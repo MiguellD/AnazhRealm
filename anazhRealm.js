@@ -23093,13 +23093,13 @@ class AnazhRealm {
         p.g = typeof g === "number" && Number.isFinite(g) ? g : NaN;
     }
 
-    // ═══ DER KREATUR-ZIEGEL (Tiere als Felder — der letzte Bogen) ═══
-    // Das Tier IST sein Feld (VOLLE FORM, KREATUR_ZIEGEL_DIST=0): einmal
-    // gebacken zieht es als SLOT in den EINEN Welt-March; das Feld FOLGT dem
-    // Tier über die Feld-Liste (bbMin wandert mit der Position — zwei Floats-
-    // Sets je Frame, kein Re-Bake, kein eigenes Draw-Objekt). Bake budgetiert
-    // (nie über Frame-Budget), headless byte-alt, Tod räumt (removeCreature).
-    // Atlas voll → das Tier bleibt sein Mesh (fail-open, ehrlich benannt).
+    // ═══ DER KREATUR-ZIEGEL (Tiere als GLIEDER-Felder — die lebende Form) ═══
+    // Das Tier IST seine Felder (VOLLE FORM, KREATUR_ZIEGEL_DIST=0): jedes
+    // GLIED (die tierBaum-Teile, die _animateTierBaum rotiert) ist ein eigenes
+    // Brick im Atlas; je Frame reist die Knochen-Matrix in die Liste
+    // (_weltFeldMatrix — MATRIX DER MATRIX) → das Feld ANIMIERT mit dem Gang,
+    // und die Zerlegung IST die Auflösung (32³ je Glied statt je Tier).
+    // Bake getaktet (Bake-Garantie), headless byte-alt, Tod räumt.
     _tickKreaturZiegel(playerPos) {
         const st = this.state;
         if (!playerPos || (st.renderer && st.renderer._isHeadlessNull)) return;
@@ -23111,13 +23111,13 @@ class AnazhRealm {
             const fern = dx * dx + dz * dz > D2;
             const u = cr.userData || (cr.userData = {});
             if (!fern) {
-                if (u._kzSlot) {
-                    this._weltFeldAktiv(u._kzSlot, false);
+                if (u._kzGlieder) {
+                    for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, false);
                     cr.visible = true;
                 }
                 continue;
             }
-            if (!u._kzSlot) {
+            if (!u._kzGlieder) {
                 if (u._kzVersuch) {
                     // KEIN RÜCKWEG: der Bake ist gefallen — das Tier rendert nie
                     // als Mesh weiter, das Fehlen ist sichtbar (laut im Register)
@@ -23127,22 +23127,19 @@ class AnazhRealm {
                 if (!this._weltBakeErlaubt()) continue; // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt der Körper
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
-                const zg = this._ziegelBackenAusGruppe(cr, AnazhRealm.WALD_ZIEGEL.dim);
-                const handle = zg ? this._weltFeldRegister(zg) : null;
-                if (!handle) {
-                    cr.visible = false; // Feld fehlt → nichts erscheint
+                u._kzGlieder = this._kreaturGliederBacken(cr);
+                if (!u._kzGlieder) {
+                    cr.visible = false; // Feld fehlt → nichts erscheint (laut im Register)
                     continue;
                 }
-                u._kzSlot = handle;
-                u._kzMinBasis = handle.bbMin.clone();
-                u._kzPosBasis = cr.position.clone();
             }
-            // DAS FELD WANDERT MIT DEM TIER (die Liste trägt den Anker):
-            const ddx = cr.position.x - u._kzPosBasis.x;
-            const ddy = cr.position.y - u._kzPosBasis.y;
-            const ddz = cr.position.z - u._kzPosBasis.z;
-            this._weltFeldBewege(u._kzSlot, u._kzMinBasis.x + ddx, u._kzMinBasis.y + ddy, u._kzMinBasis.z + ddz);
-            this._weltFeldAktiv(u._kzSlot, st.creaturesHidden !== true); // toggleCreatures schaltet die Felder
+            // DIE KNOCHEN TRAGEN DIE FELDER (je Glied je Frame — die Pose der
+            // letzten Animations-Auswertung reist als inverse Welt-Matrix):
+            const an = st.creaturesHidden !== true;
+            for (const gl of u._kzGlieder) {
+                this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+                this._weltFeldAktiv(gl.handle, an);
+            }
             cr.visible = false; // das Feld IST die Gestalt
         }
     }
@@ -23150,8 +23147,8 @@ class AnazhRealm {
     _kreaturZiegelTod(cr) {
         const u = cr && cr.userData;
         if (!u) return;
-        if (u._kzSlot) this._weltFeldFrei(u._kzSlot);
-        u._kzSlot = null;
+        if (u._kzGlieder) for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
+        u._kzGlieder = null;
         u._kzVersuch = false;
     }
 
@@ -23277,7 +23274,7 @@ class AnazhRealm {
             // `visible` dem Kreatur-Ziegel (das Feld IST die Gestalt — der
             // Frustum-Schreiber würde den Mesh-Rückweg wiederbeleben); nur die
             // Bake-Rampe (noch kein Feld) wird frustum-gecullt.
-            if (!creature.userData || !creature.userData._kzSlot) creature.visible = inFrustum;
+            if (!creature.userData || !creature.userData._kzGlieder) creature.visible = inFrustum;
 
             // V8.49 — Hindernis-Raycast nur für sichtbare, nahe Kreaturen.
             // Off-Screen-Sparsamkeit + Distanz-LOD: die Hindernis-Vermeidung
@@ -24802,8 +24799,8 @@ class AnazhRealm {
         this.state.creaturesHidden = !visible;
         this.state.creatures.forEach((creature) => {
             const u = creature.userData;
-            if (u && u._kzSlot) {
-                this._weltFeldAktiv(u._kzSlot, visible);
+            if (u && u._kzGlieder) {
+                for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, visible);
                 creature.visible = false; // der Körper bleibt unsichtbarer Träger
             } else creature.visible = visible;
         });
@@ -39711,13 +39708,16 @@ class AnazhRealm {
             nah: TSL.uniform(0.1),
             fern: TSL.uniform(9000),
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
+            felderN: TSL.uniform(0),
+            sonne: TSL.uniform(new THREE.Vector3(0, 1, 0)),
+            sonnStaerke: TSL.uniform(1),
         };
         // DER BLICK (WGSL, roh — ersetzt den per-Pixel-March): Richtung aus
         // invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-
         // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
         // SPEC-WAND bleibt geehrt (textureDimensions → f32/i32-Casts).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, felderN: f32, sonne: vec3<f32>, sonnStaerke: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -39740,46 +39740,82 @@ class AnazhRealm {
                 "            panoDa = true;\n" +
                 "        }\n" +
                 "    }\n" +
-                "    // ── DER EINE WELT-MARCH: alle Felder (Regionen·Bauten·Tiere) ──\n" +
-                "    // Liste je Feld: [bbMin.xyz | einheitsIndex] · [bbSize.xyz | d]\n" +
-                "    // (d = 0 inaktiv; d IST das Schrittmaß — voxel-wahr, keine Konstante).\n" +
+                "    // ── DER EINE WELT-MARCH v2 (MATRIX DER MATRIX): alle Felder ──\n" +
+                "    // Liste je Feld (8 Texel): [wAABB.min|d] [wAABB.max|einheit]\n" +
+                "    // [inv r0] [inv r1] [inv r2] [lokalMin|·] [lokalGroesse|·] [·] —\n" +
+                "    // der Strahl zieht in den GLIED-Raum (Knochen-Matrix = Animation),\n" +
+                "    // d IST das Schrittmaß (voxel-wahr), die Normale kommt aus dem\n" +
+                "    // Dichte-Gradienten und die Sonne beleuchtet (kein Nacht-Glühen).\n" +
                 "    var bestT = 1e30;\n" +
                 "    var bestRgb = vec3<f32>(0.0);\n" +
-                "    let lDim = textureDimensions(liste, 0);\n" +
-                "    let nFelder = i32(lDim.x) / 2;\n" +
-                "    for (var j: i32 = 0; j < nFelder; j = j + 1) {\n" +
-                "        let t0 = textureLoad(liste, vec2<i32>(j * 2, 0), 0);\n" +
-                "        let t1 = textureLoad(liste, vec2<i32>(j * 2 + 1, 0), 0);\n" +
-                "        let d = t1.w;\n" +
+                "    var bestN = vec3<f32>(0.0, 1.0, 0.0);\n" +
+                "    let nF = i32(felderN + 0.5);\n" +
+                "    for (var j: i32 = 0; j < nF; j = j + 1) {\n" +
+                "        let b = j * 8;\n" +
+                "        let t0 = textureLoad(liste, vec2<i32>(b, 0), 0);\n" +
+                "        let d = t0.w;\n" +
                 "        if (d < 1.0) { continue; }\n" +
-                "        let bbMin = t0.xyz;\n" +
-                "        let bbMax = bbMin + t1.xyz;\n" +
+                "        let t1 = textureLoad(liste, vec2<i32>(b + 1, 0), 0);\n" +
                 "        let inv = 1.0 / dir;\n" +
-                "        let tA = (bbMin - camPos) * inv;\n" +
-                "        let tB = (bbMax - camPos) * inv;\n" +
+                "        let tA = (t0.xyz - camPos) * inv;\n" +
+                "        let tB = (t1.xyz - camPos) * inv;\n" +
                 "        let tMin3 = min(tA, tB);\n" +
                 "        let tMax3 = max(tA, tB);\n" +
                 "        let tN = max(max(tMin3.x, tMin3.y), max(tMin3.z, 0.5));\n" +
                 "        let tF = min(tMax3.x, min(tMax3.y, tMax3.z));\n" +
                 "        if (tF <= tN || tN >= bestT) { continue; }\n" +
-                "        let u = i32(t0.w + 0.5);\n" +
+                "        let r0 = textureLoad(liste, vec2<i32>(b + 2, 0), 0);\n" +
+                "        let r1 = textureLoad(liste, vec2<i32>(b + 3, 0), 0);\n" +
+                "        let r2 = textureLoad(liste, vec2<i32>(b + 4, 0), 0);\n" +
+                "        let lm = textureLoad(liste, vec2<i32>(b + 5, 0), 0).xyz;\n" +
+                "        let lg = textureLoad(liste, vec2<i32>(b + 6, 0), 0).xyz;\n" +
+                "        let c4 = vec4<f32>(camPos, 1.0);\n" +
+                "        let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
+                "        let dL = vec3<f32>(dot(r0.xyz, dir), dot(r1.xyz, dir), dot(r2.xyz, dir));\n" +
+                "        let invL = 1.0 / dL;\n" +
+                "        let lA = (lm - oL) * invL;\n" +
+                "        let lB = (lm + lg - oL) * invL;\n" +
+                "        let lMin3 = min(lA, lB);\n" +
+                "        let lMax3 = max(lA, lB);\n" +
+                "        let tN2 = max(tN, max(lMin3.x, max(lMin3.y, lMin3.z)));\n" +
+                "        let tF2 = min(tF, min(lMax3.x, min(lMax3.y, lMax3.z)));\n" +
+                "        if (tF2 <= tN2) { continue; }\n" +
+                "        let u = i32(t1.w + 0.5);\n" +
                 "        let orig = vec3<f32>(f32(u % 16) * 32.0, f32((u / 16) % 16) * 32.0, f32(u / 256) * 32.0);\n" +
                 "        let schritte = i32(d + 0.5);\n" +
                 "        for (var k: i32 = 0; k < schritte; k = k + 1) {\n" +
-                "            let t = tN + (tF - tN) * (f32(k) + 0.5) / d;\n" +
+                "            let t = tN2 + (tF2 - tN2) * (f32(k) + 0.5) / d;\n" +
                 "            if (t >= bestT) { break; }\n" +
-                "            let pos = camPos + dir * t;\n" +
-                "            let uvw = clamp((pos - bbMin) / t1.xyz, vec3<f32>(0.001), vec3<f32>(0.999));\n" +
+                "            let pL = oL + dL * t;\n" +
+                "            let uvw = clamp((pL - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999));\n" +
                 "            let texel = vec3<i32>(orig + uvw * d);\n" +
                 "            let tex = textureLoad(atlas, texel, 0);\n" +
-                "            if (tex.a > 0.25) { bestT = t; bestRgb = tex.rgb; break; }\n" +
+                "            if (tex.a > 0.25) {\n" +
+                "                bestT = t;\n" +
+                "                bestRgb = tex.rgb;\n" +
+                "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a):\n" +
+                "                let gx = textureLoad(atlas, texel + vec3<i32>(1, 0, 0), 0).a - textureLoad(atlas, texel - vec3<i32>(1, 0, 0), 0).a;\n" +
+                "                let gy = textureLoad(atlas, texel + vec3<i32>(0, 1, 0), 0).a - textureLoad(atlas, texel - vec3<i32>(0, 1, 0), 0).a;\n" +
+                "                let gz = textureLoad(atlas, texel + vec3<i32>(0, 0, 1), 0).a - textureLoad(atlas, texel - vec3<i32>(0, 0, 1), 0).a;\n" +
+                "                var nL = vec3<f32>(-gx, -gy, -gz);\n" +
+                "                if (dot(nL, nL) < 1e-8) { nL = -dir; }\n" +
+                "                // lokal → Welt via invᵀ (Zeilen der inversen = Spalten der Transponierten):\n" +
+                "                bestN = normalize(vec3<f32>(\n" +
+                "                    r0.x * nL.x + r1.x * nL.y + r2.x * nL.z,\n" +
+                "                    r0.y * nL.x + r1.y * nL.y + r2.y * nL.z,\n" +
+                "                    r0.z * nL.x + r1.z * nL.y + r2.z * nL.z\n" +
+                "                ));\n" +
+                "                break;\n" +
+                "            }\n" +
                 "        }\n" +
                 "    }\n" +
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
                 "    if (bestT < 1e29) {\n" +
+                "        // DAS LICHT AUF DEM FELD (das Nacht-Glühen fällt): Lambert + Ambient\n" +
+                "        let licht = 0.35 + 0.85 * sonnStaerke * max(dot(bestN, sonne), 0.0);\n" +
                 "        let vz = bestT * max(dot(dir, fwd), 1e-4);\n" +
                 "        let tiefe = clamp(fern * (vz - nah) / (vz * (fern - nah)), 0.0, 0.9999995);\n" +
-                "        return vec4<f32>(bestRgb, tiefe);\n" +
+                "        return vec4<f32>(bestRgb * licht, tiefe);\n" +
                 "    }\n" +
                 "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
                 "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
@@ -39807,6 +39843,9 @@ class AnazhRealm {
             nah: U.nah,
             fern: U.fern,
             fwd: U.fwd,
+            felderN: U.felderN,
+            sonne: U.sonne,
+            sonnStaerke: U.sonnStaerke,
             fogFarbe: U.fogFarbe,
             pano: TSL.texture(panoTex),
             liste: TSL.texture(wm.liste),
@@ -39951,8 +39990,13 @@ class AnazhRealm {
         atlas.magFilter = THREE.LinearFilter;
         atlas.unpackAlignment = 1;
         atlas.needsUpdate = true;
-        const listeDaten = new Float32Array(W.felder * 2 * 4);
-        const liste = new THREE.DataTexture(listeDaten, W.felder * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+        // LISTE v2 (MATRIX DER MATRIX, 8 Texel je Feld): [wAABB.min|d]
+        // [wAABB.max|einheit] [inv r0] [inv r1] [inv r2] [lokalMin|0]
+        // [lokalGroesse|0] [frei] — die inverse WELT-MATRIX trägt Rotation und
+        // Animation (Glieder-Felder folgen ihren Knochen), die Welt-AABB ist
+        // der billige Vortest, die lokale Box das Brick-Zuhause.
+        const listeDaten = new Float32Array(W.felder * 8 * 4);
+        const liste = new THREE.DataTexture(listeDaten, W.felder * 8, 1, THREE.RGBAFormat, THREE.FloatType);
         liste.minFilter = THREE.NearestFilter;
         liste.magFilter = THREE.NearestFilter;
         liste.needsUpdate = true;
@@ -39966,10 +40010,11 @@ class AnazhRealm {
             atlasDaten,
             liste,
             listeDaten,
-            freiFelder: Array.from({ length: W.felder }, (_x, i) => i),
+            freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
             freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
             belegt: 0,
+            obergrenze: 0, // höchster je vergebener Feld-Index + 1 (der Shader-Loop endet dort)
         };
         return st.weltMarch;
     }
@@ -40005,6 +40050,7 @@ class AnazhRealm {
             return null;
         }
         const feld = wm.freiFelder.pop();
+        if (feld + 1 > wm.obergrenze) wm.obergrenze = feld + 1;
         const src = zg.tex.image.data;
         const ox = (einheit % 16) * W.einheit;
         const oy = (Math.floor(einheit / 16) % 16) * W.einheit;
@@ -40016,15 +40062,37 @@ class AnazhRealm {
                 wm.atlasDaten.set(src.subarray(si, si + d * 4), di);
             }
         wm.atlas.needsUpdate = true;
-        const o = feld * 8;
-        wm.listeDaten[o] = zg.bbMin.x;
-        wm.listeDaten[o + 1] = zg.bbMin.y;
-        wm.listeDaten[o + 2] = zg.bbMin.z;
-        wm.listeDaten[o + 3] = einheit; // der Shader leitet den Atlas-Ursprung ab
-        wm.listeDaten[o + 4] = zg.bbGroesse.x;
-        wm.listeDaten[o + 5] = zg.bbGroesse.y;
-        wm.listeDaten[o + 6] = zg.bbGroesse.z;
-        wm.listeDaten[o + 7] = d; // d > 0 = aktiv UND das Schrittmaß des March
+        const L = wm.listeDaten;
+        const o = feld * 32; // 8 Texel × 4 Floats
+        // Welt-AABB == lokale Box (Identität — Glieder überschreiben per Matrix):
+        L[o] = zg.bbMin.x;
+        L[o + 1] = zg.bbMin.y;
+        L[o + 2] = zg.bbMin.z;
+        L[o + 3] = d; // d > 0 = aktiv UND das Schrittmaß des March
+        L[o + 4] = zg.bbMin.x + zg.bbGroesse.x;
+        L[o + 5] = zg.bbMin.y + zg.bbGroesse.y;
+        L[o + 6] = zg.bbMin.z + zg.bbGroesse.z;
+        L[o + 7] = einheit; // der Shader leitet den Atlas-Ursprung ab
+        L[o + 8] = 1;
+        L[o + 9] = 0;
+        L[o + 10] = 0;
+        L[o + 11] = 0; // inv Zeile 0 (Identität)
+        L[o + 12] = 0;
+        L[o + 13] = 1;
+        L[o + 14] = 0;
+        L[o + 15] = 0; // inv Zeile 1
+        L[o + 16] = 0;
+        L[o + 17] = 0;
+        L[o + 18] = 1;
+        L[o + 19] = 0; // inv Zeile 2
+        L[o + 20] = zg.bbMin.x;
+        L[o + 21] = zg.bbMin.y;
+        L[o + 22] = zg.bbMin.z;
+        L[o + 23] = 0; // lokale Box min
+        L[o + 24] = zg.bbGroesse.x;
+        L[o + 25] = zg.bbGroesse.y;
+        L[o + 26] = zg.bbGroesse.z;
+        L[o + 27] = 0; // lokale Box Größe
         wm.liste.needsUpdate = true;
         wm.belegt++;
         if (zg.tex.dispose) zg.tex.dispose(); // die Einzel-Textur ist im Atlas aufgegangen
@@ -40034,29 +40102,73 @@ class AnazhRealm {
     _weltFeldAktiv(handle, an) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
-        const o = handle.feld * 8;
+        const o = handle.feld * 32;
         const soll = an ? handle.d : 0;
-        if (wm.listeDaten[o + 7] !== soll) {
-            wm.listeDaten[o + 7] = soll;
+        if (wm.listeDaten[o + 3] !== soll) {
+            wm.listeDaten[o + 3] = soll;
             wm.liste.needsUpdate = true;
         }
     }
 
-    _weltFeldBewege(handle, x, y, z) {
+    // MATRIX DER MATRIX (der Schöpfer sah es selbst): das Feld folgt seinem
+    // GLIED — die Liste bekommt die inverse Welt-Matrix des Knochens (der
+    // March zieht den Strahl in den Glied-Raum) + die Welt-AABB der bewegten
+    // lokalen Box (der billige Vortest). Ein Aufruf je Glied je Frame.
+    _weltFeldMatrix(handle, matrixWorld) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
-        const o = handle.feld * 8;
-        wm.listeDaten[o] = x;
-        wm.listeDaten[o + 1] = y;
-        wm.listeDaten[o + 2] = z;
+        const inv = this._wfInv || (this._wfInv = new THREE.Matrix4());
+        const ecke = this._wfEcke || (this._wfEcke = new THREE.Vector3());
+        inv.copy(matrixWorld).invert();
+        const e = inv.elements; // Spalten-major
+        const L = wm.listeDaten;
+        const o = handle.feld * 32;
+        L[o + 8] = e[0];
+        L[o + 9] = e[4];
+        L[o + 10] = e[8];
+        L[o + 11] = e[12]; // inv Zeile 0
+        L[o + 12] = e[1];
+        L[o + 13] = e[5];
+        L[o + 14] = e[9];
+        L[o + 15] = e[13]; // inv Zeile 1
+        L[o + 16] = e[2];
+        L[o + 17] = e[6];
+        L[o + 18] = e[10];
+        L[o + 19] = e[14]; // inv Zeile 2
+        // Welt-AABB: die 8 Ecken der lokalen Box durch die VORWÄRTS-Matrix:
+        const m = handle.bbMin;
+        const g = handle.bbGroesse;
+        let minX = Infinity,
+            minY = Infinity,
+            minZ = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity,
+            maxZ = -Infinity;
+        for (let k = 0; k < 8; k++) {
+            ecke.set(m.x + (k & 1 ? g.x : 0), m.y + (k & 2 ? g.y : 0), m.z + (k & 4 ? g.z : 0)).applyMatrix4(
+                matrixWorld
+            );
+            if (ecke.x < minX) minX = ecke.x;
+            if (ecke.y < minY) minY = ecke.y;
+            if (ecke.z < minZ) minZ = ecke.z;
+            if (ecke.x > maxX) maxX = ecke.x;
+            if (ecke.y > maxY) maxY = ecke.y;
+            if (ecke.z > maxZ) maxZ = ecke.z;
+        }
+        L[o] = minX;
+        L[o + 1] = minY;
+        L[o + 2] = minZ;
+        L[o + 4] = maxX;
+        L[o + 5] = maxY;
+        L[o + 6] = maxZ;
         wm.liste.needsUpdate = true;
     }
 
     _weltFeldFrei(handle) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
-        const o = handle.feld * 8;
-        wm.listeDaten[o + 7] = 0;
+        const o = handle.feld * 32;
+        wm.listeDaten[o + 3] = 0;
         wm.liste.needsUpdate = true;
         wm.freiFelder.push(handle.feld);
         (handle.gross ? wm.freiGross : wm.freiKlein).push(handle.einheit);
@@ -40291,6 +40403,17 @@ class AnazhRealm {
             fp.U.fern.value = cam.far;
             const e = cam.matrixWorld.elements;
             fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
+            // Loop-Grenze (nur vergebene Felder marchen) + das SONNEN-LICHT:
+            const wm = st.weltMarch;
+            fp.U.felderN.value = wm ? wm.obergrenze : 0;
+            const dl = st.directionalLight;
+            if (dl) {
+                fp.U.sonne.value
+                    .copy(dl.position)
+                    .sub(dl.target && dl.target.position ? dl.target.position : this._nullVektor || (this._nullVektor = new THREE.Vector3()))
+                    .normalize();
+                fp.U.sonnStaerke.value = Math.max(0, Math.min(1.5, dl.intensity || 0));
+            }
             if (st.scene && st.scene.fog && st.scene.fog.color) fp.U.fogFarbe.value.copy(st.scene.fog.color);
         }
     }
@@ -74594,6 +74717,130 @@ class AnazhRealm {
         entry._ziegelSlot = null;
     }
 
+    // DER GLIED-BÄCKER (MATRIX DER MATRIX): backt eine MESH-LISTE im
+    // GLIED-LOKALEN Raum (wurzelInv × meshWorld) — das Brick ist statisch,
+    // die Knochen-Matrix trägt es zur Laufzeit. Dieselben Splat-Konstanten
+    // wie der Universal-Bäcker (200/90, Material-Farb-Fallback).
+    _gliedFeldBacken(meshes, wurzelInv, dim) {
+        if (!meshes || !meshes.length || typeof THREE === "undefined") return null;
+        const d = dim || AnazhRealm.WALD_ZIEGEL.dim;
+        const v = new THREE.Vector3();
+        const mL = new THREE.Matrix4();
+        const bb = new THREE.Box3();
+        bb.makeEmpty();
+        for (const o of meshes) {
+            mL.multiplyMatrices(wurzelInv, o.matrixWorld);
+            const pos = o.geometry.attributes.position;
+            const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1;
+            for (let i = 0; i < pos.count; i += schritt)
+                bb.expandByPoint(v.fromBufferAttribute(pos, i).applyMatrix4(mL));
+        }
+        if (bb.isEmpty()) return null;
+        bb.expandByScalar(0.01); // Splat-Punkte AUF der Kante bleiben im Brick
+        const sx = Math.max(1e-6, bb.max.x - bb.min.x);
+        const sy = Math.max(1e-6, bb.max.y - bb.min.y);
+        const sz = Math.max(1e-6, bb.max.z - bb.min.z);
+        const daten = new Uint8Array(d * d * d * 4);
+        for (const o of meshes) {
+            mL.multiplyMatrices(wurzelInv, o.matrixWorld);
+            const g = o.geometry;
+            const pos = g.attributes.position;
+            const col = g.attributes.color || null;
+            const mc = !col && o.material && o.material.color ? o.material.color : null;
+            const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1;
+            for (let i = 0; i < pos.count; i += schritt) {
+                v.fromBufferAttribute(pos, i).applyMatrix4(mL);
+                const vx = Math.min(d - 1, Math.max(0, Math.floor(((v.x - bb.min.x) / sx) * d)));
+                const vy = Math.min(d - 1, Math.max(0, Math.floor(((v.y - bb.min.y) / sy) * d)));
+                const vz = Math.min(d - 1, Math.max(0, Math.floor(((v.z - bb.min.z) / sz) * d)));
+                const oI = (vz * d * d + vy * d + vx) * 4;
+                const cr = col ? col.getX(i) : mc ? mc.r : 0.55;
+                const cg = col ? col.getY(i) : mc ? mc.g : 0.5;
+                const cb = col ? col.getZ(i) : mc ? mc.b : 0.45;
+                daten[oI] = Math.min(255, daten[oI] + cr * 200);
+                daten[oI + 1] = Math.min(255, daten[oI + 1] + cg * 200);
+                daten[oI + 2] = Math.min(255, daten[oI + 2] + cb * 200);
+                daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
+            }
+        }
+        const tex = new THREE.Data3DTexture(daten, d, d, d);
+        tex.format = THREE.RGBAFormat;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.unpackAlignment = 1;
+        tex.needsUpdate = true;
+        return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
+    }
+
+    // DIE GLIEDER EINER KREATUR: jedes Mesh gehört seinem NÄCHSTEN
+    // artikulierten Anker (die tierBaum-Teile — genau die Gruppen, die
+    // _animateTierBaum rotiert); Mini-Gruppen verschmelzen in den Eltern-
+    // Anker, Deckel 12 Glieder je Tier. Der Fern-Standbild-Ast backt NIE
+    // (er wäre der Doppel-Körper). Ganz oder gar nicht: reicht der Atlas
+    // nicht für ALLE Glieder, fällt das ganze Tier (kein halber Wolf).
+    _kreaturGliederBacken(cr) {
+        const tb = cr.userData && cr.userData._tierBaum;
+        const anker = new Set();
+        if (tb && tb.teile)
+            for (const k in tb.teile) if (tb.teile[k] && tb.teile[k].isObject3D) anker.add(tb.teile[k]);
+        const wurzel = (tb && tb.wrap) || cr;
+        anker.add(wurzel);
+        const gruppen = new Map();
+        cr.traverse((o) => {
+            if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
+            if (tb && tb.fern) {
+                let p = o;
+                while (p && p !== cr) {
+                    if (p === tb.fern) return; // das gemergte Standbild wäre der Doppel-Körper
+                    p = p.parent;
+                }
+            }
+            let a = o.parent;
+            while (a && a !== cr && !anker.has(a)) a = a.parent;
+            const schluessel = a && anker.has(a) ? a : wurzel;
+            let g = gruppen.get(schluessel);
+            if (!g) gruppen.set(schluessel, (g = { meshes: [], verts: 0 }));
+            g.meshes.push(o);
+            g.verts += o.geometry.attributes.position.count;
+        });
+        if (gruppen.size === 0) return null;
+        const zielVon = (a) => {
+            let p = a === wurzel ? null : a.parent;
+            while (p && p !== cr && !anker.has(p)) p = p.parent;
+            return p && p !== cr && anker.has(p) ? p : wurzel;
+        };
+        const merge = (von, nach) => {
+            const g = gruppen.get(von);
+            let z = gruppen.get(nach);
+            if (!z) gruppen.set(nach, (z = { meshes: [], verts: 0 }));
+            z.meshes.push(...g.meshes);
+            z.verts += g.verts;
+            gruppen.delete(von);
+        };
+        for (const [a, g] of [...gruppen]) if (a !== wurzel && g.verts < 300 && gruppen.has(a)) merge(a, zielVon(a));
+        while (gruppen.size > 12) {
+            let kleinster = null;
+            for (const [a, g] of gruppen)
+                if (a !== wurzel && (!kleinster || g.verts < gruppen.get(kleinster).verts)) kleinster = a;
+            if (!kleinster) break;
+            merge(kleinster, zielVon(kleinster));
+        }
+        const glieder = [];
+        const inv = new THREE.Matrix4();
+        for (const [a, g] of gruppen) {
+            inv.copy(a.matrixWorld).invert();
+            const zg = this._gliedFeldBacken(g.meshes, inv, AnazhRealm.WALD_ZIEGEL.dim);
+            if (!zg) continue;
+            const handle = this._weltFeldRegister(zg);
+            if (!handle) {
+                for (const gl of glieder) this._weltFeldFrei(gl.handle);
+                return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
+            }
+            glieder.push({ teil: a, handle });
+        }
+        return glieder.length ? glieder : null;
+    }
+
     // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der
     // Feld-Pass marcht ALLE Felder aus Atlas+Liste in EINEM Draw — ein
     // Material je Ziegel wäre der Zwilling, den wir abgeschafft haben.
@@ -92623,7 +92870,7 @@ class AnazhRealm {
         // wiederbeleben; nur die Bake-Rampe (noch kein Feld) wird gecullt.
         if (this.state.creatures)
             this.state.creatures.forEach((creature) => {
-                if (!creature.userData || !creature.userData._kzSlot)
+                if (!creature.userData || !creature.userData._kzGlieder)
                     creature.visible = this.isInFrustum(creature, frustum);
             });
         // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Batches lebt auf der
@@ -95035,7 +95282,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.44";
+AnazhRealm.VERSION = "18.491.45";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

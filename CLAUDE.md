@@ -50,7 +50,34 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.44 — DIE HEILUNG DES SCHÖPFER-BOOTS: der Ring weicht dem Gebauten, die Bakes verhungern nie)
+## Stand (V18.491.45 — MATRIX DER MATRIX: die Tiere werden animierte Glieder-Felder, das Licht fällt aufs Feld)
+
+**20.07., Schöpfer-Boot .44 (Screenshots: „Auflösung noch geringer … müsste es
+nicht eine Transformationsformel statt Matrix sein, Matrix der Matrix?" + „die
+Animationen? die Bäume sehe ich noch nicht so"):** die drei Wurzeln geschnitten:
+- DIE MATRIX DER MATRIX (sein eigenes Wort): die Feld-Liste trägt je Feld jetzt 8
+  Texel (32 Floats) statt 2 — die INVERSE Welt-Matrix des Glieds + Welt-AABB +
+  lokale Box. Der March zieht den Strahl in den GLIED-Raum (oL=inv·cam,
+  dL=inv₃ₓ₃·dir); die Knochen-Matrix reist je Frame in die Liste
+  (_weltFeldMatrix) → das Feld ANIMIERT mit dem Gang.
+- DIE GLIEDER-ZERLEGUNG (die Auflösung): ein Tier ist nicht mehr EIN Klotz-Feld,
+  sondern je artikuliertem Knochen (die tierBaum-Teile, die _animateTierBaum
+  rotiert) ein eigenes 32³-Brick (~12 Glieder je Wolf) — die Zerlegung IST die
+  Auflösung. _kreaturGliederBacken bäckt glied-lokal, ganz-oder-gar-nicht bei
+  Atlas-Erschöpfung (kein halber Wolf).
+- DAS LICHT FÄLLT AUFS FELD (das Nacht-Glühen fällt): der March liest die
+  NORMALE aus dem Dichte-Gradienten (−∇a), transformiert sie lokal→welt (invᵀ),
+  und die Sonne beleuchtet (Lambert 0.35 + 0.85·max(N·L,0)). Das goldene
+  Selbstleuchten der Nacht ist tot.
+- BEWIESEN: Boot-Sonde echtes WebGPU (dauerhaft über Budget) — 1 Tier → 12
+  Glieder gebacken, alle aktiv, die Glied-Matrix WANDERT zwischen zwei
+  Zeitpunkten (1.8 — die Animation erreicht das Feld), 0 Fehler/Warns ·
+  gate:fern-ring GRÜN · playtest:fast 18/18 · lint 0 Errors. EHRLICH: die
+  adversariale Korrektheits-Prüfung (4 Linsen: Raymarch-t-Raum · Normalen-
+  Transform · Allokator-Fragmentierung · Integration) läuft — bestätigte
+  Befunde werden im Folge-Commit geheilt (ship-then-heal, wie befohlen).
+
+**Davor, V18.491.44 — DIE HEILUNG DES SCHÖPFER-BOOTS: der Ring weicht dem Gebauten, die Bakes verhungern nie)
 
 **20.07., Schöpfer-Boot .43 (Screenshots: „untexturiertes Sheet durch das ich
 laufe — zwei Terrainsheets?" + „Tiere scheinen noch wie früher"):** beide
