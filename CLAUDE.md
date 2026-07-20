@@ -50,7 +50,20 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.39 — DER REALLOC-TOD: die Bewegungs-Auflösung fällt — die Destroyed-Klasse ist an der Wurzel tot)
+## Stand (V18.491.40 — DIE LEER-WACHE: die letzte laute Klasse fällt — leere Bürger kompilieren nie)
+
+**20.07., Schöpfer-Konsole .39 (Destroyed BESTÄTIGT TOT — aber die Attribut-
+Warn-Fluten leben im Spiel weiter: Masken- UND Impostor-Familie):** der
+.38-Stack hatte den Täter: die REIFE-WACHE kompiliert Bürger beim GRUPPEN-
+MINT — die BatchedMesh-/Hüllen-Geometrie ist dort noch LEER (position kommt
+erst mit dem ersten addGeometry) → jede Flut war eine FALSCH-Pipeline mit
+Default-Null-Attributen (Pipeline-Churn 4.5/s). DIE LEER-WACHE am EINEN
+Chokepoint (_bundleReifeWache): ohne position-Attribut kein Compile — der
+erste ECHTE Beitritt ruft die Wache sowieso erneut. BEWIESEN (echtes WebGPU):
+attrWarn 0 (vorher Fluten) · Kreatur-Ziegel-Zyklus weiter 5/5 · 0 Fehler ·
+playtest:fast 18/18 · gate:foundry-crossfade GRÜN (Band-Residenz dicht).**
+
+**Davor, V18.491.39 — DER REALLOC-TOD: die Bewegungs-Auflösung fällt — die Destroyed-Klasse ist an der Wurzel tot)**
 
 **20.07., Schöpfer-Konsole .38 mit VOLLEN Stacks — der Täter beim Namen:
 compileAsync/_bundleReifeWache (alle Warm-Compile-Pfade) submittet intern

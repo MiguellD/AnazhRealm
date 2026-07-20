@@ -69211,6 +69211,14 @@ class AnazhRealm {
         const r = st.renderer;
         if (!mesh || !r || r._isHeadlessNull || typeof r.compileAsync !== "function") return;
         if (!st.scene || !st.camera) return;
+        // DIE LEER-WACHE (Schöpfer-Konsole .39, Täter-Stack .38): beim GRUPPEN-
+        // MINT ist die BatchedMesh-/Hüllen-Geometrie noch LEER (position kommt
+        // erst mit dem ersten addGeometry) — ein Compile jetzt baut eine
+        // FALSCH-Pipeline mit Default-Null-Attributen (die normal/position/
+        // color/aH0*/aImpX/aFlex/uv/aOccl-Warn-Fluten + Pipeline-Churn 4.5/s).
+        // Leere Bürger warten: der erste ECHTE Beitritt ruft die Wache erneut.
+        const g = mesh.geometry;
+        if (!g || !g.attributes || !g.attributes.position) return;
         Promise.resolve(r.compileAsync(mesh, st.camera, st.scene))
             .catch(() => {})
             .finally(() => {
@@ -94892,7 +94900,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.39";
+AnazhRealm.VERSION = "18.491.40";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
