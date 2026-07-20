@@ -33541,17 +33541,24 @@ class AnazhRealm {
         }
     }
     _chunkBodenNulle(geo) {
+        // SCHÖPFER-TRACE 20.07. (schwarze Welt, „reading 'constructor'"):
+        // der Vendor liest attribute.array.constructor beim PIPELINE-BAU
+        // (getTypeFromArray — Schatten-Kontexte/Späte-Kompilate münzen
+        // RenderObjects LAZY, lange nach dem Upload). Ein null-Array crasht
+        // dort JEDEN Frame. Deshalb: NULL-LÄNGE-SENTINEL derselben Typ-
+        // Klasse — der TYP überlebt (der Bau liest nur den constructor),
+        // die BYTES fallen. Re-Hydrierung erkennt length === 0.
         let frei = 0;
         for (const k in geo.attributes) {
             const a = geo.attributes[k];
             if (a && a.array && a.array.byteLength) {
                 frei += a.array.byteLength;
-                a.array = null;
+                a.array = new a.array.constructor(0);
             }
         }
         if (geo.index && geo.index.array && geo.index.array.byteLength) {
             frei += geo.index.array.byteLength;
-            geo.index.array = null;
+            geo.index.array = new geo.index.array.constructor(0);
         }
         return frei;
     }
@@ -68465,10 +68472,11 @@ class AnazhRealm {
         if (!bg || batch._entlassen !== true) return;
         for (const k in bg.attributes) {
             const a = bg.attributes[k];
-            if (a && a.array === null && a._anazhArrTyp) a.array = new a._anazhArrTyp(a.count * a.itemSize);
+            if (a && a.array && a.array.length === 0)
+                a.array = new a.array.constructor(a.count * a.itemSize);
         }
-        if (bg.index && bg.index.array === null && bg.index._anazhArrTyp)
-            bg.index.array = new bg.index._anazhArrTyp(bg.index.count);
+        if (bg.index && bg.index.array && bg.index.array.length === 0)
+            bg.index.array = new bg.index.array.constructor(bg.index.count);
         for (const [src, gid] of batch.geomIds) {
             try {
                 batch.mesh.setGeometryAt(gid, src);
@@ -68503,20 +68511,9 @@ class AnazhRealm {
                 batch._geoMutAt = now; // nie gerendert/hochgeladen → Frist neu
                 continue;
             }
-            let frei = 0;
-            for (const k in bg.attributes) {
-                const a = bg.attributes[k];
-                if (a && a.array && a.array.byteLength) {
-                    a._anazhArrTyp = a.array.constructor;
-                    frei += a.array.byteLength;
-                    a.array = null;
-                }
-            }
-            if (bg.index && bg.index.array && bg.index.array.byteLength) {
-                bg.index._anazhArrTyp = bg.index.array.constructor;
-                frei += bg.index.array.byteLength;
-                bg.index.array = null;
-            }
+            // Null-Länge-SENTINEL statt null (Schöpfer-Trace 20.07.): der
+            // Pipeline-Bau liest array.constructor — der Typ muss überleben.
+            const frei = this._chunkBodenNulle(bg);
             batch._entlassen = true;
             batch._entlassBytes = frei;
             this.state._batchEntlassenBytes = (this.state._batchEntlassenBytes || 0) + frei;
@@ -73618,7 +73615,12 @@ class AnazhRealm {
             // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`). Seit W5.4
             // DEFAULT AN — zusammen mit der CPU-Doppel-Mitgliedschaft im Band (das eine Flag);
             // xfade aus (Build-Zeit-A/B) = byte-unverändertes Material wie vor W5.3.
-            if (xfade) {
+            // SCHÖPFER-KONSOLE 20.07. (aH0/aLodLevel/aH0L-Warn-Flut): die
+            // Kreatur-/Mensch-Klassen tragen aLodLevel=0 → die Stufen-Maske
+            // ist für sie IDENTITÄT — ihre Attribut-Leser sind nur tote
+            // Reads + Warnungen auf ungestempelten Klon-/Hüllen-Geometrien.
+            // Die Klassen-Familie bleibt maskenfrei (byte-gleiches Bild).
+            if (xfade && !klasseLook) {
                 const _keepX = this._lodCrossfadeMaskNode(TSL, {
                     foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
                 });
@@ -93664,7 +93666,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.19";
+AnazhRealm.VERSION = "18.491.20";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

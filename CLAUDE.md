@@ -50,9 +50,32 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.19 — DIE LISTE FÄLLT: Look GANZ + Batch-Staging-Entlassung + GOLD-Urteile)
+## Stand (V18.491.20 — DER SENTINEL-SCHNITT: die schwarze Welt fällt auf ihre EINE Wurzel)
 
-**19.07., zwanzigste Welle (Schöpfer: „wie oft noch, bis du das endlich erledigst?" —
+**20.07., einundzwanzigste Welle (Schöpfer-Trace V18.491.19: „bild wird nach kurzer
+zeit schwarz" — Loop-Fehler #607 „reading 'constructor'", dc 0, Heap +9.73 MB/s,
+pendingDisposals 1111; die Entlassung LIEF [37 Böden/3.2 MB + 11 Batches/15.5 MB
+frei], aber mein Leser-Zensus verfehlte EINEN Vendor-Spät-Leser):**
+- DIE WURZEL: getTypeFromArray liest attribute.array.constructor beim
+  PIPELINE-BAU — Schatten-Kontexte/Späte-Kompilate münzen RenderObjects
+  LAZY, lange nach dem Upload. Ein null-Array crasht dort JEDEN Frame →
+  der Loop fängt, aber _loopRender stirbt VOR dem Dispose-Drain → schwarze
+  Welt + 1111er-Stau + Heap-Klettern (alles EINE Wurzel, keine drei Lecks).
+- DER SCHNITT: NULL-LÄNGE-SENTINEL derselben Typ-Klasse statt null
+  (constructor überlebt für den Bau, die Bytes fallen; Re-Hydrierung
+  erkennt length === 0; beide Maschinen teilen _chunkBodenNulle). Dazu
+  fällt die INERTE Stufen-Maske der Kreatur-/Mensch-Klassen (aLodLevel=0 →
+  Identität; ihre aH0/aLodLevel/aH0L-Leser waren die Warn-Flut der
+  Schöpfer-Konsole auf Klon-/Hüllen-Geometrien — byte-gleiches Bild).
+- BEWIESEN: chirurgische Batch-Probe 6/6 GRÜN unter Sentinel-Semantik
+  (Nullung/Guard/WACHSTUM/Byte-Treue/Bilanz) · playtest:fast 18/18 ·
+  node --check. TRACE-FAKTEN benannt (nach dem Fix neu messen): steady
+  23.1 ms EWMA · bundleDeckung 29 % (1210 MeshStandardNodeMaterial
+  draußen — der nächste Bundle-Hebel) · batchFillPct 9 % im großen
+  Regime · Boot-Sturm 2.86M Klein-Uploads/855 MB · gruppenChurn
+  3814/2424 (geroell-Wiederkehrer ×4) · stillstandMuell 11.5 MB/s.
+
+**Davor, zwanzigste Welle (Schöpfer: „wie oft noch, bis du das endlich erledigst?" —
 die ewige Offen-Liste fällt in EINER Welle: zwei Schnitte, zwei finale Urteile):**
 - HAUT+FELLE GANZ (die multiplikativen Rest-Terme fallen): die Kerne tragen
   die letzten Lab-Zahlen (FELL_LOOK.koerper: wrap 0.5 · atem 1.4/0.007/0.14 ·
