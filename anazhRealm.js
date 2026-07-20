@@ -69341,13 +69341,13 @@ class AnazhRealm {
             // rendern sie korrekt im Haupt-Pass (fail-open, nie falsches Bild).
             if (s && this.state.camera) {
                 const FS = AnazhRealm.FERN_SCHICHT;
-                const schichtDa = !!this.state.fernSchicht;
                 const cp = this.state.camera.position;
                 const kante = Math.hypot(s.center.x - cp.x, s.center.z - cp.z) - s.radius;
+                // (Trace .36: der Layer-Flip fiel mit der Fern-Schicht — die
+                // Flagge ist reine DISTANZ-Wahrheit, der Region-Ziegel liest sie.)
                 const istFern = bg.userData._fernSchicht === true;
-                if (schichtDa && !istFern && kante > FS.dist + FS.band) this._bundleSchichtFlip(bg, true);
-                else if (istFern && (!schichtDa || kante < FS.dist - FS.band)) this._bundleSchichtFlip(bg, false);
-                else if (istFern && bg.needsUpdate === true) this._bundleSchichtStempel(bg); // frische Kinder erben
+                if (!istFern && kante > FS.dist + FS.band) bg.userData._fernSchicht = true;
+                else if (istFern && kante < FS.dist - FS.band) bg.userData._fernSchicht = false;
                 // ④ WALD-VOR-WALD (echtes Depth-Occlusion): der Query-Proxy testet
                 // die KOMPLETTE Frame-Tiefe (Bäume + Fern-Schirm) — nativ.
                 if (bergAktiv) this._bundleQueryTick(bg, s, kante);
@@ -69500,28 +69500,148 @@ class AnazhRealm {
         bg.userData._occlProxy = null;
     }
 
-    // Layer-Flip eines Region-Bundles in/aus der Fern-Schicht (+ Re-Record —
-    // der Pass-Kontext wechselt, der alte Record ist wertlos).
-    _bundleSchichtFlip(bg, fern) {
-        bg.userData._fernSchicht = fern;
-        this._bundleSchichtStempel(bg);
-        bg.needsUpdate = true;
-    }
-    _bundleSchichtStempel(bg) {
-        const fern = bg.userData._fernSchicht === true;
-        const fernMask = 1 << AnazhRealm.FERN_LAYER;
-        bg.traverse((o) => {
-            if (!o.layers) return;
-            if (fern) {
-                if (o.layers.mask !== fernMask) {
-                    o.userData._maskVorFern = o.layers.mask; // FOLIAGE-Bit u.a. überleben den Flip
-                    o.layers.mask = fernMask;
-                }
-            } else if (o.layers.mask === fernMask) {
-                o.layers.mask = o.userData._maskVorFern || 1;
+    // ═══ WALD-VOR-WALD (Natur-Antwort ④ — natives Depth-Occlusion) ═══
+    // Der Berg-Schatten fragt das TERRAIN-Gesetz; hier fragt die Welt die ECHTE
+    // Frame-Tiefe: ein unsichtbarer Kugel-Kasten (colorWrite=false, transparent-
+    // Liste → nach allem Opaken, inkl. FERN-SCHIRM-Tiefe) trägt occlusionTest —
+    // das native ANY_SAMPLES_PASSED-Query. 0 Fragmente durch → die Region ist
+    // TOTAL verdeckt (auch von Wald!). Verdikt async (1-2 Frames alt), 2er-
+    // Hysterese, Un-Cull sofort, nahe Regionen (< BERG_CULL.minDist) nie.
+    // Der Render-Kontext des Szene-Passes wird am Proxy selbst gefangen
+    // (onBeforeRender) — backend.isOccluded(ctx, proxy) liest das Verdikt-Set.
+    _bundleQueryTick(bg, s, kante) {
+        const st = this.state;
+        const u = bg.userData;
+        if (kante < AnazhRealm.BERG_CULL.minDist) {
+            if (u._occlProxy) u._occlProxy.visible = false;
+            u._occlTreffer = 0;
+            u._occlVerdeckt = false;
+            return;
+        }
+        // TRACE-URTEIL .29 (CPU-render 387 ms · GPU echt 352 ms): Queries JEDEN
+        // Frame zwingen den Vendor in QuerySet-Bau/-Destroy + Resolve + Map PRO
+        // FRAME (der Dawn-Cliff). Die Natur zahlt nicht pro Frage: der PROBE-
+        // TAKT fragt nur jeden queryTakt-ten Frame (Proxys dazwischen unsichtbar
+        // = 0 Queries, 0 Churn); das Verdikt hält bis zur nächsten Probe —
+        // Verdeckung ist zeitlich kohärent (Objekt-Permanenz).
+        this._occlProbeFrame = this._occlProbeFrame === undefined ? 0 : this._occlProbeFrame;
+        const probeFenster = this._occlProbeFrame % AnazhRealm.BERG_CULL.queryTakt === 0;
+        if (!probeFenster) {
+            if (u._occlProxy) u._occlProxy.visible = false;
+            if (u._occlVerdeckt) {
+                bg.visible = false;
+                this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1;
             }
-        });
+            return;
+        }
+        let q = u._occlProxy;
+        if (!q) {
+            if (!this._occlProxyGeo) this._occlProxyGeo = new THREE.BoxGeometry(2, 2, 2);
+            if (!this._occlProxyMat) {
+                const m = new THREE.MeshBasicMaterial({ transparent: true });
+                m.colorWrite = false;
+                m.depthWrite = false;
+                this._occlProxyMat = m;
+            }
+            q = new THREE.Mesh(this._occlProxyGeo, this._occlProxyMat);
+            q.occlusionTest = true;
+            q.userData.inventar = "occl-proxy";
+            q.onBeforeRender = (r) => {
+                if (r && r._currentRenderContext) this._occlKontext = r._currentRenderContext;
+            };
+            u._occlProxy = q;
+            if (st.scene) st.scene.add(q);
+        }
+        q.visible = true;
+        q.position.set(s.center.x, s.center.y, s.center.z);
+        q.scale.setScalar(Math.max(1e-3, s.radius));
+        const be = st.renderer && st.renderer.backend;
+        const okt = this._occlKontext;
+        if (be && okt && typeof be.isOccluded === "function") {
+            if (be.isOccluded(okt, q)) {
+                u._occlTreffer = (u._occlTreffer || 0) + 1;
+                if (u._occlTreffer >= 2) u._occlVerdeckt = true; // Hysterese: 2 Verdikte
+            } else {
+                u._occlTreffer = 0;
+                u._occlVerdeckt = false; // sichtbar → SOFORT zurück
+            }
+            if (u._occlVerdeckt) {
+                bg.visible = false;
+                this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // dieselbe Linse
+            }
+        }
     }
+
+    // ═══ DER REGION-ZIEGEL (die reine Form für ALLES Gestreute) ═══
+    // Wiese-Reste · Felsen · Kristalle · Bäume sind KEINE getrennten Assets —
+    // sie sind Region-Inhalt. Eine ferne Region wird EIN 32³-Feld (der
+    // Universal-Bäcker splattet auch Instanzen), gerendert als EINE Box, die
+    // der Pixel marcht. Die Box erbt die FERN-SCHICHT (1/4-Kadenz) und den
+    // Berg-Schatten/Query-Cull des Bundles (sie folgt bundle.visible-Logik
+    // nicht — sie IST die Fern-Gestalt; Frustum cullt sie selbst).
+    _bundleZiegelTick(bg) {
+        const st = this.state;
+        const u = bg.userData;
+        if (u._fernSchicht !== true) {
+            // nah (oder Schicht aus): das echte Bundle rendert, der Ziegel ruht
+            if (u._ziegelBox) u._ziegelBox.visible = false;
+            return;
+        }
+        if (u._ziegelBox) {
+            if (bg.needsUpdate === true) {
+                // Mutation → der Ziegel ist stale: verwerfen, nächster Tick backt neu
+                this._bundleZiegelTod(bg);
+                bg.visible = true;
+                return;
+            }
+            u._ziegelBox.visible = true;
+            bg.visible = false; // die Box IST die Region — die Draw-Liste ruht ganz
+            return;
+        }
+        if (st._frameOverBudget || u._ziegelBakeVersuch) return; // budgetiert, ein Versuch je Stand
+        u._ziegelBakeVersuch = true;
+        const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
+        if (!zg) return;
+        const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritteRegion);
+        if (!mat) return;
+        const geo = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
+        geo.translate(
+            zg.bbMin.x + zg.bbGroesse.x / 2,
+            zg.bbMin.y + zg.bbGroesse.y / 2,
+            zg.bbMin.z + zg.bbGroesse.z / 2
+        );
+        const box = new THREE.Mesh(geo, mat);
+        box.frustumCulled = true;
+        box.userData.inventar = "region-ziegel";
+        if (st.fernSchicht) box.layers.mask = 1 << AnazhRealm.FERN_LAYER; // die Kadenz erbt
+        st.scene.add(box);
+        u._ziegelBox = box;
+        u._ziegelTex = zg.tex;
+    }
+
+    _bundleZiegelTod(bg) {
+        const u = bg && bg.userData;
+        if (!u || !u._ziegelBox) return;
+        if (u._ziegelBox.parent) u._ziegelBox.parent.remove(u._ziegelBox);
+        this._queueGeometryDispose(u._ziegelBox.geometry);
+        if (u._ziegelBox.material && u._ziegelBox.material.dispose) u._ziegelBox.material.dispose();
+        if (u._ziegelTex && u._ziegelTex.dispose) u._ziegelTex.dispose();
+        u._ziegelBox = null;
+        u._ziegelTex = null;
+        u._ziegelBakeVersuch = false;
+    }
+
+    // Proxy-Abbau (der Bundle-Tod räumt sein Query-Objekt — kein Szene-Leck).
+    _bundleQueryProxyTod(bg) {
+        const q = bg && bg.userData && bg.userData._occlProxy;
+        if (!q) return;
+        if (q.parent) q.parent.remove(q);
+        bg.userData._occlProxy = null;
+    }
+
+    // (Die Layer-Flip-Maschinerie der Fern-Schicht fiel mit ihr — Trace .36:
+    // der zweite Pass war die Flacker-/Draw-Wurzel; _fernSchicht ist heute
+    // die reine Distanz-Flagge des Region-Ziegels.)
 
     // V18.300 — `regionKey` (optional): eine REGION-gekeyte Gruppe trägt nur die
     // Instanzen EINER 256m-Streu-Region → ihre instanz-bewusste Bounding-Sphere ist
@@ -94027,101 +94147,13 @@ class AnazhRealm {
             // (`_nexusPerfActuate`) rechnet den Faktor, `_loopRender` legt ihn HIER an.
             if (typeof scenePass.setResolutionScale === "function") scenePass.setResolutionScale(1);
             this.state.scenePass = scenePass;
-            // ═══ DIE FERN-SCHICHT (Natur-Antwort ② — Schattierungs-Persistenz) ═══
-            // Ein ZWEITER Pass rendert NUR AnazhRealm.FERN_LAYER (Fern-Ring +
-            // ferne Region-Bundles) — KADENZIERT: sein updateBefore läuft nur,
-            // wenn die Kamera sich bewegte oder `kadenz` Frames vergingen; sonst
-            // hält sein RT das letzte Bild = die Fern-Schattierung PERSISTIERT
-            // (im Stand fällt sie auf 1/kadenz). Der FERN-SCHIRM (unten) malt
-            // Farbe + TIEFE des Caches in den Haupt-Pass. Fern-Inhalt castet
-            // keine Schatten in die Nähe (Schatten-Reichweite ≤170 m < dist).
-            try {
-                // EIGENE Fern-Kamera (pro Frame gesynct): die RenderList des
-                // Vendors ist (Szene, Kamera)-gekeyt — teilte der Fern-Pass die
-                // Haupt-Kamera, teilte er auch die Liste/Bundle-Arrays des
-                // Haupt-Passes (Destructure-Crash 'object of e[n]'). Eigene
-                // Kamera = eigene Liste = eigene Bundle-Kontexte.
-                const farCam = this.state.camera.clone();
-                farCam.layers = new THREE.Layers();
-                const farPass = pass(this.state.scene, farCam);
-                if (
-                    typeof farPass.setLayers === "function" &&
-                    typeof farPass.getTextureNode === "function" &&
-                    typeof farPass.updateBefore === "function" &&
-                    TSL.Discard
-                ) {
-                    const fl = new THREE.Layers();
-                    fl.set(AnazhRealm.FERN_LAYER);
-                    farPass.setLayers(fl);
-                    const origUB = farPass.updateBefore.bind(farPass);
-                    const fs = {
-                        frame: 0,
-                        rendered: 0,
-                        lastPos: new THREE.Vector3(1e9, 0, 0),
-                        lastQuat: new THREE.Quaternion(),
-                    };
-                    const KAD = AnazhRealm.FERN_SCHICHT;
-                    farPass.updateBefore = (frame) => {
-                        fs.frame++;
-                        const cam = this.state.camera;
-                        const due =
-                            !fs.rendered ||
-                            fs.frame - fs.rendered >= KAD.kadenz ||
-                            !cam ||
-                            cam.position.distanceToSquared(fs.lastPos) > KAD.posDelta * KAD.posDelta ||
-                            1 - Math.min(1, Math.abs(cam.quaternion.dot(fs.lastQuat))) > KAD.rotDelta * 0.5;
-                        if (!due) return;
-                        fs.rendered = fs.frame;
-                        if (cam) {
-                            fs.lastPos.copy(cam.position);
-                            fs.lastQuat.copy(cam.quaternion);
-                            // Fern-Kamera synchronisieren (Matrizen == Haupt-Kamera):
-                            farCam.position.copy(cam.position);
-                            farCam.quaternion.copy(cam.quaternion);
-                            farCam.fov = cam.fov;
-                            farCam.aspect = cam.aspect;
-                            farCam.near = cam.near;
-                            farCam.far = cam.far;
-                            farCam.updateProjectionMatrix();
-                            farCam.updateMatrixWorld(true);
-                        }
-                        origUB(frame);
-                    };
-                    // DER FERN-SCHIRM: Fullscreen-Dreieck GANZ FRÜH im Haupt-Pass —
-                    // schreibt Farbe UND Frag-Tiefe (depthNode) der Fern-Schicht;
-                    // Pixel ohne Fern-Inhalt (Depth ≈ 1) fallen im Discard, dort
-                    // leben Skybox/Feld-Pass wie bisher.
-                    const fColor = farPass.getTextureNode();
-                    const fDepth = farPass.getTextureNode("depth");
-                    const sm = new THREE.MeshBasicNodeMaterial();
-                    sm.vertexNode = TSL.vec4(TSL.positionGeometry.x, TSL.positionGeometry.y, 0.999999, 1.0);
-                    const dS = fDepth.sample(TSL.screenUV);
-                    sm.colorNode = TSL.Fn(() => {
-                        TSL.Discard(dS.greaterThan(0.9999995));
-                        return fColor.sample(TSL.screenUV);
-                    })();
-                    sm.depthNode = dS;
-                    sm.depthTest = false; // der Schirm ist der Boden des Frames (depthWrite trägt die Fern-Tiefe)
-                    sm.depthWrite = true;
-                    sm.fog = false;
-                    const sGeo = new THREE.BufferGeometry();
-                    sGeo.setAttribute(
-                        "position",
-                        new THREE.Float32BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3)
-                    );
-                    const schirm = new THREE.Mesh(sGeo, sm);
-                    schirm.frustumCulled = false;
-                    schirm.renderOrder = -10000;
-                    schirm.matrixAutoUpdate = false;
-                    schirm.userData.inventar = "fern-schirm";
-                    this.state.scene.add(schirm);
-                    this.state.fernSchicht = { pass: farPass, fs, schirm };
-                    this.log("FERN-SCHICHT aktiv — ferne Schattierung persistiert (Kadenz 1/" + KAD.kadenz + " im Stand).", "INFO");
-                }
-            } catch (fsErr) {
-                this.state.fernSchicht = null;
-                this.log("FERN-SCHICHT nicht verfügbar (" + ((fsErr && fsErr.message) || fsErr) + ") — alles rendert im Haupt-Pass.", "INFO");
-            }
+            // FERN-SCHICHT ZURÜCKGEBAUT (Trace .36: der zweite Szene-Pass ließ
+            // die Material-Diät/Uniform-Updates zwischen den Pässen racen —
+            // Schwarz-Flackern von Plattform/Avatar/Tieren — und flutete Draws
+            // [1941 außerhalb der Bundles]. Die ZIEGEL haben ihn überflüssig
+            // gemacht: ferne Regionen sind Boxen — es gibt nichts mehr zu
+            // cachen. EIN Szene-Pass, eine Diät-Wahrheit.)
+            this.state.fernSchicht = null;
             // API-korrekt: der sampelbare Textur-Node kommt aus
             // getTextureNode() (PassNode != TextureNode — .sample() lebt am
             // TextureNode). Das ist das offizielle MRT/pass-Muster.
@@ -94886,7 +94918,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.36";
+AnazhRealm.VERSION = "18.491.37";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

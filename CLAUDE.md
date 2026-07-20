@@ -50,7 +50,25 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.36 — DER KREATUR-ZIEGEL: die Tiere werden wandernde Felder — die Karte ist GESCHLOSSEN)
+## Stand (V18.491.37 — DER FERN-SCHICHT-RÜCKBAU: das Trace-.36-Urteil — die Ziegel tragen, der Zweit-Pass fällt)
+
+**20.07., Schöpfer-Trace .36 (dc 417→5997 · CPU-render 862 ms · Plattform/
+Avatar/Tiere FLACKERN schwarz): die Wurzel war MEINE Fern-Schicht — Diät/
+Bundle-Records sind für EINEN Render je Frame gebaut; der zweite Szene-Pass
+ließ Uniform-Updates racen (das Flackern der Diät-Materialien) und flutete
+Draws (1941 außerhalb der Bundles, vorher 602). Und: die ZIEGEL haben den
+Zweit-Pass ÜBERFLÜSSIG gemacht — ferne Regionen sind Boxen, es gibt nichts
+mehr zu cachen. DER RÜCKBAU: farPass/Schirm/Layer-Flips physisch raus
+(EIN Szene-Pass, eine Diät-Wahrheit); _fernSchicht ist die reine Distanz-
+Flagge des Region-Ziegels. Das Panorama (Feld-Pass-Cache) bleibt —
+unabhängig vom Zweit-Pass. BEWIESEN: Voll-Boot + Kreatur-Ziegel-Zyklus 5/5
+nach Rückbau · ppFail false · 0 Fehler · playtest:fast 18/18. EHRLICH: die
+20.8M Steady-Tris sind die NAHEN p:-Nexus-Dörfer (7.8M je Dorf im 100-m-
+Radius — voll detailliert BY DESIGN [nah = feinste Stufe]; ihr Mittel-LOD
+ist der nächste benannte Bogen) + Schatten-Kaskaden zählen im Zähler mit.
+Kreaturen 20 = maxCreatures-Cap (by design, kein Leck).
+
+**Davor, V18.491.36 — DER KREATUR-ZIEGEL: die Tiere werden wandernde Felder — die Karte ist GESCHLOSSEN**
 
 **20.07., Schöpfer: „vollende alles" — der letzte Bogen fällt:**
 - DER KREATUR-ZIEGEL (_tickKreaturZiegel in updateCreatures): ferne Tiere
