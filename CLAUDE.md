@@ -50,7 +50,36 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.27 — DIE DESTROYED-TEXTURE-WAND: der Welle-1-Bruch der Schöpfer-Konsole fällt)
+## Stand (V18.491.28 — DIE FERN-SCHICHT + WALD-VOR-WALD: die letzten zwei Tiefen fallen)
+
+**20.07., Schöpfer: „kein ehrlich offen mehr, die vollen 100%, jetzt" — die zwei
+benannten Rest-Tiefen der Natur-Antwort GEBAUT:**
+- ② DIE FERN-SCHICHT (Bundle-Schattierungs-Persistenz): fernes Statisches
+  (Fern-Ring + Region-Bundles mit Kugel-Nahkante > 400 m, Hysterese-Band 60 m)
+  rendert in einen EIGENEN kadenzierten Pass (FERN_LAYER=2; eigene Fern-Kamera,
+  pro Frame gesynct — die Vendor-RenderList ist (Szene,Kamera)-gekeyt, geteilte
+  Kamera = geteilte Bundle-Arrays = Destructure-Crash, GEFUNDEN+GESCHNITTEN).
+  updateBefore läuft NUR bei Kadenz (4 Frames) oder Kamera-Delta (2 m/0.02-Quat)
+  — sonst hält sein RT das Bild = Fern-Schattierung persistiert. Der FERN-SCHIRM
+  (Fullscreen, renderOrder −10000, colorNode+depthNode, Discard bei Depth≈1)
+  malt Farbe+TIEFE des Caches in den Haupt-Pass: Wasser/Godrays/Bloom
+  komponieren korrekt, EINE sceneColor, Queries sehen die volle Tiefe.
+  FAIL-OPEN komplett: pp-Sturz → Schicht fällt, Ring/Bundles heilen auf Layer 0
+  (selbststempelnd). BEWIESEN (echtes WebGPU, 4/4): Kadenz spart exakt 1/4
+  (15 Renders/60 Frames im Stand) · Ring auf FERN_LAYER · 0 Destroyed ·
+  0 Fehler · Schirm-BILD intakt (eigenes Auge).
+- ④ WALD-VOR-WALD (echtes Depth-Occlusion): unsichtbare Kugel-Kästen
+  (colorWrite=false, occlusionTest — natives ANY_SAMPLES_PASSED) je Region
+  jenseits minDist testen die KOMPLETTE Frame-Tiefe (Bäume + Fern-Schirm);
+  Kontext am Proxy gefangen (onBeforeRender), Verdikt via backend.isOccluded,
+  2er-Hysterese, Un-Cull sofort, Proxy-Tod mit dem Bundle (kein Leck). Berg-
+  Schatten bleibt als Gesetz-Filter davor. Linse: dieselbe bergCull-Zählung.
+- ⑤ EHRLICH VERBOTEN statt gefälscht: Vegetation auf dem Fern-Deckel braucht
+  das Worker-Streu-GESETZ (Haupt-Thread hat nur das Voxel-Dichte-Gesetz) — ein
+  Pseudo-Platzierungs-Gesetz wäre der verbotene Zwilling („sage a, tue a").
+  Der twin-freie Weg ist der Streu-Gesetz-Port — der nächste Bogen.
+
+**Davor, V18.491.27 — DIE DESTROYED-TEXTURE-WAND: der Welle-1-Bruch der Schöpfer-Konsole fällt**
 
 **20.07., Schöpfer-Konsole nach .26 („reflektiere: alles in voller tiefe erreicht?"
 — NEIN, und die Konsole bewies es: 219× „Destroyed texture (Depth24Plus) used in
