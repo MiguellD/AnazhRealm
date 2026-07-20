@@ -50,7 +50,7 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.25 — DIE NATUR-WELLEN: WAHRNEHMUNG · STREAMING · LOCH-DECKEL · BERG-SCHATTEN)
+## Stand (V18.491.26 — DIE NATUR-VOLLENDUNG: PANORAMA-PERSISTENZ · VOLL-GESETZ-GPU · WAHRNEHMUNGS-ALLOKATION)
 
 **20.07., vierundzwanzigste Welle (Schöpfer: „lerne von der natur, wie ermöglicht
 unsere realität eine solche effizienz … komme zurück mit was du gelernt, wie kann man
@@ -114,12 +114,30 @@ GPU-Sicht-Ring · Hi-Z-Verdeckung] stehen ehrlich als benannte Wurzel-Chirurgie 
   Linse: steadyState.bergCull. BEWIESEN (chirurgische Probe 8/8): hinterm Grat
   verdeckt · frei/hoch/nah sichtbar · Selbsttest (Riesen-Marge kippt) ·
   Hysterese · Sofort-Un-Cull · 0 Fehler. Dichter = billiger — das Natur-Paradox.
-- OFFEN, ehrlich benannt (die zwei Rest-Chirurgien): (a) SCHATTIERUNGS-
-  PERSISTENZ — Textur-Raum-Cache/Impostor-Panorama fürs statische Fernfeld
-  (der 120-fps-Kanal-Hebel). (b) GPU-SICHT-MITTEL-RING — den Feld-Zeichner
-  nach innen ziehen (visuelle Meshes GPU-generiert; Welle 2 lieferte den
-  tractablen Kern: fps-unabhängiges Streaming). (c) ATMOSPHÄRE-ALS-LOD nach
-  Trace-Urteil (browser-getuntes Look-System).
+- DIE NATUR-VOLLENDUNG (Schöpfer: „vollende die offenen dinge in einem guss" —
+  die drei benannten Rest-Chirurgien fallen in EINER Welle):
+  (a) DAS FELD-PANORAMA (Schattierungs-Persistenz): der 96-Schritt-Raymarch
+  lief JE Himmel-Pixel JE Frame fürs statische Fernfeld — jetzt marcht EIN
+  Compute (FELD_PANO 768×160) ins Polar-Panorama [rgb = Rampen-Farbe, a =
+  Treffer-DISTANZ; der Nebel mischt LIVE im Fragment aus der Distanz →
+  Tag/Nacht kostet KEIN Re-Bake], das Fragment schaut nur noch nach (~1 Load
+  statt 96×Load+5-Bisektion — der 120-fps-Kanal-Hebel). Re-Bake amortisiert
+  bei Kamera-Drift (60 m XZ / 12 m Y — Parallaxe ≈ 0.4° auf 8 km, unter der
+  Wahrnehmung); der EINE March lebt im Bake-Kernel, der Fragment-Zwilling ist
+  TOT. (b) DER GPU-SICHT-MITTEL-RING: der WGSL-Spiegel trug includeDetail seit
+  je, die Caller reichten nur false — jetzt malt der Feld-Zeichner die Deck-
+  Zone mit ZWEI Flügen (Makro alle + VOLLES Gesetz für die Zonen-Vertices),
+  gemischt durch die EINE Deck-Formel (_fernRingDeckMisch, CPU und GPU teilen
+  sie) — der Mittel-Ring steht ab dem ERSTEN GPU-Anstrich wahr geformt.
+  (c) WAHRNEHMUNGS-ALLOKATION (Atmosphäre-als-LOD): die Panorama-Elevation-
+  Zeilen ballen QUADRATISCH am Horizont (dort lebt die Information), Himmels-
+  Texel fallen im Früh-Aus (über hMax marcht niemand). BEWIESEN (Prüfung NACH
+  der Vollendung, wie befohlen): gate:fern-ring ALLE Bänder GRÜN gewandert
+  (pano=1 gebacken · Render-Probe 1726 Horizont-Pixel durch den Nachschlage-
+  Pfad · Höhen==Gesetz worst 0.0000 · GPU-Seh-Band 0.0044) · gate:dritter-
+  spiegel GRÜN (Selbsttest feuert) · playtest:fast 18/18 · check GRÜN (11
+  Vendor-Anker) · lint 0 Err · Selbst-Spiel-Sonde (eigenes Auge, echtes
+  WebGPU).
 
 **Davor, dreiundzwanzigste Welle (Schöpfer-Screenshots „Höhenverschiebung mit
 komischen Pixelmustern zwischen Ring und Chunks — da ist noch etwas unsauber in

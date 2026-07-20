@@ -360,13 +360,17 @@ const server = http.createServer((req, res) => {
         const P8 = r.constructor.FELD_PASS;
         const dl8 = performance.now() + 90000;
         let fp8 = r.state.feldPass;
-        while ((!fp8 || fp8.laeufe < 1) && performance.now() < dl8) {
+        // SCHATTIERUNGS-PERSISTENZ (20.07.): sichtbar erst mit gebackenem
+        // PANORAMA (der Fragment-March ist tot, der Blick liest das Panorama) —
+        // die Probe wartet auf Feld-Anstrich UND Panorama-Bake.
+        while ((!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && performance.now() < dl8) {
             r._tickFernRing(r.state.playerMesh.position);
             fp8 = r.state.feldPass;
             await sleep7(100);
         }
         res.fpDa = !!fp8;
         res.fpLaeufe = fp8 ? fp8.laeufe : 0;
+        res.fpPanoLaeufe = fp8 ? fp8.panoLaeufe : 0;
         res.fpTexOk = !!(fp8 && fp8.tex && fp8.tex.image.width === P8.az && fp8.tex.image.height === P8.rad);
         res.fpSichtbar = !!(fp8 && fp8.mesh.visible === true);
         let fpWorst = -1;
@@ -514,9 +518,9 @@ const server = http.createServer((req, res) => {
     );
     check("7: die CPU verfeinert danach aufs f64-Gesetz durch (Cursor läuft voll)", out.fzCpuFertig === true);
     check(
-        "8: DER FELD-PASS existiert und das Feld malte seine Textur (Compute durch feld-wgsl)",
-        out.fpDa === true && out.fpLaeufe >= 1 && out.fpTexOk === true && out.fpSichtbar === true,
-        `laeufe=${out.fpLaeufe}`
+        "8: DER FELD-PASS existiert, das Feld malte, das PANORAMA ist gebacken (Persistenz)",
+        out.fpDa === true && out.fpLaeufe >= 1 && out.fpTexOk === true && out.fpSichtbar === true && out.fpPanoLaeufe >= 1,
+        `laeufe=${out.fpLaeufe} pano=${out.fpPanoLaeufe}`
     );
     check(
         "8: Texel-Höhen == f64-Gesetz im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl)",

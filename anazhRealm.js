@@ -39103,6 +39103,15 @@ class AnazhRealm {
         this._fernRingColorInto(geo.attributes.color, p.li, law, wl, wet);
     }
 
+    // DIE EINE DECK-FORMEL (CPU-Refresh UND GPU-Maler mischen durch sie — kein
+    // Zahlen-Zwilling): innerhalb der Zone volles Gesetz −0.3 gesenkt, ×1.35-
+    // Blende auf Makro. Das Gate spiegelt exakt diese Formel.
+    _fernRingDeckMisch(fr, rad, makro, voll) {
+        if (!(rad <= fr.deckZoneRad * 1.35)) return makro;
+        const w = rad <= fr.deckZoneRad ? 1 : (fr.deckZoneRad * 1.35 - rad) / (fr.deckZoneRad * 0.35);
+        return makro + (voll - makro) * w - 0.3 * w;
+    }
+
     // Der BUDGETIERTE Höhen-Refresh (~`refreshVertsProTick` Vertices je Frame,
     // das BOOT_PHASE3-Muster — nie synchron alles): je Vertex Welt-XZ aufs
     // Schalen-Snap-Gitter runden, Höhe = das EINE Gesetz (includeDetail=false);
@@ -39119,20 +39128,14 @@ class AnazhRealm {
             const p = this._fernRingPunkt(fr, fr.cursor);
             let law = this._terrainMacroSurfaceY(p.x, p.z, false);
             // DER LOCH-DECKEL + DIE NAHT-VEREDELUNG (20.07., zwei Wellen, EINE
-            // Formel): alle Schale-0-Reihen INNERHALB der Chunk-Ziel-Zone
-            // (rad ≤ deckZoneRad) tragen das VOLLE Gesetz (includeDetail),
-            // leicht gesenkt (−0.3) — wo Chunks stehen, decken sie den Ring per
-            // Depth (kein Z-Fight); wo sie FEHLEN (Boot-Ramp, zerquetschte
-            // Radien, ungebaute Bereiche), zeigt der Ring wahres Terrain und
-            // VERDECKT die Welt-Wasser-Plane samt Sonnen-/Mond-Spekular (die
-            // „falsche Wasser-Reflexion" der Schöpfer-Screenshots). Jenseits
-            // der Zone blendet w auf Makro aus (×1.35-Blende; Fern-Reihen
-            // byte-alt, der GPU-Maler malt Makro — der Cursor-Refine
-            // überschreibt die Zonen-Vertices in den ersten Ticks).
+            // Formel — _fernRingDeckMisch, geteilt mit dem GPU-Maler): alle
+            // Schale-0-Reihen INNERHALB der Chunk-Ziel-Zone tragen das VOLLE
+            // Gesetz (includeDetail), leicht gesenkt (−0.3) — wo Chunks stehen,
+            // decken sie den Ring per Depth; wo sie FEHLEN, zeigt der Ring
+            // wahres Terrain und VERDECKT die Welt-Wasser-Plane samt Spekular.
             if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35) {
-                const w = p.rad <= fr.deckZoneRad ? 1 : (fr.deckZoneRad * 1.35 - p.rad) / (fr.deckZoneRad * 0.35);
                 const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
-                law = law + (voll - law) * w - 0.3 * w;
+                law = this._fernRingDeckMisch(fr, p.rad, law, voll);
             }
             this._fernRingSetzVertex(fr, p, law, wl);
             dirty[p.s] = true;
@@ -39313,11 +39316,37 @@ class AnazhRealm {
         }
         fr.gpuFlug = true;
         const gen = (fr.gen = (fr.gen || 0) + 1);
-        this._feldZeichnerHoehen(punkte, false)
-            .then((werte) => {
+        // DER GPU-SICHT-MITTEL-RING (Natur-Antwort, offener Punkt b — VOLLENDET):
+        // der Feld-Zeichner spricht in der Deck-Zone das VOLLE Gesetz (der
+        // WGSL-Spiegel trägt includeDetail seit je — die Caller reichten nur
+        // false). ZWEI Flüge (Makro alle + VOLL für die Zonen-Vertices), die
+        // EINE Deck-Formel (_fernRingDeckMisch) mischt — der Mittel-Ring steht
+        // ab dem ERSTEN GPU-Anstrich wahr geformt, die CPU verfeinert nur noch
+        // aufs f64-Gesetz (kein sichtbarer Makro→Voll-Sprung mehr im Loch).
+        const zonenIdx = [];
+        for (let g = 0; g < n; g++) {
+            const p = pts[g];
+            if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35) zonenIdx.push(g);
+        }
+        const zonenPunkte = new Float32Array(zonenIdx.length * 2);
+        for (let k = 0; k < zonenIdx.length; k++) {
+            zonenPunkte[k * 2] = punkte[zonenIdx[k] * 2];
+            zonenPunkte[k * 2 + 1] = punkte[zonenIdx[k] * 2 + 1];
+        }
+        Promise.all([
+            this._feldZeichnerHoehen(punkte, false),
+            zonenIdx.length ? this._feldZeichnerHoehen(zonenPunkte, true) : Promise.resolve(null),
+        ])
+            .then(([werte, vollWerte]) => {
                 if (this.state.fernRing !== fr || fr.gen !== gen) return; // überholt (Re-Anker/Dispose)
                 fr.gpuFlug = false;
                 if (!werte) return; // kein Device/Fehler → die CPU zeichnet das Gesetz
+                if (vollWerte) {
+                    for (let k = 0; k < zonenIdx.length; k++) {
+                        const g = zonenIdx[k];
+                        werte[g] = this._fernRingDeckMisch(fr, pts[g].rad, werte[g], vollWerte[k]);
+                    }
+                }
                 const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
                 // NUR ab dem Live-Cursor malen: Vertices davor hat die CPU schon
                 // aufs f64-Gesetz verfeinert — f32 überschreibt nie exakter.
@@ -39367,11 +39396,20 @@ class AnazhRealm {
         const TSL = THREE.TSL;
         if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.uniform || !TSL.positionGeometry) return null;
         const P = AnazhRealm.FELD_PASS;
+        const PN = AnazhRealm.FELD_PANO;
         const daten = new Float32Array(P.az * P.rad * 4);
         const tex = new THREE.DataTexture(daten, P.az, P.rad, THREE.RGBAFormat, THREE.FloatType);
         tex.minFilter = THREE.NearestFilter;
         tex.magFilter = THREE.NearestFilter;
         tex.needsUpdate = true;
+        // DAS PANORAMA (Schattierungs-Persistenz): rgb = Rampen-Farbe, a =
+        // Treffer-Distanz (0 = Himmel). Gebacken vom Compute (_feldPanoramaMal),
+        // gelesen vom billigen Fragment — der 96-Schritt-March je Pixel ist tot.
+        const panoDaten = new Float32Array(PN.az * PN.elev * 4);
+        const panoTex = new THREE.DataTexture(panoDaten, PN.az, PN.elev, THREE.RGBAFormat, THREE.FloatType);
+        panoTex.minFilter = THREE.NearestFilter;
+        panoTex.magFilter = THREE.NearestFilter;
+        panoTex.needsUpdate = true;
         const U = {
             camPos: TSL.uniform(new THREE.Vector3()),
             invVP: TSL.uniform(new THREE.Matrix4()),
@@ -39381,61 +39419,32 @@ class AnazhRealm {
             wl: TSL.uniform(0),
             hMax: TSL.uniform(500),
             fogFarbe: TSL.uniform(new THREE.Color(0.62, 0.68, 0.78)),
+            elevMax: TSL.uniform(PN.elevMax),
         };
-        // Der Raymarch (WGSL, roh): Strahl aus invVP, quadratische Schritt-
-        // Dichte (nah fein), Textur-Treffer → Rampen-Farbe + Fern-Nebel.
-        const marsch = TSL.wgslFn(
-            "fn feldPassMarsch(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, anker: vec2<f32>, rMin: f32, rMax: f32, wl: f32, hMax: f32, fogFarbe: vec3<f32>, tex: texture_2d<f32>) -> vec4<f32> {\n" +
+        // DER BLICK (WGSL, roh — ersetzt den per-Pixel-March): Richtung aus
+        // invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-
+        // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
+        // SPEC-WAND bleibt geehrt (textureDimensions → f32/i32-Casts).
+        const blick = TSL.wgslFn(
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fern = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fern - camPos);\n" +
-                "    let dim = textureDimensions(tex, 0);\n" +
-                "    // WGSL-SPEC-WAND (18.07., Schöpfer-Konsole): textureDimensions liefert\n" +
-                "    // vec2<u32> — i32 % u32 bzw. clamp(i32,·,u32) sind SPEC-INVALID. Der\n" +
-                "    // swiftshader-Dawn der Gates war nachsichtig, das Schöpfer-Chrome-150-Dawn\n" +
-                "    // nicht: CreateShaderModule warf, die invalide Pipeline riss den GANZEN\n" +
-                "    // Queue.Submit des Render-Kontexts mit (weiße Welt). Einmal i32-casten.\n" +
-                "    let AZi = i32(dim.x);\n" +
-                "    let RADi = i32(dim.y);\n" +
-                "    let AZ = f32(dim.x);\n" +
-                "    let RAD = f32(dim.y);\n" +
+                "    let e = asin(clamp(dir.y, -1.0, 1.0));\n" +
+                "    if (abs(e) > elevMax) { return vec4<f32>(0.0, 0.0, 0.0, 0.0); }\n" +
                 "    let PI = 3.14159265358979;\n" +
-                "    var tVor = rMin * 0.8;\n" +
-                "    for (var i: i32 = 0; i < 96; i = i + 1) {\n" +
-                "        let q = (f32(i) + 1.0) / 96.0;\n" +
-                "        let t = rMin * 0.8 + (rMax - rMin * 0.8) * q * q;\n" +
-                "        let pos = camPos + dir * t;\n" +
-                "        if (pos.y > hMax && dir.y >= 0.0) { break; }\n" +
-                "        let rel = pos.xz - anker;\n" +
-                "        let r = length(rel);\n" +
-                "        if (r < rMin) { tVor = t; continue; }\n" +
-                "        if (r > rMax) { break; }\n" +
-                "        let u = atan2(rel.y, rel.x) / (2.0 * PI) + 0.5;\n" +
-                "        let ix = i32(clamp(u, 0.0, 0.9999) * AZ) % AZi;\n" +
-                "        let iy = clamp(i32((r - rMin) / (rMax - rMin) * RAD), 0, RADi - 1);\n" +
-                "        let h = textureLoad(tex, vec2<i32>(ix, iy), 0);\n" +
-                "        if (pos.y <= h.r) {\n" +
-                "            var tFein = t;\n" +
-                "            var a = tVor;\n" +
-                "            var b = t;\n" +
-                "            for (var k: i32 = 0; k < 5; k = k + 1) {\n" +
-                "                let m = (a + b) * 0.5;\n" +
-                "                let pm = camPos + dir * m;\n" +
-                "                let relM = pm.xz - anker;\n" +
-                "                let rM = length(relM);\n" +
-                "                let uM = atan2(relM.y, relM.x) / (2.0 * PI) + 0.5;\n" +
-                "                let ixM = i32(clamp(uM, 0.0, 0.9999) * AZ) % AZi;\n" +
-                "                let iyM = clamp(i32((rM - rMin) / (rMax - rMin) * RAD), 0, RADi - 1);\n" +
-                "                let hM = textureLoad(tex, vec2<i32>(ixM, iyM), 0);\n" +
-                "                if (pm.y <= hM.r) { b = m; tFein = m; } else { a = m; }\n" +
-                "            }\n" +
-                "            let nebel = clamp((tFein - rMin) / (rMax - rMin), 0.0, 1.0) * 0.85;\n" +
-                "            let farbe = mix(h.gba, fogFarbe, nebel);\n" +
-                "            return vec4<f32>(farbe, 1.0);\n" +
-                "        }\n" +
-                "        tVor = t;\n" +
-                "    }\n" +
-                "    return vec4<f32>(0.0, 0.0, 0.0, 0.0);\n" +
+                "    let dim = textureDimensions(pano, 0);\n" +
+                "    let a = atan2(dir.z, dir.x);\n" +
+                "    let u = clamp(a / (2.0 * PI) + 0.5, 0.0, 0.9999);\n" +
+                "    var s = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
+                "    if (e < 0.0) { s = -s; }\n" +
+                "    let v = clamp(s * 0.5 + 0.5, 0.0, 0.9999);\n" +
+                "    let ix = i32(u * f32(dim.x));\n" +
+                "    let iy = i32(v * f32(dim.y));\n" +
+                "    let p = textureLoad(pano, vec2<i32>(ix, iy), 0);\n" +
+                "    if (p.a <= 0.0) { return vec4<f32>(0.0, 0.0, 0.0, 0.0); }\n" +
+                "    let nebel = clamp((p.a - rMin) / (rMax - rMin), 0.0, 1.0) * 0.85;\n" +
+                "    return vec4<f32>(mix(p.rgb, fogFarbe, nebel), 1.0);\n" +
                 "}"
         );
         const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, depthTest: true });
@@ -39447,17 +39456,15 @@ class AnazhRealm {
             TSL.screenUV.x.mul(2.0).sub(1.0),
             TSL.float(1.0).sub(TSL.screenUV.y).mul(2.0).sub(1.0)
         );
-        mat.outputNode = marsch({
+        mat.outputNode = blick({
             ndc: ndcNode,
             camPos: U.camPos,
             invVP: U.invVP,
-            anker: U.anker,
             rMin: U.rMin,
             rMax: U.rMax,
-            wl: U.wl,
-            hMax: U.hMax,
+            elevMax: U.elevMax,
             fogFarbe: U.fogFarbe,
-            tex: TSL.texture(tex),
+            pano: TSL.texture(panoTex),
         });
         const geo = new THREE.BufferGeometry();
         geo.setAttribute(
@@ -39471,7 +39478,26 @@ class AnazhRealm {
         mesh.visible = false; // erst sichtbar, wenn das Feld die Textur gemalt hat
         mesh.userData.inventar = "feld-pass";
         st.scene.add(mesh);
-        st.feldPass = { mesh, mat, tex, daten, U, anchorX: null, anchorZ: null, laeufe: 0, flug: false, gen: 0 };
+        st.feldPass = {
+            mesh,
+            mat,
+            tex,
+            daten,
+            panoTex,
+            panoDaten,
+            U,
+            anchorX: null,
+            anchorZ: null,
+            laeufe: 0,
+            flug: false,
+            gen: 0,
+            panoFlug: false,
+            panoGen: 0,
+            panoLaeufe: 0,
+            panoCamX: null,
+            panoCamY: null,
+            panoCamZ: null,
+        };
         return st.feldPass;
     }
 
@@ -39524,10 +39550,203 @@ class AnazhRealm {
                 fp.anchorX = ankerX;
                 fp.anchorZ = ankerZ;
                 fp.laeufe++;
-                fp.mesh.visible = true;
+                // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit
+                // gebackenem Panorama (_feldPanoramaMal setzt visible) — das
+                // Fragment liest NUR noch das Panorama, nie das rohe Feld.
+                this._feldPanoramaMal(fp);
             })
             .catch(() => {
                 if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
+            });
+    }
+
+    // ═══ DAS FELD-PANORAMA (SCHATTIERUNGS-PERSISTENZ, Natur-Antwort a+c) ═══
+    // Der EINE March lebt jetzt HIER (Compute) — das Fragment schaut nur nach.
+    // Ausgabe je Texel: rgb = Rampen-Farbe des Treffers, a = Treffer-Distanz
+    // (0 = Himmel). Der Nebel wird NICHT gebacken — er mischt live im Fragment
+    // aus der Distanz (Tag/Nacht-Farbe kostet kein Re-Bake). Elevation-Zeilen
+    // ballen quadratisch am Horizont (Wahrnehmungs-Allokation), Himmels-Texel
+    // fallen im Früh-Aus.
+    _feldPanoWgsl() {
+        if (this._feldPanoWgslText) return this._feldPanoWgslText;
+        this._feldPanoWgslText =
+            "struct PS {\n" +
+            "    ankerX: f32, ankerZ: f32, camX: f32, camY: f32,\n" +
+            "    camZ: f32, rMin: f32, rMax: f32, hMax: f32,\n" +
+            "    elevMax: f32, feldAz: f32, feldRad: f32, panoAz: f32,\n" +
+            "    panoElev: f32, pad0: f32, pad1: f32, pad2: f32,\n" +
+            "};\n" +
+            "@group(0) @binding(0) var<uniform> S: PS;\n" +
+            "@group(0) @binding(1) var<storage, read> feld: array<f32>;\n" +
+            "@group(0) @binding(2) var<storage, read_write> pano: array<f32>;\n" +
+            "fn feldTexel(ix: i32, iy: i32) -> vec4<f32> {\n" +
+            "    let k = (u32(iy) * u32(S.feldAz) + u32(ix)) * 4u;\n" +
+            "    return vec4<f32>(feld[k], feld[k + 1u], feld[k + 2u], feld[k + 3u]);\n" +
+            "}\n" +
+            "@compute @workgroup_size(64)\n" +
+            "fn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n" +
+            "    let idx = gid.x;\n" +
+            "    let nAz = u32(S.panoAz);\n" +
+            "    let nEl = u32(S.panoElev);\n" +
+            "    if (idx >= nAz * nEl) { return; }\n" +
+            "    let ia = idx % nAz;\n" +
+            "    let ie = idx / nAz;\n" +
+            "    let PI = 3.14159265358979;\n" +
+            "    let a = ((f32(ia) + 0.5) / S.panoAz) * 2.0 * PI - PI;\n" +
+            "    // WAHRNEHMUNGS-ALLOKATION: quadratische Elevation (Zeilen ballen am Horizont)\n" +
+            "    let sSym = ((f32(ie) + 0.5) / S.panoElev) * 2.0 - 1.0;\n" +
+            "    let e = sign(sSym) * sSym * sSym * S.elevMax;\n" +
+            "    let cosE = cos(e);\n" +
+            "    let dir = vec3<f32>(cos(a) * cosE, sin(e), sin(a) * cosE);\n" +
+            "    let camPos = vec3<f32>(S.camX, S.camY, S.camZ);\n" +
+            "    let o = idx * 4u;\n" +
+            "    pano[o] = 0.0; pano[o + 1u] = 0.0; pano[o + 2u] = 0.0; pano[o + 3u] = 0.0;\n" +
+            "    // HIMMELS-FRÜH-AUS: steigt der Strahl und liegt schon am March-Start über\n" +
+            "    // hMax, kann kein Terrain mehr kommen (die Höhe wächst monoton) — kein March.\n" +
+            "    if (dir.y >= 0.0 && camPos.y + dir.y * (S.rMin * 0.8) > S.hMax) { return; }\n" +
+            "    var tVor = S.rMin * 0.8;\n" +
+            "    for (var i: i32 = 0; i < 96; i = i + 1) {\n" +
+            "        let q = (f32(i) + 1.0) / 96.0;\n" +
+            "        let t = S.rMin * 0.8 + (S.rMax - S.rMin * 0.8) * q * q;\n" +
+            "        let pos = camPos + dir * t;\n" +
+            "        if (pos.y > S.hMax && dir.y >= 0.0) { break; }\n" +
+            "        let rel = pos.xz - vec2<f32>(S.ankerX, S.ankerZ);\n" +
+            "        let r = length(rel);\n" +
+            "        if (r < S.rMin) { tVor = t; continue; }\n" +
+            "        if (r > S.rMax) { break; }\n" +
+            "        let u = atan2(rel.y, rel.x) / (2.0 * PI) + 0.5;\n" +
+            "        let ix = i32(clamp(u, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
+            "        let iy = clamp(i32((r - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
+            "        let h = feldTexel(ix, iy);\n" +
+            "        if (pos.y <= h.x) {\n" +
+            "            var aB = tVor;\n" +
+            "            var bB = t;\n" +
+            "            var tFein = t;\n" +
+            "            var hF = h;\n" +
+            "            for (var k: i32 = 0; k < 5; k = k + 1) {\n" +
+            "                let m = (aB + bB) * 0.5;\n" +
+            "                let pm = camPos + dir * m;\n" +
+            "                let relM = pm.xz - vec2<f32>(S.ankerX, S.ankerZ);\n" +
+            "                let rM = length(relM);\n" +
+            "                let uM = atan2(relM.y, relM.x) / (2.0 * PI) + 0.5;\n" +
+            "                let ixM = i32(clamp(uM, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
+            "                let iyM = clamp(i32((rM - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
+            "                let hM = feldTexel(ixM, iyM);\n" +
+            "                if (pm.y <= hM.x) { bB = m; tFein = m; hF = hM; } else { aB = m; }\n" +
+            "            }\n" +
+            "            pano[o] = hF.y; pano[o + 1u] = hF.z; pano[o + 2u] = hF.w; pano[o + 3u] = tFein;\n" +
+            "            return;\n" +
+            "        }\n" +
+            "        tVor = t;\n" +
+            "    }\n" +
+            "}\n";
+        return this._feldPanoWgslText;
+    }
+
+    // EIN Panorama-Bake-Lauf (raw Device, dieselbe Plumbing wie der Zeichner):
+    // liest fp.daten (das Polar-Feld) als Storage, schreibt az×elev×4 zurück.
+    async _feldPanoramaRechnen(fp, cx, cy, cz) {
+        const device = this._feldZeichnerDevice() || (await this._feldZeichnerEigenDevice());
+        if (!device) return null;
+        try {
+            const P = AnazhRealm.FELD_PASS;
+            const PN = AnazhRealm.FELD_PANO;
+            const n = PN.az * PN.elev;
+            device.pushErrorScope("validation");
+            if (!this._feldPanoPipe || this._feldPanoPipeDev !== device) {
+                const mod = device.createShaderModule({ code: this._feldPanoWgsl() });
+                this._feldPanoPipe = device.createComputePipeline({
+                    layout: "auto",
+                    compute: { module: mod, entryPoint: "main" },
+                });
+                this._feldPanoPipeDev = device;
+            }
+            const pipe = this._feldPanoPipe;
+            const uni = new Float32Array(16);
+            uni[0] = fp.anchorX;
+            uni[1] = fp.anchorZ;
+            uni[2] = cx;
+            uni[3] = cy;
+            uni[4] = cz;
+            uni[5] = fp.U.rMin.value;
+            uni[6] = P.rMaxM;
+            uni[7] = fp.U.hMax.value;
+            uni[8] = PN.elevMax;
+            uni[9] = P.az;
+            uni[10] = P.rad;
+            uni[11] = PN.az;
+            uni[12] = PN.elev;
+            const uniBuf = device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+            device.queue.writeBuffer(uniBuf, 0, uni.buffer, 0, 64);
+            const feldBuf = device.createBuffer({
+                size: fp.daten.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+            device.queue.writeBuffer(feldBuf, 0, fp.daten.buffer, fp.daten.byteOffset, fp.daten.byteLength);
+            const outBuf = device.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
+            const staging = device.createBuffer({ size: n * 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+            const bind = device.createBindGroup({
+                layout: pipe.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: uniBuf } },
+                    { binding: 1, resource: { buffer: feldBuf } },
+                    { binding: 2, resource: { buffer: outBuf } },
+                ],
+            });
+            const err = await device.popErrorScope();
+            if (err) {
+                this.log("Feld-Panorama: WGSL-Validierung scheiterte — " + err.message, "ERROR");
+                return null;
+            }
+            const enc = device.createCommandEncoder();
+            const pass = enc.beginComputePass();
+            pass.setPipeline(pipe);
+            pass.setBindGroup(0, bind);
+            pass.dispatchWorkgroups(Math.ceil(n / 64));
+            pass.end();
+            enc.copyBufferToBuffer(outBuf, 0, staging, 0, n * 16);
+            device.queue.submit([enc.finish()]);
+            await staging.mapAsync(GPUMapMode.READ);
+            const werte = new Float32Array(staging.getMappedRange().slice(0));
+            staging.unmap();
+            for (const b of [uniBuf, feldBuf, outBuf, staging]) {
+                try {
+                    b.destroy();
+                } catch (_e) {}
+            }
+            return werte;
+        } catch (err) {
+            this.log("Feld-Panorama: Bake scheiterte (" + ((err && err.message) || err) + ")", "WARN");
+            return null;
+        }
+    }
+
+    // Bake-Auslöser (nach Feld-Anstrich + bei Kamera-Drift): gen-gestempelt,
+    // das alte Panorama bleibt sichtbar bis das neue steht (kein Flackern).
+    _feldPanoramaMal(fp) {
+        if (fp.panoFlug || !(fp.laeufe > 0)) return;
+        const cam = this.state.camera;
+        if (!cam) return;
+        fp.panoFlug = true;
+        const gen = (fp.panoGen = (fp.panoGen || 0) + 1);
+        const cx = cam.position.x;
+        const cy = cam.position.y;
+        const cz = cam.position.z;
+        this._feldPanoramaRechnen(fp, cx, cy, cz)
+            .then((werte) => {
+                if (this.state.feldPass !== fp || fp.panoGen !== gen) return;
+                fp.panoFlug = false;
+                if (!werte) return; // kein Device → der Pass bleibt unsichtbar, die Schalen tragen
+                fp.panoDaten.set(werte);
+                fp.panoTex.needsUpdate = true;
+                fp.panoCamX = cx;
+                fp.panoCamY = cy;
+                fp.panoCamZ = cz;
+                fp.panoLaeufe = (fp.panoLaeufe || 0) + 1;
+                fp.mesh.visible = true; // erst mit gebackenem Panorama sichtbar
+            })
+            .catch(() => {
+                if (this.state.feldPass === fp && fp.panoGen === gen) fp.panoFlug = false;
             });
     }
 
@@ -39540,6 +39759,20 @@ class AnazhRealm {
         if (!fp) return;
         if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ) this._feldPassMal(fp, fr);
         const cam = st.camera;
+        // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät) + Re-Bake bei
+        // Kamera-Drift (Parallaxe/Horizont) — amortisiert, gen-gestempelt.
+        if (cam && fp.laeufe > 0 && !fp.panoFlug) {
+            if (!(fp.panoLaeufe > 0)) {
+                this._feldPanoramaMal(fp);
+            } else {
+                const PN = AnazhRealm.FELD_PANO;
+                const ddx = cam.position.x - fp.panoCamX;
+                const ddy = cam.position.y - fp.panoCamY;
+                const ddz = cam.position.z - fp.panoCamZ;
+                if (ddx * ddx + ddz * ddz > PN.rebakeDist * PN.rebakeDist || Math.abs(ddy) > PN.rebakeHoehe)
+                    this._feldPanoramaMal(fp);
+            }
+        }
         if (cam && fp.mesh.visible) {
             fp.U.camPos.value.copy(cam.position);
             fp.U.invVP.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).invert();
@@ -39554,6 +39787,7 @@ class AnazhRealm {
         this._queueGeometryDispose(fp.mesh.geometry);
         if (fp.mat && typeof fp.mat.dispose === "function") fp.mat.dispose();
         if (fp.tex && typeof fp.tex.dispose === "function") fp.tex.dispose();
+        if (fp.panoTex && typeof fp.panoTex.dispose === "function") fp.panoTex.dispose();
         this.state.feldPass = null;
     }
 
@@ -93906,7 +94140,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.25";
+AnazhRealm.VERSION = "18.491.26";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -94638,6 +94872,22 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // jenseits der letzten Ring-Schale — az×rad Texel bis rMaxM, gemalt vom
 // GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel).
 AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
+// DAS FELD-PANORAMA (Natur-Antwort, offener Punkt a — SCHATTIERUNGS-PERSISTENZ):
+// der 96-Schritt-Raymarch lief JE HIMMEL-PIXEL JE FRAME für ein statisches
+// Fernfeld — die Natur re-rechnet nur die Differenz. Jetzt marcht EIN Compute
+// ins Polar-Panorama (Farbe + Treffer-DISTANZ — der Nebel bleibt LIVE im
+// billigen Fragment: Tag/Nacht braucht KEIN Re-Bake), das Fragment schaut nur
+// noch nach (~1 Load statt 96×Load+5-Bisektion). Re-Bake nur bei Kamera-Drift.
+// (c) ATMOSPHÄRE/WAHRNEHMUNG-ALS-LOD: die Elevation-Zeilen ballen QUADRATISCH
+// am Horizont (dort lebt die Information — die Streuung band-limitiert die
+// Ferne ohnehin) + Himmels-Früh-Aus (über hMax marcht niemand).
+AnazhRealm.FELD_PANO = Object.freeze({
+    az: 768, // Azimut-Spalten (4× feiner als das 192er-Feld — die Winkel-Auflösung des Blicks)
+    elev: 160, // Elevation-Zeilen (quadratisch am Horizont geballt)
+    elevMax: 0.35, // rad (~20°) — deckt die Höhen-Öffnung (camY 2800: Horizont-Terrain ≈ −19.3°)
+    rebakeDist: 60, // m XZ-Drift bis zum Re-Bake (Parallaxe auf 8 km ≈ 0.4° — unter der Wahrnehmung)
+    rebakeHoehe: 12, // m Y-Drift bis zum Re-Bake (Horizont-Verschiebung)
+});
 // DER FELD-CULL (das-feld-zeichnet §2 Stufe 1 Vollausbau) — pro-Instanz-GPU-Cull
 // der schwersten @s:-Scatter-Familien (Compute + indirekte Draws). BEWUSST nicht
 // gefroren: die Linse (gate:feld-cull) senkt minInstanzen/scanTakt, um die
