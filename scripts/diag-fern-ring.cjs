@@ -523,7 +523,11 @@ const server = http.createServer((req, res) => {
     check("7: die CPU verfeinert danach aufs f64-Gesetz durch (Cursor läuft voll)", out.fzCpuFertig === true);
     check(
         "8: DER FELD-PASS existiert, das Feld malte, das PANORAMA ist gebacken (Persistenz)",
-        out.fpDa === true && out.fpLaeufe >= 1 && out.fpTexOk === true && out.fpSichtbar === true && out.fpPanoLaeufe >= 1,
+        out.fpDa === true &&
+            out.fpLaeufe >= 1 &&
+            out.fpTexOk === true &&
+            out.fpSichtbar === true &&
+            out.fpPanoLaeufe >= 1,
         `laeufe=${out.fpLaeufe} pano=${out.fpPanoLaeufe}`
     );
     check(
