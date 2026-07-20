@@ -74881,8 +74881,7 @@ class AnazhRealm {
     _kreaturGliederBacken(cr) {
         const tb = cr.userData && cr.userData._tierBaum;
         const anker = new Set();
-        if (tb && tb.teile)
-            for (const k in tb.teile) if (tb.teile[k] && tb.teile[k].isObject3D) anker.add(tb.teile[k]);
+        if (tb && tb.teile) for (const k in tb.teile) if (tb.teile[k] && tb.teile[k].isObject3D) anker.add(tb.teile[k]);
         const wurzel = (tb && tb.wrap) || cr;
         anker.add(wurzel);
         const gruppen = new Map();
