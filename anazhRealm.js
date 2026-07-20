@@ -38520,6 +38520,123 @@ class AnazhRealm {
         inst.instanceMatrix.needsUpdate = true;
     }
 
+    // ═══ DIE DECK-STREU (Natur-Antwort ⑤ — Vegetation auf dem Fern-Deckel) ═══
+    // DASSELBE Streu-Gesetz wie das Fernfeld (worldFieldAt · _scatterChunkRng ·
+    // Dichte-Formel · Wasser-Wand — KEIN Zwilling: dieselben Ströme, dieselben
+    // Leser), konsumiert für UNGEBAUTE Chunks im Band jenseits des geladenen
+    // Rings: die Höhe liest das EINE Makro-Gesetz (includeDetail — dieselbe
+    // Quelle, aus der die Chunks gebaut werden; Vor-Bau-Fidelität, unedierte
+    // Chunks treffen bis auf Voxel-Quantisierung). Die Löcher/der Mittel-Ring
+    // tragen Vegetation, BEVOR ein Chunk existiert — die Welt als Funktion.
+    // Baut 1 Art je Tick (Fernfeld-Muster), re-ankert mit dem Spieler-Chunk;
+    // gebaute Chunks decken per Depth (dieselbe Physik wie der Loch-Deckel).
+    _tickDeckStreu() {
+        const lpc = this.state.lastPlayerVoxelChunk;
+        if (!lpc || !this.state.scene) return 0;
+        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [], meshes: new Map() };
+        const ds = this.state.deckStreu;
+        const anchor = `${lpc.cx},${lpc.cz}`;
+        if (ds.anchor !== anchor) {
+            ds.anchor = anchor;
+            ds.queue = AnazhRealm.KLEIN_VEGETATION_SPECIES.map((_s, i) => i);
+        }
+        if (ds.queue.length === 0) return 0;
+        this._buildDeckStreuSpecies(ds.queue.shift(), lpc.cx, lpc.cz);
+        return 1;
+    }
+
+    _buildDeckStreuSpecies(si, pcx, pcz) {
+        const sp = AnazhRealm.KLEIN_VEGETATION_SPECIES[si];
+        if (!sp || typeof THREE === "undefined") return;
+        if (sp.minGen && this._genVersion() < sp.minGen) return;
+        const FF = AnazhRealm.DEKO_FERNFELD;
+        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [], meshes: new Map() };
+        const ds = this.state.deckStreu;
+        let inst = ds.meshes.get(sp.name);
+        if (!inst) {
+            const geo = this._scatterImpostorGeometry(sp);
+            const mat = this._scatterMaterial(sp);
+            if (!geo || !mat) return;
+            inst = new THREE.InstancedMesh(geo, mat, FF.cap);
+            inst.count = 0;
+            inst.castShadow = false;
+            inst.receiveShadow = false;
+            inst.frustumCulled = false;
+            inst.userData.inventar = "deck-streu"; // H3-Identität: die Vor-Bau-Stufe des Fernfelds
+            this.state.scene.add(inst);
+            ds.meshes.set(sp.name, inst);
+        }
+        const atmoD =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
+                ? this.state.atmosphere.dekoDensity
+                : 1;
+        const cfg = this._voxelChunkConfig(0);
+        const targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
+        const bandBis = targetRing + 4; // ~4 Ring-Reihen jenseits des Ziels (der sichtbare Mittel-Ring)
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        const fdScale = this._effectiveFoliageDensity();
+        const gen2 = this._genVersion() >= 2;
+        let n = 0;
+        for (let cz = pcz - bandBis; cz <= pcz + bandBis && n < FF.cap; cz++) {
+            for (let cx = pcx - bandBis; cx <= pcx + bandBis && n < FF.cap; cx++) {
+                const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+                if (ringDist <= targetRing) continue; // die geladene Welt trägt das echte Fernfeld
+                const key = `${cx},${cz}`;
+                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+                if (entry && entry.surfMap) continue; // gebaut → das Fernfeld deckt (kein Doppel)
+                const band = this._detailBand(ringDist);
+                const dekoDensity = (band && band.dekoDichte ? band.dekoDichte : 0.35) * atmoD * fdScale;
+                if (dekoDensity <= 0) continue;
+                const rnd = this._scatterChunkRng(cx, cz, si); // DERSELBE Strom wie Fernfeld/Nah
+                const S = FF.samples;
+                const stepXZ = cfg.span / S;
+                const ox = cx * cfg.span;
+                const oz = cz * cfg.span;
+                for (let zi = 0; zi < S && n < FF.cap; zi++) {
+                    for (let xi = 0; xi < S && n < FF.cap; xi++) {
+                        const bx = ox + (xi + 0.5) * stepXZ;
+                        const bz = oz + (zi + 0.5) * stepXZ;
+                        const f = this.worldFieldAt(bx, bz);
+                        if (!f) continue;
+                        const useNass = gen2 && sp.feldNass;
+                        const fieldKey = useNass ? sp.feldNass : sp.field;
+                        const floorV = useNass && Number.isFinite(sp.floorNass) ? sp.floorNass : sp.floor;
+                        const fv =
+                            fieldKey === "feuchte"
+                                ? gen2
+                                    ? this._feuchteAt(bx, bz, this._terrainMacroSurfaceY(bx, bz, true))
+                                    : 0
+                                : f[fieldKey] || 0;
+                        if (fv < floorV) continue;
+                        const norm = (fv - floorV) / Math.max(0.001, 1 - floorV);
+                        const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                        for (let k = 0; k < count && n < FF.cap; k++) {
+                            const gx = bx + (rnd() - 0.5) * stepXZ;
+                            const gz = bz + (rnd() - 0.5) * stepXZ;
+                            const sclK = (sp.scale[0] + rnd() * (sp.scale[1] - sp.scale[0])) * FF.scaleMul;
+                            const rotK = rnd() * Math.PI * 2;
+                            const surfY = this._terrainMacroSurfaceY(gx, gz, true); // das EINE Gesetz (Vor-Bau)
+                            if (!Number.isFinite(surfY)) continue;
+                            if (surfY < this._waterLevelAt(gx, gz) + 0.1) continue;
+                            pos.set(gx, surfY + sp.yOff, gz);
+                            q.setFromAxisAngle(up, rotK);
+                            scl.set(sclK, sclK, sclK);
+                            m.compose(pos, q, scl);
+                            inst.setMatrixAt(n, m);
+                            n++;
+                        }
+                    }
+                }
+            }
+        }
+        inst.count = n;
+        inst.instanceMatrix.needsUpdate = true;
+    }
+
     // V9.75 (Welle C.4+5) — `_buildVoxelChunkWater`, `_disposeVoxelChunkWater`,
     // `_voxelChunkTouchesWater` sind gestrichen. Der alte per-Chunk-Quad-Mesh
     // (V9.50-b) war die zweite Wasser-Sprache — 16-m-Drainage-Atlas + 1.8-m-
@@ -93191,7 +93308,11 @@ class AnazhRealm {
                     this._tickScatterStreaming(playerPos, _dl);
                     const grassBuilt = this._tickPendingGrass(1);
                     const scatterBuilt = grassBuilt ? 1 : this._tickPendingScatter(2);
-                    if (!grassBuilt && !scatterBuilt) this._tickDekoFernfeld();
+                    if (!grassBuilt && !scatterBuilt) {
+                        // Fernfeld zuerst (geladene Chunks), dann die DECK-STREU
+                        // (ungebaute Band-Chunks — Vegetation vor dem Bau, ⑤).
+                        if (!this._tickDekoFernfeld()) this._tickDeckStreu();
+                    }
                     this._tickScatterRegrow(performance.now());
                     this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();
@@ -94382,7 +94503,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.28";
+AnazhRealm.VERSION = "18.491.29";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

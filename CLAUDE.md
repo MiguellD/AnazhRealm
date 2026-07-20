@@ -50,7 +50,20 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.28 — DIE FERN-SCHICHT + WALD-VOR-WALD: die letzten zwei Tiefen fallen)
+## Stand (V18.491.29 — DIE DECK-STREU: Vegetation VOR dem Bau — ⑤ fällt ganz)
+
+**20.07., Schöpfer: „das war zurückweichen, traue dich" — er hatte recht: das
+Streu-Gesetz lebt im STAMM (kein Worker), meine Barriere war falsch. DIE
+DECK-STREU (_tickDeckStreu/_buildDeckStreuSpecies): DASSELBE Gesetz wie das
+Fernfeld (worldFieldAt · _scatterChunkRng · Dichte-Formel · Wasser-Wand —
+dieselben Ströme, KEIN Zwilling) konsumiert für UNGEBAUTE Chunks im Band
+jenseits des Rings; die Höhe liest das EINE Makro-Gesetz (includeDetail,
+Vor-Bau-Fidelität). Löcher/Mittel-Ring tragen Vegetation BEVOR ein Chunk
+existiert; gebaute Chunks decken per Depth, das echte Fernfeld übernimmt.
+BEWIESEN (echtes WebGPU): 269 Instanzen/11 Arten auf ungebauten Chunks ·
+0 Fehler · Fern-Schicht dabei grün · playtest:fast 18/18.**
+
+**Davor, V18.491.28 — DIE FERN-SCHICHT + WALD-VOR-WALD: die letzten zwei Tiefen fallen**
 
 **20.07., Schöpfer: „kein ehrlich offen mehr, die vollen 100%, jetzt" — die zwei
 benannten Rest-Tiefen der Natur-Antwort GEBAUT:**
