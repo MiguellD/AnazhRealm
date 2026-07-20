@@ -50,7 +50,43 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.41 — DIE VOLLE FORM: das Feld ist IMMER die Gestalt — bei jeder Distanz, für alles)
+## Stand (V18.491.42 — DER EINE WELT-MARCH: alle Felder in EINEM Pass, die Ziegel-Boxen sind tot)
+
+**20.07., Schöpfer: „dann läuft es ohne three … Tue es, egal was passiert,
+vollende es champ" (ship-then-heal ist SEINE Doktrin — er bewertet das Ganze,
+korrigiert wird schrittweise):** die per-Ziegel-Boxen (je Feld ein Mesh, ein
+Material, eine Pipeline) waren der letzte three-Umweg — jetzt:
+- DAS ORGAN (_weltMarchEnsure): EIN 3D-Atlas 512×512×64 (8×8 Slots à 64³,
+  64 MB, RGBA8) + EINE Feld-Listen-Textur (2 RGBA-Float-Texel je Feld:
+  [bbMin|frac]·[bbSize|aktiv]) + Slot-Verwaltung (Register kopiert den
+  Ziegel in den Atlas und ENTSORGT die Einzel-Textur · Aktiv · Bewege ·
+  Frei). Kein Renderer-Gate (gate:fern-ring fährt Null-Renderer + eigenen
+  Probe-Renderer); headless ruft niemand hierher (Konsumenten gewallt).
+- DER MARCH IM FELD-PASS: das Blick-WGSL loopt die Liste (Ray-AABB-Slab je
+  Slot, tN≥0.5), marcht Treffer-Slots in 24 Schritten per textureLoad
+  (Integer-Koordinaten — das bewiesene Pano-Muster, kein Sampler), nächster
+  Treffer gewinnt; Panorama bleibt der Fern-Grund. Der Pass ist jetzt OPAK
+  und schreibt ECHTE TIEFE (depthNode = View-Z-Projektion über nah/fern/
+  fwd-Uniforms, nie Strahl-Länge) — Feld ↔ Mesh ↔ Wasser komponieren per
+  Depth-Test, -1-Sentinel discardet (Himmel).
+- DIE DREI KONSUMENTEN TAUSCHEN Box→Slot: Region (_bundleZiegelTick — der
+  DUPLIKAT-Zwilling des ganzen Blocks fiel dabei) · Architektur
+  (_archZiegelFern/Tod) · Kreatur (folgt via _weltFeldBewege — die Liste
+  trägt den Anker, zwei Float-Sets je Frame). _waldZiegelMaterial ist
+  PHYSISCH gefallen (der per-Ziegel-March wäre der Zwilling). Atlas voll →
+  fail-open: die alte Gestalt trägt weiter (Mesh/Bundle), ehrlich benannt.
+- LINSE: steadyState.weltMarch {belegt, frei} — die Kapazitäts-Wahrheit.
+- BEWIESEN: Boot-Sonde echtes WebGPU — 11/11 Kreaturen als Felder im Atlas
+  (belegt 12), Feld-Pass lebt (pano 1), Terrain-Tiefe schneidet VOR dem
+  Fern-Feld (Komposition), 0 Seiten-/Loop-Fehler, 0 Warns, Screenshot
+  gesehen · gate:fern-ring ALLE Bänder GRÜN (Render-Probe 1726 Pixel) ·
+  playtest:fast 18/18 · node --check. EHRLICH OFFEN: 64 Slots sind die
+  erste Kapazität (Kreaturen+Regionen+Bauten teilen sie; voll → Mesh
+  trägt) · EIN Schrittmaß 24 für alle Klassen (die 48er-Arch-Tiefe fiel) ·
+  das Urteil über das BILD fällt der Schöpfer beim Öffnen — Korrektur
+  schrittweise, wie befohlen.
+
+**Davor, V18.491.41 — DIE VOLLE FORM: das Feld ist IMMER die Gestalt — bei jeder Distanz, für alles)**
 
 **20.07., Schöpfer: „Detail-Fixes an Sterbendem sind dumm — alles rein, dann
 bewerte ich":** die Inversion, sichtbar-vollständig:

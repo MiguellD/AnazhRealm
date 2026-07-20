@@ -16079,6 +16079,15 @@ class AnazhRealm {
                           tests: this._bergCullTests || 0,
                           verdecktFrames: this._bergCullVerdeckt || 0,
                       },
+                      // DER EINE WELT-MARCH im Trace: wie viele Felder leben im
+                      // Atlas (belegt) und wie viel Raum bleibt (frei) — die
+                      // Kapazitäts-Wahrheit der reinen Form, beim Namen.
+                      weltMarch: this.state.weltMarch
+                          ? {
+                                belegt: this.state.weltMarch.belegt,
+                                frei: this.state.weltMarch.frei.length,
+                            }
+                          : null,
                       // (d) DER INGEST-TAKT (sechste Welle): freigegeben gesamt + Stau-
                       // Spitze — der Beweis, dass Konversions-Bursts nie mehr bündeln.
                       ingestTakt: {
@@ -23083,13 +23092,12 @@ class AnazhRealm {
     }
 
     // ═══ DER KREATUR-ZIEGEL (Tiere als Felder — der letzte Bogen) ═══
-    // Ferne Tiere (> KREATUR_ZIEGEL_DIST) tauschen ihre geskinnte Geometrie
-    // (~315k Tris je Tier, Trace .29) gegen ihr gebackenes Feld: der Ziegel
-    // FOLGT dem Tier — bbMin ist die LEBENDE Uniform-Referenz des March-
-    // Materials, Box + Feld-Anker wandern mit der Position (die Bewegung
-    // kostet zwei Vektor-Sets, kein Re-Bake). Nah kehrt das echte Tier
-    // zurück. Bake budgetiert (nie über Frame-Budget), headless byte-alt,
-    // Tod räumt (removeCreature).
+    // Das Tier IST sein Feld (VOLLE FORM, KREATUR_ZIEGEL_DIST=0): einmal
+    // gebacken zieht es als SLOT in den EINEN Welt-March; das Feld FOLGT dem
+    // Tier über die Feld-Liste (bbMin wandert mit der Position — zwei Floats-
+    // Sets je Frame, kein Re-Bake, kein eigenes Draw-Objekt). Bake budgetiert
+    // (nie über Frame-Budget), headless byte-alt, Tod räumt (removeCreature).
+    // Atlas voll → das Tier bleibt sein Mesh (fail-open, ehrlich benannt).
     _tickKreaturZiegel(playerPos) {
         const st = this.state;
         if (!playerPos || (st.renderer && st.renderer._isHeadlessNull)) return;
@@ -23101,56 +23109,39 @@ class AnazhRealm {
             const fern = dx * dx + dz * dz > D2;
             const u = cr.userData || (cr.userData = {});
             if (!fern) {
-                if (u._kzBox) {
-                    u._kzBox.visible = false;
+                if (u._kzSlot) {
+                    this._weltFeldAktiv(u._kzSlot, false);
                     cr.visible = true;
                 }
                 continue;
             }
-            if (!u._kzBox) {
+            if (!u._kzSlot) {
                 if (st._frameOverBudget || u._kzVersuch) continue;
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
                 const zg = this._ziegelBackenAusGruppe(cr, AnazhRealm.WALD_ZIEGEL.dim);
                 if (!zg) continue;
-                const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritte);
-                if (!mat) continue;
-                const geo = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
-                geo.translate(
-                    zg.bbMin.x + zg.bbGroesse.x / 2,
-                    zg.bbMin.y + zg.bbGroesse.y / 2,
-                    zg.bbMin.z + zg.bbGroesse.z / 2
-                );
-                const box = new THREE.Mesh(geo, mat);
-                box.frustumCulled = true;
-                box.userData.inventar = "kreatur-ziegel";
-                st.scene.add(box);
-                u._kzBox = box;
-                u._kzTex = zg.tex;
-                u._kzMin = zg.bbMin; // die LEBENDE Uniform-Referenz des Materials
-                u._kzMinBasis = zg.bbMin.clone();
+                const handle = this._weltFeldRegister(zg);
+                if (!handle) continue; // Atlas voll → das Tier bleibt sein Mesh
+                u._kzSlot = handle;
+                u._kzMinBasis = handle.bbMin.clone();
                 u._kzPosBasis = cr.position.clone();
             }
-            // DAS FELD WANDERT MIT DEM TIER (Uniform-Anker + Box folgen):
+            // DAS FELD WANDERT MIT DEM TIER (die Liste trägt den Anker):
             const ddx = cr.position.x - u._kzPosBasis.x;
             const ddy = cr.position.y - u._kzPosBasis.y;
             const ddz = cr.position.z - u._kzPosBasis.z;
-            u._kzMin.set(u._kzMinBasis.x + ddx, u._kzMinBasis.y + ddy, u._kzMinBasis.z + ddz);
-            u._kzBox.position.set(ddx, ddy, ddz);
-            u._kzBox.visible = true;
-            cr.visible = false; // das Feld IST die ferne Gestalt
+            this._weltFeldBewege(u._kzSlot, u._kzMinBasis.x + ddx, u._kzMinBasis.y + ddy, u._kzMinBasis.z + ddz);
+            this._weltFeldAktiv(u._kzSlot, true);
+            cr.visible = false; // das Feld IST die Gestalt
         }
     }
 
     _kreaturZiegelTod(cr) {
         const u = cr && cr.userData;
-        if (!u || !u._kzBox) return;
-        if (u._kzBox.parent) u._kzBox.parent.remove(u._kzBox);
-        this._queueGeometryDispose(u._kzBox.geometry);
-        if (u._kzBox.material && u._kzBox.material.dispose) u._kzBox.material.dispose();
-        if (u._kzTex && u._kzTex.dispose) u._kzTex.dispose();
-        u._kzBox = null;
-        u._kzTex = null;
+        if (!u) return;
+        if (u._kzSlot) this._weltFeldFrei(u._kzSlot);
+        u._kzSlot = null;
         u._kzVersuch = false;
     }
 
@@ -39595,7 +39586,12 @@ class AnazhRealm {
         if (!this._gpuComputeFaehig() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
             return null;
         const TSL = THREE.TSL;
-        if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.uniform || !TSL.positionGeometry) return null;
+        if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.texture3D || !TSL.Fn || !TSL.Discard || !TSL.uniform || !TSL.positionGeometry)
+            return null;
+        // DER EINE WELT-MARCH: Atlas + Feld-Liste sind Pass-Bindings — ohne das
+        // Organ existiert der Pass nicht (die Schalen tragen, byte-alt).
+        const wm = this._weltMarchEnsure();
+        if (!wm) return null;
         const P = AnazhRealm.FELD_PASS;
         const PN = AnazhRealm.FELD_PANO;
         const daten = new Float32Array(P.az * P.rad * 4);
@@ -39621,34 +39617,83 @@ class AnazhRealm {
             hMax: TSL.uniform(500),
             fogFarbe: TSL.uniform(new THREE.Color(0.62, 0.68, 0.78)),
             elevMax: TSL.uniform(PN.elevMax),
+            nah: TSL.uniform(0.1),
+            fern: TSL.uniform(9000),
+            fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
         };
         // DER BLICK (WGSL, roh — ersetzt den per-Pixel-March): Richtung aus
         // invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-
         // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
         // SPEC-WAND bleibt geehrt (textureDimensions → f32/i32-Casts).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
-                "    let fern = fern4.xyz / fern4.w;\n" +
-                "    let dir = normalize(fern - camPos);\n" +
-                "    let e = asin(clamp(dir.y, -1.0, 1.0));\n" +
-                "    if (abs(e) > elevMax) { return vec4<f32>(0.0, 0.0, 0.0, 0.0); }\n" +
+                "    let fernP = fern4.xyz / fern4.w;\n" +
+                "    let dir = normalize(fernP - camPos);\n" +
                 "    let PI = 3.14159265358979;\n" +
-                "    let dim = textureDimensions(pano, 0);\n" +
-                "    let a = atan2(dir.z, dir.x);\n" +
-                "    let u = clamp(a / (2.0 * PI) + 0.5, 0.0, 0.9999);\n" +
-                "    var s = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
-                "    if (e < 0.0) { s = -s; }\n" +
-                "    let v = clamp(s * 0.5 + 0.5, 0.0, 0.9999);\n" +
-                "    let ix = i32(u * f32(dim.x));\n" +
-                "    let iy = i32(v * f32(dim.y));\n" +
-                "    let p = textureLoad(pano, vec2<i32>(ix, iy), 0);\n" +
-                "    if (p.a <= 0.0) { return vec4<f32>(0.0, 0.0, 0.0, 0.0); }\n" +
-                "    let nebel = clamp((p.a - rMin) / (rMax - rMin), 0.0, 1.0) * 0.85;\n" +
-                "    return vec4<f32>(mix(p.rgb, fogFarbe, nebel), 1.0);\n" +
+                "    // ── DAS PANORAMA (die Ferne jenseits der Schalen) ──\n" +
+                "    var panoRgb = vec3<f32>(0.0);\n" +
+                "    var panoDa = false;\n" +
+                "    let e = asin(clamp(dir.y, -1.0, 1.0));\n" +
+                "    if (abs(e) <= elevMax) {\n" +
+                "        let dim = textureDimensions(pano, 0);\n" +
+                "        let a = atan2(dir.z, dir.x);\n" +
+                "        let u = clamp(a / (2.0 * PI) + 0.5, 0.0, 0.9999);\n" +
+                "        var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
+                "        if (e < 0.0) { sV = -sV; }\n" +
+                "        let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
+                "        let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
+                "        if (pT.a > 0.0) {\n" +
+                "            let nebel = clamp((pT.a - rMin) / (rMax - rMin), 0.0, 1.0) * 0.85;\n" +
+                "            panoRgb = mix(pT.rgb, fogFarbe, nebel);\n" +
+                "            panoDa = true;\n" +
+                "        }\n" +
+                "    }\n" +
+                "    // ── DER EINE WELT-MARCH: alle Felder (Regionen·Bauten·Tiere) ──\n" +
+                "    var bestT = 1e30;\n" +
+                "    var bestRgb = vec3<f32>(0.0);\n" +
+                "    let lDim = textureDimensions(liste, 0);\n" +
+                "    let nSlots = i32(lDim.x) / 2;\n" +
+                "    for (var j: i32 = 0; j < nSlots; j = j + 1) {\n" +
+                "        let t0 = textureLoad(liste, vec2<i32>(j * 2, 0), 0);\n" +
+                "        let t1 = textureLoad(liste, vec2<i32>(j * 2 + 1, 0), 0);\n" +
+                "        if (t1.w < 0.5) { continue; }\n" +
+                "        let bbMin = t0.xyz;\n" +
+                "        let bbMax = bbMin + t1.xyz;\n" +
+                "        let inv = 1.0 / dir;\n" +
+                "        let tA = (bbMin - camPos) * inv;\n" +
+                "        let tB = (bbMax - camPos) * inv;\n" +
+                "        let tMin3 = min(tA, tB);\n" +
+                "        let tMax3 = max(tA, tB);\n" +
+                "        let tN = max(max(tMin3.x, tMin3.y), max(tMin3.z, 0.5));\n" +
+                "        let tF = min(tMax3.x, min(tMax3.y, tMax3.z));\n" +
+                "        if (tF <= tN || tN >= bestT) { continue; }\n" +
+                "        let frac = t0.w;\n" +
+                "        let slotO = vec3<f32>(f32(j % 8) * 64.0, f32(j / 8) * 64.0, 0.0);\n" +
+                "        for (var k: i32 = 0; k < 24; k = k + 1) {\n" +
+                "            let t = tN + (tF - tN) * (f32(k) + 0.5) / 24.0;\n" +
+                "            if (t >= bestT) { break; }\n" +
+                "            let pos = camPos + dir * t;\n" +
+                "            let uvw = clamp((pos - bbMin) / t1.xyz, vec3<f32>(0.001), vec3<f32>(0.999));\n" +
+                "            let texel = vec3<i32>(slotO + uvw * 64.0 * frac);\n" +
+                "            let tex = textureLoad(atlas, texel, 0);\n" +
+                "            if (tex.a > 0.25) { bestT = t; bestRgb = tex.rgb; break; }\n" +
+                "        }\n" +
+                "    }\n" +
+                "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
+                "    if (bestT < 1e29) {\n" +
+                "        let vz = bestT * max(dot(dir, fwd), 1e-4);\n" +
+                "        let tiefe = clamp(fern * (vz - nah) / (vz * (fern - nah)), 0.0, 0.9999995);\n" +
+                "        return vec4<f32>(bestRgb, tiefe);\n" +
+                "    }\n" +
+                "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
+                "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
                 "}"
         );
-        const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, depthTest: true });
+        // DER EINE WELT-MARCH schreibt ECHTE TIEFE (depthNode, das Fern-Schirm-
+        // Muster): der Pass ist OPAK und komponiert per Depth-Test mit allem —
+        // Wasser/Transparentes zeichnet DANACH und testet gegen die Feld-Tiefe.
+        const mat = new THREE.MeshBasicNodeMaterial({ depthWrite: true, depthTest: true });
         mat.fog = false;
         // Fullscreen-Dreieck in NDC: der Vertex-Knoten setzt CLIP-Koordinaten
         // direkt (z nahe far), die Kamera-Matrizen werden umgangen.
@@ -39657,16 +39702,26 @@ class AnazhRealm {
             TSL.screenUV.x.mul(2.0).sub(1.0),
             TSL.float(1.0).sub(TSL.screenUV.y).mul(2.0).sub(1.0)
         );
-        mat.outputNode = blick({
+        const ruf = blick({
             ndc: ndcNode,
             camPos: U.camPos,
             invVP: U.invVP,
             rMin: U.rMin,
             rMax: U.rMax,
             elevMax: U.elevMax,
+            nah: U.nah,
+            fern: U.fern,
+            fwd: U.fwd,
             fogFarbe: U.fogFarbe,
             pano: TSL.texture(panoTex),
+            liste: TSL.texture(wm.liste),
+            atlas: TSL.texture3D(wm.atlas),
         });
+        mat.outputNode = TSL.Fn(() => {
+            TSL.Discard(ruf.a.lessThan(0.0)); // -1-Sentinel: kein Feld, kein Panorama → Himmel
+            return TSL.vec4(ruf.rgb, 1.0);
+        })();
+        mat.depthNode = ruf.a; // die March-Tiefe IST die Fragment-Tiefe (Feld ↔ Mesh komponieren)
         const geo = new THREE.BufferGeometry();
         geo.setAttribute(
             "position",
@@ -39759,6 +39814,98 @@ class AnazhRealm {
             .catch(() => {
                 if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
             });
+    }
+
+    // ═══ DER EINE WELT-MARCH: Atlas + Feld-Liste (die Boxen sind tot) ═══
+    _weltMarchEnsure() {
+        const st = this.state;
+        if (st.weltMarch) return st.weltMarch;
+        // KEIN Renderer-Gate: der Feld-Pass (gate:fern-ring fährt einen EIGENEN
+        // Probe-Renderer neben dem Null-Renderer) braucht die Bindings; im
+        // headless Playtest ruft niemand hierher (alle Konsumenten sind gewallt).
+        if (typeof THREE === "undefined") return null;
+        const W = AnazhRealm.WELT_MARCH;
+        const A = W.slotDim * 8; // 512
+        const atlasDaten = new Uint8Array(A * A * W.slotDim * 4);
+        const atlas = new THREE.Data3DTexture(atlasDaten, A, A, W.slotDim);
+        atlas.format = THREE.RGBAFormat;
+        atlas.minFilter = THREE.LinearFilter;
+        atlas.magFilter = THREE.LinearFilter;
+        atlas.unpackAlignment = 1;
+        atlas.needsUpdate = true;
+        // Feld-Liste: 2 Texel je Feld — [bbMin.xyz | frac] · [bbSize.xyz | aktiv]
+        const listeDaten = new Float32Array(W.slots * 2 * 4);
+        const liste = new THREE.DataTexture(listeDaten, W.slots * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+        liste.minFilter = THREE.NearestFilter;
+        liste.magFilter = THREE.NearestFilter;
+        liste.needsUpdate = true;
+        st.weltMarch = { atlas, atlasDaten, liste, listeDaten, frei: Array.from({ length: W.slots }, (_x, i) => i), belegt: 0 };
+        return st.weltMarch;
+    }
+
+    // Ein gebackenes Feld (zg des Universal-Bäckers) zieht in den Atlas + die
+    // Liste. Rückgabe: Slot-Handle (oder null — voll/headless → Rufer lässt
+    // seine alte Gestalt sichtbar, fail-open).
+    _weltFeldRegister(zg) {
+        const wm = this._weltMarchEnsure();
+        if (!wm || !zg || !zg.tex || wm.frei.length === 0) return null;
+        const W = AnazhRealm.WELT_MARCH;
+        const slot = wm.frei.pop();
+        const d = zg.tex.image.width; // Quell-Dim (32/48/64)
+        const src = zg.tex.image.data;
+        const A = W.slotDim * 8;
+        const ox = (slot % 8) * W.slotDim;
+        const oy = Math.floor(slot / 8) * W.slotDim;
+        for (let z = 0; z < d; z++)
+            for (let y = 0; y < d; y++) {
+                const si = (z * d * d + y * d) * 4;
+                const di = (z * A * A + (oy + y) * A + ox) * 4;
+                wm.atlasDaten.set(src.subarray(si, si + d * 4), di);
+            }
+        wm.atlas.needsUpdate = true;
+        const o = slot * 8;
+        wm.listeDaten[o] = zg.bbMin.x;
+        wm.listeDaten[o + 1] = zg.bbMin.y;
+        wm.listeDaten[o + 2] = zg.bbMin.z;
+        wm.listeDaten[o + 3] = d / W.slotDim; // frac (Teil-Slot kleiner Dims)
+        wm.listeDaten[o + 4] = zg.bbGroesse.x;
+        wm.listeDaten[o + 5] = zg.bbGroesse.y;
+        wm.listeDaten[o + 6] = zg.bbGroesse.z;
+        wm.listeDaten[o + 7] = 1; // aktiv
+        wm.liste.needsUpdate = true;
+        wm.belegt++;
+        if (zg.tex.dispose) zg.tex.dispose(); // die Einzel-Textur ist im Atlas aufgegangen
+        return { slot, bbMin: zg.bbMin, bbGroesse: zg.bbGroesse };
+    }
+
+    _weltFeldAktiv(handle, an) {
+        const wm = this.state.weltMarch;
+        if (!wm || !handle) return;
+        const o = handle.slot * 8;
+        if (wm.listeDaten[o + 7] !== (an ? 1 : 0)) {
+            wm.listeDaten[o + 7] = an ? 1 : 0;
+            wm.liste.needsUpdate = true;
+        }
+    }
+
+    _weltFeldBewege(handle, x, y, z) {
+        const wm = this.state.weltMarch;
+        if (!wm || !handle) return;
+        const o = handle.slot * 8;
+        wm.listeDaten[o] = x;
+        wm.listeDaten[o + 1] = y;
+        wm.listeDaten[o + 2] = z;
+        wm.liste.needsUpdate = true;
+    }
+
+    _weltFeldFrei(handle) {
+        const wm = this.state.weltMarch;
+        if (!wm || !handle) return;
+        const o = handle.slot * 8;
+        wm.listeDaten[o + 7] = 0;
+        wm.liste.needsUpdate = true;
+        wm.frei.push(handle.slot);
+        wm.belegt--;
     }
 
     // ═══ DAS FELD-PANORAMA (SCHATTIERUNGS-PERSISTENZ, Natur-Antwort a+c) ═══
@@ -39977,6 +40124,12 @@ class AnazhRealm {
         if (cam && fp.mesh.visible) {
             fp.U.camPos.value.copy(cam.position);
             fp.U.invVP.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).invert();
+            // DER EINE WELT-MARCH: echte Tiefe braucht die Projektions-Wahrheit —
+            // near/far + Blick-Achse (Tiefe = View-Z, nie Strahl-Länge).
+            fp.U.nah.value = cam.near;
+            fp.U.fern.value = cam.far;
+            const e = cam.matrixWorld.elements;
+            fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
             if (st.scene && st.scene.fog && st.scene.fog.color) fp.U.fogFarbe.value.copy(st.scene.fog.color);
         }
     }
@@ -69443,199 +69596,40 @@ class AnazhRealm {
 
     // ═══ DER REGION-ZIEGEL (die reine Form für ALLES Gestreute) ═══
     // Wiese-Reste · Felsen · Kristalle · Bäume sind KEINE getrennten Assets —
-    // sie sind Region-Inhalt. Eine ferne Region wird EIN 32³-Feld (der
-    // Universal-Bäcker splattet auch Instanzen), gerendert als EINE Box, die
-    // der Pixel marcht. Die Box erbt die FERN-SCHICHT (1/4-Kadenz) und den
-    // Berg-Schatten/Query-Cull des Bundles (sie folgt bundle.visible-Logik
-    // nicht — sie IST die Fern-Gestalt; Frustum cullt sie selbst).
+    // sie sind Region-Inhalt. Eine ferne Region wird EIN 64³-Feld — kein
+    // eigenes Draw-Objekt mehr: das Feld zieht als SLOT in den EINEN
+    // Welt-March (Atlas + Liste), der Feld-Pass marcht es mit allem anderen.
     _bundleZiegelTick(bg) {
         const st = this.state;
         const u = bg.userData;
         if (u._fernSchicht !== true) {
-            // nah (oder Schicht aus): das echte Bundle rendert, der Ziegel ruht
-            if (u._ziegelBox) u._ziegelBox.visible = false;
+            // nah (oder Schicht aus): das echte Bundle rendert, das Feld ruht
+            if (u._ziegelSlot) this._weltFeldAktiv(u._ziegelSlot, false);
             return;
         }
-        if (u._ziegelBox) {
+        if (u._ziegelSlot) {
             if (bg.needsUpdate === true) {
-                // Mutation → der Ziegel ist stale: verwerfen, nächster Tick backt neu
+                // Mutation → das Feld ist stale: verwerfen, nächster Tick backt neu
                 this._bundleZiegelTod(bg);
                 bg.visible = true;
                 return;
             }
-            u._ziegelBox.visible = true;
-            bg.visible = false; // die Box IST die Region — die Draw-Liste ruht ganz
+            this._weltFeldAktiv(u._ziegelSlot, true);
+            bg.visible = false; // das Feld IST die Region — die Draw-Liste ruht ganz
             return;
         }
         if (st._frameOverBudget || u._ziegelBakeVersuch) return; // budgetiert, ein Versuch je Stand
         u._ziegelBakeVersuch = true;
         const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
         if (!zg) return;
-        const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritteRegion);
-        if (!mat) return;
-        const geo = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
-        geo.translate(
-            zg.bbMin.x + zg.bbGroesse.x / 2,
-            zg.bbMin.y + zg.bbGroesse.y / 2,
-            zg.bbMin.z + zg.bbGroesse.z / 2
-        );
-        const box = new THREE.Mesh(geo, mat);
-        box.frustumCulled = true;
-        box.userData.inventar = "region-ziegel";
-        if (st.fernSchicht) box.layers.mask = 1 << AnazhRealm.FERN_LAYER; // die Kadenz erbt
-        st.scene.add(box);
-        u._ziegelBox = box;
-        u._ziegelTex = zg.tex;
+        u._ziegelSlot = this._weltFeldRegister(zg); // null bei vollem Atlas → das Bundle trägt weiter (fail-open)
     }
 
     _bundleZiegelTod(bg) {
         const u = bg && bg.userData;
-        if (!u || !u._ziegelBox) return;
-        if (u._ziegelBox.parent) u._ziegelBox.parent.remove(u._ziegelBox);
-        this._queueGeometryDispose(u._ziegelBox.geometry);
-        if (u._ziegelBox.material && u._ziegelBox.material.dispose) u._ziegelBox.material.dispose();
-        if (u._ziegelTex && u._ziegelTex.dispose) u._ziegelTex.dispose();
-        u._ziegelBox = null;
-        u._ziegelTex = null;
-        u._ziegelBakeVersuch = false;
-    }
-
-    // Proxy-Abbau (der Bundle-Tod räumt sein Query-Objekt — kein Szene-Leck).
-    _bundleQueryProxyTod(bg) {
-        const q = bg && bg.userData && bg.userData._occlProxy;
-        if (!q) return;
-        if (q.parent) q.parent.remove(q);
-        bg.userData._occlProxy = null;
-    }
-
-    // ═══ WALD-VOR-WALD (Natur-Antwort ④ — natives Depth-Occlusion) ═══
-    // Der Berg-Schatten fragt das TERRAIN-Gesetz; hier fragt die Welt die ECHTE
-    // Frame-Tiefe: ein unsichtbarer Kugel-Kasten (colorWrite=false, transparent-
-    // Liste → nach allem Opaken, inkl. FERN-SCHIRM-Tiefe) trägt occlusionTest —
-    // das native ANY_SAMPLES_PASSED-Query. 0 Fragmente durch → die Region ist
-    // TOTAL verdeckt (auch von Wald!). Verdikt async (1-2 Frames alt), 2er-
-    // Hysterese, Un-Cull sofort, nahe Regionen (< BERG_CULL.minDist) nie.
-    // Der Render-Kontext des Szene-Passes wird am Proxy selbst gefangen
-    // (onBeforeRender) — backend.isOccluded(ctx, proxy) liest das Verdikt-Set.
-    _bundleQueryTick(bg, s, kante) {
-        const st = this.state;
-        const u = bg.userData;
-        if (kante < AnazhRealm.BERG_CULL.minDist) {
-            if (u._occlProxy) u._occlProxy.visible = false;
-            u._occlTreffer = 0;
-            u._occlVerdeckt = false;
-            return;
-        }
-        // TRACE-URTEIL .29 (CPU-render 387 ms · GPU echt 352 ms): Queries JEDEN
-        // Frame zwingen den Vendor in QuerySet-Bau/-Destroy + Resolve + Map PRO
-        // FRAME (der Dawn-Cliff). Die Natur zahlt nicht pro Frage: der PROBE-
-        // TAKT fragt nur jeden queryTakt-ten Frame (Proxys dazwischen unsichtbar
-        // = 0 Queries, 0 Churn); das Verdikt hält bis zur nächsten Probe —
-        // Verdeckung ist zeitlich kohärent (Objekt-Permanenz).
-        this._occlProbeFrame = this._occlProbeFrame === undefined ? 0 : this._occlProbeFrame;
-        const probeFenster = this._occlProbeFrame % AnazhRealm.BERG_CULL.queryTakt === 0;
-        if (!probeFenster) {
-            if (u._occlProxy) u._occlProxy.visible = false;
-            if (u._occlVerdeckt) {
-                bg.visible = false;
-                this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1;
-            }
-            return;
-        }
-        let q = u._occlProxy;
-        if (!q) {
-            if (!this._occlProxyGeo) this._occlProxyGeo = new THREE.BoxGeometry(2, 2, 2);
-            if (!this._occlProxyMat) {
-                const m = new THREE.MeshBasicMaterial({ transparent: true });
-                m.colorWrite = false;
-                m.depthWrite = false;
-                this._occlProxyMat = m;
-            }
-            q = new THREE.Mesh(this._occlProxyGeo, this._occlProxyMat);
-            q.occlusionTest = true;
-            q.userData.inventar = "occl-proxy";
-            q.onBeforeRender = (r) => {
-                if (r && r._currentRenderContext) this._occlKontext = r._currentRenderContext;
-            };
-            u._occlProxy = q;
-            if (st.scene) st.scene.add(q);
-        }
-        q.visible = true;
-        q.position.set(s.center.x, s.center.y, s.center.z);
-        q.scale.setScalar(Math.max(1e-3, s.radius));
-        const be = st.renderer && st.renderer.backend;
-        const okt = this._occlKontext;
-        if (be && okt && typeof be.isOccluded === "function") {
-            if (be.isOccluded(okt, q)) {
-                u._occlTreffer = (u._occlTreffer || 0) + 1;
-                if (u._occlTreffer >= 2) u._occlVerdeckt = true; // Hysterese: 2 Verdikte
-            } else {
-                u._occlTreffer = 0;
-                u._occlVerdeckt = false; // sichtbar → SOFORT zurück
-            }
-            if (u._occlVerdeckt) {
-                bg.visible = false;
-                this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // dieselbe Linse
-            }
-        }
-    }
-
-    // ═══ DER REGION-ZIEGEL (die reine Form für ALLES Gestreute) ═══
-    // Wiese-Reste · Felsen · Kristalle · Bäume sind KEINE getrennten Assets —
-    // sie sind Region-Inhalt. Eine ferne Region wird EIN 32³-Feld (der
-    // Universal-Bäcker splattet auch Instanzen), gerendert als EINE Box, die
-    // der Pixel marcht. Die Box erbt die FERN-SCHICHT (1/4-Kadenz) und den
-    // Berg-Schatten/Query-Cull des Bundles (sie folgt bundle.visible-Logik
-    // nicht — sie IST die Fern-Gestalt; Frustum cullt sie selbst).
-    _bundleZiegelTick(bg) {
-        const st = this.state;
-        const u = bg.userData;
-        if (u._fernSchicht !== true) {
-            // nah (oder Schicht aus): das echte Bundle rendert, der Ziegel ruht
-            if (u._ziegelBox) u._ziegelBox.visible = false;
-            return;
-        }
-        if (u._ziegelBox) {
-            if (bg.needsUpdate === true) {
-                // Mutation → der Ziegel ist stale: verwerfen, nächster Tick backt neu
-                this._bundleZiegelTod(bg);
-                bg.visible = true;
-                return;
-            }
-            u._ziegelBox.visible = true;
-            bg.visible = false; // die Box IST die Region — die Draw-Liste ruht ganz
-            return;
-        }
-        if (st._frameOverBudget || u._ziegelBakeVersuch) return; // budgetiert, ein Versuch je Stand
-        u._ziegelBakeVersuch = true;
-        const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
-        if (!zg) return;
-        const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritteRegion);
-        if (!mat) return;
-        const geo = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
-        geo.translate(
-            zg.bbMin.x + zg.bbGroesse.x / 2,
-            zg.bbMin.y + zg.bbGroesse.y / 2,
-            zg.bbMin.z + zg.bbGroesse.z / 2
-        );
-        const box = new THREE.Mesh(geo, mat);
-        box.frustumCulled = true;
-        box.userData.inventar = "region-ziegel";
-        if (st.fernSchicht) box.layers.mask = 1 << AnazhRealm.FERN_LAYER; // die Kadenz erbt
-        st.scene.add(box);
-        u._ziegelBox = box;
-        u._ziegelTex = zg.tex;
-    }
-
-    _bundleZiegelTod(bg) {
-        const u = bg && bg.userData;
-        if (!u || !u._ziegelBox) return;
-        if (u._ziegelBox.parent) u._ziegelBox.parent.remove(u._ziegelBox);
-        this._queueGeometryDispose(u._ziegelBox.geometry);
-        if (u._ziegelBox.material && u._ziegelBox.material.dispose) u._ziegelBox.material.dispose();
-        if (u._ziegelTex && u._ziegelTex.dispose) u._ziegelTex.dispose();
-        u._ziegelBox = null;
-        u._ziegelTex = null;
+        if (!u) return;
+        if (u._ziegelSlot) this._weltFeldFrei(u._ziegelSlot);
+        u._ziegelSlot = null;
         u._ziegelBakeVersuch = false;
     }
 
@@ -74405,11 +74399,11 @@ class AnazhRealm {
     _archZiegelFern(entry) {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return false;
-        if (entry._ziegelMesh) {
-            entry._ziegelMesh.visible = true;
+        if (entry._ziegelSlot) {
+            this._weltFeldAktiv(entry._ziegelSlot, true);
             return false;
         }
-        if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche)
+        if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Atlas voll)
         if (st._frameOverBudget) return false; // der Nexus-Grundsatz: nie auf Kosten des Spielers
         const hatte = this._archIsRendered(entry);
         if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Bake
@@ -74423,73 +74417,20 @@ class AnazhRealm {
             return true;
         }
         entry._ziegelGebacken = true; // Erfolg — genau EIN Feld je Eintrag
-        const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritteArch);
-        if (!mat) return true;
-        const bg = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
-        bg.translate(
-            zg.bbMin.x + zg.bbGroesse.x / 2,
-            zg.bbMin.y + zg.bbGroesse.y / 2,
-            zg.bbMin.z + zg.bbGroesse.z / 2
-        );
-        const mesh = new THREE.Mesh(bg, mat);
-        mesh.frustumCulled = true;
-        mesh.userData.inventar = "arch-ziegel";
-        st.scene.add(mesh);
-        entry._ziegelMesh = mesh;
-        entry._ziegelTex = zg.tex;
+        entry._ziegelSlot = this._weltFeldRegister(zg); // null bei vollem Atlas — ehrlich benannt, kein Zweit-Pfad
         return true;
     }
 
-    // Der Ziegel stirbt mit seinem Eintrag (kein Szene-/GPU-Leck).
+    // Das Feld stirbt mit seinem Eintrag (der Slot wird frei — kein Atlas-Leck).
     _archZiegelTod(entry) {
-        if (!entry || !entry._ziegelMesh) return;
-        if (entry._ziegelMesh.parent) entry._ziegelMesh.parent.remove(entry._ziegelMesh);
-        this._queueGeometryDispose(entry._ziegelMesh.geometry);
-        if (entry._ziegelMesh.material && entry._ziegelMesh.material.dispose) entry._ziegelMesh.material.dispose();
-        if (entry._ziegelTex && entry._ziegelTex.dispose) entry._ziegelTex.dispose();
-        entry._ziegelMesh = null;
-        entry._ziegelTex = null;
+        if (!entry || !entry._ziegelSlot) return;
+        this._weltFeldFrei(entry._ziegelSlot);
+        entry._ziegelSlot = null;
     }
 
-    // Das March-Material (memoisiert je Ziegel): die Box rastert ihre Fläche,
-    // das Fragment marcht ZIEGEL_SCHRITTE durch das 3D-Feld (TSL-unrollt wie
-    // der Godray-March — kein Shader-Loop) und färbt sich am ersten dichten
-    // Texel; ohne Treffer discard (die Box ist unsichtbar, nur der Baum lebt).
-    _waldZiegelMaterial(ziegel, schritte) {
-        const TSL = THREE.TSL;
-        if (!TSL || !TSL.texture3D || !TSL.Discard) return null;
-        const { vec3, vec4, float, positionWorld, cameraPosition, normalize, Fn } = TSL;
-        const N = schritte || AnazhRealm.WALD_ZIEGEL.schritte;
-        const uMin = TSL.uniform(ziegel.bbMin);
-        const uGr = TSL.uniform(ziegel.bbGroesse);
-        const mat = new THREE.MeshBasicNodeMaterial({ transparent: false });
-        mat.side = THREE.BackSide; // Rückseite rastert → der March beginnt an der Front (Kamera darf nah)
-        mat.colorNode = Fn(() => {
-            const dir = normalize(positionWorld.sub(cameraPosition));
-            // Eintritt: von der Rückfläche rückwärts zur Kamera geklemmt — der
-            // March läuft vorwärts durch den lokalen Einheits-Würfel.
-            let hit = vec4(0, 0, 0, 0).toVar();
-            const span = uGr.length();
-            const start = positionWorld.sub(dir.mul(span));
-            for (let i = 0; i < N; i++) {
-                const p = start.add(dir.mul(span.mul(float((i + 0.5) / N))));
-                const uvw = p.sub(uMin).div(uGr);
-                const innen = uvw.x
-                    .greaterThanEqual(0)
-                    .and(uvw.y.greaterThanEqual(0))
-                    .and(uvw.z.greaterThanEqual(0))
-                    .and(uvw.x.lessThan(1))
-                    .and(uvw.y.lessThan(1))
-                    .and(uvw.z.lessThan(1));
-                const t = TSL.texture3D(ziegel.tex, uvw, 0);
-                const trifft = innen.and(t.a.greaterThan(0.25)).and(hit.a.lessThan(0.5));
-                hit.assign(trifft.select(vec4(t.rgb, 1.0), hit));
-            }
-            TSL.Discard(hit.a.lessThan(0.5));
-            return vec3(hit.rgb);
-        })();
-        return mat;
-    }
+    // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der
+    // Feld-Pass marcht ALLE Felder aus Atlas+Liste in EINEM Draw — ein
+    // Material je Ziegel wäre der Zwilling, den wir abgeschafft haben.
 
     _foundryTreeMaterial(kind, mp) {
         if (!this._foundryMats) this._foundryMats = {};
@@ -78165,14 +78106,14 @@ class AnazhRealm {
                     built++;
                 }
                 if (built < budget && this._archZiegelFern(entry)) built++;
-                if (entry._ziegelMesh) {
-                    entry._ziegelMesh.visible = true;
+                if (entry._ziegelSlot) {
+                    this._weltFeldAktiv(entry._ziegelSlot, true);
                     if (entry.mesh && entry.mesh.visible !== false) entry.mesh.visible = false;
                 }
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
                 if (built < budget && this._archZiegelFern(entry)) built++;
-                else if (entry._ziegelMesh) entry._ziegelMesh.visible = true;
+                else if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, true);
             }
         }
         // DAS NEUE KLEID — der Foundry-Drain: baut kalte Foundry-Einträge + HEBT klassisch
@@ -94909,7 +94850,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.41";
+AnazhRealm.VERSION = "18.491.42";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99608,7 +99549,16 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
     dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB)
     schritteRegion: 40,
 });
-AnazhRealm.KREATUR_ZIEGEL_DIST = 0; // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
+AnazhRealm.KREATUR_ZIEGEL_DIST = 0;
+// DER EINE WELT-MARCH (Schöpfer: „dann läuft es ohne three — vollende es"):
+// ALLE Felder (Regionen · Bauten · Tiere) leben in EINEM 3D-Atlas (8×8 Slots
+// à 64³) + EINER Feld-Listen-Textur; der Feld-Pass marcht sie ALLE in EINEM
+// Draw mit echter Tiefe. Die Ziegel-Boxen sind tot — die Welt ist ein Pass.
+AnazhRealm.WELT_MARCH = Object.freeze({
+    slots: 64, // 8×8 Slots im Atlas
+    slotDim: 64, // Voxel je Slot-Kante (Atlas 512×512×64, 64 MB)
+    schritte: 24, // March-Schritte je getroffenem Feld
+}); // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
 AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
