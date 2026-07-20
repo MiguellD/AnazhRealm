@@ -94580,50 +94580,16 @@ class AnazhRealm {
         // Aufbau-/Render-Fehler (postProcessingFailed) faellt es auf den
         // direkten renderer.render() zurueck — NIE ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
-        // WELLE 1 — der Auflösungs-Konsument: den vom Regler bestimmten Szene-Auflösungs-Faktor
-        // auf das interne Szene-RenderTarget legen (flicker-frei; die Swapchain bleibt voll). Der
-        // Vendor wendet _resolutionScale pro Frame in updateBefore an; setResolutionScale schreibt
-        // nur die Zahl — das RT realloziert erst beim nächsten setSize mit geänderter Größe.
-        if (
-            this.state.scenePass &&
-            typeof this.state.scenePass.setResolutionScale === "function" &&
-            !(this.state.renderer && this.state.renderer._isHeadlessNull)
-        ) {
-            // Auf 0.05-Rast-Stufen quantisieren: das interne RT realloziert NUR beim Überqueren
-            // einer Stufe, nicht bei jeder feinen Regler-Regung (der Realloc-/Hitch-Spar-Grund).
-            const raw = this.state._foliageResScale != null ? this.state._foliageResScale : 1;
-            const step = AnazhRealm.PERF_RENDER_SCALE_STEP;
-            const snapped = Math.max(AnazhRealm.PERF_FOLIAGE_RES_MIN, Math.round(raw / step) * step);
-            // DIE DESTROYED-TEXTURE-WAND (Schöpfer-Konsole 20.07., 219×
-            // „Destroyed texture (Depth24Plus) used in a submit"): der RT-Realloc
-            // zerstört die Depth-Textur — aber die REGION-BUNDLES halten ihren
-            // Render-Kontext-Descriptor (Depth-View!) vom Aufnahme-Zeitpunkt und
-            // re-recorden nur bei Mutation → sie submitten die zerstörte Textur
-            // FÜR IMMER. Zwei Wände: (1) VERWEIL-Hysterese — ein Stufen-Wechsel
-            // greift frühestens alle RES_SCALE_DWELL_MS (kein Flappen an der
-            // Stufen-Grenze, kein Realloc-Sturm), (2) jeder ANGEWANDTE Wechsel
-            // re-recordet ALLE Region-Bundles (dieselbe Maschine wie
-            // toggleTerrain) — kein Descriptor überlebt seine Textur.
-            const st = this.state;
-            const now = performance.now();
-            if (st._resScaleAngewandt === undefined) st._resScaleAngewandt = 1;
-            // TRACE-URTEIL .29 (foliageRes wanderte 0.6↔0.68): der PID-Jitter
-            // ließ die Stufe langsam OSZILLIEREN — jeder Wobble = Realloc +
-            // Destroyed-Submit + 46-Bundle-Re-Record. TOT-BAND: angewandt wird
-            // nur ein Sprung ≥ 2 Stufen (0.1) ODER die Rückkehr auf exakt 1.0;
-            // dazu die längere Verweil-Wand.
-            const sprung = Math.abs(snapped - st._resScaleAngewandt);
-            const zielVoll = Math.abs(snapped - 1) < 1e-9 && st._resScaleAngewandt !== 1;
-            if (
-                (sprung >= 0.0999 || zielVoll) &&
-                (!st._resScaleWechselAt || now - st._resScaleWechselAt > AnazhRealm.RES_SCALE_DWELL_MS)
-            ) {
-                st._resScaleAngewandt = snapped;
-                st._resScaleWechselAt = now;
-                this.state.scenePass.setResolutionScale(snapped);
-                if (st._regionBundles) for (const bg of st._regionBundles.values()) bg.needsUpdate = true;
-            }
-        }
+        // DIE BEWEGUNGS-AUFLÖSUNG IST GEFALLEN (Schöpfer-Konsole .38, volle
+        // Stacks: compileAsync/_bundleReifeWache submittet intern gegen den
+        // Render-Kontext — JEDER RT-Realloc zerstört dessen Depth-View, und
+        // drei Wände [Re-Record, Dwell, Tot-Band] konnten die Klasse nicht
+        // bändigen, weil die Wurzel der REALLOC SELBST ist. Die Zahl führte:
+        // fps 2.6→1.9 — der Hebel brachte nie Gewinn, nur die Fehler-Klasse).
+        // Das Szene-RT bleibt für IMMER auf Skala 1 (kein Laufzeit-Realloc, je
+        // — die V18.390-Weisheit, endgültig); die KLASSEN-PIXEL-KAPPE (statisch,
+        // ein Boot-Set) trägt die Auflösungs-Ökonomie allein. Der Wahrnehmungs-
+        // Weg kehrt nur Realloc-frei zurück (Viewport-Scaling), falls je.
         if (pp && !this.state.postProcessingFailed) {
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
@@ -94926,7 +94892,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.38";
+AnazhRealm.VERSION = "18.491.39";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

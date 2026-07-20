@@ -50,7 +50,22 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.38 — DIE HAND-BLASE: alles ist Feld — die echte Form nur noch zum Anfassen)
+## Stand (V18.491.39 — DER REALLOC-TOD: die Bewegungs-Auflösung fällt — die Destroyed-Klasse ist an der Wurzel tot)
+
+**20.07., Schöpfer-Konsole .38 mit VOLLEN Stacks — der Täter beim Namen:
+compileAsync/_bundleReifeWache (alle Warm-Compile-Pfade) submittet intern
+gegen den Render-Kontext, dessen Depth-View der RT-Realloc zerstört. Drei
+Wände (Re-Record · Dwell · Tot-Band) bändigten die Klasse nicht, weil die
+Wurzel der REALLOC SELBST ist. Die Zahl führte: fps 2.6→1.9 — der Hebel
+brachte NIE Gewinn. DER SCHNITT: das dynamische RT-Scaling fällt GANZ (das
+Szene-RT bleibt für immer Skala 1 — kein Laufzeit-Realloc, je; die V18.390-
+Weisheit endgültig). Die KLASSEN-PIXEL-KAPPE (statisch, der echte Gewinn)
+trägt allein; der Wahrnehmungs-Weg kehrt nur Realloc-frei zurück (Viewport-
+Scaling), falls je. playtest:fast 18/18. BENANNT: der Warn-Block (Masken-
+Material auf attribut-loser Batch-Geometrie in der Reife-Wache — Täter-Stack
+jetzt bekannt: _archBatchGroupFor-Familie; harmlos-transient, nächster Schnitt.**
+
+**Davor, V18.491.38 — DIE HAND-BLASE: alles ist Feld — die echte Form nur noch zum Anfassen)**
 
 **20.07., Schöpfer: „alles heißt alles — ein Hybrid ist nicht die Zukunft":**
 - DIE HAND-BLASE (ARCH_ZIEGEL_HAND=16 m): die echte Architektur-Geometrie
