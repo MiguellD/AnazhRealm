@@ -50,9 +50,30 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.20 — DER SENTINEL-SCHNITT: die schwarze Welt fällt auf ihre EINE Wurzel)
+## Stand (V18.491.21 — DIE GLOBALE EINBÜRGERUNG: die Bäume ziehen ins @global-Bundle)
 
-**20.07., einundzwanzigste Welle (Schöpfer-Trace V18.491.19: „bild wird nach kurzer
+**20.07., zweiundzwanzigste Welle (Schöpfer: „sei endlich der gigant" — der seit
+Welle 8 benannte letzte Nicht-Bundle-Rest fällt, ohne auf den nächsten Trace zu
+warten; die crash-verseuchten Steady-Zahlen des .19-Traces sind KEINE Mess-Basis,
+aber der CODE-Fakt stand fest):**
+- DIE GLOBALEN INSTANZ-GRUPPEN (Bäume, welt-verteilte Deko — frustumCulled=
+  false seit je: sie wurden IMMER voll gezeichnet, aber einzeln submitted)
+  ziehen in EIN "@global"-Bundle: identische Draw-Menge, Submit ≈ 0. Der
+  Key matcht das Kugel-Regex nicht → keine cullSphere → per existierendem
+  Cull-Code immer sichtbar (exakt die alte Semantik); Touch-/Grow-/Dispose-
+  Maschinerie greift parent-bewusst ohne eine Zeile Änderung (Welle-9/10-
+  Invarianten). Tür-Flügel bleiben draußen (per-Frame-Matrizen).
+- GLOBALE BATCHES bleiben BEWUSST draußen (Selbst-Review fing die
+  Regression VOR dem Commit): sie tragen perObjectFrustumCulled=true —
+  BatchedMesh cullt ihre welt-verteilten Instanzen PER INSTANZ, und genau
+  das ist im Bundle-Replay wirkungslos; der Encode-Gewinn wöge den
+  Voll-Draw jeder fernen Platzier-Deko nicht auf.
+- BEWIESEN: node --check · playtest:fast 18/18 · gate:foundry-crossfade
+  GRÜN. Das dc-Urteil auf dem Schöpfer-Holz fällt der nächste Trace
+  (bundleDeckung-Linse misst; die .19-Zahlen waren crash-verseucht —
+  render tot ab ~Frame 200, dc 0/GPU 0 im Steady waren Artefakte).
+
+**Davor, einundzwanzigste Welle — DER SENTINEL-SCHNITT (Schöpfer-Trace V18.491.19: „bild wird nach kurzer
 zeit schwarz" — Loop-Fehler #607 „reading 'constructor'", dc 0, Heap +9.73 MB/s,
 pendingDisposals 1111; die Entlassung LIEF [37 Böden/3.2 MB + 11 Batches/15.5 MB
 frei], aber mein Leser-Zensus verfehlte EINEN Vendor-Spät-Leser):**

@@ -68405,6 +68405,11 @@ class AnazhRealm {
             // ausgewertet); (b) JEDE Draw-Listen-Mutation (addInstance/deleteInstance/
             // setGeometrySize/Mesh-Add/-Remove) MUSS das Bundle invalidieren
             // (_archBundleTouch → needsUpdate → gezielter Re-Record NUR dieser Region).
+            // GLOBALE Batches bleiben BEWUSST draußen (20.07., Selbst-Review):
+            // sie tragen perObjectFrustumCulled=true — BatchedMesh cullt ihre
+            // welt-verteilten Instanzen PER INSTANZ, und im Bundle-Replay ist
+            // genau das wirkungslos (Draw-Liste friert). Der Bundle-Gewinn
+            // (1 Encode) wöge den Voll-Draw jeder fernen Platzier-Deko nicht auf.
             const bundle = regional ? this._archRegionBundleFor(regionKey) : null;
             if (bundle) {
                 mesh.frustumCulled = false;
@@ -68918,8 +68923,15 @@ class AnazhRealm {
         // die Chokepoints, die _archMeshBundleTouch rufen (Re-Record NUR dieser Region).
         // Tür-Flügel-Leaves (leaf.tuer) bleiben DRAUSSEN: ihr Scharnier schreibt im
         // Nähe-Tick per-Frame Matrizen (_tickTorFluegel) — Dauer-Re-Record wäre teurer
-        // als ihr einzelner Draw. Global (regionKey null, z.B. Bäume) bleibt byte-alt.
-        const bundle = regional && !leaf.tuer ? this._archRegionBundleFor(regionKey) : null;
+        // als ihr einzelner Draw. DIE GLOBALE EINBÜRGERUNG (20.07., Schöpfer-Trace
+        // bundleDeckung 29 %): auch die GLOBALEN Gruppen (Bäume, welt-verteilte
+        // Deko — heute frustumCulled=false, IMMER gezeichnet, einzeln submitted)
+        // ziehen in EIN "@global"-Bundle: identische Draw-Menge, Submit ≈ 0. Der
+        // Key matcht das Kugel-Regex nicht → keine cullSphere → per Cull-Code
+        // immer sichtbar (exakt die heutige Semantik); jede Mutation läuft durch
+        // dieselben Touch-Chokepoints (parent-bewusst, ein Re-Record ≤ heutiger
+        // Dauer-Encode). Nicht-WebGPU/Kill-Switch → byte-alter Szene-Pfad.
+        const bundle = !leaf.tuer ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
         if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
@@ -93666,7 +93678,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.20";
+AnazhRealm.VERSION = "18.491.21";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
