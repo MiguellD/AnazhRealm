@@ -93844,7 +93844,28 @@ class AnazhRealm {
             const raw = this.state._foliageResScale != null ? this.state._foliageResScale : 1;
             const step = AnazhRealm.PERF_RENDER_SCALE_STEP;
             const snapped = Math.max(AnazhRealm.PERF_FOLIAGE_RES_MIN, Math.round(raw / step) * step);
-            this.state.scenePass.setResolutionScale(snapped);
+            // DIE DESTROYED-TEXTURE-WAND (Schöpfer-Konsole 20.07., 219×
+            // „Destroyed texture (Depth24Plus) used in a submit"): der RT-Realloc
+            // zerstört die Depth-Textur — aber die REGION-BUNDLES halten ihren
+            // Render-Kontext-Descriptor (Depth-View!) vom Aufnahme-Zeitpunkt und
+            // re-recorden nur bei Mutation → sie submitten die zerstörte Textur
+            // FÜR IMMER. Zwei Wände: (1) VERWEIL-Hysterese — ein Stufen-Wechsel
+            // greift frühestens alle RES_SCALE_DWELL_MS (kein Flappen an der
+            // Stufen-Grenze, kein Realloc-Sturm), (2) jeder ANGEWANDTE Wechsel
+            // re-recordet ALLE Region-Bundles (dieselbe Maschine wie
+            // toggleTerrain) — kein Descriptor überlebt seine Textur.
+            const st = this.state;
+            const now = performance.now();
+            if (st._resScaleAngewandt === undefined) st._resScaleAngewandt = 1;
+            if (
+                snapped !== st._resScaleAngewandt &&
+                (!st._resScaleWechselAt || now - st._resScaleWechselAt > AnazhRealm.RES_SCALE_DWELL_MS)
+            ) {
+                st._resScaleAngewandt = snapped;
+                st._resScaleWechselAt = now;
+                this.state.scenePass.setResolutionScale(snapped);
+                if (st._regionBundles) for (const bg of st._regionBundles.values()) bg.needsUpdate = true;
+            }
         }
         if (pp && !this.state.postProcessingFailed) {
             try {
@@ -94140,7 +94161,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.26";
+AnazhRealm.VERSION = "18.491.27";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -98828,6 +98849,7 @@ AnazhRealm.BERG_CULL = Object.freeze({
 // Framebuffer-Re-Alloc-Churn.
 AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
 AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
+AnazhRealm.RES_SCALE_DWELL_MS = 400; // Verweil-Hysterese je Auflösungs-Stufe (Destroyed-Texture-Wand: Realloc gebunden + Bundle-Re-Record amortisiert)
 // GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace) — die zwei Radius-Wände:
 // Wachsen erst nach so vielen SIM-Sekunden ohne Über-Budget-Frame (die eine Welle
 // des Zyklus setzt die Uhr zurück — der Radius jagt keinem kurzlebigen Kopfraum

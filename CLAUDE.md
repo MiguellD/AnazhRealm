@@ -50,7 +50,39 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.26 — DIE NATUR-VOLLENDUNG: PANORAMA-PERSISTENZ · VOLL-GESETZ-GPU · WAHRNEHMUNGS-ALLOKATION)
+## Stand (V18.491.27 — DIE DESTROYED-TEXTURE-WAND: der Welle-1-Bruch der Schöpfer-Konsole fällt)
+
+**20.07., Schöpfer-Konsole nach .26 („reflektiere: alles in voller tiefe erreicht?"
+— NEIN, und die Konsole bewies es: 219× „Destroyed texture (Depth24Plus) used in
+a submit", Größen 2052×1090 ↔ 1512×803 = exakt die Auflösungs-Stufen der
+Welle-1):**
+- DIE WURZEL (Vendor gelesen): PassNode.setSize realloziert das Szene-RT mit
+  _resolutionScale (Depth-Textur wird ZERSTÖRT) — aber die REGION-BUNDLES halten
+  ihren Render-Kontext-Descriptor (Depth-VIEW!) vom Aufnahme-Zeitpunkt und
+  re-recorden nur bei Mutation → sie submitten die zerstörte Textur FÜR IMMER.
+  Mein Auge-Test (statische Kamera) provozierte nie Skalen-Wechsel unter
+  lebenden Bundles — die Probe maß Realloc-ZAHL, nie Submit-GÜLTIGKEIT danach.
+- DIE WAND (am EINEN Apply-Chokepoint in _loopRender): (1) VERWEIL-Hysterese
+  RES_SCALE_DWELL_MS=400 — ein Stufen-Wechsel greift gebunden, kein Flappen an
+  Stufen-Grenzen, kein Realloc-Sturm; (2) jeder ANGEWANDTE Wechsel re-recordet
+  ALLE Region-Bundles (bg.needsUpdate — dieselbe Maschine wie toggleTerrain):
+  kein Descriptor überlebt seine Textur.
+- BEWIESEN (chirurgische Probe auf echtem WebGPU, Bundles lebend, 4/4 GRÜN über
+  vier Läufe): Stufen-Reise 1.0→0.6→1.0 angewandt (≥2 echte Depth-Reallocs) +
+  20×-Flap an der Stufen-Grenze → **0 Destroyed-Texture-Submits** (vorher
+  Schöpfer-Konsole 219×) · 0 Loop-/Seiten-Fehler · playtest:fast 18/18.
+- EHRLICH OFFEN aus derselben Konsole: der 2×-Boot-Warnblock (ein Render-Objekt
+  mit Foundry-Masken-Material auf attribut-LEERER Geometrie: normal/position/
+  color/aH0L/aH0/aLodLevel not found — transient beim Seelen-Wechsel, kein
+  Per-Frame-Fluten; Täter unbenannt, braucht die Naming-Linse am RenderObject-
+  Mint) · und die TIEFEN-Ehrlichkeit der Natur-Antwort: ② Persistenz deckt den
+  Feld-Pass (>8 km), NICHT die 670 Bundle-Draws (deren Schattierung läuft
+  weiter je Frame — der nächste große Bogen) · ④ Berg-Schatten cullt gegen das
+  TERRAIN-Gesetz, nicht gegen den Depth-Buffer (Wald verdeckt Wald noch nicht)
+  · ⑤ GPU-Mittel-Ring trägt den BODEN-Deckel, nicht die Vegetation. Erste wahre
+  Schnitte je Ökonomie — nicht die vollen Ausbauten.
+
+**Davor, V18.491.26 — DIE NATUR-VOLLENDUNG (PANORAMA-PERSISTENZ · VOLL-GESETZ-GPU · WAHRNEHMUNGS-ALLOKATION)**
 
 **20.07., vierundzwanzigste Welle (Schöpfer: „lerne von der natur, wie ermöglicht
 unsere realität eine solche effizienz … komme zurück mit was du gelernt, wie kann man
