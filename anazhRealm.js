@@ -17787,6 +17787,7 @@ class AnazhRealm {
     // ===== ATLAS §06 · KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd =====
     // ### Kreaturen ### V7.42
     removeCreature(creature) {
+        this._kreaturZiegelTod(creature); // das Feld stirbt mit dem Tier
         if (!creature) return;
         // Welle 6.H — Task-Aura mit disposen, sonst bleibt das Sprite als
         // Geist im WebGL-Heap. Textur ist seit V2 shared (siehe
@@ -23081,6 +23082,78 @@ class AnazhRealm {
         p.g = typeof g === "number" && Number.isFinite(g) ? g : NaN;
     }
 
+    // ═══ DER KREATUR-ZIEGEL (Tiere als Felder — der letzte Bogen) ═══
+    // Ferne Tiere (> KREATUR_ZIEGEL_DIST) tauschen ihre geskinnte Geometrie
+    // (~315k Tris je Tier, Trace .29) gegen ihr gebackenes Feld: der Ziegel
+    // FOLGT dem Tier — bbMin ist die LEBENDE Uniform-Referenz des March-
+    // Materials, Box + Feld-Anker wandern mit der Position (die Bewegung
+    // kostet zwei Vektor-Sets, kein Re-Bake). Nah kehrt das echte Tier
+    // zurück. Bake budgetiert (nie über Frame-Budget), headless byte-alt,
+    // Tod räumt (removeCreature).
+    _tickKreaturZiegel(playerPos) {
+        const st = this.state;
+        if (!playerPos || (st.renderer && st.renderer._isHeadlessNull)) return;
+        const D2 = AnazhRealm.KREATUR_ZIEGEL_DIST * AnazhRealm.KREATUR_ZIEGEL_DIST;
+        for (const cr of st.creatures) {
+            if (!cr || !cr.position) continue;
+            const dx = cr.position.x - playerPos.x;
+            const dz = cr.position.z - playerPos.z;
+            const fern = dx * dx + dz * dz > D2;
+            const u = cr.userData || (cr.userData = {});
+            if (!fern) {
+                if (u._kzBox) {
+                    u._kzBox.visible = false;
+                    cr.visible = true;
+                }
+                continue;
+            }
+            if (!u._kzBox) {
+                if (st._frameOverBudget || u._kzVersuch) continue;
+                u._kzVersuch = true;
+                cr.updateMatrixWorld(true);
+                const zg = this._ziegelBackenAusGruppe(cr, AnazhRealm.WALD_ZIEGEL.dim);
+                if (!zg) continue;
+                const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritte);
+                if (!mat) continue;
+                const geo = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
+                geo.translate(
+                    zg.bbMin.x + zg.bbGroesse.x / 2,
+                    zg.bbMin.y + zg.bbGroesse.y / 2,
+                    zg.bbMin.z + zg.bbGroesse.z / 2
+                );
+                const box = new THREE.Mesh(geo, mat);
+                box.frustumCulled = true;
+                box.userData.inventar = "kreatur-ziegel";
+                st.scene.add(box);
+                u._kzBox = box;
+                u._kzTex = zg.tex;
+                u._kzMin = zg.bbMin; // die LEBENDE Uniform-Referenz des Materials
+                u._kzMinBasis = zg.bbMin.clone();
+                u._kzPosBasis = cr.position.clone();
+            }
+            // DAS FELD WANDERT MIT DEM TIER (Uniform-Anker + Box folgen):
+            const ddx = cr.position.x - u._kzPosBasis.x;
+            const ddy = cr.position.y - u._kzPosBasis.y;
+            const ddz = cr.position.z - u._kzPosBasis.z;
+            u._kzMin.set(u._kzMinBasis.x + ddx, u._kzMinBasis.y + ddy, u._kzMinBasis.z + ddz);
+            u._kzBox.position.set(ddx, ddy, ddz);
+            u._kzBox.visible = true;
+            cr.visible = false; // das Feld IST die ferne Gestalt
+        }
+    }
+
+    _kreaturZiegelTod(cr) {
+        const u = cr && cr.userData;
+        if (!u || !u._kzBox) return;
+        if (u._kzBox.parent) u._kzBox.parent.remove(u._kzBox);
+        this._queueGeometryDispose(u._kzBox.geometry);
+        if (u._kzBox.material && u._kzBox.material.dispose) u._kzBox.material.dispose();
+        if (u._kzTex && u._kzTex.dispose) u._kzTex.dispose();
+        u._kzBox = null;
+        u._kzTex = null;
+        u._kzVersuch = false;
+    }
+
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
@@ -23093,6 +23166,10 @@ class AnazhRealm {
         const scratchA = this._creatureScratchA || (this._creatureScratchA = new THREE.Vector3());
         const scratchB = this._creatureScratchB || (this._creatureScratchB = new THREE.Vector3());
         const playerPos = this.state.playerMesh.position;
+        // DER KREATUR-ZIEGEL (der letzte Bogen der Karte der Formen): ferne
+        // Tiere werden Feld — das Feld WANDERT mit dem Tier (lebende
+        // Uniform-Referenz, dafür lag sie bereit).
+        this._tickKreaturZiegel(playerPos);
         // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
         const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
         // V9.84 Perf-1.f — Spatial-Hash für Flocking. Vorher: O(N²) Loop mit
@@ -94809,7 +94886,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.35";
+AnazhRealm.VERSION = "18.491.36";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99508,6 +99585,7 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
     dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB)
     schritteRegion: 40,
 });
+AnazhRealm.KREATUR_ZIEGEL_DIST = 120; // m — jenseits wird das Tier sein Feld (315k-Tris-Klasse fällt)
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
     proben: 5, // Höhen-Proben je Sichtlinie

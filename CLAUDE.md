@@ -50,7 +50,25 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.35 — DIE ZIEGEL-PYRAMIDE: jede Distanz sampelt das Feld in ihrer Frequenz)
+## Stand (V18.491.36 — DER KREATUR-ZIEGEL: die Tiere werden wandernde Felder — die Karte ist GESCHLOSSEN)
+
+**20.07., Schöpfer: „vollende alles" — der letzte Bogen fällt:**
+- DER KREATUR-ZIEGEL (_tickKreaturZiegel in updateCreatures): ferne Tiere
+  (>120 m, KREATUR_ZIEGEL_DIST) tauschen ihre geskinnte Geometrie (315k Tris
+  je Tier, Trace .29) gegen ihr gebackenes Feld — und das Feld WANDERT mit
+  dem Tier (bbMin ist die LEBENDE Uniform-Referenz des March-Materials; Box +
+  Anker folgen der Position, zwei Vektor-Sets je Frame, kein Re-Bake). Nah
+  kehrt das echte Tier zurück. Bake budgetiert, headless byte-alt, Tod räumt
+  (removeCreature). BEWIESEN (echtes WebGPU, 5/5): der LIVE-Loop backte
+  selbst · Tier ruht fern · Feld folgt EXAKT (+25.000) · Rückkehr nah ·
+  0 Fehler. playtest:fast 18/18.
+- DIE KARTE IST GESCHLOSSEN: Terrain=Funktion · Gras=Band-0+Impostor+Boden ·
+  Regionen fern=Ziegel 64³ · Architektur fern=Ziegel 48³ (Fahrzeuge sind
+  Architektur) · Bäume=Ziegel 32³ · Sonne/Himmel=Funktion · TIERE=wandernde
+  Felder. Rest-Geometrie = die feinste Abtaststufe desselben Feldes (Iso-
+  Surface) + P2P-Peer-Avatare (selten; derselbe Mechanismus liegt bereit).
+
+**Davor, V18.491.35 — DIE ZIEGEL-PYRAMIDE: jede Distanz sampelt das Feld in ihrer Frequenz**
 
 **20.07., Schöpfer: „nicht die erste Oktave — die Vollendung, alles, jetzt":**
 - DIE PYRAMIDE (WALD_ZIEGEL): Basis 32³/24 (Einzel-Baum) · Architektur 48³/32
