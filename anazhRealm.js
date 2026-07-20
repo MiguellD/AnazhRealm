@@ -69076,6 +69076,7 @@ class AnazhRealm {
             if (p.children.length === 0) {
                 if (p.parent) p.parent.remove(p);
                 this._bundleQueryProxyTod(p); // ④ — der Query-Proxy fällt mit dem Bundle
+                this._bundleZiegelTod(p); // der Region-Ziegel fällt mit
                 if (this.state._regionBundles) this.state._regionBundles.delete(p.userData.regionKey);
             }
         }
@@ -69273,6 +69274,12 @@ class AnazhRealm {
                 // ④ WALD-VOR-WALD (echtes Depth-Occlusion): der Query-Proxy testet
                 // die KOMPLETTE Frame-Tiefe (Bäume + Fern-Schirm) — nativ.
                 if (bergAktiv) this._bundleQueryTick(bg, s, kante);
+                // DER REGION-ZIEGEL (alles ist Region-Inhalt — Bäume · Felsen ·
+                // Kristalle · Streu werden EIN Feld): ferne Regionen (die
+                // Fern-Schicht-Mitglieder) tauschen ihre gesamte Draw-Liste
+                // gegen EINE March-Box (12 Tris). Bake budgetiert, Mutation
+                // (needsUpdate) verwirft den Ziegel (Re-Bake nächster Tick).
+                if (bergAktiv) this._bundleZiegelTick(bg);
             }
         }
     }
@@ -69347,6 +69354,65 @@ class AnazhRealm {
                 this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // dieselbe Linse
             }
         }
+    }
+
+    // ═══ DER REGION-ZIEGEL (die reine Form für ALLES Gestreute) ═══
+    // Wiese-Reste · Felsen · Kristalle · Bäume sind KEINE getrennten Assets —
+    // sie sind Region-Inhalt. Eine ferne Region wird EIN 32³-Feld (der
+    // Universal-Bäcker splattet auch Instanzen), gerendert als EINE Box, die
+    // der Pixel marcht. Die Box erbt die FERN-SCHICHT (1/4-Kadenz) und den
+    // Berg-Schatten/Query-Cull des Bundles (sie folgt bundle.visible-Logik
+    // nicht — sie IST die Fern-Gestalt; Frustum cullt sie selbst).
+    _bundleZiegelTick(bg) {
+        const st = this.state;
+        const u = bg.userData;
+        if (u._fernSchicht !== true) {
+            // nah (oder Schicht aus): das echte Bundle rendert, der Ziegel ruht
+            if (u._ziegelBox) u._ziegelBox.visible = false;
+            return;
+        }
+        if (u._ziegelBox) {
+            if (bg.needsUpdate === true) {
+                // Mutation → der Ziegel ist stale: verwerfen, nächster Tick backt neu
+                this._bundleZiegelTod(bg);
+                bg.visible = true;
+                return;
+            }
+            u._ziegelBox.visible = true;
+            bg.visible = false; // die Box IST die Region — die Draw-Liste ruht ganz
+            return;
+        }
+        if (st._frameOverBudget || u._ziegelBakeVersuch) return; // budgetiert, ein Versuch je Stand
+        u._ziegelBakeVersuch = true;
+        const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dim);
+        if (!zg) return;
+        const mat = this._waldZiegelMaterial(zg);
+        if (!mat) return;
+        const geo = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
+        geo.translate(
+            zg.bbMin.x + zg.bbGroesse.x / 2,
+            zg.bbMin.y + zg.bbGroesse.y / 2,
+            zg.bbMin.z + zg.bbGroesse.z / 2
+        );
+        const box = new THREE.Mesh(geo, mat);
+        box.frustumCulled = true;
+        box.userData.inventar = "region-ziegel";
+        if (st.fernSchicht) box.layers.mask = 1 << AnazhRealm.FERN_LAYER; // die Kadenz erbt
+        st.scene.add(box);
+        u._ziegelBox = box;
+        u._ziegelTex = zg.tex;
+    }
+
+    _bundleZiegelTod(bg) {
+        const u = bg && bg.userData;
+        if (!u || !u._ziegelBox) return;
+        if (u._ziegelBox.parent) u._ziegelBox.parent.remove(u._ziegelBox);
+        this._queueGeometryDispose(u._ziegelBox.geometry);
+        if (u._ziegelBox.material && u._ziegelBox.material.dispose) u._ziegelBox.material.dispose();
+        if (u._ziegelTex && u._ziegelTex.dispose) u._ziegelTex.dispose();
+        u._ziegelBox = null;
+        u._ziegelTex = null;
+        u._ziegelBakeVersuch = false;
     }
 
     // Proxy-Abbau (der Bundle-Tod räumt sein Query-Objekt — kein Szene-Leck).
@@ -70366,6 +70432,7 @@ class AnazhRealm {
             for (const bg of this.state._regionBundles.values()) {
                 if (bg.parent) bg.parent.remove(bg);
                 this._bundleQueryProxyTod(bg); // ④ — Query-Proxys fallen mit (kein Szene-Leck)
+                this._bundleZiegelTod(bg); // Region-Ziegel fallen mit
             }
             this.state._regionBundles.clear();
         }
@@ -74073,16 +74140,10 @@ class AnazhRealm {
         const sz = Math.max(1e-6, bb.max.z - bb.min.z);
         const daten = new Uint8Array(d * d * d * 4);
         const v = new THREE.Vector3();
-        gruppe.traverse((o) => {
-            if (!o.isMesh || o.isInstancedMesh) return;
-            const g = o.geometry;
-            const pos = g && g.attributes && g.attributes.position;
-            if (!pos || !pos.count) return;
-            const col = g.attributes.color || null;
-            const mc = !col && o.material && o.material.color ? o.material.color : null;
-            const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1; // Riesen-Kinder abtasten
+        const mI = new THREE.Matrix4();
+        const splat = (pos, col, mc, welt, schritt) => {
             for (let i = 0; i < pos.count; i += schritt) {
-                v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+                v.fromBufferAttribute(pos, i).applyMatrix4(welt);
                 const vx = Math.min(d - 1, Math.max(0, Math.floor(((v.x - bb.min.x) / sx) * d)));
                 const vy = Math.min(d - 1, Math.max(0, Math.floor(((v.y - bb.min.y) / sy) * d)));
                 const vz = Math.min(d - 1, Math.max(0, Math.floor(((v.z - bb.min.z) / sz) * d)));
@@ -74094,6 +74155,30 @@ class AnazhRealm {
                 daten[oI + 1] = Math.min(255, daten[oI + 1] + cg * 200);
                 daten[oI + 2] = Math.min(255, daten[oI + 2] + cb * 200);
                 daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
+            }
+        };
+        gruppe.traverse((o) => {
+            if (!o.isMesh && !o.isInstancedMesh) return;
+            const g = o.geometry;
+            const pos = g && g.attributes && g.attributes.position;
+            if (!pos || !pos.count) return;
+            const col = g.attributes.color || null;
+            const mc = !col && o.material && o.material.color ? o.material.color : null;
+            if (o.isInstancedMesh) {
+                // ALLES ist Region-Inhalt (Bäume · Felsen · Kristalle · Streu):
+                // jede Instanz splattet ihre Quell-Vertices durch ihre Matrix —
+                // die ganze Population wird EIN Feld.
+                const n = Math.max(1, o.count | 0);
+                const proInstanz = Math.max(24, Math.floor(60000 / n));
+                const schrittI = pos.count > proInstanz ? Math.ceil(pos.count / proInstanz) : 1;
+                for (let k = 0; k < n; k++) {
+                    o.getMatrixAt(k, mI);
+                    mI.premultiply(o.matrixWorld);
+                    splat(pos, col, mc, mI, schrittI);
+                }
+            } else {
+                const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1; // Riesen-Kinder abtasten
+                splat(pos, col, mc, o.matrixWorld, schritt);
             }
         });
         const tex = new THREE.Data3DTexture(daten, d, d, d);
@@ -94724,7 +94809,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.33";
+AnazhRealm.VERSION = "18.491.34";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

@@ -50,7 +50,29 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.33 — DER GRAS-SCHNITT: der 81-%-Wal fällt ans kanonische Band)
+## Stand (V18.491.34 — DER REGION-ZIEGEL: ALLES Gestreute wird EIN Feld — keine getrennten Assets mehr)
+
+**20.07., Schöpfer: „tiere, wiese, felsen, fahrzeuge — dass du Wiese als anderes
+Asset siehst als Waldstudio ist schon komisch — vollende ALLES":** er hatte
+recht — Wiese/Wald/Fels sind EINE Klasse: REGION-INHALT. Der Schnitt:
+- DER UNIVERSAL-BÄCKER lernt Instanzen (_ziegelBackenAusGruppe splattet jede
+  Instanz-Matrix — eine ganze Population wird EIN Feld).
+- DER REGION-ZIEGEL (_bundleZiegelTick am EINEN Cull-Chokepoint): eine ferne
+  Region (Fern-Schicht-Mitglied) tauscht ihre GESAMTE Draw-Liste (Bäume +
+  Felsen + Kristalle + Streu) gegen EINE March-Box (12 Tris, 128 KB Feld) —
+  bundle.visible=false, die Box IST die Fern-Gestalt. Sie erbt die FERN-
+  SCHICHT (1/4-Kadenz) + Frustum; Mutation (needsUpdate) verwirft den Ziegel
+  (Re-Bake nächster Tick); Tod mit dem Bundle; budgetiert (nie über Frame-
+  Budget); headless byte-alt (bergAktiv-Wand). BEWIESEN (echtes Bundle,
+  echtes WebGPU, 5/5): gebacken · Box sichtbar · Bundle RUHT ganz · Rückweg
+  (nah: Box ruht, Bundle lebt) · 0 Fehler. playtest:fast 18/18.
+- DIE KARTE DER FORMEN (Stand heute): Terrain=Funktion (Ring/Panorama/Pass) ·
+  Gras=Band-0-Geometrie+Impostor+Boden · Regionen fern=ZIEGEL · Architektur
+  fern=ZIEGEL (Fahrzeuge sind Architektur) · Sonne/Himmel=Funktion (TSL) ·
+  Tiere/Avatare=Geometrie (wenige, bewegt — ihr Feld-Weg [geskinnte Felder,
+  Dreams-Beweis] ist der letzte Bogen).
+
+**Davor, V18.491.33 — DER GRAS-SCHNITT: der 81-%-Wal fällt ans kanonische Band**
 
 **20.07., Schöpfer: „vollende es ganz" — der gemessene Wal der Boot-Chronik
 (6.5 M Gras-Tris = 81 % aller Dreiecke, bei 64k Terrain) fällt nach Gesetz #0:**
