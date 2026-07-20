@@ -50,7 +50,26 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.37 — DER FERN-SCHICHT-RÜCKBAU: das Trace-.36-Urteil — die Ziegel tragen, der Zweit-Pass fällt)
+## Stand (V18.491.38 — DIE HAND-BLASE: alles ist Feld — die echte Form nur noch zum Anfassen)
+
+**20.07., Schöpfer: „alles heißt alles — ein Hybrid ist nicht die Zukunft":**
+- DIE HAND-BLASE (ARCH_ZIEGEL_HAND=16 m): die echte Architektur-Geometrie
+  materialisiert NUR noch in Berührungs-Reichweite (Türen öffnen, Anfassen,
+  Betreten — die Erlebnisse leben); dahinter ist JEDE Architektur bei JEDER
+  Distanz ihr 64³-Feld (dimArch 48→64, schritteArch 32→48). Der alte
+  Cull-Radius regelt keine Meshes mehr — die 7.8-M-Tris-Dörfer des Traces
+  können nicht mehr existieren (max ~1-3 Bauten je Moment als echte Form).
+- TIERE ab 40 m Feld (KREATUR_ZIEGEL_DIST 120→40) — nah animiert der Körper,
+  dahinter wandert das Feld (20×317k → ~2-3 nahe Tiere echt).
+- BAKE-RETRY: der Einmal-Schuss verbrannte an ASYNC-Foundry-Teilen (leerer
+  temporärer Bau beim ersten Tick) — jetzt 8 begrenzte Versuche, Erfolg
+  versiegelt. EHRLICH: die Live-Probe konnte den Hand-Blase-Swap auf
+  swiftshader nicht zeigen (Foundry dort minutenkalt, der Wasserfall baut
+  nie); die Ziegel-Mechanik ist durch die .32/.36-Proben bewiesen, auf dem
+  Schöpfer-Holz ist die Foundry warm (Trace: Bauten bauen) — sein Boot ist
+  der Richter. playtest:fast 18/18 · node --check.
+
+**Davor, V18.491.37 — DER FERN-SCHICHT-RÜCKBAU: das Trace-.36-Urteil — die Ziegel tragen, der Zweit-Pass fällt**
 
 **20.07., Schöpfer-Trace .36 (dc 417→5997 · CPU-render 862 ms · Plattform/
 Avatar/Tiere FLACKERN schwarz): die Wurzel war MEINE Fern-Schicht — Diät/

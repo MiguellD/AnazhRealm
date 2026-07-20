@@ -74401,14 +74401,20 @@ class AnazhRealm {
             entry._ziegelMesh.visible = true;
             return false;
         }
-        if (entry._ziegelGebacken) return false; // Bake schlug fehl → nicht wiederholen
+        if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche)
         if (st._frameOverBudget) return false; // der Nexus-Grundsatz: nie auf Kosten des Spielers
-        entry._ziegelGebacken = true;
         const hatte = this._archIsRendered(entry);
         if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Bake
         const zg = entry.mesh ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dimArch) : null;
         if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
-        if (!zg) return true;
+        if (!zg) {
+            // ASYNC-Foundry: der temporäre Bau kann beim ersten Tick noch leer
+            // sein — begrenzt wiederversuchen statt den Einmal-Schuss verbrennen.
+            entry._ziegelVersuche = (entry._ziegelVersuche || 0) + 1;
+            if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
+            return true;
+        }
+        entry._ziegelGebacken = true; // Erfolg — genau EIN Feld je Eintrag
         const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritteArch);
         if (!mat) return true;
         const bg = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
@@ -78134,18 +78140,20 @@ class AnazhRealm {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
-            if (distSq <= radiusSq) {
-                // Nah + noch nicht gerendert → bauen (budgetiert; die Feld-Kollision
-                // liegt schon in `entry.blockerAABBs` ab Spawn, kein Body-Schritt).
+            // DIE REINE FORM (Schöpfer: „alles heißt alles"): die echte
+            // Geometrie materialisiert NUR in der HAND-BLASE (16 m — Türen,
+            // Anfassen, das Betretbare); dahinter ist die Architektur bei
+            // JEDER Distanz ihr 64³-Feld. Der alte Cull-Radius regelt nichts
+            // mehr — die 7.8-M-Tris-Dörfer der Traces sind Geschichte.
+            const hand2 = AnazhRealm.ARCH_ZIEGEL_HAND * AnazhRealm.ARCH_ZIEGEL_HAND;
+            if (distSq <= hand2) {
                 if (!this._archIsRendered(entry) && built < budget) {
                     this._rebuildArchitectureMesh(entry);
                     built++;
                 }
-                if (entry._ziegelMesh) entry._ziegelMesh.visible = false; // nah trägt das echte Mesh
+                if (entry._ziegelMesh) entry._ziegelMesh.visible = false; // in der Hand: die echte Form
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
-                // DIE ZIEGEL-FERNSTUFE (die reine Form): fern stirbt nicht mehr —
-                // der Pixel marcht das gebackene Feld (1 Bake/Tick, budgetiert).
                 if (built < budget && this._archZiegelFern(entry)) built++;
                 else if (entry._ziegelMesh) entry._ziegelMesh.visible = true;
             }
@@ -94918,7 +94926,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.37";
+AnazhRealm.VERSION = "18.491.38";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99612,12 +99620,13 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
     // kompakt (Voxel klein) → 48³ ab 150 m; Regionen sind weit → 64³ ab 400 m;
     // darunter IST die Geometrie die feinste Stufe desselben Feldes (die
     // Iso-Surface der Dichte-Funktion — eine Quelle, kontinuierliche Abtastung).
-    dimArch: 48, // Architektur-Stufe (Dorf/Tempel/Fahrzeug, ~187 KB)
-    schritteArch: 32,
+    dimArch: 64, // Architektur-Stufe (Dorf/Tempel/Fahrzeug — EINE Feld-Form für JEDE Distanz, 1 MB)
+    schritteArch: 48,
     dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB)
     schritteRegion: 40,
 });
-AnazhRealm.KREATUR_ZIEGEL_DIST = 120; // m — jenseits wird das Tier sein Feld (315k-Tris-Klasse fällt)
+AnazhRealm.KREATUR_ZIEGEL_DIST = 40; // m — jenseits wird das Tier sein Feld (315k-Tris-Klasse fällt; nah animiert der echte Körper)
+AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
     proben: 5, // Höhen-Proben je Sichtlinie
