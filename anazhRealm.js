@@ -33753,7 +33753,10 @@ class AnazhRealm {
                 // Pass überspringt diesen Chunk, bis ihn der normale Streaming-
                 // Rebuild ersetzt (die Existenz-Probe macht das SELTEN).
                 e2._entlassVerloren = true;
-                this.log(`Chunk-Re-Hydrierung ${key}: IDB-Bytes fehlen — Boden bleibt bis zum Rebuild ungemorpht`, "WARN");
+                this.log(
+                    `Chunk-Re-Hydrierung ${key}: IDB-Bytes fehlen — Boden bleibt bis zum Rebuild ungemorpht`,
+                    "WARN"
+                );
                 return;
             }
             const geo = mesh.geometry;
@@ -39586,7 +39589,16 @@ class AnazhRealm {
         if (!this._gpuComputeFaehig() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
             return null;
         const TSL = THREE.TSL;
-        if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.texture3D || !TSL.Fn || !TSL.Discard || !TSL.uniform || !TSL.positionGeometry)
+        if (
+            !TSL ||
+            !TSL.wgslFn ||
+            !TSL.texture ||
+            !TSL.texture3D ||
+            !TSL.Fn ||
+            !TSL.Discard ||
+            !TSL.uniform ||
+            !TSL.positionGeometry
+        )
             return null;
         // DER EINE WELT-MARCH: Atlas + Feld-Liste sind Pass-Bindings — ohne das
         // Organ existiert der Pass nicht (die Schalen tragen, byte-alt).
@@ -39839,7 +39851,14 @@ class AnazhRealm {
         liste.minFilter = THREE.NearestFilter;
         liste.magFilter = THREE.NearestFilter;
         liste.needsUpdate = true;
-        st.weltMarch = { atlas, atlasDaten, liste, listeDaten, frei: Array.from({ length: W.slots }, (_x, i) => i), belegt: 0 };
+        st.weltMarch = {
+            atlas,
+            atlasDaten,
+            liste,
+            listeDaten,
+            frei: Array.from({ length: W.slots }, (_x, i) => i),
+            belegt: 0,
+        };
         return st.weltMarch;
     }
 
@@ -40031,8 +40050,14 @@ class AnazhRealm {
                 usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
             });
             device.queue.writeBuffer(feldBuf, 0, fp.daten.buffer, fp.daten.byteOffset, fp.daten.byteLength);
-            const outBuf = device.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
-            const staging = device.createBuffer({ size: n * 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+            const outBuf = device.createBuffer({
+                size: n * 16,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+            });
+            const staging = device.createBuffer({
+                size: n * 16,
+                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+            });
             const bind = device.createBindGroup({
                 layout: pipe.getBindGroupLayout(0),
                 entries: [
@@ -69150,8 +69175,7 @@ class AnazhRealm {
         if (!bg || batch._entlassen !== true) return;
         for (const k in bg.attributes) {
             const a = bg.attributes[k];
-            if (a && a.array && a.array.length === 0)
-                a.array = new a.array.constructor(a.count * a.itemSize);
+            if (a && a.array && a.array.length === 0) a.array = new a.array.constructor(a.count * a.itemSize);
         }
         if (bg.index && bg.index.array && bg.index.array.length === 0)
             bg.index.array = new bg.index.array.constructor(bg.index.count);
@@ -74502,9 +74526,7 @@ class AnazhRealm {
             });
             if (MatK === T.MeshPhysicalNodeMaterial) {
                 mat.clearcoat = _hautL.clearcoat;
-                mat.clearcoatRoughness = Number.isFinite(_hautL.clearcoatRoughness)
-                    ? _hautL.clearcoatRoughness
-                    : 0.5;
+                mat.clearcoatRoughness = Number.isFinite(_hautL.clearcoatRoughness) ? _hautL.clearcoatRoughness : 0.5;
             }
             if (env !== 1) mat.envMapIntensity = env;
             if (emis) {
@@ -74630,7 +74652,15 @@ class AnazhRealm {
                             // kein garantiertes uv — das Lokal-Raster (positionLocal
                             // ×dichte) trägt dieselbe Sparkle-Klasse, ehrlich benannt.
                             const mf = L.microFur;
-                            if (mf && Array.isArray(mf.farbe) && TSL.positionLocal && TSL.floor && TSL.fract && TSL.sin && TSL.step) {
+                            if (
+                                mf &&
+                                Array.isArray(mf.farbe) &&
+                                TSL.positionLocal &&
+                                TSL.floor &&
+                                TSL.fract &&
+                                TSL.sin &&
+                                TSL.step
+                            ) {
                                 const cell = TSL.floor(TSL.positionLocal.xz.mul(mf.dichte));
                                 const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
                                 term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
@@ -74642,7 +74672,10 @@ class AnazhRealm {
                         // die matFur-Ordnung: outputNode multipliziert den
                         // fertigen Output inkl. der emissive-Terme).
                         if (Number.isFinite(L.wrap) && TSL.output && TSL.vec4) {
-                            const w = ndv.max(0.0).mul(L.wrap).add(1.0 - L.wrap);
+                            const w = ndv
+                                .max(0.0)
+                                .mul(L.wrap)
+                                .add(1.0 - L.wrap);
                             mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
                         }
                         // VOLLENDUNG (19.07.) — das ATEM-NOISE-Displacement der
@@ -74662,9 +74695,9 @@ class AnazhRealm {
                         ) {
                             mat.positionNode = TSL.positionLocal.add(
                                 TSL.normalLocal.mul(
-                                    TSL.mx_noise_float(
-                                        TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))
-                                    ).mul(at.amp)
+                                    TSL.mx_noise_float(TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))).mul(
+                                        at.amp
+                                    )
                                 )
                             );
                         }
@@ -94354,9 +94387,7 @@ class AnazhRealm {
             const cam = this.state.camera;
             // currentTime ist SEKUNDEN (loop: t/1000). dtS geklemmt: Boden gegen Div-0, Deckel
             // gegen den Riesen-dt eines Tab-Wechsels/ersten Frames (sonst falscher Peak).
-            const dtS = this._camMotionLast
-                ? Math.min(0.1, Math.max(0.001, currentTime - this._camMotionLast))
-                : 0.016;
+            const dtS = this._camMotionLast ? Math.min(0.1, Math.max(0.001, currentTime - this._camMotionLast)) : 0.016;
             this._camMotionLast = currentTime;
             if (!this._camDirPrev) this._camDirPrev = new THREE.Vector3();
             if (!this._camPosPrev) this._camPosPrev = new THREE.Vector3();
