@@ -15,3 +15,7 @@ anazhRealmState.json
 
 # Runtime-Flugschreiber-Artefakt (POST /api/perf-trace) — wie anazhRealmState.json nicht getrackt
 anazhRealmPerf.json
+
+# blick-Sonde (diag-blick): RT-Readback-Schuss je Lauf — Proben-Artefakt, nie Repo-Gut.
+blick-*.png
+spiel-t*.png
