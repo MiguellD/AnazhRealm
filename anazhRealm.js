@@ -38135,7 +38135,14 @@ class AnazhRealm {
         const queue = this.state.pendingGrass;
         if (!queue || queue.size === 0) return 0;
         const lpc = this.state.lastPlayerVoxelChunk;
-        const GRASS_RING = 4; // V18.97 (die weite Wiese): 2→4 — die Ferne baut dünner (lod-Faktor)
+        // DER GRAS-SCHNITT (die reine Form — Boot-Chronik: 6.5 M Gras-Tris = 81 %
+        // aller Dreiecke, bei 64k Terrain): GEOMETRIE-Gras nur noch im Band 0
+        // der EINEN Kaskade (volles Detail, dort lebt die Büschel-Parallaxe);
+        // jenseits tragen Impostor-Deko (Band 1, steht) + grüner Boden + Fog —
+        // Halme dort sind sub-pixel, sie verdienen keine Vertices. Kein
+        // Parallel-Ring mehr: das Gras liest das kanonische Band (Gesetz #0).
+        // Fläche (5/9)² → ~2 M statt 6.5 M Gras-Tris.
+        const GRASS_RING = AnazhRealm.DETAIL_CASCADE[0].maxRing;
         let keys = [...queue];
         if (lpc) {
             const distOf = (k) => {
@@ -94717,7 +94724,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.32";
+AnazhRealm.VERSION = "18.491.33";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

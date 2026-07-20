@@ -50,7 +50,21 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.32 — DER UNIVERSAL-ZIEGEL: alle Studios durch EINEN Bäcker — ferne Bauten LEBEN)
+## Stand (V18.491.33 — DER GRAS-SCHNITT: der 81-%-Wal fällt ans kanonische Band)
+
+**20.07., Schöpfer: „vollende es ganz" — der gemessene Wal der Boot-Chronik
+(6.5 M Gras-Tris = 81 % aller Dreiecke, bei 64k Terrain) fällt nach Gesetz #0:**
+- GEOMETRIE-Gras nur noch im Band 0 der EINEN Kaskade (GRASS_RING liest
+  DETAIL_CASCADE[0].maxRing statt der Parallel-Konstante 4 — volles Detail ≈
+  110 m, dort lebt die Büschel-Parallaxe); jenseits tragen Impostor-Deko
+  (Band 1, steht) + grüner Boden + Fog — Halme dort sind SUB-PIXEL, sie
+  verdienen keine Vertices (die reine Form: nie mehr Rechnung als Pixel).
+  Fläche (5/9)² → ~2 M statt 6.5 M Gras-Tris. playtest:fast 18/18 ·
+  gate:scatter-lod GRÜN. BENANNT-OFFEN: die WIESEN-FUNKTION im Boden-Material
+  (Distanz-geblendetes Noise-Flimmern auf Grün — der Look-Feinschliff, wenn
+  das Schöpfer-Auge die 110-m-Kante sieht) · der fimp-Quad→Ziegel-Swap.
+
+**Davor, V18.491.32 — DER UNIVERSAL-ZIEGEL: alle Studios durch EINEN Bäcker — ferne Bauten LEBEN**
 
 **20.07., Schöpfer: „wenn unser System synergetisch ist, müssen ALLE Studios
 gehen — Import/Export, zeige was du kannst":**
