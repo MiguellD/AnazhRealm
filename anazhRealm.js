@@ -74004,6 +74004,93 @@ class AnazhRealm {
         }
         return this._foundryBarkNormal;
     }
+    // ═══ DER WALD-ZIEGEL (die reine Form — der Pixel fragt den Baum) ═══
+    // Schöpfer: „nicht LODs — das Bild direkt aus Position und Blickrichtung
+    // abgeleitet." Die Fern-Stufe eines Baums wird ein VOLUMEN-ZIEGEL: die
+    // GEBACKENE Geometrie (dieselbe Quelle wie das Mesh — kein Zwilling) wird
+    // in ein 3D-Dichtefeld voxelisiert (RGBA: Farbe + Dichte), das Fragment
+    // marcht den Ziegel durch die Box — echte Parallaxe aus JEDEM Winkel
+    // (das Kamera-Quad log bei Schrägsicht), Kosten nur am Schirm. Erste
+    // Stufe des Funktions-Wegs: Masse wandert von der Dreiecks- auf die
+    // Funktions-Seite (der Kompass der reinen Form).
+    _waldZiegelBacken(srcGeo, dim) {
+        const d = dim || 32;
+        const pos = srcGeo && srcGeo.attributes && srcGeo.attributes.position;
+        if (!pos || !pos.count) return null;
+        const col = srcGeo.attributes.color || null;
+        if (!srcGeo.boundingBox) srcGeo.computeBoundingBox();
+        const bb = srcGeo.boundingBox;
+        const sx = Math.max(1e-6, bb.max.x - bb.min.x);
+        const sy = Math.max(1e-6, bb.max.y - bb.min.y);
+        const sz = Math.max(1e-6, bb.max.z - bb.min.z);
+        const daten = new Uint8Array(d * d * d * 4);
+        // Vertex-Splat (Kronen sind dichte Punktwolken — die Dichte-Näherung
+        // der gebauten Form; Stämme splatten mit +1-Voxel-Kern).
+        for (let i = 0; i < pos.count; i++) {
+            const vx = Math.min(d - 1, Math.max(0, Math.floor(((pos.getX(i) - bb.min.x) / sx) * d)));
+            const vy = Math.min(d - 1, Math.max(0, Math.floor(((pos.getY(i) - bb.min.y) / sy) * d)));
+            const vz = Math.min(d - 1, Math.max(0, Math.floor(((pos.getZ(i) - bb.min.z) / sz) * d)));
+            const o = (vz * d * d + vy * d + vx) * 4;
+            if (col) {
+                daten[o] = Math.min(255, daten[o] + col.getX(i) * 200);
+                daten[o + 1] = Math.min(255, daten[o + 1] + col.getY(i) * 200);
+                daten[o + 2] = Math.min(255, daten[o + 2] + col.getZ(i) * 200);
+            } else {
+                daten[o] = 90;
+                daten[o + 1] = 120;
+                daten[o + 2] = 60;
+            }
+            daten[o + 3] = Math.min(255, daten[o + 3] + 90);
+        }
+        const tex = new THREE.Data3DTexture(daten, d, d, d);
+        tex.format = THREE.RGBAFormat;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.unpackAlignment = 1;
+        tex.needsUpdate = true;
+        return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
+    }
+
+    // Das March-Material (memoisiert je Ziegel): die Box rastert ihre Fläche,
+    // das Fragment marcht ZIEGEL_SCHRITTE durch das 3D-Feld (TSL-unrollt wie
+    // der Godray-March — kein Shader-Loop) und färbt sich am ersten dichten
+    // Texel; ohne Treffer discard (die Box ist unsichtbar, nur der Baum lebt).
+    _waldZiegelMaterial(ziegel) {
+        const TSL = THREE.TSL;
+        if (!TSL || !TSL.texture3D || !TSL.Discard) return null;
+        const { vec3, vec4, float, positionWorld, cameraPosition, normalize, Fn } = TSL;
+        const N = AnazhRealm.WALD_ZIEGEL.schritte;
+        const uMin = TSL.uniform(ziegel.bbMin);
+        const uGr = TSL.uniform(ziegel.bbGroesse);
+        const mat = new THREE.MeshBasicNodeMaterial({ transparent: false });
+        mat.side = THREE.BackSide; // Rückseite rastert → der March beginnt an der Front (Kamera darf nah)
+        mat.colorNode = Fn(() => {
+            const dir = normalize(positionWorld.sub(cameraPosition));
+            // Eintritt: von der Rückfläche rückwärts zur Kamera geklemmt — der
+            // March läuft vorwärts durch den lokalen Einheits-Würfel.
+            let hit = vec4(0, 0, 0, 0).toVar();
+            const span = uGr.length();
+            const start = positionWorld.sub(dir.mul(span));
+            for (let i = 0; i < N; i++) {
+                const p = start.add(dir.mul(span.mul(float((i + 0.5) / N))));
+                const uvw = p.sub(uMin).div(uGr);
+                const innen = uvw.x
+                    .greaterThanEqual(0)
+                    .and(uvw.y.greaterThanEqual(0))
+                    .and(uvw.z.greaterThanEqual(0))
+                    .and(uvw.x.lessThan(1))
+                    .and(uvw.y.lessThan(1))
+                    .and(uvw.z.lessThan(1));
+                const t = TSL.texture3D(ziegel.tex, uvw, 0);
+                const trifft = innen.and(t.a.greaterThan(0.25)).and(hit.a.lessThan(0.5));
+                hit.assign(trifft.select(vec4(t.rgb, 1.0), hit));
+            }
+            TSL.Discard(hit.a.lessThan(0.5));
+            return vec3(hit.rgb);
+        })();
+        return mat;
+    }
+
     _foundryTreeMaterial(kind, mp) {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
@@ -94527,7 +94614,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.30";
+AnazhRealm.VERSION = "18.491.31";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99211,6 +99298,12 @@ AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-
 // WELLE 5 — DER BERG-SCHATTEN (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer
 // Sichtlinien-Test Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz. Je voller/bergiger
 // die Welt, desto BILLIGER wird sie (das Natur-Paradox: der Wald verdeckt sich selbst).
+// DER WALD-ZIEGEL (die reine Form, Stufe 4 — s. _waldZiegelBacken): die Baum-
+// Fern-Stufe als 3D-Dichtefeld, pro Pixel gemarcht statt als Kamera-Quad gerastert.
+AnazhRealm.WALD_ZIEGEL = Object.freeze({
+    dim: 32, // Voxel-Kantenlänge des Ziegels (32³ × RGBA = 128 KB je Art)
+    schritte: 24, // March-Schritte durchs Feld (TSL-unrollt, Godray-Muster)
+});
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
     proben: 5, // Höhen-Proben je Sichtlinie

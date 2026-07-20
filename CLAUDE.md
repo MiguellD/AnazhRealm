@@ -50,7 +50,28 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.30 — DAS TRACE-URTEIL .29: Query-Takt + Stufen-Tot-Band — die zwei neuen Täter fallen)
+## Stand (V18.491.31 — DER WALD-ZIEGEL: die reine Form beginnt — der Pixel fragt den Baum)
+
+**20.07., Schöpfer: „nicht LODs — das Bild direkt aus Position+Blickrichtung
+abgeleitet; beginne beim Waldstudio, der volle Prozess" + die Kompass-Korrektur
+(„ist hybrid nicht die niedrige Stufe?" — JA: die Endform ist REIN, hybrid ist
+nur die Rampe; jede Welle muss Masse von der Dreiecks- auf die FUNKTIONS-Seite
+bewegen, nie umgekehrt — der neue wahre Norden):**
+- DER WALD-ZIEGEL (_waldZiegelBacken/_waldZiegelMaterial, WALD_ZIEGEL 32³/24):
+  die GEBACKENE Baum-Geometrie (dieselbe Quelle — kein Zwilling) wird in ein
+  3D-Dichtefeld voxelisiert (RGBA=Farbe+Dichte, 128 KB je Art), das Fragment
+  marcht den Ziegel durch die Box (TSL-unrollt, Godray-Muster, texture3D/
+  Data3DTexture) — echte Parallaxe aus JEDEM Winkel, Kosten nur am Schirm.
+- BEWIESEN (voller Prozess im ECHTEN Realm, echtes WebGPU): lebender Foundry-
+  Baum (173.936 Verts) → Bake (6.920 belegte Voxel) → March-Box im Spiel —
+  die Krone STEHT sichtbar als Volumen (eigenes Auge, Screenshot) · ppFail
+  false · 0 Loop-/Seiten-Fehler · playtest:fast 18/18.
+- DER NÄCHSTE SCHNITT (benannt): der fimp-Kamera-Quad-SWAP — die Baum-Fern-
+  stufe konsumiert den Ziegel statt des Atlas-Quads (EIN Chokepoint, Material
+  31754ff/fimp-Keying 69820ff); danach Gras-als-Funktion (der 81-%-Wal der
+  Boot-Chronik: 6.5 M Gras-Tris vs 64k Terrain) und Portal um Portal.
+
+**Davor, V18.491.30 — DAS TRACE-URTEIL .29: Query-Takt + Stufen-Tot-Band — die zwei neuen Täter fallen**
 
 **20.07., Schöpfer-Trace .29 (avgFps 2.6 — SCHLECHTER; CPU-render 387 ms EWMA ·
 GPU echt 352 ms · Destroyed-Texture lebt · foliageRes oszilliert 0.6↔0.68):
