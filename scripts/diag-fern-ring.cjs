@@ -152,7 +152,10 @@ const server = http.createServer((req, res) => {
         // Schale 1 beginnt AUSSERHALB des gebauten Rings (Ziel-Ring-Kante + randPad).
         const cfg = r._voxelChunkConfig();
         const targetRing = Math.max(1, Math.min(12, r.state.chunkRingRadius || 4));
-        res.innerRandOk = fr.schalen[0].inner >= (targetRing + 0.5) * cfg.span + F.randPad - 1e-9;
+        // NAHT-SCHLIESSUNG (20.07.): die Kante beginnt UNTER der äußersten
+        // Chunk-Reihe (−0.5·span) statt jenseits (+0.5·span + randPad).
+        res.innerRandOk =
+            Math.abs(fr.schalen[0].inner - Math.max(cfg.span, (targetRing - 0.5) * cfg.span)) < 1e-9;
 
         // ===== (2) HÖHEN == GESETZ: 60 deterministische Proben-Vertices =====
         // Die Erwartung UNABHÄNGIG nachgerechnet (Schalen-Layout + Snap + Klemme
@@ -163,12 +166,20 @@ const server = http.createServer((req, res) => {
             const row = (li / F.winkel) | 0;
             const ai = li - row * F.winkel;
             const sh = fr.schalen[s];
-            const rad = sh.inner + ((sh.aussen - sh.inner) * row) / (F.reihen - 1);
+            // GEOMETRISCHE Reihen + NAHT-VEREDELUNG (20.07.) — die Erwartung
+            // spiegelt das LIVE-Layout (nah dicht, fern weit; Innen-Reihen der
+            // ersten Schale tragen das volle Gesetz leicht gesenkt).
+            const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (F.reihen - 1));
             const ang = (ai / F.winkel) * Math.PI * 2;
             const sx = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
             const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
             const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
-            const law = r._terrainMacroSurfaceY(sx, sz, false);
+            let law = r._terrainMacroSurfaceY(sx, sz, false);
+            if (s === 0 && row < 3) {
+                const w = 1 - row / 3;
+                const voll = r._terrainMacroSurfaceY(sx, sz, true);
+                law = law + (voll - law) * w - 0.25 * w;
+            }
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-

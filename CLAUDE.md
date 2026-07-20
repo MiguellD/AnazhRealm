@@ -50,9 +50,46 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.21 — DIE GLOBALE EINBÜRGERUNG: die Bäume ziehen ins @global-Bundle)
+## Stand (V18.491.22 — DIE NAHT-SCHLIESSUNG + DIE KLASSEN-PIXEL-KAPPE)
 
-**20.07., zweiundzwanzigste Welle (Schöpfer: „sei endlich der gigant" — der seit
+**20.07., dreiundzwanzigste Welle (Schöpfer-Screenshots „Höhenverschiebung mit
+komischen Pixelmustern zwischen Ring und Chunks — da ist noch etwas unsauber in
+der wurzel, oder?" + „wie erreichen wir 60/120 fps" — beide Wurzeln benannt und
+geschnitten; sein .21-Trace ist SAUBER [Heap stabil −0.39 MB/s, 0 Disposal-Stau,
+Entlassung trägt: 169 Batches/117 MB + 8 Böden frei]):**
+- DIE NAHT-SCHLIESSUNG (drei Wurzeln im Fern-Ring): (1) LINEARE Reihen
+  spannten Schale 1 zu ~139-m-Quads an der Innenkante — deren Vertex-Farb-
+  Interpolation WAR das Streifen-Muster → GEOMETRISCHE Reihen (nah dicht,
+  fern weit; gleiche Vertex-Zahl, 0 Mehrkosten; der Feld-Maler wertet nur
+  XZ-Punkte — kein WGSL-Anfassen). (2) Makro-OHNE-Detail-Höhen wichen an
+  der sichtbaren Naht um den Mikro-Term ab → die Innen-Reihen der ersten
+  Schale tragen das VOLLE Gesetz, leicht gesenkt (−0.25·w), auf Makro
+  ausblendend (Reihe 3+ byte-alt; der Cursor-Refine überschreibt die 288
+  Naht-Vertices im 1. Tick nach dem GPU-Anstrich). (3) Der randPad-Spalt
+  („Nebel deckt") wird von der Höhen-Öffnung entblößt → die Kante beginnt
+  UNTER der äußersten Chunk-Reihe (−0.5·span, Chunks decken per Depth).
+  gate:fern-ring WANDERTE mit (Layout+Naht-Formel gespiegelt) — ALLE
+  Bänder GRÜN inkl. Feld-Zeichner/Feld-Pass.
+- DIE KLASSEN-PIXEL-KAPPE (der GPU-Wal beim Namen): sein Trace maß GPU
+  echt 105.6 ms EWMA bei dpr 2 (4.4 MPix) auf Klasse „mittel" — und der
+  PID opferte WELT-TIEFE (Radius 50 m, loadScale 0) statt Pixel, weil
+  PERF_RENDER_SCALE_MIN=1 die adaptive Auflösung seit V18.390 stilllegt
+  (setPixelRatio-Flackern). Der flicker-freie Schnitt: die GERÄTE-KLASSE
+  deckelt den DPR (mittel 1.5 · schwach 1.25 · stark byte-alt) — konstant
+  je Sitzung, setPixelRatio feuert EINMAL beim Boot (Dead-Band), kein
+  Laufzeit-Realloc; explizite ?holz=/localStorage-Wahl schlägt die Kappe.
+  Für sein Holz: 4.4→2.5 MPix ≈ GPU ~105→~60 ms — und der PID gewinnt
+  Kopfraum, die TIEFE (Radien) wächst zurück statt zu verhungern.
+- BEWIESEN: node --check · gate:fern-ring GRÜN (gewanderte Bänder) ·
+  Selbst-Spiel-Sonde (eigenes Auge): Welt hell/lebendig t15/t60/t120,
+  Entlassung läuft, 0 Loop-/Seiten-Fehler. OFFEN mit Zahlen (die
+  60/120-Bahn): bundleDeckung 38 % — 670 anonyme Draußen-Draws brauchen
+  erst die NAMEN-Linse, dann die Einbürgerung · Klein-Upload-Sturm 34.5M
+  ≤16K (die per-Draw-Uniform-Bahn der Nicht-Bundle-Draws — fällt mit der
+  Deckung) · blume-Churn ×4 · echtes DRS via Render-Target-Scaling
+  (der V18.390-benannte Rückweg) als End-Ausbau.
+
+**Davor, zweiundzwanzigste Welle — DIE GLOBALE EINBÜRGERUNG (Schöpfer: „sei endlich der gigant" — der seit
 Welle 8 benannte letzte Nicht-Bundle-Rest fällt, ohne auf den nächsten Trace zu
 warten; die crash-verseuchten Steady-Zahlen des .19-Traces sind KEINE Mess-Basis,
 aber der CODE-Fakt stand fest):**

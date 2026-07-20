@@ -15052,13 +15052,19 @@ class AnazhRealm {
         const P = AnazhRealm.HOLZ_PROFILE;
         try {
             const url = typeof location !== "undefined" ? new URLSearchParams(location.search).get("holz") : null;
-            if (url && P[url]) return url;
+            if (url && P[url]) {
+                this.state._holzExplizit = true; // GPU-WAL 20.07.: explizite Wahl schlägt die Klassen-dpr-Kappe
+                return url;
+            }
         } catch (_e) {
             /* location kann in Workern fehlen */
         }
         try {
             const stored = typeof localStorage !== "undefined" ? localStorage.getItem("anazhHolz") : null;
-            if (stored && P[stored]) return stored;
+            if (stored && P[stored]) {
+                this.state._holzExplizit = true;
+                return stored;
+            }
         } catch (_e) {
             /* Privacy-Modus */
         }
@@ -15103,7 +15109,20 @@ class AnazhRealm {
         if (!renderer || renderer._isHeadlessNull || typeof renderer.setPixelRatio !== "function") return;
         const dprRaw = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
         // JEDES-HOLZ: das Profil deckelt den DPR (kienspan 1) — die eine Stelle.
-        const dpr = Math.min(dprRaw, this.state._holzPixelCap || 2);
+        // GPU-WAL (20.07., Schöpfer-Trace: GPU echt 105 ms EWMA bei dpr 2 auf
+        // Klasse „mittel" = 4.4 MPix — der PID opferte WELT-TIEFE [Radius 50 m]
+        // statt PIXEL): die GERÄTE-KLASSE deckelt den DPR mit. Konstant je
+        // Sitzung → setPixelRatio feuert EINMAL beim Boot (Dead-Band), kein
+        // Laufzeit-Realloc — das V18.390-Flacker-Verbot bleibt geehrt. Eine
+        // EXPLIZITE Holz-Wahl (?holz=/localStorage) schlägt die Kappe; stark
+        // bleibt byte-alt (Kappe 2 == Default).
+        let klasseCap = 2;
+        if (!st._holzExplizit) {
+            const gp = typeof this._geraeteProfil === "function" ? this._geraeteProfil() : null;
+            if (gp && gp.klasse === "schwach") klasseCap = 1.25;
+            else if (gp && gp.klasse === "mittel") klasseCap = 1.5;
+        }
+        const dpr = Math.min(dprRaw, this.state._holzPixelCap || 2, klasseCap);
         const target = Math.max(AnazhRealm.PERF_RENDER_SCALE_MIN, Math.min(1, scale)) * dpr;
         if (st._renderScaleApplied != null && Math.abs(target - st._renderScaleApplied) < 0.001) return;
         st._renderScaleApplied = target;
@@ -38903,7 +38922,14 @@ class AnazhRealm {
         // Gitter (24 m) kann einen Punkt maximal ~17 m einwärts ziehen → randPad
         // 40 hält die Kante sicher jenseits der gebauten Chunks.
         const targetRing = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-        const innerRand = (targetRing + 0.5) * cfg.span + F.randPad;
+        // DIE NAHT-SCHLIESSUNG (20.07., Schöpfer-Screenshots): die Kante lag
+        // JENSEITS der Chunks (+0.5·span + randPad) — der Spalt war „Nebel
+        // deckt"-Design, aber die Höhen-Öffnung (erhöhtes Auge) entblößt ihn
+        // als naktes Band. Jetzt beginnt der Ring UNTER der äußersten Chunk-
+        // Reihe (−0.5·span): die Chunks decken ihn per Depth, die Innen-Reihen
+        // schmiegen sich mit VOLLEM Gesetz leicht gesenkt unter die Oberfläche
+        // (s. _fernRingRefresh) — kein Loch, kein Durchstoßen, kein Z-Fight.
+        const innerRand = Math.max(cfg.span, (targetRing - 0.5) * cfg.span);
         const schalen = F.schalen.map((s, i) =>
             Object.freeze({
                 inner: i === 0 ? innerRand : F.schalen[i - 1].aussen,
@@ -39018,7 +39044,13 @@ class AnazhRealm {
         const row = (li / W) | 0;
         const ai = li - row * W;
         const sh = fr.schalen[s];
-        const rad = sh.inner + ((sh.aussen - sh.inner) * row) / (R - 1);
+        // GEOMETRISCHE Reihen (20.07., Schöpfer-Screenshots „Streifen/Pixelmuster
+        // an der Naht"): linear spannte Schale 1 ihre Reihen zu je ~139 m —
+        // Riesen-Quads an der Innenkante, deren Vertex-Farb-Interpolation als
+        // Streifen-Wand las. Geometrisch liegt die Auflösung, wo das Auge ist
+        // (Reihe-0-Tiefe ≈ inner·(q−1), fern wächst sie) — gleiche Vertex-Zahl,
+        // 0 Mehrkosten; der Feld-Maler wertet ohnehin nur die XZ-Punkte aus.
+        const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (R - 1));
         const ang = (ai / W) * Math.PI * 2;
         return {
             s,
@@ -39056,7 +39088,20 @@ class AnazhRealm {
         let done = 0;
         while (done < budget && fr.cursor < fr.totalVerts) {
             const p = this._fernRingPunkt(fr, fr.cursor);
-            const law = this._terrainMacroSurfaceY(p.x, p.z, false);
+            let law = this._terrainMacroSurfaceY(p.x, p.z, false);
+            // DIE NAHT-VEREDELUNG (20.07.): die Innen-Reihen der ersten Schale
+            // tragen das VOLLE Gesetz (includeDetail) — die Makro-Höhe wich an
+            // der sichtbaren Naht um den Mikro-Term ab (die Höhenverschiebung
+            // der Schöpfer-Screenshots). Leicht gesenkt (−0.25·w) schmiegt sich
+            // der Ring UNTER die Chunk-Oberfläche (kein Z-Fight im Überlapp)
+            // und füllt die chunk-lose Lücke mit wahrer Höhe; w blendet auf
+            // Makro aus (Reihe 3+ bleibt byte-alt, der GPU-Maler malt Makro —
+            // der Cursor-Refine überschreibt die 288 Naht-Vertices im 1. Tick).
+            if (p.s === 0 && p.row < 3) {
+                const w = 1 - p.row / 3;
+                const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
+                law = law + (voll - law) * w - 0.25 * w;
+            }
             this._fernRingSetzVertex(fr, p, law, wl);
             dirty[p.s] = true;
             fr.cursor++;
@@ -93678,7 +93723,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.21";
+AnazhRealm.VERSION = "18.491.22";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
