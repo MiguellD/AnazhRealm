@@ -149,13 +149,15 @@ const server = http.createServer((req, res) => {
         });
         res.visible = fr.meshes.every((m) => m.visible === true);
         res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && !m.receiveShadow);
-        // Schale 1 beginnt AUSSERHALB des gebauten Rings (Ziel-Ring-Kante + randPad).
+        // DER LOCH-DECKEL (20.07.): Schale 1 beginnt DIREKT am Spieler (0.5·span)
+        // — der Ring deckt jedes Chunk-Loch (die Wasser-Plane samt Spekular bleibt
+        // verdeckt); gebaute Chunks decken ihn per Depth. deckZoneRad trägt die
+        // Chunk-Ziel-Zone, in der die Reihen das VOLLE Gesetz gesenkt tragen.
         const cfg = r._voxelChunkConfig();
         const targetRing = Math.max(1, Math.min(12, r.state.chunkRingRadius || 4));
-        // NAHT-SCHLIESSUNG (20.07.): die Kante beginnt UNTER der äußersten
-        // Chunk-Reihe (−0.5·span) statt jenseits (+0.5·span + randPad).
         res.innerRandOk =
-            Math.abs(fr.schalen[0].inner - Math.max(cfg.span, (targetRing - 0.5) * cfg.span)) < 1e-9;
+            Math.abs(fr.schalen[0].inner - cfg.span * 0.5) < 1e-9 &&
+            Math.abs(fr.deckZoneRad - (targetRing + 0.5) * cfg.span) < 1e-9;
 
         // ===== (2) HÖHEN == GESETZ: 60 deterministische Proben-Vertices =====
         // Die Erwartung UNABHÄNGIG nachgerechnet (Schalen-Layout + Snap + Klemme
@@ -175,10 +177,11 @@ const server = http.createServer((req, res) => {
             const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
             const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
             let law = r._terrainMacroSurfaceY(sx, sz, false);
-            if (s === 0 && row < 3) {
-                const w = 1 - row / 3;
+            // LOCH-DECKEL-Formel (gespiegelt): Zone = volles Gesetz −0.3, ×1.35-Blende auf Makro.
+            if (s === 0 && rad <= fr.deckZoneRad * 1.35) {
+                const w = rad <= fr.deckZoneRad ? 1 : (fr.deckZoneRad * 1.35 - rad) / (fr.deckZoneRad * 0.35);
                 const voll = r._terrainMacroSurfaceY(sx, sz, true);
-                law = law + (voll - law) * w - 0.25 * w;
+                law = law + (voll - law) * w - 0.3 * w;
             }
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
@@ -457,7 +460,7 @@ const server = http.createServer((req, res) => {
     );
     check("1: EIN geteiltes Material für alle Schalen", out.oneMaterial === true);
     check("1: sichtbar erst nach vollem Refresh + frustumCulled/Schatten aus", out.ready && out.visible && out.flags);
-    check("1: Schale 1 beginnt AUSSERHALB der Ziel-Ring-Kante (+randPad)", out.innerRandOk === true);
+    check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
         "Bau BUDGETIERT über Ticks (je Tick <= refreshVertsProTick, mehrere Ticks — BOOT_PHASE3-Muster)",
         out.buildBudgeted === true,

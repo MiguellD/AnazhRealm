@@ -38934,14 +38934,19 @@ class AnazhRealm {
         // Gitter (24 m) kann einen Punkt maximal ~17 m einwärts ziehen → randPad
         // 40 hält die Kante sicher jenseits der gebauten Chunks.
         const targetRing = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-        // DIE NAHT-SCHLIESSUNG (20.07., Schöpfer-Screenshots): die Kante lag
-        // JENSEITS der Chunks (+0.5·span + randPad) — der Spalt war „Nebel
-        // deckt"-Design, aber die Höhen-Öffnung (erhöhtes Auge) entblößt ihn
-        // als naktes Band. Jetzt beginnt der Ring UNTER der äußersten Chunk-
-        // Reihe (−0.5·span): die Chunks decken ihn per Depth, die Innen-Reihen
-        // schmiegen sich mit VOLLEM Gesetz leicht gesenkt unter die Oberfläche
-        // (s. _fernRingRefresh) — kein Loch, kein Durchstoßen, kein Z-Fight.
-        const innerRand = Math.max(cfg.span, (targetRing - 0.5) * cfg.span);
+        // DER LOCH-DECKEL (20.07., Schöpfer: „die Reflexion von Sonne/Mond auf
+        // Wasser, das auf Terrain liegt, wo kein Wasser sein sollte" — UNGELADENE
+        // Chunk-Bereiche zwischen gebautem Ring und Ziel-Kante ließen die Welt-
+        // Wasser-Plane bei waterLevel + ihr Spekular DURCHSCHEINEN): der Ring
+        // beginnt jetzt DIREKT am Spieler (0.5·span) statt an der Ziel-Ring-Kante
+        // — er deckt JEDES Loch (Boot-Ramp, zerquetschte Radien, ungebaute
+        // Chunks) mit wahrem Terrain, und gebaute Chunks decken IHN per Depth
+        // (opak, depthWrite). Die alte Durchstich-Angst („Makro-Höhen schneiden
+        // das Detail-Terrain") fällt mit der ausgeweiteten Naht-Formel: ALLE
+        // Reihen innerhalb der Chunk-Ziel-Zone tragen das VOLLE Gesetz leicht
+        // gesenkt (s. _fernRingRefresh, deckZoneRad) — kein Z-Fight, kein Loch,
+        // keine falsche Wasser-Reflexion.
+        const innerRand = cfg.span * 0.5;
         const schalen = F.schalen.map((s, i) =>
             Object.freeze({
                 inner: i === 0 ? innerRand : F.schalen[i - 1].aussen,
@@ -38993,7 +38998,12 @@ class AnazhRealm {
             // der Anker folgt dem Spieler QUANTISIERT (kein Höhen-Schwimmen):
             anchorX: Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
             anchorZ: Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant,
-            builtRing: targetRing, // Sicht-Regler-Wechsel → Neubau (Kante folgt)
+            builtRing: targetRing, // Sicht-Regler-Wechsel → Neubau (Deck-Zone folgt)
+            // DER LOCH-DECKEL: bis zu diesem Radius (Chunk-Ziel-Zone + Blende)
+            // tragen die Schale-0-Reihen das VOLLE Gesetz leicht gesenkt —
+            // wahres Terrain deckt jedes Chunk-Loch, die Wasser-Plane bleibt
+            // verdeckt (s. _fernRingRefresh).
+            deckZoneRad: (targetRing + 0.5) * cfg.span,
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: per * schalen.length,
             refreshed: 0, // Budget-Zähler (Linse)
@@ -39068,6 +39078,7 @@ class AnazhRealm {
             s,
             li,
             row,
+            rad, // der LOCH-DECKEL liest den Reihen-Radius (Deck-Zonen-Urteil)
             x: Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap,
             z: Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap,
         };
@@ -39101,18 +39112,21 @@ class AnazhRealm {
         while (done < budget && fr.cursor < fr.totalVerts) {
             const p = this._fernRingPunkt(fr, fr.cursor);
             let law = this._terrainMacroSurfaceY(p.x, p.z, false);
-            // DIE NAHT-VEREDELUNG (20.07.): die Innen-Reihen der ersten Schale
-            // tragen das VOLLE Gesetz (includeDetail) — die Makro-Höhe wich an
-            // der sichtbaren Naht um den Mikro-Term ab (die Höhenverschiebung
-            // der Schöpfer-Screenshots). Leicht gesenkt (−0.25·w) schmiegt sich
-            // der Ring UNTER die Chunk-Oberfläche (kein Z-Fight im Überlapp)
-            // und füllt die chunk-lose Lücke mit wahrer Höhe; w blendet auf
-            // Makro aus (Reihe 3+ bleibt byte-alt, der GPU-Maler malt Makro —
-            // der Cursor-Refine überschreibt die 288 Naht-Vertices im 1. Tick).
-            if (p.s === 0 && p.row < 3) {
-                const w = 1 - p.row / 3;
+            // DER LOCH-DECKEL + DIE NAHT-VEREDELUNG (20.07., zwei Wellen, EINE
+            // Formel): alle Schale-0-Reihen INNERHALB der Chunk-Ziel-Zone
+            // (rad ≤ deckZoneRad) tragen das VOLLE Gesetz (includeDetail),
+            // leicht gesenkt (−0.3) — wo Chunks stehen, decken sie den Ring per
+            // Depth (kein Z-Fight); wo sie FEHLEN (Boot-Ramp, zerquetschte
+            // Radien, ungebaute Bereiche), zeigt der Ring wahres Terrain und
+            // VERDECKT die Welt-Wasser-Plane samt Sonnen-/Mond-Spekular (die
+            // „falsche Wasser-Reflexion" der Schöpfer-Screenshots). Jenseits
+            // der Zone blendet w auf Makro aus (×1.35-Blende; Fern-Reihen
+            // byte-alt, der GPU-Maler malt Makro — der Cursor-Refine
+            // überschreibt die Zonen-Vertices in den ersten Ticks).
+            if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35) {
+                const w = p.rad <= fr.deckZoneRad ? 1 : (fr.deckZoneRad * 1.35 - p.rad) / (fr.deckZoneRad * 0.35);
                 const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
-                law = law + (voll - law) * w - 0.25 * w;
+                law = law + (voll - law) * w - 0.3 * w;
             }
             this._fernRingSetzVertex(fr, p, law, wl);
             dirty[p.s] = true;
