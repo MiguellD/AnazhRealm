@@ -78155,11 +78155,20 @@ class AnazhRealm {
             // mehr — die 7.8-M-Tris-Dörfer der Traces sind Geschichte.
             const hand2 = AnazhRealm.ARCH_ZIEGEL_HAND * AnazhRealm.ARCH_ZIEGEL_HAND;
             if (distSq <= hand2) {
+                // DIE VOLLE FORM (Schöpfer: „alles, egal wie nahe"): auch in der
+                // Hand-Blase IST das Feld die sichtbare Gestalt. Das Mesh baut
+                // weiter — aber UNSICHTBAR, als reiner Interaktions-Körper
+                // (Raycast fürs Abbauen ignoriert Sichtbarkeit, Tür-Blocker
+                // öffnen physisch, Betreten lebt). EIN sichtbares Gesetz.
                 if (!this._archIsRendered(entry) && built < budget) {
                     this._rebuildArchitectureMesh(entry);
                     built++;
                 }
-                if (entry._ziegelMesh) entry._ziegelMesh.visible = false; // in der Hand: die echte Form
+                if (built < budget && this._archZiegelFern(entry)) built++;
+                if (entry._ziegelMesh) {
+                    entry._ziegelMesh.visible = true;
+                    if (entry.mesh && entry.mesh.visible !== false) entry.mesh.visible = false;
+                }
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
                 if (built < budget && this._archZiegelFern(entry)) built++;
@@ -94900,7 +94909,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.40";
+AnazhRealm.VERSION = "18.491.41";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99599,7 +99608,7 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
     dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB)
     schritteRegion: 40,
 });
-AnazhRealm.KREATUR_ZIEGEL_DIST = 40; // m — jenseits wird das Tier sein Feld (315k-Tris-Klasse fällt; nah animiert der echte Körper)
+AnazhRealm.KREATUR_ZIEGEL_DIST = 0; // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
 AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)

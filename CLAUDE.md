@@ -50,7 +50,27 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.40 — DIE LEER-WACHE: die letzte laute Klasse fällt — leere Bürger kompilieren nie)
+## Stand (V18.491.41 — DIE VOLLE FORM: das Feld ist IMMER die Gestalt — bei jeder Distanz, für alles)
+
+**20.07., Schöpfer: „Detail-Fixes an Sterbendem sind dumm — alles rein, dann
+bewerte ich":** die Inversion, sichtbar-vollständig:
+- ARCHITEKTUR (Dörfer · Tempel · Fahrzeuge · Felsblöcke · gespawnte Bäume —
+  alles Compound): das FELD ist bei JEDER Distanz die sichtbare Gestalt; das
+  Mesh baut in der Hand-Blase weiter, aber UNSICHTBAR als reiner Interaktions-
+  Körper (der Raycaster ignoriert Sichtbarkeit → Abbauen lebt; Tür-Blocker
+  öffnen physisch → Betreten lebt).
+- TIERE: KREATUR_ZIEGEL_DIST=0 — das Tier IST sein Feld, immer; der Körper
+  bleibt unsichtbarer Physik-/KI-Träger. Nur der BEOBACHTER selbst (Avatar)
+  bleibt Körper.
+- BEWIESEN (echtes WebGPU): Feld gebacken · folgt exakt · kehrt NIE zurück
+  (die korrekte neue Antwort) · attrWarn 0 · 0 Fehler · playtest:fast 18/18.
+- WAS SICHTBAR NOCH RASTERT (ehrliche Rest-Liste): Terrain-Chunks (= Iso-
+  CACHE des Feldes, eine Wahrheit) · Streu/Wald-Instanzen 16–400 m (ihr
+  Feld-Weg = die Mip-Leiter des Region-Ziegels) · Gras Band 0 · der Avatar.
+  Die Inversion des Foundry-Exports (Feld primär, Mesh abgeleitet) +
+  geskinnte Felder sind die zwei letzten Bögen — auf der .41-Messung.
+
+**Davor, V18.491.40 — DIE LEER-WACHE: die letzte laute Klasse fällt — leere Bürger kompilieren nie)**
 
 **20.07., Schöpfer-Konsole .39 (Destroyed BESTÄTIGT TOT — aber die Attribut-
 Warn-Fluten leben im Spiel weiter: Masken- UND Impostor-Familie):** der
