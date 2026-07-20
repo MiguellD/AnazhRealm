@@ -50,7 +50,50 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.45 — MATRIX DER MATRIX: die Tiere werden animierte Glieder-Felder, das Licht fällt aufs Feld)
+## Stand (V18.491.46 — DIE HEILUNG DER MATRIX-WELLE: 4 adversariale Linsen, 8 Befunde geschnitten)
+
+**20.07., nach der Matrix-der-Matrix-Welle: 4 adversariale Skeptiker (Raymarch-t-
+Raum · Normalen-Transform · Allokator · Integration) prüften den v2-Shader — 8
+bestätigte Befunde, alle geheilt:**
+- DAS NACHT-GLÜHEN FÄLLT WIRKLICH (MITTEL-HOCH, der .44-Täter): das Feld
+  multiplizierte mit einem WEISSEN Skalar (0.35+0.85·sonnStaerke) und ignorierte
+  die Licht-FARBE — warmes Gold-Albedo leuchtete nachts aus sich selbst. Jetzt
+  liest der March lichtFarbe (Sonne×Intensität) + ambientFarbe (Ambient+Hemi-
+  Mittel) aus den ECHTEN Szene-Lichtern; nachts dunkel-blau, das Feld gehorcht
+  derselben Tag/Nacht-Farbe wie alles.
+- KEIN TUNNELN dünner Glieder (MITTEL): d Schritte waren voxel-wahr nur
+  achsparallel; ein Diagonalstrahl durchquert √3·d Zellen → Bein/Schwanz fielen
+  durch. Über-Abtastung ×1.732 (schritte, stepN teilt das Segment korrekt).
+- DER BRICK-RAND (GERING, 3 Linsen einig): der Gradient-Read texel±1 griff im
+  dicht gepackten Atlas in den NACHBAR-Slot → Naht/Speckle am Rand. Jetzt auf
+  [orig, orig+d−1] geklemmt.
+- DER FALLBACK −dir (GERING): eine WELT-Richtung lief durch invᵀ (Kategorie-
+  Fehler) → jetzt bestN=−dir direkt, ohne Transform.
+- DIE FRAGMENTIERUNG (HOCH, irreversibel): Blöcke splitteten EIN-WEG in
+  Einheiten, nie zurück → über eine Sitzung verhungerte jedes 64³-Feld. Jetzt
+  VEREINIGT _weltFeldFrei die 8 freien Geschwister eines Block-Ankers zurück zu
+  EINEM Block (freiKleinSet für O(1)); Doppel-Frei-Wand (handle._frei).
+- DIE KAPAZITÄT (HOCH): felder 256→512 (entkoppelt von den 128 Atlas-Blöcken;
+  20 Tiere×12 Glieder=240 passten sonst kaum). EHRLICH OFFEN: die 128 Blöcke
+  tragen nicht die volle Fern-Welt (177 Bauten je EIN Brick) — die DEDUP-Bahn
+  (ein Brick, viele Matrix-Einträge; die Matrix-der-Matrix macht sie natürlich)
+  ist der nächste Bogen.
+- DER SICHTBARKEITS-BESITZER (MITTEL-HOCH): bei Bake-Erschöpfung (kzGlieder
+  null, kzVersuch true) belebten die Frustum-Schreiber den 315k-Tris-Mesh
+  wieder — ein Fail-soft-Rückweg gegen „KEIN Rückweg". Jetzt teilt EIN Prädikat
+  (_kzBesitztFeld = Glieder ODER Versuch) alle drei Schreiber + toggleCreatures:
+  ein bake-gescheitertes Tier bleibt unsichtbar (das Fehlen ist sichtbar).
+- KORREKT BESTÄTIGT (kein Schnitt nötig): der lokale Strahl oL+dL·t (t bleibt
+  Welt-Einheit trotz Skala), die Slab-Misch, die Tiefe (Standard-Perspektiv),
+  der invᵀ-Normal-Transform (Ry90 nachgerechnet), der statische Region-Pfad
+  (richtige Welt-Position), der Erst-Frame (kein Ursprungs-Blitz), die
+  Erschöpfungs-Räumung (kein Leck). 1-Frame-Matrix-Lag: gutartig (Mesh
+  unsichtbar).
+- BEWIESEN: Boot-Sonde echtes WebGPU — 2 Tiere → 24 Glieder aktiv, Matrix
+  wandert (3.17), Regionen backen mit (belegt 37), 0 Fehler/Warns ·
+  playtest:fast 18/18 · lint 0 Errors · node --check.
+
+**Davor, V18.491.45 — MATRIX DER MATRIX: die Tiere werden animierte Glieder-Felder, das Licht fällt aufs Feld)
 
 **20.07., Schöpfer-Boot .44 (Screenshots: „Auflösung noch geringer … müsste es
 nicht eine Transformationsformel statt Matrix sein, Matrix der Matrix?" + „die

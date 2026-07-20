@@ -23144,6 +23144,15 @@ class AnazhRealm {
         }
     }
 
+    // DER SICHTBARKEITS-BESITZER-TEST: gehört dieses Tier dem Feld? Wahr, sobald
+    // ein Bake-Versuch lief — mit Gliedern (Feld lebt) ODER ohne (Bake
+    // gescheitert, Atlas voll: KEIN Rückweg zum Mesh). Nur die Bake-Rampe (noch
+    // kein Versuch) darf der Frustum-Schreiber sichtbar schalten.
+    _kzBesitztFeld(cr) {
+        const u = cr && cr.userData;
+        return !!(u && (u._kzGlieder || u._kzVersuch));
+    }
+
     _kreaturZiegelTod(cr) {
         const u = cr && cr.userData;
         if (!u) return;
@@ -23273,8 +23282,10 @@ class AnazhRealm {
             // EIN SICHTBARKEITS-BESITZER: trägt das Tier sein Feld, gehört
             // `visible` dem Kreatur-Ziegel (das Feld IST die Gestalt — der
             // Frustum-Schreiber würde den Mesh-Rückweg wiederbeleben); nur die
-            // Bake-Rampe (noch kein Feld) wird frustum-gecullt.
-            if (!creature.userData || !creature.userData._kzGlieder) creature.visible = inFrustum;
+            // Bake-RAMPE (noch kein Versuch) wird frustum-gecullt. _kzVersuch
+            // (Bake gelaufen, auch gescheitert) hält den Körper unsichtbar —
+            // KEIN Rückweg, auch nicht bei Atlas-Erschöpfung.
+            if (!this._kzBesitztFeld(creature)) creature.visible = inFrustum;
 
             // V8.49 — Hindernis-Raycast nur für sichtbare, nahe Kreaturen.
             // Off-Screen-Sparsamkeit + Distanz-LOD: die Hindernis-Vermeidung
@@ -24802,6 +24813,8 @@ class AnazhRealm {
             if (u && u._kzGlieder) {
                 for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, visible);
                 creature.visible = false; // der Körper bleibt unsichtbarer Träger
+            } else if (u && u._kzVersuch) {
+                creature.visible = false; // Bake gescheitert: KEIN Rückweg zum Mesh
             } else creature.visible = visible;
         });
         this.log(`Kreaturen ${visible ? "aktiviert" : "deaktiviert"}`);
@@ -39710,14 +39723,15 @@ class AnazhRealm {
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
             felderN: TSL.uniform(0),
             sonne: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            sonnStaerke: TSL.uniform(1),
+            lichtFarbe: TSL.uniform(new THREE.Vector3(1, 1, 1)),
+            ambientFarbe: TSL.uniform(new THREE.Vector3(0.3, 0.3, 0.3)),
         };
         // DER BLICK (WGSL, roh — ersetzt den per-Pixel-March): Richtung aus
         // invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-
         // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
         // SPEC-WAND bleibt geehrt (textureDimensions → f32/i32-Casts).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, felderN: f32, sonne: vec3<f32>, sonnStaerke: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, felderN: f32, sonne: vec3<f32>, lichtFarbe: vec3<f32>, ambientFarbe: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -39782,9 +39796,15 @@ class AnazhRealm {
                 "        if (tF2 <= tN2) { continue; }\n" +
                 "        let u = i32(t1.w + 0.5);\n" +
                 "        let orig = vec3<f32>(f32(u % 16) * 32.0, f32((u / 16) % 16) * 32.0, f32(u / 256) * 32.0);\n" +
-                "        let schritte = i32(d + 0.5);\n" +
+                "        // ÜBER-ABTASTUNG (√3-Marge): d Schritte sind voxel-wahr nur für\n" +
+                "        // achsparallele Strahlen; ein Diagonalstrahl durchquert bis √3·d\n" +
+                "        // Zellen — dünne Glieder (Bein/Schwanz) tunnelten sonst durch.\n" +
+                "        let schritte = i32(d * 1.732 + 0.5);\n" +
+                "        let stepN = f32(schritte);\n" +
+                "        let loI = vec3<i32>(orig);\n" +
+                "        let hiI = loI + vec3<i32>(i32(d) - 1);\n" +
                 "        for (var k: i32 = 0; k < schritte; k = k + 1) {\n" +
-                "            let t = tN2 + (tF2 - tN2) * (f32(k) + 0.5) / d;\n" +
+                "            let t = tN2 + (tF2 - tN2) * (f32(k) + 0.5) / stepN;\n" +
                 "            if (t >= bestT) { break; }\n" +
                 "            let pL = oL + dL * t;\n" +
                 "            let uvw = clamp((pL - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999));\n" +
@@ -39793,26 +39813,34 @@ class AnazhRealm {
                 "            if (tex.a > 0.25) {\n" +
                 "                bestT = t;\n" +
                 "                bestRgb = tex.rgb;\n" +
-                "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a):\n" +
-                "                let gx = textureLoad(atlas, texel + vec3<i32>(1, 0, 0), 0).a - textureLoad(atlas, texel - vec3<i32>(1, 0, 0), 0).a;\n" +
-                "                let gy = textureLoad(atlas, texel + vec3<i32>(0, 1, 0), 0).a - textureLoad(atlas, texel - vec3<i32>(0, 1, 0), 0).a;\n" +
-                "                let gz = textureLoad(atlas, texel + vec3<i32>(0, 0, 1), 0).a - textureLoad(atlas, texel - vec3<i32>(0, 0, 1), 0).a;\n" +
-                "                var nL = vec3<f32>(-gx, -gy, -gz);\n" +
-                "                if (dot(nL, nL) < 1e-8) { nL = -dir; }\n" +
-                "                // lokal → Welt via invᵀ (Zeilen der inversen = Spalten der Transponierten):\n" +
-                "                bestN = normalize(vec3<f32>(\n" +
-                "                    r0.x * nL.x + r1.x * nL.y + r2.x * nL.z,\n" +
-                "                    r0.y * nL.x + r1.y * nL.y + r2.y * nL.z,\n" +
-                "                    r0.z * nL.x + r1.z * nL.y + r2.z * nL.z\n" +
-                "                ));\n" +
+                "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a);\n" +
+                "                // die ±1-Reads auf den EIGENEN Brick geklemmt (dicht gepackter\n" +
+                "                // Atlas, kein Padding → sonst liest der Rand den Nachbar-Slot):\n" +
+                "                let gx = textureLoad(atlas, clamp(texel + vec3<i32>(1, 0, 0), loI, hiI), 0).a - textureLoad(atlas, clamp(texel - vec3<i32>(1, 0, 0), loI, hiI), 0).a;\n" +
+                "                let gy = textureLoad(atlas, clamp(texel + vec3<i32>(0, 1, 0), loI, hiI), 0).a - textureLoad(atlas, clamp(texel - vec3<i32>(0, 1, 0), loI, hiI), 0).a;\n" +
+                "                let gz = textureLoad(atlas, clamp(texel + vec3<i32>(0, 0, 1), loI, hiI), 0).a - textureLoad(atlas, clamp(texel - vec3<i32>(0, 0, 1), loI, hiI), 0).a;\n" +
+                "                let gv = vec3<f32>(-gx, -gy, -gz);\n" +
+                "                if (dot(gv, gv) < 1e-8) {\n" +
+                "                    bestN = -dir;\n" + // degeneriert: direkt zur Kamera (WELT-Raum, kein Transform)
+                "                } else {\n" +
+                "                    // lokal → Welt via invᵀ (Zeilen der inversen = Spalten der Transponierten):\n" +
+                "                    bestN = normalize(vec3<f32>(\n" +
+                "                        r0.x * gv.x + r1.x * gv.y + r2.x * gv.z,\n" +
+                "                        r0.y * gv.x + r1.y * gv.y + r2.y * gv.z,\n" +
+                "                        r0.z * gv.x + r1.z * gv.y + r2.z * gv.z\n" +
+                "                    ));\n" +
+                "                }\n" +
                 "                break;\n" +
                 "            }\n" +
                 "        }\n" +
                 "    }\n" +
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
                 "    if (bestT < 1e29) {\n" +
-                "        // DAS LICHT AUF DEM FELD (das Nacht-Glühen fällt): Lambert + Ambient\n" +
-                "        let licht = 0.35 + 0.85 * sonnStaerke * max(dot(bestN, sonne), 0.0);\n" +
+                "        // DAS LICHT AUF DEM FELD (das Nacht-Glühen fällt): dieselbe Tag/Nacht-\n" +
+                "        // Farbe wie die ganze Welt — ambientFarbe + lichtFarbe·Lambert (beide\n" +
+                "        // aus den echten Szene-Lichtern, getönt+gedimmt; nachts dunkel-blau,\n" +
+                "        // das goldene Albedo leuchtet nicht mehr aus sich selbst):\n" +
+                "        let licht = ambientFarbe + lichtFarbe * max(dot(bestN, sonne), 0.0);\n" +
                 "        let vz = bestT * max(dot(dir, fwd), 1e-4);\n" +
                 "        let tiefe = clamp(fern * (vz - nah) / (vz * (fern - nah)), 0.0, 0.9999995);\n" +
                 "        return vec4<f32>(bestRgb * licht, tiefe);\n" +
@@ -39845,7 +39873,8 @@ class AnazhRealm {
             fwd: U.fwd,
             felderN: U.felderN,
             sonne: U.sonne,
-            sonnStaerke: U.sonnStaerke,
+            lichtFarbe: U.lichtFarbe,
+            ambientFarbe: U.ambientFarbe,
             fogFarbe: U.fogFarbe,
             pano: TSL.texture(panoTex),
             liste: TSL.texture(wm.liste),
@@ -40013,6 +40042,7 @@ class AnazhRealm {
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
             freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
+            freiKleinSet: new Set(), // O(1)-Mitgliedschaft für die Wieder-Vereinigung
             belegt: 0,
             obergrenze: 0, // höchster je vergebener Feld-Index + 1 (der Shader-Loop endet dort)
         };
@@ -40034,15 +40064,25 @@ class AnazhRealm {
                 const b = wm.freiGross.pop(); // ein Block splittet in 8 Einheiten
                 for (let dz = 0; dz < 2; dz++)
                     for (let dy = 0; dy < 2; dy++)
-                        for (let dx = 0; dx < 2; dx++) wm.freiKlein.push(b + dx + dy * 16 + dz * 256);
+                        for (let dx = 0; dx < 2; dx++) {
+                            const u = b + dx + dy * 16 + dz * 256;
+                            wm.freiKlein.push(u);
+                            wm.freiKleinSet.add(u);
+                        }
             }
-            if (wm.freiKlein.length > 0) einheit = wm.freiKlein.pop();
+            if (wm.freiKlein.length > 0) {
+                einheit = wm.freiKlein.pop();
+                wm.freiKleinSet.delete(einheit);
+            }
         } else if (wm.freiGross.length > 0) {
             einheit = wm.freiGross.pop();
             gross = true;
         }
         if (einheit === null || wm.freiFelder.length === 0) {
-            if (einheit !== null) (gross ? wm.freiGross : wm.freiKlein).push(einheit);
+            if (einheit !== null) {
+                (gross ? wm.freiGross : wm.freiKlein).push(einheit);
+                if (!gross) wm.freiKleinSet.add(einheit); // Rollback in den Set spiegeln
+            }
             if (!this._weltMarchVollWarn) {
                 this._weltMarchVollWarn = true;
                 this.log("WELT-MARCH ERSCHÖPFT: kein Platz im Feld-Atlas — das Feld FEHLT sichtbar", "WARN");
@@ -40167,11 +40207,41 @@ class AnazhRealm {
     _weltFeldFrei(handle) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
+        if (handle._frei) return; // Doppel-Frei-Wand (kein doppelter Push → keine spätere Doppel-Vergabe)
+        handle._frei = true;
         const o = handle.feld * 32;
         wm.listeDaten[o + 3] = 0;
         wm.liste.needsUpdate = true;
         wm.freiFelder.push(handle.feld);
-        (handle.gross ? wm.freiGross : wm.freiKlein).push(handle.einheit);
+        if (handle.gross) {
+            wm.freiGross.push(handle.einheit);
+        } else {
+            // DIE WIEDER-VEREINIGUNG (gegen die Ein-Weg-Fragmentierung): liegen nach
+            // diesem Free ALLE 8 Einheiten des Block-Ankers frei, verschmelzen sie
+            // zurück zu EINEM 64³-Block — sonst verhungerte ein Region-/Bau-Feld
+            // mit der Zeit, obwohl 8 freie Einheiten da sind (irreversibler Bruch).
+            const u = handle.einheit;
+            wm.freiKleinSet.add(u);
+            const ex = u % 16,
+                ey = Math.floor(u / 16) % 16,
+                ez = Math.floor(u / 256);
+            const ax = ex & ~1,
+                ay = ey & ~1,
+                az = ez & ~1;
+            const anker = ax + ay * 16 + az * 256;
+            const geschwister = [];
+            for (let dz = 0; dz < 2; dz++)
+                for (let dy = 0; dy < 2; dy++)
+                    for (let dx = 0; dx < 2; dx++) geschwister.push(anker + dx + dy * 16 + dz * 256);
+            if (geschwister.every((g) => wm.freiKleinSet.has(g))) {
+                for (const g of geschwister) wm.freiKleinSet.delete(g);
+                const gs = new Set(geschwister);
+                wm.freiKlein = wm.freiKlein.filter((x) => !gs.has(x));
+                wm.freiGross.push(anker); // der Block ist wieder ganz
+            } else {
+                wm.freiKlein.push(u);
+            }
+        }
         wm.belegt--;
     }
 
@@ -40403,17 +40473,47 @@ class AnazhRealm {
             fp.U.fern.value = cam.far;
             const e = cam.matrixWorld.elements;
             fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
-            // Loop-Grenze (nur vergebene Felder marchen) + das SONNEN-LICHT:
+            // Loop-Grenze (nur vergebene Felder marchen) + DAS LICHT DER WELT:
+            // das Feld gehorcht denselben Szene-Lichtern wie alles andere —
+            // lichtFarbe = Sonnen-Farbe × Intensität (Tag/Nacht/Wetter/Feld-getönt),
+            // ambientFarbe = Ambient + Hemi-Mittel. Nachts sind beide dunkel-blau →
+            // das goldene Albedo leuchtet nicht mehr aus sich selbst (das .44-Symptom).
             const wm = st.weltMarch;
             fp.U.felderN.value = wm ? wm.obergrenze : 0;
             const dl = st.directionalLight;
             if (dl) {
                 fp.U.sonne.value
                     .copy(dl.position)
-                    .sub(dl.target && dl.target.position ? dl.target.position : this._nullVektor || (this._nullVektor = new THREE.Vector3()))
+                    .sub(
+                        dl.target && dl.target.position
+                            ? dl.target.position
+                            : this._nullVektor || (this._nullVektor = new THREE.Vector3())
+                    )
                     .normalize();
-                fp.U.sonnStaerke.value = Math.max(0, Math.min(1.5, dl.intensity || 0));
+                const di = Math.max(0, dl.intensity || 0);
+                fp.U.lichtFarbe.value.set(dl.color.r * di, dl.color.g * di, dl.color.b * di);
             }
+            const amb = st.ambientLight;
+            const hemi = st.hemiLight;
+            let ar = 0,
+                ag = 0,
+                ab = 0;
+            if (amb) {
+                const ai = Math.max(0, amb.intensity || 0);
+                ar += amb.color.r * ai;
+                ag += amb.color.g * ai;
+                ab += amb.color.b * ai;
+            }
+            if (hemi) {
+                const hi = Math.max(0, hemi.intensity || 0) * 0.5; // Himmel/Boden-Mittel
+                ar += ((hemi.color.r + hemi.groundColor.r) / 2) * hi;
+                ag += ((hemi.color.g + hemi.groundColor.g) / 2) * hi;
+                ab += ((hemi.color.b + hemi.groundColor.b) / 2) * hi;
+            }
+            if (!amb && !hemi) {
+                ar = ag = ab = 0.3;
+            }
+            fp.U.ambientFarbe.value.set(ar, ag, ab);
             if (st.scene && st.scene.fog && st.scene.fog.color) fp.U.fogFarbe.value.copy(st.scene.fog.color);
         }
     }
@@ -92865,13 +92965,13 @@ class AnazhRealm {
         const frustum = this._frustumCache;
         if (this.state.floatingIslands)
             this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
-        // EIN SICHTBARKEITS-BESITZER (Welt-March): Tiere mit Feld-Slot gehören
-        // dem Kreatur-Ziegel — der Frustum-Schreiber würde den Mesh-Rückweg
-        // wiederbeleben; nur die Bake-Rampe (noch kein Feld) wird gecullt.
+        // EIN SICHTBARKEITS-BESITZER (Welt-March): Tiere mit Feld ODER
+        // gelaufenem Bake-Versuch gehören dem Kreatur-Ziegel — der Frustum-
+        // Schreiber würde sonst den Mesh-Rückweg wiederbeleben (auch bei
+        // Atlas-Erschöpfung: KEIN Rückweg); nur die Bake-Rampe wird gecullt.
         if (this.state.creatures)
             this.state.creatures.forEach((creature) => {
-                if (!creature.userData || !creature.userData._kzGlieder)
-                    creature.visible = this.isInFrustum(creature, frustum);
+                if (!this._kzBesitztFeld(creature)) creature.visible = this.isInFrustum(creature, frustum);
             });
         // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Batches lebt auf der
         // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
@@ -95282,7 +95382,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.45";
+AnazhRealm.VERSION = "18.491.46";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99997,7 +100097,7 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     hoehe: 512, // Atlas-Y (16 Einheiten)
     tiefe: 128, // Atlas-Z (4 Einheiten) — 512×512×128 RGBA8 = 128 MB
     einheit: 32, // Voxel je Einheits-Kante (Kreatur/Baum-Klasse; 64er = Block aus 8)
-    felder: 256, // Feld-Listen-Plätze (2 RGBA-Float-Texel je Feld)
+    felder: 512, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld) — entkoppelt von den 128 Atlas-Blöcken (Dedup-Bahn: ein Brick, viele Matrix-Einträge)
 }); // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
 AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
