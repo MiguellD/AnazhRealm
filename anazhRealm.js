@@ -23124,7 +23124,7 @@ class AnazhRealm {
                     cr.visible = false;
                     continue;
                 }
-                if (st._frameOverBudget) continue; // bis zum Bake trägt der Körper (Streaming-Rampe)
+                if (!this._weltBakeErlaubt()) continue; // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt der Körper
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
                 const zg = this._ziegelBackenAusGruppe(cr, AnazhRealm.WALD_ZIEGEL.dim);
@@ -39305,14 +39305,35 @@ class AnazhRealm {
         };
     }
 
+    // DER RING WEICHT DEM GEBAUTEN (20.07., Schöpfer-Screenshots „zwei
+    // Terrain-Sheets, ein untexturiertes durch das ich laufe"): trägt ein
+    // GEBAUTER, sichtbarer Chunk die Säule, existiert der Ring dort nicht als
+    // zweite Wahrheit — Edits/Detail-Abweichungen liegen beliebig UNTER dem
+    // Gesetz, die −0.3-Senkung war das Pflaster, das Weichen ist der Schnitt.
+    // Sichtbar = Mesh + jede Eltern-Stufe (Region-Bundles blenden als GRUPPE).
+    _chunkDecktRing(x, z) {
+        const st = this.state;
+        if (!st.voxelChunks || st.voxelChunks.size === 0) return false;
+        const { span } = this._voxelChunkConfig();
+        const e = st.voxelChunks.get(`${Math.floor(x / span)},${Math.floor(z / span)}`);
+        if (!e || e.empty || !e.mesh) return false;
+        let o = e.mesh;
+        while (o) {
+            if (o.visible === false) return false;
+            o = o.parent;
+        }
+        return true;
+    }
+
     // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →
     // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
-    // Farbrampe. Kein Parallelpfad zwischen den beiden Ausführern.
+    // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
     _fernRingSetzVertex(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
         const wet = law < wl;
         let y = wet ? wl - F.wasserDrop : law;
         if (p.row === 0) y -= F.saumDrop; // die Saum-Tauchkante
+        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60; // der Ring weicht
         const geo = fr.meshes[p.s].geometry;
         geo.attributes.position.setXYZ(p.li, p.x, y, p.z);
         this._fernRingColorInto(geo.attributes.color, p.li, law, wl, wet);
@@ -39335,7 +39356,11 @@ class AnazhRealm {
     // Nebel-/Ring-Rand und Schalen-Naht). Liefert die Zahl erneuerter Vertices.
     _fernRingRefresh(budget) {
         const fr = this.state.fernRing;
-        if (!fr || fr.cursor >= fr.totalVerts) return 0;
+        if (!fr) return 0;
+        if (fr.cursor >= fr.totalVerts) {
+            this._fernRingDeckWache(fr);
+            return 0;
+        }
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let done = 0;
@@ -39370,6 +39395,40 @@ class AnazhRealm {
             for (const m of fr.meshes) m.visible = true; // erst voll, dann sichtbar (kein Null-Blob)
         }
         return done;
+    }
+
+    // DIE DECK-WACHE (20.07., „zwei Terrain-Sheets"): Chunks bauen und fallen
+    // NACH dem Ring-Anstrich — die Deck-Zone folgt dem Chunk-Strom ROLLIEREND
+    // (128 Vertices je Tick durch DIESELBE Setz-Naht: der Ring weicht dem
+    // Gebauten und kehrt zurück, wenn es fällt). Zählt nie als Refresh
+    // (fr.refreshed/cursor byte-alt — die Gate-Bänder lesen unverändert).
+    _fernRingDeckWache(fr) {
+        const F = AnazhRealm.FERN_RING;
+        if (fr.zoneVerts === undefined) {
+            const sh = fr.schalen[0];
+            let rows = 0;
+            while (
+                rows < F.reihen &&
+                sh.inner * Math.pow(sh.aussen / sh.inner, rows / (F.reihen - 1)) <= fr.deckZoneRad * 1.35
+            )
+                rows++;
+            fr.zoneVerts = rows * F.winkel;
+        }
+        if (!fr.zoneVerts) return;
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        fr.deckCursor = fr.deckCursor || 0;
+        for (let n = 0; n < 128; n++) {
+            const p = this._fernRingPunkt(fr, fr.deckCursor % fr.zoneVerts);
+            let law = this._terrainMacroSurfaceY(p.x, p.z, false);
+            const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
+            law = this._fernRingDeckMisch(fr, p.rad, law, voll);
+            this._fernRingSetzVertex(fr, p, law, wl);
+            fr.deckCursor++;
+        }
+        const geo = fr.meshes[0].geometry;
+        geo.attributes.position.needsUpdate = true;
+        geo.attributes.color.needsUpdate = true;
+        geo.computeVertexNormals();
     }
 
     // ===== DER FELD-ZEICHNER (STUFE-2-VOLLAUSBAU, das-feld-zeichnet §2) =====
@@ -39858,6 +39917,25 @@ class AnazhRealm {
     // Block — nichts verschwendet, kein Größen-Kompromiss. Die Liste trägt je
     // Feld: [bbMin.xyz | einheitsIndex] · [bbSize.xyz | d] (d=0 → inaktiv;
     // der Shader leitet Slot-Ursprung UND Schrittmaß aus denselben 8 Floats).
+
+    // DIE BAKE-GARANTIE (Ingest-Takt-Doktrin: über Budget WENIG, nie NULL):
+    // die Bakes sind die GEBURT der reinen Form — verhungern sie am
+    // Frame-Budget, erwacht die Form auf lahmem Holz NIE (Schöpfer-Boot .43:
+    // 16 fps ⇒ _frameOverBudget dauerhaft ⇒ Tiere/Bauten blieben Körper).
+    // Der Takt zielt auf eine Rate je ECHTER Sekunde (die Wanduhr, nie die
+    // Framerate); Kopfraum erlaubt mehr. Danach ist alles memoisiert = 0.
+    _weltBakeErlaubt() {
+        const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
+        if (this._weltBakeFenster === undefined || jetzt - this._weltBakeFenster > 1000) {
+            this._weltBakeFenster = jetzt;
+            this._weltBakeN = 0;
+        }
+        const max = this.state._frameOverBudget ? 4 : 16; // Bakes je Sekunde
+        if (this._weltBakeN >= max) return false;
+        this._weltBakeN++;
+        return true;
+    }
+
     _weltMarchEnsure() {
         const st = this.state;
         if (st.weltMarch) return st.weltMarch;
@@ -69706,7 +69784,7 @@ class AnazhRealm {
             bg.visible = false;
             return;
         }
-        if (st._frameOverBudget) return; // budgetiert — bis zum Bake trägt das Bundle (Streaming-Rampe)
+        if (!this._weltBakeErlaubt()) return; // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt das Bundle (Streaming-Rampe)
         u._ziegelBakeVersuch = true;
         const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
         u._ziegelSlot = zg ? this._weltFeldRegister(zg) : null;
@@ -74492,7 +74570,7 @@ class AnazhRealm {
             return false;
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Atlas voll)
-        if (st._frameOverBudget) return false; // der Nexus-Grundsatz: nie auf Kosten des Spielers
+        if (!this._weltBakeErlaubt()) return false; // Bake-Garantie: getaktet, nie verhungert
         const hatte = this._archIsRendered(entry);
         if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Bake
         const zg = entry.mesh ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dimArch) : null;
@@ -78202,7 +78280,10 @@ class AnazhRealm {
                     this._rebuildArchitectureMesh(entry);
                     built++;
                 }
-                if (built < budget && this._archZiegelFern(entry)) built++;
+                // Der Ziegel-Ruf hängt NICHT am Mesh-Budget (das steht auf lahmem
+                // Holz dauerhaft auf 0 und ließe die Form nie erwachen) — er
+                // taktet sich selbst über die Bake-Garantie und ist memoisiert.
+                this._archZiegelFern(entry);
                 if (entry._ziegelSlot) {
                     this._weltFeldAktiv(entry._ziegelSlot, true);
                     if (entry.mesh && entry.mesh.visible !== false) entry.mesh.visible = false;
@@ -78213,8 +78294,7 @@ class AnazhRealm {
                 }
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
-                if (built < budget && this._archZiegelFern(entry)) built++;
-                else if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, true);
+                this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie); aktiviert den Slot, wenn er lebt
             }
         }
         // DAS NEUE KLEID — der Foundry-Drain: baut kalte Foundry-Einträge + HEBT klassisch
@@ -94955,7 +95035,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.43";
+AnazhRealm.VERSION = "18.491.44";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

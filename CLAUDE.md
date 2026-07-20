@@ -50,7 +50,34 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.43 — KEINE FALLBACKS: Einheiten-Atlas, voxel-wahres Schrittmaß, der Mesh-Rückweg ist tot)
+## Stand (V18.491.44 — DIE HEILUNG DES SCHÖPFER-BOOTS: der Ring weicht dem Gebauten, die Bakes verhungern nie)
+
+**20.07., Schöpfer-Boot .43 (Screenshots: „untexturiertes Sheet durch das ich
+laufe — zwei Terrainsheets?" + „Tiere scheinen noch wie früher"):** beide
+Wurzeln benannt und geschnitten:
+- DER RING WEICHT DEM GEBAUTEN: das „Sheet" waren die ZWEI Terrain-Wahrheiten
+  — der Fern-Ring (Gesetz-Höhe, seit dem Loch-Deckel bis unter die Füße) lag
+  über editierten/abweichenden Chunks (die −0.3-Senkung war das Pflaster).
+  Jetzt: trägt ein GEBAUTER, sichtbarer Chunk die Säule (_chunkDecktRing:
+  Chunk + Eltern-Kette sichtbar), taucht der Zone-Vertex −60 — in der EINEN
+  Setz-Naht (_fernRingSetzVertex), CPU und GPU erben gleich. DIE DECK-WACHE
+  (_fernRingDeckWache): Chunks bauen/fallen NACH dem Anstrich — die Zone
+  folgt dem Chunk-Strom rollierend (128 Vertices/Tick durch dieselbe Naht,
+  zählt nie als Refresh). gate:fern-ring spiegelt den Weich-Term (Band 2/3).
+- DIE BAKE-GARANTIE (_weltBakeErlaubt, Ingest-Takt-Doktrin): auf dem
+  Schöpfer-Holz (16 fps) stand _frameOverBudget DAUERHAFT — alle drei
+  Bake-Pfade waren auf 0 gegated, die Form erwachte NIE („Tiere wie
+  früher"); meine Sonde hatte die Wand chirurgisch geöffnet, sein Spiel
+  nicht. Jetzt: Wanduhr-Takt (über Budget 4 Bakes/s, nie 0; Kopfraum 16/s),
+  alle drei Konsumenten rufen durch den EINEN Helfer; der Arch-Ziegel-Ruf
+  hängt nicht mehr am Mesh-Budget (das über Budget 0 ist — der stille
+  Verhungerer).
+- BEWIESEN: Boot-Sonde OHNE Budget-Chirurgie (echtes swiftshader = dauerhaft
+  über Budget, exakt seine Bedingung): 1/1 gespawnte Kreatur bakte ihr Feld
+  (unter .43: 0), aktiv + Körper unsichtbar, 0 Fehler · gate:fern-ring ALLE
+  Bänder GRÜN (Weich-Term gespiegelt) · playtest:fast 18/18 · lint 0 Errors.
+
+**Davor, V18.491.43 — KEINE FALLBACKS: Einheiten-Atlas, voxel-wahres Schrittmaß, der Mesh-Rückweg ist tot)
 
 **20.07., Schöpfer: „nichts offen, vollendet … evt. erwacht nichts, evt alles,
 nichts dazwischen, keine fallbacks":** die drei Krücken des .42-Stands fallen:

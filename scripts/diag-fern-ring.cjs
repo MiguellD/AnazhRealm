@@ -185,6 +185,10 @@ const server = http.createServer((req, res) => {
             }
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
+            // DER RING WEICHT DEM GEBAUTEN (gespiegelt): trägt ein gebauter,
+            // sichtbarer Chunk die Säule, taucht der Zone-Vertex −60 (die
+            // Live-Wahrheit derselben Naht — _chunkDecktRing ist die Quelle).
+            if (s === 0 && rad <= fr.deckZoneRad * 1.35 && r._chunkDecktRing(sx, sz)) expY -= 60;
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
             expY += fudge || 0;
