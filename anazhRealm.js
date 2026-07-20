@@ -1157,9 +1157,16 @@ class AnazhRealm {
             // Render-Auflösung (Vorlage `_rScale` + `setRenderScale`), zielsuchend auf
             // die Ziel-FPS (via effArch, dieselbe loadScale-PID-Quelle). `lodRef` +
             // `_foliageResScale` leben schon (Subsystem A / S5) — hier NICHT dupliziert.
-            foliageResCeiling: 1, // die User-Obergrenze der Laub-Auflösung (0.25..1); der Regler skaliert darunter
-            _renderScale: 1, // adaptive Render-Auflösung (Pixel-Ratio-Faktor), effArch-gefahren; Headless → 1
-            _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter Wert (Dead-Band gegen Churn)
+            foliageResCeiling: 1, // die User-Obergrenze der Szene-Auflösung (0.25..1); der Regler skaliert darunter
+            _renderScale: 1, // Swapchain-DPR-Faktor (KONSTANT 1 × Klassen-Pixel-Kappe): die adaptive Auflösung lebt jetzt FLICKER-FREI im Szene-RenderTarget (`_foliageResScale` → scenePass.setResolutionScale), nicht mehr in setPixelRatio (V18.390-Verbot geehrt)
+            _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter DPR-Cap-Wert (Dead-Band gegen Churn)
+            // WELLE 1 — WAHRNEHMUNG als dritter Kostenterm (die Natur rechnet nichts, was das
+            // Auge nicht auflöst): `_camMotion01` misst die Blick-/Translations-Geschwindigkeit
+            // (0 = Stand → 1 = schnell). Sakkadische Maskierung + Bewegungsunschärfe machen
+            // Detail bei schneller Bewegung unsichtbar → die Szene-Auflösung darf dann fallen
+            // (imperzeptibel), und WÄHREND der Bewegung frei werdende GPU-Zeit trägt das
+            // Streaming (die Regionen ziehen mit dem Schritt-/Fahr-Tempo nach). Reine Beobachtung.
+            _camMotion01: 0,
             // V18.389 (DAS NEUE KLEID P5) — DAS SAUBERE STANDALONE-PERF-PANEL (Vorlage
             // phytogenesis.js Z.2407-2415): das kleine, IMMER sichtbare top-right Panel mit der
             // EINEN klaren Zeile `{fps} · {rScale}% · Laub {folRes}% · {dc}dc · {tri}k▲`. Liest
@@ -14799,16 +14806,23 @@ class AnazhRealm {
                         : Math.min(fdTarget, fdCur + fdStep)
                     : Math.max(fdTarget, fdCur - fdStep * 2);
         }
-        // SUBSYSTEM 5 — DER LAUB-AUFLÖSUNGS-FAKTOR (Vorlage `_folRes`, die dritte Foliage-Schwester):
-        // dieselbe `effArch`-Quelle wie Radius/Dichte (KEIN zweiter Regler) fährt den Auflösungs-Faktor
-        // des künftigen reduziert-aufgelösten Laub-Passes — gedeckelt durch die User-OBERGRENZE
-        // (`state.foliageResCeiling`, der Einstellungen-Slider „Laub-Auflösung", V18.387): der Regler
-        // skaliert NUR DARUNTER. Unter Last sinkt er → das Laub (90 % der Fill-Last) rendert in einen
-        // kleineren RT → grosse Fill-Ersparnis; mit Kopfraum wächst er zurück bis zum User-Ceiling. Er
-        // sinkt SOFORT (Optik-Notbremse, wie die Dichte) und wächst nur in den Lücken (nicht über Budget).
-        // Headless (Null-Renderer) → das Ceiling (gate-treu). Der Konsument ist der Zwei-Pass-Composite
-        // (pass.setPixelRatio(dpr·scale)); bis dahin lebt der Faktor in der EINEN Regelschleife + im
-        // Flugschreiber (die etablierte Stellgrößen-Surface, wie foliageDensity).
+        // SUBSYSTEM 5 — DIE EINE SZENE-AUFLÖSUNG (WELLE 1: der dritte Kostenterm WAHRNEHMUNG).
+        // `_foliageResScale` ist der EINE adaptive Auflösungs-Faktor der GANZEN Szene (das pass()-
+        // RenderTarget; das Laub trägt 90 % der Fill-Last, aber Terrain/Wasser fahren mit — halbe
+        // Auflösung ≈ 4× weniger Fill). Sein Konsument ist ENDLICH gebaut (V18.387 „bis dahin lebt der
+        // Faktor nur im Regler"): `scenePass.setResolutionScale` in `_loopRender` — FLICKER-FREI, weil
+        // nur das interne RT skaliert, nie die Swapchain (der V18.390 benannte Rückweg; setPixelRatio
+        // bleibt konstant beim Klassen-Pixel-Kappen-DPR). Der Faktor fällt auf das MINIMUM zweier
+        // Erlaubnisse (KEIN Parallel-Regler — dieselbe effArch-Quelle + EIN zusätzlicher Sense):
+        //   (a) PID-LAST: `lerp(LOAD_FLOOR, ceil, effArch)` — eine ertrinkende GPU gibt Pixel her
+        //       (jetzt gefahrlos, da flicker-frei; das V18.390-setPixelRatio-Verbot ist umgangen).
+        //   (b) WAHRNEHMUNG: `lerp(ceil, MOTION_FLOOR, _camMotion01)` — schnelle Kamera → das Auge ist
+        //       durch sakkadische Maskierung + Bewegungsunschärfe geblendet → die Absenkung ist
+        //       IMPERZEPTIBEL, und die frei werdende GPU-Zeit trägt das Streaming (Regionen ziehen mit
+        //       dem Schritt-/Fahr-Tempo nach — genau der Schöpfer-Befund „laden nicht mit Schritttempo").
+        // Absenken SOFORT (Bewegungs-/Last-Notbremse, unsichtbar), Anheben SANFT (kein Schärfe-Pop im
+        // Stand). Diskrete 0.05-Stufen → das RT realloziert nur bei echtem Stufen-Wechsel, nie pro Frame.
+        // Headless (Null-Renderer) → das Ceiling (gate-treu, volle Auflösung).
         {
             const rsCeil = Number.isFinite(st.foliageResCeiling)
                 ? Math.max(AnazhRealm.PERF_FOLIAGE_RES_MIN, Math.min(1, st.foliageResCeiling))
@@ -14816,33 +14830,28 @@ class AnazhRealm {
             if (st.renderer && st.renderer._isHeadlessNull) {
                 st._foliageResScale = rsCeil;
             } else {
-                const rsTarget = lerp(AnazhRealm.PERF_FOLIAGE_RES_MIN, rsCeil, effArch);
-                const rsCur = st._foliageResScale != null ? st._foliageResScale : AnazhRealm.PERF_FOLIAGE_RES_MIN;
+                const loadAllow = lerp(AnazhRealm.PERF_SCENE_RES_LOAD_FLOOR, rsCeil, effArch);
+                const m = cl(st._camMotion01 || 0);
+                const motionAllow = lerp(rsCeil, AnazhRealm.PERF_SCENE_RES_MOTION_FLOOR, m);
+                const rsTarget = Math.min(loadAllow, motionAllow);
+                const rsCur = st._foliageResScale != null ? st._foliageResScale : rsCeil;
                 const rsStep = AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP;
-                st._foliageResScale =
-                    rsTarget > rsCur
-                        ? st._frameOverBudget
-                            ? rsCur
-                            : Math.min(rsTarget, rsCur + rsStep)
-                        : Math.max(rsTarget, rsCur - rsStep * 2);
+                // KONTINUIERLICHER Kontroll-Wert: Absenken SOFORT (Bewegungs-/Last-Notbremse),
+                // Anheben nur schrittweise. Die 0.05-Quantisierung passiert ERST am Konsumenten
+                // (`_loopRender` → setResolutionScale) — hier NICHT (sonst frisst die grobe Stufe
+                // den feinen Wachs-Schritt und der Wert klettert nie zurück).
+                const raw = rsTarget < rsCur ? rsTarget : Math.min(rsTarget, rsCur + rsStep);
+                st._foliageResScale = Math.max(
+                    Math.min(rsCeil, AnazhRealm.PERF_FOLIAGE_RES_MIN),
+                    Math.min(rsCeil, raw)
+                );
             }
         }
-        // V18.387 — DIE ZIELEFFIZIENZ: DIE ADAPTIVE RENDER-AUFLÖSUNG (Vorlage `_rScale` + `setRenderScale`,
-        // Z.2401-2405 „hält die per Schieber gewählte Ziel-fps, indem NUR die Render-Auflösung nachgibt").
-        // Der Perf-Regler hatte bisher KEINE Pixel-Ratio-Stellgröße — die adaptive Auflösung ist das
-        // billigste Look-Opfer (die halbe Auflösung kostet ~4× weniger Fill). Sie folgt DERSELBEN effArch-
-        // PID-Quelle wie Laub/Schatten (KEIN Parallel-Regler, Gesetz #0 — die Ziel-FPS lebt in `perfTargetMs`,
-        // das der PID → loadScale → effArch treibt): unter Last sinkt `_renderScale` zum Floor, mit Kopfraum
-        // wächst er zurück auf 1. Diskrete 0.05-Rast-Stufen (Vorlage) + Dead-Band (in `_applyRenderScale`)
-        // → kein ständiges Framebuffer-Neu-Allozieren. Angewandt NUR non-headless (der Null-Renderer stubt
-        // setPixelRatio ohnehin → gate-treu: die volle Auflösung, kein Pixel).
-        {
-            const drTarget = lerp(AnazhRealm.PERF_RENDER_SCALE_MIN, 1, effArch);
-            const step = AnazhRealm.PERF_RENDER_SCALE_STEP;
-            const drSnap = Math.round(drTarget / step) * step;
-            st._renderScale = Math.max(AnazhRealm.PERF_RENDER_SCALE_MIN, Math.min(1, drSnap));
-            if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale(st._renderScale);
-        }
+        // Der Swapchain-DPR bleibt KONSTANT (Klassen-Pixel-Kappe, einmal beim Boot per Dead-Band): die
+        // adaptive Auflösung lebt jetzt allein im Szene-RT (oben). `_renderScale` = 1 (voller DPR),
+        // `_applyRenderScale` trägt nur noch den Klassen-Pixel-Cap — kein per-Last-setPixelRatio mehr.
+        st._renderScale = 1;
+        if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale(1);
         // V18.352 — DER SCHATTEN-PASS KOMMT UNTER DEN EINEN REGLER (Schöpfer „tue es endlich, alles, wie
         // es die Vision will"). Der Schatten-Pass (ein zweiter Voll-Render) war die FIXE Boden-Last, die
         // der Laub-Regler NIE erreichte → eine kämpfende GPU blieb darum unter dem fps-Ziel, auch wenn
@@ -16048,6 +16057,9 @@ class AnazhRealm {
                               st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
                           foliageRes: st._foliageResScale != null ? +(+st._foliageResScale).toFixed(2) : null,
                           renderScale: st._renderScale != null ? +(+st._renderScale).toFixed(2) : null,
+                          // WELLE 1 — der Wahrnehmungs-Term im Trace: 0 = Stand (Szene scharf), 1 = schnelle
+                          // Kamera (Auflösung imperzeptibel abgesenkt, GPU-Zeit ans Streaming).
+                          camMotion: st._camMotion01 != null ? +(+st._camMotion01).toFixed(2) : null,
                           archRadius:
                               st.architectureCullingRadius != null ? Math.round(+st.architectureCullingRadius) : null,
                           streamBudgetMs:
@@ -93045,6 +93057,13 @@ class AnazhRealm {
             const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
+            // WELLE 1 — der Griff auf den Szene-PassNode: sein internes RenderTarget ist der
+            // flicker-freie Auflösungs-Hebel. `setResolutionScale(x)` skaliert `_width·_pixelRatio·x`
+            // ins RT (der Vendor wendet es pro Frame in updateBefore an; renderTarget.setSize
+            // no-opt bei gleicher Größe → Realloc NUR bei echtem Stufen-Wechsel). Der Regler
+            // (`_nexusPerfActuate`) rechnet den Faktor, `_loopRender` legt ihn HIER an.
+            if (typeof scenePass.setResolutionScale === "function") scenePass.setResolutionScale(1);
+            this.state.scenePass = scenePass;
             // API-korrekt: der sampelbare Textur-Node kommt aus
             // getTextureNode() (PassNode != TextureNode — .sample() lebt am
             // TextureNode). Das ist das offizielle MRT/pass-Muster.
@@ -93270,6 +93289,40 @@ class AnazhRealm {
         // Skybox lief 1 Frame hinterher → Sterne rauschten bei Bewegung
         // + 2 s Nachlauf. Jetzt: Camera ist bereits aktualisiert (siehe
         // Z. ~25049), Skybox-Position folgt SYNCHRON.
+        // WELLE 1 — DER WAHRNEHMUNGS-SENSE (der dritte Kostenterm): wie schnell bewegt sich der
+        // BLICK. Die Kamera ist hier bereits aktualisiert (s.o.). Winkelgeschwindigkeit der Welt-
+        // Blickrichtung (Umsehen) UND Translations-Geschwindigkeit (Gehen/Fahren) → `_camMotion01`
+        // ∈ [0..1]. Fast-Attack (sofort tief, das Auge ist ohnehin geblendet), Short-Decay (~170 ms
+        // zurück zur Schärfe im Stand). Reine Beobachtung; der Szene-Auflösungs-Aktuator liest sie.
+        if (this.state.camera) {
+            const cam = this.state.camera;
+            // currentTime ist SEKUNDEN (loop: t/1000). dtS geklemmt: Boden gegen Div-0, Deckel
+            // gegen den Riesen-dt eines Tab-Wechsels/ersten Frames (sonst falscher Peak).
+            const dtS = this._camMotionLast
+                ? Math.min(0.1, Math.max(0.001, currentTime - this._camMotionLast))
+                : 0.016;
+            this._camMotionLast = currentTime;
+            if (!this._camDirPrev) this._camDirPrev = new THREE.Vector3();
+            if (!this._camPosPrev) this._camPosPrev = new THREE.Vector3();
+            if (!this._camDirTmp) this._camDirTmp = new THREE.Vector3();
+            const dir = cam.getWorldDirection(this._camDirTmp);
+            let raw = 0;
+            if (this._camMotionInit) {
+                const dot = Math.max(-1, Math.min(1, dir.dot(this._camDirPrev)));
+                const angVel = Math.acos(dot) / dtS; // rad/s Blick-Winkelgeschwindigkeit
+                const posVel = cam.position.distanceTo(this._camPosPrev) / dtS; // m/s
+                const angN = Math.min(1, angVel / AnazhRealm.PERF_CAM_ANGVEL_FULL);
+                const posN = Math.min(1, posVel / AnazhRealm.PERF_CAM_POSVEL_FULL);
+                raw = Math.max(angN, posN);
+            }
+            this._camMotionInit = true;
+            this._camDirPrev.copy(dir);
+            this._camPosPrev.copy(cam.position);
+            const prev = this.state._camMotion01 != null ? this.state._camMotion01 : 0;
+            // Fast-Attack (raw sofort), Short-Decay (Zeitkonstante DECAY_MS in ms → dtS×1000):
+            const decay = Math.exp((-dtS * 1000) / AnazhRealm.PERF_CAM_MOTION_DECAY_MS);
+            this.state._camMotion01 = raw >= prev ? raw : prev * decay;
+        }
         if (this.state.camera && this.state.skybox) {
             this.state.skybox.position.copy(this.state.camera.position);
         }
@@ -93429,6 +93482,22 @@ class AnazhRealm {
         // Aufbau-/Render-Fehler (postProcessingFailed) faellt es auf den
         // direkten renderer.render() zurueck — NIE ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
+        // WELLE 1 — der Auflösungs-Konsument: den vom Regler bestimmten Szene-Auflösungs-Faktor
+        // auf das interne Szene-RenderTarget legen (flicker-frei; die Swapchain bleibt voll). Der
+        // Vendor wendet _resolutionScale pro Frame in updateBefore an; setResolutionScale schreibt
+        // nur die Zahl — das RT realloziert erst beim nächsten setSize mit geänderter Größe.
+        if (
+            this.state.scenePass &&
+            typeof this.state.scenePass.setResolutionScale === "function" &&
+            !(this.state.renderer && this.state.renderer._isHeadlessNull)
+        ) {
+            // Auf 0.05-Rast-Stufen quantisieren: das interne RT realloziert NUR beim Überqueren
+            // einer Stufe, nicht bei jeder feinen Regler-Regung (der Realloc-/Hitch-Spar-Grund).
+            const raw = this.state._foliageResScale != null ? this.state._foliageResScale : 1;
+            const step = AnazhRealm.PERF_RENDER_SCALE_STEP;
+            const snapped = Math.max(AnazhRealm.PERF_FOLIAGE_RES_MIN, Math.round(raw / step) * step);
+            this.state.scenePass.setResolutionScale(snapped);
+        }
         if (pp && !this.state.postProcessingFailed) {
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
@@ -93723,7 +93792,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.22";
+AnazhRealm.VERSION = "18.491.23";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -98349,8 +98418,20 @@ AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelö
 // Kaskaden-Klone erben ihn) lässt einzig den Schatten-Render ihn als Caster zählen. Das exakte
 // Gegenstück zum Vorlagen-`layers.set(2)` + `camera.layers.enableAll()`-vor-dem-Schatten-Bake.
 AnazhRealm.SHADOW_TWIN_LAYER = 2;
-AnazhRealm.PERF_FOLIAGE_RES_MIN = 0.5; // unter Last: halbe Laub-Auflösung (Vorlage-Slider 25–100 %, 0.5 = sicherer Floor)
+AnazhRealm.PERF_FOLIAGE_RES_MIN = 0.5; // absoluter Boden der Szene-Auflösung (0.5 = 25 % Fill — noch nicht Matsch)
 AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Zurück-auf-volle-Auflösung
+// WELLE 1 — DIE BEWEGUNGS-GEKOPPELTE SZENE-AUFLÖSUNG (der V18.390 benannte Rückweg:
+// „Adaptive Auflösung kehrt flicker-frei zurück — Render-Target-Scaling statt setPixelRatio").
+// Der Konsument ist endlich gebaut: `scenePass.setResolutionScale(_foliageResScale)` skaliert
+// NUR das interne Szene-RenderTarget des pass() — die Swapchain bleibt voll (kein setPixelRatio-
+// Framebuffer-Realloc → kein schwarzes Flackern). `_foliageResScale` fährt der EINE Regler aus
+// dem MINIMUM zweier Erlaubnisse (KEIN Parallel-Regler): (a) PID-Last (GPU ertrinkt → tiefer)
+// und (b) WAHRNEHMUNG (schnelle Kamera → sakkadisch geblendet → tiefer, imperzeptibel).
+AnazhRealm.PERF_SCENE_RES_MOTION_FLOOR = 0.6; // schnelle Kamera: 60 % Auflösung (36 % Fill) — unter Bewegungsunschärfe unsichtbar
+AnazhRealm.PERF_SCENE_RES_LOAD_FLOOR = 0.68; // ertrinkende GPU im STAND: 68 % (im Stand sieht das Auge scharf → konservativer als der Bewegungs-Boden)
+AnazhRealm.PERF_CAM_ANGVEL_FULL = 1.6; // rad/s Blick-Winkelgeschwindigkeit für volle Bewegungs-Absenkung (~92°/s, ein zügiger Umsehen-Schwenk)
+AnazhRealm.PERF_CAM_POSVEL_FULL = 11; // m/s Translations-Geschwindigkeit für volle Absenkung (Gehen 1.5 vernachlässigbar, Fahren ≥11 voll)
+AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief bei Bewegung, ~170 ms zurück zur Schärfe im Stand (kein Schärfe-Pop)
 // V18.387 (DAS NEUE KLEID — DIE ZIELEFFIZIENZ, Vorlage phytogenesis.js Z.2401-2405 `_rScale` +
 // `setRenderScale`): die adaptive Render-Auflösung — die Zieleffizienz. Unter Last gibt die Pixel-
 // Ratio nach (das billigste Look-Opfer, ~4× Fill-Ersparnis bei halber Auflösung), mit Kopfraum

@@ -50,9 +50,44 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.22 — DIE NAHT-SCHLIESSUNG + DIE KLASSEN-PIXEL-KAPPE)
+## Stand (V18.491.23 — DER DRITTE KOSTENTERM: WAHRNEHMUNG)
 
-**20.07., dreiundzwanzigste Welle (Schöpfer-Screenshots „Höhenverschiebung mit
+**20.07., vierundzwanzigste Welle (Schöpfer: „lerne von der natur, wie ermöglicht
+unsere realität eine solche effizienz … komme zurück mit was du gelernt, wie kann man
+das anwenden auf anazh" → dann „vollende es, giesse die dinge, sei der gigant, alles in
+der antwort wollen wir, es ist die zukunft". Die Recherche fand EIN Gesetz: die Natur
+rechnet nichts, was das Auge nicht auflöst — drei Ökonomien [Sender/Atmosphäre ·
+Kanal/Sehnerv-Deltas · Konsument/Fovea+Sakkade]. Das Kostengesetz „Schirm+Änderung"
+hat einen dritten Term: WAHRNEHMUNG. Welle 1 von fünf gießt ihn):**
+- DIE BEWEGUNGS-GEKOPPELTE SZENE-AUFLÖSUNG (der V18.390 benannte Rückweg,
+  endlich gebaut): sakkadische Maskierung + Bewegungsunschärfe machen Detail
+  bei schneller Kamera unsichtbar → die Szene-Auflösung darf DANN fallen
+  (imperzeptibel), und die frei werdende GPU-Zeit trägt das Streaming (der
+  Schöpfer-Befund „Regionen laden nicht mit Schritttempo, wie erst beim
+  Fahren"). Der EINE Regler (`_nexusPerfActuate`) fährt `_foliageResScale`
+  aufs MINIMUM zweier Erlaubnisse (KEIN Parallel-Regler): (a) PID-LAST (GPU
+  ertrinkt → tiefer, jetzt gefahrlos) + (b) WAHRNEHMUNG (`_camMotion01` =
+  Blick-Winkel-/Translations-Geschwindigkeit, Fast-Attack/Short-Decay).
+- DER KONSUMENT WAR NIE GEBAUT (die „sage a, tue a"-Lüge geheilt): das
+  Overlay zeigte seit V18.387 eine foliageRes-% + renderScale-%, die NICHTS
+  taten (nur Regler+Anzeige, kein Render-Effekt). Jetzt liegt der Faktor
+  WIRKLICH am `scenePass.setResolutionScale` — FLICKER-FREI, weil nur das
+  interne Szene-RenderTarget skaliert, nie die Swapchain (kein setPixelRatio-
+  Realloc). `_renderScale` fällt als Auflösungs-Hebel (konstant 1 × Klassen-
+  Pixel-Kappe-DPR); der EINE Auflösungs-Faktor lebt jetzt im RT-Scaling.
+- BEWIESEN (deterministische Konsum-Probe auf ECHTEM WebGPU, rAF-Loop
+  gestoppt + Frames selbst getrieben, 11/11 GRÜN): Stand fol 1.0/RT 540 mit
+  0 RT-Realloc über 30 konstante Frames (der Flacker-Beweis) · schnelles
+  Umsehen → _camMotion01 1.0 → fol 0.6 → passScale 0.6 → RT schrumpft
+  540→324 (nur 1 Realloc im Übergang) · Bewegungs-Ende → fol klettert zurück
+  0.997/RT 540 · 0 Seiten-Fehler. playtest:fast 18/18 · gate:regler-sim 11/11
+  (S3 „renderScale 1") · gate:leistungs-vertrag GRÜN · check GRÜN · lint 0 Err.
+  OFFEN (die vier Rest-Wellen, benannt): Schattierungs-Persistenz (Kanal) ·
+  GPU-generierter Sicht-Mittel-Ring (Wurzel) · Atmosphäre-als-LOD-Gesetz ·
+  Hi-Z-Verdeckung. Das fps-Urteil auf dem Schöpfer-Holz fällt der nächste
+  Trace (camMotion an Bord im Flugschreiber).
+
+**Davor, dreiundzwanzigste Welle (Schöpfer-Screenshots „Höhenverschiebung mit
 komischen Pixelmustern zwischen Ring und Chunks — da ist noch etwas unsauber in
 der wurzel, oder?" + „wie erreichen wir 60/120 fps" — beide Wurzeln benannt und
 geschnitten; sein .21-Trace ist SAUBER [Heap stabil −0.39 MB/s, 0 Disposal-Stau,
