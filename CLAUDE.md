@@ -50,7 +50,21 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.34 — DER REGION-ZIEGEL: ALLES Gestreute wird EIN Feld — keine getrennten Assets mehr)
+## Stand (V18.491.35 — DIE ZIEGEL-PYRAMIDE: jede Distanz sampelt das Feld in ihrer Frequenz)
+
+**20.07., Schöpfer: „nicht die erste Oktave — die Vollendung, alles, jetzt":**
+- DIE PYRAMIDE (WALD_ZIEGEL): Basis 32³/24 (Einzel-Baum) · Architektur 48³/32
+  (kompakt → feine Voxel, ab Cull-Radius 150 m) · Region 64³/40 (weit, ab
+  400 m — 1 MB je Region). Der EINE Bäcker, der EINE March — nur die
+  Abtastrate folgt der Wahrnehmung. Darunter IST die Geometrie die feinste
+  Stufe DESSELBEN Feldes (die Iso-Surface der Dichte-Funktion): eine Quelle,
+  kontinuierliche Abtastung — nah wie fern, keine zwei Systeme. BEWIESEN:
+  Region-Probe 5/5 auf 64³ (gebacken · sichtbar · Bundle ruht · Rückweg ·
+  0 Fehler) · playtest:fast 18/18. TIERE/AVATARE: Geometrie (wenige, bewegt)
+  — der geskinnte-Felder-Bogen (Dreams-Beweis) ist der letzte Schritt der
+  Karte, die Maschinerie (Bäcker/March/uniform-mutierbare bbMin) liegt bereit.
+
+**Davor, V18.491.34 — DER REGION-ZIEGEL: ALLES Gestreute wird EIN Feld — keine getrennten Assets mehr**
 
 **20.07., Schöpfer: „tiere, wiese, felsen, fahrzeuge — dass du Wiese als anderes
 Asset siehst als Waldstudio ist schon komisch — vollende ALLES":** er hatte

@@ -69384,9 +69384,9 @@ class AnazhRealm {
         }
         if (st._frameOverBudget || u._ziegelBakeVersuch) return; // budgetiert, ein Versuch je Stand
         u._ziegelBakeVersuch = true;
-        const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dim);
+        const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
         if (!zg) return;
-        const mat = this._waldZiegelMaterial(zg);
+        const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritteRegion);
         if (!mat) return;
         const geo = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
         geo.translate(
@@ -74209,10 +74209,10 @@ class AnazhRealm {
         entry._ziegelGebacken = true;
         const hatte = this._archIsRendered(entry);
         if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Bake
-        const zg = entry.mesh ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dim) : null;
+        const zg = entry.mesh ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dimArch) : null;
         if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
         if (!zg) return true;
-        const mat = this._waldZiegelMaterial(zg);
+        const mat = this._waldZiegelMaterial(zg, AnazhRealm.WALD_ZIEGEL.schritteArch);
         if (!mat) return true;
         const bg = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
         bg.translate(
@@ -74244,11 +74244,11 @@ class AnazhRealm {
     // das Fragment marcht ZIEGEL_SCHRITTE durch das 3D-Feld (TSL-unrollt wie
     // der Godray-March — kein Shader-Loop) und färbt sich am ersten dichten
     // Texel; ohne Treffer discard (die Box ist unsichtbar, nur der Baum lebt).
-    _waldZiegelMaterial(ziegel) {
+    _waldZiegelMaterial(ziegel, schritte) {
         const TSL = THREE.TSL;
         if (!TSL || !TSL.texture3D || !TSL.Discard) return null;
         const { vec3, vec4, float, positionWorld, cameraPosition, normalize, Fn } = TSL;
-        const N = AnazhRealm.WALD_ZIEGEL.schritte;
+        const N = schritte || AnazhRealm.WALD_ZIEGEL.schritte;
         const uMin = TSL.uniform(ziegel.bbMin);
         const uGr = TSL.uniform(ziegel.bbGroesse);
         const mat = new THREE.MeshBasicNodeMaterial({ transparent: false });
@@ -94809,7 +94809,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.34";
+AnazhRealm.VERSION = "18.491.35";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99496,8 +99496,17 @@ AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-
 // DER WALD-ZIEGEL (die reine Form, Stufe 4 — s. _waldZiegelBacken): die Baum-
 // Fern-Stufe als 3D-Dichtefeld, pro Pixel gemarcht statt als Kamera-Quad gerastert.
 AnazhRealm.WALD_ZIEGEL = Object.freeze({
-    dim: 32, // Voxel-Kantenlänge des Ziegels (32³ × RGBA = 128 KB je Art)
-    schritte: 24, // March-Schritte durchs Feld (TSL-unrollt, Godray-Muster)
+    dim: 32, // Basis-Stufe (Einzel-Baum, 128 KB)
+    schritte: 24, // March-Schritte der Basis-Stufe (TSL-unrollt, Godray-Muster)
+    // DIE ZIEGEL-PYRAMIDE (Schöpfer: „nicht die erste Oktave — die Vollendung"):
+    // jeder Konsument sampelt in SEINER Wahrnehmungs-Frequenz — Architektur ist
+    // kompakt (Voxel klein) → 48³ ab 150 m; Regionen sind weit → 64³ ab 400 m;
+    // darunter IST die Geometrie die feinste Stufe desselben Feldes (die
+    // Iso-Surface der Dichte-Funktion — eine Quelle, kontinuierliche Abtastung).
+    dimArch: 48, // Architektur-Stufe (Dorf/Tempel/Fahrzeug, ~187 KB)
+    schritteArch: 32,
+    dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB)
+    schritteRegion: 40,
 });
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
