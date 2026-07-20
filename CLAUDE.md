@@ -50,7 +50,27 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.31 — DER WALD-ZIEGEL: die reine Form beginnt — der Pixel fragt den Baum)
+## Stand (V18.491.32 — DER UNIVERSAL-ZIEGEL: alle Studios durch EINEN Bäcker — ferne Bauten LEBEN)
+
+**20.07., Schöpfer: „wenn unser System synergetisch ist, müssen ALLE Studios
+gehen — Import/Export, zeige was du kannst":**
+- DER UNIVERSAL-BÄCKER (_ziegelBackenAusGruppe): backt jede GRUPPE — Fachwerk-
+  Dorf, Tempel, Garage-Werk, was immer ein Studio exportiert und
+  spawnArchitecture zusammensetzt — in EIN Welt-Raum-3D-Feld (Kinder ohne
+  Vertex-Farben splatten ihre MATERIAL-Farbe; Riesen-Kinder abgetastet).
+- DIE ZIEGEL-FERNSTUFE (_archZiegelFern am EINEN Distanz-Chokepoint
+  tickArchitectureCulling): jenseits des Cull-Radius stirbt das Mesh nicht
+  mehr — der Ziegel ERBT (1 Draw/12 Tris, der Pixel marcht). Ferne Dörfer/
+  Tempel sind erstmals SICHTBAR statt weggecullt; die 7.8-M-Tris-Klasse des
+  .29-Traces kostet am Horizont nur noch Schirm. Bake memoisiert je Eintrag
+  (temporärer Bau wenn nie nah), budgetiert (1/Tick, NIE über Frame-Budget —
+  der Nexus-Grundsatz), Tod mit dem Eintrag (removeArchitecture), headless
+  byte-alt. BEWIESEN (voller Prozess, echtes WebGPU, chirurgisch [swiftshader
+  ist immer über Budget — auf echtem Holz backt der Tick selbst]): 2 ferne
+  Bauten gespawnt → gebacken → March-Boxen SICHTBAR · ppFail false · 0 Loop-/
+  Seiten-Fehler · playtest:fast 18/18. Das LOOK-Urteil fällt das Schöpfer-Auge.
+
+**Davor, V18.491.31 — DER WALD-ZIEGEL: die reine Form beginnt — der Pixel fragt den Baum**
 
 **20.07., Schöpfer: „nicht LODs — das Bild direkt aus Position+Blickrichtung
 abgeleitet; beginne beim Waldstudio, der volle Prozess" + die Kompass-Korrektur

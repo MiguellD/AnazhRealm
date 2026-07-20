@@ -74051,6 +74051,103 @@ class AnazhRealm {
         return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
     }
 
+    // DER UNIVERSAL-BÄCKER (alle Studios — EIN Import/Export-Weg): backt eine
+    // ganze GRUPPE (Fachwerk-Dorf, Tempel, Garage-Werk — was immer ein Studio
+    // exportiert und spawnArchitecture zusammensetzt) in EIN Welt-Raum-Feld.
+    // Kinder ohne Vertex-Farben splatten ihre MATERIAL-Farbe (Fachwerk-Wände).
+    _ziegelBackenAusGruppe(gruppe, dim) {
+        if (!gruppe || typeof THREE === "undefined") return null;
+        const d = dim || AnazhRealm.WALD_ZIEGEL.dim;
+        gruppe.updateMatrixWorld(true);
+        const bb = new THREE.Box3().setFromObject(gruppe);
+        if (bb.isEmpty()) return null;
+        const sx = Math.max(1e-6, bb.max.x - bb.min.x);
+        const sy = Math.max(1e-6, bb.max.y - bb.min.y);
+        const sz = Math.max(1e-6, bb.max.z - bb.min.z);
+        const daten = new Uint8Array(d * d * d * 4);
+        const v = new THREE.Vector3();
+        gruppe.traverse((o) => {
+            if (!o.isMesh || o.isInstancedMesh) return;
+            const g = o.geometry;
+            const pos = g && g.attributes && g.attributes.position;
+            if (!pos || !pos.count) return;
+            const col = g.attributes.color || null;
+            const mc = !col && o.material && o.material.color ? o.material.color : null;
+            const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1; // Riesen-Kinder abtasten
+            for (let i = 0; i < pos.count; i += schritt) {
+                v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+                const vx = Math.min(d - 1, Math.max(0, Math.floor(((v.x - bb.min.x) / sx) * d)));
+                const vy = Math.min(d - 1, Math.max(0, Math.floor(((v.y - bb.min.y) / sy) * d)));
+                const vz = Math.min(d - 1, Math.max(0, Math.floor(((v.z - bb.min.z) / sz) * d)));
+                const oI = (vz * d * d + vy * d + vx) * 4;
+                const cr = col ? col.getX(i) : mc ? mc.r : 0.55;
+                const cg = col ? col.getY(i) : mc ? mc.g : 0.5;
+                const cb = col ? col.getZ(i) : mc ? mc.b : 0.45;
+                daten[oI] = Math.min(255, daten[oI] + cr * 200);
+                daten[oI + 1] = Math.min(255, daten[oI + 1] + cg * 200);
+                daten[oI + 2] = Math.min(255, daten[oI + 2] + cb * 200);
+                daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
+            }
+        });
+        const tex = new THREE.Data3DTexture(daten, d, d, d);
+        tex.format = THREE.RGBAFormat;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.unpackAlignment = 1;
+        tex.needsUpdate = true;
+        return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
+    }
+
+    // DIE ZIEGEL-FERNSTUFE der Architektur (der EINE Distanz-Chokepoint,
+    // tickArchitectureCulling): jenseits des Cull-Radius stirbt heute das Mesh
+    // — jetzt ERBT der Ziegel: EIN Draw (12 Tris Box), der Pixel marcht das
+    // Feld. Ferne Dörfer/Tempel sind erstmals SICHTBAR statt weggecullt, und
+    // die 7.8-M-Tris-Klasse (Trace .29) kostet am Horizont nur noch Schirm.
+    // Bake memoisiert je Eintrag (temporärer Bau, wenn nie nah gewesen),
+    // budgetiert (1/Tick, nie über Frame-Budget). Headless byte-alt.
+    _archZiegelFern(entry) {
+        const st = this.state;
+        if (st.renderer && st.renderer._isHeadlessNull) return false;
+        if (entry._ziegelMesh) {
+            entry._ziegelMesh.visible = true;
+            return false;
+        }
+        if (entry._ziegelGebacken) return false; // Bake schlug fehl → nicht wiederholen
+        if (st._frameOverBudget) return false; // der Nexus-Grundsatz: nie auf Kosten des Spielers
+        entry._ziegelGebacken = true;
+        const hatte = this._archIsRendered(entry);
+        if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Bake
+        const zg = entry.mesh ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dim) : null;
+        if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+        if (!zg) return true;
+        const mat = this._waldZiegelMaterial(zg);
+        if (!mat) return true;
+        const bg = new THREE.BoxGeometry(zg.bbGroesse.x, zg.bbGroesse.y, zg.bbGroesse.z);
+        bg.translate(
+            zg.bbMin.x + zg.bbGroesse.x / 2,
+            zg.bbMin.y + zg.bbGroesse.y / 2,
+            zg.bbMin.z + zg.bbGroesse.z / 2
+        );
+        const mesh = new THREE.Mesh(bg, mat);
+        mesh.frustumCulled = true;
+        mesh.userData.inventar = "arch-ziegel";
+        st.scene.add(mesh);
+        entry._ziegelMesh = mesh;
+        entry._ziegelTex = zg.tex;
+        return true;
+    }
+
+    // Der Ziegel stirbt mit seinem Eintrag (kein Szene-/GPU-Leck).
+    _archZiegelTod(entry) {
+        if (!entry || !entry._ziegelMesh) return;
+        if (entry._ziegelMesh.parent) entry._ziegelMesh.parent.remove(entry._ziegelMesh);
+        this._queueGeometryDispose(entry._ziegelMesh.geometry);
+        if (entry._ziegelMesh.material && entry._ziegelMesh.material.dispose) entry._ziegelMesh.material.dispose();
+        if (entry._ziegelTex && entry._ziegelTex.dispose) entry._ziegelTex.dispose();
+        entry._ziegelMesh = null;
+        entry._ziegelTex = null;
+    }
+
     // Das March-Material (memoisiert je Ziegel): die Box rastert ihre Fläche,
     // das Fragment marcht ZIEGEL_SCHRITTE durch das 3D-Feld (TSL-unrollt wie
     // der Godray-March — kein Shader-Loop) und färbt sich am ersten dichten
@@ -77755,8 +77852,13 @@ class AnazhRealm {
                     this._rebuildArchitectureMesh(entry);
                     built++;
                 }
+                if (entry._ziegelMesh) entry._ziegelMesh.visible = false; // nah trägt das echte Mesh
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+                // DIE ZIEGEL-FERNSTUFE (die reine Form): fern stirbt nicht mehr —
+                // der Pixel marcht das gebackene Feld (1 Bake/Tick, budgetiert).
+                if (built < budget && this._archZiegelFern(entry)) built++;
+                else if (entry._ziegelMesh) entry._ziegelMesh.visible = true;
             }
         }
         // DAS NEUE KLEID — der Foundry-Drain: baut kalte Foundry-Einträge + HEBT klassisch
@@ -78545,6 +78647,7 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
+        this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // V9.65 (Welle A.2) — Blocker-Index pflegen beim Remove (frühe Out
         // für Einträge ohne solide Parts via entry.blockerAABBs-Sentinel).
         // V9.67 (Welle A.4) — vor dem Index-Cleanup merken, ob diese
@@ -94614,7 +94717,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.31";
+AnazhRealm.VERSION = "18.491.32";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
