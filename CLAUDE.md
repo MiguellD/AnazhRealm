@@ -50,7 +50,34 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.42 — DER EINE WELT-MARCH: alle Felder in EINEM Pass, die Ziegel-Boxen sind tot)
+## Stand (V18.491.43 — KEINE FALLBACKS: Einheiten-Atlas, voxel-wahres Schrittmaß, der Mesh-Rückweg ist tot)
+
+**20.07., Schöpfer: „nichts offen, vollendet … evt. erwacht nichts, evt alles,
+nichts dazwischen, keine fallbacks":** die drei Krücken des .42-Stands fallen:
+- DER EINHEITEN-ATLAS (512×512×128, 128 MB): allokiert in EINHEITEN (32³ —
+  Kreatur/Baum) und BLÖCKEN (2×2×2 Einheiten = 64³ — Region/Bau); ein Block
+  splittet bei Bedarf in 8 Einheiten (kein Verschnitt, kein Größen-Kompromiss).
+  Liste (256 Felder): [bbMin|einheitsIndex]·[bbSize|d] — d=0 inaktiv, der
+  Shader leitet Ursprung UND Schrittmaß aus denselben 8 Floats.
+- VOXEL-WAHRES SCHRITTMASS: der March läuft d Schritte je d³-Feld — die
+  24er-Kompromiss-Konstante ist tot (WELT_MARCH.schritte fiel physisch).
+- DER MESH-RÜCKWEG IST TOT (die reine Form): nach dem Bake-Verdikt rendert
+  NIE wieder die alte Gestalt — Region: bundle unsichtbar, Feld oder nichts ·
+  Kreatur: Körper unsichtbar, Feld oder nichts · Bau: Mesh unsichtbar (bleibt
+  Interaktions-Träger). Erschöpfung schreit EINMAL laut (WARN im Register).
+  Die Bake-RAMPE (bis zum ersten Verdikt trägt die alte Gestalt) ist
+  Streaming, kein Fallback.
+- EIN SICHTBARKEITS-BESITZER: die zwei Frustum-Schreiber (updateCreatures +
+  _loopFrustumCull) belebten den Mesh-Rückweg jede Frame wieder (Sonde:
+  11 Felder aktiv, nur 2 Körper unsichtbar) — sie fassen Feld-Träger nie
+  mehr an; toggleCreatures schaltet jetzt die FELDER (Flag am Chokepoint).
+- BEWIESEN: Boot-Sonde echtes WebGPU — 11/11 Felder aktiv UND 11/11 Körper
+  unsichtbar, Allokator-Bilanz exakt (2 Blöcke gesplittet → 11 belegt/5 frei,
+  1 Gross-Feld, bloeckeFrei 125), 0 Fehler/Warns · gate:fern-ring ALLE
+  Bänder GRÜN (1726 px) · playtest:fast 18/18 · lint 0 Errors. Linse:
+  weltMarch {belegt, bloeckeFrei, einheitenFrei, felderFrei}.
+
+**Davor, V18.491.42 — DER EINE WELT-MARCH: alle Felder in EINEM Pass, die Ziegel-Boxen sind tot)
 
 **20.07., Schöpfer: „dann läuft es ohne three … Tue es, egal was passiert,
 vollende es champ" (ship-then-heal ist SEINE Doktrin — er bewertet das Ganze,
