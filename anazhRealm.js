@@ -32524,7 +32524,10 @@ class AnazhRealm {
             if (_T.cameraPosition && _T.mx_noise_float) {
                 const _camD = wp.sub(_T.cameraPosition).length();
                 const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
-                const _halmN = _T.mx_noise_float(_T.vec3(wp.x.mul(2.7), wp.z.mul(2.7), _T.float(11.0))).mul(0.5).add(0.5);
+                const _halmN = _T
+                    .mx_noise_float(_T.vec3(wp.x.mul(2.7), wp.z.mul(2.7), _T.float(11.0)))
+                    .mul(0.5)
+                    .add(0.5);
                 const _halm = _halmN.mul(_halmN); // schärfen → Halm-Streifen statt Wolke
                 const _mg2 = AnazhRealm.MEADOW_GREEN;
                 const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.72).add(_halm.mul(_T.float(0.5))));
