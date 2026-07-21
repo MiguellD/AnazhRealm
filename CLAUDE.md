@@ -50,7 +50,39 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.46 — DIE HEILUNG DER MATRIX-WELLE: 4 adversariale Linsen, 8 Befunde geschnitten)
+## Stand (V18.491.47 — DER DEDUP-KERN: die EINE Registrier-Wurzel — ein Brick, viele Matrix-Einträge)
+
+**20.07., Schöpfer: „das ganze system, nicht nur die kreaturen … die pipeline
+existiert ja schon, sie muss angepasst und optimiert werden":** der grosse
+Schnitt an der Wurzel statt des nächsten Klassen-Pflasters. Die Pipeline
+(Universal-Bäcker → Welt-March → Matrix-der-Matrix) bekommt den Dedup-Kern:
+- BRICK ↔ FELD GETRENNT: `_weltBrickAlloc` (teuer: Atlas-Einheit/Block, EINE
+  geteilte Gestalt) vs `_weltFeldEintrag` (billig: EIN Listen-Slot, EINE
+  Instanz-Matrix). Dazwischen der `_weltBrickHolen`-Cache (key → Brick, refs).
+- DIE EINE DEDUP-WURZEL `_weltFeldSpawn(key, matrix, bakeFn)`: identische
+  Vorlagen teilen EIN Brick; bakeFn läuft NUR beim Cache-Miss. Refcount:
+  `_weltFeldFrei` senkt refs, das Brick fällt (Block-Vereinigung) erst bei 0.
+- ARCHITEKTUR dedup'd (der 177-Bauten-Wall fällt): key `arch:type:variant:dim`,
+  LOKAL gebacken (`_ziegelBackenAusGruppe` mit wurzelInv), die Instanz-Matrix
+  aus der Transform allein (`_archWeltMatrix` — Cache-Treffer bauen KEIN Mesh
+  mehr). 177 Bauten aus N Vorlagen → N Bricks.
+- KREATUREN dedup'd je Gattung+Glied: das Knochen-lokale Glied-Brick ist pose-
+  UND instanz-unabhängig (starre Teile) → alle Wölfe teilen ~12 Bricks, jede
+  Instanz posiert per eigener Knochen-Matrix.
+- REGIONEN bleiben anonym (`_weltFeldRegister` — einzigartiger Streu-Inhalt,
+  kein Dedup). Linse: steadyState.weltMarch {belegt=Einträge, bricks=Gestalten}.
+- BEWIESEN: Boot-Sonde echtes WebGPU — 5 Wölfe dazu gespawnt: Einträge
+  25→85 (+60), Bricks 25→37 (+12 = EIN geteilter Wolf-Glieder-Satz für ALLE) —
+  die Dedup skaliert (50 Wölfe blieben 12 Bricks); Matrix wandert (3.79),
+  84 Glieder aktiv, 0 Fehler/Warns · playtest:fast 18/18 · lint 0 Errors.
+- EHRLICH OFFEN: NAHE Bäume/Gras (< Cull-Radius) rastern noch als Instanzen
+  (fern sind sie längst Region-Bricks; die Instanz-Bahn ist GPU-effizient) ·
+  Terrain-Chunks = Iso-Cache derselben Funktion · der Avatar = der Beobachter.
+  Per-Instanz-Ton (Baum-Hue-Jitter) fällt in der Dedup weg (Brick trägt die
+  Basis-Farbe) — ein Feld-Farb-Mult je Eintrag ist der Feinschliff, wenn das
+  Auge es verlangt.
+
+**Davor, V18.491.46 — DIE HEILUNG DER MATRIX-WELLE: 4 adversariale Linsen, 8 Befunde geschnitten)
 
 **20.07., nach der Matrix-der-Matrix-Welle: 4 adversariale Skeptiker (Raymarch-t-
 Raum · Normalen-Transform · Allokator · Integration) prüften den v2-Shader — 8

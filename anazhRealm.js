@@ -16084,7 +16084,8 @@ class AnazhRealm {
                       // Einheiten 32³ · Listen-Plätze) — die Kapazitäts-Wahrheit.
                       weltMarch: this.state.weltMarch
                           ? {
-                                belegt: this.state.weltMarch.belegt,
+                                belegt: this.state.weltMarch.belegt, // Feld-EINTRÄGE (Instanzen)
+                                bricks: this.state.weltMarch.brickCache.size, // GETEILTE Gestalten (Dedup)
                                 bloeckeFrei: this.state.weltMarch.freiGross.length,
                                 einheitenFrei: this.state.weltMarch.freiKlein.length,
                                 felderFrei: this.state.weltMarch.freiFelder.length,
@@ -40043,16 +40044,17 @@ class AnazhRealm {
             freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
             freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
             freiKleinSet: new Set(), // O(1)-Mitgliedschaft für die Wieder-Vereinigung
-            belegt: 0,
+            brickCache: new Map(), // DEDUP (Gesetz #0): key → geteiltes Brick {einheit,d,refs,...}
+            belegt: 0, // Feld-EINTRÄGE (Instanzen)
             obergrenze: 0, // höchster je vergebener Feld-Index + 1 (der Shader-Loop endet dort)
         };
         return st.weltMarch;
     }
 
-    // Ein gebackenes Feld (zg des Universal-Bäckers) zieht in den Atlas + die
-    // Liste. Rückgabe: Feld-Handle oder null NUR bei ERSCHÖPFUNG — die schreit
-    // EINMAL laut (WARN); einen stillen Mesh-Rückweg gibt es nicht mehr.
-    _weltFeldRegister(zg) {
+    // ── DIE TEURE SEITE: ein BRICK (Atlas-Einheit/Block) allozieren + hochladen.
+    // Kein Feld-Slot — nur die geteilte Gestalt. null bei Atlas-Erschöpfung
+    // (schreit EINMAL laut). Die Voxel-Daten sind danach im Atlas aufgegangen.
+    _weltBrickAlloc(zg) {
         const wm = this._weltMarchEnsure();
         if (!wm || !zg || !zg.tex) return null;
         const W = AnazhRealm.WELT_MARCH;
@@ -40078,19 +40080,13 @@ class AnazhRealm {
             einheit = wm.freiGross.pop();
             gross = true;
         }
-        if (einheit === null || wm.freiFelder.length === 0) {
-            if (einheit !== null) {
-                (gross ? wm.freiGross : wm.freiKlein).push(einheit);
-                if (!gross) wm.freiKleinSet.add(einheit); // Rollback in den Set spiegeln
-            }
+        if (einheit === null) {
             if (!this._weltMarchVollWarn) {
                 this._weltMarchVollWarn = true;
-                this.log("WELT-MARCH ERSCHÖPFT: kein Platz im Feld-Atlas — das Feld FEHLT sichtbar", "WARN");
+                this.log("WELT-MARCH ERSCHÖPFT: kein Atlas-Platz für ein Brick — das Feld FEHLT sichtbar", "WARN");
             }
             return null;
         }
-        const feld = wm.freiFelder.pop();
-        if (feld + 1 > wm.obergrenze) wm.obergrenze = feld + 1;
         const src = zg.tex.image.data;
         const ox = (einheit % 16) * W.einheit;
         const oy = (Math.floor(einheit / 16) % 16) * W.einheit;
@@ -40102,48 +40098,126 @@ class AnazhRealm {
                 wm.atlasDaten.set(src.subarray(si, si + d * 4), di);
             }
         wm.atlas.needsUpdate = true;
+        if (zg.tex.dispose) zg.tex.dispose(); // die Einzel-Textur ist im Atlas aufgegangen
+        return { einheit, gross, d, lokalMin: zg.bbMin, lokalGroesse: zg.bbGroesse, refs: 0, key: null };
+    }
+
+    // ── DER BRICK-CACHE (DEDUP, Gesetz #0: EINE kanonische Gestalt je Vorlage):
+    // identische Bauten/Bäume/Tier-Glieder (gleicher key) teilen EIN Brick;
+    // jede Instanz ist nur ein Feld-Eintrag (Matrix). zgFn läuft NUR beim
+    // Cache-Miss (lazy Bake) — so backt eine Vorlage EINMAL, egal wie oft sie
+    // in der Welt steht (177 Bauten aus N Vorlagen → N Bricks).
+    _weltBrickHolen(key, zgFn) {
+        const wm = this._weltMarchEnsure();
+        if (!wm) return null;
+        let brick = wm.brickCache.get(key);
+        if (brick) {
+            brick.refs++;
+            return brick;
+        }
+        const zg = zgFn();
+        if (!zg) return null;
+        brick = this._weltBrickAlloc(zg);
+        if (!brick) return null;
+        brick.key = key;
+        brick.refs = 1;
+        wm.brickCache.set(key, brick);
+        return brick;
+    }
+
+    // ── DIE BILLIGE SEITE: ein FELD-EINTRAG (EIN Listen-Slot) zeigt auf ein
+    // Brick. matrixWorld gegeben → platziert/animiert (Matrix der Matrix);
+    // sonst Identität (statisches Welt-Raum-Brick == lokale Box).
+    _weltFeldEintrag(brick, matrixWorld) {
+        const wm = this.state.weltMarch;
+        if (!wm || !brick) return null;
+        if (wm.freiFelder.length === 0) {
+            if (!this._weltFelderVollWarn) {
+                this._weltFelderVollWarn = true;
+                this.log("WELT-MARCH: Feld-Liste voll — kein weiterer Eintrag (das Feld FEHLT sichtbar)", "WARN");
+            }
+            return null;
+        }
+        const feld = wm.freiFelder.pop();
+        if (feld + 1 > wm.obergrenze) wm.obergrenze = feld + 1;
         const L = wm.listeDaten;
         const o = feld * 32; // 8 Texel × 4 Floats
-        // Welt-AABB == lokale Box (Identität — Glieder überschreiben per Matrix):
-        L[o] = zg.bbMin.x;
-        L[o + 1] = zg.bbMin.y;
-        L[o + 2] = zg.bbMin.z;
-        L[o + 3] = d; // d > 0 = aktiv UND das Schrittmaß des March
-        L[o + 4] = zg.bbMin.x + zg.bbGroesse.x;
-        L[o + 5] = zg.bbMin.y + zg.bbGroesse.y;
-        L[o + 6] = zg.bbMin.z + zg.bbGroesse.z;
-        L[o + 7] = einheit; // der Shader leitet den Atlas-Ursprung ab
-        L[o + 8] = 1;
-        L[o + 9] = 0;
-        L[o + 10] = 0;
-        L[o + 11] = 0; // inv Zeile 0 (Identität)
-        L[o + 12] = 0;
-        L[o + 13] = 1;
-        L[o + 14] = 0;
-        L[o + 15] = 0; // inv Zeile 1
-        L[o + 16] = 0;
-        L[o + 17] = 0;
-        L[o + 18] = 1;
-        L[o + 19] = 0; // inv Zeile 2
-        L[o + 20] = zg.bbMin.x;
-        L[o + 21] = zg.bbMin.y;
-        L[o + 22] = zg.bbMin.z;
+        const lm = brick.lokalMin;
+        const lg = brick.lokalGroesse;
+        L[o + 3] = brick.d; // d > 0 = aktiv UND das Schrittmaß des March
+        L[o + 7] = brick.einheit; // der Shader leitet den Atlas-Ursprung ab
+        L[o + 20] = lm.x;
+        L[o + 21] = lm.y;
+        L[o + 22] = lm.z;
         L[o + 23] = 0; // lokale Box min
-        L[o + 24] = zg.bbGroesse.x;
-        L[o + 25] = zg.bbGroesse.y;
-        L[o + 26] = zg.bbGroesse.z;
+        L[o + 24] = lg.x;
+        L[o + 25] = lg.y;
+        L[o + 26] = lg.z;
         L[o + 27] = 0; // lokale Box Größe
+        const handle = { feld, brick };
+        if (matrixWorld) {
+            this._weltFeldMatrix(handle, matrixWorld); // inv + Welt-AABB aus der Matrix
+        } else {
+            // Identität: Welt-AABB == lokale Box (statisches Welt-Raum-Brick)
+            L[o] = lm.x;
+            L[o + 1] = lm.y;
+            L[o + 2] = lm.z;
+            L[o + 4] = lm.x + lg.x;
+            L[o + 5] = lm.y + lg.y;
+            L[o + 6] = lm.z + lg.z;
+            L[o + 8] = 1;
+            L[o + 9] = 0;
+            L[o + 10] = 0;
+            L[o + 11] = 0;
+            L[o + 12] = 0;
+            L[o + 13] = 1;
+            L[o + 14] = 0;
+            L[o + 15] = 0;
+            L[o + 16] = 0;
+            L[o + 17] = 0;
+            L[o + 18] = 1;
+            L[o + 19] = 0;
+        }
         wm.liste.needsUpdate = true;
         wm.belegt++;
-        if (zg.tex.dispose) zg.tex.dispose(); // die Einzel-Textur ist im Atlas aufgegangen
-        return { feld, einheit, gross, d, bbMin: zg.bbMin, bbGroesse: zg.bbGroesse };
+        return handle;
+    }
+
+    // DIE DEDUP-BAHN (die EINE Registrier-Wurzel für alles Wiederholte): ein
+    // Brick je Vorlage (key), viele Feld-Einträge (Matrix). Rückgabe: Handle
+    // oder null (Erschöpfung — kein Rückweg).
+    _weltFeldSpawn(key, matrixWorld, zgFn) {
+        const brick = this._weltBrickHolen(key, zgFn);
+        if (!brick) return null;
+        const handle = this._weltFeldEintrag(brick, matrixWorld || null);
+        if (!handle) {
+            brick.refs--; // Feld-Liste voll: den eben geholten Ref zurückgeben
+            if (brick.refs <= 0) this._weltBrickFrei(brick);
+            return null;
+        }
+        return handle;
+    }
+
+    // DIE ANONYME BAHN (kein Dedup — einzigartiger Inhalt, z.B. Region-Streu):
+    // EIN eigenes Brick, EIN Feld, refs=1. Rückwärts-kompatibel.
+    _weltFeldRegister(zg, matrixWorld) {
+        const brick = this._weltBrickAlloc(zg);
+        if (!brick) return null;
+        brick.refs = 1;
+        brick.key = null; // anonym → nie im Cache
+        const handle = this._weltFeldEintrag(brick, matrixWorld || null);
+        if (!handle) {
+            this._weltBrickFrei(brick);
+            return null;
+        }
+        return handle;
     }
 
     _weltFeldAktiv(handle, an) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
         const o = handle.feld * 32;
-        const soll = an ? handle.d : 0;
+        const soll = an ? handle.brick.d : 0;
         if (wm.listeDaten[o + 3] !== soll) {
             wm.listeDaten[o + 3] = soll;
             wm.liste.needsUpdate = true;
@@ -40176,8 +40250,8 @@ class AnazhRealm {
         L[o + 18] = e[10];
         L[o + 19] = e[14]; // inv Zeile 2
         // Welt-AABB: die 8 Ecken der lokalen Box durch die VORWÄRTS-Matrix:
-        const m = handle.bbMin;
-        const g = handle.bbGroesse;
+        const m = handle.brick.lokalMin;
+        const g = handle.brick.lokalGroesse;
         let minX = Infinity,
             minY = Infinity,
             minZ = Infinity,
@@ -40204,45 +40278,60 @@ class AnazhRealm {
         wm.liste.needsUpdate = true;
     }
 
+    // Ein BRICK freigeben (Atlas-Einheit/Block zurück): NUR wenn kein Feld mehr
+    // darauf zeigt (refs === 0). Räumt den Cache-Eintrag und vereinigt Blöcke.
+    _weltBrickFrei(brick) {
+        const wm = this.state.weltMarch;
+        if (!wm || !brick || brick._frei) return; // Doppel-Frei-Wand
+        brick._frei = true;
+        if (brick.key) wm.brickCache.delete(brick.key);
+        if (brick.gross) {
+            wm.freiGross.push(brick.einheit);
+            return;
+        }
+        // DIE WIEDER-VEREINIGUNG (gegen die Ein-Weg-Fragmentierung): liegen ALLE
+        // 8 Einheiten des Block-Ankers frei, verschmelzen sie zurück zu EINEM
+        // 64³-Block — sonst verhungerte ein Region-/Bau-Feld mit der Zeit.
+        const u = brick.einheit;
+        wm.freiKleinSet.add(u);
+        const ex = u % 16,
+            ey = Math.floor(u / 16) % 16,
+            ez = Math.floor(u / 256);
+        const ax = ex & ~1,
+            ay = ey & ~1,
+            az = ez & ~1;
+        const anker = ax + ay * 16 + az * 256;
+        const geschwister = [];
+        for (let dz = 0; dz < 2; dz++)
+            for (let dy = 0; dy < 2; dy++)
+                for (let dx = 0; dx < 2; dx++) geschwister.push(anker + dx + dy * 16 + dz * 256);
+        if (geschwister.every((g) => wm.freiKleinSet.has(g))) {
+            for (const g of geschwister) wm.freiKleinSet.delete(g);
+            const gs = new Set(geschwister);
+            wm.freiKlein = wm.freiKlein.filter((x) => !gs.has(x));
+            wm.freiGross.push(anker); // der Block ist wieder ganz
+        } else {
+            wm.freiKlein.push(u);
+        }
+    }
+
+    // Ein FELD-EINTRAG stirbt: der Listen-Slot fällt frei, das Brick nur, wenn
+    // KEIN anderer Eintrag mehr darauf zeigt (Dedup-Refcount).
     _weltFeldFrei(handle) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
-        if (handle._frei) return; // Doppel-Frei-Wand (kein doppelter Push → keine spätere Doppel-Vergabe)
+        if (handle._frei) return; // Doppel-Frei-Wand
         handle._frei = true;
         const o = handle.feld * 32;
         wm.listeDaten[o + 3] = 0;
         wm.liste.needsUpdate = true;
         wm.freiFelder.push(handle.feld);
-        if (handle.gross) {
-            wm.freiGross.push(handle.einheit);
-        } else {
-            // DIE WIEDER-VEREINIGUNG (gegen die Ein-Weg-Fragmentierung): liegen nach
-            // diesem Free ALLE 8 Einheiten des Block-Ankers frei, verschmelzen sie
-            // zurück zu EINEM 64³-Block — sonst verhungerte ein Region-/Bau-Feld
-            // mit der Zeit, obwohl 8 freie Einheiten da sind (irreversibler Bruch).
-            const u = handle.einheit;
-            wm.freiKleinSet.add(u);
-            const ex = u % 16,
-                ey = Math.floor(u / 16) % 16,
-                ez = Math.floor(u / 256);
-            const ax = ex & ~1,
-                ay = ey & ~1,
-                az = ez & ~1;
-            const anker = ax + ay * 16 + az * 256;
-            const geschwister = [];
-            for (let dz = 0; dz < 2; dz++)
-                for (let dy = 0; dy < 2; dy++)
-                    for (let dx = 0; dx < 2; dx++) geschwister.push(anker + dx + dy * 16 + dz * 256);
-            if (geschwister.every((g) => wm.freiKleinSet.has(g))) {
-                for (const g of geschwister) wm.freiKleinSet.delete(g);
-                const gs = new Set(geschwister);
-                wm.freiKlein = wm.freiKlein.filter((x) => !gs.has(x));
-                wm.freiGross.push(anker); // der Block ist wieder ganz
-            } else {
-                wm.freiKlein.push(u);
-            }
-        }
         wm.belegt--;
+        const brick = handle.brick;
+        if (brick) {
+            brick.refs--;
+            if (brick.refs <= 0) this._weltBrickFrei(brick);
+        }
     }
 
     // ═══ DAS FELD-PANORAMA (SCHATTIERUNGS-PERSISTENZ, Natur-Antwort a+c) ═══
@@ -74717,11 +74806,39 @@ class AnazhRealm {
     // ganze GRUPPE (Fachwerk-Dorf, Tempel, Garage-Werk — was immer ein Studio
     // exportiert und spawnArchitecture zusammensetzt) in EIN Welt-Raum-Feld.
     // Kinder ohne Vertex-Farben splatten ihre MATERIAL-Farbe (Fachwerk-Wände).
-    _ziegelBackenAusGruppe(gruppe, dim) {
+    // wurzelInv gegeben (DEDUP-Bahn): backt in den LOKALEN Raum der Vorlage
+    // (jeder Vertex durch wurzelInv × welt) — so ist das Brick platzierungs-
+    // frei und identische Vorlagen teilen es (die Instanz-Matrix platziert im
+    // Feld-Eintrag). Ohne wurzelInv byte-alt: Welt-Raum-Feld (Region-Streu).
+    _ziegelBackenAusGruppe(gruppe, dim, wurzelInv) {
         if (!gruppe || typeof THREE === "undefined") return null;
         const d = dim || AnazhRealm.WALD_ZIEGEL.dim;
         gruppe.updateMatrixWorld(true);
-        const bb = new THREE.Box3().setFromObject(gruppe);
+        const lokal = wurzelInv ? new THREE.Matrix4() : null;
+        // Bounding-Box im Ziel-Raum (Welt ODER Vorlagen-lokal):
+        const bb = new THREE.Box3();
+        if (wurzelInv) {
+            const vv = new THREE.Vector3();
+            const mm = new THREE.Matrix4();
+            gruppe.traverse((o) => {
+                if (!o.isMesh && !o.isInstancedMesh) return;
+                const pos = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
+                if (!pos || !pos.count) return;
+                const cnt = o.isInstancedMesh ? Math.max(1, o.count | 0) : 1;
+                const schr = pos.count > 4000 ? Math.ceil(pos.count / 4000) : 1;
+                for (let k = 0; k < cnt; k++) {
+                    if (o.isInstancedMesh) {
+                        o.getMatrixAt(k, mm);
+                        mm.premultiply(o.matrixWorld).premultiply(wurzelInv);
+                    } else {
+                        mm.multiplyMatrices(wurzelInv, o.matrixWorld);
+                    }
+                    for (let i = 0; i < pos.count; i += schr) bb.expandByPoint(vv.fromBufferAttribute(pos, i).applyMatrix4(mm));
+                }
+            });
+        } else {
+            bb.setFromObject(gruppe);
+        }
         if (bb.isEmpty()) return null;
         const sx = Math.max(1e-6, bb.max.x - bb.min.x);
         const sy = Math.max(1e-6, bb.max.y - bb.min.y);
@@ -74730,8 +74847,10 @@ class AnazhRealm {
         const v = new THREE.Vector3();
         const mI = new THREE.Matrix4();
         const splat = (pos, col, mc, welt, schritt) => {
+            // welt bringt in den Ziel-Raum; lokal-Bahn faltet wurzelInv davor.
+            const m = lokal ? lokal.multiplyMatrices(wurzelInv, welt) : welt;
             for (let i = 0; i < pos.count; i += schritt) {
-                v.fromBufferAttribute(pos, i).applyMatrix4(welt);
+                v.fromBufferAttribute(pos, i).applyMatrix4(m);
                 const vx = Math.min(d - 1, Math.max(0, Math.floor(((v.x - bb.min.x) / sx) * d)));
                 const vy = Math.min(d - 1, Math.max(0, Math.floor(((v.y - bb.min.y) / sy) * d)));
                 const vz = Math.min(d - 1, Math.max(0, Math.floor(((v.z - bb.min.z) / sz) * d)));
@@ -74778,13 +74897,29 @@ class AnazhRealm {
         return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
     }
 
-    // DIE ZIEGEL-FERNSTUFE der Architektur (der EINE Distanz-Chokepoint,
-    // tickArchitectureCulling): jenseits des Cull-Radius stirbt heute das Mesh
-    // — jetzt ERBT der Ziegel: EIN Draw (12 Tris Box), der Pixel marcht das
-    // Feld. Ferne Dörfer/Tempel sind erstmals SICHTBAR statt weggecullt, und
-    // die 7.8-M-Tris-Klasse (Trace .29) kostet am Horizont nur noch Schirm.
-    // Bake memoisiert je Eintrag (temporärer Bau, wenn nie nah gewesen),
-    // budgetiert (1/Tick, nie über Frame-Budget). Headless byte-alt.
+    // Die WELT-PLATZIERUNGS-MATRIX eines Eintrags aus seiner Transform allein
+    // (position mit −0.5-baseY wie _rebuildArchitectureMesh · rotationY · scale)
+    // — so kann eine DEDUP-Instanz platziert werden, OHNE ihr Mesh zu bauen.
+    _archWeltMatrix(entry) {
+        const p = entry.position || { x: 0, y: 0, z: 0 };
+        const baseY = Number.isFinite(p.y) ? p.y - 0.5 : 0;
+        const s = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const q = new THREE.Quaternion().setFromAxisAngle(
+            this._archUp || (this._archUp = new THREE.Vector3(0, 1, 0)),
+            entry.rotationY || 0
+        );
+        return new THREE.Matrix4().compose(
+            new THREE.Vector3(p.x || 0, baseY, p.z || 0),
+            q,
+            new THREE.Vector3(s, s, s)
+        );
+    }
+
+    // DIE ZIEGEL-FERNSTUFE der Architektur, DEDUP'd (der grosse Schnitt): die
+    // Vorlage (type+variant) backt EINMAL in ein platzierungsfreies Brick; jede
+    // Instanz ist nur ein Feld-Eintrag mit ihrer Welt-Matrix. 177 Bauten aus N
+    // Vorlagen → N Bricks (statt 177). Cache-Treffer bauen KEIN Mesh mehr (die
+    // Matrix kommt aus der Transform). Bake getaktet (Bake-Garantie).
     _archZiegelFern(entry) {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return false;
@@ -74792,21 +74927,36 @@ class AnazhRealm {
             this._weltFeldAktiv(entry._ziegelSlot, true);
             return false;
         }
-        if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Atlas voll)
+        if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
         if (!this._weltBakeErlaubt()) return false; // Bake-Garantie: getaktet, nie verhungert
-        const hatte = this._archIsRendered(entry);
-        if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Bake
-        const zg = entry.mesh ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dimArch) : null;
-        if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
-        if (!zg) {
-            // ASYNC-Foundry: der temporäre Bau kann beim ersten Tick noch leer
-            // sein — begrenzt wiederversuchen statt den Einmal-Schuss verbrennen.
+        const M = this._archWeltMatrix(entry);
+        const key = `arch:${entry.type}:${entry._lodVariantIndex || 0}:${AnazhRealm.WALD_ZIEGEL.dimArch}`;
+        let zgWar = "hit"; // läuft die Bake-Fn, wird's "leer" (async) oder "gebacken"
+        const handle = this._weltFeldSpawn(key, M, () => {
+            // Cache-Miss: die Vorlage EINMAL bauen + LOKAL backen (relativ zu M⁻¹).
+            const hatte = this._archIsRendered(entry);
+            if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Erst-Bake
+            const inv = M.clone().invert();
+            const zg = entry.mesh
+                ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dimArch, inv)
+                : null;
+            if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+            zgWar = zg ? "gebacken" : "leer";
+            return zg;
+        });
+        if (handle) {
+            entry._ziegelGebacken = true; // genau EIN Eintrag je Bau
+            entry._ziegelSlot = handle;
+            return true;
+        }
+        if (zgWar === "leer") {
+            // ASYNC-Foundry: der temporäre Bau war beim ersten Tick noch leer —
+            // begrenzt wiederversuchen statt den Einmal-Schuss verbrennen.
             entry._ziegelVersuche = (entry._ziegelVersuche || 0) + 1;
             if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
             return true;
         }
-        entry._ziegelGebacken = true; // Erfolg — genau EIN Feld je Eintrag
-        entry._ziegelSlot = this._weltFeldRegister(zg); // null bei vollem Atlas — ehrlich benannt, kein Zweit-Pfad
+        entry._ziegelGebacken = true; // Erschöpfung (Atlas/Feld voll) — kein Rückweg
         return true;
     }
 
@@ -74924,13 +75074,21 @@ class AnazhRealm {
             if (!kleinster) break;
             merge(kleinster, zielVon(kleinster));
         }
+        // DEDUP je GATTUNG+GLIED (die reine Form, geteilt): das Glied-Brick ist
+        // im Knochen-LOKALEN Raum pose- UND instanz-unabhängig (starre Teile) →
+        // alle Wölfe teilen dieselben ~12 Bricks, jede Instanz posiert sie per
+        // eigener Knochen-Matrix. 20 Tiere × 12 Glieder → 12 Bricks statt 240.
         const glieder = [];
-        const inv = new THREE.Matrix4();
+        const soul = (cr.userData && cr.userData.soul) || "wesen";
+        const dim = AnazhRealm.WALD_ZIEGEL.dim;
         for (const [a, g] of gruppen) {
-            inv.copy(a.matrixWorld).invert();
-            const zg = this._gliedFeldBacken(g.meshes, inv, AnazhRealm.WALD_ZIEGEL.dim);
-            if (!zg) continue;
-            const handle = this._weltFeldRegister(zg);
+            a.updateMatrixWorld(true);
+            const key = `kreatur:${soul}:${a.name || "wurzel"}:${dim}`;
+            const meshes = g.meshes;
+            const handle = this._weltFeldSpawn(key, a.matrixWorld, () => {
+                const inv = new THREE.Matrix4().copy(a.matrixWorld).invert();
+                return this._gliedFeldBacken(meshes, inv, dim);
+            });
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
@@ -95381,7 +95539,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.46";
+AnazhRealm.VERSION = "18.491.47";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
