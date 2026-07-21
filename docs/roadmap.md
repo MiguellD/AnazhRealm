@@ -5,7 +5,7 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.491.49)
+## §0 · DER TISCH — was offen ist (Stand V18.491.50)
 
 > **Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md`** (Frozen-Liste, max 5 — vom
 > BETRIEBSGESETZ in CLAUDE.md bewacht, `gate:betriebsgesetz` in `npm run check`). Gesetzt

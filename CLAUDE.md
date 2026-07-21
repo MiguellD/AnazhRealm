@@ -71,39 +71,39 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.491.49 — BETRIEBSGESETZ + DIE AUFLÖSUNGS-LEITER BEGINNT)
+## Stand (V18.491.50 — DIE AUFLÖSUNGS-LEITER TRÄGT: Flächen-Bäcker · Seiten-March · Baum-Bahn · Arch-Oktanten)
 
-**21.07., zwei Wellen:** (1) DAS BETRIEBSGESETZ wird Maschine (oben; docs/PFLICHT-OFFEN.md =
-Frozen-Liste · gate:betriebsgesetz in npm run check · champion-Format · Drehbuch 15 Schritte ·
-die 1300-Zeilen-Chronik fiel an git). (2) Schöpfer-Kurskorrektur (bindend): „niemals wurde
-gesagt wiese entfernen · alles mit raymarch, einheitlich · nahe dinge brauchen eine höhere
-auflösung als ferne" — drei Schnitte:
-- DIE MARCH-GLÄTTUNG (0 Byte mehr Speicher): Treffer per Bisektion auf der TRILINEAREN Dichte
-  (Iso-Fläche 0.25 liegt ZWISCHEN den Voxeln — die Treppen fallen), Farbe = Ecken-Mittel (durch
-  a geteilt), Normale = analytischer Gradient derselben 8 Ecken; wgslFn-includes am EINEN Blick.
-- DIE AUFLÖSUNGS-LEITER: Kreatur-Glieder backen nah (< KREATUR_TIER_FEIN 28 m, Band 8 m) auf
-  WALD_ZIEGEL.dimFein 64³ (ein Block je Glied, 8× Voxel), fern 32³ — Wechsel bake-getaktet,
-  NEU vor FREI; Erschöpfung trägt die GROBE Stufe laut weiter (Ziegel-Pyramide, nie unsichtbar).
-- DIE WIESE MIT TIEFE: der flache Halm-Noise wird ein 8-Schicht-PARALLAX-RELIEF im Boden-
-  Fragment (Halme fangen den Blick, Lücken fallen zum dunklen Wurzelgrund — Tiefe + Parallaxe
-  als FUNKTION, kein Dreieck; dieselbe Frequenz 2.7 + MEADOW_GREEN, Gesetz #0).
-- BEWIESEN: node --check · lint 0 Errors · playtest:fast 18/18 · npm run check GRÜN ·
-  gate:fern-ring ALLE Bänder (echte Render-Probe 1726 px durch den NEUEN March) · VORHER-Sonde
-  echtes WebGPU: steady dc 158 / 768k Tris, weltMarch belegt 85/bricks 49, 0 Fehler. Das
-  NACHHER-Bild-Paar (Pflicht-OFFEN D) läuft — das Look-Urteil steht ehrlich aus.
+**21.07. (nach Betriebsgesetz + Kurskorrektur — Schöpfer: „alles mit raymarch, einheitlich —
+nahe dinge brauchen eine höhere auflösung als ferne"), die Leiter-Welle, alle Commits gepusht:**
+- MARCH-GLÄTTUNG + GEKOPPELTE AKKUMULATION: Treffer per Bisektion auf TRILINEARER Dichte,
+  Farbe = Ecken-Mittel, Normale = analytischer Gradient; der Bäcker akkumuliert rgb+alpha im
+  SELBEN 90er-Schritt mit gemeinsamem Deckel — rgb/a IST die Albedo (der Weiß-Stich fiel an
+  der Wurzel), Ton-Klemme licht/(1+0.35·licht) im March.
+- DER FLÄCHEN-SPLAT (die EINE Splat-Wurzel aller drei Bäcker): Dreiecke säen deterministisch
+  (~2 Proben/Voxel-Fläche, goldene 2D-Folge), Budget PROPORTIONAL — der Vertex-Splat-Käse fiel.
+- DIE SEITEN-EBENE: Feld-Liste 512→2048 (2D 4096×4), Seiten à 32 mit CPU-Hüll-AABB — der March
+  testet SEITEN (Kosten an getroffene Seiten, Gebot 7); Linse weltMarch.seiten.
+- DIE LEITER: Kreatur-Glieder 64³ nah (< 28 m, Band 8) / 32³ fern · ARCH-OKTANTEN nah (< 48 m):
+  8 Teil-Bricks der Vorlagen-Box = effektiv 128³ (Klemm-Box-Bake, Leer-Cache, ganz-oder-gar-
+  nicht, Erschöpfung trägt grob laut) · BAUM-BAHN (C, Klasse 1): Zellen-LOD ≥ 1 wird FELD —
+  Dedup-Brick je Vorlage×Stufe, Stufe 1→64³/2→32³ (der Billboard-Quad starb, der .31-fimp-
+  Swap), Stufe 0 = feinste Abtaststufe als echte Instanz (Fällen/Anfassen); Slots entstehen
+  bei Feld-Erfolg NICHT — Frei-Pfade dicht (LOD-Tick + Region-Dispose räumen cell.feld).
+- WIESE MIT TIEFE: 8-Schicht-Parallax-Halm-Relief im Boden-Fragment (Funktion, kein Dreieck).
+- GEMESSEN (dieselbe Sonde, echtes WebGPU, 0 Fehler/Warns): weite-dc 229→97 (−58 %) ·
+  steady-dc 158→43 · bricks 37→61 (+24 Baum-Vorlagen) · wolfDim 64 (Fein-Satz lebt) ·
+  playtest:fast 18/18 · check komplett GRÜN · fern-ring/scatter-lod/-ab/foundry-crossfade GRÜN.
 
-**WAS STEHT (Karte der Formen — Detail: git log):** TERRAIN = Funktion (Ring 8 km · Panorama
-40 km · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Atlas 512×512×128 + Feld-Liste +
-EIN Raymarch mit echter Tiefe/Szene-Licht; DEDUP-KERN `_weltFeldSpawn` (ein Brick, viele
-Matrix-Einträge; Linse steadyState.weltMarch) · ARCHITEKTUR = Feld (Hand-Blase 16 m, Mesh =
-unsichtbarer Interaktions-Träger) · KREATUREN = animierte Glieder-Felder, jetzt ZWEISTUFIG
-(64³ nah / 32³ fern) · REGIONEN fern = Region-Bricks · GRAS = Boden-Funktion mit Relief-Tiefe.
-HYBRID (= Pflicht-OFFEN C) = nahe Bäume/Streu als Instanzen (~11k Batch- + ~330 schwere
-Instanzen < 400 m, Zensus 21.07.). AUSGENOMMEN = der Avatar.
+**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) ·
+WELT-MARCH: EIN Atlas + Seiten-Liste + EIN Raymarch (Dedup-Kern `_weltFeldSpawn`) ·
+ARCHITEKTUR = Feld (Hand-Blase 16 m; nah Oktanten) · KREATUREN = Glieder-Felder zweistufig ·
+BÄUME Stufe ≥ 1 = Felder · REGIONEN fern = Region-Bricks · GRAS = Boden-Funktion mit Relief.
+HYBRID (ehrlich): Stufe-0-Bäume (feinste Stufe, by design) · die KLEIN-STREU (~11k Batch-
+Instanzen < 400 m — der offene Rest von C) · der Avatar (gebilligt).
 
-**PFLICHT-OFFEN (Spiegel — die Wahrheit ist docs/PFLICHT-OFFEN.md):** A) Leiter + Glättung
-(GEBAUT — fällt erst mit dem Bild-Beweis) · B) Wiese sichtbar zurück (GEBAUT — fällt erst mit
-dem Bild-Beweis) · C) nahe Bäume + Streu auf die Feld-Bahn nach A · D) Beweis-Paket (läuft).
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A) Leiter+Glättung: gebaut,
+Bild-Beweis Wolf-Nahaufnahme + Arch-Boden offen · B) Wiese: Funktion steht, braucht eine echte
+Gras-Zone im Bild · C) Bäume ✓ (−58 % dc) — die STREU-Klasse rastert noch · D) läuft je Sonde.
 
 ## Architektur (die Karte)
 
