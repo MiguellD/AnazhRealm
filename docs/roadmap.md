@@ -9,13 +9,14 @@
 
 > **Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md`** (Frozen-Liste, max 5 — vom
 > BETRIEBSGESETZ in CLAUDE.md bewacht, `gate:betriebsgesetz` in `npm run check`). Gesetzt
-> vom Schöpfer 21.07. („alles mit raymarch, einheitlich — nahe dinge brauchen höhere
-> auflösung als ferne; die wiese wurde nie zum entfernen befohlen"): **A)** Auflösungs-
-> Leiter + March-Glättung · **B)** die Wiese kehrt sichtbar zurück (Funktion mit Tiefe) ·
-> **C)** nahe Bäume+Streu auf die Feld-Bahn nach A · **D)** Beweis-Paket (Bilder + Zahlen) —
-> danach die Schöpfer-Abnahme (`docs/abnahme-drehbuch.md`, 15 Schritte). Alles Weitere in §0
-> ist KONTEXT/CHRONIK gefallener Bögen (Detail: git log), KEINE Offen-Liste — wo alte Sätze
-> dem BETRIEBSGESETZ widersprechen (z. B. „das Schöpfer-Auge als Merge-Tor"), gewinnt das Gesetz.
+> vom Schöpfer 21.07. mit EINEM Wort: **„analog!"** — Importe sind das GESETZ (Kapseln ·
+> Boxen · Verteilungen), digitalisiert wird NUR am effektiven Bildschirm; der Voxel-Brick
+> fällt auf die Fern-Cache-Rolle. **A)** Kreatur-Kapseln (tierBaum-Skelett = Gestalt) ·
+> **B)** Bäume analog (Grammatik-Skelett) · **C)** Architektur-Boxen + Streu-Verteilungs-
+> gesetz · **D)** Wiese im Bild · **E)** Beweis-Paket mit Armlängen-Schüssen — danach die
+> Schöpfer-Abnahme (`docs/abnahme-drehbuch.md`). Alles Weitere in §0 ist KONTEXT/CHRONIK
+> gefallener Bögen (git log), KEINE Offen-Liste — wo Alt-Sätze dem BETRIEBSGESETZ
+> widersprechen (z. B. „das Schöpfer-Auge als Merge-Tor"), gewinnt das Gesetz.
 
 0. **DAS ERLEBNIS-ZIEL (16.07., Schöpfer-Wort — DIES schlägt alles darunter):**
    Jedes Ding im Realm ist EIN Studio-geborenes Wesen — EIN Bauplan je Ding (keine

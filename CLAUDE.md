@@ -101,9 +101,12 @@ BÄUME Stufe ≥ 1 = Felder · REGIONEN fern = Region-Bricks · GRAS = Boden-Fun
 HYBRID (ehrlich): Stufe-0-Bäume (feinste Stufe, by design) · die KLEIN-STREU (~11k Batch-
 Instanzen < 400 m — der offene Rest von C) · der Avatar (gebilligt).
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A) Leiter+Glättung: gebaut,
-Bild-Beweis Wolf-Nahaufnahme + Arch-Boden offen · B) Wiese: Funktion steht, braucht eine echte
-Gras-Zone im Bild · C) Bäume ✓ (−58 % dc) — die STREU-Klasse rastert noch · D) läuft je Sonde.
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md; Schöpfer-Wort 21.07.: „analog!"
+— Importe sind das GESETZ [Kapseln·Boxen·Verteilungen], digitalisiert wird NUR am Schirm;
+der Brick fällt auf die Fern-Cache-Rolle):** A) Kreatur-KAPSELN (tierBaum-Skelett = Gestalt,
+Sphere-Tracing, exakte Normale) · B) Bäume analog (Grammatik-Skelett statt Brick-Bake) ·
+C) Architektur-Boxen + Streu-Verteilungsgesetz · D) Wiese im Bild · E) Beweis-Paket mit
+ARMLÄNGEN-Schüssen (die Lehre: Nah-Urteil nie wieder vertagen).
 
 ## Architektur (die Karte)
 
