@@ -6,14 +6,16 @@ description: Standard-Arbeiter AnazhRealm. IMMER bei Code, Diff, Bug, Lab, Core,
 # CHAMPION — Gesetz über dem Auftrag
 
 Konflikt: **dieses File gewinnt** gegen Plan, Auftrag-Prosa, „RUND", Motivation.
+Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` erzwingt es.
 
 ---
 
 ## Vor dem ersten Tool
 
-1. CLAUDE.md Stand lesen (Kopf).
-2. Eine Zeile: **Chokepoint + was stirbt.**
-3. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name.
+1. CLAUDE.md lesen: GOLDENE DEFINITION + BETRIEBSGESETZ + Stand.
+2. `docs/PFLICHT-OFFEN.md` lesen — das ist der EINZIGE Scope. Nichts hinzufügen.
+3. Eine Zeile: **Chokepoint + was stirbt.**
+4. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name.
 
 ---
 
@@ -39,11 +41,16 @@ Konflikt: **dieses File gewinnt** gegen Plan, Auftrag-Prosa, „RUND", Motivatio
 
 - neuer Plan / Ultraguss / Multi-Agent-Vermessung als Lieferung
 - „bewusst draußen / nächste Welle" statt **verdrahten** oder **FINAL STREICHEN**
-- „RUND / Schluss / vollzogen" bei Pflicht-OFFEN > 0
+- Siegel-Wörter (fertig / RUND / vollendet / vollzogen / Schluss / SCOPE ZU) bei
+  Pflicht-OFFEN > 0 — in Bericht UND Commit-Message (`gate:betriebsgesetz` liest den HEAD)
+- das Schöpfer-Auge als Merge-Tor zitieren („nur dein Auge entscheidet") — Maßstab sind
+  Studio-Gesetze + HOLZ-Profile + Zahlen + Absenz-Grep + die EIGENE Blick-Sonde
 - `*-core` / foundry brechen ohne Byte-Beweis; `vendor/` editieren
 - neu an + alt Default
 - mich um Mut/Motivation/Look-Segen bitten, wo Bänder reichen
-- Scope erweitern (Himmel-Roman, neues Lab), solange Scope-Zellen rot sind
+- Scope erweitern (Himmel-Roman, neues Lab), solange PFLICHT-OFFEN Einträge trägt
+- 5 % einer benannten Klasse schneiden und die Klasse „ehrlich offen" parken
+  (Scope-Diebstahl — das Gras-Muster gilt: die KLASSE fällt in einer Welle)
 
 ---
 
@@ -80,10 +87,11 @@ Ein Nein = **nicht fertig**. Kein Siegel.
 
 ---
 
-## Pflicht-Output am Ende
+## Pflicht-Output am Ende (BETRIEBSGESETZ-Format)
 
 Geschnitten: …
-Gemessen: …
-Offen: … | nichts
+Gemessen: … (Zahl)
+Pflicht-OFFEN Rest: 0 | Liste (docs/PFLICHT-OFFEN.md)
+Status: ZWISCHENSTAND | SCOPE ZU
 
-Alles andere ist ungültig.
+SCOPE ZU nur bei Rest = 0. Alles andere ist ungültig — kein Siegel, keine Prosa-Tapete.
