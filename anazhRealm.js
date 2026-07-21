@@ -39653,12 +39653,10 @@ class AnazhRealm {
                 "                let cH = feldTriAbtast(atlas, loI, hiI, vH);\n" +
                 "                bestT = tHi;\n" +
                 "                // Ecken-MITTEL statt Voxel-Farbe: durch a geteilt — leere Ecken\n" +
-                "                // (rgba=0) dunkeln den Rand sonst zum Halo ab. FARB-EICHUNG: der\n" +
-                "                // Bäcker splattet rgb×200 gegen a×90 (Sonden-Befund 21.07.: ohne\n" +
-                "                // den 90/200-Faktor brennt das Mittel 2.2× zu hell — der Marmor-\n" +
-                "                // Blowout); 0.45·rgb/a gibt die WAHRE Splat-Farbe auf jeder\n" +
-                "                // Füll-Stufe zurück (an der 0.25-Iso exakt: 0.45·0.557c/0.25 = c).\n" +
-                "                bestRgb = clamp(cH.rgb * (0.45 / max(cH.a, 0.05)), vec3<f32>(0.0), vec3<f32>(1.0));\n" +
+                "                // (rgba=0) dunkeln den Rand sonst zum Halo ab. Der Bäcker koppelt\n" +
+                "                // rgb und alpha im SELBEN 90er-Schritt (gemeinsamer Deckel) —\n" +
+                "                // rgb/a IST die Albedo, auf jeder Füllstufe, ohne Eich-Faktor.\n" +
+                "                bestRgb = clamp(cH.rgb / max(cH.a, 0.05), vec3<f32>(0.0), vec3<f32>(1.0));\n" +
                 "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a),\n" +
                 "                // analytisch aus DENSELBEN 8 Ecken (glatt statt Facetten):\n" +
                 "                let gv = -feldTriGrad(atlas, loI, hiI, vH);\n" +
@@ -57896,6 +57894,43 @@ class AnazhRealm {
             if (!keys) return null;
             bpName = keys[lod] || keys[0];
         }
+        // DIE BAUM-BAHN (C, 21.07.): Zellen-LOD ≥ 1 wird FELD — die Instanz-
+        // Slots entstehen dann GAR NICHT (dc/tris sterben an der Wurzel), der
+        // Baum ist ein Feld-Eintrag auf dem Dedup-Brick seiner Vorlage×Stufe.
+        // Scheitert der Spawn (Brick lädt/Bake-Takt), trägt die Instanz-Bahn
+        // als Streaming-Rampe weiter (der nächste Durchlauf versucht es neu).
+        // Headless byte-alt (Null-Renderer-Wand — die Gates lesen Slots).
+        if (foundryFlat && foundryPreset && this._foundryPresetIsTree(foundryPreset)) {
+            const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
+            if (_cellLodF >= 1 && !(this.state.renderer && this.state.renderer._isHeadlessNull)) {
+                const W = AnazhRealm.WALD_ZIEGEL;
+                const dimB = _cellLodF === 1 ? W.dimFein : W.dim;
+                const fseedB = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+                const MB = new THREE.Matrix4().compose(
+                    new THREE.Vector3(tf.x, Number.isFinite(surfY) ? surfY : 0, tf.z),
+                    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tf.yaw || 0, 0)),
+                    new THREE.Vector3(tf.scale || 1, tf.scale || 1, tf.scale || 1)
+                );
+                const fh = this._baumFeldSpawn(foundryPreset, fseedB, dimB, MB);
+                if (fh) {
+                    return {
+                        cellX,
+                        cellZ,
+                        cellM,
+                        layer: layer.name,
+                        promotable: layer.promotable === true,
+                        species,
+                        variantIndex,
+                        lod: _cellLodF,
+                        bpName: "baum:" + foundryPreset + ":" + this._foundryVariantFor(fseedB) + ":" + dimB,
+                        slots: [],
+                        feld: fh,
+                        x: tf.x,
+                        z: tf.z,
+                    };
+                }
+            }
+        }
         // PARITÄT (Schöpfer „billiger Abklatsch" — die ROTEN/violetten Kronen, im Paritäts-Bild
         // gemessen): drei UNABHÄNGIGE 0..1-Würfe hießen {h,s,v}, wurden aber als ROHES RGB
         // konsumiert (`tintColor.setRGB(tint.h, tint.s, tint.v)`, _scatterInstanceAdd) → jede
@@ -58129,13 +58164,19 @@ class AnazhRealm {
             // nur den Hysterese-Zustand quittieren (kein Churn pro Band-Kreuzung).
             if (rec.bpName === cell.bpName) {
                 this._scatterFreeSlots(rec.slots);
+                if (rec.feld) this._weltFeldFrei(rec.feld); // Duplikat-Eintrag (Dedup-Refcount räumt)
                 cell.lod = newLod;
                 continue;
             }
             this._scatterFreeSlots(cell.slots);
+            if (cell.feld) {
+                this._weltFeldFrei(cell.feld); // die alte Feld-Stufe fällt mit dem Band-Wechsel
+                cell.feld = null;
+            }
             cell.lod = rec.lod;
             cell.bpName = rec.bpName;
             cell.slots = rec.slots;
+            cell.feld = rec.feld || null;
             realloc++;
         }
         return realloc;
@@ -58157,6 +58198,12 @@ class AnazhRealm {
         const regionGroupKeys = region.regional ? new Set() : null;
         const sharedSlots = regionGroupKeys ? [] : null;
         for (const cell of region.cells) {
+            // DIE BAUM-BAHN: das Feld eines Baum-Zells stirbt mit seiner Region
+            // (Dedup-Refcount — das geteilte Brick fällt erst mit dem letzten).
+            if (cell.feld) {
+                this._weltFeldFrei(cell.feld);
+                cell.feld = null;
+            }
             if (regionGroupKeys) {
                 // V18.390 (Eins W2) — NUR region-PRIVATE Gruppen (Key trägt @regX,regZ) als
                 // Ganzes entsorgen. GLOBALE Gruppen (Bäume alle LODs seit W2-D; LOD1/2-Fern-
@@ -74798,10 +74845,17 @@ class AnazhRealm {
                 const vy = Math.min(d - 1, Math.max(0, py | 0));
                 const vz = Math.min(d - 1, Math.max(0, pz | 0));
                 const oI = (vz * d * d + vy * d + vx) * 4;
-                daten[oI] = Math.min(255, daten[oI] + (c0r * q0 + c1r * u + c2r * w2) * 200);
-                daten[oI + 1] = Math.min(255, daten[oI + 1] + (c0g * q0 + c1g * u + c2g * w2) * 200);
-                daten[oI + 2] = Math.min(255, daten[oI + 2] + (c0b * q0 + c1b * u + c2b * w2) * 200);
-                daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
+                // GEKOPPELTE AKKUMULATION (v7-Befund: rgb×200 ungebremst sättigte
+                // dichte Flächen-Saat gegen WEISS): rgb UND alpha wachsen im
+                // SELBEN 90er-Schritt und stoppen ZUSAMMEN am Alpha-Deckel —
+                // rgb/alpha IST damit auf jeder Füllstufe exakt die Albedo
+                // (das Ecken-Mittel des March braucht keine Eichung mehr).
+                if (daten[oI + 3] < 255) {
+                    daten[oI] = Math.min(255, daten[oI] + (c0r * q0 + c1r * u + c2r * w2) * 90);
+                    daten[oI + 1] = Math.min(255, daten[oI + 1] + (c0g * q0 + c1g * u + c2g * w2) * 90);
+                    daten[oI + 2] = Math.min(255, daten[oI + 2] + (c0b * q0 + c1b * u + c2b * w2) * 90);
+                    daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
+                }
             }
         }
     }
@@ -74993,6 +75047,38 @@ class AnazhRealm {
         if (!entry || !entry._ziegelSlot) return;
         this._weltFeldFrei(entry._ziegelSlot);
         entry._ziegelSlot = null;
+    }
+
+    // ═══ DIE BAUM-BAHN (C, 21.07.): der Scatter-Baum IST sein Feld ═══
+    // Jenseits der feinsten Stufe (Zellen-LOD ≥ 1) wird der Baum ein Dedup-
+    // Brick je Vorlage×Stufe (baum:preset:variant:dim) + EIN Feld-Eintrag je
+    // Instanz (die Matrix platziert). Die Stufe reitet das EXISTIERENDE
+    // Zellen-LOD: 1 → dimFein 64³ · 2 → dim 32³ (der Billboard-Quad stirbt —
+    // der seit .31 benannte fimp-Swap); Stufe 0 bleibt echte Instanz-
+    // Geometrie = die feinste Abtaststufe (Anfassen/Fällen lebt). Die
+    // Bake-Quelle ist IMMER die Geometrie-Stufe 1, nie das Billboard — der
+    // Brick trägt die volle Form, dim wählt nur die Abtastrate (Pyramide).
+    _baumFeldSpawn(preset, fseed, dimB, M) {
+        const key = "baum:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + dimB;
+        const wm = this._weltMarchEnsure();
+        if (!wm) return null;
+        if (!wm.brickCache.has(key) && !this._weltBakeErlaubt()) return null; // Bake-Takt (Cache-Treffer sind frei)
+        return this._weltFeldSpawn(key, M, () => {
+            const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
+            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2)
+                return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
+            const grp = new THREE.Group();
+            for (const lf of bf.leaves) {
+                if (!lf || !lf.geom) continue;
+                const mesh = new THREE.Mesh(lf.geom, lf.mat || undefined);
+                mesh.matrixAutoUpdate = false;
+                if (lf.localMatrix) mesh.matrix.copy(lf.localMatrix);
+                grp.add(mesh);
+            }
+            if (!grp.children.length) return null;
+            const ident = this._identMatrix || (this._identMatrix = new THREE.Matrix4());
+            return this._ziegelBackenAusGruppe(grp, dimB, ident);
+        });
     }
 
     // DER GLIED-BÄCKER (MATRIX DER MATRIX): backt eine MESH-LISTE im
