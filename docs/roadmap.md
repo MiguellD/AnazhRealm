@@ -8,12 +8,14 @@
 ## §0 · DER TISCH — was offen ist (Stand V18.491.49)
 
 > **Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md`** (Frozen-Liste, max 5 — vom
-> BETRIEBSGESETZ in CLAUDE.md bewacht, `gate:betriebsgesetz` in `npm run check`). Heute:
-> **A)** nahe Bäume + Streu auf die Brick/Feld-Dedup-Bahn, Instanz-Default TOT (Grep-Beweis) ·
-> **B)** Boot-Messung Tris + dc vorher↔nachher (dieselbe Sonde, die Zahl im Commit) — danach
-> die Schöpfer-Abnahme (`docs/abnahme-drehbuch.md`, 15 Schritte). Alles Weitere in §0 ist
-> KONTEXT/CHRONIK gefallener Bögen (Detail: git log), KEINE Offen-Liste — wo alte Sätze dem
-> BETRIEBSGESETZ widersprechen (z. B. „das Schöpfer-Auge als Merge-Tor"), gewinnt das Gesetz.
+> BETRIEBSGESETZ in CLAUDE.md bewacht, `gate:betriebsgesetz` in `npm run check`). Gesetzt
+> vom Schöpfer 21.07. („alles mit raymarch, einheitlich — nahe dinge brauchen höhere
+> auflösung als ferne; die wiese wurde nie zum entfernen befohlen"): **A)** Auflösungs-
+> Leiter + March-Glättung · **B)** die Wiese kehrt sichtbar zurück (Funktion mit Tiefe) ·
+> **C)** nahe Bäume+Streu auf die Feld-Bahn nach A · **D)** Beweis-Paket (Bilder + Zahlen) —
+> danach die Schöpfer-Abnahme (`docs/abnahme-drehbuch.md`, 15 Schritte). Alles Weitere in §0
+> ist KONTEXT/CHRONIK gefallener Bögen (Detail: git log), KEINE Offen-Liste — wo alte Sätze
+> dem BETRIEBSGESETZ widersprechen (z. B. „das Schöpfer-Auge als Merge-Tor"), gewinnt das Gesetz.
 
 0. **DAS ERLEBNIS-ZIEL (16.07., Schöpfer-Wort — DIES schlägt alles darunter):**
    Jedes Ding im Realm ist EIN Studio-geborenes Wesen — EIN Bauplan je Ding (keine

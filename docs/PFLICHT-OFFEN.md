@@ -1,10 +1,11 @@
 # PFLICHT-OFFEN — die Frozen-Liste (max 5; LEER = SCOPE ZU)
 
-> Das EINZIGE Offen-Dokument (BETRIEBSGESETZ, CLAUDE.md). Einträge sind Zeilen, die mit
-> `A)`–`E)` beginnen. Ein Eintrag fällt GANZ — die Zeile stirbt im selben Commit wie ihr
-> Beweis — oder er bleibt stehen. Neue Einträge setzt NUR der Schöpfer, nie ein Arbeiter.
-> `gate:betriebsgesetz` (npm run check) liest diese Datei: solange sie Einträge trägt, sind
-> Siegel-Wörter (fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU) im HEAD-Commit ROT.
+> Das EINZIGE Offen-Dokument (BETRIEBSGESETZ, CLAUDE.md). Gesetzt vom Schöpfer am 21.07.:
+> „niemals wurde gesagt wiese entfernen · alles mit raymarch, einheitlich · nahe dinge
+> brauchen eine höhere auflösung als ferne." Einträge fallen GANZ (Zeile stirbt im
+> Beweis-Commit) oder bleiben. `gate:betriebsgesetz` liest diese Datei.
 
-A) Nahe Bäume + Streu (Instanz-Geometrie < Cull-Radius) auf die EINE Brick/Feld-Dedup-Bahn (`_weltFeldSpawn`); der alte Instanz-Default TOT — Grep-Beweis + Lifecycle byte-konsistent (fern tragen die Region-Bricks längst; das Gras-Muster gilt: die KLASSE fällt).
-B) Boot-Szenario-Messung zu A: Tris + dc vorher↔nachher mit DERSELBEN Sonde (Boot-Sonde echtes WebGPU, steadyState.weltMarch + Tri-Zensus) — die Zahl steht im Commit.
+A) DIE AUFLÖSUNGS-LEITER + MARCH-GLÄTTUNG: nahe Felder backen FEIN (64³-Tier je Glied/Bau, Distanz-Tick mit Hysterese und Budget), ferne grob (32³) — die Voxel-Winkelgröße ist das Gesetz; dazu die Glättung im March (trilineare Dichte-Abtastung + Treffer-Verfeinerung statt Nearest-Klötzchen). Beweis: Bild-Paar Kreatur/Bau nah vorher↔nachher.
+B) DIE WIESE KEHRT SICHTBAR ZURÜCK — als Funktion MIT TIEFE: nah Halm-Relief/Parallaxe (räumliche Halme, nicht flache Noise-Tönung), fern trägt der Meadow-Grund; einheitlich im Funktions-Paradigma, keine Rückkehr der Kegel-Instanzen. Beweis: Screenshot der Wiese gegen den Studio-Look.
+C) NAHE BÄUME + STREU auf die Feld-Bahn — ERST NACH A (nie wieder Klötzchen nah): Dedup-Bricks je Vorlage (`_weltFeldSpawn`) mit der Leiter, der Instanz-Default fällt (Grep-Beweis, Lifecycle byte-konsistent).
+D) BEWEIS-PAKET: dieselbe Boot-Sonde (echtes WebGPU) vorher↔nachher — Tris + dc + weltMarch-Zahlen im Commit, Bild-Paare (Kreatur nah · Bau 30 m · Wiese) gesehen.

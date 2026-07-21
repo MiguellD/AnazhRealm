@@ -99,9 +99,12 @@ die Frozen-Liste. Die 1300-Zeilen-Wellen-Chronik fiel an git (Lehre 15; `git log
 - BEWIESEN am .48-Stand: Boot-Sonde echtes WebGPU 0 Fehler/Warns · playtest:fast 18/18 ·
   lint 0 Errors · gate:fern-ring GRÜN.
 
-**PFLICHT-OFFEN (Spiegel — die Wahrheit ist docs/PFLICHT-OFFEN.md):**
-A) nahe Bäume + Streu auf die Brick/Feld-Dedup-Bahn, Instanz-Default TOT (Grep-Beweis) ·
-B) Boot-Messung Tris + dc vorher↔nachher (dieselbe Sonde, die Zahl im Commit).
+**PFLICHT-OFFEN (Spiegel — die Wahrheit ist docs/PFLICHT-OFFEN.md; Schöpfer-Wort 21.07.:
+„alles mit raymarch, einheitlich — nahe dinge brauchen höhere auflösung als ferne; die
+wiese wurde nie zum entfernen befohlen"):** A) Auflösungs-Leiter (nah 64³, fern 32³) +
+March-Glättung (trilinear + Treffer-Verfeinerung) · B) die Wiese kehrt sichtbar zurück
+(Funktion mit Tiefe, Halm-Relief nah) · C) nahe Bäume+Streu auf die Feld-Bahn NACH A ·
+D) Beweis-Paket (Bild-Paare + Tris/dc, dieselbe Sonde).
 
 ## Architektur (die Karte)
 
