@@ -71,40 +71,39 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.491.49 — DAS BETRIEBSGESETZ: „fertig" wird illegal, die Frozen-Liste wird Maschine)
+## Stand (V18.491.49 — BETRIEBSGESETZ + DIE AUFLÖSUNGS-LEITER BEGINNT)
 
-**21.07., Schöpfer (Systemdiagnose des Agenten-Betriebsmodus):** früh „fertig", Scope-Diebstahl,
-erfundene Schöpfer-Abhängigkeit und Wellen-Romane fallen als SYSTEM, nicht als Vorsatz: das
-BETRIEBSGESETZ (oben) + `docs/PFLICHT-OFFEN.md` (Frozen-Liste, max 5 — das EINZIGE
-Offen-Dokument) + `gate:betriebsgesetz` in `npm run check` (Siegel-Wort-Wand am HEAD-Commit
-solange Pflicht-OFFEN > 0 · Stand ≤ 40 Zeilen · Absenz-Wand der Gesetze in CLAUDE.md/champion.md
-· Selbsttest feuert) · champion.md trägt das Pflicht-Output-Format (Geschnitten/Gemessen/
-Pflicht-OFFEN Rest/Status) · Abnahme-Drehbuch auf 15 aktuelle Schritte · roadmap §0 spiegelt
-die Frozen-Liste. Die 1300-Zeilen-Wellen-Chronik fiel an git (Lehre 15; `git log` trägt sie).
+**21.07., zwei Wellen:** (1) DAS BETRIEBSGESETZ wird Maschine (oben; docs/PFLICHT-OFFEN.md =
+Frozen-Liste · gate:betriebsgesetz in npm run check · champion-Format · Drehbuch 15 Schritte ·
+die 1300-Zeilen-Chronik fiel an git). (2) Schöpfer-Kurskorrektur (bindend): „niemals wurde
+gesagt wiese entfernen · alles mit raymarch, einheitlich · nahe dinge brauchen eine höhere
+auflösung als ferne" — drei Schnitte:
+- DIE MARCH-GLÄTTUNG (0 Byte mehr Speicher): Treffer per Bisektion auf der TRILINEAREN Dichte
+  (Iso-Fläche 0.25 liegt ZWISCHEN den Voxeln — die Treppen fallen), Farbe = Ecken-Mittel (durch
+  a geteilt), Normale = analytischer Gradient derselben 8 Ecken; wgslFn-includes am EINEN Blick.
+- DIE AUFLÖSUNGS-LEITER: Kreatur-Glieder backen nah (< KREATUR_TIER_FEIN 28 m, Band 8 m) auf
+  WALD_ZIEGEL.dimFein 64³ (ein Block je Glied, 8× Voxel), fern 32³ — Wechsel bake-getaktet,
+  NEU vor FREI; Erschöpfung trägt die GROBE Stufe laut weiter (Ziegel-Pyramide, nie unsichtbar).
+- DIE WIESE MIT TIEFE: der flache Halm-Noise wird ein 8-Schicht-PARALLAX-RELIEF im Boden-
+  Fragment (Halme fangen den Blick, Lücken fallen zum dunklen Wurzelgrund — Tiefe + Parallaxe
+  als FUNKTION, kein Dreieck; dieselbe Frequenz 2.7 + MEADOW_GREEN, Gesetz #0).
+- BEWIESEN: node --check · lint 0 Errors · playtest:fast 18/18 · npm run check GRÜN ·
+  gate:fern-ring ALLE Bänder (echte Render-Probe 1726 px durch den NEUEN March) · VORHER-Sonde
+  echtes WebGPU: steady dc 158 / 768k Tris, weltMarch belegt 85/bricks 49, 0 Fehler. Das
+  NACHHER-Bild-Paar (Pflicht-OFFEN D) läuft — das Look-Urteil steht ehrlich aus.
 
-**WAS STEHT (die Karte der Formen — Detail: git log bis V18.491.49):**
-- TERRAIN = Funktion: Fern-Ring 8 km · Feld-Panorama 40 km · Fullscreen-Feld-Pass · GPU-Feld-
-  Zeichner; Chunks = Iso-CACHE desselben Gesetzes. GRAS = Oberflächen-Funktion im Boden-Fragment
-  (0 Gras-Instanzen, 0 Gras-Tris — vorher ~2 M; Boot-Chronik-Wal 81 %).
-- DER WELT-MARCH: EIN 3D-Einheiten-Atlas (512×512×128, Blöcke↔Einheiten mit Vereinigung) + Feld-
-  Liste (Matrix der Matrix: inverse Welt-Matrix je Glied) + EIN Raymarch-Pass mit echter Tiefe
-  und Szene-Licht. DEDUP-KERN `_weltFeldSpawn`: ein Brick, viele Matrix-Einträge (5 Wölfe =
-  +60 Einträge, +12 Bricks). Linse: steadyState.weltMarch.
-- ARCHITEKTUR = Feld bei jeder Distanz (Hand-Blase 16 m; Mesh nur unsichtbarer Interaktions-
-  Träger) · KREATUREN = animierte Glieder-Felder (~12 Glieder je Wolf, Körper unsichtbar) ·
-  REGIONEN fern = Region-Bricks · KEIN Mesh-Rückweg, keine Fallbacks (Bake-Garantie 4/s min).
-- EHRLICHE KARTE: CACHE (erlaubt, EINE Wahrheit memoisiert) = Terrain-Mesh · Fern-Ring ·
-  Panorama · Region-Bricks · Atlas. HYBRID (= Pflicht-OFFEN A) = NAHE Bäume/Streu als
-  Instanzen. AUSGENOMMEN = der Avatar (der Beobachter, gebilligt).
-- BEWIESEN am .48-Stand: Boot-Sonde echtes WebGPU 0 Fehler/Warns · playtest:fast 18/18 ·
-  lint 0 Errors · gate:fern-ring GRÜN.
+**WAS STEHT (Karte der Formen — Detail: git log):** TERRAIN = Funktion (Ring 8 km · Panorama
+40 km · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Atlas 512×512×128 + Feld-Liste +
+EIN Raymarch mit echter Tiefe/Szene-Licht; DEDUP-KERN `_weltFeldSpawn` (ein Brick, viele
+Matrix-Einträge; Linse steadyState.weltMarch) · ARCHITEKTUR = Feld (Hand-Blase 16 m, Mesh =
+unsichtbarer Interaktions-Träger) · KREATUREN = animierte Glieder-Felder, jetzt ZWEISTUFIG
+(64³ nah / 32³ fern) · REGIONEN fern = Region-Bricks · GRAS = Boden-Funktion mit Relief-Tiefe.
+HYBRID (= Pflicht-OFFEN C) = nahe Bäume/Streu als Instanzen (~11k Batch- + ~330 schwere
+Instanzen < 400 m, Zensus 21.07.). AUSGENOMMEN = der Avatar.
 
-**PFLICHT-OFFEN (Spiegel — die Wahrheit ist docs/PFLICHT-OFFEN.md; Schöpfer-Wort 21.07.:
-„alles mit raymarch, einheitlich — nahe dinge brauchen höhere auflösung als ferne; die
-wiese wurde nie zum entfernen befohlen"):** A) Auflösungs-Leiter (nah 64³, fern 32³) +
-March-Glättung (trilinear + Treffer-Verfeinerung) · B) die Wiese kehrt sichtbar zurück
-(Funktion mit Tiefe, Halm-Relief nah) · C) nahe Bäume+Streu auf die Feld-Bahn NACH A ·
-D) Beweis-Paket (Bild-Paare + Tris/dc, dieselbe Sonde).
+**PFLICHT-OFFEN (Spiegel — die Wahrheit ist docs/PFLICHT-OFFEN.md):** A) Leiter + Glättung
+(GEBAUT — fällt erst mit dem Bild-Beweis) · B) Wiese sichtbar zurück (GEBAUT — fällt erst mit
+dem Bild-Beweis) · C) nahe Bäume + Streu auf die Feld-Bahn nach A · D) Beweis-Paket (läuft).
 
 ## Architektur (die Karte)
 

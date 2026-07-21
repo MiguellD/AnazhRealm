@@ -23118,6 +23118,16 @@ class AnazhRealm {
                 }
                 continue;
             }
+            // DIE AUFLÖSUNGS-LEITER (Schöpfer 21.07., „nahe dinge brauchen eine
+            // höhere auflösung als ferne"): innerhalb KREATUR_TIER_FEIN backt das
+            // Glied fein (64³ = ein Block je Glied), dahinter grob (32³) —
+            // Hysterese-Band gegen Flappen, der Wechsel zahlt den Bake-Takt.
+            const W = AnazhRealm.WALD_ZIEGEL;
+            const feinD = AnazhRealm.KREATUR_TIER_FEIN;
+            const band = AnazhRealm.KREATUR_TIER_BAND;
+            const distQ = dx * dx + dz * dz;
+            let dimSoll = u._kzDim === W.dimFein ? (distQ > (feinD + band) * (feinD + band) ? W.dim : W.dimFein) : distQ < feinD * feinD ? W.dimFein : W.dim;
+            if (u._kzDimVersagt === dimSoll) dimSoll = u._kzDim || W.dim; // Erschöpfung: die Stufe bleibt, bis das Band wechselt (laut im Register)
             if (!u._kzGlieder) {
                 if (u._kzVersuch) {
                     // KEIN RÜCKWEG: der Bake ist gefallen — das Tier rendert nie
@@ -23128,10 +23138,26 @@ class AnazhRealm {
                 if (!this._weltBakeErlaubt()) continue; // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt der Körper
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
-                u._kzGlieder = this._kreaturGliederBacken(cr);
+                u._kzGlieder = this._kreaturGliederBacken(cr, dimSoll);
                 if (!u._kzGlieder) {
                     cr.visible = false; // Feld fehlt → nichts erscheint (laut im Register)
                     continue;
+                }
+                u._kzDim = dimSoll;
+            } else if (u._kzDim !== dimSoll && this._weltBakeErlaubt()) {
+                // STUFEN-WECHSEL: NEU zuerst backen (Dedup-Cache trägt Wiederkehrer
+                // gratis), erst bei Erfolg fällt die alte Stufe — scheitert der
+                // feine Bake (Atlas-Erschöpfung), trägt die grobe Stufe weiter:
+                // dieselbe EINE Wahrheit, niedrigere Abtastrate (Ziegel-Pyramide).
+                cr.updateMatrixWorld(true);
+                const neu = this._kreaturGliederBacken(cr, dimSoll);
+                if (neu) {
+                    for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
+                    u._kzGlieder = neu;
+                    u._kzDim = dimSoll;
+                    u._kzDimVersagt = null;
+                } else {
+                    u._kzDimVersagt = dimSoll;
                 }
             }
             // DIE KNOCHEN TRAGEN DIE FELDER (je Glied je Frame — die Pose der
@@ -32522,20 +32548,45 @@ class AnazhRealm {
             // Farbe (MEADOW_GREEN, Gesetz #0 mit der alten Halm-Wurzel) → keine
             // zweite Wahrheit, nur die Wiese als Funktion statt als Dreiecke.
             if (_T.cameraPosition && _T.mx_noise_float) {
+                // DIE WIESE MIT TIEFE (Schöpfer 21.07.: „niemals wurde gesagt wiese
+                // entfernen … nahe dinge brauchen eine höhere auflösung als ferne"):
+                // die Halme sind eine PARALLAX-FUNKTION — ein Höhenfeld aus Halm-
+                // Noise, das der Blick in 8 Schichten durchsticht (Relief-March im
+                // Boden-Fragment): hohe Halme fangen den Strahl früh (helle Spitze),
+                // Lücken lassen ihn zum dunklen Wurzelgrund durch. Räumliche Tiefe +
+                // Parallaxe beim Umsehen — als FUNKTION, ohne ein Dreieck; dieselbe
+                // EINE Halm-Frequenz 2.7 und dasselbe MEADOW_GREEN (Gesetz #0).
                 const _camD = wp.sub(_T.cameraPosition).length();
                 const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
-                const _halmN = _T
-                    .mx_noise_float(_T.vec3(wp.x.mul(2.7), wp.z.mul(2.7), _T.float(11.0)))
-                    .mul(0.5)
-                    .add(0.5);
-                const _halm = _halmN.mul(_halmN); // schärfen → Halm-Streifen statt Wolke
+                const _blick = wp.sub(_T.cameraPosition).normalize(); // Auge → Boden
+                // Schräg-Projektion: flacher Blick wandert weit durch die Halm-Schicht
+                // (starke Parallaxe), steiler Blick kaum — der 0.18-Boden hält die
+                // Wanderung am Horizont endlich (dort blendet _nah ohnehin aus).
+                const _steil = _blick.y.abs().max(0.18);
+                const _halmHoch = _T.float(0.32); // m sichtbare Halm-Schicht
+                const _wanderX = _blick.x.div(_steil).mul(_halmHoch);
+                const _wanderZ = _blick.z.div(_steil).mul(_halmHoch);
+                const _f = _T.float(2.7); // die EINE Halm-Frequenz
+                let _traf = _T.float(0.0); // 0 = noch kein Halm getroffen (branchenlos)
+                let _trefH = _T.float(0.0); // Schicht-Höhe des Treffers (0 = Wurzelgrund)
+                for (let _s = 0; _s < 8; _s++) {
+                    const _li = 1.0 - _s / 8.0; // Schicht von oben (1.0) nach unten (0.125)
+                    const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
+                    const _pz = wp.z.add(_wanderZ.mul(_T.float(_s / 8.0)));
+                    const _hN = _T.mx_noise_float(_T.vec3(_px.mul(_f), _pz.mul(_f), _T.float(11.0))).mul(0.5).add(0.5);
+                    const _h = _hN.mul(_hN); // schärfen → Halm-Streifen statt Wolke
+                    const _erst = _T.step(_T.float(_li), _h).mul(_T.float(1.0).sub(_traf));
+                    _trefH = _trefH.add(_erst.mul(_T.float(_li)));
+                    _traf = _traf.add(_erst);
+                }
                 const _mg2 = AnazhRealm.MEADOW_GREEN;
-                const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.72).add(_halm.mul(_T.float(0.5))));
+                // Spitze hell, Wurzelgrund dunkel — die Tiefe liest sich als Eigen-Schatten:
+                const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.5).add(_trefH.mul(_T.float(0.75))));
                 const _halmW = _green
                     .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
                     .mul(_T.float(1.0).sub(_dryW))
                     .mul(_nah)
-                    .mul(_T.float(0.4))
+                    .mul(_T.float(0.55))
                     .clamp(0.0, 1.0);
                 _out = _T.mix(_out, _halmCol, _halmW);
             }
@@ -39440,6 +39491,52 @@ class AnazhRealm {
             lichtFarbe: TSL.uniform(new THREE.Vector3(1, 1, 1)),
             ambientFarbe: TSL.uniform(new THREE.Vector3(0.3, 0.3, 0.3)),
         };
+        // DIE MARCH-GLÄTTUNG (Schöpfer 21.07., „nahe dinge brauchen eine höhere
+        // auflösung als ferne" — Stufe 1 kostet KEIN Byte Speicher): die Treffer
+        // werden per Bisektion auf der TRILINEAREN Dichte verfeinert statt am
+        // Nearest-Texel abgebrochen — die Iso-Fläche 0.25 liegt ZWISCHEN den
+        // Voxeln, die Treppen-Klötzchen fallen. Farbe = Ecken-Mittel (durch a
+        // geteilt), Normale = ANALYTISCHER Gradient derselben 8 Ecken. Beide
+        // Helfer sind rohes WGSL (textureLoad-Muster, kein Sampler — die
+        // WGSL-SPEC-WAND der vierten Welle bleibt geehrt), als wgslFn-includes
+        // an den Blick gehängt.
+        const feldTriAbtastFn = TSL.wgslFn(
+            "fn feldTriAbtast(atlas: texture_3d<f32>, loI: vec3<i32>, hiI: vec3<i32>, vox: vec3<f32>) -> vec4<f32> {\n" +
+                "    let f0 = floor(vox - 0.5);\n" +
+                "    let fr = vox - 0.5 - f0;\n" +
+                "    let b = loI + vec3<i32>(f0);\n" +
+                "    let s0 = textureLoad(atlas, clamp(b, loI, hiI), 0);\n" +
+                "    let s1 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 0), loI, hiI), 0);\n" +
+                "    let s2 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 0), loI, hiI), 0);\n" +
+                "    let s3 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 0), loI, hiI), 0);\n" +
+                "    let s4 = textureLoad(atlas, clamp(b + vec3<i32>(0, 0, 1), loI, hiI), 0);\n" +
+                "    let s5 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 1), loI, hiI), 0);\n" +
+                "    let s6 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 1), loI, hiI), 0);\n" +
+                "    let s7 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 1), loI, hiI), 0);\n" +
+                "    let c0 = mix(mix(s0, s1, fr.x), mix(s2, s3, fr.x), fr.y);\n" +
+                "    let c1 = mix(mix(s4, s5, fr.x), mix(s6, s7, fr.x), fr.y);\n" +
+                "    return mix(c0, c1, fr.z);\n" +
+                "}"
+        );
+        const feldTriGradFn = TSL.wgslFn(
+            "fn feldTriGrad(atlas: texture_3d<f32>, loI: vec3<i32>, hiI: vec3<i32>, vox: vec3<f32>) -> vec3<f32> {\n" +
+                "    let f0 = floor(vox - 0.5);\n" +
+                "    let fr = vox - 0.5 - f0;\n" +
+                "    let b = loI + vec3<i32>(f0);\n" +
+                "    let a0 = textureLoad(atlas, clamp(b, loI, hiI), 0).a;\n" +
+                "    let a1 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 0), loI, hiI), 0).a;\n" +
+                "    let a2 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 0), loI, hiI), 0).a;\n" +
+                "    let a3 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 0), loI, hiI), 0).a;\n" +
+                "    let a4 = textureLoad(atlas, clamp(b + vec3<i32>(0, 0, 1), loI, hiI), 0).a;\n" +
+                "    let a5 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 1), loI, hiI), 0).a;\n" +
+                "    let a6 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 1), loI, hiI), 0).a;\n" +
+                "    let a7 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 1), loI, hiI), 0).a;\n" +
+                "    let gx = mix(mix(a1 - a0, a3 - a2, fr.y), mix(a5 - a4, a7 - a6, fr.y), fr.z);\n" +
+                "    let gy = mix(mix(a2 - a0, a3 - a1, fr.x), mix(a6 - a4, a7 - a5, fr.x), fr.z);\n" +
+                "    let gz = mix(mix(a4 - a0, a5 - a1, fr.x), mix(a6 - a2, a7 - a3, fr.x), fr.y);\n" +
+                "    return vec3<f32>(gx, gy, gz);\n" +
+                "}"
+        );
         // DER BLICK (WGSL, roh — ersetzt den per-Pixel-March): Richtung aus
         // invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-
         // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
@@ -39517,6 +39614,7 @@ class AnazhRealm {
                 "        let stepN = f32(schritte);\n" +
                 "        let loI = vec3<i32>(orig);\n" +
                 "        let hiI = loI + vec3<i32>(i32(d) - 1);\n" +
+                "        var tDavor = tN2;\n" +
                 "        for (var k: i32 = 0; k < schritte; k = k + 1) {\n" +
                 "            let t = tN2 + (tF2 - tN2) * (f32(k) + 0.5) / stepN;\n" +
                 "            if (t >= bestT) { break; }\n" +
@@ -39525,15 +39623,25 @@ class AnazhRealm {
                 "            let texel = vec3<i32>(orig + uvw * d);\n" +
                 "            let tex = textureLoad(atlas, texel, 0);\n" +
                 "            if (tex.a > 0.25) {\n" +
-                "                bestT = t;\n" +
-                "                bestRgb = tex.rgb;\n" +
-                "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a);\n" +
-                "                // die ±1-Reads auf den EIGENEN Brick geklemmt (dicht gepackter\n" +
-                "                // Atlas, kein Padding → sonst liest der Rand den Nachbar-Slot):\n" +
-                "                let gx = textureLoad(atlas, clamp(texel + vec3<i32>(1, 0, 0), loI, hiI), 0).a - textureLoad(atlas, clamp(texel - vec3<i32>(1, 0, 0), loI, hiI), 0).a;\n" +
-                "                let gy = textureLoad(atlas, clamp(texel + vec3<i32>(0, 1, 0), loI, hiI), 0).a - textureLoad(atlas, clamp(texel - vec3<i32>(0, 1, 0), loI, hiI), 0).a;\n" +
-                "                let gz = textureLoad(atlas, clamp(texel + vec3<i32>(0, 0, 1), loI, hiI), 0).a - textureLoad(atlas, clamp(texel - vec3<i32>(0, 0, 1), loI, hiI), 0).a;\n" +
-                "                let gv = vec3<f32>(-gx, -gy, -gz);\n" +
+                "                // DIE MARCH-GLÄTTUNG: Bisektion auf der TRILINEAREN Dichte —\n" +
+                "                // die 0.25-Iso-Fläche liegt ZWISCHEN den Voxeln, nicht auf dem\n" +
+                "                // Texel-Gitter (die Treppen fallen, ohne ein Byte mehr Speicher).\n" +
+                "                var tLo = tDavor;\n" +
+                "                var tHi = t;\n" +
+                "                for (var rr: i32 = 0; rr < 4; rr = rr + 1) {\n" +
+                "                    let tM = (tLo + tHi) * 0.5;\n" +
+                "                    let vM = clamp((oL + dL * tM - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999)) * d;\n" +
+                "                    if (feldTriAbtast(atlas, loI, hiI, vM).a > 0.25) { tHi = tM; } else { tLo = tM; }\n" +
+                "                }\n" +
+                "                let vH = clamp((oL + dL * tHi - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999)) * d;\n" +
+                "                let cH = feldTriAbtast(atlas, loI, hiI, vH);\n" +
+                "                bestT = tHi;\n" +
+                "                // Ecken-MITTEL statt Voxel-Farbe: durch a geteilt — leere Ecken\n" +
+                "                // (rgba=0) dunkeln den Rand sonst zum Halo ab.\n" +
+                "                bestRgb = cH.rgb / max(cH.a, 0.05);\n" +
+                "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a),\n" +
+                "                // analytisch aus DENSELBEN 8 Ecken (glatt statt Facetten):\n" +
+                "                let gv = -feldTriGrad(atlas, loI, hiI, vH);\n" +
                 "                if (dot(gv, gv) < 1e-8) {\n" +
                 "                    bestN = -dir;\n" + // degeneriert: direkt zur Kamera (WELT-Raum, kein Transform)
                 "                } else {\n" +
@@ -39546,6 +39654,7 @@ class AnazhRealm {
                 "                }\n" +
                 "                break;\n" +
                 "            }\n" +
+                "            tDavor = t;\n" +
                 "        }\n" +
                 "    }\n" +
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
@@ -39561,7 +39670,8 @@ class AnazhRealm {
                 "    }\n" +
                 "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
                 "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
-                "}"
+                "}",
+            [feldTriAbtastFn, feldTriGradFn] // die Glättungs-Helfer reisen als WGSL-includes mit
         );
         // DER EINE WELT-MARCH schreibt ECHTE TIEFE (depthNode, das Fern-Schirm-
         // Muster): der Pass ist OPAK und komponiert per Depth-Test mit allem —
@@ -74736,7 +74846,7 @@ class AnazhRealm {
     // Anker, Deckel 12 Glieder je Tier. Der Fern-Standbild-Ast backt NIE
     // (er wäre der Doppel-Körper). Ganz oder gar nicht: reicht der Atlas
     // nicht für ALLE Glieder, fällt das ganze Tier (kein halber Wolf).
-    _kreaturGliederBacken(cr) {
+    _kreaturGliederBacken(cr, dimWahl) {
         const tb = cr.userData && cr.userData._tierBaum;
         const anker = new Set();
         if (tb && tb.teile) for (const k in tb.teile) if (tb.teile[k] && tb.teile[k].isObject3D) anker.add(tb.teile[k]);
@@ -74786,9 +74896,12 @@ class AnazhRealm {
         // im Knochen-LOKALEN Raum pose- UND instanz-unabhängig (starre Teile) →
         // alle Wölfe teilen dieselben ~12 Bricks, jede Instanz posiert sie per
         // eigener Knochen-Matrix. 20 Tiere × 12 Glieder → 12 Bricks statt 240.
+        // DIE AUFLÖSUNGS-LEITER (Schöpfer 21.07.): dimWahl wählt die Stufe —
+        // nah 64³ (ein Block je Glied, 8× Voxel), fern 32³; der Key trägt die
+        // Stufe, beide Tiers teilen den Brick-Cache je Gattung.
         const glieder = [];
         const soul = (cr.userData && cr.userData.soul) || "wesen";
-        const dim = AnazhRealm.WALD_ZIEGEL.dim;
+        const dim = dimWahl || AnazhRealm.WALD_ZIEGEL.dim;
         for (const [a, g] of gruppen) {
             a.updateMatrixWorld(true);
             const key = `kreatur:${soul}:${a.name || "wurzel"}:${dim}`;
@@ -99945,8 +100058,17 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
     schritteArch: 48,
     dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB)
     schritteRegion: 40,
+    dimFein: 64, // DIE AUFLÖSUNGS-LEITER (21.07.): das NAHE Glied backt fein (ein Block je Glied, 8× Voxel)
 });
 AnazhRealm.KREATUR_ZIEGEL_DIST = 0;
+// DIE AUFLÖSUNGS-LEITER (Schöpfer 21.07.: „nahe dinge brauchen eine höhere
+// auflösung als ferne"): innerhalb TIER_FEIN backen Kreatur-Glieder auf
+// WALD_ZIEGEL.dimFein (64³ — Wolf-Glied ~7 mm Voxel statt 14), dahinter die
+// Basis-Stufe; BAND ist die Hysterese gegen Bake-Flappen an der Grenze.
+// Erschöpft der Atlas den feinen Satz, trägt die GROBE Stufe weiter — dieselbe
+// EINE Wahrheit in niedrigerer Abtastrate (Ziegel-Pyramide), nie Unsichtbarkeit.
+AnazhRealm.KREATUR_TIER_FEIN = 28;
+AnazhRealm.KREATUR_TIER_BAND = 8;
 // DER EINE WELT-MARCH (Schöpfer: „dann läuft es ohne three — vollende es …
 // nichts offen, keine fallbacks"): ALLE Felder (Regionen · Bauten · Tiere)
 // leben in EINEM 3D-Atlas + EINER Feld-Listen-Textur; der Feld-Pass marcht
