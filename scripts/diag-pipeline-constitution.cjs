@@ -165,15 +165,20 @@ law(
     true,
     /impostor:\s*\{\s*views:/.test(foundryNC)
 );
-// LOD-WURZEL (08.07., V9.56-i — das Gesetz wandert mit dem Code): der Halm-Draht ist
-// STUFEN-parameterisiert (`_grassStudioGeometry(stage)`, die Stufe aus den Vertrags-Daten
-// `kindStages.grass` via `_grassKindStages`); der Defer-Draht bleibt die Kopie-Bau-Wand.
+// GRAS ALS OBERFLÄCHEN-FUNKTION (20.07., V18.491.48 — das Gesetz wandert mit dem Code):
+// die Halm-GEOMETRIE ist tot — der Voxel-Gras-Bauer registriert bedingungslos null
+// (Lifecycle byte-konsistent, es entstehen nie wieder Kegel-Dreiecke); die Wiese lebt
+// als Halm-Schattierung IM Boden-Fragment (`_terrainGeologyAlbedo`: `_halmW`-Mix auf
+// das EINE geteilte MEADOW_GREEN — Gesetz #0, keine zweite Farb-Wahrheit).
 law(
-    "DER GRAS-SCHNITT: der Halm ist das Studio-Asset (`_grassStudioGeometry(stage)` + kindStages-Draht + Defer im Bauer)",
+    "GRAS ALS OBERFLÄCHEN-FUNKTION: der Bauer registriert null, baut nie ein Mesh",
     true,
-    /_grassStudioGeometry\(/.test(anazhNC) &&
-        /_grassKindStages\(\)/.test(anazhNC) &&
-        /this\._enqueueGrass\(cx, cz\);\s*return;/.test(anazhNC)
+    /voxelChunkGrass\.set\(key, null\);/.test(anazhNC)
+);
+law(
+    "die Wiese lebt im Boden-Fragment (Halm-Term `_halmW` mixt MEADOW_GREEN)",
+    true,
+    /_halmW/.test(anazhNC) && /MEADOW_GREEN/.test(anazhNC)
 );
 // LOD-WURZEL (08.07.) — die Stufen-Wahrheit je Art lebt als VERTRAGS-DATEN in foundry-core
 // (kindStages), der Studio-Wald liest sie SELBST (near/far-Kacheln), AnazhRealm clampt seine
@@ -378,18 +383,15 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
             /mp && typeof mp\.metalness === "number" \? mp\.metalness :/.test(anazhNC) &&
             /mp && typeof mp\.envMapIntensity === "number" \? mp\.envMapIntensity :/.test(anazhNC)
     );
-    // N4.3/N7.4 — die Wiese IST Studio-definiert: das Resolved-Leer-Verdikt ist bedingungslos,
-    // ohne Studio wird die Zelle bewusst gras-los verbucht, der Alt-Tuft-Bauer ist GESCHNITTEN
-    // (das P4-Gesetz „wenn kein Gras da ist, ist es so" — kein Nachbau, keine Rückkehr):
+    // N4.3/N7.4 → GRAS ALS OBERFLÄCHEN-FUNKTION (V18.491.48, das Gesetz wandert mit dem
+    // Code): der Studio-Halm-KONSUM im Bauer fiel mit der Halm-Geometrie (das
+    // `sg === "leer"`-Verdikt und die Existenz-Gabel waren Leser des Mesh-Pfads) — KEIN
+    // Bauer-Pfad erzeugt mehr Halm-Instanzen; die Tuft-/Thin-Absenz-Gesetze bleiben.
     law(
-        'N4.3: der Gras-Bauer verbucht „leer" als Studio-Antwort (`sg === "leer"` lebt)',
-        true,
-        /sg === "leer"/.test(anazhNC)
-    );
-    law(
-        "N7.4: ohne Studio-Pipeline wird die Gras-Zelle bewusst gras-los verbucht (Existenz-Gabel)",
-        true,
-        /if \(!grassStudio\) \{/.test(anazhNC)
+        'N7.4: der Mesh-Gras-Konsum ist tot (kein `sg === "leer"`-Leser, keine Existenz-Gabel im Bauer)',
+        false,
+        /sg === "leer"/.test(anazhNC) || /if \(!grassStudio\) \{/.test(anazhNC),
+        "der Mesh-Gras-Pfad ist zurückgekehrt"
     );
     law(
         "N7.4: der Alt-Tuft-Bauer ist geschnitten (kein _grassBladeTuftGeometry im Code)",
