@@ -74733,7 +74733,10 @@ class AnazhRealm {
     // skaliert PROPORTIONAL über die Gesamt-Fläche (kein stiller Schwanz-
     // Abschnitt — jedes Dreieck sät anteilig). Indexlose Soups = (i, i+1, i+2);
     // Riesen-Meshes tasten Dreiecke im Schritt ab und wichten die Fläche hoch.
-    _feldFlaechenSplat(daten, d, bbMin, sx, sy, sz, geo, col, mc, m, sollProben) {
+    // randArt: "klemm" (Default — Proben klemmen auf den Brick-Rand) | "skip"
+    // (Oktant-Bake: Proben AUSSERHALB der Teil-Box fallen — sie gehören dem
+    // Nachbar-Oktanten; Klemmen würde sie auf die Schnittfläche schmieren).
+    _feldFlaechenSplat(daten, d, bbMin, sx, sy, sz, geo, col, mc, m, sollProben, randArt) {
         const pos = geo && geo.attributes && geo.attributes.position;
         if (!pos || pos.count < 3) return;
         const idx = geo.index || null;
@@ -74841,6 +74844,7 @@ class AnazhRealm {
                 const px = ax * q0 + bx * u + cx * w2;
                 const py = ay * q0 + by * u + cy * w2;
                 const pz = az * q0 + bz * u + cz * w2;
+                if (randArt === "skip" && (px < 0 || px >= d || py < 0 || py >= d || pz < 0 || pz >= d)) continue;
                 const vx = Math.min(d - 1, Math.max(0, px | 0));
                 const vy = Math.min(d - 1, Math.max(0, py | 0));
                 const vz = Math.min(d - 1, Math.max(0, pz | 0));
@@ -74913,12 +74917,60 @@ class AnazhRealm {
     // (jeder Vertex durch wurzelInv × welt) — so ist das Brick platzierungs-
     // frei und identische Vorlagen teilen es (die Instanz-Matrix platziert im
     // Feld-Eintrag). Ohne wurzelInv byte-alt: Welt-Raum-Feld (Region-Streu).
-    _ziegelBackenAusGruppe(gruppe, dim, wurzelInv) {
+    // klemmBox (optional, ARCH-ZERLEGUNG): backt NUR diese Teil-Box der
+    // Vorlage (Oktant) — Proben außerhalb fallen (randArt "skip"); ein leer
+    // gebliebener Oktant liefert das SENTINEL "leer" (der Aufrufer merkt es
+    // im Leer-Cache — kein Brick, kein Re-Bake, kein Erschöpfungs-Irrtum).
+    _ziegelBackenAusGruppe(gruppe, dim, wurzelInv, klemmBox) {
         if (!gruppe || typeof THREE === "undefined") return null;
         const d = dim || AnazhRealm.WALD_ZIEGEL.dim;
         gruppe.updateMatrixWorld(true);
         const lokal = wurzelInv ? new THREE.Matrix4() : null;
         // Bounding-Box im Ziel-Raum (Welt ODER Vorlagen-lokal):
+        if (klemmBox) {
+            const sxK = Math.max(1e-6, klemmBox.max.x - klemmBox.min.x);
+            const syK = Math.max(1e-6, klemmBox.max.y - klemmBox.min.y);
+            const szK = Math.max(1e-6, klemmBox.max.z - klemmBox.min.z);
+            const datenK = new Uint8Array(d * d * d * 4);
+            const mIK = new THREE.Matrix4();
+            gruppe.traverse((o) => {
+                if (!o.isMesh && !o.isInstancedMesh) return;
+                const g = o.geometry;
+                const pos = g && g.attributes && g.attributes.position;
+                if (!pos || !pos.count) return;
+                const col = g.attributes.color || null;
+                const mc = !col && o.material && o.material.color ? o.material.color : null;
+                if (o.isInstancedMesh) {
+                    const n = Math.max(1, o.count | 0);
+                    const proInstanz = Math.max(600, Math.floor((d * d * 24) / n));
+                    for (let k = 0; k < n; k++) {
+                        o.getMatrixAt(k, mIK);
+                        mIK.premultiply(o.matrixWorld);
+                        const mK = wurzelInv ? new THREE.Matrix4().multiplyMatrices(wurzelInv, mIK) : mIK;
+                        this._feldFlaechenSplat(datenK, d, klemmBox.min, sxK, syK, szK, g, col, mc, mK, proInstanz, "skip");
+                    }
+                } else {
+                    const mK = wurzelInv
+                        ? new THREE.Matrix4().multiplyMatrices(wurzelInv, o.matrixWorld)
+                        : o.matrixWorld;
+                    this._feldFlaechenSplat(datenK, d, klemmBox.min, sxK, syK, szK, g, col, mc, mK, d * d * 24, "skip");
+                }
+            });
+            let voll = false;
+            for (let i = 3; i < datenK.length; i += 4)
+                if (datenK[i] > 0) {
+                    voll = true;
+                    break;
+                }
+            if (!voll) return "leer";
+            const texK = new THREE.Data3DTexture(datenK, d, d, d);
+            texK.format = THREE.RGBAFormat;
+            texK.minFilter = THREE.LinearFilter;
+            texK.magFilter = THREE.LinearFilter;
+            texK.unpackAlignment = 1;
+            texK.needsUpdate = true;
+            return { tex: texK, bbMin: klemmBox.min.clone(), bbGroesse: new THREE.Vector3(sxK, syK, szK) };
+        }
         const bb = new THREE.Box3();
         if (wurzelInv) {
             const vv = new THREE.Vector3();
@@ -75007,6 +75059,35 @@ class AnazhRealm {
     _archZiegelFern(entry) {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return false;
+        // DIE ARCH-ZERLEGUNG (A): Tier-Wahl mit Hysterese — nah tragen 8
+        // Oktanten-Felder (128³ effektiv), fern das EINE grobe Brick.
+        let willFein = false;
+        const pp = st.playerMesh && st.playerMesh.position;
+        if (pp && entry.position && !entry._azOktVersagt) {
+            const fein = AnazhRealm.ARCH_TIER_FEIN;
+            const band = AnazhRealm.ARCH_TIER_BAND;
+            const dxA = entry.position.x - pp.x;
+            const dzA = entry.position.z - pp.z;
+            const dQ = dxA * dxA + dzA * dzA;
+            willFein = entry._azOkt ? dQ < (fein + band) * (fein + band) : dQ < fein * fein;
+        }
+        if (entry._azOkt) {
+            if (willFein) {
+                for (const h of entry._azOkt) this._weltFeldAktiv(h, true);
+                if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
+                return false;
+            }
+            for (const h of entry._azOkt) this._weltFeldFrei(h);
+            entry._azOkt = null; // die grobe Bahn unten trägt wieder
+        } else if (willFein && entry._ziegelSlot && this._weltBakeErlaubt()) {
+            const okt = this._archOktantenSpawn(entry);
+            if (okt) {
+                this._weltFeldAktiv(entry._ziegelSlot, false);
+                entry._azOkt = okt;
+                return true;
+            }
+            entry._azOktVersagt = true; // Erschöpfung — grob trägt laut weiter (Register warnt)
+        }
         if (entry._ziegelSlot) {
             this._weltFeldAktiv(entry._ziegelSlot, true);
             return false;
@@ -75044,9 +75125,78 @@ class AnazhRealm {
 
     // Das Feld stirbt mit seinem Eintrag (der Slot wird frei — kein Atlas-Leck).
     _archZiegelTod(entry) {
-        if (!entry || !entry._ziegelSlot) return;
+        if (!entry) return;
+        if (entry._azOkt) {
+            for (const h of entry._azOkt) this._weltFeldFrei(h);
+            entry._azOkt = null;
+        }
+        if (!entry._ziegelSlot) return;
         this._weltFeldFrei(entry._ziegelSlot);
         entry._ziegelSlot = null;
+    }
+
+    // DIE ARCH-ZERLEGUNG: 8 Oktanten-Felder der Vorlagen-Box spawnen (Dedup je
+    // Vorlage×Oktant; die Instanz-Matrix M platziert alle 8 — die lokale Box
+    // des Bricks IST der Oktant). Leere Oktanten fallen (Leer-Cache — kein
+    // Re-Bake); echte Erschöpfung → alles zurück, null (ganz oder gar nicht).
+    _archOktantenSpawn(entry) {
+        const brick = entry._ziegelSlot && entry._ziegelSlot.brick;
+        if (!brick || !brick.lokalMin || !brick.lokalGroesse) return null;
+        const wm = this._weltMarchEnsure();
+        if (!wm) return null;
+        if (!wm.leerCache) wm.leerCache = new Set();
+        const M = this._archWeltMatrix(entry);
+        const inv = M.clone().invert();
+        const dim = AnazhRealm.WALD_ZIEGEL.dimArch;
+        const bmin = brick.lokalMin;
+        const bg = brick.lokalGroesse;
+        const hx = bg.x / 2;
+        const hy = bg.y / 2;
+        const hz = bg.z / 2;
+        const hatte = this._archIsRendered(entry);
+        let tempGebaut = false;
+        const handles = [];
+        for (let i = 0; i < 8; i++) {
+            const key = `arch:${entry.type}:${entry._lodVariantIndex || 0}:okt${i}:${dim}`;
+            if (wm.leerCache.has(key)) continue; // bekannter Leer-Oktant
+            const ox = i & 1;
+            const oy = (i >> 1) & 1;
+            const oz = (i >> 2) & 1;
+            let leer = false;
+            const h = this._weltFeldSpawn(key, M, () => {
+                if (!hatte && !tempGebaut) {
+                    this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Erst-Bake
+                    tempGebaut = true;
+                }
+                if (!entry.mesh) return null;
+                const sub = new THREE.Box3(
+                    new THREE.Vector3(bmin.x + (ox ? hx : 0), bmin.y + (oy ? hy : 0), bmin.z + (oz ? hz : 0)),
+                    new THREE.Vector3(
+                        bmin.x + (ox ? bg.x : hx),
+                        bmin.y + (oy ? bg.y : hy),
+                        bmin.z + (oz ? bg.z : hz)
+                    )
+                );
+                const zg = this._ziegelBackenAusGruppe(entry.mesh, dim, inv, sub);
+                if (zg === "leer") {
+                    leer = true;
+                    return null;
+                }
+                return zg;
+            });
+            if (h) {
+                handles.push(h);
+            } else if (leer) {
+                wm.leerCache.add(key);
+            } else {
+                // Erschöpfung (Atlas/Feld voll): ganz oder gar nicht — zurückrollen
+                for (const hh of handles) this._weltFeldFrei(hh);
+                if (tempGebaut && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+                return null;
+            }
+        }
+        if (tempGebaut && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+        return handles.length ? handles : null;
     }
 
     // ═══ DIE BAUM-BAHN (C, 21.07.): der Scatter-Baum IST sein Feld ═══
@@ -100352,6 +100502,13 @@ AnazhRealm.KREATUR_ZIEGEL_DIST = 0;
 // EINE Wahrheit in niedrigerer Abtastrate (Ziegel-Pyramide), nie Unsichtbarkeit.
 AnazhRealm.KREATUR_TIER_FEIN = 28;
 AnazhRealm.KREATUR_TIER_BAND = 8;
+// DIE ARCH-ZERLEGUNG (21.07., A): nahe Bauten backen in 8 OKTANTEN ihrer
+// Vorlagen-Box (je 64³ = effektiv 128³ — der Voxel-Teppich unter den Füßen
+// halbiert seine Klötze); Vorlagen-Dedup teilt die Oktanten, leere Oktanten
+// merkt der Leer-Cache (kein Re-Bake, kein Erschöpfungs-Irrtum), Erschöpfung
+// trägt die GROBE Stufe laut weiter (Ziegel-Pyramide, nie Unsichtbarkeit).
+AnazhRealm.ARCH_TIER_FEIN = 48;
+AnazhRealm.ARCH_TIER_BAND = 10;
 // DER EINE WELT-MARCH (Schöpfer: „dann läuft es ohne three — vollende es …
 // nichts offen, keine fallbacks"): ALLE Felder (Regionen · Bauten · Tiere)
 // leben in EINEM 3D-Atlas + EINER Feld-Listen-Textur; der Feld-Pass marcht
