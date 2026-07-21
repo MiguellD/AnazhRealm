@@ -58078,7 +58078,7 @@ class AnazhRealm {
         // LOD-Wechsel trifft denselben Key: Dedup, kein Churn). Scheitert der
         // Spawn (Flat lädt/Fit-Takt), trägt die Instanz-Bahn als Streaming-
         // Rampe. Headless byte-alt (Null-Renderer-Wand — die Gates lesen Slots).
-        if (foundryFlat && foundryPreset && this._foundryPresetIsTree(foundryPreset)) {
+        if (foundryFlat && foundryPreset) {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             if (_cellLodF >= 1 && !(this.state.renderer && this.state.renderer._isHeadlessNull)) {
                 const fseedB = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
@@ -100693,10 +100693,10 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     // Kosten binden an getroffene SEITEN statt an die Welt-Größe (Gebot 7).
     // Zeitliche Allokations-Nähe = räumliche Nähe (Zellen einer Region
     // materialisieren zusammen) — die Seiten clustern von selbst.
-    felder: 2048, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld; Textur 4096×4)
+    felder: 4096, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld; Textur 4096×8)
     seite: 32, // Einträge je Seite (64 Seiten × 2 AABB-Texel = 128×1-Textur)
     spalten: 512, // Felder je Listen-Textur-Zeile (Breite = 512×8 = 4096 Texel, WebGPU-sicher)
-    kapseln: 2048, // ANALOG-Primitive (2 Texel je Kapsel/Box — „analog!": das Gesetz statt des Rasters; Textur 4096×1)
+    kapseln: 4096, // ANALOG-Primitive (2 Texel je Kapsel/Box — das Gesetz statt des Rasters; Textur 8192×1)
 }); // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
 AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
