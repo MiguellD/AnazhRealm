@@ -16085,6 +16085,7 @@ class AnazhRealm {
                       weltMarch: this.state.weltMarch
                           ? {
                                 belegt: this.state.weltMarch.belegt, // Feld-EINTRÄGE (Instanzen)
+                                seiten: Math.ceil(this.state.weltMarch.obergrenze / AnazhRealm.WELT_MARCH.seite), // March-Loop-Grenze in SEITEN
                                 bricks: this.state.weltMarch.brickCache.size, // GETEILTE Gestalten (Dedup)
                                 bloeckeFrei: this.state.weltMarch.freiGross.length,
                                 einheitenFrei: this.state.weltMarch.freiKlein.length,
@@ -39486,7 +39487,7 @@ class AnazhRealm {
             nah: TSL.uniform(0.1),
             fern: TSL.uniform(9000),
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
-            felderN: TSL.uniform(0),
+            seitenN: TSL.uniform(0),
             sonne: TSL.uniform(new THREE.Vector3(0, 1, 0)),
             lichtFarbe: TSL.uniform(new THREE.Vector3(1, 1, 1)),
             ambientFarbe: TSL.uniform(new THREE.Vector3(0.3, 0.3, 0.3)),
@@ -39542,7 +39543,7 @@ class AnazhRealm {
         // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
         // SPEC-WAND bleibt geehrt (textureDimensions → f32/i32-Casts).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, felderN: f32, sonne: vec3<f32>, lichtFarbe: vec3<f32>, ambientFarbe: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, sonne: vec3<f32>, lichtFarbe: vec3<f32>, ambientFarbe: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -39574,14 +39575,29 @@ class AnazhRealm {
                 "    var bestT = 1e30;\n" +
                 "    var bestRgb = vec3<f32>(0.0);\n" +
                 "    var bestN = vec3<f32>(0.0, 1.0, 0.0);\n" +
-                "    let nF = i32(felderN + 0.5);\n" +
-                "    for (var j: i32 = 0; j < nF; j = j + 1) {\n" +
-                "        let b = j * 8;\n" +
-                "        let t0 = textureLoad(liste, vec2<i32>(b, 0), 0);\n" +
+                "    let inv = 1.0 / dir;\n" +
+                "    // SEITEN-VORTEST (2 Loads je Seite à 32 Einträge): die Per-Pixel-\n" +
+                "    // Kosten binden an GETROFFENE Seiten, nie an die Welt-Größe.\n" +
+                "    let nP = i32(seitenN + 0.5);\n" +
+                "    for (var p: i32 = 0; p < nP; p = p + 1) {\n" +
+                "        let s0 = textureLoad(seiten, vec2<i32>(p * 2, 0), 0);\n" +
+                "        if (s0.w < 1.0) { continue; }\n" +
+                "        let s1 = textureLoad(seiten, vec2<i32>(p * 2 + 1, 0), 0);\n" +
+                "        let sA = (s0.xyz - camPos) * inv;\n" +
+                "        let sB = (s1.xyz - camPos) * inv;\n" +
+                "        let sMin = min(sA, sB);\n" +
+                "        let sMax = max(sA, sB);\n" +
+                "        let sN = max(max(sMin.x, sMin.y), max(sMin.z, 0.5));\n" +
+                "        let sF = min(sMax.x, min(sMax.y, sMax.z));\n" +
+                "        if (sF <= sN || sN >= bestT) { continue; }\n" +
+                "    for (var q: i32 = 0; q < 32; q = q + 1) {\n" +
+                "        let j = p * 32 + q;\n" +
+                "        let ty = j / 512;\n" +
+                "        let bx = (j % 512) * 8;\n" +
+                "        let t0 = textureLoad(liste, vec2<i32>(bx, ty), 0);\n" +
                 "        let d = t0.w;\n" +
                 "        if (d < 1.0) { continue; }\n" +
-                "        let t1 = textureLoad(liste, vec2<i32>(b + 1, 0), 0);\n" +
-                "        let inv = 1.0 / dir;\n" +
+                "        let t1 = textureLoad(liste, vec2<i32>(bx + 1, ty), 0);\n" +
                 "        let tA = (t0.xyz - camPos) * inv;\n" +
                 "        let tB = (t1.xyz - camPos) * inv;\n" +
                 "        let tMin3 = min(tA, tB);\n" +
@@ -39589,11 +39605,11 @@ class AnazhRealm {
                 "        let tN = max(max(tMin3.x, tMin3.y), max(tMin3.z, 0.5));\n" +
                 "        let tF = min(tMax3.x, min(tMax3.y, tMax3.z));\n" +
                 "        if (tF <= tN || tN >= bestT) { continue; }\n" +
-                "        let r0 = textureLoad(liste, vec2<i32>(b + 2, 0), 0);\n" +
-                "        let r1 = textureLoad(liste, vec2<i32>(b + 3, 0), 0);\n" +
-                "        let r2 = textureLoad(liste, vec2<i32>(b + 4, 0), 0);\n" +
-                "        let lm = textureLoad(liste, vec2<i32>(b + 5, 0), 0).xyz;\n" +
-                "        let lg = textureLoad(liste, vec2<i32>(b + 6, 0), 0).xyz;\n" +
+                "        let r0 = textureLoad(liste, vec2<i32>(bx + 2, ty), 0);\n" +
+                "        let r1 = textureLoad(liste, vec2<i32>(bx + 3, ty), 0);\n" +
+                "        let r2 = textureLoad(liste, vec2<i32>(bx + 4, ty), 0);\n" +
+                "        let lm = textureLoad(liste, vec2<i32>(bx + 5, ty), 0).xyz;\n" +
+                "        let lg = textureLoad(liste, vec2<i32>(bx + 6, ty), 0).xyz;\n" +
                 "        let c4 = vec4<f32>(camPos, 1.0);\n" +
                 "        let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
                 "        let dL = vec3<f32>(dot(r0.xyz, dir), dot(r1.xyz, dir), dot(r2.xyz, dir));\n" +
@@ -39661,6 +39677,7 @@ class AnazhRealm {
                 "            tDavor = t;\n" +
                 "        }\n" +
                 "    }\n" +
+                "    }\n" + // Seiten-Loop zu
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
                 "    if (bestT < 1e29) {\n" +
                 "        // DAS LICHT AUF DEM FELD (das Nacht-Glühen fällt): dieselbe Tag/Nacht-\n" +
@@ -39703,12 +39720,13 @@ class AnazhRealm {
             nah: U.nah,
             fern: U.fern,
             fwd: U.fwd,
-            felderN: U.felderN,
+            seitenN: U.seitenN,
             sonne: U.sonne,
             lichtFarbe: U.lichtFarbe,
             ambientFarbe: U.ambientFarbe,
             fogFarbe: U.fogFarbe,
             pano: TSL.texture(panoTex),
+            seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
             atlas: TSL.texture3D(wm.atlas),
         });
@@ -39856,11 +39874,26 @@ class AnazhRealm {
         // [lokalGroesse|0] [frei] — die inverse WELT-MATRIX trägt Rotation und
         // Animation (Glieder-Felder folgen ihren Knochen), die Welt-AABB ist
         // der billige Vortest, die lokale Box das Brick-Zuhause.
+        // 2D-Layout (SEITEN-EBENE): 512 Felder je Zeile × 8 Texel = 4096 breit
+        // (die 1-Zeilen-16384 wäre über dem garantierten WebGPU-Limit 8192).
         const listeDaten = new Float32Array(W.felder * 8 * 4);
-        const liste = new THREE.DataTexture(listeDaten, W.felder * 8, 1, THREE.RGBAFormat, THREE.FloatType);
+        const liste = new THREE.DataTexture(
+            listeDaten,
+            W.spalten * 8,
+            W.felder / W.spalten,
+            THREE.RGBAFormat,
+            THREE.FloatType
+        );
         liste.minFilter = THREE.NearestFilter;
         liste.magFilter = THREE.NearestFilter;
         liste.needsUpdate = true;
+        // DIE SEITEN (2 Texel je Seite: [aabbMin|aktivZahl][aabbMax|frei]):
+        const seitenZahl = W.felder / W.seite;
+        const seitenDaten = new Float32Array(seitenZahl * 2 * 4);
+        const seiten = new THREE.DataTexture(seitenDaten, seitenZahl * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+        seiten.minFilter = THREE.NearestFilter;
+        seiten.magFilter = THREE.NearestFilter;
+        seiten.needsUpdate = true;
         // Block-Anker als Einheits-Indizes (Einheits-Gitter 16×16×4 → Blöcke 8×8×2):
         const bloecke = [];
         for (let bz = 0; bz < 2; bz++)
@@ -39871,6 +39904,9 @@ class AnazhRealm {
             atlasDaten,
             liste,
             listeDaten,
+            seiten,
+            seitenDaten,
+            seitenDirty: new Set(), // Seiten mit veralteter Hüll-AABB (der Pass-Tick pflegt)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
             freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
@@ -40011,7 +40047,55 @@ class AnazhRealm {
         }
         wm.liste.needsUpdate = true;
         wm.belegt++;
+        this._weltSeiteDirty(wm, feld);
         return handle;
+    }
+
+    // SEITEN-EBENE: eine Feld-Mutation veraltet die Hüll-AABB ihrer Seite —
+    // der Pass-Tick pflegt alle schmutzigen Seiten in EINEM Gang (billig:
+    // 32 Einträge × 8 Floats je Seite; bewegte Kreaturen schmutzen je Frame).
+    _weltSeiteDirty(wm, feld) {
+        if (wm && wm.seitenDirty) wm.seitenDirty.add(feld >> 5);
+    }
+
+    _weltSeitenPflegen(wm) {
+        if (!wm || !wm.seitenDirty || wm.seitenDirty.size === 0) return;
+        const L = wm.listeDaten;
+        const S = wm.seitenDaten;
+        for (const p of wm.seitenDirty) {
+            let minX = Infinity,
+                minY = Infinity,
+                minZ = Infinity,
+                maxX = -Infinity,
+                maxY = -Infinity,
+                maxZ = -Infinity,
+                n = 0;
+            const basis = p * 32;
+            for (let q = 0; q < 32; q++) {
+                const o = (basis + q) * 32;
+                if (L[o + 3] < 1) continue; // d=0: inaktiv/frei
+                n++;
+                if (L[o] < minX) minX = L[o];
+                if (L[o + 1] < minY) minY = L[o + 1];
+                if (L[o + 2] < minZ) minZ = L[o + 2];
+                if (L[o + 4] > maxX) maxX = L[o + 4];
+                if (L[o + 5] > maxY) maxY = L[o + 5];
+                if (L[o + 6] > maxZ) maxZ = L[o + 6];
+            }
+            const so = p * 8;
+            S[so + 3] = n;
+            if (n > 0) {
+                S[so] = minX;
+                S[so + 1] = minY;
+                S[so + 2] = minZ;
+                S[so + 4] = maxX;
+                S[so + 5] = maxY;
+                S[so + 6] = maxZ;
+                S[so + 7] = 0;
+            }
+        }
+        wm.seitenDirty.clear();
+        wm.seiten.needsUpdate = true;
     }
 
     // DIE DEDUP-BAHN (die EINE Registrier-Wurzel für alles Wiederholte): ein
@@ -40052,6 +40136,7 @@ class AnazhRealm {
         if (wm.listeDaten[o + 3] !== soll) {
             wm.listeDaten[o + 3] = soll;
             wm.liste.needsUpdate = true;
+            this._weltSeiteDirty(wm, handle.feld);
         }
     }
 
@@ -40107,6 +40192,7 @@ class AnazhRealm {
         L[o + 5] = maxY;
         L[o + 6] = maxZ;
         wm.liste.needsUpdate = true;
+        this._weltSeiteDirty(wm, handle.feld);
     }
 
     // Ein BRICK freigeben (Atlas-Einheit/Block zurück): NUR wenn kein Feld mehr
@@ -40156,6 +40242,7 @@ class AnazhRealm {
         const o = handle.feld * 32;
         wm.listeDaten[o + 3] = 0;
         wm.liste.needsUpdate = true;
+        this._weltSeiteDirty(wm, handle.feld);
         wm.freiFelder.push(handle.feld);
         wm.belegt--;
         const brick = handle.brick;
@@ -40399,7 +40486,10 @@ class AnazhRealm {
             // ambientFarbe = Ambient + Hemi-Mittel. Nachts sind beide dunkel-blau →
             // das goldene Albedo leuchtet nicht mehr aus sich selbst (das .44-Symptom).
             const wm = st.weltMarch;
-            fp.U.felderN.value = wm ? wm.obergrenze : 0;
+            // SEITEN-PFLEGE: schmutzige Hüll-AABBs in EINEM Gang, dann die
+            // Loop-Grenze in SEITEN (der Shader testet Seiten, nie rohe Felder).
+            if (wm) this._weltSeitenPflegen(wm);
+            fp.U.seitenN.value = wm ? Math.ceil(wm.obergrenze / AnazhRealm.WELT_MARCH.seite) : 0;
             const dl = st.directionalLight;
             if (dl) {
                 fp.U.sonne.value
@@ -100191,7 +100281,15 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     hoehe: 512, // Atlas-Y (16 Einheiten)
     tiefe: 128, // Atlas-Z (4 Einheiten) — 512×512×128 RGBA8 = 128 MB
     einheit: 32, // Voxel je Einheits-Kante (Kreatur/Baum-Klasse; 64er = Block aus 8)
-    felder: 512, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld) — entkoppelt von den 128 Atlas-Blöcken (Dedup-Bahn: ein Brick, viele Matrix-Einträge)
+    // DIE SEITEN-EBENE (21.07., C-Vorbau): die Feld-Liste wächst auf 2048 und
+    // bekommt SEITEN à 32 Einträge mit CPU-gepflegter Hüll-AABB — der March
+    // testet erst die Seite (2 Loads), dann ihre Mitglieder: die Per-Pixel-
+    // Kosten binden an getroffene SEITEN statt an die Welt-Größe (Gebot 7).
+    // Zeitliche Allokations-Nähe = räumliche Nähe (Zellen einer Region
+    // materialisieren zusammen) — die Seiten clustern von selbst.
+    felder: 2048, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld; Textur 4096×4)
+    seite: 32, // Einträge je Seite (64 Seiten × 2 AABB-Texel = 128×1-Textur)
+    spalten: 512, // Felder je Listen-Textur-Zeile (Breite = 512×8 = 4096 Texel, WebGPU-sicher)
 }); // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
 AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
