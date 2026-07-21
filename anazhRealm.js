@@ -39942,8 +39942,9 @@ class AnazhRealm {
             seitenDirty: new Set(), // Seiten mit veralteter Hüll-AABB (der Pass-Tick pflegt)
             kapseln,
             kapselDaten,
-            freiKapseln: Array.from({ length: W.kapseln }, (_x, i) => W.kapseln - 1 - i), // pop() vergibt 0 zuerst
-            kapselCache: new Map(), // DEDUP: key → geteilte Kapsel (Pseudo-Brick, refs)
+            kapselCursor: 0, // Bump-Allokator (Mehr-Kapsel-Sätze brauchen ZUSAMMENHÄNGENDE Slots)
+            freiKapselSeg: new Map(), // anzahl → [offsets] (freigewordene Segmente je Länge)
+            kapselCache: new Map(), // DEDUP: key → geteilter Kapsel-Satz (Pseudo-Brick, refs)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
             freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
@@ -40142,6 +40143,9 @@ class AnazhRealm {
     // ein Pseudo-Brick (d = −anzahl, einheit = Kapsel-Texel-Offset, lokale
     // Box = Kapsel-AABB) — _weltFeldEintrag/_weltFeldMatrix/_weltFeldAktiv/
     // _weltFeldFrei tragen ihn UNVERÄNDERT (eine Bahn, kein Zwilling).
+    // kapselFn liefert EINEN Satz (Array von {a, b, r, farbe}) — eine Kugel ist
+    // die entartete Kapsel (a == b). Der Satz liegt ZUSAMMENHÄNGEND (der Shader
+    // liest po + k·2); Bump-Allokator + Segment-Freiliste je Länge.
     _weltKapselHolen(key, kapselFn) {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
@@ -40150,44 +40154,63 @@ class AnazhRealm {
             k.refs++;
             return k;
         }
-        const def = kapselFn();
-        if (!def || !def.a || !def.b || !Number.isFinite(def.r)) return null;
-        if (wm.freiKapseln.length === 0) {
-            if (!this._weltKapselnVollWarn) {
-                this._weltKapselnVollWarn = true;
-                this.log("KAPSEL-LISTE ERSCHÖPFT: kein Platz für ein Analog-Glied — das Feld FEHLT sichtbar", "WARN");
+        let defs = kapselFn();
+        if (defs && !Array.isArray(defs)) defs = [defs];
+        defs = (defs || []).filter((d2) => d2 && d2.a && d2.b && Number.isFinite(d2.r));
+        if (!defs.length) return null;
+        const W = AnazhRealm.WELT_MARCH;
+        const seg = wm.freiKapselSeg.get(defs.length);
+        let slot = seg && seg.length ? seg.pop() : -1;
+        if (slot < 0) {
+            if (wm.kapselCursor + defs.length > W.kapseln) {
+                if (!this._weltKapselnVollWarn) {
+                    this._weltKapselnVollWarn = true;
+                    this.log("KAPSEL-LISTE ERSCHÖPFT: kein Platz für einen Analog-Satz — das Feld FEHLT sichtbar", "WARN");
+                }
+                return null;
             }
-            return null;
+            slot = wm.kapselCursor;
+            wm.kapselCursor += defs.length;
         }
-        const slot = wm.freiKapseln.pop();
-        const o = slot * 8; // 2 Texel × 4 Floats
         const K = wm.kapselDaten;
-        K[o] = def.a.x;
-        K[o + 1] = def.a.y;
-        K[o + 2] = def.a.z;
-        K[o + 3] = Math.max(0.005, def.r);
-        K[o + 4] = def.b.x;
-        K[o + 5] = def.b.y;
-        K[o + 6] = def.b.z;
-        const f = def.farbe || { r: 0.55, g: 0.5, b: 0.45 };
-        // Farbe als 24-bit-Pack im f32 (exakt bis 2^24 — die Mantisse trägt es):
-        K[o + 7] =
-            (Math.min(255, Math.max(0, Math.round(f.r * 255))) << 16) +
-            (Math.min(255, Math.max(0, Math.round(f.g * 255))) << 8) +
-            Math.min(255, Math.max(0, Math.round(f.b * 255)));
+        const lokalMin = new THREE.Vector3(Infinity, Infinity, Infinity);
+        const lokalMax = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+        for (let i = 0; i < defs.length; i++) {
+            const def = defs[i];
+            const o = (slot + i) * 8; // 2 Texel × 4 Floats
+            const rr = Math.max(0.005, def.r);
+            K[o] = def.a.x;
+            K[o + 1] = def.a.y;
+            K[o + 2] = def.a.z;
+            K[o + 3] = rr;
+            K[o + 4] = def.b.x;
+            K[o + 5] = def.b.y;
+            K[o + 6] = def.b.z;
+            const f = def.farbe || { r: 0.55, g: 0.5, b: 0.45 };
+            // Farbe als 24-bit-Pack im f32 (exakt bis 2^24 — die Mantisse trägt es):
+            K[o + 7] =
+                (Math.min(255, Math.max(0, Math.round(f.r * 255))) << 16) +
+                (Math.min(255, Math.max(0, Math.round(f.g * 255))) << 8) +
+                Math.min(255, Math.max(0, Math.round(f.b * 255)));
+            lokalMin.x = Math.min(lokalMin.x, Math.min(def.a.x, def.b.x) - rr);
+            lokalMin.y = Math.min(lokalMin.y, Math.min(def.a.y, def.b.y) - rr);
+            lokalMin.z = Math.min(lokalMin.z, Math.min(def.a.z, def.b.z) - rr);
+            lokalMax.x = Math.max(lokalMax.x, Math.max(def.a.x, def.b.x) + rr);
+            lokalMax.y = Math.max(lokalMax.y, Math.max(def.a.y, def.b.y) + rr);
+            lokalMax.z = Math.max(lokalMax.z, Math.max(def.a.z, def.b.z) + rr);
+        }
         wm.kapseln.needsUpdate = true;
-        const rr = Math.max(0.005, def.r);
-        const lokalMin = new THREE.Vector3(
-            Math.min(def.a.x, def.b.x) - rr,
-            Math.min(def.a.y, def.b.y) - rr,
-            Math.min(def.a.z, def.b.z) - rr
-        );
-        const lokalGroesse = new THREE.Vector3(
-            Math.max(def.a.x, def.b.x) + rr - lokalMin.x,
-            Math.max(def.a.y, def.b.y) + rr - lokalMin.y,
-            Math.max(def.a.z, def.b.z) + rr - lokalMin.z
-        );
-        k = { artKapsel: true, d: -1, einheit: slot * 2, slot, lokalMin, lokalGroesse, refs: 1, key };
+        k = {
+            artKapsel: true,
+            d: -defs.length,
+            einheit: slot * 2,
+            slot,
+            anzahl: defs.length,
+            lokalMin,
+            lokalGroesse: lokalMax.sub(lokalMin),
+            refs: 1,
+            key,
+        };
         wm.kapselCache.set(key, k);
         return k;
     }
@@ -40308,9 +40331,11 @@ class AnazhRealm {
         if (!wm || !brick || brick._frei) return; // Doppel-Frei-Wand
         brick._frei = true;
         if (brick.artKapsel) {
-            // KAPSEL-Frei: Slot zurück, Cache räumen — kein Atlas beteiligt.
+            // KAPSEL-Frei: Segment in die Längen-Freiliste, Cache räumen — kein Atlas.
             wm.kapselCache.delete(brick.key);
-            wm.freiKapseln.push(brick.slot);
+            let seg = wm.freiKapselSeg.get(brick.anzahl || 1);
+            if (!seg) wm.freiKapselSeg.set(brick.anzahl || 1, (seg = []));
+            seg.push(brick.slot);
             return;
         }
         if (brick.key) wm.brickCache.delete(brick.key);
@@ -58008,24 +58033,23 @@ class AnazhRealm {
             if (!keys) return null;
             bpName = keys[lod] || keys[0];
         }
-        // DIE BAUM-BAHN (C, 21.07.): Zellen-LOD ≥ 1 wird FELD — die Instanz-
-        // Slots entstehen dann GAR NICHT (dc/tris sterben an der Wurzel), der
-        // Baum ist ein Feld-Eintrag auf dem Dedup-Brick seiner Vorlage×Stufe.
-        // Scheitert der Spawn (Brick lädt/Bake-Takt), trägt die Instanz-Bahn
-        // als Streaming-Rampe weiter (der nächste Durchlauf versucht es neu).
-        // Headless byte-alt (Null-Renderer-Wand — die Gates lesen Slots).
+        // DIE BAUM-BAHN, ANALOG (Schöpfer-Wort): Zellen-LOD ≥ 1 wird KAPSEL-
+        // FELD — die Instanz-Slots entstehen dann GAR NICHT (dc/tris sterben
+        // an der Wurzel), der Baum ist ein Feld-Eintrag auf dem Kapsel-SATZ
+        // seiner Vorlage (EIN Key — analog kennt keine Import-Stufen, der
+        // LOD-Wechsel trifft denselben Key: Dedup, kein Churn). Scheitert der
+        // Spawn (Flat lädt/Fit-Takt), trägt die Instanz-Bahn als Streaming-
+        // Rampe. Headless byte-alt (Null-Renderer-Wand — die Gates lesen Slots).
         if (foundryFlat && foundryPreset && this._foundryPresetIsTree(foundryPreset)) {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             if (_cellLodF >= 1 && !(this.state.renderer && this.state.renderer._isHeadlessNull)) {
-                const W = AnazhRealm.WALD_ZIEGEL;
-                const dimB = _cellLodF === 1 ? W.dimFein : W.dim;
                 const fseedB = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
                 const MB = new THREE.Matrix4().compose(
                     new THREE.Vector3(tf.x, Number.isFinite(surfY) ? surfY : 0, tf.z),
                     new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tf.yaw || 0, 0)),
                     new THREE.Vector3(tf.scale || 1, tf.scale || 1, tf.scale || 1)
                 );
-                const fh = this._baumFeldSpawn(foundryPreset, fseedB, dimB, MB);
+                const fh = this._baumFeldSpawn(foundryPreset, fseedB, MB);
                 if (fh) {
                     return {
                         cellX,
@@ -58036,7 +58060,7 @@ class AnazhRealm {
                         species,
                         variantIndex,
                         lod: _cellLodF,
-                        bpName: "baum:" + foundryPreset + ":" + this._foundryVariantFor(fseedB) + ":" + dimB,
+                        bpName: "abaum:" + foundryPreset + ":" + this._foundryVariantFor(fseedB),
                         slots: [],
                         feld: fh,
                         x: tf.x,
@@ -75322,27 +75346,83 @@ class AnazhRealm {
     // Geometrie = die feinste Abtaststufe (Anfassen/Fällen lebt). Die
     // Bake-Quelle ist IMMER die Geometrie-Stufe 1, nie das Billboard — der
     // Brick trägt die volle Form, dim wählt nur die Abtastrate (Pyramide).
-    _baumFeldSpawn(preset, fseed, dimB, M) {
-        const key = "baum:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + dimB;
+    // ANALOG (Schöpfer-Wort): der Baum ist sein KAPSEL-SATZ — Stamm/Äste als
+    // Kapseln, Kronen-Massen als Kugeln (entartete Kapseln), gepasst aus den
+    // größten Flat-Leaves der GEOMETRIE-Stufe (nie das Billboard). EIN Key je
+    // Vorlage (analog kennt keine Import-Stufen — der Strahl digitalisiert);
+    // der Zellen-LOD-Wechsel trifft denselben Key → Dedup, kein Churn.
+    _baumFeldSpawn(preset, fseed, M) {
+        const key = "abaum:" + preset + ":" + this._foundryVariantFor(fseed);
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
-        if (!wm.brickCache.has(key) && !this._weltBakeErlaubt()) return null; // Bake-Takt (Cache-Treffer sind frei)
-        return this._weltFeldSpawn(key, M, () => {
+        if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt()) return null; // Fit-Takt (Cache-Treffer sind frei)
+        return this._weltKapselSpawn(key, M, () => {
             const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2)
                 return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
-            const grp = new THREE.Group();
-            for (const lf of bf.leaves) {
-                if (!lf || !lf.geom) continue;
-                const mesh = new THREE.Mesh(lf.geom, lf.mat || undefined);
-                mesh.matrixAutoUpdate = false;
-                if (lf.localMatrix) mesh.matrix.copy(lf.localMatrix);
-                grp.add(mesh);
-            }
-            if (!grp.children.length) return null;
-            const ident = this._identMatrix || (this._identMatrix = new THREE.Matrix4());
-            return this._ziegelBackenAusGruppe(grp, dimB, ident);
+            return this._baumKapselFit(bf);
         });
+    }
+
+    // DER BAUM-KAPSEL-FIT: je Leaf eine Kapsel im Vorlagen-Raum (größte
+    // Ausdehnung = Achse, Neben-Halbachsen = Radius, Material-/Vertex-Farbe);
+    // die 6 volumen-größten Leaves tragen die Gestalt (Stamm + Kronen-Massen),
+    // der Rest geht im Satz auf (erste Ordnung des Gesetzes).
+    _baumKapselFit(bf) {
+        const v = this._bkfV || (this._bkfV = new THREE.Vector3());
+        const kand = [];
+        for (const lf of bf.leaves) {
+            if (!lf || !lf.geom || !lf.geom.attributes || !lf.geom.attributes.position) continue;
+            const pos = lf.geom.attributes.position;
+            const col = lf.geom.attributes.color || null;
+            const mc = !col && lf.mat && lf.mat.color ? lf.mat.color : null;
+            const bb = new THREE.Box3();
+            bb.makeEmpty();
+            let fr = 0,
+                fg = 0,
+                fb = 0,
+                fn = 0;
+            const schritt = pos.count > 2000 ? Math.ceil(pos.count / 2000) : 1;
+            for (let i = 0; i < pos.count; i += schritt) {
+                v.fromBufferAttribute(pos, i);
+                if (lf.localMatrix) v.applyMatrix4(lf.localMatrix);
+                bb.expandByPoint(v);
+                if (col) {
+                    fr += col.getX(i);
+                    fg += col.getY(i);
+                    fb += col.getZ(i);
+                    fn++;
+                } else if (mc) {
+                    fr += mc.r;
+                    fg += mc.g;
+                    fb += mc.b;
+                    fn++;
+                }
+            }
+            if (bb.isEmpty()) continue;
+            const c = bb.getCenter(new THREE.Vector3());
+            const h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+            let ax = "x";
+            if (h.y > h[ax]) ax = "y";
+            if (h.z > h[ax]) ax = "z";
+            const nb = ["x", "y", "z"].filter((kk) => kk !== ax);
+            const r = Math.max(0.02, (h[nb[0]] + h[nb[1]]) * 0.5);
+            const lang = Math.max(0, h[ax] - r);
+            const a = c.clone();
+            a[ax] -= lang;
+            const b = c.clone();
+            b[ax] += lang;
+            kand.push({
+                a,
+                b,
+                r,
+                farbe: fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null,
+                vol: h.x * h.y * h.z,
+            });
+        }
+        if (!kand.length) return null;
+        kand.sort((p, q) => q.vol - p.vol);
+        return kand.slice(0, 6);
     }
 
     // (Der GLIED-BÄCKER der Voxel-Ära fiel mit dem Schöpfer-Wort „analog!" —
