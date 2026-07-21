@@ -5,9 +5,15 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.490.1; die neun P0-Risse UND die
-## DoD-Matrix M1–M5 sind geschnitten [CLAUDE.md Stand + git log 18.07.] — offen
-## ist NUR die Schöpfer-Abnahme: docs/abnahme-drehbuch.md, 20 Schritte)
+## §0 · DER TISCH — was offen ist (Stand V18.491.49)
+
+> **Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md`** (Frozen-Liste, max 5 — vom
+> BETRIEBSGESETZ in CLAUDE.md bewacht, `gate:betriebsgesetz` in `npm run check`). Heute:
+> **A)** nahe Bäume + Streu auf die Brick/Feld-Dedup-Bahn, Instanz-Default TOT (Grep-Beweis) ·
+> **B)** Boot-Messung Tris + dc vorher↔nachher (dieselbe Sonde, die Zahl im Commit) — danach
+> die Schöpfer-Abnahme (`docs/abnahme-drehbuch.md`, 15 Schritte). Alles Weitere in §0 ist
+> KONTEXT/CHRONIK gefallener Bögen (Detail: git log), KEINE Offen-Liste — wo alte Sätze dem
+> BETRIEBSGESETZ widersprechen (z. B. „das Schöpfer-Auge als Merge-Tor"), gewinnt das Gesetz.
 
 0. **DAS ERLEBNIS-ZIEL (16.07., Schöpfer-Wort — DIES schlägt alles darunter):**
    Jedes Ding im Realm ist EIN Studio-geborenes Wesen — EIN Bauplan je Ding (keine
