@@ -71,42 +71,39 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.491.50 — DIE AUFLÖSUNGS-LEITER TRÄGT: Flächen-Bäcker · Seiten-March · Baum-Bahn · Arch-Oktanten)
+## Stand (V18.491.51 — „ANALOG!": das Gesetz ist der Import, der Schirm digitalisiert)
 
-**21.07. (nach Betriebsgesetz + Kurskorrektur — Schöpfer: „alles mit raymarch, einheitlich —
-nahe dinge brauchen eine höhere auflösung als ferne"), die Leiter-Welle, alle Commits gepusht:**
-- MARCH-GLÄTTUNG + GEKOPPELTE AKKUMULATION: Treffer per Bisektion auf TRILINEARER Dichte,
-  Farbe = Ecken-Mittel, Normale = analytischer Gradient; der Bäcker akkumuliert rgb+alpha im
-  SELBEN 90er-Schritt mit gemeinsamem Deckel — rgb/a IST die Albedo (der Weiß-Stich fiel an
-  der Wurzel), Ton-Klemme licht/(1+0.35·licht) im March.
-- DER FLÄCHEN-SPLAT (die EINE Splat-Wurzel aller drei Bäcker): Dreiecke säen deterministisch
-  (~2 Proben/Voxel-Fläche, goldene 2D-Folge), Budget PROPORTIONAL — der Vertex-Splat-Käse fiel.
-- DIE SEITEN-EBENE: Feld-Liste 512→2048 (2D 4096×4), Seiten à 32 mit CPU-Hüll-AABB — der March
-  testet SEITEN (Kosten an getroffene Seiten, Gebot 7); Linse weltMarch.seiten.
-- DIE LEITER: Kreatur-Glieder 64³ nah (< 28 m, Band 8) / 32³ fern · ARCH-OKTANTEN nah (< 48 m):
-  8 Teil-Bricks der Vorlagen-Box = effektiv 128³ (Klemm-Box-Bake, Leer-Cache, ganz-oder-gar-
-  nicht, Erschöpfung trägt grob laut) · BAUM-BAHN (C, Klasse 1): Zellen-LOD ≥ 1 wird FELD —
-  Dedup-Brick je Vorlage×Stufe, Stufe 1→64³/2→32³ (der Billboard-Quad starb, der .31-fimp-
-  Swap), Stufe 0 = feinste Abtaststufe als echte Instanz (Fällen/Anfassen); Slots entstehen
-  bei Feld-Erfolg NICHT — Frei-Pfade dicht (LOD-Tick + Region-Dispose räumen cell.feld).
-- WIESE MIT TIEFE: 8-Schicht-Parallax-Halm-Relief im Boden-Fragment (Funktion, kein Dreieck).
-- GEMESSEN (dieselbe Sonde, echtes WebGPU, 0 Fehler/Warns): weite-dc 229→97 (−58 %) ·
-  steady-dc 158→43 · bricks 37→61 (+24 Baum-Vorlagen) · wolfDim 64 (Fein-Satz lebt) ·
-  playtest:fast 18/18 · check komplett GRÜN · fern-ring/scatter-lod/-ab/foundry-crossfade GRÜN.
+**21.07., die Analog-Wende (Schöpfer benannte die Wurzel: Voxel-Bricks = ZWEITE Digitalisierung
+mit eingebackener Frequenz; dann das EINE Wort „analog!"):** vier Klassen in Serie —
+- KREATUREN: Glieder = KAPSEL-GESETZE (Achse+Radius+Farbe, ~32 B statt 128-KB-Brick), Dedup je
+  Gattung×Glied, Matrix-der-Matrix unverändert; Sphere-Tracing im Glied-Raum, Normale = exakter
+  SDF-Gradient. Der Voxel-Glied-Bäcker und die Kreatur-Tier-Leiter fielen GANZ.
+- BÄUME: Kapsel-SÄTZE aus der Geometrie-Stufe des Flats (Stamm + Kronen-Kugeln, 6 je Vorlage,
+  Segment-Allokator für zusammenhängende Sätze); EIN Key je Vorlage — die Import-Stufen starben,
+  der Zellen-LOD-Wechsel trifft denselben Key (Dedup, kein Churn).
+- ARCHITEKTUR: BOX-Sätze (24 je Vorlage — Fachwerk-Balken SIND Boxen im Gesetz); die Box als
+  zweiter Primitiv-Typ derselben Liste (pA.w < 0, Farbe im Negativ gepackt, Achsen-Normale).
+  Oktanten-Maschinerie + klemmBox-Zweig fielen GANZ (netto −37 Zeilen).
+- STREU: der Baum-Gate im Zellen-Chokepoint fiel — JEDE foundry-gemappte Art (Fels·Kristall·
+  Blume·Strauch) geht ab Zellen-LOD 1 die EINE Analog-Bahn; Band 0 (Berührweite, pflückbar)
+  bleibt die feinste Abtaststufe. Kapazität: felder 4096 · Primitive 4096.
+- Der Voxel-Bäcker trägt nur noch REGION-Bricks (Fern-Cache — die legitime Rolle); Fundament
+  der Wende blieb: Seiten-March, Flächen-Splat, gekoppelte Akkumulation, Ton-Klemme, Wiese mit
+  Parallax-Relief (alle heute gebaut, Chronik = git log).
+- GEMESSEN je Klasse: playtest:fast 18/18 · npm run check komplett GRÜN · gate:fern-ring GRÜN
+  (Kapsel- UND Box-Branch kompilieren + zeichnen, echtes WebGPU) · gate:scatter-lod GRÜN ·
+  Sonden 0 Fehler/0 Warns · kapseln.vorlagen 48 geteilt · Baum-Welle weite-dc 229→97 (−58 %).
 
-**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) ·
-WELT-MARCH: EIN Atlas + Seiten-Liste + EIN Raymarch (Dedup-Kern `_weltFeldSpawn`) ·
-ARCHITEKTUR = Feld (Hand-Blase 16 m; nah Oktanten) · KREATUREN = Glieder-Felder zweistufig ·
-BÄUME Stufe ≥ 1 = Felder · REGIONEN fern = Region-Bricks · GRAS = Boden-Funktion mit Relief.
-HYBRID (ehrlich): Stufe-0-Bäume (feinste Stufe, by design) · die KLEIN-STREU (~11k Batch-
-Instanzen < 400 m — der offene Rest von C) · der Avatar (gebilligt).
+**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
+EIN Pass, Seiten-Vortest, zwei Payloads (ANALOG-Primitive: Kapsel+Box · Voxel-Brick nur als
+Region-Fern-Cache) · KREATUREN/BÄUME/ARCHITEKTUR/STREU ≥ Stufe 1 = Analog-Sätze · GRAS =
+Boden-Funktion mit Relief · Stufe 0 = feinste Abtaststufe als echte Geometrie (Anfassen).
+HYBRID (ehrlich): Band-0-Chunk-Klein-Streu (pflückbar) · Deko-/Deck-Impostor-Ringe (~300
+Instanzen) · der Avatar (gebilligt).
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md; Schöpfer-Wort 21.07.: „analog!"
-— Importe sind das GESETZ [Kapseln·Boxen·Verteilungen], digitalisiert wird NUR am Schirm;
-der Brick fällt auf die Fern-Cache-Rolle):** A) Kreatur-KAPSELN (tierBaum-Skelett = Gestalt,
-Sphere-Tracing, exakte Normale) · B) Bäume analog (Grammatik-Skelett statt Brick-Bake) ·
-C) Architektur-Boxen + Streu-Verteilungsgesetz · D) Wiese im Bild · E) Beweis-Paket mit
-ARMLÄNGEN-Schüssen (die Lehre: Nah-Urteil nie wieder vertagen).
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A/B/C GEBAUT (Bild-Beweise
+ausstehend — die Voll-Analog-Sonde läuft) · D Wiese im Bild (braucht Gras-Zone/Koordinate) ·
+E Beweis-Paket mit Armlängen-Schüssen. Kein Eintrag fällt ohne sein Bild.
 
 ## Architektur (die Karte)
 

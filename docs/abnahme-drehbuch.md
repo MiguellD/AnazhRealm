@@ -1,4 +1,4 @@
-# Das Abnahme-Drehbuch — DIE EINE Schöpfer-Runde (V18.491.50, 15 Schritte)
+# Das Abnahme-Drehbuch — DIE EINE Schöpfer-Runde (V18.491.51, 15 Schritte)
 
 > **Zweck:** EINE Browser-Session, die das ERLEBNIS des Feld-Stands bestätigt. Alles hier ist
 > vorab maschinell verifiziert (Merge-Gate „Alle Invarianten OK" + npm run check + Domänen-Gates
