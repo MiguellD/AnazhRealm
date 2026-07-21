@@ -23119,46 +23119,23 @@ class AnazhRealm {
                 }
                 continue;
             }
-            // DIE AUFLÖSUNGS-LEITER (Schöpfer 21.07., „nahe dinge brauchen eine
-            // höhere auflösung als ferne"): innerhalb KREATUR_TIER_FEIN backt das
-            // Glied fein (64³ = ein Block je Glied), dahinter grob (32³) —
-            // Hysterese-Band gegen Flappen, der Wechsel zahlt den Bake-Takt.
-            const W = AnazhRealm.WALD_ZIEGEL;
-            const feinD = AnazhRealm.KREATUR_TIER_FEIN;
-            const band = AnazhRealm.KREATUR_TIER_BAND;
-            const distQ = dx * dx + dz * dz;
-            let dimSoll = u._kzDim === W.dimFein ? (distQ > (feinD + band) * (feinD + band) ? W.dim : W.dimFein) : distQ < feinD * feinD ? W.dimFein : W.dim;
-            if (u._kzDimVersagt === dimSoll) dimSoll = u._kzDim || W.dim; // Erschöpfung: die Stufe bleibt, bis das Band wechselt (laut im Register)
+            // ANALOG (Schöpfer-Wort 21.07.): das Glied ist eine KAPSEL — die
+            // Auflösung kommt vom Strahl, nicht vom Import; die Tier-Leiter
+            // der Voxel-Ära fiel ersatzlos (kein Wechsel, kein Re-Bake).
             if (!u._kzGlieder) {
                 if (u._kzVersuch) {
-                    // KEIN RÜCKWEG: der Bake ist gefallen — das Tier rendert nie
+                    // KEIN RÜCKWEG: der Fit ist gefallen — das Tier rendert nie
                     // als Mesh weiter, das Fehlen ist sichtbar (laut im Register)
                     cr.visible = false;
                     continue;
                 }
-                if (!this._weltBakeErlaubt()) continue; // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt der Körper
+                if (!this._weltBakeErlaubt()) continue; // getaktet, nie verhungert — bis dahin trägt der Körper
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
-                u._kzGlieder = this._kreaturGliederBacken(cr, dimSoll);
+                u._kzGlieder = this._kreaturGliederBacken(cr);
                 if (!u._kzGlieder) {
                     cr.visible = false; // Feld fehlt → nichts erscheint (laut im Register)
                     continue;
-                }
-                u._kzDim = dimSoll;
-            } else if (u._kzDim !== dimSoll && this._weltBakeErlaubt()) {
-                // STUFEN-WECHSEL: NEU zuerst backen (Dedup-Cache trägt Wiederkehrer
-                // gratis), erst bei Erfolg fällt die alte Stufe — scheitert der
-                // feine Bake (Atlas-Erschöpfung), trägt die grobe Stufe weiter:
-                // dieselbe EINE Wahrheit, niedrigere Abtastrate (Ziegel-Pyramide).
-                cr.updateMatrixWorld(true);
-                const neu = this._kreaturGliederBacken(cr, dimSoll);
-                if (neu) {
-                    for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
-                    u._kzGlieder = neu;
-                    u._kzDim = dimSoll;
-                    u._kzDimVersagt = null;
-                } else {
-                    u._kzDimVersagt = dimSoll;
                 }
             }
             // DIE KNOCHEN TRAGEN DIE FELDER (je Glied je Frame — die Pose der
@@ -39543,7 +39520,7 @@ class AnazhRealm {
         // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
         // SPEC-WAND bleibt geehrt (textureDimensions → f32/i32-Casts).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, sonne: vec3<f32>, lichtFarbe: vec3<f32>, ambientFarbe: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, sonne: vec3<f32>, lichtFarbe: vec3<f32>, ambientFarbe: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -39596,7 +39573,7 @@ class AnazhRealm {
                 "        let bx = (j % 512) * 8;\n" +
                 "        let t0 = textureLoad(liste, vec2<i32>(bx, ty), 0);\n" +
                 "        let d = t0.w;\n" +
-                "        if (d < 1.0) { continue; }\n" +
+                "        if (d > -0.5 && d < 1.0) { continue; }\n" + // 0 = leer; negativ = ANALOG-Kapsel
                 "        let t1 = textureLoad(liste, vec2<i32>(bx + 1, ty), 0);\n" +
                 "        let tA = (t0.xyz - camPos) * inv;\n" +
                 "        let tB = (t1.xyz - camPos) * inv;\n" +
@@ -39621,6 +39598,53 @@ class AnazhRealm {
                 "        let tN2 = max(tN, max(lMin3.x, max(lMin3.y, lMin3.z)));\n" +
                 "        let tF2 = min(tF, min(lMax3.x, min(lMax3.y, lMax3.z)));\n" +
                 "        if (tF2 <= tN2) { continue; }\n" +
+                "        if (d < -0.5) {\n" +
+                "            // ═══ DER ANALOG-MARCH (Schöpfer-Wort „analog!“) ═══\n" +
+                "            // Sphere-Tracing der Kapsel-GESETZE im Glied-Raum: der Schritt\n" +
+                "            // IST die Distanz (adaptiv), die Normale ist der EXAKTE SDF-\n" +
+                "            // Gradient — digitalisiert wird nur hier, am Schirm-Pixel.\n" +
+                "            let anzahl = i32(-d + 0.5);\n" +
+                "            let po = i32(t1.w + 0.5);\n" +
+                "            let lenDL = max(length(dL), 1e-6);\n" +
+                "            var tK = tN2;\n" +
+                "            for (var s: i32 = 0; s < 40; s = s + 1) {\n" +
+                "                if (tK >= tF2 || tK >= bestT) { break; }\n" +
+                "                let pL = oL + dL * tK;\n" +
+                "                var dm = 1e30;\n" +
+                "                var nk = 0;\n" +
+                "                for (var k: i32 = 0; k < anzahl; k = k + 1) {\n" +
+                "                    let pA = textureLoad(kapseln, vec2<i32>(po + k * 2, 0), 0);\n" +
+                "                    let pB = textureLoad(kapseln, vec2<i32>(po + k * 2 + 1, 0), 0);\n" +
+                "                    let ba = pB.xyz - pA.xyz;\n" +
+                "                    let pa = pL - pA.xyz;\n" +
+                "                    let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                    let dk = length(pa - ba * hh) - pA.w;\n" +
+                "                    if (dk < dm) { dm = dk; nk = k; }\n" +
+                "                }\n" +
+                "                if (dm < 0.008) {\n" +
+                "                    bestT = tK;\n" +
+                "                    let pA = textureLoad(kapseln, vec2<i32>(po + nk * 2, 0), 0);\n" +
+                "                    let pB = textureLoad(kapseln, vec2<i32>(po + nk * 2 + 1, 0), 0);\n" +
+                "                    let ba = pB.xyz - pA.xyz;\n" +
+                "                    let pa = pL - pA.xyz;\n" +
+                "                    let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                    let gvK = pa - ba * hh; // exakte Kapsel-Normale (lokal)\n" +
+                "                    if (dot(gvK, gvK) < 1e-10) {\n" +
+                "                        bestN = -dir;\n" +
+                "                    } else {\n" +
+                "                        bestN = normalize(vec3<f32>(\n" +
+                "                            r0.x * gvK.x + r1.x * gvK.y + r2.x * gvK.z,\n" +
+                "                            r0.y * gvK.x + r1.y * gvK.y + r2.y * gvK.z,\n" +
+                "                            r0.z * gvK.x + r1.z * gvK.y + r2.z * gvK.z));\n" +
+                "                    }\n" +
+                "                    let ci = u32(pB.w);\n" +
+                "                    bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0;\n" +
+                "                    break;\n" +
+                "                }\n" +
+                "                tK = tK + max(dm / lenDL, 0.004);\n" +
+                "            }\n" +
+                "            continue;\n" + // Kapsel-Eintrag abgeschlossen — kein Brick-March
+                "        }\n" +
                 "        let u = i32(t1.w + 0.5);\n" +
                 "        let orig = vec3<f32>(f32(u % 16) * 32.0, f32((u / 16) % 16) * 32.0, f32(u / 256) * 32.0);\n" +
                 "        // ÜBER-ABTASTUNG (√3-Marge): d Schritte sind voxel-wahr nur für\n" +
@@ -39726,6 +39750,7 @@ class AnazhRealm {
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
+            kapseln: TSL.texture(wm.kapseln),
             atlas: TSL.texture3D(wm.atlas),
         });
         mat.outputNode = TSL.Fn(() => {
@@ -39892,6 +39917,16 @@ class AnazhRealm {
         seiten.minFilter = THREE.NearestFilter;
         seiten.magFilter = THREE.NearestFilter;
         seiten.needsUpdate = true;
+        // DIE KAPSEL-LISTE (Schöpfer-Wort „analog!"): analytische Primitive —
+        // 2 Texel je Kapsel [A.xyz|radius][B.xyz|farbePacked] — der March
+        // sphere-tract sie im Glied-Raum, digitalisiert wird NUR am Schirm.
+        // Ein Eintrag markiert sich mit d = −anzahl (texel0.w), texel1.w = der
+        // Kapsel-Texel-Offset. ~1 KB je Gattung statt MB-Bricks.
+        const kapselDaten = new Float32Array(W.kapseln * 2 * 4);
+        const kapseln = new THREE.DataTexture(kapselDaten, W.kapseln * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+        kapseln.minFilter = THREE.NearestFilter;
+        kapseln.magFilter = THREE.NearestFilter;
+        kapseln.needsUpdate = true;
         // Block-Anker als Einheits-Indizes (Einheits-Gitter 16×16×4 → Blöcke 8×8×2):
         const bloecke = [];
         for (let bz = 0; bz < 2; bz++)
@@ -39905,6 +39940,10 @@ class AnazhRealm {
             seiten,
             seitenDaten,
             seitenDirty: new Set(), // Seiten mit veralteter Hüll-AABB (der Pass-Tick pflegt)
+            kapseln,
+            kapselDaten,
+            freiKapseln: Array.from({ length: W.kapseln }, (_x, i) => W.kapseln - 1 - i), // pop() vergibt 0 zuerst
+            kapselCache: new Map(), // DEDUP: key → geteilte Kapsel (Pseudo-Brick, refs)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
             freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
@@ -40071,7 +40110,7 @@ class AnazhRealm {
             const basis = p * 32;
             for (let q = 0; q < 32; q++) {
                 const o = (basis + q) * 32;
-                if (L[o + 3] < 1) continue; // d=0: inaktiv/frei
+                if (L[o + 3] === 0) continue; // 0 = inaktiv/frei (negativ = ANALOG-Kapsel, aktiv!)
                 n++;
                 if (L[o] < minX) minX = L[o];
                 if (L[o + 1] < minY) minY = L[o + 1];
@@ -40094,6 +40133,75 @@ class AnazhRealm {
         }
         wm.seitenDirty.clear();
         wm.seiten.needsUpdate = true;
+    }
+
+    // ═══ DIE KAPSEL-BAHN (Schöpfer-Wort „analog!") ═══
+    // Der Import ist das GESETZ: eine Kapsel (Achse A→B, Radius, Farbe) je
+    // Vorlage — der March digitalisiert sie am Schirm (Sphere-Tracing, exakte
+    // SDF-Normale). Dedup wie die Bricks (kapselCache, refs); der Eintrag ist
+    // ein Pseudo-Brick (d = −anzahl, einheit = Kapsel-Texel-Offset, lokale
+    // Box = Kapsel-AABB) — _weltFeldEintrag/_weltFeldMatrix/_weltFeldAktiv/
+    // _weltFeldFrei tragen ihn UNVERÄNDERT (eine Bahn, kein Zwilling).
+    _weltKapselHolen(key, kapselFn) {
+        const wm = this._weltMarchEnsure();
+        if (!wm) return null;
+        let k = wm.kapselCache.get(key);
+        if (k) {
+            k.refs++;
+            return k;
+        }
+        const def = kapselFn();
+        if (!def || !def.a || !def.b || !Number.isFinite(def.r)) return null;
+        if (wm.freiKapseln.length === 0) {
+            if (!this._weltKapselnVollWarn) {
+                this._weltKapselnVollWarn = true;
+                this.log("KAPSEL-LISTE ERSCHÖPFT: kein Platz für ein Analog-Glied — das Feld FEHLT sichtbar", "WARN");
+            }
+            return null;
+        }
+        const slot = wm.freiKapseln.pop();
+        const o = slot * 8; // 2 Texel × 4 Floats
+        const K = wm.kapselDaten;
+        K[o] = def.a.x;
+        K[o + 1] = def.a.y;
+        K[o + 2] = def.a.z;
+        K[o + 3] = Math.max(0.005, def.r);
+        K[o + 4] = def.b.x;
+        K[o + 5] = def.b.y;
+        K[o + 6] = def.b.z;
+        const f = def.farbe || { r: 0.55, g: 0.5, b: 0.45 };
+        // Farbe als 24-bit-Pack im f32 (exakt bis 2^24 — die Mantisse trägt es):
+        K[o + 7] =
+            (Math.min(255, Math.max(0, Math.round(f.r * 255))) << 16) +
+            (Math.min(255, Math.max(0, Math.round(f.g * 255))) << 8) +
+            Math.min(255, Math.max(0, Math.round(f.b * 255)));
+        wm.kapseln.needsUpdate = true;
+        const rr = Math.max(0.005, def.r);
+        const lokalMin = new THREE.Vector3(
+            Math.min(def.a.x, def.b.x) - rr,
+            Math.min(def.a.y, def.b.y) - rr,
+            Math.min(def.a.z, def.b.z) - rr
+        );
+        const lokalGroesse = new THREE.Vector3(
+            Math.max(def.a.x, def.b.x) + rr - lokalMin.x,
+            Math.max(def.a.y, def.b.y) + rr - lokalMin.y,
+            Math.max(def.a.z, def.b.z) + rr - lokalMin.z
+        );
+        k = { artKapsel: true, d: -1, einheit: slot * 2, slot, lokalMin, lokalGroesse, refs: 1, key };
+        wm.kapselCache.set(key, k);
+        return k;
+    }
+
+    _weltKapselSpawn(key, matrixWorld, kapselFn) {
+        const k = this._weltKapselHolen(key, kapselFn);
+        if (!k) return null;
+        const handle = this._weltFeldEintrag(k, matrixWorld || null);
+        if (!handle) {
+            k.refs--;
+            if (k.refs <= 0) this._weltBrickFrei(k);
+            return null;
+        }
+        return handle;
     }
 
     // DIE DEDUP-BAHN (die EINE Registrier-Wurzel für alles Wiederholte): ein
@@ -40199,6 +40307,12 @@ class AnazhRealm {
         const wm = this.state.weltMarch;
         if (!wm || !brick || brick._frei) return; // Doppel-Frei-Wand
         brick._frei = true;
+        if (brick.artKapsel) {
+            // KAPSEL-Frei: Slot zurück, Cache räumen — kein Atlas beteiligt.
+            wm.kapselCache.delete(brick.key);
+            wm.freiKapseln.push(brick.slot);
+            return;
+        }
         if (brick.key) wm.brickCache.delete(brick.key);
         if (brick.gross) {
             wm.freiGross.push(brick.einheit);
@@ -75231,47 +75345,8 @@ class AnazhRealm {
         });
     }
 
-    // DER GLIED-BÄCKER (MATRIX DER MATRIX): backt eine MESH-LISTE im
-    // GLIED-LOKALEN Raum (wurzelInv × meshWorld) — das Brick ist statisch,
-    // die Knochen-Matrix trägt es zur Laufzeit. Dieselben Splat-Konstanten
-    // wie der Universal-Bäcker (200/90, Material-Farb-Fallback).
-    _gliedFeldBacken(meshes, wurzelInv, dim) {
-        if (!meshes || !meshes.length || typeof THREE === "undefined") return null;
-        const d = dim || AnazhRealm.WALD_ZIEGEL.dim;
-        const v = new THREE.Vector3();
-        const mL = new THREE.Matrix4();
-        const bb = new THREE.Box3();
-        bb.makeEmpty();
-        for (const o of meshes) {
-            mL.multiplyMatrices(wurzelInv, o.matrixWorld);
-            const pos = o.geometry.attributes.position;
-            const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1;
-            for (let i = 0; i < pos.count; i += schritt)
-                bb.expandByPoint(v.fromBufferAttribute(pos, i).applyMatrix4(mL));
-        }
-        if (bb.isEmpty()) return null;
-        bb.expandByScalar(0.01); // Splat-Punkte AUF der Kante bleiben im Brick
-        const sx = Math.max(1e-6, bb.max.x - bb.min.x);
-        const sy = Math.max(1e-6, bb.max.y - bb.min.y);
-        const sz = Math.max(1e-6, bb.max.z - bb.min.z);
-        const daten = new Uint8Array(d * d * d * 4);
-        for (const o of meshes) {
-            mL.multiplyMatrices(wurzelInv, o.matrixWorld);
-            const g = o.geometry;
-            const col = g.attributes.color || null;
-            const mc = !col && o.material && o.material.color ? o.material.color : null;
-            // FLÄCHEN-SPLAT (die EINE Wurzel): Dreiecke säen — das 64³-Glied
-            // füllt seine Oberfläche statt nur seine Vertices (der v6-Befund).
-            this._feldFlaechenSplat(daten, d, bb.min, sx, sy, sz, g, col, mc, mL, d * d * 32);
-        }
-        const tex = new THREE.Data3DTexture(daten, d, d, d);
-        tex.format = THREE.RGBAFormat;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.unpackAlignment = 1;
-        tex.needsUpdate = true;
-        return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
-    }
+    // (Der GLIED-BÄCKER der Voxel-Ära fiel mit dem Schöpfer-Wort „analog!" —
+    // die Kreatur-Glieder sind Kapsel-GESETZE, _gliedKapselFit ist die Naht.)
 
     // DIE GLIEDER EINER KREATUR: jedes Mesh gehört seinem NÄCHSTEN
     // artikulierten Anker (die tierBaum-Teile — genau die Gruppen, die
@@ -75279,7 +75354,7 @@ class AnazhRealm {
     // Anker, Deckel 12 Glieder je Tier. Der Fern-Standbild-Ast backt NIE
     // (er wäre der Doppel-Körper). Ganz oder gar nicht: reicht der Atlas
     // nicht für ALLE Glieder, fällt das ganze Tier (kein halber Wolf).
-    _kreaturGliederBacken(cr, dimWahl) {
+    _kreaturGliederBacken(cr) {
         const tb = cr.userData && cr.userData._tierBaum;
         const anker = new Set();
         if (tb && tb.teile) for (const k in tb.teile) if (tb.teile[k] && tb.teile[k].isObject3D) anker.add(tb.teile[k]);
@@ -75325,23 +75400,22 @@ class AnazhRealm {
             if (!kleinster) break;
             merge(kleinster, zielVon(kleinster));
         }
-        // DEDUP je GATTUNG+GLIED (die reine Form, geteilt): das Glied-Brick ist
-        // im Knochen-LOKALEN Raum pose- UND instanz-unabhängig (starre Teile) →
-        // alle Wölfe teilen dieselben ~12 Bricks, jede Instanz posiert sie per
-        // eigener Knochen-Matrix. 20 Tiere × 12 Glieder → 12 Bricks statt 240.
-        // DIE AUFLÖSUNGS-LEITER (Schöpfer 21.07.): dimWahl wählt die Stufe —
-        // nah 64³ (ein Block je Glied, 8× Voxel), fern 32³; der Key trägt die
-        // Stufe, beide Tiers teilen den Brick-Cache je Gattung.
+        // DER ANALOG-IMPORT (Schöpfer-Wort „analog!"): das Glied wird KAPSEL —
+        // Achse + Radius + Farbe aus dem Skelett-Raum gepasst (das Gesetz der
+        // Form, ~32 Byte statt 128 KB Brick), DEDUP je GATTUNG+GLIED: alle
+        // Wölfe teilen dieselben ~12 Kapseln, jede Instanz posiert sie per
+        // eigener Knochen-Matrix (Matrix der Matrix, unverändert). Der March
+        // digitalisiert am Schirm — die Voxel-Glieder-Bricks der Kreaturen
+        // sind GEFALLEN (kein Parallelpfad).
         const glieder = [];
         const soul = (cr.userData && cr.userData.soul) || "wesen";
-        const dim = dimWahl || AnazhRealm.WALD_ZIEGEL.dim;
         for (const [a, g] of gruppen) {
             a.updateMatrixWorld(true);
-            const key = `kreatur:${soul}:${a.name || "wurzel"}:${dim}`;
+            const key = `kapsel:${soul}:${a.name || "wurzel"}`;
             const meshes = g.meshes;
-            const handle = this._weltFeldSpawn(key, a.matrixWorld, () => {
+            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => {
                 const inv = new THREE.Matrix4().copy(a.matrixWorld).invert();
-                return this._gliedFeldBacken(meshes, inv, dim);
+                return this._gliedKapselFit(meshes, inv);
             });
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
@@ -75350,6 +75424,58 @@ class AnazhRealm {
             glieder.push({ teil: a, handle });
         }
         return glieder.length ? glieder : null;
+    }
+
+    // DER KAPSEL-FIT (analog): die Glied-Meshes im Knochen-LOKALEN Raum →
+    // EINE Kapsel entlang der größten Ausdehnung (Radius = Mittel der beiden
+    // Neben-Halbachsen), Farbe = Mittel der Vertex-/Material-Farben. Bewusst
+    // die erste Ordnung des Gesetzes — mehr Kapseln je Glied sind eine
+    // Verfeinerung DERSELBEN Bahn, nie ein neues System.
+    _gliedKapselFit(meshes, wurzelInv) {
+        if (!meshes || !meshes.length || typeof THREE === "undefined") return null;
+        const v = new THREE.Vector3();
+        const mL = new THREE.Matrix4();
+        const bb = new THREE.Box3();
+        bb.makeEmpty();
+        let fr = 0,
+            fg = 0,
+            fb = 0,
+            fn = 0;
+        for (const o of meshes) {
+            mL.multiplyMatrices(wurzelInv, o.matrixWorld);
+            const pos = o.geometry.attributes.position;
+            const col = o.geometry.attributes.color || null;
+            const mc = !col && o.material && o.material.color ? o.material.color : null;
+            const schritt = pos.count > 4000 ? Math.ceil(pos.count / 4000) : 1;
+            for (let i = 0; i < pos.count; i += schritt) {
+                bb.expandByPoint(v.fromBufferAttribute(pos, i).applyMatrix4(mL));
+                if (col) {
+                    fr += col.getX(i);
+                    fg += col.getY(i);
+                    fb += col.getZ(i);
+                    fn++;
+                } else if (mc) {
+                    fr += mc.r;
+                    fg += mc.g;
+                    fb += mc.b;
+                    fn++;
+                }
+            }
+        }
+        if (bb.isEmpty()) return null;
+        const c = bb.getCenter(new THREE.Vector3());
+        const h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+        let ax = "x";
+        if (h.y > h[ax]) ax = "y";
+        if (h.z > h[ax]) ax = "z";
+        const nb = ["x", "y", "z"].filter((kk) => kk !== ax);
+        const r = Math.max(0.01, (h[nb[0]] + h[nb[1]]) * 0.5);
+        const lang = Math.max(0, h[ax] - r);
+        const a = c.clone();
+        a[ax] -= lang;
+        const b = c.clone();
+        b[ax] += lang;
+        return { a, b, r, farbe: fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null };
     }
 
     // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der
@@ -100494,14 +100620,8 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
     dimFein: 64, // DIE AUFLÖSUNGS-LEITER (21.07.): das NAHE Glied backt fein (ein Block je Glied, 8× Voxel)
 });
 AnazhRealm.KREATUR_ZIEGEL_DIST = 0;
-// DIE AUFLÖSUNGS-LEITER (Schöpfer 21.07.: „nahe dinge brauchen eine höhere
-// auflösung als ferne"): innerhalb TIER_FEIN backen Kreatur-Glieder auf
-// WALD_ZIEGEL.dimFein (64³ — Wolf-Glied ~7 mm Voxel statt 14), dahinter die
-// Basis-Stufe; BAND ist die Hysterese gegen Bake-Flappen an der Grenze.
-// Erschöpft der Atlas den feinen Satz, trägt die GROBE Stufe weiter — dieselbe
-// EINE Wahrheit in niedrigerer Abtastrate (Ziegel-Pyramide), nie Unsichtbarkeit.
-AnazhRealm.KREATUR_TIER_FEIN = 28;
-AnazhRealm.KREATUR_TIER_BAND = 8;
+// (Die Kreatur-Tier-Leiter der Voxel-Ära fiel mit dem Schöpfer-Wort „analog!":
+// Kapseln haben keine Import-Auflösung — der Strahl digitalisiert am Schirm.)
 // DIE ARCH-ZERLEGUNG (21.07., A): nahe Bauten backen in 8 OKTANTEN ihrer
 // Vorlagen-Box (je 64³ = effektiv 128³ — der Voxel-Teppich unter den Füßen
 // halbiert seine Klötze); Vorlagen-Dedup teilt die Oktanten, leere Oktanten
@@ -100533,6 +100653,7 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     felder: 2048, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld; Textur 4096×4)
     seite: 32, // Einträge je Seite (64 Seiten × 2 AABB-Texel = 128×1-Textur)
     spalten: 512, // Felder je Listen-Textur-Zeile (Breite = 512×8 = 4096 Texel, WebGPU-sicher)
+    kapseln: 512, // ANALOG-Kapsel-Plätze (2 Texel je Kapsel — „analog!": das Gesetz statt des Rasters)
 }); // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
 AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
