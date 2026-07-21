@@ -39667,7 +39667,11 @@ class AnazhRealm {
                 "        // Farbe wie die ganze Welt — ambientFarbe + lichtFarbe·Lambert (beide\n" +
                 "        // aus den echten Szene-Lichtern, getönt+gedimmt; nachts dunkel-blau,\n" +
                 "        // das goldene Albedo leuchtet nicht mehr aus sich selbst):\n" +
-                "        let licht = ambientFarbe + lichtFarbe * max(dot(bestN, sonne), 0.0);\n" +
+                "        var licht = ambientFarbe + lichtFarbe * max(dot(bestN, sonne), 0.0);\n" +
+                "        // TON-KLEMME (v6-Befund: das rohe Feld brannte weiß aus, während die\n" +
+                "        // Mesh-Materialien tone-gemappt laufen): sanfte Kompression der Höhen,\n" +
+                "        // Mitten bleiben (1.0 → 0.74) — das Feld gehorcht derselben Belichtung.\n" +
+                "        licht = licht / (vec3<f32>(1.0) + licht * 0.35);\n" +
                 "        let vz = bestT * max(dot(dir, fwd), 1e-4);\n" +
                 "        let tiefe = clamp(fern * (vz - nah) / (vz * (fern - nah)), 0.0, 0.9999995);\n" +
                 "        return vec4<f32>(bestRgb * licht, tiefe);\n" +
@@ -74582,6 +74586,136 @@ class AnazhRealm {
         }
         return this._foundryBarkNormal;
     }
+    // ═══ DER FLÄCHEN-SPLAT (die EINE Splat-Wurzel aller drei Bäcker) ═══
+    // v6-Sonden-Befund (21.07., eigenes Auge): der Vertex-Splat ließ bei 64³
+    // ~95 % der Oberflächen-Voxel LEER (zwischen den Vertices liegt nichts) —
+    // Schweizer-Käse-Dichte, die der trilineare March zu Wolken-Matsch mittelt
+    // (der weiße Wolf, die Marmor-Bricks). Jetzt rastern DREIECKE: je Dreieck
+    // ~2 deterministische Proben je Voxel-Fläche (goldene 2D-Folge, KEIN
+    // Math.random — Lehre 7), Farbe barycentrisch gemischt; das Proben-Budget
+    // skaliert PROPORTIONAL über die Gesamt-Fläche (kein stiller Schwanz-
+    // Abschnitt — jedes Dreieck sät anteilig). Indexlose Soups = (i, i+1, i+2);
+    // Riesen-Meshes tasten Dreiecke im Schritt ab und wichten die Fläche hoch.
+    _feldFlaechenSplat(daten, d, bbMin, sx, sy, sz, geo, col, mc, m, sollProben) {
+        const pos = geo && geo.attributes && geo.attributes.position;
+        if (!pos || pos.count < 3) return;
+        const idx = geo.index || null;
+        const triN = Math.floor((idx ? idx.count : pos.count) / 3);
+        if (triN < 1) return;
+        const A = this._ffsA || (this._ffsA = new THREE.Vector3());
+        const B = this._ffsB || (this._ffsB = new THREE.Vector3());
+        const C = this._ffsC || (this._ffsC = new THREE.Vector3());
+        const kx = d / sx;
+        const ky = d / sy;
+        const kz = d / sz;
+        const schrittT = triN > 40000 ? Math.ceil(triN / 40000) : 1;
+        // Pass 1: Gesamt-Fläche in Voxel² (der Proportional-Faktor braucht sie).
+        let gesamtFl = 0;
+        for (let t = 0; t < triN; t += schrittT) {
+            const i0 = idx ? idx.getX(t * 3) : t * 3;
+            const i1 = idx ? idx.getX(t * 3 + 1) : t * 3 + 1;
+            const i2 = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+            A.fromBufferAttribute(pos, i0);
+            B.fromBufferAttribute(pos, i1);
+            C.fromBufferAttribute(pos, i2);
+            if (m) {
+                A.applyMatrix4(m);
+                B.applyMatrix4(m);
+                C.applyMatrix4(m);
+            }
+            const ux = (B.x - A.x) * kx;
+            const uy = (B.y - A.y) * ky;
+            const uz = (B.z - A.z) * kz;
+            const wx = (C.x - A.x) * kx;
+            const wy = (C.y - A.y) * ky;
+            const wz = (C.z - A.z) * kz;
+            const cxp = uy * wz - uz * wy;
+            const cyp = uz * wx - ux * wz;
+            const czp = ux * wy - uy * wx;
+            gesamtFl += Math.sqrt(cxp * cxp + cyp * cyp + czp * czp) * 0.5 * schrittT;
+        }
+        if (!(gesamtFl > 0)) return;
+        const f = Math.min(2.5, (sollProben || d * d * 24) / gesamtFl);
+        // Pass 2: säen.
+        for (let t = 0; t < triN; t += schrittT) {
+            const i0 = idx ? idx.getX(t * 3) : t * 3;
+            const i1 = idx ? idx.getX(t * 3 + 1) : t * 3 + 1;
+            const i2 = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+            A.fromBufferAttribute(pos, i0);
+            B.fromBufferAttribute(pos, i1);
+            C.fromBufferAttribute(pos, i2);
+            if (m) {
+                A.applyMatrix4(m);
+                B.applyMatrix4(m);
+                C.applyMatrix4(m);
+            }
+            const ax = (A.x - bbMin.x) * kx;
+            const ay = (A.y - bbMin.y) * ky;
+            const az = (A.z - bbMin.z) * kz;
+            const bx = (B.x - bbMin.x) * kx;
+            const by = (B.y - bbMin.y) * ky;
+            const bz = (B.z - bbMin.z) * kz;
+            const cx = (C.x - bbMin.x) * kx;
+            const cy = (C.y - bbMin.y) * ky;
+            const cz = (C.z - bbMin.z) * kz;
+            const ux = bx - ax;
+            const uy = by - ay;
+            const uz = bz - az;
+            const wx = cx - ax;
+            const wy = cy - ay;
+            const wz = cz - az;
+            const cxp = uy * wz - uz * wy;
+            const cyp = uz * wx - ux * wz;
+            const czp = ux * wy - uy * wx;
+            const fl = Math.sqrt(cxp * cxp + cyp * cyp + czp * czp) * 0.5 * schrittT;
+            const n = Math.min(128, Math.max(1, Math.round(fl * f)));
+            let c0r = 0.55,
+                c0g = 0.5,
+                c0b = 0.45,
+                c1r = 0.55,
+                c1g = 0.5,
+                c1b = 0.45,
+                c2r = 0.55,
+                c2g = 0.5,
+                c2b = 0.45;
+            if (col) {
+                c0r = col.getX(i0);
+                c0g = col.getY(i0);
+                c0b = col.getZ(i0);
+                c1r = col.getX(i1);
+                c1g = col.getY(i1);
+                c1b = col.getZ(i1);
+                c2r = col.getX(i2);
+                c2g = col.getY(i2);
+                c2b = col.getZ(i2);
+            } else if (mc) {
+                c0r = c1r = c2r = mc.r;
+                c0g = c1g = c2g = mc.g;
+                c0b = c1b = c2b = mc.b;
+            }
+            for (let s2 = 0; s2 < n; s2++) {
+                let u = ((s2 + 0.5) * 0.7548776662) % 1;
+                let w2 = ((s2 + 0.5) * 0.5698402909) % 1;
+                if (u + w2 > 1) {
+                    u = 1 - u;
+                    w2 = 1 - w2;
+                }
+                const q0 = 1 - u - w2;
+                const px = ax * q0 + bx * u + cx * w2;
+                const py = ay * q0 + by * u + cy * w2;
+                const pz = az * q0 + bz * u + cz * w2;
+                const vx = Math.min(d - 1, Math.max(0, px | 0));
+                const vy = Math.min(d - 1, Math.max(0, py | 0));
+                const vz = Math.min(d - 1, Math.max(0, pz | 0));
+                const oI = (vz * d * d + vy * d + vx) * 4;
+                daten[oI] = Math.min(255, daten[oI] + (c0r * q0 + c1r * u + c2r * w2) * 200);
+                daten[oI + 1] = Math.min(255, daten[oI + 1] + (c0g * q0 + c1g * u + c2g * w2) * 200);
+                daten[oI + 2] = Math.min(255, daten[oI + 2] + (c0b * q0 + c1b * u + c2b * w2) * 200);
+                daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
+            }
+        }
+    }
+
     // ═══ DER WALD-ZIEGEL (die reine Form — der Pixel fragt den Baum) ═══
     // Schöpfer: „nicht LODs — das Bild direkt aus Position und Blickrichtung
     // abgeleitet." Die Fern-Stufe eines Baums wird ein VOLUMEN-ZIEGEL: die
@@ -74602,24 +74736,22 @@ class AnazhRealm {
         const sy = Math.max(1e-6, bb.max.y - bb.min.y);
         const sz = Math.max(1e-6, bb.max.z - bb.min.z);
         const daten = new Uint8Array(d * d * d * 4);
-        // Vertex-Splat (Kronen sind dichte Punktwolken — die Dichte-Näherung
-        // der gebauten Form; Stämme splatten mit +1-Voxel-Kern).
-        for (let i = 0; i < pos.count; i++) {
-            const vx = Math.min(d - 1, Math.max(0, Math.floor(((pos.getX(i) - bb.min.x) / sx) * d)));
-            const vy = Math.min(d - 1, Math.max(0, Math.floor(((pos.getY(i) - bb.min.y) / sy) * d)));
-            const vz = Math.min(d - 1, Math.max(0, Math.floor(((pos.getZ(i) - bb.min.z) / sz) * d)));
-            const o = (vz * d * d + vy * d + vx) * 4;
-            if (col) {
-                daten[o] = Math.min(255, daten[o] + col.getX(i) * 200);
-                daten[o + 1] = Math.min(255, daten[o + 1] + col.getY(i) * 200);
-                daten[o + 2] = Math.min(255, daten[o + 2] + col.getZ(i) * 200);
-            } else {
-                daten[o] = 90;
-                daten[o + 1] = 120;
-                daten[o + 2] = 60;
-            }
-            daten[o + 3] = Math.min(255, daten[o + 3] + 90);
-        }
+        // FLÄCHEN-SPLAT statt Vertex-Splat (die EINE Wurzel — Dreiecke säen,
+        // kein Schweizer-Käse mehr); das Fallback-Grün des farb-losen Baums
+        // bleibt byte-gleich als mc (0.45/0.6/0.3 × 200 = 90/120/60).
+        this._feldFlaechenSplat(
+            daten,
+            d,
+            bb.min,
+            sx,
+            sy,
+            sz,
+            srcGeo,
+            col,
+            col ? null : { r: 0.45, g: 0.6, b: 0.3 },
+            null,
+            d * d * 48
+        );
         const tex = new THREE.Data3DTexture(daten, d, d, d);
         tex.format = THREE.RGBAFormat;
         tex.minFilter = THREE.LinearFilter;
@@ -74672,25 +74804,11 @@ class AnazhRealm {
         const sy = Math.max(1e-6, bb.max.y - bb.min.y);
         const sz = Math.max(1e-6, bb.max.z - bb.min.z);
         const daten = new Uint8Array(d * d * d * 4);
-        const v = new THREE.Vector3();
         const mI = new THREE.Matrix4();
-        const splat = (pos, col, mc, welt, schritt) => {
+        const splat = (g, col, mc, welt, sollProben) => {
             // welt bringt in den Ziel-Raum; lokal-Bahn faltet wurzelInv davor.
             const m = lokal ? lokal.multiplyMatrices(wurzelInv, welt) : welt;
-            for (let i = 0; i < pos.count; i += schritt) {
-                v.fromBufferAttribute(pos, i).applyMatrix4(m);
-                const vx = Math.min(d - 1, Math.max(0, Math.floor(((v.x - bb.min.x) / sx) * d)));
-                const vy = Math.min(d - 1, Math.max(0, Math.floor(((v.y - bb.min.y) / sy) * d)));
-                const vz = Math.min(d - 1, Math.max(0, Math.floor(((v.z - bb.min.z) / sz) * d)));
-                const oI = (vz * d * d + vy * d + vx) * 4;
-                const cr = col ? col.getX(i) : mc ? mc.r : 0.55;
-                const cg = col ? col.getY(i) : mc ? mc.g : 0.5;
-                const cb = col ? col.getZ(i) : mc ? mc.b : 0.45;
-                daten[oI] = Math.min(255, daten[oI] + cr * 200);
-                daten[oI + 1] = Math.min(255, daten[oI + 1] + cg * 200);
-                daten[oI + 2] = Math.min(255, daten[oI + 2] + cb * 200);
-                daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
-            }
+            this._feldFlaechenSplat(daten, d, bb.min, sx, sy, sz, g, col, mc, m, sollProben);
         };
         gruppe.traverse((o) => {
             if (!o.isMesh && !o.isInstancedMesh) return;
@@ -74701,19 +74819,17 @@ class AnazhRealm {
             const mc = !col && o.material && o.material.color ? o.material.color : null;
             if (o.isInstancedMesh) {
                 // ALLES ist Region-Inhalt (Bäume · Felsen · Kristalle · Streu):
-                // jede Instanz splattet ihre Quell-Vertices durch ihre Matrix —
-                // die ganze Population wird EIN Feld.
+                // jede Instanz sät ihre Flächen durch ihre Matrix — die ganze
+                // Population wird EIN Feld; das Proben-Budget teilt sich fair.
                 const n = Math.max(1, o.count | 0);
-                const proInstanz = Math.max(24, Math.floor(60000 / n));
-                const schrittI = pos.count > proInstanz ? Math.ceil(pos.count / proInstanz) : 1;
+                const proInstanz = Math.max(600, Math.floor((d * d * 24) / n));
                 for (let k = 0; k < n; k++) {
                     o.getMatrixAt(k, mI);
                     mI.premultiply(o.matrixWorld);
-                    splat(pos, col, mc, mI, schrittI);
+                    splat(g, col, mc, mI, proInstanz);
                 }
             } else {
-                const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1; // Riesen-Kinder abtasten
-                splat(pos, col, mc, o.matrixWorld, schritt);
+                splat(g, col, mc, o.matrixWorld, d * d * 24);
             }
         });
         const tex = new THREE.Data3DTexture(daten, d, d, d);
@@ -74816,24 +74932,11 @@ class AnazhRealm {
         for (const o of meshes) {
             mL.multiplyMatrices(wurzelInv, o.matrixWorld);
             const g = o.geometry;
-            const pos = g.attributes.position;
             const col = g.attributes.color || null;
             const mc = !col && o.material && o.material.color ? o.material.color : null;
-            const schritt = pos.count > 20000 ? Math.ceil(pos.count / 20000) : 1;
-            for (let i = 0; i < pos.count; i += schritt) {
-                v.fromBufferAttribute(pos, i).applyMatrix4(mL);
-                const vx = Math.min(d - 1, Math.max(0, Math.floor(((v.x - bb.min.x) / sx) * d)));
-                const vy = Math.min(d - 1, Math.max(0, Math.floor(((v.y - bb.min.y) / sy) * d)));
-                const vz = Math.min(d - 1, Math.max(0, Math.floor(((v.z - bb.min.z) / sz) * d)));
-                const oI = (vz * d * d + vy * d + vx) * 4;
-                const cr = col ? col.getX(i) : mc ? mc.r : 0.55;
-                const cg = col ? col.getY(i) : mc ? mc.g : 0.5;
-                const cb = col ? col.getZ(i) : mc ? mc.b : 0.45;
-                daten[oI] = Math.min(255, daten[oI] + cr * 200);
-                daten[oI + 1] = Math.min(255, daten[oI + 1] + cg * 200);
-                daten[oI + 2] = Math.min(255, daten[oI + 2] + cb * 200);
-                daten[oI + 3] = Math.min(255, daten[oI + 3] + 90);
-            }
+            // FLÄCHEN-SPLAT (die EINE Wurzel): Dreiecke säen — das 64³-Glied
+            // füllt seine Oberfläche statt nur seine Vertices (der v6-Befund).
+            this._feldFlaechenSplat(daten, d, bb.min, sx, sy, sz, g, col, mc, mL, d * d * 32);
         }
         const tex = new THREE.Data3DTexture(daten, d, d, d);
         tex.format = THREE.RGBAFormat;
