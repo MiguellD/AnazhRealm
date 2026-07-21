@@ -39637,8 +39637,12 @@ class AnazhRealm {
                 "                let cH = feldTriAbtast(atlas, loI, hiI, vH);\n" +
                 "                bestT = tHi;\n" +
                 "                // Ecken-MITTEL statt Voxel-Farbe: durch a geteilt — leere Ecken\n" +
-                "                // (rgba=0) dunkeln den Rand sonst zum Halo ab.\n" +
-                "                bestRgb = cH.rgb / max(cH.a, 0.05);\n" +
+                "                // (rgba=0) dunkeln den Rand sonst zum Halo ab. FARB-EICHUNG: der\n" +
+                "                // Bäcker splattet rgb×200 gegen a×90 (Sonden-Befund 21.07.: ohne\n" +
+                "                // den 90/200-Faktor brennt das Mittel 2.2× zu hell — der Marmor-\n" +
+                "                // Blowout); 0.45·rgb/a gibt die WAHRE Splat-Farbe auf jeder\n" +
+                "                // Füll-Stufe zurück (an der 0.25-Iso exakt: 0.45·0.557c/0.25 = c).\n" +
+                "                bestRgb = clamp(cH.rgb * (0.45 / max(cH.a, 0.05)), vec3<f32>(0.0), vec3<f32>(1.0));\n" +
                 "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a),\n" +
                 "                // analytisch aus DENSELBEN 8 Ecken (glatt statt Facetten):\n" +
                 "                let gv = -feldTriGrad(atlas, loI, hiI, vH);\n" +
