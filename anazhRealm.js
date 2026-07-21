@@ -32514,6 +32514,28 @@ class AnazhRealm {
                 .mul(_T.float(G.floorMax))
                 .clamp(0.0, 1.0);
             _out = _T.mix(_out, _T.vec3(_lit[0], _lit[1], _lit[2]), _floorW);
+            // GRAS ALS OBERFLÄCHEN-FUNKTION (der 81-%-Wal fällt — Schöpfer „Gras
+            // wird Oberflächen-Funktion"): die Halm-GEOMETRIE (Band-0-Kegel, ~2 M
+            // Tris) stirbt; die Wiese lebt als hochfrequente Blatt-Schattierung
+            // des Bodens, NAH eingeblendet (fern trägt der Meadow-Grund allein —
+            // die Halme wären dort sub-pixel). ≈0 Kosten (ein Noise + Mix), EINE
+            // Farbe (MEADOW_GREEN, Gesetz #0 mit der alten Halm-Wurzel) → keine
+            // zweite Wahrheit, nur die Wiese als Funktion statt als Dreiecke.
+            if (_T.cameraPosition && _T.mx_noise_float) {
+                const _camD = wp.sub(_T.cameraPosition).length();
+                const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
+                const _halmN = _T.mx_noise_float(_T.vec3(wp.x.mul(2.7), wp.z.mul(2.7), _T.float(11.0))).mul(0.5).add(0.5);
+                const _halm = _halmN.mul(_halmN); // schärfen → Halm-Streifen statt Wolke
+                const _mg2 = AnazhRealm.MEADOW_GREEN;
+                const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.72).add(_halm.mul(_T.float(0.5))));
+                const _halmW = _green
+                    .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
+                    .mul(_T.float(1.0).sub(_dryW))
+                    .mul(_nah)
+                    .mul(_T.float(0.4))
+                    .clamp(0.0, 1.0);
+                _out = _T.mix(_out, _halmCol, _halmW);
+            }
             // V18.340 — die GEOLOGIE treibt die BRUCH-STRUKTUR (Synergie, EINE Quelle): wo Fels/Geröll
             // durchbricht (`rockW`+`screeW`), bricht der Boden KARSCH (hardDrive → ridged Bruch im Kern);
             // die flache Wiese bleibt weich (niedrige Basis-härte 0.36). So weiss der steinige Boden, dass
@@ -37199,327 +37221,15 @@ class AnazhRealm {
         if (!this.state.voxelChunkGrass) this.state.voxelChunkGrass = new Map();
         const key = `${cx},${cz}`;
         if (this.state.voxelChunkGrass.has(key)) return;
-        const { span } = this._voxelChunkConfig();
-        // V18.97 — DIE WEITE WIESE: (a) die Oberfläche kommt aus der Chunk-
-        // surfMap (Grid-Nebenprodukt, `_chunkSurfaceAt` — bilinear, ~gratis;
-        // Fallback `_voxelSurfaceY` nur ohne Karte/NaN-Ecke), (b) ferne Chunks
-        // (lod≥1, Ring 3–4) bauen DÜNNER (Faktor 0.35), lod≥2 gar nicht —
-        // so reicht die Wiese bis an die Fog-Kante, ohne die Vertex-Last zu
-        // vervielfachen. Der Halm sitzt auf SEINER Höhe (by), nicht der
-        // Zell-Höhe → Hänge tragen Gras ohne Schweben.
-        const chunkEntry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
-        const entryLod = chunkEntry && !chunkEntry.empty ? chunkEntry.lod || 0 : 0;
+        // GRAS ALS OBERFLÄCHEN-FUNKTION (der 81-%-Wal fällt): die Halm-GEOMETRIE
+        // ist tot — die Wiese lebt jetzt als Boden-Shading (_terrainGeologyAlbedo:
+        // Halm-Schattierung, nah eingeblendet). Der Chunk wird als „kein Gras-
+        // Mesh" (null) registriert, damit der ganze Lifecycle (Cull/Release/LOD)
+        // byte-konsistent bleibt — es entstehen nur nie wieder Kegel-Dreiecke.
         if (!this.state.voxelChunkGrassLod) this.state.voxelChunkGrassLod = new Map();
-        if (entryLod >= 2) {
-            this.state.voxelChunkGrass.set(key, null);
-            this.state.voxelChunkGrassLod.set(key, entryLod);
-            return;
-        }
-        // DER GRAS-SCHNITT (08.07.): der Halm ist das ECHTE Studio-Asset (`_grassStudioGeometry`
-        // — buildInstance('gras',·,2), dieselbe Quelle wie der Studio-Wald-Teppich). Lädt es
-        // noch (null), WARTET die Zelle (re-enqueue in pendingGrass — die Baum-Regel V18.411,
-        // KEIN Kopie-Bau; der Lade-Nebel bleibt über die Gras-Front konservativ gedeckelt).
-        // N7.4 — DAS TUFT-PAKET: das P4-Gesetz gilt auch der Wiese („wenn kein Gras da ist,
-        // ist es so"): OHNE Studio-Pipeline (Test-Hook/Worker-lose Einbettung) wird die Zelle
-        // bewusst gras-los verbucht (Nebel-Front zufrieden, kein Deadlock) — der Alt-Tuft-
-        // Bauer ist GESCHNITTEN, kein Nachbau. Der eine Regime-Read ist die Existenz-Gabel.
-        let _builtGrassStage = null;
-        const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
-        if (!grassStudio) {
-            this.state.voxelChunkGrass.set(key, null);
-            this.state.voxelChunkGrassLod.set(key, entryLod);
-            return;
-        }
-        {
-            // LOD-WURZEL (08.07.): die STUFE folgt dem Studio-Gesetz (kindStages.grass) —
-            // der Spieler-Nahring (chebyshev ≤1 Chunk) trägt die reiche Stufe, die Ferne
-            // die kompensierte; `_tickGrassStage` baut falsch-stufige Chunks nach, wenn
-            // der Spieler wandert (das budgetierte Idle-Thin-Muster). Einstufige Daten → byte-alt.
-            const _gStages = this._grassKindStages();
-            const _pc = this.state.lastPlayerVoxelChunk;
-            const _gnear = _pc ? Math.max(Math.abs(cx - _pc.cx), Math.abs(cz - _pc.cz)) <= 1 : entryLod === 0;
-            const stage = _gnear ? _gStages[0] : _gStages[_gStages.length - 1];
-            const sg = this._grassStudioGeometry(stage);
-            if (sg === null) {
-                this._enqueueGrass(cx, cz);
-                return;
-            }
-            if (sg === "leer") {
-                // W6 — RESOLVED-LEER ist eine STUDIO-ANTWORT, kein Miss (V18.380-Klasse):
-                // die Zelle wird als bewusst-gras-los verbucht (die Nebel-Front ist zufrieden,
-                // kein Deadlock) — und NIE der Alt-Tuft-Nachbau (fail-closed zur Studio-Wahrheit).
-                this.state.voxelChunkGrass.set(key, null);
-                this.state.voxelChunkGrassLod.set(key, entryLod);
-                return;
-            }
-            if (sg && this.state._grassConeGeometry !== sg) this.state._grassConeGeometry = sg;
-            if (sg) _builtGrassStage = stage;
-        }
-        // DIE WIESE OHNE DISTANZ-ABFALL (Studio-Gesetz, 08.07.): das Studio pflanzt das Gras
-        // als GLEICHMÄSSIGES Raster bis zur Sichtkante (grassStep 0.72 in buildForest — kein
-        // Distanz-Falloff; der 0.35-farFactor war V18.97-Perf, keine Studio-Regel). N7.4: der
-        // Bau ist Studio-only (Früh-Return oben) → die Gabel kollabiert aufs Studio-Gesetz.
-        const farFactor = 1;
-        // DAS NEUE KLEID — DIE WIESE = DIE VORLAGE (Schöpfer „die selbe Dichte, die selbe
-        // Wiese"): das Studio pflanzt die VOLLE Dichte (~1.8 Halme/m² = das 0.72-m-Raster) bis
-        // zur Nebelkante — die Wiese dünnt NIE (V18.422-Gesetz; N7.4 bedingungslos: der Bau ist
-        // Studio-only, der `_foliageDensityScale`-Gras-Hebel starb mit dem Thin-Tick — die
-        // Kapazität atmet über Ring/LOD/Schatten, nicht über die Wiesen-Dichte).
-        const grassDensityScale = 1;
-        const surfAt = (x, z) => {
-            if (chunkEntry && chunkEntry.surfMap) {
-                const v = this._chunkSurfaceAt(chunkEntry, cx, cz, x, z);
-                if (v !== null) return v;
-            }
-            return this._voxelSurfaceY(x, z);
-        };
-        const ox = cx * span;
-        const oz = cz * span;
-        const SAMPLES = 16;
-        const step = span / SAMPLES;
-        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ 0x9e3779b9) >>> 0 || 1;
-        const rnd = () => {
-            rs = (rs + 0x6d2b79f5) >>> 0;
-            let t = rs;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-        const blades = [];
-        for (let zi = 0; zi < SAMPLES; zi++) {
-            for (let xi = 0; xi < SAMPLES; xi++) {
-                const baseX = ox + (xi + 0.5) * step;
-                const baseZ = oz + (zi + 0.5) * step;
-                const field = this.worldFieldAt(baseX, baseZ);
-                const lebendig = field ? field.lebendig : 0;
-                if (lebendig < 0.22) continue;
-                const surfY = surfAt(baseX, baseZ);
-                if (surfY === null) continue;
-                // V9.59-c — Gras-Halme wachsen NICHT unter Wasser. 0.1 m
-                // Marge: Gras DARF an der Uferlinie wachsen (saftiges Ufer),
-                // aber nicht im See-Becken. `_waterLevelAt` ist O(1)+ für
-                // Ozean, leicht teurer für See/Fluss → einmal pro Sample-
-                // Zelle, nicht pro Blade (16×16=256 Samples pro Chunk).
-                const waterY = this._waterLevelAt(baseX, baseZ);
-                if (surfY < waterY + 0.1) continue;
-                // V17.5/V18.97 — Cliff-Skip an der ECHTEN Oberfläche: der Halm
-                // liest SEINE Höhe aus der surfMap (vorher: Macro-Proxy, 2 Calls
-                // pro Halm); liegt sie > 1.2 m unter der Zell-Höhe (Abbruch),
-                // fällt er weg → kahle Klippen-Kante statt schwebender Halm.
-                // Und der Halm STEHT auf seiner Höhe → Hänge ohne Schweben.
-                // V18.102 — NATUR-CLUMPING (λ~28 m, mittelwert-neutral): die Wiese
-                // bekommt Dickichte (×bis 2.2) und magere Lichtungen (×0.15) statt
-                // homogener Dichte — dasselbe Klump-Feld, das den Bäumen die
-                // Wald-Maske gibt, eine Oktave feiner. Totale ≈ unverändert.
-                const clump = Math.max(0.15, Math.min(2.2, 1 + 1.2 * this._clumpAt(baseX, baseZ, 0.035)));
-                // V18.230 (Ω-OPSIS Säule II Ω-O6) — auf einem PFAD (getrampelte
-                // Fluss-Bank) wächst kein Gras: der gepackte Boden trägt den Trampel-
-                // pfad, die Halme weichen → die bare Erd-Linie wird sichtbar.
-                const pathSuppress = this._pathFieldAt ? 1 - this._pathFieldAt(baseX, baseZ, surfY) * 0.92 : 1;
-                // V18.351 — SLOPE-GATE (Schöpfer „noch nie eine Felswand mit Gras gesehen"): die EINE
-                // Slope-Quelle (`_slopeAt`) aus DERSELBEN gecachten Oberfläche, auf der der Halm steht
-                // (`surfAt`, billig im 256-Sample-Loop) → flach voll, steil → 0, sanfter Übergang (kein
-                // harter Schnitt). Fels liest dieselbe Slope (der Scatter-Pfad) → Gras weicht exakt dort,
-                // wo Fels klettert, aus EINER geologischen Wahrheit; die Schwellen sitzen unter rock-slopeMax.
-                const slope = this._slopeAt(baseX, baseZ, surfAt);
-                const GS = AnazhRealm.GRASS_SLOPE;
-                const slopeFactor = Math.max(0, Math.min(1, 1 - (slope - GS.lo) / (GS.hi - GS.lo)));
-                if (slopeFactor <= 0) continue; // steile Felswand → gar kein Gras (früh raus, spart den Halm-Loop)
-                // V18.389 (P2 UNTERWUCHS) — das Gras REAGIERT aufs Kronendach: die EINE
-                // Bodenlicht-Quelle `_canopyLightAt` (P1-Wald-aligned — dicht bepflanzt =
-                // dunkler Boden) → in der Lichtung DICHT, unterm dichten Dach LICHT; der
-                // Feuchte-Antrieb weitet die Vorlagen-meadow-Regel (m verdichtet die Wiese).
-                // `feuchteG` wird hier EINMAL gelesen (der Boden-Tint unten teilt ihn).
-                const feuchteG = this._feuchteAt ? this._feuchteAt(baseX, baseZ, surfY) : 0;
-                const canopyLG = this._canopyLightAt(baseX, baseZ, surfY, feuchteG);
-                const U389 = AnazhRealm.UNDERGROWTH;
-                const understoryG =
-                    (U389.grassFloor + U389.grassGain * this._understoryNiche(canopyLG).gras) *
-                    (0.85 + U389.grassWet * feuchteG);
-                const count = Math.floor(
-                    (lebendig * 16 + rnd() * 2) *
-                        farFactor *
-                        clump *
-                        pathSuppress *
-                        grassDensityScale *
-                        slopeFactor *
-                        understoryG
-                );
-                // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-TINT pro Sample (das
-                // Gras liest den Boden): lush-grün wo lebendig+feuchte hoch, dry-
-                // oliv/strohig wo trocken. Multiplikatoren um ~1 auf die Halm-Albedo.
-                const lushG = Math.max(0, Math.min(1, lebendig * 0.7 + feuchteG * 0.5 - 0.1));
-                // V18.344 — STÄRKERE REGIONALE FARBPRÄGUNG (Schöpfer „die Halme farblich überall gleich,
-                // verschmelzen nicht mit dem Boden — gib eine Farbprägung durch die Region wie beim Boden"):
-                // die Tint-Spanne deutlich geweitet, damit das Gras die Geologie spiegelt — TROCKEN →
-                // gelb-braun-oliv (matcht die Dürre-Flecken V18.339), LUSH → sattes Grün (matcht den
-                // Meadow-Grund V18.341). So liest jede Region ihr eigenes Gras, kohärent mit dem Boden.
-                const tintR = 1.34 - 0.64 * lushG; // dry 1.34 (gelb) → lush 0.70 (grün)
-                const tintG = 0.9 + 0.24 * lushG; // dry 0.90 → lush 1.14
-                const tintB = 0.46 + 0.36 * lushG; // dry 0.46 (wenig Blau = strohig) → lush 0.82
-                for (let k = 0; k < count; k++) {
-                    const gx = baseX + (rnd() - 0.5) * step;
-                    const gz = baseZ + (rnd() - 0.5) * step;
-                    const by = surfAt(gx, gz);
-                    if (by === null || by < surfY - 1.2) continue;
-                    // V17.14 — Halm-Variation gegen den „Lauchstängel"-Eindruck
-                    // (Schöpfer-Audit „immer gleiche Länge, Höhe + Position nicht
-                    // überzeugend"). Drei entkoppelte Achsen statt EINEM uniformen
-                    // scale: (a) Breite + Höhe GETRENNT (manche kurz+breit, manche
-                    // hoch+schmal — `r1²` macht kurze Halme häufiger = natürliche
-                    // Verteilung); (b) Neigung (tilt) → kein steifes Senkrecht-
-                    // Stehen; (c) Tilt-Richtung zufällig. Die Wind-positionNode
-                    // wiegt sie zusätzlich (V16.2).
-                    const r1 = rnd();
-                    const r2 = rnd();
-                    // V18.390 — Eins W5 (DIE WIESE): der Teppich-Deckel. Der Halm ist lokal ~GRASS_BLADE_H
-                    // (0.40 m) hoch → sY hält die Welt-Höhe bei ~0.1-0.4 m (Vorlagen-Teppich) statt der alten
-                    // 0.5-1.95-m-Steppe (H 0.85 × sY bis 2.3). Nasses Ufergras wächst FETTER (Vorlagen-
-                    // `moW>0.8?1.45`): Breite ×1.45, Höhe ×1.15 (kein Zerreißen des Teppich-Höhen-Vertrags).
-                    const wet = feuchteG > 0.8 ? 1 : 0;
-                    const sXZ = (0.72 + r2 * 0.6) * (1 + wet * 0.45); // Breite [0.72, 1.32], nass fetter
-                    const sY = (0.4 + r1 * r1 * 0.5) * (1 + wet * 0.15); // Welt-Höhe ≈ localMaxY·sY ∈ [~0.17, ~0.40]
-                    const tj = 0.9 + r2 * 0.2; // ±10 % per-Halm-Helligkeits-Jitter
-                    blades.push({
-                        x: gx,
-                        y: by,
-                        z: gz,
-                        rot: rnd() * Math.PI * 2,
-                        sXZ,
-                        sY,
-                        tilt: (rnd() - 0.5) * 0.5, // ±0.25 rad Neigung
-                        tiltDir: rnd() * Math.PI * 2,
-                        tR: tintR * tj,
-                        tG: tintG * tj,
-                        tB: tintB * tj,
-                    });
-                }
-            }
-        }
-        if (blades.length === 0) {
-            this.state.voxelChunkGrass.set(key, null);
-            this.state.voxelChunkGrassLod.set(key, entryLod);
-            return;
-        }
-        // V10.0-j.j — die Halm-Geometrie ist ein Singleton (shared mesh, EIN Buffer pro
-        // Realm-Instanz). N7.4: die EINE Quelle ist das Studio-Asset (`_grassStudioGeometry`
-        // setzte `_grassConeGeometry` oben, bevor der Loop läuft) — der Alt-Tuft-Fallback
-        // (`_grassBladeTuftGeometry`) ist GESCHNITTEN, kein Nachbau-Bauer mehr.
-        // V11.0-b (Mesh-Pool aktiv im Build-Pfad) — wir holen ein
-        // InstancedMesh aus dem Pool (oder allokieren neu wenn leer)
-        // statt jedes Mal `new THREE.InstancedMesh` zu rufen. Pool-Identity
-        // ist garantiert (V11.0-a-Test): bei wiederholtem Streaming +
-        // Despawn der gleichen Welt-Region poppt der Pool dieselben
-        // Mesh-Objekte raus, instanceMatrix wird neu beschrieben —
-        // kein neuer Buffer, kein Race-Risiko.
-        // V10.0-j.c-Uniform-Capacity-Pattern bleibt: GRASS_MAX_BLADES=256
-        // für alle Pool-Meshes → Bound-Buffer konstant → kein Cache-
-        // Mismatch zwischen Chunks. inst.count = realCount für die
-        // DrawIndexed-Iteration (echte Render-Count).
-        const GRASS_MAX_BLADES = AnazhRealm.GRASS_MAX_BLADES; // V18.390 Eins W5 — die EINE Cap-Quelle (Memory-Wand, pool-sicher by construction; der Regler ist der Look-Deckel, nicht der Cap).
-        const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
-        // V12.0-d — Pool-Pfad re-aktiviert auf r184. Drei strukturelle
-        // Heilungen des Vendor-Upgrades machen das echte Recycling möglich:
-        // (1) „Improve Bind Group Layout cache system" (r182) — InstancedMesh-
-        //     Re-Use cached Bind-Groups nicht mehr stale zwischen Chunks.
-        // (2) „compileAsync truly non-blocking" (r182) — Pipeline-Compile
-        //     stalls den Render-Loop nicht mehr (V11.0-d.fix.gras-2's
-        //     fresh-instanceMatrix-per-acquire-Workaround obsolet).
-        // (3) Three.js' WebGPU-Backend macht writeBuffer JETZT nur bei
-        //     `instanceMatrix.needsUpdate === true` (DynamicDrawUsage-Race
-        //     der V10.0-j.i-Lehre strukturell geheilt).
-        // V11.0-d.fix.gras-Bogen-Lehre angewandt: Vendor-Bugs durch Upgrade
-        // heilen, nicht workaround'en. `_acquireGrassMesh` poppt einen Pool-
-        // Mesh ODER allokiert neu wenn leer (Geometry-Singleton + Material-
-        // Singleton geteilt). Returnt null wenn Voraussetzungen fehlen →
-        // defensive Fallback auf direkte Allokation.
-        let inst = this._acquireGrassMesh();
-        if (!inst) {
-            inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
-            inst.castShadow = false;
-            inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
-            inst.layers.enable(AnazhRealm.FOLIAGE_LAYER); // Subsystem 5: Gras ist Laub → eigene Layer
-        } else if (inst.geometry !== this.state._grassConeGeometry) {
-            // Pool-Mesh aus einer früheren Geometrie-Ära (Tuft↔Studio-Wechsel) → auf die
-            // aktuelle EINE Halm-Geometrie ziehen (geteilt, kein dispose — Singleton).
-            inst.geometry = this.state._grassConeGeometry;
-        }
-        inst.count = realCount;
-        // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
-        // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
-        // V10.0-j.c löste die echte Wurzel via Uniform-Capacity (alle Chunks
-        // mit konstantem GRASS_MAX_BLADES → Buffer-Layout uniform → keine
-        // Cache-Pollution). Damit ist DynamicDrawUsage nicht nur unnötig,
-        // sondern AKTIV SCHÄDLICH: Three.js' Attributes.update (Z53)
-        // `bufferAttribute.usage === DynamicDrawUsage` triggert
-        // `backend.updateAttribute(attribute)` JEDEN Frame, der
-        // `device.queue.writeBuffer(buffer, 0, array, ...)` aufruft —
-        // unabhängig davon ob `bufferAttribute.needsUpdate` true ist. Wenn
-        // der Buffer via Geometry-Dispose destroyed wird, läuft der per-
-        // Frame-writeBuffer auf den toten Buffer → „WriteBuffer ... while
-        // destroyed"-Crash (16384 bytes = 256 instances × 64 bytes Matrix4
-        // = EXAKT unsere Capacity). StaticDrawUsage (Default) triggert
-        // updateAttribute NUR bei version-bump (needsUpdate=true) → einmal
-        // pro Welt-Build, nie mehr → kein Race mehr mit Geometry-Dispose.
-        // Wir setzen needsUpdate=true einmal nach Matrix-Fill, das reicht.
-        const m = new THREE.Matrix4();
-        const q = new THREE.Quaternion();
-        const qYaw = new THREE.Quaternion();
-        const qTilt = new THREE.Quaternion();
-        const pos = new THREE.Vector3();
-        const scl = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
-        const tiltAxis = new THREE.Vector3();
-        // V18.228 (Ω-OPSIS Säule II Ω-O4) — jeder Halm trägt instanceColor (der
-        // Boden-Tint); das geteilte Gras-Material liest es → JEDES Gras-Mesh MUSS
-        // das Attribut tragen (WebGPU-strikt, V10.0-g.1) → wir setzen es immer.
-        const gcol = new THREE.Color();
-        for (let i = 0; i < realCount; i++) {
-            const b = blades[i];
-            pos.set(b.x, b.y, b.z);
-            // V17.14 — Yaw (rot um y) + Tilt (Neigung um eine horizontale Achse)
-            // kombiniert → die Halme stehen nicht mehr alle steif senkrecht.
-            qYaw.setFromAxisAngle(up, b.rot);
-            tiltAxis.set(Math.cos(b.tiltDir || 0), 0, Math.sin(b.tiltDir || 0));
-            qTilt.setFromAxisAngle(tiltAxis, b.tilt || 0);
-            q.multiplyQuaternions(qTilt, qYaw);
-            // Breite (x/z) + Höhe (y) entkoppelt → keine uniform-Lauchstängel.
-            scl.set(b.sXZ || 1, b.sY || 1, b.sXZ || 1);
-            m.compose(pos, q, scl);
-            inst.setMatrixAt(i, m);
-            gcol.setRGB(b.tR || 1, b.tG || 1, b.tB || 1);
-            inst.setColorAt(i, gcol);
-        }
-        inst.instanceMatrix.needsUpdate = true;
-        if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
-        inst.castShadow = false;
-        inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
-        // V11.0-d.fix.gras (27.05.2026, Schöpfer-Browser-Audit-Wurzel) — beim
-        // Pool-Recycle hat das Mesh noch den `boundingSphere`-Cache vom alten
-        // Chunk (Position X1/Z1). instanceMatrix wird neu beschrieben mit
-        // Position X2/Z2, aber Three.js' frustum-Culling liest die alte
-        // Sphere → cullt das Mesh fälschlich raus → KEIN GRAS sichtbar.
-        // Heilung: nach setMatrixAt-Loop computeBoundingSphere() neu rufen.
-        // Plus: instanceMatrix.computeBoundingSphere() für die InstancedMesh-
-        // spezifische Bounding-Berechnung (Three.js prüft `instanceMatrix.
-        // boundingSphere` im InstancedMesh-Frustum-Test). Beide null-setzen
-        // erzwingt Re-Compute beim nächsten Render.
-        if (inst.geometry && inst.geometry.boundingSphere === null) {
-            inst.geometry.computeBoundingSphere();
-        }
-        inst.boundingBox = null;
-        inst.boundingSphere = null;
-        if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
-        if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
-        this._chunkBundleAnker(inst, cx, cz); // CHUNK-EINBÜRGERUNG: Gras in die Region-BundleGroup
-        this.state.voxelChunkGrass.set(key, inst);
-        this.state.voxelChunkGrassLod.set(key, entryLod);
-        // LOD-WURZEL (08.07.) — die gebaute Gras-STUFE merken:
-        // `_tickGrassStage` liest sie, um beim Wandern falsch-stufige Chunks nachzubauen.
-        if (_builtGrassStage !== null) {
-            if (!this.state.voxelChunkGrassStage) this.state.voxelChunkGrassStage = new Map();
-            this.state.voxelChunkGrassStage.set(key, _builtGrassStage);
-        }
+        const _ce = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+        this.state.voxelChunkGrass.set(key, null);
+        this.state.voxelChunkGrassLod.set(key, _ce && !_ce.empty ? _ce.lod || 0 : 0);
     }
 
     _disposeVoxelChunkGrass(key) {
@@ -74833,7 +74543,8 @@ class AnazhRealm {
                     } else {
                         mm.multiplyMatrices(wurzelInv, o.matrixWorld);
                     }
-                    for (let i = 0; i < pos.count; i += schr) bb.expandByPoint(vv.fromBufferAttribute(pos, i).applyMatrix4(mm));
+                    for (let i = 0; i < pos.count; i += schr)
+                        bb.expandByPoint(vv.fromBufferAttribute(pos, i).applyMatrix4(mm));
                 }
             });
         } else {
@@ -74908,11 +74619,7 @@ class AnazhRealm {
             this._archUp || (this._archUp = new THREE.Vector3(0, 1, 0)),
             entry.rotationY || 0
         );
-        return new THREE.Matrix4().compose(
-            new THREE.Vector3(p.x || 0, baseY, p.z || 0),
-            q,
-            new THREE.Vector3(s, s, s)
-        );
+        return new THREE.Matrix4().compose(new THREE.Vector3(p.x || 0, baseY, p.z || 0), q, new THREE.Vector3(s, s, s));
     }
 
     // DIE ZIEGEL-FERNSTUFE der Architektur, DEDUP'd (der grosse Schnitt): die
@@ -74937,9 +74644,7 @@ class AnazhRealm {
             const hatte = this._archIsRendered(entry);
             if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Erst-Bake
             const inv = M.clone().invert();
-            const zg = entry.mesh
-                ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dimArch, inv)
-                : null;
+            const zg = entry.mesh ? this._ziegelBackenAusGruppe(entry.mesh, AnazhRealm.WALD_ZIEGEL.dimArch, inv) : null;
             if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             zgWar = zg ? "gebacken" : "leer";
             return zg;
@@ -95539,7 +95244,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.47";
+AnazhRealm.VERSION = "18.491.48";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

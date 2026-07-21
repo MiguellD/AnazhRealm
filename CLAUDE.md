@@ -50,7 +50,33 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.47 — DER DEDUP-KERN: die EINE Registrier-Wurzel — ein Brick, viele Matrix-Einträge)
+## Stand (V18.491.48 — GRAS WIRD OBERFLÄCHE: der 81-%-Wal fällt von der Dreiecks- auf die Funktions-Seite)
+
+**20.07., Schöpfer: „bewerte dich selbst … die Endform ist rein, eine Welle ist nur
+richtig, wenn sie Masse von der Dreiecks- auf die Funktions-Seite bewegt":** die
+ehrliche Selbstkorrektur — ich hatte die DICHTEN Massen (Gras, nahe Streu) Welle
+für Welle als „ehrlich offen" geparkt (die verbotene 5-%-Niederlage), während ich
+dünne Objekte polierte. Jetzt der Kompass-Schnitt am größten Wal:
+- GRAS ALS OBERFLÄCHEN-FUNKTION (Boot-Chronik: Gras war 81 % aller Tris = 6.5 M,
+  nach dem Band-0-Schnitt noch ~2 M): die Halm-GEOMETRIE (Kegel-Instanzen) ist
+  TOT — `_buildVoxelChunkGrass` baut nie wieder ein Mesh (registriert null,
+  Lifecycle byte-konsistent). Die Wiese lebt als hochfrequente Halm-Schattierung
+  IM Boden-Fragment (`_terrainGeologyAlbedo`): ein Noise × MEADOW_GREEN (dieselbe
+  Farbe wie die alte Halm-Wurzel — Gesetz #0, keine zweite Wahrheit), nah
+  eingeblendet (fern trägt der Meadow-Grund allein, dort ist der Halm sub-pixel).
+  ≈0 Kosten (ein Noise + Mix je Boden-Pixel).
+- BEWIESEN: Boot-Sonde echtes WebGPU — 0 Gras-Instanzen, 0 Gras-Tris (vorher
+  ~2 M), Boden liest grün als Wiese (Screenshot), terrainGeologyError null (der
+  Fragment-Term kompiliert), 0 Fehler/Warns · playtest:fast 18/18 · lint 0.
+- DIE EHRLICHE KARTE (Hybrid vs Cache, Schöpfer-Doktrin): CACHE (erlaubt, EINE
+  Wahrheit memoisiert) = Terrain-Mesh (Iso-Cache des Makro-Gesetzes + Spieler-
+  Edits) · Fern-Ring-Schalen · Panorama · Region-Bricks · Atlas. HYBRID (noch
+  zu bewegen) = NAHE Bäume/Streu (Instanz-Geometrie < Cull-Radius; fern längst
+  Region-Bricks — der Dedup-Kern trägt sie jetzt, der nächste Schnitt). AUSGENOMMEN
+  = der Avatar (der Beobachter, gebilligt). Der Halm-Nah-Detail (Blatt-Shimmer)
+  ist jetzt Funktion — sein Look ist das Schöpfer-Urteil beim Öffnen.
+
+**Davor, V18.491.47 — DER DEDUP-KERN: die EINE Registrier-Wurzel — ein Brick, viele Matrix-Einträge)
 
 **20.07., Schöpfer: „das ganze system, nicht nur die kreaturen … die pipeline
 existiert ja schon, sie muss angepasst und optimiert werden":** der grosse
