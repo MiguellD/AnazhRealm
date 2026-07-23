@@ -32070,6 +32070,27 @@ class AnazhRealm {
                                 }
                             }
                         }
+                        // DIE KUPPEL-NORMALE, FLIP-FREI (22.07. — „im Busch fast schwarz"):
+                        // das Laub (Karten + Klingen) trägt die analytische Kuppel-Richtung
+                        // als gebackene Normale (_stampFoliageDomeNormals). Der Renderer
+                        // negiert attribute-Normalen back-facender DoubleSide-Fragmente
+                        // (directionToFaceDirection in normalView) → die Karten-INNENSEITE
+                        // las die Kuppel invertiert = Boden-Hemisphäre = das fast schwarze
+                        // Laub von innen. normalNode konsumiert setupNormal OHNE den Flip
+                        // (Vendor: `this.normalNode?vec3(this.normalNode):…`); normalLocal
+                        // trägt die Batch-/Instanz-Rotation (BatchNode transformiert die
+                        // Normale mit), modelViewMatrix hebt in den View-Raum — dasselbe
+                        // Muster wie der 8-View-Impostor oben (transformDirection, NIE
+                        // transformNormalToView). Impostor/Rinde/Kronen-Kern unberührt.
+                        if (
+                            opts.foliageLeaf === true &&
+                            !opts.impostorKey &&
+                            _Ta.normalLocal &&
+                            _Ta.modelViewMatrix &&
+                            _Ta.normalize
+                        ) {
+                            mat.normalNode = _Ta.normalize(_Ta.normalLocal.transformDirection(_Ta.modelViewMatrix));
+                        }
                         // Ω-O7 (wahreranblick §6 — DIE RINDE-MASERUNG) — prozedural aus dem
                         // holz-Tag, KEINE Bitmap: eine LÄNGS-Faser (hohe Frequenz quer x/z,
                         // niedrige längs der Stamm-Achse y → vertikale Maser-Streifen) + RISSE
@@ -68217,9 +68238,10 @@ class AnazhRealm {
 
     // BufferGeometry mit card{cross} (zwei ⊥ Quads) pro Anchor. needleSpray
     // bekommt y-stretched cards (Nadel-Optik), leafCluster normale Quads.
-    // Plan §3.4: „card{cross} = zwei ⊥ Quads; normalBend mischt Normale
-    // Richtung Krone-Sphere → schattiert wie geschlossene Krone, nicht wie
-    // freie Sprites." Per-Vertex flex (outer-Vertices flexen stärker) +
+    // Shading-Normale = analytische KUPPEL vom Kronen-Boden
+    // (_stampFoliageDomeNormals, 22.07. — das alte normalBend-Gemisch Plan
+    // §3.4 fiel: facing-abhängig + Mitten-Ursprung = schwarze Innen-Krone).
+    // Per-Vertex flex (outer-Vertices flexen stärker) +
     // phase (aperiodisches Hash-Phasen-Versatz). Statt N sphere-Parts
     // (V18.211) eine einzige cards-Geometrie pro Variante.
     // V18.387 — DAS NEUE KLEID S1-SHADER — stempelt die pro-Baum-konstanten Wahrnehmungs-Höhen
@@ -68242,6 +68264,52 @@ class AnazhRealm {
         aH0L.fill(h0l);
         g.setAttribute("aH0", new THREE.BufferAttribute(aH0, 1));
         g.setAttribute("aH0L", new THREE.BufferAttribute(aH0L, 1));
+        return g;
+    }
+
+    // DIE ANALYTISCHE KUPPEL-NORMALE (22.07. — „erster Schritt in die Vegetation = fast
+    // schwarzes Bild"): das Laub-Shading liest NIE mehr die Karten-/Klingen-FACING-Normale,
+    // sondern die Kuppel-Richtung vom KRONEN-BODEN (min-Y der Kartenwolke − 0.5) + Up-Bias.
+    // Der Boden statt der Wolken-MITTE ist Pflicht: unterhalb eines Mitten-Ursprungs zeigten
+    // die Normalen nach UNTEN und sampelten die dunkle Boden-Hemisphäre (dunkle Unterkrone).
+    // Facing-unabhängig ist die WURZEL-Kur: auf DoubleSide negiert der Renderer attribute-
+    // Normalen back-facender Fragmente (directionToFaceDirection) — die Karten-Innenseite
+    // kippte ins Schwarze. Konsumiert wird die Kuppel flip-frei via mat.normalNode
+    // (_buildPbrNodeMaterial, foliageLeaf). EINE Quelle für BEIDE Laub-Geometrien
+    // (Karten + phyto-Klingen — der Kern bleibt unberührt, der Host stempelt).
+    _stampFoliageDomeNormals(g) {
+        if (!g || !g.attributes || !g.attributes.position || !g.attributes.normal) return g;
+        const pos = g.attributes.position.array;
+        const nor = g.attributes.normal.array;
+        const vc = g.attributes.position.count;
+        if (!(vc > 0)) return g;
+        let cx = 0,
+            cz = 0,
+            minY = Infinity;
+        for (let i = 0; i < vc; i++) {
+            cx += pos[i * 3];
+            cz += pos[i * 3 + 2];
+            if (pos[i * 3 + 1] < minY) minY = pos[i * 3 + 1];
+        }
+        cx /= vc;
+        cz /= vc;
+        const oy = minY - 0.5; // Kuppel-Ursprung: der Kronen-BODEN, nie die Mitte
+        const UP = 0.3; // Up-Bias: Rand-Karten sampeln Himmel statt Horizont
+        for (let i = 0; i < vc; i++) {
+            const i3 = i * 3;
+            let nx = pos[i3] - cx;
+            let ny = pos[i3 + 1] - oy;
+            let nz = pos[i3 + 2] - cz;
+            const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            nx /= l;
+            ny = ny / l + UP;
+            nz /= l;
+            const l2 = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            nor[i3] = nx / l2;
+            nor[i3 + 1] = ny / l2;
+            nor[i3 + 2] = nz / l2;
+        }
+        g.attributes.normal.needsUpdate = true;
         return g;
     }
 
@@ -68296,6 +68364,10 @@ class AnazhRealm {
         g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
         g.setIndex(new THREE.BufferAttribute(q.indices, 1));
+        // KUPPEL-NORMALE auch für die Klingen (22.07.): die Core-cup-Normalen litten
+        // denselben DoubleSide-Flip — der Host überstempelt das Shading-Attribut
+        // (phyto-core unberührt, seine Rückgabe bleibt byte-identisch).
+        this._stampFoliageDomeNormals(g);
         // S1-SHADER — dieselben Wahrnehmungs-Höhen wie die Karten → das Dither-Crossfade
         // blendet die Klingen am L0→L1-Band weich aus (kein Pop auf die Karten-Krone).
         this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH || 10));
@@ -68396,9 +68468,10 @@ class AnazhRealm {
         const cardW = baseSize * _wByKind * fScale * _lodCardBoost;
         const cardH = baseSize * _hByKind * fScale * _lodCardBoost;
         const totalH = Math.max(1, skeleton.totalH || 10);
-        // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
-        // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
-        // Richtung → Schatten wirken wie geschlossene Krone.
+        // Krone-Sphere-Zentrum (Mitte der Anchor-Wolke + leicht nach oben) —
+        // seit der Kuppel-Normale (22.07.) NUR noch für POSITIONEN (innerFill-
+        // Pull + Spitzen-Curl); die Shading-Normale stempelt
+        // _stampFoliageDomeNormals vom Kronen-BODEN aus.
         let cx = 0,
             cy = 0,
             cz = 0;
@@ -68458,7 +68531,6 @@ class AnazhRealm {
             h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
             return (h >>> 0) / 4294967296;
         };
-        const bendStr = 0.6; // normalBend (Plan §3.4 ≈ 0.5-0.7)
         let vWrite = 0;
         let iWrite = 0;
         let cardIdx = 0;
@@ -68523,27 +68595,10 @@ class AnazhRealm {
                 const cR = Math.cos(rot),
                     sR = Math.sin(rot);
                 // Tangenten (um y gedreht): t1=(cR,0,−sR), t2=(sR,0,cR) (⟂).
-                // Normalen: n1=+z→(sR,0,cR); n2=+x→(cR,0,−sR); zur Kronen-SCHALE
-                // (AUSWÄRTS, od=−bd) gebogen → die Krone schattiert wie eine 3D-Kugel
-                // (oben sonnen-lit, unten im Schatten). Auswärts ist Pflicht: die alte
-                // EINWÄRTS-Biegung machte die sonnenseitige Krone-Oberseite DUNKEL.
-                const odx = -bdx,
-                    ody = -bdy,
-                    odz = -bdz;
-                let bn1x = sR * (1 - bendStr) + odx * bendStr,
-                    bn1y = ody * bendStr,
-                    bn1z = cR * (1 - bendStr) + odz * bendStr;
-                let bn2x = cR * (1 - bendStr) + odx * bendStr,
-                    bn2y = ody * bendStr,
-                    bn2z = -sR * (1 - bendStr) + odz * bendStr;
-                const l1 = Math.sqrt(bn1x * bn1x + bn1y * bn1y + bn1z * bn1z) || 1;
-                const l2 = Math.sqrt(bn2x * bn2x + bn2y * bn2y + bn2z * bn2z) || 1;
-                bn1x /= l1;
-                bn1y /= l1;
-                bn1z /= l1;
-                bn2x /= l2;
-                bn2y /= l2;
-                bn2z /= l2;
+                // KEINE Facing-Normale mehr: das alte tangent×outward-Gemisch
+                // (bendStr 0.6) starb mit der Kuppel-Normale (22.07.) —
+                // _stampFoliageDomeNormals überschreibt das normal-Attribut
+                // nach dem Bau facing-unabhängig vom Kronen-Boden aus.
                 // Eck-Halbbreiten (Blatt-Form Ω-O14): unten ±hw, oben ±tw.
                 const lxs = [-hw, hw, tw, -tw];
                 const lys = [-hh, -hh, hh, hh];
@@ -68558,9 +68613,6 @@ class AnazhRealm {
                     positions[v3] = ax + lx * cR + cu * bdx;
                     positions[v3 + 1] = ay + lys[c] + cu * bdy;
                     positions[v3 + 2] = az - lx * sR + cu * bdz;
-                    normals[v3] = bn1x;
-                    normals[v3 + 1] = bn1y;
-                    normals[v3 + 2] = bn1z;
                     colors[v3] = cr;
                     colors[v3 + 1] = cg;
                     colors[v3 + 2] = cb;
@@ -68578,9 +68630,6 @@ class AnazhRealm {
                     positions[v3] = ax + lx * sR + cu * bdx;
                     positions[v3 + 1] = ay + lys[c] + cu * bdy;
                     positions[v3 + 2] = az + lx * cR + cu * bdz;
-                    normals[v3] = bn2x;
-                    normals[v3 + 1] = bn2y;
-                    normals[v3 + 2] = bn2z;
                     colors[v3] = cr;
                     colors[v3 + 1] = cg;
                     colors[v3 + 2] = cb;
@@ -68612,6 +68661,8 @@ class AnazhRealm {
         g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); // Ω-O14: weiche Blatt-Alpha
         g.setIndex(new THREE.BufferAttribute(indices, 1));
+        // Kuppel-Normale vom Kronen-Boden (facing-unabhängig, s. Helper).
+        this._stampFoliageDomeNormals(g);
         // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
         this._stampFoliageVisHeights(g, totalH);
         g.computeBoundingBox();
