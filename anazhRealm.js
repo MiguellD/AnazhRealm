@@ -16090,6 +16090,9 @@ class AnazhRealm {
                                 bloeckeFrei: this.state.weltMarch.freiGross.length,
                                 einheitenFrei: this.state.weltMarch.freiKlein.length,
                                 felderFrei: this.state.weltMarch.freiFelder.length,
+                                // DAS VERTEILUNGS-GESETZ (C): Klein-Streu-Blöcke + Plätze
+                                gesetzBloecke: this.state.weltMarch.gesetzBloecke || 0,
+                                gesetzPlaetze: this.state.weltMarch.gesetzPlaetze || 0,
                             }
                           : null,
                       // (d) DER INGEST-TAKT (sechste Welle): freigegeben gesamt + Stau-
@@ -39604,6 +39607,89 @@ class AnazhRealm {
                 "            // IST die Distanz (adaptiv), die Normale ist der EXAKTE SDF-\n" +
                 "            // Gradient — digitalisiert wird nur hier, am Schirm-Pixel.\n" +
                 "            let anzahl = i32(-d + 0.5);\n" +
+                "            if (t1.w < -0.5) {\n" +
+                "                // ═══ DAS VERTEILUNGS-GESETZ (Klein-Streu je Kachel) ═══\n" +
+                "                // EIN Eintrag trägt bis zu anzahl PLÄTZE (2 Texel je Platz:\n" +
+                "                // [Pos|Hüllradius][yaw|scale|po|anzahl]): Kugel-Vortest je\n" +
+                "                // Platz, dann Sphere-Tracing des GETEILTEN Vorlagen-Satzes im\n" +
+                "                // Platz-Raum (rotY(−yaw), /scale) — die Matrix bleibt Identität,\n" +
+                "                // die Kosten binden an getroffene Kugeln, nie an die Streu-Zahl.\n" +
+                "                let basis = i32(-t1.w - 0.5);\n" +
+                "                for (var pk: i32 = 0; pk < anzahl; pk = pk + 1) {\n" +
+                "                    let gA = textureLoad(kapseln, vec2<i32>(basis + pk * 2, 0), 0);\n" +
+                "                    if (gA.w < 0.001) { continue; }\n" +
+                "                    let oc = gA.xyz - camPos;\n" +
+                "                    let bq = dot(oc, dir);\n" +
+                "                    let disc = bq * bq - dot(oc, oc) + gA.w * gA.w;\n" +
+                "                    if (disc <= 0.0) { continue; }\n" +
+                "                    let sq = sqrt(disc);\n" +
+                "                    let tGa = max(bq - sq, tN2);\n" +
+                "                    let tGe = min(min(bq + sq, tF2), bestT);\n" +
+                "                    if (tGe <= tGa) { continue; }\n" +
+                "                    let gB = textureLoad(kapseln, vec2<i32>(basis + pk * 2 + 1, 0), 0);\n" +
+                "                    let cy = cos(gB.x);\n" +
+                "                    let sy = sin(gB.x);\n" +
+                "                    let sk = max(gB.y, 1e-4);\n" +
+                "                    let ow = camPos - gA.xyz;\n" +
+                "                    let oP = vec3<f32>(cy * ow.x - sy * ow.z, ow.y, sy * ow.x + cy * ow.z) / sk;\n" +
+                "                    let dP = vec3<f32>(cy * dir.x - sy * dir.z, dir.y, sy * dir.x + cy * dir.z) / sk;\n" +
+                "                    let poG = i32(gB.z + 0.5);\n" +
+                "                    let anzG = i32(gB.w + 0.5);\n" +
+                "                    var tG = tGa;\n" +
+                "                    for (var s2: i32 = 0; s2 < 32; s2 = s2 + 1) {\n" +
+                "                        if (tG >= tGe) { break; }\n" +
+                "                        let pP = oP + dP * tG;\n" +
+                "                        var dmG = 1e30;\n" +
+                "                        var nkG = 0;\n" +
+                "                        for (var k2: i32 = 0; k2 < anzG; k2 = k2 + 1) {\n" +
+                "                            let qA = textureLoad(kapseln, vec2<i32>(poG + k2 * 2, 0), 0);\n" +
+                "                            let qB = textureLoad(kapseln, vec2<i32>(poG + k2 * 2 + 1, 0), 0);\n" +
+                "                            var dkG = 0.0;\n" +
+                "                            if (qA.w >= 0.0) {\n" +
+                "                                let ba2 = qB.xyz - qA.xyz;\n" +
+                "                                let pa2 = pP - qA.xyz;\n" +
+                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                                dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
+                "                            } else {\n" +
+                "                                let q2 = abs(pP - qA.xyz) - qB.xyz;\n" +
+                "                                dkG = length(max(q2, vec3<f32>(0.0))) + min(max(q2.x, max(q2.y, q2.z)), 0.0);\n" +
+                "                            }\n" +
+                "                            if (dkG < dmG) { dmG = dkG; nkG = k2; }\n" +
+                "                        }\n" +
+                "                        if (dmG * sk < 0.008) {\n" +
+                "                            bestT = tG;\n" +
+                "                            let qA = textureLoad(kapseln, vec2<i32>(poG + nkG * 2, 0), 0);\n" +
+                "                            let qB = textureLoad(kapseln, vec2<i32>(poG + nkG * 2 + 1, 0), 0);\n" +
+                "                            var gvG = vec3<f32>(0.0);\n" +
+                "                            var ciG: u32 = 0u;\n" +
+                "                            if (qA.w >= 0.0) {\n" +
+                "                                let ba2 = qB.xyz - qA.xyz;\n" +
+                "                                let pa2 = pP - qA.xyz;\n" +
+                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                                gvG = pa2 - ba2 * h2; // exakte Kapsel-Normale (Platz-Raum)\n" +
+                "                                ciG = u32(qB.w);\n" +
+                "                            } else {\n" +
+                "                                let q2 = pP - qA.xyz;\n" +
+                "                                let aq2 = abs(q2) - qB.xyz;\n" +
+                "                                if (aq2.x >= aq2.y && aq2.x >= aq2.z) { gvG = vec3<f32>(sign(q2.x), 0.0, 0.0); }\n" +
+                "                                else if (aq2.y >= aq2.z) { gvG = vec3<f32>(0.0, sign(q2.y), 0.0); }\n" +
+                "                                else { gvG = vec3<f32>(0.0, 0.0, sign(q2.z)); }\n" +
+                "                                ciG = u32(-qA.w - 1.0);\n" +
+                "                            }\n" +
+                "                            if (dot(gvG, gvG) < 1e-10) {\n" +
+                "                                bestN = -dir;\n" +
+                "                            } else {\n" +
+                "                                // Platz-Raum → Welt: rotY(+yaw); uniforme Skala dreht die Richtung nicht\n" +
+                "                                bestN = normalize(vec3<f32>(cy * gvG.x + sy * gvG.z, gvG.y, cy * gvG.z - sy * gvG.x));\n" +
+                "                            }\n" +
+                "                            bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0;\n" +
+                "                            break;\n" +
+                "                        }\n" +
+                "                        tG = tG + max(dmG * sk, 0.004);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "                continue;\n" + // Gesetz-Eintrag abgeschlossen — kein Kapsel-/Brick-March
+                "            }\n" +
                 "            let po = i32(t1.w + 0.5);\n" +
                 "            let lenDL = max(length(dL), 1e-6);\n" +
                 "            var tK = tN2;\n" +
@@ -39964,6 +40050,9 @@ class AnazhRealm {
             kapselCursor: 0, // Bump-Allokator (Mehr-Kapsel-Sätze brauchen ZUSAMMENHÄNGENDE Slots)
             freiKapselSeg: new Map(), // anzahl → [offsets] (freigewordene Segmente je Länge)
             kapselCache: new Map(), // DEDUP: key → geteilter Kapsel-Satz (Pseudo-Brick, refs)
+            gesetzKacheln: new Map(), // DAS VERTEILUNGS-GESETZ: kachelKey → [Gesetz-Blöcke der Klein-Streu]
+            gesetzBloecke: 0, // lebende Gesetz-Blöcke (die Kapazitäts-Linse zählt mit)
+            gesetzPlaetze: 0, // belegte Plätze über alle Blöcke (Instanz-Wahrheit der Klein-Streu)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
             freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
@@ -40263,6 +40352,212 @@ class AnazhRealm {
             return null;
         }
         return handle;
+    }
+
+    // ═══ DAS VERTEILUNGS-GESETZ (PFLICHT-OFFEN C, Schöpfer-Wort „analog!") ═══
+    // Die Klein-Streu (Nicht-Baum-Schichten: under/litter/rock) frisst keinen
+    // Feld-Listen-Slot je Instanz mehr: je 64-m-KACHEL trägt EIN Feld-Eintrag
+    // einen BLOCK von Plätzen in der Kapsel-Liste (1 Slot = 2 Texel je Platz:
+    // [Pos|Hüllradius][yaw|scale|po|anzahl]) — der March wertet das Gesetz
+    // analytisch am Schirm aus (Kugel-Vortest je Platz, dann Sphere-Tracing
+    // des GETEILTEN Vorlagen-Satzes im Platz-Raum). Die Plätze bleiben die
+    // EINEN Γ5-deterministischen Raster-Plätze des Zellen-Chokepoints
+    // (Wasser-/Feld-Gates sind CPU-Wahrheit — ein Shader-Hash wäre der
+    // Verteilungs-ZWILLING und würde am LOD-0-Saum gegen die echte Geometrie
+    // driften). Der Batch-Raster auf der Feld-Liste stirbt an der Wurzel.
+    _streuGesetzSpawn(preset, fseed, x, surfY, z, yaw, scale) {
+        const wm = this._weltMarchEnsure();
+        if (!wm) return null;
+        const key = "abaum:" + preset + ":" + this._foundryVariantFor(fseed);
+        if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt()) return null; // Fit-Takt (Cache-Treffer sind frei)
+        const satz = this._weltKapselHolen(key, () => {
+            const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
+            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2)
+                return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
+            return this._baumKapselFit(bf);
+        });
+        if (!satz) return null;
+        const W = AnazhRealm.WELT_MARCH;
+        const kachel = Math.floor(x / W.gesetzKachelM) + "," + Math.floor(z / W.gesetzKachelM);
+        let bloecke = wm.gesetzKacheln.get(kachel);
+        if (!bloecke) wm.gesetzKacheln.set(kachel, (bloecke = []));
+        let block = null;
+        for (const b of bloecke)
+            if (b.freiPlaetze.length) {
+                block = b;
+                break;
+            }
+        if (!block) {
+            block = this._streuGesetzBlock(wm, kachel);
+            if (!block) {
+                satz.refs--;
+                if (satz.refs <= 0) this._weltBrickFrei(satz);
+                return null;
+            }
+            bloecke.push(block);
+        }
+        const idx = block.freiPlaetze.pop();
+        // Hüllkugel um den PLATZ-URSPRUNG (Boden-Anker): r = scale × fernste
+        // Ecke der Vorlagen-AABB — konservativ, kein Vorlagen-Wissen im Shader.
+        const lm = satz.lokalMin;
+        const lg = satz.lokalGroesse;
+        const rx = Math.max(Math.abs(lm.x), Math.abs(lm.x + lg.x));
+        const ry = Math.max(Math.abs(lm.y), Math.abs(lm.y + lg.y));
+        const rz = Math.max(Math.abs(lm.z), Math.abs(lm.z + lg.z));
+        const rWelt = Math.sqrt(rx * rx + ry * ry + rz * rz) * Math.max(0.01, scale);
+        const K = wm.kapselDaten;
+        const o = (block.slot + idx) * 8;
+        K[o] = x;
+        K[o + 1] = surfY;
+        K[o + 2] = z;
+        K[o + 3] = rWelt;
+        K[o + 4] = yaw;
+        K[o + 5] = scale;
+        K[o + 6] = satz.einheit; // Vorlagen-Texel-Offset (der Shader liest ihn als po)
+        K[o + 7] = satz.anzahl;
+        wm.kapseln.needsUpdate = true;
+        block.plaetze[idx] = satz;
+        block.belegtPlaetze++;
+        wm.gesetzPlaetze++;
+        this._streuGesetzAabb(wm, block);
+        return { gesetz: block, platz: idx };
+    }
+
+    // Ein GESETZ-BLOCK: ZUSAMMENHÄNGENDE Kapsel-Slots (je Slot ein Platz) +
+    // EIN Feld-Eintrag (Identitäts-Matrix — die Plätze liegen im Welt-Raum;
+    // der Shader erkennt das Gesetz an einheit < 0). null bei Erschöpfung
+    // (dieselben Voll-Linsen wie die Kapsel-/Feld-Bahn schreien EINMAL laut).
+    _streuGesetzBlock(wm, kachel) {
+        const W = AnazhRealm.WELT_MARCH;
+        const n = W.gesetzBlock;
+        const seg = wm.freiKapselSeg.get(n);
+        let slot = seg && seg.length ? seg.pop() : -1;
+        if (slot < 0) {
+            if (wm.kapselCursor + n > W.kapseln) {
+                if (!this._weltKapselnVollWarn) {
+                    this._weltKapselnVollWarn = true;
+                    this.log("KAPSEL-LISTE ERSCHÖPFT: kein Platz für einen Analog-Satz — das Feld FEHLT sichtbar", "WARN");
+                }
+                return null;
+            }
+            slot = wm.kapselCursor;
+            wm.kapselCursor += n;
+        }
+        wm.kapselDaten.fill(0, slot * 8, (slot + n) * 8); // alle Plätze inaktiv (Hüllradius 0)
+        const brick = {
+            artKapsel: true,
+            gesetz: true,
+            d: -n,
+            einheit: -(slot * 2 + 1), // NEGATIV = Gesetz-Block: der Shader liest die Texel-Basis als -(einheit+1)
+            slot,
+            anzahl: n,
+            lokalMin: new THREE.Vector3(0, 0, 0),
+            lokalGroesse: new THREE.Vector3(0, 0, 0),
+            refs: 1,
+            key: null,
+        };
+        const handle = this._weltFeldEintrag(brick, null);
+        if (!handle) {
+            this._weltBrickFrei(brick); // gibt das Slot-Segment zurück (artKapsel-Bahn)
+            return null;
+        }
+        wm.gesetzBloecke++;
+        return {
+            kachel,
+            slot,
+            handle,
+            brick,
+            belegtPlaetze: 0,
+            freiPlaetze: Array.from({ length: n }, (_x, i) => n - 1 - i),
+            plaetze: new Array(n).fill(null),
+        };
+    }
+
+    // Die Block-HÜLLE folgt ihren Plätzen (Union der Hüllkugeln): Welt-AABB
+    // und lokale Box in EINEM Schritt (Identitäts-Matrix bleibt stehen) —
+    // der Seiten-Vortest des March bleibt eng, auch wenn Plätze sterben.
+    _streuGesetzAabb(wm, block) {
+        const K = wm.kapselDaten;
+        const n = AnazhRealm.WELT_MARCH.gesetzBlock;
+        let minX = Infinity,
+            minY = Infinity,
+            minZ = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity,
+            maxZ = -Infinity;
+        for (let i = 0; i < n; i++) {
+            const o = (block.slot + i) * 8;
+            const r = K[o + 3];
+            if (r <= 0) continue;
+            if (K[o] - r < minX) minX = K[o] - r;
+            if (K[o + 1] - r < minY) minY = K[o + 1] - r;
+            if (K[o + 2] - r < minZ) minZ = K[o + 2] - r;
+            if (K[o] + r > maxX) maxX = K[o] + r;
+            if (K[o + 1] + r > maxY) maxY = K[o + 1] + r;
+            if (K[o + 2] + r > maxZ) maxZ = K[o + 2] + r;
+        }
+        if (minX > maxX) {
+            minX = minY = minZ = maxX = maxY = maxZ = 0;
+        }
+        block.brick.lokalMin.set(minX, minY, minZ);
+        block.brick.lokalGroesse.set(maxX - minX, maxY - minY, maxZ - minZ);
+        const L = wm.listeDaten;
+        const o = block.handle.feld * 32;
+        L[o] = minX;
+        L[o + 1] = minY;
+        L[o + 2] = minZ;
+        L[o + 4] = maxX;
+        L[o + 5] = maxY;
+        L[o + 6] = maxZ;
+        L[o + 20] = minX;
+        L[o + 21] = minY;
+        L[o + 22] = minZ;
+        L[o + 24] = maxX - minX;
+        L[o + 25] = maxY - minY;
+        L[o + 26] = maxZ - minZ;
+        wm.liste.needsUpdate = true;
+        this._weltSeiteDirty(wm, block.handle.feld);
+    }
+
+    // Ein PLATZ stirbt (LOD-0-Rückkehr/Region-Dispose): sein Texel wird
+    // inaktiv (Hüllradius 0), die Vorlage gibt ihren Ref zurück; der LEERE
+    // Block fällt GANZ (Feld-Eintrag + Slot-Segment über die eine Frei-Bahn).
+    _streuGesetzFrei(handle) {
+        const wm = this.state.weltMarch;
+        if (!wm || !handle || handle._frei) return;
+        handle._frei = true;
+        const block = handle.gesetz;
+        const o = (block.slot + handle.platz) * 8;
+        wm.kapselDaten.fill(0, o, o + 8);
+        wm.kapseln.needsUpdate = true;
+        const satz = block.plaetze[handle.platz];
+        block.plaetze[handle.platz] = null;
+        if (satz) {
+            satz.refs--;
+            if (satz.refs <= 0) this._weltBrickFrei(satz);
+        }
+        block.freiPlaetze.push(handle.platz);
+        block.belegtPlaetze--;
+        wm.gesetzPlaetze--;
+        if (block.belegtPlaetze <= 0) {
+            this._weltFeldFrei(block.handle); // refs 1 → 0: die Brick-Frei-Bahn gibt das Slot-Segment zurück
+            wm.gesetzBloecke--;
+            const bloecke = wm.gesetzKacheln.get(block.kachel);
+            if (bloecke) {
+                const i = bloecke.indexOf(block);
+                if (i >= 0) bloecke.splice(i, 1);
+                if (!bloecke.length) wm.gesetzKacheln.delete(block.kachel);
+            }
+            return;
+        }
+        this._streuGesetzAabb(wm, block);
+    }
+
+    // Der EINE Frei-Chokepoint der Streu-Zellen: Baum-Zellen tragen ein
+    // Feld-Handle, Klein-Streu-Zellen einen Gesetz-Platz — beide sterben hier.
+    _scatterFeldFrei(handle) {
+        if (handle && handle.gesetz) this._streuGesetzFrei(handle);
+        else this._weltFeldFrei(handle);
     }
 
     // DIE DEDUP-BAHN (die EINE Registrier-Wurzel für alles Wiederholte): ein
@@ -58082,12 +58377,28 @@ class AnazhRealm {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             if (_cellLodF >= 1 && !(this.state.renderer && this.state.renderer._isHeadlessNull)) {
                 const fseedB = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
-                const MB = new THREE.Matrix4().compose(
-                    new THREE.Vector3(tf.x, Number.isFinite(surfY) ? surfY : 0, tf.z),
-                    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tf.yaw || 0, 0)),
-                    new THREE.Vector3(tf.scale || 1, tf.scale || 1, tf.scale || 1)
-                );
-                const fh = this._baumFeldSpawn(foundryPreset, fseedB, MB);
+                let fh;
+                if (layer.kind === "tree") {
+                    const MB = new THREE.Matrix4().compose(
+                        new THREE.Vector3(tf.x, Number.isFinite(surfY) ? surfY : 0, tf.z),
+                        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tf.yaw || 0, 0)),
+                        new THREE.Vector3(tf.scale || 1, tf.scale || 1, tf.scale || 1)
+                    );
+                    fh = this._baumFeldSpawn(foundryPreset, fseedB, MB);
+                } else {
+                    // DAS VERTEILUNGS-GESETZ (PFLICHT-OFFEN C): die Klein-Streu
+                    // wohnt als PLATZ im Gesetz-Block ihrer Kachel — kein
+                    // Feld-Listen-Slot je Instanz mehr (der Batch-Raster starb).
+                    fh = this._streuGesetzSpawn(
+                        foundryPreset,
+                        fseedB,
+                        tf.x,
+                        Number.isFinite(surfY) ? surfY : 0,
+                        tf.z,
+                        tf.yaw || 0,
+                        tf.scale || 1
+                    );
+                }
                 if (fh) {
                     return {
                         cellX,
@@ -58340,13 +58651,13 @@ class AnazhRealm {
             // nur den Hysterese-Zustand quittieren (kein Churn pro Band-Kreuzung).
             if (rec.bpName === cell.bpName) {
                 this._scatterFreeSlots(rec.slots);
-                if (rec.feld) this._weltFeldFrei(rec.feld); // Duplikat-Eintrag (Dedup-Refcount räumt)
+                if (rec.feld) this._scatterFeldFrei(rec.feld); // Duplikat-Eintrag (Dedup-Refcount räumt)
                 cell.lod = newLod;
                 continue;
             }
             this._scatterFreeSlots(cell.slots);
             if (cell.feld) {
-                this._weltFeldFrei(cell.feld); // die alte Feld-Stufe fällt mit dem Band-Wechsel
+                this._scatterFeldFrei(cell.feld); // die alte Feld-Stufe fällt mit dem Band-Wechsel
                 cell.feld = null;
             }
             cell.lod = rec.lod;
@@ -58374,10 +58685,11 @@ class AnazhRealm {
         const regionGroupKeys = region.regional ? new Set() : null;
         const sharedSlots = regionGroupKeys ? [] : null;
         for (const cell of region.cells) {
-            // DIE BAUM-BAHN: das Feld eines Baum-Zells stirbt mit seiner Region
+            // DIE BAUM-/GESETZ-BAHN: das Feld eines Baum-Zells bzw. der
+            // Gesetz-Platz einer Klein-Streu-Zelle stirbt mit seiner Region
             // (Dedup-Refcount — das geteilte Brick fällt erst mit dem letzten).
             if (cell.feld) {
-                this._weltFeldFrei(cell.feld);
+                this._scatterFeldFrei(cell.feld);
                 cell.feld = null;
             }
             if (regionGroupKeys) {
@@ -100697,6 +101009,12 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     seite: 32, // Einträge je Seite (64 Seiten × 2 AABB-Texel = 128×1-Textur)
     spalten: 512, // Felder je Listen-Textur-Zeile (Breite = 512×8 = 4096 Texel, WebGPU-sicher)
     kapseln: 4096, // ANALOG-Primitive (2 Texel je Kapsel/Box — das Gesetz statt des Rasters; Textur 8192×1)
+    // DAS VERTEILUNGS-GESETZ (PFLICHT-OFFEN C): Klein-Streu wohnt als GESETZ-
+    // BLOCK je Kachel — EIN Feld-Eintrag trägt bis zu gesetzBlock Plätze als
+    // Kapsel-Slots (32 B je Platz statt 128-B-Feld-Slot je Instanz; die 4096
+    // Felder gehören wieder Kreaturen/Bauten/Bäumen).
+    gesetzKachelM: 64, // Kachel-Kante der Gesetz-Blöcke (Schirm-Bindung: kleine Hüll-AABBs)
+    gesetzBlock: 16, // Plätze je Block (1 Kapsel-Slot = 2 Texel je Platz)
 }); // die VOLLE FORM: das Tier IST sein Feld, bei jeder Distanz (der Körper bleibt unsichtbarer Physik-Träger)
 AnazhRealm.ARCH_ZIEGEL_HAND = 16; // m — die HAND-BLASE: nur hier materialisiert die echte Form (Türen/Anfassen); dahinter ist ALLES Feld
 AnazhRealm.BERG_CULL = Object.freeze({
