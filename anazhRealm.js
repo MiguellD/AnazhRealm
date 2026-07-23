@@ -32881,6 +32881,11 @@ class AnazhRealm {
         // (opts.foliageLeaf — Karten UND Klingen; der Impostor trägt kein foliageLeaf →
         // sein Licht kommt aus dem Normal-Atlas). Post-lighting auf outputNode (CLAUDE.md-
         // Gotcha: Mikro-Terme output-seitig, nie colorNode).
+        // URTEIL 22.07. (Kuppel-Normale): der Floor BLEIBT — er ist der Vorlagen-Port für
+        // die Kanten-Subsurface der Silhouette (nachts/im Schatten), nicht das Pflaster für
+        // den DoubleSide-Flip (der fiel an der Wurzel via normalNode-Kuppel). NEU dazu: ein
+        // kleiner NICHT-direktionaler Ambient-Boden (thicknessAmbient-Gedanke) — die
+        // Unterkrone fällt nie mehr absolut schwarz, auch face-on (der Rim ist dort ~0).
         if (opts.foliageLeaf === true) {
             try {
                 const _Tf = THREE.TSL;
@@ -32904,8 +32909,10 @@ class AnazhRealm {
                         .vec3(0.09, 0.15, 0.04)
                         .mul(_Tf.pow(_inv, _Tf.float(4.0)))
                         .mul(_Tf.float(0.5));
+                    // Ambient-Boden: eigene Albedo × 0.06, view- und sonnen-unabhängig.
+                    const _amb = mat.colorNode.rgb.mul(_Tf.float(0.06));
                     const _outF = mat.outputNode || _Tf.output;
-                    mat.outputNode = _outF.add(_Tf.vec4(_rim.add(_edge), _Tf.float(0.0)));
+                    mat.outputNode = _outF.add(_Tf.vec4(_rim.add(_edge).add(_amb), _Tf.float(0.0)));
                     mat.userData = mat.userData || {};
                     mat.userData.unlitSilhouetteFloor = true; // Linsen-Marker (diag-leaf-blades)
                 }
