@@ -40436,7 +40436,10 @@ class AnazhRealm {
             if (wm.kapselCursor + n > W.kapseln) {
                 if (!this._weltKapselnVollWarn) {
                     this._weltKapselnVollWarn = true;
-                    this.log("KAPSEL-LISTE ERSCHÖPFT: kein Platz für einen Analog-Satz — das Feld FEHLT sichtbar", "WARN");
+                    this.log(
+                        "KAPSEL-LISTE ERSCHÖPFT: kein Platz für einen Analog-Satz — das Feld FEHLT sichtbar",
+                        "WARN"
+                    );
                 }
                 return null;
             }
