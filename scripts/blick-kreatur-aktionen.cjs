@@ -33,6 +33,7 @@ const argOf = (name, dflt) => {
 const argOut = argOf("--out", root);
 const argAkt = argOf("--aktionen", "grasen,ruhen,playbow,yawn").split(",");
 const argSouls = argOf("--souls", "wolf,fuchs,baer").split(",");
+const argArm = process.argv.includes("--armlaenge"); // je Kreatur zusätzlich der 1.1-m-Schuss
 const W = 640,
     H = 360;
 const mime = {
@@ -171,7 +172,8 @@ const server = http.createServer((req, res) => {
             continue;
         }
         for (let k = 0; k < argSouls.length; k++) {
-            const s = await page.evaluate(async (kIdx) => {
+          for (const nah of argArm ? [false, true] : [false]) {
+            const s = await page.evaluate(async (kIdx, nah) => {
                 const r = window.anazhRealm;
                 const THREE_ = window.THREE;
                 const rend = r.state.renderer;
@@ -179,19 +181,21 @@ const server = http.createServer((req, res) => {
                 const scene = r.state.scene;
                 const c = window.__blickKre[kIdx];
                 // 3/4-Blick mit Boden im Bild (Kopf-im-Boden ist nur SO beurteilbar).
+                // nah = ARMLÄNGE (PFLICHT-OFFEN A: „Wolf auf Armlänge SCHARF") —
+                // 1.1 m ans Fell, Auge auf Schulterhöhe, dieselbe Blickachse.
                 const box = new THREE_.Box3().setFromObject(c);
                 const ctr = box.getCenter(new THREE_.Vector3());
                 const size = box.getSize(new THREE_.Vector3());
                 const ry = c.rotation.y;
                 const fwd = { x: Math.sin(ry), z: Math.cos(ry) };
                 const side = { x: Math.cos(ry), z: -Math.sin(ry) };
-                const dist = Math.max(2.4, Math.max(size.x, size.z) * 1.6);
+                const dist = nah ? 1.1 : Math.max(2.4, Math.max(size.x, size.z) * 1.6);
                 cam.position.set(
                     ctr.x + side.x * dist + fwd.x * dist * 0.6,
-                    ctr.y + size.y * 0.55,
+                    ctr.y + size.y * (nah ? 0.25 : 0.55),
                     ctr.z + side.z * dist + fwd.z * dist * 0.6
                 );
-                cam.lookAt(ctr.x, ctr.y - size.y * 0.15, ctr.z);
+                cam.lookAt(ctr.x, ctr.y - size.y * (nah ? 0 : 0.15), ctr.z);
                 cam.updateMatrixWorld(true);
                 const w = 640,
                     h = 360;
@@ -226,19 +230,20 @@ const server = http.createServer((req, res) => {
                 img.data.set(u8.subarray(0, w * h * 4));
                 ctx.putImageData(img, 0, 0);
                 return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png") };
-            }, k);
+            }, k, nah);
             if (!s.ok) {
                 console.log(`❌ ${akt}/${argSouls[k]}: ${s.grund}`);
                 rot++;
                 continue;
             }
-            const file = path.join(argOut, `blick-kreatur-${akt}-${argSouls[k]}.png`);
+            const file = path.join(argOut, `blick-kreatur-${akt}-${argSouls[k]}${nah ? "-armlaenge" : ""}.png`);
             fs.writeFileSync(file, Buffer.from(s.png.split(",")[1], "base64"));
             const substanz = s.farben >= 8 && s.nonzero > 50;
             if (!substanz) rot++;
             console.log(
-                `${substanz ? "✅" : "❌"} ${akt}/${argSouls[k]}: ${file} · Farben=${s.farben} · nonzero=${s.nonzero}`
+                `${substanz ? "✅" : "❌"} ${akt}/${argSouls[k]}${nah ? " (Armlänge)" : ""}: ${file} · Farben=${s.farben} · nonzero=${s.nonzero}`
             );
+          }
         }
     }
 
