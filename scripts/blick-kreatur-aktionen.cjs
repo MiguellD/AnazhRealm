@@ -123,6 +123,7 @@ const server = http.createServer((req, res) => {
         // Erden + einschwingen (Terrain-Höhe, Anim-Init).
         for (let i = 0; i < 15; i++) {
             try {
+                if (r.state.world) r.state.world.timeOfDay = 0.5;
                 r._gameLoopTick(performance.now());
             } catch (_e) {}
             await sleep(30);
@@ -160,6 +161,7 @@ const server = http.createServer((req, res) => {
             // Anim einschwingen lassen (Profil-Merge + Phase).
             for (let i = 0; i < 25; i++) {
                 try {
+                    if (r.state.world) r.state.world.timeOfDay = 0.5;
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
                 await sleep(30);
