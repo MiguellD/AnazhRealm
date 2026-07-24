@@ -32556,8 +32556,18 @@ class AnazhRealm {
                 // Noise, das der Blick in 8 Schichten durchsticht (Relief-March im
                 // Boden-Fragment): hohe Halme fangen den Strahl früh (helle Spitze),
                 // Lücken lassen ihn zum dunklen Wurzelgrund durch. Räumliche Tiefe +
-                // Parallaxe beim Umsehen — als FUNKTION, ohne ein Dreieck; dieselbe
-                // EINE Halm-Frequenz 2.7 und dasselbe MEADOW_GREEN (Gesetz #0).
+                // Parallaxe beim Umsehen — als FUNKTION, ohne ein Dreieck; dasselbe
+                // MEADOW_GREEN wie der Meadow-Grund (Gesetz #0).
+                // GEMESSEN 24.07. (Wiesen-Ort −900/−850, „grüner SAMT"-Befund): das
+                // alte Höhenfeld `_h = _hN²` gegen die Schwellen [0.125..1.0] kollabierte
+                // an der REALEN mx_noise-Verteilung (eng um 0.5, ±~0.2) auf 1-2 Schichten
+                // → trefH ≈ konstant, Kontrast (0.5..1.25 auf dunklem Grün × 0.55 Mix)
+                // wenige Prozent = unsichtbar; Frequenz 2.7/m (~37-cm-Fleck) war kein
+                // Halm. Der Schnitt: smoothstep-Remap des Höhenfelds an die echte
+                // Verteilung (Lücken UND volle Spitzen existieren wieder), Halm-Frequenz
+                // 9/m (~11-cm-Büschel, auf Armlänge lesbar), eine Büschel-Maske (2.7/m,
+                // EIN zusätzlicher Noise) formt die Wiese auf 10-30 m, Kontrast
+                // Wurzelgrund↔Spitze 0.35..1.30.
                 const _camD = wp.sub(_T.cameraPosition).length();
                 const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
                 const _blick = wp.sub(_T.cameraPosition).normalize(); // Auge → Boden
@@ -32568,7 +32578,19 @@ class AnazhRealm {
                 const _halmHoch = _T.float(0.32); // m sichtbare Halm-Schicht
                 const _wanderX = _blick.x.div(_steil).mul(_halmHoch);
                 const _wanderZ = _blick.z.div(_steil).mul(_halmHoch);
-                const _f = _T.float(2.7); // die EINE Halm-Frequenz
+                const _f = _T.float(9.0); // Halm-Frequenz (~11 cm — Armlängen-lesbar)
+                // Büschel-Maske (2.7/m, in halber Wander-Tiefe abgetastet): Halme
+                // wachsen in Büscheln, die Lücken dazwischen zeigen den Wurzelgrund —
+                // die Wiese liest auch auf 10-30 m als Wiese, nicht als Rauschen.
+                const _bX = wp.x.add(_wanderX.mul(_T.float(0.5)));
+                const _bZ = wp.z.add(_wanderZ.mul(_T.float(0.5)));
+                const _tuft = _T.smoothstep(
+                    _T.float(0.3),
+                    _T.float(0.62),
+                    _T.mx_noise_float(_T.vec3(_bX.mul(_T.float(2.7)), _bZ.mul(_T.float(2.7)), _T.float(11.0)))
+                        .mul(0.5)
+                        .add(0.5)
+                );
                 let _traf = _T.float(0.0); // 0 = noch kein Halm getroffen (branchenlos)
                 let _trefH = _T.float(0.0); // Schicht-Höhe des Treffers (0 = Wurzelgrund)
                 for (let _s = 0; _s < 8; _s++) {
@@ -32576,19 +32598,26 @@ class AnazhRealm {
                     const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
                     const _pz = wp.z.add(_wanderZ.mul(_T.float(_s / 8.0)));
                     const _hN = _T.mx_noise_float(_T.vec3(_px.mul(_f), _pz.mul(_f), _T.float(11.0))).mul(0.5).add(0.5);
-                    const _h = _hN.mul(_hN); // schärfen → Halm-Streifen statt Wolke
+                    // Remap an die echte Noise-Verteilung: unter 0.36 = Lücke (0), über
+                    // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
+                    const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(_tuft);
                     const _erst = _T.step(_T.float(_li), _h).mul(_T.float(1.0).sub(_traf));
                     _trefH = _trefH.add(_erst.mul(_T.float(_li)));
                     _traf = _traf.add(_erst);
                 }
                 const _mg2 = AnazhRealm.MEADOW_GREEN;
-                // Spitze hell, Wurzelgrund dunkel — die Tiefe liest sich als Eigen-Schatten:
-                const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.5).add(_trefH.mul(_T.float(0.75))));
+                // Spitze hell (1.30), Wurzelgrund tief-dunkel (0.35) — die Tiefe liest
+                // sich als Eigen-Schatten zwischen den Büscheln:
+                const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.35).add(_trefH.mul(_T.float(0.95))));
                 const _halmW = _green
                     .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
                     .mul(_T.float(1.0).sub(_dryW))
                     .mul(_nah)
-                    .mul(_T.float(0.55))
+                    // GEMESSEN 24.07. (Bild-Paar wiese3/wiese4): mit Deckel 0.55 blieb
+                    // die volle Kette ~1/3-Mix — Büschel-Fleckung statt Wiese. Wo die
+                    // Gewichte Wiese sagen, BESITZT das Gras den Pixel (0.95); der
+                    // Kontrast kommt aus _halmCol 0.35..1.30, nie aus der Verdünnung.
+                    .mul(_T.float(0.95))
                     .clamp(0.0, 1.0);
                 _out = _T.mix(_out, _halmCol, _halmW);
             }
