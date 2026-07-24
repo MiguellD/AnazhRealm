@@ -192,9 +192,15 @@ const server = http.createServer((req, res) => {
                 const dist = nah ? 1.1 : Math.max(2.4, Math.max(size.x, size.z) * 1.6);
                 cam.position.set(
                     ctr.x + side.x * dist + fwd.x * dist * 0.6,
-                    ctr.y + size.y * (nah ? 0.25 : 0.55),
+                    ctr.y + size.y * (nah ? 0.45 : 0.55),
                     ctr.z + side.z * dist + fwd.z * dist * 0.6
                 );
+                // BODEN-KLEMME (GEMESSEN 24.07.: Armlaengen-Schuss ROT, Farben=5 —
+                // das Auge stand IM Hang): die Nah-Kamera nie unter die Oberflaeche.
+                if (nah && typeof r._terrainMacroSurfaceY === "function") {
+                    const gy = r._terrainMacroSurfaceY(cam.position.x, cam.position.z);
+                    if (isFinite(gy) && cam.position.y < gy + 0.35) cam.position.y = gy + 0.35;
+                }
                 cam.lookAt(ctr.x, ctr.y - size.y * (nah ? 0 : 0.15), ctr.z);
                 cam.updateMatrixWorld(true);
                 const w = 640,
