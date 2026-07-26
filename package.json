@@ -16,6 +16,8 @@
         "format:check": "prettier --check anazhRealm.js phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "check": "node --check anazhRealm.js && node --check phyto-core.js && node --check voxel-worker.js && node --check foundry-core.js && node --check vehicle-core.js && node --check porta-core.js && node --check schmiede-core.js && node --check fachwerk-core.js && node --check klang-core.js && node --check koerper-core.js && node --check tetrapoda-core.js && node --check feld-wgsl.js && node --check save-server.js && node --check signaling-server.js && node -e \"JSON.parse(require('fs').readFileSync('cores.manifest.json','utf8'))\" && node scripts/diag-atlas.cjs --check && node scripts/diag-source-probes.cjs && node scripts/diag-phyto-tree.cjs && node scripts/diag-phyto-core-parity.cjs && node scripts/diag-pipeline-constitution.cjs && node scripts/diag-studio-vertrag.cjs && node scripts/diag-altlasten.cjs && node scripts/diag-apparat.cjs && node scripts/diag-vendor-anker.cjs && node scripts/diag-betriebsgesetz.cjs",
         "atlas": "node scripts/diag-atlas.cjs",
+        "coupling": "node scripts/diag-coupling.cjs",
+        "churn": "node scripts/diag-churn.cjs",
         "playtest": "node scripts/playtest.cjs",
         "playtest:fast": "node scripts/playtest-fast.cjs",
         "gpu-lens": "node scripts/diag-idle-gpu-churn.cjs",
