@@ -2019,7 +2019,7 @@
         brakeDecel: 14,
         rollDecel: 1.0,
         handDecel: 9,
-        G: 9.8,
+        G: 9.8, // V18.491.150 G_VIS — leave 9.8
         CA_F: 5.0,
         CA_R: 5.6,
         maxGrip: 1.0,
@@ -2114,6 +2114,58 @@
             posEase: 0.0016,
         },
     };
+    // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
+    // compound "hub-yaw" = Host rad.front + rotation.y = base + _rideSteerYaw (.120).
+    // instance "entry-yaw" = Foundry HISM leaf matrices; ride uses _archInstanceUpdate only.
+    // Like ZONE_PICK .117: naming the Feel, not Fake-zu / not shared-flat mutation.
+    const STEER_VIS = {
+        compound: "hub-yaw",
+        instance: "entry-yaw",
+    };
+    // G_VIS — intentional FAHR.G approx (Feel-Entscheid .150). Do NOT "fix" to 9.81.
+    // fahr:"g-9.8" = FAHR.G 9.8 (Lab garage + exportDrive).
+    // schmiede/host GRAVITY_VIS .149 = ARENA.g +9.81 / state.gravity −9.81 — other domain.
+    // Like STEER_VIS .124 / GRAVITY_VIS .149: naming the Feel, not Fake-zu.
+    const G_VIS = {
+        fahr: "g-9.8",
+        note: "approx; not ARENA.g 9.81",
+    };
+    // GRIP_VIS — naming Feel + first non-1 recipe (Feel-Entscheid .151).
+    // preset:"supersport-0.85" = PRESETS.supersport.fx.grip 0.85 → export gripK 5.1.
+    // default:"grip-1.0" = DEFAULT_P.grip 1.0 → export gripK 6 (gt/others).
+    // host:"gripK-product" = lenkung.gripK × P.grip from .121.
+    // V18.491.152 Byte-Beweis: scripts/diag-grip-byte.cjs (product + Lab maxGrip·grip).
+    // Do NOT Fake-merge Lab Reibkreis with Host simplified path.
+    const GRIP_VIS = {
+        preset: "supersport-0.85",
+        default: "grip-1.0",
+        host: "gripK-product",
+    };
+
+    // ── LACK / PAINT SWATCHES (.230) — Lab Garage Lack-Swatches als DATEN.
+    // V18.491.230 Lab Garage Lack-Swatches; Host none (LACK_VIS).
+    // Do NOT Fake-merge Host paint / foundry materials. LY/PARAMS stay Lab UI-local.
+    const LACK_GESETZ = [
+        ["Clay", 0x8d9499, 1],
+        ["Signalrot", 0xc4181b, 0],
+        ["Racing-Grün", 0x1d4a30, 0],
+        ["Silber", 0xb6babf, 0],
+        ["Tiefschwarz", 0x111319, 0],
+        ["Azurblau", 0x1c5190, 0],
+        ["Solargelb", 0xe2b21e, 0],
+        ["Kupfer-Orange", 0xc8641a, 0],
+        ["Perlweiss", 0xe8eaee, 0],
+    ];
+
+    // LACK_VIS — intentional Lab paint swatches (Feel-Entscheid .230). Host none.
+    // lab:"swatches-9" = LACK_GESETZ 9 [name, hex, clayFlag] triples.
+    const LACK_VIS = { lab: "swatches-9", host: "none" };
+
+    // V18.491.265 Lab Garage caliper status colors; Host none (PRUEF_VIS).
+    // ≠ LACK_GESETZ — do not Fake-merge.
+    const PRUEF_GESETZ = { pass: 0x4ec98a, warn: 0xe8b54a, fail: 0xe0664a };
+    const PRUEF_VIS = { lab: "cal-3", host: "none" };
+
     // ── Rad-Bewegungshuellkurve: GEMESSEN aus der LIVE-Fahrphysik (gleiche Klammern/Federn wie updateVehicle), keine 1-g-Schaetzung ──
     //    vert  = Nicktauchen am Achs-x (aMax + Feder-Ueberschwingen ζ) + Squat(Heave)  → vertikaler Freigang Bogenscheitel↔Reifen
     //    inb   = inboard-Reichweite des (gelenkten) Reifens ab Radmitte · roll = Wank-Spitze  → Tiefe der inneren Radhausschale
@@ -2231,7 +2283,9 @@
             lenkung: {
                 sfK: FAHR.lenkung.sfK,
                 maxSteer: FAHR.maxSteer,
-                gripK: FAHR.lenkung.gripK,
+                // V18.491.121 — Vertrags-Akt: gripK × P.grip so recipe grip reaches Host simplified path.
+                // DEFAULT_P.grip = 1.0 → 6 (byte-alt). zweispur.grip already carries P.grip (full model).
+                gripK: FAHR.lenkung.gripK * (Number.isFinite(P.grip) && P.grip > 0 ? P.grip : 1),
                 driftGripMul: FAHR.lenkung.driftGripMul,
                 handDecel: FAHR.handDecel,
                 kehrV: FAHR.lenkung.kehrV,
@@ -2264,7 +2318,7 @@
                 CA_F: FAHR.CA_F,
                 CA_R: FAHR.CA_R,
                 maxGrip: FAHR.maxGrip,
-                G: FAHR.G,
+                G: FAHR.G, // V18.491.150 G_VIS.fahr=g-9.8 — leave 9.8; not ARENA.g
                 steerK: FAHR.zweispur.steerK,
                 steerZentrK: FAHR.zweispur.steerZentrK,
                 slipEps: FAHR.zweispur.slipEps,
@@ -2502,7 +2556,8 @@
                 haunch: 0.05,
                 hoodArc: 0.02,
             },
-            fx: { sig: "split" },
+            // V18.491.151 — first recipe grip≠1 so export gripK = 6*0.85 = 5.1; Lab garage already uses P.grip.
+            fx: { sig: "split", grip: 0.85 },
         },
         limousine: {
             kind: "vehicle",
@@ -2680,6 +2735,13 @@
         wheelClearance: wheelClearance,
         carPhys: carPhys,
         FAHR: FAHR,
+        STEER_VIS: STEER_VIS,
+        G_VIS: G_VIS,
+        GRIP_VIS: GRIP_VIS,
+        LACK_GESETZ: LACK_GESETZ,
+        LACK_VIS: LACK_VIS,
+        PRUEF_GESETZ: PRUEF_GESETZ,
+        PRUEF_VIS: PRUEF_VIS,
         exportDrive: exportDrive,
         A_PITCH_MAX: A_PITCH_MAX,
         A_LAT_MAX: A_LAT_MAX,

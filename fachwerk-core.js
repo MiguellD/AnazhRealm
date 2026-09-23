@@ -2622,10 +2622,33 @@
             hofGap: 2.5,
             meshes: [],
         };
+        // KAMIN-RAUCH (.105): AABB reist auf B, bevor mass.g stirbt (H.chimney
+        // sonst weg mit dem Dispose — exportSettlement + Host brauchen die Spitze).
+        if (mass.H && mass.H.chimney) {
+            var c = mass.H.chimney;
+            B.chimney = {
+                min: [c.min[0], c.min[1], c.min[2]],
+                max: [c.max[0], c.max[1], c.max[2]],
+            };
+        }
         mass.g.traverse(function (o) {
             if (o.geometry) o.geometry.dispose();
         });
         return B;
+    }
+
+    // KAMIN-RAUCH (.108): Solo-Haus-Spitze aus massBau-AABB (exportSettlement-Formel).
+    // null wenn kein chimney (ROUND/modern/kuppel) — Host fail-closed.
+    function chimneyTipFromParams(p) {
+        var B = massBau(p || {});
+        if (!B.chimney) return null;
+        var c = B.chimney;
+        if (!c.min || !c.max) return null;
+        return {
+            x: (c.min[0] + c.max[0]) / 2,
+            y: c.max[1] + 0.2,
+            z: (c.min[2] + c.max[2]) / 2,
+        };
     }
 
     // ── DIE EINE STUFEN-QUELLE des Vertrags — buildStufe(p, stufe) → geoms
@@ -2947,6 +2970,16 @@
                         tz.hinten = { x: dm.tuer.hinten.x, z: dm.tuer.hinten.z, w: dm.tuer.hinten.w };
                     return tz;
                 })(Bs[i].dims),
+                // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) —
+                // null wenn massBau kein chimney (ROUND/modern/kuppel).
+                chimney: (function (ch) {
+                    if (!ch || !ch.min || !ch.max) return null;
+                    return {
+                        x: (ch.min[0] + ch.max[0]) / 2,
+                        y: ch.max[1] + 0.2,
+                        z: (ch.min[2] + ch.max[2]) / 2,
+                    };
+                })(Bs[i].chimney),
             });
         }
         return {
@@ -2979,6 +3012,105 @@
         };
     }
 
+    // ── KAMIN-RAUCH (.105/.106) — Partikel-Feel als DATEN: Host + Lab lesen
+    //    denselben Block (worlds/fachwerk frame fail-soft; residual = rich VFX).
+    var RAUCH_GESETZ = {
+        maxTeilchen: 26,
+        spawnChance: 0.3,
+        vyBase: 0.014,
+        vyRange: 0.012,
+        dxSpread: 0.006,
+        fade: 0.0035,
+        a0: 0.55,
+        aKill: 0.03,
+        size: 0.34,
+        color: 0xb9bec6,
+        scaleMul: 1.006,
+    };
+
+    // RAUCH_VIS — intentional box-feel (Feel-Entscheid .125). Do NOT Fake-full-VFX.
+    // lab+host "box-lambert" = RAUCH_GESETZ BoxGeometry + MeshLambert. Sprites/noise/wind = Redesign.
+    // Like STEER_VIS .124 / ZONE_PICK .117: naming the Feel, not Fake-zu.
+    var RAUCH_VIS = {
+        lab: "box-lambert",
+        host: "box-lambert",
+    };
+
+
+    // ── BEGEHUNG (.166) — Lab Ego-Begehung (Fachwerk walk) als DATEN.
+    //    G=20 is Lab arcade walk gravity — NOT ARENA.g 9.81 / FAHR.G 9.8 / Host state.gravity
+    //    (named dual — do not Fake-align).
+    // V18.491.166
+    var BEGEH_GESETZ = {
+        radius: 0.3,
+        playerH: 1.7,
+        eyeY: 1.62,
+        step: 0.46,
+        g: 20,
+        jumpVy: 6.0,
+    };
+
+    // BEGEH_VIS — intentional Lab walk g dual (Feel-Entscheid .171). Do NOT Fake-align.
+    // lab:"g-20" = BEGEH_GESETZ.g arcade Ego-Begehung. Not ARENA.g 9.81 / FAHR.G 9.8 / Host state.gravity.
+    // Like FLUG_VIS .169 / G_VIS .150: naming the Feel, not Fake-zu.
+    var BEGEH_VIS = { lab: "g-20", host: "world-g-dual" };
+
+    // ── TAGESZEITEN (.228) — Lab Fachwerk dayparts als DATEN.
+    // V18.491.228 Lab Fachwerk Tageszeiten; Host none (ZEIT_VIS).
+    // Do NOT Fake-merge Host sky/fog / foundry HIMMEL_GESETZ.
+    var ZEIT_GESETZ = {
+        mittag: { p: [24, 34, 16], c: 0xfff1dc, i: 2.1, h: 0.62, a: 0.22, bg: 0x9fb2c4 },
+        morgen: { p: [34, 14, 20], c: 0xffd9a8, i: 1.7, h: 0.55, a: 0.26, bg: 0xc8baa0 },
+        abend:  { p: [-32, 12, -14], c: 0xff9a55, i: 1.45, h: 0.48, a: 0.22, bg: 0xb0876a },
+        nacht:  { p: [-16, 22, -10], c: 0x9fb6e0, i: 0.32, h: 0.16, a: 0.12, bg: 0x161d2c },
+    };
+
+    // ZEIT_VIS — intentional Lab dayparts (Feel-Entscheid .228). Host none.
+    // lab:"dayparts-4" = ZEIT_GESETZ mittag/morgen/abend/nacht. fire + glas glut stay Lab-local.
+    var ZEIT_VIS = { lab: "dayparts-4", host: "none" };
+
+    // ── EXPLODE-Y (.229) — Lab Fachwerk subsystem explode Y offsets als DATEN.
+    // V18.491.229 Lab Fachwerk explode-Y offsets; Host none (EXPL_VIS).
+    // Do NOT Fake-merge Host; ORDER/LABEL stay Lab UI-local.
+    var EXPL_GESETZ = {
+        fundament: -1.2,
+        geruest: 0,
+        riegel: 0.15,
+        streben: 0.3,
+        zimmermann: 0.3,
+        gefache: 0.55,
+        giebel: 1.6,
+        dachwerk: 3.0,
+        dachdeckung: 4.4,
+        boeden: 0.9,
+        innenwaende: 0.5,
+        herd: 0.25,
+        treppe: 0.35,
+        tueren: 0.15,
+        fenster: 0.35,
+        moebel: 0.7,
+        anbau: 0.0,
+        balkon: 0.6,
+        kuppel: 4.4,
+        portikus: 0.2,
+        hof: 0.1,
+        dachAlt: 4.4,
+        arkade: 0.3,
+        turm: 0.0,
+        zinnen: 5.0,
+        veranda: 0.4,
+        vorkragung: 0.7,
+        pilotis: -1.5,
+        terrasse: 5.5,
+        rundbau: 0.0,
+    };
+
+    // EXPL_VIS — intentional Lab explode-Y table (Feel-Entscheid .229). Host none.
+    // lab:"explode-y-30" = EXPL_GESETZ 30 subsystem Y offsets.
+    var EXPL_VIS = { lab: "explode-y-30", host: "none" };
+
+
+
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
     root.__fachwerkCore = {
         VERSION: VERSION,
@@ -2989,6 +3121,14 @@
         buildInstance: buildInstance,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
+        RAUCH_GESETZ: RAUCH_GESETZ,
+        RAUCH_VIS: RAUCH_VIS,
+        BEGEH_GESETZ: BEGEH_GESETZ,
+        BEGEH_VIS: BEGEH_VIS,
+        ZEIT_GESETZ: ZEIT_GESETZ,
+        ZEIT_VIS: ZEIT_VIS,
+        EXPL_GESETZ: EXPL_GESETZ,
+        EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
         brandwand: brandwand,
@@ -3011,6 +3151,7 @@
         LAB_SEED: LAB_SEED,
         hausParams: hausParams,
         massBau: massBau,
+        chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,
         // Die Haus-Fabrik + Kultur-Quellen (die Shell liest DIESE eine Quelle)

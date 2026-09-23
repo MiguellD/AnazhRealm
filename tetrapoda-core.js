@@ -95,6 +95,53 @@
             // KEINE Stimmungs-Zeile (kein aktionen/alle) — die Leser der
             // Stimmungs-Tabelle ueberspringen den Schluessel (must-ignore).
             schwellen: { chaos: 0.5, joy: 0.5, nachtSin: -0.15, weideDiet: 0.5 },
+            // Lab liest stimmung.lab (emo.name Buttons); Host liest joy/jagd/…
+            // (must-ignore: Host-Leser ohne aktionen[] ueberspringen lab).
+            lab: {
+                joy: { aktionen: ["playbow", "bound", "spin", "prance", "hop"], alle: [2, 4] },
+                hunt: { aktionen: ["pounce", "freeze", "stalk", "hop", "circle"], alle: [1.2, 2.7] },
+                flee: { lookbackRate: 0.12, zigzagRate: 0.06, circleRate: 0.04 },
+                alert: { aktionen: ["scan", "snap", "earflick"], alle: [3, 7] },
+                idle: { aktionen: ["relax", "shake", "lookaround", "sniff", "yawn"], alle: [5, 13] },
+                showcase: { aktionen: ["showcase"], alle: [1e9, 1e9] },
+            },
+        },
+        // Lab-Kurven (additive): Studio getBeh-Zahlen — single-phase .101 + residual multi .107
+        // .107: hop/pounce (nested phases), shake, snap (Lab keeps Math.random sign), showcase.
+        // Residual: BEH_PICK Feel .119 (Host aktionen.profil / Lab labKurven — no Fake-Merge). must-ignore fuer Host-Leser.
+        labKurven: {
+            playbow: { dauer: 1.2, bodyX: 0.22, headX: -0.20, tailBoostAdd: 4, jawBoost: 0.03, spineBoost: 0.6 },
+            bound: { dauer: 0.4, legOv: -0.30, impulseY: 0.06, bodyX: -0.05, spineBoost: 0.4, jawBoost: 0.03 },
+            spin: { dauer: 1.5, bodyRotY: 0.9, legOv: 0.12, tailBoostAdd: 0.6, headY: 0.35, spineBoost: 0.5 },
+            prance: { dauer: 2.5, headX: 0.10, bodyZ: 0.03, tailBoostAdd: 3, spineBoost: 0.4, jawBoost: 0.03, legOv: 0.08 },
+            circle: { dauer: 2.5, bodyRotY: 0.7, bodyZ: 0.03, headY: 0.2, spineBoost: 0.25, tailDir: 0.05 },
+            freeze: { dauer: 1.8, freqOv: 0.001, muscleBoost: 0.4, headX: -0.06 },
+            stalk: { dauer: 3, bodyX: 0.12, headX: -0.10, headXWobble: 0.03, headY: 0.12, muscleBoost: 0.25 },
+            lookback: { dauer: 0.6, headY: 0.55, headX: 0.04, bodyRotY: 0.18 },
+            zigzag: { dauer: 1.2, bodyRotY: 0.30, bodyZ: 0.025, spineBoost: 0.35 },
+            scan: { dauer: 4, headY: 0.40, headX: -0.04, headXAmp: 0.04 },
+            earflick: { dauer: 0.5, earBoost: 0.15 },
+            relax: { dauer: 5, headX: 0.005, headY: 0.02 },
+            lookaround: { dauer: 4, headY: 0.30, headXAmp: 0.03, headXBias: -0.01 },
+            sniff: { dauer: 2, headX: 0.15, headXWobble: 0.03, jawBoost: 0.015 },
+            yawn: { dauer: 2.5, jawBoost: 0.14, headX: -0.04 },
+            hop: {
+                dauer: 0.6,
+                crouch: { t: 0.10, legOv: -0.40, bodyX: 0.15, muscleBoost: 0.3 },
+                launch: { t: 0.14, legOv: 0.65, impulseY: 0.18, impulseX: 0.10, bodyX: -0.08, spineBoost: -0.3 },
+                air: { t: 0.40, pounceY: 0.06, legOv: 0.15, spineBoost0: -0.1, spineBoostSin: 0.2 },
+                land: { legOv: -0.20, bodyX: 0.06 },
+            },
+            pounce: {
+                dauer: 1.0,
+                crouch: { t: 0.28, legOv: -0.75, bodyX: 0.28, headX: -0.18, freqOv: 0, muscleBoost: 0.6, spineBoost: -0.3 },
+                launch: { t: 0.32, legOv: 1.0, impulseY: 0.35, impulseX: 0.22, bodyX: -0.14, headX: 0.05, muscleBoost: 0.8, spineBoost: 0.5 },
+                air: { t: 0.75, pounceY: 0.15, legOv: 0.12, bodyX: -0.05, headX: -0.05, spineBoost0: -0.2, spineBoostSin: 0.4 },
+                land: { t: 1.0, legOv: -0.30, bodyX: 0.12, headX: -0.08, spineBoost: -0.15 },
+            },
+            shake: { dauer: 1.2, rate: 28, bodyRotZ: 0.08, headZ: 0.05, spineBoost: 0.6, earBoost: -0.06 },
+            snap: { dauer: 1.5, burst: 0.1, headY: 0.45, earBoost: 0.12 },
+            showcase: { rate: 0.12, headY: 0.45, headX: 0.06, headXBias: -0.02, headZ: 0.025, tailBoost: 1.4 },
         },
         // KREATUR-SEELE (Spiegel-Zensus 17.07., rein additive DATEN-Zeilen):
         // die VERHALTENS-ZAHLEN der Welt-Wesen wohnen im Evolutions-Gesetzbuch —
@@ -2257,6 +2304,16 @@
         };
     }
 
+
+    // BEH_PICK — intentional dual behaviour source (Feel-Entscheid .119). Do NOT merge.
+    // lab "labKurven" = Studio emo.getBeh curve envelopes (legOv/impulseY/spineBoost…).
+    // host "aktionen.profil" = Host mood tick merges V.aktionen[name].profil onto MOTION.
+    // Like ZONE_PICK .117 / FOREST_TOPOLOGY .116 / NINJA_FEEL .97: naming the Feel, not Fake-zu.
+    var BEH_PICK = {
+        lab: "labKurven",
+        host: "aktionen.profil",
+    };
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__tetrapodaCore = {
         VERSION: VERSION,
@@ -2279,6 +2336,7 @@
         CPG_COUPLING: CPG_COUPLING,
         STAND_POSE: STAND_POSE,
         VERHALTEN: VERHALTEN,
+        BEH_PICK: BEH_PICK,
         fellStreu: fellStreu,
     };
 })(typeof self !== "undefined" ? self : globalThis);

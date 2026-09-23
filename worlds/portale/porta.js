@@ -128,6 +128,7 @@ function buildMembrane(){
 // pk (Slider-id → Bau-Schlüssel) lebt im Kern — oben als PC.pk aliast (eine Quelle).
 function readParams(){var p={M:1.4};SLIDERS.forEach(function(s){if(s[1]==='h')return;p[pk(s[0])]=parseFloat(document.getElementById('s_'+s[0]).value);});return p;}
 function setParams(v){SLIDERS.forEach(function(s){if(s[1]==='h')return;var el=document.getElementById('s_'+s[0]);if(v[s[0]]!==undefined){el.value=v[s[0]];document.getElementById('v_'+s[0]).textContent=(+v[s[0]]).toFixed(2);}});}
+// V18.491.132 MESSEN_VIS.lab=law-ui
 function updateLaw(){var el=document.getElementById('law');if(!el)return;el.textContent='Strategien: Mauer '+D.p.wMason.toFixed(2)+' Geflecht '+D.p.wBraid.toFixed(2)+' Mono '+D.p.wMono.toFixed(2)+' Lace '+D.p.wLace.toFixed(2)+'\nOrdnungen='+Math.round(D.p.orders)+' (gestaffelt, zurückweichend)\nStich='+D.rise.toFixed(2)+'→Schub='+D.thrustNorm.toFixed(2)+'→Dicke='+D.jambW.toFixed(2);}
 
 function init(){
@@ -138,7 +139,8 @@ function init(){
   scene.add(new THREE.HemisphereLight(0xffffff,0x444444,0.6));
   var key=new THREE.DirectionalLight(0xffe0b0,3.0);key.position.set(5,8,5);key.castShadow=true;key.shadow.mapSize.width=2048;key.shadow.mapSize.height=2048;key.shadow.bias=-0.0001;key.shadow.camera.left=-9;key.shadow.camera.right=9;key.shadow.camera.top=13;key.shadow.camera.bottom=-4;key.shadow.camera.near=0.5;key.shadow.camera.far=46;scene.add(key);
   var rl=new THREE.DirectionalLight(0x33aaff,2.0);rl.position.set(-5,4,-5);scene.add(rl);
-  portalLight=new THREE.PointLight(0xffd9a0,0.3,14,2);portalLight.position.set(0,3,0.4);scene.add(portalLight);
+  /* V18.491.126 — GLUT_GESETZ: Lab+Host portal PointLight (fail-soft Literale). */
+  var _G=(PC&&PC.GLUT_GESETZ)?PC.GLUT_GESETZ:{};portalLight=new THREE.PointLight(_G.color!=null?_G.color:0xffd9a0,_G.i0!=null?_G.i0:0.3,_G.dist!=null?_G.dist:14,_G.decay!=null?_G.decay:2);portalLight.position.set(0,3,0.4);scene.add(portalLight);
   composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.24,0.5,1.05));
   var _pr=renderer.getPixelRatio()*0.42,_dw=Math.max(2,Math.floor(innerWidth*_pr)),_dh=Math.max(2,Math.floor(innerHeight*_pr));depthRT=new THREE.WebGLRenderTarget(_dw,_dh);depthRT.depthTexture=new THREE.DepthTexture(_dw,_dh);depthRT.depthTexture.type=THREE.UnsignedShortType;
   fxaa=new THREE.ShaderPass(THREE.FXAAShader);fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);composer.addPass(fxaa);
@@ -159,6 +161,7 @@ function buildFog(){
   var coneAdd=(D.orders-1)*D.jambW/rimAx;
   var hx=rimAx*(1.0+coneAdd)*1.08, hz=D.zFace*1.04;
   var mxY=cy+rimAy*(1.0+coneAdd)*1.08, mnY=D.baseY-0.12;                                                        // unten am Boden gekappt → Aura geht nicht durch den Boden
+  // V18.491.128 NEBEL_VIS.lab=glsl-box
   fogMat=new THREE.ShaderMaterial({uniforms:{uTime:{value:0},uAct:{value:0},uPulse:{value:1},uCam:{value:new THREE.Vector3()},
       uBoxMin:{value:new THREE.Vector3(-hx,mnY,-hz)},uBoxMax:{value:new THREE.Vector3(hx,mxY,hz)},
       uCenter:{value:new THREE.Vector3(0,cy,0)},uRimAx:{value:rimAx},uRimAy:{value:rimAy},uSwirl:{value:D.p.swirl*0.5},uZFace:{value:D.zFace},uConeAdd:{value:coneAdd},uFloorY:{value:D.baseY},
@@ -232,9 +235,11 @@ function animate(){requestAnimationFrame(animate);var t=clock.getElapsedTime();
   if(memMat.uniforms.uPulse)memMat.uniforms.uPulse.value=0.5+0.5*Math.sin(t*MG.puls);
   if(memMat.uniforms.uWaveDepth&&D)memMat.uniforms.uWaveDepth.value=D.zFace*(MG.aktivDepth[0]+MG.aktivDepth[1]*openM);}   // zu: kaum; offen: bis zur Eingangsebene (Gesetz aktivDepth)
  var pulse=0.5+0.5*Math.sin(t*MG.puls);                                // gemeinsamer Atem — vereint Portal + Nebel (Gesetz puls)
- if(fogMat&&D){fogMat.uniforms.uTime.value=t;fogMat.uniforms.uCam.value.copy(camera.position);fogMat.uniforms.uPulse.value=pulse;fogMat.uniforms.uAct.value=(D.p.fog!==undefined?D.p.fog:0.85)*(0.7+0.35*openM);
+ // V18.491.158 NEBEL_GESETZ cold fallback fail-soft (fogDefault/actBase/actOpen; live nebelAct first)
+ if(fogMat&&D){var _Ng=(PC&&PC.NEBEL_GESETZ)?PC.NEBEL_GESETZ:{};var na=(PC&&typeof PC.nebelAct==="function")?PC.nebelAct(D.p.fog,openM):(D.p.fog!==undefined?D.p.fog:(_Ng.fogDefault||0.85))*((_Ng.actBase||0.7)+(_Ng.actOpen||0.35)*openM);fogMat.uniforms.uTime.value=t;fogMat.uniforms.uCam.value.copy(camera.position);fogMat.uniforms.uPulse.value=pulse;fogMat.uniforms.uAct.value=na;
    if(memMat){fogMat.uniforms.uPA.value.copy(memMat.uniforms.uPA.value);fogMat.uniforms.uPB.value.copy(memMat.uniforms.uPB.value);fogMat.uniforms.uPC.value.copy(memMat.uniforms.uPC.value);fogMat.uniforms.uPD.value.copy(memMat.uniforms.uPD.value);}}
- if(portalLight&&D){portalLight.position.set(0,D.springY*0.55,0.0);portalLight.intensity=(0.3+openM*3.4)*(0.8+0.28*pulse);}
+ // V18.491.159 GLUT_GESETZ cold fallback fail-soft (i0/iOpen/pulseBase/pulseAmp; live glutIntensity first)
+ if(portalLight&&D){var _Gy=(PC&&PC.GLUT_GESETZ)?PC.GLUT_GESETZ:{};portalLight.position.set(0,D.springY*(_Gy.ySpring||0.55),0.0);portalLight.intensity=(PC&&typeof PC.glutIntensity==='function')?PC.glutIntensity(openM,pulse):((_Gy.i0||0.3)+openM*(_Gy.iOpen||3.4))*((_Gy.pulseBase||0.8)+(_Gy.pulseAmp||0.28)*pulse);}
  cinePass.uniforms.time.value=t;if(rimMat){var pr=0.85+0.15*Math.sin(t*1.6);rimMat.color.setHSL(0.11,0.6,0.55);rimMat.color.multiplyScalar((0.7+2.6*Math.max(D.p.glow,0.25))*pr*(1.0+openM*0.9));}
  fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();
  if(fogMat&&D&&depthRT){var pr=renderer.getPixelRatio()*0.42,dw=Math.max(2,Math.floor(innerWidth*pr)),dh=Math.max(2,Math.floor(innerHeight*pr));if(depthRT.width!==dw||depthRT.height!==dh)depthRT.setSize(dw,dh);fogGroup.visible=false;camera.updateMatrixWorld();renderer.setRenderTarget(depthRT);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);fogGroup.visible=true;fogMat.uniforms.uViewMatrix.value.copy(camera.matrixWorldInverse);fogMat.uniforms.uNear.value=camera.near;fogMat.uniforms.uFar.value=camera.far;fogMat.uniforms.uResolution.value.set(dw,dh);}

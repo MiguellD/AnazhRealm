@@ -718,6 +718,10 @@
             chinY: chinY,
             jawY: jawY,
             hairlineY: hairlineY,
+            // V18.491.163 — Lab IK stand offsets (byte-alt)
+            footBelowAnkle: 0.30,
+            standYWalkMul: 0.997,
+            standYRunMul: 0.83,
         };
     }
 
@@ -971,7 +975,7 @@
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,browY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,browY,0.36);headGroup.add(browRidge);
         [-1,1].forEach(sd=>{const sock=s(0.145,matSocket,[1.0,0.88,0.50]);sock.position.set(sd*eyeDist/2,eyeY,0.3);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04,matPupil);pupil.position.z=0.11;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.position.set(sd*eyeDist/2,eyeY,0.32);headGroup.add(e);if(sd<0){eyeL=e;irisL=iris;lidTL=lidT;lidBL=lidB;}else{eyeR=e;irisR=iris;lidTR=lidT;lidBR=lidB;}});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04,matPupil);pupil.position.z=0.11;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.position.set(sd*eyeDist/2,eyeY,0.32);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75,0.65,0.5]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const maxilla=s(0.15,matSkin,[0.75,0.88,0.85]);maxilla.position.set(0,(lipY+noseY)/2,0.325);headGroup.add(maxilla);
@@ -1020,6 +1024,32 @@
         return M;
     }
 
+    // AUGEN_VIS — intentional dual iris (Feel-Entscheid .131). Do NOT merge.
+    // lab:"gaze-iris" = koerperstudio gaze `_gz` + irisSpeed noise + blinkRate lids.
+    // host:"noise-iris" = `_animateHumanoidAugen` irisSpeed sin-noise + blinkRate lids (no gaze).
+    // Like TILT_VIS .129 / NEBEL_VIS .128 / STEER_VIS .124: naming the Feel, not Fake-zu.
+    // Gaze look-at on Host = Redesign later. MOTION irisSpeed/blinkRate stay the numbers.
+    var AUGEN_VIS = {
+        lab: "gaze-iris",
+        host: "noise-iris",
+    };
+
+    // KPMUL_VIS — intentional dual (Feel-Entscheid .141/.142). Do NOT merge.
+    // lab:"pd-gain" = koerperstudio phys.kp/kd *= kpMul.
+    // host:"map-alpha" = humanoid MOTION_RIG_MAP one-pole when kpMul<1 (.142); kpMul>=1 instant.
+    // Tetrapoda Host already reads kpMul (.81) — other species, sibling α, not this Feel merge.
+    // Still no MOTION_RIG_MAP kpMul row. Like AUGEN_VIS .131.
+    var KPMUL_VIS = {
+        lab: "pd-gain",
+        host: "map-alpha",
+    };
+
+    // NINJA_FEEL — Lab Arcade Ninja-Park Didaktik (V18.491.179). Host parkour stays realitätsgeeicht.
+    var NINJA_FEEL = { sprungVy:15.5, wandVy:14.5, wandKick:11, doppelVy:13.8, kletterVy:8.5, sprintSpd:18, walkSpd:10.5, crouchSpd:4.6, ctrlWalk:6.0 };
+    // NINJA_VIS — intentional dual (Feel-Entscheid .179). Do NOT Fake-merge arcade into Host.
+    // lab:"arcade-ninja" = NINJA_FEEL. host:"parkour-real" = fx.bewegung.parkour / _parkourGesetz.
+    var NINJA_VIS = { lab: "arcade-ninja", host: "parkour-real" };
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {
         VERSION: VERSION,
@@ -1051,5 +1081,11 @@
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,
+        AUGEN_VIS: AUGEN_VIS,
+        KPMUL_VIS: KPMUL_VIS,
+        NINJA_FEEL: NINJA_FEEL,
+        NINJA_VIS: NINJA_VIS,
+        // V18.491.96 — Lab-Parkour liest sprung.coyoteSec/bufferSec (Host: _bewegungsBlock)
+        bewegung: PRESETS.mensch.fx.bewegung,
     };
 })(typeof self !== "undefined" ? self : globalThis);

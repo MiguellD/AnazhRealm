@@ -566,10 +566,17 @@ sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.f
 sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26; sun.shadow.bias=-0.0004;
 scene.add(sun); const hemi=new THREE.HemisphereLight(0xbcd2f0,0x4d4636,0.62); const amb=new THREE.AmbientLight(0xffffff,0.22); scene.add(hemi); scene.add(amb);
 // ════ Tageszeiten ════
-const ZEIT={ mittag:{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0.22,bg:0x9fb2c4},
-  morgen:{p:[34,14,20],c:0xffd9a8,i:1.7,h:0.55,a:0.26,bg:0xc8baa0},
-  abend:{p:[-32,12,-14],c:0xff9a55,i:1.45,h:0.48,a:0.22,bg:0xb0876a},
-  nacht:{p:[-16,22,-10],c:0x9fb6e0,i:0.32,h:0.16,a:0.12,bg:0x161d2c} };
+// V18.491.228 — Lab Tageszeiten ← ZEIT_GESETZ fail-soft; Host none (ZEIT_VIS).
+// fire.intensity + glas glut stay LOCAL (not part of ZEIT table).
+const _ZG=(FC&&FC.ZEIT_GESETZ)||(window.__fachwerkCore&&window.__fachwerkCore.ZEIT_GESETZ)||null;
+function _zeitPart(k,fb){ const s=_ZG&&_ZG[k]; if(!s) return {p:fb.p.slice(),c:fb.c,i:fb.i,h:fb.h,a:fb.a,bg:fb.bg};
+  return { p:(Array.isArray(s.p)&&s.p.length===3)?[s.p[0],s.p[1],s.p[2]]:fb.p.slice(),
+    c:(s.c!=null)?s.c:fb.c, i:Number.isFinite(s.i)?s.i:fb.i, h:Number.isFinite(s.h)?s.h:fb.h,
+    a:Number.isFinite(s.a)?s.a:fb.a, bg:(s.bg!=null)?s.bg:fb.bg }; }
+const ZEIT={ mittag:_zeitPart('mittag',{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0.22,bg:0x9fb2c4}),
+  morgen:_zeitPart('morgen',{p:[34,14,20],c:0xffd9a8,i:1.7,h:0.55,a:0.26,bg:0xc8baa0}),
+  abend:_zeitPart('abend',{p:[-32,12,-14],c:0xff9a55,i:1.45,h:0.48,a:0.22,bg:0xb0876a}),
+  nacht:_zeitPart('nacht',{p:[-16,22,-10],c:0x9fb6e0,i:0.32,h:0.16,a:0.12,bg:0x161d2c}) };
 function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); fire.intensity=(t==='nacht'?3.0:t==='abend'?2.2:1.6);
   const glut=(t==='nacht')?0.85:(t==='abend')?0.42:0;                                        // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake
   for(const gm of [M.glas, M.glasfern, (typeof _MM!=='undefined')&&_MM.glas, (typeof _MM!=='undefined')&&_MM.glasfern]){ if(!gm) continue;
@@ -581,7 +588,10 @@ const fire=new THREE.PointLight(0xff7a35,1.6,9,2); scene.add(fire);
 // ════════════════ Subsystem-UI (einmal angelegt) ════════════════
 const ORDER=['fundament','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];
 const LABEL={fundament:'Fundament · Sockel · Schwelle',geruest:'Gerüst (Ständer · Rähm · Balken)',riegel:'Riegel (Felderteilung)',streben:'Streben (Figuren)',zimmermann:'Holzverbindungen (Zapfen · Nägel)',gefache:'Ausfachung (Backstein)',giebel:'Giebel',dachwerk:'Dachwerk (Sparren · Pfetten)',dachdeckung:'Eindeckung (Lattung · Ziegel)',boeden:'Böden (Dielung)',innenwaende:'Innenwände (Räume)',herd:'Herd · Kamin',treppe:'Treppe',tueren:'Haustür',fenster:'Fenster (öffenbar)',moebel:'Möbel',anbau:'Anbau · Garage',balkon:'Balkon (Laube)'};
-const EXPL={fundament:-1.2,geruest:0,riegel:0.15,streben:0.3,zimmermann:0.3,gefache:0.55,giebel:1.6,dachwerk:3.0,dachdeckung:4.4,boeden:0.9,innenwaende:0.5,herd:0.25,treppe:0.35,tueren:0.15,fenster:0.35,moebel:0.7,anbau:0.0,balkon:0.6,kuppel:4.4,portikus:0.2,hof:0.1,dachAlt:4.4,arkade:0.3,turm:0.0,zinnen:5.0,veranda:0.4,vorkragung:0.7,pilotis:-1.5,terrasse:5.5,rundbau:0.0};
+// V18.491.229 — Lab explode-Y ← EXPL_GESETZ fail-soft; Host none (EXPL_VIS).
+const _EG=(FC&&FC.EXPL_GESETZ)||(window.__fachwerkCore&&window.__fachwerkCore.EXPL_GESETZ)||null;
+const EXPL_FALLBACK={fundament:-1.2,geruest:0,riegel:0.15,streben:0.3,zimmermann:0.3,gefache:0.55,giebel:1.6,dachwerk:3.0,dachdeckung:4.4,boeden:0.9,innenwaende:0.5,herd:0.25,treppe:0.35,tueren:0.15,fenster:0.35,moebel:0.7,anbau:0.0,balkon:0.6,kuppel:4.4,portikus:0.2,hof:0.1,dachAlt:4.4,arkade:0.3,turm:0.0,zinnen:5.0,veranda:0.4,vorkragung:0.7,pilotis:-1.5,terrasse:5.5,rundbau:0.0};
+const EXPL=(function(){ const o={}; for(const k of Object.keys(EXPL_FALLBACK)){ const v=_EG&&_EG[k]; o[k]=Number.isFinite(v)?v:EXPL_FALLBACK[k]; } return o; })();
 const subsDiv=document.getElementById('subs'); const checks={};
 ORDER.forEach(k=>{const r=document.createElement('div');r.className='row';
   const cb=document.createElement('input');cb.type='checkbox';cb.checked=true;cb.id='cb_'+k;
@@ -788,7 +798,15 @@ cv.addEventListener('wheel',e=>{if(mode!=='orbit')return;e.preventDefault();orb.
 // ── Begehung (Ego) ──
 const player={pos:new THREE.Vector3(0,0,0),vy:0,onGround:false,groundY:0};
 let yaw=Math.PI, pitch=0; const keys={};
-const R=0.3, PH=1.7, EYE=1.62, STEP=0.46, G=20;
+// V18.491.166 — Lab Ego-Begehung ← BEGEH_GESETZ fail-soft (G=20 Lab arcade named dual vs ARENA.g/FAHR.G)
+// V18.491.171 — BEGEH_VIS.lab=g-20 — math untouched.
+const _BG=(window.__fachwerkCore&&window.__fachwerkCore.BEGEH_GESETZ)||null;
+const R=(_BG&&Number.isFinite(_BG.radius))?_BG.radius:0.3;
+const PH=(_BG&&Number.isFinite(_BG.playerH))?_BG.playerH:1.7;
+const EYE=(_BG&&Number.isFinite(_BG.eyeY))?_BG.eyeY:1.62;
+const STEP=(_BG&&Number.isFinite(_BG.step))?_BG.step:0.46;
+const G=(_BG&&Number.isFinite(_BG.g))?_BG.g:20;
+const JUMP_VY=(_BG&&Number.isFinite(_BG.jumpVy))?_BG.jumpVy:6.0;
 const raycaster=new THREE.Raycaster();
 function toggleDoor(d){ d.open=!d.open;
   if(!d.open && d.block){ d.blockObj={min:[d.block[0],d.block[1],d.block[2]],max:[d.block[3],d.block[4],d.block[5]], th:d.th, tx:d.tx, tz:d.tz}; solids.push(d.blockObj); }
@@ -845,7 +863,7 @@ function walkUpdate(dt){
   if(f||s){const sy=Math.sin(yaw),cy=Math.cos(yaw);
     let dx=(-sy*f + cy*s), dz=(-cy*f - sy*s); const l=Math.hypot(dx,dz)||1;
     moveAxis('x',dx/l*sp); moveAxis('z',dz/l*sp);}
-  if(keys['Space']&&player.onGround){player.vy=6.0;player.onGround=false;}
+  if(keys['Space']&&player.onGround){player.vy=JUMP_VY;player.onGround=false;}
   gravity(dt);
   const cp=Math.cos(pitch);
   camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);
@@ -866,13 +884,27 @@ function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   for(let k=dorfSterben.length-1;k>=0;k--){ const S3=dorfSterben[k];
     if(nw>=S3.t){ S3.meshes.forEach(m=>{ m.geometry.dispose(); dorfGroup.remove(m); }); dorfSterben.splice(k,1); } } }
 if(dorf&&dorfB){ lodTick(performance.now());
-  if(dorfRauch.quellen.length){ if(dorfRauch.teilchen.length<26&&Math.random()<0.3){
+  // RAUCH_VIS.lab = "box-lambert" — Feel .125; Box+Lambert via RAUCH_GESETZ (sprites = Redesign).
+  if(dorfRauch.quellen.length){
+    const RG=(window.__fachwerkCore&&window.__fachwerkCore.RAUCH_GESETZ)||null;
+    const maxT=(RG&&RG.maxTeilchen)||26;
+    const spawnP=(RG&&RG.spawnChance)||0.3;
+    const vyBase=(RG&&RG.vyBase)||0.014;
+    const vyRange=(RG&&RG.vyRange)||0.012;
+    const dxSpread=(RG&&RG.dxSpread)||0.006;
+    const fade=(RG&&RG.fade)||0.0035;
+    const a0=(RG&&RG.a0)||0.55;
+    const aKill=(RG&&RG.aKill)||0.03;
+    const size=(RG&&RG.size)||0.34;
+    const color=(RG&&RG.color)||0xb9bec6;
+    const scaleMul=(RG&&RG.scaleMul)||1.006;
+    if(dorfRauch.teilchen.length<maxT&&Math.random()<spawnP){
       const qq=dorfRauch.quellen[(Math.random()*dorfRauch.quellen.length)|0];
-      const pm=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.34,0.34), new THREE.MeshLambertMaterial({color:0xb9bec6, transparent:true, opacity:0.55}));
-      pm.position.set(qq.x,qq.y,qq.z); scene.add(pm); dorfRauch.teilchen.push({m:pm, vy:0.014+Math.random()*0.012, dx:(Math.random()-0.5)*0.006, a:0.55}); }
+      const pm=new THREE.Mesh(new THREE.BoxGeometry(size,size,size), new THREE.MeshLambertMaterial({color:color, transparent:true, opacity:a0}));
+      pm.position.set(qq.x,qq.y,qq.z); scene.add(pm); dorfRauch.teilchen.push({m:pm, vy:vyBase+Math.random()*vyRange, dx:(Math.random()-0.5)*dxSpread, a:a0}); }
     for(let k=dorfRauch.teilchen.length-1;k>=0;k--){ const T2=dorfRauch.teilchen[k];
-      T2.m.position.y+=T2.vy; T2.m.position.x+=T2.dx; T2.a-=0.0035; T2.m.material.opacity=T2.a; T2.m.scale.multiplyScalar(1.006);
-      if(T2.a<=0.03){ scene.remove(T2.m); T2.m.geometry.dispose(); T2.m.material.dispose(); dorfRauch.teilchen.splice(k,1); } } } }
+      T2.m.position.y+=T2.vy; T2.m.position.x+=T2.dx; T2.a-=fade; T2.m.material.opacity=T2.a; T2.m.scale.multiplyScalar(scaleMul);
+      if(T2.a<=aKill){ scene.remove(T2.m); T2.m.geometry.dispose(); T2.m.material.dispose(); dorfRauch.teilchen.splice(k,1); } } } }
 renderer.render(scene,camera);requestAnimationFrame(frame);}
 
 // ── Start ──

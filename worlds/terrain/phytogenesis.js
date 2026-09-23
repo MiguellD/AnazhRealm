@@ -18,7 +18,10 @@
 
 /* ---------- Konstanten & deterministischer PRNG (Saat -> Individuum) ------- */
 const PHI = (1 + Math.sqrt(5)) / 2;
-const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // 137.50776 deg Phyllotaxis
+/* V18.491.243 — Lab Phyllotaxis golden ← PHYLO_GESETZ.golden fail-soft; Host none (PHYLO_VIS). FIB stays local (dead). */
+const GOLDEN_FALLBACK = Math.PI * (3 - Math.sqrt(5)); // 137.50776 deg Phyllotaxis
+const _PHYLO_G = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.PHYLO_GESETZ) || null;
+const GOLDEN = (_PHYLO_G && isFinite(_PHYLO_G.golden)) ? _PHYLO_G.golden : GOLDEN_FALLBACK;
 const FIB = [3, 5, 8, 13, 21, 34, 55];
 let RNG = mulberry32(12345);
 const rnd = () => RNG();
@@ -1051,12 +1054,30 @@ function pathDist(x, z) {
     return Math.min(Math.abs(x - p1x), Math.abs(z - p2z));
 }
 /* FIX v26: densityField()/speciesField() entfernt — waren definiert, aber nie aufgerufen (plantForest nutzt standDensity + inline clim/patch). Toter Code. */
-const SEA_LEVEL = -3.0;
-const COAST_D = 74.0; // Insel-Radius: Kuestenlinie rundherum. Wald endet bei R=64 -> 5m Puffer vor dem Strandsaum. EINZIGE Quelle, wird in den See-Shader injiziert.
+/* V18.491.236 — Lab island radius + sea plane ← INSEL_GESETZ fail-soft; Host none (INSEL_VIS).
+   MTN/CAVE/BERG untouched this pulse. */
+const INSEL_GESETZ_FALLBACK = { coastD: 74.0, seaLevel: -3.0 };
+const _IG = (typeof INSEL_GESETZ !== "undefined" && INSEL_GESETZ)
+  || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.INSEL_GESETZ)
+  || null;
+const SEA_LEVEL = (_IG && Number.isFinite(_IG.seaLevel)) ? _IG.seaLevel : INSEL_GESETZ_FALLBACK.seaLevel;
+const COAST_D = (_IG && Number.isFinite(_IG.coastD)) ? _IG.coastD : INSEL_GESETZ_FALLBACK.coastD; // Insel-Radius: Kuestenlinie rundherum. Wald endet bei R=64 -> 5m Puffer vor dem Strandsaum. EINZIGE Quelle, wird in den See-Shader injiziert.
 function seaward(x, z) {
     return Math.hypot(x, z) - COAST_D;
 } // <0 Land, >0 seewaerts (RADIAL: die Welt ist eine Insel, Meer rundherum)
-const MTN = { x: -42, z: -30, R: 20, H: 22, Rtun: 3.2 }; // BERG (3D-Volumen via Marching Cubes) in der -X/-Z-Ecke
+/* V18.491.235 — Lab MC-Berg ← BERG_GESETZ fail-soft; Host none (BERG_VIS).
+   CAVE stays derived. */
+const BERG_GESETZ_FALLBACK = { x: -42, z: -30, R: 20, H: 22, Rtun: 3.2 };
+const _BG = (typeof BERG_GESETZ !== "undefined" && BERG_GESETZ)
+  || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.BERG_GESETZ)
+  || null;
+const MTN = {
+  x:    (_BG && Number.isFinite(_BG.x))    ? _BG.x    : BERG_GESETZ_FALLBACK.x,
+  z:    (_BG && Number.isFinite(_BG.z))    ? _BG.z    : BERG_GESETZ_FALLBACK.z,
+  R:    (_BG && Number.isFinite(_BG.R))    ? _BG.R    : BERG_GESETZ_FALLBACK.R,
+  H:    (_BG && Number.isFinite(_BG.H))    ? _BG.H    : BERG_GESETZ_FALLBACK.H,
+  Rtun: (_BG && Number.isFinite(_BG.Rtun)) ? _BG.Rtun : BERG_GESETZ_FALLBACK.Rtun
+}; // BERG (3D-Volumen via Marching Cubes) in der -X/-Z-Ecke
 const _cfa = Math.atan2(-MTN.z, -MTN.x); // Richtung Berg -> Ursprung (Hoehle oeffnet zum Wald)
 const CAVE = {
     fa: _cfa,
@@ -1230,6 +1251,10 @@ function forestGroundH(x, z) {
    Wird 1:1 in die HTML portiert. Hier nur zur Messung gegen die Realität. */
 
 function standDensity(x, z) {
+    // Leser: EINE Formel in phyto-core (Mode lab). Fail-soft = alte Lab-Vorlage.
+    const core = typeof window !== "undefined" && window.__phytoCore;
+    if (core && typeof core.forestStandDensity === "function")
+        return core.forestStandDensity(fbm2, x, z, "lab");
     let d = fbm2(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm2(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
     return clamp((d - 0.5) * 1.9 + 0.5, 0, 1);
 } // glatt, NICHT übersättigt: echter Gradient Lichtung<->Kern
@@ -1242,16 +1267,82 @@ function slopeAt(x, z) {
 }
 
 /* arttypischer Kronenradius (m) bei Größenfaktor 1 — Waldwuchs (schmal, Konkurrenz) */
-const CROWN = PORTAL_RENDER_CONFIG.density.crown; // echter Beaestungsradius (Lichtkrone) — die EINE Quelle (Config)
-const PACK = PORTAL_RENDER_CONFIG.density.pack; // Zentren >= PACK*(Ti+Tj): Kronen-Schuechternheit (aus dem Config-Block)
+/* FOREST_TOPOLOGY.lab = "disk" — plantForest sequential Poisson + ok(); Feel-Entscheid .116; no fake merge with Host cell */
+/* FOREST_PACK in phyto-core = shared pack/dartsPerM2/crown (Lab density); fail-soft = PORTAL_RENDER_CONFIG */
+/* FOREST_LAB = Lab-only path/saum/garantie + Verjüngung/Schatten numbers; Host planForestCell must-ignore */
+/* FOREST_SPECIES = Lab Kurzname ↔ Host baum_* table (.112); Lab keeps short names internally */
+const _FP =
+    typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.FOREST_PACK
+        ? window.__phytoCore.FOREST_PACK
+        : null;
+const _FL =
+    typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.FOREST_LAB
+        ? window.__phytoCore.FOREST_LAB
+        : null;
+const _FS =
+    typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.FOREST_SPECIES
+        ? window.__phytoCore.FOREST_SPECIES
+        : null;
+const CROWN = (_FP && _FP.crown) || PORTAL_RENDER_CONFIG.density.crown; // echter Beaestungsradius (Lichtkrone)
+const PACK =
+    _FP && typeof _FP.pack === "number" ? _FP.pack : PORTAL_RENDER_CONFIG.density.pack; // Zentren >= PACK*(Ti+Tj)
 
 /* ---------- BÄUME: variabel-radius Poisson-Disc + Ökologie + Selbstausdünnung */
 function plantForest(R, seedInt) {
     const rng = mulberry32(seedInt >>> 0);
-    const cell = 12,
+    const cell = (_FP && _FP.cell) || 12,
         grid = new Map(),
         trees = [];
-    const K = (cx, cz) => (cx * 73856093) ^ (cz * 19349663);
+    // FOREST_LAB thresholds (fail-soft = current Lab literals)
+    const _n = (k, d) => (_FL && typeof _FL[k] === "number" ? _FL[k] : d);
+    const pathClearM = _n("pathClearM", 3.6);
+    const pathBirkeMulDistM = _n("pathBirkeMulDistM", 8);
+    const pathBirkeMul = _n("pathBirkeMul", 1.5);
+    const seawardWeideM = _n("seawardWeideM", 9);
+    const wetSaumM = _n("wetSaumM", 1.2);
+    const openWaterM = _n("openWaterM", -0.2);
+    const garantieMammutMin = _n("garantieMammutMin", 2);
+    const garantieTries = _n("garantieTries", 2500);
+    const garantiePathM = _n("garantiePathM", 4);
+    const garantieSdMin = _n("garantieSdMin", 0.55);
+    const garantieClearSq = _n("garantieClearSq", 6.76);
+    const garantieSMin = _n("garantieSMin", 0.9);
+    const garantieSAdd = _n("garantieSAdd", 0.4);
+    // Verjüngung (.111) — fail-soft = aktuelle Lab-Literale
+    const parentSMin = _n("parentSMin", 0.55);
+    const parentChance = _n("parentChance", 0.82);
+    const nseedBase = _n("nseedBase", 5);
+    const nseedSpan = _n("nseedSpan", 6);
+    const radMinFrac = _n("radMinFrac", 0.15);
+    const radSpanFrac = _n("radSpanFrac", 0.45);
+    const verjPathM = _n("verjPathM", 3.2);
+    const inheritSp = _n("inheritSp", 0.6);
+    const verjSMin = _n("sMin", 0.5);
+    const verjSAdd = _n("sAdd", 0.24);
+    const packMul = _n("packMul", 0.3);
+    // Schattenverdängung (.111)
+    const bigS = _n("bigS", 1.3);
+    const shadeMulMammut = _n("shadeMulMammut", 1.7);
+    const shadeMulOther = _n("shadeMulOther", 1.25);
+    const killChance = _n("killChance", 0.92);
+    // FOREST_SPECIES.verjPool (.112) — fail-soft = aktuelle Lab-Literale
+    const verjPool =
+        _FS && Array.isArray(_FS.verjPool) && _FS.verjPool.length
+            ? _FS.verjPool
+            : ["birke", "eiche", "fichte", "tanne"];
+    // Leser: EINE Grid-Hash + shy-Distanz in phyto-core. Fail-soft = alte Lab-Inline.
+    const _coreP = typeof window !== "undefined" && window.__phytoCore;
+    const K =
+        _coreP && typeof _coreP.forestGridKey === "function"
+            ? _coreP.forestGridKey
+            : (cx, cz) => (cx * 73856093) ^ (cz * 19349663);
+    const tooClose =
+        _coreP && typeof _coreP.forestTooClose === "function"
+            ? _coreP.forestTooClose
+            : (dx, dz, T, tT, pk) => {
+                  const md = (T + tT) * pk;
+                  return dx * dx + dz * dz < md * md;
+              };
     function ok(x, z, T, pk) {
         pk = pk || PACK;
         const cx = Math.floor(x / cell),
@@ -1263,21 +1354,24 @@ function plantForest(R, seedInt) {
                 for (const id of arr) {
                     const t = trees[id],
                         dx = x - t.x,
-                        dz = z - t.z,
-                        md = (T + t.T) * pk;
-                    if (dx * dx + dz * dz < md * md) return false;
+                        dz = z - t.z;
+                    if (tooClose(dx, dz, T, t.T, pk)) return false;
                 }
             }
         return true;
     }
-    const darts = Math.floor(R * R * PORTAL_RENDER_CONFIG.density.dartsPerM2);
+    const _dartsPerM2 =
+        _FP && typeof _FP.dartsPerM2 === "number"
+            ? _FP.dartsPerM2
+            : PORTAL_RENDER_CONFIG.density.dartsPerM2;
+    const darts = Math.floor(R * R * _dartsPerM2);
     for (let i = 0; i < darts; i++) {
         const a = rng() * 6.2831,
             rr = Math.sqrt(rng()) * R,
             x = Math.cos(a) * rr,
             z = Math.sin(a) * rr;
         if (x * x + z * z > R * R) continue;
-        if (pathDist(x, z) < 3.6) continue;
+        if (pathDist(x, z) < pathClearM) continue;
         const sd = standDensity(x, z);
         if (rng() > 0.04 + 0.96 * sstep(0.18, 0.8, sd)) continue; // BIMODAL: Lichtungen wirklich leer, Kerne wirklich dicht
         const e = forestGroundH(x, z),
@@ -1285,13 +1379,30 @@ function plantForest(R, seedInt) {
         const clim = fbm2(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
         const patch = fbm2(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik: Reinbestaende mit Mischsaeumen
         const open = 1 - sd,
-            dry = clamp((e + 6) / 18, 0, 1),
-            pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
-        let wF = (sstep(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte: trockene Hoehen
-        let wT = (sstep(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: hoeher/feuchter
-        let wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
-        let wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Luecken
-        if (pathDist(x, z) < 8) wB *= 1.5; // Birke saeumt Pfade
+            dry = clamp((e + 6) / 18, 0, 1);
+        // Leser: EINE Basis-Nische in phyto-core. Fail-soft = alte Lab-Formeln (ohne Wasser-Nähe).
+        const _coreN = typeof window !== "undefined" && window.__phytoCore;
+        const NW =
+            _coreN && typeof _coreN.forestNicheWeights === "function"
+                ? _coreN.forestNicheWeights(clim, dry, wet, open, patch, { ss: sstep })
+                : null;
+        let wF = NW
+            ? NW.wF
+            : (sstep(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) *
+              (0.18 + 4.8 * Math.max(0, 1 - Math.abs(patch - 0.15) / 0.14)); // Fichte fail-soft
+        let wT = NW
+            ? NW.wT
+            : (sstep(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) *
+              (0.16 + 4.2 * Math.max(0, 1 - Math.abs(patch - 0.36) / 0.14)); // Tanne fail-soft
+        let wE = NW
+            ? NW.wE
+            : ((1 - dry) * 0.65 + wet * 0.35 + 0.04) *
+              (0.18 + 4.6 * Math.max(0, 1 - Math.abs(patch - 0.58) / 0.14)); // Eiche fail-soft
+        let wB = NW
+            ? NW.wB
+            : ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) *
+              (0.2 + 3.6 * Math.max(0, 1 - Math.abs(patch - 0.82) / 0.14)); // Birke fail-soft
+        if (pathDist(x, z) < pathBirkeMulDistM) wB *= pathBirkeMul; // Lab-only: Birke saeumt Pfade
         const _W = water(),
             _de = Math.min(
                 Math.hypot(x - _W.pondLo.x, z - _W.pondLo.z) - _W.pondLo.rs,
@@ -1299,28 +1410,46 @@ function plantForest(R, seedInt) {
                 _streamDH(x, z)[0] - _W.SW
             ),
             _wp = clamp(1 - Math.max(_de, 0) / 7, 0, 1);
-        let wW = wet * wet * (1 - dry) * 0.8 + _wp * _wp * 6.0 + 0.01; // Weide: nur nass/tief
+        // Shared base-wW + Lab waterProx (_wp); Host uses feu instead.
+        let wW = (NW ? NW.wW : wet * wet * (1 - dry) * 0.8 + 0.01) + _wp * _wp * 6.0; // Weide: nur nass/tief
         const wsum = wF + wT + wE + wB + wW;
         let pick = rng() * wsum,
             sp;
-        if ((pick -= wF) < 0) sp = "fichte";
-        else if ((pick -= wT) < 0) sp = "tanne";
-        else if ((pick -= wE) < 0) sp = "eiche";
-        else if ((pick -= wB) < 0) sp = "birke";
-        else sp = "weide";
-        if (_de < -0.2) continue; // im offenen Wasser waechst NICHTS
-        if (_de < 1.2 && sp !== "weide") continue; // nur die Weide steht im nassen Saum; der Rest wuerde versaufen -> sie verstehen das Wasser
-        if (seaward(x, z) > 9 && sp !== "weide") continue; // MEER: nasser Strand-Saum -> nur Weide (Baeume kennen die Feuchtigkeit)
-        // Größe: reverse-J + Selbstausdünnung (dichter Stand -> kleinere Lose; sd variiert -> echter Gradient)
-        let ue = clamp(rng() * (1 - 0.52 * sd), 0, 1);
-        let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
-        if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55); // seltene Überhälter (Altbestand)
-        s = clamp(s, 0.5, 1.95);
-        let crown = CROWN[sp] * s;
-        if (sp !== "weide" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
-            sp = "mammut";
-            s = 0.85 + rng() * 0.4;
-            crown = CROWN.mammut * s;
+        // Lab Kurzname intern (CROWN/Verj); Host-Zwilling via FOREST_SPECIES.labToHost
+        // names from FOREST_SPECIES.labNames
+        if ((pick -= wF) < 0) sp = "fichte"; // → baum_kiefer
+        else if ((pick -= wT) < 0) sp = "tanne"; // → baum_tanne
+        else if ((pick -= wE) < 0) sp = "eiche"; // → baum_eiche
+        else if ((pick -= wB) < 0) sp = "birke"; // → baum_birke
+        else sp = "weide"; // → baum_erle (mammut → baum_buche via promote)
+        if (_de < openWaterM) continue; // im offenen Wasser waechst NICHTS
+        if (_de < wetSaumM && sp !== "weide") continue; // nur die Weide steht im nassen Saum; der Rest wuerde versaufen -> sie verstehen das Wasser
+        if (seaward(x, z) > seawardWeideM && sp !== "weide") continue; // MEER: nasser Strand-Saum -> nur Weide (Baeume kennen die Feuchtigkeit)
+        // Größe + Mammut: shared reverse-J / Überhälter / Mammut-Roll (phyto-core). Fail-soft = inline.
+        // Species-ids bleiben Lab-lokal (mammut/weide). RNG-Ordnung: size first, then mammut iff not weide.
+        let s, crown;
+        if (_coreN && typeof _coreN.forestTreeSize === "function") {
+            s = _coreN.forestTreeSize(rng, sd);
+            crown = CROWN[sp] * s;
+            if (sp !== "weide" && typeof _coreN.forestMammutRoll === "function") {
+                const m = _coreN.forestMammutRoll(rng, sd, clim);
+                if (m.promote) {
+                    sp = "mammut";
+                    s = m.s;
+                    crown = CROWN.mammut * s;
+                }
+            }
+        } else {
+            let ue = clamp(rng() * (1 - 0.52 * sd), 0, 1);
+            s = 0.55 + 1.45 * Math.pow(ue, 1.45);
+            if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55); // seltene Überhälter (Altbestand)
+            s = clamp(s, 0.5, 1.95);
+            crown = CROWN[sp] * s;
+            if (sp !== "weide" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
+                sp = "mammut";
+                s = 0.85 + rng() * 0.4;
+                crown = CROWN.mammut * s;
+            }
         }
         const T = crown;
         if (!ok(x, z, T)) continue;
@@ -1339,13 +1468,13 @@ function plantForest(R, seedInt) {
     // Garantie: mind. 2 Mammutbaeume (volle Artenvielfalt sichtbar) an dichten, trockenen Stellen
     let nM = 0;
     for (const t of trees) if (t.sp === "mammut") nM++;
-    for (let g = 0; g < 2500 && nM < 2; g++) {
+    for (let g = 0; g < garantieTries && nM < garantieMammutMin; g++) {
         const a = rng() * 6.2831,
             rr = Math.sqrt(rng()) * R,
             x = Math.cos(a) * rr,
             z = Math.sin(a) * rr;
-        if (pathDist(x, z) < 4 || standDensity(x, z) < 0.55 || waterSurfaceAt(x, z) !== null) continue;
-        const s = 0.9 + rng() * 0.4,
+        if (pathDist(x, z) < garantiePathM || standDensity(x, z) < garantieSdMin || waterSurfaceAt(x, z) !== null) continue;
+        const s = garantieSMin + rng() * garantieSAdd,
             T = CROWN.mammut * s;
         let clear = true;
         const cxg = Math.floor(x / cell),
@@ -1358,7 +1487,7 @@ function plantForest(R, seedInt) {
                     const t = trees[id2],
                         dx = x - t.x,
                         dz = z - t.z;
-                    if (dx * dx + dz * dz < 6.76) {
+                    if (dx * dx + dz * dz < garantieClearSq) {
                         clear = false;
                         break;
                     }
@@ -1379,21 +1508,22 @@ function plantForest(R, seedInt) {
         nM++;
     }
     // VERJÜNGUNG: Sämlings-Cluster um etablierte Altbäume -> natürliche Verklumpung (senkt Clark-Evans, stärkt reverse-J)
+    // Zahlen → FOREST_LAB (.111); fail-soft Literale oben.
     const canopy = trees.slice();
     for (const par of canopy) {
-        if (par.s < 0.55) continue;
-        if (rng() > 0.82) continue;
-        const nseed = 5 + Math.floor(rng() * 6);
+        if (par.s < parentSMin) continue;
+        if (rng() > parentChance) continue;
+        const nseed = nseedBase + Math.floor(rng() * nseedSpan);
         for (let kk2 = 0; kk2 < nseed; kk2++) {
             const ang = rng() * 6.2831,
-                rad = par.T * (0.15 + rng() * 0.45);
+                rad = par.T * (radMinFrac + rng() * radSpanFrac);
             const x = par.x + Math.cos(ang) * rad,
                 z = par.z + Math.sin(ang) * rad;
-            if (x * x + z * z > R * R || pathDist(x, z) < 3.2 || waterSurfaceAt(x, z) !== null) continue;
-            const sp = rng() < 0.6 ? par.sp : ["birke", "eiche", "fichte", "tanne"][Math.floor(rng() * 4)];
-            const s = 0.5 + rng() * 0.24,
+            if (x * x + z * z > R * R || pathDist(x, z) < verjPathM || waterSurfaceAt(x, z) !== null) continue;
+            const sp = rng() < inheritSp ? par.sp : verjPool[Math.floor(rng() * verjPool.length)];
+            const s = verjSMin + rng() * verjSAdd,
                 T = CROWN[sp] * s;
-            if (!ok(x, z, T, PACK * 0.3)) continue; // Sämlinge dürfen im Kohorten-Cluster eng stehen (Clark-Evans -> naturnah; Stammradius winzig, kein Overlap)
+            if (!ok(x, z, T, PACK * packMul)) continue; // Sämlinge dürfen im Kohorten-Cluster eng stehen (Clark-Evans -> naturnah; Stammradius winzig, kein Overlap)
             const id = trees.length;
             trees.push({ x, z, sp, s, T, rotY: rng() * 6.2831, y: forestGroundH(x, z) });
             const cx = Math.floor(x / cell),
@@ -1408,11 +1538,12 @@ function plantForest(R, seedInt) {
         }
     }
     // SCHATTENVERDRAENGUNG: grosse Baeume/Mammut unterdruecken kleine Nachbarn in ihrem Schatten -> Luecken & Varianz
+    // Zahlen → FOREST_LAB (.111); fail-soft Literale oben. Host planForestCell hat keinen Pass.
     const kill = new Set();
     for (const big of trees) {
-        const isBig = big.sp === "mammut" || big.s > 1.3;
+        const isBig = big.sp === "mammut" || big.s > bigS;
         if (!isBig) continue;
-        const shadeR = big.T * (big.sp === "mammut" ? 1.7 : 1.25),
+        const shadeR = big.T * (big.sp === "mammut" ? shadeMulMammut : shadeMulOther),
             bcx = Math.floor(big.x / cell),
             bcz = Math.floor(big.z / cell);
         for (let dx = -2; dx <= 2; dx++)
@@ -1423,7 +1554,7 @@ function plantForest(R, seedInt) {
                     const t = trees[id];
                     if (t === big || kill.has(id) || t.s >= big.s * 0.85) continue;
                     const d = Math.hypot(t.x - big.x, t.z - big.z);
-                    if (d < shadeR && rng() < (1 - d / shadeR) * 0.92) kill.add(id);
+                    if (d < shadeR && rng() < (1 - d / shadeR) * killChance) kill.add(id);
                 }
             }
     }
@@ -1453,7 +1584,11 @@ function plantForest(R, seedInt) {
 function canopyLight(trees) {
     const cell = trees._cell,
         grid = trees._grid,
-        K = (cx, cz) => (cx * 73856093) ^ (cz * 19349663);
+        _cK = typeof window !== "undefined" && window.__phytoCore,
+        K =
+            _cK && typeof _cK.forestGridKey === "function"
+                ? _cK.forestGridKey
+                : (cx, cz) => (cx * 73856093) ^ (cz * 19349663);
     return function (x, z) {
         const cx = Math.floor(x / cell),
             cz = Math.floor(z / cell);
@@ -1895,7 +2030,11 @@ function buildForest() {
         SEG = 118,
         SEEDI = Math.floor(SEED) >>> 0;
     const rebuildGrid = (arr) => {
-        const cell = 12,
+        /* V18.491.239 — Lab Kachel cell ← KACHEL_GESETZ.size fail-soft; Host none (KACHEL_VIS). FOREST_PACK.cell untouched. */
+        const _KG_C = (typeof KACHEL_GESETZ !== "undefined" && KACHEL_GESETZ)
+          || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.KACHEL_GESETZ)
+          || null;
+        const cell = (_KG_C && Number.isFinite(_KG_C.size)) ? _KG_C.size : 12,
             grid = new Map(),
             K = (cx, cz) => (cx * 73856093) ^ (cz * 19349663);
         for (let i = 0; i < arr.length; i++) {
@@ -1919,7 +2058,11 @@ function buildForest() {
     _forestTrees = trees;
     const C = findClearing(trees, R, SEEDI);
     const paths = wildPaths(SEEDI, C, 4, R);
-    const GLADE = 22; // grosse Lichtung zum Bestaunen
+    /* V18.491.237 — Lab Wald Lichtung ← WALD_GESETZ.glade fail-soft; Host none (WALD_VIS). */
+    const _WG_GL = (typeof WALD_GESETZ !== "undefined" && WALD_GESETZ)
+      || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.WALD_GESETZ)
+      || null;
+    const GLADE = (_WG_GL && Number.isFinite(_WG_GL.glade)) ? _WG_GL.glade : 22; // grosse Lichtung zum Bestaunen
     trees = trees.filter((t) => {
         if (Math.hypot(t.x - C.x, t.z - C.z) < GLADE - t.T * 0.3) return false; // Lichtung freihalten
         if (trailDist(t.x, t.z, paths) < 3.2 + t.T * 0.12) return false; // breite, gepflegte Pfad-Korridore, immer frei
@@ -2162,9 +2305,21 @@ function buildForest() {
     // (Berg entfernt)
 
     // 3) Templates: WENIGE pro Art (Batching). FLOD2 = leicht.
-    const FLOD = 0; // feine Stufe -> saubere Baeume aus der Naehe (NICHT die grobe Fernsicht-LOD)
-    const CB = { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 }; // Stamm freistellen (Selbstastung im Wald)
-    const TMUL = 0.5; // Stamm schlanker (Wald-Realismus; Studio unberuehrt)
+    /* V18.491.237 — Lab Wald Astung/LOD ← WALD_GESETZ fail-soft; Host none (WALD_VIS). FIB not hoisted. */
+    const _WG = (typeof WALD_GESETZ !== "undefined" && WALD_GESETZ)
+      || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.WALD_GESETZ)
+      || null;
+    const _CB_FB = { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 };
+    const FLOD = (_WG && Number.isFinite(_WG.flod)) ? _WG.flod : 0; // feine Stufe -> saubere Baeume aus der Naehe (NICHT die grobe Fernsicht-LOD)
+    const CB = (_WG && _WG.crownBase) ? {
+      eiche: Number.isFinite(_WG.crownBase.eiche) ? _WG.crownBase.eiche : _CB_FB.eiche,
+      fichte: Number.isFinite(_WG.crownBase.fichte) ? _WG.crownBase.fichte : _CB_FB.fichte,
+      birke: Number.isFinite(_WG.crownBase.birke) ? _WG.crownBase.birke : _CB_FB.birke,
+      weide: Number.isFinite(_WG.crownBase.weide) ? _WG.crownBase.weide : _CB_FB.weide,
+      tanne: Number.isFinite(_WG.crownBase.tanne) ? _WG.crownBase.tanne : _CB_FB.tanne,
+      mammut: Number.isFinite(_WG.crownBase.mammut) ? _WG.crownBase.mammut : _CB_FB.mammut
+    } : _CB_FB; // Stamm freistellen (Selbstastung im Wald)
+    const TMUL = (_WG && Number.isFinite(_WG.trunkMul)) ? _WG.trunkMul : 0.5; // Stamm schlanker (Wald-Realismus; Studio unberuehrt)
     const poolL = [{}, {}];
     /* L2-Mesh-Pool gestrichen: Fernstufe IST das Billboard (tote Fracht seit der Impostor-Aera) */ const mp = (
         sp,
@@ -2293,7 +2448,11 @@ function buildForest() {
     };
     // ★ KACHEL-INSTANZIERUNG: dichte Bodenschichten in 12m-Kacheln, jede mit EIGENER enger Welt-Kugel -> Three cullt jede Kachel
     // einzeln aus dem Frustum. Instanzen bleiben in WELT-Koordinaten (Wind-Phase korrekt, keine Nahtkanten zwischen Kacheln).
-    const TILE = 12;
+    /* V18.491.239 — Lab Kachel TILE ← KACHEL_GESETZ.size fail-soft; Host none (KACHEL_VIS). FOREST_PACK.cell untouched. */
+    const _KG_T = (typeof KACHEL_GESETZ !== "undefined" && KACHEL_GESETZ)
+      || (typeof __terrainCore !== "undefined" && __terrainCore && __terrainCore.KACHEL_GESETZ)
+      || null;
+    const TILE = (_KG_T && Number.isFinite(_KG_T.size)) ? _KG_T.size : 12;
     // LOD-WURZEL (08.07.): `stage` macht eine Kachel-Schicht zweistufig — "near" traegt die
     // reiche Stufe bis LOD_D0(+Ueberlapp), "far" die kompensierte billige dahinter bis zum
     // Art-Limit; "single" = das alte Verhalten. Beide Stufen teilen PLACEMENTS + Seed
@@ -3367,31 +3526,48 @@ function wSS(a, b, x) {
 // ===== ATMOSPHAERE-GESETZ: Sonnenhoehe -> Luftmasse -> spektrale Transmission (Rayleigh ~1/lambda^4) =====
 // EINE Quelle fuer Sonnenfarbe+Intensitaet, Hemi und Impostor-Tint. Sonnenuntergang/Nacht entstehen aus der Physik, nicht aus Lerps.
 const _atmS = new THREE.Color();
-const _BETA_R = 0.044,
-    _BETA_G = 0.1,
-    _BETA_B = 0.23; // Rayleigh optische Tiefe Meereshoehe/Zenit (Bucholtz 1995): blau streut ~5x rot
+/* V18.491.254 — Lab Rayleigh zenith OD ← ATMOS_GESETZ fail-soft; Host none (ATMOS_VIS). PHYLO/FIB untouched. */
+const _ATMOS = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.ATMOS_GESETZ) || null;
+const _BETA_R = (_ATMOS && isFinite(_ATMOS.betaR)) ? _ATMOS.betaR : 0.044,
+    _BETA_G = (_ATMOS && isFinite(_ATMOS.betaG)) ? _ATMOS.betaG : 0.1,
+    _BETA_B = (_ATMOS && isFinite(_ATMOS.betaB)) ? _ATMOS.betaB : 0.23; // Rayleigh optische Tiefe Meereshoehe/Zenit (Bucholtz 1995): blau streut ~5x rot
+/* V18.491.258 — Lab air-mass/night ← LUFT_GESETZ fail-soft; Host none (LUFT_VIS). ≠ ATMOS betas. */
+const _LUFT = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.LUFT_GESETZ) || null;
+const _AIR_SOFT = (_LUFT && isFinite(_LUFT.airSoft)) ? _LUFT.airSoft : 0.06;
+const _NIGHT_SCALE = (_LUFT && isFinite(_LUFT.nightScale)) ? _LUFT.nightScale : 0.16;
+const _NIGHT_LUM = (_LUFT && isFinite(_LUFT.nightLum)) ? _LUFT.nightLum : 0.06;
 function atmosphere(e) {
-    const m = 1.0 / (Math.max(e, 0.0) + 0.06); // Luftmasse: ~1 im Zenit, gross am Horizont
+    const m = 1.0 / (Math.max(e, 0.0) + _AIR_SOFT); // Luftmasse: ~1 im Zenit, gross am Horizont
     const tr = Math.exp(-_BETA_R * m),
         tg = Math.exp(-_BETA_G * m),
         tb = Math.exp(-_BETA_B * m); // durchgelassenes Sonnenspektrum (Beer-Lambert)
     const lum = 0.21 * tr + 0.72 * tg + 0.07 * tb; // Lichtmenge der direkten Sonne
     const mx = Math.max(tr, tg, tb, 1e-4);
     _atmS.setRGB(tr / mx, tg / mx, tb / mx); // Sonnenfarbe = Hue des Spektrums (Sonnenuntergang -> rot)
-    const night = clamp(-e / 0.16, 0, 1);
+    const night = clamp(-e / _NIGHT_SCALE, 0, 1);
     _atmS.lerp(_moonCol, night); // unter Horizont -> Mond (Purkinje-Blauverschiebung)
-    return { col: _atmS, lum: lum * (1.0 - night) + 0.06 * night, day: clamp(e, 0, 1) };
+    return { col: _atmS, lum: lum * (1.0 - night) + _NIGHT_LUM * night, day: clamp(e, 0, 1) };
 }
-let _wxBase = { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 };
+/* V18.491.264 — Lab weather presets ← WX_GESETZ fail-soft; Host none (WX_VIS). ≠ ATMOS/LUFT; FIB untouched. */
+const WX_GESETZ_FALLBACK = {
+    klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
+    bewoelkt: { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 },
+    nebel: { fog: 1.0, sun: 0.48, grey: 0.46, wind: 0.1, rain: 0.0 },
+    sturm: { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 }
+};
+function _wxPick(w) {
+    const src = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.WX_GESETZ) || null;
+    const row = (src && src[w]) || null;
+    const fb = WX_GESETZ_FALLBACK[w] || WX_GESETZ_FALLBACK.klar;
+    if (row && isFinite(row.fog) && isFinite(row.sun) && isFinite(row.grey) && isFinite(row.wind) && isFinite(row.rain)) {
+        return { fog: row.fog, sun: row.sun, grey: row.grey, wind: row.wind, rain: row.rain };
+    }
+    return { fog: fb.fog, sun: fb.sun, grey: fb.grey, wind: fb.wind, rain: fb.rain };
+}
+let _wxBase = _wxPick("klar");
 function weatherTargets(w) {
-    if (w === "klar") {
-        _wxBase = { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 };
-    } else if (w === "bewoelkt") {
-        _wxBase = { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 };
-    } else if (w === "nebel") {
-        _wxBase = { fog: 1.0, sun: 0.48, grey: 0.46, wind: 0.1, rain: 0.0 };
-    } else if (w === "sturm") {
-        _wxBase = { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 };
+    if (w === "klar" || w === "bewoelkt" || w === "nebel" || w === "sturm") {
+        _wxBase = _wxPick(w);
     }
 }
 weatherTargets(WWEATHER);
@@ -5090,6 +5266,8 @@ init();
             // Reply (kein neuer Kanal; Leser ohne position-Guard überspringen ihn,
             // IDB trägt ihn gratis mit).
             if (g.userData && g.userData.__skelett) meshes.push({ kind: "__skelett", skelett: g.userData.__skelett });
+            if (g.userData && g.userData.__baumGrammatik)
+                meshes.push({ kind: "__baumGrammatik", grammatik: g.userData.__baumGrammatik });
             // Aufraeumen (kein Leak in der Foundry): Geometrien + Materialien der Wegwerf-Instanz.
             g.traverse((o) => {
                 if (o.isMesh) {

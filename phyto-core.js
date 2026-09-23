@@ -29,7 +29,11 @@
         const rrange = (a, b) => a + (b - a) * rnd();
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
-        const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // 137.50776° Phyllotaxis
+        /* V18.491.243 — Phyllotaxis golden ← PHYLO_GESETZ.golden fail-soft; Host none (PHYLO_VIS). */
+        const GOLDEN_FALLBACK = Math.PI * (3 - Math.sqrt(5)); // 137.50776° Phyllotaxis
+        const GOLDEN = (PHYLO_GESETZ && isFinite(PHYLO_GESETZ.golden))
+            ? PHYLO_GESETZ.golden
+            : GOLDEN_FALLBACK;
         // Vektor-Helfer (THREE-frei, aus phytogenesis portiert).
         const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
         const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
@@ -1363,19 +1367,218 @@
             return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
     }
-    // Vorlagen-`standDensity`: glatter Wald-↔-Lichtung-Gradient [0,1] (Studio-Modell: hoch +
-    // gleichmässig — Mittel 0.72, Kontrast 1.35; dichte Kerne + gelichtete Säume, keine Wüsten).
-    function forestStandDensity(fbm, x, z) {
+    // Vorlagen-`standDensity`: glatter Wald-↔-Lichtung-Gradient [0,1].
+    // Shared fbm-Mix; Kontrast/Mittel per Mode (Host-Default byte-same bei 3-Arg-Aufruf).
+    // Lab-Vorlage: clamp((d-0.5)*1.9+0.5,0,1) · Host-Studio: (d-0.5)*1.35+0.72.
+    const FOREST_STAND = {
+        lab: { contrast: 1.9, mid: 0.5 },
+        host: { contrast: 1.35, mid: 0.72 },
+    };
+    function forestStandDensity(fbm, x, z, opt) {
         const d = fbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
-        const v = (d - 0.5) * 1.35 + 0.72;
+        let contrast = FOREST_STAND.host.contrast,
+            mid = FOREST_STAND.host.mid;
+        if (typeof opt === "string") {
+            const m = FOREST_STAND[opt];
+            if (m) {
+                contrast = m.contrast;
+                mid = m.mid;
+            }
+        } else if (opt && typeof opt === "object") {
+            if (opt.contrast != null) contrast = +opt.contrast;
+            if (opt.mid != null) mid = +opt.mid;
+        }
+        const v = (d - 0.5) * contrast + mid;
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
+    // Arten-Nische Basis-Gewichte (wF/wT/wE/wB + base-wW ohne Wasser-Nähe).
+    // Klima × Patch × Feuchte × Trockenheit × Offenheit — EINE Formel für Lab+Host.
+    // wW = wet²·(1-dry)·0.8 + 0.01; Caller addiert waterProx²·6 (Host: feu, Lab: _wp).
+    // Lab-only (pathDist→wB·1.5, species-ids) bleibt AUSSERHALB. extras-Loop bleibt in planForestCell.
+    function forestNicheWeights(clim, dry, wet, open, patch, opts) {
+        const ss =
+            opts && typeof opts.ss === "function"
+                ? opts.ss
+                : (e0, e1, v) => {
+                      let t = (v - e0) / (e1 - e0);
+                      t = t < 0 ? 0 : t > 1 ? 1 : t;
+                      return t * t * (3 - 2 * t);
+                  };
+        const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
+        const wF = (ss(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte→kiefer: trockene Höhen
+        const wT = (ss(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: höher/feuchter
+        const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
+        const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
+        const wW = wet * wet * (1 - dry) * 0.8 + 0.01; // Weide→erle base; Caller + waterProx²·6
+        return { wF, wT, wE, wB, wW };
+    }
+
+    // reverse-J Größe + Selbstausdünnung + seltene Überhälter. RNG-REIHENFOLGE heilig
+    // (Host-Determinismus): ue → Überhälter-Wurf → optional Überhälter-s → clamp.
+    // Byte-same Lab plantForest + Host planForestCell.
+    function forestTreeSize(rng, sd) {
+        const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+        const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+        let ue = clamp01(rng() * (1 - 0.52 * sd));
+        let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
+        if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
+        s = clamp(s, 0.5, 1.95);
+        return s;
+    }
+    // Mammut-Promotion. Species-Gate (Lab weide / Host baum_erle) bleibt Caller-lokal —
+    // NUR dann aufrufen, sonst ändert sich die Host-rng-Reihenfolge (prio/keep/totRoll/rotY).
+    // Short-circuit wie heute: rng() nur wenn sd>0.72 && clim>0.5; s-rng nur bei promote.
+    function forestMammutRoll(rng, sd, clim) {
+        let promote = false;
+        let s = 0;
+        if (sd > 0.72 && clim > 0.5 && rng() < 0.02) {
+            promote = true;
+            s = 0.85 + rng() * 0.4;
+        }
+        return { promote: promote, s: s };
+    }
+    // Convenience: size first (inkl. Überhälter), then mammut — SAME order as today.
+    // Nur aufrufen wenn Species Mammut erlaubt (nicht weide/baum_erle).
+    function forestSizeAndMammut(rng, sd, clim) {
+        let s = forestTreeSize(rng, sd);
+        const m = forestMammutRoll(rng, sd, clim);
+        if (m.promote) s = m.s;
+        return { s: s, mammut: m.promote };
+    }
+
+    // FOREST_TOPOLOGY — intentional dual topology (Feel-Entscheid .116). Do NOT merge.
+    // lab "disk" = plantForest sequential Poisson + ok() reject (walkable studio).
+    // host "cell" = planForestCell darts + forestPrioWins shy (chunk order-independent).
+    // Like NINJA_FEEL .97: naming the Feel, not Fake-zu / not topology rewrite.
+    const FOREST_TOPOLOGY = {
+        lab: "disk", // plantForest sequential Poisson + ok() reject
+        host: "cell", // planForestCell darts + forestPrioWins shy (chunk order-independent)
+    };
+    // FOREST_PACK — geteilte Kronen-Schüchternheit / Poisson-Grid-Hash / Lab-Dichte-Zahlen.
+    // Lab plantForest.ok + Host crown-shy Distance teilen forestTooClose.
+    // pack/dartsPerM2/crown = Lab PORTAL_RENDER_CONFIG.density (foundry); Host behält F.crown/
+    // F.cell/dartsPerCell (andere Topologie + andere Species-ids) — must-ignore Host F.*.
+    // Topology named FOREST_TOPOLOGY (.116 Feel); Host prio-max named forestPrioWins (.113); Species-ids → FOREST_SPECIES (.112).
+    // path/garantie/saum (.110) + Verjüngung/Schatten-Zahlen (.111) → FOREST_LAB;
+    // Host planForestCell liest KEIN pathDist / keine Verjüngung / keine Schattenverdängung.
+    const FOREST_PACK = {
+        pack: 1.16,
+        dartsPerM2: 1.2,
+        cell: 12, // Lab Poisson-Zellgröße; Host F.cell bleibt lokal (gleicher Wert, andere Nutzung)
+        crown: { eiche: 5.2, birke: 3.2, weide: 4.5, tanne: 2.95, fichte: 2.75, mammut: 9.2 },
+    };
+    // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
+    // Host hat keine Lab-Pfade → planForestCell must-ignore; kein pathDist / keine Verj-/Schatten-Pässe.
+    const FOREST_LAB = {
+        pathClearM: 3.6, // skip dart if pathDist < this
+        pathBirkeMulDistM: 8, // wB *= pathBirkeMul if pathDist < this
+        pathBirkeMul: 1.5,
+        seawardWeideM: 9, // if seaward > this && sp !== weide skip
+        wetSaumM: 1.2, // _de < this → only weide
+        openWaterM: -0.2, // _de < this → skip
+        garantieMammutMin: 2,
+        garantieTries: 2500,
+        garantiePathM: 4,
+        garantieSdMin: 0.55,
+        garantieClearSq: 6.76, // Stammfreiheit²
+        garantieSMin: 0.9,
+        garantieSAdd: 0.4, // s = garantieSMin + rng()*garantieSAdd
+        // Verjüngung (Sämlings-Cluster) — Lab plantForest only; Host has no pass
+        parentSMin: 0.55, // skip parent if par.s < this
+        parentChance: 0.82, // rng() > this → skip parent
+        nseedBase: 5,
+        nseedSpan: 6, // nseed = nseedBase + floor(rng()*nseedSpan)
+        radMinFrac: 0.15,
+        radSpanFrac: 0.45, // rad = par.T * (radMinFrac + rng()*radSpanFrac)
+        verjPathM: 3.2, // ≠ pathClearM 3.6 — Verjüngung pathDist gate
+        inheritSp: 0.6, // rng() < this → inherit parent.sp
+        sMin: 0.5,
+        sAdd: 0.24, // seedling s = sMin + rng()*sAdd
+        packMul: 0.3, // ok(..., PACK*packMul) — engere Kohorten
+        // Schattenverdängung — Lab plantForest only; Host has no pass
+        bigS: 1.3, // mammut OR s > bigS
+        shadeMulMammut: 1.7,
+        shadeMulOther: 1.25, // shadeR = big.T * (mammut ? shadeMulMammut : shadeMulOther)
+        killChance: 0.92, // rng() < (1 - d/shadeR) * killChance
+    };
+    // FOREST_SPECIES — EINE named table Lab-Kurzname ↔ Host baum_* (.112).
+    // Lab hält Kurzname intern (CROWN / Verjüngung); Host pick-strings unverändert (RNG/Determinismus).
+    // Optional map via forestLabToHost / forestHostToLab — fail-soft identity if unknown.
+    const FOREST_SPECIES = {
+        labToHost: {
+            fichte: "baum_kiefer",
+            tanne: "baum_tanne",
+            eiche: "baum_eiche",
+            birke: "baum_birke",
+            weide: "baum_erle",
+            mammut: "baum_buche",
+        },
+        hostToLab: {
+            baum_kiefer: "fichte",
+            baum_tanne: "tanne",
+            baum_eiche: "eiche",
+            baum_birke: "birke",
+            baum_erle: "weide",
+            baum_buche: "mammut",
+        },
+        labNames: ["fichte", "tanne", "eiche", "birke", "weide", "mammut"],
+        verjPool: ["birke", "eiche", "fichte", "tanne"],
+    };
+    function forestLabToHost(id) {
+        return FOREST_SPECIES.labToHost[id] || id;
+    }
+    function forestHostToLab(id) {
+        return FOREST_SPECIES.hostToLab[id] || id;
+    }
+    // Lab K(): spatial hash für Poisson-Nachbarzellen
+    function forestGridKey(cx, cz) {
+        return (cx * 73856093) ^ (cz * 19349663);
+    }
+    // true = Zentren zu nah (Overlap unter pack*(T+tT))
+    function forestTooClose(dx, dz, T, tT, pk) {
+        const md = (T + tT) * pk;
+        return dx * dx + dz * dz < md * md;
+    }
+    // true if a is better than b (a should survive, b rejected in Host shy)
+    // Host today: o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)))
+    // FOREST_TOPOLOGY: Lab plantForest = disk (sequential ok() reject); Host = cell (prio-max via forestPrioWins).
+    // Feel-Entscheid .116 — intentional dual topology; no fake merge.
+    function forestPrioWins(a, b) {
+        if (!a || !b) return false;
+        if (a.prio > b.prio) return true;
+        if (a.prio === b.prio && (a.x > b.x || (a.x === b.x && a.z > b.z))) return true;
+        return false;
+    }
+    // neighbors: [{x,z,T}, ...]; false wenn irgendein Nachbar überlappt
+    function forestCrownClear(x, z, T, pk, neighbors) {
+        if (!neighbors || !neighbors.length) return true;
+        for (let i = 0; i < neighbors.length; i++) {
+            const t = neighbors[i];
+            if (forestTooClose(x - t.x, z - t.z, T, t.T, pk)) return false;
+        }
+        return true;
+    }
+
+    // SCATTER_STRATUM — ecology axes only (floor / scaleBase / scaleVar / slopeMax).
+    // Host SCATTER.layers READ these; cellM/cap/kind/promotable/densityScale stay Host perf.
+    // Distinct from FOREST_* / planForestCell (canopy darts). Do NOT merge into planForestCell.
+    const SCATTER_STRATUM = {
+        tree:   { floor: 0.1,  scaleBase: 0.6, scaleVar: 1.5, slopeMax: 1.45 },
+        under:  { floor: 0.06, scaleBase: 0.8, scaleVar: 0.5, slopeMax: 1.0 },
+        litter: { floor: 0.04, scaleBase: 0.8, scaleVar: 0.4, slopeMax: 1.25 },
+        rock:   { floor: 0.02, scaleBase: 0.6, scaleVar: 1.0, slopeMax: 1.6 },
+    };
+    function scatterStratum(name) {
+        return SCATTER_STRATUM[name] || null;
+    }
+
     // Die BORN-Darts einer Zelle — reine Funktion von (cx,cz,seed,ctx). Jeder Roh-Dart läuft
     // die Vorlagen-Kette: bimodaler standDensity-Wurf → Boden/Wasser → Slope-Grundierung →
     // Arten-Nische (Klima × Patch-Mosaik × Feuchte × Höhen-Trockenheit × Offenheit, inkl. der
     // AUTO-Arten aus dem Rezeptbuch via ctx.extras) → reverse-J-Größe → Mammut-Promotion.
     // ctx = { F, baseH, extras, fbm(px,pz), surfaceYAt(x,z), waterYAt(x,z), slopeAt(x,z),
     // feuchteAt(x,z,surfY) }. Die rng()-Aufruf-REIHENFOLGE ist heilig (byte-deterministisch).
+    // FOREST_TOPOLOGY.host = "cell" — cell-darts + Host shy prio-max; Feel-Entscheid .116; no fake merge with Lab disk.
     function planForestCell(cx, cz, seedInt, ctx) {
         const F = ctx.F;
         const CELL = F.cell;
@@ -1412,12 +1615,13 @@
             const open = 1 - sd;
             const clim = ctx.fbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
             const patch = ctx.fbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
-            const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
-            const wF = (ss(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte→kiefer: trockene Höhen
-            const wT = (ss(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: höher/feuchter
-            const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
-            const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
-            const wW = wet * wet * (1 - dry) * 0.8 + feu * feu * 6.0 + 0.01; // Weide→erle: nur nass/tief
+            const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14); // extras-Loop (AUTO-Arten)
+            const NW = forestNicheWeights(clim, dry, wet, open, patch, { ss });
+            const wF = NW.wF;
+            const wT = NW.wT;
+            const wE = NW.wE;
+            const wB = NW.wB;
+            const wW = NW.wW + feu * feu * 6.0; // Host: waterProx = feu
             // NERVENSYSTEM — die AUTO-Arten (ctx.extras, aus dem LIVE-Rezeptbuch) streuen mit:
             // Patch-Nische deterministisch aus dem Namens-Hash — die neue Art bildet eigene
             // Haine, ohne dass hier je eine Zeile für sie geschrieben wird.
@@ -1428,6 +1632,7 @@
             const wsum = wF + wT + wE + wB + wW + wXsum;
             let pick = rng() * wsum;
             let sp;
+            // pick strings Host-lokal (RNG heilig) — Lab-Zwilling fichte via FOREST_SPECIES.labToHost
             if ((pick -= wF) < 0) sp = "baum_kiefer";
             else if ((pick -= wT) < 0) sp = "baum_tanne";
             else if ((pick -= wE) < 0) sp = "baum_eiche";
@@ -1445,18 +1650,19 @@
             }
             // Nur die Weide-Nische (baum_erle) steht im nassen Saum; der Rest würde versaufen.
             if (sp !== "baum_erle" && above <= 1.2) continue;
-            // GRÖSSE: reverse-J + Selbstausdünnung (dichter Stand → kleinere Lose) + seltene
-            // Überhälter (Altbestand). 1:1 aus der Vorlage.
-            let ue = clamp01(rng() * (1 - 0.52 * sd));
-            let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
-            if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
-            s = s < 0.5 ? 0.5 : s > 1.95 ? 1.95 : s;
+            // GRÖSSE + optional Mammut via phyto-core Helper.
+            // RNG-Ordnung unverändert: size (ue/Überhälter) zuerst; Mammut-Roll nur wenn
+            // sp !== baum_erle (Species-Gate Caller-lokal — sonst Drift an prio/keep/…).
+            let s = forestTreeSize(rng, sd);
             let T = (F.crown[sp] || 4.0) * s; // Auto-Arten ohne Kronen-Eintrag → generischer 4-m-Radius
             // MAMMUT-Nische (baum_buche, selten + riesig) an dichten, trockenen Kernen.
-            if (sp !== "baum_erle" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
-                sp = "baum_buche";
-                s = 0.85 + rng() * 0.4;
-                T = F.crown.baum_buche * s;
+            if (sp !== "baum_erle") {
+                const m = forestMammutRoll(rng, sd, clim);
+                if (m.promote) {
+                    sp = "baum_buche";
+                    s = m.s;
+                    T = F.crown.baum_buche * s;
+                }
             }
             const prio = rng(); // Kronen-Schüchternheit: das prio-Maximum im Konflikt-Radius gewinnt
             const keep = rng(); // Perf-Kappung (separat von prio → die Form bleibt beim Dünnen)
@@ -1777,6 +1983,30 @@
         geos.push(g);
     }
 
+    // V18.491.243 Lab+core Phyllotaxis; Host none (PHYLO_VIS).
+    var PHYLO_GESETZ = { golden: Math.PI * (3 - Math.sqrt(5)) };
+    var PHYLO_VIS = { lab: "golden-137.5", host: "none" };
+
+    // V18.491.254 Lab Rayleigh zenith OD; Host none (ATMOS_VIS).
+    // ≠ PHYLO — do not Fake-merge.
+    var ATMOS_GESETZ = { betaR: 0.044, betaG: 0.1, betaB: 0.23 };
+    var ATMOS_VIS = { lab: "rayleigh-3", host: "none" };
+
+    // V18.491.258 Lab air-mass softener + night scale/floor; Host none (LUFT_VIS).
+    // ≠ ATMOS_GESETZ betas — do not Fake-merge.
+    var LUFT_GESETZ = { airSoft: 0.06, nightScale: 0.16, nightLum: 0.06 };
+    var LUFT_VIS = { lab: "air-3", host: "none" };
+
+    // V18.491.264 Lab weather preset table; Host none (WX_VIS).
+    // ≠ ATMOS/LUFT — do not Fake-merge. klar.wind 0.06 is WX, not LUFT.airSoft.
+    var WX_GESETZ = {
+        klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
+        bewoelkt: { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 },
+        nebel: { fog: 1.0, sun: 0.48, grey: 0.46, wind: 0.1, rain: 0.0 },
+        sturm: { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 }
+    };
+    var WX_VIS = { lab: "wx-4", host: "none" };
+
     root.__phytoCore = {
         vn2: vn2,
         fbm2: fbm2,
@@ -1785,9 +2015,34 @@
         impostorFrame: impostorFrame,
         scanRadialXZ: scanRadialXZ,
         forestCellRng: forestCellRng,
+        FOREST_STAND: FOREST_STAND,
         forestStandDensity: forestStandDensity,
+        forestNicheWeights: forestNicheWeights,
+        forestTreeSize: forestTreeSize,
+        forestMammutRoll: forestMammutRoll,
+        forestSizeAndMammut: forestSizeAndMammut,
+        FOREST_TOPOLOGY: FOREST_TOPOLOGY,
+        SCATTER_STRATUM: SCATTER_STRATUM,
+        scatterStratum: scatterStratum,
+        FOREST_PACK: FOREST_PACK,
+        FOREST_LAB: FOREST_LAB,
+        FOREST_SPECIES: FOREST_SPECIES,
+        forestLabToHost: forestLabToHost,
+        forestHostToLab: forestHostToLab,
+        forestGridKey: forestGridKey,
+        forestTooClose: forestTooClose,
+        forestPrioWins: forestPrioWins,
+        forestCrownClear: forestCrownClear,
         planForestCell: planForestCell,
         growSkeleton: growSkeleton,
+        PHYLO_GESETZ: PHYLO_GESETZ,
+        PHYLO_VIS: PHYLO_VIS,
+        ATMOS_GESETZ: ATMOS_GESETZ,
+        ATMOS_VIS: ATMOS_VIS,
+        LUFT_GESETZ: LUFT_GESETZ,
+        LUFT_VIS: LUFT_VIS,
+        WX_GESETZ: WX_GESETZ,
+        WX_VIS: WX_VIS,
         treePhenotype: treePhenotype,
         treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,

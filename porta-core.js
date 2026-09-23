@@ -463,6 +463,47 @@
     // byte-gleich: kalter Kern -> das alte Literal).
     var TUER_GESETZ = { offen: 1.95 };
 
+    // GLUT_GESETZ — Lab+Host portal PointLight (·126). Same numbers as porta.js / _tickPortalLicht.
+    var GLUT_GESETZ = {
+        color: 0xffd9a0,
+        dist: 14,
+        decay: 2,
+        i0: 0.3,
+        iOpen: 3.4,
+        pulseBase: 0.8,
+        pulseAmp: 0.28,
+        ySpring: 0.55,
+    };
+    function glutIntensity(openM, pulse) {
+        var G = GLUT_GESETZ;
+        var o = isFinite(openM) ? openM : 0;
+        var p = isFinite(pulse) ? pulse : 1;
+        return (G.i0 + o * G.iOpen) * (G.pulseBase + G.pulseAmp * p);
+    }
+
+    // NEBEL_GESETZ — Lab uAct + Host nebelAct (·127). Shader/TSL untouched.
+    var NEBEL_GESETZ = {
+        fogDefault: 0.85,
+        actBase: 0.7,
+        actOpen: 0.35,
+    };
+    function nebelAct(fog, openM) {
+        var N = NEBEL_GESETZ;
+        var f = isFinite(fog) ? fog : N.fogDefault;
+        var o = isFinite(openM) ? openM : 0;
+        return f * (N.actBase + N.actOpen * o);
+    }
+
+    // NEBEL_VIS — intentional dual fog pass (Feel-Entscheid .128). Do NOT merge.
+    // lab:"glsl-box" = ShaderMaterial volumetric box + depthRT (porta.js).
+    // host:"tsl-box" = TSL `_nebelMaterialFor` box (anazhRealm).
+    // Like STEER_VIS .124 / RAUCH_VIS .125 / ZONE_PICK .117: naming the Feel, not Fake-zu.
+    // Shader/TSL rewrite = Redesign later. NEBEL_GESETZ numbers stay the one source for uAct/nebelAct.
+    var NEBEL_VIS = {
+        lab: "glsl-box",
+        host: "tsl-box",
+    };
+
     // membranUniforms(p) — die REINE Ableitung der Membran-Uniform-Zahlen aus
     // einem vollen Parametersatz (gateParams-Ausgang). Byte-treu zur Shell
     // (buildMembrane Z.36–51): Geometrie-Rahmen aus deriveGate, Bogen-Oberkante
@@ -525,6 +566,16 @@
         };
     }
 
+    // MESSEN_VIS — intentional dual Lehre surface (Feel-Entscheid .132). Do NOT merge.
+    // lab:"law-ui" = porta.js updateLaw Stich→Schub→Dicke display.
+    // host:"chat-metrologie" = `_portaMessenZeile` / g.messen via core.messen (.87).
+    // Like AUGEN_VIS .131 / TILT_VIS .129: naming the Feel, not Fake-zu.
+    // Werkstatt-Stats-Row = UI-Welle later. messen() formula stays the one source.
+    var MESSEN_VIS = {
+        lab: "law-ui",
+        host: "chat-metrologie",
+    };
+
     root.__portaCore = {
         VERSION: VERSION,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
@@ -537,11 +588,17 @@
         buildInstance: buildInstance,
         // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze)
         messen: messen,
+        MESSEN_VIS: MESSEN_VIS,
         deriveGate: deriveGate,
         deriveFrame: deriveFrame,
         membranPalette: membranPalette,
         MEMBRAN_GESETZ: MEMBRAN_GESETZ,
         TUER_GESETZ: TUER_GESETZ,
+        GLUT_GESETZ: GLUT_GESETZ,
+        glutIntensity: glutIntensity,
+        NEBEL_GESETZ: NEBEL_GESETZ,
+        nebelAct: nebelAct,
+        NEBEL_VIS: NEBEL_VIS,
         membranUniforms: membranUniforms,
         archProfile: archProfile,
         interpTop: interpTop,

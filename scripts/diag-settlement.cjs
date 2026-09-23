@@ -25,6 +25,9 @@
 //     Slot mit unbekannter Kultur MUSS fallen + die Auto-Dorf-Struktur-Gesetze
 //     MÜSSEN auf injizierte Verletzungen feuern (die Linse ist nicht vakuös).
 //   node scripts/diag-settlement.cjs [--selftest]
+// V18.491.186 — Settlement-Golden honesty: live≠golden (2 fixtures) expected until
+//   deliberate MINT_FORCE remint; TEIL B/C remain the living channel (Kanal GRÜN).
+//   Do NOT Fake-remint siedlung.json / no Fake-ERLEDIGT. Remint = Michael Entscheidung.
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");

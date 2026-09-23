@@ -1106,6 +1106,8 @@ class AnazhRealm {
             // baut Meshes nahe Spieler (auf), disposed weite (ab). Save bleibt
             // unabhängig — Daten sind die Wahrheit, Mesh nur Sicht.
             architectures: [],
+            // KAMIN-RAUCH (.105): Settlement-Rauchquellen + Teilchen (Lab dorfRauch-Wire).
+            dorfRauch: { quellen: [], teilchen: [] },
             architectureNextId: 1,
             // Φ7 (V18.190) — DIE PORTAL-HALLEN: kuratierte Welt-Verzeichnisse.
             // Ein Eintrag ist eine signierte Sammlung von Welt-Adressen (Φ1),
@@ -9321,6 +9323,30 @@ class AnazhRealm {
                 },
             },
             {
+                // Sonde/Abnahme: Nacht macht Feld-Beweis schwarz — Mittag erzwingen.
+                example: "setze uhrzeit mittag",
+                re: /^setze\s+(?:uhrzeit|zeit)\s+(mittag|mitternacht|morgen|abend|sonnenaufgang|sonnenuntergang|0(?:\.\d+)?|1(?:\.0+)?)\s*$/i,
+                build: (m) => {
+                    const raw = m[1].toLowerCase();
+                    const map = {
+                        mitternacht: 0,
+                        sonnenaufgang: 0.25,
+                        morgen: 0.3,
+                        mittag: 0.5,
+                        abend: 0.7,
+                        sonnenuntergang: 0.75,
+                    };
+                    const t =
+                        map[raw] !== undefined
+                            ? map[raw]
+                            : Math.max(0, Math.min(1, parseFloat(raw)));
+                    return {
+                        program: ["set_time_of_day", t],
+                        describe: `Uhrzeit gesetzt: ${raw} (${t})`,
+                    };
+                },
+            },
+            {
                 // Ring 11 V2.1: Position embed bei Build-Zeit (sonst spawnt
                 // der Empfänger Kreaturen an SEINER Spielerposition statt
                 // unserer). spawn_creature selbst hat keinen Seed (Kreaturen
@@ -11258,9 +11284,19 @@ class AnazhRealm {
 
     // W4 V3 — den diatonischen Septakkord einer Tonleiter-Stufe als Halbton-
     // Abstände: gestapelte Terzen (Stufe d, d+2, d+4, d+6), mit Oktav-Umbruch.
+    // V18.491.136 COLOR_EXT — dna.color → chord stack width (4/5/6); fail-soft n=4.
     _lofiChordFromDegree(degree) {
+        const studio = this._klangStudioPreset();
+        const dna = studio && studio.dna ? studio.dna : null;
+        const color = dna && Number.isFinite(dna.color) ? dna.color : 0;
+        const kc = typeof globalThis !== "undefined" ? globalThis.__klangCore : null;
+        const ext =
+            kc && typeof kc.colorExt === "function"
+                ? kc.colorExt(color)
+                : 1 + (color > 0.35 ? 1 : 0) + (color > 0.7 ? 1 : 0);
+        const n = 3 + (Number.isFinite(ext) ? ext : 1); // 4 / 5 / 6
         const offsets = [];
-        for (let k = 0; k < 4; k++) offsets.push(this._lofiScaleSemitone(degree + k * 2));
+        for (let k = 0; k < n; k++) offsets.push(this._lofiScaleSemitone(degree + k * 2));
         return offsets;
     }
 
@@ -11537,6 +11573,7 @@ class AnazhRealm {
             { kickDauer: 1, snareHp: 1, snareDauer: 1, hihatHp: 1, hihatGain: 1 },
             (d && T[d]) || null
         );
+        // V18.491.129 TILT_VIS.host=role-db
         // GENRE-STIMMEN (18.07.) — tilt.drums (dB, die Genre-Mixer-Zeile des
         // Gesetzbuchs) reist als linearer Faktor auf alle Trommel-Pegel.
         const tDb = studio && studio.tilt && Number.isFinite(studio.tilt.drums) ? studio.tilt.drums : 0;
@@ -11589,6 +11626,7 @@ class AnazhRealm {
         };
         const alt = { harmony: "triangle", lead: "sine", bass: "triangle" };
         const v = (typeof name === "string" && T[name]) || { type: alt[rolle] || "sine", gain: 1, attackMul: 1 };
+        // V18.491.129 TILT_VIS.host=role-db
         const tiltDb =
             studio && studio.tilt
                 ? rolle === "harmony"
@@ -16087,6 +16125,10 @@ class AnazhRealm {
                                 belegt: this.state.weltMarch.belegt, // Feld-EINTRÄGE (Instanzen)
                                 seiten: Math.ceil(this.state.weltMarch.obergrenze / AnazhRealm.WELT_MARCH.seite), // March-Loop-Grenze in SEITEN
                                 bricks: this.state.weltMarch.brickCache.size, // GETEILTE Gestalten (Dedup)
+                                // ANALOG E — Kapsel-Dedup in den Flugschreiber (nicht nur Live-Konsole)
+                                kapseln: this.state.weltMarch.kapselCache
+                                    ? this.state.weltMarch.kapselCache.size
+                                    : 0,
                                 bloeckeFrei: this.state.weltMarch.freiGross.length,
                                 einheitenFrei: this.state.weltMarch.freiKlein.length,
                                 felderFrei: this.state.weltMarch.freiFelder.length,
@@ -16095,6 +16137,8 @@ class AnazhRealm {
                                 gesetzPlaetze: this.state.weltMarch.gesetzPlaetze || 0,
                             }
                           : null,
+                      // V18.491.90 — letzte Chat-Metrologie-Stempel (Ring, Slice −8) im Export
+                      eMetrologieStamps: (this._eMetrologieStamps || []).slice(-8),
                       // (d) DER INGEST-TAKT (sechste Welle): freigegeben gesamt + Stau-
                       // Spitze — der Beweis, dass Konversions-Bursts nie mehr bündeln.
                       ingestTakt: {
@@ -17893,6 +17937,10 @@ class AnazhRealm {
         group.visible = true;
         group.userData.kind = "creature";
         group.userData.soul = chosenSoul;
+        // ANALOG A — kanonische Gattung am Körper (Dedup-Schlüssel Gattung×Glied):
+        // Studio-Rezept-Id wenn gemappt, sonst die Seele selbst (Custom/Geist).
+        group.userData.gattung =
+            (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[chosenSoul]) || chosenSoul;
         group.userData.name = this._pickCreatureName();
         // Kreatur-Sicht-Sync — eine pro-Peer eindeutige netId für den
         // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
@@ -18481,6 +18529,14 @@ class AnazhRealm {
             _morphDials: dials,
             _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
         };
+        // V18.491.85 — Augen-Welle: iris/lid aus Ofen-Gelenken (fail-closed ohne Refs).
+        // Nicht MOTION_RIG_MAP — eigene Welle außerhalb der Knochen-Map.
+        rig.irisL = P2("irisL");
+        rig.irisR = P2("irisR");
+        rig.lidTL = P2("lidTL");
+        rig.lidTR = P2("lidTR");
+        rig.lidBL = P2("lidBL");
+        rig.lidBR = P2("lidBR");
         return { mesh: wrap, rig, kh, bones: [] };
     }
 
@@ -18809,7 +18865,9 @@ class AnazhRealm {
             // LESER: das koerper-fx.motion-Profil (Da-Vinci-Studio, über die EINE Emotions-
             // Brücke) führt den Atem (breath/freq, auf das Lab-idle NORMALISIERT → neutral
             // exakt byte-alt 0.02/1.6) und die Emotions-POSE (MOTION_RIG_MAP-Deltas relativ
-            // zum Lab-idle: sad → Kopf sinkt 0.18, joy → Arme heben 0.6, fear → Deckung).
+            // zum Lab-idle: sad → Kopf sinkt 0.18, joy → Arme heben 0.6, fear → Deckung;
+            // V18.491.82 — headY·spineY·hipLZ/hipRZ reisen im Buch und mappt der Rig jetzt
+            // (angry/fight-Standbreite, Yaw) — Hyperlink: Gesetz reist, Host wertet lokal).
             // Fail-soft: kaltes Buch → mp null → die Host-Konstanten, byte-identisch. Der
             // Rig bleibt der ANIMATOR (SkinnedMesh-Wand) — er LIEST nur die Studio-Zahlen.
             const wi = 1 - w;
@@ -18835,15 +18893,43 @@ class AnazhRealm {
             add(r.armR.elbow, "x", -0.1 * wi);
             // Die Emotions-Pose als DATEN-Deltas (mp === mref am Neutralpunkt → Schleife
             // trägt Nullen → byte-alt; mp/mref sind dieselbe Preset-Referenz bei "idle").
+            // V18.491.142 KPMUL_VIS α-path; kpMul>=1 byte-alt instant; tetrapoda .81 sibling.
+            const kpMul = mp && Number.isFinite(Number(mp.kpMul)) ? Number(mp.kpMul) : 1;
+            const dtK = r._kpmulT != null ? Math.max(0, Math.min(0.08, t - r._kpmulT)) : 0;
+            r._kpmulT = t;
+            if (mp && mref && mp === mref) r._kpmulAcc = null;
             if (mp && mref && mp !== mref) {
+                if (!r._kpmulAcc) r._kpmulAcc = Object.create(null);
+                const a =
+                    kpMul >= 0.999 || dtK <= 0
+                        ? 1
+                        : 1 - Math.exp(-Math.max(18, 55 * kpMul) * dtK);
                 for (const row of AnazhRealm.MOTION_RIG_MAP) {
                     const dv = ((Number(mp[row.key]) || 0) - (Number(mref[row.key]) || 0)) * wi;
-                    if (!dv) continue;
+                    const accKey = row.key + "." + row.axis;
+                    const prev = r._kpmulAcc[accKey] || 0;
+                    const out = prev + (dv - prev) * a;
+                    r._kpmulAcc[accKey] = out;
+                    if (!out) continue;
                     const seg = row.bone.split(".");
                     const bone = seg.length === 2 ? r[seg[0]] && r[seg[0]][seg[1]] : r[seg[0]];
-                    if (bone && bone.rotation) bone.rotation[row.axis] += dv * row.mul;
+                    if (bone && bone.rotation) bone.rotation[row.axis] += out * row.mul;
                 }
             }
+            // BODY-WELLE (18.491.86) — Lab Root-Pitch/Roll + Mikro-Sway → Host hips.
+            // Nicht MOTION_RIG_MAP (kein Knochen-Gap; Überlapp Kontrapost bewusst klein halten).
+            if (r.hips && mp) {
+                const m0 = mref || mp;
+                const dX = ((Number(mp.bodyX) || 0) - (Number(m0.bodyX) || 0)) * wi;
+                const dZ = ((Number(mp.bodyZ) || 0) - (Number(m0.bodyZ) || 0)) * wi;
+                add(r.hips, "x", dX);
+                add(r.hips, "z", dZ);
+                // Mikro-Sway: absolute Amp wie Lab e.sway (idle bleibt fühlbar; mp===mref → nur sway)
+                const swayA = Number.isFinite(mp.sway) ? mp.sway : 0.022;
+                add(r.hips, "z", Math.sin(t * 1.1) * swayA * wi);
+                add(r.hips, "x", Math.sin(t * 0.7) * swayA * 0.35 * wi);
+            }
+            // V18.491.142 KPMUL_VIS.host=map-alpha — map-α reads kpMul; still no MOTION_RIG_MAP kpMul row (Vertrag .87 Map-Verbot).
         }
         if (w > 0.001) {
             // ── GEHEN ×w — Beine gegenphasig (Hüft-Schwung ±0.5; Knie nur beugen, Drag
@@ -18875,6 +18961,50 @@ class AnazhRealm {
         // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
         // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
         if (gait && gait.ik) this._gaitApplyFussIK(r, walkPhase, w, gait.ik);
+        // V18.491.85 — Augen-Welle außerhalb MOTION_RIG_MAP (irisSpeed/blinkRate).
+        this._animateHumanoidAugen(r, t, emotions);
+    }
+
+    // V18.491.85 — Augen-Welle: Ofen-Joints iris/lid aus koerper-MOTION (außerhalb Map).
+    // Fail-closed ohne Refs; Idle erlaubt schwachen Blink (Lab-idle blinkRate).
+    // V18.491.131 AUGEN_VIS.host=noise-iris
+    _animateHumanoidAugen(rig, t, emotions) {
+        if (!(rig && (rig.irisL || rig.irisR || rig.lidTL || rig.lidTR))) return;
+        const mp = this._koerperMotionProfile(false, emotions);
+        if (!mp) return;
+        const blinkRate = Math.max(0.1, Number(mp.blinkRate) || 0.5);
+        if (rig._lidBaseY == null) {
+            const sample = rig.lidTL || rig.lidTR;
+            rig._lidBaseY = sample && sample.scale ? sample.scale.y : 0.35;
+        }
+        // Deterministisch: Periode aus blinkRate (Lab-Mitte ~1.0/rate), Pulse ~0.09s.
+        const period = 1.0 / blinkRate;
+        const phase = ((t % period) + period) % period;
+        const blinkDur = 0.09;
+        let open = 1.0;
+        if (phase < blinkDur) {
+            const bf = phase / blinkDur;
+            // Lab-Form: zu → 0.3 → auf; open 1→0.3→1
+            open = bf < 0.45 ? 1.0 - (bf / 0.45) * 0.7 : 0.3 + ((bf - 0.45) / 0.55) * 0.7;
+        }
+        const lidY = rig._lidBaseY * open; // offen≈base, zu≈0.3*base
+        if (rig.lidTL && rig.lidTL.scale) rig.lidTL.scale.y = lidY;
+        if (rig.lidTR && rig.lidTR.scale) rig.lidTR.scale.y = lidY;
+        const irisSpeed = Number.isFinite(mp.irisSpeed) ? mp.irisSpeed : 0.3;
+        if (rig.irisL && !rig._irisBaseL && rig.irisL.position) {
+            rig._irisBaseL = rig.irisL.position.clone();
+        }
+        if (rig.irisR && !rig._irisBaseR && rig.irisR.position) {
+            rig._irisBaseR = rig.irisR.position.clone();
+        }
+        const ox = Math.sin(t * (2 + irisSpeed * 2)) * 0.003;
+        const oy = Math.sin(t * (1.6 + irisSpeed * 1.6) + 1.7) * 0.002;
+        if (rig.irisL && rig._irisBaseL) {
+            rig.irisL.position.set(rig._irisBaseL.x + ox, rig._irisBaseL.y + oy, rig._irisBaseL.z);
+        }
+        if (rig.irisR && rig._irisBaseR) {
+            rig.irisR.position.set(rig._irisBaseR.x + ox, rig._irisBaseR.y + oy, rig._irisBaseR.z);
+        }
     }
 
     // ABSCHIEDS-WELLE (Koerper-Dock A2) — DIE EINE KREATUR-DIAL-QUELLE: liest die fünf
@@ -19257,6 +19387,7 @@ class AnazhRealm {
         // überlagern P (einmal je Aktion gemerged), die Sonder-Kanäle dreh/
         // kopfSweep/rollAmp/rollRate wirken unten an Rumpf/Kopf. Abgelaufene
         // Aktion fällt hier (EIN Verfalls-Ort für beide Leser).
+        // BEH_PICK.host = "aktionen.profil" — Feel .119; Host mood merge (no Fake-Merge with labKurven).
         let VA = group.userData && group.userData._verhaltenAktion;
         if (VA) {
             const nowS = performance.now() / 1000;
@@ -19320,6 +19451,9 @@ class AnazhRealm {
             [0, 0, 0, 0],
         ];
         let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul;
+        // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
+        // additiv neben sway·sin); ohne Feld 0 = byte-alt.
+        roll += (Number(P.bodyZ) || 0) * fadeMul;
         // KREATUR-LEBEN — die Sonder-Kanäle der Aktion: Schüttel-Rolle, Ganz-
         // körper-Drehung (linear über die Dauer — endet bei dreh=2π nahtlos),
         // Kopf-Pendel (Scan). Ohne Aktion alles 0 = byte-alt.
@@ -19341,9 +19475,36 @@ class AnazhRealm {
             // Profile war bislang unkonsumiert (hunt pirscht jetzt wirklich
             // geduckt, playbow verbeugt sich); der Hang-Pitch lebt getrennt
             // am Kreatur-ROOT (creature.rotation.x) — kein Konflikt.
-            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul;
+            // V18.491.80 — bob (Galopp-Federn): Lab schreibt spineX·bob·sin(ph·2);
+            // Host verdichtet auf wolf.rotation.x (kein separater Spine-Tick).
+            const bob = (Number(P.bob) || 0) * fadeMul;
+            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob;
             T.wolf.rotation.y = drehY;
         }
+        // V18.491.81 — ZIP/LAB→HOST PD-Kanäle: tension·kpMul reisen im MOTION-
+        // Preset (Lab: bodyPhys-Plant + pd.kp/kd). Host verdichtet: tension →
+        // Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige Bein-Näherung.
+        // Fehlend → 1.0 (Lab-idle / byte-nahe Defaults).
+        const tension = Number.isFinite(Number(P.tension)) ? Number(P.tension) : 1.0;
+        const kpMul = Number.isFinite(Number(P.kpMul)) ? Number(P.kpMul) : 1.0;
+        if (!g.prevSt) g.prevSt = [0, 0, 0, 0];
+        if (!Number.isFinite(g.plantX)) g.plantX = 0;
+        if (dt > 0) g.plantX *= Math.exp(-14 * dt);
+        if (st > 0.002) {
+            for (let pi = 0; pi < 4; pi++) {
+                const ns = Math.max(0, -Math.sin(g.ph[pi]));
+                if (g.prevSt[pi] < 0.05 && ns > 0.15) g.plantX -= 0.012 * tension;
+                g.prevSt[pi] = ns;
+            }
+        } else {
+            for (let pi = 0; pi < 4; pi++) g.prevSt[pi] = Math.max(0, -Math.sin(g.ph[pi]));
+        }
+        if (T.wolf) T.wolf.rotation.x += g.plantX * fadeMul;
+        // V18.491.80 — ear: Lab setzt earL.z=+ear / earR.z=−ear (MOTION.ear);
+        // teile.earL/earR kommen aus dem __skelett-Beipack (Ofen). Fehlt → skip.
+        const ear = (Number(P.ear) || 0) * fadeMul;
+        if (T.earL) T.earL.rotation.z = ear;
+        if (T.earR) T.earR.rotation.z = -ear;
         const ketten = [
             [T.legFL, T.flU, T.flL, T.flP],
             [T.legFR, T.frU, T.frL, T.frP],
@@ -19352,6 +19513,15 @@ class AnazhRealm {
         ];
         const spr = st > 0.08 ? 2.0 : st > 0.02 ? 1.4 : 1.0;
         const seiten = [-1, 1, -1, 1];
+        // V18.491.81 — kpMul: Lab skaliert pd.kp/kd; Host = einpolige Ziel-Näherung
+        // (höher → knackiger). State an tb._gang; NeutralStance nullt den Gang.
+        if (!g.legCur) g.legCur = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ];
+        const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * dt) : 1;
         for (let i = 0; i < 4; i++) {
             const ph = g.ph[i];
             const K = ketten[i];
@@ -19360,7 +19530,10 @@ class AnazhRealm {
             let z0, z1, z2, z3;
             if (st < 0.002) {
                 // Stand: STAND_POSE + Gewichts-Unruhe + Roll-Shift (Lab-Mathe, t-Sinus).
-                const wn = Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003;
+                // V18.491.81 — tension skaliert Unruhe (Lab ribcage/support-Verwandte).
+                const wn =
+                    (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) *
+                    tension;
                 const wShift = roll * seiten[i] * 0.025;
                 z0 = SP[i][0] + wn + wShift;
                 z1 = SP[i][1] + wn * 0.5 + wShift * 0.3;
@@ -19372,15 +19545,29 @@ class AnazhRealm {
                 z2 = swing * 0.8 + stance * 0.12 + Math.max(0, Math.sin(ph + 0.5)) * st * 0.4;
                 z3 = swing * 0.45 + stance * 0.05 + Math.max(0, Math.sin(ph + 1.0)) * st * 0.25;
             }
-            if (K[0]) K[0].rotation.x = z0;
-            if (K[1]) K[1].rotation.x = z1;
-            if (K[2]) K[2].rotation.x = z2;
-            if (K[3]) K[3].rotation.x = z3;
+            const cur = g.legCur[i];
+            if (!g.legInit) {
+                cur[0] = z0;
+                cur[1] = z1;
+                cur[2] = z2;
+                cur[3] = z3;
+            } else {
+                cur[0] += (z0 - cur[0]) * legA;
+                cur[1] += (z1 - cur[1]) * legA;
+                cur[2] += (z2 - cur[2]) * legA;
+                cur[3] += (z3 - cur[3]) * legA;
+            }
+            if (K[0]) K[0].rotation.x = cur[0];
+            if (K[1]) K[1].rotation.x = cur[1];
+            if (K[2]) K[2].rotation.x = cur[2];
+            if (K[3]) K[3].rotation.x = cur[3];
         }
+        g.legInit = true;
         if (T.headGroup) {
             T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul;
             // KREATUR-LEBEN — das Scan-Pendel (kopfSweep); ohne Aktion 0 = byte-alt.
-            T.headGroup.rotation.y = sweepY;
+            // V18.491.80 — headY aus MOTION-Preset (Lab-Yaw) + Sweep additiv.
+            T.headGroup.rotation.y = sweepY + (Number(P.headY) || 0) * fadeMul;
         }
         const amp = (Number(P.tailAmp) || 0.1) * fadeMul;
         const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
@@ -19835,9 +20022,23 @@ class AnazhRealm {
                     phase = (M.px >= 0 ? 0 : 1) % 2 === 0 ? 0 : Math.PI;
                 }
                 const side = M.px > 0.02 ? 1 : M.px < -0.02 ? -1 : 1;
-                roles[movIdx] = { role: jointRole, side, phase, anchor, axis: jointAxis, joint: true };
+                const roleObj = { role: jointRole, side, phase, anchor, axis: jointAxis, joint: true };
+                // V18.491.120 — Achs-Semantik front/heck placeholder (second pass fills from longitudinal x)
+                if (jointRole === "rad") roleObj.front = false;
+                roles[movIdx] = roleObj;
                 any = true;
             }
+        }
+        // V18.491.120 — Achs-Semantik front/heck from longitudinal x (Lab corners.front; Host had none).
+        const rads = [];
+        for (let i = 0; i < roles.length; i++) {
+            if (roles[i] && roles[i].role === "rad") rads.push(roles[i]);
+        }
+        if (rads.length >= 2) {
+            let sx = 0;
+            for (let i = 0; i < rads.length; i++) sx += rads[i].anchor.x;
+            const mid = sx / rads.length;
+            for (let i = 0; i < rads.length; i++) rads[i].front = rads[i].anchor.x > mid + 1e-4;
         }
         return any ? roles : null;
     }
@@ -19980,6 +20181,7 @@ class AnazhRealm {
         }
         if (nowS < ud._verhaltenNext) return;
         const h = this._verhaltenHash((i + 1) * 2654435761, nowS | 0);
+        // BEH_PICK.host — Feel .119; picks V.aktionen[name] (aktionen.profil world).
         const name = row.aktionen[h % row.aktionen.length];
         const def = V.aktionen[name];
         if (!def) return;
@@ -20100,7 +20302,7 @@ class AnazhRealm {
     // Center-Pivot-Schwünge in der Sprache der Hand-Skelette: absolute Werte
     // pro Frame (Basis + Delta, kein Drift); die Basis-Rotationen (part.rotation)
     // werden einmal eingefangen und geehrt. t in Sekunden.
-    _animateCompoundMotion(group, roles, t, walkPhase, moving, emotions) {
+    _animateCompoundMotion(group, roles, t, walkPhase, moving, emotions, steerYaw) {
         // KONVERGENZ III — EIN Chokepoint: Baum-Tiere (bauTier-Gestalt) animieren
         // über den Baum-Gang; ALLE Aufrufer (Welt-Kreaturen, Peers, Verkörperung)
         // laufen hier durch — kein Parallel-Verzweigen an jedem Aufrufer.
@@ -20178,6 +20380,10 @@ class AnazhRealm {
                     // das Rad ROLLT: mit Fahrt ∝ walkPhase, im Idle (Architektur:
                     // Mühle/Wasserrad) eine ruhige Dauer-Drehung.
                     applyJoint(c, b, r, moving ? walkPhase * 1.6 : t * 0.7);
+                    // V18.491.120 — Lab hub.rotation.y = car.steer. Roll is typically x/z; compose yaw on Y from captured base.
+                    if (r.front && Number.isFinite(steerYaw) && r.axis !== "y") {
+                        c.rotation.y = b.ry + steerYaw;
+                    }
                 } else if (r.role === "tuer") {
                     applyJoint(c, b, r, Math.sin(t * 0.7 + r.phase) * 0.12);
                 } else if (r.role === "wirbel") {
@@ -23026,8 +23232,17 @@ class AnazhRealm {
             [0, 0, 0, 0],
         ];
         const T = tb.teile;
-        if (T.wolf) T.wolf.rotation.z = 0;
-        if (T.headGroup) T.headGroup.rotation.x = 0;
+        if (T.wolf) {
+            T.wolf.rotation.z = 0;
+            T.wolf.rotation.x = 0;
+        }
+        if (T.headGroup) {
+            T.headGroup.rotation.x = 0;
+            T.headGroup.rotation.y = 0;
+        }
+        // V18.491.80 — ear-Kanäle mit einfrieren (sonst Mid-ear-Pop beim Aufwachen).
+        if (T.earL) T.earL.rotation.z = 0;
+        if (T.earR) T.earR.rotation.z = 0;
         const ketten = [
             [T.legFL, T.flU, T.flL, T.flP],
             [T.legFR, T.frU, T.frL, T.frP],
@@ -23098,12 +23313,12 @@ class AnazhRealm {
         p.g = typeof g === "number" && Number.isFinite(g) ? g : NaN;
     }
 
-    // ═══ DER KREATUR-ZIEGEL (Tiere als GLIEDER-Felder — die lebende Form) ═══
-    // Das Tier IST seine Felder (VOLLE FORM, KREATUR_ZIEGEL_DIST=0): jedes
-    // GLIED (die tierBaum-Teile, die _animateTierBaum rotiert) ist ein eigenes
-    // Brick im Atlas; je Frame reist die Knochen-Matrix in die Liste
-    // (_weltFeldMatrix — MATRIX DER MATRIX) → das Feld ANIMIERT mit dem Gang,
-    // und die Zerlegung IST die Auflösung (32³ je Glied statt je Tier).
+    // ═══ DER KREATUR-ZIEGEL (Tiere als GLIEDER-KAPSELN — die lebende Form) ═══
+    // Das Tier IST seine Kapsel-Gesetze (VOLLE FORM, KREATUR_ZIEGEL_DIST=0):
+    // jedes GLIED (tierBaum-Teile, die _animateTierBaum rotiert) ist Achse +
+    // Radius + Farbe; Dedup je Gattung×Glied; je Frame reist die Knochen-Matrix
+    // in die Liste (_weltFeldMatrix — MATRIX DER MATRIX) → der March sphere-
+    // tract sie im Glied-Raum. Voxel-Glieder-Bricks der Kreaturen: GEFALLEN.
     // Bake getaktet (Bake-Garantie), headless byte-alt, Tod räumt.
     _tickKreaturZiegel(playerPos) {
         const st = this.state;
@@ -23115,16 +23330,10 @@ class AnazhRealm {
             const dz = cr.position.z - playerPos.z;
             const fern = dx * dx + dz * dz > D2;
             const u = cr.userData || (cr.userData = {});
-            if (!fern) {
-                if (u._kzGlieder) {
-                    for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, false);
-                    cr.visible = true;
-                }
-                continue;
-            }
-            // ANALOG (Schöpfer-Wort 21.07.): das Glied ist eine KAPSEL — die
-            // Auflösung kommt vom Strahl, nicht vom Import; die Tier-Leiter
-            // der Voxel-Ära fiel ersatzlos (kein Wechsel, kein Re-Bake).
+            // ANALOG A (Armlänge = Feld): auch nah ist die Kapsel die Gestalt.
+            // KREATUR_ZIEGEL_DIST=0 → fern war praktisch immer true; der alte
+            // !fern-Mesh-Rückweg ist tot (kein Parallelpfad mehr).
+            void fern; // Distanz-Linse bleibt messbar, steuert nicht mehr Mesh↔Feld
             if (!u._kzGlieder) {
                 if (u._kzVersuch) {
                     // KEIN RÜCKWEG: der Fit ist gefallen — das Tier rendert nie
@@ -23181,9 +23390,8 @@ class AnazhRealm {
         const scratchA = this._creatureScratchA || (this._creatureScratchA = new THREE.Vector3());
         const scratchB = this._creatureScratchB || (this._creatureScratchB = new THREE.Vector3());
         const playerPos = this.state.playerMesh.position;
-        // DER KREATUR-ZIEGEL (der letzte Bogen der Karte der Formen): ferne
-        // Tiere werden Feld — das Feld WANDERT mit dem Tier (lebende
-        // Uniform-Referenz, dafür lag sie bereit).
+        // DER KREATUR-ZIEGEL (Analog A): Tiere sind Kapsel-Feld — das Feld
+        // WANDERT mit dem Tier (lebende Knochen-Matrix, Matrix der Matrix).
         this._tickKreaturZiegel(playerPos);
         // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
         const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
@@ -25241,8 +25449,158 @@ class AnazhRealm {
     }
 
     // ### Chat ###
+    // Async-Spawn (Dorf) → sichtbares Chat-Echo (nicht nur Logbuch).
+    // ANALOG E — live Metrologie-Zeile für Beweis-Schüsse (fail-closed: fehlende
+    // Quellen als "?" / ROT, keine erfundenen Zahlen). Chat: metrologie | analog e | zahlen.
+    _analogEMetrologieZeile() {
+        const v = AnazhRealm.VERSION || "?";
+        const wm = this.state && this.state.weltMarch;
+        const s = this.state && this.state.perfSense;
+        const ri =
+            this.state && this.state.renderer && this.state.renderer.info && this.state.renderer.info.render
+                ? this.state.renderer.info.render
+                : null;
+        const pos =
+            this.state && this.state.playerMesh && this.state.playerMesh.position
+                ? this.state.playerMesh.position
+                : null;
+        const n = (x) => (typeof x === "number" && Number.isFinite(x) ? String(Math.round(x)) : "?");
+        const dcLive = ri ? (ri.drawCalls != null ? ri.drawCalls : ri.calls) : null;
+        const trisLive = ri ? ri.triangles : null;
+        // Prefer live renderer.info; fall back to perfSense EWMA (may be 0 at idle).
+        const dc = typeof dcLive === "number" ? dcLive : s ? s.renderCalls : null;
+        const tris = typeof trisLive === "number" ? trisLive : s ? s.renderTris : null;
+        const belegt = wm ? wm.belegt : null;
+        const bricks = wm && wm.brickCache ? wm.brickCache.size : null;
+        const kapseln = wm && wm.kapselCache ? wm.kapselCache.size : null;
+        const gesetzB = wm ? wm.gesetzBloecke : null;
+        const gesetzP = wm ? wm.gesetzPlaetze : null;
+        const posS = pos
+            ? `${Math.round(pos.x)}/${Math.round(pos.y)}/${Math.round(pos.z)}`
+            : "?/?/?";
+        const pflicht = [dc, tris, belegt, bricks, kapseln];
+        const ok = pflicht.every((x) => typeof x === "number" && Number.isFinite(x));
+        const head = ok ? "E OK" : "E ROT";
+        return (
+            `${head} V${v} tris=${n(tris)} dc=${n(dc)} belegt=${n(belegt)} bricks=${n(bricks)}` +
+            ` kapseln=${n(kapseln)} gesetzB=${n(gesetzB)} gesetzP=${n(gesetzP)} pos=${posS}`
+        );
+    }
+    // V18.491.90 — Analog-E Stempel-Ring (browser-safe): Chat-Zahlen neben späteren
+    // Beweis-Bildern; echter Disk-Pfad = Flugschreiber-Export (anazhRealmPerf.json).
+    _analogEMetrologieStempelLog(zeile) {
+        try {
+            const entry = {
+                t: Date.now(),
+                zeile: String(zeile || ""),
+                ver: AnazhRealm.VERSION || "?",
+            };
+            if (!Array.isArray(this._eMetrologieStamps)) this._eMetrologieStamps = [];
+            this._eMetrologieStamps.push(entry);
+            while (this._eMetrologieStamps.length > 32) this._eMetrologieStamps.shift();
+            const hook =
+                typeof window !== "undefined" && typeof window.__anazhEMetrologieLog === "function"
+                    ? window.__anazhEMetrologieLog
+                    : null;
+            if (hook) {
+                try {
+                    hook(entry);
+                } catch (_) {}
+            }
+        } catch (_) {}
+    }
+    _analogEMetrologieStamps() {
+        return Array.isArray(this._eMetrologieStamps) ? this._eMetrologieStamps.slice() : [];
+    }
+    // V18.491.87 — porta messen Chat-Echo (metrologie): PRESETS warm → Stich/Schub; kalt → null.
+    // V18.491.132 MESSEN_VIS.host=chat-metrologie
+    _portaMessenZeile() {
+        const core = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
+        if (!core || typeof core.messen !== "function" || !core.PRESETS) return null;
+        const keys = Object.keys(core.PRESETS).slice(0, 3);
+        const parts = [];
+        const fmt = (x) =>
+            typeof x === "number" && Number.isFinite(x)
+                ? x.toFixed(2)
+                : x == null
+                  ? "?"
+                  : String(x);
+        for (const k of keys) {
+            try {
+                const pre = core.PRESETS[k];
+                const P = (pre && pre.s) || pre;
+                const m = core.messen(P);
+                if (m)
+                    parts.push(
+                        `${k}:{stich=${fmt(m.stich)},schub=${fmt(m.schub)},dicke=${fmt(m.dicke)},streckung=${fmt(m.streckung)}}`
+                    );
+            } catch (_) {}
+        }
+        return parts.length ? `porta ${parts.join(" ")}` : null;
+    }
+    // V18.491.88 — vehicle LEHREN Chat-Echo (metrologie): PRESETS warm → pass/warn/fail; kalt → null.
+    _vehicleLehrenZeile() {
+        const core = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+        if (!core || typeof core.evalLehren !== "function" || !core.PRESETS) return null;
+        const keys = Object.keys(core.PRESETS)
+            .filter((k) => {
+                const pre = core.PRESETS[k];
+                return !pre || pre.kind == null || pre.kind === "vehicle";
+            })
+            .slice(0, 3);
+        const parts = [];
+        for (const k of keys) {
+            try {
+                const pre = core.PRESETS[k];
+                const P = Object.assign({}, (pre && pre.s) || {}, (pre && pre.fx) || {});
+                const rows = core.evalLehren(P);
+                if (!Array.isArray(rows) || !rows.length) continue;
+                let pass = 0,
+                    warn = 0,
+                    fail = 0;
+                const failIds = [];
+                let worst = null;
+                for (const r of rows) {
+                    const st = r && r.st;
+                    if (st === "fail") {
+                        fail++;
+                        const id = r.L && r.L.id;
+                        if (id) failIds.push(id);
+                        if (!worst) worst = id || "fail";
+                    } else if (st === "warn") {
+                        warn++;
+                        if (!worst) worst = (r.L && r.L.id) || "warn";
+                    } else if (st === "pass") pass++;
+                }
+                let s = `${k}:{pass=${pass},warn=${warn},fail=${fail}}`;
+                if (failIds.length) s += ` fail=[${failIds.slice(0, 3).join(",")}]`;
+                else if (warn && worst) s += ` worst=${worst}`;
+                parts.push(s);
+            } catch (_) {}
+        }
+        return parts.length ? `vehicle ${parts.join(" ")}` : null;
+    }
+    _chatEcho(message) {
+        try {
+            const chatOutput = document.getElementById("chat-output");
+            if (!chatOutput) return;
+            const line = document.createElement("div");
+            line.textContent = String(message || "");
+            chatOutput.appendChild(line);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        } catch (_) {}
+    }
     processChatCommand(command) {
-        const parts = command.toLowerCase().trim().split(" ");
+        // Chat-Naht: ZWSP/BOM/Weird-Spaces killen sonst exakte Patterns
+        // (Sonde: „werde wolf" → Unbekannt, Suggest aber „werde wolf").
+        // Suffix-Müll nach kanonischem Suggest: siehe Legacy-Dispatch (hierblwv).
+        command = String(command || "")
+            .normalize("NFC")
+            .replace(/[\u200B-\u200D\uFEFF]/g, "")
+            .replace(/[\u00A0\u202F\u2007]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        const parts = command.toLowerCase().split(" ");
         const chatInput = document.getElementById("chat-input");
         const chatOutput = document.getElementById("chat-output");
         const appendChatOutput = (message) => {
@@ -25300,6 +25658,48 @@ class AnazhRealm {
         // (pro-Subsystem ms) + wie der Regelkreis steht (loadScale/δ/Stellgrößen).
         if (vc === "perf" || vc === "perf sense" || vc === "debug perf") {
             this._togglePerfOverlay();
+            return true;
+        }
+        // ANALOG E — eine Zeile Tris/dc/weltMarch/kapseln in den Chat (neben dem Bild).
+        if (vc === "metrologie" || vc === "analog e" || vc === "zahlen") {
+            const zeile = this._analogEMetrologieZeile();
+            this._chatEcho(zeile);
+            this.log(zeile, "INFO");
+            try {
+                this._analogEMetrologieStempelLog(zeile);
+            } catch (_) {}
+            const portaZeile = this._portaMessenZeile();
+            if (portaZeile) {
+                this._chatEcho(portaZeile);
+                this.log(portaZeile, "INFO");
+            }
+            const vehicleZeile = this._vehicleLehrenZeile();
+            if (vehicleZeile) {
+                this._chatEcho(vehicleZeile);
+                this.log(vehicleZeile, "INFO");
+            }
+            return true;
+        }
+        // Konsum: wo stehen die Bauten? (Sonde soll nicht in die Schlucht starren)
+        if (vc === "bauten" || vc === "zeige bauten") {
+            const list = (this.state && this.state.architectures) || [];
+            const pm = this.state && this.state.playerMesh && this.state.playerMesh.position;
+            let nearest = null;
+            let nHaus = 0;
+            let nZiegel = 0;
+            for (const e of list) {
+                if (!e || !e.position) continue;
+                if (typeof e.type === "string" && e.type.startsWith("haus_")) nHaus++;
+                if (e._ziegelSlot) nZiegel++;
+                if (!pm) continue;
+                const d = Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
+                if (!nearest || d < nearest.d) nearest = { d, e };
+            }
+            const zeile = nearest
+                ? `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} nah=${nearest.e.type} @${Math.round(nearest.e.position.x)}/${Math.round(nearest.e.position.y)}/${Math.round(nearest.e.position.z)} d=${Math.round(nearest.d)}m`
+                : `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} (kein Spieler)`;
+            this._chatEcho(zeile);
+            this.log(zeile, "INFO");
             return true;
         }
         // Determinismus-Bogen P3 — die Feld-Physik ist die einzige Physik (Ammo ist raus).
@@ -25967,6 +26367,26 @@ class AnazhRealm {
         }
         const suggestion = this.chatSuggest(command);
         if (suggestion) {
+            const norm = command.trim().toLowerCase();
+            const sug = String(suggestion).trim().toLowerCase();
+            // Exact/nahe: nicht „Meintest du X?" wenn X schon getippt war —
+            // unsichtbare Zeichen oder 1-Tippfehler → Suggestion ausführen.
+            // Suffix-Müll (Sonde: „baue dorf hierblwv") und 1-Tippfehler → ausführen
+            const suffixJunk =
+                norm.startsWith(sug) && /^[a-zäöüß0-9]{1,8}$/i.test(norm.slice(sug.length));
+            if (norm === sug || this.levenshtein(norm, sug) <= 1 || suffixJunk) {
+                if (this._chatTryDslParse(suggestion, { value: "" }, appendChatOutput)) return;
+                for (const p of this.chatSystemPatterns) {
+                    const m = String(suggestion).trim().match(p.re);
+                    if (!m) continue;
+                    try {
+                        p.run(m, appendChatOutput);
+                    } catch (err) {
+                        appendChatOutput(`(Befehl-Fehler: ${err && err.message})`);
+                    }
+                    return;
+                }
+            }
             appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
         } else {
             // E1 (V18.127) — der System-Teil der Hilfe wird aus der EINEN
@@ -35445,6 +35865,12 @@ class AnazhRealm {
         if (!g) {
             const p = core.gateParams(pre);
             g = { gestalt, p, mu: core.membranUniforms(p), gesetz: core.MEMBRAN_GESETZ };
+            // V18.491.87 — porta messen Host-Leser: Stich/Schub/Dicke/Streckung am Rezept (fail-soft).
+            if (typeof core.messen === "function") {
+                try {
+                    g.messen = core.messen(p);
+                } catch (_) {}
+            }
             this._torGesetzMemo.set(gestalt, g);
         }
         return g;
@@ -35479,7 +35905,19 @@ class AnazhRealm {
         if (!g) {
             // s+fx ist exakt der Brücken-Merge (phytogenesis fahrprofil-Münze) —
             // der Kern mergt DEFAULT_P+BASE_P intern davor: EINE Merge-Ordnung.
-            g = { gestalt, drive: core.exportDrive(Object.assign({}, pre.s, pre.fx)) };
+            const P = Object.assign({}, pre.s, pre.fx);
+            g = { gestalt, drive: core.exportDrive(P) };
+            // V18.491.88 — vehicle LEHREN/messen Host-Leser (fail-soft; exportDrive unverändert).
+            if (typeof core.evalLehren === "function") {
+                try {
+                    g.lehren = core.evalLehren(P);
+                } catch (_) {}
+            }
+            if (typeof core.messen === "function") {
+                try {
+                    g.messen = core.messen(P);
+                } catch (_) {}
+            }
             this._fahrzeugGesetzMemo.set(gestalt, g);
         }
         return g;
@@ -39575,6 +40013,48 @@ class AnazhRealm {
                 "    return vec3<f32>(gx, gy, gz);\n" +
                 "}"
         );
+        // Analog-B Slice 2 — IQ truncated cone
+        const sdCappedConeFn = TSL.wgslFn(
+            "fn sdCappedCone(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, ra: f32, rb: f32) -> f32 {\n" +
+                "    let ba = b - a;\n" +
+                "    let baba = dot(ba, ba);\n" +
+                "    let papa = dot(p - a, p - a);\n" +
+                "    let paba = dot(p - a, ba) / max(baba, 1e-8);\n" +
+                "    let x = sqrt(max(papa - paba * paba * baba, 0.0));\n" +
+                "    let cax = max(0.0, x - select(rb, ra, paba < 0.5));\n" +
+                "    let cay = abs(paba - 0.5) - 0.5;\n" +
+                "    let k = (rb - ra) * (rb - ra) + baba;\n" +
+                "    let f = clamp(((rb - ra) * (x - ra) + paba * baba) / max(k, 1e-8), 0.0, 1.0);\n" +
+                "    let cbx = x - ra - f * (rb - ra);\n" +
+                "    let cby = paba - f;\n" +
+                "    let s = select(1.0, -1.0, cbx < 0.0 && cay < 0.0);\n" +
+                "    return s * sqrt(min(cax * cax + cay * cay * baba, cbx * cbx + cby * cby * baba));\n" +
+                "}"
+        );
+        // Analog-B Slice 3 — Kronen-Ellipsoid + billiger Noise-Term (amp ≪ radius)
+        const sdEllipsoidCrownFn = TSL.wgslFn(
+            "fn sdEllipsoidCrown(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>) -> f32 {\n" +
+                "    let q = (p - c) / h;\n" +
+                "    let hn = min(h.x, min(h.y, h.z));\n" +
+                "    let d0 = (length(q) - 1.0) * hn;\n" +
+                "    let n = sin(dot(p, vec3<f32>(2.17, 3.31, 1.79))) * sin(dot(p, vec3<f32>(1.41, 2.63, 3.97)));\n" +
+                "    return d0 + hn * 0.035 * n;\n" +
+                "}"
+        );
+        const gradEllipsoidCrownFn = TSL.wgslFn(
+            "fn gradEllipsoidCrown(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>) -> vec3<f32> {\n" +
+                "    let d = p - c;\n" +
+                "    let q = d / h;\n" +
+                "    let hn = min(h.x, min(h.y, h.z));\n" +
+                "    let f0 = vec3<f32>(2.17, 3.31, 1.79);\n" +
+                "    let f1 = vec3<f32>(1.41, 2.63, 3.97);\n" +
+                "    let a0 = dot(p, f0);\n" +
+                "    let a1 = dot(p, f1);\n" +
+                "    let g0 = hn * d / max(h * h * length(q), vec3<f32>(1e-6));\n" +
+                "    let gn = hn * 0.035 * (cos(a0) * sin(a1) * f0 + sin(a0) * cos(a1) * f1);\n" +
+                "    return g0 + gn;\n" +
+                "}"
+        );
         // DER BLICK (WGSL, roh — ersetzt den per-Pixel-March): Richtung aus
         // invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-
         // Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. WGSL-
@@ -39703,13 +40183,30 @@ class AnazhRealm {
                 "                            let qB = textureLoad(kapseln, vec2<i32>(poG + k2 * 2 + 1, 0), 0);\n" +
                 "                            var dkG = 0.0;\n" +
                 "                            if (qA.w >= 0.0) {\n" +
-                "                                let ba2 = qB.xyz - qA.xyz;\n" +
-                "                                let pa2 = pP - qA.xyz;\n" +
-                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
-                "                                dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
-                "                            } else {\n" +
+                "                                if (qB.w < 0.0) {\n" +
+                "                                    let tC = -qB.w;\n" +
+                "                                    dkG = sdCappedCone(pP, qA.xyz, qB.xyz, qA.w, fract(tC) * 10.0 - 1.0);\n" +
+                "                                } else {\n" +
+                "                                    let ba2 = qB.xyz - qA.xyz;\n" +
+                "                                    let pa2 = pP - qA.xyz;\n" +
+                "                                    let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                                    dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
+                "                                }\n" +
+                "                            } else if (qB.w < 0.5) {\n" +
                 "                                let q2 = abs(pP - qA.xyz) - qB.xyz;\n" +
                 "                                dkG = length(max(q2, vec3<f32>(0.0))) + min(max(q2.x, max(q2.y, q2.z)), 0.0);\n" +
+                "                            } else if (qB.w < 1.5) {\n" +
+                "                                // ELLIPSOID (pB.w≈1) + Slice3 crown noise\n" +
+                "                                dkG = sdEllipsoidCrown(pP, qA.xyz, qB.xyz);\n" +
+                "                            } else {\n" +
+                "                                // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
+                "                                let d2 = pP - qA.xyz;\n" +
+                "                                let h2 = qB.xyz;\n" +
+                "                                let qb2 = abs(d2) - h2;\n" +
+                "                                let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
+                "                                let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
+                "                                let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
+                "                                dkG = max(db2, plane2);\n" +
                 "                            }\n" +
                 "                            if (dkG < dmG) { dmG = dkG; nkG = k2; }\n" +
                 "                        }\n" +
@@ -39720,17 +40217,47 @@ class AnazhRealm {
                 "                            var gvG = vec3<f32>(0.0);\n" +
                 "                            var ciG: u32 = 0u;\n" +
                 "                            if (qA.w >= 0.0) {\n" +
-                "                                let ba2 = qB.xyz - qA.xyz;\n" +
-                "                                let pa2 = pP - qA.xyz;\n" +
-                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
-                "                                gvG = pa2 - ba2 * h2; // exakte Kapsel-Normale (Platz-Raum)\n" +
-                "                                ciG = u32(qB.w);\n" +
-                "                            } else {\n" +
+                "                                if (qB.w < 0.0) {\n" +
+                "                                    let tC = -qB.w;\n" +
+                "                                    let r1c = fract(tC) * 10.0 - 1.0;\n" +
+                "                                    let eC = 0.002;\n" +
+                "                                    gvG = vec3<f32>(\n" +
+                "                                        sdCappedCone(pP + vec3<f32>(eC, 0.0, 0.0), qA.xyz, qB.xyz, qA.w, r1c) - sdCappedCone(pP - vec3<f32>(eC, 0.0, 0.0), qA.xyz, qB.xyz, qA.w, r1c),\n" +
+                "                                        sdCappedCone(pP + vec3<f32>(0.0, eC, 0.0), qA.xyz, qB.xyz, qA.w, r1c) - sdCappedCone(pP - vec3<f32>(0.0, eC, 0.0), qA.xyz, qB.xyz, qA.w, r1c),\n" +
+                "                                        sdCappedCone(pP + vec3<f32>(0.0, 0.0, eC), qA.xyz, qB.xyz, qA.w, r1c) - sdCappedCone(pP - vec3<f32>(0.0, 0.0, eC), qA.xyz, qB.xyz, qA.w, r1c)\n" +
+                "                                    );\n" +
+                "                                    ciG = u32(floor(tC));\n" +
+                "                                } else {\n" +
+                "                                    let ba2 = qB.xyz - qA.xyz;\n" +
+                "                                    let pa2 = pP - qA.xyz;\n" +
+                "                                    let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                                    gvG = pa2 - ba2 * h2;\n" +
+                "                                    ciG = u32(qB.w);\n" +
+                "                                }\n" +
+                "                            } else if (qB.w < 0.5) {\n" +
                 "                                let q2 = pP - qA.xyz;\n" +
                 "                                let aq2 = abs(q2) - qB.xyz;\n" +
                 "                                if (aq2.x >= aq2.y && aq2.x >= aq2.z) { gvG = vec3<f32>(sign(q2.x), 0.0, 0.0); }\n" +
                 "                                else if (aq2.y >= aq2.z) { gvG = vec3<f32>(0.0, sign(q2.y), 0.0); }\n" +
                 "                                else { gvG = vec3<f32>(0.0, 0.0, sign(q2.z)); }\n" +
+                "                                ciG = u32(-qA.w - 1.0);\n" +
+                "                            } else if (qB.w < 1.5) {\n" +
+                "                                // ELLIPSOID-Normale (Slice3: analytischer Noise-Gradient)\n" +
+                "                                gvG = gradEllipsoidCrown(pP, qA.xyz, qB.xyz);\n" +
+                "                                ciG = u32(-qA.w - 1.0);\n" +
+                "                            } else {\n" +
+                "                                // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
+                "                                let d2 = pP - qA.xyz;\n" +
+                "                                let h2 = qB.xyz;\n" +
+                "                                let qb2 = abs(d2) - h2;\n" +
+                "                                let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
+                "                                let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
+                "                                let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
+                "                                if (plane2 > db2) {\n" +
+                "                                    gvG = select(vec3<f32>(0.0, h2.z, h2.y), vec3<f32>(0.0, h2.z, -h2.y), qB.w < 2.5);\n" +
+                "                                } else if (qb2.x >= qb2.y && qb2.x >= qb2.z) { gvG = vec3<f32>(sign(d2.x), 0.0, 0.0); }\n" +
+                "                                else if (qb2.y >= qb2.z) { gvG = vec3<f32>(0.0, sign(d2.y), 0.0); }\n" +
+                "                                else { gvG = vec3<f32>(0.0, 0.0, sign(d2.z)); }\n" +
                 "                                ciG = u32(-qA.w - 1.0);\n" +
                 "                            }\n" +
                 "                            if (dot(gvG, gvG) < 1e-10) {\n" +
@@ -39760,14 +40287,31 @@ class AnazhRealm {
                 "                    let pB = textureLoad(kapseln, vec2<i32>(po + k * 2 + 1, 0), 0);\n" +
                 "                    var dk = 0.0;\n" +
                 "                    if (pA.w >= 0.0) {\n" +
-                "                        let ba = pB.xyz - pA.xyz;\n" +
-                "                        let pa = pL - pA.xyz;\n" +
-                "                        let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
-                "                        dk = length(pa - ba * hh) - pA.w;\n" +
-                "                    } else {\n" +
-                "                        // BOX (pA.w < 0: Zentrum|−(farbe+1) · Halbmaße): das Fachwerk-Gesetz\n" +
+                "                        if (pB.w < 0.0) {\n" +
+                "                            let tC = -pB.w;\n" +
+                "                            dk = sdCappedCone(pL, pA.xyz, pB.xyz, pA.w, fract(tC) * 10.0 - 1.0);\n" +
+                "                        } else {\n" +
+                "                            let ba = pB.xyz - pA.xyz;\n" +
+                "                            let pa = pL - pA.xyz;\n" +
+                "                            let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                            dk = length(pa - ba * hh) - pA.w;\n" +
+                "                        }\n" +
+                "                    } else if (pB.w < 0.5) {\n" +
+                "                        // BOX (pA.w < 0, pB.w≈0): Zentrum|−(farbe+1) · Halbmaße\n" +
                 "                        let q = abs(pL - pA.xyz) - pB.xyz;\n" +
                 "                        dk = length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);\n" +
+                "                    } else if (pB.w < 1.5) {\n" +
+                "                        // ELLIPSOID (pB.w≈1) + Slice3 crown noise\n" +
+                "                        dk = sdEllipsoidCrown(pL, pA.xyz, pB.xyz);\n" +
+                "                    } else {\n" +
+                "                        // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
+                "                        let d = pL - pA.xyz;\n" +
+                "                        let h = pB.xyz;\n" +
+                "                        let qb = abs(d) - h;\n" +
+                "                        let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
+                "                        let invL = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
+                "                        let plane = select((d.y * h.z + d.z * h.y) * invL, (d.y * h.z - d.z * h.y) * invL, pB.w < 2.5);\n" +
+                "                        dk = max(db, plane);\n" +
                 "                    }\n" +
                 "                    if (dk < dm) { dm = dk; nk = k; }\n" +
                 "                }\n" +
@@ -39778,18 +40322,48 @@ class AnazhRealm {
                 "                    var gvK = vec3<f32>(0.0);\n" +
                 "                    var ci: u32 = 0u;\n" +
                 "                    if (pA.w >= 0.0) {\n" +
-                "                        let ba = pB.xyz - pA.xyz;\n" +
-                "                        let pa = pL - pA.xyz;\n" +
-                "                        let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
-                "                        gvK = pa - ba * hh; // exakte Kapsel-Normale (lokal)\n" +
-                "                        ci = u32(pB.w);\n" +
-                "                    } else {\n" +
+                "                        if (pB.w < 0.0) {\n" +
+                "                            let tC = -pB.w;\n" +
+                "                            let r1c = fract(tC) * 10.0 - 1.0;\n" +
+                "                            let eC = 0.002;\n" +
+                "                            gvK = vec3<f32>(\n" +
+                "                                sdCappedCone(pL + vec3<f32>(eC, 0.0, 0.0), pA.xyz, pB.xyz, pA.w, r1c) - sdCappedCone(pL - vec3<f32>(eC, 0.0, 0.0), pA.xyz, pB.xyz, pA.w, r1c),\n" +
+                "                                sdCappedCone(pL + vec3<f32>(0.0, eC, 0.0), pA.xyz, pB.xyz, pA.w, r1c) - sdCappedCone(pL - vec3<f32>(0.0, eC, 0.0), pA.xyz, pB.xyz, pA.w, r1c),\n" +
+                "                                sdCappedCone(pL + vec3<f32>(0.0, 0.0, eC), pA.xyz, pB.xyz, pA.w, r1c) - sdCappedCone(pL - vec3<f32>(0.0, 0.0, eC), pA.xyz, pB.xyz, pA.w, r1c)\n" +
+                "                            );\n" +
+                "                            ci = u32(floor(tC));\n" +
+                "                        } else {\n" +
+                "                            let ba = pB.xyz - pA.xyz;\n" +
+                "                            let pa = pL - pA.xyz;\n" +
+                "                            let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                            gvK = pa - ba * hh;\n" +
+                "                            ci = u32(pB.w);\n" +
+                "                        }\n" +
+                "                    } else if (pB.w < 0.5) {\n" +
                 "                        // BOX-Normale: die Achse der größten Überschreitung trägt\n" +
                 "                        let q = pL - pA.xyz;\n" +
                 "                        let aq = abs(q) - pB.xyz;\n" +
                 "                        if (aq.x >= aq.y && aq.x >= aq.z) { gvK = vec3<f32>(sign(q.x), 0.0, 0.0); }\n" +
                 "                        else if (aq.y >= aq.z) { gvK = vec3<f32>(0.0, sign(q.y), 0.0); }\n" +
                 "                        else { gvK = vec3<f32>(0.0, 0.0, sign(q.z)); }\n" +
+                "                        ci = u32(-pA.w - 1.0);\n" +
+                "                    } else if (pB.w < 1.5) {\n" +
+                "                        // ELLIPSOID-Normale (Slice3: analytischer Noise-Gradient)\n" +
+                "                        gvK = gradEllipsoidCrown(pL, pA.xyz, pB.xyz);\n" +
+                "                        ci = u32(-pA.w - 1.0);\n" +
+                "                    } else {\n" +
+                "                        // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
+                "                        let d = pL - pA.xyz;\n" +
+                "                        let h = pB.xyz;\n" +
+                "                        let qb = abs(d) - h;\n" +
+                "                        let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
+                "                        let invL = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
+                "                        let plane = select((d.y * h.z + d.z * h.y) * invL, (d.y * h.z - d.z * h.y) * invL, pB.w < 2.5);\n" +
+                "                        if (plane > db) {\n" +
+                "                            gvK = select(vec3<f32>(0.0, h.z, h.y), vec3<f32>(0.0, h.z, -h.y), pB.w < 2.5);\n" +
+                "                        } else if (qb.x >= qb.y && qb.x >= qb.z) { gvK = vec3<f32>(sign(d.x), 0.0, 0.0); }\n" +
+                "                        else if (qb.y >= qb.z) { gvK = vec3<f32>(0.0, sign(d.y), 0.0); }\n" +
+                "                        else { gvK = vec3<f32>(0.0, 0.0, sign(d.z)); }\n" +
                 "                        ci = u32(-pA.w - 1.0);\n" +
                 "                    }\n" +
                 "                    if (dot(gvK, gvK) < 1e-10) {\n" +
@@ -39880,7 +40454,7 @@ class AnazhRealm {
                 "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
                 "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
                 "}",
-            [feldTriAbtastFn, feldTriGradFn] // die Glättungs-Helfer reisen als WGSL-includes mit
+            [feldTriAbtastFn, feldTriGradFn, sdCappedConeFn, sdEllipsoidCrownFn, gradEllipsoidCrownFn] // Glättung + Cone + Ellipsoid-Noise (Analog-B Slice 2+3)
         );
         // DER EINE WELT-MARCH schreibt ECHTE TIEFE (depthNode, das Fern-Schirm-
         // Muster): der Pass ist OPAK und komponiert per Depth-Test mit allem —
@@ -40173,10 +40747,11 @@ class AnazhRealm {
     }
 
     // ── DER BRICK-CACHE (DEDUP, Gesetz #0: EINE kanonische Gestalt je Vorlage):
-    // identische Bauten/Bäume/Tier-Glieder (gleicher key) teilen EIN Brick;
-    // jede Instanz ist nur ein Feld-Eintrag (Matrix). zgFn läuft NUR beim
+    // Region-Fern-Cache (+ ggf. Band-0-Feinheiten): identische Keys teilen EIN
+    // Brick; Kreatur-Glieder sind KAPSELN (_weltKapselHolen), nicht hier.
+    // Jede Instanz ist nur ein Feld-Eintrag (Matrix). zgFn läuft NUR beim
     // Cache-Miss (lazy Bake) — so backt eine Vorlage EINMAL, egal wie oft sie
-    // in der Welt steht (177 Bauten aus N Vorlagen → N Bricks).
+    // in der Welt steht.
     _weltBrickHolen(key, zgFn) {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
@@ -40321,7 +40896,7 @@ class AnazhRealm {
         }
         let defs = kapselFn();
         if (defs && !Array.isArray(defs)) defs = [defs];
-        defs = (defs || []).filter((d2) => d2 && (d2.box ? d2.c && d2.h : d2.a && d2.b && Number.isFinite(d2.r)));
+        defs = (defs || []).filter((d2) => d2 && ((d2.box || d2.ellipsoid || d2.prism) ? d2.c && d2.h : d2.cone ? d2.a && d2.b && Number.isFinite(d2.r0) && Number.isFinite(d2.r1) : d2.a && d2.b && Number.isFinite(d2.r)));
         if (!defs.length) return null;
         const W = AnazhRealm.WELT_MARCH;
         const seg = wm.freiKapselSeg.get(defs.length);
@@ -40349,8 +40924,8 @@ class AnazhRealm {
                 (Math.min(255, Math.max(0, Math.round(f.r * 255))) << 16) +
                 (Math.min(255, Math.max(0, Math.round(f.g * 255))) << 8) +
                 Math.min(255, Math.max(0, Math.round(f.b * 255)));
-            if (def.box) {
-                // BOX [Zentrum|−(farbe+1)][Halbmaße|0] — das Fachwerk-Gesetz als Primitiv.
+            if (def.box || def.ellipsoid || def.prism) {
+                // BOX [Zentrum|−(farbe+1)][Halbmaße|0]; ELLIPSOID pB.w=1; PRISM/Wedge pB.w=2 (+z-First) / 3 (−z-First).
                 K[o] = def.c.x;
                 K[o + 1] = def.c.y;
                 K[o + 2] = def.c.z;
@@ -40358,13 +40933,35 @@ class AnazhRealm {
                 K[o + 4] = Math.max(0.01, def.h.x);
                 K[o + 5] = Math.max(0.01, def.h.y);
                 K[o + 6] = Math.max(0.01, def.h.z);
-                K[o + 7] = 0;
+                K[o + 7] = def.prism ? (def.prismFlip ? 3 : 2) : def.ellipsoid ? 1 : 0;
                 lokalMin.x = Math.min(lokalMin.x, def.c.x - def.h.x);
                 lokalMin.y = Math.min(lokalMin.y, def.c.y - def.h.y);
                 lokalMin.z = Math.min(lokalMin.z, def.c.z - def.h.z);
                 lokalMax.x = Math.max(lokalMax.x, def.c.x + def.h.x);
                 lokalMax.y = Math.max(lokalMax.y, def.c.y + def.h.y);
                 lokalMax.z = Math.max(lokalMax.z, def.c.z + def.h.z);
+                continue;
+            }
+            // CONE (Analog-B Slice 2): pA=(a,r0>=0), pB=(b, -(colorPack+(r1+1)/10)).
+            // pB.w<0 trennt von Kapsel (pB.w=colorPack>=0); floor(-pB.w)=color, fract*10-1=r1 (r1<9).
+            if (def.cone) {
+                const r0 = Math.max(0.005, def.r0);
+                const r1 = Math.max(0, Math.min(8.999, def.r1));
+                K[o] = def.a.x;
+                K[o + 1] = def.a.y;
+                K[o + 2] = def.a.z;
+                K[o + 3] = r0;
+                K[o + 4] = def.b.x;
+                K[o + 5] = def.b.y;
+                K[o + 6] = def.b.z;
+                K[o + 7] = -(pack + (r1 + 1) / 10);
+                const rm = Math.max(r0, r1);
+                lokalMin.x = Math.min(lokalMin.x, Math.min(def.a.x, def.b.x) - rm);
+                lokalMin.y = Math.min(lokalMin.y, Math.min(def.a.y, def.b.y) - rm);
+                lokalMin.z = Math.min(lokalMin.z, Math.min(def.a.z, def.b.z) - rm);
+                lokalMax.x = Math.max(lokalMax.x, Math.max(def.a.x, def.b.x) + rm);
+                lokalMax.y = Math.max(lokalMax.y, Math.max(def.a.y, def.b.y) + rm);
+                lokalMax.z = Math.max(lokalMax.z, Math.max(def.a.z, def.b.z) + rm);
                 continue;
             }
             const rr = Math.max(0.005, def.r);
@@ -40411,17 +41008,15 @@ class AnazhRealm {
         return handle;
     }
 
-    // ═══ DAS VERTEILUNGS-GESETZ (PFLICHT-OFFEN C, Schöpfer-Wort „analog!") ═══
-    // Die Klein-Streu (Nicht-Baum-Schichten: under/litter/rock) frisst keinen
-    // Feld-Listen-Slot je Instanz mehr: je 64-m-KACHEL trägt EIN Feld-Eintrag
-    // einen BLOCK von Plätzen in der Kapsel-Liste (1 Slot = 2 Texel je Platz:
-    // [Pos|Hüllradius][yaw|scale|po|anzahl]) — der March wertet das Gesetz
-    // analytisch am Schirm aus (Kugel-Vortest je Platz, dann Sphere-Tracing
-    // des GETEILTEN Vorlagen-Satzes im Platz-Raum). Die Plätze bleiben die
-    // EINEN Γ5-deterministischen Raster-Plätze des Zellen-Chokepoints
-    // (Wasser-/Feld-Gates sind CPU-Wahrheit — ein Shader-Hash wäre der
-    // Verteilungs-ZWILLING und würde am LOD-0-Saum gegen die echte Geometrie
-    // driften). Der Batch-Raster auf der Feld-Liste stirbt an der Wurzel.
+    // ═══ DAS VERTEILUNGS-GESETZ, ANALOG C (Schöpfer-Wort „analog!") ═══
+    // Klein-Streu (under/litter/rock) ab Zellen-LOD ≥ 1: je 64-m-KACHEL EIN
+    // Feld-Eintrag trägt einen BLOCK von Plätzen (gesetzBlock × 2 Texel:
+    // [Pos|Hüllradius][yaw|scale|po|anzahl]). March: Kugel-Vortest → Sphere-
+    // Tracing des GETEILTEN Vorlagen-Satzes im Platz-Raum. Plätze = die EINEN
+    // Γ5-deterministischen Raster-Plätze des Zellen-Chokepoints (kein Shader-
+    // Hash = kein Verteilungs-ZWILLING). Batch-Raster auf der Feld-Liste
+    // (1 Slot je Instanz) ist GEFALLEN — Chokepoint = diese Bahn + Shader
+    // einheit<0. Band 0 bleibt Mesh (_scatterInstanceAdd) zum Anfassen.
     _streuGesetzSpawn(preset, fseed, x, surfY, z, yaw, scale) {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
@@ -40624,6 +41219,12 @@ class AnazhRealm {
     // Brick je Vorlage (key), viele Feld-Einträge (Matrix). Rückgabe: Handle
     // oder null (Erschöpfung — kein Rückweg).
     _weltFeldSpawn(key, matrixWorld, zgFn) {
+        // ANALOG B (fail-closed): Baum-Bahn = Kapsel (_baumFeldSpawn), kein
+        // Voxel-Brick-Dedup mehr. Alte Keys "baum:…" sterben hier sichtbar.
+        if (typeof key === "string" && key.startsWith("baum:")) return null;
+        // ANALOG C (fail-closed): Architektur = Box-Satz (_archZiegelFern /
+        // aarch:… via _weltKapselSpawn). Alte Voxel-Keys "arch:…" sterben hier.
+        if (typeof key === "string" && key.startsWith("arch:")) return null;
         const brick = this._weltBrickHolen(key, zgFn);
         if (!brick) return null;
         const handle = this._weltFeldEintrag(brick, matrixWorld || null);
@@ -42244,6 +42845,8 @@ class AnazhRealm {
                 // DORF-ERLEBNIS — die Tür-Zeile überlebt den Reload (die Blocker-
                 // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
                 ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
+                // KAMIN-RAUCH (.105) — Spitze überlebt den Reload (Rauch ⟺ chimney).
+                ...(a.chimney && Number.isFinite(a.chimney.x) ? { chimney: a.chimney } : {}),
                 // Φ7 (V18.190) — entry-level portalMeta (Halle-Slots): eine
                 // materialisierte Halle hat N Tore mit JE eigener worldAddress
                 // am entry.portalMeta. Ohne diese Persistenz würden alle
@@ -46840,6 +47443,8 @@ class AnazhRealm {
                 fundament: a.fundament,
                 // DORF-ERLEBNIS — die Tür-Zeile reist durch den Reload mit.
                 tuer: a.tuer,
+                // KAMIN-RAUCH (.105) — Spitze reist durch den Reload mit.
+                chimney: a.chimney,
             });
             // Φ7 (V18.190) — entry-level portalMeta nachhängen (Halle-Slots
             // tragen je eigene worldAddress; ohne diesen Schritt würden alle
@@ -52363,6 +52968,8 @@ class AnazhRealm {
         // bekommt seine Rolle über joinPortalInvite. Für ein Relay-Portal ist
         // die computeRole folgenlos (kein Server-Kontext).
         this._buildPortalOverlay(portalMeta, { computeRole: "host" });
+        // V18.491.75 — Heimkehr braucht denselben Tor-Eintrag (Linger/Disarm).
+        if (this._portalOverlay && entry && entry.id != null) this._portalOverlay.entryId = entry.id;
         const worldLabel = (portalMeta && portalMeta.label) || entry.type;
         this.log(`Portal betreten: „${worldLabel}"`, "INFO");
         // W12 Phase 3 — die erste Reise durch ein bestimmtes Tor ist eine
@@ -52480,10 +53087,33 @@ class AnazhRealm {
     // sieht _portalOverlay = null und nimmt die Heimat-Welt wieder auf.
     exitPortal() {
         if (!this._portalOverlay) return { ok: false, reason: "not_in_portal" };
+        const po = this._portalOverlay;
+        const entryId = po && po.entryId != null ? po.entryId : null;
+        const world = po && po.world ? po.world : null;
+        const now =
+            (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
         this._disposePortalOverlay();
         // Tasten-Zustand verwerfen: ein keyup kann im iframe gelandet sein,
         // sonst liefe der Avatar nach der Heimkehr von selbst weiter.
         this.state.keys = {};
+        // V18.491.75 — Heimkehr-Linger (Portal-Kontinuum): Membran/Nebel/Licht
+        // am Ausgangstor bleiben ~2.2 s warm (Lab-openM-Analog), statt hartem
+        // Insel-Schnitt iframe→kalt. Währenddessen unarmed (kein Sofort-Reenter).
+        this._portalHeimkehr = { start: now, until: now + 2.2, entryId, world };
+        if (this._portalMembranes && entryId != null) {
+            const rec = this._portalMembranes.get(entryId);
+            if (rec) {
+                rec.armed = false;
+                rec.lastLz = null;
+            }
+        }
+        // Steuer-Kontinuum: Pointer-Lock zurück auf Host-Canvas (enter löste ihn).
+        try {
+            const canvas = this.state && this.state.renderer && this.state.renderer.domElement;
+            if (canvas && typeof canvas.requestPointerLock === "function") canvas.requestPointerLock();
+        } catch (_e) {
+            /* Gesture/Policy — Heimkehr bleibt auch ohne Lock gültig */
+        }
         this.log("Portal verlassen — zurück in der Heimat-Welt", "INFO");
         // W12 Phase 3 — die Heimkehr ist der Speicher-Punkt: die im Portal
         // gesammelten Erinnerungen (Erst-Besuch + Welt-Ereignisse) werden
@@ -54096,6 +54726,7 @@ class AnazhRealm {
     // depthTest übernimmt die Verdeckung, floorCut kappt den Boden), die
     // ZAHLEN sind EINE Quelle. Teilt das u-Objekt der Membran (time/camL/
     // pulse — derselbe Tick-Atem) und trägt u.nebelAct als fünfte Uniform.
+    // V18.491.128 NEBEL_VIS.host=tsl-box
     _nebelMaterialFor(tor, u) {
         const T = THREE;
         const TSL = T.TSL;
@@ -54334,17 +54965,39 @@ class AnazhRealm {
                 continue;
             }
             if (rec.mesh && !rec.mesh.visible) rec.mesh.visible = true;
-            const act = Math.max(0, Math.min(1, 1 - (d - reach) / 12));
+            let act = Math.max(0, Math.min(1, 1 - (d - reach) / 12));
+            // V18.491.75 — Heimkehr-Linger: Ausgangstor bleibt kurz warm (Kontinuum).
+            const hk = this._portalHeimkehr;
+            if (hk) {
+                if (currentTime >= hk.until) {
+                    this._portalHeimkehr = null;
+                } else if (!hk.entryId || (entry && entry.id === hk.entryId)) {
+                    const span = Math.max(0.001, hk.until - hk.start);
+                    const fade = Math.max(0, Math.min(1, (hk.until - currentTime) / span));
+                    act = Math.max(act, 0.55 + 0.45 * fade);
+                    rec.armed = false;
+                }
+            }
             rec._act = act;
             rec.u.time.value = currentTime;
             rec.u.act.value = act;
             rec.u.pulse.value = 0.5 + 0.5 * Math.sin(currentTime * MG.puls);
             rec.u.waveDepth.value = mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
-            // PORTA-NEBEL — der Dial atmet: nebelAct = mu.fog · (0.7 + 0.35·act)
+            // V18.491.162 NEBEL_GESETZ cold fallback fail-soft (fogDefault/actBase/actOpen; live nebelAct first)
+            // Feel .128 named dual (NEBEL_VIS glsl-box/tsl-box); numbers still NEBEL_GESETZ.
+            // PORTA-NEBEL — der Dial atmet: nebelAct = fog · (actBase + actOpen·act)
             // (die Lab-Formel, act = das Welt-Analog zu openM); der Kasten lebt
             // nur nähe-aktiviert (Raymarch-Kosten bleiben am Tor).
             if (rec.nebel) {
-                if (rec.u.nebelAct) rec.u.nebelAct.value = mu.fog * (0.7 + 0.35 * act);
+                const pcN = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
+                if (rec.u.nebelAct) {
+                    const N = (pcN && pcN.NEBEL_GESETZ) || {};
+                    rec.u.nebelAct.value =
+                        pcN && typeof pcN.nebelAct === "function"
+                            ? pcN.nebelAct(mu.fog, act)
+                            : (Number.isFinite(mu.fog) ? mu.fog : (N.fogDefault || 0.85)) *
+                              ((N.actBase || 0.7) + (N.actOpen || 0.35) * act);
+                }
                 rec.nebel.visible = act > 0.001;
             }
             // Kamera in Tor-lokalen Koordinaten (der Marsch läuft im Lab-Rahmen).
@@ -54405,23 +55058,37 @@ class AnazhRealm {
     }
 
     _tickPortalLicht(rec) {
+        // V18.491.126 GLUT_GESETZ — Lab+Host portal PointLight (fail-soft Literale).
         let li = this._portalLicht;
         if (!rec) {
             if (li) li.intensity = 0;
             return;
         }
+        const PC = globalThis.__portaCore;
+        const G = (PC && PC.GLUT_GESETZ) || {};
         if (!li) {
-            // Lab-Werte (porta.js: PointLight 0xffd9a0, Reichweite 14, decay 2).
-            li = this._portalLicht = new THREE.PointLight(0xffd9a0, 0, 14, 2);
+            // Lab-Werte (porta.js / GLUT_GESETZ: PointLight color, Reichweite, decay).
+            li = this._portalLicht = new THREE.PointLight(
+                G.color != null ? G.color : 0xffd9a0,
+                0,
+                G.dist != null ? G.dist : 14,
+                G.decay != null ? G.decay : 2
+            );
             li.castShadow = false;
             this.state.scene.add(li);
         }
         const e = rec.entry;
         const mu = rec.tor.mu;
         const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-        li.position.set(e.position.x, e.position.y - 0.5 + mu.springY * 0.55 * sc, e.position.z);
+        const ySpring = G.ySpring != null ? G.ySpring : 0.55;
+        li.position.set(e.position.x, e.position.y - 0.5 + mu.springY * ySpring * sc, e.position.z);
         const pulse = rec.u && rec.u.pulse ? rec.u.pulse.value : 1;
-        li.intensity = (0.3 + rec._act * 3.4) * (0.8 + 0.28 * pulse);
+        // V18.491.160 GLUT_GESETZ cold fallback fail-soft (i0/iOpen/pulseBase/pulseAmp; live glutIntensity first)
+        li.intensity =
+            PC && typeof PC.glutIntensity === "function"
+                ? PC.glutIntensity(rec._act, pulse)
+                : ((G.i0 || 0.3) + rec._act * (G.iOpen || 3.4)) *
+                  ((G.pulseBase || 0.8) + (G.pulseAmp || 0.28) * pulse);
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
@@ -54560,6 +55227,135 @@ class AnazhRealm {
     // System). Kandidaten (nur Einträge MIT Tür-Zeile = Siedlungs-Häuser)
     // werden 1×/s gesammelt, der Frame-Tick dreht nur NAHE Häuser (< 40 m —
     // jenseits davon serviert die lodServe-Fernstufe ohnehin gebakte Türen). ═══
+    // ═══ KAMIN-RAUCH (.105) — erste ehrliche Wire: Quellen aus Settlement-
+    //    Einträgen mit rauchQuelle; minimale Lab-Partikel (Box + Lambert) wenn
+    //    THREE+scene da; sonst Quellen-Liste + einmaliger Log/Flugschreiber-Stamp.
+    //    Invariant: Rauch ⟺ chimney — kein Source ohne chimney/rauchQuelle. ═══
+    _updateDorfRauch(_dt) {
+        // RAUCH_VIS.host = "box-lambert" — Feel .125; Box+Lambert via RAUCH_GESETZ (sprites = Redesign).
+        const st = this.state;
+        if (!st) return;
+        let dr = st.dorfRauch;
+        if (!dr || typeof dr !== "object") {
+            dr = st.dorfRauch = { quellen: [], teilchen: [] };
+        }
+        if (!Array.isArray(dr.quellen)) dr.quellen = [];
+        if (!Array.isArray(dr.teilchen)) dr.teilchen = [];
+        // Quellen neu aus Architectures mit rauchQuelle (world tip = origin + φ-rotate).
+        const quellen = [];
+        const archs = st.architectures;
+        if (Array.isArray(archs)) {
+            for (let i = 0; i < archs.length; i++) {
+                const e = archs[i];
+                if (!e || !e.position) continue;
+                const tip =
+                    (e.userData && e.userData.rauchQuelle) ||
+                    (e.chimney && Number.isFinite(e.chimney.x) ? e.chimney : null);
+                if (!tip || !Number.isFinite(tip.x) || !Number.isFinite(tip.y) || !Number.isFinite(tip.z)) continue;
+                const phi = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+                const c = Math.cos(phi);
+                const s = Math.sin(phi);
+                const ox = e.position.x || 0;
+                const oz = e.position.z || 0;
+                // Mesh-Fuß = position.y − 0.5 (spawnArchitecture-Kalibrierung); Lab y=0.
+                const oy = (Number.isFinite(e.position.y) ? e.position.y : 0) - 0.5;
+                quellen.push({
+                    id: e.id,
+                    x: ox + tip.x * c + tip.z * s,
+                    y: oy + tip.y,
+                    z: oz - tip.x * s + tip.z * c,
+                });
+            }
+        }
+        dr.quellen = quellen;
+        if (quellen.length && !this._dorfRauchLogged) {
+            this._dorfRauchLogged = true;
+            try {
+                this.log(`KAMIN-RAUCH: ${quellen.length} Quelle(n) live (chimney→rauchQuelle)`, "INFO");
+            } catch (_e) {
+                /* log optional */
+            }
+            try {
+                const fr = st.flightRecorder;
+                if (fr && typeof fr === "object") {
+                    fr.rauchQuellen = quellen.length;
+                    fr.rauchStamp = Date.now();
+                }
+            } catch (_e2) {
+                /* flight recorder optional */
+            }
+        }
+        const THREE_REF = typeof THREE !== "undefined" ? THREE : null;
+        const scene = st.scene;
+        if (!THREE_REF || !scene || !quellen.length) {
+            // Residual renderer: Quellen stehen; kein Mesh-Pfad (headless / no THREE).
+            // Aufräumen falls Teilchen aus früherem Live-Pass übrig.
+            if (dr.teilchen.length && (!THREE_REF || !scene)) {
+                for (let k = dr.teilchen.length - 1; k >= 0; k--) {
+                    const T2 = dr.teilchen[k];
+                    if (T2 && T2.m) {
+                        try {
+                            if (T2.m.parent) T2.m.parent.remove(T2.m);
+                            if (T2.m.geometry) T2.m.geometry.dispose();
+                            if (T2.m.material) T2.m.material.dispose();
+                        } catch (_e3) {
+                            /* dispose best-effort */
+                        }
+                    }
+                }
+                dr.teilchen.length = 0;
+            }
+            return;
+        }
+        const G =
+            (typeof self !== "undefined" && self.__fachwerkCore && self.__fachwerkCore.RAUCH_GESETZ) ||
+            (typeof globalThis !== "undefined" &&
+                globalThis.__fachwerkCore &&
+                globalThis.__fachwerkCore.RAUCH_GESETZ) ||
+            null;
+        const maxT = (G && G.maxTeilchen) || 26;
+        const chance = (G && G.spawnChance) || 0.3;
+        const vyBase = (G && G.vyBase) || 0.014;
+        const vyRange = (G && G.vyRange) || 0.012;
+        const dxSpread = (G && G.dxSpread) || 0.006;
+        const fade = (G && G.fade) || 0.0035;
+        const a0 = (G && G.a0) || 0.55;
+        const aKill = (G && G.aKill) || 0.03;
+        const size = (G && G.size) || 0.34;
+        const color = (G && G.color) || 0xb9bec6;
+        const scaleMul = (G && G.scaleMul) || 1.006;
+        // Lab-Feel: pro Frame, nicht dt-skaliert (Parity worlds/fachwerk frame).
+        if (dr.teilchen.length < maxT && Math.random() < chance) {
+            const qq = quellen[(Math.random() * quellen.length) | 0];
+            const pm = new THREE_REF.Mesh(
+                new THREE_REF.BoxGeometry(size, size, size),
+                new THREE_REF.MeshLambertMaterial({ color: color, transparent: true, opacity: a0 })
+            );
+            pm.position.set(qq.x, qq.y, qq.z);
+            scene.add(pm);
+            dr.teilchen.push({
+                m: pm,
+                vy: vyBase + Math.random() * vyRange,
+                dx: (Math.random() - 0.5) * dxSpread,
+                a: a0,
+            });
+        }
+        for (let k = dr.teilchen.length - 1; k >= 0; k--) {
+            const T2 = dr.teilchen[k];
+            T2.m.position.y += T2.vy;
+            T2.m.position.x += T2.dx;
+            T2.a -= fade;
+            T2.m.material.opacity = T2.a;
+            T2.m.scale.multiplyScalar(scaleMul);
+            if (T2.a <= aKill) {
+                scene.remove(T2.m);
+                T2.m.geometry.dispose();
+                T2.m.material.dispose();
+                dr.teilchen.splice(k, 1);
+            }
+        }
+    }
+
     _tickHausTueren(currentTime) {
         const st = this.state;
         const pm = st.playerMesh;
@@ -56249,6 +57045,7 @@ class AnazhRealm {
         // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
         // (`_archInstanceUpdate`, foundry-bewusst) fürs Studio-Fahrzeug.
         if (entry.mesh) {
+            // STEER_VIS.compound = "hub-yaw" — Feel .124; rad.front + _rideSteerYaw via _animateCompoundMotion.
             // HEAVE (N7-Rest) — der Aufbau taucht mit dem Squat (render-only).
             entry.mesh.position.set(
                 entry.position.x,
@@ -56272,10 +57069,13 @@ class AnazhRealm {
                     prof.roles,
                     performance.now() / 1000,
                     entry._ridePhase,
-                    sp > fahrtGate
+                    sp > fahrtGate,
+                    undefined,
+                    Number.isFinite(entry._rideSteerYaw) ? entry._rideSteerYaw : undefined
                 );
             }
         } else if (entry.instanced) {
+            // STEER_VIS.instance = "entry-yaw" — Feel .124; do not yaw leaves; shared localMatrix sacred.
             this._archInstanceUpdate(entry);
         }
         // B2 — die BLOCKER ZIEHEN MIT (dieselbe Spawn-Quelle `_populateBlockerAABBs`;
@@ -71536,6 +72336,7 @@ class AnazhRealm {
     // nach. Die Flat-Quelle ist DIESELBE wie `_rebuildArchitectureMesh` (Gesetz #0):
     // instFoundry → `_foundryFlattenFor` auf der SERVIERTEN Stufe (Cache-Treffer — die
     // Slots wurden aus exakt diesem Flat alloziert), sonst der klassische Bauplan-Flat.
+    // STEER_VIS.instance = "entry-yaw" — Feel .124; ew * leaf.localMatrix only; do not mutate shared localMatrix.
     _archInstanceUpdate(entry) {
         if (!entry.instanced || !entry.instSlots) return;
         const fPreset = entry.instFoundry && this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
@@ -71997,9 +72798,40 @@ class AnazhRealm {
     // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
     // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
     spawnArchitecture(type, position, opts = {}) {
+        // FOUNDRY-SPAWN-WAND (fail-closed, kein stilles Nichts): Studio-Blueprints
+        // (fahrzeug_/haus_/tor_/klinge_*) existieren erst nach get-book. Kaltes Buch →
+        // LAUTER ERROR statt unsichtbarer Tot-Spawn. Opt-out = Worldgen/silent + Restore
+        // (precise+id) — die heilen beim Ingest/Rewarm; deliberater Chat/Werkstatt-Spawn nicht.
+        const _fdrySpawnHeal =
+            opts.silent === true || (opts.precise === true && typeof opts.id === "string" && opts.id);
+        if (this._foundryEnabled() && this._foundryNeedsBookForType(type) && !_fdrySpawnHeal) {
+            const f = this._foundry;
+            if (!f || !f.ready || !f.recipes) {
+                this.log(
+                    `FOUNDRY KALT: spawnArchitecture("${type}") BLOCKIERT — Buch/Worker fehlt (warte Boot, kein stilles Nichts).`,
+                    "ERROR"
+                );
+                return null;
+            }
+            if (!(this.state.blueprints && this.state.blueprints[type])) {
+                this.log(
+                    `FOUNDRY KALT: spawnArchitecture("${type}") BLOCKIERT — Blueprint fehlt trotz Buch (unbekanntes Preset?).`,
+                    "ERROR"
+                );
+                return null;
+            }
+        }
         const builders = this._architectureBuilders();
         if (!builders[type]) {
-            this.log(`spawnArchitecture: unbekannter Typ '${type}'`, "ERROR");
+            if (this._foundryEnabled() && this._foundryNeedsBookForType(type)) {
+                const f = this._foundry;
+                this.log(
+                    `FOUNDRY KALT: spawnArchitecture("${type}") — kein Builder (Buch ${f && f.ready ? "bereit/unbekannt" : "kalt"})`,
+                    "ERROR"
+                );
+            } else {
+                this.log(`spawnArchitecture: unbekannter Typ '${type}'`, "ERROR");
+            }
             return null;
         }
         if (!this.state.scene) return null;
@@ -72102,6 +72934,46 @@ class AnazhRealm {
                 entry.tuer = JSON.parse(JSON.stringify(opts.tuer));
             } catch (_e) {
                 /* nicht-serialisierbar → keine Tür-Zeile (fail-closed) */
+            }
+        }
+        // KAMIN-RAUCH (.105): Spitze haus-lokal → userData.rauchQuelle (Invariant: Rauch ⟺ chimney).
+        if (
+            opts.chimney &&
+            Number.isFinite(opts.chimney.x) &&
+            Number.isFinite(opts.chimney.y) &&
+            Number.isFinite(opts.chimney.z)
+        ) {
+            const tip = { x: +opts.chimney.x, y: +opts.chimney.y, z: +opts.chimney.z };
+            entry.chimney = tip; // Snapshot/Restore (tuer-Muster)
+            entry.userData = entry.userData || {};
+            entry.userData.rauchQuelle = tip;
+        }
+        // KAMIN-RAUCH (.108): Solo-Haus (nicht Settlement-Slot) — Spitze aus
+        // __fachwerkCore.chimneyTipFromParams(studioOv). Fail-closed bei null
+        // (modern/round/kuppel). Nicht-haus_* erfindet keinen Rauch.
+        if (!entry.chimney) {
+            const hausPol = AnazhRealm.KIND_POLICY && AnazhRealm.KIND_POLICY.haus;
+            const isHaus =
+                (hausPol && typeof hausPol.prefix === "string" && String(type).startsWith(hausPol.prefix)) ||
+                String(type).startsWith("haus_");
+            if (isHaus) {
+                const core = globalThis.__fachwerkCore;
+                if (core && typeof core.chimneyTipFromParams === "function") {
+                    const bpTip = this.state.blueprints && this.state.blueprints[type];
+                    const ov =
+                        (opts.studioOv && typeof opts.studioOv === "object" && !Array.isArray(opts.studioOv)
+                            ? opts.studioOv
+                            : null) ||
+                        (entry.studioOv && typeof entry.studioOv === "object" ? entry.studioOv : null) ||
+                        (bpTip && bpTip.studioOv && typeof bpTip.studioOv === "object" ? bpTip.studioOv : null) ||
+                        {};
+                    const tip = core.chimneyTipFromParams(ov);
+                    if (tip && Number.isFinite(tip.x) && Number.isFinite(tip.y) && Number.isFinite(tip.z)) {
+                        entry.chimney = { x: +tip.x, y: +tip.y, z: +tip.z };
+                        entry.userData = entry.userData || {};
+                        entry.userData.rauchQuelle = entry.chimney;
+                    }
+                }
             }
         }
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
@@ -74097,6 +74969,8 @@ class AnazhRealm {
                 // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
                 // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
                 tuer: slot.tuer || undefined,
+                // KAMIN-RAUCH (.105): Spitze haus-lokal (exportSettlement) — rauchQuelle.
+                chimney: slot.chimney || undefined,
                 // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — das Slot-Rezept
                 // (Kirche/Gasthaus/Armut/wohl/col, exportSettlement ov = die hp-
                 // Quelle von massBau) reist als Guss-Stempel: die Optik baut aus
@@ -74115,8 +74989,8 @@ class AnazhRealm {
     // `spawnArchitecture`, Bauplan `brunnen_dorf` — kein Parallel-System).
     // Aufrufer: `spawnSettlement` (deliberat) · `_autoSettlementSpawnCell`
     // (Auto-Ankunft) · der Reload-Rebuild (so.nurWege — Brunnen sind da längst
-    // persistierte state.architectures). Unkonsumiert bleiben benannt: fences/
-    // felder/staende/mauer/fluss/bruecken/laternen/trees (must-ignore, offen).
+    // persistierte state.architectures). Konsumiert: fences/felder/trees/staende/
+    // brunnen. Residual ehrlich unkonsumiert (export-stripped): mauer/laternen/fluss.
     _spawnSettlementErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
@@ -74219,7 +75093,61 @@ class AnazhRealm {
     // vom Worker und platziert am ANKER. Der Anker läuft durch den EINEN Spawn-Chokepoint
     // `_structureSpawnPos` (Footprint-Klasse "haus_basis" aus KIND_SUBSTANCE): nie auf dem Spieler. Async
     // (Worker-Roundtrip) — der Rückweg meldet ins Chat-Log.
-    spawnSettlement(opts) {
+
+    // Nach deliberate Dorf-Spawn: Spieler Richtung Häuser drehen + Bauten-Zeile.
+    _nachDorfOrientieren(anchor, res) {
+        try {
+            const list = (this.state && this.state.architectures) || [];
+            const houses = list.filter(
+                (e) => e && e.position && typeof e.type === "string" && e.type.startsWith("haus_")
+            );
+            const pm = this.state && this.state.playerMesh;
+            if (pm && houses.length) {
+                let cx = 0,
+                    cz = 0;
+                for (const h of houses) {
+                    cx += h.position.x;
+                    cz += h.position.z;
+                }
+                cx /= houses.length;
+                cz /= houses.length;
+                const dx = cx - pm.position.x;
+                const dz = cz - pm.position.z;
+                if (Math.hypot(dx, dz) > 0.5) {
+                    // yaw: 0 → −z; sin/cos wie Chat-Bau-Offset
+                    this.state.yaw = Math.atan2(-dx, -dz);
+                }
+            }
+            const nHaus = houses.length;
+            let nZiegel = 0;
+            let nearest = null;
+            for (const e of houses) {
+                if (e._ziegelSlot) nZiegel++;
+                if (!pm) continue;
+                const d = Math.hypot(e.position.x - pm.position.x, e.position.z - pm.position.z);
+                if (!nearest || d < nearest.d) nearest = { d, e };
+            }
+            const zeile = nearest
+                ? `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} nah=${nearest.e.type} @${Math.round(nearest.e.position.x)}/${Math.round(nearest.e.position.y)}/${Math.round(nearest.e.position.z)} d=${Math.round(nearest.d)}m`
+                : `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} placed=${res && res.placed}`;
+            this._chatEcho?.(zeile);
+            this.log(zeile, "INFO");
+            // Hand-Dichte: nächstes haus_ sofort meshen (nicht auf Cull-Budget warten)
+            if (nearest && nearest.e && typeof this._rebuildArchitectureMesh === "function") {
+                try {
+                    this._rebuildArchitectureMesh(nearest.e);
+                    if (nearest.e.mesh) nearest.e.mesh.visible = true;
+                    this._archZiegelFern?.(nearest.e);
+                } catch (_r) {
+                    /* fail-soft */
+                }
+            }
+        } catch (_e) {
+            /* fail-soft */
+        }
+    }
+
+    async spawnSettlement(opts) {
         const o = opts && typeof opts === "object" ? opts : {};
         let seed = Number.isFinite(o.seed) ? Number(o.seed) : NaN;
         if (!Number.isFinite(seed)) {
@@ -74246,9 +75174,22 @@ class AnazhRealm {
         // AUSLÖSCHUNGS-WELLE — die Footprint-Klasse misst über die Substanz-Zeile
         // haus_basis (×3 ≈ Dorf-Kern; der village-Bauplan ist gefallen).
         const anchor = o.position ? base : this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);
+        // FOUNDRY-WARM — Dorf braucht export-settlement. Kaltes Buch → LAUT blockieren
+        // (kein WARN-Nichts). Autonome Worldgen-Zellen warten schon auf Channel-Live.
+        if (!o.autonomous) {
+            const warm = await this._foundryAwaitBook(45000);
+            if (!warm.ok) {
+                const msg = `FOUNDRY KALT: Siedlung/Dorf-Spawn BLOCKIERT (${warm.reason}; ready=${warm.ready} recipes=${warm.recipes}) — kein stilles Nichts.`;
+                this.log(msg, "ERROR");
+                this._chatEcho?.(msg);
+                return null;
+            }
+        }
         return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then((plan) => {
             if (!plan) {
-                this.log("Siedlung: kein Settlement-Export (Foundry aus/kalt) — nichts platziert.", "WARN");
+                const msg = "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).";
+                this.log(msg, "ERROR");
+                this._chatEcho?.(msg);
                 return null;
             }
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
@@ -74259,10 +75200,11 @@ class AnazhRealm {
             const dKey = "d:" + seed;
             if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
-            this.log(
-                `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`,
-                "INFO"
-            );
+            const msg = `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`;
+            this.log(msg, "INFO");
+            this._chatEcho?.(msg);
+            // Konsum: Blick + Locator automatisch (Sonden starren sonst in die Schlucht)
+            this._nachDorfOrientieren?.(anchor, res);
             return res;
         });
     }
@@ -74414,6 +75356,149 @@ class AnazhRealm {
             this.log(`Genesis-Ring: ${gebaut} Kern-Portale im Kreis um die Plattform.`, "INFO");
         }
     }
+    // V18.491.79 — PORTAL-PREVIEW (Portal-Kontinuum): EIN idempotentes Preview je
+    // Studio-Tor (~8 m radial vor welt_<worldKey>), damit der Host die Silhouette
+    // sieht BEVOR das iframe öffnet. worldKey + Blueprint-type + stabile id;
+    // Doppel-Idempotenz wie der Genesis-Ring: worldMeta.portalPreview<Key> (reist
+    // im Save) UND Existenz-Probe auf id. Foundry kalt → fail-soft Skip + ein
+    // Await-Book in flight je worldKey (nächster Tick retry); kein Duplikat-Spawn.
+    // Aufrufer: fachwerk→haus_alemannisch, garage→fahrzeug_gt, schmiede→esse
+    // (Werkstatt-Stand; klinge_* = hand-mode, prüfstand = Lab-UI — kein Blueprint),
+    // portale→tor_drachentor (spawnArchitecture silent/autonomous).
+    _ensurePortalPreview(worldKey, type, id) {
+        if (typeof worldKey !== "string" || !worldKey || typeof type !== "string" || !type) return;
+        if (typeof id !== "string" || !id) return;
+        const st = this.state;
+        const wm = st.worldMeta;
+        const metaKey = "portalPreview" + worldKey.charAt(0).toUpperCase() + worldKey.slice(1);
+        const fertig = (this._portalPreviewFertig = this._portalPreviewFertig || Object.create(null));
+        const awaiting = (this._portalPreviewAwaiting = this._portalPreviewAwaiting || Object.create(null));
+        if (!wm || wm[metaKey] || fertig[worldKey]) return;
+        const arches = st.architectures || [];
+        for (const e of arches) {
+            if (e && e.id === id) {
+                fertig[worldKey] = true;
+                wm[metaKey] = true;
+                return;
+            }
+        }
+        const portalType = "welt_" + worldKey;
+        let portal = null;
+        for (const e of arches) {
+            if (e && e.type === portalType && e.position) {
+                portal = e;
+                break;
+            }
+        }
+        if (!portal) return;
+        const f = this._foundry;
+        const bpOk = !!(st.blueprints && st.blueprints[type]);
+        if (!f || !f.ready || !f.recipes || !bpOk) {
+            if (awaiting[worldKey]) return;
+            awaiting[worldKey] = true;
+            Promise.resolve(this._foundryAwaitBook(8000))
+                .then((warm) => {
+                    awaiting[worldKey] = false;
+                    if (warm && warm.ok) this._ensurePortalPreview(worldKey, type, id);
+                })
+                .catch(() => {
+                    awaiting[worldKey] = false;
+                });
+            return;
+        }
+        const px = portal.position.x || 0;
+        const pz = portal.position.z || 0;
+        const len = Math.hypot(px, pz) || 1;
+        const ox = px + (px / len) * 8;
+        const oz = pz + (pz / len) * 8;
+        const y = this.getTerrainHeightAt(ox, oz);
+        if (!Number.isFinite(y)) return;
+        // Deterministische Seeds: fachwerk 49177 · garage 49178 · schmiede 49179 · portale 49180.
+        const seed =
+            worldKey === "fachwerk"
+                ? 49177
+                : worldKey === "garage"
+                  ? 49178
+                  : worldKey === "schmiede"
+                    ? 49179
+                    : worldKey === "portale"
+                      ? 49180
+                      : 49170;
+        const opts = { silent: true, autonomous: true, id, seed };
+        // V18.491.91 — fachwerk/haus_* only: dense studioOv so Host `_archFachwerkFit`
+        // gets brace/gaube/fluegel under Soft-Cap ≤24 (Lab-ish denseness). garage/esse/tor unchanged.
+        // Idempotent stamp wins: existing entry with id but missing studioOv stays as-is;
+        // new ov only on fresh spawns. Old worldMeta.portalPreviewFachwerk → clear meta / new world to respawn.
+        if (worldKey === "fachwerk" && type.startsWith("haus_")) {
+            opts.studioOv = Object.freeze({
+                stil: "alt",
+                brace: "andreas",
+                storeys: 2,
+                W: 9,
+                D: 7,
+                pitchDeg: 50,
+                gaube: true,
+                fluegel: true,
+                fluegelSide: 1,
+            });
+        }
+        const entry = this.spawnArchitecture(type, { x: ox, y: y + 0.5, z: oz }, opts);
+        if (entry) {
+            wm[metaKey] = true;
+            fertig[worldKey] = true;
+            this.log(`Portal-Preview ${worldKey}: ${type} ~8 m vor ${portalType}.`, "INFO");
+        }
+    }
+
+    // V18.491.81 — PORTAL-APPROACH PREFETCH: wenn der Spieler einem Genesis-Tor
+    // nahe kommt (~22 m), Preview-Typen via `_ensurePortalPreview` schärfen und
+    // bei kaltem Foundry EIN Await-Book feuern (Boot-Prefetch bleibt separat).
+    // Fail-soft: kein Portal / kein playerPos → no-op. koerperstudio/terrain/
+    // klang/tetrapoda weiter ohne Arch-Preview (kein sicherer Typ).
+    _portalApproachPrefetch(playerPos) {
+        if (!playerPos) return;
+        const rows = [
+            ["fachwerk", "haus_alemannisch", "portal-preview-fachwerk"],
+            ["garage", "fahrzeug_gt", "portal-preview-garage"],
+            ["schmiede", "esse", "portal-preview-schmiede"],
+            ["portale", "tor_drachentor", "portal-preview-portale"],
+        ];
+        const arches = (this.state && this.state.architectures) || [];
+        const R2 = 22 * 22;
+        let nearAny = false;
+        for (let i = 0; i < rows.length; i++) {
+            const worldKey = rows[i][0];
+            const type = rows[i][1];
+            const id = rows[i][2];
+            const portalType = "welt_" + worldKey;
+            let portal = null;
+            for (let j = 0; j < arches.length; j++) {
+                const e = arches[j];
+                if (e && e.type === portalType && e.position) {
+                    portal = e;
+                    break;
+                }
+            }
+            if (!portal) continue;
+            const dx = (portal.position.x || 0) - playerPos.x;
+            const dz = (portal.position.z || 0) - playerPos.z;
+            if (dx * dx + dz * dz > R2) continue;
+            nearAny = true;
+            this._ensurePortalPreview(worldKey, type, id);
+        }
+        if (!nearAny) return;
+        const f = this._foundry;
+        if (f && f.ready) return;
+        if (this._portalApproachAwaiting) return;
+        this._portalApproachAwaiting = true;
+        Promise.resolve(this._foundryAwaitBook(8000))
+            .then(() => {
+                this._portalApproachAwaiting = false;
+            })
+            .catch(() => {
+                this._portalApproachAwaiting = false;
+            });
+    }
 
     _autoSettlementStartInfo() {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (startRadiusM)
@@ -74555,6 +75640,9 @@ class AnazhRealm {
         // DER GENESIS-PORTAL-RING zuerst (einmalig je Welt, Schöpfer 17.07.) —
         // dieselbe Tick-Heimat wie das Start-Dorf (Kanal lebt, Spieler am Ursprung).
         this._genesisPortalRing(playerPos);
+        // V18.491.81 — Portal-approach Prefetch: Preview-Typen nur bei Tor-Nähe
+        // (+ frühes Await-Book), nicht Boot-breit. Helper `_ensurePortalPreview` bleibt.
+        this._portalApproachPrefetch(playerPos);
         // DORF-ERLEBNIS — DER WEGE-REBUILD (Reload-Treue über DENSELBEN
         // settlementCells-Pfad): besiedelte Zellen mit Rebuild-Gedächtnis
         // ({seed,nH,x,z}) bauen ihre Wege-Streifen je Session lazy neu —
@@ -75440,49 +76528,15 @@ class AnazhRealm {
         }
     }
 
-    // ═══ DER WALD-ZIEGEL (die reine Form — der Pixel fragt den Baum) ═══
-    // Schöpfer: „nicht LODs — das Bild direkt aus Position und Blickrichtung
-    // abgeleitet." Die Fern-Stufe eines Baums wird ein VOLUMEN-ZIEGEL: die
-    // GEBACKENE Geometrie (dieselbe Quelle wie das Mesh — kein Zwilling) wird
-    // in ein 3D-Dichtefeld voxelisiert (RGBA: Farbe + Dichte), das Fragment
-    // marcht den Ziegel durch die Box — echte Parallaxe aus JEDEM Winkel
-    // (das Kamera-Quad log bei Schrägsicht), Kosten nur am Schirm. Erste
-    // Stufe des Funktions-Wegs: Masse wandert von der Dreiecks- auf die
-    // Funktions-Seite (der Kompass der reinen Form).
+    // ═══ DER WALD-ZIEGEL — ANALOG B: Einzel-Baum-Brick GEFALLEN ═══
+    // Schöpfer-Wort „analog!": die Baum-Bahn ist KAPSEL (_baumFeldSpawn),
+    // kein Voxel-Bake je Vorlage×Stufe. Diese Funktion bleibt als fail-
+    // closed Naht (return null) — Region-Fern-CACHE (_bundleZiegelTick /
+    // dimRegion) ist die erlaubte Brick-CACHE-Rolle für Fernes.
     _waldZiegelBacken(srcGeo, dim) {
-        const d = dim || 32;
-        const pos = srcGeo && srcGeo.attributes && srcGeo.attributes.position;
-        if (!pos || !pos.count) return null;
-        const col = srcGeo.attributes.color || null;
-        if (!srcGeo.boundingBox) srcGeo.computeBoundingBox();
-        const bb = srcGeo.boundingBox;
-        const sx = Math.max(1e-6, bb.max.x - bb.min.x);
-        const sy = Math.max(1e-6, bb.max.y - bb.min.y);
-        const sz = Math.max(1e-6, bb.max.z - bb.min.z);
-        const daten = new Uint8Array(d * d * d * 4);
-        // FLÄCHEN-SPLAT statt Vertex-Splat (die EINE Wurzel — Dreiecke säen,
-        // kein Schweizer-Käse mehr); das Fallback-Grün des farb-losen Baums
-        // bleibt byte-gleich als mc (0.45/0.6/0.3 × 200 = 90/120/60).
-        this._feldFlaechenSplat(
-            daten,
-            d,
-            bb.min,
-            sx,
-            sy,
-            sz,
-            srcGeo,
-            col,
-            col ? null : { r: 0.45, g: 0.6, b: 0.3 },
-            null,
-            d * d * 48
-        );
-        const tex = new THREE.Data3DTexture(daten, d, d, d);
-        tex.format = THREE.RGBAFormat;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.unpackAlignment = 1;
-        tex.needsUpdate = true;
-        return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
+        void srcGeo;
+        void dim;
+        return null;
     }
 
     // DER UNIVERSAL-BÄCKER (alle Studios — EIN Import/Export-Weg): backt eine
@@ -75495,6 +76549,10 @@ class AnazhRealm {
     // Feld-Eintrag). Ohne wurzelInv byte-alt: Welt-Raum-Feld (Region-Streu).
     // (Der klemmBox-Oktant-Zweig fiel mit den Oktanten — „analog!".)
     _ziegelBackenAusGruppe(gruppe, dim, wurzelInv) {
+        // ANALOG C (fail-closed): Architektur-Voxel-Stufe (dimArch) ist GEFALLEN —
+        // Bau = Box-Satz (_archBoxFit / aarch:…). Nur Region-Fern-CACHE (dimRegion)
+        // bleibt die erlaubte Brick-Rolle (PFLICHT-Header: Fernes/Irreguläres).
+        if (dim === AnazhRealm.WALD_ZIEGEL.dimArch) return null;
         if (!gruppe || typeof THREE === "undefined") return null;
         const d = dim || AnazhRealm.WALD_ZIEGEL.dim;
         gruppe.updateMatrixWorld(true);
@@ -75580,16 +76638,14 @@ class AnazhRealm {
         return new THREE.Matrix4().compose(new THREE.Vector3(p.x || 0, baseY, p.z || 0), q, new THREE.Vector3(s, s, s));
     }
 
-    // DIE ZIEGEL-FERNSTUFE der Architektur, DEDUP'd (der grosse Schnitt): die
-    // Vorlage (type+variant) backt EINMAL in ein platzierungsfreies Brick; jede
-    // Instanz ist nur ein Feld-Eintrag mit ihrer Welt-Matrix. 177 Bauten aus N
-    // Vorlagen → N Bricks (statt 177). Cache-Treffer bauen KEIN Mesh mehr (die
-    // Matrix kommt aus der Transform). Bake getaktet (Bake-Garantie).
-    // ANALOG (Schöpfer-Wort): der Bau ist sein BOX-SATZ — je Kind-Mesh eine
-    // Box im Vorlagen-Raum (Fachwerk-Balken/Wände SIND Boxen im Gesetz), die
-    // 24 volumen-größten tragen die Gestalt; EIN Key je Vorlage, Dedup über
-    // alle Instanzen. Die Voxel-Bricks + Oktanten der Architektur sind
-    // GEFALLEN — der Strahl digitalisiert das Gesetz am Schirm.
+    // ═══ DIE ARCH-BAHN, ANALOG C: Bau = BOX-SATZ ═══
+    // Vorlage (type+variant[+ov]) → Key `aarch:type:variant` bzw. bei studioOv
+    // `aarch:type:variant:ov:<hash>` (fail-closed: ohne ov byte-alt). Dedup über
+    // gleiche Vorlage; Payload = _archFachwerkFit (haus_/studioOv) sonst
+    // _archBoxFit (bis 24 AABB-Boxen im Vorlagen-Raum). Oktanten + Voxel-Bricks
+    // (dimArch) GEFALLEN — fail-closed in _weltFeldSpawn("arch:…") /
+    // _ziegelBackenAusGruppe(dimArch). Mesh nur Hand-Blase als unsichtbarer
+    // Interaktions-Körper. Bake getaktet.
     _archZiegelFern(entry) {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return false;
@@ -75599,16 +76655,27 @@ class AnazhRealm {
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
         const wm = this._weltMarchEnsure();
-        const key = `aarch:${entry.type}:${entry._lodVariantIndex || 0}`;
+        const ov = entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
+            ? entry.studioOv
+            : null;
+        const ovH = ov ? `:ov:${this._studioOvHash(ov)}` : "";
+        const key = `aarch:${entry.type}:${entry._lodVariantIndex || 0}${ovH}`;
         if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
         const M = this._archWeltMatrix(entry);
         let fitWar = "hit";
         const handle = this._weltKapselSpawn(key, M, () => {
+            // KONSUM / Fachwerk-Naht: haus_/studioOv → Grammatik-Boxen aus denselben
+            // Maßen wie massBau/buildInstance (kein Mesh nötig). Sonst Mesh-AABB.
+            let defs = this._archFachwerkFit(entry);
+            if (defs && defs.length) {
+                fitWar = "gepasst";
+                return defs;
+            }
             // Cache-Miss: die Vorlage EINMAL bauen + LOKAL passen (relativ zu M⁻¹).
             const hatte = this._archIsRendered(entry);
             if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Erst-Fit
             const inv = M.clone().invert();
-            const defs = entry.mesh ? this._archBoxFit(entry.mesh, inv) : null;
+            defs = entry.mesh ? this._archBoxFit(entry.mesh, inv) : null;
             if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             fitWar = defs && defs.length ? "gepasst" : "leer";
             return defs;
@@ -75627,6 +76694,484 @@ class AnazhRealm {
         }
         entry._ziegelGebacken = true; // Erschöpfung (Kapsel-Liste voll) — kein Rückweg
         return true;
+    }
+
+    // KONSUM / Fachwerk-Naht (Analog C): aarch-Boxen/Prismen aus der HAUS-Grammatik
+    // (Balken · Gefache · Diagonal-Verbände · Dach · Gaube/Flügel-Stub) — Maße wie massBau/
+    // buildInstance/HAUS (W/D/storeys/egH/ogH/foundH/pitchDeg/post/door*),
+    // Vorlagen-Raum wie Mesh. Trigger: type `haus_*` ODER entry.studioOv.
+    // ≤24 (timber prio); Dedup-Key via `_archZiegelFern` inkl. ov-Hash
+    // wenn studioOv (ohne ov byte-alt). Sattel-Dach = Prism-Wedges (pB.w=2|3);
+    // Gaube-Stub TEIL (Front −z); Flügel-Stub landed .73.
+    _archFachwerkFit(entry) {
+        if (!entry || typeof THREE === "undefined") return null;
+        const typ = entry.type || "";
+        const ov = entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
+            ? entry.studioOv
+            : null;
+        if (!(typ.startsWith("haus_") || ov)) return null;
+        const n = (v, d) => {
+            const x = Number(v);
+            return Number.isFinite(x) ? x : d;
+        };
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        const tuer = entry.tuer && typeof entry.tuer === "object" ? entry.tuer : null;
+        const W = clamp(n(ov && ov.W, n(tuer && tuer.W, 9)), 3, 20);
+        const D = clamp(n(ov && ov.D, n(tuer && tuer.D, 7)), 3, 20);
+        const storeys = clamp(Math.round(n(ov && ov.storeys, 2)), 1, 8);
+        const foundH = clamp(n(ov && ov.foundH, 0.55), 0.2, 2.5);
+        const egH = clamp(n(ov && ov.egH, 2.55), 1.8, 4);
+        const ogH = clamp(n(ov && ov.ogH, 2.35), 1.6, 4);
+        const pitchDeg = clamp(n(ov && (ov.pitchDeg != null ? ov.pitchDeg : ov.pitch), 50), 8, 62);
+        const post = clamp(n(ov && ov.post, 0.16), 0.08, 0.4);
+        const sill = clamp(n(ov && ov.sill, 0.18), 0.08, 0.4);
+        const ovEave = clamp(n(ov && ov.ovEave, 0.42), 0, 1.2);
+        const doorW = clamp(n(tuer && tuer.w, n(ov && ov.doorW, 1.1)), 0.7, 2.4);
+        const doorH = clamp(n(tuer && tuer.h, n(ov && ov.doorH, 2.05)), 1.6, 2.8);
+        const doorX = n(tuer && tuer.x, 0);
+        const winW = clamp(n(ov && ov.winW, 1.0), 0.5, 1.8);
+        const winH = clamp(n(ov && ov.winH, 1.2), 0.6, 1.8);
+        const stil = typeof (ov && ov.stil) === "string" ? ov.stil : "alt";
+        const brace = ov && ov.brace != null ? ov.brace : stil === "alt" || stil === "huette" || stil === "stroh" ? "andreas" : "none";
+        const fachwerk = brace && brace !== "none";
+        const hexRgb = (hex, fb) => {
+            const h = Number(hex);
+            if (!Number.isFinite(h)) return fb;
+            return { r: ((h >> 16) & 255) / 255, g: ((h >> 8) & 255) / 255, b: (h & 255) / 255 };
+        };
+        const col = ov && ov.col && typeof ov.col === "object" ? ov.col : null;
+        const cHolz = hexRgb(col && (col.holz != null ? col.holz : col.stamm), { r: 0.35, g: 0.27, b: 0.2 });
+        const cGefach = hexRgb(
+            col && (col.gefach != null ? col.gefach : col.putz != null ? col.putz : col.backstein != null ? col.backstein : col.lehm),
+            stil === "klinker"
+                ? { r: 0.59, g: 0.31, b: 0.24 }
+                : stil === "glas"
+                  ? { r: 0.5, g: 0.65, b: 0.72 }
+                  : { r: 0.85, g: 0.82, b: 0.76 }
+        );
+        const cZiegel = hexRgb(
+            col && (col.ziegel != null ? col.ziegel : col.dachmod != null ? col.dachmod : col.stamm),
+            { r: 0.61, g: 0.29, b: 0.21 }
+        );
+        const cFund = hexRgb(col && col.stein, { r: 0.55, g: 0.52, b: 0.48 });
+        const levels = [];
+        {
+            let y = foundH;
+            for (let k = 0; k < storeys; k++) {
+                const h = k === 0 ? egH : ogH;
+                levels.push({ y, h, top: y + h });
+                y += h;
+            }
+        }
+        const eaveY = levels[levels.length - 1].top;
+        const ridgeY = eaveY + (D / 2) * Math.tan((pitchDeg * Math.PI) / 180);
+        const flatRoof = pitchDeg < 14 || stil === "modern" || stil === "glas";
+        const kand = [];
+        // prio: 2 = Balken/Dach-First (dürfen nicht von Volumen-Sort fallen), 1 = Gefach/Dach, 0 = Deko
+        const push = (cx, cy, cz, hx, hy, hz, farbe, prio) => {
+            const hx2 = Math.max(0.02, hx);
+            const hy2 = Math.max(0.02, hy);
+            const hz2 = Math.max(0.02, hz);
+            kand.push({
+                box: true,
+                c: new THREE.Vector3(cx, cy, cz),
+                h: new THREE.Vector3(hx2, hy2, hz2),
+                farbe,
+                vol: hx2 * hy2 * hz2,
+                prio: prio | 0,
+            });
+        };
+        // Prism/Wedge: gleicher Pack wie Box, Typ pB.w=2 (First +local z) / 3 (First −z).
+        const pushPrism = (cx, cy, cz, hx, hy, hz, farbe, prio, flip) => {
+            const hx2 = Math.max(0.02, hx);
+            const hy2 = Math.max(0.02, hy);
+            const hz2 = Math.max(0.02, hz);
+            kand.push({
+                prism: true,
+                prismFlip: !!flip,
+                c: new THREE.Vector3(cx, cy, cz),
+                h: new THREE.Vector3(hx2, hy2, hz2),
+                farbe,
+                vol: hx2 * hy2 * hz2 * 0.5,
+                prio: prio | 0,
+            });
+        };
+        // Fundament-Sockel (massBau baseY-Wahrheit)
+        push(0, foundH * 0.5, 0, W * 0.5 + 0.06, foundH * 0.5, D * 0.5 + 0.06, cFund, 1);
+        const tWall = Math.max(0.1, post * 1.15);
+        const hw = W * 0.5;
+        const hd = D * 0.5;
+        // Eckständer (volle Traufhöhe) — Fachwerk-Lesbarkeit
+        if (fachwerk) {
+            const ph = eaveY - foundH;
+            const py = foundH + ph * 0.5;
+            const px = hw - post * 0.5;
+            const pz = hd - post * 0.5;
+            for (const sx of [-1, 1]) for (const sz of [-1, 1]) push(sx * px, py, sz * pz, post * 0.5, ph * 0.5, post * 0.5, cHolz, 2);
+        }
+        for (let li = 0; li < levels.length; li++) {
+            const L = levels[li];
+            const cy = L.y + L.h * 0.5;
+            const hy = L.h * 0.5 - 0.02;
+            // Rähm / Schwelle als Balkenring (vorne/hinten + Seiten)
+            if (fachwerk) {
+                const bySill = L.y + sill * 0.5;
+                const byRaehm = L.top - sill * 0.5;
+                push(0, bySill, -hd + post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
+                push(0, bySill, hd - post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
+                push(0, byRaehm, -hd + post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
+                push(0, byRaehm, hd - post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
+            }
+            // Gefache / Wandplatten — EG Front: Tür + Fenster; OG Front (storeys≥2):
+            // 1–2 Fenster wie EG (ov.winW/winH); Seiten optional bei Soft-Cap; Back massiv.
+            // Timber/Prism behalten prio (Sort ≤24).
+            const frontZ = -hd + tWall * 0.5;
+            const backZ = hd - tWall * 0.5;
+            const yWall0 = cy - hy;
+            const yWall1 = cy + hy;
+            // Lochwand entlang X (Front/Back): Segmente + Brüstung/Sturz je Öffnung.
+            const pushGapsX = (z, a0, a1, y0, y1, holes) => {
+                const hs = (holes || [])
+                    .filter((h) => h && h.w > 0.2 && h.c - h.w * 0.5 > a0 - 0.02 && h.c + h.w * 0.5 < a1 + 0.02)
+                    .sort((p, q) => p.c - q.c);
+                let cur = a0;
+                const halfH = (y1 - y0) * 0.5;
+                const midY = (y0 + y1) * 0.5;
+                for (let hi = 0; hi < hs.length; hi++) {
+                    const h = hs[hi];
+                    const Lh = h.c - h.w * 0.5;
+                    const Rh = h.c + h.w * 0.5;
+                    const leftLen = Lh - cur;
+                    if (leftLen > 0.15) push((cur + Lh) * 0.5, midY, z, leftLen * 0.5, halfH, tWall * 0.5, cGefach, 1);
+                    const b = Math.max(y0, h.b);
+                    const t = Math.min(y1, h.t);
+                    if (b > y0 + 0.08) push(h.c, (y0 + b) * 0.5, z, h.w * 0.5, (b - y0) * 0.5, tWall * 0.5, cGefach, 1);
+                    if (y1 > t + 0.08) push(h.c, (t + y1) * 0.5, z, h.w * 0.5, (y1 - t) * 0.5, tWall * 0.5, cGefach, 1);
+                    cur = Rh;
+                }
+                const rightLen = a1 - cur;
+                if (rightLen > 0.15) push((cur + a1) * 0.5, midY, z, rightLen * 0.5, halfH, tWall * 0.5, cGefach, 1);
+            };
+            // Lochwand entlang Z (Seitenwände).
+            const pushGapsZ = (x, a0, a1, y0, y1, holes) => {
+                const hs = (holes || [])
+                    .filter((h) => h && h.w > 0.2 && h.c - h.w * 0.5 > a0 - 0.02 && h.c + h.w * 0.5 < a1 + 0.02)
+                    .sort((p, q) => p.c - q.c);
+                let cur = a0;
+                const halfH = (y1 - y0) * 0.5;
+                const midY = (y0 + y1) * 0.5;
+                for (let hi = 0; hi < hs.length; hi++) {
+                    const h = hs[hi];
+                    const Lh = h.c - h.w * 0.5;
+                    const Rh = h.c + h.w * 0.5;
+                    const leftLen = Lh - cur;
+                    if (leftLen > 0.15) push(x, midY, (cur + Lh) * 0.5, tWall * 0.5, halfH, leftLen * 0.5, cGefach, 1);
+                    const b = Math.max(y0, h.b);
+                    const t = Math.min(y1, h.t);
+                    if (b > y0 + 0.08) push(x, (y0 + b) * 0.5, h.c, tWall * 0.5, (b - y0) * 0.5, h.w * 0.5, cGefach, 1);
+                    if (y1 > t + 0.08) push(x, (t + y1) * 0.5, h.c, tWall * 0.5, (y1 - t) * 0.5, h.w * 0.5, cGefach, 1);
+                    cur = Rh;
+                }
+                const rightLen = a1 - cur;
+                if (rightLen > 0.15) push(x, midY, (cur + a1) * 0.5, tWall * 0.5, halfH, rightLen * 0.5, cGefach, 1);
+            };
+            const winHoleAt = (c, y0, y1) => {
+                // unter Traufe/Rähm: Sturz-Band bleibt; Brüstung ≥ ~0.55
+                const top = Math.min(y1 - 0.12, y0 + Math.max(winH + 0.7, 1.85));
+                const bot = Math.max(y0 + 0.55, top - winH);
+                return { c, w: winW, b: bot, t: bot + Math.min(winH, top - bot) };
+            };
+            const x0w = -hw + post;
+            const x1w = hw - post;
+            const z0w = -hd + post;
+            const z1w = hd - post;
+            if (li === 0) {
+                // Tür-Lücke bleibt (kein Brüstungsband); daneben 1–2 Fenster wenn Feld breit genug.
+                const holesF = [{ c: doorX, w: doorW, b: yWall0 - 0.05, t: L.y + doorH }];
+                const gapLo = doorX - doorW * 0.5;
+                const gapHi = doorX + doorW * 0.5;
+                const minSpan = winW + 0.55;
+                if (gapLo - x0w >= minSpan) holesF.push(winHoleAt((x0w + gapLo) * 0.5, yWall0, yWall1));
+                if (x1w - gapHi >= minSpan) holesF.push(winHoleAt((gapHi + x1w) * 0.5, yWall0, yWall1));
+                // falls Tür am Rand und nur eine Seite: ggf. zweites Fenster auf der langen Seite
+                if (holesF.length === 2) {
+                    const side = gapLo - x0w >= x1w - gapHi ? { a0: x0w, a1: gapLo } : { a0: gapHi, a1: x1w };
+                    if (side.a1 - side.a0 >= 2 * winW + 1.1) {
+                        const c1 = side.a0 + (side.a1 - side.a0) * 0.33;
+                        const c2 = side.a0 + (side.a1 - side.a0) * 0.67;
+                        holesF.length = 1; // Tür behalten, Fenster neu setzen
+                        holesF.push(winHoleAt(c1, yWall0, yWall1));
+                        holesF.push(winHoleAt(c2, yWall0, yWall1));
+                    }
+                }
+                pushGapsX(frontZ, x0w, x1w, yWall0, yWall1, holesF);
+            } else if (li === 1 && storeys >= 2) {
+                // OG-Front: 1–2 Fenster-Lücken (wie EG ohne Tür), ov.winW/winH Defaults.
+                const holesF = [];
+                const span = x1w - x0w;
+                const minSpan = winW + 0.55;
+                if (span >= 2 * winW + 1.1) {
+                    holesF.push(winHoleAt(x0w + span * 0.33, yWall0, yWall1));
+                    holesF.push(winHoleAt(x0w + span * 0.67, yWall0, yWall1));
+                } else if (span >= minSpan) {
+                    holesF.push(winHoleAt((x0w + x1w) * 0.5, yWall0, yWall1));
+                }
+                if (holesF.length) pushGapsX(frontZ, x0w, x1w, yWall0, yWall1, holesF);
+                else push(0, cy, frontZ, hw - post, hy, tWall * 0.5, cGefach, 1);
+            } else {
+                push(0, cy, frontZ, hw - post, hy, tWall * 0.5, cGefach, 1);
+            }
+            push(0, cy, backZ, hw - post, hy, tWall * 0.5, cGefach, 1);
+            // EG-Seiten: 1 Fenster/Seite wenn Cap; OG-Seiten nur wenn noch Soft-Raum.
+            if (li === 0) {
+                const sideLen = z1w - z0w;
+                const sideBudget = kand.length <= 18 && sideLen >= winW + 0.7;
+                if (sideBudget) {
+                    const holesS = [winHoleAt(0, yWall0, yWall1)];
+                    if (sideLen >= 2 * winW + 1.2 && kand.length <= 14) {
+                        holesS.length = 0;
+                        holesS.push(winHoleAt(z0w + sideLen * 0.33, yWall0, yWall1));
+                        holesS.push(winHoleAt(z0w + sideLen * 0.67, yWall0, yWall1));
+                    }
+                    pushGapsZ(-hw + tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
+                    pushGapsZ(hw - tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
+                } else {
+                    push(-hw + tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
+                    push(hw - tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
+                }
+            } else if (li === 1 && storeys >= 2) {
+                const sideLen = z1w - z0w;
+                // OG-Seiten optional: Soft vor Verbänden/Dach (enger als EG).
+                const sideBudget = kand.length <= 20 && sideLen >= winW + 0.7;
+                if (sideBudget) {
+                    const holesS = [winHoleAt(0, yWall0, yWall1)];
+                    if (sideLen >= 2 * winW + 1.2 && kand.length <= 16) {
+                        holesS.length = 0;
+                        holesS.push(winHoleAt(z0w + sideLen * 0.33, yWall0, yWall1));
+                        holesS.push(winHoleAt(z0w + sideLen * 0.67, yWall0, yWall1));
+                    }
+                    pushGapsZ(-hw + tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
+                    pushGapsZ(hw - tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
+                } else {
+                    push(-hw + tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
+                    push(hw - tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
+                }
+            } else {
+                push(-hw + tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
+                push(hw - tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
+            }
+            // Mittelständer weichen den Diagonal-Verbänden (gleicher ≤24-Cap;
+            // Verbände tragen die Fachwerk-Lesbarkeit auf Front/Back/Seiten).
+        }
+        // Diagonal-Verbände (Andreas-X / K / Mann) — AABB-Stufen entlang der
+        // Strebe (kein rotiertes Mesh). EG Front/Back immer; EG Left/Right
+        // (1 Stufe/Diag, Cap sparen); OG Front/Back + Left/Right wenn Budget ≤24.
+        if (fachwerk) {
+            const a0 = -hw + post;
+            const a1 = hw - post;
+            const b0 = -hd + post;
+            const b1 = hd - post;
+            const cx = 0;
+            const cz = 0;
+            const zF = -hd + post * 0.55;
+            const zB = hd - post * 0.55;
+            const xL = -hw + post * 0.55;
+            const xR = hw - post * 0.55;
+            const bt = Math.max(0.045, post * 0.38);
+            // Eine Diagonale als N AABB-Stufen (Silhouette / bzw. \) — Front/Back (x,y).
+            const pushDiag = (xA, yA, xB, yB, z, segs) => {
+                const n = Math.max(1, segs | 0);
+                for (let i = 0; i < n; i++) {
+                    const t0 = i / n;
+                    const t1 = (i + 1) / n;
+                    const t = (t0 + t1) * 0.5;
+                    const px = xA + (xB - xA) * t;
+                    const py = yA + (yB - yA) * t;
+                    const hx = Math.abs(xB - xA) / (2 * n) + bt * 0.55;
+                    const hy = Math.abs(yB - yA) / (2 * n) + bt * 0.55;
+                    push(px, py, z, hx, hy, bt, cHolz, 2);
+                }
+            };
+            // Seitenwände: Diagonale in (z,y), x fest — 1 Stufe bevorzugt (Cap).
+            const pushDiagSide = (zA, yA, zB, yB, x, segs) => {
+                const n = Math.max(1, segs | 0);
+                for (let i = 0; i < n; i++) {
+                    const t0 = i / n;
+                    const t1 = (i + 1) / n;
+                    const t = (t0 + t1) * 0.5;
+                    const pz = zA + (zB - zA) * t;
+                    const py = yA + (yB - yA) * t;
+                    const hz = Math.abs(zB - zA) / (2 * n) + bt * 0.55;
+                    const hy = Math.abs(yB - yA) / (2 * n) + bt * 0.55;
+                    push(x, py, pz, bt, hy, hz, cHolz, 2);
+                }
+            };
+            const motifCost = (segs) => (brace === "mann" ? 1 + 2 * Math.max(1, segs | 0) : 2 * Math.max(1, segs | 0));
+            const timberRoom = () => {
+                let p2 = 0;
+                for (let i = 0; i < kand.length; i++) if (kand[i].prio === 2) p2++;
+                return 24 - p2;
+            };
+            const motif = (z, yLo, yHi, segs) => {
+                const cyM = (yLo + yHi) * 0.5;
+                if (brace === "k") {
+                    pushDiag(cx, yLo, a0, yHi, z, segs);
+                    pushDiag(cx, yLo, a1, yHi, z, segs);
+                } else if (brace === "mann") {
+                    // kürzere Halb-Streben; EG oft 1 Stufe (Budget für Dach-AABB)
+                    push(cx, cyM, z, post * 0.35, (yHi - yLo) * 0.5, post * 0.35, cHolz, 2);
+                    pushDiag(a0, yLo, cx, cyM, z, segs);
+                    pushDiag(a1, yLo, cx, cyM, z, segs);
+                } else {
+                    // andreas · wild · Default-X
+                    pushDiag(a0, yLo, a1, yHi, z, segs);
+                    pushDiag(a1, yLo, a0, yHi, z, segs);
+                }
+            };
+            const motifSide = (x, yLo, yHi, segs) => {
+                const cyM = (yLo + yHi) * 0.5;
+                if (brace === "k") {
+                    pushDiagSide(cz, yLo, b0, yHi, x, segs);
+                    pushDiagSide(cz, yLo, b1, yHi, x, segs);
+                } else if (brace === "mann") {
+                    push(x, cyM, cz, post * 0.35, (yHi - yLo) * 0.5, post * 0.35, cHolz, 2);
+                    pushDiagSide(b0, yLo, cz, cyM, x, segs);
+                    pushDiagSide(b1, yLo, cz, cyM, x, segs);
+                } else {
+                    pushDiagSide(b0, yLo, b1, yHi, x, segs);
+                    pushDiagSide(b1, yLo, b0, yHi, x, segs);
+                }
+            };
+            const L0 = levels[0];
+            const y0 = L0.y + sill;
+            const y1 = L0.top - sill;
+            if (y1 - y0 >= 0.55) {
+                // EG Front/Back: Andreas/K mit 2 Stufen; Mann-Halbstreben bleiben 1 Stufe.
+                const segsEg = brace === "mann" ? 1 : 2;
+                motif(zF, y0, y1, segsEg);
+                motif(zB, y0, y1, segsEg);
+                // EG Left/Right: 1 Stufe/Diagonale (Cap sparen) — vor OG, damit EG trägt.
+                const costSide = motifCost(1) * 2;
+                if (timberRoom() >= costSide) {
+                    motifSide(xL, y0, y1, 1);
+                    motifSide(xR, y0, y1, 1);
+                }
+            }
+            // OG Front/Back: storeys≥2 und timber-prio-2-Raum im ≤24-Cap.
+            // Eng → 1 Stufe/Diagonale; wenn Platz → ggf. 2 (wie EG Andreas/K).
+            if (storeys >= 2 && levels[1]) {
+                const L1 = levels[1];
+                const y0g = L1.y + sill;
+                const y1g = L1.top - sill;
+                if (y1g - y0g >= 0.55) {
+                    const room = timberRoom();
+                    const cost1 = motifCost(1) * 2;
+                    const cost2 = motifCost(2) * 2;
+                    let segsOg = 0;
+                    if (room >= cost2 && brace !== "mann") segsOg = 2;
+                    else if (room >= cost1) segsOg = 1;
+                    if (segsOg > 0) {
+                        motif(zF, y0g, y1g, segsOg);
+                        motif(zB, y0g, y1g, segsOg);
+                    }
+                    // OG Left/Right: nur wenn noch ≤24-Raum (immer 1 Stufe).
+                    const costSideOg = motifCost(1) * 2;
+                    if (timberRoom() >= costSideOg) {
+                        motifSide(xL, y0g, y1g, 1);
+                        motifSide(xR, y0g, y1g, 1);
+                    }
+                }
+            }
+        }
+        // Dachkörper — Sattel = zwei Prism-Wedges (First zur Mitte); flach = Platte
+        if (flatRoof) {
+            push(0, eaveY + 0.1, 0, hw + ovEave, 0.1, hd + ovEave * 0.6, cZiegel, 1);
+        } else {
+            const roofH = Math.max(0.25, (ridgeY - eaveY) * 0.5 + 0.06);
+            const midY = eaveY + roofH;
+            const hxR = hw + ovEave;
+            const hzR = hd * 0.5 + ovEave * 0.35;
+            // −z-Hälfte: First bei +local z; +z-Hälfte: First bei −local z (prismFlip)
+            pushPrism(0, midY, -hd * 0.5, hxR, roofH, hzR, cZiegel, 1, false);
+            pushPrism(0, midY, hd * 0.5, hxR, roofH, hzR, cZiegel, 1, true);
+            push(0, ridgeY - 0.06, 0, Math.max(0.2, hw * 0.15), 0.08, 0.12, cHolz, 2);
+            // Gaube-Stub: eine Front-Gaube (−z-Dachhälfte, nicht beide). Box-Körper
+            // + Mini-Prism. wantGaube: ov.gaube explizit (false = fail-closed) sonst
+            // Default fachwerk + stil alt/huette/stroh. storeys≥2; Soft-Cap ≤24 Sort
+            // (prio 2 — Dorf-Gaube hält gegen winzige Timber; Extras fallen).
+            {
+                const wantGaube = ov && ov.gaube != null
+                    ? !!ov.gaube
+                    : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh");
+                if (wantGaube && storeys >= 2) {
+                    const gW = clamp(W * 0.14, 0.9, 1.35);
+                    const gD = clamp(hd * 0.28, 0.5, 0.9);
+                    const gH = clamp((ridgeY - eaveY) * 0.42, 0.65, 1.1);
+                    const gx = 0;
+                    const gz = -hd * 0.4;
+                    const roofAt =
+                        eaveY + (ridgeY - eaveY) * (1 - Math.min(1, Math.abs(gz) / Math.max(0.01, hd)));
+                    const baseY = roofAt + 0.02;
+                    push(gx, baseY + gH * 0.5, gz, gW * 0.5, gH * 0.5, gD * 0.5, cGefach, 2);
+                    const pH = Math.max(0.1, gH * 0.2);
+                    pushPrism(
+                        gx,
+                        baseY + gH + pH * 0.5,
+                        gz,
+                        gW * 0.5 + 0.06,
+                        pH,
+                        gD * 0.5 + 0.05,
+                        cZiegel,
+                        2,
+                        false
+                    );
+                }
+            }
+        }
+        // Slim wing (18.491.94): Seitenflügel +x/−x (ov.fluegelSide).
+        // Trigger = wantFluegel: ov.fluegel explizit (false = fail-closed) sonst
+        // Default fachwerk + stil alt/huette/stroh + W≥8. Soft-Cap ≤24 —
+        // 2× prio-2 (solid Annex + Dachplatte) hält Flügel-Silhouette neben
+        // Andreas/Gaube; kein 5-Box-Satz (Sockel+3 Wände+Dach) prio-1 mehr.
+        {
+            const wantFluegel = ov && ov.fluegel != null
+                ? !!ov.fluegel
+                : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh") && W >= 8;
+            if (wantFluegel) {
+                let sx = 1;
+                const fs = ov && ov.fluegelSide;
+                if (
+                    fs === -1 ||
+                    fs === "-1" ||
+                    fs === "-" ||
+                    fs === "W" ||
+                    fs === "w" ||
+                    fs === "-x" ||
+                    fs === "left"
+                )
+                    sx = -1;
+                else if (typeof fs === "number" && fs < 0) sx = -1;
+                const fW = clamp(W * 0.32, 2.0, 3.2); // Auskragung entlang x (slim Cap)
+                const fD = clamp(D * 0.5, 2.2, 4.0); // Breite entlang z (kleiner als Haupt)
+                const fH = egH; // 1 Geschoss
+                const cx = sx * (hw + fW * 0.5);
+                const y0 = foundH;
+                const y1 = foundH + fH;
+                const cy = (y0 + y1) * 0.5;
+                const hy = fH * 0.5 - 0.02;
+                const hz = fD * 0.5;
+                // Slim wing Soft-Cap hält (18.491.96 denseness): 2× prio-2 neben Andreas/Gaube; wing=2 under andreas+gaube.
+                // solid Annex-Körper + Dachplatte; kein 5-Box-Satz mehr.
+                push(cx, cy, 0, fW * 0.5, hy, hz, cGefach, 2);
+                push(cx, y1 + 0.08, 0, fW * 0.5 + 0.06, 0.08, hz + 0.06, cZiegel, 2);
+            }
+        }
+        if (!kand.length) return null;
+        kand.sort((a, b) => b.prio - a.prio || b.vol - a.vol);
+        return kand.slice(0, 24).map((d) => {
+            delete d.prio;
+            return d;
+        });
     }
 
     // DER BOX-FIT: je Kind-Mesh eine Box (lokale AABB im Vorlagen-Raum) mit
@@ -75707,20 +77252,14 @@ class AnazhRealm {
     // (Die Oktanten-Zerlegung der Voxel-Ära fiel mit dem Schöpfer-Wort
     // „analog!" — der Bau ist sein Box-Satz, _archBoxFit ist die Naht.)
 
-    // ═══ DIE BAUM-BAHN (C, 21.07.): der Scatter-Baum IST sein Feld ═══
-    // Jenseits der feinsten Stufe (Zellen-LOD ≥ 1) wird der Baum ein Dedup-
-    // Brick je Vorlage×Stufe (baum:preset:variant:dim) + EIN Feld-Eintrag je
-    // Instanz (die Matrix platziert). Die Stufe reitet das EXISTIERENDE
-    // Zellen-LOD: 1 → dimFein 64³ · 2 → dim 32³ (der Billboard-Quad stirbt —
-    // der seit .31 benannte fimp-Swap); Stufe 0 bleibt echte Instanz-
-    // Geometrie = die feinste Abtaststufe (Anfassen/Fällen lebt). Die
-    // Bake-Quelle ist IMMER die Geometrie-Stufe 1, nie das Billboard — der
-    // Brick trägt die volle Form, dim wählt nur die Abtastrate (Pyramide).
-    // ANALOG (Schöpfer-Wort): der Baum ist sein KAPSEL-SATZ — Stamm/Äste als
-    // Kapseln, Kronen-Massen als Kugeln (entartete Kapseln), gepasst aus den
-    // größten Flat-Leaves der GEOMETRIE-Stufe (nie das Billboard). EIN Key je
-    // Vorlage (analog kennt keine Import-Stufen — der Strahl digitalisiert);
-    // der Zellen-LOD-Wechsel trifft denselben Key → Dedup, kein Churn.
+    // ═══ DIE BAUM-BAHN, ANALOG B: Scatter-Baum = KAPSEL-SATZ ═══
+    // Zellen-LOD ≥ 1 → Dedup-Kapsel je Vorlage (abaum:preset:variant) + EIN
+    // Feld-Eintrag je Instanz (Matrix platziert). Brick-Bake je Vorlage×Stufe
+    // (baum:…:dim) ist GEFALLEN — fail-closed in _weltFeldSpawn/_waldZiegelBacken.
+    // Stufe 0 bleibt Instanz-Geometrie (Anfassen/Fällen). Fit-Quelle = Foundry-
+    // Flat LOD1 (nie Billboard). Dedup-Key OHNE Stufe: LOD-Wechsel trifft denselben
+    // Key → kein Churn. Payload heute: AABB-Kapseln der 6 volumen-größten Leaves
+    // (Stamm/Äste + Kronen-Kugeln); Grammatik-Skelett Kegel/Ellipsoid+Noise = Lücke.
     _baumFeldSpawn(preset, fseed, M) {
         const key = "abaum:" + preset + ":" + this._foundryVariantFor(fseed);
         const wm = this._weltMarchEnsure();
@@ -75739,6 +77278,11 @@ class AnazhRealm {
     // die 6 volumen-größten Leaves tragen die Gestalt (Stamm + Kronen-Massen),
     // der Rest geht im Satz auf (erste Ordnung des Gesetzes).
     _baumKapselFit(bf) {
+        // Analog-B Slice 2: Grammatik-Fit (Kegel+Krone) wenn Beipack da; sonst AABB (fail-closed).
+        if (bf && bf._baumGrammatik && bf._baumGrammatik.segs && bf._baumGrammatik.segs.length) {
+            const gFit = this._baumGrammatikFit(bf._baumGrammatik, bf);
+            if (gFit && gFit.length) return gFit;
+        }
         const v = this._bkfV || (this._bkfV = new THREE.Vector3());
         const kand = [];
         for (const lf of bf.leaves) {
@@ -75772,6 +77316,21 @@ class AnazhRealm {
             if (bb.isEmpty()) continue;
             const c = bb.getCenter(new THREE.Vector3());
             const h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+            const farbe = fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null;
+            const vol = h.x * h.y * h.z;
+            const hmin = Math.min(h.x, h.y, h.z);
+            const hmax = Math.max(h.x, h.y, h.z);
+            // Kronen-ähnlich (kompakt): Ellipsoid statt AABB-Kapsel (Grammatik Slice 1)
+            if (hmin > 1e-6 && hmax / hmin <= 2.2) {
+                kand.push({
+                    ellipsoid: true,
+                    c,
+                    h: new THREE.Vector3(Math.max(0.01, h.x), Math.max(0.01, h.y), Math.max(0.01, h.z)),
+                    farbe,
+                    vol,
+                });
+                continue;
+            }
             let ax = "x";
             if (h.y > h[ax]) ax = "y";
             if (h.z > h[ax]) ax = "z";
@@ -75786,13 +77345,96 @@ class AnazhRealm {
                 a,
                 b,
                 r,
-                farbe: fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null,
-                vol: h.x * h.y * h.z,
+                farbe,
+                vol,
             });
         }
         if (!kand.length) return null;
         kand.sort((p, q) => q.vol - p.vol);
         return kand.slice(0, 6);
+    }
+
+    // Analog-B Slice 2 — Grammatik-Fit: Top-N Kegelstuempfel (vol~len*((r0+r1)/2)^2)
+    // + 1 Kronen-Ellipsoid. Segmente im Template-Raum; Scale aus Flat-localMatrix.
+    _baumGrammatikFit(gram, bf) {
+        if (!gram || !Array.isArray(gram.segs) || !gram.segs.length) return null;
+        let sx = 1,
+            sy = 1,
+            sz = 1;
+        if (bf && bf.leaves && bf.leaves[0] && bf.leaves[0].localMatrix) {
+            const e = bf.leaves[0].localMatrix.elements;
+            sx = Math.abs(e[0]) || 1;
+            sy = Math.abs(e[5]) || 1;
+            sz = Math.abs(e[10]) || 1;
+        }
+        const ba = gram.barkA || { r: 0.32, g: 0.22, b: 0.13 };
+        const bb = gram.barkB || { r: 0.22, g: 0.14, b: 0.08 };
+        const maxD = Math.max(1, ...gram.segs.map((sg) => (sg && sg.depth) || 0));
+        const kand = [];
+        for (const sg of gram.segs) {
+            if (!sg || !sg.p0 || !sg.p1) continue;
+            const ax = sg.p0[0] * sx,
+                ay = sg.p0[1] * sy,
+                az = sg.p0[2] * sz;
+            const bx = sg.p1[0] * sx,
+                by = sg.p1[1] * sy,
+                bz = sg.p1[2] * sz;
+            const r0 = Math.max(0.005, (sg.r0 || 0) * Math.max(sx, sz));
+            const r1 = Math.max(0.0, (sg.r1 || 0) * Math.max(sx, sz));
+            const dx = bx - ax,
+                dy = by - ay,
+                dz = bz - az;
+            const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (len < 1e-4) continue;
+            const rm = 0.5 * (r0 + r1);
+            const vol = len * rm * rm;
+            const t = Math.min(1, Math.max(0, (sg.depth || 0) / maxD));
+            const farbe = {
+                r: ba.r + (bb.r - ba.r) * t,
+                g: ba.g + (bb.g - ba.g) * t,
+                b: ba.b + (bb.b - ba.b) * t,
+            };
+            kand.push({
+                cone: true,
+                a: new THREE.Vector3(ax, ay, az),
+                b: new THREE.Vector3(bx, by, bz),
+                r0,
+                r1,
+                farbe,
+                vol,
+            });
+        }
+        if (!kand.length) return null;
+        kand.sort((p, q) => q.vol - p.vol);
+        const out = kand.slice(0, 5);
+        const H = Math.max(0.5, (gram.height || 4) * sy);
+        const tR = Math.max(0.05, (gram.trunkR || 0.15) * Math.max(sx, sz));
+        const ctype = (gram.crown && gram.crown.type) || "ellipsoid";
+        let cy = H * 0.72;
+        let hx = tR * 4.2,
+            hy = H * 0.28,
+            hz = tR * 4.2;
+        if (ctype === "cone" || ctype === "column") {
+            hx = tR * (ctype === "column" ? 2.4 : 3.2);
+            hy = H * 0.34;
+            hz = hx;
+            cy = H * 0.68;
+        } else if (ctype === "dome") {
+            hx = tR * 5.0;
+            hy = H * 0.22;
+            hz = hx;
+            cy = H * 0.78;
+        }
+        const leaf =
+            ctype === "cone" ? { r: 0.18, g: 0.32, b: 0.14 } : { r: 0.22, g: 0.38, b: 0.16 };
+        out.push({
+            ellipsoid: true,
+            c: new THREE.Vector3(0, cy, 0),
+            h: new THREE.Vector3(Math.max(0.05, hx), Math.max(0.05, hy), Math.max(0.05, hz)),
+            farbe: leaf,
+            vol: hx * hy * hz,
+        });
+        return out.slice(0, 6);
     }
 
     // (Der GLIED-BÄCKER der Voxel-Ära fiel mit dem Schöpfer-Wort „analog!" —
@@ -75858,10 +77500,19 @@ class AnazhRealm {
         // digitalisiert am Schirm — die Voxel-Glieder-Bricks der Kreaturen
         // sind GEFALLEN (kein Parallelpfad).
         const glieder = [];
-        const soul = (cr.userData && cr.userData.soul) || "wesen";
+        // Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle —
+        // gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul], sonst soul.
+        const ud = cr.userData || {};
+        const soul = ud.soul || "wesen";
+        const gattung =
+            ud.gattung ||
+            ud.recipe ||
+            ud.preset ||
+            (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[soul]) ||
+            soul;
         for (const [a, g] of gruppen) {
             a.updateMatrixWorld(true);
-            const key = `kapsel:${soul}:${a.name || "wurzel"}`;
+            const key = `kapsel:${gattung}:${a.name || "wurzel"}`;
             const meshes = g.meshes;
             const handle = this._weltKapselSpawn(key, a.matrixWorld, () => {
                 const inv = new THREE.Matrix4().copy(a.matrixWorld).invert();
@@ -76343,6 +77994,11 @@ class AnazhRealm {
         try {
             group = new T.Group();
             for (const m of meshes) {
+                if (m && m.kind === "__baumGrammatik" && m.grammatik) {
+                    group.userData.__baumGrammatik = m.grammatik;
+                    continue;
+                }
+                if (m && m.kind === "__skelett") continue;
                 const mesh = this._foundryBuildMesh(m);
                 if (mesh) group.add(mesh);
             }
@@ -76422,6 +78078,41 @@ class AnazhRealm {
         }
         return null;
     }
+    // FOUNDRY-WARM — wartet auf ready+Buch (get-book Ingest). Spawn-Pfade (Dorf/Fahrzeug)
+    // rufen ihn, statt bei kaltem Worker still null zu liefern.
+    async _foundryAwaitBook(timeoutMs) {
+        this._ensureAssetFoundry();
+        const f = this._foundry;
+        if (!f) return { ok: false, reason: "foundry_aus" };
+        const budget = Number.isFinite(timeoutMs) ? timeoutMs : 45000;
+        const t0 = performance.now();
+        while (performance.now() - t0 < budget) {
+            if (f.ready && f.recipes && f.recipeCount > 0) {
+                return { ok: true, ms: Math.round(performance.now() - t0), recipeCount: f.recipeCount };
+            }
+            await new Promise((r) => setTimeout(r, 50));
+        }
+        return {
+            ok: false,
+            reason: "foundry_kalt",
+            ready: !!f.ready,
+            recipes: !!(f.recipes && f.recipeCount),
+            prefetching: !!f._prefetching,
+        };
+    }
+    // Studio-Arten mit KIND_POLICY.prefix (fahrzeug_/haus_/tor_/klinge_…): brauchen
+    // das Buch — ohne Auto-Register gibt es keinen Blueprint → Spawn wäre tot/still.
+    _foundryNeedsBookForType(type) {
+        if (typeof type !== "string" || !type) return false;
+        const KP = AnazhRealm.KIND_POLICY || {};
+        for (const k in KP) {
+            if (!Object.prototype.hasOwnProperty.call(KP, k)) continue;
+            const pol = KP[k];
+            if (!pol || !pol.prefix) continue;
+            if (type.startsWith(pol.prefix) && pol.builtIn === false) return true;
+        }
+        return false;
+    }
     _foundryLibrarySpec() {
         // NUR die LEICHTE Ferne (lod2 ~15k) vorab backen -> die ganze Welt hat SOFORT einen
         // Wald, ohne den Startup-Speicher-Bomben-Freeze (die 132 schweren lod0/1-Gruppen ~170k
@@ -76460,6 +78151,14 @@ class AnazhRealm {
             // laden on-demand fuer die naechsten Baeume. _foundryVariantFor waehlt 1..16.
             seeds: [1, 2, 3, 4, 5, 6, 7, 8],
             lods: [2],
+            // FOUNDRY-WARM (Spawn-tot-Heilung): Garage-Fahrzeuge + Siedlung brauchen
+            // warmes Buch/build-asset — sonst stirbt In-Welt-Spawn (fahrzeug_*/dorf)
+            // als stilles Nichts. Wenige Seeds, lod 0 (vehicle kindStages = [0]).
+            critical: {
+                species: ["gt", "supersport", "limousine", "kompakt_fwd", "suv"],
+                seeds: [1, 7],
+                lods: [0],
+            },
         };
     }
     async _foundryPrefetchLibrary() {
@@ -76525,6 +78224,62 @@ class AnazhRealm {
             }
         }
         await Promise.all(jobs);
+        // FOUNDRY-WARM — kritische Studio-Arten (Garage) + Siedlungs-Kanal: In-Welt-Spawn
+        // von fahrzeug_*/dorf trifft warmes Memo statt kalt-404. Fail-closed: leerer
+        // Settlement-Probe → lautes ERROR (kein stilles „Dorf tot").
+        const crit = spec.critical || { species: [], seeds: [7], lods: [0] };
+        const critJobs = [];
+        for (const sp of crit.species || []) {
+            if (!(f.recipes && f.recipes[sp])) {
+                this.log(`FOUNDRY WARM: kritisches Preset „${sp}" fehlt im Buch`, "ERROR");
+                continue;
+            }
+            for (const sd of crit.seeds || [7]) {
+                for (const lod of crit.lods || [0]) {
+                    const season = this.state.season || "summer";
+                    const key = sp + "|" + sd + "|" + lod + "|" + season;
+                    if (f.cache.has(key)) continue;
+                    critJobs.push(
+                        this._foundryRequest(sp, sd, lod, season)
+                            .then((meshes) => {
+                                if (meshes)
+                                    this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
+                                else
+                                    this.log(
+                                        `FOUNDRY WARM: build-asset(${sp}|${sd}|lod${lod}) leer — Spawn riskiert kalt-404`,
+                                        "ERROR"
+                                    );
+                            })
+                            .catch((e) => {
+                                this.log(
+                                    `FOUNDRY WARM: build-asset(${sp}) warf (${e && e.message})`,
+                                    "ERROR"
+                                );
+                            })
+                    );
+                }
+            }
+        }
+        await Promise.all(critJobs);
+        try {
+            const plan = await this._foundryRequestSettlement({ seed: 7, nH: 4 });
+            f._settlementWarm = !!(plan && Array.isArray(plan.slots) && plan.slots.length);
+            if (!f._settlementWarm) {
+                this.log(
+                    "FOUNDRY WARM: export-settlement Probe LEER — Dorf-Spawn bleibt fail-closed laut",
+                    "ERROR"
+                );
+            } else {
+                this.log(
+                    `FOUNDRY WARM: Settlement-Kanal bereit (${plan.slots.length} Probe-Slots)`,
+                    "INFO"
+                );
+            }
+        } catch (e) {
+            f._settlementWarm = false;
+            this.log(`FOUNDRY WARM: Settlement-Probe warf (${e && e.message})`, "ERROR");
+        }
+        f._warmCritical = true;
         f._prefetching = false;
         // Die Bibliothek steht jetzt — cold-gebliebene Foundry-Baum-Eintraege (waehrend des
         // Prefetch gespawnt) AKTIV neu bauen, statt auf den budget-gedrosselten Culling-Tick zu
@@ -76951,6 +78706,16 @@ class AnazhRealm {
             group._foundryFlat = leaves.length
                 ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves }
                 : false;
+            // Analog-B Slice 2: Grammatik-Nebenkanal (Spiegel __skelett)
+            if (group._foundryFlat && group.userData && group.userData.__baumGrammatik)
+                group._foundryFlat._baumGrammatik = group.userData.__baumGrammatik;
+        } else if (
+            group._foundryFlat &&
+            !group._foundryFlat._baumGrammatik &&
+            group.userData &&
+            group.userData.__baumGrammatik
+        ) {
+            group._foundryFlat._baumGrammatik = group.userData.__baumGrammatik;
         }
         return group._foundryFlat;
     }
@@ -77235,6 +79000,12 @@ class AnazhRealm {
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
         const c1z = Math.floor((oz + span) / CELL);
+        // Shared shy-Distanz (phyto-core forestTooClose) + named prio-max (forestPrioWins).
+        // FOREST_TOPOLOGY.host = "cell" (phyto-core) — Feel-Entscheid .116; chunk order-independent; no fake merge with Lab disk.
+        const _coreShy = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        const forestTooClose =
+            _coreShy && typeof _coreShy.forestTooClose === "function" ? _coreShy.forestTooClose : null;
+        const forestPrioWins = _coreShy && _coreShy.forestPrioWins;
         // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
         // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
         const memo = new Map();
@@ -77267,11 +79038,19 @@ class AnazhRealm {
                                 if (o === d) continue; // sich selbst (eigene Zelle) überspringen
                                 const dx = d.x - o.x;
                                 const dz = d.z - o.z;
-                                const md = F.pack * (d.T + o.T);
-                                if (dx * dx + dz * dz >= md * md) continue; // kein Konflikt
-                                // Konflikt: „besser" = höhere prio (Tiebreak x dann z = einzigartig).
-                                const better =
-                                    o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
+                                // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
+                                const conflict = forestTooClose
+                                    ? forestTooClose(dx, dz, d.T, o.T, F.pack)
+                                    : (() => {
+                                          const md = F.pack * (d.T + o.T);
+                                          return dx * dx + dz * dz < md * md;
+                                      })();
+                                if (!conflict) continue; // kein Konflikt
+                                // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
+                                const better = forestPrioWins
+                                    ? forestPrioWins(o, d)
+                                    : o.prio > d.prio ||
+                                      (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
                                 if (better) {
                                     accepted = false;
                                     break;
@@ -79601,8 +81380,9 @@ class AnazhRealm {
             // DIE REINE FORM (Schöpfer: „alles heißt alles"): die echte
             // Geometrie materialisiert NUR in der HAND-BLASE (16 m — Türen,
             // Anfassen, das Betretbare); dahinter ist die Architektur bei
-            // JEDER Distanz ihr 64³-Feld. Der alte Cull-Radius regelt nichts
-            // mehr — die 7.8-M-Tris-Dörfer der Traces sind Geschichte.
+            // JEDER Distanz ihr BOX-SATZ (ANALOG C / _archZiegelFern). Der
+            // alte Cull-Radius regelt nichts mehr — die 7.8-M-Tris-Dörfer
+            // der Traces sind Geschichte.
             const hand2 = AnazhRealm.ARCH_ZIEGEL_HAND * AnazhRealm.ARCH_ZIEGEL_HAND;
             if (distSq <= hand2) {
                 // DIE VOLLE FORM (Schöpfer: „alles, egal wie nahe"): auch in der
@@ -79620,11 +81400,14 @@ class AnazhRealm {
                 this._archZiegelFern(entry);
                 if (entry._ziegelSlot) {
                     this._weltFeldAktiv(entry._ziegelSlot, true);
-                    if (entry.mesh && entry.mesh.visible !== false) entry.mesh.visible = false;
+                    // KONSUM: haus_* in der Hand-Blase = Studio-Dichte (Mesh sichtbar);
+                    // Fern bleibt Feld-Silhouette. Wasserfall/etc. weiter Feld-only.
+                    const haus = typeof entry.type === "string" && entry.type.startsWith("haus_");
+                    if (entry.mesh) entry.mesh.visible = !!haus;
                 } else if (entry._ziegelGebacken && entry.mesh && entry.mesh.visible !== false) {
-                    // KEIN RÜCKWEG: Bake gefallen → der Bau erscheint nicht — der
-                    // unsichtbare Körper bleibt Interaktions-Träger (Tür/Abbau)
-                    entry.mesh.visible = false;
+                    // KEIN RÜCKWEG außer haus_ Hand-Dichte: Bake leer → sonst unsichtbar
+                    const haus = typeof entry.type === "string" && entry.type.startsWith("haus_");
+                    entry.mesh.visible = !!haus;
                 }
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
@@ -80661,10 +82444,18 @@ class AnazhRealm {
         // (ARENA.schwung, fail-closed — Kern-Pflicht).
         const K = AnazhRealm._arenaGesetz().schwung;
         const dauer = this._playerSwingDauer();
+        // V18.491.123 ARENA.handlingWindF; strikeFrac/dauer formula unchanged.
+        let windMul = 1;
+        const kmW = this._schmiedeKampfMasze(this._heldImplementBlueprint());
+        const scW = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (kmW && Number.isFinite(kmW.traegheit) && scW && typeof scW.handlingWindF === "function") {
+            const wf = scW.handlingWindF(kmW.traegheit);
+            if (Number.isFinite(wf) && wf > 0) windMul = wf;
+        }
         p._swing = {
             t: 0,
             dauer,
-            windupSec: dauer * K.windupFrac,
+            windupSec: dauer * K.windupFrac * windMul,
             strikeSec: dauer * K.strikeFrac,
             weapon: weaponName || null,
             hits: new Set(), // Dedup je Schwung: EINE Klinge trifft EIN Wesen EINMAL
@@ -80746,6 +82537,7 @@ class AnazhRealm {
         const dx = Math.sin(arcYaw);
         const dz = Math.cos(arcYaw);
         const ox = pm.position.x;
+        // V18.491.148 STUDIO_VIS.host=world-fp — Feel; schwung.shoulderH world (not Lab anthro).
         const oy = pm.position.y + K.shoulderH;
         const oz = pm.position.z;
         const reach = Number.isFinite(sw.reach) ? sw.reach : this._kampfBladeReach();
@@ -80785,12 +82577,19 @@ class AnazhRealm {
             const stats = p && p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
             // WAFFEN-GÜTE — die GEMESSENE Schmiede-Arbeit (Lehren-Urteil des
             // Kerns) skaliert den Schaden; kein schmiede-Gerät / Kern kalt → 1.
-            const res = this.damageCreature(c, (stats.damage || 5) * this._heldSchmiedeFaktor(), {
+            // ZONE_PICK.host = "y-capsule" — Feel .117; bladeY→yFrac→zoneMulAt/zoneKindAt; XZ-blind (no Host limb pick).
+            const bladeY = oy;
+            const yFrac = Math.max(0, Math.min(1, (bladeY - c.position.y) / L));
+            const scZ = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+            const zoneMul = (scZ && typeof scZ.zoneMulAt === "function" && scZ.zoneMulAt(yFrac)) || 1;
+            const zoneKind = scZ && typeof scZ.zoneKindAt === "function" ? scZ.zoneKindAt(yFrac) : undefined;
+            const res = this.damageCreature(c, (stats.damage || 5) * this._heldSchmiedeFaktor() * zoneMul, {
                 source: "player",
                 fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
                 knockback: stats.knockback || 0,
+                zoneKind,
             });
-            if (res && res.ok) this._kampfHitJuice(c, nowSec);
+            if (res && res.ok) this._kampfHitJuice(c, nowSec, undefined, zoneKind);
         }
     }
 
@@ -80853,17 +82652,18 @@ class AnazhRealm {
     // 0.20/dip max), die Faust auf einen Sprite tickt (min). Der Pfeil-Pfad
     // reicht seine ECHTE Flug-Energie als keOpt herein. Kern kalt → Fallback
     // min==max = der byte-alte feste Hit-Stop/Dip.
-    _kampfHitJuice(creature, nowSec, keOpt) {
+    _kampfHitJuice(creature, nowSec, keOpt, zoneKind) {
         const K = AnazhRealm._arenaGesetz().schwung;
         const G = AnazhRealm._arenaGesetz().gefuehl;
         let ke = Number.isFinite(keOpt) ? keOpt : 0;
+        let km = null; // hoist: KE branch + handlingMul reuse (no double blueprint fetch)
         if (!Number.isFinite(keOpt)) {
             const bp = this._heldImplementBlueprint();
             if (bp) {
                 // EINHEITSBREI-SCHNITT (18.07.): dieselbe Trägheits-Quelle wie
                 // die Dauer (kampfMasze für Studio-Klingen, Ω-Φ4 für Eigenwerke)
                 // — KE und Dauer rechnen nie in gemischten Einheiten.
-                const km = this._schmiedeKampfMasze(bp);
+                km = this._schmiedeKampfMasze(bp);
                 const I = km && km.traegheit > 0 ? km.traegheit : this._swingDynamics(bp).swingInertia;
                 const sw = this.state.player && this.state.player._swing;
                 const dauer = sw && Number.isFinite(sw.dauer) ? sw.dauer : this._playerSwingDauer();
@@ -80872,7 +82672,26 @@ class AnazhRealm {
             }
         }
         const L = Math.max(0.3, (creature && creature.scale && creature.scale.x) || 1);
-        const e = Math.max(0, Math.min(1, (ke * Math.min(2, L)) / Math.max(1, G.keRefJ)));
+        // TREFFERZONEN .115 — juiceMul skaliert Feel (freeze/dip); Schaden bleibt zoneMul.
+        // Fail-closed ohne kind (kein Fake-Boost); mit kind: × zoneJuiceAt, clamp 0.5..1.6.
+        let e = Math.max(0, Math.min(1, (ke * Math.min(2, L)) / Math.max(1, G.keRefJ)));
+        if (zoneKind) {
+            const scJ = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+            const jm =
+                scJ && typeof scJ.zoneJuiceAt === "function" ? scJ.zoneJuiceAt(zoneKind) : 1.0;
+            e = Math.max(0.5, Math.min(1.6, e * (Number.isFinite(jm) && jm > 0 ? jm : 1.0)));
+            if (creature && creature.userData) creature.userData.lastZoneKind = zoneKind;
+        }
+        // V18.491.122 ARENA.handling; damage unchanged (mEff).
+        if (!km) {
+            const bpH = this._heldImplementBlueprint();
+            km = bpH ? this._schmiedeKampfMasze(bpH) : null;
+        }
+        const scH = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (km && Number.isFinite(km.masseKg) && scH && typeof scH.handlingMul === "function") {
+            const hm = scH.handlingMul(km.masseKg);
+            if (Number.isFinite(hm) && hm > 0) e = Math.max(0.5, Math.min(1.6, e * hm));
+        }
         const p = this.state.player;
         if (p) p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
         this.state._landImpactPending = Math.max(
@@ -81140,6 +82959,7 @@ class AnazhRealm {
         const K = AnazhRealm._arenaGesetz().schwung;
         const pf = {
             x: pm.position.x + dx * AB.muendungM,
+            // V18.491.148 STUDIO_VIS.host=world-fp — Feel; bow muzzle at schwung.shoulderH.
             y: pm.position.y + K.shoulderH + dy * AB.muendungM,
             z: pm.position.z + dz * AB.muendungM,
             vx: dx * v0,
@@ -81171,6 +82991,7 @@ class AnazhRealm {
         const list = this.state._pfeile;
         if (!list || !list.length) return;
         const B = AnazhRealm._arenaGesetz().bogen;
+        // V18.491.149 GRAVITY_VIS.host=state-signed — Lab ARENA.g studio +9.81; Host state.gravity world −9.81 dual, not Fake-merge.
         const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
         const creatures = this.state.creatures || [];
         for (let i = list.length - 1; i >= 0; i--) {
@@ -81227,16 +83048,23 @@ class AnazhRealm {
                 }
             }
             if (hit) {
-                const res = this.damageCreature(hit, pf.dmg, {
+                // ZONE_PICK.host = "y-capsule" — Feel .117; hitY→zoneMulAt/zoneKindAt; XZ-blind.
+                const hitL = Math.max(0.3, hit.scale.x || 1);
+                const hitYFrac = Math.max(0, Math.min(1, (pf.y - hit.position.y) / hitL));
+                const scZ = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+                const zoneMul = (scZ && typeof scZ.zoneMulAt === "function" && scZ.zoneMulAt(hitYFrac)) || 1;
+                const zoneKind = scZ && typeof scZ.zoneKindAt === "function" ? scZ.zoneKindAt(hitYFrac) : undefined;
+                const res = this.damageCreature(hit, pf.dmg * zoneMul, {
                     source: "player",
                     fromPos: { x: ox, y: oy, z: oz },
                     knockback: pf.kb,
+                    zoneKind,
                 });
                 // ARENA-GEFÜHL — der Pfeil reicht seine ECHTE Flug-Energie
                 // (½·mArrow·v², dieselbe Arena-Eichung) in die Hit-Juice.
                 if (res && res.ok) {
                     const vv = pf.vx * pf.vx + pf.vy * pf.vy + pf.vz * pf.vz;
-                    this._kampfHitJuice(hit, nowSec, 0.5 * AnazhRealm._arenaGesetz().bogen.mArrow * vv);
+                    this._kampfHitJuice(hit, nowSec, 0.5 * AnazhRealm._arenaGesetz().bogen.mArrow * vv, zoneKind);
                 }
                 this._pfeilDespawn(pf);
                 list.splice(i, 1);
@@ -93680,6 +95508,9 @@ class AnazhRealm {
                 // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
                 this._tickHausTueren(currentTime);
 
+                // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
+                this._updateDorfRauch(delta);
+
                 // ### Fähigkeiten ###
                 Object.keys(this.state.abilities).forEach((ability) => {
                     if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
@@ -94811,6 +96642,7 @@ class AnazhRealm {
                     fahr.aLong = Math.max(-zs.aPitchMax, Math.min(zs.aPitchMax, (vLong - vPrev) / dtF));
                     ent._fahrVLongPrev = vLong;
                 } else {
+                    // V18.491.121 — recipe grip now in exportDrive.lenkung.gripK (× P.grip; default 1 → 6).
                     const grip =
                         lenk.gripK * (hand ? (Number.isFinite(lenk.driftGripMul) ? lenk.driftGripMul : 0.35) : 1);
                     vLat *= Math.max(0, 1 - grip * nowDt);
@@ -94834,11 +96666,14 @@ class AnazhRealm {
                     fahr.aLong = 0;
                     fahr.aLat = 0;
                 }
+                if (fahr) delta = fahr.steer;
                 const fX2 = Math.sin(yaw);
                 const fZ2 = Math.cos(yaw);
                 this.state.playerVel.setValue(fX2 * vLong + fZ2 * vLat, v.y(), fZ2 * vLong - fX2 * vLat);
                 ent._rideYaw = yaw;
                 ent._rideSteer = true; // der Yaw-Folge-Block im Mount-Tick ruht
+                // V18.491.120 — one visual steer field (zs: fahr.steer; non-zs: delta)
+                ent._rideSteerYaw = Number.isFinite(delta) ? delta : 0;
             } else if (slide) {
                 // PARKOUR — der RUTSCH führt: Richtung eingefroren, Tempo klingt
                 // linear vom Boost auf das Geh-Tempo aus (WASD ruht — wer rutscht,
@@ -95573,6 +97408,7 @@ class AnazhRealm {
                 // Höhlendecke ragte es IN den Fels (Durchsehen von innen). Die
                 // Decken-Probe klemmt das Auge unter die Decke (0.12 m Marge);
                 // die Seitenwände hielt schon die Physik-Box.
+                // V18.491.148 STUDIO_VIS.host=world-fp — Feel; FP eye ≈1.6 (not Lab eyeY 1.62).
                 let eyeY = smoothBodyY + 1.6 + landDip;
                 const headroomFP = this._ceilingHeadroom();
                 if (Number.isFinite(headroomFP)) {
@@ -96369,7 +98205,8 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.51";
+// V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
+AnazhRealm.VERSION = "18.491.532";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -97926,97 +99763,114 @@ AnazhRealm.SCATTER_SLICE_MS = 6;
 // wird er graziös verworfen (Retry, dann rttFailed + Canvas-Fallback) statt die Queue für
 // immer zu blocken. Weit über jedem legitimen Bake, aber ENDLICH.
 AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 15000;
-AnazhRealm.SCATTER = Object.freeze({
-    cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster (die Canopy-Schicht)
-    regionM: 256, // eine Scatter-Region = 16 Voxel-Chunks (= Bake-Region V18.219)
-    promoteM: 64, // < diesem Radius → der Scatter-Baum wird ein ECHTER Bauplan (Touch→Real)
-    innerM: 64, // innerhalb: keine Deko-Streu (der promovierte/reale Ring trägt)
-    outerM: 384, // äusserer Rand der Deko-Streu (jenseits trägt die Canopy-Shell)
-    ringRegions: 1, // ±1 Region = 3×3 (768m²) aktiver Scatter-Ring
-    perRegionCap: 1400, // (Legacy — die Baum-Schicht; die layers-Liste trägt jetzt die Caps)
-    densityFloor: 0.1, // lebendig-Boden für jeden Baum-Scatter
-    densityScale: 1.5, // Multiplikator auf die lebendig-getriebene Wahrscheinlichkeit
-    slopeMax: 1.45, // Steilhänge tragen weniger Scatter (Fels-Zone)
-    maxRegionsPerFrame: 1, // bounded: max 1 Region/Frame generieren (Plan §5)
-    // V18.225 (DER ATEMBERAUBENDE WALD — Plan §13 „≥hunderte/Chunk + 5 Schichten"):
-    // die MEHRSCHICHTIGE Dichte. Eine Baum-Schicht allein (3.4m-Zelle = ~161
-    // Zellen/43.2m-Chunk) erreicht NIE „hunderte" — der Plan verlangt die fünf
-    // Vegetations-Strata, die ZUSAMMEN den dichten Boden ergeben: Canopy (Bäume)
-    // + Strauch (Hazel) + Kraut (Farn) + Bodenflora (Blume) + Streu (Totholz).
-    // Drei Scatter-Pässe (Strauch+Kraut+Blume teilen den feineren under-Pass),
-    // jeder mit eigenem Zell-Raster + Cap. Region = 256m ≈ 35 Chunks (span 43.2m)
-    // → die Caps zielen auf ~180-220 Instanzen/Chunk gesamt = „hunderte".
-    layers: Object.freeze([
-        // V18.233 (SUBSTANZ-REBALANCE, Schöpfer-Befund „Bäume ragen kaum, FPS → 0"):
-        // WENIGE, GROSSE, varianz-reiche Bäume (cap 1700→900, scaleVar 0.66→1.5 =
-        // Scale 0.6-2.1 → ragende Alte + junge) statt vieler sparse Stacheln. Die
-        // Krone ist 1.7× lusher (FPS-neutral, s. _buildTreeFoliageCardGeometry).
-        // V18.267 (PROVISORISCHE ENTLASTUNG, Schöpfer „ich sehe hunderte Bäume aber
-        // sonst kaum was — vorerst provisorisch entlasten"): cap 900→300 (offenes
-        // Waldland statt dichter Forst → Terrain/Fels/Blumen werden sichtbar, FPS
-        // entlastet). REVERSIBEL — der echte Dichte-Regler ist der kommende
-        // Perf-Regelkreis-Render-Hebel; dies ist die Sofort-Linderung.
-        Object.freeze({
-            name: "tree",
-            cellM: 3.4,
-            // V18.296 (Schöpfer-Anordnung, 20+ Versionen überfällig: „sehe immernoch
-            // hunderte Bäume … wir gehen runter"): cap 300→90 (~2.6 Bäume/Chunk =
-            // offenes Waldland, freie Sicht auf Terrain/Fels/Substanz). REVERSIBEL.
-            cap: 55, // V18.303 90→55: das Laub war 90 % der GPU-Last (gemessen) + Schöpfer „zu viele Bäume, sonst kaum was"
-            floor: 0.1,
-            scaleBase: 0.6,
-            scaleVar: 1.5,
-            slopeMax: 1.45,
-            kind: "tree",
-            promotable: true,
-        }),
-        // Understory: Strauch+Kraut+Bodenflora. WAR der Haupt-Dichte-Träger (4200)
-        // = der FPS-Killer + visuelle Verstopfung (kleines Gestrüpp verdeckte die
-        // Bäume). V18.233: 4200→800; V18.267: 800→250 (mit den Bäumen entlastet —
-        // weniger Gestrüpp, mehr Sicht auf die Substanz; bleibt < treeCap, damit
-        // die Bäume die prominente Substanz bleiben, nicht das Gestrüpp). REVERSIBEL.
-        Object.freeze({
-            name: "under",
-            cellM: 2.4,
-            cap: 40, // V18.303 70→40 (das Laub = 90 % der GPU-Last); V18.296 250→70
-            floor: 0.06,
-            scaleBase: 0.8,
-            scaleVar: 0.5,
-            slopeMax: 1.0,
-            kind: "under",
-            promotable: false,
-        }),
-        // Streu: Totholz am Boden (2.8m-Zelle, sparse). V18.267: 250→150 (mit-
-        // entlastet — Totholz war der 2.-grösste gewachsene Render-Posten).
-        Object.freeze({
-            name: "litter",
-            cellM: 2.8,
-            cap: 22, // V18.303 40→22 (das Laub = 90 % der GPU-Last); V18.296 150→40
-            floor: 0.04,
-            scaleBase: 0.8,
-            scaleVar: 0.4,
-            slopeMax: 1.25,
-            kind: "litter",
-            promotable: false,
-        }),
-        // V18.227 (Ω-OPSIS Säule II Ω-O5) — FELS: Kiesel + Felsbrocken, wo der Fels
-        // durchbricht (rockExposure aus slope+trocken+kahl, das Spiegelbild der
-        // Säule-I-Geologie). Eigener densityScale + hoher slopeMax (Fels mag steil),
-        // grosse Skalen-Varianz (Kiesel bis Brocken). Deko, nicht promotable.
-        Object.freeze({
-            name: "rock",
-            cellM: 2.6,
-            cap: 110, // V18.303 350→110: 350 Kiesel/Region = absurd viele Instanzen für winzigen Look-Wert (der größte Instanz-Posten nach den Bäumen)
-            floor: 0.02,
-            scaleBase: 0.6,
-            scaleVar: 1.0,
-            slopeMax: 1.6,
-            densityScale: 1.3,
-            kind: "rock",
-            promotable: false,
-        }),
-    ]),
-});
+{
+    const _streuEco = (typeof globalThis !== "undefined" && globalThis.__phytoCore && globalThis.__phytoCore.SCATTER_STRATUM) || {};
+    const _eco = (n, fb) => {
+        const s = _streuEco[n];
+        return {
+            floor: s && Number.isFinite(s.floor) ? s.floor : fb.floor,
+            scaleBase: s && Number.isFinite(s.scaleBase) ? s.scaleBase : fb.scaleBase,
+            scaleVar: s && Number.isFinite(s.scaleVar) ? s.scaleVar : fb.scaleVar,
+            slopeMax: s && Number.isFinite(s.slopeMax) ? s.slopeMax : fb.slopeMax,
+        };
+    };
+    const _ecoTree = _eco("tree", { floor: 0.1, scaleBase: 0.6, scaleVar: 1.5, slopeMax: 1.45 });
+    const _ecoUnder = _eco("under", { floor: 0.06, scaleBase: 0.8, scaleVar: 0.5, slopeMax: 1.0 });
+    const _ecoLitter = _eco("litter", { floor: 0.04, scaleBase: 0.8, scaleVar: 0.4, slopeMax: 1.25 });
+    const _ecoRock = _eco("rock", { floor: 0.02, scaleBase: 0.6, scaleVar: 1.0, slopeMax: 1.6 });
+    // V18.491.118 — ecology from `__phytoCore.SCATTER_STRATUM`; caps stay Host.
+    AnazhRealm.SCATTER = Object.freeze({
+        cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster (die Canopy-Schicht)
+        regionM: 256, // eine Scatter-Region = 16 Voxel-Chunks (= Bake-Region V18.219)
+        promoteM: 64, // < diesem Radius → der Scatter-Baum wird ein ECHTER Bauplan (Touch→Real)
+        innerM: 64, // innerhalb: keine Deko-Streu (der promovierte/reale Ring trägt)
+        outerM: 384, // äusserer Rand der Deko-Streu (jenseits trägt die Canopy-Shell)
+        ringRegions: 1, // ±1 Region = 3×3 (768m²) aktiver Scatter-Ring
+        perRegionCap: 1400, // (Legacy — die Baum-Schicht; die layers-Liste trägt jetzt die Caps)
+        densityFloor: _ecoTree.floor, // lebendig-Boden für jeden Baum-Scatter
+        densityScale: 1.5, // Multiplikator auf die lebendig-getriebene Wahrscheinlichkeit
+        slopeMax: _ecoTree.slopeMax, // Steilhänge tragen weniger Scatter (Fels-Zone)
+        maxRegionsPerFrame: 1, // bounded: max 1 Region/Frame generieren (Plan §5)
+        // V18.225 (DER ATEMBERAUBENDE WALD — Plan §13 „≥hunderte/Chunk + 5 Schichten"):
+        // die MEHRSCHICHTIGE Dichte. Eine Baum-Schicht allein (3.4m-Zelle = ~161
+        // Zellen/43.2m-Chunk) erreicht NIE „hunderte" — der Plan verlangt die fünf
+        // Vegetations-Strata, die ZUSAMMEN den dichten Boden ergeben: Canopy (Bäume)
+        // + Strauch (Hazel) + Kraut (Farn) + Bodenflora (Blume) + Streu (Totholz).
+        // Drei Scatter-Pässe (Strauch+Kraut+Blume teilen den feineren under-Pass),
+        // jeder mit eigenem Zell-Raster + Cap. Region = 256m ≈ 35 Chunks (span 43.2m)
+        // → die Caps zielen auf ~180-220 Instanzen/Chunk gesamt = „hunderte".
+        layers: Object.freeze([
+            // V18.233 (SUBSTANZ-REBALANCE, Schöpfer-Befund „Bäume ragen kaum, FPS → 0"):
+            // WENIGE, GROSSE, varianz-reiche Bäume (cap 1700→900, scaleVar 0.66→1.5 =
+            // Scale 0.6-2.1 → ragende Alte + junge) statt vieler sparse Stacheln. Die
+            // Krone ist 1.7× lusher (FPS-neutral, s. _buildTreeFoliageCardGeometry).
+            // V18.267 (PROVISORISCHE ENTLASTUNG, Schöpfer „ich sehe hunderte Bäume aber
+            // sonst kaum was — vorerst provisorisch entlasten"): cap 900→300 (offenes
+            // Waldland statt dichter Forst → Terrain/Fels/Blumen werden sichtbar, FPS
+            // entlastet). REVERSIBEL — der echte Dichte-Regler ist der kommende
+            // Perf-Regelkreis-Render-Hebel; dies ist die Sofort-Linderung.
+            Object.freeze({
+                name: "tree",
+                cellM: 3.4,
+                // V18.296 (Schöpfer-Anordnung, 20+ Versionen überfällig: „sehe immernoch
+                // hunderte Bäume … wir gehen runter"): cap 300→90 (~2.6 Bäume/Chunk =
+                // offenes Waldland, freie Sicht auf Terrain/Fels/Substanz). REVERSIBEL.
+                cap: 55, // V18.303 90→55: das Laub war 90 % der GPU-Last (gemessen) + Schöpfer „zu viele Bäume, sonst kaum was"
+                floor: _ecoTree.floor,
+                scaleBase: _ecoTree.scaleBase,
+                scaleVar: _ecoTree.scaleVar,
+                slopeMax: _ecoTree.slopeMax,
+                kind: "tree",
+                promotable: true,
+            }),
+            // Understory: Strauch+Kraut+Bodenflora. WAR der Haupt-Dichte-Träger (4200)
+            // = der FPS-Killer + visuelle Verstopfung (kleines Gestrüpp verdeckte die
+            // Bäume). V18.233: 4200→800; V18.267: 800→250 (mit den Bäumen entlastet —
+            // weniger Gestrüpp, mehr Sicht auf die Substanz; bleibt < treeCap, damit
+            // die Bäume die prominente Substanz bleiben, nicht das Gestrüpp). REVERSIBEL.
+            Object.freeze({
+                name: "under",
+                cellM: 2.4,
+                cap: 40, // V18.303 70→40 (das Laub = 90 % der GPU-Last); V18.296 250→70
+                floor: _ecoUnder.floor,
+                scaleBase: _ecoUnder.scaleBase,
+                scaleVar: _ecoUnder.scaleVar,
+                slopeMax: _ecoUnder.slopeMax,
+                kind: "under",
+                promotable: false,
+            }),
+            // Streu: Totholz am Boden (2.8m-Zelle, sparse). V18.267: 250→150 (mit-
+            // entlastet — Totholz war der 2.-grösste gewachsene Render-Posten).
+            Object.freeze({
+                name: "litter",
+                cellM: 2.8,
+                cap: 22, // V18.303 40→22 (das Laub = 90 % der GPU-Last); V18.296 150→40
+                floor: _ecoLitter.floor,
+                scaleBase: _ecoLitter.scaleBase,
+                scaleVar: _ecoLitter.scaleVar,
+                slopeMax: _ecoLitter.slopeMax,
+                kind: "litter",
+                promotable: false,
+            }),
+            // V18.227 (Ω-OPSIS Säule II Ω-O5) — FELS: Kiesel + Felsbrocken, wo der Fels
+            // durchbricht (rockExposure aus slope+trocken+kahl, das Spiegelbild der
+            // Säule-I-Geologie). Eigener densityScale + hoher slopeMax (Fels mag steil),
+            // grosse Skalen-Varianz (Kiesel bis Brocken). Deko, nicht promotable.
+            Object.freeze({
+                name: "rock",
+                cellM: 2.6,
+                cap: 110, // V18.303 350→110: 350 Kiesel/Region = absurd viele Instanzen für winzigen Look-Wert (der größte Instanz-Posten nach den Bäumen)
+                floor: _ecoRock.floor,
+                scaleBase: _ecoRock.scaleBase,
+                scaleVar: _ecoRock.scaleVar,
+                slopeMax: _ecoRock.slopeMax,
+                densityScale: 1.3,
+                kind: "rock",
+                promotable: false,
+            }),
+        ]),
+    });
+}
 
 // V18.235 (wahreranblick §3 — DIE LUSHE KRONE, „die Samen werden zu Mammutbäumen"):
 // die Krone als VOLUMEN. Vorher EINE card{cross} pro Foliage-Anchor (~21 Karten in
@@ -101053,21 +102907,20 @@ AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-
 // WELLE 5 — DER BERG-SCHATTEN (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer
 // Sichtlinien-Test Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz. Je voller/bergiger
 // die Welt, desto BILLIGER wird sie (das Natur-Paradox: der Wald verdeckt sich selbst).
-// DER WALD-ZIEGEL (die reine Form, Stufe 4 — s. _waldZiegelBacken): die Baum-
-// Fern-Stufe als 3D-Dichtefeld, pro Pixel gemarcht statt als Kamera-Quad gerastert.
+// DER WALD-ZIEGEL: Region-Fern-CACHE (dimRegion) bleibt; Einzel-Baum-Brick
+// (_waldZiegelBacken / dim) ist ANALOG B fail-closed — Baum-Bahn = Kapsel.
 AnazhRealm.WALD_ZIEGEL = Object.freeze({
-    dim: 32, // Basis-Stufe (Einzel-Baum, 128 KB)
+    dim: 32, // tot für Einzel-Baum (fail-closed); Legacy-Default für _ziegelBackenAusGruppe
     schritte: 24, // March-Schritte der Basis-Stufe (TSL-unrollt, Godray-Muster)
-    // DIE ZIEGEL-PYRAMIDE (Schöpfer: „nicht die erste Oktave — die Vollendung"):
-    // jeder Konsument sampelt in SEINER Wahrnehmungs-Frequenz — Architektur ist
-    // kompakt (Voxel klein) → 48³ ab 150 m; Regionen sind weit → 64³ ab 400 m;
-    // darunter IST die Geometrie die feinste Stufe desselben Feldes (die
-    // Iso-Surface der Dichte-Funktion — eine Quelle, kontinuierliche Abtastung).
-    dimArch: 64, // Architektur-Stufe (Dorf/Tempel/Fahrzeug — EINE Feld-Form für JEDE Distanz, 1 MB)
-    schritteArch: 48,
-    dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB)
+    // ANALOG C: Architektur-Voxel-Pyramide GEFALLEN — Bau = Box-Satz (aarch:…).
+    // dimArch/schritteArch bleiben als tot-Markierung (fail-closed Leserin
+    // in _ziegelBackenAusGruppe); dimFein tot für Kreatur-Glieder (Analog A).
+    // Lebend: nur dimRegion = Region-Fern-CACHE (256-m-Wald+Fels+Streu).
+    dimArch: 64, // tot ANALOG C (fail-closed); Architektur = _archBoxFit, nicht Voxel
+    schritteArch: 48, // tot mit dimArch
+    dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB) — erlaubter CACHE
     schritteRegion: 40,
-    dimFein: 64, // DIE AUFLÖSUNGS-LEITER (21.07.): das NAHE Glied backt fein (ein Block je Glied, 8× Voxel)
+    dimFein: 64, // tot ANALOG A (Kreatur-Glieder = Kapseln, kein Fein-Brick)
 });
 AnazhRealm.KREATUR_ZIEGEL_DIST = 0;
 // (Die Kreatur-Tier-Leiter der Voxel-Ära fiel mit dem Schöpfer-Wort „analog!":
@@ -101553,8 +103406,10 @@ AnazhRealm.MOTION_EMOTION_PROFILES = Object.freeze([
 // der Host-Atem (0.02 · 1.6 rad/s) bleibt am Neutralpunkt byte-identisch.
 AnazhRealm.MOTION_RIG_MAP = Object.freeze([
     Object.freeze({ key: "headX", bone: "head", axis: "x", mul: 1 }),
+    Object.freeze({ key: "headY", bone: "head", axis: "y", mul: 1 }),
     Object.freeze({ key: "headZ", bone: "head", axis: "z", mul: 1 }),
     Object.freeze({ key: "spineX", bone: "spine", axis: "x", mul: 1 }),
+    Object.freeze({ key: "spineY", bone: "spine", axis: "y", mul: 1 }),
     Object.freeze({ key: "spineZ", bone: "spine", axis: "z", mul: 1 }),
     Object.freeze({ key: "armL", bone: "armL.shoulder", axis: "z", mul: 1 }),
     Object.freeze({ key: "armR", bone: "armR.shoulder", axis: "z", mul: -1 }),
@@ -101564,6 +103419,8 @@ AnazhRealm.MOTION_RIG_MAP = Object.freeze([
     Object.freeze({ key: "elbowR", bone: "armR.elbow", axis: "x", mul: -1 }),
     Object.freeze({ key: "hipLX", bone: "legL.hip", axis: "x", mul: 1 }),
     Object.freeze({ key: "hipRX", bone: "legR.hip", axis: "x", mul: 1 }),
+    Object.freeze({ key: "hipLZ", bone: "legL.hip", axis: "z", mul: 1 }),
+    Object.freeze({ key: "hipRZ", bone: "legR.hip", axis: "z", mul: 1 }),
     Object.freeze({ key: "kneeL", bone: "legL.knee", axis: "x", mul: 1 }),
     Object.freeze({ key: "kneeR", bone: "legR.knee", axis: "x", mul: 1 }),
 ]);

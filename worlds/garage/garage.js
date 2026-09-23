@@ -86,7 +86,12 @@ function caliper(a,b,colHex,txt,perp){const m=new THREE.LineBasicMaterial({color
   const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2+0.10,(a[2]+b[2])/2];
   const hex='#'+colHex.toString(16).padStart(6,'0');const lb=label(txt,hex,0.34);lb.position.set(...mid);g.add(lb);
   return g;}
-const STc={pass:0x4ec98a,warn:0xe8b54a,fail:0xe0664a};
+/* V18.491.265 — Lab caliper status colors ← PRUEF_GESETZ fail-soft; Host none (PRUEF_VIS). ≠ LACK. */
+const PRUEF_FALLBACK={pass:0x4ec98a,warn:0xe8b54a,fail:0xe0664a};
+const _PG=(typeof VC!=='undefined'&&VC&&VC.PRUEF_GESETZ)||(window.__vehicleCore&&window.__vehicleCore.PRUEF_GESETZ)||null;
+const STc=(_PG&&Number.isFinite(_PG.pass)&&Number.isFinite(_PG.warn)&&Number.isFinite(_PG.fail))
+  ? {pass:_PG.pass,warn:_PG.warn,fail:_PG.fail}
+  : Object.assign({}, PRUEF_FALLBACK);
 function buildCalipers(H,P,res){const g=new THREE.Group();const by=id=>res.find(r=>r.L.id===id).st;
   const cR=STc[by('rl')], cD=STc[by('dta')], cU=STc[by('ueb')], cB=STc[by('bf')];
   // Radstand (Boden)
@@ -185,7 +190,10 @@ let kin=false;const kinB=document.getElementById('kin');
 kinB.onclick=()=>{kin=!kin;kinB.classList.toggle('on');};
 const clayB=document.getElementById('clay');
 clayB.onclick=()=>{bodyMat=(bodyMat===M.clay)?M.paint:M.clay;clayB.classList.toggle('on');rebuild();};
-const PAINTS=[['Clay',0x8d9499,1],['Signalrot',0xc4181b,0],['Racing-Grün',0x1d4a30,0],['Silber',0xb6babf,0],['Tiefschwarz',0x111319,0],['Azurblau',0x1c5190,0],['Solargelb',0xe2b21e,0],['Kupfer-Orange',0xc8641a,0],['Perlweiss',0xe8eaee,0]];
+// V18.491.230 — Lab Lack-Swatches ← LACK_GESETZ fail-soft; Host none (LACK_VIS).
+const PAINTS_FALLBACK=[['Clay',0x8d9499,1],['Signalrot',0xc4181b,0],['Racing-Grün',0x1d4a30,0],['Silber',0xb6babf,0],['Tiefschwarz',0x111319,0],['Azurblau',0x1c5190,0],['Solargelb',0xe2b21e,0],['Kupfer-Orange',0xc8641a,0],['Perlweiss',0xe8eaee,0]];
+const _LG=(typeof VC!=='undefined'&&VC&&VC.LACK_GESETZ)||(window.__vehicleCore&&window.__vehicleCore.LACK_GESETZ)||null;
+const PAINTS=(Array.isArray(_LG)&&_LG.length===9)?_LG.map(t=>[t[0],t[1],t[2]]):PAINTS_FALLBACK.map(t=>[t[0],t[1],t[2]]);
 const prow=document.getElementById('paintrow');
 PAINTS.forEach(pt=>{const sw=document.createElement('button');sw.className='sw';sw.title=pt[0];
   sw.style.cssText='width:21px;height:21px;border-radius:50%;border:2px solid rgba(120,150,175,.32);background:#'+pt[1].toString(16).padStart(6,'0')+';cursor:pointer;padding:0;flex:none';
@@ -316,6 +324,7 @@ function updateVehicle(dt,t){
   const slipF=Math.atan2(car.vlat+car.yawRate*b, dn) - car.steer*sgn;
   const slipR=Math.atan2(car.vlat-car.yawRate*c, dn); car.slipF=slipF;car.slipR=slipR;
   // ── Achslasten mit LÄNGS-Lastverlagerung (Beschl→hinten, Brems→vorn) — koppelt Last an Grip ──
+  // V18.491.150 G_VIS.fahr=g-9.8 — do NOT change math
   const Wt=m*FAHR.G, dW=car.aLong*cgH/L*m;
   const Wf=Math.max(0,Wt*(c/L)-dW), Wr=Math.max(0,Wt*(b/L)+dW);
   // ── Reifen-SEITENKRÄFTE: Schlupf×Steifigkeit, gesättigt durch Reibkreis×Achslast (Grip-Grenze entsteht hier) ──
@@ -375,6 +384,7 @@ function updateVehicle(dt,t){
   vehicle.position.x=car.x; vehicle.position.z=car.z; vehicle.position.y=bodenY(car.x,car.z); vehicle.rotation.y=car.yaw;
   // Räder: Abrollen ω=v/r + Vorderrad-Lenkung
   car.wheelAng+=car.vlong/Math.max(0.1,P.radR)*dt;
+  // STEER_VIS.compound = "hub-yaw" — Feel .124 Lab-parity (front hub yaw).
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-car.wheelAng;if(cc.front)cc.grp.rotation.y=car.steer;cc.grp.position.y=cc.baseY;});
   key.position.set(car.x+5,9,car.z+4);key.target.position.set(car.x,0,car.z);key.target.updateMatrixWorld(); // Schatten folgt
 }

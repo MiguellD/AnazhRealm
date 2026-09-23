@@ -287,6 +287,25 @@
         return t;
     }
 
+    // COLOR_EXT — Lab+Host chord stack width from dna.color (·136).
+    // Lab buildTones: ext = 1 + (c>ninth) + (c>thirteenth). Host n = 3+ext (4/5/6).
+    // Missing/non-finite color → ext 1 (Host 4-note byte-alt). LoFi color 0.60 → 9th.
+    // V18.491.137 Lab V7 finale; Host has no cadence — not Fake-merge.
+    var COLOR_EXT = { ninth: 0.35, thirteenth: 0.7, finaleAdd: 0.4, finaleSemi: 14 };
+    function colorExt(color) {
+        var C = COLOR_EXT;
+        var c = isFinite(color) ? color : 0;
+        var ext = 1;
+        if (c > C.ninth) ext++;
+        if (c > C.thirteenth) ext++;
+        return ext;
+    }
+    function colorFinaleAdd(color) {
+        var C = COLOR_EXT;
+        var c = isFinite(color) ? color : 0;
+        return c > C.finaleAdd;
+    }
+
     // ── SCHRITT-TIMBRE (Zensus-Rest V18.488, rein additive DATEN-Zeile —
     //    Praezedenz: hostEmergent/DORF_NORM): das MATERIAL→FILTER-Gesetz des
     //    Schritt-Klangs (Farnell-Synthese: die Quelle ist immer ein Rausch-
@@ -344,8 +363,11 @@
     //    bleibt die Lab-Sim (das Welt-Pad bleibt asset-frei). ──
     // prettier-ignore
     var RAUM = {
+        // V18.491.133 — Lab hall create + applyPreset read RAUM.hall fail-soft (numbers byte-alt).
         hall: { impulseSec: 3.4, decay: 2.4, predelaySec: 0.02, returnProSpace: 0.5 },
+        // V18.491.134 — Lab echo create + setDelayFromBpm + dlyRet + echoPlan read RAUM.echo fail-soft (numbers byte-alt).
         echo: { beatFrac: 0.75, minSec: 0.06, maxSec: 1.8, feedback: 0.42, hpHz: 260, lpHz: 2800, returnProEcho: 0.85 },
+        // V18.491.135 — Lab local twin killed; cold-core stub {def:{lead:.12}}; numbers untouched. Lab applyPreset reads RAUM.DELAY_SENDS fail-soft.
         DELAY_SENDS: {
             Reggae:{ harmony:.4, lead:.34, drums:.1 }, Ambient:{ lead:.45, harmony:.3 },
             LoFi:{ lead:.2, harmony:.12 }, BoomBap:{ lead:.16 }, Trap:{ lead:.2 },
@@ -357,13 +379,567 @@
         }
     };
 
+    // V18.491.196 — Lab master glue compressor; Host none (GLUE_VIS).
+    var GLUE_GESETZ = {
+      thresholdDb: -14,
+      knee: 10,
+      ratio: 2.5,
+      attackSec: 0.012,
+      releaseSec: 0.24,
+    };
+    var GLUE_VIS = { lab: "master-glue", host: "none" };
+
+    // V18.491.197 — Lab master limiter; Host none (LIMITER_VIS).
+    var LIMITER_GESETZ = {
+      thresholdDb: -2.5,
+      knee: 0,
+      ratio: 20,
+      attackSec: 0.001,
+      releaseSec: 0.06,
+    };
+    var LIMITER_VIS = { lab: "master-limiter", host: "none" };
+
+    // V18.491.198 — Lab master EQ 3-band; Host none (EQ_VIS).
+    var EQ_GESETZ = {
+      low:  { type: "lowshelf",  freqHz: 90,   gainDb: 1.2 },
+      mud:  { type: "peaking",   freqHz: 350,  q: 1, gainDb: -1.5 },
+      air:  { type: "highshelf", freqHz: 8500, gainDb: 1.5 },
+    };
+    var EQ_VIS = { lab: "master-eq-3band", host: "none" };
+
+    // V18.491.199 — Lab master softClip WaveShaper; Host none (SOFTCLIP_VIS).
+    var SOFTCLIP_GESETZ = { amount: 1.15, oversample: "4x" };
+    var SOFTCLIP_VIS = { lab: "waveshaper-1.15", host: "none" };
+
+    // V18.491.201 — Lab sympathetik resonance bus cold-init; Host none (RESONANZ_VIS).
+    var RESONANZ_GESETZ = {
+      outGain: 0.16,
+      delaySec: 1/131,
+      lpHz: 3600,
+      feedback: 0.72,
+      voices: 3,
+    };
+    var RESONANZ_VIS = { lab: "sympathetik-3", host: "none" };
+
+    // V18.491.202 — Lab LoFi cold-init; Host none (LOFI_VIS).
+    var LOFI_GESETZ = {
+      wowDelaySec: 0.012,
+      wowMaxSec: 0.05,
+      wowSlowHz: 0.45,
+      wowFastHz: 5.6,
+      lpHz: 19500,
+      lpQ: 0.4,
+      crackleGain: 0.0001,
+      crackleBufSec: 3,
+      dcHpHz: 24,
+    };
+    var LOFI_VIS = { lab: "bandlauf-vinyl", host: "none" };
+
+    // V18.491.204 — Lab analyser cold-init; Host none (ANALYSER_VIS).
+    var ANALYSER_GESETZ = { fftSize: 1024, smoothing: 0.82 };
+    var ANALYSER_VIS = { lab: "fft-1024-smooth-0.82", host: "none" };
+
+    // V18.491.204 — Lab strip defaults cold-init; Host none (STRIP_VIS).
+    var STRIP_GESETZ = {
+      drums:   { pan: 0.00, levelDb: -1.5, revSend: 0.10, ducked: false, delaySend: 0 },
+      bass:    { pan: 0.00, levelDb: -1.0, revSend: 0.03, ducked: true,  delaySend: 0 },
+      harmony: { pan:-0.12, levelDb: -4.5, revSend: 0.30, ducked: true,  delaySend: 0 },
+      lead:    { pan: 0.10, levelDb: -3.0, revSend: 0.24, ducked: false, delaySend: 0.12 },
+      sim:     { pan: 0.00, levelDb: -2.0, revSend: 0.22, ducked: false, delaySend: 0.15 },
+    };
+    var STRIP_VIS = { lab: "strip-defaults-5", host: "none" };
+
+    // V18.491.205 — Lab sidechain duck defaults; Host none (DUCK_VIS).
+    var DUCK_GESETZ = { depth: 0.45, attackSec: 0.012, releaseSec: 0.20 };
+    var DUCK_VIS = { lab: "sidechain-duck", host: "none" };
+
+    // V18.491.206 — Lab WAV-recorder cold tap; Host none (REC_VIS).
+    var REC_GESETZ = { bufferSize: 4096, inputChannels: 2, outputChannels: 2, sinkGain: 0 };
+    var REC_VIS = { lab: "scriptprocessor-4096", host: "none" };
+
+    // V18.491.207 — Lab kick-kit tone table; Host none (KICK_VIS).
+    var KICK_GESETZ = {
+      Acoustic:   { f0:150, f1:46,  pd:0.05,  dec:0.42, click:0.15, sat:1.25 },
+      Electronic: { f0:190, f1:48,  pd:0.03,  dec:0.60, click:0.30, sat:1.6 },
+      LoFi:       { f0:105, f1:42,  pd:0.06,  dec:0.28, click:0.05, sat:1.0 },
+      Brush:      { f0:120, f1:44,  pd:0.05,  dec:0.30, click:0.03, sat:1.0 },
+      Perc:       { f0:235, f1:172, pd:0.018, dec:0.22, click:0.02, sat:1.05 },
+    };
+    var KICK_VIS = { lab: "kick-kit-5", host: "none" };
+
+    // V18.491.208 — Lab snare-kit tone table; Host none (SNARE_VIS).
+    var SNARE_GESETZ = {
+      Acoustic:   { tone:195, dec:0.16, hp:1500, body:0.45, atk:0.001 },
+      Electronic: { tone:195, dec:0.20, hp:1500, body:0.45, atk:0.001 },
+      LoFi:       { tone:160, dec:0.16, hp:900,  body:0.45, atk:0.001 },
+      Brush:      { tone:170, dec:0.26, hp:1100, body:0.10, atk:0.02  },
+      Perc:       { tone:340, dec:0.09, hp:2600, body:0.70, atk:0.001 }
+    };
+    var SNARE_VIS = { lab: "snare-kit-5", host: "none" };
+
+    // V18.491.209 — Lab hi-hat kit cold constants; Host none (HIHAT_VIS).
+    var HIHAT_GESETZ = {
+      baseHz: 104,
+      baseHzLoFi: 86,
+      bpHz: 10400,
+      bpHzElectronic: 9800,
+      bpQ: 0.9,
+      hpHz: 7000,
+      hpHzLoFi: 5200,
+      softMulBrush: 0.68,
+      closedDec: 0.05,
+      openDec: 0.42,
+      closedVel: 0.42,
+      openVel: 0.5,
+      pan: 0.16,
+      ratios: [2, 3.03, 4.16, 5.43, 6.79, 8.21],
+      chokeTau: 0.008,
+      perc: { openNoise: 0.24, closedNoise: 0.09, bpHz: 5600, bpQ: 1.1, openVel: 0.4, closedVel: 0.34, atk: 0.012, openDec: 0.2, closedDec: 0.07, pan: 0.14 }
+    };
+    var HIHAT_VIS = { lab: "hihat-kit", host: "none" };
+
+    // V18.491.210 — Lab ride() 3-partial + noise cold constants; Host none (RIDE_VIS).
+    var RIDE_GESETZ = {
+      velMul: 0.32,
+      atk: 0.002,
+      dec: 1.25,
+      pan: -0.18,
+      freqs: [521, 787, 1123],
+      gains: [0.5, 0.22, 0.13],
+      oscStop: 1.4,
+      noiseSec: 0.8,
+      noiseHpHz: 6000,
+      noiseVel: 0.10,
+      noiseAtk: 0.002,
+      noiseDec: 0.7,
+      noiseStop: 0.85,
+    };
+    var RIDE_VIS = { lab: "ride-3partial", host: "none" };
+
+    // V18.491.211 — Lab crash() cold constants; Host none (CRASH_VIS).
+    var CRASH_GESETZ = {
+      velMul: 0.4,
+      atk: 0.003,
+      dec: 1.7,
+      pan: -0.1,
+      noiseSec: 1.7,
+      noiseHpHz: 4200,
+      noiseStop: 1.8,
+      freqs: [637, 941, 1370],
+      oscGain: 0.08,
+      oscStop: 1.2,
+    };
+    var CRASH_VIS = { lab: "crash-3partial", host: "none" };
+
+    // V18.491.212 — Lab clap() cold constants; Host none (CLAP_VIS).
+    var CLAP_GESETZ = {
+      pan: 0.1,
+      delays: [0, 0.011, 0.023],
+      noiseSec: 0.28,
+      bpHz: 1400,
+      bpQ: 1.3,
+      velEarly: 0.4,
+      velLast: 0.7,
+      atk: 0.001,
+      decEarly: 0.02,
+      decLast: 0.22,
+    };
+    var CLAP_VIS = { lab: "clap-3burst", host: "none" };
+
+    // V18.491.213 — MIDI bus/channel and GM program maps; Host none (MIDI_VIS).
+    var MIDI_GESETZ = {
+        busCh: { harmony: 0, lead: 1, bass: 2, sim: 3 },
+        gmProgram: {
+            GrandPiano: 0, Rhodes: 4, Guitar: 24, DoubleBass: 32,
+            Strings: 48, Flute: 73, LeadSynth: 81, SynthPad: 89,
+            Sub808: 38, SynthBass: 38, Vibraphone: 11, Marimba: 12,
+            Kalimba: 108, Organ: 16, Clavinet: 7, SynthBrass: 62,
+            ReeseBass: 39, DistGuitar: 30, PickBass: 34,
+        },
+    };
+    var MIDI_VIS = { lab: "gm-bus-map", host: "none" };
+
+    // V18.491.214 — Lab simulator note-duration map; Host none (SIMDUR_VIS).
+    var SIMDUR_GESETZ = {
+        GrandPiano: 2.6, Guitar: 2.2, Rhodes: 1.8, Strings: 1.6,
+        SynthPad: 2.0, LeadSynth: 0.7, Flute: 1.2, Sub808: 1.0,
+        Vibraphone: 3.2, Marimba: 1.3, Kalimba: 1.5, Organ: 1.6,
+        Clavinet: 1.0, SynthBrass: 1.2, DistGuitar: 1.6, PickBass: 1.4,
+    };
+    var SIMDUR_VIS = { lab: "sim-dur-16", host: "none" };
+
+    // V18.491.215 — Lab instrument-role cold defaults; Host none (ROLES_VIS).
+    var ROLES_GESETZ = {
+        drums: "Acoustic",
+        bass: "DoubleBass",
+        harmony: "GrandPiano",
+        lead: "Guitar",
+        sim: "GrandPiano",
+    };
+    var ROLES_VIS = { lab: "role-defaults-5", host: "none" };
+
+    // V18.491.216 — Lab laws cold defaults; Host none (LAWS_VIS).
+    var LAWS_GESETZ = {
+        form: "AAB",
+        harmony: "Blues",
+        rhythm: "Shuffle",
+        bass: "Walking",
+        melody: "BlueNotes",
+    };
+    var LAWS_VIS = { lab: "laws-defaults-5", host: "none" };
+
+    // V18.491.217 — Lab modulation cold defaults; Host none (MODS_VIS).
+    var MODS_GESETZ = {
+        swing: 0.72,
+        darkness: 0.5,
+        color: 0.3,
+        flow: 0.5,
+        tension: 0.4,
+        space: 0.22,
+        volume: 0.85,
+    };
+    var MODS_VIS = { lab: "mods-defaults-7", host: "none" };
+
+    // V18.491.218 — Lab tuning cold defaults; Host none (TUNING_VIS).
+    var TUNING_GESETZ = {
+        root: 0,
+        baseFreq: 440,
+    };
+    var TUNING_VIS = { lab: "a440-root0", host: "none" };
+
+    // V18.491.219 — Lab state cold seeds; Host none (STATE_VIS).
+    var STATE_GESETZ = {
+        bpm: 96,
+        root: 48,
+        rootBase: 48,
+        scaleName: "blues",
+        motifIntervals: [0, 1],
+        motifRhythm: [0.5, 1],
+        motifOp: "Original",
+        melDeg: 9,
+    };
+    var STATE_VIS = { lab: "state-seed-8", host: "none" };
+
+    // V18.491.220 — Lab preset cold default; Host none (PRESET_VIS).
+    var PRESET_GESETZ = { defaultName: "Blues" };
+    var PRESET_VIS = { lab: "preset-blues", host: "none" };
+
+    // V18.491.221 — Lab GenesisLimiter cold constants; Host none (LOOKAHEAD_VIS).
+    var LOOKAHEAD_GESETZ = {
+        bufLen: 256,
+        ceil: 0.891,
+        release: 0.0008,
+        processorName: "genesis-limiter",
+        outChannels: 2,
+    };
+    var LOOKAHEAD_VIS = { lab: "lookahead-256", host: "none" };
+
+    // V18.491.222 — Lab genre pump density table; Host none (PUMP_VIS).
+    var PUMP_GESETZ = {
+        byPreset: { Trap: 0.55, DnB: 0.5, Synthwave: 0.52, Techno: 0.42, LoFi: 0.3, BoomBap: 0.3 },
+        straightFallback: 0.42,
+        defaultFallback: 0.3,
+    };
+    var PUMP_VIS = { lab: "genre-pump-6", host: "none" };
+
+    // V18.491.223 — Lab genre-weather table; Host none (SCENES_VIS).
+    var SCENES_GESETZ = {
+        byPreset: {
+            Rock: { skyTop: [14, 70, 30], choppy: 1.7, ember: true },
+            Funk: { skyTop: [28, 60, 26], choppy: 1.4 },
+            Ambient: { skyTop: [210, 45, 16], choppy: 0.45, aurora: true },
+            Cinematic: { skyTop: [225, 35, 14], choppy: 0.6, letterbox: true, godray: true },
+            LoFi: { skyTop: [35, 35, 20], choppy: 0.8 },
+            BoomBap: { skyTop: [30, 30, 18], choppy: 0.9 },
+            Trap: { skyTop: [275, 45, 14], choppy: 1.1 },
+            DnB: { skyTop: [195, 55, 18], choppy: 1.6 },
+            Techno: { skyTop: [190, 60, 16], choppy: 1.2, pulse: 1.8 },
+            Synthwave: { skyTop: [300, 55, 20], choppy: 0.9, aurora: true },
+            Dub: { skyTop: [150, 40, 16], choppy: 0.8 },
+            Bossa: { skyTop: [25, 55, 22], choppy: 0.7 },
+            Latin: { skyTop: [20, 65, 24], choppy: 1.1 },
+            Vibes: { skyTop: [250, 25, 12], choppy: 0.7 },
+            Reggae: { skyTop: [45, 55, 20], choppy: 0.8 },
+        },
+        fallbackSkyTop: [215, 40, 15],
+        choppyBase: 0.6,
+        choppyTensionMul: 0.9,
+        choppyMin: 0.5,
+        choppyMax: 1.6,
+        defaultPulse: 1,
+    };
+    var SCENES_VIS = { lab: "genre-weather-15", host: "none" };
+
+    // V18.491.224 — Lab Wasser-Physik cold constants; Host none (RIPPLE_VIS).
+    var RIPPLE_GESETZ = {
+        lamOffset: 26,
+        lamScale: 5200,
+        lamFMin: 20,
+        lamMin: 28,
+        lamMax: 150,
+        twoPi: 6.2832,
+        envTauMul: 1.6,
+        radialDecay: 260,
+        speed: 150,
+        defaultLife: 1.6,
+        hopSpring: 5.2,
+    };
+    var RIPPLE_VIS = { lab: "wasser-physik", host: "none" };
+
+    // V18.491.225 — Lab Klang instrument-shape table; Host none (INSTVIS_VIS).
+    var INSTVIS_GESETZ = {
+        GrandPiano: { k: "diamond", sus: 0 },
+        Rhodes: { k: "square", sus: 0, trem: 4.3 },
+        Guitar: { k: "string", sus: 0 },
+        DoubleBass: { k: "string", sus: 0, thick: 1.7 },
+        Clavinet: { k: "zig", sus: 0 },
+        Vibraphone: { k: "fan", sus: 0, trem: 5.0 },
+        Marimba: { k: "bar", sus: 0 },
+        Kalimba: { k: "drop", sus: 0 },
+        Strings: { k: "lens", sus: 1, vib: 5.2 },
+        Flute: { k: "breath", sus: 1, vib: 4.6 },
+        SynthPad: { k: "cloud", sus: 1 },
+        Organ: { k: "bars3", sus: 1, trem: 5.7 },
+        LeadSynth: { k: "arrow", sus: 1 },
+        SynthBrass: { k: "chev", sus: 1 },
+        Sub808: { k: "blob", sus: 1 },
+        SynthBass: { k: "blob", sus: 1 },
+        ReeseBass: { k: "blob", sus: 1, wob: 0.35 },
+        DistGuitar: { k: "bolt", sus: 0 },
+        PickBass: { k: "string", sus: 0, thick: 1.5 },
+    };
+    var INSTVIS_VIS = { lab: "inst-forms-19", host: "none" };
+
+    // V18.491.226 — Lab Klang hook rhythm/contour tables; Host none (HOOK_VIS).
+    var HOOK_GESETZ = {
+        rhythms: {
+            Rock: [[0, 1], [3, .55], [6, .9], [10, .7], [12, .55]],
+            Funk: [[0, 1], [3, .6], [7, .9], [10, .55], [14, .7]],
+            Swing: [[0, 1], [4, .65], [6, .5], [10, .85], [13, .55]],
+            Shuffle: [[0, 1], [4, .65], [6, .5], [10, .85]],
+            Bossa: [[0, 1], [3, .7], [8, .8], [11, .55], [14, .65]],
+            Breakbeat: [[0, 1], [6, .6], [8, .85], [11, .55]],
+            HalfTime: [[0, 1], [8, .8], [11, .5]],
+            Straight: [[0, 1], [6, .65], [8, .85], [14, .55]],
+            None: [[0, 1], [8, .7]],
+        },
+        contours: [[0, 2, 4, 2, 0], [0, 0, 3, 2, 0], [4, 2, 0, 2, 4],
+            [0, -1, 0, 2, 4], [7, 5, 4, 2, 0], [0, 2, 0, -1, 2]],
+    };
+    var HOOK_VIS = { lab: "hook-rhythms-9", host: "none" };
+
+    // V18.491.227 — Lab Klang articulation lengths/profiles; Host none (ART_VIS).
+    var ART_GESETZ = {
+        len: { stc: 0.38, det: 0.62, ten: 0.95, ring: 1.55 },
+        profiles: {
+            Funk: ["stc", "stc", "det", "stc"],
+            Swing: ["ten", "stc", "ten", "ring"],
+            Shuffle: ["ten", "stc", "ten", "ring"],
+            Rock: ["det", "det", "ring", "det"],
+            OneDrop: ["det", "stc", "ten", "stc"],
+            Bossa: ["ten", "ten", "det", "ring"],
+            Breakbeat: ["det", "stc", "det", "stc"],
+            HalfTime: ["ten", "ring", "ten", "ring"],
+            Straight: ["det", "det", "ten", "det"],
+            None: ["ring", "ten", "ring", "ten"],
+        },
+    };
+    var ART_VIS = { lab: "artic-10", host: "none" };
+
+    // V18.491.231 Lab Klang pocket ms offsets; Host none (POCKET_VIS).
+    // Do NOT bake LoFi +8/+8 into GESETZ — that stays Lab pocket() local mutation.
+    var POCKET_GESETZ = {
+        Swing:     { s: 14, h: -2, m: 12, b: 4 },
+        Shuffle:   { s: 12, h:  0, m: 10, b: 4 },
+        Straight:  { s:  2, h: -4, m:  0, b: 0 },
+        Breakbeat: { s:  4, h: -6, m:  2, b: 0 },
+        HalfTime:  { s: 16, h:  2, m: 12, b: 6 },
+        Bossa:     { s:  6, h: -3, m:  6, b: 2 },
+        Funk:      { s: -2, h: -8, m: -2, b: -2 },
+        Rock:      { s:  2, h: -5, m:  0, b: 0 },
+        None:      { s:  0, h:  0, m:  0, b: 0 }
+    };
+    var POCKET_VIS = { lab: "pocket-9", host: "none" };
+
+    // V18.491.232 Lab Klang 3D projection defaults; Host none (CAM_VIS).
+    // camFor curve deltas (55/155/…) stay Lab-local — not baked into GESETZ.
+    var CAM_GESETZ = { F: 470, camH: 250, zMin: -300 };
+    var CAM_VIS = { lab: "proj-3", host: "none" };
+
+    // V18.491.233 Lab Klang riddim cell templates; Host none (RIDDIM_VIS).
+    // makeRiddim varDrop rng()<0.5 stays Lab-local — not baked into GESETZ.
+    var RIDDIM_GESETZ = [
+        [
+            { s: 2, t: "r", l: 3 }, { s: 6, t: "5", l: 2 }, { s: 8, t: "r", l: 5 }, { s: 14, t: "3", l: 2 }
+        ],
+        [
+            { s: 2, t: "r", l: 2 }, { s: 5, t: "3", l: 3 }, { s: 8, t: "r", l: 4 }, { s: 12, t: "5", l: 2 }, { s: 14, t: "o", l: 2 }
+        ],
+        [
+            { s: 3, t: "r", l: 3 }, { s: 8, t: "r", l: 4 }, { s: 11, t: "b7", l: 2 }, { s: 14, t: "5", l: 2 }
+        ],
+        [
+            { s: 2, t: "r", l: 4 }, { s: 8, t: "5", l: 3 }, { s: 12, t: "r", l: 4 }
+        ]
+    ];
+    var RIDDIM_VIS = { lab: "templates-4", host: "none" };
+
+    // V18.491.234 Lab Klang form block maps; Host none (FORM_VIS).
+    // SECTION_LABELS / VOICE_COL / FIFTHS stay Lab UI/viz-local this pulse.
+    var FORM_GESETZ = {
+        AABA: [["A", 8], ["A", 8], ["B", 8], ["A", 8]],
+        AAB: [["A", 4], ["A", 4], ["B", 4]],
+        Sonata: [["Expo", 16], ["Dev", 16], ["Repr", 16]]
+    };
+    var FORM_VIS = { lab: "forms-3", host: "none" };
+
+    // V18.491.240 Lab Klang chromatic note names; Host none (NOTE_VIS).
+    var NOTE_GESETZ = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"];
+    var NOTE_VIS = { lab: "chromatic-12", host: "none" };
+
+    // V18.491.241 Lab Klang piano keymap; Host none (KEYMAP_VIS).
+    var KEYMAP_GESETZ = { a: 60, w: 61, s: 62, e: 63, d: 64, f: 65, t: 66, g: 67, z: 68, h: 69, u: 70, j: 71, k: 72 };
+    var KEYMAP_VIS = { lab: "keys-13", host: "none" };
+
+    // V18.491.242 Lab Klang circle-of-fifths PC order; Host none (FIFTHS_VIS).
+    var FIFTHS_GESETZ = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
+    var FIFTHS_VIS = { lab: "circle-12", host: "none" };
+
+    // V18.491.246 Lab Klang voice viz colors; Host none (VOICE_VIS).
+    // SECTION_LABELS stay Lab UI-local this pulse.
+    var VOICE_GESETZ = { bass: "#6ea0ff", harmony: "#b48cff", lead: "#ffb45a", sim: "#7ee0a3" };
+    var VOICE_VIS = { lab: "bus-4", host: "none" };
+
+    // V18.491.248 Lab Klang sample-buffer cache cap; Host none (BUF_VIS).
+    var BUF_GESETZ = { max: 90 };
+    var BUF_VIS = { lab: "cache-90", host: "none" };
+
+    // V18.491.249 Lab Klang form-section labels; Host none (SECTION_VIS).
+    var SECTION_GESETZ = {
+        V: "Vamp",
+        Free: "∞",
+        Return: "Klimax",
+        Expo: "Exposition",
+        Dev: "Durchführung",
+        Repr: "Reprise",
+        Drop: "Drop"
+    };
+    var SECTION_VIS = { lab: "labels-7", host: "none" };
+
+    // V18.491.270 Lab Klang mixer strip labels; Host none (STRIPLBL_VIS).
+    // ≠ STRIP_GESETZ (strip-defaults-5 numbers) — do not Fake-merge.
+    var STRIPLBL_GESETZ = { drums: "Drums", bass: "Bass", harmony: "Akkorde", lead: "Melodie", sim: "Simulator" };
+    var STRIPLBL_VIS = { lab: "strip-labels-5", host: "none" };
+
+
+
+
+
+    // TILT_VIS — intentional dual mix (Feel-Entscheid .129). Do NOT merge.
+    // lab:"mixer-ui" = mixTilt + applyMixState strip faders (klang.js).
+    // host:"role-db" = tilt.<rolle> dB → linear gain on lofi osc (_lofiDrumTimbre / _lofiInstStimme).
+    // Like NEBEL_VIS .128 / RAUCH_VIS .125 / STEER_VIS .124: naming the Feel, not Fake-zu.
+    // Full Lab mixer / convolution into Host = Redesign later. tilt numbers stay on GENRES.
+    var TILT_VIS = {
+        lab: "mixer-ui",
+        host: "role-db",
+    };
+
     root.__klangCore = {
         VERSION: VERSION,
         progressionDeg: progressionDeg,
         stack: stack,
+        COLOR_EXT: COLOR_EXT,
+        colorExt: colorExt,
+        colorFinaleAdd: colorFinaleAdd,
         SCHRITT_TIMBRE: SCHRITT_TIMBRE,
         RHYTHMUS_MUSTER: RHYTHMUS_MUSTER,
         RAUM: RAUM,
+        GLUE_GESETZ: GLUE_GESETZ,
+        GLUE_VIS: GLUE_VIS,
+        LIMITER_GESETZ: LIMITER_GESETZ,
+        LIMITER_VIS: LIMITER_VIS,
+        EQ_GESETZ: EQ_GESETZ,
+        EQ_VIS: EQ_VIS,
+        SOFTCLIP_GESETZ: SOFTCLIP_GESETZ,
+        SOFTCLIP_VIS: SOFTCLIP_VIS,
+        RESONANZ_GESETZ: RESONANZ_GESETZ,
+        RESONANZ_VIS: RESONANZ_VIS,
+        LOFI_GESETZ: LOFI_GESETZ,
+        LOFI_VIS: LOFI_VIS,
+        ANALYSER_GESETZ: ANALYSER_GESETZ,
+        ANALYSER_VIS: ANALYSER_VIS,
+        STRIP_GESETZ: STRIP_GESETZ,
+        STRIP_VIS: STRIP_VIS,
+        DUCK_GESETZ: DUCK_GESETZ,
+        DUCK_VIS: DUCK_VIS,
+        REC_GESETZ: REC_GESETZ,
+        REC_VIS: REC_VIS,
+        KICK_GESETZ: KICK_GESETZ,
+        KICK_VIS: KICK_VIS,
+        SNARE_GESETZ: SNARE_GESETZ,
+        SNARE_VIS: SNARE_VIS,
+        HIHAT_GESETZ: HIHAT_GESETZ,
+        HIHAT_VIS: HIHAT_VIS,
+        RIDE_GESETZ: RIDE_GESETZ,
+        RIDE_VIS: RIDE_VIS,
+        CRASH_GESETZ: CRASH_GESETZ,
+        CRASH_VIS: CRASH_VIS,
+        CLAP_GESETZ: CLAP_GESETZ,
+        CLAP_VIS: CLAP_VIS,
+        MIDI_GESETZ: MIDI_GESETZ,
+        MIDI_VIS: MIDI_VIS,
+        SIMDUR_GESETZ: SIMDUR_GESETZ,
+        SIMDUR_VIS: SIMDUR_VIS,
+        ROLES_GESETZ: ROLES_GESETZ,
+        ROLES_VIS: ROLES_VIS,
+        LAWS_GESETZ: LAWS_GESETZ,
+        LAWS_VIS: LAWS_VIS,
+        MODS_GESETZ: MODS_GESETZ,
+        MODS_VIS: MODS_VIS,
+        TUNING_GESETZ: TUNING_GESETZ,
+        TUNING_VIS: TUNING_VIS,
+        STATE_GESETZ: STATE_GESETZ,
+        STATE_VIS: STATE_VIS,
+        PRESET_GESETZ: PRESET_GESETZ,
+        PRESET_VIS: PRESET_VIS,
+        LOOKAHEAD_GESETZ: LOOKAHEAD_GESETZ,
+        LOOKAHEAD_VIS: LOOKAHEAD_VIS,
+        PUMP_GESETZ: PUMP_GESETZ,
+        PUMP_VIS: PUMP_VIS,
+        SCENES_GESETZ: SCENES_GESETZ,
+        SCENES_VIS: SCENES_VIS,
+        RIPPLE_GESETZ: RIPPLE_GESETZ,
+        RIPPLE_VIS: RIPPLE_VIS,
+        INSTVIS_GESETZ: INSTVIS_GESETZ,
+        INSTVIS_VIS: INSTVIS_VIS,
+        HOOK_GESETZ: HOOK_GESETZ,
+        HOOK_VIS: HOOK_VIS,
+        ART_GESETZ: ART_GESETZ,
+        ART_VIS: ART_VIS,
+        POCKET_GESETZ: POCKET_GESETZ,
+        POCKET_VIS: POCKET_VIS,
+        CAM_GESETZ: CAM_GESETZ,
+        CAM_VIS: CAM_VIS,
+        RIDDIM_GESETZ: RIDDIM_GESETZ,
+        RIDDIM_VIS: RIDDIM_VIS,
+        FORM_GESETZ: FORM_GESETZ,
+        FORM_VIS: FORM_VIS,
+        NOTE_GESETZ: NOTE_GESETZ,
+        NOTE_VIS: NOTE_VIS,
+        KEYMAP_GESETZ: KEYMAP_GESETZ,
+        KEYMAP_VIS: KEYMAP_VIS,
+        FIFTHS_GESETZ: FIFTHS_GESETZ,
+        FIFTHS_VIS: FIFTHS_VIS,
+        VOICE_GESETZ: VOICE_GESETZ,
+        VOICE_VIS: VOICE_VIS,
+        BUF_GESETZ: BUF_GESETZ,
+        BUF_VIS: BUF_VIS,
+        SECTION_GESETZ: SECTION_GESETZ,
+        SECTION_VIS: SECTION_VIS,
+        STRIPLBL_GESETZ: STRIPLBL_GESETZ,
+        STRIPLBL_VIS: STRIPLBL_VIS,
+        TILT_VIS: TILT_VIS,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,

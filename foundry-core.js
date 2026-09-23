@@ -139,7 +139,39 @@ var WASSER_GESETZ = {
 // sie erreicht und die Kern-Pflicht-Wand den Ausfall meldet. var (nicht
 // const): reist als globalThis.__terrainCore zum Stamm-Leser — dieselbe
 // Klasse wie HIMMEL_GESETZ/WASSER_GESETZ selbst.
-var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ };
+// V18.491.235 Lab Terrain MC-Berg; Host none (BERG_VIS).
+// CAVE stays Lab-derived from MTN/BERG; COAST_D/SEA_LEVEL stay Lab-local this pulse.
+// var (nicht const): reist als globalThis.BERG_GESETZ zum Studio-Leser — wie HIMMEL/WASSER.
+// prettier-ignore
+var BERG_GESETZ = { x: -42, z: -30, R: 20, H: 22, Rtun: 3.2 };
+var BERG_VIS = { lab: "mc-volume", host: "none" };
+
+// V18.491.236 Lab Terrain island radius + sea plane; Host none (INSEL_VIS).
+// Do NOT Fake-align with WASSER_GESETZ look numbers.
+// var (nicht const): reist als globalThis.INSEL_GESETZ zum Studio-Leser — wie HIMMEL/BERG.
+// prettier-ignore
+var INSEL_GESETZ = { coastD: 74.0, seaLevel: -3.0 };
+var INSEL_VIS = { lab: "coast-74", host: "none" };
+
+// V18.491.237 Lab Terrain Wald Astung/LOD/Lichtung; Host none (WALD_VIS).
+// FIB dead-array stays Lab-local (unused — do NOT hoist). BERG/INSEL/HIMMEL/WASSER untouched.
+// var (nicht const): reist als globalThis.WALD_GESETZ zum Studio-Leser — wie HIMMEL/BERG/INSEL.
+// prettier-ignore
+var WALD_GESETZ = {
+    flod: 0,
+    trunkMul: 0.5,
+    glade: 22,
+    crownBase: { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 }
+};
+var WALD_VIS = { lab: "astung-glade", host: "none" };
+
+// V18.491.239 Lab Terrain 12m tile/cell; Host none (KACHEL_VIS).
+// var (nicht const): reist als globalThis.KACHEL_GESETZ zum Studio-Leser — wie HIMMEL/BERG/INSEL/WALD.
+// prettier-ignore
+var KACHEL_GESETZ = { size: 12 };
+var KACHEL_VIS = { lab: "tile-12", host: "none" };
+
+var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS };
 
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke
@@ -2631,7 +2663,29 @@ function buildInstance(presetId, seed, lod, ov) {
             if (P.kind === "flower") emitFlower(P);
             else if (P.kind === "grass") emitGrass(P);
             else {
-                emitTree(P);
+                const nodes = emitTree(P);
+                // Analog-B Slice 2: Grammatik-Beipack (Kegelstumpf-Segmente) — Template-Raum;
+                // World-Scale über _foundryWorldScaleMatrix am Flatten. Fail-closed: ohne segs kein Beipack.
+                if (nodes && Array.isArray(nodes.segs) && nodes.segs.length) {
+                    const ba = new THREE.Color(P.barkA || 0x3a2c1e);
+                    const bb = new THREE.Color(P.barkB || 0x2a1c10);
+                    g.userData.__baumGrammatik = {
+                        segs: nodes.segs.map((sg) => ({
+                            p0: sg.p0.slice(),
+                            p1: sg.p1.slice(),
+                            r0: sg.r0,
+                            r1: sg.r1,
+                            depth: sg.depth,
+                        })),
+                        crown: {
+                            type: P.crown || (P.conifer ? "cone" : "ellipsoid"),
+                        },
+                        trunkR: nodes.trunkR,
+                        height: nodes.height,
+                        barkA: { r: ba.r, g: ba.g, b: ba.b },
+                        barkB: { r: bb.r, g: bb.g, b: bb.b },
+                    };
+                }
             }
         }
     } catch (e) {
@@ -3593,6 +3647,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         "knee-1",
         "ankle1",
         "ankle-1",
+        // V18.491.85 — Augen-Welle: iris/lid/eye als Ofen-Gelenke (NICHT skinJoints).
+        "irisL",
+        "irisR",
+        "lidTL",
+        "lidTR",
+        "lidBL",
+        "lidBR",
+        "eyeL",
+        "eyeR",
     ];
     const nodeName = new Map();
     nodeName.set(B.character, "mensch");
