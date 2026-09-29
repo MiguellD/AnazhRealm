@@ -198,6 +198,259 @@ controls.target.set(0,ORBIT_TY,0);controls.minDistance=ORBIT_MIND;controls.maxDi
 // Die Shell behält Szene/UI/Overlays/Harmonik/Prüfstand und LIEST den Kern.
 // ════════════════════════════════════════════════════════════════════
 const SC=window.__schmiedeCore;
+/* V18.491.570 — Lab Arena popText Warn ← WARNM_GESETZ fail-soft; Host none (WARNM_VIS). ARENAM HUD title / chrome / stam mid left bare (same hex ≠ same law); LIFT untouched. */
+const _WRN=(SC&&SC.WARNM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.WARNM_GESETZ)||null;
+const WARNM_COLOR=(_WRN&&Number.isFinite(_WRN.color))?_WRN.color:0xd4a843;
+const WARNM_CSS='#'+WARNM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.574 — Lab Arena popText Success/Fail ← TREFFM_GESETZ fail-soft; Host none (TREFFM_VIS). SPEKOM meter ends left bare; HUD verdict wired .576; LIFT untouched. */
+const _TRF=(SC&&SC.TREFFM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TREFFM_GESETZ)||null;
+const TREFFM_OK=(_TRF&&Number.isFinite(_TRF.ok))?_TRF.ok:0x6fcf73;
+const TREFFM_BAD=(_TRF&&Number.isFinite(_TRF.bad))?_TRF.bad:0xd96a4a;
+const TREFFM_OK_CSS='#'+TREFFM_OK.toString(16).padStart(6,'0');
+const TREFFM_BAD_CSS='#'+TREFFM_BAD.toString(16).padStart(6,'0');
+/* V18.491.575 — Lab Arena popText Gold ← GOLDM_GESETZ fail-soft; Host none (GOLDM_VIS). ENTEM.ring0 left bare; HUD-score wired GOLDM; HUD verdict wired TREFFM; reticle → RETIKELM .576; TREFFM/SPEKOM/LIFT untouched. */
+const _GLD=(SC&&SC.GOLDM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.GOLDM_GESETZ)||null;
+const GOLDM_COLOR=(_GLD&&Number.isFinite(_GLD.color))?_GLD.color:0xffe07a;
+const GOLDM_CSS='#'+GOLDM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.577 — Lab Arena Neutral/Mid Silver ← NEUTM_GESETZ fail-soft; Host none (NEUTM_VIS). arena-hint → HINTM .578; TREFFM/GOLDM/SPEKOM/LIFT untouched. */
+const _NEU=(SC&&SC.NEUTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.NEUTM_GESETZ)||null;
+const NEUTM_COLOR=(_NEU&&Number.isFinite(_NEU.color))?_NEU.color:0x9fb3c8;
+const NEUTM_CSS='#'+NEUTM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.579 — Lab Arena Player-Danger popText ← GEFAHRM_GESETZ fail-soft; Host none (GEFAHRM_VIS). ≠ TREFFM.bad; #7a7f8c → MISSM .580; #ffae6a → DECKM .581; LIFT untouched. */
+const _GFR=(SC&&SC.GEFAHRM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.GEFAHRM_GESETZ)||null;
+const GEFAHRM_COLOR=(_GFR&&Number.isFinite(_GFR.color))?_GFR.color:0xff6a4a;
+const GEFAHRM_CSS='#'+GEFAHRM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.580 — Lab Arena Miss/Dud popText ← MISSM_GESETZ fail-soft; Host none (MISSM_VIS). ≠ NEUTM/HINTM; #ffae6a → DECKM .581; LIFT untouched. */
+const _MSM=(SC&&SC.MISSM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.MISSM_GESETZ)||null;
+const MISSM_COLOR=(_MSM&&Number.isFinite(_MSM.color))?_MSM.color:0x7a7f8c;
+const MISSM_CSS='#'+MISSM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.581 — Lab Arena Deckung Status popText ← DECKM_GESETZ fail-soft; Host none (DECKM_VIS). ≠ GEFAHRM/GOLDM/WARNM; LIFT untouched. */
+const _DCM=(SC&&SC.DECKM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.DECKM_GESETZ)||null;
+const DECKM_COLOR=(_DCM&&Number.isFinite(_DCM.color))?_DCM.color:0xffae6a;
+const DECKM_CSS='#'+DECKM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.586 — Lab Arena Near/Invite popText ← INVITEM_GESETZ fail-soft; Host none (INVITEM_VIS). ≠ TREFFM.ok; fuge → FUGEM .587; wucht left bare; LIFT untouched. */
+const _INV=(SC&&SC.INVITEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.INVITEM_GESETZ)||null;
+const INVITEM_COLOR=(_INV&&Number.isFinite(_INV.color))?_INV.color:0xcfe0a0;
+const INVITEM_CSS='#'+INVITEM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.587 — Lab Arena Harnisch-Fuge Success ← FUGEM_GESETZ fail-soft; Host none (FUGEM_VIS). ≠ TREFFM.ok/INVITEM; #ffd24a → WUCHTM .588; #9fe0a0 → STICHM .589; LIFT untouched. */
+const _FUG=(SC&&SC.FUGEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.FUGEM_GESETZ)||null;
+const FUGEM_COLOR=(_FUG&&Number.isFinite(_FUG.color))?_FUG.color:0x8fe39a;
+const FUGEM_CSS='#'+FUGEM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.588 — Lab Arena Wucht/Impact ← WUCHTM_GESETZ fail-soft; Host none (WUCHTM_VIS). ≠ GOLDM/FUGEM; #9fe0a0 → STICHM .589; LIFT untouched. */
+const _WUC=(SC&&SC.WUCHTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.WUCHTM_GESETZ)||null;
+const WUCHTM_COLOR=(_WUC&&Number.isFinite(_WUC.color))?_WUC.color:0xffd24a;
+const WUCHTM_CSS='#'+WUCHTM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.589 — Lab Arena Stich/Schnitt Success ← STICHM_GESETZ fail-soft; Host none (STICHM_VIS). ≠ FUGEM; #7fe0a0 → SIEGM .590; LIFT untouched. */
+const _STH=(SC&&SC.STICHM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.STICHM_GESETZ)||null;
+const STICHM_COLOR=(_STH&&Number.isFinite(_STH.color))?_STH.color:0x9fe0a0;
+const STICHM_CSS='#'+STICHM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.590 — Lab Arena Down/Victory ← SIEGM_GESETZ fail-soft; Host none (SIEGM_VIS). ≠ STICHM hit; LIFT untouched. */
+const _SIE=(SC&&SC.SIEGM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SIEGM_GESETZ)||null;
+const SIEGM_COLOR=(_SIE&&Number.isFinite(_SIE.color))?_SIE.color:0x7fe0a0;
+const SIEGM_CSS='#'+SIEGM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.591 — Lab Arena Gerät→Spieler Hit ← GERATM_GESETZ fail-soft; Host none (GERATM_VIS). ≠ GEFAHRM; #cdbf9a → GERTTM .592; #ff5a4a → BRUCHM .593; LIFT untouched. */
+const _GER=(SC&&SC.GERATM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.GERATM_GESETZ)||null;
+const GERATM_COLOR=(_GER&&Number.isFinite(_GER.color))?_GER.color:0xff6a6a;
+const GERATM_CSS='#'+GERATM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.592 — Lab Arena Spieler→Gerät Hit ← GERTTM_GESETZ fail-soft; Host none (GERTTM_VIS). ≠ GERATM; #cd9a6a → DREHTTM .594; #ff5a4a → BRUCHM .593; LIFT untouched. */
+const _GTT=(SC&&SC.GERTTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.GERTTM_GESETZ)||null;
+const GERTTM_COLOR=(_GTT&&Number.isFinite(_GTT.color))?_GTT.color:0xcdbf9a;
+const GERTTM_CSS='#'+GERTTM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.593 — Lab Arena Deckung-Bruch ← BRUCHM_GESETZ fail-soft; Host none (BRUCHM_VIS). ≠ GEFAHRM/DECKM/GERATM; #cd9a6a → DREHTTM .594; LIFT untouched. */
+const _BRU=(SC&&SC.BRUCHM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BRUCHM_GESETZ)||null;
+const BRUCHM_COLOR=(_BRU&&Number.isFinite(_BRU.color))?_BRU.color:0xff5a4a;
+const BRUCHM_CSS='#'+BRUCHM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.594 — Lab Arena Drehbaum-Hit popText ← DREHTTM_GESETZ fail-soft; Host none (DREHTTM_VIS). ≠ GERTTM/DREHM mats; LIFT untouched. */
+const _DHT=(SC&&SC.DREHTTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.DREHTTM_GESETZ)||null;
+const DREHTTM_COLOR=(_DHT&&Number.isFinite(_DHT.color))?_DHT.color:0xcd9a6a;
+const DREHTTM_CSS='#'+DREHTTM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.595 — Lab Arena Quintain Hit pops ← QUINTHM_GESETZ fail-soft; Host none (QUINTHM_VIS). ≠ QUINTM mats · ≠ LATERNEM.glow coincidence; #ffce6a left bare; LIFT untouched. */
+const _QHM=(SC&&SC.QUINTHM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.QUINTHM_GESETZ)||null;
+const QUINTHM_SACK=(_QHM&&Number.isFinite(_QHM.sack))?_QHM.sack:0xd8c089;
+const QUINTHM_SHIELD=(_QHM&&Number.isFinite(_QHM.shield))?_QHM.shield:0xffd479;
+const QUINTHM_SACK_CSS='#'+QUINTHM_SACK.toString(16).padStart(6,'0');
+const QUINTHM_SHIELD_CSS='#'+QUINTHM_SHIELD.toString(16).padStart(6,'0');
+/* V18.491.596 — Lab Arena Ritter/Kämpfer Rise ← ERHEBM_GESETZ fail-soft; Host none (ERHEBM_VIS). ≠ WUCHTM/GOLDM/QUINTHM.shield; #ff8a6a/#d8c050 left bare; LIFT untouched. */
+const _ERE=(SC&&SC.ERHEBM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.ERHEBM_GESETZ)||null;
+const ERHEBM_COLOR=(_ERE&&Number.isFinite(_ERE.color))?_ERE.color:0xffce6a;
+const ERHEBM_CSS='#'+ERHEBM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.597 — Lab Arena Drehbaum-Erwischt ← DREHERM_GESETZ fail-soft; Host none (DREHERM_VIS). ≠ GERATM/GEFAHRM/BRUCHM/DREHTTM; #d8c050/#ff8a4a left bare; LIFT untouched. */
+const _DHR=(SC&&SC.DREHERM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.DREHERM_GESETZ)||null;
+const DREHERM_COLOR=(_DHR&&Number.isFinite(_DHR.color))?_DHR.color:0xff8a6a;
+const DREHERM_CSS='#'+DREHERM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.598 — Lab Arena Clay PULL ← PULLM_GESETZ fail-soft; Host none (PULLM_VIS). ≠ CLOUTM.flag coincidence; #ff8a4a left bare; LIFT untouched. */
+const _PLL=(SC&&SC.PULLM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PULLM_GESETZ)||null;
+const PULLM_COLOR=(_PLL&&Number.isFinite(_PLL.color))?_PLL.color:0xd8c050;
+const PULLM_CSS='#'+PULLM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.599 — Lab Arena Streitpuppe-Angriff ← GREIFM_GESETZ fail-soft; Host none (GREIFM_VIS). ≠ DREHERM/GEFAHRM/GERATM/ZIPFELM; #d8b46a Pell left bare; LIFT untouched. */
+const _GRF=(SC&&SC.GREIFM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.GREIFM_GESETZ)||null;
+const GREIFM_COLOR=(_GRF&&Number.isFinite(_GRF.color))?_GRF.color:0xff8a4a;
+const GREIFM_CSS='#'+GREIFM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.600 — Lab Arena Pell-Hit popText ← PELLTM_GESETZ fail-soft; Host none (PELLTM_VIS). ≠ PELLM mats · ≠ PULLM; LIFT untouched. */
+const _PLT=(SC&&SC.PELLTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PELLTM_GESETZ)||null;
+const PELLTM_COLOR=(_PLT&&Number.isFinite(_PLT.color))?_PLT.color:0xd8b46a;
+const PELLTM_CSS='#'+PELLTM_COLOR.toString(16).padStart(6,'0');
+/* V18.491.602 — Lab Arena popText Bubble Chrome ← POPUM_GESETZ fail-soft; Host none (POPUM_VIS). ≠ PANELM/HINTER; drawmeter/reticle rgba left bare; LIFT untouched. */
+const _POP=(SC&&SC.POPUM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.POPUM_GESETZ)||null;
+const POPUM_SHADOW=(_POP&&Number.isFinite(_POP.shadow))?_POP.shadow:0x000000;
+const POPUM_GLOWA=(_POP&&Number.isFinite(_POP.glowA))?_POP.glowA:0.85;
+const POPUM_BG=(_POP&&Number.isFinite(_POP.bg))?_POP.bg:0x090705;
+const POPUM_BGA=(_POP&&Number.isFinite(_POP.bgA))?_POP.bgA:0.46;
+const POPUM_BORDER=(_POP&&Number.isFinite(_POP.border))?_POP.border:0xffffff;
+const POPUM_BORDERA=(_POP&&Number.isFinite(_POP.borderA))?_POP.borderA:0.09;
+const POPUM_BOXA=(_POP&&Number.isFinite(_POP.boxA))?_POP.boxA:0.4;
+const POPUM_SR=(POPUM_SHADOW>>>16)&255,POPUM_SG=(POPUM_SHADOW>>>8)&255,POPUM_SB=POPUM_SHADOW&255;
+const POPUM_BR=(POPUM_BG>>>16)&255,POPUM_BG_G=(POPUM_BG>>>8)&255,POPUM_BB=POPUM_BG&255;
+const POPUM_BOR=(POPUM_BORDER>>>16)&255,POPUM_BOG=(POPUM_BORDER>>>8)&255,POPUM_BOB=POPUM_BORDER&255;
+const POPUM_SHADOW_CSS='#'+POPUM_SHADOW.toString(16).padStart(6,'0');
+const POPUM_GLOW_CSS='rgba('+POPUM_SR+','+POPUM_SG+','+POPUM_SB+','+POPUM_GLOWA+')';
+const POPUM_BG_CSS='rgba('+POPUM_BR+','+POPUM_BG_G+','+POPUM_BB+','+POPUM_BGA+')';
+const POPUM_BORDER_CSS='rgba('+POPUM_BOR+','+POPUM_BOG+','+POPUM_BOB+','+POPUM_BORDERA+')';
+const POPUM_BOX_CSS='rgba('+POPUM_SR+','+POPUM_SG+','+POPUM_SB+','+POPUM_BOXA+')';
+/* V18.491.603 — Lab Arena Drawmeter Track ← METERBM_GESETZ fail-soft; Host none (METERBM_VIS). ≠ POPUM/PANELM; reticle rgba left bare; LIFT untouched. */
+const _MTB=(SC&&SC.METERBM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.METERBM_GESETZ)||null;
+const METERBM_COLOR=(_MTB&&Number.isFinite(_MTB.color))?_MTB.color:0x000000;
+const METERBM_A=(_MTB&&Number.isFinite(_MTB.a))?_MTB.a:0.45;
+const METERBM_R=(METERBM_COLOR>>>16)&255,METERBM_G=(METERBM_COLOR>>>8)&255,METERBM_B=METERBM_COLOR&255;
+const METERBM_CSS='rgba('+METERBM_R+','+METERBM_G+','+METERBM_B+','+METERBM_A+')';
+/* V18.491.604 — Lab Arena Reticle Ring Border ← RINGRM_GESETZ fail-soft; Host none (RINGRM_VIS). ≠ RETIKELM/POPUM.border/KREISM; LIFT untouched. */
+const _RRG=(SC&&SC.RINGRM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.RINGRM_GESETZ)||null;
+const RINGRM_COLOR=(_RRG&&Number.isFinite(_RRG.color))?_RRG.color:0xffffff;
+const RINGRM_A=(_RRG&&Number.isFinite(_RRG.a))?_RRG.a:0.5;
+const RINGRM_R=(RINGRM_COLOR>>>16)&255,RINGRM_G=(RINGRM_COLOR>>>8)&255,RINGRM_B=RINGRM_COLOR&255;
+const RINGRM_CSS='rgba('+RINGRM_R+','+RINGRM_G+','+RINGRM_B+','+RINGRM_A+')';
+/* V18.491.605 — Lab UI Muted Caption Opacity ← MUTEM_GESETZ fail-soft; Host none (MUTEM_VIS). ≠ RINGRM/SCHLEIER; befund .65 + stam .85/.25 left bare; LIFT untouched. */
+const _MUT=(SC&&SC.MUTEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.MUTEM_GESETZ)||null;
+const MUTEM_A=(_MUT&&Number.isFinite(_MUT.a))?_MUT.a:0.6;
+const MUTEM_CSS='opacity:'+MUTEM_A;
+/* V18.491.606 — Lab Befund Intent Caption Opacity ← LEISEM_GESETZ fail-soft; Host none (LEISEM_VIS). ≠ MUTEM; HUD .7/.85/.25 left bare; LIFT untouched. */
+const _LIS=(SC&&SC.LEISEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LEISEM_GESETZ)||null;
+const LEISEM_A=(_LIS&&Number.isFinite(_LIS.a))?_LIS.a:0.65;
+const LEISEM_CSS='opacity:'+LEISEM_A;
+/* V18.491.607 — Lab Arena HUD Stats Caption ← STATSM_GESETZ fail-soft; Host none (STATSM_VIS). ≠ MUTEM/LEISEM; stam .85/.25 left bare; LIFT untouched. */
+const _STS=(SC&&SC.STATSM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.STATSM_GESETZ)||null;
+const STATSM_A=(_STS&&Number.isFinite(_STS.a))?_STS.a:0.7;
+const STATSM_CSS='opacity:'+STATSM_A;
+/* V18.491.608 — Lab Arena HUD Ausdauer Label ← AUSDM_GESETZ fail-soft; Host none (AUSDM_VIS). ≠ MUTEM/LEISEM/STATSM/SCHIEB; stam empty .25 + thresholds left bare; LIFT untouched. */
+const _ADM=(SC&&SC.AUSDM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.AUSDM_GESETZ)||null;
+const AUSDM_A=(_ADM&&Number.isFinite(_ADM.a))?_ADM.a:0.85;
+const AUSDM_CSS='opacity:'+AUSDM_A;
+/* V18.491.609 — Lab Arena HUD Ausdauer leere Leiste ← LEERM_GESETZ fail-soft; Host none (LEERM_VIS). ≠ AUSDM .85; stam thresholds 0.5/0.25 left bare; LIFT untouched. */
+const _LER=(SC&&SC.LEERM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LEERM_GESETZ)||null;
+const LEERM_A=(_LER&&Number.isFinite(_LER.a))?_LER.a:0.25;
+const LEERM_CSS='opacity:'+LEERM_A;
+/* V18.491.610 — Lab Arena Pell-Station Position ← PELLPOS_GESETZ fail-soft; Host none (PELLPOS_VIS). ≠ PELL geo/PELLM/AUFSTELL/HOF; other station Vector3 left bare; LIFT untouched. */
+const _PPS=(SC&&SC.PELLPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PELLPOS_GESETZ)||null;
+const PELLPOS_X=(_PPS&&Number.isFinite(_PPS.x))?_PPS.x:4.0;
+const PELLPOS_Y=(_PPS&&Number.isFinite(_PPS.y))?_PPS.y:0;
+const PELLPOS_Z=(_PPS&&Number.isFinite(_PPS.z))?_PPS.z:5.0;
+/* V18.491.611 — Lab Arena Waffentisch-Station Position ← WAFFTISCHPOS_GESETZ fail-soft; Host none (WAFFTISCHPOS_VIS). ≠ TISCH/TISCHM/RACK/PELLPOS; other station Vector3 left bare; LIFT untouched. */
+const _WTP=(SC&&SC.WAFFTISCHPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.WAFFTISCHPOS_GESETZ)||null;
+const WAFFTISCHPOS_X=(_WTP&&Number.isFinite(_WTP.x))?_WTP.x:-3.0;
+const WAFFTISCHPOS_Y=(_WTP&&Number.isFinite(_WTP.y))?_WTP.y:0;
+const WAFFTISCHPOS_Z=(_WTP&&Number.isFinite(_WTP.z))?_WTP.z:0;
+/* V18.491.612 — Lab Arena Stechringe-Station Position ← STECHPOS_GESETZ fail-soft; Host none (STECHPOS_VIS). ≠ STECH geo/STECHM/STECHF/PELLPOS; other station Vector3 left bare; LIFT untouched. */
+const _SCP=(SC&&SC.STECHPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.STECHPOS_GESETZ)||null;
+const STECHPOS_X=(_SCP&&Number.isFinite(_SCP.x))?_SCP.x:8.5;
+const STECHPOS_Y=(_SCP&&Number.isFinite(_SCP.y))?_SCP.y:0;
+const STECHPOS_Z=(_SCP&&Number.isFinite(_SCP.z))?_SCP.z:5.0;
+/* V18.491.613 — Lab Arena Quintane-Station Position ← QUINTPOS_GESETZ fail-soft; Host none (QUINTPOS_VIS). ≠ QUINT geo/QUINTM/QUINTHM/PELLPOS; other station Vector3 left bare; LIFT untouched. */
+const _QTP=(SC&&SC.QUINTPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.QUINTPOS_GESETZ)||null;
+const QUINTPOS_X=(_QTP&&Number.isFinite(_QTP.x))?_QTP.x:4.0;
+const QUINTPOS_Y=(_QTP&&Number.isFinite(_QTP.y))?_QTP.y:0;
+const QUINTPOS_Z=(_QTP&&Number.isFinite(_QTP.z))?_QTP.z:10.5;
+/* V18.491.614 — Lab Arena Pendel-Kugel-Station Position ← PENDELPOS_GESETZ fail-soft; Host none (PENDELPOS_VIS). ≠ PENDEL geo/PENDELM/Pendel-Gasse; other station Vector3 left bare; LIFT untouched. */
+const _PDP=(SC&&SC.PENDELPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PENDELPOS_GESETZ)||null;
+const PENDELPOS_X=(_PDP&&Number.isFinite(_PDP.x))?_PDP.x:9.0;
+const PENDELPOS_Y=(_PDP&&Number.isFinite(_PDP.y))?_PDP.y:0;
+const PENDELPOS_Z=(_PDP&&Number.isFinite(_PDP.z))?_PDP.z:10.0;
+/* V18.491.615 — Lab Arena Drehbaum-Station Position ← DREHPOS_GESETZ fail-soft; Host none (DREHPOS_VIS). ≠ DREH geo/DREHM/DREHTTM/DREHERM; 8.5 coincidence; other station Vector3 left bare; LIFT untouched. */
+const _DRP=(SC&&SC.DREHPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.DREHPOS_GESETZ)||null;
+const DREHPOS_X=(_DRP&&Number.isFinite(_DRP.x))?_DRP.x:1.0;
+const DREHPOS_Y=(_DRP&&Number.isFinite(_DRP.y))?_DRP.y:0;
+const DREHPOS_Z=(_DRP&&Number.isFinite(_DRP.z))?_DRP.z:8.5;
+/* V18.491.616 — Lab Arena Federpfahl-Station Position ← FEDERPOS_GESETZ fail-soft; Host none (FEDERPOS_VIS). ≠ FEDER logic/FEDERM/PELLPOS; other station Vector3 left bare; LIFT untouched. */
+const _FDP=(SC&&SC.FEDERPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.FEDERPOS_GESETZ)||null;
+const FEDERPOS_X=(_FDP&&Number.isFinite(_FDP.x))?_FDP.x:2.0;
+const FEDERPOS_Y=(_FDP&&Number.isFinite(_FDP.y))?_FDP.y:0;
+const FEDERPOS_Z=(_FDP&&Number.isFinite(_FDP.z))?_FDP.z:2.5;
+/* V18.491.617 — Lab Arena Trefferfolge-Station Position ← SEQPOS_GESETZ fail-soft; Host none (SEQPOS_VIS). ≠ FOLGE logic/PAD geo/FOLGEM; other station Vector3 left bare; LIFT untouched. */
+const _SQP=(SC&&SC.SEQPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SEQPOS_GESETZ)||null;
+const SEQPOS_X=(_SQP&&Number.isFinite(_SQP.x))?_SQP.x:-6.0;
+const SEQPOS_Y=(_SQP&&Number.isFinite(_SQP.y))?_SQP.y:0;
+const SEQPOS_Z=(_SQP&&Number.isFinite(_SQP.z))?_SQP.z:13.0;
+/* V18.491.618 — Lab Arena Streitpuppe-Station Position ← CHARGEPOS_GESETZ fail-soft; Host none (CHARGEPOS_VIS). ≠ STREIT logic/STREITM/GREIFM; home stays pos.clone(); other station Vector3 left bare; LIFT untouched. */
+const _CHP=(SC&&SC.CHARGEPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.CHARGEPOS_GESETZ)||null;
+const CHARGEPOS_X=(_CHP&&Number.isFinite(_CHP.x))?_CHP.x:5.0;
+const CHARGEPOS_Y=(_CHP&&Number.isFinite(_CHP.y))?_CHP.y:0;
+const CHARGEPOS_Z=(_CHP&&Number.isFinite(_CHP.z))?_CHP.z:19.0;
+/* V18.491.619 — Lab Arena Pendel-Gasse-Station Position ← GASSEPOS_GESETZ fail-soft; Host none (GASSEPOS_VIS). ≠ GASSE logic/GASSEM/PENDELPOS; other station Vector3 left bare; LIFT untouched. */
+const _GSP=(SC&&SC.GASSEPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.GASSEPOS_GESETZ)||null;
+const GASSEPOS_X=(_GSP&&Number.isFinite(_GSP.x))?_GSP.x:10.0;
+const GASSEPOS_Y=(_GSP&&Number.isFinite(_GSP.y))?_GSP.y:0;
+const GASSEPOS_Z=(_GSP&&Number.isFinite(_GSP.z))?_GSP.z:18.0;
+/* V18.491.620 — Lab Arena Bambus-Stand-Station Position ← BAMBUSPOS_GESETZ fail-soft; Host none (BAMBUSPOS_VIS). ≠ BAMBUS stand/SOCKEL/PELLPOS/QUINTPOS; Schnittgasse + other station Vector3 left bare; LIFT untouched. */
+const _BBP=(SC&&SC.BAMBUSPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BAMBUSPOS_GESETZ)||null;
+const BAMBUSPOS_X=(_BBP&&Number.isFinite(_BBP.x))?_BBP.x:4.0;
+const BAMBUSPOS_Y=(_BBP&&Number.isFinite(_BBP.y))?_BBP.y:0;
+const BAMBUSPOS_Z=(_BBP&&Number.isFinite(_BBP.z))?_BBP.z:-5.0;
+/* V18.491.621 — Lab Arena Schnittgasse-Station Position ← SCHNITTPOS_GESETZ fail-soft; Host none (SCHNITTPOS_VIS). ≠ SCHNITT layout/SCHWELLE/STECHPOS/BAMBUSPOS; other station Vector3 left bare; LIFT untouched. */
+const _SNP=(SC&&SC.SCHNITTPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SCHNITTPOS_GESETZ)||null;
+const SCHNITTPOS_X=(_SNP&&Number.isFinite(_SNP.x))?_SNP.x:8.5;
+const SCHNITTPOS_Y=(_SNP&&Number.isFinite(_SNP.y))?_SNP.y:0;
+const SCHNITTPOS_Z=(_SNP&&Number.isFinite(_SNP.z))?_SNP.z:-5.0;
+/* V18.491.622 — Lab Arena schwingende Tatami-Station Position ← TATAMIPOS_GESETZ fail-soft; Host none (TATAMIPOS_VIS). ≠ TATAMI logic/GALGEN/TATAMIM; x 4.0 coincidence; other station Vector3 left bare; LIFT untouched. */
+const _TTP=(SC&&SC.TATAMIPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TATAMIPOS_GESETZ)||null;
+const TATAMIPOS_X=(_TTP&&Number.isFinite(_TTP.x))?_TTP.x:4.0;
+const TATAMIPOS_Y=(_TTP&&Number.isFinite(_TTP.y))?_TTP.y:0;
+const TATAMIPOS_Z=(_TTP&&Number.isFinite(_TTP.z))?_TTP.z:-10.0;
+/* V18.491.623 — Lab Arena Harnisch-Puppe-Station Position ← HARNISCHPOS_GESETZ fail-soft; Host none (HARNISCHPOS_VIS). ≠ HARNISCH logic/HARNISCHM/GASSEPOS; Ritter-Arenen + other station Vector3 left bare; LIFT untouched. */
+const _HNP=(SC&&SC.HARNISCHPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.HARNISCHPOS_GESETZ)||null;
+const HARNISCHPOS_X=(_HNP&&Number.isFinite(_HNP.x))?_HNP.x:10.0;
+const HARNISCHPOS_Y=(_HNP&&Number.isFinite(_HNP.y))?_HNP.y:0;
+const HARNISCHPOS_Z=(_HNP&&Number.isFinite(_HNP.z))?_HNP.z:-9.0;
+/* V18.491.624 — Lab Arena Kirmes-Enten-Station Position ← KIRMESPOS_GESETZ fail-soft; Host none (KIRMESPOS_VIS). ≠ KIRMES logic/PFAD/BAHN (no Fake-Wire); Torii + Ritter-Arenen left bare; LIFT untouched. */
+const _KMP=(SC&&SC.KIRMESPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KIRMESPOS_GESETZ)||null;
+const KIRMESPOS_X=(_KMP&&Number.isFinite(_KMP.x))?_KMP.x:36;
+const KIRMESPOS_Y=(_KMP&&Number.isFinite(_KMP.y))?_KMP.y:0;
+const KIRMESPOS_Z=(_KMP&&Number.isFinite(_KMP.z))?_KMP.z:0;
+/* V18.491.625 — Lab Arena Torii Position ← TORIIPOS_GESETZ fail-soft; Host none (TORIIPOS_VIS). ≠ TORII geo/TORIIM/TORP/BAHN/PFAD (no Fake-Wire); Ritter-Arenen left bare; LIFT untouched. */
+const _TIP=(SC&&SC.TORIIPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TORIIPOS_GESETZ)||null;
+const TORIIPOS_X=(_TIP&&Number.isFinite(_TIP.x))?_TIP.x:13.0;
+const TORIIPOS_Z=(_TIP&&Number.isFinite(_TIP.z))?_TIP.z:0.0;
+/* V18.491.626 — Lab Arena Ritter-Arenen Positions ← RITTERPOS_GESETZ fail-soft; Host none (RITTERPOS_VIS). ≠ AUFSTELL/RITTER (no Fake-Wire); count 3/2 + armored flag left bare; LIFT untouched. */
+const _RTP=(SC&&SC.RITTERPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.RITTERPOS_GESETZ)||null;
+const RITTERPOS_ARMX=(_RTP&&Number.isFinite(_RTP.armX))?_RTP.armX:6;
+const RITTERPOS_ARMY=(_RTP&&Number.isFinite(_RTP.armY))?_RTP.armY:0;
+const RITTERPOS_ARMZ=(_RTP&&Number.isFinite(_RTP.armZ))?_RTP.armZ:-18.5;
+const RITTERPOS_BAREX=(_RTP&&Number.isFinite(_RTP.bareX))?_RTP.bareX:-7;
+const RITTERPOS_BAREY=(_RTP&&Number.isFinite(_RTP.bareY))?_RTP.bareY:0;
+const RITTERPOS_BAREZ=(_RTP&&Number.isFinite(_RTP.bareZ))?_RTP.bareZ:-18.5;
+/* V18.491.627 — Lab Arena Wand-Schiessen-Station Position ← WANDPOS_GESETZ fail-soft; Host none (WANDPOS_VIS). ≠ WAND H/WANDM (no Fake-Wire); Clout/Wurfscheibe/Pendelziel/Papagei-Feld left bare; LIFT untouched. */
+const _WDP=(SC&&SC.WANDPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.WANDPOS_GESETZ)||null;
+const WANDPOS_X=(_WDP&&Number.isFinite(_WDP.x))?_WDP.x:20;
+const WANDPOS_Y=(_WDP&&Number.isFinite(_WDP.y))?_WDP.y:0;
+const WANDPOS_Z=(_WDP&&Number.isFinite(_WDP.z))?_WDP.z:3.0;
+/* V18.491.628 — Lab Arena Clout-Station Position ← CLOUTPOS_GESETZ fail-soft; Host none (CLOUTPOS_VIS). ≠ CLOUT/CLOUTM (no Fake-Wire); Wurfscheibe/Pendelziel/Papagei-Feld left bare; LIFT untouched. */
+const _CLP=(SC&&SC.CLOUTPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.CLOUTPOS_GESETZ)||null;
+const CLOUTPOS_X=(_CLP&&Number.isFinite(_CLP.x))?_CLP.x:38;
+const CLOUTPOS_Y=(_CLP&&Number.isFinite(_CLP.y))?_CLP.y:0;
+const CLOUTPOS_Z=(_CLP&&Number.isFinite(_CLP.z))?_CLP.z:7;
+/* V18.491.629 — Lab Arena Wurfscheibe-Station Position ← CLAYPOS_GESETZ fail-soft; Host none (CLAYPOS_VIS). ≠ TON logic/TONM (no Fake-Wire); Pendelziel/Papagei-Feld left bare; LIFT untouched. */
+const _CYP=(SC&&SC.CLAYPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.CLAYPOS_GESETZ)||null;
+const CLAYPOS_X=(_CYP&&Number.isFinite(_CYP.x))?_CYP.x:23;
+const CLAYPOS_Y=(_CYP&&Number.isFinite(_CYP.y))?_CYP.y:0;
+const CLAYPOS_Z=(_CYP&&Number.isFinite(_CYP.z))?_CYP.z:-8;
+/* V18.491.630 — Lab Arena Pendelziel-Station Position ← SWINGPOS_GESETZ fail-soft; Host none (SWINGPOS_VIS). ≠ SCHAUKEL/SCHAUKELM/ZIELP/PENDELPOS (no Fake-Wire); Papagei-Feld left bare; LIFT untouched. */
+const _SWP=(SC&&SC.SWINGPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SWINGPOS_GESETZ)||null;
+const SWINGPOS_X=(_SWP&&Number.isFinite(_SWP.x))?_SWP.x:30;
+const SWINGPOS_Y=(_SWP&&Number.isFinite(_SWP.y))?_SWP.y:0;
+const SWINGPOS_Z=(_SWP&&Number.isFinite(_SWP.z))?_SWP.z:4;
+/* V18.491.631 — Lab Arena Papagei-Feld Positions ← PAPAGEIPOS_GESETZ fail-soft (exactly 4 finite x/z pairs, else whole FALLBACK); Host none (PAPAGEIPOS_VIS). ≠ PAPAGEI/PAPAGEIM/CLAYPOS/CLOUTPOS; y stays 0; LIFT untouched. */
+const _PGP=(SC&&SC.PAPAGEIPOS_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PAPAGEIPOS_GESETZ)||null;
+const PAPAGEIPOS_FALLBACK=[[16,8],[22,-8],[28,7],[33,-6]];
+function _papageiSpotsOk(s){if(!Array.isArray(s)||s.length!==4)return false;for(const r of s){if(!Array.isArray(r)||r.length!==2)return false;for(const v of r)if(!Number.isFinite(v))return false;}return true;}
+const PAPAGEIPOS_SPOTS=(_PGP&&_papageiSpotsOk(_PGP.spots))?_PGP.spots.map(r=>r.slice()):PAPAGEIPOS_FALLBACK.map(r=>r.slice());
 const M=SC.materials();   // die geteilten Materialien (byte-treu im Kern; nie disposen)
 const {box,cyl,B,sectionAt,sectionMoments,curveY,RHO,hnoise,
        buildPommel,buildGuard,buildGrip,buildHaft,buildHead,buildBogen,
@@ -550,9 +803,13 @@ function buildSpine(P){const g=new THREE.Group();const S=stations(P);
   const stns = S.impact
     ? [['KNAUF',S.xButt],['GRIFF',S.xGripEnd*0.5],['KOPF',S.xHead0],['SPITZE',S.xTip]]
     : [['KNAUF',S.xButt],['GRIFF',S.xGripEnd*0.5],['PARIER',S.xGuard],['KLINGE',(S.xBlade0+S.xPoint)/2],['SPITZE',S.xPoint]];
+  /* V18.491.565 — Lab Rückgrat Station-Labels ← SPINEM_GESETZ fail-soft; Host none (SPINEM_VIS). KARTENM/Host M.bone/LEHREM/LIFT untouched. */
+  const _SPM=(SC&&SC.SPINEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SPINEM_GESETZ)||null;
+  const SPINEM_COLOR=(_SPM&&Number.isFinite(_SPM.color))?_SPM.color:0xcdb38a;
+  const SPINEM_CSS='#'+SPINEM_COLOR.toString(16).padStart(6,'0');
   for(const [nm,xx] of stns){const yy=(!S.impact&&xx>=S.xBlade0)?curveY((xx-S.xBlade0)/P.klinge,P):0;
     g.add(dot([xx,yy,0],M.bone,PUNKT_STATION));
-    const lb=label(nm,'#cdb38a',0.04);lb.position.set(xx,yy+0.05,0);g.add(lb);}
+    const lb=label(nm,SPINEM_CSS,0.04);lb.position.set(xx,yy+SPINELAB_LIFT,0);g.add(lb);}
   return g;}
 
 // ════════════════════════════════════════════════════════════════════
@@ -563,20 +820,40 @@ function buildSpine(P){const g=new THREE.Group();const S=stations(P);
 const _HND=(SC&&SC.HAND_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.HAND_GESETZ)||null;
 const HAND_R=(_HND&&Number.isFinite(_HND.R))?_HND.R:0.02;
 const HAND_TUBE=(_HND&&Number.isFinite(_HND.tube))?_HND.tube:0.0035;
+/* V18.491.633 — Lab Lehren HAND·Drehpunkt label dy ← HANDLAB_GESETZ fail-soft; Host none (HANDLAB_VIS). ≠ HAND ring/LEHREM/SCHIEB; sizes 0.044/0.042 left bare; LIFT untouched. */
+const _HLB=(SC&&SC.HANDLAB_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.HANDLAB_GESETZ)||null;
+const HANDLAB_DY=(_HLB&&Number.isFinite(_HLB.dy))?_HLB.dy:-0.055;
+/* V18.491.634 — Lab Lehren BALANCE/SCHLAGPUNKT label lift ← LEHRLAB_GESETZ fail-soft; Host none (LEHRLAB_VIS). ≠ HANDLAB/SCHIEB/spine +0.05; other 0.06 left bare; HAND duplicate label untouched; LIFT untouched. */
+const _LLB=(SC&&SC.LEHRLAB_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LEHRLAB_GESETZ)||null;
+const LEHRLAB_LIFT=(_LLB&&Number.isFinite(_LLB.lift))?_LLB.lift:0.06;
+/* V18.491.635 — Lab Rückgrat station label lift ← SPINELAB_GESETZ fail-soft; Host none (SPINELAB_VIS). ≠ LEHRLAB/HANDLAB/SCHIEB/PUNKT/RUECK; other 0.05 left bare; LIFT untouched. */
+const _SLB=(SC&&SC.SPINELAB_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SPINELAB_GESETZ)||null;
+const SPINELAB_LIFT=(_SLB&&Number.isFinite(_SLB.lift))?_SLB.lift:0.05;
+/* V18.491.636 — Lab Lehren BALANCE/SCHLAGPUNKT label size ← LEHRLABSC_GESETZ fail-soft; Host none (LEHRLABSC_VIS). ≠ ETIK/SCHIEB/LEHRLAB; HAND 0.044 dup + 0.042 untouched; LIFT untouched. */
+const _LLS=(SC&&SC.LEHRLABSC_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LEHRLABSC_GESETZ)||null;
+const LEHRLABSC_SC=(_LLS&&Number.isFinite(_LLS.sc))?_LLS.sc:0.044;
 function buildLehrenOverlay(P,m){const g=new THREE.Group();const S=m.S;const yb=0.075;
+  /* V18.491.562 — Lab Lehren Overlay Colors ← LEHREM_GESETZ fail-soft; Host none (LEHREM_VIS). ABKLINGM/ACHSE/Host M.hand|bal|node/befund/LIFT untouched. */
+  const _LHM=(SC&&SC.LEHREM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LEHREM_GESETZ)||null;
+  const LEHREM_HAND=(_LHM&&Number.isFinite(_LHM.hand))?_LHM.hand:0x66a8ff;
+  const LEHREM_BAL=(_LHM&&Number.isFinite(_LHM.bal))?_LHM.bal:0x7fc98a;
+  const LEHREM_NODE=(_LHM&&Number.isFinite(_LHM.node))?_LHM.node:0xff9a3c;
+  const LEHREM_HAND_CSS='#'+LEHREM_HAND.toString(16).padStart(6,'0');
+  const LEHREM_BAL_CSS='#'+LEHREM_BAL.toString(16).padStart(6,'0');
+  const LEHREM_NODE_CSS='#'+LEHREM_NODE.toString(16).padStart(6,'0');
   const yAt=x=>(!S.impact&&x>=S.xBlade0)?curveY((x-S.xBlade0)/P.klinge,P):0;
   // Hand (Drehpunkt) — Ring um den Griff
   const hand=new THREE.Mesh(new THREE.TorusGeometry(HAND_R,HAND_TUBE,10,28),M.hand);hand.rotation.y=Math.PI/2;hand.position.set(S.pivot,0,0);g.add(hand);
-  g.add(label('HAND · Drehpunkt','#66a8ff',0.044).translateX(0));const hl=label('HAND · Drehpunkt','#66a8ff',0.042);hl.position.set(S.pivot,-0.055,0);g.add(hl);
+  g.add(label('HAND · Drehpunkt',LEHREM_HAND_CSS,0.044).translateX(0));const hl=label('HAND · Drehpunkt',LEHREM_HAND_CSS,0.042);hl.position.set(S.pivot,HANDLAB_DY,0);g.add(hl);
   // Balance-Punkt
   g.add(dot([m.xcm,yAt(m.xcm),0],M.bal,PUNKT_MARK));
-  const bl=label('BALANCE','#7fc98a',0.044);bl.position.set(m.xcm,yAt(m.xcm)+0.06,0);g.add(bl);
-  g.add(caliper([S.pivot,yb,0.02],[m.xcm,yb,0.02],0x7fc98a,(Math.abs(m.xcm-S.pivot)*1000|0)+' mm  PoB'));
+  const bl=label('BALANCE',LEHREM_BAL_CSS,LEHRLABSC_SC);bl.position.set(m.xcm,yAt(m.xcm)+LEHRLAB_LIFT,0);g.add(bl);
+  g.add(caliper([S.pivot,yb,0.02],[m.xcm,yb,0.02],LEHREM_BAL,(Math.abs(m.xcm-S.pivot)*1000|0)+' mm  PoB'));
   // Schlagpunkt / harmonischer Knoten (CoP) — falls auf der Klinge
   if(m.xcop>S.xBlade0 && m.xcop<S.xTip+0.05){
     g.add(dot([Math.min(m.xcop,S.xTip),yAt(Math.min(m.xcop,S.xTip)),0],M.node,PUNKT_MARK));
-    const nl=label('SCHLAGPUNKT · Knoten','#ff9a3c',0.044);nl.position.set(Math.min(m.xcop,S.xTip),yAt(Math.min(m.xcop,S.xTip))+0.06,0);g.add(nl);
-    g.add(caliper([S.pivot,-yb,-0.02],[Math.min(m.xcop,S.xTip),-yb,-0.02],0xff9a3c,(Math.abs(m.xcop-S.pivot)*1000|0)+' mm  Stoßzentrum'));
+    const nl=label('SCHLAGPUNKT · Knoten',LEHREM_NODE_CSS,LEHRLABSC_SC);nl.position.set(Math.min(m.xcop,S.xTip),yAt(Math.min(m.xcop,S.xTip))+LEHRLAB_LIFT,0);g.add(nl);
+    g.add(caliper([S.pivot,-yb,-0.02],[Math.min(m.xcop,S.xTip),-yb,-0.02],LEHREM_NODE,(Math.abs(m.xcop-S.pivot)*1000|0)+' mm  Stoßzentrum'));
   }
   return g;}
 
@@ -591,6 +868,13 @@ function buildSectionCard(P){const g=new THREE.Group();const S=stations(P);if(S.
   const FORTE_SC=(_FOR&&Number.isFinite(_FOR.sc))?_FOR.sc:4.2;
   const FORTE_XOFF=(_FOR&&Number.isFinite(_FOR.xOff))?_FOR.xOff:0.12;
   const FORTE_PY=(_FOR&&Number.isFinite(_FOR.py))?_FOR.py:0.30;
+  /* V18.491.632 — Lab Schnitt-Karte Caption-Abstand ← KARTENABST_GESETZ fail-soft; Host none (KARTENABST_VIS). ≠ FORTE/KARTENM/SCHIEB; 2.8 left bare; LIFT untouched. */
+  const _KAB=(SC&&SC.KARTENABST_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KARTENABST_GESETZ)||null;
+  const KARTENABST_GAP=(_KAB&&Number.isFinite(_KAB.gap))?_KAB.gap:0.02;
+  /* V18.491.637 — Lab Schnitt-Karte caption sizes ← KARTENSC_GESETZ fail-soft; Host none (KARTENSC_VIS). ≠ ETIK/spine/mass/Steg/Flansch; LIFT untouched. */
+  const _KSC=(SC&&SC.KARTENSC_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KARTENSC_GESETZ)||null;
+  const KARTENSC_TITLE=(_KSC&&Number.isFinite(_KSC.title))?_KSC.title:0.05;
+  const KARTENSC_META=(_KSC&&Number.isFinite(_KSC.meta))?_KSC.meta:0.04;
   const t=FORTE_T, poly=sectionAt(t,P), sc=FORTE_SC;                 // forte
   const shape=new THREE.Shape();poly.forEach((p,i)=>{const z=p[0]*sc,y=p[1]*sc;i?shape.lineTo(z,y):shape.moveTo(z,y);});shape.closePath();
   const geo=new THREE.ShapeGeometry(shape);const face=new THREE.Mesh(geo,M.cardFill);
@@ -614,10 +898,23 @@ function buildSectionCard(P){const g=new THREE.Group();const S=stations(P);if(S.
   const hw=P.w0/2*sc, ht=P.th0/2*sc;
   g.add(seg([px-hw*ACHSE_MULH,py,pz+0.002],[px+hw*ACHSE_MULH,py,pz+0.002],new THREE.LineBasicMaterial({color:ACHSE_COLOR,transparent:true,opacity:ACHSE_OPH})));
   g.add(seg([px,py-ht*ACHSE_MULV,pz+0.002],[px,py+ht*ACHSE_MULV,pz+0.002],new THREE.LineBasicMaterial({color:ACHSE_COLOR,transparent:true,opacity:ACHSE_OPV})));
-  const cap=label('SCHNITT @ forte  ·  '+(P.fuller>0?'Hohlkehle = I-Träger':'voll'),'#cdb38a',0.05);cap.position.set(px,py+ht*2.8+0.02,pz);g.add(cap);
-  const cap2=label((P.w0*1000|0)+'×'+(P.th0*1000|0)+' mm  ·  '+P.fam,'#8c7d6b',0.04);cap2.position.set(px,py-ht*2.8-0.02,pz);g.add(cap2);
-  if(P.fuller>0){const fl=label('Steg (Hohlkehle)','#ff9a3c',0.034);fl.position.set(px,py+0.005,pz+0.01);g.add(fl);
-    for(const sx of[-1,1]){const efl=label('Flansch','#7fc98a',0.032);efl.position.set(px+sx*hw*0.8,py,pz);g.add(efl);}}
+  /* V18.491.564 — Lab Schnitt-Karte Captions ← KARTENM_GESETZ fail-soft; Host none (KARTENM_VIS). LEHREM/Host bone/spine #cdb38a/LIFT untouched. */
+  const _KCM=(SC&&SC.KARTENM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KARTENM_GESETZ)||null;
+  const KARTENM_TITLE=(_KCM&&Number.isFinite(_KCM.title))?_KCM.title:0xcdb38a;
+  const KARTENM_META=(_KCM&&Number.isFinite(_KCM.meta))?_KCM.meta:0x8c7d6b;
+  const KARTENM_TITLE_CSS='#'+KARTENM_TITLE.toString(16).padStart(6,'0');
+  const KARTENM_META_CSS='#'+KARTENM_META.toString(16).padStart(6,'0');
+  const cap=label('SCHNITT @ forte  ·  '+(P.fuller>0?'Hohlkehle = I-Träger':'voll'),KARTENM_TITLE_CSS,KARTENSC_TITLE);cap.position.set(px,py+ht*2.8+KARTENABST_GAP,pz);g.add(cap);
+  const cap2=label((P.w0*1000|0)+'×'+(P.th0*1000|0)+' mm  ·  '+P.fam,KARTENM_META_CSS,KARTENSC_META);cap2.position.set(px,py-ht*2.8-KARTENABST_GAP,pz);g.add(cap2);
+  /* prior wire — section-card fuller labels → LEHREM_GESETZ (Steg=node · Flansch=bal; ≠ KARTENM). */
+  if(P.fuller>0){
+    const _LHM2=(SC&&SC.LEHREM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LEHREM_GESETZ)||null;
+    const LEHREM_BAL2=(_LHM2&&Number.isFinite(_LHM2.bal))?_LHM2.bal:0x7fc98a;
+    const LEHREM_NODE2=(_LHM2&&Number.isFinite(_LHM2.node))?_LHM2.node:0xff9a3c;
+    const LEHREM_BAL2_CSS='#'+LEHREM_BAL2.toString(16).padStart(6,'0');
+    const LEHREM_NODE2_CSS='#'+LEHREM_NODE2.toString(16).padStart(6,'0');
+    const fl=label('Steg (Hohlkehle)',LEHREM_NODE2_CSS,0.034);fl.position.set(px,py+0.005,pz+0.01);g.add(fl);
+    for(const sx of[-1,1]){const efl=label('Flansch',LEHREM_BAL2_CSS,0.032);efl.position.set(px+sx*hw*0.8,py,pz);g.add(efl);}}
   return g;}
 
 // ════════════════════════════════════════════════════════════════════
@@ -694,7 +991,7 @@ function rebuild(){
   if(P.modus==='bogen'){
     gWeapon=new THREE.Group(); gWeapon.add(buildBogen(P,M.wood)); gWeapon.visible=show.steel; weapon.add(gWeapon);
     gSpine=new THREE.Group();gSection=new THREE.Group();gLehren=new THREE.Group();gMass=new THREE.Group();
-    weapon.position.set(-((P.riserLen||0.13)+2*(P.limbLen||0.6))/2, 0.30, 0);
+    weapon.position.set(-((P.riserLen||0.13)+2*(P.limbLen||0.6))/2, HEBE_Y, 0);   // V18.491.631 wire: Augenhöhe ← HEBE_GESETZ.y (no bump; ≠ LIFT dead)
     renderBogenTafel(P); return;
   }
   const S=stations(P), m=measure(P), res=evalLehren(P);
@@ -716,7 +1013,7 @@ function rebuild(){
   gLehren=buildLehrenOverlay(P,m);gLehren.visible=show.lehren;weapon.add(gLehren);
   gMass=buildMassStrip(P);gMass.visible=show.mass;weapon.add(gMass);
   // — zentrieren & auf Augenhöhe heben —
-  weapon.position.set(-S.L/2,0.30,0);
+  weapon.position.set(-S.L/2,HEBE_Y,0);   // V18.491.631 wire: Augenhöhe ← HEBE_GESETZ.y (no bump; ≠ LIFT dead)
   renderTafel(res,m);
 }
 // — Lehren-Tafel rendern —
@@ -734,19 +1031,37 @@ function renderTafel(res,m){const list=document.getElementById('lrlist');let htm
   list.innerHTML=html;
   document.getElementById('score').innerHTML='<b>'+ok+'</b> / '+tot+' in Toleranz';
   const f=m.f1>0?(' · Grundton ~'+(m.f1|0)+' Hz (flach)'):'';
-  const bf=befund(P,m);const bc=bf.v==='KRIEGSWAFFE'?'#e0664a':(bf.v==='WERKZEUG'?'#7fc98a':'#e8b54a');
+  /* V18.491.566 — Lab Befund Verdict Colors ← BEFUNDM_GESETZ fail-soft; Host none (BEFUNDM_VIS). SPINEM/LEHREM/bogen/reg #8a7a5a/LIFT untouched. */
+  const _BFM=(SC&&SC.BEFUNDM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BEFUNDM_GESETZ)||null;
+  const BEFUNDM_KRIEG=(_BFM&&Number.isFinite(_BFM.krieg))?_BFM.krieg:0xe0664a;
+  const BEFUNDM_WERK=(_BFM&&Number.isFinite(_BFM.werk))?_BFM.werk:0x7fc98a;
+  const BEFUNDM_MID=(_BFM&&Number.isFinite(_BFM.mid))?_BFM.mid:0xe8b54a;
+  const bf=befund(P,m);const bcHex=bf.v==='KRIEGSWAFFE'?BEFUNDM_KRIEG:(bf.v==='WERKZEUG'?BEFUNDM_WERK:BEFUNDM_MID);
+  const bc='#'+bcHex.toString(16).padStart(6,'0');
+  /* V18.491.567 — Lab Befund Reg-Fußzeile ← REGM_GESETZ fail-soft; Host none (REGM_VIS). BEFUNDM/bogen-title/LIFT untouched. */
+  const _RGM=(SC&&SC.REGM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.REGM_GESETZ)||null;
+  const REGM_COLOR=(_RGM&&Number.isFinite(_RGM.color))?_RGM.color:0x8a7a5a;
+  const REGM_CSS='#'+REGM_COLOR.toString(16).padStart(6,'0');
   document.getElementById('intentline').innerHTML=
     '<span style="color:'+bc+';font-weight:700;letter-spacing:.04em">BEFUND · '+bf.v+'</span>'
-    +'<span style="opacity:.65"> — Absicht '+INTENT_LAB[P.intent]+' · '+m.M.toFixed(2)+' kg'+f+'</span>'
-    +'<div style="font-size:9px;color:#8a7a5a;margin-top:4px;line-height:1.45">'+bf.reg.join(' · ')+'</div>';
+    +'<span style="'+LEISEM_CSS+'"> — Absicht '+INTENT_LAB[P.intent]+' · '+m.M.toFixed(2)+' kg'+f+'</span>'
+    +'<div style="font-size:9px;color:'+REGM_CSS+';margin-top:4px;line-height:1.45">'+bf.reg.join(' · ')+'</div>';
 }
 function renderBogenTafel(P){
   // V18.491.165 — Lab Bogen-UI keRefJ ← ARENA.gefuehl fail-soft (Host juice already reads it)
   var _keRefJ=(SC&&SC.ARENA&&SC.ARENA.gefuehl&&Number.isFinite(SC.ARENA.gefuehl.keRefJ))?SC.ARENA.gefuehl.keRefJ:114;
+  /* V18.491.567 — Lab Bogen Reg-Fußzeile ← REGM_GESETZ fail-soft; Host none (REGM_VIS). */
+  const _RGM2=(SC&&SC.REGM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.REGM_GESETZ)||null;
+  const REGM_COLOR2=(_RGM2&&Number.isFinite(_RGM2.color))?_RGM2.color:0x8a7a5a;
+  const REGM_CSS2='#'+REGM_COLOR2.toString(16).padStart(6,'0');
+  /* V18.491.568 — Lab Bogen-Befund Title ← BOGENM_GESETZ fail-soft; Host none (BOGENM_VIS). REGM/BEFUNDM/LIFT untouched. */
+  const _BGM=(SC&&SC.BOGENM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BOGENM_GESETZ)||null;
+  const BOGENM_COLOR=(_BGM&&Number.isFinite(_BGM.color))?_BGM.color:0x8ab4e8;
+  const BOGENM_CSS='#'+BOGENM_COLOR.toString(16).padStart(6,'0');
   document.getElementById('intentline').innerHTML=
-    '<span style="color:#8ab4e8;font-weight:700;letter-spacing:.04em">BEFUND · BOGEN</span>'
-    +'<span style="opacity:.65"> — Zugkraft '+Math.round(P.zugN)+' N · Pfeilenergie '+Math.round(P.energie)+' J</span>'
-    +'<div style="font-size:9px;color:#8a7a5a;margin-top:4px;line-height:1.45">Wurfarm '+((P.limbLen*100)|0)+' cm · Recurve '+(P.recurve||0).toFixed(2)+' · '+(P.bogenMat||'holz')+' · Breite '+((P.wBase*1000)|0)+' mm</div>';
+    '<span style="color:'+BOGENM_CSS+';font-weight:700;letter-spacing:.04em">BEFUND · BOGEN</span>'
+    +'<span style="'+LEISEM_CSS+'"> — Zugkraft '+Math.round(P.zugN)+' N · Pfeilenergie '+Math.round(P.energie)+' J</span>'
+    +'<div style="font-size:9px;color:'+REGM_CSS2+';margin-top:4px;line-height:1.45">Wurfarm '+((P.limbLen*100)|0)+' cm · Recurve '+(P.recurve||0).toFixed(2)+' · '+(P.bogenMat||'holz')+' · Breite '+((P.wBase*1000)|0)+' mm</div>';
   document.getElementById('lrlist').innerHTML=
     '<div class="lr na"><div class="lr-h"><span class="lr-lab">ZUGKRAFT (Ziel)</span><span class="lr-val">'+Math.round(P.zugN)+' N</span></div><div class="lr-hint">Breite des Wurfarms aus Zugkraft ÷ Steifigkeit gewählt</div></div>'
     +'<div class="lr na"><div class="lr-h"><span class="lr-lab">GESPEICHERT → PFEIL</span><span class="lr-val">'+Math.round(P.stored||0)+' → '+Math.round(P.energie)+' J</span></div><div class="lr-hint">½·F·Auszug·Kurve, dann ×η='+((P.eta||0).toFixed(2))+' — echte SI-Joule, gegen '+_keRefJ+' J geeicht</div></div>'
@@ -820,7 +1135,7 @@ function triggerRing(){if(P.modus!=='klinge'||!gBladeMesh)return;const m=measure
   let mx=1e-9;for(let s=0;s<=40;s++){const x=S.xBlade0+s/40*P.klinge;mx=Math.max(mx,Math.abs(modeRaw(x)));}ring.phiMax=mx;
   ring.active=true;ring.t0=clock.getElapsedTime();
   const info=document.getElementById('ring-info');info.style.display='block';
-  document.getElementById('ring-txt').innerHTML='Grundton <b>~'+(m.f1|0)+' Hz</b> (flach) · der <b>Knoten</b> steht still — das ist der Schlagpunkt. <span style="opacity:.6">(verlangsamt dargestellt)</span>';}
+  document.getElementById('ring-txt').innerHTML='Grundton <b>~'+(m.f1|0)+' Hz</b> (flach) · der <b>Knoten</b> steht still — das ist der Schlagpunkt. <span style="'+MUTEM_CSS+'">(verlangsamt dargestellt)</span>';}
 
 // ════════════════════════════════════════════════════════════════════
 // PRÜFSTAND — EGO, ANATOMISCH GEFÜHRT.
@@ -1209,7 +1524,7 @@ function buildBamboo(pos){const g=new THREE.Group();g.position.copy(pos);
   arena.bamboo=[];const N=BAMBUS_N;
   for(let i=0;i<N;i++){const px=(i-(N-1)/2)*BAMBUS_GAP, h=BAMBUS_HBASE+(i%2)*BAMBUS_HALT;
     const holder=new THREE.Mesh(new THREE.CylinderGeometry(FASSUNG_RTOP,FASSUNG_RBOT,FASSUNG_H,FASSUNG_SEGS),matCol(SOCKELM_FASSUNG,SOCKELM_ROUGH,0));holder.position.set(px,FASSUNG_Y,0);g.add(holder);
-    const pole=makeBamboo(h);pole.position.set(px,0.16,0);g.add(pole);
+    const pole=makeBamboo(h);pole.position.set(px,SOCKEL_H,0);g.add(pole);   // V18.491.609 wire: Halm steht auf Sockel-Oberkante ← SOCKEL_GESETZ.H (no bump; ≠ SCHWELLE.H coincidence)
     arena.bamboo.push({mesh:pole,wx:pos.x+px,wz:pos.z,baseY:pos.y+0.16,h,cut:false,wobble:0});}
   return g;}
 /* V18.491.261 — Lab striking wand height ← WAND_GESETZ fail-soft; Host none (WAND_VIS). ≠ BANNER.H; LIFT untouched. */
@@ -1452,10 +1767,25 @@ function buildArmoredDummy(pos){const g=new THREE.Group();g.position.copy(pos);g
   arena.armored={grp:g,torso,mat:steel,flash:0,spark:0,hitCD:0,dent:0,breach:0,deflect:0};
   return g;}
 function updateArmored(dt){const A=arena.armored;if(!A)return;
+  /* V18.491.556 — Lab Panzer-Blitz RGB ← BLITZM_GESETZ fail-soft; Host none (BLITZM_VIS). LEBENM/PIPM/HARNISCHM/gambeson-flash/tel/LIFT untouched. */
+  const _BLM=(SC&&SC.BLITZM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BLITZM_GESETZ)||null;
+  const BLITZM_R0=(_BLM&&Number.isFinite(_BLM.r0))?_BLM.r0:0.57;
+  const BLITZM_G0=(_BLM&&Number.isFinite(_BLM.g0))?_BLM.g0:0.60;
+  const BLITZM_B0=(_BLM&&Number.isFinite(_BLM.b0))?_BLM.b0:0.63;
+  const BLITZM_FR=(_BLM&&Number.isFinite(_BLM.fr))?_BLM.fr:0.45;
+  const BLITZM_FG=(_BLM&&Number.isFinite(_BLM.fg))?_BLM.fg:0.40;
+  const BLITZM_FB=(_BLM&&Number.isFinite(_BLM.fb))?_BLM.fb:0.18;
+  const BLITZM_SR=(_BLM&&Number.isFinite(_BLM.sr))?_BLM.sr:0.5;
+  const BLITZM_SG=(_BLM&&Number.isFinite(_BLM.sg))?_BLM.sg:-0.20;
+  const BLITZM_SB=(_BLM&&Number.isFinite(_BLM.sb))?_BLM.sb:-0.22;
+  /* V18.491.561 — Lab Blitz/Funke Abklingen ← ABKLINGM_GESETZ fail-soft; Host none (ABKLINGM_VIS). TELM/BLITZM RGB/STECHF ring-decay/LIFT untouched. */
+  const _AKM=(SC&&SC.ABKLINGM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.ABKLINGM_GESETZ)||null;
+  const ABKLINGM_FLASH=(_AKM&&Number.isFinite(_AKM.flash))?_AKM.flash:3.2;
+  const ABKLINGM_SPARK=(_AKM&&Number.isFinite(_AKM.spark))?_AKM.spark:4.5;
   if(A.hitCD>0)A.hitCD-=dt;
-  if(A.flash>0)A.flash=Math.max(0,A.flash-dt*3.2);
-  if(A.spark>0)A.spark=Math.max(0,A.spark-dt*4.5);
-  const c=A.mat&&A.mat.color;if(c&&c.setRGB){const f=A.flash,sp=A.spark;c.setRGB(0.57+0.45*f+0.5*sp,0.60+0.40*f-0.20*sp,0.63+0.18*f-0.22*sp);}   // Blitz gold (Treffer), Funke rot (abgeglitten)
+  if(A.flash>0)A.flash=Math.max(0,A.flash-dt*ABKLINGM_FLASH);
+  if(A.spark>0)A.spark=Math.max(0,A.spark-dt*ABKLINGM_SPARK);
+  const c=A.mat&&A.mat.color;if(c&&c.setRGB){const f=A.flash,sp=A.spark;c.setRGB(BLITZM_R0+BLITZM_FR*f+BLITZM_SR*sp,BLITZM_G0+BLITZM_FG*f+BLITZM_SG*sp,BLITZM_B0+BLITZM_FB*f+BLITZM_SB*sp);}   // Blitz gold (Treffer), Funke rot (abgeglitten)
 }
 function tryHitArmored(handW,bladeDir,vel){const A=arena.armored;if(!A||A.hitCD>HARNISCH_HITCD)return false;
   A.grp.updateMatrixWorld(true);const bw=A.torso.getWorldPosition(new THREE.Vector3());let hit=false,hitPt=null;
@@ -1466,12 +1796,12 @@ function tryHitArmored(handW,bladeDir,vel){const A=arena.armored;if(!A||A.hitCD>
   const thrust=vAx>vLat*0.9,sharp=(mm.edgeWinkel!=null&&mm.edgeWinkel<32),pointy=(mm.betaDeg!=null&&mm.betaDeg<30);
   const mEff=Math.max(0.02,(mm.mEffFrac||0.2)*M);
   if(thrust){
-    if(pointy){const KE=0.5*mEff*vAx*vAx;A.breach++;A.flash=1;if(hitPt)dentArmor(hitPt,0.022);popText('➤ in die Harnisch-Fuge gestochen — '+KE.toFixed(0)+' J','#8fe39a',0,-0.04);fx.shake=Math.max(fx.shake,0.10);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.30;}
-    else{A.spark=1;A.deflect++;popText('✗ am Plattenrand abgewiesen — kein spitzer Ort','#d96a4a',0,0);bladeRecoil(0.70);}
+    if(pointy){const KE=0.5*mEff*vAx*vAx;A.breach++;A.flash=1;if(hitPt)dentArmor(hitPt,0.022);popText('➤ in die Harnisch-Fuge gestochen — '+KE.toFixed(0)+' J',FUGEM_CSS,0,-0.04);fx.shake=Math.max(fx.shake,0.10);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.30;}
+    else{A.spark=1;A.deflect++;popText('✗ am Plattenrand abgewiesen — kein spitzer Ort',TREFFM_BAD_CSS,0,0);bladeRecoil(0.70);}
   }else if(sharp){
-    A.spark=1;A.deflect++;popText('✗ vom Harnisch abgeglitten — Schnitt prallt von der Platte','#d96a4a',0,0);bladeRecoil(0.85);
+    A.spark=1;A.deflect++;popText('✗ vom Harnisch abgeglitten — Schnitt prallt von der Platte',TREFFM_BAD_CSS,0,0);bladeRecoil(0.85);
   }else{
-    const KE=0.5*mEff*vLat*vLat,mom=M*vLat;A.dent++;   // Energie: mEff · Impuls/Beule: volle MasseA.flash=1;if(hitPt)dentArmor(hitPt,clamp(mom*0.006,0.025,0.07));popText('✹ Wucht durch den Harnisch — '+KE.toFixed(0)+' J Erschütterung','#ffd24a',0,-0.04);
+    const KE=0.5*mEff*vLat*vLat,mom=M*vLat;A.dent++;   // Energie: mEff · Impuls/Beule: volle MasseA.flash=1;if(hitPt)dentArmor(hitPt,clamp(mom*0.006,0.025,0.07));popText('✹ Wucht durch den Harnisch — '+KE.toFixed(0)+' J Erschütterung',WUCHTM_CSS,0,-0.04);
     fx.shake=Math.max(fx.shake,0.16+clamp(mom*0.02,0,0.20));fx.freeze=Math.max(fx.freeze,0.08);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-1.1);arena.cooldown=0.32;
   }
   return true;}
@@ -1546,8 +1876,8 @@ function tryHitSpringPell(handW,bladeDir,vel){const P=arena.springPell;if(!P||P.
   if(!hit)return false;
   const ms=wMass();P.vx+=clamp(vel.x,-9,9)*0.32*ms;P.vz+=clamp(vel.z,-9,9)*0.32*ms;P.hitCD=0.14;
   const sp=Math.hypot(vel.x,vel.z)*ms;
-  if(sp>2.5){P.combo++;P.lastHitT=clock.getElapsedTime();popText('Treffer'+(P.combo>1?' x'+P.combo:'')+' — Pfahl federt zurueck','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.035);arena.cooldown=0.12;}
-  else{popText('zu zaghaft','#d4a843',0,0);bladeRecoil(0.4);}
+  if(sp>2.5){P.combo++;P.lastHitT=clock.getElapsedTime();popText('Treffer'+(P.combo>1?' x'+P.combo:'')+' — Pfahl federt zurueck',TREFFM_OK_CSS,0,-0.04);fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.035);arena.cooldown=0.12;}
+  else{popText('zu zaghaft',WARNM_CSS,0,0);bladeRecoil(0.4);}
   return true;}
 
 /* V18.491.273 — Lab sequence arc ← FOLGE_GESETZ fail-soft; Host none (FOLGE_VIS). HARNISCH/FEDER/LIFT untouched. */
@@ -1601,8 +1931,8 @@ function tryHitSequence(handW,bladeDir,vel){const S=arena.sequence;if(!S||S.hitC
   for(let pi=0;pi<S.pads.length;pi++){const p=S.pads[pi];let hit=false;
     for(let i=0;i<=5;i++){const pp=e0+(i/5)*eLen,pt=handW.clone().addScaledVector(bladeDir,pp);if(Math.hypot(pt.x-p.wx,pt.z-p.wz)<0.30&&Math.abs(pt.y-p.wy)<0.32){hit=true;break;}}
     if(!hit)continue;
-    if(p.lit){p.lit=false;let nx;do{nx=Math.floor(Math.random()*S.pads.length);}while(nx===pi);S.pads[nx].lit=true;S.active=nx;S.combo++;S.lastT=clock.getElapsedTime();popText('Folge '+S.combo+(S.combo>S.best&&S.combo>2?' — Bestwert!':''),'#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.03);arena.cooldown=0.18;}
-    else{popText('falsches Ziel — Folge bricht','#d96a4a',0,0);if(S.combo>S.best)S.best=S.combo;S.combo=0;arena.cooldown=0.2;}
+    if(p.lit){p.lit=false;let nx;do{nx=Math.floor(Math.random()*S.pads.length);}while(nx===pi);S.pads[nx].lit=true;S.active=nx;S.combo++;S.lastT=clock.getElapsedTime();popText('Folge '+S.combo+(S.combo>S.best&&S.combo>2?' — Bestwert!':''),TREFFM_OK_CSS,0,-0.04);fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.03);arena.cooldown=0.18;}
+    else{popText('falsches Ziel — Folge bricht',TREFFM_BAD_CSS,0,0);if(S.combo>S.best)S.best=S.combo;S.combo=0;arena.cooldown=0.2;}
     S.hitCD=0.2;return true;}
   return false;}
 
@@ -1751,12 +2081,16 @@ function buildKnightBody(armored,tabardHex,crestHex,maxHp){const g=new THREE.Gro
   for(const sx of [-SCHENKEL_XOFF,SCHENKEL_XOFF]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(SCHENKEL_R0,SCHENKEL_R1,SCHENKEL_H,10),body);leg.position.set(sx,SCHENKEL_Y,0);leg.castShadow=true;g.add(leg);}
   const torso=new THREE.Mesh(new THREE.CylinderGeometry(armored?LEIB_R0A:LEIB_R0B,LEIB_R1,LEIB_H,22,9),body);torso.position.y=LEIB_Y;torso.scale.z=LEIB_SCALEZ;torso.castShadow=true;g.add(torso);
   if(armored){const ridge=new THREE.Mesh(new THREE.BoxGeometry(RIPPE_W,RIPPE_H,RIPPE_D),dark);ridge.position.set(0,RIPPE_Y,RIPPE_Z);g.add(ridge);}
-  const surcoat=new THREE.Mesh(new THREE.CylinderGeometry(KOTTE_R0,KOTTE_R1,armored?KOTTE_HA:KOTTE_HB,18),matCol(tabardHex,0.7,0));surcoat.position.y=armored?KOTTE_YA:KOTTE_YB;surcoat.scale.z=KOTTE_SCALEZ;g.add(surcoat);
+  /* V18.491.557 — Lab Ritter Kotte/Busch Rough ← KOTTEM_GESETZ fail-soft; Host none (KOTTEM_VIS). BLITZM/KOTTE/BUSCH geo/RITTERM/TUCHM/LIFT untouched; tabardHex/crestHex stay caller. */
+  const _KTM=(SC&&SC.KOTTEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KOTTEM_GESETZ)||null;
+  const KOTTEM_SURCOATR=(_KTM&&Number.isFinite(_KTM.surcoatR))?_KTM.surcoatR:0.7;
+  const KOTTEM_CRESTR=(_KTM&&Number.isFinite(_KTM.crestR))?_KTM.crestR:0.6;
+  const surcoat=new THREE.Mesh(new THREE.CylinderGeometry(KOTTE_R0,KOTTE_R1,armored?KOTTE_HA:KOTTE_HB,18),matCol(tabardHex,KOTTEM_SURCOATR,0));surcoat.position.y=armored?KOTTE_YA:KOTTE_YB;surcoat.scale.z=KOTTE_SCALEZ;g.add(surcoat);
   if(armored)for(const sx of [-ACHSEL_XOFF,ACHSEL_XOFF]){const pa=new THREE.Mesh(new THREE.SphereGeometry(ACHSEL_R,12,10),body);pa.position.set(sx,ACHSEL_Y,0);pa.scale.set(1,ACHSEL_SCALEY,ACHSEL_SCALEZ);g.add(pa);}
   const neck=new THREE.Mesh(new THREE.CylinderGeometry(NACKEN_R0,NACKEN_R1,NACKEN_H,10),dark);neck.position.y=NACKEN_Y;g.add(neck);
   if(armored){const helm=new THREE.Mesh(new THREE.SphereGeometry(HAUBE_R,14,12),body);helm.position.y=HAUBE_Y;helm.scale.set(1,HAUBE_SCALEY,HAUBE_SCALEZ);helm.castShadow=true;g.add(helm);
     const visor=new THREE.Mesh(new THREE.BoxGeometry(BLEND_W,BLEND_H,BLEND_D),dark);visor.position.set(0,BLEND_Y,BLEND_Z);g.add(visor);
-    const crest=new THREE.Mesh(new THREE.BoxGeometry(BUSCH_W,BUSCH_H,BUSCH_D),matCol(crestHex,0.6,0));crest.position.set(0,BUSCH_Y,0);g.add(crest);}
+    const crest=new THREE.Mesh(new THREE.BoxGeometry(BUSCH_W,BUSCH_H,BUSCH_D),matCol(crestHex,KOTTEM_CRESTR,0));crest.position.set(0,BUSCH_Y,0);g.add(crest);}
   else{
     /* V18.491.521 — Lab Ritter Kopf/Kapuze Mats ← SCHAEDELM_GESETZ fail-soft; Host none (SCHAEDELM_VIS). RITTERM/HARNISCHM/SCHAEDEL/KAPUZE geo/sword/pip/LIFT untouched. */
     const _SDM=(SC&&SC.SCHAEDELM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SCHAEDELM_GESETZ)||null;
@@ -1849,19 +2183,59 @@ function knightFieldReset(F){const ctr=F.center;
   for(const K of F.knights){K.grp.position.set(K.home.x-ctr.x,0,K.home.z-ctr.z);K.grp.rotation.set(0,0,0);K.state='dormant';K.hp=K.maxHp;K.windT=0;K.actCD=0;K.stagT=0;K._lunge=0;K._dealt=false;if(K.arm)K.arm.rotation.x=0;}
   F.active=false;F.won=false;F.deckung=3;}
 
-function updateKnights(dt){if(!arena.knightArenas)return;arena._nearKnightField=null;
+function updateKnights(dt){
+  /* V18.491.555 — Lab Ritter HP-Pip Zustandsfarben ← LEBENM_GESETZ fail-soft; Host none (LEBENM_VIS). NARBM/PIPM/DOJOM/LIFT untouched. */
+  const _LVM=(SC&&SC.LEBENM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LEBENM_GESETZ)||null;
+  const LEBENM_LOST=(_LVM&&Number.isFinite(_LVM.lost))?_LVM.lost:0x3a1a1a;
+  const LEBENM_CRIT=(_LVM&&Number.isFinite(_LVM.crit))?_LVM.crit:0xff4040;
+  const LEBENM_WARN=(_LVM&&Number.isFinite(_LVM.warn))?_LVM.warn:0xe0a040;
+  const LEBENM_OK=(_LVM&&Number.isFinite(_LVM.ok))?_LVM.ok:0x40e060;
+  /* V18.491.556 — Lab Panzer-Blitz RGB ← BLITZM_GESETZ fail-soft (ritter armored path); Host none (BLITZM_VIS). gambeson-flash/tel left bare. */
+  const _BLM=(SC&&SC.BLITZM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BLITZM_GESETZ)||null;
+  const BLITZM_R0=(_BLM&&Number.isFinite(_BLM.r0))?_BLM.r0:0.57;
+  const BLITZM_G0=(_BLM&&Number.isFinite(_BLM.g0))?_BLM.g0:0.60;
+  const BLITZM_B0=(_BLM&&Number.isFinite(_BLM.b0))?_BLM.b0:0.63;
+  const BLITZM_FR=(_BLM&&Number.isFinite(_BLM.fr))?_BLM.fr:0.45;
+  const BLITZM_FG=(_BLM&&Number.isFinite(_BLM.fg))?_BLM.fg:0.40;
+  const BLITZM_FB=(_BLM&&Number.isFinite(_BLM.fb))?_BLM.fb:0.18;
+  const BLITZM_SR=(_BLM&&Number.isFinite(_BLM.sr))?_BLM.sr:0.5;
+  const BLITZM_SG=(_BLM&&Number.isFinite(_BLM.sg))?_BLM.sg:-0.20;
+  const BLITZM_SB=(_BLM&&Number.isFinite(_BLM.sb))?_BLM.sb:-0.22;
+  /* V18.491.559 — Lab Gambeson/Wams Flash RGB ← WAMSM_GESETZ fail-soft; Host none (WAMSM_VIS). STECHF/BLITZM/tel/LIFT untouched. */
+  const _WMM=(SC&&SC.WAMSM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.WAMSM_GESETZ)||null;
+  const WAMSM_R0=(_WMM&&Number.isFinite(_WMM.r0))?_WMM.r0:0.42;
+  const WAMSM_G0=(_WMM&&Number.isFinite(_WMM.g0))?_WMM.g0:0.345;
+  const WAMSM_B0=(_WMM&&Number.isFinite(_WMM.b0))?_WMM.b0:0.25;
+  const WAMSM_FR=(_WMM&&Number.isFinite(_WMM.fr))?_WMM.fr:0.50;
+  const WAMSM_FG=(_WMM&&Number.isFinite(_WMM.fg))?_WMM.fg:-0.10;
+  const WAMSM_FB=(_WMM&&Number.isFinite(_WMM.fb))?_WMM.fb:-0.10;
+  /* V18.491.560 — Lab Ritter Telegraph ← TELM_GESETZ fail-soft; Host none (TELM_VIS). WAMSM/BLITZM/STECHF/LIFT untouched. */
+  const _TLM=(SC&&SC.TELM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TELM_GESETZ)||null;
+  const TELM_AMP=(_TLM&&Number.isFinite(_TLM.amp))?_TLM.amp:0.5;
+  const TELM_FREQ=(_TLM&&Number.isFinite(_TLM.freq))?_TLM.freq:16;
+  const TELM_BIAS=(_TLM&&Number.isFinite(_TLM.bias))?_TLM.bias:0.5;
+  const TELM_AR=(_TLM&&Number.isFinite(_TLM.ar))?_TLM.ar:0.40;
+  const TELM_AG=(_TLM&&Number.isFinite(_TLM.ag))?_TLM.ag:0.10;
+  const TELM_AB=(_TLM&&Number.isFinite(_TLM.ab))?_TLM.ab:-0.18;
+  const TELM_GR=(_TLM&&Number.isFinite(_TLM.gr))?_TLM.gr:0.28;
+  const TELM_GG=(_TLM&&Number.isFinite(_TLM.gg))?_TLM.gg:0.10;
+  /* V18.491.561 — Lab Blitz/Funke Abklingen ← ABKLINGM_GESETZ fail-soft (ritter path); Host none (ABKLINGM_VIS). */
+  const _AKM=(SC&&SC.ABKLINGM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.ABKLINGM_GESETZ)||null;
+  const ABKLINGM_FLASH=(_AKM&&Number.isFinite(_AKM.flash))?_AKM.flash:3.2;
+  const ABKLINGM_SPARK=(_AKM&&Number.isFinite(_AKM.spark))?_AKM.spark:4.5;
+  if(!arena.knightArenas)return;arena._nearKnightField=null;
   for(const F of arena.knightArenas){
     const pdx=arena.player.x-F.center.x,pdz=arena.player.z-F.center.z,pDist=Math.hypot(pdx,pdz);
-    if(!F.active){if(pDist<5.5){arena._nearKnightField=F;if(!F._nearShown){F._nearShown=true;popText('drücke [E] — '+(F.armored?'die Ritter herausfordern':'die Kämpfer herausfordern'),'#cfe0a0',0,-0.16);}}else F._nearShown=false;}
+    if(!F.active){if(pDist<5.5){arena._nearKnightField=F;if(!F._nearShown){F._nearShown=true;popText('drücke [E] — '+(F.armored?'die Ritter herausfordern':'die Kämpfer herausfordern'),INVITEM_CSS,0,-0.16);}}else F._nearShown=false;}
     if(F.won&&pDist>10){knightFieldReset(F);continue;}
     for(const K of F.knights){
       const showPips=F.active&&K.state!=='down';
-      for(let i=0;i<K.pips.length;i++){K.pips[i].visible=showPips;if(showPips){const lost=i>=K.hp;K.pips[i].material.color.setHex(lost?0x3a1a1a:(K.hp===1?0xff4040:K.hp===2&&K.maxHp>2?0xe0a040:0x40e060));}}
+      for(let i=0;i<K.pips.length;i++){K.pips[i].visible=showPips;if(showPips){const lost=i>=K.hp;K.pips[i].material.color.setHex(lost?LEBENM_LOST:(K.hp===1?LEBENM_CRIT:K.hp===2&&K.maxHp>2?LEBENM_WARN:LEBENM_OK));}}
       if(K.state==='down'){if(K.downT>0)K.downT-=dt;continue;}
-      if(K.actCD>0)K.actCD-=dt; if(K.flash>0)K.flash=Math.max(0,K.flash-dt*3.2); if(K.spark>0)K.spark=Math.max(0,K.spark-dt*4.5);
-      const c=K.bodyMat.color,tel=(K.state==='wind')?(0.5*Math.sin(clock.getElapsedTime()*16)+0.5):0;
-      if(c&&c.setRGB){if(K.armored)c.setRGB(0.57+0.45*K.flash+0.5*K.spark+0.40*tel,0.60+0.40*K.flash-0.20*K.spark+0.10*tel,0.63+0.18*K.flash-0.22*K.spark-0.18*tel);
-        else c.setRGB(0.42+0.50*K.flash+0.28*tel,0.345-0.10*K.flash+0.10*tel,0.25-0.10*K.flash);}
+      if(K.actCD>0)K.actCD-=dt; if(K.flash>0)K.flash=Math.max(0,K.flash-dt*ABKLINGM_FLASH); if(K.spark>0)K.spark=Math.max(0,K.spark-dt*ABKLINGM_SPARK);
+      const c=K.bodyMat.color,tel=(K.state==='wind')?(TELM_AMP*Math.sin(clock.getElapsedTime()*TELM_FREQ)+TELM_BIAS):0;
+      if(c&&c.setRGB){if(K.armored)c.setRGB(BLITZM_R0+BLITZM_FR*K.flash+BLITZM_SR*K.spark+TELM_AR*tel,BLITZM_G0+BLITZM_FG*K.flash+BLITZM_SG*K.spark+TELM_AG*tel,BLITZM_B0+BLITZM_FB*K.flash+BLITZM_SB*K.spark+TELM_AB*tel);
+        else c.setRGB(WAMSM_R0+WAMSM_FR*K.flash+TELM_GR*tel,WAMSM_G0+WAMSM_FG*K.flash+TELM_GG*tel,WAMSM_B0+WAMSM_FB*K.flash);}
       if(!F.active)continue;
       const kw=K.grp.position,dx=arena.player.x-(F.center.x+kw.x),dz=arena.player.z-(F.center.z+kw.z),dist=Math.hypot(dx,dz)||1e-4;
       K.grp.rotation.y=Math.atan2(dx,dz);
@@ -1879,14 +2253,14 @@ function updateKnights(dt){if(!arena.knightArenas)return;arena._nearKnightField=
         if(u>=0.5&&!K._dealt){K._dealt=true;
           if(dist<2.45){F.deckung=Math.max(0,F.deckung-1);
             fx.shake=Math.max(fx.shake,0.40);fx.freeze=Math.max(fx.freeze,0.10);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-2.4);fx.kickV.y-=1.0;
-            if(F.deckung>0){popText('✖ HIEB DURCH DEINE DECKUNG','#ff6a4a',0,0);popText('Deckung '+F.deckung+'/3','#ffae6a',0.12,0.07);}
-            else{popText('✖ DEINE DECKUNG ZERBRICHT','#ff5a4a',0,0);knightFieldReset(F);}}
-          else popText('— Hieb verfehlt, ausgewichen','#9fb3c8',0,-0.04);}
+            if(F.deckung>0){popText('✖ HIEB DURCH DEINE DECKUNG',GEFAHRM_CSS,0,0);popText('Deckung '+F.deckung+'/3',DECKM_CSS,0.12,0.07);}
+            else{popText('✖ DEINE DECKUNG ZERBRICHT',BRUCHM_CSS,0,0);knightFieldReset(F);}}
+          else popText('— Hieb verfehlt, ausgewichen',NEUTM_CSS,0,-0.04);}
         if(K._lunge>=0.28){K.state='approach';K.actCD=0.60;K._dealt=false;if(K.arm)K.arm.rotation.x=0;}
       }
     }
     if(F.active&&!F.won){let down=0;for(const K of F.knights)if(K.state==='down')down++;
-      if(down>=F.knights.length){F.won=true;popText('⚔ '+(F.armored?'ALLE RITTER GEFALLEN':'DAS FELD IST GERÄUMT')+' — verlasse den Ring','#7fe0a0',0,-0.06);}}
+      if(down>=F.knights.length){F.won=true;popText('⚔ '+(F.armored?'ALLE RITTER GEFALLEN':'DAS FELD IST GERÄUMT')+' — verlasse den Ring',SIEGM_CSS,0,-0.06);}}
   }
 }
 
@@ -1909,23 +2283,24 @@ function tryHitKnight(handW,bladeDir,vel){if(!arena.knightArenas)return false;
   const vAx=Math.abs(vel.dot(bladeDir)),vLat=vel.clone().addScaledVector(bladeDir,-vel.dot(bladeDir)).length();
   const thrust=vAx>vLat*0.9,sharp=(mm.edgeWinkel!=null&&mm.edgeWinkel<32),pointy=(mm.betaDeg!=null&&mm.betaDeg<42),mEff=Math.max(0.02,(mm.mEffFrac||0.2)*M);
   const mom=M*Math.max(vAx,vLat);                                                            // Stoß-Impuls → Rückstoß
-  let dmg=0,msg='',col='#d96a4a';
+  /* V18.491.591 WIRE — Lab knight-hit default col ← TREFFM_GESETZ.bad (same reject/fail bad as TREFFM_BAD_CSS; used when Platte abweist without overwrite; no new twin; VERSION stays .590). ≠ GEFAHRM · ≠ SPEKOM meter; LIFT untouched. */
+  let dmg=0,msg='',col=TREFFM_BAD_CSS;
   if(F.armored){
-    if(thrust&&bestHead&&mm.betaDeg!=null){const KE=0.5*mEff*vAx*vAx;dmg=2;msg='➤ Stich in den Augenschlitz! — '+KE.toFixed(0)+' J';col='#9fe0a0';}   // GEMESSEN: Streitkolben/Kriegshammer betaDeg=null — ein Wuchtkopf passt in keinen Schlitz
-    else if(thrust&&pointy){const KE=0.5*mEff*vAx*vAx;dmg=1;msg='➤ Stich in die Fuge (Achsel/Leiste) — '+KE.toFixed(0)+' J';col='#8fe39a';}
-    else if(!thrust&&!sharp){const KE=0.5*mEff*vLat*vLat;dmg=1;msg='✹ Wucht durch den Harnisch — '+KE.toFixed(0)+' J';col='#ffd24a';}   // Energie am Kopf: mEff; Impuls (mom) trägt weiter die volle Masse
+    if(thrust&&bestHead&&mm.betaDeg!=null){const KE=0.5*mEff*vAx*vAx;dmg=2;msg='➤ Stich in den Augenschlitz! — '+KE.toFixed(0)+' J';col=STICHM_CSS;}   // GEMESSEN: Streitkolben/Kriegshammer betaDeg=null — ein Wuchtkopf passt in keinen Schlitz
+    else if(thrust&&pointy){const KE=0.5*mEff*vAx*vAx;dmg=1;msg='➤ Stich in die Fuge (Achsel/Leiste) — '+KE.toFixed(0)+' J';col=FUGEM_CSS;}
+    else if(!thrust&&!sharp){const KE=0.5*mEff*vLat*vLat;dmg=1;msg='✹ Wucht durch den Harnisch — '+KE.toFixed(0)+' J';col=WUCHTM_CSS;}   // Energie am Kopf: mEff; Impuls (mom) trägt weiter die volle Masse
     else if(thrust){K.spark=1;msg='✗ am Plattenrand abgewiesen — kein spitzer Ort';bladeRecoil(0.70);}
     else{K.spark=1;msg='✗ Schnitt prallt von der Platte ab';bladeRecoil(0.85);}
   } else {
-    if(thrust){const KE=0.5*mEff*vAx*vAx;dmg=bestHead?2:1;msg=bestHead?'➤ Stich in die Kehle! — '+KE.toFixed(0)+' J':'➤ Stich trifft — '+KE.toFixed(0)+' J';col='#9fe0a0';}
-    else if(sharp){const edgeQ=clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1),KE=0.5*mEff*vLat*vLat*(0.25+0.75*edgeQ);dmg=bestHead?2:1;msg=(bestHead?'⚔ Schnitt zum Kopf — ':'⚔ Schnitt trifft tief — ')+KE.toFixed(0)+' J'+(edgeQ<=0.75?' · Schneide quer':'');col='#9fe0a0';}
-    else{const KE=0.5*mEff*vLat*vLat;dmg=1;msg='✹ Schlag trifft — '+KE.toFixed(0)+' J';col='#ffd24a';}
+    if(thrust){const KE=0.5*mEff*vAx*vAx;dmg=bestHead?2:1;msg=bestHead?'➤ Stich in die Kehle! — '+KE.toFixed(0)+' J':'➤ Stich trifft — '+KE.toFixed(0)+' J';col=STICHM_CSS;}
+    else if(sharp){const edgeQ=clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1),KE=0.5*mEff*vLat*vLat*(0.25+0.75*edgeQ);dmg=bestHead?2:1;msg=(bestHead?'⚔ Schnitt zum Kopf — ':'⚔ Schnitt trifft tief — ')+KE.toFixed(0)+' J'+(edgeQ<=0.75?' · Schneide quer':'');col=STICHM_CSS;}
+    else{const KE=0.5*mEff*vLat*vLat;dmg=1;msg='✹ Schlag trifft — '+KE.toFixed(0)+' J';col=WUCHTM_CSS;}
   }
   if(dmg>0){K.flash=1;if(bestPt&&F.armored)dentArmorKnight(K,bestPt,bestHead?0.018:clamp(M*vLat*0.006,0.022,0.07));
     K.knockSpeed=clamp(mom*0.16,0.9,4.5);K.stagT=clamp(0.40+mom*0.018,0.45,0.9);                  // variabler Rückstoß
     if(K.state==='wind'||K.state==='strike'){if(K.arm)K.arm.rotation.x=0;}K.state='stagger';K._dealt=false;
     K.hp-=dmg;fx.shake=Math.max(fx.shake,0.10);fx.freeze=Math.max(fx.freeze,0.05);arena.cooldown=0.28;
-    if(K.hp<=0){K.state='down';K.downT=600;K.grp.rotation.x=Math.PI*0.42;K.grp.position.y=0.10;msg+=(F.armored?' — RITTER FÄLLT':' — GESTRECKT');col='#7fe0a0';}
+    if(K.hp<=0){K.state='down';K.downT=600;K.grp.rotation.x=Math.PI*0.42;K.grp.position.y=0.10;msg+=(F.armored?' — RITTER FÄLLT':' — GESTRECKT');col=SIEGM_CSS;}
     popText(msg,col,0,-0.04);}
   else popText(msg,col,0,0);
   return true;}
@@ -2021,18 +2396,18 @@ function updateCharger(dt){const C=arena.charger;if(!C)return;
   const dx=arena.player.x-dummyW.x,dz=arena.player.z-dummyW.z,dist=Math.hypot(dx,dz)||1e-4;
   if(C.hitCD>0)C.hitCD-=dt;
   const near=(C.state==='dormant'&&dist<STREIT_NEARR);arena._nearCharger=near;
-  if(near&&!C._wasNear)popText('drücke [E] — Streitpuppe wecken','#cfe0a0',0,-0.16);C._wasNear=(dist<8);
+  if(near&&!C._wasNear)popText('drücke [E] — Streitpuppe wecken',INVITEM_CSS,0,-0.16);C._wasNear=(dist<8);
   if(C.flag)C.flag.visible=(C.state==='dormant');
   if(C.state==='dormant'){C.sled.rotation.y=Math.atan2(dx,dz);}                                  // wartet, schaut dich an
   else if(C.state==='charge'){const step=C.speed*dt;C.sled.position.x+=(dx/dist)*step;C.sled.position.z+=(dz/dist)*step;C.sled.rotation.y=Math.atan2(dx,dz);
-    if(dist<STREIT_HITR&&C.hitCD<=0){fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DIE STREITPUPPE RAMMT DICH','#ff6a4a',0,0);popText('rechtzeitig treffen!','#d96a4a',0.12,0.07);C.state='retreat';C.hitCD=1.0;}}
+    if(dist<STREIT_HITR&&C.hitCD<=0){fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DIE STREITPUPPE RAMMT DICH',GEFAHRM_CSS,0,0);popText('rechtzeitig treffen!',TREFFM_BAD_CSS,0.12,0.07);C.state='retreat';C.hitCD=1.0;}}
   else if(C.state==='retreat'){const hx=-C.sled.position.x,hz=-C.sled.position.z,hd=Math.hypot(hx,hz);
     if(hd<0.25){C.sled.position.set(0,0,0);C.sled.rotation.y=0;C.state='dormant';C._wasNear=true;}else{const step=C.speed*1.5*dt;C.sled.position.x+=(hx/hd)*step;C.sled.position.z+=(hz/hd)*step;}}
   if(C.wob>0.001){C.wob*=Math.pow(0.015,dt);C.sled.rotation.z=Math.sin(clock.getElapsedTime()*26)*C.wob;}else C.sled.rotation.z=0;}
 function tryArrowCharger(a){const C=arena.charger;if(!C||C.state==='retreat')return false;
   C.grp.updateMatrixWorld(true);const dummyW=C.sled.getWorldPosition(new THREE.Vector3());
   if(Math.hypot(a.pos.x-dummyW.x,a.pos.z-dummyW.z)<0.5&&a.pos.y>0.6&&a.pos.y<2.1){
-    C.wob=0.55;C.state='retreat';C.hitCD=0.8;fx.shake=Math.max(fx.shake,0.1);popText('Pfeil stoppt die Streitpuppe!','#6fcf73',0,0);popText('+15','#6fcf73',0.12,0.06);
+    C.wob=0.55;C.state='retreat';C.hitCD=0.8;fx.shake=Math.max(fx.shake,0.1);popText('Pfeil stoppt die Streitpuppe!',TREFFM_OK_CSS,0,0);popText('+15',TREFFM_OK_CSS,0.12,0.06);
     arena.score.shots++;arena.score.sum+=15;arena.score.last={ring:15,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
   return false;}
 function tryHitCharger(handW,bladeDir,vel){const C=arena.charger;if(!C||C.state!=='charge'||C.hitCD>0.4)return false;
@@ -2042,9 +2417,9 @@ function tryHitCharger(handW,bladeDir,vel){const C=arena.charger;if(!C||C.state!
   if(!hit)return false;
   const ms=wMass(),sp=vel.length()*ms;C.wob=0.45*Math.min(1.5,ms);C.hitCD=0.5;
   const _dist=Math.hypot(dummyW.x-arena.player.x,dummyW.z-arena.player.z),_reach=Math.max(0.3,e1),_jam=clamp((_dist-_reach*0.15)/(_reach*0.45),0.15,1),spEff=sp*_jam;
-  if(spEff>3.5){C.state='retreat';C.hitCD=0.8;popText('Streitpuppe zurueckgeschlagen!','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.13);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.25;}
-  else if(sp>3.5&&_jam<0.6){C.wob=0.30;popText('zu nah — '+currentGattung+' kommt nicht zur Geltung!','#d4a843',0,0);bladeRecoil(0.5);}
-  else{popText('zu schwach — sie draengt weiter','#d4a843',0,0);bladeRecoil(0.6);}
+  if(spEff>3.5){C.state='retreat';C.hitCD=0.8;popText('Streitpuppe zurueckgeschlagen!',TREFFM_OK_CSS,0,-0.04);fx.shake=Math.max(fx.shake,0.13);fx.freeze=Math.max(fx.freeze,0.06);arena.cooldown=0.25;}
+  else if(sp>3.5&&_jam<0.6){C.wob=0.30;popText('zu nah — '+currentGattung+' kommt nicht zur Geltung!',WARNM_CSS,0,0);bladeRecoil(0.5);}
+  else{popText('zu schwach — sie draengt weiter',WARNM_CSS,0,0);bladeRecoil(0.6);}
   return true;}
 
 /* V18.491.274 — Lab gauntlet corridor ← GASSE_GESETZ fail-soft; Host none (GASSE_VIS). KETTE rope / FOLGE / LIFT untouched. */
@@ -2074,14 +2449,25 @@ const ANGEL_YOFF=(_ANG&&Number.isFinite(_ANG.yOff))?_ANG.yOff:0.12;
 /* V18.491.412 — Lab Gauntlet-Seil Anfangs-Knick ← KNICK_GESETZ fail-soft; Host none (KNICK_VIS). ZIELP/DORN/NAHE/REICH/OESE/ANGEL/RIEGEL/TAU/LIFT untouched; Verlet X-bias only. */
 const _KNI=(SC&&SC.KNICK_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KNICK_GESETZ)||null;
 const KNICK_AMP=(_KNI&&Number.isFinite(_KNI.amp))?_KNI.amp:0.05;
-function buildGauntlet(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.9,0);
+function buildGauntlet(pos){const g=new THREE.Group();g.position.copy(pos);
+  /* V18.491.533 — Lab Pendel-Gasse/Gauntlet Mats ← GASSEM_GESETZ fail-soft; Host none (GASSEM_VIS). ZIPFELM/STREITM/GASSE logic/clay/swing/LIFT untouched. */
+  const _GSM=(SC&&SC.GASSEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.GASSEM_GESETZ)||null;
+  const GASSEM_WOOD=(_GSM&&Number.isFinite(_GSM.wood))?_GSM.wood:0x4a3520;
+  const GASSEM_WOODR=(_GSM&&Number.isFinite(_GSM.woodR))?_GSM.woodR:0.9;
+  const GASSEM_DARK=(_GSM&&Number.isFinite(_GSM.dark))?_GSM.dark:0x2a1d12;
+  const GASSEM_DARKR=(_GSM&&Number.isFinite(_GSM.darkR))?_GSM.darkR:0.9;
+  const GASSEM_ROPE=(_GSM&&Number.isFinite(_GSM.rope))?_GSM.rope:0x6e5a3a;
+  const GASSEM_ROPER=(_GSM&&Number.isFinite(_GSM.ropeR))?_GSM.ropeR:0.8;
+  const GASSEM_BALL=(_GSM&&Number.isFinite(_GSM.ball))?_GSM.ball:0x484440;
+  const GASSEM_BALLR=(_GSM&&Number.isFinite(_GSM.ballR))?_GSM.ballR:0.5;
+  const wood=matCol(GASSEM_WOOD,GASSEM_WOODR,0),dark=matCol(GASSEM_DARK,GASSEM_DARKR,0);
   const N=GASSE_N,gap=GASSE_GAP,len=N*gap,H=GASSE_H;arena.gauntlet={grp:g,ropes:[]};
   for(let i=0;i<N;i++){const cz=-len/2+gap*0.5+i*gap;const pivot=new THREE.Vector3(pos.x,pos.y+H-ANGEL_YOFF,pos.z+cz);
     const L=KETTE_L,ballR=KETTE_BALLR,NS=KETTE_NS,segLen=L/NS;const pts=[],ptsPrev=[];
     for(let k=0;k<=NS;k++){const p=new THREE.Vector3(pivot.x,pivot.y-segLen*k,pivot.z);pts.push(p.clone());ptsPrev.push(p.clone());}
     const sign=i%2?1:-1;for(let k=1;k<=NS;k++)ptsPrev[k].x-=sign*KNICK_AMP*(k/NS);
-    const ropeSegs=[];for(let k=0;k<NS;k++){const seg=new THREE.Mesh(new THREE.CylinderGeometry(TAU_R,TAU_R,segLen,5),matCol(0x6e5a3a,0.8,0));g.add(seg);ropeSegs.push(seg);}
-    const ball=new THREE.Mesh(new THREE.SphereGeometry(ballR,14,11),matCol(0x484440,0.5,0));ball.castShadow=true;g.add(ball);
+    const ropeSegs=[];for(let k=0;k<NS;k++){const seg=new THREE.Mesh(new THREE.CylinderGeometry(TAU_R,TAU_R,segLen,5),matCol(GASSEM_ROPE,GASSEM_ROPER,0));g.add(seg);ropeSegs.push(seg);}
+    const ball=new THREE.Mesh(new THREE.SphereGeometry(ballR,14,11),matCol(GASSEM_BALL,GASSEM_BALLR,0));ball.castShadow=true;g.add(ball);
     arena.gauntlet.ropes.push({ball,ropeSegs,pivot,N:NS,segLen,L,ballR,pts,ptsPrev,hitCD:0});}
   for(const cz of [-len/2-PFYL_ZPAD,len/2+PFYL_ZPAD]){for(const cx of [-PFYL_XOFF,PFYL_XOFF]){const post=new THREE.Mesh(new THREE.CylinderGeometry(PFYL_R0,PFYL_R1,H,8),wood);post.position.set(cx,H/2,cz);post.castShadow=true;g.add(post);}}
   for(const cx of [-RIEGEL_XOFF,RIEGEL_XOFF]){const beam=new THREE.Mesh(new THREE.BoxGeometry(RIEGEL_W,RIEGEL_H,len+RIEGEL_ZEXTRA),dark);beam.position.set(cx,H-RIEGEL_YOFF,0);g.add(beam);}
@@ -2092,13 +2478,13 @@ function updateGauntlet(dt){const G=arena.gauntlet;if(!G)return;
     drawRope(P,G.grp.position.x,G.grp.position.y,G.grp.position.z);
     const bw=P.pts[N];
     if(P.hitCD>0)P.hitCD-=dt;
-    if(dt>0&&P.hitCD<=0){const spd=Math.hypot(bw.x-P.ptsPrev[N].x,bw.z-P.ptsPrev[N].z)/Math.max(1e-4,dt);if(spd>1.5){const dh=Math.hypot(bw.x-arena.player.x,bw.z-arena.player.z);if(dh<P.ballR+0.42&&bw.y<1.85){fx.shake=Math.max(fx.shake,0.35);fx.freeze=Math.max(fx.freeze,0.09);popText('✖ Pendel erwischt dich','#ff6a6a',0,0);P.hitCD=1.0;}}}}}
+    if(dt>0&&P.hitCD<=0){const spd=Math.hypot(bw.x-P.ptsPrev[N].x,bw.z-P.ptsPrev[N].z)/Math.max(1e-4,dt);if(spd>1.5){const dh=Math.hypot(bw.x-arena.player.x,bw.z-arena.player.z);if(dh<P.ballR+0.42&&bw.y<1.85){fx.shake=Math.max(fx.shake,0.35);fx.freeze=Math.max(fx.freeze,0.09);popText('✖ Pendel erwischt dich',GERATM_CSS,0,0);P.hitCD=1.0;}}}}}
 function tryHitGauntlet(handW,bladeDir,vel){const G=arena.gauntlet;if(!G)return false;
   for(const P of G.ropes){if(P.hitCD>0.55)continue;const N=P.N,bw=P.pts[N];let hit=false;
     hit=!!bladeHitsPoint(handW,bladeDir,bw,P.ballR+0.07);
     if(!hit)continue;
     P.ptsPrev[N].x-=clamp(vel.x,-7,7)*0.014*wMass();P.ptsPrev[N].z-=clamp(vel.z,-7,7)*0.014*wMass();P.ptsPrev[N].y-=clamp(vel.y,-5,5)*0.007*wMass();
-    fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.04);popText('Pendel getroffen','#cdbf9a',0,-0.04);arena.cooldown=0.16;return true;}
+    fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.04);popText('Pendel getroffen',GERTTM_CSS,0,-0.04);arena.cooldown=0.16;return true;}
   return false;}
 
 /* V18.491.276 — Lab clay thrower ← TON_GESETZ fail-soft; Host none (TON_VIS). SCHEIBE archery / RITTER / LIFT untouched. */
@@ -2132,20 +2518,31 @@ const BECHER_Z=(_BEC&&Number.isFinite(_BEC.z))?_BEC.z:0.22;
 const _SCB=(SC&&SC.SCHEIB_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SCHEIB_GESETZ)||null;
 const SCHEIB_R=(_SCB&&Number.isFinite(_SCB.R))?_SCB.R:0.17;
 const SCHEIB_H=(_SCB&&Number.isFinite(_SCB.H))?_SCB.H:0.04;
-function buildClayThrower(pos){const g=new THREE.Group();g.position.copy(pos);const dark=matCol(0x33312c,0.45,0),wood=matCol(0x4a3520,0.9,0),metal=matCol(0x4a4842,0.4,0);
+function buildClayThrower(pos){const g=new THREE.Group();g.position.copy(pos);
+  /* V18.491.534 — Lab Ton-Wurf/Clay Mats ← TONM_GESETZ fail-soft; Host none (TONM_VIS). GASSEM/ZIPFELM/STREITM/TON logic/SCHEIBM/swing/LIFT untouched. */
+  const _TNM=(SC&&SC.TONM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TONM_GESETZ)||null;
+  const TONM_DARK=(_TNM&&Number.isFinite(_TNM.dark))?_TNM.dark:0x33312c;
+  const TONM_DARKR=(_TNM&&Number.isFinite(_TNM.darkR))?_TNM.darkR:0.45;
+  const TONM_WOOD=(_TNM&&Number.isFinite(_TNM.wood))?_TNM.wood:0x4a3520;
+  const TONM_WOODR=(_TNM&&Number.isFinite(_TNM.woodR))?_TNM.woodR:0.9;
+  const TONM_METAL=(_TNM&&Number.isFinite(_TNM.metal))?_TNM.metal:0x4a4842;
+  const TONM_METALR=(_TNM&&Number.isFinite(_TNM.metalR))?_TNM.metalR:0.4;
+  const TONM_DISC=(_TNM&&Number.isFinite(_TNM.disc))?_TNM.disc:0xc85a3a;
+  const TONM_DISCR=(_TNM&&Number.isFinite(_TNM.discR))?_TNM.discR:0.6;
+  const dark=matCol(TONM_DARK,TONM_DARKR,0),wood=matCol(TONM_WOOD,TONM_WOODR,0),metal=matCol(TONM_METAL,TONM_METALR,0);
   const base=new THREE.Mesh(new THREE.BoxGeometry(BLOCK_W,BLOCK_H,BLOCK_D),dark);base.position.y=BLOCK_Y;g.add(base);
   const arm=new THREE.Mesh(new THREE.BoxGeometry(HEBEL_W,HEBEL_H,HEBEL_D),wood);arm.position.set(0,HEBEL_Y,0);arm.rotation.x=HEBEL_ROTX;g.add(arm);
   const cup=new THREE.Mesh(new THREE.CylinderGeometry(BECHER_R0,BECHER_R1,BECHER_H,12),metal);cup.position.set(0,BECHER_Y,BECHER_Z);g.add(cup);
-  const disc=new THREE.Mesh(new THREE.CylinderGeometry(SCHEIB_R,SCHEIB_R,SCHEIB_H,16),matCol(0xc85a3a,0.6,0));disc.visible=false;g.add(disc);
+  const disc=new THREE.Mesh(new THREE.CylinderGeometry(SCHEIB_R,SCHEIB_R,SCHEIB_H,16),matCol(TONM_DISC,TONM_DISCR,0));disc.visible=false;g.add(disc);
   arena.clay={grp:g,thrower:pos.clone(),disc,active:false,nextT:TON_NEXTT0,vel:new THREE.Vector3(),pos:new THREE.Vector3(),broke:0};return g;}
 function updateClay(dt){const C=arena.clay;if(!C)return;const t=clock.getElapsedTime();
-  if(!C.active){if(t>C.nextT&&Math.hypot(arena.player.x-C.thrower.x,arena.player.z-C.thrower.z)<TON_NEARR){C.pos.copy(C.thrower);C.pos.y+=TON_LIFTY;C.vel.set((Math.random()-0.5)*3,TON_VYBASE+Math.random()*2.5,(Math.random()<0.5?1:-1)*(4+Math.random()*4));C.active=true;C.disc.visible=true;popText('PULL! — Wurfscheibe steigt','#d8c050',0,-0.22);}return;}
+  if(!C.active){if(t>C.nextT&&Math.hypot(arena.player.x-C.thrower.x,arena.player.z-C.thrower.z)<TON_NEARR){C.pos.copy(C.thrower);C.pos.y+=TON_LIFTY;C.vel.set((Math.random()-0.5)*3,TON_VYBASE+Math.random()*2.5,(Math.random()<0.5?1:-1)*(4+Math.random()*4));C.active=true;C.disc.visible=true;popText('PULL! — Wurfscheibe steigt',PULLM_CSS,0,-0.22);}return;}
   C.vel.y-=ARENA.g*dt;C.pos.addScaledVector(C.vel,dt);
   C.disc.position.set(C.pos.x-C.grp.position.x,C.pos.y-C.grp.position.y,C.pos.z-C.grp.position.z);C.disc.rotation.x+=dt*7;C.disc.rotation.z+=dt*4;
   if(C.pos.y<0.12){C.active=false;C.disc.visible=false;C.nextT=t+2.0+Math.random()*2.2;}}
 function tryArrowClay(a){const C=arena.clay;if(!C||!C.active)return false;
   if(a.pos.distanceTo(C.pos)<TON_HITR){C.active=false;C.disc.visible=false;C.nextT=clock.getElapsedTime()+1.6+Math.random()*1.5;C.broke++;
-    fx.shake=Math.max(fx.shake,0.1);popText('SCHEIBE ZERSPLITTERT — in der Luft getroffen!','#ffe07a',0,0);popText('+25','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=25;arena.score.last={ring:25,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
+    fx.shake=Math.max(fx.shake,0.1);popText('SCHEIBE ZERSPLITTERT — in der Luft getroffen!',GOLDM_CSS,0,0);popText('+25',TREFFM_OK_CSS,0.12,0.06);arena.score.shots++;arena.score.sum+=25;arena.score.last={ring:25,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
   return false;}
 
 /* V18.491.278 — Lab swing target ← SCHAUKEL_GESETZ fail-soft; Host none (SCHAUKEL_VIS). PENDEL rope-ball / STREIT / LIFT untouched. */
@@ -2176,12 +2573,23 @@ const BLATT_DTHK=(_BLTG&&Number.isFinite(_BLTG.dThk))?_BLTG.dThk:0.004;
 /* V18.491.308 — Lab swing-target rest height ← RUHE_GESETZ fail-soft; Host none (RUHE_VIS). GESTELL / SCHAUKEL / LEINE / BLATT / REIHE / LIFT untouched. */
 const _RUG=(SC&&SC.RUHE_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.RUHE_GESETZ)||null;
 const RUHE_Y=(_RUG&&Number.isFinite(_RUG.y))?_RUG.y:1.75;
-function buildSwingTarget(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.9,0);
+function buildSwingTarget(pos){const g=new THREE.Group();g.position.copy(pos);
+  /* V18.491.535 — Lab Pendelziel/Swing Mats ← SCHAUKELM_GESETZ fail-soft; Host none (SCHAUKELM_VIS). TONM/GASSEM/ZIPFELM/SCHAUKEL logic/BLATT geo/LIFT untouched. */
+  const _SWGM=(SC&&SC.SCHAUKELM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SCHAUKELM_GESETZ)||null;
+  const SCHAUKELM_WOOD=(_SWGM&&Number.isFinite(_SWGM.wood))?_SWGM.wood:0x4a3520;
+  const SCHAUKELM_WOODR=(_SWGM&&Number.isFinite(_SWGM.woodR))?_SWGM.woodR:0.9;
+  const SCHAUKELM_DARK=(_SWGM&&Number.isFinite(_SWGM.dark))?_SWGM.dark:0x2a1d12;
+  const SCHAUKELM_DARKR=(_SWGM&&Number.isFinite(_SWGM.darkR))?_SWGM.darkR:0.9;
+  const SCHAUKELM_COLS_FALL=[0xd8cab0,0x2f4858,0xc85a3a,0xd8cab0];
+  const SCHAUKELM_COLS=(_SWGM&&Array.isArray(_SWGM.cols)&&_SWGM.cols.length===4&&_SWGM.cols.every(function(v){return Number.isFinite(v);}))?_SWGM.cols.slice():SCHAUKELM_COLS_FALL.slice();
+  const SCHAUKELM_RINGR=(_SWGM&&Number.isFinite(_SWGM.ringR))?_SWGM.ringR:0.6;
+  const SCHAUKELM_FALL=(_SWGM&&Number.isFinite(_SWGM.fallback))?_SWGM.fallback:0x888888;
+  const wood=matCol(SCHAUKELM_WOOD,SCHAUKELM_WOODR,0),dark=matCol(SCHAUKELM_DARK,SCHAUKELM_DARKR,0);
   for(const sz of [-GESTELL_HALFZ,GESTELL_HALFZ]){const post=new THREE.Mesh(new THREE.CylinderGeometry(GESTELL_POSTR0,GESTELL_POSTR1,GESTELL_POSTH,10),wood);post.position.set(0,GESTELL_POSTH/2,sz);post.castShadow=true;g.add(post);}
   const beam=new THREE.Mesh(new THREE.BoxGeometry(GESTELL_BEAMW,GESTELL_BEAMH,GESTELL_BEAML),dark);beam.position.set(0,GESTELL_BEAMY,0);g.add(beam);
   const rope=new THREE.Mesh(new THREE.CylinderGeometry(LEINE_R,LEINE_R,LEINE_L,5),dark);g.add(rope);
-  const tgt=new THREE.Group();g.add(tgt);const cols=[0xd8cab0,0x2f4858,0xc85a3a,0xd8cab0];
-  for(let i=BLATT_N;i>=1;i--){const ring=new THREE.Mesh(new THREE.CylinderGeometry(i*BLATT_RSTEP,i*BLATT_RSTEP,BLATT_THK0+(BLATT_N-i)*BLATT_DTHK,20),matCol(cols[BLATT_N-i]||0x888888,0.6,0));ring.rotation.z=Math.PI/2;tgt.add(ring);}
+  const tgt=new THREE.Group();g.add(tgt);const cols=SCHAUKELM_COLS;
+  for(let i=BLATT_N;i>=1;i--){const ring=new THREE.Mesh(new THREE.CylinderGeometry(i*BLATT_RSTEP,i*BLATT_RSTEP,BLATT_THK0+(BLATT_N-i)*BLATT_DTHK,20),matCol(cols[BLATT_N-i]||SCHAUKELM_FALL,SCHAUKELM_RINGR,0));ring.rotation.z=Math.PI/2;tgt.add(ring);}
   arena.swingTgt={grp:g,tgt,rope,pivot:new THREE.Vector3(pos.x,pos.y+GESTELL_BEAMY,pos.z),L:SCHAUKEL_L,R:SCHAUKEL_R,ang:SCHAUKEL_ANG0,vel:0,struck:false,respawnAt:0,_wz:pos.z,_wy:pos.y+RUHE_Y};
   updateSwingTarget(0);return g;}
 function updateSwingTarget(dt){const S=arena.swingTgt;if(!S)return;
@@ -2196,7 +2604,7 @@ function tryArrowSwing(a){const S=arena.swingTgt;if(!S||S.struck)return false;
   const dx=a.pos.x-S.pivot.x,dz=a.pos.z-S._wz,dy=a.pos.y-S._wy;
   if(Math.abs(dx)<0.22&&Math.hypot(dz,dy)<S.R){const r=Math.hypot(dz,dy),ring=clamp(Math.ceil(4*(1-r/S.R)),1,4);
     S.struck=true;S.respawnAt=clock.getElapsedTime()+2.5;S.tgt.visible=false;S.vel+=(a.vel&&a.vel.z>0?2:-2);
-    fx.shake=Math.max(fx.shake,0.08);popText('PENDELZIEL getroffen — vorgehalten! · '+ring,'#ffe07a',0,0);popText('+'+(ring*5),'#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=ring*5;arena.score.last={ring:ring*5,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
+    fx.shake=Math.max(fx.shake,0.08);popText('PENDELZIEL getroffen — vorgehalten! · '+ring,GOLDM_CSS,0,0);popText('+'+(ring*5),TREFFM_OK_CSS,0.12,0.06);arena.score.shots++;arena.score.sum+=ring*5;arena.score.last={ring:ring*5,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
   return false;}
 
 /* V18.491.286 — Lab range specs ← BAHN_GESETZ fail-soft; Host none (BAHN_VIS). SCHEIBE face / PAPAGEI / LIFT untouched. */
@@ -2208,9 +2616,13 @@ const ZIELP_R0=(_ZLP&&Number.isFinite(_ZLP.R0))?_ZLP.R0:0.04;
 const ZIELP_R1=(_ZLP&&Number.isFinite(_ZLP.R1))?_ZLP.R1:0.05;
 function _bahnSpecsOk(s){if(!Array.isArray(s)||s.length!==4)return false;for(const r of s){if(!Array.isArray(r)||r.length!==4)return false;for(const v of r)if(!Number.isFinite(v))return false;}return true;}
 function buildRange(){arena.targets=[];const specs=_bahnSpecsOk(_BHG&&_BHG.specs)?_BHG.specs.map(r=>r.slice()):BAHN_SPECS_FALLBACK.map(r=>r.slice());
+  /* V18.491.539 — Lab Bahn-Zielpfosten Mat ← ZIELPM_GESETZ fail-soft; Host none (ZIELPM_VIS). BUDEM/ENTEM/ZIELP geo/TATAMIM/TORII/LIFT untouched. */
+  const _ZLM=(SC&&SC.ZIELPM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.ZIELPM_GESETZ)||null;
+  const ZIELPM_COLOR=(_ZLM&&Number.isFinite(_ZLM.color))?_ZLM.color:0x3a2a1a;
+  const ZIELPM_ROUGH=(_ZLM&&Number.isFinite(_ZLM.rough))?_ZLM.rough:0.9;
   for(const sp of specs){const x=sp[0],y=sp[1],z=sp[2],R=sp[3];
     const t=buildZielscheibe();t.position.set(x,y,z);t.traverse(o=>{if(o.material)o.material.side=THREE.DoubleSide;});arena.group.add(t);
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(ZIELP_R0,ZIELP_R1,y,8),matCol(0x3a2a1a,0.9,0));post.position.set(x,y/2,z);arena.group.add(post);
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(ZIELP_R0,ZIELP_R1,y,8),matCol(ZIELPM_COLOR,ZIELPM_ROUGH,0));post.position.set(x,y/2,z);arena.group.add(post);
     arena.targets.push({mesh:t,pos:new THREE.Vector3(x,y,z),R});}}
 function equipWeapon(name){if(!GATTUNGEN[name])return;
   delete P.guardOverride;P.backSpike=false;P.beak=false;delete P.task;delete P.cheekMul;delete P.pickLen;
@@ -2249,12 +2661,12 @@ function tryCutBamboo(handW,bladeDir,vel){if(!arena.bamboo)return;const m=measur
     const vAx=vAxT*velFac, vLat=vLatT*velFac, mEff=Math.max(0.02,(m.mEffFrac||0.2)*m.M);
     const edgeQ=clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1), KE=0.5*mEff*vLat*vLat*eff*(0.25+0.75*edgeQ);   // wahre Schneide: EIN Faktor überall
     const where=Math.abs(xLoc-xcop)/S.L<0.12?'Sweetspot':best.p>e1*0.85?'Spitze':best.p<e1*0.4?'gehilznah':'Mitte';
-    if(!sharp){b.wobble=0.35;popText('stumpf — keine Schneide','#d96a4a',0,0);bladeRecoil(0.7);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
-    if(vLat<vAx*0.8){b.wobble=0.32;popText('Stich — Bambus splittert nicht, kein Schnitt','#d96a4a',0,0);bladeRecoil(0.95);return;}
-    if(edgeQ<0.45){b.wobble=0.30;popText('flach — die Schneide liegt quer','#d96a4a',0,0);bladeRecoil(0.8);return;}
-    if(KE<10){b.wobble=0.45;popText('zu schwach — die Klinge prallt ab ('+KE.toFixed(0)+' J · '+where+')','#d4a843',0,0);bladeRecoil(0.85);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
+    if(!sharp){b.wobble=0.35;popText('stumpf — keine Schneide',TREFFM_BAD_CSS,0,0);bladeRecoil(0.7);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
+    if(vLat<vAx*0.8){b.wobble=0.32;popText('Stich — Bambus splittert nicht, kein Schnitt',TREFFM_BAD_CSS,0,0);bladeRecoil(0.95);return;}
+    if(edgeQ<0.45){b.wobble=0.30;popText('flach — die Schneide liegt quer',TREFFM_BAD_CSS,0,0);bladeRecoil(0.8);return;}
+    if(KE<10){b.wobble=0.45;popText('zu schwach — die Klinge prallt ab ('+KE.toFixed(0)+' J · '+where+')',WARNM_CSS,0,0);bladeRecoil(0.85);b.cut='miss';setTimeout(()=>{if(b.cut==='miss')b.cut=false;},350);return;}
     const cutDir=vel.clone().setY(0);if(cutDir.lengthSq()<1e-4)cutDir.set(0,0,1);cutDir.normalize();
-    cutBambooPole(b,best.pt.y,cutDir,KE);if(where==='Sweetspot')popText('Schwingungsknoten — voll','#6fcf73',0.14,-0.12);arena.cooldown=0.25;return;}}
+    cutBambooPole(b,best.pt.y,cutDir,KE);if(where==='Sweetspot')popText('Schwingungsknoten — voll',TREFFM_OK_CSS,0.14,-0.12);arena.cooldown=0.25;return;}}
 function cutBambooPole(b,yCut,cutDir,KE){b.cut=true;if(!arena.fallingBamboo)arena.fallingBamboo=[];
   const bottomH=Math.max(0.05,yCut-b.baseY),topH=Math.max(0.05,(b.baseY+b.h)-yCut);
   if(b.mesh.parent)b.mesh.parent.remove(b.mesh);
@@ -2263,7 +2675,7 @@ function cutBambooPole(b,yCut,cutDir,KE){b.cut=true;if(!arena.fallingBamboo)aren
   arena.fallingBamboo.push({mesh:top,vel:cutDir.clone().multiplyScalar(0.6+Math.min(2.5,KE*0.006)).add(new THREE.Vector3(0,0.4,0)),ang:new THREE.Vector3((Math.random()-0.5)*5,0,(Math.random()-0.5)*5),life:0});
   b.respawnAt=clock.getElapsedTime()+(b.lane?0.9:1.6);
   fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.05);
-  popText('✁ SAUBERER SCHNITT — '+KE.toFixed(0)+' J','#ffe07a',0,-0.04);popText('die Spitze fällt','#9fb3c8',0.12,0.05);}
+  popText('✁ SAUBERER SCHNITT — '+KE.toFixed(0)+' J',GOLDM_CSS,0,-0.04);popText('die Spitze fällt',NEUTM_CSS,0.12,0.05);}
 /* V18.491.281 — Lab swing-tatami ← TATAMI_GESETZ fail-soft; Host none (TATAMI_VIS). SCHAUKEL archery / DREH / LIFT untouched. */
 const _TMG=(SC&&SC.TATAMI_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TATAMI_GESETZ)||null;
 const TATAMI_LEN=(_TMG&&Number.isFinite(_TMG.len))?_TMG.len:0.55;
@@ -2289,16 +2701,28 @@ const ROLLE_RINGT=(_RLG&&Number.isFinite(_RLG.ringT))?_RLG.ringT:0.014;
 /* V18.491.304 — Lab tatami hang rope ← STRICK_GESETZ fail-soft; Host none (STRICK_VIS). SEIL.iters / SCHAUKEL rope / ROLLE / LIFT untouched. */
 const _STK=(SC&&SC.STRICK_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.STRICK_GESETZ)||null;
 const STRICK_R=(_STK&&Number.isFinite(_STK.R))?_STK.R:0.012;
+/* V18.491.536 — Lab Swing-Tatami Mats ← TATAMIM_GESETZ fail-soft; Host none (TATAMIM_VIS). SCHAUKELM/TATAMI/BOCK/ROLLE/STRICK geo/ZIELP/LIFT untouched. */
+const _TTM=(SC&&SC.TATAMIM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TATAMIM_GESETZ)||null;
+const TATAMIM_POST=(_TTM&&Number.isFinite(_TTM.post))?_TTM.post:0x3a2a1a;
+const TATAMIM_POSTR=(_TTM&&Number.isFinite(_TTM.postR))?_TTM.postR:0.9;
+const TATAMIM_BAR=(_TTM&&Number.isFinite(_TTM.bar))?_TTM.bar:0x33251a;
+const TATAMIM_BARR=(_TTM&&Number.isFinite(_TTM.barR))?_TTM.barR:0.9;
+const TATAMIM_ROLL=(_TTM&&Number.isFinite(_TTM.roll))?_TTM.roll:0xcab793;
+const TATAMIM_ROLLR=(_TTM&&Number.isFinite(_TTM.rollR))?_TTM.rollR:0.85;
+const TATAMIM_RING=(_TTM&&Number.isFinite(_TTM.ring))?_TTM.ring:0x6a5535;
+const TATAMIM_RINGR=(_TTM&&Number.isFinite(_TTM.ringR))?_TTM.ringR:0.8;
+const TATAMIM_ROPE=(_TTM&&Number.isFinite(_TTM.rope))?_TTM.rope:0x5a4525;
+const TATAMIM_ROPER=(_TTM&&Number.isFinite(_TTM.ropeR))?_TTM.ropeR:0.9;
 function buildSwingTatami(pos){const g=new THREE.Group();g.position.copy(pos);
-  for(const sx of [-BOCK_HALFX,BOCK_HALFX]){const post=new THREE.Mesh(new THREE.CylinderGeometry(BOCK_POSTR0,BOCK_POSTR1,BOCK_POSTH,8),matCol(0x3a2a1a,0.9,0));post.position.set(sx,BOCK_POSTH/2,0);g.add(post);}
-  const bar=new THREE.Mesh(new THREE.CylinderGeometry(BOCK_BARR,BOCK_BARR,BOCK_BARL,8),matCol(0x33251a,0.9,0));bar.rotation.z=Math.PI/2;bar.position.set(0,BOCK_BARY,0);g.add(bar);
+  for(const sx of [-BOCK_HALFX,BOCK_HALFX]){const post=new THREE.Mesh(new THREE.CylinderGeometry(BOCK_POSTR0,BOCK_POSTR1,BOCK_POSTH,8),matCol(TATAMIM_POST,TATAMIM_POSTR,0));post.position.set(sx,BOCK_POSTH/2,0);g.add(post);}
+  const bar=new THREE.Mesh(new THREE.CylinderGeometry(BOCK_BARR,BOCK_BARR,BOCK_BARL,8),matCol(TATAMIM_BAR,TATAMIM_BARR,0));bar.rotation.z=Math.PI/2;bar.position.set(0,BOCK_BARY,0);g.add(bar);
   arena.tatami={grp:g,pivot:new THREE.Vector3(pos.x,pos.y+BOCK_BARY,pos.z),len:TATAMI_LEN,rollLen:TATAMI_ROLLLEN,amp:TATAMI_AMP,w:TATAMI_W,phase:0,cut:false,respawnAt:0,roll:null,rope:null};
   spawnTatamiRoll();return g;}
 function spawnTatamiRoll(){const T=arena.tatami;
-  const roll=new THREE.Mesh(new THREE.CylinderGeometry(ROLLE_R,ROLLE_R,T.rollLen,12),matCol(0xcab793,0.85,0));
-  for(const yy of ROLLE_RINGYS){const ring=new THREE.Mesh(new THREE.TorusGeometry(ROLLE_RINGR,ROLLE_RINGT,6,14),matCol(0x6a5535,0.8,0));ring.rotation.x=Math.PI/2;ring.position.y=yy;roll.add(ring);}
+  const roll=new THREE.Mesh(new THREE.CylinderGeometry(ROLLE_R,ROLLE_R,T.rollLen,12),matCol(TATAMIM_ROLL,TATAMIM_ROLLR,0));
+  for(const yy of ROLLE_RINGYS){const ring=new THREE.Mesh(new THREE.TorusGeometry(ROLLE_RINGR,ROLLE_RINGT,6,14),matCol(TATAMIM_RING,TATAMIM_RINGR,0));ring.rotation.x=Math.PI/2;ring.position.y=yy;roll.add(ring);}
   roll.position.set(T.pivot.x,T.pivot.y-T.len-T.rollLen*0.5,T.pivot.z);arena.group.add(roll);T.roll=roll;
-  const rope=new THREE.Mesh(new THREE.CylinderGeometry(STRICK_R,STRICK_R,T.len,5),matCol(0x5a4525,0.9,0));arena.group.add(rope);T.rope=rope;T.cut=false;}
+  const rope=new THREE.Mesh(new THREE.CylinderGeometry(STRICK_R,STRICK_R,T.len,5),matCol(TATAMIM_ROPE,TATAMIM_ROPER,0));arena.group.add(rope);T.rope=rope;T.cut=false;}
 function swingTatamiUpdate(t){const T=arena.tatami;if(!T||!T.roll)return;const ang=T.amp*Math.sin(T.w*t+T.phase);
   const rx=T.pivot.x+Math.sin(ang)*T.len, ry=T.pivot.y-Math.cos(ang)*T.len;
   T.rope.position.set((T.pivot.x+rx)/2,(T.pivot.y+ry)/2,T.pivot.z);T.rope.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(rx-T.pivot.x,ry-T.pivot.y,0).normalize());
@@ -2315,10 +2739,10 @@ function tryCutTatami(handW,bladeDir,vel){const T=arena.tatami;if(!T||!T.roll||T
   const xLoc=gXd+best.p, velFac=clamp(best.p/Math.max(0.05,e1),0.12,1.0), eff=clamp(1-1.4*Math.abs(xLoc-xcop)/S.L,0.25,1.0);
   const vAx=vAxT*velFac, vLat=vLatT*velFac, mEff=Math.max(0.02,(m.mEffFrac||0.2)*m.M);
   const edgeQ=clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1), KE=0.5*mEff*vLat*vLat*eff*(0.25+0.75*edgeQ);   // wahre Schneide: EIN Faktor überall
-  if(!sharp){popText('stumpf — Matte schwingt nur','#d96a4a',0,0);arena.cooldown=0.3;return;}
-  if(vLat<vAx*0.8){popText('zu flach — kein Schnitt','#d96a4a',0,0);arena.cooldown=0.3;return;}
-  if(edgeQ<0.45){popText('flach — die Schneide liegt quer','#d96a4a',0,0);bladeRecoil(0.6);return;}
-  if(KE<12){popText('zu schwach — Klinge prallt ab ('+KE.toFixed(0)+' J)','#d4a843',0,0);bladeRecoil(0.55);return;}
+  if(!sharp){popText('stumpf — Matte schwingt nur',TREFFM_BAD_CSS,0,0);arena.cooldown=0.3;return;}
+  if(vLat<vAx*0.8){popText('zu flach — kein Schnitt',TREFFM_BAD_CSS,0,0);arena.cooldown=0.3;return;}
+  if(edgeQ<0.45){popText('flach — die Schneide liegt quer',TREFFM_BAD_CSS,0,0);bladeRecoil(0.6);return;}
+  if(KE<12){popText('zu schwach — Klinge prallt ab ('+KE.toFixed(0)+' J)',WARNM_CSS,0,0);bladeRecoil(0.55);return;}
   const cutDir=vel.clone().setY(0);if(cutDir.lengthSq()<1e-4)cutDir.set(0,0,1);cutDir.normalize();
   const ang=T.roll.rotation.z||0, ca=Math.max(0.25,Math.cos(ang));                                     // Rolle am KONTAKTPUNKT teilen
   const rTop=T.rollCenter.y+(T.rollLen*0.5)*ca, rBot=T.rollCenter.y-(T.rollLen*0.5)*ca;
@@ -2327,12 +2751,12 @@ function tryCutTatami(handW,bladeDir,vel){const T=arena.tatami;if(!T||!T.roll||T
   if(T.roll&&T.roll.parent)T.roll.parent.remove(T.roll);T.roll=null;
   if(T.rope&&T.rope.parent)T.rope.parent.remove(T.rope);T.rope=null;
   if(botLen>0.04){const bx=T.rollCenter.x+Math.sin(ang)*(T.rollLen*0.5-botLen*0.5), by=cutY-(botLen*0.5)*ca;
-    const bot=new THREE.Mesh(new THREE.CylinderGeometry(ROLLE_R,ROLLE_R,botLen,12),matCol(0xcab793,0.85,0));bot.position.set(bx,by,T.rollCenter.z);bot.rotation.z=ang;arena.group.add(bot);
+    const bot=new THREE.Mesh(new THREE.CylinderGeometry(ROLLE_R,ROLLE_R,botLen,12),matCol(TATAMIM_ROLL,TATAMIM_ROLLR,0));bot.position.set(bx,by,T.rollCenter.z);bot.rotation.z=ang;arena.group.add(bot);
     arena.fallingBamboo.push({mesh:bot,vel:cutDir.clone().multiplyScalar(0.6+Math.min(2,KE*0.005)).add(new THREE.Vector3(0,0.15,0)),ang:new THREE.Vector3((Math.random()-0.5)*4,0,(Math.random()-0.5)*4),life:0});}
   if(topLen>0.30){T.rollLen=topLen;T.cut=false;spawnTatamiRoll();}                                      // oberes Stück bleibt am Seil → weiter schneidbar
   else{T.cut=true;T.respawnAt=clock.getElapsedTime()+2.2;T.rollLen=1.0;}
   fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.05);
-  popText('✁ DURCHTRENNT — '+KE.toFixed(0)+' J'+(topLen>0.30?' · weiter!':''),eff>0.7?'#ffe07a':'#d4a843',0,-0.04);arena.cooldown=0.22;return;}
+  popText('✁ DURCHTRENNT — '+KE.toFixed(0)+' J'+(topLen>0.30?' · weiter!':''),eff>0.7?GOLDM_CSS:WARNM_CSS,0,-0.04);arena.cooldown=0.22;return;}
 function regrowTatami(){const T=arena.tatami;if(T&&T.cut&&T.respawnAt&&clock.getElapsedTime()>T.respawnAt&&!T.roll)spawnTatamiRoll();}
 /* V18.491.301 — Lab carnival duck mesh ← ENTE_GESETZ fail-soft; Host none (ENTE_VIS). TREFF / KIRMES / VOR / REIHE / BUDE / LIFT untouched. */
 const _ETG=(SC&&SC.ENTE_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.ENTE_GESETZ)||null;
@@ -2354,10 +2778,20 @@ const ENTE_RINGT=(_ETG&&Number.isFinite(_ETG.ringT))?_ETG.ringT:0.014;
 const ENTE_RINGX=(_ETG&&Number.isFinite(_ETG.ringX))?_ETG.ringX:-0.04;
 const ENTE_RINGZ=(_ETG&&Number.isFinite(_ETG.ringZ))?_ETG.ringZ:0.33;
 function buildDuck(){const g=new THREE.Group();
-  const body=new THREE.Mesh(new THREE.SphereGeometry(ENTE_BODYR,12,10),matCol(0xd8553a,0.7,0));body.scale.set(ENTE_SX,ENTE_SY,ENTE_SZ);g.add(body);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(ENTE_HEADR,10,8),matCol(0xd8553a,0.7,0));head.position.set(ENTE_HEADX,ENTE_HEADY,0);g.add(head);
-  const beak=new THREE.Mesh(new THREE.ConeGeometry(ENTE_BEAKR,ENTE_BEAKH,6),matCol(0xe0a020,0.6,0));beak.rotation.z=-Math.PI/2;beak.position.set(ENTE_BEAKX,ENTE_BEAKY,0);g.add(beak);
-  for(let i=0;i<ENTE_RINGN;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(ENTE_RINGR0+i*ENTE_RINGDR,ENTE_RINGT,6,16),matCol(i===0?0xffe07a:i===1?0xffffff:0xd8553a,0.5,0));ring.position.set(ENTE_RINGX,0,ENTE_RINGZ);g.add(ring);}
+  /* V18.491.537 — Lab Kirmes-Ente Mats ← ENTEM_GESETZ fail-soft; Host none (ENTEM_VIS). TATAMIM/SCHAUKELM/ENTE geo/BUDE/ZIELP/TORII/LIFT untouched. */
+  const _ETM=(SC&&SC.ENTEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.ENTEM_GESETZ)||null;
+  const ENTEM_BODY=(_ETM&&Number.isFinite(_ETM.body))?_ETM.body:0xd8553a;
+  const ENTEM_BODYR=(_ETM&&Number.isFinite(_ETM.bodyR))?_ETM.bodyR:0.7;
+  const ENTEM_BEAK=(_ETM&&Number.isFinite(_ETM.beak))?_ETM.beak:0xe0a020;
+  const ENTEM_BEAKR=(_ETM&&Number.isFinite(_ETM.beakR))?_ETM.beakR:0.6;
+  const ENTEM_RING0=(_ETM&&Number.isFinite(_ETM.ring0))?_ETM.ring0:0xffe07a;
+  const ENTEM_RING1=(_ETM&&Number.isFinite(_ETM.ring1))?_ETM.ring1:0xffffff;
+  const ENTEM_RING2=(_ETM&&Number.isFinite(_ETM.ring2))?_ETM.ring2:0xd8553a;
+  const ENTEM_RINGR=(_ETM&&Number.isFinite(_ETM.ringR))?_ETM.ringR:0.5;
+  const body=new THREE.Mesh(new THREE.SphereGeometry(ENTE_BODYR,12,10),matCol(ENTEM_BODY,ENTEM_BODYR,0));body.scale.set(ENTE_SX,ENTE_SY,ENTE_SZ);g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(ENTE_HEADR,10,8),matCol(ENTEM_BODY,ENTEM_BODYR,0));head.position.set(ENTE_HEADX,ENTE_HEADY,0);g.add(head);
+  const beak=new THREE.Mesh(new THREE.ConeGeometry(ENTE_BEAKR,ENTE_BEAKH,6),matCol(ENTEM_BEAK,ENTEM_BEAKR,0));beak.rotation.z=-Math.PI/2;beak.position.set(ENTE_BEAKX,ENTE_BEAKY,0);g.add(beak);
+  for(let i=0;i<ENTE_RINGN;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(ENTE_RINGR0+i*ENTE_RINGDR,ENTE_RINGT,6,16),matCol(i===0?ENTEM_RING0:i===1?ENTEM_RING1:ENTEM_RING2,ENTEM_RINGR,0));ring.position.set(ENTE_RINGX,0,ENTE_RINGZ);g.add(ring);}
   return g;}
 /* V18.491.283 — Lab carnival ducks ← KIRMES_GESETZ fail-soft; Host none (KIRMES_VIS). GALGEN frame / TATAMI / LIFT untouched. */
 const _KMG=(SC&&SC.KIRMES_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KIRMES_GESETZ)||null;
@@ -2395,9 +2829,17 @@ const TREFF_XPOS=(_TFG&&Number.isFinite(_TFG.xPos))?_TFG.xPos:0.3;
 const TREFF_ZHALF=(_TFG&&Number.isFinite(_TFG.zHalf))?_TFG.zHalf:0.28;
 const TREFF_YHALF=(_TFG&&Number.isFinite(_TFG.yHalf))?_TFG.yHalf:0.26;
 function buildCarnival(pos){const g=new THREE.Group();g.position.copy(pos);
-  const wall=new THREE.Mesh(new THREE.BoxGeometry(BUDE_WALLW,BUDE_WALLH,BUDE_WALLL),matCol(0x2c2438,0.92,0));wall.position.set(BUDE_WALLX,BUDE_WALLY,0);g.add(wall);
-  for(const yy of BUDE_RAILYS){const rail=new THREE.Mesh(new THREE.BoxGeometry(BUDE_RAILW,BUDE_RAILH,BUDE_RAILL),matCol(0x4a4458,0.6,0));rail.position.set(0,yy,0);g.add(rail);}
-  const top=new THREE.Mesh(new THREE.BoxGeometry(BUDE_TOPW,BUDE_TOPH,BUDE_TOPL),matCol(0x8a3050,0.7,0));top.position.set(BUDE_TOPX,BUDE_TOPY,0);g.add(top);
+  /* V18.491.538 — Lab Kirmes-Bude Mats ← BUDEM_GESETZ fail-soft; Host none (BUDEM_VIS). ENTEM/BUDE geo/KIRMES/ZIELP/TORII/LIFT untouched. */
+  const _BDM=(SC&&SC.BUDEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BUDEM_GESETZ)||null;
+  const BUDEM_WALL=(_BDM&&Number.isFinite(_BDM.wall))?_BDM.wall:0x2c2438;
+  const BUDEM_WALLR=(_BDM&&Number.isFinite(_BDM.wallR))?_BDM.wallR:0.92;
+  const BUDEM_RAIL=(_BDM&&Number.isFinite(_BDM.rail))?_BDM.rail:0x4a4458;
+  const BUDEM_RAILR=(_BDM&&Number.isFinite(_BDM.railR))?_BDM.railR:0.6;
+  const BUDEM_TOP=(_BDM&&Number.isFinite(_BDM.top))?_BDM.top:0x8a3050;
+  const BUDEM_TOPR=(_BDM&&Number.isFinite(_BDM.topR))?_BDM.topR:0.7;
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(BUDE_WALLW,BUDE_WALLH,BUDE_WALLL),matCol(BUDEM_WALL,BUDEM_WALLR,0));wall.position.set(BUDE_WALLX,BUDE_WALLY,0);g.add(wall);
+  for(const yy of BUDE_RAILYS){const rail=new THREE.Mesh(new THREE.BoxGeometry(BUDE_RAILW,BUDE_RAILH,BUDE_RAILL),matCol(BUDEM_RAIL,BUDEM_RAILR,0));rail.position.set(0,yy,0);g.add(rail);}
+  const top=new THREE.Mesh(new THREE.BoxGeometry(BUDE_TOPW,BUDE_TOPH,BUDE_TOPL),matCol(BUDEM_TOP,BUDEM_TOPR,0));top.position.set(BUDE_TOPX,BUDE_TOPY,0);g.add(top);
   arena.movers=[];const yrows=REIHE_YS;
   for(let i=0;i<3;i++){const duck=buildDuck();const yy=yrows[i];duck.position.set(VOR_X,yy,0);g.add(duck);
     arena.movers.push({mesh:duck,grp:g,baseX:pos.x+VOR_X,baseY:pos.y+yy,z0:pos.z,amp:KIRMES_AMP,w:KIRMES_W0+i*KIRMES_DW,phase:i*2.0,worldZ:pos.z,hit:false,hitAt:0});}
@@ -2409,7 +2851,7 @@ function hitMover(a){if(!arena.movers)return false;const t=clock.getElapsedTime(
   for(const mv of arena.movers){if(mv.hit)continue;
     if(a.pos.x>=mv.baseX-TREFF_XNEG&&a.pos.x<mv.baseX+TREFF_XPOS&&Math.abs(a.pos.z-mv.worldZ)<TREFF_ZHALF&&Math.abs(a.pos.y-mv.baseY)<TREFF_YHALF){
       mv.hit=true;mv.hitAt=t;fx.shake+=0.06;arena.score.shots++;arena.score.sum+=10;arena.score.last={ring:10,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};
-      popText('ENTE GETROFFEN!','#ffe07a',0,0);popText('+10','#6fcf73',0.12,0.06);stickArrow(a);updateHUD();return true;}}
+      popText('ENTE GETROFFEN!',GOLDM_CSS,0,0);popText('+10',TREFFM_OK_CSS,0.12,0.06);stickArrow(a);updateHUD();return true;}}
   return false;}
 function regrowBamboo(){if(!arena.bamboo)return;const t=clock.getElapsedTime();
   for(const b of arena.bamboo){if(b.cut===true&&b.respawnAt&&t>b.respawnAt){
@@ -2417,7 +2859,7 @@ function regrowBamboo(){if(!arena.bamboo)return;const t=clock.getElapsedTime();
     const pole=makeBamboo(b.h);pole.position.set(b.wx,b.baseY,b.wz);arena.group.add(pole);b.mesh=pole;b.cut=false;b.respawnAt=0;}}}
 function scoreArrowOn(a,T,r){const R=T.R;let ring=0;if(r<=R)ring=clamp(Math.ceil(10*(1-r/R)),1,10);const pen=a.KE*0.18;
   const dist=Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z);arena.score.shots++;arena.score.sum+=ring;arena.score.last={ring,pen,v0:a.v0,KE:a.KE,dist};
-  if(ring>0){fx.shake+=0.04;popText(ring+'! · '+dist.toFixed(0)+' m',ring>=9?'#ffe07a':ring>=6?'#9fb3c8':'#d96a4a',0,0);if(ring>=10)popText('GOLD!','#ffe07a',0.14,0.06);}else popText('Scheibe verfehlt','#7a7f8c',0,0);
+  if(ring>0){fx.shake+=0.04;popText(ring+'! · '+dist.toFixed(0)+' m',ring>=9?GOLDM_CSS:ring>=6?NEUTM_CSS:TREFFM_BAD_CSS,0,0);if(ring>=10)popText('GOLD!',GOLDM_CSS,0.14,0.06);}else popText('Scheibe verfehlt',MISSM_CSS,0,0);
   stickArrow(a);updateHUD();}
 
 function orientToNormal(z,x){z=z.clone().normalize();let xx=x.clone().sub(z.clone().multiplyScalar(x.dot(z)));
@@ -2438,12 +2880,22 @@ const NARBZ_N=(_NRZ&&Number.isFinite(_NRZ.n))?_NRZ.n:0.006;
 const _NBC=(SC&&SC.NARBC_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.NARBC_GESETZ)||null;
 const NARBC_MAX=(_NBC&&Number.isFinite(_NBC.max))?_NBC.max:30;
 function addDummyScar(point,normal,cutDir,hit){if(!arena.dummy||!point)return;arena.scars=arena.scars||[];
+  /* V18.491.554 — Lab Narben/Scar Mats ← NARBM_GESETZ fail-soft; Host none (NARBM_VIS). DOJOM/NARB geo/SCHRAMM/LIFT untouched. */
+  const _NBM=(SC&&SC.NARBM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.NARBM_GESETZ)||null;
+  const NARBM_STICH=(_NBM&&Number.isFinite(_NBM.stich))?_NBM.stich:0x100704;
+  const NARBM_STICHR=(_NBM&&Number.isFinite(_NBM.stichR))?_NBM.stichR:0.45;
+  const NARBM_SCHLAG=(_NBM&&Number.isFinite(_NBM.schlag))?_NBM.schlag:0x351d12;
+  const NARBM_SCHLAGR=(_NBM&&Number.isFinite(_NBM.schlagR))?_NBM.schlagR:0.4;
+  const NARBM_SCHNITT=(_NBM&&Number.isFinite(_NBM.schnitt))?_NBM.schnitt:0x0e0604;
+  const NARBM_SCHNITTR=(_NBM&&Number.isFinite(_NBM.schnittR))?_NBM.schnittR:0.5;
+  const NARBM_DIRTY=(_NBM&&Number.isFinite(_NBM.dirty))?_NBM.dirty:0x281610;
+  const NARBM_DIRTYR=(_NBM&&Number.isFinite(_NBM.dirtyR))?_NBM.dirtyR:0.5;
   arena.dummy.updateMatrixWorld(true);const inv=new THREE.Matrix4().copy(arena.dummy.matrixWorld).invert();
   const lp=point.clone().applyMatrix4(inv), ln=normal.clone().transformDirection(inv).normalize(), ld=cutDir.clone().transformDirection(inv).normalize();
   const art=hit?hit.art:'SCHNITT', clean=hit?hit.clean:true; let mesh;
-  if(art==='STICH'){mesh=new THREE.Mesh(new THREE.CircleGeometry(NARB_STICH,8),matCol(0x100704,0.45,0));}
-  else if(art==='SCHLAG'){mesh=new THREE.Mesh(new THREE.CircleGeometry(NARB_SCHLAG,12),matCol(0x351d12,0.4,0));}
-  else{mesh=new THREE.Mesh(new THREE.PlaneGeometry(SCHRAMM_W,SCHRAMM_H),matCol(clean?0x0e0604:0x281610,0.5,0));}              // Schnitt: Strich entlang Klingenbahn
+  if(art==='STICH'){mesh=new THREE.Mesh(new THREE.CircleGeometry(NARB_STICH,8),matCol(NARBM_STICH,NARBM_STICHR,0));}
+  else if(art==='SCHLAG'){mesh=new THREE.Mesh(new THREE.CircleGeometry(NARB_SCHLAG,12),matCol(NARBM_SCHLAG,NARBM_SCHLAGR,0));}
+  else{mesh=new THREE.Mesh(new THREE.PlaneGeometry(SCHRAMM_W,SCHRAMM_H),matCol(clean?NARBM_SCHNITT:NARBM_DIRTY,clean?NARBM_SCHNITTR:NARBM_DIRTYR,0));}              // Schnitt: Strich entlang Klingenbahn
   mesh.quaternion.copy(orientToNormal(ln,ld));mesh.position.copy(lp).addScaledVector(ln,NARBZ_N);
   arena.dummy.add(mesh);arena.scars.push(mesh);
   if(arena.scars.length>NARBC_MAX){const o=arena.scars.shift();if(o.parent)o.parent.remove(o);}}
@@ -2460,10 +2912,16 @@ const SCHWELLE_H=(_SWG&&Number.isFinite(_SWG.H))?_SWG.H:0.16;
 const SCHWELLE_L=(_SWG&&Number.isFinite(_SWG.L))?_SWG.L:4.6;
 const SCHWELLE_Y=(_SWG&&Number.isFinite(_SWG.y))?_SWG.y:0.08;
 function buildCuttingLane(pos){const g=new THREE.Group();const PX=pos.x,PZ=pos.z;
-  const base=new THREE.Mesh(new THREE.BoxGeometry(SCHWELLE_W,SCHWELLE_H,SCHWELLE_L),matCol(0x3a2a1a,0.9,0));base.position.set(PX,SCHWELLE_Y,PZ);g.add(base);
+  /* V18.491.541 — Lab Schnittgasse-Schwelle Mats ← SCHWELLEM_GESETZ fail-soft; Host none (SCHWELLEM_VIS). TORIIM/ZIELPM/SOCKELM/SCHWELLE geo/PERGOLA/LIFT untouched. */
+  const _SWLM=(SC&&SC.SCHWELLEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SCHWELLEM_GESETZ)||null;
+  const SCHWELLEM_BASE=(_SWLM&&Number.isFinite(_SWLM.base))?_SWLM.base:0x3a2a1a;
+  const SCHWELLEM_BASER=(_SWLM&&Number.isFinite(_SWLM.baseR))?_SWLM.baseR:0.9;
+  const SCHWELLEM_HOLDER=(_SWLM&&Number.isFinite(_SWLM.holder))?_SWLM.holder:0x2a2018;
+  const SCHWELLEM_HOLDERR=(_SWLM&&Number.isFinite(_SWLM.holderR))?_SWLM.holderR:0.9;
+  const base=new THREE.Mesh(new THREE.BoxGeometry(SCHWELLE_W,SCHWELLE_H,SCHWELLE_L),matCol(SCHWELLEM_BASE,SCHWELLEM_BASER,0));base.position.set(PX,SCHWELLE_Y,PZ);g.add(base);
   const N=SCHNITT_N;for(let i=0;i<N;i++){const z=PZ-SCHNITT_SPAN/2+i*(SCHNITT_SPAN/(N-1)), h=SCHNITT_H0+(i%2)*SCHNITT_DH;                                    // Zickzack-Höhen
-    const holder=new THREE.Mesh(new THREE.CylinderGeometry(FASSUNG_RTOP,FASSUNG_RBOT,FASSUNG_H,FASSUNG_SEGS),matCol(0x2a2018,0.9,0));holder.position.set(PX,FASSUNG_Y,z);g.add(holder);
-    const pole=makeBamboo(h);pole.position.set(PX,0.16,z);g.add(pole);
+    const holder=new THREE.Mesh(new THREE.CylinderGeometry(FASSUNG_RTOP,FASSUNG_RBOT,FASSUNG_H,FASSUNG_SEGS),matCol(SCHWELLEM_HOLDER,SCHWELLEM_HOLDERR,0));holder.position.set(PX,FASSUNG_Y,z);g.add(holder);
+    const pole=makeBamboo(h);pole.position.set(PX,SCHWELLE_Y+SCHWELLE_H/2,z);g.add(pole);   // V18.491.609 wire: Halm steht auf Schwellen-Oberkante ← SCHWELLE_GESETZ y+H/2 (no bump; ≠ SOCKEL_H coincidence)
     arena.bamboo.push({mesh:pole,wx:PX,wz:z,baseY:0.16,h,cut:false,wobble:0,lane:true});}
   return g;}
 /* V18.491.256 — Lab Torii gate ← TORII_GESETZ fail-soft; Host none (TORII_VIS). ≠ HEBE/BANK/PENDEL; LIFT untouched. */
@@ -2497,7 +2955,14 @@ const PFOSTEN_FOOTR0=(_PFOG&&Number.isFinite(_PFOG.footR0))?_PFOG.footR0:0.22;
 const PFOSTEN_FOOTR1=(_PFOG&&Number.isFinite(_PFOG.footR1))?_PFOG.footR1:0.26;
 const PFOSTEN_FOOTH=(_PFOG&&Number.isFinite(_PFOG.footH))?_PFOG.footH:0.18;
 const PFOSTEN_FOOTY=(_PFOG&&Number.isFinite(_PFOG.footY))?_PFOG.footY:0.09;
-function buildTorii(x,z){const g=new THREE.Group();const red=matCol(0x8a3a28,0.82,0),dark=matCol(0x241410,0.9,0);const H=TORII_H,W=TORII_W;
+function buildTorii(x,z){const g=new THREE.Group();
+  /* V18.491.540 — Lab Torii Mats ← TORIIM_GESETZ fail-soft; Host none (TORIIM_VIS). ZIELPM/BUDEM/SCHILDM/TORII geo/SCHWELLE/LIFT untouched. */
+  const _TIM=(SC&&SC.TORIIM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TORIIM_GESETZ)||null;
+  const TORIIM_RED=(_TIM&&Number.isFinite(_TIM.red))?_TIM.red:0x8a3a28;
+  const TORIIM_REDR=(_TIM&&Number.isFinite(_TIM.redR))?_TIM.redR:0.82;
+  const TORIIM_DARK=(_TIM&&Number.isFinite(_TIM.dark))?_TIM.dark:0x241410;
+  const TORIIM_DARKR=(_TIM&&Number.isFinite(_TIM.darkR))?_TIM.darkR:0.9;
+  const red=matCol(TORIIM_RED,TORIIM_REDR,0),dark=matCol(TORIIM_DARK,TORIIM_DARKR,0);const H=TORII_H,W=TORII_W;
   for(const sz of [-W/2,W/2]){const post=new THREE.Mesh(new THREE.CylinderGeometry(PFOSTEN_POSTR0,PFOSTEN_POSTR1,H,12),red);post.position.set(x,H/2,z+sz);g.add(post);
     const foot=new THREE.Mesh(new THREE.CylinderGeometry(PFOSTEN_FOOTR0,PFOSTEN_FOOTR1,PFOSTEN_FOOTH,12),dark);foot.position.set(x,PFOSTEN_FOOTY,z+sz);g.add(foot);}
   const kasagi=new THREE.Mesh(new THREE.BoxGeometry(BALKEN_KASW,BALKEN_KASH,W+BALKEN_KASDL,1,1,1),dark);kasagi.position.set(x,H+BALKEN_KASY,z);kasagi.rotation.x=BALKEN_KASROT;g.add(kasagi);
@@ -2540,7 +3005,16 @@ const LEUCHTE_CAPR0=(_LEUG&&Number.isFinite(_LEUG.capR0))?_LEUG.capR0:0.04;
 const LEUCHTE_CAPR1=(_LEUG&&Number.isFinite(_LEUG.capR1))?_LEUG.capR1:0.12;
 const LEUCHTE_CAPH=(_LEUG&&Number.isFinite(_LEUG.capH))?_LEUG.capH:0.05;
 const LEUCHTE_CAPYOFF=(_LEUG&&Number.isFinite(_LEUG.capYOff))?_LEUG.capYOff:0.36;
-function buildPergola(cx,cz,hw,hd){const g=new THREE.Group();const wood=matCol(0x4a3522,0.9,0),dark=matCol(0x33251a,0.92,0),paper=matCol(0xd6c596,0.5,0);const H=PERGOLA_H;
+function buildPergola(cx,cz,hw,hd){const g=new THREE.Group();
+  /* V18.491.542 — Lab Pergola Mats ← PERGOLAM_GESETZ fail-soft; Host none (PERGOLAM_VIS). SCHWELLEM/TORIIM/TATAMIM/PERGOLA geo/LIFT untouched. */
+  const _PGM=(SC&&SC.PERGOLAM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PERGOLAM_GESETZ)||null;
+  const PERGOLAM_WOOD=(_PGM&&Number.isFinite(_PGM.wood))?_PGM.wood:0x4a3522;
+  const PERGOLAM_WOODR=(_PGM&&Number.isFinite(_PGM.woodR))?_PGM.woodR:0.9;
+  const PERGOLAM_DARK=(_PGM&&Number.isFinite(_PGM.dark))?_PGM.dark:0x33251a;
+  const PERGOLAM_DARKR=(_PGM&&Number.isFinite(_PGM.darkR))?_PGM.darkR:0.92;
+  const PERGOLAM_PAPER=(_PGM&&Number.isFinite(_PGM.paper))?_PGM.paper:0xd6c596;
+  const PERGOLAM_PAPERR=(_PGM&&Number.isFinite(_PGM.paperR))?_PGM.paperR:0.5;
+  const wood=matCol(PERGOLAM_WOOD,PERGOLAM_WOODR,0),dark=matCol(PERGOLAM_DARK,PERGOLAM_DARKR,0),paper=matCol(PERGOLAM_PAPER,PERGOLAM_PAPERR,0);const H=PERGOLA_H;
   for(const [px,pz] of [[cx-hw,cz-hd],[cx+hw,cz-hd],[cx-hw,cz+hd],[cx+hw,cz+hd]]){
     const post=new THREE.Mesh(new THREE.CylinderGeometry(STUTZE_POSTR0,STUTZE_POSTR1,H,10),wood);post.position.set(px,H/2,pz);post.castShadow=true;g.add(post);
     const brace=new THREE.Mesh(new THREE.BoxGeometry(STUTZE_BRACEW,STUTZE_BRACEH,STUTZE_BRACED),dark);brace.position.set(px+(px<cx?STUTZE_BRACEOFF:-STUTZE_BRACEOFF),H-STUTZE_BRACEYOFF,pz);g.add(brace);}
@@ -2569,12 +3043,20 @@ const FAHNE_CLOTHZ=(_FHNG&&Number.isFinite(_FHNG.clothZ))?_FHNG.clothZ:0.68;
 const FAHNE_TIPR=(_FHNG&&Number.isFinite(_FHNG.tipR))?_FHNG.tipR:0.31;
 const FAHNE_TIPH=(_FHNG&&Number.isFinite(_FHNG.tipH))?_FHNG.tipH:0.22;
 const FAHNE_TIPYOFF=(_FHNG&&Number.isFinite(_FHNG.tipYOff))?_FHNG.tipYOff:1.86;
-function buildBannerPole(x,z,col){const g=new THREE.Group();const dark=matCol(0x2a1d12,0.9,0);const H=BANNER_H;
+function buildBannerPole(x,z,col){const g=new THREE.Group();
+  /* V18.491.543 — Lab Banner-Fahne Mats ← FAHNEM_GESETZ fail-soft; Host none (FAHNEM_VIS). PERGOLAM/TUCHM/BANNER/FAHNE geo/CLOUTM/LIFT untouched; cloth hex stays caller col. */
+  const _FHM=(SC&&SC.FAHNEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.FAHNEM_GESETZ)||null;
+  const FAHNEM_DARK=(_FHM&&Number.isFinite(_FHM.dark))?_FHM.dark:0x2a1d12;
+  const FAHNEM_DARKR=(_FHM&&Number.isFinite(_FHM.darkR))?_FHM.darkR:0.9;
+  const FAHNEM_FIN=(_FHM&&Number.isFinite(_FHM.fin))?_FHM.fin:0xc8a44a;
+  const FAHNEM_FINR=(_FHM&&Number.isFinite(_FHM.finR))?_FHM.finR:1.0;
+  const FAHNEM_CLOTHR=(_FHM&&Number.isFinite(_FHM.clothR))?_FHM.clothR:0.5;
+  const dark=matCol(FAHNEM_DARK,FAHNEM_DARKR,0);const H=BANNER_H;
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(FAHNE_POLER0,FAHNE_POLER1,H,8),dark);pole.position.set(x,H/2,z);pole.castShadow=true;g.add(pole);
-  const fin=new THREE.Mesh(new THREE.SphereGeometry(FAHNE_FINR,8,6),matCol(0xc8a44a,1,0));fin.position.set(x,H,z);g.add(fin);
+  const fin=new THREE.Mesh(new THREE.SphereGeometry(FAHNE_FINR,8,6),matCol(FAHNEM_FIN,FAHNEM_FINR,0));fin.position.set(x,H,z);g.add(fin);
   const arm=new THREE.Mesh(new THREE.BoxGeometry(FAHNE_ARMW,FAHNE_ARMH,FAHNE_ARML),dark);arm.position.set(x,H-FAHNE_ARMYOFF,z+FAHNE_ARMZ);g.add(arm);
-  const ban=new THREE.Mesh(new THREE.PlaneGeometry(FAHNE_CLOTHW,FAHNE_CLOTHH),matCol(col,0.5,0));ban.position.set(x,H-FAHNE_CLOTHYOFF,z+FAHNE_CLOTHZ);ban.rotation.y=Math.PI/2;ban.material.side=2;g.add(ban);
-  const tip=new THREE.Mesh(new THREE.ConeGeometry(FAHNE_TIPR,FAHNE_TIPH,3),matCol(col,0.5,0));tip.position.set(x,H-FAHNE_TIPYOFF,z+FAHNE_CLOTHZ);tip.rotation.x=Math.PI;tip.rotation.y=Math.PI/2;tip.material.side=2;g.add(tip);
+  const ban=new THREE.Mesh(new THREE.PlaneGeometry(FAHNE_CLOTHW,FAHNE_CLOTHH),matCol(col,FAHNEM_CLOTHR,0));ban.position.set(x,H-FAHNE_CLOTHYOFF,z+FAHNE_CLOTHZ);ban.rotation.y=Math.PI/2;ban.material.side=2;g.add(ban);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(FAHNE_TIPR,FAHNE_TIPH,3),matCol(col,FAHNEM_CLOTHR,0));tip.position.set(x,H-FAHNE_TIPYOFF,z+FAHNE_CLOTHZ);tip.rotation.x=Math.PI;tip.rotation.y=Math.PI/2;tip.material.side=2;g.add(tip);
   return g;}
 /* V18.491.266 — Lab hay bale ← HEU_GESETZ fail-soft; Host none (HEU_VIS). ≠ CLOUT; LIFT untouched. */
 const _HEU=(SC&&SC.HEU_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.HEU_GESETZ)||null;
@@ -2583,33 +3065,63 @@ const HEU_LEN=(_HEU&&Number.isFinite(_HEU.len))?_HEU.len:0.78;
 const HEU_BANDR=(_HEU&&Number.isFinite(_HEU.bandR))?_HEU.bandR:0.43;
 const HEU_BANDTUBE=(_HEU&&Number.isFinite(_HEU.bandTube))?_HEU.bandTube:0.018;
 const HEU_BANDOFF=(_HEU&&Number.isFinite(_HEU.bandOff))?_HEU.bandOff:0.2;
-function buildHayBale(x,z,rot){const g=new THREE.Group();const hay=matCol(0xb89a52,0.95,0);
+function buildHayBale(x,z,rot){const g=new THREE.Group();
+  /* V18.491.544 — Lab Heu-Ballen Mats ← HEUM_GESETZ fail-soft; Host none (HEUM_VIS). FAHNEM/PELLM/HEU geo/LATERNE/KOHLE/LIFT untouched. */
+  const _HYM=(SC&&SC.HEUM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.HEUM_GESETZ)||null;
+  const HEUM_HAY=(_HYM&&Number.isFinite(_HYM.hay))?_HYM.hay:0xb89a52;
+  const HEUM_HAYR=(_HYM&&Number.isFinite(_HYM.hayR))?_HYM.hayR:0.95;
+  const HEUM_BAND=(_HYM&&Number.isFinite(_HYM.band))?_HYM.band:0x6e5a38;
+  const HEUM_BANDR=(_HYM&&Number.isFinite(_HYM.bandR))?_HYM.bandR:0.9;
+  const hay=matCol(HEUM_HAY,HEUM_HAYR,0);
   const bale=new THREE.Mesh(new THREE.CylinderGeometry(HEU_R,HEU_R,HEU_LEN,12),hay);bale.rotation.x=Math.PI/2;bale.rotation.z=rot||0;bale.position.set(x,HEU_R,z);bale.castShadow=true;g.add(bale);
-  for(const o of [-HEU_BANDOFF,HEU_BANDOFF]){const band=new THREE.Mesh(new THREE.TorusGeometry(HEU_BANDR,HEU_BANDTUBE,6,16),matCol(0x6e5a38,0.9,0));band.position.set(x,HEU_R,z+o);g.add(band);}
+  for(const o of [-HEU_BANDOFF,HEU_BANDOFF]){const band=new THREE.Mesh(new THREE.TorusGeometry(HEU_BANDR,HEU_BANDTUBE,6,16),matCol(HEUM_BAND,HEUM_BANDR,0));band.position.set(x,HEU_R,z+o);g.add(band);}
   return g;}
 /* V18.491.267 — Lab stone lantern ← LATERNE_GESETZ fail-soft; Host none (LATERNE_VIS). ≠ HEU; LIFT untouched. */
 const LATERNE_FALLBACK={baseR0:0.19,baseR1:0.23,baseH:0.2,baseY:0.1,postR0:0.07,postR1:0.08,postH:0.66,postY:0.53,boxW:0.29,boxH:0.27,boxD:0.29,boxY:0.99,capR:0.27,capH:0.2,capY:1.22,topR:0.05,topY:1.35};
 const _LTR=(SC&&SC.LATERNE_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LATERNE_GESETZ)||null;
 function _laterneF(k){return (_LTR&&Number.isFinite(_LTR[k]))?_LTR[k]:LATERNE_FALLBACK[k];}
-function buildStoneLantern(x,z){const g=new THREE.Group();const stone=matCol(0x7a756c,0.97,0),dark=matCol(0x55504a,0.97,0);
+function buildStoneLantern(x,z){const g=new THREE.Group();
+  /* V18.491.545 — Lab Stein-Laterne Mats ← LATERNEM_GESETZ fail-soft; Host none (LATERNEM_VIS). HEUM/LATERNE geo/LEUCHTE/KOHLE/PFAD/LIFT untouched. */
+  const _LTM=(SC&&SC.LATERNEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.LATERNEM_GESETZ)||null;
+  const LATERNEM_STONE=(_LTM&&Number.isFinite(_LTM.stone))?_LTM.stone:0x7a756c;
+  const LATERNEM_STONER=(_LTM&&Number.isFinite(_LTM.stoneR))?_LTM.stoneR:0.97;
+  const LATERNEM_DARK=(_LTM&&Number.isFinite(_LTM.dark))?_LTM.dark:0x55504a;
+  const LATERNEM_DARKR=(_LTM&&Number.isFinite(_LTM.darkR))?_LTM.darkR:0.97;
+  const LATERNEM_GLOW=(_LTM&&Number.isFinite(_LTM.glow))?_LTM.glow:0xd8c089;
+  const LATERNEM_GLOWR=(_LTM&&Number.isFinite(_LTM.glowR))?_LTM.glowR:0.45;
+  const stone=matCol(LATERNEM_STONE,LATERNEM_STONER,0),dark=matCol(LATERNEM_DARK,LATERNEM_DARKR,0);
   const base=new THREE.Mesh(new THREE.CylinderGeometry(_laterneF('baseR0'),_laterneF('baseR1'),_laterneF('baseH'),8),dark);base.position.set(x,_laterneF('baseY'),z);g.add(base);
   const post=new THREE.Mesh(new THREE.CylinderGeometry(_laterneF('postR0'),_laterneF('postR1'),_laterneF('postH'),8),stone);post.position.set(x,_laterneF('postY'),z);g.add(post);
-  const box=new THREE.Mesh(new THREE.BoxGeometry(_laterneF('boxW'),_laterneF('boxH'),_laterneF('boxD')),matCol(0xd8c089,0.45,0));box.position.set(x,_laterneF('boxY'),z);g.add(box);
+  const box=new THREE.Mesh(new THREE.BoxGeometry(_laterneF('boxW'),_laterneF('boxH'),_laterneF('boxD')),matCol(LATERNEM_GLOW,LATERNEM_GLOWR,0));box.position.set(x,_laterneF('boxY'),z);g.add(box);
   const cap=new THREE.Mesh(new THREE.ConeGeometry(_laterneF('capR'),_laterneF('capH'),4),stone);cap.position.set(x,_laterneF('capY'),z);cap.rotation.y=Math.PI/4;g.add(cap);
   const top=new THREE.Mesh(new THREE.SphereGeometry(_laterneF('topR'),6,5),stone);top.position.set(x,_laterneF('topY'),z);g.add(top);return g;}
 /* V18.491.268 — Lab brazier ← KOHLE_GESETZ fail-soft; Host none (KOHLE_VIS). ≠ LATERNE/HEU; LIFT untouched. */
 const KOHLE_FALLBACK={legs:3,legR0:0.02,legR1:0.025,legH:0.82,legRad:0.17,legY:0.4,legTilt:0.32,bowlR0:0.3,bowlR1:0.17,bowlH:0.22,bowlY:0.84,coalR:0.26,coalH:0.07,coalY:0.95};
 const _KOH=(SC&&SC.KOHLE_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KOHLE_GESETZ)||null;
 function _kohleF(k){return (_KOH&&Number.isFinite(_KOH[k]))?_KOH[k]:KOHLE_FALLBACK[k];}
-function buildBrazier(x,z){const g=new THREE.Group();const iron=matCol(0x2a2620,0.35,0);
+function buildBrazier(x,z){const g=new THREE.Group();
+  /* V18.491.546 — Lab Kohlenbecken/Brazier Mats ← KOHLEM_GESETZ fail-soft; Host none (KOHLEM_VIS). LATERNEM/KOHLE geo/HEUM/PFAD/LIFT untouched. */
+  const _KHM=(SC&&SC.KOHLEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KOHLEM_GESETZ)||null;
+  const KOHLEM_IRON=(_KHM&&Number.isFinite(_KHM.iron))?_KHM.iron:0x2a2620;
+  const KOHLEM_IRONR=(_KHM&&Number.isFinite(_KHM.ironR))?_KHM.ironR:0.35;
+  const KOHLEM_COAL=(_KHM&&Number.isFinite(_KHM.coal))?_KHM.coal:0xd8662a;
+  const KOHLEM_COALR=(_KHM&&Number.isFinite(_KHM.coalR))?_KHM.coalR:0.25;
+  const iron=matCol(KOHLEM_IRON,KOHLEM_IRONR,0);
   for(let i=0;i<_kohleF('legs');i++){const a=i/_kohleF('legs')*Math.PI*2;const leg=new THREE.Mesh(new THREE.CylinderGeometry(_kohleF('legR0'),_kohleF('legR1'),_kohleF('legH'),6),iron);leg.position.set(x+Math.cos(a)*_kohleF('legRad'),_kohleF('legY'),z+Math.sin(a)*_kohleF('legRad'));leg.rotation.z=Math.cos(a)*_kohleF('legTilt');leg.rotation.x=-Math.sin(a)*_kohleF('legTilt');g.add(leg);}
   const bowl=new THREE.Mesh(new THREE.CylinderGeometry(_kohleF('bowlR0'),_kohleF('bowlR1'),_kohleF('bowlH'),12),iron);bowl.position.set(x,_kohleF('bowlY'),z);g.add(bowl);
-  const coals=new THREE.Mesh(new THREE.CylinderGeometry(_kohleF('coalR'),_kohleF('coalR'),_kohleF('coalH'),12),matCol(0xd8662a,0.25,0));coals.position.set(x,_kohleF('coalY'),z);g.add(coals);return g;}
+  const coals=new THREE.Mesh(new THREE.CylinderGeometry(_kohleF('coalR'),_kohleF('coalR'),_kohleF('coalH'),12),matCol(KOHLEM_COAL,KOHLEM_COALR,0));coals.position.set(x,_kohleF('coalY'),z);g.add(coals);return g;}
 /* V18.491.269 — Lab stone path ← PFAD_GESETZ fail-soft; Host none (PFAD_VIS). ≠ KOHLE/LATERNE; LIFT untouched. */
 const PFAD_FALLBACK={x0:-3,x1:40,step:1.45,slabW:1.25,slabH:0.06,slabD:2.4,slabY:0.03,curbZ:1.35,curbW:43,curbH:0.1,curbD:0.14,curbX:18.5,curbY:0.05};
 const _PFAD=(SC&&SC.PFAD_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PFAD_GESETZ)||null;
 function _pfadF(k){return (_PFAD&&Number.isFinite(_PFAD[k]))?_PFAD[k]:PFAD_FALLBACK[k];}
-function buildStonePath(){const g=new THREE.Group();const stone=matCol(0x453f37,0.97,0),edge=matCol(0x35302a,0.97,0);
+function buildStonePath(){const g=new THREE.Group();
+  /* V18.491.547 — Lab Stein-Pfad Mats ← PFADM_GESETZ fail-soft; Host none (PFADM_VIS). KOHLEM/LATERNEM/PFAD geo/LIFT untouched. */
+  const _PDM=(SC&&SC.PFADM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PFADM_GESETZ)||null;
+  const PFADM_STONE=(_PDM&&Number.isFinite(_PDM.stone))?_PDM.stone:0x453f37;
+  const PFADM_STONER=(_PDM&&Number.isFinite(_PDM.stoneR))?_PDM.stoneR:0.97;
+  const PFADM_EDGE=(_PDM&&Number.isFinite(_PDM.edge))?_PDM.edge:0x35302a;
+  const PFADM_EDGER=(_PDM&&Number.isFinite(_PDM.edgeR))?_PDM.edgeR:0.97;
+  const stone=matCol(PFADM_STONE,PFADM_STONER,0),edge=matCol(PFADM_EDGE,PFADM_EDGER,0);
   for(let x=_pfadF('x0');x<_pfadF('x1');x+=_pfadF('step')){const slab=new THREE.Mesh(new THREE.BoxGeometry(_pfadF('slabW'),_pfadF('slabH'),_pfadF('slabD')),stone);slab.position.set(x,_pfadF('slabY'),0);g.add(slab);}
   for(const sz of [-_pfadF('curbZ'),_pfadF('curbZ')]){const curb=new THREE.Mesh(new THREE.BoxGeometry(_pfadF('curbW'),_pfadF('curbH'),_pfadF('curbD')),edge);curb.position.set(_pfadF('curbX'),_pfadF('curbY'),sz);g.add(curb);}
   return g;}
@@ -2657,7 +3169,22 @@ const STRANG_R=(_STRNG&&Number.isFinite(_STRNG.R))?_STRNG.R:0.016;
 const _REIG=(SC&&SC.REIF_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.REIF_GESETZ)||null;
 const REIF_MUL=(_REIG&&Number.isFinite(_REIG.mul))?_REIG.mul:0.86;
 const REIF_TUBE=(_REIG&&Number.isFinite(_REIG.tube))?_REIG.tube:0.02;
-function buildPendulumBall(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.92,0),iron=matCol(0x33312c,0.4,0);
+function buildPendulumBall(pos){const g=new THREE.Group();g.position.copy(pos);
+  /* V18.491.548 — Lab Pendel/Galgen Mats ← PENDELM_GESETZ fail-soft; Host none (PENDELM_VIS). PFADM/PENDEL geo/GALGEN/FEDERM/STREITM/LIFT untouched. */
+  const _PNM=(SC&&SC.PENDELM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PENDELM_GESETZ)||null;
+  const PENDELM_WOOD=(_PNM&&Number.isFinite(_PNM.wood))?_PNM.wood:0x4a3520;
+  const PENDELM_WOODR=(_PNM&&Number.isFinite(_PNM.woodR))?_PNM.woodR:0.9;
+  const PENDELM_DARK=(_PNM&&Number.isFinite(_PNM.dark))?_PNM.dark:0x2a1d12;
+  const PENDELM_DARKR=(_PNM&&Number.isFinite(_PNM.darkR))?_PNM.darkR:0.92;
+  const PENDELM_IRON=(_PNM&&Number.isFinite(_PNM.iron))?_PNM.iron:0x33312c;
+  const PENDELM_IRONR=(_PNM&&Number.isFinite(_PNM.ironR))?_PNM.ironR:0.4;
+  const PENDELM_ROPE=(_PNM&&Number.isFinite(_PNM.rope))?_PNM.rope:0x6e5a3a;
+  const PENDELM_ROPER=(_PNM&&Number.isFinite(_PNM.ropeR))?_PNM.ropeR:0.8;
+  const PENDELM_BALL=(_PNM&&Number.isFinite(_PNM.ball))?_PNM.ball:0x484440;
+  const PENDELM_BALLR=(_PNM&&Number.isFinite(_PNM.ballR))?_PNM.ballR:0.5;
+  const PENDELM_BAND=(_PNM&&Number.isFinite(_PNM.band))?_PNM.band:0x2c2824;
+  const PENDELM_BANDR=(_PNM&&Number.isFinite(_PNM.bandR))?_PNM.bandR:0.45;
+  const wood=matCol(PENDELM_WOOD,PENDELM_WOODR,0),dark=matCol(PENDELM_DARK,PENDELM_DARKR,0),iron=matCol(PENDELM_IRON,PENDELM_IRONR,0);
   const H=GALGEN_H, span=GALGEN_SPAN;
   for(const px of [-span/2,span/2]){const post=new THREE.Mesh(new THREE.CylinderGeometry(SAULE_R0,SAULE_R1,H,10),wood);post.position.set(px,H/2,0);post.castShadow=true;g.add(post);
     const foot=new THREE.Mesh(new THREE.BoxGeometry(FUSS_W,FUSS_H,FUSS_D),dark);foot.position.set(px,FUSS_Y,0);g.add(foot);
@@ -2667,9 +3194,9 @@ function buildPendulumBall(pos){const g=new THREE.Group();g.position.copy(pos);c
   const L=PENDEL_L, ballR=PENDEL_BALLR, N=PENDEL_N, segLen=L/N;                                        // echtes Seil: segs Verlet-Segmente
   const pivot=new THREE.Vector3(pos.x,pos.y+H-OESE_YOFF,pos.z);
   const pts=[],ptsPrev=[];for(let i=0;i<=N;i++){const p=new THREE.Vector3(pivot.x,pivot.y-segLen*i,pivot.z);pts.push(p.clone());ptsPrev.push(p.clone());}
-  const ropeSegs=[];for(let i=0;i<N;i++){const seg=new THREE.Mesh(new THREE.CylinderGeometry(STRANG_R,STRANG_R,segLen,6),matCol(0x6e5a3a,0.8,0));g.add(seg);ropeSegs.push(seg);}
-  const ball=new THREE.Mesh(new THREE.SphereGeometry(ballR,18,14),matCol(0x484440,0.5,0));ball.castShadow=true;g.add(ball);
-  const band=new THREE.Mesh(new THREE.TorusGeometry(ballR*REIF_MUL,REIF_TUBE,6,18),matCol(0x2c2824,0.45,0));ball.add(band);
+  const ropeSegs=[];for(let i=0;i<N;i++){const seg=new THREE.Mesh(new THREE.CylinderGeometry(STRANG_R,STRANG_R,segLen,6),matCol(PENDELM_ROPE,PENDELM_ROPER,0));g.add(seg);ropeSegs.push(seg);}
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(ballR,18,14),matCol(PENDELM_BALL,PENDELM_BALLR,0));ball.castShadow=true;g.add(ball);
+  const band=new THREE.Mesh(new THREE.TorusGeometry(ballR*REIF_MUL,REIF_TUBE,6,18),matCol(PENDELM_BAND,PENDELM_BANDR,0));ball.add(band);
   arena.pendulum={grp:g,ball,ropeSegs,pivot,N,segLen,L,ballR,pts,ptsPrev,hitCD:0};
   updatePendulum(0);return g;}
 /* V18.491.238 — Lab rope solver iters ← SEIL_GESETZ fail-soft; Host none (SEIL_VIS). */
@@ -2705,12 +3232,12 @@ function updatePendulum(dt){const P=arena.pendulum;if(!P)return;const N=P.N;
   const bw=P.pts[N];
   if(P.hitCD>0)P.hitCD-=dt;
   if(dt>0&&P.hitCD<=0){const spd=Math.hypot(bw.x-P.ptsPrev[N].x,bw.z-P.ptsPrev[N].z)/Math.max(1e-4,dt);
-    if(spd>1.6){const dh=Math.hypot(bw.x-arena.player.x,bw.z-arena.player.z);if(dh<P.ballR+0.42&&bw.y<1.85){fx.shake=Math.max(fx.shake,0.4);fx.freeze=Math.max(fx.freeze,0.1);popText('✖ DIE KUGEL TRIFFT DICH','#ff6a6a',0,0);P.hitCD=1.0;}}}}
+    if(spd>1.6){const dh=Math.hypot(bw.x-arena.player.x,bw.z-arena.player.z);if(dh<P.ballR+0.42&&bw.y<1.85){fx.shake=Math.max(fx.shake,0.4);fx.freeze=Math.max(fx.freeze,0.1);popText('✖ DIE KUGEL TRIFFT DICH',GERATM_CSS,0,0);P.hitCD=1.0;}}}}
 function tryHitPendulum(handW,bladeDir,vel){const P=arena.pendulum;if(!P||P.hitCD>0.55)return false;const N=P.N,bw=P.pts[N];let hit=false;
   hit=!!bladeHitsPoint(handW,bladeDir,bw,P.ballR+0.07);
   if(!hit)return false;
   P.ptsPrev[N].x-=clamp(vel.x,-7,7)*0.014*wMass();P.ptsPrev[N].z-=clamp(vel.z,-7,7)*0.014*wMass();P.ptsPrev[N].y-=clamp(vel.y,-5,5)*0.007*wMass();   // Impuls auf den Ball-Punkt (Seil schwingt + biegt)
-  fx.shake=Math.max(fx.shake,0.08);fx.freeze=Math.max(fx.freeze,0.05);popText('Kugel getroffen — sie schwingt!','#cdbf9a',0,-0.04);arena.cooldown=0.18;return true;}
+  fx.shake=Math.max(fx.shake,0.08);fx.freeze=Math.max(fx.freeze,0.05);popText('Kugel getroffen — sie schwingt!',GERTTM_CSS,0,-0.04);arena.cooldown=0.18;return true;}
 /* V18.491.417 — Lab Drehbaum-Kappe ← KAPPE_GESETZ fail-soft; Host none (KAPPE_VIS). STUMPF/BAUM/DREH untouched; pad 0.13 left bare; HAUBE/KNOLLE/BLOCK/LIFT untouched. */
 const _KPE=(SC&&SC.KAPPE_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.KAPPE_GESETZ)||null;
 const KAPPE_R0=(_KPE&&Number.isFinite(_KPE.R0))?_KPE.R0:0.13;
@@ -2746,7 +3273,18 @@ const _DRG=(SC&&SC.DREH_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.D
 const DREH_H=(_DRG&&Number.isFinite(_DRG.H))?_DRG.H:1.5;
 const DREH_ARMLEN=(_DRG&&Number.isFinite(_DRG.armLen))?_DRG.armLen:0.92;
 const DREH_PADR=(_DRG&&Number.isFinite(_DRG.padR))?_DRG.padR:0.18;
-function buildSpinTree(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.92,0),pad=matCol(0x6e4a32,0.85,0),lin=matCol(0xb6a06a,0.7,0);
+function buildSpinTree(pos){const g=new THREE.Group();g.position.copy(pos);
+  /* V18.491.549 — Lab Drehbaum Mats ← DREHM_GESETZ fail-soft; Host none (DREHM_VIS). PENDELM/DREH/BAUM/STUMPF/FEDERM/STREITM/LIFT untouched. */
+  const _DRM=(SC&&SC.DREHM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.DREHM_GESETZ)||null;
+  const DREHM_WOOD=(_DRM&&Number.isFinite(_DRM.wood))?_DRM.wood:0x4a3520;
+  const DREHM_WOODR=(_DRM&&Number.isFinite(_DRM.woodR))?_DRM.woodR:0.9;
+  const DREHM_DARK=(_DRM&&Number.isFinite(_DRM.dark))?_DRM.dark:0x2a1d12;
+  const DREHM_DARKR=(_DRM&&Number.isFinite(_DRM.darkR))?_DRM.darkR:0.92;
+  const DREHM_PAD=(_DRM&&Number.isFinite(_DRM.pad))?_DRM.pad:0x6e4a32;
+  const DREHM_PADR=(_DRM&&Number.isFinite(_DRM.padR))?_DRM.padR:0.85;
+  const DREHM_LIN=(_DRM&&Number.isFinite(_DRM.lin))?_DRM.lin:0xb6a06a;
+  const DREHM_LINR=(_DRM&&Number.isFinite(_DRM.linR))?_DRM.linR:0.7;
+  const wood=matCol(DREHM_WOOD,DREHM_WOODR,0),dark=matCol(DREHM_DARK,DREHM_DARKR,0),pad=matCol(DREHM_PAD,DREHM_PADR,0),lin=matCol(DREHM_LIN,DREHM_LINR,0);
   const H=DREH_H;
   const post=new THREE.Mesh(new THREE.CylinderGeometry(BAUM_R0,BAUM_R1,H,12),wood);post.position.set(0,H/2,0);post.castShadow=true;g.add(post);
   const base=new THREE.Mesh(new THREE.CylinderGeometry(STUMPF_R0,STUMPF_R1,STUMPF_H,12),dark);base.position.set(0,STUMPF_Y,0);g.add(base);
@@ -2760,7 +3298,7 @@ function buildSpinTree(pos){const g=new THREE.Group();g.position.copy(pos);const
 function updateSpinTree(dt){const T=arena.spintree;if(!T)return;
   if(Math.abs(T.angVel)>0.02){T.ang+=T.angVel*dt;T.angVel*=Math.max(0,1-0.62*dt);T.hub.rotation.y=T.ang;}else T.angVel=0;
   if(T.hitCD>0)T.hitCD-=dt;
-  if(Math.abs(T.angVel)>2.6&&T.hitCD<=0){for(let i=0;i<4;i++){const a=T.ang+i/4*Math.PI*2,px=T.pivot.x+Math.cos(a)*T.armLen,pz=T.pivot.z+Math.sin(a)*T.armLen;if(Math.hypot(px-arena.player.x,pz-arena.player.z)<T.padR+0.42&&T.pivot.y<1.85){fx.shake=Math.max(fx.shake,0.34);fx.freeze=Math.max(fx.freeze,0.09);popText('✖ der Drehbaum erwischt dich','#ff8a6a',0,0);T.hitCD=0.9;break;}}}}
+  if(Math.abs(T.angVel)>2.6&&T.hitCD<=0){for(let i=0;i<4;i++){const a=T.ang+i/4*Math.PI*2,px=T.pivot.x+Math.cos(a)*T.armLen,pz=T.pivot.z+Math.sin(a)*T.armLen;if(Math.hypot(px-arena.player.x,pz-arena.player.z)<T.padR+0.42&&T.pivot.y<1.85){fx.shake=Math.max(fx.shake,0.34);fx.freeze=Math.max(fx.freeze,0.09);popText('✖ der Drehbaum erwischt dich',DREHERM_CSS,0,0);T.hitCD=0.9;break;}}}}
 function tryHitSpinTree(handW,bladeDir,vel){const T=arena.spintree;if(!T)return false;
   const e0=arena._edge0,e1=arena._edge1,eLen=Math.max(0.02,e1-e0);let hp=null;
   for(let j=0;j<4&&!hp;j++){const a=T.ang+j/4*Math.PI*2,pw=new THREE.Vector3(T.pivot.x+Math.cos(a)*T.armLen,T.pivot.y,T.pivot.z+Math.sin(a)*T.armLen);
@@ -2769,7 +3307,7 @@ function tryHitSpinTree(handW,bladeDir,vel){const T=arena.spintree;if(!T)return 
   const r=hp.clone().sub(T.pivot);r.y=0;const radius=Math.max(0.3,r.length());
   const tang=new THREE.Vector3(r.z,0,-r.x).normalize();const vt=vel.dot(tang);
   T.angVel+=clamp(vt/radius,-10,10)*0.8;
-  fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.05);popText('Drehbaum getroffen!','#cd9a6a',0,-0.04);arena.cooldown=0.18;return true;}
+  fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.05);popText('Drehbaum getroffen!',DREHTTM_CSS,0,-0.04);arena.cooldown=0.18;return true;}
 /* V18.491.418 — Lab Quintain-Pfosten ← HOLM_GESETZ fail-soft; Host none (HOLM_VIS). BAUM coinc. untouched; QUINT postH/armLen/shieldR untouched; KAPPE/STUMPF/DREH/PFYL/PFOST/DORN/ZIELP/LIFT untouched. */
 const _HOL=(SC&&SC.HOLM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.HOLM_GESETZ)||null;
 const HOLM_R0=(_HOL&&Number.isFinite(_HOL.R0))?_HOL.R0:0.09;
@@ -2822,18 +3360,34 @@ const QUINT_POSTH=(_QNG&&Number.isFinite(_QNG.postH))?_QNG.postH:1.32;
 const QUINT_ARMLEN=(_QNG&&Number.isFinite(_QNG.armLen))?_QNG.armLen:1.0;
 const QUINT_SHIELDR=(_QNG&&Number.isFinite(_QNG.shieldR))?_QNG.shieldR:0.36;
 function buildQuintain(pos){const g=new THREE.Group();g.position.copy(pos);
-  const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.92,0);const postH=QUINT_POSTH;
+  /* V18.491.550 — Lab Quintain Mats ← QUINTM_GESETZ fail-soft; Host none (QUINTM_VIS). DREHM/PENDELM/QUINT geo/SCHILDM/LIFT untouched. */
+  const _QNM=(SC&&SC.QUINTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.QUINTM_GESETZ)||null;
+  const QUINTM_WOOD=(_QNM&&Number.isFinite(_QNM.wood))?_QNM.wood:0x4a3520;
+  const QUINTM_WOODR=(_QNM&&Number.isFinite(_QNM.woodR))?_QNM.woodR:0.9;
+  const QUINTM_DARK=(_QNM&&Number.isFinite(_QNM.dark))?_QNM.dark:0x2a1d12;
+  const QUINTM_DARKR=(_QNM&&Number.isFinite(_QNM.darkR))?_QNM.darkR:0.92;
+  const QUINTM_SHIELD=(_QNM&&Number.isFinite(_QNM.shield))?_QNM.shield:0x9a3528;
+  const QUINTM_SHIELDR=(_QNM&&Number.isFinite(_QNM.shieldR))?_QNM.shieldR:0.55;
+  const QUINTM_BOSS=(_QNM&&Number.isFinite(_QNM.boss))?_QNM.boss:0xc8a44a;
+  const QUINTM_BOSSR=(_QNM&&Number.isFinite(_QNM.bossR))?_QNM.bossR:1;
+  const QUINTM_CROSS=(_QNM&&Number.isFinite(_QNM.cross))?_QNM.cross:0xe8dcc0;
+  const QUINTM_CROSSR=(_QNM&&Number.isFinite(_QNM.crossR))?_QNM.crossR:0.45;
+  const QUINTM_BAG=(_QNM&&Number.isFinite(_QNM.bag))?_QNM.bag:0x6e5a38;
+  const QUINTM_BAGR=(_QNM&&Number.isFinite(_QNM.bagR))?_QNM.bagR:0.8;
+  const QUINTM_CAP=(_QNM&&Number.isFinite(_QNM.cap))?_QNM.cap:0x5a4a2e;
+  const QUINTM_CAPR=(_QNM&&Number.isFinite(_QNM.capR))?_QNM.capR:0.8;
+  const wood=matCol(QUINTM_WOOD,QUINTM_WOODR,0),dark=matCol(QUINTM_DARK,QUINTM_DARKR,0);const postH=QUINT_POSTH;
   const base=new THREE.Mesh(new THREE.CylinderGeometry(BODEN_R0,BODEN_R1,BODEN_H,12),dark);base.position.y=BODEN_Y;g.add(base);
   const post=new THREE.Mesh(new THREE.CylinderGeometry(HOLM_R0,HOLM_R1,postH,12),wood);post.position.y=postH/2;post.castShadow=true;g.add(post);
   const hub=new THREE.Mesh(new THREE.CylinderGeometry(NABE_R,NABE_R,NABE_H,10),dark);hub.position.y=postH;g.add(hub);
   const arm=new THREE.Group();arm.position.set(0,postH+GELENK_YOFF,0);g.add(arm);const armLen=QUINT_ARMLEN;
   const beam=new THREE.Mesh(new THREE.BoxGeometry(armLen*2,QUERB_THICK,QUERB_THICK),wood);arm.add(beam);
   const shield=new THREE.Group();shield.position.set(armLen,0,0);arm.add(shield);                          // Schild
-  const sh=new THREE.Mesh(new THREE.CylinderGeometry(SCHIRM_R,SCHIRM_R,SCHIRM_H,16),matCol(0x9a3528,0.55,0));sh.rotation.z=Math.PI/2;sh.castShadow=true;shield.add(sh);
-  const boss=new THREE.Mesh(new THREE.SphereGeometry(BUCKEL_R,10,8),matCol(0xc8a44a,1,0));boss.position.x=BUCKEL_X;shield.add(boss);
-  const cross=new THREE.Mesh(new THREE.BoxGeometry(KREUZB_W,KREUZB_H,KREUZB_D),matCol(0xe8dcc0,0.45,0));cross.position.x=KREUZB_X;shield.add(cross);
-  const bag=new THREE.Mesh(new THREE.CylinderGeometry(SACK_R0,SACK_R1,SACK_H,10),matCol(0x6e5a38,0.8,0));bag.position.set(-armLen,SACK_Y,0);bag.rotation.z=SACK_ROTZ;bag.castShadow=true;arm.add(bag);   // Sandsack-Gegengewicht
-  const bcap=new THREE.Mesh(new THREE.SphereGeometry(KUPPE_R,10,8),matCol(0x5a4a2e,0.8,0));bcap.position.set(-armLen+KUPPE_XOFF,KUPPE_Y,0);arm.add(bcap);
+  const sh=new THREE.Mesh(new THREE.CylinderGeometry(SCHIRM_R,SCHIRM_R,SCHIRM_H,16),matCol(QUINTM_SHIELD,QUINTM_SHIELDR,0));sh.rotation.z=Math.PI/2;sh.castShadow=true;shield.add(sh);
+  const boss=new THREE.Mesh(new THREE.SphereGeometry(BUCKEL_R,10,8),matCol(QUINTM_BOSS,QUINTM_BOSSR,0));boss.position.x=BUCKEL_X;shield.add(boss);
+  const cross=new THREE.Mesh(new THREE.BoxGeometry(KREUZB_W,KREUZB_H,KREUZB_D),matCol(QUINTM_CROSS,QUINTM_CROSSR,0));cross.position.x=KREUZB_X;shield.add(cross);
+  const bag=new THREE.Mesh(new THREE.CylinderGeometry(SACK_R0,SACK_R1,SACK_H,10),matCol(QUINTM_BAG,QUINTM_BAGR,0));bag.position.set(-armLen,SACK_Y,0);bag.rotation.z=SACK_ROTZ;bag.castShadow=true;arm.add(bag);   // Sandsack-Gegengewicht
+  const bcap=new THREE.Mesh(new THREE.SphereGeometry(KUPPE_R,10,8),matCol(QUINTM_CAP,QUINTM_CAPR,0));bcap.position.set(-armLen+KUPPE_XOFF,KUPPE_Y,0);arm.add(bcap);
   const initAng=Math.PI/2;arm.rotation.y=initAng;                                                          // Schild zeigt anfangs nach -z
   arena.quintain={grp:g,arm,ang:initAng,angVel:0,armLen,pivot:new THREE.Vector3(pos.x,postH+GELENK_YOFF,pos.z),shieldR:QUINT_SHIELDR,hitCD:0};return g;}
 function tryHitQuintain(handW,bladeDir,vel){const Q=arena.quintain;if(!Q)return false;
@@ -2849,13 +3403,13 @@ function tryHitQuintain(handW,bladeDir,vel){const Q=arena.quintain;if(!Q)return 
   const tang=new THREE.Vector3(r.z,0,-r.x).normalize();const vt=vel.dot(tang);                             // richtige Drehrichtung: Treffer stösst den Arm in Schlagrichtung weg
   Q.angVel+=clamp(vt/radius,-9,9)*0.75*wMass();
   fx.shake=Math.max(fx.shake,0.06);fx.freeze=Math.max(fx.freeze,0.05);
-  popText(bag?'Sandsack getroffen — er schwingt herum!':'Schild getroffen — weiche dem Sandsack!',bag?'#d8c089':'#ffd479',0,-0.04);arena.cooldown=0.2;return true;}
+  popText(bag?'Sandsack getroffen — er schwingt herum!':'Schild getroffen — weiche dem Sandsack!',bag?QUINTHM_SACK_CSS:QUINTHM_SHIELD_CSS,0,-0.04);arena.cooldown=0.2;return true;}
 function updateQuintain(dt){const Q=arena.quintain;if(!Q)return;
   if(Math.abs(Q.angVel)>0.02){Q.ang+=Q.angVel*dt;Q.angVel*=Math.max(0,1-1.05*dt);Q.arm.rotation.y=Q.ang;}else Q.angVel=0;
   if(Q.hitCD>0)Q.hitCD-=dt;
   Q.arm.updateMatrixWorld(true);const bp=new THREE.Vector3(-Q.armLen,-0.2,0).applyMatrix4(Q.arm.matrixWorld);
   const dh=Math.hypot(bp.x-arena.player.x,bp.z-arena.player.z);                                            // erwischt der Sack den Spieler?
-  if(dh<0.75&&Math.abs(Q.angVel)>0.6&&Q.hitCD<=0){Q.hitCD=1.3;fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DER SANDSACK ERWISCHT DICH','#ff6a4a',0,0);popText('schneller ausweichen!','#d96a4a',0.12,0.08);}}
+  if(dh<0.75&&Math.abs(Q.angVel)>0.6&&Q.hitCD<=0){Q.hitCD=1.3;fx.shake=Math.max(fx.shake,0.42);fx.freeze=Math.max(fx.freeze,0.12);const B=camBasis();fx.kickV.addScaledVector(B.fwd,-3.2);fx.kickV.y-=1.5;popText('✖ DER SANDSACK ERWISCHT DICH',GEFAHRM_CSS,0,0);popText('schneller ausweichen!',TREFFM_BAD_CSS,0.12,0.08);}}
 /* V18.491.287 — Lab thrust rings ← STECH_GESETZ fail-soft; Host none (STECH_VIS). BAHN / SCHEIBE / LIFT untouched. ≠ STREIT charger. */
 const STECH_SPOTS_FALLBACK=[[-0.85,1.50],[0,1.42],[0.85,1.55]];
 const _STCG=(SC&&SC.STECH_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.STECH_GESETZ)||null;
@@ -2878,11 +3432,20 @@ const _ROH=(SC&&SC.ROHR_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.R
 const ROHR_TUBE=(_ROH&&Number.isFinite(_ROH.tube))?_ROH.tube:0.026;
 function _stechSpotsOk(s){if(!Array.isArray(s)||s.length!==3)return false;for(const p of s){if(!Array.isArray(p)||p.length!==2)return false;if(!Number.isFinite(p[0])||!Number.isFinite(p[1]))return false;}return true;}
 const STECH_SPOTS=_stechSpotsOk(_STCG&&_STCG.spots)?_STCG.spots.map(p=>p.slice()):STECH_SPOTS_FALLBACK.map(p=>p.slice());
-function buildThrustRings(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0),dark=matCol(0x2a1d12,0.9,0);
+function buildThrustRings(pos){const g=new THREE.Group();g.position.copy(pos);
+  /* V18.491.551 — Lab Stechbahn Mats ← STECHM_GESETZ fail-soft; Host none (STECHM_VIS). QUINTM/STECH geo/DREHM/PENDELM/LIFT untouched. */
+  const _TRM=(SC&&SC.STECHM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.STECHM_GESETZ)||null;
+  const STECHM_WOOD=(_TRM&&Number.isFinite(_TRM.wood))?_TRM.wood:0x4a3520;
+  const STECHM_WOODR=(_TRM&&Number.isFinite(_TRM.woodR))?_TRM.woodR:0.9;
+  const STECHM_DARK=(_TRM&&Number.isFinite(_TRM.dark))?_TRM.dark:0x2a1d12;
+  const STECHM_DARKR=(_TRM&&Number.isFinite(_TRM.darkR))?_TRM.darkR:0.9;
+  const STECHM_RING=(_TRM&&Number.isFinite(_TRM.ring))?_TRM.ring:0xc8a44a;
+  const STECHM_RINGR=(_TRM&&Number.isFinite(_TRM.ringR))?_TRM.ringR:1;
+  const wood=matCol(STECHM_WOOD,STECHM_WOODR,0),dark=matCol(STECHM_DARK,STECHM_DARKR,0);
   for(const sx of [-STECH_POSTX,STECH_POSTX]){const post=new THREE.Mesh(new THREE.CylinderGeometry(TORP_R0,TORP_R1,STECH_BARH,10),wood);post.position.set(sx,STECH_BARH/2,0);post.castShadow=true;g.add(post);}
   const bar=new THREE.Mesh(new THREE.BoxGeometry(BARRE_W,BARRE_THICK,BARRE_THICK),dark);bar.position.set(0,STECH_BARH,0);g.add(bar);
   arena.thrustRings=[];const spots=STECH_SPOTS;                                     // x, Höhe (Stichlinie) — durchstechen entlang z
-  for(const [rx,ry] of spots){const ring=new THREE.Mesh(new THREE.TorusGeometry(STECH_R,ROHR_TUBE,8,22),matCol(0xc8a44a,1,0));ring.position.set(rx,ry,0);g.add(ring);
+  for(const [rx,ry] of spots){const ring=new THREE.Mesh(new THREE.TorusGeometry(STECH_R,ROHR_TUBE,8,22),matCol(STECHM_RING,STECHM_RINGR,0));ring.position.set(rx,ry,0);g.add(ring);
     const str=new THREE.Mesh(new THREE.CylinderGeometry(FADEN_R,FADEN_R,STECH_BARH-ry,4),dark);str.position.set(rx,(STECH_BARH+ry)/2,0);g.add(str);
     arena.thrustRings.push({center:new THREE.Vector3(pos.x+rx,pos.y+ry,pos.z),R:STECH_R,axis:new THREE.Vector3(0,0,1),mesh:ring,scored:false,flash:0});}
   return g;}
@@ -2890,24 +3453,35 @@ function tryThrustBamboo(tip,prev){if(!arena.bamboo)return false;
   for(const b of arena.bamboo){if(b.cut)continue;
     const dH=Math.hypot(tip.x-b.wx,tip.z-b.wz);
     if(dH<0.13&&tip.y>b.baseY+0.06&&tip.y<b.baseY+b.h-0.03){
-      b.wobble=0.5;popText('Bambus — die Spitze dringt nicht durch','#d96a4a',0,0);bladeRecoil(1.0);arena.thrusting=false;return true;}}
+      b.wobble=0.5;popText('Bambus — die Spitze dringt nicht durch',TREFFM_BAD_CSS,0,0);bladeRecoil(1.0);arena.thrusting=false;return true;}}
   return false;}
 function tryThrustRing(tip,prev){if(!arena.thrustRings||!prev)return;
   for(const r of arena.thrustRings){if(r.scored)continue;const c=r.center,ax=r.axis;
     const d0=prev.clone().sub(c).dot(ax),d1=tip.clone().sub(c).dot(ax);
     if(d0*d1<=0&&Math.abs(d1-d0)>1e-5){const t=d0/(d0-d1),cr=prev.clone().lerp(tip,t);const rad=cr.clone().sub(c).addScaledVector(ax,-cr.clone().sub(c).dot(ax)).length();
-      if(rad<r.R-0.035){r.scored=true;r.scoreUntil=clock.getElapsedTime()+1.4;r.flash=1;popText('◎ RING DURCHSTOCHEN — sauber durch die Mitte!','#6fcf73',0,-0.04);fx.freeze=Math.max(fx.freeze,0.06);}
-      else if(rad<r.R*1.7&&!r.falling){r.falling=true;r.homePos=r.mesh.position.clone();r.fallVel=new THREE.Vector3((Math.random()-0.5)*0.5+(d1-d0>0?0.3:-0.3),0.3,0.6);r.fallSpin=new THREE.Vector3((Math.random()-0.5)*6,(Math.random()-0.5)*6,(Math.random()-0.5)*7);r.respawnAt=clock.getElapsedTime()+5;popText('Rand erwischt — Ring kippt vom Posten!','#d4a843',0,-0.04);fx.shake=Math.max(fx.shake,0.16);fx.freeze=Math.max(fx.freeze,0.05);}
-      else if(rad<r.R*2.8){popText('knapp — '+(rad*100).toFixed(0)+' cm daneben','#d4a843',0,-0.04);}}}}
-function updateRings(dt){if(!arena.thrustRings)return;for(const r of arena.thrustRings){
+      if(rad<r.R-0.035){r.scored=true;r.scoreUntil=clock.getElapsedTime()+1.4;r.flash=1;popText('◎ RING DURCHSTOCHEN — sauber durch die Mitte!',TREFFM_OK_CSS,0,-0.04);fx.freeze=Math.max(fx.freeze,0.06);}
+      else if(rad<r.R*1.7&&!r.falling){r.falling=true;r.homePos=r.mesh.position.clone();r.fallVel=new THREE.Vector3((Math.random()-0.5)*0.5+(d1-d0>0?0.3:-0.3),0.3,0.6);r.fallSpin=new THREE.Vector3((Math.random()-0.5)*6,(Math.random()-0.5)*6,(Math.random()-0.5)*7);r.respawnAt=clock.getElapsedTime()+5;popText('Rand erwischt — Ring kippt vom Posten!',WARNM_CSS,0,-0.04);fx.shake=Math.max(fx.shake,0.16);fx.freeze=Math.max(fx.freeze,0.05);}
+      else if(rad<r.R*2.8){popText('knapp — '+(rad*100).toFixed(0)+' cm daneben',WARNM_CSS,0,-0.04);}}}}
+function updateRings(dt){
+  /* V18.491.558 — Lab Stechbahn Ring-Flash RGB ← STECHF_GESETZ fail-soft; Host none (STECHF_VIS). KOTTEM/BLITZM/STECHM/STECH geo/LIFT untouched. */
+  const _SFM=(SC&&SC.STECHF_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.STECHF_GESETZ)||null;
+  const STECHF_R0=(_SFM&&Number.isFinite(_SFM.r0))?_SFM.r0:0.78;
+  const STECHF_G0=(_SFM&&Number.isFinite(_SFM.g0))?_SFM.g0:0.64;
+  const STECHF_B0=(_SFM&&Number.isFinite(_SFM.b0))?_SFM.b0:0.29;
+  const STECHF_FR=(_SFM&&Number.isFinite(_SFM.fr))?_SFM.fr:-0.4;
+  const STECHF_FG=(_SFM&&Number.isFinite(_SFM.fg))?_SFM.fg:0.25;
+  /* V18.491.563 — Lab Stechbahn Ring-Flash Abklingen ← RINGABKM_GESETZ fail-soft; Host none (RINGABKM_VIS). LEHREM/ABKLINGM/STECHF RGB/LIFT untouched. */
+  const _RAK=(SC&&SC.RINGABKM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.RINGABKM_GESETZ)||null;
+  const RINGABKM_FLASH=(_RAK&&Number.isFinite(_RAK.flash))?_RAK.flash:0.8;
+  if(!arena.thrustRings)return;for(const r of arena.thrustRings){
   if(r.scored&&r.scoreUntil&&clock.getElapsedTime()>r.scoreUntil){r.scored=false;r.scoreUntil=0;}
   if(r.falling){r.fallVel.y-=ARENA.g*dt;r.mesh.position.addScaledVector(r.fallVel,dt);
     r.mesh.rotation.x+=r.fallSpin.x*dt;r.mesh.rotation.y+=r.fallSpin.y*dt;r.mesh.rotation.z+=r.fallSpin.z*dt;
     if(r.mesh.position.y<0.16){r.mesh.position.y=0.16;r.fallVel.set(0,0,0);r.fallSpin.multiplyScalar(0.86);}    // am Boden liegen, austrudeln
     if(clock.getElapsedTime()>r.respawnAt){r.falling=false;r.mesh.position.copy(r.homePos);r.mesh.rotation.set(0,0,0);}   // nach 5 s zurück an den Posten
     continue;}
-  if(r.flash>0)r.flash=Math.max(0,r.flash-dt*0.8);
-  if(r.mesh&&r.mesh.material&&r.mesh.material.color&&r.mesh.material.color.setRGB)r.mesh.material.color.setRGB(0.78-0.4*r.flash,0.64+0.25*r.flash,0.29);}}
+  if(r.flash>0)r.flash=Math.max(0,r.flash-dt*RINGABKM_FLASH);
+  if(r.mesh&&r.mesh.material&&r.mesh.material.color&&r.mesh.material.color.setRGB)r.mesh.material.color.setRGB(STECHF_R0+STECHF_FR*r.flash,STECHF_G0+STECHF_FG*r.flash,STECHF_B0);}}
 /* V18.491.285 — Lab popinjay ← PAPAGEI_GESETZ fail-soft; Host none (PAPAGEI_VIS). CLOUT / BANNER / LIFT untouched. */
 const _PPG=(SC&&SC.PAPAGEI_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PAPAGEI_GESETZ)||null;
 const PAPAGEI_POLEH=(_PPG&&Number.isFinite(_PPG.poleH))?_PPG.poleH:4.6;
@@ -2952,15 +3526,30 @@ const FLUEGEL_ZOFF=(_FLU&&Number.isFinite(_FLU.zOff))?_FLU.zOff:0.12;
 /* V18.491.439 — Lab Popinjay-Ruhehöhe ← RAST_GESETZ fail-soft; Host none (RAST_VIS). FLUEGEL/PAPAGEI/AST/RUTE/ANSATZ/GELENK/SPINN/RUHE/LIFT untouched; bird+base same yOff. */
 const _RST=(SC&&SC.RAST_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.RAST_GESETZ)||null;
 const RAST_YOFF=(_RST&&Number.isFinite(_RST.yOff))?_RST.yOff:0.13;
-function buildPopinjay(pos){const g=new THREE.Group();g.position.copy(pos);const wood=matCol(0x4a3520,0.9,0);const poleH=PAPAGEI_POLEH;
+function buildPopinjay(pos){const g=new THREE.Group();g.position.copy(pos);
+  /* V18.491.552 — Lab Popinjay/Papagei Mats ← PAPAGEIM_GESETZ fail-soft; Host none (PAPAGEIM_VIS). STECHM/PAPAGEI geo/ENTEM/LIFT untouched. */
+  const _PYM=(SC&&SC.PAPAGEIM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PAPAGEIM_GESETZ)||null;
+  const PAPAGEIM_WOOD=(_PYM&&Number.isFinite(_PYM.wood))?_PYM.wood:0x4a3520;
+  const PAPAGEIM_WOODR=(_PYM&&Number.isFinite(_PYM.woodR))?_PYM.woodR:0.9;
+  const PAPAGEIM_BODY=(_PYM&&Number.isFinite(_PYM.body))?_PYM.body:0x2f7a45;
+  const PAPAGEIM_BODYR=(_PYM&&Number.isFinite(_PYM.bodyR))?_PYM.bodyR:0.55;
+  const PAPAGEIM_HEAD=(_PYM&&Number.isFinite(_PYM.head))?_PYM.head:0xc83828;
+  const PAPAGEIM_HEADR=(_PYM&&Number.isFinite(_PYM.headR))?_PYM.headR:0.55;
+  const PAPAGEIM_BEAK=(_PYM&&Number.isFinite(_PYM.beak))?_PYM.beak:0xe0a830;
+  const PAPAGEIM_BEAKR=(_PYM&&Number.isFinite(_PYM.beakR))?_PYM.beakR:0.5;
+  const PAPAGEIM_TAIL=(_PYM&&Number.isFinite(_PYM.tail))?_PYM.tail:0x245a35;
+  const PAPAGEIM_TAILR=(_PYM&&Number.isFinite(_PYM.tailR))?_PYM.tailR:0.55;
+  const PAPAGEIM_WING=(_PYM&&Number.isFinite(_PYM.wing))?_PYM.wing:0x3f8a55;
+  const PAPAGEIM_WINGR=(_PYM&&Number.isFinite(_PYM.wingR))?_PYM.wingR:0.55;
+  const wood=matCol(PAPAGEIM_WOOD,PAPAGEIM_WOODR,0);const poleH=PAPAGEI_POLEH;
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(RUTE_R0,RUTE_R1,poleH,10),wood);pole.position.y=poleH/2;pole.castShadow=true;g.add(pole);
   const perch=new THREE.Mesh(new THREE.BoxGeometry(AST_W,AST_THICK,AST_THICK),wood);perch.position.y=poleH;g.add(perch);
   const bird=new THREE.Group();const restY=poleH+RAST_YOFF;bird.position.set(0,restY,0);g.add(bird);
-  const body=new THREE.Mesh(new THREE.SphereGeometry(VOGEL_R,12,10),matCol(0x2f7a45,0.55,0));body.scale.set(VOGEL_SX,VOGEL_SY,VOGEL_SZ);bird.add(body);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(KUKEN_R,10,8),matCol(0xc83828,0.55,0));head.position.set(KUKEN_X,KUKEN_Y,0);bird.add(head);
-  const beak=new THREE.Mesh(new THREE.ConeGeometry(SCHNABEL_R,SCHNABEL_H,6),matCol(0xe0a830,0.5,0));beak.rotation.z=-Math.PI/2;beak.position.set(SCHNABEL_X,SCHNABEL_Y,0);bird.add(beak);
-  const tail=new THREE.Mesh(new THREE.ConeGeometry(SCHWANZ_R,SCHWANZ_H,6),matCol(0x245a35,0.55,0));tail.rotation.z=Math.PI/2;tail.position.set(SCHWANZ_X,0,0);bird.add(tail);
-  for(const dz of [FLUEGEL_ZOFF,-FLUEGEL_ZOFF]){const wing=new THREE.Mesh(new THREE.BoxGeometry(FLUEGEL_W,FLUEGEL_H,FLUEGEL_D),matCol(0x3f8a55,0.55,0));wing.position.set(0,FLUEGEL_Y,dz);bird.add(wing);}
+  const body=new THREE.Mesh(new THREE.SphereGeometry(VOGEL_R,12,10),matCol(PAPAGEIM_BODY,PAPAGEIM_BODYR,0));body.scale.set(VOGEL_SX,VOGEL_SY,VOGEL_SZ);bird.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(KUKEN_R,10,8),matCol(PAPAGEIM_HEAD,PAPAGEIM_HEADR,0));head.position.set(KUKEN_X,KUKEN_Y,0);bird.add(head);
+  const beak=new THREE.Mesh(new THREE.ConeGeometry(SCHNABEL_R,SCHNABEL_H,6),matCol(PAPAGEIM_BEAK,PAPAGEIM_BEAKR,0));beak.rotation.z=-Math.PI/2;beak.position.set(SCHNABEL_X,SCHNABEL_Y,0);bird.add(beak);
+  const tail=new THREE.Mesh(new THREE.ConeGeometry(SCHWANZ_R,SCHWANZ_H,6),matCol(PAPAGEIM_TAIL,PAPAGEIM_TAILR,0));tail.rotation.z=Math.PI/2;tail.position.set(SCHWANZ_X,0,0);bird.add(tail);
+  for(const dz of [FLUEGEL_ZOFF,-FLUEGEL_ZOFF]){const wing=new THREE.Mesh(new THREE.BoxGeometry(FLUEGEL_W,FLUEGEL_H,FLUEGEL_D),matCol(PAPAGEIM_WING,PAPAGEIM_WINGR,0));wing.position.set(0,FLUEGEL_Y,dz);bird.add(wing);}
   arena.popinjays=arena.popinjays||[];arena.popinjays.push({grp:g,bird,base:new THREE.Vector3(pos.x,pos.y+restY,pos.z),restY,struck:false,fallV:0,respawnAt:0});return g;}
 function updatePopinjay(dt){if(!arena.popinjays)return;for(const P2 of arena.popinjays){if(!P2.bird)continue;
   if(P2.struck){P2.fallV-=9.8*dt;P2.bird.position.y+=P2.fallV*dt;P2.bird.rotation.z+=dt*5;P2.bird.position.x+=dt*0.4;
@@ -3041,7 +3630,17 @@ const SIMS_X=(_SIMG&&Number.isFinite(_SIMG.x))?_SIMG.x:-3.35;
 const SIMS_Y=(_SIMG&&Number.isFinite(_SIMG.y))?_SIMG.y:2.78;
 const SIMS_Z=(_SIMG&&Number.isFinite(_SIMG.z))?_SIMG.z:2.6;
 function buildDojo(){const g=new THREE.Group();
-  const wood=matCol(0x4a3522,0.9,0), darkwood=matCol(0x33251a,0.92,0), paper=matCol(0xd6c596,0.55,0);
+  /* V18.491.553 — Lab Dojo Mats ← DOJOM_GESETZ fail-soft; Host none (DOJOM_VIS). PAPAGEIM/PERGOLAM/DOJO geo/LIFT untouched. */
+  const _DJM=(SC&&SC.DOJOM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.DOJOM_GESETZ)||null;
+  const DOJOM_WOOD=(_DJM&&Number.isFinite(_DJM.wood))?_DJM.wood:0x4a3522;
+  const DOJOM_WOODR=(_DJM&&Number.isFinite(_DJM.woodR))?_DJM.woodR:0.9;
+  const DOJOM_DARK=(_DJM&&Number.isFinite(_DJM.dark))?_DJM.dark:0x33251a;
+  const DOJOM_DARKR=(_DJM&&Number.isFinite(_DJM.darkR))?_DJM.darkR:0.92;
+  const DOJOM_PAPER=(_DJM&&Number.isFinite(_DJM.paper))?_DJM.paper:0xd6c596;
+  const DOJOM_PAPERR=(_DJM&&Number.isFinite(_DJM.paperR))?_DJM.paperR:0.55;
+  const DOJOM_WALL=(_DJM&&Number.isFinite(_DJM.wall))?_DJM.wall:0x281d12;
+  const DOJOM_WALLR=(_DJM&&Number.isFinite(_DJM.wallR))?_DJM.wallR:0.95;
+  const wood=matCol(DOJOM_WOOD,DOJOM_WOODR,0), darkwood=matCol(DOJOM_DARK,DOJOM_DARKR,0), paper=matCol(DOJOM_PAPER,DOJOM_PAPERR,0);
   const cs=[[DOJO_X0,DOJO_Z0],[DOJO_X1,DOJO_Z0],[DOJO_X0,DOJO_Z1],[DOJO_X1,DOJO_Z1]];                                                  // Pergola-Eckpfosten um den Übungshof
   for(const [cx,cz] of cs){const post=new THREE.Mesh(new THREE.CylinderGeometry(STEHER_R0,STEHER_R1,DOJO_POSTH,10),wood);post.position.set(cx,DOJO_POSTH/2,cz);post.castShadow=true;g.add(post);
     const brace=new THREE.Mesh(new THREE.BoxGeometry(KNIE_W,KNIE_H,KNIE_D),darkwood);brace.position.set(cx+(cx<KNIE_MID?KNIE_OFF:-KNIE_OFF),KNIE_Y,cz);g.add(brace);}
@@ -3052,7 +3651,7 @@ function buildDojo(){const g=new THREE.Group();
     const lan=new THREE.Mesh(new THREE.CylinderGeometry(PAPIER_R,PAPIER_R,PAPIER_H,12),paper);lan.position.set(lx,PAPIER_Y,lz);g.add(lan);
     const cap=new THREE.Mesh(new THREE.CylinderGeometry(PAPIER_CAPR0,PAPIER_CAPR1,PAPIER_CAPH,12),darkwood);cap.position.set(lx,PAPIER_CAPY,lz);g.add(cap);
     const str=new THREE.Mesh(new THREE.CylinderGeometry(PAPIER_STRR,PAPIER_STRR,PAPIER_STRH,4),darkwood);str.position.set(lx,PAPIER_STRY,lz);g.add(str);}
-  const wall=new THREE.Mesh(new THREE.BoxGeometry(RUECK_T,DOJO_WALLH,RUECK_L),matCol(0x281d12,0.95,0));wall.position.set(RUECK_X,DOJO_WALLH/2,RUECK_Z);g.add(wall);   // Rückwand hinter Spawn
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(RUECK_T,DOJO_WALLH,RUECK_L),matCol(DOJOM_WALL,DOJOM_WALLR,0));wall.position.set(RUECK_X,DOJO_WALLH/2,RUECK_Z);g.add(wall);   // Rückwand hinter Spawn
   for(let i=0;i<STIEL_N;i++){const beam=new THREE.Mesh(new THREE.BoxGeometry(STIEL_W,DOJO_WALLH,STIEL_T),wood);beam.position.set(STIEL_X,DOJO_WALLH/2,STIEL_ZMID-STIEL_HALF+i*STIEL_STEP);g.add(beam);}
   const sill=new THREE.Mesh(new THREE.BoxGeometry(SIMS_W,SIMS_H,SIMS_L),darkwood);sill.position.set(SIMS_X,SIMS_Y,SIMS_Z);g.add(sill);
   return g;}
@@ -3060,7 +3659,8 @@ function buildDojo(){const g=new THREE.Group();
 const _DUA=(SC&&SC.DUNSTA_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.DUNSTA_GESETZ)||null;
 const DUNSTA_DENS=(_DUA&&Number.isFinite(_DUA.dens))?_DUA.dens:0.006;
 function arenaEnter(){if(arena.active)return;arena.active=true;
-  weapon.visible=false;controls.enabled=false;scene.fog=new THREE.FogExp2(0x0a0807,DUNSTA_DENS);
+  weapon.visible=false;controls.enabled=false;/* V18.491.565 — WIRE arena fog color → HINTER_COLOR (HINTER_GESETZ; dens stays DUNSTA). */
+  scene.fog=new THREE.FogExp2(HINTER_COLOR,DUNSTA_DENS);
   arena.group=new THREE.Group();scene.add(arena.group);arena.group.add(buildGround());
   arena.camSaved={pos:cam.position.clone(),tgt:controls.target.clone(),fov:cam.fov};
   arena.player.set(0,0,0);arena.yaw=0;arena.pitch=0;fx.fov=fx.fovT=_bogenFov().ruhe;cam.fov=fx.fov;/* V18.491.139 fovRuhe fail-soft */arena.arrows.length=0;arena.stuck.length=0;arena.fallingBamboo=[];
@@ -3068,32 +3668,32 @@ function arenaEnter(){if(arena.active)return;arena.active=true;
   arena.trail.mesh=null;arena.trail.pts=[];
   arena.popinjays=[];
   arena.group.add(buildDojo());                                                     // Struktur: Pergolen, Rückwand, Banner, Laternen, Steinweg
-  arena.group.add(buildTable(new THREE.Vector3(-3.0,0,0)));                          // Waffentisch (am Spawn)
+  arena.group.add(buildTable(new THREE.Vector3(WAFFTISCHPOS_X,WAFFTISCHPOS_Y,WAFFTISCHPOS_Z)));                          // Waffentisch (am Spawn)
   // — Waffenhof (+z): aktiver Kampf —
-  arena.dummy=buildDummy();arena.dummy.position.set(4.0,0,5.0);arena.group.add(arena.dummy);    // Pell
-  arena.group.add(buildThrustRings(new THREE.Vector3(8.5,0,5.0)));                    // Stechringe (running at the ring)
-  arena.group.add(buildQuintain(new THREE.Vector3(4.0,0,10.5)));                      // Quintane — frei, Raum zum Ausweichen
-  arena.pendulum=null;arena.group.add(buildPendulumBall(new THREE.Vector3(9.0,0,10.0)));   // Pendel-Kugel: triff sie, weich der Rückkehr aus
-  arena.spintree=null;arena.group.add(buildSpinTree(new THREE.Vector3(1.0,0,8.5)));         // Drehbaum: vier Arme im Rhythmus schlagen
-  arena.springPell=null;arena.group.add(buildSpringPell(new THREE.Vector3(2.0,0,2.5)));          // Federpfahl: im Pell-Hof, Kopf auf Hiebhöhe
-  arena.sequence=null;arena.group.add(buildSequence(new THREE.Vector3(-6.0,0,13.0)));            // Trefferfolge: freier Bogen im Nordwesten
-  arena.charger=null;arena.group.add(buildCharger(new THREE.Vector3(5.0,0,19.0)));               // Streitpuppe: schläft, mit [E] wecken — dann greift sie an
-  arena.gauntlet=null;arena.group.add(buildGauntlet(new THREE.Vector3(10.0,0,18.0)));            // Pendel-Gasse: Korridor im Norden
+  arena.dummy=buildDummy();arena.dummy.position.set(PELLPOS_X,PELLPOS_Y,PELLPOS_Z);arena.group.add(arena.dummy);    // Pell
+  arena.group.add(buildThrustRings(new THREE.Vector3(STECHPOS_X,STECHPOS_Y,STECHPOS_Z)));                    // Stechringe (running at the ring)
+  arena.group.add(buildQuintain(new THREE.Vector3(QUINTPOS_X,QUINTPOS_Y,QUINTPOS_Z)));                      // Quintane — frei, Raum zum Ausweichen
+  arena.pendulum=null;arena.group.add(buildPendulumBall(new THREE.Vector3(PENDELPOS_X,PENDELPOS_Y,PENDELPOS_Z)));   // Pendel-Kugel: triff sie, weich der Rückkehr aus
+  arena.spintree=null;arena.group.add(buildSpinTree(new THREE.Vector3(DREHPOS_X,DREHPOS_Y,DREHPOS_Z)));         // Drehbaum: vier Arme im Rhythmus schlagen
+  arena.springPell=null;arena.group.add(buildSpringPell(new THREE.Vector3(FEDERPOS_X,FEDERPOS_Y,FEDERPOS_Z)));          // Federpfahl: im Pell-Hof, Kopf auf Hiebhöhe
+  arena.sequence=null;arena.group.add(buildSequence(new THREE.Vector3(SEQPOS_X,SEQPOS_Y,SEQPOS_Z)));            // Trefferfolge: freier Bogen im Nordwesten
+  arena.charger=null;arena.group.add(buildCharger(new THREE.Vector3(CHARGEPOS_X,CHARGEPOS_Y,CHARGEPOS_Z)));               // Streitpuppe: schläft, mit [E] wecken — dann greift sie an
+  arena.gauntlet=null;arena.group.add(buildGauntlet(new THREE.Vector3(GASSEPOS_X,GASSEPOS_Y,GASSEPOS_Z)));            // Pendel-Gasse: Korridor im Norden
   // — Schnitthof (−z): Schnittproben —
-  arena.group.add(buildBamboo(new THREE.Vector3(4.0,0,-5.0)));                        // Bambus-Stand
-  arena.group.add(buildCuttingLane(new THREE.Vector3(8.5,0,-5.0)));                   // Schnittgasse (Zickzack)
-  arena.group.add(buildSwingTatami(new THREE.Vector3(4.0,0,-10.0)));                  // schwingende Tatami
-  arena.armored=null;arena.group.add(buildArmoredDummy(new THREE.Vector3(10.0,0,-9.0)));
-  arena.knightArenas=null;arena.group.add(buildKnightArena(new THREE.Vector3(6,0,-18.5),3,true));arena.group.add(buildKnightArena(new THREE.Vector3(-7,0,-18.5),2,false));               // Harnisch-Puppe: Schnitt gleitet ab — Stich in die Fuge oder stumpfe Wucht
+  arena.group.add(buildBamboo(new THREE.Vector3(BAMBUSPOS_X,BAMBUSPOS_Y,BAMBUSPOS_Z)));                        // Bambus-Stand
+  arena.group.add(buildCuttingLane(new THREE.Vector3(SCHNITTPOS_X,SCHNITTPOS_Y,SCHNITTPOS_Z)));                   // Schnittgasse (Zickzack)
+  arena.group.add(buildSwingTatami(new THREE.Vector3(TATAMIPOS_X,TATAMIPOS_Y,TATAMIPOS_Z)));                  // schwingende Tatami
+  arena.armored=null;arena.group.add(buildArmoredDummy(new THREE.Vector3(HARNISCHPOS_X,HARNISCHPOS_Y,HARNISCHPOS_Z)));
+  arena.knightArenas=null;arena.group.add(buildKnightArena(new THREE.Vector3(RITTERPOS_ARMX,RITTERPOS_ARMY,RITTERPOS_ARMZ),3,true));arena.group.add(buildKnightArena(new THREE.Vector3(RITTERPOS_BAREX,RITTERPOS_BAREY,RITTERPOS_BAREZ),2,false));               // Harnisch-Puppe: Schnitt gleitet ab — Stich in die Fuge oder stumpfe Wucht
   // — Schießbahn (+x) —
   buildRange();
-  arena.group.add(buildTorii(13.0,0.0));                                              // Torii am Bahneingang
-  arena.group.add(buildCarnival(new THREE.Vector3(36,0,0)));                          // Kirmes-Enten (Bahnende)
-  for(const pp of [[16,8],[22,-8],[28,7],[33,-6]]) arena.group.add(buildPopinjay(new THREE.Vector3(pp[0],0,pp[1])));   // Papagei-Feld
-  arena.wand=null;arena.group.add(buildWand(new THREE.Vector3(20,0,3.0)));                            // Wand-Schiessen: gestreifte Rute mit Wimpel, Präzision
-  arena.clout=null;arena.group.add(buildClout(new THREE.Vector3(38,0,7)));                           // Clout: fernes Bodenziel, triff die Wurfparabel
-  arena.clay=null;arena.group.add(buildClayThrower(new THREE.Vector3(23,0,-8)));                     // Wurfscheibe: Tontaube steigt — triff sie in der Luft
-  arena.swingTgt=null;arena.group.add(buildSwingTarget(new THREE.Vector3(30,0,4)));                  // Pendelziel: schwingt quer — vorhalten
+  arena.group.add(buildTorii(TORIIPOS_X,TORIIPOS_Z));                                              // Torii am Bahneingang
+  arena.group.add(buildCarnival(new THREE.Vector3(KIRMESPOS_X,KIRMESPOS_Y,KIRMESPOS_Z)));                          // Kirmes-Enten (Bahnende)
+  for(const pp of PAPAGEIPOS_SPOTS) arena.group.add(buildPopinjay(new THREE.Vector3(pp[0],0,pp[1])));   // Papagei-Feld
+  arena.wand=null;arena.group.add(buildWand(new THREE.Vector3(WANDPOS_X,WANDPOS_Y,WANDPOS_Z)));                            // Wand-Schiessen: gestreifte Rute mit Wimpel, Präzision
+  arena.clout=null;arena.group.add(buildClout(new THREE.Vector3(CLOUTPOS_X,CLOUTPOS_Y,CLOUTPOS_Z)));                           // Clout: fernes Bodenziel, triff die Wurfparabel
+  arena.clay=null;arena.group.add(buildClayThrower(new THREE.Vector3(CLAYPOS_X,CLAYPOS_Y,CLAYPOS_Z)));                     // Wurfscheibe: Tontaube steigt — triff sie in der Luft
+  arena.swingTgt=null;arena.group.add(buildSwingTarget(new THREE.Vector3(SWINGPOS_X,SWINGPOS_Y,SWINGPOS_Z)));                  // Pendelziel: schwingt quer — vorhalten
   // ── Geräte-Register: eine Wahrheit für Update + Nahkampf + Pfeil. Neues Gerät = eine Zeile. ──
   arena.devices=[
     {update:updateQuintain, melee:tryHitQuintain},
@@ -3116,14 +3716,15 @@ function arenaEnter(){if(arena.active)return;arena.active=true;
   ['lehren','ctl','leg','hint','ring-info'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
   document.getElementById('arena-toggle').textContent='← Werkstatt';hudHint();updateHUD();}
 function arenaExit(){if(!arena.active)return;arena.active=false;controls.enabled=true;weapon.visible=true;
-  if(document.pointerLockElement)document.exitPointerLock();scene.fog=new THREE.FogExp2(0x0a0807,DUNST_DENS);
+  if(document.pointerLockElement)document.exitPointerLock();/* V18.491.565 — WIRE restore fog color → HINTER_COLOR (HINTER_GESETZ; dens stays DUNST). */
+  scene.fog=new THREE.FogExp2(HINTER_COLOR,DUNST_DENS);
   if(arena.group){clear(arena.group);arena.group=null;}arena.arrows.length=0;arena.stuck.length=0;arena.trail.mesh=null;arena.trail.pts=[];
   arena.vm=arena.dummy=arena.target=arena.vmWeapon=arena.arm=null;arena.swinging=arena.thrusting=false;arena.drawing=false;
   if(arena.camSaved){cam.position.copy(arena.camSaved.pos);controls.target.copy(arena.camSaved.tgt);cam.fov=arena.camSaved.fov;cam.updateProjectionMatrix();}
   ['lehren','ctl','leg','hint'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='';});
   document.getElementById('arena-ui').style.display='none';document.getElementById('arena-toggle').textContent='Prüfstand ⚔';}
 function arenaToggle(){arena.active?arenaExit():arenaEnter();}
-function toggleHand(){arena.right=!arena.right;computeBaseQuat();popText(arena.right?'rechtshändig':'linkshändig','#9fb3c8',0,-0.1);}
+function toggleHand(){arena.right=!arena.right;computeBaseQuat();popText(arena.right?'rechtshändig':'linkshändig',NEUTM_CSS,0,-0.1);}
 
 function updateMovement(dt){const k=arena.keys,B=camBasis();let f=0,r=0;
   if(k.w)f+=1;if(k.s)f-=1;if(k.d)r+=1;if(k.a)r-=1;
@@ -3228,8 +3829,8 @@ function landMelee(z,vLat,vAx){const m=measure(P),mEff=Math.max(0.02,(m.mEffFrac
   var _recoilMin=(_gf&&Number.isFinite(_gf.labRecoilMin))?_gf.labRecoilMin:0.10;
   var _recoilMax=(_gf&&Number.isFinite(_gf.labRecoilMax))?_gf.labRecoilMax:0.7;
   const B=camBasis();fx.kickV.copy(B.fwd).multiplyScalar(-e*_kickFwd);fx.kickV.y-=e*_kickY;arena.recoil=clamp(e*_recoilKe,_recoilMin,_recoilMax);
-  popText((art==='STICH'?'➤ ':art==='SCHNITT'?'✂ ':'✹ ')+KE.toFixed(0)+' J',clean?'#ffe07a':'#d96a4a',0,-0.04);
-  popText(z.n+(clean?'':' · '+verdict),clean?'#9fb3c8':'#d96a4a',0.1,0.05);updateHUD();}
+  popText((art==='STICH'?'➤ ':art==='SCHNITT'?'✂ ':'✹ ')+KE.toFixed(0)+' J',clean?GOLDM_CSS:TREFFM_BAD_CSS,0,-0.04);
+  popText(z.n+(clean?'':' · '+verdict),clean?NEUTM_CSS:TREFFM_BAD_CSS,0.1,0.05);updateHUD();}
 
 /* V18.491.467 — Lab Blade-Trail Point-Cap ← SPUR_GESETZ fail-soft; Host none (SPUR_VIS). NARBC/TRAIL opacity/TUPF/LIFT untouched; recoilKeMul stays gefuehl .185. */
 const _SPR=(SC&&SC.SPUR_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SPUR_GESETZ)||null;
@@ -3265,13 +3866,13 @@ function arenaUpdate(realDt){if(!arena.active)return;const now=clock.getElapsedT
     for(const a of arena.arrows){if(a.stuck)continue;a.vel.y-=ARENA.g*dt;const sp=a.vel.length();a.vel.multiplyScalar(Math.max(0,1-_bogenFov().luftDrag*sp*dt));/* V18.491.173 SCHUSS_DRAG_VIS.lab; Host none — Do NOT Fake-add Host drag */
       a.pos.addScaledVector(a.vel,dt);a.mesh.position.copy(a.pos);if(sp>0.01)a.mesh.quaternion.setFromUnitVectors(_AX,a.vel.clone().normalize());a.life+=dt;
       if(!a.scored)hitMover(a);
-      if(!a.scored&&arena.popinjays){for(const P2 of arena.popinjays){if(P2.struck)continue;const bp=P2.base;if(Math.hypot(a.pos.x-bp.x,a.pos.y-bp.y,a.pos.z-bp.z)<PAPAGEI_HITR){P2.struck=true;P2.fallV=0.6;P2.respawnAt=clock.getElapsedTime()+3.5;popText('Papagei getroffen!','#ffe07a',0,0);popText('+15','#6fcf73',0.12,0.06);a.scored=true;stickArrow(a);break;}}}
-      if(!a.scored&&arena.dummy){const dp=arena.dummy.position;if(Math.hypot(a.pos.x-dp.x,a.pos.z-dp.z)<0.36&&a.pos.y>0.55&&a.pos.y<1.9){fx.shake+=0.05;popText('Pell getroffen','#d8b46a',0,0);popText('+8','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=8;arena.score.last={ring:8,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
-      if(!a.scored&&arena.wand&&!arena.wand.struck){const W=arena.wand;if(Math.hypot(a.pos.x-W.x,a.pos.z-W.z)<W.R&&a.pos.y>W.y0&&a.pos.y<W.y1){W.struck=true;W.respawnAt=clock.getElapsedTime()+3.0;W.rod.visible=false;fx.shake+=0.05;popText('WAND GESPALTEN — reine Präzision','#ffe07a',0,0);popText('+20','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=20;arena.score.last={ring:20,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
-      if(!a.scored&&arena.clout){const C=arena.clout,hd=Math.hypot(a.pos.x-C.x,a.pos.z-C.z);if(a.pos.y<0.35&&a.vel.y<0&&hd<C.R){const ring=clamp(Math.ceil(6*(1-hd/C.R)),1,6);fx.shake+=0.05;popText('CLOUT — die Parabel sitzt · '+ring,'#ffe07a',0,0);popText('+'+(ring*3),'#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=ring*3;arena.score.last={ring:ring*3,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
+      if(!a.scored&&arena.popinjays){for(const P2 of arena.popinjays){if(P2.struck)continue;const bp=P2.base;if(Math.hypot(a.pos.x-bp.x,a.pos.y-bp.y,a.pos.z-bp.z)<PAPAGEI_HITR){P2.struck=true;P2.fallV=0.6;P2.respawnAt=clock.getElapsedTime()+3.5;popText('Papagei getroffen!',GOLDM_CSS,0,0);popText('+15',TREFFM_OK_CSS,0.12,0.06);a.scored=true;stickArrow(a);break;}}}
+      if(!a.scored&&arena.dummy){const dp=arena.dummy.position;if(Math.hypot(a.pos.x-dp.x,a.pos.z-dp.z)<0.36&&a.pos.y>0.55&&a.pos.y<1.9){fx.shake+=0.05;popText('Pell getroffen',PELLTM_CSS,0,0);popText('+8',TREFFM_OK_CSS,0.12,0.06);arena.score.shots++;arena.score.sum+=8;arena.score.last={ring:8,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
+      if(!a.scored&&arena.wand&&!arena.wand.struck){const W=arena.wand;if(Math.hypot(a.pos.x-W.x,a.pos.z-W.z)<W.R&&a.pos.y>W.y0&&a.pos.y<W.y1){W.struck=true;W.respawnAt=clock.getElapsedTime()+3.0;W.rod.visible=false;fx.shake+=0.05;popText('WAND GESPALTEN — reine Präzision',GOLDM_CSS,0,0);popText('+20',TREFFM_OK_CSS,0.12,0.06);arena.score.shots++;arena.score.sum+=20;arena.score.last={ring:20,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
+      if(!a.scored&&arena.clout){const C=arena.clout,hd=Math.hypot(a.pos.x-C.x,a.pos.z-C.z);if(a.pos.y<0.35&&a.vel.y<0&&hd<C.R){const ring=clamp(Math.ceil(6*(1-hd/C.R)),1,6);fx.shake+=0.05;popText('CLOUT — die Parabel sitzt · '+ring,GOLDM_CSS,0,0);popText('+'+(ring*3),TREFFM_OK_CSS,0.12,0.06);arena.score.shots++;arena.score.sum+=ring*3;arena.score.last={ring:ring*3,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
       for(const d of (arena.devices||[])){if(!a.scored&&d.arrow&&d.arrow(a))a.scored=true;}
       if(!a.scored){for(const T of arena.targets){if(a.pos.x>=T.pos.x-_bogenFov().targetNear&&a.pos.x<T.pos.x+_bogenFov().targetDepth){const rr=Math.hypot(a.pos.y-T.pos.y,a.pos.z-T.pos.z);if(rr<=T.R+_bogenFov().radius){scoreArrowOn(a,T,rr);break;}/* V18.491.168+V18.491.187 TARGET_VIS.lab x-slab */}}}
-      else if(a.pos.y<=0.02){a.pos.y=0.02;a.mesh.position.copy(a.pos);stickArrow(a);popText('im Boden','#7a7f8c',0,0);}
+      else if(a.pos.y<=0.02){a.pos.y=0.02;a.mesh.position.copy(a.pos);stickArrow(a);popText('im Boden',MISSM_CSS,0,0);}
       // FLUG_VIS.lab=life-9 ← labLifeSec (+labXMax); Host maxFlugSec-5 — Do NOT Fake-align 9→5. V18.491.177 labLifeSec fail-soft
       else if(a.life>_bogenFov().lifeSec||a.pos.x>_bogenFov().xMax){stickArrow(a);}}
   }else{arena.ready=lerp(arena.ready,(arena.swinging||arena.thrusting||arena._pressing)?1:0,clamp(realDt*_readyK,0,1));/* V18.491.191 labReadyK fail-soft */meleeSwingUpdate(realDt,dt);
@@ -3286,16 +3887,66 @@ function applyCamera(dt){fx.fov=lerp(fx.fov,fx.fovT,clamp(dt*_fovK,0,1));cam.fov
   cam.lookAt(cam.position.clone().add(B.fwd));cam.updateProjectionMatrix();}
 
 function appendArenaUI(){
+  /* V18.491.571 — Lab Arena Chrome Accent ← CHROMEM_GESETZ fail-soft; Host none (CHROMEM_VIS). ARENAM/WARNM left bare (same hex ≠ same law); LIFT untouched. */
+  const _CRM=(SC&&SC.CHROMEM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.CHROMEM_GESETZ)||null;
+  const CHROMEM_COLOR=(_CRM&&Number.isFinite(_CRM.color))?_CRM.color:0xd4a843;
+  const CHROMEM_CSS='#'+CHROMEM_COLOR.toString(16).padStart(6,'0');
+  /* V18.491.572 — Lab Arena Spectrum Mid ← SPEKM_GESETZ fail-soft; Host none (SPEKM_VIS). drawmeter mid; stam mid wired in updateHUD; CHROMEM/ARENAM/WARNM/LIFT untouched. */
+  const _SPK=(SC&&SC.SPEKM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SPEKM_GESETZ)||null;
+  const SPEKM_COLOR=(_SPK&&Number.isFinite(_SPK.color))?_SPK.color:0xd4a843;
+  const SPEKM_CSS='#'+SPEKM_COLOR.toString(16).padStart(6,'0');
+  /* V18.491.573 — Lab Arena Spectrum Ok/Bad ← SPEKOM_GESETZ fail-soft; Host none (SPEKOM_VIS). drawmeter ends; stam ends+erschöpft in updateHUD; popText/HUD-verdict left bare; SPEKM/LIFT untouched. */
+  const _SOM=(SC&&SC.SPEKOM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SPEKOM_GESETZ)||null;
+  const SPEKOM_OK=(_SOM&&Number.isFinite(_SOM.ok))?_SOM.ok:0x6fcf73;
+  const SPEKOM_BAD=(_SOM&&Number.isFinite(_SOM.bad))?_SOM.bad:0xd96a4a;
+  const SPEKOM_OK_CSS='#'+SPEKOM_OK.toString(16).padStart(6,'0');
+  const SPEKOM_BAD_CSS='#'+SPEKOM_BAD.toString(16).padStart(6,'0');
+  /* V18.491.576 — Lab Arena Reticle Aim Dot ← RETIKELM_GESETZ fail-soft; Host none (RETIKELM_VIS). ≠ GOLDM pop gold · ≠ ENTEM.ring0; LIFT untouched. */
+  const _RTK=(SC&&SC.RETIKELM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.RETIKELM_GESETZ)||null;
+  const RETIKELM_COLOR=(_RTK&&Number.isFinite(_RTK.color))?_RTK.color:0xffe07a;
+  const RETIKELM_CSS='#'+RETIKELM_COLOR.toString(16).padStart(6,'0');
+  /* V18.491.578 — Lab Arena Hint Chrome ← HINTM_GESETZ fail-soft; Host none (HINTM_VIS). ≠ NEUTM score/pop mid same hex; LIFT untouched. */
+  const _HNT=(SC&&SC.HINTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.HINTM_GESETZ)||null;
+  const HINTM_COLOR=(_HNT&&Number.isFinite(_HNT.color))?_HNT.color:0x9fb3c8;
+  const HINTM_CSS='#'+HINTM_COLOR.toString(16).padStart(6,'0');
+  /* V18.491.582 — Lab Arena UI Base Text ← TEXTM_GESETZ fail-soft; Host none (TEXTM_VIS). ≠ CHROMEM/HINTM; pickup → PICKM .584; LIFT untouched. */
+  const _TXM=(SC&&SC.TEXTM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.TEXTM_GESETZ)||null;
+  const TEXTM_COLOR=(_TXM&&Number.isFinite(_TXM.color))?_TXM.color:0xe8e6e0;
+  const TEXTM_CSS='#'+TEXTM_COLOR.toString(16).padStart(6,'0');
+  /* V18.491.583 — Lab Arena Toggle-Btn Shell ← BTNM_GESETZ fail-soft; Host none (BTNM_VIS). ≠ CHROMEM accent; LIFT untouched. */
+  const _BTN=(SC&&SC.BTNM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.BTNM_GESETZ)||null;
+  const BTNM_BG=(_BTN&&Number.isFinite(_BTN.bg))?_BTN.bg:0x1c1c26;
+  const BTNM_BORDER=(_BTN&&Number.isFinite(_BTN.border))?_BTN.border:0x3a3a48;
+  const BTNM_BG_CSS='#'+BTNM_BG.toString(16).padStart(6,'0');
+  const BTNM_BORDER_CSS='#'+BTNM_BORDER.toString(16).padStart(6,'0');
+  /* V18.491.584 — Lab Arena Pickup CTA Text ← PICKM_GESETZ fail-soft; Host none (PICKM_VIS). ≠ CHROMEM bg · ≠ TEXTM; LIFT untouched. */
+  const _PKM=(SC&&SC.PICKM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PICKM_GESETZ)||null;
+  const PICKM_COLOR=(_PKM&&Number.isFinite(_PKM.color))?_PKM.color:0x1a1408;
+  const PICKM_CSS='#'+PICKM_COLOR.toString(16).padStart(6,'0');
+  /* V18.491.585 — Lab Arena Readout Border ← READM_GESETZ fail-soft; Host none (READM_VIS). ≠ BTNM.border; combat pops left bare; LIFT untouched. */
+  const _RDM=(SC&&SC.READM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.READM_GESETZ)||null;
+  const READM_BORDER=(_RDM&&Number.isFinite(_RDM.border))?_RDM.border:0x2a2a38;
+  const READM_BORDER_CSS='#'+READM_BORDER.toString(16).padStart(6,'0');
+  /* V18.491.601 — Lab Arena Panel Shell rgba ← PANELM_GESETZ fail-soft; Host none (PANELM_VIS). ≠ BTNM/READM; popText/#000 chrome left bare; LIFT untouched. */
+  const _PNL=(SC&&SC.PANELM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.PANELM_GESETZ)||null;
+  const PANELM_COLOR=(_PNL&&Number.isFinite(_PNL.color))?_PNL.color:0x12121a;
+  const PANELM_READOUTA=(_PNL&&Number.isFinite(_PNL.readoutA))?_PNL.readoutA:0.82;
+  const PANELM_HINTA=(_PNL&&Number.isFinite(_PNL.hintA))?_PNL.hintA:0.7;
+  const PANELM_LOCKA=(_PNL&&Number.isFinite(_PNL.lockA))?_PNL.lockA:0.85;
+  const PANELM_R=(PANELM_COLOR>>>16)&255,PANELM_G=(PANELM_COLOR>>>8)&255,PANELM_B=PANELM_COLOR&255;
+  const PANELM_READOUT_CSS='rgba('+PANELM_R+','+PANELM_G+','+PANELM_B+','+PANELM_READOUTA+')';
+  const PANELM_HINT_CSS='rgba('+PANELM_R+','+PANELM_G+','+PANELM_B+','+PANELM_HINTA+')';
+  const PANELM_LOCK_CSS='rgba('+PANELM_R+','+PANELM_G+','+PANELM_B+','+PANELM_LOCKA+')';
   const btn=document.createElement('button');btn.id='arena-toggle';btn.textContent='Prüfstand ⚔';
-  btn.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:50;background:#1c1c26;color:#d4a843;border:1px solid #3a3a48;border-radius:8px;padding:9px 18px;font:600 13px system-ui;cursor:pointer';
+  btn.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:50;background:'+BTNM_BG_CSS+';color:'+CHROMEM_CSS+';border:1px solid '+BTNM_BORDER_CSS+';border-radius:8px;padding:9px 18px;font:600 13px system-ui;cursor:pointer';
   btn.onclick=arenaToggle;document.body.appendChild(btn);
-  const ui=document.createElement('div');ui.id='arena-ui';ui.style.cssText='position:fixed;inset:0;z-index:45;display:none;pointer-events:none;font:13px system-ui;color:#e8e6e0';
-  ui.innerHTML='<div id="reticle" style="position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)"><div style="position:absolute;inset:0;border:1.5px solid rgba(255,255,255,.5);border-radius:50%"></div><div style="position:absolute;left:50%;top:50%;width:3px;height:3px;background:#ffe07a;border-radius:50%;transform:translate(-50%,-50%)"></div></div>'
-    +'<div id="drawmeter" style="position:absolute;left:50%;bottom:86px;transform:translateX(-50%);width:200px;height:8px;background:rgba(0,0,0,.45);border-radius:4px;overflow:hidden;display:none"><div id="drawfill" style="height:100%;width:0%;background:linear-gradient(90deg,#6fcf73,#d4a843,#d96a4a)"></div></div>'
+  const ui=document.createElement('div');ui.id='arena-ui';ui.style.cssText='position:fixed;inset:0;z-index:45;display:none;pointer-events:none;font:13px system-ui;color:'+TEXTM_CSS;
+  ui.innerHTML='<div id="reticle" style="position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)"><div style="position:absolute;inset:0;border:1.5px solid '+RINGRM_CSS+';border-radius:50%"></div><div style="position:absolute;left:50%;top:50%;width:3px;height:3px;background:'+RETIKELM_CSS+';border-radius:50%;transform:translate(-50%,-50%)"></div></div>'
+    +'<div id="drawmeter" style="position:absolute;left:50%;bottom:86px;transform:translateX(-50%);width:200px;height:8px;background:'+METERBM_CSS+';border-radius:4px;overflow:hidden;display:none"><div id="drawfill" style="height:100%;width:0%;background:linear-gradient(90deg,'+SPEKOM_OK_CSS+','+SPEKM_CSS+','+SPEKOM_BAD_CSS+')"></div></div>'
     +'<div id="popups" style="position:absolute;left:50%;top:42%;width:0;text-align:center"></div>'
-    +'<div id="arena-readout" style="position:absolute;left:18px;bottom:18px;background:rgba(18,18,26,.82);border:1px solid #2a2a38;border-radius:9px;padding:10px 13px;min-width:260px;line-height:1.5;backdrop-filter:blur(5px)"></div>'
-    +'<div id="arena-hint" style="position:absolute;left:50%;bottom:18px;transform:translateX(-50%);color:#9fb3c8;font-size:11.5px;background:rgba(18,18,26,.7);padding:6px 12px;border-radius:7px"></div>'
-    +'<div id="lockhint" style="position:absolute;left:50%;top:50%;transform:translate(-50%,44px);color:#d4a843;font-size:13px;background:rgba(18,18,26,.85);padding:8px 16px;border-radius:8px">Klick = Maus & Steuerung übernehmen</div>'+'<div id="pickup" style="position:absolute;left:50%;top:60%;transform:translateX(-50%);display:none;color:#1a1408;font-weight:700;font-size:14px;background:#d4a843;padding:7px 16px;border-radius:8px">E nehmen</div>';
+    +'<div id="arena-readout" style="position:absolute;left:18px;bottom:18px;background:'+PANELM_READOUT_CSS+';border:1px solid '+READM_BORDER_CSS+';border-radius:9px;padding:10px 13px;min-width:260px;line-height:1.5;backdrop-filter:blur(5px)"></div>'
+    +'<div id="arena-hint" style="position:absolute;left:50%;bottom:18px;transform:translateX(-50%);color:'+HINTM_CSS+';font-size:11.5px;background:'+PANELM_HINT_CSS+';padding:6px 12px;border-radius:7px"></div>'
+    +'<div id="lockhint" style="position:absolute;left:50%;top:50%;transform:translate(-50%,44px);color:'+CHROMEM_CSS+';font-size:13px;background:'+PANELM_LOCK_CSS+';padding:8px 16px;border-radius:8px">Klick = Maus & Steuerung übernehmen</div>'+'<div id="pickup" style="position:absolute;left:50%;top:60%;transform:translateX(-50%);display:none;color:'+PICKM_CSS+';font-weight:700;font-size:14px;background:'+CHROMEM_CSS+';padding:7px 16px;border-radius:8px">E nehmen</div>';
   document.body.appendChild(ui);
   const cv=R.domElement;
   cv.addEventListener('click',()=>{if(arena.active&&!arena.locked)cv.requestPointerLock();});
@@ -3314,7 +3965,7 @@ function appendArenaUI(){
     if(arena.kind==='bow'){if(e.button===2)doRelease();else if(e.button===0){arena._wantAim=false;}}
     else{if(e.button===0){if(arena._pressing&&!arena.swinging&&(arena._dragMag||0)<12&&arena.cooldown<=0)startThrust();arena.swinging=false;arena._pressing=false;}else if(e.button===2)arena.holdView=false;}});
   document.addEventListener('keydown',e=>{if(!arena.active)return;const k=e.key.toLowerCase();
-    if(k==='w')arena.keys.w=1;else if(k==='s')arena.keys.s=1;else if(k==='a')arena.keys.a=1;else if(k==='d')arena.keys.d=1;else if(k==='shift')arena.keys.shift=1;else if(k==='control')arena.keys.ctrl=1;else if(k==='h')toggleHand();else if(k==='e'){if(arena._nearKnightField){const F=arena._nearKnightField;F.active=true;for(const KK of F.knights)if(KK.state==='dormant')KK.state='approach';popText(F.armored?'⚔ DIE RITTER ERHEBEN SICH':'⚔ DIE KÄMPFER STELLEN SICH','#ffce6a',0,-0.10);popText(F.armored?'Schnitt prallt ab — Stich ins Visier (Auge) oder stumpfe Wucht':'ungepanzert — jeder Hieb sitzt','#cfe0a0',0,0.06);}else if(arena._nearCharger&&arena.charger&&arena.charger.state==='dormant'){arena.charger.state='charge';arena.charger.hitCD=0;popText('Streitpuppe greift an!','#ff8a4a',0,0);}else if(arena._near)equipWeapon(arena._near.name);}});
+    if(k==='w')arena.keys.w=1;else if(k==='s')arena.keys.s=1;else if(k==='a')arena.keys.a=1;else if(k==='d')arena.keys.d=1;else if(k==='shift')arena.keys.shift=1;else if(k==='control')arena.keys.ctrl=1;else if(k==='h')toggleHand();else if(k==='e'){if(arena._nearKnightField){const F=arena._nearKnightField;F.active=true;for(const KK of F.knights)if(KK.state==='dormant')KK.state='approach';popText(F.armored?'⚔ DIE RITTER ERHEBEN SICH':'⚔ DIE KÄMPFER STELLEN SICH',ERHEBM_CSS,0,-0.10);popText(F.armored?'Schnitt prallt ab — Stich ins Visier (Auge) oder stumpfe Wucht':'ungepanzert — jeder Hieb sitzt',INVITEM_CSS,0,0.06);}else if(arena._nearCharger&&arena.charger&&arena.charger.state==='dormant'){arena.charger.state='charge';arena.charger.hitCD=0;popText('Streitpuppe greift an!',GREIFM_CSS,0,0);}else if(arena._near)equipWeapon(arena._near.name);}});
   document.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='w')arena.keys.w=0;else if(k==='s')arena.keys.s=0;else if(k==='a')arena.keys.a=0;else if(k==='d')arena.keys.d=0;else if(k==='shift')arena.keys.shift=0;else if(k==='control')arena.keys.ctrl=0;});
 }
 function hudHint(){document.getElementById('arena-hint').textContent=arena.kind==='bow'
@@ -3323,18 +3974,35 @@ function hudHint(){document.getElementById('arena-hint').textContent=arena.kind=
   document.getElementById('drawmeter').style.display=arena.kind==='bow'?'block':'none';}
 function updateReticle(){const ret=document.getElementById('reticle');if(!ret)return;let s=22;if(arena.kind==='bow')s=lerp(40,14,arena.drawFrac)+arena.sway*40;else if(arena.swinging)s=30;ret.style.width=ret.style.height=s.toFixed(0)+'px';if(arena.kind==='bow')document.getElementById('drawfill').style.width=(arena.drawFrac*100).toFixed(0)+'%';}
 function popText(txt,color,ox,oy){const c=document.getElementById('popups');if(!c)return;const d=document.createElement('div');
-  d.textContent=txt;d.style.cssText='position:absolute;left:'+(ox*innerWidth*0.3)+'px;top:'+(oy*innerHeight)+'px;transform:translate(-50%,0);color:'+color+';font:800 25px system-ui;letter-spacing:.3px;text-shadow:0 1px 2px #000,0 0 7px rgba(0,0,0,.85);background:rgba(9,7,5,.46);padding:6px 15px;border-radius:8px;border:1px solid rgba(255,255,255,.09);box-shadow:0 4px 14px rgba(0,0,0,.4);opacity:1;transition:all .9s ease-out;white-space:nowrap';
+  d.textContent=txt;d.style.cssText='position:absolute;left:'+(ox*innerWidth*0.3)+'px;top:'+(oy*innerHeight)+'px;transform:translate(-50%,0);color:'+color+';font:800 25px system-ui;letter-spacing:.3px;text-shadow:0 1px 2px '+POPUM_SHADOW_CSS+',0 0 7px '+POPUM_GLOW_CSS+';background:'+POPUM_BG_CSS+';padding:6px 15px;border-radius:8px;border:1px solid '+POPUM_BORDER_CSS+';box-shadow:0 4px 14px '+POPUM_BOX_CSS+';opacity:1;transition:all .9s ease-out;white-space:nowrap';
   c.appendChild(d);requestAnimationFrame(()=>{d.style.top=(oy*innerHeight-60)+'px';d.style.opacity='0';});setTimeout(()=>d.remove(),950);}
 function updateHUD(){const ro=document.getElementById('arena-readout');if(!ro)return;
+  /* V18.491.569 — Lab Arena HUD Title ← ARENAM_GESETZ fail-soft; Host none (ARENAM_VIS). popText/chrome/stam mid #d4a843 left bare; BOGENM/LIFT untouched. */
+  const _AHM=(SC&&SC.ARENAM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.ARENAM_GESETZ)||null;
+  const ARENAM_COLOR=(_AHM&&Number.isFinite(_AHM.color))?_AHM.color:0xd4a843;
+  const ARENAM_CSS='#'+ARENAM_COLOR.toString(16).padStart(6,'0');
   if(arena.kind==='bow'){const E=Math.max(1,P.energie||_bogenFov().eFallback /* V18.491.178 SCHUSS_VIS */),v=Math.sqrt(2*E/ARENA.mArrow)*arena.drawFrac;let dist=999;if(arena.targets)for(const T of arena.targets)dist=Math.min(dist,Math.hypot(T.pos.x-arena.player.x,T.pos.z-arena.player.z));
-    let s='<b style="color:#d4a843">BOGEN</b> · Distanz '+dist.toFixed(0)+' m'+(arena.right?' · rechts':' · links')+'<br>Zug '+(arena.drawFrac*100|0)+'%  ·  v '+v.toFixed(0)+' m/s  ·  '+(0.5*ARENA.mArrow*v*v).toFixed(0)+' J';
-    if(arena.score.last){const L=arena.score.last;s+='<br><span style="color:'+(L.ring>=9?'#ffe07a':L.ring>=6?'#9fb3c8':'#d96a4a')+'">'+(L.ring>0?'Letzter: '+L.ring+' Ringe ('+L.dist.toFixed(0)+' m) · '+L.pen.toFixed(0)+' cm':'daneben')+'</span>';}
-    if(arena.score.shots)s+='<br><span style="opacity:.6">Schnitt '+(arena.score.sum/arena.score.shots).toFixed(1)+' über '+arena.score.shots+' · '+arena.stuck.length+' Pfeile stecken</span>';
+    let s='<b style="color:'+ARENAM_CSS+'">BOGEN</b> · Distanz '+dist.toFixed(0)+' m'+(arena.right?' · rechts':' · links')+'<br>Zug '+(arena.drawFrac*100|0)+'%  ·  v '+v.toFixed(0)+' m/s  ·  '+(0.5*ARENA.mArrow*v*v).toFixed(0)+' J';
+    /* V18.491.576 WIRE — Lab HUD-score ring>=9 gold ← GOLDM_GESETZ (same excellence gold as popText). reticle → RETIKELM .576. */
+    /* V18.491.577 WIRE — Lab HUD-score ring<6 bad ← TREFFM_GESETZ.bad (same outcome bad as popText ring score). mid → NEUTM TEIL .577; SPEKOM/LIFT untouched. */
+    if(arena.score.last){const L=arena.score.last;s+='<br><span style="color:'+(L.ring>=9?GOLDM_CSS:L.ring>=6?NEUTM_CSS:TREFFM_BAD_CSS)+'">'+(L.ring>0?'Letzter: '+L.ring+' Ringe ('+L.dist.toFixed(0)+' m) · '+L.pen.toFixed(0)+' cm':'daneben')+'</span>';}
+    if(arena.score.shots)s+='<br><span style="'+MUTEM_CSS+'">Schnitt '+(arena.score.sum/arena.score.shots).toFixed(1)+' über '+arena.score.shots+' · '+arena.stuck.length+' Pfeile stecken</span>';
     ro.innerHTML=s;
-  }else{let s='<b style="color:#d4a843">NAHKAMPF</b> · '+currentGattung+(arena.right?' · rechts':' · links');const h=arena.lastHit;
-    if(h)s+='<br><b>'+h.art+'</b> '+h.KE.toFixed(0)+' J · '+h.v.toFixed(1)+' m/s'+(h.pen?' · '+h.pen.toFixed(0)+' cm':'')+'<br><span style="color:'+(h.clean?'#6fcf73':'#d96a4a')+'">'+h.verdict+'</span> · '+h.zone.n;
-    else s+='<br><span style="opacity:.6">linke Maus halten = Schwung (trifft wohin du schaust) · rechte Maus = Blick halten</span>';
-    if(arena.mStats)s+='<br><span style="opacity:.7">Treffer '+arena.mStats.hits+' · Schaden gesamt '+arena.mStats.dmg.toFixed(0)+' J</span>';{const _st=(arena.stam!=null?arena.stam:1),_sb=Math.round(_st*10),_bc=_st>0.5?'#6fcf73':_st>0.25?'#d4a843':'#d96a4a';s+='<br><span style="opacity:.85">Ausdauer <span style="color:'+_bc+'">'+'\u2588'.repeat(_sb)+'<span style="opacity:.25">'+'\u2588'.repeat(10-_sb)+'</span></span>'+(_st<0.25?'  <span style="color:#d96a4a">erschöpft</span>':'')+'</span>';}
+  }else{let s='<b style="color:'+ARENAM_CSS+'">NAHKAMPF</b> · '+currentGattung+(arena.right?' · rechts':' · links');const h=arena.lastHit;
+    /* V18.491.576 WIRE — Lab HUD verdict h.clean ← TREFFM_GESETZ (same outcome ok/bad law as popText; no new twin; VERSION stays .575). SPEKOM/GOLDM/LIFT untouched. */
+    if(h)s+='<br><b>'+h.art+'</b> '+h.KE.toFixed(0)+' J · '+h.v.toFixed(1)+' m/s'+(h.pen?' · '+h.pen.toFixed(0)+' cm':'')+'<br><span style="color:'+(h.clean?TREFFM_OK_CSS:TREFFM_BAD_CSS)+'">'+h.verdict+'</span> · '+h.zone.n;
+    else s+='<br><span style="'+MUTEM_CSS+'">linke Maus halten = Schwung (trifft wohin du schaust) · rechte Maus = Blick halten</span>';
+    if(arena.mStats)s+='<br><span style="'+STATSM_CSS+'">Treffer '+arena.mStats.hits+' · Schaden gesamt '+arena.mStats.dmg.toFixed(0)+' J</span>';{/* V18.491.572 — Lab Arena Spectrum Mid ← SPEKM_GESETZ fail-soft (stam mid); Host none (SPEKM_VIS). */
+const _SPK2=(SC&&SC.SPEKM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SPEKM_GESETZ)||null;
+const SPEKM_COLOR2=(_SPK2&&Number.isFinite(_SPK2.color))?_SPK2.color:0xd4a843;
+const SPEKM_CSS2='#'+SPEKM_COLOR2.toString(16).padStart(6,'0');
+/* V18.491.573 — Lab Arena Spectrum Ok/Bad ← SPEKOM_GESETZ fail-soft (stam ends); Host none (SPEKOM_VIS). popText/HUD-verdict left bare. */
+const _SOM2=(SC&&SC.SPEKOM_GESETZ)||(window.__schmiedeCore&&window.__schmiedeCore.SPEKOM_GESETZ)||null;
+const SPEKOM_OK2=(_SOM2&&Number.isFinite(_SOM2.ok))?_SOM2.ok:0x6fcf73;
+const SPEKOM_BAD2=(_SOM2&&Number.isFinite(_SOM2.bad))?_SOM2.bad:0xd96a4a;
+const SPEKOM_OK_CSS2='#'+SPEKOM_OK2.toString(16).padStart(6,'0');
+const SPEKOM_BAD_CSS2='#'+SPEKOM_BAD2.toString(16).padStart(6,'0');
+const _st=(arena.stam!=null?arena.stam:1),_sb=Math.round(_st*10),_bc=_st>0.5?SPEKOM_OK_CSS2:_st>0.25?SPEKM_CSS2:SPEKOM_BAD_CSS2;s+='<br><span style="'+AUSDM_CSS+'">Ausdauer <span style="color:'+_bc+'">'+'\u2588'.repeat(_sb)+'<span style="'+LEERM_CSS+'">'+'\u2588'.repeat(10-_sb)+'</span></span>'+(_st<0.25?'  <span style="color:'+SPEKOM_BAD_CSS2+'">erschöpft</span>':'')+'</span>';}
     ro.innerHTML=s;}}
 
 

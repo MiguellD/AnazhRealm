@@ -4698,6 +4698,531 @@
     var ZIPFELM_GESETZ = { color: 0x6fcf73, rough: 0.6 };
     var ZIPFELM_VIS = { lab: "streit-zipfelm", host: "none" };
 
+    // V18.491.533 Lab Schmiede Pendel-Gasse/Gauntlet Mats (wood/dark/rope/ball); Host none (GASSEM_VIS).
+    // ≠ ZIPFELM · ≠ STREITM · ≠ GASSE logic · ≠ FOLGEM/FEDERM wood-dark coincidence · ≠ clay/swing · ≠ LIFT — gasse-gassem only; one gauntlet mat family.
+    var GASSEM_GESETZ = { wood: 0x4a3520, woodR: 0.9, dark: 0x2a1d12, darkR: 0.9, rope: 0x6e5a3a, ropeR: 0.8, ball: 0x484440, ballR: 0.5 };
+    var GASSEM_VIS = { lab: "gasse-gassem", host: "none" };
+
+    // V18.491.534 Lab Schmiede Ton-Wurf/Clay Mats (dark/wood/metal/disc); Host none (TONM_VIS).
+    // ≠ GASSEM · ≠ ZIPFELM · ≠ STREITM.metal coincidence · ≠ TON logic · ≠ SCHEIBM/SCHEIB geo · ≠ FOLGEM wood coincidence · ≠ swing · ≠ LIFT — ton-tonm only; one clay-thrower mat family.
+    var TONM_GESETZ = { dark: 0x33312c, darkR: 0.45, wood: 0x4a3520, woodR: 0.9, metal: 0x4a4842, metalR: 0.4, disc: 0xc85a3a, discR: 0.6 };
+    var TONM_VIS = { lab: "ton-tonm", host: "none" };
+
+    // V18.491.535 Lab Schmiede Pendelziel/Swing Mats (wood/dark/cols/ringR); Host none (SCHAUKELM_VIS).
+    // ≠ TONM (disc 0xc85a3a coincidence in cols) · ≠ GASSEM wood-dark coincidence · ≠ ZIPFELM · ≠ SCHAUKEL logic · ≠ BLATT geo · ≠ LIFT — schaukel-schaukelm only; one swing-target mat family.
+    var SCHAUKELM_GESETZ = { wood: 0x4a3520, woodR: 0.9, dark: 0x2a1d12, darkR: 0.9, cols: [0xd8cab0, 0x2f4858, 0xc85a3a, 0xd8cab0], ringR: 0.6, fallback: 0x888888 };
+    var SCHAUKELM_VIS = { lab: "schaukel-schaukelm", host: "none" };
+
+    // V18.491.536 Lab Schmiede Swing-Tatami Mats (post/bar/roll/ring/rope); Host none (TATAMIM_VIS).
+    // ≠ SCHAUKELM (archery swing) · ≠ TATAMI/BOCK/ROLLE/STRICK geo · ≠ SOCKELM/ZIELP 0x3a2a1a coincidence · ≠ GASSEM rope · ≠ LIFT — tatami-tatamim only; one swing-tatami mat family.
+    var TATAMIM_GESETZ = { post: 0x3a2a1a, postR: 0.9, bar: 0x33251a, barR: 0.9, roll: 0xcab793, rollR: 0.85, ring: 0x6a5535, ringR: 0.8, rope: 0x5a4525, ropeR: 0.9 };
+    var TATAMIM_VIS = { lab: "tatami-tatamim", host: "none" };
+
+    // V18.491.537 Lab Schmiede Kirmes-Ente Mats (body/beak/ring0..2); Host none (ENTEM_VIS).
+    // ≠ TATAMIM · ≠ SCHAUKELM · ≠ ENTE geo · ≠ BUDE/KIRMES · ≠ ZIELP/TORII · ≠ LIFT — ente-entem only; one carnival-duck mat family.
+    var ENTEM_GESETZ = { body: 0xd8553a, bodyR: 0.7, beak: 0xe0a020, beakR: 0.6, ring0: 0xffe07a, ring1: 0xffffff, ring2: 0xd8553a, ringR: 0.5 };
+    var ENTEM_VIS = { lab: "ente-entem", host: "none" };
+
+    // V18.491.538 Lab Schmiede Kirmes-Bude Mats (wall/rail/top); Host none (BUDEM_VIS).
+    // ≠ ENTEM · ≠ BUDE geo · ≠ KIRMES/REIHE/VOR · ≠ TATAMIM · ≠ ZIELP/TORII · ≠ LIFT — bude-budem only; one carnival-booth mat family.
+    var BUDEM_GESETZ = { wall: 0x2c2438, wallR: 0.92, rail: 0x4a4458, railR: 0.6, top: 0x8a3050, topR: 0.7 };
+    var BUDEM_VIS = { lab: "bude-budem", host: "none" };
+
+    // V18.491.539 Lab Schmiede Bahn-Zielpfosten Mat (color/rough); Host none (ZIELPM_VIS).
+    // ≠ BUDEM · ≠ ENTEM · ≠ ZIELP geo · ≠ TATAMIM/SOCKELM/SCHWELLE 0x3a2a1a coincidence · ≠ TORII · ≠ LIFT — bahn-zielpm only; one range-post mat law.
+    var ZIELPM_GESETZ = { color: 0x3a2a1a, rough: 0.9 };
+    var ZIELPM_VIS = { lab: "bahn-zielpm", host: "none" };
+
+    // V18.491.540 Lab Schmiede Torii Mats (red/dark); Host none (TORIIM_VIS).
+    // ≠ ZIELPM · ≠ BUDEM · ≠ SCHILDM 0x8a3a28 coincidence · ≠ TORII/BALKEN/PFOSTEN geo · ≠ SCHWELLE · ≠ LIFT — torii-toriim only; one gate mat family.
+    var TORIIM_GESETZ = { red: 0x8a3a28, redR: 0.82, dark: 0x241410, darkR: 0.9 };
+    var TORIIM_VIS = { lab: "torii-toriim", host: "none" };
+
+    // V18.491.541 Lab Schmiede Schnittgasse-Schwelle Mats (base/holder); Host none (SCHWELLEM_VIS).
+    // ≠ TORIIM · ≠ ZIELPM/TATAMIM/SOCKELM 0x3a2a1a+0x2a2018 coincidence · ≠ SCHWELLE/FASSUNG geo · ≠ PERGOLA · ≠ LIFT — schnitt-schwellem only; one cutting-lane mat family.
+    var SCHWELLEM_GESETZ = { base: 0x3a2a1a, baseR: 0.9, holder: 0x2a2018, holderR: 0.9 };
+    var SCHWELLEM_VIS = { lab: "schnitt-schwellem", host: "none" };
+
+    // V18.491.542 Lab Schmiede Pergola Mats (wood/dark/paper); Host none (PERGOLAM_VIS).
+    // ≠ SCHWELLEM · ≠ TORIIM · ≠ TATAMIM.bar 0x33251a coincidence · ≠ PERGOLA/STUTZE/RAND/SPARREN/LEUCHTE geo · ≠ common 0x4a3520 wood · ≠ LIFT — pergola-pergolam only; one shade-arbor mat family.
+    var PERGOLAM_GESETZ = { wood: 0x4a3522, woodR: 0.9, dark: 0x33251a, darkR: 0.92, paper: 0xd6c596, paperR: 0.5 };
+    var PERGOLAM_VIS = { lab: "pergola-pergolam", host: "none" };
+
+    // V18.491.543 Lab Schmiede Banner-Fahne Mats (dark/fin/clothR; cloth hex stays caller col); Host none (FAHNEM_VIS).
+    // ≠ PERGOLAM · ≠ TUCHM (arena banners) · ≠ BANNER/FAHNE geo · ≠ FAEHNE/CLOUTM · ≠ FEDERM.dark coincidence · ≠ LIFT — fahne-fahnem only; one mast-banner mat family.
+    var FAHNEM_GESETZ = { dark: 0x2a1d12, darkR: 0.9, fin: 0xc8a44a, finR: 1.0, clothR: 0.5 };
+    var FAHNEM_VIS = { lab: "fahne-fahnem", host: "none" };
+
+    // V18.491.544 Lab Schmiede Heu-Ballen Mats (hay/band); Host none (HEUM_VIS).
+    // ≠ FAHNEM · ≠ PELLM.stroh 0xb89a52 coincidence · ≠ HEU geo · ≠ GASSEM.rope 0x6e5a3a near-miss · ≠ LATERNE/KOHLE · ≠ LIFT — heu-heum only; one hay-bale mat family.
+    var HEUM_GESETZ = { hay: 0xb89a52, hayR: 0.95, band: 0x6e5a38, bandR: 0.9 };
+    var HEUM_VIS = { lab: "heu-heum", host: "none" };
+
+    // V18.491.545 Lab Schmiede Stein-Laterne Mats (stone/dark/glow); Host none (LATERNEM_VIS).
+    // ≠ HEUM · ≠ LATERNE geo · ≠ LEUCHTE (pergola) · ≠ KOHLE/brazier · ≠ PFAD · ≠ LIFT — laterne-laternem only; one stone-toro mat family.
+    var LATERNEM_GESETZ = { stone: 0x7a756c, stoneR: 0.97, dark: 0x55504a, darkR: 0.97, glow: 0xd8c089, glowR: 0.45 };
+    var LATERNEM_VIS = { lab: "laterne-laternem", host: "none" };
+
+    // V18.491.546 Lab Schmiede Kohlenbecken/Brazier Mats (iron/coal); Host none (KOHLEM_VIS).
+    // ≠ LATERNEM · ≠ KOHLE geo · ≠ HEUM · ≠ PFAD · ≠ STREITM.metal · ≠ LIFT — kohle-kohlem only; one brazier mat family.
+    var KOHLEM_GESETZ = { iron: 0x2a2620, ironR: 0.35, coal: 0xd8662a, coalR: 0.25 };
+    var KOHLEM_VIS = { lab: "kohle-kohlem", host: "none" };
+
+    // V18.491.547 Lab Schmiede Stein-Pfad Mats (stone/edge); Host none (PFADM_VIS).
+    // ≠ KOHLEM · ≠ LATERNEM.stone coincidence of rough only · ≠ PFAD geo · ≠ HEUM · ≠ LIFT — pfad-pfadm only; one stone-path mat family.
+    var PFADM_GESETZ = { stone: 0x453f37, stoneR: 0.97, edge: 0x35302a, edgeR: 0.97 };
+    var PFADM_VIS = { lab: "pfad-pfadm", host: "none" };
+
+    // V18.491.548 Lab Schmiede Pendel/Galgen Mats (wood/dark/iron/rope/ball/band); Host none (PENDELM_VIS).
+    // ≠ PFADM · ≠ PENDEL geo · ≠ GALGEN geo · ≠ FEDERM/STREITM wood-dark coincidence · ≠ LIFT — pendel-pendelm only; one pendulum mat family.
+    var PENDELM_GESETZ = { wood: 0x4a3520, woodR: 0.9, dark: 0x2a1d12, darkR: 0.92, iron: 0x33312c, ironR: 0.4, rope: 0x6e5a3a, ropeR: 0.8, ball: 0x484440, ballR: 0.5, band: 0x2c2824, bandR: 0.45 };
+    var PENDELM_VIS = { lab: "pendel-pendelm", host: "none" };
+
+    // V18.491.549 Lab Schmiede Drehbaum Mats (wood/dark/pad/lin); Host none (DREHM_VIS).
+    // ≠ PENDELM · ≠ DREH/BAUM/STUMPF geo · ≠ FEDERM/STREITM wood-dark coincidence · ≠ FEDERM.pad · ≠ LIFT — dreh-drehm only; one spin-tree mat family.
+    var DREHM_GESETZ = { wood: 0x4a3520, woodR: 0.9, dark: 0x2a1d12, darkR: 0.92, pad: 0x6e4a32, padR: 0.85, lin: 0xb6a06a, linR: 0.7 };
+    var DREHM_VIS = { lab: "dreh-drehm", host: "none" };
+
+    // V18.491.550 Lab Schmiede Quintain Mats (wood/dark/shield/boss/cross/bag/cap); Host none (QUINTM_VIS).
+    // ≠ DREHM · ≠ PENDELM · ≠ QUINT/HOLM/BODEN geo · ≠ SCHILDM · ≠ wood-dark coincidence · ≠ LIFT — quint-quintm only; one quintain mat family.
+    var QUINTM_GESETZ = { wood: 0x4a3520, woodR: 0.9, dark: 0x2a1d12, darkR: 0.92, shield: 0x9a3528, shieldR: 0.55, boss: 0xc8a44a, bossR: 1, cross: 0xe8dcc0, crossR: 0.45, bag: 0x6e5a38, bagR: 0.8, cap: 0x5a4a2e, capR: 0.8 };
+    var QUINTM_VIS = { lab: "quint-quintm", host: "none" };
+
+    // V18.491.551 Lab Schmiede Stechbahn/Thrust-Rings Mats (wood/dark/ring); Host none (STECHM_VIS).
+    // ≠ QUINTM · ≠ DREHM · ≠ PENDELM · ≠ STECH geo · ≠ QUINTM.boss 0xc8a44a coincidence · ≠ wood-dark coincidence · ≠ LIFT — stech-stechm only; one thrust-rings mat family.
+    var STECHM_GESETZ = { wood: 0x4a3520, woodR: 0.9, dark: 0x2a1d12, darkR: 0.9, ring: 0xc8a44a, ringR: 1 };
+    var STECHM_VIS = { lab: "stech-stechm", host: "none" };
+
+    // V18.491.552 Lab Schmiede Popinjay/Papagei Mats (wood/body/head/beak/tail/wing); Host none (PAPAGEIM_VIS).
+    // ≠ STECHM · ≠ QUINTM · ≠ PAPAGEI geo · ≠ ENTEM · ≠ wood coincidence · ≠ LIFT — papagei-papageim only; one popinjay mat family.
+    var PAPAGEIM_GESETZ = { wood: 0x4a3520, woodR: 0.9, body: 0x2f7a45, bodyR: 0.55, head: 0xc83828, headR: 0.55, beak: 0xe0a830, beakR: 0.5, tail: 0x245a35, tailR: 0.55, wing: 0x3f8a55, wingR: 0.55 };
+    var PAPAGEIM_VIS = { lab: "papagei-papageim", host: "none" };
+
+    // V18.491.553 Lab Schmiede Dojo Mats (wood/dark/paper/wall); Host none (DOJOM_VIS).
+    // ≠ PAPAGEIM · ≠ PERGOLAM (paperR 0.55≠0.5; wall exclusive) · ≠ DOJO geo · ≠ wood-dark coincidence · ≠ LIFT — dojo-dojom only; one dojo mat family.
+    var DOJOM_GESETZ = { wood: 0x4a3522, woodR: 0.9, dark: 0x33251a, darkR: 0.92, paper: 0xd6c596, paperR: 0.55, wall: 0x281d12, wallR: 0.95 };
+    var DOJOM_VIS = { lab: "dojo-dojom", host: "none" };
+
+    // V18.491.554 Lab Schmiede Narben/Scar Mats (stich/schlag/schnitt/dirty); Host none (NARBM_VIS).
+    // ≠ DOJOM · ≠ NARB/SCHRAMM/NARBZ/NARBC geo · ≠ DOJOM.wall 0x281d12 vs dirty 0x281610 · ≠ LIFT — narb-narbm only; one scar mat family.
+    var NARBM_GESETZ = { stich: 0x100704, stichR: 0.45, schlag: 0x351d12, schlagR: 0.4, schnitt: 0x0e0604, schnittR: 0.5, dirty: 0x281610, dirtyR: 0.5 };
+    var NARBM_VIS = { lab: "narb-narbm", host: "none" };
+
+    // V18.491.555 Lab Schmiede Ritter HP-Pip Zustandsfarben (lost/crit/warn/ok); Host none (LEBENM_VIS).
+    // ≠ NARBM · ≠ PIPM (ok 0x40e060 coincidence with PIPM.color — base mat ≠ state palette) · ≠ DOJOM · ≠ LIFT — ritter-lebenm only; one pip-state family.
+    var LEBENM_GESETZ = { lost: 0x3a1a1a, crit: 0xff4040, warn: 0xe0a040, ok: 0x40e060 };
+    var LEBENM_VIS = { lab: "ritter-lebenm", host: "none" };
+
+    // V18.491.556 Lab Schmiede Panzer-Blitz/Flash RGB (r0/g0/b0 + flash/spark deltas); Host none (BLITZM_VIS).
+    // ≠ LEBENM · ≠ PIPM · ≠ HARNISCHM · ≠ RITTERM · ≠ bare gambeson flash · ≠ tel telegraph terms · ≠ LIFT — blitz-blitzm only; one armored-flash family (dummy+ritter armored).
+    var BLITZM_GESETZ = { r0: 0.57, g0: 0.60, b0: 0.63, fr: 0.45, fg: 0.40, fb: 0.18, sr: 0.5, sg: -0.20, sb: -0.22 };
+    var BLITZM_VIS = { lab: "blitz-blitzm", host: "none" };
+
+    // V18.491.557 Lab Schmiede Ritter Kotte/Busch Rough (surcoatR/crestR); Host none (KOTTEM_VIS).
+    // ≠ BLITZM · ≠ KOTTE/BUSCH geo · ≠ RITTERM · ≠ TUCHM · ≠ HARNISCHM.tabard hex (caller) · ≠ LIFT — ritter-kottem only; one cloth-finish rough family.
+    var KOTTEM_GESETZ = { surcoatR: 0.7, crestR: 0.6 };
+    var KOTTEM_VIS = { lab: "ritter-kottem", host: "none" };
+
+    // V18.491.558 Lab Schmiede Stechbahn Ring-Flash RGB (r0/g0/b0 + fr/fg); Host none (STECHF_VIS).
+    // ≠ KOTTEM · ≠ BLITZM · ≠ STECHM mats · ≠ STECH geo · ≠ gambeson-flash · ≠ LIFT — stech-stechf only; one thrust-ring flash family.
+    var STECHF_GESETZ = { r0: 0.78, g0: 0.64, b0: 0.29, fr: -0.4, fg: 0.25 };
+    var STECHF_VIS = { lab: "stech-stechf", host: "none" };
+
+    // V18.491.559 Lab Schmiede Gambeson/Wams Flash RGB (r0/g0/b0 + fr/fg/fb); Host none (WAMSM_VIS).
+    // ≠ STECHF · ≠ BLITZM · ≠ RITTERM.gambeson · ≠ tel telegraph (osc+mix left bare) · ≠ LIFT — ritter-wamsm only; one bare-knight flash family.
+    var WAMSM_GESETZ = { r0: 0.42, g0: 0.345, b0: 0.25, fr: 0.50, fg: -0.10, fb: -0.10 };
+    var WAMSM_VIS = { lab: "ritter-wamsm", host: "none" };
+
+    // V18.491.560 Lab Schmiede Ritter Telegraph (amp/freq/bias + armored/gambeson mix); Host none (TELM_VIS).
+    // ≠ WAMSM · ≠ BLITZM · ≠ STECHF · ≠ RITTERM · ≠ LIFT — ritter-telm only; one wind-telegraph family (osc + color mix).
+    var TELM_GESETZ = { amp: 0.5, freq: 16, bias: 0.5, ar: 0.40, ag: 0.10, ab: -0.18, gr: 0.28, gg: 0.10 };
+    var TELM_VIS = { lab: "ritter-telm", host: "none" };
+
+    // V18.491.561 Lab Schmiede Blitz/Funke Abklingen (flash/spark decay rates); Host none (ABKLINGM_VIS).
+    // ≠ TELM · ≠ BLITZM RGB · ≠ WAMSM · ≠ STECHF · ≠ ring flash decay 0.8 · ≠ LIFT — blitz-abklingm only; one panzer/ritter hit-decay family.
+    var ABKLINGM_GESETZ = { flash: 3.2, spark: 4.5 };
+    var ABKLINGM_VIS = { lab: "blitz-abklingm", host: "none" };
+
+    // V18.491.562 Lab Schmiede Lehren Overlay Colors (hand/bal/node); Host none (LEHREM_VIS).
+    // ≠ ABKLINGM · ≠ ACHSE.color 0x66a8ff coincidence · ≠ Host M.hand/bal/node (Lab↔Host dual) · ≠ befund CSS · ≠ LIFT — lehre-lehrem only; one caliper/label palette.
+    var LEHREM_GESETZ = { hand: 0x66a8ff, bal: 0x7fc98a, node: 0xff9a3c };
+    var LEHREM_VIS = { lab: "lehre-lehrem", host: "none" };
+
+    // V18.491.563 Lab Schmiede Stechbahn Ring-Flash Abklingen (flash decay); Host none (RINGABKM_VIS).
+    // ≠ LEHREM · ≠ ABKLINGM (3.2/4.5) · ≠ STECHF RGB · ≠ STECHM · ≠ LIFT — stech-ringabkm only; one thrust-ring flash-decay family.
+    var RINGABKM_GESETZ = { flash: 0.8 };
+    var RINGABKM_VIS = { lab: "stech-ringabkm", host: "none" };
+
+    // V18.491.564 Lab Schmiede Schnitt-Karte Caption Colors (title/meta); Host none (KARTENM_VIS).
+    // ≠ LEHREM · ≠ RINGABKM · ≠ Host bone/cardFill 0xcdb38a coincidence · ≠ spine #cdb38a left bare · ≠ LIFT — schnitt-kartenm only; one section-card caption family.
+    var KARTENM_GESETZ = { title: 0xcdb38a, meta: 0x8c7d6b };
+    var KARTENM_VIS = { lab: "schnitt-kartenm", host: "none" };
+
+    // V18.491.565 Lab Schmiede Rückgrat Station-Label Color; Host none (SPINEM_VIS).
+    // ≠ KARTENM.title 0xcdb38a coincidence (section-card caption ≠ spine station labels) · ≠ Host M.bone dual · ≠ LEHREM · ≠ LIFT — rueckgrat-spinem only.
+    var SPINEM_GESETZ = { color: 0xcdb38a };
+    var SPINEM_VIS = { lab: "rueckgrat-spinem", host: "none" };
+
+    // V18.491.566 Lab Schmiede Befund Verdict Colors (krieg/werk/mid); Host none (BEFUNDM_VIS).
+    // ≠ SPINEM · ≠ KARTENM · ≠ LEHREM.bal 0x7fc98a coincidence (werk ≠ lehre bal) · ≠ bogen #8ab4e8 · ≠ reg #8a7a5a · ≠ LIFT — befund-befundm only.
+    var BEFUNDM_GESETZ = { krieg: 0xe0664a, werk: 0x7fc98a, mid: 0xe8b54a };
+    var BEFUNDM_VIS = { lab: "befund-befundm", host: "none" };
+
+    // V18.491.567 Lab Schmiede Befund/Bogen Reg-Fußzeile Color; Host none (REGM_VIS).
+    // ≠ BEFUNDM verdict · ≠ bogen title #8ab4e8 · ≠ LEHREM · ≠ SPINEM · ≠ LIFT — befund-regm only; one footnote color family (tafel+bogen).
+    var REGM_GESETZ = { color: 0x8a7a5a };
+    var REGM_VIS = { lab: "befund-regm", host: "none" };
+
+    // V18.491.568 Lab Schmiede Bogen-Befund Title Color; Host none (BOGENM_VIS).
+    // ≠ REGM footnote · ≠ BEFUNDM verdict · ≠ SPINEM · ≠ LEHREM · ≠ KARTENM · ≠ LIFT — bogen-befundm only; title CSS one site.
+    var BOGENM_GESETZ = { color: 0x8ab4e8 };
+    var BOGENM_VIS = { lab: "bogen-befundm", host: "none" };
+
+    // V18.491.569 Lab Schmiede Arena HUD Title Color; Host none (ARENAM_VIS).
+    // ≠ BOGENM befund-title · ≠ REGM · ≠ BEFUNDM · ≠ popText/chrome/stam mid #d4a843 (separate sites) · ≠ LIFT — arena-arenam only; BOGEN+NAHKAMPF titles.
+    var ARENAM_GESETZ = { color: 0xd4a843 };
+    var ARENAM_VIS = { lab: "arena-arenam", host: "none" };
+
+    // V18.491.570 Lab Schmiede Arena popText Warn Color; Host none (WARNM_VIS).
+    // ≠ ARENAM HUD title (same hex, different site/role) · ≠ chrome/stam mid · ≠ BOGENM · ≠ REGM · ≠ LIFT — arena-warnm only; popText caution family.
+    var WARNM_GESETZ = { color: 0xd4a843 };
+    var WARNM_VIS = { lab: "arena-warnm", host: "none" };
+
+    // V18.491.571 Lab Schmiede Arena Chrome Accent Color; Host none (CHROMEM_VIS).
+    // ≠ ARENAM HUD title · ≠ WARNM popText · ≠ stam/drawmeter mid (severity spectrum) · ≠ LIFT — arena-chromem only; btn/lockhint/pickup chrome gold.
+    var CHROMEM_GESETZ = { color: 0xd4a843 };
+    var CHROMEM_VIS = { lab: "arena-chromem", host: "none" };
+
+    // V18.491.572 Lab Schmiede Arena Spectrum Mid Color; Host none (SPEKM_VIS).
+    // ≠ CHROMEM chrome · ≠ WARNM popText · ≠ ARENAM HUD title · ≠ ok #6fcf73 · ≠ bad #d96a4a · ≠ LIFT — arena-spekm only; stam+drawmeter mid.
+    var SPEKM_GESETZ = { color: 0xd4a843 };
+    var SPEKM_VIS = { lab: "arena-spekm", host: "none" };
+
+    // V18.491.573 Lab Schmiede Arena Spectrum Ok/Bad Ends; Host none (SPEKOM_VIS).
+    // ≠ SPEKM mid · ≠ CHROMEM/WARNM/ARENAM · ≠ popText success/fail same hex · ≠ HUD verdict · ≠ LIFT — arena-spekom only; drawmeter+stam ends.
+    var SPEKOM_GESETZ = { ok: 0x6fcf73, bad: 0xd96a4a };
+    var SPEKOM_VIS = { lab: "arena-spekom", host: "none" };
+
+    // V18.491.574 Lab Schmiede Arena popText Success/Fail Colors; Host none (TREFFM_VIS).
+    // ≠ SPEKOM meter ends (same hex, different site/role) · ≠ SPEKM · ≠ HUD verdict h.clean · ≠ WARNM · ≠ LIFT — arena-treffm only; popText outcome family.
+    var TREFFM_GESETZ = { ok: 0x6fcf73, bad: 0xd96a4a };
+    var TREFFM_VIS = { lab: "arena-treffm", host: "none" };
+
+    // V18.491.575 Lab Schmiede Arena popText Gold/Feier Color; Host none (GOLDM_VIS).
+    // ≠ TREFFM ok/bad · ≠ SPEKOM · ≠ ENTEM.ring0 0xffe07a coincidence · ≠ reticle/HUD-score · ≠ LIFT — arena-goldm only; popText celebration gold.
+    var GOLDM_GESETZ = { color: 0xffe07a };
+    var GOLDM_VIS = { lab: "arena-goldm", host: "none" };
+
+    // V18.491.576 Lab Schmiede Arena Reticle Aim Dot Color; Host none (RETIKELM_VIS).
+    // ≠ GOLDM pop feier (same hex, aim chrome ≠ celebration) · ≠ ENTEM.ring0 coincidence · ≠ TREFFM · ≠ SPEKOM · ≠ LIFT — arena-retikelm only; reticle center dot.
+    var RETIKELM_GESETZ = { color: 0xffe07a };
+    var RETIKELM_VIS = { lab: "arena-retikelm", host: "none" };
+
+    // V18.491.577 Lab Schmiede Arena Neutral/Mid Silver Color; Host none (NEUTM_VIS).
+    // ≠ TREFFM ok/bad · ≠ GOLDM · ≠ SPEKOM/SPEKM meter · ≠ arena-hint chrome (left bare) · ≠ LIFT — arena-neutm only; HUD-score mid + popText info/mid.
+    var NEUTM_GESETZ = { color: 0x9fb3c8 };
+    var NEUTM_VIS = { lab: "arena-neutm", host: "none" };
+
+    // V18.491.578 Lab Schmiede Arena Hint Chrome Color; Host none (HINTM_VIS).
+    // ≠ NEUTM score/pop mid (same hex, chrome hint ≠ info/mid) · ≠ CHROMEM · ≠ RETIKELM · ≠ LIFT — arena-hintm only; #arena-hint text.
+    var HINTM_GESETZ = { color: 0x9fb3c8 };
+    var HINTM_VIS = { lab: "arena-hintm", host: "none" };
+
+    // V18.491.579 Lab Schmiede Arena Player-Danger popText Color; Host none (GEFAHRM_VIS).
+    // ≠ TREFFM.bad 0xd96a4a (fail/reject ≠ player-hit danger) · ≠ SPEKOM.bad · ≠ WARNM · ≠ #ffae6a deckung · ≠ LIFT — arena-gefahrm only; ram/hurt popText.
+    var GEFAHRM_GESETZ = { color: 0xff6a4a };
+    var GEFAHRM_VIS = { lab: "arena-gefahrm", host: "none" };
+
+    // V18.491.580 Lab Schmiede Arena Miss/Dud popText Color; Host none (MISSM_VIS).
+    // ≠ NEUTM/HINTM 0x9fb3c8 (brighter info ≠ dull miss) · ≠ TREFFM.bad · ≠ GEFAHRM · ≠ #ffae6a deckung · ≠ LIFT — arena-missm only; miss/dud popText.
+    var MISSM_GESETZ = { color: 0x7a7f8c };
+    var MISSM_VIS = { lab: "arena-missm", host: "none" };
+
+    // V18.491.581 Lab Schmiede Arena Deckung Status popText Color; Host none (DECKM_VIS).
+    // ≠ GEFAHRM hurt · ≠ GOLDM feier · ≠ WARNM · ≠ ARENAM · ≠ MISSM · ≠ LIFT — arena-deckm only; Deckung n/3 status pop.
+    var DECKM_GESETZ = { color: 0xffae6a };
+    var DECKM_VIS = { lab: "arena-deckm", host: "none" };
+
+    // V18.491.582 Lab Schmiede Arena UI Base Text Color; Host none (TEXTM_VIS).
+    // ≠ CHROMEM accent · ≠ HINTM/NEUTM silver · ≠ pickup #1a1408 · ≠ LIFT — arena-textm only; #arena-ui default color.
+    var TEXTM_GESETZ = { color: 0xe8e6e0 };
+    var TEXTM_VIS = { lab: "arena-textm", host: "none" };
+
+    // V18.491.583 Lab Schmiede Arena Toggle-Btn Shell Colors; Host none (BTNM_VIS).
+    // ≠ CHROMEM accent text/fill · ≠ TEXTM · ≠ pickup #1a1408 · ≠ readout #2a2a38 · ≠ LIFT — arena-btnm only; Prüfstand btn bg+border.
+    var BTNM_GESETZ = { bg: 0x1c1c26, border: 0x3a3a48 };
+    var BTNM_VIS = { lab: "arena-btnm", host: "none" };
+
+    // V18.491.584 Lab Schmiede Arena Pickup CTA Text Color; Host none (PICKM_VIS).
+    // ≠ CHROMEM pickup bg · ≠ TEXTM light UI text · ≠ BTNM shell · ≠ LIFT — arena-pickm only; #pickup dark text on gold.
+    var PICKM_GESETZ = { color: 0x1a1408 };
+    var PICKM_VIS = { lab: "arena-pickm", host: "none" };
+
+    // V18.491.585 Lab Schmiede Arena Readout Panel Border Color; Host none (READM_VIS).
+    // ≠ BTNM.border 0x3a3a48 (toggle btn ≠ readout panel) · ≠ TEXTM · ≠ PICKM · ≠ LIFT — arena-readm only; #arena-readout border.
+    var READM_GESETZ = { border: 0x2a2a38 };
+    var READM_VIS = { lab: "arena-readm", host: "none" };
+
+    // V18.491.586 Lab Schmiede Arena Near/Invite popText Color; Host none (INVITEM_VIS).
+    // ≠ TREFFM.ok 0x6fcf73 (success ≠ near-prompt) · ≠ #8fe39a fuge · ≠ #ffd24a wucht · ≠ GOLDM · ≠ LIFT — arena-invitem only; [E]-Nahaufforderung/Tipp.
+    var INVITEM_GESETZ = { color: 0xcfe0a0 };
+    var INVITEM_VIS = { lab: "arena-invitem", host: "none" };
+
+    // V18.491.587 Lab Schmiede Arena Harnisch-Fuge Success Color; Host none (FUGEM_VIS).
+    // ≠ TREFFM.ok 0x6fcf73 · ≠ INVITEM 0xcfe0a0 · ≠ #9fe0a0 general Stich · ≠ #ffd24a wucht · ≠ LIFT — arena-fugem only; Fuge-Stich success.
+    var FUGEM_GESETZ = { color: 0x8fe39a };
+    var FUGEM_VIS = { lab: "arena-fugem", host: "none" };
+
+    // V18.491.588 Lab Schmiede Arena Wucht/Impact popText Color; Host none (WUCHTM_VIS).
+    // ≠ GOLDM 0xffe07a feier · ≠ DECKM 0xffae6a · ≠ WARNM/ARENAM · ≠ FUGEM · ≠ #9fe0a0 stich · ≠ LIFT — arena-wuchtm only; blunt impact yellow.
+    var WUCHTM_GESETZ = { color: 0xffd24a };
+    var WUCHTM_VIS = { lab: "arena-wuchtm", host: "none" };
+
+    // V18.491.589 Lab Schmiede Arena General Stich/Schnitt Success Color; Host none (STICHM_VIS).
+    // ≠ FUGEM 0x8fe39a (Fuge ≠ general Stich) · ≠ INVITEM · ≠ TREFFM.ok · ≠ #7fe0a0 down/victory · ≠ LIFT — arena-stichm only; Stich/Schnitt hit green.
+    var STICHM_GESETZ = { color: 0x9fe0a0 };
+    var STICHM_VIS = { lab: "arena-stichm", host: "none" };
+
+    // V18.491.590 Lab Schmiede Arena Down/Victory Color; Host none (SIEGM_VIS).
+    // ≠ STICHM 0x9fe0a0 (hit ≠ down/victory) · ≠ FUGEM · ≠ INVITEM · ≠ TREFFM.ok · ≠ LIFT — arena-siegm only; Ritter fällt / Feld geräumt.
+    var SIEGM_GESETZ = { color: 0x7fe0a0 };
+    var SIEGM_VIS = { lab: "arena-siegm", host: "none" };
+
+    // V18.491.591 Lab Schmiede Arena Gerät→Spieler Hit Color; Host none (GERATM_VIS).
+    // ≠ GEFAHRM 0xff6a4a (Kämpfer-Ram ≠ Pendel/Kugel) · ≠ TREFFM.bad · ≠ #cdbf9a device-hit · ≠ #ff5a4a Deckung · ≠ LIFT — arena-geratm only; apparatus hurts player.
+    var GERATM_GESETZ = { color: 0xff6a6a };
+    var GERATM_VIS = { lab: "arena-geratm", host: "none" };
+
+    // V18.491.592 Lab Schmiede Arena Spieler→Gerät Hit Color; Host none (GERTTM_VIS).
+    // ≠ GERATM 0xff6a6a (Gerät→Spieler ≠ Spieler→Gerät) · ≠ TREFFM.ok · ≠ WUCHTM · ≠ #cd9a6a Drehbaum · ≠ #ff5a4a Deckung · ≠ LIFT — arena-gerttm only; Pendel/Kugel getroffen.
+    var GERTTM_GESETZ = { color: 0xcdbf9a };
+    var GERTTM_VIS = { lab: "arena-gerttm", host: "none" };
+
+    // V18.491.593 Lab Schmiede Arena Deckung-Bruch Color; Host none (BRUCHM_VIS).
+    // ≠ GEFAHRM 0xff6a4a (Hieb durch Deckung ≠ Bruch) · ≠ GERATM · ≠ DECKM status · ≠ TREFFM.bad · ≠ #cd9a6a · ≠ LIFT — arena-bruchm only; Deckung zerbricht.
+    var BRUCHM_GESETZ = { color: 0xff5a4a };
+    var BRUCHM_VIS = { lab: "arena-bruchm", host: "none" };
+
+    // V18.491.594 Lab Schmiede Arena Drehbaum-Hit popText Color; Host none (DREHTTM_VIS).
+    // ≠ GERTTM 0xcdbf9a (Pendel/Kugel ≠ Drehbaum) · ≠ DREHM.lin 0xb6a06a (mats ≠ pop) · ≠ DREHM wood/pad · ≠ LIFT — arena-drehttm only; Drehbaum getroffen.
+    var DREHTTM_GESETZ = { color: 0xcd9a6a };
+    var DREHTTM_VIS = { lab: "arena-drehttm", host: "none" };
+
+    // V18.491.595 Lab Schmiede Arena Quintain Hit popText Colors; Host none (QUINTHM_VIS).
+    // ≠ QUINTM mats bag/shield · ≠ LATERNEM.glow 0xd8c089 coincidence (sack ≠ lantern) · ≠ GOLDM/WUCHTM · ≠ GERTTM · ≠ #ffce6a rise · ≠ LIFT — arena-quinthm only; Sandsack/Schild hit pops.
+    var QUINTHM_GESETZ = { sack: 0xd8c089, shield: 0xffd479 };
+    var QUINTHM_VIS = { lab: "arena-quinthm", host: "none" };
+
+    // V18.491.596 Lab Schmiede Arena Ritter/Kämpfer Rise popText Color; Host none (ERHEBM_VIS).
+    // ≠ WUCHTM 0xffd24a · ≠ GOLDM/RETIKELM 0xffe07a · ≠ QUINTHM.shield 0xffd479 · ≠ INVITEM · ≠ #ff8a6a/#d8c050 · ≠ LIFT — arena-erhebm only; DIE RITTER/KÄMPFER rise.
+    var ERHEBM_GESETZ = { color: 0xffce6a };
+    var ERHEBM_VIS = { lab: "arena-erhebm", host: "none" };
+
+    // V18.491.597 Lab Schmiede Arena Drehbaum-Erwischt popText Color; Host none (DREHERM_VIS).
+    // ≠ GERATM 0xff6a6a (Gerät≠Drehbaum) · ≠ GEFAHRM 0xff6a4a · ≠ BRUCHM 0xff5a4a · ≠ DREHTTM (hit-on ≠ erwischt) · ≠ #ff8a4a/#d8c050 · ≠ LIFT — arena-dreherm only; Drehbaum erwischt dich.
+    var DREHERM_GESETZ = { color: 0xff8a6a };
+    var DREHERM_VIS = { lab: "arena-dreherm", host: "none" };
+
+    // V18.491.598 Lab Schmiede Arena Clay PULL popText Color; Host none (PULLM_VIS).
+    // ≠ CLOUTM.flag 0xd8c050 coincidence (PULL ≠ Fahne) · ≠ QUINTHM.sack 0xd8c089 · ≠ LATERNEM.glow · ≠ GOLDM · ≠ ERHEBM · ≠ #ff8a4a · ≠ LIFT — arena-pullm only; PULL! Wurfscheibe steigt.
+    var PULLM_GESETZ = { color: 0xd8c050 };
+    var PULLM_VIS = { lab: "arena-pullm", host: "none" };
+
+    // V18.491.599 Lab Schmiede Arena Streitpuppe-Angriff popText Color; Host none (GREIFM_VIS).
+    // ≠ DREHERM 0xff8a6a (Drehbaum≠Streitpuppe) · ≠ GEFAHRM 0xff6a4a · ≠ GERATM 0xff6a6a · ≠ BRUCHM · ≠ ZIPFELM mats · ≠ STREITM mats · ≠ #d8b46a Pell · ≠ LIFT — arena-greifm only; Streitpuppe greift an.
+    var GREIFM_GESETZ = { color: 0xff8a4a };
+    var GREIFM_VIS = { lab: "arena-greifm", host: "none" };
+
+    // V18.491.600 Lab Schmiede Arena Pell-Hit popText Color; Host none (PELLTM_VIS).
+    // ≠ PELLM mats (stroh/leder/holz/seil ≠ pop) · ≠ PULLM 0xd8c050 · ≠ QUINTHM.sack · ≠ DREHTTM · ≠ HEUM · ≠ CLOUTM.flag · ≠ TREFFM.ok · ≠ LIFT — arena-pelltm only; Pell getroffen.
+    var PELLTM_GESETZ = { color: 0xd8b46a };
+    var PELLTM_VIS = { lab: "arena-pelltm", host: "none" };
+
+    // V18.491.601 Lab Schmiede Arena Panel Shell rgba Colors; Host none (PANELM_VIS).
+    // ≠ BTNM.bg 0x1c1c26 · ≠ READM.border 0x2a2a38 · ≠ HINTER 0x0a0807 · ≠ TEXTM · ≠ popText rgba chrome · ≠ LIFT — arena-panelm only; readout/hint/lockhint panel bg.
+    var PANELM_GESETZ = { color: 0x12121a, readoutA: 0.82, hintA: 0.7, lockA: 0.85 };
+    var PANELM_VIS = { lab: "arena-panelm", host: "none" };
+
+    // V18.491.602 Lab Schmiede Arena popText Bubble Chrome; Host none (POPUM_VIS).
+    // ≠ PANELM 0x12121a · ≠ HINTER 0x0a0807 (bg 0x090705 ≠ fog) · ≠ BTNM · ≠ READM · ≠ drawmeter/reticle rgba · ≠ LIFT — arena-popum only; popText shell shadow/bg/border/box.
+    var POPUM_GESETZ = { shadow: 0x000000, glowA: 0.85, bg: 0x090705, bgA: 0.46, border: 0xffffff, borderA: 0.09, boxA: 0.4 };
+    var POPUM_VIS = { lab: "arena-popum", host: "none" };
+
+    // V18.491.603 Lab Schmiede Arena Drawmeter Track Color; Host none (METERBM_VIS).
+    // ≠ POPUM.shadow/boxA (meter ≠ pop chrome; a 0.45 ≠ 0.4/0.85) · ≠ PANELM · ≠ HINTER · ≠ SPEKM/SPEKOM fill · ≠ reticle rgba · ≠ LIFT — arena-meterbm only; drawmeter track bg.
+    var METERBM_GESETZ = { color: 0x000000, a: 0.45 };
+    var METERBM_VIS = { lab: "arena-meterbm", host: "none" };
+
+    // V18.491.604 Lab Schmiede Arena Reticle Ring Border Color; Host none (RINGRM_VIS).
+    // ≠ RETIKELM 0xffe07a (ring ≠ aim-dot) · ≠ POPUM.border a 0.09 (≠ 0.5) · ≠ KREISM mats · ≠ TEXTM/NEUTM · ≠ METERBM · ≠ LIFT — arena-ringrm only; reticle outer ring.
+    var RINGRM_GESETZ = { color: 0xffffff, a: 0.5 };
+    var RINGRM_VIS = { lab: "arena-ringrm", host: "none" };
+
+    // V18.491.605 Lab Schmiede UI Muted Caption Opacity; Host none (MUTEM_VIS).
+    // ≠ RINGRM.a 0.5 · ≠ SCHLEIER 0.26 · ≠ SCHIEB 0.85 · ≠ WIRBEL 0.8 · ≠ befund .65 · ≠ stam .85/.25 · ≠ LIFT — ui-mutem only; secondary caption opacity .6.
+    var MUTEM_GESETZ = { a: 0.6 };
+    var MUTEM_VIS = { lab: "ui-mutem", host: "none" };
+
+    // V18.491.606 Lab Schmiede Befund Intent Caption Opacity; Host none (LEISEM_VIS).
+    // ≠ MUTEM.a 0.6 (befund meta ≠ muted HUD) · ≠ RINGRM · ≠ SCHLEIER · ≠ SCHIEB · ≠ HUD .7/.85/.25 · ≠ LIFT — befund-leisem only; Absicht/Zugkraft caption .65.
+    var LEISEM_GESETZ = { a: 0.65 };
+    var LEISEM_VIS = { lab: "befund-leisem", host: "none" };
+
+    // V18.491.607 Lab Schmiede Arena HUD Stats Caption Opacity; Host none (STATSM_VIS).
+    // ≠ MUTEM.a 0.6 · ≠ LEISEM.a 0.65 · ≠ stam .85/.25 · ≠ RINGRM · ≠ SCHLEIER · ≠ LIFT — arena-statsm only; Treffer/Schaden caption .7.
+    var STATSM_GESETZ = { a: 0.7 };
+    var STATSM_VIS = { lab: "arena-statsm", host: "none" };
+
+    // V18.491.608 Lab Schmiede Arena HUD Ausdauer Label Opacity; Host none (AUSDM_VIS).
+    // ≠ MUTEM.a 0.6 · ≠ LEISEM.a 0.65 · ≠ STATSM.a 0.7 · ≠ SCHIEB.opacity 0.85 coincidence (lehren ≠ HUD) · ≠ stam empty .25 · ≠ stam thresholds 0.5/0.25 · ≠ LIFT — arena-ausdm only; Ausdauer row .85.
+    var AUSDM_GESETZ = { a: 0.85 };
+    var AUSDM_VIS = { lab: "arena-ausdm", host: "none" };
+
+    // V18.491.609 Lab Schmiede Arena HUD Ausdauer leere Leiste Opacity; Host none (LEERM_VIS).
+    // ≠ AUSDM.a 0.85 · ≠ STATSM.a 0.7 · ≠ LEISEM.a 0.65 · ≠ MUTEM.a 0.6 · ≠ stam thresholds 0.5/0.25 (logic, stay bare) · ≠ LIFT — arena-leerm only; empty-bar segments .25.
+    var LEERM_GESETZ = { a: 0.25 };
+    var LEERM_VIS = { lab: "arena-leerm", host: "none" };
+
+    // V18.491.610 Lab Schmiede Arena Waffenhof Pell-Station Position (x/y/z); Host none (PELLPOS_VIS).
+    // ≠ PELL_GESETZ (pell geo postH/torso) · ≠ PELLM mats · ≠ AUFSTELL (ritter spawn cfg) · ≠ HOF (courtyard rings) · ≠ Quintane/Bambus x 4.0 coincidence · ≠ Stechringe z 5.0 coincidence · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-pellpos only.
+    var PELLPOS_GESETZ = { x: 4.0, y: 0, z: 5.0 };
+    var PELLPOS_VIS = { lab: "arena-pellpos", host: "none" };
+
+    // V18.491.611 Lab Schmiede Arena Waffentisch-Station Position (am Spawn; x/y/z); Host none (WAFFTISCHPOS_VIS).
+    // ≠ TISCH (H) · ≠ TISCHM mats · ≠ RACK (pitch/margin) · ≠ RUECK/STIEL/SIMS x −3.4/−3.32/−3.35 near-miss · ≠ AUFSTELL z −3.0 coincidence · ≠ PELLPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-waffentischpos only.
+    var WAFFTISCHPOS_GESETZ = { x: -3.0, y: 0, z: 0 };
+    var WAFFTISCHPOS_VIS = { lab: "arena-waffentischpos", host: "none" };
+
+    // V18.491.612 Lab Schmiede Arena Stechringe-Station Position (Waffenhof; x/y/z); Host none (STECHPOS_VIS).
+    // ≠ STECH (local geo R/barH/postX/spots) · ≠ STECHM mats · ≠ STECHF color · ≠ RING/RINGRM · ≠ PELLPOS z 5.0 coincidence · ≠ Schnittgasse x 8.5 coincidence · ≠ Drehbaum z 8.5 coincidence · ≠ WAFFTISCHPOS · ≠ LIFT — arena-stechpos only.
+    var STECHPOS_GESETZ = { x: 8.5, y: 0, z: 5.0 };
+    var STECHPOS_VIS = { lab: "arena-stechpos", host: "none" };
+
+    // V18.491.613 Lab Schmiede Arena Quintane-Station Position (Waffenhof; x/y/z); Host none (QUINTPOS_VIS).
+    // ≠ QUINT (local geo postH/armLen/shieldR) · ≠ QUINTM mats · ≠ QUINTHM pops · ≠ PELLPOS/Bambus x 4.0 coincidence · ≠ STECHPOS · ≠ WAFFTISCHPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-quintpos only.
+    var QUINTPOS_GESETZ = { x: 4.0, y: 0, z: 10.5 };
+    var QUINTPOS_VIS = { lab: "arena-quintpos", host: "none" };
+
+    // V18.491.614 Lab Schmiede Arena Pendel-Kugel-Station Position (Waffenhof; x/y/z); Host none (PENDELPOS_VIS).
+    // ≠ PENDEL (local geo L/ballR/segs) · ≠ PENDELM mats · ≠ Pendel-Gasse station (10,0,18; left bare) · ≠ QUINTPOS/STECHPOS/PELLPOS/WAFFTISCHPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-pendelpos only.
+    var PENDELPOS_GESETZ = { x: 9.0, y: 0, z: 10.0 };
+    var PENDELPOS_VIS = { lab: "arena-pendelpos", host: "none" };
+
+    // V18.491.615 Lab Schmiede Arena Drehbaum-Station Position (Waffenhof; x/y/z); Host none (DREHPOS_VIS).
+    // ≠ DREH (local geo H/armLen/padR) · ≠ DREHM mats · ≠ DREHTTM/DREHERM pops · ≠ BAUM/SPINN · ≠ STECHPOS/Schnittgasse 8.5 coincidence · ≠ PENDELPOS/QUINTPOS/PELLPOS/WAFFTISCHPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-drehpos only.
+    var DREHPOS_GESETZ = { x: 1.0, y: 0, z: 8.5 };
+    var DREHPOS_VIS = { lab: "arena-drehpos", host: "none" };
+
+    // V18.491.616 Lab Schmiede Arena Federpfahl-Station Position (Pell-Hof; x/y/z); Host none (FEDERPOS_VIS).
+    // ≠ FEDER (logic H/k/damp/hitR) · ≠ FEDERM mats · ≠ PELLPOS (straw pell station) · ≠ DREHPOS/PENDELPOS/QUINTPOS/STECHPOS/WAFFTISCHPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-federpos only.
+    var FEDERPOS_GESETZ = { x: 2.0, y: 0, z: 2.5 };
+    var FEDERPOS_VIS = { lab: "arena-federpos", host: "none" };
+
+    // V18.491.617 Lab Schmiede Arena Trefferfolge-Station Position (Nordwest-Bogen; x/y/z); Host none (SEQPOS_VIS).
+    // ≠ FOLGE (logic N/spread/r) · ≠ PAD (local pad geo) · ≠ FOLGEM mats · ≠ FEDERPOS/DREHPOS/PENDELPOS/QUINTPOS/STECHPOS/PELLPOS/WAFFTISCHPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-seqpos only.
+    var SEQPOS_GESETZ = { x: -6.0, y: 0, z: 13.0 };
+    var SEQPOS_VIS = { lab: "arena-seqpos", host: "none" };
+
+    // V18.491.618 Lab Schmiede Arena Streitpuppe-Station Position (Nord; x/y/z; also charger home via pos.clone); Host none (CHARGEPOS_VIS).
+    // ≠ STREIT (logic speed/nearR/hitR) · ≠ STREITM mats · ≠ GREIFM pop · ≠ SEQPOS/FEDERPOS/DREHPOS/PENDELPOS/QUINTPOS/STECHPOS/PELLPOS/WAFFTISCHPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-chargepos only.
+    var CHARGEPOS_GESETZ = { x: 5.0, y: 0, z: 19.0 };
+    var CHARGEPOS_VIS = { lab: "arena-chargepos", host: "none" };
+
+    // V18.491.619 Lab Schmiede Arena Pendel-Gasse-Station Position (Nord-Korridor; x/y/z); Host none (GASSEPOS_VIS).
+    // ≠ GASSE (logic N/gap/H) · ≠ GASSEM mats · ≠ PENDELPOS (single pendulum ball station) · ≠ PENDEL geo · ≠ CHARGEPOS/SEQPOS/FEDERPOS/DREHPOS/QUINTPOS/STECHPOS/PELLPOS/WAFFTISCHPOS · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-gassepos only.
+    var GASSEPOS_GESETZ = { x: 10.0, y: 0, z: 18.0 };
+    var GASSEPOS_VIS = { lab: "arena-gassepos", host: "none" };
+
+    // V18.491.620 Lab Schmiede Arena Bambus-Stand-Station Position (Schnitthof; x/y/z); Host none (BAMBUSPOS_VIS).
+    // ≠ BAMBUS (stand N/gap/hBase/hAlt) · ≠ SOCKEL/FASSUNG/HALM geo · ≠ SOCKELM/HALMM mats · ≠ PELLPOS/QUINTPOS x 4.0 coincidence · ≠ Schnittgasse z -5.0 (other station, left bare) · ≠ GASSEPOS/CHARGEPOS/SEQPOS/FEDERPOS/DREHPOS/PENDELPOS/STECHPOS/WAFFTISCHPOS · ≠ LIFT — arena-bambuspos only.
+    var BAMBUSPOS_GESETZ = { x: 4.0, y: 0, z: -5.0 };
+    var BAMBUSPOS_VIS = { lab: "arena-bambuspos", host: "none" };
+
+    // V18.491.621 Lab Schmiede Arena Schnittgasse-Station Position (Schnitthof; x/y/z); Host none (SCHNITTPOS_VIS).
+    // ≠ SCHNITT (lane layout N/span/h0/dh) · ≠ SCHWELLE geo · ≠ SCHWELLEM mats · ≠ STECHPOS x 8.5 coincidence · ≠ BAMBUSPOS z -5.0 (other station) · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-schnittpos only.
+    var SCHNITTPOS_GESETZ = { x: 8.5, y: 0, z: -5.0 };
+    var SCHNITTPOS_VIS = { lab: "arena-schnittpos", host: "none" };
+
+    // V18.491.622 Lab Schmiede Arena schwingende Tatami-Station Position (Schnitthof; x/y/z); Host none (TATAMIPOS_VIS).
+    // ≠ TATAMI (logic len/rollLen/amp/w) · ≠ GALGEN geo · ≠ TATAMIM mats · ≠ PELLPOS/QUINTPOS/BAMBUSPOS x 4.0 coincidence · ≠ SCHNITTPOS/BAMBUSPOS (other stations) · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-tatamipos only.
+    var TATAMIPOS_GESETZ = { x: 4.0, y: 0, z: -10.0 };
+    var TATAMIPOS_VIS = { lab: "arena-tatamipos", host: "none" };
+
+    // V18.491.623 Lab Schmiede Arena Harnisch-Puppe-Station Position (Schnitthof; x/y/z); Host none (HARNISCHPOS_VIS).
+    // ≠ HARNISCH (logic scale/hitCD/hitR/y0/y1) · ≠ HARNISCHM mats · ≠ FUGEM/WUCHTM/STICHM pops · ≠ GASSEPOS x 10 coincidence · ≠ Ritter-Arenen (AUFSTELL, own stations) · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-harnischpos only.
+    var HARNISCHPOS_GESETZ = { x: 10.0, y: 0, z: -9.0 };
+    var HARNISCHPOS_VIS = { lab: "arena-harnischpos", host: "none" };
+
+    // V18.491.624 Lab Schmiede Arena Kirmes-Enten-Station Position (Bahnende; x/y/z); Host none (KIRMESPOS_VIS).
+    // ≠ KIRMES (logic amp/w0/dw) · ≠ PFAD x1 40 / curbW 43 (no derivation) · ≠ BAHN specs max 31 (no derivation) · ≠ TORII · ≠ other station Vector3 (left bare) · ≠ LIFT — arena-kirmespos only.
+    var KIRMESPOS_GESETZ = { x: 36, y: 0, z: 0 };
+    var KIRMESPOS_VIS = { lab: "arena-kirmespos", host: "none" };
+
+    // V18.491.625 Lab Schmiede Arena Torii am Bahneingang Position (x/z scalars; no y arg); Host none (TORIIPOS_VIS).
+    // ≠ TORII (geo H/W) · ≠ TORIIM mats · ≠ TORP · ≠ PFOSTEN geo · ≠ BAHN specs (first target x 17; no derivation) · ≠ PFAD x0 -3 (no derivation) · ≠ KIRMESPOS · ≠ LIFT — arena-toriipos only.
+    var TORIIPOS_GESETZ = { x: 13.0, z: 0.0 };
+    var TORIIPOS_VIS = { lab: "arena-toriipos", host: "none" };
+
+    // V18.491.626 Lab Schmiede Arena Ritter-Arenen Positions (armored + bare arena; x/y/z each); Host none (RITTERPOS_VIS).
+    // ≠ AUFSTELL (knight spawn cfg inside each arena, relative) · ≠ RITTER (ringIn/ringOut/bannerR/hp) · ≠ RITTERM/KREISM/TUCHM mats · ≠ HARNISCHPOS · count 3/2 + armored flag left bare · shared z -18.5 kept as two fields (no merge) · ≠ LIFT — arena-ritterpos only.
+    var RITTERPOS_GESETZ = { armX: 6, armY: 0, armZ: -18.5, bareX: -7, bareY: 0, bareZ: -18.5 };
+    var RITTERPOS_VIS = { lab: "arena-ritterpos", host: "none" };
+
+    // V18.491.627 Lab Schmiede Arena Wand-Schiessen-Station Position (Schießbahn; x/y/z); Host none (WANDPOS_VIS).
+    // ≠ WAND (geo H) · ≠ WANDM mats · ≠ STAB/STREIF/SPITZE/STAND geo · ≠ BAHN specs · ≠ PFAD · ≠ other Schießbahn stations (left bare) · ≠ LIFT — arena-wandpos only.
+    var WANDPOS_GESETZ = { x: 20, y: 0, z: 3.0 };
+    var WANDPOS_VIS = { lab: "arena-wandpos", host: "none" };
+
+    // V18.491.628 Lab Schmiede Arena Clout-Station Position (fernes Bodenziel, Schießbahn; x/y/z); Host none (CLOUTPOS_VIS).
+    // ≠ CLOUT (cols/step/poleH/hitR) · ≠ CLOUTM mats · ≠ MAST/FAEHNE geo · ≠ KIRMESPOS x 36 near-miss · ≠ BAHN/PFAD · ≠ other Schießbahn stations (left bare) · ≠ LIFT — arena-cloutpos only.
+    var CLOUTPOS_GESETZ = { x: 38, y: 0, z: 7 };
+    var CLOUTPOS_VIS = { lab: "arena-cloutpos", host: "none" };
+
+    // V18.491.629 Lab Schmiede Arena Wurfscheibe/Tontaube-Station Position (Schießbahn; x/y/z); Host none (CLAYPOS_VIS).
+    // ≠ TON (logic nearR/nextT0/liftY/vyBase/hitR) · ≠ TONM mats · ≠ TONNE geo · ≠ Papagei-Feld z -8 coincidence · ≠ BAHN/PFAD · ≠ other Schießbahn stations (left bare) · ≠ LIFT — arena-claypos only.
+    var CLAYPOS_GESETZ = { x: 23, y: 0, z: -8 };
+    var CLAYPOS_VIS = { lab: "arena-claypos", host: "none" };
+
+    // V18.491.630 Lab Schmiede Arena Pendelziel-Station Position (Schießbahn, schwingt quer; x/y/z); Host none (SWINGPOS_VIS).
+    // ≠ SCHAUKEL (logic L/R/ang0) · ≠ SCHAUKELM mats · ≠ ZIELP post geo · ≠ PENDELPOS (Pendel-Kugel, melee) · ≠ BAHN/PFAD · ≠ Papagei-Feld (left bare) · ≠ LIFT — arena-swingpos only.
+    var SWINGPOS_GESETZ = { x: 30, y: 0, z: 4 };
+    var SWINGPOS_VIS = { lab: "arena-swingpos", host: "none" };
+
+    // V18.491.631 Lab Schmiede Arena Papagei-Feld Positions (list of 4 x/z pairs; y 0 in lab); Host none (PAPAGEIPOS_VIS).
+    // ≠ PAPAGEI (poleH/hitR) · ≠ PAPAGEIM mats · ≠ CLAYPOS z -8 / CLOUTPOS z 7 coincidence · ≠ BAHN specs · ≠ other Schießbahn stations · ≠ LIFT — arena-papageipos only; exactly 4 spots (lab validates).
+    var PAPAGEIPOS_GESETZ = { spots: [[16, 8], [22, -8], [28, 7], [33, -6]] };
+    var PAPAGEIPOS_VIS = { lab: "arena-papageipos", host: "none" };
+
+    // V18.491.632 Lab Schmiede Schnitt-Karte Caption-Abstand (title above / meta below card, symmetric gap); Host none (KARTENABST_VIS).
+    // ≠ FORTE (card t/sc/xOff/py) · ≠ KARTENM caption colors · ≠ ACHSE/KONTUR lines · ≠ SCHIEB.labY 0.045 · ≠ card half-height mul 2.8 (left bare) · ≠ other 0.02 literals (coincidence) · ≠ LIFT — karte-kartenabst only.
+    var KARTENABST_GESETZ = { gap: 0.02 };
+    var KARTENABST_VIS = { lab: "karte-kartenabst", host: "none" };
+
+    // V18.491.633 Lab Schmiede Lehren HAND·Drehpunkt label offset below pivot ring (dy); Host none (HANDLAB_VIS).
+    // ≠ HAND (ring R/tube) · ≠ LEHREM colors · ≠ SCHIEB.labY 0.045 (caliper) · ≠ BALANCE/SCHLAGPUNKT +0.06 label lift · ≠ label sizes 0.044/0.042 (left bare) · ≠ other 0.055 (RAUSCH/STAB/SPITZE/OBERARM coincidence) · ≠ LIFT — lehren-handlab only.
+    var HANDLAB_GESETZ = { dy: -0.055 };
+    var HANDLAB_VIS = { lab: "lehren-handlab", host: "none" };
+
+    // V18.491.634 Lab Schmiede Lehren label lift above blade curve (BALANCE + SCHLAGPUNKT, same role); Host none (LEHRLAB_VIS).
+    // ≠ HANDLAB dy -0.055 (below pivot) · ≠ SCHIEB.labY 0.045 (caliper) · ≠ spine station label +0.05 (left bare) · ≠ KARTENABST · ≠ LEHREM colors · ≠ other 0.06 (coincidence) · ≠ LIFT — lehren-lehrlab only.
+    var LEHRLAB_GESETZ = { lift: 0.06 };
+    var LEHRLAB_VIS = { lab: "lehren-lehrlab", host: "none" };
+
+    // V18.491.635 Lab Schmiede Rückgrat station label lift above station dot; Host none (SPINELAB_VIS).
+    // ≠ LEHRLAB lift 0.06 · ≠ HANDLAB · ≠ SCHIEB.labY 0.045 · ≠ PUNKT dot radii · ≠ SPINEM color · ≠ RUECK (arena back wall) · ≠ ETIK.scale 0.05 / other 0.05 (coincidence) · ≠ LIFT — lehren-spinelab only.
+    var SPINELAB_GESETZ = { lift: 0.05 };
+    var SPINELAB_VIS = { lab: "lehren-spinelab", host: "none" };
+
+    // V18.491.636 Lab Schmiede Lehren main label size (BALANCE + SCHLAGPUNKT, same role/overlay); Host none (LEHRLABSC_VIS).
+    // ≠ ETIK.scale 0.05 (label default) · ≠ SCHIEB.labScale 0.046 (caliper) · ≠ LEHRLAB lift · ≠ HAND labels 0.044 dup / 0.042 (left bare) · ≠ 0.04 spine/meta/mass (other roles) · ≠ LIFT — lehren-lehrlabsc only.
+    var LEHRLABSC_GESETZ = { sc: 0.044 };
+    var LEHRLABSC_VIS = { lab: "lehren-lehrlabsc", host: "none" };
+
+    // V18.491.637 Lab Schmiede Schnitt-Karte caption label sizes (title + meta line); Host none (KARTENSC_VIS).
+    // ≠ ETIK.scale 0.05 (label default, coincidence) · ≠ spine 0.04 / mass 0.04 (other overlays, coincidence) · ≠ Steg 0.034 / Flansch 0.032 (left bare) · ≠ KARTENABST gap · ≠ KARTENM colors · ≠ LEHRLABSC · ≠ LIFT — karte-kartensc only.
+    var KARTENSC_GESETZ = { title: 0.05, meta: 0.04 };
+    var KARTENSC_VIS = { lab: "karte-kartensc", host: "none" };
+
     // V18.491.290 Lab Schmiede weapon rack; Host none (RACK_VIS).
     // ≠ KIRMES_GESETZ.w0 (0.55 coincidence — carnival ω ≠ rack pitch) · ≠ DOJO · ≠ LIFT — weapon table spacing only; do not Fake-merge.
     var RACK_GESETZ = { pitch: 0.55, margin: 0.6 };
@@ -5458,6 +5983,216 @@
         SCHILDM_VIS: SCHILDM_VIS,
         ZIPFELM_GESETZ: ZIPFELM_GESETZ,
         ZIPFELM_VIS: ZIPFELM_VIS,
+        GASSEM_GESETZ: GASSEM_GESETZ,
+        GASSEM_VIS: GASSEM_VIS,
+        TONM_GESETZ: TONM_GESETZ,
+        TONM_VIS: TONM_VIS,
+        SCHAUKELM_GESETZ: SCHAUKELM_GESETZ,
+        SCHAUKELM_VIS: SCHAUKELM_VIS,
+        TATAMIM_GESETZ: TATAMIM_GESETZ,
+        TATAMIM_VIS: TATAMIM_VIS,
+        ENTEM_GESETZ: ENTEM_GESETZ,
+        ENTEM_VIS: ENTEM_VIS,
+        BUDEM_GESETZ: BUDEM_GESETZ,
+        BUDEM_VIS: BUDEM_VIS,
+        ZIELPM_GESETZ: ZIELPM_GESETZ,
+        ZIELPM_VIS: ZIELPM_VIS,
+        TORIIM_GESETZ: TORIIM_GESETZ,
+        TORIIM_VIS: TORIIM_VIS,
+        SCHWELLEM_GESETZ: SCHWELLEM_GESETZ,
+        SCHWELLEM_VIS: SCHWELLEM_VIS,
+        PERGOLAM_GESETZ: PERGOLAM_GESETZ,
+        PERGOLAM_VIS: PERGOLAM_VIS,
+        FAHNEM_GESETZ: FAHNEM_GESETZ,
+        FAHNEM_VIS: FAHNEM_VIS,
+        HEUM_GESETZ: HEUM_GESETZ,
+        HEUM_VIS: HEUM_VIS,
+        LATERNEM_GESETZ: LATERNEM_GESETZ,
+        LATERNEM_VIS: LATERNEM_VIS,
+        KOHLEM_GESETZ: KOHLEM_GESETZ,
+        KOHLEM_VIS: KOHLEM_VIS,
+        PFADM_GESETZ: PFADM_GESETZ,
+        PFADM_VIS: PFADM_VIS,
+        PENDELM_GESETZ: PENDELM_GESETZ,
+        PENDELM_VIS: PENDELM_VIS,
+        DREHM_GESETZ: DREHM_GESETZ,
+        DREHM_VIS: DREHM_VIS,
+        QUINTM_GESETZ: QUINTM_GESETZ,
+        QUINTM_VIS: QUINTM_VIS,
+        STECHM_GESETZ: STECHM_GESETZ,
+        STECHM_VIS: STECHM_VIS,
+        PAPAGEIM_GESETZ: PAPAGEIM_GESETZ,
+        PAPAGEIM_VIS: PAPAGEIM_VIS,
+        DOJOM_GESETZ: DOJOM_GESETZ,
+        DOJOM_VIS: DOJOM_VIS,
+        NARBM_GESETZ: NARBM_GESETZ,
+        NARBM_VIS: NARBM_VIS,
+        LEBENM_GESETZ: LEBENM_GESETZ,
+        LEBENM_VIS: LEBENM_VIS,
+        BLITZM_GESETZ: BLITZM_GESETZ,
+        BLITZM_VIS: BLITZM_VIS,
+        KOTTEM_GESETZ: KOTTEM_GESETZ,
+        KOTTEM_VIS: KOTTEM_VIS,
+        STECHF_GESETZ: STECHF_GESETZ,
+        STECHF_VIS: STECHF_VIS,
+        WAMSM_GESETZ: WAMSM_GESETZ,
+        WAMSM_VIS: WAMSM_VIS,
+        TELM_GESETZ: TELM_GESETZ,
+        TELM_VIS: TELM_VIS,
+        ABKLINGM_GESETZ: ABKLINGM_GESETZ,
+        ABKLINGM_VIS: ABKLINGM_VIS,
+        LEHREM_GESETZ: LEHREM_GESETZ,
+        LEHREM_VIS: LEHREM_VIS,
+        RINGABKM_GESETZ: RINGABKM_GESETZ,
+        RINGABKM_VIS: RINGABKM_VIS,
+        KARTENM_GESETZ: KARTENM_GESETZ,
+        KARTENM_VIS: KARTENM_VIS,
+        SPINEM_GESETZ: SPINEM_GESETZ,
+        SPINEM_VIS: SPINEM_VIS,
+        BEFUNDM_GESETZ: BEFUNDM_GESETZ,
+        BEFUNDM_VIS: BEFUNDM_VIS,
+        REGM_GESETZ: REGM_GESETZ,
+        REGM_VIS: REGM_VIS,
+        BOGENM_GESETZ: BOGENM_GESETZ,
+        BOGENM_VIS: BOGENM_VIS,
+        ARENAM_GESETZ: ARENAM_GESETZ,
+        ARENAM_VIS: ARENAM_VIS,
+        WARNM_GESETZ: WARNM_GESETZ,
+        WARNM_VIS: WARNM_VIS,
+        CHROMEM_GESETZ: CHROMEM_GESETZ,
+        CHROMEM_VIS: CHROMEM_VIS,
+        SPEKM_GESETZ: SPEKM_GESETZ,
+        SPEKM_VIS: SPEKM_VIS,
+        SPEKOM_GESETZ: SPEKOM_GESETZ,
+        SPEKOM_VIS: SPEKOM_VIS,
+        TREFFM_GESETZ: TREFFM_GESETZ,
+        TREFFM_VIS: TREFFM_VIS,
+        GOLDM_GESETZ: GOLDM_GESETZ,
+        GOLDM_VIS: GOLDM_VIS,
+        RETIKELM_GESETZ: RETIKELM_GESETZ,
+        RETIKELM_VIS: RETIKELM_VIS,
+        NEUTM_GESETZ: NEUTM_GESETZ,
+        NEUTM_VIS: NEUTM_VIS,
+        HINTM_GESETZ: HINTM_GESETZ,
+        HINTM_VIS: HINTM_VIS,
+        GEFAHRM_GESETZ: GEFAHRM_GESETZ,
+        GEFAHRM_VIS: GEFAHRM_VIS,
+        MISSM_GESETZ: MISSM_GESETZ,
+        MISSM_VIS: MISSM_VIS,
+        DECKM_GESETZ: DECKM_GESETZ,
+        DECKM_VIS: DECKM_VIS,
+        TEXTM_GESETZ: TEXTM_GESETZ,
+        TEXTM_VIS: TEXTM_VIS,
+        BTNM_GESETZ: BTNM_GESETZ,
+        BTNM_VIS: BTNM_VIS,
+        PICKM_GESETZ: PICKM_GESETZ,
+        PICKM_VIS: PICKM_VIS,
+        READM_GESETZ: READM_GESETZ,
+        READM_VIS: READM_VIS,
+        INVITEM_GESETZ: INVITEM_GESETZ,
+        INVITEM_VIS: INVITEM_VIS,
+        FUGEM_GESETZ: FUGEM_GESETZ,
+        FUGEM_VIS: FUGEM_VIS,
+        WUCHTM_GESETZ: WUCHTM_GESETZ,
+        WUCHTM_VIS: WUCHTM_VIS,
+        STICHM_GESETZ: STICHM_GESETZ,
+        STICHM_VIS: STICHM_VIS,
+        SIEGM_GESETZ: SIEGM_GESETZ,
+        SIEGM_VIS: SIEGM_VIS,
+        GERATM_GESETZ: GERATM_GESETZ,
+        GERATM_VIS: GERATM_VIS,
+        GERTTM_GESETZ: GERTTM_GESETZ,
+        GERTTM_VIS: GERTTM_VIS,
+        BRUCHM_GESETZ: BRUCHM_GESETZ,
+        BRUCHM_VIS: BRUCHM_VIS,
+        DREHTTM_GESETZ: DREHTTM_GESETZ,
+        DREHTTM_VIS: DREHTTM_VIS,
+        QUINTHM_GESETZ: QUINTHM_GESETZ,
+        QUINTHM_VIS: QUINTHM_VIS,
+        ERHEBM_GESETZ: ERHEBM_GESETZ,
+        ERHEBM_VIS: ERHEBM_VIS,
+        DREHERM_GESETZ: DREHERM_GESETZ,
+        DREHERM_VIS: DREHERM_VIS,
+        PULLM_GESETZ: PULLM_GESETZ,
+        PULLM_VIS: PULLM_VIS,
+        GREIFM_GESETZ: GREIFM_GESETZ,
+        GREIFM_VIS: GREIFM_VIS,
+        PELLTM_GESETZ: PELLTM_GESETZ,
+        PELLTM_VIS: PELLTM_VIS,
+        PANELM_GESETZ: PANELM_GESETZ,
+        PANELM_VIS: PANELM_VIS,
+        POPUM_GESETZ: POPUM_GESETZ,
+        POPUM_VIS: POPUM_VIS,
+        METERBM_GESETZ: METERBM_GESETZ,
+        METERBM_VIS: METERBM_VIS,
+        RINGRM_GESETZ: RINGRM_GESETZ,
+        RINGRM_VIS: RINGRM_VIS,
+        MUTEM_GESETZ: MUTEM_GESETZ,
+        MUTEM_VIS: MUTEM_VIS,
+        LEISEM_GESETZ: LEISEM_GESETZ,
+        LEISEM_VIS: LEISEM_VIS,
+        STATSM_GESETZ: STATSM_GESETZ,
+        STATSM_VIS: STATSM_VIS,
+        AUSDM_GESETZ: AUSDM_GESETZ,
+        AUSDM_VIS: AUSDM_VIS,
+        LEERM_GESETZ: LEERM_GESETZ,
+        LEERM_VIS: LEERM_VIS,
+        PELLPOS_GESETZ: PELLPOS_GESETZ,
+        PELLPOS_VIS: PELLPOS_VIS,
+        WAFFTISCHPOS_GESETZ: WAFFTISCHPOS_GESETZ,
+        WAFFTISCHPOS_VIS: WAFFTISCHPOS_VIS,
+        STECHPOS_GESETZ: STECHPOS_GESETZ,
+        STECHPOS_VIS: STECHPOS_VIS,
+        QUINTPOS_GESETZ: QUINTPOS_GESETZ,
+        QUINTPOS_VIS: QUINTPOS_VIS,
+        PENDELPOS_GESETZ: PENDELPOS_GESETZ,
+        PENDELPOS_VIS: PENDELPOS_VIS,
+        DREHPOS_GESETZ: DREHPOS_GESETZ,
+        DREHPOS_VIS: DREHPOS_VIS,
+        FEDERPOS_GESETZ: FEDERPOS_GESETZ,
+        FEDERPOS_VIS: FEDERPOS_VIS,
+        SEQPOS_GESETZ: SEQPOS_GESETZ,
+        SEQPOS_VIS: SEQPOS_VIS,
+        CHARGEPOS_GESETZ: CHARGEPOS_GESETZ,
+        CHARGEPOS_VIS: CHARGEPOS_VIS,
+        GASSEPOS_GESETZ: GASSEPOS_GESETZ,
+        GASSEPOS_VIS: GASSEPOS_VIS,
+        BAMBUSPOS_GESETZ: BAMBUSPOS_GESETZ,
+        BAMBUSPOS_VIS: BAMBUSPOS_VIS,
+        SCHNITTPOS_GESETZ: SCHNITTPOS_GESETZ,
+        SCHNITTPOS_VIS: SCHNITTPOS_VIS,
+        TATAMIPOS_GESETZ: TATAMIPOS_GESETZ,
+        TATAMIPOS_VIS: TATAMIPOS_VIS,
+        HARNISCHPOS_GESETZ: HARNISCHPOS_GESETZ,
+        HARNISCHPOS_VIS: HARNISCHPOS_VIS,
+        KIRMESPOS_GESETZ: KIRMESPOS_GESETZ,
+        KIRMESPOS_VIS: KIRMESPOS_VIS,
+        TORIIPOS_GESETZ: TORIIPOS_GESETZ,
+        TORIIPOS_VIS: TORIIPOS_VIS,
+        RITTERPOS_GESETZ: RITTERPOS_GESETZ,
+        RITTERPOS_VIS: RITTERPOS_VIS,
+        WANDPOS_GESETZ: WANDPOS_GESETZ,
+        WANDPOS_VIS: WANDPOS_VIS,
+        CLOUTPOS_GESETZ: CLOUTPOS_GESETZ,
+        CLOUTPOS_VIS: CLOUTPOS_VIS,
+        CLAYPOS_GESETZ: CLAYPOS_GESETZ,
+        CLAYPOS_VIS: CLAYPOS_VIS,
+        SWINGPOS_GESETZ: SWINGPOS_GESETZ,
+        SWINGPOS_VIS: SWINGPOS_VIS,
+        PAPAGEIPOS_GESETZ: PAPAGEIPOS_GESETZ,
+        PAPAGEIPOS_VIS: PAPAGEIPOS_VIS,
+        KARTENABST_GESETZ: KARTENABST_GESETZ,
+        KARTENABST_VIS: KARTENABST_VIS,
+        HANDLAB_GESETZ: HANDLAB_GESETZ,
+        HANDLAB_VIS: HANDLAB_VIS,
+        LEHRLAB_GESETZ: LEHRLAB_GESETZ,
+        LEHRLAB_VIS: LEHRLAB_VIS,
+        SPINELAB_GESETZ: SPINELAB_GESETZ,
+        SPINELAB_VIS: SPINELAB_VIS,
+        LEHRLABSC_GESETZ: LEHRLABSC_GESETZ,
+        LEHRLABSC_VIS: LEHRLABSC_VIS,
+        KARTENSC_GESETZ: KARTENSC_GESETZ,
+        KARTENSC_VIS: KARTENSC_VIS,
         RACK_GESETZ: RACK_GESETZ,
         RACK_VIS: RACK_VIS,
         SOCKEL_GESETZ: SOCKEL_GESETZ,
