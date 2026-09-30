@@ -155,7 +155,9 @@
         "gate:arch-feld": "node scripts/diag-arch-feld.cjs",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90",
         "lens:e-trace": "node scripts/diag-analog-e-metrology.cjs",
-        "lens:wiese": "node scripts/diag-wiese.cjs"
+        "lens:wiese": "node scripts/diag-wiese.cjs",
+        "lens:lod-zensus": "node scripts/diag-lod-zensus.cjs",
+        "lens:fell": "node scripts/diag-fell-blick.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",
