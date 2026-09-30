@@ -88,9 +88,9 @@ mittel ist das Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld tr�
 in der Streaming-Rampe. Kreaturen ≤ 55 m Studio-Tier (`KREATUR_NAH_MESH`), Architektur in der
 Mesh-Zone = Cull-Radius 100–150 m, Streu-Bäume L0/L1 Mesh + L2 Studio-Billboard. Damit die Zone
 steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, EINE Bake-Uhr
-(45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa7`):
-ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen/Wurzeln; 95–267 dc /
-27–568k Dreiecke je Bild (analog3: 15–28 / 26–35k). V18.494/495 (die Analog-Wette, Feld-Licht,
+(45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa8`):
+ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0);
+97–283 dc / 28–832k Dreiecke je Bild (analog3: 15–28 / 26–35k; Stock-Schwelle ~1 M). V18.494/495 (die Analog-Wette, Feld-Licht,
 Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten, Haus 12–26 m
 = L2-Destillat (Studio-L1 kaum billiger), Wiese (D) — `docs/abnahme-analog.md`.
 
@@ -101,7 +101,7 @@ Kapseln · Baum-Kegel + Kronen-Lappen · Fachwerk-/Box-Satz · Streu-Gesetz) · 
 OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS).
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bild
-`aaa7`) · D ohne besonnte Gras-Zone aus Augenhöhe · E gemessen; offen: Schatten, Wiese, GPU-Trace.
+`aaa8`) · D ohne besonnte Gras-Zone aus Augenhöhe · E gemessen; offen: Schatten, Wiese, GPU-Trace.
 
 ## Architektur (die Karte)
 

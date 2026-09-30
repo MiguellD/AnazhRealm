@@ -9,16 +9,18 @@
 
 ## Die Sonde
 
-`node scripts/diag-beweis-e.cjs --tag <name> [--klassen kreatur,baum,haus,wiese] [--proto-min 45]`
+`node scripts/diag-beweis-e.cjs --tag <name> [--klassen kreatur,baum,haus,wiese] [--proto-min 90]` (npm run beweis:e)
 
 - Echter Renderer (WebGPU über swiftshader-Vulkan), RT-Readback wie `diag-blick` — **der
   Null-Renderer des Gates ist für den ganzen Analog-Pfad blind** (Feld-Fit, Slots, March kehren
   headless früh zurück).
 - Je Schuss ruht der Spiel-Loop (sonst zieht er Kamera, Tageszeit und Cull-Zustand zwischen
   Setzen und Render weiter), Mittag fest, die Schatten-Map wird neu markiert (ohne Loop blieb sie
-  für die neue Kamera alt → schwarzer Boden). Die **Blick-Wahl** prüft je Klasse 12 Azimute
-  (Objekt-Feld an/aus, 160×90) und nimmt den mit den meisten Objekt-Pixeln — keine Kamera mehr im
-  Laub oder hinter einem Stamm.
+  für die neue Kamera alt → schwarzer Boden). Die Sonde schwingt ein, bis die **Mesh-Zone GANZ
+  steht** (Mesh-Zonen-Linse + Impostor-Zensus nennen, was fehlt), dann prüft die **Blick-Wahl** je
+  Schuss-Art 12 Azimute (aktive Gestalt an/aus — Mesh oder Feld —, 160×90) und nimmt den mit den
+  meisten Objekt-Pixeln; die **Zustands-Linse** meldet je Bau Mesh/Instanzen, LOD, servierte Stufe,
+  Feld-Slot.
 - Alle Klassen auf der **Mess-Wiese −900/−850** (die Welt ist seed-deterministisch → auf jedem
   Code-Stand dieselben Bühnen): flache, trockene Bühne je Klasse (Höhen-Spanne 1,2 / 3,6 / 4,8 m),
   der Spieler steht an der Kamera (Chunk-Ring, Foundry-Stufe und March folgen ihm), zwei Renders
@@ -99,23 +101,27 @@ Baum-/Haus-Zahlen sind die Szene ohne diese Objekte.
 | Haus · fern/Arm | 28 / 26 913 · 15 / 26 745 | **kein Haus im Bild** — die Blick-Wahl fand zu dem Zeitpunkt keinen Feld-Slot am Haus (Sonden-Lücke, offen) |
 | Wiese · fern/Arm | 34 / 27 605 · 16 / 25 439 | Boden im Waldschatten fast schwarz — die Bühne neben dem Wolf liegt unter Kronen; die Halm-Funktion ist dort nicht zu sehen |
 
-### AAA nah (V18.496, Schöpfer-Wort 30.09., Tag `aaa7`)
+### AAA nah (V18.496, Schöpfer-Wort 30.09., Tag `aaa8`)
 
 Nah und mittel das Studio-Mesh, fern das Feld. Die Sonde schwingt vor der Blick-Wahl ein, bis die
-Mesh-Zone GANZ steht, und berichtet je Bau, was im Bild steht (Zustands-Linse).
+Mesh-Zone GANZ steht, wählt den Blick je Schuss-Art und berichtet je Bau, was im Bild steht
+(Zustands-Linse: Mesh/Instanzen · LOD · servierte Stufe · Feld-Slot).
 
-| Schuss | dc / Dreiecke | Bild |
+| Schuss | dc / Dreiecke | Gestalt (Zustands-Linse) · Bild |
 |---|---|---|
-| Wolf · fern | 267 / 568 193 | Studio-Fichten aus nächster Nähe, der Wolf dahinter (die Blick-Wahl sah die Mesh-Zone noch halb — seither schwingt sie vorher ganz ein) |
-| Wolf · Armlänge | 155 / 341 805 | Kamera im Busch, Wolfsbeine dahinter (seither Blick-Wahl je Schuss-Art) |
-| Eiche · fern | 95 / 44 141 | die gesetzte Eiche als Studio-Baum: Laub-Büschel, Äste, Wurzeln; Studio-Fichten und -Büsche daneben |
-| Eiche · Armlänge | 146 / 304 465 | unter der Eiche: Stamm, Astgabeln, Blattwerk gegen den Himmel |
-| Haus · fern | 151 / 27 481 | das Haus im Bild (1081 Objekt-Pixel), bei 15 m das L2-Destillat (glatte Box, rotes Dach — `lodServe {1:2}`) |
-| Haus · Armlänge | 137 / 27 225 | dunkle glatte Wand, Dachkante |
+| Wolf · fern | 263 / 831 937 | Studio-Tier zwischen Studio-Büschen und -Bäumen; zwei Hauswände im Ring 12–26 m als glattes L2-Destillat |
+| Wolf · Armlänge | 222 / 635 557 | Studio-Tier: Rumpf und Läufe mit Fell-Strähnen, Pfoten |
+| Eiche · fern | 192 / 254 453 | Instanzen · LOD 1 (serviert 1) · Feld-Slot aus — Studio-Eiche mit Laub, Ästen, Wurzeln |
+| Eiche · Armlänge | 97 / 27 505 | Instanzen · LOD 0 · Feld-Slot aus — Stamm, Astgabeln, Blattwerk gegen den Himmel |
+| Haus · fern | 283 / 252 361 | Instanzen · LOD 1 (serviert 2 = Destillat) · 20 m — ein Studio-Busch füllt den Vordergrund |
+| Haus · Armlänge | 154 / 415 363 | Instanzen · LOD 0 · 7,5 m — das Studio-Fachwerk: Balken, Streben, Backstein-Gefach, Tür |
 
 Ungebaut in der Mesh-Zone: 148–195 (Läufe `aaa3`–`aaa5`, vor den Nah-zuerst-Schnitten) → **0** an
-allen Bühnen. Kosten gegen `analog3`: 15–28 dc / 26–35k Dreiecke → 95–267 dc / 27–568k — die
-Größenordnung des Mesh-Stands 19.07. (31–245 dc / 183k–1,18 M), jetzt mit geordneter LOD-Kette.
+allen Bühnen; Bäcker 149 Karten gebacken, 0 hängend (vorher 7–8 hängend). Kosten gegen `analog3`:
+15–28 dc / 26–35k Dreiecke → 97–283 dc / 28–832k — die Größenordnung des Mesh-Stands 19.07.
+(31–245 dc / 183k–1,18 M). Die Trias-Linse hält fest, wo dein Holz stockt (~1 M Dreiecke): der
+Wolf-Schuss liegt mit 832k knapp darunter — die schwersten Posten sind Studio-Stufen selbst
+(Konifere L0 ~170k Vertices, Fachwerk L1 75k ≈ L0 88k).
 
 **Die Licht-Linse** (`diag-arch-feld` D): eine Feld-Box und eine MeshStandard-Box (Albedo 0,5,
 roughness 1) am SELBEN Ort, gemeinsame Pixel-Maske. Vorher **0,67** (Feld rgb 70/77/86, Mesh
@@ -166,11 +172,13 @@ Fachwerk behält Dach und Wände).
 ## Das Urteil (ehrlich)
 
 - **Die Form ist AAA-Studio, wo man hinsieht:** nah und mittel das Studio-Mesh mit seiner
-  LOD-Kette (Wolf mit Fell, Eiche mit Laub/Ästen/Wurzeln, Fichten, Büsche), die Mesh-Zone steht
-  (0 ungebaut). Das Feld trägt fern und in der Streaming-Rampe; dort bleibt es ein grober Satz,
+  LOD-Kette (Wolf mit Fell, Eiche mit Laub/Ästen/Wurzeln, das Fachwerk-Haus mit Balken und
+  Backstein-Gefach, Fichten, Büsche), die Mesh-Zone steht (0 ungebaut). Das Feld trägt fern und in der Streaming-Rampe; dort bleibt es ein grober Satz,
   klein im Bild.
-- **Kosten:** zurück in der Größenordnung des Mesh-Stands (bis ~570k Dreiecke, bis 267 dc je Bild
-  auf kienspan) — der Richter ist der echte GPU-Trace (Ziellinie p95 ≤ 33 ms).
+- **Kosten:** zurück in der Größenordnung des Mesh-Stands (bis ~830k Dreiecke, bis 283 dc je Bild
+  auf kienspan), knapp unter der Stock-Schwelle deines Holzes (~1 M) — die schwersten Posten sind
+  Studio-Stufen ohne echte Reduktion (Konifere L0, Fachwerk L1). Der Richter ist der echte
+  GPU-Trace (Ziellinie p95 ≤ 33 ms).
 - **Ehrlich offen:** die Schattenseiten sind sehr dunkel (MeshStandard-Box Albedo 0,5 liest
   rgb ≈ 64/71/80 — key-dominantes Licht ohne Boden-Bounce); das Haus zeigt im Ring 12–26 m das
   L2-Destillat, weil das Studio-L1 (75k) kaum billiger ist als L0 (88k) — ein echtes Mittel-LOD
