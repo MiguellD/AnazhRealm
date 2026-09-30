@@ -16539,13 +16539,7 @@ class AnazhRealm {
         klon.traverse((n) => {
             if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
         });
-        // V18.463 — KLON-REBIND: SkinnedMesh.clone teilt das Template-Skelett —
-        // jede Instanz bindet auf IHRE geklonten Bones um (Bind-Matrix bleibt).
-        klon.traverse((n) => {
-            if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
-            const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
-            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
-        });
+        AnazhRealm._ofenKlonRebind(klon, teile);
         const f = (8 * 0.2125) / 6.0;
         const wrap = new THREE.Group();
         wrap.scale.setScalar(f);
@@ -16563,14 +16557,10 @@ class AnazhRealm {
             fernKlon.traverse((n) => {
                 if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
             });
-            // Klon-Rebind (das V18.463-Muster): geklonte SkinnedMeshes an die
-            // EIGENEN Bones — nie am geteilten Template-Skelett hängen lassen.
             fernKlon.traverse((n) => {
                 if (n.isMesh) n.castShadow = false;
-                if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
-                const bonesF = n.userData.__skinJoints.map((nm) => teileF[nm]).filter(Boolean);
-                if (bonesF.length) n.bind(new THREE.Skeleton(bonesF), n.bindMatrix.clone());
             });
+            AnazhRealm._ofenKlonRebind(fernKlon, teileF);
             fernKlon.visible = false;
             wrap.add(fernKlon);
             wrap.userData._menschFern = { nah: klon, fern: fernKlon };
@@ -17063,6 +17053,15 @@ class AnazhRealm {
             d = "";
         }
         return recId + "|" + (lod | 0) + "|" + d;
+    }
+    // KLON-REBIND (V18.463, ein Gesetz für Mensch UND Tier): SkinnedMesh.clone teilt das Template-Skelett —
+    // jede Instanz bindet auf IHRE geklonten Bones um (Bind-Matrix bleibt).
+    static _ofenKlonRebind(klon, teile) {
+        klon.traverse((n) => {
+            if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
+            const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
+            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
+        });
     }
     // Der Beipack-Leser (GENERISCH für jede Gelenk-Gattung — Tier UND Mensch):
     // Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an ihren Gelenken.
@@ -17615,8 +17614,10 @@ class AnazhRealm {
             const klon = t0.root.clone(true);
             const teile = {};
             klon.traverse((n) => {
-                if (n.isGroup && n.name) teile[n.name] = n;
+                if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
             });
+            // Die Tier-Haut (V18.497) ist geskinnt: der Klon bindet an SEINE Bones.
+            AnazhRealm._ofenKlonRebind(klon, teile);
             const tailSegs = (t0.tailNamen || []).map((n) => teile[n]).filter(Boolean);
             const wrap2 = new THREE.Group();
             wrap2.scale.setScalar(f2);
@@ -67756,6 +67757,18 @@ class AnazhRealm {
         const wurzel = (tb && tb.wrap) || cr;
         anker.add(wurzel);
         const gruppen = new Map();
+        const ankerVon = (start) => {
+            let a = start;
+            while (a && a !== cr && !anker.has(a)) a = a.parent;
+            return a && anker.has(a) ? a : wurzel;
+        };
+        const zuGruppe = (schluessel, o, n) => {
+            let g = gruppen.get(schluessel);
+            if (!g) gruppen.set(schluessel, (g = { meshes: [], verts: 0 }));
+            g.meshes.push(o);
+            g.verts += n;
+        };
+        cr.updateMatrixWorld(true);
         cr.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
             if (tb && tb.fern) {
@@ -67765,13 +67778,39 @@ class AnazhRealm {
                     p = p.parent;
                 }
             }
-            let a = o.parent;
-            while (a && a !== cr && !anker.has(a)) a = a.parent;
-            const schluessel = a && anker.has(a) ? a : wurzel;
-            let g = gruppen.get(schluessel);
-            if (!g) gruppen.set(schluessel, (g = { meshes: [], verts: 0 }));
-            g.meshes.push(o);
-            g.verts += o.geometry.attributes.position.count;
+            // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
+            // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
+            // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.
+            const si = o.isSkinnedMesh && o.skeleton ? o.geometry.attributes.skinIndex : null;
+            if (si) {
+                const pa = o.geometry.attributes.position;
+                const proBone = new Map();
+                for (let i = 0; i < pa.count; i++) {
+                    const b = si.getX(i);
+                    let l = proBone.get(b);
+                    if (!l) proBone.set(b, (l = []));
+                    l.push(i);
+                }
+                for (const [b, liste] of proBone) {
+                    const bone = o.skeleton.bones[b];
+                    const inv = o.skeleton.boneInverses[b];
+                    if (!bone || !inv) continue;
+                    const arr = new Float32Array(liste.length * 3);
+                    for (let n = 0; n < liste.length; n++) {
+                        arr[n * 3] = pa.getX(liste[n]);
+                        arr[n * 3 + 1] = pa.getY(liste[n]);
+                        arr[n * 3 + 2] = pa.getZ(liste[n]);
+                    }
+                    const stueck = {
+                        geometry: { attributes: { position: new THREE.BufferAttribute(arr, 3) } },
+                        material: o.material,
+                        matrixWorld: new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, inv).multiply(o.bindMatrix),
+                    };
+                    zuGruppe(ankerVon(bone), stueck, liste.length);
+                }
+                return;
+            }
+            zuGruppe(ankerVon(o.parent), o, o.geometry.attributes.position.count);
         });
         if (gruppen.size === 0) return null;
         const zielVon = (a) => {
@@ -86165,7 +86204,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.496.0";
+AnazhRealm.VERSION = "18.497.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

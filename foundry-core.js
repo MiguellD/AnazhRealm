@@ -2904,6 +2904,153 @@ function __tierStraehnenGeo(segR, i, Hh) {
     return geo;
 }
 
+// ── DIE HÜLLEN-MASCHINE DES OFENS (V18.497 — ein Gesetz für Mensch UND Tier): Feld → Surface-Nets
+// (koerper-core, verbatim Lab) → Orientierung → 2× Laplace → CLR-Push → Gelenk-Gewichte → Geometrie.
+// Der Aufrufer liefert das FELD (Mensch: Punkt-Splat + Closing · Tier: Primitiv-Füllung); zentren =
+// [{j, c, d?}] je Teil-Primitiv (d(v) = eigener Abstand², sonst Zentrums-Abstand), skinJoints = Bone-
+// Ordnung (null = ungeskinnte Hülle, die Fern-Stufe), kandidaten(v) = optionale Vorauswahl der zentren. ──
+function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, eW, kandidaten) {
+    const sn = hk.surfaceNets(f, nx, ny, nz, level, lo[0], lo[1], lo[2], vox);
+    if (!sn.verts.length || !sn.faces.length) return null;
+    // ORIENTIERUNG pro Hülle (das Lab-Mehrheitsvotum): Nets kann nach
+    // INNEN wickeln — FrontSide cullt dann die ganze Hülle (unsichtbar).
+    {
+        let cx = 0,
+            cy = 0,
+            cz = 0;
+        for (const v of sn.verts) {
+            cx += v[0];
+            cy += v[1];
+            cz += v[2];
+        }
+        cx /= sn.verts.length;
+        cy /= sn.verts.length;
+        cz /= sn.verts.length;
+        let vote = 0;
+        for (const fc of sn.faces) {
+            const A = sn.verts[fc[0]],
+                Bv = sn.verts[fc[1]],
+                C = sn.verts[fc[2]];
+            const ux = Bv[0] - A[0],
+                uy = Bv[1] - A[1],
+                uz = Bv[2] - A[2];
+            const vx = C[0] - A[0],
+                vy = C[1] - A[1],
+                vz = C[2] - A[2];
+            const nx2 = uy * vz - uz * vy,
+                ny2 = uz * vx - ux * vz,
+                nz2 = ux * vy - uy * vx;
+            vote += nx2 * (A[0] - cx) + ny2 * (A[1] - cy) + nz2 * (A[2] - cz) > 0 ? 1 : -1;
+        }
+        if (vote < 0) for (const fc of sn.faces) [fc[1], fc[2]] = [fc[2], fc[1]];
+    }
+    // 2× Laplace-Glättung (Nachbarn über Kanten):
+    for (let it = 0; it < 2; it++) {
+        const acc = new Float32Array(sn.verts.length * 3);
+        const cnt = new Uint16Array(sn.verts.length);
+        for (const fc of sn.faces)
+            for (let e = 0; e < 3; e++) {
+                const a = fc[e],
+                    b = fc[(e + 1) % 3];
+                acc[a * 3] += sn.verts[b][0];
+                acc[a * 3 + 1] += sn.verts[b][1];
+                acc[a * 3 + 2] += sn.verts[b][2];
+                cnt[a]++;
+                acc[b * 3] += sn.verts[a][0];
+                acc[b * 3 + 1] += sn.verts[a][1];
+                acc[b * 3 + 2] += sn.verts[a][2];
+                cnt[b]++;
+            }
+        for (let i = 0; i < sn.verts.length; i++)
+            if (cnt[i]) {
+                const v = sn.verts[i],
+                    k = 0.5 / cnt[i];
+                v[0] = v[0] * 0.5 + acc[i * 3] * k;
+                v[1] = v[1] * 0.5 + acc[i * 3 + 1] * k;
+                v[2] = v[2] * 0.5 + acc[i * 3 + 2] * k;
+            }
+    }
+    // CLR-PUSH: jeden Vertex entlang seiner Flächen-Normale nach AUSSEN
+    // (die Vorlagen-Klarheit: Hülle ÜBER den Primitiven, kein Durchstoß).
+    if (clr) {
+        const VN = new Float32Array(sn.verts.length * 3);
+        for (const fc of sn.faces) {
+            const A = sn.verts[fc[0]],
+                Bv = sn.verts[fc[1]],
+                C = sn.verts[fc[2]];
+            const ux = Bv[0] - A[0],
+                uy = Bv[1] - A[1],
+                uz = Bv[2] - A[2];
+            const vx = C[0] - A[0],
+                vy = C[1] - A[1],
+                vz = C[2] - A[2];
+            const nx2 = uy * vz - uz * vy,
+                ny2 = uz * vx - ux * vz,
+                nz2 = ux * vy - uy * vx;
+            for (const vi of fc) {
+                VN[vi * 3] += nx2;
+                VN[vi * 3 + 1] += ny2;
+                VN[vi * 3 + 2] += nz2;
+            }
+        }
+        for (let i = 0; i < sn.verts.length; i++) {
+            const L = Math.hypot(VN[i * 3], VN[i * 3 + 1], VN[i * 3 + 2]) || 1;
+            sn.verts[i][0] += (VN[i * 3] / L) * clr;
+            sn.verts[i][1] += (VN[i * 3 + 1] / L) * clr;
+            sn.verts[i][2] += (VN[i * 3 + 2] / L) * clr;
+        }
+    }
+    // Gewichte: 1/d⁴ über Teil-Zentren (Lab-Bindung), aggregiert je Gelenk, Top-4.
+    const nV = sn.verts.length;
+    const pos = new Float32Array(nV * 3);
+    const sIdx = skinJoints ? new Float32Array(nV * 4) : null;
+    const sWgt = skinJoints ? new Float32Array(nV * 4) : null;
+    for (let i = 0; i < nV; i++) {
+        const v = sn.verts[i];
+        pos[i * 3] = v[0];
+        pos[i * 3 + 1] = v[1];
+        pos[i * 3 + 2] = v[2];
+        if (!skinJoints) continue;
+        const jw = {};
+        let sum = 0;
+        for (const z of kandidaten ? kandidaten(v) : zentren) {
+            const dx = v[0] - z.c[0],
+                dy = v[1] - z.c[1],
+                dz = v[2] - z.c[2];
+            const d2 = z.d ? z.d(v) : dx * dx + dy * dy + dz * dz;
+            const w = 1 / ((d2 + eW) * (d2 + eW));
+            jw[z.j] = (jw[z.j] || 0) + w;
+            sum += w;
+        }
+        const top = Object.keys(jw)
+            .map((j) => [skinJoints.indexOf(j), jw[j] / sum])
+            .filter((e) => e[0] >= 0 && e[1] > 0.03)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4);
+        let ts = 0;
+        for (const t of top) ts += t[1];
+        for (let k = 0; k < 4; k++) {
+            sIdx[i * 4 + k] = top[k] ? top[k][0] : 0;
+            sWgt[i * 4 + k] = top[k] ? top[k][1] / (ts || 1) : 0;
+        }
+    }
+    const idx = new Uint32Array(sn.faces.length * 3);
+    for (let i = 0; i < sn.faces.length; i++) {
+        idx[i * 3] = sn.faces[i][0];
+        idx[i * 3 + 1] = sn.faces[i][1];
+        idx[i * 3 + 2] = sn.faces[i][2];
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    if (skinJoints) {
+        geo.setAttribute("skinIndex", new THREE.BufferAttribute(sIdx, 4));
+        geo.setAttribute("skinWeight", new THREE.BufferAttribute(sWgt, 4));
+    }
+    geo.setIndex(new THREE.BufferAttribute(idx, 1));
+    geo.computeVertexNormals();
+    return geo;
+}
+
 // DER TIER-GUSS: baut den bauTier-Baum des Gattungs-Kerns mit ECHTEN THREE-
 // Fabriken, bäckt jede Mesh-Geometrie in den LOKAL-Raum ihres nächsten
 // ANIMIERTEN Gelenks und mergt je (Gelenk × Material-Klasse) → wenige Meshes,
@@ -2980,7 +3127,12 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
     const F = {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
-            const m = new THREE.Mesh(new THREE.SphereGeometry(r, segW, segH), matFuer(k));
+            // Segmente folgen der GRÖSSE (V18.497): eine 7-mm-Kralle trug dieselben 20×14 wie der
+            // Brustkorb (520 Dreiecke je Kralle). Voll ab r·max(sc) ≥ 0.1·H, darunter ∝ √Größe.
+            const q = Math.min(1, Math.sqrt((r * (sc ? Math.max(sc[0], sc[1], sc[2]) : 1)) / (0.1 * (P.size || 2.4))));
+            const w = Math.max(fein ? 5 : 8, Math.round(segW * q)),
+                h = Math.max(fein ? 4 : 6, Math.round(segH * q));
+            const m = new THREE.Mesh(new THREE.SphereGeometry(r, w, h), matFuer(k));
             if (sc) m.scale.set(sc[0], sc[1], sc[2]);
             return m;
         },
@@ -3130,12 +3282,223 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         nodeName.set(seg, nm);
         tailNamen.push(nm);
     });
+    const skinJoints = __tierHaut(kern, B, root, nodeName, fein, P, matFuer);
     return __bakeGelenkBaum(root, "wolf", nodeName, fein, {
         art: presetId,
         tailSegs: tailNamen,
         masse: B.masse || null,
         base: typeof P.cB === "number" ? P.cB : null,
+        // V18.497 — die Bone-Ordnung der Tier-Haut (nur Stufe 0 ist geskinnt).
+        ...(skinJoints ? { skinJoints } : {}),
     });
+}
+
+// ── DIE TIER-HAUT (V18.497, Schöpfer 30.09.: „am Ende AAA-Niveau, nicht Kapseln"): der Rumpf-, Hals-,
+// Bein- und Schweif-Leib des bauTier-Baums ist eine Vereinigung von ~136 Fell-Ellipsoiden — gegossen
+// als Einzel-Kugeln war er eine sichtbare Perlen-Kette (85k Dreiecke). Hier wird er EINE geschlossene
+// Haut: das Feld ist die GLATTE Vereinigung (polynomiales smin, Verrundung `blend`) der Ellipsoid-
+// Abstände — exakt, ohne die Blur-Erosion, die dünne Beine fräße —, die Hüllen-Maschine des Ofens
+// (Surface-Nets, dieselbe wie beim Menschen) macht daraus die Fläche. Stufe 0 bindet sie per Gewicht
+// an die Bein-/Schweif-Gelenke (Abstand zur Primitiv-OBERFLÄCHE, Top-4); Stufe 1 (das Fern-Standbild)
+// bleibt ungeskinnt und gröber und schließt den Kopf mit ein. Nah bleiben Kopf (Kiefer/Ohren/Lider
+// bewegen sich) und Teile unter dem Raster (Zehen, Krallen-Bett) Primitive. Die ersetzten Kugeln bleiben im Baum (Strähnen-Wirte), gegossen werden sie
+// nicht (__nichtGiessen). Das Fern-Standbild gießt keine Teile unter der Pfote oder im Maul (Krallen,
+// Ballen, Zähne, Zahnfleisch): bei ≥ 35 m trägt es Silhouette und Farbe, nicht Details unter einem Pixel.
+// Rückgabe: skinJoints (Stufe 0) oder null.
+var TIER_HAUT = Object.freeze({
+    voxNah: 0.02, // × H (Rasterweite Stufe 0)
+    voxFern: 0.04, // × H (Stufe 1)
+    minVox: 0.35, // kleinste Halbachse < minVox·vox → bleibt Primitiv
+    minDicke: 0.75, // Dicken-Erhalt: dünnere Glieder wachsen auf minDicke·vox (sonst dünnt das Raster sie aus)
+    fernOhne: Object.freeze(["klaue", "ballen", "zahn", "zahnfleisch"]), // Stufe 1 gießt sie nicht
+    blend: 0.035, // × H (smin-Verrundung der Nähte)
+    eW: 0.03, // × H (Gewichts-Weiche: 1/(d² + eW²)²)
+});
+function __tierHaut(kern, B, root, nodeName, fein, P, matFuer) {
+    const hk =
+        kern && typeof kern.surfaceNets === "function"
+            ? kern
+            : typeof __koerperCore !== "undefined" && __koerperCore && typeof __koerperCore.surfaceNets === "function"
+              ? __koerperCore
+              : null;
+    // Ohne Hüllen-Maschine kein Tier: LAUT (der Bäcker-Fänger meldet), nie still die Perlen-Kette.
+    if (!hk) throw new Error("TIER-HAUT: Hüllen-Maschine (koerper-core.surfaceNets) fehlt");
+    const H = (B.masse && B.masse.H) || P.size || 2.4;
+    const vox = (fein ? TIER_HAUT.voxFern : TIER_HAUT.voxNah) * H;
+    const blend = TIER_HAUT.blend * H;
+    root.updateMatrixWorld(true);
+    const invRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    const kopf = B.teile.headGroup || null;
+    const unterKopf = (n) => {
+        for (let c = n; c; c = c.parent) if (c === kopf) return true;
+        return false;
+    };
+    const gelenkVon = (n) => {
+        for (let c = n; c; c = c.parent) if (nodeName.has(c)) return nodeName.get(c);
+        return "wolf";
+    };
+    const sp = new THREE.Vector3();
+    const prims = [];
+    root.traverse((node) => {
+        if (!node.isMesh || !node.geometry || !node.geometry.parameters) return;
+        const kl = node.material && node.material.userData && node.material.userData.__klasse;
+        // Stufe 0: der Kopf bleibt Primitiv (Kiefer/Ohren/Lider bewegen sich); das Fern-Standbild ist starr.
+        if (kl !== "fell" || (!fein && unterKopf(node))) return;
+        const r = node.geometry.parameters.radius;
+        if (!(r > 0) || node.geometry.type !== "SphereGeometry") return;
+        const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
+        const e = M.elements;
+        const sx = Math.sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]),
+            sy = Math.sqrt(e[4] * e[4] + e[5] * e[5] + e[6] * e[6]),
+            sz = Math.sqrt(e[8] * e[8] + e[9] * e[9] + e[10] * e[10]);
+        const minHalb = r * Math.min(sx, sy, sz);
+        if (minHalb < TIER_HAUT.minVox * vox) return;
+        const Mi = Float64Array.from(new THREE.Matrix4().copy(M).invert().elements);
+        const ext = r * Math.max(sx, sy, sz) + blend + 2 * vox;
+        sp.setFromMatrixPosition(M);
+        const auf = Math.max(0, TIER_HAUT.minDicke * vox - minHalb);
+        prims.push({ node, r, Mi, c: [sp.x, sp.y, sp.z], ext: ext + auf, auf, j: gelenkVon(node) });
+    });
+    if (fein)
+        root.traverse((node) => {
+            const kl = node.isMesh && node.material && node.material.userData && node.material.userData.__klasse;
+            if (kl && TIER_HAUT.fernOhne.includes(kl)) node.userData.__nichtGiessen = true;
+        });
+    if (prims.length < 4) return null;
+    // Groß vor klein: die großen Rumpf-Ellipsoide machen das Innere früh TIEF, die kleinen springen dort.
+    prims.sort((a, b) => b.ext - a.ext);
+    // Das Raster: AABB aller Ellipsoide (+ Rand) im Root-Raum.
+    const lo = [1e9, 1e9, 1e9],
+        hi = [-1e9, -1e9, -1e9];
+    for (const p of prims)
+        for (let d = 0; d < 3; d++) {
+            lo[d] = Math.min(lo[d], p.c[d] - p.ext);
+            hi[d] = Math.max(hi[d], p.c[d] + p.ext);
+        }
+    const nx = Math.ceil((hi[0] - lo[0]) / vox) + 2,
+        ny = Math.ceil((hi[1] - lo[1]) / vox) + 2,
+        nz = Math.ceil((hi[2] - lo[2]) / vox) + 2;
+    // Abstand zum Ellipsoid (erste Ordnung, exakt auf der Fläche): (|q| − r) / |Miᵀ·q̂|, q = Mi·p.
+    const abstand = (p, x, y, z) => {
+        const m = p.Mi;
+        const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
+            qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+            qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+        const ql = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-9;
+        const ux = qx / ql,
+            uy = qy / ql,
+            uz = qz / ql;
+        const gx = m[0] * ux + m[1] * uy + m[2] * uz,
+            gy = m[4] * ux + m[5] * uy + m[6] * uz,
+            gz = m[8] * ux + m[9] * uy + m[10] * uz;
+        return (ql - p.r) / (Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9) - p.auf;
+    };
+    const WEIT = 8 * vox;
+    // Nur die Schale um die Fläche zählt (eine Nets-Zelle, die schneidet, hat Ecken ≤ √3·vox vom
+    // Nullniveau): Punkte, die schon TIEF innen liegen, kann kein weiteres smin mehr über Null heben,
+    // und ein Primitiv, dessen Abstand (untere Schranke |p−c| − R) um blend über dem Feld liegt,
+    // ändert nichts — beide überspringen die Abstands-Rechnung.
+    const TIEF = -3 * vox;
+    const f = new Float32Array(nx * ny * nz).fill(WEIT);
+    for (const p of prims) {
+        const R = p.ext - blend - 2 * vox;
+        const cx = p.c[0],
+            cy = p.c[1],
+            cz = p.c[2];
+        const i0 = Math.max(0, Math.floor((p.c[0] - p.ext - lo[0]) / vox)),
+            i1 = Math.min(nx - 1, Math.ceil((p.c[0] + p.ext - lo[0]) / vox)),
+            j0 = Math.max(0, Math.floor((p.c[1] - p.ext - lo[1]) / vox)),
+            j1 = Math.min(ny - 1, Math.ceil((p.c[1] + p.ext - lo[1]) / vox)),
+            k0 = Math.max(0, Math.floor((p.c[2] - p.ext - lo[2]) / vox)),
+            k1 = Math.min(nz - 1, Math.ceil((p.c[2] + p.ext - lo[2]) / vox));
+        // Nur die KUGEL mit Radius ext (nicht der Würfel): jenseits davon erreicht das Primitiv die
+        // Schale um das Nullniveau nie (b ≥ R + blend + 2·vox − R).
+        const ext2 = p.ext * p.ext;
+        for (let k = k0; k <= k1; k++) {
+            const z = lo[2] + k * vox,
+                ez = z - cz;
+            for (let j = j0; j <= j1; j++) {
+                const y = lo[1] + j * vox,
+                    ey = y - cy;
+                const rest = ext2 - ey * ey - ez * ez;
+                if (rest <= 0) continue;
+                const w = Math.sqrt(rest);
+                const ia = Math.max(i0, Math.floor((cx - w - lo[0]) / vox)),
+                    ib = Math.min(i1, Math.ceil((cx + w - lo[0]) / vox));
+                const eyz = ey * ey + ez * ez;
+                const row = nx * (j + ny * k);
+                for (let i = ia; i <= ib; i++) {
+                    const id = i + row;
+                    const a = f[id];
+                    if (a < TIEF) continue;
+                    const x = lo[0] + i * vox,
+                        ex = x - cx;
+                    if (Math.sqrt(ex * ex + eyz) - R >= a + blend) continue;
+                    const b = abstand(p, x, y, z);
+                    // polynomiales smin (IQ): die Naht verrundet mit Radius ~blend
+                    const dab = a > b ? a - b : b - a;
+                    if (dab >= blend) {
+                        if (b < a) f[id] = b;
+                        continue;
+                    }
+                    const h = (blend - dab) / blend;
+                    f[id] = (a < b ? a : b) - h * h * blend * 0.25;
+                }
+            }
+        }
+        p.node.userData.__nichtGiessen = true; // gegossen wird die Haut, nicht die Kugel
+    }
+    // Gelenke der Haut in Baum-Ordnung (nur die, die ein Primitiv trägt).
+    let skinJoints = null;
+    if (!fein) {
+        const genutzt = new Set(prims.map((p) => p.j));
+        skinJoints = [];
+        for (const nm of nodeName.values()) if (genutzt.has(nm)) skinJoints.push(nm);
+    }
+    // Gewicht nach Abstand zur Primitiv-OBERFLÄCHE (nicht zum Zentrum: der Rumpf-Punkt an der
+    // Schulter gehört dem Rumpf, auch wenn das Oberarm-Zentrum näher liegt).
+    const zentren = prims.map((p) => ({
+        j: p.j,
+        c: p.c,
+        d: (v) => {
+            // Ferne Primitive (Schranke |v−c| − R > 0.3·H) tragen < 0.3 % Gewicht: die Schranke genügt.
+            const ex = v[0] - p.c[0],
+                ey = v[1] - p.c[1],
+                ez = v[2] - p.c[2];
+            const lb = Math.sqrt(ex * ex + ey * ey + ez * ez) - (p.ext - blend - 2 * vox);
+            if (lb > 0.3 * H) return lb * lb;
+            const d = Math.max(0, abstand(p, v[0], v[1], v[2]));
+            return d * d;
+        },
+    }));
+    // Vorauswahl je Vertex: ein grobes Raster (Zelle 0.3·H) trägt jedes Primitiv in allen Zellen,
+    // die seine Reichweite (R + 0.3·H) berührt — der Vertex fragt nur seine Zelle.
+    let kandidaten = null;
+    if (skinJoints) {
+        const C = 0.3 * H,
+            reich = 0.3 * H;
+        const cnx = Math.ceil((hi[0] - lo[0]) / C) + 1,
+            cny = Math.ceil((hi[1] - lo[1]) / C) + 1,
+            cnz = Math.ceil((hi[2] - lo[2]) / C) + 1;
+        const zellen = new Array(cnx * cny * cnz);
+        const zi = (v, d, n) => Math.min(n - 1, Math.max(0, Math.floor((v - lo[d]) / C)));
+        prims.forEach((p, n) => {
+            const rr = p.ext - blend - 2 * vox + reich;
+            for (let k = zi(p.c[2] - rr, 2, cnz); k <= zi(p.c[2] + rr, 2, cnz); k++)
+                for (let j = zi(p.c[1] - rr, 1, cny); j <= zi(p.c[1] + rr, 1, cny); j++)
+                    for (let i = zi(p.c[0] - rr, 0, cnx); i <= zi(p.c[0] + rr, 0, cnx); i++) {
+                        const id = i + cnx * (j + cny * k);
+                        (zellen[id] || (zellen[id] = [])).push(zentren[n]);
+                    }
+        });
+        kandidaten = (v) => zellen[zi(v[0], 0, cnx) + cnx * (zi(v[1], 1, cny) + cny * zi(v[2], 2, cnz))] || zentren;
+    }
+    const eW = TIER_HAUT.eW * H;
+    const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten);
+    if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
+    const mesh = new THREE.Mesh(geo, matFuer("fell"));
+    root.add(mesh); // Root-lokal gebacken (Identität)
+    return skinJoints;
 }
 
 // ── DER GENERISCHE GELENK-GUSS (ein Gesetz für Tier UND Mensch): Meshes in den
@@ -3189,11 +3552,12 @@ function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
     const buckets = new Map();
     const tmp = new THREE.Matrix4();
     root.traverse((node) => {
-        if (!node.isMesh || !node.geometry) return;
+        // __nichtGiessen (V18.497): das Primitiv lebt in einer Haut oder fällt im Fern-Standbild.
+        if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
         const a = fein ? root : animAhn(node);
         const jName = nodeName.get(a) || rootName;
         const klasse = (node.material && node.material.userData && node.material.userData.__klasse) || "fell";
-        const key = jName + "|" + klasse;
+        const key = jName + "|" + klasse + (node.geometry.attributes.skinIndex ? "|skin" : "");
         inv.copy(a.matrixWorld).invert();
         tmp.multiplyMatrices(inv, node.matrixWorld);
         const g2 = node.geometry.clone();
@@ -3388,142 +3752,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             let f = new Float32Array(g.length);
             for (let i = 0; i < g.length; i++) f[i] = g[i];
             f = kern.blur3(f, nx, ny, nz, sigma);
-            const sn = kern.surfaceNets(f, nx, ny, nz, level, lo[0], lo[1], lo[2], vox);
-            if (!sn.verts.length || !sn.faces.length) return;
-            // ORIENTIERUNG pro Hülle (das Lab-Mehrheitsvotum): Nets kann nach
-            // INNEN wickeln — FrontSide cullt dann die ganze Hülle (unsichtbar).
-            {
-                let cx = 0,
-                    cy = 0,
-                    cz = 0;
-                for (const v of sn.verts) {
-                    cx += v[0];
-                    cy += v[1];
-                    cz += v[2];
-                }
-                cx /= sn.verts.length;
-                cy /= sn.verts.length;
-                cz /= sn.verts.length;
-                let vote = 0;
-                for (const fc of sn.faces) {
-                    const A = sn.verts[fc[0]],
-                        Bv = sn.verts[fc[1]],
-                        C = sn.verts[fc[2]];
-                    const ux = Bv[0] - A[0],
-                        uy = Bv[1] - A[1],
-                        uz = Bv[2] - A[2];
-                    const vx = C[0] - A[0],
-                        vy = C[1] - A[1],
-                        vz = C[2] - A[2];
-                    const nx2 = uy * vz - uz * vy,
-                        ny2 = uz * vx - ux * vz,
-                        nz2 = ux * vy - uy * vx;
-                    vote += nx2 * (A[0] - cx) + ny2 * (A[1] - cy) + nz2 * (A[2] - cz) > 0 ? 1 : -1;
-                }
-                if (vote < 0) for (const fc of sn.faces) [fc[1], fc[2]] = [fc[2], fc[1]];
-            }
-            // 2× Laplace-Glättung (Nachbarn über Kanten):
-            for (let it = 0; it < 2; it++) {
-                const acc = new Float32Array(sn.verts.length * 3);
-                const cnt = new Uint16Array(sn.verts.length);
-                for (const fc of sn.faces)
-                    for (let e = 0; e < 3; e++) {
-                        const a = fc[e],
-                            b = fc[(e + 1) % 3];
-                        acc[a * 3] += sn.verts[b][0];
-                        acc[a * 3 + 1] += sn.verts[b][1];
-                        acc[a * 3 + 2] += sn.verts[b][2];
-                        cnt[a]++;
-                        acc[b * 3] += sn.verts[a][0];
-                        acc[b * 3 + 1] += sn.verts[a][1];
-                        acc[b * 3 + 2] += sn.verts[a][2];
-                        cnt[b]++;
-                    }
-                for (let i = 0; i < sn.verts.length; i++)
-                    if (cnt[i]) {
-                        const v = sn.verts[i],
-                            k = 0.5 / cnt[i];
-                        v[0] = v[0] * 0.5 + acc[i * 3] * k;
-                        v[1] = v[1] * 0.5 + acc[i * 3 + 1] * k;
-                        v[2] = v[2] * 0.5 + acc[i * 3 + 2] * k;
-                    }
-            }
-            // CLR-PUSH: jeden Vertex entlang seiner Flächen-Normale nach AUSSEN
-            // (die Vorlagen-Klarheit: Hülle ÜBER den Primitiven, kein Durchstoß).
-            if (clr) {
-                const VN = new Float32Array(sn.verts.length * 3);
-                for (const fc of sn.faces) {
-                    const A = sn.verts[fc[0]],
-                        Bv = sn.verts[fc[1]],
-                        C = sn.verts[fc[2]];
-                    const ux = Bv[0] - A[0],
-                        uy = Bv[1] - A[1],
-                        uz = Bv[2] - A[2];
-                    const vx = C[0] - A[0],
-                        vy = C[1] - A[1],
-                        vz = C[2] - A[2];
-                    const nx2 = uy * vz - uz * vy,
-                        ny2 = uz * vx - ux * vz,
-                        nz2 = ux * vy - uy * vx;
-                    for (const vi of fc) {
-                        VN[vi * 3] += nx2;
-                        VN[vi * 3 + 1] += ny2;
-                        VN[vi * 3 + 2] += nz2;
-                    }
-                }
-                for (let i = 0; i < sn.verts.length; i++) {
-                    const L = Math.hypot(VN[i * 3], VN[i * 3 + 1], VN[i * 3 + 2]) || 1;
-                    sn.verts[i][0] += (VN[i * 3] / L) * clr;
-                    sn.verts[i][1] += (VN[i * 3 + 1] / L) * clr;
-                    sn.verts[i][2] += (VN[i * 3 + 2] / L) * clr;
-                }
-            }
-            // Gewichte: 1/d⁴ über Teil-Zentren (Lab-Bindung), aggregiert je Gelenk, Top-4.
-            const nV = sn.verts.length;
-            const pos = new Float32Array(nV * 3);
-            const sIdx = new Float32Array(nV * 4);
-            const sWgt = new Float32Array(nV * 4);
-            const eW = 0.04;
-            for (let i = 0; i < nV; i++) {
-                const v = sn.verts[i];
-                pos[i * 3] = v[0];
-                pos[i * 3 + 1] = v[1];
-                pos[i * 3 + 2] = v[2];
-                const jw = {};
-                let sum = 0;
-                for (const z of zentren) {
-                    const dx = v[0] - z.c[0],
-                        dy = v[1] - z.c[1],
-                        dz = v[2] - z.c[2];
-                    const d2 = dx * dx + dy * dy + dz * dz;
-                    const w = 1 / ((d2 + eW) * (d2 + eW));
-                    jw[z.j] = (jw[z.j] || 0) + w;
-                    sum += w;
-                }
-                const top = Object.keys(jw)
-                    .map((j) => [skinJoints.indexOf(j), jw[j] / sum])
-                    .filter((e) => e[0] >= 0 && e[1] > 0.03)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 4);
-                let ts = 0;
-                for (const t of top) ts += t[1];
-                for (let k = 0; k < 4; k++) {
-                    sIdx[i * 4 + k] = top[k] ? top[k][0] : 0;
-                    sWgt[i * 4 + k] = top[k] ? top[k][1] / (ts || 1) : 0;
-                }
-            }
-            const idx = new Uint32Array(sn.faces.length * 3);
-            for (let i = 0; i < sn.faces.length; i++) {
-                idx[i * 3] = sn.faces[i][0];
-                idx[i * 3 + 1] = sn.faces[i][1];
-                idx[i * 3 + 2] = sn.faces[i][2];
-            }
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-            geo.setAttribute("skinIndex", new THREE.BufferAttribute(sIdx, 4));
-            geo.setAttribute("skinWeight", new THREE.BufferAttribute(sWgt, 4));
-            geo.setIndex(new THREE.BufferAttribute(idx, 1));
-            geo.computeVertexNormals();
+            const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04);
+            if (!geo) return;
             const mesh = new THREE.Mesh(geo, matFuer(klasse));
             mesh.userData.__skinned = true;
             B.character.add(mesh);

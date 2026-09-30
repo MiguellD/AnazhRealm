@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.496.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.497.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -93,6 +93,13 @@ ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen, Fa
 97–283 dc / 28–832k Dreiecke je Bild (analog3: 15–28 / 26–35k; Stock-Schwelle ~1 M). V18.494/495 (die Analog-Wette, Feld-Licht,
 Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten, Haus 12–26 m
 = L2-Destillat (Studio-L1 kaum billiger), Wiese (D) — `docs/abnahme-analog.md`.
+
+**V18.497 — DIE TIER-HAUT:** der Tier-Leib (Rumpf · Hals · Beine · Schweif, ~118 Fell-Ellipsoide)
+ist EINE geskinnte Haut statt einer Kugel-Kette: glatte SDF-Vereinigung (smin) → die Hüllen-
+Maschine des Ofens (`__huelleAusFeld`, dieselbe wie der Mensch) → Gewichte nach Oberflächen-
+Abstand an 25 Bones; das Fern-Standbild schließt den Kopf ein. Gemessen (Wolf, ohne Strähnen):
+L0 110k → 29k, L1 17,5k → 6,4k Dreiecke. Offen: das Fell (Strähnen 205k, im Bild Flecken statt
+Pelz), der Kopf nah bleibt Primitiv.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
