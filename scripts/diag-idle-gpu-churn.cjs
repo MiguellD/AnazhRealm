@@ -30,8 +30,12 @@ const server = http.createServer((req, res) => {
 });
 // generöse Schwelle: ein Recompile-CASCADE ist Dutzende+ (Sky-Env-Bug war ~270/Regen); ein paar
 // Erst-Compile-Nachzügler im Idle-Fenster (eine neue Animations-/LOD-Variante) sind kein Churn.
+// Gezählt werden WIEDERHOLUNGS-Compiles (derselbe Fingerabdruck ein zweites Mal); Erst-Compiles neuer Objekte
+// einer streamenden Welt sind Nachzügler, kein Churn — über KASKADE fällt aber jedes Fenster rot, auch mit lauter
+// neuen Quelltexten (eine Kaskade ist Dutzende+).
 const IDLE_THRESHOLD = 8; // reines Idle (kein Env-Trigger) — sollte ~0 sein
 const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wand gegen V18.322)
+const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--no-sandbox", "--disable-setuid-sandbox"] });
@@ -75,16 +79,42 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
         const r = window.anazhRealm, s = r.state;
         if (!s.rendererReady || !window.__origRender) return { err: "renderer nicht bereit" };
         if (s.renderer._isHeadlessNull) return { err: "Null-Renderer — die Linse braucht den ECHTEN Renderer (sonst blind, das ist der ganze Punkt)" };
-        window.__cc = { gpuPipeline: 0, glLink: 0 };
+        // WIEDERHOLUNG vs. ERST-COMPILE (Befund CI 36718459377): auf dem langsamen Runner erreichte der Warmup nie
+        // Ruhe — die streamende Welt brachte neue Objekte, deren ERST-Compiles zählte Check B als Env-Churn (6 Stacks,
+        // alle _renderObjectDirect). Die V18.322-Klasse ist ein WIEDERHOLTER Compile: dieselbe Pipeline (derselbe
+        // Quelltext, derselbe Zustand) noch einmal, weil ein Cache-Schlüssel seine Identität verliert. Darum trägt
+        // jeder Compile seinen Fingerabdruck; `wdh` zählt die schon gesehenen.
+        window.__cc = { gpuPipeline: 0, glLink: 0, wdh: 0 };
+        const gesehen = new Set();
+        const zaehle = (fp) => {
+            const wdh = gesehen.has(fp);
+            if (wdh) window.__cc.wdh++; else gesehen.add(fp);
+            if (window.__ccSpur) window.__ccSpur.push((wdh ? "[WDH] " : "[neu] ") + (new Error().stack || "").split("\n").slice(3, 10).join(" | "));
+        };
         if (typeof GPUDevice !== "undefined" && GPUDevice.prototype) {
+            const code = new WeakMap();
+            const oM = GPUDevice.prototype.createShaderModule;
+            if (typeof oM === "function") GPUDevice.prototype.createShaderModule = function (d) { const m = oM.call(this, d); try { code.set(m, (d && d.code) || ""); } catch (_e) {} return m; };
             for (const m of ["createRenderPipeline", "createRenderPipelineAsync"]) {
                 const o = GPUDevice.prototype[m];
-                if (typeof o === "function") GPUDevice.prototype[m] = function (...a) { window.__cc.gpuPipeline++; if (window.__ccSpur) window.__ccSpur.push((new Error().stack || "").split("\n").slice(2, 9).join(" | ")); return o.apply(this, a); };
+                if (typeof o === "function") GPUDevice.prototype[m] = function (d, ...rest) {
+                    window.__cc.gpuPipeline++;
+                    let fp = "?";
+                    try { fp = JSON.stringify([code.get(d.vertex && d.vertex.module), d.vertex && d.vertex.entryPoint, code.get(d.fragment && d.fragment.module), d.fragment && d.fragment.entryPoint, d.fragment && d.fragment.targets, d.primitive, d.depthStencil, d.multisample, d.vertex && d.vertex.buffers]); } catch (_e) {}
+                    zaehle(fp);
+                    return o.call(this, d, ...rest);
+                };
             }
         }
         if (typeof WebGL2RenderingContext !== "undefined" && WebGL2RenderingContext.prototype && WebGL2RenderingContext.prototype.linkProgram) {
             const o = WebGL2RenderingContext.prototype.linkProgram;
-            WebGL2RenderingContext.prototype.linkProgram = function (...a) { window.__cc.glLink++; if (window.__ccSpur) window.__ccSpur.push((new Error().stack || "").split("\n").slice(2, 9).join(" | ")); return o.apply(this, a); };
+            WebGL2RenderingContext.prototype.linkProgram = function (prog) {
+                window.__cc.glLink++;
+                let fp = "?";
+                try { fp = (this.getAttachedShaders(prog) || []).map((sh) => this.getShaderSource(sh)).join("\n----\n"); } catch (_e) {}
+                zaehle(fp);
+                return o.call(this, prog);
+            };
         }
         let backend = "?";
         try { const b = s.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : (b.constructor && b.constructor.name) || "?"; } catch (_e) {}
@@ -123,35 +153,40 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
     if (setup.err) { await browser.close(); server.close(); console.error("⛔ LINSE NICHT LAUFFÄHIG:", setup.err); process.exit(1); }
     if (setup.warmupCompiles === 0) { await browser.close(); server.close(); console.error("⛔ LINSE UNGÜLTIG: 0 Warmup-Compiles → der Zähler greift nicht (kein Compiler gewrappt) → die Linse wäre blind grün."); process.exit(1); }
 
-    // CHECK A — REINES IDLE: nach Warmup N Idle-Frames; KEINE Pipeline darf neu kompilieren.
-    const idle = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        const tot = () => window.__cc.gpuPipeline + window.__cc.glLink;
-        const before = tot();
-        for (let i = 0; i < 16; i++) { try { r._gameLoopTick(performance.now()); } catch (_e) {} try { r._loopRender(performance.now()); } catch (_e) {} }
-        return tot() - before;
-    });
+    // CHECK A — REINES IDLE: nach Warmup N Idle-Frames; KEINE Pipeline darf neu kompilieren. Je Frame EIN kurzer
+    // evaluate (dieselbe Klasse wie der Warmup-Bruch CI 36681658740: 16 Frames in einem evaluate sprengen auf
+    // langsamem Holz die Protokoll-Frist).
+    const stand = () => page.evaluate(() => ({ tot: window.__cc.gpuPipeline + window.__cc.glLink, wdh: window.__cc.wdh }));
+    const a0 = await stand();
+    for (let i = 0; i < 16; i++) await page.evaluate(() => window.__frame());
+    const a1 = await stand();
+    const idle = { gesamt: a1.tot - a0.tot, wdh: a1.wdh - a0.wdh };
 
     // CHECK B — ENV-REGENERIERUNG (die scharfe V18.322-Wand): die Himmelsfarbe wechselt (wie die
     // Tag-Nacht-Uhr es im Stehen tut) → die Env regeneriert. Eine KORREKTE Implementierung nutzt
     // das Target wieder (stabile Identität → 0 Recompiles); der alte Churn rekompilierte ~270/Regen.
-    const regen = await page.evaluate(async () => {
-        const r = window.anazhRealm, s = r.state, u = s.skyboxUniforms;
-        if (!u || !u.nebulaColor) return { err: "keine skyboxUniforms.nebulaColor" };
-        const tot = () => window.__cc.gpuPipeline + window.__cc.glLink;
-        const before = tot();
-        window.__ccSpur = []; // der Täter beim Namen: Aufrufer-Stack jedes Compiles in diesem Fenster
-        const colors = [[0.85, 0.55, 0.30], [0.55, 0.75, 0.95], [0.30, 0.10, 0.15], [0.70, 0.80, 0.70]];
-        for (const c of colors) {
-            u.nebulaColor.value.setRGB(c[0], c[1], c[2]);
-            s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → mehrere echte Regenerierungen erzwingen
-            try { r._ensureSkyEnvironment(true); } catch (_e) {}
-            try { r._loopRender(performance.now()); } catch (_e) {}
+    // SELBSTTEST (--selbsttest-churn): die V18.322-Klasse künstlich zurück — jede Regenerierung eine NEUE
+    // Env-Identität. Die Linse MUSS dann rot werden (sonst wäre sie blind).
+    if (process.argv.includes("--selbsttest-churn")) await page.evaluate(() => (window.__selbsttestChurn = true));
+    const regen = { gesamt: 0, wdh: 0, spur: [] };
+    const hatUni = await page.evaluate(() => { const u = window.anazhRealm.state.skyboxUniforms; window.__ccSpur = []; return !!(u && u.nebulaColor); });
+    if (!hatUni) regen.err = "keine skyboxUniforms.nebulaColor";
+    else {
+        const b0 = await stand();
+        for (const c of [[0.85, 0.55, 0.30], [0.55, 0.75, 0.95], [0.30, 0.10, 0.15], [0.70, 0.80, 0.70]]) {
+            await page.evaluate((c) => {
+                const r = window.anazhRealm, s = r.state;
+                s.skyboxUniforms.nebulaColor.value.setRGB(c[0], c[1], c[2]);
+                s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
+                try { r._ensureSkyEnvironment(true); } catch (_e) {}
+                if (window.__selbsttestChurn && s.scene && s.scene.environment) s.scene.environment = s.scene.environment.clone();
+                try { r._loopRender(performance.now()); } catch (_e) {}
+            }, c);
         }
-        const spur = window.__ccSpur.slice(0, 8);
-        window.__ccSpur = null;
-        return { compiles: tot() - before, spur };
-    });
+        const b1 = await stand();
+        Object.assign(regen, { gesamt: b1.tot - b0.tot, wdh: b1.wdh - b0.wdh });
+        regen.spur = await page.evaluate(() => { const sp = window.__ccSpur.slice(0, 8); window.__ccSpur = null; return sp; });
+    }
 
     await browser.close();
     server.close();
@@ -163,10 +198,10 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
         for (const z of regen.spur) console.log("    · " + z.replace(/https?:\/\/127\.0\.0\.1:\d+\//g, "").slice(0, 400));
     }
     console.log(`  Backend: ${setup.backend}  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}  ·  davon Nachzügler bis zur Ruhe: ${setup.nachzuegler} in ${setup.warmupExtra} Extra-Frames${setup.ruhe ? "" : " (RUHE NIE ERREICHT)"}\n`);
-    const idleOk = idle <= IDLE_THRESHOLD;
-    const regenOk = regen.compiles <= REGEN_THRESHOLD;
-    console.log(`  CHECK A — reines Idle (16 Frames):      ${idle} Recompiles   (Schwelle ≤${IDLE_THRESHOLD})  ${idleOk ? "✅" : "❌ CHURN"}`);
-    console.log(`  CHECK B — Env-Regenerierung (4 Farben): ${regen.compiles} Recompiles   (Schwelle ≤${REGEN_THRESHOLD})  ${regenOk ? "✅" : "❌ RECOMPILE-CASCADE (die V18.322-Klasse!)"}`);
+    const idleOk = idle.wdh <= IDLE_THRESHOLD && idle.gesamt <= KASKADE;
+    const regenOk = regen.wdh <= REGEN_THRESHOLD && regen.gesamt <= KASKADE;
+    console.log(`  CHECK A — reines Idle (16 Frames):      ${idle.wdh} Wiederholungs-Compiles (Schwelle ≤${IDLE_THRESHOLD}) · ${idle.gesamt - idle.wdh} Erst-Compiles (gesamt ≤${KASKADE})  ${idleOk ? "✅" : "❌ CHURN"}`);
+    console.log(`  CHECK B — Env-Regenerierung (4 Farben): ${regen.wdh} Wiederholungs-Compiles (Schwelle ≤${REGEN_THRESHOLD}) · ${regen.gesamt - regen.wdh} Erst-Compiles (gesamt ≤${KASKADE})  ${regenOk ? "✅" : "❌ RECOMPILE-CASCADE (die V18.322-Klasse!)"}`);
     console.log("");
     if (idleOk && regenOk) {
         console.log("✅ KEINE Steady-State-Pipeline-Rekompilierung — der periodische Idle-Freeze KANN nicht zurückkehren,");
