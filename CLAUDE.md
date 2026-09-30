@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.492.0 — die Ziellinie steht: v1.0 = die ersten fünf Minuten)
+## Stand (V18.493.0 — die Ziellinie steht: v1.0 = die ersten fünf Minuten)
 
 **30.09., V18.492 — der Boden wieder fest + eine Ziellinie (aus der Gesamt-Analyse von 2171
 Commits):** das Projekt hatte keine Produkt-Ziellinie mehr, der KI-Co-Schöpfer war aus dem
@@ -94,7 +94,12 @@ Stempel, CI war seit 26.07. rot. Geschnitten:
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
 benutzen/teilen — bei p95 ≤ 33 ms auf dem Schöpfer-Holz (Flugschreiber-Trace). Feature-Stopp
-bis dahin.
+bis dahin. **Schritt 4 GEBAUT (Code + Headless-Beweis):** DSL-Op `spawn_studio` (Wort → Bauplan
+über `_studioBlueprintForWord` = dieselben Tabellen wie die Werkstatt, EIN Stempel
+`_studioStampFor`, geerdet + nie im Wasser, Position `near_water`); das KI-Prompt lehrt den Op +
+die LIVE-Wörter aller Studios; der Chat-Satz „pflanz mir einen eichenhain am wasser" wirkt auch
+ohne Schlüssel; Claude-Modelle auf der 5er-Generation (effort low + fallbacks). Offen: der echte
+LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·

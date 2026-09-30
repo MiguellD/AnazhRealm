@@ -20,6 +20,11 @@ war aus dem Erlebnis gefallen. v1.0 ist darum KEIN Feature-Katalog, sondern EIN 
 4. **MIT DER KI ERSCHAFFEN** — der Satz „pflanz mir einen Eichenhain am Wasser" (o. ä.) wird
    über den Rezept-Katalog der Studios zu echten Foundry-Assets in der Welt (der Co-Schöpfer
    spricht dieselbe Sprache wie die Werkstatt: `PARAMS_BY_KIND`, kein Parallel-Pfad).
+   **Stand V18.492: GEBAUT** — `spawn_studio` + `near_water` + Prompt mit den LIVE-Wörtern aller
+   Studios (Bäume · Stein · Häuser · Tore · Fahrzeuge) + Chat-Satz ohne Schlüssel; bewiesen im
+   Playtest-Band `checkBandV18493CoSchoepferStudio` und in `playtest:fast` (KI-Antwort gestubbt).
+   Offen: der Lauf mit echtem Schlüssel (Drehbuch Schritt 18) + Regler-Wörter („knorrig", „hoch")
+   auf die B4-Regler des Rezepts.
 5. **BENUTZEN / TEILEN** — das Geschaffene benutzen (betreten · fahren · halten) oder als
    Bauplan teilen.
 

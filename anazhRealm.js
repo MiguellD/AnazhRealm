@@ -1845,6 +1845,7 @@ class AnazhRealm {
             "spawn_island",
             "spawn_ufo",
             "spawn_tree",
+            "spawn_studio",
             "remove_architecture",
             // Identität / Definitionen / Werkzeuge / Welt-Beziehung / Portale / Physik
             "define_blueprint",
@@ -2577,6 +2578,25 @@ class AnazhRealm {
                     if (entry) spawned++;
                 }
                 ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
+            },
+            // V18.492 — DER CO-SCHÖPFER PFLANZT STUDIO-ASSETS (v1.0-Schritt 4, roadmap §0.v1):
+            // ein Wort ("eiche", "birken", "fels", ein Haus-/Tor-Rezept) wird über DIESELBEN
+            // Tabellen wie die Werkstatt zum Bauplan (`_studioBlueprintForWord`) und landet
+            // am EINEN Chokepoint `spawnArchitecture` — mit dem Werkstatt-Stempel des Presets
+            // (`_studioStampFor`), auf dem Boden, nie im Wasser (`_dslSpawnStudioItems`).
+            // Unbekanntes Wort → ein Log-Eintrag, kein Raten, kein Ersatz-Baum.
+            spawn_studio: ([what, positionNode, count, seed], ctx) => {
+                const name = this._studioBlueprintForWord(what == null ? "" : String(what));
+                if (!name) {
+                    ctx.log.push({ event: "unknown_studio_word", word: what, program_id: ctx.programId });
+                    return;
+                }
+                const n = c(count, 1, 24);
+                const pos = this.dslEvalPos(positionNode, ctx);
+                const abstand = this._studioSpawnAbstand(name);
+                const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
+                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter);
+                ctx.log.push({ event: "spawned_studio", count: spawned, pos, kind: name });
             },
             spawn_island: ([positionNode, height, seed, size], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
@@ -3450,6 +3470,42 @@ class AnazhRealm {
         return this._dslEffectsCache;
     }
 
+    // Die Platzier-Schleife des Co-Schöpfers: n Stück um `pos` (Jitter-Kreis), je ein
+    // trockener Fleck (max 4 Würfe — nie ins Wasser, `_isAboveWaterAt` wie Siedlung +
+    // Worldgen), geerdet auf die Voxel-Oberfläche (+0.5 wie der Wald-Generator), Drehung
+    // und Baum-Größe aus dem Programm-RNG (deterministisch je Programm), der Werkstatt-
+    // Stempel des Presets am Eintrag. Budget wie jeder Spawn-Op.
+    _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
+        const stamp = this._studioStampFor(name);
+        const istBaum = name.startsWith("baum_");
+        const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+        let spawned = 0;
+        for (let i = 0; i < n; i++) {
+            if (ctx.budget.spawnsLeft <= 0) {
+                ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                break;
+            }
+            let x = pos.x,
+                z = pos.z,
+                trocken = false;
+            for (let t = 0; t < 4 && !trocken; t++) {
+                const off = n > 1 || t > 0 ? Math.max(jitter, 2.5) : 0;
+                x = pos.x + (ctx.rng() - 0.5) * 2 * off;
+                z = pos.z + (ctx.rng() - 0.5) * 2 * off;
+                trocken = typeof this._isAboveWaterAt !== "function" || this._isAboveWaterAt(x, z, 0.2);
+            }
+            if (!trocken) continue;
+            ctx.budget.spawnsLeft--;
+            const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
+            const y = Number.isFinite(sy) ? sy + 0.5 : pos.y;
+            const opts = { seed: (baseSeed + i) >>> 0, rotationY: ctx.rng() * Math.PI * 2 };
+            if (istBaum) opts.scale = 0.8 + ctx.rng() * 0.45;
+            if (stamp) opts.studioOv = stamp;
+            if (this.spawnArchitecture(name, { x, y, z }, opts)) spawned++;
+        }
+        return spawned;
+    }
+
     get dslPositions() {
         if (this._dslPositionsCache) return this._dslPositionsCache;
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
@@ -3532,6 +3588,25 @@ class AnazhRealm {
                 const z = p.z + Math.sin(angle) * dist;
                 const y = typeof this.getTerrainHeightAt === "function" ? this.getTerrainHeightAt(x, z) : p.y;
                 return { x, y, z };
+            },
+            // V18.492 — „am Wasser": das nächste Wasser im Umkreis, von dort zurück zum
+            // Spieler bis zum ersten trockenen Ufer-Fleck (+2 m landeinwärts). Kein Wasser
+            // in Reichweite → der Spieler-Ort (der Aufrufer bleibt handlungsfähig).
+            near_water: ([radius], ctx) => {
+                const r = c(radius, 8, 200) || 60;
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const w =
+                    typeof this._findNearestWaterPoint === "function" ? this._findNearestWaterPoint(p.x, p.z, r) : null;
+                if (!w) return { x: p.x, y: p.y, z: p.z };
+                const dx = p.x - w.x,
+                    dz = p.z - w.z;
+                const L = Math.hypot(dx, dz) || 1;
+                for (let s = 1; s <= Math.ceil(L); s++) {
+                    const x = w.x + (dx / L) * s,
+                        z = w.z + (dz / L) * s;
+                    if (this._isAboveWaterAt(x, z, 0.4)) return { x: x + (dx / L) * 2, y: p.y, z: z + (dz / L) * 2 };
+                }
+                return { x: p.x, y: p.y, z: p.z };
             },
             at: ([x, y, z]) => ({
                 x: Number.isFinite(Number(x)) ? Number(x) : 0,
@@ -4574,25 +4649,46 @@ class AnazhRealm {
                 label: "Claude (Anthropic, kostet)",
                 hint: "Key holen: console.anthropic.com → Settings → API Keys — Format sk-ant-…",
                 keyPrefix: "sk-ant-",
+                // V18.492 — die aktuelle Generation (Sonnet 5.5 · Opus 5.5 · Fable 5.1). Die
+                // 5er-Modelle denken IMMER adaptiv mit (thinking lässt sich nicht abschalten) —
+                // darum mehr max_tokens (Denken + JSON-Antwort passen hinein) und Effort "low"
+                // (der Begleiter antwortet kurz; Chat braucht keine tiefe Denkarbeit). Bei einer
+                // Sicherheits-Ablehnung übernimmt serverseitig ein Ersatz-Modell ("fallbacks":
+                // "default", Beta-Header) statt stumm leer zu antworten. Haiku 4.5 kennt weder
+                // effort noch fallbacks — für Haiku bleibt die Anfrage schlicht.
                 models: [
                     { id: "claude-haiku-4-5", label: "Haiku 4.5 — schnell" },
-                    { id: "claude-sonnet-4-6", label: "Sonnet 4.6 — ausgewogen" },
-                    { id: "claude-opus-4-7", label: "Opus 4.7 — klügste" },
+                    { id: "claude-sonnet-5-5", label: "Sonnet 5.5 — ausgewogen" },
+                    { id: "claude-opus-5-5", label: "Opus 5.5 — klügste" },
+                    { id: "claude-fable-5-1", label: "Fable 5.1 — das Stärkste (teuer)" },
                 ],
                 requiresKey: true,
                 endpoint: () => "https://api.anthropic.com/v1/messages",
-                buildHeaders: (apiKey) => ({
-                    "content-type": "application/json",
-                    "x-api-key": apiKey,
-                    "anthropic-version": "2023-06-01",
-                    "anthropic-dangerous-direct-browser-access": "true",
-                }),
-                buildBody: (model, system, userContent) => ({
-                    model,
-                    max_tokens: 400,
-                    system,
-                    messages: [{ role: "user", content: userContent }],
-                }),
+                buildHeaders: (apiKey, cfg) => {
+                    const h = {
+                        "content-type": "application/json",
+                        "x-api-key": apiKey,
+                        "anthropic-version": "2023-06-01",
+                        "anthropic-dangerous-direct-browser-access": "true",
+                    };
+                    if (AnazhRealm._llmFuenferModell(cfg && cfg.model))
+                        h["anthropic-beta"] = "server-side-fallback-2026-07-01";
+                    return h;
+                },
+                buildBody: (model, system, userContent) => {
+                    const body = {
+                        model,
+                        max_tokens: 400,
+                        system,
+                        messages: [{ role: "user", content: userContent }],
+                    };
+                    if (AnazhRealm._llmFuenferModell(model)) {
+                        body.max_tokens = 4000;
+                        body.output_config = { effort: "low" };
+                        body.fallbacks = "default";
+                    }
+                    return body;
+                },
                 extractText: (json) => {
                     const block = (json.content || []).find((b) => b.type === "text");
                     return block ? block.text : "";
@@ -4879,6 +4975,11 @@ class AnazhRealm {
             'Beispiele: ["weather","rainy"], ["chain",["weather","sunny"],["creatures_emotion","happy"]],',
             '["spawn_creature",["near_player",10],3,"happy"], ["skybox_color","#d4a3ff"].',
             `Erlaubte Effekt-Ops (Auszug): ${ops}.`,
+            "",
+            "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
+            '  ["spawn_studio", <wort>, <position>, <anzahl>] — z.B. ["spawn_studio","eiche",["near_water",60],6] (ein Eichenhain am Wasser) oder ["spawn_studio","haus",["at_player_forward",14],1].',
+            `  Wörter, die die Welt JETZT kennt: ${this._studioWordsForPrompt() || "eiche, kiefer, fels"}.`,
+            '  Positionen: ["near_player",r] · ["at_player_forward",d] · ["near_water",r] · ["far_player",min,max]. Anzahl 1–24.',
             "",
             "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
             '  ["rule", <Bedingung>, <Effekt>, {"everySec":3}]',
@@ -9806,6 +9907,34 @@ class AnazhRealm {
                     program: ["set_portal", m[1].toLowerCase(), m[2].toLowerCase()],
                     describe: `richtet „${m[1].toLowerCase()}" als Portal auf „${m[2].toLowerCase()}"`,
                 }),
+            },
+            // V18.492 — DER SATZ WIRD STUDIO (v1.0-Schritt 4, auch OHNE KI-Schlüssel): „pflanz
+            // mir einen eichenhain am wasser", „setz drei birken hier", „bau ein haus". Das Wort
+            // löst über DIESELBEN Tabellen auf wie die Werkstatt (`_studioBlueprintForWord`);
+            // unbekannt → null, der Satz fällt an den LLM-Begleiter (der denselben Op spricht).
+            // Bewusst die LETZTE Regel: jede spezifischere Geste oben gewinnt.
+            {
+                example: "pflanz mir einen eichenhain am wasser",
+                re: /^(?:pflanz|setz|bau|stell|erschaff|mach|wachs)\w*\s+(?:mir\s+|uns\s+)?(?:(ein(?:en|e|ige)?|zwei|drei|vier|fünf|fuenf|sechs|sieben|acht|neun|zehn|\d+)\s+)?([a-zäöüß_]+?)(hain|wald|gruppe)?(?:\s+(?:am|an|beim|zum|ans)\s+(wasser|fluss|see|ufer|bach|meer)|\s+(hier|vor mir))?\s*[.!]?$/i,
+                build: (m) => {
+                    const wort = m[2].toLowerCase();
+                    const name = this._studioBlueprintForWord(wort);
+                    if (!name) return null;
+                    const ZAHL = { ein: 1, eine: 1, einen: 1, einige: 5, zwei: 2, drei: 3, vier: 4, fünf: 5, fuenf: 5 };
+                    Object.assign(ZAHL, { sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10 });
+                    const z = m[1] ? m[1].toLowerCase() : null;
+                    let n = z ? (ZAHL[z] != null ? ZAHL[z] : parseInt(z, 10)) : m[3] ? 6 : 1;
+                    if (!Number.isFinite(n) || n < 1) n = 1;
+                    // „einen eichenHAIN" / „einen wald" = ein Hain, nicht ein Baum
+                    if ((m[3] || /^(wald|hain)$/.test(wort)) && (!z || ZAHL[z] === 1)) n = 6;
+                    const pos = m[4] ? ["near_water", 80] : ["at_player_forward", m[5] ? 6 : 10];
+                    const seed = Math.floor(Math.random() * 0xffffffff);
+                    const wo = m[4] ? "am Wasser" : "vor dir";
+                    return {
+                        program: ["spawn_studio", wort, pos, n, seed],
+                        describe: `${n}× ${name} aus dem Studio ${wo} gewachsen`,
+                    };
+                },
             },
         ];
         return this._chatDslPatternsCache;
@@ -25134,6 +25263,8 @@ class AnazhRealm {
         if (head === "at_player") return "beim Spieler";
         if (head === "near_player") return "in der Nähe des Spielers";
         if (head === "random_position") return "an einem zufälligen Ort";
+        if (head === "near_water") return "am nächsten Wasser";
+        if (head === "far_player") return "in der Ferne";
         if (head === "at" && arg.length >= 4) return `bei (${arg[1]}, ${arg[2]}, ${arg[3]})`;
         return "an einer Stelle";
     }
@@ -25176,7 +25307,8 @@ class AnazhRealm {
             deposit_emotion: (a) => `prägt „${a[0]}" ins Feld ${pos(a[2])}`,
             spawn_creature: (a) =>
                 `ruft ${a[1] || 1} ${a[2] ? a[2] + " " : ""}Kreatur${(a[1] || 1) !== 1 ? "en" : ""} herbei ${pos(a[0])}`,
-            spawn_tree: (a) => `pflanzt ${a[1] || 1} Baum${(a[1] || 1) !== 1 ? "äume" : ""} ${pos(a[0])}`,
+            spawn_tree: (a) => `pflanzt ${a[1] || 1} ${(a[1] || 1) !== 1 ? "Bäume" : "Baum"} ${pos(a[0])}`,
+            spawn_studio: (a) => `lässt ${a[2] || 1}× „${a[0]}" aus dem Studio wachsen ${pos(a[1])}`,
             spawn_island: (a) => `setzt eine schwebende Insel ${pos(a[0])}`,
             spawn_ufo: (a) => `ruft ein UFO ${pos(a[0])}`,
             spawn_village: (a) => `errichtet ein Dorf ${pos(a[0])}`,
@@ -75703,6 +75835,84 @@ class AnazhRealm {
         }
         return null;
     }
+    // DAS WORT DES CO-SCHÖPFERS → der Bauplan (V18.492): „eiche", „birken", „fels", ein
+    // Haus-/Tor-/Fahrzeug-Rezept. Liest DIESELBEN Tabellen wie die Werkstatt — die
+    // Bauplan-Namen, das LIVE-Rezeptbuch über KIND_POLICY (die Auto-Registrierung
+    // `<prefix><id>`), `_foundryPresetFor` (Art → Preset) — plus die kleine
+    // STUDIO_WORT-Brücke für Gattungs-Wörter ohne eigenes Rezept (fels/stein/baum…).
+    // null = unbekannt (kein Raten, kein Ersatz).
+    _studioBlueprintForWord(word) {
+        if (typeof word !== "string" || !word.trim()) return null;
+        const bps = this.state.blueprints || {};
+        const f = this._foundry;
+        const recipes = f && f.recipes ? f.recipes : null;
+        const KP = AnazhRealm.KIND_POLICY;
+        const w = word
+            .trim()
+            .toLowerCase()
+            .replace(/ä/g, "ae")
+            .replace(/ö/g, "oe")
+            .replace(/ü/g, "ue")
+            .replace(/ß/g, "ss")
+            .replace(/[\s-]+/g, "_");
+        const kandidaten = [w];
+        for (const suf of ["en", "n", "e", "s", "er"])
+            if (w.length > suf.length + 2 && w.endsWith(suf)) kandidaten.push(w.slice(0, -suf.length));
+        for (const t of kandidaten) {
+            if (bps[t]) return t;
+            if (bps["baum_" + t]) return "baum_" + t;
+            const rec = recipes && Object.prototype.hasOwnProperty.call(recipes, t) ? recipes[t] : null;
+            const pol = rec && KP[rec.kind];
+            if (pol && pol.prefix && bps[pol.prefix + t]) return pol.prefix + t;
+        }
+        const WORT = AnazhRealm.STUDIO_WORT;
+        for (const t of kandidaten) {
+            const ziel = WORT[t];
+            if (ziel === "haus_") {
+                const haeuser = Object.keys(bps)
+                    .filter((n) => n.startsWith("haus_"))
+                    .sort();
+                if (haeuser.length) return haeuser[0];
+            } else if (ziel && bps[ziel]) return ziel;
+        }
+        return null;
+    }
+
+    // Die lebenden Wörter für das KI-Prompt (was der Co-Schöpfer JETZT pflanzen kann):
+    // aus dem LIVE-Rezeptbuch, gefiltert durch denselben Auflöser — nie ein Wort, das
+    // die Welt nicht bauen kann.
+    _studioWordsForPrompt() {
+        const f = this._foundry;
+        const recipes = f && f.recipes ? f.recipes : {};
+        const gruppen = { tree: [], haus: [], gate: [], vehicle: [] };
+        for (const id of Object.keys(recipes)) {
+            const r = recipes[id];
+            if (r && gruppen[r.kind] && this._studioBlueprintForWord(id)) gruppen[r.kind].push(id);
+        }
+        if (!gruppen.tree.length)
+            for (const b of ["eiche", "kiefer", "birke", "tanne", "buche"])
+                if (this._studioBlueprintForWord(b)) gruppen.tree.push(b);
+        const stein = ["fels", "stein", "kristall"].filter((x) => this._studioBlueprintForWord(x));
+        const teile = [];
+        if (gruppen.tree.length) teile.push("Bäume: " + gruppen.tree.join(", "));
+        if (stein.length) teile.push("Stein: " + stein.join(", "));
+        if (gruppen.haus.length) teile.push("Häuser: haus, " + gruppen.haus.slice(0, 6).join(", "));
+        if (gruppen.gate.length) teile.push("Tore: " + gruppen.gate.join(", "));
+        if (gruppen.vehicle.length) teile.push("Fahrzeuge: " + gruppen.vehicle.join(", "));
+        return teile.join(" · ");
+    }
+
+    // Der Pflanz-Abstand je Bauplan: Bäume/Stein eng (ein Hain), Häuser/Tore/Fahrzeuge
+    // mit Luft (Kind aus dem Rezeptbuch über das Preset).
+    _studioSpawnAbstand(name) {
+        const f = this._foundry;
+        const preset = this._foundryPresetFor(name);
+        const rec = preset && f && f.recipes ? f.recipes[preset] : null;
+        const kind = rec ? rec.kind : name.startsWith("baum_") ? "tree" : null;
+        if (kind === "haus" || kind === "gate" || kind === "vehicle") return 9;
+        return 2.5;
+    }
+
     // Das Foundry-Preset EINES EINTRAGS — die EINE Auflösung für den Platzier-Pfad. Ein GEWACHSENER
     // Baum trägt seinen Typ als `grown_<art>_v<idx>` (NICHT im Preset-Map), aber seine BASIS-Art als
     // `entry._lodSpecies` (= `baum_eiche` …, DIE im Map steht) — die liest der Platzier-Pfad zuerst.
@@ -81555,23 +81765,12 @@ class AnazhRealm {
         // gilt die JETZT gewählte Werkstatt-Prägung (der freie schöpfer-/frieden-Bau hat
         // keinen Craft-Akt — confirmBuild IST sein Guss). Der Stempel reist am Eintrag
         // (Snapshot) UND im place-DSL (Slot 6) zu allen Peers — EINE gestempelte Wahrheit.
-        const bmBp = this.state.blueprints && this.state.blueprints[bm.blueprintName];
-        const bmPreset =
-            typeof this._foundryPresetForEntry === "function"
-                ? this._foundryPresetForEntry({ type: bm.blueprintName })
-                : null;
-        let bmStamp = this._artifactStudioOv(bmBp) || (bmPreset ? this._workshopStudioOvFor(bmPreset) : null);
         // V18.477 (Verify-Ernte): die tiefe Kopie EINMAL + fail-closed VOR dem Guss —
         // ein nicht-serialisierbarer Kanalwert warf sonst NACH dem lokalen Spawn und
         // VOR dem Broadcast (einseitige Welt: lokal existiert der Eintrag, Peers nie).
-        // Kein Stempel ist besser als eine gespaltene Welt.
-        if (bmStamp) {
-            try {
-                bmStamp = JSON.parse(JSON.stringify(bmStamp));
-            } catch (_e) {
-                bmStamp = null;
-            }
-        }
+        // Kein Stempel ist besser als eine gespaltene Welt. V18.492: die EINE Quelle
+        // `_studioStampFor` (der Co-Schöpfer stempelt identisch).
+        const bmStamp = this._studioStampFor(bm.blueprintName);
         // Ω5 — ein im schöpfer-Modus (gate.free) gebautes Werk ist freeBorn:
         // es erntet zu 0 (das Perpetuum-Verbot — die Modus-Wäsche schließt).
         this.spawnArchitecture(bm.blueprintName, spawnPos, {
@@ -87155,6 +87354,27 @@ class AnazhRealm {
     }
 
     // W-A1 — die ov-Overrides der aktuellen Auswahl fuer ein Preset (null wenn leer/keine).
+    // DER EINE STUDIO-STEMPEL eines Platzier-Akts (Werkstatt-Bau UND Co-Schöpfer): ein
+    // beim Craft gestempelter Bauplan (bp.studioOv) FÜHRT, sonst die jetzt gewählte
+    // Werkstatt-Prägung seines Presets. Tief kopiert + fail-closed: ein nicht
+    // serialisierbarer Kanalwert wird zu „kein Stempel" (nie eine gespaltene Welt).
+    _studioStampFor(blueprintName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        const preset =
+            typeof this._foundryPresetForEntry === "function"
+                ? this._foundryPresetForEntry({ type: blueprintName })
+                : null;
+        let stamp = this._artifactStudioOv(bp) || (preset ? this._workshopStudioOvFor(preset) : null);
+        if (stamp) {
+            try {
+                stamp = JSON.parse(JSON.stringify(stamp));
+            } catch (_e) {
+                stamp = null;
+            }
+        }
+        return stamp || null;
+    }
+
     _workshopStudioOvFor(presetId) {
         const ws = this.state.workshop;
         const ov = ws && ws.studioOv ? ws.studioOv[presetId] : null;
@@ -97928,7 +98148,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.492.0";
+AnazhRealm.VERSION = "18.493.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -102476,6 +102696,25 @@ AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
 // Materials, uBladeH-Fallback). V18.492: GRASS_MAX_BLADES/GRASS_POOL_CAP sind mit dem
 // Halm-Mesh-Pool gefallen (die Wiese ist Boden-Funktion, 21.07.).
 AnazhRealm.GRASS_BLADE_H = 0.42;
+// V18.492 — DIE WORT-BRÜCKE des Co-Schöpfers: NUR Gattungs-Wörter ohne eigenes Rezept/
+// eigenen Bauplan (alles Übrige löst `_studioBlueprintForWord` über die lebenden Tabellen
+// auf). "haus_" = das erste registrierte Studio-Haus (fachwerk-Rezept, alphabetisch).
+// Die Claude-5er-Generation (Sonnet 5.5 · Opus 5 / 5.5 · Fable 5 / 5.1): thinking immer an,
+// `output_config.effort`, serverseitige `fallbacks` — der EINE Prüfer für Header + Body.
+AnazhRealm._llmFuenferModell = function (model) {
+    return typeof model === "string" && /^claude-(sonnet-5-5|opus-5|fable-5)/.test(model);
+};
+AnazhRealm.STUDIO_WORT = Object.freeze({
+    baum: "baum_eiche",
+    hain: "baum_eiche",
+    wald: "baum_eiche",
+    fels: "felsbrocken",
+    felsen: "felsbrocken",
+    stein: "stein_block",
+    kristall: "kristall_geode",
+    haus: "haus_",
+    haeuser: "haus_",
+});
 // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die Region-Geometrie für das
 // Frustum-Cullen der PLATZIERTEN Architektur. ARCH_REGION_M = _bakeRegionConfig().sizeM (256 m) →
 // platzierte Bauten teilen die Streu-Region-Kantenlänge (eine Welt-Karte). Strukturen mit

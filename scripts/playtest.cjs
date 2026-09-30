@@ -39698,6 +39698,155 @@ async function checkBandV18266RockDetail(ctx) {
 // derselbe Start + dieselbe Input-Folge ⇒ bit-identisches Ergebnis. Diese Invariante schützt
 // das Lockstep/Replay-Fundament; bricht sie, lauert eine versteckte Nicht-Determinismus-Quelle
 // (Math.random/Zeit/Float-Drift) im Schritt-Pfad. (Volle Linse: `scripts/diag-replay-determinism.cjs`.)
+// V18.492 — DER CO-SCHÖPFER SPRICHT STUDIO (v1.0-Schritt 4, roadmap §0.v1): ein Satz an
+// die KI (oder in den Chat, ohne Schlüssel) wird über DIESELBEN Tabellen wie die Werkstatt
+// zu echten Studio-Bauplänen in der Welt — geerdet, nie im Wasser, mit dem Werkstatt-
+// Stempel. Beweist Auflöser · Op · Satz-Parser · near_water · Prompt · den KI-Pfad END-ZU-
+// END (gestubbte Antwort → maybeAnswerWithLlm → dslRun → spawnArchitecture).
+async function checkBandV18493CoSchoepferStudio(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const archs = r.state.architectures;
+        const vorherAll = archs.length;
+        try {
+            out.eiche = r._studioBlueprintForWord("eiche");
+            out.eichen = r._studioBlueprintForWord("Eichen");
+            out.fels = r._studioBlueprintForWord("fels");
+            out.unbekannt = r._studioBlueprintForWord("quasselstrippe");
+            const f = r._foundry;
+            const treeIds =
+                f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "tree") : [];
+            out.treeIds = treeIds.length;
+            out.alleBaeumeLoesen = treeIds.every((id) => !!r._studioBlueprintForWord(id));
+            // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen).
+            const p = r.state.playerMesh.position;
+            let spot = null;
+            for (let i = 0; i < 64 && !spot; i++) {
+                const a = i * 0.618 * Math.PI * 2,
+                    d = 20 + (i % 8) * 6;
+                const x = p.x + Math.cos(a) * d,
+                    z = p.z + Math.sin(a) * d;
+                if (r._isAboveWaterAt(x, z, 2)) spot = { x, z };
+            }
+            out.spot = !!spot;
+            const vorher = archs.length;
+            const res1 = r.dslRun(["spawn_studio", "eiche", ["at", spot.x, p.y, spot.z], 5, 4242], { source: "test" });
+            const neu = archs.slice(vorher);
+            out.neuZahl = neu.length;
+            out.alleEiche = neu.length > 0 && neu.every((e) => e.type === "baum_eiche");
+            out.alleTrocken = neu.every((e) => r._isAboveWaterAt(e.position.x, e.position.z, 0.2));
+            out.alleGeerdet = neu.every((e) => {
+                const sy = r._voxelSurfaceY(e.position.x, e.position.z);
+                return Number.isFinite(sy) && Math.abs(e.position.y - (sy + 0.5)) < 0.6;
+            });
+            out.ok1 = res1.ok;
+            const v2 = archs.length;
+            const res2 = r.dslRun(["spawn_studio", "quasselstrippe", ["at_player"], 3], { source: "test" });
+            out.unbekanntKeinSpawn = archs.length === v2 && res2.log.some((l) => l.event === "unknown_studio_word");
+            const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
+            out.satz = parsed ? JSON.stringify([parsed.program[0], parsed.program[1], parsed.program[2][0], parsed.program[3]]) : null;
+            const alt = r.parseChatToDsl("pflanze baum hier");
+            out.altGesteBleibt = !!alt && alt.program[0] === "spawn_tree";
+            const nw = r.dslPositions.near_water([160], { state: r.state, rng: Math.random });
+            out.nearWater = !!nw && Number.isFinite(nw.x) && Number.isFinite(nw.z);
+            out.nearWaterTrocken = !!nw && r._isAboveWaterAt(nw.x, nw.z, 0.3);
+            const prompt = r.llmBuildSystemPrompt();
+            out.promptOp = /spawn_studio/.test(prompt) && /near_water/.test(prompt);
+            out.promptWoerter = /Bäume: /.test(prompt);
+            out.ruleVerbot = r.constructor.RULE_FORBIDDEN_EFFECT_OPS.has("spawn_studio");
+            // Die Anthropic-Anfrage folgt der aktuellen Generation: 5er-Modelle mit effort +
+            // fallbacks + Beta-Header, Haiku 4.5 schlicht (es kennt beides nicht).
+            const an = r.llmProviderDefs().anthropic;
+            const bOpus = an.buildBody("claude-opus-5-5", "s", "u");
+            const hOpus = an.buildHeaders("k", { model: "claude-opus-5-5" });
+            const bHaiku = an.buildBody("claude-haiku-4-5", "s", "u");
+            const hHaiku = an.buildHeaders("k", { model: "claude-haiku-4-5" });
+            out.anthropicForm =
+                an.models.some((m) => m.id === "claude-opus-5-5") &&
+                bOpus.output_config &&
+                bOpus.output_config.effort === "low" &&
+                bOpus.fallbacks === "default" &&
+                hOpus["anthropic-beta"] === "server-side-fallback-2026-07-01" &&
+                !bHaiku.output_config &&
+                !bHaiku.fallbacks &&
+                !hHaiku["anthropic-beta"];
+            // Der KI-Pfad END-ZU-END (die Antwort ist gestubbt — der Container hat kein Netz zum LLM).
+            const llm = r.state.llm;
+            const altLlm = { enabled: llm.enabled, provider: llm.provider };
+            const origCall = r.llmCall;
+            llm.enabled = true;
+            llm.provider = "ollama";
+            r.llmCall = async () => ({
+                say: "Ich lasse Birken wachsen.",
+                program: ["spawn_studio", "birke", ["at", spot.x + 6, p.y, spot.z + 6], 4, 77],
+            });
+            const v3 = archs.length;
+            const said = [];
+            try {
+                await r.maybeAnswerWithLlm("pflanz mir ein paar birken", (t) => said.push(t));
+            } finally {
+                r.llmCall = origCall;
+                llm.enabled = altLlm.enabled;
+                llm.provider = altLlm.provider;
+            }
+            const neu3 = archs.slice(v3);
+            out.kiNeu = neu3.length;
+            out.kiBirke = neu3.length > 0 && neu3.every((e) => e.type === r._studioBlueprintForWord("birke"));
+            out.kiSagte = said.some((t) => /Birken/.test(t)) && said.some((t) => /Welt verändert/.test(t));
+        } catch (e) {
+            out.err = (e && e.message) || String(e);
+        }
+        // Aufräumen: die Test-Pflanzung verlässt die Welt wieder (die Folge-Bänder sehen den alten Stand).
+        for (const e of archs.slice(vorherAll).reverse()) {
+            try {
+                r.removeArchitecture(e);
+            } catch (_e) {}
+        }
+        out.aufgeraeumt = archs.length === vorherAll;
+        return out;
+    });
+    const R = res || {};
+    check("V18.493 Co-Schöpfer: Band lief ohne Fehler", !R.err, R.err);
+    check(
+        "V18.493 Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (eiche/Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
+        R.eiche === "baum_eiche" && R.eichen === "baum_eiche" && !!R.fels && R.unbekannt === null,
+        `eiche=${R.eiche} eichen=${R.eichen} fels=${R.fels} unbekannt=${R.unbekannt}`
+    );
+    check(
+        `V18.493 Co-Schöpfer: JEDE Baum-Art des Rezeptbuchs ist ein sagbares Wort (${R.treeIds} Arten)`,
+        R.alleBaeumeLoesen === true && R.treeIds > 0
+    );
+    check(
+        "V18.493 Co-Schöpfer: spawn_studio pflanzt 5 Eichen — geerdet (Oberfläche+0.5), trocken, am EINEN Chokepoint",
+        R.spot === true && R.neuZahl === 5 && R.alleEiche && R.alleTrocken && R.alleGeerdet && R.ok1,
+        `neu=${R.neuZahl} eiche=${R.alleEiche} trocken=${R.alleTrocken} geerdet=${R.alleGeerdet}`
+    );
+    check("V18.493 Co-Schöpfer: ein unbekanntes Wort pflanzt NICHTS und sagt es im Log", R.unbekanntKeinSpawn === true);
+    check(
+        "V18.493 Co-Schöpfer: der Satz OHNE KI („pflanz mir einen eichenhain am wasser“) wird spawn_studio eichen · near_water · 6",
+        R.satz === JSON.stringify(["spawn_studio", "eichen", "near_water", 6]),
+        String(R.satz)
+    );
+    check("V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)", R.altGesteBleibt === true);
+    check("V18.493 Co-Schöpfer: near_water liefert einen endlichen Ort", R.nearWater === true);
+    check(
+        "V18.493 Co-Schöpfer: das KI-Prompt lehrt spawn_studio + near_water + die lebenden Wörter; Regeln dürfen es nicht",
+        R.promptOp === true && R.promptWoerter === true && R.ruleVerbot === true
+    );
+    check(
+        "V18.493 Co-Schöpfer: KI-Pfad END-ZU-END — Antwort → maybeAnswerWithLlm → 4 Birken aus dem Studio in der Welt",
+        R.kiNeu === 4 && R.kiBirke === true && R.kiSagte === true,
+        `neu=${R.kiNeu} birke=${R.kiBirke} sagte=${R.kiSagte}`
+    );
+    check(
+        "V18.493 Co-Schöpfer: die Claude-Anfrage spricht die aktuelle Generation (5er: effort low + fallbacks; Haiku schlicht)",
+        R.anthropicForm === true
+    );
+    check("V18.493 Co-Schöpfer: die Test-Pflanzung ist wieder aufgeräumt", R.aufgeraeumt === true);
+}
+
 async function checkBandV18331ReplayDeterminism(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -57905,6 +58054,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandV18265ShadowDistance, ctx);
             await timed(checkBandV18266RockDetail, ctx);
             await timed(checkBandV18331ReplayDeterminism, ctx);
+            await timed(checkBandV18493CoSchoepferStudio, ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

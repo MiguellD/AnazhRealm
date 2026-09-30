@@ -1,4 +1,4 @@
-# Das Abnahme-Drehbuch — DIE EINE Schöpfer-Runde (V18.491.51, 15 Schritte)
+# Das Abnahme-Drehbuch — DIE EINE Schöpfer-Runde (V18.492, 18 Schritte)
 
 > **Zweck:** EINE Browser-Session, die das ERLEBNIS des Feld-Stands bestätigt. Alles hier ist
 > vorab maschinell verifiziert (Merge-Gate „Alle Invarianten OK" + npm run check + Domänen-Gates
@@ -25,11 +25,14 @@
 | 12 | Eine Kreatur NACHTS ansehen | Augen glimmen DEZENT (0.3); das Feld leuchtet NICHT aus sich selbst — es gehorcht derselben Tag/Nacht-Farbe wie die Welt | |
 | 13 | Zum Genesis-Ring, durch die Membran | Bodennebel atmet in Membran-Farben, EIN warmes Licht pulst; Hindurchgehen IST Betreten | |
 | 14 | Symphonie an; Genre wechseln (LoFi → Trap → Bossa → Cinematic) | Drums UND Harmonie/Lead/Bass klingen distinkt; LoFi kippt harmony-lastig | |
+| 16 | Werkstatt öffnen, einen Bauplan wählen, in der Welt platzieren | v1.0-Schritt 3: ≤ 3 Klicks vom Öffnen bis zum stehenden Werk; der Werkstatt-Regler prägt, was platziert wird | |
+| 17 | Chat OHNE KI: `pflanz mir einen eichenhain am wasser` | v1.0-Schritt 4 (Grundstufe): 6 Studio-Eichen wachsen am nächsten Ufer, geerdet, keine im Wasser | |
+| 18 | KI an (Einstellungen → Begleiter, eigener Schlüssel): „lass mir ein paar Birken und ein Fachwerkhaus wachsen" | v1.0-Schritt 4: die KI antwortet UND die Welt verändert sich (spawn_studio — dieselben Baupläne wie die Werkstatt) | |
 | 15 | Schnell umsehen, dann ~2 min stehen; HUD + Konsole | Auflösung fällt bei Bewegung imperzeptibel und kehrt flicker-frei zurück; Konsole bleibt still; der Flugschreiber-Trace POSTet — Tris/dc/weltMarch gegen den letzten Trace lesen | |
 
 **Stehende Ein-Wort-Defaults** (bestätigt, nur bei Widerspruch melden): Materialisierungs-Pop
 der Hand-Blase = Streaming, kein eigener Fall · glutbrunnen/glut_var = bewusste
 Nicht-Studio-Silhouette (Welt-Substanz) · fliegende Inseln + start_plattform = Welt-Substanz.
 
-**Abschluss:** 15 ✔ = das Wort des Schöpfers über Scope/Ship. Optional danach:
+**Abschluss:** 18 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Optional danach:
 `npm run look-golden -- --mint` auf dem Schöpfer-Holz — das Golden bewacht ab dann jeden Push.
