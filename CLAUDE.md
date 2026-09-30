@@ -71,45 +71,41 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.493.0 — die Ziellinie steht: v1.0 = die ersten fünf Minuten)
-
-**30.09., V18.492 — der Boden wieder fest + eine Ziellinie (aus der Gesamt-Analyse von 2171
-Commits):** das Projekt hatte keine Produkt-Ziellinie mehr, der KI-Co-Schöpfer war aus dem
-Erlebnis gefallen, und die September-Welle (2 „Grok Bot"-Sammel-Commits, V18.491.52–.637) hob
-~800 Lab-Kulissen-Zahlen (Label-Größen, Fenster-Rechtecke, Drum-Parameter) als `*_GESETZ` mit
-stillem Ersatzwert in die Kerne — 0 davon las die Welt, die Frozen-Liste wuchs auf 463 Zeilen
-Stempel, CI war seit 26.07. rot. Geschnitten:
-- Schmiede-, Klang- und Tetrapoda-Labor + Kern auf den Stand vor der Hebung (−7 300 Zeilen);
-  die EINE echte Naht blieb: `klang-core.colorExt` (Akkord-Breite aus der Genre-Farbe, Lab UND
-  Welt lesen sie). Echte Grok-Arbeit im Stamm (Fachwerk-Fit, Grammatik-Fit, Tor-Flügel,
-  Genesis-Ring, Wald-Ökologie in phyto-core) bleibt und ist gate-geprüft.
-- Der Gras-Abschied GANZ: Halm-Mesh-Pool, Studio-Halm-Geometrie, Stufen-Tick (jeden Frame ein
-  No-op) physisch raus, 10 Rückkehr-Namen in `gate:altlasten`; die Tests prüfen die neue
-  Wahrheit (Wiese = Parallax-Funktion im Terrain-Albedo, Pfad/Feuchte über das Boden-Grün).
-- Wände: `npm run bump -- x.y.z` setzt ALLE Versions-Träger; die LOGBUCH-WAND in
-  `gate:betriebsgesetz` (kein „Stand-Stempel:", max 40 Zeilen) — die Liste bleibt eine Liste.
-- Fixes: Pointer-Lock-Promise (ungefangene Ablehnung = Seiten-Fehler), Rauch liest das
-  fachwerk-Gesetz fail-closed, toter CI-Schritt `gate:creature-contract` raus.
+## Stand (V18.494.0 — die Ziellinie steht, die Analog-Wette ist gemessen)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
 benutzen/teilen — bei p95 ≤ 33 ms auf dem Schöpfer-Holz (Flugschreiber-Trace). Feature-Stopp
-bis dahin. **Schritt 4 GEBAUT (Code + Headless-Beweis):** DSL-Op `spawn_studio` (Wort → Bauplan
-über `_studioBlueprintForWord` = dieselben Tabellen wie die Werkstatt, EIN Stempel
-`_studioStampFor`, geerdet + nie im Wasser, Position `near_water`); das KI-Prompt lehrt den Op +
-die LIVE-Wörter aller Studios; der Chat-Satz „pflanz mir einen eichenhain am wasser" wirkt auch
-ohne Schlüssel; Claude-Modelle auf der 5er-Generation (effort low + fallbacks). Offen: der echte
-LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
+bis dahin. V18.492 hat den Boden wieder fest gemacht (Grok-Literal-Welle zurück, Gras-Abschied
+ganz, alle Gates grün — Details im Commit). **Schritt 4 GEBAUT (V18.493):** DSL-Op
+`spawn_studio` (Wort → Bauplan über `_studioBlueprintForWord`, EIN Stempel `_studioStampFor`,
+geerdet + nie im Wasser, Position `near_water`); das KI-Prompt lehrt die LIVE-Wörter aller
+Studios; der Satz „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel; Claude-
+Modelle auf der 5er-Generation. Offen: der echte LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
+
+**V18.494 — die Analog-Wette GEMESSEN (echter Renderer, `diag-beweis-e`, Mesh-Stand 19.07. vs.
+HEAD an denselben Bühnen der Mess-Wiese −900/−850):** an der Wolf-Bühne 35 Tsd. statt 527 Tsd.
+Dreiecke und 17 statt 135 Draw-Calls je Bild — ABER nah sichtbar schlechter: Kapsel-Tiere,
+massive Kronen-Dächer, dunkle Box-Häuser, die Halm-Wiese fehlt. Drei echte Fehler dabei geheilt:
+(1) gesetzte Studio-Dinge (Eiche · Tor · Fahrzeug) blieben UNSICHTBAR — der Fit baute ein
+Async-Mesh temporär, sah es leer, brannte nach 8 Versuchen aus (26 von 28 Weltgen-Bauten);
+jetzt passen sie aus der Foundry-Flat (Bäume teilen Schlüssel + Fit mit der Streu); (2) Bake-
+Takte gingen in Listen-Reihenfolge an ferne Altbauten — jetzt NAH zuerst; (3) der Baum-Fit
+nahm 5 Stücke DESSELBEN Stamms und riet die Krone 5× zu klein — jetzt Ketten-Kegel + Kronen-
+Lappen aus den Zweig-Punkten. Linse `diag-arch-feld` (Slot für Eiche + Haus, 0 ausgebrannt).
+**Die Entscheidung liegt beim Schöpfer:** Analog überall (billig, grob) oder HYBRID (nah das
+Studio-Mesh wie bei der Streu-Stufe 0, fern die Analog-Silhouette) — Bilder + Zahlen in
+`docs/abnahme-analog-e.md`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
-KREATUREN/BÄUME/ARCHITEKTUR/STREU ≥ Stufe 1 = Analog-Sätze (Baum = 5 Ast-Kegel + 1 Kronen-
-Ellipsoid) · GRAS = Boden-Funktion · Stufe 0 = echte Geometrie (Anfassen). HYBRID (ehrlich):
-Band-0-Klein-Streu · Deko-Impostor-Ringe · der Avatar. UNGEMESSEN: die Analog-Wende auf echter
-GPU (letzter Schöpfer-Trace 14.07.: 4–12 FPS, vor der Wende).
+KREATUREN/BÄUME/ARCHITEKTUR/STREU ≥ Stufe 1 = Analog-Sätze (Baum = Stamm + Hauptäste als Kegel +
+Kronen-Lappen) · GRAS = Boden-Funktion · Stufe 0 = echte Geometrie (Anfassen). HYBRID (ehrlich):
+Band-0-Klein-Streu · Deko-Impostor-Ringe · der Avatar. OFFEN: ein echter GPU-Trace der
+Analog-Wende auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS, vor der Wende).
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–D Code steht, Bild-Beweise
-offen · E Beweis-Paket (Armlängen-Schüsse + Tris/dc + ein echter GPU-Trace).
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–D Code steht · E gemessen,
+die Wette wartet auf die Entscheidung + den echten GPU-Trace.
 
 ## Architektur (die Karte)
 
@@ -157,6 +153,10 @@ offen · E Beweis-Paket (Armlängen-Schüsse + Tris/dc + ein echter GPU-Trace).
 15. **git ist das Archiv:** kein Doppel-Archiv im Baum — Chronik = Commit-Messages, vollendete
     Pläne fallen (git trägt sie), dauerhafte Lehren = EINE Zeile hier, Offenes = PFLICHT-OFFEN.
     Vor jedem Datei-Schnitt: KONSUM prüfen (Gates/CI/Docs, transitiv), nicht Existenz raten.
+16. **Der Null-Renderer ist für den GANZEN Analog-Pfad blind** (Feld-Fit, Slots, March kehren
+    headless früh zurück) — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`,
+    `diag-beweis-e`). Ein Fit liest eine FERTIGE Quelle (Foundry-Flat), nie ein temporär gebautes
+    Async-Mesh („leer" → ausgebrannt → für immer unsichtbar); Takt-Budgets gehen NAH zuerst.
 
 ## Workflows
 

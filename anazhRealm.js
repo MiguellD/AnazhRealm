@@ -76604,6 +76604,14 @@ class AnazhRealm {
                 ? entry.studioOv
                 : null;
         const ovH = ov ? `:ov:${this._studioOvHash(ov)}` : "";
+        // DIE FOUNDRY-NAHT (30.09., GEMESSEN mit diag-arch-feld): ein gesetztes Studio-Ding
+        // (Baum · Tor · Fahrzeug · Fels) passte bisher über ein TEMPORÄR gebautes Mesh — das
+        // lädt aber asynchron: der Fit sah es leer, riss es sofort wieder ab, und nach 8
+        // Versuchen galt der Bau als aufgegeben → unsichtbar für immer (die gesetzte Eiche,
+        // 26 von 28 Weltgen-Bauten). Jetzt passt es aus der Foundry-Flat, derselben Quelle
+        // wie die Streu; „lädt noch" verbrennt weder Versuch noch Bake-Takt.
+        const fPreset = this._archFoundryPreset(entry);
+        if (fPreset) return this._archFoundryZiegel(entry, fPreset, ovH);
         const key = `aarch:${entry.type}:${entry._lodVariantIndex || 0}${ovH}`;
         if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
         const M = this._archWeltMatrix(entry);
@@ -76638,6 +76646,67 @@ class AnazhRealm {
             return true;
         }
         entry._ziegelGebacken = true; // Erschöpfung (Kapsel-Liste voll) — kein Rückweg
+        return true;
+    }
+
+    // Welche Foundry-Vorlage trägt diesen gesetzten Bau? null = kein Studio-Ding ODER
+    // ein Haus (Häuser passen aus der Fachwerk-Grammatik, ohne Mesh — die bleibt vorn).
+    // Ohne Rezeptbuch (Foundry kalt) zählt die Vorlage trotzdem: die Flat lädt dann
+    // noch, der Eintrag wartet (kein Rückfall auf den Temporär-Mesh-Fit).
+    _archFoundryPreset(entry) {
+        const typ = entry && typeof entry.type === "string" ? entry.type : "";
+        if (!typ || typ.startsWith("haus_") || !this._foundryEnabled()) return null;
+        const preset = this._foundryPresetFor(typ);
+        if (!preset) return null;
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[preset] : null;
+        if (rec && rec.kind === "haus") return null;
+        return preset;
+    }
+
+    // DER FOUNDRY-FIT eines gesetzten Baus (die Naht aus _archZiegelFern): Bäume teilen
+    // Schlüssel UND Fit mit der Streu (`abaum:preset:variant`, _baumKapselFit — Analog B,
+    // ein gesetzter Eichen-Hain dedupt auf denselben Satz wie der Wald), alles andere
+    // passt als Box-Satz (_archBoxFit — Analog C) über eine transiente Gruppe aus den
+    // Flat-Leaves (nie in der Szene, keine GPU-Arbeit). Die Flat lädt noch → warten
+    // OHNE Versuch und OHNE Bake-Takt; `false` (die Foundry kann das nicht) → ehrlich
+    // aufgegeben. Gestempelt (ovH): eigener Satz, die Flat routet das ov selbst.
+    _archFoundryZiegel(entry, preset, ovH) {
+        const wm = this._weltMarchEnsure();
+        if (!wm) return false;
+        const baum = this._foundryPresetIsTree(preset);
+        const variant = this._foundryVariantFor(entry.seed);
+        const key = baum ? `abaum:${preset}:${variant}${ovH}` : `aarch:${entry.type}:f${variant}${ovH}`;
+        let bf = null;
+        if (!wm.kapselCache.has(key)) {
+            bf = this._foundryFlattenFor(entry, preset, 1);
+            if (bf === false) {
+                entry._ziegelGebacken = true;
+                return true;
+            }
+            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return false; // lädt noch — der nächste Tick fragt wieder, nichts verbrannt
+            if (!this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
+        }
+        const handle = this._weltKapselSpawn(key, this._archWeltMatrix(entry), () => {
+            if (baum) return this._baumKapselFit(bf);
+            const g = new THREE.Group();
+            for (const lf of bf.leaves) {
+                if (!lf || !lf.geom) continue;
+                const m = new THREE.Mesh(lf.geom, lf.mat);
+                m.matrixAutoUpdate = false;
+                if (lf.localMatrix) m.matrix.copy(lf.localMatrix);
+                g.add(m);
+            }
+            return this._archBoxFit(g, new THREE.Matrix4());
+        });
+        if (handle) {
+            entry._ziegelGebacken = true;
+            entry._ziegelSlot = handle;
+            return true;
+        }
+        // Fit leer ODER Kapsel-Liste voll: begrenzt wiederversuchen (die Flat war da).
+        entry._ziegelVersuche = (entry._ziegelVersuche || 0) + 1;
+        if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
         return true;
     }
 
@@ -77295,8 +77364,14 @@ class AnazhRealm {
         return kand.slice(0, 6);
     }
 
-    // Analog-B Slice 2 — Grammatik-Fit: Top-N Kegelstuempfel (vol~len*((r0+r1)/2)^2)
-    // + 1 Kronen-Ellipsoid. Segmente im Template-Raum; Scale aus Flat-localMatrix.
+    // Analog-B — der GRAMMATIK-FIT: die Gestalt aus der Wuchs-Grammatik GELESEN, nie geraten.
+    // GEMESSEN 30.09. (Eiche, Welt-Scale 3.41): der alte Fit nahm die 5 volumen-größten
+    // EINZEL-Segmente — das waren die 5 untersten Stücke DESSELBEN Stamms (je 0.75 m, Stamm
+    // endete bei 3.7 m, kein einziger Ast) — und riet die Krone als 4.2 × Stammradius
+    // (Halbbreite 2.1 m gegen ~10 m echte Krone, Boden bei 5.5 m → sichtbare Lücke über dem
+    // Stummel). Jetzt: zusammenhängende Segmente gleicher Tiefe sind EINE Kette → EIN Kegel
+    // (Stamm Fuß→Spitze + die volumen-größten Hauptäste), die Krone sind LAPPEN über den
+    // Zweig-Punkten je Hauptast (plus Blatt-Saum). Template-Raum × Flat-Scale.
     _baumGrammatikFit(gram, bf) {
         if (!gram || !Array.isArray(gram.segs) || !gram.segs.length) return null;
         let sx = 1,
@@ -77310,70 +77385,122 @@ class AnazhRealm {
         }
         const ba = gram.barkA || { r: 0.32, g: 0.22, b: 0.13 };
         const bb = gram.barkB || { r: 0.22, g: 0.14, b: 0.08 };
-        const maxD = Math.max(1, ...gram.segs.map((sg) => (sg && sg.depth) || 0));
-        const kand = [];
-        for (const sg of gram.segs) {
-            if (!sg || !sg.p0 || !sg.p1) continue;
-            const ax = sg.p0[0] * sx,
-                ay = sg.p0[1] * sy,
-                az = sg.p0[2] * sz;
-            const bx = sg.p1[0] * sx,
-                by = sg.p1[1] * sy,
-                bz = sg.p1[2] * sz;
-            const r0 = Math.max(0.005, (sg.r0 || 0) * Math.max(sx, sz));
-            const r1 = Math.max(0.0, (sg.r1 || 0) * Math.max(sx, sz));
-            const dx = bx - ax,
-                dy = by - ay,
-                dz = bz - az;
-            const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (len < 1e-4) continue;
-            const rm = 0.5 * (r0 + r1);
-            const vol = len * rm * rm;
-            const t = Math.min(1, Math.max(0, (sg.depth || 0) / maxD));
-            const farbe = {
-                r: ba.r + (bb.r - ba.r) * t,
-                g: ba.g + (bb.g - ba.g) * t,
-                b: ba.b + (bb.b - ba.b) * t,
-            };
-            kand.push({
+        const segs = gram.segs.filter((sg) => sg && Array.isArray(sg.p0) && Array.isArray(sg.p1));
+        if (!segs.length) return null;
+        // KETTEN: ein Segment setzt das vorige fort, wenn es an dessen Ende beginnt
+        // (gleiche Tiefe). Schlüssel auf 1e-4 gerundet (die Grammatik schreibt p1 → p0 exakt).
+        const k3 = (p) => Math.round(p[0] * 1e4) + "," + Math.round(p[1] * 1e4) + "," + Math.round(p[2] * 1e4);
+        const nachStart = new Map();
+        const hatVorgaenger = new Set();
+        for (let i = 0; i < segs.length; i++) nachStart.set((segs[i].depth || 0) + "|" + k3(segs[i].p0), i);
+        for (let i = 0; i < segs.length; i++) {
+            const j = nachStart.get((segs[i].depth || 0) + "|" + k3(segs[i].p1));
+            if (j !== undefined && j !== i) hatVorgaenger.add(j);
+        }
+        const ketten = [];
+        for (let i = 0; i < segs.length; i++) {
+            if (hatVorgaenger.has(i)) continue;
+            const erst = segs[i];
+            let letzt = erst,
+                vol = 0,
+                n = 0;
+            for (let c = i, guard = 0; c !== undefined && guard < segs.length; guard++) {
+                const sg = segs[c];
+                const len = Math.hypot(sg.p1[0] - sg.p0[0], sg.p1[1] - sg.p0[1], sg.p1[2] - sg.p0[2]);
+                const rm = 0.5 * ((sg.r0 || 0) + (sg.r1 || 0));
+                vol += len * rm * rm;
+                letzt = sg;
+                n++;
+                c = nachStart.get((sg.depth || 0) + "|" + k3(sg.p1));
+            }
+            ketten.push({ erst, letzt, vol, n, depth: erst.depth || 0 });
+        }
+        const rS = Math.max(sx, sz);
+        const kegel = (kt) => {
+            const t = Math.min(1, kt.depth / 2);
+            return {
                 cone: true,
-                a: new THREE.Vector3(ax, ay, az),
-                b: new THREE.Vector3(bx, by, bz),
-                r0,
-                r1,
-                farbe,
-                vol,
+                a: new THREE.Vector3(kt.erst.p0[0] * sx, kt.erst.p0[1] * sy, kt.erst.p0[2] * sz),
+                b: new THREE.Vector3(kt.letzt.p1[0] * sx, kt.letzt.p1[1] * sy, kt.letzt.p1[2] * sz),
+                r0: Math.max(0.005, (kt.erst.r0 || 0) * rS),
+                r1: Math.max(0.0, (kt.letzt.r1 || 0) * rS),
+                farbe: { r: ba.r + (bb.r - ba.r) * t, g: ba.g + (bb.g - ba.g) * t, b: ba.b + (bb.b - ba.b) * t },
+                vol: kt.vol * rS * rS * sy,
+            };
+        };
+        const stamm = ketten.filter((k) => k.depth === 0).sort((p, q) => q.vol - p.vol)[0];
+        const aeste = ketten.filter((k) => k.depth === 1).sort((p, q) => q.vol - p.vol);
+        const out = [];
+        if (stamm) out.push(kegel(stamm));
+        // DIE KRONE ALS LAPPEN (GEMESSEN 30.09. im echten Render: EINE maßgetreue Hülle um
+        // eine luftige Krone ist aus 15 m ein massives dunkles Ei, das zwei Drittel des Bildes
+        // füllt). Die Zweig-Punkte (Tiefe ≥ 2, sonst 1) gehen an das nächste Hauptast-Ende;
+        // je Cluster EIN Ellipsoid → Lücken zwischen den Lappen, eine gegliederte Silhouette.
+        // Budget 6: Stamm + 2 Hauptäste + bis zu 3 Lappen (ohne Äste: eine Hülle).
+        const LAPPEN = Math.min(3, aeste.length);
+        for (let i = 0; i < aeste.length && out.length < 6 - Math.max(1, LAPPEN); i++) out.push(kegel(aeste[i]));
+        if (!out.length) return null;
+        const huelleTiefe = segs.some((sg) => (sg.depth || 0) >= 2) ? 2 : 1;
+        const punkte = [];
+        for (const sg of segs)
+            if ((sg.depth || 0) >= huelleTiefe) {
+                punkte.push([sg.p0[0] * sx, sg.p0[1] * sy, sg.p0[2] * sz]);
+                punkte.push([sg.p1[0] * sx, sg.p1[1] * sy, sg.p1[2] * sz]);
+            }
+        if (!punkte.length && stamm) {
+            const t = stamm.letzt.p1;
+            punkte.push([t[0] * sx, t[1] * sy * 0.5, t[2] * sz], [t[0] * sx, t[1] * sy, t[2] * sz]);
+        }
+        if (!punkte.length) return out;
+        const anker = aeste.slice(0, LAPPEN).map((k) => [k.letzt.p1[0] * sx, k.letzt.p1[1] * sy, k.letzt.p1[2] * sz]);
+        const cluster = anker.length >= 2 ? anker.map(() => []) : [punkte];
+        if (anker.length >= 2)
+            for (const q of punkte) {
+                let best = 0,
+                    bd = Infinity;
+                for (let j = 0; j < anker.length; j++) {
+                    const d = (q[0] - anker[j][0]) ** 2 + (q[1] - anker[j][1]) ** 2 + (q[2] - anker[j][2]) ** 2;
+                    if (d < bd) {
+                        bd = d;
+                        best = j;
+                    }
+                }
+                cluster[best].push(q);
+            }
+        const ctype = (gram.crown && gram.crown.type) || "ellipsoid";
+        const leaf = ctype === "cone" ? { r: 0.18, g: 0.32, b: 0.14 } : { r: 0.22, g: 0.38, b: 0.16 };
+        for (const cl of cluster) {
+            if (cl.length < 4 || out.length >= 6) continue;
+            let x0 = Infinity,
+                y0 = Infinity,
+                z0 = Infinity,
+                x1 = -Infinity,
+                y1 = -Infinity,
+                z1 = -Infinity;
+            for (const q of cl) {
+                if (q[0] < x0) x0 = q[0];
+                if (q[1] < y0) y0 = q[1];
+                if (q[2] < z0) z0 = q[2];
+                if (q[0] > x1) x1 = q[0];
+                if (q[1] > y1) y1 = q[1];
+                if (q[2] > z1) z1 = q[2];
+            }
+            // Der Blatt-Saum ist ASYMMETRISCH (gemessen an der Mesh-Hülle): die Karten
+            // ragen seitlich + oben über die Zweig-Enden, nach unten kaum.
+            const saum = Math.max(0.3, 0.1 * Math.max(x1 - x0, z1 - z0));
+            const unten = y0 - 0.2,
+                oben = y1 + saum * 0.8;
+            const hx = Math.max(0.05, (x1 - x0) / 2 + saum),
+                hy = Math.max(0.05, (oben - unten) / 2),
+                hz = Math.max(0.05, (z1 - z0) / 2 + saum);
+            out.push({
+                ellipsoid: true,
+                c: new THREE.Vector3((x0 + x1) / 2, (unten + oben) / 2, (z0 + z1) / 2),
+                h: new THREE.Vector3(hx, hy, hz),
+                farbe: leaf,
+                vol: hx * hy * hz,
             });
         }
-        if (!kand.length) return null;
-        kand.sort((p, q) => q.vol - p.vol);
-        const out = kand.slice(0, 5);
-        const H = Math.max(0.5, (gram.height || 4) * sy);
-        const tR = Math.max(0.05, (gram.trunkR || 0.15) * Math.max(sx, sz));
-        const ctype = (gram.crown && gram.crown.type) || "ellipsoid";
-        let cy = H * 0.72;
-        let hx = tR * 4.2,
-            hy = H * 0.28,
-            hz = tR * 4.2;
-        if (ctype === "cone" || ctype === "column") {
-            hx = tR * (ctype === "column" ? 2.4 : 3.2);
-            hy = H * 0.34;
-            hz = hx;
-            cy = H * 0.68;
-        } else if (ctype === "dome") {
-            hx = tR * 5.0;
-            hy = H * 0.22;
-            hz = hx;
-            cy = H * 0.78;
-        }
-        const leaf = ctype === "cone" ? { r: 0.18, g: 0.32, b: 0.14 } : { r: 0.22, g: 0.38, b: 0.16 };
-        out.push({
-            ellipsoid: true,
-            c: new THREE.Vector3(0, cy, 0),
-            h: new THREE.Vector3(Math.max(0.05, hx), Math.max(0.05, hy), Math.max(0.05, hz)),
-            farbe: leaf,
-            vol: hx * hy * hz,
-        });
         return out.slice(0, 6);
     }
 
@@ -81304,6 +81431,8 @@ class AnazhRealm {
         // Das CULLEN (fern → frei) läuft weiter (billig, gibt Speicher frei).
         const budget = this.state._frameOverBudget ? 0 : Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
+        const fernOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
+        const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
@@ -81342,8 +81471,22 @@ class AnazhRealm {
                 }
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
-                this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie); aktiviert den Slot, wenn er lebt
+                // NAH ZUERST (30.09., GEMESSEN): die Bake-Takte (4/s über Budget) gingen in
+                // Listen-Reihenfolge an die ältesten, fernsten Bauten — ein frisch gesetzter
+                // Bau auf Platz 98 von 100 bekam in 150 Takten keinen Versuch. Lebende Slots
+                // aktivieren sofort (billig); die noch ungebackenen fernen warten auf den
+                // Gang NACH der Liste, dort nach Distanz sortiert.
+                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);
+                else {
+                    entry._ziegelD2 = distSq;
+                    fernOffen.push(entry);
+                }
             }
+        }
+        if (fernOffen.length) {
+            fernOffen.sort((a, b) => a._ziegelD2 - b._ziegelD2);
+            for (const entry of fernOffen) this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie)
+            fernOffen.length = 0;
         }
         // DAS NEUE KLEID — der Foundry-Drain: baut kalte Foundry-Einträge + HEBT klassisch
         // platzierte (vor Studio-ready gespawnte) auf das Studio-Asset. Budget-gedeckelt (≤4/Tick,
@@ -98148,7 +98291,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.493.0";
+AnazhRealm.VERSION = "18.494.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
