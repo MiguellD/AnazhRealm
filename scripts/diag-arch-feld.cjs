@@ -8,7 +8,7 @@
 // den ganzen Analog-Pfad blind) auf der Mess-Wiese −900/−850 und prüft:
 //   A  gesetzte Eiche UND Haus haben binnen 200 Takten ihren Feld-Slot
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
-//   C  die Eiche teilt ihren Kapsel-Satz mit der Streu (Schlüssel abaum:eiche:<v>)
+//   C  die Eiche hat ihren Fern-Satz auf dem Baum-Schlüssel (abaum:eiche:<v>)
 //   D  das Feld liest dasselbe Licht wie das Mesh: neutrale Feld-Box vs. MeshStandard-Box am
 //      selben Ort, Luminanz-Verhältnis über die gemeinsame Maske im Band 0,8–1,25
 // plus je ein Schuss (artifacts/beweis-e/arch-feld-*.png) fürs Auge.
@@ -234,7 +234,7 @@ const SCHUSS_FN = async (kam) => {
     console.log(
         `${Bk ? "✅" : "❌"} B  Foundry-Bauten: ${res.foundryN} · mit Slot ${res.mitSlot} · ausgebrannt ${res.ausgebrannt}`
     );
-    console.log(`${C ? "✅" : "❌"} C  die Eiche teilt den Kapsel-Satz der Streu (abaum:eiche:<v>)`);
+    console.log(`${C ? "✅" : "❌"} C  die Eiche hat ihren Fern-Satz auf dem Baum-Schlüssel (abaum:eiche:<v>)`);
     const kam = await page.evaluate(() => {
         const r = window.anazhRealm;
         const pm = r.state.playerMesh.position;

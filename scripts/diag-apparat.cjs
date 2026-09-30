@@ -92,11 +92,11 @@ function countToString(src) {
 }
 
 // V18.462 — DER typeof-RATCHET (ultraguss U1-Folge, die Voll-Wanderung ist
-// tabellen-getrieben offen): 891 namens-verankerte `typeof … === "function"`-
+// tabellen-getrieben offen): 890 namens-verankerte `typeof … === "function"`-
 // Existenz-Proben leben im Apparat. Der Bestand darf NUR SINKEN — jede neue
 // Probe liest den Anker-Katalog (window.__anker) oder beweist KONSUM
 // (window.__consumes); wandert eine Probe, sinkt die Zahl hier mit.
-const FROZEN_TYPEOF = 891;
+const FROZEN_TYPEOF = 890;
 
 function countTypeof(src) {
     return (stripComments(src).match(/typeof [^=\n]{1,80}=== "function"/g) || []).length;
