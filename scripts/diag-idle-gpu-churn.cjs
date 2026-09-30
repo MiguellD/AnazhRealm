@@ -94,9 +94,19 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
         if (cam && pm) { cam.position.set(pm.position.x, pm.position.y + 1.6, pm.position.z); cam.lookAt(pm.position.x + 30, pm.position.y + 1, pm.position.z); cam.updateMatrixWorld(true); }
         // Warmup: Env setzen + viele Frames + ein paar Game-Ticks → ALLE Steady-State-Pipelines compilen
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
-        for (let i = 0; i < 10; i++) { try { r._gameLoopTick(performance.now()); } catch (_e) {} try { r._loopRender(performance.now()); } catch (_e) {} }
         const tot = () => window.__cc.gpuPipeline + window.__cc.glLink;
-        return { backend, warmupCompiles: tot() };
+        const frame = () => { try { r._gameLoopTick(performance.now()); } catch (_e) {} try { r._loopRender(performance.now()); } catch (_e) {} };
+        for (let i = 0; i < 10; i++) frame();
+        // DER DAUERZUSTAND, nicht die Uhr (30.09., CI-Lauf 36654871232: 10 Idle-Compiles auf dem
+        // langsamen Runner): nach den 10 Pflicht-Frames weiter wärmen, bis 8 Frames in Folge
+        // NICHTS kompilieren (höchstens 80) — Erst-Compile-Nachzügler (nachgeladene LOD-/Foundry-
+        // Varianten) landen so im Warmup, nicht im Mess-Fenster. Echter Churn kompiliert JEDEN
+        // Frame, erreicht die Ruhe nie und fällt im Idle-Fenster unverändert rot.
+        const nachStart = tot();
+        let ruhig = 0, extra = 0;
+        const t0 = performance.now(); // Wand-Frist 120 s: unter Last bleibt der evaluate unter protocolTimeout
+        while (ruhig < 8 && extra < 80 && performance.now() - t0 < 120000) { const v = tot(); frame(); extra++; ruhig = tot() === v ? ruhig + 1 : 0; }
+        return { backend, warmupCompiles: tot(), nachzuegler: tot() - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 };
     });
     if (setup.err) { await browser.close(); server.close(); console.error("⛔ LINSE NICHT LAUFFÄHIG:", setup.err); process.exit(1); }
     if (setup.warmupCompiles === 0) { await browser.close(); server.close(); console.error("⛔ LINSE UNGÜLTIG: 0 Warmup-Compiles → der Zähler greift nicht (kein Compiler gewrappt) → die Linse wäre blind grün."); process.exit(1); }
@@ -133,7 +143,7 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
     console.log("===== STEHENDE LINSE — Idle/Env-GPU-Pipeline-Churn (echter Renderer) =====\n");
     if (pageErr) { console.error("⛔ Page-Error während des Laufs:", pageErr); process.exit(1); }
     if (regen.err) { console.error("⛔ LINSE NICHT LAUFFÄHIG:", regen.err); process.exit(1); }
-    console.log(`  Backend: ${setup.backend}  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}\n`);
+    console.log(`  Backend: ${setup.backend}  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}  ·  davon Nachzügler bis zur Ruhe: ${setup.nachzuegler} in ${setup.warmupExtra} Extra-Frames${setup.ruhe ? "" : " (RUHE NIE ERREICHT)"}\n`);
     const idleOk = idle <= IDLE_THRESHOLD;
     const regenOk = regen.compiles <= REGEN_THRESHOLD;
     console.log(`  CHECK A — reines Idle (16 Frames):      ${idle} Recompiles   (Schwelle ≤${IDLE_THRESHOLD})  ${idleOk ? "✅" : "❌ CHURN"}`);
