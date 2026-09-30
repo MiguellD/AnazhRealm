@@ -20867,17 +20867,17 @@ class AnazhRealm {
         return !!(u && u._kzNah !== true && (u._kzGlieder || u._kzVersuch));
     }
 
-    // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): die Strähnen zeichnen nur, solange ihre
-    // projizierte Breite FELL_BILDSCHIRM.pxMin erreicht — darunter ändern sie kein Pixel mehr (gemessen), das Tier
-    // tragen Körper-Fell + FELL_LOOK. Die Grenze folgt Bildhöhe, Sichtfeld und Tiergröße (jedes Holz, jede
-    // Auflösung); Hysterese gegen Flackern, geschaltet wird nur `visible`. Gemessen 30.09.: Strähnen = 205k von
-    // 333k Dreiecken eines Wolfs.
+    // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (seit V18.497 die Schalen, dazu
+    // Rest-Strähnen wie der Nasenrücken) zeichnet nur, solange seine projizierte Breite FELL_BILDSCHIRM.pxMin
+    // erreicht — darunter trägt die Haut mit FELL_LOOK das Tier. Die Grenze folgt Bildhöhe, Sichtfeld und
+    // Tiergröße (jedes Holz, jede Auflösung); Hysterese gegen Flackern, geschaltet wird nur `visible`.
     _fellBildschirmGesetz(creature, tB) {
         if (!tB.straehnen) {
             tB.straehnen = [];
             tB.wrap.traverse((o) => {
                 const kl = o.isMesh && o.userData && o.userData.__klasse;
-                if (typeof kl === "string" && kl.indexOf("straehne") === 0) tB.straehnen.push(o);
+                if (typeof kl === "string" && (kl.indexOf("straehne") === 0 || kl === "fellSchale"))
+                    tB.straehnen.push(o);
             });
         }
         if (!tB.straehnen.length) return;
@@ -67946,7 +67946,12 @@ class AnazhRealm {
         // HAAR_LOOK) hier gewoben wird. Der Ton-Anker (mp.color, linear) steht im Key — die Strähnen-Achse ist
         // die Luminanz-Ratio zum Ton; je Gattungs-Ton EIN Material (bounded: Gattungen × 4 Klassen).
         const klasseLook =
-            kind === "fell" || kind === "skin" || kind === "haut" || kind === "hair" || kind.indexOf("straehne") === 0;
+            kind === "fell" ||
+            kind === "fellSchale" ||
+            kind === "skin" ||
+            kind === "haut" ||
+            kind === "hair" ||
+            kind.indexOf("straehne") === 0;
         const key =
             (mp
                 ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
@@ -68034,7 +68039,8 @@ class AnazhRealm {
                 try {
                     const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
                     const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-                    const strand = kind === "hair" || kind.indexOf("straehne") === 0;
+                    const schale = kind === "fellSchale";
+                    const strand = kind === "hair" || kind.indexOf("straehne") === 0 || schale;
                     const L =
                         kind === "skin" || kind === "haut"
                             ? kkC && kkC.HAUT_LOOK
@@ -68057,15 +68063,48 @@ class AnazhRealm {
                                 ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
                                 : null;
                             const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
-                            const sT =
-                                tonL !== null
-                                    ? vcol
-                                          .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                          .div(tonL)
-                                          .sub(wA)
-                                          .div(Math.max(1e-3, 1 - wA))
-                                          .clamp(0.0, 1.0)
-                                    : TSL.float(1.0);
+                            // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
+                            // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
+                            // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
+                            // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
+                            // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
+                            // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
+                            const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
+                            if (schale) {
+                                const t = aS.x;
+                                const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
+                                const zelle = TSL.floor(p);
+                                const h1 = TSL.fract(
+                                    TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453)
+                                );
+                                const h2 = TSL.fract(
+                                    TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
+                                );
+                                const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
+                                    .sub(0.5)
+                                    .mul(0.4);
+                                const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
+                                const radius = aS.y
+                                    .sqrt()
+                                    .mul(0.62)
+                                    .mul(TSL.float(1.0).sub(t.mul(0.75)));
+                                const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
+                                const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
+                                mat.opacityNode = TSL.max(haar, wolle);
+                                mat.alphaTest = 0.5;
+                                const FS = AnazhRealm.FELL_SCHALE;
+                                mat.colorNode = TSL.vec4(vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)), 1.0);
+                            }
+                            const sT = schale
+                                ? aS.x
+                                : tonL !== null
+                                  ? vcol
+                                        .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                        .div(tonL)
+                                        .sub(wA)
+                                        .div(Math.max(1e-3, 1 - wA))
+                                        .clamp(0.0, 1.0)
+                                  : TSL.float(1.0);
                             if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
                                 term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
                             if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
@@ -68078,7 +68117,8 @@ class AnazhRealm {
                             if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
                                 term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
                             // microFur-Sparkle (matFur: hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt kein garantiertes
-                            // uv — das Lokal-Raster (positionLocal × dichte) ersetzt es.
+                            // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
+                            // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
                             const mf = L.microFur;
                             if (
                                 mf &&
@@ -68089,7 +68129,7 @@ class AnazhRealm {
                                 TSL.sin &&
                                 TSL.step
                             ) {
-                                const cell = TSL.floor(TSL.positionLocal.xz.mul(mf.dichte));
+                                const cell = TSL.floor((TSL.positionGeometry || TSL.positionLocal).xz.mul(mf.dichte));
                                 const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
                                 term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
                             }
@@ -68105,8 +68145,9 @@ class AnazhRealm {
                             mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
                         }
                         // Atem-Noise-Displacement der Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier mx_noise, gleiche
-                        // Rausch-Klasse). NUR ungeskinnte Klassen (fell, skin); die haut-SkinnedMesh-Hülle bleibt still
-                        // (positionNode × Skinning-Komposition unbewiesen).
+                        // Rausch-Klasse) auf fell und skin. Die Tier-Haut (fell) ist seit V18.497 geskinnt: r184
+                        // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
+                        // Die haut-Hülle des Menschen bleibt still.
                         const at = L.atem;
                         if (
                             at &&
@@ -68228,6 +68269,9 @@ class AnazhRealm {
             geo.setAttribute("color", new T.BufferAttribute(carr, 3));
         }
         if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
+        // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
+        for (const nm of ["aWurzel", "aSchale"])
+            if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
         if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
@@ -68252,7 +68296,8 @@ class AnazhRealm {
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         }
-        mesh.castShadow = true;
+        // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
+        mesh.castShadow = m.kind !== "fellSchale";
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
         if (AnazhRealm.LOOK_KLASSEN.has(m.kind)) mesh.userData.__klasse = m.kind;
@@ -86204,7 +86249,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.497.0";
+AnazhRealm.VERSION = "18.498.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -90038,13 +90083,18 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: 55, aus: 65 });
 // Die Studio-Material-Klassen, für die der Material-Weber ein Lab-Shader-Gesetz trägt (FELL_LOOK · HAUT_LOOK ·
 // HAAR_LOOK) — die Extraktion reicht genau sie als `kind` durch.
-AnazhRealm.LOOK_KLASSEN = new Set(["fell", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
+AnazhRealm.LOOK_KLASSEN = new Set(["fell", "fellSchale", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
 // Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
 // Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
 // in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse `diag-fell-blick`, 720p, fov 75°): die Strähnen ändern
 // 23 592 px bei 1,5 m · 8 421 bei 3 m · 1 808 bei 6 m · 0 ab 10 m — viele Strähnen unter einem Pixel wirken als
 // Dichte, bis ~0,1 px je Strähne (≈ 8 m bei 720p, ≈ 12 m bei 1080p).
 AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ breiteM: 0.018, pxMin: 0.1, hyst: 0.1 });
+// Die Ton-Rampe der Fell-Schalen (V18.497): der Lab-wurzelAnker 0.12 gilt Strähnen, deren Wurzeln unter
+// anderen Strähnen verschwinden — Schalen zeigen die Unterwolle (t ≈ 0.17–0.34). Gemessen (Fell-Linse 4 m,
+// nur Wolf-Pixel, Haut darunter ≈ 28): 0.12 → 1.0 las 23,5 (−16 %, ein Sprung an der Schwelle des Fell-
+// Bildschirm-Gesetzes) · 0.55 → 1.1 las 28,1 (Parität) · 0.7 → 1.3 las 31,2 (+11 %).
+AnazhRealm.FELL_SCHALE = Object.freeze({ wurzel: 0.55, spitze: 1.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;

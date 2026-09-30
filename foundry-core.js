@@ -2750,10 +2750,8 @@ function __tierMergeGeos(geos) {
     return out;
 }
 
-// Schweif-STRÄHNEN — die Lab-Streu (Kreuz-Quad-Form, getStrandGeo) DETERMINISTISCH
-// (LCG je Segment, nie Math.random — Welt-Substanz-Gesetz) als EIN Geometrie-Block
-// je Segment. Wandert aus dem Stamm hierher: die Pipe ist die eine Bau-Stelle.
-// Ein Strähnen-BLOCK aus einer Streu-Spec: n Strähnen über dem Ellipsoid
+// Ein Strähnen-BLOCK aus einer Streu-Spec (die Haar-Streu des Menschen; deterministischer LCG, nie
+// Math.random — Welt-Substanz-Gesetz): n Strähnen über dem Ellipsoid
 // (Lab-Mathe verbatim: phi/theta-Streu, Richtungs-Jitter, Längen-Quantisierung),
 // Kreuz-Quads mit WURZEL→SPITZE-Farbverlauf als Vertex-Daten (der Lab-Shader
 // mischte fast-schwarz→Ton über aStrandY — hier reist es als Farbe, kein Shader).
@@ -2847,62 +2845,6 @@ function __streuGeo(row, seed, tonRGB) {
     return geo;
 }
 
-function __tierStraehnenGeo(segR, i, Hh) {
-    let s = (9301 + i * 49297) >>> 0;
-    const rnd = () => {
-        s = (s * 1103515245 + 12345) >>> 0;
-        return s / 4294967296;
-    };
-    const pos = [];
-    const idx = [];
-    const q = new THREE.Quaternion();
-    const AB = new THREE.Vector3(0, -1, 0);
-    const d = new THREE.Vector3();
-    const v = new THREE.Vector3();
-    const n = (28 - i * 2) * 9;
-    let sN = 0;
-    for (let j = 0; j < n; j++) {
-        const phi = rnd() * Math.PI;
-        const theta = rnd() * Math.PI * 2;
-        const dx = (rnd() - 0.5) * 0.25;
-        const dy = (rnd() - 0.5) * 0.15;
-        const dz = (rnd() - 0.5) * 0.25;
-        const qr = rnd();
-        if (Math.cos(phi) < -0.28) continue;
-        const px = segR * 0.95 * Math.sin(phi) * Math.cos(theta);
-        const py = segR * 1.18 * Math.cos(phi);
-        const pz = segR * 1.18 * Math.sin(phi) * Math.sin(theta) - 0.048 * Hh;
-        d.set(dx, -0.12 + dy, -0.92 + dz).normalize();
-        q.setFromUnitVectors(AB, d);
-        const l = Math.round((0.032 - i * 0.003 + qr * 0.03) / 0.004) * 0.004;
-        if (l <= 0) continue;
-        const w = 0.0216,
-            wt = 0.0078;
-        const ecken = [
-            [-w, 0, 0],
-            [w, 0, 0],
-            [wt, -l, 0],
-            [-wt, -l, 0],
-            [0, 0, -w],
-            [0, 0, w],
-            [0, -l, wt],
-            [0, -l, -wt],
-        ];
-        const b = sN * 8;
-        for (const e of ecken) {
-            v.set(e[0], e[1], e[2]).applyQuaternion(q);
-            pos.push(v.x + px, v.y + py, v.z + pz);
-        }
-        idx.push(b, b + 1, b + 2, b, b + 2, b + 3, b + 4, b + 5, b + 6, b + 4, b + 6, b + 7);
-        sN++;
-    }
-    if (!sN) return null;
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    geo.setIndex(idx);
-    geo.computeVertexNormals();
-    return geo;
-}
 
 // ── DIE HÜLLEN-MASCHINE DES OFENS (V18.497 — ein Gesetz für Mensch UND Tier): Feld → Surface-Nets
 // (koerper-core, verbatim Lab) → Orientierung → 2× Laplace → CLR-Push → Gelenk-Gewichte → Geometrie.
@@ -3089,6 +3031,10 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         } else if (k === "straehneL") {
             c = P.cL != null ? P.cL : 0x8a6a48;
             r = 0.88;
+        } else if (k === "fellSchale") {
+            // Die Schalen tragen ihren Ton als Vertex-Farbe; der Anker (mp.color) ist der Körper-Ton.
+            c = P.cB != null ? P.cB : 0x6b4a2e;
+            r = 0.92;
         } else {
             const kl = TK[k] || TK.dunkel || { c: 0x111111, r: 0.5 };
             c = kl.c;
@@ -3124,6 +3070,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         matCache[k] = m;
         return m;
     };
+    const schweif = [];
     const F = {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
@@ -3143,109 +3090,48 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         richte: (node, dir) => {
             node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
         },
-        fellSchweif: fein
-            ? () => {}
-            : (segG, segR, i) => {
-                  const geo = __tierStraehnenGeo(segR, i, P.size);
-                  if (geo) segG.add(new THREE.Mesh(geo, matFuer("straehne")));
-              },
+        // Schweif-Fell (V18.497): die Schalen tragen es — der Haken meldet das Segment als Fell-Zeile an.
+        fellSchweif: (segG, segR, i) => schweif.push({ node: segG, segR, i }),
     };
     const B = kern.bauTier(F, dials);
-    // DIE FELL-STREU (V18.460): das Look-Gesetz als Zeilen (kern.fellStreu) —
-    // deterministisch gestreut, Farbverlauf als Vertex-Daten, in die Teil-Wirte
-    // (der Gelenk-Guss merged sie je Wirt×Klasse; lod1/fern bleibt kahl-billig).
-    if (!fein && typeof kern.fellStreu === "function") {
-        try {
-            const T = {};
-            for (const nm of [
-                "belly",
-                "lowerAbd",
-                "croup",
-                "pelvis",
-                "throat",
-                "throatLower",
-                "mane",
-                "ribcage",
-                "waist",
-                "flank",
-                "cranium",
-            ]) {
-                const nd = B.teile[nm];
-                if (nd && nd.position) T[nm] = [nd.position.x, nd.position.y, nd.position.z];
-            }
-            if (B.neckStart && B.neckDir) {
-                const nm2 = B.neckStart.clone().add(B.neckDir.clone().multiplyScalar(0.5));
-                T.neckMid = [nm2.x, nm2.y, nm2.z];
-            }
-            const lin2 = (hx) => {
-                const f2 = (v2) => (v2 <= 0.04045 ? v2 / 12.92 : Math.pow((v2 + 0.055) / 1.055, 2.4));
-                return [f2(((hx >> 16) & 255) / 255), f2(((hx >> 8) & 255) / 255), f2((hx & 255) / 255)];
-            };
-            const toene = {
-                B: lin2(typeof P.cB === "number" ? P.cB : 0x6b4a2e),
-                D: lin2(typeof P.cD === "number" ? P.cD : 0x3a2e1c),
-                L: lin2(typeof P.cL === "number" ? P.cL : 0xc0a060),
-            };
-            const rows = kern.fellStreu(P, B.masse, T) || [];
-            // FELL=FLÄCHE (T4): die Gesetz-Zeilen tragen ABSOLUTE Strähnen-Zahlen,
-            // getunt an der Gattungs-BASIS-Größe — die Haut wächst aber ×(size/basis)².
-            // Der Bäcker (der EINE Chokepoint beider Scheduler) skaliert jede
-            // Streu-MENGE mit dem Flächen-Verhältnis (Deckel ×16 = Tri-Budget);
-            // Default-Guss (size == basis) bleibt byte-identisch (fellF === 1).
-            const basisSize =
-                dials0 && typeof dials0.size === "number" && dials0.size > 0 ? dials0.size : P.size || 2.4;
-            const fellF = Math.min(16, Math.max(1 / 16, Math.pow((P.size || basisSize) / basisSize, 2)));
-            let seed = 4242;
-            const streue = (row, ton) => {
-                const node = B.teile[row.teil];
-                seed++;
-                if (!node) return;
-                if (fellF !== 1 && row.n > 0)
-                    row = Object.assign({}, row, { n: Math.max(1, Math.round(row.n * fellF)) });
-                const geo = __streuGeo(row, seed, toene[ton] || toene.B);
-                if (!geo) return;
-                const klass = ton === "D" ? "straehneD" : ton === "L" ? "straehneL" : "straehne";
-                node.add(new THREE.Mesh(geo, matFuer(klass)));
-            };
-            const H2 = (B.masse && B.masse.H) || 2.4;
-            const bX2 = (B.masse && B.masse.bX) || 1;
-            for (const row of rows) {
-                if (row.art === "deck") {
-                    // Der Pipe-Deck: die Gesetz-Dichten über die Rumpf-Teil-Ellipsoide
-                    // (die Wirte-Liste der Zeile trägt die Verteilung).
-                    for (const [wirt, anteil] of row.wirte || []) {
-                        const t3 = T[wirt];
-                        if (!t3) continue;
-                        const basis = {
-                            teil: "wolf",
-                            c: t3,
-                            r: 0.3 * H2 * Math.sqrt(anteil * 3),
-                            sc: [bX2, 0.95, 1.15],
-                            d: row.d,
-                        };
-                        streue(
-                            Object.assign({ n: Math.round(row.uDens * anteil), l: row.underL, t: 0.008 }, basis),
-                            "D"
-                        );
-                        streue(
-                            Object.assign({ n: Math.round(row.gDens * anteil), l: row.guardL, t: 0.006 }, basis),
-                            "B"
-                        );
-                        streue(
-                            Object.assign({ n: Math.round(row.gDens * anteil * row.hellQuote) }, basis, {
-                                l: 0.06,
-                                t: 0.008,
-                            }),
-                            "L"
-                        );
-                    }
-                    continue;
-                }
-                streue(row, row.ton);
-            }
-        } catch (_eF) {
-            /* Streu optional — der Baum bleibt heil */
+    // DAS FELL-GESETZ (V18.460 Zeilen · V18.497 Schalen): kern.fellStreu liefert die Streu-Zeilen (Teil ·
+    // Ellipsoid · Legerichtung · Zahl · Länge · Ton); die FELL-SCHALEN auf der Tier-Haut konsumieren sie je
+    // Haut-Punkt (__tierFellSchalen). Die einzeln gestreuten Strähnen sind gefallen (205k Dreiecke je Wolf,
+    // im Bild Flecken statt Pelz). Stufe 1 bleibt kahl (Silhouette + Farbe).
+    let fell = null;
+    if (!fein) {
+        if (typeof kern.fellStreu !== "function") throw new Error("FELL: kern.fellStreu fehlt (fail-closed)");
+        const T = {};
+        for (const nm of [
+            "belly",
+            "lowerAbd",
+            "croup",
+            "pelvis",
+            "throat",
+            "throatLower",
+            "mane",
+            "ribcage",
+            "waist",
+            "flank",
+            "cranium",
+        ]) {
+            const nd = B.teile[nm];
+            if (nd && nd.position) T[nm] = [nd.position.x, nd.position.y, nd.position.z];
         }
+        if (B.neckStart && B.neckDir) {
+            const nm2 = B.neckStart.clone().add(B.neckDir.clone().multiplyScalar(0.5));
+            T.neckMid = [nm2.x, nm2.y, nm2.z];
+        }
+        const lin2 = (hx) => {
+            const f2 = (v2) => (v2 <= 0.04045 ? v2 / 12.92 : Math.pow((v2 + 0.055) / 1.055, 2.4));
+            return [f2(((hx >> 16) & 255) / 255), f2(((hx >> 8) & 255) / 255), f2((hx & 255) / 255)];
+        };
+        const toene = {
+            B: lin2(typeof P.cB === "number" ? P.cB : 0x6b4a2e),
+            D: lin2(typeof P.cD === "number" ? P.cD : 0x3a2e1c),
+            L: lin2(typeof P.cL === "number" ? P.cL : 0xc0a060),
+        };
+        fell = { rows: kern.fellStreu(P, B.masse, T) || [], T, toene, schweif };
     }
     const root = B.teile.wolf;
     const namen = [
@@ -3282,7 +3168,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         nodeName.set(seg, nm);
         tailNamen.push(nm);
     });
-    const skinJoints = __tierHaut(kern, B, root, nodeName, fein, P, matFuer);
+    const skinJoints = __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell);
     return __bakeGelenkBaum(root, "wolf", nodeName, fein, {
         art: presetId,
         tailSegs: tailNamen,
@@ -3314,7 +3200,7 @@ var TIER_HAUT = Object.freeze({
     blend: 0.035, // × H (smin-Verrundung der Nähte)
     eW: 0.03, // × H (Gewichts-Weiche: 1/(d² + eW²)²)
 });
-function __tierHaut(kern, B, root, nodeName, fein, P, matFuer) {
+function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const hk =
         kern && typeof kern.surfaceNets === "function"
             ? kern
@@ -3498,7 +3384,224 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer) {
     if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
     const mesh = new THREE.Mesh(geo, matFuer("fell"));
     root.add(mesh); // Root-lokal gebacken (Identität)
+    if (fell) {
+        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, H);
+        root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
+    }
     return skinJoints;
+}
+
+// ── DAS SCHALEN-FELL (V18.497): N versetzte Schalen über einer gröberen Haut aus DEMSELBEN Feld (jeder
+// zweite Rasterpunkt — keine neue Füllung), gleich geskinnt: LBS biegt jede Schale samt Legerichtung mit.
+// Je Haut-Punkt mischt das Fell-Gesetz Länge, Ton und Legerichtung: jede fellStreu-Zeile (und jedes
+// Schweif-Segment) wirkt auf ihrer Streu-Schale (Ellipsoid-Abstand e ≈ 1, Abfall über `reich`), gewichtet
+// mit ihrer Strähnen-Dichte je Fläche. Die Schale s liegt bei (s+1)/N der Länge, zur Spitze hin mit der
+// Legerichtung gekämmt (Lean ∝ t²). Attribute: aSchale (t = 0..1 innen → außen · lokale Dichte relativ zum
+// Median · Haar-Zellen je Einheit = √Median — das Raster der Lab-Strähnen) · aWurzel (der Bind-Punkt
+// der Haar-Wurzel — die Haar-Maske liest ihn, damit jedes Haar EINE Säule über alle Schalen bleibt) ·
+// color (der gemischte Ton, linear). Das Welt-Material (Klasse fellSchale) maskiert und schattiert.
+var TIER_FELL = Object.freeze({
+    schalen: 6,
+    basisVox: 2, // Schalen-Basis = jeder basisVox-te Rasterpunkt der Haut
+    clr: 0.5, // × vox: die Basis liegt knapp über der Haut
+    reich: 0.6, // Zeilen-Abfall in Ellipsoid-Einheiten um e = 1
+    kamm: 0.6, // Lean zur Spitze (× Länge)
+});
+function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, H) {
+    const s = TIER_FELL.basisVox;
+    const nx2 = Math.floor((nx - 1) / s) + 1,
+        ny2 = Math.floor((ny - 1) / s) + 1,
+        nz2 = Math.floor((nz - 1) / s) + 1;
+    const f2 = new Float32Array(nx2 * ny2 * nz2);
+    for (let k = 0; k < nz2; k++)
+        for (let j = 0; j < ny2; j++)
+            for (let i = 0; i < nx2; i++) f2[i + nx2 * (j + ny2 * k)] = f[i * s + nx * (j * s + ny * k * s)];
+    const basis = __huelleAusFeld(
+        hk,
+        f2,
+        nx2,
+        ny2,
+        nz2,
+        lo,
+        vox * s,
+        0,
+        TIER_FELL.clr * vox,
+        zentren,
+        skinJoints,
+        eW2,
+        kandidaten
+    );
+    if (!basis) throw new Error("FELL: die Schalen-Basis lieferte keine Fläche");
+    // Die Zeilen in den Root-Raum (Ellipsoid-Inverse + Legerichtung).
+    root.updateMatrixWorld(true);
+    const invRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    const zeilen = [];
+    const zeile = (node, c, r, sc, d, n, l, ton) => {
+        if (!(n > 0) || !(l > 0)) return;
+        const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
+        const dw = new THREE.Vector3(d[0], d[1], d[2]).transformDirection(M);
+        const rx = r * sc[0],
+            ry = r * sc[1],
+            rz = r * sc[2];
+        zeilen.push({
+            Mi: Float64Array.from(new THREE.Matrix4().copy(M).invert().elements),
+            c,
+            rx,
+            ry,
+            rz,
+            dw,
+            dichte: n / (rx * ry + ry * rz + rx * rz),
+            l,
+            ton: fell.toene[ton] || fell.toene.B,
+        });
+    };
+    const bX = (B.masse && B.masse.bX) || 1;
+    for (const row of fell.rows) {
+        if (row.art === "deck") {
+            for (const [wirt, anteil] of row.wirte || []) {
+                const t3 = fell.T[wirt];
+                if (!t3) continue;
+                const r = 0.3 * H * Math.sqrt(anteil * 3),
+                    sc = [bX, 0.95, 1.15];
+                zeile(root, t3, r, sc, row.d, row.uDens * anteil, row.underL, "D");
+                zeile(root, t3, r, sc, row.d, row.gDens * anteil, row.guardL, "B");
+                zeile(root, t3, r, sc, row.d, row.gDens * anteil * row.hellQuote, 0.06, "L");
+            }
+            continue;
+        }
+        const node = B.teile[row.teil];
+        if (node) zeile(node, row.c, row.r, row.sc, row.d, row.n, row.l + (row.lj != null ? row.lj : 0.015) / 2, row.ton);
+    }
+    // Das Schweif-Gesetz des Ofens (Lab-Streu je Segment: (28 − 2i)·9 Strähnen, Länge 0.047 − 0.003·i im
+    // Mittel, nach hinten gekämmt) — dieselben Zahlen wie die gefallenen Schweif-Strähnen.
+    for (const sw of fell.schweif)
+        zeile(sw.node, [0, 0, -0.048 * H], sw.segR, [0.95, 1.18, 1.18], [0, -0.12, -0.92], (28 - 2 * sw.i) * 9, 0.047 - 0.003 * sw.i, "B");
+    const pa = basis.attributes.position,
+        na = basis.attributes.normal,
+        Vs = pa.count;
+    const len = new Float32Array(Vs),
+        dichte = new Float32Array(Vs),
+        kamm = new Float32Array(Vs * 3),
+        ton = new Float32Array(Vs * 3);
+    const reich = TIER_FELL.reich;
+    for (let i = 0; i < Vs; i++) {
+        const x = pa.getX(i),
+            y = pa.getY(i),
+            z = pa.getZ(i);
+        let W = 0,
+            L = 0,
+            dx = 0,
+            dy = 0,
+            dz = 0,
+            cr = 0,
+            cg = 0,
+            cb = 0;
+        for (const zl of zeilen) {
+            const m = zl.Mi;
+            const qx = (m[0] * x + m[4] * y + m[8] * z + m[12] - zl.c[0]) / zl.rx,
+                qy = (m[1] * x + m[5] * y + m[9] * z + m[13] - zl.c[1]) / zl.ry,
+                qz = (m[2] * x + m[6] * y + m[10] * z + m[14] - zl.c[2]) / zl.rz;
+            const e = Math.sqrt(qx * qx + qy * qy + qz * qz);
+            const nah = 1 - Math.abs(e - 1) / reich;
+            if (nah <= 0) continue;
+            const w = nah * zl.dichte;
+            W += w;
+            L += w * zl.l;
+            dx += w * zl.dw.x;
+            dy += w * zl.dw.y;
+            dz += w * zl.dw.z;
+            cr += w * zl.ton[0];
+            cg += w * zl.ton[1];
+            cb += w * zl.ton[2];
+        }
+        dichte[i] = W;
+        if (W > 0) {
+            len[i] = L / W;
+            // Legerichtung tangential (der Anteil entlang der Normale ist die Länge selbst).
+            const nx0 = na.getX(i),
+                ny0 = na.getY(i),
+                nz0 = na.getZ(i);
+            const dn = (dx * nx0 + dy * ny0 + dz * nz0) / W;
+            const tx = dx / W - dn * nx0,
+                ty = dy / W - dn * ny0,
+                tz = dz / W - dn * nz0;
+            const tl = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
+            kamm[i * 3] = tx / tl;
+            kamm[i * 3 + 1] = ty / tl;
+            kamm[i * 3 + 2] = tz / tl;
+            ton[i * 3] = cr / W;
+            ton[i * 3 + 1] = cg / W;
+            ton[i * 3 + 2] = cb / W;
+        } else {
+            // Kein Gesetz trägt diesen Punkt: kahl (die Schalen fallen auf die Basis), Ton = Körper.
+            ton[i * 3] = fell.toene.B[0];
+            ton[i * 3 + 1] = fell.toene.B[1];
+            ton[i * 3 + 2] = fell.toene.B[2];
+        }
+    }
+    // Das Haar-Raster folgt der Gesetz-Dichte: Zellen je Einheit = √(Median Strähnen je Fläche) — der
+    // Abstand der Lab-Strähnen (Wolf ~0.012); die lokale Dichte (relativ zum Median) skaliert die Locke.
+    const belegt = Array.from(dichte)
+        .filter((w) => w > 0)
+        .sort((a, b) => a - b);
+    const median = belegt.length ? belegt[belegt.length >> 1] : 1;
+    const zellen = Math.sqrt(median);
+    // Der Schalen-Stapel: N Kopien der Basis, jede auf ihrer Höhe, gekämmt, gleich gewichtet.
+    const N = TIER_FELL.schalen;
+    const si = basis.attributes.skinIndex,
+        sw = basis.attributes.skinWeight;
+    const idx0 = basis.index.array;
+    const P = new Float32Array(Vs * N * 3),
+        Nn = new Float32Array(Vs * N * 3),
+        C = new Float32Array(Vs * N * 3),
+        Wz = new Float32Array(Vs * N * 3),
+        T = new Float32Array(Vs * N * 3),
+        SI = new Float32Array(Vs * N * 4),
+        SW = new Float32Array(Vs * N * 4),
+        I = new Uint32Array(idx0.length * N);
+    for (let sN = 0; sN < N; sN++) {
+        const t = (sN + 1) / N;
+        const o = sN * Vs;
+        for (let i = 0; i < Vs; i++) {
+            const v = o + i;
+            const lt = len[i] * t,
+                lk = len[i] * t * t * TIER_FELL.kamm;
+            const nx0 = na.getX(i),
+                ny0 = na.getY(i),
+                nz0 = na.getZ(i);
+            P[v * 3] = pa.getX(i) + nx0 * lt + kamm[i * 3] * lk;
+            P[v * 3 + 1] = pa.getY(i) + ny0 * lt + kamm[i * 3 + 1] * lk;
+            P[v * 3 + 2] = pa.getZ(i) + nz0 * lt + kamm[i * 3 + 2] * lk;
+            Nn[v * 3] = nx0;
+            Nn[v * 3 + 1] = ny0;
+            Nn[v * 3 + 2] = nz0;
+            Wz[v * 3] = pa.getX(i);
+            Wz[v * 3 + 1] = pa.getY(i);
+            Wz[v * 3 + 2] = pa.getZ(i);
+            C[v * 3] = ton[i * 3];
+            C[v * 3 + 1] = ton[i * 3 + 1];
+            C[v * 3 + 2] = ton[i * 3 + 2];
+            T[v * 3] = t;
+            T[v * 3 + 1] = Math.min(1.6, dichte[i] / median);
+            T[v * 3 + 2] = zellen;
+            for (let k = 0; k < 4; k++) {
+                SI[v * 4 + k] = si.array[i * 4 + k];
+                SW[v * 4 + k] = sw.array[i * 4 + k];
+            }
+        }
+        for (let q = 0; q < idx0.length; q++) I[sN * idx0.length + q] = idx0[q] + o;
+    }
+    basis.dispose();
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
+    geo.setAttribute("normal", new THREE.BufferAttribute(Nn, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(C, 3));
+    geo.setAttribute("aWurzel", new THREE.BufferAttribute(Wz, 3));
+    geo.setAttribute("aSchale", new THREE.BufferAttribute(T, 3));
+    geo.setAttribute("skinIndex", new THREE.BufferAttribute(SI, 4));
+    geo.setAttribute("skinWeight", new THREE.BufferAttribute(SW, 4));
+    geo.setIndex(new THREE.BufferAttribute(I, 1));
+    return geo;
 }
 
 // ── DER GENERISCHE GELENK-GUSS (ein Gesetz für Tier UND Mensch): Meshes in den
