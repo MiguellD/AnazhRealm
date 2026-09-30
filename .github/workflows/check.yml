@@ -124,7 +124,10 @@ jobs:
         # (manuell + nächtlich, timeout-bounded), wo Stunden in Ordnung sind. Der Fast-Tier fängt
         # ~80 % der Regressionen SOFORT (CLAUDE.md: „Nicht jede Änderung durch den 10-min-Gate zwingen").
         runs-on: ubuntu-latest
-        timeout-minutes: 15
+        # 30 statt 15 (GEMESSEN 30.09., Lauf 36652065997): die ~45 Domänen-Gates vor der
+        # GPU-Linse brauchen allein ~14 min — das alte Limit brach den Job mitten in der
+        # GPU-Linse ab („cancelled", kein Code-Fehler). 30 hält Luft für GPU- + Look-Linsen.
+        timeout-minutes: 30
         steps:
             - uses: actions/checkout@v4
 
