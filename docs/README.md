@@ -17,12 +17,9 @@
 | `docs/das-lebendige-feld.md`                    | **DER WAHRE NORDEN** — die Welt als EIN Feld, das alle lesen · schreiben · WERTEN. Vor Arbeit an Feld/Emotion/Nexus/DSL/Kreaturen ZUERST.      |
 | `docs/das-feld-zeichnet.md`                     | **NORMATIV** — der Render-Bogen des Feldes (der vierte Vers): drei Stufen · der dritte Spiegel (WGSL, Seh-Toleranz) · Warm-Start. Vor Render-/Perf-Bögen ZUERST. |
 | `docs/state-of-realm.md`                        | **DIE VISION** — die Pfeiler · die Heilige Lektion · die Stand-vs-Vision-Matrix · das Welten-Ultiversum.                                       |
-| `docs/abnahme-drehbuch.md`                      | **DIE EINE SCHÖPFER-RUNDE** — das ausstehende Browser-Sign-off-Drehbuch (W8 · look-golden --mint · perf.json · DoD 5 · E-C/E-E/E-F · Galerie). |
+| `docs/PFLICHT-OFFEN.md`                         | **DIE FROZEN-LISTE** — die EINE Offen-Wahrheit (max 5, vom Schöpfer gesetzt; `gate:betriebsgesetz` bewacht sie).                                 |
+| `docs/abnahme-analog.md`                        | **DER ANALOG-BEWEIS** — A–E: die Klassen im Code · die Messung (8 Bild-Paare, dc/Dreiecke) · das Urteil · der echte GPU-Trace.                  |
+| `docs/abnahme-drehbuch.md`                      | **DIE EINE SCHÖPFER-RUNDE** — das Browser-Drehbuch (18 Schritte inkl. KI mit Schlüssel).                                                        |
 | `docs/analyse/perf-paritaet-baseline-v18432.md` | Perf-Paritäts-Baseline — von `gate:perf-parity` konsumiert.                                                                                    |
 
 **Chronik:** `git log` (Commits sind klein, thematisch, deutsch — die Message IST der Eintrag).
-**Gefallene Namen** (wo einst mehr lag, alles in git): `archiv/handover.md` (Chronik + Gotcha-
-Vollarchiv → git + CLAUDE.md-Lehren) · `wahrerguss`/`archiv/wahrerbauplan`/`archiv/wahreranblick`
-(die Guss-Bögen — ihr Offenes ist in roadmap §0 gefaltet) · `nervensystem-plan`/
-`paritaet-vollendung-plan`/`lebendiger-koerper-plan`/`neues-kleid-plan`/`ultraguss-plan` u. a.
-(vollendete Bögen) · `referenz/` (Anatomie-Referenzbilder).

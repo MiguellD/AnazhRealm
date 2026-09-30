@@ -95,7 +95,7 @@ nahm 5 Stücke DESSELBEN Stamms und riet die Krone 5× zu klein — jetzt Ketten
 Lappen aus den Zweig-Punkten. Linse `diag-arch-feld` (Slot für Eiche + Haus, 0 ausgebrannt).
 **Die Entscheidung liegt beim Schöpfer:** Analog überall (billig, grob) oder HYBRID (nah das
 Studio-Mesh wie bei der Streu-Stufe 0, fern die Analog-Silhouette) — Bilder + Zahlen in
-`docs/abnahme-analog-e.md`.
+`docs/abnahme-analog.md`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·

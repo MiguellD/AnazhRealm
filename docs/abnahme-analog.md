@@ -1,8 +1,9 @@
-# Abnahme Analog E — Beweis-Paket
+# Abnahme Analog (Pflicht A–E)
 
-> Pflicht E: Bild-Paare vorher↔nachher MIT Armlängen-Schüssen je Klasse + Tris/dc/weltMarch-Zahlen,
-> dieselbe Sonde. **Stand 30.09. (V18.494): gemessen — die Wette wartet auf die Entscheidung des
-> Schöpfers und auf einen echten GPU-Trace.**
+> Die Frozen-Liste (`docs/PFLICHT-OFFEN.md`) setzt fünf Einträge: A Kreaturen · B Bäume ·
+> C Architektur + Streu · D Wiese · E das Beweis-Paket. Hier steht je Klasse die Code-Wahrheit,
+> darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.494):
+> gemessen — die Wette wartet auf die Entscheidung des Schöpfers und einen echten GPU-Trace.**
 
 ## Die Sonde
 
@@ -21,6 +22,37 @@
 - Bilder: `artifacts/beweis-e/e-<tag>-<klasse>-<fern|arm>.png` (nicht im Repo — jederzeit neu
   erzeugbar), Zahlen: `artifacts/beweis-e/beweis-e-<tag>.json`. Alle acht Paare nebeneinander
   (privat, Schöpfer-Konto): https://claude.ai/artifact/K8wVXFNbHsc9x3dR9gzRKk
+
+## Die Klassen im Code
+
+**Gemeinsam:** EIN Welt-March (`_tickFeldPass`, Mesh `renderOrder 9999`, Tiefe = March-Tiefe)
+über EINE Feld-Liste; Dedup je Vorlage im `kapselCache` (`_weltKapselHolen`/`_weltKapselSpawn`),
+Bake-Takt `_weltBakeErlaubt` (16/s, 4/s über Budget). Voxel-Bricks nur noch als Region-Fern-Cache
+(`dimRegion`); jeder andere Brick-Weg ist fail-closed (`_weltFeldSpawn("arch:…"|"baum:…")` → null).
+Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
+
+| Art | pA.w | pB.w |
+|---|---|---|
+| Kapsel | r ≥ 0 | Farbe ≥ 0 |
+| Kegel | r0 ≥ 0 | −(Farbe + (r1+1)/10) |
+| Box / Ellipsoid / Prisma | −(c+1) | 0 / 1 / 2·3 |
+
+- **A Kreaturen:** `_tickKreaturZiegel` → `_kreaturGliederBacken` → `_gliedKapselFit` (Kapsel je
+  Glied, Dedup Gattung×Glied); je Frame reist die Knochen-Matrix in die Liste
+  (`_weltFeldMatrix`). Das Mesh ist unsichtbar (`KREATUR_ZIEGEL_DIST = 0`, kein Rückweg).
+- **B Bäume:** Streu-Zellen-LOD ≥ 1 → `_baumFeldSpawn` (Schlüssel `abaum:preset:variant`, ohne
+  Stufe → kein Churn), LOD 0 bleibt Instanz-Geometrie (Anfassen/Fällen). Fit `_baumKapselFit` →
+  mit Beipack `_baumGrammatikFit` (Ketten-Kegel Stamm + Hauptäste, Kronen-Lappen aus den
+  Zweig-Punkten), ohne Beipack AABB-Kapseln.
+- **C Architektur + Streu:** `_archZiegelFern` — Häuser über `_archFachwerkFit` (Balken, Gefach,
+  Verbände, Prisma-Dach, Gaube/Flügel; ≤ 24 Primitive), gesetzte Studio-Dinge über
+  `_archFoundryZiegel` (Foundry-Flat; Bäume teilen Schlüssel + Fit mit der Streu), sonst
+  `_archBoxFit` (≤ 24 AABB). Hand-Blase (16 m): Mesh als unsichtbarer Interaktions-Körper, Häuser
+  sichtbar. Klein-Streu LOD ≥ 1: `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
+  tract die Plätze (`einheit < 0`). Band 0 bleibt Mesh (Anfassen).
+- **D Wiese:** Boden-FUNKTION in `_terrainGeologyAlbedo` — Meadow-Grund (`MEADOW_GREEN`) fern,
+  8-Schicht-Parallax-Relief nah (≤ 90 m, gated grün × flach × kein Fels × nicht trocken). Keine
+  Halm-Geometrie (`voxelChunkGrass` → null je Chunk). Mess-Wiese: −900/−850.
 
 ## Die Messung (30.09.)
 
