@@ -135,8 +135,10 @@ Fachwerk behält Dach und Wände).
 - **Nähe bleibt grob, wo die Form analog ist:** Tiere sind Kapsel-Figuren (scharf, aber ohne
   Kopf- und Fell-Detail), Kronen gefüllte Lappen, Stämme glatte Kegel. Das Feld wirft und
   empfängt keinen Schatten (kein Lookup in die Schatten-Map).
-- **Ehrlich offen:** D (Wiese) — die Mess-Bühne liegt im Waldschatten, der Nah-Schuss beweist
-  nichts; ein sauberer Haus-Schuss (Sonden-Lücke: kein Feld-Slot im Moment der Blick-Wahl);
+- **Ehrlich offen:** D (Wiese) — die Wiesen-Linse (`npm run lens:wiese`) sucht die besonnte,
+  von oben grüne Stelle (−840/−954); aus Augenhöhe liest derselbe Boden grau, Halm-Kontrast
+  0,20 fern / 0,05 Armlänge, mit altem Parallax und mit Zell-Halmen identisch — das Grün geht im
+  Streiflicht verloren (Verdacht: Glanz der Boden-Rauheit), nicht an der Halm-Funktion; ein sauberer Haus-Schuss (Sonden-Lücke: kein Feld-Slot im Moment der Blick-Wahl);
   der echte GPU-Trace auf dem Schöpfer-Holz.
 
 ## Der echte GPU-Trace (Schöpfer-Holz)
