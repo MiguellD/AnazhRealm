@@ -79,35 +79,47 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
         if (typeof GPUDevice !== "undefined" && GPUDevice.prototype) {
             for (const m of ["createRenderPipeline", "createRenderPipelineAsync"]) {
                 const o = GPUDevice.prototype[m];
-                if (typeof o === "function") GPUDevice.prototype[m] = function (...a) { window.__cc.gpuPipeline++; return o.apply(this, a); };
+                if (typeof o === "function") GPUDevice.prototype[m] = function (...a) { window.__cc.gpuPipeline++; if (window.__ccSpur) window.__ccSpur.push((new Error().stack || "").split("\n").slice(2, 9).join(" | ")); return o.apply(this, a); };
             }
         }
         if (typeof WebGL2RenderingContext !== "undefined" && WebGL2RenderingContext.prototype && WebGL2RenderingContext.prototype.linkProgram) {
             const o = WebGL2RenderingContext.prototype.linkProgram;
-            WebGL2RenderingContext.prototype.linkProgram = function (...a) { window.__cc.glLink++; return o.apply(this, a); };
+            WebGL2RenderingContext.prototype.linkProgram = function (...a) { window.__cc.glLink++; if (window.__ccSpur) window.__ccSpur.push((new Error().stack || "").split("\n").slice(2, 9).join(" | ")); return o.apply(this, a); };
         }
         let backend = "?";
         try { const b = s.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : (b.constructor && b.constructor.name) || "?"; } catch (_e) {}
         s.renderer.render = window.__origRender;
         s.postProcessingFailed = true;
+        // Der App-Loop RUHT: die Linse treibt ihre Frames selbst (sonst rendert er parallel mit und
+        // verdoppelt die Compile-Last auf dem langsamen Runner).
+        if (typeof s.renderer.setAnimationLoop === "function") s.renderer.setAnimationLoop(null);
         const cam = s.camera, pm = s.playerMesh;
         if (cam && pm) { cam.position.set(pm.position.x, pm.position.y + 1.6, pm.position.z); cam.lookAt(pm.position.x + 30, pm.position.y + 1, pm.position.z); cam.updateMatrixWorld(true); }
-        // Warmup: Env setzen + viele Frames + ein paar Game-Ticks → ALLE Steady-State-Pipelines compilen
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
-        const tot = () => window.__cc.gpuPipeline + window.__cc.glLink;
-        const frame = () => { try { r._gameLoopTick(performance.now()); } catch (_e) {} try { r._loopRender(performance.now()); } catch (_e) {} };
-        for (let i = 0; i < 10; i++) frame();
-        // DER DAUERZUSTAND, nicht die Uhr (30.09., CI-Lauf 36654871232: 10 Idle-Compiles auf dem
-        // langsamen Runner): nach den 10 Pflicht-Frames weiter wärmen, bis 8 Frames in Folge
-        // NICHTS kompilieren (höchstens 80) — Erst-Compile-Nachzügler (nachgeladene LOD-/Foundry-
-        // Varianten) landen so im Warmup, nicht im Mess-Fenster. Echter Churn kompiliert JEDEN
-        // Frame, erreicht die Ruhe nie und fällt im Idle-Fenster unverändert rot.
-        const nachStart = tot();
-        let ruhig = 0, extra = 0;
-        const t0 = performance.now(); // Wand-Frist 120 s: unter Last bleibt der evaluate unter protocolTimeout
-        while (ruhig < 8 && extra < 80 && performance.now() - t0 < 120000) { const v = tot(); frame(); extra++; ruhig = tot() === v ? ruhig + 1 : 0; }
-        return { backend, warmupCompiles: tot(), nachzuegler: tot() - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 };
+        window.__frame = () => { try { r._gameLoopTick(performance.now()); } catch (_e) {} try { r._loopRender(performance.now()); } catch (_e) {} return window.__cc.gpuPipeline + window.__cc.glLink; };
+        return { backend };
     });
+    // Warmup: Env gesetzt, jetzt Frames — JE FRAME EIN kurzer evaluate (Node treibt, Node hält die
+    // Frist): ein einziger evaluate mit allen Warmup-Frames sprengte auf dem langsamen Runner die
+    // Protokoll-Frist (CI 36681658740). 10 Pflicht-Frames, dann DER DAUERZUSTAND: weiter wärmen, bis
+    // 8 Frames in Folge NICHTS kompilieren (höchstens 80, Wand 240 s) — Erst-Compile-Nachzügler
+    // landen im Warmup, echter Churn kompiliert JEDEN Frame und fällt im Idle-Fenster rot.
+    if (!setup.err) {
+        const frame = () => page.evaluate(() => window.__frame());
+        for (let i = 0; i < 10; i++) await frame();
+        const nachStart = await page.evaluate(() => window.__cc.gpuPipeline + window.__cc.glLink);
+        let ruhig = 0,
+            extra = 0,
+            stand = nachStart;
+        const t0 = Date.now();
+        while (ruhig < 8 && extra < 80 && Date.now() - t0 < 240000) {
+            const v = await frame();
+            extra++;
+            ruhig = v === stand ? ruhig + 1 : 0;
+            stand = v;
+        }
+        Object.assign(setup, { warmupCompiles: stand, nachzuegler: stand - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 });
+    }
     if (setup.err) { await browser.close(); server.close(); console.error("⛔ LINSE NICHT LAUFFÄHIG:", setup.err); process.exit(1); }
     if (setup.warmupCompiles === 0) { await browser.close(); server.close(); console.error("⛔ LINSE UNGÜLTIG: 0 Warmup-Compiles → der Zähler greift nicht (kein Compiler gewrappt) → die Linse wäre blind grün."); process.exit(1); }
 
@@ -128,6 +140,7 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
         if (!u || !u.nebulaColor) return { err: "keine skyboxUniforms.nebulaColor" };
         const tot = () => window.__cc.gpuPipeline + window.__cc.glLink;
         const before = tot();
+        window.__ccSpur = []; // der Täter beim Namen: Aufrufer-Stack jedes Compiles in diesem Fenster
         const colors = [[0.85, 0.55, 0.30], [0.55, 0.75, 0.95], [0.30, 0.10, 0.15], [0.70, 0.80, 0.70]];
         for (const c of colors) {
             u.nebulaColor.value.setRGB(c[0], c[1], c[2]);
@@ -135,7 +148,9 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
             try { r._ensureSkyEnvironment(true); } catch (_e) {}
             try { r._loopRender(performance.now()); } catch (_e) {}
         }
-        return { compiles: tot() - before };
+        const spur = window.__ccSpur.slice(0, 8);
+        window.__ccSpur = null;
+        return { compiles: tot() - before, spur };
     });
 
     await browser.close();
@@ -143,6 +158,10 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
     console.log("===== STEHENDE LINSE — Idle/Env-GPU-Pipeline-Churn (echter Renderer) =====\n");
     if (pageErr) { console.error("⛔ Page-Error während des Laufs:", pageErr); process.exit(1); }
     if (regen.err) { console.error("⛔ LINSE NICHT LAUFFÄHIG:", regen.err); process.exit(1); }
+    if (regen.spur && regen.spur.length) {
+        console.log("  Compiles im Env-Fenster (Aufrufer):");
+        for (const z of regen.spur) console.log("    · " + z.replace(/https?:\/\/127\.0\.0\.1:\d+\//g, "").slice(0, 400));
+    }
     console.log(`  Backend: ${setup.backend}  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}  ·  davon Nachzügler bis zur Ruhe: ${setup.nachzuegler} in ${setup.warmupExtra} Extra-Frames${setup.ruhe ? "" : " (RUHE NIE ERREICHT)"}\n`);
     const idleOk = idle <= IDLE_THRESHOLD;
     const regenOk = regen.compiles <= REGEN_THRESHOLD;
