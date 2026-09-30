@@ -156,6 +156,14 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
 17. **Sonden mit echtem Renderer:** je Schuss ruht der Spiel-Loop (sonst wandern Kamera, Tageszeit,
     Cull-Zustand), die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht. Und:
     `Number(null) === 0` — ein fehlender Wert ist nie 0; Default-Helfer prüfen `v == null` zuerst.
+18. **Erst das Soll-Bild, dann die Welle:** vor jedem Paradigmen-Wechsel je Klasse ein Soll-Bild
+    (Referenz) + Budget (Tris/dc je LOD-Stufe) festlegen und EINEN Spike mit echtem Renderer an
+    der Mess-Wiese zeigen, nah UND fern. Die Analog-Welle (21.07.–30.09.) lief zwei Monate gegen
+    ein nie festgelegtes Nah-Bild und kehrte nah zum Studio-Mesh zurück; nur fern blieb sie.
+19. **Kosten gehören ins Asset, nicht in den Host:** ein LOD, das nicht reduziert (Fachwerk L1 75k
+    ≈ L0 88k, Konifere L0 ~170k Vertices), heilt am Studio, nie über Host-Umwege (`lodServe`).
+    Und nach jedem Push die CI lesen; schwere Echt-Renderer-Läufe nie parallel (CPU-Konkurrenz
+    fälscht Zeitfristen).
 
 ## Workflows
 
