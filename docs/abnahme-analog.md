@@ -2,10 +2,10 @@
 
 > Die Frozen-Liste (`docs/PFLICHT-OFFEN.md`) setzt fünf Einträge: A Kreaturen · B Bäume ·
 > C Architektur + Streu · D Wiese · E das Beweis-Paket. Hier steht je Klasse die Code-Wahrheit,
-> darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.495):
-> gemessen und nachgeschärft — das Feld liest dasselbe Licht wie das Mesh (Linse 0,67 → 0,98),
-> Häuser tragen ihr Fachwerk; offen bleiben die Nah-Grobheit der Kapsel-Formen, die Wiese (D)
-> und der echte GPU-Trace.**
+> darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
+> Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
+> seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
+> die dunklen Schattenseiten, die Wiese (D), der echte GPU-Trace.**
 
 ## Die Sonde
 
@@ -46,20 +46,25 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
 | Kegel | r0 ≥ 0 | −(Farbe + (r1+1)/10) |
 | Box / Ellipsoid / Prisma | −(c+1) | 0 / 1 / 2·3 |
 
-- **A Kreaturen:** `_tickKreaturZiegel` → `_kreaturGliederBacken` → `_gliedKapselFit` (Kapsel je
-  Glied, Dedup Gattung×Glied); je Frame reist die Knochen-Matrix in die Liste
-  (`_weltFeldMatrix`). Das Mesh ist unsichtbar (`KREATUR_ZIEGEL_DIST = 0`, kein Rückweg).
-- **B Bäume:** Streu-Zellen-LOD ≥ 1 → `_baumFeldSpawn` (Schlüssel `abaum:preset:variant`, ohne
-  Stufe → kein Churn), LOD 0 bleibt Instanz-Geometrie (Anfassen/Fällen). Fit `_baumKapselFit` →
-  mit Beipack `_baumGrammatikFit` (Ketten-Kegel Stamm + Hauptäste, Kronen-Lappen aus den
-  Zweig-Punkten), ohne Beipack AABB-Kapseln.
+- **A Kreaturen:** bis 55 m (Hysterese 65 m, `KREATUR_NAH_MESH`) ist das Studio-Tier
+  (tierBaum-Mesh mit Fell) die Gestalt. Fern: `_tickKreaturZiegel` → `_kreaturGliederBacken` →
+  `_gliedKapselFit` (Kapsel je Glied, Dedup Gattung×Glied); je Frame reist die Knochen-Matrix in
+  die Liste (`_weltFeldMatrix`).
+- **B Bäume:** die Streu-Bäume tragen die ganze Studio-LOD-Kette als Instanzen — L0/L1 Mesh, L2 das
+  gebackene Studio-Billboard (Bäcker-Queue nah zuerst, EINE Bake-Uhr 45 s). Gesetzte Bäume
+  (Architektur) fern: `_archFoundryZiegel` → `_baumKapselFit` mit Beipack `_baumGrammatikFit`
+  (Ketten-Kegel Stamm + Hauptäste, Kronen-Lappen aus den Zweig-Punkten).
 - **C Architektur + Streu:** `_archZiegelFern` — Häuser über `_archFachwerkFit` (Balken, Gefach,
   Verbände, Prisma-Dach, Gaube/Flügel; ≤ 24 Primitive), gesetzte Studio-Dinge über
   `_archFoundryZiegel` (Foundry-Flat; Bäume teilen Schlüssel + Fit mit der Streu), sonst
-  `_archBoxFit` (≤ 24 AABB). Hand-Blase (16 m) = Stufe 0: steht das Mesh (oder seine Instanzen),
-  IST es die Gestalt und das Feld schweigt; über Budget baut sie mit Takt-Garantie (1 je 250 ms).
-  Fachwerk-Farben sRGB-dekodiert wie `THREE.Color`, bei vollem Fachwerk Silhouette vor Holz. Klein-Streu LOD ≥ 1: `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
-  tract die Plätze (`einheit < 0`). Band 0 bleibt Mesh (Anfassen).
+  `_archBoxFit` (≤ 24 AABB) — das ist die Gestalt JENSEITS der Mesh-Zone. Die Mesh-Zone ist der
+  geregelte Cull-Radius (100–150 m): dort IST das Studio-Mesh mit seiner LOD-Kette die Gestalt
+  (L0 < 12 m · L1 < 26 m · L2 darüber; Haus: `KIND_POLICY.haus.lodServe {1:2}` serviert im Ring
+  12–26 m das L2-Destillat), bis es steht trägt das Feld. Bauten nah zuerst, das Budget zählt
+  gebaute Meshes (≤ 24 Versuche je Takt), über Budget Takt-Garantie (1 je 250 ms). Fachwerk-Farben
+  sRGB-dekodiert wie `THREE.Color`, bei vollem Fachwerk Silhouette vor Holz. Klein-Streu auf der
+  Fern-Stufe (Zellen-LOD 2): `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
+  tract die Plätze (`einheit < 0`); nah und mittel Mesh-Instanzen.
 - **D Wiese:** Boden-FUNKTION in `_terrainGeologyAlbedo` — Meadow-Grund (`MEADOW_GREEN`) fern,
   8-Schicht-Parallax-Relief nah (≤ 90 m, gated grün × flach × kein Fels × nicht trocken). Keine
   Halm-Geometrie (`voxelChunkGrass` → null je Chunk). Mess-Wiese: −900/−850.
@@ -94,6 +99,24 @@ Baum-/Haus-Zahlen sind die Szene ohne diese Objekte.
 | Haus · fern/Arm | 28 / 26 913 · 15 / 26 745 | **kein Haus im Bild** — die Blick-Wahl fand zu dem Zeitpunkt keinen Feld-Slot am Haus (Sonden-Lücke, offen) |
 | Wiese · fern/Arm | 34 / 27 605 · 16 / 25 439 | Boden im Waldschatten fast schwarz — die Bühne neben dem Wolf liegt unter Kronen; die Halm-Funktion ist dort nicht zu sehen |
 
+### AAA nah (V18.496, Schöpfer-Wort 30.09., Tag `aaa7`)
+
+Nah und mittel das Studio-Mesh, fern das Feld. Die Sonde schwingt vor der Blick-Wahl ein, bis die
+Mesh-Zone GANZ steht, und berichtet je Bau, was im Bild steht (Zustands-Linse).
+
+| Schuss | dc / Dreiecke | Bild |
+|---|---|---|
+| Wolf · fern | 267 / 568 193 | Studio-Fichten aus nächster Nähe, der Wolf dahinter (die Blick-Wahl sah die Mesh-Zone noch halb — seither schwingt sie vorher ganz ein) |
+| Wolf · Armlänge | 155 / 341 805 | Kamera im Busch, Wolfsbeine dahinter (seither Blick-Wahl je Schuss-Art) |
+| Eiche · fern | 95 / 44 141 | die gesetzte Eiche als Studio-Baum: Laub-Büschel, Äste, Wurzeln; Studio-Fichten und -Büsche daneben |
+| Eiche · Armlänge | 146 / 304 465 | unter der Eiche: Stamm, Astgabeln, Blattwerk gegen den Himmel |
+| Haus · fern | 151 / 27 481 | das Haus im Bild (1081 Objekt-Pixel), bei 15 m das L2-Destillat (glatte Box, rotes Dach — `lodServe {1:2}`) |
+| Haus · Armlänge | 137 / 27 225 | dunkle glatte Wand, Dachkante |
+
+Ungebaut in der Mesh-Zone: 148–195 (Läufe `aaa3`–`aaa5`, vor den Nah-zuerst-Schnitten) → **0** an
+allen Bühnen. Kosten gegen `analog3`: 15–28 dc / 26–35k Dreiecke → 95–267 dc / 27–568k — die
+Größenordnung des Mesh-Stands 19.07. (31–245 dc / 183k–1,18 M), jetzt mit geordneter LOD-Kette.
+
 **Die Licht-Linse** (`diag-arch-feld` D): eine Feld-Box und eine MeshStandard-Box (Albedo 0,5,
 roughness 1) am SELBEN Ort, gemeinsame Pixel-Maske. Vorher **0,67** (Feld rgb 70/77/86, Mesh
 97/115/151 — zu dunkel und ohne Himmels-Blau), nachher **0,98** (62/69/81 vs. 64/71/80).
@@ -121,6 +144,20 @@ roughness 1) am SELBEN Ort, gemeinsame Pixel-Maske. Vorher **0,67** (Feld rgb 70
 7. **Der Kronen-Noise skalierte mit der Kronengröße** (Amplitude ∝ hn bei fester Frequenz →
    Gradient ∝ hn): Streifen und Lipschitz-Bruch auf großen Kronen. Jetzt im größen-normierten Raum.
 
+Mit dem AAA-Schnitt (V18.496):
+
+8. **Die Staging-Entlassung nullte Arrays mit offenem Upload:** ein gerade ungerenderter Batch
+   sammelte Teil-Uploads, die Gnadenfrist lief ab, der nächste Render las die Range aus dem
+   Null-Array (`writeBuffer … too large`, jeder Schuss nach dem Einschwingen). Die Upload-Probe
+   prüft jetzt offene Versionen und Ranges.
+9. **Das Mesh-Zonen-Budget zählte Versuche:** die nächsten Karten-Wartenden fraßen jeden Takt das
+   Budget, bereite Eichen dahinter standen. Jetzt zählt der gelungene Bau.
+10. **Bäcker-Queue und Foundry-Rewarm gingen in Anfrage-/Listen-Reihenfolge** (105 von 112 Karten
+    wartend). Jetzt nah zuerst.
+11. **Zwei Bake-Uhren:** der 15-s-Watchdog gab Bakes auf, während der serielle Worker noch
+    rechnete, und schob den nächsten nach — Kaskade (7 hängend, 3 gescheitert, 0 gebacken). Jetzt
+    EINE Uhr (45 s).
+
 Stehende Linsen: `node scripts/diag-arch-feld.cjs` (A Slots · B 0 ausgebrannt · C geteilter
 Kapsel-Satz · D Feld-Licht ≙ Mesh-Licht, Band 0,8–1,25) und `node scripts/diag-arch-fachwerk-fit.cjs`
 (Welt-Haus ohne `studioOv`: Maße aus Defaults, Sattel-Dach, keine schwarze Farbe; volles
@@ -128,18 +165,18 @@ Fachwerk behält Dach und Wände).
 
 ## Das Urteil (ehrlich)
 
-- **Kosten:** Analog senkt die Dreiecke je Bild um 7–46× (Median ~15×), die Draw-Calls um
-  2,6–8× — genau das Versprechen der Wende; die Schnitte von V18.495 ändern daran nichts.
-- **Licht und Farbe stimmen jetzt:** dasselbe Licht-Modell wie das Mesh (0,98), Häuser mit
-  Maßen, Dach und Farben ihres Fachwerks, nah das echte Mesh, sobald es steht.
-- **Nähe bleibt grob, wo die Form analog ist:** Tiere sind Kapsel-Figuren (scharf, aber ohne
-  Kopf- und Fell-Detail), Kronen gefüllte Lappen, Stämme glatte Kegel. Das Feld wirft und
-  empfängt keinen Schatten (kein Lookup in die Schatten-Map).
-- **Ehrlich offen:** D (Wiese) — die Wiesen-Linse (`npm run lens:wiese`) sucht die besonnte,
-  von oben grüne Stelle (−840/−954); aus Augenhöhe liest derselbe Boden grau, Halm-Kontrast
-  0,20 fern / 0,05 Armlänge, mit altem Parallax und mit Zell-Halmen identisch — das Grün geht im
-  Streiflicht verloren (Verdacht: Glanz der Boden-Rauheit), nicht an der Halm-Funktion; ein sauberer Haus-Schuss (Sonden-Lücke: kein Feld-Slot im Moment der Blick-Wahl);
-  der echte GPU-Trace auf dem Schöpfer-Holz.
+- **Die Form ist AAA-Studio, wo man hinsieht:** nah und mittel das Studio-Mesh mit seiner
+  LOD-Kette (Wolf mit Fell, Eiche mit Laub/Ästen/Wurzeln, Fichten, Büsche), die Mesh-Zone steht
+  (0 ungebaut). Das Feld trägt fern und in der Streaming-Rampe; dort bleibt es ein grober Satz,
+  klein im Bild.
+- **Kosten:** zurück in der Größenordnung des Mesh-Stands (bis ~570k Dreiecke, bis 267 dc je Bild
+  auf kienspan) — der Richter ist der echte GPU-Trace (Ziellinie p95 ≤ 33 ms).
+- **Ehrlich offen:** die Schattenseiten sind sehr dunkel (MeshStandard-Box Albedo 0,5 liest
+  rgb ≈ 64/71/80 — key-dominantes Licht ohne Boden-Bounce); das Haus zeigt im Ring 12–26 m das
+  L2-Destillat, weil das Studio-L1 (75k) kaum billiger ist als L0 (88k) — ein echtes Mittel-LOD
+  fehlt im Studio; einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
+  D (Wiese) — die Wiesen-Linse (`npm run lens:wiese`) findet die besonnte Stelle, aus Augenhöhe
+  liest der Boden grau (Halm-Kontrast 0,20 / 0,05); der echte GPU-Trace auf dem Schöpfer-Holz.
 
 ## Der echte GPU-Trace (Schöpfer-Holz)
 

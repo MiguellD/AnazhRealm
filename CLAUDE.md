@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.495.0 — die Ziellinie steht, das Analog-Bild ist nachgeschärft)
+## Stand (V18.496.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -83,26 +83,25 @@ geerdet + nie im Wasser, Position `near_water`); das KI-Prompt lehrt die LIVE-W�
 Studios; der Satz „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel; Claude-
 Modelle auf der 5er-Generation. Offen: der echte LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.494/495 — die Analog-Wette GEMESSEN und NACHGESCHÄRFT (echter Renderer, `diag-beweis-e`,
-Mesh-Stand 19.07. vs. HEAD an denselben Bühnen der Mess-Wiese −900/−850):** 7–46× weniger
-Dreiecke (Median ~15×), 2,6–8× weniger Draw-Calls je Bild. V18.495 heilte die Bild-Fehler an der
-Wurzel: das Feld las nur 2 von 5 Lichtquellen (jetzt `_feldLichtSync`, Linse Feld/Mesh 0,67 →
-0,98); jedes Welt-Haus war eine schwarze 3×3-m-Flachdach-Hütte (`Number(null) === 0` im
-Fachwerk-Fit, Holz fraß Wand + Dach, Hex roh als linear); in der Hand-Blase zeichneten Mesh UND
-Feld, über Budget baute sie nie (jetzt Stufe 0 = echtes Mesh, Takt-Garantie); Kronen-Noise ∝
-Kronengröße. Frühjahrsputz: Doku + tote Skripte −3 371, Kommentar-Diät −15 847 Zeilen
-(Token-Strom byte-gleich). Ehrlich offen: nah bleiben Kapsel-Tiere und Lappen-Kronen grob, das
-Feld hat keinen Schatten, D (Wiese) und ein sauberer Haus-Schuss — `docs/abnahme-analog.md`.
+**V18.496 — AAA NAH (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"):** nah und
+mittel ist das Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern und
+in der Streaming-Rampe. Kreaturen ≤ 55 m Studio-Tier (`KREATUR_NAH_MESH`), Architektur in der
+Mesh-Zone = Cull-Radius 100–150 m, Streu-Bäume L0/L1 Mesh + L2 Studio-Billboard. Damit die Zone
+steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, EINE Bake-Uhr
+(45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa7`):
+ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen/Wurzeln; 95–267 dc /
+27–568k Dreiecke je Bild (analog3: 15–28 / 26–35k). V18.494/495 (die Analog-Wette, Feld-Licht,
+Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten, Haus 12–26 m
+= L2-Destillat (Studio-L1 kaum billiger), Wiese (D) — `docs/abnahme-analog.md`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
-KREATUREN/BÄUME/ARCHITEKTUR/STREU ≥ Stufe 1 = Analog-Sätze (Baum = Stamm + Hauptäste als Kegel +
-Kronen-Lappen) · GRAS = Boden-Funktion · Stufe 0 = echte Geometrie (Anfassen). HYBRID (ehrlich):
-Band-0-Klein-Streu · Deko-Impostor-Ringe · der Avatar. OFFEN: ein echter GPU-Trace der
-Analog-Wende auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS, vor der Wende).
+NAH/MITTEL = Studio-Mesh + LOD-Kette (Tier · Baum · Haus · Streu) · FERN = Analog-Sätze (Glieder-
+Kapseln · Baum-Kegel + Kronen-Lappen · Fachwerk-/Box-Satz · Streu-Gesetz) · GRAS = Boden-Funktion.
+OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS).
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–D Code steht (A/B/C mit Bild,
-D ohne besonnte Gras-Zone) · E gemessen; offen: Haus-Schuss, Wiese, echter GPU-Trace.
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bild
+`aaa7`) · D ohne besonnte Gras-Zone aus Augenhöhe · E gemessen; offen: Schatten, Wiese, GPU-Trace.
 
 ## Architektur (die Karte)
 

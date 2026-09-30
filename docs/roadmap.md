@@ -27,9 +27,9 @@ Schritte oder den FPS-Boden trägt.
 ### §0.frozen · Die Frozen-Liste
 
 Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit dem Schöpfer-Wort
-„analog!"). Stand V18.495: A–D Code steht, E gemessen und nachgeschärft — Feld-Licht = Mesh-Licht,
-Häuser mit Fachwerk, Hand-Blase = Stufe 0 (`docs/abnahme-analog.md`); offen: nah grobe Kapsel-
-Formen, die Wiese (D) ohne besonnte Gras-Zone, ein sauberer Haus-Schuss, der echte GPU-Trace.
+„analog!"). Stand V18.496: Schöpfer-Wort 30.09. „am Ende AAA-Niveau, nicht Kapseln" — nah und
+mittel das Studio-Mesh mit seiner LOD-Kette, das Feld nur fern; die Mesh-Zone steht (0 ungebaut,
+`docs/abnahme-analog.md`); offen: dunkle Schattenseiten, die Wiese (D), der echte GPU-Trace.
 
 ### §0.reste · Benannte Reste mit Wartebedingung (nichts erfinden)
 
