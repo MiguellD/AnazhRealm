@@ -84,8 +84,8 @@ Studios; der Satz „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schl
 Modelle auf der 5er-Generation. Offen: der echte LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
 **V18.494 — die Analog-Wette GEMESSEN (echter Renderer, `diag-beweis-e`, Mesh-Stand 19.07. vs.
-HEAD an denselben Bühnen der Mess-Wiese −900/−850):** an der Wolf-Bühne 35 Tsd. statt 527 Tsd.
-Dreiecke und 17 statt 135 Draw-Calls je Bild — ABER nah sichtbar schlechter: Kapsel-Tiere,
+HEAD an denselben Bühnen der Mess-Wiese −900/−850, 8 Bildpaare):** 7–46× weniger Dreiecke
+(Median ~15×), 2,6–8× weniger Draw-Calls je Bild — ABER nah sichtbar schlechter: Kapsel-Tiere,
 massive Kronen-Dächer, dunkle Box-Häuser, die Halm-Wiese fehlt. Drei echte Fehler dabei geheilt:
 (1) gesetzte Studio-Dinge (Eiche · Tor · Fahrzeug) blieben UNSICHTBAR — der Fit baute ein
 Async-Mesh temporär, sah es leer, brannte nach 8 Versuchen aus (26 von 28 Weltgen-Bauten);

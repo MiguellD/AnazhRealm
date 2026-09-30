@@ -1,112 +1,83 @@
 # Abnahme Analog E — Beweis-Paket
 
-> Pflicht E: Bild-Paare vorher↔nachher MIT Armlängen-Schüssen je Klasse + Tris/dc/weltMarch-Zahlen, dieselbe Sonde.
+> Pflicht E: Bild-Paare vorher↔nachher MIT Armlängen-Schüssen je Klasse + Tris/dc/weltMarch-Zahlen,
+> dieselbe Sonde. **Stand 30.09. (V18.494): gemessen — die Wette wartet auf die Entscheidung des
+> Schöpfers und auf einen echten GPU-Trace.**
 
-## Status je Klasse (live CODE vs Bild · Puls .156 · 15.09. UTC+2)
+## Die Sonde
 
-> Honesty: Tabelle war stale **09.09.** (Grammatik-SDF/Prism „offen“, C-Bild „noch offen“) — **lügt vs PFLICHT**. Unten = CODE/Bild-Wahrheit. Metrologie-Spalte bleibt **offen** (Zahlen neben Bild). Snapshot `anazhRealmPerf.json` version **.63** stale ≠ live **18.491.157**; headless Kanal **GRÜN ≠ E-zu**. E bleibt **TEIL**. Kein Fake-ERLEDIGT E · keine erfundenen Tris/dc.
+`node scripts/diag-beweis-e.cjs --tag <name> [--klassen kreatur,baum,haus,wiese] [--proto-min 45]`
 
-| Klasse | Code | Bild | Metrologie (Tris/dc/weltMarch) |
-|--------|------|------|--------------------------------|
-| A Kreaturen | CODE-PFAD geschlossen (Kapseln+Dedup+Chat-Fix) | Bild-Paar **TEIL** (Welt-Silhouette + Hof-Vorschau Wolf) | offen — Zahlen neben Bild |
-| B Bäume | CODE **ZU V18.491.76** (Kegel-Fit/Pack/March + Kronen-Ellipsoid+Noise); Grammatik-SDF **nicht** offen | Fernwald **TEIL** (`analog-b-fernwald.png`; auch `analog-b-e-stempel.png`) | offen (Zahlen neben Bild) |
-| C Arch/Streu | CODE denseness done-ish ≤.95 (FachwerkFit + Prism-Dach + Gaube/Flügel); Prism **nicht** offen | Bild **TEIL** (`AnazhRealm-denken/analog-c-mittag.png`; auch `analog-c-mittag-e.png`) — **nicht** „noch offen“ | offen (Zahlen neben Bild) |
-| D Wiese | CODE+BILD **zu** (Parallax) | `analog-d-wiese-nah.png` @ −900/−850 | offen — Zahlen neben Bild |
+- Echter Renderer (WebGPU über swiftshader-Vulkan), RT-Readback wie `diag-blick` — **der
+  Null-Renderer des Gates ist für den ganzen Analog-Pfad blind** (Feld-Fit, Slots, March kehren
+  headless früh zurück).
+- Alle Klassen auf der **Mess-Wiese −900/−850** (die Welt ist seed-deterministisch → auf jedem
+  Code-Stand dieselben Bühnen): flache, trockene Bühne je Klasse (Höhen-Spanne 1,2 / 3,6 / 4,8 m),
+  der Spieler steht an der Kamera (Chunk-Ring, Foundry-Stufe und March folgen ihm), zwei Renders
+  je Schuss, gezählt wird der zweite (`renderer.info`: Draw-Calls, Dreiecke dieses einen Renders).
+- Vorher = Worktree des Mesh-Stands `d7ca0a1f` (19.07., vor dem Schöpfer-Wort „analog!"), dieselbe
+  Sonde hineinkopiert. Holz-Profil in beiden Läufen „kienspan" (swiftshader: Ring ≤ 2, keine
+  Schatten) — die Zahlen sind unter sich vergleichbar, nicht mit dem Schöpfer-Holz.
+- Bilder: `artifacts/beweis-e/e-<tag>-<klasse>-<fern|arm>.png` (nicht im Repo — jederzeit neu
+  erzeugbar), Zahlen: `artifacts/beweis-e/beweis-e-<tag>.json`. Alle acht Paare nebeneinander
+  (privat, Schöpfer-Konto): https://claude.ai/artifact/K8wVXFNbHsc9x3dR9gzRKk
 
-## Messprotokoll (eine Sonde)
+## Die Messung (30.09.)
 
-1. **Gleiche Kamera/Koordinaten** je Klasse (Armlänge + Fern wo nötig) — siehe A–D.
-2. **Bild** speichern (vorher↔nachher wo Parallelpfad tot).
-3. **Zahlen** im selben Moment:
-   - Live-Konsole (kapselCache nur so):
-     ```js
-     const wm = anazhRealm.state.weltMarch;
-     ({ belegt: wm.belegt, bricks: wm.brickCache.size, kapsel: wm.kapselCache.size, gesetzBloecke: wm.gesetzBloecke });
-     const ri = anazhRealm.state.renderer.info.render;
-     ({ dc: ri.drawCalls ?? ri.calls, tris: ri.triangles });
-     ```
-   - Oder Perf-Panel Screenshot (Version + frame/dc/tris) **und** Export → `anazhRealmPerf.json`.
-4. Headless-Auswertung des Exports:
-   ```bash
-   node scripts/diag-analog-e-metrology.cjs
-   # optional: node scripts/diag-analog-e-metrology.cjs /pfad/zu/trace.json
-   ```
+| Klasse · Schuss | Mesh-Stand 19.07. dc / Dreiecke | Analog (HEAD) dc / Dreiecke | Bild-Urteil |
+|---|---|---|---|
+| Wolf · fern | 135 / 527 475 | 17 / 34 933 | Mesh: helle Wiese mit Gras + Blumen, erkennbarer Wolf. Analog: brauner Kapsel-Rumpf auf Stab-Beinen, dunkle Kronen darüber |
+| Wolf · Armlänge | 102 / 503 783 | 17 / 34 951 | Mesh: Tierkörper mit Fell-Strähnen. Analog: glatte, dunkle Kapseln |
+| Eiche · fern | 31 / 183 495 | 12 / 24 801 | Mesh: Nebelwiese mit Halmen, die gesetzte Eiche ist NICHT im Bild (im Juli-Stand nach dem Einschwingen nicht gebaut — Ursache dort ungemessen). Analog: der Blick endet in einem massiven Kronen-Lappen (fast einfarbig) |
+| Eiche · Armlänge | 32 / 183 503 | 12 / 24 801 | Mesh: Wiese mit Grasbüscheln, keine Eiche. Analog: dunkler Stamm-Kegel füllt das Bild |
+| Haus · fern | 245 / 912 943 | 36 / 28 389 | Mesh: Wiese mit Halmen, das gesetzte Haus ist NICHT im Bild. Analog: das Haus als dunkler Box-Satz, darüber Kronen-Dach |
+| Haus · Armlänge | 95 / 671 101 | 23 / 28 239 | Mesh: Hang mit Gras, kein Haus. Analog: dunkle Box-Flächen |
+| Wiese · fern | 91 / 420 239 | 25 / 27 217 | Mesh: Grasbüschel, Pfad, Studio-Bäume mit Himmel zwischen den Ästen. Analog: fleckiger Boden ohne Halme (Parallax-Funktion), Kapsel-Wolf, dunkle Kronen |
+| Wiese · Armlänge | 77 / 1 175 961 | 19 / 25 817 | Mesh: einzelne Halme und Blätter. Analog: fast einfarbig dunkel |
 
-## Linse (ohne Browser)
+Über alle acht Paare: **Dreiecke 7–46× weniger** (Median ~15×), **Draw-Calls 2,6–8× weniger**.
+Welt-March im Analog-Lauf: 261–371 Feld-Einträge, 102–107 Kapsel-Sätze (Dedup), 0 Bricks;
+der Feld-Pass war ab dem ersten Takt sichtbar, 0 Takte mit unsichtbarem Tier. Im Mesh-Stand
+erschienen die gesetzte Eiche und das gesetzte Haus in der Einschwing-Zeit nicht — dessen
+Baum-/Haus-Zahlen sind die Szene ohne diese Objekte.
 
-| | |
-|--|--|
-| Script | `scripts/diag-analog-e-metrology.cjs` |
-| Quelle | `anazhRealmPerf.json` (Flugschreiber-Export) |
-| Misst aus JSON | `steadyState.weltMarch.{belegt,bricks,gesetzBloecke,…}`, dc/tris aus `worstFrames` (steady oft 0 bei Idle) |
-| Code-Vertrag | Export trägt belegt/bricks/gesetzBloecke/**kapseln** + steady dc/tris + **`eMetrologieStamps`** (letzte Chat-Stempel); Chat `_analogEMetrologieZeile` + `_analogEMetrologieStempelLog` (metrologie\|analog e\|zahlen) |
-| Selbst-Test | Fake ohne `weltMarch` → ROT; Function-Extrakt `_analogEMetrologieZeile` → E OK inkl. kapseln |
+## Was die Messung an Fehlern fand (geheilt in V18.494)
 
-## Stand Metrologie · Puls .156 (15.09. Nachmittag UTC+2) — ehrlich
+1. **Gesetzte Studio-Dinge blieben unsichtbar** (Eiche, Tor, Fahrzeug …): der Feld-Fit baute ein
+   Async-Mesh temporär, sah es leer, gab nach 8 Versuchen auf — 26 von 28 Weltgen-Bauten mit
+   Versuchen waren ausgebrannt. Jetzt Fit aus der Foundry-Flat (`_archFoundryZiegel`).
+2. **Bake-Takte verhungerten** in Listen-Reihenfolge: eine frisch gesetzte Eiche auf Platz 98 von
+   100 bekam in 150 Takten keinen Versuch. Jetzt nah zuerst, ferne nach Distanz.
+3. **Der Baum-Fit war nicht maßtreu:** 5 Stücke desselben Stamms, Krone 5× zu klein und schwebend.
+   Jetzt Ketten-Kegel (Stamm + Hauptäste) + Kronen-Lappen aus den Zweig-Punkten.
 
-Lauf: `node scripts/diag-analog-e-metrology.cjs` → **Kanal GRÜN** (Metrologie-Vertrag). **Kanal GRÜN ≠ E-zu.**
+Stehende Linse: `node scripts/diag-arch-feld.cjs` (Eiche + Haus bekommen ihren Feld-Slot,
+0 ausgebrannte Foundry-Bauten, die Eiche teilt den Kapsel-Satz der Streu).
 
-On-Disk Trace `anazhRealmPerf.json` · version **18.491.63** · savedAt 2026-09-09T13:26:48.162Z (= **15:26 Europe/Zurich**) — **stale Snapshot ≠ live Code 18.491.157** (Snapshot ≠ live; Kanal GRÜN ≠ E-zu):
+## Das Urteil (ehrlich, für die Entscheidung)
 
-| Feld | Wert (nur gelesen) |
-|------|--------------------|
-| weltMarch.belegt | **121** |
-| weltMarch.bricks | **0** |
-| weltMarch.gesetzBloecke | **0** |
-| weltMarch.gesetzPlaetze | **0** |
-| weltMarch.seiten | **4** |
-| frei bloecke/einheiten/felder | **128** / **0** / **3975** |
-| kapseln | **37** |
-| steady dc / tris | **117** / **1021103** |
-| worstPick dc / tris | **8** / **15261** @ 36581.9ms (n=12) |
-| eMetrologieStamps | **absent** (fail-soft) |
+- **Kosten:** Analog senkt die Dreiecke je Bild um 7–46× (Median ~15×), die Draw-Calls um
+  2,6–8× — genau das Versprechen der Wende.
+- **Nähe:** auf Armlänge und bis ~20 m ist jede Analog-Klasse sichtbar gröber als das Studio-Mesh:
+  Tiere sind Kapsel-Figuren, Kronen sind massive Körper (ein luftiges Blätterdach lässt sich mit
+  gefüllten Ellipsoiden nicht darstellen — aus der Nähe wird es eine Wand), Häuser dunkle Boxen,
+  die Wiese hat keine Halme mehr.
+- **Offen, nur im echten Browser entscheidbar:** ob die Stufen-Übergabe beim echten Laufen nahe
+  Bäume rechtzeitig als Mesh zeigt (die Sonde teleportiert — Zellen-Stufen können veraltet sein),
+  und die FPS auf dem Schöpfer-Holz (letzter Trace 14.07., 4–12 FPS, vor der Wende).
 
-E bleibt **TEIL** (Bild-Stempel A/C/D + Tris neben Bild fehlen; B TEIL). Kein Fake-ERLEDIGT E. Nächster: **human Bild**.
+**Die zwei Wege:** (a) Analog überall, wie am 21.07. entschieden — billig, nah grob; (b) HYBRID:
+nah das Studio-Mesh (wie schon bei der Streu-Stufe 0 und bei Häusern in der Hand-Blase), fern die
+Analog-Silhouette — die Kosten-Ersparnis bleibt dort, wo sie am größten ist.
 
-## Stand Metrologie (09.09. ~12:25 MESZ) — historisch
+## Der echte GPU-Trace (Schöpfer-Holz)
 
-Lauf: `node scripts/diag-analog-e-metrology.cjs` → **GRÜN**.
+1. `npm run leuchtturm` (save-server + signaling), Welt im Browser öffnen, Holz-Profil „voll".
+2. Die Wege aus `docs/abnahme-drehbuch.md` Schritte 1–5 gehen (ankommen, laufen, umsehen).
+3. Im Chat `metrologie` tippen (die Zahlen-Zeile landet im Flugschreiber), dann 60 s laufen.
+4. Der Flugschreiber schreibt `anazhRealmPerf.json` (save-server `/api/perf-trace`) —
+   `node scripts/diag-analog-e-metrology.cjs` liest daraus steady/worst dc·tris·weltMarch.
+5. Maßstab der Ziellinie: p95 ≤ 33 ms (roadmap §0.v1).
 
-Trace `anazhRealmPerf.json` · version **18.491.53** · savedAt 09.09. 12:25 MESZ (UTC 10:25):
-
-| Feld | Wert |
-|------|------|
-| weltMarch.belegt | 176 |
-| weltMarch.bricks | 0 |
-| weltMarch.gesetzBloecke | 0 |
-| weltMarch.gesetzPlaetze | 0 |
-| weltMarch.seiten | 9 |
-| frei bloecke/einheiten/felder | 128 / 0 / 3920 |
-| steady dc / tris | 0 / 0 (Idle-Export) |
-| worstPick dc / tris | **73** / **378827** @ 30198.8 ms |
-
-## Lücken (fail-closed)
-
-1. ~~**`kapselCache.size` nur Live**~~ — **geschlossen im Kanal:** Flugschreiber exportiert `weltMarch.kapseln`; Chat-Zeile nennt `kapseln=` (Linse + Extrakt-Smoke).
-2. **Sonden-gebundene Zahlen** — der Trace ist Session-weit, nicht „dieselbe Sonde neben dem Bild“. E-Schließung braucht die Console/Panel/Chat-Zahlen **am Bildmoment** je Klasse A–D.
-3. **steady dc/tris = 0** möglich bei Idle-Export — für Beleg neben Bild `worstFrames`, Live-`renderer.info` oder Chat `metrologie` nutzen.
-4. Metrologie neben Bild A–D offen (Zahlen am Bildmoment); human Bild-Rest A/C formal — CODE B Grammatik zu .76 / C Prism denseness done-ish (siehe A–D-Abnahmen). Kein Fake „SDF/Prism offen“.
-
-## PULS (09.09. ~18:40 MESZ) — ehrlich
-
-**Kanal GRÜN** (Quell-Vertrag + `diag-analog-e-metrology` Extrakt-Smoke + `scripts/diag-puls`): Flugschreiber trägt `kapseln`, `_analogEMetrologieZeile` liefert `E OK`/`E ROT` inkl. Kapseln. **Bild-Stempel A–D weiterhin menschlich/Feel** — keine Desktop-Sonden in diesem Puls; Screenshot-Roulette bleibt bewusst aus.
-
-## Stand .90 (09.09. ~19:25 MESZ) — Stempel im Flugschreiber
-
-**V18.491.90:** Chat `metrologie`/`analog e`/`zahlen` schreibt fail-soft in den Ring `_eMetrologieStamps` (cap 32); Export `steadyState.eMetrologieStamps` (slice −8) in `anazhRealmPerf.json` — **das ist der echte Disk-Pfad** neben Session-Trace. Optional-Hook `window.__anazhEMetrologieLog`. Linse: Stamps absent → fail-soft GRÜN; weltMarch-Vertrag weiter fail-closed.
-
-**Bild-Stempel A/C/D** weiterhin menschlich; **B TEIL** (`analog-b-e-stempel.png`). Kein Screenshot-Roulette in diesem Cut.
-
-## Noch für E-Schließung
-
-1. Einheitliche Sonde (gleiche Kamera/Koordinaten) je Klasse — mit Zahlenblock aus Protokoll.
-2. Tris/dc/weltMarch (+ Live `kapselCache` wo Dedup zählt) **neben** Bild (Chat-Zeile + Export-Stamps).
-3. Vorher↔nachher-Paare wo Parallelpfad totgelegt wurde.
-
-Gates: `node scripts/diag-puls-konsum.cjs` · `node scripts/diag-analog-e-metrology.cjs` · VERSION **18.491.157**. E **nicht** zu.
-
-## Stempel-Fortschritt (09.09.)
-| Klasse | Datei | Zeile |
-|--------|-------|-------|
-| B | `analog-b-e-stempel.png` | `E OK V18.491.59 tris=258821 dc=43 belegt=84 bricks=0 kapseln=36 gesetzB=0 gesetzP=0 pos=48/52/0` |
-| A/C/D | — | offen |
+Die Metrologie-Linse ohne Browser: `node scripts/diag-analog-e-metrology.cjs [trace.json]`
+(Selbst-Test: ein Trace ohne `weltMarch` ist ROT).
