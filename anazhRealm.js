@@ -29742,6 +29742,22 @@ class AnazhRealm {
                 const di = be.get(geo.index);
                 if (!di || (di.buffer === undefined && di.bufferGPU === undefined)) return false;
             }
+            // NICHTS SCHWEBT: ein gebundenes Attribut mit offenem Upload (Version über der hochgeladenen oder
+            // offene updateRanges — BatchedMesh.setGeometryAt schreibt Teil-Uploads) darf nicht genullt werden:
+            // der nächste Render läse die Range aus dem Null-Array → writeBuffer „Number of bytes to write is
+            // too large" (Befund 30.09.: ungerenderte Batches — verdeckt/außer Frustum — sammeln Ranges, die
+            // Gnadenfrist läuft ab). Ungebundene Stagings laden nie → frei.
+            const am = r._attributes && r._attributes.data;
+            if (am && typeof am.get === "function") {
+                const offen = (a) => {
+                    if (!a || !a.array || !a.array.length) return false;
+                    const rec = am.get(a);
+                    if (!rec || rec.version === undefined) return false;
+                    return rec.version < a.version || (a.updateRanges && a.updateRanges.length > 0);
+                };
+                for (const k in geo.attributes) if (offen(geo.attributes[k])) return false;
+                if (offen(geo.index)) return false;
+            }
             return true;
         } catch (_e) {
             return false;
