@@ -56,8 +56,6 @@ function check(name, ok) {
         args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
-    // [PERF] Skin-Res-Cap vor dem Laden seeden (der Avatar-Isosurface baut sonst ~19 s im Boot);
-    // die Checks prüfen „Avatar baut + ist Rig", nicht die Treue → verlustfrei. Siehe playtest.cjs.
     await page.evaluateOnNewDocument(() => {
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-
         // Pixel mit Augen aus). Der Null-Renderer macht den Lauf robust gegen
@@ -109,7 +107,6 @@ function check(name, ok) {
                     };
             }
             r.state.postProcessingFailed = true;
-            // (Skin-Res-Cap wird via evaluateOnNewDocument vor dem Laden geseedet — siehe oben.)
             const start = performance.now();
             const TARGET = 4; // schneller Warmup: ein paar Chunks genügen für die Kern-Gesundheit
             const MIN_MS = 3000;

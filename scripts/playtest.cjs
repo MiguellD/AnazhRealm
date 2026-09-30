@@ -1,35 +1,21 @@
-// Headless-Smoketest, doppelt als CI-Gate verwendbar.
-// Startet save-server.js, lädt das Spiel in Chromium, sammelt Console-Logs für
-// N Sekunden, druckt Statistik UND prüft eine Liste harter Invarianten. Eine
-// verletzte Invariante setzt exit=1; CI bricht damit ab.
-//
-// Aufruf:
-//   npm run playtest                       # Standardlauf
-//   PLAYTEST_SECONDS=60 npm run playtest   # länger
-//   PLAYTEST_STRICT=0 npm run playtest     # nur reporten, kein exit=1
-//
-// Voraussetzungen: puppeteer als devDependency (`npm install`).
+// Headless-Smoketest + CI-Merge-Gate: startet save-server.js, lädt das Spiel in Chromium, sammelt
+// Console-Logs und prüft harte Invarianten — eine verletzte setzt exit=1 (CI bricht ab).
+// Env: PLAYTEST_SECONDS (Mindest-Warmup) · PLAYTEST_STRICT=0 (nur reporten) · braucht puppeteer.
 
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
 
-// V17.32-Heilung (GEMESSEN): der Warmup-Pump finalisiert die Voxel-Chunks
-// (Cold-Start, async Worker + Main-BVH) mit ~0,5–0,8 Chunks/s; unter CI-Last
-// landet `voxelChunks` gelegentlich unter dem `>= 15`-Threshold → „seit
-// Versionen rot" (derselbe Commit rot+grün je nach Runner). DURATION_MS ist
-// jetzt nur noch der MINDEST-Warmup (Floor) für die zeit-getriebenen Systeme;
-// die eigentliche Robustheit gegen die Last liefert der count-BASIERTE Pump
-// unten (pumpt, bis die Welt die Ziel-Chunks WIRKLICH gebaut hat, statt bis
-// ein Timer abläuft). Default 30 s = CI-Wert (`.github/workflows/check.yml`).
+// DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
+// der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
+// Default 30 s = CI-Wert (.github/workflows/check.yml).
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
-// GPU-frei (Default): der Mechanik-Gate läuft mit Null-Renderer — kein Band liest
-// Pixel, der echte GPU-Kontext ist reine Crash-Quelle (swiftshader unter Last).
-// PLAYTEST_REAL_RENDERER=1 schaltet den echten WebGPU-Renderer + End-Screenshot
-// zurück (für ein visuelles Artefakt; der LOOK lebt sonst in diag-settled-view).
+// Default GPU-frei (Null-Renderer): kein Band liest Pixel, der echte GPU-Kontext wäre nur Crash-Quelle
+// (swiftshader unter Last). PLAYTEST_REAL_RENDERER=1 = echter WebGPU-Renderer + End-Screenshot
+// (der LOOK lebt in diag-settled-view).
 const REAL_RENDERER = process.env.PLAYTEST_REAL_RENDERER === "1";
 const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
 const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
@@ -52,15 +38,8 @@ function startSaveServer() {
     });
 }
 
-// V9.52 Sub-Welle a/f — der `safeEvaluate`-Helfer + `ctx` für den Playtest-Pflege-
-// Bogen (`docs/archiv/playtest-hygiene.md`). Kapselt das `page.evaluate(fn).catch(...)`-
-// Boilerplate, das die alte IIFE ~200× wiederholte. Vertrag: liefert das Ergebnis
-// oder `null` bei evaluate-Wurf. Rückwärts-kompatibel zu allen drei Legacy-Catch-
-// Varianten — `() => null`, `(e) => ({error: String(e)})`, `(err) => ({error:
-// err.message})` —, da bestehende Guards `if (!X)` ODER `if (!X || X.error)` auf
-// `null` korrekt zur Fehler-Branch zweigen (kein Detail-String mehr auf catch,
-// aber catch ist Browser-Crash-Pfad — passiert nicht auf grünen Läufen). Sub-
-// Welle f rollt diesen Helfer mechanisch durch alle ~200 Call-Sites.
+// page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf (Browser-Crash-Pfad);
+// Guards `if (!X)` wie `if (!X || X.error)` zweigen damit korrekt in den Fehler-Zweig.
 async function safeEvaluate(page, fn, ...args) {
     // Fehler LAUT loggen statt still null (V18.456-Lehre: „page.evaluate
     // fehlgeschlagen" ohne Botschaft kostet eine ganze Diagnose-Runde).
@@ -70,18 +49,13 @@ async function safeEvaluate(page, fn, ...args) {
     });
 }
 
-// V9.52 Sub-Welle a — die Initial-State-Probe als benannte Funktion. War vorher der
-// erste `page.evaluate`-Block der `### Invarianten`-Sektion. Liefert das `finalState`-
-// Objekt, das die ersten Basis-Checks + Ring 1 (Grok) konsumieren; alles weiter unten
-// fasst es nicht mehr an.
+// Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
 async function gatherInitialFinalState(page) {
     return await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
-        // V8.83 — deterministische Mechanik-Probe statt der flaky
-        // Messung des Box-Inhalts am Lauf-Ende (V8.57-Disziplin):
-        // grokRender schreibt einen Prüfsatz, die Box muss ihn tragen;
-        // ein leerer Satz blankt sie NICHT (der V8.83-Guard).
+        // Deterministische Mechanik-Probe (statt des flaky Box-Inhalts am Lauf-Ende): grokRender schreibt
+        // einen Prüfsatz, die Box muss ihn tragen; ein leerer/null-Satz blankt sie NICHT.
         let grokRenderProbe = null;
         let grokRenderEmptyGuard = false;
         try {
@@ -126,11 +100,8 @@ function checkInitialState(ctx) {
         finalState.terrainEverGenerated === true,
         `terrainEverGenerated=${finalState.terrainEverGenerated}`
     );
-    // V9.33 Phase 5c.2.b — die Eingangs-Welt ist seit dem Flip voxel-
-    // default. Die zwei alten Heightfield-Invarianten sind in einer
-    // voxel-aktiven Welt legitim leer; jetzt prüfen wir, dass IRGEND-
-    // EIN Terrain-Ring um den Spieler gefüllt ist (heightfield ODER
-    // voxel), und dass die voxel-default-Welt das Flag trägt.
+    // Die Eingangs-Welt ist voxel-default: geprüft werden das Flag (worldMeta.voxelTerrain), das aktive
+    // Voxel-Terrain und ein gefüllter Chunk-Ring um den Spieler.
     check(
         "Voxel V9.33 Phase 5c.2.b: die Eingangs-Welt ist per Default voxel-basiert (worldMeta.voxelTerrain=true)",
         finalState.voxelTerrainFlag === true,
@@ -142,11 +113,8 @@ function checkInitialState(ctx) {
         `voxelTerrainActive=${finalState.voxelTerrainActive}`
     );
     check(
-        // V10.0-g.2 — Threshold defensiv von 20 → 15 gesenkt. Wurzel: Headless-
-        // Performance schwankt seit V10.0-Bogen (mehr Material-Compile-Overhead
-        // durch NodeMaterial-TSL-Migrationen) zwischen 17-21 Chunks im 30s-
-        // Budget. Welt rendert ab 15 Chunks sichtbar gerendert; die strikte
-        // voxelTerrainActive-Probe (Z124) bleibt als Vision-Invariante.
+        // Schwelle 15: headless schwanken 17–21 Chunks im 30-s-Budget, ab 15 steht die Welt sichtbar;
+        // die strikte Invariante bleibt voxelTerrainActive.
         "Welt-Terrain ist gefüllt (Voxel-Chunks)",
         finalState.voxelChunksSize >= 15,
         `voxelChunks=${finalState.voxelChunksSize}`
@@ -169,11 +137,9 @@ function checkInitialState(ctx) {
     );
 }
 
-// V9.52 Sub-Welle a — Ring 1 Grok-Stimme als benannte Funktion.
-// firstSpawn feuert mit 1.5s Delay nach Erst-Worldgen und ist der einzige Trigger,
-// der in 20-25 s Headless-Lauf zuverlässig kommt (idle braucht 45 s, jumpBurst
-// keine Keys, rainLong 60 s, nexus irregulär). Daher: seenFirstSpawn + lastSpoke +
-// Dialog-Text + mindestens ein "Grok: ..."-Log werden gateweise geprüft.
+// Ring 1 Grok-Stimme: firstSpawn (1,5 s nach Erst-Worldgen) ist der einzige Trigger, der headless
+// zuverlässig kommt (idle 45 s, rainLong 60 s, jumpBurst ohne Keys, nexus irregulär) → geprüft
+// werden seenFirstSpawn + lastSpoke + Dialog-Text + mindestens ein "Grok: ..."-Log.
 function checkRing1Grok(ctx) {
     const { check, finalState, logs } = ctx;
     check(
@@ -203,17 +169,9 @@ function checkRing1Grok(ctx) {
     );
 }
 
-// V9.52 Sub-Welle a — Ring 2 DSL-Interpreter + die Terrain-Erweiterungs-Sektion,
-// die historisch nur den Phase-2-Loop-Dispatch fasst. Beide teilen `dslResults` +
-// `phase2Results` und werden daher als EIN Block extrahiert (Sektions-Reihenfolge
-// bleibt unverändert).
-//
-// Ring 2: live-Smoketest der DSL-Sandbox — Welt-Identität, Effekte auf state,
-// Budget-Limits, unbekannte-Op-Ablehnung, delay-Scheduler, dslCompose.
-// Terrain-Erweiterung: V9.39 Phase 5c.2.c.3.b.iii — der alte ensureChunkAt-Smoke
-// ist tot (Voxel-Streaming hat eigene Naht-Logik); übrig bleibt der Nexus-Loop-
-// Dispatch-Beweis (V8.50 — _gameLoopTick deterministisch synchron treiben, da
-// Headless-Chromium rAF auf ~1 Hz drosselt).
+// Ring 2: DSL-Sandbox live — Welt-Identität, Effekte auf state, Budget-Limits, Ablehnung unbekannter
+// Ops, delay-Scheduler, dslCompose; plus Nexus-Loop-Dispatch (_gameLoopTick synchron treiben, da
+// Headless-Chromium rAF auf ~1 Hz drosselt). EIN Block, weil beide dslResults + phase2Results teilen.
 async function checkRing2Dsl(ctx) {
     const { page, check } = ctx;
     const dslResults = await safeEvaluate(page, () => {
@@ -280,11 +238,8 @@ async function checkRing2Dsl(ctx) {
         out.composeIsArray = Array.isArray(composed);
         out.composeRootIsChain = out.composeIsArray && composed[0] === "chain";
         const histBefore = r.state.dsl.history.length;
-        // V18.105 (E2-Wanderung, V9.56-i): seit E2 ZAHLT der Nexus am Wirk-Tor —
-        // ein durch frühere Band-Aktivität verarmtes Budget ließe die Test-
-        // Evolution korrekt RUHEN (Trägheit by design). Dieser Test prüft den
-        // DISPATCH-Mechanismus (die Ökonomie prüft checkBandPhasenBF) → das
-        // Budget deterministisch decken.
+        // Der Nexus ZAHLT am Wirk-Tor; ein von früheren Bändern verarmtes Budget ließe die Test-Evolution
+        // korrekt ruhen. Geprüft wird der DISPATCH (Ökonomie: checkBandPhasenBF) → Budget decken.
         r.state.nexusWirk = r.constructor.NEXUS_WIRK.max;
         r.state.nexusEvolutionQueue.push({
             name: `playtest_evo_${Date.now()}`,
@@ -294,10 +249,8 @@ async function checkRing2Dsl(ctx) {
         });
         out.histBefore = histBefore;
 
-        // V18.284 — KEINE STRUKTUR-BATCH-BOMBEN: generateEvolution erzeugt nie >1 schweren
-        // Welt-Bau pro Evolution (ein `repeat N × spawn_village` / chain-Batch lief synchron
-        // als N Footprint-Remeshes = der periodische Nexus-Freeze; der Mesh-Bau ist budgetiert,
-        // Kreaturen gecacht → es bleibt nur, KEINEN synchronen Bau-Stapel zu erzeugen).
+        // Keine Struktur-Batch-Bomben: generateEvolution erzeugt nie >1 schweren Welt-Bau pro Evolution
+        // (`repeat N × spawn_village` liefe synchron als N Footprint-Remeshes = periodischer Nexus-Freeze).
         {
             const HEAVY = /spawn_(village|temple|island|fractal|waterfall)/g;
             let maxHeavy = 0;
@@ -376,10 +329,8 @@ async function checkBandRing2Extended(ctx) {
     void errors;
     void finalState;
     // ### Ring 2 Phase 3 – Chat → DSL ###
-    // Wir verifizieren drei Dinge: Parser liefert das richtige AST,
-    // processChatCommand routet den Chat-Befehl tatsächlich durch dslRun
-    // (state.dsl.lastUserProgram + Welt-Effekt), und chatSuggest erkennt
-    // einen leicht verschriebenen Befehl per Levenshtein.
+    // Parser liefert das richtige AST; processChatCommand routet durch dslRun (state.dsl.lastUserProgram
+    // + Welt-Effekt); chatSuggest erkennt einen verschriebenen Befehl per Levenshtein.
     const phase3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -421,10 +372,7 @@ async function checkBandRing2Extended(ctx) {
         const suggestion = r.chatSuggest("setze wettr rainy");
         out.suggestionForTypo = suggestion === "setze wetter rainy";
 
-        // 4. Phase 3b: set_visible-Primitiv + Chat-Routing
-        // V9.39 Phase 5c.2.c.3.b.iii — `toggleTerrain` wirkt jetzt
-        // auf Voxel-Chunks (`state.voxelChunks`), nicht den toten
-        // `state.groundChunks`. Der DSL-Op-Pfad bleibt identisch.
+        // 4. Phase 3b: set_visible-Primitiv + Chat-Routing — `toggleTerrain` wirkt auf `state.voxelChunks`.
         const voxelChunksBefore = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
         const someVoxelVisible = () => {
             if (!r.state.voxelChunks) return false;
@@ -588,9 +536,8 @@ async function checkBandRing2Extended(ctx) {
     }
 
     // ### Ring 2 Phase 6 – CSP ###
-    // CSP-Meta-Tag muss vorhanden sein und die kritischen Direktiven
-    // tragen. Plus: über die gesamte Lauf-Zeit darf keine CSP-Violation
-    // im console-Buffer landen.
+    // Das CSP-Meta-Tag trägt die kritischen Direktiven; über den ganzen Lauf landet keine CSP-Violation
+    // im console-Buffer.
     const cspResults = await safeEvaluate(page, () => {
         const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
         if (!meta) return { metaPresent: false };
@@ -622,9 +569,8 @@ async function checkBandRing2Extended(ctx) {
     );
 
     // ### Ring 2 Phase 7 – Fitness-V2 ###
-    // Drei Aspekte: (a) Selektion bevorzugt statistisch high-fitness,
-    // (b) Mutation behält strukturelle Invarianten, (c) dslCompose
-    // mit historyProbability=1 nutzt tatsächlich die History.
+    // (a) Selektion bevorzugt statistisch high-fitness, (b) Mutation behält strukturelle Invarianten,
+    // (c) dslCompose mit historyProbability=1 nutzt tatsächlich die History.
     const phase7Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || typeof r.dslSelectByFitness !== "function") return null;
@@ -836,10 +782,8 @@ async function checkBandRing2Extended(ctx) {
     }
 }
 
-// V17.21 — Das lebendige Feld, Welle 1: auraAt (die Lese-Seite) + der
-// geschlossene Kreis (Welt→Spieler via FIELD_TO_EMOTION). Beweist: auraAt
-// umhüllt das eingefrorene worldFieldAt + die lokale Aura HEBT die Emotion
-// (lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
+// Lebendiges Feld, Lese-Seite: auraAt umhüllt das eingefrorene worldFieldAt; die lokale Aura HEBT die
+// Emotion (FIELD_TO_EMOTION: lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
 // Save/Restore von Position + Emotionen → kein State-Leak in Folge-Bänder.
 async function checkBandV1721LivingFieldAura(ctx) {
     const { page, check } = ctx;
@@ -922,11 +866,9 @@ async function checkBandV1721LivingFieldAura(ctx) {
     );
 }
 
-// V17.22 — Das lebendige Feld, Welle 2: dem Nexus Augen geben. dslComposeAtomic
-// liest jetzt auraAt am Spieler + komponiert resonant zum lokalen Feld (der
-// Kreis des Verstehens, docs/das-lebendige-feld.md §2/§3.1). Beweis: die
-// Feld-resonante Farbwahl (kontrollierte rng → deterministisch) + dass
-// dslComposeAtomic das Feld LIEST + weiter valide DSL komponiert.
+// Nexus-Augen: dslComposeAtomic LIEST auraAt am Spieler und komponiert resonant zum lokalen Feld
+// (docs/das-lebendige-feld.md §2/§3.1). Beweis: feld-resonante Farbwahl (kontrollierte rng →
+// deterministisch) + weiter valide DSL.
 async function checkBandV1722NexusEyes(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -956,12 +898,9 @@ async function checkBandV1722NexusEyes(ctx) {
     check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
-// V17.23 — Harmonie statt Revert (Schöpfer-Lehre): drei Kräfte verschmelzen
-// PARALLEL, ohne zu überschreiben, und faden. (1) Wetter: Feld + Emotion, das
-// Feld weicht dem starken Willen (×(1−emoSignal)); (2) Sky: die DSL-Tönung
-// blendet mit Tag-Nacht + fadet (snappt/überschreibt nicht); (3) Spawn: Ring
-// um den Spieler statt AUF ihm. Sky-Fade behavioral (mit Restore), Rest Source-
-// Probe (kein State-Leak durch echtes Spawnen).
+// Harmonie statt Revert: drei Kräfte verschmelzen, ohne zu überschreiben — Wetter (Feld weicht dem
+// Willen: ×(1−emoSignal)), Sky (DSL-Tönung blendet mit Tag-Nacht + fadet), Spawn (Ring um den
+// Spieler, nicht AUF ihm). Sky-Fade behavioral mit Restore, Rest Source-Probe (kein Spawn-Leak).
 async function checkBandV1723Harmony(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1019,20 +958,16 @@ async function checkBandV1723Harmony(ctx) {
     check("V17.23 Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm (Spawn-Ring)", res.spawnRings);
 }
 
-// V17.25 — Mehr Leser ans Feld (§5): die Logik-Konsumenten lesen jetzt die
-// living `auraAt`-API (statt direkt das eingefrorene worldFieldAt), und die
-// Fauna liest die VOLLEN Achsen (lebendig hebt, glut dämpft) statt nur lebendig.
-// Source-Probe (auraAt+glut) + behavioral (lebendige Region trägt mehr Fauna).
+// Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt); die
+// Fauna liest die VOLLEN Achsen (lebendig hebt, glut dämpft); Beweis: Konsum + behavioral.
 async function checkBandV1725FieldReaders(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
-        // U1 (V18.452) — KONSUM-Beweis statt Quelltext-Zitat: die Leser rufen
-        // auraAt WIRKLICH (Spy-Swap __consumes, überlebt jede Kern-Wanderung);
-        // das glut-Token bleibt als __codeOf-Probe (kommentar-gestrippt) und
-        // die Behavioral-Probe unten (faunaDiffers) misst die glut-Dämpfung.
+        // KONSUM-Beweis statt Quelltext-Zitat: die Leser rufen auraAt WIRKLICH (Spy-Swap __consumes, überlebt
+        // Kern-Wanderungen); das glut-Token bleibt __codeOf-Probe, faunaDiffers misst die glut-Dämpfung.
         out.faunaReadsAura =
             window.__consumes(r, "_currentFaunaTarget", r, "auraAt") &&
             /glut/.test(window.__codeOf(r._currentFaunaTarget));
@@ -1086,10 +1021,8 @@ async function checkBandV1725FieldReaders(ctx) {
     );
 }
 
-// V17.26 — Dem Nexus die FELD-RICHTUNG: er trägt Leben zum erkannten BEDARF
-// (at_field_need = der ärmste Punkt im Ring) statt nur die lebendige Region zu
-// verstärken — „die Welt versteht sich selbst und heilt sich". Beweis:
-// at_field_need-Resolver findet das lebendig-Minimum + dslComposeAtomic nutzt ihn.
+// Feld-Richtung: der Nexus trägt Leben zum BEDARF (at_field_need = ärmster Punkt im Ring). Beweis:
+// der Resolver findet das lebendig-Minimum, dslComposeAtomic nutzt ihn.
 async function checkBandV1726FieldDirection(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1126,12 +1059,9 @@ async function checkBandV1726FieldDirection(ctx) {
     check("V17.26 Feld-Richtung: der Bedarf-Punkt liegt auf dem Ring (Radius 50)", res.onRing);
 }
 
-// V17.27 — die SCHREIB-Seite des lebendigen Feldes: eine Geburt deponiert Leben,
-// das den frozen lebendig-Kern HEBT (auraAt blendet, nie überschreiben), langsam
-// zurück zerfällt (Homöostase), bei max sättigt — und der at_field_need-LOOP
-// schließt sich ECHT: Leben am ärmsten Punkt → er ist nicht mehr der ärmste →
-// ein ANDERER wird es (Leben spreizt, kein Abladen). Plus backward-compatible
-// (leerer Overlay == frozen) + die Geburt im spawn_creature-Pfad deponiert.
+// Schreib-Seite: eine Geburt deponiert Leben, das den frozen lebendig-Kern HEBT (auraAt blendet),
+// zerfällt (Homöostase), bei max sättigt; der at_field_need-Loop schließt sich (belebt → ein ANDERER
+// Punkt wird ärmster). Leerer Overlay == frozen; der spawn_creature-Pfad deponiert.
 async function checkBandV1727WritableField(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1200,10 +1130,8 @@ async function checkBandV1727WritableField(ctx) {
     check("V17.27 Schreib-Feld: der alte Bedarf-Punkt ist gehoben (der Mangel sinkt wirklich)", res.p1Raised);
 }
 
-// V17.28 — „der Ort, an dem ich stehe, ist besetzt": GROSSE Strukturen (Dorf/
-// Tempel/Wasserfall) spawnen nicht mehr AUF dem Spieler (sie remeshten seinen
-// Chunk + ueberlappten ihn → Fall-durch-den-Boden), kleine Platzierungen bleiben
-// unberuehrt; plus ein Void-Boden, der den Spieler aus jedem Durchfall zurueckholt.
+// GROSSE Strukturen (Dorf/Tempel/Wasserfall) spawnen nicht AUF dem Spieler (Chunk-Remesh →
+// Durchfall), kleine Platzierungen unberührt; ein Void-Boden holt aus jedem Durchfall zurück.
 async function checkBandV1728SpawnClearance(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1213,10 +1141,8 @@ async function checkBandV1728SpawnClearance(ctx) {
         const MARGIN = r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN;
         out.hasConsts =
             typeof MIN === "number" && typeof MARGIN === "number" && typeof r.constructor.PLAYER_VOID_Y === "number";
-        // Footprint-Radius: die Siedlungs-Klasse gross (>= MIN), Felsblock klein (< MIN).
-        // AUSLÖSCHUNGS-WELLE — der village-Blueprint fiel; die Spawn-Klemme misst jetzt
-        // über die eingefrorene Substanz-Zeile haus_basis (KIND_SUBSTANCE-Fallback in
-        // _blueprintFootprintRadius — exakt der Pfad, den spawn_village selbst nimmt).
+        // Footprint-Radius: Siedlungs-Klasse gross (>= MIN), Felsblock klein (< MIN) — gemessen über die
+        // Substanz-Zeile haus_basis (KIND_SUBSTANCE-Fallback in _blueprintFootprintRadius, wie spawn_village).
         const fpVillage = r._blueprintFootprintRadius("haus_basis");
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
@@ -1279,11 +1205,8 @@ async function checkBandV1728SpawnClearance(ctx) {
     );
 }
 
-// V17.29 — der Kreatur-Trickle: NUR Nexus/Spieler-getragene Kreaturen (tendsLife)
-// traeufeln Leben in ihre Zelle (Leben sustainiert, wo es wohnt) → die getendete
-// Region erhaelt sich, statt nach dem Geburts-Puls zu verblassen. Die ambiente
-// Fauna traeufelt NICHT (kein Runaway). Rate-limitiert. So wird der V17.27-
-// Schreib-Loop eine echte, stabile Oekologie.
+// Kreatur-Trickle: NUR getragene Kreaturen (tendsLife) träufeln Leben in ihre Zelle → die Region
+// erhält sich nach dem Geburts-Puls; ambiente Fauna träufelt NICHT (kein Runaway); rate-limitiert.
 async function checkBandV1729CreatureTrickle(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1329,10 +1252,8 @@ async function checkBandV1729CreatureTrickle(ctx) {
     check("V17.29 Trickle: ambiente Fauna traeufelt NICHT (kein Feedback-Runaway, V17.27-Disziplin)", res.ambientInert);
 }
 
-// V17.30 — Pfeiler 2 wird WAHR: „Emotion treibt alles". Die Emotion leitet sich
-// jetzt aus dem echten SEIN-IN-DER-WELT ab — ueber ALLE sechs Achsen, aus den
-// TATEN (ACTION_TO_EMOTION, an jeder Handlungs-Stelle verdrahtet) + dem ZUSTAND
-// (niedrige HP) + der UMGEBUNG (Feld, V17.21). Nicht mehr nur Chat-Stichwoerter.
+// Emotion aus dem SEIN: alle sechs Achsen speisen sich aus TATEN (ACTION_TO_EMOTION an jeder
+// Handlungs-Stelle), ZUSTAND (niedrige HP) und UMGEBUNG (Feld) — nicht nur aus Chat-Stichwörtern.
 async function checkBandV1730EmotionFromBeing(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1394,14 +1315,9 @@ async function checkBandV1730EmotionFromBeing(ctx) {
     check("V17.30 Zustand: niedrige HP driftet sorrow/chaos (die Wund-Dread)", res.hpChannel);
 }
 
-// V17.31 — die Reflexion deckte ZWEI tote Haken auf: (a) die `emotion`-Achse von
-// `auraAt` war ein PASSAGIER (V17.21 hinzugefuegt, NIEMAND las sie — die Welt-
-// Konsumenten lasen `player.emotions` direkt); (b) der Wasser-`uEmotion`-Haken
-// (V14) blieb auf 0.0 (deklariert, im Shader benutzt, NIE gefuettert). Beide
-// geheilt: der Welt-Tint liest jetzt `aura.emotion` (die Achse ist ein echter
-// Leser), das Wasser wird gefuettert. Diese Welle prueft KONSUM, nicht blosse
-// Existenz (die V17.21-Probe pruefte nur, dass die Achse DA ist — der Passagier-
-// Trugschluss). So treibt die Emotion die Welt KONTINUIERLICH (Licht + Wasser).
+// Emotion treibt die Welt KONTINUIERLICH (Licht + Wasser), geprüft als KONSUM: der Welt-Tint liest
+// `aura.emotion` (die auraAt-Achse hat einen echten Leser), der Wasser-`uEmotion`-Haken wird
+// gefüttert — beide waren sonst tote Passagiere.
 async function checkBandV1731EmotionDrivesWorld(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1415,10 +1331,8 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
-        // V18.369 — der Default `auraTintStrength` ist jetzt 0 (Schöpfer „Emotion aus dem Himmel,
-        // wir gehen in die Realität — die Emotion oben im UI [Text] reicht"). Der MECHANISMUS lebt
-        // weiter (Slider hebt ihn) → diese KONSUM-Probe forciert ihn auf 1 (deterministisch, das
-        // V18.236-Muster), um zu beweisen DASS die Feld-Emotion-Achse den Tint färbt, wenn aktiviert.
+        // Default `auraTintStrength` ist 0 (Slider hebt ihn) → die KONSUM-Probe forciert 1 (deterministisch),
+        // um zu beweisen, dass die Feld-Emotion-Achse den Tint färbt, wenn aktiviert.
         const _origAuraK1731 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         const THREE = window.THREE;
@@ -1455,12 +1369,9 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
     );
 }
 
-// V17.32 — die RAEUMLICH-dynamische Emotion-Achse: das emotionale GEDAECHTNIS der
-// Welt. Der Moment des Fuehlens (`_feelAction`) praegt die Emotion an der Spieler-
-// Zelle ein; `auraAt` blendet den lokalen Abdruck ueber die globale Stimmung; der
-// V17.31-Welt-Tint liest das → faerbt den Ort. Die emotion-Achse wird damit eine
-// echte SCHREIBBARE Feld-Achse (heilt §3.3 fuer Emotion), KONSUMIERT raeumlich
-// (der Tint) — die V17.31-Passagier-Lehre angewandt: KONSUM, nicht nur Existenz.
+// Räumliche Emotion: `_feelAction` prägt die Emotion an der Spieler-Zelle ein, auraAt blendet den
+// lokalen Abdruck über die globale Stimmung, der Welt-Tint liest das → färbt den Ort. Die
+// emotion-Achse ist damit schreibbar UND räumlich konsumiert.
 async function checkBandV1732SpatialEmotion(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1494,10 +1405,8 @@ async function checkBandV1732SpatialEmotion(ctx) {
         const stored = r.state.emotionField.get(key).axes.sorrow;
         r.state.emotionField.get(key).t -= 120;
         out.decays = r.auraAt(A.x, A.z).emotion.sorrow < stored;
-        // (5) DER ANTI-PASSAGIER-BEWEIS: ein raeumlicher sorrow-Abdruck FAERBT den
-        // Welt-Tint (am Spieler), obwohl die globale Stimmung NEUTRAL ist → sorrow
-        // grayt (reduziert die Saettigung). Beide Tints am selben Ort (gleiches
-        // Feld), nur der Emotions-Abdruck unterscheidet sich.
+        // (5) Anti-Passagier-Beweis: ein räumlicher sorrow-Abdruck FÄRBT den Tint am Spieler (sorrow senkt
+        // die Sättigung), obwohl die globale Stimmung neutral ist — gleicher Ort, nur der Abdruck differiert.
         out.tintColors = true;
         const THREE = window.THREE;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
@@ -1547,14 +1456,9 @@ async function checkBandV1732SpatialEmotion(ctx) {
     );
 }
 
-// V17.33 Phase A (DSL-Weltregeln-Bogen) — DAS rule-PRIMITIV: ein `when`, das
-// NICHT verfaellt. Statt die Bedingung→Effekt EINMAL auszufuehren, REGISTRIERT
-// `rule` sie als stehende Regel in state.worldRules; der Welt-Tick
-// (_tickWorldRules) prueft sie fortlaufend. Damit ist die Welt zum ersten Mal
-// REGEL-getrieben statt nur durch Gesten gepoked. Gemessen (§6-A): Verdrahtung,
-// Registrierung (kein Sofort-Effekt), Feuern bei Bedingung, everySec-Gate,
-// Bedingung-false, TTL-Entfernung, Frame-Budget, Dedup, Cap+Eviction,
-// Re-Entrancy (kein Same-Tick-Kaskade), deterministische Regel-RNG.
+// rule-Primitiv: ein `when`, das NICHT verfällt — `rule` REGISTRIERT Bedingung→Effekt in
+// state.worldRules, _tickWorldRules prüft fortlaufend. Gemessen u. a.: kein Sofort-Effekt, everySec,
+// TTL, Frame-Budget, Dedup, Cap+Eviction, keine Same-Tick-Kaskade, deterministische Regel-RNG.
 async function checkBandV1733WorldRules(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1716,17 +1620,10 @@ async function checkBandV1733WorldRules(ctx) {
     );
 }
 
-// V17.34 Phase B (DSL-Weltregeln-Bogen) — die FELD-Kopplung: Regeln LESEN das
-// lebendige Feld (field_above/field_below ueber auraAt — die frozen Achsen +
-// die raeumliche emotion) und SCHREIBEN es (deposit_life/deposit_emotion → die
-// V17.27/.32-Overlays). Damit schliesst sich der Feld-Kreis INNERHALB der Sprache:
-// eine Regel schreibt, was eine andere liest — lesen+schreiben sind DASSELBE
-// Substrat (der wahre Norden, das-lebendige-feld.md §2). Der V17.26-„trag Leben in
-// den Mangel"-Gedanke wird als REGEL ausdrueckbar statt hardcodiert. Gemessen
-// (§6-B): Verdrahtung, field-read (frozen + emotion raeumlich), deposit-write→
-// read-back, Default at_player, die HEILUNGS-Regel (der Loop schliesst sich:
-// field_below lebendig → deposit_life → lebendig steigt → die Regel stoppt),
-// invalide Achse → no-op.
+// Feld-Kopplung: Regeln LESEN das Feld (field_above/field_below über auraAt, frozen + räumliche
+// emotion) und SCHREIBEN es (deposit_life/deposit_emotion → Overlays) — ein Substrat. Kern-Probe:
+// die Heilungs-Regel schließt den Loop (field_below lebendig → deposit_life → steigt → Regel
+// stoppt); Default at_player; invalide Achse → no-op.
 async function checkBandV1734FieldRules(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1874,16 +1771,10 @@ async function checkBandV1734FieldRules(ctx) {
     check("V17.34 Feld-Regeln: invalide emotion-Achse → no-op (kein throw, kein Feld-Schreiben)", res.invalidAxisNoop);
 }
 
-// V17.35 Phase C (DSL-Weltregeln-Bogen) — der Nexus EVOLVIERT Regeln: die Welt
-// waechst + bewertet ihre eigene Logik. Der Nexus KOMPONIERT Regeln (aus Feld-
-// Bedingungen + Feld-Effekten, resonant zur Aura, ephemer per ttlSec) UND BEWERTET
-// sie ueber ein Lebens-Fenster (per-Regel-Fitness = Engagement + Kosten + Erfolg,
-// alles attributierbar — kein Passagier): gut bewaehrt → ERNEUERN, schlecht/inert →
-// VERFALLEN (Selektion); neue Regeln descend von Ueberlebenden (Heredity → Evolution).
-// "Regelkreise statt Hardcode": der V17.26-Heilungs-Gedanke ist jetzt ein evolvierter
-// Regelkreis. Gemessen (§6-C): Komposition (Struktur, Feld-Read/Write), der
-// generateEvolution-Hook (Misch aus Regel+Geste), Fitness, Erneuerung, Verfall
-// (inert + erroring), dslMutate haelt die Regel-Form, _composeNexusRule.
+// Der Nexus EVOLVIERT Regeln: _composeNexusRule komponiert aus Feld-Bedingungen + -Effekten
+// (resonant, ephemer per ttlSec), bewertet über ein Lebens-Fenster (Fitness = Engagement + Kosten +
+// Erfolg, attributierbar): bewährt → ERNEUERN, inert/erroring → VERFALLEN, Neue erben von
+// Überlebenden. generateEvolution mischt Regel + Geste; dslMutate hält die Regel-Form.
 async function checkBandV1735NexusEvolvesRules(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2076,14 +1967,9 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
     );
 }
 
-// V17.36 Phase D (DSL-Weltregeln-Bogen) — der SCHÖPFER gibt der Welt GESETZE: per
-// Chat „wann immer X, dann Y" → eine stehende Mensch-Regel. Synergie: der Effekt (Y)
-// wird über die BESTEHENDEN Chat-Patterns geparst (jeder Chat-Effekt wird Regel-fähig),
-// die Bedingung (X) über _parseChatCondition (liest Feld + Stimmung). Whitelist-Wand:
-// eine Mensch-Regel darf den frozen Worldgen NICHT anfassen (der V17.33-Caveat).
-// „zeige regeln" macht die Gesetze sichtbar, „vergiss regeln" widerruft sie. Gemessen
-// (§6-D): Parser (cond+effect), Whitelist, end-to-end Regel-Erstellung + Feuern,
-// describeProgram(rule), Liste, Vergessen, unsicherer Effekt abgelehnt, unbekannte cond.
+// Mensch-Regeln per Chat „wann immer X, dann Y“: Y über die bestehenden Chat-Patterns, X über
+// _parseChatCondition (Feld + Stimmung). Whitelist-Wand: eine Mensch-Regel fasst den frozen
+// Worldgen NICHT an. „zeige regeln“ listet, „vergiss regeln“ widerruft, unsichere Effekte → abgelehnt.
 async function checkBandV1736HumanRules(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2223,13 +2109,9 @@ async function checkBandV1736HumanRules(ctx) {
     check('V17.36 Mensch-Regeln: „vergiss regeln" widerruft die Mensch-Gesetze', res.rulesForgotten);
 }
 
-// V17.37 D-2 — die Gesetze-Sektion in der BESTEHENDEN Faehigkeiten-UI (kein
-// Parallel-Panel, die Heilige Lektion): state.worldRules wird im selben Drawer
-// gelistet wie die Faehigkeiten (gleiches ability-row-Pattern via describeProgram),
-// aber eine Regel STEHT (kein ▶) → statt Run ein ✕ (vergiss, nur Mensch-Regeln) +
-// ein aktiv/ruht-Indikator; beide Sektionen sind einklappbar (wie die Einstellungen).
-// Gemessen: DOM-Host, renderWorldRulesList (Mensch-Regel mit ✕, Nexus-Regel ohne),
-// der ✕-Klick vergisst die Regel, der Empty-State, das Collapsible verdrahtet.
+// Gesetze-Sektion in der BESTEHENDEN Fähigkeiten-UI (kein Parallel-Panel): state.worldRules im selben
+// Drawer via describeProgram; eine Regel STEHT (kein ▶) → ✕ (vergiss, nur Mensch-Regeln) +
+// aktiv/ruht-Indikator; beide Sektionen einklappbar.
 async function checkBandV1737RulesUI(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2360,12 +2242,9 @@ async function checkBandV1737RulesUI(ctx) {
     );
 }
 
-// V17.38 Phase E — Persistenz + Bibliothek: die stehenden Welt-Regeln ueberleben
-// einen Reload (buildStateSnapshot/loadState) UND der Regel-Satz zweier Welten wird
-// beim Fusionieren VEREINIGT (fuseWorlds) — eine Welt IST ihr Regel-Satz, die
-// Bibliothek von Alexandria im tiefen Sinn (Welt-LOGIK ist merge-bar). Gemessen:
-// Snapshot serialisiert (definierende Felder), Restore (frische Akkus, dedup, cap),
-// eine restaurierte Regel FEUERT, alter Save ohne worldRules → no-op, Merge unioniert.
+// Regel-Persistenz: worldRules überleben den Reload (buildStateSnapshot/loadState: definierende
+// Felder, frische Akkus, dedup, cap), fuseWorlds VEREINIGT die Regel-Sätze. Eine restaurierte Regel
+// FEUERT; ein alter Save ohne worldRules → no-op.
 async function checkBandV1738RulePersistence(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2484,12 +2363,9 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-// V17.39 — die Gesetze-UX als Spieler durchdacht: SEHEN ob ein Gesetz bleibt
-// (permanent) oder verfaellt (~Ns), eigene Gesetze PAUSIEREN/loeschen, eine gute
-// Nexus-Regel BEHALTEN (📌 adoptieren → permanent + eviction-geschuetzt). Modus-
-// bewusst: eine FREMDE Nexus-Regel verwerfen ist eine Schoepfer-Geste. Gemessen:
-// Persistenz-Label, Pause (Tick skippt), Pin-Klick adoptiert, Eviction schuetzt
-// Pinned, Modus-Gating des Nexus-✕, Sortierung (Favoriten oben), Persistenz.
+// Gesetze-UX: Persistenz-Label (permanent vs ~Ns), eigene Gesetze pausieren (Tick skippt)/löschen,
+// Nexus-Regel per 📌 adoptieren (permanent + eviction-geschützt). Modus-Gating: eine FREMDE
+// Nexus-Regel verwerfen ist Schöpfer-Geste; Favoriten oben.
 async function checkBandV1739RulesUX(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2639,12 +2515,9 @@ async function checkBandV1739RulesUX(ctx) {
     );
 }
 
-// V17.40 — die KI/das LLM als Regel-Schreiberin (der letzte Pfeiler §3.4): Mensch ·
-// Nexus · LLM schreiben am SELBEN Regel-Satz. Das LLM produzierte schon DSL-Programme
-// (dslRun source:"llm:grok") — jetzt kennt es die Regel-Grammatik (Prompt) + ist
-// abgesichert: die Effekt-Whitelist lebt jetzt an der EINEN Registrierungs-Stelle
-// (_registerWorldRule) → JEDE Quelle (auch LLM) darf nur die reaktive Welt berühren.
-// Eine LLM-Regel ist EPHEMER (fitness-getestet + adoptierbar) + im Gesetze-Console.
+// Mensch · Nexus · LLM schreiben am SELBEN Regel-Satz: das LLM kennt die Regel-Grammatik (Prompt);
+// die Effekt-Whitelist lebt am EINEN Chokepoint _registerWorldRule → auch LLM-Regeln berühren nur
+// die reaktive Welt. LLM-Regeln sind EPHEMER (fitness-getestet, adoptierbar).
 async function checkBandV1740LlmRules(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2716,14 +2589,9 @@ async function checkBandV1740LlmRules(ctx) {
     );
 }
 
-// V17.41 — Der Gesetzes-Faden: die Regeln wirken nicht mehr unsichtbar. Zwei
-// Konsumenten der EINEN Spur (lastFired/fires, die das Feuern schon aufzeichnet):
-// (a) die Gesetze-Console geht LIVE — _worldRuleActivityLabel zeigt „⚡ feuert"
-// (im Moment des Wirkens) statt des alten sticky „⚡ aktiv"; (b) das erste Erwachen
-// einer EIGENEN (Mensch-)Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte").
-// Gemessen wird KONSUM (V17.31-Lehre): der DOM-Span zeigt „feuert" nach echtem
-// Feuern, die Signatur ändert sich (Live-ness im Diff), das Journal bekommt die
-// Erinnerung (einmal, idempotent über die Signatur), eine Nexus-Regel NICHT.
+// Gesetzes-Faden, zwei Konsumenten der EINEN Spur lastFired/fires: (a) _worldRuleActivityLabel zeigt
+// live „⚡ feuert“, (b) das erste Erwachen einer EIGENEN Mensch-Regel wird eine Welt-Erinnerung
+// (einmal, idempotent über die Signatur; Nexus-Regeln nicht). Geprüft nach echtem Feuern.
 async function checkBandV1741RuleThread(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2853,12 +2721,9 @@ async function checkBandV1741RuleThread(ctx) {
     );
 }
 
-// V17.42 — DIE LEBENDIGE WERTUNG, Phase 1: das Wohl-Maß + die gleitende Baseline (das
-// dritte Verb des Feldes — die Mess-Schicht, auf der Phase 2/3 die Regel-Fitness + die
-// Emotion echt machen). Gemessen wird KONSUM (V17.31-Lehre): die EMA verfolgt ihren
-// Input KORREKT + LIVE — Cold-Start = erste Beobachtung, stabiler Input → Baseline hält,
-// ein Sprung → die Baseline trackt aber LAGGT (das EMA-Wesen), die Spieler-Baseline
-// ebenso. Nicht „die Methode existiert", sondern „die Gleichung rechnet richtig".
+// Wohl-Maß + gleitende Baseline (Mess-Schicht für Regel-Fitness + Emotion): die EMA rechnet richtig —
+// Cold-Start = erste Beobachtung, stabiler Input → hält, Sprung → trackt mit Lag; Spieler-Baseline
+// ebenso.
 async function checkBandV1742Wohl(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2943,13 +2808,10 @@ async function checkBandV1742Wohl(ctx) {
     check("V17.42 Wertung: die Baseline-Map wird gepruned (lange nicht beobachtete Zelle → weg, bounded)", res.prunes);
 }
 
-// V17.43 — DIE LEBENDIGE WERTUNG, Phase 2: die lokal-attribuierte Regel-Fitness. Eine
-// Regel überlebt, weil der ORT, den sie berührt, AUFBLÜHT — reward = struktureller δ am
-// Effekt-Ort über die Baseline, EMA in rule.value; _worldRuleFitness wird viability-Floor
-// + value-Bonus/Penalty (valueScore zentriert bei 0.5 → neutral überlebt, KEINE Monokultur).
-// Gemessen wird KONSUM: die Fitness DISKRIMINIERT (Heiler/neutral/Schädling — was die alte
-// ≈0.99-Fitness NICHT konnte), eine heilende Regel akkumuliert positiven Wert, eine neutrale
-// ~0, die Eviction wirft den wert-niedrigsten (nicht den ältesten), Mensch/pinned geschützt.
+// Lokal-attribuierte Regel-Fitness: reward = struktureller δ am Effekt-Ort über die Baseline, EMA in
+// rule.value; _worldRuleFitness = viability-Floor + value-Bonus (valueScore zentriert 0.5 → neutral
+// überlebt, keine Monokultur). Geprüft: Heiler/neutral/Schädling diskriminieren; die Eviction wirft
+// den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
 async function checkBandV1743RuleFitness(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -3088,14 +2950,9 @@ async function checkBandV1743RuleFitness(ctx) {
     );
 }
 
-// V17.44 — DIE LEBENDIGE WERTUNG, Phase 3: die Emotion als APPRAISAL (Vorhersagefehler
-// des Erlebens). δ = SITUATION − Spieler-Baseline, wobei die Situation die WELT um den
-// Spieler (lebendig) + sein Zustand (HP) ist — NICHT seine Stimmung (sonst Rückkopplung →
-// Runaway, in der Selbstprüfung gemessen + hier bewiesen). Gemessen wird KONSUM: die
-// Situation IGNORIERT die Stimmung (kein Feedback-Input), die Baseline trackt die Situation
-// (nicht die Stimmung), eine Situations-Verbesserung gibt einen joy-Puls (Überraschung), die
-// Gewöhnung fällt heraus (Baseline holt auf → δ→0), KEIN Runaway, und V17.30 bleibt heil
-// (anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle).
+// Emotion als APPRAISAL: δ = Situation − Spieler-Baseline; Situation = Welt um den Spieler (lebendig)
+// + HP, NIE seine Stimmung (sonst Rückkopplung → Runaway). Geprüft: Verbesserung → joy-Puls,
+// Gewöhnung (δ→0), kein Runaway; anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle.
 async function checkBandV1744Appraisal(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -3238,15 +3095,10 @@ async function checkBandV1744Appraisal(ctx) {
     );
 }
 
-// V17.45 — Der emotionale Kern W1: das dimensionale Substrat + die FUSION
-// (docs/emotion-kern-plan.md). Unter den sechs diskreten Gefühlen liegt ein
-// kontinuierlicher Affekt-Raum (EMOTION_GEOMETRY: Valenz × Erregung, Russell). Der
-// fusionierte Readout (`_emotionState`) liest das dominante Gefühl + den Schwerpunkt
-// + die INTENSITÄT (6-dim Abstand vom Neutralen) — bittersüß hat Valenz~0 ABER hohe
-// Intensität (die Fusion, die das additive Modell VERFEHLT). Eine gentle Kohärenz
-// in updatePlayerEmotions lässt gegensätzliche Achsen sich mild dämpfen → der
-// Zustand wird ein kohärenter Punkt. Diese Welle prüft KONSUM (die KI kennt jetzt
-// die Stimmung — vorher eine Lücke), nicht blosse Existenz (V17.31-Lehre).
+// Emotionaler Kern, Substrat + FUSION: unter den sechs Gefühlen liegt ein Affekt-Raum
+// (EMOTION_GEOMETRY: Valenz × Erregung). `_emotionState` liest dominantes Gefühl + Schwerpunkt +
+// INTENSITÄT (6-dim Abstand vom Neutralen: bittersüß = Valenz~0, hohe Intensität). Sanfte Kohärenz
+// in updatePlayerEmotions dämpft gegensätzliche Achsen; Konsum: die KI kennt die Stimmung.
 async function checkBandV1745EmotionCore(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -3384,14 +3236,10 @@ async function checkBandV1745EmotionCore(ctx) {
     );
 }
 
-// V17.46 — Der emotionale Kern W2: die APPRAISAL-BRÜCKE + der Hylomorphismus
-// (docs/emotion-kern-plan.md, der Keystone). Die Gefühls-Antwort auf eine Tat
-// EMERGIERT aus den TAGS der beteiligten Substanz (computeCompoundTags → TAG_TO_
-// EMOTION × Magnitude), nicht aus einem Lookup nach Tat-NAME. Regel über Tabelle,
-// Logik über Hardcode. Diese Welle prüft KONSUM (build mit lebendigem Holz ≠ mit
-// totem Stein, auf den 6 Achsen sichtbar; der schöpferische Akt feuert Stolz ∝
-// Komplexität), nicht blosse Existenz (V17.31-Lehre). ACTION_TO_EMOTION bleibt als
-// FALLBACK für tag-lose Akte (explore/damage) → kein Regress.
+// Appraisal-Brücke: die Gefühls-Antwort auf eine Tat EMERGIERT aus den Substanz-Tags
+// (computeCompoundTags → TAG_TO_EMOTION × Magnitude), nicht aus dem Tat-Namen — lebendiges Holz ≠
+// toter Stein, Schöpfen feuert Stolz ∝ Komplexität. ACTION_TO_EMOTION bleibt Fallback für tag-lose
+// Akte (explore/damage).
 async function checkBandV1746EmotionSubstance(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -3500,14 +3348,9 @@ async function checkBandV1746EmotionSubstance(ctx) {
     );
 }
 
-// V17.47 — Der emotionale Kern W3: Fast/Slow — EMOTION vs. STIMMUNG
-// (docs/emotion-kern-plan.md). Gefühl hat eine ZEIT-Struktur: die schnelle Emotion
-// (akuter Spike, PRO-ACHSE-Decay — Furcht/chaos kurz, Trauer/peace lang) vs. die
-// langsame STIMMUNG (`mood`, eine EMA über Minuten = das Temperament, in das die
-// Emotion zerfällt). Die Stimmung färbt die nächste Bewertung KONGRUENT (gebounded —
-// die V17.44-Feedback-Lehre) und ist die „Person mit Geschichte", die die KI liest.
-// Diese Welle prüft KONSUM (Furcht verfliegt schneller als Trauer; die Stimmung
-// konvergiert + färbt; die KI kennt sie), nicht blosse Existenz (V17.31-Lehre).
+// Fast/Slow: schnelle Emotion (Spike, Decay PRO ACHSE — Furcht kurz, Trauer lang) vs. langsame
+// Stimmung (`mood`, EMA über Minuten), in die sie zerfällt; die Stimmung färbt die nächste Bewertung
+// kongruent (gebounded gegen Feedback) und ist das, was die KI liest.
 async function checkBandV1747FastSlow(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -3653,13 +3496,8 @@ async function checkBandV1747FastSlow(ctx) {
     );
 }
 
-// V17.48 — Der emotionale Kern W4: das SOZIALE — Contagion + Bindung + die KI als
-// KO-REGULATOR (docs/emotion-kern-plan.md). Gefühl ist sozial: die Emotion naher
-// Kreaturen fließt zum Spieler (∝ Nähe × Bindung, gebounded), die Bindung wächst mit
-// gemeinsamer Zeit, der Verlust einer gebundenen Kreatur schmerzt ∝ Bindung, und die KI
-// TENDET die Stimmung (sie pflegt, statt nur zu kommentieren). Diese Welle prüft KONSUM
-// (ein freudiges Wesen hebt joy; die Bindung gewichtet + wächst; der Verlust einer
-// gebundenen Kreatur schmerzt mehr; die KI tröstet), nicht blosse Existenz (V17.31).
+// Soziales Gefühl: Emotion naher Kreaturen fließt zum Spieler (∝ Nähe × Bindung, gebounded), Bindung
+// wächst mit gemeinsamer Zeit, Verlust schmerzt ∝ Bindung, die KI TENDET die Stimmung (tröstet).
 async function checkBandV1748Social(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -3704,10 +3542,8 @@ async function checkBandV1748Social(ctx) {
         r._tickEmotionContagion(1);
         out.sadGrieves = p.emotions.sorrow > 0 && p.emotions.joy === 0;
 
-        // (2c) V18.100 G4-1 — der VEKTOR ist die Wahrheit (KONSUM-Diskriminator):
-        // ein Wesen mit echtem awe-Innenleben steckt den Spieler mit AWE an —
-        // das binäre happy-Target (CONTAGION_TARGET) kennt KEIN awe, nur der
-        // Vektor-Pfad kann das transportieren.
+        // (2c) Der VEKTOR ist die Wahrheit: ein Wesen mit awe-Innenleben steckt mit AWE an — das binäre
+        // happy-Target (CONTAGION_TARGET) kennt kein awe, nur der Vektor-Pfad transportiert es.
         setEmo({});
         r.state.creatures = [fake(1)];
         r.state.creatures[0].userData.emotions = { joy: 0, awe: 0.7, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
@@ -3826,12 +3662,9 @@ async function checkBandV1748Social(ctx) {
     check("V17.48 Soziales: die KI tendet aus dem grokTick (Ko-Regulator wired, nicht nur Kommentar)", res.tendWired);
 }
 
-// V17.49 — Der emotionale Kern W5: das ABENTEUER GRADUIERT (docs/emotion-kern-plan.md).
-// Bis hier feuerte `explore` flach (awe+hope) bei JEDEM Chunk-Wechsel. Jetzt wird das
-// WAGNIS gewichtet: die Magnitude EMERGIERT aus Neuheit (visitedRegions) + Distanz vom
-// Ursprung + Kühnheit (in karge/glut-Aura wagen, liest auraAt). Diese Welle prüft KONSUM
-// (kühnes Erkunden ≫ Pendeln, auf awe sichtbar), nicht blosse Existenz (V17.31). (Der
-// KAMPF-Affekt wartet bewusst auf eine Kampf-Mechanik — die W1/W2-Substrate sind bereit.)
+// Abenteuer graduiert: `explore` feuert nicht flach je Chunk-Wechsel, die Magnitude emergiert aus
+// Neuheit (visitedRegions) + Distanz vom Ursprung + Kühnheit (karge/glut-Aura via auraAt);
+// Konsum: kühnes Erkunden ≫ Pendeln (awe).
 async function checkBandV1749Adventure(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -3936,13 +3769,9 @@ async function checkBandV1749Adventure(ctx) {
     check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
 
-// V17.50 — Die lebendige Wertung Phase 4: DIE KLAMMER — die Welt lernt, was den Spieler
-// freut (docs/lebendige-wertung-plan.md §5). `rule.value` (lokaler struktureller δ) und
-// `δ_spieler` (der rohe Situations-δ) sind DASSELBE Vorhersagefehler-Signal: eine Regel,
-// die NAH am Spieler feuert UND mit positivem δ_spieler zusammenfällt, bekommt Bonus-
-// Credit ∝ Nähe → spieler-zentrische Evolution. Diese Welle prüft KONSUM (der Bonus hebt
-// den Reward nah + positiv, der Proximity-Gate schließt ferne aus) UND das ANTI-GAMING
-// (der δ_spieler ist die SITUATION, NICHT die stempelbare Emotion → kein Reward-Hacking).
+// Die Klammer: rule.value und δ_spieler sind dasselbe Vorhersagefehler-Signal — feuert eine Regel NAH
+// am Spieler bei positivem δ_spieler, gibt es Bonus-Credit ∝ Nähe (ferne ausgeschlossen). Anti-Gaming:
+// δ_spieler ist die SITUATION, nie die stempelbare Emotion → kein Reward-Hacking.
 async function checkBandV1750Klammer(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -4053,14 +3882,9 @@ async function checkBandV1750Klammer(ctx) {
     check("V17.50 Klammer: _measureRuleReward nutzt appraisalDelta + phase4Radius (wired)", res.wired);
 }
 
-// V17.51 — Der Kampf-Bogen Phase A: die Kombat-Stats (kampf-plan.md §4-A).
-// Kampf ist KEIN neues System — er ist der Hylomorphismus, eine Ebene weiter:
-// knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS),
-// GENAU wie damage/speed/hpMax. Eine schwere dichte Keule schlägt langsam-wuchtig,
-// eine leichte harte Klinge schnell + scharf — das Profil WÄHLT man über die Materie,
-// nicht über einen Slider. Diese Welle prüft KONSUM (die Profile DIFFERENZIEREN aus der
-// Substanz, durch DIESELBE Pipeline für Spieler + Kreatur + sichtbar in der UI), nicht
-// blosse Existenz (V17.31). Der GAMEPLAY-Konsum (Impuls/Cooldown/Reduktion) folgt C/D.
+// Kombat-Stats: knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS) wie
+// damage/speed/hpMax — schwere Keule langsam-wuchtig, leichte harte Klinge schnell. Geprüft: Profile
+// differenzieren durch DIESELBE Pipeline für Spieler + Kreatur, sichtbar in der UI.
 async function checkBandV1751CombatStats(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -4095,10 +3919,8 @@ async function checkBandV1751CombatStats(ctx) {
 
         // (4) Kreatur-Pipeline-KONSUM (symmetrisch — DIESELBE Pipeline, kein Parallelpfad)
         const pm = r.state.playerMesh.position;
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake an der Wurzel): der last-
-        // gestreckte Warmup füllt `creatures` bis maxCreatures (20) → ein Test-Spawn ON TOP gäbe
-        // null → .stats-Crash → die GANZE Band fällt. Lokal raise/restore (kein Pump dazwischen →
-        // tickFaunaLifecycle kann die Lücke nicht füllen), die proven V18.296-Form.
+        // Cap-Headroom: der Warmup kann `creatures` bis maxCreatures füllen → ein Test-Spawn gäbe null →
+        // .stats-Crash. Lokal raise/restore (kein Pump dazwischen, tickFaunaLifecycle füllt die Lücke nicht).
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
@@ -4170,16 +3992,9 @@ async function checkBandV1751CombatStats(ctx) {
     );
 }
 
-// V17.52 — Der Kampf-Bogen Phase B: die Waffen-Rolle + der Equip-Slot
-// (docs/kampf-plan.md §4-B). Eine Waffe ist ein Compound wie jeder andere; ihr
-// Kombat-Profil (damage/knockback/attackSpeed) EMERGIERT aus den Tags beim
-// Ausrüsten — REUSE der Equip-Pipeline mit WEAPON_STAT_WEIGHT (0.4), KEIN neuer
-// „Waffen-Schaden"-Pfad. Diese Welle prüft KONSUM (eine ausgerüstete harte Waffe
-// HEBT das Kombat-Profil des Spielers; die Rolle persistiert durch serialize/
-// deserialize) + die Validierung + die UI-Trennung, nicht blosse Existenz (V17.31).
-// V17.57 W2-B (kampf-plan §8.1) — der EINE „in der Hand"-Slot: Werkzeug + Waffe verschmolzen, kein
-// Rollen-Schloss. equipHeld nimmt JEDEN Bauplan (keine Markierung nötig); das gehaltene Gerät faltet
-// in die Kombat-Stats (Angriff-mit-jedem-Gerät) UND treibt das Abbauen (W1/W2) — eine Pipeline. KONSUM.
+// Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
+// Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
+// Waffen-Schaden-Pfad) UND treibt das Abbauen (_heldImplementBlueprint) — eine Pipeline.
 async function checkBandV1757HeldSlot(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -4295,14 +4110,9 @@ async function checkBandV1757HeldSlot(ctx) {
     );
 }
 
-// V17.53 — Der Kampf-Bogen Phase C: Kreatur-HP + Schaden + Tod/Loot
-// (docs/kampf-plan.md §4-C). Symmetrisch zum Spieler: DIESELBE computeCreatureStats-
-// Pipeline liefert hpMax + defense; `dealt = max(1, amount − defense)` (Schadens-Floor
-// wie der Spieler); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien, NUR für den
-// Spieler-Töter; removeCreature). Der damage_creature-DSL-Op ist der Konsument (wie der
-// Spieler-`damage`-Op). Diese Welle prüft KONSUM (Schaden reduziert hp, der Floor, der
-// Kill entfernt + lootet, der DSL-Op), nicht blosse Existenz (V17.31). Knockback + der
-// Kampf-AFFEKT folgen Phase D (wo die Agency klar ist).
+// Kreatur-Kampf symmetrisch zum Spieler: computeCreatureStats liefert hpMax + defense;
+// `dealt = max(1, amount − defense)`; hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
+// Spieler-Töter, removeCreature). Konsument ist der damage_creature-DSL-Op.
 async function checkBandV1753CreatureCombat(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -4354,10 +4164,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
         const countBefore = r.state.creatures.length;
         const killR = r.damageCreature(c1, 99999, { source: "player" });
-        // KAMPF-GEFÜHL (Test wandert mit, Lehre 6): der Kill despawnt NICHT mehr
-        // sofort — der Körper KIPPT erst (userData.dying, ~1 s + Nachklang), DANN
-        // kommt der bestehende Abschied. Die Frist synthetisch verstreichen lassen:
-        // updateCreatures räumt den gekippten Körper.
+        // Der Kill despawnt nicht sofort: der Körper KIPPT (userData.dying, ~1 s + Nachklang), dann folgt
+        // der Abschied — die Frist synthetisch verstreichen lassen, updateCreatures räumt.
         const kipptErst = killR.killed && !!c1.userData.dying && r.state.creatures.indexOf(c1) !== -1;
         c1.userData.dying.t = 9999;
         r.updateCreatures(0.016);
@@ -4413,15 +4221,10 @@ async function checkBandV1753CreatureCombat(ctx) {
     check("V17.53 Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
 }
 
-// V17.54 — Der Kampf-Bogen Phase D: der LMB-Angriff + der W5-Affekt (der letzte
-// Konsument des Emotion-Kerns, docs/kampf-plan.md §4-D/F). `_playerAttackCreature`
-// ist der LMB-Konsument von damageCreature (attackSpeed-Cooldown + Stamina + Spieler-
-// damage/knockback); tryMouseBreak dispatcht zum nächsten Ziel (Kreatur in Reichweite
-// → angreifen; sonst Architektur → harvest; sonst carve). Der W5-Affekt wird gewebt:
-// Zorn ∝ Waffen-härte (chaos via die W2-Brücke) beim Angreifen; SCHULD ∝ lebendig×bond
-// beim Töten eines friedlichen Wesens (der W4-Kontext-Appraisal). Diese Welle prüft
-// KONSUM (Angriff schädigt, Cooldown gated, der Affekt feuert, die Schuld ist lebendig-
-// gegated), nicht blosse Existenz (V17.31). Die WUCHT/das Feel sind der Schöpfer-Browser.
+// LMB-Angriff: `_playerAttackCreature` konsumiert damageCreature (attackSpeed-Cooldown + Stamina +
+// damage/knockback); tryMouseBreak dispatcht: Kreatur in Reichweite → angreifen, sonst Architektur →
+// harvest, sonst carve. Affekt: Zorn ∝ Waffen-Härte beim Angriff, SCHULD ∝ lebendig×bond beim Töten
+// eines friedlichen Wesens.
 async function checkBandV1754PlayerAttack(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -4453,10 +4256,8 @@ async function checkBandV1754PlayerAttack(ctx) {
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
-        // KAMPF-GEFÜHL (Test wandert mit, Lehre 6): der Klick ist nur noch das
-        // AUSLÖSEN des 3-Phasen-Schwungs — das TREFFEN macht der Klingen-Sweep in
-        // der Strike-Phase. Das Ziel VOR den Spieler stellen (Sweep-Reichweite) und
-        // den Schwung synthetisch über die Anzeige-Uhr durchtreiben.
+        // Der Klick LÖST nur den 3-Phasen-Schwung aus, das Treffen macht der Klingen-Sweep der Strike-Phase
+        // → Ziel VOR den Spieler (Sweep-Reichweite), Schwung synthetisch über die Anzeige-Uhr treiben.
         const savedYaw = r.state.yaw;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
@@ -4557,10 +4358,8 @@ async function checkBandV1754PlayerAttack(ctx) {
     );
 }
 
-// V17.55 W1 (kampf-plan §8/§9) — der WURZELFEHLER geheilt: Abbauen kostet substanz-gebundene
-// MÜHE, und EINE Tauglichkeit (gehaltenes Ding vs Material) dirigiert vier Kanäle. KONSUM, nicht
-// Existenz (V17.31): die Tauglichkeit DIFFERENZIERT Tempo/Stamina/Ertrag; die Mühe ist real
-// (viele Hiebe, kein Instant); ein gutes Werkzeug bricht schneller + lootet, die Faust nicht.
+// Abbauen kostet substanz-gebundene MÜHE; EINE Tauglichkeit (gehaltenes Ding vs Material) dirigiert
+// Tempo/Stamina/Ertrag — viele Hiebe statt Instant, ein gutes Werkzeug bricht schneller + lootet.
 async function checkBandV1755HarvestEffort(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -4619,10 +4418,8 @@ async function checkBandV1755HarvestEffort(ctx) {
             fitGood.progress > fitHand.progress && // TEMPO
             fitGood.yieldMult > fitHand.yieldMult && // ERTRAG
             fitGood.stamina < fitHand.stamina; // STAMINA (invers)
-        // M6 (V18.159, V9.56-i): das alte „Faust an Hartem → NICHTS" ist BEWUSST
-        // ersetzt — der Ertrags-SOCKEL (yieldMin): wer den Bruch erarbeitet, erntet
-        // mindestens 1/3; die Untauglichkeit bestraft über Tempo + Stamina (gemessen
-        // im fitnessDifferentiates-Check daneben). Der Test prüft den SOCKEL.
+        // Ertrags-SOCKEL (yieldMin): wer den Bruch erarbeitet, erntet mindestens 1/3 — auch die Faust an
+        // Hartem; Untauglichkeit bestraft über Tempo + Stamina (fitnessDifferentiates daneben).
         out.handYieldsNothingOnHard =
             fitHand.yieldMult >= (r.constructor.HARVEST.yieldMin || 0.34) - 1e-9 && fitHand.yieldMult < 0.5;
 
@@ -4828,10 +4625,8 @@ async function checkBandV1755W2Profile(ctx) {
     check("V17.56 W2: die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
 }
 
-// V17.58 W3 (kampf-plan §9) — die NATÜRLICHE, aura-reaktive Kreatur: ein wildes Wesen LIEST den Spieler
-// (deine Aura-Menace × seine Natur × Bindung × Modus → die Wariness), wird neugierig (näher) oder scheu
-// (fort), und flieht wenn getroffen. KONSUM (nicht Existenz): die Wariness DIFFERENZIERT nach Aura/Natur/
-// Bindung/Modus + treibt den wander-Tick; ein Treffer setzt Furcht.
+// Aura-reaktive Kreatur: Wariness = Aura-Menace × Natur × Bindung × Modus → neugierig (näher) oder
+// scheu (fort), treibt den wander-Tick; ein Treffer setzt Furcht (Flucht).
 async function checkBandV1758CreatureNature(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -5570,11 +5365,9 @@ async function checkBandV1765BrewConsumable(ctx) {
     );
 }
 
-// V17.66 S7 (kampf-plan §11.7/§11.9) — DER EINE FLUSS: das FERTIGEN in den Prozess-Fluss falten
-// (raus aus dem parallelen ⚒-Knopf im Detail-Editor, rein in die Stats-Tabelle als Abschluss) +
-// die Maschine-in-der-Welt (_workshopStationGate) end-to-end am Mach-Akt anschliessen (nicht nur
-// confirmBuild). KONSUM, nicht Existenz (V17.31): das Gate lehnt ab/laesst durch, die FERTIGEN-Zeile
-// rendert ins DOM, die alten Knoepfe sind weg.
+// Der EINE Fluss: FERTIGEN ist die Abschluss-Zeile der Stats-Tabelle (kein paralleler ⚒-Knopf),
+// _workshopStationGate hängt end-to-end am Mach-Akt (nicht nur confirmBuild). Geprüft: das Gate
+// lehnt ab/lässt durch, die FERTIGEN-Zeile rendert, die alten Knöpfe sind weg.
 async function checkBandV1766FertigenFlow(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -5708,11 +5501,9 @@ async function checkBandV1766FertigenFlow(ctx) {
     );
 }
 
-// V17.67 S7-B (kampf-plan §11) — die WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (_computeWorkshopDomain),
-// kein hardcoded `workshopDomain` mehr — das Vorbild ist _isPortalShaped (ein Ring IST ein Tor). Der erste
-// Schnitt, der die Prozess-Hardcode-Insel auflöst: die fünf Built-in-Werkstätten emergieren auf ihre Domäne
-// (der Tag-Drift-Wächter, V17.17-Disziplin), die Regel diskriminiert nach SUBSTANZ statt Name, das Gate liest
-// die emergente Domäne end-to-end.
+// Die Werkstatt-Domäne EMERGIERT aus der Substanz (_computeWorkshopDomain, kein hardcoded
+// `workshopDomain`; Vorbild _isPortalShaped). Geprüft: die fünf Built-in-Werkstätten treffen ihre
+// Domäne (Tag-Drift-Wächter), die Regel diskriminiert nach Substanz, das Gate liest sie end-to-end.
 async function checkBandV1767WorkshopDomainEmergent(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -5812,10 +5603,9 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
     );
 }
 
-// V17.69 R2/R3 (kampf-plan §11.10) — die ROLLEN-RESONANZ: computeBlueprintRole entscheidet die intrinsische Rolle
-// als ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕ bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES, statt der
-// priority-Prädikat-Kette. DER HEAL (Schöpfer 03.06.): „architecture" ist eine positive Signatur (dichte+harte
-// Struktur) → ein Stein-Tempel/Felsbogen wird Bauwerk statt Seele, obwohl body-förmig. KONSUM, nicht Existenz.
+// Rollen-Resonanz: computeBlueprintRole = ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕
+// bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES; „architecture“ ist positive Signatur (dicht +
+// hart) → Stein-Tempel/Felsbogen wird Bauwerk, obwohl body-förmig.
 async function checkBandV1769RoleResonance(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -5842,13 +5632,9 @@ async function checkBandV1769RoleResonance(ctx) {
         const tv = r._blueprintProductVector(templeFix);
         out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
 
-        // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — die Säulen-Klasse (tor_basis-Substanz) + felsbogen
-        // WAREN soul (body-förmig), sind architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als
-        // dichte, harte Stein-Struktur resoniert „architecture" STÄRKER als „soul". V18.181-merge-Λ Sub 3c
-        // (V9.56-i — Test wandert): die Λ.1-livingCenterY-Heilung (V18.173) klemmt _isBodyShaped DIREKT — ein
-        // stein-Bau hat keine lebendige Masse → !_isBodyShaped → kein Resonanz-Vergleich nötig. Der Test
-        // akzeptiert beide Heilungs-Pfade: Λ.1 direkt (tvBody === false) ODER V17.69-Resonanz-Vorrang
-        // (archScore > soulScore bei body-förmig). Beide ergeben dasselbe Resultat: architecture.
+        // (2) Säulen-Klasse (tor_basis-Substanz) + felsbogen sind architecture, nicht soul. Zwei gültige
+        // Pfade: _isBodyShaped klemmt Stein direkt (tvBody === false, keine lebendige Masse) ODER bei
+        // body-förmig schlägt die Resonanz (archScore > soulScore) — beide ergeben architecture.
         out.templeHealed = r.computeBlueprintRole(templeFix) === "architecture";
         out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
         const tvBody = r._isBodyShaped(templeFix);
@@ -5869,11 +5655,8 @@ async function checkBandV1769RoleResonance(ctx) {
             "felsbogen",
         ];
         out.allArch = wantArch.every((n) => r.computeBlueprintRole(blu[n]) === "architecture");
-        // M2 (V18.154, meister-plan Befund 5): die Bäume sind ARCHITECTURE — die bulk-Achse
-        // (span/8) nimmt dem Riesen-Laub die consumable-Resonanz (man trinkt keinen Baum;
-        // GEMESSEN diag-roles: Eiche consumable 0.667→−0.03, architecture 0.307→0.57).
-        // V18.257 — die statischen Baum-Baupläne sind geschnitten; wir wachsen
-        // einen Baum durch die Grammatik + prüfen, dass der GEWACHSENE als architecture liest.
+        // Bäume sind ARCHITECTURE: die bulk-Achse (span/8) nimmt dem Riesen-Laub die consumable-Resonanz.
+        // Geprüft am GEWACHSENEN Baum (_growTreeBlueprintForSpawn; statische Baum-Baupläne gibt es nicht).
         const __rrEiche = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "rr|eiche");
         const __rrKiefer = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_kiefer", "rr|kiefer");
         out.baeumeArchitecture =
@@ -5882,13 +5665,9 @@ async function checkBandV1769RoleResonance(ctx) {
             r.computeBlueprintRole(blu[__rrEiche]) === "architecture" &&
             r.computeBlueprintRole(blu[__rrKiefer]) === "architecture";
 
-        // (4) die Form-Rollen via Resonanz: ein weicher fleisch-Körper → soul, ein Turm → architecture, Nahrung →
-        // consumable, ein magie-Ring → portal, ein Stein-Ring → architecture (KONSUM der Fixtures durch die Resonanz)
-        // V18.164 §7.3(a) (V9.56-i — die Spec schärfte sich): ein GLIED ist GESTRECKT
-        // (wie jede echte Engine-Seele: waechter/koerper_human-Arme sind elongierte
-        // Zylinder) — gespiegelte BLOBS sind keine Glieder mehr (sonst wurde die
-        // Eiche zur Seele, von der Archetypen-Bank gefangen). Die Würfel-Arme der
-        // 2025-Fixture wandern auf gestreckte Arme.
+        // (4) Form-Rollen via Resonanz: weicher fleisch-Körper → soul, Turm → architecture, Nahrung →
+        // consumable, magie-Ring → portal, Stein-Ring → architecture. Ein GLIED ist GESTRECKT (gespiegelte
+        // Blobs sind keine Glieder, sonst wird die Eiche Seele) → die Fixture nutzt gestreckte Arme.
         const arm = (mat, x) => ({
             shape: "box",
             material: mat,
@@ -5970,11 +5749,9 @@ async function checkBandV1769RoleResonance(ctx) {
     );
 }
 
-// V17.70 R3-Schluss (kampf-plan §11.10) — die WORKSHOP-STATION-DESIGNATION als Override + emergente Domäne.
-// GEMESSEN: ob etwas eine Werkstatt IST emergiert NICHT sauber (eine Esse und ein dichtes Bauwerk sind Substanz-
-// Zwillinge) — die Werkstatt-Natur ist INTENT (Hand-Flag, der „optionale Override"), aber die bediente Domäne
-// EMERGIERT (R1). Damit kann ein Spieler einen eigenen Apparat bauen → markieren → er bedient seine emergente
-// Domäne, das Gate findet ihn. KONSUM, nicht Existenz.
+// Werkstatt-Designation: ob etwas eine Werkstatt IST, emergiert nicht sauber (Esse ≈ dichtes
+// Bauwerk) → Hand-Flag als Override (Intent); die bediente Domäne EMERGIERT. Ein eigener Apparat
+// wird markiert und bedient seine emergente Domäne, das Gate findet ihn.
 async function checkBandV1770WorkshopStationMark(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6071,10 +5848,9 @@ async function checkBandV1770WorkshopStationMark(ctx) {
     check("V17.70 R3-Schluss: der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
 }
 
-// V17.71 S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: welche Transformation ein Werkzeug katalysiert,
-// emergiert aus seiner Form × Material (scharf→schneiden, stumpf-dicht→schmieden, magie→wandeln) statt aus manuellem
-// opName-Tippen. `setBlueprintToolMeta(name)` OHNE opClass leitet die Op aus der Form ab; eine explizite opClass
-// bleibt der Override. additive bleibt form-mehrdeutig (Intent). Wächter synthetisch (Built-in-Tools sind formlos).
+// Katalysator-Op aus Form × Material (scharf→schneiden, stumpf-dicht→schmieden, magie→wandeln):
+// `setBlueprintToolMeta(name)` ohne opClass leitet ab, eine explizite opClass ist Override; additive
+// bleibt Intent. Wächter synthetisch (Built-in-Tools sind formlos).
 async function checkBandV1771ToolOpFromForm(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6150,18 +5926,9 @@ async function checkBandV1771ToolOpFromForm(ctx) {
     );
 }
 
-// V17.72 A1 — DIE BIBLIOTHEK: ein craftbarer Beispiel-Bauplan pro Mach-Akt-Rolle.
-// KONSUM-Disziplin (V17.31): nicht „existiert", sondern (a) die Rolle ist
-// substanz-EHRLICH (computeBlueprintRole — die pure Substanz-Funktion —
-// emergiert zu derselben Rolle für Trank/Avatar; architecture = der Intent-
-// Zwilling für Rüstung/Gerät), (b) die vier Mach-Akte FEUERN rollen-gerecht
-// (fertigeBlueprint routet, das Role-Gate beißt), (c) kein Worldgen-Litter.
-// Player-State wird gesnapshottet + restauriert (V17.66-Lehre: forge-equip
-// + embody mutieren equipped/soul/boosts → ein dangling Held bräche spätere Bands).
 // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ1 — SCHWERPUNKT + MASSE (der Grundstein) ═══
-// wahrerbauplan §4 Ω-Φ1 — der Physik-Schiedsrichter, der bis hier KOMPLETT fehlte
-// (0 Treffer). BEWEIS objektiv + headless (reine Berechnung, KEIN WebGPU-Flake):
-// ein asymmetrischer Bauplan hat den CoM nahe der schweren Seite, nicht in der Mitte.
+// Physik-Schiedsrichter, headless objektiv (reine Berechnung, kein WebGPU-Flake): ein
+// asymmetrischer Bauplan hat den CoM nahe der schweren Seite, nicht in der Mitte.
 async function checkBandOmegaPhi1CoM(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6232,10 +5999,9 @@ async function checkBandOmegaPhi1CoM(ctx) {
     check("Ω-Φ1: leerer/ungültiger Bauplan → Masse 0 (sicher, keine Div/0)", res.emptySafe === true);
 }
 
-// Ω-PHYSIS Säule I (Ω-Φ2..Φ5 der Schiedsrichter) + Säule II (Ω-L1..L3 + Ω-W1 die
-// Vereinigung — Physik speist den Leser). Reine Berechnung → headless VOLL verifizierbar,
-// kein Flake (wahrerbauplan §4/§5/§10). Die zwei Seelen vereint: die gerechnete Physik
-// wird vom Resonanz-Leser + vom Warum-Chip gelesen, klar getrennt von der Konvention.
+// Ω-PHYSIS Säule I (Ω-Φ2..Φ5 Schiedsrichter) + Säule II (Ω-L1..L3 + Ω-W1): die gerechnete Physik
+// speist den Resonanz-Leser + den Warum-Chip, getrennt von der Konvention; reine Berechnung → kein
+// Flake.
 async function checkBandOmegaPhysisSaeuleI_II(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6382,11 +6148,9 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
     check("Ω-W1: Warum-Chip ZITIERT gerechnete Physik (KONSUM, kein Passagier)", res.w1ConsumesPhysik === true);
 }
 
-// Ω-PHYSIS Säule IV — DER WAHRHEITS-SPIEGEL (wahrerbauplan §7/§10). DIE ZWEI SEELEN
-// VEREINT: die in Säule I gerechnete Physik (das SEIN) wird Ω-W2 physik-wahre
-// Optimierung + Ω-W3 sichtbares Bau-Feedback (der ANBLICK, wahreranblick.md). Reine
-// Berechnung + CONSUM-Source-Probe → kein GPU-Flake (der finale LOOK des Wankens ist
-// augen-bound, Wand 1; der MECHANISMUS ist hart bewiesen).
+// Ω-PHYSIS Säule IV — Wahrheits-Spiegel: die gerechnete Physik treibt Ω-W2 (physik-wahre
+// Optimierung) + Ω-W3 (sichtbares Bau-Feedback). Reine Berechnung + Konsum-Source-Probe, kein
+// GPU-Flake; der LOOK des Wankens ist headless nicht prüfbar.
 async function checkBandOmegaWerkstattSpiegel(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6486,12 +6250,9 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     );
 }
 
-// Ω-PHYSIS Säule III — DIE BAUPLAN-GRAMMATIK (wahrerbauplan §6). Ω-B1 Architektur
-// (der Tempel folgt der DORISCHEN ORDNUNG: Entasis + Kanneluren [flutedColumn] · Echinus ·
-// Triglyphen · Giebel) + Ω-B2 Objekte (das Schwert als OAKESHOTT-Typ: bladeProfile mit
-// distaler Verjüngung + Hohlkehle). Reference-first UND PHYSIK-GARANT: der Tempel steht +
-// die 1:7-Säulen knicken nicht, die Balance der Klinge ist gerechnet. Reine Berechnung →
-// kein Flake (der LOOK augen-bound, Wand 1).
+// Ω-PHYSIS Säule III — Bauplan-Grammatik: Ω-B1 Tempel nach DORISCHER ORDNUNG (Entasis + Kanneluren
+// [flutedColumn], Echinus, Triglyphen, Giebel), Ω-B2 Schwert als OAKESHOTT-Typ (bladeProfile:
+// Verjüngung + Hohlkehle). Physik-Garant: Tempel steht, 1:7-Säulen knicken nicht, Balance gerechnet.
 async function checkBandOmegaGrammatik(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6619,10 +6380,9 @@ async function checkBandOmegaGrammatik(ctx) {
     check("⟡ Ω-B2 PHYSIK: die Balance ist GERECHNET (Ω-Φ4), typ-abhängig", res.balanceTyped === true);
 }
 
-// Ω-OPSIS §7 (wahreranblick §8) — die Sky-Env-Map-MECHANIK: ohne scene.environment
-// rendern PBR-Metalle schwarz (sie holen ihre Farbe aus der Reflexion). Der lawful Fix
-// (prozedurale Equirekt-Gradient-Env aus der Himmel-Farbe) ist headless als MECHANIK
-// beweisbar (environment gesetzt, kein Crash); der LOOK ist AUGEN-bound (Wand 1).
+// Ω-OPSIS: ohne scene.environment rendern PBR-Metalle schwarz (Farbe aus der Reflexion) →
+// prozedurale Equirekt-Gradient-Env aus der Himmel-Farbe; headless nur als Mechanik prüfbar
+// (environment gesetzt, kein Crash).
 async function checkBandOmegaOpsisSkyEnv(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6665,10 +6425,9 @@ async function checkBandV1772Library(ctx) {
         // (1) die deklarierten Rollen: Gerät rollenlos (gehalten, W2-B), die drei anderen deklariert.
         out.rolesDeclared = G.role === undefined && A.role === "armor" && T.role === "consumable" && V.role === "soul";
 
-        // (2) SUBSTANZ-EHRLICH: computeBlueprintRole (die pure Substanz-Funktion, liest NICHT bp.role) emergiert
-        //     für Trank/Avatar zur SELBEN Rolle (ein Spieler-Klon bekäme dieselbe → die Rekursion-Saat ist ehrlich);
-        //     Rüstung+Gerät resonieren architecture (der dichte+harte Intent-Zwilling — darum ist die armor-Rolle
-        //     ein deklarierter Override, V17.70, kein Emergenz-Versagen).
+        // (2) SUBSTANZ-EHRLICH: computeBlueprintRole (liest NICHT bp.role) emergiert für Trank/Avatar zur
+        // SELBEN Rolle; die Rüstung resoniert architecture (dichter+harter Intent-Zwilling → armor ist
+        // deklarierter Override, kein Emergenz-Versagen).
         out.trankHonest = r.computeBlueprintRole(T) === "consumable";
         out.avatarHonest = r.computeBlueprintRole(V) === "soul" && r._isBodyShaped(V) === true;
         out.armorIsTwin = r.computeBlueprintRole(A) === "architecture"; // Platte (stumpf) → Bauwerk, armor-Rolle ist Intent
@@ -6746,11 +6505,9 @@ async function checkBandV1772Library(ctx) {
     );
 }
 
-// V17.73 S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand. Headless beweist
-// Existenz + Lifecycle + Anker (Mesh erscheint beim Equip · skaliert · am Avatar geparentet ·
-// wechselt beim Equip-Wechsel ohne Leak · verschwindet beim Ablegen · ein formloses builtIn-Tool
-// wird abgelehnt · re-attached beim Körper-Wechsel). Die Optik/Pose/Skala = Schöpfer-Browser
-// (pixel-blind headless, V13). Snapshot + Restore des Player-States (wie V17.66).
+// Gehaltenes Gerät SICHTBAR in der Hand — headless: Mesh erscheint beim Equip, skaliert, am Avatar
+// geparentet, wechselt ohne Leak, verschwindet beim Ablegen, formloses builtIn-Tool abgelehnt,
+// re-attached beim Körper-Wechsel (Optik/Pose headless blind). Player-State: Snapshot + Restore.
 async function checkBandV1773HeldMesh(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -6883,10 +6640,9 @@ async function checkBandV1774UseByRole(ctx) {
             label: "Spitzhacke (Substanz)",
             parts: JSON.parse(JSON.stringify(KS74.geraet_spitzhacke.parts)),
         };
-        // KÖRPER GANZ (T6) — koerper_human ist ALT_DOPPEL/donorOnly (V18.480) und fällt aus der
-        // primären Select-Sicht (der mensch-Eintrag der Studio-Gruppe ist seine Wahrheit). Der
-        // generische „Bauplan-Avatar gelistet + verkörperbar"-Pfad wandert auf einen eigenen
-        // role:soul-Bauplan (dieselben Parts — die Verkörperung bleibt ein Compound wie zuvor).
+        // koerper_human ist ALT_DOPPEL/donorOnly und fehlt in der primären Select-Sicht → der generische
+        // „Bauplan-Avatar gelistet + verkörperbar“-Pfad misst an einem eigenen role:soul-Bauplan
+        // (dieselben Parts).
         if (r.state.customSouls) delete r.state.customSouls["bp__t_avatar74"];
         if (blu._t_avatar74) delete blu._t_avatar74;
         blu._t_avatar74 = {
@@ -6937,10 +6693,8 @@ async function checkBandV1774UseByRole(ctx) {
             /spitzhacke/i.test(row.textContent || "")
         );
 
-        // (6) BUG b — die Seele-Select listet den Bauplan-Avatar + Verkörpern registriert ihn.
-        // KÖRPER GANZ (T6): der generische Pfad wird am eigenen role:soul-Bauplan gemessen;
-        // die STUDIO-SICHT dazu — koerper_human (Alt-Doppel) tritt NICHT mehr auf, die
-        // Studio-Gruppe trägt den Tier-Wert (koerper_wolf) mit Studio-Namen.
+        // (6) Die Seele-Select listet den Bauplan-Avatar, Verkörpern registriert ihn; Studio-Sicht:
+        // koerper_human (Alt-Doppel) fehlt, die Studio-Gruppe trägt koerper_wolf mit Studio-Namen.
         if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
         const soulSel = document.getElementById("player-soul-select");
         out.avatarListed = !!soulSel && [...soulSel.options].some((o) => o.value === "_t_avatar74");
@@ -6963,18 +6717,12 @@ async function checkBandV1774UseByRole(ctx) {
             [...soulSel2.options].filter((o) => o.value === "_t_avatar74").length === 0 &&
             [...soulSel2.options].some((o) => o.value === "bp__t_avatar74");
 
-        // V18.99 (G1 — Motion-Resonanz): (a) die Bewegungs-Rollen EMERGIEREN
-        // für den Bauplan-Avatar (Bein + Flügel aus Form × Lage × Spiegelung,
-        // kein Hardcode), (b) der verkörperte CUSTOM-Avatar BEWEGT sich beim
-        // Gehen (vorher: der frühe animatePlayerSoul-Return = komplett
-        // statisch — KONSUM-Beweis, V17.31-Disziplin, am echten Treiber).
+        // Motion-Resonanz: (a) die Bewegungs-Rollen EMERGIEREN für den Bauplan-Avatar (Bein + Flügel aus
+        // Form × Lage × Spiegelung), (b) der verkörperte CUSTOM-Avatar BEWEGT sich beim Gehen — Konsum am
+        // echten Treiber animatePlayerSoul (ein früher Return ließ ihn statisch).
         const wRoles = (r.computeMotionRoles(r.state.blueprints.koerper_human.parts) || []).filter(Boolean);
-        // V18.101 (Test wandert auf den WAHREREN Intent): die geschärfte
-        // flat-Formel (Platte = mid/min, nicht max/min) erkennt die dünnen
-        // Wächter-Seiten-ZYLINDER korrekt als ARME (keine Platten-Flügel);
-        // die echte fluegel-Emergenz deckt der Phönix (2 Spiegel-PLANES).
-        // ALTLASTEN-NULL: die fluegel-Emergenz prüft ein LITERAL-Paar Spiegel-
-        // Planes (computeMotionRoles ist pur — kein gefallener Def nötig).
+        // Flat-Formel: Platte = mid/min (nicht max/min) → dünne Wächter-Seiten-Zylinder lesen als ARME.
+        // Die fluegel-Emergenz prüft ein LITERAL-Paar Spiegel-Planes (computeMotionRoles ist pur).
         const wingParts = [
             { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
             {
@@ -7537,10 +7285,8 @@ async function checkBandV1780FormAxes(ctx) {
     );
 }
 
-// V17.81 U2 (resonanz-system.md §3) — DAS EINE Rollen-Signatur-Register: jede Rolle eine VOLLE Signatur über
-// alle Achsen (die fragmentierten FORM_ROLE/ROLE_FIT/forging-split zusammengeführt). Die Tiefe: das volle
-// Profil entscheidet (eine Klinge ist eine bessere Waffe, ein Block ein besseres Bauwerk — über die GESAMTE
-// Resonanz, nicht eine Achse). _blueprintRoleFit liest das Register; die Ausrüstungs-Stats werden tiefer.
+// Das EINE Rollen-Signatur-Register: jede Rolle eine VOLLE Signatur über alle Achsen; das volle
+// Profil entscheidet (Klinge = bessere Waffe, Block = besseres Bauwerk). _blueprintRoleFit liest es.
 async function checkBandV1781RoleRegister(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -7691,10 +7437,9 @@ async function checkBandV1782CatalystReadout(ctx) {
     );
 }
 
-// V17.83 U4 (resonanz-system.md §5) — die Rolle-KLASSIFIKATION an der Wurzel: eine greifbare GERÄTE-Form
-// (spitz/griff-elongiert) wird über die FORM als Waffe/Werkzeug klassifiziert, NICHT als Bauwerk — der
-// Substanz-Zwilling Klinge/Bauwerk (beide dicht+hart) wird über die Form getrennt. Nur greifbare Implement-
-// Formen ändern sich; Würfel/große Strukturen/Körper/Tore bleiben (die Form-Rollen unverändert).
+// Rollen-Klassifikation an der Wurzel: eine greifbare Geräte-Form (spitz/griff-elongiert) wird über
+// die FORM Waffe/Werkzeug statt Bauwerk (trennt den Substanz-Zwilling Klinge/Bauwerk); Würfel,
+// große Strukturen, Körper und Tore bleiben unverändert.
 async function checkBandV1783ImplementClassification(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -8122,10 +7867,9 @@ async function checkBandV1787UndoRedo(ctx) {
     check("V17.87: die Edit-Geschichte ist NICHT persistiert (reaktive Editor-Sitzungs-Schicht)", res.notPersisted);
 }
 
-// V17.88 — die WERKSTATT IST DER PROZESS (Schöpfer-Vision „der wahre Weg"): der Spieler startet mit den
-// Basics (nur hände); eine platzierte+nahe Werkstatt (frieden/pfad) ODER eine besessene (schöpfer) liefert
-// ihren Prozess; eine bessere Werkstatt → höherer Cap (die §4.3-Rekursion). Die Domain-Werkzeuge sind die
-// Op-Bibliothek, gefaltet in die Werkstatt.
+// Die Werkstatt IST der Prozess: Start nur mit hände; eine platzierte + nahe (frieden/pfad) oder
+// besessene (schöpfer) Werkstatt liefert ihren Prozess, eine bessere → höherer Cap; die
+// Domain-Werkzeuge sind ihre Op-Bibliothek.
 async function checkBandV1788WorkshopAsProcess(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -8283,10 +8027,9 @@ async function checkBandV1789WorkshopReadout(ctx) {
         const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
         if (tab) tab.click();
         delete blu["_ab_clone"];
-        // ein WAFFEN-Klon (Schwert-Substanz aus KIND_SUBSTANCE — der geraet_schwert-Blueprint fiel) —
-        // eine Ausrüstungs-Rolle, die Werte hat (architecture → bewusst KEINE Werte-Zeile);
-        // zugleich nicht-builtIn → der Undo/Redo-Verlauf rendert. Klon-Quelle registrieren,
-        // klonen (materialisiert die emergente Rolle), Quelle räumen.
+        // Waffen-Klon aus der KIND_SUBSTANCE-Schwert-Zeile: Ausrüstungs-Rolle MIT Werte-Zeile (architecture
+        // hat bewusst keine), nicht-builtIn → Undo/Redo rendert. Quelle registrieren, klonen (materialisiert
+        // die emergente Rolle), Quelle räumen.
         const KS89 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         if (blu._t_ab_src) delete blu._t_ab_src;
         blu._t_ab_src = { name: "_t_ab_src", parts: JSON.parse(JSON.stringify(KS89.geraet_schwert.parts)) };
@@ -8335,11 +8078,10 @@ async function checkBandV1789WorkshopReadout(ctx) {
     );
 }
 
-// V17.90 (resonanz-system.md — die Re-Kalibrierung): die vier „blass"-Facetten + zwei UI-Heilungen GEMESSEN.
-// (1) das Spektrum SPREIZT (nicht 1.0/1.0/1.0 — die A1-Vektor-Normalisierung) + führt mit der richtigen Rolle.
-// (2) MATERIAL dramatisch (Eisen-Klinge ≫ Holz-Klinge, ≥2×). (3) V18.311 — der Equip-Fold ist EINE kanonische
-// Quelle (`_foldEquippedStatTags`, Spieler+Kreatur); der V17.90-Größen-Faktor ist VORERST raus (Schöpfer „Spieler
-// runter") → size-neutral. (4) ROLLE scharf (Pickel→Werkzeug, Schwert→Waffe). + Drehbank-Proximity + CSS.
+// Re-Kalibrierung: (1) das Spektrum SPREIZT (nicht 1/1/1) + führt mit der richtigen Rolle,
+// (2) Material dramatisch (Eisen-Klinge ≥ 2× Holz), (3) der Equip-Fold ist EINE Quelle
+// (`_foldEquippedStatTags`, Spieler+Kreatur), size-neutral, (4) Rolle scharf (Pickel→Werkzeug,
+// Schwert→Waffe); + Drehbank-Proximity + CSS.
 async function checkBandV1790Recalibration(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -8833,10 +8575,8 @@ async function checkBandWave4(ctx) {
         r.loadState(oldSnap);
         out.legacyPartGotDefaultMaterial =
             r.state.blueprints["legacy-test"] && r.state.blueprints["legacy-test"].parts[0].material === "stein";
-        // V17.91 — das Material wählt man jetzt durch ZIEHEN aus der rechten MATERIALIEN-Palette auf einen
-        // Part im 3D (kein Dropdown mehr im entfernten Detail-Editor). Hier datennah geprüft (der Container
-        // existiert + es gibt ≥6 Materialien) — kein erzwungenes Re-Render (das die V8.03-Card-Zählung stören
-        // könnte, wenn ein späterer Test ein Material ergänzt).
+        // Material wählt man per ZIEHEN aus der MATERIALIEN-Palette auf einen Part im 3D; datennah geprüft
+        // (Container + ≥6 Materialien), ohne erzwungenes Re-Render (störte die Card-Zählung späterer Tests).
         r.selectBlueprintForEdit("legacy-test");
         out.uiHasMaterialDropdown = !!document.getElementById("workshop-material-palette");
         out.uiDropdownLists6PlusOptions = Object.keys(r.state.materials || {}).length >= 6;
@@ -8991,10 +8731,8 @@ async function checkBandWave4(ctx) {
             state: r.state,
         });
 
-        // V17.91 — die aktiven Tags (Eigenschaften) werden jetzt im intuitiven Stats-Panel angezeigt
-        // (_workshopAppendTagsRow → .tag-chip in einer .stat-row „Tags"), nicht in der entfernten Editor-
-        // Tags-Sektion. Die Formen (inkl. helix) sind die ziehbaren Karten der linken FORMEN-Palette (kein
-        // Dropdown mehr) — der Spieler zieht eine Form ins 3D, statt sie in einer Tabelle zu wählen.
+        // Aktive Tags stehen im Stats-Panel (.tag-chip in einer .stat-row „Tags“); Formen (inkl. helix) sind
+        // ziehbare Karten der FORMEN-Palette — der Spieler zieht eine Form ins 3D.
         r.selectBlueprintForEdit("test-quarz-orb");
         r._renderWorkshopDOM();
         // V18.44 — die Tags sind jetzt das MATERIAL-PROFIL (Daten-Viz-Balken im Spec-Sheet), nicht mehr Chips.
@@ -9116,10 +8854,8 @@ async function checkBandWave4(ctx) {
         const dslRes = r.dslRun(["apply_op", "test-precision", 0, "hände"], { source: "test" });
         out.dslApplyOpWorks = dslRes.log.some((e) => e.event === "applied_op");
 
-        // Diskriminations-Test: zwei Resonanz-Compounds, einer
-        // hand-roh (precision 0.4), einer poliert (cap 0.97). Welt-
-        // Effekt-Schwelle precision_high=0.8 muss zwischen ihnen
-        // liegen — der polierte triggert, der hand-rohe nicht.
+        // Diskrimination: hand-roh (precision 0.4) vs. poliert (cap 0.97) — die Welt-Effekt-Schwelle
+        // precision_high=0.8 liegt dazwischen: der polierte triggert, der rohe nicht.
         r.state.blueprints["raw-orb"] = {
             name: "raw-orb",
             label: "Rau-Orb",
@@ -9173,10 +8909,8 @@ async function checkBandWave4(ctx) {
                 },
             ],
         };
-        // V18.235 (V17.32-Konfund-Heilung): awe auf eine BASIS zurücksetzen, sonst
-        // ist der Test confoundiert — hat der Warmup awe schon an die Decke (1.0)
-        // gehoben, kann der Magie-Compound es nicht weiter heben → falsch-rot. Wir
-        // testen die ABSICHT (Magie hebt awe), deterministisch ab 0.
+        // awe auf 0: hat der Warmup awe schon an die Decke (1.0) gehoben, kann der Magie-Compound nicht
+        // weiter heben → falsch-rot. Geprüft wird die Absicht (Magie hebt awe), deterministisch ab 0.
         r.state.player.emotions.awe = 0;
         const aweBefore = r.state.player.emotions.awe;
         r._applyCompoundWorldEffects("mage-pyramid");
@@ -9194,10 +8928,9 @@ async function checkBandWave4(ctx) {
         rawGroup.traverse((o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose());
         polGroup.traverse((o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose());
 
-        // V17.91 — die Werkstatt ist 3D-zentrisch: der per-Part-opChain-Dropdown + die Tools-Chips des alten
-        // Detail-Editors sind ENTFERNT. Die Werkzeuge/Prozesse leben jetzt als ziehbare Karten in der rechten
-        // WERKZEUGE-Palette (auf einen Part im 3D ziehen wendet die Op/den Prozess an); der Readout (inkl.
-        // Präzision/Qualität) im intuitiven #workshop-stats-panel.
+        // Die Werkstatt ist 3D-zentrisch: Werkzeuge/Prozesse sind ziehbare Karten der WERKZEUGE-Palette
+        // (auf einen Part ziehen wendet die Op an); der Readout (Präzision/Qualität) lebt im
+        // #workshop-stats-panel.
         const prevModeP3 = r.getGameMode ? r.getGameMode() : "frieden";
         if (r.setGameMode) r.setGameMode("schöpfer");
         r.selectBlueprintForEdit("test-precision");
@@ -9377,10 +9110,8 @@ async function checkBandWave5(ctx) {
         const atomar = r.computeCompoundTags(tipBp);
         const spatial = r.computeSpatialTags(tipBp);
         out.tipBoostsMagic = spatial.magieleitung > atomar.magieleitung + 0.1;
-        // Pyramide unten + LATERAL versetzt (sonst greift in
-        // Phase 2 der Y-Symmetrie-Bonus und überdeckt die at_top-
-        // Logik). Hier prüfen wir nur: pointed-at-bottom kriegt
-        // NICHT den Spitze-Bonus aus Prinzip 1.
+        // Pyramide unten + LATERAL versetzt (sonst überdeckt der Y-Symmetrie-Bonus die at_top-Logik);
+        // geprüft wird nur: pointed-at-bottom trägt kein at_top (kein Spitze-Bonus).
         const noTipBp = {
             parts: [
                 {
@@ -9423,20 +9154,9 @@ async function checkBandWave5(ctx) {
         };
         const cAtomar = r.computeCompoundTags(contactBp);
         const cSpatial = r.computeSpatialTags(contactBp);
-        // Helix-Kupfer dominiert in beiden (MAX-Aggregation), aber
-        // Kontakt zieht Stein in seinem Slot hoch. Da MAX am Ende
-        // nimmt, sehen wir den Effekt am ehesten, wenn ein Tag
-        // beim Stein ohnehin nicht prominent war.
-        // Test: ohne Kontakt-Transfer hätte Stein bei stromleitung
-        // box(1)×stein(0.05) = 0.05, helix(3)×kupfer(0.95) = 2.85
-        // → MAX = 2.85. MIT Transfer wird der Stein-Slot auch auf
-        // 2.85 × 0.6 = 1.71 hochgezogen — aber das ist immer noch
-        // unter dem Helix-Slot, also MAX bleibt 2.85.
-        // Sinnvoller Test: weniger asymmetrische Tags messen.
-        // Separater at_outside-Test: drei Parts in einer Reihe,
-        // das äußerste links bekommt at_outside (xz-Distanz vom
-        // Compound-Zentrum). Bei dem contactBp-Setup wäre die
-        // Helix wegen ihrer eigenen Z-Extent zentral.
+        // Kontakt-Transfer (Stein-Slot ← 0.6 × Helix-Kupfer 2.85 = 1.71) ist im MAX-Aggregat unsichtbar
+        // (MAX bleibt 2.85) → hier nur at_outside: in einer Dreier-Reihe tragen die äußeren Parts
+        // at_outside (xz-Distanz vom Compound-Zentrum), der mittlere nicht.
         const outsideBp = {
             parts: [
                 {
@@ -9482,16 +9202,8 @@ async function checkBandWave5(ctx) {
                 },
             ],
         };
-        // Holz×cylinder: stromleitung = 3 × 0.05 = 0.15
-        // Kupfer×cylinder: 3 × 0.95 = 2.85
-        // MAX atomar = 2.85
-        // MIT Kontakt: holz wird auf 2.85 × 0.6 = 1.71 gehoben.
-        // MAX bleibt 2.85, aber der Holz-Slot ist jetzt 1.71.
-        // → Spatial-MAX-Aggregat bleibt 2.85 in stromleitung.
-        // Schwierig zu erkennen ohne den Holz-Slot zu inspizieren.
-        // Alternative: zwei Parts, beide schwach in einem Tag, ein
-        // ANDERES Part-Pair überträgt darüber. Skip — wir prüfen
-        // den Mechanismus über die UI-Anzeige.
+        // Holz×cylinder 0.15 wird per Kontakt auf 2.85 × 0.6 = 1.71 gehoben, das MAX-Aggregat bleibt 2.85 —
+        // ohne Slot-Einblick nicht messbar; der Transfer wird darum nicht hier, sondern über die UI geprüft.
 
         // UI: räumliche Reihe erscheint bei pointed-am-Rand
         r.state.blueprints["wave5b-test"] = {
@@ -9535,10 +9247,8 @@ async function checkBandWave5(ctx) {
             { state: r.state }
         );
 
-        // Welt-Effekt: tipBp sollte Magie-Effekt triggern, weil die
-        // räumlich verstärkte Magieleitung über die Schwelle kommt.
-        // Wir testen den Unterschied: gleicher Bauplan, aber Pyramide
-        // unten vs. oben. Beide brauchen Politur (precision_high).
+        // Welt-Effekt: gleicher Bauplan, Pyramide oben vs. unten, beide poliert (precision_high); oben hebt
+        // die räumlich verstärkte Magieleitung über die Schwelle.
         const polished = r._defaultPartOpChain();
         polished.push({ tool: "polierscheibe", op: "polish", cap: 0.97 });
         r.state.blueprints["wave5b-tip-polished"] = {
@@ -9560,10 +9270,8 @@ async function checkBandWave5(ctx) {
         r._applyCompoundWorldEffects("wave5b-tip-polished");
         const aweAfterTip = r.state.player.emotions.awe;
         out.tipTriggersMagic = aweAfterTip > aweBefore;
-        // bottom: könnte triggern oder nicht — wir prüfen, dass
-        // wenn beide identisch wären, die Magie identisch wäre.
-        // Aber durch journalAppendOnce per-bp-name ist das stabil.
-        // Test: tipPolished sollte MEHR magie-Bonus haben als bottom.
+        // Ob bottom triggert, bleibt offen (journalAppendOnce per bp-Name); geprüft wird: tip-polished
+        // trägt MEHR räumliche magieleitung als bottom.
         const tipMagic = r.computeSpatialTags(r.state.blueprints["wave5b-tip-polished"]).magieleitung || 0;
         const bottomMagic = r.computeSpatialTags(r.state.blueprints["wave5b-bottom-polished"]).magieleitung || 0;
         out.tipMagicExceedsBottom = tipMagic > bottomMagic + 0.1;
@@ -9939,11 +9647,8 @@ async function checkBandWave5(ctx) {
         // Validation
         const v1 = r.validateBlueprintConnections([{ type: "hafting", partA: 0, partB: 1 }], 2);
         out.validAcceptsGood = v1.length === 1;
-        // Unknown type — Ω4 (V18.139, taille-spec §2): seit must-preserve wird
-        // eine STRUKTURELL valide Verbindung mit unbekanntem Typ BEWAHRT
-        // (sie ist signierte Substanz; die typ-gebundenen Lesarten ignorieren
-        // sie: Strength → 0). Struktur-Müll fällt weiter (v3/v4 unten). Der
-        // Test wandert vom alten „lehnt ab" zur neuen Wahrheit (V9.56-i).
+        // Unbekannter Typ: eine STRUKTURELL valide Verbindung wird BEWAHRT (must-preserve, taille-spec §2;
+        // typ-gebundene Lesarten ignorieren sie: Strength → 0); Struktur-Müll fällt weiter (v3/v4).
         const v2 = r.validateBlueprintConnections([{ type: "schmusen", partA: 0, partB: 1 }], 2);
         const touchingBp = {
             parts: [
@@ -10229,10 +9934,9 @@ async function checkBandWave5(ctx) {
         );
         out.snapshotHasTool = (snap.tools || []).some((t) => t.name === "w5c-lathe" && t.precisionCap === 0.97);
 
-        // V17.91 — die „Als Werkzeug registrieren"-UI ist ENTFERNT (von V17.88 „die Werkstatt IST der Prozess"
-        // abgelöst — Prozesse kommen aus platzierten Werkstätten, nicht aus registrierten Bauplänen). Die
-        // Daten-Methoden bleiben (oben getestet: registerBlueprintAsTool → snapshotHasTool); ein registriertes
-        // Werkzeug erscheint als ziehbare Karte in der WERKZEUGE-Palette, wenn der Spieler es besitzt.
+        // Die „Als Werkzeug registrieren“-UI ist entfernt (Prozesse kommen aus platzierten Werkstätten);
+        // die Daten-Methoden bleiben (registerBlueprintAsTool → snapshotHasTool), ein besessenes
+        // registriertes Werkzeug erscheint als ziehbare Karte der WERKZEUGE-Palette.
         out.toolMethodSurvives =
             typeof r.registerBlueprintAsTool === "function" && typeof r.setBlueprintToolMeta === "function";
 
@@ -10473,10 +10177,8 @@ async function checkBandRing8(ctx) {
     void errors;
     void finalState;
     // ### Ring 8 — Multi-Welt-Verwaltung ###
-    // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld
-    // (ohne Reload — Reload ist UI-Schicht), deleteWorld, Migration,
-    // Player-Übernahme. Wir benutzen reload:false damit wir alle
-    // Pfade in einer Session prüfen können.
+    // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld, deleteWorld, Migration,
+    // Player-Übernahme — mit reload:false, damit alle Pfade in einer Session laufen (Reload = UI).
     const ring8Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -10548,11 +10250,8 @@ async function checkBandRing8(ctx) {
         out.freshNoInheritedSoul = freshSave.playerSoul === "human";
         out.freshNoInheritedTools = Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
 
-        // V9.23 Phase 5a + V9.35 Phase 5c.2.c.2 — Voxel ist permanent
-        // + irreversibel; ein no-arg createNewWorld setzt worldMeta.
-        // voxelTerrain=true. Der V9.23-Heightfield-Opt-out ist tot —
-        // auch ein explizites voxelTerrain:false-Argument wird vom
-        // V9.35-Pfad ignoriert (Parameter entfernt + Sanitizer-Zwang).
+        // Voxel ist permanent + irreversibel: createNewWorld setzt worldMeta.voxelTerrain=true, auch ein
+        // explizites voxelTerrain:false wird ignoriert (Parameter entfernt + Sanitizer-Zwang).
         const voxelId = r.createNewWorld({ slug: "test-voxel-welt", reload: false });
         const voxelSave = JSON.parse(localStorage.getItem(r.worldStorageKey(voxelId)) || "{}");
         out.voxelWorldFlagSet = !!(voxelSave.worldMeta && voxelSave.worldMeta.voxelTerrain === true);
@@ -10686,11 +10385,8 @@ async function checkBandRing8(ctx) {
     }
 
     // ### Ring 8.1 — Per-Welt-Seed ###
-    // Vor Ring 8.1 nutzten alle Welten den gleichen Default-Seed; das
-    // Terrain einer „neuen" Welt sah identisch zur alten aus. Jetzt
-    // trägt jede Welt ihren eigenen Seed in worldMeta. SimplexNoise
-    // wird mit worldMeta.seed gefüttert; verschiedene Welten liefern
-    // damit verschiedene Geometrien.
+    // Jede Welt trägt ihren Seed in worldMeta; SimplexNoise wird damit gefüttert → verschiedene Welten
+    // liefern verschiedene Geometrie.
     const ring81Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -10735,10 +10431,8 @@ async function checkBandRing8(ctx) {
         out.newWorldPathBucketsEmpty = aSave.playerPathBuckets === null;
         out.newWorldEmotionsZero = aSave.playerEmotions && Object.values(aSave.playerEmotions).every((v) => v === 0);
 
-        // SimplexNoise nutzt worldMeta.seed: wir prüfen über
-        // MEHRERE Sample-Punkte, dass mindestens einer differiert.
-        // Beide Welten haben dieselbe steepness/baseHeight, der
-        // Unterschied liegt AUSSCHLIESSLICH am Seed.
+        // Über MEHRERE Sample-Punkte muss mindestens einer differieren; steepness/baseHeight sind gleich,
+        // der Unterschied liegt NUR am Seed.
         if (typeof SimplexNoise === "function") {
             const nA = new SimplexNoise(seedA);
             const nB = new SimplexNoise(seedB);
@@ -10789,11 +10483,8 @@ async function checkBandRing8(ctx) {
     }
 
     // ### Ring 8.2 — Player-Position-Restore + Status-Bar-Welt ###
-    // Bug-Report: nach Welt-Wechsel landete der Spieler bei (0,50,0)
-    // statt an seiner zuletzt gespeicherten Position. Ursache:
-    // generateNewWorld() prüft `terrainEverGenerated` (state-only,
-    // nicht persistiert) und teleportiert beim FIRST=false-Pfad.
-    // Fix: loadState markiert das Flag, sobald ein Save geladen wurde.
+    // generateNewWorld() teleportiert, solange `terrainEverGenerated` (state-only, nicht persistiert)
+    // fehlt → loadState setzt das Flag beim Laden eines Saves, sonst landet der Spieler bei (0,50,0).
     const ring82Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -10821,12 +10512,9 @@ async function checkBandRing8(ctx) {
             Math.abs(r.state.playerMesh.position.x - 42) < 0.5 &&
             Math.abs(r.state.playerMesh.position.z - 23) < 0.5;
 
-        // V18.95 — der leere createNewWorld-Snapshot (playerPosition:null)
-        // zählt NICHT als „schon generiert": das Flag bleibt false und die
-        // Position bleibt unangetastet → der Browser-Reload-Pfad fährt den
-        // Genesis-Erst-Spawn (deterministischer offener Punkt + Plattform).
-        // Wurzel des V18.94-Browser-Befunds „neue Welt: keine Plattform,
-        // im Boden" (Browser-Pfad-Reproduktion: `diag-genesis-spawn.cjs`).
+        // Ein leerer createNewWorld-Snapshot (playerPosition:null) zählt NICHT als generiert: das Flag bleibt
+        // false, die Position unangetastet → der Reload fährt den Genesis-Erst-Spawn (offener Punkt +
+        // Plattform).
         const emptySnap = r._buildEmptyWorldSnapshot(
             { worldId: "test-genesis-pre-spawn", slug: "test-genesis", bornAt: Date.now(), seed: "s-test" },
             false
@@ -10883,12 +10571,8 @@ async function checkBandRing9to10(ctx) {
     void errors;
     void finalState;
     // ### Ring 9 — Welt-Tor (Drei-Wahl-Import-Dialog) ###
-    // Reload-basierte UI-Pfade testen wir indirekt via Daten-Methoden:
-    //  - importWorldBeside (datenseitig, ohne Dialog) erzeugt neuen
-    //    Index-Eintrag + Per-Welt-Save mit parentWorlds-Spur.
-    //  - Dialog-Markup ist im DOM (HTML + Buttons + summary).
-    //  - _openWeltTorDialog setzt pendingImport + zeigt Dialog.
-    //  - Esc/cancel räumt pendingImport auf.
+    // Reload-UI indirekt über Daten-Methoden: importWorldBeside (Index-Eintrag + Per-Welt-Save mit
+    // parentWorlds-Spur), Dialog-Markup im DOM, _openWeltTorDialog setzt pendingImport, Esc/cancel räumt.
     const ring9Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -10967,11 +10651,8 @@ async function checkBandRing9to10(ctx) {
         r._weltTorImportBeside();
         out.besideNoopWithoutPending = true; // sollte nicht crashen
 
-        // Edge-Bug-Regression (gefunden in verify-ring9.cjs):
-        // Eine importierte Welt OHNE worldJournal soll trotzdem
-        // einen Witness-Eintrag bekommen. Vor dem Fix wurde der
-        // Eintrag still übersprungen, wenn cloned.worldJournal
-        // fehlte.
+        // Eine importierte Welt OHNE worldJournal bekommt trotzdem einen Witness-Eintrag (nie still
+        // überspringen, wenn cloned.worldJournal fehlt).
         const journalless = {
             worldMeta: { worldId: "no-journal-src", slug: "test-stumm", bornAt: Date.now() },
         };
@@ -11030,11 +10711,8 @@ async function checkBandRing9to10(ctx) {
     }
 
     // ### Ring 10 — Welt-Fusion ###
-    // Diskriminations-Test: zwei Eltern mit JE EINER eindeutigen Sache
-    // (A hat Material X, B hat Bauplan Y, A hat hohe Emotion, B hat
-    // andere Emotion). Drei Strategien fusionieren — die Fusion muss
-    // beide Eindeutigkeiten tragen, und die Strategien müssen
-    // unterscheidbare Emotion-Aggregation zeigen.
+    // Diskrimination: zwei Eltern mit JE einer eindeutigen Sache (Material, Bauplan, Emotion) — die
+    // Fusion trägt beide, die drei Strategien zeigen unterscheidbare Emotion-Aggregation.
     const ring10Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -11176,14 +10854,9 @@ async function checkBandRing9to10(ctx) {
         r._closeWorldFusionDialog();
         out.dialogClosed = !document.getElementById("world-fusion-dialog").hasAttribute("open");
 
-        // ### Rename-Cascade-Regression (Reflexions-Bugfund) ###
-        // Zwei Eltern haben beide einen Bauplan "kollidierer". B
-        // hat zusätzlich (a) ein Werkzeug das diesen Bauplan
-        // registriert und (b) einen fraktalen Bauplan der ihn
-        // referenziert. Nach Fusion: B's "kollidierer" wird zu
-        // "kollidierer-fusion". Tool.sourceBlueprint und
-        // fractal.part.refName MÜSSEN mitumbenannt werden, sonst
-        // dangling.
+        // ### Rename-Cascade-Regression ###
+        // Beide Eltern haben Bauplan „kollidierer“; der von B wird „kollidierer-fusion“ — Tool.sourceBlueprint
+        // und fractal.part.refName MÜSSEN mitumbenannt werden, sonst dangling.
         const cascadeAId = r.createNewWorld({ slug: "cascade-a", inheritPlayer: false, reload: false });
         const cascadeBId = r.createNewWorld({ slug: "cascade-b", inheritPlayer: false, reload: false });
         const cA = JSON.parse(localStorage.getItem(r.worldStorageKey(cascadeAId)));
@@ -11316,11 +10989,8 @@ async function checkBandRing9to10(ctx) {
     }
 
     // ### Ring 10.1 — Rezepte aus anderer Welt holen (ohne Fusion) ###
-    // Schöpfer-Wunsch nach Ring-10-Reflexion: B's Rezepte in A
-    // importieren OHNE eine Fusions-Welt zu erschaffen. `import-
-    // RecipesFromWorld(sourceId)` kopiert Baupläne + Materialien +
-    // Werkzeuge der Quelle in die aktive Welt, Konflikte mit
-    // `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
+    // `importRecipesFromWorld(sourceId)` kopiert Baupläne + Materialien + Werkzeuge der Quelle in die
+    // aktive Welt; Konflikte bekommen `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
     const recipeResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -11355,10 +11025,8 @@ async function checkBandRing9to10(ctx) {
                 ],
                 connections: [],
                 role: "tool",
-                // Ω3 (V18.138): der Import läuft jetzt durch dieselbe Wand wie
-                // der Save-Restore (TOOL_OP_CLASSES + opName-Pattern) — das
-                // Test-Werkzeug trägt eine VALIDE opClass (die alte Fiktion
-                // "form_geben" überlebte schon den Reload nie; V9.56-i).
+                // Der Import läuft durch dieselbe Wand wie der Save-Restore (TOOL_OP_CLASSES + opName-Pattern) →
+                // das Test-Werkzeug braucht eine VALIDE opClass.
                 toolMeta: { opName: "fremder-hammer", opClass: "plastic" },
             },
             {
@@ -11489,16 +11157,10 @@ async function checkBandRing11AndW7Mesh(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Voxel V9.36 Phase 5c.2.c.3.a — modify_terrain stirbt, voxel_carve/_fill leben ###
-    // Die Ring-10.5-Heightfield-Mod-Schicht ist tot: `modify_terrain`-
-    // DSL-Op + 6 Helpers (`_chunksTouchedByDisc`, `_appendChunkDeltaOp`,
-    // `_sanitizeChunkDeltas`, `_applyModifyOpToChunk`, `_rebuildChunk-
-    // Physics`, `applyChunkDelta`) + `chunkDeltas`-Feld + CHUNK_DELTA_
-    // OPS_CAP gelöscht. Die Welt-Mod wirkt jetzt durch zwei broadcast-
-    // bare DSL-Ops im 3D-Voxel-Feld (V9.14/V9.15). Die Chat-Patterns
-    // `grabe loch`/`hebe hügel` rufen die neuen Ops mit der Spieler-
-    // Position embedded. Im `CREATURE_PROPOSED_OPS`-Whitelist ist
-    // `modify_terrain` durch `voxel_carve`+`voxel_fill` ersetzt.
+    // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
+    // Absenz: der modify_terrain-DSL-Op, seine Heightfield-Helfer, `chunkDeltas` und CHUNK_DELTA_OPS_CAP;
+    // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
+    // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
     const voxelV936Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -11627,13 +11289,9 @@ async function checkBandRing11AndW7Mesh(ctx) {
     }
 
     // ### Ring 11 V1 — Multi-User Position-Sync (Daten + UI + Sandbox) ###
-    // V1 trägt nur Position + Rotation, kein DSL-Sync. Tests prüfen
-    // Datenstruktur, Sandbox-Grenze (kein neuer eval-Pfad), CSP-
-    // Erweiterung um ws://, UI-Toggle. Kein echter WebSocket-Connect
-    // im Headless — der signaling-server läuft nicht zwingend; aber
-    // initP2PSync ohne worldId muss sauber ablehnen, mit worldId
-    // muss die Datenstruktur korrekt aufgebaut werden (auch wenn
-    // die Connection scheitert).
+    // Nur Position + Rotation (kein DSL-Sync). Geprüft: Datenstruktur, Sandbox-Grenze (kein neuer
+    // eval-Pfad), CSP ws://, UI-Toggle; ohne echten WebSocket: initP2PSync ohne worldId lehnt ab, mit
+    // worldId steht die Datenstruktur, auch wenn die Connection scheitert.
     const ring11Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -11727,11 +11385,8 @@ async function checkBandRing11AndW7Mesh(ctx) {
         }
         out.tickNoOpSafe = tickError === null;
 
-        // DSL-Sandbox: kein neuer eval-Pfad. Es darf KEINE neue
-        // dsl-op geben, die das gleich "p2p" oder "sync" heißt
-        // (V1 trägt KEIN DSL-Sharing). Kontrolliert die Sandbox-
-        // Grenze: fremde Welten dürfen nicht per DSL-Op die
-        // eigene manipulieren.
+        // Sandbox-Grenze: KEIN dsl-op namens p2p/sync — fremde Welten dürfen die eigene nicht per DSL-Op
+        // manipulieren (V1 trägt kein DSL-Sharing).
         out.noP2PDslOp =
             typeof r.dslEffects.p2p_send === "undefined" &&
             typeof r.dslEffects.peer_dsl === "undefined" &&
@@ -11798,13 +11453,9 @@ async function checkBandRing11AndW7Mesh(ctx) {
     }
 
     // ### W7 Phase 1 — WebRTC-Mesh (Compute-Sharing) ###
-    // Der signaling-server wird vom Daten-Relay zum Handshake-
-    // Rendezvous: Position/DSL/Soul fliessen über RTCDataChannels
-    // direkt peer-to-peer. Tests prüfen Datenstruktur, die Mesh-
-    // Komplett-Wand (_p2pMeshReady), die peerId-Stempelung über den
-    // Kanal (anti-spoof), den Transport-Wechsel in p2pSend, die
-    // RTC-Signaling-Handler + CSP-Erweiterung. Ein echter zwei-
-    // Browser-Handshake läuft in scripts/smoke-webrtc.cjs.
+    // Signaling ist nur Handshake-Rendezvous; Position/DSL/Soul fließen über RTCDataChannels P2P.
+    // Geprüft: Datenstruktur, Mesh-Komplett-Wand (_p2pMeshReady), peerId-Stempelung am Kanal
+    // (anti-spoof), Transport-Wechsel in p2pSend, RTC-Handler + CSP; zwei Browser: smoke-webrtc.cjs.
     const w7Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -11990,11 +11641,9 @@ async function checkBandRing11AndW7Mesh(ctx) {
     }
 
     // ### W7 Phase 2 — Welt-Snapshot über das Mesh ###
-    // Ein Guest holt die Welt des Hosts in P2P_WORLD_CHUNK_SIZE-Stücken
-    // über den RTCDataChannel. Tests prüfen: Chunk-Reassembly, die
-    // Annahme-Wand (nur Stücke vom gepullten Peer + nur bei pending),
-    // worldRole im soul-Kanal, _p2pApplyWorldSnapshot extrahiert,
-    // Resync-Fehlerpfade. Der echte Transfer läuft in smoke-webrtc.cjs.
+    // Ein Guest holt die Host-Welt in P2P_WORLD_CHUNK_SIZE-Stücken; Annahme-Wand: nur Stücke vom
+    // gepullten Peer + nur bei pending. Geprüft: Reassembly, worldRole im soul-Kanal,
+    // _p2pApplyWorldSnapshot, Resync-Fehlerpfade; echter Transfer: smoke-webrtc.cjs.
     const w7p2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -12193,11 +11842,8 @@ async function checkBandW16Distribution(ctx) {
     void errors;
     void finalState;
     // ### W16 Phase 1 — Mesh-Welt-Verteilung ###
-    // Eine vendorte Welt reist peer-to-peer: ein Mitspieler holt ihr
-    // Bündel über das Mesh (Transport spiegelt W7 P2 world-pull). Tests
-    // prüfen die Datenschicht — Sender, Empfänger, Annahme-Wand,
-    // Rate-Limit, kanal-exklusiv; den echten Zwei-Browser-Transfer
-    // prüft smoke-webrtc.cjs.
+    // Eine vendorte Welt reist P2P (Transport spiegelt den W7-P2-world-pull). Geprüft: Sender,
+    // Empfänger, Annahme-Wand, Rate-Limit, kanal-exklusiv; Zwei-Browser-Transfer: smoke-webrtc.cjs.
     const w16Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -12429,9 +12075,8 @@ async function checkBandW16Distribution(ctx) {
         r._p2pHandleWorldBundlePull = origPull;
 
         // ### W16-Politur — Hash-Verifikation + Pull-Timeout ###
-        // requestWorldBundleFromPeer trägt den Katalog-Hash +
-        // startedAt im pendingBundlePull (für die Hash-Prüfung
-        // nach dem Pull + den weichen Timeout).
+        // requestWorldBundleFromPeer trägt Katalog-Hash + startedAt im pendingBundlePull (Hash-Prüfung nach
+        // dem Pull + weicher Timeout).
         sent.length = 0;
         const beforeReq = Date.now();
         const polRes = r.requestWorldBundleFromPeer("polish-w16", "w16peer", "ABCDEF123");
@@ -12605,10 +12250,8 @@ async function checkBandW16Distribution(ctx) {
         out.runMeshWorldGetRoutes = !!routed && routed.wid === "route-w16" && routed.pid === "route-peer-w16";
         r.requestWorldBundleFromPeer = origReq;
 
-        // Der Holen-Knopf: ein ECHTER Klick routet durch den
-        // delegierten Listener (meshWorldInitDOM) zur Transport-
-        // Methode — der ganze Spieler-Pfad render→klick→holen
-        // (W12-Lehre: „fertig" heißt den Spieler-Pfad gegangen).
+        // Der Holen-Knopf: ein ECHTER Klick routet durch den delegierten Listener (meshWorldInitDOM) zur
+        // Transport-Methode — der ganze Spieler-Pfad render→klick→holen.
         let clickRouted = null;
         const origReqClick = r.requestWorldBundleFromPeer;
         r.requestWorldBundleFromPeer = (wid, pid) => {
@@ -12748,14 +12391,9 @@ async function checkBandW17Multiplayer(ctx) {
     void errors;
     void finalState;
     // ### W17 Phase B-Relay — das Mesh-als-Server ###
-    // Phase A trug den `WebSocket`-Verkehr einer fremden Welt über den
-    // Transport-Shim zur Heimat (Loopback-Echo). B-Relay ersetzt den
-    // Echo durch die Mesh-Verteilung: ein `ws-send` wird ein
-    // subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
-    // stellt ihn in sein iframe zu. Tests prüfen die Client-Schicht
-    // (subworld-net-Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
-    // Rate-Limit + Deckel); den echten Zwei-Browser-Durchlauf prüft
-    // smoke-webrtc.cjs.
+    // Ein `ws-send` der fremden Welt wird ein subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
+    // stellt ihn in sein iframe zu. Geprüft: Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
+    // Rate-Limit + Deckel; Zwei-Browser-Durchlauf: smoke-webrtc.cjs.
     const w17bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -12914,10 +12552,8 @@ async function checkBandW17Multiplayer(ctx) {
         });
         out.deliverCapsSize = dBig === false && posted.length === 0;
 
-        // subworld-net ist kanal-zustellbar: _p2pHandleChannelMessage
-        // reicht es (in der ALLOWED-Whitelist) an p2pHandleMessage →
-        // _portalNetDeliver. Eine Fremd-Peer-Nachricht landet so im
-        // iframe.
+        // subworld-net ist kanal-zustellbar: _p2pHandleChannelMessage reicht es (ALLOWED-Whitelist) an
+        // p2pHandleMessage → _portalNetDeliver → iframe.
         r._portalOverlay = makeOverlay();
         r._portalOverlay.netChannels = new Set([1]);
         posted.length = 0;
@@ -12995,13 +12631,9 @@ async function checkBandW17Multiplayer(ctx) {
     }
 
     // ### W17 Phase B-JS-Compute — der Compute-Host ###
-    // B-Relay trug RELAY-Welten (Server = blosser Rebroadcast).
-    // B-JS-Compute trägt Welten mit echter autoritativer Server-JS:
-    // ein Peer wird Compute-Host — sein Tab führt die Server-JS in
-    // einem verborgenen, sandgesicherten Server-Kontext-iframe aus,
-    // die Gäste routen ihren Verkehr an ihn (subworld-srv), die
-    // Antwort kommt gezielt zurück (subworld-cli). Tests prüfen die
-    // Routing-Methoden; den Zwei-Browser-Durchlauf prüft smoke-webrtc.
+    // Welten mit autoritativer Server-JS: ein Peer wird Compute-Host (Server-JS in einem verborgenen,
+    // sandgesicherten iframe), Gäste routen an ihn (subworld-srv), Antworten kommen gezielt zurück
+    // (subworld-cli). Geprüft: Routing-Methoden; Zwei-Browser-Durchlauf: smoke-webrtc.
     const w17jsResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -13307,10 +12939,8 @@ async function checkBandW17Multiplayer(ctx) {
     }
 
     // ### W17 Phase B-JS-Compute Phase 2 — Host-Migration ###
-    // Verlässt der Compute-Host das Mesh, endet Phase 1's Sub-Welt.
-    // Phase 2: jeder Gast wählt aus der zuletzt vom Host annoncierten
-    // Roster deterministisch denselben Nachfolger (die kleinste
-    // peerId); der Nachfolger baut einen frischen Server-Kontext.
+    // Verlässt der Compute-Host das Mesh, wählt jeder Gast aus dem zuletzt annoncierten Roster
+    // deterministisch denselben Nachfolger (kleinste peerId); der baut einen frischen Server-Kontext.
     const w17mResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -13494,9 +13124,8 @@ async function checkBandW17Multiplayer(ctx) {
     }
 
     // ### W17 Phase C — das Gruppen-Portal ###
-    // Betritt ein Spieler ein Multiplayer-Portal, broadcastet er einen
-    // portal-invite; die Mitspieler bekommen einen „mitkommen?"-Prompt,
-    // „Ja" holt das Portal + betritt es (B2 verbindet die Gruppe).
+    // Wer ein Multiplayer-Portal betritt, broadcastet portal-invite; Mitspieler bekommen „mitkommen?“,
+    // „Ja“ holt + betritt das Portal.
     const w17cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -13681,10 +13310,8 @@ async function checkBandW17Multiplayer(ctx) {
     }
 
     // ### W17 — die Multiplayer-Welt-Deklaration ###
-    // Eine vendorte Welt erklärt sich selbst mehrspielerfähig; die
-    // Marke fliesst durch _sanitizeImportedManifest, _vendorRegisterWorld,
-    // den Welt-Katalog und aimBlueprintAtWorld → obtainPortalForWorld
-    // produziert ein Multiplayer-Portal, das beim Betreten einlädt.
+    // Die Multiplayer-Marke fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, den
+    // Welt-Katalog und aimBlueprintAtWorld → obtainPortalForWorld baut ein einladendes Multiplayer-Portal.
     const w17mpResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -13794,11 +13421,8 @@ async function checkBandW17Multiplayer(ctx) {
     }
 
     // ### W17 P-Vendor — die serverMode-Vendor-Ketten-Naht ###
-    // serverMode fliesst durch die Vendor-/Mesh-Kette (Spiegel der
-    // multiplayer-Naht oben): _sanitizeImportedManifest,
-    // _vendorRegisterWorld, _p2pBuildCatalog/-Sanitize, der Welt-
-    // Katalog. Ohne sie verlöre eine VENDORTE js-compute-Welt still
-    // ihren serverMode → sie degradierte zu relay.
+    // serverMode fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, _p2pBuildCatalog/-Sanitize
+    // und den Welt-Katalog — sonst verlöre eine vendorte js-compute-Welt still ihren serverMode (→ relay).
     const w17svResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -13909,9 +13533,8 @@ async function checkBandW4LofiPad(ctx) {
     void errors;
     void finalState;
     // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
-    // V2: ein Pad-Layer (~60 BPM). V3: die Akkordfolge wächst aus
-    // einer Tonleiter + einer funktionalen Markov-Kette (seed- +
-    // emotion-getrieben) — kein fester Akkord-Satz mehr.
+    // Pad-Layer (~60 BPM); die Akkordfolge wächst aus Tonleiter + funktionaler Markov-Kette (seed- +
+    // emotion-getrieben), kein fester Akkord-Satz.
     const w4v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -13927,11 +13550,9 @@ async function checkBandW4LofiPad(ctx) {
             Object.isFrozen(harmony) &&
             harmony.every((t) => Array.isArray(t) && t.length >= 1);
         out.bpmDefined = AnazhRealm.LOFI_BPM === undefined && AnazhRealm.LOFI_BASE_FREQ === 110;
-        // W-A7-VERTIEFUNG (V9.56-i — der Test wandert mit dem Code): die SKALA führt
-        // seit der Nachlese-Welle das Studio-Klang-Rezept (_lofiActiveScale, Blues-
-        // Skala bei warmem Buch) — die byte-alten Konstanten-Proben laufen darum mit
-        // VERSTECKTEM Rezept (Sicherung + Wiederherstellung, die Gate-Hook-Disziplin);
-        // die Studio-Skalen-Probe steht daneben.
+        // Die SKALA führt das Studio-Klang-Rezept (_lofiActiveScale; warmes Buch → Blues) → die
+        // Konstanten-Proben laufen mit VERSTECKTEM Rezept (sichern + wiederherstellen); die
+        // Studio-Skalen-Probe steht daneben.
         const fK = r._foundry;
         const prevLofi = fK && fK.recipes ? fK.recipes.lofi : undefined;
         if (prevLofi) delete fK.recipes.lofi;
@@ -13951,12 +13572,9 @@ async function checkBandW4LofiPad(ctx) {
             r._lofiScaleSemitone(0) === 0 && r._lofiScaleSemitone(6) === 12 && r._lofiScaleSemitone(2) === 5;
         r._klangStudioPreset = prevKSP;
         if (prevLofi) fK.recipes.lofi = prevLofi;
-        // W-A7-VERTIEFUNG — mit warmem Buch faltet der EINE Mapper in die Studio-
-        // Skala (lofi → Blues [0,3,5,6,7,10], 6 Töne: idx 6 = Oktav-Wurzel +12).
-        // V18.492 (der Test wandert mit dem Code): die Akkord-BREITE folgt dem
-        // klang-Gesetz colorExt (Genre-DNA color → None/Tredezime, EINE Quelle
-        // Lab+Welt) — der Grund-Vierklang bleibt [0,5,7,12], die Stapel-Länge
-        // ist 3 + colorExt(dna.color) (warmes LoFi-Buch: color 0.60 → 5 Töne).
+        // Mit warmem Buch faltet der EINE Mapper in die Studio-Skala (lofi → Blues [0,3,5,6,7,10], idx 6 =
+        // Oktav-Wurzel +12). Akkord-BREITE = klang-Gesetz colorExt: Grund-Vierklang [0,5,7,12], Stapel
+        // 3 + colorExt(dna.color) (warmes LoFi-Buch: color 0.60 → 5 Töne).
         const _sp = r._klangStudioPreset();
         const _kc = globalThis.__klangCore;
         const _chord0 = r._lofiChordFromDegree(0);
@@ -13968,9 +13586,7 @@ async function checkBandW4LofiPad(ctx) {
                 r._lofiScaleSemitone(6) === 12 &&
                 _chord0.length === 3 + _extSoll &&
                 JSON.stringify(_chord0.slice(0, 4)) === JSON.stringify([0, 5, 7, 12]));
-        // W4 V3 Phase 3 — der Groove. ZWILLINGS-ABSCHIED 19.07.: das Muster
-        // wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER.Swing IST das
-        // historische Wirts-Pattern), die Konstanten-Zwillinge
+        // Der Groove wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER.Swing); die Konstanten-Zwillinge
         // LOFI_GROOVE_PATTERN/GROOVE_SWING sind ABWESEND.
         const gp = AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER.Swing", null);
         out.grooveDefined =
@@ -13997,11 +13613,9 @@ async function checkBandW4LofiPad(ctx) {
         // major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
         const freqsMajor = r._lofiChordFreqs([0, 3, 7, 10], true);
         out.majorLeanRaisesThird = freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
-        // _lofiChordDurationMs — sorrow verlangsamt das Tempo. W-A7 (V9.56-i, der Test
-        // wandert mit dem Code): das TEMPO führt seit dem klang-Dock das Studio-Genre
-        // (_klangStudioPreset, Genesis "lofi" bpm 78; kaltes Buch → die Kern-GENRES-
-        // Tafel antwortet fail-closed, der LOFI_BPM-Zwilling fiel 19.07.) — die
-        // Erwartung liest DIESELBE kanonische Quelle (kein Timing-Flake: Buch async).
+        // _lofiChordDurationMs — sorrow verlangsamt das Tempo. Das Tempo führt das Studio-Genre
+        // (_klangStudioPreset, lofi bpm 78; kaltes Buch → fail-closed); die Erwartung liest DIESELBE Quelle
+        // (kein Timing-Flake, das Buch lädt async).
         const emo = r.state.player.emotions;
         const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow, peace: emo.peace };
         const kStudio = r._klangStudioPreset();
@@ -14132,13 +13746,9 @@ async function checkBandW4LofiPad(ctx) {
                 void e;
             }
             out.nearResonantBoolean = nearResOk && typeof nearResBool === "boolean";
-            // W4 V4 Sub-Schritt 2 — das Welt-Feld biast die Harmonie,
-            // ABER die Emotion bleibt der dominante Kanal. Wir stubben
-            // _lofiWorldField, um die zwei Bias-Kanäle (Emotion 0.8,
-            // Welt-Feld 0.4) sauber gegeneinander zu messen — selber
-            // RNG-Strom (fixe rngState) → deterministischer Vergleich.
-            // Tests wandern V18.489: die Bias-/Determinismus-Baender messen die
-            // HOST-Markov-Kette (kaltes Studio); bar-Zaehler mit zuruecksetzen.
+            // Das Welt-Feld biast die Harmonie, die Emotion bleibt dominant: _lofiWorldField gestubbt, um beide
+            // Kanäle (Emotion 0.8, Welt-Feld 0.4) bei fixem rngState deterministisch zu vergleichen. Gemessen
+            // wird die HOST-Markov-Kette (kaltes Studio); bar-Zähler zurücksetzen.
             r._klangStudioPreset = () => null;
             sym.lofi.bar = 0;
             {
@@ -14331,11 +13941,9 @@ async function checkBandLateMultiUser(ctx) {
     void errors;
     void finalState;
     // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
-    // confirmBuild + tryMouseBreak broadcasten jetzt; eine geteilte
-    // string-archId macht eine spieler-gebaute Struktur peer-über-
-    // greifend identifizierbar. Tests: opts.id-Pfad, spawn_blueprint
-    // mit archId + Idempotenz, remove_architecture, confirmBuild-
-    // Broadcast (built-in direkt, eigener Bauplan als chain), Persistenz.
+    // confirmBuild + tryMouseBreak broadcasten; eine geteilte string-archId macht Spieler-Bauten
+    // peer-übergreifend identifizierbar. Geprüft: opts.id, spawn_blueprint mit archId + Idempotenz,
+    // remove_architecture, confirmBuild-Broadcast (built-in direkt, Bauplan als chain), Persistenz.
     const buildSyncResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -14475,11 +14083,9 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### W7 Phase 3 — LLM-Pool: eine Stimme über das Mesh teilen ###
-    // Ein Peer mit aktivem LLM teilt seine „Stimme"; ein schlüsselloser
-    // Peer routet Chat darüber. Sicherheit: Opt-in (voiceShared),
-    // Rate-Limit, dslRun-Sandbox für das Antwort-Programm. Tests:
-    // Capability-Gate, soul trägt voiceShared, Anfrage/Antwort-Pfad,
-    // Annahme-Wand (not_sharing/rate_limited/wrong-peer).
+    // Ein Peer mit aktivem LLM teilt seine Stimme, ein schlüsselloser routet Chat darüber. Sicherheit:
+    // Opt-in (voiceShared), Rate-Limit, dslRun-Sandbox für das Antwort-Programm; Annahme-Wand
+    // not_sharing/rate_limited/wrong-peer.
     const w7p3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -14656,9 +14262,8 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### W7 Phase 4 — Public-Lobby + Kreatur-Sicht-Sync ###
-    // P4: Räume browsbar machen (lobby-publish/list/join). Kreatur-
-    // Sync: jeder Peer streamt SEINE Kreaturen, Mitspieler rendern sie
-    // als Sicht-Schicht (remoteCreatures, NICHT in state.creatures).
+    // Lobby: lobby-publish/list/join. Jeder Peer streamt SEINE Kreaturen; Mitspieler rendern sie als
+    // Sicht-Schicht (remoteCreatures, NICHT in state.creatures).
     const w7p4Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -14730,23 +14335,16 @@ async function checkBandLateMultiUser(ctx) {
             "_disposeRemoteCreature",
         ].every((m) => typeof r[m] === "function");
 
-        // spawnCreatureAt vergibt eine netId.
-        // V18.296 — maxCreatures 120→20: Raum für die Test-Kreatur sichern (der Warmup
-        // kann nahe am Cap liegen → spawnCreatureAt gäbe sonst null → flaky). Misst die
-        // netId/Broadcast-Mechanik, nicht den Cap.
+        // spawnCreatureAt vergibt eine netId. Cap-Headroom sichern (Warmup nahe maxCreatures → null →
+        // flaky); gemessen wird die netId/Broadcast-Mechanik, nicht der Cap.
         const _saveMaxNet = r.state.maxCreatures;
         r.state.maxCreatures = r.state.creatures.length + 1;
         const testC = r.spawnCreatureAt(20, 6, 20, "happy");
         r.state.maxCreatures = _saveMaxNet;
         out.creatureHasNetId = !!testC && typeof testC.userData.netId === "string" && testC.userData.netId.length > 0;
 
-        // _p2pBroadcastCreatures sendet creature-pos mit der Kreatur.
-        // V9.54: state.creatures temporär auf [testC] reduzieren — der Broadcast
-        // hat einen 40er-Cap (`list.length < 40`), und Worldgen-Variance bringt
-        // state.creatures.length auf 13-36 (gemessen) je Lauf. testC landet am
-        // Ende → bei state.creatures.length >= 40 vor dem Push wäre testIdx >= 40
-        // und der Cap würde testC stillschweigend ausschließen → flaky-Test.
-        // Die Isolation misst das Broadcast-Verhalten, nicht das Worldgen-Glück.
+        // _p2pBroadcastCreatures sendet creature-pos. state.creatures temporär = [testC]: der Broadcast hat
+        // einen 40er-Cap, die Worldgen-Varianz schöbe testC über Index 40 → still ausgeschlossen (flaky).
         const csent = [];
         const origSend2 = r.p2pSend;
         r.p2pSend = (o) => csent.push(o);
@@ -14827,10 +14425,8 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### W11 Phase 4 — Voice-Sync (companion-say) ###
-    // grokRender ist der EINE Sprech-Engpass (Trigger/Journal/LLM/dsl);
-    // wenn der Begleiter spricht, reist der Text via companion-say an
-    // alle Mitspieler. Sie spielen ihn via SpeechSynthesis ab — gegated
-    // auf den eigenen Stimme-Toggle. Dedizierter Kanal wie soul/aura.
+    // grokRender ist der EINE Sprech-Engpass; spricht der Begleiter, reist der Text via companion-say an
+    // alle Mitspieler (SpeechSynthesis, gegated auf deren Stimme-Toggle). Eigener Kanal wie soul/aura.
     const w11v4Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -14986,11 +14582,9 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
-    // Sandbox-Pfad: human-dslRun broadcastet via p2pSend wenn enabled+
-    // connected; remote-dslRun (source="remote:*") läuft durch dslRun
-    // OHNE Re-Broadcast (sonst Endlos-Echo). Eingehende dsl-Nachricht
-    // läuft durch dslRun mit normalem Sandbox-Pfad. Welt-Effekte
-    // (V9.36-voxel_carve/voxel_fill) sind damit synchron auf beiden Welten.
+    // human-dslRun broadcastet via p2pSend (enabled+connected); remote-dslRun (source="remote:*") läuft
+    // durch dslRun OHNE Re-Broadcast (sonst Endlos-Echo). So wirken voxel_carve/voxel_fill auf beiden
+    // Welten.
     const ring11V2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15064,10 +14658,7 @@ async function checkBandLateMultiUser(ctx) {
         const afterSunny = r.state.weather;
         out.discriminationHolds = afterRainy === "rainy" && afterSunny === "sunny";
 
-        // 9) V9.36: Remote voxel_carve → voxelEdits wachsen lokal
-        // (der eigentliche Vision-Punkt von V2 — eine Welt-Mod
-        // eines Mitspielers wirkt auf MEIN Welt-Feld, jetzt im
-        // Voxel-Feld statt im Heightfield).
+        // 9) Remote voxel_carve → voxelEdits wachsen lokal: die Mod eines Mitspielers wirkt auf MEIN Feld.
         if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
         const editsBefore = r.state.worldMeta.voxelEdits.length;
         const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
@@ -15122,14 +14713,9 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
-    // Bug-Fixes nach User-Test mit zwei Maschinen:
-    //   1. signaling-server bind 0.0.0.0 (LAN reachable)
-    //   2. CSP weit (ws:/wss:) — Custom-IPs erlaubt
-    //   3. Raum-Override (state.p2p.roomOverride) für ad-hoc-Räume
-    //   4. spawn_*-Chat-Patterns embedden Position+Seed → Multi-User-
-    //      Sync-Korrektheit (Empfänger spawnt am SENDER-Ort, nicht
-    //      am eigenen)
-    //   5. Non-broadcastable-Filter: player_*-Ops bleiben lokal
+    // 1. signaling-server bindet 0.0.0.0 (LAN)  2. CSP ws:/wss: (Custom-IPs)  3. Raum-Override
+    // (state.p2p.roomOverride)  4. spawn_*-Chat-Patterns embedden Position+Seed → der Empfänger spawnt
+    // am SENDER-Ort  5. Non-broadcastable-Filter: player_*-Ops bleiben lokal.
     const ring11V21Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15214,10 +14800,8 @@ async function checkBandLateMultiUser(ctx) {
             fraktal.program[1][0] === "at" &&
             Number.isInteger(fraktal.program[5]);
 
-        // 7b. V9.74.1 — Chat-Pattern "baue damm hier" routet über
-        // spawn_blueprint (kein eigener spawn_damm-Op nötig, der `damm`-Bauplan
-        // ist seit V9.64 built-in). Macht den Welle-A-Vision-Pfeiler vom
-        // Spieler direkt anstoßbar — vorher nur über DSL-Syntax oder Hotbar.
+        // 7b. Chat „baue damm hier“ routet über spawn_blueprint (der `damm`-Bauplan ist built-in, kein
+        // eigener spawn_damm-Op).
         const dammPattern = r.parseChatToDsl("baue damm hier");
         out.dammHasSpawnBlueprint =
             dammPattern &&
@@ -15230,10 +14814,8 @@ async function checkBandLateMultiUser(ctx) {
             Number.isFinite(dammPattern.program[2][3]) &&
             Number.isInteger(dammPattern.program[3]);
 
-        // 8./9. AUSLÖSCHUNGS-WELLE — spawn_village hebt jetzt das Studio-DORF (spawnSettlement,
-        // async über den Worker) statt einen village-Architektur-Eintrag zu bauen. Die INTENT
-        // bleibt Multi-User-Sync: der Empfänger ruft mit dem SENDER-Seed und der SENDER-Position.
-        // Der Test fängt die spawnSettlement-Argumente am Chokepoint (Stub, deterministisch).
+        // 8./9. spawn_village hebt das Studio-DORF (spawnSettlement, async über den Worker); Multi-User: der
+        // Empfänger ruft mit SENDER-Seed + SENDER-Position. Der Test fängt die Argumente am Chokepoint (Stub).
         const spCalls = [];
         const origSpawnSettlement = r.spawnSettlement;
         r.spawnSettlement = function (o) {
@@ -15304,9 +14886,8 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### Ring 11.5 — Intuitives Multi-User-Setup ###
-    // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest,
-    // world-snapshot-Empfang nur bei pending=true, role-State in
-    // worldMeta + p2p.
+    // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest, world-snapshot-Empfang nur bei
+    // pending=true, role-State in worldMeta + p2p.
     const ring115Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15400,10 +14981,8 @@ async function checkBandLateMultiUser(ctx) {
         // Welt darf nicht überschrieben sein
         out.snapshotRejectedWhenNotPending = r.state.worldMeta.role === originalRole;
 
-        // 8. world-request: nur Host antwortet (mit world-snapshot)
-        // W7 P1: world-snapshot ist eine Signaling-Nachricht und
-        // läuft über _p2pSignal (WS), nicht über das mesh-bewusste
-        // p2pSend — der Mock fängt darum _p2pSignal ab.
+        // 8. world-request: nur der Host antwortet (world-snapshot). world-snapshot ist Signaling über
+        // _p2pSignal (WS), nicht das mesh-bewusste p2pSend → der Mock fängt _p2pSignal ab.
         const sentMsgs = [];
         const origSignal = r._p2pSignal;
         r._p2pSignal = function (m) {
@@ -15493,14 +15072,9 @@ async function checkBandWelle6APolish(ctx) {
     void errors;
     void finalState;
     // ### Welle 6.A — Interaktion-Polish (Erdung auf Bauwerken) ###
-    //
-    // DETERMINISMUS-BOGEN P3 — die alte Ammo-Wall-Sliding-Friction (6.A1) ist
-    // mit der Bullet-Welt entfernt; der Feld-Controller (`_stepCharacter`) löst
-    // die Wand-Kollision nativ. 6.A2: `isPlayerGrounded` liest jetzt den
-    // Feld-`_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`.
-    // Threshold leicht entspannt von 0.5 → 0.6, damit der minimale y-Offset
-    // eines Sub-Compounds beim Stehen auf einer Plattform nicht den Sprung
-    // blockiert.
+    // Der Feld-Controller (`_stepCharacter`) löst die Wand-Kollision nativ; `isPlayerGrounded` liest den
+    // `_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`. groundDistance 0.6 (nicht 0.5),
+    // damit der y-Offset eines Sub-Compounds auf einer Plattform den Sprung nicht blockiert.
     const wave6aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state.playerVel) return null;
@@ -15511,19 +15085,14 @@ async function checkBandWelle6APolish(ctx) {
         out.hasGroundDistanceVar = fnSrc.includes("groundDistance");
         out.groundDistanceIs06 = /groundDistance\s*=\s*0\.6/.test(fnSrc);
 
-        // 6.A2 — Diskriminations-Test: Spieler an einer kontrollierten Position
-        // (frühere Tests können mesh.position verschoben haben — wir setzen
-        // eine eindeutige Setup-Position, statt uns auf den Live-Zustand
-        // zu verlassen). Über offenes Terrain (in der Luft) → not grounded,
-        // auf gespawntem Bauwerk → grounded.
+        // 6.A2 Diskrimination an eindeutiger Setup-Position (frühere Tests verschieben mesh.position):
+        // in der Luft → not grounded, auf gespawntem Bauwerk → grounded.
         const savedX = r.state.playerMesh.position.x;
         const savedY = r.state.playerMesh.position.y;
         const savedZ = r.state.playerMesh.position.z;
 
-        // Spawnen wir einen Tempel an einer eindeutigen, vom Terrain
-        // freien Position (Heightfield hat höchstens ~50m Höhe; wir
-        // wählen y=0 als Spawn-Y damit der Tempel direkt mit dem
-        // Heightfield-Niveau überlappt — typischer In-Spiel-Fall).
+        // Bau an eindeutiger Position neben dem Spieler, Spawn-y=0 → überlappt das Boden-Niveau (typischer
+        // In-Spiel-Fall).
         const archX = savedX + 20;
         const archZ = savedZ + 20;
         const beforeArchCount = r.state.architectures.length;
@@ -15569,23 +15138,16 @@ async function checkBandWelle6APolish(ctx) {
             // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
             delete r.state._groundedCachedAt;
             out.isGroundedHighInSky = r.isPlayerGrounded();
-            // Positiv-Test: Spieler in steigenden Höhen über die
-            // visuelle Top-BBox. Visuelle Box ist nicht 1:1 mit dem
-            // Collision-Compound (Dekor-Mesh-Spitzen ragen oft über
-            // die strukturellen Sub-Boxes), deshalb gehen wir die
-            // ersten paar Frame-Distanzen durch — sobald für EINE
-            // davon `isGrounded === true` zurückkommt, ist die
-            // Bauwerks-Erdung bewiesen. groundDistance(0.6) ist die
-            // theoretische Obergrenze pro Sample.
+            // Positiv-Test: die visuelle Top-BBox ist nicht 1:1 die Kollision (Dekor-Spitzen ragen über die
+            // Sub-Boxes) → steigende dy abtasten; EIN Treffer beweist die Bauwerks-Erdung (groundDistance 0.6
+            // = Obergrenze je Sample).
             out.archTopY = topY;
             let foundGrounded = false;
             let groundedAtDy = null;
             for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
                 r.state.playerMesh.position.set(archX, topY + dy, archZ);
-                // Welle 6.X.5 — Cache invalidieren vor jeder
-                // Position-Probe. In echtem Spiel ändert sich die
-                // Position nur via Physics-Tick zwischen Frames;
-                // im Test setzen wir manuell, also Cache resetten.
+                // Cache vor jeder Position-Probe invalidieren: im Spiel ändert der Physics-Tick die Position zwischen
+                // Frames, hier setzen wir sie manuell.
                 delete r.state._groundedCachedAt;
                 if (r.isPlayerGrounded()) {
                     foundGrounded = true;
@@ -15605,11 +15167,8 @@ async function checkBandWelle6APolish(ctx) {
         r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
         delete r.state.blueprints._t_w6a_haus;
 
-        // V18.279 — der Physik-Selbstheil-DOOM-LOOP ist entfernt: kein per-Frame-Pfad ruft mehr
-        // optimizePhysics/processOptimization (heilte einen Render-Freeze nicht, leckte WASM,
-        // flutete die Konsole).
-        // __codeOf strippt Kommentare (sonst stolpert der Absenz-Grep über den erklärenden
-        // Kommentar, der den ENTFERNTEN Code zitiert — die dokumentierte .toString()-Falle).
+        // Kein per-Frame-Pfad ruft optimizePhysics/processOptimization (leckte WASM, flutete die Konsole).
+        // __codeOf strippt Kommentare — sonst träfe der Absenz-Grep den Kommentar, der den Code zitiert.
         out.noDoomLoopInSelfAnalysis = !/processOptimization|optimizePhysics/.test(
             window.__codeOf(r._loopSelfAnalysis)
         );
@@ -15648,13 +15207,9 @@ async function checkBandWelle6APolish(ctx) {
     }
 
     // ### Welle 6.A3 — Slope-Steepness (Anti-Wandkleben) ###
-    //
-    // isPlayerGrounded liest pro Hit die Surface-Normal. Das flachste
-    // Normal-Y wird in `state.groundNormalY` gespeichert; wenn keine
-    // begehbare Fläche dabei ist (Normal-Y < hang.maxSlopeY=0.5,
-    // entspricht >60° Steigung), gilt `state.onSteepSlope = true` und
-    // der Bewegungs-Input wird auf 20 % gedrosselt. Damit klebt der
-    // Spieler nicht mehr an senkrechten Wänden.
+    // isPlayerGrounded speichert das flachste Treffer-Normal-Y in `state.groundNormalY`; ist keine Fläche
+    // begehbar (Normal-Y < hang.maxSlopeY = 0.5, >60°), gilt `state.onSteepSlope = true` und der
+    // Bewegungs-Input wird auf 20 % gedrosselt — kein Kleben an senkrechten Wänden.
     const wave6a3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15669,37 +15224,24 @@ async function checkBandWelle6APolish(ctx) {
         out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
         out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
 
-        // 6.A3 — Diskriminations-Test mit zwei kontrollierten Setups:
-        // (a) Spieler hoch in den Himmel → nicht geerdet → onSteepSlope MUSS false sein
-        //     (Logik: onSteepSlope = isGrounded && bestNormalY<0.5).
-        // (b) Spieler auf der Oberseite eines spawnenden Bauwerks (Tempel)
-        //     → geerdet, Normal-Y der Top-Box ist ~1.0 → onSteepSlope MUSS false sein.
-        // Wir reden NICHT über das natürliche Initial-Terrain — das ist
-        // prozedural und kann an einzelnen Stellen steile Hänge haben.
+        // Diskriminations-Test onSteepSlope (= isGrounded && bestNormalY<0.5) in zwei Setups:
+        // (a) Spieler hoch im Himmel → nicht geerdet → false; (b) auf flachem Tempel-Dach (Normal-Y ~1)
+        // → false. Nicht am prozeduralen Initial-Terrain — das darf lokal steil sein.
         const _savedX = r.state.playerMesh.position.x;
         const _savedY = r.state.playerMesh.position.y;
         const _savedZ = r.state.playerMesh.position.z;
 
-        // (a) Himmel — Cache invalidieren (V8.X.5 D1 hält das Ergebnis
-        // 33 ms; nach dem 20-s-Lauf hat er einen stale Wert von der
-        // alten Spieler-Position). Vor jedem isPlayerGrounded-Call
-        // den `_groundedCachedAt` nullen.
+        // (a) Himmel: `_groundedCachedAt` vor jedem isPlayerGrounded-Call nullen — der Cache hält 33 ms
+        // und trüge sonst einen stale Wert der alten Spieler-Position.
         r.state.playerMesh.position.set(0, 5000, 0);
         r.state._groundedCachedAt = 0;
         r.isPlayerGrounded();
         out.skyOnSteepSlope = r.state.onSteepSlope;
         out.skyGroundNormalY = r.state.groundNormalY;
 
-        // (b) Flacher Bauwerks-Top: separater Tempel-Spawn.
-        // V18.93 — Spieler-Position VOR dem Spawn restoren: `spawnArchitecture`
-        // baut den Mesh nur bei XZ-Distanz ≤ architectureCullingRadius zum
-        // SPIELER — der stand hier noch im Sky-Test bei (0,5000,0) (XZ=(0,0)).
-        // Solange savedXZ nahe dem Ursprung lag, ging das ZUFÄLLIG gut; seit das
-        // Live-Wasser den Spieler tragen kann (T4a-4 + Wake-on-Stream-Skins),
-        // DRIFTET er im Warmup → savedXZ+40 fiel aus dem (0,0)-Radius → der
-        // Spawn blieb „cold" (mesh=null) → der Test maß NICHTS. Der Test prüft
-        // den INTENT „flaches Dach ist nicht steil" — der Spieler gehört
-        // VOR den Spawn an seinen Platz (deterministisch, drift-unabhängig).
+        // (b) Flaches Bauwerks-Dach: separater Tempel-Spawn. Spieler-Position VOR dem Spawn restoren —
+        // `spawnArchitecture` baut den Mesh nur im architectureCullingRadius (XZ) um den SPIELER; stünde
+        // er noch bei (0,5000,0), bliebe der Spawn cold (mesh=null) und der Test mäße nichts.
         r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
         const _beforeArchA3 = r.state.architectures.length;
         let _entryA3 = null;
@@ -15748,17 +15290,9 @@ async function checkBandWelle6APolish(ctx) {
             // Setze Spieler knapp über die Top-Fläche
             r.state.playerMesh.position.set(_savedX + 40, topYA3 + 0.3, _savedZ + 40);
             r.state._groundedCachedAt = 0;
-            // V17.0-Flake-Heilung (korrigiert): NUR werten, wenn der Raycast
-            // WIRKLICH die flache Dach-Flaeche getroffen hat (groundNormalY > 0.7
-            // = nahezu horizontal). Die Architektur-Kollision kann unter CI-CPU-
-            // Last budgetiert/verzoegert gebaut sein -> dann erdet der Spieler
-            // auf dem STEILEN Terrain darunter (grounded=true, normalY niedrig)
-            // statt auf dem Dach = CI-Flake, lokal nie reproduzierbar. Der erste
-            // Fix-Versuch (`grounded ? ...`) griff nicht, weil "grounded" auch
-            // das Terrain-Erden einschliesst. Auf einer flachen Flaeche
-            // (normalY>0.7) MUSS onSteepSlope false sein (Konsistenz des
-            // Slope-Klassifikators: onSteepSlope = grounded && normalY<0.5).
-            // Kein flaches Dach getroffen -> unmessbar = bestanden.
+            // Nur werten, wenn der Raycast wirklich das flache Dach traf (groundNormalY > 0.7): unter CPU-Last
+            // kann die Architektur-Kollision verzögert gebaut sein, dann erdet der Spieler auf steilem Terrain
+            // (grounded allein trennt das nicht). Kein flaches Dach getroffen → unmessbar = bestanden.
             const _groundedOnTopA3 = r.isPlayerGrounded();
             const _nyA3 = r.state.groundNormalY;
             flatBlueprintNotSteep = _groundedOnTopA3 && _nyA3 > 0.7 ? r.state.onSteepSlope === false : true;
@@ -15777,11 +15311,8 @@ async function checkBandWelle6APolish(ctx) {
         out.fnSetsSteepFlag = /onSteepSlope\s*=/.test(fnSrc);
         out.fnSetsGroundNormal = /groundNormalY\s*=/.test(fnSrc);
 
-        // 6.A3 — Diskriminations-Test: Bewegungs-Loop drosselt auf
-        // steilem Hang. Wir prüfen die slopePenalty-Logik im
-        // Quellcode der Bewegungs-Phase (statischer Check, weil
-        // einen echten Slope im Headless zu synthetisieren fragil
-        // ist). V9.44-f — die Bewegung lebt in _loopPlayerMovement.
+        // Bewegungs-Loop drosselt auf steilem Hang: statischer Check der slopePenalty-Logik in
+        // _loopPlayerMovement (einen echten Hang headless zu synthetisieren ist fragil).
         const loopSrc = r._loopPlayerMovement ? window.__codeOf(r._loopPlayerMovement) : "";
         out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
         // Tests wandern V18.489: die Drossel liest das Steilhang-Gesetz (fx.bewegung.hang.malus).
@@ -15826,12 +15357,9 @@ async function checkBandWelle6APolish(ctx) {
         );
     }
 
-    // ### Welle 6.A4+6.A5 — Raycast-Place + Stabilitäts-Visual ###
-    //
-    // tickBuildMode delegiert an _resolvePhantomTarget — der castet aus
-    // der Kamera, gibt {x, y, z, isStable, hit} zurück. Phantom-Position
-    // folgt damit der Kamera-Blickrichtung (Pitch wirkt!), Tint färbt
-    // bei stabilem Boden grün, sonst rot.
+    // ### Raycast-Place + Stabilitäts-Visual ###
+    // tickBuildMode → _resolvePhantomTarget castet aus der Kamera ({x, y, z, isStable, hit}): das
+    // Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15862,10 +15390,8 @@ async function checkBandWelle6APolish(ctx) {
         out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
         out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
 
-        // Funktionaler Test: Build-Modus auf "stein_block"-Slot 0 aktivieren,
-        // Kamera so positionieren dass sie in den Heightfield-Boden
-        // schaut, tickBuildMode aufrufen, prüfen dass Phantom im
-        // Treffer-Bereich liegt + isStable=true.
+        // Build-Modus auf "stein_block"-Slot 0, Kamera in den Boden schauen lassen, tickBuildMode →
+        // Phantom liegt im Treffer-Bereich + isStable=true.
         const savedYaw = r.state.yaw;
         const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
         const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
@@ -15878,16 +15404,9 @@ async function checkBandWelle6APolish(ctx) {
             })
         );
 
-        // Garantiert flache Test-Oberfläche: Tempel spawnen,
-        // Kamera direkt darüber positionieren — die Top-Sub-Box hat
-        // eine flache Oberseite (Normal-Y ~ 1), zuverlässiger als
-        // das prozedurale Heightfield (das an manchen Stellen steil ist).
-        // V9.33 Phase 5c.2.b — die Voxel-Eingangs-Welt hat Voxel-
-        // Chunks bei (60,60) (Sicht-Ring 4 reicht ~172 m); der
-        // Tempel-Spawn auf y=0 würde im Voxel-Terrain stecken,
-        // der Raycast den Voxel-Boden statt den Tempel treffen.
-        // Spawn-Y=200 hebt den Tempel klar über die Voxel-Spitzen
-        // (Surface ~ base+64 max), die Stabilitäts-Probe ist ehrlich.
+        // Garantiert flache Test-Oberfläche: Tempel-Dach (Normal-Y ~1) statt prozeduralem Heightfield.
+        // Spawn-Y=200 hebt den Tempel über die Voxel-Chunks (Surface ≤ base+64), sonst träfe der Raycast
+        // den Voxel-Boden statt des Tempels.
         const _spawnArchX = 60;
         const _spawnArchZ = 60;
         const _spawnArchY = 200;
@@ -16050,12 +15569,9 @@ async function checkBandWelle6APolish(ctx) {
         );
     }
 
-    // ### UI-Putz — WOW-Start statt Anleitungs-Modal ###
-    // Das alte 3-Seiten-Intro-Modal (Welle 6.E2: Welt/Spieler/Nexus mit Backdrop)
-    // entfiel — der erste Moment gehört der WELT, nicht einer Anleitung. Der
-    // Begleiter (Eins) lädt EINMAL diegetisch ein; die Steuerung lernt der Spieler
-    // just-in-time + im Hilfe-Tab. Verifiziert: das Modal ist restlos weg, die
-    // Begrüssung ist eine Einladung (keine Steuerungs-Anleitung), gegated/idempotent.
+    // ### WOW-Start statt Anleitungs-Modal ###
+    // Beweist: das alte Intro-Modal ist restlos weg; der Begleiter (Eins) lädt EINMAL diegetisch ein
+    // (Einladung, keine Steuerungs-Anleitung), gegated + idempotent.
     const wowStartResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -16098,13 +15614,10 @@ async function checkBandWelle6APolish(ctx) {
         check("UI-Putz WOW-Start: zweiter Start bleibt still (gegated)", wowStartResults.idempotent);
     }
 
-    // ### Welle 6.F1 + 6.F2 — Visuelle Verbindungs-Linien + Brech-Warning ###
-    //
-    // _addConnectionLines hängt pro Connection eine THREE.Line an die
-    // gebaute Group. Farbe folgt computeConnectionStrength via
-    // _connectionColor (grün/gelb/rot). 6.F2: Wenn die schwächste
-    // Verbindung < 0.7 ist, schreibt _applyCompoundWorldEffects einen
-    // idempotenten weakness-Journal-Eintrag.
+    // ### Visuelle Verbindungs-Linien + Brech-Warning ###
+    // _addConnectionLines hängt je Connection eine THREE.Line an die Group; Farbe via _connectionColor
+    // (computeConnectionStrength → grün/gelb/rot). Schwächste Verbindung < 0.7 →
+    // _applyCompoundWorldEffects schreibt einen idempotenten weakness-Journal-Eintrag.
     const wave6fResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -16316,14 +15829,10 @@ async function checkBandWelle6DSoul(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.D Etappe 1 — Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
-    //
-    // Vision-Pfeiler-Test: der Spieler ist ein Compound im selben
-    // Hylomorphismus-System wie Architekturen + Materialien. Die 10
-    // MATERIAL_TAG_KEYS sind die EINE Sprache; Soul-Tags + Material-Tags
-    // sind beide an dieselbe Achsen-Liste gebunden. STAT_FROM_TAGS-Formeln
-    // sind reine Funktionen — Diskriminations-Tests prüfen Verhältnisse
-    // (Größen-Achse: Fuchs schneller als Bär, Bär mehr HP als Fuchs).
+    // ### Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
+    // Der Spieler ist ein Compound im selben Hylomorphismus-System wie Architekturen: die 10
+    // MATERIAL_TAG_KEYS sind die EINE Achsen-Sprache für Soul- und Material-Tags. STAT_FROM_TAGS sind
+    // reine Funktionen → Diskriminations-Tests prüfen Verhältnisse (Fuchs schneller, Bär mehr HP).
     const wave6dResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -16485,25 +15994,17 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    // ### Schöpfer-Reflexions-Fixes (13.05.2026, Welle 6.D Etappe 3a+) ###
-    // Sechs Lücken, die der Schöpfer aufdeckte:
-    //  1. WASD A/D-Swap (Drache-Steuerung „invertiert")
-    //  2. „damage X" als Chat-Pattern (war nur DSL-JSON)
-    //  3. Aura am Charakter statt Boden-Ring
-    //  4. Tod-Wunde persistent + linear regenerierend
-    //  5. Werkzeug-Anwendung kostet Stamina
-    //  6. Konsumables aus Compound-Tags (Logik statt Tabelle)
+    // ### Reflexions-Fixes ###
+    // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod-Wunde persistent
+    // + linear regenerierend · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
     const reflexResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
 
-        // (1) WASD: Original-Mapping wiederhergestellt. Geometrisch
-        // ist state.right tatsächlich „player-links" wegen Right-Hand-
-        // Coords (forward × up = -X). A=+right=player-links, D=-right=
-        // player-rechts — wie es immer war. V9.44-f — die WASD-Logik
-        // lebt in der Bewegungs-Phase _loopPlayerMovement.
+        // (1) WASD: A=+right, D=-right — state.right zeigt wegen Right-Hand-Coords (forward × up = -X)
+        // geometrisch nach player-links. Die Logik lebt in _loopPlayerMovement.
         const loopSrc = window.__codeOf(r._loopPlayerMovement);
         out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
         out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
@@ -16517,11 +16018,9 @@ async function checkBandWelle6DSoul(ctx) {
         const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
         out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
 
-        // (3) SYNERGIE-WELLE — DIE AVATAR-AURA IST GEFALLEN (Schoepfer „wir brauchen
-        // in anazh weder eine avatar aura…"): das Band wandert auf die ABWESENHEIT
-        // (V9.56-i, kein Aufweichen): Tick + Haut-Shells + Hue-Map + Loop-Aufruf +
-        // p2p-Sende-Seite sind PHYSISCH raus; der p2p-Empfangs-Stub bleibt
-        // must-ignore-tolerant (Alt-Peers senden weiter aura-Messages).
+        // (3) Die Avatar-Aura ist gefallen: Probe auf ABWESENHEIT (Tick, Haut-Shells, Hue-Map,
+        // Loop-Aufruf, p2p-Senden). Der p2p-Empfangs-Stub bleibt must-ignore-tolerant (Alt-Peers senden
+        // aura weiter).
         r.applyPlayerSoul("human");
         const sub = r.state.playerMesh.children[0];
         out.subMeshExists = !!sub && !!sub.material;
@@ -16545,10 +16044,8 @@ async function checkBandWelle6DSoul(ctx) {
         out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
         out.glowSpriteGone = !r.state.playerAuraGlow;
 
-        // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
-        // wurde wieder revertiert, weil er den Drache in 3rd-Person
-        // visuell zum Spieler hin gespiegelt hat. Kopf-Box bleibt
-        // bei +0.85 in Z (Forward-Richtung).
+        // Drache: Kopf in +Z (Forward), Kopf-Box bei +0.85 Z — kein Inner-π-Flip (der spiegelte ihn in
+        // 3rd-Person zum Spieler hin).
         r.applyPlayerSoul("wolf");
         const dragonGroup = r.state.playerMesh;
         let dragonHasInnerFlip = false;
@@ -16564,11 +16061,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.dragonNoInnerFlip = !dragonHasInnerFlip;
         r.applyPlayerSoul("human"); // restore
 
-        // Welle 6.D Polish — player_speed-DSL-Op setzt jetzt
-        // sprintSpeed mit (= 2× speed). Vorher konnte ein dsl
-        // `player_speed 25` state.speed=25 setzen ohne
-        // sprintSpeed zu aktualisieren → Shift drücken machte
-        // den Spieler LANGSAMER.
+        // player_speed-DSL-Op setzt sprintSpeed mit (= 2× speed) — sonst machte Shift den Spieler LANGSAMER.
         const beforeSprintBug = r.state.sprintSpeed;
         r.dslRun(["player_speed", 20], { source: "test" });
         out.speedAfterDsl = r.state.speed;
@@ -16601,11 +16094,9 @@ async function checkBandWelle6DSoul(ctx) {
         out.humanTags = JSON.stringify(humanResult.tags);
         out.humanWound = r.state.player.deathWoundIntensity;
         out.humanBoostCount = r.state.player.boosts.length;
-        // Mensch ist „balanced" — niedriges magieleitung, hoher dichte
-        // (durch sphere-Kopf-Aktivierung clamped auf 1) ⇒ speed ≥ Base.
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
-        // mind. die LEBENDE Gesetz-Base (fx.bewegung.speed.base, Fallback 7
-        // = byte-alt bei kaltem Kern), nicht mehr hart „mind. 7".
+        // Mensch ist „balanced“ (niedrige magieleitung, dichte clamped auf 1) ⇒ speed ≥ LEBENDE
+        // Gesetz-Base (fx.bewegung.speed.base; Fallback 7 bei kaltem Kern) — gesetz-relativ, kein
+        // Arcade-Literal.
         const speedBaseReflex =
             bewGesetzReflex && bewGesetzReflex.speed && Number.isFinite(bewGesetzReflex.speed.base)
                 ? bewGesetzReflex.speed.base
@@ -17235,11 +16726,9 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
     }
 
-    // ### Welle 6.D Etappe 2 — Boosts (temporäre Tag-Deltas) ###
-    //
-    // state.player.boosts ist ein Array; tickPlayerBoosts filtert
-    // Abgelaufene + triggert Emotion + Resonance 1×/s; computePlayerStats
-    // addiert aktive Deltas vor der Stat-Berechnung.
+    // ### Boosts (temporäre Tag-Deltas) ###
+    // state.player.boosts ist ein Array; tickPlayerBoosts filtert Abgelaufene + triggert Emotion +
+    // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
     const wave6d2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -17285,14 +16774,9 @@ async function checkBandWelle6DSoul(ctx) {
         out.dedupesBySource = r.state.player.boosts.length === 1;
         out.dedupeReplacesDelta = Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
 
-        // tickPlayerBoosts entfernt abgelaufene Boosts.
-        // V7.75: prüfen ob der test:flame-Boost spezifisch
-        // entfernt wurde (statt "boosts.length===0"). Grund:
-        // ab V7.75 kann tickPlayerBoosts gleichzeitig einen
-        // world:resonance-Boost setzen, wenn der Spieler nah
-        // bei einer hochresonanten Welt-Affinitäts-Architektur
-        // (kristall_geode, quarz) steht — das ist Vision-treu
-        // (Welt resoniert mit dem Spieler), nicht der Bug.
+        // tickPlayerBoosts entfernt abgelaufene Boosts: gezielt den test:flame-Boost prüfen, nicht
+        // boosts.length===0 — tickPlayerBoosts darf zugleich einen world:resonance-Boost setzen (Spieler
+        // nah an hochresonanter Architektur wie kristall_geode/quarz).
         r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
         r.state.player.boostLastTick = -Infinity; // Throttle umgehen
         r.tickPlayerBoosts(performance.now() / 1000);
@@ -17316,13 +16800,9 @@ async function checkBandWelle6DSoul(ctx) {
             z: r.state.playerMesh.position.z,
         };
         r.state.playerMesh.position.set(80, 5, 80);
-        // Wir nutzen einen Custom-Bauplan mit Quarz-Helix-Array.
-        // Vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) —
-        // Resonance-Array-Detector (W5-B Prinzip 5) verlangt
-        // gleiche Shape auf gleichem Radius ±12 % vom Schwerpunkt.
-        // Quarz hat resoniert=0.9 + magieleitung=0.85, helix-Shape
-        // verstärkt beide. Array-Bonus + ggf. Symmetrieachse-Bonus
-        // bringen das Compound über die signature-Schwelle (2.5).
+        // Custom-Bauplan mit Quarz-Helix-Array: vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) — der
+        // Resonance-Array-Detector verlangt gleiche Shape auf gleichem Radius ±12 %. Quarz (resoniert 0.9,
+        // magieleitung 0.85) + helix + Array-Bonus heben das Compound über die signature-Schwelle (2.5).
         r.state.blueprints.wave6d2_resonator = {
             name: "wave6d2_resonator",
             label: "Resonator",
@@ -17435,12 +16915,9 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
     }
 
-    // ### Welle 6.D Etappe 1.6 — Custom-Seelen via DSL ###
-    //
-    // Schöpfer kann mit define_soul(name, bodyParts) eigene Charaktere
-    // komponieren — Form × Material via dieselbe Hylomorphismus-Pipe
-    // wie Bauwerke. Vision: „mehr Charaktere, mehr Wachstums-Freiheit
-    // durch simple Regeln".
+    // ### Custom-Seelen via DSL ###
+    // define_soul(name, bodyParts) komponiert eigene Charaktere — Form × Material über dieselbe
+    // Hylomorphismus-Pipe wie Bauwerke.
     const wave6d16Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -17572,11 +17049,8 @@ async function checkBandWelle6DSoul(ctx) {
         const s2b = r.soulToBlueprint("human");
         out.s2bOk = !!(s2b && s2b.ok);
         const s2bBp = s2b && s2b.ok ? r.state.blueprints[s2b.name] : null;
-        // V18.101 (Test wandert, V9.56-i): der Mensch hat jetzt POSITIONIERTE
-        // bodyParts (6 statt der 4 positions-losen Stat-Schatten — der
-        // Schöpfer-Befund „Körper holen zeigt nicht den getragenen Avatar").
-        // Die Wahrheit ist dynamisch: ALLE def-Teile reisen, POSITIONIERT
-        // (nicht alle am Ursprung gestapelt).
+        // Der Mensch trägt POSITIONIERTE bodyParts: ALLE def-Teile reisen positioniert (nicht am Ursprung
+        // gestapelt) — dynamisch gegen die def-Länge geprüft.
         const humanDefParts = r.playerSoulDefs.human.bodyParts.length;
         out.s2bIsSoulRole = !!(
             s2bBp &&
@@ -17831,23 +17305,16 @@ async function checkBandWelle6GHylomorphism(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.G Phase 1.5 — Hylomorphismus-Unification ###
-    // V7.73 hatte Bäume als Parallelcode (state.vegetation, eigene
-    // spawnTreeAt + _buildTreeCollision). V7.74 fließt das ins
-    // bestehende Architektur-System: baum_eiche/baum_kiefer als
-    // _defaultBlueprints, spawn_tree DSL-Op routet durch
-    // spawnArchitecture. EINE Sprache, EIN Renderpfad. Inseln + UFOs
-    // bleiben Sonderpfad (Inseln = floating-chunk-Disziplin, UFOs =
-    // 6.F4-Vorstufe).
+    // ### Hylomorphismus-Unification ###
+    // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
+    // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
     const wave6gResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // V7.74 Erwartung: Spawn-Pfade für Inseln + UFOs leben weiter,
-        // Baum-Helfer (spawnTreeAt + _buildTreeCollision) sind WEG.
-        // DETERMINISMUS-BOGEN P3: die Ammo-Kollisions-Builder/Disposer
-        // (`_buildIslandCollision`/`_disposeStaticCollision`) sind GESCHNITTEN —
-        // die Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs`).
+        // Spawn-Pfade für Inseln + UFOs leben; die Baum-Helfer (spawnTreeAt, _buildTreeCollision) und die
+        // Ammo-Kollisions-Builder (`_buildIslandCollision`/`_disposeStaticCollision`) sind WEG — die
+        // Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs`).
         out.islandCollisionHelpersRemoved =
             typeof r._buildIslandCollision !== "function" && typeof r._disposeStaticCollision !== "function";
         out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
@@ -17858,14 +17325,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
         const bps = r.state.blueprints || {};
-        // V17.11 — die Bäume sind jetzt Multi-Part (Ghibli-Silhouette): Stamm-
-        // Segmente (holz) + mehrere Laub-Massen. Der Test wandert mit (V9.56-i):
-        // ≥2 Parts, Stamm[0]=cylinder/holz, ein Laub-Krone-Part existiert (statt
-        // fix parts[1]). Die Intention (holz-Stamm + laub-Krone, abbaubar) hält.
-        // V18.257 — die statischen baum_eiche/baum_kiefer-Baupläne sind GESCHNITTEN;
-        // die Bäume wachsen jetzt aus der Grammatik. Wir wachsen einen + prüfen die
-        // SUBSTANZ (holz-Stamm + laub-Krone als Materialien — die FORM ist jetzt
-        // grammatik-getrieben: Tube-Rinde + Blatt-Karten statt Zylinder+Kugel).
+        // Bäume wachsen aus der Grammatik (keine statischen baum_eiche/baum_kiefer-Baupläne): einen wachsen
+        // und die SUBSTANZ prüfen — ≥2 Parts, holz-Stamm + laub-Krone als Materialien. Die FORM
+        // (Tube-Rinde + Blatt-Karten) ist grammatik-getrieben und wird nicht geprüft.
         const __heKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "struktur|eiche");
         const __hkKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_kiefer", "struktur|kiefer");
         const __heBp = __heKey && bps[__heKey];
@@ -17881,10 +17343,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r.state.materials.laub.builtIn === true
         );
 
-        // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
-        // NICHT in state.vegetation. state.vegetation enthält nur noch
-        // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer
-        // ODER (seit V18.210/genVersion≥4) prozedurale grown_*-Bauplane.
+        // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_),
+        // NICHT in state.vegetation.
         const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
         const archTrees = archs.filter(
             (a) =>
@@ -17892,11 +17352,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 (a.type.startsWith("baum_") || a.type.startsWith("stamm_") || a.type.startsWith("grown_"))
         );
         out.worldgenTreesInArchitectures = archTrees.length;
-        // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
-        // muss eine Compound-Kollision haben.
-        // V12.0-perf.c.2 — Bäume sind jetzt instanced (a.instanced, kein a.mesh).
-        // DETERMINISMUS-BOGEN P3 — die Kollision ist feld-nativ via blockerAABBs
-        // (beim Spawn gefüllt, render-unabhängig), kein Ammo-Body mehr.
+        // Mindestens ein gerenderter Baum (instanced, kein a.mesh) muss Kollision tragen — feld-nativ via
+        // blockerAABBs (beim Spawn gefüllt, render-unabhängig), kein Ammo-Body.
         const renderedTree = archTrees.find(
             (a) => (a.mesh || a.instanced) && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length > 0
         );
@@ -17981,11 +17438,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // DETERMINISMUS-BOGEN P3 — Inseln tragen kein per-Objekt-Kollisions-Artefakt
         // mehr (Ammo entfernt); der UFO-Negativtest bleibt (er hat nie Kollision).
         out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
-        // V9.42-a — Inseln aus Surface-Nets-Pipeline. Vollkörper
-        // emergiert per Konstruktion (Iso-Fläche schließt sich
-        // oben + unten). Test misst nicht die Vertex-Zahl
-        // (Surface-Nets-Auflösung variiert), sondern die Y-Spanne
-        // der Geometrie: ein Vollkörper hat eine Höhe > 0.5 m.
+        // Inseln aus der Surface-Nets-Pipeline: Vollkörper per Konstruktion (Iso-Fläche schließt oben +
+        // unten). Gemessen wird die Y-Spanne (> 0.5 m), nicht die auflösungsabhängige Vertex-Zahl.
         if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
             const pa = newIsland.geometry.attributes.position.array;
             let minY = Infinity;
@@ -18048,11 +17502,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gResults.islandCollisionHelpersRemoved
         );
         check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
-        // V9.42-a — Vision §1.3 fraktal: Inseln teilen die Surface-
-        // Nets-Pipeline mit Voxel-Welt-Chunks. Eine Sprache, zwei
-        // Anwendungen. Beweis: `_voxelChunkGeometry` akzeptiert
-        // einen `densityFn`-Callback (Default-Pfad bleibt für Welt-
-        // Chunks erhalten, Insel-Pfad übergibt `_islandDensityAt`).
+        // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
+        // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
             const r = window.anazhRealm;
             const out = { hasIslandDensity: typeof r._islandDensityAt === "function" };
@@ -18084,15 +17535,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
         check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
         check("V9.42-a: _voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
-        // V9.42-b — Skirt-Disziplin im Smooth-Pass: Naht-Vertices
-        // (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1) dürfen
-        // NICHT verschoben werden, sonst zerstört Laplacian die V9.10-
-        // Skirt-Überlappung zwischen zwei Nachbar-Chunks. Wir messen
-        // das, indem wir ZWEI benachbarte Voxel-Chunks bauen und
-        // prüfen, dass an der gemeinsamen Naht (X-Welt-Koord
-        // identisch) substanziell viele Vertices identische Position
-        // teilen. Pre-V9.42-b: ~0 Übereinstimmung (Smooth zog jede
-        // Seite anders). Post-V9.42-b: >50 % der Vertices an der Naht.
+        // Skirt-Disziplin im Smooth-Pass: Naht-Vertices (Rand-Zellen i==0/dimX-1, k==0/dimZ-1) bleiben
+        // unverschoben, sonst zerstört Laplacian die Skirt-Überlappung der Nachbar-Chunks. Probe: zwei
+        // benachbarte Chunks bauen — an der gemeinsamen Naht teilen >50 % der Vertices die Position
+        // (ohne die Disziplin ~0).
         const r42bSkirt = await page.evaluate(() => {
             const r = window.anazhRealm;
             const chunks = [...r.state.voxelChunks.values()].filter((c) => c && c.mesh && c.mesh.geometry).slice(0, 9);
@@ -18143,23 +17589,18 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-b: DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
             r42bDsl.spawned && r42bDsl.width > 24
         );
-        // V9.42-c — Insel-Material vereinheitlicht: MeshToon + vertex-
-        // Colors (wie der Voxel-Boden), kein Terrain-ShaderMaterial
-        // mehr (das passte nicht zur Surface-Nets-Geometrie ohne
-        // aField/uv → "Löcher"-Befund). _attachIslandColors gibt der
-        // Insel grün-oben/erdig-unten per Vertex-Normale.
+        // Insel-Material wie der Voxel-Boden: MeshToon + vertexColors (kein Terrain-ShaderMaterial — das
+        // braucht aField/uv, die Surface-Nets-Geometrie nicht hat → Löcher). _attachIslandColors färbt
+        // grün-oben/erdig-unten per Vertex-Normale.
         const r42c = await page.evaluate(() => {
             const r = window.anazhRealm;
             const out = { hasAttachColors: typeof r._attachIslandColors === "function" };
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;
-                // V12.0-f Doku-Sync: Insel ist jetzt natives MeshToonNodeMaterial
-                // (lights=true, r184) — Three.js managed gradientMap-Cel-Lookup +
-                // DirectionalLight/Ambient/Hemisphere + Schatten. isMeshToonMaterial
-                // === true ist NATIV gesetzt (Toon-Familie); isMeshToonNodeMaterial
-                // === true ist der Node-Pfad-Marker (war V10.0-g: MeshBasicNodeMaterial).
-                // V18.234 — mode-agnostisch: das aktive Lichtmodell ist Toon ODER PBR.
+                // Insel = natives MeshToonNodeMaterial (lights=true): isMeshToonMaterial ist NATIV gesetzt,
+                // isMeshToonNodeMaterial markiert den Node-Pfad. Mode-agnostisch: das aktive Lichtmodell ist
+                // Toon ODER PBR.
                 out.isToonMarker = !!(isle.material.isMeshToonMaterial || isle.material.isMeshStandardMaterial);
                 out.isNodeMaterial = /Node/.test(isle.material.type || "");
                 out.hasColorAttr = !!isle.geometry.getAttribute("color");
@@ -18245,13 +17686,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("Welle 6.G P1.5: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
     }
 
-    // ### Welle 6.G Phase 2 — Welt-Affinitäts-Feld ###
-    // Bäume + Strukturen verteilen sich organisch über das Welt-Feld
-    // (4 Noise-Schichten: lebendig/dichte/glut/magieleitung). KEINE
-    // Tabelle — Bauplan-Compound-Tags resonieren mit Welt-Tag-Feld.
-    // Drei neue Baupläne: stein_block (dichte), kristall_geode
-    // (magieleitung), glutbrunnen (glut). Hook in ensureChunkAt
-    // füllt neue Chunks beim Player-Approach.
+    // ### Welt-Affinitäts-Feld ###
+    // Bäume + Strukturen verteilen sich über das Welt-Feld (4 Noise-Schichten: lebendig/dichte/glut/
+    // magieleitung) — KEINE Tabelle: Bauplan-Compound-Tags resonieren mit dem Welt-Tag-Feld.
+    // Baupläne: stein_block (dichte), kristall_geode (magieleitung), glutbrunnen (glut).
     const wave6gP2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -18282,10 +17720,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.fieldValuesInRange =
                 sample.lebendig >= 0 && sample.lebendig <= 1 && sample.dichte >= 0 && sample.dichte <= 1;
         }
-        // Determinismus: zweimaliger Aufruf an dieselbe Position →
-        // dieselben Werte. Cross-Welt-Variation: zwei verschiedene
-        // Positionen → unterschiedliche Werte (mit hoher
-        // Wahrscheinlichkeit, da Noise nicht-konstant).
+        // Determinismus: gleiche Position → gleiche Werte; zwei verschiedene Positionen → verschiedene
+        // Werte (Noise nicht-konstant).
         if (out.hasWorldFieldAt) {
             const a1 = r.worldFieldAt(50, 30);
             const a2 = r.worldFieldAt(50, 30);
@@ -18296,11 +17732,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.fieldVariesBySamplePos =
                 Math.abs(b1.lebendig - b2.lebendig) > 0.001 || Math.abs(b1.dichte - b2.dichte) > 0.001;
         }
-        // spawnAffinityForBlueprint: baum_eiche (holz+laub, hoch
-        // in lebendig) hat höhere Affinität in einer lebendig-
-        // hohen Region als ein stein_block (dichte-hoch, lebendig=0).
-        // Wir suchen empirisch eine lebendig-hohe Position und
-        // verifizieren das Verhältnis.
+        // spawnAffinityForBlueprint: in einer (empirisch gesuchten) lebendig-hohen Region hat baum_eiche
+        // (holz+laub) höhere Affinität als stein_block (dichte-hoch, lebendig=0).
         if (out.hasSpawnAffinity && out.hasWorldFieldAt) {
             // Iteriere Welt-Grid um eine Position mit hohem lebendig
             // zu finden.
@@ -18337,10 +17770,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             if (bestDichteSpot && bestDichte > 0.5) {
                 const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestDichteSpot.x, bestDichteSpot.z);
                 const steinAff = r.spawnAffinityForBlueprint("stein_block", bestDichteSpot.x, bestDichteSpot.z);
-                // Wenn die Stelle auch lebendig-hoch ist, könnte
-                // tree gewinnen. Wir prüfen primär „stein hat
-                // signifikant > 0", was die Affinity-Anwendung
-                // bestätigt.
+                // Ist die Stelle auch lebendig-hoch, kann der Baum gewinnen — geprüft wird daher nur
+                // „stein signifikant > 0“ (die Affinität greift).
                 out.steinAffinityNonzeroInDichteRegion = steinAff > 0.05;
                 // Für klare Diskrimination: an einer wirklich
                 // dichte-dominanten Position erwarten wir
@@ -18360,15 +17791,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
         for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
         out.affinitySpawnTypes = typeCounts;
         out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
-        // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Populator
-        // `populateChunkVegetation` ist als toter Pfad entfernt.
-        // Die Vision-Anker (Welt-Affinitäts-Feld treibt
-        // Vegetations-Verteilung, idempotent) lebt im Voxel-
-        // Pendant `_populateVoxelChunkVegetation` weiter — am
-        // Voxel-Chunk-Lifecycle aufgehängt (V9.24-Verdrahtung).
-        // Der Test scant `voxelPopulatedChunks` (der Voxel-
-        // Idempotenz-Cache, befüllt durch die initialen ~81
-        // Voxel-Chunks beim Welt-Aufbau).
+        // Das Welt-Affinitäts-Feld treibt die Vegetation idempotent über `_populateVoxelChunkVegetation`
+        // (am Voxel-Chunk-Lifecycle); geprüft wird dessen Idempotenz-Cache `voxelPopulatedChunks`, den
+        // die initialen Voxel-Chunks beim Welt-Aufbau füllen.
         out.populatedChunksSize = r.state.voxelPopulatedChunks ? r.state.voxelPopulatedChunks.size : 0;
         if (typeof r._populateVoxelChunkVegetation === "function") {
             const before = archs.length;
@@ -18382,34 +17807,22 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 out.populateIdempotent = secondReturn === 0 && after === before;
             }
         }
-        // Stamm-Radius der Bäume ist größer (V7.75 Bugfix):
-        // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
-        // V18.257 — die Stamm-Dicke ist grammatik-getrieben (statischer Bauplan geschnitten);
-        // wir prüfen, dass der gewachsene Baum einen holz-Stamm trägt.
+        // Die Stamm-Dicke ist grammatik-getrieben: geprüft wird nur, dass der gewachsene Baum einen
+        // holz-Stamm trägt.
         const __siKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "stamm");
         const __siBp = __siKey && bps[__siKey];
         out.stammIsThicker = !!(__siBp && __siBp.parts.some((p) => p.material === "holz"));
-        // V17.17 — Affinitäts-Tag-Wächter (die Wurzel-Lehre des V17.16-Reverts).
-        // Die Parts-Liste einer spawnbaren Architektur erfüllt ZWEI Funktionen:
-        // (1) WO sie spawnt (computeCompoundTags × worldField in
-        // spawnAffinityForBlueprint) und (2) WIE sie aussieht. Eine Optik-
-        // Anreicherung DARF die 4 Affinitäts-Achsen-Tags NICHT verschieben — sonst
-        // kippt der Winner-take-all in _vegetationSampleSpawn (V17.16: glutbrunnen
-        // 8→229, Bäume→0, weil glut von einer sphere [brennbar-Aktivierung 0] auf
-        // einen cylinder [brennbar-Aktivierung 1] wanderte → gluts brennbar 1.0
-        // wurde entfesselt). KEIN Crash war im Spiel — eine emergente Affinitäts-
-        // Verzerrung. Dieser Wächter friert die GEMESSENE V17.15-Baseline ein:
-        // jede künftige Architektur-Anreicherung, die einen Spawn-Tag verschiebt,
-        // wird hier ROT (deterministisch, kein Warmup, kein Flake). Wer einen Tag
-        // BEWUSST ändert (echte Rebalance), zieht die Baseline hier nach.
+        // Affinitäts-Tag-Wächter: die Parts einer spawnbaren Architektur bestimmen WO sie spawnt
+        // (computeCompoundTags × worldField in spawnAffinityForBlueprint) UND wie sie aussieht. Eine
+        // Optik-Anreicherung darf die 4 Affinitäts-Achsen-Tags NICHT verschieben, sonst kippt der
+        // Winner-take-all in _vegetationSampleSpawn (glut sphere→cylinder entfesselt brennbar → 0 Bäume).
+        // Die gemessene Baseline ist eingefroren; eine bewusste Rebalance zieht sie hier nach.
         out.archAffinityTags = {};
         out.archResoniert = {};
         out.archBroadcasting = {};
         if (typeof r.computeCompoundTags === "function") {
-            // 4 Spawn-Affinitäts-Achsen + resoniert (die MUSIK-Achse — V17-Lehre:
-            // resoniert ist NICHT in der Spawn-Affinität, treibt aber den Resonator/
-            // Abschied-Ping; eine Optik-Anreicherung kann sie über FORM_TAG_ACTIVATION
-            // genauso unbemerkt verschieben wie die Spawn-Tags).
+            // 4 Spawn-Affinitäts-Achsen + resoniert (Musik-Achse): resoniert treibt nicht den Spawn, aber den
+            // Resonator/Abschied-Ping — und kann über FORM_TAG_ACTIVATION genauso unbemerkt kippen.
             const AFF_AXES = ["lebendig", "dichte", "brennbar", "magieleitung"];
             const spawnable = [
                 "baum_eiche",
@@ -18439,11 +17852,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
     if (wave6gP2Results && !wave6gP2Results.error) {
         check("Welle 6.G P2: worldFieldAt-Methode existiert", wave6gP2Results.hasWorldFieldAt);
         check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
-        // V9.39 — `populateChunkVegetation` ist gelöscht; der Vision-
-        // Anker (Welt-Affinitäts-Feld treibt Vegetation) lebt in
-        // `_populateVoxelChunkVegetation` weiter (am Voxel-Chunk-
-        // Lifecycle aufgehängt). Der `hasPopulateChunk`-Flag prüft
-        // jetzt das Voxel-Pendant (umgewidmet im evaluate-Block).
+        // Der `hasPopulateChunk`-Flag prüft das Voxel-Pendant `_populateVoxelChunkVegetation`
+        // (umgewidmet im evaluate-Block; `populateChunkVegetation` ist gelöscht).
         check(
             "Welle 6.G P2 (V9.39): _populateVoxelChunkVegetation-Methode existiert (Voxel-Pendant)",
             wave6gP2Results.hasPopulateChunk
@@ -18498,15 +17908,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gP2Results.populateIdempotent
         );
         check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
-        // V17.17 — Affinitäts-Tag-Stabilitäts-Wächter (siehe Block im evaluate
-        // oben). Gefrorene, GEMESSENE V17.15-Baseline der 4 Affinitäts-Achsen je
-        // spawnbarer Architektur. Verschiebt eine Optik-Anreicherung einen Tag,
-        // verschiebt sich der Spawn-Ort (Winner-take-all) → Bäume können verdrängt
-        // werden (V17.16-Regression). Dieser Wächter fängt GENAU das ab.
-        // V17.18 — die Baseline trägt jetzt auch `resoniert` (Musik-Achse): eine
-        // Optik-Anreicherung kann sie genauso unbemerkt verschieben wie die Spawn-
-        // Tags (welcher Bauwerk singt/klingt). felsturm: dichte 1.7→1.8 + resoniert
-        // 0.6→1.2 = der BEWUSSTE eisen-Mast-Shift (Antenne), Baseline nachgezogen.
+        // Affinitäts-Tag-Stabilitäts-Wächter (siehe evaluate-Block oben): eingefrorene, GEMESSENE
+        // Baseline der 4 Affinitäts-Achsen + `resoniert` je spawnbarer Architektur. Ein verschobener Tag
+        // verschiebt den Spawn-Ort (Winner-take-all) und kann Bäume verdrängen; bewusste Shifts ziehen
+        // die Baseline nach (felsturm: eisen-Mast → dichte 1.8, resoniert 1.2).
         const AFF_BASELINE = {
             // V18.259 — die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
             // baum_eiche = Basis + Art-Variation (lebendig +0.05); baum_kiefer = Basis +
@@ -18551,12 +17956,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("V17.18: felsbogen ist NICHT broadcasting (stein, nicht leitfähig)", bc.felsbogen === false);
     }
 
-    // ### W6.G P3 Phase 1 — Felsformationen ###
-    // felsbogen (ein Trilithon — ein begehbarer Überhang) + felsturm
-    // (eine vertikale Fels-Nadel) als emergente Welt-Bürger. KEIN
-    // Voxel-Terrain — das Compound-Architektur-System trägt den
-    // Überhang: die Per-Sub-Mesh-Box-Kollision lässt zwischen den
-    // zwei Pfeilern eine echte begehbare Lücke.
+    // ### Felsformationen ###
+    // felsbogen (Trilithon, begehbarer Überhang) + felsturm (Fels-Nadel) als Welt-Bürger — KEIN
+    // Voxel-Terrain: die Per-Part-Kollision lässt zwischen den Pfeilern eine echte begehbare Lücke.
     const wave6gP3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -18609,15 +18011,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.felsbogenIsDense = out.felsbogenDichte > 0.5;
         }
 
-        // spawnArchitecture("felsbogen") → Mesh + feld-native Kollision via
-        // blockerAABBs (eine AABB pro solidem Stein-Part). Das IST der begehbare
-        // Durchgang auf Kollisions-Ebene — die Lücke zwischen den Pfeilern hat
-        // keinen Part → keine AABB dort. DETERMINISMUS-BOGEN P3 (kein Ammo-Compound).
-        // N7.3 — UNIT-RICHTER: felsbogen/felsturm sind Studio-bekannt (→ zacken);
-        // foundry-ON hinge „gerendert + Leaf-Farbe" an der Varianten-Cache-Lotterie
-        // (Spawn-Seed → Variante → warm=instanced ODER kalt=nichts, lauf-abhängig
-        // GEMESSEN: Lauf 1-3 grün, Lauf 4 rot). Der Prüf-Gegenstand ist der
-        // klassische/Grammatik-Spawn → lokaler Hook (deterministisch).
+        // spawnArchitecture("felsbogen") → Mesh + feld-native Kollision via blockerAABBs (eine AABB je
+        // solidem Stein-Part); die Lücke zwischen den Pfeilern hat keinen Part → begehbarer Durchgang.
+        // Unter Foundry hinge „gerendert + Farbe“ am Varianten-Cache (lauf-abhängig warm/kalt) — geprüft
+        // wird der klassische/Grammatik-Spawn unter lokalem __withNoFoundry-Hook (deterministisch).
         const pm = r.state.playerMesh;
         const px = pm ? pm.position.x : 0;
         const pz = pm ? pm.position.z : 0;
@@ -18641,12 +18038,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
                         }
                     });
                 } else if (eb.instanced) {
-                    // RENDER-DIÄT (V18.476): das geteilte Tag-Signatur-Material ist
-                    // WEISS, die Part-Farbe reist als Instanz-Farbe (leaf.tint =
-                    // _archPartTintColor-Hex; die Engine multipliziert instanceColor
-                    // auf den colorNode). Der GERENDERTE Wert ist mat.color × tint —
-                    // die Probe liest genau diese EINE Multiplikation (Alt-Pfad:
-                    // tint undefined ⇒ Material-Farbe pur, wie vor der Diät).
+                    // Das geteilte Tag-Signatur-Material ist WEISS, die Part-Farbe reist als Instanz-Farbe (leaf.tint
+                    // = _archPartTintColor-Hex). Gerendert wird mat.color × tint — genau diese Multiplikation liest
+                    // die Probe (tint undefined ⇒ Material-Farbe pur).
                     const flat = r._archFlattenBlueprint("felsbogen");
                     const l0 = flat.leaves[0];
                     if (l0 && l0.mat && l0.mat.color) {
@@ -18681,12 +18075,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length > 0);
         });
 
-        // V9.39 Phase 5c.2.c.3.b.iii — Placement-Probe nutzt jetzt
-        // den Voxel-Populator (das Heightfield-Pendant ist tot).
-        // Vision-Anker bleibt: über ein Raster frischer Chunks MUSS
-        // mindestens ein Felsbogen + ein Felsturm spawnen
-        // (Landmark-Wurf 0.014 × Affinitäts-Floor, 12×12=144 Chunks
-        // statistisch sicher). Vorher: `populateChunkVegetation`.
+        // Placement-Probe über den Voxel-Populator: über ein Raster frischer Chunks MUSS mindestens ein
+        // Felsbogen + ein Felsturm spawnen (Landmark-Wurf 0.014 × Affinitäts-Floor; 12×12=144 Chunks =
+        // statistisch sicher).
         if (typeof r._populateVoxelChunkVegetation === "function") {
             const before = r.state.architectures.length;
             // Frische Voxel-Chunk-Indices, deutlich außerhalb des
@@ -18761,12 +18152,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
     }
 
-    // ### W6.G P4 — das Terrain wird Materie ###
-    // Der Boden gibt: ein Grabe-Hieb löst Terrain in Material auf,
-    // dessen Identität aus worldFieldAt emergiert (die Farbe, die der
-    // Spieler sieht, ist das Material, das er bekommt). Kein Voxel-
-    // Rewrite, keine Biom-Tabelle — der kontinuierliche Affinitäts-
-    // Feld trägt es. Das Terrain joint die Hylomorphismus-Sprache.
+    // ### Das Terrain wird Materie ###
+    // Ein Grabe-Hieb löst Terrain in Material auf, dessen Identität aus worldFieldAt emergiert (die
+    // sichtbare Farbe ist das Material, das der Spieler bekommt) — keine Biom-Tabelle.
     const wave6gP4Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -18814,10 +18202,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const digY = 5;
             r._raycastWorldHit = () => ({ hit: true, x: digX, y: digY, z: digZ });
             r._pickArchitectureAtCrosshair = () => null;
-            // V18.197 Γ-M STRATA: das gegrabene Material schichtet nach
-            // Tiefe — der Test muss DENSELBEN 3-arg-Aufruf machen wie
-            // digTerrain (sonst rechnet er das alte erde-Verhalten gegen
-            // das neue stein-by-Tiefe, was bricht).
+            // Das gegrabene Material schichtet nach Tiefe: DENSELBEN 3-arg-Aufruf wie digTerrain machen,
+            // sonst rechnet der Test ohne Tiefe gegen die Strata.
             const expectMat = r._terrainMaterialAt(digX, digZ, digY);
             const inv = r.state.player.inventory;
             // Inventar tief snapshotten — der Grabe-Test darf den
@@ -18835,20 +18221,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r._raycastWorldHit = origRay;
             r._pickArchitectureAtCrosshair = origPick;
 
-            // Un-mocked Realpfad — der ECHTE _raycastWorldHit gegen
-            // das echte Terrain. Nur _pickArchitectureAtCrosshair
-            // wird genullt (damit garantiert der Terrain-Zweig
-            // läuft, nicht ein Architektur-Treffer). Die Kamera
-            // blickt gerade nach unten → der feld-native Raycast
-            // trifft den Voxel-Boden unter dem Spieler. Beweist: echter
-            // Raycast + V9.36-`carveVoxelSphere` + Material-Yield,
-            // ohne Mock.
+            // Un-mocked Realpfad: der ECHTE _raycastWorldHit gegen das echte Terrain; nur
+            // _pickArchitectureAtCrosshair wird genullt (garantiert den Terrain-Zweig). Kamera blickt nach
+            // unten → beweist Raycast + `carveVoxelSphere` + Material-Yield ohne Mock.
             if (r.state.camera && r.state.playerMesh) {
-                // Robustheit (renderer-unabhängig): ein paar Loop-Ticks pumpen → der
-                // Spieler settled per Schwerkraft (Feld-Controller) auf die Terrain-
-                // Oberfläche. Der feld-native Raycast hängt sonst vom konfundierten
-                // Welt-Zustand ab. Heilung auf INTENT (Raycast/Grabe-MECHANIK),
-                // nicht „Last-Flake".
+                // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
+                // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
                 for (let k = 0; k < 12; k++)
                     if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
                 const cam = r.state.camera;
@@ -18915,13 +18293,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
 // ohne dass ein per-Chunk-Mesh/BVH existieren muss). Es gibt keinen weichen Boden +
 // keinen BVH-Watchdog mehr zu prüfen.
 
-// V18.275 — DIE KAPAZITÄTS-GEWACHSENE WELT: die Vegetation füllt nur Chunks im
-// V18.278 — DIE ERROR-BOUNDARY DES EWIGEN LOOPS: der Loop war nicht ewig — ein einziger
-// Frame-Throw brach den setAnimationLoop-Callback → die Welt erstarrte („die Wellen hängen").
-// Der Headless-Pump fing den Throw in SEINEM try/catch ab → er sah den Freeze NIE. Jetzt fängt
-// der Loop selbst ab (loggt gedrosselt mit Stack, läuft weiter). Diese Wand prüft die Grenze
-// strukturell (try/catch + _loopErrorBoundary) UND behavioral (ein werfender Schritt erstarrt
-// den Loop NICHT). DIE Wand gegen die „der ewige Loop ist nicht ewig"-Bug-Klasse.
+// Error-Boundary des ewigen Loops: ein Frame-Throw darf den setAnimationLoop-Callback nicht
+// brechen (die Welt erstarrte; der Headless-Pump fing den Throw selbst und sah es nie). Der Loop
+// fängt selbst ab (loggt gedrosselt mit Stack, läuft weiter). Geprüft strukturell (try/catch +
+// _loopErrorBoundary) UND behavioral (ein werfender Schritt erstarrt den Loop NICHT).
 async function checkBandV18278LoopErrorBoundary(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -19001,10 +18376,9 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // (2) Radius wächst → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
         st.foliageRadius = 9999;
         out.farIncludedAfterGrow = r._foliageChunkInRadius(pcx + 6, pcz + 6) === true;
-        // (3) CONSUM: _tickFoliageGrowth drainiert einen wartenden, in-radius Chunk-Key.
-        // V18.282 — die Drain-MECHANIK isoliert prüfen: der Frame-über-Budget-Zustand (der das
-        // Wachstum LEGITIM pausiert, getestet in (4)) muss hier AUS sein (die warme Gate-Welt hat
-        // hohe Warmup-frameMs → _frameOverBudget=true; vorher war der Draw-Call-Flag headless nie an).
+        // (3) CONSUM: _tickFoliageGrowth drainiert einen wartenden, in-radius Chunk-Key. Drain-Mechanik
+        // isoliert: _frameOverBudget (pausiert Wachstum legitim, siehe (4)) hier AUS — die warme
+        // Gate-Welt hat hohe Warmup-frameMs.
         st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
         if (st.voxelChunks) st.voxelChunks.delete(tk); // nicht existent → nur entfernen, kein Re-Populate
@@ -19040,18 +18414,11 @@ async function checkBandV18275FoliageGrowth(ctx) {
             /_foliageDensityScale/.test(window.__codeOf(r._effectiveFoliageDensity)) &&
             /_foundryEnabled/.test(window.__codeOf(r._effectiveFoliageDensity));
         const ppD = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
-        // CONSUM (behavioral): die FERNE Scatter-Region (der eigentliche Render-Last-Hebel,
-        // 2.2 M Dreiecke) bei voller vs gedrosselter Dichte neu bauen → `instanceCount` fällt
-        // DIREKT. Der Faktor lichtet BEIDES: die Platzierungs-Wahrscheinlichkeit UND den Pro-
-        // Region-Cap (sonst maskiert der Cap die Drosselung bei dichtem, cap-saturiertem Wald —
-        // genau den Freeze-Hotspots). Anders als die LOD-Schwelle (gemessen 0 %, gebackene
-        // Geometrie) senkt WENIGER Instanzen die Dreiecke wirklich. Die Spieler-Region selbst
-        // bauen (der Warmup baut den fernen Scatter nicht) → der CONSUM läuft IN-GATE.
-        // N7.3 — UNIT-RICHTER: der Regler-Dichte-Pfad lebt BY DESIGN nur foundry-aus
-        // (Studio-Regime → `_effectiveFoliageDensity()` = 1, W1); der Gate fährt jetzt
-        // foundry-ON, also prüft diese CONSUM-Probe die lebende Regler-Mechanik unter
-        // LOKALEM Hook (sichern + WIEDERHERSTELLEN, V18.423-Form). Die Wiederherstellung
-        // der echten Region passiert NACH dem Restore — im ambienten Regime, wie die Welt.
+        // CONSUM (behavioral): die Scatter-Region des Spielers (der Warmup baut sie nicht) bei voller vs
+        // gedrosselter Dichte neu bauen → `instanceCount` fällt. Der Faktor lichtet Platzierungs-
+        // Wahrscheinlichkeit UND Pro-Region-Cap (sonst maskiert der Cap die Drosselung im dichten Wald).
+        // Der Regler-Pfad lebt nur foundry-aus → lokaler Hook (sichern + WIEDERHERSTELLEN); die echte
+        // Region wird erst NACH dem Restore neu gebaut, im ambienten Regime.
         try {
             const SCcfg = (window.AnazhRealm || r.constructor).SCATTER;
             if (SCcfg && Number.isFinite(SCcfg.regionM) && typeof r._scatterRegion === "function") {
@@ -19103,20 +18470,15 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.thinExists = typeof r._tickFoliageThin === "function";
         out.scatterReadsBuiltDensity = /builtDensity/.test(window.__codeOf(r._scatterRegion));
         out.streamingCallsThin = /_tickFoliageThin/.test(window.__codeOf(r._tickScatterStreaming));
-        // W1 — DAS THIN-LOCH GESCHLOSSEN (die letzte V18.427-Endlosschleifen-Klasse), zwei Wände:
-        // (a) die builtDensity-BUCHHALTUNG und der Thin-LESER lesen die EINE Quelle (vorher: Bau
-        // wandte fdScale=1 an, Buchhaltung verbuchte den ROHEN Regler-Wert → byte-identische
-        // 54-ms-Dispose+Rebuild-Zyklen im Studio-Regime); (b) das direkte Foundry-Gate in
-        // `_tickFoliageThin`, byte-symmetrisch zur Gras-Schwester `_tickGrassThin`.
+        // Thin-Loch-Wand: (a) builtDensity-Buchhaltung und Thin-Leser lesen die EINE Quelle
+        // _effectiveFoliageDensity (sonst Dispose+Rebuild-Endlosschleife im Studio-Regime);
+        // (b) direktes Foundry-Gate in `_tickFoliageThin`.
         out.builtDensityFromOneSource = /_effectiveFoliageDensity/.test(window.__codeOf(r._scatterRegion));
         out.thinReadsOneSource = /_effectiveFoliageDensity/.test(window.__codeOf(r._tickFoliageThin));
         out.thinFoundryGated = /_foundryEnabled/.test(window.__codeOf(r._tickFoliageThin));
-        // CONSUM (behavioral, die Gate-Hook-Lehre: SICHERN+WIEDERHERSTELLEN, nie löschen-und-vergessen):
-        // N7.3 — der Gate fährt foundry-ON: das Studio-Regime ist jetzt der DEFAULT (Hook-frei
-        // gelüftet, im neuen Regime ein No-op) → die eine Quelle liefert 1 trotz gesenktem
-        // Regler, das Nach-Dünnen ist ein No-op. Die foundry-aus-Lesung („der Regler führt")
-        // prüft der Unit-Richter: Hook LOKAL setzen, dann wiederherstellen. Beide Pfade sind
-        // reine Frühausstiege (kein Worker-Zugriff → gate-sicher).
+        // CONSUM (behavioral; Hook SICHERN + WIEDERHERSTELLEN, nie löschen-und-vergessen): foundry-ON
+        // ist Default → die eine Quelle liefert 1 trotz gesenktem Regler, Nach-Dünnen = No-op; foundry-aus
+        // („der Regler führt“) per lokalem Hook. Beide Pfade sind Frühausstiege ohne Worker → gate-sicher.
         try {
             const _prevHook = window.__anazhGateNoFoundry;
             st._foliageDensityScale = 0.4;
@@ -19263,15 +18625,10 @@ async function checkBandVoxelTerrainCore(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Voxel-Terrain-Bogen Phase 1 — Dichte-Feld + Surface Nets ###
-    // Parallel-System: ein 3D-Dichte-Feld + ein Surface-Nets-Mesher.
-    // Beweist, dass echte Höhlen/Überhänge möglich sind, ohne das
-    // Heightfield anzufassen. Siehe docs/roadmap.md „Voxel-Terrain-Bogen".
-    // V9.35 — vor dem _spawnVoxelTestChunk-Test räumen wir alle
-    // Voxel-Chunks direkt ab (~81 Chunks, ~5-6 MB Ammo-Heap zurück);
-    // die alte setVoxelTerrainActive(false)-Geste ist tot (Toggle ist
-    // weg). Die folgenden Tests bauen ihren Voxel-Ring per direktem
-    // _tickVoxelChunkStreaming neu auf — saubere Test-Isolation.
+    // ### Voxel-Terrain — Dichte-Feld + Surface Nets ###
+    // Beweist echte Höhlen/Überhänge aus 3D-Dichte-Feld + Surface-Nets-Mesher. Vorab alle
+    // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
+    // (Test-Isolation).
     await page.evaluate(() => {
         const r = window.anazhRealm;
         if (r && r.state && r.state.voxelChunks && typeof r._disposeVoxelChunk === "function") {
@@ -19287,10 +18644,8 @@ async function checkBandVoxelTerrainCore(ctx) {
         out.hasSpawnTest = typeof r._spawnVoxelTestChunk === "function";
 
         if (out.hasDensityAt) {
-            // Das Feld ist genuin 3D — bei festem (x,z) nimmt die
-            // Dichte mit der Höhe ab (mehr Luft oben). Über mehrere
-            // Stichproben gemittelt, damit das 3D-Noise-Band die
-            // Monotonie nicht lokal kippt.
+            // Das Feld ist genuin 3D: bei festem (x,z) fällt die Dichte mit der Höhe — über mehrere
+            // Stichproben gemittelt, damit das 3D-Noise-Band die Monotonie nicht lokal kippt.
             let lowerSum = 0;
             let upperSum = 0;
             for (let s = 0; s < 8; s++) {
@@ -19300,11 +18655,8 @@ async function checkBandVoxelTerrainCore(ctx) {
                 upperSum += r._terrainDensityAt(sx, 60, sz);
             }
             out.densityIs3D = lowerSum > upperSum;
-            // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0),
-            // der vertikal zwischen festem Grund liegt.
-            // V14.7 — die Höhlen-Zone ist SURF-RELATIV (base-20 .. surf-16); relativ
-            // zur lokalen Oberfläche scannen statt absolut sy -40..20 (das lag nur in
-            // der alten flachen Welt richtig — die V14.7-Massive heben surf weit hoch).
+            // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0) vertikal zwischen festem Grund. Die
+            // Höhlen-Zone ist SURF-RELATIV (base-20 .. surf-16) → relativ zur lokalen Oberfläche scannen.
             let foundCave = false;
             for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
                 for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
@@ -19322,22 +18674,16 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
             out.densityCanCave = foundCave;
 
-            // V9.12 — der Voxel-Chunk fasst das ganze Oberflächen-
-            // Band: der Boden ist überall fest, die Decke überall
-            // Luft → keine Klipp-Löcher. V9.26: Chunk-Bounds erhöht
-            // auf base-58 .. base+86 (Marge ~22 gegen ridged-Spike-
-            // Löcher am erweiterten Sicht-Ring).
+            // Der Voxel-Chunk fasst das ganze Oberflächen-Band: Boden überall fest, Decke überall Luft →
+            // keine Klipp-Löcher.
             const cBase = r.state.terrainBaseHeight || 0;
             let floorAllSolid = true;
             let ceilAllAir = true;
             for (let sx = -220; sx <= 220; sx += 20) {
                 for (let sz = -220; sz <= 220; sz += 20) {
-                    // V14.7: SURF-RELATIV (Decke 30 m über surf = Luft).
-                    // Welle G (V9.56-i): der Boden-Sample wandert UNTER das Höhlen-
-                    // Band — die V17.97-Kavernen reichen legitim bis ~surf-45 (eine
-                    // Höhle 15 m unter der Oberfläche ist korrekt, gegated durch
-                    // surf-16/base-28). Garantiert fest ist es erst unter caveFloor
-                    // (base-28) UND unter dem Seeboden → `min(surf, base) - 40`.
+                    // SURF-RELATIV: Decke 30 m über surf = Luft. Der Boden-Sample liegt UNTER dem Höhlen-Band
+                    // (Kavernen reichen legitim bis ~surf-45): garantiert fest erst unter caveFloor (base-28) UND
+                    // dem Seeboden → `min(surf, base) - 40`.
                     const surf = r._terrainMacroSurfaceY(sx, sz);
                     if (r._terrainDensityAt(sx, Math.min(surf, cBase) - 40, sz) <= 0) floorAllSolid = false;
                     if (r._terrainDensityAt(sx, surf + 30, sz) >= 0) ceilAllAir = false;
@@ -19345,14 +18691,9 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
             out.chunkContainsSurface = floorAllSolid && ceilAllAir;
 
-            // V9.18 Phase 4 — Höhlen entstehen mit der Welt.
-            // Über ein 3D-Raster: eine Höhlen-Zelle ist Luft, von
-            // festem Grund 6 m darüber UND darunter umschlossen
-            // (echte Höhle, kein offener Himmel). Es gibt viele
-            // davon (Höhlen existieren) — aber sie sind eine
-            // Minderheit des festen Volumens (die Welt ist nicht
-            // hohl). Und der Boden unter dem Höhlen-Band (base-44,
-            // unter der caveFloor-Hüllkurve) bleibt überall fest.
+            // Höhlen entstehen mit der Welt: auf einem 3D-Raster ist eine Höhlen-Zelle Luft, 6 m darüber UND
+            // darunter fest umschlossen. Es gibt viele, aber als Minderheit des festen Volumens (die Welt ist
+            // nicht hohl); der Boden unter dem Höhlen-Band (base-44, unter caveFloor) bleibt überall fest.
             let caveCells = 0;
             let solidCells = 0;
             let p4FloorSolid = true;
@@ -19412,11 +18753,8 @@ async function checkBandVoxelTerrainCore(ctx) {
                     }
                 }
                 out.normalsUnit = normalsUnit;
-                // V9.11 — kein Streck-Dreieck (Index-Aliasing-Bug):
-                // jede Triangle-Kante ist lokal klein (≤ ein paar
-                // Zellen). Ein Stray-Dreieck quer durch den Chunk
-                // hätte eine Kante von zig Zellen — das war die
-                // unsaubere Naht. step=1.8 → Grenze 5×step=9.
+                // Kein Streck-Dreieck (Index-Aliasing): jede Kante ist lokal klein; ein Stray-Dreieck quer durch
+                // den Chunk hätte zig Zellen Kantenlänge. step=1.8 → Grenze 5×step=9.
                 if (out.geomHasIndex) {
                     const ia = geom.getIndex().array;
                     const pa = pos.array;
@@ -19432,17 +18770,9 @@ async function checkBandVoxelTerrainCore(ctx) {
                     out.geomMaxEdge = maxEdge;
                     out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
 
-                    // V9.41.b — Laplacian-Smooth: prüfe, dass die
-                    // Position eines Vertex deutlich näher am
-                    // Durchschnitt seiner Nachbarn liegt als der
-                    // Original-Vertex (Surface-Nets-Treppe). Wir
-                    // messen pro Vertex die Y-Distanz zum Nachbar-
-                    // Mittel und mitteln über alle Vertices. Pre-
-                    // V9.41.b liegt der Wert in der Größenordnung
-                    // step/2 = 0.9 (Surface-Nets-Zellen-Auflösung).
-                    // Nach 1 Iteration mit Lambda 0.5 sollte der
-                    // Wert ungefähr halbiert sein — der Vertex ist
-                    // jetzt 50% des Weges zum Nachbar-Mittel.
+                    // Laplacian-Smooth: je Vertex die Y-Distanz zum Nachbar-Mittel, gemittelt über alle Vertices.
+                    // Ohne Smooth ~step/2 = 0.9 (Surface-Nets-Treppe); 1 Iteration mit Lambda 0.5 halbiert sie etwa
+                    // (der Vertex wandert 50 % zum Nachbar-Mittel).
                     const neighborSets = new Array(pos.count);
                     for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
                     for (let t = 0; t + 2 < ia.length; t += 3) {
@@ -19468,22 +18798,12 @@ async function checkBandVoxelTerrainCore(ctx) {
                         sampledVerts++;
                     }
                     out.smoothMeanYDev = sampledVerts > 0 ? totalDev / sampledVerts : 0;
-                    // step = 1.8 für Test-Chunk; pre-Smooth wäre
-                    // diese Mean-Dev typisch > 0.3 (steile Treppen).
-                    // Post-Smooth mit Lambda 0.5 sollte sie unter
-                    // 0.25 fallen — das ist die Härtung.
+                    // step=1.8: ohne Smooth liegt die Mean-Dev typisch > 0.3 (steile Treppen), mit Lambda 0.5 < 0.25.
                     out.smoothMeanYDevLow = out.smoothMeanYDev > 0 && out.smoothMeanYDev < 0.25;
 
-                    // V9.41 — alternierende Diagonalen (Schach-Brett).
-                    // Quad emittiert pro Paar 6 Indizes: 2 Dreiecke.
-                    // a-c-Diagonale: indices = [a,b,c, a,c,d] →
-                    // erster Vertex des ersten Dreiecks (a) == erster
-                    // Vertex des zweiten Dreiecks (a).
-                    // b-d-Diagonale: indices = [a,b,d, b,c,d] →
-                    // ZWEITER Vertex des ersten Dreiecks (b) == ERSTER
-                    // Vertex des zweiten Dreiecks (b).
-                    // Pre-V9.41: nur a-c-Pattern. Post-V9.41 mit
-                    // Schach-Brett: beide Patterns kommen vor.
+                    // Alternierende Diagonalen (Schachbrett), 6 Indizes je Quad: a-c-Diagonale [a,b,c, a,c,d] →
+                    // erster Vertex beider Dreiecke gleich (a); b-d-Diagonale [a,b,d, b,c,d] → ZWEITER Vertex des
+                    // ersten == ERSTER des zweiten (b). Mit Schachbrett kommen beide Patterns vor.
                     let acDiag = 0;
                     let bdDiag = 0;
                     for (let t = 0; t + 5 < ia.length; t += 6) {
@@ -19497,10 +18817,8 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
         }
 
-        // DETERMINISMUS-BOGEN P3 — die Kollisions-Builder (`_buildStaticTriMeshCollision` /
-        // `_buildIslandCollision`) sind Ammo-freie No-op-Stubs (bauen nichts); der Boden
-        // lebt feld-nativ im Dichtefeld. Es gibt kein per-Chunk-Kollisions-Artefakt mehr
-        // zu prüfen — nur der Mesh-in-Szene-Lebenszyklus bleibt eine echte Aussage.
+        // Die Kollision ist feld-nativ (Dichtefeld), es gibt kein per-Chunk-Kollisions-Artefakt —
+        // geprüft wird nur der Mesh-in-Szene-Lebenszyklus von _spawnVoxelTestChunk.
         if (out.hasSpawnTest && r.state.scene) {
             const before = r.state.scene.children.length;
             const m1 = r._spawnVoxelTestChunk();
@@ -19591,36 +18909,22 @@ async function checkBandVoxelTerrainCore(ctx) {
         out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
         out.hasConfig = typeof r._voxelChunkConfig === "function";
         out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
-        // V9.35 Phase 5c.2.c.2 — die Toggle-Methoden sind tot;
-        // Voxel ist permanent + irreversibel. Der Ring ist schon
-        // beim Init gefüllt (state.voxelTerrainActive defaults
-        // auf true). Die alten Reversibilitäts-Tests (Heightfield
-        // ruht / erwacht / setVoxelTerrainActive füllt|räumt)
-        // sind ersatzlos entfallen.
+        // Voxel ist permanent (keine Toggle-Methoden): der Ring ist beim Init gefüllt
+        // (state.voxelTerrainActive default true).
 
         if (out.hasTick) {
-            // V9.40-c — Test-Deterministik: der Game-Loop läuft im
-            // Headless-Chromium gedrosselt (~1 Hz im Hintergrund-Tab),
-            // also bauen wir den Voxel-Ring hier explizit synchron.
-            // Der V9.40-c-Hook (`_tickDirtyVoxelChunks`) verschob das
-            // Timing-Fenster gerade weit genug, dass die initial-
-            // Spawn-Tests rot wurden — der explizite Drain heilt das
-            // an der Test-Seite (im Spiel-Pfad läuft alles asynchron).
+            // Der Game-Loop läuft headless gedrosselt (~1 Hz im Hintergrund-Tab) → den Voxel-Ring hier
+            // explizit synchron bauen; im Spiel-Pfad läuft alles asynchron.
             const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-            // V18.271 — der Spieler-Chunk baut jetzt ASYNC (Worker); der Worker-Callback
-            // feuert im SYNCHRONEN Test-Pump-Loop NICHT (kein event-loop-yield) → die Chunks
-            // blieben pending. Die Test-Naht baut den Ring EXPLIZIT SYNCHRON (Stage-3-
-            // Fallback), wie der Kommentar oben es schon fordert: Worker temporär „nicht
-            // synced" → `_acquireVoxelChunkBuild` überspringt den async-Worker → Sync-Build.
+            // Der Spieler-Chunk baut async im Worker, dessen Callback im synchronen Test-Pump nie feuert →
+            // Worker temporär „nicht synced“: `_acquireVoxelChunkBuild` baut dann synchron (Stage-3-Fallback).
             const _wgSynced = r.state.voxelWorkerWorldgenSynced;
             r.state.voxelWorkerWorldgenSynced = false;
             if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
             for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
             r.state.voxelWorkerWorldgenSynced = _wgSynced;
-            // Welle A — das Gras ist seit Welle A deferred (enqueue im Finalize,
-            // Build ≤1/Frame im Loop). Das Streaming oben enqueued es nur; die
-            // Test-Naht drainet es sofort, sonst sieht der Grass-Check unten
-            // leere Chunks (V9.56-i: das Verhalten wanderte, der Test wandert mit).
+            // Gras ist deferred (enqueue im Finalize, Build ≤1/Frame im Loop): das Streaming enqueued nur,
+            // die Test-Naht drainet sofort — sonst sieht der Grass-Check leere Chunks.
             if (typeof r._drainPendingGrass === "function") r._drainPendingGrass();
             out.activated = r.state.voxelTerrainActive === true;
             out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
@@ -19639,10 +18943,9 @@ async function checkBandVoxelTerrainCore(ctx) {
                 }
             }
             out.voxelGrassBuilt = grassEntries > 0;
-            // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist
-            // BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie
-            // mehr — jede Gras-Zelle bewusst gras-los verbucht (0 Halme) UND die
-            // Halm-Funktion lebt im Boden-Albedo (Konsum-Probe am Chokepoint).
+            // Die Wiese ist BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie: jede
+            // Gras-Zelle verbucht 0 Halme UND die Halm-Funktion lebt im Boden-Albedo (Konsum-Probe am
+            // Chokepoint).
             out.voxelGrassIsSurface =
                 grassEntries > 0 &&
                 grassBlades === 0 &&
@@ -19663,10 +18966,8 @@ async function checkBandVoxelTerrainCore(ctx) {
             const ringBefore = r.state.chunkRingRadius;
             const activeBefore = r.state._activeRingRadius;
             r.state.chunkRingRadius = 6;
-            // V18.301 — der Lade-Rhythmus-Ramp (`_activeRingRadius`) sitzt zwischen Slider
-            // + ringRadius (`min(target, active)`). Der Test prüft den STEADY-STATE (folgt
-            // der Ring dem Slider?) → den Ramp aufs Ziel setzen, statt am Warmup-Leftover zu
-            // hängen (sonst last-flaky: ein langsamer Warmup lässt active < 6).
+            // Der Lade-Ramp `_activeRingRadius` sitzt zwischen Slider und ringRadius (`min(target, active)`).
+            // Geprüft wird der STEADY-STATE → Ramp aufs Ziel setzen (ein langsamer Warmup ließe active < 6).
             r.state._activeRingRadius = 6;
             out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
             r.state.chunkRingRadius = ringBefore;
@@ -19677,10 +18978,8 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
             out.voxelVegMarksChunk = !!(r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777"));
 
-            // V9.25 Phase 5b — die Höhen-Konsumenten sind voxel-aware.
-            // (Das Voxel-Terrain ist hier aktiv → worldMeta.voxelTerrain
-            // gesetzt.) getTerrainHeightAt + findSurfaceAbove liefern
-            // die Voxel-Oberfläche, nicht das schlafende Heightfield.
+            // Die Höhen-Konsumenten sind voxel-aware: getTerrainHeightAt + findSurfaceAbove liefern die
+            // Voxel-Oberfläche.
             const vsRef = r._voxelSurfaceY(10, 10);
             const ghVoxel = r.getTerrainHeightAt(10, 10);
             out.getTerrainHeightVoxelAware =
@@ -19692,16 +18991,9 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.findSurfaceVoxelAware =
                 typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
 
-            // V9.26 Phase 5c-Migration + V9.35 Phase 5c.2.c.2
-            // Zwangs-Migration — eine geladene alte Welt OHNE
-            // voxelTerrain-Flag UND eine alte explizit Heightfield-
-            // Opt-out-Welt werden BEIDE voxel-basiert (der Opt-out
-            // existiert nicht mehr; das Heightfield ist Dead-Code).
-            // Die fresh-Eingangs-Welt ist seit V9.33 ebenfalls
-            // voxel-default. Das Welt-Journal wird vor dem Test
-            // gesichert + danach restored — sonst flutet der
-            // Migrations-Genesis-Eintrag den nachfolgenden
-            // „Journal nicht überflutet"-Test.
+            // Zwangs-Migration: eine alte Welt OHNE voxelTerrain-Flag UND eine explizite Heightfield-Opt-out-
+            // Welt werden BEIDE voxel-basiert. Welt-Journal vorher sichern + danach restoren — sonst flutet
+            // der Migrations-Genesis-Eintrag den folgenden „Journal nicht überflutet“-Test.
             const origMeta = r.state.worldMeta;
             const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
             const origJournalSeen =
@@ -19758,10 +19050,9 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Streaming: alles abräumen, ein Tick baut wieder auf.
             for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
             const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-            // V18.271 — der Spieler-Chunk baut jetzt ASYNC (Worker); EIN Tick im synchronen
-            // Test (kein event-loop-yield) erzeugt nur pending-Requests, KEINE Chunk-Einträge
-            // → die Test-Naht baut SYNCHRON (Stage-3, Worker temporär „nicht synced"), wie
-            // schon der 50er-Pump oben. Im echten Spiel läuft der Tick async (eigene Wand).
+            // Ein Tick im synchronen Test erzeugt nur pending Worker-Requests, keine Chunk-Einträge →
+            // synchron bauen (Stage-3, Worker temporär „nicht synced“) wie der Pump oben; im Spiel läuft der
+            // Tick async.
             const _wgSyncedTick = r.state.voxelWorkerWorldgenSynced;
             r.state.voxelWorkerWorldgenSynced = false;
             r._tickVoxelChunkStreaming(pos);
@@ -19776,12 +19067,10 @@ async function checkBandVoxelTerrainCore(ctx) {
             // direkt, damit nachfolgende Tests Voxel-Chunks haben.
             r._tickVoxelChunkStreaming(pos);
 
-            // Welle E (E1/E2) — die LOD-Pyramide. Der Warmup läuft bei Ring 4 →
-            // er erreicht LOD2/LOD3 (r≥9) NIE; darum hier explizit prüfen:
-            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=417.6 seit T8 — das weite Band),
-            // (b) Zuweisung additiv (r≤8 wie alt: r2-8→LOD1; neu r9-10→2, r≥11→3),
-            // (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob —
-            //     der Surface-Nets-Mesher + pad/crop muss es tragen).
+            // LOD-Pyramide: der Warmup läuft bei Ring 4 und erreicht LOD2/LOD3 (r≥9) nie, daher explizit:
+            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=417.6), (b) Zuweisung r2-8→LOD1, r9-10→2,
+            // r≥11→3, (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob — Surface-Nets +
+            // pad/crop müssen es tragen).
             const cL2 = r._voxelChunkConfig(2);
             const cL3 = r._voxelChunkConfig(3);
             out.lodPyramidConfig =
@@ -19838,13 +19127,9 @@ async function checkBandVoxelTerrainCore(ctx) {
                     b(99).lod === 3;
                 out.lodReadsBand =
                     r._voxelChunkLodFor(0, 0, 0, 0) === b(0).lod && r._voxelChunkLodFor(9, 0, 0, 0) === b(9).lod;
-                // N3 — die LOD-Hysterese: ein bestehender Chunk hält seine feinere
-                // LOD im Deadband (r bis Band-Grenze + LOD_HYSTERESIS_RINGS), aber
-                // VERFEINERT sofort. Beweis am Grat LOD0(maxRing2)↔LOD1:
-                //   r=3, currentLod=0 → bleibt 0 (Deadband: 3 ≤ 2+1) — kein Vergröbern-Pop
-                //   r=4, currentLod=0 → wird 1 (klar über 2+1) — vergröbert endlich
-                //   r=2, currentLod=1 → wird 0 (Verfeinern greift sofort)
-                //   ohne currentLod → reine Band-LOD (lf(3)===1, unverändert)
+                // LOD-Hysterese: ein Chunk hält seine feinere LOD im Deadband (r ≤ Band-Grenze +
+                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat LOD0(maxRing 2)↔LOD1: r=3/lod0 → 0
+                // (kein Pop), r=4/lod0 → 1, r=2/lod1 → 0, ohne currentLod → reine Band-LOD (lf(3)===1).
                 out.lodHysteresis =
                     r._voxelChunkLodFor(3, 0, 0, 0, 0) === 0 &&
                     r._voxelChunkLodFor(4, 0, 0, 0, 0) === 1 &&
@@ -19997,12 +19282,9 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
     }
 
-    // ### Voxel V9.35 Phase 5c.2.c.2 — Toggle-Tod: Voxel permanent + irreversibel ###
-    // Der V9.13-`voxel terrain on/off`-Toggle ist als Reversibilitäts-
-    // Schicht entfernt — Voxel ist beim Init aktiv, `worldMeta.voxel-
-    // Terrain` ist immer true (Zwangs-Migration in `ensureWorldMeta`
-    // zieht jede alte Welt mit). Die drei Toggle-Methoden + der Chat-
-    // Befehl sind weg.
+    // ### Voxel permanent + irreversibel (kein Toggle) ###
+    // Voxel ist beim Init aktiv, `worldMeta.voxelTerrain` immer true (Zwangs-Migration in
+    // `ensureWorldMeta`); Toggle-Methoden + `voxel terrain on/off`-Chat-Befehl sind weg.
     const voxelV935ToggleResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -20017,11 +19299,8 @@ async function checkBandVoxelTerrainCore(ctx) {
         // Der Welt-Snapshot trägt das Flag (überlebt Reload).
         const snap = r.buildStateSnapshot();
         out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
-        // Chat-Toggle ist tot — `voxel terrain on/off` ist kein
-        // erkanntes Kommando mehr. Der Source-Scan prüft das
-        // String-Literal `=== "voxel terrain on"` (die echte
-        // Code-Logik, nicht ein Kommentar — der V9.35-Eintrag-
-        // Kommentar erwähnt den toten Befehl als Doku).
+        // Der Chat-Toggle ist tot: der Source-Scan prüft das String-Literal `=== "voxel terrain on"`
+        // (Code-Logik, nicht einen Kommentar, der den toten Befehl erwähnt).
         const src = (typeof r.processChatCommand === "function" && window.__codeOf(r.processChatCommand)) || "";
         out.noChatToggle = !/===\s*["']voxel terrain on["']/.test(src);
         return out;
@@ -20058,15 +19337,10 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
     }
 
-    // ### Voxel V9.27 Phase 5c.1 + V9.28 — fusioniert für Heap-Schonung ###
-    // V9.27: eine Voxel-Welt überspringt die initialen 64 Heightfield-
-    // Chunks. V9.28: zusätzlich ist die heightData/caveData/volcanoData-
-    // Allokation übersprungen (V9.25 Phase 5b ehrlich abgeschlossen —
-    // updateCreatures ist der letzte missed Höhen-Konsument, jetzt
-    // voxel-aware via getTerrainHeightAt). BEIDE teilen sich die zwei
-    // generateNewWorld-Aufrufe (Voxel-Mode + Heightfield-Regression).
-    // (DETERMINISMUS-BOGEN P3 — das frühere Ammo-Heap-Auxiliar-Leck-Risiko
-    // ist mit der entfernten Bullet-Welt gegenstandslos.)
+    // ### Voxel-Welt ohne Heightfield ###
+    // Eine Voxel-Welt baut keine Heightfield-Chunks und keine heightData (groundHeightField null,
+    // min/maxHeight 0); updateCreatures setzt Kreaturen via getTerrainHeightAt auf die Voxel-Surface.
+    // Alle Proben teilen dieselben generateNewWorld-Aufrufe (Heap-Schonung).
     const voxelP5c1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -20110,20 +19384,14 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Spawn weg; der Test misst den BODEN an (testX,testZ) → re-platzieren.
             if (creature) creature.position.set(testX, 50, testZ);
             if (creature && Number.isFinite(voxelY)) {
-                // V18.149 (GEMESSEN, der Flake-Heal): _creatureGroundY trägt ein
-                // 20-Scans-Budget pro Tick; die Test-Kreatur ist die LETZTE im
-                // Array — bei ≥20 Vorgängern fiel EIN Tick auf den Makro-
-                // Schätzwert (seed-abhängige ±m-Divergenz = rot↔grün je Lauf).
-                // Der Cache deckt pro Tick 20 WEITERE Kreaturen → drei Ticks
-                // erreichen sie deterministisch (der echte Budget+Cache-Pfad
-                // bleibt geprüft, kein Cache-Bypass).
+                // _creatureGroundY hat ein 20-Scans-Budget je Tick und die Test-Kreatur ist die LETZTE im Array
+                // → ein Tick fiele seed-abhängig auf den Makro-Schätzwert. Drei Ticks erreichen sie
+                // deterministisch (der echte Budget+Cache-Pfad bleibt geprüft, kein Cache-Bypass).
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
-                // KÖRPER-BEWEGUNG (4) — TIER-BODENKONTAKT: der +0.5-m-Schwebe-
-                // Anker + Sinus-Bob sind gefallen; die Sohlen stehen AUF
-                // _voxelSurfaceY (±0.5 deckt die Hang-Proben-Mitte; der
-                // Schwimm-Bob lebt nur noch im Wasser).
+                // Tier-Bodenkontakt: die Sohlen stehen AUF _voxelSurfaceY (kein Schwebe-Anker, kein Sinus-Bob;
+                // ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser).
                 const expected = voxelY;
                 const actual = creature.position.y;
                 out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
@@ -20134,13 +19402,9 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
         }
 
-        // V9.37 Phase 5c.2.c.3.b.i: der ehemalige V9.27-Heightfield-
-        // Regression-Pfad (worldMeta.voxelTerrain = false → 64
-        // Chunks gebaut) ist mit dem Lösch des `else`-Pfads in
-        // `generateTerrainWithParameters` tot. Der Beweis
-        // wandert um: selbst wenn ein Test-Setup `voxelTerrain
-        // = false` mutiert, baut der Welt-Generator keine
-        // Heightfield-Chunks mehr (chunkMap bleibt leer).
+        // Selbst wenn ein Test-Setup `voxelTerrain = false` setzt, baut der Welt-Generator keine
+        // Heightfield-Chunks (chunkMap bleibt leer) — der `else`-Pfad in `generateTerrainWithParameters`
+        // ist gelöscht.
         r.state.worldMeta.voxelTerrain = false;
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
@@ -20160,11 +19424,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             "Voxel V9.27 Phase 5c.1: eine Voxel-Welt überspringt die initialen 64 Heightfield-Chunks (chunkMap leer)",
             voxelP5c1Results.voxelChunkMapEmpty
         );
-        // V9.39 Phase 5c.2.c.3.b.iii — der V9.27-Material-Erhaltungs-
-        // Test ist gestrichen. Sein Vision-Ziel („Heightfield-Material
-        // bleibt für voxel-off-Toggle erhalten") wurde mit V9.35 obsolet
-        // (Toggle-Tod) und mit V9.39 vollendet (terrainMaterial-Setzer
-        // gelöscht — kein Heightfield-Mesh nutzt es mehr).
         check(
             "Voxel V9.37 Phase 5c.2.c.3.b.i: der Heightfield-`else`-Pfad in generateTerrainWithParameters ist tot — auch `voxelTerrain = false` baut keine Heightfield-Chunks mehr",
             voxelP5c1Results.heightfieldElseDead
@@ -20186,33 +19445,9 @@ async function checkBandVoxelTerrainCore(ctx) {
             "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y ≠ Fallback-Basis)",
             voxelP5c1Results.creatureNotAtFallback
         );
-        // V9.37 Phase 5c.2.c.3.b.i: die zwei V9.28-Heightfield-Regression-
-        // Tests („groundHeightField gefüllt", „minHeight/maxHeight gesetzt")
-        // sind mit dem Lösch des `else`-Pfads in `generateTerrainWith-
-        // Parameters` tot — sie prüften, dass eine `voxelTerrain=false`-
-        // Welt noch das Heightfield aufbaut; mit V9.37 baut sie keine
-        // Heightfield-Chunks mehr, der heightData-Allokations-Pfad in
-        // `isVoxelWorldGen2` lebt zwar noch, aber kein Spieler-Pfad
-        // erreicht ihn (eine spätere Welle 5c.2.c.3.b.ii könnte ihn
-        // auch noch ablösen, sobald die Test-Anker umgewidmet sind).
     }
 
-    // ### Voxel V9.39 — V9.29-Disposal-Test gestrichen ###
-    // Der V9.29-Test prüfte die `_disposeChunkPhysics`-Auxiliars-
-    // Cleanup-Disziplin (Body + Shape + MotionState + TMesh) an einem
-    // Heightfield-Chunk, der per `ensureChunkAt(40,40)` direkt gebaut
-    // wurde. Beide Methoden sind in V9.39 als toter Pfad entfernt;
-    // die V9.29-Lehre lebt im `_disposeStaticCollision`-Helper weiter
-    // (Inseln + Voxel-Chunks). V9.37-Disziplin: Test einer
-    // unreachable Schicht ist toter Schutz — ehrlich streichen.
-
-    // ### Voxel V9.30 — Lösch-Beweise ###
-    // Die V9.30-Welle löschte `generateChunk` + `addTerrainPhysics`
-    // (V9.28-Befund: nachweislich tot). Die zwei Lösch-Beweise leben
-    // weiter; die V9.30-Regression-Schutzanker (`ensureChunkAt`/
-    // `_terrainHeightAtWorld` leben weiter) sind in V9.39 verfallen
-    // — die geschützte Schicht ist selbst tot. V9.37-Disziplin:
-    // ehrlich streichen, nicht heilen.
+    // ### Voxel — Lösch-Beweise: generateChunk + addTerrainPhysics ###
     const voxelV930Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -20230,27 +19465,9 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
     }
 
-    // ### Voxel V9.34 — Phase 5c.2.c.1: weitere tote Heightfield-Schichten gelöscht ###
-    // Drei nachweislich tote Schichten, in derselben V9.30-Disziplin (pure
-    // Dead-Code, keine Verhaltens-Änderung): (1) `extendTerrain` — die
-    // Legacy-direction-API für Playtest-Kompat hatte keinen Aufrufer mehr
-    // (alle Playtest-Pfade routen direkt über `ensureChunkAt`); (2) das
-    // `caveData`-Float-Array — wurde in `generateTerrainWithParameters`
-    // alloziert + befüllt, aber NIE gelesen (das Versprechen aus dem
-    // Kommentar „behalten wir nur als Tag-Flags für späteren shader-
-    // Gebrauch" wurde nie erfüllt); (3) das `volcanoData`-Float-Array —
-    // dieselbe Klasse, identisches Schicksal. Wer eine der drei je wieder
-    // anlegt, muss eine echte Notwendigkeit benennen. caveNoise +
-    // volcanoNoise (die SimplexNoise-Instanzen) leben weiter — sie
-    // modulieren die Höhe in `_terrainHeightAtWorld` (echte Konsumenten).
-    // V9.39 Phase 5c.2.c.3.b.iii — die V9.34-Regression-Schutzanker
-    // („ensureChunkAt + _terrainHeightAtWorld leben weiter",
-    // „caveNoise/volcanoNoise leben weiter") sind in V9.39 verfallen
-    // — alle drei genannten Mechaniken sind gelöscht. Die zwei
-    // V9.34-Lösch-Beweise (extendTerrain + caveData/volcanoData-
-    // Arrays) leben unter den V9.39-Lösch-Beweisen unten (zusammen
-    // mit den drei neuen). V9.37-Disziplin: Test einer unreachable
-    // Schicht ist toter Schutz — ehrlich streichen.
+    // ### Voxel — Lösch-Beweise toter Heightfield-Schichten ###
+    // `extendTerrain` (ohne Aufrufer) + die `caveData`/`volcanoData`-Float-Arrays (alloziert, nie
+    // gelesen). Wer eine davon wieder anlegt, muss eine echte Notwendigkeit benennen.
     const voxelV934Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -20282,10 +19499,8 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
     }
 
-    // ### V9.38 — Phase 5c.2.c.3.b.ii Lösch-Beweise ###
-    // V9.35 machte `worldMeta.voxelTerrain` permanent true → fünf
-    // voxel-Gate-`else`-Hälften wurden unreachable. V9.38 löscht sie
-    // ehrlich (pure Dead-Code-Welle, V9.30/V9.37-Disziplin).
+    // ### Voxel — Lösch-Beweise der voxel-Gate-`else`-Hälften ###
+    // `worldMeta.voxelTerrain` ist permanent true → die Heightfield-`else`-Hälften waren unreachable.
     const voxelV938Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -20350,14 +19565,9 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
     }
 
-    // ### V9.39 — Phase 5c.2.c.3.b.iii Lösch-Beweise ###
-    // Die letzte grosse Aufräum-Welle der Heightfield-Pipeline: sechs
-    // tote Methoden + alle ihre Konsumenten + `terrainMaterial`-Setzer
-    // gelöscht. V9.30/V9.37-Disziplin: pure Dead-Code-Welle, keine
-    // Verhaltens-Änderung im Spiel (Voxel ist seit V9.35 die einzige
-    // Welt-Form). Die Vision-Schichten (Affinitäts-Vegetation, Wind-
-    // Gras, Welt-Affinität pro Vertex) leben in den Voxel-Pendants
-    // weiter (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
+    // ### Voxel — Lösch-Beweise der Heightfield-Pipeline ###
+    // Die toten Heightfield-Methoden + der `terrainMaterial`-Setzer sind weg; die Vision-Schichten
+    // leben in den Voxel-Pendants (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
     // `_attachVoxelFieldColors`).
     const voxelV939Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -20388,10 +19598,8 @@ async function checkBandVoxelTerrainCore(ctx) {
                     )
                 )
             ),
-            // (9) `_buildWaterPlane` ist voxel-only — kein echter
-            // `this._terrainHeightAtWorld(...)`-Aufruf mehr (der
-            // Erklär-Kommentar darf den Namen erwähnen — V9.36-
-            // Test-Kommentar-Falle: Regex auf den Aufruf-Pattern).
+            // (9) `_buildWaterPlane` ist voxel-only: Regex auf das Aufruf-Pattern
+            // `this._terrainHeightAtWorld(`, damit ein Kommentar mit dem Namen nicht falsch-rot wird.
             waterPlaneVoxelOnly:
                 typeof r._buildWaterPlane === "function" &&
                 !/this\._terrainHeightAtWorld\s*\(/.test(window.__codeOf(r._buildWaterPlane)),
@@ -20399,10 +19607,8 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelGrassAlive: typeof r._buildVoxelChunkGrass === "function" && r.state.voxelChunkGrass instanceof Map,
             voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
             voxelSurfaceYAlive: typeof r._voxelSurfaceY === "function",
-            // (11) Die geteilten Helper bleiben:
-            // `_vegetationSampleSpawn` (per-Sample-Spawn-Kern,
-            // V9.24-extrahiert) + `_attachVoxelFieldColors` (Voxel-
-            // Affinitäts-Färbung).
+            // (11) Die geteilten Helper bleiben: `_vegetationSampleSpawn` (per-Sample-Spawn-Kern) +
+            // `_attachVoxelFieldColors` (Voxel-Affinitäts-Färbung).
             sampleSpawnAlive: typeof r._vegetationSampleSpawn === "function",
             attachVoxelFieldColorsAlive: typeof r._attachVoxelFieldColors === "function",
         };
@@ -20444,11 +19650,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelV939Results.sampleSpawnAlive && voxelV939Results.attachVoxelFieldColorsAlive
         );
     }
-
-    // DETERMINISMUS-BOGEN P3 — das V9.31-Band (motionState-Leck-Fix in
-    // `_buildStaticTriMeshCollision`/`_disposeStaticCollision`) ist ENTFERNT: mit
-    // Ammo weg erzeugen die Builder gar keinen `btDefaultMotionState` mehr (No-op-
-    // Stubs), es gibt kein WASM-Auxiliar-Leck zu prüfen.
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Hydrosphäre — V9.43-a/b/c/c.2/d/e + V9.47 Erosion + V9.50-b Chunk-Wasser/Ufer-Schaum).
@@ -20457,17 +19658,11 @@ async function checkBandHydrosphere(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Voxel V9.43-c — der per-Chunk-Wasserfall-Spawner ist abgelöst ###
-    // V9.32/V9.43-a spawnten Wasserfälle per-Chunk-Zufall
-    // (`_buildVoxelChunkWaterfalls`: 6×6-Raster, 12 % Hash-Wahrschein-
-    // lichkeit an steilen Voxel-Klippen). V9.43-c löst das ab —
-    // Wasserfälle kommen aus dem Hydrosphären-Netz (ein Fluss kreuzt
-    // eine echte Voxel-Klippe, `_hydroExtractWaterfalls`). Der
-    // per-Chunk-Spawner + seine State-Map sind gelöscht; `_ensure-
-    // VoxelChunkAt`/`_disposeVoxelChunk` hooken sie nicht mehr. Das
-    // Material `_ensureWaterfallMaterial` + die vertikale Plane-
-    // Geometrie bleiben (von `_buildHydroWaterfall` reuset) — nur die
-    // Spawn-Quelle wanderte vom Zufall zum Drainage-Netz (§7/§10).
+    // ### Wasserfälle aus dem Hydrosphären-Netz ###
+    // Wasserfälle entstehen, wo ein Fluss eine echte Voxel-Klippe kreuzt (`_hydroExtractWaterfalls`);
+    // der per-Chunk-Zufalls-Spawner `_buildVoxelChunkWaterfalls` + seine State-Map sind gelöscht und
+    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. `_ensureWaterfallMaterial` +
+    // die vertikale Plane-Geometrie bleiben (`_buildHydroWaterfall` nutzt sie).
     const voxelV943cAblation = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -20504,13 +19699,10 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Voxel V9.43-a — Wasser-Ultiversum: das Wasserfall-Material ###
-    // V9.43-a vereinheitlichte die Wasser-Sprache: ein geteiltes
-    // ShaderMaterial mit Abwärts-Flow (`_ensureWaterfallMaterial`),
-    // das die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog) mit dem Meer
-    // teilt. V9.43-c reuset dieses Material für die netz-verankerten
-    // Wasserfall-Planes (`_buildHydroWaterfall`) — der per-Chunk-
-    // Zufalls-Spawner ist abgelöst (siehe V9.43-c-Ablösungs-Block).
+    // ### Das Wasserfall-Material ###
+    // Ein geteiltes ShaderMaterial mit Abwärts-Flow (`_ensureWaterfallMaterial`) teilt die
+    // Wasser-Substanz-Uniforms (Farbe/Sonne/Fog) mit dem Meer; `_buildHydroWaterfall` nutzt es für
+    // die netz-verankerten Planes.
     const voxelV943Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -20572,19 +19764,16 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Voxel V9.47 — Fluviale Erosion (Stream-Power-Inzision) ###
-    // `_computeErosion` lässt Terrain + Drainage ko-evolvieren: je
-    // Iteration Priority-Flood → Flow-Accumulation → Inzision
-    // `Δh=k·A^m·S^n` NUR in Kanälen (A ≥ channelMinArea). Grate bleiben
-    // unberührt, Täler schneiden ein. Delta fliesst in _terrainMacroSurfaceY.
+    // ### Fluviale Erosion (Stream-Power-Inzision) ###
+    // `_computeErosion`: je Iteration Priority-Flood → Flow-Accumulation → Inzision `Δh=k·A^m·S^n`
+    // NUR in Kanälen (A ≥ channelMinArea) — Grate bleiben, Täler schneiden ein. Delta fließt in
+    // _terrainMacroSurfaceY.
     const voxelV947Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // `_computeErosion` nullt state.erosion beim Start — der
-        // Worldgen-Stand wird gesichert + am Ende wiederhergestellt,
-        // damit die nachfolgenden Hydrosphäre-Tests das erodierte
-        // Gelände sehen.
+        // `_computeErosion` nullt state.erosion beim Start → Worldgen-Stand sichern + am Ende
+        // wiederherstellen, sonst sehen die folgenden Hydrosphäre-Tests kein erodiertes Gelände.
         const savedEro = r.state.erosion;
         out.methodsExist =
             typeof r._computeErosion === "function" &&
@@ -20600,11 +19789,8 @@ async function checkBandHydrosphere(ctx) {
             e.delta.length === e.dim * e.dim;
         if (!out.methodsExist || !out.wired) return out;
         const E = r.constructor.EROSION;
-        // (1) V14.2 — Inzision (Abtrag) + thermische Talus-Erosion (Deposition):
-        // das Delta ist BEIDSEITIG auf ±maxDelta geklemmt; es gibt Abtrag
-        // (negativ, Gipfel/Hänge) UND Deposition (positiv, Täler). Die alte
-        // „reine Inzision ≤ 0"-Invariante ist mit V14.2 überholt (mit-gewandert,
-        // V9.56-i): der Talus deponiert legitim im Tal (mass-conserving).
+        // (1) Inzision (Abtrag, Gipfel/Hänge) + thermische Talus-Erosion (Deposition, Täler): das Delta
+        // ist BEIDSEITIG auf ±maxDelta geklemmt — Deposition im Tal ist legitim (mass-conserving).
         let minD = 0;
         let maxD = 0;
         let sumD = 0;
@@ -20673,11 +19859,10 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.47: Erosions-Tests laufen", false, voxelV947Results ? voxelV947Results.error : "no result");
     }
 
-    // ### Voxel V9.43-b — Der Hydrosphären-Atlas ###
-    // Aus der Voxel-Surface ein deterministisches Drainage-Netz:
-    // Priority-Flood (Senken auffüllen → Seen) → D8-Flow-Direction →
-    // Flow-Accumulation → Netz-Extraktion (Flüsse/Seen/Wasserfälle).
-    // Reine Daten, headless-prüfbar — kein Rendering, kein Carven.
+    // ### Der Hydrosphären-Atlas ###
+    // Deterministisches Drainage-Netz aus der Voxel-Surface: Priority-Flood (Senken → Seen) →
+    // D8-Flow-Direction → Flow-Accumulation → Netz-Extraktion (Flüsse/Seen/Wasserfälle). Reine
+    // Daten, headless-prüfbar.
     const voxelV943bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -20712,10 +19897,8 @@ async function checkBandHydrosphere(ctx) {
             JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
             JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
-        // Jeder Fluss steigt STRIKT monoton ab — point.y ist die
-        // Füllhöhe, die entlang flowTo strikt monoton fällt (V9.46:
-        // auch durch eine See-Durchquerung — das Priority-Flood-ε
-        // hält filled selbst im Becken strikt fallend).
+        // Jeder Fluss fällt STRIKT monoton: point.y ist die Füllhöhe entlang flowTo — auch durch einen
+        // See (das Priority-Flood-ε hält filled im Becken strikt fallend).
         out.riversDescend = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
                 if (rv.points[k].y <= rv.points[k + 1].y) return false;
@@ -20748,12 +19931,9 @@ async function checkBandHydrosphere(ctx) {
         out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
         // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
         out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
-        // V9.49-a/e — das vereinte Wasser-Feld: je Region-Zelle der
-        // flache Wasser-Spiegel (`waterY`) + die Klassifikation
-        // (`waterKind` 0 Land · 1 Ozean · 2 See). Ozean trägt
-        // `waterLevel`, ein See `lake.level`, eine trockene Zelle
-        // den Meeresspiegel-Default. Die Wahrheit, aus der V9.49 EIN
-        // Höhenfeld-Mesh baut (`docs/hydrosphere.md` §12 + §13).
+        // Das vereinte Wasser-Feld je Region-Zelle: flacher Wasser-Spiegel (`waterY`) + Klassifikation
+        // (`waterKind` 0 Land · 1 Ozean · 2 See). Ozean trägt `waterLevel`, See `lake.level`, trockene
+        // Zelle den Meeresspiegel-Default — die Wahrheit, aus der EIN Höhenfeld-Mesh gebaut wird.
         const wf = h1.water;
         out.waterFieldShape =
             !!wf &&
@@ -20897,14 +20077,9 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Voxel V9.43-c.2 — das Wasser wird synergetisch ###
-    // Schöpfer-Browser-Befund: die Seen/Flüsse schweben ein paar Meter
-    // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
-    // erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel`
-    // bzw. den Ziel-See-Level), und der Spieler schwimmt in einem See
-    // wie im Meer. V18.180-FIX §6.4: die alte `_hydroWaterLevelAt`-Quelle
-    // ist gefallen (V9.69-Zwei-Skalen-Lücke); die Tests wandern auf
-    // `_waterLevelAt` (V9.56-i — der Test bleibt am echten Verhalten).
+    // ### Das Wasser wird synergetisch ###
+    // Fluss-Mündungen erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel` bzw. den
+    // Ziel-See-Level), und der Spieler schwimmt im See wie im Meer — Quelle ist `_waterLevelAt`.
     const voxelV943c2 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -20964,10 +20139,8 @@ async function checkBandHydrosphere(ctx) {
             out.seaMouthChecked = true;
             if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
         }
-        // Die Schwimm-Physik (in _loopPhysicsSync) speist den
-        // effektiven Wasserspiegel aus _waterLevelAt.
-        // P3 — die Schwimm-/Wasser-Physik wanderte aus `_loopPhysicsSync` (jetzt nur noch
-        // `_stepCharacter`-Dispatch) in den feld-nativen Controller `_stepCharacter`.
+        // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus _waterLevelAt; sie lebt im
+        // feld-nativen Controller `_stepCharacter` (`_loopPhysicsSync` dispatcht nur).
         out.physicsUsesEffWater =
             typeof r._stepCharacter === "function" && /_waterLevelAt/.test(window.__codeOf(r._stepCharacter));
         return out;
@@ -20998,12 +20171,10 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Voxel V9.43-d — die Flüsse carven echte Betten ###
-    // `_terrainDensityAt` fragt die Hydrosphäre (Bucket-Index) + senkt
-    // die Dichte im Fluss-Kanal + in See-Senken → der Chunk-Mesher
-    // produziert echte Rinnen mit Ufern + gemuldete Becken. Zirkel-frei
-    // über das `_hydroComputing`-Suppress-Flag. Ohne Hydrosphäre
-    // bit-identisch zu vor V9.43-d.
+    // ### Die Flüsse carven echte Betten ###
+    // `_terrainDensityAt` fragt die Hydrosphäre (Bucket-Index) und senkt die Dichte im Fluss-Kanal
+    // + in See-Senken → echte Rinnen mit Ufern + Becken. Zirkel-frei über das `_hydroComputing`-
+    // Suppress-Flag; ohne Hydrosphäre bit-identisch zum Feld ohne Carve.
     const voxelV943d = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -21021,10 +20192,8 @@ async function checkBandHydrosphere(ctx) {
             hydro.lakeNear instanceof Uint8Array &&
             typeof hydro.bucketSize === "number" &&
             typeof hydro.bucketsDim === "number";
-        // einen Fluss-Punkt mit echter Flow-Richtung finden —
-        // V9.46: NICHT in einem See (See-Durchquerungs-Segmente
-        // werden bewusst nicht gecarvt) und mit nicht-See-Nachbar,
-        // damit das Segment rp→next im Carve-Index liegt.
+        // Einen Fluss-Punkt mit echter Flow-Richtung finden — NICHT in einem See (See-Durchquerungen
+        // werden nicht gecarvt) und mit nicht-See-Nachbar, damit das Segment rp→next im Carve-Index liegt.
         let rp = null;
         for (let ri = 0; ri < hydro.rivers.length && !rp; ri++) {
             const pts = hydro.rivers[ri].points;
@@ -21041,11 +20210,8 @@ async function checkBandHydrosphere(ctx) {
             const HC = r.constructor.HYDROSPHERE;
             const rx = rp.x;
             const rz = rp.z;
-            // V9.45-b — lakeNear neutralisiert: alle Fluss-Sub-Tests
-            // messen den reinen Fluss-Carve + das Terrain, ohne dass
-            // ein zufällig benachbarter See-Blend die Mess-Punkte
-            // verfälscht (ein Fluss-Punkt kann im 1-Ring eines Sees
-            // liegen). Am Ende des Blocks wiederhergestellt.
+            // lakeNear neutralisieren: die Fluss-Sub-Tests messen den reinen Fluss-Carve, ohne dass ein
+            // benachbarter See-Blend die Mess-Punkte verfälscht; am Blockende wiederhergestellt.
             const savedLN = hydro.lakeNear;
             hydro.lakeNear = new Uint8Array(savedLN.length);
             // (3) der Fluss-Mittelpunkt wird gecarvt
@@ -21062,12 +20228,9 @@ async function checkBandHydrosphere(ctx) {
             const midOff = halfW + bankW * 0.45;
             const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
             out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
-            // (5) der Carve senkt die Voxel-Surface am Fluss. V14.7: der erste Fluss-
-            // Punkt kann eine flache Rinne sein (<1.2 m Carve = unter der `_voxelSurfaceY`-
-            // Scan-Granularität von 1.2 m → kein messbarer Drop). Den TIEFSTEN Carve-Punkt
-            // über alle Flüsse suchen (dort ist der Drop messbar). Default „kein tiefer
-            // Carve = unmessbar = bestanden" (V13.1/V14.3 — der Mechanismus ist via
-            // carveIsSubtractive ohnehin exakt bewiesen).
+            // (5) Der Carve senkt die Voxel-Surface am Fluss. Flache Rinnen (<1.2 m = unter der
+            // `_voxelSurfaceY`-Scan-Granularität) sind nicht messbar → den TIEFSTEN Carve-Punkt über alle
+            // Flüsse suchen; kein tiefer Carve = unmessbar = bestanden (carveIsSubtractive beweist exakt).
             let bestCarve = 0;
             let bcx = rx;
             let bcz = rz;
@@ -21109,11 +20272,9 @@ async function checkBandHydrosphere(ctx) {
             out.floorSolid = r._terrainDensityAt(rx, base - 56, rz) > 0;
             hydro.lakeNear = savedLN;
         }
-        // (6+7) V9.45-b — ein See-Becken wird zu einem flachen,
-        // wasserdichten Topf gesculptet: `_hydrosphereLakeAt` liefert
-        // ein bedY über dem Meeresspiegel (die Meeres-Plane bleibt
-        // verdeckt) + unter dem See-Spiegel; die geblendete Voxel-
-        // Surface sitzt auf bedY, knapp darunter ist fester Grund.
+        // (6+7) Ein See-Becken wird ein flacher, wasserdichter Topf: `_hydrosphereLakeAt` liefert bedY
+        // über dem Meeresspiegel (Meeres-Plane verdeckt) und unter dem See-Spiegel; die Voxel-Surface
+        // sitzt auf bedY, knapp darunter fester Grund.
         out.lakeSculpted = false;
         out.lakeBedWatertight = false;
         const wl2 = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
@@ -21143,10 +20304,9 @@ async function checkBandHydrosphere(ctx) {
         out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
         // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
         out.flagClean = !r._hydroComputing;
-        // (13) V13.1 — das Wasser-Cell-Feld fragt jetzt den ATLAS-STRIKTEN
-        // Wasser-Spiegel (`_buildVoxelChunkWaterCells` ruft `_atlasWaterLevelAt`
-        // pro xz-Spalte, statt des dilatierenden `_waterLevelAt` — V13.1-Doku-
-        // Sync, der Wasserschatten-an-Hängen-Fix).
+        // (13) Das Wasser-Cell-Feld fragt den ATLAS-STRIKTEN Spiegel (`_buildVoxelChunkWaterCells` ruft
+        // `_atlasWaterLevelAt` je xz-Spalte), nicht das dilatierende `_waterLevelAt` — sonst
+        // Wasserschatten an Hängen.
         out.unifiedQueriesRivers =
             typeof r._buildVoxelChunkWaterCells === "function" &&
             /_atlasWaterLevelAt/.test(window.__codeOf(r._buildVoxelChunkWaterCells));
@@ -21203,12 +20363,10 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### V9.43-e — das Wasser-Ultiversum bekommt Klang ###
-    // Zwei positions-modulierte White-Noise-Layer: Fluss-Rauschen
-    // (heller Bandpass) + Wasserfall-Donnern (dunkler Lowpass).
-    // `_tickHydrosphereAudio` setzt je Layer ein `target` aus der
-    // Spieler-Distanz — der deterministische Mess-Punkt (der GainNode
-    // rampt verzögert hinterher). Vision §1.4 multisensorisch.
+    // ### Wasser-Klang ###
+    // Zwei positions-modulierte White-Noise-Layer: Fluss-Rauschen (heller Bandpass) + Wasserfall-
+    // Donnern (dunkler Lowpass). `_tickHydrosphereAudio` setzt je Layer ein `target` aus der
+    // Spieler-Distanz — der deterministische Mess-Punkt (der GainNode rampt verzögert hinterher).
     const voxelV943e = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -21318,12 +20476,8 @@ async function checkBandHydrosphere(ctx) {
     }
 }
 
-// V9.65 (Welle A.2) — Generischer Blocker-Index + Damm als Anwendungsfall.
-// Verifiziert die Vision-Klärung „jede solide Geometrie blockt, nicht nur
-// Dämme": Damm-Bauplan existiert weiter, Spawn pflegt den Blocker-Index für
-// ALLE Architekturen mit soliden Parts (dichte ≥ 0.3), `_blockerTopAt`
-// liefert die richtige Höhe — und pro-Part: ein Baum-Stamm (Holz) blockt,
-// die Krone (Laub, dichte 0.1) NICHT.
+// Wasser-Cell-Feld: CELL_STATE (eingefroren), `_buildVoxelChunkWaterCells`, Klassifikation und
+// Determinismus an einem streaming-aktiven Chunk.
 async function checkBandWelleC1WaterCells(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -21339,11 +20493,8 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.cellStateFrozen = STATE && Object.isFrozen(STATE);
         // 2) Methode `_buildVoxelChunkWaterCells` existiert
         out.hasMethod = typeof r._buildVoxelChunkWaterCells === "function";
-        // V9.88 (Welle Perf-3.b — Distance-LOD-Doku-Sync): die LOD wandert
-        // pro Chunk; der Test muss die Entry-LOD lesen, NICHT den Default
-        // `_voxelChunkConfig()`-Snapshot. Sonst sieht der Test 71424 erwartet
-        // gegen 8928 tatsächlich.
-        // 3) Streaming-aktiver Chunk hat waterCells
+        // 3) Streaming-aktiver Chunk hat waterCells (die LOD wandert pro Chunk — Entry-LOD lesen, nicht
+        // den Default-`_voxelChunkConfig()`-Snapshot).
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             return { ...out, error: "no voxel chunks streamed" };
         }
@@ -21362,11 +20513,8 @@ async function checkBandWelleC1WaterCells(ctx) {
             return { ...out, foundFilledChunk: false };
         }
         out.testKey = testKey;
-        // 4) Konfig + Erwartungen
-        // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells leben jetzt IMMER auf
-        // LOD 0 (71424 Cells), unabhängig von entry.lod (Terrain-LOD kann
-        // weiterhin LOD 1 sein). Das ist die naht-freie-per-Konstruktion-
-        // Wasserheilung — terrain bleibt LOD-aware, water-cells uniform.
+        // 4) Konfig + Erwartungen: Wasser-Cells leben IMMER auf LOD 0 (71424 Cells), unabhängig von
+        // entry.lod — naht-frei per Konstruktion; nur das Terrain ist LOD-aware.
         const entryLod = Number.isFinite(testEntry.lod) ? testEntry.lod : 0;
         const cfg = r._voxelChunkConfig(0); // Wasser-Cells immer LOD 0
         const expectedLen = cfg.dim * cfg.dim * cfg.dimY;
@@ -21375,10 +20523,8 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.hasWaterCells = testEntry.waterCells instanceof Uint8Array;
         out.waterCellsLen = testEntry.waterCells.length;
         out.waterCellsLenCorrect = testEntry.waterCells.length === expectedLen;
-        // 5) Klassifikations-Stichprobe: scan 64 Cells im Chunk, vergleiche
-        // mit der V9.77-Cell-Klassifikations-Logik (globales Band + Density-
-        // Regel im Band). Above-band = AIR, below-band = WATER, in-band =
-        // Density+waterLevel-Check.
+        // 5) Klassifikations-Stichprobe: 64 Cells gegen die Cell-Klassifikations-Logik (globales Band +
+        // Density-Regel): über dem Band AIR, darunter WATER, im Band Density+waterLevel-Check.
         const commaIdx = testKey.indexOf(",");
         const cx = parseInt(testKey.slice(0, commaIdx), 10);
         const cz = parseInt(testKey.slice(commaIdx + 1), 10);
@@ -21403,13 +20549,10 @@ async function checkBandWelleC1WaterCells(ctx) {
             const cy = oy + (j + 0.5) * step;
             const cxw = ox + (i + 0.5) * step;
             const czw = oz + (k + 0.5) * step;
-            // V13.8 — die Klassifikation ist jetzt ein 3D-Flood-Fill (verbundenes
-            // Wasser), kein per-Spalten-`cy<=level` mehr. Konnektivität ist nicht
-            // billig nachrechenbar → der Test prüft die INVARIANTEN des Floods statt
-            // exakter Gleichheit: WATER ist NIE solide (Density ≤ 0) und NIE über
-            // dem Hydro-Band (cy ≤ band.top). Verletzung = echter Bug. (SOLID wird
-            // nicht geprüft: der Architektur-Stempel darf nicht-solides Terrain auf
-            // SOLID setzen.) 8-Corner-Avg-Density am Cell-Center wie der Build.
+            // Die Klassifikation ist ein 3D-Flood-Fill (verbundenes Wasser), nicht billig nachrechenbar →
+            // der Test prüft die Flood-INVARIANTEN: WATER ist NIE solide (Density ≤ 0) und NIE über dem
+            // Hydro-Band (cy ≤ band.top). SOLID wird nicht geprüft (der Architektur-Stempel darf
+            // nicht-solides Terrain SOLID setzen). 8-Corner-Avg-Density am Cell-Center wie der Build.
             let dSum = 0;
             for (let dj = 0; dj <= 1; dj++) {
                 for (let dk = 0; dk <= 1; dk++) {
@@ -21425,21 +20568,15 @@ async function checkBandWelleC1WaterCells(ctx) {
             else airCount++;
         }
         out.mismatches = mismatches;
-        // V13.8-Härtung: der Test prüft die Flood-Invariante (WATER nie solide / nie
-        // über dem Band) via Main-`_terrainDensityAt`; der Chunk wird evtl. vom Worker
-        // gebaut, dessen Density transzendente Präzisions-Drift gegen Main hat. An
-        // einer Borderline-Cell (d≈0) flippt die Klassifikation → 1-2 Drift-Mismatches
-        // sind implementation-defined Rauschen, KEIN Bug. Echter Bug flippt Dutzende.
+        // Geprüft via Main-`_terrainDensityAt`, gebaut evtl. vom Worker (transzendente Präzisions-Drift):
+        // an Borderline-Cells (d≈0) flippen 1–2 Cells als Rauschen; ein echter Bug flippt Dutzende.
         out.classificationCorrect = mismatches <= 2;
         out.sampleSolidCount = solidCount;
         out.sampleWaterCount = waterCount;
         out.sampleAirCount = airCount;
-        // 6) Determinismus: ein zweiter Build des SELBEN Chunks ergibt das
-        // gleiche Feld. V9.76: dirty-Queue vorher drainen — sonst hätte
-        // testEntry.waterCells einen alten Stempel-Stand (vor neuesten
-        // Architekturen aus vorherigen Test-Bändern), und der zweite Build
-        // sähe den aktuellen Stand → Stempel-Drift. Mit Drain sind beide
-        // Builds gegen denselben architectures-Snapshot.
+        // 6) Determinismus: ein zweiter Build des SELBEN Chunks ergibt das gleiche Feld. Die dirty-Queue
+        // vorher drainen, sonst trägt testEntry.waterCells einen alten Stempel-Stand und der zweite Build
+        // den aktuellen (Stempel-Drift).
         if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
         const refreshed = r.state.voxelChunks.get(testKey);
         const reference = refreshed && refreshed.waterCells ? refreshed.waterCells : testEntry.waterCells;
@@ -21509,14 +20646,10 @@ async function checkBandWelleC1WaterCells(ctx) {
     check("Welle C.1 V9.71: Cell-Summe stimmt mit Feld-Länge (kein unklassifizierter State)", res.hasMeaningfulField);
 }
 
-// V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — Iso-Surface-Mesher für Wasser
-// ist der EINZIGE Wasser-Render-Pfad (der alte Quad-Mesh ist weg). Verifiziert:
-// `state.voxelChunkWaterIso`-Map existiert; Build/Dispose-Methoden existieren;
-// `_rebuildVoxelChunk` ruft den Build (Source-Probe); nach Worldgen haben
-// gefüllte Chunks ein Iso-Mesh (oder null bei trockenen Chunks); die Iso-
-// Meshes sind sichtbar (default — kein Toggle mehr); Material ist das
-// geteilte `hydroSurfaceMaterial`; userData.hydroKind='chunk-water-iso';
-// Bergsee-Cells über waterLevel werden als WATER erfasst (V9.73-Cell-Init).
+// Iso-Surface-Mesher ist der EINZIGE Wasser-Render-Pfad. Beweist: `state.voxelChunkWaterIso`-Map
+// + Build/Dispose existieren, der Chunk-Finalize baut sie (Source-Probe), gefüllte Chunks tragen
+// ein sichtbares Iso-Mesh (trockene null) mit geteiltem `hydroSurfaceMaterial`, und Bergsee-Cells
+// über waterLevel werden als WATER erfasst.
 async function checkBandWelleC2WaterIsoSurface(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -21532,12 +20665,8 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // 2) Methoden existieren
         out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
-        // 3) Source-Probe: _rebuildVoxelChunk ruft die Build-Methode (mit-
-        // wandernde Doku-Probe).
-        // V12.0-perf.a — Iso-Wasser-Build wanderte in den geteilten Finalize-
-        // Helfer `_finalizeVoxelChunkBuild`. V12.0-perf.h — Finalize ENQUEUED
-        // den Wasser-Iso jetzt (deferred-Queue) statt ihn synchron zu bauen;
-        // der per-Frame-Tick / Drain baut ihn. Source-Probe wandert mit.
+        // 3) Source-Probe: `_finalizeVoxelChunkBuild` ENQUEUED den Wasser-Iso (deferred-Queue), der
+        // per-Frame-Tick / Drain baut ihn.
         out.rebuildCallsBuild = /this\._enqueueWaterIso\(/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
         out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(window.__codeOf(r._disposeVoxelChunk));
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
@@ -21578,12 +20707,9 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.allChunksTracked = chunksWithoutIso === 0;
         // V9.75 — Iso-Meshes sind default sichtbar (kein Toggle mehr).
         out.allIsoVisible = isoMeshCount > 0 && isoMeshVisibleCount === isoMeshCount;
-        // 7) V9.73-Heilung-Test: Cell-Init erfasst Bergsee-Wasser (über
-        // state.waterLevel). Wenn Lake-Cells im 16-m-Hydrosphäre-Atlas
-        // existieren, MUSS in einem Chunk in deren Footprint mindestens
-        // eine water-Cell über state.waterLevel im Cell-Feld stehen.
-        // (Vor V9.73 hatte die Cell-Init nur globalen waterLevel benutzt
-        // → Bergseen fehlten im Iso-Mesh.)
+        // 7) Cell-Init erfasst Bergsee-Wasser über state.waterLevel: existieren Lake-Cells im
+        // 16-m-Hydrosphäre-Atlas, MUSS in einem Chunk ihres Footprints mindestens eine water-Cell über
+        // state.waterLevel stehen (sonst fehlen Bergseen im Iso-Mesh).
         const wlGlobal = r.state.waterLevel;
         let bergseeCellsFound = false;
         let bergseeCheckable = false;
@@ -21628,17 +20754,10 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // 8) Material-Probe: Mesh nutzt das geteilte hydroSurfaceMaterial
         // (NICHT eigener Shader).
         if (sampleMeshKey) {
-            // N3/T4b (V17.32 — den Test DETERMINISTISCH machen): V18.25 (U-W4 unten)
-            // prüft die STATISCHE Wasser-Form (flach auf L, kein Bank-Klettern). T4b
-            // (V18.84) erlaubt dynamisches caDelta — Wasser fliesst nach einem Carve
-            // bis +4 m über L (surfY = L + caDelta, _caWaterTopDelta). Ein früheres
-            // Carve-Band hinterlässt caDelta in waterLevelCells; der order-abhängige
-            // sampleMesh (erster Wasser-Chunk in Map-Reihenfolge) griff es, nachdem
-            // der N3-LOD-Reorder die Map-Reihenfolge verschob. GEMESSEN (scripts/
-            // diag-n3-water-abovel): sauber Δ=0, NACH einem Carve Δ=3.6 m → der LOD-
-            // Reorder baut KEINEN Vertex über L, es ist die T4b-Inkompatibilität des
-            // alten Wächters. Fürs STATISCHE Kriterium das CA leeren + die sampleMesh
-            // frisch bauen (caDelta=0) — testet die V18.25-Intent, nicht den Live-Fluss.
+            // Deterministisch die STATISCHE Wasser-Form prüfen (flach auf L, kein Bank-Klettern): nach einem
+            // Carve darf Wasser dynamisch bis +4 m über L fließen (surfY = L + caDelta, _caWaterTopDelta),
+            // und ein früheres Band hinterlässt caDelta in waterLevelCells. Darum das CA leeren + die
+            // sampleMesh frisch bauen (caDelta=0) — geprüft wird die ruhende Form, nicht der Live-Fluss.
             if (r.state.waterLevelCells && r.state.waterLevelCells.size > 0) {
                 r.state.waterLevelCells.clear();
                 const _sc = sampleMeshKey.split(",");
@@ -21653,19 +20772,14 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 sampleMesh.userData &&
                 (sampleMesh.userData.hydroKind === "chunk-water-cellsheet" ||
                     sampleMesh.userData.hydroKind === "chunk-water-iso");
-            // V18.1 W1 (Wasser-finale-Form) — Wasser ist eine FLÄCHE, kein Volumen:
-            // Material BackSide (von oben über die Rückseite sichtbar, von unten
-            // front-gecullt) + die Iso trägt KEINE Unterseiten-Dreiecke mehr
-            // (ny>0.2 am Build verworfen). Tötet „Wasser auf der falschen Seite
-            // des Bodens" an der Geometrie-Wurzel. Über ALLE Iso-Meshes gezählt.
+            // Wasser ist eine FLÄCHE, kein Volumen: Material BackSide (von oben sichtbar, von unten
+            // front-gecullt) + keine Unterseiten-Dreiecke (ny>0.2 am Build verworfen) — sonst „Wasser auf
+            // der falschen Seite des Bodens“. Über ALLE Iso-Meshes gezählt.
             const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
-            // V18.120-Konfounder geheilt: der B5-Tauch-Pass macht das GETEILTE
-            // Material DoubleSide, solange der Spieler UNTER Wasser steht
-            // (playerEyesUnderwater) — das ist der korrekte Tauch-Zustand, NICHT
-            // der Oberflächen-Vertrag. Diesen Test deterministisch auf den
-            // OBERFLÄCHEN-Zustand prüfen (Intent: die ruhende Fläche ist BackSide),
-            // zustands-neutral mit Restore — sonst kippt er je nach Spieler-
-            // Position am Warmup-Ende (die KONFUNDIERTE-Test-Lehre).
+            // Der Tauch-Pass macht das GETEILTE Material DoubleSide, solange playerEyesUnderwater — korrekt,
+            // aber nicht der Oberflächen-Vertrag. Darum deterministisch den OBERFLÄCHEN-Zustand prüfen
+            // (ruhende Fläche = BackSide), zustands-neutral mit Restore — sonst kippt es mit der
+            // Spieler-Position.
             out.waterMatBackSide = (() => {
                 if (!r.state.hydroSurfaceMaterial) return false;
                 const savedDive = r.state.playerEyesUnderwater;
@@ -21711,17 +20825,14 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             }
             out.waterUndersideTris = undersideTris;
             out.waterTopsTris = topsTris;
-            // V18.6 U-W4 — DIE FINALE FORM: die Fläche IST das Feld L. Jeder
-            // Vertex sitzt EXAKT auf `_atlasWaterLevelAt(x,z,-Inf)` (so wird er
-            // gebaut) → keine ±1-m-Zell-Granularität mehr (Seezentrum-Fix). Nur
-            // im surface-Modus messbar (der iso-Modus baut die alte Zell-Iso).
+            // Die Fläche IST das Feld L: jeder Vertex sitzt EXAKT auf `_atlasWaterLevelAt(x,z,-Inf)` (keine
+            // ±1-m-Zell-Granularität). Nur im surface-Modus messbar (der iso-Modus baut die Zell-Iso).
             if (sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-cellsheet") {
                 const sp = sampleMesh.geometry.attributes.position;
                 const ad = sampleMesh.geometry.attributes.aDepth;
-                // V18.25 — der Wasser-KÖRPER (aDepth ≥ 1 Zelle = 1.8 m echtes Wasser) sitzt
-                // FLACH auf L; die Über-Deckung (aDepth→0, Rim/Ribbon jenseits des Flood-Körpers)
-                // NEIGT sich auf das Terrain UNTER L (der Boden-Auslauf, V18.25) → darf < L sein,
-                // aber NIE über L (`min(L,…)`-Garantie, kein Bank-Klettern/See-Regression).
+                // Der Wasser-KÖRPER (aDepth ≥ 1 Zelle = 1.8 m) sitzt FLACH auf L; die Über-Deckung (aDepth→0,
+                // Rim/Ribbon) neigt sich auf das Terrain und darf < L sein, aber NIE über L
+                // (`min(L,…)`-Garantie, kein Bank-Klettern).
                 let mx = 0; // |Y−L| über das echte Wasser → muss ~0 (flach auf L)
                 let mxAbove = 0; // max(Y−L) über ALLE Vertices → muss ~0 (nie über L)
                 for (let v = 0; v < sp.count; v++) {
@@ -21729,10 +20840,8 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                     const vz = sp.getZ(v);
                     const L = r._atlasWaterLevelAt(vx, vz, -Infinity);
                     if (!isFinite(L)) continue;
-                    // V18.92 — FLACH messen (das Zell-Sheet GLÄTTET über die Dächer:
-                    // an Fluss-GEFÄLLEN weicht es legitim von der lokalen L ab — die
-                    // Oberflächenspannung; der Wächter-Intent ist KLETTERN auf
-                    // flachen Körpern, nicht das Gefälle).
+                    // FLACH messen: an Fluss-GEFÄLLEN weicht das glättende Zell-Sheet legitim von der lokalen L ab
+                    // (Oberflächenspannung); der Wächter prüft Klettern auf flachen Körpern, nicht das Gefälle.
                     const l1 = r._atlasWaterLevelAt(vx + 2.7, vz, -Infinity);
                     const l2 = r._atlasWaterLevelAt(vx - 2.7, vz, -Infinity);
                     const l3 = r._atlasWaterLevelAt(vx, vz + 2.7, -Infinity);
@@ -21840,15 +20949,11 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
     }
 }
 
-// V9.74 (Welle C.3) — Cellular-Reaktion nach Spieler-Edit. Verifiziert dass
-// (1) Architektur-AABBs `botY` als ergänzte Y-Grenze tragen (Cell-Stempel-
-// Pfad braucht beide Y-Grenzen), (2) `_stampArchitectureSolidCellsInto`
-// existiert und vom Cell-Build aufgerufen wird, (3) ein Damm-Spawn in einem
-// streaming-aktiven Chunk → Cells im Damm-Footprint werden SOLID nach
-// Chunk-Rebuild, (4) Damm-Remove → Cells werden wieder air/water je nach
-// Density+waterLevel, (5) Voxel-Carve unter waterLevel → Cells werden water
-// nach Rebuild (das ist der „Cellular-Flow"-Effekt: das Wasser fließt in
-// das frische Loch via Cell-Klassifikation, kein BFS nötig).
+// Cellular-Reaktion nach Spieler-Edit: (1) Architektur-AABBs tragen `botY` (der Cell-Stempel
+// braucht beide Y-Grenzen), (2) `_stampArchitectureSolidCellsInto` existiert + wird vom
+// Cell-Build gerufen, (3) Damm-Spawn → Footprint-Cells nach Rebuild SOLID, (4) Damm-Remove →
+// wieder air/water je Density+waterLevel, (5) Voxel-Carve unter waterLevel → Cells nach Rebuild
+// water (das Wasser fließt per Cell-Klassifikation ins Loch, kein BFS).
 async function checkBandWelleC3CellularReaction(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -21856,13 +20961,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const STATE = r.constructor.CELL_STATE;
-        // V18.224 — TEST-ISOLATION (V9.54-Klasse): dieser Band misst den
-        // Damm-STEMPEL-Revert (spawn dam → SOLID → remove → exakter Revert).
-        // Der V18.224-Scatter promoviert/streut Bäume im Spieler-Ring; landet
-        // ein gewachsener Baum im Damm-Footprint zwischen Pre-Damm-Snapshot und
-        // Post-Remove-Check, stempelt SEIN Holz die Wasser-Cells → diff (GEMESSEN
-        // 34, deterministisch). Der Scatter ist hier ein unbeteiligtes System →
-        // für die Messung ruhig stellen (wie die V18.217-Migration-Test-Isolation).
+        // Test-Isolation: das Band misst den Damm-STEMPEL-Revert (spawn → SOLID → remove → exakter
+        // Revert). Der Scatter streut Bäume in den Spieler-Ring; landet einer im Damm-Footprint, stempelt
+        // sein Holz die Wasser-Cells → Schein-Diff. Der Scatter ist unbeteiligt → gpuScatter ruhigstellen.
         const _savedScatter = r.state.atmosphere ? r.state.atmosphere.gpuScatter : undefined;
         if (r.state.atmosphere) r.state.atmosphere.gpuScatter = false;
         // 1) Stempel-Methode existiert
@@ -21870,14 +20971,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.cellBuildCallsStamp = /this\._stampArchitectureSolidCellsInto\(/.test(
             window.__codeOf(r._buildVoxelChunkWaterCells)
         );
-        // 2) AABB hat botY (V9.74-Erweiterung)
-        // V9.88 (Welle Perf-3.b — Distance-LOD-Doku-Sync): jede Cell-Index-
-        // Berechnung MUSS die LOD des betreffenden Chunks lesen, sonst greift
-        // dim=24/step=1.8 (LOD 0) auf einem LOD-1-Chunk (dim=12/step=3.6) →
-        // out-of-bounds-Index. Helper für „config für diesen Chunk".
-        // V9.93 — Wasser-Cells leben jetzt IMMER auf LOD 0 (naht-frei). Der
-        // cfgFor-Helper liest entry.lod nur für Terrain-Berechnungen; für
-        // Cell-Indizierung in waterCells nutze immer cfgFor0 (LOD 0).
+        // Jede Cell-Index-Berechnung liest die LOD des Chunks, sonst greift dim=24/step=1.8 (LOD 0) auf
+        // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. cfgFor(entry) gilt fürs Terrain; waterCells
+        // leben immer auf LOD 0 → cfgWater.
         const cfgFor = (chunkEntry) => {
             const lod = chunkEntry && Number.isFinite(chunkEntry.lod) ? chunkEntry.lod : 0;
             return r._voxelChunkConfig(lod);
@@ -21886,22 +20982,15 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // span ist LOD-invariant (43.2 m), darf aus dem Default gelesen werden.
         const span = r._voxelChunkConfig().span;
         const base = r.state.terrainBaseHeight || 0;
-        // Test-Architektur: Damm an einer freien Position spawnen
-        // V14.3 — die Welt ist vielfältig (Gebirgs- + Flach-Regionen). Einen
-        // FLACHEN Trocken-Spot suchen: die Voxel-Oberfläche nah an der Makro-
-        // Surface (vy < m+3) → keine hohen ranges-Cusps, die die Cell über
-        // macroY Worldgen-solid machen würden (sonst bräche der removeRestores-
-        // Check fälschlich). Ein fester Spot (alt: 2,2) könnte jetzt im Gebirge
-        // liegen → V9.56-i Test-Mitwanderung an die vielfältige V14.3-Welt.
+        // Test-Architektur: Damm auf einem FLACHEN Trocken-Spot (Voxel-Surface nah an der Makro-Surface,
+        // vy < m+3) — hohe ranges-Cusps machten die Cell über macroY Worldgen-solid und der
+        // removeRestores-Check bräche fälschlich; ein fester Spot läge evtl. im Gebirge.
         const wlDam = r.state.waterLevel;
         let testCx = 2;
         let testCz = 2;
         let macroY = r._terrainMacroSurfaceY(testCx * span + span / 2, testCz * span + span / 2, false);
-        // V14.8 — der Damm-Stempel-Test braucht einen Chunk MIT Wasser-Cells (sonst
-        // gibt es nichts zu stempeln). Such einen FLACHEN Ufer-Spot, dessen Chunk
-        // Wasser trägt; fällt zurück auf irgendeinen flachen Trocken-Spot (dann ist
-        // der Stempel-Test unmessbar = bestanden, V13.1/V14.3). Die V14.7/.8-Welt ist
-        // höher/trockener → ein fester Spot trägt evtl. kein Wasser mehr (V9.56-i).
+        // Der Damm-Stempel braucht einen Chunk MIT Wasser-Cells: einen flachen Ufer-Spot mit Wasser
+        // suchen, sonst Rückfall auf einen flachen Trocken-Spot (dann unmessbar = bestanden).
         let damSpotHasWater = false;
         let foundFlat = false;
         for (let scx = -4; scx <= 4 && !damSpotHasWater; scx++) {
@@ -21917,11 +21006,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
                         macroY = m;
                         foundFlat = true;
                     }
-                    // V14.9 — der Spot muss Wasser tragen UND schon gestreamt sein
-                    // (in voxelChunks), sonst kann der Damm-Stempel-Chunk gar nicht
-                    // gebaut/gelesen werden → sonst „unmessbar = bestanden". Die
-                    // wasserreiche V14.9-Welt findet sonst einen Wasser-Spot ausserhalb
-                    // des Streaming-Rings (Chunk nicht in voxelChunks).
+                    // Der Spot muss Wasser tragen UND schon gestreamt sein (in voxelChunks), sonst kann der
+                    // Stempel-Chunk nicht gebaut/gelesen werden → unmessbar.
                     if (
                         r._voxelChunkHasAnyWater(scx, scz) &&
                         r.state.voxelChunks &&
@@ -21939,23 +21025,14 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.damSpotHasWater = damSpotHasWater;
         const damPos = { x: testCx * span + span / 2, y: 10, z: testCz * span + span / 2 };
         damPos.y = Math.max(macroY + 2, r.state.waterLevel + 4);
-        // V17.118 (E3-Migration): die Pre-Dam-waterCells kopieren — der ROBUSTE
-        // Revert-Beweis. Ein Einzel-Zell-Check ist roughness-anfällig (die 3D-
-        // Roughness ±12 m kann die Damm-Höhe übersteigen → terrain-SOLID ist vom
-        // Stempel ununterscheidbar; mit dem engagierten Worker findet der async-
-        // Warmup reproduzierbar solche Spots → C.3 failte konsistent). Der Voll-
-        // Array-Vergleich (remove MUSS die Cells exakt zum Pre-Dam-Zustand
-        // restaurieren) ist terrain-unabhängig + die echte V9.74-Garantie.
+        // Die Pre-Dam-waterCells vollständig kopieren: ein Einzel-Zell-Check ist roughness-anfällig (die
+        // 3D-Roughness ±12 m kann die Damm-Höhe übersteigen → terrain-SOLID ist vom Stempel nicht
+        // unterscheidbar). Der Voll-Array-Vergleich (remove restauriert EXAKT) ist terrain-unabhängig.
         const preDamChunkKey = `${testCx},${testCz}`;
-        // V18.224 — die Pre-Dam-Baseline aus einem FRISCH GEDRAINTEN Chunk lesen:
-        // ein im Warmup promovierter Scatter-Baum (V18.224) kann in
-        // state.architectures liegen, ohne dass sein Holz-Stempel schon in den
-        // waterCells dieses Chunks steckt (der Chunk wurde seit der Promotion
-        // nicht neu gebaut). Der Test-Force-Drain unten würde ihn dann erst NACH
-        // dem Snapshot stempeln → ein „Geister-diff", der nichts mit dem Damm zu
-        // tun hat. Heilung: denselben 3×3-Force-Drain VOR der Baseline fahren →
-        // Pre-Dam + After-Remove sehen denselben Architektur-Satz (nur der Damm
-        // unterscheidet sie). Zusammen mit der gpuScatter=false-Isolation oben.
+        // Pre-Dam-Baseline aus einem FRISCH GEDRAINTEN Chunk: ein promovierter Scatter-Baum kann in
+        // state.architectures liegen, ohne dass sein Holz-Stempel schon in den waterCells steckt — der
+        // Force-Drain unten stempelte ihn erst NACH dem Snapshot (Geister-Diff). Derselbe 3×3-Force-Drain
+        // VOR der Baseline → beide Seiten sehen denselben Architektur-Satz, nur der Damm unterscheidet.
         if (!r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks = new Set();
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) r.state.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
@@ -21996,14 +21073,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // 4) Damm-Remove → Drain → Cells gehen zurück
         if (damEntry) {
             r.removeArchitecture(damEntry);
-            // V17.0-Flake-Heilung + V17.x-Determinismus: `removeArchitecture`
-            // markiert mit skirt=0 nur den Footprint-Chunk dirty, und der
-            // Welt-Zustand beim Band-Eintritt variiert je Lauf (der Warmup-
-            // Worker settlet timing-abhängig — render-frei fällt der Render-
-            // Puffer weg, der das früher kaschierte). Heilung: den GELESENEN
-            // Chunk (`damChunkKey`) + sein 3×3-Umfeld EXPLIZIT dirty markieren
-            // und drainen, bis das Set leer ist → der Stempel-Cell wird
-            // garantiert neu klassifiziert, deterministisch + render-unabhängig.
+            // `removeArchitecture` (skirt=0) markiert nur den Footprint-Chunk dirty, und der Welt-Zustand
+            // beim Band-Eintritt variiert je Lauf → den GELESENEN Chunk (`damChunkKey`) + 3×3-Umfeld EXPLIZIT
+            // dirty markieren und drainen, bis das Set leer ist: die Stempel-Cell wird garantiert neu
+            // klassifiziert.
             if (!r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks = new Set();
             for (let dz = -1; dz <= 1; dz++) {
                 for (let dx = -1; dx <= 1; dx++) {
@@ -22018,11 +21091,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 afterRemoveEntry.waterCells &&
                 afterRemoveEntry.waterCells.length === preDamCells.length
             ) {
-                // V17.118 (E3-Migration): VOLL-ARRAY-Vergleich — nach removeArchitecture
-                // + Drain MÜSSEN die waterCells EXAKT zum Pre-Dam-Zustand zurückkehren
-                // (der Stempel vollständig revertiert). Terrain-unabhängig + die echte
-                // V9.74-Absicht. `damCellIsSolid` oben beweist, dass der Stempel WIRKLICH
-                // etwas änderte (sonst wäre der Revert-Test vakant).
+                // VOLL-ARRAY-Vergleich: nach removeArchitecture + Drain MÜSSEN die waterCells EXAKT zum
+                // Pre-Dam-Zustand zurückkehren. `damCellIsSolid` oben beweist, dass der Stempel wirklich etwas
+                // änderte (sonst wäre der Revert-Test vakant).
                 const a = afterRemoveEntry.waterCells;
                 let diff = 0;
                 for (let q = 0; q < preDamCells.length; q++) if (a[q] !== preDamCells[q]) diff++;
@@ -22043,16 +21114,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const x = cx * span + span / 2;
                 const z = cz * span + span / 2;
                 const m = r._terrainMacroSurfaceY(x, z, false);
-                // V13.7-Härtung: WIRKLICH isolierter Spot — keine Atlas-Wasser-Quelle
-                // im 3×3. Probe mit terrainTop=-Infinity: `_atlasWaterLevelAt` gibt nur
-                // dann -Infinity zurück, wenn KEIN Ozean/See/Fluss in Reichweite ist
-                // (sonst füllt V13.7 die unter-Spiegel-Mulde reaktiv = verbundenes
-                // Wasser, kein Phantom). So bleibt dieser Test der ehrliche Phantom-
-                // Schutz: ein Carve OHNE Quelle bleibt trocken (jede Tiefe).
-                // V14.3: flach (Voxel nah Makro) + STRENG isoliert (kein Atlas-Wasser
-                // im ganzen Carve-Radius, nicht nur am Zentrum) — sonst öffnet der
-                // r=12-Carve eine Verbindung zu echtem Wasser (kein Phantom, aber der
-                // Test misst dann verbundenes Wasser statt der Phantom-Freiheit).
+                // Wirklich isolierter, flacher Spot (Voxel nah Makro): `_atlasWaterLevelAt(…, -Infinity)` ist nur
+                // ohne Ozean/See/Fluss in Reichweite -Infinity — geprüft über den Carve-Radius, nicht nur am
+                // Zentrum. Sonst öffnet der r=12-Carve echtes Wasser und der Test misst verbundenes Wasser.
                 const vyc = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : m;
                 const isolated =
                     !Number.isFinite(r._atlasWaterLevelAt(x, z, -Infinity)) &&
@@ -22083,10 +21147,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
             const carveCz = Math.floor(carveZ / span);
             const carveChunkKey = `${carveCx},${carveCz}`;
             const carveChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(carveChunkKey);
-            // V13.1: Default „trocken" — kein Wasser-Cell-Feld (Chunk ungestreamt
-            // ODER atlas-strict ohne Wasser-Körper) = keine Phantom-Pfütze. Nur
-            // wenn der gestreamte Chunk eine WATER-Cell an der Carve-Stelle trägt,
-            // wäre das die alte Phantom-Füllung (→ false, Regression-Wächter).
+            // Default „trocken“: ohne Wasser-Cell-Feld (Chunk ungestreamt oder ohne Wasser-Körper) keine
+            // Phantom-Pfütze. Nur eine WATER-Cell an der Carve-Stelle wäre Phantom-Füllung (→ false).
             out.carveStaysDry = true;
             out.carveCellUnderWL = carveChunkEntry && carveChunkEntry.waterCells ? "measure" : "no-watercells";
             if (carveChunkEntry && carveChunkEntry.waterCells) {
@@ -22114,13 +21176,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 r.state.worldMeta.voxelEdits.pop();
             }
         }
-        // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Kohärenz): der Edit-FOOTPRINT heilt
-        // SYNCHRON im Edit-Call (kein async-Fenster), die SKIRT-Nachbarn bleiben async
-        // (footprint-only sync → kein Edit-Spike). GEMESSEN (`diag-chunk-seam`): vor T1
-        // heilte der Grenz-Nachbar erst @Frame 3 → ~2 Frames sichtbare Abbau-Naht.
-        // Probe: ein gestreamter Chunk, carve in seiner Mitte (r=3 → Footprint = nur er),
-        // dann MUSS sein Mesh neu sein OHNE `_drainDirtyVoxelChunks`; das Dirty-Set trägt
-        // danach noch die (ungesyncten) Skirt-Nachbarn.
+        // T1 zeitliche Kohärenz: der Edit-FOOTPRINT heilt SYNCHRON im Edit-Call, die SKIRT-Nachbarn
+        // bleiben async (kein Edit-Spike). Probe: carve r=3 mitten in einem gestreamten Chunk → sein Mesh
+        // ist neu OHNE `_drainDirtyVoxelChunks`; das Dirty-Set trägt danach noch die Skirt-Nachbarn.
         out.t1FootprintSync = "no-streamed-chunk";
         out.t1SkirtStaysAsync = false;
         {
@@ -22173,12 +21231,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
             typeof r._syncRebuildEditFootprint === "function" &&
             /_frameOverBudget/.test(window.__codeOf(r._syncRebuildEditFootprint));
 
-        // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die feinen Boundary-Vertices an
-        // einer LOD0↔LOD1-Grenze auf die GROBE Nachbar-Oberfläche ziehen → die T-junction
-        // schliesst (render-only, `geomorph`-Uniform; GEMESSEN diag-chunk-seam D: Grenz-Zeile
-        // 98 % auf der groben Fläche). Hier: kein Material-Fehler (positionNode kompiliert), die
-        // Morph-Attribute existieren auf JEDER Terrain-Geometrie (WebGPU-strikt), der Finalize
-        // ruft den Geomorph, und er FEUERT (≥1 Chunk hasMorph an einer Cross-LOD-Grenze).
+        // T2 Cross-LOD-Geomorph: feine Boundary-Vertices an LOD0↔LOD1-Grenzen auf die GROBE Nachbar-Fläche
+        // ziehen → die T-junction schließt (render-only, `geomorph`-Uniform). Probe: Material kompiliert,
+        // Morph-Attribute auf JEDER Terrain-Geometrie (WebGPU-strikt), Finalize ruft ihn, ≥1 hasMorph.
         out.t2NoMorphError = !window.__terrainMorphError;
         out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
         out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
@@ -22196,20 +21251,16 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.t2HasMorphAttrs = t2HasAttrs;
         out.t2ChunksWithMorph = t2ChunksWithMorph;
 
-        // T3 (Terrain-Kohärenz-Plan §4 — Manifold Dual Contouring): der Mesher setzt den Vertex
-        // ans QEF-Minimum (scharf) statt ins Mittel (blobig); der Laplacian ist feature-bewusst
-        // (verschont scharfe Vertices). Determinismus (Worker bit-identisch) deckt V9.42-b ab
-        // (288 geteilte Naht-Vertices = Worker- + Main-QEF koinzident). Hier: Source-Probes.
+        // T3 Manifold Dual Contouring: Vertex ans QEF-Minimum (scharf) statt ins Mittel; der Laplacian
+        // verschont scharfe Vertices. Naht-Determinismus deckt die Skirt-Naht-Probe; hier Source-Probes.
         const exSrc = window.__codeOf(r._voxelExtractSurfaceVertices);
         out.t3QefMesher = /a00 \+= gx \* gx/.test(exSrc) && /Cramer|m00 \* b0/.test(exSrc);
         out.t3ExtractReturnsSharp = /vertCells, cellVert, sharp/.test(exSrc);
         out.t3FeatureAwareLaplacian = /sharp && sharp\[v\]/.test(window.__codeOf(r._voxelLaplacianSmoothPositions));
         out.t3DcConstants = Number.isFinite(r.constructor.DC_LAMBDA) && Number.isFinite(r.constructor.DC_SHARP_MOVE2);
 
-        // T4 (terrain-t4-wasser-ca-plan §3 — der Wasser-Automat-KERN): `_tickWaterCA` ist die
-        // reine Fluss-Funktion (Level pro Zelle). Die zwei fundamentalen Garantien eines Fluid-
-        // Automaten, behavioral + deterministisch: ERHALTUNG (Σ Wasser konstant) + FLUSS (ein Blob
-        // fällt). Voller Beweis (Gravität + Niveau-suchen + Erhaltung): `diag-water-flow-ca.cjs`.
+        // T4 Wasser-Automat: `_tickWaterCA` ist die reine Fluss-Funktion (Level pro Zelle). Behavioral:
+        // ERHALTUNG (Σ Wasser konstant) + FLUSS (ein Blob fällt). Voller Beweis: `diag-water-flow-ca.cjs`.
         out.t4HasTickCA = typeof r._tickWaterCA === "function";
         if (out.t4HasTickCA) {
             const SOLID = r.constructor.CELL_STATE.SOLID;
@@ -22278,10 +21329,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `diff=${res.cellAfterRemoveAbove}`
         );
     }
-    // V13.1-Default: ein nicht gefundener isolierter Flach-Spot ist „unmessbar =
-    // bestanden" — die vielfältige V14.3-Welt hat nicht in jedem Streaming-Ring
-    // einen flachen, von jedem Atlas-Wasser isolierten Hochland-Spot. Der Phantom-
-    // Test (carveStaysDry) läuft nur, wenn ein passender Spot existiert.
+    // Kein isolierter Flach-Spot im Ring = „unmessbar = bestanden“ (nicht jeder Ring hat einen);
+    // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot.
     check(
         "Welle C.3 V9.74: Trocken-Spot für Carve-Test (gefunden ODER unmessbar)",
         true,
@@ -22290,16 +21339,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
             : "kein isolierter Flach-Spot im Ring — Test übersprungen"
     );
     if (res.carveSpotFound) {
-        // V13.7-Doku-Sync: verbundenes Wasser. V13.7 macht den Carve nahe einer
-        // echten Quelle REAKTIV (Ozean/See/Fluss in Reichweite + unter dessen
-        // Spiegel → die Mulde füllt sich = die Welle-A-Vision endlich realisiert).
-        // Der Phantom-Schutz bleibt aber die heilige Invariante: ein Carve OHNE
-        // Wasser-Quelle in Reichweite (der Spot oben ist via `_atlasWaterLevelAt(
-        // x,z,-Infinity)===-Infinity` garantiert quellenfrei) bleibt TROCKEN — jede
-        // Tiefe, kein Phantom. (Vor V13.1 gab `_waterLevelAt` den Ozean-Spiegel als
-        // flachen Default für JEDE Spalte → Phantom überall; V13.1 atlas-strict
-        // heilte das, V13.7 fügt das verbundene reaktive Füllen hinzu, ohne den
-        // Phantom-Default zurückzubringen.)
+        // Phantom-Schutz (heilige Invariante): ein Carve OHNE Wasser-Quelle in Reichweite bleibt TROCKEN,
+        // jede Tiefe; nur nahe einer echten Quelle füllt sich die Mulde reaktiv. Der Spot oben ist via
+        // `_atlasWaterLevelAt(x,z,-Infinity)===-Infinity` garantiert quellenfrei.
         check(
             "Welle V13.7: Carve OHNE Wasser-Quelle bleibt TROCKEN (kein Phantom; verbundenes Wasser füllt NUR mit Quelle)",
             res.carveStaysDry,
@@ -22375,12 +21417,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
     check("T4a-2 (Wasser-CA): ein Carve WECKT den Automaten (Wasser strömt nach)", res.t4CarveWakesCA);
 }
 
-// V9.88 (Welle Perf-3.b — Distance-LOD): empirischer Beweis dass ferne
-// Chunks mit reduzierter Auflösung gebaut werden. Profi-Pattern aus BotW/
-// Genshin: Chunks > 80 m vom Spieler bekommen step=3.6 m statt 1.8 m,
-// dim=12 statt 24, dimY=62 statt 124 → 8× weniger Cells pro Chunk. Span
-// (43.2 m) + vertikaler Range (223.2 m) bleiben konstant → Chunks
-// world-aligned über LOD-Grenze.
+// Distance-LOD: ferne Chunks (> 80 m) bauen mit step=3.6 m statt 1.8, dim=12 statt 24, dimY=62
+// statt 124 (8× weniger Cells). Span (43.2 m) + vertikaler Range (223.2 m) bleiben konstant
+// → Chunks world-aligned über die LOD-Grenze.
 async function checkBandWellePerf3bDistanceLod(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -22409,13 +21448,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
             out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 1 (N3: Grenze bei r=3)
             out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 1
         }
-        // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`
-        // V17.118 (E3-Migration): mit dem dormanten Worker baute der Warmup den
-        // vollen Ring SYNC (deterministisch → immer LOD-1-Chunks bei r≥2). Seit
-        // der Worker engagiert ist, ist das Streaming ASYNC → die LOD-Verteilung
-        // der gestreamten Chunks ist streaming-history-abhängig (Flake). Darum EINEN
-        // LOD-1-Chunk deterministisch bauen (Worker aus → sync, ein ferner frischer
-        // Chunk, lod=1 explizit) — der empirische `lod1Count≥1`-Beweis wird robust.
+        // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`. Async-Streaming macht die LOD-
+        // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
+        // sync, ferner frischer Chunk, lod=1 explizit).
         {
             const _savedW88 = r.state.voxelWorker;
             r.state.voxelWorker = null;
@@ -22486,12 +21521,8 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
     check("Welle Perf-3.b V9.88: ≥1 LOD-1-Chunk gestreamt (Fernbereich)", res.lod1Count >= 1);
     if (res.lod0CellsLen !== null && res.lod1CellsLen !== null) {
-        // V9.93 (Wasser-LOD-Naht-Heilung) — Wasser-Cells leben jetzt IMMER auf
-        // LOD 0 (71424), unabhängig von der Terrain-LOD des Chunks. Vorher
-        // (V9.88) testeten wir hier LOD1-Cells < LOD0-Cells — das ist seit
-        // V9.93 strukturell falsch. Neue Erwartung: BEIDE haben 71424
-        // (naht-frei per Konstruktion). Terrain-LOD bleibt LOD-aware (s.
-        // separater Terrain-Vertex-Count, das ist V9.88-Mechanik).
+        // Wasser-Cells leben IMMER auf LOD 0 (71424), unabhängig von der Terrain-LOD → beide LODs gleich
+        // lang (naht-frei per Konstruktion). Nur das Terrain ist LOD-aware (eigener Vertex-Check).
         check(
             "Welle Perf-3.b V9.88 / V9.93: waterCells gleich-lang (V9.93-Naht-Heilung) — beide LODs LOD-0-Cells",
             res.lod1CellsLen === res.lod0CellsLen,
@@ -22508,12 +21539,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     );
 }
 
-// V12.0-perf.c.1 (Architektur-Instancing-Foundation): beweist die pure
-// Mathematik des HISM-Layers, BEVOR der Culling-Pfad umgehängt wird (perf.c.2).
-// Kern-Invariante: die Per-Leaf-World-Matrix `entryWorldMatrix × leaf.localMatrix`
-// MUSS bit-gleich zum klassischen Group-Child-`matrixWorld` sein — sonst rendert
-// das Instancing die Welt verschoben. Plus: Gate-Korrektheit (water_wave nicht
-// instancbar) + Leaf-Material-Farbe gleich (Mirror-Drift-Wand).
+// Architektur-Instancing (HISM), reine Mathematik: die Per-Leaf-World-Matrix `entryWorldMatrix ×
+// leaf.localMatrix` MUSS bit-gleich zum klassischen Group-Child-`matrixWorld` sein, sonst rendert
+// das Instancing verschoben. Dazu: water_wave nicht instancbar; Leaf-Farbe gleich (Mirror-Drift).
 async function checkBandWellePerfCArchInstancing(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -22525,12 +21553,9 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         out.hasLeafMat = typeof r._archLeafMaterial === "function";
         if (!out.hasFlatten || !out.hasEntryMatrix) return out;
 
-        // Gate: ein gewachsener Baum (Grammatik) ist instancbar — der statische
-        // baum_kiefer-Bauplan ist V18.257 geschnitten, wir wachsen die Fixture.
-        // V18.259 — der gewachsene Baum ist _isMerged (Bark+Foliage zu 2 Leaves
-        // verschmolzen); für die PER-PART-Matrix-/Farb-Gleichheit unten brauchen wir
-        // die NICHT-gemergte Sicht (1 Leaf je Part, deckungsgleich zum klassischen
-        // _buildFromBlueprint-Render). Eine non-merged Klon-Fixture liefert das.
+        // Gate: ein gewachsener Baum (Grammatik) ist instancbar. Er ist _isMerged (Bark+Foliage = 2 Leaves);
+        // die Per-Part-Matrix-/Farb-Gleichheit braucht eine non-merged Klon-Fixture (1 Leaf je Part,
+        // deckungsgleich zum _buildFromBlueprint-Render).
         const __fkKeyMerged = r._growTreeBlueprintForSpawn("baum_kiefer", "flat-fixture") || "baum_kiefer";
         const __fkKey = "__flat_fixture_nm";
         r.state.blueprints[__fkKey] = { ...r.state.blueprints[__fkKeyMerged], _isMerged: false, _skeleton: null };
@@ -22581,11 +21606,9 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         out.maxColorDelta = maxColorDelta;
         if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(group);
 
-        // --- perf.c.2 Cutover: instancbarer Spawn geht in die Registry ---
-        // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist die GRAMMATIK-Instancing-
-        // Registry (die `baum_kiefer#0`-Gruppen-Form + Slot/Cull/Pick-Mechanik);
-        // foundry-ON platziert derselbe Spawn Studio-Instanzen (f:-Gruppen) →
-        // lokaler Hook (__withNoFoundry, V18.423-Form).
+        // --- Cutover: instancbarer Spawn geht in die Registry ---
+        // UNIT-RICHTER: Prüf-Gegenstand ist die GRAMMATIK-Instancing-Registry (`baum_kiefer#0`-Gruppe +
+        // Slot/Cull/Pick); foundry-ON setzt derselbe Spawn Studio-Instanzen (f:-Gruppen) → __withNoFoundry.
         if (r.state.playerMesh && typeof r.spawnArchitecture === "function") {
             window.__withNoFoundry(() => {
                 const pp = r.state.playerMesh.position;
@@ -22646,15 +21669,9 @@ async function checkBandWellePerfCArchInstancing(ctx) {
                     cam.position.set(tcx, pp.y + 1.2, tcz - 6);
                     cam.lookAt(tcx, pp.y + 1.0, tcz);
                     cam.updateMatrixWorld(true);
-                    // V18.386-HÄRTUNG (Last-Robustheit, die V18.273/.276-Disziplin): unter kumulativer
-                    // Last (Band ~130) fällt der Pick aus ZWEI Gründen, die BEIDE nichts mit der
-                    // getesteten Sache (ist ein instancierter Baum pickbar?) zu tun haben: (a) es gibt
-                    // zwischen Spawn + Pick keinen Render-Frame → die InstancedMesh-WELT-Matrizen sind
-                    // stale → der Raycaster verwirft sie; (b) ein akkumulierter NACHBAR liegt in der
-                    // 6-m-Sichtlinie → er wird zuerst getroffen. Die Mechanik ist in ISOLATION grün
-                    // (pick.entry === pe). Wir aktualisieren die Szene-Matrizen (gegen a) UND räumen
-                    // Blocker aus der Sichtlinie (gegen b) — legitimes Target-Isolieren, dann testet
-                    // der finale Pick GENAU, ob pe's Instanz raycast-bar ist (load-unabhängig).
+                    // Last-Robustheit: ohne Render-Frame zwischen Spawn und Pick sind die InstancedMesh-Welt-Matrizen
+                    // stale (Raycaster verwirft sie), und ein akkumulierter NACHBAR in der 6-m-Sichtlinie trifft zuerst.
+                    // Darum Szene-Matrizen aktualisieren + Blocker räumen → der finale Pick prüft genau pe's Instanz.
                     if (r.state.scene) r.state.scene.updateMatrixWorld(true);
                     for (let g = 0; g < 10; g++) {
                         const pk = r._pickArchitectureAtCrosshair();
@@ -22737,10 +21754,9 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-// V12.0-perf.d (Wurzel B — budgetierter Culling-Build): beweist, dass
-// `tickArchitectureCulling` höchstens `architectureBuildBudgetPerFrame` teure
-// Builds pro Frame macht, statt beim Eintritt in eine dichte Region alle
-// in-Range-cold-Einträge auf einmal zu bauen (der FPS-Sturm der perf.c.diag).
+// Budgetierter Culling-Build: `tickArchitectureCulling` baut höchstens
+// `architectureBuildBudgetPerFrame` teure Builds pro Frame, statt beim Eintritt in eine dichte
+// Region alle cold-Einträge auf einmal (FPS-Sturm).
 async function checkBandWellePerfDBudget(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -22770,10 +21786,8 @@ async function checkBandWellePerfDBudget(ctx) {
                 if (e) ids.push(e.id);
             }
             r.state.architectureCullingRadius = Math.max(origRadius, 300);
-            // V18.298 — tickArchitectureCulling baut 0 bei `_frameOverBudget` (der Nexus baut
-            // nur in der freien Zeit). Der Test prüft den BAU-Pfad (baut die Kaskade über
-            // Ticks?) → Kopfraum erzwingen, statt am Warmup-Leftover zu hängen (last-flaky:
-            // ein langsamer Warmup lässt frameMs > Budget → _frameOverBudget bleibt true).
+            // tickArchitectureCulling baut 0 bei `_frameOverBudget` (Bau nur in freier Zeit) → Kopfraum
+            // erzwingen, sonst hängt der Bau-Pfad-Test am Warmup-Leftover (langsamer Warmup = Flake).
             r.state._frameOverBudget = false;
             const idSet = new Set(ids);
             const renderedCount = () =>
@@ -22784,13 +21798,9 @@ async function checkBandWellePerfDBudget(ctx) {
             r.tickArchitectureCulling(performance.now());
             out.builtInOneTick = renderedCount() - renderedPre;
             out.respectsBudget = out.builtInOneTick <= budget;
-            // Alle 12 bauen → der Bau-PFAD trägt jede (sanftes Pop-In). ROBUST gegen die
-            // geteilte-Budget-Konkurrenz: das Cull-Budget ist GLOBAL — unter kumulativer Last
-            // konkurrieren Hunderte cold-Architekturen (Worldgen/Nexus) um die wenigen Build-
-            // Slots/Tick, sodass die 12 Test-Bäume in einer endlichen Tick-Schleife verhungern
-            // könnten (der gemessene Last-Flake „0/12"). Wir verifizieren den Bau-Pfad DIREKT
-            // (`_rebuildArchitectureMesh` pro noch-nicht-gerenderter Test-Architektur) — das ist
-            // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft, nur ohne die Fremd-Konkurrenz.
+            // Alle 12 bauen: das Cull-Budget ist GLOBAL, unter kumulativer Last verhungern die Test-Bäume an
+            // Hunderten cold-Architekturen. Darum den Bau-Pfad DIREKT prüfen — `_rebuildArchitectureMesh` ist
+            // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft.
             for (const e of r.state.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
                 r._rebuildArchitectureMesh(e);
             }
@@ -22828,13 +21838,9 @@ async function checkBandWellePerfDBudget(ctx) {
     );
 }
 
-// V18.263 (DER PERFORMANCE-REGELKREIS — vereinheitlicht aus V12.0-perf.e):
-// EIN PID-Regler (kein Parallel-System) misst die per-Subsystem-Last (perfSense)
-// und fährt ALLE Qualitäts-Stellgrößen (Architektur-Cull-Radius/Budget + Streaming-
-// Budget + Wasser-Iso-Budget) gewichtet nach der GEMESSENEN Last — das TEUERSTE
-// Subsystem gibt ZUERST nach (Synergie statt blindem Drosseln). Gravitation NIE.
-// Der alte fps-Bang-Bang ist im PID aufgegangen; `_nexusAdaptiveQuality(fps)`
-// bleibt nur als expliziter fps-Eingang in DENSELBEN Regler.
+// EIN PID-Regler misst die Last je Subsystem (perfSense) und fährt ALLE Stellgrößen (Arch-Cull,
+// Streaming-, Wasser-Iso-Budget) nach gemessener Last — das teuerste gibt zuerst nach, Gravitation
+// NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler.
 async function checkBandWellePerfENexusGovernor(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -22881,10 +21887,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.budgetFloor = st.architectureBuildBudgetPerFrame >= A.ARCH_QUALITY_BUDGET_MIN;
         out.gravityUntouchedLow = st.gravity === gBefore;
 
-        // (2) FPS-LUFT (klare Reserve, frameMs≈7 ≪ growMs) → relax zum MAXIMUM (alle Stell-
-        // größen). V18.281: mehr Ticks bis zur Sättigung — der Atem-Totband macht den Kopfraum-
-        // err kleiner (7−13 statt 7−17), der Integral-Term braucht länger bis loadScale exakt
-        // 1.0 clampt (das Gleichgewicht bei 140 fps IST 1.0, da frameMs < growMs immer → err<0).
+        // (2) FPS-LUFT (frameMs≈7 ≪ growMs) → relax zum MAXIMUM aller Stellgrößen. Viele Ticks: mit dem
+        // Atem-Totband braucht der Integral-Term lange, bis loadScale auf 1.0 clampt (Gleichgewicht, err<0).
         for (let i = 0; i < 240; i++) r._nexusAdaptiveQuality(140);
         out.relaxedRadius = st.architectureCullingRadius === A.ARCH_QUALITY_RADIUS_MAX;
         out.relaxedBudget = st.architectureBuildBudgetPerFrame === A.ARCH_QUALITY_BUDGET_MAX;
@@ -22933,14 +21937,9 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
         out.loopRenderTaps =
             /renderCalls/.test(window.__codeOf(r._loopRender)) && /info\.reset/.test(window.__codeOf(r._loopRender));
-        // V18.427 — DIE VERGIFTETE ZAHL: im r184-WebGPU-Info ist `render.calls` ein
-        // LEBENSZEIT-Zähler (reset() löscht ihn nicht) — der Tap MUSS den PRO-FRAME-
-        // Zähler `render.drawCalls` lesen (Schöpfer-HUD zeigte 38108 „dc" = Session-
-        // Render-Aufrufe, und der Regler drosselte gegen die wachsende Phantom-Last).
-        // W1 — die Probe war VAKUÖS-fähig (die V18.267-Klasse): der erklärende Tap-
-        // Kommentar zitiert `render.drawCalls` wörtlich → ein Revert auf `.calls`
-        // bliebe an toString grün. Jetzt __codeOf (kommentar-gestrippt) + drawCalls-
-        // FIRST (der Lebenszeit-Zähler darf nur als ??-Fallback dahinter stehen).
+        // `render.calls` ist im r184-WebGPU-Info ein LEBENSZEIT-Zähler (reset() löscht ihn nicht) — der Tap
+        // MUSS den Pro-Frame-Zähler `render.drawCalls` lesen, sonst drosselt der Regler gegen Phantom-Last.
+        // Probe auf __codeOf (kommentar-gestrippt), drawCalls ZUERST; `.calls` höchstens als ??-Fallback.
         {
             const _lrC = window.__codeOf(r._loopRender);
             const _ltIdx = _lrC.indexOf("render.calls"); // −1 = kein Lebenszeit-Read (auch ok)
@@ -22951,18 +21950,12 @@ async function checkBandWellePerfENexusGovernor(ctx) {
             /renderCalls/.test(window.__codeOf(r._perfSenseRender)) &&
             /phaseMax|spike/i.test(window.__codeOf(r._perfSenseRender));
 
-        // (7) V18.269 — die Augen FAHREN: bei reiner RENDER-Last (viele Draw-Calls, CPU-
-        // Phasen niedrig) drosselt der Regler die render-senkenden Hebel (Schatten-Intervall
-        // + Cull-Radius), NICHT das Streaming. Vorher wog er die Architektur-Domäne als billig
-        // (p.render=CPU≈0) → drosselte das Falsche, der Schatten-Pass lief ungebremst.
+        // (7) Bei reiner RENDER-Last (viele Draw-Calls, CPU-Phasen niedrig) drosselt der Regler die
+        // render-senkenden Hebel (Schatten-Intervall + Cull-Radius), NICHT das Streaming.
         out.actuateReadsRenderLoad = /renderCalls/.test(window.__codeOf(r._nexusPerfActuate));
-        // (a) MODERATE Render-Last (Draw-Calls UNTER dem Responsiv-Schwellwert): die
-        // Architektur-Domäne (Schatten/Cull = die render-VERURSACHENDEN Hebel) gibt MEHR
-        // nach als das Streaming — der Regler drosselt das RICHTIGE (NICHT blind das
-        // Streaming wie der alte Bang-Bang), die Welt LÄDT WEITER, während die Render-
-        // Qualität schrumpft (V18.269 — Durchsatz geschützt, solange noch Luft ist).
-        // Render-Last hebt die Architektur-Domäne (Schatten/Cull) → sie gibt zuerst nach,
-        // das Streaming bleibt geschützt (die render-VERURSACHENDEN Hebel drosseln, nicht das Laden).
+        // (a) MODERATE Render-Last (Draw-Calls unter dem Responsiv-Schwellwert): die Architektur-Domäne
+        // (Schatten/Cull = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
+        // lädt weiter, während die Render-Qualität schrumpft.
         r._nexusPerfActuate({
             loadScale: 0.5,
             renderCalls: 600,
@@ -22976,13 +21969,9 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         const shadowLoaded = st._shadowMinInterval;
         // unter moderater Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach.
         out.renderLoadThrottlesArch = archPosR < streamPosR - 0.1;
-        // (b) V18.282 — STREAMING IST HEILIG: HOHE Render-Last (viele Draw-Calls) drosselt das
-        // Streaming NICHT mehr. Der alte V18.276-Render-Throttle (streamEff 0.12 bei renderCalls
-        // > 820) verhungerte die Bewegung an der Wurzel: sein Trigger war die Draw-Call-ZAHL =
-        // die Welt-GRÖSSE (konstant >820 in jeder geladenen Welt), nicht ein transienter Druck →
-        // dauerhaft an → Lauf-Freeze. Jetzt: bei Bau-Rückstau bleibt das Streaming auf MAX (die
-        // Bewegung lebt vom Terrain-Laden), egal wie hoch die Render-Last — Render-Druck drosselt
-        // nur die Optik (Schatten/Cull/Laub), nie die Bewegung.
+        // (b) STREAMING IST HEILIG: bei Bau-Rückstau bleibt das Streaming auf MAX, egal wie hoch die
+        // Render-Last. Die Draw-Call-Zahl misst die Welt-GRÖSSE, keinen transienten Druck — als Trigger
+        // wäre sie dauerhaft an (Lauf-Freeze). Render-Druck drosselt nur die Optik (Schatten/Cull/Laub).
         const pendBSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0"]); // Bau-Rückstau: die Welt lädt
         r._nexusPerfActuate({
@@ -23006,11 +21995,9 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.renderArchPos = +archPosR.toFixed(2);
         out.renderStreamPos = +streamPosR.toFixed(2);
 
-        // (8) V18.270 — DER LADE-RHYTHMUS (Schöpfer „der Regler hemmt die Ladezeit,
-        // pendelt mit Mitteln die nichts ändern"): bei Bau-Rückstau lädt die Welt mit
-        // MAX Streaming-Budget (rückstau-getrieben), AUCH unter starker Drosselung — der
-        // PID drosselt NICHT den Bau, der das hohe frameMs selbst erzeugt. Settled (kein
-        // Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration).
+        // (8) LADE-RHYTHMUS: bei Bau-Rückstau lädt die Welt mit MAX Streaming-Budget, auch unter starker
+        // Drosselung (der PID drosselt nicht den Bau, der das hohe frameMs selbst erzeugt); settled
+        // (kein Rückstau) drosselt derselbe Druck das Streaming wieder.
         out.actuateReadsBacklog = /voxelMeshPending|streamBacklog/.test(window.__codeOf(r._nexusPerfActuate));
         const pendingSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0", "2,0,0", "3,0,0", "4,0,0"]); // Bau-Rückstau (lädt)
@@ -23179,12 +22166,9 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     );
 }
 
-// JEDES-HOLZ — DER EXISTENZ-BODEN der Ring-Ramp: auf Holz, dessen Frame ab Bild 1
-// über dem Totband liegt (Software-Rasterizer, alte iGPU), wartete das Kopfraum-
-// Gate der V18.318-Ramp EWIG → Ring 0 → die Welt entstand NIE (gemessen: Kienspan-
-// Boot chunks=1 für immer). Der Boden RING_EXIST_FLOOR garantiert die Existenz:
-// bis dorthin wächst der Ring OHNE fps-Bedingung (geordnet: settled + kein Rückstau
-// + Atem), und der Schrumpf-Pfad endet dort. Der PID atmet NUR darüber.
+// EXISTENZ-BODEN der Ring-Ramp: liegt der Frame ab Bild 1 über dem Totband (Software-Rasterizer),
+// hielte ein Kopfraum-Gate den Ring ewig auf 0. Bis RING_EXIST_FLOOR wächst er OHNE fps-Bedingung
+// (settled + kein Rückstau + Atem), dort endet der Schrumpf-Pfad; der PID atmet NUR darüber.
 async function checkBandJedesHolzExistenzBoden(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -23288,17 +22272,9 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
     );
 }
 
-// DETERMINISMUS-BOGEN P3 — das Lazy-Proxy-Collision-Band (V12.0-perf.d.2) ist
-// ENTFERNT: die Ammo-Ära baute einen Kollisions-Body nur innerhalb eines kleinen
-// Collision-Radius (~90 m, lazy add/free je Spieler-Distanz). Mit Ammo weg ist die
-// Architektur-Kollision feld-nativ (`entry.blockerAABBs`, beim Spawn unbedingt
-// gefüllt, render-/distanz-unabhängig) — es gibt keinen lazy hinzugefügten/
-// freigegebenen Ammo-Body mehr zu prüfen.
-
-// V12.0-perf.h (Streaming-Hitch — Wasser-Iso deferred-Queue): beweist, dass der
-// schwerste Main-Thread-Streaming-Posten (Wasser-Iso ~78 ms) aus dem synchronen
-// Chunk-Finalize in eine per-Frame-budgetierte Queue gewandert ist — der Chunk
-// ist sofort fertig (Terrain+Boden), das Wasser baut ≤budget/Frame nach.
+// Wasser-Iso deferred-Queue: der schwerste Main-Thread-Streaming-Posten (Wasser-Iso ~78 ms) läuft
+// nicht im synchronen Chunk-Finalize, sondern per-Frame-budgetiert — der Chunk ist sofort fertig
+// (Terrain+Boden), das Wasser baut ≤budget/Frame nach.
 async function checkBandWellePerfHWaterIsoQueue(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -23314,17 +22290,12 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         // ODER sync-build (Edit-Rebuild via syncWater, kein Flacker). Beide da.
         out.finalizeEnqueues = /_enqueueWaterIso\(/.test(finSrc);
         out.finalizeGatedOnSyncWater = /syncWater/.test(finSrc);
-        // V18.0 (Wasser-Finish) — REGRESSIONS-WALL des 50-Versionen-Blobs (GEMESSEN
-        // `diag-water-blob.cjs` Teil A/C): der Iso-Mesher liest die 8 Nachbarn
-        // (Achsen + DIAGONALEN, OOB-`cellClass`); bis V18.0 re-enqueued die Finalize
-        // nur die 4 ACHSEN → die Diagonal-Iso blieb stale = „Wasser klebt am
-        // Gebäude-Eck". Die Probe verlangt die Diagonal-Offsets im re-enqueue-Block.
-        // Wird der Block in einen Helfer refaktoriert, wandert die Probe mit (V9.56-i).
+        // Der Iso-Mesher liest 8 Nachbarn (Achsen + DIAGONALEN, OOB-`cellClass`) → die Finalize muss auch
+        // die Diagonalen re-enqueuen, sonst bleibt deren Iso stale („Wasser klebt am Gebäude-Eck“).
+        // Wird der Block in einen Helfer refaktoriert, wandert die Probe mit.
         out.finalizeReEnqueuesDiagonals = /\[cx - 1, cz - 1\]/.test(finSrc) && /\[cx \+ 1, cz \+ 1\]/.test(finSrc);
-        // V18.0 — der V17.118-Transient-Fix: ein wasser-verdrängender Architektur-
-        // Spawn meshet seinen Footprint SYNCHRON (sonst deferred der async-Worker die
-        // Verdrängung → Wasser steht in der Struktur). Probe: spawnArchitecture
-        // sammelt `footprintKeys` + forceSynct wasser-tragende.
+        // Ein wasser-verdrängender Architektur-Spawn meshet seinen Footprint SYNCHRON (async stünde das
+        // Wasser in der Struktur). Probe: spawnArchitecture sammelt `footprintKeys` + forceSynct sie.
         const spawnSrc = window.__codeOf(r.spawnArchitecture);
         out.spawnSyncsWaterFootprint =
             /footprintKeys/.test(spawnSrc) && /forceSync: true/.test(spawnSrc) && /waterCells/.test(spawnSrc);
@@ -23380,14 +22351,9 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
     check("V12.0-perf.h: drain leert die Queue (Test-Naht/Edit-Instant)", res.drainEmptiesQueue);
 }
 
-// V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass
-// der `voxel-worker.js` bit-identische Density-Grids zum Main-Thread liefert.
-// Kern-Invariante der Worker-Migration: jede Density-Funktion im Worker
-// (Mirror) muss EXAKT die Output des Main-Thread-Pendants reproduzieren —
-// sonst entsteht visueller Drift zwischen Worker- + Sync-gebauten Chunks.
-// **Phase 1**: keine async Integration in `_buildVoxelChunkData` — wir
-// rufen den Worker AUSSCHLIESSLICH aus diesem Test heraus. Wenn Phase 2
-// die Pipeline cutovert, ist die bit-Identität die Sicherheits-Wand.
+// Worker-Foundation: `voxel-worker.js` liefert bit-identische Density-Grids zum Main-Thread. Jede
+// Density-Funktion im Worker (Spiegel) muss ihr Main-Pendant EXAKT reproduzieren, sonst driften
+// Worker- und Sync-gebaute Chunks sichtbar auseinander.
 async function checkBandWellePerf3cWorkerFoundation(ctx) {
     const { page, check } = ctx;
     // Worker-Determinismus braucht einen einmaligen async-Roundtrip: Worker
@@ -23492,17 +22458,9 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
     );
 }
 
-// V9.90 (Welle Perf-3.c Phase 2 — Worker-Density-Cutover): empirischer Beweis
-// dass der Streaming-Pfad jetzt Worker-Density nutzt. Vier Probepunkte:
-//   (1) Worker-State ist nach Worldgen-Abschluss synced (Atlas/Erosion/Tarns
-//       beim Worker angekommen, `voxelWorkerSyncedHydroStateGen ===
-//       voxelWorkerStateGen`).
-//   (2) `_fetchOrRequestChunkDensity` existiert + funktioniert für einen
-//       streaming-aktiven Chunk (Cache-Hit oder pending-Set-Population).
-//   (3) Async Worker-built Chunk ist bit-identisch zu sync-built (Build-
-//       Pfad-Determinismus — der teure Sample-Loop läuft im Worker, aber
-//       das Result-Mesh ist identisch).
-//   (4) voxelEdit triggert Worker-Notify (Cache geleert, state-gen bumpt).
+// Worker-Density im Streaming-Pfad: (1) Worker-State nach Worldgen synced (`voxelWorkerSynced-
+// HydroStateGen === voxelWorkerStateGen`); (2) `_fetchOrRequestChunkDensity` liefert (Cache/pending);
+// (3) Worker-Density-Build == Sync-Build; (4) voxelEdit notifiziert den Worker (state-gen bumpt).
 async function checkBandWellePerf3cPhase2Async(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(async () => {
@@ -23533,12 +22491,8 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         await new Promise((resolve) => setTimeout(resolve, 50));
         out.workerStateGen = r.state.voxelWorkerStateGen;
         out.workerSynced = r.state.voxelWorkerWorldgenSynced;
-        // 4) Determinismus: sync-Build vs Worker-Density-Build vergleichen.
-        // Wir bauen denselben Chunk zweimal:
-        //   (a) sync (kein preDensity) — das ist das pre-V9.90-Verhalten
-        //   (b) mit Worker-Density vorab abgerufen + an _buildVoxelChunkData
-        //       als preDensity übergeben
-        // Erwartung: identische Vertex-Count und identische BufferGeometry.
+        // 4) Determinismus: denselben Chunk zweimal bauen — (a) sync ohne preDensity, (b) mit Worker-
+        // Density als preDensity an _buildVoxelChunkData. Erwartung: gleiche Vertex-Zahl + Geometrie.
         const cfg = r._voxelChunkConfig(0);
         const base = r.state.terrainBaseHeight || 0;
         const span = cfg.span;
@@ -23574,16 +22528,9 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             out.syncVertCount = syncPos.count;
             out.workerVertCount = workerPos.count;
             out.vertCountMatch = syncPos.count === workerPos.count;
-            // Position-Array bit-identisch?
-            // V12.0-perf.h-fix — epsilon-Toleranz statt exakt-0 (V9.95-a-Lehre):
-            // SimplexNoise nutzt transzendente Funktionen (sqrt/floor), deren
-            // Präzision implementation-defined ist → Worker- vs Main-Density
-            // driftet um Float32-Rundung (~1e-6, sub-mikron, unsichtbar; das
-            // Surface-Nets-Smoothing absorbiert es). „bit-identisch" war eine
-            // zu strenge Annahme (passte nur wenn der Test-Chunk zufällig keine
-            // Drift-Vertices hatte → ~40% Flake). Die ehrliche Invariante:
-            // epsilon-nah (< 1e-4 fängt echte Determinismus-Bugs, ignoriert
-            // Float32-Rundung). maxDelta bleibt sichtbar im Detail.
+            // Position-Array epsilon-nah statt exakt 0: SimplexNoise nutzt transzendente Funktionen mit
+            // implementation-defined Präzision → Worker↔Main driften um Float32-Rundung (~1e-6, unsichtbar).
+            // < 1e-4 fängt echte Determinismus-Bugs; maxDelta bleibt im Detail sichtbar.
             const EPS = 1e-4;
             let posMismatches = 0;
             let maxPosDelta = 0;
@@ -23649,12 +22596,9 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
     check("Welle Perf-3.c V9.90: _addVoxelEdit ruft _voxelWorkerNotifyEdit (Source-Probe)", res.addEditCallsNotify);
 }
 
-// V9.91 (Welle Perf-3.c Phase 3 — voller Chunk-Mesh im Worker): empirischer
-// Beweis dass der Worker JETZT die komplette Mesh-Pipeline trägt (Iso-
-// Meshing + Cells + Colors), nicht nur die Density-Samples. Main-Thread macht
-// nur noch BufferGeometry-Konstruktion + Architektur-Stempel + BVH + Scene.
-// **Kern-Invariante**: BufferGeometry vom Worker-Build (alle 4 Arrays —
-// positions/normals/colors/waterCells) ist bit-identisch zum Sync-Build.
+// Voller Chunk-Mesh im Worker: er trägt die komplette Pipeline (Iso-Meshing + Cells + Colors),
+// nicht nur die Density-Samples. Invariante: alle 4 Arrays (positions/normals/colors/waterCells)
+// des Worker-Builds gleichen dem Sync-Build.
 async function checkBandWellePerf3cPhase3FullMesh(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(async () => {
@@ -23701,11 +22645,8 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.syncVertCount = syncPos.count;
         out.workerVertCount = workerMesh.positions.length / 3;
         out.vertCountMatch = syncPos.count === workerMesh.positions.length / 3;
-        // Position-Array bit-identisch?
-        // V12.0-perf.h-fix — epsilon-Toleranz statt exakt-0 (V9.95-a-Lehre):
-        // transzendente SimplexNoise-Präzision driftet Worker↔Main um Float32-
-        // Rundung (sub-mikron, unsichtbar). < 1e-4 fängt echte Bugs, ignoriert
-        // Rundung. maxDelta bleibt sichtbar.
+        // Position-Array epsilon-nah (< 1e-4): transzendente SimplexNoise-Präzision driftet Worker↔Main um
+        // Float32-Rundung (unsichtbar); echte Bugs liegen weit darüber. maxDelta bleibt sichtbar.
         const EPS = 1e-4;
         let posMismatches = 0;
         let maxPosDelta = 0;
@@ -23774,16 +22715,9 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.colMismatches = colMismatches;
         out.maxColDelta = maxColDelta;
         out.colBitIdentical = colMismatches === 0;
-        // WaterCells bit-identisch? Achtung — der Worker liefert OHNE
-        // Architektur-Stempel, der Sync-Pfad liefert MIT Stempel. Wenn
-        // KEINE Architekturen im chunk-Footprint sind, sind die Cells
-        // identisch. Wir testen den Default-Worldgen-Chunk (0,0): am
-        // Spawn liegen typischerweise Worldgen-Architekturen (Bäume) in
-        // der Nähe — also kann es Cell-Mismatches geben. WIR FILTERN das,
-        // indem wir die Worker-Cells gegen die Sync-Cells VOR-Stempel
-        // vergleichen wollen, aber den haben wir nicht direkt. Pragmatisch:
-        // wenn Cell-Counts gleich sind, ist die Mesh-Pipeline OK; die
-        // Stempel-Differenz ist erwartet (~unter 100 Cells je Architektur).
+        // WaterCells: der Worker liefert OHNE Architektur-Stempel, der Sync-Pfad MIT → am Spawn-Chunk (0,0)
+        // mit Worldgen-Bäumen sind Cell-Mismatches erwartet (< ~100 je Architektur). Pipeline-Beweis ist
+        // darum die gleiche Cell-ANZAHL.
         if (syncFresh.waterCells && workerMesh.waterCells) {
             out.syncCellCount = syncFresh.waterCells.length;
             out.workerCellCount = workerMesh.waterCells.length;
@@ -23864,16 +22798,9 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
     );
 }
 
-// V17.117 (H3 — der globale Ozean jenseits der ±1024-Hydrosphäre-Region): die
-// Wurzel (CLAUDE.md-Gotcha) war, dass der Ozean-Default (state.waterLevel) hinter
-// dem region-bound Atlas gegated ist → ferne Chunks (>1024 m) trugen KEIN Wasser,
-// obwohl ihr Terrain unter dem Meeresspiegel liegt. Fix: `_atlasWaterLevelAt` +
-// `_voxelChunkHasAnyWater` leiten den Ozean beyond-region direkt vom waterLevel ab
-// (in-region UNANGETASTET). Beweis: (1) ein beyond-region Ozean-Chunk trägt jetzt
-// Wasser-Cells (Gate true + Klassifikator > 0); (2) ein beyond-region Land-Chunk
-// bleibt trocken (Gate false → kein Mehraufwand); (3) Worker↔Main bauen beyond-
-// region bit-identische Wasser-Cells (die NAHT-WAND — beyond-region kein
-// Architektur-Stempel → exakt gleich, kein Determinismus-Drift).
+// Globaler Ozean jenseits der ±1024-Region: `_atlasWaterLevelAt` + `_voxelChunkHasAnyWater` leiten
+// ihn direkt aus state.waterLevel ab (in-region unberührt). Beweis: Ozean-Chunk trägt Wasser, Land
+// bleibt trocken, Worker↔Main bauen bit-identische Wasser-Cells (kein Architektur-Stempel).
 async function checkBandV17117FarWater(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(async () => {
@@ -23983,15 +22910,9 @@ async function checkBandV17117FarWater(ctx) {
     );
 }
 
-// V17.118 (E3 — der Voxel-Worker engagiert: der ~71-ms-Mesh-Bau geht off-thread):
-// die GEMESSENE Wurzel des Streaming-Spikes (FPS 9–17) war, dass der Worker NIE
-// gespawnt wurde — `_voxelWorkerSyncWorldgenState` returnte früh (`if (!voxelWorker)
-// return`), und `_acquireVoxelChunkBuild` gated zirkulär auf das null-Feld → JEDER
-// Chunk sync-baute (~71 ms). Fix: `_voxelWorkerSyncWorldgenState` bootstrappt den
-// Worker (`_getVoxelWorker`) + der Spieler-Chunk bleibt sync (Kollision). Diese
-// Invariante ist die REGRESSIONS-WAND gegen erneute Dormanz: nach dem Warmup MUSS
-// der Worker engagiert sein (worldgenSynced), + die zwei Source-Anker (Bootstrap +
-// Spieler-Chunk-Sync) müssen stehen.
+// Voxel-Worker engagiert (~71 ms Mesh-Bau off-thread): `_voxelWorkerSyncWorldgenState` bootstrappt
+// ihn (`_getVoxelWorker`), sonst baut `_acquireVoxelChunkBuild` zirkulär JEDEN Chunk sync. Wand:
+// nach dem Warmup ist der Worker engagiert (worldgenSynced), Bootstrap + Spieler-Chunk-async stehen.
 async function checkBandV17118WorkerEngaged(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -24003,10 +22924,8 @@ async function checkBandV17118WorkerEngaged(ctx) {
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
             bootstrapSrc: /_getVoxelWorker\(\)/.test(window.__codeOf(r._voxelWorkerSyncWorldgenState)),
-            // Source: V18.271 — der Spieler-Chunk baut ASYNC (kein `_voxelChunkIsPlayerChunk`-
-            // Sync-Trip mehr im Streaming). DETERMINISMUS-BOGEN P3: der weiche Boden ist mit
-            // Ammo entfallen (der Spieler fällt nicht mehr durch einen ungebauten Chunk — das
-            // Dichtefeld trägt den Boden global) → nur noch die Async-Quelle wird geprüft.
+            // Source: der Spieler-Chunk baut ASYNC (kein `_voxelChunkIsPlayerChunk`-Sync-Trip) — das
+            // Dichtefeld trägt den Boden global, niemand fällt durch einen ungebauten Chunk.
             playerAsyncSrc: !/_voxelChunkIsPlayerChunk/.test(window.__codeOf(r._ensureVoxelChunkAt)),
         };
     });
@@ -24056,11 +22975,9 @@ async function checkBandPhasenBF(ctx) {
         out.d3Age = /FAUNA_MAX_AGE_MS/.test(window.__codeOf(r.tickFaunaLifecycle));
         out.d3Feed = /_depositLife/.test(window.__codeOf(r._creatureNaturalDeath));
         out.d4Src = /gegenwehr/.test(window.__codeOf(r.damageCreature));
-        // V18.107 — D4-VOLL: das Temperament emergiert aus der Seelen-Substanz
-        // (GEMESSEN an den Built-ins: wesen [stein+holz, dicht] → wehrhaft ·
-        // geist [laub+leder, lebendig-weich] → sanft · sprite [quarz,
-        // ätherisch] → scheu) + KONSUM: die Gegenwehr liest das Profil
-        // (strikeCap/fleeMul im Treffer-Pfad), sanft/scheu haben strike 0.
+        // D4 — das Temperament emergiert aus der Seelen-Substanz (wesen [stein+holz] → wehrhaft · geist
+        // [laub+leder] → sanft · sprite [quarz] → scheu). KONSUM: die Gegenwehr liest das Profil
+        // (strikeCap/fleeMul im Treffer-Pfad); sanft/scheu haben strike 0.
         out.d4Temperament = (() => {
             const t = (soul) => r._creatureTemperament({ userData: { soul } });
             // ALTLASTEN-NULL: sprite/geist sind gefallen — die Substanz-
@@ -24096,10 +23013,8 @@ async function checkBandPhasenBF(ctx) {
         // E2 — der Kosten-Walker zahlt die Substanz-Wahrheit.
         out.e2VillageCost = r._dslProgramWirkCost(["spawn_village", ["at", 0, 0, 0], 1]) === 20;
         out.e2Gate = /nexusWirk/.test(window.__codeOf(r._loopNexusUpdate));
-        // V18.108 — E2-VOLL: der REGELKREIS. Behavioral: ruhige Emotion → Faktor 1,
-        // stark gekippte (chaos dominant) → klein (<0.5). KONSUM an allen vier
-        // Stellen: Outcome-Regen + Idle-Tropf + Kosten-Tor + proaktive Stimmen
-        // lesen DENSELBEN _emotionBalanceFactor (eine Quelle, vier Leser).
+        // E2 — der REGELKREIS: ruhige Emotion → Faktor 1, stark gekippt (chaos dominant) → < 0.5. KONSUM:
+        // Outcome-Regen, Idle-Tropf, Kosten-Tor + proaktive Stimmen lesen DENSELBEN _emotionBalanceFactor.
         out.e2Balance = (() => {
             const p = r.state.player;
             const save = { ...p.emotions };
@@ -24127,11 +23042,8 @@ async function checkBandPhasenBF(ctx) {
         // auf das geteilte _p2pPeerRateAdmit-Tor (V9.82-Verdichtung). Der Test
         // wandert mit (V9.56-i): die INTENT bleibt „trägt den Empfangs-Cap".
         out.f2CpCap = /_p2pPeerRateAdmit\("creature-pos"/.test(window.__codeOf(r._p2pMsgCreaturePos));
-        // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
-        // V18.259 — die Struktur-Gradient-LUT (`_ensureStructureGradient`) war eine
-        // TOON-Schicht, mit dem Cel-System gepurged (bdb03e9, V18.236 PBR = die EINE
-        // Material-Wahrheit). Kein Shader liest sie mehr. B8 prüft jetzt nur noch das
-        // LEBENDE Struktur-Licht: die rimStrength-Uniform (PBR-Rim, weiter verdrahtet).
+        // B8 — prüft nur das LEBENDE Struktur-Licht: die rimStrength-Uniform (PBR-Rim); die Struktur-LUT
+        // (`_ensureStructureGradient`) ist mit dem Cel-System gefallen, kein Shader liest sie.
         out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
         // V18.109 — E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
         // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
@@ -24163,12 +23075,9 @@ async function checkBandPhasenBF(ctx) {
         out.e8Dom = !!document.querySelector('#hotbar .hotbar-slot[data-slot="offhand"]');
         out.e8Key = (r.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands === "KeyG";
         out.e8OffhandMeshPath = /offhandMesh/.test(window.__codeOf(r._refreshHeldMesh));
-        // V18.110 — C7 ATTACHMENT-PUNKTE: (1) ein sitz-Punkt validiert ohne
-        // partB (Attachment zur Außenwelt), (2) die getragene Rüstung sitzt am
-        // TORSO (Masse-Zentrum auf 0.18 — der „auf dem Kopf"-Fix, GEMESSEN am
-        // echten _wornArmorMesh), (3) die Fahrzeug-/Reittier-Saat ist moveable
-        // per Substanz (GEMESSEN) + trägt explizite sitz-Punkte, (4) die
-        // Built-in-Körper liegen automatisch als Blueprints (der Button fiel).
+        // C7 ATTACHMENT-PUNKTE: (1) sitz validiert ohne partB; (2) die getragene Rüstung sitzt am TORSO
+        // (Masse-Zentrum 0.18, am echten _wornArmorMesh); (3) Fahrzeug-/Reittier-Saat ist per Substanz
+        // moveable + trägt sitz-Punkte; (4) die Built-in-Körper liegen automatisch als Blueprints.
         out.c7Validate = (() => {
             const v = r.validateBlueprintConnections([{ type: "sitz", partA: 0 }], 3);
             return v.length === 1 && v[0].partB === -1;
@@ -24223,10 +23132,8 @@ async function checkBandPhasenBF(ctx) {
             /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
             /_sitzHeight/.test(window.__codeOf(r._tickMountedMovement));
         out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
-        // V18.111 — A4: die Wasserfall-PLANE ist geschnitten (Builder weg, das
-        // Abwärts-Material lebt als markierte Saat), der STEIL-SPLIT formt
-        // vertikales Wasser im Zell-Sheet (Lippe + Vorhang; GEMESSEN
-        // diag-waterfall-zacken: >14-m-Zacken 137→0, max 28.8→12.3 m).
+        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg, das Abwärts-Material lebt als markierte
+        // Saat); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
         out.a4PlaneCut =
             typeof r._buildHydroWaterfall === "undefined" &&
             typeof r._buildHydroWaterfallPool === "undefined" &&
@@ -24238,25 +23145,18 @@ async function checkBandPhasenBF(ctx) {
         out.a4Curtain =
             /VERT_SPLIT/.test(window.__codeOf(r._computeWaterSheetData)) &&
             /dupVert/.test(window.__codeOf(r._computeWaterSheetData));
-        // V18.116 — A4-MÜNDUNGS-SYNERGIE: aWave (Ozean-Wellen-Anteil) ist
-        // ART-gedämpft — die Fluss-Abdeckung (riverness, dieselbe
-        // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem
-        // Fluss, ein See ist still (GEMESSEN diag-mouth: Fluss-Kern aWave>0.5
-        // 75 %→0). Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
+        // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
+        // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
+        // Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
         out.a4MouthWave = (() => {
             const src = window.__codeOf(r._computeWaterSheetData);
             return (
                 /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
             );
         })();
-        // V18.117 — WASSER-SHEET-ANTI-STARVATION (S-Befund „durch das LOD
-        // Löcher im Wasser"): die reine Distanz-Priorität + CA-Dauer-Nachschub
-        // naher Keys ließen FERNE Queue-Einträge NIE drankommen (GEMESSEN:
-        // Ring-3/4-Ozean-Chunks mit 30k nassen Zellen „nie gebaut"). Der Tick
-        // trägt jetzt einen FIFO-Slot (ältester Eintrag). BEHAVIORAL: ein
-        // ferner Key überlebt den Dauer-Nachschub naher Keys NICHT länger als
-        // wenige Ticks — er wird gezogen, obwohl jede Runde frische nahe
-        // Keys nachkommen (vorher: blieb für immer in der Queue).
+        // WASSER-SHEET-ANTI-STARVATION: reine Distanz-Priorität + Dauer-Nachschub naher Keys ließe FERNE
+        // Einträge nie drankommen (Löcher im fernen Wasser) → der Tick trägt einen FIFO-Slot (ältester).
+        // Behavioral: ein ferner Key wird trotz frischer naher Keys binnen weniger Ticks gezogen.
         out.waterIsoNoStarve = (() => {
             const s = r.state;
             const savedQ = s.pendingWaterIso;
@@ -24292,10 +23192,8 @@ async function checkBandPhasenBF(ctx) {
                 s.pendingWaterIso = savedQ;
             }
         })();
-        // V18.119 — E3-MANA-HUD (der Kreis schließt: Welt-Gesten KOSTEN im pfad
-        // Mana [V18.104], aber die Währung hatte keine Anzeige). BEHAVIORAL:
-        // pfad → dritte Stats-Row sichtbar + Wert folgt p.mana; frieden →
-        // hidden (kein UI-Rauschen, dort ist Mana keine Währung).
+        // E3-MANA-HUD: pfad → dritte Stats-Row sichtbar, Wert folgt p.mana; frieden → hidden (dort ist
+        // Mana keine Währung).
         out.e3ManaHud = (() => {
             const row = document.getElementById("stats-hud-mana-row");
             if (!row) return false;
@@ -24320,12 +23218,9 @@ async function checkBandPhasenBF(ctx) {
                 r.state.player.mana = savedMana;
             }
         })();
-        // V18.119 — C1-GELENK-READOUT (eine Wahrheit für Animation UND Panel):
-        // der Readout rief computeMotionRoles OHNE bp.connections (Lage-
-        // Fallback), die Animation MIT → das Panel zeigte nie die Gelenke,
-        // die sich wirklich bewegen (der V9.82-Riss). KONSUM: der Wagen
-        // (Eisen-Räder) klassifiziert MIT connections als rad; die Panel-
-        // Quelle trägt den connections-Call + die Gelenk-Labels.
+        // C1-GELENK-READOUT (eine Wahrheit für Animation UND Panel): der Readout ruft computeMotionRoles
+        // MIT bp.connections wie die Animation (ohne → Lage-Fallback, falsche Gelenke). KONSUM: der Wagen
+        // (Eisen-Räder) klassifiziert als rad; die Panel-Quelle trägt connections-Call + Gelenk-Labels.
         out.c1JointReadout = (() => {
             // AUSLÖSCHUNGS-WELLE — die Wagen-Substanz (KIND_SUBSTANCE) trägt die rad-Klassifikation.
             const KSc1 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
@@ -24336,11 +23231,9 @@ async function checkBandPhasenBF(ctx) {
             const src = r._specRenderBody ? window.__codeOf(r._specRenderBody) : "";
             return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
         })();
-        // V18.120 — B5-UNTERWASSER-PASS: der dritte Konsument des einen
-        // playerEyesUnderwater-Flags (neben Tauch-Fog + Tint) — beim Tauchen
-        // wird das geteilte Wasser-Material DoubleSide (die Decke ist von
-        // unten sichtbar), beim Auftauchen BackSide (V18.1-W1-Vertrag).
-        // BEHAVIORAL mit Restore (zustands-neutral).
+        // B5-UNTERWASSER-PASS: dritter Konsument des playerEyesUnderwater-Flags (neben Tauch-Fog + Tint) —
+        // getaucht ist das geteilte Wasser-Material DoubleSide (Decke von unten sichtbar), aufgetaucht
+        // BackSide. Behavioral mit Restore (zustands-neutral).
         out.b5Underwater = (() => {
             if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
             const mat = r._ensureHydroSurfaceMaterial();
@@ -24359,12 +23252,9 @@ async function checkBandPhasenBF(ctx) {
                 r._applyDayNightToScene();
             }
         })();
-        // V18.121 — B6: das DACH-GATE des Wasser-Re-Mesh (GEMESSEN: ein
-        // stationärer Fluss trug Brutto-moved>0.5 dauerhaft → 3 Chunks
-        // re-meshten JEDEN Frame = Ø14 ms; jetzt entscheidet die SICHTBARE
-        // Spalten-Dach-Änderung). BEHAVIORAL am synthetischen Feld: erster
-        // Call true (kein FP) · unverändert false · sichtbare Änderung true ·
-        // danach false (FP fortgeschrieben). + KONSUM (Welt-Tick ruft es).
+        // B6: DACH-GATE des Wasser-Re-Mesh — es entscheidet die SICHTBARE Spalten-Dach-Änderung, nicht
+        // Brutto-moved (ein stationärer Fluss re-meshte sonst jeden Frame). Behavioral: erster Call true ·
+        // unverändert false · sichtbare Änderung true · danach false; + KONSUM (Welt-Tick ruft es).
         out.b6RoofGate = (() => {
             const key = "__fp_test__";
             const saved = r.state.voxelChunks.get(key);
@@ -24388,11 +23278,9 @@ async function checkBandPhasenBF(ctx) {
                 else r.state.voxelChunks.set(key, saved);
             }
         })();
-        // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
-        // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
-        // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
-        // der Effekt ist der beste Lauf, die Registrierung geht durch die
-        // Nexus-Queue (zahlt am Wirk-Tor). Behavioral + KONSUM (Tick-Hook).
+        // E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte Läufe, deposit_life, sorrow)
+        // kristallisiert zur Regel — Bedingung aus der Emotions-Signatur (field_above sorrow), Effekt =
+        // bester Lauf, Registrierung über die Nexus-Queue (zahlt am Wirk-Tor). Behavioral + KONSUM.
         out.e45Crystal = (() => {
             const dsl = r.state.dsl;
             const saved = {
@@ -24461,13 +23349,9 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.e45Hook = /_crystallizeGestureRule/.test(window.__codeOf(r._loopSelfAnalysis));
-        // V18.127 — E1: das EINE Dispatch-Tor (gigant-plan §3-Zwilling 5).
-        // (a) VERDICHTUNG: die vier if-else-Handler sind GESCHNITTEN, der
-        // Dispatch läuft über die chatSystemPatterns-Tabelle (kein Parallel-
-        // Pfad, V9.82); (b) BEHAVIORAL: „liste welten" läuft durch die Tabelle
-        // (Output-Beweis); (c) KONSUM: chatSuggest liest jetzt BEIDE Tabellen —
-        // der Tippfehler „speichre zustand" bekommt den System-Vorschlag
-        // (vorher waren Legacy-Befehle für die Vorschläge unsichtbar).
+        // E1: das EINE Dispatch-Tor — der Dispatch läuft über die chatSystemPatterns-Tabelle (keine
+        // if-else-Handler); behavioral: „liste welten“ läuft durch die Tabelle; KONSUM: chatSuggest liest
+        // BEIDE Tabellen (der Tippfehler „speichre zustand“ bekommt den System-Vorschlag).
         out.e1OneGate = (() => {
             const oldHandlersGone =
                 typeof r._chatTryWorldCommand !== "function" &&
@@ -24491,12 +23375,9 @@ async function checkBandPhasenBF(ctx) {
             if (sugg !== "speichere zustand") return `Suggest las die System-Tabelle nicht (${sugg})`;
             return true;
         })();
-        // V18.128 — D5a: die Wetter-INTENSITÄTS-ACHSE (Vier-Teil-Beweis):
-        // (a) die Achse extrapoliert (stormy > rainy im Blend-Lerp) ·
-        // (b) das Vokabular-Gate (stormy ja, xyz nein) · (c) das Innenleben
-        // unterscheidet die WORTE (Sturm fühlt chaos+awe, NICHT sorrow) ·
-        // (d) der EINE Schreiber (DSL-Op + Auto-Zug rufen _setWeather, der
-        // den Cross-Fade trägt — der rohe Loop-Flip ist Geschichte).
+        // D5a Wetter-INTENSITÄTS-ACHSE: (a) die Achse extrapoliert (stormy > rainy im Blend-Lerp);
+        // (b) Vokabular-Gate (stormy ja, xyz nein); (c) das Innenleben unterscheidet die Worte (Sturm
+        // fühlt chaos+awe, nicht sorrow); (d) EIN Schreiber: DSL-Op + Auto-Zug rufen _setWeather (Fade).
         out.d5aWeather = (() => {
             const saved = {
                 w: r.state.weather,
@@ -24543,13 +23424,9 @@ async function checkBandPhasenBF(ctx) {
         // N7.4 — der Horizont-Mantel ist GESCHNITTEN (Vor-Studio-Kulisse): die V18.113-
         // Material-Probe wandert zur Abwesenheit (der Schnitt bleibt geschnitten).
         out.b3Mantle = typeof r._ensureHorizonMantle === "undefined";
-        // V18.125 — A4-SCHELF: der KÜSTEN-AQUIFER, der synthetische Drei-Beweis
-        // auf einem PRÄPARIERTEN preDensity-Grid an einem atlas-freien In-Region-
-        // Ort: (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER
-        // (der Aquifer — vorher 0, die GEMESSENE Loch-Klasse) · (b) Land über
-        // dem Spiegel bleibt trocken (kein Bluten/Hang-Schatten, V13-Wand) ·
-        // (c) die GEDECKELTE Höhle unter dem Spiegel bleibt trocken (kein
-        // Phantom — der _skyOpenWaterFilter trennt).
+        // A4-SCHELF, KÜSTEN-AQUIFER — synthetisch auf präpariertem preDensity-Grid (atlas-frei, in-region):
+        // (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER; (b) Land über dem Spiegel bleibt
+        // trocken; (c) die GEDECKELTE Höhle unter dem Spiegel bleibt trocken (_skyOpenWaterFilter trennt).
         out.a4ShelfAquifer = (() => {
             const cfg = r._voxelChunkConfig(0);
             const { dim, dimY, step, span, floorDrop } = cfg;
@@ -24812,10 +23689,8 @@ async function checkBandPhaseAFundament(ctx) {
                 src: /visualEdge/.test(window.__codeOf(r._dayNightApplyHemiAndFog)),
             };
         }
-        // ── B2 · Horizont-Mantel — N7.4 GESCHNITTEN (Vor-Studio-Fern-Kulisse, V18.423
-        // im Studio-Regime aus, jetzt ganz weg: der Nebel schliesst an der Wald-Kante,
-        // jenseits davon zeichnet NICHTS). Das Band prüft die ABWESENHEIT — der Schnitt
-        // bleibt geschnitten, kein Re-Grow (Methoden · Konstante · State · Tick-Aufruf).
+        // ── B2 · Horizont-Mantel geschnitten (der Nebel schließt an der Wald-Kante, jenseits zeichnet
+        // NICHTS). Das Band prüft die ABWESENHEIT (Methoden · Konstante · State · Tick-Aufruf).
         out.b2 = {
             methodsGone:
                 typeof r._ensureHorizonMantle === "undefined" && typeof r._disposeHorizonMantle === "undefined",
@@ -24910,19 +23785,8 @@ async function checkBandPhaseAFundament(ctx) {
     );
 }
 
-// DETERMINISMUS-BOGEN P3 — das Lazy-BVH-Band (`_voxelChunkLazyBVHFor` /
-// `_upgradeChunkBVH` / `_pumpVoxelChunkBVH` / `_ensurePlayerChunkBVH` / das
-// per-Chunk-`hasBVH`-Flag) ist ENTFERNT: mit der Ammo-Welt fällt die ganze
-// per-Chunk-Kollisions-BVH weg — der Spieler läuft feld-nativ aus dem
-// Dichtefeld (`_stepCharacter` → `_fieldSurfaceBelow`), kein Chunk trägt mehr
-// ein BVH-Artefakt. Es gibt keine Lazy-BVH-Mechanik mehr zu prüfen.
-
-// V9.93 (Wasser-LOD-Naht-Heilung): empirischer Beweis dass Wasser-Cells
-// jetzt IMMER auf LOD 0 leben, unabhängig vom Terrain-LOD des Chunks.
-// Vor V9.93: LOD-0-Chunks hatten 71424 waterCells, LOD-1-Chunks 8928 →
-// am LOD-Boundary klaffte die Wasser-Iso-Surface visuell (Cell-Center-
-// Position step-abhängig). Heilung: Wasser-Cells uniform LOD 0 → naht-
-// frei per Konstruktion. Terrain bleibt LOD-aware.
+// Wasser-Cells leben IMMER auf LOD 0, unabhängig vom Terrain-LOD des Chunks — sonst klafft die
+// Wasser-Iso-Surface an der LOD-Grenze (Cell-Center step-abhängig). Terrain bleibt LOD-aware.
 async function checkBandWelle993WaterLodSeam(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -25042,34 +23906,25 @@ async function checkBandWelleV11D1WaterContext(ctx) {
             out.waterDistToShoreFinite = Number.isFinite(c.distToShore) || c.distToShore === Infinity;
         }
 
-        // Performance-Probe — 200 Calls in der ersten Land-Position (oder
-        // Spawn-Position wenn kein Land gefunden, höchst unwahrscheinlich).
-        // Cap 50ms (= 250µs/Call, sehr großzügig — D.2 wird das im Frame
-        // loopen, Distance-LOD-gated).
+        // Performance-Probe: 200 Calls an der ersten Land-Position (sonst am Spawn).
         if (landSample) probe.position.set(landSample.dx, 5, landSample.dz);
         else probe.position.set(0, 5, 0);
-        // V17.113 — der Wasser-Kontext bekommt die Boden-Höhe jetzt als Param
-        // (im Frame-Loop gecacht via _creatureGroundY), scannt sie nicht mehr
-        // selbst. Die Perf-Probe reicht eine vorberechnete Surface = die
-        // realistische Frame-Kosten.
+        // Der Wasser-Kontext bekommt die Boden-Höhe als Param (im Frame-Loop via _creatureGroundY gecacht)
+        // → die Probe reicht eine vorberechnete Surface = realistische Frame-Kosten.
         const psy = r._voxelSurfaceY(probe.position.x, probe.position.z);
         const t0 = performance.now();
         for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe: die Wahrheits-Quellen (V9.50/V9.59). V17.113: die Surface
-        // kommt jetzt aus `_creatureGroundY` (gecacht) → die `_voxelSurfaceY`-
-        // Quelle ist dorthin gewandert; `_creatureGroundY` ist der EINZIGE
-        // Surface-Leser (EIN-Quelle-Disziplin bleibt, eine Ebene höher).
+        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` ist der EINZIGE `_voxelSurfaceY`-Leser;
+        // der Helper selbst liest `_waterLevelAt` + `_isAboveWaterAt`.
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
         out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(window.__codeOf(r._creatureGroundY));
         out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
         out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
 
-        // V17.113 Kreatur-FPS-Dirigent — der BODEN-CACHE (die FPS-13-Wurzel-
-        // Heilung). Beweist deterministisch: die teuren `_voxelSurfaceY`-Scans
-        // sind pro Frame GEBOUNDET (Budget), nicht 1–2× pro Kreatur. Budget
-        // dekrementiert pro echtem Scan → wir lesen es als Scan-Zähler.
+        // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
+        // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
         out.groundCacheFn = typeof r._creatureGroundY === "function";
         if (out.groundCacheFn) {
             const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), userData: {} });
@@ -25128,12 +23983,8 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         );
     }
     check(
-        // V17.0-Flake-Heilung: 50 -> 200 ms. Reine CPU-Timing-Messung (200
-        // _creatureWaterContextAt-Aufrufe); auf geteilten CI-Runnern schwankt
-        // das stark (gemessen 53.8 ms = knapp ueber der alten 50-ms-Linie =
-        // Flake, lokal ~5-15 ms). Der Test soll eine O(n²)-REGRESSION fangen —
-        // die waere SEKUNDEN fuer 200 Aufrufe, nicht 54 ms. 200 ms ist CI-robust
-        // UND faengt echte Regressionen.
+        // 200 ms: reine CPU-Timing-Messung, auf geteilten CI-Runnern stark schwankend (lokal ~5–15 ms).
+        // Eine O(n²)-Regression wären SEKUNDEN für 200 Aufrufe — die Schwelle ist CI-robust und fängt sie.
         "Welle V11.0-d.1: 200 Aufrufe im Perf-Budget (< 200 ms, CI-robust gegen O(n²))",
         res.perfMs < 200,
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
@@ -25154,11 +24005,9 @@ async function checkBandWelleV11D1WaterContext(ctx) {
     }
 }
 
-// V11.0-d.2 (Pfeiler D — Tiefen-Scheue + Schwimm-Surface) — Beweis dass der
-// wander-Loop den V11.0-d.1-Helper konsumiert, Direction zum Ufer biast und
-// die Y-Position auf Schwimm-Surface anhebt. Test-Strategie: synthetisch
-// eine existing Kreatur in eine Wasser-Spalte teleportieren, einen
-// `updateCreatures(0.016)`-Tick laufen, die Y-Position prüfen.
+// Tiefen-Scheue + Schwimm-Surface: der wander-Loop konsumiert `_creatureWaterContextAt`, biast die
+// Richtung zum Ufer und hebt Y auf die Schwimm-Surface. Probe: Kreatur in eine Wasser-Spalte
+// teleportieren, `updateCreatures(0.016)` ticken, Y prüfen.
 async function checkBandWelleV11D2WaterBias(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -25413,16 +24262,9 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     }
 }
 
-// V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation aus den
-// vier worldFieldAt-Feldern. Prüft: (1) die Arten-Registry (5 Biom-Stimmen,
-// gültige Felder + konstante Caps); (2) Geometrie-Singleton trägt das Vertex-
-// Farb-Attribut (das Material liest `attribute("color")`); (3) das Material
-// baut; (4) der Streu-Mechanismus setzt einen Scatter-Eintrag + echte Instanzen
-// in einer lebendig-reichen Region; (5) Determinismus (selbe Region → selbe
-// Instanz-Zahl, stabil beim Re-Streamen); (6) Pool-Recycling (acquire/release/
-// drain pro Art, Cap-Disziplin); (7) Dispose gibt die Meshes zurück in die Pools.
-// Render-Qualität (Dichte-Gefühl, FPS) ist Browser-Audit (headless ist pixel-
-// blind, V13-Lehre) — hier nur die Datenstruktur-Wahrheit.
+// Klein-Vegetation (GPU-instanziert aus worldFieldAt): Arten-Registry · Vertex-Farbe (Material liest
+// `attribute("color")`) · Material baut · echte Instanzen · Determinismus beim Re-Streamen · Pool-
+// Recycling (Cap) · Dispose in die Pools. Headless ist pixel-blind — hier die Datenstruktur.
 async function checkBandV171Scatter(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -25454,13 +24296,9 @@ async function checkBandV171Scatter(ctx) {
         // V17.4 — Pollen-Partikel-Art (emissive + drift, lebendig-gated).
         const pollen = out.registryArray ? species.find((s) => s.name === "pollen") : null;
         out.hasPollen = !!(pollen && pollen.emissive === true && pollen.drift === true && pollen.field === "lebendig");
-        // V17.4/V18.310 — die kohärente Böen-Welle lebt jetzt in der EINEN Quelle
-        // `_windSwayOffset` (Gesetz #0 — Raptor): Gras + Streu-Vegetation LESEN sie,
-        // statt den gust-Mathe-Baum je selbst zu tragen. Der Lens prüft den Kollaps
-        // strukturell (kommentar-bereinigt via __codeOf, die V18.267-Disziplin):
-        // (a) beide Reader rufen `_windSwayOffset`, der gust + die Pollen-drift sind da,
-        // (b) der Kollaps ist ECHT — gust lebt NUR in der einen Quelle, nicht inline
-        // re-geforkt in den Readern (sonst driftet er wieder wie 1.5 vs 1.2).
+        // Die kohärente Böen-Welle lebt in der EINEN Quelle `_windSwayOffset`; Gras + Streu LESEN sie.
+        // Probe auf __codeOf (kommentar-bereinigt): (a) beide Reader rufen `_windSwayOffset`, gust +
+        // Pollen-drift sind da; (b) gust lebt NUR dort, nie inline re-geforkt (sonst driftet er).
         const grassSrc = r._grassInstanceMat ? window.__codeOf(r._grassInstanceMat) : "";
         const motionSrc = r._applyScatterMotion ? window.__codeOf(r._applyScatterMotion) : "";
         const swaySrc = r._windSwayOffset ? window.__codeOf(r._windSwayOffset) : "";
@@ -25746,24 +24584,17 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
     }
 
-    // V9.40-c — Async-Rebuild via Dirty-Queue: ein Edit markiert
-    // die Voxel-Chunks dirty (statt sie sync zu rebuilden); ein
-    // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks`
-    // ist die Test-Naht für sofortigen sync-Drain.
+    // Async-Rebuild via Dirty-Queue: ein Edit markiert Voxel-Chunks dirty statt sync zu rebuilden, der
+    // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks` ist die Test-Naht (sync-Drain).
     const voxelV940cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         out.hasTick = typeof r._tickDirtyVoxelChunks === "function";
         out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
-        // Den Test-Voxel-Ring synchron auffüllen, damit der Edit
-        // gleich Chunks zum Markieren findet.
-        // V18.105 (GEMESSEN per Telemetrie — chunks:1, dirtyAfter:0): der alte
-        // 30×-Tick-Loop war ASYNC-BLIND — ohne Event-Loop-Yield kommt keine
-        // Worker-Antwort an, der Ring blieb je nach Vorzustand der Bands LEER
-        // (der rot↔grün-Flake bei identischem Code). Der INTENT dieses Bands
-        // braucht GEBAUTE Chunks am Carve-Ort → das bewährte V9.88-Muster:
-        // Worker AUS → 3×3-Ring um den Spieler-Chunk SYNC bauen → Worker zurück.
+        // Den Test-Voxel-Ring SYNC auffüllen, damit der Edit Chunks zum Markieren findet: ein Tick-Loop
+        // ohne Event-Loop-Yield bekommt keine Worker-Antwort (Ring bliebe leer, Flake). Darum Worker AUS
+        // → 3×3-Ring um den Spieler-Chunk sync bauen → Worker zurück.
         const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
         if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
         {
@@ -25786,13 +24617,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
             out.skip = true;
             return out;
         }
-        // V18.96 (V17.32-Disziplin — den INTENT deterministisch testen, nicht
-        // den konfundierten Warmup-Zustand): der Carve sitzt OBERFLÄCHEN-
-        // relativ (surf − 1.5), nicht spieler-y-relativ. Ein früheres Band
-        // kann den Spieler hoch in der Luft hinterlassen (Sky-Test y=5000;
-        // je schneller der Lauf, desto weniger Wall-Clock zum Runterfallen)
-        // → pm.y − 1.5 läge über der `_addVoxelEdit`-Y-Wand → Edit verworfen
-        // → false-rot. surf − 1.5 ist IMMER in-band + im Terrain.
+        // Carve OBERFLÄCHEN-relativ (surf − 1.5), nicht spieler-y-relativ: ein früheres Band kann den
+        // Spieler hoch in der Luft lassen → pm.y − 1.5 läge über der `_addVoxelEdit`-Y-Wand → Edit
+        // verworfen → false-rot.
         const carveSurf = r.getTerrainHeightAt(pm.x, pm.z);
         const cy = (Number.isFinite(carveSurf) ? carveSurf : pm.y) - 1.5;
         // Ein Carve in der Nähe des Spielers markiert Chunks dirty
@@ -25822,15 +24649,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.drainRebuilt = built > 0;
         out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
-        // Game-Loop-Tick rebuildet pro Frame max 1.
-        // V18.362 (V17.32-Disziplin — den INTENT deterministisch testen): der Edit-/Spieler-
-        // Chunk-Rebuild ist seit V18.362 FRAME-BUDGET-ADAPTIV (`_rebuildVoxelChunk`: sync nur
-        // bei `!_frameOverBudget`, sonst async via Worker → kein ~200-ms-Grab-Stall auf schwacher
-        // HW). HEADLESS hat ein ~1-Hz-rAF → `_perfSenseFoldFrame` setzt `_frameOverBudget=true`
-        // (riesiges frameMs) → der Tick ginge async (Worker → „pending" → Chunk RE-ENQUEUED →
-        // size unverändert) statt der hier geprüften deterministischen 1/Frame-SYNC-Verteilung.
-        // Dieser Test prüft den DISTRIBUTIONS-Mechanismus (≤1 pro Frame), nicht die adaptive
-        // Sync/Async-Wahl (die `diag-carve-adaptive` separat beweist) → den gesunden Frame setzen.
+        // Tick rebuildet max 1/Frame. `_rebuildVoxelChunk` geht nur bei `!_frameOverBudget` sync; headless
+        // setzt das ~1-Hz-rAF `_frameOverBudget=true` (Tick ginge async). Geprüft wird die Verteilung, die
+        // adaptive Wahl prüft `diag-carve-adaptive` → gesunden Frame setzen.
         r.state._frameOverBudget = false;
         r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
@@ -25880,21 +24701,15 @@ async function checkBandVoxelP3AndInventory(ctx) {
         );
     }
 
-    // V9.40-d — Dispose-Before-Build (Heap-Druck-Heilung) + Retry-
-    // Counter. Schöpfer-V9.40-c-Browser-Befund: kaskadierende OOMs
-    // weil V9.40-b's Pre-Build-Pattern alter+neuer parallel im
-    // Ammo-Heap leben liess.
+    // Dispose-Before-Build + Retry-Counter: den alten Chunk VOR dem Neubau entsorgen (alt + neu
+    // parallel im Heap → kaskadierende OOMs).
     const voxelV940dResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // V17.118 (E3-Migration, V9.56-i): seit der Worker engagiert ist, baut der
-        // Streaming-/Rebuild-Pfad ASYNC (Worker-Mesh). Dieser Band prüft aber die
-        // SYNC-Bau-MECHANIK (dispose-before-build, Fail-Retry-Counter, OOM-give-up) —
-        // den Stufe-3-Sync-Fallback, der weiter lebt (Spieler-Chunk, kein-Worker-
-        // Browser, Fallback). Den Worker für die Dauer dieses Tests deaktivieren →
-        // `_acquireVoxelChunkBuild` nimmt direkt Stufe 3 (sync), die Mechanik ist
-        // testbar wie zuvor. Restore am Ende.
+        // Dieses Band prüft die SYNC-Bau-Mechanik (dispose-before-build, Fail-Retry-Counter, OOM-give-up)
+        // des lebenden Stufe-3-Fallbacks. Worker für die Dauer des Tests aus → `_acquireVoxelChunkBuild`
+        // nimmt direkt Stufe 3 (sync); Restore am Ende.
         const _savedWorker = r.state.voxelWorker;
         r.state.voxelWorker = null;
         // Ring auffüllen.
@@ -25972,14 +24787,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         );
     }
 
-    // V9.40-e — drei Heilungen nach dem zweiten Schöpfer-Browser-
-    // Audit: (1) `_addVoxelEdit` clampt Y auf den Chunk-Bereich +
-    // verwirft Edits weit ausserhalb (Schöpfer-Hinweis ehren);
-    // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit
-    // (Memory-Hygiene); (3) `_ensureVoxelChunkAt` (Streaming-Pfad)
-    // bekommt Retry-Counter wie der Re-Mesh-Pfad — vor V9.40-e
-    // markierte er bei OOM sofort `{empty:true}` (V9.24-Symptom-
-    // Geste). Damit sind beide Bau-Pfade (Stream + Re-Mesh) konsistent.
+    // (1) `_addVoxelEdit` clampt Y auf den Chunk-Bereich + verwirft Edits weit außerhalb;
+    // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit; (3) `_ensureVoxelChunkAt` (Streaming)
+    // trägt einen Retry-Counter wie der Re-Mesh-Pfad — beide Bau-Pfade konsistent.
     const voxelV940eResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -26009,14 +24819,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r._disposeVoxelChunk("99,99");
         out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
 
-        // (3) _ensureVoxelChunkAt Retry-Pfad: ein Build-Fail (bare null) → der Retry-
-        // Counter steigt; nach <3 Fails steht KEIN empty-Eintrag (Retry pending), nach 3
-        // ein empty + der Counter ist geräumt. DETERMINISMUS-BOGEN P3: der Fail wird
-        // DETERMINISTISCH erzwungen, indem `_acquireVoxelChunkBuild` kurz auf `()=>null`
-        // gestubbt wird. (Früher hing der Test an einem „degenerierten Fern-Chunk", dessen
-        // Build bei Ammo-Heap-Druck null lieferte — ohne Ammo baut der Fern-Chunk sauber
-        // einen Mesh, der Fail-Pfad würde nie getriggert. Der Mechanismus selbst lebt
-        // unverändert in `_ensureVoxelChunkAt`; wir testen ihn jetzt an seiner Wurzel.)
+        // (3) _ensureVoxelChunkAt Retry-Pfad: Build-Fail (bare null) → Retry-Counter steigt; nach < 3
+        // Fails KEIN empty-Eintrag (Retry pending), nach 3 ein empty + Counter geräumt. Der Fail wird
+        // deterministisch erzwungen (`_acquireVoxelChunkBuild` kurz auf `()=>null` gestubbt).
         const fakeKey = "0,-999"; // weit weg, ungebraucht
         const _savedAcquire = r._acquireVoxelChunkBuild;
         r._acquireVoxelChunkBuild = () => null; // Build-Fail erzwingen (bare null)
@@ -26231,10 +25036,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
         out.hasSetGameMode = typeof r.setGameMode === "function";
         out.hasGetGameMode = typeof r.getGameMode === "function";
-        // Default-Modus für NEUE Welten ist frieden — checken über
-        // _buildEmptyWorldSnapshot (init-time-Verhalten), nicht
-        // runtime-state (vorherige Tests haben evtl. auf pfad
-        // geschaltet).
+        // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
+        // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
         if (typeof r._buildEmptyWorldSnapshot === "function") {
             const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
             out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
@@ -26398,10 +25201,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
     }
 
-    // ### Welle 6.C1 — Hylomorphismus-Inventar ===
-    // 27 Slots mit Tag-Resonanz statt Minecraft-Tabelle. Tag-Profile
-    // emergieren aus computeCompoundTags(blueprint). Drag-Click-Pfad:
-    // Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
+    // ### Hylomorphismus-Inventar ###
+    // 27 Slots mit Tag-Resonanz; Tag-Profile emergieren aus computeCompoundTags(blueprint).
+    // Drag-Click-Pfad: Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
     const wave6c1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -26532,15 +25334,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
             const h = document.getElementById("hof-chronik");
             return !!(h && h.childNodes.length > 0);
         })();
-        // V18.66 Ich-J1 — die WERKSTATT-TOPOLOGIE: die Vorschau-Reihe (HABE-Grid | Avatar-VIEWER | WERK-
-        // Rezepte) + der vollbreite READOUT darunter (das Spec-Sheet + „Was du trägst", wie die Ausgabe-
-        // tabelle der Werkstatt). Das Spec-Sheet + Equip wandern aus den Spalten in den Readout (V9.56-i).
-        // V18.67 Ich-J5 — das WAHRE Modell (Schöpfer-Korrektur): der Viewer ist INFO, nicht der Star. LINKS
-        // die SELBST-INSEL (.ich-self: Viewer · Was du trägst · Spec · Emotion vertikal), MITTE WAS ICH HABE
-        // (Inventar/Hotbar = zentraler Nutzen), RECHTS WERK. Das Spec + Equip leben in der Selbst-Insel (links).
-        // V18.68 Ich-J6 (Schöpfer-Korrektur²): „unten durch all die Statistiken" = eine vollbreite STATSBAR
-        // (.ich-readout) UNTER den drei Spalten. LINKS die Selbst-Insel (.ich-self: Viewer + Was du trägst),
-        // MITTE Inventar (zentral), RECHTS Rezepte; die Stats (Spec) + Emotion in der STATSBAR unten.
+        // WERKSTATT-TOPOLOGIE: drei Spalten — LINKS die Selbst-Insel (.ich-self: Viewer + Was du trägst),
+        // MITTE Inventar/Hotbar (zentral), RECHTS Rezepte (WERK); darunter die vollbreite STATSBAR
+        // (.ich-readout) mit Spec + Emotion.
         out.ichThreeZones = !!(
             document.querySelector(".ich-cols .inventory-col-items #inventory-grid") &&
             document.querySelector(".ich-cols .inventory-col-character .ich-self #ich-stage-canvas") &&
@@ -26593,11 +25389,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
             out.ichSearchClears =
                 visibleRows() === before && filled.every((el) => !el.classList.contains("search-dim"));
         })();
-        // V18.64 — das Fenster PASST in den Viewport (kein Über-den-Rand, die wiederholte Falle): das
-        // Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box).
-        // V18.68 Ich-J6 GEMESSEN (Schöpfer-Modell²): (a) die drei Spalten (SELF | HABE | WERK) nebeneinander;
-        // (b) in der Selbst-Insel sitzt „Was du trägst" (#inventory-equip) UNTER dem Viewer; (c) die STATSBAR
-        // (.ich-readout) liegt VOLLBREIT UNTER den Spalten („unten durch all die Statistiken", wie V18.66).
+        // Das Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box). Dazu:
+        // (a) drei Spalten (SELF | HABE | WERK) nebeneinander; (b) #inventory-equip in der Selbst-Insel
+        // UNTER dem Viewer; (c) .ich-readout vollbreit UNTER den Spalten.
         {
             const ov = document.getElementById("inventory-overlay");
             const ob = ov ? ov.getBoundingClientRect() : null;
@@ -26750,10 +25544,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: Schließen räumt inventorySelected", wave6c1Results.toggleCloseClearsSelected);
     }
 
-    // ### UI-Putz — Ich/Inventar: Rezeptbuch + Equip-Status ###
-    // Der Minecraft-artige Crafting-Weg (Schöpfer: "rezeptbuch gibts ja auch schon in
-    // minecraft, intuitiv"): das Inventar listet die craftbaren Baupläne mit Kosten + einem
-    // rollen-gerechten Fertigen-Knopf, und zeigt sichtbar, was getragen wird (Equip-Status).
+    // ### Ich/Inventar: Rezeptbuch + Equip-Status ###
+    // Das Inventar listet die craftbaren Baupläne mit Kosten + rollen-gerechtem Fertigen-Knopf und
+    // zeigt sichtbar, was getragen wird.
     const recipeBookResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -26814,11 +25607,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("UI-Putz Rezeptbuch: gefertigtes Gerät landet in der Hand", recipeBookResults.craftEquipsHeld);
     }
 
-    // ### Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
-    // Vier Pfade testen: inv→inv (swap), inv→hot (Hotbar setzt),
-    // hot→hot (swap), hot→inv (Hotbar räumen). HTML5-Drag-Events
-    // simulieren wir nicht (Headless-Inkonsistenz); statt dessen
-    // testen wir die Drop-Handler direkt mit fingiertem state.drag.
+    // ### Drag&Drop Inventar ↔ Hotbar ###
+    // Vier Pfade: inv→inv (swap), inv→hot (Hotbar setzt), hot→hot (swap), hot→inv (Hotbar räumen).
+    // HTML5-Drag-Events sind headless inkonsistent → Drop-Handler direkt mit fingiertem state.drag.
     const dragResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -26853,10 +25644,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
         r.state.player.inventory[5] = null;
 
-        // (2) inv → hot mit leerem Hot + Inv-count=1: konsequenter
-        // Slot-Move (Schöpfer-Wunsch V7.77+: „soll nichtmehr im
-        // Inventar sein, nurnoch in der Hotbar"). Inv-Slot wird
-        // null, Hot = name.
+        // (2) inv → hot mit leerem Hot + Inv-count=1: echter Slot-Move — Inv-Slot wird null, Hot = name.
         r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
         r._onSlotDrop(mkEvent(), "hot", 3);
         out.invToHotPlaces = r.state.hotbar[3] === "baum_eiche";
@@ -26903,10 +25691,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // Reset
         r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
 
-        // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE
-        // (Schöpfer-Fix V7.77+: alte Logik räumte nur Hotbar,
-        // Bauplan verschwand). Erwartung: Hot wird null,
-        // Inv-Slot 10 bekommt {waterfall, count: 1}.
+        // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE (nur Hotbar räumen ließe den Bauplan
+        // verschwinden). Erwartung: Hot null, Inv-Slot 10 = {waterfall, count: 1}.
         r.state.player.inventory[10] = null;
         r.state.drag = { kind: "hot", index: 1, name: "waterfall" };
         r._onSlotDrop(mkEvent(), "inv", 10);
@@ -27011,10 +25797,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1 Drag: leerer Hotbar-Slot ist NICHT draggable", dragResults.hotEmptyNotDraggable);
     }
 
-    // ### Welle 6.C1 Pointer-Lock-Fix: Drag&Drop braucht freie Maus ===
-    // Inventar öffnen → exitPointerLock damit Maus-Cursor erscheint
-    // und HTML5-Drag&Drop funktioniert. WASD bleibt aktiv (Minecraft-
-    // Konvention). Esc schließt Inventar.
+    // ### Pointer-Lock: Drag&Drop braucht freie Maus ###
+    // Inventar öffnen → exitPointerLock (Cursor erscheint, HTML5-Drag&Drop geht); WASD bleibt aktiv;
+    // Esc schließt das Inventar.
     const lockResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -27025,10 +25810,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.keys.w = true;
         r.state.keys.a = true;
 
-        // Inventar öffnen → exitPointerLock wird gerufen (wir
-        // können das in jsdom/headless nicht direkt prüfen,
-        // aber wir können verifizieren dass der Pfad ohne Crash
-        // läuft + state.inventoryOpen true wird).
+        // Inventar öffnen → exitPointerLock wird gerufen (headless per Stub gezählt); dazu crash-frei +
+        // state.inventoryOpen true.
         let exitCalled = 0;
         const origExit = document.exitPointerLock;
         document.exitPointerLock = function () {
@@ -27060,11 +25843,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.wKeyStillActiveAfterOpen = r.state.keys.w === true;
         out.aKeyStillActiveAfterOpen = r.state.keys.a === true;
 
-        // Esc-Handler bei offenem Inventar → toggle close.
-        // Wir simulieren das durch direkten Aufruf des Pfads
-        // (Keydown-Synthetic ist in Headless flaky).
-        // Verifizieren dass toggleInventoryOverlay(false) sauber
-        // arbeitet ohne Pointer-Lock erneut zu setzen.
+        // Esc bei offenem Inventar → toggle close: direkter Aufruf statt synthetischem Keydown (headless
+        // flaky); toggleInventoryOverlay(false) darf den Pointer-Lock nicht erneut setzen.
         r.toggleInventoryOverlay(false);
         out.closeWorksWithoutReLock = r.state.inventoryOpen === false;
 
@@ -27097,10 +25877,9 @@ async function checkBandWelle6Keybindings(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ###
-    // LMB abbauen / RMB platzieren über konfigurierbares Keybinding.
-    // Architektur-Hit → removeArchitecture; kein Hit → V9.36-Voxel-carve.
-    // Stamina-Gate via getGameMode wie applyOpToPart (6.C2).
+    // ### Maus-Aktionen (abbauen + platzieren) ###
+    // LMB abbauen / RMB platzieren über Keybinding. Architektur-Hit → removeArchitecture; kein Hit →
+    // Voxel-carve. Stamina-Gate via getGameMode wie applyOpToPart.
     const wave6a6Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -27161,12 +25940,8 @@ async function checkBandWelle6Keybindings(ctx) {
         // removeArchitecture mit nicht-existentem Entry → false
         out.removeArchitectureRejectsGhost = r.removeArchitecture({ id: -1, type: "x" }) === false;
 
-        // V9.35: tryMousePlace ohne aktiven Bau-Modus läuft in den
-        // V9.15-Voxel-Fill-Pfad (das Gegenstück zum LMB-Graben);
-        // seit voxel permanent + irreversibel ist, ist dieser Pfad
-        // immer erreichbar. Wir prüfen darum nur Crash-Frei +
-        // boolean-Rückgabe (true bei erfolgreichem Fill, false
-        // wenn der Raycast nichts trifft).
+        // tryMousePlace ohne aktiven Bau-Modus läuft in den Voxel-Fill-Pfad (Gegenstück zum LMB-Graben,
+        // immer erreichbar) → nur crash-frei + boolean (true = Fill, false = Raycast trifft nichts).
         r.setGameMode("frieden");
         r.state.buildMode.active = false;
         const placeResult = r.tryMousePlace();
@@ -27210,10 +25985,9 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.A6: tryMouseBreak crasht nicht ohne Hit", wave6a6Results.breakSafeWithoutHit);
     }
 
-    // ### Welle 6.A6 V2 — Vision §1.2: Resonanz-Abklang beim Abbauen ###
-    // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit
-    // einem Sinus-Ping. Stille Strukturen bleiben stumm — Verstummen
-    // tönt nur wo Klang war.
+    // ### Resonanz-Abklang beim Abbauen ###
+    // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit einem Sinus-Ping; stille
+    // Strukturen bleiben stumm.
     const wave6a6V2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -27306,11 +26080,9 @@ async function checkBandWelle6Keybindings(ctx) {
         }
     }
 
-    // ### Welle 6.C3 V2 — HUD spiegelt aktuelle Keybindings ###
-    // _updateBuildModeHud baut den Text aus state.keybindings über
-    // _formatBindingCode. setKeybinding + resetKeybindings triggern
-    // ein HUD-Refresh, sodass der Spieler nie veraltete Beschriftung
-    // sieht.
+    // ### HUD spiegelt aktuelle Keybindings ###
+    // _updateBuildModeHud baut den Text aus state.keybindings über _formatBindingCode; setKeybinding
+    // + resetKeybindings triggern ein HUD-Refresh (nie veraltete Beschriftung).
     const wave6c3V2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -27359,10 +26131,9 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3 V2: resetKeybindings stellt HUD-Default wieder her", wave6c3V2Results.afterResetMentionsRMB);
     }
 
-    // ### Welle 6.C3 — Tastenbelegung (Keybindings) ###
-    // Sechs Aktionen rebindable: break, place, confirmBuild, inventory,
-    // cancelBuild, jump. Default-Map ist Minecraft-Konvention. Konflikt-
-    // Auflösung über Swap. Persistiert in localStorage.
+    // ### Tastenbelegung (Keybindings) ###
+    // Sechs Aktionen rebindable: break, place, confirmBuild, inventory, cancelBuild, jump.
+    // Konflikt-Auflösung über Swap; persistiert in localStorage.
     const wave6c3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -27547,11 +26318,9 @@ async function checkBandWelle6HCreatures(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.H Phase 1 — Kreaturen-Aufträge (follow_player / wait / wander) ###
-    // Tasks sind Beziehungs-Gesten, keine Identität (Vision §1.1 Co-Schöpfer).
-    // Default-Task „wander" hält das heutige Emotion-Verhalten — Aura ist stumm.
-    // follow_player + wait haben Aura-Sprite (grün/bernstein) als visuelles Feedback.
-    // Multi-User: Tasks in NON_BROADCASTABLE_OPS (Phase 2 mit expliziten IDs).
+    // ### Kreaturen-Aufträge (follow_player / wait / wander) ###
+    // Default-Task „wander“ hält das Emotion-Verhalten (Aura stumm); follow_player + wait tragen ein
+    // Aura-Sprite (grün/bernstein). Multi-User: Tasks stehen in NON_BROADCASTABLE_OPS.
     const wave6hResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
@@ -27775,11 +26544,9 @@ async function checkBandWelle6HCreatures(ctx) {
         );
     }
 
-    // ### Welle 6.H V2 — Vision-/UX-/Performance-Schließungen ###
-    // Nach Schöpfer-Audit: Audio-Antwort bei Task-Wechsel (§1.2),
-    // Journal-Eintrag bei Geste (§1.1), Leerschlag-Feedback (UX),
-    // Status-Bar-Zähler (UX), Texture-Cache (Performance),
-    // describeProgram-Distanz (UX).
+    // ### Kreaturen-Aufträge: Vision-/UX-/Performance-Schließungen ###
+    // Audio-Antwort bei Task-Wechsel, Journal-Eintrag bei Geste, Leerschlag-Feedback, Status-Bar-
+    // Zähler, Texture-Cache, describeProgram-Distanz.
     const wave6hV2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
@@ -27954,10 +26721,9 @@ async function checkBandWelle6HCreatures(ctx) {
         );
     }
 
-    // ### Welle 6.H Phase 2A — Kreaturen als Hylomorphismus-Compounds ###
-    // Kreaturen sind jetzt Multi-Mesh-Groups aus bodyParts × Material —
-    // selbe Sprache wie Spieler-Seele (6.D) + Architektur (6.G P1.5).
-    // Drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
+    // ### Kreaturen als Hylomorphismus-Compounds ###
+    // Multi-Mesh-Groups aus bodyParts × Material (dieselbe Sprache wie Spieler-Seele + Architektur);
+    // drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
     const wave6hP2aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -28269,10 +27035,9 @@ async function checkBandWelle6HCreatures(ctx) {
         );
     }
 
-    // ### Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern ###
-    // gather-Task mit args.material findet nächste Architektur mit
-    // diesem Material in den Parts, läuft hin, erntet bei haltDist
-    // = 1.5m → entfernt Architektur + addToInventory + memory.
+    // ### Kreaturen sammeln + erinnern ###
+    // gather-Task mit args.material findet die nächste Architektur mit diesem Material, läuft hin und
+    // erntet bei haltDist = 1.5 m (Architektur entfernt, memory geschrieben).
     const wave6hP2bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
@@ -28314,12 +27079,9 @@ async function checkBandWelle6HCreatures(ctx) {
         out.waitEmptyArg = Object.keys(r._buildCreatureTaskArgs("wait", "x")).length === 0;
         out.gatherWithNumberDrops = !r._buildCreatureTaskArgs("gather", 5).material;
 
-        // Gather-Direction: läuft zum Ziel
-        // N7.3 — UNIT-RICHTER: baum_eiche/stein_block sind Studio-bekannt; foundry-ON
-        // hinge `_findNearestArchitectureWithMaterial` (filtert auf `_archIsRendered`)
-        // an der Varianten-Cache-Lotterie des Spawns (kalt = unauffindbar, lauf-abhängig).
-        // Der Prüf-Gegenstand ist die Gather-MECHANIK → die Fixturen bauen deterministisch
-        // klassisch/Grammatik unter lokalem Hook.
+        // Gather-Direction: läuft zum Ziel. UNIT-RICHTER: foundry-ON hinge `_findNearestArchitectureWith-
+        // Material` (filtert `_archIsRendered`) am kalten Varianten-Cache des Spawns → Fixturen klassisch/
+        // Grammatik unter lokalem Hook; Prüf-Gegenstand ist die Gather-MECHANIK.
         window.__withNoFoundry(() => {
             const target = r.spawnArchitecture("baum_eiche", { x: p.x + 10, y: p.y, z: p.z });
             c0.position.set(p.x, p.y, p.z);
@@ -28330,10 +27092,8 @@ async function checkBandWelle6HCreatures(ctx) {
             out.gatherDirTargetsX = dir && dir.x > 0;
             out.targetCached = !!task.args._target;
 
-            // Gather-Ernte bei haltDist — Phase 2B.5: Ernte landet in
-            // carrying (nicht direkt Inventar; Bring-Phase folgt).
-            // c0 weit weg vom Spieler positionieren damit nicht sofort
-            // Übergabe ausgelöst wird.
+            // Gather-Ernte bei haltDist landet in carrying (Bring-Phase folgt), nicht direkt im Inventar.
+            // c0 weit weg vom Spieler, damit nicht sofort die Übergabe auslöst.
             const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
             c0.position.set(p.x + 50.5, p.y, p.z + 50);
             c0.userData.carrying = null;
@@ -28508,11 +27268,9 @@ async function checkBandWelle6HCreatures(ctx) {
         );
     }
 
-    // ### Welle 6.H Phase 2B.5 — harvestArchitecture + Material-Inventar + Bring-Phase ###
-    // EINE Funktion für Spieler-LMB UND Kreatur-gather: Hylomorphismus-
-    // Wurzel. Architekturen lösen sich in Material-Map auf (volumen-
-    // basiert). Inventar dual-typed: {kind:'material'} | {kind:'blueprint'}.
-    // Kreaturen tragen Ernte in carrying, bringen sie zum Spieler.
+    // ### harvestArchitecture + Material-Inventar + Bring-Phase ###
+    // EINE Funktion für Spieler-LMB UND Kreatur-gather: Architekturen lösen sich volumen-basiert in eine
+    // Material-Map auf; Inventar dual-typed {kind:'material'} | {kind:'blueprint'}; carrying → Spieler.
     const wave6hP2b5Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
@@ -28571,26 +27329,19 @@ async function checkBandWelle6HCreatures(ctx) {
         out.matNewSlot = r.state.player.inventory[1] && r.state.player.inventory[1].material === "stein";
         out.matRejectsUnknown = okBad === false;
 
-        // Spieler-LMB nutzt harvestArchitecture (EINE Funktion).
-        // V8.29 — deterministisch: Kamera EXPLIZIT positionieren
-        // (nicht auf die Render-Loop-Kamera des letzten Frames
-        // verlassen, die je nach Spieler-Zustand variiert) +
-        // Test-Block weit von anderen Architekturen spawnen,
-        // damit der Raycast garantiert NUR das Target trifft.
+        // Spieler-LMB nutzt harvestArchitecture (EINE Funktion). Deterministisch: Kamera EXPLIZIT setzen
+        // (nicht die variable Render-Loop-Kamera) + Test-Block fern anderer Architekturen, damit der
+        // Raycast NUR das Target trifft.
         r.state.player.inventory = new Array(27).fill(null);
         const tcx = p.x + 6;
         const tcz = p.z + 6;
         const target = r.spawnArchitecture("stein_block", { x: tcx, y: p.y, z: tcz });
-        // ROBUST gegen die geteilte-Budget-Konkurrenz (s. V12.0-perf.d): das Target-Mesh
-        // DIREKT bauen, statt auf einen einzelnen budgetierten Cull-Tick zu hoffen, der
-        // unter kumulativer Last (Hunderte cold-Arches) das Target nicht erreicht → der
-        // `_pickArchitectureAtCrosshair`-Raycast (THREE) braucht `entry.mesh`.
+        // Target-Mesh DIREKT bauen: das Cull-Budget ist global und erreicht das Target unter kumulativer
+        // Last evtl. nicht; der `_pickArchitectureAtCrosshair`-Raycast braucht `entry.mesh`.
         if (target && !r._archIsRendered(target)) r._rebuildArchitectureMesh(target);
-        // Die Welt-Matrizen aktualisieren, wie es ein Render-Frame täte — der
-        // `_pickArchitectureAtCrosshair`-Raycast (THREE) liest `mesh.matrixWorld` AS-IS;
-        // ein frisch gespawntes Mesh hat sie noch auf Identität (Position erst nach
-        // updateMatrixWorld korrekt). Im echten Spiel rendert der Loop vor jedem Klick;
-        // im Band gibt es zwischen Spawn + Pick keinen Render → hier explizit.
+        // Welt-Matrizen aktualisieren wie ein Render-Frame: `_pickArchitectureAtCrosshair` liest
+        // `mesh.matrixWorld` AS-IS, ein frisch gespawntes Mesh steht bis updateMatrixWorld auf Identität
+        // (im Band gibt es keinen Render zwischen Spawn und Pick).
         if (r.state.scene) r.state.scene.updateMatrixWorld(true);
         if (r.state.camera) {
             // Kamera 6 m vor dem Target, leicht erhöht, schaut drauf.
@@ -28604,15 +27355,9 @@ async function checkBandWelle6HCreatures(ctx) {
         r.state.player.equipped = r.state.player.equipped || {};
         r.state.player.equipped.held = "stein_block";
         r.state.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
-        // V18.386-HÄRTUNG (Last-Robustheit, die V18.273/.276-Disziplin: den fragilen Test härten,
-        // NICHT den Inhalt schwächen). Unter kumulativer Last (Band ~136) ist der Crosshair-Raycast
-        // fragil (das force-gebaute Target-Mesh kann budget-verzögert nicht raycast-bar sein, ODER
-        // der Ray trifft einen der vielen akkumulierten NACHBARN) → tryMouseBreak brach das FALSCHE
-        // Ding (lmbShrunkArch grün, lmbFilledInventory rot). Der Mechanik-Beweis ist in ISOLATION
-        // grün (48 Stein). Die getestete VISION ist „Spieler-LMB → Material-Slot" — und das IST
-        // `_strikeArchitecture` (die EINE Funktion, die tryMouseBreak beim Architektur-Treffer ruft,
-        // s. anazhRealm.js). Wir schlagen daher das Target DIREKT über diesen exakten LMB-Handler
-        // (last-unabhängig, kein Raycast-Glücksspiel); der Raycast selbst ist eine andere Concern.
+        // Der Crosshair-Raycast ist unter kumulativer Last fragil (Target budget-verzögert, oder ein Nachbar
+        // wird getroffen). Die Vision „Spieler-LMB → Material-Slot“ IST `_strikeArchitecture` (die EINE
+        // Funktion, die tryMouseBreak beim Architektur-Treffer ruft) → das Target direkt darüber schlagen.
         const archBeforeLmb = r.state.architectures.length;
         for (let s = 0; s < 40 && r.state.architectures.indexOf(target) >= 0; s++) r._strikeArchitecture(target);
         r.state.player.equipped.held = null;
@@ -28621,12 +27366,9 @@ async function checkBandWelle6HCreatures(ctx) {
             (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
         );
 
-        // Kreatur-gather: zwei-Phasen mit carrying
-        // N7.3 — UNIT-RICHTER (dieselbe Klasse wie P2B.1): foundry-ON hinge die Fixtur
-        // an der Varianten-Cache-Lotterie (`_findNearestArchitectureWithMaterial` filtert
-        // `_archIsRendered`; ein kalt gespawnter stein_block ist unauffindbar — GEMESSEN
-        // lauf-abhängig rot in Lauf 3+4). Die Gather-Mechanik ist der Prüf-Gegenstand →
-        // deterministische Grammatik-Fixtur unter lokalem Hook.
+        // Kreatur-gather: zwei Phasen mit carrying. UNIT-RICHTER: foundry-ON macht einen kalt gespawnten
+        // stein_block für `_findNearestArchitectureWithMaterial` (filtert `_archIsRendered`) unauffindbar
+        // → deterministische Grammatik-Fixtur unter lokalem Hook.
         r.state.player.inventory = new Array(27).fill(null);
         window.__withNoFoundry(() => {
             r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
@@ -28714,12 +27456,9 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2B.5: Material-Slot-Label zeigt Material-Namen", wave6hP2b5Results.uiShowsMaterialName);
     }
 
-    // ### Welle 6.H Phase 2C — Material-Konsum beim Bauen (modus-symmetrisch) ###
-    // Vision §1.5 Schöpfer-darf-frei-erschaffen + Modus-Symmetrie zu
-    // damagePlayer/applyOpToPart-Stamina: pfad konsumiert, frieden +
-    // schöpfer kostenlos. computeBuildCost ≡ harvestArchitecture
-    // (Wertneutralität — bauen einer Box kostet das was harvest
-    // zurückliefert).
+    // ### Material-Konsum beim Bauen (modus-symmetrisch) ###
+    // pfad konsumiert, frieden + schöpfer kostenlos (Symmetrie zu damagePlayer/applyOpToPart-Stamina).
+    // computeBuildCost ≡ harvestArchitecture (Wertneutralität: eine Box kostet, was harvest liefert).
     const wave6hP2cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -28779,10 +27518,8 @@ async function checkBandWelle6HCreatures(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
-        // Welle 6.X.1 A2 — confirmBuild prüft jetzt phantomOnGround
-        // im pfad-Modus. Im Headless-Setup läuft tickBuildMode nicht
-        // (das würde via Raycast die Stabilität setzen). Wir simulieren
-        // einen stabilen Phantom-Stand für den Material-Konsum-Test.
+        // confirmBuild prüft im pfad-Modus phantomOnGround; headless läuft tickBuildMode (Raycast-
+        // Stabilität) nicht → stabilen Phantom-Stand simulieren.
         if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
         const archBeforePfad = r.state.architectures.length;
         const stoneBeforePfad = r.state.player.inventory[0].count;
@@ -28924,13 +27661,9 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
-// V18.131 — U4 (gigant-plan §5-B5 / lod-kaskade-plan U4): die DEKO LIEST DIE
-// KASKADE. Die per-Art-`ring`-Felder fielen; das Band entscheidet mesh (Band 0,
-// 5×5) / impostor (Band 1+2 — EIN Fernfeld-InstancedMesh pro Art, das
-// B2-Mantel-Muster: +6 Draw-Calls statt per-Chunk-Explosion) / none (Band 3).
-// Voller Welt-Beweis: `scripts/diag-deko-fernfeld.cjs` (GEMESSEN GRÜN: 25
-// mesh-Chunks · 5241 nahe Instanzen · Fernfeld 6 Meshes, deterministisch
-// über Re-Anker · Dichte fällt mit dem Band).
+// U4 — die DEKO LIEST DIE KASKADE: das Band entscheidet mesh (Band 0, 5×5) / impostor (Band 1+2 —
+// EIN Fernfeld-InstancedMesh pro Art: +6 Draw-Calls statt per-Chunk-Explosion) / none (Band 3).
+// Voller Welt-Beweis: `scripts/diag-deko-fernfeld.cjs`.
 async function checkBandV18131DekoKaskade(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29000,13 +27733,9 @@ async function checkBandV18131DekoKaskade(ctx) {
     );
 }
 
-// V18.132 — A3 (gigant-plan §5): FERNE BINNENGEWAESSER via seed-deterministische
-// KACHELN. Heimat-Region (±1024) UNANGETASTET; jenseits liefern lazy Kacheln
-// (2048 m, f(seed, Koordinate) — peer-identisch egal wann berechnet; die alte
-// Plan-Idee „Region wandert mit dem Spieler" waere determinismus-brechend
-// gewesen) Seen·Fluesse·Erosion. Voller Beweis: `scripts/diag-ferne-seen.cjs`
-// (GEMESSEN GRUEN: Kachel 34 Fluesse + 13 Seen in 265 ms · Heimat bit-identisch ·
-// Kachel deterministisch · Worker==Main 0/32144 am fernen Fluss-Chunk).
+// A3 — FERNE BINNENGEWÄSSER: Heimat-Region (±1024) unberührt; jenseits liefern lazy Kacheln (2048 m,
+// f(seed, Koordinate) — peer-identisch, egal wann berechnet) Seen · Flüsse · Erosion; eine
+// mitwandernde Region bräche den Determinismus. Voller Beweis: `scripts/diag-ferne-seen.cjs`.
 async function checkBandV18132FerneSeen(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -29098,13 +27827,9 @@ async function checkBandV18132FerneSeen(ctx) {
     }
 }
 
-// V18.133 — S6-B (kampf-plan §11): ERNTBARE FLORA — die Foraging-Oekonomie.
-// Die V17.1-Klein-Vegetation (bisher reine GPU-Deko) ist PFLUECKBAR: Raycast
-// auf die bestehenden InstancedMeshes (instanceId = stabiler Bucket-Index),
-// Ertrag = Alchemie-Materialien kraut/essenz (Arten-Daten `ernte`), Session-
-// Gedaechtnis + Regrow (NICHT persistiert — Flora waechst nach), der Trank-
-// Bauplan zieht GEPFLUECKTES kraut durchs Mach-Tor (V17.65). End-to-end-
-// Probe-bewiesen (pfluecken → +1 kraut → versteckt ueber Rebuild → Regrow).
+// S6-B ERNTBARE FLORA: Raycast auf die Klein-Vegetations-InstancedMeshes (instanceId = stabiler
+// Bucket-Index), Ertrag kraut/essenz (Arten-Daten `ernte`), Session-Gedächtnis + Regrow (nicht
+// persistiert); gepflücktes kraut speist den Trank-Bauplan durchs Mach-Tor.
 async function checkBandV18133Forage(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29194,12 +27919,9 @@ async function checkBandV18133Forage(ctx) {
     );
 }
 
-// V18.134 — F4 Stufe 1 (gigant-plan §5): der SOZIALE BOGEN beginnt — signierte
-// BEWERTUNGS-ZEUGNISSE uebers Mesh. Ein Zeugnis {id,s,t,pub,sig} (ed25519 ueber
-// das stabile Kanonische), LWW pro (Ziel, Schluessel) = CRDT-tauglich
-// konfliktarm; kanal-exklusiv + R1-rate-gegated; R4-Rueckruf-KONSUMENT
-// (revozierte Schluessel fallen aus der Wertungs-Wahrheit). End-to-end mit
-// ZWEITER Identitaet probe-bewiesen (verify, LWW, Tamper, Rueckruf, Batch).
+// Signierte BEWERTUNGS-ZEUGNISSE übers Mesh: {id,s,t,pub,sig} (ed25519 über das stabile
+// Kanonische), LWW pro (Ziel, Schlüssel) = CRDT-tauglich; kanal-exklusiv + rate-gegated;
+// revozierte Schlüssel fallen aus der Wertung. End-to-end mit ZWEITER Identität.
 async function checkBandV18134Social(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -29247,10 +27969,8 @@ async function checkBandV18134Social(ctx) {
                 out.revokeConsumed =
                     agg2.count === 1 &&
                     (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
-                // V18.180-FIX §6.1: revokedKeys ist eine Map — .delete() ist
-                // garantiert da, kein silent-skip mehr (vorher prüfte ein
-                // `if (...delete)`-Gate, das bei Object stillschweigend leer
-                // lief und den Datenmüll wandern liess).
+                // revokedKeys ist eine Map: .delete() direkt, ohne `if (…delete)`-Existenz-Gate (das lief bei
+                // einem Object still leer).
                 r.state.revokedKeys.delete(pubHex.toLowerCase());
             } else {
                 out.revokeConsumed = true;
@@ -29330,10 +28050,9 @@ async function checkBandV18135Bookmarks(ctx) {
     );
 }
 
-// F4 Stufe 3 (V18.142) — FOLGEN: das Merken einer IDENTITÄT (pubkey).
-// Privat-lokal (anazh.feedFollows, nie im Snapshot); KONSUM: der „Gefolgt"-
-// Chip + Filter über data-followed, die Karte trägt den Toggle (nie auf den
-// EIGENEN Werken), das Folgen schreibt witness (die share/witness-Saat).
+// FOLGEN: das Merken einer IDENTITÄT (pubkey), privat-lokal (anazh.feedFollows, nie im Snapshot).
+// KONSUM: „Gefolgt“-Chip + Filter über data-followed; die Karte trägt den Toggle (nie auf eigenen
+// Werken); Folgen schreibt witness.
 async function checkBandV18142Follow(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29392,11 +28111,9 @@ async function checkBandV18142Follow(ctx) {
     );
 }
 
-// F4 Stufe 4 (V18.143) — KOMMENTARE: signierte Text-Zeugnisse uebers Mesh
-// (das V18.134-Substrat, append-only statt LWW). End-to-end mit ZWEITER
-// Ed25519-Identitaet: eigenes Wort signiert+gespeichert+bezeugt (share-
-// Journal) · fremdes verifiziert · Tamper bricht · Rueckruf siebt · Batch
-// + Handler + onopen verdrahtet · der Text bleibt DATEN (textContent-Wand).
+// KOMMENTARE: signierte Text-Zeugnisse übers Mesh (append-only statt LWW). End-to-end mit ZWEITER
+// Ed25519-Identität: eigenes Wort signiert + bezeugt · fremdes verifiziert · Tamper bricht ·
+// Rückruf siebt · Batch/Handler/onopen verdrahtet · der Text bleibt DATEN (textContent-Wand).
 async function checkBandV18143Comments(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -29489,15 +28206,9 @@ async function checkBandV18143Comments(ctx) {
     );
 }
 
-// W18-A+B (V18.144, gigant-plan F3; world-portal-w18-plan §5) — die KO-PRÄSENZ-
-// INJEKTION: AnazhRealm ist die Multiplayer-SCHICHT für Welten, die selbst
-// keine haben. Das Mesh trägt Posen (subworld-pose, B2-Welt-Schlüssel +
-// Empfänger-Rate-Wand), die Heimat injiziert peer-join/peer-state/peer-leave
-// ins Sub-Welt-iframe, die WELT rendert die Gefährten (worlds/begegnung
-// deklariert das Protokoll). Der End-to-End-Beweis über zwei echte Browser
-// lebt in `npm run smoke:copresence`; dieses Band friert die Mechanik:
-// Tier-Wahrheit · Sanitize-Wand · Mesh-Verdrahtung · Sende-/Zustell-/Sweep-
-// Verhalten · Deklarations-Gate · Snapshot-Reise.
+// KO-PRÄSENZ: das Mesh trägt Posen (subworld-pose, Welt-Schlüssel + Empfänger-Rate-Wand), die Heimat
+// injiziert peer-join/-state/-leave ins Sub-Welt-iframe, die WELT rendert die Gefährten
+// (worlds/begegnung). E2E: `npm run smoke:copresence`; dieses Band friert die Mechanik.
 async function checkBandW18CoPresence(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29615,13 +28326,9 @@ async function checkBandW18CoPresence(ctx) {
     check("W18 Ko-Präsenz: Hinweis + Banner KONSUMIEREN die Tier-Wahrheit", res.hintConsumes && res.bannerConsumes);
 }
 
-// W18-C (V18.145, world-portal-w18-plan §6 Variante A) — die INPUT-BRÜCKE:
-// eine Welt, die im ready-Handshake `inputActions` deklariert, bekommt
-// AnazhRealms Tasten als SEMANTISCHE Aktionen ({type:"input", action, down}
-// — Daten, nie Key-Codes). Eingefrorenes Vokabular, Tipp-Feld-Wand (wer in
-// die Konsole schreibt, steuert nicht), Listener lebt + stirbt mit dem
-// Overlay. Der End-to-End-Kreis (Heimat-Taste → fremde Engine bewegt sich →
-// Pose wandert übers Mesh) lebt in `npm run smoke:copresence`.
+// INPUT-BRÜCKE: eine Welt, die im ready-Handshake `inputActions` deklariert, bekommt die Tasten als
+// SEMANTISCHE Aktionen ({type:"input", action, down} — Daten, nie Key-Codes). Eingefrorenes
+// Vokabular, Tipp-Feld-Wand, Listener lebt + stirbt mit dem Overlay. E2E: smoke:copresence.
 async function checkBandW18InputBridge(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29707,12 +28414,9 @@ async function checkBandW18InputBridge(ctx) {
     check("W18-C Input-Brücke: ready-Verdrahtung + Dispose räumt den Listener", res.readyWired && res.disposeCleans);
 }
 
-// W18-D (V18.146, world-portal-w18-plan §7) — DARIN LEBEN: das WOHNEN ist
-// ein globaler Zeiger (anazh.portalDwelling — NIE im Welt-Snapshot), der
-// Boot kehrt durch das Tor zurück, die Gefährten sehen „wohnt in …" übers
-// Mesh (soul-Kanal), der Persistenz-Slot (anazh.portalState) trägt den
-// Zustand der Fremd-Welt zurück (restoreState im enter). Der End-to-End-
-// Bogen (B lädt neu + wacht IN der Fremd-Welt auf) lebt im Smoke.
+// DARIN LEBEN: das Wohnen ist ein globaler Zeiger (anazh.portalDwelling, NIE im Welt-Snapshot);
+// der Boot kehrt durchs Tor zurück, Gefährten sehen „wohnt in …“ (soul-Kanal), anazh.portalState
+// trägt den Zustand der Fremd-Welt zurück (restoreState im enter). Reload-E2E lebt im Smoke.
 async function checkBandW18Dwell(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29805,10 +28509,9 @@ async function checkBandW18Dwell(ctx) {
     check("W18-D Souveränität: Zeiger + Slot leben GLOBAL, nie im Welt-Snapshot", res.notInSnapshot);
 }
 
-// F4 Stufe 5 (V18.147) — „FÜR DICH": die persönliche Feed-Reihung als
-// LESBARE Verdichtung der gebauten sozialen Signale (Folgen +4 · Gemeinschafts-
-// Ø vertrauens-gewichtet · Merken +2 · eigenes Urteil ×0.5 · Gesprächs-Puls
-// gedeckelt). Kein Server, keine Black-Box — der letzte benannte F4-Schritt.
+// „FÜR DICH“: persönliche Feed-Reihung als LESBARE Verdichtung der sozialen Signale (Folgen +4 ·
+// Gemeinschafts-Ø vertrauens-gewichtet · Merken +2 · eigenes Urteil ×0.5 · Gesprächs-Puls
+// gedeckelt). Kein Server, keine Black-Box.
 async function checkBandV18147ForYou(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29859,14 +28562,9 @@ async function checkBandV18147ForYou(ctx) {
     check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
 }
 
-// PHASE E (V18.148, kampf-plan — GEMERKTER FADEN #2): die BEDROHUNG — der
-// letzte Affekt-Konsument, der den Emotion-Kern RUND macht. Ein WILDES Wesen
-// (Temperament tag-emergent aus glühender Substanz, kein hostile-Flag) JAGT
-// die Beute (pfad-only, Furcht schlägt Jagd, sparsam: Raubtiere entstehen
-// nur durch bewusste Schöpfung — predator-Filter hält sie aus den Ambient-
-// Pickern); der Biss läuft durchs damagePlayer-Tor (Rüstung dämpft FLACH wie
-// die Kreatur-Formel) → FURCHT bei niedriger HP (threatened) · TRIUMPH beim
-// Fall eines frischen Jägers (joy+hope) · die SCHULD (V17.54) bleibt daneben.
+// BEDROHUNG: ein WILDES Wesen (Temperament aus glühender Substanz, kein hostile-Flag) jagt nur im
+// pfad, Furcht schlägt Jagd; der predator-Filter hält Raubtiere aus den Ambient-Pickern. Der Biss
+// läuft durchs damagePlayer-Tor → FURCHT bei niedriger HP · TRIUMPH beim Fall eines Jägers.
 async function checkBandPhaseEThreat(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -29915,11 +28613,9 @@ async function checkBandPhaseEThreat(ctx) {
             const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "wesen");
             spawned.push(lamm);
             out.gentleNoHunt = r._creatureHuntDrive(lamm, 0) === false;
-            // (3) der BISS: HP sinkt durchs damagePlayer-Tor; der Cooldown
-            // deckelt; die Rüstung dämpft FLACH — die Probe ISOLIERT die
-            // Abwehr (0 vs 3), denn der weiche Glut-Biss (max(2,…)) klemmt
-            // mit der Basis-defense des Spielers sonst beidseitig auf der
-            // max(1,…)-Untergrenze (keine Marge — der erste Lauf maß es).
+            // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft FLACH.
+            // Die Probe isoliert die Abwehr (0 vs 3): mit der Basis-defense klemmt der weiche Biss (max(2,…))
+            // sonst beidseitig auf der max(1,…)-Untergrenze.
             const savedDef = p.stats.defense;
             p.stats.defense = 0;
             p.hp = p.stats.hpMax || 100;
@@ -29935,10 +28631,8 @@ async function checkBandPhaseEThreat(ctx) {
             const dealt2 = hp1 - p.hp;
             p.stats.defense = savedDef;
             out.armorDampens = dealt2 < dealt1 - 1e-9 && dealt2 >= 1;
-            // (4) die FURCHT: niedrige HP + Jagd-Schlag → sorrow steigt (threatened).
-            // sorrow ZUERST auf 0 (der Warmup kann es an die 1.0-Decke getrieben haben →
-            // ein Anstieg wäre nicht mehr messbar; die KONFUNDIERTE-Warmup-Lehre). So misst
-            // die Probe den INTENT (der Schlag HEBT sorrow) deterministisch, kein Last-Flake.
+            // (4) die FURCHT: niedrige HP + Jagd-Schlag → sorrow steigt. sorrow zuerst auf 0 — der Warmup kann
+            // es an die 1.0-Decke getrieben haben, dann wäre kein Anstieg messbar.
             p.hp = (p.stats.hpMax || 100) * 0.2;
             p.emotions.sorrow = 0;
             const sor0 = p.emotions.sorrow || 0;
@@ -29989,10 +28683,9 @@ async function checkBandPhaseEThreat(ctx) {
     check("Phase E Bedrohung: Jagd + Biss im Bewegungs-Zweig verdrahtet", res.moveWired);
 }
 
-// GEMERKTER FADEN #8 (V18.149) — die STATUSBAR auf ESSENZ (Minecraft-F3-
-// Muster): immer sichtbar nur, was den Spieler trägt (Welt · Wetter · Modus ·
-// Zeit); die Werkstatt-Zahlen ruhen hinter dem ···-Toggle (persistiert).
-// Kein Verlust (P17): alle Items bleiben im DOM, alle Schreiber schreiben.
+// STATUSBAR auf ESSENZ: immer sichtbar nur Welt · Wetter · Modus · Zeit; die Werkstatt-Zahlen ruhen
+// hinter dem ···-Toggle (persistiert). Kein Verlust: alle Items bleiben im DOM, alle Schreiber
+// schreiben.
 async function checkBandV18149Statusbar(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -30038,13 +28731,9 @@ async function checkBandV18149Statusbar(ctx) {
     check("V18.149 Statusbar: der ···-Toggle flippt + persistiert", res.toggleShows && res.toggleHides);
 }
 
-// FADEN #7 (V18.150) — FAHRZEUG-FAHR-TIEFE: das Fahr-Profil EMERGIERT aus
-// der Substanz (C1-Gelenke: Räder = Tempo + Ausrollen; Masse = Trägheit),
-// der Sattel führt die C5-Kurven (EINE Bewegungs-Quelle), das Gefährt
-// RICHTET sich aus + seine Gelenke fahren mit (Phase ∝ Weg), und Reiter +
-// Gefährt sind EINS (Kollision ruht im Sattel; unerntbar; brennglas-fest —
-// alle drei GEMESSEN im diag-ride: Sammler/Brennglas fraßen den Wagen unterm
-// Reiter weg, der statische Körper stand als Bordstein im Weg).
+// FAHR-TIEFE: das Fahr-Profil emergiert aus der Substanz (Räder = Tempo + Ausrollen, Masse =
+// Trägheit), der Sattel führt die Bewegung (EINE Quelle), Gelenke fahren mit (Phase ∝ Weg). Reiter
+// + Gefährt sind EINS: Kollision ruht im Sattel, unerntbar, brennglas-fest.
 async function checkBandV18150Ride(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -30070,10 +28759,8 @@ async function checkBandV18150Ride(ctx) {
             const prof = r._vehicleProfile(entry);
             out.profile =
                 !!prof && prof.radCount === 4 && prof.topSpeedMul > 1.3 && prof.kBrake < prof.kAcc && prof.mass > 1;
-            // (2) der Sattel: Aufsteigen ruht die Kollision + liest das Profil.
-            // DETERMINISMUS-BOGEN P3 — die Kollision ist feld-nativ: das GERITTENE Gefährt
-            // blockt seinen Reiter NICHT, weil `_stepCharacterStructures` den `riddenId`
-            // (= player.mountedArch) überspringt (der Ersatz für den alten Ammo-Dispose).
+            // (2) der Sattel: Aufsteigen ruht die Kollision + liest das Profil — `_stepCharacterStructures`
+            // überspringt `riddenId` (= player.mountedArch), das gerittene Gefährt blockt seinen Reiter nicht.
             r.mountArchitecture(entry);
             out.collisionRests =
                 r.state.player.mountedArch === entry.id && /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
@@ -30133,12 +28820,9 @@ async function checkBandV18150Ride(ctx) {
     check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);
 }
 
-// FADEN #6 (V18.151) — INDEXEDDB-PERSISTENZ: die localStorage-5-MB-Wand
-// fällt. Die großen Welt-Snapshots leben ZUSÄTZLICH in IndexedDB (additiv +
-// graceful: ohne IDB bleibt alles wie heute); beim Lesen gewinnt der ECHT
-// frischere Stand (IDB-Stempel vs. worldsIndex.lastPlayed); wirft
-// localStorage QUOTA, trägt IndexedDB die Welt weiter (ehrliches WARN
-// statt stillem Verlust). Der winzige Index bleibt synchron in localStorage.
+// INDEXEDDB gegen die localStorage-5-MB-Wand: große Snapshots leben ZUSÄTZLICH in IDB; beim Lesen
+// gewinnt der frischere Stand (IDB-Stempel vs. worldsIndex.lastPlayed); bei QUOTA trägt IDB die
+// Welt (WARN statt stillem Verlust). Der Index bleibt synchron in localStorage.
 async function checkBandV18151Idb(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -30220,12 +28904,9 @@ async function checkBandV18151Idb(ctx) {
     );
 }
 
-// R6-KERN (V18.152, robustheit-plan — GEMERKTER FADEN #1): die SELBST-
-// ERWEITERUNG beginnt. Capability-Inversion: eine Welt REICHT eine Fähigkeit
-// (DSL-Daten in die Quarantäne-Queue, NIE ausgeführt), der Mensch GEWÄHRT
-// souverän (die seit R2 eingefrorene grant_capability-Geste erwacht), der
-// LAUF geht durch die dslRun-Sandbox; der R4-Rückruf wirkt VOR und NACH der
-// Gewähr; die Gewähr überlebt den Reload durch die heutige Wand.
+// R6 SELBST-ERWEITERUNG (Capability-Inversion): eine Welt REICHT eine Fähigkeit (DSL-Daten in die
+// Quarantäne-Queue, nie ausgeführt), der Mensch GEWÄHRT (grant_capability), der LAUF geht durch die
+// dslRun-Sandbox; der Rückruf wirkt VOR und NACH der Gewähr; die Gewähr überlebt den Reload.
 async function checkBandR6Capability(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -30275,12 +28956,8 @@ async function checkBandR6Capability(ctx) {
             out.runs = ran.ok === true && r.state.weather === "rainy";
             const pub = "cd".repeat(32);
             r.state.grantedCapabilities["regen-tanz"].authorPubKey = pub;
-            // V18.180-FIX §6.1: revokedKeys ist eine Map (war Object — der
-            // alte if(.add)-Gate prüfte gegen die Set-API; weil Object weder
-            // .add noch .has noch .delete hat, fiel der Test still ins else
-            // und meldete revokeStops/revokeGates als "passed", ohne dass
-            // jemals ein revozierter Schlüssel die Wand traf. Jetzt: .set()
-            // gegen Map, behavioral GEMESSEN, kein Skip-Pfad mehr.
+            // revokedKeys ist eine Map → .set(); kein Gate auf die Set-API (fiel bei einem Object still ins
+            // else und meldete grün, ohne dass ein revozierter Schlüssel die Wand traf).
             r.state.revokedKeys.set(pub, { at: Date.now() });
             out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
             r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
@@ -30331,10 +29008,9 @@ async function checkBandR6Capability(ctx) {
     check(`R6 Selbst-Erweiterung: „gewähre/wirke" in der EINEN Chat-Tabelle`, res.chatGestures);
 }
 
-// V18.154 — M2: DIE ROLLEN-WAHRHEIT (meister-plan §2, GEMESSEN diag-roles). Die größte
-// Audit-Einzel-Wurzel: dem Register fehlte `vehicle` (Wagen→Bauwerk, Holzross→Seele,
-// Bäume→Trank) + das Hüll-Volumen-Exploit (auseinanderziehen = stärker) + der Klon
-// verlor Substanz (connections) und Intent (role). KONSUM, nicht Existenz.
+// M2 ROLLEN-WAHRHEIT (diag-roles): das Register kennt `vehicle`, kein Hüll-Volumen-Exploit
+// (auseinanderziehen ≠ stärker), der Klon behält Substanz (connections) + Intent (role).
+// KONSUM, nicht Existenz.
 async function checkBandM2RollenWahrheit(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -30343,11 +29019,9 @@ async function checkBandM2RollenWahrheit(ctx) {
         const blu = r.state.blueprints;
         const sigs = r.constructor.FORM_ROLE_SIGNATURES;
 
-        // (1) die fahrzeug-Rolle + ihr MECHANISMUS: der Wagen (4 rad-Gelenke + sitz)
-        // und das Holzross (sitz + moveable) emergieren vehicle; am Holzross schlägt
-        // die vehicle-Resonanz das alte soul (livingBody) — die rideable-Konjunktion.
-        // AUSLÖSCHUNGS-WELLE — der Wagen lebt als Substanz-Zeile (KIND_SUBSTANCE) +
-        // hier als Test-Blueprint (für den Klon-Erbe-Teil (5)).
+        // (1) die fahrzeug-Rolle: der Wagen (4 rad-Gelenke + sitz) und das Holzross (sitz + moveable)
+        // emergieren vehicle; am Holzross schlägt die vehicle-Resonanz soul (rideable-Konjunktion). Der
+        // Wagen lebt in KIND_SUBSTANCE + hier als Test-Blueprint (für den Klon-Erbe-Teil (5)).
         const KSm2 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         if (blu._t_m2_wagen) delete blu._t_m2_wagen;
         blu._t_m2_wagen = {
@@ -30454,12 +29128,9 @@ async function checkBandM2RollenWahrheit(ctx) {
     );
 }
 
-// V18.155 — M3: DER RITT VOLLENDET (meister-plan §2; Befunde 9/10/11/27). Das
-// GEFÄHRT führt vertikal (steht auf dem Terrain — der V18.150-Beifang-Riss
-// „versinkt komplett" fällt), der Reiter folgt ihm (Body kinematisch auf
-// Sitz-Höhe); die SITZ-Pose (Walk-Cycle ruht); die Rad-ACHSE = Zylinder-
-// Eigenachse (nicht die Verbindungs-Richtung = Propeller) + Anker im Rad-
-// Zentrum (kein Eiern); der Rüstungs-FIT generisch (der ext.y-Pfad war TOT).
+// M3 RITT: das GEFÄHRT führt vertikal (steht auf dem Terrain), der Reiter folgt (kinematisch auf
+// Sitz-Höhe); SITZ-Pose (Walk-Cycle ruht); Rad-ACHSE = Zylinder-Eigenachse (nicht die Verbindungs-
+// Richtung) + Anker im Rad-Zentrum (kein Eiern); der Rüstungs-FIT ist generisch.
 async function checkBandM3RittVollendet(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -30511,21 +29182,16 @@ async function checkBandM3RittVollendet(ctx) {
             for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
             const bottom = entry.position.y + r._compoundBottomY(bp) * (entry.scale || 1);
-            // W-F (V18.175, V9.56-i): der fahrzeug_wagen ist HOLZ → er SCHWIMMT
-            // (Substanz-emergent). Steht er über Wasser, ruht die Unterkante an
-            // der Wasserlinie (geglättete Lauf-Fläche − 25 cm Tiefgang), nicht am
-            // Terrain — die Test-Intent ist „kein Versinken", nicht „klebt am
-            // Boden". Die Erwartung folgt der Welt-Wahrheit (trocken → Terrain).
+            // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante an der geglätteten
+            // Lauf-Fläche − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
             const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
             const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
             const sollY = expectFloat ? runSurf - 0.25 : terr;
             out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - sollY) < 0.35;
             out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
             out.vyZeroed = Math.abs(r.state._fieldVy) < 1e-6;
-            // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), KEIN gefrorenes
-            // Maß — so re-verankert sich JEDE Fahrzeug-Gestalt (auch grosse Räder aus den
-            // Lab-Rezepten) korrekt auf dem Terrain. Der Test prüft die ABLEITUNG, nicht
-            // eine Magie-Zahl → robust gegen jede Rad-Gestalt.
+            // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), kein gefrorenes Maß → jede
+            // Fahrzeug-Gestalt verankert korrekt; der Test prüft die Ableitung, keine Magie-Zahl.
             const expectClear = -r._compoundBottomY(bp) * (entry.scale || 1);
             out.clearCached = Number.isFinite(entry._groundClear) && Math.abs(entry._groundClear - expectClear) < 0.05;
 
@@ -30542,10 +29208,8 @@ async function checkBandM3RittVollendet(ctx) {
             out.poseCleared = !!parts && Math.abs(parts.leftLeg.rotation.x) < 0.6; // Idle ≈ 0
             r.applyPlayerSoul(savedSoul);
 
-            // (4) der RÜSTUNGS-FIT ist generisch (der tote ext.y-Pfad fiel): die
-            // Quelle liest ext.dy/dx/dz, Höhe (1.15/dy) UND Breite (0.95/dw) deckeln.
-            // (Positiv-Probe — der Erklär-Kommentar in der Quelle nennt das alte
-            // Literal, eine Negativ-Probe matchte den Kommentar.)
+            // (4) der RÜSTUNGS-FIT ist generisch: die Quelle liest ext.dy/dx/dz; Höhe (1.15/dy) UND Breite
+            // (0.95/dw) deckeln (Positiv-Probe).
             const fitSrc = window.__codeOf(r._tickWornArmorVisual);
             out.fitReadsDy = /ext\.dy/.test(fitSrc) && /ext\.dx/.test(fitSrc) && /1\.15 \/ dy/.test(fitSrc);
             return out;
@@ -30576,11 +29240,9 @@ async function checkBandM3RittVollendet(ctx) {
     check("M3 Ritt: der Rüstungs-FIT liest die echte Werk-Hülle (ext.dy — der ext.y-Pfad war tot)", res.fitReadsDy);
 }
 
-// V18.156 — M1: DIE VERBINDUNGS-WERKSTATT WIE EIN PROFI (meister-plan §2;
-// Befunde 1+2). Der Dialog ist ZWEI Gruppen Glyph-KACHELN (Besiege/Scrap-
-// Mechanic) statt der 12-Zeilen-Textliste; der SUBSTANZ-VORSCHLAG = argmax
-// über die BESTEHENDE Stärke-Wahrheit (kein zweites Mapping); ANKER-Kacheln
-// starten den FACE-SNAP-Pick (3×3 je Fläche), der Punkt reist als Substanz.
+// M1 VERBINDUNGS-WERKSTATT: der Dialog ist ZWEI Gruppen Glyph-KACHELN; der SUBSTANZ-VORSCHLAG =
+// argmax über die bestehende Stärke-Wahrheit (kein zweites Mapping); ANKER-Kacheln starten den
+// FACE-SNAP-Pick (3×3 je Fläche), der Punkt reist als Substanz.
 async function checkBandM1VerbindungsWerkstatt(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -30699,12 +29361,9 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
     );
 }
 
-// V18.162 — DER NUTZER-BLICK (Schöpfer-Szenario diag-nachbau, 3 Brüche GEMESSEN
-// + geheilt): der NACHGEBAUTE Holz-Wagen wurde „Trank" und war nicht platzierbar.
-// (1) Der Sofort-Löse-Toggle machte die Anker-Kacheln auf verbundenen Parts
-// unerreichbar → der Dialog öffnet IMMER (✂ Lösen ist eine sichtbare Kachel,
-// ein Kachel-Klick ERSETZT). (2) consumable frisst keinen Holz-Kasten mehr
-// (spread-Gegen-Achse). (3) Das Rezeptbuch kennt die Fahrzeug-Gruppe.
+// NUTZER-BLICK (diag-nachbau): (1) der Verbindungs-Dialog öffnet IMMER (✂ Lösen ist eine Kachel,
+// ein Klick ERSETZT), sonst sind Anker verbundener Parts unerreichbar; (2) consumable frisst keinen
+// Holz-Kasten (spread-Gegen-Achse); (3) das Rezeptbuch kennt die Fahrzeug-Gruppe.
 async function checkBandNutzerBlickNachbau(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -30828,12 +29487,8 @@ async function checkBandNutzerBlickNachbau(ctx) {
     );
 }
 
-// V18.163 — DIE DETAIL-TIEFE (Schöpfer: „die Tiefe jedes Details erkannt?"):
-// (1) der CEL-KONTRAST — das ECHTE Verständnis des Wunsches („kontrast selbst
-// erhöhen, pinselstrichartig" = die Stufen-SPREIZUNG, nicht Mikro-Noise):
-// die LUT-Werte spreizen um die Mitte, der Struktur-Boden hält. (2) die
-// GEMESSENE HUD-Kollision (ab 1366 px überlappten Konsole+Hotbar 32–165 px) —
-// die Minecraft-Wahrheit: der Chat sitzt ÜBER der Hotbar-Ebene.
+// HUD-Regel: auf schmalen Schirmen sitzt der Chat ÜBER der Hotbar-Ebene (Konsole und Hotbar
+// kollidierten sonst).
 async function checkBandV18163DetailTiefe(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -30858,13 +29513,9 @@ async function checkBandV18163DetailTiefe(ctx) {
     );
 }
 
-// V18.164 — §7.1 (meister-plan): die AUTO-VERBINDUNG (Besiege-Muster) + §7.2
-// (Sattel-Optik + Probesitz-Ghost). GEMESSEN via diag-autoconnect (der Wagen
-// entsteht ohne einen Dialog-Klick); hier die stehenden Wände: Transition-
-// Geburt/-Lösung · „✂ Lösen" geehrt · Typ folgt der Substanz · Tür/Wirbel nur
-// aus bewusster Hand (Hütten wackeln nie) · die rotations-bewusste Kontakt-
-// Hülle (das liegende Rad BERÜHRT) · der geheilte Remap-Riss (Anker überleben
-// Part-Löschen) · Sattel in der Welt, Ghost nur in der Werkstatt.
+// AUTO-VERBINDUNG + Sattel-Optik/Probesitz-Ghost (behavioral: diag-autoconnect). Wände: Transition-
+// Geburt/-Lösung · „✂ Lösen“ geehrt · Typ folgt Substanz · Tür/Wirbel nur aus bewusster Hand ·
+// rotations-bewusste Kontakt-Hülle · Anker überleben Part-Löschen · Ghost nur in der Werkstatt.
 async function checkBandV18164AutoConnect(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31014,12 +29665,9 @@ async function checkBandV18164AutoConnect(ctx) {
     );
 }
 
-// V18.164 — §7.3(a) (meister-plan): die ARCHETYPEN-BANK. ~46 synthetische
-// Positiv- + GEGEN-Beispiele je Rolle als STEHENDE Invariante — jeder künftige
-// Signatur-Edit läuft gegen die Bank (nicht nur 31 Built-ins). Kalibriert via
-// diag-archetypbank (dieselbe Tabelle); die Bank fing beim Bau sofort zwei
-// echte Fragilitäten: den first-match-Spiegel (kompakte Körper hatten keine
-// Glieder) + die Kronen-Blob-Glieder (die Eiche wurde kurz zur Seele).
+// ARCHETYPEN-BANK: ~46 synthetische Positiv- + GEGEN-Beispiele je Rolle als stehende Invariante —
+// jeder Signatur-Edit läuft gegen die Bank, nicht nur gegen die Built-ins. Kalibriert via
+// diag-archetypbank (dieselbe Tabelle).
 async function checkBandArchetypBank(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31206,20 +29854,9 @@ async function checkBandArchetypBank(ctx) {
     );
 }
 
-// V18.164 — §7.3(b) WARUM-Führung + §7.5 Licht-Folgepunkte (meister-plan):
-// die Lehrer-Geste („+0.3 Standfläche → Fahrzeug") ist ARITHMETISCH EHRLICH
-// (die Drehung flippt die Rolle wirklich) + sichtbar im Spektrum; die HISM-
-// Bäume laufen GEMESSEN durch den microTexture-Zweig (Befund-21-Rest); das
-// Mond-Rim lebt nacht-getrieben; die M7-Regler überleben den Reload (der
-// geheilte V8.59-Riss).
-// V18.165 — Ψ0 (meister-plan §8.8a): das ORTHOGONALITÄTS-MESSGERÄT als stehende
-// Wand. Paarweise Kosinus-Winkel aller Signaturen je Tabelle gegen die KALIBRIERTE
-// Baseline (diag-band-belegung, 12.06.): Eiche=Trank/Holzross=Seele WAREN zu enge
-// Winkel — jede künftige Signatur, die ein Paar ENGER macht als die heute
-// akzeptierte Nähe (die bewussten Geschwister definieren sie), wird ROT, bevor
-// der Browser sie als Fehl-Rolle zeigt. Der KLASSIFIKATOR (FORM_ROLE) trägt
-// zusätzlich eine harte semantische Schranke (0.35) — dort wird Übersprechen
-// zur falschen ROLLE, nicht nur zur unscharfen Anzeige.
+// Ψ0: paarweise Kosinus-Winkel aller Signaturen je Tabelle gegen die kalibrierte Baseline
+// (diag-band-belegung) — ein Paar ENGER als die akzeptierte Geschwister-Nähe wird ROT. FORM_ROLE
+// trägt zusätzlich eine harte Schranke (0.35): dort wird Übersprechen zur falschen ROLLE.
 async function checkBandPsi0Winkel(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31320,12 +29957,9 @@ async function checkBandPsi0Winkel(ctx) {
     );
 }
 
-// V18.168 — W-B (meister-plan §8.2, Korpus R-002): die HOF-KARTE FÜHLT. Der EINE
-// Emotions-Renderer (_buildEmotionRows) baut die 6-Achsen-Reihen für ICH (live)
-// und HOF (statisch — an der Stelle der Natur); die NATUR ruht als <details>;
-// die Lesbarkeit (R-006) ist KONSUM-bewiesen (die Farbe IST hell, nicht „Token
-// gesetzt"); die Werte-Balken tragen sichtbare Füllung (die Sichtbarkeits-Lüge
-// als Invariante — M-B1 maß die CSS gesund, das Band hält sie so).
+// W-B HOF-KARTE: der EINE Emotions-Renderer (_buildEmotionRows) baut die 6-Achsen-Reihen für ICH
+// (live) und HOF (statisch); die NATUR ruht als <details>; Lesbarkeit KONSUM-bewiesen (die Farbe
+// IST hell, nicht „Token gesetzt“); die Werte-Balken tragen sichtbare Füllung.
 async function checkBandWBHofKarte(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31397,12 +30031,9 @@ async function checkBandWBHofKarte(ctx) {
     );
 }
 
-// V18.169 — W-C (meister-plan §8.2, Korpus R-003..R-009 + R-036): der ICH-RAUM
-// SAGT DIE WAHRHEIT. (a) Das Mach-Tor SPRICHT inline (EIN Formatter, drei
-// Konsumenten — der GEMESSENE „Stats ändern sich nicht"-Bruch war ein STILLER
-// Fehlschlag in der zugeklappten Konsole); (b) EIN Boost-Band (Doublette tot,
-// Abgelaufene werden ENTFERNT); (c) Haupthand/Nebenhand benannt; (e) Label==Tat
-// (vehicle → „Fertigen"); (h) der WARUM-CHIP (lesbare Emergenz, R-036).
+// W-C ICH-RAUM: (a) das Mach-Tor spricht inline (EIN Formatter, drei Konsumenten — kein stiller
+// Fehlschlag in der zugeklappten Konsole); (b) EIN Boost-Band, Abgelaufene werden entfernt;
+// (c) Haupthand/Nebenhand benannt; (e) Label == Tat (vehicle → „Fertigen“); (h) der WARUM-CHIP.
 async function checkBandWCIchWahrheit(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -31485,10 +30116,8 @@ async function checkBandWCIchWahrheit(ctx) {
         out.warumKarten =
             /_blueprintRoleWhy/.test(window.__codeOf(r._recipeRow)) &&
             /_blueprintRoleWhy/.test(window.__codeOf(r._feedRecipeCard));
-        // (g) V18.172-Nachbau-Fund — das LEISTEN-LOCH ist tot: bei Ruhe verlässt
-        // das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade; vorher
-        // stand „Freude" mit 49 px + Doppel-Gap unsichtbar in der Leiste);
-        // Wieder-Entzünden holt es zurück. End-VERHALTEN, nicht Existenz.
+        // (g) bei Ruhe verlässt das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade, sonst ein
+        // unsichtbares Loch in der Leiste); Wieder-Entzünden holt es zurück. End-VERHALTEN, nicht Existenz.
         {
             const lab = document.getElementById("status-emotion");
             const item = document.getElementById("status-emotion-item");
@@ -31536,11 +30165,9 @@ async function checkBandWCIchWahrheit(ctx) {
     );
 }
 
-// V18.170 — W-D (meister-plan §8.2, Korpus R-010 + R-017): RITT-FEEL + SPAWN-
-// HYGIENE. (1) Der Reiter sitzt: die Steh-Anatomie (+0.9) wich der SITZ-Hüfte
-// (SITZ_HIP_OFFSET 0.45 — GEMESSEN schwebte er exakt +0.90 m). (2) Die SPIELER-
-// KLEMME an der Kreatur-Wurzel: kein frisches Wesen materialisiert IM Spieler
-// (≥3 m radial); Restore/Peer-Sicht bleiben PRECISE (bit-treu).
+// W-D RITT + SPAWN-HYGIENE: (1) der Reiter sitzt auf der SITZ-Hüfte (SITZ_HIP_OFFSET 0.45) statt
+// der Steh-Anatomie (+0.9); (2) SPIELER-KLEMME an der Kreatur-Wurzel: kein frisches Wesen
+// materialisiert IM Spieler (≥ 3 m radial); Restore/Peer-Sicht bleiben PRECISE (bit-treu).
 async function checkBandWDRittSpawn(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31582,11 +30209,9 @@ async function checkBandWDRittSpawn(ctx) {
     check("W-D Restore ist precise — das Wesen wacht auf, wo es stand (Opt-out-Karte wie M6)", res.restorePrecise);
 }
 
-// V18.165 — W-A (meister-plan §8.2, Korpus R-001): die KONSOLE ist heil. Die
-// Zustands-CSS gewinnt über JEDEN Inline-Schreiber (Drag/Restore): eine per Drag
-// gesetzte Inline-Höhe wird vom Einklappen GEDECKT (Widget-Maß), beim Entfalten
-// kehrt sie von selbst zurück — drei unterscheidbare, korrekte Höhen. Plus: der
-// Griff ist eine SICHTBARE Ecken-Affordanz (Messing-Winkel) mit Richtungs-Titel.
+// W-A KONSOLE: die Zustands-CSS gewinnt über JEDEN Inline-Schreiber (Drag/Restore) — eine Drag-
+// Höhe wird vom Einklappen GEDECKT und kehrt beim Entfalten zurück (drei unterscheidbare Höhen).
+// Der Griff ist eine SICHTBARE Ecken-Affordanz (Messing-Winkel) mit Richtungs-Titel.
 async function checkBandV18165KonsoleHeil(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31637,18 +30262,9 @@ async function checkBandV18165KonsoleHeil(ctx) {
     );
 }
 
-// V18.166 — Γ-GENESE (genese-plan Γ1/Γ2/Γ5): das FEUCHTE-Feld (die fünfte
-// Welt-Stimme, aus der HYDROSPHÄRE abgeleitet statt aus Noise) + die KRONEN-
-// Lesarten (EIN Klump-Feld, drei Öko-Verteilungen) + der Determinismus-Schliff
-// (nie Math.random im Worldgen). Die Invarianten messen die KERN-Funktion mit
-// kontrolliertem Input (V17.32) + den KONSUM beider Gating-Stellen (V17.31,
-// die Doppel-Gating-WAND nah/Fernfeld) + das Legacy-Tor (genVersion fehlt → 1
-// → Feld schweigt, schilf ruht — bestehende Welten behalten ihr Gesicht).
-// V18.181-merge-Λ — die SIEBEN Λ-Bänder als eigenständige Mess-Wände (Plan
-// §7.1, Welle 6-Nachhol nach Reviewer-Befund). Vorher waren die Λ-Wahrheiten
-// in tesla-W-Bändern verankert via Source-Probes — Regression wäre rot, aber
-// nicht als Λ-Klassifikation. Diese sechs Bänder + das schon gebaute
-// checkBandV18177AAA (= das siebte) schließen die Plan §7.1-Lücke strukturell.
+// Die Λ-Bänder (checkBandLambda* + checkBandV18177AAA) sind eigenständige Mess-Wände — eine
+// Regression wird als Λ-Klassifikation rot, nicht versteckt in fremden Source-Probes.
+// Λ.1: ein humanoider Körper (lebendige Masse mittig) ist body-shaped, ein Stein-Tempel nicht.
 async function checkBandLambda1LivingCenter(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31754,11 +30370,9 @@ async function checkBandLambda2HismSynthese(ctx) {
             Number.isFinite(A.INSTANCE_TINT.rangeH) &&
             Number.isFinite(A.INSTANCE_TINT.rangeS) &&
             Number.isFinite(A.INSTANCE_TINT.rangeV);
-        // Spawn 50 baum_eiche mit verschiedenen Seeds; sammle tintH/S/V.
-        // Λ.2 ist die clever-gauss-Achse (tintH/S/V seed-deterministisch aus
-        // Bit-Bändern in spawnArchitecture). Yaw-σ ist W-H (tesla, kommt aus
-        // _vegetationSampleSpawn via opts.rotationY), separat geprüft via
-        // checkBandWHWald-Familie — hier NICHT mit-prüfen.
+        // 50 baum_eiche mit verschiedenen Seeds; tintH/S/V sammeln (Λ.2: seed-deterministisch aus Bit-
+        // Bändern in spawnArchitecture). Yaw-σ (_vegetationSampleSpawn via opts.rotationY) prüft die
+        // checkBandWHWald-Familie, nicht dieses Band.
         const tints = [];
         const tintS = [];
         const tintV = [];
@@ -31766,10 +30380,8 @@ async function checkBandLambda2HismSynthese(ctx) {
         try {
             r.state.architectures = [];
             for (let i = 0; i < 50; i++) {
-                // Echte 32-bit-Seeds — die spawnArchitecture-Bit-Bänder >>> 5,
-                // >>> 13, >>> 21 brauchen die volle Breite, sonst trifft >>> 21
-                // bei seed < 2²¹ immer 0 (alle tintS gleich → σ=0). Mulberry32-
-                // ähnlicher Hash für sehr verstreute Seeds aus kleinem i.
+                // Echte 32-bit-Seeds: die Bit-Bänder (>>> 5, >>> 13, >>> 21) brauchen die volle Breite, sonst ist
+                // >>> 21 bei seed < 2²¹ immer 0 (σ = 0). Der multiplikative Hash streut kleine i über 32 bit.
                 const seed = ((i + 1) * 2654435761) >>> 0;
                 const a = r.spawnArchitecture(
                     "baum_eiche",
@@ -31824,11 +30436,9 @@ async function checkBandLambda2HismSynthese(ctx) {
         return out;
     });
     check("Λ.2 HISM: INSTANCE_TINT ist frozen + trägt rangeH/S/V", res.instanceTintFrozen && res.instanceTintShape);
-    // PARITÄT (V18.421, Band-Nachzug V9.56-i): der Instanz-Tint ist BEWUSST NEUTRAL-NAH
-    // (±8 % Luminanz-Jitter, uniform [0.92, 1.08] → σ = 0.16/√12 ≈ 0.046) — der alte
-    // Farbwurf (σ > 0.05) zerstörte die Studio-Blattfarbe multiplikativ (rote Kronen,
-    // 50 % zu dunkle Stämme, im Paritäts-Bild gemessen). Der Vertrag jetzt: Varianz
-    // EXISTIERT (σ > 0.02, kein Klon-Flat) UND bleibt GEBUNDEN (σ < 0.06, kein Wurf).
+    // Der Instanz-Tint ist bewusst NEUTRAL-NAH: ±8 % Luminanz-Jitter, uniform [0.92, 1.08] → σ =
+    // 0.16/√12 ≈ 0.046. Vertrag: Varianz EXISTIERT (σ > 0.02, kein Klon-Flat) und bleibt GEBUNDEN
+    // (σ < 0.06 — stärkerer Farbwurf verfälscht die Studio-Blattfarbe multiplikativ).
     check(
         `Λ.2 HISM: tintH-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${res.tintHSpread && res.tintHSpread.toFixed(3)})`,
         Number.isFinite(res.tintHSpread) && res.tintHSpread > 0.02 && res.tintHSpread < 0.06
@@ -31887,17 +30497,9 @@ async function checkBandLambda4Streu(ctx) {
         // V18.174 — instanceColor pro-Instanz (Hash-Stream, setColorAt).
         out.instanceColorCode = /hashInstanceTint/.test(src) && /setColorAt\(i,\s*tintColor\)/.test(src);
         const matSrc = window.__codeOf(r._scatterMaterial);
-        // V18.267 — der pro-Instanz-Tint kommt jetzt über Three.js' nativen
-        // InstanceNode-Pfad (setupDiffuseColor multipliziert instanceColor
-        // automatisch): das Material setzt das useInstanceTint-Flag, liest aber
-        // NICHT mehr manuell `attribute("instanceColor")` (das war redundant +
-        // die „instanceColor not found"-Fehlerquelle, da die geteilte Geometrie
-        // das Per-Mesh-Attribut nicht trägt).
-        // Strip Kommentare bevor wir auf den manuellen Read prüfen (CLAUDE.md-
-        // Lehre, Vorbild Z. ~34340: der Code darf das Wort tragen — der V18.267-
-        // Erklär-Kommentar zitiert den entfernten `attribute("instanceColor")`-
-        // Block —, der CODE darf es nicht. Ohne Strip stolpert der Test über
-        // seine eigene Dokumentation (deterministisch rot).
+        // Pro-Instanz-Tint läuft über den nativen InstanceNode-Pfad (setupDiffuseColor × instanceColor):
+        // das Material setzt useInstanceTint, liest aber nie manuell `attribute("instanceColor")` (die
+        // geteilte Geometrie trägt es nicht). Negativ-Probe auf kommentar-gestripptem Code (matCode).
         const matCode = window.__codeOf(matSrc);
         out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && !/attribute\("instanceColor"/.test(matCode);
         // V18.176 — 12 Gestalt-Varianten (3 je Art: blume/farn/gestruepp/schilf).
@@ -32016,13 +30618,9 @@ async function checkBandLambda6Detail(ctx) {
     );
 }
 
-// V18.181-merge-Λ Sub 3g — AAA-Atmosphäre Regression-Wand (Welle 6-Nachhol).
-// Ein scharfer Review fand: `static get AERIAL()` in der Klasse überdeckte das
-// Top-Level `AnazhRealm.AERIAL = ...` LAUTLOS (Getter ohne Setter, non-strict-
-// Assignment fällt durch). Mein Sub 3g-Bump war funktional tot — die Antennen
-// lasen 0.1/0.6 statt 0.14/0.75. Diese Wand fängt JEDE künftige Wiederholung
-// derselben Bug-Klasse (frozen Konstante + Getter-Schatten + non-strict-Fall-
-// durch).
+// AAA-Atmosphäre-Wand: AERIAL ist frozen, und KEIN `static get AERIAL()` in der Klasse überdeckt
+// das Top-Level `AnazhRealm.AERIAL = …` (Getter ohne Setter: die non-strict-Zuweisung fällt LAUTLOS
+// durch, die Antennen läsen alte Werte) — fängt die ganze Getter-Schatten-Klasse.
 async function checkBandV18177AAA(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -32037,11 +30635,8 @@ async function checkBandV18177AAA(ctx) {
         out.aoCap = aer.aoCap;
         out.heightCap = aer.heightCap;
         out.frozen = Object.isFrozen(aer);
-        // Doppel-Definitions-Wand: prüfe Source — kein AKTIVER static get
-        // AERIAL() in der Klasse (würde das Top-Level-Assignment schweigend
-        // überdecken). Comments mit dem Wort sind erlaubt — sie dokumentieren
-        // die Heilung. Der Regex strippt Kommentar-Zeilen + sucht dann das
-        // Pattern als echte Method-Definition.
+        // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse; __codeOf strippt die
+        // Kommentare (sie dürfen das Wort zitieren), gesucht wird die echte Method-Definition.
         const srcNoComments = window.__codeOf(A);
         out.noGetterShadow = !/static\s+get\s+AERIAL\s*\(/.test(srcNoComments);
         return out;
@@ -32125,10 +30720,8 @@ async function checkBandGammaGenese(ctx) {
                 out.feuchteLegacy = r._feuchteAt(bank.x, bank.z, bank.sy);
                 r.state.worldMeta.genVersion = 2;
             }
-            // (3) Affinitäts-KONSUM kontrolliert (V17.32): DERSELBE Punkt,
-            // feuchte explizit 1 vs 0 → Δ = tags.lebendig × Gewicht / 4, exakt
-            // und welt-zustands-unabhängig. Punkt mit unsaturierter Basis wählen
-            // (der [0,1]-Clamp würde das Δ sonst fressen).
+            // (3) Affinitäts-KONSUM kontrolliert: DERSELBE Punkt, feuchte 1 vs 0 → Δ = tags.lebendig × Gewicht/4,
+            // exakt und welt-zustands-unabhängig. Punkt mit unsaturierter Basis wählen (der [0,1]-Clamp fräße Δ).
             let aff = null;
             for (let i = 0; i < 64 && !aff; i++) {
                 const x = -780 + (i % 8) * 220;
@@ -32161,14 +30754,9 @@ async function checkBandGammaGenese(ctx) {
                     neutral: r._kronenMult({}, pWald.x, pWald.z),
                 };
             }
-            // (5) Arten-Daten + der KONSUM BEIDER Gating-Stellen (die Doppel-
-            // Gating-WAND: nah-Mesh UND Fernfeld lesen feldNass/minGen/kronen
-            // identisch — sonst ploppt die Dichte am Band-Übergang).
-            // V18.187-Welle-11 V9.56-i Test-Wanderung: schilf/farn sind nach
-            // der Λ.4-V18.176-Heilung in 3 Gestalt-Varianten gespalten (schilf_
-            // reihe/_tuff/_rohr, farn_normal/_breit/_schmal — Tag-Neutralität
-            // bewahrt). Die Probe sucht jetzt prefix-basiert + akzeptiert
-            // generic oder erste Variante.
+            // (5) Arten-Daten + KONSUM BEIDER Gating-Stellen: nah-Mesh UND Fernfeld lesen feldNass/minGen/kronen
+            // identisch — sonst ploppt die Dichte am Band-Übergang. schilf/farn sind in Gestalt-Varianten
+            // gespalten (schilf_reihe/_tuff/_rohr, farn_normal/_breit/_schmal) → Suche per Präfix.
             const species = A.KLEIN_VEGETATION_SPECIES;
             const schilf = species.find((s) => s.name === "schilf" || s.name.startsWith("schilf_"));
             const farn = species.find((s) => s.name === "farn" || s.name.startsWith("farn_"));
@@ -32232,11 +30820,8 @@ async function checkBandGammaGenese(ctx) {
         `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta && res.affDelta.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
         Number.isFinite(res.affDelta) && res.affDelta > 0.04
     );
-    // V18.181-merge-Λ Sub 3h: Γ1-Lesart-4 BODEN-ATMET-Source-Probe (Mix-Linie
-    // dampEarth+F_VIS_LO lebt) als Stamm-Wand — die A/B-bankDLum-Behavioral-
-    // Probe braucht die clever-gauss-Probe-Logik im evaluate-Block, die ich
-    // hier NICHT zusätzlich migriere (Code-Konflikt mit der HEAD-Form);
-    // die Source-Probe deckt den Schutz strukturell ab.
+    // Γ1-Lesart-4 BODEN-ATMET als Source-Wand: die Mix-Linie (dampEarth + F_VIS_LO) lebt in
+    // _attachVoxelFieldColors.
     check(
         "Γ1-Lesart-4 Mix-Linie LEBT in der Source (dampEarth + F_VIS_LO)",
         /dampEarth/.test(ctx.realm ? "" : "") ||
@@ -32431,10 +31016,8 @@ async function checkBandV18164WarumLicht(ctx) {
             out.hintEhrlich = score(hinted.targetRole, v2) >= score(hinted.winner, v2) - 1e-6;
             out.hintFlippt = winner2 === hinted.targetRole || out.hintEhrlich;
         }
-        // …und der KONJUNKTIONS-RUF spricht als TAT: der sitzlose Wagen
-        // resoniert Fahrzeug schon als SPEKTRUM-Spitze (GEMESSEN nach dem
-        // consumable-Spiegel-Heal), der Klassifikator wartet auf den Sitz —
-        // die Zeile ruft die Tat aus („Fahrzeug ruft: setze einen Sitz-Anker").
+        // …und der KONJUNKTIONS-RUF spricht als TAT: der sitzlose Wagen resoniert Fahrzeug schon als
+        // Spektrum-Spitze, der Klassifikator wartet auf den Sitz → der Ruf nennt die Tat (Sitz-Anker).
         const RZ = { x: 0, y: 0, z: 1.5707963 };
         const wagenOhneSitz = {
             name: "__warum2",
@@ -32467,12 +31050,9 @@ async function checkBandV18164WarumLicht(ctx) {
         // Material(color) → isFlatStructure → Aerial-Chain (outputNode lebt).
         const flat = r._archFlattenBlueprint("baum_eiche");
         out.baumInstanced = !!flat && flat.instanceable === true;
-        // V18.389 (DAS NEUE KLEID P4) — der SCHATTEN-ZWILLING (`l.shadowTwin`) ist ein
-        // OPAKER, kamera-unsichtbarer Schatten-Caster (SHADOW_TWIN_LAYER) — er läuft
-        // bewusst NICHT durch den microTexture-/Aerial-Anzeige-Zweig (kein outputNode).
-        // Die §7.5(b)-Invariante gilt den ANZEIGE-Leaves (bark/card/core); der Zwilling
-        // wird gefiltert (die gemessene neue Realität, kein Pflaster — er trägt keinen
-        // Anzeige-Node, er trägt nur die solide Silhouette für den Schatten-Pass).
+        // Der Schatten-Zwilling (`l.shadowTwin`, SHADOW_TWIN_LAYER) ist ein opaker, kamera-unsichtbarer
+        // Schatten-Caster ohne Anzeige-Node → bewusst NICHT im microTexture-/Aerial-Zweig. Die §7.5(b)-
+        // Invariante gilt nur den ANZEIGE-Leaves (bark/card/core); der Zwilling wird gefiltert.
         const displayLeavesE = flat ? flat.leaves.filter((l) => !l.shadowTwin) : [];
         out.baumMicro =
             !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
@@ -32506,10 +31086,8 @@ async function checkBandV18164WarumLicht(ctx) {
             /setTerrainNightFloor/.test(srcRestore) &&
             /setTerrainMoonRim/.test(srcRestore);
 
-        // (6) §6.5 LADE-NEBEL (Befund 23, GEMESSEN diag-startloch): solange der
-        // Ziel-Ring nicht voll steht, deckt der Nebel die GEBAUTE Kante (der
-        // Boot-Blick in die Mantel-Stanze fällt). KONSUM: der Fog-Sync liest
-        // _builtRingRadius; im warmen Test-Ring ist der Spieler-Chunk gebaut.
+        // (6) §6.5 LADE-NEBEL: solange der Ziel-Ring nicht voll steht, deckt der Nebel die GEBAUTE Kante.
+        // KONSUM: der Fog-Sync liest _builtRingRadius; im warmen Test-Ring ist der Spieler-Chunk gebaut.
         out.ladeNebelKonsum = /_builtRingRadius/.test(window.__codeOf(r._dayNightApplyHemiAndFog));
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
@@ -32543,12 +31121,9 @@ async function checkBandV18164WarumLicht(ctx) {
     );
 }
 
-// V18.157 — M5: HUD/RÄUME-POLITUR nach Spieler-Denken (meister-plan §2;
-// Befunde 13–17 + 26, alle GEMESSEN via diag-m5-hud). Resize-Sprung (105→180
-// beim ersten Pixel) · Logbuch = Dev-Sicht (EIN Schalter) · Emotion-Track auf
-// dunklem Grund · Boost-Chips mit Effekt + LIVE-Restzeit · Equip/Pickup →
-// Sofort-Refresh · Umwidmen zog in die Werkstatt (eigener W12-Test) ·
-// Hof-Gemüt als HP-artiger Balken.
+// M5 HUD/Räume-Politur: kein Resize-Sprung der Konsole · Logbuch = Dev-Sicht (EIN Schalter) ·
+// Emotion-Track auf dunklem Grund · Boost-Chips mit Effekt + LIVE-Restzeit · Equip/Pickup →
+// Sofort-Refresh · Hof-Gemüt als HP-artiger Balken (Umwidmen: eigener W12-Test).
 async function checkBandM5HudPolitur(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -32668,11 +31243,9 @@ async function checkBandM5HudPolitur(ctx) {
     );
 }
 
-// V18.158 — M4: EIN SUCH/FILTER-KERN (meister-plan §2; Befund 12 „Tags klappen
-// nicht überall"). GEMESSEN lebten 5 Privat-Filter mit UNGLEICHER Logik (die
-// Habe matchte die ROHE role-id — „bauwerk" traf architecture nie). Jetzt:
-// _matchQuery (Mehrwort-UND) + _blueprintSearchText (der EINE Heuhaufen:
-// Rolle deutsch + Material + Tags) — alle Flächen konsumieren sie (V9.82).
+// M4 — EIN Such/Filter-Kern: _matchQuery (Mehrwort-UND) + _blueprintSearchText (der EINE Heuhaufen:
+// Rolle deutsch + id + Material + Tags); alle Flächen konsumieren sie. Nie auf die rohe role-id
+// matchen („bauwerk" träfe architecture nie).
 async function checkBandM4SuchKern(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -32699,10 +31272,8 @@ async function checkBandM4SuchKern(ctx) {
             out.heuhaufen =
                 /bauwerk/.test(hay) && /architecture/.test(hay) && /eisen/.test(hay) && /probe-block/.test(hay);
             // (3) DIESELBE Query trifft in ALLEN Flächen (die M4-Invariante):
-            // (a) Omnibox — die GLEICHE Mehrwort-Query „bauwerk eisen" wie
-            // Werkstatt+Ich (V9.56-i: „bauwerk" allein wurde mit den W-H-Baum-
-            // Varianten unspezifisch — sie sind bauwerk, aber nicht eisen; die
-            // UND-Query siebt sie raus und surfaced den Eisen-Block im 14er-Cap).
+            // (a) Omnibox — Mehrwort-Query „bauwerk eisen" wie Werkstatt+Ich; „bauwerk" allein träfe auch die
+            // Baum-Varianten, die UND-Query siebt sie und hält den Eisen-Block im 14er-Cap.
             const omni = r._omniboxSearch("b: bauwerk eisen");
             out.omniboxHits = (omni || []).some((x) => /Probe-Block/.test(x.label));
             // (b) Werkstatt-Liste — display folgt dem EINEN Kern.
@@ -32759,11 +31330,9 @@ async function checkBandM4SuchKern(ctx) {
     check("M4 Such-Kern: alle Flächen KONSUMIEREN den Kern (Source — kein Privat-Filter-Rest)", res.konsum);
 }
 
-// V18.159 — M6: ERNTE/SPAWN-EHRLICHKEIT (meister-plan §2; Befunde 18/19/25,
-// alle GEMESSEN via diag-harvest). Der Ertrags-SOCKEL (die Faust brach den Baum
-// nach 8 Hieben, yieldMult war 0 → nichts) · die EINE Mühe-Sprache fürs Terrain
-// (Schlag-Zahl im pfad, Stamina anteilig) · die Spieler-Klemme an der WURZEL
-// (spawnArchitecture — neue Pfade wie der Kreatur-BUILD umgingen V17.28).
+// M6 Ernte/Spawn-Ehrlichkeit: (1) Ertrags-SOCKEL (yieldMult ≥ yieldMin — die Faust erntet den Baum),
+// (2) EINE Mühe-Sprache fürs Terrain (Schlag-Zahl im pfad, Stamina anteilig), (3) die Spieler-Klemme
+// an der WURZEL spawnArchitecture (kein Spawn-Pfad umgeht sie).
 async function checkBandM6ErnteSpawn(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -32816,10 +31385,8 @@ async function checkBandM6ErnteSpawn(ctx) {
             const perStrike = digFit.stamina * Math.min(1, digFit.progress);
             out.staminaAnteilig = perStrike < digFit.stamina - 1e-9 && perStrike * (1 / digFit.progress) < 30;
 
-            // (3) die WURZEL-KLEMME: ein großer Spawn AUF dem Spieler (ohne Opt-out)
-            // weicht aus; precise/silent/string-id bleiben EXAKT (bit-treu).
-            // AUSLÖSCHUNGS-WELLE — village fiel; die grosse haus_basis-Substanz
-            // (KIND_SUBSTANCE, Footprint ≥ MIN) trägt die Klemm-Probe als Test-Blueprint.
+            // (3) die WURZEL-KLEMME: ein großer Spawn AUF dem Spieler (ohne Opt-out) weicht aus; precise/silent/
+            // string-id bleiben EXAKT. Test-Blueprint: haus_basis-Substanz (KIND_SUBSTANCE, Footprint ≥ MIN).
             r.setGameMode("frieden");
             const KSm6 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
             if (r.state.blueprints._t_m6_haus) delete r.state.blueprints._t_m6_haus;
@@ -32865,11 +31432,9 @@ async function checkBandM6ErnteSpawn(ctx) {
     );
 }
 
-// W-H (meister-plan §8.5, V18.178) — DER WALD-WOW (R-016 „2 Arten × 1 Gestalt"):
-// GESTALT-VARIANTEN je Art (Worldgen-seed-gewählt NACH dem Affinitäts-Sieg →
-// die Verteilung bleibt bit-identisch, die V17.16-Falle strukturell vermieden;
-// dieselben Materialien+Formen → tag-neutral GEMESSEN). Headless: die Tag-
-// Neutralität + die Spawn-Verdrahtung; der Wald-WOW ist Schöpfer-Browser.
+// W-H Wald: die Gestalt-Variante je Art wird NACH dem Affinitäts-Sieg gewählt → die Verteilung bleibt
+// bit-identisch und tag-neutral (gleiche Materialien + Formen). Headless: Tag-Neutralität,
+// Spawn-Verdrahtung, Pro-Instanz-Rotation + ihre Persistenz.
 async function checkBandWHWald(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -32880,15 +31445,8 @@ async function checkBandWHWald(ctx) {
         // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
         const refTbl = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
         out.refTableHat = !!(refTbl.baum_eiche && refTbl.baum_kiefer);
-        // (2) die Bäume sind NICHT als Variante im Affinitäts-Wettstreit (candidates) —
-        // der Spawn wählt die Gestalt NACH dem Sieg, mit dem kanonischen bestName.
-        // wahrerwuchs §5 S2 (V9.56-i — die Probe WANDERT mit dem Code): die alte
-        // `switch(bestName){…_jung/_alt/_breit…}`-Variantenwahl ist GESCHNITTEN.
-        // Die Gestalt-Vielfalt kommt jetzt aus der GRAMMATIK (grown, sizeClass/age-
-        // Genom über _growTreeBlueprintForSpawn) bzw. der kanonischen Basis (gen<4) —
-        // KEINE statische _jung/_alt-Variante mehr im Spawn. Das STRUKTURELLE Gesetz
-        // bleibt heil (Varianten nicht im candidates-Pool); nur ihr Beweis aktualisiert
-        // sich auf den neuen, einen Pfad.
+        // (2) die Bäume treten im Affinitäts-Wettstreit (candidates) NUR als kanonische Art an — keine
+        // statische _jung/_alt/_breit-Variante im Pool; die Gestalt entsteht NACH dem Sieg.
         const src = window.__codeOf(r._vegetationSampleSpawn);
         const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
         const candidatesBlock = candidatesMatch ? candidatesMatch[1] : "";
@@ -32897,15 +31455,9 @@ async function checkBandWHWald(ctx) {
             /["']baum_kiefer["']/.test(candidatesBlock) &&
             !/baum_eiche_(breit|jung|alt)/.test(candidatesBlock) &&
             !/baum_kiefer_schlank/.test(candidatesBlock);
-        // der Sieger (bestName) wird NACH dem Affinitäts-Sieg durch die Grammatik
-        // gestaltet (gen≥4) bzw. als kanonische Basis gespawnt (gen<4) — und die
-        // Funktion trägt KEINE _jung/_alt/_breit-Variante mehr (der Legacy-Schnitt).
-        // V18.389 (DAS NEUE KLEID P1 — DER WALD-GENERATOR) — der Baum-Zweig delegiert aus
-        // `_vegetationSampleSpawn` an `_forestPlantChunk` (return 0, EINE Baum-Quelle). Die
-        // Gestalt-Wahl + Größe wanderten MIT dem Code (V9.56-i — die Probe wandert mit) →
-        // die Beweise lesen jetzt den Wald-Generator. Das STRUKTURELLE Gesetz bleibt heil
-        // (die kanonische Art tritt an, die Variante wird NACH der Nischen-Entscheidung
-        // GEWACHSEN — keine statische _jung/_alt-Variante im Pool NOCH im Generator).
+        // Der Baum-Zweig delegiert aus `_vegetationSampleSpawn` an `_forestPlantChunk` (EINE Baum-Quelle) →
+        // die Beweise lesen den Wald-Generator: die kanonische Art tritt an, die Variante entsteht NACH der
+        // Nischen-Entscheidung — keine statische _jung/_alt-Variante im Pool NOCH im Generator.
         const forestSrc = window.__codeOf(r._forestPlantChunk);
         // „Drähte statt Kopien" (08.07.): die Dart-PFLANZ-LOGIK (Größen-Formel) lebt jetzt in
         // phyto-core.planForestCell (byte-identisch umgezogen, Dart-Parität bewiesen) — die
@@ -32914,29 +31466,17 @@ async function checkBandWHWald(ctx) {
             window.__phytoCore && typeof window.__phytoCore.planForestCell === "function"
                 ? window.__codeOf(window.__phytoCore.planForestCell)
                 : window.__codeOf(r._forestCellDarts);
-        // Die Variante wächst region-deterministisch (`_growTreeBlueprintForSpawn(d.sp,…)`)
-        // NACH dem Poisson-/Nischen-Sieg; gespawnt wird die KANONISCHE Art (`d.sp`) — die
-        // Identität ist tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint. KEINE
-        // statische _jung/_alt/_breit-Variante mehr (der V18.257-Legacy-Schnitt bleibt).
-        // V9.56-i — die Probe wandert mit dem Code (DAS NEUE KLEID — SOURCE-NEUTRALER WALD): der Wald
-        // spawnt die KANONISCHE Art (`d.sp` = `baum_eiche`) + den Varianten-Index als METADATEN
-        // (`_lodVariantIndex`), region-deterministisch NACH dem Nischen-Sieg (`_treeVariantIndexFor(d.sp,…)`).
-        // KEINE eager-gewachsene ~170k-Geometrie mehr im Spawn (`_growTreeBlueprintForSpawn` ist raus) — der
-        // RENDER wählt die Quelle: das Studio-Asset [Foundry] ODER, nur wenn das Studio aus ist, die lazy
-        // gewachsene Geometrie. Das STRUKTURELLE Gesetz hält unverändert: die kanonische Art tritt an, die
-        // Variante ist Metadaten NACH dem Sieg, KEIN statischer _jung/_alt/_breit-Bauplan im Generator.
+        // Der Wald spawnt die KANONISCHE Art (`d.sp`) + den Varianten-Index als METADATEN (`_lodVariantIndex`
+        // über `_treeVariantIndexFor(d.sp,…)` NACH dem Nischen-Sieg); keine eager gewachsene Geometrie im
+        // Spawn — der RENDER wählt die Quelle (Studio-Asset [Foundry], sonst lazy gewachsen).
         out.variantPickAfterWin =
             /_treeVariantIndexFor\(\s*d\.sp/.test(forestSrc) &&
             /_enqueueVegetationSpawn\(\s*d\.sp\b/.test(forestSrc) &&
             /_lodVariantIndex:\s*variantIndex/.test(forestSrc) &&
             !/baum_\w+_(jung|alt|breit|schlank)/.test(forestSrc);
-        // (4) GRÖSSEN-SPAN: die Größe wurde REICHER (reverse-J statt linear ±40 %) und
-        // wanderte in den Generator — eine seed-deterministische Größe (`_forestCellDarts`:
-        // Selbstausdünnung + seltene Überhälter → `0.55 + 1.45·ue^1.45`) reist als
-        // `scale: d.s` in die HISM-Instanz-Matrix. Der Kern der Invariante bleibt.
-        // V18.492 — die Probe wandert mit dem Code: die Größen-Formel lebt jetzt als EIN
-        // geteiltes Gesetz `phyto-core.forestTreeSize` (Lab + Welt lesen es; planForestCell
-        // ruft es) — die Formel steht dort, der Dart-Plan ruft sie, der Spawn trägt `d.s`.
+        // (4) GRÖSSEN-SPAN: seed-deterministische reverse-J-Größe `0.55 + 1.45·ue^1.45` (Selbstausdünnung +
+        // seltene Überhälter) als EIN geteiltes Gesetz `phyto-core.forestTreeSize` (Lab + Welt; planForestCell
+        // ruft es); sie reist als `scale: d.s` in die HISM-Instanz-Matrix.
         const _pc = window.__phytoCore;
         const sizeSrc =
             _pc && typeof _pc.forestTreeSize === "function" ? window.__codeOf(_pc.forestTreeSize) : cellDartsSrc;
@@ -32944,10 +31484,9 @@ async function checkBandWHWald(ctx) {
             /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(sizeSrc) &&
             (sizeSrc === cellDartsSrc || /forestTreeSize\(/.test(cellDartsSrc)) &&
             /scale: d\.s\b/.test(forestSrc);
-        // (5) DER KLON-KILLER — die PRO-INSTANZ-ROTATION: _archEntryWorldMatrix
-        // wirkt entry.rotationY (sonst zeigt ein ganzer Wald nach Norden) UND der
-        // Spawn setzt sie seed-deterministisch. Behavioral: zwei Entries mit
-        // verschiedener rotationY liefern verschiedene Welt-Matrizen.
+        // (5) DER KLON-KILLER — Pro-Instanz-Rotation: _archEntryWorldMatrix wirkt entry.rotationY (sonst
+        // zeigt ein ganzer Wald nach Norden) UND der Spawn setzt sie seed-deterministisch; behavioral:
+        // verschiedene rotationY → verschiedene Welt-Matrizen.
         out.rotInMatrix = /entry\.rotationY/.test(window.__codeOf(r._archEntryWorldMatrix));
         out.rotInSpawn = /spawnYaw/.test(src) && /rotationY: spawnYaw/.test(src);
         const m0 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 0 });
@@ -32982,12 +31521,9 @@ async function checkBandWHWald(ctx) {
     );
 }
 
-// Φ-Bogen (V18.188) — DAS WELTEN-NETZ: M9-Sprosse 1 (Φ1 Welt-Adressen +
-// tragendes Portal · Φ2 Sichtbarkeit + Hausrecht). Das Web-Muster gemessen:
-// Welt verlinkt Welt, Portal=Hyperlink, Adresse=URL, Host=Server. Taille-
-// konform additiv (worldMeta-Felder wachsen per §4 minor, alte Builds müssen
-// sie ignorieren); jeder Bann/Kick/Adress-Setter ist R2 (kein DSL-Op trägt
-// sie — die Disjunktheit am Pool ist die Wand).
+// Φ Welten-Netz: Φ1 Welt-Adressen + tragendes Portal · Φ2 Sichtbarkeit + Hausrecht (Welt verlinkt
+// Welt, Portal = Hyperlink, Adresse = URL). Taille-konform additiv (alte Builds ignorieren neue
+// worldMeta-Felder); Bann/Kick/Adress-Setter sind R2 — KEIN DSL-Op trägt sie (die Wand).
 async function checkBandPhiArchipel(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -33026,10 +31562,8 @@ async function checkBandPhiArchipel(ctx) {
         // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
         // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
-        // Die neuen Akte: NICHT in dslComposeAtomic, NICHT in NON_BROADCASTABLE_OPS
-        // (sie sind GAR KEINE Ops). Strukturelle Probe an der `dslRun`-Source:
-        // setPortalAddress/setWorldVisibility/setWorldGuestRights/kickPeer/banPeer
-        // tauchen NICHT als Ops in der Run-Logik auf (kein op === "kick_peer" o.ä.).
+        // Die neuen Akte sind GAR KEINE Ops (nicht in dslComposeAtomic / NON_BROADCASTABLE_OPS) — Source-
+        // Probe: setPortalAddress/setWorldVisibility/setWorldGuestRights/kickPeer/banPeer fehlen in dslRun.
         const dslRunSrc = window.__codeOf(r.dslRun);
         out.noKickOp = !/op\s*===\s*["']kick_peer["']/.test(dslRunSrc);
         out.noBanOp = !/op\s*===\s*["']ban_peer["']/.test(dslRunSrc);
@@ -33046,10 +31580,8 @@ async function checkBandPhiArchipel(ctx) {
             r._canonicalWorldAddress(a1).includes(`"${f}":`)
         );
 
-        // (P5) _admitForeignWorldAddress siebt strukturell + Signatur:
-        //   - kaputte Form fällt (kein worldId, kein wss-broker, etc.)
-        //   - gültige Form passt durch + Hex-Hülle wird angehängt
-        //   - revozierte Herkunft fällt am Eingang
+        // (P5) _admitForeignWorldAddress siebt Form + Signatur: kaputte Form fällt (kein worldId, kein
+        // wss-broker …), gültige passt + bekommt die Hex-Hülle, revozierte Herkunft fällt am Eingang.
         out.admitNull = r._admitForeignWorldAddress(null) === null;
         out.admitNoBroker =
             r._admitForeignWorldAddress({ worldId: "w1", roomId: "r1", broker: "http://x", label: "L" }) === null;
@@ -33120,11 +31652,8 @@ async function checkBandPhiArchipel(ctx) {
         out.portalClearOk = !!(clearRes && clearRes.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;
         delete r.state.blueprints["phi_test_portal"];
 
-        // (P8) Visibility-Setter wirkt + die Lobby-BRIDGE existiert (Source-
-        // Probe). Den ECHTEN Connected-Round-Trip (publishToLobby setzt p2p.
-        // lobby.published nur, wenn p2p.connected === true) deckt smoke-
-        // multiuser; im Headless returnt publishToLobby früh {ok:false,
-        // reason:"not_connected"} — die ABSICHT der Bridge ist trotzdem grep-bar.
+        // (P8) Visibility-Setter wirkt + die Lobby-BRIDGE existiert (Source-Probe). Den echten Round-Trip
+        // deckt smoke-multiuser; headless returnt publishToLobby früh {ok:false, reason:"not_connected"}.
         const visBefore = r.state.worldMeta.visibility;
         r.setWorldVisibility("gelistet");
         out.visGelistet = r.state.worldMeta.visibility === "gelistet";
@@ -33214,11 +31743,9 @@ async function checkBandPhiArchipel(ctx) {
     );
 }
 
-// Φ-Bogen V2 (V18.189) — M9-SPROSSEN 2+3: Φ3 Regions-Archipel + Φ4
-// Anwesenheits-Schicht + Φ5 Mittragen-Schicht. Drei Wellen, ein Band.
-// Φ3: das Web-Muster räumlich (Regions-Bubbles, opt-in via regionsActive);
-// Φ4: regional aufgelöste Köpfe (Broker-Antwort, Client-Cache); Φ5: das
-// Torrent-Modell für Welten (pinnen, als Mitträger antworten).
+// Φ3 Regions-Archipel (Regions-Bubbles, opt-in via regionsActive) · Φ4 Anwesenheit (regional
+// aufgelöste Köpfe: Broker-Antwort, Client-Cache) · Φ5 Mittragen (Welten pinnen, mittragend
+// antworten).
 async function checkBandPhiArchipelV2(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -33262,18 +31789,13 @@ async function checkBandPhiArchipelV2(ctx) {
             typeof onRes.currentRegionKey === "string" && /^r-?\d+_-?\d+$/.test(onRes.currentRegionKey);
         out.isActiveNow = r.isRegionsActive() === true;
 
-        // (Q6) Bei aktivem Regions-Archipel löst initP2PSync die regionale
-        // roomId. Wir testen die Auflösungs-Logik direkt (kein WS-Aufbau):
-        // wenn regionsActive=true + worldId vorhanden → der DEFAULT-Raum
-        // ist worldId:currentRegionKey. Wir prüfen das, indem wir die Source-
-        // Probe des regionalDefault-Pfads matchen.
+        // (Q6) Bei aktivem Regions-Archipel (regionsActive + worldId) löst initP2PSync den Default-Raum
+        // worldId:currentRegionKey — Source-Probe des regionalDefault-Pfads, kein WS-Aufbau.
         const initSrc = window.__codeOf(r.initP2PSync);
         out.initReadsRegional = /regionalDefault/.test(initSrc) && /_regionRoomId/.test(initSrc);
 
-        // (Q7) Übergangs-Detection: wir setzen die Player-Position TIEF in eine
-        // neue Region (≥ 10m Hysterese-Margin von JEDER Grenze). Region r2_2
-        // hat Bounds 691.2-1036.8 × 691.2-1036.8 → Mitte 864 × 864 ist
-        // sicher 172.8m von jeder Grenze (>> 10m Hysterese).
+        // (Q7) Übergangs-Detection: Spieler TIEF in eine neue Region setzen (≫ 10 m Hysterese-Margin) —
+        // r2_2 hat Bounds 691.2–1036.8 je Achse, die Mitte 864 liegt 172.8 m von jeder Grenze.
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         let crossing = null;
         if (pm) {
@@ -33483,11 +32005,9 @@ async function checkBandPhiArchipelV2(ctx) {
     );
 }
 
-// Φ7-Bogen (V18.190) — PORTAL-HALLEN: kuratierte Welt-Verzeichnisse als
-// signierte Artefakte. Eine Halle trägt N Welt-Adressen (Φ1) + Label +
-// Signatur + Provenance. Beim Materialisieren wird jeder Slot ein
-// eigenständiges Portal mit entry-level portalMeta (das _enterPortal-
-// Routing wandert auf entry → bauplan-portalMeta-Coalesce).
+// Φ7 Portal-Hallen: kuratierte Welt-Verzeichnisse als signierte Artefakte (N Welt-Adressen + Label +
+// Signatur + Provenance). Materialisiert wird jeder Slot ein eigenes Portal mit entry-level
+// portalMeta (_enterPortal: entry → bauplan-portalMeta-Coalesce).
 async function checkBandPhi7PortalHalls(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -33711,13 +32231,9 @@ async function checkBandPhi7PortalHalls(ctx) {
     );
 }
 
-// Φ6-Bogen (V18.191) — DIE COMPUTE-SPENDE: das verteilte Immunsystem.
-// (a) Chunk-Compute-Beiträge (signiert + bit-Hash + Stichproben-Verify
-//     gegen die LOKAL nachgerechnete Wahrheit — die Worker-Asymmetrie:
-//     verifizieren ist O(Build), schummeln gegen Hash unmöglich).
-// (b) Playtest-Lauf-Beiträge (signiert + Commit + Resultat; eine Welt mit
-//     N Mitläufern hat N× die Antikörper-Exposition).
-// Geschenk-Schicht — KEINE Rechen-Währung (Anti-Scope §3 ehrt).
+// Φ6 Compute-Spende (Geschenk-Schicht, KEINE Rechen-Währung): (a) Chunk-Beiträge signiert + Hash +
+// Stichproben-Verify gegen die LOKAL nachgerechnete Wahrheit (verifizieren ist O(Build), schummeln
+// gegen den Hash unmöglich); (b) Playtest-Lauf-Beiträge signiert + Commit + Resultat.
 async function checkBandPhi6ComputeSpende(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -33775,12 +32291,8 @@ async function checkBandPhi6ComputeSpende(ctx) {
         const badPin = await r.pinComputeContribution({ inputHash: "X!?", outputHash: "Y!?" });
         out.badRejected = !badPin.ok && badPin.reason === "invalid";
 
-        // (K7) STICHPROBEN-VERIFY: der Spec wird lokal nachgerechnet, Hash
-        // verglichen → "verified" wenn gleich. Das ist die echte Wand.
-        // Wir nutzen den oben gespeicherten h1-Eintrag (spec liegt vor).
-        // ABER: wir müssen denselben Spec auch lokal bauen können, also
-        // brauchen wir den ECHTEN buildVoxelChunkData(spec.cx, spec.cz).
-        // Spec1 hat cx=0,cz=0 → bauen + Hash vergleichen.
+        // (K7) STICHPROBEN-VERIFY — die echte Wand: der Spec wird lokal über den ECHTEN buildVoxelChunkData
+        // nachgerechnet, der Hash verglichen → "verified" wenn gleich.
         const verifySpec = { kind: "chunk-density", worldSeed: "test-seed", cx: 2, cz: 2, lod: 0 };
         const verifyHash = r._computeJobInputHash(verifySpec);
         // Pin mit dem LOKAL korrekten outputHash (das ist der „ehrliche Spender"-Fall).
@@ -33913,12 +32425,9 @@ async function checkBandPhi6ComputeSpende(ctx) {
     );
 }
 
-// W5 (V18.192, R-031) — WERKZEUG-ABNUTZUNG: das Ω5-Perpetuum-Verbot lebt
-// jetzt auch am gehaltenen Werkzeug. Schöpfer-Entscheid 13.06.: „ja, kein
-// pepetrum mobile, sonst ist balance nicht möglich". Ein gehaltenes Gerät
-// trägt wear (0..1); jeder Hieb zehrt; bei Schwelle → kaputt + Repair-
-// Aufruf; Repair-Akt zahlt Material (analog forge × REPAIR_FRACTION ×
-// Schaden) → wear=1. Migration-tolerant (Bauplan ohne wear-Feld liest 1).
+// W5 Werkzeug-Abnutzung (Ω5-Perpetuum-Verbot am Werkzeug): ein gehaltenes Gerät trägt wear (0..1),
+// jeder Hieb zehrt, an der Schwelle → kaputt + Repair; Repair zahlt Material (forge × REPAIR_FRACTION
+// × Schaden) → wear=1. Migration-tolerant: ein Bauplan ohne wear-Feld liest 1.
 async function checkBandW5Werkzeugabnutzung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -33999,10 +32508,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
             factorMid > factorEmpty + 0.1 &&
             factorMid < factorFull;
 
-        // (W6) FORGE setzt wear=1 (frisches Werkzeug startet voll). AUSLÖSCHUNGS-WELLE —
-        // der geraet_spitzhacke-Blueprint fiel; die craftbare Werkzeug-Substanz lebt in
-        // KIND_SUBSTANCE (die klinge_-Gattungen des Schmiede-Labs SIND die Werkzeuge).
-        // Deterministisches Test-Blueprint aus der Substanz-Zeile, am Ende geräumt.
+        // (W6) FORGE setzt wear=1 (frisches Werkzeug startet voll). Test-Blueprint deterministisch aus der
+        // Substanz-Zeile KIND_SUBSTANCE.geraet_spitzhacke, am Ende geräumt.
         const KSw5 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         const heldName = "_t_wear_spitz";
         if (r.state.blueprints._t_wear_spitz) delete r.state.blueprints._t_wear_spitz;
@@ -34015,11 +32522,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         let heldBp = r.state.blueprints && r.state.blueprints[heldName];
         out.libraryHasSpitzhacke = !!heldBp;
         if (heldBp) {
-            // Setze wear bewusst niedrig + setze ein Inventar (forge zahlt nichts,
-            // wenn schon mit forgedPrecision — der Erst-Wurf-Test reicht).
-            // schöpfer-Modus schalten → forge ist gratis (das deckt den frieden-
-            // Path auch ab, denn _forgeMaterialAndFreeze ruft _makeCostGate, das
-            // im schöpfer free=true zurückgibt).
+            // wear bewusst niedrig setzen; im schöpfer-Modus ist forge gratis (_forgeMaterialAndFreeze ruft
+            // _makeCostGate → free=true) — das deckt den frieden-Pfad mit ab.
             if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
             r._setBlueprintWear(heldBp, 0.3); // beschädigt
             const forgeRes = r.forgeBlueprint(heldName);
@@ -34197,12 +32701,9 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
-// Γ4-VOLLENDUNG (genese-plan §4, V18.193) — ECHTER MAKRO-ANKER + ERBGUT +
-// ABFLUSS-INVARIANTE. Drei Wände: (a) ERBGUT-Persistenz via worldMeta.macro
-// (das Welt-Stempel-Pattern, additiv-teilbar), (b) Abfluss-Invariante über
-// 10 Seeds (die geerbte LAAS-Narbe strukturell ausgeschlossen), (c) der
-// WORKER-Mirror reicht den Erbgut-Anker (Determinismus Main↔Worker auch
-// bei Konstanten-Änderung oder Bündel-Import).
+// Γ4 Makro-Anker + Erbgut + Abfluss — drei Wände: (a) Erbgut-Persistenz via worldMeta.macro (additiv),
+// (b) Abfluss-Invariante über 10 Seeds (kein endorheisches Becken), (c) der Worker-Spiegel reicht den
+// Erbgut-Anker (Main↔Worker deterministisch auch bei Konstanten-Änderung oder Bündel-Import).
 async function checkBandV18193MakroErbgut(ctx) {
     const { page, check } = ctx;
     const SEEDS = ["seed-a", "seed-b", "seed-c", "seed-d", "seed-e", "seed-f", "seed-g", "seed-h", "seed-i", "seed-j"];
@@ -34323,11 +32824,9 @@ async function checkBandV18193MakroErbgut(ctx) {
                 out.outflowAll10Seeds = allOutflow;
                 out.spillSamples = spillSamples;
 
-                // (E11) STATISTISCHE TAL-ALIGNMENT-PROBE: mindestens 6/10 Seeds
-                // haben den niedrigsten Rim-Punkt nahe (< 60°) der Tal-Eingangs-
-                // Richtung — das Tal IST der designte Spillweg im Großteil der
-                // Welten. Die Ausnahmen sind Welten, wo ein anderer Pass tiefer
-                // geriet (auch ein valider Auslass, kein endorheic).
+                // (E11) Tal-Alignment statistisch: ≥ 6/10 Seeds haben den tiefsten Rim-Punkt < 60° von der
+                // Tal-Eingangs-Richtung (das Tal IST der Spillweg); Ausnahmen haben einen tieferen Pass — auch ein
+                // valider Auslass.
                 let nearTalCount = 0;
                 for (const seed of SEEDS) {
                     r.state.worldMeta.seed = seed;
@@ -34416,13 +32915,9 @@ async function checkBandV18193MakroErbgut(ctx) {
     check("Γ4-Vollendung (E13) Worker-Legacy gen=1 → snap.macroAnker null", res.workerSnapLegacyNull === true);
 }
 
-// Γ6-BEFÖRDERUNG (genese-plan §V.1 Befund 4, V18.194) — VIER STEHENDE BÄNDER
-// statt vier loser diags. Jede visuelle Narbe, die GEHEILT wurde, wird hier zur
-// strukturellen Wand: (G1) snowband auf PROMINENZ (V17.105) · (G2) chunk-seam
-// per Pad+Crop (V9.42-b, hier komplementär als Source-Wand) · (G3) false-swim
-// via `_waterCellAt` 3D-Wahrheit (V13.11/V18.0) · (G4) arch-water-solid via
-// blockerAABBs (V13.10). KEINE mutativen Spawns — Source-Proben + bestehender
-// Welt-Zustand nach Warmup (Test-Hygiene: Bands clean schichten).
+// Γ6 — vier stehende Wände gegen geheilte visuelle Narben: (G1) Schneeband auf PROMINENZ ·
+// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_waterCellAt` (3D-Wahrheit) ·
+// (G4) arch-water-solid via blockerAABBs. KEINE mutativen Spawns — Source-Proben + Welt nach Warmup.
 async function checkBandV18194Gamma6Befoerderung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -34430,11 +32925,9 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const s = r.state;
         const out = {};
 
-        // (G1) SNOWBAND auf PROMINENZ: die V17.105-Heilung ist strukturell tot
-        // bei Regression auf absolutes y. Drei Wände: Source enthält PROMINENZ-
-        // Konstanten + Substraktion y-base-_cont0, alte ss(12,42,y) NICHT mehr,
-        // und der gemessene Schnee-Anteil in der NAHEN Region (±300 m) ist
-        // < 0.1 (kein flächiger Boden-Schnee mehr).
+        // (G1) SNOWBAND auf PROMINENZ statt absolutem y: die Source trägt die PROMINENZ-Konstanten +
+        // y − base − _cont0, die alte ss(12,42,y) fehlt, und der Schnee-Anteil der NAHEN Region
+        // (±300 m) ist < 0.1.
         const attachSrc = window.__codeOf(r._attachVoxelFieldColors);
         out.snowOnProminence = /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
@@ -34464,10 +32957,8 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
             lcg = (lcg * 1664525 + 1013904223) >>> 0;
             return lcg / 4294967296;
         };
-        // SAUBERER Tiefland-Test: prüfe NUR Stellen mit niedriger Prominenz
-        // (das alte Bug-Symptom war Schnee am FLACHEN Boden, nicht am echten
-        // Berg). Stellen mit prominence > 30 m sind echte Erhebungen, dort
-        // ist Schnee korrekt — wir messen ausschließlich die TIEFLAND-Klasse.
+        // Nur TIEFLAND messen (prominence ≤ 30 m): das Fehlerbild war Schnee am flachen Boden; an echten
+        // Erhebungen ist Schnee korrekt.
         let lowProminSnowSum = 0;
         let lowProminN = 0;
         for (let i = 0; i < 1500; i++) {
@@ -34532,11 +33023,8 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const wsnap = r._voxelWorkerSnapshotState();
         out.hydroBandPresent = !!wsnap.hydroBand && typeof wsnap.hydroBand.top === "number";
 
-        // (G4) ARCH-WATER-SOLID: spawnbare Architekturen tragen blockerAABBs
-        // (V13.10-Heilung der Felsbogen-/Felsturm-/Genesis-Plattform-Klasse).
-        // Wir prüfen den bestehenden Welt-Zustand nach Warmup: mindestens eine
-        // Architektur EXISTIERT, und alle Stein-/Architektur-Bauten haben
-        // ihre `blockerAABBs` aus _blockerComputePartAABB gebaut.
+        // (G4) ARCH-WATER-SOLID: nach Warmup existiert Architektur, und die Stein-/Architektur-Bauten
+        // tragen `blockerAABBs` aus _blockerComputePartAABB.
         let archSeen = 0;
         let archWithBlockers = 0;
         let archStoneSolid = 0;
@@ -34557,13 +33045,9 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         out.archSeen = archSeen;
         out.archWithBlockers = archWithBlockers;
         out.archStoneSolid = archStoneSolid;
-        // Mindestens 30 % der gestreamten Architekturen haben blockerAABBs
-        // (Bäume tragen Holz-Stamm-Blocker, Stein-Strukturen tragen Multi-
-        // Part-Blocker; nur reine Optik-Bauten wie leere Plattformen ohne
-        // soliden Part haben keine — < 70 %). Wenn die Welt noch keine
-        // Architektur hat (Edge-Case auf einem schnellen Runner ohne 30s-
-        // Warmup), wird die Probe als "skipped" markiert — den V13.10-Wert
-        // verteidigt der `_blockerComputePartAABB` Source-Probe-Wand.
+        // ≥ 30 % der gestreamten Architekturen tragen blockerAABBs (Bäume: Stamm-Blocker, Stein: Multi-Part;
+        // reine Optik-Bauten ohne soliden Part keine). Ohne Architektur (schneller Runner) → "skipped";
+        // dann hält die _blockerComputePartAABB-Source-Wand.
         out.archMostlyHaveBlockers =
             archSeen < 3 ? "skipped-no-archs" : archWithBlockers / Math.max(1, archSeen) >= 0.3;
         // Source-Probe: _blockerComputePartAABB (die Solidität-Quelle, V9.65-
@@ -34609,10 +33093,8 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
     );
 }
 
-// V18.195 — AVATAR-GRÖSSE→HP (aktiv.md §4.D, klein): größere custom Avatare
-// haben mehr HP + Stamina (sqrt-Skalierung der Soul-Compound-Größe).
-// Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL — kein Balance-Bruch
-// an den getunten intrinsischen Seelen.
+// Avatar-Größe → HP: größere custom Avatare haben mehr HP + Stamina (sqrt der Soul-Compound-Größe);
+// Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL (getunte intrinsische Seelen).
 async function checkBandV18195AvatarSizeHp(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -34692,17 +33174,12 @@ async function checkBandV18195AvatarSizeHp(ctx) {
             // small < large (selbst nach Mul, weil large viel größer ist)
             out.smallLessThanLarge = smallComputed.stats.hpMax < largeComputed.stats.hpMax;
 
-            // (S5) DAS SPEED-/ATTACK-SPEED-VERSPRECHEN: größer ist NICHT schneller —
-            // die Größen-Skalierung trifft NUR hpMax + staminaMax, nicht speed
-            // oder attackSpeed. Vergleich: kleine vs große Avatare haben den
-            // GLEICHEN speed (modulo Tag-Pipe), da der Größen-Mul nur HP/Stamina
-            // hebt.
+            // (S5) Größer ist NICHT schneller: die Größen-Skalierung trifft NUR hpMax + staminaMax, nicht speed
+            // oder attackSpeed.
             const smallSpeed = smallComputed.stats.speed;
             const largeSpeed = largeComputed.stats.speed;
-            // Wir prüfen NICHT speed-Identität (Tags können sich unterscheiden je
-            // nach Compound), aber: keine systematische Beschleunigung der
-            // Großen, NUR HP-Spreading. Akzeptanz: |speed_large/speed_small|
-            // nahe Tag-Verhältnis, NICHT sqrt(sizeFactor)
+            // Keine speed-Identität (Tags variieren je Compound), aber keine systematische Beschleunigung der
+            // Großen: |speed_large/speed_small| ≈ Tag-Verhältnis, NICHT sqrt(sizeFactor).
             out.speedNotScaledBySize = true; // wir prüfen es indirekt via STAT-Formel-Anteil
 
             // (S6) STAMINA: same scaling als HP
@@ -34868,10 +33345,8 @@ async function checkBandV18196ManaSymmetry(ctx) {
     check("V18.196 (M8) Mana skaliert mit sqrt(soulSize) (V18.195-Symmetrie)", res.manaScaledByMul === true);
 }
 
-// V18.197 — Γ-M MULTI-CLASS-MATERIAL Foundation: STRATA (genese-plan §Γ-M).
-// y-abhängige Material-Wahl im Boden: nahe Oberfläche durchhumusiert (erde
-// kann gewinnen), tief drinnen Felsen (stein dominiert). Migration-tolerant:
-// alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
+// Γ-M STRATA: y-abhängige Material-Wahl im Boden — nahe der Oberfläche kann erde gewinnen, tief
+// dominiert stein. Alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
 async function checkBandV18197GammaMStrata(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -35002,14 +33477,9 @@ async function checkBandV18198Gamma2Totholz(ctx) {
             );
         }
 
-        // (T4) AFFINITÄTS-WAND (V17.16-Disziplin neu interpretiert): da stamm_
-        // gefallen NICHT im candidates-Wettstreit ist (Sub-Spawn nach Baum),
-        // muss er nicht tag-identisch zu baum_eiche sein. Aber: er darf in
-        // KEINER Achse HÖHER resonieren als baum_eiche — sonst könnte er,
-        // falls je in candidates aufgenommen, einen anderen Affinitäts-
-        // Sieger verdrängen. Strikte Lese-Wand: stamm_gefallen ≤ baum_eiche
-        // in jeder Achse (er fehlt das Laub → magieleitung typischerweise
-        // niedriger; das ist OK + designt).
+        // (T4) Affinitäts-Wand: stamm_gefallen ist NICHT in candidates (Sub-Spawn nach dem Baum), muss also
+        // nicht tag-identisch zu baum_eiche sein — darf aber in KEINER Achse höher resonieren, sonst
+        // verdrängte er, je in candidates aufgenommen, einen Sieger (ohne Laub: magieleitung niedriger, OK).
         const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
         // V18.257 — die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
@@ -35030,20 +33500,14 @@ async function checkBandV18198Gamma2Totholz(ctx) {
             out.tagNeverHigherThanTree = neverHigher;
         }
 
-        // (T5) Sub-Spawn-Pfad: V18.389 (DAS NEUE KLEID P1) — der Totholz-Sub-Spawn
-        // (Wald-Boden-Debris) ist Teil der Wald-Ökologie und wanderte MIT dem Baum-Zweig
-        // aus `_vegetationSampleSpawn` in `_forestPlantChunk` (V9.56-i — die Probe wandert
-        // mit dem Code). Dort leben jetzt TOTHOLZ_RATE + stamm_gefallen. `src` bleibt
-        // `_vegetationSampleSpawn` für die T6-Determinismus-Probe unten (dort lebt der
-        // rng.noise2D-Unterwuchs weiter).
+        // (T5) Der Totholz-Sub-Spawn (TOTHOLZ_RATE + stamm_gefallen) lebt in `_forestPlantChunk`;
+        // `src` bleibt `_vegetationSampleSpawn` für T6 (dort lebt der rng.noise2D-Unterwuchs).
         const src = window.__codeOf(r._vegetationSampleSpawn);
         const forestSrc = window.__codeOf(r._forestPlantChunk);
         out.hasSubSpawn = /TOTHOLZ_RATE/.test(forestSrc) && /stamm_gefallen/.test(forestSrc);
 
-        // (T6) RNG-DETERMINISMUS: der Sub-Spawn nutzt ein DETERMINISTISCHES
-        // noise2D (kein Math.random-Aufruf) — Γ5-Wand strukturell gewahrt.
-        // Strip Kommentare bevor wir auf Math.random-CODE prüfen (CLAUDE.md-
-        // Lehre: der Code darf das Wort tragen, der Code darf es nicht).
+        // (T6) RNG-DETERMINISMUS: der Sub-Spawn nutzt deterministisches noise2D, kein Math.random (Γ5-Wand);
+        // __codeOf strippt Kommentare — nur CODE zählt, Kommentare dürfen das Wort tragen.
         const stripped = window.__codeOf(src);
         out.usesDeterministicRng = /rng\.noise2D/.test(src) && !/Math\.random\s*\(/.test(stripped);
 
@@ -35139,10 +33603,8 @@ async function checkBandV18199GammaMLichen(ctx) {
             );
         };
 
-        // Drei kontrollierte Probe-Punkte (synthetische feuchte/dichte):
-        // a) feucht + steinig + ein anderer (x,z): lichen > 0 (typischerweise)
-        // b) trocken + steinig: lichen ≈ 0 (feuchte-Schwelle nicht erreicht)
-        // c) feucht + erde: lichen ≈ 0 (dichte-Schwelle nicht erreicht)
+        // Drei Probe-Punkte (synthetische feuchte/dichte): feucht + steinig → lichen > 0 · trocken + steinig
+        // → lichen ≈ 0 (feuchte-Schwelle) · feucht + erde → lichen ≈ 0 (dichte-Schwelle).
         const samplesPositive = [];
         const samplesDryStone = [];
         const samplesWetErde = [];
@@ -35632,10 +34094,7 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
                 Math.abs(f1.glut - f3.glut) > 1e-6 ||
                 Math.abs(f1.magieleitung - f3.magieleitung) > 1e-6;
 
-            // V18.209-Konsolidierung: F4 ersatzlos in F9b unten gefaltet
-            // (die echte Bit-Identitäts-Probe inkl. Warp). F4-Wand bleibt
-            // nur als minimaler Sanity-Check (kein NaN/Infinity); die
-            // ECHTE Wand ist F9b.
+            // F4 ist nur Sanity (kein NaN/Infinity); die echte Bit-Identitäts-Probe inkl. Warp ist F9b.
             const FC = A.FIELD_CHARACTER;
             out.gen3ValuesFinite =
                 Number.isFinite(f3.lebendig) &&
@@ -35781,10 +34240,8 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
             out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
 
-            // (G5) SPECIES.ts-REGEL: Laub sitzt NIE direkt am Hauptstamm (y=0..3),
-            // sondern an Ebene-2-Enden (typischerweise höher y oder lateral
-            // offset). Probe: alle laub-Parts haben |xz| > 0.4 ODER y > 2
-            // (= an einem Ast-Ende, nicht am Stamm-Sockel).
+            // (G5) SPECIES.ts-Regel: Laub sitzt NIE am Hauptstamm (y=0..3), sondern an Ebene-2-Enden →
+            // alle laub-Parts haben |xz| > 0.4 ODER y > 2.
             const laubAwayFromTrunk = sample
                 .filter((p) => p.material === "laub")
                 .every((p) => {
@@ -35793,12 +34250,9 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
                 });
             out.laubAtBranchEnds = laubAwayFromTrunk;
 
-            // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben
-            // Affinitäts-MAX wie ein bestehender baum_eiche (holz+laub Materials,
-            // gleiche shapes cylinder+sphere). V17.16-Disziplin.
-            // V18.259 — fakeBp trägt die SPEZIES-Marke, damit computeCompoundTags ihm
-            // dieselbe Art-Variation gibt wie dem Vergleichsbaum (sonst liest die +0.05-
-            // Variation als „Drift"). Apples-to-apples: beide baum_eiche mit Variation.
+            // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben Affinitäts-MAX wie baum_eiche (holz+laub,
+            // cylinder+sphere). fakeBp trägt die Spezies-Marke (_grownSpecies), damit computeCompoundTags beiden
+            // dieselbe Art-Variation gibt — sonst läse die +0.05-Variation als Drift.
             const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
             // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
             const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
@@ -35955,10 +34409,8 @@ async function checkBandV18206SpeedTrade(ctx) {
                 out.largeJumpLower = true;
             }
 
-            // (S6) Floor-Disziplin: speed nie kaputt durch hohen sizeFactor.
-            // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
-            // Floor = (2/7)·Gesetz-base (dieselbe Formel wie der Stamm; Fallback-
-            // base 7 ⇒ Floor 2 byte-alt bei kaltem Kern), nicht mehr fix 2.
+            // (S6) Floor-Disziplin: speed-Floor = (2/7)·Gesetz-base (dieselbe Formel wie der Stamm; kalter Kern
+            // → Fallback-base 7 ⇒ Floor 2).
             const bewGesetzS =
                 (globalThis.__koerperCore &&
                     globalThis.__koerperCore.PRESETS &&
@@ -36027,20 +34479,14 @@ async function checkBandV18207R5StructureTexture(ctx) {
                 A.R5_STRUCTURE_TEXTURE.microBoost < 5;
         }
 
-        // (R2) U1 (V18.452) — die Probe wandert auf die V18.210-Wahrheit (der
-        // rohe toString-Grep war nur über einen zitierenden KOMMENTAR grün):
-        // die Konstante seedet in _ensureAtmoUniforms das LIVE-Uniform
-        // `r5StructureBoost`; _applySubstanceResponse LIEST das Uniform und
-        // multipliziert es aufs micro-Gewicht — die KETTE zählt (kein Literal).
+        // (R2) Die KETTE zählt, kein Literal: die Konstante seedet in _ensureAtmoUniforms das LIVE-Uniform
+        // `r5StructureBoost`; _applySubstanceResponse LIEST es und multipliziert es aufs micro-Gewicht.
         const src = window.__codeOf(r._applySubstanceResponse);
         const seedSrc = window.__codeOf(r._ensureAtmoUniforms);
         out.srcHasR5 = /R5_STRUCTURE_TEXTURE/.test(seedSrc) && /r5StructureBoost/.test(seedSrc);
         out.srcMultipliesMicro = /r5StructureBoost\.mul/.test(src) && /micro/.test(src);
 
-        // (R3) V18.210 (§1-A2): der Default wanderte 1.0 → 1.3 (sichtbar);
-        // der Slider ist live → der Spieler dreht selbst. Pre-V18.207 lebte
-        // ohne den Boost-Faktor, V18.207-Foundation war 1.0 (no-op), V18.210
-        // verdrahtete + bracht den DEFAULT auf den sichtbaren Wert.
+        // (R3) Default microBoost 1.3 (sichtbar); der Slider ist live, der Spieler dreht selbst.
         out.defaultIs13 = A.R5_STRUCTURE_TEXTURE.microBoost === 1.3;
 
         return out;
@@ -36108,13 +34554,9 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         }
         out.statsRecord = stats;
 
-        // (C3) Größerer sizeFactor → tendenziell mehr HP, weniger speed.
-        // V18.259 — die Tendenz wird über die SPANNE geprüft (kleinste vs größte
-        // Kreatur), nicht strikt paarweise: das MATERIAL/Element überstimmt die Größe
-        // legitim im Mittelfeld (Größen-Achse: kleine Tiere niedrig-HP + schnell
-        // TROTZ Größe — thematisch gewollt). Der Größen-MULTIPLIKATOR selbst ist in
-        // C1 quell-verifiziert (stats.hpMax *= sizeHpMul); hier zählt, dass die
-        // Größen-Wirkung über die volle Spanne richtig gerichtet ist.
+        // (C3) Größerer sizeFactor → tendenziell mehr HP, weniger speed — geprüft über die SPANNE (kleinste
+        // vs größte Kreatur), nicht paarweise: Material/Element überstimmt die Größe im Mittelfeld legitim.
+        // Den Multiplikator selbst (stats.hpMax *= sizeHpMul) verifiziert C1 an der Quelle.
         const sorted = Object.entries(stats).sort((a, b) => a[1].sizeFactor - b[1].sizeFactor);
         const smallest = sorted.length ? sorted[0][1] : null;
         const largest = sorted.length ? sorted[sorted.length - 1][1] : null;
@@ -36125,10 +34567,8 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         out.hpMonotone = hpMonotone;
         out.speedMonotone = speedMonotone;
 
-        // (C4) Floor-Disziplin für alle Kreaturen.
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
-        // Floor = (2/7)·Gesetz-base (dieselbe Formel wie der Stamm; Fallback-
-        // base 7 ⇒ Floor 2 byte-alt bei kaltem Kern), nicht mehr fix 2.
+        // (C4) Floor-Disziplin für alle Kreaturen: Floor = (2/7)·Gesetz-base (Formel des Stamms; kalter Kern
+        // → Fallback-base 7 ⇒ Floor 2).
         const bewGesetzC =
             (globalThis.__koerperCore &&
                 globalThis.__koerperCore.PRESETS &&
@@ -36148,10 +34588,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const hpRange = Math.max(...hpValues) - Math.min(...hpValues);
         const speedRange = Math.max(...speedValues) - Math.min(...speedValues);
         out.hpVariesAmongCreatures = hpRange > 1;
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: die
-        // Mindest-Spanne 0.5 war auf Base 7 geeicht — sie skaliert mit der
-        // LEBENDEN Gesetz-Base (0.5·base/7; byte-alt bei kaltem Kern). Unter
-        // dem alten Fix-Floor 2 klemmte ohnehin ALLES auf denselben Wert.
+        // Die Mindest-Spanne skaliert mit der LEBENDEN Gesetz-Base (0.5·base/7; kalter Kern → 0.5).
         out.speedRange = speedRange;
         out.speedVariesAmongCreatures = speedRange > 0.5 * (speedBaseC / 7);
 
@@ -36180,11 +34617,8 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     );
 }
 
-// V18.209 — KONSOLIDIERUNGS-WELLE (Schöpfer-Audit 14.06.: 5 Audit-Punkte
-// abschliessen). Source-Probe: die Doc-Quellen + Versions-Stellen synchron;
-// die Foundation-Übersicht in CLAUDE.md/aktiv.md/rueckmeldung.md aktuell;
-// und die VIER FOUNDATIONS (V18.201 Mana-Konsum · V18.202 Geruch-KI · V18.205
-// Worldgen · V18.207 R5-Slider) ehrlich als "Verdrahtung pending" markiert.
+// Konsolidierungs-Band: Version-Floor · die vier Foundations leben (Mana-Drain · Geruch ·
+// Baum-Grammatik · R5) · alle Γ-Wellen-Anker · Avatar-Größen-Familie · Mana-Symmetrie.
 async function checkBandV18209Konsolidierung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -36232,10 +34666,9 @@ async function checkBandV18209Konsolidierung(ctx) {
             out.gamma3Char &&
             out.gamma7Grammar;
 
-        // (K4) AVATAR-GRÖSSEN-Familie komplett (V18.195+196+206+208):
-        // V18.312/.347 — die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
-        // (Gesetz #0); die `_compoundSizeFactor`/`creatureSize`-Quelle bleibt in compute*Stats, die
-        // ANWENDUNG (sizeHpMul/sizeSpeedMul) liest die geteilte Quelle. Beide source-probes lesen sie mit.
+        // (K4) AVATAR-GRÖSSEN-Familie: die Größen-Mul (sizeHpMul/sizeSpeedMul) lebt in der EINEN Quelle
+        // _applySizeMultipliersToStats; `_compoundSizeFactor`/`creatureSize` bleiben in compute*Stats →
+        // beide Source-Proben lesen die geteilte Quelle mit.
         const _sizeMulSrc = window.__codeOf(r._applySizeMultipliersToStats);
         const srcCompPlayer = window.__codeOf(r.computePlayerStats) + _sizeMulSrc;
         const srcCompCreature = window.__codeOf(r.computeCreatureStats) + _sizeMulSrc;
@@ -36267,13 +34700,9 @@ async function checkBandV18209Konsolidierung(ctx) {
     );
 }
 
-// V18.210 — VERDRAHTUNGS-WELLE (abschluss-plan §1): die vier Passagier-
-// Foundations bekommen Konsumenten. Jeder Sub-Akt prüft KONSUM (V17.31-
-// Disziplin „Existenz ist Deko"), nicht Existenz.
-// A1: _growTreeBlueprintForSpawn (Worldgen-Hook gen≥4)
-// A2: setStructureBoost + Live-Uniform r5StructureBoost (Slider)
-// A3: _creatureScentHuntDir + _tickCreatureScentStrike (wild-KI liest scent)
-// A4: applyOpToPart + applyWorkshopProcessToPart: phaseChange → Mana
+// Verdrahtungs-Band — KONSUM, nicht Existenz: A1 _growTreeBlueprintForSpawn (Worldgen-Hook) ·
+// A2 setStructureBoost + Live-Uniform r5StructureBoost · A3 _creatureScentHuntDir +
+// _tickCreatureScentStrike (wild-KI liest scent) · A4 applyOpToPart/applyWorkshopProcessToPart → Mana.
 async function checkBandV18210Verdrahtung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -36293,14 +34722,9 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1Deterministic = k1 && k1 === k2;
         // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
         out.a1CacheReuse = k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
-        // (A1e) ALLE N Varianten leben. V18.347 — dieser Test FING einen ECHTEN Worldgen-Bug
-        // (kein stale Test): der Key war `grown_<art>_v<hash%8>`, aber die fnv-1a-LOW-Bits sind
-        // mod 8 degeneriert (gemessen: nur {0,2,4,6}, Bucket 0+4=75 % → von 8 designten Baum-
-        // Varianten lebten effektiv ~2). Geheilt in `_growTreeBlueprintForSpawn` (die HOHEN Bits
-        // `hash >>> 24` wählen, gleichverteilt). V18.390 (Eins W2-C, REAL nachgezogen): N ist
-        // jetzt 3 (der Draw-Call-Kollaps) → die INTENT-treue Form der Wand: über 8·N Seeds
-        // müssen ALLE N Varianten-Buckets getroffen werden (keine degenerierten Buckets) —
-        // dieselbe Degenerierung, die V18.347 fing, würde hier weiter feuern.
+        // (A1e) ALLE N Varianten leben: über 8·N Seeds muss jeder Varianten-Bucket getroffen werden. Fängt
+        // degenerierte Buckets (die fnv-1a-LOW-Bits sind mod 8 degeneriert → `_growTreeBlueprintForSpawn`
+        // wählt mit den HOHEN Bits `hash >>> 24`).
         const NVar = A.VARIANTS_PER_SPECIES;
         const keys = new Set();
         for (let s = 0; s < 8 * NVar; s++) {
@@ -36320,10 +34744,8 @@ async function checkBandV18210Verdrahtung(ctx) {
         if (ref && grownBp) {
             const got = r.computeCompoundTags(grownBp);
             let neutral = true;
-            // V18.215 — V17.16-VARIATIONS-Wand toleranter: deklarierte Spezies-
-            // Variation in SPECIES_TAG_VARIATION (Eiche lebendig+0.05) ist
-            // erlaubt; undeklarierte Drift > 0.05 weiterhin abgelehnt. Die
-            // Toleranz pro Achse: 0.05 + |deklarierte Variation|.
+            // Variations-Wand: deklarierte Spezies-Variation (SPECIES_TAG_VARIATION, Eiche lebendig +0.05) ist
+            // erlaubt; Toleranz je Achse = 0.05 + |deklarierte Variation|.
             const V = (r.constructor.SPECIES_TAG_VARIATION || {}).baum_eiche || {};
             for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) {
                 const declared = Math.abs(V[a] || 0);
@@ -36764,11 +35186,9 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A4f BEHAVIORAL: schöpfer-Modus kostenfrei", res.a4SchoepferKostenfrei === true);
 }
 
-// V18.211 — DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar): „Bäume lesen als
-// Bäume". Multi-level Grammatik (trunk + L1 + L2) + Foliage at TIPS (hunderte
-// Cluster statt 8 Kugeln). Routing-Gate gen≥5 (alte Welten bit-identisch).
-// Snapshot-Heilung: grownBlueprints persistiert NUR Metadata (parts re-wachsen
-// f(seed)) → bezahlbar unter 256-KB-pinCurrentWorld-Cap.
+// Skeleton-Grammar: mehrstufige Grammatik (trunk + L1 + L2) mit Foliage an den TIPS; Routing-Gate
+// gen≥5 (alte Welten bit-identisch). grownBlueprints persistiert NUR Metadaten (parts re-wachsen
+// f(seed)) → bleibt unter dem 256-KB-pinCurrentWorld-Cap.
 async function checkBandV18211SkeletonGrammar(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -36776,10 +35196,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (S1) SPECIES_GRAMMAR existiert + trägt die KERN-Arten (6 Bäume + Totholz).
-        // V18.216 (Plan §1) — KARST + 3 Büsche (busch_hazel/farn_busch/blume_gross)
-        // erweitern das Set auf 11. Wir akzeptieren ≥6 (Backward-Kompat bei
-        // sehr alten Welten) statt einer scharfen Zahl.
+        // (S1) SPECIES_GRAMMAR trägt die Kern-Arten (6 Bäume + Totholz; mit KARST + 3 Büschen 11) — die
+        // Probe verlangt ≥ 6 statt einer scharfen Zahl.
         out.grammarExists = !!A.SPECIES_GRAMMAR;
         if (out.grammarExists) {
             const species = Object.keys(A.SPECIES_GRAMMAR);
@@ -36792,10 +35210,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
                 "baum_kiefer",
                 "baum_erle",
             ].every((s) => A.SPECIES_GRAMMAR[s] != null);
-            // Pro Spezies: trunk + L1 + foliage müssen existieren (Plan-§3.3-Form).
-            // V18.216 — anchorLevel ≥ 1 (Büsche tragen ihre Krone schon an L1;
-            // Bäume an L2+; Karst an L3). Die Strenge „≥ 2" war eine Baum-
-            // Annahme, kein universelles Gesetz (Plan §3.5 erlaubt L1-Anchor).
+            // Pro Spezies: trunk + L1 + foliage existieren; anchorLevel ≥ 1 (Büsche tragen die Krone an L1,
+            // Bäume an L2+, Karst an L3 — „≥ 2" wäre eine Baum-Annahme).
             out.grammarShapeWohlgeformt = species.every((s) => {
                 const g = A.SPECIES_GRAMMAR[s];
                 return g && g.trunk && g.L1 && g.foliage && g.foliage.anchorLevel >= 1;
@@ -36817,11 +35233,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
             out.richAllHolzOrLaub =
                 Array.isArray(richParts) && richParts.every((p) => p.material === "holz" || p.material === "laub");
-            // FOLIAGE AT TIPS: ≥80% der laub-Parts sind vom Stamm-Sockel weg
-            // (|xz| > 0.4 oder y > 1.5) — Plan-§3.3-Regel. V18.212-EXCEPTION:
-            // der Ω-K2 Baum-Fuß-Flare (Plan §4) sitzt BEWUSST am Sockel —
-            // er ist die Wurzelanlauf-Disk, kein Krone-Cluster. Daher 80%
-            // statt 100%: die Krone bleibt am Tip, die Erdung am Boden.
+            // FOLIAGE AT TIPS: ≥ 80 % der laub-Parts sind vom Stamm-Sockel weg (|xz| > 0.4 oder y > 1.5); nicht
+            // 100 %, weil der Ω-K2-Fuß-Flare BEWUSST am Sockel sitzt (Wurzelanlauf-Disk, kein Kronen-Cluster).
             const laub = richParts ? richParts.filter((p) => p.material === "laub") : [];
             const atTipsCount = laub.filter((p) => {
                 const dist = Math.hypot(p.position.x, p.position.z);
@@ -36830,10 +35243,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             out.richFoliageAtTips = laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
         }
 
-        // (S4) ROUTING: gen<5 → Legacy, gen≥5 → Rich. Wir mutieren temporär.
-        // Wir können nicht in-place gen wechseln, ohne die Welt-Init zu brechen;
-        // STATTDESSEN: prüfen, dass die Routing-Funktion das Gate ZIEHT (Source-
-        // Probe genVersion >= 5).
+        // (S4) ROUTING gen<5 → Legacy, gen≥5 → Rich: gen lässt sich nicht in-place wechseln, ohne die
+        // Welt-Init zu brechen → Source-Probe, dass die Routing-Funktion das Gate (genVersion >= 5) zieht.
         const routingSrc = window.__codeOf(r._growTreeBlueprint);
         out.routingHasGate = /genVersion\(\)\s*>=\s*5/.test(routingSrc) || /_genVersion\(\)\s*>=\s*5/.test(routingSrc);
         out.routingDelegates = /_growTreeBlueprintRich/.test(routingSrc) && /_growTreeBlueprintLegacy/.test(routingSrc);
@@ -36861,10 +35272,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             }
         }
 
-        // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
-        // Walk-with-code (V9.56-i, V18.217-Drift-Schutz): die Probe trägt einen
-        // FLOOR statt einer scharfen Zahl; jede Welle bumpt den Floor nur, wo
-        // sie wirklich neue Behavior etabliert.
+        // (S6) VERSION: AnazhRealm.VERSION + index.html-Cache-Buster; die Probe trägt einen FLOOR statt
+        // einer scharfen Zahl (Drift-Schutz).
         const vparts2 = String(A.VERSION || "0.0.0")
             .split(".")
             .map((s) => parseInt(s, 10) || 0);
@@ -36903,11 +35312,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     check(`V18.211 (S6) VERSION floor ≥ 18.217.0 (walk-with-code, V18.217 Varianten-Pool)`, res.versionBumped === true);
 }
 
-// V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE der ersten Pillar-Welle:
-// Ω-K2 Baum-Füße (§4) + Ω-W vertieftes Wind (§9) + Ω-H Promotion-Provenienz
-// (§2) + Ω-C Canopy-Shell (§9). Die Gigant-Pillars II-V (außer Säule I)
-// sind damit foundation-bereit; §5+§8 (GPU-Feld-Bake + Compute-Scatter)
-// bleibt explizit als kommende Welle markiert.
+// Gigant-Restsubschritte: Ω-K2 Baum-Füße · Ω-W vertieftes Wind · Ω-H Promotion-Provenienz ·
+// Ω-C Canopy-Shell (als ABWESENHEIT geprüft).
 async function checkBandV18212GigantRestsubschritte(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -36915,19 +35321,14 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // ─── Ω-K2 BAUM-FÜSSE (§4 Plan) ───────────────────────────────
-        // Ein flacher mossiger Saum am Stamm-Sockel. Probe: jeder Rich-
-        // generierte Baum hat ein laub-Part mit y < trunkBaseR (am Sockel,
-        // nicht in der Krone) UND mit großem x/z-Stretch (eine Disk-Form).
+        // ─── Ω-K2 BAUM-FÜSSE ───
+        // Flacher mossiger Saum am Stamm-Sockel: jeder Rich-Baum hat ein laub-Part mit y < trunkBaseR und
+        // großem x/z-Stretch (Disk-Form).
         if (typeof r._growTreeBlueprintRich === "function" && A.SPECIES_GRAMMAR) {
             const grammar = A.SPECIES_GRAMMAR.baum_tanne;
             const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test", grammar);
-            // wahrerwuchs §4.1 (V9.56-i — die Probe WANDERT): der Flare skaliert jetzt
-            // mit der Größenklasse (ein Strauch trägt einen kleinen, ein Gigant einen
-            // riesigen Saum). Die alte absolute Schwelle `size.x > baseR*2` verfehlte den
-            // Strauch-Flare. Robust: der Flare ist eine FLACHE DISK (x ≫ y, Verhältnis
-            // ~5.5) am Sockel — größenklassen-unabhängig, trennt ihn von den runden
-            // Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
+            // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
+            // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
             const sockelParts = parts.filter(
                 (p) => p.material === "laub" && p.position.y < grammar.trunk.baseR * 2 && p.size.x > p.size.y * 1.5
             );
@@ -36939,10 +35340,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             }
         }
 
-        // ─── Ω-W VERTIEFTES WIND (§9 Plan) ─────────────────────────────
-        // Source-Probe: das Wind-Sway im _buildToonNodeMaterial trägt
-        // (1) quadratischen crownFactor (statt linear) UND (2) ein
-        // aperiodisches Flatter (flutter mit höherer Frequenz).
+        // ─── Ω-W VERTIEFTES WIND ───
+        // Source-Probe: das Wind-Sway (_applyVegetationResponse) trägt (1) quadratischen crownFactor UND
+        // (2) ein aperiodisches Flatter (flutter mit höherer Frequenz).
         const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
         out.wQuadraticCrown =
             /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
@@ -36982,10 +35382,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             }
         }
 
-        // ─── Ω-C CANOPY-SHELL — N7.4 GESCHNITTEN (Vor-Studio-Fern-Kulisse) ─────
-        // Die Shell stand im Studio-Modell komplett hinter dem Wald-Kanten-Nebel und
-        // baute jeden Boot ×2 (V18.423); der Foundry-Wald + der Nebel tragen die Ferne.
-        // Das Band prüft die ABWESENHEIT (Konstante · Methoden · State · Restore-Pfad).
+        // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
+        // Foundry-Wald + Wald-Kanten-Nebel tragen die Ferne; das Band prüft die ABWESENHEIT (Konstante ·
+        // Methoden · State · Restore-Pfad).
         out.cConstGone = !A.CANOPY_SHELL;
         out.cMethodsGone =
             typeof r._ensureCanopyShell === "undefined" &&
@@ -37024,13 +35423,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     check("N7.4 (C4) Welt-Wechsel-Restore referenziert die Shell nicht mehr (Source)", res.cRestoreClean === true);
 }
 
-// V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (gigant-fortsetzung-
-// plan §1, der erste FPS-Hebel nach Säule I). Statt 75-80 InstancedMesh pro
-// V18.211-Tannen-Variante baut der Pfad ~2 (1 bark merged + 1 foliage merged)
-// = ~37× weniger Draw-Calls/Variante. Tag-Neutralität strukturell: bp.parts
-// bleibt unverändert (V17.16-Wand) — der Merge ist eine reine RENDER-
-// Optimierung. Backward-Kompat: gen<6 bleibt Per-Part (alte Welten bit-
-// identisch).
+// Mesh-Merge pro Variante: statt ~75–80 InstancedMesh je Variante ~2 (bark merged + foliage merged).
+// Reine RENDER-Optimierung — bp.parts bleibt unverändert (tag-neutral); gen<6 bleibt Per-Part
+// (alte Welten bit-identisch).
 async function checkBandV18213MeshMerge(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -37051,28 +35446,18 @@ async function checkBandV18213MeshMerge(ctx) {
         out.restoreDisposesMerged =
             /archMergedGeomCache/.test(restoreSrc) && /\.dispose\s*\(\s*\)|\.clear\s*\(\s*\)/.test(restoreSrc);
 
-        // ─── (M2) genVersion-Default: neue Welten = gen 6 ──────────
-        // Eine NEUE Welt-Meta hat genVersion: 7 (V18.214 SKELETON-MESH); gen 6
-        // war V18.213. Die M2-Probe prüft, dass die Welt-Genese MINDESTENS 6
-        // ist (V18.213-Mesh-Merge aktiv) — der konkrete Default-Bump wird in
-        // V18.214 (T1) explizit getestet.
-        // Die LAUFENDE Welt kann eine ältere Welt aus localStorage sein
-        // (Backward-Kompat-Test): bestehende Welten bleiben auf ihrem
-        // genVersion-Stand, NUR neue Welten bekommen 6. So sind die alten
-        // Welten bit-identisch (V18.211-Pfad).
+        // ─── (M2) genVersion-Default: neue Welten ≥ gen 6 ───
+        // Neue Welt-Metas tragen genVersion ≥ 6 (Mesh-Merge aktiv; der konkrete Default steht in T1).
+        // Die LAUFENDE Welt kann älter sein (localStorage) — bestehende Welten bleiben auf ihrem Stand.
         const newMetaSrc = r._generateFreshWorldMeta ? window.__codeOf(r._generateFreshWorldMeta) : "";
         // V18.213-Probe: gen >= 6 (Mesh-Merge aktiv). V18.214 hebt auf 7 —
         // wir akzeptieren beide (Aufwärts-Kompat). M2 prüft NICHT den exakten
         // Wert (das macht V18.214-T-band), sondern nur den Mesh-Merge-Floor.
         out.newMetaUsesGen6 = /genVersion:\s*[6-9]/.test(newMetaSrc);
 
-        // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ─
-        // Den ECHTEN warm-welt-Bauplan als Test-Subjekt: ein _isGrown-Bauplan,
-        // der NICHT als moveable/magnifying klassifiziert wird (sonst läuft er
-        // sowieso classic-Pfad, kein HISM, kein Merge-Bedarf). Damit testen wir
-        // an der Substanz, die im realen Spiel den Vegetations-Druck trägt.
-        // Manche Random-Seeds (V18.212 Ω-K2 Wurzelanlauf-Spread + magieleitung)
-        // erzeugen moveable-Tannen — die fallen klassisch, gar nicht durch HISM.
+        // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ───
+        // Test-Subjekt ist ein ECHTER _isGrown-Bauplan der warmen Welt, der NICHT moveable/magnifying ist
+        // (die laufen classic, ohne HISM/Merge) — manche Seeds erzeugen moveable-Tannen.
         let testBp = null;
         let testKey = null;
         for (const key of Object.keys(r.state.blueprints)) {
@@ -37122,13 +35507,9 @@ async function checkBandV18213MeshMerge(ctx) {
                         Math.abs(elems[14]) < 1e-6
                     );
                 });
-                // M-Color: jede ANZEIGE-geom trägt vertexColors-Attribut. V18.389 (DAS
-                // NEUE KLEID P4) — der Schatten-Zwilling (`l.shadowTwin`) ist ein OPAKER,
-                // kamera-unsichtbarer Schatten-Caster (SHADOW_TWIN_LAYER) → bewusst KEIN
-                // color-Attribut / vertexColors (er trägt keine Farbe, nur die solide
-                // Silhouette für den Schatten-Pass). Die Vertex-Color-Invariante gilt den
-                // ANZEIGE-Leaves (bark/card/core); der Zwilling wird gefiltert (die gemessene
-                // neue Realität, kein Pflaster — er ist ein neuer, distinkter Leaf-Typ).
+                // M-Color: jede ANZEIGE-geom trägt das vertexColors-Attribut. Der Schatten-Zwilling (`l.shadowTwin`,
+                // SHADOW_TWIN_LAYER) ist ein opaker, kamera-unsichtbarer Schatten-Caster ohne Farbe → gefiltert;
+                // die Invariante gilt den ANZEIGE-Leaves (bark/card/core).
                 const displayLeaves = flat.leaves.filter((l) => !l.shadowTwin);
                 out.mergedHasColors =
                     displayLeaves.length > 0 &&
@@ -37138,11 +35519,9 @@ async function checkBandV18213MeshMerge(ctx) {
                     displayLeaves.length > 0 && displayLeaves.every((l) => l.mat && l.mat.vertexColors === true);
             }
 
-            // ─── (M7) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ─
-            // computeCompoundTags läuft über bp.parts → dieselben Werte mit/ohne
-            // _isMerged-Flag. V18.215: der bpClone braucht _isGrown +
-            // _grownSpecies für FAIRE Variation-Anwendung (sonst vergleicht
-            // er „Variation an" vs „Variation aus" = falsche Wand).
+            // ─── (M7) Tag-Neutralität: bp.parts unverändert ───
+            // computeCompoundTags liest bp.parts → gleiche Werte mit/ohne _isMerged. Der bpClone braucht
+            // _isGrown + _grownSpecies, sonst vergliche er Variation-an mit Variation-aus.
             const tagsMerged = r.computeCompoundTags(testBp);
             const bpClone = {
                 parts: testBp.parts.slice(),
@@ -37195,10 +35574,8 @@ async function checkBandV18213MeshMerge(ctx) {
             cacheBeforeReset.clear();
             out.cacheClearedAfterReset = cacheBeforeReset.size === 0;
         }
-        // Defensive: auch den archFlattenCache des Test-Bauplans räumen,
-        // sodass nachfolgende Bands keinen stale Eintrag mit zerstörten
-        // merged-Geom-Referenzen ziehen (die anderen Bauplane bleiben
-        // unberührt — selektive Eviction).
+        // Auch den archFlattenCache-Eintrag des Test-Bauplans räumen (selektiv), sonst zögen Folge-Bands
+        // stale Einträge mit zerstörten merged-Geom-Referenzen.
         if (testKey && r.state.archFlattenCache) r.state.archFlattenCache.delete(testKey);
 
         return out;
@@ -37244,13 +35621,9 @@ async function checkBandV18213MeshMerge(ctx) {
     check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
 
-// V18.214 — DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG (lebendiger-Gigant-
-// Plan §6+§7+§9): Ω-G2 echte Tube-Geometrie + Ω-G3 Foliage-Cards + Ω-W per-
-// Vertex flex/phase + Ω-R2 §3.7 Slope/Höhen-Toleranzen. bp.parts BLEIBT
-// unverändert (V17.16-Wand strukturell) — der Skeleton-Pfad ist eine reine
-// Render-Vertiefung: statt 75 nackten cylinder/sphere-Parts (V18.211) oder
-// 2 merged-cylinder-Leaves (V18.213) sind es zwei organische Geometries
-// (bark-Tube mit lobed flare + foliage-cards mit normalBend).
+// Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) +
+// per-Vertex Wind-flex/phase + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
+// unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -37292,14 +35665,9 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.spawnReadsSlopeHeight =
             /SPECIES_TREE_PARAMS/.test(spawnSrc) && /slopeMax/.test(spawnSrc) && /heightRange/.test(spawnSrc);
 
-        // ─── (T4) Behavioral: Skeleton wird beim Wachsen gesetzt ────
-        // Wir setzen genVersion temporär auf 7 + wachsen einen Bauplan, der
-        // GARANTIERT instancbar ist (nicht moveable/magnifying). V18.213-Lehre:
-        // manche Random-Seeds (V18.212 Ω-K2 Spread + magieleitung) erzeugen
-        // moveable-Tannen → der Test darf nicht an einem Random-Edge-Case
-        // hängen. Wir probieren mehrere (Seed, Spezies)-Kombis bis wir einen
-        // nicht-moveable-Baum haben. Das ist der robuste Pfad — die Wahrheit
-        // des Skeleton-Codes wird mit JEDEM nicht-moveable Bauplan getestet.
+        // ─── (T4) Behavioral: Skeleton wird beim Wachsen gesetzt ───
+        // genVersion temporär 7, dann (Seed, Spezies)-Kombis probieren, bis ein NICHT-moveable Bauplan
+        // wächst — manche Seeds erzeugen moveable-Tannen, der Test darf nicht an diesem Edge-Case hängen.
         const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : null;
         if (r.state.worldMeta) r.state.worldMeta.genVersion = 7;
         let grownKey = null;
@@ -37369,12 +35737,9 @@ async function checkBandV18214SkeletonMesh(ctx) {
                     out.foliageHasFlex = !!fol.geom.attributes.aFlex;
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
-                    // DAS NEUE KLEID Welle 1 (V18.386): die Krone ist die VORLAGEN-Geometrie aus
-                    // der EINEN phyto-core-Quelle — EIN Element je gewachsenem Phyto-Blatt. Die
-                    // Anker kommen aus DENSELBEN Phyto-Blättern → foliageVerts = anchorCount ×
-                    // Verts/Blatt. V18.390 (Eins W4): bei LOD0-Laubbäumen ist das Blatt die
-                    // 30-Vert-SUPERFORMEL-KLINGE (`buildLeafBlades`, der pushLeaf-Port); Nadel-
-                    // Sprays (Konifere) bleiben das 4-Vert-Cluster-Quad (`buildFoliageQuads`).
+                    // Die Krone ist Vorlagen-Geometrie aus der EINEN phyto-core-Quelle: EIN Element je Phyto-Blatt, die
+                    // Anker aus denselben Blättern → foliageVerts = anchorCount × Verts/Blatt. LOD0-Laubbäume: die
+                    // 30-Vert-Superformel-Klinge (`buildLeafBlades`); Nadel-Sprays: das 4-Vert-Quad (`buildFoliageQuads`).
                     out.foliageCardsPerAnchor = 1;
                     const _fvc = fol.geom.attributes.position.count;
                     out.foliageVertsMatchAnchors =
@@ -37473,10 +35838,8 @@ async function checkBandV18214SkeletonMesh(ctx) {
     );
 }
 
-// V18.215 — DER ATEMBERAUBENDE WALD (lebendiger-gigant be15a050 §4 Ω-K3 +
-// §7 Ω-R1 + §8.2 Säule III): Palette dunkler+erdiger, per-Spezies distinkte
-// Tag-Vektoren (V17.16-Wand GESCHÄRFT zur Variations-Wand), Säule III CPU-
-// Pfad mit baum_totholz als Lücken-Baum + SAMPLES 8→10 für dichteren Wald.
+// Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-
+// Wand), baum_totholz als Lücken-Baum, SAMPLES-Dichte (W7).
 async function checkBandV18215AtemberaubenderWald(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -37523,11 +35886,9 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
         out.wandGeschaerft = /SPECIES_TAG_VARIATION/.test(growSrc) && /\(a in variation\)\s*continue/.test(growSrc);
 
-        // ─── (W4) computeCompoundTags wendet Variation für _grownSpecies ──
-        // U1 (V18.452) — die Probe wandert auf die V18.259-Wahrheit: die
-        // Bedingung prüft `_grownSpecies` (die SPEZIES-Identität), nicht mehr
-        // `_isGrown` (das Laufzeit-Flag). Der rohe toString-Grep war nur über
-        // den zitierenden KOMMENTAR grün (die __codeOf-Falsch-Positiv-Klasse).
+        // ─── (W4) computeCompoundTags wendet Variation für _grownSpecies ───
+        // Die Bedingung prüft `_grownSpecies` (die Spezies-Identität), nicht `_isGrown` (Laufzeit-Flag);
+        // __codeOf, weil ein roher toString-Grep über zitierende Kommentare falsch-grün wird.
         const tagsSrc = window.__codeOf(r.computeCompoundTags);
         out.tagsAppliesVariation = /SPECIES_TAG_VARIATION/.test(tagsSrc) && /_grownSpecies/.test(tagsSrc);
 
@@ -37600,10 +35961,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             out.totholzSpawnError = String(_e && _e.message);
         }
 
-        // ─── (W7) SAMPLES in _populateVoxelChunkVegetation ─────
-        // V18.259 — DEV-DROSSEL: SAMPLES ist temporär gesenkt (Schöpfer „weniger Bäume,
-        // schneller iterieren"); v1.0 dreht zurück auf die volle V18.215-Dichte (10). Der
-        // Test prüft darum einen SANEN Bereich (≥4), nicht den festen Wert 10.
+        // ─── (W7) SAMPLES in _populateVoxelChunkVegetation ───
+        // SAMPLES ist als Dev-Drossel gesenkt (voll = 10) → geprüft wird ein SANER Bereich (≥ 4).
         const popSrc = window.__codeOf(r._populateVoxelChunkVegetation);
         const _sm = popSrc.match(/const SAMPLES\s*=\s*(\d+)/);
         out.samples10 = !!_sm && Number(_sm[1]) >= 4;
@@ -37683,12 +36042,9 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     );
 }
 
-// V18.216 (DER LEBENDIGE GIGANT §1, gigant-fortsetzung-plan) — KARST + Büsche /
-// Understory. Plan §3.3 (KARST als 7. Baumart, slopeMax 1.6) + §3.5 (drei
-// BUSCH-Bauplane busch_hazel/farn_busch/blume_gross) + §8.2 Schicht 2 (Bush-
-// Sub-Spawn-Strategie b: wenn Baum-probe fail → Busch am selben Slot, „in den
-// Lücken, wo der Wald nicht steht"). Die Wände prüfen Substanz (Grammar +
-// Params + Variation) + Pipeline-Integration (candidates + Sub-Spawn-Pfad).
+// KARST + Understory: KARST als 7. Baumart (slopeMax 1.6) + drei Busch-Baupläne (busch_hazel/
+// farn_busch/blume_gross); scheitert die Baum-Probe, wächst am selben Slot ein Busch. Die Wände
+// prüfen Substanz (Grammar + Params + Variation) + Pipeline (candidates + Sub-Spawn-Pfad).
 async function checkBandV18216KarstUndUnderstory(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -37836,10 +36192,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
             /["']busch_hazel["']/.test(spawnSrc) &&
             /["']blume_gross["']/.test(spawnSrc);
 
-        // ─── (F) Version + walk-with-code ────────────────────────────
-        // V18.216 baute KARST+Büsche; eine spätere Welle (V18.217 Varianten-
-        // Pool) bumpt die Version auf 18.217.0 ohne dieses Band zu brechen
-        // → wir prüfen FLOOR (string-vergleich, semver-Form 18.MMM.PPP).
+        // ─── (F) Version + walk-with-code ───
+        // Spätere Wellen bumpen die Version → FLOOR-Prüfung (semver-Form 18.MMM.PPP), keine scharfe Zahl.
         out.versionString = A.VERSION;
         const parts = String(A.VERSION || "0.0.0")
             .split(".")
@@ -37909,12 +36263,9 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     check("V18.216 (F2) Fresh-Welt genVersion ≥ 9 (V18.216 Routing)", res.genVersionFresh9 === true);
 }
 
-// V18.217 (DER LEBENDIGE GIGANT §2, gigant-fortsetzung-plan) — VARIANTEN-POOL.
-// Plan §2.5+§6: N=VARIANTS_PER_SPECIES Varianten pro Spezies, gefroren als
-// Welt-Genese-Konstante in worldMeta.variantSeed. Voraussetzung der echten
-// Promotion (V18.221 Ω-H): ein berührter Baum re-wächst BIT-GENAU aus
-// variantSeed[index] → kein visueller Sprung. P2P: zwei Peers mit identischem
-// worldSeed bauen IDENTISCHEN Pool.
+// Varianten-Pool: N=VARIANTS_PER_SPECIES Varianten je Spezies, gefroren als Genese-Konstante in
+// worldMeta.variantSeed. Ein berührter Baum re-wächst BIT-GENAU aus variantSeed[index] (kein
+// Sprung); zwei Peers mit gleichem worldSeed bauen den IDENTISCHEN Pool.
 async function checkBandV18217VariantenPool(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -37922,12 +36273,9 @@ async function checkBandV18217VariantenPool(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // ─── (A) Source-Probes ────────────────────────────────────────
-        // V18.390 (Eins W2-C, REAL nachgezogen — kein stale-Pflaster): die Schwelle war ≥8
-        // (V18.217 „N ≈ 8-32"); der Wald-Kollaps senkte auf 3 BY DESIGN (diff-A1 §5C: jede
-        // Variante = eigene Geometrie = eigene Draw-Calls; die Vielfalt reitet pro Instanz
-        // über scale/rotationY/tint wie die Vorlage mit ~2 Templates/Art). Der Pool-Mechanismus
-        // (das Geprüfte dieses Bands) ist N-unabhängig → die Wand ist jetzt N ≥ 2.
+        // ─── (A) Source-Probes ───
+        // N ≥ 2 statt fester Zahl: N ist bewusst klein (jede Variante = eigene Geometrie = eigene Draw-Calls;
+        // die Vielfalt reitet pro Instanz über scale/rotationY/tint); der Pool-Mechanismus ist N-unabhängig.
         out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 2;
         out.constantValue = A.VARIANTS_PER_SPECIES;
         out.ensureHelperExists = typeof r._ensureVariantSeedPool === "function";
@@ -38018,12 +36366,9 @@ async function checkBandV18217VariantenPool(ctx) {
             }
         }
 
-        // ─── (F) Migration: Pool ohne Eintrag wird lazy ergänzt ───────
-        // SAUBER getestet: wir bauen einen TEMPORÄREN Meta-Kontext, prüfen die
-        // Migration, und STELLEN den Welt-Stand restlos wieder her. Sonst
-        // vergiftet der mutierte Pool die nachfolgenden Bands (V18.218 LOD-
-        // Bauplane bauten gegen den alten pool[]-Pfad und brachen die Seed-
-        // Identität → das ist GENAU das Welt-Identitäts-Gesetz, V18.210).
+        // ─── (F) Migration: Pool ohne Eintrag wird lazy ergänzt ───
+        // In einem TEMPORÄREN Meta-Kontext testen und den Welt-Stand restlos wiederherstellen — ein
+        // mutierter Pool vergiftet die Folge-Bands (LOD-Baupläne brächen die Seed-Identität).
         const savedMeta = r.state.worldMeta ? { ...r.state.worldMeta } : null;
         try {
             const oldStyleMeta = { seed: "old-world-seed-1", genVersion: 5 };
@@ -38113,12 +36458,8 @@ async function checkBandV18217VariantenPool(ctx) {
     check(`V18.217 (H1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionFloor18217 === true);
 }
 
-// V18.218 (DER LEBENDIGE GIGANT §3, gigant-fortsetzung-plan) — LOD-STUFEN
-// FOUNDATION. Plan §3.6+§6: 3 LODs pro Variante (Hero/Mittel/Far), Distanz-
-// Chooser mit Hysterese. Diese Welle baut die FOUNDATION (Geometrie-Beschneidung
-// + Variant-LOD-Builder + Chooser); die ACTIVATION im Spawn-Pfad (LOD-Switch
-// per Frame, Re-Allokation) bleibt für V18.218.1 OPT-IN (Schöpfer-Browser-Auge
-// muss den Look-Switch prüfen). Verdrahtung pending — bewusst markiert.
+// LOD-Stufen: 3 LODs pro Variante (Hero/Mittel/Far) — Geometrie-Beschneidung + Variant-LOD-Builder
+// + Distanz-Chooser mit Hysterese.
 async function checkBandV18218LODStufen(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -38139,10 +36480,8 @@ async function checkBandV18218LODStufen(ctx) {
         out.richHasLodOpt = /opts\s*&&\s*Number\.isFinite\(opts\.lod\)/.test(richSrc) || /opts.*lod/.test(richSrc);
         out.richHasLodLevel = /lodLevel/.test(richSrc);
 
-        // ─── (B) Distanz-Chooser ──────────────────────────────────────
-        // V18.390 (Eins W3) — SCHWELLEN-RELATIV statt absoluter Meter (die Probe
-        // wandert mit dem Code, V9.56-i): thresh01/12 zogen von 80/160 auf die
-        // Vorlagen-Proportion 32/64 — die Stufenfunktion selbst ist unverändert.
+        // ─── (B) Distanz-Chooser ───
+        // Die Probe liest die Schwellen aus LOD_DISTANCES (thresh01/thresh12/hysteresis), keine festen Meter.
         if (out.chooseLODExists) {
             const t01r = A.LOD_DISTANCES.thresh01;
             const t12r = A.LOD_DISTANCES.thresh12;
@@ -38160,10 +36499,9 @@ async function checkBandV18218LODStufen(ctx) {
             out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
         }
 
-        // ─── (C) LOD-Bauplane werden gebaut (3 Stufen) ────────────────
-        // N7.3 — UNIT-RICHTER: der Gate fährt foundry-ON, der _buildVariantLODs-
-        // Chokepoint gäbe null (V18.411, baum_eiche ist Studio-bekannt) → die lebende
-        // Grammatik-LOD-Erzeugung prüft unter LOKALEM Hook (__withNoFoundry).
+        // ─── (C) LOD-Baupläne werden gebaut (3 Stufen) ───
+        // Der Gate fährt foundry-ON; für Studio-bekannte Arten gäbe der _buildVariantLODs-Chokepoint null →
+        // die Grammatik-LOD-Erzeugung prüft unter LOKALEM Hook (__withNoFoundry).
         if (out.buildVariantLODsExists) {
             window.__withNoFoundry(() => {
                 const keys = r._buildVariantLODs("baum_eiche", 0);
@@ -38212,10 +36550,9 @@ async function checkBandV18218LODStufen(ctx) {
             }
         }
 
-        // ─── (E) LOD2 für Totholz (kein Foliage) ─────────────────────
-        // Plan §3.3: Totholz ist ein Snag (kein Laub). LOD2 darf den Ω-K2-
-        // Wurzelanlauf-Flare (Saum am Stamm-Fuß) tragen, aber KEINE Krone-
-        // Foliage. Test: keine laub-Sphere höher als der Flare-Saum (y > 1m).
+        // ─── (E) LOD2 für Totholz (kein Foliage) ───
+        // Totholz ist ein Snag: LOD2 darf den Ω-K2-Flare am Stamm-Fuß tragen, aber KEINE Kronen-Foliage →
+        // keine laub-Sphere über y > 1 m.
         const totGrammar = A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz;
         if (totGrammar && r._growTreeBlueprintRich) {
             const origLast = r._lastTreeSkeleton;
@@ -38326,11 +36663,9 @@ async function checkBandV18218LODStufen(ctx) {
     check(`V18.218 (G1) VERSION floor ≥ 18.218.0 (gemessen ${res.versionStr})`, res.versionFloor18218 === true);
 }
 
-// V18.218.1+219+220+221+222 (DER LEBENDIGE GIGANT §3-§7) — die VOLLE Vollendung:
-// LOD-Activation per-Frame, GPU-Feld-Bake-Region-Cache, Scatter-Bitmask + Cap +
-// Lookup, Ω-H Promotion + Snapshot, Canopy chunk-streaming. End-to-end verdrahtet
-// (kein Passagier — jeder Helper hat einen echten Konsumenten im Loop oder Spawn-
-// Pfad). Eine grosse Wand-Funktion deckt alle fünf Wellen ab.
+// Gigant-Vollendung (eine Wand-Funktion): LOD-Activation per Frame · GPU-Feld-Bake-Region-Cache ·
+// Scatter-Bitmask + Cap + Lookup · Ω-H Promotion + Snapshot · Canopy-Chunk-Streaming — jeder
+// Helper mit echtem Konsumenten im Loop oder Spawn-Pfad.
 async function checkBandV18219bisVollendung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -38347,10 +36682,9 @@ async function checkBandV18219bisVollendung(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
-            // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
-            // Frame-Budget-Scheduler (`_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs`).
-            // Beide in die Loop-Verdrahtungs-Quellen aufnehmen (der Test folgt dem Refactor, V9.56-i).
+            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben im
+            // Frame-Budget-Scheduler → `_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs` zählen
+            // als Loop-Verdrahtungs-Quellen.
             if (
                 (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
                 typeof r[k] === "function"
@@ -38593,10 +36927,8 @@ async function checkBandV18219bisVollendung(ctx) {
     check(`V18.222 (V1) VERSION floor ≥ 18.222.0 (gemessen ${res.versionStr})`, res.versionFloor18222 === true);
 }
 
-// V18.223 (DER LEBENDIGE GIGANT §10 Ω-P) — PBR-PFAD. Plan §10: PBR = Physik,
-// keine Gefühls-Patches. roughness + metalness HERGELEITET aus Material-Tags.
-// Schöpfer-Wort 14.06.: „pbr bedeutet ohne mein gefühl, regeln, physik".
-// Tests: Builder existiert, Dispatch wirkt, Roughness/Metalness aus Tags.
+// PBR-Pfad: roughness + metalness werden aus Material-Tags HERGELEITET (Physik, keine Gefühls-
+// Patches). Proben: Builder existiert, Dispatch wirkt, Roughness/Metalness folgen den Tags.
 async function checkBandV18223PbrKohaerenz(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -38723,11 +37055,9 @@ async function checkBandV18223PbrKohaerenz(ctx) {
     check(`V18.223 (V1) VERSION floor ≥ 18.223.0 (gemessen ${res.versionStr})`, res.versionFloor18223 === true);
 }
 
-// V18.224 (DER LEBENDIGE GIGANT §5+§8+§2 — DAS HERZ) — der ECHTE Scatter +
-// die ECHTE Promotion. Die zwei Seelen vereint: ferner Wald als InstancedMesh-
-// Streu (Dichte-Band) + Touch→Real-Kristallisation (SEELEN-Band). Tests messen
-// ECHTE Konsumtion: Instanzen entstehen, Cells promovieren zu echten Einträgen,
-// die Geometrie ist identisch (kein Sprung), Determinismus bit-genau.
+// Echter Scatter + echte Promotion: ferner Wald als InstancedMesh-Streu (Dichte-Band) + Touch→Real-
+// Kristallisation (Seelen-Band). KONSUM: Instanzen entstehen, Cells promovieren zu echten Einträgen,
+// identische Geometrie (kein Sprung), bit-genauer Determinismus.
 async function checkBandV18224ScatterPromotion(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -38746,10 +37076,9 @@ async function checkBandV18224ScatterPromotion(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
-            // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
-            // Frame-Budget-Scheduler (`_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs`).
-            // Beide in die Loop-Verdrahtungs-Quellen aufnehmen (der Test folgt dem Refactor, V9.56-i).
+            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben im
+            // Frame-Budget-Scheduler → `_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs` zählen
+            // als Loop-Verdrahtungs-Quellen.
             if (
                 (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
                 typeof r[k] === "function"
@@ -38802,11 +37131,8 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 const treeCap = (SC.layers.find((l) => l.name === "tree") || {}).cap || 0;
                 const underCap = (SC.layers.find((l) => l.name === "under") || {}).cap || 0;
                 const litterCap = (SC.layers.find((l) => l.name === "litter") || {}).cap || 0;
-                // V18.233 (SUBSTANZ-REBALANCE, Schöpfer-Befund „FPS → 0, Bäume ragen
-                // kaum"): der FPS-Befund überstimmt das alte V18.225-„hunderte/Chunk"-
-                // Ziel. Die Bäume sind jetzt die prominente Substanz (treeCap ≥ underCap),
-                // das Understory-Gestrüpp (war 4200 = FPS-Killer + Sicht-Verstopfung)
-                // ist sekundär. Dichte FPS-bewusst, nicht maximal.
+                // Die Bäume sind die prominente Substanz (treeCap ≥ underCap); das Understory ist sekundär —
+                // Dichte FPS-bewusst, nicht maximal (dichtes Gestrüpp kostet FPS + Sicht).
                 out.treeProminentRebalance = treeCap >= underCap && treeCap > 0;
                 out.hasThreeStrata = treeCap > 0 && underCap > 0 && litterCap > 0;
                 // Design-Kapazität: FPS-bewusst populiert (nicht mehr „≥150 hunderte")
@@ -38860,11 +37186,9 @@ async function checkBandV18224ScatterPromotion(ctx) {
             out.speciesDeterministic = sp1 === sp2;
         }
 
-        // ─── (E) Ω-H PROMOTION (Touch→Real, kein visueller Sprung) ────
-        // N7.3 — UNIT-RICHTER: foundry-ON überspringt der Scatter die Baum-Schichten
-        // (kein promotable Cell) — die lebende Grammatik-Promotion (Touch→Real über
-        // grown_-Baupläne) prüft unter LOKALEM Hook; die Test-Region wird danach
-        // entsorgt (kein Grammatik-Bestand in der ambient Studio-Welt).
+        // ─── (E) Ω-H PROMOTION (Touch→Real, kein visueller Sprung) ───
+        // Foundry-ON überspringt der Scatter die Baum-Schichten (kein promotable Cell) → die Grammatik-
+        // Promotion prüft unter LOKALEM Hook; die Test-Region wird danach entsorgt.
         if (out.promoteExists && r.state.scene) {
             window.__withNoFoundry(() => {
                 // Eine frische Scatter-Cell bauen + promovieren
@@ -38889,10 +37213,8 @@ async function checkBandV18224ScatterPromotion(ctx) {
                             out.entryHasProvenance =
                                 entry.provenance && entry.provenance.bornFrom === "world-genesis-cell";
                             out.provenanceSpecies = entry.provenance && entry.provenance.species === promotedSpecies;
-                            // Der Eintrag nutzt den GLEICHEN grown-Bauplan (kein Sprung):
-                            // entry.type ist grown_<species>_v<variant> (LOD0). Der
-                            // Entry trägt _lodSpecies (von spawnArchitecture gesetzt),
-                            // NICHT _grownSpecies (das lebt am Blueprint).
+                            // Der Eintrag nutzt DENSELBEN grown-Bauplan (kein Sprung): entry.type = grown_<species>_v<variant>
+                            // (LOD0); der Entry trägt _lodSpecies (von spawnArchitecture), _grownSpecies lebt am Blueprint.
                             out.entryUsesGrownBp = /^grown_/.test(entry.type) && entry._lodSpecies === promotedSpecies;
                             out.entryVariantMatches = entry._lodVariantIndex === promotedVariant;
                             // Cell ist jetzt promoted (Bitmask) + slots freigegeben
@@ -38982,15 +37304,10 @@ async function checkBandV18224ScatterPromotion(ctx) {
             Number.isFinite(res.byLayer.under) &&
             Number.isFinite(res.byLayer.litter)
     );
-    // V18.267 (PROVISORISCHE ENTLASTUNG, Schöpfer „hunderte Bäume, sonst kaum was"):
-    // die Caps gesenkt (tree 900→300, under 800→250, litter 250→150) → ein offeneres
-    // Waldland, das Terrain/Fels/Blumen sichtbar macht. Die Dichte-Schwellen ziehen
-    // mit (der Test wandert mit dem Code) — die Welt ist BEWUSST sparsamer.
+    // Die Dichte-Schwellen folgen den FPS-bewusst gesenkten Scatter-Caps — die Welt ist BEWUSST sparsam.
     check(
-        // V18.347 — die Schwelle 18→2.5 nachgezogen: die SCATTER-Caps wurden SCHÖPFER-GETRIEBEN für
-        // FPS gesenkt (V18.303 tree 90→55 „Laub war 90 % der GPU-Last, zu viele Bäume"; under 250→70→40)
-        // → die Kapazität fiel von ~18 auf ~3/Chunk. Die ≥18-Schwelle war von VOR diesen Schnitten; der
-        // Test prüft jetzt den aktuellen FPS-bewussten Floor (>0, drei Strata bleiben via M3 geprüft).
+        // Floor ≥ 2.5/Chunk: die Scatter-Caps sind für FPS gesenkt (Laub trug den Großteil der GPU-Last);
+        // die drei Strata prüft M3.
         `V18.224/267 (M5) Design-Kapazität FPS-bewusst populiert ≥2.5/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(1) : "?"})`,
         res.designPerChunk >= 2.5
     );
@@ -39028,13 +37345,9 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check(`V18.224 (V1) VERSION floor ≥ 18.224.0 (gemessen ${res.versionStr})`, res.versionFloor18224 === true);
 }
 
-// V18.226 (DER WAHRE ANBLICK — Ω-OPSIS Säule I) — DER LAWFUL BODEN: die per-
-// Fragment Multi-Klassen-GEOLOGIE als geteilter Auslesewert (Toon + PBR). KEINE
-// gemalte Oberfläche: Fels/Geröll EMERGIEREN aus der STEILE (Physik — ein steiler
-// Hang trägt keine Erde), Moos aus flach+feucht (Hydrologie, die Feuchte lebt
-// schon im Basis-Albedo). Tests messen CONSUM (beide Builder rufen den Helfer,
-// die Uniforms treiben, der colorNode wird gesetzt — auch PBR, die geheilte
-// Lücke), nicht Existenz.
+// Wahrer Anblick I — der LAWFUL Boden: per-Fragment Multi-Klassen-Geologie als geteilter Auslesewert
+// (Toon + PBR). Fels/Geröll EMERGIEREN aus der Steile, Moos aus flach + feucht. KONSUM: beide
+// Builder rufen den Helfer, die Uniforms treiben, der colorNode ist gesetzt (auch PBR).
 async function checkBandWahrerAnblickSaeule1(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -39145,11 +37458,9 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check(`Ω-OPSIS S1 (V1) VERSION floor ≥ 18.226.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// V18.227 (DER WAHRE ANBLICK — die FELS-WELLE) — Säule VI Ω-O15 (prozeduraler
-// Fels: Box-Samen → noise-verschobener Ikosaeder) + Säule II Ω-O5 (Kiesel-Streu
-// wo Fels durchbricht) + die V18.226-Geologie-Korrektur (nur Land, nicht
-// wind-wiegende Vegetation). Tests messen CONSUM: der Fels emergiert, die Streu
-// liest rockExposure, die Geologie ist gegated.
+// Fels-Welle: prozeduraler Fels (Box-Samen → noise-verschobener Ikosaeder) + Kiesel-Streu, wo Fels
+// durchbricht; Geologie nur auf Land, nicht auf wind-wiegender Vegetation. KONSUM: der Fels
+// emergiert, die Streu liest rockExposure, die Geologie ist gegated.
 async function checkBandWahrerAnblickFels(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -39196,10 +37507,9 @@ async function checkBandWahrerAnblickFels(ctx) {
             out.steinTagsFinite = false;
         }
 
-        // (D) CONSUM: die Streu liest die statischen Fels-Baupläne
-        // N7.3 — UNIT-RICHTER: kiesel ist Studio-bekannt (→ geroell), foundry-ON gäbe
-        // der Chokepoint null; der Prüf-Gegenstand ist der STATISCHE Grammatik-LOD-Weg
-        // ({0,1,2} = derselbe Bauplan, V18.227) → lokaler Hook.
+        // (D) CONSUM: die Streu liest die statischen Fels-Baupläne. kiesel ist Studio-bekannt → foundry-ON
+        // gäbe der Chokepoint null; geprüft wird der STATISCHE Grammatik-LOD-Weg ({0,1,2} = derselbe
+        // Bauplan) → lokaler Hook.
         const lods = window.__withNoFoundry(() => r._buildVariantLODs("kiesel", 0));
         out.staticLods = !!(lods && lods[0] === "kiesel" && lods[1] === "kiesel" && lods[2] === "kiesel");
         const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
@@ -39250,10 +37560,8 @@ async function checkBandWahrerAnblickFels(ctx) {
     check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// V18.228 (DER WAHRE ANBLICK — die GRAS-VERTIEFUNG) — Säule II Ω-O4: das Gras
-// liest den BODEN darunter. Der Samen (fixer Grün-Gradient) wächst zur Boden-
-// Kohärenz: jeder Halm trägt instanceColor aus lebendig+feuchte (lush-grün ↔
-// dry-oliv). Tests messen CONSUM (das Material liest es, der Bau setzt es).
+// Gras-Band: die Wiese liest den BODEN darunter (lush-grün ↔ dry-oliv aus lebendig + feuchte).
+// Proben messen KONSUM an den Nähten (Material, Boden-Albedo, Feld-Bake).
 async function checkBandWahrerAnblickGras(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -39263,20 +37571,14 @@ async function checkBandWahrerAnblickGras(ctx) {
 
         // (A) CONSUM Source-Probes
         const matSrc = window.__codeOf(r._grassInstanceMat);
-        // V18.267 — der Boden-Tint kommt über Three.js' nativen InstanceNode-Pfad
-        // (setupDiffuseColor multipliziert instanceColor automatisch). Das Material
-        // liest instanceColor NICHT mehr manuell (das war redundant + die
-        // „instanceColor not found"-Fehlerquelle). Der KONSUM ist via setColorAt
-        // im Build (A2) bewiesen, nicht via manuellem Material-Read.
-        // Strip Kommentare bevor wir auf den manuellen Read prüfen (CLAUDE.md-
-        // Lehre, Vorbild Z. ~34340: der Code darf das Wort tragen — der V18.267-
-        // Erklär-Kommentar zitiert den entfernten Read —, der CODE darf es nicht.
+        // Der Boden-Tint kommt über Three.js' nativen InstanceNode-Pfad (setupDiffuseColor multipliziert
+        // instanceColor selbst) — ein manueller instanceColor-Read ist redundant und wirft „instanceColor not
+        // found". __codeOf strippt Kommentare, die den entfernten Read zitieren.
         const matCode = window.__codeOf(matSrc);
         out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matCode);
-        // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist
-        // BODEN-FUNKTION — der Halm-Ton ist keine Instanz-Farbe mehr, sondern liest
-        // das Grün des gebackenen Boden-Albedos (_green → _halmW), und DIESES Grün
-        // trägt lebendig + feuchte (_attachVoxelFieldColors). Konsum an beiden Nähten.
+        // Die Wiese ist BODEN-FUNKTION: der Halm-Ton liest das Grün des gebackenen Boden-Albedos
+        // (_green → _halmW), und dieses Grün trägt lebendig + feuchte (_attachVoxelFieldColors) — Konsum
+        // an beiden Nähten.
         const albedoSrc = window.__codeOf(r._terrainGeologyAlbedo);
         const bakeSrc = window.__codeOf(r._attachVoxelFieldColors);
         out.buildSetsColor = /const _halmW = _green/.test(albedoSrc) && /_halmHoch/.test(albedoSrc);
@@ -39329,11 +37631,8 @@ async function checkBandWahrerAnblickGras(ctx) {
     check(`Ω-OPSIS S2-Gras (V1) VERSION floor ≥ 18.228.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// V18.229 (DER WAHRE ANBLICK — die LAUB-VERTIEFUNG) — Säule III Ω-O7 (Rinden-
-// Maserung: flache Bark-Farbe → axiale Borke-Bänder + radialer Streifen) +
-// Säule VI Ω-O14 (flaches Quad → blatt-geformte, verjüngte, gekrümmte Card).
-// Tests messen CONSUM (die Geometrie-Builder tragen die Maserung/Verjüngung) +
-// Behavioral (die getaperte Card ist oben schmaler als unten).
+// Laub-Vertiefung: Rinden-Maserung (axiale Borke-Bänder + radialer Streifen) + blatt-geformte Card.
+// Proben: KONSUM in den Geometrie-Buildern + behavioral (Tube + Card aus dem gewachsenen Skelett).
 async function checkBandWahrerAnblickLaub(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -39348,10 +37647,8 @@ async function checkBandWahrerAnblickLaub(ctx) {
         out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
         out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);
 
-        // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card
-        // N7.3 — UNIT-RICHTER: foundry-ON gäbe der Chokepoint null → der gen<7-Zweig
-        // stellte die Probe still auf true (vakuös). Der lokale Hook hält den
-        // Behavioral-Beweis (Tube/Card aus dem gewachsenen Skelett) am Leben.
+        // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card. Foundry-ON gäbe der
+        // Chokepoint null (die Probe wäre vakuös grün) → der lokale Hook hält den Beweis am Leben.
         let tubeOk = false,
             cardOk = false,
             taperProven = false;
@@ -39365,11 +37662,9 @@ async function checkBandWahrerAnblickLaub(ctx) {
                 if (tube && tube.dispose) tube.dispose();
                 const card = r._buildTreeFoliageCardGeometry(skel);
                 cardOk = !!(card && card.attributes && card.attributes.position && card.attributes.position.count > 0);
-                // DAS NEUE KLEID Welle 1 (V18.386): die Blatt-FORM lebt jetzt in der Atlas-
-                // Silhouette (die Vorlagen-Cluster-Quad-Karte `buildFoliageQuads`), NICHT in
-                // der Geometrie-Verjüngung. Die Karte ist ein Cluster-Quad (4 Verts/Blatt,
-                // uv-geroutet in die Atlas-Zelle) — der Beweis ist das uv-Attribut + die
-                // Quad-Vertex-Zahl (Vielfaches von 4), nicht mehr die getaperte card{cross}.
+                // Die Blatt-FORM lebt in der Atlas-Silhouette (Cluster-Quad-Karte `buildFoliageQuads`, 4 Verts/Blatt,
+                // uv in die Atlas-Zelle geroutet), nicht in der Geometrie → Beweis: uv-Attribut + Vertex-Zahl als
+                // Vielfaches von 4.
                 if (card && card.attributes.position && card.attributes.position.count >= 4) {
                     const cnt = card.attributes.position.count;
                     taperProven = !!card.attributes.uv && cnt % 4 === 0;
@@ -39406,10 +37701,8 @@ async function checkBandWahrerAnblickLaub(ctx) {
     check(`Ω-OPSIS S3/S6-Laub (V1) VERSION floor ≥ 18.229.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// V18.230 (DER WAHRE ANBLICK — die PFADE) — Säule II Ω-O6: der einzige Samen,
-// der aus NICHTS wuchs. Die Fluss-Bänke sind getrampelte Erde (lawful aus dem
-// Drainage-Netz): _pathFieldAt → der Boden packt (packedDirt, worker-gespiegelt
-// bit-identisch) + das Gras weicht. Tests messen CONSUM + die Feld-Logik.
+// Pfade: Fluss-Bänke sind getrampelte Erde, lawful aus dem Drainage-Netz: _pathFieldAt → der Boden
+// packt (packedDirt, Main ↔ Worker bit-identisch) + das Gras weicht. Proben: KONSUM + Feld-Logik.
 async function checkBandWahrerAnblickPfade(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -39473,10 +37766,8 @@ async function checkBandWahrerAnblickPfade(ctx) {
     check(`Ω-OPSIS S2-Pfad (V1) VERSION floor ≥ 18.230.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// V18.231 (DER WAHRE ANBLICK — VERIFIKATION + ATMOSPHÄRE) — Säule IV (Büsche/
-// Understory: GEMESSEN schon gewachsen, V18.216/.225 — VERIFIZIEREN, kein
-// Kugel-Bug) + Säule V Ω-O13 (die Atmosphäre koppelt ans Wetter — schon weit,
-// hier vollendet um hazeNear: ferne Berge verblassen STÄRKER bei Feuchte).
+// Verifikation + Atmosphäre: Büsche/Understory sind echte gewachsene Bauten (kein Kugel-Bug); die
+// Atmosphäre koppelt ans Wetter — hazeNear: ferne Berge verblassen STÄRKER bei Feuchte.
 async function checkBandWahrerAnblickAtmoBusch(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -39535,11 +37826,9 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// V18.264 (DER SCHATTEN-CACHE) — der Schatten-Pass ist ein zweiter Voll-Render
-// (gemessen 2.32M Dreiecke). Beim Umsehen (Maus = Rotation) bewegt sich die
-// Schatten-Kamera NICHT (folgt der Spieler-Position) → die Map ist identisch.
-// autoUpdate=false + `_loopShadowUpdate` rendert nur neu bei Bewegung/Sonne/Max-
-// Staleness → im Stand übersprungen. Das Intervall ist eine Regelkreis-Stellgröße.
+// Schatten-Cache: der Schatten-Pass ist ein zweiter Voll-Render; beim Umsehen bewegt sich die
+// Schatten-Kamera nicht (folgt der Spieler-Position) → autoUpdate=false + `_loopShadowUpdate`
+// rendert nur bei Bewegung/Sonne/Max-Staleness neu. Das Intervall ist eine Regelkreis-Stellgröße.
 async function checkBandV18264ShadowCache(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -39602,10 +37891,8 @@ async function checkBandV18265ShadowDistance(ctx) {
         const out = {};
         out.hasMethod = typeof r._archGroupCastsShadow === "function";
         if (!out.hasMethod) return out;
-        // UNIT (V18.464 — der Test wandert mit dem Gesetz): L0 UND L1 werfen
-        // Schatten (seit thresh01=20 verlor sonst jeder Baum ab 20 m seinen
-        // Schatten mitten im Sichtfeld); NUR die Fernstufe L2 wirft nie.
-        // Bauten (kein _lodN) werfen weiter.
+        // UNIT: L0 UND L1 werfen Schatten (sonst verlöre jeder Baum ab thresh01 seinen Schatten mitten im
+        // Sichtfeld); NUR die Fernstufe L2 wirft nie. Bauten (kein _lodN) werfen weiter.
         out.lod0Casts = r._archGroupCastsShadow("grown_baum_eiche_v3") === true;
         out.lod1NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod1") === true;
         out.lod2NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod2") === false;
@@ -39693,16 +37980,12 @@ async function checkBandV18266RockDetail(ctx) {
     );
 }
 
-// DETERMINISMUS-BOGEN P4 (Stufe 1) — DIE ERNTE: der deterministische Input-Replay.
-// Die feld-native Simulation ist eine reine Funktion (Position × Dichtefeld × Input × dt) →
-// derselbe Start + dieselbe Input-Folge ⇒ bit-identisches Ergebnis. Diese Invariante schützt
-// das Lockstep/Replay-Fundament; bricht sie, lauert eine versteckte Nicht-Determinismus-Quelle
-// (Math.random/Zeit/Float-Drift) im Schritt-Pfad. (Volle Linse: `scripts/diag-replay-determinism.cjs`.)
-// V18.492 — DER CO-SCHÖPFER SPRICHT STUDIO (v1.0-Schritt 4, roadmap §0.v1): ein Satz an
-// die KI (oder in den Chat, ohne Schlüssel) wird über DIESELBEN Tabellen wie die Werkstatt
-// zu echten Studio-Bauplänen in der Welt — geerdet, nie im Wasser, mit dem Werkstatt-
-// Stempel. Beweist Auflöser · Op · Satz-Parser · near_water · Prompt · den KI-Pfad END-ZU-
-// END (gestubbte Antwort → maybeAnswerWithLlm → dslRun → spawnArchitecture).
+// Co-Schöpfer spricht Studio: ein Satz an die KI (oder ohne Schlüssel in den Chat) wird über
+// DIESELBEN Tabellen wie die Werkstatt zu Studio-Bauplänen — geerdet, nie im Wasser. Beweist
+// Auflöser · Op · Satz-Parser · near_water · Prompt · KI-Pfad END-ZU-END (gestubbte Antwort →
+// maybeAnswerWithLlm → dslRun → spawnArchitecture).
+// (checkBandV18331ReplayDeterminism unten: gleicher Start + gleiche Input-Folge ⇒ bit-identisch;
+// sonst Math.random/Zeit/Float-Drift im Schritt-Pfad; Linse: scripts/diag-replay-determinism.cjs.)
 async function checkBandV18493CoSchoepferStudio(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(async () => {
@@ -39935,16 +38218,10 @@ async function checkBandV18331ReplayDeterminism(ctx) {
     );
 }
 
-// KONVERGENZ III (V18.456) — DIE KREATUR IST DER STUDIO-BAUM: alle vier Gattungen
-// (Hirsch·Wolf·Fuchs·Bär) bauen aus tetrapoda-core.bauTier (dieselben Kugeln wie das
-// Lab); die Parts bleiben die Mechanik-Wahrheit (_soulParts), der Baum die Gestalt.
-// Die Metaball-Klasse (Skin-Isosurface + Gesichts-LOD + Bäcker) ist GEFALLEN.
-// Wände: (1) Struktur je Gattung (Baum-Gruppe, ≥2 Meshes, KEIN Metaball-Rest),
-// (2) DIE NaN-LINSE (die V18.456-Fehler-Klasse: EIN NaN-Radius kollabierte den Wolf
-// zu unsichtbaren NaN-Matrizen — die Welt-BBox jeder Kreatur ist FINIT + sinnvoll),
-// (3) CONSUM: der EINE Animations-Chokepoint (_animateCompoundMotion) bewegt die
-// Baum-Beine (Diagonal-Trab), (4) die Render-Ehrlichkeit: Baum ≤ 300 Meshes bei
-// GETEILTEN Geometrien (der Mesh-Zähler ist dokumentierte Realität, kein Win-Theater).
+// Die Kreatur ist der Studio-Baum: alle vier Gattungen bauen aus tetrapoda-core.bauTier; die Parts
+// bleiben Mechanik-Wahrheit (_soulParts). Wände: (1) Baum-Gruppe je Gattung, ≥ 2 Meshes, kein
+// Metaball-Rest · (2) NaN-Linse: Welt-BBox FINIT (ein NaN-Radius macht die Kreatur unsichtbar) ·
+// (3) KONSUM: _animateCompoundMotion bewegt die Baum-Beine · (4) ≤ 300 Meshes, geteilte Geometrien.
 async function checkBandKonvergenzTierBaum(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40069,10 +38346,8 @@ async function checkBandKonvergenzTierBaum(ctx) {
     );
 }
 
-// W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
-// SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
-// (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
-// (c) Gelenk-Probe. Headless: die LOGIK; der FEEL ist Schöpfer-Browser.
+// W-G Werkstatt-Gelenke begreifbar: macht computeMotionRoles · CONNECTION_TYPES sichtbar (Achsen-
+// Geister im Viewer · Progressive Disclosure · Lehr-Satz · Gelenk-Probe). Headless prüft die LOGIK.
 async function checkBandWGGelenke(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40142,10 +38417,8 @@ async function checkBandWGGelenke(ctx) {
     );
 }
 
-// W3 (meister-plan §8.8f, V18.176) — DER UI-PULS: ein dirty(raum) → eine
-// rAF-gebündelte Render-Insel pro Raum. Die GEMESSENE Krankheit (der Boost-
-// Doppel war das Symptom): N hand-verdrahtete Render-Aufrufe ⇒ Doppel-Render +
-// Stale. Das EINE Organ `_uiDirty` dedupt (Set + ein rAF) → strukturell unmöglich.
+// W3 UI-Puls: dirty(raum) → EINE rAF-gebündelte Render-Insel pro Raum. Das Organ `_uiDirty` dedupt
+// (Set + ein rAF) → Doppel-Render/Stale durch hand-verdrahtete Render-Aufrufe strukturell unmöglich.
 async function checkBandW3UiPuls(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40164,10 +38437,8 @@ async function checkBandW3UiPuls(ctx) {
         r._uiDirty("hof");
         r._uiDirty("hof");
         out.dedup = r._uiPulseQueued === true && r._uiDirtyRooms.size === 1;
-        // (4) MIGRATION wird per Grep-Wand am Quelltext geprüft (s. unten — der
-        // Source ist außerhalb der Browser-Sandbox lesbar).
-        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt nicht den Puls
-        // (try/catch im Source — der __uiPulseError-Marker fängt ihn).
+        // (4) Migration: Grep-Wand am Quelltext (s. unten).
+        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt den Puls nicht (try/catch, __uiPulseError).
         out.islandIsolated = /try \{[\s\S]*?room\.render\(\)[\s\S]*?catch/.test(window.__codeOf(r._uiDirty));
         // (6) der ON-OPEN-Render im Hof-Hook (so darf die Insel isOpen-skippen).
         out.hofOnOpen = /_renderCreatureListUI\(\)/.test(window.__codeOf(r._hofHandleDrawerChange));
@@ -40208,19 +38479,11 @@ async function checkBandW3UiPuls(ctx) {
     );
 }
 
-// W-E (meister-plan §8.3, V18.173) — DAS FREQUENZBAND: eine Atmosphäre, viele
-// Antennen. Das Sende-Feld war schon EINS (atmoUniforms/lights/fog), die
-// Empfangs-Seite war fünffach familien-gegated (E1 GEMESSEN, diag-frequenzband:
-// der Nacht-Boden-Hebel traf das Terrain mit Faktor ~6 gegenüber den Bauten,
-// das Gras gar nicht). Jetzt: EIN Empfänger (_applySubstanceResponse), Profile
-// aus der SUBSTANZ (_substanceResponseProfile — die Antenne IST die Substanz),
-// FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.
-// W-F (meister-plan §8.3 W-F, V18.175) — der Fluss wie von Profis: die EINE
-// geglättete Lauf-Fläche (_waterRunSurfaceAt), drei Konsumenten (Zell-Sheet ·
-// Tauch-Trigger · Boot-Schwimmen), die NARBEN-WAND (Zentrums-Blende lässt die
-// Querschnitt-Kante roh), die Flow-Kräuselung im Shader, das Substanz-
-// emergente Schwimmen. Headless: Verdrahtung + behaviorales Boot-Schwimmen
-// (der Fluss-Look misst diag-wf am echten Lauf + das Schöpfer-Auge).
+// W-F Fluss: die EINE geglättete Lauf-Fläche (_waterRunSurfaceAt) mit drei Konsumenten (Zell-Sheet ·
+// Tauch-Trigger · Boot-Schwimmen), Narben-Wand (Zentrums-Blende lässt die Querschnitt-Kante roh),
+// Flow-Kräuselung im Shader, Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
+// (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
+// via _substanceResponseProfile, FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.)
 async function checkBandWFFluss(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40233,11 +38496,8 @@ async function checkBandWFFluss(ctx) {
         const dryX = 99999,
             dryZ = 99999;
         out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
-        // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe).
-        // V18.345 (B1): die Sheet-Mathe wanderte von `_buildVoxelChunkWaterCellSheet` nach
-        // `_computeWaterSheetData` (Main+Worker-geteilte Quelle) → die Source-Probe liest sie dort.
-        // V18.347: der Tauch-Trigger wanderte von `_loopPhysicsSync` nach `_stepCharacter` (V18.331
-        // feld-native Physik — der Spieler-Schritt liest die Wasser-Fläche via `_waterRunSurfaceAt`).
+        // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe): die Sheet-Mathe in
+        // `_computeWaterSheetData` (Main + Worker geteilt), der Tauch-Trigger in `_stepCharacter`.
         out.sheetReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._computeWaterSheetData));
         out.diveReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._stepCharacter));
         // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
@@ -40373,11 +38633,8 @@ async function checkBandWEFrequenzband(ctx) {
     );
 }
 
-// V18.160 — M7: LICHT-FEINSCHLIFF (meister-plan §2; Befunde 20+21). Der
-// Terrain-NACHT-BODEN (seit W-E das Füll-Licht — Mittag per Konstruktion
-// ≈ unverändert; A/B GEMESSEN: Pixel-Mittel 25.9 → 37.9 am Abend) + die
-// Mikro-Struktur als LEBENDIGER Regler (vorher Konstante im Tree — ein
-// Slider wäre der tote Knopf, V18.65-Klasse).
+// M7 Licht-Feinschliff: der Terrain-NACHT-BODEN als Füll-Licht (Mittag per Konstruktion ≈ gleich)
+// + die Mikro-Struktur als LEBENDIGER Regler (eine Konstante im Tree wäre ein toter Slider-Knopf).
 async function checkBandM7LichtFeinschliff(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40395,10 +38652,8 @@ async function checkBandM7LichtFeinschliff(ctx) {
             Math.abs(au.microStrength.value - 0.27) < 1e-9 && Math.abs(au.terrainNightFloor.value - 0.21) < 1e-9;
         r.setMicroStrength(m0);
         r.setTerrainNightFloor(n0);
-        // (3) der Shader-Tree KONSUMIERT beide (Source: _au.microStrength im
-        // micro-Block; das fuell-Licht auf der Albedo; der vertexColors-Bau
-        // reicht die per-Vertex-Albedo-Quelle — W-E: die Probe wanderte mit
-        // dem Code in den EINEN Band-Empfänger, V9.56-i).
+        // (3) der Shader-Tree KONSUMIERT beide im EINEN Band-Empfänger: _au.microStrength im micro-Block,
+        // das fuell-Licht auf der Albedo; der vertexColors-Bau reicht die per-Vertex-Albedo-Quelle.
         const aerialSrc = window.__codeOf(r._applySubstanceResponse);
         const toonSrc = window.__codeOf(r._buildPbrNodeMaterial); // V18.236 (§2): PBR der EINE Builder
         out.treeConsumes =
@@ -40437,11 +38692,9 @@ async function checkBandM7LichtFeinschliff(ctx) {
     );
 }
 
-// V18.161 — M8: DAS MAKRO-FENSTER (meister-plan §2/§0; Audit-Frage 28).
-// Broker-stats über den BESTEHENDEN WS-Kanal (kein neuer HTTP-Pfad/CSP) ·
-// die Identitäts-Seite als GEFILTERTER Feed (data-author — F4-Verdichtung) ·
-// der Vibe-Pass-Backup-Pfad sichtbar. Der ECHTE Server-Beweis lebt im
-// smoke:multiuser (1 Raum · 2 Peers · nur der Anfrager).
+// M8 Makro-Fenster: Broker-stats über den BESTEHENDEN WS-Kanal (kein neuer HTTP-Pfad/CSP) · die
+// Identitäts-Seite als gefilterter Feed (data-author) · der Vibe-Pass-Backup-Pfad sichtbar. Den
+// echten Server-Beweis trägt smoke:multiuser (1 Raum · 2 Peers · nur der Anfrager).
 async function checkBandM8MakroFenster(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40522,15 +38775,10 @@ async function checkBandM8MakroFenster(ctx) {
     );
 }
 
-// V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
-// Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
-// Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
-// (V18.65-Klasse) → er treibt jetzt csm.maxFar (300→540 = der gebaute Default,
-// nahtlos); (2) Kachel-Erosion trug 64-KB-flowTo-Ballast (Konsument nur der
-// Heimat-diag); (3) die Bestbewertet-Rail las nur die EIGENE Wertung (mesh-
-// gewertete Items unsichtbar — Konsum-Riss zur V18.134-Aggregation); (4) der
-// per-Chunk-RNG lebte 2x inline (Scatter+Fernfeld) → EIN _scatterChunkRng.
-// Entkraeftet (GEMESSEN): die CSM-Haupt-Map rendert NICHT (mainMap=false).
+// Reflexions-Audit — vier Wände: (1) der Schatten-Weite-Slider treibt unter CSM csm.maxFar (kein
+// toter Knopf) · (2) Kachel-Erosion ohne flowTo-Ballast · (3) die Bestbewertet-Rail liest die
+// aggregierte Wertung · (4) EIN per-Chunk-RNG _scatterChunkRng (Scatter + Fernfeld).
+// Gegenprobe: die CSM-Haupt-Map rendert NICHT (mainMap=false).
 async function checkBandV18136Audit(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40573,10 +38821,9 @@ async function checkBandV18136Audit(ctx) {
     check("V18.136 Audit: EIN per-Chunk-RNG (Scatter + Fernfeld verdichtet, V9.82)", res.oneRng);
 }
 
-// Ω2 (V18.137, taille-spec §2) — must-preserve als GESETZ: Unbekanntes
-// überlebt jeden Serialize/Restore-Zwilling bit-gleich (EINE Quelle
-// _carryUnknown), die R4-Herkunftskette überlebt den Save, die bekannten
-// Sicherheits-Wände halten WEITER (Gegenproben), die Größen-Wand dämpft.
+// Ω2 must-preserve als Gesetz: Unbekanntes überlebt jeden Serialize/Restore bit-gleich (EINE Quelle
+// _carryUnknown), die R4-Herkunftskette überlebt den Save, die Sicherheits-Wände halten
+// (Gegenproben), die Größen-Wand dämpft.
 async function checkBandTailleOmega2(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40720,12 +38967,9 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// Ω3 (V18.138, taille-spec §3) — die RE-DERIVE-WAND + der ANTIKÖRPER „der
-// lügende Bauplan" (R5-Stil): ein fremdes Artefakt behauptet role=workshop-
-// station + roleManual, schmuggelt ein fremdes portalMeta-Origin, trägt ein
-// Gott-Material (härte=10⁶) und ein revoziertes Ketten-Glied → der Import
-// emergiert die Rolle lokal, sanitisiert das Portal, die Klemme am Leser
-// deckelt die Mauer (abbaubar), das Sieb fällt das Vergiftete AM EINGANG.
+// Ω3 Re-Derive-Wand, Antikörper „der lügende Bauplan": ein fremdes Artefakt behauptet role=workshop-
+// station + roleManual, schmuggelt ein portalMeta-Origin, trägt ein Gott-Material (härte=10⁶) und
+// ein revoziertes Ketten-Glied → Rolle lokal emergiert, Portal sanitisiert, Klemme am Leser, Sieb.
 async function checkBandTailleOmega3(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -40877,12 +39121,9 @@ async function checkBandTailleOmega3(ctx) {
     );
 }
 
-// Ω5 (V18.140, taille-spec §5) — DAS PERPETUUM-VERBOT als lebende Invariante
-// (Antikörper, impft bei jedem Push): die GEMESSENE Modus-Wäsche (schöpfer
-// baut gratis → pfad erntet: +14 Stein/Zyklus aus dem Nichts, Random-Walk
-// +69) ist durch freeBorn GESCHLOSSEN — die Herkunft entscheidet den Ertrag;
-// die Marke überlebt den Snapshot (sonst wüsche der Reload sie ab). Das
-// ausführliche Werkzeug: scripts/diag-ledger-cycles.cjs.
+// Ω5 Perpetuum-Verbot als lebende Invariante: Modus-Wäsche (schöpfer baut gratis → pfad erntet
+// Ertrag aus dem Nichts) ist durch freeBorn geschlossen — die Herkunft entscheidet den Ertrag; die
+// Marke überlebt den Snapshot (sonst wüsche der Reload sie ab). Linse: scripts/diag-ledger-cycles.cjs.
 async function checkBandTailleOmega5(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40948,10 +39189,9 @@ async function checkBandTailleOmega5(ctx) {
     check("Ω5: die Kette ist verdrahtet (confirmBuild → spawn → snapshot → restore → harvest)", res.wired);
 }
 
-// Ω6 (V18.141, taille-spec §6) — NAMENSRAUM + WACHSTUMSREGEL: fremdes
-// Vokabular (x:-präfixiert ODER künftige nackte Achsen) REIST (must-preserve)
-// und beeinflusst KEINE Kern-Lesart (must-ignore, BEHAVIORAL bewiesen:
-// bit-gleiche Rolle/Kosten/Tags/Vektor mit und ohne fremdem Tag).
+// Ω6 Namensraum + Wachstumsregel: fremdes Vokabular (x:-präfixiert ODER künftige nackte Achsen)
+// REIST (must-preserve) und beeinflusst KEINE Kern-Lesart (must-ignore, behavioral: bit-gleiche
+// Rolle/Kosten/Tags/Vektor mit und ohne fremden Tag).
 async function checkBandTailleOmega6(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -41027,20 +39267,14 @@ async function checkBandTailleOmega6(ctx) {
     check("Ω6: die Wachstumsregel steht (neue Achsen additiv, Default 0 per Konstruktion)", res.defaultsZero);
 }
 
-// Ω4 (V18.139, taille-spec) — DER KONFORMANZ-KORPUS: die eingefrorenen
-// goldenen Dateien (spec/golden/v1/ — NIE regeneriert) werden FÜR IMMER
-// geladen: der heutige Code MUSS sie lesen, beide Signaturen MÜSSEN "valid"
-// verifizieren (bricht das, hat jemand die Taille verletzt — dieses Band IST
-// die Wand), der Snapshot-Kopf trägt weiter ⊇ das goldene Schema, jeder
-// goldene p2p-Typ hat einen lebenden Handler + den pv-Stempel.
+// Ω4 Konformanz-Korpus: die eingefrorenen goldenen Dateien (spec/golden/v1/ — NIE regeneriert) muss
+// der heutige Code lesen; beide Signaturen verifizieren "valid", der Snapshot-Kopf trägt ⊇ das
+// goldene Schema, jeder goldene p2p-Typ hat Handler + pv-Stempel. Bricht das: Taille verletzt.
 async function checkBandTailleGolden(ctx) {
     const { page, check } = ctx;
-    // V18.171 — DER LEUCHTTURM (R-035, taille-spec §7): der Broker-Protokoll-
-    // DRIFT-WÄCHTER. Jeder im signaling-server gelesene `msg.type === "X"`-Typ
-    // MUSS in §7 der Taille-Spec dokumentiert sein — ein neuer Broker-Typ ohne
-    // Andock-Vertrag ist der Riss von morgen. (Der EN-Spiegel fiel mit der
-    // Informations-Diät V18.468 — EINE Spec, kein Übersetzungs-Zwilling; der
-    // Test wanderte mit, Lehre #6.) Plus: der Ein-Befehl-Self-Host existiert.
+    // Leuchtturm: jeder im signaling-server gelesene `msg.type === "X"`-Typ MUSS in §7 der Taille-Spec
+    // dokumentiert sein (ein Broker-Typ ohne Andock-Vertrag ist der Riss von morgen); plus der
+    // Ein-Befehl-Self-Host existiert.
     try {
         const brokerSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
         const specDe = fs.readFileSync(path.join(__dirname, "..", "docs", "taille-spec.md"), "utf8");
@@ -41145,14 +39379,9 @@ async function checkBandWelle6XAudit(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.X.1 Audit-Fixes (17.05.2026) ###
-    // Vier Bug-Quartett-Fixes aus dem Schöpfer-Audit:
-    //   A1 — Ammo-Body activate(true) vor Jump-Velocity (Stand-Sprung)
-    //   A2 — confirmBuild blockt bei instabilem Phantom im pfad-Modus
-    //   A3 — Markier-UI zeigt Baupläne mit emergenter Rolle (filter
-    //        auf !roleManual statt !role), Stat-Panel zeigt Equipped
-    //   A4 — Player-Aura in 1st-Person ausgeblendet (Position bleibt
-    //        getrackt, nur Visibility togglet)
+    // ### Welle 6.X.1 — Audit-Fixes ###
+    // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt instabiles Phantom im pfad ·
+    // A3 Umwidmen nimmt emergente Rollen auf + Stat-Panel zeigt Equipped · A4 Avatar-Aura ist gefallen.
     const wave6x1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -41190,10 +39419,8 @@ async function checkBandWelle6XAudit(ctx) {
         r.setGameMode("frieden");
 
         // --- A3a: Umwidmen nimmt Baupläne mit emergenter Rolle auf.
-        // M5 (V18.157, V9.56-i): das Umwidmen zog in die WERKSTATT-Mach-Zone —
-        // die Reihe erscheint für den GEWÄHLTEN eigenen Bauplan, auch wenn er
-        // schon eine EMERGENTE Rolle trägt (kein roleManual-Filter, kein
-        // Sackgassen-Zustand). createBlueprint returnt true/false, nicht {ok}.
+        // Das Umwidmen lebt in der Werkstatt-Mach-Zone: die Reihe erscheint für den GEWÄHLTEN eigenen
+        // Bauplan, auch mit emergenter Rolle (kein roleManual-Filter). createBlueprint returnt true/false.
         const bpCreated = r.createBlueprint("audit_armor_test", "Audit-Test");
         out._a3aCreated = bpCreated === true;
         if (bpCreated) {
@@ -41307,10 +39534,9 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
     }
 
-    // ### Welle 6.X.2 — UI-Politur (Audit 17.05.2026) ###
-    // B1 Logbuch-Toggle (default versteckt)
-    // B2 Welt-Bauwerke-Buttons aus dem world-drawer entfernt
-    // B4 Scrollrad zyklt durch Hotbar-Slots
+    // ### Welle 6.X.2 — UI-Politur ###
+    // B1 Logbuch-Toggle (default versteckt) · B2 keine Welt-Bauwerke-Buttons im world-drawer ·
+    // B4 Scrollrad zyklt durch die Hotbar-Slots.
     const wave6x2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -41462,21 +39688,11 @@ async function checkBandWelle6XAudit(ctx) {
 
         // --- C3: Slope + pfad + Phönix → kann springen (lebendig hoch)
         r.setGameMode("pfad");
-        // V17.32-Heilung (GEMESSEN-Wurzel, `scripts/diag-soul-jump.cjs`): der Test
-        // prüft die INTRINSISCHE Seelen-Eigenschaft („Drache rutscht, dichte HOCH").
-        // `_canSoulJumpFromSlope` liest `statTags`, die in `computePlayerStats`
-        // NACH dem Soul-Clamp noch die AKTIVEN BOOSTS addieren (Emotion/Welt-
-        // Resonanz, im Warmup positions-/stimmungs-abhängig aufgebaut). GEMESSEN:
-        // die intrinsische Drachen-Seele hat lebendig=0.82 (wund) → score
-        // 0.7·0.82−0.3·0.72 = 0.358 < 0.4 → kann NICHT springen (stated intent ✓);
-        // ein +lebendig-Welt-Boost (lebendiges Feld) hebt lebendig auf 0.92 →
-        // score 0.428 ≥ 0.4 → kann springen → der Test kippte am 0.4-Grat („seit
-        // Versionen rot"). Die Boosts sind ein transienter Konfounder, kein
-        // Seelen-Merkmal → für die intrinsische Messung leeren (V17.31-Disziplin:
-        // die Eigenschaft testen, nicht den Drift des Welt-Zustands). Robust per
-        // Konstruktion: mit geleerten Boosts gilt für JEDE Wund-Intensität w∈[0,1]
-        // Drache-score = 0.4−0.05w (immer < 0.4) und Phönix-score = 0.475−0.05w
-        // (immer ≥ 0.4) — der Wund-Term verschiebt beide gleich, kippt nie.
+        // Gemessen wird die INTRINSISCHE Seelen-Eigenschaft („Drache rutscht, dichte HOCH"):
+        // `_canSoulJumpFromSlope` liest `statTags`, in die computePlayerStats NACH dem Soul-Clamp die
+        // aktiven Boosts addiert (Emotion/Welt-Resonanz — transienter Konfounder) → Boosts leeren. Dann
+        // gilt für jede Wund-Intensität w∈[0,1]: Drache-score = 0.4−0.05w (< 0.4), Phönix-score =
+        // 0.475−0.05w (≥ 0.4) — der Wund-Term verschiebt beide gleich. Linse: scripts/diag-soul-jump.cjs.
         if (r.state.player) r.state.player.boosts = [];
         // ALTLASTEN-NULL: eine LEICHTE lebendige Seele (federn-Fixture,
         // lebendig≈0.98/dichte≈0.29 → score 0.60) klettert; der WOLF-Körper
@@ -41692,10 +39908,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.G3 — Welt-Lebendigkeit (V8.24, 17.05.2026) ###
-    // Drei Schichten: (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang,
-    // (c) Fauna-Lifecycle mit Geburt + Tod. Testet Konstanten,
-    // Methoden, Persistenz, DSL-Op, UI-DOM.
+    // ### Welle 6.G3 — Welt-Lebendigkeit ###
+    // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang, (c) Fauna-Lifecycle mit Geburt + Tod —
+    // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
     const wave6g3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -41768,11 +39983,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.timeOfDaySliderInDom = !!document.getElementById("slider-timeofday");
         out.dayNightSectionInDom = !!document.getElementById("day-night-section");
 
-        // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität.
-        // V18.377 — DAS ECHTE MONDLICHT: das Richtlicht ist tags die SONNE (oben, hell,
-        // warm), nachts der MOND (gegenüber der Sonne → AUCH über dem Horizont, aber
-        // gedämpft + kühl). Die alte Invariante „Mitternacht unten" galt dem Sonnen-Licht-
-        // von-unten-Füllen (das die Nacht auswusch); jetzt steht der Mond oben + spricht.
+        // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität: tags die SONNE (oben,
+        // hell, warm), nachts der MOND gegenüber der Sonne — AUCH über dem Horizont, gedämpft + kühl
+        // (ein Licht von unten wüsche die Nacht aus).
         r.setTimeOfDay(0.5); // Mittag
         const noonY = r.state.directionalLight.position.y;
         const noonInt = r.state.directionalLight.intensity;
@@ -41811,10 +40024,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
         r.tickWeatherTransition(0);
         out.transitionProgressAdvanced = r.state.weatherTransition && r.state.weatherTransition.progress > 0;
-        // Bei progress=1 → transition geclearet. Offset > Cap (120s)
-        // damit die Probe deterministisch ist (Emotion-Modulation
-        // kann die Default-Dauer auf bis zu ~86s strecken — V9.33
-        // mit voxel-default-Welt hat oft höhere peace-Werte).
+        // Bei progress=1 wird die transition geclearet. Offset > Cap (120 s), damit die Probe deterministisch
+        // ist — die Emotion-Modulation streckt die Default-Dauer auf bis zu ~86 s.
         if (r.state.weatherTransition) {
             r.state.weatherTransition.startedAt = performance.now() - 200000; // 200s > 120s-Cap
         }
@@ -41833,12 +40044,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
         out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
 
-        // _findOldestCreature liefert die älteste (kleinster bornAt). Test-
-        // Isolation: ALLE Kreaturen auf `now` setzen (jung), dann c0+c1
-        // gezielt älter. Sonst ist der Test fragil gegen die Welt-Lifetime
-        // (Worldgen-Kreaturen mit bornAt = WorldgenZeitpunkt werden mit
-        // jedem Playtest-Sekunde älter relativ zu c1, ab > 10s Test-Laufzeit
-        // sind sie ÄLTER als c1).
+        // _findOldestCreature liefert die älteste (kleinster bornAt). Test-Isolation: ALLE Kreaturen auf
+        // `now`, dann c0 + c1 gezielt älter — Worldgen-Kreaturen würden mit der Test-Laufzeit älter als c1.
         if (r.state.creatures.length >= 2) {
             const now = Date.now();
             for (const c of r.state.creatures) {
@@ -41864,11 +40071,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
         if (r.state.creatures.length > 0) {
             const beforeCount = r.state.creatures.length;
-            // V17.45-Härtung (KONFOUNDER, gemessen — kein „Last-Flake"): nach langem
-            // Warmup kann die Stimmung gesättigt sein (sorrow == 1.0) → der +0.2-
-            // Stempel von _creatureNaturalDeath clampt auf 1.0 → der strikte „>"-
-            // Vergleich (1.0 > 1.0) ist FALSCH. Den INTENT isolieren (Tod ADDIERT
-            // sorrow): sorrow auf einen bekannten sub-Sättigungs-Wert setzen.
+            // Bei gesättigter Stimmung (sorrow == 1.0) clampt der +0.2-Stempel von _creatureNaturalDeath → der
+            // strikte „>"-Vergleich wäre falsch. Den INTENT isolieren (Tod ADDIERT sorrow): sorrow auf einen
+            // bekannten sub-Sättigungs-Wert setzen.
             if (r.state.player.emotions) r.state.player.emotions.sorrow = 0.1;
             const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
             const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
@@ -41883,13 +40088,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             out.deathAddsLossJournal = true;
         }
 
-        // _creatureNaturalBirth fügt Kreatur hinzu + Journal.
-        // Flaky-Heilung (V8.96-Klasse): NICHT count(growth)
-        // before/after vergleichen — am 200-FIFO-Cap verdrängt das
-        // Anhängen einen alten Eintrag; ist der evictete selbst ein
-        // growth-Eintrag, bleibt die Zahl gleich. Stattdessen die
-        // Eintrags-OBJEKT-Identität messen: ein frisch angehängter
-        // growth-Eintrag ist ein Objekt, das vorher nicht da war.
+        // _creatureNaturalBirth fügt Kreatur + Journal-Eintrag hinzu. NICHT count(growth) vorher/nachher
+        // vergleichen (am 200-FIFO-Cap verdrängt das Anhängen evtl. einen growth-Eintrag) — gemessen wird
+        // die OBJEKT-Identität: der neue growth-Eintrag war vorher nicht da.
         const beforeBirthCount = r.state.creatures.length;
         const beforeBirthEntries = new Set(r.state.worldJournal.entries || []);
         r._creatureNaturalBirth();
@@ -42006,11 +40207,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
     }
 
-    // ### Welle 6.G3 V2 — Vision-Invarianten (V8.25, 17.05.2026) ###
-    // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität wirklich auf
-    // Soul-Wahl? Folgen Frequenzen den Tags? Modulieren Emotionen den
-    // Tint? Ist Wetter-Dauer emotion-abhängig? Vision §1.3 fraktal:
-    // alles emergiert aus dem System, nicht aus Tabellen.
+    // ### Welle 6.G3 V2 — Vision-Invarianten ###
+    // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität auf die Soul-Wahl? Folgen Frequenzen den
+    // Tags? Modulieren Emotionen den Tint? Ist die Wetter-Dauer emotion-abhängig?
     const wave6g3v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -42085,11 +40284,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
         // aus früheren _feelAction-Bands rein, V9.56-i).
         if (r.state.emotionField) r.state.emotionField.clear();
-        // V18.236 (V17.32-Disziplin): der Default `auraTintStrength` 0.15 macht den
-        // Feld/Emotion-Tint SUBTIL (Look) → die Marge-Tests (awe/magie heben Blau um
-        // +0.02) würden flaky. Diese Proben prüfen den MECHANISMUS (DASS die Achse den
-        // Himmel tönt) → bei VOLLER Stärke (1.0) messen = große, deterministische Marge,
-        // unabhängig vom Look-Default. Zurückgesetzt am Block-Ende (vor Vision 6).
+        // Der Look-Default `auraTintStrength` macht den Feld/Emotion-Tint subtil → Margen-Tests würden
+        // flaky. Die Proben prüfen den MECHANISMUS bei VOLLER Stärke (1.0: große, deterministische Marge);
+        // zurückgesetzt am Block-Ende (vor Vision 6).
         const _origAuraKg3 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         r._applyDayNightToScene();
@@ -42105,13 +40302,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // r-Anteil auch (Lila = Rot + Blau)
         out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
-        // --- Vision 5: sorrow entsättigt den Welt-Tint. V17.32 — GEMESSEN-robust:
-        // statt des live `nebulaColor` (hängt von der Spieler-Feld-Position UND
-        // dem V17.23-skyTint-Blend ab, der den Emotion-Effekt auf ~3 % verdünnt →
-        // grenzwertige Marge ~0.005, flaky) misst die Probe den ROHEN Tint via
-        // `_dayNightComputeTint(mkStop)` mit kontrolliert-gesättigtem Stop → sorrow
-        // grayt die volle ~40 % (große, deterministische Marge). Beide Tints am
-        // selben Ort/Feld, emotionField leer (oben) → nur sorrow unterscheidet.
+        // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
+        // `_dayNightComputeTint(mkStop)` (gesättigter Stop: sorrow grayt ~40 %), nicht am live `nebulaColor`
+        // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const THREE_g3 = window.THREE;
         if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {
             const mkStopG3 = () => ({
@@ -42165,11 +40358,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
             return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
         };
-        // V17.35: das Phase-C-Overlay isolieren. _currentFaunaTarget liest auraAt =
-        // frozen-Mock + Leben-Overlay; der Nexus deponiert jetzt AKTIV Leben (deposit_
-        // life-Regeln) → ein Deposit nahe der kargen Testzelle würde den frozen-Mock
-        // verfälschen (targetKarg > 6). Wir testen die frozen→Fauna-Abbildung isoliert
-        // (V17.34-Konsumenten-Migration, wie die V17.31/.32-Bänder das emotionField clearen).
+        // Das Leben-Overlay isolieren: _currentFaunaTarget liest auraAt = frozen-Mock + Leben-Overlay, und
+        // der Nexus deponiert aktiv Leben → ein Deposit nahe der kargen Testzelle verfälschte den Mock.
+        // Getestet wird die frozen→Fauna-Abbildung isoliert.
         if (r.state.lifeField) r.state.lifeField.clear();
         r.state.playerMesh.position.x = -100;
         const targetLiv = r._currentFaunaTarget();
@@ -42199,11 +40390,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.sunMeshExists = !!r.state.sunMesh && r.state.sunMesh.type === "Mesh";
         out.moonMeshExists = !!r.state.moonMesh && r.state.moonMesh.type === "Mesh";
         if (r.state.sunMesh && r.state.moonMesh) {
-            // V17.J3-Migration (V9.56-i): die Orbit-HÖHE lebt jetzt im skyOffset
-            // (die Welt-Position ist kamera-relativ = camera+skyOffset, pro Render-
-            // Frame in `_followCelestialBodies` gesetzt — dieser Test ruft kein
-            // _loopRender). Der skyOffset.y (= sin(angle)·380) ist das kamera-
-            // unabhängige Maß für „über/unter dem Horizont".
+            // Die Orbit-HÖHE lebt im skyOffset (Welt-Position = camera + skyOffset, pro Frame gesetzt in
+            // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
+            // ist das kamera-unabhängige Maß für über/unter dem Horizont.
             const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
             r.setTimeOfDay(0.5); // Mittag
             r._applyDayNightToScene();
@@ -42322,13 +40511,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Bug 1 — Stern-Stabilität: Skybox folgt Camera + Shader
-        // nutzt lokale vDir. Test: bewege Spieler 100 m → Skybox-
-        // Position folgt + nebulaColor-Sample-Achse bleibt vDir.
-        // Skybox-Folgt-Camera: durchsuche alle Prototype-Methoden auf
-        // das Pattern `skybox.position.copy(this.state.camera.position)`.
-        // Es lebt in der animate-Closure von init() — also irgendwo
-        // im Source der init-Methode.
+        // Bug 1 — Stern-Stabilität: die Skybox folgt der Kamera (eine Prototyp-Methode trägt
+        // `skybox.position.copy(this.state.camera.position)`) und der Shader sampelt mit lokaler vDir.
         out.skyboxFollowsCamera = false;
         try {
             const proto = Object.getPrototypeOf(r);
@@ -42349,22 +40533,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         } catch {
             out.skyboxFollowsCamera = false;
         }
-        // V10.0-f-1 Doku-Sync: NodeMaterial hat keinen .vertexShader-String mehr.
-        // Die V8.26-Lehre (lokale Position als Sample-Achse statt vWorldPosition)
-        // lebt jetzt im TSL-Tree von createGalaxySkybox: `const vDir =
-        // normalize(positionLocal);` plus mehrere vDir-Konsumenten im colorNode.
-        // Probe scannt den Builder-Source nach diesen TSL-Patterns.
+        // Lokale Position als Sample-Achse statt vWorldPosition: im TSL-Tree von createGalaxySkybox
+        // `const vDir = normalize(positionLocal);` plus vDir-Konsumenten im colorNode.
         out.shaderUsesLocalPosition = false;
         out.shaderFragmentUsesVDir = false;
         try {
             const builderSrc = r.createGalaxySkybox ? window.__codeOf(r.createGalaxySkybox) : "";
             out.shaderUsesLocalPosition = /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
-            // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
-            // → Stern-/Wolken-Stabilität bei Spieler-Bewegung. V17.10: der
-            // Noise-Kern ist von hash3-`noise3` auf `mx_noise_float` gewechselt
-            // (die Pattern-Probe wandert mit, V9.56-i-Lehre) — die INTENTION
-            // (Fragment sampelt mit vDir, nicht World-Position) gilt weiter:
-            // vDir fließt in _nebN(vDir...)/_wn(vDir...)/cp + vDir.y im band.
+            // vDir wird im Nebula- + Wolken-Pfad konsumiert (Stern-/Wolken-Stabilität bei Bewegung): das
+            // Fragment sampelt mit vDir, nicht der World-Position — vDir fließt in _nebN/_wn/cp + vDir.y im band.
             out.shaderFragmentUsesVDir = /\bvDir\.(mul|y)\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
         } catch {
             // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
@@ -42384,12 +40561,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const interpSrc = window.__codeOf(r._interpolateDayNight);
         out.interpUsesCatmull = /_catmullDayNight/.test(interpSrc);
 
-        // V8.48 — kein Pulsen mehr. Die alte per-Intervall-
-        // smoothstep hatte Geschwindigkeit 0 an JEDEM Stop
-        // (slow→fast→slow → „ruckartig"). Catmull-Rom: die
-        // Steigung an einem Stop folgt der Nachbar-Differenz.
-        // An t=0.32 STEIGT die Intensität (0.65→0.78→0.9), die
-        // Steigung dort muss klar positiv sein (smoothstep: ≈0).
+        // Kein Pulsen: Catmull-Rom statt per-Intervall-smoothstep (der hatte Geschwindigkeit 0 an JEDEM
+        // Stop). An t=0.32 STEIGT die Intensität (0.65→0.78→0.9) → die Steigung dort muss klar positiv sein.
         const dtN = 0.003;
         const slopeAtStop =
             (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / (2 * dtN);
@@ -42475,12 +40648,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
     }
 
-    // ### V8.27 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Lambert + Fog) ###
-    // Tiefe-Welle nach Schöpfer-Beobachtung „Himmel und Licht wirken
-    // homogen, keine Tiefe". Genial-minimale Lösung: Hemisphere-Light
-    // (Sky-Tint oben + Erd-Tint unten) + Lambert-Material überall +
-    // atmosphärischer Fog. Self-Shadow durch Lambert ohne teure
-    // Shadow-Maps. Vision §3 Welt-Atem auf Material-Ebene.
+    // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
+    // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
+    // Material + atmosphärischer Fog.
     const v827Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -42541,12 +40711,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const intensityNight = r.state.hemiLight.intensity;
         out.hemiIntensityFollowsDayCycle = intensityNoon > intensityNight;
 
-        // 3. Hemisphere-groundColor moduliert mit Welt-Affinität.
-        // PARITÄT (08.07., Band-Nachzug V9.56-i): der Feld→Boden-Term ist seit der
-        // Licht-Wurzel-Welle hinter `tint.auraK` gegated (Default `auraTintStrength` 0 —
-        // Schöpfer „der Nebel wird durch die Emotion gefärbt, das soll weg"); der
-        // MECHANISMUS lebt als Opt-in weiter → das Band testet ihn MIT dem Opt-in
-        // (Konsum-Beweis der lebenden Naht) + mockt den ECHTEN Leser (auraAt).
+        // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
+        // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
+        // testet MIT Opt-in und mockt den echten Leser (auraAt).
         r.setTimeOfDay(0.5);
         const origWFA = r.worldFieldAt;
         const origAuraAt = r.auraAt;
@@ -42559,12 +40726,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             return r.worldFieldAt(x, z);
         };
         r._applyDayNightToScene();
-        // V12.0-vendor.3 Doku-Sync (V9.56-i): mit `ColorManagement.enabled=true`
-        // speichert THREE.Color die Werte in LINEAR-Space (sRGB→linear-Konvertierung
-        // bei `setHex`/`setRGB`). Wir vergleichen gegen die sRGB-Display-Form via
-        // `convertLinearToSRGB()` — die Semantik der Probe („groundColor's Grün ist
-        // hoch in lebendig-Region") bleibt unverändert, nur die Compare-Schwelle
-        // referenziert die wahrgenommene Helligkeit, nicht den linearen Roh-Wert.
+        // Mit `ColorManagement.enabled=true` speichert THREE.Color LINEAR (setHex/setRGB konvertieren
+        // sRGB→linear) → verglichen wird die sRGB-Display-Form via `convertLinearToSRGB()`; die Schwelle
+        // meint die wahrgenommene Helligkeit.
         const tmpColor = new window.THREE.Color();
         tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
         const groundLebendigG = tmpColor.g;
@@ -42582,14 +40746,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = savedAuraStrength;
         r._applyDayNightToScene();
 
-        // 4. Architektur-Material ist Lambert (nach V8.27 Build-Pipeline)
-        // V8.28 — Architektur-Material ist jetzt MeshToonMaterial
-        // (Cel-Shading). Reagiert auf Licht wie Lambert, aber
-        // quantisiert das Sonnen-Diffuse über die gradientMap.
-        // N7.3 — UNIT-RICHTER: stein_block ist Studio-bekannt (→ basalt) — foundry-ON
-        // platziert er als f:-Instanz OHNE entry.mesh; der Prüf-Gegenstand ist das
-        // Material des KLASSISCHEN Bau-Pfads (_buildFromBlueprint) → lokaler Hook
-        // (+ der Spawn wird IMMER entfernt, auch mesh-los — kein Test-Leck).
+        // 4. Architektur-Material ist licht-reaktiv (Toon/PBR) — geprüft am KLASSISCHEN Bau-Pfad
+        // (_buildFromBlueprint): stein_block ist Studio-bekannt und stünde foundry-ON als f:-Instanz ohne
+        // entry.mesh → lokaler Hook; der Spawn wird IMMER entfernt (auch mesh-los — kein Test-Leck).
         let hasToonMaterial = false;
         if (typeof r.spawnArchitecture === "function" && r.state.blueprints && r.state.blueprints.stein_block) {
             window.__withNoFoundry(() => {
@@ -42613,18 +40772,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
         out.architectureUsesLambert = hasToonMaterial;
 
-        // V18.274 — der alte Heightfield-Shader-Uniform-Test (Terrain hat
-        // lightIntensity/ambientIntensity) ist als toter Passagier entfernt: er
-        // baute via `ensureChunkAt` (gelöscht V9.39) → `shaderSample` blieb IMMER
-        // null, der Block lief nie, und KEIN check() las seine out-Felder. Die
-        // Tag/Nacht-Antwort des Voxel-Terrains läuft über die geteilten PBR-Lichter
-        // (Sonne/Fog/Hemisphere) — abgedeckt von den `_applyDayNightToScene`-Bändern
-        // (Sonne hoch@Mittag/niedrig@Mitternacht · Fog-Color · C1-Stetigkeit).
+        // Terrain-Tag/Nacht = die geteilten PBR-Lichter (Sonne/Fog/Hemisphere) — geprüft in den
+        // `_applyDayNightToScene`-Bändern, nicht hier.
 
-        // 6. Stern-Feld (V8.28) hat per-Stern Hue + Größen-Variation.
-        // V10.0-i.a: Sterne sind InstancedMesh mit Per-Instance Color
-        // (sf.instanceColor) + Per-Instance Matrix (Größe encoded im scale).
-        // V9.56-i-Doku-Sync angewandt.
+        // 6. Stern-Feld: InstancedMesh mit Per-Instance-Farbe (sf.instanceColor = Hue) + Per-Instance-Matrix
+        // (Größe im scale).
         const sf = r.state.starField;
         out.starHasHueVariation = !!(sf && sf.instanceColor && sf.instanceColor.count > 0);
         out.threeStarLayers = !!(sf && sf.instanceMatrix && sf.instanceMatrix.count > 0);
@@ -42648,12 +40800,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
             v827Results.architectureUsesLambert
         );
-        // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Terrain-Shader-
-        // spezifischen Checks (lightIntensity-Uniform, Tag-Nacht-Sync
-        // im Custom-Shader) sind gestrichen. Der Vision-Anker („Welt
-        // unter wandernder Sonne, von Tag-Nacht durchlebt") lebt in
-        // HemisphereLight + DirectionalLight + Fog + Skybox + dem
-        // MeshToonMaterial-Voxel-Mesh weiter (alles oben geprüft).
         check("V8.28: Stern-Feld hat per-Stern Hue (color-Attribut)", v827Results.starHasHueVariation);
         check("V8.28: Stern-Feld hat per-Stern Größen-Variation (aSize-Attribut)", v827Results.threeStarLayers);
     } else {
@@ -42705,13 +40851,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.chunkHasFieldAttribute = chunkHasField;
 
         // --- Phase C: Fog ---
-        // STUDIO-MODELL (08.07., Band-Nachzug V9.56-i): die Sicht folgt NATIV der
-        // Wald-Kante (visualEdgeTarget, S1) — der fogDistance-Slider treibt den
-        // Welt-Nebel NICHT mehr (der EINE Sicht-Regler ist chunkRingRadius; ein
-        // zweiter fog-Multiplikator wäre ein Parallel-Regler). Das Band prüft die
-        // NEUE Wahrheit: fog.near ist slider-UNABHÄNGIG (Toleranz = die sm-Nebel-
-        // Glättung, maxStep 4 m/Apply — alt sprang der Faktor 4×) UND die Quelle
-        // rechnet aus der Kanten-Formel; der Setter persistiert weiter (Datum).
+        // Die Sicht folgt der Wald-Kante (visualEdgeTarget); der EINE Sicht-Regler ist chunkRingRadius —
+        // fogDistance treibt den Welt-Nebel NICHT (ein zweiter Regler wäre ein Parallelpfad). Probe: fog.near
+        // slider-unabhängig (Toleranz = Nebel-Glättung, maxStep 4 m/Apply) + Quelle nutzt die Kanten-Formel.
         r.state.playerEyesUnderwater = false;
         r.setFogDistance(0.5);
         r._applyDayNightToScene();
@@ -42742,11 +40884,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.skybox.material &&
             r.state.skybox.material.isMeshBasicNodeMaterial === true
         );
-        // Wolken-Cover folgt weather (Pfad zieht aus state.skyboxUniforms).
-        // V17.32-Härtung: eine aktive `weatherTransition` aus dem Warmup ÜBERSTIMMT das direkt
-        // gesetzte `state.weather` in `_weatherBlendedValue` (es liest dann wt.from/to/progress)
-        // → beide Lese-Vorgänge lieferten denselben Transitions-Wert = Flake. Die Transition
-        // leeren misst die ECHTE Wetter→Wolken-Kopplung deterministisch (kein verdünnter Live-Blend).
+        // Wolken-Cover folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
+        // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
         r.state.weatherTransition = null;
         r.state.weather = "rainy";
         r._applyDayNightToScene();
@@ -42760,9 +40899,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const sd = r.state.skyboxUniforms.sunDir;
         out.skyboxHasSunDir = !!(sd && sd.value && typeof sd.value.x === "number");
         // ===== WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Ursprung =====
-        // KONSUM: nach einem fernen Kamera-Teleport steht die Sonne nahe der Kamera
-        // (in Himmelsrichtung), NICHT um den Welt-Ursprung (der „rast neben mir
-        // durchs Terrain"-Befund). Beweis-Probe.
+        // KONSUM: nach fernem Kamera-Teleport steht die Sonne nahe der Kamera (in Himmelsrichtung),
+        // nicht um den Welt-Ursprung.
         out.celestialFollowExists = typeof r._followCelestialBodies === "function";
         out.sunFollowsCamera = false;
         out.sunNotAtOrigin = false;
@@ -42785,10 +40923,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r._followCelestialBodies();
         }
         const skySrc = r.createGalaxySkybox ? window.__codeOf(r.createGalaxySkybox) : "";
-        // W9 — das Band WANDERT mit dem Code (Lehre 6): das Wolken-Feld ist jetzt
-        // das STUDIO-GESETZ (HIMMEL_GESETZ aus foundry-core: Parallaxe-Projektion,
-        // zwei fbm-Felder, Deckungs-smoothstep, lit-Beleuchtung) — die alten
-        // Welt-Terme (cloudShade/Warp) sind gefallen.
+        // Das Wolken-Feld ist das Studio-Gesetz (HIMMEL_GESETZ aus foundry-core: Parallaxe, zwei fbm-Felder,
+        // Deckungs-smoothstep, lit-Beleuchtung); die alten Welt-Terme (cloudShade) müssen fehlen.
         out.skyboxCloudFbm =
             skySrc.includes("HIMMEL_GESETZ") &&
             skySrc.includes("fbm2") &&
@@ -42797,21 +40933,16 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
         // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
         out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
-        // V17.12 — der Terrain-colorNode (triplanar-Textur + Wiese + Aerial) baut
-        // OHNE geschluckte Exception. Wurzel-Schutz: ein still gefangener Fehler
-        // (V17.12: nacktes `float(` statt `_T.float(`) ließe die ganze Render-
-        // Schicht lautlos verschwinden — der Playtest-grün verdeckt das sonst.
-        // `window.__toonColorNodeError` ist der Diagnose-Marker (null = sauber).
+        // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE geschluckte Exception — ein still
+        // gefangener Fehler ließe die Render-Schicht lautlos verschwinden. `window.__toonColorNodeError`
+        // ist der Marker (null = sauber).
         window.__toonColorNodeError = null;
         const _terrMat =
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
         out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
         out.terrainColorNodeError = window.__toonColorNodeError || null;
-        // V18.113 — B3-ROLLBACK (die Narbe): die 2.5D-Lichtung flacht die
-        // SHADING-Normale (normalNode mit der eingefrorenen Konstante — der
-        // Slider bleibt geschnitten); die GEOMETRIE behält die ECHTE
-        // Oberflächen-Normale (Schatten-Bias-Vertrag — der V18.106-Bake
-        // erzeugte Akne-Rauten an Hängen, Schöpfer-Browser-Beweis 10.06.).
+        // Die 2.5D-Lichtung flacht nur die SHADING-Normale (normalNode, eingefrorene Konstante); die
+        // GEOMETRIE behält die echte Normale (Schatten-Bias-Vertrag — gebackene Normalen = Akne an Hängen).
         out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode);
         // Der AKNE-WÄCHTER: ein echter Chunk trägt VARIIERENDE Normalen
         // (mindestens ein gesampelter Vertex weicht von up ab) — ein
@@ -42834,10 +40965,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             }
         })();
         // ===== WELLE J → W-E — der EINE geteilte Band-Empfänger (Render-Harmonie) =====
-        // KONSUM (nicht Existenz, V17.31): `_applySubstanceResponse` setzt
-        // outputNode IDENTISCH auf Terrain UND Strukturen (eine Atmosphäre, viele
-        // Antennen); transparente Phantome bleiben unberührt; die dynamische
-        // material.color bleibt setzbar (kein colorNode-Override).
+        // KONSUM: `_applySubstanceResponse` setzt outputNode IDENTISCH auf Terrain UND Strukturen;
+        // transparente Phantome bleiben unberührt, material.color bleibt setzbar (kein colorNode-Override).
         window.__aerialOutputError = null;
         out.aerialHelperExists = typeof r._applySubstanceResponse === "function";
         // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
@@ -42872,10 +41001,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
         out.aerialNoError = !window.__aerialOutputError;
         out.aerialOutputError = window.__aerialOutputError || null;
-        // (7) V17.106 — der Höhen-Melt ist EYE-RELATIV: er hängt an `cameraPosition`
-        // (Distanz + Höhe-über-Auge), NICHT an der absoluten Welt-Höhe → auf einen
-        // Berg klettern bleicht den Boden um dich nicht mehr. Source-Probe (Render
-        // pixel-blind), schützt gegen Rückfall auf `smoothstep(.., positionWorld.y)`.
+        // (7) Der Höhen-Melt ist AUGEN-relativ (`cameraPosition`: Distanz + Höhe über Auge), nie absolute
+        // Welt-Höhe — sonst bleicht Klettern den Boden. Source-Probe gegen `smoothstep(.., positionWorld.y)`.
         const _aerSrc =
             typeof r._applySubstanceResponse === "function" ? window.__codeOf(r._applySubstanceResponse) : "";
         out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hazeNear");
@@ -42954,10 +41081,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
         check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
-        // V9.39: die Heightfield-Shader-Checks (tm.vertexShader / terrainHasCelUniform)
-        // sind tot (terrainMaterial=null seit V9.39). Welt-Affinität pro Vertex lebt im
-        // Voxel-Mesh (V9.10 `_attachVoxelFieldColors`); die Cel-Shading-LUT ist
-        // GESCHNITTEN (V18.236 — PBR ist die EINE Material-Wahrheit).
         check(
             "V8.28 C→Studio-Modell: Welt-Nebel ist fogDistance-UNABHÄNGIG (die Wald-Kante führt, der Ring ist der Sicht-Regler)",
             v828Results.fogSliderWorks
@@ -43065,13 +41188,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // --- Avatar-Hide im 1st-Person ---
         out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
-        // V8.29.1 — Render-Loop hält player.visible=true,
-        // versteckt nur den KOPF im 1st-Person (headPart.visible
-        // = cameraMode==="third"). Via Source-Pattern geprüft.
-        // T7 (16.07.) — Tests wandern mit dem Code: die Regel wohnt jetzt im
-        // Chokepoint `_applyEgoSicht` (lokales `third = cameraMode === "third"`);
-        // das Pattern akzeptiert BEIDE Formen, verlangt aber die Modus-Quelle
-        // in DERSELBEN Funktion (kein blindes `= third`-Match).
+        // Render-Loop hält player.visible=true und versteckt im 1st-Person nur den KOPF (headPart.visible =
+        // cameraMode==="third") im Chokepoint `_applyEgoSicht`. Das Pattern akzeptiert beide Formen, verlangt
+        // aber die Modus-Quelle in DERSELBEN Funktion (kein blindes `= third`-Match).
         {
             let found = false;
             const proto = Object.getPrototypeOf(r);
@@ -43092,14 +41211,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.avatarHideInLoop = found;
         }
 
-        // --- Instanced-Gras (V9.39: Voxel-Gras-Pendant) ---
-        // V9.39 — der V8.29-Heightfield-Gras-Lifecycle
-        // (`_buildChunkGrass`/`_disposeChunkGrass`/`state.chunkGrass`)
-        // ist tot. Die Vision-Schicht („Welt grünt, Instanced-
-        // Gras pro Chunk") lebt im Voxel-Pendant
-        // `_buildVoxelChunkGrass` / `state.voxelChunkGrass`
-        // (V9.22-Verdrahtung). Das `_grassInstanceMat` (Wind-
-        // Material) wird von beiden geteilt — es lebt weiter.
+        // --- Instanced-Gras (Voxel-Gras-Pendant) ---
+        // Lebenszyklus: `_buildVoxelChunkGrass` / `_disposeVoxelChunkGrass` / `state.voxelChunkGrass`;
+        // `_grassInstanceMat` (Wind-Material) ist geteilt.
         out.grassMethodsExist =
             typeof r._buildVoxelChunkGrass === "function" &&
             typeof r._disposeVoxelChunkGrass === "function" &&
@@ -43184,10 +41298,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.starField.material.depthTest === true
         );
 
-        // V10.0-f-4 Doku-Sync: Wasser-Material ist jetzt MeshBasicNodeMaterial.
-        // Die alten vertexShader/fragmentShader-Strings gibt's nicht mehr —
-        // wir scannen die createBuilder-Source nach TSL-Patterns und lesen die
-        // Uniforms aus state.hydroSurfaceUniforms.
+        // Wasser-Material ist ein MeshBasicNodeMaterial (TSL, keine Shader-Strings): die Probe scannt die
+        // `_ensureHydroSurfaceMaterial`-Source nach TSL-Mustern, Uniforms aus state.hydroSurfaceUniforms.
         let waterDiagonal = false;
         let waterSpecular = false;
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
@@ -43195,10 +41307,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         let waterMinDepthCull = false;
         if (wMat) {
             const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
-            // V18.368 — die WELLEN-VERSCHIEBUNG ist organische Dünung (`oceanSwell`), KEIN
-            // Gerstner mehr (die parallelen Sinus-Kämme = das Chevron-V, Schöpfer-Befund):
-            // mehrere dekorrelierte value-noise-Oktaven (`vnoise`) statt `dot(xz,d)`-Wellenfronten
-            // → runde, ungerichtete Hügel (kein Schachbrett, keine parallelen Kämme).
+            // Wellen-Verschiebung = organische Dünung (`oceanSwell`, ≥3 dekorrelierte `vnoise`-Oktaven), KEIN
+            // Gerstner — parallele Sinus-Kämme ergäben das Chevron-Raster.
             waterDiagonal =
                 /oceanSwell\s*=\s*Fn/.test(builderSrc) &&
                 (builderSrc.match(/vnoise\(/g) || []).length >= 3 &&
@@ -43229,10 +41339,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
         // V13.9 (Schicht 3): Min-Depth-Cull-Uniform + Default + Source-Probe.
         out.waterMinDepthUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.minDepth);
-        // V13.9.2: Default ist jetzt 0.0025 (Schöpfer-Browser-Befund „0.0025 war
-        // nicht schlecht"), aus state.atmosphere.waterCull initialisiert. Wir
-        // prüfen: das Uniform trägt einen endlichen, nicht-negativen Wert (der
-        // genaue Default lebt im atmosphere-Slot + ist live justierbar).
+        // Nur endlich + ≥ 0 prüfen: der Default lebt in state.atmosphere.waterCull und ist live justierbar.
         out.waterMinDepthValueOk = !!(
             r.state.hydroSurfaceUniforms &&
             r.state.hydroSurfaceUniforms.minDepth &&
@@ -43268,10 +41375,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     if (typeof fn !== "function") continue;
                     const src = window.__codeOf(fn);
                     if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
-                    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
-                    // die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, Fallback
-                    // 0.55) statt der hartkodierten 0.55 — das Muster ist jetzt ein
-                    // if-Block: playerUnderwater) { … currentSpeed *= … speedMul … }.
+                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, Fallback 0.55) statt eines Literals:
+                    // if-Block `playerUnderwater) { … currentSpeed *= … speedMul … }`.
                     if (/playerUnderwater\)\s*\{[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
                         speedCut = true;
                 } catch {
@@ -43340,10 +41445,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 r.state.hydroSurfaceUniforms.fogNear
             );
             const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
-            // V18.368 — Heterogenität kommt jetzt aus der MEHR-SKALEN organischen Dünung
-            // (`oceanSwell`: drei value-noise-Oktaven bei 0.05/0.12/0.23 mit eigenen Drift-
-            // Richtungen), NICHT mehr aus dem Gerstner-Domain-Warp → kein periodisches Raster,
-            // keine parallelen Kämme.
+            // Heterogenität aus der Mehr-Skalen-Dünung (`oceanSwell`: value-noise-Oktaven 0.05/0.12/0.23 mit
+            // eigener Drift) statt Gerstner-Warp → kein periodisches Raster, keine parallelen Kämme.
             out.waterHeteroSwell =
                 /oceanSwell\s*=\s*Fn/.test(builderSrc) && /0\.05/.test(builderSrc) && /0\.23/.test(builderSrc);
             // Fog-Mix via TSL: smoothstep(uFogNear, uFogFar, vFogDepth) + mix.
@@ -43372,12 +41475,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v831Results && !v831Results.error) {
-        // V9.39 Phase 5c.2.c.3.b.iii — die Terrain-Shader-Fog-Checks
-        // (terrainFogUniforms, terrainFogInShader, fogSliderReachesTerrain)
-        // sind tot — `state.terrainMaterial` existiert nicht mehr,
-        // das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-Fog.
-        // Die Wasser-Shader-Checks leben — `_buildWaterPlane` läuft
-        // weiter (voxel-aware seit V9.39).
         check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
         check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
         check("V8.31: Wasser-Wellen heterogen (Mehr-Skalen organische Dünung, V18.368)", v831Results.waterHeteroSwell);
@@ -43393,10 +41490,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Getrennte Flags: playerUnderwater (Körper) vs.
         // playerEyesUnderwater (Augen/Tauchen).
         out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
-        // Der Controller berechnet playerEyesUnderwater aus der Augen-Höhe (Körper-Y + 1.6).
-        // P3: die Logik wanderte aus `_loopPhysicsSync` (Quelle `scaledY + 1.6`) in
-        // `_stepCharacter` (Quelle `mesh.position.y + 1.6`, im `if(submerged)`-Block) — die
-        // Probe akzeptiert beide Formen (das Verhalten wanderte, der Test wandert mit).
+        // Der Controller rechnet playerEyesUnderwater aus der Augen-Höhe (Körper-Y + 1.6), in `_stepCharacter`
+        // im `if(submerged)`-Block; die Probe akzeptiert `scaledY` wie `mesh.position.y` als Quelle.
         {
             let found = false;
             const proto = Object.getPrototypeOf(r);
@@ -43473,12 +41568,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.riseLifts = rise > 0;
             out.neutralFloats = neutral > 0 && neutral <= 2.5;
             out.diveBelowNeutral = dive < neutral;
-            // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
-            // aktives Auftauchen konvergiert per lerp gegen Gesetz-aufV
-            // (schwimmen.aufV, geeicht 1.0 m/s). Nur beim Arcade-Satz (aufV
-            // 3.2) lag schon der EINE lerp-Schritt ab vy=0 über dem Neutral-
-            // Auftrieb — die Diskrimination misst jetzt die KONVERGIERTE
-            // Steig-Geschwindigkeit (→ aufV) gegen denselben Neutral-Auftrieb.
+            // Aktives Auftauchen konvergiert per lerp gegen das Gesetz (schwimmen.aufV ≈ 1.0 m/s): gemessen wird
+            // die KONVERGIERTE Steig-Geschwindigkeit gegen den Neutral-Auftrieb, nicht der erste lerp-Schritt.
             let riseKonv = 0;
             for (let i = 0; i < 60; i++) riseKonv = r._swimVerticalVelocity(riseKonv, 4, false, true);
             out.riseAboveNeutral = riseKonv > neutral;
@@ -43522,10 +41613,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.humanSwimReset = Math.abs(gh.rotation.x) < 0.001;
             r._disposeSoulGroup(gh);
 
-            // ABSCHIEDS-WELLE (Konvergenz C): Phoenix/Drache sind Compound-Seelen — die
-            // EINE Schwimm-Lehne (SOUL_SWIM_LEAN) wendet animatePlayerSoul an (der
-            // Hand-Skelett-Pfad _buildPhoenixGroup/_animatePhoenix ist geschnitten).
-            // Der Test faehrt den ECHTEN Pfad: Seele wechseln, underwater setzen, Zahl lesen.
+            // Phoenix/Drache sind Compound-Seelen: die EINE Schwimm-Lehne (SOUL_SWIM_LEAN) wirkt über
+            // animatePlayerSoul. Echter Pfad: Seele wechseln, underwater setzen, rotation.x lesen.
             const savedSoulSwim = r.state.player.soul;
             const savedUw = r.state.playerUnderwater;
             const L = r.constructor.SOUL_SWIM_LEAN;
@@ -43632,10 +41721,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         out.entryHasV3Fields =
             !!pv1 && "soulName" in pv1 && !("auraHue" in pv1) && "walkPhase" in pv1 && "nameLabel" in pv1;
 
-        // soul-Nachricht (geflügelte Compound-Seele) → echte Seele + Name-Schild.
-        // ALTLASTEN-NULL: Peers reisen als Compound-Seelen aus bodyParts (die
-        // gefallenen Built-ins sind LITERAL-Fixtures geworden); die benannten
-        // Anker (leftWing) kommen aus der EINEN Rollen-Quelle.
+        // soul-Nachricht (geflügelte Compound-Seele) → echte Seele + Name-Schild. Peers reisen als
+        // Compound-Seelen aus bodyParts; benannte Anker (leftWing) kommen aus der EINEN Rollen-Quelle.
         const WING_PARTS = [
             { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
             {
@@ -43830,13 +41917,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             typeof r._isBodyShaped === "function" &&
             typeof r._isFoodLike === "function";
 
-        // --- Körper-Form → Seele: Torso+Kopf auf der Achse,
-        //     Glieder als Spiegel-Paar ---
-        // Wesen: Torso+Kopf auf der Achse (vertikal gestreckt),
-        // Arme als Off-Achsen-Spiegel-Paar.
-        // V18.164 §7.3(a) (V9.56-i — die Spec schärfte sich): ein GLIED ist
-        // GESTRECKT (wie jede echte Engine-Seele) — gespiegelte BLOBS sind
-        // keine Glieder (sonst wurde die Eiche zur Seele; Archetypen-Bank).
+        // --- Körper-Form → Seele: Torso+Kopf auf der Achse, Glieder als Spiegel-Paar ---
+        // Ein GLIED ist GESTRECKT — gespiegelte BLOBS sind keine Glieder (sonst würde die Eiche zur Seele).
         const armPart = (mat, x) => ({
             shape: "box",
             material: mat,
@@ -44006,22 +42088,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
         }
 
-        // 3. Loch-Durchfall — V9.36 Phase 5c.2.c.3.a: der V8.36-
-        // Heightfield-Höhen-Clamp im `_applyModifyOpToChunk` ist
-        // mit der Lösch der ganzen modify_terrain-Schicht weg;
-        // die V9.36-`carveVoxelSphere`-Geste hat keinen Höhen-
-        // Clamp-Bedarf (das 3D-Voxel-Feld kennt keine Höhen-
-        // Säulen-Akkumulation). Der V8.36-Radius-Marker lebt
-        // weiter, jetzt als `carveRadius = 3.5` (im Voxel-Feld
-        // grösser als die alte 3.0-Heightfield-Mulde — eine
-        // Voxel-Kugel mit 3.5 m Radius spannt ~140 Zellen).
+        // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das 3D-Feld kennt keine
+        // Säulen-Akkumulation); Marker ist `carveRadius = 3.5` (~140 Zellen), `_applyModifyOpToChunk` ist weg.
         out.digRadiusVoxel = /const carveRadius = 3\.5;/.test(srcOf("tryMouseBreak"));
         out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
-        // 4. Wasser-/Boden-Durchfall — P3: die Schutz-Logik wanderte in den feld-nativen
-        //    `_stepCharacter`: der Spieler kann nicht durch den Boden schwimmen, weil der
-        //    Boden-Snap ihn auf die Feld-Oberfläche setzt (kein „Auftrieb unter Terrain"),
-        //    und die KILLPLANE fängt einen echten Durchfall. Beide Stücke müssen da sein.
+        // 4. Wasser-/Boden-Durchfall: `_stepCharacter` snappt auf die Feld-Oberfläche (kein Auftrieb unter
+        //    Terrain) und die KILLPLANE fängt einen echten Durchfall — beide Stücke müssen da sein.
         {
             const src = srcOf("_stepCharacter");
             out.waterGate = /submerged/.test(src) && /killPlaneY/.test(src);
@@ -44121,10 +42194,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             r._initCollapsibleSettings(); // idempotent
             const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
             const headers = drawer ? drawer.querySelectorAll("h3.collapsible-header") : [];
-            // V18.79 — die Welt-VERWALTUNG (Speicher + Diese Welt = 2 Sektionen) zog in den
-            // Welt-Manager (Bibliothek); die Einstellungen tragen jetzt 11 Präferenz-Sektionen
-            // in 5 Gruppen (vorher 13). Der Test wandert mit (V9.56-i): die Schwelle folgt der
-            // neuen Wahrheit (≥11), die Falt-MECHANIK (collapseToggles unten) bleibt der Beweis.
+            // Die Einstellungen tragen 11 Präferenz-Sektionen (die Welt-Verwaltung lebt im Welt-Manager) →
+            // Schwelle ≥11; der Beweis ist die Falt-MECHANIK (collapseToggles).
             out.collapsibleHeaders = headers.length >= 11;
             if (headers.length > 0) {
                 const sec = headers[0].closest("section");
@@ -44177,7 +42248,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.37: Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
         check("V8.37: Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
         check("V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
-        check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥12)", v837Results.collapsibleHeaders);
+        check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥11)", v837Results.collapsibleHeaders);
         check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
         check("V8.37: Werkzeug-Drag läuft über Container-Delegation", v837Results.dragDelegated);
         check("V8.37: Werkzeug-Drag überträgt weiterhin Daten (setData)", v837Results.dragSetData);
@@ -44368,13 +42439,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             delete r.state.blueprints["_t839s"];
         }
 
-        // Qualität skaliert Creature-Stats + Konsumable (Source-Check).
-        // V18.312 — die Equip-Qualität-Skalierung wanderte in die GETEILTE Quelle
-        // `_foldEquippedStatTags` (Gesetz #0: computeCreatureStats + computePlayerStats LESEN sie,
-        // statt jede inline `computeBlueprintQuality` zu rufen). Der Test wandert mit dem Code an
-        // die Wurzel (CLAUDE.md V9.56-i „der Test wandert mit dem Code"): die Kreatur-Stats erben
-        // die Qualität, WEIL computeCreatureStats den Equip-Fold liest UND der Fold die Qualität
-        // multipliziert. `__codeOf` strippt Kommentare → der Presence-Grep trifft nur echten Code.
+        // Qualität skaliert Creature-Stats + Konsumable (Source-Check): die Equip-Qualität lebt in der
+        // geteilten Quelle `_foldEquippedStatTags` (liest computeBlueprintQuality); computeCreatureStats
+        // erbt sie, weil es den Fold liest.
         out.creatureStatsQuality =
             /_foldEquippedStatTags/.test(window.__codeOf(r.computeCreatureStats)) &&
             /computeBlueprintQuality/.test(window.__codeOf(r._foldEquippedStatTags));
@@ -44752,14 +42819,8 @@ async function checkBandW12WorldPortal(ctx) {
         // Loop-Guard ist verdrahtet.
         out.loopGuard = /_portalOverlay/.test(window.__codeOf(r.startEternalLoop));
 
-        // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
-        // V17.32-Heilung (GEMESSEN-Wurzel): die zwischenzeitlichen _gameLoopTick
-        // (Physik) lassen den Spieler aus PORTAL_REACH (4,5 m, 3D inkl. y — er
-        // settlet auf den Boden, weg von der Portal-Spawn-y) driften → „seit
-        // Versionen rot", auch bei voll gebauter Welt. Das Feature prüft „Spieler
-        // AM Portal → Prompt"; den Spieler an die Portal-Position zu setzen ist
-        // die korrekte, deterministische Test-Vorbedingung (V17.31-Disziplin:
-        // KONSUM/Intent testen, nicht den Drift einer Setup-Physik).
+        // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist. Spieler AUF die Portal-Position
+        // setzen: Zwischen-Ticks lassen ihn sonst zu Boden aus PORTAL_REACH (4,5 m, 3D inkl. y) driften.
         if (portalEntry && pm && pm.set) {
             pm.set(portalEntry.position.x, portalEntry.position.y, portalEntry.position.z);
         }
@@ -45233,9 +43294,8 @@ async function checkBandW12WorldPortal(ctx) {
     }
 
     // ### W12 Phase 2 — Umwidmen: Portal-Geste erreichbar + umwidmbar ###
-    // M5 (V18.157, Befund 17, V9.56-i): das Umwidmen zog aus dem ICH in die
-    // WERKSTATT-Mach-Zone (Domänen-Trennung) — der Test prüft die Werkstatt-Reihe
-    // des gewählten Bauplans + den NEUEN ✨-Emergent-Reset (vorher toter Verweis).
+    // Das Umwidmen lebt in der WERKSTATT-Mach-Zone: geprüft werden die Werkstatt-Reihe des gewählten
+    // Bauplans + der ✨-Emergent-Reset.
     const w12markResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -45340,12 +43400,8 @@ async function checkBandW12WorldPortal(ctx) {
             if (r._portalReceiveEvent({ type: "event", text: "Flut " + i }) === true) floodAccepted++;
         }
         out.rateLimitCapsBurst = floodAccepted === AnazhRealm.PORTAL_EVENT_RATE_MAX;
-        // Flaky-Heilung (V8.96-Klasse): NICHT die journal().length-
-        // Differenz messen — am 200-FIFO-Cap verdrängt jedes Anhängen
-        // einen alten Eintrag, die Längen-Differenz wäre dann 0 statt
-        // PORTAL_EVENT_RATE_MAX. Stattdessen die Flut-Einträge selbst
-        // zählen: genau RATE_MAX tragen den "Flut "-Text (die zuletzt
-        // angehängten — nie von ihren eigenen Geschwistern evictet).
+        // Nicht die journal().length-Differenz messen: am 200-FIFO-Cap verdrängt jedes Anhängen einen alten
+        // Eintrag. Stattdessen die "Flut "-Einträge zählen — genau RATE_MAX, nie von Geschwistern evictet.
         out.rateLimitNoJournalOverflow =
             journal().filter((e) => e && typeof e.text === "string" && e.text.startsWith("Flut ")).length ===
             AnazhRealm.PORTAL_EVENT_RATE_MAX;
@@ -45600,14 +43656,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // Defensiv: Müll-Eingabe wirft nicht, liefert false.
         out.verifyDefensive =
             (await r._vibeVerify("x", null, null)) === false && (await r._vibeVerify("x", "zzz", "kurz")) === false;
-        // Genesis-Erinnerung im Journal (Typ "ritual"). Flaky-
-        // Heilung (V8.96-Klasse): der Vibe-Pass-Genesis-Eintrag wird
-        // früh geschrieben; nach einem langen Lauf kann der 200-FIFO-
-        // Cap ihn evicten. _ensureVibePass nutzt journalAppendOnce(
-        // "vibepass:genesis", …) — der seen-Schlüssel ist cap-
-        // unabhängig (seen wird nie FIFO-gedeckelt) und beweist, dass
-        // der Genesis-Eintrag geschrieben WURDE; der entries-Scan
-        // bleibt als Fallback, falls er noch im Fenster liegt.
+        // Genesis-Erinnerung im Journal (Typ "ritual"): der 200-FIFO-Cap kann den frühen Eintrag evicten →
+        // primär den cap-unabhängigen seen-Schlüssel "vibepass:genesis" (journalAppendOnce) prüfen,
+        // den entries-Scan nur als Fallback.
         const wj = r.state.worldJournal || {};
         const entries = wj.entries || [];
         out.journalGenesis =
@@ -46142,10 +44193,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.secondStacks = res2.ok === true && !!slot2 && slot2.count >= 2 && bpCountAfter === bpCountBefore;
         // Unbekannte Welt → abgelehnt.
         out.unknownRejected = r.obtainPortalForWorld("nirgendwo").ok === false;
-        // V8.59 — portalMeta + role:portal überleben den Save.
-        // buildStateSnapshot muss sie schreiben, loadState sie
-        // wiederherstellen — sonst verlöre ein geholtes Portal beim
-        // Reload seine Ausrichtung (und träfe wieder _isMoveable).
+        // portalMeta + role:portal überleben den Save (buildStateSnapshot schreibt, loadState stellt her) —
+        // sonst verlöre ein geholtes Portal beim Reload seine Ausrichtung (und träfe wieder _isMoveable).
         const snap = r.buildStateSnapshot();
         const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_fluid");
         out.snapPersistsPortal =
@@ -47456,9 +45505,8 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     }
 
     // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
-    // _vendorPostRepo (der Netz-Schritt) wird gestubbt — der echte
-    // GitHub-Round-Trip lebt in smoke-vendor.cjs (gegen ein lokales
-    // Fake-GitHub, damit der Test offline + deterministisch bleibt).
+    // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
+    // deterministisch in smoke-vendor.cjs (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -47606,13 +45654,9 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     }
 }
 
-// ============================================================================
-// G8 — DER ROBUSTHEITS-BOGEN (docs/archiv/robustheit-plan.md) — die vier
-// Angriffs-KORPORA = das lebende Antikörper-Archiv (R5). Jeder Korpus impft
-// das System bei JEDEM Push gegen genau einen Angriff: R0 Trennung · R1 Flut ·
-// R2 souveräner Angriff · R3 Sandbox-Escape · R4 Infektion. Ein Regress an
+// ===== G8 — die Angriffs-KORPORA: jeder Korpus impft bei JEDEM Push gegen genau einen Angriff =====
+// R0 Trennung · R1 Flut · R2 souveräner Angriff · R3 Sandbox-Escape · R4 Infektion — ein Regress an
 // einer alten Wand ist sofort rot.
-// ============================================================================
 
 // G8 R0 — der INNERSTE RING ist BENANNT + ABWESEND aus jedem geteilten Kanal.
 // Die Wand: der private Schlüssel / die Identität lecken NIE in einen
@@ -47887,10 +45931,9 @@ async function checkBandG8R3Locality(ctx) {
     check("G8 R3: der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein)", res.serverNullOrigin);
 }
 
-// G8 R4 — Netz-Immunität (M4): die Herkunfts-KETTE (4a, „Ursprung X · über
-// dich" statt flachem origin-Enum) + der RÜCKRUF (4b, ein revozierter Schlüssel
-// stößt jedes Artefakt mit ihm in der Kette aus) + die Quarantäne (4c, der
-// welt-exponierte LLM kann keinen souveränen Akt formulieren — R2-gebunden).
+// G8 R4 — Netz-Immunität: Herkunfts-KETTE (4a) · RÜCKRUF (4b: ein revozierter Schlüssel stößt jedes
+// Artefakt mit ihm in der Kette aus) · Quarantäne (4c: der welt-exponierte LLM formuliert keinen
+// souveränen Akt).
 async function checkBandG8R4Immunity(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -47907,12 +45950,8 @@ async function checkBandG8R4Immunity(ctx) {
             typeof r._normalizePubKey === "function";
         out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
         out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
-        // Zustand sichern, den wir mutieren.
-        // V18.180-FIX §6.1: revokedKeys ist eine Map (war Object) — ein flacher
-        // Object.assign({}, …)-Klon hätte daraus ein leeres {} gemacht (Map-
-        // Einträge sind nicht enumerable als Properties) → der Restore an L38430
-        // hätte revokedKeys zum Object umgehängt, und der nächste Test bricht
-        // beim ersten .set()-Aufruf. Eine echte Map-Kopie ist die Wahrheit.
+        // Zustand sichern, den wir mutieren. revokedKeys ist eine Map → echte Map-Kopie; ein
+        // Object.assign-Klon ergäbe {} und der Restore bräche das nächste .set().
         const savedRevoked = new Map(r.state.revokedKeys);
         const savedSigned = JSON.parse(JSON.stringify(r.state.signedWorlds || {}));
         const KA = "aa".repeat(32);
@@ -48056,13 +46095,9 @@ async function checkBandG8R5LivingImmune(ctx) {
     );
 }
 
-// V18.129 — DAS HOCH-BECKEN (A4-Rest, gigant-plan §5): der Stau-Spiegel. Ein
-// Spieler-Werk (Fill/solide Architektur) öffnet die V18.93-Spiegel-Kappe LOKAL
-// über einen bounded Spill-Scan (Priority-Flood); gepinnte Quell-Spalten im
-// Stau-Bereich TROPFEN den Pool voll. PURE Beweise hier (deterministisch,
-// welt-unabhängig); der Welt-Beweis am echten Fluss: `scripts/diag-stau.cjs`
-// (Pfeiler staut 0 m · Damm-Pool +2.68 m über rim, flat · settled · Welt
-// unverändert — GEMESSEN, reproduzierbar).
+// DAS HOCH-BECKEN (Stau-Spiegel): ein Spieler-Werk (Fill/solide Architektur) öffnet die Spiegel-Kappe
+// LOKAL per bounded Spill-Scan (Priority-Flood); gepinnte Quell-Spalten tropfen den Pool voll. Hier
+// nur PURE Beweise; der Welt-Beweis am echten Fluss ist `scripts/diag-stau.cjs`.
 async function checkBandV18129HochBecken(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -48155,16 +46190,9 @@ async function checkBandV18129HochBecken(ctx) {
     );
 }
 
-// V18.130 — B4 (gigant-plan §5 / U5): SCHATTEN-CSM an den Kaskaden-Bändern.
-// Das r184-Addon (CSMShadowNode, verbatim vendort) ersetzt die EINE 2048er-
-// Map: 3 Kaskaden, deren Grenzen die DETAIL_CASCADE-Band-Kanten SIND; der
-// R1-Texel-Snap lebt im Addon pro Kaskade. Headless prüft die VERDRAHTUNG
-// (der Look + die Map-Allokation: `scripts/diag-csm.cjs` — GEMESSEN GRÜN:
-// Maps alloziert, breaks [0.2,0.68,1], nahe Kaskade 0.167 m/Texel vs. 0.293
-// vorher, keine Akne in der V18.113-Matrix). Die CSM-Initialisierung ist
-// LAZY (erster echter Material-Build) — unter gestubbtem Render sind breaks
-// leer; die Invarianten prüfen darum Konstruktion + Vertrag, nicht den
-// Render-Zustand.
+// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 3 Kaskaden mit Grenzen = DETAIL_CASCADE-Kanten.
+// Die CSM-Init ist LAZY (erster echter Material-Build) → unter gestubbtem Render sind breaks leer:
+// hier Konstruktion + Vertrag prüfen; Look + Map-Allokation misst `scripts/diag-csm.cjs`.
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -48272,12 +46300,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
-        // V9.39 Phase 5c.2.c.3.b.iii — V8.43/V8.44/V8.45 prüften den
-        // Heightfield-Terrain-Shader (per-Vertex-Noise, Welt-Raum-Normal,
-        // radiale Fog-Distanz). `state.terrainMaterial` existiert nicht
-        // mehr; das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-
-        // eingebauten Lichtquellen + Fog (anders gerechnet). Tests
-        // gestrichen.
         check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
         check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
         check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
@@ -48304,15 +46326,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
         r.state.weatherTransition = origTrans;
         r.state.weather = origWeather;
-        // weatherEffect + cloudCover faden über den Helper (Skybox-Wolken im
-        // _dayNightApplySkybox-Helfer; der tote Heightfield-Terrain-Uniform-Pfad
-        // `_dayNightApplyTerrainShaderUniforms` ist V18.287 entfernt — Voxel-
-        // Terrain trägt Wetter/Fog über voxelChunkMaterial).
-        // V10.0-f-1 Doku-Sync: _dayNightApplySkybox liest jetzt aus
-        // state.skyboxUniforms. Der Cross-Fade-Helper-Aufruf hat dieselbe
-        // Semantik (_weatherBlendedValue), aber das Ziel ist u.cloudCover.value.
-        // V18.128 (D5a): der [0,1]-Konsument clampt die unbounded Achse lokal
-        // (Math.min(1, …)) — die Probe toleriert den Clamp-Wrapper.
+        // weatherEffect + cloudCover faden über `_weatherBlendedValue` in `_dayNightApplySkybox` (Ziel
+        // u.cloudCover.value); die Probe toleriert den [0,1]-Clamp `Math.min(1, …)` des Konsumenten.
         const skyboxSrc = window.__codeOf(r._dayNightApplySkybox);
         out.cloudFades = /u\.cloudCover\.value\s*=\s*(?:Math\.min\(\s*1\s*,\s*)?this\._weatherBlendedValue/.test(
             skyboxSrc
@@ -48373,15 +46388,10 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der V17.111-Light-
             // Space-Snap rundet in der Ebene ⟂ sunDir → Versatz ≤ ~1 Texel < 0.5.
             out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
-            // V17.111 R1 — Snap-Stabilitäts-Beweis (V9.56-i-Migration des V9.85-
-            // Tests). Das Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (das
-            // Texel-Grid). Eine Sub-Texel-Bewegung darf dort KEIN Sub-Texel-Crawl
-            // erzeugen: der Light-Space-Snap QUANTISIERT die LATERALE Target-
-            // Bewegung auf ganze Texel — ~0 (gleiche Zelle) ODER ein sauberer
-            // Sprung (≥~0.29 m bei Grenz-Übertritt), NIE ein Kriechen in Schritt-
-            // Höhe (~0.05 m = der Bug). Die Bewegung ENTLANG sunDir (Tiefe) ist
-            // harmlos (verschiebt keine Texel) → wird herausprojiziert. sunDir bei
-            // t=0.3 aus der replizierten _dayNightSunDirection-Formel.
+            // Snap-Stabilität: Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (Texel-Grid). Der Light-Space-
+            // Snap quantisiert die laterale Target-Bewegung auf ganze Texel: ~0 (gleiche Zelle) ODER ein sauberer
+            // Sprung (≥~0.29 m), NIE ein Kriechen in Schritt-Höhe (~0.05 m). Bewegung entlang sunDir verschiebt
+            // keine Texel → herausprojiziert. sunDir bei t=0.3 aus der replizierten _dayNightSunDirection-Formel.
             const _ang = 0.3 * Math.PI * 2 - Math.PI / 2;
             let _sx = Math.cos(_ang);
             let _sy = Math.sin(_ang);
@@ -48412,13 +46422,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v848Results && !v848Results.error) {
-        // V9.39 Phase 5c.2.c.3.b.iii — die V8.48-Terrain-Shader-
-        // Schatten-Tests sind tot — `state.terrainMaterial` existiert
-        // nicht mehr. Die V8.48-Vision (Schatten aufs Terrain) lebt
-        // im Voxel-Mesh weiter (PBR-Material mit `receiveShadow`, die
-        // DirectionalLight-Shadow-Map). Die Schatten-Frustum-folgt-Spieler-
-        // Mechanik lebt; die tote `usesSunDir`-Probe auf dem entfernten
-        // `_dayNightApplyTerrainShaderUniforms`-Helfer ist V18.287 gekehrt.
         check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
         check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
         check(
@@ -48439,15 +46442,9 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.usesDistanceSquared = /distanceToSquared/.test(src);
         out.raycastGated = /OBSTACLE_RAYCAST_MAX_DIST_SQ/.test(src) && /inFrustum/.test(src);
         out.scratchPooled = /_creatureScratchDir/.test(src);
-        // Funktional: viele Kreaturen, mehrere Ticks → kein Crash,
-        // Bewegung erhalten, alle Positionen endlich.
-        // V18.347 — DER CAP-SCHUTZ (ein ECHTER, vom Container-Tod verdeckter Bug, gefangen als
-        // das Gate GPU-frei DURCHlief): V18.296 senkte `maxCreatures` 120→20. Der alte
-        // `while (length < 60)`-Spawn-Loop lief damit ENDLOS (bei 20 Kreaturen fügt
-        // `spawnCreatureAt` nichts mehr hinzu → length bleibt 20 < 60 → Schleife dreht ewig →
-        // protocolTimeout → "no result"). Fix: den Cap für den Stress-Test temporär heben +
-        // Guard-Zähler (belt-and-suspenders) + danach SAUBER abräumen (kein Kreatur-Leck in die
-        // Folge-Bänder, die ihren eigenen Cap messen).
+        // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
+        // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
+        // `while (length < 60)`-Loop dreht ewig; danach sauber abräumen (kein Leck in Folge-Bänder).
         const _saveMax849 = r.state.maxCreatures;
         const _baseN849 = r.state.creatures.length;
         r.state.maxCreatures = 70;
@@ -48603,14 +46600,9 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const c0 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
         out.emptyChainNoDomain = Object.keys(c0).length === 0;
 
-        // Wende einen Schmiede-Hammer (forging-domain) an → counts.forging = 1
-        // Hammer (Starter) hat domain:null; nur schmiede-hammer hat
-        // domain:"forging". Welle 9a-Architektur.
-        // schmiede-hammer ist nicht Starter — zum Besitz hinzufügen
-        // (frieden-Modus überspringt Stamina-Cost). Plus: opChain-
-        // Material-Compat — schmiede-hammer.opClass=plastic ist mit
-        // stein NICHT kompatibel (MATERIAL_OP_COMPATIBILITY). Eisen
-        // passt → wir wechseln das Test-Material auf eisen.
+        // Schmiede-Hammer (domain:"forging") → counts.forging = 1; der Starter-Hammer hat domain:null.
+        // schmiede-hammer in den Besitz legen (frieden-Modus: keine Stamina) und Material auf eisen setzen —
+        // opClass=plastic ist mit stein inkompatibel (MATERIAL_OP_COMPATIBILITY).
         r.state.player.tools = Array.isArray(r.state.player.tools) ? r.state.player.tools : [];
         if (!r.state.player.tools.includes("schmiede-hammer")) {
             r.state.player.tools.push("schmiede-hammer");
@@ -48731,12 +46723,8 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
-    //
-    // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur
-    // ist Schöpfungs-Hand. Drei Phasen: take (zum Spieler) → walk
-    // (weg vom Spieler) → spawn (Architektur am Kreatur-Ort). Modus-
-    // symmetrisch über _buildMaterialGate (eine Funktion teilen sich
-    // Spieler-confirmBuild + Kreatur-build-take-Phase).
+    // Umkehrung von gather: Phasen take (zum Spieler) → walk (weg) → spawn (Architektur am Kreatur-Ort);
+    // _buildMaterialGate ist EINE Funktion für Spieler-confirmBuild und die Kreatur-take-Phase.
     const wave6hP2b2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -49072,11 +47060,8 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     }
 
     // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
-    //
-    // Vision §1.1: Co-Schöpfer-Beziehung wächst durch Geschichte.
-    // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material,
-    // build:blueprint), Speed-Bonus pro Level, Audio + Journal bei Level-Up,
-    // UI-Pills in Kreatur-Liste. KEINE Persistenz (Vision-konsequent).
+    // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material, build:blueprint): Speed-Bonus
+    // je Level, Audio + Journal beim Level-Up, UI-Pills; Levels sind abgeleitet, nie separat gespeichert.
     const wave6hP2dResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -49186,18 +47171,8 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // 9. Level-Up triggert über _creatureRemember
         const cFollow = r.spawnCreatureAt(player.x + 100, player.y, player.z + 100, "happy", "wesen");
         cFollow.userData.memory = [];
-        // V8.96 — Wurzelheilung des flaky 6.H-P2D-Level-Up-Tests:
-        // journalGrew prüfte „entries.length > lenBefore". Aber
-        // worldJournal.entries ist FIFO-gedeckelt (200) — stand der
-        // Journal-Stand nach dem 20-25-s-Autonom-Lauf schon am Cap,
-        // verdrängte das Anhängen einen alten Eintrag → die Länge
-        // blieb 200 → der Test kippte. Auch journalAppends id
-        // (`entries.length + 1`) ist nach dem Cap nicht eindeutig.
-        // Fix: die EINTRAGS-IDENTITÄT messen — ein growth-Eintrag,
-        // der als Objekt nicht im Vorher-Set steht, beweist das
-        // Anhängen cap- + id-unabhängig (V8.57/V8.83-Disziplin:
-        // den Mess-Punkt an die Mechanik legen, nicht an einen
-        // volatilen Proxy).
+        // Die EINTRAGS-IDENTITÄT messen, nicht entries.length: worldJournal.entries ist FIFO-gedeckelt (200),
+        // am Cap bleibt die Länge gleich und journalAppends id (`entries.length + 1`) ist nicht eindeutig.
         const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
         // 3 gathered → L1, sollte LevelUp triggern
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
@@ -49205,10 +47180,8 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
         const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
         out.rememberTriggersLevel = lvlAfter === 1;
-        // Ein NEUER growth-Eintrag (Objekt nicht im Vorher-Set) mit
-        // Sammler / „quarz" / „Stufe 1" beweist sowohl, DASS der
-        // Level-Up einen Journal-Eintrag schrieb, als auch dass
-        // GENAU DIESER Test ihn auslöste (kein Autonom-Lauf-Echo).
+        // Ein NEUER growth-Eintrag (nicht im Vorher-Set) mit Sammler / "quarz" / "Stufe 1" beweist, dass
+        // DIESER Level-Up ihn schrieb (kein Autonom-Lauf-Echo).
         const journalAfter = r.state.worldJournal.entries || [];
         const newLvlUpEntry = journalAfter.some(
             (e) =>
@@ -49369,20 +47342,15 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     }
 
     // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
-    //
-    // Vision §1.1-Erweiterung: Kreaturen-Identitäten überleben Reload.
-    // Save trägt {name, soul, memory, position, bornAt} pro Kreatur,
-    // ~1 KB pro Stück. Memory-Cap 200. Tote Kreaturen (removeCreature)
-    // werden aus dem Save entfernt.
+    // Kreatur-Identitäten überleben Reload: der Save trägt {name, soul, memory, position, bornAt} je
+    // Kreatur (~1 KB), Memory-Cap 200; tote Kreaturen (removeCreature) fallen aus dem Save.
     const wave6hP2d1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
-        // V18.370 — Cap-Headroom: der last-gestreckte Warmup füllt `creatures` bis maxCreatures
-        // → ein Restore/Spawn ON TOP gäbe null (Cap-Hit) → load-abhängiges rot an diesem Band.
-        // Lokal anheben, vor `return out` restaurieren (kein _gameLoopTick dazwischen →
-        // tickFaunaLifecycle kann die Lücke nicht füllen → deterministisch grün).
+        // Cap-Headroom: der Warmup kann `creatures` bis maxCreatures füllen → ein Spawn obendrauf gäbe null.
+        // Lokal anheben, vor `return out` restaurieren (kein _gameLoopTick dazwischen → deterministisch).
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
 
@@ -49596,11 +47564,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
-    //
-    // Vision §1.3 fraktal vollendet: Kreaturen ≡ Spieler ≡ Architektur
-    // sind alle Compound aus parts × Material × Form. Stats emergieren
-    // aus der gleichen STAT_FROM_TAGS-Pipeline (kein paralleler Code).
-    // Body-Speed-Modulator (stats.speed/7) wirkt im Tick neben Spec-Mul.
+    // Kreatur, Spieler und Architektur sind Compound aus parts × Material × Form; Stats kommen aus
+    // derselben STAT_FROM_TAGS-Pipeline; Body-Speed-Mul (stats.speed/7) wirkt im Tick neben Spec-Mul.
     const wave6hP2f1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -49627,10 +47592,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
             Number.isFinite(csW.stats.magicResist) &&
             Number.isFinite(csW.stats.heatResist);
 
-        // S7 (V9.56-i — der Test WANDERT): die Test-Wesen werden mit bodySize:1 gespawnt,
-        // damit die SOUL-Diskrimination (sprite vs wesen) ISOLIERT ist — die per-Kreatur-
-        // Körpergröße (S7) ist eine orthogonale Achse (in diag-genom geprüft), die hier
-        // sonst die Soul-Speed-Relation überlagert.
+        // Test-Wesen mit bodySize:1: die per-Kreatur-Körpergröße ist eine orthogonale Achse und überlagerte
+        // sonst die Soul-Speed-Relation.
         // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
         const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "fuchs", { bodySize: 1 });
         const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "baer", { bodySize: 1 });
@@ -49669,22 +47632,16 @@ async function checkBandWelle6HCreatureStats(ctx) {
         // _target = null zwingt zur Such-Phase (wo speed wirkt)
         cw.userData.task.args._target = null;
         cs.userData.task.args._target = null;
-        // Stelle sicher: in der Such-Phase brauchen wir eine Target-Distanz > halt.
-        // Wir setzen position weit weg von allem damit kein early-return greift
-        // (gather-task → kein Target gefunden → wander-fallback, ein anderer Pfad).
-        // Stattdessen: nutzen build-task (laufen zum Spieler) für fairen Vergleich.
+        // In der Such-Phase braucht es Target-Distanz > halt: build-task (läuft zum Spieler) statt gather —
+        // gather ohne Target fiele in den wander-Fallback (anderer Pfad).
         r.assignCreatureTask(cw, "build", { blueprint: "stein_block" }, { silent: true });
         r.assignCreatureTask(cs, "build", { blueprint: "stein_block" }, { silent: true });
         cw.userData.carrying = null;
         cs.userData.carrying = null;
         cw.position.set(player.x + 50, player.y, player.z);
         cs.position.set(player.x + 50, player.y, player.z);
-        // V9.84 Perf-1.d — `_tickCreatureTaskDirection` returnt jetzt einen
-        // geteilten Scratch-Vector3 (statt eines frischen pro Aufruf), um
-        // ~120 Vec3-Allokationen/Frame im updateCreatures-Loop zu sparen.
-        // Im Test müssen wir die erste Direction KOPIEREN, bevor der zweite
-        // Aufruf den Scratch überschreibt — sonst lesen wir zweimal denselben
-        // Wert. V9.56-i-Doku-Sync: der Test wandert mit der Mechanik.
+        // `_tickCreatureTaskDirection` liefert einen GETEILTEN Scratch-Vector3 (keine Allokation je Aufruf)
+        // → die erste Direction KOPIEREN, bevor der zweite Aufruf sie überschreibt.
         const dirW = r._tickCreatureTaskDirection(cw, cw.userData.task, "happy");
         const dirWX = dirW.x,
             dirWZ = dirW.z;
@@ -49781,11 +47738,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
     }
 
     // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
-    //
-    // Vision §1.3 fraktal weiter: Kreaturen tragen Werkzeug + Rüstung wie
-    // der Spieler. computeCreatureStats stackt equipped Compound-Tags
-    // mit TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT (dieselben Konstanten wie
-    // Player). Persistenz via _serializeCreature → snap.equipped.
+    // Kreaturen tragen Werkzeug + Rüstung wie der Spieler: equipped Compound-Tags stacken mit
+    // TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT; Persistenz via _serializeCreature → snap.equipped.
     const wave6hP2f2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -49836,10 +47790,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const unEqInvalid = r.unequipCreatureSlot(c, "boots");
         out.unequipInvalidSlotRejected = unEqInvalid.ok === false;
 
-        // 7. Stats-Stacking via equipped — Tool/Armor mit Compound-Tags
-        // beeinflussen computeCreatureStats über existing pipeline.
-        // Wir erstellen einen eigenen „magie-leitenden" Werkzeug-Bauplan
-        // und vergleichen Stats VOR/NACH equip.
+        // 7. Stats-Stacking via equipped: eigener "magie-leitender" Werkzeug-Bauplan, Stats VOR/NACH equip
+        // vergleichen (dieselbe computeCreatureStats-Pipeline).
         if (typeof r.cloneBlueprint === "function") {
             const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
             const baseStats = r.computeCreatureStats(c2).stats;
@@ -50006,11 +47958,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
     }
 
     // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
-    //
-    // Vision §1.3 fraktal weiter: Boost emergiert aus
-    // `computeCompoundTags(consumableBp) × scale` — KEIN Hardcode,
-    // KEINE Tabelle. Bauplan mit role:"consumable" UND
-    // consumableMeta. RMB+Hotbar-Konsumable+Raycast-Kreatur = Übergabe.
+    // Boost = `computeCompoundTags(consumableBp) × scale` — kein Hardcode, keine Tabelle. Bauplan mit
+    // role:"consumable" + consumableMeta; RMB + Hotbar-Konsumable + Raycast-Kreatur = Übergabe.
     const wave6hP2f3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -50257,11 +48206,8 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
-    //
-    // Vision §1.5 — Spieler spricht mit EINER Kreatur, sie antwortet
-    // aus ihrer Sicht. Persona-Prompt versammelt VOLLE Identität
-    // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). KEIN echter
-    // LLM-Call im Test (kein API-Key) — wir prüfen Builder + Routing.
+    // Der Spieler spricht mit EINER Kreatur; der Persona-Prompt versammelt ihre volle Identität
+    // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). Kein echter LLM-Call: geprüft: Builder + Routing.
     const wave6hP2eV1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -50428,13 +48374,8 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 
     // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
-    //
-    // Schöpfer-Feedback nach Browser-Test V7.90: "Bran wie gehts"
-    // wurde nicht als Kreatur-Adresse erkannt (kein Trenner) → fiel
-    // zur Welt-Grok zurück, die als Welt antwortete aber Bran als
-    // Zuhörer adressierte (verwirrend). V1.1: @-Pattern als primäre
-    // Geste (Discord/Slack/Twitter-Konvention) + Soul-Farben für
-    // Identität (Sprite=cyan/Wesen=brass/Geist=grün).
+    // @Name ist die primäre Kreatur-Adresse (ohne Trenner fiele "Bran wie gehts" an die Welt-KI);
+    // Soul-Farben tragen Identität (Sprite=cyan / Wesen=brass / Geist=grün).
     const wave6hP2eV11Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -50486,11 +48427,8 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.wesenHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-wesen"));
         out.geistHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-baer"));
 
-        // 8. Chat-Output: erfolgreicher LLM-Pfad würde Soul-Span erzeugen
-        //    Wir testen den DOM-Pfad ohne echten API-Call durch
-        //    Stubbing von llmCallCreature. Das mockt die Antwort
-        //    und verifiziert, dass die DOM-Soul-Klassen gerendert
-        //    werden — der wichtige UX-Pfad für die Lesbarkeit.
+        // 8. Chat-Output: llmCallCreature gestubbt (kein API-Call) — prüft, dass die Antwort als Soul-Span
+        //    mit den DOM-Soul-Klassen gerendert wird.
         const wasLlmEnabled = r.state.llm && r.state.llm.enabled;
         if (r.state.llm) r.state.llm.enabled = true;
         const origCall = r.llmCallCreature;
@@ -50561,11 +48499,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 
     // ### Welle 6.H Phase 2E V2 — Proaktive Kreatur-Sprache ###
-    //
-    // Kreatur initiiert Chat-Output bei Events (Level-Up, Boost,
-    // Material-Mangel). Pre-baked phrase-pool, soul-aware, throttled.
-    // 4 Hook-Stellen: _onCreatureLevelUp, applyCreatureBoost,
-    // no_material_found (gather-tick), no_inventory_for_build (build-tick).
+    // Die Kreatur spricht bei Events (Level-Up, Boost, Material-Mangel) aus einem soul-aware, gedrosselten
+    // Phrasen-Pool. Hooks: _onCreatureLevelUp · applyCreatureBoost · no_material_found (gather-tick) ·
+    // no_inventory_for_build (build-tick).
     const wave6hP2eV2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -50790,14 +48726,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 
     // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
-    //
-    // Schöpfer-Wahl V7.93 + V9.36-Reroute: atmosphärisch + Terrain
-    // (voxel_carve/voxel_fill erlaubt, modify_terrain entfernt),
-    // modus-abhängig (schöpfer auto-execute / pfad+frieden
-    // inline-Buttons), LLM-Augmentation bei seltenen Events (L5,
-    // neue Spec) mit eigenem 10-Min-Throttle. Tests prüfen:
-    // Whitelist-Validation, Modus-Diskrimination, Memory-Einträge,
-    // Sandbox-Defense.
+    // Erlaubt: atmosphärisch + Terrain (voxel_carve/voxel_fill; kein modify_terrain); modus-abhängig
+    // (schöpfer = auto-execute, pfad/frieden = Inline-Buttons); LLM-Augmentation bei seltenen Events mit
+    // eigenem 10-Min-Throttle. Geprüft: Whitelist, Modus-Diskrimination, Memory-Einträge, Sandbox-Defense.
     const wave6hP2eV3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
@@ -51116,11 +49047,8 @@ async function checkBandCadWorkshop(ctx) {
             out.selectionRejectsOOB = ws.selectedPartIdx === null;
             r._workshopSetSelection(null); // reset
 
-            // V18.37 — die Werkstatt SICHTBAR machen, BEVOR der Manipulator getestet wird:
-            // _workshopBeginManipulation raycastet gegen die Canvas-Rect. Ein geschlossener
-            // Drawer hat eine 0×0-Rect → (100,100) mappt off-screen → der Ray verfehlt. Das
-            // EINZIGE reale Szenario ist eine OFFENE Werkstatt (man manipuliert nur dort). Der
-            // alte Test traf das nur inzidentell über aspect-ratio; jetzt explizit (V9.56-i).
+            // Werkstatt ÖFFNEN, bevor der Manipulator getestet wird: _workshopBeginManipulation raycastet gegen
+            // die Canvas-Rect, ein geschlossener Drawer hat 0×0 → der Ray verfehlt.
             {
                 const wtab = document.querySelector('#topbar [data-tab="werkstatt"]');
                 if (wtab) wtab.click();
@@ -51159,10 +49087,8 @@ async function checkBandCadWorkshop(ctx) {
                 out.p2PreviewExists = !!pre;
                 out.p2SelIdx = r.state.workshop.selectedPartIdx;
                 if (pre) {
-                    // V18.37 — die Klick-Koordinate aus der ECHTEN Canvas-Rect ableiten (Mitte),
-                    // nicht hartcodiert (100,100): seit der Layout-Putz den Canvas tiefer schiebt,
-                    // liegt (100,100) ÜBER dem Canvas → ndcY>1 → der Ray verfehlt die Ebene. Die
-                    // Canvas-Mitte ist immer drin (V9.56-i: der Test wandert mit dem Layout).
+                    // Klick-Koordinate = Mitte der ECHTEN Canvas-Rect, nie hartcodiert: ein fester Punkt kann über
+                    // dem Canvas liegen (ndcY>1) → der Ray verfehlt die Ebene.
                     const _c = document.getElementById("workshop-preview-canvas");
                     const _rc = _c && _c.getBoundingClientRect();
                     out.p2RectW = _rc && Math.round(_rc.width);
@@ -51180,10 +49106,8 @@ async function checkBandCadWorkshop(ctx) {
                     r._workshopEndManipulation();
                     out.dragManipulatorCleared = pre.dragManipulator === null;
                 }
-                // Aufräumen: deleteBlueprint allein refreshed nicht die
-                // Workshop-DOM-Liste — wir müssen das explizit nachziehen,
-                // sonst sieht der nachfolgende Ring-6.6-Test eine Liste,
-                // die 1 Eintrag länger ist als state.blueprints.
+                // Aufräumen: deleteBlueprint refresht die Workshop-DOM-Liste nicht — explizit nachziehen, sonst
+                // sieht der Ring-6.6-Test eine Liste mit einem Eintrag mehr als state.blueprints.
                 r.deleteBlueprint("test_wave6b");
                 r.selectBlueprintForEdit("stein_block");
                 r._renderWorkshopDOM();
@@ -51214,11 +49138,8 @@ async function checkBandCadWorkshop(ctx) {
                 out.gizmoHasTranslateMeshes = tCount >= 3;
                 out.gizmoHasRotateMeshes = rCount >= 3;
                 out.gizmoHasScaleMeshes = sCount >= 4; // 3 axes + 1 uniform
-                // V7.99 Bug-Fix: Picker-Meshes erhöhen die Mesh-
-                // Anzahl pro Modus (visual + picker pro Handle).
-                // translate: 3 × (shaft + tip + picker) = 9
-                // rotate: 3 × (ring + picker) = 6
-                // scale: 3 × (cube + shaft + picker) + 2 × (center + picker) = 11
+                // Picker-Meshes zählen mit (visual + picker je Handle): translate 3×(shaft+tip+picker) = 9 ·
+                // rotate 3×(ring+picker) = 6 · scale 3×(cube+shaft+picker) + 2×(center+picker) = 11.
                 out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
 
                 // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
@@ -51556,11 +49477,8 @@ async function checkBandCadWorkshop(ctx) {
             // h2 ist ebenfalls direktes child (bleibt oben fest)
             const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
             out.h2DirectChildOfDrawer = !!w2;
-            // Drawer hat overflow:hidden + display:flex. Beide nur
-            // prüfbar wenn Drawer SICHTBAR (.drawer[hidden] hat
-            // display:block!important via CSS-Override).
-            // Öffne den Werkstatt-Tab kurz für den Test, später
-            // alles zurück.
+            // overflow:hidden + display:flex sind nur am SICHTBAREN Drawer prüfbar (.drawer[hidden] erzwingt
+            // display:block!important) → Werkstatt-Tab kurz öffnen, danach alles zurück.
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             if (werkstatt) {
@@ -51684,11 +49602,8 @@ async function checkBandCadWorkshop(ctx) {
             out.newPartIsSphere = newPart && newPart.shape === "sphere";
             out.newPartSelected = r.state.workshop.selectedPartIdx === partsAfter - 1;
 
-            // §7.1 — der Sphere-Drop auf den kompakten Fels (stein_block-Klon, 1 Part) kann
-            // eine AUTO-Verbindung (Berührung) gebären → der Connect-Popover trüge zusätzlich
-            // die „✂ Lösen"-Kachel (14 statt 13 Buttons). Der Test misst den FRISCHEN
-            // Paar-Dialog → das Test-Paar startet unverbunden (die Auto-Geburt selbst
-            // prüft das eigene §7.1-Band).
+            // Der Sphere-Drop auf den 1-Part-Fels kann eine AUTO-Verbindung gebären (+ „✂ Lösen“-Kachel, 14
+            // statt 13 Buttons) → das Test-Paar startet unverbunden; die Auto-Geburt prüft ihr eigenes §7.1-Band.
             {
                 const bp3 = r.state.blueprints.test_phase3;
                 bp3.connections = (bp3.connections || []).filter(
@@ -51909,10 +49824,8 @@ async function checkBandCadWorkshop(ctx) {
             const rect = canvas.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
-            // Test: direkte Methode mit gültigem Material
-            // (raycast hit hängt von Camera-Position ab, also gibt's
-            // möglicherweise keinen Treffer — pragmatischer: prüfen
-            // dass die Methode existiert + nicht crashed)
+            // Direkter Methoden-Aufruf: ob der Raycast trifft, hängt an der Kamera — geprüft wird nur, dass die
+            // Methode existiert und nicht crasht.
             r._workshopHandleMaterialDrop("holz", cx, cy);
             out.materialDropNoCrash = true;
             // Wenn ein Hit war, sollte material gewechselt sein
@@ -52526,10 +50439,8 @@ async function checkBandWaves9And10a(ctx) {
             const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
             out.unknownReject = unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
 
-            // UI — S7 (V17.66): die role-spezifischen Mach-Knöpfe (.workshop-soul-activate /
-            // .workshop-forge) sind in den EINEN „FERTIGEN"-Akt der Stats-Tabelle gefaltet. Der
-            // Soul-Bauplan zeigt jetzt die FERTIGEN-Zeile (im LIVE Werkstatt-DOM, ergänzt das
-            // isolierte V1766-Band).
+            // UI: die role-spezifischen Mach-Knöpfe (.workshop-soul-activate / .workshop-forge) sind im EINEN
+            // „FERTIGEN“-Akt der Stats-Tabelle gefaltet — der Soul-Bauplan zeigt die FERTIGEN-Zeile im Live-DOM.
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_9d_soul");
@@ -52661,14 +50572,9 @@ async function checkBandWaves9And10a(ctx) {
             const soulRes = r.applyPlayerSoulFromBlueprint("test_10a_soul");
             out.soulApplyOk = soulRes && soulRes.ok === true;
             const statsRough = r.computePlayerStats();
-            // V18.195-Schliff: PRÄZISIONS-Achse isoliert messen — gleicher Soul,
-            // einmal mit cap=0.4 (roh), einmal ohne opChain (geboren). So
-            // bleibt der Größen-Faktor konstant + nur die Präzisions-Mul
-            // unterscheidet sich → die Sorgfalt-Belohnung wird strukturell
-            // bewiesen, unabhängig von der absoluten Avatar-Größe (vorher
-            // verglich der Test gegen den Mensch-Default, was nach V18.195-
-            // Größen-Skalierung mehrdeutig wurde, wenn der Custom-Avatar
-            // größer als Mensch ist).
+            // PRÄZISIONS-Achse isoliert: derselbe Soul einmal mit cap=0.4 (roh), einmal ohne opChain (geboren) —
+            // der Größen-Faktor bleibt konstant, nur die Präzisions-Mul unterscheidet sich (unabhängig von der
+            // absoluten Avatar-Größe).
             for (const p of bp.parts) {
                 delete p.opChain;
             }
@@ -52787,12 +50693,8 @@ async function checkBandWave10b(ctx) {
 
             out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
             out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
-            // V18.247 — die „kein-Affordance"-Kontrolle ist jetzt stein_block (ein Fels).
-            // Das DORF ist seit den größeren, substanzielleren Hütten (Schöpfer „häuser klein")
-            // KEIN affordance-freier Compound mehr: seine großen flachen Fundamente/Vordächer
-            // bieten emergent `balancing` (man kann darauf stehen) — die Compound-TAGS bleiben
-            // bit-identisch (form-getriebene Affordance, nicht tag-getrieben). stein_block ist
-            // der saubere affordance-freie Kontroll-Compound (gemessen leer).
+            // Die kein-Affordance-Kontrolle ist stein_block (Fels, gemessen leer): das Dorf bietet über seine
+            // flachen Fundamente emergent `balancing` (form-, nicht tag-getrieben).
             out.steinNoAffordances =
                 Object.keys(r.computeBlueprintAffordances(r.state.blueprints.stein_block)).length === 0;
 
@@ -52929,10 +50831,8 @@ async function checkBandWave10b(ctx) {
             ];
             out.radiatorIsRadiating =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).radiating === true;
-            // Ein Quarz-Mast (≥3 Parts, alle auf der y-Achse) strahlt
-            // NICHT radial — die räumliche Gate greift trotz hohem
-            // resoniert (Vision-Beweis: kein Form-Whitelist, die
-            // Konfiguration entscheidet).
+            // Ein Quarz-Mast (≥3 Parts auf der y-Achse) strahlt NICHT radial — das räumliche Gate greift trotz
+            // hohem resoniert (die Konfiguration entscheidet, keine Form-Whitelist).
             if (r.state.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
             r.cloneBlueprint("stein_block", "test_10ext_mast");
             r.state.blueprints.test_10ext_mast.parts = [
@@ -53020,17 +50920,9 @@ async function checkBandWave10b(ctx) {
             ];
             out.horizLineNotBroadcasting =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
-            // Welt-Reaktion-Relais: ein broadcasting-Mast nahe einem
-            // Strahler verstärkt dessen Reichweite. Spieler 22 m vom
-            // Strahler — ausserhalb der Basis-Reichweite (14 m),
-            // innerhalb der verstärkten (28 m).
-            // V9.33 Phase 5c.2.b — Welt-Reaktions-Affordances filtern
-            // nach Distanz UND prüfen alle nahen Architekturen mit
-            // der Affordance. In der Voxel-Eingangs-Welt platziert
-            // `_populateVoxelChunkVegetation` natürliche Strahler
-            // (kristall_geode) in magie-Regionen. Wir entfernen
-            // ALLE radiating-Architekturen ringsum (vor dem Test-
-            // Setup), damit die Probe ehrlich ist.
+            // Relais: ein broadcasting-Mast nahe einem Strahler verstärkt dessen Reichweite — Spieler 22 m vom
+            // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m). Vorher ALLE radiating-
+            // Architekturen ringsum entfernen (natürliche kristall_geode aus `_populateVoxelChunkVegetation`).
             if (pmR) {
                 pmR.x = 60;
                 pmR.y = 0;
@@ -53134,11 +51026,8 @@ async function checkBandWave10b(ctx) {
                 typeof radSnap.affordanceStrength.radiating === "number"
             );
             r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
-            // Welt-Reaktion: ein STARKER Mast relais-verstärkt weiter
-            // als ein SCHWACHER. Spieler 23 m vom Strahler — der
-            // schwache Holz-Mast erreicht ihn nicht, der starke schon.
-            // V9.33-Disziplin: natürliche Strahler/Sender im 100-m-
-            // Radius entfernen, sonst kontaminieren sie die Probe.
+            // Ein STARKER Mast relais-verstärkt weiter als ein SCHWACHER: Spieler 23 m vom Strahler, nur der
+            // starke erreicht ihn. Natürliche Strahler/Sender im 100-m-Radius entfernen (sonst kontaminiert).
             if (pmR) {
                 pmR.x = 60;
                 pmR.y = 0;
@@ -53683,14 +51572,8 @@ async function checkBandWave10b(ctx) {
             out.farMountRejected = farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
             r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
 
-            // Zoom-Test — deterministisch. _hasMagnifyingInSight
-            // raycastet gegen ALLE Architekturen mit magnifying-
-            // Affordance; eine autonom gespawnte transparent-
-            // axiale Geode kann zufällig im Kamera-Strahl liegen
-            // und die „kein Target"-Prüfung kippen. Für diese
-            // Prüfung die Architektur-Liste kurz leeren + danach
-            // wiederherstellen (V8.57-Lehre: ein Test ist erst
-            // deterministisch, wenn ALLE seine Eingaben es sind).
+            // Zoom-Test: _hasMagnifyingInSight raycastet gegen ALLE magnifying-Architekturen; eine autonom
+            // gespawnte Geode im Strahl kippte die „kein Target“-Prüfung → Architektur-Liste kurz leeren.
             const initialFov = r.state.camera.fov;
             out.zoomInactiveInitial = !r.state._zoomActive;
             const zoomArchBackup = r.state.architectures;
@@ -54086,10 +51969,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             const starsContent = qStarsEl ? qStarsEl.textContent : "";
             out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 5;
 
-            // V18.42 — _workshopApplyDefaultSizeOnce RÄUMT jetzt die Legacy-Inline-Größe + die
-            // gespeicherte Resize-Größe (Migration), statt eine fixe Vollbild-Inline-Größe zu setzen
-            // (die den V18-CSS-Rahmen left:12;right:12 überschrieb → „alle Achsen verfehlt"). Der
-            // Rahmen kommt rein aus CSS → die stale Größe muss weg sein.
+            // _workshopApplyDefaultSizeOnce RÄUMT Legacy-Inline-Größe + gespeicherte Resize-Größe (der Rahmen
+            // kommt rein aus CSS, left:12;right:12) — eine stale Größe muss weg sein.
             localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 300, height: 300 }));
             const werkstattEl807 = document.querySelector('[data-drawer="werkstatt"]');
             if (werkstattEl807) werkstattEl807.style.width = "300px";
@@ -54278,11 +52159,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     }
 
     // ### Welle 6.H V7.94 — Ollama-API-Key (gehosteter Setup) ###
-    //
-    // Lokales Ollama braucht keinen Key. Gehostete Setups (ollama.com
-    // Turbo, Reverse-Proxy mit Auth, Cloud-Hoster) kommen mit Bearer-
-    // Token. buildHeaders schickt Authorization-Header NUR wenn Key
-    // gesetzt — Backward-Compat für lokale Spieler.
+    // Lokales Ollama braucht keinen Key, gehostete Setups einen Bearer-Token: buildHeaders schickt
+    // Authorization NUR bei gesetztem Key.
     const ollamaKeyResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -54362,12 +52240,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     }
 
     // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
-    //
-    // Schöpfer-Browser-Test V7.94: Ollama-Cloud-Setup scheiterte still.
-    // Drei Bug-Quellen entdeckt: (1) /api/chat wurde immer angehängt
-    // auch wenn URL schon Pfad hatte; (2) extractText las nur Ollama-
-    // native Format, OpenAI-kompat lieferte null; (3) options.num_predict
-    // ist Ollama-spezifisch, OpenAI lehnt unbekannte Felder ab.
+    // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
+    // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -54487,12 +52361,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     }
 
     // ### V7.96 — Cloud-LLM-Proxy via save-server (CORS-Lösung) ###
-    //
-    // Cloud-Provider wie ollama.com senden keine CORS-Header → Browser
-    // blockt Direct-Calls. Save-server steht als loyaler Vermittler:
-    // localhost:4312/api/proxy/llm + Auth-Header durchgereicht.
-    // Tests prüfen: useProxy-Flag in Config, UI-Toggle sichtbar/wired,
-    // llmCall routet zum Proxy bei aktivem Flag, CORS-Error-Hint hilfreich.
+    // Cloud-Provider senden keine CORS-Header → der save-server vermittelt (localhost:4312/api/proxy/llm,
+    // Auth-Header durchgereicht). Geprüft: useProxy-Flag, UI-Toggle, Proxy-Routing, CORS-Fehler-Hinweis.
     const v796Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.llm) return null;
@@ -54583,11 +52453,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     }
 
     // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
-    //
-    // Schöpfer-Browser-Test V7.96 zeigte drei reale Stolpersteine:
-    // (1) Proxy-Toggle aktiv + localhost-URL → 400 Fehler (Proxy https-only);
-    // (2) Dropdown-Modelle veraltet — User hat qwen3.5:cloud etc.;
-    // (3) 404 ohne Anleitung was zu tun ist.
+    // (1) Proxy + localhost-URL → Auto-Bypass (der Proxy ist https-only); (2) Modell ist Free-Text
+    // (input + datalist); (3) 404 trägt eine Anleitung.
     const v797Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -54746,12 +52613,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     }
 
     // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
-    //
-    // Schöpfer-Browser-Test V7.97: Ollama lokales qwen3.6 antwortet,
-    // aber Chat zeigt "Leere Antwort". Drei Ursachen:
-    // (1) Reasoning-Models wrappen Output in <think>...</think>;
-    // (2) lokale 7B-Modelle ignorieren oft den JSON-Vertrag;
-    // (3) num_predict=400 reicht nicht für think-Block + Antwort.
+    // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
+    // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -54852,13 +52715,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.collectJoyOk = out.joyAfterCollect >= 0.1 - 1e-9;
         out.collectAweOk = out.aweAfterCollect >= 0.1 - 1e-9;
 
-        // (b) Decay reduziert über simulierten Zeitfortschritt
-        // V17.45-Härtung (KONFOUNDER, gemessen — kein „Flake"): seit V17.44 HEBT der
-        // Appraisal-Kanal joy bei δ>0 (Situation über der Spieler-Baseline); über die
-        // 10s-delta dieses Tests überstimmt das den 0.05-Decay (warmup-abhängig, ob
-        // δ>0 → der Test flaket). Der INTENT ist NUR der Decay → ihn isolieren: das
-        // lifeField leeren (stabile Aura) + die Spieler-Baseline = aktuelle Situation
-        // → δ=0 → kein Appraisal-Hub, nur der Decay wirkt.
+        // (b) Decay über simulierten Zeitfortschritt, isoliert: der Appraisal-Kanal hebt joy bei δ>0 und
+        // überstimmt den 0.05-Decay → lifeField leeren + Spieler-Baseline = aktuelle Situation (δ=0).
         const savedLifeRing3 = r.state.lifeField;
         r.state.lifeField = new Map();
         const pmRing3 = r.state.playerMesh.position;
@@ -54871,10 +52729,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
         r.state.lifeField = savedLifeRing3;
 
-        // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy".
-        // lastTick nahe an currentTime, damit der Decay-Schritt
-        // sorrow nicht unter die Schwelle drückt bevor der Trigger
-        // schaut.
+        // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy". lastTick nahe currentTime, damit
+        // der Decay sorrow nicht vor dem Trigger unter die Schwelle drückt.
         r.state.weather = "sunny";
         r.state.player.emotions.sorrow = 0.9;
         r.state.player.emotionLastApply.sorrow = -Infinity;
@@ -54970,11 +52826,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         p.emotionLastTick = -Infinity;
         p.emotions.awe = 0.9;
         p.emotionLastTick = 299;
-        // V17.23 Doku-Sync (Sky-Harmonie): skybox_color setzt jetzt eine fadende
-        // state.skyTint-Tönung (die in den Tag-Nacht-Himmel BLENDET), snappt
-        // nicht mehr nebulaColor (das _dayNightApplySkybox eh überschrieb). Der
-        // awe-Trigger feuert ["skybox_color","#d4a3ff"] → setzt skyTint +
-        // skyTintTarget > 0.
+        // skybox_color setzt eine fadende state.skyTint-Tönung (blendet in den Tag-Nacht-Himmel): der
+        // awe-Trigger ["skybox_color","#d4a3ff"] → skyTint + skyTintTarget > 0.
         r.state.skyTint = null;
         r.state.skyTintTarget = 0;
         r.updatePlayerEmotions(300);
@@ -55102,10 +52955,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         // (b) Wetter-Layer-Gain folgt state.weather
         r.state.weather = "sunny";
         r.symphonyTick();
-        // Direkter Wert kann durch laufende Rampe in Bewegung sein;
-        // wir prüfen das _Ziel_ via lastWeather + dass der Tick
-        // beim erneuten Aufruf mit gleichem Wetter nichts mehr
-        // tut (idempotent).
+        // Der direkte Wert kann in einer Rampe stehen → das ZIEL via lastWeather prüfen + dass ein zweiter
+        // Tick mit gleichem Wetter nichts tut (idempotent).
         const lastBefore = s.lastWeather;
         r.symphonyTick(); // idempotent
         out.weatherTickIdempotent = s.lastWeather === lastBefore;
@@ -55278,10 +53129,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
     }
 
     // ### UI-Putz — Emotion-Klarheit (Legende + FP-sichtbares Feedback) ###
-    // Das Aura-Rätsel (Schöpfer: "verstehe nicht, welche Farbe welche Emotion; in FP sieht
-    // man die Aura nicht") geheilt: die Balken tragen deutsche Namen + einen Wirkung-Tooltip
-    // (Legende), und ein Bildschirmrand-Schimmer + Label zeigen die dominante Emotion in
-    // JEDER Kamera (via _emotionState — dieselbe Quelle, die KI/Journal lesen).
+    // Die Balken tragen deutsche Namen + Wirkungs-Tooltip (Legende); ein Bildschirmrand-Schimmer + Label
+    // zeigen die dominante Emotion in JEDER Kamera (via _emotionState — dieselbe Quelle wie KI/Journal).
     const emoClarityResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -55368,11 +53217,9 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r) return null;
         const out = {};
 
-        // (a) UI-Putz V18.47: die ~60-Befehle-Liste (#help-section) UND die alten Welt-Aktionen
-        // (#quick-actions) sind AUFGELÖST — die Omnibox (⌕ Suche / Ctrl+K, `c:`) trägt ALLE Befehle
-        // durchsuchbar an EINEM Ort (die GEMESSENE Kern-Duplikation des Plans, gelöst). Die Befehls-
-        // Such-/Ausführungs-Pfade prüft das V18.45-Omnibox-Band; hier nur: die Listen sind WEG + die
-        // Omnibox trägt die Befehle + die Hof-Drawer-Mechanik bleibt.
+        // (a) #help-section und #quick-actions sind aufgelöst — die Omnibox (Ctrl+K, `c:`) trägt ALLE Befehle
+        // an EINEM Ort. Such-/Ausführungspfade prüft das Omnibox-Band; hier: Listen weg + Omnibox trägt die
+        // Befehle + die Hof-Drawer-Mechanik bleibt.
         out.quickActionsGone = !document.getElementById("quick-actions");
         out.helpSectionGone = !document.getElementById("help-section");
         try {
@@ -55496,11 +53343,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const rowAgain = container ? container.querySelector(".ability-row") : null;
         out.signatureCachePreserves = rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
 
-        // (e) Export-Button löst Download aus → wir prüfen, dass
-        //     ein <a>-Element mit JSON-Data-URL angelegt UND wieder
-        //     entfernt wird. triggerStateDownload macht das
-        //     synchron, wir patchen click() um die Daten-URL zu
-        //     fangen.
+        // (e) Export: triggerStateDownload legt synchron ein <a> mit JSON-Data-URL an und entfernt es;
+        //     click() wird gepatcht, um die URL zu fangen.
         let capturedHref = "";
         const origCreate = document.createElement.bind(document);
         document.createElement = function (tag) {
@@ -55736,11 +53580,8 @@ async function checkBandRing5Soul(ctx) {
     void errors;
     void finalState;
     // ### Ring 5 — createPlayerSoul V1 ###
-    // Der Mensch + die verkörperbaren Tier-Körper. Wir prüfen:
-    // Default-Seele ist human, Wechsel ändert geometry+color, Chat-
-    // Pattern routet, Save/Load-Roundtrip persistiert die Seele,
-    // unbekannte Namen werden abgelehnt, Position überlebt den
-    // Wechsel, Drawer + Status-Bar enthalten das UI.
+    // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
+    // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
     const ring5Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
@@ -55778,19 +53619,9 @@ async function checkBandRing5Soul(ctx) {
         // Cleanup: starte vom Default aus.
         r.applyPlayerSoul("human");
         out.defaultIsHuman = r.state.player.soul === "human";
-        // V8.29.1 — Mensch-Avatar ist jetzt MeshToonMaterial mit
-        // gedämpftem Rot (0xc0392b) statt grelles MeshBasic 0xff0000.
-        // V18.234 — mode-agnostisch: gedämpftes Rot + aktives lit NodeMaterial (Toon ODER PBR).
-        // V18.259 — der Avatar ist PBR-HAUTTON 0xc89372 (das rote Soul-Sediment 0xc0392b
-        // ist raus, d0836f4); lit MeshStandardMaterial. Die alte „gedämpftes Rot"-Erwartung
-        // war die Toon-Era-Wahrheit, jetzt gemessen-tan.
-        // PIPE-VOLLENDUNG (V18.459): die Farb-Wahrheit ist die ZAHL am Körper
-        // (userData.hautTon); die Pipe trägt Farben als Vertex-Daten auf
-        // GETEILTEN Node-Materialien (kein per-Körper-Material mehr).
-        // BOOT-LITERAL-ABSCHIED (18.07.): das Band wandert MIT dem Gesetz —
-        // der Default-Hautton ist MITGLIED der koerper-core-Palette
-        // (SKIN_TONES; Γ5-Anker aus dem Welt-Seed), kein palettenfremdes
-        // Literal mehr (0xc89372 stand in KEINER Studio-Tabelle).
+        // Die Farb-Wahrheit ist die ZAHL am Körper (userData.hautTon): Mitglied der koerper-core-Palette
+        // (SKIN_TONES, Γ5-Anker aus dem Welt-Seed), kein Literal; die Pipe trägt Farben als Vertex-Daten auf
+        // GETEILTEN Node-Materialien (kein per-Körper-Material).
         let pipeNodeMat = false;
         currentMesh().traverse((n) => {
             if (
@@ -55847,11 +53678,8 @@ async function checkBandRing5Soul(ctx) {
         // Dropdown synchronisiert sich (auf den Bauplan-Namen der Verkörperung)
         out.dropdownSyncsToPhoenix = select && (select.value === "koerper_wolf" || select.value === "bp_koerper_wolf");
 
-        // V18.331/.347 — KEIN Physics-Body mehr: Ammo ist physisch raus, der Spieler ist
-        // body-frei (feld-native Kollision aus dem Dichtefeld, Velocity in state.playerVel).
-        // Ein Soul-Wechsel hat KEINEN rigid body, der dem Mesh-Group folgt → die zwei alten
-        // Ammo-Checks (physicsBodySwitchedToNewGroup · rigidBodiesArrayUpdated) sind GESCHNITTEN
-        // (sie prüften entferntes Verhalten — die V18.331-Ammo-Band-Räumung übersah sie).
+        // Kein Physics-Body: der Spieler ist body-frei (feld-native Kollision aus dem Dichtefeld, Velocity
+        // in state.playerVel) — ein Soul-Wechsel hat keinen rigid body umzuhängen.
 
         // Chat-Pattern: "werde hirsch" (der werde-Ring spricht die Tiere)
         r.processChatCommand("werde hirsch");
@@ -55948,11 +53776,9 @@ async function checkBandRing5Soul(ctx) {
         const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
         out.humanWalkAnimationMoves = Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
 
-        // ALTLASTEN-NULL — die FLÜGEL-Rolle flattert im Idle durch den EINEN
-        // Kern (_animateCompoundMotion) über den ECHTEN Spieler-Pfad: eine
-        // geflügelte CUSTOM-Seele (Literal-Fixture) trägt den Beweis. Die
-        // Emotionen werden NEUTRALISIERT (V18.273-Lehre: Warmup-Emotionen
-        // konfundieren sonst die Amplituden-Schwelle über die Brücke).
+        // Die FLÜGEL-Rolle flattert im Idle durch den EINEN Kern (_animateCompoundMotion) über den echten
+        // Spieler-Pfad (geflügelte Custom-Seele als Literal-Fixture). Emotionen NEUTRALISIEREN — Warmup-
+        // Emotionen konfundieren sonst die Amplituden-Schwelle.
         const savedEmo = Object.assign({}, r.state.player.emotions);
         for (const k in r.state.player.emotions) r.state.player.emotions[k] = 0;
         r.state.customSouls = r.state.customSouls || {};
@@ -55988,10 +53814,8 @@ async function checkBandRing5Soul(ctx) {
         const wingRotB = phGroup.userData.parts.leftWing.rotation.z;
         out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
 
-        // Der Schweif wellt sich — am getragenen HIRSCH-Körper. KONVERGENZ III:
-        // der Schweif lebt in _tierBaum.tailSegs, profil-getrieben (idle:
-        // tailRate 0.5 · tailAmp 0.1 — Emotionen sind oben neutralisiert);
-        // t 0.1→3.1 hebt die Phase auf ~sin(1.55)≈1 → Delta ~0.095, robust.
+        // Der Schweif wellt sich am HIRSCH-Körper: _tierBaum.tailSegs, profil-getrieben (idle: tailRate 0.5 ·
+        // tailAmp 0.1); t 0.1→3.1 hebt die Phase auf ~sin(1.55)≈1 → Delta ~0.095, robust über 0.05.
         r.applyPlayerSoul("hirsch");
         const drGroup = currentMesh();
         r.state.player.animationLastTick = -Infinity;
@@ -56070,10 +53894,8 @@ async function checkBandRing5Soul(ctx) {
     }
 
     // ### Ring 5 V2-Vorbereitung — Third-Person-Kamera ###
-    // Toggle wechselt state.cameraMode, persistiert in localStorage,
-    // Kamera positioniert sich tatsächlich orbit-mäßig hinter dem
-    // Spieler. playerMesh dreht sich mit yaw mit (Vorbereitung für
-    // animierte Glieder).
+    // Toggle wechselt state.cameraMode (persistiert in localStorage), die Kamera orbitet hinter den
+    // Spieler, playerMesh dreht mit yaw.
     const cameraResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh || !r.state.camera) return null;
@@ -56106,10 +53928,8 @@ async function checkBandRing5Soul(ctx) {
 
         // playerMesh.rotation.y folgt yaw — setze yaw und renderFrame
         r.state.yaw = Math.PI / 2;
-        // Den Loop-Tick triggern wir nicht synchron; rotation.y
-        // wird im nächsten Frame gesetzt. Wir prüfen, dass die
-        // Logik existiert (Methode + State) und vertrauen dem
-        // Loop, der durchläuft.
+        // rotation.y setzt erst der nächste Loop-Frame — hier nur prüfen, dass die Logik existiert (Methode +
+        // State); den Effekt misst der synchrone Tick unten.
         out.rotationLogicReady = typeof r.state.yaw === "number" && r.state.playerMesh.rotation !== undefined;
 
         // setCameraMode("first") zurück
@@ -56125,10 +53945,8 @@ async function checkBandRing5Soul(ctx) {
         return out;
     });
 
-    // V8.50 — Loop synchron treiben statt auf rAF zu warten. Headless-
-    // Chromium drosselt requestAnimationFrame auf ~1 Hz → ein 300-ms-
-    // Fenster enthielt oft 0 Loop-Ticks → player.rotation.y blieb
-    // stale → flaky CI. _gameLoopTick treibt genau einen Frame.
+    // Loop synchron treiben (_gameLoopTick = genau ein Frame): Headless-Chromium drosselt rAF auf ~1 Hz,
+    // ein Warte-Fenster enthielte oft 0 Ticks.
     const cameraEffect = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state.camera || !r.state.playerMesh) return null;
@@ -56145,23 +53963,10 @@ async function checkBandRing5Soul(ctx) {
         };
     });
 
-    // Pitch-Inversion + Boden-Clamp im 3rd-Modus prüfen: Maus hoch
-    // (pitch positiv) muss Kamera SENKEN, nicht heben. Bei extremem
-    // Pitch darf die Kamera nicht unter den Boden tauchen.
-    //
-    // V8.50 — Pitch setzen + Loop SYNCHRON treiben (statt auf das im
-    // Headless ~1 Hz gedrosselte rAF zu warten).
-    //
-    // V8.57 — Wurzel-Heilung des flaky CI-Falls. Gelesen wird jetzt
-    // `_cameraDesiredY` (die pitch-gesteuerte Wunsch-Höhe), NICHT
-    // `camera.position.y`. Grund: die V8.36-Kamera-Kollision zieht die
-    // Kamera per Raycast ein, sobald Terrain/Struktur/Kreatur hinter
-    // dem Spieler steht — und wo der Spieler nach 20 s autonomem Lauf
-    // landet, ist nicht-deterministisch. Die hohe "Maus runter"-Kamera
-    // wurde so vereinzelt unter die Schwelle gezogen → CI-Flake.
-    // `_cameraDesiredY` ist die reine Pitch-Mathematik (inkl.
-    // Boden-Clamp), umgebungs-unabhängig — genau das, was dieser Test
-    // prüfen will. Die Kamera-Kollision ist ein eigenes Feature.
+    // Pitch-Inversion + Boden-Clamp im 3rd-Modus: Maus hoch (pitch positiv) SENKT die Kamera; bei
+    // extremem Pitch taucht sie nie unter den Boden. Loop synchron treiben (Headless-rAF ~1 Hz).
+    // Gelesen wird `_cameraDesiredY` (reine Pitch-Mathematik inkl. Boden-Clamp), NICHT camera.position.y
+    // — die Kamera-Kollision zieht je nach Umgebung ein (eigenes Feature, nicht deterministisch).
     const setPitchAndRead = async (pitch) => {
         return await page.evaluate((p) => {
             const r = window.anazhRealm;
@@ -56244,9 +54049,8 @@ async function checkBandRing6Workshop(ctx) {
     void errors;
     void finalState;
     // ### Ring 6 — architectureTemplates V1 ###
-    // Drei Bau-Primitives (Dorf/Tempel/Wasserfall) als DSL-Ops mit
-    // Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag mit niedriger
-    // Gewichtung. Wasserfälle haben einen Animations-Hook im Tick.
+    // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
+    // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
     const ring6Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -56360,10 +54164,8 @@ async function checkBandRing6Workshop(ctx) {
         out.templeInAtomicPool = seenOps.has("spawn_temple");
         out.waterfallInAtomicPool = seenOps.has("spawn_waterfall");
 
-        // (h) Wasserfall-Animation: vor und nach Tick müssen Z-
-        // Werte der Geometrie unterschiedlich sein.
-        // Position muss innerhalb cullingRadius (150) liegen,
-        // sonst ist mesh null (cold) und der Test crasht.
+        // (h) Wasserfall-Animation: Z-Werte der Geometrie vor/nach Tick verschieden. Die Position muss in
+        // cullingRadius (150) liegen, sonst ist mesh null (cold) und der Test crasht.
         const wf = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 50 }, { seed: 1 });
         const waterMesh = wf.mesh.children.find((c) => c.geometry && c.geometry.type === "PlaneGeometry");
         if (waterMesh) {
@@ -56471,10 +54273,8 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6.3 — Feld-native Kollision für Strukturen ###
-    // DETERMINISMUS-BOGEN P3 — jede Architektur mit soliden Parts (dichte ≥ 0.3)
-    // bekommt beim Spawn `entry.blockerAABBs` (kein Ammo-Body mehr). Die Kollision
-    // ist render-/distanz-unabhängig (Daten, kein per-Distanz lazy gebauter Body):
-    // `_stepCharacterStructures` löst die Spieler-Kapsel gegen die AABBs.
+    // Jede Architektur mit soliden Parts (dichte ≥ 0.3) trägt ab Spawn `entry.blockerAABBs` (Daten,
+    // render-/distanz-unabhängig); `_stepCharacterStructures` löst die Spieler-Kapsel dagegen.
     const ring63Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -56580,11 +54380,9 @@ async function checkBandRing6Workshop(ctx) {
         );
     }
 
-    // Live-Kollisions-Test (feld-nativ, DETERMINISMUS-BOGEN P3): der Spieler läuft
-    // gegen eine Tempel-Säule, `_stepCharacterStructures` (gegen entry.blockerAABBs)
-    // muss ihn aufhalten. Wir setzen ihn 2 m vor den Tempel + lassen ihn via
-    // gedrückter W-Taste (yaw=0 → forward=+Z) durch synchrone _gameLoopTick-Pumps
-    // (headless-rAF ~1 Hz → synchron treiben) auf ihn zu laufen.
+    // Live-Kollision: der Spieler läuft gegen eine Haus-Wand, `_stepCharacterStructures` (gegen
+    // entry.blockerAABBs) muss ihn aufhalten — gedrückte W-Taste (yaw=0 → forward=+Z), synchrone
+    // _gameLoopTick-Pumps (Headless-rAF ~1 Hz).
     const collisionLive = await page.evaluate(() => {
         const r = window.anazhRealm;
         for (const a of r.state.architectures.slice()) {
@@ -56627,10 +54425,8 @@ async function checkBandRing6Workshop(ctx) {
         }
         return { playerZ, playerY };
     });
-    // Haus sitzt bei z=5, Front-Wand (z-Offset −2.55, Dicke 0.3) → Wand-Vorderkante
-    // bei z≈2.3. Player startete bei z=-2, hätte ohne Kollision in
-    // 0.8s mehr als 4 m gemacht. Mit Kollision (blockerAABBs) sollte er
-    // VOR der Wand-Vorderkante stehen (z < ~2).
+    // Haus bei z=5, Front-Wand (z-Offset −2.55, Dicke 0.3) → Vorderkante z≈2.3. Start z=-2: ohne
+    // Kollision >4 m in 0.8 s, mit Kollision steht der Spieler davor (z < ~2).
     check(
         "Ring 6.3: feld-native Kollision (blockerAABBs) stoppt den Spieler vor der Haus-Wand",
         collisionLive.playerZ < 2.0,
@@ -56647,9 +54443,8 @@ async function checkBandRing6Workshop(ctx) {
     });
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
-    // state.blueprints enthält Built-in dorf/tempel/wasserfall als
-    // Daten. _buildFromBlueprint rendert sie. 8 Primitive werden
-    // erkannt. User-Baupläne sind hinzufügbar + persistierbar.
+    // Built-ins sind Daten in state.blueprints, _buildFromBlueprint rendert sie, 8 Primitive werden
+    // erkannt; User-Baupläne sind hinzufügbar + persistierbar.
     const ring64Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -56962,15 +54757,10 @@ async function checkBandRing6Workshop(ctx) {
         out.workshopListInDom = !!document.getElementById("workshop-list");
         out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
-        // Liste hat einen Eintrag pro SICHTBAREM Bauplan. V18.317/.347 — die Liste filtert die auto-
-        // gewachsenen Streaming-Varianten (`grown_<art>_v<N>`) HERAUS; V18.413 — zusätzlich die Fels-/
-        // Kristall-/Glut-Formations-Varianten `*_var1+` (gebündelt: EINE Karte je Sorte, var0 = Repräsentant,
-        // wie im Studio). W-A1 (Katalysator §5, Donor-Abschied) — zusätzlich der donorOnly-Filter
-        // (die alten Donor-Blueprints sind seit der AUSLÖSCHUNGS-WELLE physisch gefallen;
-        // der Filter bleibt code-treu für persistierte Alt-Klone). Der Test zählt
-        // darum mit DEMSELBEN Filter wie `_workshopRenderBlueprintList` (der Test wandert mit dem
-        // Code, V9.56-i). Die neuen „Studio-Rezepte"-Zeilen tragen eine EIGENE Klasse
-        // (.workshop-studio-recipe-row) — die .workshop-list-row-Zählung bleibt rezept-frei.
+        // Ein Eintrag je SICHTBAREM Bauplan — derselbe Filter wie `_workshopRenderBlueprintList`: ohne
+        // `grown_*`-Streaming-Varianten, ohne `(fels|kristall|glut)_var1+` (var0 vertritt die Sorte), ohne
+        // donorOnly. Studio-Rezepte tragen .workshop-studio-recipe-row → die .workshop-list-row-Zählung
+        // bleibt rezept-frei.
         const list = document.getElementById("workshop-list");
         const _hidden = (n) =>
             /^grown_/.test(n) ||
@@ -57126,10 +54916,8 @@ async function checkBandRing6Workshop(ctx) {
         }
         r.state.architectures = [];
         r._clearBuildMode();
-        // V18.298/.347 — der Cull-Tick BAUT nur bei Kopfraum (`_frameOverBudget ? 0 : budget`);
-        // im last-gestreckten Warmup steht das Flag auf true → 0 Bauten → der Rebuild-Test schlüge
-        // fehl. Für den deterministischen Test den Frame-Budget-Druck nullen (wir messen die
-        // Rebuild-MECHANIK, nicht die Perf-Drossel).
+        // Der Cull-Tick baut nur bei Kopfraum (`_frameOverBudget ? 0 : budget`); nach dem Warmup kann das
+        // Flag stehen → nullen, gemessen wird die Rebuild-MECHANIK, nicht die Perf-Drossel.
         r.state._frameOverBudget = false;
 
         // === A) Distance-Culling ===
@@ -57172,15 +54960,9 @@ async function checkBandRing6Workshop(ctx) {
         out.fractalSpawnsExpected = dslRes.ok === true && r.state.architectures.length === before + 43;
         const eventFound = dslRes.log.find((e) => e.event === "spawned_fractal");
         out.fractalEventEmitted = !!eventFound && eventFound.count === 43;
-        // Determinismus: gleiche Argumente sollten in dieser Test-
-        // Welt nicht zu identischen Positionen führen, weil
-        // ctx.rng() den Root-Seed bestimmt — ABER die HEXAGONAL-
-        // Anordnung sollte erkennbar sein (6 Children auf einem
-        // Kreis um die Wurzel).
-        // Visit ist depth-first: root, dann visit(child0) inkl.
-        // dessen Grand-Children, dann child1, etc. Direkte
-        // Kinder finden wir über scale (genau 0.5 bei ratio 0.5);
-        // Grandchildren haben 0.25.
+        // Positionen hängen am Root-Seed (ctx.rng()), die HEXAGONAL-Anordnung bleibt: 6 Kinder auf einem
+        // Kreis um die Wurzel. Visit ist depth-first (root, child0 + Enkel, child1, …) → direkte Kinder
+        // über scale 0.5 finden (ratio 0.5), Enkel haben 0.25.
         const rootEntry = r.state.architectures[before];
         const directChildren = r.state.architectures.slice(before).filter((e) => Math.abs(e.scale - 0.5) < 1e-6);
         const childRadii = directChildren.map((e) =>
@@ -57317,21 +55099,13 @@ async function checkBandRing6Workshop(ctx) {
 
     const browser = await puppeteer.launch({
         headless: true,
-        // V18.309 — DER GATE HÄNGT NIE MEHR EWIG: ein toter/hängender page.evaluate
-        // (kumulativer Renderer-Tod im Schwanz, detached frame) wird nach diesem
-        // Timeout zu einer FANGBAREN Rejection statt einer Endlos-Blockade (der
-        // 50-min-Hänger). Generös (>> das teuerste legitime Band ~57 s), aber
-        // ENDLICH — so kommt die Wahrheit, statt dass der Lauf für immer schweigt.
+        // Hängt ein page.evaluate (toter Renderer, detached frame), wird er nach diesem Timeout eine
+        // FANGBARE Rejection statt einer Endlos-Blockade — großzügig (≫ teuerstes Band ~57 s), aber endlich.
         protocolTimeout: 240000,
         args: [
-            // V18.347 — DER GATE LÄUFT GPU-FREI (die WURZEL des "detached Frame"-Tail-Todes
-            // bei ~Band 136 endlich GEMESSEN, nicht geraten): es ist NICHT Speicher (diag-gate-heap:
-            // 16 GB frei, kein cgroup-Limit, JS-Heap nur 82 MB Basis / 124 MB unter Last) und NICHT
-            // Welt-Gewicht (0.13 M Tris) — es ist der UNNÖTIGE swiftshader-GPU-Prozess, der unter der
-            // kumulativen Last im Schwanz crasht. Der Null-Renderer (Default) braucht KEINEN GPU
-            // (diag-gate-nogpu: Welt+Avatar+Architektur+Baupläne bauen OHNE GPU, 0 page-errors). GPU
-            // AUS → der GPU-Prozess existiert nicht → kann nicht crashen → das Gate läuft DURCH.
-            // PLAYTEST_REAL_RENDERER=1 schaltet swiftshader zurück (nur fürs visuelle Screenshot-Artefakt).
+            // Das Gate läuft GPU-frei: der Null-Renderer (Default) braucht keinen GPU, und der swiftshader-
+            // GPU-Prozess crashte unter kumulativer Last im Schwanz (detached frame). PLAYTEST_REAL_RENDERER=1
+            // schaltet swiftshader zurück (nur für das Screenshot-Artefakt).
             ...(REAL_RENDERER
                 ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
                 : ["--disable-gpu", "--disable-software-rasterizer"]),
@@ -57344,51 +55118,24 @@ async function checkBandRing6Workshop(ctx) {
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    // [PERF] Skin-Res-Cap VOR dem Laden setzen (der Bootstrap seedet daraus den Static,
-    // bevor init() den ~270-Teil-Avatar baut) → schon der ALLERERSTE Build ist gedrosselt
-    // (~19 s → ~2.8 s). Die Bands prüfen Logik, nie die Isosurface-Treue. Siehe Build-Kommentar.
     await page.evaluateOnNewDocument((realRenderer) => {
-        // N7.3 — DER GATE FÄHRT FOUNDRY-ON (die Produktions-Wahrheit): der GLOBALE
-        // `__anazhGateNoFoundry`-Hook ist GEFALLEN. Die Foundry (der Studio-Worker) bootet im
-        // Gate mit — wie in Produktion und wie der Fast-Tier es seit V18.411 beweist; der
-        // Warmup wartet unten gedeckelt, bis die Studio-Bibliothek WARM ist (f.ready +
-        // recipeCount + Prefetch fertig), bevor die Bänder laufen. Die noch LEBENDE
-        // Grammatik-MECHANIK (der Richter `_growTreeBlueprintRich`, die LOD-Bauplan-Erzeugung
-        // `_buildVariantLODs`, die Scatter-Promotion, die Understory, der Regler-Dichte-Pfad)
-        // prüfen ihre Bänder als UNIT-RICHTER: sie setzen den Hook LOKAL (sichern +
-        // WIEDERHERSTELLEN, nie löschen — die V18.423-Form ist Pflicht). „MECHANIK eine ZAHL,
-        // LOOK ein BILD, Pipeline ein Gate."
-        // GPU-FREI: kein Band liest je ein Pixel (nur ein Wegwerf-Screenshot), die
-        // Rasterung war ohnehin schon gestubbt. Der Null-Renderer entfernt den GPU-
-        // Kontext ganz → der Mechanik-Gate ist effizient + ROBUST (kein swiftshader-
-        // Renderer-Crash unter kumulativer Last mehr). Der LOOK bleibt der echten
-        // WebGPU-Bahn (diag-settled-view · Schöpfer-Browser) — eine ZAHL hier, ein
-        // BILD dort. Opt-out via PLAYTEST_REAL_RENDERER=1 (echter Renderer + Screenshot).
+        // Foundry-ON wie in Produktion: der Warmup wartet unten gedeckelt, bis die Studio-Bibliothek WARM ist.
+        // Bänder der lebenden Grammatik-MECHANIK (`_growTreeBlueprintRich`, `_buildVariantLODs`, Scatter, …)
+        // setzen `__anazhGateNoFoundry` nur LOKAL via `__withNoFoundry` (sichern + wiederherstellen, nie
+        // löschen). Null-Renderer: kein Band liest ein Pixel; den LOOK misst diag-settled-view.
         if (!realRenderer) window.__anazhHeadlessNullRenderer = true;
-        // EINE Quelle für „der CODE einer Funktion, ohne Kommentare". Jeder
-        // Absenz-Grep gegen methode.toString() liest über diesen Helfer — sonst
-        // stolpert er über erklärende Kommentare, die den entfernten Code zitieren
-        // (CLAUDE.md-Lehre „der Code darf das Wort tragen, der Code darf es nicht").
-        // Nimmt eine Funktion ODER einen schon gefangenen Quell-String. Verfügbar
-        // in jedem page.evaluate-Probe als window.__codeOf(r._method).
+        // EINE Quelle für „den CODE einer Funktion, ohne Kommentare“: jeder Absenz-Grep liest darüber,
+        // sonst trifft er Kommentare, die entfernten Code zitieren. Nimmt Funktion ODER Quell-String.
         window.__codeOf = (fnOrSrc) =>
             String(fnOrSrc)
                 .replace(/\/\/.*$/gm, "")
                 .replace(/\/\*[\s\S]*?\*\//g, "");
-        // U1 (V18.452) — DIE DOKU-LINSE (bewusst UNGESTRIPPT): einzelne Bänder
-        // prüfen einen DOKUMENTATIONS-Marker (z.B. „V12.0-d" im Pool-Pfad), der
-        // per Definition im KOMMENTAR wohnt. Diese Probe läuft explizit durch
-        // __dokuOf — nie durch rohes .toString() (der Apparat-Ratchet zählt) und
-        // nie durch __codeOf (das den Marker strippen würde). CODE-Behauptungen
-        // gehören in __codeOf/__consumes, NIE hierher.
+        // DIE DOKU-LINSE (bewusst UNGESTRIPPT) für Marker, die per Definition im KOMMENTAR wohnen — nie
+        // rohes .toString() (Apparat-Ratchet), nie __codeOf; CODE-Behauptungen gehören in __codeOf/__consumes.
         window.__dokuOf = (fnOrSrc) => String(fnOrSrc);
-        // U1 (V18.452) — DER APPARAT-SCHLÜSSEL, Teil 1: KONSUM-Beweis statt
-        // Quelltext-Zitat. Spy-Swap: providerObj[providerKey] wird temporär durch
-        // einen Zähl-Spy ersetzt (der ans Original delegiert), dann läuft
-        // obj[methodName](...args), dann wird own-Property-treu restauriert.
-        // true = der Konsument hat den Provider WIRKLICH gerufen — der Beweis
-        // überlebt jede Kern-Wanderung, die das Verhalten erhält, und kein
-        // zitierender Kommentar kann ihn fälschen. Wirft nie (try/finally+catch).
+        // KONSUM-Beweis statt Quelltext-Zitat: providerObj[providerKey] wird temporär ein Zähl-Spy (delegiert
+        // ans Original), obj[methodName](...args) läuft, dann own-Property-treu restauriert. true = der
+        // Konsument hat den Provider WIRKLICH gerufen; wirft nie.
         window.__consumes = (obj, methodName, providerObj, providerKey, args) => {
             try {
                 const hadOwn = Object.prototype.hasOwnProperty.call(providerObj, providerKey);
@@ -57411,12 +55158,9 @@ async function checkBandRing6Workshop(ctx) {
                 return false;
             }
         };
-        // U1, Teil 2 — DER ANKER-KATALOG: semantischer Anker → Symbolname, EINE
-        // frozen Tabelle (Gesetz #0). Bänder proben r[window.__anker.X] statt den
-        // Namen N-fach zu wiederholen — zieht ein Symbol um, wandert EINE Zeile
-        // hier statt N Proben. Bestand: die 20 meist-geprobten Symbole (grep-
-        // gezählt, U1) + die Tod/Vitals-Anker; diag-apparat.cjs hält jeden
-        // Eintrag gegen den lebenden Stamm-Code (kein toter Katalog).
+        // DER ANKER-KATALOG: semantischer Anker → Symbolname, EINE frozen Tabelle. Bänder proben
+        // r[window.__anker.X] — zieht ein Symbol um, wandert EINE Zeile; diag-apparat.cjs hält jeden Eintrag
+        // gegen den lebenden Stamm-Code.
         window.__anker = Object.freeze({
             weltZustand: "state",
             modusSetzen: "setGameMode",
@@ -57441,14 +55185,10 @@ async function checkBandRing6Workshop(ctx) {
             todRespawn: "_playerDeathRespawn",
             vitalsTick: "tickPlayerVitals",
         });
-        // N7.3 — DIE EINE UNIT-RICHTER-QUELLE: ein Band, das die lebende Grammatik-
-        // MECHANIK prüft (LOD-Bauplan-Erzeugung · Scatter-Promotion · Instancing-
-        // Registry · Regler-Dichte), fährt seine Probe durch DIESEN Chokepoint —
-        // er trägt die V18.423-Form strukturell (sichern + im finally WIEDER-
-        // HERSTELLEN, nie löschen; ein geleakter Hook = die 35-Folge-Rote-Klasse).
-        // SYNC-ONLY als Wand: ein await im Hook-Fenster ließe Hintergrund-Ticks
-        // foundry-aus laufen (Grammatik-Bauten in der warmen Studio-Welt) —
-        // ein zurückgegebenes Promise wirft LAUT statt still zu vergiften.
+        // DIE EINE UNIT-RICHTER-QUELLE: Bänder der lebenden Grammatik-MECHANIK (LOD-Bauplan · Scatter-
+        // Promotion · Instancing-Registry · Regler-Dichte) proben hier durch — sichern + im finally
+        // wiederherstellen, nie löschen (ein geleakter Hook färbt Folge-Bänder rot). SYNC-ONLY: ein await im
+        // Hook-Fenster ließe Hintergrund-Ticks foundry-aus laufen → ein Promise wirft LAUT.
         window.__withNoFoundry = (fn) => {
             const prev = window.__anazhGateNoFoundry;
             window.__anazhGateNoFoundry = true;
@@ -57473,31 +55213,16 @@ async function checkBandRing6Workshop(ctx) {
     );
 
     const failures = [];
-    // V18.309 — DER ABBRUCH-ZUSTAND: ist die SEITE tot/abgehängt (kumulativer
-    // Renderer-Tod im Schwanz, protocolTimeout-Hänger), wird hier der erste tote
-    // Band vermerkt → alle Folgebänder überspringen + ein UNÜBERSEHBARES
-    // Schluss-Verdikt. So endet ein toter Lauf NIE mehr als rätselhafte ✅-Liste
-    // (das „ich las den Zähler statt des Verdikts") oder als 50-min-Schweigen.
+    // Abbruch-Zustand: ist die SEITE tot (Renderer-Tod, protocolTimeout), steht hier das erste tote Band
+    // → Folgebänder überspringen + ein unübersehbares Schluss-Verdikt statt einer ✅-Liste.
     let gateAborted = null;
-    // DER PLAYTEST SIEHT SICH SELBST: jedes Band läuft durch `timed` (eine Quelle,
-    // viele Leser) → der Bericht zeigt, WAS hängt (Pareto-Diagnose des „der Playtest
-    // hängt"-Befunds; löst die externe diag-gate-cost ab). Die thematische Gruppierung
-    // im Dispatch bleibt — nur die Call-Form wandert auf den Wrapper. `await fn(ctx)`
-    // trägt sync (checkInitialState/Ring1) wie async (alle checkBand*) gleich.
+    // Jedes Band läuft durch `timed` → der Bericht zeigt, WAS hängt (Pareto). `await fn(ctx)` trägt
+    // sync (checkInitialState/Ring1) wie async (checkBand*) gleich.
     const bandTimes = [];
-    // V18.309 — DER CHOKEPOINT TRÄGT DIE FEHLER-GRENZE (die Parallelpfad-Heilung,
-    // wie auraAt/deposit: EIN Ort, durch den alle Bänder fliessen, statt N
-    // Try/Catch an den Aufruf-Orten). Drei Aufgaben in der EINEN Quelle:
-    //  (1) Timing (der Pareto-Bericht, wie bisher).
-    //  (2) Ein Band-Throw bricht den Lauf nicht mehr UNGEFANGEN ab — der alte
-    //      Pfad warf bis zum „Smoketest-Crash"-.catch durch, der das Verdikt UND
-    //      die Band-Timings verschluckte. Jetzt wird der Throw als Invariante-
-    //      Verletzung verbucht (erscheint im Schluss-Verdikt) + der Lauf läuft
-    //      weiter (alle Fehler werden sichtbar, nicht nur der erste).
-    //  (3) Ist die SEITE tot/abgehängt (kumulativer Renderer-Tod, protocolTimeout-
-    //      Hänger), scheitert auch jedes Folgeband → `gateAborted` setzen → den
-    //      Rest still überspringen (kein Folge-Fehler-Flut) → eine laute Verdikt-
-    //      Zeile. So wird der tote Lauf zu EINER Wahrheit, nicht Endlos-Schweigen.
+    // DER CHOKEPOINT mit der Fehler-Grenze — EIN Ort statt N Try/Catch an den Aufrufern:
+    //  (1) Timing (Pareto-Bericht);
+    //  (2) ein Band-Throw wird als Invariante-Verletzung verbucht, der Lauf läuft weiter;
+    //  (3) Tote-Seite-Signatur → `gateAborted`, den Rest still überspringen, eine laute Verdikt-Zeile.
     const timed = async (fn, c) => {
         if (gateAborted) return; // Seite tot → Rest überspringen (Folge-Fehler unterdrücken)
         const t0 = Date.now();
@@ -57506,10 +55231,8 @@ async function checkBandRing6Workshop(ctx) {
         } catch (e) {
             const msg = (e && e.message) || String(e);
             check(fn.name, false, "Band-Fehler (geworfen): " + msg.slice(0, 200));
-            // Tote-Seite-Signatur: protocolTimeout, detached frame, geschlossener
-            // Target/Session, Runtime-Call gegen einen toten Kontext. Trifft sie zu,
-            // ist der Renderer-Prozess gestorben (swiftshader-Kumulativ-Last) → der
-            // Lauf ist ab hier wertlos, sauber abbrechen statt N-fach scheitern.
+            // Tote-Seite-Signatur (protocolTimeout, detached frame, geschlossene Target/Session, toter Kontext):
+            // der Renderer-Prozess ist gestorben → sauber abbrechen statt N-fach scheitern.
             if (
                 /Execution context|Target closed|Session closed|detached|Protocol error|timed out|Runtime\.callFunctionOn|Connection closed/i.test(
                     msg
@@ -57529,38 +55252,15 @@ async function checkBandRing6Workshop(ctx) {
 
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        // V9.83 Wurzel-Heilung der CI-Flake-Klasse: das Headless-Chromium drosselt
-        // requestAnimationFrame auf ~1 Hz, während `_tickVoxelChunkStreaming`
-        // genau 1 Chunk pro Frame baut (MAX_PER_FRAME=1). Ein 20-s-Wall-Clock-
-        // Sleep erreicht damit nur ~20 Chunks → unter CPU-Last (CI) fällt das
-        // unter den 20-Chunk-Threshold. Die V8.50-Lehre (CLAUDE.md-Gotcha) sagt
-        // explizit: Loop-Features deterministisch über `_gameLoopTick` synchron
-        // treiben statt auf rAF warten. Hier auf den Warmup angewandt: wir
-        // pumpen den Game-Loop mit ~16 ms-Cadence (≈60 FPS-Äquivalent), damit
-        // Streaming + creature-ticks + grok-Trigger unabhängig von Headless-
-        // Drosselung + CI-CPU-Last deterministisch ablaufen. Wall-Clock-
-        // getriebene Trigger (Grok 1.5 s, idle 45 s) sehen weiterhin echte
-        // performance.now()-Werte → keine semantische Verschiebung.
+        // Headless-Chromium drosselt rAF auf ~1 Hz → den Game-Loop synchron über `_gameLoopTick` pumpen,
+        // damit Streaming, Kreatur-Ticks und Grok-Trigger unabhängig von Drosselung + CPU-Last ablaufen.
+        // Wall-Clock-Trigger (Grok 1.5 s, idle 45 s) sehen weiter echte performance.now()-Werte.
         const warmupInfo = await page.evaluate(async (durationMs) => {
             const start = performance.now();
-            // Phase 1 — auf den Game-Loop warten. Der Konstruktor exponiert
-            // `_gameLoopTick` erst am Ende; im Headless dauert die Init normal
-            // 200–1500 ms (Worldgen + Materialien), auf einem gedrosselten
-            // Container aber bis ~26 s. Bleibt er aus, fallen wir auf den
-            // passiven Sleep zurück (defensiv).
-            // V18.276 — DIE BOOT-READINESS WARTET GEDULDIG (CPU-last-unabhängig): das
-            // wahre Ready-Signal ist `_gameLoopTick` (exponiert von `startEternalLoop` am
-            // Boot-Ende), NICHT `rendererReady` (= nur „GPU-Device fertig", feuert beim
-            // Null-Renderer SOFORT, lange vor dem Loop — die dokumentierte Race). Auf einem
-            // gedrosselten Container dauert der Boot (Worldgen + Loop) >5 s; die alte 5-s-
-            // Magic-Number (`Math.min(5000, durationMs)`) traf zu früh → der ehrliche
-            // Fallback griff → der Warmup-Pump lief NIE → `voxelChunks=0` + 9 Folge-Fehler
-            // (GEMESSEN: bootElapsed=5066ms, hasTick=false, terrainGen läuft noch). Das ist
-            // derselbe Last-Flake wie V17.32/V18.273, nur eine Stufe FRÜHER (im Boot-Wait
-            // statt im Chunk-Build). Jetzt warten wir GROSSZÜGIG auf `_gameLoopTick` (bis
-            // BOOT_READY_CAP_MS, gegen einen echten Hänger gedeckelt), unabhängig von
-            // durationMs/CPU-Speed → load-unabhängig (mit dem 60-s-Boot baut der Pump 81
-            // Chunks). Der Chunk-Build-Loop hat seinen eigenen HARD_CAP (90 s).
+            // Phase 1 — auf den Game-Loop warten: das wahre Ready-Signal ist `_gameLoopTick` (von
+            // `startEternalLoop` am Boot-Ende), NICHT `rendererReady` (feuert beim Null-Renderer sofort).
+            // Geduldig bis BOOT_READY_CAP_MS, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
+            // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger): passiver Sleep.
             const BOOT_READY_CAP_MS = 60000;
             const deadline = start + BOOT_READY_CAP_MS;
             while (
@@ -57576,19 +55276,10 @@ async function checkBandRing6Workshop(ctx) {
                 await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
                 return;
             }
-            // [PERF] der per-Frame-GPU-Render (`renderer.render` unter swiftshader
-            // ~2.5 s/Frame) ist der Warmup-Flaschenhals UND konkurriert während der
-            // Bands mit dem rAF-Hintergrund-Loop um die CPU — headless ist aber
-            // pixel-blind (die Bands prüfen Logik/DOM/State, NIE Pixel; nur der
-            // finale Screenshot rendert). CHIRURGISCH: NUR den teuren GPU-Aufruf
-            // stubben (`renderer.render`/`renderAsync`), NICHT das ganze `_loopRender`
-            // — so laufen seine billigen Uniform-Updates (skybox/starField-Position,
-            // `hydroSurfaceUniforms.time`/`.emotion`) weiter, die V17.31 + V9.42-b
-            // lesen. Der Screenshot-Pfad stellt den echten Render wieder her.
-            // GEMESSEN (diag-warmup-speed): Warmup 27.5 s → 5.6 s.
-            // Beim Null-Renderer NICHT stubben: sein render() ist schon GPU-frei +
-            // macht die nötige Matrix-Buchhaltung (sonst verfehlt der echte Raycast
-            // das Terrain). Nur den ECHTEN (swiftshader-)Renderer entschärfen.
+            // Nur den teuren GPU-Aufruf (`renderer.render`/`renderAsync`, swiftshader ~2.5 s/Frame) stubben,
+            // NICHT `_loopRender`: die Bänder sind pixel-blind, lesen aber seine billigen Uniform-Updates
+            // (skybox/starField, hydroSurfaceUniforms.time/.emotion); der Screenshot-Pfad stellt ihn wieder her.
+            // Beim Null-Renderer NICHT stubben — sein render() macht die Matrix-Buchhaltung für den Raycast.
             if (r.state.renderer && !r.state.renderer._isHeadlessNull) {
                 window.__origRendererRender = r.state.renderer.render.bind(r.state.renderer);
                 r.state.renderer.render = function () {};
@@ -57600,52 +55291,17 @@ async function checkBandRing6Workshop(ctx) {
             }
             // Post-Processing (falls aktiv) auf den nun-no-op renderer.render-Pfad zwingen.
             r.state.postProcessingFailed = true;
-            // (Skin-Res-Cap wird via evaluateOnNewDocument vor dem Laden geseedet — siehe oben.)
-            // Phase 2 — Loop synchron pumpen, bis das Wall-Clock-Budget
-            // verbraucht ist. setTimeout(0) yieldet zwischen Ticks für
-            // Mikrotasks (Promise-Ketten, async Worldgen) — `setTimeout`
-            // ist im Headless NICHT auf 1 Hz gedrosselt (rAF schon),
-            // also läuft der Pump CPU-gebunden statt frame-gebunden.
-            // Damit wird Streaming + Tick-Logik deterministisch unabhängig
-            // von CPU-Last (CI-Flake-Wurzel der V9.82-Iso-Mesh-Welle).
-            // V17.32-Folge — count-BASIERTER Warmup (robust gegen CPU-Last,
-            // die Wurzel des „voxelChunks-Schwellen-Flakes"). Der alte feste
-            // Wall-Clock-Pump (`while elapsed < durationMs`) baute unter CI-Last
-            // zu wenige Chunks: jeder Tick streamt zeit-budgetiert
-            // (FRAME_BUDGET_MS), und unter Last laufen weniger Ticks/s → in 30 s
-            // landet voxelChunks gelegentlich unter dem >=15-Threshold (derselbe
-            // Commit rot+grün je nach Runner — der gemessene CI-Flake). Die CI
-            // lief schon mit 30 s; mehr Wall-Clock ist nur ein größeres Magic-
-            // Number, kein Fix. Jetzt: MINDESTENS durationMs pumpen (damit zeit-
-            // getriebene Systeme wie gehabt laufen — keine Regression auf der
-            // schnellen Maschine, sie exitet exakt bei durationMs), danach NUR
-            // weiter, solange die Welt noch unter dem Ziel-Chunk-Count ist, bis
-            // zu einem großzügigen Cap (gegen einen hängenden Build). Die
-            // Invariante prüft WELT-ZUSTAND, nicht Wall-Clock-vs-CPU-Speed →
-            // deterministisch auf jedem Runner.
-            // [PERF] mit gestubbtem Render ist der Warmup nur noch chunk-build-
-            // bound (~5-8 s). Der alte 30-s-Wall-Clock-FLOOR (V17.32) war nötig,
-            // solange der Render jeden Tick 2.5 s fraß; jetzt detektieren wir das
-            // PLATEAU (der Streaming-Ring um den stationären Spieler ist voll, die
-            // Chunk-Zahl seit >=2 s stabil) → dieselbe „warme" Welt wie der alte
-            // Floor (V9.42-b braucht den vollen 3×3-Naht-Ring: die ersten 9 Chunks
-            // müssen >=200 Naht-Vertices teilen), nur schnell. Count-basiert (robust
-            // gegen CPU-Last, die V17.32-Wurzel) + WARMUP_MIN für die zeit-getriebenen
-            // Trigger (Grok 1.5 s) + Hard-Cap gegen einen Hänger.
+            // Phase 2 — Loop synchron pumpen; setTimeout(0) yieldet für Mikrotasks und ist headless NICHT
+            // gedrosselt (rAF schon) → CPU- statt frame-gebunden. Count-basiert statt Wall-Clock: mindestens
+            // WARMUP_MIN_MS (zeit-getriebene Trigger), dann bis ≥ TARGET_VOXEL_CHUNKS + PLATEAU (Chunk-Zahl
+            // PLATEAU_MS stabil = Ring voll; die Naht-Probe braucht den 3×3-Ring), HARD_CAP_MS gegen einen
+            // Hänger — so prüft die Invariante Welt-Zustand, nicht CPU-Tempo.
             const TARGET_VOXEL_CHUNKS = 18; // Mindest-Marge über der >=15-Invariante
             const WARMUP_MIN_MS = 3000; // zeit-getriebene Trigger (Grok 1.5 s) sehen echte Zeit
             const PLATEAU_MS = 2000; // Ring „voll", wenn die Chunk-Zahl so lange stabil ist
             const HARD_CAP_MS = Math.max(durationMs * 3, 90000);
-            // V18.273 — DER WARMUP BAUT DETERMINISTISCH (worker-unabhängig): der
-            // Voxel-Worker wird für die Aufwärm-Phase ausgehängt → der Streaming-
-            // Tick baut jeden Ring-Chunk SYNC im Tick (das proven `voxelWorker=null`-
-            // Muster, s. die LOD-Bänder). WURZEL der Last-Fragilität: V18.271 nahm dem
-            // Spieler-Chunk den Sync-Anker (RICHTIG für den Lauf-Freeze in Produktion) —
-            // dadurch hing die WARMUP-Welt an der ASYNC-Worker-Lieferung, die unter CPU-
-            // Last (CI, mehrere Runner) ausgehungert wird → `voxelChunks=0` + 9 Folge-
-            // Fehler (gemessener Last-Flake: derselbe Commit rot↔grün je nach Last).
-            // Der Warmup braucht nur eine WARME Welt, kein Async-Timing. Sync = load-
-            // unabhängig (kein Worker-Timing) + bit-identisch (Determinismus-Wand).
+            // Voxel-Worker für den Warmup aushängen → der Streaming-Tick baut jeden Ring-Chunk SYNC: unter
+            // CPU-Last hungert die Async-Lieferung aus (voxelChunks=0). Sync = load-unabhängig + bit-identisch.
             const _warmupSavedWorker = r.state.voxelWorker;
             r.state.voxelWorker = null;
             let lastBuilt = -1;
@@ -57670,17 +55326,10 @@ async function checkBandRing6Workshop(ctx) {
                 }
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
-            // N7.3 — DER FOUNDRY-WARM-ANKER (foundry-warm-Muster, gedeckelt wie BOOT_READY_CAP):
-            // der Gate fährt foundry-ON, der Studio-Worker bootet ASYNC (ein ANDERER Worker als
-            // der oben ausgehängte voxelWorker — der Chunk-Warmup bleibt sync/deterministisch).
-            // Bänder, die Baum-/Asset-/Scatter-Zustände lesen, dürfen nicht das Boot-Fenster
-            // statt der Wahrheit sehen (die V18.273-Async-Timing-Flake-Klasse) → hier wartet
-            // der Warmup auf die DREI Stufen der Foundry-Wahrheit: f.ready (der Worker bootet)
-            // → recipeCount > 0 (das Rezeptbuch floss) → !_prefetching (die Bibliothek ist WARM;
-            // `_prefetching` wird im ready-Handler synchron true, also ist „false nach ready"
-            // genau „Prefetch fertig"). Der Loop pumpt weiter (Retry-/Rewarm-Ticks laufen),
-            // die Sleeps lassen Worker-Antworten docken. Der Deckel ist reiner Hänger-Schutz:
-            // ein Cap-Treffer lässt die Bänder ehrlich rot werden (kein Verschlucken).
+            // Foundry-Warm-Anker: der Studio-Worker bootet ASYNC (ein anderer Worker als der ausgehängte
+            // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_prefetching (im ready-Handler synchron
+            // true, also „false nach ready“ = Prefetch fertig). Der Loop pumpt weiter; der Deckel ist nur
+            // Hänger-Schutz — ein Cap-Treffer lässt die Bänder ehrlich rot werden.
             const _fdry = r._foundry || (typeof r._ensureAssetFoundry === "function" ? r._ensureAssetFoundry() : null);
             const foundryT0 = performance.now();
             let foundryReadyMs = -1;
@@ -57760,10 +55409,8 @@ async function checkBandRing6Workshop(ctx) {
         for (const [msg, count] of top) console.log(`  ${String(count).padStart(4)}× ${msg.slice(0, 110)}`);
 
         // ### Invarianten (gatekeeping) ###
-        // V9.52 Sub-Welle a — der Playtest-Pflege-Bogen hat begonnen. `ctx` ist die
-        // geteilte Sammlung der Akkumulatoren (page, check, logs, errors, finalState);
-        // jede benannte `checkX(ctx)`-Sektion liest daraus + ruft `ctx.check(...)`.
-        // Weitere Bänder ziehen Sub-Welle b-e nach (`docs/archiv/playtest-hygiene.md`).
+        // `ctx` = geteilte Akkumulatoren (page, check, logs, errors, finalState); jede `checkX(ctx)`-Sektion
+        // liest daraus + ruft `ctx.check(...)`.
         const ctx = { page, check, logs, errors };
         ctx.finalState = await gatherInitialFinalState(page);
 
@@ -57920,10 +55567,7 @@ async function checkBandRing6Workshop(ctx) {
             // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
             await timed(checkBandV171Scatter, ctx);
 
-            // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
-            // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
-            // V8.70-72 Untrusted-Tor/Vendor + späte 6.X.4-Fixes) als 8 Band-
-            // Funktionen, je 498-1190 Z.
+            // Band 3 — Atmosphäre, Welt-Portal/Vibe-Pass/Bibliothek, Übersetzer + Untrusted-Tor, späte Politur.
             await timed(checkBandWelle6XAudit, ctx);
             await timed(checkBandWelle6G3Lebendigkeit, ctx);
             await timed(checkBandWelle6G4Atmosphere, ctx);
@@ -57933,12 +55577,8 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandTranslatorAndUntrusted, ctx);
             await timed(checkBandV8LatePolishAnd6XContinued, ctx);
 
-            // V9.52-e: Band 4 (die End-Sektionen — Welle 6.H 2B.2/2D/2E/2F + Welle 6.B
-            // CAD + V8.00-V8.07 + Welle 9/10 + V7.x LLM + Ring 3-6 + UI V1/V2) als 10
-            // Band-Funktionen, je 432-1131 Z. Der else-Block ist mit V9.52-e
-            // GANZ als Band-Liste erschöpft — keine Inline-Sektionen mehr.
-            // Sub-Welle f folgt nur noch für den Helfer-Durchzug (safeEvaluate-Roll-out
-            // INNERHALB der Band-Funktionen).
+            // Band 4 — End-Sektionen (Kreatur-Bau/Stats/LLM, CAD, Welle 9/10, Ring 3–6, UI), dann G8 +
+            // Einzel-Bänder.
             await timed(checkBandWelle6HBuildAndPersist, ctx);
             await timed(checkBandWelle6HCreatureStats, ctx);
             await timed(checkBandWelle6HCreatureLlm, ctx);
@@ -58096,10 +55736,8 @@ async function checkBandRing6Workshop(ctx) {
         const bodenFehltCount = logs.filter((l) => /Boden fehlt/.test(l.text)).length;
         check("Keine Welt-Regen-Death-Spiral", bodenFehltCount <= 2, `'Boden fehlt'-Logs=${bodenFehltCount}`);
 
-        // Screenshot als Beweis-Artefakt — NUR im Real-Renderer-Modus (mit dem
-        // Null-Renderer wäre das Bild blank; der LOOK lebt in diag-settled-view,
-        // dem echten, settled, augenhöhen-WebGPU-Auge). Force-revealt die
-        // Dialog-Box, falls ihr 8 s-Fade-Out schon durch ist — der Text bleibt im DOM.
+        // Screenshot als Beweis-Artefakt NUR im Real-Renderer-Modus (Null-Renderer = blankes Bild; der LOOK
+        // lebt in diag-settled-view). Force-revealt die Dialog-Box, falls ihr 8-s-Fade-Out durch ist.
         if (!REAL_RENDERER) {
             console.log(
                 "\nScreenshot übersprungen (GPU-frei / Null-Renderer). Für ein BILD: " +
