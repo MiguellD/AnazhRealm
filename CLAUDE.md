@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.494.0 — die Ziellinie steht, die Analog-Wette ist gemessen)
+## Stand (V18.495.0 — die Ziellinie steht, das Analog-Bild ist nachgeschärft)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -83,19 +83,16 @@ geerdet + nie im Wasser, Position `near_water`); das KI-Prompt lehrt die LIVE-W�
 Studios; der Satz „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel; Claude-
 Modelle auf der 5er-Generation. Offen: der echte LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.494 — die Analog-Wette GEMESSEN (echter Renderer, `diag-beweis-e`, Mesh-Stand 19.07. vs.
-HEAD an denselben Bühnen der Mess-Wiese −900/−850, 8 Bildpaare):** 7–46× weniger Dreiecke
-(Median ~15×), 2,6–8× weniger Draw-Calls je Bild — ABER nah sichtbar schlechter: Kapsel-Tiere,
-massive Kronen-Dächer, dunkle Box-Häuser, die Halm-Wiese fehlt. Drei echte Fehler dabei geheilt:
-(1) gesetzte Studio-Dinge (Eiche · Tor · Fahrzeug) blieben UNSICHTBAR — der Fit baute ein
-Async-Mesh temporär, sah es leer, brannte nach 8 Versuchen aus (26 von 28 Weltgen-Bauten);
-jetzt passen sie aus der Foundry-Flat (Bäume teilen Schlüssel + Fit mit der Streu); (2) Bake-
-Takte gingen in Listen-Reihenfolge an ferne Altbauten — jetzt NAH zuerst; (3) der Baum-Fit
-nahm 5 Stücke DESSELBEN Stamms und riet die Krone 5× zu klein — jetzt Ketten-Kegel + Kronen-
-Lappen aus den Zweig-Punkten. Linse `diag-arch-feld` (Slot für Eiche + Haus, 0 ausgebrannt).
-**Die Entscheidung liegt beim Schöpfer:** Analog überall (billig, grob) oder HYBRID (nah das
-Studio-Mesh wie bei der Streu-Stufe 0, fern die Analog-Silhouette) — Bilder + Zahlen in
-`docs/abnahme-analog.md`.
+**V18.494/495 — die Analog-Wette GEMESSEN und NACHGESCHÄRFT (echter Renderer, `diag-beweis-e`,
+Mesh-Stand 19.07. vs. HEAD an denselben Bühnen der Mess-Wiese −900/−850):** 7–46× weniger
+Dreiecke (Median ~15×), 2,6–8× weniger Draw-Calls je Bild. V18.495 heilte die Bild-Fehler an der
+Wurzel: das Feld las nur 2 von 5 Lichtquellen (jetzt `_feldLichtSync`, Linse Feld/Mesh 0,67 →
+0,98); jedes Welt-Haus war eine schwarze 3×3-m-Flachdach-Hütte (`Number(null) === 0` im
+Fachwerk-Fit, Holz fraß Wand + Dach, Hex roh als linear); in der Hand-Blase zeichneten Mesh UND
+Feld, über Budget baute sie nie (jetzt Stufe 0 = echtes Mesh, Takt-Garantie); Kronen-Noise ∝
+Kronengröße. Frühjahrsputz: Doku + tote Skripte −3 371, Kommentar-Diät −15 847 Zeilen
+(Token-Strom byte-gleich). Ehrlich offen: nah bleiben Kapsel-Tiere und Lappen-Kronen grob, das
+Feld hat keinen Schatten, D (Wiese) und ein sauberer Haus-Schuss — `docs/abnahme-analog.md`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
@@ -104,8 +101,8 @@ Kronen-Lappen) · GRAS = Boden-Funktion · Stufe 0 = echte Geometrie (Anfassen).
 Band-0-Klein-Streu · Deko-Impostor-Ringe · der Avatar. OFFEN: ein echter GPU-Trace der
 Analog-Wende auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS, vor der Wende).
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–D Code steht · E gemessen,
-die Wette wartet auf die Entscheidung + den echten GPU-Trace.
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–D Code steht (A/B/C mit Bild,
+D ohne besonnte Gras-Zone) · E gemessen; offen: Haus-Schuss, Wiese, echter GPU-Trace.
 
 ## Architektur (die Karte)
 
@@ -157,6 +154,9 @@ die Wette wartet auf die Entscheidung + den echten GPU-Trace.
     headless früh zurück) — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`,
     `diag-beweis-e`). Ein Fit liest eine FERTIGE Quelle (Foundry-Flat), nie ein temporär gebautes
     Async-Mesh („leer" → ausgebrannt → für immer unsichtbar); Takt-Budgets gehen NAH zuerst.
+17. **Sonden mit echtem Renderer:** je Schuss ruht der Spiel-Loop (sonst wandern Kamera, Tageszeit,
+    Cull-Zustand), die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht. Und:
+    `Number(null) === 0` — ein fehlender Wert ist nie 0; Default-Helfer prüfen `v == null` zuerst.
 
 ## Workflows
 

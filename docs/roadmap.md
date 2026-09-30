@@ -27,8 +27,9 @@ Schritte oder den FPS-Boden trägt.
 ### §0.frozen · Die Frozen-Liste
 
 Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit dem Schöpfer-Wort
-„analog!"). Stand: A–D Code steht, E gemessen (`docs/abnahme-analog.md`) — die Entscheidung
-analog überall ↔ hybrid und der echte GPU-Trace stehen aus.
+„analog!"). Stand V18.495: A–D Code steht, E gemessen und nachgeschärft — Feld-Licht = Mesh-Licht,
+Häuser mit Fachwerk, Hand-Blase = Stufe 0 (`docs/abnahme-analog.md`); offen: nah grobe Kapsel-
+Formen, die Wiese (D) ohne besonnte Gras-Zone, ein sauberer Haus-Schuss, der echte GPU-Trace.
 
 ### §0.reste · Benannte Reste mit Wartebedingung (nichts erfinden)
 

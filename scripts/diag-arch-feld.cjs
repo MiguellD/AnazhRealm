@@ -9,6 +9,8 @@
 //   A  gesetzte Eiche UND Haus haben binnen 200 Takten ihren Feld-Slot
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
 //   C  die Eiche teilt ihren Kapsel-Satz mit der Streu (Schlüssel abaum:eiche:<v>)
+//   D  das Feld liest dasselbe Licht wie das Mesh: neutrale Feld-Box vs. MeshStandard-Box am
+//      selben Ort, Luminanz-Verhältnis über die gemeinsame Maske im Band 0,8–1,25
 // plus je ein Schuss (artifacts/beweis-e/arch-feld-*.png) fürs Auge.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
@@ -137,6 +139,10 @@ const SCHUSS_FN = async (kam) => {
     await page.setViewport({ width: W, height: H });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    page.on("console", (m) => {
+        const t = m.text();
+        if (t.startsWith("[D]")) console.log("  " + t);
+    });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -250,9 +256,150 @@ const SCHUSS_FN = async (kam) => {
         fs.writeFileSync(f, Buffer.from(s.png.split(",")[1], "base64"));
         console.log(`  Schuss ${k}: ${path.relative(root, f)} · dc=${s.zahlen.dc} tris=${s.zahlen.tris}`);
     }
+    // D — DAS LICHT DER WELT (das Licht-Modell, ohne Albedo-Störer): am SELBEN Ort einmal eine Feld-Box
+    // (Kapsel-Satz, Albedo 0,5 linear), einmal eine MeshStandard-Box (color 0,5, roughness 1, metalness 0),
+    // dazu der Hintergrund. Die Pixel-Maske ist identisch; Luminanz-Mittel Feld/Mesh muss ~1 sein.
+    // Die Boxen schweben über dem Kronendach (freie Sicht); der Spiel-Loop ruht, Mittag fest, die Sonne
+    // wirft keinen Schatten (das Feld hat keinen Schatten-Lookup).
+    const schussPx = (modus) =>
+        page.evaluate(
+            async (modus, DW, DH) => {
+                const r = window.anazhRealm;
+                const THREE_ = window.THREE;
+                const rend = r.state.renderer;
+                rend.setAnimationLoop(null);
+                if (r.state.world) r.state.world.timeOfDay = 0.5;
+                r.state.timeOfDay = 0.5;
+                if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                if (r.state.directionalLight) r.state.directionalLight.castShadow = false;
+                let L = window.__licht;
+                if (!L) {
+                    const pm = r.state.playerMesh.position;
+                    const x = pm.x + 6,
+                        z = pm.z + 6;
+                    const y = r._voxelSurfaceY(x, z) + 45; // über dem Kronendach: freier Blick, Himmel als Grund
+                    const M = new THREE_.Matrix4().makeTranslation(x, y, z);
+                    const handle = r._weltKapselSpawn("licht-linse:box", M, () => [
+                        {
+                            box: true,
+                            c: new THREE_.Vector3(0, 0, 0),
+                            h: new THREE_.Vector3(1, 1, 1),
+                            farbe: { r: 0.5, g: 0.5, b: 0.5 },
+                        },
+                    ]);
+                    const mat = new THREE_.MeshStandardNodeMaterial({ roughness: 1, metalness: 0 });
+                    mat.color.setRGB(0.5, 0.5, 0.5);
+                    const mesh = new THREE_.Mesh(new THREE_.BoxGeometry(2, 2, 2), mat);
+                    mesh.position.set(x, y, z);
+                    mesh.castShadow = false;
+                    mesh.receiveShadow = false;
+                    r.state.scene.add(mesh);
+                    const cam = { px: x - 5, py: y + 3.2, pz: z - 6, lx: x, ly: y, lz: z };
+                    L = window.__licht = { handle, mesh, cam };
+                }
+                if (!L.handle) return { fehlt: "Feld-Box ohne Slot" };
+                r._weltFeldAktiv(L.handle, modus === "feld");
+                L.mesh.visible = modus === "mesh";
+                const cam = r.state.camera;
+                cam.position.set(L.cam.px, L.cam.py, L.cam.pz);
+                cam.lookAt(L.cam.lx, L.cam.ly, L.cam.lz);
+                cam.updateMatrixWorld(true);
+                if (r.state.playerMesh) r.state.playerMesh.visible = false;
+                let u8 = null;
+                for (let k = 0; k < 2; k++) {
+                    try {
+                        if (r.state.fernRing && typeof r._tickFeldPass === "function")
+                            r._tickFeldPass(r.state.fernRing);
+                    } catch (_e) {}
+                    const rt = new THREE_.RenderTarget(DW, DH, { depthBuffer: true, samples: 0 });
+                    const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
+                    rend.setRenderTarget(rt);
+                    if (typeof rend.renderAsync === "function") await rend.renderAsync(r.state.scene, cam);
+                    else rend.render(r.state.scene, cam);
+                    const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, DW, DH);
+                    rend.setRenderTarget(prev);
+                    if (rt.dispose) rt.dispose();
+                    u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+                }
+                const cv = document.createElement("canvas");
+                cv.width = DW;
+                cv.height = DH;
+                const ctx = cv.getContext("2d");
+                const img = ctx.createImageData(DW, DH);
+                img.data.set(u8.subarray(0, DW * DH * 4));
+                ctx.putImageData(img, 0, 0);
+                let bin = "";
+                for (let i = 0; i < u8.length; i += 0x8000)
+                    bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+                return { b64: btoa(bin), png: cv.toDataURL("image/png") };
+            },
+            modus,
+            320,
+            180
+        );
+    const bilder = {};
+    // Erster Schuss wärmt (Pipelines, Sichtbarkeit nach dem Umsetzen); der Hintergrund zählt zuletzt.
+    for (const modus of ["warm", "feld", "mesh", "aus"]) {
+        const t0 = Date.now();
+        const b = await Promise.race([
+            schussPx(modus),
+            new Promise((res) => setTimeout(() => res({ fehlt: `Zeit-Wand 600 s im Modus ${modus}` }), 600000)),
+        ]);
+        console.log(`  D-Schuss ${modus}: ${b.fehlt || "ok"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+        if (!b.fehlt) {
+            b.px = Buffer.from(b.b64, "base64");
+            fs.writeFileSync(
+                path.join(OUT, `arch-feld-licht-${modus}.png`),
+                Buffer.from(b.png.split(",")[1], "base64")
+            );
+        }
+        bilder[modus] = b;
+    }
+    await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const L = window.__licht;
+        if (L) {
+            if (L.handle) r._weltFeldFrei(L.handle);
+            r.state.scene.remove(L.mesh);
+        }
+        if (r.state.directionalLight) r.state.directionalLight.castShadow = true;
+        r.state.renderer.setAnimationLoop(r._gameLoopTick);
+    });
+    const { aus: bg, feld, mesh } = bilder;
+    let D = false;
+    if (bg.fehlt || feld.fehlt || mesh.fehlt) {
+        console.log(`❌ D  Feld-Licht: ${bg.fehlt || feld.fehlt || mesh.fehlt}`);
+    } else {
+        // Gemeinsame Maske: Pixel, die BEIDE Boxen gegenüber dem Hintergrund ändern.
+        let n = 0,
+            lf = 0,
+            lm = 0;
+        const rf = [0, 0, 0],
+            rm = [0, 0, 0];
+        const lum = (p, i) => 0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2];
+        const diff = (p, i) =>
+            Math.abs(p[i] - bg.px[i]) + Math.abs(p[i + 1] - bg.px[i + 1]) + Math.abs(p[i + 2] - bg.px[i + 2]);
+        for (let i = 0; i < bg.px.length; i += 4) {
+            if (diff(feld.px, i) <= 24 || diff(mesh.px, i) <= 24) continue;
+            n++;
+            lf += lum(feld.px, i);
+            lm += lum(mesh.px, i);
+            for (let c = 0; c < 3; c++) {
+                rf[c] += feld.px[i + c];
+                rm[c] += mesh.px[i + c];
+            }
+        }
+        const q = lm > 0 ? lf / lm : 0;
+        D = n > 300 && q >= 0.8 && q <= 1.25;
+        const f = (v) => v.map((x) => Math.round(x / Math.max(1, n))).join("/");
+        console.log(
+            `${D ? "✅" : "❌"} D  Feld-Licht ≙ Mesh-Licht (neutrale Box am selben Ort): Feld rgb ${f(rf)} · Mesh rgb ${f(rm)} ` +
+                `· Luminanz ${(lf / Math.max(1, n)).toFixed(1)} / ${(lm / Math.max(1, n)).toFixed(1)} = ${q.toFixed(2)} (Band 0,8–1,25) · ${n} px`
+        );
+    }
     await browser.close();
     server.close();
-    const gruen = A && Bk && C && pageErrors.length === 0;
+    const gruen = A && Bk && C && D && pageErrors.length === 0;
     console.log(
         gruen
             ? "✅ GRÜN — gesetzte Dinge erscheinen im Feld (das Bild urteilt über die Gestalt)."

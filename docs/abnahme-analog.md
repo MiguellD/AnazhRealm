@@ -2,8 +2,10 @@
 
 > Die Frozen-Liste (`docs/PFLICHT-OFFEN.md`) setzt fünf Einträge: A Kreaturen · B Bäume ·
 > C Architektur + Streu · D Wiese · E das Beweis-Paket. Hier steht je Klasse die Code-Wahrheit,
-> darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.494):
-> gemessen — die Wette wartet auf die Entscheidung des Schöpfers und einen echten GPU-Trace.**
+> darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.495):
+> gemessen und nachgeschärft — das Feld liest dasselbe Licht wie das Mesh (Linse 0,67 → 0,98),
+> Häuser tragen ihr Fachwerk; offen bleiben die Nah-Grobheit der Kapsel-Formen, die Wiese (D)
+> und der echte GPU-Trace.**
 
 ## Die Sonde
 
@@ -12,6 +14,11 @@
 - Echter Renderer (WebGPU über swiftshader-Vulkan), RT-Readback wie `diag-blick` — **der
   Null-Renderer des Gates ist für den ganzen Analog-Pfad blind** (Feld-Fit, Slots, March kehren
   headless früh zurück).
+- Je Schuss ruht der Spiel-Loop (sonst zieht er Kamera, Tageszeit und Cull-Zustand zwischen
+  Setzen und Render weiter), Mittag fest, die Schatten-Map wird neu markiert (ohne Loop blieb sie
+  für die neue Kamera alt → schwarzer Boden). Die **Blick-Wahl** prüft je Klasse 12 Azimute
+  (Objekt-Feld an/aus, 160×90) und nimmt den mit den meisten Objekt-Pixeln — keine Kamera mehr im
+  Laub oder hinter einem Stamm.
 - Alle Klassen auf der **Mess-Wiese −900/−850** (die Welt ist seed-deterministisch → auf jedem
   Code-Stand dieselben Bühnen): flache, trockene Bühne je Klasse (Höhen-Spanne 1,2 / 3,6 / 4,8 m),
   der Spieler steht an der Kamera (Chunk-Ring, Foundry-Stufe und March folgen ihm), zwei Renders
@@ -26,7 +33,9 @@
 ## Die Klassen im Code
 
 **Gemeinsam:** EIN Welt-March (`_tickFeldPass`, Mesh `renderOrder 9999`, Tiefe = March-Tiefe)
-über EINE Feld-Liste; Dedup je Vorlage im `kapselCache` (`_weltKapselHolen`/`_weltKapselSpawn`),
+über EINE Feld-Liste; **das Licht** liest `_feldLichtSync` aus denselben Quellen wie jedes
+MeshStandard (vier Richt-Lichter, Ambient, Hemi, Himmels-Irradianz aus `_skyEnvTex`, Lambert =
+albedo/π, `scene.fog`); Dedup je Vorlage im `kapselCache` (`_weltKapselHolen`/`_weltKapselSpawn`),
 Bake-Takt `_weltBakeErlaubt` (16/s, 4/s über Budget). Voxel-Bricks nur noch als Region-Fern-Cache
 (`dimRegion`); jeder andere Brick-Weg ist fail-closed (`_weltFeldSpawn("arch:…"|"baum:…")` → null).
 Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
@@ -47,8 +56,9 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
 - **C Architektur + Streu:** `_archZiegelFern` — Häuser über `_archFachwerkFit` (Balken, Gefach,
   Verbände, Prisma-Dach, Gaube/Flügel; ≤ 24 Primitive), gesetzte Studio-Dinge über
   `_archFoundryZiegel` (Foundry-Flat; Bäume teilen Schlüssel + Fit mit der Streu), sonst
-  `_archBoxFit` (≤ 24 AABB). Hand-Blase (16 m): Mesh als unsichtbarer Interaktions-Körper, Häuser
-  sichtbar. Klein-Streu LOD ≥ 1: `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
+  `_archBoxFit` (≤ 24 AABB). Hand-Blase (16 m) = Stufe 0: steht das Mesh (oder seine Instanzen),
+  IST es die Gestalt und das Feld schweigt; über Budget baut sie mit Takt-Garantie (1 je 250 ms).
+  Fachwerk-Farben sRGB-dekodiert wie `THREE.Color`, bei vollem Fachwerk Silhouette vor Holz. Klein-Streu LOD ≥ 1: `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
   tract die Plätze (`einheit < 0`). Band 0 bleibt Mesh (Anfassen).
 - **D Wiese:** Boden-FUNKTION in `_terrainGeologyAlbedo` — Meadow-Grund (`MEADOW_GREEN`) fern,
   8-Schicht-Parallax-Relief nah (≤ 90 m, gated grün × flach × kein Fels × nicht trocken). Keine
@@ -73,6 +83,21 @@ der Feld-Pass war ab dem ersten Takt sichtbar, 0 Takte mit unsichtbarem Tier. Im
 erschienen die gesetzte Eiche und das gesetzte Haus in der Einschwing-Zeit nicht — dessen
 Baum-/Haus-Zahlen sind die Szene ohne diese Objekte.
 
+### Nach den Licht- und Fit-Schnitten (V18.495, Tag `analog3`, Blick-Wahl)
+
+| Schuss | dc / Dreiecke | Bild |
+|---|---|---|
+| Wolf · fern | 22 / 26 077 | beleuchteter Kapsel-Wolf (brauner Rumpf, dunkle Beine) neben einem echten Studio-Baum (Stufe 0), grüne Analog-Kronen dahinter, Boden grün |
+| Wolf · Armlänge | 15 / 26 127 | Rumpf und Beine füllen das Bild — scharfe Kanten, glatte Kapseln, Schattenseite dunkel |
+| Eiche · fern | 27 / 35 137 | grünes Kronendach aus Lappen, Wolf und Stämme darunter; einzelne Lappen zeigen noch Wellen-Rippen |
+| Eiche · Armlänge | 23 / 35 093 | der Stamm-Kegel (Feld): das Stufe-0-Mesh der gesetzten Eiche stand nach 28 Takten noch nicht (Foundry-Flat LOD 0 lädt asynchron) |
+| Haus · fern/Arm | 28 / 26 913 · 15 / 26 745 | **kein Haus im Bild** — die Blick-Wahl fand zu dem Zeitpunkt keinen Feld-Slot am Haus (Sonden-Lücke, offen) |
+| Wiese · fern/Arm | 34 / 27 605 · 16 / 25 439 | Boden im Waldschatten fast schwarz — die Bühne neben dem Wolf liegt unter Kronen; die Halm-Funktion ist dort nicht zu sehen |
+
+**Die Licht-Linse** (`diag-arch-feld` D): eine Feld-Box und eine MeshStandard-Box (Albedo 0,5,
+roughness 1) am SELBEN Ort, gemeinsame Pixel-Maske. Vorher **0,67** (Feld rgb 70/77/86, Mesh
+97/115/151 — zu dunkel und ohne Himmels-Blau), nachher **0,98** (62/69/81 vs. 64/71/80).
+
 ## Was die Messung an Fehlern fand (geheilt in V18.494)
 
 1. **Gesetzte Studio-Dinge blieben unsichtbar** (Eiche, Tor, Fahrzeug …): der Feld-Fit baute ein
@@ -83,24 +108,36 @@ Baum-/Haus-Zahlen sind die Szene ohne diese Objekte.
 3. **Der Baum-Fit war nicht maßtreu:** 5 Stücke desselben Stamms, Krone 5× zu klein und schwebend.
    Jetzt Ketten-Kegel (Stamm + Hauptäste) + Kronen-Lappen aus den Zweig-Punkten.
 
-Stehende Linse: `node scripts/diag-arch-feld.cjs` (Eiche + Haus bekommen ihren Feld-Slot,
-0 ausgebrannte Foundry-Bauten, die Eiche teilt den Kapsel-Satz der Streu).
+4. **Das Feld las nur 2 von 5 Lichtquellen** (Sonne + Ambient/Hemi-Mittel, ohne /π, mit eigener
+   Ton-Klemme): Fill-, Rim-, Back-Licht und die Himmels-Umgebung fehlten — Schattenseiten fast
+   schwarz. Jetzt `_feldLichtSync` (V18.495).
+5. **Jedes Welt-Haus war eine schwarze 3×3-m-Flachdach-Hütte:** im Fachwerk-Fit galt
+   `Number(null) === 0` als Wert (`n(ov && ov.W, 9)` → 0 → W=3, Dach 8° → flach; `hexRgb(null)` →
+   Schwarz). Dazu fraß bei vollem Fachwerk das Holz (prio 2) alle 24 Plätze — Wände und Dach
+   fielen. Und Hex-Farben galten roh als linear (Feld heller als das Mesh derselben Farbe).
+6. **In der Hand-Blase zeichneten Mesh UND Feld** (Häuser, gesetzte Foundry-Dinge): der
+   konservative Box-Satz lag vor dem Mesh. Und über Budget (auf dem Schöpfer-Holz immer) baute
+   die Hand-Blase nie ein Mesh — die Tür blieb Feld.
+7. **Der Kronen-Noise skalierte mit der Kronengröße** (Amplitude ∝ hn bei fester Frequenz →
+   Gradient ∝ hn): Streifen und Lipschitz-Bruch auf großen Kronen. Jetzt im größen-normierten Raum.
 
-## Das Urteil (ehrlich, für die Entscheidung)
+Stehende Linsen: `node scripts/diag-arch-feld.cjs` (A Slots · B 0 ausgebrannt · C geteilter
+Kapsel-Satz · D Feld-Licht ≙ Mesh-Licht, Band 0,8–1,25) und `node scripts/diag-arch-fachwerk-fit.cjs`
+(Welt-Haus ohne `studioOv`: Maße aus Defaults, Sattel-Dach, keine schwarze Farbe; volles
+Fachwerk behält Dach und Wände).
+
+## Das Urteil (ehrlich)
 
 - **Kosten:** Analog senkt die Dreiecke je Bild um 7–46× (Median ~15×), die Draw-Calls um
-  2,6–8× — genau das Versprechen der Wende.
-- **Nähe:** auf Armlänge und bis ~20 m ist jede Analog-Klasse sichtbar gröber als das Studio-Mesh:
-  Tiere sind Kapsel-Figuren, Kronen sind massive Körper (ein luftiges Blätterdach lässt sich mit
-  gefüllten Ellipsoiden nicht darstellen — aus der Nähe wird es eine Wand), Häuser dunkle Boxen,
-  die Wiese hat keine Halme mehr.
-- **Offen, nur im echten Browser entscheidbar:** ob die Stufen-Übergabe beim echten Laufen nahe
-  Bäume rechtzeitig als Mesh zeigt (die Sonde teleportiert — Zellen-Stufen können veraltet sein),
-  und die FPS auf dem Schöpfer-Holz (letzter Trace 14.07., 4–12 FPS, vor der Wende).
-
-**Die zwei Wege:** (a) Analog überall, wie am 21.07. entschieden — billig, nah grob; (b) HYBRID:
-nah das Studio-Mesh (wie schon bei der Streu-Stufe 0 und bei Häusern in der Hand-Blase), fern die
-Analog-Silhouette — die Kosten-Ersparnis bleibt dort, wo sie am größten ist.
+  2,6–8× — genau das Versprechen der Wende; die Schnitte von V18.495 ändern daran nichts.
+- **Licht und Farbe stimmen jetzt:** dasselbe Licht-Modell wie das Mesh (0,98), Häuser mit
+  Maßen, Dach und Farben ihres Fachwerks, nah das echte Mesh, sobald es steht.
+- **Nähe bleibt grob, wo die Form analog ist:** Tiere sind Kapsel-Figuren (scharf, aber ohne
+  Kopf- und Fell-Detail), Kronen gefüllte Lappen, Stämme glatte Kegel. Das Feld wirft und
+  empfängt keinen Schatten (kein Lookup in die Schatten-Map).
+- **Ehrlich offen:** D (Wiese) — die Mess-Bühne liegt im Waldschatten, der Nah-Schuss beweist
+  nichts; ein sauberer Haus-Schuss (Sonden-Lücke: kein Feld-Slot im Moment der Blick-Wahl);
+  der echte GPU-Trace auf dem Schöpfer-Holz.
 
 ## Der echte GPU-Trace (Schöpfer-Holz)
 

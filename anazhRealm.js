@@ -34454,9 +34454,24 @@ class AnazhRealm {
             fern: TSL.uniform(9000),
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
             seitenN: TSL.uniform(0),
-            sonne: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            lichtFarbe: TSL.uniform(new THREE.Vector3(1, 1, 1)),
-            ambientFarbe: TSL.uniform(new THREE.Vector3(0.3, 0.3, 0.3)),
+            // DAS LICHT DER WELT (_feldLichtSync): die vier Richt-Lichter, Ambient, Hemi und die
+            // Himmels-Umgebung — dieselben Quellen und dieselbe BRDF wie jedes Mesh.
+            l0d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
+            l1d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
+            l2d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
+            l3d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
+            l0c: TSL.uniform(new THREE.Vector3()),
+            l1c: TSL.uniform(new THREE.Vector3()),
+            l2c: TSL.uniform(new THREE.Vector3()),
+            l3c: TSL.uniform(new THREE.Vector3()),
+            ambientFarbe: TSL.uniform(new THREE.Vector3()),
+            hemiOben: TSL.uniform(new THREE.Vector3()),
+            hemiUnten: TSL.uniform(new THREE.Vector3()),
+            envUnten: TSL.uniform(new THREE.Vector3()),
+            envMitte: TSL.uniform(new THREE.Vector3()),
+            envOben: TSL.uniform(new THREE.Vector3()),
+            fogNah: TSL.uniform(1e6),
+            fogFern: TSL.uniform(2e6),
         };
         // March-Glättung: Treffer per Bisektion auf der TRILINEAREN Dichte verfeinern (Iso 0.25 liegt
         // zwischen den Voxeln → keine Treppen). Farbe = Ecken-Mittel (durch a geteilt), Normale =
@@ -34516,13 +34531,15 @@ class AnazhRealm {
                 "    return s * sqrt(min(cax * cax + cay * cay * baba, cbx * cbx + cby * cby * baba));\n" +
                 "}"
         );
-        // Analog-B Slice 3 — Kronen-Ellipsoid + billiger Noise-Term (amp ≪ radius)
+        // Kronen-Ellipsoid + Noise-Term im GRÖSSEN-normierten Raum ((p−c)/hn): Amplitude UND Frequenz
+        // skalieren mit der Krone → der Gradient ist größen-invariant (sonst ∝ hn: Streifen, Lipschitz-Bruch).
         const sdEllipsoidCrownFn = TSL.wgslFn(
             "fn sdEllipsoidCrown(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>) -> f32 {\n" +
                 "    let q = (p - c) / h;\n" +
                 "    let hn = min(h.x, min(h.y, h.z));\n" +
                 "    let d0 = (length(q) - 1.0) * hn;\n" +
-                "    let n = sin(dot(p, vec3<f32>(2.17, 3.31, 1.79))) * sin(dot(p, vec3<f32>(1.41, 2.63, 3.97)));\n" +
+                "    let s = (p - c) * (1.5 / hn);\n" +
+                "    let n = sin(dot(s, vec3<f32>(2.17, 3.31, 1.79))) * sin(dot(s, vec3<f32>(1.41, 2.63, 3.97)));\n" +
                 "    return d0 + hn * 0.035 * n;\n" +
                 "}"
         );
@@ -34533,10 +34550,11 @@ class AnazhRealm {
                 "    let hn = min(h.x, min(h.y, h.z));\n" +
                 "    let f0 = vec3<f32>(2.17, 3.31, 1.79);\n" +
                 "    let f1 = vec3<f32>(1.41, 2.63, 3.97);\n" +
-                "    let a0 = dot(p, f0);\n" +
-                "    let a1 = dot(p, f1);\n" +
+                "    let s = d * (1.5 / hn);\n" +
+                "    let a0 = dot(s, f0);\n" +
+                "    let a1 = dot(s, f1);\n" +
                 "    let g0 = hn * d / max(h * h * length(q), vec3<f32>(1e-6));\n" +
-                "    let gn = hn * 0.035 * (cos(a0) * sin(a1) * f0 + sin(a0) * cos(a1) * f1);\n" +
+                "    let gn = 0.035 * 1.5 * (cos(a0) * sin(a1) * f0 + sin(a0) * cos(a1) * f1);\n" +
                 "    return g0 + gn;\n" +
                 "}"
         );
@@ -34544,7 +34562,7 @@ class AnazhRealm {
         // Elevation-Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. textureDimensions braucht
         // f32/i32-Casts (WGSL-Spec).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, sonne: vec3<f32>, lichtFarbe: vec3<f32>, ambientFarbe: vec3<f32>, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l1d: vec3<f32>, l2d: vec3<f32>, l3d: vec3<f32>, l0c: vec3<f32>, l1c: vec3<f32>, l2c: vec3<f32>, l3c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -34922,18 +34940,19 @@ class AnazhRealm {
                 "    }\n" + // Seiten-Loop zu
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
                 "    if (bestT < 1e29) {\n" +
-                "        // DAS LICHT AUF DEM FELD (das Nacht-Glühen fällt): dieselbe Tag/Nacht-\n" +
-                "        // Farbe wie die ganze Welt — ambientFarbe + lichtFarbe·Lambert (beide\n" +
-                "        // aus den echten Szene-Lichtern, getönt+gedimmt; nachts dunkel-blau,\n" +
-                "        // das goldene Albedo leuchtet nicht mehr aus sich selbst):\n" +
-                "        var licht = ambientFarbe + lichtFarbe * max(dot(bestN, sonne), 0.0);\n" +
-                "        // TON-KLEMME (v6-Befund: das rohe Feld brannte weiß aus, während die\n" +
-                "        // Mesh-Materialien tone-gemappt laufen): sanfte Kompression der Höhen,\n" +
-                "        // Mitten bleiben (1.0 → 0.74) — das Feld gehorcht derselben Belichtung.\n" +
-                "        licht = licht / (vec3<f32>(1.0) + licht * 0.35);\n" +
+                "        // DAS LICHT DER WELT: Richt-Lichter + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
+                "        // Himmels-Irradianz (albedo·env) — die Formel des MeshStandard-Diffus, ohne Ton-Klemme:\n" +
+                "        // die Belichtung macht die Ausgabe-Kette für Feld und Mesh gemeinsam.\n" +
+                "        let nY = bestN.y;\n" +
+                "        let direkt = l0c * max(dot(bestN, l0d), 0.0) + l1c * max(dot(bestN, l1d), 0.0)\n" +
+                "            + l2c * max(dot(bestN, l2d), 0.0) + l3c * max(dot(bestN, l3d), 0.0);\n" +
+                "        let hemi = mix(hemiUnten, hemiOben, nY * 0.5 + 0.5);\n" +
+                "        let env = select(mix(envMitte, envOben, nY), mix(envMitte, envUnten, -nY), nY < 0.0);\n" +
+                "        let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
                 "        let vz = bestT * max(dot(dir, fwd), 1e-4);\n" +
                 "        let tiefe = clamp(fern * (vz - nah) / (vz * (fern - nah)), 0.0, 0.9999995);\n" +
-                "        return vec4<f32>(bestRgb * licht, tiefe);\n" +
+                "        let nebelF = smoothstep(fogNah, fogFern, vz);\n" +
+                "        return vec4<f32>(mix(bestRgb * licht, fogFarbe, nebelF), tiefe);\n" +
                 "    }\n" +
                 "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
                 "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
@@ -34963,9 +34982,22 @@ class AnazhRealm {
             fern: U.fern,
             fwd: U.fwd,
             seitenN: U.seitenN,
-            sonne: U.sonne,
-            lichtFarbe: U.lichtFarbe,
+            l0d: U.l0d,
+            l1d: U.l1d,
+            l2d: U.l2d,
+            l3d: U.l3d,
+            l0c: U.l0c,
+            l1c: U.l1c,
+            l2c: U.l2c,
+            l3c: U.l3c,
             ambientFarbe: U.ambientFarbe,
+            hemiOben: U.hemiOben,
+            hemiUnten: U.hemiUnten,
+            envUnten: U.envUnten,
+            envMitte: U.envMitte,
+            envOben: U.envOben,
+            fogNah: U.fogNah,
+            fogFern: U.fogFern,
             fogFarbe: U.fogFarbe,
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
@@ -35079,6 +35111,15 @@ class AnazhRealm {
     // Bake-Garantie (über Budget WENIG, nie NULL): verhungern die Bakes am Frame-Budget, erwacht die
     // reine Form auf lahmem Holz nie (dauerhaft `_frameOverBudget`). Der Takt zielt auf eine Rate je
     // echter Sekunde (Wanduhr, nie Framerate); Kopfraum erlaubt mehr. Danach memoisiert = 0.
+    // Takt-Garantie der Hand-Blase über Budget: ein Mesh-Bau je 250 ms (bei Kopfraum trägt das Budget).
+    _handBauErlaubt(budget) {
+        if (budget > 0) return false;
+        const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
+        if (this._handBauNaechster !== undefined && jetzt < this._handBauNaechster) return false;
+        this._handBauNaechster = jetzt + 250;
+        return true;
+    }
+
     _weltBakeErlaubt() {
         const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
         if (this._weltBakeFenster === undefined || jetzt - this._weltBakeFenster > 1000) {
@@ -36088,42 +36129,114 @@ class AnazhRealm {
             // Loop-Grenze in SEITEN (der Shader testet Seiten, nie rohe Felder).
             if (wm) this._weltSeitenPflegen(wm);
             fp.U.seitenN.value = wm ? Math.ceil(wm.obergrenze / AnazhRealm.WELT_MARCH.seite) : 0;
-            const dl = st.directionalLight;
-            if (dl) {
-                fp.U.sonne.value
-                    .copy(dl.position)
-                    .sub(
-                        dl.target && dl.target.position
-                            ? dl.target.position
-                            : this._nullVektor || (this._nullVektor = new THREE.Vector3())
-                    )
-                    .normalize();
-                const di = Math.max(0, dl.intensity || 0);
-                fp.U.lichtFarbe.value.set(dl.color.r * di, dl.color.g * di, dl.color.b * di);
-            }
-            const amb = st.ambientLight;
-            const hemi = st.hemiLight;
-            let ar = 0,
-                ag = 0,
-                ab = 0;
-            if (amb) {
-                const ai = Math.max(0, amb.intensity || 0);
-                ar += amb.color.r * ai;
-                ag += amb.color.g * ai;
-                ab += amb.color.b * ai;
-            }
-            if (hemi) {
-                const hi = Math.max(0, hemi.intensity || 0) * 0.5; // Himmel/Boden-Mittel
-                ar += ((hemi.color.r + hemi.groundColor.r) / 2) * hi;
-                ag += ((hemi.color.g + hemi.groundColor.g) / 2) * hi;
-                ab += ((hemi.color.b + hemi.groundColor.b) / 2) * hi;
-            }
-            if (!amb && !hemi) {
-                ar = ag = ab = 0.3;
-            }
-            fp.U.ambientFarbe.value.set(ar, ag, ab);
-            if (st.scene && st.scene.fog && st.scene.fog.color) fp.U.fogFarbe.value.copy(st.scene.fog.color);
+            this._feldLichtSync(fp.U);
         }
+    }
+
+    // DAS LICHT DER WELT für den Feld-Pass: liest dieselben Quellen wie jedes MeshStandard —
+    // Sonne/Mond, Fill, Rim, Back (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
+    // und die Himmels-Umgebung (Irradianz aus DENSELBEN Bytes wie `_skyEnvTex`, je Normalen-y).
+    // Der Nebel ist `scene.fog` (linear, View-Tiefe) wie beim Mesh.
+    _feldLichtSync(U) {
+        const st = this.state;
+        const quellen = [st.directionalLight, st.fillLight, st.rimLight, st.backLight];
+        const dirs = [U.l0d, U.l1d, U.l2d, U.l3d];
+        const cols = [U.l0c, U.l1c, U.l2c, U.l3c];
+        const nullV = this._nullVektor || (this._nullVektor = new THREE.Vector3());
+        for (let i = 0; i < 4; i++) {
+            const l = quellen[i];
+            if (!l || l.visible === false || !(l.intensity > 0)) {
+                cols[i].value.set(0, 0, 0);
+                continue;
+            }
+            dirs[i].value
+                .copy(l.position)
+                .sub(l.target && l.target.position ? l.target.position : nullV)
+                .normalize();
+            cols[i].value.set(l.color.r * l.intensity, l.color.g * l.intensity, l.color.b * l.intensity);
+        }
+        const amb = st.ambientLight;
+        const ai = amb && amb.visible !== false ? Math.max(0, amb.intensity || 0) : 0;
+        U.ambientFarbe.value.set(amb ? amb.color.r * ai : 0, amb ? amb.color.g * ai : 0, amb ? amb.color.b * ai : 0);
+        const hemi = st.hemiLight;
+        const hi = hemi && hemi.visible !== false ? Math.max(0, hemi.intensity || 0) : 0;
+        if (hemi) {
+            U.hemiOben.value.set(hemi.color.r * hi, hemi.color.g * hi, hemi.color.b * hi);
+            U.hemiUnten.value.set(hemi.groundColor.r * hi, hemi.groundColor.g * hi, hemi.groundColor.b * hi);
+        } else {
+            U.hemiOben.value.set(0, 0, 0);
+            U.hemiUnten.value.set(0, 0, 0);
+        }
+        this._feldEnvIrradianz(U);
+        const fog = st.scene && st.scene.fog;
+        if (fog && fog.color) {
+            U.fogFarbe.value.copy(fog.color);
+            U.fogNah.value = Number.isFinite(fog.near) ? fog.near : 1e6;
+            U.fogFern.value = Number.isFinite(fog.far) ? Math.max(fog.far, U.fogNah.value + 1e-3) : 2e6;
+        } else {
+            U.fogNah.value = 1e6;
+            U.fogFern.value = 2e6;
+        }
+    }
+
+    // Die Himmels-Irradianz (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der
+    // Kosinus-gefaltete Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt),
+    // sRGB-dekodiert wie die Textur. Neu gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde.
+    _feldEnvIrradianz(U) {
+        const st = this.state;
+        const d = st._skyEnvData;
+        const tex = st._skyEnvTex;
+        const scene = st.scene;
+        const env = scene && scene.environment;
+        const ei = scene && Number.isFinite(scene.environmentIntensity) ? scene.environmentIntensity : 1;
+        if (!d || !tex || !env) {
+            U.envUnten.value.set(0, 0, 0);
+            U.envMitte.value.set(0, 0, 0);
+            U.envOben.value.set(0, 0, 0);
+            return;
+        }
+        const stempel = (tex.version || 0) + ":" + ei;
+        if (this._feldEnvStempel === stempel) return;
+        this._feldEnvStempel = stempel;
+        const W = tex.image.width;
+        const H = tex.image.height;
+        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        // Zeile y → Elevation (v=1 Zenit … 0 Nadir), Farbe der Zeile (Spalte 0: azimut-konstant)
+        const zeilen = [];
+        for (let y = 0; y < H; y++) {
+            const v = 1 - y / (H - 1);
+            const el = (v - 0.5) * Math.PI; // −π/2 … π/2
+            const i = y * W * 4;
+            zeilen.push({ el, r: lin(d[i] / 255), g: lin(d[i + 1] / 255), b: lin(d[i + 2] / 255) });
+        }
+        // E(n) = (1/π)∫ L(ω) max(n·ω,0) dω; n in der x-y-Ebene (azimut-invariant), numerisch über
+        // Elevation × Azimut.
+        const falte = (nY) => {
+            const nX = Math.sqrt(Math.max(0, 1 - nY * nY));
+            let r = 0,
+                g = 0,
+                b = 0;
+            const AZ = 32;
+            for (const z of zeilen) {
+                const ce = Math.cos(z.el);
+                const se = Math.sin(z.el);
+                const dA = ((Math.PI / (H - 1)) * ce * (2 * Math.PI)) / AZ;
+                for (let a = 0; a < AZ; a++) {
+                    const phi = ((a + 0.5) / AZ) * 2 * Math.PI;
+                    const cos = nX * ce * Math.cos(phi) + nY * se;
+                    if (cos <= 0) continue;
+                    const w = cos * dA;
+                    r += z.r * w;
+                    g += z.g * w;
+                    b += z.b * w;
+                }
+            }
+            const k = ei / Math.PI;
+            return [r * k, g * k, b * k];
+        };
+        U.envUnten.value.fromArray(falte(-1));
+        U.envMitte.value.fromArray(falte(0));
+        U.envOben.value.fromArray(falte(1));
     }
 
     _feldPassDispose() {
@@ -66777,7 +66890,10 @@ class AnazhRealm {
                 ? entry.studioOv
                 : null;
         if (!(typ.startsWith("haus_") || ov)) return null;
+        // Fehlt der Wert (null/undefined/""), gilt der Default — Number(null) ist 0 und machte ohne studioOv
+        // jedes Welt-Haus zur 3×3-m-Flachdach-Hütte.
         const n = (v, d) => {
+            if (v == null || v === "") return d;
             const x = Number(v);
             return Number.isFinite(x) ? x : d;
         };
@@ -66806,13 +66922,16 @@ class AnazhRealm {
                   ? "andreas"
                   : "none";
         const fachwerk = brace && brace !== "none";
-        const hexRgb = (hex, fb) => {
-            const h = Number(hex);
-            if (!Number.isFinite(h)) return fb;
-            return { r: ((h >> 16) & 255) / 255, g: ((h >> 8) & 255) / 255, b: (h & 255) / 255 };
+        // Hex → LINEARE Albedo wie THREE.Color.setHex (sRGB-dekodiert) — sonst ist das Feld heller als das
+        // Studio-Mesh derselben Farbe; ein fehlender Wert (null/undefined/"") nimmt den Default-Hex.
+        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const hexRgb = (hex, fbHex) => {
+            let h = hex == null || hex === "" ? fbHex : Number(hex);
+            if (!Number.isFinite(h)) h = fbHex;
+            return { r: lin(((h >> 16) & 255) / 255), g: lin(((h >> 8) & 255) / 255), b: lin((h & 255) / 255) };
         };
         const col = ov && ov.col && typeof ov.col === "object" ? ov.col : null;
-        const cHolz = hexRgb(col && (col.holz != null ? col.holz : col.stamm), { r: 0.35, g: 0.27, b: 0.2 });
+        const cHolz = hexRgb(col && (col.holz != null ? col.holz : col.stamm), 0x594533);
         const cGefach = hexRgb(
             col &&
                 (col.gefach != null
@@ -66822,17 +66941,13 @@ class AnazhRealm {
                       : col.backstein != null
                         ? col.backstein
                         : col.lehm),
-            stil === "klinker"
-                ? { r: 0.59, g: 0.31, b: 0.24 }
-                : stil === "glas"
-                  ? { r: 0.5, g: 0.65, b: 0.72 }
-                  : { r: 0.85, g: 0.82, b: 0.76 }
+            stil === "klinker" ? 0x964f3d : stil === "glas" ? 0x80a6b8 : 0xd9d1c2
         );
         const cZiegel = hexRgb(
             col && (col.ziegel != null ? col.ziegel : col.dachmod != null ? col.dachmod : col.stamm),
-            { r: 0.61, g: 0.29, b: 0.21 }
+            0x9c4a36
         );
-        const cFund = hexRgb(col && col.stein, { r: 0.55, g: 0.52, b: 0.48 });
+        const cFund = hexRgb(col && col.stein, 0x8c857a);
         const levels = [];
         {
             let y = foundH;
@@ -67225,11 +67340,46 @@ class AnazhRealm {
             }
         }
         if (!kand.length) return null;
-        kand.sort((a, b) => b.prio - a.prio || b.vol - a.vol);
-        return kand.slice(0, 24).map((d) => {
-            delete d.prio;
-            return d;
+        const fertig = (liste) =>
+            liste.slice(0, 24).map((d) => {
+                delete d.prio;
+                return d;
+            });
+        if (kand.length <= 24) return fertig(kand.sort((a, b) => b.prio - a.prio || b.vol - a.vol));
+        // AUSWAHL bei Budget-Not (≤ 24): die SILHOUETTE zuerst — Dach-Prismen und Sockel/Platten, dann die
+        // Wände (die Loch-Segmente einer Wand-Ebene je Geschoss zu EINER Platte gelegt; Tür/Fenster liest
+        // nah das Mesh), danach Holz nach prio/Volumen. Sonst fallen bei vollem Fachwerk Wände und Dach.
+        const istWand = (d) => d.box && d.prio === 1 && Math.min(d.h.x, d.h.z) <= tWall * 0.5 + 1e-3 && d.h.y > 0.3;
+        const ebenen = new Map();
+        const rest = [];
+        for (const d of kand) {
+            if (!istWand(d)) {
+                rest.push(d);
+                continue;
+            }
+            const achse = d.h.x < d.h.z ? "x" : "z";
+            const stock = levels.findIndex((L) => d.c.y >= L.y - 0.05 && d.c.y <= L.top + 0.05);
+            const key = achse + ":" + Math.round(d.c[achse] * 100) + ":" + stock;
+            const lo = new THREE.Vector3(d.c.x - d.h.x, d.c.y - d.h.y, d.c.z - d.h.z);
+            const hi = new THREE.Vector3(d.c.x + d.h.x, d.c.y + d.h.y, d.c.z + d.h.z);
+            const e = ebenen.get(key);
+            if (!e) ebenen.set(key, { lo, hi, farbe: d.farbe, vol: d.vol });
+            else {
+                e.lo.min(lo);
+                e.hi.max(hi);
+                if (d.vol > e.vol) {
+                    e.farbe = d.farbe;
+                    e.vol = d.vol;
+                }
+            }
+        }
+        const waende = [...ebenen.values()].map((e) => {
+            const h = e.hi.clone().sub(e.lo).multiplyScalar(0.5);
+            return { box: true, c: e.lo.clone().add(h), h, farbe: e.farbe, vol: h.x * h.y * h.z, prio: 1 };
         });
+        const huelle = rest.filter((d) => d.prio === 1).sort((a, b) => b.vol - a.vol);
+        const holz = rest.filter((d) => d.prio !== 1).sort((a, b) => b.prio - a.prio || b.vol - a.vol);
+        return fertig([...huelle, ...waende.sort((a, b) => b.vol - a.vol), ...holz]);
     }
 
     // DER BOX-FIT: je Kind-Mesh eine Box (lokale AABB im Vorlagen-Raum) mit
@@ -70835,9 +70985,13 @@ class AnazhRealm {
             // nichts.
             const hand2 = AnazhRealm.ARCH_ZIEGEL_HAND * AnazhRealm.ARCH_ZIEGEL_HAND;
             if (distSq <= hand2) {
-                // Auch in der Hand-Blase ist das Feld die sichtbare Gestalt: das Mesh baut UNSICHTBAR als reiner
-                // Interaktions-Körper (Raycast ignoriert Sichtbarkeit, Tür-Blocker, Betreten). EIN sichtbares Gesetz.
-                if (!this._archIsRendered(entry) && built < budget) {
+                // Hand-Blase = Stufe 0 = ECHTE Geometrie (Tür, Anfassen, Betreten — wie die Streu-Stufe 0):
+                // steht das Mesh (oder seine Instanzen), IST es die Gestalt und das Feld schweigt; sonst läge
+                // der konservative Box-/Kapsel-Satz VOR dem Mesh und verdeckte es. Bis es steht, trägt das Feld.
+                // Die Hand-Blase ist der Raum des Spielers: über Budget baut sie mit Takt-Garantie weiter
+                // (ein Bau je 250 ms, wie die Bake-Garantie des Felds) — sonst bliebe auf langsamem Holz die Tür
+                // für immer Feld.
+                if (!this._archIsRendered(entry) && (built < budget || this._handBauErlaubt(budget))) {
                     this._rebuildArchitectureMesh(entry);
                     built++;
                 }
@@ -70845,17 +70999,9 @@ class AnazhRealm {
                 // Holz dauerhaft auf 0 und ließe die Form nie erwachen) — er
                 // taktet sich selbst über die Bake-Garantie und ist memoisiert.
                 this._archZiegelFern(entry);
-                if (entry._ziegelSlot) {
-                    this._weltFeldAktiv(entry._ziegelSlot, true);
-                    // KONSUM: haus_* in der Hand-Blase = Studio-Dichte (Mesh sichtbar);
-                    // Fern bleibt Feld-Silhouette. Wasserfall/etc. weiter Feld-only.
-                    const haus = typeof entry.type === "string" && entry.type.startsWith("haus_");
-                    if (entry.mesh) entry.mesh.visible = !!haus;
-                } else if (entry._ziegelGebacken && entry.mesh && entry.mesh.visible !== false) {
-                    // KEIN RÜCKWEG außer haus_ Hand-Dichte: Bake leer → sonst unsichtbar
-                    const haus = typeof entry.type === "string" && entry.type.startsWith("haus_");
-                    entry.mesh.visible = !!haus;
-                }
+                const echt = this._archIsRendered(entry);
+                if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, !echt);
+                if (entry.mesh) entry.mesh.visible = echt;
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
@@ -85933,7 +86079,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.494.0";
+AnazhRealm.VERSION = "18.495.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

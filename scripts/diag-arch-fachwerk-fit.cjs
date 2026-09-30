@@ -68,13 +68,47 @@ if (block) {
     const body = block.slice(block.indexOf("{"));
     try {
         // Minimal-THREE: nur Vector3 (Methode braucht keine Matrix/Box).
-        global.THREE = {
-            Vector3: function Vector3(x, y, z) {
+        class Vector3 {
+            constructor(x, y, z) {
                 this.x = x || 0;
                 this.y = y || 0;
                 this.z = z || 0;
-            },
-        };
+            }
+            clone() {
+                return new Vector3(this.x, this.y, this.z);
+            }
+            min(o) {
+                this.x = Math.min(this.x, o.x);
+                this.y = Math.min(this.y, o.y);
+                this.z = Math.min(this.z, o.z);
+                return this;
+            }
+            max(o) {
+                this.x = Math.max(this.x, o.x);
+                this.y = Math.max(this.y, o.y);
+                this.z = Math.max(this.z, o.z);
+                return this;
+            }
+            add(o) {
+                this.x += o.x;
+                this.y += o.y;
+                this.z += o.z;
+                return this;
+            }
+            sub(o) {
+                this.x -= o.x;
+                this.y -= o.y;
+                this.z -= o.z;
+                return this;
+            }
+            multiplyScalar(k) {
+                this.x *= k;
+                this.y *= k;
+                this.z *= k;
+                return this;
+            }
+        }
+        global.THREE = { Vector3 };
         fitFn = new Function("return function(entry) " + body + ";")();
         check("Function()-Instanz", typeof fitFn === "function");
     } catch (e) {
@@ -122,13 +156,11 @@ if (fitFn) {
             defs.every((d) => d && d.c && d.h && (d.box || d.prism)),
             "alle ok"
         );
-        console.log(
-            "  · count " +
-                JSON.stringify({ n, nBox, nPrism, nFlip, ver })
-        );
+        console.log("  · count " + JSON.stringify({ n, nBox, nPrism, nFlip, ver }));
     }
 
-    // Timber-prio füllt Cap: mit Andreas oft 0 Prism im Top-24 — trotzdem ≤24 + Boxes.
+    // Volles Fachwerk (Andreas) sprengt das Budget: die Silhouette bleibt — Sattel-Dach (2 Prismen) und
+    // Wände vor dem Holz (früher fraß prio-2-Holz alle 24 Plätze: ein Gerippe ohne Dach und Wand).
     const timber = fitFn.call(
         {},
         {
@@ -141,6 +173,22 @@ if (fitFn) {
         Array.isArray(timber) && timber.length >= 1 && timber.length <= 24,
         timber ? "n=" + timber.length : "null"
     );
+    const waende = (defs) =>
+        (defs || []).filter((d) => d && d.box && Math.min(d.h.x, d.h.z) < 0.15 && d.h.y > 0.8).length;
+    check("andreas: Sattel-Dach bleibt (2 Prismen)", (timber || []).filter((d) => d.prism).length >= 2);
+    check("andreas: Wände bleiben (≥ 4 Wand-Platten)", waende(timber) >= 4, "wand=" + waende(timber));
+    // Ohne studioOv (jedes Welt-Haus): die DEFAULTS gelten — Number(null) = 0 machte daraus eine
+    // schwarze 3×3-m-Flachdach-Hütte.
+    const welt = fitFn.call({}, { type: "haus_alemannisch" }) || [];
+    const ausdehnung = welt.reduce((m, d) => Math.max(m, Math.abs(d.c.x) + d.h.x), 0);
+    const schwarz = welt.filter((d) => d.farbe && d.farbe.r + d.farbe.g + d.farbe.b < 0.05).length;
+    check(
+        "Welt-Haus ohne ov: Maße aus Defaults (Breite ≥ 8 m)",
+        ausdehnung * 2 >= 8,
+        "W≈" + (ausdehnung * 2).toFixed(1)
+    );
+    check("Welt-Haus ohne ov: Sattel-Dach", welt.filter((d) => d.prism).length >= 2);
+    check("Welt-Haus ohne ov: keine schwarze Farbe", schwarz === 0, "schwarz=" + schwarz);
 
     // V18.491.92 — stil-alt fachwerk ohne explizites ov.gaube: Dorf-Gaube (prio-2)
     // unter Soft-Cap; fail-closed ov.gaube===false. Soft-Cap-Assert unverändert.
@@ -185,35 +233,23 @@ if (fitFn) {
         gaubeish(stilDefault) >= 1,
         "gBody=" + gaubeish(stilDefault)
     );
-    check(
-        "stil-alt andreas: ov.gaube===false unterdrückt",
-        gaubeish(stilOff) === 0,
-        "gBody=" + gaubeish(stilOff)
-    );
+    check("stil-alt andreas: ov.gaube===false unterdrückt", gaubeish(stilOff) === 0, "gBody=" + gaubeish(stilOff));
 
     // V18.491.94 — slim wing 2× prio-2: wantFluegel (fail-closed ov.fluegel===false);
     // Soft-Cap ≤24 hält Wing ≥1 unter stil-alt andreas W≥8 (nicht "drop ok").
     // Cap-Raum brace none + ov.fluegel===false → 0 wing weiter OK.
     const wingish = (defs, W) => {
         const thr = (Number(W) || 9) / 2 + 0.8; // jenseits Haupt-hw
-        return Array.isArray(defs)
-            ? defs.filter((d) => d && d.box && d.c && Math.abs(d.c.x) > thr).length
-            : 0;
+        return Array.isArray(defs) ? defs.filter((d) => d && d.box && d.c && Math.abs(d.c.x) > thr).length : 0;
     };
     const fluegelDefault = stilDefault; // selbes andreas W9 ohne ov.fluegel
     const wingDef = wingish(fluegelDefault, 9);
     check(
         "stil-alt andreas W≥8: Soft-Cap ≤24 (Flügel-Default-Pfad)",
-        Array.isArray(fluegelDefault) &&
-            fluegelDefault.length >= 1 &&
-            fluegelDefault.length <= 24,
+        Array.isArray(fluegelDefault) && fluegelDefault.length >= 1 && fluegelDefault.length <= 24,
         "n=" + (fluegelDefault ? fluegelDefault.length : "null") + " wing=" + wingDef
     );
-    check(
-        "stil-alt andreas W≥8 wantFluegel: wing ≥1 unter Soft-Cap",
-        wingDef >= 1,
-        "wing=" + wingDef
-    );
+    check("stil-alt andreas W≥8 wantFluegel: wing ≥1 unter Soft-Cap", wingDef >= 1, "wing=" + wingDef);
     const fluegelRoomOn = fitFn.call(
         {},
         {
@@ -257,9 +293,7 @@ if (fitFn) {
     );
     check(
         "Cap-Raum Soft-Cap ≤24",
-        Array.isArray(fluegelRoomOn) &&
-            fluegelRoomOn.length >= 1 &&
-            fluegelRoomOn.length <= 24,
+        Array.isArray(fluegelRoomOn) && fluegelRoomOn.length >= 1 && fluegelRoomOn.length <= 24,
         fluegelRoomOn ? "n=" + fluegelRoomOn.length : "null"
     );
 }

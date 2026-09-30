@@ -58,6 +58,72 @@ const server = http.createServer((req, res) => {
     });
 });
 
+// DIE BLICK-WAHL (Befund 30.09.: Kameras standen im Laub, unter dem Bauch des Tiers, hinter Stämmen):
+// 12 Azimute um das Objekt, je zwei Renders (Objekt-Feld an/aus, 160×90, Loop ruht) — der Azimut mit den
+// meisten vom Objekt geänderten Pixeln trägt Fern- UND Armlängen-Schuss.
+const SICHT_FN = async (a) => {
+    const r = window.anazhRealm;
+    const THREE_ = window.THREE;
+    const rend = r.state.renderer;
+    const cam = r.state.camera;
+    rend.setAnimationLoop(null);
+    if (r.state.world) r.state.world.timeOfDay = 0.5;
+    r.state.timeOfDay = 0.5;
+    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    const handles = [];
+    if (a.klasse === "kreatur") {
+        const u = window.__beweisWolf && window.__beweisWolf.userData;
+        for (const gl of (u && u._kzGlieder) || []) handles.push(gl.handle);
+    } else {
+        const e = a.klasse === "baum" ? window.__beweisBaum : window.__beweisHaus;
+        if (e && e._ziegelSlot) handles.push(e._ziegelSlot);
+    }
+    if (!handles.length) {
+        rend.setAnimationLoop(r._gameLoopTick);
+        return { w: a.w0, n: -1, grund: "kein Feld-Slot" };
+    }
+    const setze = (an) => handles.forEach((h) => r._weltFeldAktiv(h, an));
+    const bild = async () => {
+        try {
+            if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
+        } catch (_e) {}
+        if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
+        const rt = new THREE_.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
+        const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
+        rend.setRenderTarget(rt);
+        if (typeof rend.renderAsync === "function") await rend.renderAsync(r.state.scene, cam);
+        else rend.render(r.state.scene, cam);
+        const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 160, 90);
+        rend.setRenderTarget(prev);
+        if (rt.dispose) rt.dispose();
+        return px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+    };
+    let best = null;
+    for (let k = 0; k < 12; k++) {
+        const w = a.w0 + (k * Math.PI) / 6;
+        const px = a.ox + Math.cos(w) * a.dist,
+            pz = a.oz + Math.sin(w) * a.dist;
+        const g = r._voxelSurfaceY(px, pz);
+        cam.position.set(px, Math.max(g + 0.35, a.augeY != null ? a.augeY : g + a.augeH), pz);
+        cam.lookAt(a.ox, a.zielY, a.oz);
+        cam.updateMatrixWorld(true);
+        if (r.state.playerMesh) r.state.playerMesh.visible = false;
+        setze(true);
+        await bild(); // wärmt (Seiten/Listen-Upload)
+        const an = await bild();
+        setze(false);
+        const aus = await bild();
+        setze(true);
+        let n = 0;
+        for (let i = 0; i < an.length; i += 4)
+            if (Math.abs(an[i] - aus[i]) + Math.abs(an[i + 1] - aus[i + 1]) + Math.abs(an[i + 2] - aus[i + 2]) > 24)
+                n++;
+        if (!best || n > best.n) best = { w, n };
+    }
+    rend.setAnimationLoop(r._gameLoopTick);
+    return best;
+};
+
 // Im Seiten-Kontext: EIN Schuss mit der gegebenen Kamera + die Zahlen dieses Renders.
 const SCHUSS_FN = async (kam) => {
     const r = window.anazhRealm;
@@ -65,6 +131,12 @@ const SCHUSS_FN = async (kam) => {
     const rend = r.state.renderer;
     const cam = r.state.camera;
     const scene = r.state.scene;
+    // Der Spiel-Loop RUHT während des Schusses (sonst zieht er Kamera, Tageszeit und Cull-Zustand
+    // zwischen Setzen und Render weiter); Mittag fest, Lichter einmal nachgeführt.
+    rend.setAnimationLoop(null);
+    if (r.state.world) r.state.world.timeOfDay = 0.5;
+    r.state.timeOfDay = 0.5;
+    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
     cam.position.set(kam.px, kam.py, kam.pz);
     // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
     const sy = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : null;
@@ -77,6 +149,9 @@ const SCHUSS_FN = async (kam) => {
         if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
     } catch (_e) {}
     if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
+    // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
+    // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
+    if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
     const rt = new THREE_.RenderTarget(640, 360, { depthBuffer: true, samples: 0 });
     const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
     if (rend.info && typeof rend.info.reset === "function") rend.info.reset();
@@ -101,6 +176,7 @@ const SCHUSS_FN = async (kam) => {
         px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 640, 360);
     rend.setRenderTarget(prev);
     if (rt.dispose) rt.dispose();
+    rend.setAnimationLoop(r._gameLoopTick);
     if (!px || !px.length) return { ok: false, grund: "keine Pixel", zahlen };
     const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
     const set = new Set();
@@ -367,105 +443,65 @@ const SCHUSS_FN = async (kam) => {
         `Einschwingen: ${spawn.einschwingen.takte} Takte · Feld-Pass sichtbar ab Takt ${spawn.einschwingen.fpSichtbarBei} · Lücke (Tier unsichtbar) ${spawn.einschwingen.lueckeTakte} Takte`
     );
 
-    // ── 3: Kamera je Klasse (Fern + Armlänge) ──
-    const kamerasRechnen = async () => {
-        const kameras = await page.evaluate(() => {
+    // ── 3: Kamera je Klasse (Fern + Armlänge) — Objekt-Maße aus der Szene, Azimut aus der Blick-Wahl ──
+    const objektInfo = () =>
+        page.evaluate(() => {
             const r = window.anazhRealm;
             const THREE_ = window.THREE;
-            const pm = r.state.playerMesh.position;
-            const boden = (x, z) => {
-                const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, z) : r.getTerrainHeightAt(x, z);
-                return typeof y === "number" && isFinite(y) ? y : pm.y;
-            };
-            // Blick vom Spieler aus aufs Objekt: Kamera auf der Verbindungslinie, leicht seitlich.
-            const vonSpieler = (o, dist, augeH, zielH) => {
-                let dx = o.x - pm.x,
-                    dz = o.z - pm.z;
-                const l = Math.hypot(dx, dz) || 1;
-                dx /= l;
-                dz /= l;
-                const sx = -dz,
-                    sz = dx; // seitlich
-                const px = o.x - dx * dist + sx * dist * 0.35;
-                const pz = o.z - dz * dist + sz * dist * 0.35;
-                return { px, py: boden(px, pz) + augeH, pz, lx: o.x, ly: o.y + zielH, lz: o.z };
-            };
             const k = {};
             const wolf = window.__beweisWolf;
             if (wolf) {
                 const box = new THREE_.Box3().setFromObject(wolf);
                 const c = box.getCenter(new THREE_.Vector3());
-                const s = box.getSize(new THREE_.Vector3());
-                const o = { x: c.x, y: c.y, z: c.z };
-                // Tier-Schüsse: die Augen-Höhe hängt am TIER (Körpermitte), nicht am Boden unter
-                // der Kamera — sonst steht das Auge hangabwärts UNTER dem Tier (Befund 30.09.).
-                const fern = vonSpieler(o, Math.max(3.2, Math.max(s.x, s.z) * 2.2), 0, 0);
-                fern.py = o.y + s.y * 0.6;
-                const arm = vonSpieler(o, 1.1, 0, 0);
-                arm.py = o.y + s.y * 0.1;
-                k.kreatur = { fern, arm, box: { x: +s.x.toFixed(2), y: +s.y.toFixed(2), z: +s.z.toFixed(2) } };
+                const sz = box.getSize(new THREE_.Vector3());
+                k.kreatur = { x: c.x, y: c.y, z: c.z, sx: sz.x, sy: sz.y, sz: sz.z };
             }
-            return { k };
-        });
-        // Baum + Haus: Box aus dem Rückgabe-Objekt, sonst Nenn-Größe am Spawn-Punkt.
-        const kamerasArch = await page.evaluate((spawnObj) => {
-            const r = window.anazhRealm;
-            const THREE_ = window.THREE;
-            const pm = r.state.playerMesh.position;
-            const boden = (x, z) => {
-                const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, z) : r.getTerrainHeightAt(x, z);
-                return typeof y === "number" && isFinite(y) ? y : pm.y;
-            };
-            const vonSpieler = (o, dist, augeH, zielH) => {
-                let dx = o.x - pm.x,
-                    dz = o.z - pm.z;
-                const l = Math.hypot(dx, dz) || 1;
-                dx /= l;
-                dz /= l;
-                const sx = -dz,
-                    sz = dx;
-                const px = o.x - dx * dist + sx * dist * 0.25;
-                const pz = o.z - dz * dist + sz * dist * 0.25;
-                return { px, py: Math.max(boden(px, pz), o.y) + augeH, pz, lx: o.x, ly: o.y + zielH, lz: o.z };
-            };
-            const box = (e, p, nenn) => {
-                const obj = e && (e.isObject3D ? e : e.mesh || e.group || e.object);
-                if (obj && obj.isObject3D) {
-                    const b = new THREE_.Box3().setFromObject(obj);
-                    if (!b.isEmpty()) {
-                        const s = b.getSize(new THREE_.Vector3());
-                        return {
-                            x: (b.min.x + b.max.x) / 2,
-                            y: b.min.y,
-                            z: (b.min.z + b.max.z) / 2,
-                            r: Math.max(s.x, s.z) / 2,
-                            h: s.y,
-                            quelle: "box",
-                        };
-                    }
-                }
-                return { x: p.x, y: p.y, z: p.z, r: nenn.r, h: nenn.h, quelle: "nenn" };
-            };
-            const k = {};
-            if (spawnObj.baum && !spawnObj.baum.fehlt) {
-                const o = box(window.__beweisBaum, spawnObj.baum, { r: 3, h: 9 });
-                k.baum = {
-                    fern: vonSpieler(o, Math.max(14, o.h * 1.7), 1.7, o.h * 0.45),
-                    arm: vonSpieler(o, 1.4, 1.7, 1.6),
-                    o,
-                };
-            }
-            if (spawnObj.haus && !spawnObj.haus.fehlt) {
-                const o = box(window.__beweisHaus, spawnObj.haus, { r: 5, h: 8 });
-                k.haus = {
-                    fern: vonSpieler(o, Math.max(20, o.r * 3.2), 1.7, o.h * 0.35),
-                    arm: vonSpieler(o, o.r + 1.5, 1.7, 1.7),
-                    o,
+            for (const [name, e] of [
+                ["baum", window.__beweisBaum],
+                ["haus", window.__beweisHaus],
+            ]) {
+                if (!e || !e.position) continue;
+                const x = e.position.x,
+                    z = e.position.z;
+                const y = r._voxelSurfaceY(x, z);
+                // Maße: der Feld-Satz (lokale Größe) oder die Nenn-Größe
+                const kk = e._ziegelSlot && e._ziegelSlot.brick;
+                const g = kk && kk.lokalGroesse ? kk.lokalGroesse : null;
+                const s = e.scale && isFinite(e.scale) ? e.scale : 1;
+                k[name] = {
+                    x,
+                    y,
+                    z,
+                    r: g ? (Math.max(g.x, g.z) * s) / 2 : name === "baum" ? 3 : 5,
+                    h: g ? g.y * s : name === "baum" ? 9 : 8,
                 };
             }
             return k;
-        }, spawn.objekte);
-        return Object.assign({}, kameras.k, kamerasArch);
+        });
+    const kameraFuer = (klasse, o, w, art) => {
+        const at = (dist, augeH, zielY, augeY) => ({
+            dist,
+            augeH,
+            augeY,
+            zielY,
+            ox: o.x,
+            oz: o.z,
+            w0: w,
+            px: o.x + Math.cos(w) * dist,
+            pz: o.z + Math.sin(w) * dist,
+            lx: o.x,
+            ly: zielY,
+            lz: o.z,
+        });
+        if (klasse === "kreatur") {
+            const m = Math.max(o.sx, o.sz);
+            return art === "fern"
+                ? at(Math.max(4, m * 2.5), 0, o.y, o.y + o.sy * 0.6 + 0.5)
+                : at(Math.max(1.6, m * 0.5 + 1.0), 0, o.y, o.y + o.sy * 0.5 + 0.6);
+        }
+        if (klasse === "baum")
+            return art === "fern" ? at(Math.max(14, o.h * 1.7), 1.7, o.y + o.h * 0.45) : at(2.6, 1.7, o.y + 1.8);
+        return art === "fern" ? at(Math.max(20, o.r * 3.2), 1.7, o.y + o.h * 0.35) : at(o.r + 2.5, 1.7, o.y + 1.7);
     };
     // DAS UMSTELLEN: der Spieler steht dort, wo die Kamera steht — der Chunk-Ring, die
     // Foundry-Stufe (Distanz zum Spieler) und der March folgen ihm; eingeschwungen, wenn
@@ -524,21 +560,31 @@ const SCHUSS_FN = async (kam) => {
             `${substanz ? "✅" : "❌"} ${klasse}/${art}: dc=${z.dc} tris=${z.tris} · Feld=${z.weltMarch ? `belegt ${z.weltMarch.belegt} kapseln ${z.weltMarch.kapseln} bricks ${z.weltMarch.bricks}` : "–"} · Pass=${z.feldPass ? (z.feldPass.sichtbar ? "sichtbar" : "UNSICHTBAR") : "–"} · ${path.relative(root, file)}`
         );
     };
-    const plan = await kamerasRechnen();
+    const infos = await objektInfo();
     for (const klasse of ["kreatur", "baum", "haus"].filter((k) => KLASSEN.includes(k))) {
-        if (!plan[klasse]) {
+        const o = infos[klasse];
+        if (!o) {
             console.log(`– ${klasse}: kein Objekt (${JSON.stringify(spawn.objekte[klasse] || {})})`);
             continue;
         }
-        const um = await umstellen(plan[klasse].fern);
-        const k = (await kamerasRechnen())[klasse];
-        console.log(`  umgestellt zu ${klasse}: ${um.takte} Takte · ${um.chunks} Chunks`);
-        if (!k) {
-            console.log(`– ${klasse}: kein Objekt (${JSON.stringify(spawn.objekte[klasse] || {})})`);
-            continue;
+        const suche = kameraFuer(klasse, o, 0, "fern");
+        const wahl = await page.evaluate(SICHT_FN, Object.assign({ klasse }, suche));
+        console.log(
+            `  Blick-Wahl ${klasse}: Azimut ${((wahl.w * 180) / Math.PI).toFixed(0)}° · ${wahl.n} Objekt-Pixel`
+        );
+        const kf = kameraFuer(klasse, o, wahl.w, "fern");
+        const ka = kameraFuer(klasse, o, wahl.w, "arm");
+        for (const [art, k] of [
+            ["fern", kf],
+            ["arm", ka],
+        ]) {
+            // Der Spieler steht an der Kamera (Chunk-Ring, Hand-Blase, Foundry-Stufe folgen ihm).
+            const um = await umstellen(k);
+            console.log(`  umgestellt zu ${klasse}/${art}: ${um.takte} Takte · ${um.chunks} Chunks`);
+            const g = await page.evaluate((k) => window.anazhRealm._voxelSurfaceY(k.px, k.pz), k);
+            k.py = Math.max(g + 0.35, k.augeY != null ? k.augeY : g + k.augeH);
+            await schiesse(klasse, art, k);
         }
-        await schiesse(klasse, "fern", k.fern);
-        await schiesse(klasse, "arm", k.arm);
     }
 
     // ── 5: DIE WIESE (PFLICHT D) auf der Wolf-Bühne — nachweislich eben (die Mitte der
