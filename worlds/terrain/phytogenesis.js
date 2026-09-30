@@ -5115,6 +5115,13 @@ init();
         const geo = mesh.geometry;
         if (!geo || !geo.attributes || !geo.attributes.position) return null;
         const out = { kind: __assetMaterialKind(mesh.material) };
+        // DIE LOOK-KLASSE REIST MIT (30.09., additiv, must-ignore): Kreatur-/Mensch-Bäcker stempeln
+        // material.userData.__klasse (fell · straehne* · skin · haut · hair) — der Welt-Weber webt fuer
+        // GENAU diese Namen FELL_LOOK/HAUT_LOOK/HAAR_LOOK. Pflanzen-Materialien tragen das Feld nie
+        // (ihre Replies bleiben byte-alt, gate:asset-contract).
+        const __kl = mesh.material && mesh.material.userData && mesh.material.userData.__klasse;
+        if (out.kind === "unknown" && typeof __kl === "string" && /^(fell|straehne|straehneD|straehneL|skin|haut|hair)$/.test(__kl))
+            out.kind = __kl;
         // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
         // Pflanzen tragen das Feld nie — additiv, must-ignore).
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;

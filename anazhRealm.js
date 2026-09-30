@@ -17165,7 +17165,12 @@ class AnazhRealm {
     _ofenMeshEintragAusThree(mesh) {
         const geo = mesh.geometry;
         const mat = mesh.material || {};
-        const out = { kind: "unknown" };
+        // DIE KLASSE REIST MIT: der Studio-Bäcker stempelt `material.userData.__klasse` (fell · straehne* · skin ·
+        // haut · hair); der Material-Weber webt für GENAU diese Namen die Lab-Shader-Gesetze (FELL_LOOK/HAUT_LOOK/
+        // HAAR_LOOK). Befund 30.09.: hier stand `kind: "unknown"` fest — 0 von 11 Wolf-Materialien trugen das
+        // Fell-Gesetz, der Weber war ein toter Leser. Andere Klassen (Auge, Klaue …) bleiben "unknown".
+        const kl = mat.userData && mat.userData.__klasse;
+        const out = { kind: typeof kl === "string" && AnazhRealm.LOOK_KLASSEN.has(kl) ? kl : "unknown" };
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
         out.mat = {
             roughness: typeof mat.roughness === "number" ? mat.roughness : 0.7,
@@ -20861,6 +20866,36 @@ class AnazhRealm {
         return !!(u && u._kzNah !== true && (u._kzGlieder || u._kzVersuch));
     }
 
+    // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): die Strähnen zeichnen nur, solange ihre
+    // projizierte Breite FELL_BILDSCHIRM.pxMin erreicht — darunter ändern sie kein Pixel mehr (gemessen), das Tier
+    // tragen Körper-Fell + FELL_LOOK. Die Grenze folgt Bildhöhe, Sichtfeld und Tiergröße (jedes Holz, jede
+    // Auflösung); Hysterese gegen Flackern, geschaltet wird nur `visible`. Gemessen 30.09.: Strähnen = 205k von
+    // 333k Dreiecken eines Wolfs.
+    _fellBildschirmGesetz(creature, tB) {
+        if (!tB.straehnen) {
+            tB.straehnen = [];
+            tB.wrap.traverse((o) => {
+                const kl = o.isMesh && o.userData && o.userData.__klasse;
+                if (typeof kl === "string" && kl.indexOf("straehne") === 0) tB.straehnen.push(o);
+            });
+        }
+        if (!tB.straehnen.length) return;
+        const cam = this.state.camera;
+        const rend = this.state.renderer;
+        if (!cam || !cam.isPerspectiveCamera) return;
+        const F = AnazhRealm.FELL_BILDSCHIRM;
+        const hPx = (rend && rend.domElement && rend.domElement.height) || 1080;
+        const pxJeM = hPx / (2 * Math.tan(((cam.fov || 60) * Math.PI) / 360));
+        const breite = F.breiteM * (tB.f || 1) * (creature.scale.x || 1);
+        const d = Math.max(0.1, cam.position.distanceTo(creature.position));
+        const px = (breite * pxJeM) / d;
+        const war = tB._fellAn !== false;
+        const an = px >= F.pxMin * (war ? 1 - F.hyst : 1 + F.hyst);
+        if (an === war && tB._fellAn !== undefined) return;
+        tB._fellAn = an;
+        for (const s of tB.straehnen) s.visible = an;
+    }
+
     _kreaturZiegelTod(cr) {
         const u = cr && cr.userData;
         if (!u) return;
@@ -21302,6 +21337,7 @@ class AnazhRealm {
                         tB.wrap.visible = nah;
                         tB.fern.visible = !nah;
                     }
+                    if (nah) this._fellBildschirmGesetz(creature, tB);
                 }
                 // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
                 const aura = creature.userData && creature.userData.taskAura;
@@ -68138,7 +68174,10 @@ class AnazhRealm {
             const def =
                 m.kind === "bark" || m.kind === "stem"
                     ? [0.32, 0.22, 0.13]
-                    : m.kind === "unknown" && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3
+                    : (m.kind === "unknown" || AnazhRealm.LOOK_KLASSEN.has(m.kind)) &&
+                        m.mat &&
+                        Array.isArray(m.mat.color) &&
+                        m.mat.color.length === 3
                       ? m.mat.color
                       : [0.2, 0.34, 0.13];
             const carr = new Float32Array(vcount * 3);
@@ -68176,6 +68215,8 @@ class AnazhRealm {
         }
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+        // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
+        if (AnazhRealm.LOOK_KLASSEN.has(m.kind)) mesh.userData.__klasse = m.kind;
         // V18.465 — das Tür-Scharnier reist ans Mesh (Umschlag out.tuer, additiv):
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
@@ -89956,6 +89997,15 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
 // Bis hierher ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die
 // Glieder-Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten).
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: 55, aus: 65 });
+// Die Studio-Material-Klassen, für die der Material-Weber ein Lab-Shader-Gesetz trägt (FELL_LOOK · HAUT_LOOK ·
+// HAAR_LOOK) — die Extraktion reicht genau sie als `kind` durch.
+AnazhRealm.LOOK_KLASSEN = new Set(["fell", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
+// Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
+// Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
+// in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse `diag-fell-blick`, 720p, fov 75°): die Strähnen ändern
+// 23 592 px bei 1,5 m · 8 421 bei 3 m · 1 808 bei 6 m · 0 ab 10 m — viele Strähnen unter einem Pixel wirken als
+// Dichte, bis ~0,1 px je Strähne (≈ 8 m bei 720p, ≈ 12 m bei 1080p).
+AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ breiteM: 0.018, pxMin: 0.1, hyst: 0.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;
