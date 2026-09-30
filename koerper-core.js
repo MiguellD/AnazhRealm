@@ -1,0 +1,1091 @@
+// AnazhRealm — koerper-core.js: DER KOERPER-STUDIO-KERN (Katalysator-Bogen W-A6, ε-Checkliste).
+// Die GESTALT- + BEWEGUNGS-DATEN des Koerperstudios (worlds/koerperstudio/index.html —
+// Da Vinci Studio: Living Human — Proportions-/Morph-Dials + Emotions-/Gang-Profile
+// des PD-geregelten Rigs). Byte-treu aus dem Schoepfer-Werk extrahiert (Literal-
+// Slices, sha256-Beleg im Wellen-Bericht) — die Shell UND AnazhRealm lesen DIESE
+// eine Quelle (G2.1), ein Nachbau ist verboten.
+//
+// FORM (Vertrag v1.1 §7 N7.2 + §8): namespaced IIFE __koerperCore, MESHFREI = 1 —
+// DER HOST BLEIBT DER OFEN (W-A6-Gesetz): bake-core-Isosurface + _humanoidSkeleton +
+// _buildHumanoidRig bauen den Avatar-Koerper; dieser Kern liefert GESTALT-PARAMETER
+// (die acht Morph-Dials + die String-Wahlen als fx.gestalt) + das benannte v1.1-Feld
+// fx.motion (die zehn Emotions-/Gang-Profile als DATEN — der Host-Konsument ist der
+// _animateCompoundMotion-/_animateHumanoidRig-Bogen, benannter Andock-Punkt im
+// Wellen-Bericht). KEIN buildInstance (B2 N/A), kein Mesh-Kanal, kein Parallel-Sim.
+//
+// DETERMINISMUS (G2.3): reine Daten. THREE-frei, DOM-frei.
+(function (root) {
+    "use strict";
+
+    var VERSION = "1.0.0";
+    var STUDIO_VERTRAG = 1; // G4.3
+    var MESHFREI = 1; // v1.1 §8 — components-only-Kern (keine Gestalt, nur Daten)
+    // v1.2 §8.5 (V18.478, rein additiv) — DIE OFEN-STUFEN-ZEILE: ein MESHFREI-Kern
+    // deklariert hiermit die LOD-Stufen, die der WIRTS-OFEN seiner Gestalt bäckt
+    // (bakeMenschInstance: Stufe 0 = feiner Gelenk-Baum · Stufe 1 = gemergter
+    // Fern-Guss, _menschFernToggle). B2 bleibt N/A (kein buildInstance) — die
+    // Zeile ist die VERTRAGS-Wahrheit der Pipe-Bäckerei (BAKERS_BY_KIND).
+    var PORTAL_RENDER_CONFIG = { lod: { kindStages: { koerper: [0, 1] } } };
+
+    // ── Der Lab-Startzustand (byte-treu Lab Z.105) — Morph-Dials + String-Wahlen ──
+    // prettier-ignore
+    var START_PARAMS = {skinTone:'karamell',height:1.0,mass:0.35,tone:0.5,age:0.15,gender:1.0,hairLen:1.0,hairVol:1.0,arms:0.0,skinTone:'karamell',hairStyle:'mittel',hairColor:'darkbrown',top:'tshirt',topColor:'navy',bottom:'pants',bottomColor:'charcoal',shoes:'sneaker',shoeColor:'white'};
+    // ── Die Emotions-/Gang-Profile (byte-treu Lab Z.118) — das motion-Feld ──
+    // prettier-ignore
+    var MOTION = {idle:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0.14,elbowR:0.14,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.042,sway:0.022,freq:1.25,kpMul:1.0,irisSpeed:0.3,blinkRate:0.5},joy:{headY:0,headX:-0.14,headZ:0.04,spineY:0,spineX:-0.08,spineZ:0,bodyX:-0.05,bodyZ:0,armL:0.6,armR:0.6,armLX:-0.2,armRX:-0.2,elbowL:0.55,elbowR:0.55,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.07,sway:0.04,freq:3.2,kpMul:0.35,irisSpeed:1.0,blinkRate:0.8},sad:{headY:0,headX:0.18,headZ:0.04,spineY:0,spineX:0.07,spineZ:0.02,bodyX:0.05,bodyZ:0,armL:0.08,armR:0.08,armLX:0.05,armRX:0.05,elbowL:0.3,elbowR:0.3,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.012,sway:0.003,freq:0.5,kpMul:2.2,irisSpeed:0.04,blinkRate:0.18},angry:{headY:0,headX:-0.08,headZ:0,spineY:0,spineX:-0.06,spineZ:0,bodyX:-0.06,bodyZ:0,armL:0.15,armR:0.15,armLX:-0.15,armRX:-0.15,elbowL:0.5,elbowR:0.5,hipLX:0,hipRX:0,hipLZ:-0.08,hipRZ:0.08,kneeL:0,kneeR:0,breath:0.048,sway:0.006,freq:2.5,kpMul:1.3,irisSpeed:0.03,blinkRate:0.5},fear:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.08,spineZ:0.02,bodyX:0.06,bodyZ:0,armL:-0.08,armR:-0.08,armLX:0.12,armRX:0.12,elbowL:0.6,elbowR:0.6,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.022,freq:4.5,kpMul:1.8,irisSpeed:1.5,blinkRate:0.25},run:{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.06,sway:0.012,freq:2.0,kpMul:1.1,irisSpeed:0.12,blinkRate:0.35},pwalk:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:0.05,spineZ:0,bodyX:0.04,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0.01,freq:1.6,kpMul:1.0,irisSpeed:0.2,blinkRate:0.45},slide:{headY:0,headX:-0.2,headZ:0,spineY:0,spineX:0.3,spineZ:0,bodyX:0.2,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,armLZ:0,armRZ:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.05,sway:0,freq:2.0,kpMul:1.4,irisSpeed:0.1,blinkRate:0.3},fight:{headY:0,headX:-0.06,headZ:0,spineY:0,spineX:0.06,spineZ:0,bodyX:-0.04,bodyZ:0,armL:0.1,armR:0.1,armLX:-0.45,armRX:-0.45,elbowL:1.35,elbowR:1.35,hipLX:0,hipRX:0,hipLZ:-0.12,hipRZ:0.12,kneeL:0,kneeR:0,breath:0.04,sway:0.01,freq:2.8,kpMul:1.25,irisSpeed:0.08,blinkRate:0.35},showcase:{headY:0,headX:-0.03,headZ:0,spineY:0,spineX:-0.02,spineZ:0,bodyX:-0.02,bodyZ:0,armL:0.15,armR:0.15,armLX:0,armRX:0,elbowL:0.2,elbowR:0.2,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.025,sway:0.015,freq:1.0,kpMul:1.0,irisSpeed:0.4,blinkRate:0.4}};
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  B4 PARAMS — die acht numerischen Lab-Slider als DATEN (worlds/
+    //  koerperstudio/index.html Z.51–68: min/max/step/value; die String-
+    //  Wahlen [skinTone/hairStyle/Kleidung] sind KEINE B4-Zeilen — sie
+    //  reisen als fx.gestalt-Daten).
+    // ═══════════════════════════════════════════════════════════════════════
+    var PARAMS = [
+        {
+            id: "height",
+            lab: "Groesse",
+            min: 0.85,
+            max: 1.15,
+            step: 0.01,
+            def: 1.0,
+            law: "Koerpergroessen-Skala",
+            grp: "KOERPER",
+        },
+        {
+            id: "mass",
+            lab: "Masse (Fett)",
+            min: 0,
+            max: 1,
+            step: 0.01,
+            def: 0.35,
+            law: "Fettanteil — Taille/Bauch/Wangen folgen",
+            grp: "KOERPER",
+        },
+        {
+            id: "tone",
+            lab: "Muskeltonus",
+            min: 0,
+            max: 1,
+            step: 0.01,
+            def: 0.5,
+            law: "Muskelquerschnitt (effTone faellt mit Alter)",
+            grp: "KOERPER",
+        },
+        {
+            id: "age",
+            lab: "Alter",
+            min: 0,
+            max: 1,
+            step: 0.01,
+            def: 0.15,
+            law: "18–80 Jahre: Haltung/Kopfposition/Gesicht altern",
+            grp: "KOERPER",
+        },
+        {
+            id: "gender",
+            lab: "Maennlichkeit",
+            min: 0,
+            max: 1,
+            step: 0.01,
+            def: 1.0,
+            law: "Schulter/Huefte/Kiefer-Dimorphismus",
+            grp: "KOERPER",
+        },
+        {
+            id: "hairLen",
+            lab: "Haarlaenge",
+            min: 0.2,
+            max: 2.0,
+            step: 0.05,
+            def: 1.0,
+            law: "Straehnen-Laengen-Skala",
+            grp: "HAAR",
+        },
+        {
+            id: "hairVol",
+            lab: "Haarvolumen",
+            min: 0.5,
+            max: 2.0,
+            step: 0.05,
+            def: 1.0,
+            law: "Straehnen-Dicken-Skala",
+            grp: "HAAR",
+        },
+        {
+            id: "arms",
+            lab: "Armhaltung",
+            min: 0,
+            max: 1,
+            step: 0.01,
+            def: 0.0,
+            law: "Arm-Abspreizung (0 = anliegend)",
+            grp: "POSE",
+        },
+    ];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  LOOK ALS GESETZ (V18.461) — Stoff-Palette + Kleid-Zonen + Haar-Streu.
+    //  Das Gesetz sagt WAS (welche Teile, welche Farbe, welche Verteilung),
+    //  die Deck-Technik ist Leser-Sache (das Lab näht seine echten Schnitte +
+    //  Frisuren, der Pipe-Bäcker hüllt/streut deterministisch). MESHFREI §8.
+    // ═══════════════════════════════════════════════════════════════════════
+    // Die Stoff-Palette (verbatim aus der Lab-Shell gewandert — Shell liest den Kern).
+    // prettier-ignore
+    var CLOTH_COLORS={white:{hex:0xe8e6e0,name:'Weiß'},charcoal:{hex:0x2a2c30,name:'Anthrazit'},grey:{hex:0x6b6e73,name:'Grau'},black:{hex:0x161618,name:'Schwarz'},navy:{hex:0x233047,name:'Navy'},blue:{hex:0x3a5a8a,name:'Blau'},red:{hex:0x8f3328,name:'Rot'},green:{hex:0x3a5a3a,name:'Grün'},olive:{hex:0x57592f,name:'Oliv'},mustard:{hex:0xb8893a,name:'Senf'},burgundy:{hex:0x5a2530,name:'Bordeaux'},sand:{hex:0xc9b487,name:'Sand'},teal:{hex:0x2a6a6a,name:'Petrol'}};
+    // Die Kleid-ZONEN: welcher Schnitt welche Baum-Teile hüllt (inflate = Hüllen-
+    // Abstand — das Lab-Prinzip „Kleidung wird AUS der Haut extrudiert" als Zeilen).
+    function kleidZonen(d) {
+        d = d || {};
+        var farbe = function (key, fallback) {
+            return (CLOTH_COLORS[key] || CLOTH_COLORS[fallback]).hex;
+        };
+        var zonen = [];
+        var top = d.top || "tshirt";
+        if (top !== "none") {
+            // Die Lab-Teile-Liste (buildTop verbatim): Hals-Teile füllen den
+            // Kragen, pelvis/glutes geben den untucked-Saum-Überlapp der Hose.
+            var topTeile = [
+                "ribcage", "chest", "waist", "upperBack",
+                "pec1", "pec-1", "abs", "oblique1", "oblique-1",
+                "lat1", "lat-1", "trap1", "trap-1", "breast1", "breast-1",
+                "neckBase", "neckMain", "scm1", "scm-1",
+                "pelvis", "glute1", "glute-1",
+            ];
+            // Ärmel = die GANZE Oberarm-Muskelgruppe (deltoid+bicep+tricep+uarm
+            // hängen alle am arm-Gelenk — eine Teil-Hülle allein ließe Haut ragen).
+            if (top === "tshirt" || top === "pullover" || top === "poncho")
+                topTeile = topTeile.concat([
+                    "deltoid1", "deltoid-1", "bicep1", "bicep-1",
+                    "tricep1", "tricep-1", "uarm1", "uarm-1",
+                ]);
+            // STOFF-CHARAKTER (V18.464): die Lab-Material-Zeile je Schnitt
+            // (getCloth-Aufrufe verbatim) — rough + Webungs-Art reisen mit,
+            // damit Strick ≠ Baumwolle ≠ Denim ≠ Leder auch in der WELT liest.
+            zonen.push({
+                schnitt: top,
+                teile: topTeile,
+                hex: farbe(d.topColor, "navy"),
+                inflate: 1.07,
+                rough: top === "pullover" ? 0.92 : top === "tank" ? 0.82 : top === "poncho" ? 0.88 : 0.85,
+                webe: top === "pullover" ? "knit" : top === "poncho" ? "wool" : "cotton",
+            });
+        }
+        var bottom = d.bottom || "pants";
+        if (bottom !== "none") {
+            var botTeile = [
+                "pelvis", "glute1", "glute-1", "quad1", "quad-1", "vlat1", "vlat-1",
+                "adduct1", "adduct-1", "hamstring1", "hamstring-1",
+            ];
+            if (bottom === "pants")
+                botTeile = botTeile.concat(["kneecap1", "kneecap-1", "calf1", "calf-1", "shin1", "shin-1"]);
+            zonen.push({
+                schnitt: bottom,
+                teile: botTeile,
+                hex: farbe(d.bottomColor, "charcoal"),
+                inflate: 1.06,
+                rough: bottom === "pants" ? 0.82 : 0.85,
+                webe: bottom === "pants" ? "denim" : "cotton",
+            });
+        }
+        var shoes = d.shoes || "sneaker";
+        if (shoes !== "none") {
+            // Der Fuß ist im Baum eine ANONYME Gruppe unter dem ankle-Gelenk
+            // (heel/mid/Zehen unregistriert) — die Schuh-Zone nennt das GELENK,
+            // der Leser hüllt alle Meshes darunter (Gruppen-Hüllen-Regel).
+            zonen.push({
+                schnitt: shoes,
+                teile: ["ankle1", "ankle-1"],
+                hex: farbe(d.shoeColor, "white"),
+                inflate: 1.12,
+                rough: shoes === "boot" ? 0.45 : 0.55,
+                webe: shoes === "boot" ? "leather" : "rubber",
+            });
+        }
+        return zonen;
+    }
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DIE HÜLLEN-MASCHINE (V18.463) — Voxel-Ops + Surface-Nets, VERBATIM aus
+    //  der Lab-Shell gewandert (worlds/koerperstudio, browser-portable, THREE-
+    //  frei = MESHFREI §8): die EINE Maschine, mit der Haut- und Kleid-HÜLLEN
+    //  über den Teil-Primitiven entstehen. ZWEI Leser: die Lab-Shell (nutzt sie
+    //  mit ihren Schnitten/Säumen/Klammern = Studio-Erlebnis) und der Pipe-
+    //  Bäcker (bakeMenschInstance: geschlossene Hüllen + Gelenk-Gewichte für
+    //  die Welt). prettier-ignore: der Block ist eingefrorener Lab-Text.
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    function _vox_dilate(g,nx,ny,nz,iters){
+      for(var it=0;it<iters;it++){var o=new Uint8Array(g.length);
+        for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var id=i+nx*(j+ny*k);
+          if(g[id]){o[id]=1;continue;}
+          if((i>0&&g[id-1])||(i<nx-1&&g[id+1])||(j>0&&g[id-nx])||(j<ny-1&&g[id+nx])||(k>0&&g[id-nx*ny])||(k<nz-1&&g[id+nx*ny]))o[id]=1;}
+        g=o;}
+      return g;}
+    function _vox_erode(g,nx,ny,nz,iters){
+      for(var it=0;it<iters;it++){var o=new Uint8Array(g.length);
+        for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var id=i+nx*(j+ny*k);
+          if(!g[id])continue;
+          var keep=1;
+          if(i==0||!g[id-1])keep=0;else if(i==nx-1||!g[id+1])keep=0;
+          else if(j==0||!g[id-nx])keep=0;else if(j==ny-1||!g[id+nx])keep=0;
+          else if(k==0||!g[id-nx*ny])keep=0;else if(k==nz-1||!g[id+nx*ny])keep=0;
+          o[id]=keep;}
+        g=o;}
+      return g;}
+    function _vox_fill(g,nx,ny,nz){               // fill enclosed holes (flood bg from border)
+      var reach=new Uint8Array(g.length),st=[];
+      function push(id){if(!g[id]&&!reach[id]){reach[id]=1;st.push(id);}}
+      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){
+        if(i==0||i==nx-1||j==0||j==ny-1||k==0||k==nz-1)push(i+nx*(j+ny*k));}
+      while(st.length){var id=st.pop();var i=id%nx,j=((id/nx)|0)%ny,k=(id/(nx*ny))|0;
+        if(i>0)push(id-1);if(i<nx-1)push(id+1);if(j>0)push(id-nx);if(j<ny-1)push(id+nx);
+        if(k>0)push(id-nx*ny);if(k<nz-1)push(id+nx*ny);}
+      var o=new Uint8Array(g.length);
+      for(var x=0;x<g.length;x++)o[x]=(g[x]||!reach[x])?1:0;
+      return o;}
+    function _gauss1d(sig){var r=Math.max(1,Math.ceil(sig*3)),w=[],s=0;
+      for(var i=-r;i<=r;i++){var e=Math.exp(-(i*i)/(2*sig*sig));w.push(e);s+=e;}
+      for(var i=0;i<w.length;i++)w[i]/=s;return {w:w,r:r};}
+    function _blur3(f,nx,ny,nz,sig){var K=_gauss1d(sig),w=K.w,r=K.r,tmp=new Float32Array(f.length);
+      // x
+      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
+        for(var t=-r;t<=r;t++){var ii=i+t;if(ii<0)ii=0;if(ii>=nx)ii=nx-1;a+=w[t+r]*f[ii+nx*(j+ny*k)];}
+        tmp[i+nx*(j+ny*k)]=a;}
+      var out=new Float32Array(f.length);
+      // y
+      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
+        for(var t=-r;t<=r;t++){var jj=j+t;if(jj<0)jj=0;if(jj>=ny)jj=ny-1;a+=w[t+r]*tmp[i+nx*(jj+ny*k)];}
+        out[i+nx*(j+ny*k)]=a;}
+      // z
+      for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
+        for(var t=-r;t<=r;t++){var kk=k+t;if(kk<0)kk=0;if(kk>=nz)kk=nz-1;a+=w[t+r]*out[i+nx*(j+ny*kk)];}
+        tmp[i+nx*(j+ny*k)]=a;}
+      return tmp;}
+    var _CPOS=[[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1],[1,0,1],[0,1,1],[1,1,1]];
+    var _SNED=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+    function surfaceNets(F,nx,ny,nz,level,ox,oy,oz,vox){
+      var cnx=nx-1,cny=ny-1,cnz=nz-1;
+      var vid=new Int32Array(cnx*cny*cnz);for(var q=0;q<vid.length;q++)vid[q]=-1;
+      var verts=[],faces=[],c=new Float32Array(8);
+      function CID(i,j,k){return i+cnx*(j+cny*k);}
+      for(var k=0;k<cnz;k++)for(var j=0;j<cny;j++)for(var i=0;i<cnx;i++){
+        for(var e=0;e<8;e++)c[e]=F[(i+(e&1))+nx*((j+((e>>1)&1))+ny*(k+((e>>2)&1)))];
+        var mask=0;for(var e=0;e<8;e++)if(c[e]<level)mask|=(1<<e);
+        if(mask==0||mask==255)continue;
+        var px=0,py=0,pz=0,cnt=0;
+        for(var e=0;e<12;e++){var a=_SNED[e][0],b=_SNED[e][1];
+          if((c[a]<level)!=(c[b]<level)){var t=(level-c[a])/(c[b]-c[a]+1e-12);
+            px+=_CPOS[a][0]+t*(_CPOS[b][0]-_CPOS[a][0]);
+            py+=_CPOS[a][1]+t*(_CPOS[b][1]-_CPOS[a][1]);
+            pz+=_CPOS[a][2]+t*(_CPOS[b][2]-_CPOS[a][2]);cnt++;}}
+        var vi=verts.length;verts.push([(px/cnt+i)*vox+ox,(py/cnt+j)*vox+oy,(pz/cnt+k)*vox+oz]);
+        vid[CID(i,j,k)]=vi;
+        var s0=(c[0]<level);
+        for(var ax=0;ax<3;ax++){var corner=ax==0?1:ax==1?2:4;
+          if((c[0]<level)==(c[corner]<level))continue;
+          var iu=(ax+1)%3,iv=(ax+2)%3;
+          var dux=iu==0?1:0,duy=iu==1?1:0,duz=iu==2?1:0;
+          var dvx=iv==0?1:0,dvy=iv==1?1:0,dvz=iv==2?1:0;
+          var a0=i,b0=j,c0=k;
+          var a1=i-dux,b1=j-duy,c1=k-duz;
+          var a2=i-dux-dvx,b2=j-duy-dvy,c2=k-duz-dvz;
+          var a3=i-dvx,b3=j-dvy,c3=k-dvz;
+          if(a1<0||b1<0||c1<0||a2<0||b2<0||c2<0||a3<0||b3<0||c3<0)continue;
+          var A=vid[CID(a0,b0,c0)],B=vid[CID(a1,b1,c1)],C=vid[CID(a2,b2,c2)],D=vid[CID(a3,b3,c3)];
+          if(A<0||B<0||C<0||D<0)continue;
+          if(s0){faces.push([A,B,C]);faces.push([A,C,D]);}
+          else {faces.push([A,C,B]);faces.push([A,D,C]);}}
+      }
+      return {verts:verts,faces:faces};}
+
+    // Die Haar-STREU: der gewählte Stil als Streu-Zeilen (V18.462: ALLE 10
+    // Lab-Stile als Silhouetten-Tabelle — die Stil-Tabelle wächst HIER, nie im
+    // Leser; das Lab näht seine reiche Technik weiter mit eigenen Buildern).
+    // GEMESSEN an labProportionen (headSeg 0.78, Kopf-LOKAL): Schädel-Ellipsoid
+    // c=[0,0.39,0] · r=[0.402,0.450,0.402]; Kalotten-Äquator ÜBER der Braue
+    // (browY 0.45) = Gesicht frei. Zeilen-Arten: Kalotten-Schale (Default,
+    // radial:1 = Richtung aus der Schalen-Normale) · quaste (Punkt-Büschel,
+    // Box-Streuung — Zopf) · knoten (Kugel-Schale radial — Dutt). lj = Längen-
+    // Streuung. Dichte skaliert mit hairVol, Länge mit hairLen.
+    function haarStreu(d) {
+        d = d || {};
+        var vol = Math.max(0.3, typeof d.hairVol === "number" ? d.hairVol : 1.0);
+        var len = Math.max(0.25, typeof d.hairLen === "number" ? d.hairLen : 1.0);
+        var stil = d.hairStyle || "mittel";
+        var K = [0, 0.5, -0.02], // Kalotten-Schale (Zentrum · Radius · Skala)
+            KR = 0.42,
+            KS = [0.96, 0.82, 1.0];
+        var N = [0, 0.28, -0.16], // Nacken-Schale
+            NR = 0.36,
+            NS = [0.9, 0.75, 0.7];
+        var zi = function (n, l, extra) {
+            var z = { teil: "head", c: K, r: KR, sc: KS, d: [0, -0.12, -0.85], n: Math.round(n * vol), l: l * len, t: 0.01 };
+            if (extra) for (var k in extra) z[k] = extra[k];
+            return z;
+        };
+        var nacken = function (n, l, extra) {
+            var z = { teil: "head", c: N, r: NR, sc: NS, d: [0, -0.55, -0.6], n: Math.round(n * vol), l: l * len, t: 0.01 };
+            if (extra) for (var k in extra) z[k] = extra[k];
+            return z;
+        };
+        // prettier-ignore
+        var STILE = {
+            glatze: [],
+            buzz: [zi(840, 0.035)],
+            kurz: [zi(1000, 0.09), nacken(400, 0.08)],
+            mittel: [zi(1400, 0.16), nacken(630, 0.192)],
+            lang: [
+                zi(1200, 0.29), nacken(700, 0.35, { lj: 0.2 }),
+                { teil: "head", c: [0, 0.3, -0.1], r: 0.4, sc: [0.95, 0.9, 0.85], d: [0, -0.8, -0.35], n: Math.round(700 * vol), l: 0.55 * len, lj: 0.25, t: 0.01 },
+            ],
+            locken: [
+                zi(1100, 0.14, { r: 0.45 }), zi(550, 0.13, { r: 0.48, d: [0, 0.1, -0.5] }),
+                nacken(400, 0.14, { r: 0.39 }),
+            ],
+            afro: [
+                { teil: "head", c: [0, 0.42, -0.02], r: 0.5, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(1500 * vol), l: 0.2 * len, lj: 0.1, t: 0.01 },
+                { teil: "head", c: [0, 0.42, -0.02], r: 0.56, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(700 * vol), l: 0.2 * len, lj: 0.12, t: 0.01 },
+            ],
+            zopf: [
+                zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
+                { teil: "head", art: "quaste", c: [0, 0.68, -0.38], box: [0.16, 0.06, 0.1], d: [0, -1, -0.22], n: Math.round(240 * vol), l: 0.7 * len, lj: 0.55, t: 0.02 },
+            ],
+            dutt: [
+                zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
+                { teil: "head", art: "knoten", c: [0, 0.81, -0.2], r: 0.2, sc: [1.1, 1.0, 0.9], d: [0, 0, 0], n: Math.round(420 * vol), l: 0.09 * len, lj: 0.06, t: 0.018 },
+            ],
+            undercut: [
+                zi(420, 0.03),
+                { teil: "head", c: [0, 0.58, -0.02], r: 0.4, sc: [0.9, 0.55, 0.95], d: [0.55, -0.5, -0.2], n: Math.round(550 * vol), l: 0.19 * len, lj: 0.12, t: 0.02 },
+            ],
+        };
+        return STILE[stil] || STILE.mittel;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  B1 REZEPTE (Vertrags-Form) — EIN Rezept "mensch" (das Lab ist ein
+    //  Dial-Studio, kein Preset-Katalog: der Startzustand IST die Gattung):
+    //  kind "koerper", s = die acht numerischen Dials, fx.gestalt = die
+    //  String-Wahlen, fx.motion = das v1.1-Komponenten-Feld, fx.place
+    //  {mode:"none"} (der Avatar spawnt nie per Worldgen).
+    // ═══════════════════════════════════════════════════════════════════════
+    var PRESETS = (function () {
+        var s = {};
+        var gestalt = {};
+        for (var k in START_PARAMS) {
+            if (!Object.prototype.hasOwnProperty.call(START_PARAMS, k)) continue;
+            if (typeof START_PARAMS[k] === "number") s[k] = START_PARAMS[k];
+            else gestalt[k] = START_PARAMS[k];
+        }
+        return {
+            mensch: {
+                kind: "koerper",
+                lab: "Mensch (Da Vinci Studio)",
+                s: s,
+                fx: {
+                    place: { mode: "none" },
+                    gestalt: gestalt,
+                    motion: { presets: JSON.parse(JSON.stringify(MOTION)) },
+                    // PHYSIK-NAHT (rein additive DATEN-Zeile — Praezedenz: §8.5-Stufen-
+                    // Zeile): DIE BEWEGUNGS-KOEFFIZIENTEN des Avatars als Gesetzbuch-
+                    // Daten (byte-gleiche Zahlen des historischen Host-Satzes; Formel je
+                    // Stat: base + (1 − dichte)·leicht + <zweite Achse>·mag — speed/jump
+                    // lesen magieleitung, staminaMax liest waermeleitung). Der Wirt
+                    // (STAT_FROM_TAGS) liest fail-soft: Kern kalt → seine Literale.
+                    bewegung: {
+                        // DIE REALITAETS-EICHUNG (Schoepfer-Wort 17.07.: "die
+                        // Realitaet unser Spiegel") -- die Verben tragen
+                        // MENSCHEN-Masse: Gehen ~1.5 m/s (dichte-Spanne 1.15-2.0),
+                        // Sprint x4.5 ~6.8 m/s, Sprung ~0.53 m (bei g=9.81, faellt
+                        // mit derselben Welle von 1.5x-Erde), Klettern 0.6 m/s,
+                        // Schwimmen ~1.3 m/s. Die Arcade-Saetze (base 7 / Sprint x2
+                        // / jump 8 / kletterV 3.2 / tauchV 3.2) fielen mit dem Wort.
+                        speed: { base: 1.15, leicht: 0.6, mag: 0.25 },
+                        // Der Sprint-Faktor reist als Gesetz (war Stamm-Literal x2):
+                        // Gehen -> Sprint wie Mensch (1.5 -> ~6.8 = trainierter Lauf).
+                        sprintMul: 4.5,
+                        jumpPower: { base: 2.6, leicht: 1.0, mag: 0.5 },
+                        staminaMax: { base: 100, leicht: 60, mag: 40 },
+                        // SCHWIMM-HEIMAT (rein additive DATEN-Zeile — Praezedenz: die
+                        // Bewegungs-Koeffizienten oben): DIE WASSER-BEWEGUNG des Avatars
+                        // als Gesetzbuch-Daten (byte-gleiche Zahlen des historischen
+                        // Host-Satzes). tauchV/aufV m/s (Shift/Space), lerp Glaettung,
+                        // Neutral-Auftrieb min(hubCap, max(-hubCap, vy*hubK) + d*tiefeK)
+                        // mit d = min(tiefeCap, Tiefe), drag Horizontal-Daempfer je
+                        // Schritt, taktZug/taktTreten der Schwimm-Phasentakt, lean die
+                        // Koerper-Lehne (rad), pose die Kraul-Winkel des Rigs (Kopf,
+                        // Arm-Zug/-Treten/-Absenkung/-Spreizung, Bein-Zug/-Treten/-Takt),
+                        // ausdauerProS die Ausdauer-Kosten aktiver Zuege. Der Wirt liest
+                        // fail-soft (_schwimmGesetz): Kern kalt -> seine Literale.
+                        schwimmen: {
+                            // REALITAETS-EICHUNG 17.07.: Tauchen/Auftauchen ~1 m/s,
+                            // Hub-/Sink-Kappen menschlich (1.2/2 m/s), Kraul-Takt
+                            // ~1.6 Zuege/s (war 3.2/3.2/2.5/8/5.0/2.3 -- Arcade).
+                            tauchV: 1.0,
+                            aufV: 1.0,
+                            lerp: 0.25,
+                            hubK: 0.45,
+                            tiefeK: 0.18,
+                            hubCap: 1.2,
+                            tiefeCap: 2,
+                            drag: 0.7,
+                            taktZug: 1.6,
+                            taktTreten: 0.9,
+                            // NEU (Zensus 17.07., zwei Stamm-Altlasten fallen):
+                            // speedMul = horizontales Wasser-Tempo relativ zum Gehen
+                            // (war hartkodiert 0.55 im Stamm; real: Kraul 1.3 von
+                            // Gehen 1.5); leanSoul = die Schwimm-Lehne der Compound-/
+                            // Nicht-Rig-Seelen (war Stamm-Konstante SOUL_SWIM_LEAN).
+                            speedMul: 0.85,
+                            leanSoul: { moving: 0.5, idle: 0.22 },
+                            lean: { zug: 0.6, treten: 0.3 },
+                            pose: {
+                                kopf: -0.35,
+                                armZug: 1.3,
+                                armTreten: 0.6,
+                                armAb: 0.3,
+                                armSpreiz: 0.5,
+                                beinZug: 0.4,
+                                beinTreten: 0.16,
+                                beinTakt: 1.6,
+                            },
+                            ausdauerProS: 6,
+                        },
+                        // PARKOUR-HEIMAT (rein additive DATEN-Zeile): die Ninja-Park-
+                        // Verben des Labs als reisende Gesetze -- Doppelsprung (Anzahl
+                        // + Anteil an jumpPower), Wandsprung (Anteil + horizontaler
+                        // Abstoss m/s), Klettern (W gegen die Wand: Steigtempo m/s +
+                        // Ausdauer-Kosten je s), Rutsch (Taste C: Tempo-Boost ueber
+                        // den Sprint [Lab 21/18], Dauer, Mindest-Fahrt). Der Wirt
+                        // liest fail-soft: Kern kalt -> KEIN Parkour (byte-alt).
+                        parkour: {
+                            doppelspruenge: 1,
+                            doppelsprungMul: 0.9,
+                            wandsprungMul: 1.0,
+                            // REALITAETS-EICHUNG 17.07.: Wand-Abstoss ~3 m/s,
+                            // Klettern 0.6 m/s (war 6/3.2 -- Arcade; real klettert
+                            // ein Mensch 0.3-0.5, sportlich 0.6), Rutsch-Eintritt
+                            // ab 4.5 m/s (nur aus dem Lauf, nie aus dem Gehen).
+                            wandAbstoss: 3,
+                            kletterV: 0.6,
+                            kletterAusdauerProS: 12,
+                            // WANDKONTAKT-FRISCHE (Zensus 17.07., rein additiv):
+                            // EIN Verfalls-Fenster fuer den Kapsel-Wand-Kontakt.
+                            // Wandsprung (0.18) und Klettern (0.15) lasen divergente
+                            // Stamm-Zwillinge -- vereint auf 0.18 (das Klettern haelt
+                            // den Kontakt ohnehin frame-frisch, solange W drueckt).
+                            kontaktFrischeSec: 0.18,
+                            slideTempoMul: 1.167,
+                            slideDauerSec: 0.68,
+                            slideMinTempo: 4.5,
+                            // RUTSCH-POSE (V18.485, rein additiv): der Koerper legt
+                            // sich in den Gleit -- Lehne zurueck (rad, Ganzkoerper),
+                            // Beine voraus (Hueftbeuge + Knie-Knick), ein Arm
+                            // stuetzt hinten, der freie Arm balanciert, der Kopf
+                            // haelt den Blick voraus. Wirt liest fail-soft: Feld
+                            // fehlt (alter Kern) -> keine Pose (byte-alt).
+                            slidePose: {
+                                lehne: -0.85,
+                                beinVor: 1.15,
+                                knieKnick: 0.45,
+                                armStuetz: -0.9,
+                                armFrei: 0.4,
+                                kopf: 0.55,
+                            },
+                        },
+                        // LUFTKONTROLLE (Zensus 17.07., rein additive DATEN-Zeile):
+                        // die vier C5-Gefuehls-Hebel der Beschleunigungs-/Brems-
+                        // Kurven als Gesetzbuch-Daten (exp-Lerp 1-e^(-k*dt):
+                        // kAcc Boden-Beschleunigung ~70 ms bis 63 %, kAccLuft die
+                        // schwaechere Luftkontrolle, kBrake der Boden-Schlitter
+                        // ~110 ms, kBrakeLuft laesst den Sprung-Bogen ballistisch).
+                        // Byte-gleiche Zahlen des historischen Host-Satzes; der
+                        // Wirt liest fail-soft (_bewegungsBlock): Kern kalt ->
+                        // seine Literale.
+                        luft: { kAcc: 14, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
+                        // SPRUNG-FENSTER (Zensus 17.07., rein additiv): die zwei
+                        // Plattformer-Toleranzen -- coyoteSec (Sprung kurz NACH
+                        // der Kante) + bufferSec (Space kurz VOR der Landung
+                        // gemerkt, feuert beim Aufsetzen). Byte-gleich zum
+                        // historischen Host-Satz (0.3 / 0.12).
+                        sprung: { coyoteSec: 0.3, bufferSec: 0.12 },
+                        // GANG-KALIBRIERUNG (Zensus 17.07., rein additiv): der
+                        // Schrittlaengen-Faktor der distance-matched Phase
+                        // (Schritt = kalib * gebaute Beinlaenge) -- eicht die
+                        // Welt-Optik auf ~5.5 rad/s beim Basistempo. Byte-gleich 4.0.
+                        // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
+                        // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-
+                        // Rig-Gaenge (rad/s; war der divergente Stamm-Zwilling
+                        // 5.5 lokal vs 5.0 Peer -- vereint auf 5.5, alle drei
+                        // Leser haengen an derselben Emotions-Bruecke);
+                        // klangTempoMin = die Schritt-Klang-Schwelle (m/s --
+                        // darunter feuert kein Schritt-Burst; die Timbre-Tabelle
+                        // wohnt im klang-Gesetzbuch SCHRITT_TIMBRE).
+                        schritt: { kalib: 4.0, taktCompound: 5.5, klangTempoMin: 0.9 },
+                        // AKTIONS-AUSDAUER (Zensus 17.07., rein additiv): die
+                        // Ausdauer-Kosten EINER Maus-Arm-Aktion (Hieb/Abbau/
+                        // Platzieren) im Pfad-Modus -- reist wie ausdauerProS/
+                        // kletterAusdauerProS als Koerper-Kosten-Feld (war die
+                        // Stamm-Konstante MOUSE_ACTION_STAMINA_COST). Byte-gleich 5.
+                        aktionAusdauer: 5,
+                        // STEILHANG-GESETZ (Zensus-Rest V18.488, rein additiv):
+                        // was der Koerper BEGEHEN kann -- maxSlopeY = cos(max.
+                        // Hangwinkel) der Boden-Normale (0.5 = 60 Grad; steiler
+                        // => onSteepSlope: Input-Drossel + Hangabtrieb), malus =
+                        // die Bewegungs-Drossel am Steilhang. Byte-gleich zu den
+                        // historischen Stamm-Literalen (0.5 / 0.2).
+                        hang: { maxSlopeY: 0.5, malus: 0.2 },
+                        // LANDUNGS-GEFUEHL (Zensus-Rest V18.488, rein additiv):
+                        // der Aufprall-Dip des Auges (View-Punch, Koerper faengt
+                        // den Stoss) + die Kamera-Koerper-Glaettung -- dipProV m
+                        // Dip je m/s Aufprall, dipMax der Deckel (harter Sturz),
+                        // minTempo die Spuer-Schwelle (gate't auch den Landungs-
+                        // Klang), erholK die Rueckfederung (~300 ms), kameraK
+                        // die Auge-folgt-Koerper-Glaettung. Byte-gleich
+                        // (0.022 / 0.32 / 2.5 / 8 / 14).
+                        landung: { dipProV: 0.022, dipMax: 0.32, minTempo: 2.5, erholK: 8, kameraK: 14 },
+                    },
+                    // KAMPF-QUARTETT (Spiegel-Zensus 17.07., rein additive DATEN-
+                    // Zeile — Praezedenz: die Bewegungs-Koeffizienten oben): DIE
+                    // KAMPF-STAT-KOEFFIZIENTEN des Koerpers als Gesetzbuch-Daten
+                    // (byte-gleiche Zahlen des historischen Host-Satzes; Formel je
+                    // Stat: base + dichte-Tag*dichte + haerte-Tag*haerte — Masse
+                    // traegt HP/Stoss/Panzer, Haerte traegt Schaden/Panzer). Der
+                    // Wirt (STAT_FROM_TAGS via _kampfKoeff) liest fail-soft:
+                    // Kern kalt / Zeile fehlt -> seine byte-gleichen Literale.
+                    kampf: {
+                        hpMax: { base: 50, dichte: 60, haerte: 30 },
+                        damage: { base: 5, dichte: 5, haerte: 15 },
+                        knockback: { base: 1, dichte: 9, haerte: 2 },
+                        defense: { base: 0, dichte: 8, haerte: 6 },
+                        // EQUIP-FOLD-GEWICHTE (Zensus-Rest V18.488, rein
+                        // additiv): wie stark das GEHALTENE Geraet (held),
+                        // die Waffe/Ruestung/das Werkzeug einer KREATUR den
+                        // Koerper-Compound praegen (Tag-Faltung vor
+                        // STAT_FROM_TAGS) -- Koerper-Gesetz, kein Stamm-
+                        // Literal. Byte-gleich (0.4 / 0.4 / 0.3 / 0.15).
+                        fold: { held: 0.4, weapon: 0.4, armor: 0.3, tool: 0.15 },
+                    },
+                    // ANATOMIE-ANKER (Zensus-Rest V18.488, rein additiv): die
+                    // SITZ-HUEFTE -- wie hoch das Koerper-ZENTRUM der sitzenden
+                    // Pose ueber dem Sattelpunkt liegt (m; die M3-Sitz-Pose
+                    // senkt die Huefte AUF den Sattel). Spieler-Anatomie,
+                    // gefaehrt-skalen-unabhaengig; war die Stamm-Konstante
+                    // SITZ_HIP_OFFSET. Byte-gleich 0.45.
+                    anatomie: { sitzHipOffset: 0.45 },
+                },
+            },
+        };
+    })();
+
+
+    // KONVERGENZ II — DIE FARB-WAHRHEITEN wohnen im Gesetzbuch (Schöpfer „es sind
+    // noch immer nachbauten": die Stamm-KL-Tabelle und die Genom-Paletten waren
+    // ZWILLINGE der Lab-Werte — gefallen; beide Leser lesen NUR noch hier):
+    // MATERIAL_KLASSEN — die flachen Klassen-Farben der Lab-Materialien (Z.77,
+    // verbatim: lips/eye/iris/cornea/socket/dark/joint/shadow); skin/hair reisen
+    // als Genom/Wahl, shorts ist das Stamm-Würde-Band.
+    var MATERIAL_KLASSEN = Object.freeze({
+        lips: Object.freeze({ c: 0xaa5544, r: 0.4 }),
+        eye: Object.freeze({ c: 0xf5f5f0, r: 0.08 }),
+        iris: Object.freeze({ c: 0x2a4a6a, r: 0.15 }),
+        pupil: Object.freeze({ c: 0x000000, r: 0.2 }),
+        socket: Object.freeze({ c: 0x5a3320, r: 0.6 }),
+        dark: Object.freeze({ c: 0x050000, r: 0.9 }),
+        joint: Object.freeze({ c: 0x806060, r: 0.6 }),
+        shadow: Object.freeze({ c: 0x8a5840, r: 0.7 }),
+        shorts: Object.freeze({ c: 0x4a5058, r: 0.8 }),
+    });
+    // SKIN_TONES / HAIR_COLORS — die Lab-Paletten (Z.63/Z.79, verbatim):
+    // prettier-ignore
+    var SKIN_TONES = {porzellan:{hex:0xf0d5c0,name:'Porzellan'},hell:{hex:0xe3b898,name:'Hell'},sand:{hex:0xd4a17e,name:'Sand'},karamell:{hex:0xc48566,name:'Karamell'},bronze:{hex:0xa86a4d,name:'Bronze'},umbra:{hex:0x7d4a33,name:'Umbra'},mahagoni:{hex:0x5f3826,name:'Mahagoni'},ebenholz:{hex:0x3f2418,name:'Ebenholz'}};
+    // prettier-ignore
+    var HAIR_COLORS = {black:{base:0x141014,lt:0x2a2228,name:'Schwarz'},darkbrown:{base:0x2a1a10,lt:0x42291a,name:'Dunkelbraun'},brown:{base:0x472c18,lt:0x6b4226,name:'Braun'},chestnut:{base:0x6b3a1a,lt:0x8f5a2e,name:'Kastanie'},blond:{base:0xa9803f,lt:0xceac6a,name:'Blond'},platinum:{base:0xcfc097,lt:0xe8ddbf,name:'Platin'},ginger:{base:0x8a3b18,lt:0xb35e2a,name:'Rot'},grey:{base:0x6e6a66,lt:0x9a958f,name:'Grau'},white:{base:0xcecbc5,lt:0xeeece8,name:'Weiß'},blue:{base:0x244a8a,lt:0x4a78c0,name:'Blau'},pink:{base:0xb0497a,lt:0xd47aa6,name:'Pink'},teal:{base:0x1f6a66,lt:0x3a9a94,name:'Teal'}};
+
+    // KONVERGENZ-WELLE: der 8-KH-Eigen-Atlas des Stamms (landmarks + humanSkeleton,
+    // ~940 Z.) ist GEFALLEN — der EINE Mensch ist der Da-Vinci-Teile-Baum
+    // (bauMensch + morphAuf, unten); beide Leser (Lab-Shell wie Stamm) bauen NUR
+    // noch daraus. Kein zweites Anatomie-Gesetz mehr.
+
+    // ════════════════════════════════════════════════════════════════════
+    // DER HAUT-/HAAR-LOOK (Konsum-Tiefe, 19.07., rein additiv) — das SHADER-
+    // Gesetz der Lab-Materialien als DATEN (verbatim-Zahlen aus
+    // koerperstudio.js: matSkin [warmer SSS-Fresnel-Saum pow3 ×0.15,
+    // Rauheit 0.62] und createDeepFurMat `deep_human_fur_v1` [Haar-Strähnen:
+    // Spitzen-Rim pow3 + Spec pow8 ×0.3 über der Wurzel→Spitze-Achse]).
+    // KONSUMENTEN: der Welt-Material-Resolver webt sie als Post-Licht-
+    // Additive (dieselbe GLSL-Addition des Labs). MESHFREI §8: reine Zahlen.
+    var HAUT_LOOK = Object.freeze({
+        sssPow: 3,
+        sssFarbe: Object.freeze([1.0, 0.4, 0.25]),
+        sssAmt: 0.15,
+        // Vollendung (19.07.): der Clearcoat der Lab-Haut (matSkin: 0.12/0.6)
+        // und das Atem-Noise-Displacement (snoise(pos·3 + t·0.1)·0.0035) —
+        // verbatim aus koerperstudio matSkin.
+        clearcoat: 0.12,
+        clearcoatRoughness: 0.6,
+        atem: Object.freeze({ freq: 3.0, amp: 0.0035, t: 0.1 }),
+    });
+    var HAAR_LOOK = Object.freeze({
+        tipRimPow: 3,
+        tipRimFarbe: Object.freeze([0.35, 0.18, 0.05]),
+        specPow: 8,
+        specAmt: 0.3,
+        specFarbe: Object.freeze([0.3, 0.15, 0.04]),
+        wurzelAnker: 0.12,
+    });
+
+    // Dial→Genom-Achsen des Menschen (die Lab-Slider-Semantik als DATEN —
+    // verbatim aus dem Stamm gewandert; khMul skaliert die EINE Kopfhöhen-Einheit):
+    var DIAL_MAP = Object.freeze([
+        Object.freeze({ dial: "height", axis: "khMul", base: 0, mul: 1 }),
+        Object.freeze({ dial: "mass", axis: "build", base: 0, mul: 1 }),
+        Object.freeze({ dial: "tone", axis: "muscle", base: 0, mul: 1 }),
+        Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
+    ]);
+
+    // ════════════════════════════════════════════════════════════════════
+    // ULTRAGUSS U3 — DAS LAB-GESETZ WIRD DIE QUELLE (verbatim aus worlds/
+    // koerperstudio/koerperstudio.js gewandert; der Schöpfer formte es, es
+    // ist das SCHÖNE). Drei Kern-Funktionen, reine Mathe, THREE-/DOM-frei:
+    // labProportionen() — die 6-Kopfhöhen-Loomis-Konstanten (Lab Z.99),
+    // labMorph(dials)   — die ~30 Dial-Formeln (age/gender/mass/tone-Wirkung,
+    //                     Lab morph() Z.1740; die shell-Closures nehmen die
+    //                     BASE-Skala als {x,y,z} und geben die Ziel-Skala —
+    //                     Ausdrucks-Reihenfolge byte-treu, kein Umbau),
+    // labLandmarks(mess)— das Landmarken-Urteil (Lab _landmarks() Z.1388;
+    //                     die Shell MISST am lebenden Rig, der Kern URTEILT).
+    // Beweis: scripts/diag-koerper-kern.cjs (gate:koerper-kern) — Dial-Gitter
+    // alt==neu, 0 Abweichungen. MESHFREI §8 bleibt: Zahlen, keine Meshes.
+    // ════════════════════════════════════════════════════════════════════
+
+    // Die Proportions-Zeile (Lab Z.99, verbatim): H=6.0 Gesamthöhe,
+    // 6-Kopfhöhen-Loomis — Akromion 0.818H, Trochanter 0.530H, Schädel-Maße.
+    function labProportionen() {
+        var H = 6.0,
+            headSeg = 0.130 * H,
+            acromionY = 0.818 * H,
+            nippleY = 0.720 * H,
+            trochanterY = 0.530 * H;
+        var shoulderHW = (0.259 * H) / 2,
+            hipHW = (0.191 * H) / 2,
+            baseArmX = shoulderHW * 0.95;
+        var thighLen = 0.245 * H,
+            calfLen = 0.246 * H,
+            upperArmLen = 0.186 * H,
+            forearmLen = 0.146 * H;
+        var skullBaseR = headSeg / 2,
+            skullCY = headSeg / 2,
+            skullRX = skullBaseR * 1.03,
+            skullRY = skullBaseR * 1.03 * 1.12,
+            skullRZ = skullBaseR * 1.03;
+        var eyeDist = headSeg / 1.618,
+            jawW = headSeg * 0.56,
+            chinW = headSeg * 0.22;
+        var browY = headSeg * 0.58,
+            eyeY = headSeg * 0.48,
+            cheekY = headSeg * 0.33;
+        var noseY = headSeg * 0.25,
+            lipY = headSeg * 0.03,
+            chinY = -headSeg * 0.20,
+            jawY = -headSeg * 0.10,
+            hairlineY = headSeg * 0.91;
+        return {
+            H: H,
+            headSeg: headSeg,
+            acromionY: acromionY,
+            nippleY: nippleY,
+            trochanterY: trochanterY,
+            shoulderHW: shoulderHW,
+            hipHW: hipHW,
+            baseArmX: baseArmX,
+            thighLen: thighLen,
+            calfLen: calfLen,
+            upperArmLen: upperArmLen,
+            forearmLen: forearmLen,
+            skullBaseR: skullBaseR,
+            skullCY: skullCY,
+            skullRX: skullRX,
+            skullRY: skullRY,
+            skullRZ: skullRZ,
+            eyeDist: eyeDist,
+            jawW: jawW,
+            chinW: chinW,
+            browY: browY,
+            eyeY: eyeY,
+            cheekY: cheekY,
+            noseY: noseY,
+            lipY: lipY,
+            chinY: chinY,
+            jawY: jawY,
+            hairlineY: hairlineY,
+            // V18.491.163 — Lab IK stand offsets (byte-alt)
+            footBelowAnkle: 0.30,
+            standYWalkMul: 0.997,
+            standYRunMul: 0.83,
+        };
+    }
+
+    // Die Dial→Gestalt-Mathe (Lab morph() Z.1740, verbatim): dials
+    // {height,mass,tone,age,gender,arms} → abgeleitete Größen + shell-Closures
+    // (base-Skala {x,y,z} → Ziel-Skala; lat setzt ABSOLUT — wie das Original).
+    function labMorph(p) {
+        var h = p.height;
+        var effTone = (0.62 + p.tone * 0.53) * (1 - p.age * 0.35);
+        var armM = effTone * (0.68 + p.gender * 0.32);
+        var armMY = 1 + (armM - 1) * 0.1;
+        var legM = effTone * (0.88 + p.gender * 0.12);
+        var legMY = 1 + (legM - 1) * 0.1;
+        var torsoM = effTone * (0.75 + p.gender * 0.25);
+        var shMod = 0.80 + p.gender * 0.20;
+        var hipMod = 1.18 - p.gender * 0.23;
+        var waistMod = 0.76 + p.gender * 0.24;
+        var totalFat = p.mass + p.age * 0.18;
+        var fatScale = 1 + totalFat * 0.7;
+        var neckThick = (1 + totalFat * 0.22) * (1 + effTone * 0.15) * (0.78 + p.gender * 0.22);
+        var jawScale = (0.78 + p.gender * 0.22) * (1 + p.age * 0.12) * (1 + effTone * 0.04);
+        return {
+            effTone: effTone,
+            armM: armM,
+            armMY: armMY,
+            legM: legM,
+            legMY: legMY,
+            torsoM: torsoM,
+            shMod: shMod,
+            hipMod: hipMod,
+            waistMod: waistMod,
+            totalFat: totalFat,
+            fatScale: fatScale,
+            neckThick: neckThick,
+            jawScale: jawScale,
+            charScale: { x: h * 0.93, y: h, z: h * 0.93 },
+            armPose: {
+                xMul: shMod,
+                rotZ: 0.06 + p.gender * 0.05 + p.arms * 1.30,
+                rotX: 0.05 - p.arms * 0.05,
+            },
+            headPose: { ageDrop: p.age * 0.08, fwd: p.age * 0.12 },
+            shell: {
+                ribcage: function (b) {
+                    return { x: b.x * shMod, y: b.y, z: b.z * (0.95 + p.gender * 0.05) };
+                },
+                pelvis: function (b) {
+                    return { x: b.x * hipMod, y: b.y, z: b.z * (0.88 + p.gender * 0.12) };
+                },
+                waist: function (b) {
+                    return { x: b.x * fatScale * waistMod, y: b.y, z: b.z * (1 + totalFat * 0.4) };
+                },
+                abs: function (b) {
+                    return { x: b.x * (1 + totalFat * 0.45), y: b.y, z: b.z * (1 + totalFat * 0.3 - effTone * 0.08) };
+                },
+                oblique: function (b) {
+                    return { x: b.x * (1 + totalFat * 0.35) * waistMod, y: b.y, z: b.z * (1 + totalFat * 0.2) };
+                },
+                glute: function (b) {
+                    return {
+                        x: b.x * (1 + totalFat * 0.3) * hipMod,
+                        y: b.y * (1 + totalFat * 0.1) * (0.95 + (1 - p.gender) * 0.22),
+                        z: b.z * (1 + totalFat * 0.2) * (1.0 + (1 - p.gender) * 0.32),
+                    };
+                },
+                quad: function (b) {
+                    return { x: b.x * legM * (1 + totalFat * 0.15), y: b.y * legMY, z: b.z * legM };
+                },
+                hamstring: function (b) {
+                    return { x: b.x * legM, y: b.y, z: b.z * legM };
+                },
+                calf: function (b) {
+                    return { x: b.x * legM, y: b.y * legMY, z: b.z * legM };
+                },
+                bicep: function (b) {
+                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
+                },
+                tricep: function (b) {
+                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
+                },
+                uarm: function (b) {
+                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
+                },
+                forearm: function (b) {
+                    var fm = (0.70 + p.gender * 0.30) * (0.92 + effTone * 0.12);
+                    return { x: b.x * fm, y: b.y, z: b.z * fm };
+                },
+                deltoid: function (b) {
+                    return { x: b.x * armM * shMod, y: b.y * armM, z: b.z * armM * shMod };
+                },
+                trap: function (b) {
+                    return {
+                        x: b.x * (1 + (torsoM - 1) * 0.4) * (0.82 + p.gender * 0.18),
+                        y: b.y * (1 + (torsoM - 1) * 0.3) * (0.85 + p.gender * 0.15),
+                        z: b.z,
+                    };
+                },
+                lat: function () {
+                    return { x: 1 + (torsoM - 1) * 0.5, y: 1, z: 1 + (torsoM - 1) * 0.3 };
+                },
+                upperBack: function (b) {
+                    return {
+                        x: b.x * (1 + (torsoM - 1) * 0.25) * shMod,
+                        y: b.y,
+                        z: b.z * (1 + (torsoM - 1) * 0.2) * (0.82 + p.gender * 0.18),
+                    };
+                },
+                chest: function (b) {
+                    return {
+                        x: b.x * (0.62 + p.gender * 0.38) * (1 + (torsoM - 1) * 0.1),
+                        y: b.y,
+                        z: b.z * (0.85 + p.gender * 0.15),
+                    };
+                },
+                pec: function (b) {
+                    return {
+                        x: b.x * (0.55 + p.gender * 0.45) * (1 + (torsoM - 1) * 0.15),
+                        y: b.y * (1 + (torsoM - 1) * 0.04),
+                        z: b.z * (0.70 + p.gender * 0.30),
+                    };
+                },
+                breast: function (b) {
+                    var bs = Math.max(0.02, (1 - p.gender) * (0.92 + totalFat * 0.5));
+                    return { x: b.x * bs, y: b.y * bs * 1.05, z: b.z * bs };
+                },
+                neck: function (b) {
+                    return { x: b.x * neckThick, y: b.y, z: b.z * neckThick };
+                },
+                jaw: function (b) {
+                    return { x: b.x * jawScale, y: b.y, z: b.z };
+                },
+                chin: function (b) {
+                    return { x: b.x * (0.82 + p.gender * 0.18), y: b.y, z: b.z };
+                },
+                buccal: function (b) {
+                    return { x: b.x * (1 + totalFat * 0.4 + p.age * 0.1), y: b.y, z: b.z };
+                },
+                cheekbone: function (b) {
+                    return { x: b.x * (0.80 + p.gender * 0.20), y: b.y, z: b.z };
+                },
+                masseter: function (b) {
+                    return { x: b.x * torsoM, y: b.y, z: b.z };
+                },
+            },
+        };
+    }
+
+    // ── EICHUNG Kern-landmarks() (8-KH-Stamm-Extrakt, Kopf 7.95) gegen das ──
+    // Lab-Gesetz (6-KH-Loomis, H=6.0) an 5 Referenz-Gelenken, Default-Dials
+    // (gender=1→sex=0 · mass=0.35→build · tone=0.5→muscle · height=1):
+    // Stationen als Anteil der Gesamthöhe (y/7.95 bzw. y/6.0), Δrel = Kern−Lab.
+    // | Gelenk     | Kern y | rel    | Lab y  | rel    | Δrel    | Δrel x  |
+    // | Schulter   | 6.40   | 0.8050 | 4.9080 | 0.8180 | -0.0130 | +0.0114 |
+    // | Hüfte      | 4.05   | 0.5094 | 3.1800 | 0.5300 | -0.0206 | -0.0076 |
+    // | Knie       | 2.30   | 0.2893 | 1.7100 | 0.2850 | +0.0043 | -0.0261 |
+    // | Handgelenk | 3.85   | 0.4843 | 2.9160 | 0.4860 | -0.0017 | +0.0850 |
+    // | Kopf-Mitte | 7.20   | 0.9057 | 5.6100 | 0.9350 | -0.0293 |  0.0000 |
+    // Die y-Stationen liegen ≤3 % auseinander (größte Lücke: Kopf/Hüfte);
+    // seitlich klafft das Handgelenk (+8,5 % — der 8-KH-Extrakt spreizt die
+    // Arme weiter). Die Stamm-Konvergenz (Rig übernimmt die Lab-Proportionen)
+    // ist eine SICHT-Welle und bleibt bewusst offen — die Zahl liegt bereit.
+    // Das Landmarken-Urteil (Lab _landmarks() Z.1388–1408, verbatim): die
+    // Shell misst chin/neckBase/waist/knee1 + den neckBase-Radius am lebenden
+    // Rig und reicht sie als mess her; der Kern trägt Offsets, Fallbacks und
+    // den Handgelenks-VERTRAG (wristFrac/wristOverlap — hand-shell endet bei
+    // wristFrac, Körperhaut reicht wristFrac+overlap darüber).
+    function labLandmarks(mess) {
+        mess = mess || {};
+        var chin = mess.chin,
+            nb = mess.neckBase,
+            waist = mess.waist,
+            knee = mess.knee;
+        var neckBaseRad = mess.neckBaseRad != null ? mess.neckBaseRad : 0.13;
+        return {
+            chinY: chin ? chin.y : 5.44,
+            neckTopY: (chin ? chin.y : 5.44) - 0.04,
+            collarY: nb ? nb.y + 0.02 : 4.95,
+            shoulderTopY: nb ? nb.y + 0.04 : 5.06,
+            neckR: Math.max(0.12, neckBaseRad * 1.05),
+            neckCX: nb ? nb.x : 0,
+            neckCZ: nb ? nb.z : 0,
+            waistY: waist ? waist.y : 3.9,
+            wristFrac: 1.36,
+            wristOverlap: 0.06,
+            kneeY: knee ? knee.y : 1.86,
+        };
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // KONVERGENZ-WELLE — DER EINE MENSCH: bauMensch(F) baut den kompletten
+    // Da-Vinci-Teile-Baum (verbatim aus worlds/koerperstudio/koerperstudio.js
+    // Z.100–158 gewandert; der Schöpfer formte ihn, es ist das SCHÖNE) über
+    // FABRIK-HAKEN — MESHFREI §8 bleibt: der Kern kennt keine Meshes, F baut.
+    //   F.gruppe()                  → Knoten (position/rotation/scale/add/userData)
+    //   F.kugel(r, klasse, sc?)     → Kugel-Knoten (klasse: skin·joint·dark·eye·
+    //   F.zylinder(rt,rb,h, klasse)   iris·cornea·socket·shadow·lips·hair·pupil)
+    // Beide Leser bauen HIERAUS: die Lab-Shell (THREE-Meshes — byte-gleich zum
+    // alten Inline-Bau, Beweis diag-koerper-kern --selftest Bau-Gitter) und der
+    // Stamm (Daten-Knoten → Welt-Ellipsoide → Metaball-Haut, die Regler treffen
+    // labMorph über DIESELBEN Teil-Namen). Rückgabe {character, parts, base,
+    // augen}: augen = die 12 Gesichts-Refs (eyeL…lowerLipRef), base = Ruhe-
+    // Skalen für labMorph (plain {x,y,z} — labMorph.shell liest nur .x/.y/.z).
+    function bauMensch(F) {
+        const {H,headSeg,acromionY,nippleY,trochanterY,shoulderHW,hipHW,baseArmX,thighLen,calfLen,upperArmLen,forearmLen,skullBaseR,skullCY,skullRX,skullRY,skullRZ,eyeDist,jawW,chinW,browY,eyeY,cheekY,noseY,lipY,chinY,jawY,hairlineY} = labProportionen();
+        const matSkin = "skin", matJoint = "joint", matDark = "dark", matEye = "eye", matIris = "iris",
+            matCornea = "cornea", matSocket = "socket", matShadow = "shadow", matLips = "lips", matHair = "hair", matPupil = "pupil";
+        const parts = {}, base = {};
+        const s = (r, m, sc) => F.kugel(r, m, sc);
+        const c = (rt, rb, h, m) => F.zylinder(rt, rb, h, m);
+        const reg = (name, node) => {
+            parts[name] = node;
+            if (node && !node.name) node.name = name;
+            if (node.scale) base[name] = { x: node.scale.x, y: node.scale.y, z: node.scale.z };
+            return node;
+        };
+        const character=F.gruppe();var eyeL,eyeR,irisL,irisR,lidTL,lidTR,lidBL,lidBR,browL,browR,upperLipRef,lowerLipRef;
+        const torsoG=F.gruppe();torsoG.position.set(0,trochanterY,0);character.add(torsoG);reg('torso',torsoG);
+        const pelvis=reg('pelvis',s(0.7,matSkin,[1.15,1.0,0.7]));pelvis.position.set(0,trochanterY,0);character.add(pelvis);
+        [-1,1].forEach(sd=>{const g=reg('glute'+(sd===1?'1':'-1'),s(0.40,matSkin,[0.82,0.8,0.82]));g.position.set(sd*0.26,trochanterY-0.1,-0.12);character.add(g);});
+        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*0.8,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);const qR=0.32;const quad=reg('quad'+(sd===1?'1':'-1'),s(qR,matSkin,[0.9,thighLen/(qR*2),0.9]));quad.position.set(0,-thighLen/2,0.1);hipG.add(quad);const vL=reg('vlat'+(sd===1?'1':'-1'),s(0.16,matSkin,[0.85,thighLen/0.41,0.9]));vL.position.set(sd*0.17,-thighLen/2,0.06);hipG.add(vL);const ad2=reg('adduct'+(sd===1?'1':'-1'),s(0.17,matSkin,[0.9,thighLen/0.6,0.85]));ad2.position.set(sd*-0.2,-thighLen/2,-0.02);hipG.add(ad2);const ham=reg('hamstring'+(sd===1?'1':'-1'),s(0.20,matSkin,[1,thighLen/0.40,0.9]));ham.position.set(0,-thighLen/2,-0.2);hipG.add(ham);const knee=reg('kneecap'+(sd===1?'1':'-1'),s(0.24,matJoint,[1.05,0.75,1.05]));knee.position.set(0,-thighLen,0.05);hipG.add(knee);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);const cR=0.27;const calf=reg('calf'+(sd===1?'1':'-1'),s(cR,matSkin,[1,calfLen/(cR*2),0.8]));calf.position.set(0,-calfLen/2,-0.12);kneeG.add(calf);const shin=reg('shin'+(sd===1?'1':'-1'),s(0.16,matSkin,[1,calfLen/0.36,1]));shin.position.set(0,-calfLen/2,0.1);kneeG.add(shin);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
+        const ribcage=reg('ribcage',s(1.0,matSkin,[shoulderHW,1.2,0.6]));ribcage.position.set(0,nippleY-trochanterY,0);torsoG.add(ribcage);
+        const waist=reg('waist',s(0.5,matSkin,[1.14,1.0,0.5]));waist.position.set(0,(nippleY+trochanterY)/2-trochanterY,0);torsoG.add(waist);
+        [-1,1].forEach(sd=>{const g=F.gruppe();const t1=s(0.5,matSkin,[0.8,0.6,0.3]);t1.position.set(sd*0.7,acromionY-0.5-trochanterY,-0.1);g.add(t1);const t2=s(0.4,matSkin,[0.6,0.6,0.3]);t2.position.set(sd*0.4,acromionY-1.0-trochanterY,-0.1);g.add(t2);const t3=s(0.3,matSkin,[0.4,0.6,0.3]);t3.position.set(sd*0.1,0.5,-0.1);g.add(t3);reg('lat'+(sd===1?'1':'-1'),g);torsoG.add(g);});
+        const upperBack=reg('upperBack',s(0.8,matSkin,[1.15,0.8,0.5]));upperBack.position.set(0,acromionY-0.2-trochanterY,-0.2);torsoG.add(upperBack);
+        [-1,1].forEach(sd=>{const o=reg('oblique'+(sd===1?'1':'-1'),s(0.24,matSkin,[0.48,1.4,0.4]));o.position.set(sd*0.46,(nippleY+trochanterY)/2-trochanterY,0.08);torsoG.add(o);});
+        const chestCore=reg('chest',s(0.5,matSkin,[1.8,1.0,0.8]));chestCore.position.set(0,nippleY+0.2-trochanterY,0.3);torsoG.add(chestCore);
+        [-1,1].forEach(sd=>{const g=F.gruppe();const l=s(0.4,matSkin,[1.4,0.6,0.8]);l.position.set(sd*0.22,nippleY+0.2-trochanterY,0.35);l.rotation.z=sd*-0.2;g.add(l);const u=s(0.3,matSkin,[1.2,0.4,0.6]);u.position.set(sd*0.55,nippleY+0.6-trochanterY,0.32);u.rotation.set(0,sd*0.2,sd*0.4);g.add(u);reg('pec'+(sd===1?'1':'-1'),g);torsoG.add(g);});
+        [-1,1].forEach(sd=>{const br=reg('breast'+(sd===1?'1':'-1'),s(0.32,matSkin,[1.0,1.05,1.0]));br.position.set(sd*0.27,nippleY+0.06-trochanterY,0.44);br.rotation.x=-0.12;torsoG.add(br);});
+        const sternum=s(0.04,matDark,[0.4,2.5,0.5]);sternum.position.set(0,nippleY+0.1-trochanterY,0.38);torsoG.add(sternum);
+        const absBase=reg('abs',s(0.5,matSkin,[0.8,1.6,0.4]));absBase.position.set(0,(nippleY+trochanterY)/2-trochanterY,0.3);torsoG.add(absBase);
+        for(let i=0;i<4;i++){const y=(nippleY-0.1)-(i*0.2*headSeg)-trochanterY;const aL=s(0.11,matSkin,[1,1,0.8]);aL.position.set(-0.12,y-0.02,0.37);torsoG.add(aL);const aR=s(0.11,matSkin,[1,1,0.8]);aR.position.set(0.12,y-0.02,0.37);torsoG.add(aR);const tV=s(0.035,matDark,[0.22,0.6,0.5]);tV.position.set(0,y-0.04,0.4);torsoG.add(tV);const tH=s(0.03,matDark,[1.8,0.1,0.5]);tH.position.set(0,y+0.05,0.4);torsoG.add(tH);}
+        [-1,1].forEach(sd=>{const t=reg('trap'+(sd===1?'1':'-1'),s(0.3,matSkin,[1.3,0.6,0.6]));t.position.set(sd*0.3,acromionY-trochanterY,-0.1);t.rotation.z=sd*0.2;torsoG.add(t);});
+        const nSY=acromionY+0.02,nEY=acromionY+0.46,nH=nEY-nSY;const neckBase=reg('neckBase',c(0.125,0.155,0.13,matSkin));neckBase.position.set(0,nSY+0.06-trochanterY,0);torsoG.add(neckBase);const neckMain=reg('neckMain',c(0.10,0.12,nH*0.75,matSkin));neckMain.position.set(0,nSY+0.12+nH*0.375-trochanterY,0);torsoG.add(neckMain);const neckTop=c(0.10,0.11,0.05,matSkin);neckTop.position.set(0,nEY-0.025-trochanterY,0);torsoG.add(neckTop);const adamsApple=s(0.019,matSkin,[0.85,0.9,0.8]);adamsApple.position.set(0,nSY+0.16-trochanterY,0.06);torsoG.add(adamsApple);const nape=s(0.028,matSkin,[0.55,0.55,0.45]);nape.position.set(0,nSY+0.08-trochanterY,-0.04);torsoG.add(nape);
+        [-1,1].forEach(sd=>{const scm=reg('scm'+(sd===1?'1':'-1'),c(0.026,0.042,nH*0.95,matSkin));scm.position.set(sd*0.06,nSY+nH*0.42-trochanterY,0.035);scm.rotation.z=sd*-0.18;scm.rotation.x=0.10;torsoG.add(scm);});   // sternocleidomastoideus: v-zug kiefer->drosselgrube
+        [-1,1].forEach(sd=>{const tn=reg('tneck'+(sd===1?'1':'-1'),s(0.115,matSkin,[0.85,1.4,0.70]));tn.position.set(sd*0.17,nSY+0.06-trochanterY,-0.10);tn.rotation.z=sd*0.55;torsoG.add(tn);});   // nacken-trapez-bruecke: schliesst die harte hals->schulter-kante
+        const nf1=reg('napeFill1',s(0.10,matSkin,[0.9,1.3,1.0]));nf1.position.set(0,5.10-trochanterY,-0.14);torsoG.add(nf1);   // HINTERHAUPT-NACKEN-FUELLER: harness-befund -- schaedelbasis hing 0.39-0.43 HINTER dem hals,
+        const nf2=reg('napeFill2',s(0.08,matSkin,[0.85,1.1,0.95]));nf2.position.set(0,5.24-trochanterY,-0.15);torsoG.add(nf2);   // man sah von hinten unter den offenen schaedel ins leere. koerperfeld waechst jetzt hoch dagegen.
+        [-1,1].forEach(sd=>{const cl=c(0.07,0.05,0.55,matSkin);cl.position.set(sd*0.38,acromionY+0.08-trochanterY,0.08);cl.rotation.set(0,sd*0.2,sd*-0.5);torsoG.add(cl);});
+        [-1,1].forEach(sd=>{const armG=F.gruppe();armG.position.set(sd*baseArmX,acromionY-trochanterY,0);reg('arm'+(sd===1?'1':'-1'),armG);const delt=reg('deltoid'+(sd===1?'1':'-1'),s(0.30,matSkin,[1,1.1,1]));armG.add(delt);const bic=reg('bicep'+(sd===1?'1':'-1'),s(0.26,matSkin,[0.9,upperArmLen/0.52,1]));bic.position.set(0,-upperArmLen/2,0.1);armG.add(bic);const tri=reg('tricep'+(sd===1?'1':'-1'),s(0.27,matSkin,[0.9,upperArmLen/0.54,0.9]));tri.position.set(0,-upperArmLen/2,-0.15);armG.add(tri);const uarm=reg('uarm'+(sd===1?'1':'-1'),s(0.23,matSkin,[1.0,upperArmLen/0.46,0.96]));uarm.position.set(0,-upperArmLen/2,-0.02);armG.add(uarm);const el=s(0.165,matJoint,[1,0.75,1]);el.position.set(0,-upperArmLen,0);armG.add(el);const elbowG=F.gruppe();elbowG.position.set(0,-upperArmLen,0);armG.add(elbowG);reg('elbow'+(sd===1?'1':'-1'),elbowG);const fa=reg('forearm'+(sd===1?'1':'-1'),s(0.24,matSkin,[1.2,forearmLen/0.48,1]));fa.position.set(sd*0.05,-forearmLen/2,0);elbowG.add(fa);const wY=-forearmLen;const wr=s(0.14,matSkin,[1,0.5,0.9]);wr.position.set(sd*0.05,wY,0);elbowG.add(wr);
+        const hand=F.gruppe();hand.userData.sd=sd;hand.userData.fingers=[];hand.userData.thumbs=[];
+        const palmG=F.gruppe();hand.add(palmG);hand.userData.palmG=palmG;reg('palm'+(sd===1?'1':'-1'),palmG);
+        const palm=s(0.25,matSkin,[1,1.2,0.5]);palmG.add(palm);
+        for(let i=0;i<4;i++){const fX=(i-1.5)*0.12,fZ=0.1-Math.abs(i-1.5)*0.05;const fG=F.gruppe();fG.position.set(fX,-0.28,fZ);fG.rotation.z=(i-1.5)*0.13;reg('fA'+i+'_'+(sd===1?'1':'-1'),fG);fG.add(s(0.08,matSkin,[0.9,0.8,0.9]));const f1=c(0.06,0.05,0.18,matSkin);f1.position.y=-0.09;fG.add(f1);const jG1=F.gruppe();jG1.position.set(0,-0.18,0);reg('fB'+i+'_'+(sd===1?'1':'-1'),jG1);jG1.add(s(0.05,matSkin,[1.0,0.8,1.0]));const f2=c(0.05,0.04,0.14,matSkin);f2.position.set(0,-0.07,-0.01);jG1.add(f2);const jG2=F.gruppe();jG2.position.set(0,-0.14,-0.02);reg('fC'+i+'_'+(sd===1?'1':'-1'),jG2);jG2.add(s(0.04,matSkin,[1.0,0.8,1.0]));const f3=c(0.04,0.03,0.1,matSkin);f3.position.set(0,-0.05,-0.04);jG2.add(f3);jG1.add(jG2);fG.add(jG1);palmG.add(fG);hand.userData.fingers.push({mcp:fG,pip:jG1,dip:jG2});}
+        const thumbG=F.gruppe();thumbG.position.set(-sd*0.3,-0.15,0.1);thumbG.rotation.set(0,sd*0.5,sd*-1.2);reg('tA_'+(sd===1?'1':'-1'),thumbG);thumbG.add(s(0.1,matSkin,[0.8,1.5,0.8]));const thumbF1=c(0.06,0.05,0.12,matSkin);thumbF1.position.y=-0.06;thumbG.add(thumbF1);const thumbJG=F.gruppe();thumbJG.position.set(0,-0.12,0);reg('tB_'+(sd===1?'1':'-1'),thumbJG);thumbJG.add(s(0.06,matSkin,[0.8,0.8,0.8]));const thumbTip=c(0.05,0.04,0.08,matSkin);thumbTip.position.y=-0.04;thumbJG.add(thumbTip);thumbG.add(thumbJG);palmG.add(thumbG);hand.userData.thumbs.push({mcp:thumbG,ip:thumbJG});
+        hand.position.set(sd*0.05,wY-0.3,0);elbowG.add(hand);reg('hand'+(sd===1?'1':'-1'),hand);
+        armG.rotation.z=sd*0.2;armG.rotation.x=0.05;armG.userData.baseRotZ=sd*0.2;armG.userData.baseRotX=0.05;torsoG.add(armG);});
+        const headGroup=F.gruppe();headGroup.position.y=H-headSeg/2-trochanterY;reg('head',headGroup);var HEAD_S=0.92;headGroup.scale.setScalar(HEAD_S);base.headPosY=H-headSeg/2-headSeg*0.20*(1-HEAD_S);   // loomis-pass: 5.7->6.6 koepfe; pivot-korrektur haelt das KINN auf hoehe (halsroehre!)
+        const skull=s(skullBaseR*1.03,matSkin,[1.0,1.12,1.0]);skull.position.y=skullCY;headGroup.add(skull);
+        [-1,1].forEach(sd=>{const t=s(0.2,matSkin,[0.62,1.05,0.85]);t.position.set(sd*0.36,headSeg*0.48,0);headGroup.add(t);});
+        const forehead=s(0.13,matSkin,[1.35,0.95,0.72]);forehead.position.set(0,(browY+hairlineY)/2,0.26);forehead.rotation.x=0.2;headGroup.add(forehead);
+        const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,browY+0.06,0.38);headGroup.add(glabella);
+        const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,browY,0.36);headGroup.add(browRidge);
+        [-1,1].forEach(sd=>{const sock=s(0.145,matSocket,[1.0,0.88,0.50]);sock.position.set(sd*eyeDist/2,eyeY,0.3);headGroup.add(sock);});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04,matPupil);pupil.position.z=0.11;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.position.set(sd*eyeDist/2,eyeY,0.32);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
+        [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75,0.65,0.5]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
+        const maxilla=s(0.15,matSkin,[0.75,0.88,0.85]);maxilla.position.set(0,(lipY+noseY)/2,0.325);headGroup.add(maxilla);
+        [-1,1].forEach(sd=>{const nl=c(0.008,0.005,0.12,matShadow);nl.position.set(sd*0.09,(lipY+noseY)/2,0.38);nl.rotation.z=sd*-0.6;headGroup.add(nl);});
+        const jawBody=reg('jaw',s(0.31,matSkin,[0.85,0.7,0.8]));jawBody.position.set(0,jawY,0.15);headGroup.add(jawBody);
+        [-1,1].forEach(sd=>{const g=reg('gonion'+(sd===1?'1':'-1'),s(0.1,matSkin,[0.7,0.85,0.8]));g.position.set(sd*jawW/2,jawY+0.02,0.03);headGroup.add(g);});
+        [-1,1].forEach(sd=>{const r=c(0.05,0.06,0.2,matSkin);r.position.set(sd*jawW/2+0.03,cheekY+0.04,0.0);r.rotation.z=sd*0.08;headGroup.add(r);});
+        [-1,1].forEach(sd=>{const m=reg('masseter'+(sd===1?'1':'-1'),s(0.08,matSkin,[0.4,1.1,0.6]));m.position.set(sd*0.2,(cheekY+jawY)/2,0.16);headGroup.add(m);});
+        const chin=reg('chin',s(chinW/2,matSkin,[1.3,0.9,1.1]));chin.position.set(0,chinY,0.35);headGroup.add(chin);
+        const chinLine=s(0.03,matSkin,[0.6,2.0,0.8]);chinLine.position.set(0,chinY+0.04,0.38);headGroup.add(chinLine);
+        const noseBridge=reg('noseBr',c(0.04,0.06,(browY-noseY)*1.1,matSkin));noseBridge.position.set(0,(browY+noseY)/2,0.4);headGroup.add(noseBridge);
+        const noseTip=reg('noseTip',s(0.055,matSkin,[1.2,1,1.2]));noseTip.position.set(0,noseY,0.45);headGroup.add(noseTip);
+        [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035,matSkin,[1,0.5,1]));n2.position.set(sd*0.05,noseY-0.04,0.43);headGroup.add(n2);});
+        const upperLip=s(0.12,matLips,[1.22,0.42,0.62]);upperLip.position.set(0,lipY+0.02,0.415);headGroup.add(upperLip);upperLipRef=upperLip;
+        const lowerLip=s(0.14,matLips,[1.12,0.48,0.64]);lowerLip.position.set(0,lipY-0.052,0.405);headGroup.add(lowerLip);lowerLipRef=lowerLip;
+        const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41);headGroup.add(philtrum);
+        [-1,1].forEach(sd=>{const mc=s(0.025,matSkin,[0.8,0.8,1.0]);mc.position.set(sd*0.095,lipY-0.01,0.39);headGroup.add(mc);});
+        [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04,-0.03);e.rotation.y=sd*-0.45;headGroup.add(e);});
+        [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*eyeDist/2,browY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
+        torsoG.add(headGroup);
+
+        return {
+            character,
+            parts,
+            base,
+            augen: { eyeL, eyeR, irisL, irisR, lidTL, lidTR, lidBL, lidBR, browL, browR, upperLipRef, lowerLipRef },
+            // Drei un-registrierte Teile, die die Shell nach dem Bau weiter anfasst
+            // (Hals-Deckel + Kehlkopf + Nacken — Anim/Outfit lesen sie direkt):
+            extra: { neckTop: neckTop, adamsApple: adamsApple, nape: nape },
+        };
+    }
+
+    // KONVERGENZ-WELLE — DIE MORPH-ANWENDUNG ist Gesetz: morphAuf(B, dials) trägt
+    // labMorph auf den bauMensch-Baum (WELCHER Teil WELCHE Formel — die Tabelle,
+    // die vorher nur in der Shell lebte; verbatim aus morph() Z.1681 gewandert).
+    // B = {character, parts, base} (bauMensch-Rückgabe, THREE- ODER Daten-Knoten —
+    // es werden nur .scale.set/.position/.rotation/.userData berührt). Gibt M
+    // (labMorph-Ergebnis) zurück. Beide Leser rufen DIES: die Shell (THREE) und
+    // der Stamm (Daten-Knoten → Metaball-Haut).
+    function morphAuf(B, dials) {
+        const _P = labProportionen();
+        const baseArmX = _P.baseArmX, trochanterY = _P.trochanterY;
+        const character = B.character, parts = B.parts, base = B.base;
+        const M = labMorph(dials);
+        character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('quad',(m,b)=>{m.userData.baseScaleY=aply(m,MU.quad(b)).y;});pair('hamstring',(m,b)=>aply(m,MU.hamstring(b)));pair('calf',(m,b)=>{m.userData.baseScaleY=aply(m,MU.calf(b)).y;});pair('bicep',(m,b)=>{m.userData.baseScaleY=aply(m,MU.bicep(b)).y;});pair('tricep',(m,b)=>aply(m,MU.tricep(b)));pair('uarm',(m,b)=>aply(m,MU.uarm(b)));pair('forearm',(m,b)=>aply(m,MU.forearm(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
+        return M;
+    }
+
+    // AUGEN_VIS — intentional dual iris (Feel-Entscheid .131). Do NOT merge.
+    // lab:"gaze-iris" = koerperstudio gaze `_gz` + irisSpeed noise + blinkRate lids.
+    // host:"noise-iris" = `_animateHumanoidAugen` irisSpeed sin-noise + blinkRate lids (no gaze).
+    // Like TILT_VIS .129 / NEBEL_VIS .128 / STEER_VIS .124: naming the Feel, not Fake-zu.
+    // Gaze look-at on Host = Redesign later. MOTION irisSpeed/blinkRate stay the numbers.
+    var AUGEN_VIS = {
+        lab: "gaze-iris",
+        host: "noise-iris",
+    };
+
+    // KPMUL_VIS — intentional dual (Feel-Entscheid .141/.142). Do NOT merge.
+    // lab:"pd-gain" = koerperstudio phys.kp/kd *= kpMul.
+    // host:"map-alpha" = humanoid MOTION_RIG_MAP one-pole when kpMul<1 (.142); kpMul>=1 instant.
+    // Tetrapoda Host already reads kpMul (.81) — other species, sibling α, not this Feel merge.
+    // Still no MOTION_RIG_MAP kpMul row. Like AUGEN_VIS .131.
+    var KPMUL_VIS = {
+        lab: "pd-gain",
+        host: "map-alpha",
+    };
+
+    // NINJA_FEEL — Lab Arcade Ninja-Park Didaktik (V18.491.179). Host parkour stays realitätsgeeicht.
+    var NINJA_FEEL = { sprungVy:15.5, wandVy:14.5, wandKick:11, doppelVy:13.8, kletterVy:8.5, sprintSpd:18, walkSpd:10.5, crouchSpd:4.6, ctrlWalk:6.0 };
+    // NINJA_VIS — intentional dual (Feel-Entscheid .179). Do NOT Fake-merge arcade into Host.
+    // lab:"arcade-ninja" = NINJA_FEEL. host:"parkour-real" = fx.bewegung.parkour / _parkourGesetz.
+    var NINJA_VIS = { lab: "arcade-ninja", host: "parkour-real" };
+
+    // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
+    root.__koerperCore = {
+        VERSION: VERSION,
+        labProportionen: labProportionen,
+        labMorph: labMorph,
+        labLandmarks: labLandmarks,
+        bauMensch: bauMensch,
+        morphAuf: morphAuf,
+        MATERIAL_KLASSEN: MATERIAL_KLASSEN,
+        HAUT_LOOK: HAUT_LOOK,
+        HAAR_LOOK: HAAR_LOOK,
+        SKIN_TONES: SKIN_TONES,
+        CLOTH_COLORS: CLOTH_COLORS,
+        // V18.463 — die Hüllen-Maschine (verbatim, THREE-frei):
+        voxDilate: _vox_dilate,
+        voxErode: _vox_erode,
+        voxFill: _vox_fill,
+        blur3: _blur3,
+        surfaceNets: surfaceNets,
+        kleidZonen: kleidZonen,
+        haarStreu: haarStreu,
+        HAIR_COLORS: HAIR_COLORS,
+        DIAL_MAP: DIAL_MAP,
+        STUDIO_VERTRAG: STUDIO_VERTRAG,
+        MESHFREI: MESHFREI,
+        PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
+        PRESETS: PRESETS,
+        PARAMS_BY_KIND: { koerper: PARAMS },
+        // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
+        START_PARAMS: START_PARAMS,
+        MOTION: MOTION,
+        AUGEN_VIS: AUGEN_VIS,
+        KPMUL_VIS: KPMUL_VIS,
+        NINJA_FEEL: NINJA_FEEL,
+        NINJA_VIS: NINJA_VIS,
+        // V18.491.96 — Lab-Parkour liest sprung.coyoteSec/bufferSec (Host: _bewegungsBlock)
+        bewegung: PRESETS.mensch.fx.bewegung,
+    };
+})(typeof self !== "undefined" ? self : globalThis);

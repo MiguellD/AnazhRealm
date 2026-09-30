@@ -24,7 +24,6 @@
 //   Server → Client   { "type": "pos", "peerId": "...", "x":.., "y":.., "z":.., "yaw":.. }
 //   Server → Client   { "type": "dsl", "peerId": "...", "program": [...] }
 //   Server → Client   { "type": "soul", "peerId": "...", "soulName": "...", "bodyParts": [...], "name": "...", "catalog": [...] }
-//   Server → Client   { "type": "aura", "peerId": "...", "hue": .., "intensity": .. }
 //   Server → Client   { "type": "world-request", "peerId": "..." }   (forwarded)
 //   Server → Client   { "type": "world-snapshot", "peerId": "...", "state": {...} }
 //   Client → Server   { "type": "rtc-offer",  "to": "<peerId>", "sdp": {...} }   (W7 P1)
@@ -40,7 +39,7 @@
 // reinen WebRTC-Rendezvous. Er reicht SDP-Offer/Answer + ICE-Kandidaten
 // zielgerichtet zwischen zwei Peers durch; danach fliessen Position/DSL/
 // Soul direkt peer-to-peer ueber RTCDataChannels. Die alten Relay-Pfade
-// (pos/dsl/soul/aura/vibe) bleiben als Fallback, falls eine WebRTC-
+// (pos/dsl/soul/vibe) bleiben als Fallback, falls eine WebRTC-
 // Verbindung nicht zustande kommt.
 //
 // Heilige Lektion: KEIN neues Modul-Geflecht. EINE Datei, ein Server-
@@ -291,14 +290,6 @@ function handleClientMessage(ws, raw) {
                 }));
         }
         broadcastToRoom(ws.anazh.room, out, ws);
-        return;
-    }
-    if (msg.type === "aura") {
-        // Ring 11 V3: Aura-Sync — dominante Tag-Hue + Intensität, ~1 Hz.
-        const hue = Number(msg.hue);
-        const intensity = Number(msg.intensity);
-        if (![hue, intensity].every(Number.isFinite)) return;
-        broadcastToRoom(ws.anazh.room, { type: "aura", peerId: ws.anazh.peerId, hue, intensity }, ws);
         return;
     }
     if (msg.type === "vibe") {

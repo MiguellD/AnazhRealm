@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<!-- tetrapoda-Portal (Nachlese-Welle, W-A4c-Muster) — eigenes Document, eigene strikte CSP:
+     Skript nur same-origin (tetrapoda.js + ../../tetrapoda-core.js + ../terrain/lib/ — Three.js r128
+     vendored vom geteilten Regal, kein CDN mehr; die Shell wanderte dafür byte-treu
+     aus dem Inline-Skript nach tetrapoda.js, das schmiede.js/fachwerk.js-Muster). Die
+     iframe-Sandbox trägt die Isolation; die W12-Brücke am Ende von tetrapoda.js
+     spricht die Heimat (enter/ready/dsl/exit). -->
+<meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Tetrapoda — Evolution Lab (Aureus)</title>
+<style>
+body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#aa8855;font-family:monospace;font-size:14px;z-index:200;letter-spacing:2px}
+#ui{position:absolute;top:10px;left:10px;z-index:300;background:rgba(15,12,6,0.92);padding:14px;border:1px solid #443311;border-radius:6px;font-family:monospace;font-size:11px;color:#aa8855;max-width:280px}
+#presets{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+#presets button{background:#221100;color:#ccaa66;border:1px solid #553311;padding:4px 10px;font-family:monospace;font-size:11px;cursor:pointer;border-radius:3px}
+#presets button:hover{background:#332200}
+#presets button.active{background:#443311;color:#ffcc88}
+.slider-row{margin:4px 0;display:flex;align-items:center;gap:8px}
+.slider-row label{width:75px;font-size:10px;color:#886633}
+.slider-row input[type=range]{flex:1;height:4px;-webkit-appearance:none;background:#221100;border-radius:2px;outline:none}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:#ccaa66;border-radius:50%;cursor:pointer}
+.slider-row .val{width:45px;text-align:right;font-size:10px;color:#ccaa66}
+.law{font-size:9px;color:#554433;margin:2px 0 6px 0;padding-left:83px;line-height:1.3}
+#emotions{margin-top:8px;display:flex;gap:3px;flex-wrap:wrap}
+#emotions button{background:#221100;color:#ccaa66;border:1px solid #553311;padding:4px 8px;font-family:monospace;font-size:10px;cursor:pointer;border-radius:3px}
+#emotions button:hover{background:#332200}
+#emotions button.active{background:#443311;color:#ffcc88}
+</style>
+<script src="../terrain/lib/three-r128.min.js"></script>
+<script src="../terrain/lib/OrbitControls.js"></script>
+<script src="../terrain/lib/CopyShader.js"></script>
+<script src="../terrain/lib/LuminosityHighPassShader.js"></script>
+<script src="../terrain/lib/FXAAShader.js"></script>
+<script src="../terrain/lib/EffectComposer.js"></script>
+<script src="../terrain/lib/RenderPass.js"></script>
+<script src="../terrain/lib/MaskPass.js"></script>
+<script src="../terrain/lib/ShaderPass.js"></script>
+<script src="../terrain/lib/UnrealBloomPass.js"></script>
+</head>
+<body>
+<div id="loading">Erwacht in Gold...</div>
+<div id="ui">
+<div id="presets"><button data-p="wolf" class="active">Wolf</button><button data-p="fox">Fuchs</button><button data-p="bear">Baer</button><button data-p="deer">Hirsch</button></div>
+<div class="slider-row"><label>Groesse</label><input type="range" id="sSize" min="1.0" max="4.0" step="0.1" value="2.4"><span class="val" id="vSize">2.4</span></div>
+<div class="law">-> Beinmuskel = 0.42 x (Groesse/2.4)^0.67 -- Allometrie</div>
+<div class="slider-row"><label>Nacklaenge</label><input type="range" id="sNeck" min="0.15" max="0.40" step="0.01" value="0.263"><span class="val" id="vNeck">0.26</span></div>
+<div class="law">-> Nackwinkel = 8 + (Laenge-0.26)x55 -- laenger = aufrichtiger</div>
+<div class="slider-row"><label>Beinlaenge</label><input type="range" id="sLeg" min="0.15" max="0.35" step="0.01" value="0.22"><span class="val" id="vLeg">0.22</span></div>
+<div class="law">-> Gangtempo = sqrt(Beinlaenge/0.22) x 1.2 -- Froude</div>
+<div class="slider-row"><label>Ernaehrung</label><input type="range" id="sDiet" min="0" max="1" step="0.05" value="1.0"><span class="val" id="vDiet">Carn</span></div>
+<div class="law">-> Fanglaenge, Augenpos. -- Carnivor kurz+vorne, Herbivor lang+seitlich</div>
+<div class="slider-row"><label>Statur</label><input type="range" id="sBuild" min="0" max="1" step="0.05" value="0.42"><span class="val" id="vBuild">0.42</span></div>
+<div class="law">-> Muskel, Bauchtiefe, Beindicke -- schlank bis massiv</div>
+<div id="emotions">
+<button data-e="idle" class="active">Entspannt</button>
+<button data-e="joy">Freude</button>
+<button data-e="hunt">Jagd</button>
+<button data-e="flee">Flucht</button>
+<button data-e="alert">Wachsam</button>
+<button data-e="showcase">Showcase</button>
+</div>
+<!-- STUDIO-ÜBERGABE (Auftrag D): nur im AnazhRealm-Portal sichtbar (die W12-Brücke enthüllt ihn) — standalone bleibt die UI byte-alt. -->
+<button id="btnUebergabe" hidden style="width:100%;margin-top:8px">An die Welt übergeben</button>
+</div>
+<script src="../../tetrapoda-core.js?v=18.496.0"></script>
+<script src="tetrapoda.js?v=18.496.0"></script>
+
+</body>
+</html>

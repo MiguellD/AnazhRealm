@@ -1,0 +1,66 @@
+{
+  "cv": 3,
+  "minted": "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall",
+  "cases": {
+    "gt-s7-L0": {
+      "objects": 328,
+      "vertices": 27274,
+      "sha256": "2c4f176b59198acd3a40aab248669f1b48d39e1beb673e07b078f430b378151c"
+    },
+    "gt-s12345-L0": {
+      "objects": 328,
+      "vertices": 27274,
+      "sha256": "2c4f176b59198acd3a40aab248669f1b48d39e1beb673e07b078f430b378151c"
+    },
+    "supersport-s7-L0": {
+      "objects": 328,
+      "vertices": 26976,
+      "sha256": "0077b37758b3bca3cfdcf896f9d5e3f881d8bfbd29ed35292f2d5cc82bee0a28"
+    },
+    "supersport-s12345-L0": {
+      "objects": 328,
+      "vertices": 26976,
+      "sha256": "0077b37758b3bca3cfdcf896f9d5e3f881d8bfbd29ed35292f2d5cc82bee0a28"
+    },
+    "limousine-s7-L0": {
+      "objects": 344,
+      "vertices": 27544,
+      "sha256": "378aa05f382e2e7d3c07fec7e45907715a788f4cf0a5cbf07b98681d35318e42"
+    },
+    "limousine-s12345-L0": {
+      "objects": 344,
+      "vertices": 27544,
+      "sha256": "378aa05f382e2e7d3c07fec7e45907715a788f4cf0a5cbf07b98681d35318e42"
+    },
+    "kompakt_fwd-s7-L0": {
+      "objects": 359,
+      "vertices": 27854,
+      "sha256": "2da0cd1fd902e187bdb27d2acdc3467fb8d3dbd314f808af7dbd9ba1f87d49b8"
+    },
+    "kompakt_fwd-s12345-L0": {
+      "objects": 359,
+      "vertices": 27854,
+      "sha256": "2da0cd1fd902e187bdb27d2acdc3467fb8d3dbd314f808af7dbd9ba1f87d49b8"
+    },
+    "suv-s7-L0": {
+      "objects": 355,
+      "vertices": 29272,
+      "sha256": "3076a44733c6fe9fda71103682e33a23d386e95c8e6e3b6b4556887f3fb994cf"
+    },
+    "suv-s12345-L0": {
+      "objects": 355,
+      "vertices": 29272,
+      "sha256": "3076a44733c6fe9fda71103682e33a23d386e95c8e6e3b6b4556887f3fb994cf"
+    },
+    "gt-s7-L0-ov_toro": {
+      "objects": 387,
+      "vertices": 29065,
+      "sha256": "8043121d10a904e0f13ff68276ffc6fc0333a4a2a869ca9576c0d092fcb3ac3f"
+    },
+    "supersport-s7-L0-ov_cavallo": {
+      "objects": 437,
+      "vertices": 30125,
+      "sha256": "2210a8f3af0c28b1d6857ea729a4425967c8ad5920923f934c95e72379cfe27e"
+    }
+  }
+}

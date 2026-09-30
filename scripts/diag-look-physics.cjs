@@ -53,6 +53,11 @@ function relLuminance([r, g, b]) {
     const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
     return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
+// Für Werte, die schon LINEAR sind (MEADOW_GREEN trägt seit V18.386 das Studio-cMead
+// sRGB→linear, siehe den Getter) — ein zweites Dekodieren drückte die Wiese auf 0,012.
+function relLuminanceLinear([r, g, b]) {
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
@@ -102,7 +107,7 @@ function relLuminance([r, g, b]) {
     //    Erde-Oberflächen-Albedo-Tabellen: Gras/Vegetation 0,15–0,30, grün-dominant.
     if (Array.isArray(boot.meadow) && boot.meadow.length === 3) {
         const [r, g, b] = boot.meadow;
-        const lum = relLuminance(boot.meadow);
+        const lum = relLuminanceLinear(boot.meadow); // MEADOW_GREEN ist LINEAR (Getter-Doku)
         ok(
             "Gras-Albedo grün-dominant + im Real-Bereich",
             g > r && g > b && lum > 0.08 && lum < 0.55,

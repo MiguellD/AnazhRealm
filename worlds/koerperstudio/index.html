@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<!-- koerperstudio-Portal (Nachlese-Welle, W-A4c-Muster) — eigenes Document, eigene strikte CSP:
+     Skript nur same-origin (koerperstudio.js + ../../koerper-core.js + ../terrain/lib/ — Three.js r128
+     vendored vom geteilten Regal, kein CDN mehr; die Shell wanderte dafür byte-treu
+     aus dem Inline-Skript nach koerperstudio.js, das schmiede.js/fachwerk.js-Muster). Die
+     iframe-Sandbox trägt die Isolation; die W12-Brücke am Ende von koerperstudio.js
+     spricht die Heimat (enter/ready/dsl/exit). -->
+<meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+/><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Da Vinci Studio v19 — Living Human</title>
+<style>
+body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
+#ui{position:fixed;top:10px;right:10px;width:280px;background:rgba(10,10,15,0.85);padding:18px;border-radius:12px;color:#ddd;font-family:system-ui,sans-serif;font-size:13px;z-index:100;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);max-height:90vh;overflow-y:auto}
+#ui h3{margin:0 0 12px;font-size:15px;color:#fff;letter-spacing:1px}
+#ui .section{margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)}
+#ui .section h4{margin:0 0 8px;font-size:12px;color:#88aaff;text-transform:uppercase;letter-spacing:1px}
+#ui .row{margin-bottom:8px}
+#ui label{display:flex;justify-content:space-between;margin-bottom:3px;color:#aaa;font-size:12px}
+#ui label span{color:#8cf;font-weight:600}
+#ui input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:rgba(255,255,255,0.15);border-radius:2px;outline:none}
+#ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6af;cursor:pointer}
+#ui input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#6af;cursor:pointer;border:none}
+#ui .btns{display:flex;gap:8px;margin-top:10px}
+#ui button{flex:1;padding:7px;border:none;border-radius:6px;background:rgba(100,170,255,0.2);color:#8cf;cursor:pointer;font-size:12px}
+#ui button:hover{background:rgba(100,170,255,0.35)}
+#ui #emotions{display:flex;gap:4px;flex-wrap:wrap}
+#ui #emotions button{flex:1;padding:6px 4px;font-size:10px;min-width:50px}
+#ui #emotions button.active{background:rgba(100,170,255,0.45);color:#fff}
+#ui .preset{font-size:11px;color:#666;margin-top:8px;text-align:center}
+#ui .pickgrid{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+#ui .pickgrid button{flex:1 1 auto;min-width:52px;padding:5px 4px;font-size:10px;border:none;border-radius:5px;background:rgba(100,170,255,0.12);color:#9bd;cursor:pointer}
+#ui .pickgrid button:hover{background:rgba(100,170,255,0.28)}
+#ui .pickgrid button.active{background:rgba(100,170,255,0.45);color:#fff}
+#ui .swatches{display:flex;gap:5px;flex-wrap:wrap;margin:2px 0 8px}
+#ui .swatches .sw{width:19px;height:19px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px rgba(255,255,255,0.18) inset;transition:transform .1s}
+#ui .swatches .sw:hover{transform:scale(1.1)}
+#ui .swatches .sw.active{border-color:#fff;transform:scale(1.12)}
+#ui .mini{font-size:10px;color:#7a8190;margin:8px 0 3px;letter-spacing:.5px}
+</style>
+<script src="../terrain/lib/three-r128.min.js"></script>
+<script src="../terrain/lib/OrbitControls.js"></script>
+<script src="../terrain/lib/CopyShader.js"></script>
+<script src="../terrain/lib/LuminosityHighPassShader.js"></script>
+<script src="../terrain/lib/FXAAShader.js"></script>
+<script src="../terrain/lib/EffectComposer.js"></script>
+<script src="../terrain/lib/RenderPass.js"></script>
+<script src="../terrain/lib/MaskPass.js"></script>
+<script src="../terrain/lib/ShaderPass.js"></script>
+<script src="../terrain/lib/UnrealBloomPass.js"></script>
+</head>
+<body>
+<div id="ui">
+<h3>🎭 Character Studio</h3>
+<div class="section"><h4>Körper</h4>
+<div class="row"><label>Größe <span id="vHeight">1.00</span></label><input type="range" id="sHeight" min="0.85" max="1.15" step="0.01" value="1.0"></div>
+<div class="row"><label>Masse (Fett) <span id="vMass">35%</span></label><input type="range" id="sMass" min="0" max="1" step="0.01" value="0.35"></div>
+<div class="row"><label>Muskeltonus <span id="vTone">50%</span></label><input type="range" id="sTone" min="0" max="1" step="0.01" value="0.5"></div>
+<div class="row"><label>Alter <span id="vAge">25</span></label><input type="range" id="sAge" min="0" max="1" step="0.01" value="0.15"></div>
+<div class="row"><label>Männlichkeit <span id="vGender">100%</span></label><input type="range" id="sGender" min="0" max="1" step="0.01" value="1.0"></div>
+</div>
+<div class="section"><h4>Pose</h4>
+<div class="row"><label>Armhaltung <span id="vArms">0%</span></label><input type="range" id="sArms" min="0" max="1" step="0.01" value="0.0"></div>
+</div>
+<div class="section"><h4>Haut</h4><div class="mini">Ton</div><div class="swatches" id="skinTones"></div></div><div class="section"><h4>Haare</h4>
+<div class="mini">Stil</div>
+<div class="pickgrid" id="hairStyles">
+<button data-h="glatze">Glatze</button><button data-h="buzz">Buzz</button><button data-h="kurz">Kurz</button><button data-h="mittel" class="active">Mittel</button><button data-h="lang">Lang</button><button data-h="locken">Locken</button><button data-h="afro">Afro</button><button data-h="zopf">Zopf</button><button data-h="dutt">Dutt</button><button data-h="undercut">Undercut</button>
+</div>
+<div class="mini">Farbe</div>
+<div class="swatches" id="hairColors"></div>
+<div class="row"><label>Länge <span id="vHairLen">100%</span></label><input type="range" id="sHairLen" min="0.2" max="2.0" step="0.05" value="1.0"></div>
+<div class="row"><label>Volumen <span id="vHairVol">100%</span></label><input type="range" id="sHairVol" min="0.5" max="2.0" step="0.05" value="1.0"></div>
+</div>
+<div class="section"><h4>Oberteil</h4>
+<div class="pickgrid" id="topStyles">
+<button data-t="none">Keins</button><button data-t="tshirt" class="active">T-Shirt</button><button data-t="pullover">Pullover</button><button data-t="tank">Tank</button>
+</div>
+<div class="swatches" id="topColors"></div>
+</div>
+<div class="section"><h4>Hose</h4>
+<div class="pickgrid" id="botStyles">
+<button data-b="none">Keine</button><button data-b="pants" class="active">Lang</button><button data-b="shorts">Shorts</button>
+</div>
+<div class="swatches" id="botColors"></div>
+</div>
+<div class="section"><h4>Schuhe</h4>
+<div class="pickgrid" id="shoeStyles">
+<button data-s="none">Barfuß</button><button data-s="sneaker" class="active">Sneaker</button><button data-s="boot">Stiefel</button>
+</div>
+<div class="swatches" id="shoeColors"></div>
+</div>
+<div class="section"><h4>Emotion</h4>
+<div id="emotions">
+<button data-e="idle" class="active">Entspannt</button>
+<button data-e="joy">Freude</button>
+<button data-e="sad">Trauer</button>
+<button data-e="angry">Wut</button>
+<button data-e="fear">Angst</button>
+<button data-e="run">Rennen</button>
+<button data-e="fight">Kampf</button>
+<button data-e="showcase">Showcase</button>
+</div>
+</div>
+<div class="btns"><button id="btnRandom">🎲 Zufall</button><button id="btnReset">↺ Reset</button></div>
+<div class="btns"><button id="btnPlay" style="width:100%;background:linear-gradient(90deg,#3a6ea5,#5a8fc5);font-weight:600">🎮 Spielen — Ninja-Park</button></div>
+<!-- STUDIO-ÜBERGABE (Auftrag D): nur im AnazhRealm-Portal sichtbar (die W12-Brücke enthüllt ihn) — standalone bleibt die UI byte-alt. -->
+<div class="btns"><button id="btnUebergabe" hidden style="width:100%;background:linear-gradient(90deg,#7a5a2a,#b08a3a);font-weight:600">An die Welt übergeben</button></div>
+<div class="preset" id="presetLabel">Athletischer Mann · 25</div>
+</div>
+<script src="../../koerper-core.js?v=18.496.0"></script>
+<script src="koerperstudio.js?v=18.496.0"></script>
+
+<div id="hud" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(10,12,18,0.82);color:#eef3fa;padding:8px 16px;border-radius:9px;font:600 15px/1.4 ui-monospace,Menlo,monospace;letter-spacing:0.4px;pointer-events:none;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:background 0.25s">bereit</div>
+<div id="playHint" style="display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(10,12,18,0.82);color:#dfe6f0;padding:10px 18px;border-radius:10px;font:13px/1.5 system-ui;text-align:center;pointer-events:none;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.5)"><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Maus</b> schauen &nbsp;·&nbsp; <b>Leertaste</b> springen &nbsp;·&nbsp; <b>Shift</b> sprinten &nbsp;·&nbsp; <b>Strg</b> (schnell) sliden &nbsp;·&nbsp; <b>Strg</b> (langsam) ducken &nbsp;·&nbsp; Luft+<b>Leertaste</b> Doppelsprung &nbsp;·&nbsp; Wand+<b>Leertaste</b> Wandsprung (<b>W</b> halten = klettern) &nbsp;·&nbsp; <b>R</b> Neustart &nbsp;·&nbsp; <b>C</b> Kamera (3rd/Ego) &nbsp;·&nbsp; <b>Esc</b> verlassen</div>
+</body>
+</html>

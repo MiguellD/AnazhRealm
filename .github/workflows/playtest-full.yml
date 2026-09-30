@@ -21,7 +21,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
+          cache: "npm"
 
       - name: System-Libs für headless Chromium
         run: |
@@ -36,9 +37,16 @@ jobs:
             libgbm1 libpango-1.0-0 libcairo2 libasound2
 
       - name: Dependencies installieren (inkl. puppeteer)
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Voller Headless-Playtest (~5340 Invarianten)
         env:
           PLAYTEST_SECONDS: "30"
         run: npm run playtest
+
+      - name: H4 — Perf-Paritaet studio-relativ im Band (Nervensystem-Plan, Phase gamma)
+        # Zwei Browser-Boots (~4 min): dasselbe Profi-Metrik-Set auf AnazhRealm UND dem
+        # Studio-Wald, eine Zensus-Quelle, Drift-Baender aus der V18.432-Baseline (TRI <=1,5x ·
+        # DRW <=3x · VIS >=50 % · VRAM <=2x + Asset-Budget +-2 %). Nightly bewusst — fuer den
+        # per-push-Job zu schwer (15-min-Deckel).
+        run: npm run gate:perf-parity

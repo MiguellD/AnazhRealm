@@ -56,10 +56,7 @@ function check(name, ok) {
         args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
-    // [PERF] Skin-Res-Cap vor dem Laden seeden (der Avatar-Isosurface baut sonst ~19 s im Boot);
-    // die Checks prüfen „Avatar baut + ist Rig", nicht die Treue → verlustfrei. Siehe playtest.cjs.
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-
         // Pixel mit Augen aus). Der Null-Renderer macht den Lauf robust gegen
         // swiftshader-Renderer-Crashes. Der LOOK lebt in diag-settled-view.
@@ -110,7 +107,6 @@ function check(name, ok) {
                     };
             }
             r.state.postProcessingFailed = true;
-            // (Skin-Res-Cap wird via evaluateOnNewDocument vor dem Laden geseedet — siehe oben.)
             const start = performance.now();
             const TARGET = 4; // schneller Warmup: ein paar Chunks genügen für die Kern-Gesundheit
             const MIN_MS = 3000;
@@ -176,36 +172,144 @@ function check(name, ok) {
             out.avatar = safe(() => {
                 const g = r._buildHumanGroup();
                 const rig = g && g.userData && g.userData.rig;
-                let skinned = false;
+                // KONVERGENZ: der Avatar IST der Studio-Baum (bauMensch) — kein SkinnedMesh
+                // mehr; die Wahrheit ist: Baum-Teile (Meshes) + Gelenk-Gruppen im Rig.
+                let meshN = 0;
                 if (g)
                     g.traverse((o) => {
-                        if (o.isSkinnedMesh) skinned = true;
+                        if (o.isMesh) meshN++;
                     });
-                return { ok: !!g, hasRig: !!rig, skinned };
+                const gelenke = !!(rig && rig.armL && rig.armL.shoulder && rig.legL && rig.legL.knee && rig.head);
+                return { ok: !!g, hasRig: !!rig, baum: rig ? rig._baum === true : false, meshN, gelenke };
             });
-            // KREATUR baut (die geteilte Metaball-Pipeline)
+            // KREATUR baut (der Studio-Baum, KONVERGENZ III)
             out.creatureWesen = safe(() => {
                 const g = r._buildCreatureGroup("wesen");
                 return { ok: !!g, children: g ? g.children.length : 0 };
             });
+            // ALTLASTEN-NULL — glutwesen/sprite/geist sind GEFALLEN: die Seelen-
+            // Menge ist exakt die vier ehrlichen Tiere.
             out.creatureGlut = safe(() => {
-                const g = r._buildCreatureGroup("glutwesen");
-                return { ok: !!g };
+                const names = (window.AnazhRealm || r.constructor).CREATURE_SOUL_NAMES || [];
+                const exakt = names.length === 4 && ["wesen", "wolf", "fuchs", "baer"].every((n) => names.includes(n));
+                return { ok: exakt };
             });
-            // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad)
-            out.blueprintBuilds = safe(() => {
-                const names = ["geraet_schwert", "esse", "welt_portal", "ruestung_brustpanzer"];
+            // ERFINDER-WELLE — die NEUEN Tiere (wolf/fuchs/baer aus den tetrapoda-
+            // Gattungen) bauen durch DENSELBEN Guss (Konsum-Beweis, nicht Existenz).
+            out.creatureTiere = safe(() => {
                 const res = {};
+                for (const n of ["wolf", "fuchs", "baer"]) {
+                    const g = r._buildCreatureGroup(n);
+                    res[n] = !!(g && g.children.length);
+                }
+                return res;
+            });
+            // SYNERGIE-WELLE — „WERDE DAS TIER": die Tier-Körper sind TRAGBARE
+            // soul-Baupläne (der generische embody-Pfad; Konsum = wirklich getragen).
+            out.tierKoerper = safe(() => {
+                const bp = r.state.blueprints.koerper_wolf;
+                const okDef = !!(bp && bp.role === "soul" && Array.isArray(bp.parts) && bp.parts.length >= 10);
+                const prev = (r.state.player && r.state.player.soul) || "human";
+                let getragen = false;
+                if (okDef) {
+                    r.applyPlayerSoulFromBlueprint("koerper_wolf");
+                    getragen =
+                        !!(r.state.player && /koerper_wolf/.test(String(r.state.player.soul))) &&
+                        // KONVERGENZ III: der getragene Tier-Leib ist der Studio-BAUM
+                        // (ein Wrap-Kind + _tierBaum-Register) — nicht mehr der Compound.
+                        !!(
+                            r.state.playerMesh &&
+                            (r.state.playerMesh.children.length >= 5 ||
+                                (r.state.playerMesh.userData && r.state.playerMesh.userData._tierBaum))
+                        );
+                    r.applyPlayerSoul(prev);
+                }
+                return { okDef, getragen, hirsch: !!r.state.blueprints.koerper_wesen };
+            });
+            // ALTLASTEN-NULL — KÖRPER→EIGENSCHAFTEN als ZAHL: die Skelett-Größen
+            // differenzieren die getragenen Tier-Körper über die EINE Größen-Fold-
+            // Quelle (sizeHpMul): Bär > Wolf > Fuchs in HP, Fuchs > Wolf > Bär im
+            // Tempo. Plus: der werde-Alias trägt (wolf→koerper_wolf) und ein
+            // gefallener Alt-Name fällt fail-soft auf den Menschen.
+            out.koerperStats = safe(() => {
+                const prev = (r.state.player && r.state.player.soul) || "human";
+                const read = (k) => {
+                    r.applyPlayerSoulFromBlueprint(k);
+                    const st = r.state.player.stats || {};
+                    return { hp: st.hpMax || 0, sp: st.speed || 0 };
+                };
+                const fu = read("koerper_fuchs");
+                const wo = read("koerper_wolf");
+                const ba = read("koerper_baer");
+                const aliasOk = !!r.applyPlayerSoul("wolf") && /koerper_wolf/.test(String(r.state.player.soul));
+                // HERZ/KONVERGENZ III: „werde wolf" IST der Wolf — derselbe
+                // Studio-Baum wie die Welt-Kreatur (der _creatureSkin-Wrap deckt
+                // den Leib für die 1st-Person-Regel).
+                const wolfSkin = (r.state.playerMesh.children || []).some(
+                    (c) => c && c.userData && c.userData._creatureSkin
+                );
+                const softOk = !!r.applyPlayerSoul("phoenix") && r.state.player.soul === "human";
+                // HERZ: der MENSCH hängt an derselben Größen-Achse — die
+                // koerperstudio-Dials (dieselbe Quelle wie das Rig) tragen
+                // Stats: mehr Masse/Höhe → mehr HP, weniger Tempo.
+                let menschDials = false;
+                const rec = r._foundry && r._foundry.recipes && r._foundry.recipes[r.constructor.KOERPER_HOST_RECIPE];
+                if (rec && rec.s) {
+                    const saved = JSON.parse(JSON.stringify(rec.s));
+                    r.applyPlayerSoul("human");
+                    r.recomputePlayerStats();
+                    const base = { hp: r.state.player.stats.hpMax, sp: r.state.player.stats.speed };
+                    rec.s.height = 1.15;
+                    rec.s.mass = 1.0;
+                    r.recomputePlayerStats();
+                    const big = { hp: r.state.player.stats.hpMax, sp: r.state.player.stats.speed };
+                    Object.assign(rec.s, saved);
+                    r.recomputePlayerStats();
+                    menschDials = big.hp > base.hp && big.sp < base.sp;
+                }
+                r.applyPlayerSoul(prev);
+                return {
+                    hpOrder: ba.hp > wo.hp && wo.hp > fu.hp,
+                    speedOrder: fu.sp > wo.sp && wo.sp > ba.sp,
+                    aliasOk,
+                    softOk,
+                    wolfSkin,
+                    menschDials,
+                };
+            });
+            // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
+            // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
+            // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
+            // r.constructor.KIND_SUBSTANCE, die dokumentierte V18.259-Falle).
+            out.blueprintBuilds = safe(() => {
+                const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+                const names = ["esse", "welt_portal", "ruestung_brustpanzer"];
+                const res = {};
+                res.geraet_schwert = KS.geraet_schwert
+                    ? !!r._buildFromBlueprint(
+                          {
+                              name: "_fast_schwert",
+                              parts: JSON.parse(JSON.stringify(KS.geraet_schwert.parts)),
+                          },
+                          0,
+                          undefined,
+                          {}
+                      )
+                    : "missing";
                 for (const n of names) {
                     const bp = st.blueprints[n];
                     res[n] = bp ? !!r._buildFromBlueprint(bp, 0, undefined, {}) : "missing";
                 }
                 return res;
             });
-            // RESONANZ: built-in Baupläne tragen sinnvolle Rollen (Form×Material → Rolle)
+            // RESONANZ: Substanz/Built-ins tragen sinnvolle Rollen (Form×Material → Rolle)
             out.roles = safe(() => {
+                const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
                 const res = {};
-                const probe = { geraet_schwert: "weapon", ruestung_brustpanzer: "armor", welt_portal: "portal" };
+                res.geraet_schwert = KS.geraet_schwert
+                    ? r.computeBlueprintRole({ parts: KS.geraet_schwert.parts }) || "?"
+                    : "missing";
+                const probe = { ruestung_brustpanzer: "armor", welt_portal: "portal" };
                 for (const n of Object.keys(probe)) {
                     const bp = st.blueprints[n];
                     if (!bp) {
@@ -245,23 +349,102 @@ function check(name, ok) {
         check("getTerrainHeightAt(0,0) endlich", R.terrainHeightFinite === true);
         const av = R.avatar || {};
         check("AVATAR baut (_buildHumanGroup ohne Crash)", av.ok === true && !av.__err);
-        check("AVATAR ist ein Rig (SkinnedMesh + Bones)", av.hasRig === true && av.skinned === true);
+        // PIPE-VOLLENDUNG (V18.459): der Mensch ist ein Pipe-Asset — je (Gelenk ×
+        // Klasse) GEMERGT (~29 Meshes statt 227, voll gelenkig). Untergrenze 10 =
+        // die Struktur-Wand (Gelenke × Klassen), Obergrenze 120 = kein Rückfall
+        // in den ungemergten Baum.
+        check(
+            `AVATAR ist der Studio-Baum aus der PIPE (${av.meshN || 0} gemergte Teile + Gelenk-Gruppen)`,
+            av.hasRig === true && av.baum === true && av.gelenke === true && (av.meshN || 0) >= 10 && av.meshN <= 120
+        );
         const cw = R.creatureWesen || {};
         check(`KREATUR 'wesen' baut (${cw.children || 0} Teile)`, cw.ok === true && !cw.__err);
-        check("KREATUR 'glutwesen' baut", (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err);
+        check(
+            "ALTLASTEN-NULL: Seelen = exakt Hirsch·Wolf·Fuchs·Bär",
+            (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err
+        );
+        check(
+            "DIE NEUEN TIERE bauen (Wolf·Fuchs·Bär aus den tetrapoda-Gattungen)",
+            (R.creatureTiere || {}).wolf === true &&
+                (R.creatureTiere || {}).fuchs === true &&
+                (R.creatureTiere || {}).baer === true &&
+                !(R.creatureTiere || {}).__err
+        );
+        check(
+            "WERDE DAS TIER: koerper_wolf ist tragbar (generischer embody-Pfad) + koerper_wesen/Hirsch existiert",
+            (R.tierKoerper || {}).okDef === true &&
+                (R.tierKoerper || {}).getragen === true &&
+                (R.tierKoerper || {}).hirsch === true &&
+                !(R.tierKoerper || {}).__err
+        );
+        check(
+            "KÖRPER→EIGENSCHAFTEN: Bär>Wolf>Fuchs (HP) · Fuchs>Wolf>Bär (Tempo) + werde-Alias + fail-soft",
+            (R.koerperStats || {}).hpOrder === true &&
+                (R.koerperStats || {}).speedOrder === true &&
+                (R.koerperStats || {}).aliasOk === true &&
+                (R.koerperStats || {}).softOk === true &&
+                !(R.koerperStats || {}).__err
+        );
+        check(
+            "HERZ: werde wolf trägt den Studio-Baum (derselbe Guss wie die Welt-Kreatur)",
+            (R.koerperStats || {}).wolfSkin === true && !(R.koerperStats || {}).__err
+        );
+        check(
+            "HERZ: Mensch-Dials tragen Stats (mehr Masse/Höhe → mehr HP, weniger Tempo — EINE Größen-Achse)",
+            (R.koerperStats || {}).menschDials === true && !(R.koerperStats || {}).__err
+        );
         const bb = R.blueprintBuilds || {};
         const bbOk = !bb.__err && Object.values(bb).every((v) => v === true);
-        check("KERN-BAUPLÄNE bauen (Schwert·Esse·Portal·Rüstung)", bbOk);
+        check("KERN-BAUPLÄNE bauen (Schwert-Substanz·Esse·Portal·Rüstung)", bbOk);
         if (!bbOk) console.log("     ⟶ " + JSON.stringify(bb));
         const ro = R.roles || {};
         check(
-            "RESONANZ: Schwert→weapon · Rüstung→armor · Portal→portal",
+            "RESONANZ: Schwert-Substanz→weapon · Rüstung→armor · Portal→portal",
             ro.geraet_schwert === "weapon" && ro.ruestung_brustpanzer === "armor" && ro.welt_portal === "portal"
         );
         if (ro.geraet_schwert !== "weapon") console.log("     ⟶ " + JSON.stringify(ro));
         const ps = R.playerStats || {};
         check("Spieler-Stats sinnvoll (hp>0, speed>0)", ps && ps.hp > 0 && ps.speed > 0);
         if (!(ps.hp > 0 && ps.speed > 0)) console.log("     ⟶ " + JSON.stringify(ps));
+
+        // V18.492 — v1.0-Schritt 4 (mit der KI erschaffen) als Kern-Gesundheit: der Satz wird
+        // zum Studio-Programm, und die KI-Antwort (gestubbt — kein Netz im Gate) pflanzt echte
+        // Studio-Baupläne über den EINEN Chokepoint. Das volle Band: checkBandV18493CoSchoepferStudio.
+        const K = await page.evaluate(async () => {
+            const r = window.anazhRealm;
+            const o = {};
+            try {
+                const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
+                o.satz = !!parsed && parsed.program[0] === "spawn_studio" && parsed.program[1] === "eichen";
+                const archs = r.state.architectures;
+                const vorher = archs.length;
+                const llm = r.state.llm;
+                const alt = { enabled: llm.enabled, provider: llm.provider };
+                const orig = r.llmCall;
+                llm.enabled = true;
+                llm.provider = "ollama";
+                r.llmCall = async () => ({
+                    say: "Birken.",
+                    program: ["spawn_studio", "birke", ["near_player", 25], 3, 5],
+                });
+                try {
+                    await r.maybeAnswerWithLlm("birken bitte", () => {});
+                } finally {
+                    r.llmCall = orig;
+                    llm.enabled = alt.enabled;
+                    llm.provider = alt.provider;
+                }
+                const neu = archs.slice(vorher);
+                o.ki = neu.length > 0 && neu.every((e) => e.type === r._studioBlueprintForWord("birke"));
+                for (const e of neu.reverse()) r.removeArchitecture(e);
+            } catch (e) {
+                o.err = (e && e.message) || String(e);
+            }
+            return o;
+        });
+        check("CO-SCHÖPFER: der Satz wird spawn_studio (ohne KI-Schlüssel)", K.satz === true);
+        check("CO-SCHÖPFER: KI-Antwort → Studio-Birken in der Welt (END-ZU-END, gestubbt)", K.ki === true);
+        if (K.err) console.log("     ⟶ " + K.err);
 
         console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s · ${pass} ✅ · ${fails.length} ❌`);
         if (fails.length) {

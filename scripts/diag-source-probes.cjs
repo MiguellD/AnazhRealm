@@ -45,7 +45,7 @@ const GATE_FILES = ['scripts/playtest.cjs', 'scripts/playtest-fast.cjs'];
 // Proben sind `r.<x>` (die Realm-Instanz) → anazhRealm.js. Die Worker-/Bake-Mirrors
 // sind als Fallback dabei (geteilte Symbol-Namen), damit ein Mirror-Symbol nie
 // fälschlich „fehlt".
-const CODE_FILES = ['anazhRealm.js', 'voxel-worker.js', 'bake-core.js', 'bake-worker.js'];
+const CODE_FILES = ['anazhRealm.js', 'voxel-worker.js'];
 
 /**
  * Strippt JS-Kommentare (Block + Zeile) UND String-/Template-Literale, ohne über

@@ -2,7 +2,7 @@
 
 Dieses Dokument trägt **die Vision** des Projekts — und sonst nichts: die fünf Pfeiler aus den vier Testamenten, die Gründungs-Historie samt Heiliger Lektion, wo die Vision steht, die erweiterte Vision (das Welten-Ultiversum).
 
-Die anderen Zeit-Ebenen des Wissens leben anderswo: der **aktuelle Stand + die Gotchas** in `CLAUDE.md` (auto-geladen, schlank), die **volle Wellen-Chronik** in `docs/archiv/handover.md`, der **Plan vorwärts** in `docs/roadmap.md`, die **gesammelten Session-Learnings** in `docs/archiv/learnings.md`.
+Die anderen Zeit-Ebenen des Wissens leben anderswo: der **aktuelle Stand + die Lehren** in `CLAUDE.md` (auto-geladen, schlank), die **volle Wellen-Chronik** in der git-Historie (`git log` — die Commit-Message ist der Eintrag), der **Plan vorwärts** in `docs/roadmap.md`.
 
 ---
 
@@ -51,9 +51,11 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 
 ## 3. Wo die Vision steht
 
-Alle fünf Pfeiler + das Fundament stehen (gemessen, Mai–Juni 2026): das Voxel-Terrain samt Hydrosphäre · der Render (Three.js r184 / WebGPU, ~119 FPS) · der Hylomorphismus-Crafting · der Co-Schöpfer-Kreis (Kreaturen · Nexus · Grok-Stimme) · das Welten-Ultiversum (Ringe 8–11 + der ganze Fremd-Engine-Bogen W12–17) · und seit V17.19–.71 die **SEELE**: das lebendige Feld (lesen·schreiben·WERTEN), der Emotion-Kern, der DSL-Weltregeln-Bogen, der Kampf-/Schöpfungs-Fluss + die Resonanz-Vereinheitlichung. **Der lange als „tiefster offener Vision-Faden" geführte Pfeiler 2 (Emotion ↔ lokale Welt) ist eingelöst** — die Welt fühlt, lernt und wächst aus dem Feld. Was bleibt, ist VERTIEFUNG, nicht Fundament; der eine offene Körper-Vektor ist die echte **Fluid-Dynamik** (Wasser fließt nach wie Minecraft).
+Alle fünf Pfeiler + das Fundament stehen (gemessen, Mai–Juni 2026): das Voxel-Terrain samt Hydrosphäre · der Render (Three.js r184 / WebGPU) · der Hylomorphismus-Crafting · der Co-Schöpfer-Kreis (Kreaturen · Nexus · Grok-Stimme) · das Welten-Ultiversum (Ringe 8–11 + der ganze Fremd-Engine-Bogen W12–17) · und seit V17.19–.71 die **SEELE**: das lebendige Feld (lesen·schreiben·WERTEN), der Emotion-Kern, der DSL-Weltregeln-Bogen, der Kampf-/Schöpfungs-Fluss + die Resonanz-Vereinheitlichung. **Der lange als „tiefster offener Vision-Faden" geführte Pfeiler 2 (Emotion ↔ lokale Welt) ist eingelöst** — die Welt fühlt, lernt und wächst aus dem Feld. Was bleibt, ist VERTIEFUNG, nicht Fundament; der eine offene Körper-Vektor ist die echte **Fluid-Dynamik** (Wasser fließt nach wie Minecraft).
 
-Der jeweils *aktuelle, gemessene* Stand lebt in der richtigen Zeit-Ebene — **nicht hier** (eine Vision-Datei ist zeitlos, sonst veraltet sie mit jeder Welle): der JETZT-Stand + die Gotchas in `CLAUDE.md`, *was gebaut ist* + der Weg vorwärts in `docs/roadmap.md`, die volle Wellen-Chronik in `docs/archiv/handover.md`, die TIEFE der Seele in `docs/das-lebendige-feld.md`.
+**Ehrliche Korrektur (V18.492, 30.09.2026):** die Zahl „~119 FPS" stammte aus einer frühen, leeren Welt und galt nie für die gefüllte. Die letzten Traces auf der Hardware des Schöpfers (Juli 2026) zeigten 4–12 FPS bei voller Studio-Dichte; die Render-Wende danach (das Feld zeichnet / analog) ist auf echter GPU noch **nicht gemessen**. Ebenso ehrlich: der KI-Co-Schöpfer ist opt-in und seit Juni kaum gewachsen — der Pfeiler steht, trägt aber das Erlebnis noch nicht. Beides sind die ersten zwei Punkte der v1.0-Ziellinie (`docs/roadmap.md` §0).
+
+Der jeweils *aktuelle, gemessene* Stand lebt in der richtigen Zeit-Ebene — **nicht hier** (eine Vision-Datei ist zeitlos, sonst veraltet sie mit jeder Welle): der JETZT-Stand + die Lehren in `CLAUDE.md`, *was gebaut ist* + der Weg vorwärts in `docs/roadmap.md`, die volle Wellen-Chronik in `git log`, die TIEFE der Seele in `docs/das-lebendige-feld.md`.
 
 ---
 
@@ -111,4 +113,4 @@ Diese Vision **verschärft** die Lektion, nicht relativiert sie: ein public-shar
 
 ---
 
-_Dieses Dokument ist die Vision-Heimat. Die Brücke zwischen Sessions — die Chronik + die Orientierung für den nächsten Agenten — ist `docs/archiv/handover.md`._
+_Dieses Dokument ist die Vision-Heimat. Die Brücke zwischen Sessions — Stand + Lehren + Karte — ist `CLAUDE.md` (auto-geladen); die Chronik ist `git log`._

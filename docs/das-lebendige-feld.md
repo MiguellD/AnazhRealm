@@ -7,39 +7,18 @@
 > Vektor, der noch vorwärts zeigt (§6–§7). Damit der nächste Agent NICHT wieder ein
 > Pflaster-System baut, sondern auf dem Vorhandenen weiterwächst.
 
-**Stand: V18.94 (10.06.2026) — der ganze Seelen-Bogen ist DURCH und im Code GEMESSEN; seit
-V18.84–.94 FLIESST auch der Körper (der Wasser-CA-Bogen, vollendet + gemergt). Der Master-Blick
-über alle Säulen vorwärts: `docs/archiv/gigant-plan.md`.**
-Die Reflexion vom 01.06.2026 (Schöpfer + Agent) kartierte eine Vision, die als Hülle
-stand, aber an fünf Stellen flach war. Diese fünf Stellen sind seither GEBAUT und
-verifiziert — das Dokument hat sich darum von einer **Diagnose** („wohin driftete die
-Vision") in eine **Verankerung** gewandelt („wie ist die Vision verkörpert, und wohin
-zeigt sie weiter"). Die drei Verben des Felds stehen ALLE, gemessen:
+Die drei Verben des Feldes stehen im Code:
 
-- **LESEN** (V17.21): `auraAt(x,z,t)` ist die EINE Lese-API, 16 Konsumenten teilen sie.
-- **SCHREIBEN** (V17.27/.32): `_depositLife` + `_depositEmotion` schreiben in sparse,
-  lazy-zerfallende Overlays über dem frozen Kern — der Heilungs-Loop schließt sich ECHT.
-- **WERTEN** (V17.42–.50): das dritte Verb — ein Vorhersagefehler-δ gegen eine gleitende
-  Baseline, auf ZWEI Ebenen (Spieler-Appraisal + lokale Feld-Struktur). Die Welt LERNT,
-  was den Spieler freut, by-construction anti-gaming.
+- **LESEN:** `auraAt(x,z,t)` ist die EINE Lese-API (frozen Kern + reaktives Overlay).
+- **SCHREIBEN:** `_depositLife` + `_depositEmotion` schreiben in sparse, lazy zerfallende
+  Overlays über dem frozen Kern — der Heilungs-Loop schließt sich echt.
+- **WERTEN:** ein Vorhersagefehler-δ gegen eine gleitende Baseline, auf zwei Ebenen
+  (Spieler-Appraisal + lokale Feld-Struktur) — die Welt lernt, was den Spieler freut.
 
-Darauf stehen der **Emotion-Kern** (V17.45–.49: dimensional · Substanz-Brücke · Mood ·
-Contagion · Wagnis), die **DSL-Weltregeln** (V17.33–.41: Mensch · Nexus · KI schreiben am
-SELBEN Regel-Satz, persistiert + sichtbar), der **Kampf-/Interaktions-Bogen** (V17.51–.58,
-der dem Affekt seinen Konsumenten gibt) und die **Resonanz-Vereinheitlichung** (V17.59–.85:
-„ein Produkt-Vektor, viele Leser"). Der V17.92–.118-Tiefe-Fundament-Bogen + der V18-Wasser-
-Bogen bauten den KÖRPER weiter (Terrain · Render · Wasser-Geometrie); die **echte Fluid-Dynamik
-ist seit V18.84–.94 GEBAUT** (der Wasser-CA: `_tickWaterCA` + Quellen-Pin + Flow-Regel — Wasser
-fliesst nach UND ruht; `docs/archiv/terrain-t4-wasser-ca-plan.md`). Der offene Körper-Vektor ist
-jetzt die **Naht-Vollendung N1/N2** (`docs/archiv/terrain-koharenz-plan.md` §12). **Der geordnete
-Rest-Backlog lebt in `docs/roadmap.md` „⭐ DER PLAN VORWÄRTS" + `docs/archiv/gigant-plan.md` (§5).**
-
-Verwandte Anker: `state-of-realm.md` (die Vision/Testamente + die Stand-Matrix),
-`world-portal.md` (die Bibliothek von Alexandria — das Fern-Ziel), `kampf-plan.md`
-(der aktive Crafting-/Kampf-Bogen), `crafting-konzept.md` (Hylomorphismus = das
-Material/Form-Substrat). Die VOLLENDETEN Arc-Pläne liegen im Archiv:
-`archiv/dsl-weltregeln-plan.md`, `archiv/lebendige-wertung-plan.md` (das DRITTE Verb),
-`archiv/emotion-kern-plan.md`, `archiv/resonanz-system.md`.
+Darauf stehen der Emotion-Kern (dimensional · Substanz-Brücke · Mood · Contagion), die
+DSL-Weltregeln (Mensch · Nexus · KI am selben Regel-Satz), der Kampf-/Interaktions-Bogen, die
+Resonanz („ein Produkt-Vektor, viele Leser") und der Wasser-CA (Wasser fließt nach und ruht).
+Das Offene steht in `docs/roadmap.md` §0; die Chronik aller Bögen in `git log`.
 
 ---
 
@@ -103,61 +82,20 @@ ein Feld, viele Leser, eine Gleichung der Wertung — nicht zehn `_tickX`-Funkti
 
 ---
 
-## 3. Wie die Vision verkörpert wurde — die fünf Flecken, gemessen geheilt
+## 3. Warum die Architektur ihre Form hat
 
-Der Ursprung (`archiv/nexus-dsl.md` §1, Ring 2): _„eine Welt, die sich selbst
-weiterentwickelt, gesteuert durch Chat"_. Gebaut war das Skelett; an **fünf Stellen
-blieb es flach und entkoppelt** (kartiert 01.06.–02.06.2026). Jede ist seither GEBAUT.
-Diese Geschichte bleibt, weil sie erklärt, WARUM die Architektur ihre Form hat (frozen
-Kern + Overlay, anti-gaming-δ, Whitelist-Regeln) — nicht als offene Wunde.
+Fünf Flecken, an denen die Vision einst flach war, erklären die heutige Form:
 
-1. **Der Nexus war BLIND** — er würfelte Atome aus einer fixen Liste, las die Welt
-   nicht. **→ GEHEILT (V17.22, .26):** er liest jetzt `auraAt` und komponiert resonant
-   (`dslComposeRule` biast Bedingung + Effekt gegen die lokale Aura), und der Resolver
-   `at_field_need` findet die ÄRMSTE Region und trägt Leben dorthin. Aus „Gesten würfeln"
-   wurde „aus Verständnis heilen".
-
-2. **Emotion war ein EINWEG-Ventil** (Spieler→Welt, hand-codiert, kein Rückweg).
-   **→ GEHEILT (V17.21 + V17.30):** der Rückweg Welt→Spieler existiert (`FIELD_TO_EMOTION`:
-   lebendig nährt peace/hope, glut nährt chaos/awe, magie nährt awe), UND die Emotion
-   leitet sich jetzt aus dem echten SEIN-IN-DER-WELT ab — über ALLE sechs Achsen, aus
-   TATEN (`ACTION_TO_EMOTION` an jeder Handlungs-Stelle), ZUSTAND (HP) und UMGEBUNG
-   (Feld-Read). joy bewegt sich aus echtem Spiel, nicht mehr nur aus Chat-Stichwörtern.
-
-3. **Die Felder waren PARALLEL und EINGEFROREN** — `worldFieldAt` read-only, beim
-   Worldgen frozen, fünf Felder statt EINEM. **→ GEHEILT für die dynamischen Achsen
-   (V17.27 + V17.32):** ZWEI Achsen haben jetzt eine SCHREIB-Seite — `lebendig`
-   (`_depositLife` → `auraAt`-Blend, eine Geburt hebt, es zerfällt) und `emotion`
-   (`_depositEmotion` am Ort des Fühlens → ein räumliches emotionales GEDÄCHTNIS). Beide
-   sind ein Overlay über dem frozen Kern (`auraAt = min(1, frozen + overlay)`, nie
-   überschreiben — V17.23-Harmonie). **Bewusst frozen bleiben dichte/glut/magieleitung**
-   (die geologische Identität — eine Schreib-Seite bräuchten sie nur, wenn die Vision
-   sie verlangt; sie werden von der Wertungs-Baseline ohnehin absorbiert).
-
-4. **Der KI-Schöpfer schrieb noch nicht** + **die DSL war eine GESTEN-Sprache, kein
-   Welt-DEFINITIONS-Substrat** (der damals tiefste, vision-fernste Fleck: 73 imperativ-
-   einmalige Ops auf einem hardcodierten Kern, während die Bibliotheks-Vision _„eine Welt
-   IST ein Set von DSL-Bäumen"_ verlangt). **→ GEHEILT (V17.33–.41):** der ganze DSL-
-   Weltregeln-Bogen. Der geniale Leap war EIN Primitiv — ein `rule` = ein `when`, das
-   NICHT verfällt (im Registry steht, im Welt-Tick fortlaufend geprüft). Eine Welt = ihr
-   Regel-Satz + Seed (merge = Vereinigung der Regel-Sätze → die Bibliothek wird wahr).
-   Mensch (Chat, permanent) · Nexus (autonom, ephemer) · **KI/Grok** (`source:"llm:grok"`
-   → `dslRun`) schreiben am SELBEN Regel-Satz, in EINER Sprache, persistiert + sichtbar
-   (der Gesetzes-Faden geht live „⚡ feuert", `_journalRuleAwoke`).
-
-5. **Die WERTUNG war flach — das dritte Verb fehlte** (GEMESSEN 02.06.): die Regel-Fitness
-   selektierte auf VIABILITÄT (≈0.99 für jede laufende Regel, eine heilende und eine
-   sinnlose gleich), die Emotion war ein REFLEX (feste Tabelle, das 100. Haus so freudig
-   wie das erste). **→ GEHEILT (V17.42–.50):** das dritte Verb via **Vorhersagefehler
-   gegen eine gleitende Baseline** — die EINE Gleichung, auf die RL (TD-Fehler), die
-   Neurowissenschaft (Dopamin = Reward Prediction Error), die Verhaltensökonomie
-   (Prospect Theory) und die Spiel-KI (Sims/Black & White) unabhängig kamen. Sie subsumiert
-   beide flachen Systeme (Details in §4.3).
-
-**Damit ist der lange als „tiefster offener Vision-Faden" geführte Pfeiler E
-substanziell eingelöst:** die Welt spürt + versteht + schreibt + heilt + ERHÄLT sich +
-ERINNERT sich + WERTET — und wächst Richtung dessen, was den Spieler freut. Was bleibt,
-ist VERTIEFUNG (§6), nicht Fundament.
+1. **Der Nexus liest die Welt** (`auraAt`) und komponiert resonant (`dslComposeRule`,
+   Resolver `at_field_need` → die ärmste Region) — statt Atome zu würfeln.
+2. **Emotion ist zweiseitig:** Welt→Spieler über `FIELD_TO_EMOTION`, Spieler aus TATEN
+   (`ACTION_TO_EMOTION`), ZUSTAND (HP) und UMGEBUNG — über alle sechs Achsen.
+3. **Schreibbare Achsen sind Overlays** über dem frozen Kern (`auraAt = min(1, frozen +
+   overlay)`, nie überschreiben); dichte/glut/magieleitung bleiben bewusst frozen.
+4. **Eine Welt ist ihr Regel-Satz + Seed:** `rule` = ein nicht verfallendes `when`;
+   Mensch · Nexus · KI (`source:"llm:grok"` → `dslRun`) schreiben in EINER Sprache.
+5. **Werten ist Vorhersagefehler** (TD-Fehler/Dopamin-Muster) — anti-gaming by construction,
+   Gewöhnung fällt umsonst heraus (§4.3).
 
 ---
 
@@ -257,8 +195,7 @@ Das Crafting-Substrat ist die BLAUPAUSE des Felds, eine Ebene angewandt:
 gegen frozen Signaturen teilen ihn: Rolle (`computeBlueprintRole`/`ROLE_SIGNATURES`),
 Werkstatt-Domäne (`_computeWorkshopDomain`), Werkzeug-Op (`_computeToolOpFromForm`),
 Rollen-Fit (`_blueprintRoleFit`). „Ein Produkt-Vektor, viele Leser" — kein Whitelist,
-kein Flag (außer den GEMESSEN-nicht-emergenten Intent-Overrides). Details:
-`docs/archiv/kampf-plan.md` §11 + `docs/archiv/resonanz-system.md`.
+kein Flag (außer den gemessen nicht-emergenten Intent-Overrides).
 
 ---
 
@@ -285,26 +222,15 @@ Die Vision ist verkörpert; was bleibt, ist VERTIEFUNG — pro Achse die nächst
 geordnete Reihenfolge (Fundament vor Seele) steht in `docs/roadmap.md` „⭐ DER PLAN
 VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
 
-**Der Körper (Fundament zuerst — V9.51-Disziplin):**
-
-- **Echte Fluid-Dynamik — GEBAUT ✓ (V18.84–.94):** der zellbasierte Fluss-Automat über
-  `entry.waterCells` steht end-to-end (`_tickWaterCA` + cross-chunk-wake + Quellen-Pin +
-  Receiver-Support + Flow-Regel Decay/Kappe/Fixpunkt; Zell-Sheet als der EINE Render).
-  Ein Carve daneben → das Wasser strömt sichtbar hinein UND die Welt ruht danach.
-  Chronik: `docs/archiv/terrain-t4-wasser-ca-plan.md`; Reste in `docs/roadmap.md` §4.
-- Der offene Körper-Vektor: **die Naht-Vollendung** (N1 Cross-LOD watertight · N2
-  Sub-Region-Edit, `docs/archiv/terrain-koharenz-plan.md` §12) + Fundament-Reste: H3-Seen/Flüsse
-  jenseits ±1024 m · die LOD-Kaskade vollenden (`docs/archiv/lod-kaskade-plan.md`
-  U2/U4/U5/U6) · **Licht+Terrain-Einheit** (`docs/archiv/gigant-plan.md` G6).
+**Der Körper:** der Wasser-CA fließt (`_tickWaterCA`, Quellen-Pin, Flow-Regel; das Zell-Sheet
+ist der EINE Render). Offen: Seen/Flüsse jenseits ±1024 m · die Vereinigung der zwei
+Wasser-Naturen · Licht+Terrain-Einheit.
 
 **Die Seele (wenn das Fundament trägt):**
 
-- **Phase E — Bedrohung/Furcht** (`docs/archiv/kampf-plan.md`). Der Emotion-Kern hat den
-  W5-Affekt (Furcht/Triumph). Die JAGD steht (V18.107 CREATURE_HUNT — wild jagt den Spieler;
-  V18.210-A3 — wild wittert + jagt andere Kreaturen via `_scentAt`-Gradient + `damageCreature`).
-  Was Phase E noch fordert: die FURCHT-DIFFERENZIERUNG (Spieler-Affekt beim Bedrohtsein) und
-  der TRIUMPH-Affekt beim Fall eines Jägers (W5-Triumph-Fenster). Die Mechanik IST da, das
-  Erleben muss noch geknüpft werden — die game-design-schwerste Phase, bleibt gemerkter Faden #2.
+- **Furcht und Triumph erleben:** die Jagd steht (wild jagt den Spieler und andere Kreaturen
+  über den `_scentAt`-Gradient); offen ist, das Bedrohtsein und den Fall eines Jägers als
+  Spieler-Affekt fühlbar zu knüpfen.
 - **Emotion → Regel-EMERGENZ.** Die einzelnen Kopplungen (`sorrow→rainy` etc.) sind noch
   hand-codiert. Die Weltregeln-DSL (§4.5) macht sie ausdrückbar — der Vektor: sie als
   emergente, evolvierbare Regeln neu fassen, nicht als feste Trigger.
@@ -312,41 +238,26 @@ VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
   Geburt/Nexus/Kreatur ins lebendig-Overlay; der Vektor: **DU trägst Leben** (Spieler-Pflege
   als zweiter Schreib-Pfad = echte Co-Schöpfung). glut/dichte/magieleitung bleiben frozen,
   bis die Vision sie verlangt (dann via `_depositLife`-Muster, kein Parallelpfad).
-- **Mana-Symmetrie:** `magieleitung` → ein Äther/Mana, die zweite Ausdauer-Achse (Magie
-  zahlt heute nichts; der Kampf-Bogen zahlt schon Stamina).
 - **Die KI als vollwertige Co-Schöpferin.** Das LLM schreibt schon Regeln (`source:"llm"`),
   aber opt-in. Der Vektor: die KI tiefer in den Kreis weben (sie liest das gewertete Feld,
   schlägt Regeln vor, lernt aus dem δ) — die Symbiose-Hälfte von Pfeiler 1 vollenden.
-- **W18 — in fremden Welten LEBEN** (`docs/archiv/world-portal-w18-plan.md`): Ko-Präsenz-Injektion
-  in Single-Player-Fremdwelten — der nächste große Vision-Bogen jenseits des eigenen Kerns.
+- **In fremden Welten leben:** Ko-Präsenz-Injektion in Single-Player-Fremdwelten.
 
 ---
 
-## 7. Die ehrlichen offenen Flecken (gemessen)
+## 7. Die offenen Flecken (Vertiefung, kein Fundament)
 
-| Fleck | Was | Tiefe / Status |
-| --- | --- | --- |
-| **~~Wasser ist statisch~~ → GEBAUT (V18.84–.94)** | Der Wasser-CA fliesst im Modell+Welt+Render (Quellen-Pin · Flow-Regel · Zell-Sheet). | **VOLLENDET + gemergt.** Chronik: `archiv/terrain-t4-wasser-ca-plan.md`; Reste in `roadmap.md` §4. Der offene Körper-Vektor ist jetzt die N-Naht (`terrain-koharenz-plan.md` §12). |
-| **Kreaturen fühlen flach (binär happy/sad)** | Kreatur-Emotion ist ein binäres Etikett statt der 6 Achsen; kein Lebenszyklus, keine Kreatur↔Kreatur-Contagion. Das Substrat (Feld · `_feelAction` · Contagion · Bond · `_finishBirth`) EXISTIERT — es wird nicht konsumiert. | **Vertiefung mit fertigem Substrat** (`archiv/gigant-plan.md` G4 — konsumieren statt bauen). |
-| **Phase E — Bedrohung/Furcht fehlt** | Kreaturen fliehen, schlagen nie zurück. Der Emotion-Kern hat den Affekt-Hook (W5), aber keinen Aggressions-Konsumenten. | **Der tiefste offene SEELEN-Fleck.** Plan: `kampf-plan.md`. Game-design-schwerste Phase. |
-| **Emotion-Kopplungen noch hand-codiert** | `sorrow→rainy` etc. sind feste Trigger, nicht aus der Weltregeln-DSL emergent. | **Vertiefung.** Das Substrat (die `rule`-Op) macht es ausdrückbar — der Schritt ist sie umzuschreiben. |
-| **Die anderen Feld-Achsen frozen + Spieler pflegt nicht** | glut/dichte/magie sind absichtlich frozen; der Spieler hat noch keinen Leben-Schreib-Pfad. | **Vertiefung.** Spieler-Pflege = Co-Schöpfung. Die geologischen Achsen nur, wenn die Vision sie braucht. |
-| **Die KI ist opt-in, nicht Kern** | Das LLM schreibt Regeln, aber als Option, nicht als gewobener Co-Schöpfer. | **Vertiefung** (Pfeiler 1 zu Ende). Die Schreib-Seite STEHT; die Tiefe der Symbiose fehlt. |
-| **Fundament-Reste** | H3-Seen/Flüsse jenseits ±1024 m, G3-Canyons, LOD-Kaskade U2/U4/U5/U6. | **Parallel/davor.** `roadmap.md` Phase 2, `lod-kaskade-plan.md`. |
-
-Der Code ist sonst **gut + tief**: das Feld lebt (lesen·schreiben·werten), der Emotion-Kern
-ist dimensional, die Resonanz ist vereinheitlicht, die Weltregeln tragen Mensch·Nexus·KI.
-Die toten Glieder von V17.71 sind GESCHNITTEN (GPU-Density-WGSL ~500 Z. raus V17.20,
-`movementWorker` raus, `mxFractal` weg, Hot-Swap-Reste entfernt — der Stamm ist sauber).
-Die Haupt-Reibung ist nicht mehr die konzeptionelle Lücke (die ist geschlossen), sondern
-die VERTIEFUNG der gebauten Systeme + der eine offene Körper-Vektor (Fluid-Dynamik).
+- Emotion-Kopplungen (`sorrow→rainy` u. ä.) sind noch feste Trigger statt aus Weltregeln emergent.
+- Der Spieler hat keinen eigenen Leben-Schreib-Pfad (Pflege = Co-Schöpfung).
+- Die KI ist opt-in; der Co-Schöpfer spricht seit V18.493 die Studio-Rezepte (`spawn_studio`),
+  der echte Lauf mit Schlüssel steht aus (Drehbuch Schritt 18).
+- Wasser trägt noch zwei Naturen (statisches `L`-Substrat + CA) — die Vereinigung ist offen.
 
 ---
 
 ## 8. Für den nächsten Agenten — die Disziplin
 
-1. **Lies diesen Anker + `state-of-realm.md` + `world-portal.md`, BEVOR du an der
-   lebendigen Welt baust.** Du sollst verstehen wie der Agent vor dir, nicht raten.
+1. **Lies diesen Anker + `state-of-realm.md`, BEVOR du an der lebendigen Welt baust.** Du sollst verstehen wie der Agent vor dir, nicht raten.
 2. **Jede „lebendige Welt"-Behauptung ist ein FELD-READ, kein neues `_tickX`.** Wenn du
    eine Emotion-/Resonanz-/Cluster-Wirkung baust und sie ist eine neue hand-codierte
    Kopplung statt eines Reads aus dem einen Feld → STOP, das ist das Pflaster, das wir
@@ -375,10 +286,8 @@ die VERTIEFUNG der gebauten Systeme + der eine offene Körper-Vektor (Fluid-Dyna
    die Sünde von 2025 war Kopplung ohne Kohäsion, nicht „mehr als eine Datei" — ein neuer
    File NUR an einer echten Laufzeit-/Sicherheits-/stabilen-Naht-Grenze (der Drei-JA-Test
    im `CLAUDE.md`-Kopf). Ein „LivingWorldManager"-Modul wäre die Sünde.
-8. **Miss, rate nicht** — und die VISUELLE Wahrheit ist der Schöpfer-Browser (Render/
-   Wasser/Hand-Optik sind GPU-untreu headless: die Geometrie rastert treu, die
-   Shader-Feinheiten nicht). Bei pixel-blinder Arbeit: erst der Browser, dann die nächste
-   Welle; ein bestätigter Bogen = ein Merge (die Wasser-Spirale lehrte das ZWEIMAL).
+8. **Miss, rate nicht — und sieh selbst:** settled swiftshader-Schüsse sind farbtreu
+   (`diag-blick`, `diag-beweis-e`); eine headless-Zahl beweist Mechanik, das Bild den Look.
 9. **Keine halben Schritte** (V17.30): ist der Plan klar + das Gap benannt → baue das
    GANZE Subsystem an die Wurzel, mit voller Verifikation, nicht ein Pflaster nach dem
    nächsten. Der Mut kommt aus der Verifikation, nicht aus der Kleinheit.

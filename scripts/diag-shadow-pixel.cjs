@@ -73,7 +73,7 @@ const server = http.createServer((req, res) => {
             if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
             renderer.info.reset();
             try { r._loopRender(performance.now()); } catch (_e) {}
-            return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
+            return { calls: renderer.info.render.drawCalls != null ? renderer.info.render.drawCalls : renderer.info.render.calls, tris: renderer.info.render.triangles };
         };
         const capture = () => {
             const canvas = renderer.domElement;

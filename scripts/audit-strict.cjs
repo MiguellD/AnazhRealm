@@ -88,10 +88,7 @@ function auditCssVariables() {
     }
     if (undefinedCount === 0) {
         const totalUses = usesNoFallback.size + usesWithFallback.size;
-        pass(
-            "CSS-VAR",
-            `${totalUses} verwendete CSS-Variablen, alle ohne-Fallback definiert (${defs.size} defs)`
-        );
+        pass("CSS-VAR", `${totalUses} verwendete CSS-Variablen, alle ohne-Fallback definiert (${defs.size} defs)`);
     }
 }
 
@@ -118,11 +115,7 @@ function auditSoftDefaults() {
         const matches = src.match(re) || [];
         const count = matches.length;
         if (count > c.max) {
-            warn(
-                "SOFT-DEFAULT",
-                `"${c.literal}" hardcoded ${count}× (Limit ${c.max})`,
-                c.note
-            );
+            warn("SOFT-DEFAULT", `"${c.literal}" hardcoded ${count}× (Limit ${c.max})`, c.note);
         } else {
             pass("SOFT-DEFAULT", `"${c.literal}" hardcoded ${count}× (Limit ${c.max} OK)`);
         }
@@ -173,7 +166,6 @@ async function auditStateAndMethods() {
         // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.
         await page.evaluateOnNewDocument(() => {
             window.__anazhHeadlessNullRenderer = true;
-            window.__anazhHeadlessSkinResCap = 64;
         });
         await page.goto("http://127.0.0.1:4312/", { waitUntil: "load" });
         await new Promise((r) => setTimeout(r, 12000));
@@ -217,6 +209,14 @@ async function auditStateAndMethods() {
 
             // Bekannt-fehlerhafte / dynamische Pfade die wir whitelisten
             const whitelist = new Set([
+                // W3.3a — TEST-HOOK der gate:scatter-ab-Byte-Wand (Legacy-Gate-Ordnung als
+                // Referenz-Ufer, wie __anazhGateNoFoundry): nur Gates setzen ihn; der eine
+                // Leser (_scatterPass) prüft `=== true` — undefined-sicher per Konstruktion.
+                "__scatterExactWater",
+                // W5.2 — das künftige TAA-Lite-Gate (benannter Folge-Faden): die uDitherT-Rotation
+                // wartet dahinter (Studio-Gesetz „animiertes Dither ohne TAA = kriechendes
+                // Rauschen"); der eine Leser prüft `=== true` — undefined-sicher.
+                "taaLite",
                 // Lazy-init Pfade (werden erst nach User-Geste gesetzt)
                 "workshop.preview",
                 "workshop.preview.currentMesh",
@@ -250,6 +250,19 @@ async function auditStateAndMethods() {
                 // Kamera-Höhe, vom Render-Loop pro Frame gespiegelt (nie in
                 // init() gesetzt — der Playtest liest sie umgebungs-unabhängig).
                 "_cameraDesiredY",
+                // ABSCHIEDS-WELLE (Drift-Nachlese, V18.272-Disziplin — jedes Feld am
+                // Lese-Ort geprüft): drei pre-existierende, undefined-SICHERE Felder:
+                // foliageBlades = Opt-out-Toggle, der eine Leser prüft `!== false`
+                // (undefined == an, wie die Schwestern-Toggles).
+                "foliageBlades",
+                // worldField = lazy-init Noise-Feld-Cache (worldFieldAt: `if (!state.
+                // worldField || seed-Wechsel) neu` — jeder Leser läuft durch den Init).
+                "worldField",
+                "worldField.seed",
+                "worldField.rngNoise",
+                // _frameChunksBuilt = transienter Frame-Scheduler-Zustand (V18.354):
+                // der Scheduler setzt ihn am Frame-Anfang auf false, Leser truthy-only.
+                "_frameChunksBuilt",
                 // Browser-API-Wrapper
                 "playerMesh.position",
                 "playerMesh.rotation",
@@ -488,7 +501,6 @@ async function auditStateAndMethods() {
                 "jumpPower",
                 "scaleFactor",
                 "mouseSensitivity",
-                "maxWalkableSlopeY",
                 "uiActiveDrawer",
                 "weather",
                 "populatedChunks",
@@ -587,7 +599,6 @@ async function auditStateAndMethods() {
                 "erosionTiles",
                 "hydroTiles",
                 "tarns", // null-init, `if (state.tarns)`-Leser
-                "horizonMantle", // null-init, `if (state.horizonMantle)`-Leser
                 "canopyChunks",
                 "bakedRegionFields",
                 "scatterRegions",
@@ -600,6 +611,8 @@ async function auditStateAndMethods() {
                 "voxelChunkMaterial",
                 "auraSkinUniforms",
                 "postProcessingUniforms", // `if (state.X && state.X.localContrast)`-guarded
+                "godrayUniforms", // V8 (Kür) — lazy in `_ensurePostProcessing` gesetzt (wie postProcessingUniforms), NICHT im Snapshot; `if (state.X && …)`-guarded im _loopRender
+                "_godrayScale", // V8 (Kür) — Perf-Faktor, im `_nexusPerfActuate` gesetzt, `state.X ?? 1`-sicher gelesen
                 // Perf-Sense/Regelkreis (V18.263–.271):
                 "_perfFrame", // `state._perfFrame || (state._perfFrame = {})`
                 "_perfMarks",
@@ -618,17 +631,18 @@ async function auditStateAndMethods() {
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
                 "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
+                "_foliageResScale", // Subsystem 5 — Laub-Auflösungs-Faktor, `state.X != null ? : MIN`
                 "_foliageMatCache", // V18.288 — geteilte Bewuchs-Materialien, `if (!state.X) state.X = new Map()`
                 "archBatches", // V18.289/.356 — Region-BatchedMesh-Pfad, `if (!state.X) state.X = new Map()` (in init() null)
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
-                "_bakeWorker", // V18.314 — Off-thread-Skin-Bäcker, `if (state.X !== undefined) return` (lazy am ersten Bake)
-                "_bakeReqMap", // V18.314 — Bake-Request→Resolver-Map, lazy mit _bakeWorker (new Map())
-                "_bakeReqId", // V18.314 — Bake-Request-Zähler, lazy mit _bakeWorker (0), dann `++state.X`
                 "_deferredAvatarSoul", // V18.304 — deferierter Avatar-Bau, am Boot gesetzt, im Loop `if (state.X)` gedraint, dann null
                 "_bootAvatarDelay", // V18.304 — Boot-Frame-Zähler vor dem Avatar-Bau, `(state.X || 0) + 1`
                 "_bpEditTick", // V18.358 — Bauplan-Part-Edit-Zähler für die Recipe-Book-Signatur, `(state.X || 0) + 1`
+                "treeImpostors", // Subsystem S2 (V18.387) — Impostor-Toggle, `state.X !== false` (undefined = an), lazy/undefined-sicher
+                "lodUniforms", // Subsystem A (V18.387) — lazy TSL-LOD-Uniforms via `_ensureLodUniforms()`, wie windUniforms (nicht in init())
+                "seasonUniforms", // V6 (Look-Finale) — Saison-Tönungs-Uniform via `_ensureSeasonUniforms()` (in init() erzeugt); abgeleitet aus seasonPhase, NICHT im Snapshot
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen
@@ -641,19 +655,12 @@ async function auditStateAndMethods() {
                 const topLevel = used.split(".")[0];
                 if (!liveSet.has(topLevel) && !whitelist.has(topLevel)) {
                     // Hier scheinen wir einen nicht-existenten Top-Level zu lesen
-                    fail(
-                        "STATE",
-                        `Lese state.${used} aber Top-Level "state.${topLevel}" nicht in init()`,
-                        ""
-                    );
+                    fail("STATE", `Lese state.${used} aber Top-Level "state.${topLevel}" nicht in init()`, "");
                     missingCount++;
                 }
             }
             if (missingCount === 0) {
-                pass(
-                    "STATE",
-                    `${usedPaths.size} state-Pfade gescannt, alle Top-Levels in init() vorhanden`
-                );
+                pass("STATE", `${usedPaths.size} state-Pfade gescannt, alle Top-Levels in init() vorhanden`);
             }
         }
     } finally {
@@ -723,9 +730,7 @@ function auditAtmosphereHardcode() {
         const { name, body } = m;
         // A) Soul-Type-Maps: zähle `=== "..."`-Vergleiche mit "soul", "sprite",
         //    "wesen", "geist", "human", "phoenix", "dragon" als Vergleichs-Wert
-        const soulCompares = body.match(
-            /=== ?["'](sprite|wesen|geist|human|phoenix|dragon|sunny|rainy)["']/g
-        );
+        const soulCompares = body.match(/=== ?["'](sprite|wesen|geist|human|phoenix|dragon|sunny|rainy)["']/g);
         if (soulCompares && soulCompares.length >= 3) {
             warn(
                 "ATMOSPHERE",
@@ -749,8 +754,7 @@ function auditAtmosphereHardcode() {
         }
         // C) Hz-Frequenz-ternary (60..2000 Hz)
         const ternaryFreq =
-            body.match(/[?:]\s*\d{2,4}(?:\.\d+)?\s*:/g) ||
-            body.match(/\d{2,4}\s*:\s*\d{2,4}\s*:\s*\d{2,4}/g);
+            body.match(/[?:]\s*\d{2,4}(?:\.\d+)?\s*:/g) || body.match(/\d{2,4}\s*:\s*\d{2,4}\s*:\s*\d{2,4}/g);
         if (ternaryFreq && ternaryFreq.length >= 2) {
             // Tiefere Prüfung: liegen die Zahlen im Hz-Range UND in derselben
             // Zeile wie "freq" oder "Hz"?
@@ -768,10 +772,7 @@ function auditAtmosphereHardcode() {
         cleanCount++;
     }
     if (warnCount === 0) {
-        pass(
-            "ATMOSPHERE",
-            `${cleanCount}/${atmosphereMethods.length} [ATMOSPHERE]-Methoden frei von Hardcode-Mustern`
-        );
+        pass("ATMOSPHERE", `${cleanCount}/${atmosphereMethods.length} [ATMOSPHERE]-Methoden frei von Hardcode-Mustern`);
     }
 }
 

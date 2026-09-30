@@ -24,13 +24,6 @@
       ]
     },
     {
-      "type": "aura",
-      "fields": [
-        "hue",
-        "intensity"
-      ]
-    },
-    {
       "type": "vibe",
       "fields": [
         "vibePassId",

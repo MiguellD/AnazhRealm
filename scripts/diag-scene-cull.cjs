@@ -7,6 +7,13 @@
 // Szene nach Kategorie × Cull-Status auf — und nutzt `perObjectFrustumCulled` (die
 // GPU-per-Instanz-Cullung der BatchedMesh) korrekt (sonst zählt sie ein Batch falsch
 // als Phantom). Null-Renderer = die CPU-Geometrie ist da, kein swiftshader nötig.
+// DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1) — die Linse lernt den T3-BUNDLE-
+// CULL: Meshes in einer Region-BundleGroup tragen frustumCulled=false BEWUSST (die
+// Draw-Liste friert im RenderBundle ein, three-Culling wäre wirkungslos) — ihr
+// view-abhängiger Cull lebt auf der BUNDLE-Sichtbarkeit (_archRegionBundleCull,
+// userData.cullSphere je Region, pro Frame ausgewertet). Ein Mesh unter einem
+// cullSphere-Ahnen ist also NICHT view-unabhängig; die alte Zählung las jede
+// gebündelte Region-Gruppe als Phantom-„nie gecullt".
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -92,7 +99,15 @@ const server = http.createServer((req, res) => {
                 if (n.isInstancedMesh) inst = n.count || 0;
                 else if (n.isBatchedMesh) inst = n._geometryCount || n.instanceCount || 1;
                 const tris = triOf(n.geometry) * (n.isInstancedMesh ? inst : 1);
-                const trulyNoCull = n.frustumCulled === false && n.perObjectFrustumCulled !== true;
+                // T3-Bundle-Cull: ein cullSphere-Ahne (Region-BundleGroup) cullt
+                // view-abhängig pro Region — das Mesh ist KEIN Phantom.
+                let bundleCulled = false;
+                for (let a = n.parent; a; a = a.parent)
+                    if (a.userData && a.userData.cullSphere) {
+                        bundleCulled = true;
+                        break;
+                    }
+                const trulyNoCull = n.frustumCulled === false && n.perObjectFrustumCulled !== true && !bundleCulled;
                 const c = cat(n);
                 if (!acc[c]) acc[c] = { tris: 0, meshes: 0, noCullTris: 0, noCullMeshes: 0, inst: 0 };
                 acc[c].tris += tris;

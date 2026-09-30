@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<!-- klang-Portal (Nachlese-Welle, W-A4c-Muster) — eigenes Document, eigene strikte CSP:
+     Skript nur same-origin (klang.js + ../../klang-core.js — THREE-frei, kein CDN; die Shell wanderte dafür byte-treu
+     aus dem Inline-Skript nach klang.js, das schmiede.js/fachwerk.js-Muster). Die
+     iframe-Sandbox trägt die Isolation; die W12-Brücke am Ende von klang.js
+     spricht die Heimat (enter/ready/dsl/exit). -->
+<meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#07080c">
+<title>Genesis Engine Pro — Generatives Musiksystem</title>
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN-TOKENS · Studio-Rack-Ästhetik
+   ══════════════════════════════════════════════ */
+:root{
+  --bg:#07080c;
+  --panel:rgba(13,15,22,.94);
+  --card:rgba(20,23,33,.55);
+  --line:rgba(130,160,255,.13);
+  --line-strong:rgba(130,160,255,.32);
+  --txt:#ccd6ec;
+  --dim:#6d7a96;
+  --acc:#6ea0ff;
+  --acc-soft:rgba(110,160,255,.16);
+  --ok:#3fd98c;
+  --danger:#ff5d73;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;
+  --sans:-apple-system,'Segoe UI',Roboto,'Inter','Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:13px}
+#viz{display:block;width:100vw;height:100vh}
+
+/* ── Panel ── */
+#ui{position:fixed;top:12px;right:12px;width:440px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;z-index:100;
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);display:flex;flex-direction:column;
+  box-shadow:0 18px 50px rgba(0,0,0,.55)}
+#ui header{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.titleRow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.titleRow h1{margin:0;font-size:13px;font-weight:700;letter-spacing:3px;color:#fff}
+.titleRow h1 .tag{color:var(--acc);font-weight:400;letter-spacing:1px;margin-left:6px;font-size:10px;
+  border:1px solid var(--line-strong);border-radius:4px;padding:1px 6px;vertical-align:2px}
+#collapseBtn{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;width:26px;height:26px;
+  cursor:pointer;font-size:13px;line-height:1}
+#collapseBtn:hover{color:var(--txt);border-color:var(--line-strong)}
+#ui.min #panelBody{display:none}
+#ui.min header{border-bottom:none}
+
+#modeToggle{display:flex;gap:6px;margin-bottom:10px}
+.modeBtn{flex:1;padding:8px;border:1px solid var(--line);background:transparent;color:var(--dim);
+  border-radius:7px;cursor:pointer;font-weight:600;font-size:11px;letter-spacing:.5px;transition:all .12s}
+.modeBtn:hover{color:var(--txt)}
+.modeBtn.active{background:var(--acc-soft);color:#fff;border-color:var(--line-strong)}
+
+#transport{display:flex;gap:6px;margin-bottom:10px}
+.tBtn{border:1px solid var(--line);border-radius:7px;cursor:pointer;font-weight:700;font-size:11px;
+  padding:9px 4px;transition:all .12s;letter-spacing:.4px}
+.tBtn.play{flex:1.4;background:rgba(63,217,140,.12);color:var(--ok);border-color:rgba(63,217,140,.3)}
+.tBtn.play.on{background:rgba(255,93,115,.12);color:var(--danger);border-color:rgba(255,93,115,.35)}
+.tBtn.rec{flex:1.2;background:transparent;color:var(--dim);font-family:var(--mono)}
+.tBtn.rec .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dim);margin-right:6px;vertical-align:1px}
+.tBtn.rec.on{color:var(--danger);border-color:rgba(255,93,115,.4)}
+.tBtn.rec.on .dot{background:var(--danger);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.tBtn.evo{flex:1;background:transparent;color:var(--acc)}
+.tBtn:hover{border-color:var(--line-strong)}
+.tBtn.fin{flex:1;background:transparent;color:#f6c76a;border-color:rgba(246,199,106,.28)}
+
+.mixRow{display:grid;grid-template-columns:62px 1fr 52px 26px;gap:8px;align-items:center;margin:5px 0}
+.mixLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.muteBtn{width:26px;height:22px;border:1px solid var(--line);background:var(--card);color:var(--dim);
+  border-radius:5px;cursor:pointer;font-size:10px;font-weight:700;line-height:1}
+.muteBtn.active{background:rgba(255,93,115,.15);color:var(--danger);border-color:rgba(255,93,115,.4)}
+.sessRow{display:flex;gap:6px;align-items:center}
+.sessRow label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+#seedInput{flex:1;min-width:0;background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--txt);
+  border-radius:6px;padding:6px 8px;font-family:var(--mono);font-size:11px}
+.miniBtn{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:6px;
+  padding:6px 9px;cursor:pointer;font-size:10.5px;font-weight:600}
+.miniBtn:hover{border-color:var(--line-strong)}
+
+.sliderRow{display:grid;grid-template-columns:52px 1fr 58px;align-items:center;gap:8px;margin:4px 0}
+.sliderRow label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.sliderRow .val{font-family:var(--mono);font-size:10px;color:var(--acc);text-align:right}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;background:rgba(255,255,255,.13);
+  border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+  background:var(--acc);border:2px solid #0a0c14;box-shadow:0 0 6px rgba(110,160,255,.5)}
+input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--acc);border:2px solid #0a0c14}
+
+/* ── Body / Sektionen ── */
+#panelBody{overflow-y:auto;padding:6px 16px 16px;scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+#panelBody::-webkit-scrollbar{width:6px}
+#panelBody::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px}
+section{margin-top:14px}
+section h2{margin:0 0 8px;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--dim);display:flex;align-items:center;gap:8px}
+section h2::after{content:'';flex:1;height:1px;background:var(--line)}
+
+#presets{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.presetBtn{padding:7px 2px;border:1px solid var(--line);background:var(--card);color:var(--dim);
+  border-radius:6px;cursor:pointer;font-size:10px;font-weight:600;transition:all .12s}
+.presetBtn:hover{color:var(--txt);border-color:var(--line-strong)}
+.presetBtn.active{background:var(--acc-soft);color:#fff;border-color:var(--line-strong)}
+
+.infoBox{font-family:var(--mono);font-size:10.5px;color:#8fa4cc;padding:10px 12px;background:rgba(0,0,0,.45);
+  border-radius:8px;line-height:1.8;border-left:2px solid var(--acc)}
+.infoBox b{color:#fff;font-weight:600}
+
+.lawGroup{margin-bottom:10px}
+.lawGroup h4{margin:0 0 5px;font-size:9.5px;color:var(--acc);text-transform:uppercase;letter-spacing:1.2px;
+  font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
+.lawGroup h4 .lawVal{color:var(--dim);font-size:9px;font-family:var(--mono);text-transform:none;letter-spacing:0}
+.lawButtons{display:grid;grid-template-columns:repeat(var(--cols,3),1fr);gap:4px}
+.lawBtn{padding:6px 2px;border:1px solid var(--line);background:var(--card);color:var(--dim);
+  border-radius:5px;cursor:pointer;font-size:9.5px;text-align:center;transition:all .1s}
+.lawBtn:hover{color:var(--txt);border-color:var(--line-strong)}
+.lawBtn.active{background:var(--acc-soft);color:#fff;border-color:var(--line-strong)}
+
+/* ── Simulator ── */
+#keyboard{position:relative;width:100%;height:130px;background:#0b0d13;border:1px solid var(--line);
+  border-radius:8px;overflow:hidden;margin-top:4px;display:grid;grid-template-columns:repeat(7,1fr)}
+.wKey{background:#e8eaf0;border-right:1px solid #9aa0ad;display:flex;flex-direction:column;justify-content:flex-end;
+  align-items:center;padding-bottom:6px;color:#555;cursor:pointer;font-size:9px;font-family:var(--mono);user-select:none}
+.wKey:last-child{border-right:none}
+.wKey .kbd{color:#999;font-size:8px;margin-top:2px}
+.wKey.active{background:var(--acc);color:#08101f}
+.bKey{background:#14161d;border:1px solid #000;border-top:none;width:9.5%;height:62%;position:absolute;z-index:2;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:5px;color:#aab;
+  cursor:pointer;font-size:8px;font-family:var(--mono);border-radius:0 0 4px 4px;user-select:none}
+.bKey .kbd{color:#667;font-size:7px}
+.bKey.active{background:var(--acc);color:#08101f}
+#drumPads{display:none;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.pad{height:64px;background:var(--card);border:1px solid var(--line);border-radius:8px;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--txt);cursor:pointer;
+  font-weight:700;font-size:11px;letter-spacing:1px;user-select:none;transition:all .08s}
+.pad .kbd{font-family:var(--mono);font-size:9px;color:var(--dim);font-weight:400}
+.pad.active{background:var(--acc-soft);border-color:var(--line-strong);transform:scale(.98)}
+.hint{font-size:9.5px;color:var(--dim);margin:8px 0 0;line-height:1.6;font-family:var(--mono)}
+
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(12px);background:rgba(13,15,22,.96);
+  border:1px solid var(--line-strong);color:var(--txt);padding:9px 16px;border-radius:8px;font-size:11.5px;
+  font-family:var(--mono);opacity:0;pointer-events:none;transition:all .25s;z-index:200;
+  box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:520px){#ui{width:calc(100vw - 16px);top:8px;right:8px}}
+</style>
+</head>
+<body>
+<canvas id="viz"></canvas>
+
+<div id="ui">
+  <header>
+    <div class="titleRow">
+      <h1>GENESIS ENGINE<span class="tag">PRO · v5 Klangfluss</span></h1>
+      <button id="collapseBtn" title="Panel ein-/ausklappen">–</button>
+    </div>
+    <div id="modeToggle">
+      <button id="genModeBtn" class="modeBtn active">Generator</button>
+      <button id="simModeBtn" class="modeBtn">Simulator</button>
+    </div>
+    <div id="transport">
+      <button id="playBtn" class="tBtn play">▶ Start</button>
+      <button id="recBtn" class="tBtn rec" title="Master-Ausgang aufnehmen"><span class="dot"></span>Aufnahme</button>
+      <button id="evolveBtn" class="tBtn evo" title="Zufällige Mutation von Gesetzen, DNA oder L-System">🧬 Mutation</button>
+      <button id="finBtn" class="tBtn fin" title="Musikalisches Ende: ii–V–I-Kadenz mit Ritardando und Fermate">Finale</button>
+    </div>
+    <div class="sliderRow">
+      <label>Master</label>
+      <input id="sVol" type="range" min="0" max="1" step="0.01" value="0.85">
+      <span class="val" id="volVal">85 %</span>
+    </div>
+  </header>
+
+  <div id="panelBody">
+    <div id="generatorUI">
+      <section><h2>Genre-Presets</h2><div id="presets"></div></section>
+      <section><h2>Live</h2><div class="infoBox" id="liveBox">Bereit. Preset wählen und <b>Start</b> drücken.</div></section>
+      <section><h2>Kompositions-Gesetze</h2><div id="laws"></div></section>
+      <section><h2>DNA-Modifikatoren</h2><div id="dna"></div></section>
+      <section><h2>Mixer &amp; Effekte</h2><div id="mixer"></div></section>
+      <section><h2>Instrumentierung</h2><div id="instrumentsUI"></div></section>
+      <section><h2>Stimmung &amp; Tempo</h2>
+        <div class="lawGroup"><h4>Grundton</h4><div class="lawButtons" style="--cols:6" id="rootNotes"></div></div>
+        <div class="lawGroup"><h4>Kammerton</h4><div class="lawButtons" style="--cols:3" id="tuningSystem"></div></div>
+        <div class="sliderRow">
+          <label>Tempo</label>
+          <input id="sBpm" type="range" min="60" max="190" step="1" value="96">
+          <span class="val" id="bpmVal">96 BPM</span>
+        </div>
+      </section>
+      <section><h2>Session</h2><div id="session"></div></section>
+    </div>
+
+    <div id="simulatorUI" style="display:none">
+      <section><h2>Instrument</h2><div class="lawButtons" style="--cols:3" id="simInstSelect"></div></section>
+      <section><h2>Spielfläche</h2>
+        <div id="keyboard"></div>
+        <div id="drumPads">
+          <div class="pad" data-drum="kick">KICK<span class="kbd">1</span></div>
+          <div class="pad" data-drum="snare">SNARE<span class="kbd">2</span></div>
+          <div class="pad" data-drum="hat">HI-HAT<span class="kbd">3</span></div>
+          <div class="pad" data-drum="clap">CLAP<span class="kbd">4</span></div>
+        </div>
+        <p class="hint">Tastatur: A W S E D F T G Z H U J K &nbsp;·&nbsp; Pads: 1–4 &nbsp;·&nbsp; Leertaste = Start/Stop<br>
+        MIDI-Keyboards werden automatisch erkannt.<br>
+        <b>Jam-Modus:</b> Spielst du bei laufendem Generator 4+ Töne, übernimmt die Engine dein Motiv.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="../../klang-core.js?v=18.496.0"></script>
+<script src="klang.js?v=18.496.0"></script>
+
+</body>
+</html>

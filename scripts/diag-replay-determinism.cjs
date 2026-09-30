@@ -48,7 +48,6 @@ function buildFrames(seq) {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhHeadlessNullRenderer = true;
     });
     page.on("pageerror", (e) => console.log("PAGEERR:", (e.stack || e.message).split("\n")[0]));

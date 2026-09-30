@@ -37,6 +37,19 @@ self.window = self;
 // (absolute App-Basis); der normale Worker läuft mit "" relativ wie eh.
 importScripts((self.__anazhBase || "") + "vendor/simplex-noise.js");
 
+// DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern (phyto-core.js) — DIESELBE Quelle
+// wie der Main-Thread (`__phytoCore.growSkeleton`) + das Terrain-Portal, kein Mirror. Der
+// Chunk-Mesh-Bau kann so Vegetation worker-seitig wachsen lassen (künftige Wellen), bit-
+// identisch zum Main. `?v=` mitziehen → derselbe Cache-Bust wie der Worker.
+const __phytoV = (function () {
+    try {
+        return new URLSearchParams(self.location.search).get("v") || "";
+    } catch (_e) {
+        return "";
+    }
+})();
+importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+
 // State-Container — wird per init-Message gesetzt + per state-update-Delta gepflegt.
 const state = {
     seed: null,
@@ -960,7 +973,7 @@ function hydroRiverAt(x, z) {
 const FEUCHTE_FLUSS_REICHWEITE = 26;
 const FEUCHTE_HOEHE_NAH = 1.5;
 const FEUCHTE_HOEHE_FERN = 7;
-const FEUCHTE_HOEHE_GEWICHT = 0.6;
+const FEUCHTE_HOEHE_GEWICHT = 0.85; // V6 (Look-Finale, 3): 0.6→0.85 — bit-identischer Spiegel von AnazhRealm.FEUCHTE.hoeheGewicht (das FEUCHTE-DACH gehoben)
 
 function hydroDistAt(x, z) {
     const h = hydroFor(x, z);
@@ -1036,6 +1049,52 @@ function pathFieldAt(x, z, surfY) {
     return band * band;
 }
 
+// V6 (Look-Finale, 4) — DAS KRONENDACH-LICHT im Worker (bit-identischer Spiegel von
+// Main `_canopyLightAt` + `_placementStandAt("forest")`). Ohne diese Funktionen driftet
+// der `attachFieldColors`-Kronen-Multiplikator gegen die Main-Naht = Determinismus-Wand
+// rot. KONSTANTEN HARDKODIERT (V17.100-Lehre — Mirror von AnazhRealm.PLACEMENT_DENSITY
+// [forest subset] + AnazhRealm.UNDERGROWTH.canopyK; bei Änderung im Main hier mit-ziehen).
+const PLACE_FOREST_FREQ = 0.006; // PLACEMENT_DENSITY.forestFreq (λ~170 m Wald-Stand)
+const PLACE_CLUMP_AMP = 1.6;
+const PLACE_CLUMP_LO = 0.25;
+const PLACE_CLUMP_HI = 2.6;
+const PLACE_WET_BASE = 0.7;
+const PLACE_WET_GAIN = 0.9;
+const PLACE_HIGH_AMP = 0.75;
+const PLACE_HIGH_LO = 12;
+const PLACE_HIGH_HI = 45;
+const UNDERGROWTH_CANOPY_K = 0.85;
+let _placementForestNoise = null;
+let _placementForestSeed = null;
+function placementStandForest(x, z) {
+    // Mirror _placementStandAt(x,z,"forest"): SimplexNoise((seed||fallback)+":forest").
+    const seed = (state.seed || "anazh-realm-seed") + ":forest";
+    if (!_placementForestNoise || _placementForestSeed !== seed) {
+        _placementForestNoise = new SimplexNoise(seed);
+        _placementForestSeed = seed;
+    }
+    return _placementForestNoise.noise2D(x * PLACE_FOREST_FREQ, z * PLACE_FOREST_FREQ);
+}
+function canopyLightAt(x, z, surfaceY, wetHint) {
+    const ss = (e0, e1, v) => {
+        let t = (v - e0) / (e1 - e0);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    };
+    const stand = placementStandForest(x, z); // [-1,1]
+    const clump = Math.max(PLACE_CLUMP_LO, Math.min(PLACE_CLUMP_HI, 1 + PLACE_CLUMP_AMP * stand));
+    let wet = Number.isFinite(wetHint) ? wetHint : feuchteAt(x, z, surfaceY);
+    wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
+    const wetF = PLACE_WET_BASE + PLACE_WET_GAIN * wet;
+    const baseH = state.baseHeight || 0;
+    const relH = Number.isFinite(surfaceY) ? surfaceY - baseH : 0;
+    const highF = 1 - PLACE_HIGH_AMP * ss(PLACE_HIGH_LO, PLACE_HIGH_HI, relH);
+    let cover = clump * wetF * highF;
+    if (cover < 0) cover = 0;
+    const L = Math.exp(-cover * UNDERGROWTH_CANOPY_K);
+    return L < 0 ? 0 : L > 1 ? 1 : L;
+}
+
 function waterLevelAt(x, z) {
     let level = typeof state.waterLevel === "number" ? state.waterLevel : 0;
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -1097,7 +1156,10 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
                 // bis zum Body-Spiegel, wenn Terrain UNTER dem Spiegel liegt (jede
                 // Tiefe, kein 3,6-m-Cap mehr). Heilt die vertikalen Ufer-Wände; kein
                 // Hang-Schatten (Terrain über Spiegel bleibt abgelehnt), kein Phantom.
-                if (rim > -Infinity && terrainTopY < rim) {
+                // V18.475 — DIE RIM-WAND (Mirror, F2): der Rim-Pfad greift NUR bei
+                // ENDLICHEM terrainTopY — „unbekannt" (−Inf) heißt KEINE Rim-Erweiterung,
+                // nie „immer nass" (Herleitung im Main).
+                if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) {
                     level = rim;
                 }
             }
@@ -1111,7 +1173,12 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
         level = waterLevel;
     }
     const river = hydroRiverAt(x, z);
-    if (river && river.surfaceY > level) level = river.surfaceY;
+    if (river && river.surfaceY > level) {
+        // V18.475 — DIE RIM-WAND GILT AUCH DEM FLUSS (Mirror, F2): bei terrainTopY ===
+        // −Infinity zählt NUR der Kanal-KERN (centerness > 0 ⇔ dist < halfW); +Infinity
+        // (Existenz-Probe) und endliches Terrain behalten die volle Carve-Breite.
+        if (terrainTopY !== -Infinity || river.centerness > 0) level = river.surfaceY;
+    }
     return level;
 }
 
@@ -1119,8 +1186,10 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
 // (Along-Flow-Tiefpass NUR auf den Kanal-KERN via centerness; NARBEN-WAND am Ufer bleibt
 // roh). Deps `atlasWaterLevelAt` + `hydroRiverAt` (mit flowX/flowZ/centerness) sind
 // gespiegelt. MUSS bit-identisch zum Main bleiben (diag-worker-watersheet).
-function waterRunSurfaceAt(x, z) {
-    const L = atlasWaterLevelAt(x, z, -Infinity);
+// V18.475 (F2, Mirror) — `terrainTopY` reist zur Zentrums-Frage durch (der Sheet-Bau
+// reicht sein Bett); die Along-Flow-Samples bleiben ehrlich −Infinity (Doku im Main).
+function waterRunSurfaceAt(x, z, terrainTopY = -Infinity) {
+    const L = atlasWaterLevelAt(x, z, terrainTopY);
     if (!(L > -Infinity)) return L;
     const river = hydroRiverAt(x, z);
     if (!river) return L;
@@ -1254,7 +1323,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             const faceY = oy + (sc.floodTopJ + 1) * step;
             const wx = ox + (ci + 0.5) * step;
             const wz = oz + (ck + 0.5) * step;
-            const L = waterRunSurfaceAt(wx, wz);
+            // V18.475 (F2, Mirror) — das Bett reist mit (solidG + step, Doku im Main).
+            const L = waterRunSurfaceAt(wx, wz, solidG[gi] + step);
             let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
             if (level) {
                 const floodRel = (sc.floodTopJ + 1) * step;
@@ -1330,6 +1400,12 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             solidG[gi] = gj >= 0 ? oy + gj * step : oy;
         }
     }
+    // V18.475 — DAS HÖHEN-GATE DES DACH-BLURS (Mirror zu `_computeWaterSheetData`,
+    // Herleitung dort): ein Nachbar zählt nur bei |top_nb − top_roh| ≤ K·step (K=2) —
+    // der Blur mittelt keine Plateau- und Tal-Dächer mehr über die Klippe (Phantom-
+    // Wasserfälle). ROH gegen ROH = pass-invariant + naht-symmetrisch. Byte-identisch.
+    const BLUR_GATE = step * 2;
+    const topRawG = Float64Array.from(topG);
     let cur = topG;
     let buf = new Float64Array(GW * GW);
     for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
@@ -1345,8 +1421,11 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                     const nx = gx + dx2;
                     const nz = gz + dz2;
                     if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
-                    const v = cur[nx + nz * GW];
+                    const ng = nx + nz * GW;
+                    const v = cur[ng];
                     if (!Number.isNaN(v)) {
+                        // V18.475 — das Höhen-Gate (s.o.): nur Dächer derselben Etage.
+                        if (Math.abs(topRawG[ng] - topRawG[g]) > BLUR_GATE) continue;
                         sum += v;
                         n++;
                     }
@@ -1402,8 +1481,12 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                         const nx = gx + dx2;
                         const nz = gz + dz2;
                         if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
-                        if (Number.isNaN(tops[nx + nz * GW])) continue;
-                        sum += arr[nx + nz * GW];
+                        const ng = nx + nz * GW;
+                        if (Number.isNaN(tops[ng])) continue;
+                        // V18.475 — dasselbe HÖHEN-GATE wie der tops-Blur (Mirror):
+                        // Bett/Slope/Flow bluten nicht über die Klippe.
+                        if (Math.abs(topRawG[ng] - topRawG[g]) > BLUR_GATE) continue;
+                        sum += arr[ng];
                         nn++;
                     }
                 }
@@ -2007,6 +2090,15 @@ function attachFieldColors(positions) {
         // als surfY-Argument an feuchteAt übergeben.
         const feuchte = feuchteAt(x, z, y);
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        // V6 (Look-Finale, 4) — DAS KRONENDACH SCHREIBT AUF DEN BODEN (Worker-Mirror,
+        // bit-identisch zu Main `_attachVoxelFieldColors`): dichtes Dach → dunklerer
+        // Boden. feuchte als wetHint (der schon berechnete Wert). Identische Position
+        // im Mix-Stack wie Main: nach dampEarth, vor lichen/lava/snow/strand.
+        const cL = canopyLightAt(x, z, y, feuchte);
+        const _cShade = 0.58 + 0.46 * cL;
+        c[0] *= _cShade;
+        c[1] *= _cShade;
+        c[2] *= _cShade;
         // V18.199 — Γ-M LICHEN Worker-Mirror: identisch zur Main-Form.
         const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
         const lichenMix =

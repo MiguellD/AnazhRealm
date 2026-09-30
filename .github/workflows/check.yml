@@ -1,194 +1,537 @@
 name: Code-Check
 
 on:
-  push:
-    branches: ["**"]
-  pull_request:
-    branches: [main]
+    push:
+        branches: ["**"]
+    pull_request:
+        branches: [main]
+
+# V7 — ein Lauf pro Ref: ein neuer Push auf denselben Branch canceled den laufenden
+# (spart Runner-Minuten, kein veralteter Lauf hängt). Der pull_request-Trigger teilt sich
+# die Gruppe mit dem push, sodass ein PR-Branch nicht doppelt läuft.
+concurrency:
+    group: check-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
+    check:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+            # V7 — Node 22 (Node 20 ist EOL seit 30.04.2026; der breite `node --check`-Loop
+            # brach unter 20 an den eingecheckten ESM-Vendor-Dateien = „lokal grün, CI rot").
+            # `cache: npm` + das committete package-lock.json → reproduzierbarer, schneller Install.
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: "npm"
 
-      - name: Dependencies installieren
-        run: npm install --no-audit --no-fund
+            - name: Dependencies installieren
+              run: npm ci --no-audit --no-fund
 
-      - name: Prettier-Format-Check
-        run: npm run format:check
+            - name: Prettier-Format-Check
+              run: npm run format:check
 
-      - name: ESLint
-        run: npm run lint
+            - name: ESLint
+              run: npm run lint
 
-      - name: Syntax-Check JS-Dateien
-        run: |
-          set -e
-          for f in $(git ls-files '*.js'); do
-            echo "→ $f"
-            node --check "$f"
-          done
+            - name: Syntax-Check JS-Dateien
+              run: |
+                  set -e
+                  for f in $(git ls-files '*.js'); do
+                    echo "→ $f"
+                    node --check "$f"
+                  done
 
-      - name: Duplikate Methodendefinitionen
-        run: |
-          dups=$(grep -nE "^[a-zA-Z_]+\s*\([^)]*\)\s*\{" anazhRealm.js \
-            | sed -E 's/^[0-9]+://; s/\(.*//' \
-            | sort | uniq -d || true)
-          if [ -n "$dups" ]; then
-            echo "❌ Doppelte Methodendefinitionen gefunden:"
-            echo "$dups"
-            exit 1
-          fi
-          echo "✅ Keine Duplikate"
+            - name: Duplikate Methodendefinitionen
+              run: |
+                  dups=$(grep -nE "^[a-zA-Z_]+\s*\([^)]*\)\s*\{" anazhRealm.js \
+                    | sed -E 's/^[0-9]+://; s/\(.*//' \
+                    | sort | uniq -d || true)
+                  if [ -n "$dups" ]; then
+                    echo "❌ Doppelte Methodendefinitionen gefunden:"
+                    echo "$dups"
+                    exit 1
+                  fi
+                  echo "✅ Keine Duplikate"
 
-      - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
-        run: npm run gate:source-probes
+            - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
+              run: npm run gate:source-probes
 
-      - name: Single-Quote-Template-Strings (B2-Pattern)
-        run: |
-          # Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten
-          # String-Argumenten interpoliert nicht. Backticks innerhalb von Bezeichnern
-          # werden bewusst nicht gematcht (auch wenn sie Apostrophe enthalten).
-          if grep -nE "\(\s*'[^']*\\\$\{[^}]+\}[^']*'\s*[,)]" anazhRealm.js; then
-            echo "❌ Single-Quote-Template-String erkannt – Backticks verwenden"
-            exit 1
-          fi
-          echo "✅ Keine fehlgeschlagenen Template-Strings"
+            - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
+              # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
+              # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
+              # `growTreeNodes`) byte-gleich zu machen versucht (unmöglich + eine Regression):
+              # (a) growSkeleton(P, seq) ist DETERMINISTISCH (identisch P+seq → byte-identisch);
+              # (b) Richter-Eingang (countCap 3600/leafBudget 480/xorshift-seq) ≠ Foundry-Eingang
+              # (countCap 8800/leafBudget 20000/mulberry-seq) → dokumentierte Distanz ≫ 0.
+              run: npm run gate:one-wuchs-parity
 
-      - name: Ammo-Memory-Leak-Indikator
-        continue-on-error: true
-        run: |
-          alloc=$(grep -c 'new Ammo.btVector3' anazhRealm.js || echo 0)
-          freed=$(grep -c 'Ammo.destroy' anazhRealm.js || echo 0)
-          echo "btVector3-Allokationen: $alloc"
-          echo "Ammo.destroy-Aufrufe:   $freed"
-          if [ "$alloc" -gt $((freed * 4)) ]; then
-            echo "⚠️ Verdacht auf Memory-Leak: deutlich mehr Allokationen als Frees"
-          fi
+            - name: Single-Quote-Template-Strings (B2-Pattern)
+              run: |
+                  # Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten
+                  # String-Argumenten interpoliert nicht. Backticks innerhalb von Bezeichnern
+                  # werden bewusst nicht gematcht (auch wenn sie Apostrophe enthalten).
+                  if grep -nE "\(\s*'[^']*\\\$\{[^}]+\}[^']*'\s*[,)]" anazhRealm.js; then
+                    echo "❌ Single-Quote-Template-String erkannt – Backticks verwenden"
+                    exit 1
+                  fi
+                  echo "✅ Keine fehlgeschlagenen Template-Strings"
 
-      - name: Verbotenes dynamisches Auswerten (eval / new Function)
-        # Ring 2 Phase 5: die DSL ist der einzige Pfad für dynamische
-        # Effekte. Wenn dieser Grep wieder fündig wird, schaltet jemand
-        # das Sicherheits-Modell aus.
-        run: |
-          if grep -nE "(eval\(|new Function\()" anazhRealm.js save-server.js; then
-            echo "❌ Dynamisches Code-Eval gefunden — DSL nutzen, nicht eval/new Function"
-            exit 1
-          fi
-          echo "✅ Kein dynamisches Code-Eval"
+            - name: Ammo-Memory-Leak-Indikator
+              continue-on-error: true
+              run: |
+                  alloc=$(grep -c 'new Ammo.btVector3' anazhRealm.js || echo 0)
+                  freed=$(grep -c 'Ammo.destroy' anazhRealm.js || echo 0)
+                  echo "btVector3-Allokationen: $alloc"
+                  echo "Ammo.destroy-Aufrufe:   $freed"
+                  if [ "$alloc" -gt $((freed * 4)) ]; then
+                    echo "⚠️ Verdacht auf Memory-Leak: deutlich mehr Allokationen als Frees"
+                  fi
 
-      - name: innerHTML-Schreibzugriffe (Hinweis, kein Fail)
-        continue-on-error: true
-        run: |
-          grep -nE "innerHTML\s*\+?=" anazhRealm.js || echo "keine Treffer"
+            - name: Verbotenes dynamisches Auswerten (eval / new Function)
+              # Ring 2 Phase 5: die DSL ist der einzige Pfad für dynamische
+              # Effekte. Wenn dieser Grep wieder fündig wird, schaltet jemand
+              # das Sicherheits-Modell aus.
+              run: |
+                  if grep -nE "(eval\(|new Function\()" anazhRealm.js save-server.js; then
+                    echo "❌ Dynamisches Code-Eval gefunden — DSL nutzen, nicht eval/new Function"
+                    exit 1
+                  fi
+                  echo "✅ Kein dynamisches Code-Eval"
 
-      - name: TODO/FIXME-Übersicht (Hinweis, kein Fail)
-        continue-on-error: true
-        run: |
-          grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js || echo "keine TODOs"
+            - name: innerHTML-Schreibzugriffe (Hinweis, kein Fail)
+              continue-on-error: true
+              run: |
+                  grep -nE "innerHTML\s*\+?=" anazhRealm.js || echo "keine Treffer"
 
-  playtest:
-    # PER-PUSH-MERGE-GATE — der RELIABLE, schnelle Tier: der Fast-Playtest (Kern-Gesundheit,
-    # ~13 Checks: Crash · Welt/Terrain · Avatar-Rig · Kreatur · Bauplan · Resonanz · Stats) +
-    # die GPU-Churn-Linse. Beide laufen in Minuten + schliessen zuverlässig ab.
-    # WARUM NICHT DER VOLLE PLAYTEST HIER: die ~5340 Invarianten über 242 Bänder sind für einen
-    # geteilten CI-Runner zu schwer — sie brauchen STUNDEN (gemessen: 3,5 h dann Fehlschlag, sogar
-    # bei einem reinen Docs-Commit → ein Infrastruktur-Hang, kein Code-Bug). Death-by-tausend-
-    # langsamen-Bändern, nicht ein einzelner Hänger (ein hängender page.evaluate würde vom
-    # protocolTimeout=240s gefangen). Die volle Deckung lebt jetzt in `playtest-full.yml`
-    # (manuell + nächtlich, timeout-bounded), wo Stunden in Ordnung sind. Der Fast-Tier fängt
-    # ~80 % der Regressionen SOFORT (CLAUDE.md: „Nicht jede Änderung durch den 10-min-Gate zwingen").
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
+            - name: TODO/FIXME-Übersicht (Hinweis, kein Fail)
+              continue-on-error: true
+              run: |
+                  grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js || echo "keine TODOs"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+    playtest:
+        # PER-PUSH-MERGE-GATE — der RELIABLE, schnelle Tier: der Fast-Playtest (Kern-Gesundheit,
+        # ~13 Checks: Crash · Welt/Terrain · Avatar-Rig · Kreatur · Bauplan · Resonanz · Stats) +
+        # die GPU-Churn-Linse. Beide laufen in Minuten + schliessen zuverlässig ab.
+        # WARUM NICHT DER VOLLE PLAYTEST HIER: die ~5340 Invarianten über 242 Bänder sind für einen
+        # geteilten CI-Runner zu schwer — sie brauchen STUNDEN (gemessen: 3,5 h dann Fehlschlag, sogar
+        # bei einem reinen Docs-Commit → ein Infrastruktur-Hang, kein Code-Bug). Death-by-tausend-
+        # langsamen-Bändern, nicht ein einzelner Hänger (ein hängender page.evaluate würde vom
+        # protocolTimeout=240s gefangen). Die volle Deckung lebt jetzt in `playtest-full.yml`
+        # (manuell + nächtlich, timeout-bounded), wo Stunden in Ordnung sind. Der Fast-Tier fängt
+        # ~80 % der Regressionen SOFORT (CLAUDE.md: „Nicht jede Änderung durch den 10-min-Gate zwingen").
+        runs-on: ubuntu-latest
+        # 45 (GEMESSEN 30.09.): die ~45 Domänen-Gates vor der GPU-Linse brauchen ~14 min, die
+        # GPU-Linse selbst 11–16 min — Lauf 2136 kam mit 2 s Luft durch (30:02), Lauf 2137 lief
+        # alle 53 Schritte GRÜN und wurde 4 s nach dem letzten vom 30-min-Limit „cancelled".
+        # Die Laufzeit ist legitim (Echt-Renderer-Linsen); 45 hält eine Marge von ~50 %.
+        timeout-minutes: 45
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: System-Libs für headless Chromium
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-            libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || \
-          sudo apt-get install -y --no-install-recommends \
-            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-            libgbm1 libpango-1.0-0 libcairo2 libasound2
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: "npm"
 
-      - name: Dependencies installieren (inkl. puppeteer)
-        run: npm install --no-audit --no-fund
+            - name: System-Libs für headless Chromium
+              run: |
+                  sudo apt-get update -qq
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || \
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2
 
-      - name: Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)
-        # Bootet die Seite GPU-frei + sammelt jeden Runtime-Throw / echten Console-Error und
-        # exitet non-zero an der WURZEL (mit Stack) — BEVOR der Playtest in Folge-Fehlern
-        # ertrinkt. Fängt einen `is not a function`-Boot-Tod (ein verrutschter Methoden-Schnitt),
-        # den `node --check` nicht sieht (Syntax bleibt valide). Die Schwester zu cut-method.cjs.
-        run: npm run gate:page-error
+            - name: Dependencies installieren (inkl. puppeteer)
+              run: npm ci --no-audit --no-fund
 
-      - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
-        # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
-        # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
-        # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
-        run: npm run gate:persistence
+            - name: Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)
+              # Bootet die Seite GPU-frei + sammelt jeden Runtime-Throw / echten Console-Error und
+              # exitet non-zero an der WURZEL (mit Stack) — BEVOR der Playtest in Folge-Fehlern
+              # ertrinkt. Fängt einen `is not a function`-Boot-Tod (ein verrutschter Methoden-Schnitt),
+              # den `node --check` nicht sieht (Syntax bleibt valide). Die Schwester zu cut-method.cjs.
+              run: npm run gate:page-error
 
-      - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
-        # Beweist headless die adaptive Sync/Async-Entscheidung des Edit-/Spieler-Chunk-Rebuilds:
-        # gesunder Frame → SYNC (instant-Carve-Feedback auf starker HW), Frame über Budget →
-        # ASYNC (KEIN ~200-ms-Stall auf schwacher HW; Kollision feld-nativ = sofort), explizites
-        # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
-        run: npm run gate:carve
+            - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
+              # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
+              # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
+              # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
+              run: npm run gate:persistence
 
-      - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
-        # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
-        # `_foliageDensityScale`-Regler NICHT nur beim Erst-Bau folgt, sondern auch im Stand/Drehen:
-        # gesunkene Dichte → die GELADENE Gras-Last sinkt (−60% bei 0.4); Default-Dichte (scale=1) →
-        # KEIN Dünnen (volle Wiese, gate-treu); über Budget → kein Dünnen (V18.282). Die V18.280-Hälfte
-        # für Gras — adaptiv, nicht geschnitten (starke HW behält die volle Wiese).
-        run: npm run gate:grass-thin
+            - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
+              # Beweist headless die adaptive Sync/Async-Entscheidung des Edit-/Spieler-Chunk-Rebuilds:
+              # gesunder Frame → SYNC (instant-Carve-Feedback auf starker HW), Frame über Budget →
+              # ASYNC (KEIN ~200-ms-Stall auf schwacher HW; Kollision feld-nativ = sofort), explizites
+              # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
+              run: npm run gate:carve
 
-      - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
-        # Beweist headless, dass zwei same-LOD-Face-Nachbarn an ihrer GETEILTEN Boundary-Zeile
-        # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht
-        # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
-        # via sample() (reine Funktion der Welt-Position) → beide Nachbarn rechnen dieselbe Normale.
-        # Schnell (3 Chunks); der volle ring-4 `gate:seam` bleibt manuell/Full-Tier.
-        run: npm run gate:seam-normal
+            - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
+              # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
+              # `_foliageDensityScale`-Regler NICHT nur beim Erst-Bau folgt, sondern auch im Stand/Drehen:
+              # gesunkene Dichte → die GELADENE Gras-Last sinkt (−60% bei 0.4); Default-Dichte (scale=1) →
+              # KEIN Dünnen (volle Wiese, gate-treu); über Budget → kein Dünnen (V18.282). Die V18.280-Hälfte
+              # für Gras — adaptiv, nicht geschnitten (starke HW behält die volle Wiese).
+              run: npm run gate:grass-thin
 
-      - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
-        # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
-        # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
-        # Schliesst zuverlässig in Minuten ab — der reliable per-Push-Gate. Der volle Playtest
-        # läuft in playtest-full.yml.
-        run: npm run playtest:fast
+            - name: Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)
+              # Fake-Info mit exakter r184-Semantik (calls=Lebenszeit, drawCalls=pro Frame) am EINEN Tap:
+              # der Tap liest den PRO-FRAME-Zähler, sense.renderCalls bleibt beschränkt + session-invariant
+              # (die V18.427-Klasse als Invariante), der Regler-Eingang renderLoadMs ist ehrlich; statisch:
+              # kein Render-Linsen-Skript liest `.calls` nackt, der Flugschreiber trägt das version-Feld.
+              run: npm run gate:render-tap
 
-      - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
-        # Die STEHENDE Linse gegen „eine pro-Frame/periodisch neu kompilierte GPU-Pipeline im
-        # Steady-State" (scene.environment-Identitäts-Churn → Recompile-Cascade = der Idle-Freeze,
-        # der 50+ Versionen überlebte). Der Null-Renderer-Playtest oben ist dafür STRUKTURELL
-        # blind (er stubt den GPU-Pfad); diese Linse fährt den ECHTEN Renderer (swiftshader) und
-        # zählt createRenderPipeline/linkProgram. Nach Warmup MUSS eine Env-Regenerierung 0
-        # Pipelines neu kompilieren — sonst exit≠0 und der Build wird ROT, bevor jemand friert.
-        run: npm run gpu-lens
+            - name: Regler-Simulation mit ehrlichen Zahlen (W1 — fold→regulate→actuate)
+              # Die ECHTE Regler-Kette über tausende synthetische Frames: schwache GPU → Konvergenz ohne
+              # Pendeln + 0 Thin-Rebuilds im Studio-Regime; Streaming-Rückstau → Budget MAX (heilig);
+              # starke GPU → Erholung; Session-Zeit-Invarianz (identischer Input früh/spät ⇒ identische
+              # Stellgrößen). Fing beim Erstlauf die NaN-EWMA-Vergiftung (argloser _gameLoopTick).
+              run: npm run gate:regler-sim
 
-      - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
-        # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
-        # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·
-        # Atmosphäre-Trägheit · HDR-Tone-Mapping · lineare Farbe), gibt es eine publizierte
-        # physikalische Wahrheit. Diese Linse assertiert die CPU-lesbaren Look-Konstanten gegen
-        # reale Bereiche — GPU-frei, kein Schöpfer-Auge, eine ZAHL gegen die Realität.
-        run: npm run look-lens
+            - name: Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)
+              # „Volle Bühne" als Prädikat aus kanonischen Quellen (Ring am Ziel · Gras/Wasser leer ·
+              # keine deferierte Streu-Region · Bibliothek warm · Impostoren idle · Nebel offen) +
+              # Zeitleiste t(Kontrolle)/t(Bibliothek)/t(Ring)/t(Impostoren)/t(Bühne); Selbst-Test:
+              # eine injizierte deferierte Region macht das Prädikat rot. Headless = Mechanik-Ordnung;
+              # die Wall-Clock-Wahrheit liefert die Schöpfer-GPU (W8).
+              run: npm run gate:boot-stage
 
-      - name: Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)
-        # Beweist die perzeptuelle Linse SELBST (MSSIM: identisch→1 · degradiert→<1), GPU-frei.
-        # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
-        # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.
-        run: npm run look-golden
+            - name: Bewegungs-Garantie unter Last (P1 — die 3-FPS-Realität als Linse)
+              # Simuliert schwere Frames (330-ms-Zeitsprünge = 3 FPS) mit gehaltenem W: (a) der
+              # Spieler MUSS sich horizontal bewegen (der Fixed-Step ist unconditional, Streaming/
+              # Bewegung heilig V18.282/.355); (b) auch OHNE gebauten Spieler-Chunk (gestallter
+              # Worker — der Mesh kommt nie) trägt die feld-native Kollision (V18.331) die Bewegung;
+              # (c) die Boden-Garantie: nie im Soliden, nie Void (der Nachfolger des BVH-Ankers).
+              # Selbst-Test: eine künstlich gepinnte Position macht die Linse rot (nicht blind).
+              run: npm run gate:move-under-load
+
+            - name: Scatter-Wasser-Gate A/B-Byte-Wand (W3.3a — die Benchmark bewegt sich nie)
+              # Korpus mit erzwungenen Ufer-/Steil-/Fluss-Klassen; jede Region einmal in Legacy-Ordnung
+              # (state.__scatterExactWater, das Referenz-Ufer) und einmal im Produktions-Pfad gebaut →
+              # region.cells byte-identisch. Plus Mess-Bound |field.height−exakt| + Null-Zensus der
+              # einzigen konstruktiven Rest-Klasse; Selbst-Test: falsches Wasser-Verdikt → Diff feuert.
+              run: npm run gate:scatter-ab
+
+            - name: Scatter-Zeit-Scheiben byte-treu (W3.3b/3c — der 54-ms-Block fällt)
+              # Dieselbe Region One-Shot vs in N Deadline-Scheiben (Bake-Phase j-Zeilen + Zellen-Phase
+              # cz/cx/emitted-Fortsetzung): region.cells byte-exakt + HISM-Slot-Bilanz identisch (das
+              # Doppel-Add wäre im cells-Vergleich unsichtbar) + kein halber Bake je in der Map +
+              # Dispose-Storno mitten in der Fortsetzung crasht nie. Headless=One-Shot (gate-treu).
+              run: npm run gate:scatter-slice
+
+            - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
+              # Beweist headless, dass zwei same-LOD-Face-Nachbarn an ihrer GETEILTEN Boundary-Zeile
+              # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht
+              # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
+              # via sample() (reine Funktion der Welt-Position) → beide Nachbarn rechnen dieselbe Normale.
+              # Schnell (3 Chunks); der volle ring-4 `gate:seam` bleibt manuell/Full-Tier.
+              run: npm run gate:seam-normal
+
+            - name: Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)
+              # V8: der additive Screen-Space-Light-Shaft-March haengt als NODE im einen RenderPipeline-Pass
+              # (kein 2. Pass, keine MRT-Depth → das swiftshader-Blank-Risiko bleibt klein). Beweist headless
+              # die EINE Quelle (godrayUniforms) + den March in _ensurePostProcessing + die Frame-Projektion
+              # + dass der Perf-Lever `_godrayScale` dem EINEN Regler folgt (Last→aus, Kopfraum→voll, headless→MAX).
+              run: npm run gate:godray
+
+            - name: Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)
+              # P1 des neues-kleid-Pipeline-Plans: der Studio-Generator (phytogenesis.js als Worker)
+              # baut die kuratierten Goldens (spec/asset-contract/v1) neu und vergleicht Byte fuer Byte
+              # + Schema (cv:1, Pflichtfelder). Ab hier kann KEIN Refactor der Pipeline mehr still
+              # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
+              run: npm run gate:asset-contract
+
+            - name: Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)
+              # N3 (Nervensystem Phase γ): (a) spec/pack/v0/CONTRACT.md trägt die Pflicht-Abschnitte
+              # (v0-Ist-Kanon · v1-Schema · Ü1/Ü2-Chokepoint); (b) der IDB-Stempel hasht Manifest +
+              # alle Manifest-Skripte (kommentar-gestrippter Source-Grep — die Drift-Wand steht);
+              # (c) der Ship-Hook __anazhLiveBake===false lebt im Request-Pfad, VOR dem Worker-
+              # Fallback (Source + VERHALTEN: Hook an → null trotz ready-Worker); (d) der Roundtrip-
+              # Beweis: EIN Preset (eiche, lod 2) live minten → zurücklesen → byte-gleich (sha256 je
+              # Puffer, unabhängig vor der b64-Kodierung gerechnet). --selftest zuerst: ein korruptes
+              # Pack-Artefakt macht die Linse rot (nicht vakuös).
+              run: npm run gate:pack-contract
+
+            - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
+              # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
+              # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher
+              # sah der headless-Gate nur den Grammatik-Alt-Pfad) — _foundryRequest liefert echte Meshes.
+              run: npm run gate:foundry-warm
+
+            - name: Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)
+              # P2 Kern-Split: der Studio-Generator lebt jetzt in foundry-core.js (verschoben aus
+              # phytogenesis.js), die Shell liest seine Top-Level-Globals. Beweist, dass das Portal im vollen
+              # Display-Modus (Renderer+Welt+UI, nicht ?asset-foundry) ohne page-error bootet — ein
+              # übersehener Bezug flöge hier als ReferenceError auf (der asset-foundry-Modus kehrt vorher zurück).
+              run: npm run gate:portal-boot
+
+            - name: Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)
+              # P4: der overBudget?0-bakeBudget liess die nahen LOD0/1-Bäume unter Last nie backen (=die kahle
+              # Nähe). Seit P3a bäckt der Worker off-thread → der Throttle ist hinfällig. Beweist headless, dass
+              # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
+              run: npm run gate:foundry-deadlock
+
+            - name: Boot-Nebel-Ring (der ferne Sichtring beim Ein-Chunk-Boot)
+              # V18.411: RING_RAMP_START=0 (EIN Chunk) riss den Reveal-Spalt auf — bei revealK==ringRadius==0
+              # sprang der Nebel auf den vollen Ziel-Rand über die ungebaute Leere (der ferne Sichtring). Beweist
+              # headless, dass der Ein-Chunk-Boot den Nebel auf die gebaute Kante kappt, mit dem Ring weitet und
+              # erst am Ziel den Weitblick öffnet; der Erwachen-Kokon bleibt eng.
+              run: npm run gate:boot-fog-ring
+
+            - name: Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)
+              # V18.414: foliageRadius raste per perf-headroom auf MAX (240 m), waehrend der gebaute Ring erst
+              # 1 Chunk (43 m) war -> die Vegetation lag vor dem Boden = der ferne Billboard-Ring beim Spawn.
+              # Beweist headless (forcierter Nicht-headless-Ramp-Pfad), dass foliageRadius an der gebauten
+              # Ring-Kante bleibt statt auf MAX zu rennen.
+              run: npm run gate:boot-foliage-ring
+
+            - name: Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)
+              # P5: der Impostor-Atlas backt über den Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves)
+              # statt über ein GL-Bake-iframe. Beweist headless die MECHANIK (foundry-Record, kein asset-foundry-
+              # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
+              run: npm run gate:foundry-impostor
+
+            - name: V1 Kristall-Kleid + V2 Werkstatt — Varianten tragen das Studio-Rezept
+              # V1: die Formations-Varianten (kristall_var${N}/fels_var${N}) lösen jetzt auf ein Studio-
+              # Preset auf (vorher NULL = Part-Pfad = die „alten Kristalle"). V2: der Werkstatt-Rezept-Regler
+              # erkennt die Repräsentanten (fels_var0->rock, kristall_var0->crystal). Null-Renderer, GPU-frei:
+              # prüft die reine _foundryPresetForEntry-Auflösung + _workshopRecipeKind (Kristall->kristalle,
+              # Fels->Rezept nach Form-Klasse, glut bleibt bewusst Part-Look). Eine Regression rot.
+              run: npm run gate:v1-resolve
+
+            - name: V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik
+              # V3: die P4-Invariante als Linse. Null-Renderer + Foundry-ON (der Worker bäckt GPU-frei):
+              # tickt die Welt, enumeriert die Instanz-Gruppen, klassifiziert nach Foundry-Leaf (f:/fimp:)
+              # vs Grammatik. 0 Grammatik-Baum-Gruppen = kein Nachbau. Der Scatter trägt Bäume UND Fels/
+              # Kiesel/Blume/Strauch als Studio-Asset (fscatter:*); nur ungemappte Arten bleiben Grammatik.
+              run: npm run gate:no-second-treebuilder
+
+            - name: Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)
+              # DIE EINE INVENTUR-LINSE (aus dem Silhouetten-Zensus gewachsen, Gesetz #0), zwei Hälften:
+              # (1) ZENSUS — jeder sichtbare Emitter der Szene wird über IDENTITÄT klassifiziert
+              # (Studio · Substanz [inkl. der gestempelten Bau-Quellen streu-klein/deko-fernfeld/
+              # terrain-stitch/wetter-regen] · Entscheid · VERLETZUNG fail-closed) → 0 Fremd-Silhouetten.
+              # (2) INVENTUR — jeder on-demand angefragte Foundry-Key (f.requested) ist am Ende resident
+              # (f.cache) oder sichtbar attestiert (fscatter/f:/fimp:/Gras-Memo); LRU-Räumungen (f.lruEvicted)
+              # sind bewusst, kein Verlust → 0 verlorene Keys = das stille Verhungern (V18.309-Klasse) ist
+              # strukturell laut. Selbst-Tests: injizierte Fremd-Emitter + synthetisch verlorener Key → rot.
+              run: npm run gate:asset-inventory
+
+            - name: V4 Saison-Flip progressiv — kein O(archs)-Entfern-Spike beim Jahreszeit-Wechsel
+              # V4(A): der Saison-Wechsel füllt eine Queue statt alle Foundry-Instanzen synchron zu entfernen;
+              # der `_drainSeasonFlip`-Scheduler-Job (prio 3) macht je Frame <= SEASON_FLIP_PER_TICK kalt, der
+              # budgetierte Rewarm re-platziert sie in der neuen Saison. Null-Renderer + Foundry-ON: 0 synchrone
+              # Removes im Flip-Call (war O(archs)), Drain <= Budget/Frame, Instanz-Zahl erholt sich.
+              run: npm run gate:season-flip
+
+            - name: V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht
+              # V6 (Look-Finale, Track 1): der EINE LOOK-Wetter-Leser liefert die fünf Kanäle transition-aware;
+              # grey stormy>=0.8 & sunny==0 (entsättigt das LICHT, nie den Himmel), wind stormy >=5x sunny,
+              # rain kontinuierlich (0/~0.6/1.0), fog über die Transition monoton. Null-Renderer, GPU-frei.
+              run: npm run gate:weather-vector
+
+            - name: V6 Wiese folgt der Saison — _grassInstanceMat liest uSeasonMul, _seasonTint verschieden je Phase
+              # V6 (Look-Finale, Track 2): das Gras faltet die Saison-Tönungs-Uniform in die Albedo (KONSUM-Beweis);
+              # _seasonTint gibt für die vier Saison-Phasen verschiedene Tönungen (Winter != Sommer, Sommer neutral).
+              run: npm run gate:season-meadow
+
+            - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das per-Saison-Leck
+              # V4(B): die geteilte Foundry-Baum-Geometrie wird jetzt freigegeben (LRU-Räumung → dispose,
+              # sobald kein InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-
+              # Zähler über 4 Saison-Zyklen: dispose feuert, der Speicher bleibt flach (kein lineares Leck),
+              # REF-GUARD: keine Geometrie wird disposed solange _liveRefs > 0 (kein Use-after-free).
+              run: npm run gate:foundry-memory
+
+            - name: S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)
+              # S4: der Impostor bäckt EAGER (kein `_frameOverBudget`-Gate mehr in `_tickImpostorBake` —
+              # der ferne Wald ist über Budget WEIL seine Bäume noch schwere Geometrie tragen; der Bake
+              # SENKT die Last, er darf nicht vom Budget blockiert werden; weiter ein RTT/Frame gedeckelt).
+              # Und die Werkstatt zeigt auf der L2-Baumstufe das 8-Winkel-Billboard (InstancedMesh aus dem
+              # Foundry-Impostor), NICHT die schwere L2-Geometrie. Null-Renderer, hardware-unabhängig:
+              # Source-Proben + Behavioral (der Aufruf @lod2 liefert die 6-Vertex-Impostor-Kreuz-Geometrie).
+              run: npm run gate:s4-impostor-workshop
+
+            - name: Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)
+              # DER PIPELINE-BEWEIS: (A) die EINE Platzierungs-Quelle (PORTAL_RENDER_CONFIG.placement in
+              # foundry-core), die der Studio-Wald SELBST liest (kein lokales SCALE-Literal); (B) sie
+              # kommt live durch die Brücke an; (C) eine Daten-Mutation ändert die Welt-Skala SOFORT
+              # (live gewinnt gegen jeden Hardcode-Spiegel); (D) ein NEUES kind:tree-Preset registriert
+              # sich als Auto-Blueprint + wird vom Wald-Generator gestreut — ohne AnazhRealm-Edit.
+              run: npm run gate:nervensystem
+
+            - name: Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)
+              # DER ZWEIT-KERN-BEWEIS: der Foundry-Worker importiert vehicle-core (v1.1 N7.2), das
+              # LIVE-Buch trägt die kind:vehicle-Presets, der N7.5-Merge lebt am EINEN Ingest-
+              # Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id>
+              # entsteht + der Worker liefert das Fahrzeug-Asset — ohne eine Zeile AnazhRealm-Edit.
+              run: npm run gate:nervensystem-vehicle
+
+            - name: Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)
+              # DER PLACE-BEWEIS (Phase δ, headless foundry-ON): die EINE Auflösung (_placePolicyFor —
+              # Rezept-fx.place führt, sonst die placeExtra-Ableitung) + der EINE Dispatch-Chokepoint
+              # (_placeDispatch). (a) tree ohne place → forest, Nischen-Liste BYTE-GLEICH zur alten
+              # Regel; (b) vehicle → none; (c) H8: fx.place {mode:none} auf tree → Katalog ja, Wald-
+              # Nische nein (disjunkt); (d) site-Rezept (N5.6) registriert + siteTag als Daten, streut
+              # nicht; (e) must-ignore/must-preserve unbekannter Felder. Inklusive Selbst-Test
+              # (Verletzungs-Injektion: none-Art erscheint doch → die Detektion feuert).
+              run: npm run gate:place-policy
+
+            - name: Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)
+              # DER DRIVE-BEWEIS (Phase δ, headless foundry-ON): exportDrive (vehicle-core) leitet
+              # die Host-Fahr-Skalare aus DENSELBEN Primitiven ab, die die Garage-Probefahrt fährt
+              # (carPhys + FAHR + Federrate — die Konstanten leben seit N6.1 im Kern, die Shell
+              # LIEST sie); die Brücke rechnet fx.fahrprofil beim Buch-Bau (kein eingefrorenes
+              # Duplikat). (a) das Buch trägt fahrprofil 5/5; (b) H7: GT vs Supersport messbar
+              # verschieden; (c) _vehicleProfile(fahrzeug_gt) fährt die Lab-Werte, fahrzeug_wagen
+              # (kein Buch) die Emergenz byte-gleich; (d) Formel-Parität Kern==Probefahrt-Primitive;
+              # (e) Selbst-Test (verfälschtes fahrprofil → Divergenz erkannt). Der Bewegungs-Loop
+              # bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul nur in _loopPlayerMovement).
+              run: npm run gate:vehicle-drive
+
+            - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
+              # DER ε-BEWEIS: die Tor-Domäne dockt AUSSCHLIESSLICH über die Checkliste §ε an —
+              # Manifest-Zeile (porta-core, __portaCore) + KIND_POLICY-gate-Zeile + tor_basis-
+              # Donor-DATENBLOCK + fx.place-Rezept-Daten; der Stamm bekam KEINEN neuen kind-Zweig
+              # (M8, Diff-Beweis). Statisch (Manifest/Policy/Donor/kindStages/place als Daten) +
+              # Browser foundry-ON (7 Tor-Rezepte im LIVE-Buch · kindStages.gate [0] gemerged ·
+              # Auto-Blueprint tor_drachentor am EINEN Chokepoint · Tor-Asset end-to-end durch den
+              # Worker · site streut nicht [N5.6] · Fail-Closed-Clamp auf Stufe 0). Inklusive
+              # Selbst-Test (injizierte Verletzungen feuern).
+              run: npm run gate:nervensystem-porta
+
+            - name: Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)
+              # DER ε-BEWEIS DER WAFFEN-DOMÄNE (Katalysator-Bogen): die Klingen-Domäne dockt
+              # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (schmiede-core,
+              # __schmiedeCore) + KIND_POLICY-weapon-Zeile + geraet_schwert-Donor-DATENBLOCK +
+              # fx.place-Rezept-Daten (mode hand); der Stamm bekam KEINEN neuen kind-Zweig (M8,
+              # Diff = 13 Zeilen Daten). Statisch + Browser foundry-ON (21 Klingen-Rezepte im
+              # LIVE-Buch [Waffen UND Werkzeuge, tool-Marke] · kindStages.weapon [0] gemerged ·
+              # B4-paramsByKind.weapon 18 Dials · Auto-Blueprint klinge_<id> am EINEN Chokepoint ·
+              # Klingen-Asset end-to-end durch den Worker · hand streut nicht [N5.5] ·
+              # Fail-Closed-Clamp auf Stufe 0). Inklusive Selbst-Test (injizierte Verletzungen).
+              run: npm run gate:nervensystem-schmiede
+
+            - name: Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)
+              # cv:5 (spec/asset-contract/v5): 44 frozen sha256-Goldens (21 Gattungen × 2 Seeds +
+              # 2 ov-Fälle), Node-direkt (r128, kein Browser) — Determinismus · Seed-Invarianz ·
+              # ov-Kanal · lod-Klemme · Split-Parität buildInstance==buildWeaponModel je Gattung ·
+              # Selbst-Test (korruptes Golden wird rot).
+              run: npm run gate:schmiede-contract
+
+            - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
+              # DER ε-BEWEIS DER HAUS-DOMÄNE (Katalysator-Bogen): die Haus-Domäne dockt
+              # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (fachwerk-core,
+              # __fachwerkCore) + KIND_POLICY-haus-Zeile + begehbarer haus_basis-Donor-
+              # DATENBLOCK (Tür-Lücke ist KEIN Part) + fx.place-Rezept-Daten (mode site,
+              # siteTag haus — settlement N5.7 ist seit W-A5b der deliberate Kanal); der Stamm bekam
+              # KEINEN neuen kind-Zweig (M8). Statisch + Browser foundry-ON (32 Kultur-Rezepte
+              # im LIVE-Buch · kindStages.haus [0,1,2] gemerged — die ERSTE Mehr-Stufen-Domäne
+              # außerhalb der Bäume · B4-paramsByKind.haus 21 Dials · Auto-Blueprint haus_<id>
+              # am EINEN Chokepoint · Haus-Asset end-to-end auf ALLEN drei Stufen · der
+              # Flatten-Chokepoint bedient die Wahlen 1/2 mit den ECHTEN Stufen statt
+              # [0]-Kollaps). Inklusive Selbst-Test (injizierte Verletzungen).
+              run: npm run gate:nervensystem-fachwerk
+
+            - name: Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)
+              # cv:6 (spec/asset-contract/v6): 194 frozen sha256-Goldens (32 Kulturen × 2 Seeds ×
+              # 3 Stufen + 2 ov-Fälle), Node-direkt (r128, kein Browser) — Determinismus ·
+              # SEED-GETRIEBEN (der Haus-Bau würfelt aus P.seed — anders als Fahrzeug/Tor/
+              # Klinge) · Stufen-Wahrheit (L0 Voll != L1 Hülle != L2 Destillat) · ov-Kanal ·
+              # lod-Klemme · Split-Parität buildInstance == Shell-Komposition der Kern-
+              # Primitive je Rezept×Stufe · Selbst-Test (korruptes Golden wird rot).
+              run: npm run gate:fachwerk-contract
+
+            - name: Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)
+              # DIE WALD-SCHWESTER ALS DELIBERATER AKT: exportSettlement (fachwerk-core, das
+              # exportDrive-Muster) ist deterministisch + sha256-eingefroren (siedlung.json);
+              # der Export reist durch den EINEN Worker (Bruecke generisch, M8), der Host hebt
+              # die Slots positions-deterministisch, wasser-bewacht (_isAboveWaterAt) und
+              # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
+              # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
+              run: npm run gate:settlement
+
+            - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
+              # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt
+              # in der EINEN LOD-Geschichte (_tickArchitectureLOD via instFoundry) — nah
+              # gebaute Haeuser (L1 = 75k Tris!) kleben nicht mehr fuer immer auf ihrer
+              # Bau-Stufe (GEMESSEN: 380k -> ~28k nach 120 m Zuruecktreten). Fernstufe fern
+              # (Zahl-Deckel 70k), Promotion nah, Cull + Ghost-/Band-Slot-Bilanz sauber
+              # ueber Churn, und der Klon erbt die studioGestalt (W-A3.1, donorOnly bewusst
+              # nicht). Inkl. Selbst-Test.
+              run: npm run gate:trias
+
+            - name: Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)
+              # STUDIO-VERTRAG §8: Manifest-Zeilen + MESHFREI-Kerne (kein buildInstance — der
+              # Host bleibt der Ofen), das LIVE-Buch traegt fx.klang/fx.motion, paramsByKind
+              # traegt die Dials (W-A1-Strasse), KEIN Auto-Blueprint entsteht (must-ignore an
+              # der Herkunfts-Marke), die Werkstatt fuehrt die Rezepte — und der EINE
+              # Audio-Konsument lebt (das Lofi-Pad faehrt das Genesis-Tempo, fail-soft
+              # byte-alt auf LOFI_BPM). Inkl. Selbst-Test.
+              run: npm run gate:nervensystem-labs
+
+            - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
+              # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/
+              # koerper/tetrapoda), Node-direkt (THREE-frei) — Schema (klang: bpm/Skala==
+              # scaleFor(darkness)/dna-Baender · motion: endliche Profile) · Determinismus
+              # (zwei frische vm-Kontexte byte-gleich) · Selbst-Test (korruptes Golden rot).
+              run: npm run gate:daten-contract
+
+            - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
+              # DER KATALOG-BEWEIS (auslagerungs-plan §5): die B4-Tabellen reisen als Daten
+              # (paramsByKind gate+vehicle), der ov-Kanal baut cache-frei eine ANDERE Geometrie
+              # (kein Welt-Cache-Gift), die Werkstatt zeigt die Studio-Rezepte (gras) + Slider
+              # aus den Daten, die Donoren (fahrzeug_wagen/tor_basis) treten in keinem Picker
+              # auf, das Interim ist ehrlich (pending statt Donor-Part-Gestalt).
+              run: npm run gate:rezept-katalog
+
+            - name: Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)
+              # DAS BAUM-MUSTER AUF PORTALE: 5 studioGestalt-Daten-Zeilen + der EINE generische
+              # Entry-Resolver; das Studio-Tor materialisiert end-to-end ohne Doppel-Bild, die
+              # Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt
+              # in BEIDEN Regimen (Hook -> Part-Pfad).
+              run: npm run gate:portal-gestalt
+
+            - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
+              # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
+              # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per
+              # Regex geparste foundry-core-GLSL (FIX v37 — Rinde XOR-Partition, Laub überlappende
+              # Rampen ohne Loch, Impostor-fin; die Drift-Wand gegen jeden Studio-GLSL-Edit);
+              # (b) headless foundry-ON: der Distanz-Sweep über thresh01/thresh12 — IM Band Slots
+              # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
+              run: npm run gate:foundry-crossfade
+
+            - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
+              # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
+              # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
+              # Schliesst zuverlässig in Minuten ab — der reliable per-Push-Gate. Der volle Playtest
+              # läuft in playtest-full.yml.
+              run: npm run playtest:fast
+
+            - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
+              # Die STEHENDE Linse gegen „eine pro-Frame/periodisch neu kompilierte GPU-Pipeline im
+              # Steady-State" (scene.environment-Identitäts-Churn → Recompile-Cascade = der Idle-Freeze,
+              # der 50+ Versionen überlebte). Der Null-Renderer-Playtest oben ist dafür STRUKTURELL
+              # blind (er stubt den GPU-Pfad); diese Linse fährt den ECHTEN Renderer (swiftshader) und
+              # zählt createRenderPipeline/linkProgram. Nach Warmup MUSS eine Env-Regenerierung 0
+              # Pipelines neu kompilieren — sonst exit≠0 und der Build wird ROT, bevor jemand friert.
+              run: npm run gpu-lens
+
+            - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
+              # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
+              # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·
+              # Atmosphäre-Trägheit · HDR-Tone-Mapping · lineare Farbe), gibt es eine publizierte
+              # physikalische Wahrheit. Diese Linse assertiert die CPU-lesbaren Look-Konstanten gegen
+              # reale Bereiche — GPU-frei, kein Schöpfer-Auge, eine ZAHL gegen die Realität.
+              run: npm run look-lens
+
+            - name: Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)
+              # Beweist die perzeptuelle Linse SELBST (MSSIM: identisch→1 · degradiert→<1), GPU-frei.
+              # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
+              # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.
+              run: npm run look-golden

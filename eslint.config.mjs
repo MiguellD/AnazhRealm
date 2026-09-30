@@ -22,6 +22,8 @@ export default [
                 URL: "readonly",
                 console: "readonly",
                 localStorage: "readonly",
+                location: "readonly", // JEDES-HOLZ: _holzWahl liest ?holz= aus der URL
+                URLSearchParams: "readonly",
                 fetch: "readonly",
                 FileReader: "readonly",
                 setTimeout: "readonly",
@@ -65,12 +67,12 @@ export default [
         },
     },
     {
-        files: ["voxel-worker.js", "bake-worker.js", "bake-core.js"],
+        files: ["voxel-worker.js", "bake-worker.js", "bake-core.js", "phyto-core.js"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
             globals: {
-                // Web-Worker scope (voxel-worker, bake-worker) + bake-core (geteilt: Worker + Main)
+                // Web-Worker scope (voxel-worker, bake-worker) + bake-core/phyto-core (geteilt: Worker + Main)
                 self: "readonly",
                 globalThis: "readonly",
                 importScripts: "readonly",
