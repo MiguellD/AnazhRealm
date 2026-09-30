@@ -268,7 +268,15 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             res.k.scaleStudio = JSON.stringify(r._lofiActiveScale());
             res.k.semi2Studio = r._lofiScaleSemitone(2); // Blues: scale[2] = 5
             res.k.semi6Studio = r._lofiScaleSemitone(6); // 6-Ton-Skala: idx 6 = Oktav-Wurzel +12
-            res.k.chord0Studio = JSON.stringify(r._lofiChordFromDegree(0)); // [0,5,7,12]
+            // V18.492 — die Akkord-BREITE folgt dem klang-Gesetz colorExt (Genre-DNA color,
+            // EINE Quelle Lab+Welt): der Grund-Vierklang [0,5,7,12] + (colorExt−1) Terzen darüber.
+            const _kc = globalThis.__klangCore;
+            const _extSoll = () => {
+                const sp = r._klangStudioPreset();
+                return _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(sp && sp.dna ? sp.dna.color : 0) : 1;
+            };
+            const _c0 = r._lofiChordFromDegree(0);
+            res.k.chord0Studio = _c0.length === 3 + _extSoll() ? JSON.stringify(_c0.slice(0, 4)) : "len" + _c0.length;
             // Frequenz als ZAHL: der 2. Akkord-Ton (Halbton 5 ueber A2=110) = 110*2^(5/12).
             res.k.freq1Studio = r._lofiChordFreqs(r._lofiChordFromDegree(0), false)[1];
             // Rezept kurz VERSTECKEN (Sicherung + Wiederherstellung — die Gate-Hook-Disziplin):
@@ -280,7 +288,8 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             // Konstante ist gefallen.
             res.k.scaleFallbackKern = JSON.stringify(r._lofiActiveScale()) === "[0,3,5,6,7,10]";
             res.k.semi2Fallback = r._lofiScaleSemitone(2); // A-Moll: 3
-            res.k.chord0Fallback = JSON.stringify(r._lofiChordFromDegree(0)); // [0,3,7,10]
+            const _c0f = r._lofiChordFromDegree(0);
+            res.k.chord0Fallback = _c0f.length === 3 + _extSoll() ? JSON.stringify(_c0f.slice(0, 4)) : "len" + _c0f.length;
             f.recipes.lofi = prev;
             res.k.durRestored = r._lofiChordDurationMs();
             res.k.semi2Restored = r._lofiScaleSemitone(2);
@@ -622,7 +631,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         String(out.k.scaleStudio)
     );
     check(
-        "K2: der EINE Ton-Mapper faltet (scale[2]=5 · idx 6 = Oktav-Wurzel 12 · Akkord i = [0,5,7,12])",
+        "K2: der EINE Ton-Mapper faltet (scale[2]=5 · idx 6 = Oktav-Wurzel 12 · Akkord i = [0,5,7,12] + colorExt-Breite)",
         out.k.semi2Studio === 5 && out.k.semi6Studio === 12 && out.k.chord0Studio === "[0,5,7,12]",
         `semi2=${out.k.semi2Studio} semi6=${out.k.semi6Studio} chord=${out.k.chord0Studio}`
     );

@@ -5,7 +5,8 @@
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
 //   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist ein
 //      HEAD-Commit mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot.
-//   2) FROZEN-LISTEN-WAND: max 5 Einträge (A–E), wohlgeformt — Scope wächst nie still.
+//   2) FROZEN-LISTEN-WAND: max 5 Einträge (A–E), wohlgeformt — Scope wächst nie still;
+//      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15;
 //      die 1300-Zeilen-Wellen-Romane wachsen nie nach).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md —
@@ -24,6 +25,21 @@ const SIEGEL_CS = /\bRUND\b/;
 
 function eintraege(text) {
     return text.split("\n").filter((z) => /^[A-E]\)\s+\S/.test(z));
+}
+
+// 2b) LOGBUCH-WAND (V18.492): die Frozen-Liste ist eine LISTE, kein Logbuch. Die
+//     September-Welle stempelte 446 „Stand-Stempel:"-Zeilen vor die fünf Einträge (je
+//     gehobener Lab-Konstante eine Zeile + eine Patch-Version) — die Liste wuchs 13 → 462
+//     Zeilen, A–E bewegten sich nicht. Chronik = git log (Lehre 15).
+const LISTE_MAX_ZEILEN = 40;
+function logbuchBefund(text) {
+    const zeilen = text.split("\n");
+    const stempel = zeilen.filter((z) => /^>?\s*Stand-Stempel:/.test(z)).length;
+    const out = [];
+    if (stempel > 0) out.push(`PFLICHT-OFFEN trägt ${stempel} „Stand-Stempel:"-Zeilen — die Chronik ist git log`);
+    if (zeilen.length > LISTE_MAX_ZEILEN)
+        out.push(`PFLICHT-OFFEN trägt ${zeilen.length} Zeilen (max ${LISTE_MAX_ZEILEN}) — Liste, kein Logbuch`);
+    return out;
 }
 
 function siegelBefund(commitMsg, eintragZahl) {
@@ -62,6 +78,7 @@ function main() {
     const posten = liste ? eintraege(liste) : [];
     if (liste && posten.length > 5)
         errs.push(`PFLICHT-OFFEN trägt ${posten.length} Einträge (max 5) — Scope wächst still`);
+    if (liste) errs.push(...logbuchBefund(liste));
 
     // 1) SIEGEL-WORT-WAND am HEAD-Commit
     let headMsg = null;
@@ -104,6 +121,10 @@ function main() {
     const t4 = siegelBefund("bericht: rund 60 assets pro sekunde", 2); // klein „rund" legal
     if (!t1 || t2 || t3 || t4)
         errs.push(`Selbsttest der Siegel-Wort-Wand versagt (t1=${t1} t2=${t2} t3=${t3} t4=${t4})`);
+    const l1 = logbuchBefund("> Stand-Stempel: 29.09. · V1.2.3\nA) x").length; // muss feuern
+    const l2 = logbuchBefund("# Liste\nA) x — Status: offen").length; // darf nicht feuern
+    const l3 = logbuchBefund(Array(LISTE_MAX_ZEILEN + 5).fill("x").join("\n")).length; // muss feuern
+    if (!l1 || l2 || !l3) errs.push(`Selbsttest der Logbuch-Wand versagt (l1=${l1} l2=${l2} l3=${l3})`);
 
     if (errs.length) {
         console.error("gate:betriebsgesetz ROT");
@@ -112,7 +133,7 @@ function main() {
     }
     console.log(
         `gate:betriebsgesetz GRÜN — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
-            `Siegel-Wand + Absenz-Wand stehen · Selbsttest feuert`
+            `Siegel-Wand + Logbuch-Wand + Absenz-Wand stehen · Selbsttest feuert`
     );
 }
 

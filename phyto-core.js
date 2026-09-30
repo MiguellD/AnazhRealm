@@ -31,9 +31,7 @@
         const lerp = (a, b, t) => a + (b - a) * t;
         /* V18.491.243 — Phyllotaxis golden ← PHYLO_GESETZ.golden fail-soft; Host none (PHYLO_VIS). */
         const GOLDEN_FALLBACK = Math.PI * (3 - Math.sqrt(5)); // 137.50776° Phyllotaxis
-        const GOLDEN = (PHYLO_GESETZ && isFinite(PHYLO_GESETZ.golden))
-            ? PHYLO_GESETZ.golden
-            : GOLDEN_FALLBACK;
+        const GOLDEN = PHYLO_GESETZ && isFinite(PHYLO_GESETZ.golden) ? PHYLO_GESETZ.golden : GOLDEN_FALLBACK;
         // Vektor-Helfer (THREE-frei, aus phytogenesis portiert).
         const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
         const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
@@ -1563,10 +1561,10 @@
     // Host SCATTER.layers READ these; cellM/cap/kind/promotable/densityScale stay Host perf.
     // Distinct from FOREST_* / planForestCell (canopy darts). Do NOT merge into planForestCell.
     const SCATTER_STRATUM = {
-        tree:   { floor: 0.1,  scaleBase: 0.6, scaleVar: 1.5, slopeMax: 1.45 },
-        under:  { floor: 0.06, scaleBase: 0.8, scaleVar: 0.5, slopeMax: 1.0 },
+        tree: { floor: 0.1, scaleBase: 0.6, scaleVar: 1.5, slopeMax: 1.45 },
+        under: { floor: 0.06, scaleBase: 0.8, scaleVar: 0.5, slopeMax: 1.0 },
         litter: { floor: 0.04, scaleBase: 0.8, scaleVar: 0.4, slopeMax: 1.25 },
-        rock:   { floor: 0.02, scaleBase: 0.6, scaleVar: 1.0, slopeMax: 1.6 },
+        rock: { floor: 0.02, scaleBase: 0.6, scaleVar: 1.0, slopeMax: 1.6 },
     };
     function scatterStratum(name) {
         return SCATTER_STRATUM[name] || null;
@@ -2003,7 +2001,7 @@
         klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
         bewoelkt: { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 },
         nebel: { fog: 1.0, sun: 0.48, grey: 0.46, wind: 0.1, rain: 0.0 },
-        sturm: { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 }
+        sturm: { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 },
     };
     var WX_VIS = { lab: "wx-4", host: "none" };
 

@@ -2,21 +2,17 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V18.267 (19.06.2026) — der **AKTIVE BOGEN** ist **`docs/wahrerguss.md`** (DER WAHRE GUSS — der Master-Plan zum atemberaubenden Bauplan): das EINE Gesetz _jede Eigenschaft ist ein Auslesewert der Wahrheit, gerechnet/gelesen, nie geraten/gemalt_, auf die Bauplan-Erzeugung angewandt. Ein Bauplan ist kein Mesh, sondern ein GESETZ; Detail·Schönheit·Vielfalt·Leben sind Auslesewerte VIER geteilter Pässe (Substanz · Körper/Skelett · Grammatik-Tiefe · Detail), durch die jeder Bauplan fließt — das Genom (T1–T6) reitet oben, der Richter (Ω-PHYSIS) garantiert, das Tor erzwingt die Fidelität, das Auge richtet. Darunter stehen die großen Bögen RUND: Ω-PHYSIS (der Richter im Code) · die gefrorene Taille (Ω) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4) · die Welten-Föderation (Φ/W18) · der Genese-Bogen (Γ) · das WERDEN (Wasser-CA) · das lebendige Feld · der Emotion-Kern · der Kampf-/Schöpfungs-Fluss · der Lebendige Gigant (Wald).
-
-> Der **live gepflegte Stand** (mit allen Gotchas) lebt im `CLAUDE.md`-Kopf — dort steht immer die Wahrheit, dieser Absatz ist nur ein Schnappschuss.
-
-**Nächste offene Fäden:** der aktive Bogen — `docs/wahrerguss.md` Guss 1 (SUBSTANZ — der prozedurale Material-Pass, der breiteste Hebel) · Guss 2 (KÖRPER — Skelett+Haut+Bewegung, das lebendige Herz). Die **gemerkten Fäden** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · …) in `docs/roadmap.md §4`.
-
-Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/archiv/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
+**Stand:** die Versions-Wahrheit trägt `package.json` (alle `?v=`-Buster + `AnazhRealm.VERSION` folgen ihr über `npm run bump -- x.y.z`). Der live gepflegte Stand steht im `CLAUDE.md`-Kopf, das EINE Offen-Dokument ist `docs/PFLICHT-OFFEN.md`, die Chronik ist `git log`.
 
 ## Was es ist
 
-AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~76 600 Zeilen, Vanilla JS + Three.js r184/WebGPU + Ammo.js). Drei zentrale Vision-Pfeiler:
+AnazhRealm ist eine 3D-Browser-Welt (Vanilla JS, Three.js r184 / WebGPU) mit EINEM Stamm (`anazhRealm.js`, ~104 000 Zeilen, eine Klasse) und Ringen an echten Laufzeit-Grenzen:
 
-- **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
-- **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
-- **Multi-User-Symbiose**: WebRTC-Mesh mit echten peer-to-peer DataChannels (Position, DSL, Soul, Aura, Begleiter-Stimme), mesh-nativer Welt-Snapshot, geteilter LLM-Pool, Public-Lobby. Kein authoritativer Server.
+- **Die Welt ist eine Funktion:** Voxel-Terrain aus einem Dichtefeld (Main + `voxel-worker.js` bit-identisch), Wasser als zellulärer Automat, die Ferne als Raymarch aus demselben Höhen-Gesetz (`feld-wgsl.js`). Die Physik ist feld-nativ und deterministisch (Replay + Lockstep-Multiplayer Stufe 2: nur Inputs übers Netz).
+- **Die Studios sind die Gesetzbücher:** acht Schöpfer-Labore unter `worlds/` (terrain · garage · portale · schmiede · fachwerk · klang · koerperstudio · tetrapoda) teilen ihre Gesetze mit der Welt über die Kerne (`*-core.js`, Vertrag `docs/studio-vertrag.md`); die Foundry (Worker) baut Bäume, Fels, Häuser, Waffen, Fahrzeuge und Tiere aus ihnen.
+- **Hylomorphismus als Sprache:** Form × Material → emergente Identität (Seele, Bauwerk, Werkzeug, Rüstung, Trank sprechen dieselbe Tag-Sprache); die Werkstatt baut Baupläne, die Welt liest sie.
+- **Das lebendige Feld + die DSL:** die Welt liest · schreibt · wertet ein gemeinsames Feld; eine sandboxed DSL (Budget, Op-Whitelist, kein `eval`, CSP-strict) ist die Sprache, die Mensch, Welt-Regeln und ein optionaler LLM-Begleiter teilen.
+- **Multi-User ohne Herrn:** WebRTC-Mesh über einen zero-dep-Broker, Portale in fremde Welten (sandboxed iframes), signierte Identität (Vibe-Pass).
 
 ## Schnellstart
 
@@ -47,32 +43,31 @@ seinen eigenen Leuchtturm betreiben, auf jedem Rechner, der Node hat.
   reicht Nachrichten weiter. Er sieht **nie** private Schlüssel (der Vibe-Pass
   verlässt den Browser nicht), besitzt keine Welten (Snapshots reisen
   peer-to-peer durch ihn hindurch) und führt kein Konto. Das volle
-  Broker-Protokoll: `docs/taille-spec.md` §7 (englisch:
-  `docs/taille-spec.en.md`).
+  Broker-Protokoll: `docs/taille-spec.md` §7.
 
 ## Tests + Audit
 
 ```bash
-npm run check           # Syntax-Check (node --check) + Stamm-Atlas-Drift
-npm run atlas           # die LIVE-Karte der 26 Stamm-Zonen (<1 s; --find <regex>)
+npm run check           # Statik: node --check aller Kerne + Atlas/Source-Probes/Studio-Vertrag/Altlasten/Betriebsgesetz
+npm run atlas           # die LIVE-Karte der Stamm-Zonen (<1 s; --find <regex>)
 npm run lint            # ESLint
-npm run format:check    # Prettier
-npm run playtest        # ~3500 Headless-Invarianten (~90s; render-frei, V17.72-Twist)
-npm run audit:strict    # 5 generische Audit-Schichten (~25s)
+npm run format:check    # Prettier (der Stamm braucht einige Minuten)
+npm run playtest:fast   # ~18 Kern-Gesundheits-Checks (~45 s) — der Dev-Loop
+npm run playtest        # ~5000 Headless-Invarianten über ~240 Bänder (~4 min, GPU-frei) — das Merge-Gate
+npm run gate:<name>     # die Domänen-Linsen (Liste: package.json)
 ```
 
-Pre-Push-Empfehlung: `npm run check && npm run playtest && npm run audit:strict`.
+Pre-Push-Empfehlung: `npm run check && npm run lint && npm run playtest`. Das Verdikt zählt (`✅ Alle Invarianten OK`), nie der ✅-Zähler.
 
 ## Doku-Map
 
 Die **EINE kanonische Doc-Landkarte** lebt in **[`docs/README.md`](docs/README.md)** — sie ordnet jedes Dokument nach Zeit-Ebene des Wissens (Einstiege · lebendige Anker · aktive Pläne · Referenz · Archiv). Die wichtigsten Routen:
 
-- **JETZT** (Stand + Gotchas) → `CLAUDE.md` (auto-geladen)
-- **DIE CHRONIK** (Wellen-Historie + Start) → `docs/archiv/handover.md`
+- **JETZT** (Stand + Gesetze + Lehren) → `CLAUDE.md` (auto-geladen)
+- **OFFEN** (die EINE Offen-Liste) → `docs/PFLICHT-OFFEN.md` · **DER WEG + die v1.0-Ziellinie** → `docs/roadmap.md`
 - **DIE VISION** → `docs/state-of-realm.md` · **DER WAHRE NORDEN** → `docs/das-lebendige-feld.md`
-- **DER AKTIVE BOGEN** (der Master-Plan zum atemberaubenden Bauplan) → `docs/wahrerguss.md` (DER WAHRE GUSS — die vier geteilten Pässe; Richter: `docs/archiv/wahrerbauplan.md`) · **DER WEG** → `docs/roadmap.md`
-- **REFERENZ** → `docs/archiv/crafting-konzept.md` · `docs/archiv/aktivierungsmatrix.md` · `docs/archiv/hydrosphere.md` · `docs/archiv/world-portal.md`
-- **ARCHIV** (abgeschlossen) → `docs/archiv/` (Index: `docs/archiv/README.md`)
+- **NORMATIV** → `docs/studio-vertrag.md` (Studio↔Welt) · `docs/taille-spec.md` (Draht-Formen) · `docs/neues-kleid-verfassung.md` (Pipeline)
+- **DIE CHRONIK** → `git log` (die Commit-Message ist der Chronik-Eintrag; gelöschte Pläne/Archive leben dort)
 
 ## Heilige Lektion
 
@@ -84,7 +79,7 @@ Details in `docs/state-of-realm.md` §2.
 
 > _„Andere bauen Welten FÜR Spieler. Wir bauen eine Welt, in der Spieler SELBST Welten bauen können — und durch Welten anderer Spieler gehen können."_
 
-Bibliothek von Alexandria der Vibecode-Ära. Detail in `docs/archiv/world-portal.md`.
+Bibliothek von Alexandria der Vibecode-Ära.
 
 ## Lizenz
 

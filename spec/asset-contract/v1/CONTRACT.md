@@ -35,6 +35,12 @@ Mesh {
 }
 ```
 
+**Beipack (must-ignore):** Pseudo-Einträge `{ kind: "__…" }` OHNE `position`-Puffer — `__skelett`
+(der Gelenk-Baum der Kreatur, `docs/studio-vertrag.md` §8.4) und `__baumGrammatik` (das Ast-/Kronen-
+Skelett des Baums für den Analog-Fit) — reisen im selben `meshes`-Array, sind aber KEINE Meshes:
+Leser ohne position-Guard überspringen sie, Mint und Gate fingerabdrucken sie nicht (`istBeipack`
+in `scripts/lib/asset-worker-harness.cjs` — EINE Regel für beide).
+
 Positionen sind WELT-gebacken (`matrixWorld` appliziert, Baum am Ursprung). KEINE Transferables —
 der strukturierte Klon kopiert die Puffer (Transferables neutralisierten geteilte interleaved
 ArrayBuffer → Vertex-Korruption). In den Goldens ist jeder Puffer als **byte-exakter Fingerabdruck**
@@ -85,3 +91,8 @@ REPLY    { type:"render-config", world:"terrain", reqId, config:{ lod:{d0,d1,fad
 baut jeden Fall neu, fingerabdruckt die Puffer identisch und vergleicht sha256 + Byte-Länge + prüft
 das Schema (cv, Pflichtfelder). Gemünzt mit `scripts/mint-asset-goldens.cjs` (52 Fälle: 6 Bäume ×
 Seeds[7,12345] × LODs[0,2] × Saisons[summer,winter] + je 1 findling/kristalle/blume/strauch).
+
+**Re-Mint 30.09.2026 (V18.492, begründet):** nur `recipes.json` (+ Manifest) — die additiven
+Juli-Felder (`fx.huelle` der Steine · `fx.fahrprofil.sitz/huelle/zweispur/kamera` der Fahrzeuge)
+und `supersport.fx.fahrprofil.lenkung.gripK`, das seither dem Garage-`grip` folgt (6 → 5.1). Alle
+52 Mesh-Goldens blieben byte-gleich (vor dem Re-Mint gegen die alten Bytes geprüft).

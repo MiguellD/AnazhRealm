@@ -194,15 +194,6 @@ class AnazhRealm {
             // pro Frame im Render-Loop aktualisiert.
             windUniforms: null,
             _grassMat: null,
-            // V10.0-j.j — Singleton-Cache für die ConeGeometry des Gras-
-            // Halmes. Profi-Vorbild Genshin/BotW: shared mesh-geometry für
-            // identische Asset-Kopien. Eine Geometry, viele InstancedMeshes.
-            _grassConeGeometry: null,
-            // V11.0-a — Pool aus InstancedMesh-Objekten für Gras. `_releaseGrassMesh`
-            // pusht hier rein (mit Cap-Check), `_acquireGrassMesh` poppt raus
-            // oder allokiert neu wenn leer. Bei Welt-Wechsel räumt
-            // `_drainGrassMeshPool` den Pool vollständig (echtes dispose).
-            _grassMeshPool: null,
             floatingIslands: [],
             planets: [],
             minHeight: 0,
@@ -9336,10 +9327,7 @@ class AnazhRealm {
                         abend: 0.7,
                         sonnenuntergang: 0.75,
                     };
-                    const t =
-                        map[raw] !== undefined
-                            ? map[raw]
-                            : Math.max(0, Math.min(1, parseFloat(raw)));
+                    const t = map[raw] !== undefined ? map[raw] : Math.max(0, Math.min(1, parseFloat(raw)));
                     return {
                         program: ["set_time_of_day", t],
                         describe: `Uhrzeit gesetzt: ${raw} (${t})`,
@@ -16126,9 +16114,7 @@ class AnazhRealm {
                                 seiten: Math.ceil(this.state.weltMarch.obergrenze / AnazhRealm.WELT_MARCH.seite), // March-Loop-Grenze in SEITEN
                                 bricks: this.state.weltMarch.brickCache.size, // GETEILTE Gestalten (Dedup)
                                 // ANALOG E — Kapsel-Dedup in den Flugschreiber (nicht nur Live-Konsole)
-                                kapseln: this.state.weltMarch.kapselCache
-                                    ? this.state.weltMarch.kapselCache.size
-                                    : 0,
+                                kapseln: this.state.weltMarch.kapselCache ? this.state.weltMarch.kapselCache.size : 0,
                                 bloeckeFrei: this.state.weltMarch.freiGross.length,
                                 einheitenFrei: this.state.weltMarch.freiKlein.length,
                                 felderFrei: this.state.weltMarch.freiFelder.length,
@@ -17388,10 +17374,9 @@ class AnazhRealm {
             };
         }
         const wu = this.state.windUniforms;
-        // DER GRAS-SCHNITT (08.07.): die Höhen-Referenz des Farb-Gradients ist ein UNIFORM —
-        // die Studio-gras-Geometrie bringt ihre eigene Halm-Höhe mit (localMaxY), der Tuft-
-        // Alt-Pfad behält GRASS_BLADE_H. Gesät aus dem, was zuerst da ist.
-        if (!wu.uBladeH) wu.uBladeH = uniform(this._grassStudioMaxY || AnazhRealm.GRASS_BLADE_H);
+        // Die Höhen-Referenz des Farb-Gradients ist ein UNIFORM (GRASS_BLADE_H; die
+        // Studio-Halm-Geometrie, die eine eigene Höhe mitbrachte, fiel mit dem Halm-Mesh).
+        if (!wu.uBladeH) wu.uBladeH = uniform(AnazhRealm.GRASS_BLADE_H);
         // UNIFORM-HEIMAT: der geteilte Wind-Satz reist als EIN renderGroup-Buffer.
         this._uniformHeimatTeilen(wu);
         const mat = new THREE.MeshLambertNodeMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
@@ -17415,8 +17400,7 @@ class AnazhRealm {
         // nur die Grundfarbe wird reicher. KEIN attribute()-Lookup -> die
         // V15.1-Schwärze-Klasse ist strukturell ausgeschlossen. Render-only:
         // kein Geometrie-/Determinismus-Eingriff (die Halm-Positionen/Dichte
-        // sind unberührt -> kein Worker/Buffer-Risiko, die GRASS_MAX_BLADES-256-
-        // Buffer-Klasse bleibt unangetastet). try/catch -> Fallback flach-grün.
+        // sind unberührt -> kein Worker/Buffer-Risiko). try/catch -> Fallback flach-grün.
         // EHRLICH: das heilt "uniform", NICHT "spärlich" (die Dichte ist der
         // fragile Buffer-Pfad -> V15.3-b falls der Browser mehr Halme will).
         try {
@@ -18900,10 +18884,7 @@ class AnazhRealm {
             if (mp && mref && mp === mref) r._kpmulAcc = null;
             if (mp && mref && mp !== mref) {
                 if (!r._kpmulAcc) r._kpmulAcc = Object.create(null);
-                const a =
-                    kpMul >= 0.999 || dtK <= 0
-                        ? 1
-                        : 1 - Math.exp(-Math.max(18, 55 * kpMul) * dtK);
+                const a = kpMul >= 0.999 || dtK <= 0 ? 1 : 1 - Math.exp(-Math.max(18, 55 * kpMul) * dtK);
                 for (const row of AnazhRealm.MOTION_RIG_MAP) {
                     const dv = ((Number(mp[row.key]) || 0) - (Number(mref[row.key]) || 0)) * wi;
                     const accKey = row.key + "." + row.axis;
@@ -19515,12 +19496,13 @@ class AnazhRealm {
         const seiten = [-1, 1, -1, 1];
         // V18.491.81 — kpMul: Lab skaliert pd.kp/kd; Host = einpolige Ziel-Näherung
         // (höher → knackiger). State an tb._gang; NeutralStance nullt den Gang.
-        if (!g.legCur) g.legCur = [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ];
+        if (!g.legCur)
+            g.legCur = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ];
         const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * dt) : 1;
         for (let i = 0; i < 4; i++) {
             const ph = g.ph[i];
@@ -19531,9 +19513,7 @@ class AnazhRealm {
             if (st < 0.002) {
                 // Stand: STAND_POSE + Gewichts-Unruhe + Roll-Shift (Lab-Mathe, t-Sinus).
                 // V18.491.81 — tension skaliert Unruhe (Lab ribcage/support-Verwandte).
-                const wn =
-                    (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) *
-                    tension;
+                const wn = (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) * tension;
                 const wShift = roll * seiten[i] * 0.025;
                 z0 = SP[i][0] + wn + wShift;
                 z1 = SP[i][1] + wn * 0.5 + wShift * 0.3;
@@ -21474,17 +21454,6 @@ class AnazhRealm {
     }
     static get CREATURE_DRINK_SPEED() {
         return AnazhRealm._verhaltenGesetz().aufgaben.trinkTempo; // m/s — gleich wie gather, sichtbares Bewegen
-    }
-    // V11.0-a (Pool-Foundation) — Mesh-Pool-Pattern (Genshin Instancing-System
-    // / BotW Geometry-Recycling) als ehrlicher Bogen-Schluss für den V10.0-j.j-
-    // Memory-Workaround. Disposed Gras-Meshes kommen in einen Pool, beim
-    // nächsten Bau wiederverwendet — kein new+dispose, kein Race-Risiko, kein
-    // linear-wachsender Heap.
-    static get GRASS_POOL_CAP() {
-        // V16.1 — 32→48: der Gras-Ring wuchs von 3×3 (9 Chunks) auf 5×5
-        // (25 Chunks); der Pool braucht Headroom über die Ring-Größe, sonst
-        // LRU-Thrashing (ständig disposen/neu-allokieren beim Laufen).
-        return 48; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
     }
     // V17.1 — FÜLLE/DICHTE: die Arten-Registry der GPU-instanzierten Klein-
     // Vegetation. Die VIER worldFieldAt-Felder werden hier zu FÜNF Biom-Stimmen
@@ -25475,9 +25444,7 @@ class AnazhRealm {
         const kapseln = wm && wm.kapselCache ? wm.kapselCache.size : null;
         const gesetzB = wm ? wm.gesetzBloecke : null;
         const gesetzP = wm ? wm.gesetzPlaetze : null;
-        const posS = pos
-            ? `${Math.round(pos.x)}/${Math.round(pos.y)}/${Math.round(pos.z)}`
-            : "?/?/?";
+        const posS = pos ? `${Math.round(pos.x)}/${Math.round(pos.y)}/${Math.round(pos.z)}` : "?/?/?";
         const pflicht = [dc, tris, belegt, bricks, kapseln];
         const ok = pflicht.every((x) => typeof x === "number" && Number.isFinite(x));
         const head = ok ? "E OK" : "E ROT";
@@ -25519,12 +25486,7 @@ class AnazhRealm {
         if (!core || typeof core.messen !== "function" || !core.PRESETS) return null;
         const keys = Object.keys(core.PRESETS).slice(0, 3);
         const parts = [];
-        const fmt = (x) =>
-            typeof x === "number" && Number.isFinite(x)
-                ? x.toFixed(2)
-                : x == null
-                  ? "?"
-                  : String(x);
+        const fmt = (x) => (typeof x === "number" && Number.isFinite(x) ? x.toFixed(2) : x == null ? "?" : String(x));
         for (const k of keys) {
             try {
                 const pre = core.PRESETS[k];
@@ -26372,8 +26334,7 @@ class AnazhRealm {
             // Exact/nahe: nicht „Meintest du X?" wenn X schon getippt war —
             // unsichtbare Zeichen oder 1-Tippfehler → Suggestion ausführen.
             // Suffix-Müll (Sonde: „baue dorf hierblwv") und 1-Tippfehler → ausführen
-            const suffixJunk =
-                norm.startsWith(sug) && /^[a-zäöüß0-9]{1,8}$/i.test(norm.slice(sug.length));
+            const suffixJunk = norm.startsWith(sug) && /^[a-zäöüß0-9]{1,8}$/i.test(norm.slice(sug.length));
             if (norm === sug || this.levenshtein(norm, sug) <= 1 || suffixJunk) {
                 if (this._chatTryDslParse(suggestion, { value: "" }, appendChatOutput)) return;
                 for (const p of this.chatSystemPatterns) {
@@ -33007,7 +32968,8 @@ class AnazhRealm {
                 const _tuft = _T.smoothstep(
                     _T.float(0.3),
                     _T.float(0.62),
-                    _T.mx_noise_float(_T.vec3(_bX.mul(_T.float(2.7)), _bZ.mul(_T.float(2.7)), _T.float(11.0)))
+                    _T
+                        .mx_noise_float(_T.vec3(_bX.mul(_T.float(2.7)), _bZ.mul(_T.float(2.7)), _T.float(11.0)))
                         .mul(0.5)
                         .add(0.5)
                 );
@@ -33017,7 +32979,10 @@ class AnazhRealm {
                     const _li = 1.0 - _s / 8.0; // Schicht von oben (1.0) nach unten (0.125)
                     const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
                     const _pz = wp.z.add(_wanderZ.mul(_T.float(_s / 8.0)));
-                    const _hN = _T.mx_noise_float(_T.vec3(_px.mul(_f), _pz.mul(_f), _T.float(11.0))).mul(0.5).add(0.5);
+                    const _hN = _T
+                        .mx_noise_float(_T.vec3(_px.mul(_f), _pz.mul(_f), _T.float(11.0)))
+                        .mul(0.5)
+                        .add(0.5);
                     // Remap an die echte Noise-Verteilung: unter 0.36 = Lücke (0), über
                     // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
                     const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(_tuft);
@@ -37541,211 +37506,10 @@ class AnazhRealm {
         return mat;
     }
 
-    // V9.22 — Instanced-Gras auf einem Voxel-Chunk. Spiegelt `_buildChunkGrass`
-    // V11.0-a (Pool-Foundation) — gibt ein InstancedMesh aus dem Pool ODER
-    // allokiert neu wenn leer. Foundation-Phase: noch nicht im Build-Pfad
-    // verdrahtet (V11.0-b liefert die Verdrahtung). Hier nur die saubere
-    // API + Test-Hook. Voraussetzung: `_grassConeGeometry` und
-    // `_grassInstanceMat()` sind lazy initialisiert (passiert beim ersten
-    // Build-Pfad-Aufruf, also in der typischen Welt-Lifetime sicher da).
-    // Defensive: wenn Geometry/Material noch nicht initialisiert, returnt
-    // null — der Aufrufer fällt auf den klassischen `new InstancedMesh`-
-    // Pfad zurück (V10.0-j.j-Pattern).
-    _acquireGrassMesh() {
-        if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
-        const pool = this.state._grassMeshPool;
-        const GRASS_MAX_BLADES = AnazhRealm.GRASS_MAX_BLADES; // V18.390 Eins W5 — die EINE Cap-Quelle (Memory-Wand, pool-sicher by construction; der Regler ist der Look-Deckel, nicht der Cap).
-        if (pool.length > 0) {
-            const mesh = pool.pop();
-            mesh.visible = true;
-            mesh.count = 0; // Caller wird via setMatrixAt + count neu beschreiben
-            // V12.0-d — ECHTES Pool-Recycling auf r184. Der
-            // V11.0-d.fix.gras-2-Workaround („frischer instanceMatrix-Buffer
-            // pro acquire", 16 KB/acquire) ist obsolet: r184's Bind-Group-
-            // Layout-Cache + writeBuffer-on-needsUpdate-Disziplin heilen den
-            // v160-stale-Buffer-Cache strukturell. Mesh wird mit existierendem
-            // instanceMatrix-Buffer recycled, Caller setzt
-            // `instanceMatrix.needsUpdate = true` nach setMatrixAt-Loop —
-            // Three.js triggert writeBuffer ein einziges Mal pro Chunk-Build.
-            return mesh;
-        }
-        // Pool leer — neue Instanz allokieren. Voraussetzungen prüfen.
-        if (!this.state._grassConeGeometry || typeof this._grassInstanceMat !== "function") {
-            return null;
-        }
-        const mat = this._grassInstanceMat();
-        if (!mat) return null;
-        const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, mat, GRASS_MAX_BLADES);
-        // Three.js' InstancedMesh-Constructor defaultet count=maxCount → wir
-        // setzen explizit auf 0 (Caller wird via setMatrixAt + count neu
-        // beschreiben). Visible-Default ist true — passt zur acquire-Semantik.
-        inst.count = 0;
-        inst.castShadow = false;
-        inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
-        inst.layers.enable(AnazhRealm.FOLIAGE_LAYER); // Subsystem 5: Gras ist Laub → eigene Layer (Layer 0 bleibt)
-        return inst;
-    }
-
-    // V11.0-a — gibt ein InstancedMesh zurück an den Pool. Pool-Cap-Disziplin:
-    // wenn ≥ GRASS_POOL_CAP, ältestes Mesh (FIFO am Anfang) wird ECHT
-    // disposed (geometry NICHT — die ist Singleton, geteilt zwischen allen
-    // Pool-Meshes — nur die instanceMatrix-Buffer des verworfenen Mesh werden
-    // freigegeben). Der Spieler-bei-Welt-Reise-Snowball ist damit bounded.
-    _releaseGrassMesh(mesh) {
-        if (!mesh) return;
-        if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
-        const pool = this.state._grassMeshPool;
-        this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
-        mesh.visible = false;
-        mesh.count = 0;
-        const cap = AnazhRealm.GRASS_POOL_CAP;
-        if (pool.length >= cap) {
-            // LRU-Discard: ältestes Mesh raus, echtes dispose des Instance-
-            // Buffers (geometry bleibt, Singleton). instanceMatrix.array ist
-            // ein typedarray pro Mesh — wird mit dem Mesh garbagecollected
-            // wenn keine Refs mehr. Three.js' InstancedMesh hat keinen
-            // dedizierten dispose() für instanceMatrix; das Mesh-Objekt
-            // selbst freizugeben reicht. Material ist Singleton (V9.84
-            // Perf-1.a) — nicht disposen.
-            const oldest = pool.shift();
-            if (oldest && oldest.instanceMatrix && typeof oldest.instanceMatrix.array !== "undefined") {
-                // Defensive: explizit Array-Ref killen damit GC schneller frei wird.
-                oldest.instanceMatrix.array = null;
-            }
-        }
-        pool.push(mesh);
-    }
-
-    // V11.0-a — räumt den Pool vollständig (echtes dispose aller Meshes +
-    // Instance-Buffer-Freigabe). DEFINIERT + test-bewacht (Leak-Test maxPoolSize=1),
-    // aber im Produktions-Pfad NICHT verdrahtet (0 Aufrufe, V18-Audit): der Welt-
-    // Wechsel ist reload-basiert → der Browser räumt den GPU-Heap eh auf. Der Drain
-    // wartet auf den Tag, an dem Welt-Wechsel nicht-reload wird (Leak-Schutz-Saat).
-    // Geometry-Singleton bleibt (von außen geteilt, eigene Cleanup-Disziplin).
-    _drainGrassMeshPool() {
-        // Pool lazy initialisieren falls noch nicht da — semantisch „leer"
-        // bleibt true. Test-deterministisch + sicher gegen frühen Aufruf.
-        if (!this.state._grassMeshPool) {
-            this.state._grassMeshPool = [];
-            return;
-        }
-        const pool = this.state._grassMeshPool;
-        for (const mesh of pool) {
-            this._archBundleSceneRemove(mesh); // Bundle-Parent-bewusst
-            if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
-                mesh.instanceMatrix.array = null;
-            }
-        }
-        pool.length = 0;
-    }
-
-    // DER GRAS-SCHNITT (08.07., Schöpfer „zum hundertsten Mal: nicht dieselben Gräser — vollende
-    // es"): der Halm ist das ECHTE Studio-Asset. `buildInstance('gras', 1, 2)` — DIESELBE Quelle
-    // + Stufe, die das Studio als Wald-Teppich streut (SCALE 0.24 aus der LIVE-placement-Quelle,
-    // dem Nervensystem V18.419) — wird zur Instanz-Geometrie des Gras-Systems; Platzierung/Wind/
-    // Pool/Regler bleiben AnazhRealms. Der Material-Vertrag wird ERFÜLLT, nicht umgangen (WebGPU-
-    // strikt): aSeed wird aus den gebackenen Vertex-Farben abgeleitet (die Vorlage markiert
-    // Rispen-Grannen mit seedTan 0xc8b27a → r>g; Halm-Grün → g>r), die Höhen-Referenz reist als
-    // uBladeH-Uniform (localMaxY der skalierten Studio-Geometrie). Rückgabe: Geometrie | null
-    // (Asset lädt — der Aufrufer deferiert die Zelle) | false (Foundry kann gras nicht → Alt-Pfad).
-    // LOD-WURZEL (08.07.): die Wiese ist ZWEISTUFIG wie im Studio (kindStages.grass —
-    // nah die reiche Stufe, fern die halm-/breiten-kompensierte billige); `stageLod`
-    // wählt die Stufe (Default = die ferne 2, das alte Verhalten). Memo pro Stufe.
-    _grassKindStages() {
-        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-        const s =
-            L && L.kindStages && Array.isArray(L.kindStages.grass) && L.kindStages.grass.length
-                ? L.kindStages.grass
-                : null;
-        return s || [2];
-    }
-    _grassStudioGeometry(stageLod) {
-        const stage = Number.isFinite(stageLod) ? stageLod | 0 : 2;
-        if (!this._grassStudioGeoByStage) this._grassStudioGeoByStage = {};
-        const memo = this._grassStudioGeoByStage[stage];
-        if (memo !== undefined && memo !== null) return memo;
-        if (typeof THREE === "undefined") return null;
-        const st = this.state;
-        const season = "summer"; // die FORM ist saison-stabil; die Saison atmet live über uSeasonMul
-        const gkey = "gras|1|" + stage + "|" + season;
-        const group = this._foundryCacheGet(gkey);
-        if (group === undefined) {
-            const f = this._ensureAssetFoundry();
-            // N7.4 — 3-wertiger Vertrag (null=lädt · "leer"=bewusst gras-los · Geometrie):
-            // der Aufrufer ist Studio-gegated; fällt ensure dennoch aus, ist die ehrliche
-            // Antwort "leer" (kein false-Tuft-Pfad mehr — der Tuft ist geschnitten).
-            if (!f) return "leer";
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(gkey)) {
-                f.requested.add(gkey);
-                this._foundryRequest("gras", 1, stage, season).then((meshes) => {
-                    if (meshes)
-                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: stage, preset: "gras" }));
-                    else f.requested.delete(gkey); // Timeout: nachfragbar bleiben
-                });
-            }
-            return null; // lädt — die Zelle wartet (pendingGrass)
-        }
-        // W6 (Paritäts-Vollendung, die V18.380-has-vs-null-Klasse): eine RESOLVED-LEERE
-        // Studio-Antwort ist KEIN Miss — sie heißt „das Studio sagt bewusst LEER" → "leer"
-        // (der Aufrufer verbucht die Zelle als gras-los). N7.4: der alte false-Zweig (Tuft-
-        // Alt-Pfad) ist mit dem Tuft geschnitten; alle Aufrufer sind Studio-gegated → das
-        // Verdikt ist bedingungslos "leer" (memo-stabil, die bewusste Studio-Antwort).
-        if (!group || !group.children || !group.children.length) {
-            this._grassStudioGeoByStage[stage] = "leer";
-            return "leer";
-        }
-        // Kinder mergen (position/normal/color; non-indexed expandieren) + Welt-Skala backen.
-        const k = this._foundryWorldScaleMatrix("gras").elements[0];
-        const pos = [];
-        const nrm = [];
-        const col = [];
-        for (const ch of group.children) {
-            const g = ch.geometry;
-            if (!g || !g.attributes || !g.attributes.position) continue;
-            const p = g.attributes.position;
-            const n = g.attributes.normal;
-            const c = g.attributes.color;
-            const idx = g.index;
-            const push = (vi) => {
-                pos.push(p.getX(vi) * k, p.getY(vi) * k, p.getZ(vi) * k);
-                nrm.push(n ? n.getX(vi) : 0, n ? n.getY(vi) : 1, n ? n.getZ(vi) : 0);
-                col.push(c ? c.getX(vi) : 0.3, c ? c.getY(vi) : 0.6, c ? c.getZ(vi) : 0.2);
-            };
-            if (idx) for (let i = 0; i < idx.count; i++) push(idx.getX(i));
-            else for (let i = 0; i < p.count; i++) push(i);
-        }
-        if (!pos.length) {
-            // W6/N7.4 — dieselbe Resolved-Leer-Wand nach dem Merge: bedingungslos „leer"
-            // (wie die erste Wand oben — der false-Tuft-Zweig ist mit dem Tuft geschnitten).
-            this._grassStudioGeoByStage[stage] = "leer";
-            return "leer";
-        }
-        // aSeed aus den gebackenen Farben (seedTan r>g = Granne · Grün g>r = Halm) + Höhe messen.
-        const vc = pos.length / 3;
-        const seeds = new Float32Array(vc);
-        let maxY = 0.01;
-        for (let i = 0; i < vc; i++) {
-            seeds[i] = col[i * 3] > col[i * 3 + 1] ? 1 : 0;
-            const y = pos[i * 3 + 1];
-            if (y > maxY) maxY = y;
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
-        geo.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
-        geo.computeBoundingSphere();
-        geo.userData = { foundryGras: true, localMaxY: +maxY.toFixed(4), vertCount: vc, foundryStage: stage };
-        // uBladeH ist EIN geteiltes Material-Uniform über beide Stufen → das MAXIMUM
-        // trägt (die Stufen kompensieren Breite/Anzahl, die Halm-Höhe ist ~gleich).
-        this._grassStudioMaxY = Math.max(this._grassStudioMaxY || 0, maxY);
-        const wu = st.windUniforms;
-        if (wu && wu.uBladeH) wu.uBladeH.value = this._grassStudioMaxY;
-        this._grassStudioGeoByStage[stage] = geo;
-        return geo;
-    }
-
-    // voxel-basierte Welt grünt damit wie eine Heightfield-Welt.
+    // DIE WIESE IST BODEN-FUNKTION (21.07.): jede Gras-Zelle wird bewusst gras-los
+    // verbucht (null), die Halme zeichnet die Parallax-Funktion im Terrain-Albedo.
+    // V18.492: der Rest der Halm-Maschinerie (Mesh-Pool, Studio-Gras-Geometrie,
+    // Stufen-Tick) ist physisch geschnitten — ganz oder gar nicht.
     _buildVoxelChunkGrass(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return;
         if (!this.state.voxelChunkGrass) this.state.voxelChunkGrass = new Map();
@@ -37765,21 +37529,7 @@ class AnazhRealm {
     _disposeVoxelChunkGrass(key) {
         if (this.state.voxelChunkGrassLod) this.state.voxelChunkGrassLod.delete(key);
         if (!this.state.voxelChunkGrass) return;
-        const grass = this.state.voxelChunkGrass.get(key);
-        if (grass) {
-            // V12.0-d — Pool-Recycling auf r184. `_releaseGrassMesh` macht
-            // scene.remove + push in den Pool (mit CAP=32-LRU-Disziplin).
-            // V10.0-j.j-Memory-Trade (Geometry nicht disposed, ~500 KB GPU-
-            // Heap pro Welt-Lebensdauer) ist obsolet — Geometry ist
-            // Singleton (`_grassConeGeometry`, geteilt zwischen allen Pool-
-            // Meshes), instanceMatrix wird beim nächsten acquire wieder-
-            // beschrieben. r184's Bind-Group-Layout-Cache + compileAsync-
-            // non-blocking heilen den v160-InstancedMesh-Re-Use-Bug
-            // strukturell (V11.0-d.fix.gras-Bogen-Lehre angewandt).
-            this._releaseGrassMesh(grass);
-        }
         this.state.voxelChunkGrass.delete(key);
-        if (this.state.voxelChunkGrassStage) this.state.voxelChunkGrassStage.delete(key);
     }
 
     // ===================================================================
@@ -38204,8 +37954,8 @@ class AnazhRealm {
         pool.push(mesh);
     }
 
-    // Analog _drainGrassMeshPool: definiert + test-bewacht, im Produktions-Pfad nicht
-    // verdrahtet (Reload räumt auf → Leak-Schutz-Saat, V18-Audit).
+    // Definiert + test-bewacht, im Produktions-Pfad nicht verdrahtet (Reload räumt
+    // auf → Leak-Schutz-Saat, V18-Audit).
     _drainScatterMeshPools() {
         if (!this.state._scatterMeshPools) {
             this.state._scatterMeshPools = new Map();
@@ -40896,7 +40646,15 @@ class AnazhRealm {
         }
         let defs = kapselFn();
         if (defs && !Array.isArray(defs)) defs = [defs];
-        defs = (defs || []).filter((d2) => d2 && ((d2.box || d2.ellipsoid || d2.prism) ? d2.c && d2.h : d2.cone ? d2.a && d2.b && Number.isFinite(d2.r0) && Number.isFinite(d2.r1) : d2.a && d2.b && Number.isFinite(d2.r)));
+        defs = (defs || []).filter(
+            (d2) =>
+                d2 &&
+                (d2.box || d2.ellipsoid || d2.prism
+                    ? d2.c && d2.h
+                    : d2.cone
+                      ? d2.a && d2.b && Number.isFinite(d2.r0) && Number.isFinite(d2.r1)
+                      : d2.a && d2.b && Number.isFinite(d2.r))
+        );
         if (!defs.length) return null;
         const W = AnazhRealm.WELT_MARCH;
         const seg = wm.freiKapselSeg.get(defs.length);
@@ -40905,7 +40663,10 @@ class AnazhRealm {
             if (wm.kapselCursor + defs.length > W.kapseln) {
                 if (!this._weltKapselnVollWarn) {
                     this._weltKapselnVollWarn = true;
-                    this.log("KAPSEL-LISTE ERSCHÖPFT: kein Platz für einen Analog-Satz — das Feld FEHLT sichtbar", "WARN");
+                    this.log(
+                        "KAPSEL-LISTE ERSCHÖPFT: kein Platz für einen Analog-Satz — das Feld FEHLT sichtbar",
+                        "WARN"
+                    );
                 }
                 return null;
             }
@@ -41024,8 +40785,7 @@ class AnazhRealm {
         if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt()) return null; // Fit-Takt (Cache-Treffer sind frei)
         const satz = this._weltKapselHolen(key, () => {
             const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
-            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2)
-                return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
+            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
             return this._baumKapselFit(bf);
         });
         if (!satz) return null;
@@ -53090,8 +52850,7 @@ class AnazhRealm {
         const po = this._portalOverlay;
         const entryId = po && po.entryId != null ? po.entryId : null;
         const world = po && po.world ? po.world : null;
-        const now =
-            (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
         this._disposePortalOverlay();
         // Tasten-Zustand verwerfen: ein keyup kann im iframe gelandet sein,
         // sonst liefe der Avatar nach der Heimkehr von selbst weiter.
@@ -53108,9 +52867,15 @@ class AnazhRealm {
             }
         }
         // Steuer-Kontinuum: Pointer-Lock zurück auf Host-Canvas (enter löste ihn).
+        // requestPointerLock liefert ein PROMISE — seine Ablehnung (schon gelockt,
+        // keine Geste) fängt try/catch nicht; ungefangen wäre sie ein Seiten-Fehler.
         try {
             const canvas = this.state && this.state.renderer && this.state.renderer.domElement;
-            if (canvas && typeof canvas.requestPointerLock === "function") canvas.requestPointerLock();
+            const gelockt = typeof document !== "undefined" && document.pointerLockElement === canvas;
+            if (canvas && !gelockt && typeof canvas.requestPointerLock === "function") {
+                const p = canvas.requestPointerLock();
+                if (p && typeof p.catch === "function") p.catch(() => {});
+            }
         } catch (_e) {
             /* Gesture/Policy — Heimkehr bleibt auch ohne Lock gültig */
         }
@@ -54995,7 +54760,7 @@ class AnazhRealm {
                     rec.u.nebelAct.value =
                         pcN && typeof pcN.nebelAct === "function"
                             ? pcN.nebelAct(mu.fog, act)
-                            : (Number.isFinite(mu.fog) ? mu.fog : (N.fogDefault || 0.85)) *
+                            : (Number.isFinite(mu.fog) ? mu.fog : N.fogDefault || 0.85) *
                               ((N.actBase || 0.7) + (N.actOpen || 0.35) * act);
                 }
                 rec.nebel.visible = act > 0.001;
@@ -55087,8 +54852,7 @@ class AnazhRealm {
         li.intensity =
             PC && typeof PC.glutIntensity === "function"
                 ? PC.glutIntensity(rec._act, pulse)
-                : ((G.i0 || 0.3) + rec._act * (G.iOpen || 3.4)) *
-                  ((G.pulseBase || 0.8) + (G.pulseAmp || 0.28) * pulse);
+                : ((G.i0 || 0.3) + rec._act * (G.iOpen || 3.4)) * ((G.pulseBase || 0.8) + (G.pulseAmp || 0.28) * pulse);
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
@@ -55307,23 +55071,21 @@ class AnazhRealm {
             }
             return;
         }
+        // Das Rauch-Gesetz wohnt im fachwerk-Gesetzbuch (EINE Quelle für Lab
+        // und Welt) — fail-closed wie jeder Kern-Leser, kein Literal-Zwilling.
         const G =
-            (typeof self !== "undefined" && self.__fachwerkCore && self.__fachwerkCore.RAUCH_GESETZ) ||
-            (typeof globalThis !== "undefined" &&
-                globalThis.__fachwerkCore &&
-                globalThis.__fachwerkCore.RAUCH_GESETZ) ||
-            null;
-        const maxT = (G && G.maxTeilchen) || 26;
-        const chance = (G && G.spawnChance) || 0.3;
-        const vyBase = (G && G.vyBase) || 0.014;
-        const vyRange = (G && G.vyRange) || 0.012;
-        const dxSpread = (G && G.dxSpread) || 0.006;
-        const fade = (G && G.fade) || 0.0035;
-        const a0 = (G && G.a0) || 0.55;
-        const aKill = (G && G.aKill) || 0.03;
-        const size = (G && G.size) || 0.34;
-        const color = (G && G.color) || 0xb9bec6;
-        const scaleMul = (G && G.scaleMul) || 1.006;
+            AnazhRealm.Gesetz("fachwerk:RAUCH_GESETZ", null) || AnazhRealm._kernPflichtBruch("fachwerk:RAUCH_GESETZ");
+        const maxT = G.maxTeilchen;
+        const chance = G.spawnChance;
+        const vyBase = G.vyBase;
+        const vyRange = G.vyRange;
+        const dxSpread = G.dxSpread;
+        const fade = G.fade;
+        const a0 = G.a0;
+        const aKill = G.aKill;
+        const size = G.size;
+        const color = G.color;
+        const scaleMul = G.scaleMul;
         // Lab-Feel: pro Frame, nicht dt-skaliert (Parity worlds/fachwerk frame).
         if (dr.teilchen.length < maxT && Math.random() < chance) {
             const qq = quellen[(Math.random() * quellen.length) | 0];
@@ -59832,9 +59594,6 @@ class AnazhRealm {
         // N7.4 — der Gras-Thin-Tick (V18.363) ist GESCHNITTEN: die Wiese ist Studio-definiert
         // und dünnt NIE (V18.422-Gesetz, jetzt bedingungslos — die Kapazität atmet über
         // Ring/LOD/Schatten; der Streu-Thin `_tickFoliageThin` oben bleibt der lebende Hebel).
-        // LOD-WURZEL (08.07.) — die zweistufige Studio-Wiese folgt der Bewegung (ein
-        // falsch-stufiger Chunk pro Idle-Tick, das Thin-Muster; Studio-Regime-only).
-        this._tickGrassStage();
         // V18.350 — DER BÄCKER PLANT VORAUS: solange der Spieler steht (dieser Idle-Pass feuert nur, wenn
         // das Chunk-Streaming nichts baut), warm die Merge-Cache der Hotbar-Baupläne → Auswahl/Ghost/
         // Platzieren ohne Hänger. Budgetiert (eins/Tick, nur unter Budget).
@@ -59898,50 +59657,6 @@ class AnazhRealm {
         const { regX, regZ } = bestReg;
         this._disposeScatterRegion(bestKey);
         this._scatterRegion(regX, regZ, playerPos); // baut bei der AKTUELLEN (geringeren) Dichte
-        return 1;
-    }
-
-    // LOD-WURZEL (08.07.) — die ZWEISTUFIGE Studio-Wiese FOLGT der Bewegung: der Spieler-
-    // Nahring (chebyshev ≤1 Chunk) trägt die reiche Stufe (kindStages.grass[0]), die Ferne
-    // die halm-/breiten-kompensierte (letzte). Wandert der Spieler, baut EIN falsch-stufiger
-    // Chunk pro Idle-Tick neu (budgetiert, nur in den Lücken, nächster zuerst). Einstufige
-    // Daten/kein Config → No-op (byte-alt). Der Regime-Read ist seit N7.4 eine ECHTE WAND:
-    // ohne Studio verbucht `_buildVoxelChunkGrass` die Zelle gras-los (der Tuft ist
-    // geschnitten) — liefe der Stage-Tick in einem Hook-Fenster, würde das Nachbauen
-    // Studio-Gras ZERSTÖREN (set null). Die Wand hält den Tick strikt Studio-only.
-    _tickGrassStage() {
-        const st = this.state;
-        if (st._frameOverBudget) return 0;
-        if (!(typeof this._foundryEnabled === "function" && this._foundryEnabled())) return 0;
-        const stages = this._grassKindStages();
-        if (stages.length < 2) return 0;
-        const map = st.voxelChunkGrass;
-        const stageMap = st.voxelChunkGrassStage;
-        const pc = st.lastPlayerVoxelChunk;
-        if (!map || !stageMap || !stageMap.size || !pc) return 0;
-        const nearStage = stages[0];
-        const farStage = stages[stages.length - 1];
-        let bestKey = null,
-            bestD = Infinity;
-        for (const [key, built] of stageMap) {
-            if (!map.has(key) || !map.get(key)) continue; // null = kein Gras in diesem Chunk
-            const comma = key.indexOf(",");
-            const cx = parseInt(key.slice(0, comma), 10);
-            const cz = parseInt(key.slice(comma + 1), 10);
-            const cheb = Math.max(Math.abs(cx - pc.cx), Math.abs(cz - pc.cz));
-            const want = cheb <= 1 ? nearStage : farStage;
-            if (want === built) continue;
-            if (cheb < bestD) {
-                bestD = cheb;
-                bestKey = key;
-            }
-        }
-        if (bestKey === null) return 0;
-        const comma = bestKey.indexOf(",");
-        const cx = parseInt(bestKey.slice(0, comma), 10);
-        const cz = parseInt(bestKey.slice(comma + 1), 10);
-        this._disposeVoxelChunkGrass(bestKey);
-        this._buildVoxelChunkGrass(cx, cz); // baut bei der AKTUELLEN Soll-Stufe
         return 1;
     }
 
@@ -75187,7 +74902,8 @@ class AnazhRealm {
         }
         return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then((plan) => {
             if (!plan) {
-                const msg = "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).";
+                const msg =
+                    "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).";
                 this.log(msg, "ERROR");
                 this._chatEcho?.(msg);
                 return null;
@@ -76084,6 +75800,20 @@ class AnazhRealm {
     // (der Studio-Reply ersetzt den Rahmen, RAHMEN-EINHEIT). `_ensureImpostorAtlas` (die EINE
     // Impostor-Quelle) baut Record + Fallback + reiht den Bake ein. Headless/Null-Renderer →
     // der Silhouetten-Fallback bleibt (gate-treu, kein Bake enqueued).
+    // DIE STUFEN-KLAMMER JE ART (die Studio-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`):
+    // die größte deklarierte Stufe ≤ dem Wunsch, sonst die kleinste. Ohne Deklaration bleibt
+    // der Wunsch (byte-alt). Dasselbe Gesetz wie die Distanz-Klammer in _foundryFlattenFor.
+    _foundryDeclaredStage(preset, wish) {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[preset] : null;
+        const cfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const st = rec && cfg && cfg.kindStages ? cfg.kindStages[rec.kind] : null;
+        if (!Array.isArray(st) || !st.length) return wish;
+        let sv = st[0];
+        for (let i = 0; i < st.length; i++) if (st[i] <= wish) sv = st[i];
+        return sv;
+    }
+
     _foundryEnsureImpostorRecord(preset, variant, season, ov) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seinen eigenen Record:
@@ -76097,7 +75827,11 @@ class AnazhRealm {
         if (typeof THREE === "undefined" || typeof document === "undefined") return null;
         // Die LOD1-Geometrie ist das Bake-Subjekt — aus dem Foundry-Cache (dieselbe Quelle wie der
         // nahe Foundry-Baum). Fehlt sie, EINMAL anfordern; der nächste Tick findet sie gecacht.
-        const gkey = preset + "|" + variant + "|1|" + (season || "summer") + ovH;
+        // V18.492 — die STUFEN-WAHRHEIT JE ART gilt auch dem Bake-Subjekt: eine Art, die das
+        // Studio einstufig deklariert (Tor: gate=[0]), bäckt aus IHRER Stufe — nie eine L1, die
+        // der Kern nicht vorsieht (gate:nervensystem-porta F; Bäume [0,1,2] bleiben byte-alt L1).
+        const bakeLod = this._foundryDeclaredStage(preset, 1);
+        const gkey = preset + "|" + variant + "|" + bakeLod + "|" + (season || "summer") + ovH;
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
             const f = this._ensureAssetFoundry();
@@ -76105,9 +75839,9 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(gkey)) {
                 f.requested.add(gkey);
-                this._foundryRequest(preset, variant, 1, season || "summer", ov || undefined).then((meshes) => {
+                this._foundryRequest(preset, variant, bakeLod, season || "summer", ov || undefined).then((meshes) => {
                     if (meshes) {
-                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: 1, preset }));
+                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: bakeLod, preset }));
                         this._scatterRefillPending = true;
                         // DER SELBST-MATERIALISIERENDE RECORD (08.07., GEMESSEN: nach dem Prefetch
                         // standen 0 Records — der erste ensure-Aufruf postet nur die Anfrage; erst
@@ -76655,9 +76389,10 @@ class AnazhRealm {
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
         const wm = this._weltMarchEnsure();
-        const ov = entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
-            ? entry.studioOv
-            : null;
+        const ov =
+            entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
+                ? entry.studioOv
+                : null;
         const ovH = ov ? `:ov:${this._studioOvHash(ov)}` : "";
         const key = `aarch:${entry.type}:${entry._lodVariantIndex || 0}${ovH}`;
         if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
@@ -76706,9 +76441,10 @@ class AnazhRealm {
     _archFachwerkFit(entry) {
         if (!entry || typeof THREE === "undefined") return null;
         const typ = entry.type || "";
-        const ov = entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
-            ? entry.studioOv
-            : null;
+        const ov =
+            entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
+                ? entry.studioOv
+                : null;
         if (!(typ.startsWith("haus_") || ov)) return null;
         const n = (v, d) => {
             const x = Number(v);
@@ -76732,7 +76468,12 @@ class AnazhRealm {
         const winW = clamp(n(ov && ov.winW, 1.0), 0.5, 1.8);
         const winH = clamp(n(ov && ov.winH, 1.2), 0.6, 1.8);
         const stil = typeof (ov && ov.stil) === "string" ? ov.stil : "alt";
-        const brace = ov && ov.brace != null ? ov.brace : stil === "alt" || stil === "huette" || stil === "stroh" ? "andreas" : "none";
+        const brace =
+            ov && ov.brace != null
+                ? ov.brace
+                : stil === "alt" || stil === "huette" || stil === "stroh"
+                  ? "andreas"
+                  : "none";
         const fachwerk = brace && brace !== "none";
         const hexRgb = (hex, fb) => {
             const h = Number(hex);
@@ -76742,7 +76483,14 @@ class AnazhRealm {
         const col = ov && ov.col && typeof ov.col === "object" ? ov.col : null;
         const cHolz = hexRgb(col && (col.holz != null ? col.holz : col.stamm), { r: 0.35, g: 0.27, b: 0.2 });
         const cGefach = hexRgb(
-            col && (col.gefach != null ? col.gefach : col.putz != null ? col.putz : col.backstein != null ? col.backstein : col.lehm),
+            col &&
+                (col.gefach != null
+                    ? col.gefach
+                    : col.putz != null
+                      ? col.putz
+                      : col.backstein != null
+                        ? col.backstein
+                        : col.lehm),
             stil === "klinker"
                 ? { r: 0.59, g: 0.31, b: 0.24 }
                 : stil === "glas"
@@ -76807,7 +76555,8 @@ class AnazhRealm {
             const py = foundH + ph * 0.5;
             const px = hw - post * 0.5;
             const pz = hd - post * 0.5;
-            for (const sx of [-1, 1]) for (const sz of [-1, 1]) push(sx * px, py, sz * pz, post * 0.5, ph * 0.5, post * 0.5, cHolz, 2);
+            for (const sx of [-1, 1])
+                for (const sz of [-1, 1]) push(sx * px, py, sz * pz, post * 0.5, ph * 0.5, post * 0.5, cHolz, 2);
         }
         for (let li = 0; li < levels.length; li++) {
             const L = levels[li];
@@ -77100,31 +76849,21 @@ class AnazhRealm {
             // Default fachwerk + stil alt/huette/stroh. storeys≥2; Soft-Cap ≤24 Sort
             // (prio 2 — Dorf-Gaube hält gegen winzige Timber; Extras fallen).
             {
-                const wantGaube = ov && ov.gaube != null
-                    ? !!ov.gaube
-                    : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh");
+                const wantGaube =
+                    ov && ov.gaube != null
+                        ? !!ov.gaube
+                        : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh");
                 if (wantGaube && storeys >= 2) {
                     const gW = clamp(W * 0.14, 0.9, 1.35);
                     const gD = clamp(hd * 0.28, 0.5, 0.9);
                     const gH = clamp((ridgeY - eaveY) * 0.42, 0.65, 1.1);
                     const gx = 0;
                     const gz = -hd * 0.4;
-                    const roofAt =
-                        eaveY + (ridgeY - eaveY) * (1 - Math.min(1, Math.abs(gz) / Math.max(0.01, hd)));
+                    const roofAt = eaveY + (ridgeY - eaveY) * (1 - Math.min(1, Math.abs(gz) / Math.max(0.01, hd)));
                     const baseY = roofAt + 0.02;
                     push(gx, baseY + gH * 0.5, gz, gW * 0.5, gH * 0.5, gD * 0.5, cGefach, 2);
                     const pH = Math.max(0.1, gH * 0.2);
-                    pushPrism(
-                        gx,
-                        baseY + gH + pH * 0.5,
-                        gz,
-                        gW * 0.5 + 0.06,
-                        pH,
-                        gD * 0.5 + 0.05,
-                        cZiegel,
-                        2,
-                        false
-                    );
+                    pushPrism(gx, baseY + gH + pH * 0.5, gz, gW * 0.5 + 0.06, pH, gD * 0.5 + 0.05, cZiegel, 2, false);
                 }
             }
         }
@@ -77134,21 +76873,14 @@ class AnazhRealm {
         // 2× prio-2 (solid Annex + Dachplatte) hält Flügel-Silhouette neben
         // Andreas/Gaube; kein 5-Box-Satz (Sockel+3 Wände+Dach) prio-1 mehr.
         {
-            const wantFluegel = ov && ov.fluegel != null
-                ? !!ov.fluegel
-                : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh") && W >= 8;
+            const wantFluegel =
+                ov && ov.fluegel != null
+                    ? !!ov.fluegel
+                    : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh") && W >= 8;
             if (wantFluegel) {
                 let sx = 1;
                 const fs = ov && ov.fluegelSide;
-                if (
-                    fs === -1 ||
-                    fs === "-1" ||
-                    fs === "-" ||
-                    fs === "W" ||
-                    fs === "w" ||
-                    fs === "-x" ||
-                    fs === "left"
-                )
+                if (fs === -1 || fs === "-1" || fs === "-" || fs === "W" || fs === "w" || fs === "-x" || fs === "left")
                     sx = -1;
                 else if (typeof fs === "number" && fs < 0) sx = -1;
                 const fW = clamp(W * 0.32, 2.0, 3.2); // Auskragung entlang x (slim Cap)
@@ -77267,8 +76999,7 @@ class AnazhRealm {
         if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt()) return null; // Fit-Takt (Cache-Treffer sind frei)
         return this._weltKapselSpawn(key, M, () => {
             const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
-            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2)
-                return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
+            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
             return this._baumKapselFit(bf);
         });
     }
@@ -77425,8 +77156,7 @@ class AnazhRealm {
             hz = hx;
             cy = H * 0.78;
         }
-        const leaf =
-            ctype === "cone" ? { r: 0.18, g: 0.32, b: 0.14 } : { r: 0.22, g: 0.38, b: 0.16 };
+        const leaf = ctype === "cone" ? { r: 0.18, g: 0.32, b: 0.14 } : { r: 0.22, g: 0.38, b: 0.16 };
         out.push({
             ellipsoid: true,
             c: new THREE.Vector3(0, cy, 0),
@@ -78251,10 +77981,7 @@ class AnazhRealm {
                                     );
                             })
                             .catch((e) => {
-                                this.log(
-                                    `FOUNDRY WARM: build-asset(${sp}) warf (${e && e.message})`,
-                                    "ERROR"
-                                );
+                                this.log(`FOUNDRY WARM: build-asset(${sp}) warf (${e && e.message})`, "ERROR");
                             })
                     );
                 }
@@ -78265,15 +77992,9 @@ class AnazhRealm {
             const plan = await this._foundryRequestSettlement({ seed: 7, nH: 4 });
             f._settlementWarm = !!(plan && Array.isArray(plan.slots) && plan.slots.length);
             if (!f._settlementWarm) {
-                this.log(
-                    "FOUNDRY WARM: export-settlement Probe LEER — Dorf-Spawn bleibt fail-closed laut",
-                    "ERROR"
-                );
+                this.log("FOUNDRY WARM: export-settlement Probe LEER — Dorf-Spawn bleibt fail-closed laut", "ERROR");
             } else {
-                this.log(
-                    `FOUNDRY WARM: Settlement-Kanal bereit (${plan.slots.length} Probe-Slots)`,
-                    "INFO"
-                );
+                this.log(`FOUNDRY WARM: Settlement-Kanal bereit (${plan.slots.length} Probe-Slots)`, "INFO");
             }
         } catch (e) {
             f._settlementWarm = false;
@@ -82677,8 +82398,7 @@ class AnazhRealm {
         let e = Math.max(0, Math.min(1, (ke * Math.min(2, L)) / Math.max(1, G.keRefJ)));
         if (zoneKind) {
             const scJ = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-            const jm =
-                scJ && typeof scJ.zoneJuiceAt === "function" ? scJ.zoneJuiceAt(zoneKind) : 1.0;
+            const jm = scJ && typeof scJ.zoneJuiceAt === "function" ? scJ.zoneJuiceAt(zoneKind) : 1.0;
             e = Math.max(0.5, Math.min(1.6, e * (Number.isFinite(jm) && jm > 0 ? jm : 1.0)));
             if (creature && creature.userData) creature.userData.lastZoneKind = zoneKind;
         }
@@ -98000,7 +97720,9 @@ class AnazhRealm {
             // re-locken. Sonst würde ein Klick neben das Overlay den
             // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
             if (this.state.inventoryOpen) return;
-            canvas.requestPointerLock();
+            if (document.pointerLockElement === canvas) return;
+            const p = canvas.requestPointerLock();
+            if (p && typeof p.catch === "function") p.catch(() => {}); // Ablehnung (Policy) ist kein Seiten-Fehler
         });
         // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Nur wenn der
         // Pointer-Lock aktiv ist (Spieler ist „im Spiel", nicht im UI) und
@@ -98206,7 +97928,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.491.637";
+AnazhRealm.VERSION = "18.492.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99764,7 +99486,8 @@ AnazhRealm.SCATTER_SLICE_MS = 6;
 // immer zu blocken. Weit über jedem legitimen Bake, aber ENDLICH.
 AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 15000;
 {
-    const _streuEco = (typeof globalThis !== "undefined" && globalThis.__phytoCore && globalThis.__phytoCore.SCATTER_STRATUM) || {};
+    const _streuEco =
+        (typeof globalThis !== "undefined" && globalThis.__phytoCore && globalThis.__phytoCore.SCATTER_STRATUM) || {};
     const _eco = (n, fb) => {
         const s = _streuEco[n];
         return {
@@ -102749,12 +102472,9 @@ AnazhRealm.BACK_LIGHT = Object.freeze({ r: 1.0, g: 0.847, b: 0.627, base: 0.5, d
 // `hi` < rock-`SCATTER.slopeMax`(1.45) → die natürliche Abfolge Wiese → Mischhang → Geröll → Fels:
 // Gras weicht, BEVOR der Fels voll klettert (komplementär auf DERSELBEN `_slopeAt`-Achse). Feel-Knöpfe.
 AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
-// V18.390 — Eins W5 (DIE WIESE): die Gras-Zahlen als EINE Quelle (Gesetz #0). GRASS_MAX_BLADES
-// ist die MEMORY-Wand pro Chunk (Pool-Kapazität), NICHT der Look-Deckel. N7.4: der Tuft-Bauer +
-// GRASS_TUFT_BLADES sind GESCHNITTEN (die Wiese IST das Studio-Asset, dünnt nie — V18.422
-// bedingungslos); die Kapazität atmet über Ring/LOD/Schatten. GRASS_BLADE_H = die lokale
-// Referenz-Halm-Höhe (Material-Gradient-Normalizer; uBladeH-Fallback, wenn kein Studio-Maß da).
-AnazhRealm.GRASS_MAX_BLADES = 3200;
+// GRASS_BLADE_H = die lokale Referenz-Halm-Höhe (Material-Gradient-Normalizer des Wind-
+// Materials, uBladeH-Fallback). V18.492: GRASS_MAX_BLADES/GRASS_POOL_CAP sind mit dem
+// Halm-Mesh-Pool gefallen (die Wiese ist Boden-Funktion, 21.07.).
 AnazhRealm.GRASS_BLADE_H = 0.42;
 // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die Region-Geometrie für das
 // Frustum-Cullen der PLATZIERTEN Architektur. ARCH_REGION_M = _bakeRegionConfig().sizeM (256 m) →

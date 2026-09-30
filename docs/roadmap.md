@@ -5,7 +5,32 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.491.51)
+## §0 · DER TISCH — was offen ist (Stand V18.492)
+
+### §0.v1 · DIE v1.0-ZIELLINIE (gesetzt 30.09.2026 — Schöpfer-Auftrag „vollende")
+
+Die Gesamt-Analyse der git-Historie (1660 + 511 Commits) ergab: das Projekt hatte keine
+Produkt-Ziellinie mehr (die „Erste-5-Minuten-Geste" + der FPS-Boden des Meister-Plans fielen
+mit der Informations-Diät V18.468), und der Kern der Vision — gemeinsam mit der KI erschaffen —
+war aus dem Erlebnis gefallen. v1.0 ist darum KEIN Feature-Katalog, sondern EIN gespielter Pfad:
+
+1. **ANKOMMEN** — Boot bis Kontrolle ≤ 5 s, kein Fall, kein Freeze; der Spieler steht auf Grund.
+2. **LAUFEN + SEHEN** — laufen, springen, umsehen; die Welt trägt Wiese · Wald · Wasser · Ferne.
+3. **BAUEN** — in der Werkstatt einen Bauplan wählen/formen und platzieren (≤ 3 Klicks).
+4. **MIT DER KI ERSCHAFFEN** — der Satz „pflanz mir einen Eichenhain am Wasser" (o. ä.) wird
+   über den Rezept-Katalog der Studios zu echten Foundry-Assets in der Welt (der Co-Schöpfer
+   spricht dieselbe Sprache wie die Werkstatt: `PARAMS_BY_KIND`, kein Parallel-Pfad).
+5. **BENUTZEN / TEILEN** — das Geschaffene benutzen (betreten · fahren · halten) oder als
+   Bauplan teilen.
+
+**Der FPS-Boden:** p95-Frame ≤ 33 ms (≥ 30 FPS) in der Standard-Szene auf dem Schöpfer-Holz,
+gemessen mit dem Flugschreiber-Export (`anazhRealmPerf.json`) — die EINE Zahl, die headless
+nicht beweisbar ist (Render-gebunden), darum der eine Trace, den nur echte Hardware liefert.
+
+**Feature-Stopp bis v1.0:** keine neue Doktrin, kein neuer Bogen, keine Literal-Hebung — nur,
+was einen der fünf Schritte oder den FPS-Boden trägt. Die Frozen-Liste A–E (unten) ist der
+laufende Render-Beweis dazu und bleibt gültig.
+
 
 > **Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md`** (Frozen-Liste, max 5 — vom
 > BETRIEBSGESETZ in CLAUDE.md bewacht, `gate:betriebsgesetz` in `npm run check`). Gesetzt
@@ -293,8 +318,9 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
 - **GPU/Render:** GPU-Density-WGSL → geschnitten (Roundtrip teurer als Worker-CPU; KEIN
   GPU-Compute-Rewrite der load-bearing Pipeline) · Cel/Schatten für WebGPU opfern → Rollback ·
   Geometrie-eps gegen Trapeze → falscher Hebel (Wurzel war die Facetten-Lichtung, `normalNode`) ·
-  „GPU-driven-Culling-Gigant" zur Wand geprobt: existiert nicht (GPU clippt schon; Region-Cull
-  60 % steht; Compute+Indirect high-risk/marginal) — der Render ist nahe-optimal.
+  „GPU-driven-Culling-Gigant" zur Wand geprobt (Juni): damals verworfen — V18.488 dann doch
+  gezielt gebaut (Feld-Cull: Compute-Kompaktierung + indirekte Draws nur für die schwersten
+  Streu-Familien); die Narbe gilt für den Voll-Rewrite, nicht für den gezielten Hebel.
 - **Hydro/Spawn:** Submarine-Biom-Dämpfung → Symptom-Pflaster · Perzentil-waterLevel-Magie →
   Sample-Region ≪ Wellenlänge · Architektur-Optik-Aufwertung entfesselte die Material-Resonanz
   (Optik-Anreicherung MUSS tag-neutral sein, 4 Achsen vorher/nachher messen).
@@ -354,4 +380,7 @@ wieder anfassen** (ein Revert ist ein Signal, dass die Wurzel woanders liegt).
 
 MAJOR ist teuer (ein Zeitalter), MINOR ist die Welle (`V18.469` = die nächste). Pro Welle: ein
 thematischer Commit — **die Commit-Message IST der Chronik-Eintrag** (git log = die Chronik).
+PATCH ist ein Fix INNERHALB einer Welle — nie eine Konstante, nie ein Stempel (September 2026:
+586 Patch-Versionen für Lab-Literal-Hebungen in 2 Sammel-Commits = die Narbe). Alle Träger
+setzt EIN Befehl: `npm run bump -- x.y.z` (`--check` meldet Drift).
 Eine dauerhafte Lehre → eine Zeile in `CLAUDE.md`, nie Epen.

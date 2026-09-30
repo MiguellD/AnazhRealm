@@ -152,12 +152,19 @@ async function runWithWorker(port, cb) {
 // statt Megabytes; sha256 macht einen einzigen abweichenden Byte sicher sichtbar (Kollision
 // astronomisch). Für den exakten Byte-Offset einer Divergenz dient der P0-Paritäts-Harness.
 // mint + gate LESEN diese eine Funktion (kein zweiter Fingerabdruck-Pfad, der driften kann).
+// BEIPACK (studio-vertrag §8.4, must-ignore): Pseudo-Einträge `{ kind: "__…" }` ohne Puffer
+// (`__skelett` der Kreatur, `__baumGrammatik` des Baums) reisen im selben meshes-Array, SIND
+// aber keine Meshes — der Vertrag v1 zählt sie nicht (Leser ohne position-Guard überspringen
+// sie). Hier fallen sie aus dem Fingerabdruck, damit Mint UND Gate dieselbe Regel lesen.
+function istBeipack(m) {
+    return !!m && typeof m.kind === "string" && m.kind.startsWith("__") && !(m.attrs && m.attrs.position);
+}
 function fingerprintMeshes(meshes) {
     const sha = (b64) => {
         const buf = Buffer.from(b64, "base64");
         return { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
     };
-    return (meshes || []).map((m) => {
+    return (meshes || []).filter((m) => !istBeipack(m)).map((m) => {
         const out = { kind: m.kind, mat: m.mat, attrs: {} };
         for (const k of Object.keys(m.attrs || {}))
             out.attrs[k] = Object.assign({ itemSize: m.attrs[k].itemSize }, sha(m.attrs[k].b64));
@@ -166,4 +173,4 @@ function fingerprintMeshes(meshes) {
     });
 }
 
-module.exports = { runWithWorker, fingerprintMeshes, WORKER_SCRIPTS };
+module.exports = { runWithWorker, fingerprintMeshes, istBeipack, WORKER_SCRIPTS };

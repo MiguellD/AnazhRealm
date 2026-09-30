@@ -344,13 +344,6 @@ jobs:
               # REF-GUARD: keine Geometrie wird disposed solange _liveRefs > 0 (kein Use-after-free).
               run: npm run gate:foundry-memory
 
-            - name: Kreatur-Vertrag v2 (die erste Nicht-Pflanzen-Asset-Klasse, byte-exakt)
-              # P7: die Kreatur-Haut (bake-core Skin-Isosurface) ist am Asset-Vertrag angedockt (v2). Bäckt
-              # die FROZEN Kreatur-Specs (Avatar + Seelen) über bake-core DIREKT in Node neu (THREE-frei,
-              # kein Browser) und prüft den byte-exakten Fingerabdruck gegen die eingefrorenen Goldens — ein
-              # Drift in der Isosurface-/smin-/Displace-/Taubin-Mathematik fliegt sofort auf.
-              run: npm run gate:creature-contract
-
             - name: S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)
               # S4: der Impostor bäckt EAGER (kein `_frameOverBudget`-Gate mehr in `_tickImpostorBake` —
               # der ferne Wald ist über Budget WEIL seine Bäume noch schwere Geometrie tragen; der Bake

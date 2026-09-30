@@ -394,7 +394,10 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   (must-ignore) reisen: `mesh.joint` (das animierte Gelenk des Meshes),
   `mat.emissive`/`mat.emissiveIntensity` (nur wenn nicht-schwarz) und EIN
   Pseudo-Eintrag `{ kind: "__skelett", skelett: { joints, tailSegs, masse } }`
-  (Leser ohne position-Guard überspringen ihn; IDB trägt ihn gratis).
+  (Leser ohne position-Guard überspringen ihn; IDB trägt ihn gratis). Dasselbe
+  Beipack-Muster trägt der Baum: `{ kind: "__baumGrammatik", grammatik }` (Ast-
+  Kegel + Kronen-Typ für den Analog-Fit); der Asset-Vertrag v1 zählt Beipack nie
+  als Mesh (`istBeipack`, spec/asset-contract/v1/CONTRACT.md).
   DERSELBE Bäcker läuft im Worker UND auf dem Host-Main-Thread (foundry-core
   ist auf beiden geladen) — ein Gesetz, zwei Scheduler; der Host assembliert
   NUR (Gelenk-Gruppen aus dem Skelett + die EINE Reply-Konversion) und

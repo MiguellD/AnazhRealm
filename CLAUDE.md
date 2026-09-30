@@ -71,43 +71,44 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.491.51 — „ANALOG!": das Gesetz ist der Import, der Schirm digitalisiert)
+## Stand (V18.492.0 — die Ziellinie steht: v1.0 = die ersten fünf Minuten)
 
-**21.07., die Analog-Wende (Schöpfer benannte die Wurzel: Voxel-Bricks = ZWEITE Digitalisierung
-mit eingebackener Frequenz; dann das EINE Wort „analog!"):** vier Klassen in Serie —
-- KREATUREN: Glieder = KAPSEL-GESETZE (Achse+Radius+Farbe, ~32 B statt 128-KB-Brick), Dedup je
-  Gattung×Glied, Matrix-der-Matrix unverändert; Sphere-Tracing im Glied-Raum, Normale = exakter
-  SDF-Gradient. Der Voxel-Glied-Bäcker und die Kreatur-Tier-Leiter fielen GANZ.
-- BÄUME: Kapsel-SÄTZE aus der Geometrie-Stufe des Flats (Stamm + Kronen-Kugeln, 6 je Vorlage,
-  Segment-Allokator für zusammenhängende Sätze); EIN Key je Vorlage — die Import-Stufen starben,
-  der Zellen-LOD-Wechsel trifft denselben Key (Dedup, kein Churn).
-- ARCHITEKTUR: BOX-Sätze (24 je Vorlage — Fachwerk-Balken SIND Boxen im Gesetz); die Box als
-  zweiter Primitiv-Typ derselben Liste (pA.w < 0, Farbe im Negativ gepackt, Achsen-Normale).
-  Oktanten-Maschinerie + klemmBox-Zweig fielen GANZ (netto −37 Zeilen).
-- STREU: der Baum-Gate im Zellen-Chokepoint fiel — JEDE foundry-gemappte Art (Fels·Kristall·
-  Blume·Strauch) geht ab Zellen-LOD 1 die EINE Analog-Bahn; Band 0 (Berührweite, pflückbar)
-  bleibt die feinste Abtaststufe. Kapazität: felder 4096 · Primitive 4096.
-- Der Voxel-Bäcker trägt nur noch REGION-Bricks (Fern-Cache — die legitime Rolle); Fundament
-  der Wende blieb: Seiten-March, Flächen-Splat, gekoppelte Akkumulation, Ton-Klemme, Wiese mit
-  Parallax-Relief (alle heute gebaut, Chronik = git log).
-- GEMESSEN je Klasse: playtest:fast 18/18 · npm run check komplett GRÜN · gate:fern-ring GRÜN
-  (Kapsel- UND Box-Branch kompilieren + zeichnen, echtes WebGPU) · gate:scatter-lod GRÜN ·
-  Sonden 0 Fehler/0 Warns · kapseln.vorlagen 48 geteilt · Baum-Welle weite-dc 229→97 (−58 %).
+**30.09., V18.492 — der Boden wieder fest + eine Ziellinie (aus der Gesamt-Analyse von 2171
+Commits):** das Projekt hatte keine Produkt-Ziellinie mehr, der KI-Co-Schöpfer war aus dem
+Erlebnis gefallen, und die September-Welle (2 „Grok Bot"-Sammel-Commits, V18.491.52–.637) hob
+~800 Lab-Kulissen-Zahlen (Label-Größen, Fenster-Rechtecke, Drum-Parameter) als `*_GESETZ` mit
+stillem Ersatzwert in die Kerne — 0 davon las die Welt, die Frozen-Liste wuchs auf 463 Zeilen
+Stempel, CI war seit 26.07. rot. Geschnitten:
+- Schmiede-, Klang- und Tetrapoda-Labor + Kern auf den Stand vor der Hebung (−7 300 Zeilen);
+  die EINE echte Naht blieb: `klang-core.colorExt` (Akkord-Breite aus der Genre-Farbe, Lab UND
+  Welt lesen sie). Echte Grok-Arbeit im Stamm (Fachwerk-Fit, Grammatik-Fit, Tor-Flügel,
+  Genesis-Ring, Wald-Ökologie in phyto-core) bleibt und ist gate-geprüft.
+- Der Gras-Abschied GANZ: Halm-Mesh-Pool, Studio-Halm-Geometrie, Stufen-Tick (jeden Frame ein
+  No-op) physisch raus, 10 Rückkehr-Namen in `gate:altlasten`; die Tests prüfen die neue
+  Wahrheit (Wiese = Parallax-Funktion im Terrain-Albedo, Pfad/Feuchte über das Boden-Grün).
+- Wände: `npm run bump -- x.y.z` setzt ALLE Versions-Träger; die LOGBUCH-WAND in
+  `gate:betriebsgesetz` (kein „Stand-Stempel:", max 40 Zeilen) — die Liste bleibt eine Liste.
+- Fixes: Pointer-Lock-Promise (ungefangene Ablehnung = Seiten-Fehler), Rauch liest das
+  fachwerk-Gesetz fail-closed, toter CI-Schritt `gate:creature-contract` raus.
+
+**DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
+· in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
+benutzen/teilen — bei p95 ≤ 33 ms auf dem Schöpfer-Holz (Flugschreiber-Trace). Feature-Stopp
+bis dahin.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
-EIN Pass, Seiten-Vortest, zwei Payloads (ANALOG-Primitive: Kapsel+Box · Voxel-Brick nur als
-Region-Fern-Cache) · KREATUREN/BÄUME/ARCHITEKTUR/STREU ≥ Stufe 1 = Analog-Sätze · GRAS =
-Boden-Funktion mit Relief · Stufe 0 = feinste Abtaststufe als echte Geometrie (Anfassen).
-HYBRID (ehrlich): Band-0-Chunk-Klein-Streu (pflückbar) · Deko-/Deck-Impostor-Ringe (~300
-Instanzen) · der Avatar (gebilligt).
+EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
+KREATUREN/BÄUME/ARCHITEKTUR/STREU ≥ Stufe 1 = Analog-Sätze (Baum = 5 Ast-Kegel + 1 Kronen-
+Ellipsoid) · GRAS = Boden-Funktion · Stufe 0 = echte Geometrie (Anfassen). HYBRID (ehrlich):
+Band-0-Klein-Streu · Deko-Impostor-Ringe · der Avatar. UNGEMESSEN: die Analog-Wende auf echter
+GPU (letzter Schöpfer-Trace 14.07.: 4–12 FPS, vor der Wende).
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A/B/C GEBAUT (Bild-Beweise
-ausstehend — die Voll-Analog-Sonde läuft) · D Wiese im Bild (braucht Gras-Zone/Koordinate) ·
-E Beweis-Paket mit Armlängen-Schüssen. Kein Eintrag fällt ohne sein Bild.
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–D Code steht, Bild-Beweise
+offen · E Beweis-Paket (Armlängen-Schüsse + Tris/dc + ein echter GPU-Trace).
 
 ## Architektur (die Karte)
 
-- **Stamm** `anazhRealm.js` (~91k, EINE Klasse, `npm run atlas` = 26 Zonen): Boden (Chunks/Wasser/
+- **Stamm** `anazhRealm.js` (~104k, EINE Klasse, `npm run atlas` = 26 Zonen): Boden (Chunks/Wasser/
   Genese/Ökologie) · Speicher (Snapshot/Taille) · Spieler (Seelen/Bewegung/Werkstatt/Ökonomie) ·
   Anschluss (P2P/Portale) + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
 - **Kerne** (10, cores.manifest.json): reine Daten+Mathe; Vertrag v1.2 = `PARAMS_BY_KIND` + must-ignore

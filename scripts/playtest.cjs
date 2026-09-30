@@ -13953,11 +13953,21 @@ async function checkBandW4LofiPad(ctx) {
         if (prevLofi) fK.recipes.lofi = prevLofi;
         // W-A7-VERTIEFUNG — mit warmem Buch faltet der EINE Mapper in die Studio-
         // Skala (lofi → Blues [0,3,5,6,7,10], 6 Töne: idx 6 = Oktav-Wurzel +12).
+        // V18.492 (der Test wandert mit dem Code): die Akkord-BREITE folgt dem
+        // klang-Gesetz colorExt (Genre-DNA color → None/Tredezime, EINE Quelle
+        // Lab+Welt) — der Grund-Vierklang bleibt [0,5,7,12], die Stapel-Länge
+        // ist 3 + colorExt(dna.color) (warmes LoFi-Buch: color 0.60 → 5 Töne).
+        const _sp = r._klangStudioPreset();
+        const _kc = globalThis.__klangCore;
+        const _chord0 = r._lofiChordFromDegree(0);
+        const _extSoll =
+            _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(_sp && _sp.dna ? _sp.dna.color : 0) : 1;
         out.scaleStudio =
             !prevLofi ||
             (r._lofiScaleSemitone(2) === 5 &&
                 r._lofiScaleSemitone(6) === 12 &&
-                JSON.stringify(r._lofiChordFromDegree(0)) === JSON.stringify([0, 5, 7, 12]));
+                _chord0.length === 3 + _extSoll &&
+                JSON.stringify(_chord0.slice(0, 4)) === JSON.stringify([0, 5, 7, 12]));
         // W4 V3 Phase 3 — der Groove. ZWILLINGS-ABSCHIED 19.07.: das Muster
         // wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER.Swing IST das
         // historische Wirts-Pattern), die Konstanten-Zwillinge
@@ -19629,7 +19639,14 @@ async function checkBandVoxelTerrainCore(ctx) {
                 }
             }
             out.voxelGrassBuilt = grassEntries > 0;
-            out.voxelGrassHasBlades = grassBlades > 0;
+            // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist
+            // BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie
+            // mehr — jede Gras-Zelle bewusst gras-los verbucht (0 Halme) UND die
+            // Halm-Funktion lebt im Boden-Albedo (Konsum-Probe am Chokepoint).
+            out.voxelGrassIsSurface =
+                grassEntries > 0 &&
+                grassBlades === 0 &&
+                /_halmHoch/.test(window.__codeOf(r._terrainGeologyAlbedo));
             // _voxelSurfaceY: liefert eine endliche Höhe, dort ist
             // fester Grund + knapp darüber (Scan-Schritt) Luft.
             const sy = r._voxelSurfaceY(12, -8);
@@ -19942,7 +19959,10 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
         );
         check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
-        check("Voxel V9.22: der Voxel-Chunk-Ring trägt Instanced-Gras-Halme", voxelP2bResults.voxelGrassHasBlades);
+        check(
+            "Voxel V9.22 (V18.492): die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
+            voxelP2bResults.voxelGrassIsSurface
+        );
         check(
             "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
             voxelP2bResults.hasVegSampleSpawn && voxelP2bResults.hasVoxelVegPopulator
@@ -25391,418 +25411,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
             `nach Tick: ${res.taskNameAfterTick}`
         );
     }
-}
-
-// V11.0-a (Mesh-Pool-Pattern Foundation, V10.0-j.j-Bogen-Schluss) — Beweis
-// dass die Pool-API existiert + identity-korrekt arbeitet + Cap-Disziplin
-// hat. Foundation-Welle: API noch nicht im Build/Dispose-Pfad verdrahtet
-// (V11.0-b/c folgen). Test-Band ruft acquire/release direkt.
-async function checkBandWelleV11APoolFoundation(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-
-        // Konstante + API-Existenz.
-        out.cap = r.constructor.GRASS_POOL_CAP;
-        out.acquireExists = typeof r._acquireGrassMesh === "function";
-        out.releaseExists = typeof r._releaseGrassMesh === "function";
-        out.drainExists = typeof r._drainGrassMeshPool === "function";
-
-        // State-Slot existiert oder ist init-able.
-        out.poolFieldDeclared = "_grassMeshPool" in r.state;
-
-        if (!out.acquireExists || !out.releaseExists || !out.drainExists) return out;
-
-        // Vorbedingung: damit _acquireGrassMesh eine echte Instance liefert,
-        // muss state._grassConeGeometry existieren + _grassInstanceMat()
-        // muss ein Material returnen. In der laufenden Welt ist das nach
-        // dem ersten _buildVoxelChunkGrass-Aufruf der Fall (Worldgen
-        // erledigt das im Streaming). Falls noch nicht: defensive null-
-        // Return ist erlaubt + Test markiert das.
-        const geoReady = !!r.state._grassConeGeometry;
-        out.geometryReady = geoReady;
-
-        // Pool sauber starten — alles raus damit der Test deterministisch ist.
-        r._drainGrassMeshPool();
-        out.poolEmptyAfterDrain = Array.isArray(r.state._grassMeshPool) && r.state._grassMeshPool.length === 0;
-
-        if (!geoReady) {
-            // Ohne Geometry returnt acquire null (defensive). Test stoppt hier.
-            const m = r._acquireGrassMesh();
-            out.acquireWhenGeoMissing = m === null;
-            return out;
-        }
-
-        // Acquire 1 — Pool leer, sollte neue Instanz allokieren.
-        const m1 = r._acquireGrassMesh();
-        out.acquire1NotNull = m1 !== null;
-        out.acquire1IsInstanced = m1 && m1.isInstancedMesh === true;
-        out.acquire1Visible = m1 && m1.visible === true;
-        out.acquire1CountZero = m1 && m1.count === 0;
-
-        // Release — Pool sollte 1 Element haben, Mesh nicht in Scene.
-        r._releaseGrassMesh(m1);
-        out.releasedPoolSize = r.state._grassMeshPool.length;
-        out.releasedMeshHidden = m1.visible === false;
-
-        // Acquire 2 — sollte das SELBE Mesh aus dem Pool zurückgeben (Identity).
-        const m2 = r._acquireGrassMesh();
-        out.acquire2IsSameAsM1 = m2 === m1;
-        out.poolEmptyAfterAcquire = r.state._grassMeshPool.length === 0;
-
-        // Cap-Disziplin: CAP + 1 release, Pool-Größe ist ≤ CAP.
-        // Erst Cleanup damit Test deterministisch ist.
-        r._releaseGrassMesh(m2);
-        r._drainGrassMeshPool();
-        const CAP = r.constructor.GRASS_POOL_CAP;
-        const meshes = [];
-        for (let i = 0; i < CAP + 1; i++) {
-            const m = r._acquireGrassMesh();
-            if (m) meshes.push(m);
-        }
-        out.allocatedForCapTest = meshes.length;
-        for (const m of meshes) r._releaseGrassMesh(m);
-        out.poolSizeAfterCapTest = r.state._grassMeshPool.length;
-        out.poolCapEnforced = r.state._grassMeshPool.length <= CAP;
-
-        // Drain räumt alles.
-        r._drainGrassMeshPool();
-        out.poolEmptyAfterFinalDrain = r.state._grassMeshPool.length === 0;
-
-        return out;
-    });
-    if (res.error) {
-        check("Welle V11.0-a: Pool-Foundation-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle V11.0-a: GRASS_POOL_CAP = 48 (V16.1 — Gras-Ring 3×3→5×5)", res.cap === 48);
-    check("Welle V11.0-a: _acquireGrassMesh existiert", res.acquireExists === true);
-    check("Welle V11.0-a: _releaseGrassMesh existiert", res.releaseExists === true);
-    check("Welle V11.0-a: _drainGrassMeshPool existiert", res.drainExists === true);
-    check("Welle V11.0-a: state._grassMeshPool als Slot deklariert", res.poolFieldDeclared === true);
-    check("Welle V11.0-a: _drainGrassMeshPool() leert Pool deterministisch", res.poolEmptyAfterDrain === true);
-    if (!res.geometryReady) {
-        check("Welle V11.0-a: defensive — ohne Geometry returnt acquire null", res.acquireWhenGeoMissing === true);
-        return; // Welt-Variation, kein voller Test
-    }
-    check(
-        "Welle V11.0-a: acquire bei leerem Pool allokiert neue InstancedMesh",
-        res.acquire1NotNull === true && res.acquire1IsInstanced === true
-    );
-    check(
-        "Welle V11.0-a: neue Instanz ist visible=true + count=0",
-        res.acquire1Visible === true && res.acquire1CountZero === true
-    );
-    check("Welle V11.0-a: release pusht in Pool (size=1)", res.releasedPoolSize === 1);
-    check("Welle V11.0-a: released Mesh ist visible=false", res.releasedMeshHidden === true);
-    check(
-        "Welle V11.0-a: acquire nach release returnt SELBE Instance (Pool-Identity)",
-        res.acquire2IsSameAsM1 === true
-    );
-    check("Welle V11.0-a: Pool leer nach Acquire", res.poolEmptyAfterAcquire === true);
-    check(
-        "Welle V11.0-a: Cap-Disziplin — Pool-Größe ≤ GRASS_POOL_CAP nach CAP+1 release",
-        res.poolCapEnforced === true,
-        `poolSize=${res.poolSizeAfterCapTest}, cap=${res.cap}`
-    );
-    check("Welle V11.0-a: _drainGrassMeshPool() leert vollständig (final)", res.poolEmptyAfterFinalDrain === true);
-}
-
-// V11.0-b (Mesh-Pool im Build-Pfad aktiv) — Source-Probe-Beweis dass
-// `_buildVoxelChunkGrass` jetzt `_acquireGrassMesh` ruft statt direkt
-// `new THREE.InstancedMesh`. Plus empirisch: nach Pool-Pre-fill ruft
-// der nächste Build aus dem Pool (Recycle wirkt im Build-Pfad).
-// Der volle despawn+respawn-Identity-Test gehört zu V11.0-c (dort wird
-// der Dispose-Pfad recycle-aware + V10.0-j.j-Workaround entfernt).
-async function checkBandWelleV11BPoolBuild(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-
-        // V12.0-d — Pool-Pfad RE-AKTIVIERT auf r184 (Bind-Group-Layout-Cache
-        // + compileAsync-non-blocking heilen den v160-InstancedMesh-Re-Use-
-        // Bug strukturell). Source-Probe prüft jetzt: Build-Pfad nutzt
-        // `_acquireGrassMesh()`. V11.0-d.fix.gras3-Workaround obsolet.
-        const buildSrc = window.__codeOf(r._buildVoxelChunkGrass);
-        out.usesAcquire = /this\._acquireGrassMesh\(/.test(buildSrc);
-        // U1 (V18.452) — der V12.0-d-Marker ist eine DOKU-Behauptung (er wohnt
-        // im Kommentar des Pool-Pfads) → bewusst __dokuOf, nie __codeOf.
-        out.v12dMarker = /V12\.0-d/.test(window.__dokuOf(r._buildVoxelChunkGrass));
-
-        // Empirischer Pre-fill-Test: lege ein Mesh manuell in den Pool, dann
-        // baue einen neuen Chunk — der sollte aus dem Pool acquiren.
-        if (!r.state._grassConeGeometry) {
-            out.skipReason = "Geometry noch nicht initialisiert (Welt-Variation)";
-            return out;
-        }
-        // Finde eine NICHT-existierende Chunk-Koordinate (so dass build nicht
-        // idempotent-skipt). Hochzählen bis ein freier Slot.
-        let testCx = 1000;
-        let testCz = 1000;
-        const grassMap = r.state.voxelChunkGrass || new Map();
-        while (grassMap.has(`${testCx},${testCz}`)) {
-            testCx++;
-        }
-        // Pool sauber + pre-fill mit einer fabrizierten Instanz.
-        r._drainGrassMeshPool();
-        const preFilled = r._acquireGrassMesh();
-        if (!preFilled) {
-            out.skipReason = "_acquireGrassMesh returnt null (Material/Geometry-Race)";
-            return out;
-        }
-        r._releaseGrassMesh(preFilled);
-        out.poolSizeBeforeBuild = r.state._grassMeshPool.length;
-        // Jetzt build — sollte preFilled re-akquirieren.
-        r._buildVoxelChunkGrass(testCx, testCz);
-        const builtMesh = grassMap.get(`${testCx},${testCz}`);
-        out.builtExists = !!builtMesh;
-        out.builtIsPreFilled = builtMesh === preFilled;
-        out.poolEmptyAfterBuild = r.state._grassMeshPool.length === 0;
-        // Cleanup (auch wenn V11.0-c noch fehlt — scene.remove via aktueller
-        // V10.0-j.j-Workaround).
-        r._disposeVoxelChunkGrass(`${testCx},${testCz}`);
-
-        return out;
-    });
-    if (res.error) {
-        check("Welle V11.0-b: Build-Pfad-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle V12.0-d: Build-Pfad nutzt `_acquireGrassMesh()` (Pool-Recycling aktiv)", res.usesAcquire === true);
-    check(
-        "Welle V12.0-d: V12.0-d-Marker im Build-Pfad-Code (Pool-Reaktivierung dokumentiert)",
-        res.v12dMarker === true
-    );
-    if (res.skipReason) {
-        check("Welle V11.0-b: Welt-Vorbedingung (Geometry initialisiert)", false, res.skipReason);
-        return;
-    }
-    check("Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)", res.poolSizeBeforeBuild === 1);
-    // V12.0-d: Pool-Pfad aktiv → Build konsumiert Pool-Pre-Fill via
-    // `_acquireGrassMesh()`. Mesh-Identity beweist echtes Recycling.
-    check(
-        "Welle V12.0-d: Build konsumiert Pool-Pre-Fill (`builtIsPreFilled === true`, echtes Recycling)",
-        res.builtExists === true && res.builtIsPreFilled === true,
-        `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (true = recycelt)`
-    );
-    check("Welle V12.0-d: Pool leer nach Build (Pre-Filled wurde konsumiert)", res.poolEmptyAfterBuild === true);
-}
-
-// V11.0-c (Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt) —
-// der ehrliche Bogen-Schluss. `_disposeVoxelChunkGrass` ruft jetzt
-// `_releaseGrassMesh` statt das Mesh in der Scene-Map zu behalten.
-// Voller despawn+respawn-Identity-Test: das gleiche Mesh kommt zurück.
-async function checkBandWelleV11CPoolDispose(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-
-        // V12.0-d — Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push +
-        // scene.remove intern). V11.0-d.fix.gras3-Workaround (direkt
-        // scene.remove) obsolet auf r184.
-        const disposeSrc = window.__codeOf(r._disposeVoxelChunkGrass);
-        out.usesRelease = /this\._releaseGrassMesh\(grass\)/.test(disposeSrc);
-        // U1 (V18.452) — DOKU-Marker (wohnt im Kommentar) → __dokuOf, nie __codeOf.
-        out.v12dMarker = /V12\.0-d/.test(window.__dokuOf(r._disposeVoxelChunkGrass));
-
-        // Voller despawn+respawn-Identity-Test mit einer echten Chunk-
-        // Position. Schaue nach einem existierenden Gras-Chunk.
-        const grassMap = r.state.voxelChunkGrass;
-        if (!grassMap || grassMap.size === 0) {
-            out.skipReason = "keine Gras-Chunks (Welt-Variation)";
-            return out;
-        }
-        let foundKey = null;
-        let foundMesh = null;
-        for (const [k, v] of grassMap.entries()) {
-            if (v && v.isInstancedMesh) {
-                foundKey = k;
-                foundMesh = v;
-                break;
-            }
-        }
-        if (!foundMesh) {
-            out.skipReason = "keine Chunks mit echtem Gras-Mesh";
-            return out;
-        }
-        // Pool sauber starten.
-        r._drainGrassMeshPool();
-        // Despawn — Mesh sollte in Pool.
-        r._disposeVoxelChunkGrass(foundKey);
-        out.poolSizeAfterDispose = r.state._grassMeshPool.length;
-        out.disposedChunkGone = !grassMap.has(foundKey);
-        // Re-Build denselben Chunk — sollte das gleiche Mesh aus dem Pool.
-        const parts = foundKey.split(",").map(Number);
-        r._buildVoxelChunkGrass(parts[0], parts[1]);
-        const respawned = grassMap.get(foundKey);
-        out.respawnedExists = respawned !== undefined && respawned !== null;
-        out.respawnedIsSameAsFound = respawned === foundMesh;
-        out.poolEmptyAfterRespawn = r.state._grassMeshPool.length === 0;
-
-        return out;
-    });
-    if (res.error) {
-        check("Welle V11.0-c: Dispose-Pfad-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle V12.0-d: Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push aktiv)", res.usesRelease === true);
-    check("Welle V12.0-d: V12.0-d-Marker im Dispose-Pfad-Code", res.v12dMarker === true);
-    if (res.skipReason) {
-        check("Welle V11.0-c: Welt-Vorbedingung für Identity-Test (≥1 Gras-Chunk)", false, res.skipReason);
-        return;
-    }
-    // V12.0-d aktiv → Dispose pusht in Pool, Re-Build recycelt das gleiche
-    // Mesh-Objekt (Identity-Beweis für Pool-Recycling auf r184).
-    check(
-        "Welle V12.0-d: Dispose pusht IN Pool (size=1, echtes Recycling)",
-        res.poolSizeAfterDispose === 1,
-        `poolSize=${res.poolSizeAfterDispose} (1 = Pool-Push korrekt)`
-    );
-    check("Welle V11.0-c: disposed Chunk ist aus voxelChunkGrass entfernt", res.disposedChunkGone === true);
-    check("Welle V11.0-c: Re-Build erzeugt Mesh", res.respawnedExists === true);
-    check(
-        "Welle V12.0-d: Re-Build recycelt das gleiche Mesh (Identity-Beweis für Pool-Recycling)",
-        res.respawnedIsSameAsFound === true,
-        `respawnedSameAsFound=${res.respawnedIsSameAsFound}`
-    );
-    check("Welle V11.0-c: Pool leer nach Re-Build (Mesh wurde re-akquiriert)", res.poolEmptyAfterRespawn === true);
-}
-
-// V11.0-d (Mesh-Pool-Stress-Test, Bogen-Vor-Schluss) — 50 echte spawn+
-// despawn-Zyklen via _buildVoxelChunkGrass + _disposeVoxelChunkGrass.
-// Beweist: (a) Pool-Größe bleibt klein (single-use-Pattern → maximal 1
-// im Pool zur Zeit, weil jeder Despawn sofort von Re-Build konsumiert
-// wird), (b) `voxelChunkGrass` Map ist leer nach den Disposes (kein
-// State-Leak), (c) im Browser-Memory-Tab kein Snowball (Browser-spezifisch,
-// in Puppeteer-Chromium via performance.memory wenn verfügbar).
-async function checkBandWelleV11DPoolStress(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-
-        if (!r.state._grassConeGeometry) {
-            out.skipReason = "Geometry noch nicht initialisiert";
-            return out;
-        }
-
-        // Sauberer Start.
-        r._drainGrassMeshPool();
-        out.poolEmptyStart = r.state._grassMeshPool.length === 0;
-
-        // 50 Zyklen — jeder mit eindeutiger Chunk-Position so dass build
-        // nicht idempotent-skipt. Verschiedene Pattern: 50 NEUE Spots +
-        // sofort dispose (single-use).
-        const grassMap = r.state.voxelChunkGrass || new Map();
-        const CYCLES = 50;
-        const beforeHeap =
-            typeof performance !== "undefined" && performance.memory ? performance.memory.usedJSHeapSize : null;
-        let buildsThatProducedMesh = 0;
-        let maxPoolSizeDuring = 0;
-        for (let i = 0; i < CYCLES; i++) {
-            const cx = 2000 + i;
-            const cz = 2000 + i;
-            r._buildVoxelChunkGrass(cx, cz);
-            // Wenn der Spot kein „lebendig"-Feld hatte, ist der Map-Eintrag
-            // null — kein Mesh in Scene. Trotzdem dispose um Map-Clean
-            // zu halten.
-            const built = grassMap.get(`${cx},${cz}`);
-            if (built && built.isInstancedMesh) buildsThatProducedMesh++;
-            r._disposeVoxelChunkGrass(`${cx},${cz}`);
-            if (r.state._grassMeshPool.length > maxPoolSizeDuring) {
-                maxPoolSizeDuring = r.state._grassMeshPool.length;
-            }
-        }
-        const afterHeap =
-            typeof performance !== "undefined" && performance.memory ? performance.memory.usedJSHeapSize : null;
-        out.cycles = CYCLES;
-        out.buildsThatProducedMesh = buildsThatProducedMesh;
-        out.poolSizeAfterStress = r.state._grassMeshPool.length;
-        out.maxPoolSizeDuring = maxPoolSizeDuring;
-        out.mapClean = !Array.from(grassMap.keys()).some((k) => {
-            const parts = k.split(",").map(Number);
-            return parts[0] >= 2000 && parts[0] < 2050;
-        });
-        if (beforeHeap !== null && afterHeap !== null) {
-            out.heapBefore = beforeHeap;
-            out.heapAfter = afterHeap;
-            out.heapDeltaKB = (afterHeap - beforeHeap) / 1024;
-        }
-
-        // Cleanup-Drain.
-        r._drainGrassMeshPool();
-        out.poolEmptyEnd = r.state._grassMeshPool.length === 0;
-
-        return out;
-    });
-    if (res.error) {
-        check("Welle V11.0-d: Stress-Test-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    if (res.skipReason) {
-        check("Welle V11.0-d: Vorbedingung (Geometry initialisiert)", false, res.skipReason);
-        return;
-    }
-    check("Welle V11.0-d: Pool sauber gestartet", res.poolEmptyStart === true);
-    check(
-        "Welle V11.0-d: ≥1 Build hat ein echtes Mesh produziert (Vorbedingung)",
-        res.buildsThatProducedMesh >= 1,
-        `${res.buildsThatProducedMesh}/${res.cycles} Builds produzierten Mesh (Welt-Variation)`
-    );
-    check(
-        "Welle V11.0-d: Pool-Größe während Stress bleibt klein (≤ CAP)",
-        res.maxPoolSizeDuring <= 32,
-        `maxPoolSize=${res.maxPoolSizeDuring}`
-    );
-    check(
-        "Welle V12.0-d: Pool nach Stress = 1 (echtes Recycling — last release lebt im Pool)",
-        res.poolSizeAfterStress === 1 || res.poolSizeAfterStress === 0,
-        `poolSize=${res.poolSizeAfterStress} (V12.0-d Pool-Reaktivierung)`
-    );
-    check("Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)", res.mapClean === true);
-    if (res.heapDeltaKB !== undefined) {
-        // Heap-Delta ist Browser-spezifisch + GC-volatil — Schwelle großzügig
-        // (10 MB) gegen Puppeteer-Chromium-GC-Pending-Variabilität. Der echte
-        // Recycle-Beweis ist `maxPoolSize=1`: 48 Builds → 1 Mesh-Allokation
-        // (Pool re-akquiriert dasselbe Mesh 47×). Heap-Test ist nur Backstop
-        // gegen offensichtliche Snowballs (>10 MB wäre Pool-Bruch).
-        // V12.0-perf.h.1 — Schwelle 10000 → 16000 KB. Der eigentliche Recycle-
-        // Beweis ist `maxPoolSize=1` (echtes Recycling, kein Snowball). Das
-        // Heap-Delta ist ein SOFT-Backstop gegen MB-Skala-Leaks (ein echter
-        // Pool-Bruch wäre ~16 KB × 50 Zyklen × N = MB). Das Delta ist GC-
-        // Grenzwert-Rauschen (gemessen 5695↔11810 KB über die Session,
-        // unabhängig von Wellen, die die Regen-Schleife nicht berühren) — die
-        // 10000-Linie war zu eng + flackerte. 16000 fängt echte Snowballs,
-        // ignoriert KB-Rausch.
-        check(
-            // V14.6: 16→18 MB (dimY-Hülle). V14.9: 18→24 MB. V16.1: 24→30 MB.
-            // Das ist eine reine performance.memory-GC-Rausch-Messung (beobachtet
-            // 14–26 MB beim SELBEN Code = Flake-Fingerabdruck — GC-Timing, kein
-            // Leak). V16.1 hob den Gras-Cap 256→1024 + Pool-Cap 32→48 (Gras-Ring
-            // 3×3→5×5) → mehr Gras-Instanzen pro Stress-Zyklus = legitim höherer,
-            // BOUNDED Rausch-Boden (gemessen 26,5 MB). Der ECHTE Leak-Beweis bleibt
-            // maxPoolSize=1 (der Pool recycelt EIN Mesh über alle 50 Zyklen); ein
-            // echter Snowball spränge auf Hunderte MB, nicht 26. 30 MB gibt Marge.
-            // V17.0-Flake-Heilung: 30→60 MB. Die rohe performance.memory-
-            // Messung ist auf CI-Runnern stark GC-volatil (beobachtet -9 bis
-            // +27 MB beim SELBEN Code). Der ECHTE Leak-Beweis ist der
-            // DETERMINISTISCHE maxPoolSize=1 (Pool recycelt EIN Mesh) — der
-            // bleibt scharf. Dieser Heap-Wert ist nur ein grober Backstop gegen
-            // MB-Skala-Snowballs (ein echtes Leck spraenge auf Hunderte MB, nicht
-            // 60). 60 MB immunisiert gegen GC-Rausch, faengt echte Lecks weiter.
-            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 60 MB (grober Snowball-Backstop; maxPoolSize ist der scharfe Beweis)",
-            res.heapDeltaKB < 60000,
-            `heapDelta=${res.heapDeltaKB.toFixed(1)} KB (echter Recycle-Beweis: maxPoolSize=${res.maxPoolSizeDuring})`
-        );
-    }
-    check("Welle V11.0-d: _drainGrassMeshPool() leert final", res.poolEmptyEnd === true);
 }
 
 // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation aus den
@@ -33326,7 +32934,16 @@ async function checkBandWHWald(ctx) {
         // wanderte in den Generator — eine seed-deterministische Größe (`_forestCellDarts`:
         // Selbstausdünnung + seltene Überhälter → `0.55 + 1.45·ue^1.45`) reist als
         // `scale: d.s` in die HISM-Instanz-Matrix. Der Kern der Invariante bleibt.
-        out.sizeSpan = /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(cellDartsSrc) && /scale: d\.s\b/.test(forestSrc);
+        // V18.492 — die Probe wandert mit dem Code: die Größen-Formel lebt jetzt als EIN
+        // geteiltes Gesetz `phyto-core.forestTreeSize` (Lab + Welt lesen es; planForestCell
+        // ruft es) — die Formel steht dort, der Dart-Plan ruft sie, der Spawn trägt `d.s`.
+        const _pc = window.__phytoCore;
+        const sizeSrc =
+            _pc && typeof _pc.forestTreeSize === "function" ? window.__codeOf(_pc.forestTreeSize) : cellDartsSrc;
+        out.sizeSpan =
+            /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(sizeSrc) &&
+            (sizeSrc === cellDartsSrc || /forestTreeSize\(/.test(cellDartsSrc)) &&
+            /scale: d\.s\b/.test(forestSrc);
         // (5) DER KLON-KILLER — die PRO-INSTANZ-ROTATION: _archEntryWorldMatrix
         // wirkt entry.rotationY (sonst zeigt ein ganzer Wald nach Norden) UND der
         // Spawn setzt sie seed-deterministisch. Behavioral: zwei Entries mit
@@ -39656,9 +39273,14 @@ async function checkBandWahrerAnblickGras(ctx) {
         // Erklär-Kommentar zitiert den entfernten Read —, der CODE darf es nicht.
         const matCode = window.__codeOf(matSrc);
         out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matCode);
-        const buildSrc = window.__codeOf(r._buildVoxelChunkGrass);
-        out.buildSetsColor = /setColorAt/.test(buildSrc) && /instanceColor/.test(buildSrc);
-        out.buildComputesTint = /lushG/.test(buildSrc) && /tintR/.test(buildSrc) && /_feuchteAt/.test(buildSrc);
+        // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist
+        // BODEN-FUNKTION — der Halm-Ton ist keine Instanz-Farbe mehr, sondern liest
+        // das Grün des gebackenen Boden-Albedos (_green → _halmW), und DIESES Grün
+        // trägt lebendig + feuchte (_attachVoxelFieldColors). Konsum an beiden Nähten.
+        const albedoSrc = window.__codeOf(r._terrainGeologyAlbedo);
+        const bakeSrc = window.__codeOf(r._attachVoxelFieldColors);
+        out.buildSetsColor = /const _halmW = _green/.test(albedoSrc) && /_halmHoch/.test(albedoSrc);
+        out.buildComputesTint = /lebendig/.test(bakeSrc) && /_feuchteAt/.test(bakeSrc);
 
         // (B) Material baut (der instanceColor-colorNode kompiliert ohne Wurf)
         const m = r._grassInstanceMat();
@@ -39692,11 +39314,11 @@ async function checkBandWahrerAnblickGras(ctx) {
         res.matNoManualInstanceColor === true
     );
     check(
-        "Ω-OPSIS S2-Gras (A2) CONSUM: _buildVoxelChunkGrass setzt setColorAt/instanceColor",
+        "Ω-OPSIS S2-Gras (A2, V18.492) CONSUM: die Parallax-Wiese liest das Boden-Grün (_green → _halmW)",
         res.buildSetsColor === true
     );
     check(
-        "Ω-OPSIS S2-Gras (A3) CONSUM: der Tint kommt aus lebendig+feuchte (lushG/tintR)",
+        "Ω-OPSIS S2-Gras (A3, V18.492) CONSUM: das Boden-Grün trägt lebendig+feuchte (_attachVoxelFieldColors)",
         res.buildComputesTint === true
     );
     check("Ω-OPSIS S2-Gras (B1) Gras-Material baut (instanceColor-colorNode kompiliert)", res.matBuilt === true);
@@ -39810,8 +39432,10 @@ async function checkBandWahrerAnblickPfade(ctx) {
         // (B) CONSUM — der Boden-Bau packt die Pfad-Erde, der Gras-Bau weicht
         const attachSrc = window.__codeOf(r._attachVoxelFieldColors);
         out.attachReadsPath = /_pathFieldAt/.test(attachSrc) && /packedDirt/.test(attachSrc);
-        const grassSrc = window.__codeOf(r._buildVoxelChunkGrass);
-        out.grassReadsPath = /pathSuppress/.test(grassSrc) && /_pathFieldAt/.test(grassSrc);
+        // V18.492: die Wiese weicht dem Pfad über den Boden — die Pfad-Erde senkt das
+        // Albedo-Grün, und die Parallax-Halme wiegen mit genau diesem Grün (_halmW = _green…).
+        const meadowSrc = window.__codeOf(r._terrainGeologyAlbedo);
+        out.grassReadsPath = out.attachReadsPath && /const _halmW = _green/.test(meadowSrc);
 
         // (B3) Behavioral (soft): wie viele Pfad-Treffer in einem 600m-Raster?
         let hits = 0,
@@ -39838,7 +39462,10 @@ async function checkBandWahrerAnblickPfade(ctx) {
     check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
     check("Ω-OPSIS S2-Pfad (B1) CONSUM: der Boden-Bau packt die Pfad-Erde (packedDirt)", res.attachReadsPath === true);
-    check("Ω-OPSIS S2-Pfad (B2) CONSUM: der Gras-Bau unterdrückt Gras auf dem Pfad", res.grassReadsPath === true);
+    check(
+        "Ω-OPSIS S2-Pfad (B2, V18.492) CONSUM: die Wiese weicht dem Pfad (Pfad-Erde senkt das Grün, das die Halme wiegt)",
+        res.grassReadsPath === true
+    );
     check(
         `Ω-OPSIS S2-Pfad (B3) Pfad-Feld im Welt-Raster gemessen (${res.pathHits}/${res.pathSamples} Treffer)`,
         res.pathHits >= 0 && res.pathSamples > 0
@@ -43329,13 +42956,17 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             typeof r._disposeVoxelChunkGrass === "function" &&
             typeof r._grassInstanceMat === "function";
         out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
-        let grassInstances = 0;
+        // V18.492 (der Test wandert mit dem Gras-Schnitt 21.07.): die Wiese ist Boden-
+        // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
+        let grassInstances = 0,
+            grassCells = 0;
         if (r.state.voxelChunkGrass) {
             for (const v of r.state.voxelChunkGrass.values()) {
+                grassCells++;
                 if (v && v.isInstancedMesh) grassInstances++;
             }
         }
-        out.hasGrassInstances = grassInstances > 0;
+        out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
         // --- Genesis-Plattform ---
@@ -43376,7 +43007,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v829Results.grassMethodsExist
         );
         check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
-        check("V8.29 (V9.39): mindestens ein Voxel-Chunk hat ein Gras-InstancedMesh", v829Results.hasGrassInstances);
+        check(
+            "V8.29 (V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh (die Wiese ist Boden-Funktion)",
+            v829Results.grassCellsBookedHalmFree
+        );
         check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
         check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
         check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
@@ -58132,14 +57766,8 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWelleV11D2WaterBias, ctx);
             // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
             await timed(checkBandWelleV11D3DrinkTask, ctx);
-            // V11.0-a — Mesh-Pool-Pattern Foundation (V10.0-j.j-Bogen-Schluss).
-            await timed(checkBandWelleV11APoolFoundation, ctx);
-            // V11.0-b — Mesh-Pool im Build-Pfad aktiv (Recycle wirkt).
-            await timed(checkBandWelleV11BPoolBuild, ctx);
-            // V11.0-c — Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt.
-            await timed(checkBandWelleV11CPoolDispose, ctx);
-            // V11.0-d — Mesh-Pool-Stress-Test: 50 Zyklen, Pool bleibt klein, Map clean.
-            await timed(checkBandWelleV11DPoolStress, ctx);
+            // V11.0-a..d (Gras-Mesh-Pool) — V18.492 GESCHNITTEN mit dem Pool selbst: die
+            // Wiese ist Boden-Funktion (21.07.), kein Halm-Mesh → kein Pool, kein Band.
             // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
             await timed(checkBandV171Scatter, ctx);
 

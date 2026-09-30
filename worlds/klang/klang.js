@@ -12,6 +12,7 @@
 
 /* ══════════ 1) KONSTANTEN & MUSIKTHEORIE ══════════ */
 
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','H'];
 
 /* ══ DIE MUSIK-QUELLE lebt seit W-A7 im STUDIO-KERN ../../klang-core.js (__klangCore,
    VOR diesem Skript geladen) — EINE Quelle fuer Lab-Shell, Foundry-Worker und
@@ -21,169 +22,7 @@ const KC = window.__klangCore;
 const SCALES=KC.SCALES, SCALE_LABELS=KC.SCALE_LABELS, scaleFor=KC.scaleFor, LAWS=KC.LAWS;
 const INSTRUMENTS=KC.INSTRUMENTS, SIM_INSTRUMENTS=KC.SIM_INSTRUMENTS, DNA=KC.DNA, PRESETS=KC.GENRES;
 
-/* V18.491.240 — Lab chromatic note names ← NOTE_GESETZ fail-soft; Host none (NOTE_VIS). */
-const NOTE_GESETZ_FALLBACK = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','H'];
-const NOTE_NAMES = (KC && Array.isArray(KC.NOTE_GESETZ) && KC.NOTE_GESETZ.length === 12)
-  ? KC.NOTE_GESETZ.slice()
-  : NOTE_GESETZ_FALLBACK.slice();
-
-/* V18.491.204 — Lab strip defaults ← STRIP_GESETZ fail-soft; Host none (STRIP_VIS). */
-const STRIP_GESETZ_FALLBACK = {
-  drums:   { pan: 0.00, levelDb: -1.5, revSend: 0.10, ducked: false, delaySend: 0 },
-  bass:    { pan: 0.00, levelDb: -1.0, revSend: 0.03, ducked: true,  delaySend: 0 },
-  harmony: { pan:-0.12, levelDb: -4.5, revSend: 0.30, ducked: true,  delaySend: 0 },
-  lead:    { pan: 0.10, levelDb: -3.0, revSend: 0.24, ducked: false, delaySend: 0.12 },
-  sim:     { pan: 0.00, levelDb: -2.0, revSend: 0.22, ducked: false, delaySend: 0.15 },
-};
-const SG = (KC && KC.STRIP_GESETZ) ? KC.STRIP_GESETZ : STRIP_GESETZ_FALLBACK;
-function stripLaw(k){
-  const src = (SG && SG[k]) || {};
-  const fb = STRIP_GESETZ_FALLBACK[k];
-  return {
-    pan: isFinite(src.pan) ? src.pan : fb.pan,
-    levelDb: isFinite(src.levelDb) ? src.levelDb : fb.levelDb,
-    revSend: isFinite(src.revSend) ? src.revSend : fb.revSend,
-    ducked: typeof src.ducked === 'boolean' ? src.ducked : fb.ducked,
-    delaySend: isFinite(src.delaySend) ? src.delaySend : fb.delaySend,
-  };
-}
-const delaySend = {};
-Object.keys(STRIP_GESETZ_FALLBACK).forEach(k => { delaySend[k] = stripLaw(k).delaySend; });
-
-/* V18.491.206 — Lab WAV-recorder cold params ← REC_GESETZ fail-soft; Host none (REC_VIS). */
-const REC_GESETZ_FALLBACK = { bufferSize: 4096, inputChannels: 2, outputChannels: 2, sinkGain: 0 };
-
-/* V18.491.207 — Lab kick-kit tone table ← KICK_GESETZ fail-soft; Host none (KICK_VIS). */
-const KICK_GESETZ_FALLBACK = {
-  Acoustic:   { f0:150, f1:46,  pd:0.05,  dec:0.42, click:0.15, sat:1.25 },
-  Electronic: { f0:190, f1:48,  pd:0.03,  dec:0.60, click:0.30, sat:1.6 },
-  LoFi:       { f0:105, f1:42,  pd:0.06,  dec:0.28, click:0.05, sat:1.0 },
-  Brush:      { f0:120, f1:44,  pd:0.05,  dec:0.30, click:0.03, sat:1.0 },
-  Perc:       { f0:235, f1:172, pd:0.018, dec:0.22, click:0.02, sat:1.05 },
-};
-const KG = (KC && KC.KICK_GESETZ) ? KC.KICK_GESETZ : KICK_GESETZ_FALLBACK;
-
-/* V18.491.208 — Lab snare-kit tone table ← SNARE_GESETZ fail-soft; Host none (SNARE_VIS). */
-const SNARE_GESETZ_FALLBACK = {
-  Acoustic:   { tone:195, dec:0.16, hp:1500, body:0.45, atk:0.001 },
-  Electronic: { tone:195, dec:0.20, hp:1500, body:0.45, atk:0.001 },
-  LoFi:       { tone:160, dec:0.16, hp:900,  body:0.45, atk:0.001 },
-  Brush:      { tone:170, dec:0.26, hp:1100, body:0.10, atk:0.02  },
-  Perc:       { tone:340, dec:0.09, hp:2600, body:0.70, atk:0.001 }
-};
-const SK = (KC && KC.SNARE_GESETZ) ? KC.SNARE_GESETZ : SNARE_GESETZ_FALLBACK;
-
-/* V18.491.209 — Lab hi-hat kit cold constants ← HIHAT_GESETZ fail-soft; Host none (HIHAT_VIS). */
-const HIHAT_GESETZ_FALLBACK = {
-  baseHz: 104,
-  baseHzLoFi: 86,
-  bpHz: 10400,
-  bpHzElectronic: 9800,
-  bpQ: 0.9,
-  hpHz: 7000,
-  hpHzLoFi: 5200,
-  softMulBrush: 0.68,
-  closedDec: 0.05,
-  openDec: 0.42,
-  closedVel: 0.42,
-  openVel: 0.5,
-  pan: 0.16,
-  ratios: [2, 3.03, 4.16, 5.43, 6.79, 8.21],
-  chokeTau: 0.008,
-  perc: { openNoise: 0.24, closedNoise: 0.09, bpHz: 5600, bpQ: 1.1, openVel: 0.4, closedVel: 0.34, atk: 0.012, openDec: 0.2, closedDec: 0.07, pan: 0.14 },
-};
-const HG = (KC && KC.HIHAT_GESETZ) ? KC.HIHAT_GESETZ : HIHAT_GESETZ_FALLBACK;
-function hihatLaw(key){
-  const v = HG && HG[key];
-  const fb = HIHAT_GESETZ_FALLBACK[key];
-  return isFinite(v) ? v : fb;
-}
-
-/* V18.491.210 — Lab ride() cold constants ← RIDE_GESETZ fail-soft; Host none (RIDE_VIS). */
-const RIDE_GESETZ_FALLBACK = {
-  velMul: 0.32,
-  atk: 0.002,
-  dec: 1.25,
-  pan: -0.18,
-  freqs: [521, 787, 1123],
-  gains: [0.5, 0.22, 0.13],
-  oscStop: 1.4,
-  noiseSec: 0.8,
-  noiseHpHz: 6000,
-  noiseVel: 0.10,
-  noiseAtk: 0.002,
-  noiseDec: 0.7,
-  noiseStop: 0.85,
-};
-const RG = (KC && KC.RIDE_GESETZ) ? KC.RIDE_GESETZ : RIDE_GESETZ_FALLBACK;
-function rideLaw(key){
-  const v = RG && RG[key];
-  const fb = RIDE_GESETZ_FALLBACK[key];
-  return isFinite(v) ? v : fb;
-}
-function rideArrayLaw(key){
-  const src = RG && RG[key];
-  const fb = RIDE_GESETZ_FALLBACK[key];
-  return fb.map((v, i) => Array.isArray(src) && isFinite(src[i]) ? src[i] : v);
-}
-
-/* V18.491.211 — Lab crash() cold constants ← CRASH_GESETZ fail-soft; Host none (CRASH_VIS). */
-const CRASH_GESETZ_FALLBACK = {
-  velMul: 0.4,
-  atk: 0.003,
-  dec: 1.7,
-  pan: -0.1,
-  noiseSec: 1.7,
-  noiseHpHz: 4200,
-  noiseStop: 1.8,
-  freqs: [637, 941, 1370],
-  oscGain: 0.08,
-  oscStop: 1.2,
-};
-const CG = (KC && KC.CRASH_GESETZ) ? KC.CRASH_GESETZ : CRASH_GESETZ_FALLBACK;
-function crashLaw(key){
-  const v = CG && CG[key];
-  const fb = CRASH_GESETZ_FALLBACK[key];
-  return isFinite(v) ? v : fb;
-}
-function crashArrayLaw(key){
-  const src = CG && CG[key];
-  const fb = CRASH_GESETZ_FALLBACK[key];
-  return fb.map((v, i) => Array.isArray(src) && isFinite(src[i]) ? src[i] : v);
-}
-
-/* V18.491.212 — Lab clap() cold constants ← CLAP_GESETZ fail-soft; Host none (CLAP_VIS). */
-const CLAP_GESETZ_FALLBACK = {
-  pan: 0.1,
-  delays: [0, 0.011, 0.023],
-  noiseSec: 0.28,
-  bpHz: 1400,
-  bpQ: 1.3,
-  velEarly: 0.4,
-  velLast: 0.7,
-  atk: 0.001,
-  decEarly: 0.02,
-  decLast: 0.22,
-};
-const CLG = (KC && KC.CLAP_GESETZ) ? KC.CLAP_GESETZ : CLAP_GESETZ_FALLBACK;
-function clapLaw(key){
-  const v = CLG && CLG[key];
-  const fb = CLAP_GESETZ_FALLBACK[key];
-  return isFinite(v) ? v : fb;
-}
-function clapArrayLaw(key){
-  const src = CLG && CLG[key];
-  const fb = CLAP_GESETZ_FALLBACK[key];
-  return fb.map((v, i) => Array.isArray(src) && isFinite(src[i]) ? src[i] : v);
-}
-
-/* V18.491.249 — Lab form-section labels ← SECTION_GESETZ fail-soft; Host none (SECTION_VIS). */
-const SECTION_GESETZ_FALLBACK = { V:'Vamp', Free:'∞', Return:'Klimax', Expo:'Exposition', Dev:'Durchführung', Repr:'Reprise', Drop:'Drop' };
-const SECTION_LABELS = (KC && KC.SECTION_GESETZ
-  && KC.SECTION_GESETZ.V && KC.SECTION_GESETZ.Free && KC.SECTION_GESETZ.Return
-  && KC.SECTION_GESETZ.Expo && KC.SECTION_GESETZ.Dev && KC.SECTION_GESETZ.Repr && KC.SECTION_GESETZ.Drop)
-  ? Object.assign({}, KC.SECTION_GESETZ)
-  : Object.assign({}, SECTION_GESETZ_FALLBACK);
+const SECTION_LABELS = { V:'Vamp', Free:'∞', Return:'Klimax', Expo:'Exposition', Dev:'Durchführung', Repr:'Reprise', Drop:'Drop' };
 
 /* Hilfen */
 const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
@@ -210,73 +49,22 @@ function hashStr(s){
 let seed = (Date.now() % 900000000) >>> 0;
 let seedUsed = -1;
 let rng = mulberry32(seed);
-/* V18.491.220 — Lab preset cold default reads PRESET_GESETZ fail-soft; Host none (PRESET_VIS). */
-const PRESET_FB = { defaultName: 'Blues' };
-const PG = (KC && KC.PRESET_GESETZ) ? KC.PRESET_GESETZ : PRESET_FB;
-let lastPreset = (PG && typeof PG.defaultName === 'string' && PG.defaultName) ? PG.defaultName : 'Blues';
+let lastPreset = 'Blues';
 function srand(n){ const x = Math.sin(n * 127.1 + seed * 0.61803 + 13.7) * 43758.5453; return x - Math.floor(x); }
 
 /* ══════════ 2) ZUSTAND ══════════ */
 
-/* V18.491.216 — Lab mutable laws state reads LAWS_GESETZ fail-soft; Host none (LAWS_VIS). */
-const LAWS_GESETZ_FALLBACK = { form:'AAB', harmony:'Blues', rhythm:'Shuffle', bass:'Walking', melody:'BlueNotes' };
-const LAWS_LG = (KC && KC.LAWS_GESETZ) ? KC.LAWS_GESETZ : LAWS_GESETZ_FALLBACK;
-let laws = {
-  form: LAWS_LG.form || 'AAB',
-  harmony: LAWS_LG.harmony || 'Blues',
-  rhythm: LAWS_LG.rhythm || 'Shuffle',
-  bass: LAWS_LG.bass || 'Walking',
-  melody: LAWS_LG.melody || 'BlueNotes',
-};
-/* V18.491.215 — Lab mutable instrument state reads ROLES_GESETZ fail-soft; Host none (ROLES_VIS). */
-const ROLES_GESETZ_FALLBACK = { drums:'Acoustic', bass:'DoubleBass', harmony:'GrandPiano', lead:'Guitar', sim:'GrandPiano' };
-const ROLE_RG = (KC && KC.ROLES_GESETZ) ? KC.ROLES_GESETZ : ROLES_GESETZ_FALLBACK;
-let instruments = {
-  drums: ROLE_RG.drums || 'Acoustic',
-  bass: ROLE_RG.bass || 'DoubleBass',
-  harmony: ROLE_RG.harmony || 'GrandPiano',
-  lead: ROLE_RG.lead || 'Guitar',
-};
-let simInstrument = ROLE_RG.sim || 'GrandPiano';
-/* V18.491.218 — Lab mutable tuning state reads TUNING_GESETZ fail-soft; Host none (TUNING_VIS). */
-const TUNING_FB = { root:0, baseFreq:440 };
-const TG = (KC && KC.TUNING_GESETZ) ? KC.TUNING_GESETZ : TUNING_FB;
-let tuning = {
-  root: isFinite(TG.root) ? TG.root : 0,
-  baseFreq: isFinite(TG.baseFreq) ? TG.baseFreq : 440,
-};
-/* V18.491.219 — Lab mutable state cold seeds read STATE_GESETZ fail-soft; Host none (STATE_VIS). */
-const STATE_GESETZ_FALLBACK = {
-  bpm:96, root:48, rootBase:48, scaleName:'blues',
-  motifIntervals:[0,1], motifRhythm:[0.5,1], motifOp:'Original', melDeg:9,
-};
-const SS = (KC && KC.STATE_GESETZ) ? KC.STATE_GESETZ : STATE_GESETZ_FALLBACK;
-const stateBpm = isFinite(SS.bpm) ? SS.bpm : STATE_GESETZ_FALLBACK.bpm;
-const stateRoot = isFinite(SS.root) ? SS.root : STATE_GESETZ_FALLBACK.root;
-const stateRootBase = isFinite(SS.rootBase) ? SS.rootBase : STATE_GESETZ_FALLBACK.rootBase;
-const stateScaleName = typeof SS.scaleName === 'string' ? SS.scaleName : STATE_GESETZ_FALLBACK.scaleName;
-const stateMotifIntervals = Array.isArray(SS.motifIntervals) ? SS.motifIntervals.slice() : STATE_GESETZ_FALLBACK.motifIntervals.slice();
-const stateMotifRhythm = Array.isArray(SS.motifRhythm) ? SS.motifRhythm.slice() : STATE_GESETZ_FALLBACK.motifRhythm.slice();
-const stateMotifOp = typeof SS.motifOp === 'string' ? SS.motifOp : STATE_GESETZ_FALLBACK.motifOp;
-const stateMelDeg = isFinite(SS.melDeg) ? SS.melDeg : STATE_GESETZ_FALLBACK.melDeg;
-/* V18.491.217 — Lab mutable mods state reads MODS_GESETZ fail-soft; Host none (MODS_VIS). */
-const MODS_FB = { swing:0.72, darkness:0.5, color:0.3, flow:0.5, tension:0.4, space:0.22, volume:0.85 };
-const MG = (KC && KC.MODS_GESETZ) ? KC.MODS_GESETZ : MODS_FB;
-let mods = {
-  swing: isFinite(MG.swing) ? MG.swing : 0.72,
-  darkness: isFinite(MG.darkness) ? MG.darkness : 0.5,
-  color: isFinite(MG.color) ? MG.color : 0.3,
-  flow: isFinite(MG.flow) ? MG.flow : 0.5,
-  tension: isFinite(MG.tension) ? MG.tension : 0.4,
-  space: isFinite(MG.space) ? MG.space : 0.22,
-  volume: isFinite(MG.volume) ? MG.volume : 0.85,
-};
+let laws        = { form:'AAB', harmony:'Blues', rhythm:'Shuffle', bass:'Walking', melody:'BlueNotes' };
+let instruments = { drums:'Acoustic', bass:'DoubleBass', harmony:'GrandPiano', lead:'Guitar' };
+let simInstrument = 'GrandPiano';
+let tuning = { root:0, baseFreq:440 };
+let mods   = { swing:.72, darkness:.5, color:.3, flow:.5, tension:.4, space:.22, volume:.85 };
 
 let state = {
-  bpm:stateBpm, root:stateRoot, rootBase:stateRootBase, bar:0, step:0,
-  scaleName:stateScaleName, chord:null, fullTones:[], voicing:null, form:null, pat:null,
-  motif:{ intervals:stateMotifIntervals, rhythm:stateMotifRhythm }, motifOp:stateMotifOp,
-  melDeg:stateMelDeg, melStepCt:0, lastLeadMidi:null, lastBassMidi:null,
+  bpm:96, root:48, rootBase:48, bar:0, step:0,
+  scaleName:'blues', chord:null, fullTones:[], voicing:null, form:null, pat:null,
+  motif:{ intervals:[0,1], rhythm:[.5,1] }, motifOp:'Original',
+  melDeg:9, melStepCt:0, lastLeadMidi:null, lastBassMidi:null,
   phraseBuf:[], pendingCrash:false, lastSection:null,
   theme:{ rec:[], recB:[] }, hook:null, hookB:null, riddim:null, ending:null, stopping:false, songBeat:0,
   playing:false, nextTime:0, timer:null
@@ -301,22 +89,10 @@ let resIn = null, resOut = null, resDl = [];
 let recNode = null;
 const strips = {};
 
-/* V18.491.221 — Lab lookahead reader; LOOKAHEAD_VIS host:none.
-   Numeric fields are validated before entering the isolated worklet string. */
-const LOOKAHEAD_GESETZ_FALLBACK = {
-  bufLen: 256, ceil: 0.891, release: 0.0008,
-  processorName: 'genesis-limiter', outChannels: 2,
-};
-const LG = (KC && KC.LOOKAHEAD_GESETZ) ? KC.LOOKAHEAD_GESETZ : LOOKAHEAD_GESETZ_FALLBACK;
-const limiterBufLen = isFinite(LG.bufLen) ? Math.max(1, Math.floor(LG.bufLen)) : LOOKAHEAD_GESETZ_FALLBACK.bufLen;
-const limiterCeil = isFinite(LG.ceil) ? LG.ceil : LOOKAHEAD_GESETZ_FALLBACK.ceil;
-const limiterRelease = isFinite(LG.release) ? LG.release : LOOKAHEAD_GESETZ_FALLBACK.release;
-const limiterMask = limiterBufLen - 1;
-
 const LIMITER_WORKLET = `
 class GenesisLimiter extends AudioWorkletProcessor{
-  constructor(){ super(); this.buf=[new Float32Array(${limiterBufLen}),new Float32Array(${limiterBufLen})];
-    this.w=0; this.g=1; this.ceil=${limiterCeil}; this.mask=${limiterMask}; } /* −1 dBFS */
+  constructor(){ super(); this.buf=[new Float32Array(256),new Float32Array(256)];
+    this.w=0; this.g=1; this.ceil=0.891; }           /* −1 dBFS */
   process(inputs,outputs){
     const inp=inputs[0], out=outputs[0];
     if(!inp || !inp[0]) return true;
@@ -326,15 +102,15 @@ class GenesisLimiter extends AudioWorkletProcessor{
       for(let c=0;c<ch;c++){ const sVal=inp[c][i]; this.buf[c][this.w]=sVal;
         const a=Math.abs(sVal); if(a>pk) pk=a; }
       const tg = pk > this.ceil ? this.ceil / pk : 1;
-      this.g = tg < this.g ? tg : this.g + (1 - this.g) * ${limiterRelease};
-      const r=(this.w+1)&this.mask;
+      this.g = tg < this.g ? tg : this.g + (1 - this.g) * 0.0008;
+      const r=(this.w+1)&255;
       for(let c=0;c<ch;c++) out[c][i]=this.buf[c][r]*this.g;
       this.w=r;
     }
     return true;
   }
 }
-registerProcessor(${JSON.stringify(LG.processorName || 'genesis-limiter')}, GenesisLimiter);`;
+registerProcessor('genesis-limiter', GenesisLimiter);`;
 
 function ensureAudio(){
   if (AC){ if (AC.state === 'suspended') AC.resume(); return; }
@@ -345,67 +121,40 @@ function ensureAudio(){
   mixBus = AC.createGain();
 
   glue = AC.createDynamicsCompressor();
-  /* V18.491.196 — Lab master glue ← GLUE_GESETZ fail-soft; Host none (GLUE_VIS) */
-  var GG=(KC&&KC.GLUE_GESETZ)?KC.GLUE_GESETZ:{thresholdDb:-14,knee:10,ratio:2.5,attackSec:0.012,releaseSec:0.24};
-  glue.threshold.value = isFinite(GG.thresholdDb)?GG.thresholdDb:-14;
-  glue.knee.value = isFinite(GG.knee)?GG.knee:10;
-  glue.ratio.value = isFinite(GG.ratio)?GG.ratio:2.5;
-  glue.attack.value = isFinite(GG.attackSec)?GG.attackSec:0.012;
-  glue.release.value = isFinite(GG.releaseSec)?GG.releaseSec:0.24;
+  glue.threshold.value = -14; glue.knee.value = 10; glue.ratio.value = 2.5;
+  glue.attack.value = 0.012;  glue.release.value = 0.24;
 
-  /* V18.491.198 — Lab master EQ ← EQ_GESETZ fail-soft; Host none (EQ_VIS) */
-  var EG=(KC&&KC.EQ_GESETZ)?KC.EQ_GESETZ:{low:{type:"lowshelf",freqHz:90,gainDb:1.2},mud:{type:"peaking",freqHz:350,q:1,gainDb:-1.5},air:{type:"highshelf",freqHz:8500,gainDb:1.5}};
-  var EGlow=EG.low||{}, EGmud=EG.mud||{}, EGair=EG.air||{};
-  eqLow = AC.createBiquadFilter(); eqLow.type = EGlow.type||'lowshelf';  eqLow.frequency.value = isFinite(EGlow.freqHz)?EGlow.freqHz:90;   eqLow.gain.value = isFinite(EGlow.gainDb)?EGlow.gainDb:1.2;
-  eqMud = AC.createBiquadFilter(); eqMud.type = EGmud.type||'peaking';   eqMud.frequency.value = isFinite(EGmud.freqHz)?EGmud.freqHz:350;  eqMud.Q.value = isFinite(EGmud.q)?EGmud.q:1; eqMud.gain.value = isFinite(EGmud.gainDb)?EGmud.gainDb:-1.5;
-  eqAir = AC.createBiquadFilter(); eqAir.type = EGair.type||'highshelf'; eqAir.frequency.value = isFinite(EGair.freqHz)?EGair.freqHz:8500; eqAir.gain.value = isFinite(EGair.gainDb)?EGair.gainDb:1.5;
+  eqLow = AC.createBiquadFilter(); eqLow.type = 'lowshelf';  eqLow.frequency.value = 90;   eqLow.gain.value = 1.2;
+  eqMud = AC.createBiquadFilter(); eqMud.type = 'peaking';   eqMud.frequency.value = 350;  eqMud.Q.value = 1; eqMud.gain.value = -1.5;
+  eqAir = AC.createBiquadFilter(); eqAir.type = 'highshelf'; eqAir.frequency.value = 8500; eqAir.gain.value = 1.5;
 
   limiter = AC.createDynamicsCompressor();
-  /* V18.491.197 — Lab master limiter ← LIMITER_GESETZ fail-soft; Host none (LIMITER_VIS) */
-  var LIMITER_LG=(KC&&KC.LIMITER_GESETZ)?KC.LIMITER_GESETZ:{thresholdDb:-2.5,knee:0,ratio:20,attackSec:0.001,releaseSec:0.06};
-  limiter.threshold.value = isFinite(LIMITER_LG.thresholdDb)?LIMITER_LG.thresholdDb:-2.5;
-  limiter.knee.value = isFinite(LIMITER_LG.knee)?LIMITER_LG.knee:0;
-  limiter.ratio.value = isFinite(LIMITER_LG.ratio)?LIMITER_LG.ratio:20;
-  limiter.attack.value = isFinite(LIMITER_LG.attackSec)?LIMITER_LG.attackSec:0.001;
-  limiter.release.value = isFinite(LIMITER_LG.releaseSec)?LIMITER_LG.releaseSec:0.06;
+  limiter.threshold.value = -2.5; limiter.knee.value = 0; limiter.ratio.value = 20;
+  limiter.attack.value = 0.001;   limiter.release.value = 0.06;
 
   softClip = AC.createWaveShaper();
-  /* V18.491.199 — Lab master softClip ← SOFTCLIP_GESETZ fail-soft; Host none (SOFTCLIP_VIS) */
-  var SG=(KC&&KC.SOFTCLIP_GESETZ)?KC.SOFTCLIP_GESETZ:{amount:1.15,oversample:"4x"};
-  softClip.curve = softClipCurve(isFinite(SG.amount)?SG.amount:1.15);
-  softClip.oversample = SG.oversample||'4x';
+  softClip.curve = softClipCurve(1.15);
+  softClip.oversample = '4x';
 
   analyser = AC.createAnalyser();
-  /* V18.491.204 — Lab analyser ← ANALYSER_GESETZ fail-soft; Host none (ANALYSER_VIS) */
-  var AG=(KC&&KC.ANALYSER_GESETZ)?KC.ANALYSER_GESETZ:{fftSize:1024,smoothing:0.82};
-  analyser.fftSize = isFinite(AG.fftSize)?AG.fftSize:1024;
-  analyser.smoothingTimeConstant = isFinite(AG.smoothing)?AG.smoothing:0.82;
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0.82;
 
-  /* Hall: Predelay → Faltungshall — V18.491.133 RAUM.hall fail-soft */
-  var H=(KC&&KC.RAUM&&KC.RAUM.hall)?KC.RAUM.hall:{impulseSec:3.4,decay:2.4,predelaySec:0.02,returnProSpace:0.5};
-  var hPred=isFinite(H.predelaySec)?H.predelaySec:0.02;
-  var hImp=isFinite(H.impulseSec)?H.impulseSec:3.4;
-  var hDec=isFinite(H.decay)?H.decay:2.4;
-  var hRet=isFinite(H.returnProSpace)?H.returnProSpace:0.5;
-  reverbPre  = AC.createDelay(0.1); reverbPre.delayTime.value = hPred;
-  reverbConv = AC.createConvolver(); reverbConv.buffer = makeImpulse(hImp, hDec);
-  reverbReturn = AC.createGain(); reverbReturn.gain.value = mods.space * hRet;
+  /* Hall: Predelay → Faltungshall (gedämpfte Stereo-Impulsantwort) → Return */
+  reverbPre  = AC.createDelay(0.1); reverbPre.delayTime.value = 0.02;
+  reverbConv = AC.createConvolver(); reverbConv.buffer = makeImpulse(3.4, 2.4);
+  reverbReturn = AC.createGain(); reverbReturn.gain.value = mods.space * 0.5;
   reverbPre.connect(reverbConv); reverbConv.connect(reverbReturn); reverbReturn.connect(mixBus);
 
   /* Tempo-synchrones Echo (punktierte Achtel) als zweiter Send-Effekt:
      Feedback-Schleife mit Band-Begrenzung, damit Wiederholungen dunkler
-     und schmaler werden wie bei einem Tape-Delay — V18.491.134 RAUM.echo fail-soft */
-  var E=(KC&&KC.RAUM&&KC.RAUM.echo)?KC.RAUM.echo:{beatFrac:0.75,minSec:0.06,maxSec:1.8,feedback:0.42,hpHz:260,lpHz:2800,returnProEcho:0.85};
-  var eHp=isFinite(E.hpHz)?E.hpHz:260;
-  var eLp=isFinite(E.lpHz)?E.lpHz:2800;
-  var eFb=isFinite(E.feedback)?E.feedback:0.42;
-  var eRet=isFinite(E.returnProEcho)?E.returnProEcho:0.85;
+     und schmaler werden wie bei einem Tape-Delay */
   dlyIn = AC.createGain();
-  dly   = AC.createDelay(2.0); dly.delayTime.value = 0; // V18.491.144 boot; live delay = setDelayFromBpm / RAUM.echo
-  dlyHP = AC.createBiquadFilter(); dlyHP.type = 'highpass'; dlyHP.frequency.value = eHp;
-  dlyLP = AC.createBiquadFilter(); dlyLP.type = 'lowpass';  dlyLP.frequency.value = eLp;
-  dlyFB = AC.createGain(); dlyFB.gain.value = eFb;
-  dlyRet = AC.createGain(); dlyRet.gain.value = fx.echo * eRet;
+  dly   = AC.createDelay(2.0); dly.delayTime.value = 0.42;
+  dlyHP = AC.createBiquadFilter(); dlyHP.type = 'highpass'; dlyHP.frequency.value = 260;
+  dlyLP = AC.createBiquadFilter(); dlyLP.type = 'lowpass';  dlyLP.frequency.value = 2800;
+  dlyFB = AC.createGain(); dlyFB.gain.value = 0.42;
+  dlyRet = AC.createGain(); dlyRet.gain.value = fx.echo * 0.85;
   dlyIn.connect(dly); dly.connect(dlyHP); dlyHP.connect(dlyLP);
   dlyLP.connect(dlyFB); dlyFB.connect(dly);
   dlyLP.connect(dlyRet); dlyRet.connect(mixBus);
@@ -415,19 +164,12 @@ function ensureAudio(){
      sie klingen nach — der Resonanzboden-Schimmer, der Sample-freien
      Klavieren sonst fehlt. Bei Modulation stimmen sie sich um. */
   resIn = AC.createGain(); resIn.gain.value = 1;
-  /* V18.491.201 Lab RESONANZ ← RESONANZ_GESETZ fail-soft; Host none (RESONANZ_VIS) */
-  var RG=(KC&&KC.RESONANZ_GESETZ)?KC.RESONANZ_GESETZ:{outGain:0.16,delaySec:1/131,lpHz:3600,feedback:0.72,voices:3};
-  var rOutGain=isFinite(RG.outGain)?RG.outGain:0.16;
-  var rDelaySec=isFinite(RG.delaySec)?RG.delaySec:1/131;
-  var rLpHz=isFinite(RG.lpHz)?RG.lpHz:3600;
-  var rFeedback=isFinite(RG.feedback)?RG.feedback:0.72;
-  var rVoices=isFinite(RG.voices)?Math.max(0,Math.floor(RG.voices)):3;
-  resOut = AC.createGain(); resOut.gain.value = rOutGain;
+  resOut = AC.createGain(); resOut.gain.value = 0.16;
   resDl = [];
-  for (let i = 0; i < rVoices; i++){
-    const dl = AC.createDelay(0.1); dl.delayTime.value = rDelaySec;
-    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = rLpHz;
-    const fb = AC.createGain(); fb.gain.value = rFeedback;
+  for (let i = 0; i < 3; i++){
+    const dl = AC.createDelay(0.1); dl.delayTime.value = 1 / 131;
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3600;
+    const fb = AC.createGain(); fb.gain.value = 0.72;
     resIn.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl);
     lp.connect(resOut);
     resDl.push(dl);
@@ -438,46 +180,31 @@ function ensureAudio(){
   duckGain = AC.createGain(); duckGain.connect(mixBus);
 
   /* Kanalzüge: Pan, Pegel [dB], Hall-Send, geduckt? */
-  const SD = {
-    drums: stripLaw('drums'), bass: stripLaw('bass'), harmony: stripLaw('harmony'),
-    lead: stripLaw('lead'), sim: stripLaw('sim'),
-  };
-  strips.drums   = makeStrip(SD.drums.pan, SD.drums.levelDb, SD.drums.revSend, SD.drums.ducked);
-  strips.bass    = makeStrip(SD.bass.pan, SD.bass.levelDb, SD.bass.revSend, SD.bass.ducked);
-  strips.harmony = makeStrip(SD.harmony.pan, SD.harmony.levelDb, SD.harmony.revSend, SD.harmony.ducked);
-  strips.lead    = makeStrip(SD.lead.pan, SD.lead.levelDb, SD.lead.revSend, SD.lead.ducked);
-  strips.sim     = makeStrip(SD.sim.pan, SD.sim.levelDb, SD.sim.revSend, SD.sim.ducked);
+  strips.drums   = makeStrip( 0.00, -1.5, 0.10, false);
+  strips.bass    = makeStrip( 0.00, -1.0, 0.03, true );
+  strips.harmony = makeStrip(-0.12, -4.5, 0.30, true );
+  strips.lead    = makeStrip( 0.10, -3.0, 0.24, false);
+  strips.sim     = makeStrip( 0.00, -2.0, 0.22, false);
   Object.keys(strips).forEach(k => { strips[k].sendD.gain.value = delaySend[k] || 0; });
 
   /* LoFi-Kanal in der Summe: Bandlauf-Wow (langsame + schnelle Tonhöhen-
      schwankung), Höhenblende und Vinyl-Knistern — neutral, bis ein
      LoFi-Kit aktiv ist */
-  /* V18.491.202 Lab LOFI cold-init ← LOFI_GESETZ fail-soft; Host none (LOFI_VIS) */
-  var LF=(KC&&KC.LOFI_GESETZ)?KC.LOFI_GESETZ:{wowDelaySec:0.012,wowMaxSec:0.05,wowSlowHz:0.45,wowFastHz:5.6,lpHz:19500,lpQ:0.4,crackleGain:0.0001,crackleBufSec:3,dcHpHz:24};
-  var lfWowMax=isFinite(LF.wowMaxSec)?LF.wowMaxSec:0.05;
-  var lfWowDelay=isFinite(LF.wowDelaySec)?LF.wowDelaySec:0.012;
-  var lfSlowHz=isFinite(LF.wowSlowHz)?LF.wowSlowHz:0.45;
-  var lfFastHz=isFinite(LF.wowFastHz)?LF.wowFastHz:5.6;
-  var lfLpHz=isFinite(LF.lpHz)?LF.lpHz:19500;
-  var lfLpQ=isFinite(LF.lpQ)?LF.lpQ:0.4;
-  var lfCrackleGain=isFinite(LF.crackleGain)?LF.crackleGain:0.0001;
-  var lfCrackleBufSec=isFinite(LF.crackleBufSec)?LF.crackleBufSec:3;
-  var lfDcHpHz=isFinite(LF.dcHpHz)?LF.dcHpHz:24;
-  lofiWow = AC.createDelay(lfWowMax); lofiWow.delayTime.value = lfWowDelay;
-  w1 = AC.createOscillator(); w1.frequency.value = lfSlowHz;
+  lofiWow = AC.createDelay(0.05); lofiWow.delayTime.value = 0.012;
+  w1 = AC.createOscillator(); w1.frequency.value = 0.45;
   w1g = AC.createGain(); w1g.gain.value = 0;
-  w2 = AC.createOscillator(); w2.frequency.value = lfFastHz;
+  w2 = AC.createOscillator(); w2.frequency.value = 5.6;
   w2g = AC.createGain(); w2g.gain.value = 0;
   w1.connect(w1g); w1g.connect(lofiWow.delayTime);
   w2.connect(w2g); w2g.connect(lofiWow.delayTime);
   w1.start(); w2.start();
-  lofiLP = AC.createBiquadFilter(); lofiLP.type = 'lowpass'; lofiLP.frequency.value = lfLpHz; lofiLP.Q.value = lfLpQ;
-  crSrc = AC.createBufferSource(); crSrc.buffer = makeCrackle(lfCrackleBufSec); crSrc.loop = true;
-  crGain = AC.createGain(); crGain.gain.value = lfCrackleGain;
+  lofiLP = AC.createBiquadFilter(); lofiLP.type = 'lowpass'; lofiLP.frequency.value = 19500; lofiLP.Q.value = 0.4;
+  crSrc = AC.createBufferSource(); crSrc.buffer = makeCrackle(3); crSrc.loop = true;
+  crGain = AC.createGain(); crGain.gain.value = 0.0001;
   crSrc.connect(crGain); crGain.connect(lofiWow); crSrc.start();
 
   const hpDC = AC.createBiquadFilter();
-  hpDC.type = 'highpass'; hpDC.frequency.value = lfDcHpHz;   // DC-/Subsonic-Schutz
+  hpDC.type = 'highpass'; hpDC.frequency.value = 24;   // DC-/Subsonic-Schutz
   mixBus.connect(lofiWow); lofiWow.connect(lofiLP); lofiLP.connect(hpDC);
   hpDC.connect(glue); glue.connect(eqLow); eqLow.connect(eqMud); eqMud.connect(eqAir);
   eqAir.connect(limiter); limiter.connect(softClip); softClip.connect(master);
@@ -485,20 +212,14 @@ function ensureAudio(){
 
   /* WAV-Recorder-Tap: PCM-Mitschnitt des Masters in Studioqualität */
   if (AC.createScriptProcessor){
-    /* V18.491.206 — Lab cold reader; REC_VIS host:none. */
-    const RG=(KC&&KC.REC_GESETZ)?KC.REC_GESETZ:REC_GESETZ_FALLBACK;
-    const recBufferSize = isFinite(RG.bufferSize) ? RG.bufferSize : REC_GESETZ_FALLBACK.bufferSize;
-    const recInputChannels = isFinite(RG.inputChannels) ? RG.inputChannels : REC_GESETZ_FALLBACK.inputChannels;
-    const recOutputChannels = isFinite(RG.outputChannels) ? RG.outputChannels : REC_GESETZ_FALLBACK.outputChannels;
-    const recSinkGain = isFinite(RG.sinkGain) ? RG.sinkGain : REC_GESETZ_FALLBACK.sinkGain;
-    recNode = AC.createScriptProcessor(recBufferSize, recInputChannels, recOutputChannels);
+    recNode = AC.createScriptProcessor(4096, 2, 2);
     recNode.onaudioprocess = e => {
       if (!recActive) return;
       const b = e.inputBuffer;
       recL.push(new Float32Array(b.getChannelData(0)));
       recR.push(new Float32Array(b.numberOfChannels > 1 ? b.getChannelData(1) : b.getChannelData(0)));
     };
-    const sink = AC.createGain(); sink.gain.value = recSinkGain;
+    const sink = AC.createGain(); sink.gain.value = 0;
     master.connect(recNode); recNode.connect(sink); sink.connect(AC.destination);
   }
 
@@ -514,7 +235,7 @@ function ensureAudio(){
     try {
       const url = URL.createObjectURL(new Blob([LIMITER_WORKLET], { type: 'application/javascript' }));
       AC.audioWorklet.addModule(url).then(() => {
-        const aw = new AudioWorkletNode(AC, LG.processorName||'genesis-limiter', { outputChannelCount: [isFinite(LG.outChannels)?LG.outChannels:2] });
+        const aw = new AudioWorkletNode(AC, 'genesis-limiter', { outputChannelCount: [2] });
         eqAir.disconnect(limiter);
         limiter.disconnect();
         eqAir.connect(aw); aw.connect(softClip);
@@ -556,6 +277,7 @@ function makeStrip(pan, levelDb, revAmt, ducked){
 /* ── Mixer- & FX-Zustand ── */
 const mixState = { drums:{db:0,mute:false}, bass:{db:0,mute:false}, harmony:{db:0,mute:false}, lead:{db:0,mute:false}, sim:{db:0,mute:false} };
 const fx = { echo: 0.6 };
+const delaySend = { drums:0, bass:0, harmony:0, lead:0.12, sim:0.15 };
 let lofiWanted = false;
 
 function setStripDb(k, db){
@@ -569,16 +291,10 @@ function setStripMute(k, m){
 let mixTilt = {};
 function applyMixState(){
   Object.keys(mixState).forEach(k => { setStripDb(k, mixState[k].db + (mixTilt[k] || 0)); setStripMute(k, mixState[k].mute); });
-  var E=(KC&&KC.RAUM&&KC.RAUM.echo)?KC.RAUM.echo:{returnProEcho:0.85};
-  var eRet=isFinite(E.returnProEcho)?E.returnProEcho:0.85;
-  if (dlyRet) dlyRet.gain.value = fx.echo * eRet;
+  if (dlyRet) dlyRet.gain.value = fx.echo * 0.85;
 }
 function setDelayFromBpm(){
-  var E=(KC&&KC.RAUM&&KC.RAUM.echo)?KC.RAUM.echo:{beatFrac:0.75,minSec:0.06,maxSec:1.8};
-  var bf=isFinite(E.beatFrac)?E.beatFrac:0.75;
-  var mn=isFinite(E.minSec)?E.minSec:0.06;
-  var mx=isFinite(E.maxSec)?E.maxSec:1.8;
-  if (AC && dly) dly.delayTime.setTargetAtTime(clamp(beatSec() * bf, mn, mx), AC.currentTime, 0.05);
+  if (AC && dly) dly.delayTime.setTargetAtTime(clamp(beatSec() * 0.75, 0.06, 1.8), AC.currentTime, 0.05);
 }
 /* Resonator-Stimmung: pur ableitbar, im Test pruefbar */
 function resFreqsFor(root){
@@ -683,35 +399,19 @@ function sat(k){
   return s;
 }
 
-/* V18.491.222 — Lab genre pump reader; PUMP_VIS host:none.
-   Preset lookup and the Straight branch remain local Lab semantics. */
-const PUMP_GESETZ_FALLBACK = {
-  byPreset: { Trap:0.55, DnB:0.5, Synthwave:0.52, Techno:0.42, LoFi:0.3, BoomBap:0.3 },
-  straightFallback: 0.42,
-  defaultFallback: 0.3,
-};
-const PUMP = (KC && KC.PUMP_GESETZ) ? KC.PUMP_GESETZ : PUMP_GESETZ_FALLBACK;
 /* Genre-Pump: wie tief atmet der Mix unter dem Kick? */
 function pumpAmt(){
-  const byPreset = (PUMP && PUMP.byPreset) || PUMP_GESETZ_FALLBACK.byPreset;
-  const p = byPreset[lastPreset];
-  if (p !== undefined && isFinite(p)) return p;
-  const straightFallback = isFinite(PUMP && PUMP.straightFallback) ? PUMP.straightFallback : PUMP_GESETZ_FALLBACK.straightFallback;
-  const defaultFallback = isFinite(PUMP && PUMP.defaultFallback) ? PUMP.defaultFallback : PUMP_GESETZ_FALLBACK.defaultFallback;
-  return laws.rhythm === 'Straight' ? straightFallback : defaultFallback;
+  const p = { Trap:.55, DnB:.5, Synthwave:.52, Techno:.42, LoFi:.3, BoomBap:.3 }[lastPreset];
+  return p !== undefined ? p : (laws.rhythm === 'Straight' ? .42 : .3);
 }
-/* Sidechain-Ducking (elektronische Grooves) — V18.491.205 */
+/* Sidechain-Ducking (elektronische Grooves) */
 function duck(t, amt, rel){
   if (!duckGain) return;
   const g = duckGain.gain;
-  var DG=(KC&&KC.DUCK_GESETZ)?KC.DUCK_GESETZ:{depth:0.45,attackSec:0.012,releaseSec:0.20};
-  var dDepth=isFinite(DG.depth)?DG.depth:0.45;
-  var dAtk=isFinite(DG.attackSec)?DG.attackSec:0.012;
-  var dRel=isFinite(DG.releaseSec)?DG.releaseSec:0.20;
   if (g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t);
   else { g.cancelScheduledValues(t); g.setValueAtTime(1, t); }
-  g.linearRampToValueAtTime(1 - (amt || dDepth), t + dAtk);
-  g.linearRampToValueAtTime(1, t + (rel || dRel));
+  g.linearRampToValueAtTime(1 - (amt || 0.45), t + 0.012);
+  g.linearRampToValueAtTime(1, t + (rel || 0.20));
 }
 
 /* ══════════ 4) KLANGERZEUGUNG ══════════ */
@@ -720,8 +420,13 @@ function drumKit(){ return instruments.drums; }
 
 function kick(t, vel, duckIt){
   if (!AC) return;
-  /* V18.491.207 — Lab reads the shared kit table; missing kit falls back to Acoustic. */
-  const P = KG[drumKit()] || KG.Acoustic || KICK_GESETZ_FALLBACK.Acoustic;
+  const P = {
+    Acoustic:   { f0:150, f1:46,  pd:0.05,  dec:0.42, click:0.15, sat:1.25 },
+    Electronic: { f0:190, f1:48,  pd:0.03,  dec:0.60, click:0.30, sat:1.6 },
+    LoFi:       { f0:105, f1:42,  pd:0.06,  dec:0.28, click:0.05, sat:1.0 },
+    Brush:      { f0:120, f1:44,  pd:0.05,  dec:0.30, click:0.03, sat:1.0 },
+    Perc:       { f0:235, f1:172, pd:0.018, dec:0.22, click:0.02, sat:1.05 }   // Conga (offen)
+  }[drumKit()];
   logDrum(36, t, vel);
   vizHit(t, 'kick', vel);
   const v = voice('drums', (rng()-0.5)*0.04);
@@ -746,9 +451,14 @@ function kick(t, vel, duckIt){
 
 function snare(t, vel, opt){
   if (!AC) return;
-  /* V18.491.208 — Lab reads the shared kit table; missing kit falls back to Acoustic. */
   const kit = drumKit();
-  const KD = (SK && SK[kit]) || (SK && SK.Acoustic) || SNARE_GESETZ_FALLBACK.Acoustic;
+  const KD = {
+    Acoustic:   { tone:195, dec:0.16, hp:1500, body:0.45, atk:0.001 },
+    Electronic: { tone:195, dec:0.20, hp:1500, body:0.45, atk:0.001 },
+    LoFi:       { tone:160, dec:0.16, hp:900,  body:0.45, atk:0.001 },
+    Brush:      { tone:170, dec:0.26, hp:1100, body:0.10, atk:0.02  },   // Besen-Swish
+    Perc:       { tone:340, dec:0.09, hp:2600, body:0.70, atk:0.001 }    // Bongo-Slap
+  }[kit];
   const o = Object.assign({}, KD, opt || {});
   logDrum(38, t, vel);
   vizHit(t, 'snare', vel);
@@ -776,40 +486,37 @@ function snare(t, vel, opt){
 let openHatRef = null;
 function hat(t, vel, open){
   if (!AC) return;
-  /* V18.491.209 — Lab reads the shared hi-hat law; missing fields fall back locally. */
   const kit = drumKit();
   logDrum(open ? 46 : 42, t, vel);
   vizHit(t, open ? 'oh' : 'hat', vel);
   /* Choke: geschlossene Hat würgt offene ab */
   if (!open && openHatRef && t < openHatRef.until && openHatRef.g.gain.cancelAndHoldAtTime){
     openHatRef.g.gain.cancelAndHoldAtTime(t);
-    openHatRef.g.gain.setTargetAtTime(0.0001, t, hihatLaw('chokeTau'));
+    openHatRef.g.gain.setTargetAtTime(0.0001, t, 0.008);
   }
-  const base = kit==='LoFi' ? hihatLaw('baseHzLoFi') : hihatLaw('baseHz');
+  const base = kit==='LoFi' ? 86 : 104;
   if (kit === 'Perc'){
     /* Shaker/Cabasa: Rauschband mit weicher Attacke statt Metallspektrum */
-    const PD = (HG && HG.perc) || HIHAT_GESETZ_FALLBACK.perc;
-    const pVal = key => { const v = PD[key]; const fb = HIHAT_GESETZ_FALLBACK.perc[key]; return isFinite(v) ? v : fb; };
-    const n = AC.createBufferSource(); n.buffer = noiseBuf(open ? pVal('openNoise') : pVal('closedNoise'));
+    const n = AC.createBufferSource(); n.buffer = noiseBuf(open ? 0.24 : 0.09);
     const bp2 = AC.createBiquadFilter(); bp2.type = 'bandpass';
-    bp2.frequency.value = pVal('bpHz'); bp2.Q.value = pVal('bpQ');
-    const g2 = AC.createGain(); adEnv(g2, t, vel * (open ? pVal('openVel') : pVal('closedVel')), pVal('atk'), open ? pVal('openDec') : pVal('closedDec'));
-    const p2 = makePanner(pVal('pan'));
+    bp2.frequency.value = 5600; bp2.Q.value = 1.1;
+    const g2 = AC.createGain(); adEnv(g2, t, vel * (open ? 0.4 : 0.34), 0.012, open ? 0.2 : 0.07);
+    const p2 = makePanner(0.14);
     n.connect(bp2); bp2.connect(g2); g2.connect(p2); p2.connect(strips.drums.in);
     n.start(t); n.stop(t + (open ? 0.26 : 0.11));
     reap(n, [n, bp2, g2, p2]);
     return;
   }
-  const soft = kit === 'Brush' ? hihatLaw('softMulBrush') : 1;
-  const ratios = Array.isArray(HG && HG.ratios) && HG.ratios.length ? HG.ratios : HIHAT_GESETZ_FALLBACK.ratios;   // metallisches Spektrum (808-Verhältnisse)
+  const soft = kit === 'Brush' ? 0.68 : 1;
+  const ratios = [2, 3.03, 4.16, 5.43, 6.79, 8.21];   // metallisches Spektrum (808-Verhältnisse)
   const bp = AC.createBiquadFilter(); bp.type = 'bandpass';
-  bp.frequency.value = kit==='Electronic' ? hihatLaw('bpHzElectronic') : hihatLaw('bpHz'); bp.Q.value = hihatLaw('bpQ');
+  bp.frequency.value = kit==='Electronic' ? 9800 : 10400; bp.Q.value = 0.9;
   const hp = AC.createBiquadFilter(); hp.type = 'highpass';
-  hp.frequency.value = kit==='LoFi' ? hihatLaw('hpHzLoFi') : hihatLaw('hpHz');
+  hp.frequency.value = kit==='LoFi' ? 5200 : 7000;
   const g = AC.createGain();
-  const p = makePanner(hihatLaw('pan'));
-  const dec = open ? hihatLaw('openDec') : hihatLaw('closedDec');
-  adEnv(g, t, vel * (open ? hihatLaw('openVel') : hihatLaw('closedVel')) * soft, 0.001, dec);
+  const p = makePanner(0.16);
+  const dec = open ? 0.42 : 0.05;
+  adEnv(g, t, vel * (open ? 0.5 : 0.42) * soft, 0.001, dec);
   const nodes = [bp, hp, g, p];
   let first = null;
   ratios.forEach(r => {
@@ -825,75 +532,70 @@ function hat(t, vel, open){
   if (open) openHatRef = { g, until: t + dec };
 }
 
-/* V18.491.210 — Lab ride() reads shared RIDE_GESETZ; crash()/clap() stay untouched. */
 function ride(t, vel){
   if (!AC) return;
   logDrum(51, t, vel);
   vizHit(t, 'ride', vel);
-  const freqs = rideArrayLaw('freqs');
-  const gains = rideArrayLaw('gains');
-  const g = AC.createGain(); adEnv(g, t, vel * rideLaw('velMul'), rideLaw('atk'), rideLaw('dec'));
-  const p = makePanner(rideLaw('pan'));
+  const g = AC.createGain(); adEnv(g, t, vel * 0.32, 0.002, 1.25);
+  const p = makePanner(-0.18);
   const nodes = [g, p];
   let first = null;
-  freqs.forEach((f, i) => {
+  [521, 787, 1123].forEach((f, i) => {
     const o = AC.createOscillator();
     o.type = i ? 'square' : 'triangle';
     o.frequency.value = f * (1 + (rng()-0.5)*0.01);
-    const og = AC.createGain(); og.gain.value = gains[i];
+    const og = AC.createGain(); og.gain.value = [0.5, 0.22, 0.13][i];
     o.connect(og); og.connect(g);
-    o.start(t); o.stop(t + rideLaw('oscStop'));
+    o.start(t); o.stop(t + 1.4);
     nodes.push(o, og);
     if (!first) first = o;
   });
-  const n = AC.createBufferSource(); n.buffer = noiseBuf(rideLaw('noiseSec'));
-  const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = rideLaw('noiseHpHz');
-  const ng = AC.createGain(); adEnv(ng, t, vel * rideLaw('noiseVel'), rideLaw('noiseAtk'), rideLaw('noiseDec'));
+  const n = AC.createBufferSource(); n.buffer = noiseBuf(0.8);
+  const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 6000;
+  const ng = AC.createGain(); adEnv(ng, t, vel * 0.10, 0.002, 0.7);
   n.connect(hp); hp.connect(ng); ng.connect(g);
-  n.start(t); n.stop(t + rideLaw('noiseStop'));
+  n.start(t); n.stop(t + 0.85);
   nodes.push(n, hp, ng);
   g.connect(p); p.connect(strips.drums.in);
   reap(first, nodes);
 }
 
-/* V18.491.211 — Lab crash() reads shared CRASH_GESETZ; clap() stays untouched. */
 function crash(t, vel){
   if (!AC) return;
   logDrum(49, t, vel);
   vizHit(t, 'crash', vel);
-  const g = AC.createGain(); adEnv(g, t, vel * crashLaw('velMul'), crashLaw('atk'), crashLaw('dec'));
-  const p = makePanner(crashLaw('pan'));
-  const n = AC.createBufferSource(); n.buffer = noiseBuf(crashLaw('noiseSec'));
-  const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = crashLaw('noiseHpHz');
+  const g = AC.createGain(); adEnv(g, t, vel * 0.4, 0.003, 1.7);
+  const p = makePanner(-0.1);
+  const n = AC.createBufferSource(); n.buffer = noiseBuf(1.7);
+  const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 4200;
   n.connect(hp); hp.connect(g); g.connect(p); p.connect(strips.drums.in);
-  n.start(t); n.stop(t + crashLaw('noiseStop'));
+  n.start(t); n.stop(t + 1.8);
   const nodes = [n, hp, g, p];
   let first = null;
-  crashArrayLaw('freqs').forEach(f => {
+  [637, 941, 1370].forEach(f => {
     const o = AC.createOscillator(); o.type = 'square'; o.frequency.value = f;
-    const og = AC.createGain(); og.gain.value = crashLaw('oscGain');
+    const og = AC.createGain(); og.gain.value = 0.08;
     o.connect(og); og.connect(g);
-    o.start(t); o.stop(t + crashLaw('oscStop'));
+    o.start(t); o.stop(t + 1.2);
     nodes.push(o, og);
     if (!first) first = o;
   });
   reap(first, nodes);
 }
 
-/* V18.491.212 — Lab clap() reads shared CLAP_GESETZ; crash()/ride() untouched. */
 function clap(t, vel){
   if (!AC) return;
   logDrum(39, t, vel);
   vizHit(t, 'clap', vel);
-  const p = makePanner(clapLaw('pan'));
+  const p = makePanner(0.1);
   p.connect(strips.drums.in);
-  clapArrayLaw('delays').forEach((dt, i) => {
-    const n = AC.createBufferSource(); n.buffer = noiseBuf(clapLaw('noiseSec'));
-    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = clapLaw('bpHz'); f.Q.value = clapLaw('bpQ');
+  [0, 0.011, 0.023].forEach((dt, i) => {
+    const n = AC.createBufferSource(); n.buffer = noiseBuf(0.28);
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 1.3;
     const g = AC.createGain();
-    adEnv(g, t + dt, vel * (i === 2 ? clapLaw('velLast') : clapLaw('velEarly')), clapLaw('atk'), i === 2 ? clapLaw('decLast') : clapLaw('decEarly'));
+    adEnv(g, t + dt, vel * (i === 2 ? 0.7 : 0.4), 0.001, i === 2 ? 0.22 : 0.02);
     n.connect(f); f.connect(g); g.connect(p);
-    n.start(t + dt); n.stop(t + dt + clapLaw('noiseSec'));
+    n.start(t + dt); n.stop(t + dt + 0.28);
     reap(n, i === 2 ? [n, f, g, p] : [n, f, g]);
   });
 }
@@ -904,19 +606,12 @@ function clap(t, vel){
 /* ── MIDI-Mitschrift ──
    Jede geplante Note wird mit musikalischer Beat-Position protokolliert,
    damit die Session als Standard-MIDI-File in die DAW wandern kann. */
-/* V18.491.213 — MIDI maps read shared MIDI_GESETZ; Lab fail-soft, Host none (MIDI_VIS). */
-const MIDI_GESETZ_FALLBACK = {
-  busCh: { harmony:0, lead:1, bass:2, sim:3 },
-  gmProgram: { GrandPiano:0, Rhodes:4, Guitar:24, DoubleBass:32,
-               Strings:48, Flute:73, LeadSynth:81, SynthPad:89,
-               Sub808:38, SynthBass:38, Vibraphone:11, Marimba:12,
-               Kalimba:108, Organ:16, Clavinet:7, SynthBrass:62,
-               ReeseBass:39, DistGuitar:30, PickBass:34 }
-};
-const MIDI_GESETZ = (KC && KC.MIDI_GESETZ) ? KC.MIDI_GESETZ : MIDI_GESETZ_FALLBACK;
-const MIDI_VIS = (KC && KC.MIDI_VIS) ? KC.MIDI_VIS : { lab:'gm-bus-map', host:'none' };
-const BUS_CH = MIDI_GESETZ.busCh || MIDI_GESETZ_FALLBACK.busCh;
-const GM_PROGRAM = MIDI_GESETZ.gmProgram || MIDI_GESETZ_FALLBACK.gmProgram;
+const BUS_CH = { harmony:0, lead:1, bass:2, sim:3 };
+const GM_PROGRAM = { GrandPiano:0, Rhodes:4, Guitar:24, DoubleBass:32,
+                     Strings:48, Flute:73, LeadSynth:81, SynthPad:89,
+                     Sub808:38, SynthBass:38, Vibraphone:11, Marimba:12,
+                     Kalimba:108, Organ:16, Clavinet:7, SynthBrass:62,
+                     ReeseBass:39, DistGuitar:30, PickBass:34 };
 let curBeat = 0, curStepTime = 0;
 let midiLog = [], tempoLog = [];
 function logDrum(note, t, vel){
@@ -975,8 +670,7 @@ function playNote(t, midi, dur, vel, inst, bus, opts){
    deshalb sample-genau in Puffer gerechnet und pro Ton/Anschlag gecacht:
    perfekte Stimmung, ein Bruchteil der Laufzeitkosten. */
 const BUF_CACHE = new Map();
-/* V18.491.248 — Lab sample-buffer cache cap ← BUF_GESETZ fail-soft; Host none (BUF_VIS). */
-const BUF_MAX = (KC && KC.BUF_GESETZ && Number.isFinite(KC.BUF_GESETZ.max)) ? KC.BUF_GESETZ.max : 90;
+const BUF_MAX = 90;
 const velBucket = v => v < 0.4 ? 0 : v < 0.75 ? 1 : 2;
 
 function cachedBuffer(key, seconds, fill){
@@ -1651,7 +1345,7 @@ function buildTones(bar){
   const h = laws.harmony;
   const scale = SCALES[state.scaleName] || SCALES.dorian;
   const prog = getProgression(bar);
-  var ext = (KC && typeof KC.colorExt === "function") ? KC.colorExt(mods.color) : (1 + (mods.color > 0.35 ? 1 : 0) + (mods.color > 0.7 ? 1 : 0));
+  const ext = KC.colorExt(mods.color);
   let tones;
   if (h === 'Blues'){
     const off = [0, 2, 4, 5, 7, 9, 11][prog.deg % 7];
@@ -2314,27 +2008,19 @@ function devNotesFor(bar){
    Figur: genre-typische Rhythmuszelle × Kontur, Downbeat auf einen
    Akkordton gesnappt, Auftakt vor Phrasenstarts. Die Rec-Phase SPIELT
    den Hook — dadurch erben Reprisen und Durchführung ihn gratis. */
-/* V18.491.226 — Lab hook rhythm/contour tables read HOOK_GESETZ fail-soft;
-   Host none (HOOK_VIS). ART_* remains Lab-local for the next pulse. */
-const HOOK_GESETZ_FALLBACK = {
-  rhythms: {
-    Rock:      [[0,1],[3,.55],[6,.9],[10,.7],[12,.55]],
-    Funk:      [[0,1],[3,.6],[7,.9],[10,.55],[14,.7]],
-    Swing:     [[0,1],[4,.65],[6,.5],[10,.85],[13,.55]],
-    Shuffle:   [[0,1],[4,.65],[6,.5],[10,.85]],
-    Bossa:     [[0,1],[3,.7],[8,.8],[11,.55],[14,.65]],
-    Breakbeat: [[0,1],[6,.6],[8,.85],[11,.55]],
-    HalfTime:  [[0,1],[8,.8],[11,.5]],
-    Straight:  [[0,1],[6,.65],[8,.85],[14,.55]],
-    None:      [[0,1],[8,.7]]
-  },
-  contours: [ [0,2,4,2,0], [0,0,3,2,0], [4,2,0,2,4],
-              [0,-1,0,2,4], [7,5,4,2,0], [0,2,0,-1,2] ]
+const HOOK_RHYTHMS = {
+  Rock:      [[0,1],[3,.55],[6,.9],[10,.7],[12,.55]],
+  Funk:      [[0,1],[3,.6],[7,.9],[10,.55],[14,.7]],
+  Swing:     [[0,1],[4,.65],[6,.5],[10,.85],[13,.55]],
+  Shuffle:   [[0,1],[4,.65],[6,.5],[10,.85]],
+  Bossa:     [[0,1],[3,.7],[8,.8],[11,.55],[14,.65]],
+  Breakbeat: [[0,1],[6,.6],[8,.85],[11,.55]],
+  HalfTime:  [[0,1],[8,.8],[11,.5]],
+  Straight:  [[0,1],[6,.65],[8,.85],[14,.55]],
+  None:      [[0,1],[8,.7]]
 };
-const HOOK_GESETZ = (KC && KC.HOOK_GESETZ) ? KC.HOOK_GESETZ : HOOK_GESETZ_FALLBACK;
-const HOOK_RHYTHMS = (HOOK_GESETZ && HOOK_GESETZ.rhythms) || HOOK_GESETZ_FALLBACK.rhythms;
-const HOOK_CONTOURS = (HOOK_GESETZ && Array.isArray(HOOK_GESETZ.contours))
-  ? HOOK_GESETZ.contours : HOOK_GESETZ_FALLBACK.contours;
+const HOOK_CONTOURS = [ [0,2,4,2,0], [0,0,3,2,0], [4,2,0,2,4],
+                        [0,-1,0,2,4], [7,5,4,2,0], [0,2,0,-1,2] ];
 /* ── Artikulation ──
    Musiker spielen keine Tonlängen, sie spielen VERHÄLTNISSE:
      stc  — Staccato (Funk-Zunge, 38 % des Abstands)
@@ -2344,26 +2030,19 @@ const HOOK_CONTOURS = (HOOK_GESETZ && Array.isArray(HOOK_GESETZ.contours))
             die offene Saite des Gitarristen.
    Jede Hook-Zelle bekommt ihre Artikulation aus dem Genre-Profil,
    seeded variiert; Phrasenenden ringen. */
-/* V18.491.227 — Lab articulation lengths/profiles read ART_GESETZ fail-soft;
-   Host none (ART_VIS). */
-const ART_GESETZ_FALLBACK = {
-  len: { stc: 0.38, det: 0.62, ten: 0.95, ring: 1.55 },
-  profiles: {
-    Funk:      ['stc','stc','det','stc'],
-    Swing:     ['ten','stc','ten','ring'],
-    Shuffle:   ['ten','stc','ten','ring'],
-    Rock:      ['det','det','ring','det'],
-    OneDrop:   ['det','stc','ten','stc'],
-    Bossa:     ['ten','ten','det','ring'],
-    Breakbeat: ['det','stc','det','stc'],
-    HalfTime:  ['ten','ring','ten','ring'],
-    Straight:  ['det','det','ten','det'],
-    None:      ['ring','ten','ring','ten']
-  }
+const ART_LEN = { stc: 0.38, det: 0.62, ten: 0.95, ring: 1.55 };
+const ART_PROFILES = {
+  Funk:      ['stc','stc','det','stc'],
+  Swing:     ['ten','stc','ten','ring'],
+  Shuffle:   ['ten','stc','ten','ring'],
+  Rock:      ['det','det','ring','det'],
+  OneDrop:   ['det','stc','ten','stc'],
+  Bossa:     ['ten','ten','det','ring'],
+  Breakbeat: ['det','stc','det','stc'],
+  HalfTime:  ['ten','ring','ten','ring'],
+  Straight:  ['det','det','ten','det'],
+  None:      ['ring','ten','ring','ten']
 };
-const ART_GESETZ = (KC && KC.ART_GESETZ) ? KC.ART_GESETZ : ART_GESETZ_FALLBACK;
-const ART_LEN = (ART_GESETZ && ART_GESETZ.len) || ART_GESETZ_FALLBACK.len;
-const ART_PROFILES = (ART_GESETZ && ART_GESETZ.profiles) || ART_GESETZ_FALLBACK.profiles;
 function articProfile(){ return ART_PROFILES[laws.rhythm] || ART_PROFILES.Straight; }
 
 function makeHook(){
@@ -2454,17 +2133,12 @@ function hookBarNotes(bar, role, lazy){
    die Eins bleibt leer (der Bass fällt IN den Drop hinein), dann
    melodische Akkordton-Zellen mit Pausen. Pro Song komponiert,
    seed-deterministisch, 2-taktig mit Variation. */
-/* V18.491.233 — Lab riddim cell templates read RIDDIM_GESETZ fail-soft;
-   Host none (RIDDIM_VIS). makeRiddim varDrop stays local (not in GESETZ). */
-const RIDDIM_GESETZ_FALLBACK = [
+const RIDDIM_TEMPLATES = [
   [ {s:2,t:'r',l:3}, {s:6,t:'5',l:2}, {s:8,t:'r',l:5}, {s:14,t:'3',l:2} ],
   [ {s:2,t:'r',l:2}, {s:5,t:'3',l:3}, {s:8,t:'r',l:4}, {s:12,t:'5',l:2}, {s:14,t:'o',l:2} ],
   [ {s:3,t:'r',l:3}, {s:8,t:'r',l:4}, {s:11,t:'b7',l:2}, {s:14,t:'5',l:2} ],
   [ {s:2,t:'r',l:4}, {s:8,t:'5',l:3}, {s:12,t:'r',l:4} ]
 ];
-const RIDDIM_GESETZ = (KC && Array.isArray(KC.RIDDIM_GESETZ) && KC.RIDDIM_GESETZ.length === 4)
-  ? KC.RIDDIM_GESETZ : RIDDIM_GESETZ_FALLBACK;
-const RIDDIM_TEMPLATES = RIDDIM_GESETZ;
 function makeRiddim(){
   const cells = RIDDIM_TEMPLATES[(rng() * RIDDIM_TEMPLATES.length) | 0];
   return { cells, varDrop: rng() < 0.5 };           // Takt 2: letzte Zelle fällt
@@ -2480,9 +2154,7 @@ function riddimToneMidi(t, tones){
 
 /* ── Pocket ── Timing IST der Flow: die LoFi-Snare liegt hinter dem
    Beat, die Funk-Hat treibt davor. Millisekunden, die man fühlt. */
-/* V18.491.231 — Lab pocket ms offsets read POCKET_GESETZ fail-soft;
-   Host none (POCKET_VIS). LoFi +8/+8 stays local (not in GESETZ). */
-const POCKET_GESETZ_FALLBACK = {
+const POCKET = {
   Swing:     { s: 14, h: -2, m: 12, b: 4 },
   Shuffle:   { s: 12, h:  0, m: 10, b: 4 },
   Straight:  { s:  2, h: -4, m:  0, b: 0 },
@@ -2493,8 +2165,6 @@ const POCKET_GESETZ_FALLBACK = {
   Rock:      { s:  2, h: -5, m:  0, b: 0 },
   None:      { s:  0, h:  0, m:  0, b: 0 }
 };
-const POCKET_GESETZ = (KC && KC.POCKET_GESETZ) ? KC.POCKET_GESETZ : POCKET_GESETZ_FALLBACK;
-const POCKET = POCKET_GESETZ || POCKET_GESETZ_FALLBACK;
 function pocket(){
   const p = Object.assign({}, POCKET[laws.rhythm] || POCKET.Straight);
   if (drumKit() === 'LoFi'){ p.s += 8; p.m += 8; }        // Dilla-Lehne
@@ -2648,9 +2318,7 @@ function newBar(){
     else if (E === 1){
       const r = state.root + sc[4 % L];
       tones = [r, r + 4, r + 7, r + 10];
-      var addFin = (KC && typeof KC.colorFinaleAdd === "function") ? KC.colorFinaleAdd(mods.color) : (mods.color > 0.4);
-      var semiFin = (KC && KC.COLOR_EXT && isFinite(KC.COLOR_EXT.finaleSemi)) ? KC.COLOR_EXT.finaleSemi : 14;
-      if (addFin) tones.push(r + semiFin);
+      if (mods.color > 0.4) tones.push(r + 14);
     } else tones = stack(state.root, 0, sc, 2);
     tones = [...new Set(tones)].sort((a, b) => a - b);
     state.chord = { deg: E === 1 ? 4 : E === 0 ? 1 : 0, tones,
@@ -3008,24 +2676,11 @@ resize();
      · Formgrenzen sind Wasserfall-Vorhänge. Das Finale ist die große
        stehende Welle — der echte Ritardando verlangsamt den Fluss. */
 let vizNotes = [], vizSteps = [], vizBars = [], rootTrail = [], vizHits = [], vizEch = [];
-/* V18.491.246 — Lab voice viz colors ← VOICE_GESETZ fail-soft; Host none (VOICE_VIS). */
-const VOICE_GESETZ_FALLBACK = { bass:'#6ea0ff', harmony:'#b48cff', lead:'#ffb45a', sim:'#7ee0a3' };
-const VOICE_COL = (KC && KC.VOICE_GESETZ && KC.VOICE_GESETZ.bass && KC.VOICE_GESETZ.harmony && KC.VOICE_GESETZ.lead && KC.VOICE_GESETZ.sim)
-  ? Object.assign({}, KC.VOICE_GESETZ)
-  : Object.assign({}, VOICE_GESETZ_FALLBACK);
-/* V18.491.242 — Lab circle-of-fifths PC order ← FIFTHS_GESETZ fail-soft; Host none (FIFTHS_VIS). */
-const FIFTHS_GESETZ_FALLBACK = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
-const FIFTHS = (KC && Array.isArray(KC.FIFTHS_GESETZ) && KC.FIFTHS_GESETZ.length === 12)
-  ? KC.FIFTHS_GESETZ.slice()
-  : FIFTHS_GESETZ_FALLBACK.slice();
-/* V18.491.234 — Lab form block maps read FORM_GESETZ fail-soft;
-   Host none (FORM_VIS). */
-const FORM_GESETZ_FALLBACK = { AABA:[['A',8],['A',8],['B',8],['A',8]],
+const VOICE_COL = { bass:'#6ea0ff', harmony:'#b48cff', lead:'#ffb45a', sim:'#7ee0a3' };
+const FIFTHS = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
+const FORM_BLOCKS = { AABA:[['A',8],['A',8],['B',8],['A',8]],
                       AAB:[['A',4],['A',4],['B',4]],
                       Sonata:[['Expo',16],['Dev',16],['Repr',16]] };
-const FORM_GESETZ = (KC && KC.FORM_GESETZ && KC.FORM_GESETZ.AABA && KC.FORM_GESETZ.AAB && KC.FORM_GESETZ.Sonata)
-  ? KC.FORM_GESETZ : FORM_GESETZ_FALLBACK;
-const FORM_BLOCKS = FORM_GESETZ;
 
 function vizPush(t, d, m, bus, v, inst, from){
   if (!AC) return;
@@ -3065,22 +2720,14 @@ function pushVizBar(bar, E){
 }
 
 /* ── Pure 3D-Projektion (testbar) ── */
-/* V18.491.232 — Lab 3D projection defaults read CAM_GESETZ fail-soft;
-   Host none (CAM_VIS). camFor curve deltas 55/155 stay local. */
-const CAM_GESETZ_FALLBACK = { F: 470, camH: 250, zMin: -300 };
-const _CG = (KC && KC.CAM_GESETZ) ? KC.CAM_GESETZ : null;
-const CAM = {
-  F:    (_CG && Number.isFinite(_CG.F))    ? _CG.F    : CAM_GESETZ_FALLBACK.F,
-  camH: (_CG && Number.isFinite(_CG.camH)) ? _CG.camH : CAM_GESETZ_FALLBACK.camH,
-  zMin: (_CG && Number.isFinite(_CG.zMin)) ? _CG.zMin : CAM_GESETZ_FALLBACK.zMin
-};
+const CAM = { F: 470, camH: 250, zMin: -300 };
 /* Kamera-Kurve 3P↔1P: pv=0 Überblick, pv=1 Auge knapp über der
    Wasserhaut — pure Funktion, weich blendbar */
 function camFor(pv, Hpx){
   const k = clamp(pv, 0, 1);
   return {
-    F:    CAM.F - 55 * k,
-    camH: CAM.camH - 155 * k,                     // 1P: Auge bei 95 — man STEHT im Fluss
+    F:    470 - 55 * k,
+    camH: 250 - 155 * k,                          // 1P: Auge bei 95 — man STEHT im Fluss
     hor:  Hpx * (0.30 + 0.05 * k),
     znow: 22 * k,                                 // Aktionsebene vors Gesicht
     zn:   -60 - 220 * k                           // Wasser reicht hinter dich
@@ -3115,21 +2762,7 @@ function nextSectionBoundary(bar){
 
 /* ── Wasser-Physik (pur & testbar) ──
    λ(f): Wellenlänge aus der Frequenz — die eine wahre Zuordnung */
-/* V18.491.224 — Lab reads RIPPLE_GESETZ fail-soft; Host none (RIPPLE_VIS). */
-const RIPPLE_GESETZ_FALLBACK = {
-  lamOffset: 26, lamScale: 5200, lamFMin: 20, lamMin: 28, lamMax: 150,
-  twoPi: 6.2832, envTauMul: 1.6, radialDecay: 260, speed: 150,
-  defaultLife: 1.6, hopSpring: 5.2,
-};
-const RIPPLE_GESETZ = (KC && KC.RIPPLE_GESETZ) ? KC.RIPPLE_GESETZ : RIPPLE_GESETZ_FALLBACK;
-function rippleLawNum(key){
-  const value = RIPPLE_GESETZ && RIPPLE_GESETZ[key];
-  return isFinite(value) ? value : RIPPLE_GESETZ_FALLBACK[key];
-}
-function lamF(f){
-  return clamp(rippleLawNum('lamOffset') + rippleLawNum('lamScale') /
-    Math.max(rippleLawNum('lamFMin'), f), rippleLawNum('lamMin'), rippleLawNum('lamMax'));
-}
+function lamF(f){ return clamp(26 + 5200 / Math.max(20, f), 28, 150); }
 /* Ein Ring: läuft mit konstanter Geschwindigkeit, klingt in Zeit UND
    Radius ab; Wellenzahl aus λ */
 function rippleAt(rp, x, z, now){
@@ -3138,65 +2771,50 @@ function rippleAt(rp, x, z, now){
   const zs = rp.z0 - age * ZV;                     // Quelle treibt flussab
   const r = Math.hypot(x - rp.x0, z - zs);
   const front = age * rp.c;
-  const k = rippleLawNum('twoPi') / rp.lam;
+  const k = 6.2832 / rp.lam;
   return rp.amp *
          Math.sin(k * (r - front)) *
-         Math.exp(-Math.abs(r - front) / (rp.lam * rippleLawNum('envTauMul'))) *
-         Math.exp(-r / rippleLawNum('radialDecay')) *
+         Math.exp(-Math.abs(r - front) / (rp.lam * 1.6)) *
+         Math.exp(-r / 260) *
          (1 - age / rp.life);
 }
 /* Hüpf-Kurve des Melodie-Balls: 0→1 mit federndem Überschwingen */
 function hopEase(k){
   k = clamp(k, 0, 1);
-  return 1 - Math.pow(1 - k, 2) * Math.cos(k * rippleLawNum('hopSpring'));
+  return 1 - Math.pow(1 - k, 2) * Math.cos(k * 5.2);
 }
 
-/* V18.491.223 — Lab genre weather reads SCENES_GESETZ fail-soft; Host none (SCENES_VIS).
-   The preset table and fallback law live in klang-core; grain and drum semantics stay Lab-local. */
-const SCENES_GESETZ_FALLBACK = {
-  byPreset: {
-    Rock: { skyTop:[14,70,30], choppy:1.7, ember:true },
-    Funk: { skyTop:[28,60,26], choppy:1.4 },
-    Ambient: { skyTop:[210,45,16], choppy:0.45, aurora:true },
-    Cinematic: { skyTop:[225,35,14], choppy:0.6, letterbox:true, godray:true },
-    LoFi: { skyTop:[35,35,20], choppy:0.8 },
-    BoomBap: { skyTop:[30,30,18], choppy:0.9 },
-    Trap: { skyTop:[275,45,14], choppy:1.1 },
-    DnB: { skyTop:[195,55,18], choppy:1.6 },
-    Techno: { skyTop:[190,60,16], choppy:1.2, pulse:1.8 },
-    Synthwave: { skyTop:[300,55,20], choppy:0.9, aurora:true },
-    Dub: { skyTop:[150,40,16], choppy:0.8 },
-    Bossa: { skyTop:[25,55,22], choppy:0.7 },
-    Latin: { skyTop:[20,65,24], choppy:1.1 },
-    Vibes: { skyTop:[250,25,12], choppy:0.7 },
-    Reggae: { skyTop:[45,55,20], choppy:0.8 },
-  },
-  fallbackSkyTop: [215,40,15],
-  choppyBase: 0.6,
-  choppyTensionMul: 0.9,
-  choppyMin: 0.5,
-  choppyMax: 1.6,
-  defaultPulse: 1,
+/* ── Genre-Wetter ──
+   Jedes Genre bekommt eine eigene Atmosphäre — primär über das Preset,
+   mit musikalischen Fallbacks (BPM, Puls, Kit), damit auch eigene
+   Konfigurationen Charakter zeigen. Pure Ableitung, daher testbar. */
+const SCENES = {
+  Rock:     { skyTop:[14,70,30], choppy:1.7, ember:true },
+  Funk:     { skyTop:[28,60,26], choppy:1.4 },
+  Ambient:  { skyTop:[210,45,16], choppy:0.45, aurora:true },
+  Cinematic:{ skyTop:[225,35,14], choppy:0.6, letterbox:true, godray:true },
+  LoFi:     { skyTop:[35,35,20], choppy:0.8 },
+  BoomBap:  { skyTop:[30,30,18], choppy:0.9 },
+  Trap:     { skyTop:[275,45,14], choppy:1.1 },
+  DnB:      { skyTop:[195,55,18], choppy:1.6 },
+  Techno:   { skyTop:[190,60,16], choppy:1.2, pulse:1.8 },
+  Synthwave:{ skyTop:[300,55,20], choppy:0.9, aurora:true },
+  Dub:      { skyTop:[150,40,16], choppy:0.8 },
+  Bossa:    { skyTop:[25,55,22], choppy:0.7 },
+  Latin:    { skyTop:[20,65,24], choppy:1.1 },
+  Vibes:    { skyTop:[250,25,12], choppy:0.7 },
+  Reggae:   { skyTop:[45,55,20], choppy:0.8 }
 };
-const SCENES_GESETZ = (KC && KC.SCENES_GESETZ) ? KC.SCENES_GESETZ : SCENES_GESETZ_FALLBACK;
-const SCENES = SCENES_GESETZ.byPreset || SCENES_GESETZ_FALLBACK.byPreset;
 function sceneFor(){
   const p = SCENES[lastPreset] || {};
-  const law = SCENES_GESETZ || SCENES_GESETZ_FALLBACK;
-  const skyFallback = Array.isArray(law.fallbackSkyTop) ? law.fallbackSkyTop : SCENES_GESETZ_FALLBACK.fallbackSkyTop;
-  const choppyBase = isFinite(law.choppyBase) ? law.choppyBase : SCENES_GESETZ_FALLBACK.choppyBase;
-  const choppyTensionMul = isFinite(law.choppyTensionMul) ? law.choppyTensionMul : SCENES_GESETZ_FALLBACK.choppyTensionMul;
-  const choppyMin = isFinite(law.choppyMin) ? law.choppyMin : SCENES_GESETZ_FALLBACK.choppyMin;
-  const choppyMax = isFinite(law.choppyMax) ? law.choppyMax : SCENES_GESETZ_FALLBACK.choppyMax;
-  const defaultPulse = isFinite(law.defaultPulse) ? law.defaultPulse : SCENES_GESETZ_FALLBACK.defaultPulse;
   return {
-    skyTop:  p.skyTop || skyFallback,
-    choppy:  p.choppy !== undefined ? p.choppy : clamp(choppyBase + mods.tension * choppyTensionMul, choppyMin, choppyMax),
+    skyTop:  p.skyTop || [215, 40, 15],
+    choppy:  p.choppy !== undefined ? p.choppy : clamp(0.6 + mods.tension * 0.9, 0.5, 1.6),
     ember:   !!p.ember,
     aurora:  p.aurora !== undefined ? !!p.aurora : laws.rhythm === 'None',
     letterbox: !!p.letterbox,
     godray:  !!p.godray,
-    pulse:   p.pulse || defaultPulse,
+    pulse:   p.pulse || 1,
     grain:   instruments.drums === 'LoFi',
     streaks: state.bpm >= 150
   };
@@ -3227,7 +2845,7 @@ function glowSprite(col){
   return c;
 }
 function addRipple(x0, z0, f, amp, life){
-  ripples.push({ x0, z0, t0: AC ? AC.currentTime : 0, lam: lamF(f), amp, c: rippleLawNum('speed'), life: life || rippleLawNum('defaultLife') });
+  ripples.push({ x0, z0, t0: AC ? AC.currentTime : 0, lam: lamF(f), amp, c: 150, life: life || 1.6 });
   if (ripples.length > 16) ripples.shift();
 }
 function spawnParts3(x, y, z, col, n, spd, up){
@@ -3263,10 +2881,10 @@ function groundRing(view, x, z, r, col, alpha, lw){
   ctx.stroke(); ctx.globalAlpha = 1;
 }
 
-/* V18.491.225 — Lab instrument forms read INSTVIS_GESETZ fail-soft; Host none (INSTVIS_VIS).
+/* ── Instrument-Formsprache (Ball- & Fontänen-Köpfe, Legende) ──
    Bewegungsfrequenzen = Syntheseparameter: Rhodes 4,3 Hz, Reese
    0,35 Hz, Streicher 5,2 Hz, Orgel 5,7 Hz. Die Optik IST die DSP. */
-const INSTVIS_GESETZ_FALLBACK = {
+const INST_VIS = {
   GrandPiano:{ k:'diamond', sus:0 },
   Rhodes:    { k:'square',  sus:0, trem:4.3 },
   Guitar:    { k:'string',  sus:0 },
@@ -3287,15 +2905,10 @@ const INSTVIS_GESETZ_FALLBACK = {
   DistGuitar:{ k:'bolt',    sus:0 },
   PickBass:  { k:'string',  sus:0, thick:1.5 }
 };
-const INST_VIS = (KC && KC.INSTVIS_GESETZ) ? KC.INSTVIS_GESETZ : INSTVIS_GESETZ_FALLBACK;
 function echoPlan(t, bus){
   const send = (delaySend[bus] || 0) * fx.echo;
   if (send < 0.05) return [];
-  var E=(KC&&KC.RAUM&&KC.RAUM.echo)?KC.RAUM.echo:{beatFrac:0.75,minSec:0.06,maxSec:1.8};
-  var bf=isFinite(E.beatFrac)?E.beatFrac:0.75;
-  var mn=isFinite(E.minSec)?E.minSec:0.06;
-  var mx=isFinite(E.maxSec)?E.maxSec:1.8;
-  const dT = clamp(beatSec() * bf, mn, mx);
+  const dT = clamp(beatSec() * 0.75, 0.06, 1.8);
   const out = [];
   let a = send * 0.8;
   for (let k = 1; k <= 3 && a > 0.055; k++){ out.push({ t: t + dT * k, a }); a *= 0.45; }
@@ -4325,13 +3938,7 @@ function updateLiveBox(){
 }
 
 /* ── Mixer-UI: Fader (−24…+6 dB) + Mute pro Kanal, Echo-Regler ── */
-/* V18.491.270 — Lab mixer strip labels ← STRIPLBL_GESETZ fail-soft; Host none (STRIPLBL_VIS). ≠ STRIP_GESETZ numbers. */
-const STRIPLBL_GESETZ_FALLBACK = { drums:'Drums', bass:'Bass', harmony:'Akkorde', lead:'Melodie', sim:'Simulator' };
-const STRIP_LABELS = (KC && KC.STRIPLBL_GESETZ
-  && KC.STRIPLBL_GESETZ.drums && KC.STRIPLBL_GESETZ.bass && KC.STRIPLBL_GESETZ.harmony
-  && KC.STRIPLBL_GESETZ.lead && KC.STRIPLBL_GESETZ.sim)
-  ? Object.assign({}, KC.STRIPLBL_GESETZ)
-  : Object.assign({}, STRIPLBL_GESETZ_FALLBACK);
+const STRIP_LABELS = { drums:'Drums', bass:'Bass', harmony:'Akkorde', lead:'Melodie', sim:'Simulator' };
 function buildMixerUI(){
   const c = document.getElementById('mixer');
   Object.keys(mixState).forEach(k => {
@@ -4362,9 +3969,7 @@ function buildMixerUI(){
   es.addEventListener('input', () => {
     fx.echo = parseFloat(es.value);
     ev.textContent = Math.round(fx.echo * 100) + ' %';
-    var E=(KC&&KC.RAUM&&KC.RAUM.echo)?KC.RAUM.echo:{returnProEcho:0.85};
-    var eRet=isFinite(E.returnProEcho)?E.returnProEcho:0.85;
-    if (AC && dlyRet) dlyRet.gain.setTargetAtTime(fx.echo * eRet, AC.currentTime, 0.05);
+    if (AC && dlyRet) dlyRet.gain.setTargetAtTime(fx.echo * 0.85, AC.currentTime, 0.05);
   });
 }
 
@@ -4523,23 +4128,29 @@ function buildPresets(){
   });
 }
 
-/* V18.491.135 — live table = __klangCore.RAUM.DELAY_SENDS; stub = cold-core def only */
-const DELAY_SENDS = { def:{ lead:.12 } };
+/* Genre-typische Echo-Anteile pro Kanal: Dub lebt vom Delay,
+   Ambient badet darin, Jazz braucht fast keins */
+const DELAY_SENDS = {
+  Reggae:{ harmony:.4, lead:.34, drums:.1 }, Ambient:{ lead:.45, harmony:.3 },
+  LoFi:{ lead:.2, harmony:.12 }, BoomBap:{ lead:.16 }, Trap:{ lead:.2 },
+  DnB:{ lead:.22 }, Techno:{ lead:.26, harmony:.1 }, Modern:{ lead:.2 },
+  Dub:{ harmony:.5, lead:.42, drums:.2 }, Synthwave:{ lead:.3, harmony:.2 },
+  Bossa:{ lead:.18 }, Latin:{ lead:.14 }, Funk:{ lead:.14 },
+  Cinematic:{ lead:.3, harmony:.22 }, Vibes:{ lead:.16 }, Rock:{ lead:.18 },
+  def:{ lead:.12 }
+};
 
 function applyPreset(name){
   const p = PRESETS[name];
   Object.keys(LAWS).forEach(k => laws[k] = p[k]);
   Object.keys(INSTRUMENTS).forEach(k => instruments[k] = p.inst[k]);
-  // V18.491.129 TILT_VIS.lab=mixer-ui
   mixTilt = Object.assign({}, p.tilt || {});
   if (AC) applyMixState();                      // Hierarchie live übernehmen
   DNA.forEach(d => mods[d.k] = p[d.k]);
   state.bpm = p.bpm;
   prevVoicing = null;
   lastPreset = name;
-  // V18.491.130 DELAY_SENDS ← __klangCore.RAUM.DELAY_SENDS fail-soft
-  var DS=(KC&&KC.RAUM&&KC.RAUM.DELAY_SENDS)?KC.RAUM.DELAY_SENDS:DELAY_SENDS;
-  const ds = DS[name] || DS.def || DELAY_SENDS.def;
+  const ds = DELAY_SENDS[name] || DELAY_SENDS.def;
   ['drums','bass','harmony','lead'].forEach(k => {
     delaySend[k] = ds[k] || 0;
     if (AC && strips[k]) strips[k].sendD.gain.setTargetAtTime(delaySend[k], AC.currentTime, 0.05);
@@ -4547,8 +4158,7 @@ function applyPreset(name){
   setLofi(p.inst.drums === 'LoFi');
   setDelayFromBpm();
   if (state.playing) tempoLog.push({ b: curBeat, bpm: state.bpm });
-  var hRetP=(KC&&KC.RAUM&&KC.RAUM.hall&&isFinite(KC.RAUM.hall.returnProSpace))?KC.RAUM.hall.returnProSpace:0.5;
-  if (reverbReturn && AC) reverbReturn.gain.setTargetAtTime(mods.space * hRetP, AC.currentTime, 0.08);
+  if (reverbReturn && AC) reverbReturn.gain.setTargetAtTime(mods.space * 0.5, AC.currentTime, 0.08);
   syncLawUI(); syncDnaUI(); updateLiveBox();
   toast('Preset · ' + name);
 }
@@ -4675,10 +4285,7 @@ function flashEl(el){
   el.classList.add('active');
   setTimeout(() => el.classList.remove('active'), 140);
 }
-/* V18.491.214 — Lab simulator durations ← SIMDUR_GESETZ fail-soft; Host none (SIMDUR_VIS). */
-const SIMDUR_GESETZ_FALLBACK = { GrandPiano:2.6, Guitar:2.2, Rhodes:1.8, Strings:1.6, SynthPad:2.0, LeadSynth:0.7, Flute:1.2, Sub808:1.0, Vibraphone:3.2, Marimba:1.3, Kalimba:1.5, Organ:1.6, Clavinet:1.0, SynthBrass:1.2, DistGuitar:1.6, PickBass:1.4 };
-const SIM_DUR = (KC && KC.SIMDUR_GESETZ) ? KC.SIMDUR_GESETZ : SIMDUR_GESETZ_FALLBACK;
-const SIMDUR_VIS = (KC && KC.SIMDUR_VIS) ? KC.SIMDUR_VIS : { lab:'sim-dur-16', host:'none' };
+const SIM_DUR = { GrandPiano:2.6, Guitar:2.2, Rhodes:1.8, Strings:1.6, SynthPad:2.0, LeadSynth:0.7, Flute:1.2, Sub808:1.0, Vibraphone:3.2, Marimba:1.3, Kalimba:1.5, Organ:1.6, Clavinet:1.0, SynthBrass:1.2, DistGuitar:1.6, PickBass:1.4 };
 /* ── Jam-Modus ──
    Spielt der Mensch bei laufendem Generator 4+ Töne binnen 4 s,
    destilliert die Engine daraus Intervalle + Rhythmus und macht sie
@@ -4852,12 +4459,7 @@ document.getElementById('sBpm').addEventListener('input', e => {
   updateLiveBox();
 });
 
-/* V18.491.241 — Lab piano keymap ← KEYMAP_GESETZ fail-soft; Host none (KEYMAP_VIS). */
-const KEYMAP_GESETZ_FALLBACK = { a:60, w:61, s:62, e:63, d:64, f:65, t:66, g:67, z:68, h:69, u:70, j:71, k:72 };
-const KEYMAP = (KC && KC.KEYMAP_GESETZ && Object.keys(KC.KEYMAP_GESETZ).length === 13)
-  ? Object.assign({}, KC.KEYMAP_GESETZ)
-  : Object.assign({}, KEYMAP_GESETZ_FALLBACK);
-
+const KEYMAP = { a:60, w:61, s:62, e:63, d:64, f:65, t:66, g:67, z:68, h:69, u:70, j:71, k:72 };
 window.addEventListener('keydown', e => {
   const tag = (e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || e.metaKey || e.ctrlKey || e.altKey) return;

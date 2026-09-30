@@ -15,10 +15,11 @@
 //       (voxelChunkGrass: nur null-Einträge · 0 Halm-Instanzen · Lod-Map gefüllt =
 //       die Front ist zufrieden) — und KEIN Page-Error (der Schnitt crasht nirgends);
 //   (b) QUELLE (kommentar-bereinigt): kein `_grassBladeTuftGeometry`, kein `_tickGrassThin`,
-//       die Existenz-Gabel `if (!grassStudio)` steht, die Dichte ist das Studio-Literal 1,
+//       V18.492: der Bau verbucht halm-los (kein InstancedMesh, Pool + Studio-Halm + Stufen-
+//       Tick geschnitten), die Halme zeichnet der Terrain-Albedo (`_halmHoch`),
 //       der Idle-Pass ruft keinen Gras-Thin mehr.
-// Die STUDIO-Wiese selbst (Halm = Studio-Asset, volle Dichte) beweisen der volle
-// foundry-ON-Playtest + gate:foundry-warm. GPU-frei.
+// Die Boden-Wiese selbst (Parallax-Halme) beweist das Bild (PFLICHT-OFFEN D); der volle
+// Playtest prüft ihren Konsum (Boden-Grün → Halm-Gewicht). GPU-frei.
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -108,10 +109,17 @@ function stripComments(src) {
             o.tuftMethodGone = typeof r._grassBladeTuftGeometry === "undefined";
             o.thinMethodGone = typeof r._tickGrassThin === "undefined";
             o.densityMapGone = st.voxelChunkGrassDensity === undefined;
+            // V18.492 (die Linse wandert mit dem Gras-Schnitt 21.07.): die Wiese ist
+            // BODEN-FUNKTION — der Bau verbucht jede Zelle bewusst halm-los (null), baut
+            // KEIN InstancedMesh, die Halm-Maschinerie (Pool/Studio-Geometrie/Stufen-
+            // Tick) ist physisch geschnitten, die Halme zeichnet der Terrain-Albedo.
             const buildSrc = strip(r._buildVoxelChunkGrass.toString());
-            o.existenzGabel = /if \(!grassStudio\) \{/.test(buildSrc);
-            o.dichteLiteral = /const grassDensityScale = 1;/.test(buildSrc);
-            o.farFactorLiteral = /const farFactor = 1;/.test(buildSrc);
+            o.existenzGabel = /voxelChunkGrass\.set\(key, null\)/.test(buildSrc) && !/InstancedMesh/.test(buildSrc);
+            o.dichteLiteral =
+                typeof r._acquireGrassMesh === "undefined" &&
+                typeof r._grassStudioGeometry === "undefined" &&
+                typeof r._tickGrassStage === "undefined";
+            o.farFactorLiteral = /_halmHoch/.test(strip(r._terrainGeologyAlbedo.toString()));
             o.keinTuftAufruf = !/_grassBladeTuftGeometry/.test(buildSrc);
             const idleSrc = strip(r._tickScatterStreaming.toString());
             o.idleOhneGrasThin = !/_tickGrassThin/.test(idleSrc);
@@ -153,7 +161,7 @@ function stripComments(src) {
             pass: out.tuftMethodGone && out.thinMethodGone && out.densityMapGone && staticTuftGone && staticThinGone,
         },
         {
-            name: "die Existenz-Gabel steht (`if (!grassStudio)`) + Studio-Literale (Dichte 1, farFactor 1) + kein Tuft-Aufruf",
+            name: "die Wiese ist Boden-Funktion: Zellen halm-los verbucht, kein InstancedMesh, Pool/Studio-Halm/Stufen-Tick geschnitten, Parallax-Halme im Terrain-Albedo",
             pass: out.existenzGabel && out.dichteLiteral && out.farFactorLiteral && out.keinTuftAufruf,
         },
         {

@@ -184,12 +184,15 @@ const server = http.createServer((req, res) => {
         //   deko-fernfeld  — _buildDekoFernfeldSpecies (Fern-Impostor-Ring derselben Familie)
         //   terrain-stitch — _rebuildLodStitchBand (LOD-Naht-Band + Skirt, Terrain-Familie)
         //   wetter-regen   — _ensureRainSystem (Niederschlags-Punkte, nur bei rainy/stormy sichtbar)
+        //   deck-streu     — die Vor-Bau-Stufe des Fernfelds (Deck-Streu, 20.07.: Vegetation vor dem
+        //                    Bau, dieselbe Familie wie deko-fernfeld; V18.492 ins Wörterbuch)
         // FAIL-CLOSED: ein Stempel, den das Wörterbuch nicht kennt, ist eine VERLETZUNG.
         const INVENTAR = {
             "streu-klein": { b: "substanz", why: "streu-klein (KLEIN_VEGETATION, kein Studio-Zwilling)" },
             "deko-fernfeld": { b: "substanz", why: "deko-fernfeld (Fern-Impostor der kleinen Streu)" },
             "terrain-stitch": { b: "substanz", why: "terrain-stitch (LOD-Naht-Band + Skirt)" },
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
+            "deck-streu": { b: "substanz", why: "deck-streu (Vor-Bau-Stufe des Fernfelds)" },
         };
         const chainOf = (node) => {
             const c = [];
@@ -265,6 +268,10 @@ const server = http.createServer((req, res) => {
                 // 2) Welt-Substanz-Identitäten:
                 if ((node.userData && node.userData.isHydrosphere) || waterSet.has(node))
                     return tally("substanz", "wasser");
+                // V18.381 — das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
+                // und jede andere Hydro-Fläche tragen ihre Identität als hydroKind-Stempel.
+                if (node.userData && typeof node.userData.hydroKind === "string")
+                    return tally("substanz", "wasser (" + node.userData.hydroKind + ")");
                 if (node.userData && node.userData.voxelChunkX !== undefined) return tally("substanz", "terrain-chunk");
                 if (grassSet.has(node)) {
                     // Studio-Gras trägt den Bäcker-Stempel; ein Gras-Mesh OHNE ihn wäre der

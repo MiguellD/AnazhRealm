@@ -49,6 +49,19 @@ const FORBIDDEN = [
     { token: "_creatureFaceLOD", fiel: "KONVERGENZ III — die Gesichts-LOD-Gruppe" },
     { token: "CREATURE_FACE_LOD_DIST_SQ", fiel: "KONVERGENZ III" },
     { token: "__anazhHeadlessSkinResCap", fiel: "KONVERGENZ III — der Headless-Skin-Res-Knopf" },
+    // DER GRAS-ABSCHIED GANZ (V18.492) — die Wiese ist Boden-Funktion (21.07.); die
+    // Halm-Maschinerie, die den Schnitt überlebte (Mesh-Pool, Studio-Halm-Geometrie,
+    // Stufen-Tick — jeden Frame ein No-op), ist physisch raus und kommt nicht zurück.
+    { token: "_acquireGrassMesh", fiel: "V18.492 — kein Halm-Mesh, kein Pool" },
+    { token: "_releaseGrassMesh", fiel: "V18.492" },
+    { token: "_drainGrassMeshPool", fiel: "V18.492" },
+    { token: "_grassMeshPool", fiel: "V18.492" },
+    { token: "_grassConeGeometry", fiel: "V18.492" },
+    { token: "GRASS_POOL_CAP", fiel: "V18.492" },
+    { token: "GRASS_MAX_BLADES", fiel: "V18.492" },
+    { token: "_grassStudioGeometry", fiel: "V18.492 — die Studio-Halm-Geometrie" },
+    { token: "_tickGrassStage", fiel: "V18.492 — der Stufen-Tick lief ins Leere" },
+    { token: "voxelChunkGrassStage", fiel: "V18.492" },
     // DIE EINE PIPE (V18.458) — die Stamm-Tunnel neben der Foundry sind gefallen:
     // die Kreatur ist ein Pipe-Asset (Gattungs-Bäcker BAKERS_BY_KIND in foundry-core,
     // Ofen-Assemblierung + Memo/Clone im Stamm). Kein Inline-Baum-Bau, kein eigenes
