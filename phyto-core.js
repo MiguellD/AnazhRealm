@@ -490,7 +490,7 @@
     // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3) }.
     function buildFoliageQuads(leaves, opts) {
         opts = opts || {};
-        const col = opts.leafColor || [0.29, 0.48, 0.17];
+        const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
         const bScale = opts.scale != null ? opts.scale : 2.35;
         const nScale = opts.needleScale != null ? opts.needleScale : 1.3;
         const list = leaves || [];
@@ -601,7 +601,7 @@
     //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc} }.
     function buildLeafBlades(leaves, opts) {
         opts = opts || {};
-        const col = opts.leafColor || [0.29, 0.48, 0.17];
+        const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
         const sMul = opts.scale != null ? opts.scale : 1.0;
         const cup = opts.cup != null ? opts.cup : 0.5;
         const shape =

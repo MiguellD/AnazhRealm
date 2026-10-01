@@ -1196,8 +1196,8 @@ function emitTree(P) {
             buildTube(barkGeos, stubRings, P, deadA, deadB, nodes.trunkR, true, 0.85); // STAMM-Oberflaeche, keine Floete, schliesst im Punkt
         }
     }
-    const lc = seasonTint.clone(),
-        lc2 = seasonAccent.clone();
+    const lc = vegFarbe(seasonTint),
+        lc2 = vegFarbe(seasonAccent);
     let useTexL = __lod === 1 && !P.conifer && P.kind !== "shrub" && (P.trop || 0) < 0.55; // FIX v32: Trauerwuchs (Weide) bleibt geometrisch — haengende Straehnen SIND ihr Look   // FIX v31: Mittelfeld-Laubbaeume -> Textur-Cluster (Nadeln bleiben Geometrie: billig + Cluster saehen falsch aus; Straeucher bleiben nah-chunky)
     if (useTexL && !_leafAtlas) {
         try {
@@ -1225,7 +1225,7 @@ function emitTree(P) {
     let _lq = 0;
     for (const l of nodes.leaves) {
         if (l.needle) {
-            const col = new THREE.Color(0x2e5526).lerp(seasonTint, 0.2);
+            const col = vegFarbe(0x2e5526).lerp(lc, 0.2);
             pushNeedle(
                 folGeos,
                 l.pos,
@@ -1244,7 +1244,7 @@ function emitTree(P) {
             const tint = lc
                 .clone()
                 .lerp(lc2, _tj * 0.5)
-                .lerp(new THREE.Color(P.leafCol), P.kind === "shrub" ? 0.72 : 0.45);
+                .lerp(vegFarbe(P.leafCol), P.kind === "shrub" ? 0.72 : 0.45);
             if (useTexL) {
                 pushLeafClusterQuad(
                     folGeosTex,
@@ -1301,8 +1301,8 @@ function emitFlower(P) {
                 sw1,
                 1.0,
                 0.9,
-                new THREE.Color(0x3c6a24),
-                new THREE.Color(0x4f7a2e),
+                vegFarbe(0x3c6a24),
+                vegFarbe(0x4f7a2e),
                 0
             );
             prev = p2;
@@ -1310,7 +1310,7 @@ function emitFlower(P) {
     }
     const top = prev,
         tdir = d,
-        petalCol = new THREE.Color(P.flowerCol),
+        petalCol = vegFarbe(P.flowerCol),
         hsTop = hs;
     const bloom = (pos, bdir, headR, plen, prich, hsw) => {
         // Korbblueten-Einheit (Vogel-Spirale + Fibonacci-Petalen)
@@ -1331,15 +1331,15 @@ function emitFlower(P) {
             hsw,
             1,
             1,
-            new THREE.Color(0x5a4a20),
-            new THREE.Color(0x6a5a28),
+            vegFarbe(0x5a4a20),
+            vegFarbe(0x6a5a28),
             0
         );
         pushJointSphere(
             folGeos,
             vadd(pos, vscl(bdir, -headR * 0.35)),
             headR * 0.74,
-            new THREE.Color(0x6a5a28).lerp(petalCol, 0.12),
+            vegFarbe(0x6a5a28).lerp(petalCol, 0.12),
             hsw
         );
         const ff = __lod === 0 ? 1 : 0.4,
@@ -1352,7 +1352,7 @@ function emitFlower(P) {
                 vadd(vadd(pos, vscl(hr, Math.cos(th) * r)), vscl(u2, Math.sin(th) * r)),
                 vscl(bdir, H * 0.005)
             );
-            const col = new THREE.Color(0x6a4a18).lerp(new THREE.Color(0xc88a20), r / headR);
+            const col = vegFarbe(0x6a4a18).lerp(vegFarbe(0xc88a20), r / headR);
             pushSegment(
                 folGeos,
                 fp,
@@ -1383,7 +1383,7 @@ function emitFlower(P) {
                 bdir,
                 plen,
                 P.petalShape,
-                petalCol.clone().lerp(seasonTint, 0.08),
+                petalCol.clone().lerp(vegFarbe(seasonTint), 0.08),
                 3,
                 hsw,
                 a,
@@ -1413,8 +1413,8 @@ function emitFlower(P) {
                 hsTop * 1.1,
                 1,
                 1,
-                new THREE.Color(0x3c6a24),
-                new THREE.Color(0x4f7a2e),
+                vegFarbe(0x3c6a24),
+                vegFarbe(0x4f7a2e),
                 0
             );
             bloom(sp, vnorm(vadd(sd, [0, 0.42, 0])), P.headR, P.petalLen, P.petalRich, hsTop * 1.1);
@@ -1455,7 +1455,7 @@ function emitFlower(P) {
             [0, 1, 0],
             P.petalLen * 0.85,
             SHAPE.lance,
-            seasonTint.clone().lerp(seasonAccent, 0.4),
+            vegFarbe(seasonTint).lerp(vegFarbe(seasonAccent), 0.4),
             1,
             swl,
             aa,
@@ -1472,9 +1472,9 @@ function emitGrass(P) {
     const geos = [];
     const lf = __lod === 0 ? 1 : __lod === 1 ? 0.55 : 0.14;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
-    const baseCol = seasonTint.clone().multiplyScalar(0.6),
-        tipCol = seasonAccent.clone().multiplyScalar(1.08);
-    const seedCol = new THREE.Color(P.seedTan || 0xc8b27a);
+    const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
+        tipCol = vegFarbe(seasonAccent).multiplyScalar(1.08);
+    const seedCol = vegFarbe(P.seedTan || 0xc8b27a);
     const SH = P.seedHead || 0;
     for (let i = 0; i < N; i++) {
         const a = i * GOLDEN,
@@ -1738,7 +1738,7 @@ function buildBoulder(P) {
         feld = new THREE.Color(0xc69a86),
         mica = new THREE.Color(0x2c2a26),
         bleach = new THREE.Color(0xccc7b6),
-        moss = new THREE.Color(0x6f8a3e),
+        moss = vegFarbe(0x6f8a3e),
         iron = new THREE.Color(0x7a4a26);
     let minY = 1e9,
         maxY = -1e9;
@@ -1909,7 +1909,7 @@ function emitColumns(P) {
         const capStart = vb;
         positions.push(cx, h + P.colH * 0.03, cz);
         const ctop = baseCol.clone().lerp(topCol, 0.5);
-        if (rockLichen > 0) ctop.lerp(new THREE.Color(0x768a44), 0.4 * rockLichen);
+        if (rockLichen > 0) ctop.lerp(vegFarbe(0x768a44), 0.4 * rockLichen);
         cols.push(...ctop.toArray());
         vb++;
         for (let s = 0; s < M; s++) {
@@ -2503,6 +2503,18 @@ function deriveParamsPlant(pre) {
 
 function lerpHex(a, b, t) {
     return new THREE.Color(a).lerp(new THREE.Color(b), clamp(t, 0, 1)).getHex();
+}
+
+// DAS FARB-GESETZ DER VEGETATION (V18.506): ein Paletten-Hex ist eine sRGB-ABSICHT (Farbwähler,
+// wie im Kreatur-Bäcker unten und in jeder farb-verwalteten Pipeline) — die Albedo ist sein linearer
+// Wert. r128 las Hex ROH: Laub, Nadel, Halm, Stiel und Blüte lagen so 3–5× über der Natur (Zensus
+// 01.10.: Laub 0,31–0,53 · Gras-Büschel 0,47 · Stiel 0,38, real 0,06–0,16; das Boden-Gras der Welt
+// 0,085). Dekodiert: Eiche 0,16 · Nadel 0,09 · Stiel 0,12 · Blüte 0,49. Gelesen wird beim BACKEN (wo
+// die Palette zur Vertex-Farbe wird) — Labor, Welt, Karte und Fern-Fit tragen dieselben Bytes; die
+// Paletten selbst bleiben die Absicht. Rinde, Fels und Fachwerk liegen roh im Band und bleiben roh.
+function vegFarbe(c) {
+    const x = c && c.isColor ? c.clone() : new THREE.Color(c);
+    return x.convertSRGBToLinear();
 }
 
 function rockPhenotype(gen, sph, elong, round, rough, strat, IR) {

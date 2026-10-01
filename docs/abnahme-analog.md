@@ -273,6 +273,31 @@ Verhältnis Schatten : Sonne (linear, Belichtung 0,4 ohne Clipping): Rig 0,50 �
 18-%-Karte 126/125/119) macht die Wiese zum trüben Abend (Gras G 36 statt ~100) — die Asset-Albedos
 sind mit Belichtung 1,0 im Studio geeicht; die Belichtung bleibt, die Überbelichtung ist benannt.
 
+## V18.506 — die Albedo-Wahrheit und das Farb-Gesetz der Vegetation (01.10.)
+
+Die Überbelichtung (18-%-Karte 212) war eine Zahl ohne Täter; drei Linsen zerlegen sie
+(`werkbank albedo` · `werkbank licht` · `scripts/diag-albedo-zensus.cjs`, Karte liest 0,180):
+
+| Albedo Y (linear) | vorher | V18.506 | Natur |
+|---|---|---|---|
+| Laub Eiche · Strauch · Weide · Birke | 0,42 · 0,40 · 0,48 · 0,53 | 0,16 · 0,15 · 0,21 · 0,27 | 0,06–0,16 |
+| Nadel Fichte · Tanne · Mammut | 0,31 | 0,09 | 0,04–0,09 |
+| Gras-Büschel (mit Samen) · Blüten-Stiel | 0,47 · 0,38 | 0,25 · 0,13 | 0,06–0,16 |
+| Blüte (gelb) | 0,71 | 0,52 | 0,45–0,55 |
+| Boden-Gras (Welt) · Rinde · Fell · Haut | 0,085 · 0,10–0,15 · 0,08 · 0,30 | unverändert | im Band |
+| Kalkputz · Fachwerk-Holz · Fels | 0,66–0,82 · 0,30 · 0,22–0,61 | unverändert | Band bzw. hell |
+
+Die Wurzel: das FARB-GESETZ in foundry-core (Hex = sRGB-Absicht, nach linear gerechnet) galt nur im
+Kreatur-Bäcker; die Vegetation las Hex roh (r128). Seit V18.506 liest der Bäcker (`vegFarbe`) jede
+Vegetations-Palette als sRGB — Labor, Welt, Karte und Fern-Fit tragen dieselben Bytes; im Golden
+ändert sich nur der `color`-Puffer des Laub-Teils (Positionen, Normalen, Indizes byte-gleich). In
+der Welt liest die Krone jetzt 0,11–0,12 (Eiche), 0,085 (Tanne) — im selben Band wie das Boden-Gras.
+
+**Licht-Bilanz** (Karte über dem Kronendach, Mittag): Sonne E 7,18 waagrecht; der Himmel zählt
+dreifach — Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 2,58, das sind 0,36 der Sonne (klarer Himmel
+real 0,12–0,16); Schattenseite : Sonnenseite 0,57 (real 0,35–0,4). **Offen (E):** EIN Himmel
+(Hemi + Ambient sind Zwillinge der Umgebung) und die Belichtung (Karte 212; physikalisch +1 EV ≈ 165).
+
 ## Der echte GPU-Trace (Schöpfer-Holz)
 
 1. `npm run leuchtturm` (save-server + signaling), Welt im Browser öffnen, Holz-Profil „voll".

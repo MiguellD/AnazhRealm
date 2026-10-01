@@ -60370,11 +60370,12 @@ class AnazhRealm {
         return g;
     }
 
-    // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (roh, der Phyto-Pfad gewinnt); die
-    // Sättigung trägt das Licht-Rig, keine Pfad-Konstante.
+    // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (der Phyto-Pfad gewinnt). Das Farb-Gesetz
+    // der Vegetation (foundry-core `vegFarbe`, V18.506): der Hex ist eine sRGB-Absicht, die Albedo sein
+    // linearer Wert — `THREE.Color(hex)` dekodiert unter der Farb-Verwaltung von r184 genau so.
     _treeLeafBaseColor(skeleton, fo) {
-        const c0 = (skeleton && skeleton.foliageColor) || (fo && fo.color) || 0x4a8a3a;
-        return [((c0 >> 16) & 0xff) / 255, ((c0 >> 8) & 0xff) / 255, (c0 & 0xff) / 255];
+        const c = new THREE.Color((skeleton && skeleton.foliageColor) || (fo && fo.color) || 0x4a8a3a);
+        return [c.r, c.g, c.b];
     }
 
     // NAHER BAUM (LOD0): 30-Vert-Superformel-Blatt-Klingen aus den Nicht-Nadel-Phyto-Blättern über
@@ -60745,10 +60746,10 @@ class AnazhRealm {
         const uvs = new Float32Array(vCount * 2);
         // Kern-Farbe: das DUNKLE Innen-Grün (tiefer Kronen-Schatten) — die instanceColor (per-Spawn)
         // moduliert es wie die Karten, so matcht der Kern den Baum.
-        const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
-        const cr = (((c0 >> 16) & 0xff) / 255) * 0.5,
-            cg = (((c0 >> 8) & 0xff) / 255) * 0.62,
-            cb = ((c0 & 0xff) / 255) * 0.38;
+        const _kl = this._treeLeafBaseColor(skeleton, fo);
+        const cr = _kl[0] * 0.5,
+            cg = _kl[1] * 0.62,
+            cb = _kl[2] * 0.38;
         for (let i = 0; i < vCount; i++) {
             const ux = ip.getX(i),
                 uy = ip.getY(i),
@@ -86214,7 +86215,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.505.0";
+AnazhRealm.VERSION = "18.506.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

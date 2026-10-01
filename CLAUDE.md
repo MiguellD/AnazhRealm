@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.505.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.506.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -90,19 +90,19 @@ Mesh-Zone = Cull-Radius 100–150 m, Streu-Bäume L0/L1 Mesh + L2 Studio-Billboa
 steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, EINE Bake-Uhr
 (45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa8`):
 ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0);
-97–283 dc / 28–832k Dreiecke je Bild (analog3: 15–28 / 26–35k; Stock-Schwelle ~1 M). V18.494/495 (die Analog-Wette, Feld-Licht,
-Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: Überbelichtung (Lehre 21), Wiese (D) —
-`docs/abnahme-analog.md`.
+97–283 dc / 28–832k Dreiecke je Bild (Stock-Schwelle ~1 M); V18.494/495 trägt git log. Ehrlich
+offen: Überbelichtung (Lehre 21), Wiese (D) — `docs/abnahme-analog.md`.
 
 **V18.497–499 — HAUT + SCHALEN-FELL:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin →
 `__huelleAusFeld`, 25 Bones), das Fell 6 Schalen aus den fellStreu-Zeilen, Kopf und Kiefer je eine
 starre Haut. Wolf L0 315k → 57k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut hell gleich (−2/−4 %).
 
-**V18.500–504 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT:** Haus-L1 `flaechig` (L1
-2251k → 561k), Weiß backt nur mit Karte (`aaa10`), Gelenk-Kugeln nur an der Gabel, Stamm-Radius über
-dem Stammfuß (`aaa11`); `_voxelSurfaceY` liest den Nulldurchgang (vorher Ø 0,60 m zu tief); die
-Umgebung ist der SICHTBARE Himmel, Fill · Rim · Back nur im Labor (Schattenseite 50 % 162/181/202
-blaustichig → 154/177/189 kühl-neutral). Linsen: Ausgabe-Pfad · Bühne · Werkbank.
+**V18.500–506 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT · FARBE:** Haus-L1 `flaechig`
+(L1 2251k → 561k), Weiß backt nur mit Karte (`aaa10`), Gelenk-Kugeln nur an der Gabel (`aaa11`);
+`_voxelSurfaceY` liest den Nulldurchgang (vorher Ø 0,60 m zu tief); die Umgebung ist der SICHTBARE
+Himmel, Fill · Rim · Back nur im Labor; EINE Foundry-Frist ab Arbeitsbeginn; das FARB-GESETZ gilt für
+die Vegetation (Hex = sRGB-Absicht: Laub 0,42 → 0,16, Nadel 0,31 → 0,09). Linsen: Ausgabe-Pfad ·
+Bühne · Werkbank (`albedo` · `licht`) · `diag-albedo-zensus`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
@@ -184,10 +184,11 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
     Welt bleibt offen, Methode aus dem Arbeitsbaum live tauschen, Bild ~45 s statt Neustart ~5 min);
     die Beweis-Sonden bleiben der Richter je Commit. Vergleiche nur bei eingefrorener Welt (Tiere
     wandern ins Bild).
-21. **Die Licht-Kette ist EINE Eichung:** Asset-Albedo ↔ Rig ↔ Belichtung 1,0 sind im Studio
-    gemeinsam geeicht; die Welt fügt nur hinzu, was das Labor nicht hat (den echten Himmel als
-    Umgebung) und nie doppelt — Fill · Rim · Back leben nur im Labor. Eine physikalische Belichtung
-    (18-%-Karte mittelgrau, Belichtung ≈ 0,28) verlangt die Albedo-Eichung ALLER Klassen zugleich.
+21. **Die Licht-Kette ist EINE Eichung, Farbe eine sRGB-Absicht:** ein Paletten-Hex ist sRGB, die
+    Albedo sein linearer Wert (das FARB-GESETZ in foundry-core: Kreatur-Bäcker + Vegetation; r128
+    las roh, Laub lag 3–5× über der Natur). Die Welt fügt nur hinzu, was das Labor nicht hat (den
+    echten Himmel), nie doppelt — Fill · Rim · Back leben nur im Labor. Albedo misst `werkbank
+    albedo` / `diag-albedo-zensus` (Karte 0,180), Licht-Verhältnisse `werkbank licht` — nie das Auge.
 
 ## Workflows
 
