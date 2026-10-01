@@ -68093,7 +68093,10 @@ class AnazhRealm {
                                 mat.opacityNode = TSL.max(haar, wolle);
                                 mat.alphaTest = 0.5;
                                 const FS = AnazhRealm.FELL_SCHALE;
-                                mat.colorNode = TSL.vec4(vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)), 1.0);
+                                mat.colorNode = TSL.vec4(
+                                    vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
+                                    1.0
+                                );
                             }
                             const sT = schale
                                 ? aS.x
