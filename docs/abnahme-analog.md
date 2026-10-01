@@ -225,6 +225,36 @@ war der teuerste Einzelposten (69k je Busch, davon 24k Gelenk-Kugeln im Mutter-A
 
 Dreikant-Nadeln jenseits L0 wurden gemessen und verworfen (sichtbar: 5 % mittlere Abweichung).
 
+## V18.503 — die Linse wird ehrlich, der Boden trägt (01.10.)
+
+Drei Täuschungen der Look-Sonden, je mit Gegenprobe gemessen und an EINER Stelle geschnitten:
+
+| Täuschung | Gegenprobe | Schnitt |
+|---|---|---|
+| Eigenes Render-Target = linear, ungetont (r184: Tonemapping/sRGB nur am Ausgabe-Ziel) | graue Prüf-Kiste: im RT navy, im Canvas hell-lavendel | `scripts/lib/ausgabe-aufnahme.cjs`: das RT wird Ausgabe-Puffer, der echte Frame läuft hinein |
+| Wetter (Auto-Zug 120 s) und Jahreszeit (Jahr 2400 s) liefen frei | dieselbe Wiese: Sonne 90,2 · Regen 40,3 · Sturm 16,8 Boden-Helligkeit | die Bühne `__buehne()`: Mittag · Sonne · Sommer fest |
+| Höhe = erster Fels-Gitterpunkt (1,2-m-Raster) | Kamera 0,5 m über dem Wert stand im Gelände; 600 Punkte: Ø 0,60 m / max 1,20 m zu tief | `_voxelSurfaceY` interpoliert den Nulldurchgang (Ø 6 mm / max 0,20 m) |
+
+Der Höhen-Schnitt ist ein Spiel-Schnitt, keiner der Sonde: 25 Leser (Tier-Boden, `spawn_studio`,
+Streu, `getTerrainHeightAt`) setzten Dinge bis 1,2 m in den Hang — im Bild `aaa12` verschluckte er
+Tür und Erdgeschoss-Fenster des Hauses.
+
+**Die Wiese unter der Bühne** (Stelle −1004/−790, Spieler 25 m hinter der Kamera, echte Augenhöhe):
+
+| Blick | vorher (`wiese-ausgabe2`: Sturm, Kamera zu tief) | nachher (alt2) |
+|---|---|---|
+| fern (1,7 m, 10 m voraus) | 29,0 · Kontrast 1,32 | 96,0 · 3,04 — besonnte Wiese, Büschel mit Tiefe |
+| schräg (1,6 m, 3 m voraus) | — | 95,7 · 1,87 — getreppte Relief-Büschel (8 Schichten), ferne Hänge türkis überglänzt |
+| Knie (0,5 m) | Boden von unten (Kamera im Gelände) | 91,9 · 1,65 — die Wiese von oben |
+| Armlänge (1,6 m, 0,8 m voraus) | 25,3 · 0,08 | 101,5 · 0,32 — ein glatter grüner Schleier mit Himmels-Spiegelflecken |
+
+Rot-Proben (Albedo hart rot / Halm-Farbe rot): der Arm-Boden IST `_terrainGeologyAlbedo`; der
+Schleier ist die Eigenglätte der 9/m-Relief-Funktion auf 1–3 m, kein Fremd-Layer (Fern-Ring,
+Feld-Pass, Transparente ausgeblendet: Bild gleich). Verworfen nach Messung: eine Halm-Feinschicht
+(ein Halm je 1,8-cm-Zelle, 8 Schalen) — Armlänge 0,32 → 0,35, Knie dunkler (91,9 → 80,6), fern ein
+Rausch-Teppich statt Halmen. Über dem Hügel stehen je Sitzung zufällig die drei Himmels-Planeten
+(`_buildSkyPlanets`, `Math.random`) — Deko, kein Feld-Befund.
+
 ## Der echte GPU-Trace (Schöpfer-Holz)
 
 1. `npm run leuchtturm` (save-server + signaling), Welt im Browser öffnen, Holz-Profil „voll".
