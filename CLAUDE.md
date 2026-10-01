@@ -99,7 +99,7 @@ Haut (SDF-smin → `__huelleAusFeld`, dieselbe Hüllen-Maschine wie der Mensch, 
 sind 6 Schalen darüber (Länge · Ton · Legerichtung aus den fellStreu-Zeilen, Haar-Maske im Bind-
 Raum), die Strähnen fielen. Gemessen: Wolf L0 315k → 56k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut
 hell gleich (Fell-Linse −2/−4 %); V18.499: Kopf und Kiefer je eine starre Haut (der Kiefer öffnet).
-Offen: der Kopf trägt noch kein Schalen-Fell.
+Die Kopf-Zeile des Fell-Gesetzes (30 Strähnen, 5 % der Leib-Dichte, 2,8 mm) liegt unter dem Pixel — benannt, nicht gegossen.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·

@@ -3445,6 +3445,9 @@ function __tierKopfHaeute(hk, B, H, matFuer) {
 // Median · Haar-Zellen je Einheit = √Median — das Raster der Lab-Strähnen) · aWurzel (der Bind-Punkt
 // der Haar-Wurzel — die Haar-Maske liest ihn, damit jedes Haar EINE Säule über alle Schalen bleibt) ·
 // color (der gemischte Ton, linear). Das Welt-Material (Klasse fellSchale) maskiert und schattiert.
+// Benannt, nicht gegossen: die eine Kopf-Zeile des Gesetzes (headGroup, 30 Strähnen) — 5 % der Leib-Dichte,
+// in der Welt 2,8 × 0,8 mm (≈ 0,2 px breit bei 2 m); Kopf-Schalen kosteten ~9k Dreiecke für ein Büschel
+// unter dem Pixel. Die Kopf-Haut trägt den Fell-Look (FELL_LOOK.koerper).
 var TIER_FELL = Object.freeze({
     schalen: 6,
     basisVox: 2, // Schalen-Basis = jeder basisVox-te Rasterpunkt der Haut
