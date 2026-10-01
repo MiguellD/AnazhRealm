@@ -143,14 +143,6 @@ function triasStaticLaws(anazhSrc) {
             /studioGestalt = source\.studioGestalt/.test(clone) &&
                 !/donorOnly/.test(clone.replace(/donorOnly` reist BEWUSST NICHT/g, "")),
         ],
-        // ABSCHIEDS-WELLE (F) — der HOST-Stufen-Wunsch als DATEN: die haus-Policy traegt
-        // lodServe {1:2} (der Mittel-Ring spart gemessen kaum: L1 75k ~ L0 88k) und der
-        // EINE Flatten-Chokepoint liest die Tabelle (kein kind-Literal).
-        [
-            "T-S5: KIND_POLICY.haus traegt lodServe {1:2} + _foundryFlattenFor liest lodServe (Daten, kein if-Baum)",
-            /lodServe:\s*Object\.freeze\(\{\s*1:\s*2\s*\}\)/.test(nc) &&
-                /lodServe\[lod\]/.test(fnBody("_foundryFlattenFor")),
-        ],
         // ABSCHIEDS-WELLE (E) — der GEWICHTS-DECKEL des fCache: die Byte-Budget-Wand
         // (FOUNDRY_CACHE_BYTES) + die Bilanz am EINEN Chokepoint (_foundryCacheSet).
         [
@@ -181,27 +173,25 @@ function triasStaticLaws(anazhSrc) {
         const b4 = anazhSrc.replace(/studioGestalt = source\.studioGestalt/, "nixGestalt = source.nixGestalt");
         const l4 = triasStaticLaws(b4).find((l) => l[0].startsWith("T-S4"));
         check("Selbst-Test 3: Klon-Erbe entfernt -> T-S4 feuert", l4 && l4[1] === false);
-        const b5 = anazhSrc.replace(/lodServe\[lod\]/g, "nixServe[lod]");
-        const l5 = triasStaticLaws(b5).find((l) => l[0].startsWith("T-S5"));
-        check("Selbst-Test 3b: lodServe-Konsum entfernt -> T-S5 feuert", l5 && l5[1] === false);
         const b6 = anazhSrc.replace(/f\.cacheBytes > BYTES/g, "false");
         const l6 = triasStaticLaws(b6).find((l) => l[0].startsWith("T-S6"));
         check("Selbst-Test 3c: Byte-Budget-Wand entfernt -> T-S6 feuert", l6 && l6[1] === false);
-        // Die ZAHLEN-Linse ist nicht vakuoes: die schwere L1-Stufe (gemessen ~75k) liegt
-        // WEIT ueber dem Fern-Deckel je Haus — klebte L1 fern, risse der Deckel.
+        // Die ZAHLEN-Linse ist nicht vakuoes: die Nahstufe L0 (gemessen ~93k) liegt allein
+        // ueber dem Fern-Deckel — klebte sie fern, risse der Deckel (L1 ist seit V18.500 die
+        // leichte Flaechen-Stufe ~20k; ein fern klebendes L1 faengt B4 am Stufen-Schluessel).
         global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
         require(path.join(root, "fachwerk-core.js"));
         const FCst = globalThis.__fachwerkCore;
-        const g1 = FCst.buildInstance("alemannisch", 7, 1);
-        let t1 = 0;
-        g1.traverse((o) => {
+        const g0 = FCst.buildInstance("alemannisch", 7, 0);
+        let t0 = 0;
+        g0.traverse((o) => {
             if (o.isMesh && o.geometry)
-                t1 += o.geometry.index ? o.geometry.index.count / 3 : o.geometry.attributes.position.count / 3;
+                t0 += o.geometry.index ? o.geometry.index.count / 3 : o.geometry.attributes.position.count / 3;
         });
         check(
-            "Selbst-Test 4: EIN L1-Haus (~75k) risse den Fern-Deckel fuer 3 Haeuser (Zahl nicht vakuoes)",
-            t1 * 3 > HAUS_FERN_DECKEL_TRIS,
-            `L1=${Math.round(t1)} tris`
+            "Selbst-Test 4: EIN L0-Haus (~93k) risse den Fern-Deckel allein (Zahl nicht vakuoes)",
+            t0 > HAUS_FERN_DECKEL_TRIS,
+            `L0=${Math.round(t0)} tris`
         );
         // AUSLÖSCHUNGS-WELLE — N4 ist nicht vakuoes: eine gedriftete Substanz-Zeile
         // verfehlt die Muenze, eine fehlende Zeile wird null.
@@ -425,10 +415,9 @@ function triasStaticLaws(anazhSrc) {
         res.nearBuilt = hausStats();
         res.nearHeavy = near3.every((h) => h.instanced); // die 3 stehen (Voraussetzung)
 
-        // (2b) ABSCHIEDS-WELLE (F) — lodServe: im L1-RING serviert die Foundry die
-        // FERNSTUFE (2), waehrend die Distanz-Autoritaet 1 stempelt (KIND_POLICY.haus
-        // lodServe {1:2} — der Mittel-Ring spart gemessen kaum). Ring visH-echt
-        // via _chooseLODForDistance gescannt, Konvergenz gepumpt.
+        // (2b) FLAECHEN-STUFE (V18.500): im L1-RING stempelt die Distanz-Autoritaet 1 und
+        // die Foundry SERVIERT die echte Stufe 1 (das Studio liefert sie, kein Host-Mapping).
+        // Ring visH-echt via _chooseLODForDistance gescannt, Konvergenz gepumpt.
         const h0b = near3[0];
         const visH0 = r._lodTreeVisHeight(h0b);
         let dRing = -1;
@@ -444,12 +433,12 @@ function triasStaticLaws(anazhSrc) {
             const dlServe = performance.now() + 90000;
             while (performance.now() < dlServe) {
                 await pumpRender(24);
-                if (h0b._lodLevel === 1 && h0b._servedLod === 2) break;
+                if (h0b._lodLevel === 1 && h0b._servedLod === 1) break;
             }
-            res.lodServeLevel = h0b._lodLevel;
-            res.lodServeServed = h0b._servedLod;
+            res.l1Level = h0b._lodLevel;
+            res.l1Served = h0b._servedLod;
             const mS = h0b.instanced && h0b.instSlots[0] && h0b.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)\|/);
-            res.lodServeSlot = mS ? Number(mS[1]) : null;
+            res.l1Slot = mS ? Number(mS[1]) : null;
         }
 
         // (3) 120 m zuruecktreten (IM Cull-Radius) -> die EINE LOD-Geschichte demotet.
@@ -632,9 +621,9 @@ function triasStaticLaws(anazhSrc) {
             String(out.kloneSichtbar)
         );
         check(
-            "B11 (F/lodServe): im L1-Ring stempelt die Distanz-Autoritaet 1, die Foundry SERVIERT die Fernstufe 2 (Slot-Key-Beweis)",
-            out.lodServeLevel === 1 && out.lodServeServed === 2 && out.lodServeSlot === 2,
-            `ring=${out.l1RingDist}m level=${out.lodServeLevel} served=${out.lodServeServed} slot=${out.lodServeSlot}`
+            "B11 (Flaechen-Stufe): im L1-Ring stempelt die Distanz-Autoritaet 1 und die Foundry SERVIERT Stufe 1 (Slot-Key-Beweis)",
+            out.l1Level === 1 && out.l1Served === 1 && out.l1Slot === 1,
+            `ring=${out.l1RingDist}m level=${out.l1Level} served=${out.l1Served} slot=${out.l1Slot}`
         );
         check(
             "B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP 256)",

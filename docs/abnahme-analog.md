@@ -61,8 +61,8 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
   `_archFoundryZiegel` (Foundry-Flat; Bäume teilen Schlüssel + Fit mit der Streu), sonst
   `_archBoxFit` (≤ 24 AABB) — das ist die Gestalt JENSEITS der Mesh-Zone. Die Mesh-Zone ist der
   geregelte Cull-Radius (100–150 m): dort IST das Studio-Mesh mit seiner LOD-Kette die Gestalt
-  (L0 < 12 m · L1 < 26 m · L2 darüber; Haus: `KIND_POLICY.haus.lodServe {1:2}` serviert im Ring
-  12–26 m das L2-Destillat), bis es steht trägt das Feld. Bauten nah zuerst, das Budget zählt
+  (L0 < 12 m · L1 < 26 m · L2 darüber; Haus seit V18.500: L1 = die Flächen-Stufe des Studios,
+  17–33 % von L0, der Host-Umweg `lodServe` ist gefallen), bis es steht trägt das Feld. Bauten nah zuerst, das Budget zählt
   gebaute Meshes (≤ 24 Versuche je Takt), über Budget Takt-Garantie (1 je 250 ms). Fachwerk-Farben
   sRGB-dekodiert wie `THREE.Color`, bei vollem Fachwerk Silhouette vor Holz. Klein-Streu auf der
   Fern-Stufe (Zellen-LOD 2): `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
@@ -192,15 +192,24 @@ Fachwerk behält Dach und Wände).
   Backstein-Gefach, Fichten, Büsche), die Mesh-Zone steht (0 ungebaut). Das Feld trägt fern und in der Streaming-Rampe; dort bleibt es ein grober Satz,
   klein im Bild.
 - **Kosten:** zurück in der Größenordnung des Mesh-Stands (bis ~830k Dreiecke, bis 283 dc je Bild
-  auf kienspan), knapp unter der Stock-Schwelle deines Holzes (~1 M) — die schwersten Posten sind
-  Studio-Stufen ohne echte Reduktion (Konifere L0, Fachwerk L1). Der Richter ist der echte
+  auf kienspan), knapp unter der Stock-Schwelle deines Holzes (~1 M) — der schwerste Posten ohne
+  echte Reduktion ist die Konifere L0 (Fachwerk L1 geheilt: V18.500 Flächen-Stufe, unten). Der Richter ist der echte
   GPU-Trace (Ziellinie p95 ≤ 33 ms).
 - **Ehrlich offen:** die Schattenseiten sind sehr dunkel (MeshStandard-Box Albedo 0,5 liest
-  rgb ≈ 64/71/80 — key-dominantes Licht ohne Boden-Bounce); das Haus zeigt im Ring 12–26 m das
-  L2-Destillat, weil das Studio-L1 (75k) kaum billiger ist als L0 (88k) — ein echtes Mittel-LOD
-  fehlt im Studio; einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
+  rgb ≈ 64/71/80 — key-dominantes Licht ohne Boden-Bounce; das Haus fern bei 20 m liest so dunkel);
+  der ferne Fachwerk-Satz (jenseits der Mesh-Zone) kennt das Backstein-Gefach nicht (hell statt
+  rot); einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
   D (Wiese) — die Wiesen-Linse (`npm run lens:wiese`) findet die besonnte Stelle, aus Augenhöhe
   liest der Boden grau (Halm-Kontrast 0,20 / 0,05); der echte GPU-Trace auf dem Schöpfer-Holz.
+
+## V18.500 — die Haus-Flächen-Stufe (`aaa10`, dieselbe Sonde)
+
+- **Nah (7,5 m, L0):** die Backsteine stehen rot (aaa9c: weiß-blau — die Karten-Rolle backte Weiß,
+  die Welt liest nur Vertex-Farben). 140 dc / 153k Dreiecke im Bild.
+- **20 m (L1, serviert 1):** Rahmen, Fenster, Giebel, Schornstein statt der L2-Kiste — 181 dc /
+  27,5k Dreiecke im Bild (aaa9c mit L2: 234 / 28,3k).
+- **Studio (32 Kulturen, seed 7):** L1 2251k → 561k Dreiecke, L1 17–33 % von L0 (vorher 74–89 %);
+  Bild-Abstand L0↔L1 (Distanz-emuliert, alemannisch) 0,026 → 0,028 bei 4× weniger Dreiecken.
 
 ## Der echte GPU-Trace (Schöpfer-Holz)
 

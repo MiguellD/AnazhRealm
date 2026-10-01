@@ -68823,10 +68823,6 @@ class AnazhRealm {
                 for (let _si = 0; _si < _stages.length; _si++) if (_stages[_si] <= lod) _sv = _stages[_si];
                 lod = _sv;
             }
-            // Host-Stufen-Wunsch als DATEN (KIND_POLICY.lodServe, z. B. haus {1:2}): NACH der kindStages-Klammer
-            // gemappt, damit die Schlüssel deklarierte Stufen sind; _servedLod hält den Wechsel churn-frei.
-            const _polL = _rec && AnazhRealm.KIND_POLICY[_rec.kind];
-            if (_polL && _polL.lodServe && _polL.lodServe[lod] != null) lod = _polL.lodServe[lod];
         } else {
             // Ein-Stufen-Klammer auch für tree-ish Arten: deklariert die Art GENAU EINE Stufe (Tor gate=[0]),
             // klemmt jeder Wunsch dorthin — sonst baut der Worker inhaltsgleiche Zweit-Groups (Doppel-Cache,
@@ -86252,7 +86248,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.499.0";
+AnazhRealm.VERSION = "18.500.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -86350,16 +86346,14 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     }),
     // Haus-Domäne (fachwerk-core, kind:"haus", 32 Kultur-Archetypen): fx.place mode "settlement" +
     // siteTag "haus" über den Settlement-Kanal (exportSettlement → spawnSettlement) → placeExtra null.
-    // Donor = begehbarer Substanz-Datenblock (blockerAABBs mit TÜR-LÜCKE); kindStages.haus = [0,1,2].
-    // lodServe: Stufe 1 wird am EINEN Flatten-Chokepoint auf 2 gemappt (L1 ≈ 75k ≈ L0 88k Tris spart
-    // nichts, L2 = 2.8k); die eingefrorene Lab-Wahrheit kindStages bleibt unberührt.
+    // Donor = begehbarer Substanz-Datenblock (blockerAABBs mit TÜR-LÜCKE); kindStages.haus = [0,1,2] —
+    // alle drei serviert: L1 ist seit V18.500 die FLÄCHEN-STUFE des Studios (17–33 % von L0, höchstens 31k).
     haus: Object.freeze({
         prefix: "haus_",
         donor: "haus_basis",
         grown: false,
         builtIn: false,
         placeExtra: null,
-        lodServe: Object.freeze({ 1: 2 }),
     }),
 });
 // KIND_SUBSTANCE (unten) — die Judge-SUBSTANZ der Donor-Domänen + Werkzeug-Klasse als EINGEFRORENE

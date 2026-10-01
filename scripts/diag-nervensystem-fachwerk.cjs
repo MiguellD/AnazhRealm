@@ -319,12 +319,11 @@ function ksRow(src, name) {
         }
         // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2] LEBT) =====
         // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
-        // ABSCHIEDS-WELLE (lodServe, V9.56-i — der Test wandert mit dem Entscheid): die
-        // haus-Policy mappt den Stufen-WUNSCH 1 auf die Fernstufe 2 (KIND_POLICY.haus.
-        // lodServe {1:2} — L1 75k ~ L0 88k, der Mittel-Ring spart gemessen kaum). Also:
-        // Wahl 2 fragt |2| frisch an; Wahl 1 fragt DENSELBEN |2|-Key (kein frischer Key =
-        // der lodServe-Beweis, kein [0]-Kollaps); Wahl 5 faltet die lod>2-Klemme auf |2|;
-        // Wahl 0 bleibt die feine |0| (die Stufen-Existenz [0,1,2] beweist gate:trias N/B).
+        // FLÄCHEN-STUFE (V18.500 — der Test wandert mit dem Entscheid): L1 ist eine echte
+        // Studio-Stufe (17–33 % von L0), der Host-Umweg lodServe {1:2} ist gefallen. Also:
+        // Wahl 2 fragt |2| frisch an; Wahl 1 fragt die ECHTE Stufe |1| frisch an (kein
+        // Mapping, kein [0]-Kollaps); Wahl 5 faltet die lod>2-Klemme auf |2|; Wahl 0
+        // bleibt die feine |0| (die Stufen-Existenz [0,1,2] beweist gate:trias N/B).
         try {
             if (!f.requested) f.requested = new Set();
             const probe = (preset, lodWahl) => {
@@ -437,8 +436,8 @@ function ksRow(src, name) {
         out.f.err || String(out.f.k2)
     );
     check(
-        "F (Abschieds-Welle): die Wahl 1 mappt lodServe auf die schon angefragte Fernstufe |2| (kein frischer Key)",
-        out.f.k1 === null,
+        "F (Flächen-Stufe): die Wahl 1 wird mit der ECHTEN Stufe |1| bedient (kein Host-Mapping)",
+        /\|1\|/.test(out.f.k1 || ""),
         String(out.f.k1)
     );
     check(

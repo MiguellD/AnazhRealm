@@ -93,6 +93,9 @@ const FORBIDDEN = [
     // (fx.bewegung.hang.maxSlopeY), die Leser lesen den fail-closed
     // _bewegungsBlock direkt (kein Boot-Seed, kein State-Feld).
     { token: "maxWalkableSlopeY", fiel: "ZWILLINGS-ABSCHIED 19.07. — hang.maxSlopeY via _bewegungsBlock (fail-closed)" },
+    // FLÄCHEN-STUFE (V18.500): der Host-Umweg um ein L1, das nicht reduzierte, ist gefallen —
+    // das Studio liefert die Stufe selbst (Kosten gehören ins Asset, nie in den Host).
+    { token: "lodServe", fiel: "V18.500 — fachwerk-core L1 = Flächen-Stufe, kindStages [0,1,2] alle serviert" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

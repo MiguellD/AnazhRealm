@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.499.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.500.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -91,15 +91,18 @@ steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, 
 (45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa8`):
 ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0);
 97–283 dc / 28–832k Dreiecke je Bild (analog3: 15–28 / 26–35k; Stock-Schwelle ~1 M). V18.494/495 (die Analog-Wette, Feld-Licht,
-Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten, Haus 12–26 m
-= L2-Destillat (Studio-L1 kaum billiger), Wiese (D) — `docs/abnahme-analog.md`.
+Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten, Wiese (D) —
+`docs/abnahme-analog.md`.
 
-**V18.497/498 — HAUT + SCHALEN-FELL:** der Tier-Leib (~118 Fell-Ellipsoide) ist EINE geskinnte
-Haut (SDF-smin → `__huelleAusFeld`, dieselbe Hüllen-Maschine wie der Mensch, 25 Bones); das Fell
-sind 6 Schalen darüber (Länge · Ton · Legerichtung aus den fellStreu-Zeilen, Haar-Maske im Bind-
-Raum), die Strähnen fielen. Gemessen: Wolf L0 315k → 56k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut
-hell gleich (Fell-Linse −2/−4 %); V18.499: Kopf und Kiefer je eine starre Haut (der Kiefer öffnet).
-Die Kopf-Zeile des Fell-Gesetzes (30 Strähnen, 5 % der Leib-Dichte, 2,8 mm) liegt unter dem Pixel — benannt, nicht gegossen.
+**V18.497–499 — HAUT + SCHALEN-FELL:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin →
+`__huelleAusFeld`, 25 Bones), das Fell 6 Schalen aus den fellStreu-Zeilen, Kopf und Kiefer je eine
+starre Haut. Wolf L0 315k → 57k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut hell gleich (−2/−4 %).
+
+**V18.500 — FLÄCHEN-STUFE + KARTEN-GESETZ (fachwerk-core):** Haus-L1 ist eine echte Stufe
+(`flaechig`: Gefach-Fläche mit Fugen-Ton, Ziegel-Band je Reihe, Boden-Platten, Rahmen-Ring,
+Schornstein) — 32 Kulturen L1 2251k → 561k Dreiecke (17–33 % von L0), `lodServe` fiel; Schwung-
+Dächer segmentieren nach (Y,Z)-Länge (chinesisch L0 133k → 80k). Weiß backt nur, wo eine Karte
+die Farbe trägt — vorher standen 7 Kulturen in weißen Backsteinen (Bild `aaa10`: rot, L1 bei 20 m).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
@@ -107,8 +110,8 @@ NAH/MITTEL = Studio-Mesh + LOD-Kette (Tier · Baum · Haus · Streu) · FERN = A
 Kapseln · Baum-Kegel + Kronen-Lappen · Fachwerk-/Box-Satz · Streu-Gesetz) · GRAS = Boden-Funktion.
 OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS).
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bild
-`aaa8`) · D ohne besonnte Gras-Zone aus Augenhöhe · E gemessen; offen: Schatten, Wiese, GPU-Trace.
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
+`aaa8`–`aaa10`) · D ohne besonnte Gras-Zone aus Augenhöhe · E gemessen; offen: Schatten, Wiese, GPU-Trace.
 
 ## Architektur (die Karte)
 
@@ -168,7 +171,9 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
     der Mess-Wiese zeigen, nah UND fern. Die Analog-Welle (21.07.–30.09.) lief zwei Monate gegen
     ein nie festgelegtes Nah-Bild und kehrte nah zum Studio-Mesh zurück; nur fern blieb sie.
 19. **Kosten gehören ins Asset, nicht in den Host:** ein LOD, das nicht reduziert (Fachwerk L1 75k
-    ≈ L0 88k, Konifere L0 ~170k Vertices), heilt am Studio, nie über Host-Umwege (`lodServe`).
+    ≈ L0 88k → V18.500 Flächen-Stufe 20k; Konifere L0 ~170k Vertices), heilt am Studio, nie über
+    Host-Umwege (`lodServe` ist gefallen). Und: was die Lab-Karte trägt, muss kartenlos der Vertex
+    tragen — die Welt liest nur Vertex-Farben.
     Und nach jedem Push die CI lesen; schwere Echt-Renderer-Läufe nie parallel (CPU-Konkurrenz
     fälscht Zeitfristen).
 
