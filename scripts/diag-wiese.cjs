@@ -207,7 +207,9 @@ const RENDER_FN = async (kam, W, H, png) => {
     console.log(
         `Besonnte Wiese: ${best.x.toFixed(0)}/${best.z.toFixed(0)} · von oben Helligkeit ${best.hell.toFixed(1)}, Grün-Überschuss ${best.gruen.toFixed(1)} (${kand.length} Kandidaten)`
     );
-    const um = await umstellen(best.x, best.z);
+    // Der Spieler steht 25 m HINTER der Kamera (sie blickt nach +x): an der Stelle selbst stünde die
+    // Kamera im eigenen Körper — gemessen 01.10. im Ausgabe-Pfad (Gewand + Füße füllten das Bild).
+    const um = await umstellen(best.x - 25, best.z);
     console.log(`  umgestellt: ${um.takte} Takte · ${um.chunks} Chunks`);
     const g = await page.evaluate((b) => window.anazhRealm._voxelSurfaceY(b.x, b.z), best);
     const bericht = { tag: TAG, stelle: best, schuesse: {} };
