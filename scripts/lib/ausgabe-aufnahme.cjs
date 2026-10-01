@@ -44,6 +44,27 @@ function buehne() {
     return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
 }
 
+// DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern —
+// gemessen 01.10. (aaa13 Haus fern, aaa14 Kreatur fern): ein Tier lief in die Kamera und füllte das
+// Bild. Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
+// und LOD laufen weiter.
+function tiereHalten() {
+    const r = window.anazhRealm;
+    const P = Object.getPrototypeOf(r);
+    if (P.__tiereGehalten) return;
+    const org = P.updateCreatures;
+    P.__tiereGehalten = true;
+    P.updateCreatures = function (delta) {
+        const fest = (this.state.creatures || []).map((c) => [c, c.position.x, c.position.z]);
+        const o = org.call(this, delta);
+        for (const [c, x, z] of fest) {
+            c.position.x = x;
+            c.position.z = z;
+        }
+        return o;
+    };
+}
+
 function ausgabeAufnahme(W, H, warm) {
     return (async () => {
         const r = window.anazhRealm;
@@ -90,5 +111,6 @@ module.exports = {
     AUSGABE_INSTALL:
         `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
+        `window.__tiereHalten = ${tiereHalten.toString()};` +
         `(${saisonFest.toString()})();`,
 };
