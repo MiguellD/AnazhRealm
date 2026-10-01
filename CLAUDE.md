@@ -111,7 +111,7 @@ Kapseln · Baum-Kegel + Kronen-Lappen · Fachwerk-/Box-Satz · Streu-Gesetz) · 
 OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS).
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
-`aaa8`–`aaa10`) · D ohne besonnte Gras-Zone aus Augenhöhe · E gemessen; offen: Schatten, Wiese, GPU-Trace.
+`aaa8`–`aaa10`) · D fern besonnt, Armlänge Schleier · E gemessen; offen: Überbelichtung, Wiese, GPU-Trace.
 
 ## Architektur (die Karte)
 

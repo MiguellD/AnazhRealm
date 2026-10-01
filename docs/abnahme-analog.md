@@ -5,7 +5,7 @@
 > darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
 > Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
 > seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
-> die dunklen Schattenseiten, die Wiese (D), der echte GPU-Trace.**
+> die Überbelichtung der geeichten Licht-Kette, die Wiese auf Armlänge (D), der echte GPU-Trace.**
 
 ## Die Sonde
 
@@ -195,8 +195,9 @@ Fachwerk behält Dach und Wände).
   auf kienspan), knapp unter der Stock-Schwelle deines Holzes (~1 M) — der schwerste Posten ohne
   echte Reduktion ist die Konifere L0 (Fachwerk L1 geheilt: V18.500 Flächen-Stufe, unten). Der Richter ist der echte
   GPU-Trace (Ziellinie p95 ≤ 33 ms).
-- **Ehrlich offen:** die Schattenseiten sind sehr dunkel (MeshStandard-Box Albedo 0,5 liest
-  rgb ≈ 64/71/80 — key-dominantes Licht ohne Boden-Bounce; das Haus fern bei 20 m liest so dunkel);
+- **Ehrlich offen:** die „sehr dunklen Schattenseiten" (Box 0,5 las rgb ≈ 64/71/80) waren das
+  lineare Render-Target der Sonde; im echten Frame lasen sie blaustichig (V18.504 geheilt, unten);
+  offen ist die Überbelichtung der geeichten Licht-Kette (18-%-Karte 212 statt ~120);
   der ferne Fachwerk-Satz (jenseits der Mesh-Zone) kennt das Backstein-Gefach nicht (hell statt
   rot); einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
   D (Wiese) — die Wiesen-Linse (`npm run lens:wiese`) findet die besonnte Stelle, aus Augenhöhe
@@ -254,6 +255,23 @@ Feld-Pass, Transparente ausgeblendet: Bild gleich). Verworfen nach Messung: eine
 (ein Halm je 1,8-cm-Zelle, 8 Schalen) — Armlänge 0,32 → 0,35, Knie dunkler (91,9 → 80,6), fern ein
 Rausch-Teppich statt Halmen. Über dem Hügel stehen je Sitzung zufällig die drei Himmels-Planeten
 (`_buildSkyPlanets`, `Math.random`) — Deko, kein Feld-Befund.
+
+## V18.504 — das Licht der Welt (Graukarten an der Wiese, Werkbank)
+
+Paneele mit Albedo 0,18 / 0,5 (roughness 1) an der Wiese −1004/−790, Mittag, Ausgabe-Pfad. Jede
+Variante ~45 s in der Werkbank (eine offene Welt, Lichter live geschaltet):
+
+| Licht | 18-%-Karte | 50 % Sonnenseite | 50 % Schattenseite |
+|---|---|---|---|
+| V18.503: Umgebung aus `nebulaColor` + Studio-Rig | 204/202/199 | 191/198/212 | 162/181/202 (blaustichig) |
+| dieselbe Umgebung, nur Sonne | 200/197/192 | 185/189/203 | 0/25/102 (kein Rot) |
+| sichtbarer Himmel + Studio-Rig | 210/209/205 | 214/219/221 | 208/217/222 (flach) |
+| **V18.504: sichtbarer Himmel + Sonne + Hemi** | 212/212/209 | 220/225/227 | 154/177/189 (kühl-neutral) |
+
+Verhältnis Schatten : Sonne (linear, Belichtung 0,4 ohne Clipping): Rig 0,50 → Himmel + Sonne
+0,16–0,21, das Maß der Realität (0,15–0,2). **Belichtung:** eine physikalische Belichtung (0,28:
+18-%-Karte 126/125/119) macht die Wiese zum trüben Abend (Gras G 36 statt ~100) — die Asset-Albedos
+sind mit Belichtung 1,0 im Studio geeicht; die Belichtung bleibt, die Überbelichtung ist benannt.
 
 ## Der echte GPU-Trace (Schöpfer-Holz)
 
