@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.503.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.504.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -91,18 +91,18 @@ steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, 
 (45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa8`):
 ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0);
 97–283 dc / 28–832k Dreiecke je Bild (analog3: 15–28 / 26–35k; Stock-Schwelle ~1 M). V18.494/495 (die Analog-Wette, Feld-Licht,
-Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten, Wiese (D) —
+Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: Überbelichtung (Lehre 21), Wiese (D) —
 `docs/abnahme-analog.md`.
 
 **V18.497–499 — HAUT + SCHALEN-FELL:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin →
 `__huelleAusFeld`, 25 Bones), das Fell 6 Schalen aus den fellStreu-Zeilen, Kopf und Kiefer je eine
 starre Haut. Wolf L0 315k → 57k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut hell gleich (−2/−4 %).
 
-**V18.500–503 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN:** Haus-L1 ist eine echte Stufe
-(`flaechig`, 32 Kulturen L1 2251k → 561k Dreiecke, `lodServe` fiel); Weiß backt nur, wo eine Karte
-die Farbe trägt (`aaa10`); Gelenk-Kugeln nur an der Gabel (Pflanzen resident 0,69 → 0,53 M), der
-Stamm liest seinen Radius über dem Stammfuß (`aaa11`). `_voxelSurfaceY` liest den Nulldurchgang
-statt des 1,2-m-Gitters (vorher Ø 0,60 m zu tief: Haus, Tiere, Sonden-Kameras sanken ein).
+**V18.500–504 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT:** Haus-L1 `flaechig` (L1
+2251k → 561k), Weiß backt nur mit Karte (`aaa10`), Gelenk-Kugeln nur an der Gabel, Stamm-Radius über
+dem Stammfuß (`aaa11`); `_voxelSurfaceY` liest den Nulldurchgang (vorher Ø 0,60 m zu tief); die
+Umgebung ist der SICHTBARE Himmel, Fill · Rim · Back nur im Labor (Schattenseite 50 % 162/181/202
+blaustichig → 154/177/189 kühl-neutral). Linsen: Ausgabe-Pfad · Bühne · Werkbank.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
@@ -177,8 +177,17 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
     ≈ L0 88k → V18.500 Flächen-Stufe 20k; Konifere L0 ~170k Vertices), heilt am Studio, nie über
     Host-Umwege (`lodServe` ist gefallen). Und: was die Lab-Karte trägt, muss kartenlos der Vertex
     tragen — die Welt liest nur Vertex-Farben.
-    Und nach jedem Push die CI lesen; schwere Echt-Renderer-Läufe nie parallel (CPU-Konkurrenz
-    fälscht Zeitfristen).
+    Und nach jedem Push die CI lesen; Läufe mit ZEITFRISTEN (Einschwingen, Stufen-Takte) nie
+    parallel (CPU-Konkurrenz fälscht sie). Ein Warter matcht nie die eigene Befehlszeile
+    (`pgrep -f "[x]yz"`, und kein zweites `xyz` im selben Befehl) — heute 5× selbst getroffen.
+20. **Eine Frage, kein Neustart:** Look-Fragen gehen an die Werkbank (`scripts/werkbank.cjs`: EINE
+    Welt bleibt offen, Methode aus dem Arbeitsbaum live tauschen, Bild ~45 s statt Neustart ~5 min);
+    die Beweis-Sonden bleiben der Richter je Commit. Vergleiche nur bei eingefrorener Welt (Tiere
+    wandern ins Bild).
+21. **Die Licht-Kette ist EINE Eichung:** Asset-Albedo ↔ Rig ↔ Belichtung 1,0 sind im Studio
+    gemeinsam geeicht; die Welt fügt nur hinzu, was das Labor nicht hat (den echten Himmel als
+    Umgebung) und nie doppelt — Fill · Rim · Back leben nur im Labor. Eine physikalische Belichtung
+    (18-%-Karte mittelgrau, Belichtung ≈ 0,28) verlangt die Albedo-Eichung ALLER Klassen zugleich.
 
 ## Workflows
 

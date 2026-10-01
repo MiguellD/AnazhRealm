@@ -285,10 +285,6 @@ class AnazhRealm {
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
-            // Gerichtetes GRÜNES Bounce-Fill: sonnen-ABGEWANDT, grün·atm.col — formt die Schattenseite mit
-            // Laub-Farbe statt richtungslosem Ambient. Gesetzt in initThreeJS, pro Frame geführt von
-            // _dayNightApplyDirectionalLight.
-            fillLight: null,
             // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.
             // Position folgt _applyDayNightToScene/_updateCelestialBodies.
             sunMesh: null,
@@ -15927,7 +15923,14 @@ class AnazhRealm {
         // Nie PMREMGenerator.fromScene: greift in WebGL-Interna (`buffers`), unter WebGPURenderer (r184)
         // inkompatibel. Stattdessen eine CPU-Equirekt-Gradient-Textur als scene.environment.
         const nc = st.skyboxUniforms && st.skyboxUniforms.nebulaColor && st.skyboxUniforms.nebulaColor.value;
-        const sky = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
+        const tief = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
+        // DER SICHTBARE HIMMEL ALS LICHT: der Horizont ist die Nebel-Farbe — der Nebel deckt die Skybox, das
+        // IST der Himmel, den der Spieler sieht (die EINE tag/nacht/wetter-kohärente Horizont-Quelle); die
+        // Skybox-Tönung (nebulaColor) vertieft nur den Zenit. Gemessen 01.10.: aus nebulaColor allein lag
+        // der Schatten einer 50-%-Fläche bei sRGB 0/25/102 (kein Rot-Anteil, Licht wie unter Blaufolie).
+        const fc = st.scene.fog && st.scene.fog.color;
+        const hor = fc ? { r: fc.r, g: fc.g, b: fc.b } : tief;
+        const sky = { r: hor.r + tief.r, g: hor.g + tief.g, b: hor.b + tief.b }; // Drift-Schlüssel beider Quellen
         const last = st._skyEnvLastColor;
         // Idle-Freeze-Wand: die Tag-Nacht-Uhr driftet die Himmelsfarbe auch im Stehen; jede Regeneration
         // mit NEUER Texture-Identität ließ WebGPU die Pipelines aller env-samplenden PBR-Materialien neu
@@ -15958,16 +15961,24 @@ class AnazhRealm {
                 st._skyEnvTex = tex;
             }
             const d = st._skyEnvData;
+            // Die Farben sind LINEAR (THREE.Color), die Textur ist sRGB: kodieren statt roh schreiben — roh
+            // geschrieben dekodierte die Textur sie ein zweites Mal (tiefer, gesättigter).
+            const sRGB = (c) => {
+                const x = Math.max(0, Math.min(1, c));
+                return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055));
+            };
             for (let y = 0; y < H; y++) {
                 const v = 1 - y / (H - 1); // v=1 oben (Zenit) … 0 unten (Boden/Nadir)
-                // Boden 0.35× (erd-dunkel) → Horizont 1.0× → Zenit 1.6× (hell) — der Himmel-Auslesewert
-                const fac = v >= 0.5 ? 1.0 + 0.6 * ((v - 0.5) / 0.5) : 0.35 + 0.65 * (v / 0.5);
+                // Himmel: Horizont = Nebel-Farbe, zum Zenit halb in die Skybox-Tönung (klarer Himmel: oben
+                // tiefer blau, gleich hell); Boden 0.35× (erd-dunkel) → Horizont 1.0×.
+                const t = v >= 0.5 ? 0.5 * ((v - 0.5) / 0.5) : 0;
+                const fac = v >= 0.5 ? 1.0 : 0.35 + 0.65 * (v / 0.5);
                 // Subtiler Grün-Boden-Bounce: die untere Halbkugel (v<0.5) bekommt einen Grün-Stich, stärker zum
                 // Nadir, aus am Horizont — der Himmel bleibt unberührt.
                 const bounce = v < 0.5 ? 0.12 * (1 - v / 0.5) : 0; // 0 am Horizont → 0.12 am Nadir
-                const rr = Math.min(255, sky.r * fac * (1 - bounce * 0.5) * 255),
-                    gg = Math.min(255, sky.g * fac * (1 + bounce) * 255),
-                    bb = Math.min(255, sky.b * fac * (1 - bounce * 0.5) * 255);
+                const rr = sRGB((hor.r + (tief.r - hor.r) * t) * fac * (1 - bounce * 0.5)),
+                    gg = sRGB((hor.g + (tief.g - hor.g) * t) * fac * (1 + bounce)),
+                    bb = sRGB((hor.b + (tief.b - hor.b) * t) * fac * (1 - bounce * 0.5));
                 for (let x = 0; x < W; x++) {
                     const i = (y * W + x) * 4;
                     d[i] = rr;
@@ -34521,16 +34532,10 @@ class AnazhRealm {
             fern: TSL.uniform(9000),
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
             seitenN: TSL.uniform(0),
-            // DAS LICHT DER WELT (_feldLichtSync): die vier Richt-Lichter, Ambient, Hemi und die
+            // DAS LICHT DER WELT (_feldLichtSync): das Richt-Licht (Sonne/Mond), Ambient, Hemi und die
             // Himmels-Umgebung — dieselben Quellen und dieselbe BRDF wie jedes Mesh.
             l0d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            l1d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            l2d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            l3d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
             l0c: TSL.uniform(new THREE.Vector3()),
-            l1c: TSL.uniform(new THREE.Vector3()),
-            l2c: TSL.uniform(new THREE.Vector3()),
-            l3c: TSL.uniform(new THREE.Vector3()),
             ambientFarbe: TSL.uniform(new THREE.Vector3()),
             hemiOben: TSL.uniform(new THREE.Vector3()),
             hemiUnten: TSL.uniform(new THREE.Vector3()),
@@ -34629,7 +34634,7 @@ class AnazhRealm {
         // Elevation-Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. textureDimensions braucht
         // f32/i32-Casts (WGSL-Spec).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l1d: vec3<f32>, l2d: vec3<f32>, l3d: vec3<f32>, l0c: vec3<f32>, l1c: vec3<f32>, l2c: vec3<f32>, l3c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -35007,12 +35012,11 @@ class AnazhRealm {
                 "    }\n" + // Seiten-Loop zu
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
                 "    if (bestT < 1e29) {\n" +
-                "        // DAS LICHT DER WELT: Richt-Lichter + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
+                "        // DAS LICHT DER WELT: Richt-Licht + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
                 "        // Himmels-Irradianz (albedo·env) — die Formel des MeshStandard-Diffus, ohne Ton-Klemme:\n" +
                 "        // die Belichtung macht die Ausgabe-Kette für Feld und Mesh gemeinsam.\n" +
                 "        let nY = bestN.y;\n" +
-                "        let direkt = l0c * max(dot(bestN, l0d), 0.0) + l1c * max(dot(bestN, l1d), 0.0)\n" +
-                "            + l2c * max(dot(bestN, l2d), 0.0) + l3c * max(dot(bestN, l3d), 0.0);\n" +
+                "        let direkt = l0c * max(dot(bestN, l0d), 0.0);\n" +
                 "        let hemi = mix(hemiUnten, hemiOben, nY * 0.5 + 0.5);\n" +
                 "        let env = select(mix(envMitte, envOben, nY), mix(envMitte, envUnten, -nY), nY < 0.0);\n" +
                 "        let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
@@ -35050,13 +35054,7 @@ class AnazhRealm {
             fwd: U.fwd,
             seitenN: U.seitenN,
             l0d: U.l0d,
-            l1d: U.l1d,
-            l2d: U.l2d,
-            l3d: U.l3d,
             l0c: U.l0c,
-            l1c: U.l1c,
-            l2c: U.l2c,
-            l3c: U.l3c,
             ambientFarbe: U.ambientFarbe,
             hemiOben: U.hemiOben,
             hemiUnten: U.hemiUnten,
@@ -36201,26 +36199,20 @@ class AnazhRealm {
     }
 
     // DAS LICHT DER WELT für den Feld-Pass: liest dieselben Quellen wie jedes MeshStandard —
-    // Sonne/Mond, Fill, Rim, Back (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
+    // Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
     // und die Himmels-Umgebung (Irradianz aus DENSELBEN Bytes wie `_skyEnvTex`, je Normalen-y).
     // Der Nebel ist `scene.fog` (linear, View-Tiefe) wie beim Mesh.
     _feldLichtSync(U) {
         const st = this.state;
-        const quellen = [st.directionalLight, st.fillLight, st.rimLight, st.backLight];
-        const dirs = [U.l0d, U.l1d, U.l2d, U.l3d];
-        const cols = [U.l0c, U.l1c, U.l2c, U.l3c];
         const nullV = this._nullVektor || (this._nullVektor = new THREE.Vector3());
-        for (let i = 0; i < 4; i++) {
-            const l = quellen[i];
-            if (!l || l.visible === false || !(l.intensity > 0)) {
-                cols[i].value.set(0, 0, 0);
-                continue;
-            }
-            dirs[i].value
+        const l = st.directionalLight;
+        if (!l || l.visible === false || !(l.intensity > 0)) U.l0c.value.set(0, 0, 0);
+        else {
+            U.l0d.value
                 .copy(l.position)
                 .sub(l.target && l.target.position ? l.target.position : nullV)
                 .normalize();
-            cols[i].value.set(l.color.r * l.intensity, l.color.g * l.intensity, l.color.b * l.intensity);
+            U.l0c.value.set(l.color.r * l.intensity, l.color.g * l.intensity, l.color.b * l.intensity);
         }
         const amb = st.ambientLight;
         const ai = amb && amb.visible !== false ? Math.max(0, amb.intensity || 0) : 0;
@@ -80988,61 +80980,6 @@ class AnazhRealm {
             // Tageslicht — die Karten tragen ihr eingebackenes SONNEN-Licht).
             if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht) this.state.atmoUniforms.tagLicht.value = 0;
         }
-        // Grünes BOUNCE-FILL: gerichtetes Licht von der sonnen-abgewandten Seite formt die Schattenseite
-        // statt flachem Ambient. Farbe grün·atm.col, Intensität 0.62·atm.lum·Wetter → nachts ~0.04.
-        const fl = this.state.fillLight;
-        if (fl) {
-            const F = AnazhRealm.FILL_LIGHT;
-            fl.position.set(
-                focusX - lightDir.x * F.dist,
-                focusY - lightDir.y * F.dist + F.lift,
-                focusZ - lightDir.z * F.dist
-            );
-            if (fl.target) {
-                fl.target.position.set(focusX, focusY, focusZ);
-                fl.target.updateMatrixWorld();
-            }
-            fl.color.setRGB(F.r * a.col.r, F.g * a.col.g, F.b * a.col.b);
-            // Das Laub-Bounce-Fill ist Sonnenlicht aus zweiter Hand — es stirbt mit demselben Horizont-Fade wie
-            // der Richtungs-Körper (sonst nachts grünstichiges Rest-Fill; Gate: Fill NACHT < 0.1).
-            fl.intensity =
-                F.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul * this._celestialHorizonFade(sunDir.y);
-        }
-        // RIM: kühles Gegenlicht von der sonnen-abgewandten Seite, seitlich versetzt (⟂ zur Sonne) → hebt
-        // Laub/Stamm gegen den Himmel ab. Farbe konstant kühl-blau (Himmels-Bounce), Intensität folgt dem
-        // Tageslicht (nachts führt der Mond).
-        const rl = this.state.rimLight;
-        if (rl) {
-            const R = AnazhRealm.RIM_LIGHT;
-            rl.position.set(
-                focusX - lightDir.x * R.dist + lightDir.z * 24,
-                focusY - lightDir.y * R.dist + R.lift,
-                focusZ - lightDir.z * R.dist - lightDir.x * 24
-            );
-            if (rl.target) {
-                rl.target.position.set(focusX, focusY, focusZ);
-                rl.target.updateMatrixWorld();
-            }
-            rl.color.setRGB(R.r, R.g, R.b);
-            rl.intensity = R.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
-        }
-        // Warmes BACK-Licht (viertes Richtlicht): von der rim-gegenüberliegenden Lateral-Seite (−z⊥), tiefer
-        // (lift 18) — formt die Schattenseiten der Stämme. Farbe konstant warm, Intensität folgt a.lum.
-        const bl = this.state.backLight;
-        if (bl) {
-            const B = AnazhRealm.BACK_LIGHT;
-            bl.position.set(
-                focusX - lightDir.x * B.dist - lightDir.z * 24,
-                focusY - lightDir.y * B.dist + B.lift,
-                focusZ - lightDir.z * B.dist + lightDir.x * 24
-            );
-            if (bl.target) {
-                bl.target.position.set(focusX, focusY, focusZ);
-                bl.target.updateMatrixWorld();
-            }
-            bl.color.setRGB(B.r, B.g, B.b);
-            bl.intensity = B.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
-        }
         // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
         // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
         // gibt die Tiefe gerichtet, kein Post-FX-Lift nötig. `nightFactor` 0=Tag → 1=Nacht.
@@ -83345,33 +83282,14 @@ class AnazhRealm {
                 this.log(`Schatten-CSM nicht verfügbar (${e && e.message}) — eine Map wie bisher`, "WARN");
             }
         }
-        // Grünes BOUNCE-FILL: DirectionalLight von der sonnen-abgewandten Seite, ohne Schatten (reines
-        // Form-Licht). Farbe/Intensität/Position setzt _dayNightApplyDirectionalLight pro Frame aus der
-        // EINEN Atmosphäre-Quelle.
-        const fillLight = new THREE.DirectionalLight(0x557a4a, 0.6);
-        fillLight.castShadow = false;
-        scene.add(fillLight);
-        scene.add(fillLight.target);
-        // Vorlagen-RIM (phytogenesis Z.1294): kühles Gegenlicht (0xaaccff), OHNE Schatten, von der
-        // sonnen-abgewandten Seite — hebt Laub/Stamm-Kanten gegen den Himmel ab. Tag/Nacht-geführt.
-        const rimLight = new THREE.DirectionalLight(0xaaccff, 1.2);
-        rimLight.castShadow = false;
-        scene.add(rimLight);
-        scene.add(rimLight.target);
-        this.state.rimLight = rimLight;
-        // DAS WARME BACK-LICHT (Studio-Rig Z.726, das vierte Richtlicht 0xffd8a0 0.5):
-        // OHNE Schatten, von der rim-gegenüberliegenden Lateral-Seite, tief — hellt die
-        // Schatten-Seiten-Stämme warm wie im Studio. Tag/Nacht führt _dayNightApply….
-        const backLight = new THREE.DirectionalLight(0xffd8a0, 0.5);
-        backLight.castShadow = false;
-        scene.add(backLight);
-        scene.add(backLight.target);
-        this.state.backLight = backLight;
+        // KEIN Studio-Füll-Rig in der Welt (V18.503): Fill · Rim · Back ersetzen im Labor den Himmel, den
+        // es nicht hat — die Welt hat ihn (die Himmels-Umgebung aus dem SICHTBAREN Himmel). Gemessen 01.10.
+        // an einer 50-%-Fläche: mit Rig las die Schattenseite so hell wie die Sonnenseite (208 vs 214),
+        // ohne Rig 145 vs 219 — das Verhältnis der Realität (0,16–0,21).
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
         this.state.directionalLight = directionalLight;
-        this.state.fillLight = fillLight;
         // HemisphereLight: skyColor oben, groundColor unten, gemischt über normal.y → Tiefe ohne dynamische
         // Schatten. Die Werte sind nur Saat; _applyDayNightToScene überschreibt (Sky aus DAY_NIGHT_STOPS,
         // Ground aus worldFieldAt).
@@ -86259,7 +86177,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.503.0";
+AnazhRealm.VERSION = "18.504.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -89921,23 +89839,13 @@ AnazhRealm.MOONLIGHT = Object.freeze({ r: 0x9f / 255, g: 0xb8 / 255, b: 0xdc / 2
 // über die Luftmasse gibt Sonnenfarbe+Lichtmenge für JEDEN Winkel spektral-korrekt.
 AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913 unter
-// ACES); FILL_LIGHT = das grüne, sonnen-abgewandte Bounce-Licht (grün·atm.col, 0.62·lum, +22 m
-// Hebung). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1) — Füll-Licht wäscht NdotL sonst aus.
+// ACES). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
 // 1/π-BRDF-Normierung — physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem
-// r128-Studio kopierten Rig-Werte (Key · Fill · Rim · Hemi-Tag) laufen durch diesen EINEN Faktor;
+// r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = Math.PI;
-AnazhRealm.FILL_LIGHT = Object.freeze({ r: 0.333, g: 0.478, b: 0.29, base: 0.62, dist: 60, lift: 22 });
-// Vorlagen-RIM (phytogenesis Z.1294: DirectionalLight(0xaaccff, 1.2), von der sonnen-abgewandten
-// Seite): das kühle Gegenlicht, das die Laub-/Stamm-Kanten gegen den Himmel abhebt — das 5.
-// Licht der Vorlagen-Rig, das AnazhRealm fehlte (Schöpfer-Befund „Vorlage sculptet reicher").
-AnazhRealm.RIM_LIGHT = Object.freeze({ r: 0.667, g: 0.8, b: 1.0, base: 1.2, dist: 70, lift: 30 });
-// Warmes BACK-Licht (Studio-Rig: DirectionalLight(0xffd8a0, 0.5)), das vierte Richtlicht: formt mit
-// key+fill+rim die Schattenseite der Stämme. Warm-konstant (kein atm-Tint), von der
-// rim-gegenüberliegenden Lateral-Seite, tief (lift 18 < rim 30); Intensität folgt a.lum.
-AnazhRealm.BACK_LIGHT = Object.freeze({ r: 1.0, g: 0.847, b: 0.627, base: 0.5, dist: 65, lift: 18 });
 // Slope-Schwellen des Gras-Gates: voll bis `lo` (≈35°), weg bis `hi` (≈52°), sanfter Übergang.
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN
 // `_slopeAt`-Achse.
