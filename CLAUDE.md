@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.498.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.499.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -98,7 +98,8 @@ Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten
 Haut (SDF-smin → `__huelleAusFeld`, dieselbe Hüllen-Maschine wie der Mensch, 25 Bones); das Fell
 sind 6 Schalen darüber (Länge · Ton · Legerichtung aus den fellStreu-Zeilen, Haar-Maske im Bind-
 Raum), die Strähnen fielen. Gemessen: Wolf L0 315k → 56k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut
-hell gleich (Fell-Linse −2/−4 %). Offen: der Kopf nah bleibt Primitiv.
+hell gleich (Fell-Linse −2/−4 %); V18.499: Kopf und Kiefer je eine starre Haut (der Kiefer öffnet).
+Offen: der Kopf trägt noch kein Schalen-Fell.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·

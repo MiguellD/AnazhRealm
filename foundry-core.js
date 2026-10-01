@@ -3186,8 +3186,8 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
 // Abstände — exakt, ohne die Blur-Erosion, die dünne Beine fräße —, die Hüllen-Maschine des Ofens
 // (Surface-Nets, dieselbe wie beim Menschen) macht daraus die Fläche. Stufe 0 bindet sie per Gewicht
 // an die Bein-/Schweif-Gelenke (Abstand zur Primitiv-OBERFLÄCHE, Top-4); Stufe 1 (das Fern-Standbild)
-// bleibt ungeskinnt und gröber und schließt den Kopf mit ein. Nah bleiben Kopf (Kiefer/Ohren/Lider
-// bewegen sich) und Teile unter dem Raster (Zehen, Krallen-Bett) Primitive. Die ersetzten Kugeln bleiben im Baum (Strähnen-Wirte), gegossen werden sie
+// bleibt ungeskinnt und gröber und schließt den Kopf mit ein. Nah tragen Kopf und Kiefer eigene starre
+// Häute (__tierKopfHaeute); Ohren, Lider und Teile unter dem Raster (Zehen, Krallen-Bett) bleiben Primitive. Die ersetzten Kugeln bleiben im Baum (Strähnen-Wirte), gegossen werden sie
 // nicht (__nichtGiessen). Das Fern-Standbild gießt keine Teile unter der Pfote oder im Maul (Krallen,
 // Ballen, Zähne, Zahnfleisch): bei ≥ 35 m trägt es Silhouette und Farbe, nicht Details unter einem Pixel.
 // Rückgabe: skinJoints (Stufe 0) oder null.
@@ -3197,6 +3197,8 @@ var TIER_HAUT = Object.freeze({
     minVox: 0.35, // kleinste Halbachse < minVox·vox → bleibt Primitiv
     minDicke: 0.75, // Dicken-Erhalt: dünnere Glieder wachsen auf minDicke·vox (sonst dünnt das Raster sie aus)
     fernOhne: Object.freeze(["klaue", "ballen", "zahn", "zahnfleisch"]), // Stufe 1 gießt sie nicht
+    voxKopf: 0.008, // × H (Rasterweite der Kopf-Häute — das Gesicht ist klein)
+    blendKopf: 0.012, // × H (smin-Verrundung im Gesicht)
     blend: 0.035, // × H (smin-Verrundung der Nähte)
     eW: 0.03, // × H (Gewichts-Weiche: 1/(d² + eW²)²)
 });
@@ -3213,7 +3215,6 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const vox = (fein ? TIER_HAUT.voxFern : TIER_HAUT.voxNah) * H;
     const blend = TIER_HAUT.blend * H;
     root.updateMatrixWorld(true);
-    const invRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
     const kopf = B.teile.headGroup || null;
     const unterKopf = (n) => {
         for (let c = n; c; c = c.parent) if (c === kopf) return true;
@@ -3223,16 +3224,104 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
         for (let c = n; c; c = c.parent) if (nodeName.has(c)) return nodeName.get(c);
         return "wolf";
     };
+    // Stufe 0: der Kopf trägt seine eigenen starren Häute (__tierKopfHaeute); das Fern-Standbild ist starr
+    // und nimmt ihn in die eine Haut.
+    const prims = __tierPrims(root, root, (n) => fein || !unterKopf(n), vox, blend, gelenkVon);
+    if (fein)
+        root.traverse((node) => {
+            const kl = node.isMesh && node.material && node.material.userData && node.material.userData.__klasse;
+            if (kl && TIER_HAUT.fernOhne.includes(kl)) node.userData.__nichtGiessen = true;
+        });
+    if (prims.length < 4) return null;
+    const { f, nx, ny, nz, lo, hi } = __tierFeld(prims, vox, blend);
+    // Gelenke der Haut in Baum-Ordnung (nur die, die ein Primitiv trägt).
+    let skinJoints = null;
+    if (!fein) {
+        const genutzt = new Set(prims.map((p) => p.j));
+        skinJoints = [];
+        for (const nm of nodeName.values()) if (genutzt.has(nm)) skinJoints.push(nm);
+    }
+    // Gewicht nach Abstand zur Primitiv-OBERFLÄCHE (nicht zum Zentrum: der Rumpf-Punkt an der
+    // Schulter gehört dem Rumpf, auch wenn das Oberarm-Zentrum näher liegt).
+    const zentren = prims.map((p) => ({
+        j: p.j,
+        c: p.c,
+        d: (v) => {
+            // Ferne Primitive (Schranke |v−c| − R > 0.3·H) tragen < 0.3 % Gewicht: die Schranke genügt.
+            const ex = v[0] - p.c[0],
+                ey = v[1] - p.c[1],
+                ez = v[2] - p.c[2];
+            const lb = Math.sqrt(ex * ex + ey * ey + ez * ez) - (p.ext - blend - 2 * vox);
+            if (lb > 0.3 * H) return lb * lb;
+            const d = Math.max(0, __tierAbstand(p, v[0], v[1], v[2]));
+            return d * d;
+        },
+    }));
+    // Vorauswahl je Vertex: ein grobes Raster (Zelle 0.3·H) trägt jedes Primitiv in allen Zellen,
+    // die seine Reichweite (R + 0.3·H) berührt — der Vertex fragt nur seine Zelle.
+    let kandidaten = null;
+    if (skinJoints) {
+        const C = 0.3 * H,
+            reich = 0.3 * H;
+        const cnx = Math.ceil((hi[0] - lo[0]) / C) + 1,
+            cny = Math.ceil((hi[1] - lo[1]) / C) + 1,
+            cnz = Math.ceil((hi[2] - lo[2]) / C) + 1;
+        const zellen = new Array(cnx * cny * cnz);
+        const zi = (v, d, n) => Math.min(n - 1, Math.max(0, Math.floor((v - lo[d]) / C)));
+        prims.forEach((p, n) => {
+            const rr = p.ext - blend - 2 * vox + reich;
+            for (let k = zi(p.c[2] - rr, 2, cnz); k <= zi(p.c[2] + rr, 2, cnz); k++)
+                for (let j = zi(p.c[1] - rr, 1, cny); j <= zi(p.c[1] + rr, 1, cny); j++)
+                    for (let i = zi(p.c[0] - rr, 0, cnx); i <= zi(p.c[0] + rr, 0, cnx); i++) {
+                        const id = i + cnx * (j + cny * k);
+                        (zellen[id] || (zellen[id] = [])).push(zentren[n]);
+                    }
+        });
+        kandidaten = (v) => zellen[zi(v[0], 0, cnx) + cnx * (zi(v[1], 1, cny) + cny * zi(v[2], 2, cnz))] || zentren;
+    }
+    const eW = TIER_HAUT.eW * H;
+    const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten);
+    if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
+    const mesh = new THREE.Mesh(geo, matFuer("fell"));
+    root.add(mesh); // Root-lokal gebacken (Identität)
+    if (fell) {
+        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, H);
+        root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
+    }
+    if (!fein) __tierKopfHaeute(hk, B, H, matFuer);
+    return skinJoints;
+}
+
+// Abstand zum Ellipsoid-Primitiv (erste Ordnung, exakt auf der Fläche): (|q| − r) / |Miᵀ·q̂| − auf, q = Mi·p.
+function __tierAbstand(p, x, y, z) {
+    const m = p.Mi;
+    const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
+        qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+        qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+    const ql = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-9;
+    const ux = qx / ql,
+        uy = qy / ql,
+        uz = qz / ql;
+    const gx = m[0] * ux + m[1] * uy + m[2] * uz,
+        gy = m[4] * ux + m[5] * uy + m[6] * uz,
+        gz = m[8] * ux + m[9] * uy + m[10] * uz;
+    return (ql - p.r) / (Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9) - p.auf;
+}
+
+// Die Fell-Ellipsoide eines Teil-Baums im Raum `ref` (Matrix ref⁻¹ · Welt): Kugeln der Klasse fell, die
+// `nimm(node)` zulässt. Zu fein fürs Raster (kleinste Halbachse < minVox·vox) bleibt Primitiv, dünner als
+// minDicke·vox wächst (Dicken-Erhalt). Groß vor klein sortiert (das Innere wird früh TIEF).
+function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon) {
+    const inv = new THREE.Matrix4().copy(ref.matrixWorld).invert();
     const sp = new THREE.Vector3();
     const prims = [];
-    root.traverse((node) => {
+    baum.traverse((node) => {
         if (!node.isMesh || !node.geometry || !node.geometry.parameters) return;
         const kl = node.material && node.material.userData && node.material.userData.__klasse;
-        // Stufe 0: der Kopf bleibt Primitiv (Kiefer/Ohren/Lider bewegen sich); das Fern-Standbild ist starr.
-        if (kl !== "fell" || (!fein && unterKopf(node))) return;
+        if (kl !== "fell" || !nimm(node)) return;
         const r = node.geometry.parameters.radius;
         if (!(r > 0) || node.geometry.type !== "SphereGeometry") return;
-        const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
+        const M = new THREE.Matrix4().multiplyMatrices(inv, node.matrixWorld);
         const e = M.elements;
         const sx = Math.sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]),
             sy = Math.sqrt(e[4] * e[4] + e[5] * e[5] + e[6] * e[6]),
@@ -3245,15 +3334,16 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
         const auf = Math.max(0, TIER_HAUT.minDicke * vox - minHalb);
         prims.push({ node, r, Mi, c: [sp.x, sp.y, sp.z], ext: ext + auf, auf, j: gelenkVon(node) });
     });
-    if (fein)
-        root.traverse((node) => {
-            const kl = node.isMesh && node.material && node.material.userData && node.material.userData.__klasse;
-            if (kl && TIER_HAUT.fernOhne.includes(kl)) node.userData.__nichtGiessen = true;
-        });
-    if (prims.length < 4) return null;
-    // Groß vor klein: die großen Rumpf-Ellipsoide machen das Innere früh TIEF, die kleinen springen dort.
     prims.sort((a, b) => b.ext - a.ext);
-    // Das Raster: AABB aller Ellipsoide (+ Rand) im Root-Raum.
+    return prims;
+}
+
+// Das glatte SDF-Feld der Primitive (polynomiales smin, Verrundung ~blend) auf einem Raster der Weite vox.
+// Nur die Schale um die Fläche zählt (eine Nets-Zelle, die schneidet, hat Ecken ≤ √3·vox vom Nullniveau):
+// Punkte, die schon TIEF innen liegen, kann kein weiteres smin mehr über Null heben, und ein Primitiv,
+// dessen Abstand (untere Schranke |p−c| − R) um blend über dem Feld liegt, ändert nichts — beide
+// überspringen die Abstands-Rechnung. Die Primitive werden __nichtGiessen (gegossen wird die Haut).
+function __tierFeld(prims, vox, blend) {
     const lo = [1e9, 1e9, 1e9],
         hi = [-1e9, -1e9, -1e9];
     for (const p of prims)
@@ -3264,26 +3354,7 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const nx = Math.ceil((hi[0] - lo[0]) / vox) + 2,
         ny = Math.ceil((hi[1] - lo[1]) / vox) + 2,
         nz = Math.ceil((hi[2] - lo[2]) / vox) + 2;
-    // Abstand zum Ellipsoid (erste Ordnung, exakt auf der Fläche): (|q| − r) / |Miᵀ·q̂|, q = Mi·p.
-    const abstand = (p, x, y, z) => {
-        const m = p.Mi;
-        const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
-            qy = m[1] * x + m[5] * y + m[9] * z + m[13],
-            qz = m[2] * x + m[6] * y + m[10] * z + m[14];
-        const ql = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-9;
-        const ux = qx / ql,
-            uy = qy / ql,
-            uz = qz / ql;
-        const gx = m[0] * ux + m[1] * uy + m[2] * uz,
-            gy = m[4] * ux + m[5] * uy + m[6] * uz,
-            gz = m[8] * ux + m[9] * uy + m[10] * uz;
-        return (ql - p.r) / (Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9) - p.auf;
-    };
     const WEIT = 8 * vox;
-    // Nur die Schale um die Fläche zählt (eine Nets-Zelle, die schneidet, hat Ecken ≤ √3·vox vom
-    // Nullniveau): Punkte, die schon TIEF innen liegen, kann kein weiteres smin mehr über Null heben,
-    // und ein Primitiv, dessen Abstand (untere Schranke |p−c| − R) um blend über dem Feld liegt,
-    // ändert nichts — beide überspringen die Abstands-Rechnung.
     const TIEF = -3 * vox;
     const f = new Float32Array(nx * ny * nz).fill(WEIT);
     for (const p of prims) {
@@ -3320,7 +3391,7 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
                     const x = lo[0] + i * vox,
                         ex = x - cx;
                     if (Math.sqrt(ex * ex + eyz) - R >= a + blend) continue;
-                    const b = abstand(p, x, y, z);
+                    const b = __tierAbstand(p, x, y, z);
                     // polynomiales smin (IQ): die Naht verrundet mit Radius ~blend
                     const dab = a > b ? a - b : b - a;
                     if (dab >= blend) {
@@ -3334,61 +3405,35 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
         }
         p.node.userData.__nichtGiessen = true; // gegossen wird die Haut, nicht die Kugel
     }
-    // Gelenke der Haut in Baum-Ordnung (nur die, die ein Primitiv trägt).
-    let skinJoints = null;
-    if (!fein) {
-        const genutzt = new Set(prims.map((p) => p.j));
-        skinJoints = [];
-        for (const nm of nodeName.values()) if (genutzt.has(nm)) skinJoints.push(nm);
+    return { f, nx, ny, nz, lo, hi };
+}
+
+// DIE KOPF-HÄUTE (V18.499): der Kopf nah war eine Kugel-Traube (Schädel, Schnauzen-Stücke, Wangen,
+// Brauen). Kopf und Kiefer werden je EINE starre Haut an ihrem Gelenk — derselbe SDF-Guss auf einem
+// feineren Raster (das Gesicht ist klein); starr heißt kein Skinning: der Kiefer öffnet (Gähnen, Schnüffeln).
+// Ohren und Lider bleiben eigene Gelenke mit ihren Primitiven; Augen, Nase, Zähne sind keine Fell-Klasse.
+function __tierKopfHaeute(hk, B, H, matFuer) {
+    const vox = TIER_HAUT.voxKopf * H,
+        blend = TIER_HAUT.blendKopf * H;
+    const t = B.teile;
+    const eigen = [t.jawGroup, t.earL, t.earR, t.lidTL, t.lidTR].filter(Boolean);
+    const unterEinem = (n, liste) => {
+        for (let c = n; c; c = c.parent) if (liste.includes(c)) return true;
+        return false;
+    };
+    const ohneLider = [t.lidTL, t.lidTR, t.earL, t.earR].filter(Boolean);
+    for (const [g, nimm] of [
+        [t.headGroup, (n) => !unterEinem(n, eigen)],
+        [t.jawGroup, (n) => !unterEinem(n, ohneLider)],
+    ]) {
+        if (!g) continue;
+        const prims = __tierPrims(g, g, nimm, vox, blend, () => null);
+        if (prims.length < 2) continue;
+        const F = __tierFeld(prims, vox, blend);
+        const geo = __huelleAusFeld(hk, F.f, F.nx, F.ny, F.nz, F.lo, vox, 0, 0, null, null, 0);
+        if (!geo) throw new Error("TIER-HAUT: die Kopf-Haut lieferte keine Fläche");
+        g.add(new THREE.Mesh(geo, matFuer("fell"))); // Gelenk-lokal gebacken (Identität)
     }
-    // Gewicht nach Abstand zur Primitiv-OBERFLÄCHE (nicht zum Zentrum: der Rumpf-Punkt an der
-    // Schulter gehört dem Rumpf, auch wenn das Oberarm-Zentrum näher liegt).
-    const zentren = prims.map((p) => ({
-        j: p.j,
-        c: p.c,
-        d: (v) => {
-            // Ferne Primitive (Schranke |v−c| − R > 0.3·H) tragen < 0.3 % Gewicht: die Schranke genügt.
-            const ex = v[0] - p.c[0],
-                ey = v[1] - p.c[1],
-                ez = v[2] - p.c[2];
-            const lb = Math.sqrt(ex * ex + ey * ey + ez * ez) - (p.ext - blend - 2 * vox);
-            if (lb > 0.3 * H) return lb * lb;
-            const d = Math.max(0, abstand(p, v[0], v[1], v[2]));
-            return d * d;
-        },
-    }));
-    // Vorauswahl je Vertex: ein grobes Raster (Zelle 0.3·H) trägt jedes Primitiv in allen Zellen,
-    // die seine Reichweite (R + 0.3·H) berührt — der Vertex fragt nur seine Zelle.
-    let kandidaten = null;
-    if (skinJoints) {
-        const C = 0.3 * H,
-            reich = 0.3 * H;
-        const cnx = Math.ceil((hi[0] - lo[0]) / C) + 1,
-            cny = Math.ceil((hi[1] - lo[1]) / C) + 1,
-            cnz = Math.ceil((hi[2] - lo[2]) / C) + 1;
-        const zellen = new Array(cnx * cny * cnz);
-        const zi = (v, d, n) => Math.min(n - 1, Math.max(0, Math.floor((v - lo[d]) / C)));
-        prims.forEach((p, n) => {
-            const rr = p.ext - blend - 2 * vox + reich;
-            for (let k = zi(p.c[2] - rr, 2, cnz); k <= zi(p.c[2] + rr, 2, cnz); k++)
-                for (let j = zi(p.c[1] - rr, 1, cny); j <= zi(p.c[1] + rr, 1, cny); j++)
-                    for (let i = zi(p.c[0] - rr, 0, cnx); i <= zi(p.c[0] + rr, 0, cnx); i++) {
-                        const id = i + cnx * (j + cny * k);
-                        (zellen[id] || (zellen[id] = [])).push(zentren[n]);
-                    }
-        });
-        kandidaten = (v) => zellen[zi(v[0], 0, cnx) + cnx * (zi(v[1], 1, cny) + cny * zi(v[2], 2, cnz))] || zentren;
-    }
-    const eW = TIER_HAUT.eW * H;
-    const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten);
-    if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
-    const mesh = new THREE.Mesh(geo, matFuer("fell"));
-    root.add(mesh); // Root-lokal gebacken (Identität)
-    if (fell) {
-        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, H);
-        root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
-    }
-    return skinJoints;
 }
 
 // ── DAS SCHALEN-FELL (V18.497): N versetzte Schalen über einer gröberen Haut aus DEMSELBEN Feld (jeder
