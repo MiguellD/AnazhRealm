@@ -165,8 +165,10 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
     `diag-beweis-e`). Ein Fit liest eine FERTIGE Quelle (Foundry-Flat), nie ein temporär gebautes
     Async-Mesh („leer" → ausgebrannt → für immer unsichtbar); Takt-Budgets gehen NAH zuerst.
 17. **Sonden mit echtem Renderer:** je Schuss ruht der Spiel-Loop (sonst wandern Kamera, Tageszeit,
-    Cull-Zustand), die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht. Und:
-    `Number(null) === 0` — ein fehlender Wert ist nie 0; Default-Helfer prüfen `v == null` zuerst.
+    Cull-Zustand), die Bühne (`__buehne`) hält Mittag · Sonne · Sommer fest (Wetter-Zug 120 s,
+    Saison-Drift 2400 s — Regen drückte die Wiese 90 → 40), die Schatten-Map wird neu markiert,
+    die Blick-Wahl sucht freie Sicht. Und: `Number(null) === 0` — ein fehlender Wert ist nie 0;
+    Default-Helfer prüfen `v == null` zuerst.
 18. **Erst das Soll-Bild, dann die Welle:** vor jedem Paradigmen-Wechsel je Klasse ein Soll-Bild
     (Referenz) + Budget (Tris/dc je LOD-Stufe) festlegen und EINEN Spike mit echtem Renderer an
     der Mess-Wiese zeigen, nah UND fern. Die Analog-Welle (21.07.–30.09.) lief zwei Monate gegen

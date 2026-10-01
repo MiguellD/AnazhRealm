@@ -11,7 +11,38 @@
 // TOP-DOWN RGBA. Der Aufrufer pausiert den Spiel-Loop (Lehre 17) und setzt Kamera/Schatten selbst.
 //
 // Gebrauch: einmal `await page.evaluate(AUSGABE_INSTALL)` nach dem Laden, im Seiten-Kontext
-// `const { u8, info, ms } = await window.__ausgabeAufnahme(W, H)`.
+// `window.__buehne()` vor jedem Schuss und `const { u8, info, ms } = await window.__ausgabeAufnahme(W, H)`.
+
+// DIE BÜHNE der Beweisbilder: Mittag · Sonne · Sommer, fest — „vorher↔nachher unter gleichen
+// Bedingungen". Zwei Uhren des Spiels liefen in den Sonden frei:
+// - das WETTER zieht alle 120 s weiter (Auto-Zug in `_loopWeatherAndGrowth`). Gemessen 01.10. an
+//   derselben Wiese, derselben Kamera: sonnig 90,2 · Regen 40,3 · Sturm 16,8 Boden-Helligkeit; der
+//   dunkle Lauf `wiese-ausgabe2` (29,0) war Schlechtwetter, kein Licht- oder Boden-Befund.
+// - die JAHRESZEIT driftet (Jahr = 2400 s): ab Sommer 0,375 ist nach ~5 min Herbst, der Saison-Flip
+//   baut jedes Foundry-Asset neu (Laub-Farbe) — mitten in einer Sonde, die Stufen und Ungebaute zählt.
+// Die Saison hält `saisonFest` an, sobald die Welt existiert (der Drift beginnt erst, wenn die Bühne
+// steht); die Bühne setzt Zeit und Wetter über den EINEN Wetter-Schreiber und schneidet den
+// 45-s-Cross-Fade ab (das Bild zeigt den Endzustand), der Regen fällt im selben Zug weg.
+function saisonFest() {
+    const r = window.anazhRealm;
+    if (r && r.state) r.state.autoSeason = false;
+    else setTimeout(saisonFest, 50);
+}
+
+function buehne() {
+    const r = window.anazhRealm;
+    const st = r.state;
+    st.autoSeason = false;
+    if (typeof r.setSeason === "function") r.setSeason("sommer");
+    if (st.world) st.world.timeOfDay = 0.5;
+    st.timeOfDay = 0.5;
+    if (typeof r._setWeather === "function") r._setWeather("sunny");
+    else st.weather = "sunny";
+    st.weatherTransition = null;
+    if (typeof r._tickRain === "function") r._tickRain(performance.now());
+    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
+}
 
 function ausgabeAufnahme(W, H, warm) {
     return (async () => {
@@ -55,4 +86,9 @@ function ausgabeAufnahme(W, H, warm) {
     })();
 }
 
-module.exports = { AUSGABE_INSTALL: `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` };
+module.exports = {
+    AUSGABE_INSTALL:
+        `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
+        `window.__buehne = ${buehne.toString()};` +
+        `(${saisonFest.toString()})();`,
+};

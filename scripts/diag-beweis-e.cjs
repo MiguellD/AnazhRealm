@@ -68,9 +68,7 @@ const SICHT_FN = async (a) => {
     const rend = r.state.renderer;
     const cam = r.state.camera;
     rend.setAnimationLoop(null);
-    if (r.state.world) r.state.world.timeOfDay = 0.5;
-    r.state.timeOfDay = 0.5;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     // Die AKTIVE Gestalt schalten: nah das Studio-Mesh (Tier / Mesh / Instanzen), fern das Feld.
     let setze = null;
     if (a.klasse === "kreatur") {
@@ -143,9 +141,7 @@ const SCHUSS_FN = async (kam) => {
     // Der Spiel-Loop RUHT während des Schusses (sonst zieht er Kamera, Tageszeit und Cull-Zustand
     // zwischen Setzen und Render weiter); Mittag fest, Lichter einmal nachgeführt.
     rend.setAnimationLoop(null);
-    if (r.state.world) r.state.world.timeOfDay = 0.5;
-    r.state.timeOfDay = 0.5;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
     // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
     const sy = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : null;

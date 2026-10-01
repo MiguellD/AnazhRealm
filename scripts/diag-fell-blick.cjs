@@ -51,9 +51,7 @@ const BILD_FN = async (kam, W, H) => {
     const rend = r.state.renderer;
     const cam = r.state.camera;
     rend.setAnimationLoop(null);
-    if (r.state.world) r.state.world.timeOfDay = 0.5;
-    r.state.timeOfDay = 0.5;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
     cam.lookAt(kam.lx, kam.ly, kam.lz);
     cam.updateMatrixWorld(true);

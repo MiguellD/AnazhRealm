@@ -48,9 +48,7 @@ const RENDER_FN = async (kam, W, H, png) => {
     const THREE_ = window.THREE;
     const rend = r.state.renderer;
     rend.setAnimationLoop(null);
-    if (r.state.world) r.state.world.timeOfDay = 0.5;
-    r.state.timeOfDay = 0.5;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     const cam = r.state.camera;
     cam.position.set(kam.px, kam.py, kam.pz);
     cam.lookAt(kam.lx, kam.ly, kam.lz);
