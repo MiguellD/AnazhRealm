@@ -315,6 +315,15 @@ Nacht und Dämmerung, die schon bei ~35° Sonne wieder bei 1,0 liegen).
 | Schattenseite : Sonnenseite | 0,57 | 0,52 |
 | Bild (Werkbank, Mess-Wiese) | Himmel weißlich, Laub satt | Himmel blau mit Wolken, Laub satt |
 
+**Beweis-Paket `aaa15`** (dieselbe Sonde, Licht V18.507): alle acht Schüsse stehen — zum ersten Mal
+seit `aaa12` vollständig (`aaa13` brach am Haus ab, `aaa14` lief ins Zeitlimit; die Foundry-Frist
+V18.505 trägt), 0 ungebaut in der Mesh-Zone, 0 Page-Errors; 57–224 dc / 73–285k Dreiecke je Schuss.
+Bild gegen `aaa13`: die Kronen satt grün mit Tiefe statt pastell-minzig, Fachwerk mit Ziegel-Gefach
+und Fenstern, Wolf-Fell und Wiese satt. Sichtbar offen: der Horizont auf Augenhöhe blass-grau (die
+Nebel-Anker, s. u.), Birken-Laub hell-limettig (0,27), der Findling sehr hell (Fels 0,475 roh);
+benannt aus jeder Sonde seit `aaa10`: je Lauf eine Impostor-Karte ohne brauchbaren Payload (wechselnde
+Art: birke · weide · strauch · fichte).
+
 Benannt, nicht geschnitten: die Umgebung allein liest 0,26 der Sonne (klarer Himmel real 0,12–0,16) —
 der sichtbare Himmel (Nebel-Anker 0xa6d2ec, roh gelesen) ist hell und blass; seine Anker unter das
 Farb-Gesetz zu stellen dunkelt auch die Nacht-Ferne (0x0a1326 dekodiert ≈ schwarz) und ist nicht gemessen.
