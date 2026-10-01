@@ -13,6 +13,9 @@
 //                                                           live tauschen; --terrain baut das EINE
 //                                                           Chunk-Material neu und hängt es an alle Chunks
 //   node scripts/werkbank.cjs eval '<js>'                  Funktionsrumpf in der Seite (r = Welt, T = THREE)
+//   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse
+//                                                           (scripts/lib/licht-linsen.cjs; Karte = 0,180)
+//   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // Höhen relativ zum Boden: `bild` nimmt py/ly mit Präfix `+` als Abstand über `_voxelSurfaceY(px,pz)`
@@ -23,6 +26,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -122,6 +126,7 @@ async function starte() {
             timeout: 60000,
         });
         await page.evaluate(AUSGABE_INSTALL);
+        await page.evaluate(LINSEN_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
             while (
@@ -308,6 +313,21 @@ async function starte() {
                     );
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
+                if (req.url === "/albedo") {
+                    const liste = await page.evaluate((o) => window.__albedoSicht(o), { nur: b.nur || null });
+                    const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo"));
+                    fs.mkdirSync(ordner, { recursive: true });
+                    for (const e of liste) {
+                        fs.writeFileSync(
+                            path.join(ordner, e.name.replace(/[^a-z0-9_-]+/gi, "_") + ".png"),
+                            Buffer.from(e.png.split(",")[1], "base64")
+                        );
+                        delete e.png;
+                    }
+                    return send({ klassen: liste, ordner, ms: Date.now() - t0 });
+                }
+                if (req.url === "/licht")
+                    return send(Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 }));
                 if (req.url === "/reload") {
                     await lade();
                     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
@@ -352,10 +372,12 @@ async function starte() {
         });
     else if (cmd === "methode") o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
+    else if (cmd === "albedo") o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner") });
+    else if (cmd === "licht") o = await rufe("/licht");
     else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
-        console.log(fs.readFileSync(__filename, "utf8").split("\n").slice(0, 18).join("\n"));
+        console.log(fs.readFileSync(__filename, "utf8").split("\"use strict\"")[0].trimEnd());
         process.exit(1);
     }
     console.log(JSON.stringify(o, null, 1));

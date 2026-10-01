@@ -99,7 +99,16 @@ function ausgabeAufnahme(W, H, warm) {
             };
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             const ms = performance.now() - t0;
-            return { u8: px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px), info, ms };
+            // WebGPU kopiert Zeilen auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster
+            // durch: bei W·4 ∤ 256 (z. B. 480 oder 160 px) lag jede Zeile versetzt — gestreifte Bilder,
+            // Mittel über Polster-Nullen (gemessen 01.10.: 8×8-Probe exakt ¼ zu dunkel). Hier fällt es.
+            const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+            const zeile = W * 4;
+            const schritt = roh.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
+            if (schritt === zeile) return { u8: roh, info, ms };
+            const u8 = new Uint8Array(zeile * H);
+            for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
+            return { u8, info, ms };
         } finally {
             rend.setOutputRenderTarget(prevOut);
             if (rt.dispose) rt.dispose();
