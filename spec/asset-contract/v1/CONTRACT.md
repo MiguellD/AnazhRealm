@@ -105,3 +105,9 @@ Abweichung 0,0000, höchstens 27 von 536 000 Pixeln. Geändert: nur Mesh 0 (`bar
 Strauch-Fälle; Laub, findling, kristalle, blume und die drei Daten-Kanäle byte-gleich (gegen die
 alten Bytes geprüft). Dreiecke: Strauch L1 69,0k → 44,7k, L2 20,6k → 13,8k · Weide L1 30,8k → 24,1k
 · Birke L0 83,6k → 76,8k · Eiche L0 119,4k → 110,7k · Tanne L0 158,2k → 151,4k (seed 1).
+Im selben Akt das FUSS-GESETZ der Rinde: die Stammfuß-Ringe (Buttress, auf 0,1·R0 zulaufend)
+tragen `fuss`, `phyto-core` buildTubeGesetz liest den Basis-Radius des Strangs darüber. Vorher las
+das Gesetz am dicksten Stamm „Zweig" — Zehneck, Furchentiefe 0,28, keine Narben (Mammut Ø 3,7 m:
+Sehnenfehler ~9 cm). Jetzt trägt der Stamm seine Furchen (Bild: Sequoia-Fasern). Wieder nur Mesh 0
+(`bark`) geändert (49 Fälle), alles andere byte-gleich. Dreiecke: +0,2k (Birke L0) bis +2,4k
+(Mammut L0).

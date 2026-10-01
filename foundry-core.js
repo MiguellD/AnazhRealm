@@ -1132,15 +1132,15 @@ function emitTree(P) {
         let rings = strandRings(rid);
         const baseRing = rings[0];
         if (rings.length > 1 && baseRing.c[1] < nodes.height * 0.04 && baseRing.r > nodes.trunkR * 0.6) {
-            // Stammfuss: Buttress in den Boden fuehren (absenken, verjuengen, schliessen)
+            // Stammfuss: Buttress in den Boden fuehren (absenken, verjuengen, schliessen) — die Ringe tragen `fuss`, das Rinden-Gesetz liest den Strang-Radius darueber
             const R0 = baseRing.r,
                 cx = baseRing.c[0],
                 cz = baseRing.c[2],
                 bd = Math.min(R0 * 0.85, nodes.trunkR * 1.7);
             rings = [
-                { c: [cx, -bd, cz], r: R0 * 0.1, sway: 0, depth: baseRing.depth },
-                { c: [cx, -bd * 0.5, cz], r: R0 * 0.52, sway: 0, depth: baseRing.depth },
-                { c: [cx, -bd * 0.18, cz], r: R0 * 0.84, sway: 0, depth: baseRing.depth },
+                { c: [cx, -bd, cz], r: R0 * 0.1, sway: 0, depth: baseRing.depth, fuss: true },
+                { c: [cx, -bd * 0.5, cz], r: R0 * 0.52, sway: 0, depth: baseRing.depth, fuss: true },
+                { c: [cx, -bd * 0.18, cz], r: R0 * 0.84, sway: 0, depth: baseRing.depth, fuss: true },
             ].concat(rings);
         }
         buildTube(barkGeos, rings, P, barkBase, barkTip, nodes.trunkR);

@@ -1793,7 +1793,10 @@
         const M = rings.length;
         if (M < 2) return;
         const prof = barkProfile(P);
-        const baseR = rings[0].r,
+        // Der Basis-Radius ist der Strang-Fuß ÜBER dem Stammfuß-Puffer (V18.501): die Buttress-Ringe
+        // (fuss) laufen auf 0,1·R0 zu — aus ihnen las das Gesetz „Zweig" (Zehneck, keine Furchen, keine
+        // Narben am dicksten Stamm).
+        const baseR = (rings.find((x) => !x.fuss) || rings[0]).r,
             thick = clamp((baseR - trunkR * 0.12) / (trunkR * 0.88), 0, 1); // 0 Zweig .. 1 Stamm
         const bthick = barkThick !== undefined ? barkThick : thick; // Wurzel/Totast erben die STAMM-Oberflaeche (gleiche Furchentiefe), nicht die duenn-glatte
         const ridges =
