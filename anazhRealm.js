@@ -36242,21 +36242,32 @@ class AnazhRealm {
     // Kosinus-gefaltete Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt),
     // sRGB-dekodiert wie die Textur. Neu gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde.
     _feldEnvIrradianz(U) {
+        const e = this._himmelsIrradianz();
+        if (!e) {
+            U.envUnten.value.set(0, 0, 0);
+            U.envMitte.value.set(0, 0, 0);
+            U.envOben.value.set(0, 0, 0);
+            return;
+        }
+        U.envUnten.value.fromArray(e.unten);
+        U.envMitte.value.fromArray(e.mitte);
+        U.envOben.value.fromArray(e.oben);
+    }
+
+    // DIE HIMMELS-IRRADIANZ (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der Kosinus-gefaltete
+    // Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt), sRGB-dekodiert wie die Textur. Neu
+    // gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde. Leser: der Feld-Pass und die Belichtung.
+    _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;
         const tex = st._skyEnvTex;
         const scene = st.scene;
         const env = scene && scene.environment;
         const ei = scene && Number.isFinite(scene.environmentIntensity) ? scene.environmentIntensity : 1;
-        if (!d || !tex || !env) {
-            U.envUnten.value.set(0, 0, 0);
-            U.envMitte.value.set(0, 0, 0);
-            U.envOben.value.set(0, 0, 0);
-            return;
-        }
+        if (!d || !tex || !env) return null;
         const stempel = (tex.version || 0) + ":" + ei;
-        if (this._feldEnvStempel === stempel) return;
-        this._feldEnvStempel = stempel;
+        if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
+        this._himmelsIrrStempel = stempel;
         const W = tex.image.width;
         const H = tex.image.height;
         const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
@@ -36293,9 +36304,8 @@ class AnazhRealm {
             const k = ei / Math.PI;
             return [r * k, g * k, b * k];
         };
-        U.envUnten.value.fromArray(falte(-1));
-        U.envMitte.value.fromArray(falte(0));
-        U.envOben.value.fromArray(falte(1));
+        this._himmelsIrr = { unten: falte(-1), mitte: falte(0), oben: falte(1) };
+        return this._himmelsIrr;
     }
 
     _feldPassDispose() {
@@ -80692,6 +80702,7 @@ class AnazhRealm {
         this._updateCelestialBodies(angle, tint.lightMul);
         this._dayNightApplyHemiAndFog(angle, tint);
         this._dayNightApplyWaterMaterials(lightDir);
+        this._dayNightApplyBelichtung();
     }
 
     // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor/lightColor/
@@ -81043,16 +81054,51 @@ class AnazhRealm {
         }
     }
 
-    // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
-    // moduliert (positive Emotion erhöht ambient leicht — Welt wirkt heller).
+    // DIE EINE TAG-ACHSE der Himmels-Lichter: 0 ab ~15° Sonnenhöhe (Tag), 1 am/unter dem Horizont (Nacht).
+    // Nebel-Erdanteil, Ambient- und Hemi-Nachtboden lesen sie.
+    _nachtAnteil(angle) {
+        return 1 - Math.max(0, Math.min(1, Math.sin(angle) / 0.25));
+    }
+
+    // DIE BELICHTUNG AUS DEM LICHT (V18.507): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV
+    // (die Kamera-Konvention der Profi-Engines, UE5-Belichtungs-Bias +1). Die Karte liest L = 0,18/π · E
+    // mit E = Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben (`_himmelsIrradianz`) + Hemi +
+    // Ambient — dieselben Lichter, die jedes Material liest. Vorher stand die Belichtung fest auf 1,0:
+    // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die ACES-Schulter. Die
+    // Nacht bleibt, wie sie geeicht ist (Deckel 1,0 — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
+    _dayNightApplyBelichtung() {
+        const st = this.state;
+        const rend = st.renderer;
+        const dl = st.directionalLight;
+        if (!rend || !dl) return;
+        const B = AnazhRealm.BELICHTUNG;
+        const Y = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const dir = this._belichtungRichtung || (this._belichtungRichtung = new THREE.Vector3());
+        dir.copy(dl.position);
+        if (dl.target) dir.sub(dl.target.position);
+        const dy = dir.lengthSq() > 0 ? Math.max(0, dir.normalize().y) : 0;
+        let E = Y(dl.color.r, dl.color.g, dl.color.b) * dl.intensity * dy;
+        const env = this._himmelsIrradianz(); // liefert E/π (die Antwort einer weißen Lambert-Fläche)
+        if (env) E += Math.PI * Y(env.oben[0], env.oben[1], env.oben[2]);
+        const hl = st.hemiLight;
+        if (hl) E += Y(hl.color.r, hl.color.g, hl.color.b) * hl.intensity;
+        const al = st.ambientLight;
+        if (al) E += Y(al.color.r, al.color.g, al.color.b) * al.intensity;
+        const karte = (0.18 / Math.PI) * E;
+        const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
+        rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+    }
+
+    // Ambient-Light = NUR der Nachthimmel-Boden (EIN Himmel, V18.507): am Tag IST die Himmels-Umgebung
+    // der Himmel (aus dem sichtbaren Himmel gemalt) — ein Tag-Ambient zählte ihn doppelt (Licht-Bilanz
+    // 01.10.: Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 0,36 der Sonne, klarer Himmel real 0,12–0,16).
+    // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden (0.04) mit Hemi (0.10) die
+    // Nacht-Kalibrierung Mond/(amb+hemi) ≥ 1.5. Er blendet mit `_nachtAnteil` (dieselbe Tag-Achse wie der
+    // Nebel). joy/awe/sorrow modulieren wie bisher.
     _dayNightApplyAmbient(angle) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const sunHeight = Math.max(0, Math.sin(angle));
-        // Richtungsloses Ambient fast null (Mittag 0.16, Nacht 0.04): die Form geben Key- + Fill-Licht,
-        // ein hoher Ambient wäscht NdotL aus. Nacht-Kalibrierung: Mond/(amb+hemi) ≥ 1.5
-        // (0.22/(0.04+0.10) ≈ 1.57; mit 0.06 Nacht-Ambient wäre es zu flach).
-        const baseAmb = 0.04 + 0.12 * sunHeight;
+        const baseAmb = 0.04 * this._nachtAnteil(angle);
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -81113,18 +81159,16 @@ class AnazhRealm {
                 }
             }
             hl.groundColor.copy(earth);
-            const sunHeight = Math.max(0, Math.sin(angle));
-            // Hemi: Nacht-Floor 0.1 + Tag-Term 0.45·LEGACY_LICHT (= Vorlagen-Hemi 0.55, r128→r184 übersetzt).
-            // Mit dem starken Key bleibt das Licht key-dominant (~4:1); der Nacht-Floor bleibt außerhalb der
-            // Übersetzung (die Mond-Nacht ist eigen getuned).
-            hl.intensity = (0.1 + 0.45 * AnazhRealm.LEGACY_LICHT * sunHeight) * tint.lightMul;
+            // Hemi = NUR der Nachthimmel-Boden 0.1 (EIN Himmel, V18.507): der Tag-Term (Vorlagen-Hemi 0.55·π)
+            // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
+            hl.intensity = 0.1 * this._nachtAnteil(angle) * tint.lightMul;
         }
         if (fog) {
             // Erd-Anteil der Nebel-/Aerial-Farbe (gMix): fernes Terrain bleibt ein dunklerer Dunst mit lesbarer
             // Silhouette — mit zu viel Himmelsanteil wird es deckungsgleich und die Sonne „scheint durch" die
             // Berge. Speist auch `au.skyColor` (Höhen-Melt + Wasser-Fog). gMix skaliert mit der Sonnenhöhe →
             // nachts 0, sonst dominiert der warme groundColor den dunklen Himmel (warm-brauner Horizont).
-            const dayAmt = Math.max(0, Math.min(1, Math.sin(angle) / 0.25)); // 1 ab ~15° Sonne, 0 am/unter Horizont
+            const dayAmt = 1 - this._nachtAnteil(angle); // 1 ab ~15° Sonne, 0 am/unter Horizont
             const gMix = 0.26 * dayAmt;
             const fogRn = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
             const fogGn = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
@@ -86215,7 +86259,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.506.0";
+AnazhRealm.VERSION = "18.507.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -89884,6 +89928,11 @@ AnazhRealm.KEY_BASE = 2.6;
 // r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = Math.PI;
+// DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`): `zielKarte` ist die Leuchtdichte der 18-%-Karte nach
+// der Belichtung, die ACES (three: x·k/0,6, RRT+ODT-Fit) auf Mittelgrau + 1 EV legt — Mittelgrau (sRGB 118 =
+// linear 0,18) braucht den Fit-Eingang 0,26227, also k·L = 2 · 0,26227 · 0,6 = 0,3147. `max` 1,0 hält die geeichte
+// Nacht, `min` ist nur die Wand gegen ein entartetes Licht.
+AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
 // Slope-Schwellen des Gras-Gates: voll bis `lo` (≈35°), weg bis `hi` (≈52°), sanfter Übergang.
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN
 // `_slopeAt`-Achse.

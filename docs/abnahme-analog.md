@@ -5,7 +5,7 @@
 > darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
 > Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
 > seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
-> die Überbelichtung der geeichten Licht-Kette, die Wiese auf Armlänge (D), der echte GPU-Trace.**
+> die Wiese auf Armlänge (D), der echte GPU-Trace (die Überbelichtung fiel in V18.506–507).**
 
 ## Die Sonde
 
@@ -295,8 +295,29 @@ der Welt liest die Krone jetzt 0,11–0,12 (Eiche), 0,085 (Tanne) — im selben 
 
 **Licht-Bilanz** (Karte über dem Kronendach, Mittag): Sonne E 7,18 waagrecht; der Himmel zählt
 dreifach — Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 2,58, das sind 0,36 der Sonne (klarer Himmel
-real 0,12–0,16); Schattenseite : Sonnenseite 0,57 (real 0,35–0,4). **Offen (E):** EIN Himmel
-(Hemi + Ambient sind Zwillinge der Umgebung) und die Belichtung (Karte 212; physikalisch +1 EV ≈ 165).
+real 0,12–0,16); Schattenseite : Sonnenseite 0,57 (real 0,35–0,4).
+
+## V18.507 — EIN Himmel und die Belichtung aus dem Licht (01.10.)
+
+Am Tag ist die Himmels-Umgebung der Himmel; Hemi und Ambient tragen nur noch den Nachthimmel-Boden
+(0,10 · 0,04, eingeblendet mit derselben Tag-Achse wie der Nebel) — ohne sie war Mitternacht schwarz
+(Helligkeit 1,8 statt 39,7), mit dem Boden bleibt die Nacht wie geeicht (40,5). Die Belichtung kommt aus
+dem Licht: die Karte liest L = 0,18/π · E (Sonne auf der Waagrechten + Umgebung + Hemi + Ambient), die
+Kamera legt sie auf Mittelgrau + 1 EV (ACES-Fit-Eingang 0,26227 · 2 · 0,6 = 0,3147; Deckel 1,0 hält
+Nacht und Dämmerung, die schon bei ~35° Sonne wieder bei 1,0 liegen).
+
+| Ausgabe-Pfad (Mittag, Bühne) | V18.506 | V18.507 |
+|---|---|---|
+| Belichtung | 1,0 | 0,616 |
+| 18-%-Karte waagrecht | 212 | 173/172/164 (Mittelgrau +1 EV ≈ 165) |
+| 50-%-Karte · 85-%-Karte | — · Clip | 233 · 247 (ungeclippt) |
+| Licht-Bilanz E oben (Sonne · Umgebung · Hemi · Ambient) | 7,18 · 1,89 · 0,53 · 0,16 | 7,18 · 1,89 · 0 · 0 |
+| Schattenseite : Sonnenseite | 0,57 | 0,52 |
+| Bild (Werkbank, Mess-Wiese) | Himmel weißlich, Laub satt | Himmel blau mit Wolken, Laub satt |
+
+Benannt, nicht geschnitten: die Umgebung allein liest 0,26 der Sonne (klarer Himmel real 0,12–0,16) —
+der sichtbare Himmel (Nebel-Anker 0xa6d2ec, roh gelesen) ist hell und blass; seine Anker unter das
+Farb-Gesetz zu stellen dunkelt auch die Nacht-Ferne (0x0a1326 dekodiert ≈ schwarz) und ist nicht gemessen.
 
 ## Der echte GPU-Trace (Schöpfer-Holz)
 

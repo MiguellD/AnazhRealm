@@ -41,6 +41,12 @@ function buehne() {
     st.weatherTransition = null;
     if (typeof r._tickRain === "function") r._tickRain(performance.now());
     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    // Die Himmels-Umgebung (IBL) malt der Loop aus der Nebel-Farbe — gedrosselt und nur bei Drift. Bei
+    // ruhendem Loop hielt sie den Himmel des LETZTEN Laufs (gemessen 01.10.: nach einem Mitternachts-Schuss
+    // lag mittags die Nacht-Umgebung, Himmel E 0,28 statt 1,89). Die Bühne malt sie mit, dann sieht die
+    // Belichtung (sie liest die Umgebung) denselben Himmel wie die Materialien.
+    if (typeof r._ensureSkyEnvironment === "function") r._ensureSkyEnvironment(true);
+    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
     return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
 }
 
