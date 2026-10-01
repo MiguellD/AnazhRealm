@@ -611,6 +611,22 @@ const SCHUSS_FN = async (kam) => {
                     takte = 0,
                     offenVor = -1,
                     ohneFortschritt = 0;
+                // STUFEN-LINSE: das ZIEL-Objekt (der Bau am Zielpunkt) steht klar im L0-Band, aber noch auf einer
+                // gröberen Stufe — der feinere Guss ist unterwegs. Befund aaa9: Haus bei 7,5 m auf L1 (serviert 2),
+                // „eingeschwungen" nach 40 Takten, das Bild leer. Vor dem Schuss wird gewartet (≤ 600 Takte).
+                let ziel = null,
+                    zielD = Infinity;
+                for (const e of r.state.architectures) {
+                    const d = Math.hypot(e.position.x - kam.ox, e.position.z - kam.oz);
+                    if (d < 1.5 && d < zielD) ((ziel = e), (zielD = d));
+                }
+                const LD = r.constructor && r.constructor.LOD_DISTANCES;
+                const L01 = LD && Number.isFinite(LD.thresh01) ? LD.thresh01 : 12;
+                const zielOffen = () =>
+                    !!ziel &&
+                    Number.isFinite(ziel._lodLevel) &&
+                    ziel._lodLevel > 0 &&
+                    Math.hypot(ziel.position.x - kam.px, ziel.position.z - kam.pz) < 0.85 * L01;
                 while (performance.now() < dl) {
                     try {
                         if (r.state.world) r.state.world.timeOfDay = 0.5;
@@ -635,7 +651,13 @@ const SCHUSS_FN = async (kam) => {
                     if (offen === offenVor) ohneFortschritt++;
                     else ohneFortschritt = 0;
                     offenVor = offen;
-                    if (takte >= 40 && stable >= 15 && (offen === 0 || (!voll && ohneFortschritt >= 60))) break;
+                    if (
+                        takte >= 40 &&
+                        stable >= 15 &&
+                        (offen === 0 || (!voll && ohneFortschritt >= 60)) &&
+                        (!zielOffen() || takte >= 600)
+                    )
+                        break;
                     await sleep(50);
                 }
                 rend.render = origR;
@@ -681,6 +703,9 @@ const SCHUSS_FN = async (kam) => {
                     takte,
                     chunks: last,
                     offen: offenVor,
+                    zielStufe: zielOffen()
+                        ? `Ziel L${ziel._lodLevel} (serviert ${ziel._servedLod}) im L0-Band — Stufe AUSSTEHEND`
+                        : null,
                     zensus,
                     warum: Object.entries(warum)
                         .sort((a, b) => b[1] - a[1])
@@ -752,7 +777,7 @@ const SCHUSS_FN = async (kam) => {
             // Der Spieler steht an der Kamera (Chunk-Ring, Hand-Blase, Foundry-Stufe folgen ihm).
             const um = await umstellen(k);
             console.log(
-                `  umgestellt zu ${klasse}/${art}: ${um.takte} Takte · ${um.chunks} Chunks · ungebaut in der Mesh-Zone ${um.offen}${um.warum ? " — " + um.warum : ""}\n      Impostor: ${um.zensus}`
+                `  umgestellt zu ${klasse}/${art}: ${um.takte} Takte · ${um.chunks} Chunks · ungebaut in der Mesh-Zone ${um.offen}${um.warum ? " — " + um.warum : ""}${um.zielStufe ? " · ⚠ " + um.zielStufe : ""}\n      Impostor: ${um.zensus}`
             );
             const g = await page.evaluate((k) => window.anazhRealm._voxelSurfaceY(k.px, k.pz), k);
             k.py = Math.max(g + 0.35, k.augeY != null ? k.augeY : g + k.augeH);

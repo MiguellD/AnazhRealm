@@ -123,6 +123,22 @@ allen Bühnen; Bäcker 149 Karten gebacken, 0 hängend (vorher 7–8 hängend). 
 Wolf-Schuss liegt mit 832k knapp darunter — die schwersten Posten sind Studio-Stufen selbst
 (Konifere L0 ~170k Vertices, Fachwerk L1 75k ≈ L0 88k).
 
+### Tier-Haut, Schalen-Fell, Kopf-Häute (V18.497–499, Tag `aaa9`)
+
+Dieselbe Sonde, dieselbe Bühne; der Wolf-Leib ist eine geskinnte Haut mit 6 Fell-Schalen, Kopf und
+Kiefer starre Häute.
+
+| Schuss | dc / Dreiecke (aaa8 → aaa9) | Bild |
+|---|---|---|
+| Wolf · fern | 263 / 831 937 → **177 / 77 493** | der Blick stand hinter einer Birke — kein Urteil über das Fern-Bild |
+| Wolf · Armlänge | 222 / 635 557 → **141 / 78 949** | ein durchgehender Leib mit Pelz und weicher Kontur statt der Kugel-Kette mit Strähnen-Flecken |
+
+Der Haus-Armlängen-Schuss war in `aaa9` leer: der Bau stand bei 7,5 m noch auf L1 (serviert 2),
+die Sonde galt nach 40 Takten als eingeschwungen, weil sie nur „Repräsentation zugewiesen" zählte.
+Die Wiederholung in derselben Reihenfolge (`aaa9b`) ist grün (LOD 0 bei 7,5 m). Seitdem wartet die
+**Stufen-Linse** vor dem Schuss auf das Ziel-Objekt im L0-Band (≤ 600 Takte) und benennt eine
+ausstehende Stufe im Protokoll.
+
 **Die Licht-Linse** (`diag-arch-feld` D): eine Feld-Box und eine MeshStandard-Box (Albedo 0,5,
 roughness 1) am SELBEN Ort, gemeinsame Pixel-Maske. Vorher **0,67** (Feld rgb 70/77/86, Mesh
 97/115/151 — zu dunkel und ohne Himmels-Blau), nachher **0,98** (62/69/81 vs. 64/71/80).
