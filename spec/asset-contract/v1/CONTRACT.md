@@ -96,3 +96,12 @@ Seeds[7,12345] × LODs[0,2] × Saisons[summer,winter] + je 1 findling/kristalle/
 Juli-Felder (`fx.huelle` der Steine · `fx.fahrprofil.sitz/huelle/zweispur/kamera` der Fahrzeuge)
 und `supersport.fx.fahrprofil.lenkung.gripK`, das seither dem Garage-`grip` folgt (6 → 5.1). Alle
 52 Mesh-Goldens blieben byte-gleich (vor dem Re-Mint gegen die alten Bytes geprüft).
+
+**Re-Mint 01.10.2026 (V18.501, begründet — das GABEL-GESETZ der Rinde):** `foundry-core` emitTree
+setzt die Gelenk-Kugel (1,5 r) nur noch an der Gabel (r_Kind ≥ 0,8 r_Mutter). Ein Kind wächst vom
+Segment-Ende auf der Mutter-Achse; ist es deutlich dünner, liegt die Kugel ganz im Mutter-Ast —
+unsichtbare Geometrie. Bild-Beweis (CPU-Raster, 7 Arten × Stufen × 1–12-fach Zoom): mittlere
+Abweichung 0,0000, höchstens 27 von 536 000 Pixeln. Geändert: nur Mesh 0 (`bark`) der 45 Baum-/
+Strauch-Fälle; Laub, findling, kristalle, blume und die drei Daten-Kanäle byte-gleich (gegen die
+alten Bytes geprüft). Dreiecke: Strauch L1 69,0k → 44,7k, L2 20,6k → 13,8k · Weide L1 30,8k → 24,1k
+· Birke L0 83,6k → 76,8k · Eiche L0 119,4k → 110,7k · Tanne L0 158,2k → 151,4k (seed 1).

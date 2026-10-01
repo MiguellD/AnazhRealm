@@ -211,6 +211,20 @@ Fachwerk behält Dach und Wände).
 - **Studio (32 Kulturen, seed 7):** L1 2251k → 561k Dreiecke, L1 17–33 % von L0 (vorher 74–89 %);
   Bild-Abstand L0↔L1 (Distanz-emuliert, alemannisch) 0,026 → 0,028 bei 4× weniger Dreiecken.
 
+## V18.501 — das Gabel-Gesetz der Rinde (Welt-Zensus, Mess-Wiese −900/−850)
+
+Die Zensus-Sonde zählt nach dem Einschwingen je Vorlage × Stufe die residenten Dreiecke × Instanzen
+und die im Sichtkegel (vier Blickrichtungen). Alle Streu-Pflanzen stehen dort auf L1; der Strauch
+war der teuerste Einzelposten (69k je Busch, davon 24k Gelenk-Kugeln im Mutter-Ast).
+
+| | vorher | nachher |
+|---|---|---|
+| resident (Pflanzen) | 0,69 M | 0,53 M |
+| im Sichtkegel Ø / schwerste Richtung | 0,28 / 0,37 M | 0,22 / 0,30 M |
+| Strauch L1 resident | 281k | 182k |
+
+Dreikant-Nadeln jenseits L0 wurden gemessen und verworfen (sichtbar: 5 % mittlere Abweichung).
+
 ## Der echte GPU-Trace (Schöpfer-Holz)
 
 1. `npm run leuchtturm` (save-server + signaling), Welt im Browser öffnen, Holz-Profil „voll".

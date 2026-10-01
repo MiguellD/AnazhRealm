@@ -1088,6 +1088,28 @@ function emitTree(P) {
         const mm = meta[rid];
         if (mm && mm.isLead && mm.parentRun >= 0) leadChild[mm.parentRun] = rid;
     }
+    // GABEL-GESETZ (V18.501): ein Kind waechst vom Segment-Ende AUF der Mutter-Achse — seine Gelenk-Kugel
+    // (1,5 r) liegt im Mutter-Ast, solange das Kind deutlich duenner ist. Eine Naht zu fuellen gibt es nur
+    // an der GABEL (r_Kind ≥ 0,8 r_Mutter). Gemessen (CPU-Raster, 7 Arten × Stufen × 1–12-fach): ohne die
+    // verdeckten Kugeln mittlere Abweichung 0,0000, hoechstens 27 von 536 000 Pixeln; Strauch L1 69k → 45k.
+    const __mutterRing = (s0) => {
+        const mm = meta[s0.runId],
+            par = mm && mm.parentRun >= 0 ? runs.get(mm.parentRun) : null;
+        if (!par) return 0;
+        let best = null,
+            bd = Infinity;
+        for (const ps of par) {
+            const dx = ps.p1[0] - s0.p0[0],
+                dy = ps.p1[1] - s0.p0[1],
+                dz = ps.p1[2] - s0.p0[2],
+                d = dx * dx + dy * dy + dz * dz;
+            if (d < bd) {
+                bd = d;
+                best = ps;
+            }
+        }
+        return best && bd <= 1e-10 ? best.r1 * ffR(best.p1[1]) : 0;
+    };
     function strandRings(head) {
         let rid = head,
             rings = [],
@@ -1123,7 +1145,8 @@ function emitTree(P) {
         }
         buildTube(barkGeos, rings, P, barkBase, barkTip, nodes.trunkR);
         const s0 = runs.get(rid)[0];
-        if (s0.depth > 0 && baseRing.r > nodes.trunkR * 0.035) {
+        const rMutter = s0.depth > 0 ? __mutterRing(s0) : 0;
+        if (s0.depth > 0 && baseRing.r > nodes.trunkR * 0.035 && !(rMutter > 0 && baseRing.r < rMutter * 0.8)) {
             const cc = barkBase
                 .clone()
                 .lerp(barkTip, clamp(s0.p0[1] / nodes.height, 0, 1) * 0.5 + (s0.depth / Math.max(1, P.maxDepth)) * 0.3);
