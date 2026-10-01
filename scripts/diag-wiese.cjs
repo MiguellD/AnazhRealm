@@ -1,10 +1,12 @@
-// diag-wiese.cjs — DIE WIESEN-LINSE (Pflicht D): die Halm-Funktion im Boden ist nur dort ein
-// Beweis, wo Sonne auf flaches Gras fällt. Befund 30.09.: die E-Bühne neben dem Wolf liegt im
-// Waldschatten — der Boden dort ist fast schwarz, mit und ohne Halme. Die Linse SUCHT deshalb die
+// diag-wiese.cjs — DIE WIESEN-LINSE (Pflicht D, gefallen in V18.508 — die Linse bleibt der Richter der
+// Wiese): die Wiese ist nur dort ein Beweis, wo Sonne auf flaches Gras fällt. Befund 30.09.: die
+// E-Bühne neben dem Wolf liegt im Waldschatten — der Boden dort ist fast schwarz, mit und ohne Halme.
+// Die Linse SUCHT deshalb die
 // besonnte Wiese: Kandidaten auf Ringen bis 120 m (der geladene Ring) um die Mess-Wiese −900/−850 (flach, trocken), je
-// ein Blick senkrecht nach unten (64×36, Mittag, Schatten frisch) — Grün-Überschuss × Helligkeit gewinnt. Dort je ein
+// ein Blick senkrecht nach unten (64×36, Mittag, Schatten frisch) — Büschel nach dem Gesetz × Grün × Helligkeit. Dort je ein
 // Schuss fern (1,7 m, 10 m voraus) und Armlänge (1,6 m, 0,8 m voraus) + die Halm-Zahl: mittlerer
-// Nachbar-Kontrast der unteren Bildhälfte (hochfrequente Struktur = Halme, glatter Boden ≈ 0).
+// Nachbar-Kontrast der unteren Bildhälfte (hochfrequente Struktur = Halme, glatter Boden ≈ 0). Seit V18.508
+// steht nah die Nah-Wiese (Studio-Gras im Kamera-Ring); die Aufnahme schwingt sie für jede Kamera ein.
 //   node scripts/diag-wiese.cjs [--tag name] [--out DIR]
 "use strict";
 const puppeteer = require("puppeteer");
@@ -55,13 +57,24 @@ const RENDER_FN = async (kam, W, H, png) => {
     cam.updateMatrixWorld(true);
     if (r.state.playerMesh) r.state.playerMesh.visible = false;
     let u8 = null;
+    let info = null;
     for (let k = 0; k < 2; k++) {
         try {
             if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
         } catch (_e) {}
         if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
-        u8 = (await window.__ausgabeAufnahme(W, H, 1)).u8; // die EINE Aufnahme: der echte, getonte Frame
+        const auf = await window.__ausgabeAufnahme(W, H, 1); // die EINE Aufnahme: der echte, getonte Frame
+        u8 = auf.u8;
+        info = auf.info;
     }
+    // Die Nah-Wiese (V18.508): Kacheln · Büschel · Dreiecke im Ring um diese Kamera
+    let buesch = 0;
+    let kach = 0;
+    if (r.state.nahWiese)
+        for (const kk of r.state.nahWiese.kacheln.values()) {
+            kach++;
+            for (const im of kk.meshes || []) buesch += im.count;
+        }
     rend.setAnimationLoop(r._gameLoopTick);
     // Kennzahlen der unteren Bildhälfte (Boden): Helligkeit + Nachbar-Kontrast
     const lum = (i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
@@ -78,7 +91,15 @@ const RENDER_FN = async (kam, W, H, png) => {
         }
     let gr = 0;
     for (let i = 0; i < u8.length; i += 4) gr += u8[i + 1] - Math.max(u8[i], u8[i + 2]);
-    const out = { hell: l / n, kontrast: k2 / (2 * n), gruen: gr / (u8.length / 4) };
+    const out = {
+        hell: l / n,
+        kontrast: k2 / (2 * n),
+        gruen: gr / (u8.length / 4),
+        dc: info && info.drawCalls,
+        tri: info && info.triangles,
+        kacheln: kach,
+        bueschel: buesch,
+    };
     if (png) {
         const cv = document.createElement("canvas");
         cv.width = W;
@@ -194,16 +215,33 @@ const RENDER_FN = async (kam, W, H, png) => {
             36,
             false
         );
-        // Wiese = grün UND besonnt: Grün-Überschuss × Helligkeit von oben
-        const wert = Math.max(0, m.gruen) * m.hell;
-        if (!best || wert > best.wert) best = Object.assign({ hell: m.hell, gruen: m.gruen, wert }, c);
+        // Wiese = das Gesetz sagt Wiese (Büschel der Nah-Wiese in den 3×3 Kacheln um die Stelle — Licht,
+        // Feuchte, Hang, Pfad, Grün-Kanal) UND besonnt von oben. Die Pixel-Wertung allein (Grün × Hell) wählte
+        // 01.10. ein graues Geröllfeld mit grünem Hügel am Rand.
+        const bueschel = await page.evaluate((k) => {
+            const r = window.anazhRealm;
+            const NW = r.constructor.NAH_WIESE;
+            let n = 0;
+            for (let dz = -1; dz <= 1; dz++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    const b = r._nahWieseKachelBueschel(
+                        Math.floor(k.x / NW.kachel) + dx,
+                        Math.floor(k.z / NW.kachel) + dz
+                    );
+                    if (b) n += b.length;
+                }
+            return n;
+        }, c);
+        const wert = Math.max(0, m.gruen) * m.hell * bueschel;
+        if (wert > 0 && (!best || wert > best.wert))
+            best = Object.assign({ hell: m.hell, gruen: m.gruen, bueschel, wert }, c);
     }
     if (!best) {
-        console.log("❌ keine flache, trockene Stelle gefunden");
+        console.log("❌ keine besonnte Wiese gefunden (kein Kandidat mit Büscheln nach dem Gesetz)");
         process.exit(1);
     }
     console.log(
-        `Besonnte Wiese: ${best.x.toFixed(0)}/${best.z.toFixed(0)} · von oben Helligkeit ${best.hell.toFixed(1)}, Grün-Überschuss ${best.gruen.toFixed(1)} (${kand.length} Kandidaten)`
+        `Besonnte Wiese: ${best.x.toFixed(0)}/${best.z.toFixed(0)} · von oben Helligkeit ${best.hell.toFixed(1)}, Grün-Überschuss ${best.gruen.toFixed(1)}, ${best.bueschel} Büschel (3×3 Kacheln) (${kand.length} Kandidaten)`
     );
     // Der Spieler steht 25 m HINTER der Kamera (sie blickt nach +x): an der Stelle selbst stünde die
     // Kamera im eigenen Körper — gemessen 01.10. im Ausgabe-Pfad (Gewand + Füße füllten das Bild).
@@ -221,10 +259,14 @@ const RENDER_FN = async (kam, W, H, png) => {
         bericht.schuesse[art] = {
             hell: +s.hell.toFixed(1),
             kontrast: +s.kontrast.toFixed(2),
+            dc: s.dc,
+            tri: s.tri,
+            kacheln: s.kacheln,
+            bueschel: s.bueschel,
             datei: path.relative(root, f),
         };
         console.log(
-            `  ${art}: Boden-Helligkeit ${s.hell.toFixed(1)} · Halm-Kontrast ${s.kontrast.toFixed(2)} · ${path.relative(root, f)}`
+            `  ${art}: Boden-Helligkeit ${s.hell.toFixed(1)} · Halm-Kontrast ${s.kontrast.toFixed(2)} · ${s.dc} dc / ${s.tri} Dreiecke · Nah-Wiese ${s.kacheln} Kacheln / ${s.bueschel} Büschel · ${path.relative(root, f)}`
         );
     }
     fs.writeFileSync(path.join(OUT, `wiese-${TAG}.json`), JSON.stringify(bericht, null, 2));

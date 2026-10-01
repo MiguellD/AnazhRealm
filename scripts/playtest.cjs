@@ -15324,10 +15324,7 @@ async function checkBandWelle6APolish(ctx) {
 
     if (wave6a3Results) {
         check("Welle 6.A3: Steilhang-Gesetz (hang.maxSlopeY) fail-closed lesbar", wave6a3Results.hasHangMaxSlopeY);
-        check(
-            "Welle 6.A3: hang.maxSlopeY == 0.5 (cos 60° = walkable bis 60°)",
-            wave6a3Results.hangMaxSlopeYIs05
-        );
+        check("Welle 6.A3: hang.maxSlopeY == 0.5 (cos 60° = walkable bis 60°)", wave6a3Results.hangMaxSlopeYIs05);
         check(
             "Welle 6.A3: der State-Zwilling maxWalkableSlopeY ist abwesend (19.07.)",
             wave6a3Results.stateZwillingAbwesend
@@ -18947,9 +18944,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Gras-Zelle verbucht 0 Halme UND die Halm-Funktion lebt im Boden-Albedo (Konsum-Probe am
             // Chokepoint).
             out.voxelGrassIsSurface =
-                grassEntries > 0 &&
-                grassBlades === 0 &&
-                /_halmHoch/.test(window.__codeOf(r._terrainGeologyAlbedo));
+                grassEntries > 0 && grassBlades === 0 && /_halmHoch/.test(window.__codeOf(r._terrainGeologyAlbedo));
             // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
             // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
             // 1,2 m unter dem gezeichneten Boden).
@@ -24345,6 +24340,9 @@ async function checkBandV171Scatter(ctx) {
                 const wz = (cz + 0.5) * span;
                 const f = r.worldFieldAt(wx, wz);
                 if (!f) continue;
+                // V18.508: die Streu steht auf der Boden-Karte des GEBAUTEN Chunks — nur gebaute Chunks.
+                const ce = r.state.voxelChunks && r.state.voxelChunks.get(`${cx},${cz}`);
+                if (!ce || !ce.surfMap) continue;
                 const surfY = r._voxelSurfaceY(wx, wz);
                 if (surfY === null || !Number.isFinite(surfY)) continue;
                 const waterY = r._waterLevelAt(wx, wz);
@@ -25960,7 +25958,10 @@ async function checkBandWelle6Keybindings(ctx) {
     });
 
     if (wave6a6Results && !wave6a6Results.error) {
-        check("Welle 6.A6: aktionAusdauer-Gesetz === 5 (koerper-core, Zwilling gefallen)", wave6a6Results.hasStaminaCost);
+        check(
+            "Welle 6.A6: aktionAusdauer-Gesetz === 5 (koerper-core, Zwilling gefallen)",
+            wave6a6Results.hasStaminaCost
+        );
         check("Welle 6.A6: tryMouseBreak existiert", wave6a6Results.hasTryMouseBreak);
         check("Welle 6.A6: tryMousePlace existiert", wave6a6Results.hasTryMousePlace);
         check("Welle 6.A6: removeArchitecture existiert", wave6a6Results.hasRemoveArchitecture);
@@ -28607,7 +28608,8 @@ async function checkBandPhaseEThreat(ctx) {
             // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
             // Jagd; frieden kennt keine Bedrohung; eine sanfte Seele jagt nie.
             out.drivePfad = r._creatureHuntDrive(wolf, 0) === true;
-            out.fearBeatsHunt = r._creatureHuntDrive(wolf, r.constructor._verhaltenGesetz().furcht.fleeThreshold) === false;
+            out.fearBeatsHunt =
+                r._creatureHuntDrive(wolf, r.constructor._verhaltenGesetz().furcht.fleeThreshold) === false;
             r.setGameMode("frieden");
             out.friedenNoHunt = r._creatureHuntDrive(wolf, 0) === false;
             r.setGameMode("pfad");
@@ -38001,7 +38003,9 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             out.unbekannt = r._studioBlueprintForWord("quasselstrippe");
             const f = r._foundry;
             const treeIds =
-                f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "tree") : [];
+                f && f.recipes
+                    ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "tree")
+                    : [];
             out.treeIds = treeIds.length;
             out.alleBaeumeLoesen = treeIds.every((id) => !!r._studioBlueprintForWord(id));
             // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen).
@@ -38030,7 +38034,9 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             const res2 = r.dslRun(["spawn_studio", "quasselstrippe", ["at_player"], 3], { source: "test" });
             out.unbekanntKeinSpawn = archs.length === v2 && res2.log.some((l) => l.event === "unknown_studio_word");
             const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
-            out.satz = parsed ? JSON.stringify([parsed.program[0], parsed.program[1], parsed.program[2][0], parsed.program[3]]) : null;
+            out.satz = parsed
+                ? JSON.stringify([parsed.program[0], parsed.program[1], parsed.program[2][0], parsed.program[3]])
+                : null;
             const alt = r.parseChatToDsl("pflanze baum hier");
             out.altGesteBleibt = !!alt && alt.program[0] === "spawn_tree";
             const nw = r.dslPositions.near_water([160], { state: r.state, rng: Math.random });
@@ -38113,7 +38119,10 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         R.satz === JSON.stringify(["spawn_studio", "eichen", "near_water", 6]),
         String(R.satz)
     );
-    check("V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)", R.altGesteBleibt === true);
+    check(
+        "V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
+        R.altGesteBleibt === true
+    );
     check("V18.493 Co-Schöpfer: near_water liefert einen endlichen Ort", R.nearWater === true);
     check(
         "V18.493 Co-Schöpfer: das KI-Prompt lehrt spawn_studio + near_water + die lebenden Wörter; Regeln dürfen es nicht",
@@ -41244,6 +41253,72 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
+        // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft
+        // `_chunkSurfaceAt` die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung
+        // zeigt oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben (gemessen 01.10.: Spawn-Chunk
+        // Median 45 cm, 8 % ≤ 5 cm; Mess-Wiese ±0,22 m) — Gras und Streu darauf steckten im Boden.
+        // DIE NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
+        {
+            const cfg = r._voxelChunkConfig(0);
+            const lpc = r.state.lastPlayerVoxelChunk;
+            const e = lpc && r.state.voxelChunks && r.state.voxelChunks.get(lpc.cx + "," + lpc.cz);
+            let geo = e && e.mesh && e.mesh.geometry;
+            if (geo && !(geo.attributes.position.array && geo.attributes.position.array.length)) geo = null;
+            const karte = [];
+            const gesetz = [];
+            if (e && geo) {
+                const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+                m.updateMatrixWorld(true);
+                const rc = new THREE.Raycaster();
+                for (let i = 0; i < 256; i++) {
+                    const x = (lpc.cx + 0.05 + 0.9 * ((i * 0.618034) % 1)) * cfg.span;
+                    const z = (lpc.cz + 0.05 + 0.9 * ((i * 0.381966 + 0.17) % 1)) * cfg.span;
+                    const y = r._chunkSurfaceAt(e, lpc.cx, lpc.cz, x, z);
+                    if (y === null) continue;
+                    rc.set(new THREE.Vector3(x, y + 50, z), new THREE.Vector3(0, -1, 0));
+                    const h = rc.intersectObject(m, false);
+                    if (!h.length) continue;
+                    karte.push(Math.abs(h[0].point.y - y));
+                    gesetz.push(Math.abs(h[0].point.y - r._voxelSurfaceY(x, z)));
+                }
+            }
+            const median = (a) => (a.length ? a.slice().sort((u, v) => u - v)[Math.floor(a.length / 2)] : null);
+            const anteil = (a) => (a.length ? a.filter((d) => d <= 0.05).length / a.length : 0);
+            out.bodenKarteTrifftMesh = karte.length >= 128 && median(karte) <= 0.02 && anteil(karte) >= 0.75;
+            out.bodenKarteZahl =
+                `${karte.length} Punkte: Karte Median ${(100 * (median(karte) || 0)).toFixed(1)} cm, ` +
+                `${Math.round(100 * anteil(karte))} % ≤ 5 cm · Gesetz Median ${(100 * (median(gesetz) || 0)).toFixed(1)} cm, ` +
+                `${Math.round(100 * anteil(gesetz))} % ≤ 5 cm`;
+            // Die büschel-reichste Kachel im 7×7-Umkreis des Spielers (die Spawn-Kachel selbst kann Fels sein).
+            const NW = r.constructor.NAH_WIESE;
+            const pp = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+            const t0x = Math.floor(pp.x / NW.kachel);
+            const t0z = Math.floor(pp.z / NW.kachel);
+            let tx = t0x;
+            let tz = t0z;
+            let bestN = -1;
+            for (let dz = -3; dz <= 3; dz++)
+                for (let dx = -3; dx <= 3; dx++) {
+                    const b = r._nahWieseKachelBueschel(t0x + dx, t0z + dz);
+                    if (b && b.length > bestN) {
+                        bestN = b.length;
+                        tx = t0x + dx;
+                        tz = t0z + dz;
+                    }
+                }
+            const b1 = r._nahWieseKachelBueschel(tx, tz);
+            const b2 = r._nahWieseKachelBueschel(tx, tz);
+            const fuss = (b) => {
+                const cx = Math.floor(b.x / cfg.span);
+                const cz = Math.floor(b.z / cfg.span);
+                const y = r._chunkSurfaceAt(r.state.voxelChunks.get(cx + "," + cz), cx, cz, b.x, b.z);
+                return y !== null && Math.abs(y - b.y) < 1e-6;
+            };
+            out.nahWieseStabil =
+                Array.isArray(b1) && b1.length > 0 && JSON.stringify(b1) === JSON.stringify(b2) && b1.every(fuss);
+            out.nahWieseZahl = Array.isArray(b1) ? `${b1.length} Büschel in Kachel ${tx},${tz}` : "Kachel wartet";
+        }
+
         // --- Genesis-Plattform ---
         out.genesisMethodExists = typeof r._ensureGenesisPlatform === "function";
         out.startPlattformBlueprint = !!(r.state.blueprints && r.state.blueprints.start_plattform);
@@ -41283,8 +41358,16 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
         check(
-            "V8.29 (V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh (die Wiese ist Boden-Funktion)",
+            "V8.29 (V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",
             v829Results.grassCellsBookedHalmFree
+        );
+        check(
+            `V18.508: die Boden-Karte ist der gerenderte Boden (${v829Results.bodenKarteZahl})`,
+            v829Results.bodenKarteTrifftMesh
+        );
+        check(
+            `V18.508: Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`,
+            v829Results.nahWieseStabil
         );
         check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
         check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
@@ -53647,7 +53730,7 @@ async function checkBandRing5Soul(ctx) {
         const kcTones = window.__koerperCore && window.__koerperCore.SKIN_TONES;
         const hautTonInPalette =
             !!kcTones &&
-            Object.keys(kcTones).some((k) => (kcTones[k].hex >>> 0) === (currentMesh().userData.hautTon >>> 0));
+            Object.keys(kcTones).some((k) => kcTones[k].hex >>> 0 === currentMesh().userData.hautTon >>> 0);
         out.defaultColorRed = hautTonInPalette && pipeNodeMat;
         // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
         // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).

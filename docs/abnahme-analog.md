@@ -5,7 +5,7 @@
 > darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
 > Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
 > seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
-> die Wiese auf Armlänge (D), der echte GPU-Trace (die Überbelichtung fiel in V18.506–507).**
+> der echte GPU-Trace (die Überbelichtung fiel in V18.506–507, die Wiese auf Armlänge in V18.508).**
 
 ## Die Sonde
 
@@ -67,9 +67,11 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
   sRGB-dekodiert wie `THREE.Color`, bei vollem Fachwerk Silhouette vor Holz. Klein-Streu auf der
   Fern-Stufe (Zellen-LOD 2): `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
   tract die Plätze (`einheit < 0`); nah und mittel Mesh-Instanzen.
-- **D Wiese:** Boden-FUNKTION in `_terrainGeologyAlbedo` — Meadow-Grund (`MEADOW_GREEN`) fern,
-  8-Schicht-Parallax-Relief nah (≤ 90 m, gated grün × flach × kein Fels × nicht trocken). Keine
-  Halm-Geometrie (`voxelChunkGrass` → null je Chunk). Mess-Wiese: −900/−850.
+- **D Wiese:** nah (≤ 14 m um die Kamera) die NAH-WIESE — Studio-Gras (Foundry „gras", L1 ≤ 5 m,
+  L2 bis 14 m) nach dem Studio-Gesetz (`understory.grassStep` · `groundCover.grass`) im Kachel-Ring
+  (`_tickNahWiese`), Fuß auf der Boden-Karte; jenseits die Boden-FUNKTION in `_terrainGeologyAlbedo` —
+  Meadow-Grund (`MEADOW_GREEN`) fern, 8-Schicht-Parallax-Relief (≤ 90 m, gated grün × flach × kein
+  Fels × nicht trocken). Je Chunk keine Halm-Geometrie (`voxelChunkGrass` → null). Mess-Wiese: −900/−850.
 
 ## Die Messung (30.09.)
 
@@ -339,3 +341,35 @@ Farb-Gesetz zu stellen dunkelt auch die Nacht-Ferne (0x0a1326 dekodiert ≈ schw
 
 Die Metrologie-Linse ohne Browser: `node scripts/diag-analog-e-metrology.cjs [trace.json]`
 (Selbst-Test: ein Trace ohne `weltMarch` ist ROT).
+
+## V18.508 — Die Nah-Wiese und die Boden-Karte (01.10.)
+
+Der Armlängen-Schleier hatte zwei Täter. Der erste ist die Relief-Funktion selbst (9/m-Büschel auf
+1–3 m glatt). Der zweite ist der Boden: Halme auf der Gesetzes-Höhe steckten im SICHTBAREN Boden. Rot-weiße
+Pfähle (10-cm-Ringe) an der Mess-Wiese −1004/−790 standen 20–30 cm tief. Die Surface-Nets-Fläche (1,8-m-Netz
++ Glättung) liegt neben `_voxelSurfaceY`: an der Mess-Wiese ±0,22 m (q05–q95, max +0,43), im Spawn-Chunk im
+Median 46 cm (8 % ≤ 5 cm). Ohne Boden (Werkbank, Terrain ausgeblendet) stand der volle Halm-Teppich da.
+
+| Schnitt | Messung |
+|---|---|
+| Boden-Karte = gerenderter Boden (`_bodenKarteAusMesh`: 0,45-m-Gitter aus dem fertigen Mesh, oberste nicht-steile Fläche + Grün-Kanal); der Dichte-Spalten-Zwilling (`_gridSurfaceMap` + Worker-Spiegel) fällt | Karte ↔ Mesh im Median 0,9 cm, 81 % ≤ 5 cm (Spawn-Chunk, 256 Punkte; Mess-Wiese q95 1,7 cm) |
+| Streu-Stücke stehen je auf IHREM Ort (vorher alle Stücke einer 5,4-m-Zelle auf der Zellmitten-Höhe) | `gate:scatter-ab` · `gate:scatter-slice` grün |
+| Nah-Wiese: Studio-Gras nach dem Studio-Gesetz im Kachel-Ring (6-m-Kacheln, L1 ≤ 5 m, bis 14 m, Rand-Band 4 m dünnt über `count`), nur wo die Boden-Funktion Wiese zeichnet | 30 Kacheln · 1099 Büschel; 2,5 ms je Kachel-Bau, eine je Takt |
+| Wind: das Studio-Gras wiegt mit der EINEN Böen-Welle, der Spieler biegt die Halme; das Höhen-Gewicht liest `positionGeometry` (r184 instanziert VOR dem positionNode — `positionLocal` war bei jeder InstancedMesh die Welt-Höhe) | 1,3 s Wind: 14 434 Pixel bewegt, Spitzen-Ausschlag wenige cm |
+
+**Die Wiesen-Linse** (`npm run lens:wiese`, Ausgabe-Pfad, Bühne; die Stelle wählt jetzt das Gesetz —
+Büschel in 3×3 Kacheln × Grün × Helligkeit; die Pixel-Wertung allein wählte ein graues Geröllfeld):
+
+| Blick | V18.503 (Funktion allein) | V18.508 (Nah-Wiese) |
+|---|---|---|
+| fern (1,7 m, 10 m voraus) | 96,0 · Kontrast 3,04 | 85,3 · Kontrast 9,85 — Grashügel aus Büscheln mit Rispen |
+| Armlänge (1,6 m, 0,8 m voraus) | 101,5 · Kontrast 0,32 (Schleier) | 103,7 · Kontrast 10,99 — einzelne Halme scharf, Rispen |
+| Bild-Last | — | 39 dc / 386k · 33 dc / 364k Dreiecke (Werkbank-Wiese: Nah-Wiese +14–22 dc, +190–350k) |
+
+Sichtbar offen, benannt (kein neuer Eintrag — die setzt der Schöpfer): zwischen den Büscheln trägt die
+Relief-Funktion (auf Knie-Höhe Moos-Polster statt Grasnarbe; eine Grasnarbe aus Halm-Patches, 320/m², wurde
+gemessen und nicht übernommen: auf dem Gesetzes-Boden begraben, im Bodenton kaum lesbar — auf der Boden-Karte
+nicht nachgemessen); L2
+(5–14 m) zeigt breite Blatt-Fächer; Büschel werfen keine Schatten; das 0,72-m-Raster liest am Hang als
+Reihe. Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz — deterministisch für den Lockstep,
+±0,2 m neben dem sichtbaren Boden.

@@ -89,6 +89,10 @@ function ausgabeAufnahme(W, H, warm) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 r._loopRender(performance.now());
             };
+            // Die NAH-WIESE folgt der Kamera (Kachel-Ring, `_tickNahWiese` im scatterDeco-Takt). Bei ruhendem
+            // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
+            // Kachel je Takt, bis keine mehr fehlt).
+            if (typeof r._tickNahWiese === "function") for (let i = 0; i < 200 && r._tickNahWiese() > 0; i++);
             const nWarm = warm == null ? 1 : warm;
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();

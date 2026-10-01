@@ -15752,7 +15752,7 @@ class AnazhRealm {
         const wu = this.state.windUniforms;
         if (!wu) return null;
         this._ensureWindCoupling(TSL);
-        const { vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
+        const { vec3, float, sin, cos, max, positionWorld } = TSL;
         const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
         const wd = wu.uWindDir || null;
         const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
@@ -15761,7 +15761,11 @@ class AnazhRealm {
             .add(
                 dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
             );
-        const hf = max(positionLocal.y, float(0.0));
+        // Höhen-Gewicht = Höhe über der Wurzel. `positionLocal` ist im positionNode schon instanz-transformiert
+        // (r184: Instanzierung VOR positionNode) — bei einer InstancedMesh also Welt-Höhe (20+ m statt der
+        // Halm-Höhe); die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt sie unverfälscht.
+        // `opts.hoehe` reicht eine eigene Höhe in Metern (Studio-Vorlagen tragen die Template-Skala).
+        const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         const gust = sin(
             wu.uWindTime
                 .mul(float(0.4))
@@ -21464,7 +21468,6 @@ class AnazhRealm {
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
                                 waterCells: new Uint8Array(msg.waterCells),
-                                surfMap: msg.surfMap ? new Float32Array(msg.surfMap) : null,
                             });
                         }
                     }
@@ -22028,7 +22031,16 @@ class AnazhRealm {
             const oy = base - lod0Cfg.floorDrop;
             this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
         }
-        return { mesh, kind: "filled", waterCells, lod, hasBVH, surfMap: meshData.surfMap || null };
+        const karte = this._bodenKarteAusMesh(meshData.positions, meshData.indices, meshData.colors, cx, cz, lod);
+        return {
+            mesh,
+            kind: "filled",
+            waterCells,
+            lod,
+            hasBVH,
+            surfMap: karte && karte.hoehe,
+            gruenMap: karte && karte.gruen,
+        };
     }
 
     // V18.275 — liegt der Chunk-Mittelpunkt im perf-geregelten `foliageRadius`? (Die
@@ -25380,9 +25392,6 @@ class AnazhRealm {
         // `preDensity`: hat der Aufrufer das Grid schon (Cell-Klassifikation), läuft die teure Sample-
         // Schleife (~90k `_terrainDensityAt`-Calls) nur einmal pro Chunk-Build.
         const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
-        // Die Oberflächen-Karte fällt als Nebenprodukt aus dem schon gesampelten Grid (Gras/Scatter lesen
-        // sie statt `_voxelSurfaceY`-Scans). Worker-Mirror: `gridSurfaceMap` in voxel-worker.js.
-        const surfMap = this._gridSurfaceMap(density, dimX + 1, dimY + 1, dimZ + 1, oy, step);
         const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -25415,52 +25424,116 @@ class AnazhRealm {
         // grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), main-only, Physik-Position unberührt.
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
-        geom.userData.surfMap = surfMap;
         return geom;
     }
 
-    // Oberflächen-Karte aus dem Density-Grid: pro Eck-Spalte (i,k) die oberste Luft→Fels-Kante,
-    // sub-zellig linear (= Iso des Meshers vor dem Glätten), NaN ohne Oberfläche; ~1 ms statt 256
-    // `_voxelSurfaceY`-Scans/Chunk. Worker-Mirror `gridSurfaceMap` in voxel-worker.js — BEIDE ändern.
-    _gridSurfaceMap(density, Nx, Ny, Nz, oy, step) {
-        const map = new Float32Array(Nx * Nz);
-        map.fill(NaN);
-        for (let k = 0; k < Nz; k++) {
-            for (let i = 0; i < Nx; i++) {
-                const colBase = i + k * Nx * Ny;
-                for (let j = Ny - 2; j >= 0; j--) {
-                    const a = density[colBase + j * Nx];
-                    const b = density[colBase + (j + 1) * Nx];
-                    if (a > 0 && b <= 0) {
-                        const t = a / (a - b);
-                        map[i + k * Nx] = oy + (j + t) * step;
-                        break;
+    // DIE BODEN-KARTE (V18.508): die Höhe des GERENDERTEN Bodens je Chunk, gerastert aus dem fertigen
+    // Mesh (Surface-Nets-Vertices nach Glättung + Crop) auf ein Gitter von step/BODEN_KARTE_TEILUNG (LOD 0:
+    // 0,45 m, Origin chunk − step, über das Pad (dim+3)·step); je Punkt die OBERSTE nicht-steile Fläche (Wände
+    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8). Vorher las die Karte die Dichte-Spalten
+    // (Nulldurchgang an den Gitter-Ecken) — gemessen 01.10.: an der Mess-Wiese −1004/−790 liegt der gerenderte
+    // Boden ±0,22 m (q05–q95, max +0,43) neben dem Gesetz, im Spawn-Chunk Median 45 cm; das 1,8-m-Netz trägt
+    // die Feinform der Funktion nicht, die Glättung verdoppelt die Abweichung. Die Karte trifft das Mesh im
+    // Median auf 0,9 cm. Ein Halm von 8–24 cm auf der
+    // Gesetzes-Höhe steckte so halb im sichtbaren Boden. Wer etwas AUF den sichtbaren Boden stellt (Gras,
+    // Streu, Deko), liest diese Karte; Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz
+    // (`_voxelSurfaceY`, deterministisch für den Lockstep — die Karte hängt am Streaming-Zustand).
+    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod) {
+        if (!pos || !idx || idx.length < 3) return null;
+        const cfg = this._voxelChunkConfig(lod || 0);
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const ox = cx * cfg.span - cfg.step;
+        const oz = cz * cfg.span - cfg.step;
+        const map = new Float32Array(M * M).fill(NaN);
+        const gruen = new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
+        for (let t = 0; t + 2 < idx.length; t += 3) {
+            const a = idx[t] * 3;
+            const b = idx[t + 1] * 3;
+            const c = idx[t + 2] * 3;
+            const ax = pos[a];
+            const az = pos[a + 2];
+            const bx = pos[b];
+            const bz = pos[b + 2];
+            const qx = pos[c];
+            const qz = pos[c + 2];
+            // Flächen-Neigung aus der GEOMETRIE (Betrag, wicklungs-frei): |n_y| ≥ 0,3·|n| trägt, Wände nicht.
+            // Die Gradienten-Normalen der Vertices kippen an dünnen Platten (gemessen: Spawn-Plattform 7 m
+            // unter dem sichtbaren Deckel), die Wicklung zeigt oben nach unten — beides taugt nicht als Wache.
+            const ux = bx - ax;
+            const uy = pos[b + 1] - pos[a + 1];
+            const uz = bz - az;
+            const vx = qx - ax;
+            const vy = pos[c + 1] - pos[a + 1];
+            const vz = qz - az;
+            const ny = uz * vx - ux * vz;
+            const nl = Math.hypot(uy * vz - uz * vy, ny, ux * vy - uy * vx);
+            if (!(Math.abs(ny) >= 0.3 * nl)) continue;
+            const d = (bz - qz) * (ax - qx) + (qx - bx) * (az - qz);
+            if (Math.abs(d) < 1e-9) continue;
+            const i0 = Math.max(0, Math.ceil((Math.min(ax, bx, qx) - ox) / h));
+            const i1 = Math.min(M - 1, Math.floor((Math.max(ax, bx, qx) - ox) / h));
+            const k0 = Math.max(0, Math.ceil((Math.min(az, bz, qz) - oz) / h));
+            const k1 = Math.min(M - 1, Math.floor((Math.max(az, bz, qz) - oz) / h));
+            for (let k = k0; k <= k1; k++) {
+                const pz = oz + k * h;
+                for (let i = i0; i <= i1; i++) {
+                    const px = ox + i * h;
+                    const w1 = ((bz - qz) * (px - qx) + (qx - bx) * (pz - qz)) / d;
+                    const w2 = ((qz - az) * (px - qx) + (ax - qx) * (pz - qz)) / d;
+                    const w3 = 1 - w1 - w2;
+                    if (w1 < -1e-6 || w2 < -1e-6 || w3 < -1e-6) continue;
+                    const y = w1 * pos[a + 1] + w2 * pos[b + 1] + w3 * pos[c + 1];
+                    const m = k * M + i;
+                    if (map[m] >= y) continue;
+                    map[m] = y;
+                    // Grün-Kanal: dieselbe Wiesen-Wache wie das Boden-Fragment (`_green` in
+                    // `_terrainGeologyAlbedo`: smoothstep(0, 0,1, g − (r+b)/2)) aus der Vertex-Farbe.
+                    if (col) {
+                        let g = 0;
+                        for (const [w, o] of [
+                            [w1, a],
+                            [w2, b],
+                            [w3, c],
+                        ])
+                            g += w * (col[o + 1] - 0.5 * (col[o] + col[o + 2]));
+                        const t2 = Math.max(0, Math.min(1, g / 0.1));
+                        gruen[m] = Math.round(255 * t2 * t2 * (3 - 2 * t2));
                     }
                 }
             }
         }
-        return map;
+        return { hoehe: map, gruen };
     }
 
-    // V18.97 — bilineare Oberflächen-Höhe aus der Chunk-Karte (`entry.surfMap`,
-    // padded Grid: Origin chunk−step, Nx = dim+4). null bei fehlender Karte /
-    // NaN-Ecke / außerhalb des Pads → der Aufrufer fällt auf `_voxelSurfaceY`.
+    // Bilineare Höhe des gerenderten Bodens aus der Boden-Karte (`entry.surfMap`, s. `_bodenKarteAusMesh`).
+    // null bei fehlender Karte / NaN-Ecke (kein Boden: Wand, Höhle, außerhalb) — der Aufrufer entscheidet.
     _chunkSurfaceAt(entry, cx, cz, x, z) {
-        const m = entry && entry.surfMap;
+        return this._chunkKarteAt(entry, entry && entry.surfMap, cx, cz, x, z);
+    }
+
+    // Der Grün-Kanal der Boden-Karte (0 = kein Wiesen-Boden, 1 = Wiese) am Ort, bilinear; null ohne Karte.
+    _chunkGruenAt(entry, cx, cz, x, z) {
+        const g = this._chunkKarteAt(entry, entry && entry.gruenMap, cx, cz, x, z);
+        return g === null ? null : g / 255;
+    }
+
+    _chunkKarteAt(entry, m, cx, cz, x, z) {
         if (!m) return null;
         const cfg = this._voxelChunkConfig(entry.lod || 0);
-        const Nx = cfg.dim + 4;
-        const ox = cx * cfg.span - cfg.step;
-        const oz = cz * cfg.span - cfg.step;
-        const u = (x - ox) / cfg.step;
-        const v = (z - oz) / cfg.step;
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const u = (x - (cx * cfg.span - cfg.step)) / h;
+        const v = (z - (cz * cfg.span - cfg.step)) / h;
         const i0 = Math.floor(u);
         const k0 = Math.floor(v);
-        if (i0 < 0 || k0 < 0 || i0 >= Nx - 1 || k0 >= Nx - 1) return null;
-        const a = m[i0 + k0 * Nx];
-        const b = m[i0 + 1 + k0 * Nx];
-        const c = m[i0 + (k0 + 1) * Nx];
-        const d = m[i0 + 1 + (k0 + 1) * Nx];
+        if (i0 < 0 || k0 < 0 || i0 >= M - 1 || k0 >= M - 1) return null;
+        const a = m[i0 + k0 * M];
+        const b = m[i0 + 1 + k0 * M];
+        const c = m[i0 + (k0 + 1) * M];
+        const d = m[i0 + 1 + (k0 + 1) * M];
         if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null;
         const fu = u - i0;
         const fv = v - k0;
@@ -26315,6 +26388,22 @@ class AnazhRealm {
     // Oberflächen-Normale, sonst Schatten-Akne-Rauten an Hängen.
     static get TERRAIN_NORMAL_FLATTEN() {
         return 1.0;
+    }
+
+    // Die Boden-Karte (`_bodenKarteAusMesh`) teilt den Voxel-Schritt in so viele Gitter-Abstände (LOD 0: 1,8 m / 4 =
+    // 0,45 m) — fein genug, dass die bilineare Lesung der Dreiecks-Fläche auf ≤ 2 cm folgt (Median).
+    static get BODEN_KARTE_TEILUNG() {
+        return 4;
+    }
+
+    // DIE NAH-WIESE (V18.508): nah am Auge wächst die Wiese aus dem Studio-Gras (Foundry „gras", Stufen
+    // aus `kindStages.grass`), jenseits trägt die Boden-Funktion. Kosten an den SCHIRM gebunden (Gebot 7):
+    // ein Kachel-Ring um die Kamera, nie je Chunk. `stufe1` = Radius der feinen Stufe (L1), `radius` =
+    // Ende der Büschel, `rand` = Ausdünnungs-Band davor (die Kachel zeigt nur einen Anteil ihrer zufällig
+    // geordneten Büschel), `kachel` = Kachel-Kante (Frustum-Cull-Einheit). Raster, Dichte-Gesetz und
+    // Skala kommen aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras).
+    static get NAH_WIESE() {
+        return Object.freeze({ kachel: 6, stufe1: 5, radius: 14, rand: 4, kachelnJeTakt: 1 });
     }
 
     // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Meadow-
@@ -29319,7 +29408,15 @@ class AnazhRealm {
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
             }
         }
-        return { mesh, kind: "filled", waterCells, lod, surfMap: geom.userData.surfMap || null };
+        const karte = this._bodenKarteAusMesh(
+            geom.attributes.position.array,
+            geom.index ? geom.index.array : null,
+            geom.attributes.color ? geom.attributes.color.array : null,
+            cx,
+            cz,
+            lod
+        );
+        return { mesh, kind: "filled", waterCells, lod, surfMap: karte && karte.hoehe, gruenMap: karte && karte.gruen };
     }
 
     // true, wenn der Spieler in diesem Chunk steht (`state.lastPlayerVoxelChunk`, je Streaming-Tick).
@@ -29402,9 +29499,10 @@ class AnazhRealm {
         const entry = {
             mesh: fresh.mesh,
             waterCells: fresh.waterCells || null,
-            // V18.97 — die Oberflächen-Karte (Grid-Nebenprodukt, beide Pfade):
-            // Gras/Deko lesen sie via `_chunkSurfaceAt` statt Dichte-Scans.
+            // Die Boden-Karte (der GERENDERTE Boden, `_bodenKarteAusMesh`, beide Pfade): Gras/Streu/Deko
+            // lesen sie via `_chunkSurfaceAt`.
             surfMap: fresh.surfMap || null,
+            gruenMap: fresh.gruenMap || null,
             lod,
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
@@ -32566,6 +32664,218 @@ class AnazhRealm {
         this.state.voxelChunkGrass.delete(key);
     }
 
+    // DIE NAH-WIESE: je Kachel (NAH_WIESE.kachel) die Büschel nach dem Studio-Gesetz (buildForest, Schritt 7):
+    // Raster `understory.grassStep` in Welt-Koordinaten, Jitter ±0,34, Wurf gegen
+    // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (Kronen-Licht,
+    // Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
+    // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen.
+    // Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe
+    // Wiese bei jedem Besuch. Gibt die Büschel-Liste zurück oder null, solange ein Chunk unter der Kachel
+    // noch keine Boden-Karte hat.
+    _nahWieseKachelBueschel(tx, tz) {
+        const NW = AnazhRealm.NAH_WIESE;
+        const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
+        const step = uCfg && Number.isFinite(uCfg.grassStep) ? uCfg.grassStep : 0.72;
+        const GS = AnazhRealm.GRASS_SLOPE;
+        const cfg = this._voxelChunkConfig(0);
+        const seedInt = this._forestSeedInt();
+        const x0 = tx * NW.kachel;
+        const z0 = tz * NW.kachel;
+        const cl = (v) => Math.max(0, Math.min(1, v));
+        const out = [];
+        for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
+            for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
+                let hs = ((gi * 73856093) ^ (gj * 19349663) ^ seedInt ^ 0x6a09e667) >>> 0 || 1;
+                const w = () => {
+                    hs = (hs + 0x6d2b79f5) >>> 0;
+                    let t = hs;
+                    t = Math.imul(t ^ (t >>> 15), t | 1);
+                    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                };
+                const x = gi * step + (w() - 0.5) * 0.68;
+                const z = gj * step + (w() - 0.5) * 0.68;
+                const wurf = w();
+                const vorlage = w() < 0.5 ? 0 : 1;
+                const sk = 0.7 + w() * 0.7;
+                const rot = w() * Math.PI * 2;
+                const ordnung = w();
+                const cx = Math.floor(x / cfg.span);
+                const cz = Math.floor(z / cfg.span);
+                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
+                if (!entry || !entry.surfMap) {
+                    if (entry && entry.empty) continue;
+                    return null; // der Boden steht noch nicht — die Kachel wartet
+                }
+                const y = this._chunkSurfaceAt(entry, cx, cz, x, z);
+                if (y === null) continue;
+                const gruen = this._chunkGruenAt(entry, cx, cz, x, z) || 0;
+                if (gruen <= 0) continue;
+                if (typeof this._isAboveWaterAt === "function" && !this._isAboveWaterAt(x, z, 0.1)) continue;
+                const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
+                const L = this._canopyLightAt(x, z, y, m);
+                const hang = this._slopeAt(x, z, (px, pz) => {
+                    const v = this._chunkSurfaceAt(entry, cx, cz, px, pz);
+                    return v === null ? NaN : v;
+                });
+                const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
+                const pfad = this._pathFieldAt ? this._pathFieldAt(x, z, y) : 0;
+                const p = cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * gruen;
+                if (wurf >= p) continue;
+                out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung });
+            }
+        }
+        // Zufällige Ordnung: ein Präfix der Liste ist eine gleichmäßige Ausdünnung (das Rand-Band).
+        out.sort((a, b) => a.ordnung - b.ordnung);
+        return out;
+    }
+
+    _nahWieseKachelEntsorgen(k) {
+        if (k.meshes) for (const im of k.meshes) if (im.parent) im.parent.remove(im);
+        k.meshes = null;
+    }
+
+    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt
+    // Neubauten), Stufe L1/L2 nach Kachel-Distanz, das Rand-Band dünnt über `count`, ausserhalb fällt die
+    // Kachel. Ein Chunk-Neubau (Edit) oder ein neues Studio-Asset (Saison) baut die betroffenen Kacheln neu.
+    // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
+    _tickNahWiese(deadline) {
+        const st = this.state;
+        if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
+        const NW = AnazhRealm.NAH_WIESE;
+        if (!st.nahWiese) {
+            const gruppe = new THREE.Group();
+            gruppe.name = "nahWiese";
+            st.scene.add(gruppe);
+            st.nahWiese = { gruppe, kacheln: new Map(), chunkStand: new Map() };
+        }
+        const nw = st.nahWiese;
+        const cam = st.camera.position;
+        const tcx = Math.floor(cam.x / NW.kachel);
+        const tcz = Math.floor(cam.z / NW.kachel);
+        const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
+        // Chunk-Neubau → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden).
+        for (const [key, k] of nw.kacheln) {
+            if (!k.chunks) continue;
+            for (const ck of k.chunks) {
+                const e = st.voxelChunks && st.voxelChunks.get(ck);
+                if (!e || e.surfMap !== k.chunkKarten.get(ck)) {
+                    this._nahWieseKachelEntsorgen(k);
+                    nw.kacheln.delete(key);
+                    break;
+                }
+            }
+        }
+        const wunsch = [];
+        for (let dz = -reichweite; dz <= reichweite; dz++) {
+            for (let dx = -reichweite; dx <= reichweite; dx++) {
+                const tx = tcx + dx;
+                const tz = tcz + dz;
+                const d = Math.hypot((tx + 0.5) * NW.kachel - cam.x, (tz + 0.5) * NW.kachel - cam.z);
+                if (d > NW.radius + NW.kachel * 0.71) continue;
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
+            }
+        }
+        const gewollt = new Set(wunsch.map((w) => w.key));
+        for (const [key, k] of nw.kacheln) {
+            if (gewollt.has(key)) continue;
+            this._nahWieseKachelEntsorgen(k);
+            nw.kacheln.delete(key);
+        }
+        wunsch.sort((a, b) => a.d - b.d);
+        const cfg = this._voxelChunkConfig(0);
+        let gebaut = 0;
+        nw.offen = 0;
+        // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt.
+        const flatsJe = {};
+        for (const stufe of [1, 2])
+            flatsJe[stufe] = [0, 1].map((v) => this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe));
+        for (const w of wunsch) {
+            const stufe = w.d <= NW.stufe1 ? 1 : 2;
+            const anteil = Math.max(0, Math.min(1, (NW.radius - w.d) / NW.rand + 0.5));
+            let k = nw.kacheln.get(w.key);
+            const flats = flatsJe[stufe];
+            const bereit = flats.every((f) => f && f.leaves);
+            if (k && k.stufe === stufe && k.flats && k.flats[0] === flats[0] && k.flats[1] === flats[1]) {
+                for (const im of k.meshes || []) im.count = Math.round(im.userData.nGesamt * anteil);
+                continue;
+            }
+            if (!bereit || gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+                nw.offen++; // Studio-Asset kommt noch (Foundry-Anfrage läuft) oder das Takt-Budget ist leer
+                continue;
+            }
+            if (!k) {
+                const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
+                if (!bueschel) {
+                    nw.offen++;
+                    continue;
+                }
+                const chunks = new Set();
+                for (const [ex, ez] of [
+                    [0, 0],
+                    [1, 0],
+                    [0, 1],
+                    [1, 1],
+                ]) {
+                    const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
+                    const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
+                    chunks.add(`${cx},${cz}`);
+                }
+                const chunkKarten = new Map();
+                for (const ck of chunks) {
+                    const e = st.voxelChunks.get(ck);
+                    chunkKarten.set(ck, e ? e.surfMap : undefined);
+                }
+                k = { bueschel, chunks, chunkKarten, stufe: 0, flats: null, meshes: null };
+                nw.kacheln.set(w.key, k);
+            }
+            this._nahWieseKachelEntsorgen(k);
+            k.meshes = this._nahWieseKachelMeshes(k.bueschel, flats, w.key);
+            for (const im of k.meshes) {
+                im.count = Math.round(im.userData.nGesamt * anteil);
+                nw.gruppe.add(im);
+            }
+            k.stufe = stufe;
+            k.flats = flats;
+            gebaut++;
+        }
+        return gebaut;
+    }
+
+    // Je Vorlage × Teil-Mesh EIN InstancedMesh (Matrix = Ort · Drehung · Studio-Streuung · Welt-Skala der
+    // Vorlage); Instanzen in Büschel-Ordnung, damit `count` die Ausdünnung trägt.
+    _nahWieseKachelMeshes(bueschel, flats, key) {
+        const out = [];
+        const m4 = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pv = new THREE.Vector3();
+        const sv = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        for (let v = 0; v < 2; v++) {
+            const liste = bueschel.filter((b) => b.vorlage === v);
+            if (!liste.length) continue;
+            for (const lf of flats[v].leaves) {
+                const im = new THREE.InstancedMesh(lf.geom, lf.mat, liste.length);
+                for (let i = 0; i < liste.length; i++) {
+                    const b = liste[i];
+                    pv.set(b.x, b.y, b.z);
+                    q.setFromAxisAngle(up, b.rot);
+                    sv.set(b.s, b.s, b.s);
+                    m4.compose(pv, q, sv).multiply(lf.localMatrix);
+                    im.setMatrixAt(i, m4);
+                }
+                im.instanceMatrix.needsUpdate = true;
+                im.castShadow = false;
+                im.receiveShadow = true;
+                im.computeBoundingSphere();
+                im.name = "nahWiese:" + key;
+                im.userData.nGesamt = liste.length;
+                out.push(im);
+            }
+        }
+        return out;
+    }
+
     // === FÜLLE/DICHTE: GPU-instanzierte Klein-Vegetation ===
     // Die vier `worldFieldAt`-Felder als Biom-Stimmen: Blüten/Farne (lebendig), Fels-Brocken (dichte),
     // Glut-Gestrüpp (glut), Leucht-Sporen (magieleitung). Reine Deko (KEINE Physik/Kollision/Remesh),
@@ -33073,14 +33383,24 @@ class AnazhRealm {
                         // Per-Achsen-Skalierung für lebende (`wind`-)Arten: drei entkoppelte Faktoren (kurz+breit bzw.
                         // hoch+schmal) statt Klon-Halmen; andere Arten (Steinchen) bleiben uniform.
                         let item;
+                        let xFactor = 1;
+                        let yFactor = 1;
+                        let zFactor = 1;
                         if (sp.wind) {
                             // Drei eigene Würfe: y-Streckung [0.8, 1.25], xz-Breite [0.85, 1.15].
-                            const yFactor = 0.8 + rnd() * 0.45;
-                            const xFactor = 0.85 + rnd() * 0.3;
-                            const zFactor = 0.85 + rnd() * 0.3;
+                            yFactor = 0.8 + rnd() * 0.45;
+                            xFactor = 0.85 + rnd() * 0.3;
+                            zFactor = 0.85 + rnd() * 0.3;
+                        }
+                        // Jedes Stück steht auf dem GERENDERTEN Boden an SEINEM Ort (die Boden-Karte) — vorher trugen
+                        // alle Stücke einer 5,4-m-Zelle die Gesetzes-Höhe der Zellmitte (am Hang Meter daneben).
+                        // Ohne Boden (Wand, Höhle) fällt das Stück; die Würfe oben bleiben, der Strom ist stabil.
+                        const iy = this._chunkSurfaceAt(chunkEntryS, cx, cz, gx, gz);
+                        if (iy === null) continue;
+                        if (sp.wind) {
                             item = {
                                 x: gx,
-                                y: surfY + sp.yOff,
+                                y: iy + sp.yOff,
                                 z: gz,
                                 rot: rotK,
                                 sx: sclK * xFactor,
@@ -33088,7 +33408,7 @@ class AnazhRealm {
                                 sz: sclK * zFactor,
                             };
                         } else {
-                            item = { x: gx, y: surfY + sp.yOff, z: gz, rot: rotK, scale: sclK };
+                            item = { x: gx, y: iy + sp.yOff, z: gz, rot: rotK, scale: sclK };
                         }
                         buckets[si].push(item);
                     }
@@ -68271,6 +68591,15 @@ class AnazhRealm {
                     mat.userData.foundryCrossfade = true; // Linsen-Marker (kein Verhalten)
                 }
             }
+            // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
+            // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
+            // der Spieler biegt die Halme (uBend). Der Versatz liegt nach der Instanzierung → Welt-Richtung.
+            if (kind === "grass") {
+                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
+                const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
+                const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
+                if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+            }
             mat.userData = mat.userData || {};
             mat.userData.foundryKind = kind;
         } catch (_e) {
@@ -85369,6 +85698,7 @@ class AnazhRealm {
                         if (!this._tickDekoFernfeld()) this._tickDeckStreu();
                     }
                     this._tickScatterRegrow(performance.now());
+                    this._tickNahWiese(_dl);
                     this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();
                     const lastTileCheck = this._lastHydroTileCheck ?? -Infinity;
@@ -86259,7 +86589,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.507.0";
+AnazhRealm.VERSION = "18.508.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
