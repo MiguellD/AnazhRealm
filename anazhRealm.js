@@ -30202,11 +30202,22 @@ class AnazhRealm {
         // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta).
         const colCtx = this._terrainColumnContext(x, z);
         let prevAir = true;
+        let prevD = null; // Dichte der Luft-Probe 1.2 m darüber (null = Garantie-Luft, nicht gemessen)
         for (let y = top; y >= bottom; y -= 1.2) {
             if (y > skipAbove) continue; // Garantie-Luft — Probe gespart, Gitter unverändert
-            const solid = this._fieldDensityAt(x, y, z, colCtx) > 0;
-            if (solid && prevAir) return y;
+            const d = this._fieldDensityAt(x, y, z, colCtx);
+            const solid = d > 0;
+            if (solid && prevAir) {
+                // DER NULLDURCHGANG statt des Gitterpunkts: die Oberfläche liegt zwischen der Fels-Probe y und
+                // der Luft-Probe y+1.2 — linear interpoliert wie die Marching-Cubes-Kante des Meshs. Der erste
+                // Fels-Gitterpunkt lag bis 1,2 m UNTER dem gezeichneten Boden (gemessen 01.10.: Haus, Tiere,
+                // Sonden-Kameras eingesunken; Kamera 0,5 m über dem Wert stand im Gelände).
+                const dLuft = prevD != null ? prevD : this._fieldDensityAt(x, y + 1.2, z, colCtx);
+                const t = d - dLuft > 1e-9 ? d / (d - dLuft) : 0;
+                return y + 1.2 * Math.min(1, Math.max(0, t));
+            }
             prevAir = !solid;
+            prevD = d;
         }
         return null;
     }
@@ -86248,7 +86259,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.502.0";
+AnazhRealm.VERSION = "18.503.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

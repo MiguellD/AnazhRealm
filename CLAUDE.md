@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.502.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.503.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -98,11 +98,11 @@ Fachwerk-Fit, Kronen-Noise) trägt git log. Ehrlich offen: dunkle Schattenseiten
 `__huelleAusFeld`, 25 Bones), das Fell 6 Schalen aus den fellStreu-Zeilen, Kopf und Kiefer je eine
 starre Haut. Wolf L0 315k → 57k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut hell gleich (−2/−4 %).
 
-**V18.500–502 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE:** Haus-L1 ist eine echte Stufe
-(`flaechig`) — 32 Kulturen L1 2251k → 561k Dreiecke, `lodServe` fiel; Weiß backt nur, wo eine
-Karte die Farbe trägt (vorher 7 Kulturen in weißen Backsteinen; Bild `aaa10`). Gelenk-Kugeln nur
-an der Gabel (Pflanzen in der Welt resident 0,69 → 0,53 M), der Stamm liest seinen Radius über
-dem Stammfuß (vorher Zehneck ohne Furchen am dicksten Stamm; Bild `aaa11`).
+**V18.500–503 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN:** Haus-L1 ist eine echte Stufe
+(`flaechig`, 32 Kulturen L1 2251k → 561k Dreiecke, `lodServe` fiel); Weiß backt nur, wo eine Karte
+die Farbe trägt (`aaa10`); Gelenk-Kugeln nur an der Gabel (Pflanzen resident 0,69 → 0,53 M), der
+Stamm liest seinen Radius über dem Stammfuß (`aaa11`). `_voxelSurfaceY` liest den Nulldurchgang
+statt des 1,2-m-Gitters (vorher Ø 0,60 m zu tief: Haus, Tiere, Sonden-Kameras sanken ein).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·

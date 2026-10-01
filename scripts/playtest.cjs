@@ -18950,14 +18950,15 @@ async function checkBandVoxelTerrainCore(ctx) {
                 grassEntries > 0 &&
                 grassBlades === 0 &&
                 /_halmHoch/.test(window.__codeOf(r._terrainGeologyAlbedo));
-            // _voxelSurfaceY: liefert eine endliche Höhe, dort ist
-            // fester Grund + knapp darüber (Scan-Schritt) Luft.
+            // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (V18.503, interpoliert wie die
+            // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft (vorher nur der Fels-Gitterpunkt, bis
+            // 1,2 m unter dem gezeichneten Boden).
             const sy = r._voxelSurfaceY(12, -8);
             out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
             out.voxelSurfaceIsBoundary =
                 out.voxelSurfaceFinite &&
-                r._terrainDensityAt(12, sy, -8) > 0 &&
-                r._terrainDensityAt(12, sy + 1.2, -8) <= 0;
+                r._terrainDensityAt(12, sy - 0.6, -8) > 0 &&
+                r._terrainDensityAt(12, sy + 0.6, -8) <= 0;
 
             // V9.24 — die geheilten Verbindungen: Sicht-Ring + Vegetation.
             out.hasVegSampleSpawn = typeof r._vegetationSampleSpawn === "function";
