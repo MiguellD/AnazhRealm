@@ -10,6 +10,7 @@
 //   SUBSTANZ trägt (nicht leer/uniform — sonst Exit 1 mit Diagnose).
 "use strict";
 const puppeteer = require("puppeteer");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -64,6 +65,7 @@ const server = http.createServer((req, res) => {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     // KEIN Null-Renderer — die Augen brauchen den echten (WebGPU via swiftshader-Vulkan).
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
     const gpu = await page.evaluate(async () => {
         if (!navigator.gpu) return "kein navigator.gpu";
@@ -110,20 +112,8 @@ const server = http.createServer((req, res) => {
             const schuss = async (name) => {
                 const w = 640,
                     h = 360;
-                const rt = new THREE_.RenderTarget(w, h, { depthBuffer: true, samples: 0 });
-                const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
-                rend.setRenderTarget(rt);
-                if (typeof rend.renderAsync === "function") await rend.renderAsync(scene, cam);
-                else rend.render(scene, cam);
-                let px = null;
-                if (typeof rend.readRenderTargetPixelsAsync === "function") {
-                    px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h);
-                } else if (typeof rend.readRenderTargetPixels === "function") {
-                    px = new Uint8Array(w * h * 4);
-                    rend.readRenderTargetPixels(rt, 0, 0, w, h, px);
-                }
-                rend.setRenderTarget(prev);
-                rt.dispose && rt.dispose();
+                // die EINE Aufnahme (scripts/lib/ausgabe-aufnahme.cjs): der echte, getonte Frame
+                const px = (await window.__ausgabeAufnahme(w, h, 1)).u8;
                 if (!px || !px.length) return { ok: false, grund: "keine Pixel" };
                 const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
                 // Substanz-Urteil: distinkte Farben + nicht alles eine Fläche.

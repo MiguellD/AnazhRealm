@@ -7,6 +7,7 @@
 //   node scripts/diag-fell-blick.cjs [--tag name] [--abstaende 1.5,3,6,12]
 "use strict";
 const puppeteer = require("puppeteer");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -63,15 +64,7 @@ const BILD_FN = async (kam, W, H) => {
             if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
         } catch (_e) {}
         if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
-        const rt = new THREE_.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
-        const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
-        rend.setRenderTarget(rt);
-        if (typeof rend.renderAsync === "function") await rend.renderAsync(r.state.scene, cam);
-        else rend.render(r.state.scene, cam);
-        const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-        rend.setRenderTarget(prev);
-        if (rt.dispose) rt.dispose();
-        u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+        u8 = (await window.__ausgabeAufnahme(W, H, 1)).u8; // die EINE Aufnahme: der echte, getonte Frame
     }
     const cv = document.createElement("canvas");
     cv.width = W;
@@ -104,6 +97,7 @@ const BILD_FN = async (kam, W, H) => {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
     // Boot, Mess-Wiese, Foundry bereit, den Wolf auf die ebene Bühne (−893,8/−844,9, Spanne 1,2 m).
     const buehne = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));

@@ -18,6 +18,7 @@
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
 const puppeteer = require("puppeteer");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -160,20 +161,11 @@ const SCHUSS_FN = async (kam) => {
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
     // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
     if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
-    const rt = new THREE_.RenderTarget(640, 360, { depthBuffer: true, samples: 0 });
-    const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
-    if (rend.info && typeof rend.info.reset === "function") rend.info.reset();
-    rend.setRenderTarget(rt);
-    // ZWEI Renders, der zweite zählt (GEMESSEN 30.09.: der erste Render nach dem Kamera-
-    // Umsetzen trug die Feld-Formen noch nicht — Listen-/Seiten-Upload + Pipelines warm).
-    if (typeof rend.renderAsync === "function") await rend.renderAsync(scene, cam);
-    else rend.render(scene, cam);
-    if (rend.info && typeof rend.info.reset === "function") rend.info.reset();
-    const t0 = performance.now();
-    if (typeof rend.renderAsync === "function") await rend.renderAsync(scene, cam);
-    else rend.render(scene, cam);
-    const renderMs = performance.now() - t0;
-    const ri = (rend.info && rend.info.render) || {};
+    // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, ACES + sRGB)
+    // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
+    const auf = await window.__ausgabeAufnahme(640, 360, 1);
+    const renderMs = auf.ms;
+    const ri = auf.info;
     // Kosten-Herkunft: sichtbare Meshes nach Gruppe (Dreiecke × Instanzen, residente Last).
     const herkunft = {};
     scene.traverseVisible((o) => {
@@ -205,11 +197,7 @@ const SCHUSS_FN = async (kam) => {
             .slice(0, 8)
             .map(([k, v]) => k + " " + Math.round(v)),
     };
-    let px = null;
-    if (typeof rend.readRenderTargetPixelsAsync === "function")
-        px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 640, 360);
-    rend.setRenderTarget(prev);
-    if (rt.dispose) rt.dispose();
+    const px = auf.u8;
     rend.setAnimationLoop(r._gameLoopTick);
     if (!px || !px.length) return { ok: false, grund: "keine Pixel", zahlen };
     const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
@@ -264,6 +252,7 @@ const SCHUSS_FN = async (kam) => {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
