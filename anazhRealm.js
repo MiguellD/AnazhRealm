@@ -61206,6 +61206,12 @@ class AnazhRealm {
         // rttFailed (Canvas bleibt), das Token entwertet die späte finally (sie darf den NÄCHSTEN Bake nicht
         // löschen); ein später Erfolg darf rttBaked noch setzen (der Swap ist idempotent).
         if (this._impostorBakePending) {
+            // Ein Bake-Auftrag, der beim Worker noch offen ist, wartet LEGITIM (die EINE Foundry-Frist zählt
+            // nur Arbeits-Zeit und schließt jedes Versprechen sicher ab) — der Wachhund greift erst, wenn kein
+            // Auftrag mehr offen ist und der Flug-Status trotzdem klemmt. Vorher verwarf er wartende Karten
+            // nach der Uhr ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
+            const fb = this._foundry;
+            if (fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) return 0;
             const since = this._impostorBakePendingSince || 0;
             if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) {
                 const hungKey = this._impostorBakePendingKey;
@@ -65191,7 +65197,14 @@ class AnazhRealm {
             } catch (_e) {
                 f.pending.delete(reqId);
                 resolve(null);
+                return;
             }
+            // Dieselbe EINE Frist (45 s Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller
+            // späteren Aufträge an.
+            this._foundryFrist(f, reqId, 45000, () => {
+                this.log("FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null", "WARN");
+                resolve(null);
+            });
         });
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (alle Slots sofort) und `_tickAutoSettlement`
@@ -65988,6 +66001,36 @@ class AnazhRealm {
             }
         }
     }
+    // DIE EINE FOUNDRY-FRIST: der Worker arbeitet seine Aufträge FIFO ab — die Uhr eines Auftrags läuft erst,
+    // wenn kein FRÜHER gesendeter mehr offen ist (vorher wartet er in der Schlange, nicht im Bau). Befund
+    // 01.10.: die Uhr ab Senden ließ Impostor-Karten in der belebten Welt ablaufen, bevor der Worker sie
+    // anfasste (strauch|16: 45 s Ablauf im Betrieb, 0,6 s bei freiem Worker) — drei Abläufe, und die Art
+    // stand terminal ohne Fernstufe. Nie verklemmt: der älteste offene Auftrag hat immer eine laufende Uhr.
+    _foundryFrist(f, reqId, dauerMs, beiAblauf) {
+        const nr = (id) => Number(String(id).replace(/^\D+/, ""));
+        const meine = nr(reqId);
+        let start = null;
+        const pruefe = () => {
+            if (!f.pending.has(reqId)) return; // beantwortet
+            let vorMir = false;
+            for (const k of f.pending.keys()) {
+                if (nr(k) < meine) {
+                    vorMir = true;
+                    break;
+                }
+            }
+            const jetzt = performance.now();
+            if (vorMir) start = null;
+            else if (start === null) start = jetzt;
+            if (start !== null && jetzt - start > dauerMs) {
+                f.pending.delete(reqId);
+                beiAblauf();
+                return;
+            }
+            setTimeout(pruefe, 1000);
+        };
+        setTimeout(pruefe, 1000);
+    }
     _foundryWorkerRequest(presetId, seed, lod, season, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
@@ -66006,17 +66049,14 @@ class AnazhRealm {
                 resolve(null);
                 return;
             }
-            // Großzügiges Timeout (45 s): ein Koniferen-lod0-Asset hat ~170k Verts und Anfragen stauen sich im
-            // Single-Thread-Worker hinter dem Prefetch; 10 s lief in null.
-            setTimeout(() => {
-                if (f.pending.has(reqId)) {
-                    f.pending.delete(reqId);
-                    // fail-LAUT (V18.462): das Timeout ist vom kalten Buch
-                    // unterscheidbar — der Aufrufer sieht sonst beide als null.
-                    this.log(`FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s ohne Reply → null`, "WARN");
-                    resolve(null);
-                }
-            }, 45000);
+            // 45 s ARBEITS-Zeit (die EINE Frist, `_foundryFrist`): ein Koniferen-lod0-Asset hat ~170k Verts;
+            // die Wartezeit in der Worker-Schlange zählt nicht mit.
+            this._foundryFrist(f, reqId, 45000, () => {
+                // fail-LAUT (V18.462): das Timeout ist vom kalten Buch
+                // unterscheidbar — der Aufrufer sieht sonst beide als null.
+                this.log(`FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`, "WARN");
+                resolve(null);
+            });
         });
     }
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
@@ -66039,19 +66079,16 @@ class AnazhRealm {
                 resolve(null);
                 return;
             }
-            // EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin
-            // des Tick. Der Tick-Watchdog greift erst danach (nur ein Versprechen, das nie abschließt).
+            // EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig
+            // leben; null → die Retry-Disziplin des Tick.
             const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
-            setTimeout(() => {
-                if (f.pending.has(reqId)) {
-                    f.pending.delete(reqId);
-                    this.log(
-                        `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s ohne Reply → null`,
-                        "WARN"
-                    );
-                    resolve(null);
-                }
-            }, frist);
+            this._foundryFrist(f, reqId, frist, () => {
+                this.log(
+                    `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`,
+                    "WARN"
+                );
+                resolve(null);
+            });
         });
     }
     // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
@@ -86177,7 +86214,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.504.0";
+AnazhRealm.VERSION = "18.505.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
