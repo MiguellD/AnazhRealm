@@ -124,7 +124,9 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     ]);
     out.push([
         "A4: der kindStages-Clamp traegt das Fail-Closed-[0] (bekanntes Rezept ohne Eintrag)",
-        /_stages = Number\.isFinite\(_kl\) \? \[_kl\] : _rec \? \[0\] : null;/.test(anazhNC),
+        // V18.512: die EINE Stufen-Klammer (`_foundryDeclaredStage`) liest kindStages; ohne Eintrag trägt der
+        // Flatten die einstufige Kind-Karte und ein BEKANNTES Rezept fällt fail-closed auf [0].
+        /if \(Number\.isFinite\(_kl\)\) lod = _kl;\s*else if \(_rec\) lod = 0;/.test(anazhNC),
     ]);
     // A5–A7 (N2-migriert): die drei Bruecken-Sites sind EINE generische Schleife ueber
     // self.__anazhCores (ns-Kerne aus dem Manifest) — KEIN self.__vehicleCore-Literal mehr
@@ -175,10 +177,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: das Fail-Closed-[0] entfernt -> A4 muss rot werden.
-        const broken1 = anazhSrc.replace(
-            "_stages = Number.isFinite(_kl) ? [_kl] : _rec ? [0] : null;",
-            "_stages = Number.isFinite(_kl) ? [_kl] : null;"
-        );
+        const broken1 = anazhSrc.replace("else if (_rec) lod = 0;", "else if (_rec) lod = lod;");
         const a4 = staticLaws(broken1, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A4"));
         check("Selbst-Test 1: Fail-Closed entfernt -> A4 feuert", a4 && a4[1] === false);
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
