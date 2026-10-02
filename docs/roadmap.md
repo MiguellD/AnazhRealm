@@ -87,7 +87,9 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
   `worldRules`; `_crystallizeGestureRule` live) · DSL/Weltregeln (`dslRun`-Sandbox).
 - **Schöpfung:** Crafting-Resonanz (`_blueprintProductVector`) · Werkstatt (`_makeCostGate` +
   `fertigeBlueprint`) · Hylomorphismus (`FORM_TAG_ACTIVATION`, frozen Signaturen — emergent-
-  korrekt, kein Ad-hoc-Tuning) · die EINE Pipe (Foundry `build-asset` für ALLE Gattungen).
+  korrekt, kein Ad-hoc-Tuning) · die EINE Pipe (Foundry `build-asset` für ALLE Gattungen) · ihr Transport
+  (`_foundrySchale` IM Worker: Platte · Konsum-Wand `FOUNDRY_LESEN` · Uint16-Index · Transfer — der Haupt-
+  Thread fasst keinen Asset-Cache an, `gate:fluss`).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
   Frequenzband (`_applySubstanceResponse`) · Schatten (Light-Space-Snap, EINE Map) · LOD-Kaskade
   (`DETAIL_CASCADE`) · Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei).

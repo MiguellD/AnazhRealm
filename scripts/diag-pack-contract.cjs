@@ -3,10 +3,10 @@
 // Vier Prüfungen, Node-pur wo möglich (a–c statisch, d der eine Browser-Beweis):
 //   (a) `spec/pack/v0/CONTRACT.md` existiert + trägt die Pflicht-Abschnitte (v0-Ist-Kanon ·
 //       v1-Schema · must-ignore · Ship-Hook · Ü1/Ü2-Chokepoint).
-//   (b) der IDB-Stempel-Code hasht MANIFEST + alle Manifest-Skripte (`_foundryIdbInit`,
+//   (b) der Platten-Stempel hasht MANIFEST + alle Manifest-Skripte (Transport-Schale `_foundrySchale`,
 //       kommentar-gestrippter Source-Grep — die V18.267-Disziplin) — die Drift-Wand steht.
-//   (c) der Ship-Hook `window.__anazhLiveBake === false` lebt im Request-Pfad
-//       (`_foundryRequest`), VOR dem Worker-Fallback, hinter dem Disk-first (Source-Probe).
+//   (c) der Ship-Hook `window.__anazhLiveBake === false` lebt im Request-Pfad (`_foundryRequest`) und reist
+//       als `nurPlatte` zur Schale, die dann nur die Platte fragt und nie baut (Source-Probe).
 //   (d) Browser: EIN Preset (eiche, lod 2) live minten → Artefakt zurücklesen → byte-gleich
 //       zum Live-Reply (sha256 je Puffer, UNABHÄNGIG vor der b64-Kodierung gerechnet) + der
 //       Hook VERHALTENS-bewiesen (false → null trotz ready-Worker; weg → Meshes).
@@ -130,26 +130,42 @@ async function main() {
     // Wort tragen, der CODE muss es tragen — hier PRÄSENZ-Proben, also gestrippt gegen die
     // Möglichkeit, dass NUR ein Kommentar das Muster trägt).
     const anazh = fs.readFileSync(path.join(PK.ROOT, "anazhRealm.js"), "utf8");
-    const idbInit = PK.methodSource(anazh, "_foundryIdbInit", ["_foundryIdbGet("]);
-    check(!!idbInit, "_foundryIdbInit im Stamm gefunden");
-    if (idbInit) {
-        const code = PK.stripComments(idbInit);
-        check(/cores\.manifest\.json/.test(code), "Stempel: hasht den MANIFEST-Text (cores.manifest.json im Code)");
-        check(/SHA-256/.test(code), "Stempel: SHA-256-Digest im Code");
-        check(/core\.scripts/.test(code), "Stempel: sammelt ALLE Manifest-Skripte (core.scripts)");
-        check(/manifestText/.test(code), "Stempel: der Manifest-Text reist in den Hash (manifestText)");
+    // V18.511: die Platte lebt in der Transport-Schale IM Worker — der Boot reicht ihr den Manifest-TEXT und die
+    // core.scripts-URLs, die Schale hasht sie (SHA-256) und hängt das Transport-Format an (`|f<n>`).
+    const boot = PK.methodSource(anazh, "_ensureAssetFoundry", ["_foundryIngestBook("]);
+    const schale = PK.methodSource(anazh, "static _foundrySchale", ["_foundryRequestSettlement("]);
+    check(!!boot && !!schale, "_ensureAssetFoundry + _foundrySchale im Stamm gefunden");
+    if (boot && schale) {
+        const b = PK.stripComments(boot);
+        const sc = PK.stripComments(schale);
+        check(
+            /cores\.manifest\.json/.test(b) && /manifestText/.test(b),
+            "Stempel: der MANIFEST-Text reist in die Schale"
+        );
+        check(
+            /core\.scripts/.test(b) && /stempelUrls/.test(b),
+            "Stempel: ALLE Manifest-Skripte (core.scripts) reisen mit"
+        );
+        check(/SHA-256/.test(sc), "Stempel: SHA-256-Digest in der Schale");
+        check(
+            /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(sc),
+            "Stempel: Manifest-Text vor den Skripten (die Formel)"
+        );
+        check(/"\|f" \+\s*cfg\.format/.test(sc), "Stempel: das Transport-Format reist mit (|f<n>)");
+        const iNur = sc.indexOf("m.nurPlatte");
+        const iStudio = sc.indexOf("W.onmessage(");
+        check(iNur >= 0 && iStudio > iNur, "Ship-Hook in der Schale: nurPlatte antwortet VOR dem Studio-Bau");
     }
-    const req = PK.methodSource(anazh, "_foundryRequest", ["_foundryWorkerRequest("]);
+    const req = PK.methodSource(anazh, "_foundryRequest", ["_foundryIngestTakt("]);
     check(!!req, "_foundryRequest im Stamm gefunden");
     if (req) {
         const code = PK.stripComments(req);
         check(/__anazhLiveBake/.test(code), "Ship-Hook: __anazhLiveBake lebt im Request-Pfad (CODE, nicht Kommentar)");
         check(/__anazhLiveBake\s*===\s*false/.test(code), "Ship-Hook: striktes === false (kein truthy-Raten)");
-        const iGet = code.indexOf("_foundryIdbGet");
         const iHook = code.indexOf("__anazhLiveBake");
         const iWorker = code.indexOf("_foundryWorkerRequest");
-        check(iGet >= 0 && iHook > iGet, "Ordnung: Disk-first VOR dem Hook");
-        check(iWorker > iHook, "Ordnung: der Hook VOR dem Worker-Fallback (überspringt ihn)");
+        check(iWorker > iHook, "Ordnung: der Hook VOR dem Worker-Auftrag");
+        check(/_foundryWorkerRequest\([^)]*platte, nurPlatte\)/.test(code), "Der Hook reist als nurPlatte zur Schale");
     }
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);

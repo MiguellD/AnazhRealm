@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.510.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.511.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -86,10 +86,11 @@ Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern un
 Kreaturen ≤ 55 m (`KREATUR_NAH_MESH`), Architektur im Cull-Radius 100–150 m, Streu-Bäume L0/L1 + L2-Billboard;
 Budget zählt gebaute Meshes, Bäcker nah zuerst, EINE Bake-Uhr (45 s). Gemessen (`aaa8`): ungebaut 148–195 → 0.
 
-**V18.510 — DIE DRAW-WAHRHEIT:** r184-WebGPU kennt kein Multi-Draw, ein BatchedMesh zeichnet je INSTANZ: der
-Batch-Pfad fiel (jedes Leaf eine InstancedMesh, Foundry-Teile EINES Materials verschmolzen: Geröll 16 → 1), die CSM
-trägt 2 Kaskaden (die dritte war ein 5-%-Streifen), die Instanz-Matrix heißt im WGSL fest (780 → 92 Pipelines), der
-Bundle-Replay bucht ins Info: Mess-Wiese 29 943 → 1 091 GPU-Befehle je Schatten-Frame (`werkbank zaehlen`).
+**V18.510–511 — DRAW-WAHRHEIT · DATENFLUSS:** r184-WebGPU zeichnet ein BatchedMesh je INSTANZ: der Batch-Pfad fiel
+(jedes Leaf eine InstancedMesh, Teile EINES Materials verschmolzen), 2 CSM-Kaskaden, feste WGSL-Puffer-Namen (780 → 92
+Pipelines): Mess-Wiese 29 943 → 1 091 GPU-Befehle je Schatten-Frame (`werkbank zaehlen`). Die Transport-Schale
+`_foundrySchale` trägt den Foundry-Kanal IM Worker (Platte · Konsum-Wand `FOUNDRY_LESEN` · Uint16-Index · Transfer):
+Kanal 349 → 214 MB je Boot, IDB-Put im Haupt-Thread 1,8 s → 0, größte Lücke warm 568–778 → 48–89 ms (`werkbank fluss`).
 
 **V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin → `__huelleAusFeld`, 25 Bones), das
 Fell 6 Schalen (Wolf L0 315k → 57k Dreiecke); seit V18.509 hängen die starren Teile (Pfote · Ohr · Lid · Kopf ·
@@ -196,6 +197,9 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
 23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
     Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
     ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines).
+24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
+    je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
+    was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.
 
 ## Workflows
 

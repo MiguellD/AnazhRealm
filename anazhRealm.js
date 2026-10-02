@@ -64965,6 +64965,7 @@ class AnazhRealm {
             // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker dieses Workers
             // (Kanal "bake-impostor" → Reply "impostor"). EIN Bäcker, ein Bake-Pfad.
             ready: false,
+            platte: false, // die Transport-Schale führt die Platte (gesetzt beim Worker-Boot)
             pending: new Map(),
             reqSeq: 1,
             cache: new Map(),
@@ -64985,8 +64986,9 @@ class AnazhRealm {
             // ZULETZT. Async: f.ready bleibt false bis zum ready-Handshake; jeder Fetch-/Parse-Fehler lässt es so.
             const v = "?v=" + (AnazhRealm.VERSION || "");
             fetch("cores.manifest.json" + v)
-                .then((res) => res.json())
-                .then((manifest) => {
+                .then((res) => res.text())
+                .then((manifestText) => {
+                    const manifest = JSON.parse(manifestText);
                     if (!Array.isArray(manifest) || !manifest.length) return; // fail-closed: kein Kern-Satz, kein Worker
                     const rel = [
                         "worlds/terrain/lib/three-r128.min.js",
@@ -65012,8 +65014,34 @@ class AnazhRealm {
                     const base = typeof window !== "undefined" && window.location ? window.location.href : "";
                     const abs = rel.map((p) => new URL(p + v, base).href);
                     // self.__anazhCores reist VOR den importScripts in den Worker (Brücke liest die ns-Kerne generisch);
-                    // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal.
+                    // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal. DIE TRANSPORT-SCHALE
+                    // steht davor (`_foundrySchale`): sie registriert ihren Kanal-Hörer VOR dem Studio.
+                    const stempelUrls = [];
+                    for (const core of manifest) {
+                        if (!core || !Array.isArray(core.scripts)) continue;
+                        for (const s of core.scripts)
+                            if (typeof s === "string" && s) stempelUrls.push(new URL(s + v, base).href);
+                    }
+                    // Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto.
+                    const rend = this.state.renderer;
+                    f.platte =
+                        typeof indexedDB !== "undefined" &&
+                        typeof crypto !== "undefined" &&
+                        !!crypto.subtle &&
+                        !(rend && rend._isHeadlessNull);
+                    const schale = {
+                        lesen: AnazhRealm.FOUNDRY_LESEN,
+                        format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
+                        platte: f.platte,
+                        manifestText,
+                        stempelUrls,
+                    };
                     const boot =
+                        "(function " +
+                        AnazhRealm._foundrySchale.toString() +
+                        ")(" +
+                        JSON.stringify(schale) +
+                        ");" +
                         "self.__PHYTO_FOUNDRY_WORKER=true;self.__anazhCores=" +
                         JSON.stringify(manifest) +
                         ";importScripts(" +
@@ -65072,12 +65100,6 @@ class AnazhRealm {
         } catch (_e) {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
-        // DER STILLE SAUG — den persistenten Asset-Cache PARALLEL zum Worker-Boot öffnen
-        // (Stempel-Hash + DB-Open laufen, während der Worker das Studio lädt): beim
-        // Prefetch ist die Platte schon bereit → der zweite Boot saugt in Millisekunden.
-        try {
-            this._foundryIdbInit(f);
-        } catch (_e2) {}
         return f;
     }
     // DER EINE INGEST-CHOKEPOINT für das Studio-Buch (Kanal "get-book" → Reply "book"): das Rezeptbuch
@@ -65295,113 +65317,163 @@ class AnazhRealm {
         const f = this._foundry;
         return f && f.recipes ? f.recipes[preset] || null : null;
     }
-    // ===== DER PERSISTENTE ASSET-CACHE =====
-    // Studio-Assets sind deterministisch (Rezept × Variante × LOD × Saison) → der Worker-Reply
-    // (structured-clone-sicher) wird unverändert in IndexedDB persistiert; der 2. Boot liest von Platte.
-    // Drift-Wand: der Stempel ist der HASH DER GENERATOR-QUELLEN — ein Studio-Edit bustet von selbst.
-    // Headless/Null-Renderer → AUS (gate-deterministisch); jeder Fehler fällt stumm auf den Worker.
-    _foundryIdbInit(f) {
-        if (f._idbReady) return f._idbReady;
-        const off = () => {
-            f._idbDead = true;
-            return null;
+    // ==================== DIE TRANSPORT-SCHALE: der Host-Teil des Foundry-Kanals IM Worker ====================
+    // Befund 02.10. (Fluss-Linse, Mess-Wiese, Holz voll): beim Boot liefen 262 Studio-Assets = 404 MB durch den
+    // HAUPT-Thread — strukturierter Klon beim Empfang (Σ 600 ms, max 76 ms je Antwort), IDB-Put-Serialisierung
+    // (Σ 3,7 s, max 207 ms) und IDB-Gets hinter den Schreib-Transaktionen (Median 3,3 s, max 60 s); 32 % der
+    // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
+    // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
+    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
+    //                 — der Haupt-Thread fasst den Asset-Cache nie mehr an (Store `anazhFoundryAssets/assets`).
+    //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
+    //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
+    //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
+    // Ein `build-asset` mit `platte` (Schlüssel `<preset>|<seed>|<lod>|<season>`) fragt erst die Platte; ein Miss
+    // geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und überträgt.
+    // `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut nie: Miss = leere Antwort. Diese Funktion
+    // läuft als Quelltext im Worker — sie greift auf nichts außerhalb ihres eigenen Rumpfs zu.
+    static _foundrySchale(cfg) {
+        const W = globalThis; // der Worker-Scope (self)
+        const LESEN = new Set(cfg.lesen);
+        const roh = W.postMessage.bind(W);
+        const schreibAuftrag = new Map(); // reqId → Platten-Schlüssel des Studio-Baus, der gerade läuft
+        let db = null;
+        let dbTot = !cfg.platte || typeof indexedDB === "undefined";
+        const platte = dbTot
+            ? Promise.resolve(null)
+            : Promise.all([cfg.manifestText, ...cfg.stempelUrls.map((u) => fetch(u).then((r) => r.text()))])
+                  .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
+                  .then((buf) => {
+                      const stempel =
+                          Array.from(new Uint8Array(buf))
+                              .map((b) => b.toString(16).padStart(2, "0"))
+                              .join("") +
+                          "|f" +
+                          cfg.format;
+                      return new Promise((resolve) => {
+                          const req = indexedDB.open("anazhFoundryAssets", 1);
+                          req.onupgradeneeded = () => req.result.createObjectStore("assets");
+                          req.onerror = () => resolve(null);
+                          req.onsuccess = () => {
+                              const d = req.result;
+                              const tx = d.transaction("assets", "readwrite");
+                              const st = tx.objectStore("assets");
+                              const g = st.get("__stamp");
+                              g.onsuccess = () => {
+                                  // Generator oder Transport-Format geändert → der GANZE Cache ist Drift → leeren.
+                                  if (g.result !== stempel) {
+                                      st.clear();
+                                      st.put(stempel, "__stamp");
+                                  }
+                              };
+                              tx.oncomplete = () => resolve(d);
+                              tx.onerror = () => resolve(null);
+                          };
+                      });
+                  })
+                  .catch(() => null)
+                  .then((d) => {
+                      db = d;
+                      if (!d) dbTot = true;
+                      return d;
+                  });
+        const lies = (key) =>
+            platte.then((d) =>
+                d
+                    ? new Promise((resolve) => {
+                          try {
+                              const g = d.transaction("assets", "readonly").objectStore("assets").get(key);
+                              g.onsuccess = () => resolve(g.result && g.result.meshes ? g.result.meshes : null);
+                              g.onerror = () => resolve(null);
+                          } catch (_e) {
+                              resolve(null);
+                          }
+                      })
+                    : null
+            );
+        const schlank = (meshes) => {
+            for (const m of meshes) {
+                if (!m || typeof m !== "object") continue;
+                for (const k of Object.keys(m)) {
+                    const a = m[k];
+                    if (a && a.array && ArrayBuffer.isView(a.array) && !LESEN.has(k)) delete m[k];
+                }
+                if (m.index instanceof Uint32Array && m.position && m.position.array.length / 3 <= 65536)
+                    m.index = Uint16Array.from(m.index);
+            }
+            return meshes;
         };
-        if (
-            typeof indexedDB === "undefined" ||
-            (this.state.renderer && this.state.renderer._isHeadlessNull) ||
-            typeof fetch !== "function" ||
-            typeof crypto === "undefined" ||
-            !crypto.subtle
-        ) {
-            f._idbReady = Promise.resolve(null);
-            f._idbDead = true;
-            return f._idbReady;
-        }
-        const V = AnazhRealm.VERSION;
-        // Stempel MANIFEST-getrieben: hasht den Manifest-Text + ALLE Kern-Skripte daraus (jeder Kern ist
-        // Generator-Quelle — sonst überleben stale Bakes einen Kern-Edit).
-        f._idbReady = fetch("cores.manifest.json?v=" + V)
-            .then((r) => r.text())
-            .then((manifestText) => {
-                const manifest = JSON.parse(manifestText);
-                const scripts = [];
-                if (Array.isArray(manifest)) {
-                    for (const core of manifest) {
-                        if (!core || !Array.isArray(core.scripts)) continue;
-                        for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
+        const puffer = (meshes) => {
+            const set = new Set();
+            for (const m of meshes) {
+                if (!m || typeof m !== "object") continue;
+                for (const k of Object.keys(m)) {
+                    const a = m[k];
+                    if (a && a.array && ArrayBuffer.isView(a.array)) set.add(a.array.buffer);
+                }
+                if (m.index && ArrayBuffer.isView(m.index)) set.add(m.index.buffer);
+            }
+            return Array.from(set);
+        };
+        const antwort = (m, meshes, vonPlatte) =>
+            roh(
+                {
+                    type: "asset",
+                    world: "terrain",
+                    cv: 1,
+                    reqId: m.reqId,
+                    presetId: m.presetId,
+                    seed: m.seed,
+                    lod: m.lod | 0,
+                    meshes,
+                    platte: vonPlatte,
+                },
+                puffer(meshes)
+            );
+        W.postMessage = function (msg, a, b) {
+            if (msg && msg.type === "asset" && Array.isArray(msg.meshes)) {
+                schlank(msg.meshes);
+                const key = schreibAuftrag.get(msg.reqId);
+                if (key !== undefined) {
+                    schreibAuftrag.delete(msg.reqId);
+                    // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
+                    if (db && !dbTot && msg.meshes.length) {
+                        try {
+                            db
+                                .transaction("assets", "readwrite")
+                                .objectStore("assets")
+                                .put({ meshes: msg.meshes }, key).onerror = () => {
+                                dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
+                            };
+                        } catch (_e) {
+                            dbTot = true;
+                        }
                     }
                 }
-                return Promise.all([
-                    Promise.resolve(manifestText),
-                    ...scripts.map((s) => fetch(s + "?v=" + V).then((r) => r.text())),
-                ]);
-            })
-            .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
-            .then((buf) => {
-                const stamp = Array.from(new Uint8Array(buf))
-                    .map((b) => b.toString(16).padStart(2, "0"))
-                    .join("");
-                return new Promise((resolve) => {
-                    const req = indexedDB.open("anazhFoundryAssets", 1);
-                    req.onupgradeneeded = () => {
-                        req.result.createObjectStore("assets");
-                    };
-                    req.onerror = () => resolve(off());
-                    req.onsuccess = () => {
-                        const db = req.result;
-                        const tx = db.transaction("assets", "readwrite");
-                        const st = tx.objectStore("assets");
-                        const g = st.get("__stamp");
-                        g.onsuccess = () => {
-                            if (g.result !== stamp) {
-                                // Generator geändert → der GANZE Cache ist potenziell drift → leeren.
-                                st.clear();
-                                st.put(stamp, "__stamp");
-                            }
-                        };
-                        tx.oncomplete = () => {
-                            f._idbDb = db;
-                            resolve(db);
-                        };
-                        tx.onerror = () => resolve(off());
-                    };
-                });
-            })
-            .catch(() => off());
-        return f._idbReady;
-    }
-    _foundryIdbGet(presetId, seed, lod, season) {
-        const f = this._foundry;
-        if (!f || f._idbDead) return Promise.resolve(null);
-        return this._foundryIdbInit(f).then((db) => {
-            if (!db) return null;
-            return new Promise((resolve) => {
-                try {
-                    const g = db
-                        .transaction("assets", "readonly")
-                        .objectStore("assets")
-                        .get(`${presetId}|${seed}|${lod}|${season}`);
-                    g.onsuccess = () => resolve(g.result && g.result.meshes ? g.result.meshes : null);
-                    g.onerror = () => resolve(null);
-                } catch (_e) {
-                    resolve(null);
-                }
+                return roh(msg, puffer(msg.meshes));
+            }
+            const p = msg && msg.payload;
+            if (msg && msg.type === "impostor" && p && p.albedo && p.normal && p.albedo.buffer !== p.normal.buffer)
+                return roh(msg, [p.albedo.buffer, p.normal.buffer]);
+            if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
+            return roh(msg, a, b);
+        };
+        // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
+        // Nachricht zuerst und hält nur die Platten-Aufträge an.
+        W.addEventListener("message", (ev) => {
+            const m = ev.data;
+            if (!m || m.type !== "build-asset" || typeof m.platte !== "string") return;
+            ev.stopImmediatePropagation();
+            lies(m.platte).then((hit) => {
+                if (hit) return antwort(m, hit, true);
+                if (m.nurPlatte) return antwort(m, [], true);
+                schreibAuftrag.set(m.reqId, m.platte);
+                const weiter = Object.assign({}, m);
+                delete weiter.platte;
+                delete weiter.nurPlatte;
+                if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
             });
         });
-    }
-    _foundryIdbPut(presetId, seed, lod, season, meshes) {
-        const f = this._foundry;
-        if (!f || f._idbDead || !f._idbDb || !meshes || !meshes.length) return;
-        try {
-            f._idbDb
-                .transaction("assets", "readwrite")
-                .objectStore("assets")
-                .put({ meshes }, `${presetId}|${seed}|${lod}|${season}`).onerror = () => {
-                f._idbDead = true; // Quota/Fehler → still auf den Worker-only-Pfad
-            };
-        } catch (_e) {
-            f._idbDead = true;
-        }
     }
     // Siedlung als DATEN anfragen: der Worker rechnet exportSettlement und liefert reine Slot-Daten (kein
     // Mesh, kein Cache — ein deliberater Akt). Fail-closed: kein Worker/nicht ready → null. Dieselbe
@@ -66150,38 +66222,28 @@ class AnazhRealm {
         if (!f) return Promise.resolve(null);
         const s = season || "summer";
         // Regler-Kanal: ein nicht-leeres ov (Werkstatt-Overrides) umgeht die Platte KOMPLETT (kein Get/Put) —
-        // eine Vorschau ist ein Unikat und darf den Welt-Cache weder lesen noch vergiften. Ohne ov
-        // byte-identisch (Disk-first → Ship-Hook → Worker).
+        // eine Vorschau ist ein Unikat und darf den Welt-Cache weder lesen noch vergiften.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
-        // Platte zuerst (µs–ms), Worker nur beim Miss — auch VOR f.ready (Schlüssel + Reply sind worker-frei,
-        // der warme Boot liest die Bibliothek, während der Worker bootet); ein Miss davor bleibt null.
-        // DER INGEST-TAKT: jedes Ergebnis (Platte UND Worker) passiert _foundryIngestTakt; der Loop-Tick gibt
-        // je Frame nur wenige frei — sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in
-        // EINER LongTask. Misses und headless passieren sofort; Konsumenten tragen null-bis-fertig.
-        return (hasOv ? Promise.resolve(null) : this._foundryIdbGet(presetId, seed, lod, s))
-            .then((hit) => {
-                if (hit) return hit;
-                // Ship-Pfad-Hook (spec/pack/v0/CONTRACT.md): `window.__anazhLiveBake === false` überspringt den Live-
-                // Worker-Fallback (nur Packs/Platte, Miss = null). Default byte-gleich; Linse `gate:pack-contract`.
-                if (typeof window !== "undefined" && window.__anazhLiveBake === false) return null;
-                if (!f.ready || !f.worker) {
-                    // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
-                    // 1×/10 s); das Verhalten bleibt (Aufrufer deferrieren + heilen beim Ingest).
-                    const now = Date.now();
-                    if (!this._foundryKaltWarnAt || now - this._foundryKaltWarnAt > 10000) {
-                        this._foundryKaltWarnAt = now;
-                        this.log(
-                            `FOUNDRY KALT: build-asset(${presetId}) ohne Buch/Worker → null (heilt beim Ingest)`,
-                            "WARN"
-                        );
-                    }
-                    return null;
-                }
-                return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null).then((meshes) => {
-                    if (meshes && meshes.length && !hasOv) this._foundryIdbPut(presetId, seed, lod, s, meshes);
-                    return meshes;
-                });
-            })
+        // Ship-Pfad-Hook (spec/pack/v0/CONTRACT.md): `window.__anazhLiveBake === false` → NUR die Platte (die
+        // Transport-Schale baut nie, Miss = null). Default: Platte zuerst, Studio beim Miss (beides im Worker).
+        const nurPlatte = typeof window !== "undefined" && window.__anazhLiveBake === false;
+        const platte = f.platte && !hasOv ? `${presetId}|${seed}|${lod}|${s}` : null;
+        if (nurPlatte && !platte) return Promise.resolve(null);
+        if (!f.ready || !f.worker) {
+            // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
+            // 1×/10 s); das Verhalten bleibt (Aufrufer deferrieren + heilen beim Ingest).
+            const now = Date.now();
+            if (!this._foundryKaltWarnAt || now - this._foundryKaltWarnAt > 10000) {
+                this._foundryKaltWarnAt = now;
+                this.log(`FOUNDRY KALT: build-asset(${presetId}) ohne Buch/Worker → null (heilt beim Ingest)`, "WARN");
+            }
+            return Promise.resolve(null);
+        }
+        // DER INGEST-TAKT: jedes Ergebnis passiert _foundryIngestTakt; der Loop-Tick gibt je Frame nur wenige frei —
+        // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
+        // passieren sofort; Konsumenten tragen null-bis-fertig.
+        return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null, platte, nurPlatte)
+            .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
@@ -66251,18 +66313,20 @@ class AnazhRealm {
         };
         setTimeout(pruefe, 1000);
     }
-    _foundryWorkerRequest(presetId, seed, lod, season, ov) {
+    _foundryWorkerRequest(presetId, seed, lod, season, ov, platte, nurPlatte) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const reqId = "r" + f.reqSeq++;
         return new Promise((resolve) => {
             f.pending.set(reqId, resolve);
             try {
-                // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (der ov-lose
-                // Message-Body bleibt byte-identisch zum Bestand; die Bruecke reicht ov
-                // ausschliesslich an Zweit-Kern-buildInstance durch).
+                // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (die Bruecke reicht ov ausschliesslich an
+                // Zweit-Kern-buildInstance durch). `platte` (der Schlüssel) und `nurPlatte` liest die Transport-Schale
+                // und nimmt sie heraus, bevor das Studio die Anfrage sieht.
                 const msg = { type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" };
                 if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
+                if (platte) msg.platte = platte;
+                if (nurPlatte) msg.nurPlatte = true;
                 f.worker.postMessage(msg);
             } catch (_e) {
                 f.pending.delete(reqId);
@@ -68504,6 +68568,7 @@ class AnazhRealm {
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
     // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
+    // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
     _foundryBuildMesh(m) {
         if (!m || !m.position || !m.position.array) return null;
         // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
@@ -86571,7 +86636,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.510.0";
+AnazhRealm.VERSION = "18.511.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -90366,6 +90431,14 @@ AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
 // Über Budget = halbe Rate; der Stau schrumpft immer.
+// DIE KONSUM-WAND des Foundry-Kanals (V18.511): GENAU die Vertex-Attribute, die `_foundryBuildMesh` liest — die
+// Transport-Schale (`_foundrySchale`) streicht im Worker jedes andere VOR Kopie, Platte und Transfer (aWind · aCenter ·
+// aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
+// beide Seiten gegeneinander).
+AnazhRealm.FOUNDRY_LESEN = ["position", "normal", "color", "uv", "aWurzel", "aSchale", "skinIndex", "skinWeight"];
+// Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511). Ein
+// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 2;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test

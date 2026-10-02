@@ -2,7 +2,7 @@
 // Die Schwester zu diag-nervensystem.cjs fuer die ERSTE Nicht-Pflanzen-Domaene: beweist, dass
 // ein kind:"vehicle"-Preset im Zweit-Kern (vehicle-core.js, __vehicleCore — v1.1 N7.2) OHNE
 // eine Zeile AnazhRealm-Edit durch die EINE Pipeline fliesst:
-//   A (statisch, Node — N2-migriert, V9.56-i): der Worker-Boot + der IDB-Stempel sind MANIFEST-
+//   A (statisch, Node — N2-migriert, V9.56-i): der Worker-Boot + der Platten-Stempel sind MANIFEST-
 //     getrieben (cores.manifest.json traegt den Kern-Satz; die Drift-Wand hasht Manifest-Text +
 //     alle Kern-Skripte); die Bruecke merged Kern-Rezepte + exportiert zusatzKindStages je Kern
 //     GENERISCH (Schleife ueber self.__anazhCores, KEIN Kern-spezifisches ns-Literal); der
@@ -103,14 +103,14 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
             /fetch\("cores\.manifest\.json" \+ v\)/.test(anazhNC) &&
             /core\.scripts/.test(anazhNC),
     ]);
-    // A2 (N2-migriert): der IDB-Stempel hasht MANIFEST-getrieben — den Manifest-TEXT selbst
-    // (Manifest-Edit = neuer Kern-Satz = Bust) + ALLE Kern-Skripte aus dem Manifest (deckt
-    // vehicle-core weiter, ohne harte Zeile — die Drift-Wand bleibt).
+    // A2 (N2-migriert, V18.511 in der Transport-Schale): der Platten-Stempel hasht MANIFEST-getrieben —
+    // den Manifest-TEXT selbst (Manifest-Edit = neuer Kern-Satz = Bust) + ALLE Kern-Skripte aus dem
+    // Manifest (deckt vehicle-core weiter, ohne harte Zeile — die Drift-Wand bleibt).
     out.push([
-        "A2: der IDB-Stempel hasht manifest-getrieben (Manifest-Text + alle Kern-Skripte)",
-        /fetch\("cores\.manifest\.json\?v=" \+ V\)/.test(anazhNC) &&
-            /manifestText/.test(anazhNC) &&
-            /fetch\(s \+ "\?v=" \+ V\)/.test(anazhNC),
+        "A2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + alle Kern-Skripte)",
+        /\.then\(\(res\) => res\.text\(\)\)/.test(anazhNC) &&
+            /stempelUrls\.push\(/.test(anazhNC) &&
+            /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC),
     ]);
     // A3 — Chokepoint-Gesetz: der N7.5-Merge (zusatzKindStages-Leser) lebt NUR in
     // _foundryIngestRenderConfig; ein zweiter Ingest-Pfad wird rot.
@@ -183,8 +183,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
         check("Selbst-Test 1: Fail-Closed entfernt -> A4 feuert", a4 && a4[1] === false);
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const broken2 = anazhSrc.replace(
-            "_foundryIdbInit(f) {",
-            "_foundryIdbInit(f) {\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
+            "_foundryRequestSettlement(dp) {",
+            "_foundryRequestSettlement(dp) {\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
         );
         const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false);

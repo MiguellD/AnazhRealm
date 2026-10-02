@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.510.0",
+    "version": "18.511.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -69,6 +69,7 @@
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
         "mint:asset-packs": "node scripts/mint-asset-packs.cjs",
         "gate:pack-contract": "node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs",
+        "gate:fluss": "node scripts/diag-fluss.cjs --selftest && node scripts/diag-fluss.cjs",
         "gate:vehicle-contract": "node scripts/diag-vehicle-contract.cjs",
         "gate:fahrzeug-fern": "node scripts/diag-fahrzeug-fern.cjs",
         "gate:porta-contract": "node scripts/diag-porta-contract.cjs",

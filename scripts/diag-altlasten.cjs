@@ -82,6 +82,11 @@ const FORBIDDEN = [
     { token: "_tickBatchStagingEntlassung", fiel: "V18.510 — kein Batch-Staging mehr" },
     { token: "useBatchedArch", fiel: "V18.510" },
     { token: "archBatches", fiel: "V18.510" },
+    // V18.511 — der Haupt-Thread fasst den Asset-Cache nie mehr an: Platte, Stempel, Get und Put leben in der
+    // Transport-Schale IM Worker (`_foundrySchale`).
+    { token: "_foundryIdbInit", fiel: "V18.511 — die Platte lebt in der Transport-Schale" },
+    { token: "_foundryIdbGet", fiel: "V18.511" },
+    { token: "_foundryIdbPut", fiel: "V18.511" },
     // BOOT-LITERAL-ABSCHIED 18.07. — die palettenfremden Haut-/Haar-Töne des
     // Boot-Menschen: Haut/Haar kommen aus koerper-core SKIN_TONES/HAIR_COLORS
     // (Anker-Farben Γ5 aus dem Welt-Seed bzw. benannte Kern-Anker im Bäcker).

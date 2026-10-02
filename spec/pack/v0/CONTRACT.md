@@ -30,8 +30,9 @@ geroell` · Kristall `kristalle` · Zweit-Kern z. B. `gt supersport …`).
 - `lod` — `0 | 1 | 2` (beim Gras trägt die Stufen-Position den `stage`-Wert desselben Formats).
 - `season` — `spring | summer | autumn | winter` (Default `summer`).
 
-Dazu EIN Meta-Schlüssel `__stamp` (der Stempel, s. u.). Schreib-/Lese-Symbole:
-`_foundryIdbPut` / `_foundryIdbGet` (anazhRealm.js).
+Dazu EIN Meta-Schlüssel `__stamp` (der Stempel, s. u.). Schreiber UND Leser ist seit V18.511 die
+**Transport-Schale** `_foundrySchale` (anazhRealm.js): der Host-Teil des Foundry-Kanals, der IM Worker vor dem
+Studio läuft — der Haupt-Thread fasst den Store nie an (`gate:fluss`).
 
 ## v0 — Wert
 
@@ -39,35 +40,39 @@ Dazu EIN Meta-Schlüssel `__stamp` (der Stempel, s. u.). Schreib-/Lese-Symbole:
 { meshes: Mesh[] }
 ```
 
-`meshes` ist der **UNVERÄNDERTE Worker-Reply** von `build-asset` → `asset`
-(`spec/asset-contract/v1/CONTRACT.md` §1) — structured-clone-sicher **by construction**: er kam
-durch `postMessage` (Worker → Main), also ist er beweisbar klonbar und wandert 1:1 in IndexedDB
-(die ebenfalls structured-clone speichert). KEINE Re-Serialisierung, KEIN Umbau — der Treffer
-IST der Worker-Reply eines früheren Boots.
+`meshes` ist der Worker-Reply von `build-asset` → `asset` (`spec/asset-contract/v1/CONTRACT.md` §1)
+**nach der Transport-Schale** (Format 2, V18.511): die KONSUM-WAND streicht jedes Vertex-Attribut außerhalb
+`AnazhRealm.FOUNDRY_LESEN` (genau die Leser von `_foundryBuildMesh` — aWind/aCenter/aType reisten 32 % der Bytes
+ohne Leser), die VERENGUNG macht den Index eines Teils mit ≤ 65 536 Vertices zum `Uint16Array`. Die übrigen
+Puffer sind byte-gleich zum Studio-Reply; der Treffer IST die verschlankte Antwort eines früheren Boots und
+reist wie jede Antwort per Transfer (zero-copy) zum Haupt-Thread. Der Studio-Draht selbst (die Asset-Goldens)
+bleibt unberührt — die Schale sitzt hinter ihm.
 
 ```text
 Mesh {
   kind:  string,          // bark | barkBirch | stem | foliage | foliageTex | grass | … | unknown
   mat:   { roughness, metalness, flatShading, envMapIntensity, side, alphaTest, hasNormalMap,
            color? },      // color: [r,g,b] r128-LINEAR, nur Zweit-Kern-Meshes (must-ignore für Alt-Leser)
-  <attr>:{ array:Float32Array, itemSize:int },  // position PFLICHT; normal/uv/color/… wenn vorhanden
-  index?: Uint32Array
+  <attr>:{ array:Float32Array, itemSize:int },  // position PFLICHT; nur Namen aus FOUNDRY_LESEN
+  index?: Uint16Array | Uint32Array             // Uint16 bei ≤ 65 536 Vertices
 }
 ```
 
 ## v0 — Stempel (die Drift-Wand)
 
 Ein persistierter Bake IST eine Kopie → sein Stempel MUSS der Hash der GENERATOR-QUELLEN sein
-(kein Versions-Ritual). Symbol: `_foundryIdbInit` (anazhRealm.js):
+(kein Versions-Ritual). Symbol: die Transport-Schale `_foundrySchale` (der Boot `_ensureAssetFoundry` reicht
+ihr den Manifest-Text und die Skript-URLs):
 
 ```text
-stamp = SHA-256( manifestText + "\n" + script_1 + "\n" + … + script_n )
+stamp = SHA-256( manifestText + "\n" + script_1 + "\n" + … + script_n ) + "|f" + FOUNDRY_PLATTE_FORMAT
 ```
 
 - `manifestText` — der ROHE Text von `cores.manifest.json` (ein Manifest-Edit = neuer Kern-Satz = Bust).
 - `script_i` — der Text JEDES `scripts[]`-Eintrags ALLER Manifest-Kerne, in Manifest-Reihenfolge
   (heute: `phyto-core.js`, `foundry-core.js`, `vehicle-core.js`) — jeder Kern ist Generator-Quelle.
 - Jeder Fetch trägt den `?v=<VERSION>`-Cache-Buster (Gesetz: jede separat geladene versionierte Datei).
+- `|f<n>` — das Transport-Format (heute 2): eine geänderte Konsum-Wand oder Verengung leert den Cache von selbst.
 - Beim DB-Open wird `__stamp` gelesen: Mismatch → `store.clear()` + neuen Stempel schreiben
   (der GANZE Cache ist potenziell Drift). Match → der Cache lebt weiter.
 
@@ -75,22 +80,23 @@ stamp = SHA-256( manifestText + "\n" + script_1 + "\n" + … + script_n )
 
 | Fall                           | Verhalten (heute, normativ)                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Cache-Treffer                  | `_foundryRequest` liefert den Reply von der Platte (DISK-FIRST, auch VOR `f.ready` — W4.1)        |
-| Cache-Miss                     | `null` von `_foundryIdbGet` → Worker-Fallback (`_foundryWorkerRequest`); Reply → `_foundryIdbPut` |
-| Miss + Worker noch nicht ready | ehrliches `null` — der Aufrufer deferriert + fragt später (gate-treu)                             |
-| Stempel-Mismatch               | Store leeren + neuen Stempel schreiben (Bust VON SELBST bei jedem Generator-Edit)                 |
-| Headless/Null-Renderer         | Cache AUS (`_idbDead`, gate-deterministisch — der Worker-Pfad bleibt der geprüfte)                |
-| Jeder IDB-/Quota-/Parse-Fehler | STUMM auf den Worker (`_idbDead` — nie ein Nutzer-sichtbarer Fehler)                              |
-| Leerer/`null`-Reply            | wird NIE persistiert (`_foundryIdbPut` verlangt `meshes.length`; die Art bleibt nachfragbar)      |
+| Cache-Treffer                  | die Schale antwortet von der Platte (`platte: true` am Reply), das Studio baut nicht            |
+| Cache-Miss                     | die Schale reicht den Auftrag an das Studio; dessen Antwort → Wand · Verengung · Put · Transfer |
+| Worker noch nicht ready        | ehrliches `null` (`FOUNDRY KALT`) — der Aufrufer deferriert + fragt später (gate-treu)          |
+| Stempel-Mismatch               | Store leeren + neuen Stempel schreiben (Bust VON SELBST bei Generator- und Format-Edit)         |
+| Headless/Null-Renderer         | Platte AUS (`f.platte` false, gate-deterministisch — der Studio-Pfad bleibt der geprüfte)        |
+| Jeder IDB-/Quota-/Parse-Fehler | die Schale schreibt nicht mehr und fragt nur noch das Studio (nie ein Nutzer-sichtbarer Fehler) |
+| Leerer/`null`-Reply            | wird NIE persistiert (der Put verlangt `meshes.length`; die Art bleibt nachfragbar)             |
 
 ## Der Request-Pfad + der Ship-Hook (N3.4)
 
 `_foundryRequest(presetId, seed, lod, season)` — die EINE Lese-Reihenfolge:
 
 ```text
-1. _foundryIdbGet   (Platte zuerst, µs–ms; worker-frei)
-2. Hook             window.__anazhLiveBake === false  →  return null   (Pack/IDB-only)
-3. Worker-Fallback  _foundryWorkerRequest → Reply → _foundryIdbPut
+1. Hook             window.__anazhLiveBake === false  →  nurPlatte      (ohne Platte: return null)
+2. Auftrag          _foundryWorkerRequest(…, platte = "<preset>|<seed>|<lod>|<season>", nurPlatte)
+3. Schale (Worker)  Platte zuerst → Treffer; Miss + nurPlatte → leere Antwort (Host: null);
+                    Miss → Studio → Wand · Verengung · Put · Transfer
 ```
 
 Der dokumentierte Test-Hook `window.__anazhLiveBake === false` überspringt den Live-Worker-
@@ -125,7 +131,7 @@ Inhalt  {
   } ]                                            // JSON-Zahlen wären verlustbehaftet/aufgebläht)
 }
 Index   index.json { cv, stamp, minted, files: { <datei>: sha256 } }
-        // stamp = der v0-Generator-Quellen-Stempel (identische Formel wie _foundryIdbInit) —
+        // stamp = der v0-Generator-Quellen-Stempel (die Hash-Formel der Transport-Schale, ohne |f) —
         // ein späterer Lade-Pfad kann Pack↔Generator-Drift GENAU wie die IDB erkennen.
 ```
 
@@ -151,14 +157,14 @@ sonst `coreId = <erster Manifest-Kern>.id` (der Erst-Kern führt, heute `phyto`)
 
 ### v1.5 — Der v0→v1-Live-Umstieg (bewusster Folge-Schritt, NICHT diese Welle)
 
-Der Live-Code (`_foundryIdbPut`) schreibt heute v0 (`{ meshes }`). Der Umstieg braucht:
+Der Live-Code (die Transport-Schale `_foundrySchale`) schreibt heute v0 (`{ meshes }`). Der Umstieg braucht:
 
-1. `_foundryIdbPut` schreibt die v1-Hülle (`cv`/`key`/`meta`), `_foundryIdbGet` liest BEIDE
+1. Die Schale schreibt die v1-Hülle (`cv`/`key`/`meta`) und liest BEIDE
    Formen (v0-Wert `{meshes}` = must-ignore-kompatibler Alt-Bestand; kein Zwangs-Bust nötig —
    der Stempel bustet ohnehin bei jedem Generator-Edit).
 2. Ein Pack-Lade-Pfad neben der IDB: `artifacts/packs/*.json` (oder ausgelieferte Pack-Dateien)
-   → b64-Dekodierung → typed arrays → derselbe `{meshes}`-Reply-Pfad in `_foundryRequest`
-   (VOR dem Worker-Fallback; der Ship-Hook `__anazhLiveBake === false` schaltet dann den
+   → b64-Dekodierung → typed arrays → derselbe `{meshes}`-Reply-Pfad der Schale
+   (VOR dem Studio-Bau; der Ship-Hook `__anazhLiveBake === false` schaltet dann den
    Worker ganz ab).
 3. Stempel-Prüfung des Pack-Index (`index.json.stamp`) gegen die live gerechnete Formel —
    Mismatch = Pack stale → Worker (Dev) bzw. ehrliches null (Ship).
