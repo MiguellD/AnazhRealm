@@ -32730,9 +32730,16 @@ class AnazhRealm {
         return out;
     }
 
+    // Entsorgen gibt die Foundry-Referenz zurück (V4(B)-Ref-Zähler `_liveRefs` der Cache-Gruppe): solange
+    // eine Kachel die Studio-Geometrie zeichnet, räumt der LRU sie nicht; war sie geräumt, fällt sie jetzt.
     _nahWieseKachelEntsorgen(k) {
         if (k.meshes) for (const im of k.meshes) if (im.parent) im.parent.remove(im);
         k.meshes = null;
+        for (const src of k.quellen || []) {
+            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
+            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+        }
+        k.quellen = null;
     }
 
     // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt
@@ -32831,6 +32838,13 @@ class AnazhRealm {
             }
             this._nahWieseKachelEntsorgen(k);
             k.meshes = this._nahWieseKachelMeshes(k.bueschel, flats, w.key);
+            k.quellen = [];
+            for (const fl of flats)
+                for (const lf of fl.leaves)
+                    if (lf._srcGroup && !k.quellen.includes(lf._srcGroup)) {
+                        lf._srcGroup._liveRefs = (lf._srcGroup._liveRefs || 0) + 1;
+                        k.quellen.push(lf._srcGroup);
+                    }
             for (const im of k.meshes) {
                 im.count = Math.round(im.userData.nGesamt * anteil);
                 nw.gruppe.add(im);
@@ -32870,6 +32884,7 @@ class AnazhRealm {
                 im.computeBoundingSphere();
                 im.name = "nahWiese:" + key;
                 im.userData.nGesamt = liste.length;
+                im.userData.leafKey = lf.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
                 out.push(im);
             }
         }
