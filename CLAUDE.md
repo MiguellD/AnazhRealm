@@ -71,11 +71,11 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.511.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.512.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
-benutzen/teilen — bei p95 ≤ 33 ms auf dem Schöpfer-Holz (Flugschreiber-Trace). Feature-Stopp
+benutzen/teilen — bei p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp
 bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Bauplan über
 `_studioBlueprintForWord`, EIN Stempel `_studioStampFor`, geerdet + nie im Wasser, `near_water`); das
 KI-Prompt lehrt die LIVE-Wörter aller Studios; „pflanz mir einen eichenhain am wasser" wirkt auch ohne
@@ -86,16 +86,15 @@ Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern un
 Kreaturen ≤ 55 m (`KREATUR_NAH_MESH`), Architektur im Cull-Radius 100–150 m, Streu-Bäume L0/L1 + L2-Billboard;
 Budget zählt gebaute Meshes, Bäcker nah zuerst, EINE Bake-Uhr (45 s). Gemessen (`aaa8`): ungebaut 148–195 → 0.
 
-**V18.510–511 — DRAW-WAHRHEIT · DATENFLUSS:** r184-WebGPU zeichnet ein BatchedMesh je INSTANZ: der Batch-Pfad fiel
-(jedes Leaf eine InstancedMesh, Teile EINES Materials verschmolzen), 2 CSM-Kaskaden, feste WGSL-Puffer-Namen (780 → 92
-Pipelines): Mess-Wiese 29 943 → 1 091 GPU-Befehle je Schatten-Frame (`werkbank zaehlen`). Die Transport-Schale
-`_foundrySchale` trägt den Foundry-Kanal IM Worker (Platte · Konsum-Wand `FOUNDRY_LESEN` · Uint16-Index · Transfer):
-Kanal 349 → 214 MB je Boot, IDB-Put im Haupt-Thread 1,8 s → 0, größte Lücke warm 568–778 → 48–89 ms (`werkbank fluss`).
+**V18.510–512 — DRAW-WAHRHEIT · DATENFLUSS · TAKT:** r184-WebGPU zeichnet ein BatchedMesh je INSTANZ: der Batch-Pfad
+fiel (jedes Leaf eine InstancedMesh), 2 CSM-Kaskaden, feste WGSL-Puffer-Namen: Mess-Wiese 29 943 → 1 091 GPU-Befehle
+(`werkbank zaehlen`). Die Transport-Schale `_foundrySchale` trägt den Foundry-Kanal IM Worker (Platte · Konsum-Wand ·
+Transfer): Kanal 349 → 214 MB je Boot, IDB-Put im Haupt-Thread 1,8 s → 0 (`werkbank fluss`). Der Spiel-Takt rechnet
+nur, was ihn betrifft: p50 31 → 13 ms, p95 89 → 24 ms (`werkbank takt`); der Feld-Takt geht nah zuerst, der Strauch nie L0.
 
-**V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin → `__huelleAusFeld`, 25 Bones), das
-Fell 6 Schalen (Wolf L0 315k → 57k Dreiecke); seit V18.509 hängen die starren Teile (Pfote · Ohr · Lid · Kopf ·
-Kiefer) je Material als EIN starr gebundenes SkinnedMesh am Ofen-Chokepoint (`_ofenAssembleAsset`, Mensch UND
-Tier), jede Hülle cullt gegen ihre Körper-Kugel: 5 Wölfe 730 → 310 Draws, Mensch nah 40 → 16 (`gate:kreatur-kosten`).
+**V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (25 Bones), das Fell 6 Schalen (Wolf L0 315k → 57k);
+starre Teile hängen je Material als EIN starr gebundenes SkinnedMesh am Ofen-Chokepoint (`_ofenAssembleAsset`), jede
+Hülle cullt gegen ihre Körper-Kugel: 5 Wölfe 730 → 310 Draws, Mensch nah 40 → 16 (`gate:kreatur-kosten`).
 
 **V18.500–508 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT · FARBE · WIESE:** Haus-L1 `flaechig`
 (L1 2251k → 561k), Weiß backt nur mit Karte, Gelenk-Kugeln nur an der Gabel; `_voxelSurfaceY` liest den
@@ -108,10 +107,10 @@ EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Regi
 NAH/MITTEL = Studio-Mesh + LOD-Kette (Tier · Baum · Haus · Streu) · FERN = Analog-Sätze (Glieder-
 Kapseln · Baum-Kegel + Kronen-Lappen · Fachwerk-/Box-Satz · Streu-Gesetz) · GRAS = nah Nah-Wiese,
 fern Boden-Funktion.
-OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS).
+OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
-`aaa8`–`aaa10`) · D gefallen (V18.508) · E gemessen; offen: der GPU-Trace.
+`aaa8`–`aaa10`) · D gefallen (V18.508) · E gemessen; offen: das Profi-Band auf jedem Standardgerät.
 
 ## Architektur (die Karte)
 
@@ -200,6 +199,9 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
 24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
     je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
     was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.
+25. **Der Takt kostet, was ihn betrifft, nie die Weltgröße:** billige Filter zuerst, teure Rechnung nur für Betroffene
+    (das Brennglas rechnete je Takt die Tags ALLER Bauten: Ø 20 ms) — `werkbank takt` zerlegt den Spiel-Takt je
+    Subsystem; geteilte Takt-Budgets gehen NAH zuerst über ALLE Verbraucher (`_weltBakeErlaubt(d2)`), nie „wer zuerst fragt".
 
 ## Workflows
 

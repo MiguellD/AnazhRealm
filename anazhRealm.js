@@ -20968,7 +20968,7 @@ class AnazhRealm {
                     cr.visible = false;
                     continue;
                 }
-                if (!this._weltBakeErlaubt()) continue; // getaktet — bis dahin trägt der Körper
+                if (!this._weltBakeErlaubt(d2)) continue; // getaktet — bis dahin trägt der Körper
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
                 u._kzGlieder = this._kreaturGliederBacken(cr);
@@ -35656,16 +35656,42 @@ class AnazhRealm {
         return true;
     }
 
-    _weltBakeErlaubt() {
+    // DER EINE FELD-BAKE-TAKT, NAH ZUERST ÜBER ALLE VERBRAUCHER (Bau · Streu-Gesetz · Region-Ziegel · Kreatur-Fern-Fit):
+    // je Sekunden-Fenster höchstens 16 Fits (über Budget 4). Wer weiter weg ist als der NÄCHSTE, den der Takt im
+    // Vor-Fenster abweisen musste, wartet, ohne Budget zu verbrauchen — vorher bekam, wer im Frame zuerst fragte
+    // (Befund 02.10., gate:arch-feld: in der Boot-Welt blieb eine gesetzte Eiche in 170 m 200 Takte ohne Feld, Flat
+    // geladen, 0 Versuche). `d2` = Distanz² zum Spieler (ohne Angabe: vorne).
+    _weltBakeErlaubt(d2) {
+        const D = Number.isFinite(d2) ? d2 : 0;
         const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
         if (this._weltBakeFenster === undefined || jetzt - this._weltBakeFenster > 1000) {
             this._weltBakeFenster = jetzt;
             this._weltBakeN = 0;
+            this._weltBakeVorrang = Number.isFinite(this._weltBakeHunger) ? this._weltBakeHunger : Infinity;
+            this._weltBakeHunger = Infinity;
         }
         const max = this.state._frameOverBudget ? 4 : 16; // Bakes je Sekunde
-        if (this._weltBakeN >= max) return false;
+        if (this._weltBakeN >= max || D > this._weltBakeVorrang) {
+            if (!(D >= this._weltBakeHunger)) this._weltBakeHunger = D;
+            return false;
+        }
         this._weltBakeN++;
         return true;
+    }
+
+    // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
+    _spielerD2(x, z) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return 0;
+        const dx = x - pm.x,
+            dz = z - pm.z;
+        return dx * dx + dz * dz;
+    }
+    // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Lage.
+    _archZiegelD2(entry) {
+        if (Number.isFinite(entry._ziegelD2)) return entry._ziegelD2;
+        const p = entry.position || { x: 0, z: 0 };
+        return this._spielerD2(p.x || 0, p.z || 0);
     }
 
     _weltMarchEnsure() {
@@ -36072,7 +36098,7 @@ class AnazhRealm {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
         const key = "abaum:" + preset + ":" + this._foundryVariantFor(fseed);
-        if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt()) return null; // Fit-Takt (Cache-Treffer sind frei)
+        if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt(this._spielerD2(x, z))) return null; // Fit-Takt (Treffer frei)
         const satz = this._weltKapselHolen(key, () => {
             const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
@@ -50712,11 +50738,8 @@ class AnazhRealm {
         for (const target of this.state.architectures || []) {
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
             if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
-            const targetBp = this.state.blueprints && this.state.blueprints[target.type];
-            if (!targetBp) continue;
-            const tags = this.computeCompoundTags(targetBp) || {};
-            if ((tags.brennbar || 0) < AnazhRealm.BRENNBAR_TAG_MIN) continue;
-            // Mindestens eine focusing-Architektur in Range?
+            // Mindestens eine focusing-Architektur in Range? ZUERST (billig) — die Compound-Tags rechnet nur ein
+            // Bau in Reichweite (Befund 02.10.: die Tags aller ~120 Bauten je Takt kosteten Ø 20 ms, max 62 ms).
             let inRange = false;
             for (const fa of focusing) {
                 const dx = fa.position.x - target.position.x;
@@ -50727,6 +50750,10 @@ class AnazhRealm {
                 }
             }
             if (!inRange) continue;
+            const targetBp = this.state.blueprints && this.state.blueprints[target.type];
+            if (!targetBp) continue;
+            const tags = this.computeCompoundTags(targetBp) || {};
+            if ((tags.brennbar || 0) < AnazhRealm.BRENNBAR_TAG_MIN) continue;
             target.heatBuildup = (target.heatBuildup || 0) + ratePerSec * dt;
             if (target.heatBuildup >= ignite) {
                 ignitions.push(target);
@@ -62499,7 +62526,7 @@ class AnazhRealm {
                 if (bergAktiv) this._bundleQueryTick(bg, s, kante);
                 // REGION-ZIEGEL: ferne Regionen (Fern-Schicht-Mitglieder) tauschen ihre Draw-Liste gegen EINE
                 // March-Box (12 Tris). Bake budgetiert; needsUpdate verwirft den Ziegel (Re-Bake nächster Tick).
-                if (bergAktiv) this._bundleZiegelTick(bg);
+                if (bergAktiv) this._bundleZiegelTick(bg, kante);
             }
         }
     }
@@ -62572,7 +62599,7 @@ class AnazhRealm {
     // ═══ DER REGION-ZIEGEL ═══
     // Gestreutes (Wiese-Reste · Felsen · Kristalle · Bäume) ist Region-Inhalt: eine ferne Region wird EIN
     // 64³-Feld und zieht als SLOT in den EINEN Welt-March (Atlas + Liste) — kein eigenes Draw-Objekt.
-    _bundleZiegelTick(bg) {
+    _bundleZiegelTick(bg, kante) {
         const st = this.state;
         const u = bg.userData;
         if (u._fernSchicht !== true) {
@@ -62597,7 +62624,8 @@ class AnazhRealm {
             bg.visible = false;
             return;
         }
-        if (!this._weltBakeErlaubt()) return; // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt das Bundle (Streaming-Rampe)
+        // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt das Bundle (Streaming-Rampe)
+        if (!this._weltBakeErlaubt(Number.isFinite(kante) && kante > 0 ? kante * kante : 0)) return;
         u._ziegelBakeVersuch = true;
         const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
         u._ziegelSlot = zg ? this._weltFeldRegister(zg) : null;
@@ -66612,12 +66640,17 @@ class AnazhRealm {
     // Darunter `_foundryEnsureImpostorRecord`: Studio-Atlas EINES (Preset,Variante) als Record in
     // `_impostorAtlasMap` (null = Bake läuft, false = Fehler → Geometrie). Die Pixel bäckt der Studio-
     // Bäcker im Worker; die LOD1-Gruppe liefert nur den vorläufigen Rahmen + die Silhouetten-Farbe.
-    _foundryDeclaredStage(preset, wish) {
+    // Die deklarierten Stufen einer Art (kindStages ihres Rezept-kinds) oder null.
+    _foundryKindStages(preset) {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[preset] : null;
         const cfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
         const st = rec && cfg && cfg.kindStages ? cfg.kindStages[rec.kind] : null;
-        if (!Array.isArray(st) || !st.length) return wish;
+        return Array.isArray(st) && st.length ? st : null;
+    }
+    _foundryDeclaredStage(preset, wish) {
+        const st = this._foundryKindStages(preset);
+        if (!st) return wish;
         let sv = st[0];
         for (let i = 0; i < st.length; i++) if (st[i] <= wish) sv = st[i];
         return sv;
@@ -67178,7 +67211,7 @@ class AnazhRealm {
         const fPreset = this._archFoundryPreset(entry);
         if (fPreset) return this._archFoundryZiegel(entry, fPreset, ovH);
         const key = `aarch:${entry.type}:${entry._lodVariantIndex || 0}${ovH}`;
-        if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
+        if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt
         const M = this._archWeltMatrix(entry);
         let fitWar = "hit";
         const handle = this._weltKapselSpawn(key, M, () => {
@@ -67246,7 +67279,7 @@ class AnazhRealm {
                 return true;
             }
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return false; // lädt noch — der nächste Tick fragt wieder, nichts verbrannt
-            if (!this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
+            if (!this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt (Treffer sind frei)
         }
         const handle = this._weltKapselSpawn(key, this._archWeltMatrix(entry), () => {
             if (baum) return this._baumKapselFit(bf);
@@ -68945,15 +68978,9 @@ class AnazhRealm {
                 return !!(rec && rec !== "pending" && rec !== false);
             }
         }
-        if (preset === "strauch") lod = Math.max(1, lod);
-        // Der Peek spiegelt auch die Ein-Stufen-Klammer des Flattens (Art mit GENAU einer deklarierten Stufe →
-        // jeder Wunsch klemmt dorthin) — sonst fragt er einen Key ab, den Flatten nie baut (falsch „kalt").
-        if (this._foundryPresetIsTree(preset)) {
-            const _rec2 = f.recipes && f.recipes[preset];
-            const _cfg2 = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-            const _st2 = _rec2 && _cfg2 && _cfg2.kindStages ? _cfg2.kindStages[_rec2.kind] : null;
-            if (Array.isArray(_st2) && _st2.length === 1) lod = _st2[0];
-        }
+        // Der Peek spiegelt die EINE Stufen-Klammer des Flattens (`_foundryDeclaredStage`) — sonst fragt er einen
+        // Key ab, den der Flatten nie baut (falsch „kalt").
+        if (this._foundryPresetIsTree(preset)) lod = this._foundryDeclaredStage(preset, lod);
         // PRÄGUNG-WELT — der Dock-Peek spiegelt den Flatten-Schlüssel: ein gestempelter
         // Eintrag ist erst „gedockt", wenn SEIN Unikat (|ov:-Key) im Cache liegt — sonst
         // urteilte der Rewarm „ready" über das falsche (ungeprägte) Asset.
@@ -69144,32 +69171,20 @@ class AnazhRealm {
         // Fernwald = Overdraw); Fels/Kristall/Blume bleiben L2-Geometrie. Der fimp-Key trägt den ov-Hash: ein
         // gestempelter Eintrag zieht seine EIGENE Karte, bis dahin geprägte Geometrie (nie die ungeprägte).
         if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
-        // Stufen je Art als Vertrags-Daten (`PORTAL_RENDER_CONFIG.lod.kindStages`, live): die GRÖSSTE
-        // deklarierte Stufe ≤ der Distanz-Wahl, sonst die kleinste — nie eine Stufe, die das Studio nicht
-        // vorsieht. Ohne Config: die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD, fail-closed).
-        if (!this._foundryPresetIsTree(preset)) {
+        // DIE EINE STUFEN-KLAMMER (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
+        // live) für JEDE Art, baumartig oder nicht: die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die
+        // kleinste — nie eine Stufe, die das Studio nicht vorsieht. Befund 02.10. (Werkbank, Mess-Wiese): der
+        // Strauch (shrub [1,2]) galt als baumartig, der Baum-Zweig klemmte nur Ein-Stufen-Arten — nahe Büsche
+        // standen mit L0 (112k Dreiecke je Busch statt 45k, 25 s Worker-Bau einer nie deklarierten Stufe).
+        lod = this._foundryDeclaredStage(preset, lod);
+        if (!this._foundryPresetIsTree(preset) && !this._foundryKindStages(preset)) {
+            // Ohne Config: die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD, fail-closed). Ein BEKANNTES
+            // Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0] — nur die feine Stufe,
+            // der Wirt gradet selbst (L1=L0, L2=Auto-Impostor).
             const _rec = f.recipes && f.recipes[preset];
-            const _cfgLod = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-            let _stages = _rec && _cfgLod && _cfgLod.kindStages ? _cfgLod.kindStages[_rec.kind] : null;
-            if (!Array.isArray(_stages) || !_stages.length) {
-                const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : preset === "strauch" ? 2 : null;
-                // Fail-closed: ein BEKANNTES Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0]
-                // — nur die feine Stufe, der Wirt gradet selbst (L1=L0, L2=Auto-Impostor).
-                _stages = Number.isFinite(_kl) ? [_kl] : _rec ? [0] : null;
-            }
-            if (_stages) {
-                let _sv = _stages[0];
-                for (let _si = 0; _si < _stages.length; _si++) if (_stages[_si] <= lod) _sv = _stages[_si];
-                lod = _sv;
-            }
-        } else {
-            // Ein-Stufen-Klammer auch für tree-ish Arten: deklariert die Art GENAU EINE Stufe (Tor gate=[0]),
-            // klemmt jeder Wunsch dorthin — sonst baut der Worker inhaltsgleiche Zweit-Groups (Doppel-Cache,
-            // Doppel-Draw im Crossfade-Band). Mehr-Stufen-Arten (Baum [0,1,2] · Strauch [1,2]) unberührt.
-            const _rec2 = f.recipes && f.recipes[preset];
-            const _cfg2 = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-            const _st2 = _rec2 && _cfg2 && _cfg2.kindStages ? _cfg2.kindStages[_rec2.kind] : null;
-            if (Array.isArray(_st2) && _st2.length === 1) lod = _st2[0];
+            const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : null;
+            if (Number.isFinite(_kl)) lod = _kl;
+            else if (_rec) lod = 0;
         }
         const season = this.state.season || "summer";
         // Gestempelter Welt-Eintrag (entry.studioOv) baut sein Unikat: der ov-Hash trennt Cache-Key UND (via
@@ -71568,7 +71583,7 @@ class AnazhRealm {
         // die Welt wächst in den Lücken, nie auf Kosten des Spielers. Das Cullen läuft weiter (billig).
         const budget = this.state._frameOverBudget ? 0 : Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
-        const fernOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
+        const ziegelOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
         const nahOffen = this._archNahOffen || (this._archNahOffen = []);
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
         for (const entry of this.state.architectures) {
@@ -71581,8 +71596,19 @@ class AnazhRealm {
             // VOR dem Mesh. Jenseits des Radius ist der Box-/Kapsel-Satz die Gestalt (klein im Bild, billig).
             if (distSq <= radiusSq) {
                 // Der Ziegel-Ruf hängt NICHT am Mesh-Budget — er taktet sich selbst (Bake-Garantie, memoisiert).
-                this._archZiegelFern(entry);
+                // Lebende Slots aktivieren sofort; ungebackene Bauten warten in DERSELBEN Distanz-Schlange wie die
+                // fernen (Befund 02.10., gate:arch-feld: in Listen-Reihenfolge fraß das Dorf den überbuchten
+                // Bake-Takt, 24 von 226 Anfragen bewilligt — ein frisch gesetztes Haus in 27 m blieb 200 Takte
+                // ohne Feld UND ohne Mesh, unsichtbar).
+                entry._ziegelNah = true;
                 const echt = this._archIsRendered(entry);
+                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);
+                else {
+                    // Steht das Mesh schon, braucht der Bau keine Brücke: sein Satz bäckt NACH allen Bedürftigen
+                    // vor (für den Rand der Mesh-Zone) und stiehlt ihnen nie den Takt.
+                    entry._ziegelD2 = echt ? distSq + AnazhRealm.ZIEGEL_VORBACK_D2 : distSq;
+                    ziegelOffen.push(entry);
+                }
                 if (!echt) {
                     entry._nahD2 = distSq;
                     nahOffen.push(entry);
@@ -71590,13 +71616,14 @@ class AnazhRealm {
                 if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, !echt);
                 if (entry.mesh) entry.mesh.visible = echt;
             } else {
+                entry._ziegelNah = false;
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
                 if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);
                 else {
                     entry._ziegelD2 = distSq;
-                    fernOffen.push(entry);
+                    ziegelOffen.push(entry);
                 }
             }
         }
@@ -71625,10 +71652,16 @@ class AnazhRealm {
             }
             nahOffen.length = 0;
         }
-        if (fernOffen.length) {
-            fernOffen.sort((a, b) => a._ziegelD2 - b._ziegelD2);
-            for (const entry of fernOffen) this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie)
-            fernOffen.length = 0;
+        // DIE EINE ZIEGEL-SCHLANGE (nah wie fern), nach Distanz: der Bake-Takt geht an den nächsten Bau. In der
+        // Mesh-Zone trägt ein frischer Slot nur, solange das Mesh nicht steht.
+        if (ziegelOffen.length) {
+            ziegelOffen.sort((a, b) => a._ziegelD2 - b._ziegelD2);
+            for (const entry of ziegelOffen) {
+                this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie)
+                if (entry._ziegelNah && entry._ziegelSlot)
+                    this._weltFeldAktiv(entry._ziegelSlot, !this._archIsRendered(entry));
+            }
+            ziegelOffen.length = 0;
         }
         // Foundry-Drain: baut kalte Foundry-Einträge + hebt vor Studio-ready gespawnte auf das Studio-Asset.
         // Budget-gedeckelt (pausiert über Budget) → die Erst-Welt konvergiert ohne Spike. Headless/Studio
@@ -86636,7 +86669,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.511.0";
+AnazhRealm.VERSION = "18.512.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -87778,6 +87811,9 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // LOD_TRI_BUDGET_MUL — Welt-Straff-Faktor: der Ingest übersetzt die Studio-d0/d1 durch ihn
 // (20/40 → 12/26), das Studio-L0-Gesetz bleibt unberührt; volle Geometrie nur sehr nah.
 AnazhRealm.LOD_TRI_BUDGET_MUL = Object.freeze({ d0: 0.6, d1: 0.65 });
+// Die Ziegel-Schlange ordnet nach Bedarf: ein Bau, dessen Mesh in der Mesh-Zone schon steht, reiht sich um diese
+// Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
+AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 AnazhRealm.LOD_DISTANCES = {
     thresh01: 12, // Studio LOD_D0 20 × TRI_BUDGET_MUL.d0 — dist > 12 m → LOD1 (T2: Default == Post-Ingest, headless == live)
     thresh12: 26, // Studio LOD_D1 40 × TRI_BUDGET_MUL.d1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)

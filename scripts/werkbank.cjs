@@ -23,6 +23,8 @@
 //   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE: was der Foundry-Kanal den Haupt-Thread
 //                                                           kostet (Bytes · Entpacken · Platte · Worker-Auslastung);
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
+//   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
+//                                                           ruht (scripts/lib/takt-linse.cjs)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // Höhen relativ zum Boden: `bild` nimmt py/ly mit Präfix `+` als Abstand über `_voxelSurfaceY(px,pz)`
@@ -36,6 +38,7 @@ const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
+const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -141,6 +144,7 @@ async function starte() {
         await page.evaluate(LINSEN_INSTALL);
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
+        await page.evaluate(TAKT_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
             while (
@@ -340,6 +344,13 @@ async function starte() {
                     }
                     return send({ klassen: liste, ordner, ms: Date.now() - t0 });
                 }
+                if (req.url === "/takt") {
+                    const o = await page.evaluate((k) => window.__taktZerlegung(k), {
+                        n: Number(b.n) || 120,
+                        extra: b.extra ? String(b.extra).split(",") : [],
+                    });
+                    return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
                 if (req.url === "/fluss") {
                     const o = await page.evaluate(() => {
                         const i = window.__flussLinse();
@@ -419,6 +430,7 @@ async function starte() {
     else if (cmd === "albedo") o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner") });
     else if (cmd === "licht") o = await rufe("/licht");
     else if (cmd === "fluss") o = await rufe("/fluss", {});
+    else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
     else if (cmd === "zaehlen")
         o = await rufe("/zaehlen", a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {});
     else if (cmd === "reload") o = await rufe("/reload");

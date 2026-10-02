@@ -194,9 +194,12 @@ law(
     /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC)
 );
 law(
-    "AnazhRealm clampt auf die deklarierten Stufen (`kindStages` im Flatten-Chokepoint)",
+    "AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)",
     true,
-    /kindStages\[_rec\.kind\]/.test(anazhNC)
+    /cfg\.kindStages\[rec\.kind\]/.test(anazhNC) &&
+        /_foundryFlattenFor\(entry, preset, lodOverride\) \{[\s\S]{0,3000}?lod = this\._foundryDeclaredStage\(preset, lod\)/.test(
+            anazhNC
+        )
 );
 // W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity`
 // ist der Chokepoint (Studio-Regime → 1, sonst Regler); Bau (`_scatterPass`), Buchhaltung

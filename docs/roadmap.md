@@ -20,8 +20,10 @@ v1.0 ist EIN gespielter Pfad, kein Feature-Katalog:
    (Drehbuch Schritt 18) · Regler-Wörter („knorrig", „hoch") auf die B4-Regler.
 5. **Benutzen / teilen** — betreten · fahren · halten · als Bauplan teilen.
 
-**Der FPS-Boden:** p95 ≤ 33 ms in der Standard-Szene auf dem Schöpfer-Holz, gemessen mit dem
-Flugschreiber-Export (`anazhRealmPerf.json`). **Feature-Stopp bis v1.0** — nur, was einen der fünf
+**Der FPS-Boden:** p95 ≤ 33 ms in der Standard-Szene auf JEDEM Standardgerät — der Richter ist das
+PROFI-BAND (60 fps · 208 DRW · ~680k TRI · 118 MB VRAM), nicht ein einzelner Rechner (Schöpfer-Wort 02.10.:
+„richter ist nicht mein rechner … die werte sind bekannt"); gemessen hardware-unabhängig (`werkbank zaehlen` ·
+`takt` · `fluss`) und mit dem Flugschreiber-Export (`anazhRealmPerf.json`). **Feature-Stopp bis v1.0** — nur, was einen der fünf
 Schritte oder den FPS-Boden trägt.
 
 ### §0.frozen · Die Frozen-Liste
@@ -31,8 +33,8 @@ Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit d
 mittel das Studio-Mesh mit seiner LOD-Kette, das Feld nur fern; die Mesh-Zone steht (0 ungebaut,
 `docs/abnahme-analog.md`); die Vegetation trägt seit V18.506 das Farb-Gesetz (Laub 0,42 → 0,16),
 seit V18.507 EIN Himmel am Tag und die Belichtung aus dem Licht (Karte 212 → 173), seit V18.508 nah
-die Nah-Wiese auf der Boden-Karte (D gefallen); offen: der echte GPU-Trace (die „dunklen
-Schattenseiten" waren die Linse, V18.503/504).
+die Nah-Wiese auf der Boden-Karte (D gefallen); offen: das Profi-Band auf jedem Standardgerät
+(Schöpfer-Wort 02.10.: „richter ist nicht mein rechner").
 
 ### §0.reste · Benannte Reste mit Wartebedingung (nichts erfinden)
 

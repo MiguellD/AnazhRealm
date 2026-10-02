@@ -5,7 +5,8 @@
 > darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
 > Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
 > seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
-> der echte GPU-Trace (die Überbelichtung fiel in V18.506–507, die Wiese auf Armlänge in V18.508).**
+> das Profi-Band auf jedem Standardgerät (Schöpfer-Wort 02.10.: „richter ist nicht mein rechner";
+> die Überbelichtung fiel in V18.506–507, die Wiese auf Armlänge in V18.508).**
 
 ## Die Sonde
 
