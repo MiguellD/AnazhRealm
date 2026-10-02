@@ -373,3 +373,26 @@ nicht nachgemessen); L2
 (5–14 m) zeigt breite Blatt-Fächer; Büschel werfen keine Schatten; das 0,72-m-Raster liest am Hang als
 Reihe. Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz — deterministisch für den Lockstep,
 ±0,2 m neben dem sichtbaren Boden.
+
+## V18.509 — die Starr-Bindung der Körper (02.10., Werkbank, Holz voll, 640×360)
+
+Die Frame-Zerlegung an der Mess-Wiese −1004/−790 (je Pass an/aus, Zeit bis `onSubmittedWorkDone`) nannte den
+CPU-Täter: 5 nahe Wölfe = 421 von 474 Draws — je Wolf 35 starre Teile als eigene Meshes, jedes mit Schatten-Draws
+je Kaskade. Der Ofen-Chokepoint verschmilzt Teile gleichen Materials zu EINEM starr gebundenen SkinnedMesh
+(Mensch UND Tier); jede geskinnte Hülle cullt gegen ihre Körper-Kugel.
+
+| Szene | vorher dc / Dreiecke | nachher dc / Dreiecke |
+|---|---|---|
+| 5 Wölfe im Blick (3–12 m) | 730 / 1 092 738 | 310 / 1 092 738 |
+| dieselben 5, Blick weg | 252 / 772 424 | 127 / 372 824 |
+| Wölfe am Bildrand | 537 / 989 366 | 245 / 911 706 |
+| ein Mensch (isoliert) | 127 / 567 317 | 51 / 500 285 |
+
+Kodier-Zeit des Renders (CPU, Median aus 9) 49,5 → 38,0 ms. Bild-Vergleich bei eingefrorener Zeit (isolierter Wolf,
+auch mitten im Gang): 2,3 % der Wolf-Pixel über 8 Stufen gegen 2,0 % Rauschen zweier gleicher Läufe — am selben Ort
+(Fell-Kanten, Kopf). Die Pose-Probe (`gate:kreatur-kosten` R) hält 0 von 252 480 Vertices eines gehenden Wolfs außerhalb
+seiner Kugeln.
+
+Benannt aus derselben Zerlegung, nicht geschnitten: der Feld-Pass (Welt-March) trug 34 % der GPU-Zeit (swiftshader) —
+fast ganz in den inneren Marches von 64 gesetzten Bäumen 4–75 m vor der Kamera, die in der Mesh-Zone als Kapsel-Satz
+standen, weil ihre L2-Karte noch nicht gebacken war (1 von 111 Karten nach 30 min; ein Bake dauert 0,8–4 s).

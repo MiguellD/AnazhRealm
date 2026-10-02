@@ -112,7 +112,7 @@ der Sozial-Bogen schreibt sie).
 **Gemerkte Fäden (offen):** Orakel-Posten (ungebaut, nach v1.0): Ripple/Splash/Kielwasser ·
 Szenen-Refraktion · Host-Sequencer + Zustands-CRC für MP · Fahr-Kinematik (Gierrate∝Input×Tempo) ·
 Sync-Edit-Remesh im Worker · Kachel-Erosion async · Bloom-Mip-Kette · seeded PRNG für alle
-Gameplay-Würfe · Impostor-Elevation · Rigid-Bind-GPU-Skinning der Kreaturen · Avatar-Kleider =
+Gameplay-Würfe · Impostor-Elevation · Avatar-Kleider =
 Studio · VR/WebXR (0 Code) · das echte V18→V19-Zeit-Portal (Empfang gebaut;
 offen: ein ECHTER Alt-Build emittiert ein Artefakt, das ein Folge-Build isst) · Wasser-Zwei-
 Naturen-Vereinigung (statisches `L`-Substrat + CA zu EINER Natur + Wasserfall-Politur) ·

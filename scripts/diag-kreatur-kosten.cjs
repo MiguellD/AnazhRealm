@@ -23,6 +23,13 @@
 //      nah+fern, der EINE Toggle-Chokepoint (_menschFernToggle) schaltet am
 //      Distanz-Band (MENSCH_FERN_DIST_SQ), und der ECHTE Peer-Tick
 //      (_p2pUpdatePeer) konsumiert ihn. Mesh-/Vertex-Differenz gemessen.
+//  (R) STARR-BINDUNG + KÖRPER-KUGEL (02.10.): der Ofen-Guss zieht je Material
+//      EINEN Draw — kein starres Teil teilt Material/Schatten/Attribut-Satz mit
+//      einem zweiten ungebundenen (vorher 35 Draws je Wolf); jede geskinnte
+//      Hülle cullt (frustumCulled) gegen ihre Körper-Kugel, und die POSE-PROBE
+//      (ein Wolf im Gang, 24 Takte, jede Hülle Vertex für Vertex in der Pose)
+//      bleibt in der Kugel — kein Pop am Bildrand. (S3) Starr-Bindung gestubbt →
+//      die Linse zählt die unverschmolzenen Teile.
 //  (S) SELBST-TESTS (die Linse feuert): (S1) mit gestubbter Raten-Leiter
 //      (_creatureAnimDiv ≡ 1) tickt auch die Hinter-Kreatur voll — der
 //      Zähler misst die echte Leiter, nicht sich selbst. (S2) mit gestubbter
@@ -313,6 +320,84 @@ const server = http.createServer((req, res) => {
                 o.checks.cPeerNah = mf.nah.visible === true && mf.fern.visible === false;
             }
 
+            // ── (R) STARR-BINDUNG + KÖRPER-KUGEL ──
+            const T3 = window.THREE;
+            const recW = A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP.wolf;
+            const starrZensus = (root) => {
+                const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0 };
+                const seen = new Set();
+                root.traverse((n) => {
+                    if (!n.isMesh || !n.geometry) return;
+                    z.meshes++;
+                    if (n.isSkinnedMesh) {
+                        z.skins++;
+                        if (n.frustumCulled === false) z.ungecullt++;
+                        if (!n.boundingSphere) z.ohneKugel++;
+                        return;
+                    }
+                    const g = n.geometry;
+                    const sig = Object.keys(g.attributes)
+                        .sort()
+                        .map((k) => k + ":" + g.attributes[k].itemSize)
+                        .join(",");
+                    const key = (n.material && n.material.uuid) + "|" + (n.castShadow ? 1 : 0) + "|" + sig;
+                    if (seen.has(key)) z.unverschmolzen++;
+                    else seen.add(key);
+                });
+                return z;
+            };
+            const wolfT = recW ? r._ofenKreaturTemplate(recW, null, 0) : null;
+            o.rWolf = wolfT ? starrZensus(wolfT.root) : null;
+            const gM = r._buildHumanGroup();
+            const mfM = gM && gM.userData && gM.userData._menschFern;
+            o.rMensch = mfM && mfM.nah ? starrZensus(mfM.nah) : null;
+            o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
+            o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
+            o.checks.rKugel =
+                !!o.rWolf &&
+                !!o.rMensch &&
+                o.rWolf.ungecullt + o.rWolf.ohneKugel + o.rMensch.ungecullt + o.rMensch.ohneKugel === 0;
+            // POSE-PROBE: ein Wolf im Gang — jede sichtbare Hülle bleibt Vertex für Vertex in ihrer Kugel
+            let raus = 0,
+                geprueft = 0,
+                maxUeber = 0;
+            const wp = spawnAt(6, 0);
+            if (wp && wp.userData && wp.userData._tierBaum) {
+                const v = new T3.Vector3();
+                for (let k = 0; k < 24; k++) {
+                    r._animateTierBaum(wp, k * 0.07, k * 0.35, true, null);
+                    wp.updateMatrixWorld(true);
+                    wp.userData._tierBaum.wrap.traverse((n) => {
+                        if (!n.isSkinnedMesh || !n.boundingSphere) return;
+                        const kugel = n.boundingSphere.clone().applyMatrix4(n.matrixWorld);
+                        const pos = n.geometry.attributes.position;
+                        for (let i = 0; i < pos.count; i += 3) {
+                            n.getVertexPosition(i, v);
+                            v.applyMatrix4(n.matrixWorld);
+                            const d = v.distanceTo(kugel.center) - kugel.radius;
+                            geprueft++;
+                            if (d > 0) {
+                                raus++;
+                                if (d > maxUeber) maxUeber = d;
+                            }
+                        }
+                    });
+                }
+                r.removeCreature(wp);
+            }
+            o.rPose = { geprueft, raus, maxUeber };
+            o.checks.rPoseInKugel = geprueft > 1000 && raus === 0;
+            // (S3) SELBST-TEST: ohne Starr-Bindung zählt die Linse die unverschmolzenen Teile
+            const saveStarr = A._ofenStarrBinden;
+            const saveMemo = A._tierOfenMemo;
+            A._ofenStarrBinden = function () {};
+            A._tierOfenMemo = new Map();
+            const wolfRoh = recW ? r._ofenKreaturTemplate(recW, null, 0) : null;
+            o.s3Roh = wolfRoh ? starrZensus(wolfRoh.root) : null;
+            A._ofenStarrBinden = saveStarr; // restaurieren (Gate-Hook-Lehre)
+            A._tierOfenMemo = saveMemo;
+            o.checks.s3LensFires = !!o.s3Roh && o.s3Roh.unverschmolzen > 0;
+
             o.creaturesAfter = s.creatures.length;
             return o;
         });
@@ -322,7 +407,9 @@ const server = http.createServer((req, res) => {
     await browser.close();
     server.close();
 
-    console.log("\n===== KREATUR-KOSTEN — Anim-Raten-LOD · neutrale Stance · Mensch-Fern-Guss (gate:kreatur-kosten) =====\n");
+    console.log(
+        "\n===== KREATUR-KOSTEN — Anim-Raten-LOD · neutrale Stance · Mensch-Fern-Guss (gate:kreatur-kosten) =====\n"
+    );
     let ok = true;
     const check = (cond, msg) => {
         console.log(`  ${cond ? "✅" : "❌"} ${msg}`);
@@ -349,12 +436,42 @@ const server = http.createServer((req, res) => {
         check(c.aHinter, `(A) HINTERM Standbild: GAR keine Auswertung (${out.counts.hinter}/100)`);
         check(c.aFernOrdnung, "(A) und die Leiter ist monoton (fern wertet ≤ 1/2 der näheren Stufe aus)");
         check(c.aEingefroren, "(A) die Hinter-Kreatur trägt den Einfrier-Stempel (_animEingefroren)");
-        check(c.s1LensFires, `SELBST-TEST (S1): Leiter gestubbt → hinter tickt voll (${out.s1Hinter}/20) — der Zähler misst die echte Leiter`);
-        check(c.bMidStepPremise, `(B) PRÄMISSE: vor dem Freeze mid-step (${out.devMid && out.devMid.toFixed(3)} rad > 0.05)`);
-        check(c.bNeutralStance, `(B) NEUTRALE STANCE: eingefroren auf Stand-Winkel (${out.devFrozen && out.devFrozen.toFixed(4)} rad < 0.02)`);
+        check(
+            c.s1LensFires,
+            `SELBST-TEST (S1): Leiter gestubbt → hinter tickt voll (${out.s1Hinter}/20) — der Zähler misst die echte Leiter`
+        );
+        check(
+            c.bMidStepPremise,
+            `(B) PRÄMISSE: vor dem Freeze mid-step (${out.devMid && out.devMid.toFixed(3)} rad > 0.05)`
+        );
+        check(
+            c.bNeutralStance,
+            `(B) NEUTRALE STANCE: eingefroren auf Stand-Winkel (${out.devFrozen && out.devFrozen.toFixed(4)} rad < 0.02)`
+        );
         check(c.bTailNeutral, "(B) und der Schwanz ruht (rotation.y ≈ 0)");
         check(c.bFrozen, "(B) der Freeze-Pfad lief (Stempel gesetzt)");
-        check(c.s2LensFires, `SELBST-TEST (S2): Stance gestubbt → bleibt mid-step (${out.devStub && out.devStub.toFixed(3)} rad) — die Messung ist nicht blind`);
+        check(
+            c.s2LensFires,
+            `SELBST-TEST (S2): Stance gestubbt → bleibt mid-step (${out.devStub && out.devStub.toFixed(3)} rad) — die Messung ist nicht blind`
+        );
+        if (out.rWolf)
+            console.log(
+                `  (R) Wolf-Guss ${out.rWolf.meshes} Meshes (${out.rWolf.skins} geskinnt, ${out.rWolf.unverschmolzen} unverschmolzen) · Mensch nah ${out.rMensch && out.rMensch.meshes} Meshes · ohne Starr-Bindung ${out.s3Roh && out.s3Roh.meshes} Meshes (${out.s3Roh && out.s3Roh.unverschmolzen} unverschmolzen) · Pose-Probe ${out.rPose.geprueft} Vertices, ${out.rPose.raus} außerhalb der Kugel\n`
+            );
+        check(
+            c.rWolfStarr,
+            "(R) Wolf: kein starres Teil zieht einen zweiten Draw für dasselbe Material (Starr-Bindung)"
+        );
+        check(c.rMenschStarr, "(R) Mensch: dasselbe für den nahen Körper");
+        check(c.rKugel, "(R) jede geskinnte Hülle cullt gegen ihre Körper-Kugel (frustumCulled, boundingSphere)");
+        check(
+            c.rPoseInKugel,
+            `(R) POSE-PROBE: der gehende Wolf bleibt in seinen Kugeln (${out.rPose && out.rPose.raus} von ${out.rPose && out.rPose.geprueft} außerhalb)`
+        );
+        check(
+            c.s3LensFires,
+            `SELBST-TEST (S3): Starr-Bindung gestubbt → ${out.s3Roh && out.s3Roh.unverschmolzen} unverschmolzene Teile gezählt`
+        );
         check(c.cFernGebaut, "(C) der Mensch trägt den lod1-Fern-Guss (_menschFern nah+fern)");
         check(c.cVertexDiff, "(C) messbare Vertex-Differenz (fern < 80 % von nah)");
         check(c.cMeshDiff, "(C) weniger Meshes im Fern-Guss");
@@ -364,7 +481,7 @@ const server = http.createServer((req, res) => {
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(
-        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Mensch-Fern-Guss KONSUMIERT)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
+        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Mensch-Fern-Guss KONSUMIERT · Starr-Bindung · Körper-Kugel)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
     );
     process.exit(ok ? 0 : 1);
 })();

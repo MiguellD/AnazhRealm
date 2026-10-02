@@ -17078,6 +17078,131 @@ class AnazhRealm {
             if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
         });
     }
+    // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
+    // Kopf · Kiefer · Schwanzspitze …) hing als eigenes Mesh an seinem Gelenk — ein Draw plus ein Schatten-Draw
+    // je Teil. Gemessen 02.10. (Mess-Wiese, Holz voll): 5 nahe Wölfe = 421 von 474 Draws, je Wolf 35 starre
+    // Teile. Teile mit DEMSELBEN Material (Farbe reist als Vertex-Farbe), demselben Schatten- und Attribut-Satz
+    // verschmelzen zu EINEM SkinnedMesh; jeder Vertex hängt starr an sein Gelenk (skinIndex = Gelenk, Gewicht
+    // 1), die GPU posiert, was vorher der Szenen-Graph je Teil trug. Die Gelenke bleiben Gelenke: Gang,
+    // Lid-Skala, Iris, Halter, Fern-Fit (dominanter Bone) lesen dieselben Objekte. Geometrie im Wurzel-Raum der
+    // Bind-Pose; Klone binden über __skinJoints um (_ofenKlonRebind) wie die Haut.
+    static _ofenStarrBinden(root) {
+        root.updateMatrixWorld(true);
+        const wurzelInv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+        // Gelenk-Namen müssen eindeutig sein — der Klon findet seine Bones über den Namen.
+        const namen = new Map();
+        root.traverse((n) => {
+            if (!n.isMesh && n.name) namen.set(n.name, namen.has(n.name) ? null : n);
+        });
+        const gruppen = new Map();
+        root.traverse((n) => {
+            if (!n.isMesh || n.isSkinnedMesh || n.isInstancedMesh || !n.geometry || !n.parent) return;
+            if (Array.isArray(n.material) || !n.material || n.visible === false) return;
+            const g = n.geometry;
+            if (!g.attributes.position || (g.morphAttributes && Object.keys(g.morphAttributes).length)) return;
+            if (n.userData && n.userData.__tuer) return; // Tür-Flügel drehen sich selbst
+            let gelenk = n.parent;
+            while (gelenk && gelenk.isMesh) gelenk = gelenk.parent;
+            if (!gelenk || !gelenk.name || namen.get(gelenk.name) !== gelenk) return;
+            const sig = Object.keys(g.attributes)
+                .sort()
+                .map((k) => k + ":" + g.attributes[k].itemSize)
+                .join(",");
+            const key =
+                n.material.uuid +
+                "|" +
+                (n.castShadow ? 1 : 0) +
+                (n.receiveShadow ? 1 : 0) +
+                "|" +
+                ((n.userData && n.userData.__klasse) || "") +
+                "|" +
+                sig;
+            let gr = gruppen.get(key);
+            if (!gr) gruppen.set(key, (gr = []));
+            gr.push({ mesh: n, gelenk });
+        });
+        const m = new THREE.Matrix4();
+        const nm = new THREE.Matrix3();
+        const v = new THREE.Vector3();
+        for (const teile of gruppen.values()) {
+            if (teile.length < 2) continue;
+            const g0 = teile[0].mesh.geometry;
+            const attrNamen = Object.keys(g0.attributes);
+            let nV = 0,
+                nI = 0;
+            for (const t of teile) {
+                const g = t.mesh.geometry;
+                nV += g.attributes.position.count;
+                nI += g.index ? g.index.count : g.attributes.position.count;
+            }
+            const daten = {};
+            for (const a of attrNamen) daten[a] = new Float32Array(nV * g0.attributes[a].itemSize);
+            const index = nV > 65535 ? new Uint32Array(nI) : new Uint16Array(nI);
+            const skinIndex = new Uint16Array(nV * 4);
+            const skinWeight = new Float32Array(nV * 4);
+            const bones = [];
+            const boneIdx = new Map();
+            let ov = 0,
+                oi = 0;
+            for (const t of teile) {
+                const g = t.mesh.geometry;
+                const n = g.attributes.position.count;
+                m.multiplyMatrices(wurzelInv, t.mesh.matrixWorld);
+                nm.getNormalMatrix(m);
+                for (const a of attrNamen) {
+                    const src = g.attributes[a];
+                    const dst = daten[a];
+                    const k = src.itemSize;
+                    for (let i = 0; i < n; i++) {
+                        if (a === "position" || a === "normal") {
+                            v.fromBufferAttribute(src, i);
+                            if (a === "position") v.applyMatrix4(m);
+                            else v.applyMatrix3(nm).normalize();
+                            dst[(ov + i) * 3] = v.x;
+                            dst[(ov + i) * 3 + 1] = v.y;
+                            dst[(ov + i) * 3 + 2] = v.z;
+                        } else for (let c = 0; c < k; c++) dst[(ov + i) * k + c] = src.getComponent(i, c);
+                    }
+                }
+                let b = boneIdx.get(t.gelenk);
+                if (b === undefined) {
+                    b = bones.length;
+                    bones.push(t.gelenk);
+                    boneIdx.set(t.gelenk, b);
+                }
+                for (let i = 0; i < n; i++) {
+                    skinIndex[(ov + i) * 4] = b;
+                    skinWeight[(ov + i) * 4] = 1;
+                }
+                if (g.index) for (let i = 0; i < g.index.count; i++) index[oi++] = g.index.getX(i) + ov;
+                else for (let i = 0; i < n; i++) index[oi++] = ov + i;
+                ov += n;
+            }
+            const geo = new THREE.BufferGeometry();
+            for (const a of attrNamen) {
+                const src = g0.attributes[a];
+                geo.setAttribute(a, new THREE.BufferAttribute(daten[a], src.itemSize, src.normalized));
+            }
+            geo.setIndex(new THREE.BufferAttribute(index, 1));
+            geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
+            geo.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
+            const t0 = teile[0].mesh;
+            const starr = new THREE.SkinnedMesh(geo, t0.material);
+            starr.castShadow = t0.castShadow;
+            starr.receiveShadow = t0.receiveShadow;
+            starr.userData.sharedGeom = true;
+            if (t0.userData && t0.userData.__klasse) starr.userData.__klasse = t0.userData.__klasse;
+            starr.userData.__skinJoints = bones.map((b) => b.name);
+            for (const t of teile) t.mesh.parent.remove(t.mesh);
+            root.add(starr);
+            starr.updateMatrixWorld(true);
+            starr.bind(new THREE.Skeleton(bones), starr.matrixWorld.clone());
+            // Die Bind-Box reist mit (wie die der Haut aus dem Assemble): Box3-Leser der Welt-Gestalt messen den
+            // Klon sonst über ein frisch umgebundenes, noch nicht posiertes Skelett.
+            geo.computeBoundingBox();
+            starr.boundingBox = geo.boundingBox.clone();
+        }
+    }
     // Der Beipack-Leser (GENERISCH für jede Gelenk-Gattung — Tier UND Mensch):
     // Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an ihren Gelenken.
     // Liefert {root, teile, tailNamen, hoehe, minY} oder null.
@@ -17131,11 +17256,26 @@ class AnazhRealm {
                 if (!n.isSkinnedMesh) return;
                 n.userData.__skinJoints = skelett.skinJoints.slice();
                 n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
-                n.frustumCulled = false; // LBS bewegt Vertices — die Bind-BBox lügt
             });
         }
         const bb = new THREE.Box3().setFromObject(root);
         const hoehe = Number.isFinite(bb.max.y - bb.min.y) ? Math.max(1e-3, bb.max.y - bb.min.y) : 1;
+        AnazhRealm._ofenStarrBinden(root);
+        // DIE KÖRPER-KUGEL: jede geskinnte Hülle (Haut · Fell · Kleid · starre Teile) cullt gegen die Bind-Hülle
+        // des GANZEN Körpers × 1,25 — jede Pose bleibt darin (Glieder drehen um Gelenke im Leib). Die Bind-BBox
+        // der Einzel-Hülle log (darum zeichneten Haut und Fell nie gecullt), die Körper-Hülle nicht: außerhalb
+        // des Blicks und je Schatten-Kaskade fällt der Draw. Klone erben die Kugel (SkinnedMesh.copy).
+        if (!bb.isEmpty()) {
+            const kugel = bb.getBoundingSphere(new THREE.Sphere());
+            kugel.radius *= 1.25;
+            const inv = new THREE.Matrix4();
+            root.updateMatrixWorld(true);
+            root.traverse((n) => {
+                if (!n.isSkinnedMesh) return;
+                n.boundingSphere = kugel.clone().applyMatrix4(inv.copy(n.matrixWorld).invert());
+                n.frustumCulled = true;
+            });
+        }
         return {
             root,
             teile,
@@ -17649,9 +17789,14 @@ class AnazhRealm {
                 wrap3.scale.setScalar(f2);
                 wrap3.position.y = -t0.minY * f2;
                 const fernKlon = t1.root.clone(true);
+                const teileF = {};
+                fernKlon.traverse((n) => {
+                    if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
+                });
                 fernKlon.traverse((n) => {
                     if (n.isMesh) n.castShadow = false;
                 });
+                AnazhRealm._ofenKlonRebind(fernKlon, teileF); // die starr gebundenen Teile hängen an SEINEN Gelenken
                 wrap3.add(fernKlon);
                 wrap3.visible = false;
                 wrap3.userData._creatureSkin = true;
@@ -86604,7 +86749,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.508.0";
+AnazhRealm.VERSION = "18.509.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

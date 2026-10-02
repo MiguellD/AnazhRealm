@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.508.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.509.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -85,14 +85,14 @@ Schlüssel. Offen: der echte LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 mittel ist das Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern und
 in der Streaming-Rampe. Kreaturen ≤ 55 m Studio-Tier (`KREATUR_NAH_MESH`), Architektur in der
 Mesh-Zone = Cull-Radius 100–150 m, Streu-Bäume L0/L1 Mesh + L2 Studio-Billboard. Damit die Zone
-steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, EINE Bake-Uhr
-(45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa8`):
-ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0);
-97–283 dc / 28–832k Dreiecke je Bild (Stock-Schwelle ~1 M); V18.494/495 trägt git log.
+steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, EINE Bake-Uhr (45 s),
+Staging-Entlassung nie mit offenem Upload. Gemessen (`aaa8`): ungebaut 148–195 → 0, Bild = Studio-Wolf mit
+Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0); 97–283 dc / 28–832k Dreiecke je Bild (Stock-Schwelle ~1 M).
 
-**V18.497–499 — HAUT + SCHALEN-FELL:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin →
-`__huelleAusFeld`, 25 Bones), das Fell 6 Schalen aus den fellStreu-Zeilen, Kopf und Kiefer je eine
-starre Haut. Wolf L0 315k → 57k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut hell gleich (−2/−4 %).
+**V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin → `__huelleAusFeld`, 25 Bones), das
+Fell 6 Schalen (Wolf L0 315k → 57k Dreiecke); seit V18.509 hängen die starren Teile (Pfote · Ohr · Lid · Kopf ·
+Kiefer) je Material als EIN starr gebundenes SkinnedMesh am Ofen-Chokepoint (`_ofenAssembleAsset`, Mensch UND
+Tier), jede Hülle cullt gegen ihre Körper-Kugel: 5 Wölfe 730 → 310 Draws, Mensch nah 40 → 16 (`gate:kreatur-kosten`).
 
 **V18.500–508 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT · FARBE · WIESE:** Haus-L1 `flaechig`
 (L1 2251k → 561k), Weiß backt nur mit Karte (`aaa10`), Gelenk-Kugeln nur an der Gabel (`aaa11`);

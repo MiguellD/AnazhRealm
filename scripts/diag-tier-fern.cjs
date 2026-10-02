@@ -190,7 +190,9 @@ const server = http.createServer((req, res) => {
             o.fernMeshes = sichtbar(c);
             o.fernTris = zTris;
             o.checks.nToggleFern = !!tb.fern && tb.fern.visible === true && tb.wrap.visible === false;
-            o.checks.nFernGrob = o.fernMeshes < 20; // das Ziel: fern DEUTLICH unter 20 Meshes
+            // Fern zieht weniger Draws als nah (seit der Starr-Bindung trägt nah ~11 statt ~40 Meshes — die
+            // absolute 20 stammte aus der 80-Meshes-Welt; die Kosten-Wahrheit sind Dreiecke, unten).
+            o.checks.nFernGrob = o.fernMeshes < 20 && o.fernMeshes < o.nahMeshes;
             o.checks.nFernKleiner = o.fernTris < o.nahTris / 4; // und << nah (Dreiecke — die Kosten)
             o.checks.nNahVoll = o.nahBones >= 20; // nah bleibt der volle Gelenk-Baum (die Haut trägt ≥ 20 Bones)
 
@@ -204,7 +206,9 @@ const server = http.createServer((req, res) => {
             if (saveFern) saveFern.visible = false;
             tick(1.4 * fern);
             o.sAltMeshes = sichtbar(c);
-            o.checks.sLensFires = !(o.sAltMeshes < 20); // die Fern-Grob-Prüfung erkennt den alten Fehler
+            o.sAltTris = zTris;
+            // dasselbe (N)-Urteil wie oben MUSS den alten Fehler erkennen (Draws ODER Dreiecke fallen nicht)
+            o.checks.sLensFires = !(o.sAltMeshes < 20 && o.sAltMeshes < o.nahMeshes && o.sAltTris < o.nahTris / 4);
             tb.fern = saveFern; // restaurieren (Gate-Hook-Lehre)
 
             // ── (H) HYSTERESE: Pendeln an der Kante schaltet nicht, gießt nicht ──
@@ -368,11 +372,11 @@ const server = http.createServer((req, res) => {
         check(c.nToggleNah, "(N) nah: der volle Gelenk-Baum sichtbar, das Standbild verdeckt");
         check(c.nToggleFern, "(N) fern: das Standbild sichtbar, der Gelenk-Baum verdeckt");
         check(c.nNahVoll, `(N) nah ist der volle Gelenk-Baum (Haut an ${out.nahBones} Bones ≥ 20)`);
-        check(c.nFernGrob, `(N) fern ist GROB (${out.fernMeshes} Meshes < 20)`);
+        check(c.nFernGrob, `(N) fern ist GROB (${out.fernMeshes} Meshes < 20 und < ${out.nahMeshes} nah)`);
         check(c.nFernKleiner, `(N) und << nah (${Math.round(out.fernTris)} < ${Math.round(out.nahTris)}/4 Dreiecke)`);
         check(
             c.sLensFires,
-            `SELBST-TEST (S): ohne Fern-Zweig erkennt die Linse den alten Zustand (${out.sAltMeshes} Meshes fern ≥ 20)`
+            `SELBST-TEST (S): ohne Fern-Zweig erkennt die Linse den alten Zustand (fern ${out.sAltMeshes} Meshes / ${Math.round(out.sAltTris)} Dreiecke = nah)`
         );
         check(
             c.hKeinFlackern,
