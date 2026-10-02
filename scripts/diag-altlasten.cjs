@@ -93,6 +93,18 @@ const FORBIDDEN = [
     // (fx.bewegung.hang.maxSlopeY), die Leser lesen den fail-closed
     // _bewegungsBlock direkt (kein Boot-Seed, kein State-Feld).
     { token: "maxWalkableSlopeY", fiel: "ZWILLINGS-ABSCHIED 19.07. — hang.maxSlopeY via _bewegungsBlock (fail-closed)" },
+    // FLÄCHEN-STUFE (V18.500): der Host-Umweg um ein L1, das nicht reduzierte, ist gefallen —
+    // das Studio liefert die Stufe selbst (Kosten gehören ins Asset, nie in den Host).
+    { token: "lodServe", fiel: "V18.500 — fachwerk-core L1 = Flächen-Stufe, kindStages [0,1,2] alle serviert" },
+    // DAS STUDIO-FÜLL-RIG IN DER WELT (V18.503): Fill · Rim · Back ersetzen im Labor den Himmel — die Welt
+    // hat ihn (Himmels-Umgebung aus dem sichtbaren Himmel); doppelt gezählt lasen Schattenseiten so hell
+    // wie Sonnenseiten.
+    { token: "fillLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
+    { token: "rimLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
+    { token: "backLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
+    { token: "FILL_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
+    { token: "RIM_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
+    { token: "BACK_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

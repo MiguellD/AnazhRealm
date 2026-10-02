@@ -154,6 +154,12 @@ const server = http.createServer((req, res) => {
                 if (!meshKeys.has(g.mesh)) meshKeys.set(g.mesh, []);
                 meshKeys.get(g.mesh).push(String(k));
             }
+        // V18.508 — die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Mesh sein Foundry-Leaf-Key; ein
+        // Ring-Mesh ohne Key bleibt unbekannt → Verletzung (fail-closed).
+        if (st.nahWiese)
+            for (const k of st.nahWiese.kacheln.values())
+                for (const im of k.meshes || [])
+                    if (im.userData && im.userData.leafKey) meshKeys.set(im, ["nahWiese#" + im.userData.leafKey]);
 
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
         const VEG =

@@ -1,12 +1,13 @@
-// diag-fell-blick.cjs — DIE FELL-LINSE (30.09.): was trägt das Fell-Bild eines Welt-Tiers — die Strähnen oder
-// das Körper-Fell mit dem Lab-Gesetz (FELL_LOOK)? Der Guss skaliert die Vorlage mit f ≈ 0,1 in die Welt, eine
-// Strähne ist dort 1–3 mm breit. Echter Renderer (WebGPU/swiftshader), Mittag, der Wolf auf der ebenen Bühne der
-// Mess-Wiese, Kamera in mehreren Abständen; je Abstand ein Bild MIT und eines OHNE Strähnen, dazu das Urteil des
-// Fell-Bildschirm-Gesetzes (`_fellBildschirmGesetz`) und die Zahlen: Tier-Pixel · mittlere Helligkeit ·
-// Struktur (mittlerer Nachbar-Kontrast im Tier) · Differenz mit↔ohne.
+// diag-fell-blick.cjs — DIE FELL-LINSE (30.09.; V18.497 Schalen): was trägt das Fell-Bild eines Welt-Tiers — das
+// Fell (seit V18.497 die Schalen auf der Tier-Haut) oder die Haut mit dem Lab-Gesetz (FELL_LOOK)? Echter Renderer
+// (WebGPU/swiftshader), Mittag, der Wolf auf der ebenen Bühne der Mess-Wiese, Kamera in mehreren Abständen; je
+// Abstand drei Bilder — MIT Fell · OHNE Fell · LEER (ohne Tier, die exakte Tier-Maske) —, dazu das Urteil des
+// Fell-Bildschirm-Gesetzes (`_fellBildschirmGesetz`) und die Zahlen im Tier: Pixel · was das Fell ändert · die
+// Helligkeit von Fell und Haut (Parität = kein Sprung, wo das Gesetz das Fell abschaltet).
 //   node scripts/diag-fell-blick.cjs [--tag name] [--abstaende 1.5,3,6,12]
 "use strict";
 const puppeteer = require("puppeteer");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -50,9 +51,7 @@ const BILD_FN = async (kam, W, H) => {
     const rend = r.state.renderer;
     const cam = r.state.camera;
     rend.setAnimationLoop(null);
-    if (r.state.world) r.state.world.timeOfDay = 0.5;
-    r.state.timeOfDay = 0.5;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
     cam.lookAt(kam.lx, kam.ly, kam.lz);
     cam.updateMatrixWorld(true);
@@ -63,15 +62,7 @@ const BILD_FN = async (kam, W, H) => {
             if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
         } catch (_e) {}
         if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
-        const rt = new THREE_.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
-        const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
-        rend.setRenderTarget(rt);
-        if (typeof rend.renderAsync === "function") await rend.renderAsync(r.state.scene, cam);
-        else rend.render(r.state.scene, cam);
-        const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-        rend.setRenderTarget(prev);
-        if (rt.dispose) rt.dispose();
-        u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+        u8 = (await window.__ausgabeAufnahme(W, H, 1)).u8; // die EINE Aufnahme: der echte, getonte Frame
     }
     const cv = document.createElement("canvas");
     cv.width = W;
@@ -104,6 +95,7 @@ const BILD_FN = async (kam, W, H) => {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
     // Boot, Mess-Wiese, Foundry bereit, den Wolf auf die ebene Bühne (−893,8/−844,9, Spanne 1,2 m).
     const buehne = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -209,41 +201,76 @@ const BILD_FN = async (kam, W, H) => {
             };
         }, kam);
         const bilder = {};
+        // Vier Schüsse: LEER · MIT Fell · OHNE Fell (die Haut) · LEER — die zwei LEER-Bilder (ohne Tier) liefern die
+        // exakte Tier-Maske (die projizierte Box log bei Nähe: „2 px hoch" bei 2 m); wo sie sich unterscheiden,
+        // streamte die Szene zwischen den Schüssen (Kronen-LOD) — diese Pixel zählen nicht.
         for (const [art, an] of [
+            ["leer", null],
             ["mit", true],
             ["ohne", false],
+            ["leer2", null],
         ]) {
             await page.evaluate((an) => {
                 const tB = window.__fellWolf.userData._tierBaum;
-                if (tB.wrap) tB.wrap.visible = true;
+                if (tB.wrap) tB.wrap.visible = an !== null;
                 if (tB.fern) tB.fern.visible = false;
-                for (const s of tB.straehnen || []) s.visible = an;
+                for (const s of tB.straehnen || []) s.visible = an === true;
             }, an);
             const b = await page.evaluate(BILD_FN, kam, W, H);
             const f = path.join(OUT, `fell-${TAG}-${d}m-${art}.png`);
             fs.writeFileSync(f, Buffer.from(b.png.split(",")[1], "base64"));
             bilder[art] = { datei: path.relative(root, f), rgba: b.rgba };
         }
-        // Was die Strähnen im Bild tragen: geänderte Pixel über das GANZE Bild (nur das Tier ändert sich),
-        // bezogen auf die Bildfläche des Tiers (projizierte Box).
+        // Die Tier-Maske: wo MIT oder OHNE vom (stabilen) LEER-Bild abweicht. Darin: was das Fell ändert und wie hell
+        // Fell und Haut lesen (Parität = kein Sprung an der Schwelle des Fell-Bildschirm-Gesetzes).
         const A = bilder.mit.rgba,
-            B = bilder.ohne.rgba;
+            B = bilder.ohne.rgba,
+            L0 = bilder.leer.rgba,
+            L2 = bilder.leer2.rgba;
         const lum = (a, i) => 0.2126 * a[i] + 0.7152 * a[i + 1] + 0.0722 * a[i + 2];
-        let diffPx = 0;
-        for (let i = 0; i < A.length; i += 4) if (Math.abs(lum(A, i) - lum(B, i)) > 12) diffPx++;
+        const abw = (a, b, i) => Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+        let tierPx = 0,
+            driftPx = 0,
+            diffPx = 0,
+            hMit = 0,
+            hOhne = 0,
+            nMit = 0,
+            nOhne = 0,
+            ya = H,
+            yb = -1;
+        for (let i = 0; i < A.length; i += 4) {
+            if (abw(L0, L2, i) > 12) {
+                driftPx++;
+                continue;
+            }
+            const imMit = abw(A, L0, i) > 12,
+                imOhne = abw(B, L0, i) > 12;
+            if (!imMit && !imOhne) continue;
+            tierPx++;
+            const y = (i / 4 / W) | 0;
+            if (y < ya) ya = y;
+            if (y > yb) yb = y;
+            if (Math.abs(lum(A, i) - lum(B, i)) > 12) diffPx++;
+            if (imMit) ((hMit += lum(A, i)), nMit++);
+            if (imOhne) ((hOhne += lum(B, i)), nOhne++);
+        }
         const s = {
             abstand: d,
-            gesetz: urteil.an ? "Strähnen AN" : "Strähnen AUS",
-            tierHoehePx: urteil.hoehePx,
-            tierFlaechePx: urteil.flaechePx,
+            gesetz: urteil.an ? "Fell AN" : "Fell AUS",
+            tierHoehePx: yb >= ya ? yb - ya + 1 : 0,
+            tierFlaechePx: tierPx,
+            driftPx,
             geaendertPx: diffPx,
-            anteilAmTier: +((100 * diffPx) / Math.max(1, urteil.flaechePx)).toFixed(1),
+            anteilAmTier: +((100 * diffPx) / Math.max(1, tierPx)).toFixed(1),
+            helligkeitFell: +(hMit / Math.max(1, nMit)).toFixed(1),
+            helligkeitHaut: +(hOhne / Math.max(1, nOhne)).toFixed(1),
             mit: bilder.mit.datei,
             ohne: bilder.ohne.datei,
+            leer: bilder.leer.datei,
         };
         bericht.schuesse.push(s);
         console.log(
-            `  ${d} m: Tier ${s.tierHoehePx} px hoch · Strähnen ändern ${s.geaendertPx} px = ${s.anteilAmTier} % der Tier-Fläche · Gesetz → ${s.gesetz}`
+            `  ${d} m: Tier ${s.tierHoehePx} px hoch / ${s.tierFlaechePx} px · Fell ändert ${s.geaendertPx} px = ${s.anteilAmTier} % · Helligkeit Fell ${s.helligkeitFell} ↔ Haut ${s.helligkeitHaut} (${(100 * (s.helligkeitFell / Math.max(0.1, s.helligkeitHaut) - 1)).toFixed(0)} %) · Szenen-Drift ${s.driftPx} px · Gesetz → ${s.gesetz}`
         );
     }
     fs.writeFileSync(path.join(OUT, `fell-${TAG}.json`), JSON.stringify(bericht, null, 2));

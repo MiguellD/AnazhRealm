@@ -18,6 +18,7 @@
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
 const puppeteer = require("puppeteer");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -67,9 +68,7 @@ const SICHT_FN = async (a) => {
     const rend = r.state.renderer;
     const cam = r.state.camera;
     rend.setAnimationLoop(null);
-    if (r.state.world) r.state.world.timeOfDay = 0.5;
-    r.state.timeOfDay = 0.5;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     // Die AKTIVE Gestalt schalten: nah das Studio-Mesh (Tier / Mesh / Instanzen), fern das Feld.
     let setze = null;
     if (a.klasse === "kreatur") {
@@ -142,9 +141,7 @@ const SCHUSS_FN = async (kam) => {
     // Der Spiel-Loop RUHT während des Schusses (sonst zieht er Kamera, Tageszeit und Cull-Zustand
     // zwischen Setzen und Render weiter); Mittag fest, Lichter einmal nachgeführt.
     rend.setAnimationLoop(null);
-    if (r.state.world) r.state.world.timeOfDay = 0.5;
-    r.state.timeOfDay = 0.5;
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+    window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     cam.position.set(kam.px, kam.py, kam.pz);
     // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
     const sy = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : null;
@@ -160,20 +157,11 @@ const SCHUSS_FN = async (kam) => {
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
     // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
     if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
-    const rt = new THREE_.RenderTarget(640, 360, { depthBuffer: true, samples: 0 });
-    const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
-    if (rend.info && typeof rend.info.reset === "function") rend.info.reset();
-    rend.setRenderTarget(rt);
-    // ZWEI Renders, der zweite zählt (GEMESSEN 30.09.: der erste Render nach dem Kamera-
-    // Umsetzen trug die Feld-Formen noch nicht — Listen-/Seiten-Upload + Pipelines warm).
-    if (typeof rend.renderAsync === "function") await rend.renderAsync(scene, cam);
-    else rend.render(scene, cam);
-    if (rend.info && typeof rend.info.reset === "function") rend.info.reset();
-    const t0 = performance.now();
-    if (typeof rend.renderAsync === "function") await rend.renderAsync(scene, cam);
-    else rend.render(scene, cam);
-    const renderMs = performance.now() - t0;
-    const ri = (rend.info && rend.info.render) || {};
+    // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, ACES + sRGB)
+    // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
+    const auf = await window.__ausgabeAufnahme(640, 360, 1);
+    const renderMs = auf.ms;
+    const ri = auf.info;
     // Kosten-Herkunft: sichtbare Meshes nach Gruppe (Dreiecke × Instanzen, residente Last).
     const herkunft = {};
     scene.traverseVisible((o) => {
@@ -205,11 +193,7 @@ const SCHUSS_FN = async (kam) => {
             .slice(0, 8)
             .map(([k, v]) => k + " " + Math.round(v)),
     };
-    let px = null;
-    if (typeof rend.readRenderTargetPixelsAsync === "function")
-        px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 640, 360);
-    rend.setRenderTarget(prev);
-    if (rt.dispose) rt.dispose();
+    const px = auf.u8;
     rend.setAnimationLoop(r._gameLoopTick);
     if (!px || !px.length) return { ok: false, grund: "keine Pixel", zahlen };
     const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
@@ -264,6 +248,7 @@ const SCHUSS_FN = async (kam) => {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
@@ -488,6 +473,8 @@ const SCHUSS_FN = async (kam) => {
                 out.objekte.haus = { fehlt: String(err && err.message) };
             }
         } else out.objekte.haus = { fehlt: "kein haus_-Bauplan im Buch" };
+        // Ab hier halten die Tiere still (Blick-Wahl und Schuss sehen dieselbe Szene).
+        window.__tiereHalten();
         // Einschwingen + DIE SICHTBARKEITS-LÜCKE messen (Tier ohne Mesh, Pass unsichtbar).
         const zeit = [];
         let lueckeTakte = 0,
@@ -611,6 +598,22 @@ const SCHUSS_FN = async (kam) => {
                     takte = 0,
                     offenVor = -1,
                     ohneFortschritt = 0;
+                // STUFEN-LINSE: das ZIEL-Objekt (der Bau am Zielpunkt) steht klar im L0-Band, aber noch auf einer
+                // gröberen Stufe — der feinere Guss ist unterwegs. Befund aaa9: Haus bei 7,5 m auf L1 (serviert 2),
+                // „eingeschwungen" nach 40 Takten, das Bild leer. Vor dem Schuss wird gewartet (≤ 600 Takte).
+                let ziel = null,
+                    zielD = Infinity;
+                for (const e of r.state.architectures) {
+                    const d = Math.hypot(e.position.x - kam.ox, e.position.z - kam.oz);
+                    if (d < 1.5 && d < zielD) ((ziel = e), (zielD = d));
+                }
+                const LD = r.constructor && r.constructor.LOD_DISTANCES;
+                const L01 = LD && Number.isFinite(LD.thresh01) ? LD.thresh01 : 12;
+                const zielOffen = () =>
+                    !!ziel &&
+                    Number.isFinite(ziel._lodLevel) &&
+                    ziel._lodLevel > 0 &&
+                    Math.hypot(ziel.position.x - kam.px, ziel.position.z - kam.pz) < 0.85 * L01;
                 while (performance.now() < dl) {
                     try {
                         if (r.state.world) r.state.world.timeOfDay = 0.5;
@@ -635,7 +638,13 @@ const SCHUSS_FN = async (kam) => {
                     if (offen === offenVor) ohneFortschritt++;
                     else ohneFortschritt = 0;
                     offenVor = offen;
-                    if (takte >= 40 && stable >= 15 && (offen === 0 || (!voll && ohneFortschritt >= 60))) break;
+                    if (
+                        takte >= 40 &&
+                        stable >= 15 &&
+                        (offen === 0 || (!voll && ohneFortschritt >= 60)) &&
+                        (!zielOffen() || takte >= 600)
+                    )
+                        break;
                     await sleep(50);
                 }
                 rend.render = origR;
@@ -681,6 +690,9 @@ const SCHUSS_FN = async (kam) => {
                     takte,
                     chunks: last,
                     offen: offenVor,
+                    zielStufe: zielOffen()
+                        ? `Ziel L${ziel._lodLevel} (serviert ${ziel._servedLod}) im L0-Band — Stufe AUSSTEHEND`
+                        : null,
                     zensus,
                     warum: Object.entries(warum)
                         .sort((a, b) => b[1] - a[1])
@@ -752,7 +764,7 @@ const SCHUSS_FN = async (kam) => {
             // Der Spieler steht an der Kamera (Chunk-Ring, Hand-Blase, Foundry-Stufe folgen ihm).
             const um = await umstellen(k);
             console.log(
-                `  umgestellt zu ${klasse}/${art}: ${um.takte} Takte · ${um.chunks} Chunks · ungebaut in der Mesh-Zone ${um.offen}${um.warum ? " — " + um.warum : ""}\n      Impostor: ${um.zensus}`
+                `  umgestellt zu ${klasse}/${art}: ${um.takte} Takte · ${um.chunks} Chunks · ungebaut in der Mesh-Zone ${um.offen}${um.warum ? " — " + um.warum : ""}${um.zielStufe ? " · ⚠ " + um.zielStufe : ""}\n      Impostor: ${um.zensus}`
             );
             const g = await page.evaluate((k) => window.anazhRealm._voxelSurfaceY(k.px, k.pz), k);
             k.py = Math.max(g + 0.35, k.augeY != null ? k.augeY : g + k.augeH);

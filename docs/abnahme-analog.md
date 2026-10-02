@@ -5,7 +5,7 @@
 > darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
 > Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
 > seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
-> die dunklen Schattenseiten, die Wiese (D), der echte GPU-Trace.**
+> der echte GPU-Trace (die Überbelichtung fiel in V18.506–507, die Wiese auf Armlänge in V18.508).**
 
 ## Die Sonde
 
@@ -61,15 +61,17 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
   `_archFoundryZiegel` (Foundry-Flat; Bäume teilen Schlüssel + Fit mit der Streu), sonst
   `_archBoxFit` (≤ 24 AABB) — das ist die Gestalt JENSEITS der Mesh-Zone. Die Mesh-Zone ist der
   geregelte Cull-Radius (100–150 m): dort IST das Studio-Mesh mit seiner LOD-Kette die Gestalt
-  (L0 < 12 m · L1 < 26 m · L2 darüber; Haus: `KIND_POLICY.haus.lodServe {1:2}` serviert im Ring
-  12–26 m das L2-Destillat), bis es steht trägt das Feld. Bauten nah zuerst, das Budget zählt
+  (L0 < 12 m · L1 < 26 m · L2 darüber; Haus seit V18.500: L1 = die Flächen-Stufe des Studios,
+  17–33 % von L0, der Host-Umweg `lodServe` ist gefallen), bis es steht trägt das Feld. Bauten nah zuerst, das Budget zählt
   gebaute Meshes (≤ 24 Versuche je Takt), über Budget Takt-Garantie (1 je 250 ms). Fachwerk-Farben
   sRGB-dekodiert wie `THREE.Color`, bei vollem Fachwerk Silhouette vor Holz. Klein-Streu auf der
   Fern-Stufe (Zellen-LOD 2): `_streuGesetzSpawn` — ein Gesetz-Block je 64-m-Kachel, der March
   tract die Plätze (`einheit < 0`); nah und mittel Mesh-Instanzen.
-- **D Wiese:** Boden-FUNKTION in `_terrainGeologyAlbedo` — Meadow-Grund (`MEADOW_GREEN`) fern,
-  8-Schicht-Parallax-Relief nah (≤ 90 m, gated grün × flach × kein Fels × nicht trocken). Keine
-  Halm-Geometrie (`voxelChunkGrass` → null je Chunk). Mess-Wiese: −900/−850.
+- **D Wiese:** nah (≤ 14 m um die Kamera) die NAH-WIESE — Studio-Gras (Foundry „gras", L1 ≤ 5 m,
+  L2 bis 14 m) nach dem Studio-Gesetz (`understory.grassStep` · `groundCover.grass`) im Kachel-Ring
+  (`_tickNahWiese`), Fuß auf der Boden-Karte; jenseits die Boden-FUNKTION in `_terrainGeologyAlbedo` —
+  Meadow-Grund (`MEADOW_GREEN`) fern, 8-Schicht-Parallax-Relief (≤ 90 m, gated grün × flach × kein
+  Fels × nicht trocken). Je Chunk keine Halm-Geometrie (`voxelChunkGrass` → null). Mess-Wiese: −900/−850.
 
 ## Die Messung (30.09.)
 
@@ -122,6 +124,22 @@ allen Bühnen; Bäcker 149 Karten gebacken, 0 hängend (vorher 7–8 hängend). 
 (31–245 dc / 183k–1,18 M). Die Trias-Linse hält fest, wo dein Holz stockt (~1 M Dreiecke): der
 Wolf-Schuss liegt mit 832k knapp darunter — die schwersten Posten sind Studio-Stufen selbst
 (Konifere L0 ~170k Vertices, Fachwerk L1 75k ≈ L0 88k).
+
+### Tier-Haut, Schalen-Fell, Kopf-Häute (V18.497–499, Tag `aaa9`)
+
+Dieselbe Sonde, dieselbe Bühne; der Wolf-Leib ist eine geskinnte Haut mit 6 Fell-Schalen, Kopf und
+Kiefer starre Häute.
+
+| Schuss | dc / Dreiecke (aaa8 → aaa9) | Bild |
+|---|---|---|
+| Wolf · fern | 263 / 831 937 → **177 / 77 493** | der Blick stand hinter einer Birke — kein Urteil über das Fern-Bild |
+| Wolf · Armlänge | 222 / 635 557 → **141 / 78 949** | ein durchgehender Leib mit Pelz und weicher Kontur statt der Kugel-Kette mit Strähnen-Flecken |
+
+Der Haus-Armlängen-Schuss war in `aaa9` leer: der Bau stand bei 7,5 m noch auf L1 (serviert 2),
+die Sonde galt nach 40 Takten als eingeschwungen, weil sie nur „Repräsentation zugewiesen" zählte.
+Die Wiederholung in derselben Reihenfolge (`aaa9b`) ist grün (LOD 0 bei 7,5 m). Seitdem wartet die
+**Stufen-Linse** vor dem Schuss auf das Ziel-Objekt im L0-Band (≤ 600 Takte) und benennt eine
+ausstehende Stufe im Protokoll.
 
 **Die Licht-Linse** (`diag-arch-feld` D): eine Feld-Box und eine MeshStandard-Box (Albedo 0,5,
 roughness 1) am SELBEN Ort, gemeinsame Pixel-Maske. Vorher **0,67** (Feld rgb 70/77/86, Mesh
@@ -176,15 +194,141 @@ Fachwerk behält Dach und Wände).
   Backstein-Gefach, Fichten, Büsche), die Mesh-Zone steht (0 ungebaut). Das Feld trägt fern und in der Streaming-Rampe; dort bleibt es ein grober Satz,
   klein im Bild.
 - **Kosten:** zurück in der Größenordnung des Mesh-Stands (bis ~830k Dreiecke, bis 283 dc je Bild
-  auf kienspan), knapp unter der Stock-Schwelle deines Holzes (~1 M) — die schwersten Posten sind
-  Studio-Stufen ohne echte Reduktion (Konifere L0, Fachwerk L1). Der Richter ist der echte
+  auf kienspan), knapp unter der Stock-Schwelle deines Holzes (~1 M) — der schwerste Posten ohne
+  echte Reduktion ist die Konifere L0 (Fachwerk L1 geheilt: V18.500 Flächen-Stufe, unten). Der Richter ist der echte
   GPU-Trace (Ziellinie p95 ≤ 33 ms).
-- **Ehrlich offen:** die Schattenseiten sind sehr dunkel (MeshStandard-Box Albedo 0,5 liest
-  rgb ≈ 64/71/80 — key-dominantes Licht ohne Boden-Bounce); das Haus zeigt im Ring 12–26 m das
-  L2-Destillat, weil das Studio-L1 (75k) kaum billiger ist als L0 (88k) — ein echtes Mittel-LOD
-  fehlt im Studio; einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
+- **Ehrlich offen:** die „sehr dunklen Schattenseiten" (Box 0,5 las rgb ≈ 64/71/80) waren das
+  lineare Render-Target der Sonde; im echten Frame lasen sie blaustichig (V18.504 geheilt, unten);
+  offen ist die Überbelichtung der geeichten Licht-Kette (18-%-Karte 212 statt ~120);
+  der ferne Fachwerk-Satz (jenseits der Mesh-Zone) kennt das Backstein-Gefach nicht (hell statt
+  rot); einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
   D (Wiese) — die Wiesen-Linse (`npm run lens:wiese`) findet die besonnte Stelle, aus Augenhöhe
   liest der Boden grau (Halm-Kontrast 0,20 / 0,05); der echte GPU-Trace auf dem Schöpfer-Holz.
+
+## V18.500 — die Haus-Flächen-Stufe (`aaa10`, dieselbe Sonde)
+
+- **Nah (7,5 m, L0):** die Backsteine stehen rot (aaa9c: weiß-blau — die Karten-Rolle backte Weiß,
+  die Welt liest nur Vertex-Farben). 140 dc / 153k Dreiecke im Bild.
+- **20 m (L1, serviert 1):** Rahmen, Fenster, Giebel, Schornstein statt der L2-Kiste — 181 dc /
+  27,5k Dreiecke im Bild (aaa9c mit L2: 234 / 28,3k).
+- **Studio (32 Kulturen, seed 7):** L1 2251k → 561k Dreiecke, L1 17–33 % von L0 (vorher 74–89 %);
+  Bild-Abstand L0↔L1 (Distanz-emuliert, alemannisch) 0,026 → 0,028 bei 4× weniger Dreiecken.
+
+## V18.501 — das Gabel-Gesetz der Rinde (Welt-Zensus, Mess-Wiese −900/−850)
+
+Die Zensus-Sonde zählt nach dem Einschwingen je Vorlage × Stufe die residenten Dreiecke × Instanzen
+und die im Sichtkegel (vier Blickrichtungen). Alle Streu-Pflanzen stehen dort auf L1; der Strauch
+war der teuerste Einzelposten (69k je Busch, davon 24k Gelenk-Kugeln im Mutter-Ast).
+
+| | vorher | nachher |
+|---|---|---|
+| resident (Pflanzen) | 0,69 M | 0,53 M |
+| im Sichtkegel Ø / schwerste Richtung | 0,28 / 0,37 M | 0,22 / 0,30 M |
+| Strauch L1 resident | 281k | 182k |
+
+Dreikant-Nadeln jenseits L0 wurden gemessen und verworfen (sichtbar: 5 % mittlere Abweichung).
+
+## V18.503 — die Linse wird ehrlich, der Boden trägt (01.10.)
+
+Drei Täuschungen der Look-Sonden, je mit Gegenprobe gemessen und an EINER Stelle geschnitten:
+
+| Täuschung | Gegenprobe | Schnitt |
+|---|---|---|
+| Eigenes Render-Target = linear, ungetont (r184: Tonemapping/sRGB nur am Ausgabe-Ziel) | graue Prüf-Kiste: im RT navy, im Canvas hell-lavendel | `scripts/lib/ausgabe-aufnahme.cjs`: das RT wird Ausgabe-Puffer, der echte Frame läuft hinein |
+| Wetter (Auto-Zug 120 s) und Jahreszeit (Jahr 2400 s) liefen frei | dieselbe Wiese: Sonne 90,2 · Regen 40,3 · Sturm 16,8 Boden-Helligkeit | die Bühne `__buehne()`: Mittag · Sonne · Sommer fest |
+| Höhe = erster Fels-Gitterpunkt (1,2-m-Raster) | Kamera 0,5 m über dem Wert stand im Gelände; 600 Punkte: Ø 0,60 m / max 1,20 m zu tief | `_voxelSurfaceY` interpoliert den Nulldurchgang (Ø 6 mm / max 0,20 m) |
+
+Der Höhen-Schnitt ist ein Spiel-Schnitt, keiner der Sonde: 25 Leser (Tier-Boden, `spawn_studio`,
+Streu, `getTerrainHeightAt`) setzten Dinge bis 1,2 m in den Hang — im Bild `aaa12` verschluckte er
+Tür und Erdgeschoss-Fenster des Hauses.
+
+**Die Wiese unter der Bühne** (Stelle −1004/−790, Spieler 25 m hinter der Kamera, echte Augenhöhe):
+
+| Blick | vorher (`wiese-ausgabe2`: Sturm, Kamera zu tief) | nachher (alt2) |
+|---|---|---|
+| fern (1,7 m, 10 m voraus) | 29,0 · Kontrast 1,32 | 96,0 · 3,04 — besonnte Wiese, Büschel mit Tiefe |
+| schräg (1,6 m, 3 m voraus) | — | 95,7 · 1,87 — getreppte Relief-Büschel (8 Schichten), ferne Hänge türkis überglänzt |
+| Knie (0,5 m) | Boden von unten (Kamera im Gelände) | 91,9 · 1,65 — die Wiese von oben |
+| Armlänge (1,6 m, 0,8 m voraus) | 25,3 · 0,08 | 101,5 · 0,32 — ein glatter grüner Schleier mit Himmels-Spiegelflecken |
+
+Rot-Proben (Albedo hart rot / Halm-Farbe rot): der Arm-Boden IST `_terrainGeologyAlbedo`; der
+Schleier ist die Eigenglätte der 9/m-Relief-Funktion auf 1–3 m, kein Fremd-Layer (Fern-Ring,
+Feld-Pass, Transparente ausgeblendet: Bild gleich). Verworfen nach Messung: eine Halm-Feinschicht
+(ein Halm je 1,8-cm-Zelle, 8 Schalen) — Armlänge 0,32 → 0,35, Knie dunkler (91,9 → 80,6), fern ein
+Rausch-Teppich statt Halmen. Über dem Hügel stehen je Sitzung zufällig die drei Himmels-Planeten
+(`_buildSkyPlanets`, `Math.random`) — Deko, kein Feld-Befund.
+
+## V18.504 — das Licht der Welt (Graukarten an der Wiese, Werkbank)
+
+Paneele mit Albedo 0,18 / 0,5 (roughness 1) an der Wiese −1004/−790, Mittag, Ausgabe-Pfad. Jede
+Variante ~45 s in der Werkbank (eine offene Welt, Lichter live geschaltet):
+
+| Licht | 18-%-Karte | 50 % Sonnenseite | 50 % Schattenseite |
+|---|---|---|---|
+| V18.503: Umgebung aus `nebulaColor` + Studio-Rig | 204/202/199 | 191/198/212 | 162/181/202 (blaustichig) |
+| dieselbe Umgebung, nur Sonne | 200/197/192 | 185/189/203 | 0/25/102 (kein Rot) |
+| sichtbarer Himmel + Studio-Rig | 210/209/205 | 214/219/221 | 208/217/222 (flach) |
+| **V18.504: sichtbarer Himmel + Sonne + Hemi** | 212/212/209 | 220/225/227 | 154/177/189 (kühl-neutral) |
+
+Verhältnis Schatten : Sonne (linear, Belichtung 0,4 ohne Clipping): Rig 0,50 → Himmel + Sonne
+0,16–0,21, das Maß der Realität (0,15–0,2). **Belichtung:** eine physikalische Belichtung (0,28:
+18-%-Karte 126/125/119) macht die Wiese zum trüben Abend (Gras G 36 statt ~100) — die Asset-Albedos
+sind mit Belichtung 1,0 im Studio geeicht; die Belichtung bleibt, die Überbelichtung ist benannt.
+
+## V18.506 — die Albedo-Wahrheit und das Farb-Gesetz der Vegetation (01.10.)
+
+Die Überbelichtung (18-%-Karte 212) war eine Zahl ohne Täter; drei Linsen zerlegen sie
+(`werkbank albedo` · `werkbank licht` · `scripts/diag-albedo-zensus.cjs`, Karte liest 0,180):
+
+| Albedo Y (linear) | vorher | V18.506 | Natur |
+|---|---|---|---|
+| Laub Eiche · Strauch · Weide · Birke | 0,42 · 0,40 · 0,48 · 0,53 | 0,16 · 0,15 · 0,21 · 0,27 | 0,06–0,16 |
+| Nadel Fichte · Tanne · Mammut | 0,31 | 0,09 | 0,04–0,09 |
+| Gras-Büschel (mit Samen) · Blüten-Stiel | 0,47 · 0,38 | 0,25 · 0,13 | 0,06–0,16 |
+| Blüte (gelb) | 0,71 | 0,52 | 0,45–0,55 |
+| Boden-Gras (Welt) · Rinde · Fell · Haut | 0,085 · 0,10–0,15 · 0,08 · 0,30 | unverändert | im Band |
+| Kalkputz · Fachwerk-Holz · Fels | 0,66–0,82 · 0,30 · 0,22–0,61 | unverändert | Band bzw. hell |
+
+Die Wurzel: das FARB-GESETZ in foundry-core (Hex = sRGB-Absicht, nach linear gerechnet) galt nur im
+Kreatur-Bäcker; die Vegetation las Hex roh (r128). Seit V18.506 liest der Bäcker (`vegFarbe`) jede
+Vegetations-Palette als sRGB — Labor, Welt, Karte und Fern-Fit tragen dieselben Bytes; im Golden
+ändert sich nur der `color`-Puffer des Laub-Teils (Positionen, Normalen, Indizes byte-gleich). In
+der Welt liest die Krone jetzt 0,11–0,12 (Eiche), 0,085 (Tanne) — im selben Band wie das Boden-Gras.
+
+**Licht-Bilanz** (Karte über dem Kronendach, Mittag): Sonne E 7,18 waagrecht; der Himmel zählt
+dreifach — Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 2,58, das sind 0,36 der Sonne (klarer Himmel
+real 0,12–0,16); Schattenseite : Sonnenseite 0,57 (real 0,35–0,4).
+
+## V18.507 — EIN Himmel und die Belichtung aus dem Licht (01.10.)
+
+Am Tag ist die Himmels-Umgebung der Himmel; Hemi und Ambient tragen nur noch den Nachthimmel-Boden
+(0,10 · 0,04, eingeblendet mit derselben Tag-Achse wie der Nebel) — ohne sie war Mitternacht schwarz
+(Helligkeit 1,8 statt 39,7), mit dem Boden bleibt die Nacht wie geeicht (40,5). Die Belichtung kommt aus
+dem Licht: die Karte liest L = 0,18/π · E (Sonne auf der Waagrechten + Umgebung + Hemi + Ambient), die
+Kamera legt sie auf Mittelgrau + 1 EV (ACES-Fit-Eingang 0,26227 · 2 · 0,6 = 0,3147; Deckel 1,0 hält
+Nacht und Dämmerung, die schon bei ~35° Sonne wieder bei 1,0 liegen).
+
+| Ausgabe-Pfad (Mittag, Bühne) | V18.506 | V18.507 |
+|---|---|---|
+| Belichtung | 1,0 | 0,616 |
+| 18-%-Karte waagrecht | 212 | 173/172/164 (Mittelgrau +1 EV ≈ 165) |
+| 50-%-Karte · 85-%-Karte | — · Clip | 233 · 247 (ungeclippt) |
+| Licht-Bilanz E oben (Sonne · Umgebung · Hemi · Ambient) | 7,18 · 1,89 · 0,53 · 0,16 | 7,18 · 1,89 · 0 · 0 |
+| Schattenseite : Sonnenseite | 0,57 | 0,52 |
+| Bild (Werkbank, Mess-Wiese) | Himmel weißlich, Laub satt | Himmel blau mit Wolken, Laub satt |
+
+**Beweis-Paket `aaa15`** (dieselbe Sonde, Licht V18.507): alle acht Schüsse stehen — zum ersten Mal
+seit `aaa12` vollständig (`aaa13` brach am Haus ab, `aaa14` lief ins Zeitlimit; die Foundry-Frist
+V18.505 trägt), 0 ungebaut in der Mesh-Zone, 0 Page-Errors; 57–224 dc / 73–285k Dreiecke je Schuss.
+Bild gegen `aaa13`: die Kronen satt grün mit Tiefe statt pastell-minzig, Fachwerk mit Ziegel-Gefach
+und Fenstern, Wolf-Fell und Wiese satt. Sichtbar offen: der Horizont auf Augenhöhe blass-grau (die
+Nebel-Anker, s. u.), Birken-Laub hell-limettig (0,27), der Findling sehr hell (Fels 0,475 roh);
+benannt aus jeder Sonde seit `aaa10`: je Lauf eine Impostor-Karte ohne brauchbaren Payload (wechselnde
+Art: birke · weide · strauch · fichte).
+
+Benannt, nicht geschnitten: die Umgebung allein liest 0,26 der Sonne (klarer Himmel real 0,12–0,16) —
+der sichtbare Himmel (Nebel-Anker 0xa6d2ec, roh gelesen) ist hell und blass; seine Anker unter das
+Farb-Gesetz zu stellen dunkelt auch die Nacht-Ferne (0x0a1326 dekodiert ≈ schwarz) und ist nicht gemessen.
 
 ## Der echte GPU-Trace (Schöpfer-Holz)
 
@@ -197,3 +341,35 @@ Fachwerk behält Dach und Wände).
 
 Die Metrologie-Linse ohne Browser: `node scripts/diag-analog-e-metrology.cjs [trace.json]`
 (Selbst-Test: ein Trace ohne `weltMarch` ist ROT).
+
+## V18.508 — Die Nah-Wiese und die Boden-Karte (01.10.)
+
+Der Armlängen-Schleier hatte zwei Täter. Der erste ist die Relief-Funktion selbst (9/m-Büschel auf
+1–3 m glatt). Der zweite ist der Boden: Halme auf der Gesetzes-Höhe steckten im SICHTBAREN Boden. Rot-weiße
+Pfähle (10-cm-Ringe) an der Mess-Wiese −1004/−790 standen 20–30 cm tief. Die Surface-Nets-Fläche (1,8-m-Netz
++ Glättung) liegt neben `_voxelSurfaceY`: an der Mess-Wiese ±0,22 m (q05–q95, max +0,43), im Spawn-Chunk im
+Median 46 cm (8 % ≤ 5 cm). Ohne Boden (Werkbank, Terrain ausgeblendet) stand der volle Halm-Teppich da.
+
+| Schnitt | Messung |
+|---|---|
+| Boden-Karte = gerenderter Boden (`_bodenKarteAusMesh`: 0,45-m-Gitter aus dem fertigen Mesh, oberste nicht-steile Fläche + Grün-Kanal); der Dichte-Spalten-Zwilling (`_gridSurfaceMap` + Worker-Spiegel) fällt | Karte ↔ Mesh im Median 0,9 cm, 81 % ≤ 5 cm (Spawn-Chunk, 256 Punkte; Mess-Wiese q95 1,7 cm) |
+| Streu-Stücke stehen je auf IHREM Ort (vorher alle Stücke einer 5,4-m-Zelle auf der Zellmitten-Höhe) | `gate:scatter-ab` · `gate:scatter-slice` grün |
+| Nah-Wiese: Studio-Gras nach dem Studio-Gesetz im Kachel-Ring (6-m-Kacheln, L1 ≤ 5 m, bis 14 m, Rand-Band 4 m dünnt über `count`), nur wo die Boden-Funktion Wiese zeichnet | 30 Kacheln · 1099 Büschel; 2,5 ms je Kachel-Bau, eine je Takt |
+| Wind: das Studio-Gras wiegt mit der EINEN Böen-Welle, der Spieler biegt die Halme; das Höhen-Gewicht liest `positionGeometry` (r184 instanziert VOR dem positionNode — `positionLocal` war bei jeder InstancedMesh die Welt-Höhe) | 1,3 s Wind: 14 434 Pixel bewegt, Spitzen-Ausschlag wenige cm |
+
+**Die Wiesen-Linse** (`npm run lens:wiese`, Ausgabe-Pfad, Bühne; die Stelle wählt jetzt das Gesetz —
+Büschel in 3×3 Kacheln × Grün × Helligkeit; die Pixel-Wertung allein wählte ein graues Geröllfeld):
+
+| Blick | V18.503 (Funktion allein) | V18.508 (Nah-Wiese) |
+|---|---|---|
+| fern (1,7 m, 10 m voraus) | 96,0 · Kontrast 3,04 | 85,3 · Kontrast 9,85 — Grashügel aus Büscheln mit Rispen |
+| Armlänge (1,6 m, 0,8 m voraus) | 101,5 · Kontrast 0,32 (Schleier) | 103,7 · Kontrast 10,99 — einzelne Halme scharf, Rispen |
+| Bild-Last | — | 39 dc / 386k · 33 dc / 364k Dreiecke (Werkbank-Wiese: Nah-Wiese +14–22 dc, +190–350k) |
+
+Sichtbar offen, benannt (kein neuer Eintrag — die setzt der Schöpfer): zwischen den Büscheln trägt die
+Relief-Funktion (auf Knie-Höhe Moos-Polster statt Grasnarbe; eine Grasnarbe aus Halm-Patches, 320/m², wurde
+gemessen und nicht übernommen: auf dem Gesetzes-Boden begraben, im Bodenton kaum lesbar — auf der Boden-Karte
+nicht nachgemessen); L2
+(5–14 m) zeigt breite Blatt-Fächer; Büschel werfen keine Schatten; das 0,72-m-Raster liest am Hang als
+Reihe. Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz — deterministisch für den Lockstep,
+±0,2 m neben dem sichtbaren Boden.

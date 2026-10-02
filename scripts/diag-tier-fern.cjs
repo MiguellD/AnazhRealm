@@ -10,8 +10,9 @@
 //  (N) NAH/FERN-GEOMETRIE: der nahe Wolf trägt den vollen Gelenk-Baum, der
 //      ferne Wolf das gemergte lod1-Standbild (bakeTierInstance lod≥1 —
 //      grobe Segmente, alles in den Root gebacken). Gezählt wird die
-//      SICHTBARE Mesh-Zahl (visible-Kette): fern << nah, fern < 20 Meshes.
-//      Beide Zahlen stehen im Bericht.
+//      SICHTBARE Kette (visible): nah trägt die Haut an ≥ 20 Bones (V18.497:
+//      der Leib ist EINE geskinnte Haut — Gelenkigkeit statt Mesh-Zahl), fern
+//      < 20 Meshes und < ¼ der nahen Dreiecke. Alle Zahlen stehen im Bericht.
 //  (H) HYSTERESE: ein Distanz-Pendeln INNERHALB des ±10-%-Bandes um die
 //      Schwelle schaltet NIE (kein Sichtbarkeits-Flackern) und gießt NIE
 //      (kein _ofenKreaturTemplate-Aufruf, das Memo wächst nicht — die
@@ -129,12 +130,23 @@ const server = http.createServer((req, res) => {
                 return true; // der Toggle läuft nur inFrustum — für die Messung immer „im Bild"
             };
 
-            // SICHTBARE Meshes (visible-Kette ab der Gruppe — was der Renderer zöge).
+            // SICHTBARE Meshes + Dreiecke (visible-Kette ab der Gruppe — was der Renderer zöge) und die
+            // größte Bone-Zahl einer sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über
+            // den Gelenk-Baum — die Mesh-Zahl misst seitdem Buckets, nicht die Gelenkigkeit).
+            let zTris = 0,
+                zBones = 0;
             const sichtbar = (node) => {
                 let m = 0;
+                zTris = 0;
+                zBones = 0;
                 const walk = (n) => {
                     if (n.visible === false) return;
-                    if (n.isMesh && n.geometry) m++;
+                    if (n.isMesh && n.geometry) {
+                        m++;
+                        const g = n.geometry;
+                        zTris += g.index ? g.index.count / 3 : g.attributes.position.count / 3;
+                        if (n.isSkinnedMesh && n.skeleton) zBones = Math.max(zBones, n.skeleton.bones.length);
+                    }
                     for (const k of n.children || []) walk(k);
                 };
                 walk(node);
@@ -171,13 +183,16 @@ const server = http.createServer((req, res) => {
             // ── (N) NAH voll · FERN grob — die sichtbare Mesh-Zahl ──
             tick(0.4 * fern);
             o.nahMeshes = sichtbar(c);
+            o.nahTris = zTris;
+            o.nahBones = zBones;
             o.checks.nToggleNah = tb.wrap.visible === true && (!tb.fern || tb.fern.visible === false);
             tick(1.4 * fern); // jenseits der (1+h)-Kante — der Fern-Zweig muss tragen
             o.fernMeshes = sichtbar(c);
+            o.fernTris = zTris;
             o.checks.nToggleFern = !!tb.fern && tb.fern.visible === true && tb.wrap.visible === false;
             o.checks.nFernGrob = o.fernMeshes < 20; // das Ziel: fern DEUTLICH unter 20 Meshes
-            o.checks.nFernKleiner = o.fernMeshes < o.nahMeshes / 4; // und << nah
-            o.checks.nNahVoll = o.nahMeshes > 40; // nah bleibt der volle Gelenk-Baum
+            o.checks.nFernKleiner = o.fernTris < o.nahTris / 4; // und << nah (Dreiecke — die Kosten)
+            o.checks.nNahVoll = o.nahBones >= 20; // nah bleibt der volle Gelenk-Baum (die Haut trägt ≥ 20 Bones)
 
             // ── (S) SELBST-TEST: der ALTE Zustand (kein Fern-Zweig) wird ERKANNT ──
             // tb.fern = null ⇒ der Toggle no-opt, der volle Baum bleibt auf jede
@@ -347,14 +362,14 @@ const server = http.createServer((req, res) => {
     } else {
         const c = out.checks;
         console.log(
-            `  Schwelle ${out.fernDist.toFixed(1)} m · Wolf SICHTBAR: nah ${out.nahMeshes} Meshes → fern ${out.fernMeshes} Meshes (alt-Zustand: ${out.sAltMeshes})\n`
+            `  Schwelle ${out.fernDist.toFixed(1)} m · Wolf SICHTBAR: nah ${out.nahMeshes} Meshes / ${Math.round(out.nahTris)} Dreiecke / Haut ${out.nahBones} Bones → fern ${out.fernMeshes} Meshes / ${Math.round(out.fernTris)} Dreiecke (alt-Zustand: ${out.sAltMeshes})\n`
         );
         check(c.fernGebaut, "(N) der Wolf trägt den lod1-Fern-Zweig (_tierBaum.fern)");
         check(c.nToggleNah, "(N) nah: der volle Gelenk-Baum sichtbar, das Standbild verdeckt");
         check(c.nToggleFern, "(N) fern: das Standbild sichtbar, der Gelenk-Baum verdeckt");
-        check(c.nNahVoll, `(N) nah ist der volle Baum (${out.nahMeshes} Meshes > 40)`);
+        check(c.nNahVoll, `(N) nah ist der volle Gelenk-Baum (Haut an ${out.nahBones} Bones ≥ 20)`);
         check(c.nFernGrob, `(N) fern ist GROB (${out.fernMeshes} Meshes < 20)`);
-        check(c.nFernKleiner, `(N) und << nah (${out.fernMeshes} < ${out.nahMeshes}/4)`);
+        check(c.nFernKleiner, `(N) und << nah (${Math.round(out.fernTris)} < ${Math.round(out.nahTris)}/4 Dreiecke)`);
         check(
             c.sLensFires,
             `SELBST-TEST (S): ohne Fern-Zweig erkennt die Linse den alten Zustand (${out.sAltMeshes} Meshes fern ≥ 20)`

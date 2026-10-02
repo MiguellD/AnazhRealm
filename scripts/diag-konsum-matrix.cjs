@@ -69,7 +69,7 @@ const P = {
         // die Impostor-Zeile — geparkte ferne Fahrzeuge reisen als 8-Winkel-Karte
         // (gt: 328 Meshes/28k Tris → 1 Quad/2 Tris; gate:fahrzeug-fern misst live).
         // TEIL bleibt ehrlich: die Vertrags-Seite deklariert weiter [0].
-        lods: ["lodServe|kindStages", "impostor: true"],
+        lods: ["kindStages", "impostor: true"],
         rahmen: ['jointRole = "rad"|role === "rad"'],
         bewegung: ['role === "rad"'],
         // PRÄGUNG-WELT (V18.477): der Charakter reist jetzt als Guss-Stempel bis
@@ -103,7 +103,7 @@ const P = {
         dynamik: ["_swingDynamics"],
     },
     haus: {
-        lods: ["lodServe"],
+        lods: ["kindStages"],
         rahmen: ["haus_basis"],
         bewegung: null, // Häuser: keine bewegten Teile konsumiert (Tür-Flügel nur am Tor)
         material: ["_foundryFlattenFor"],

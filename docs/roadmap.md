@@ -29,7 +29,10 @@ Schritte oder den FPS-Boden trägt.
 Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit dem Schöpfer-Wort
 „analog!"). Stand V18.496: Schöpfer-Wort 30.09. „am Ende AAA-Niveau, nicht Kapseln" — nah und
 mittel das Studio-Mesh mit seiner LOD-Kette, das Feld nur fern; die Mesh-Zone steht (0 ungebaut,
-`docs/abnahme-analog.md`); offen: dunkle Schattenseiten, die Wiese (D), der echte GPU-Trace.
+`docs/abnahme-analog.md`); die Vegetation trägt seit V18.506 das Farb-Gesetz (Laub 0,42 → 0,16),
+seit V18.507 EIN Himmel am Tag und die Belichtung aus dem Licht (Karte 212 → 173), seit V18.508 nah
+die Nah-Wiese auf der Boden-Karte (D gefallen); offen: der echte GPU-Trace (die „dunklen
+Schattenseiten" waren die Linse, V18.503/504).
 
 ### §0.reste · Benannte Reste mit Wartebedingung (nichts erfinden)
 

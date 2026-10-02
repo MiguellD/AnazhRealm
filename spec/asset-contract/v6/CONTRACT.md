@@ -120,3 +120,27 @@ Goldens am 17.07.2026):
 - Goldens `haeuser.json` (L0-Fälle: ±Objekt-Zahl, Rumpf-Bytes ohne Türen)
   und `siedlung.json` (Slots + tuer-Zeile) neu gemintet — die Bau-Primitive
   selbst (HAUS/bakeLOD/fragFuer) sind byte-unberührt.
+
+## Nachtrag FLÄCHEN-STUFE (01.10.2026) — L1 wird eine echte Stufe + das Karten-Gesetz
+
+Vertrags-Akt (Schöpfer-Maßstab „AAA, shit in shit out — die Studios einheitlich
+optimieren"; Re-Mint von `haeuser.json` am 01.10.2026). Gemessen über alle 32
+Kulturen × seed 7: L1 2251k → 561k Dreiecke (vorher 74–89 % von L0, jetzt
+17–33 %, höchstens 31k), L0 2710k → 2606k, L2 93k → 80k.
+
+- **Stufe 1 = FLÄCHEN-STUFE** (`fragFuer(B,1)` setzt `flaechig`, Flags `LOD1S`):
+  das Gefach ist EINE Backstein-Fläche (der Stein-Anteil des Verbands reist als
+  `__fuge`), jede Ziegel-Reihe EIN Band (Kehl-/Gauben-Lücken bleiben Segmente,
+  keine Lattung), die Böden Platten, der Ständer-/Rähm-Ring steht (die
+  Balkenlage schläft), der Herd baut nur den Schornstein über Dach. Vertrags-
+  UND Lab-Pfad laufen durch denselben Fragment-Chokepoint (Split-Parität grün).
+- **FELD-ACHSEN-GESETZ** (alle Stufen): die Verformung (Schwung ohne Biegung)
+  hängt nur an (Y,Z) — die Segment-Schrittweite misst die (Y,Z)-Länge. Gleicher
+  maximaler Sehnenfehler (chinesisch 16,5/3,0 mm, japanisch 10,6/1,8 mm),
+  chinesisch L0 132,8k → 79,7k, japanisch 126,4k → 75,5k. Positionen aller
+  anderen 30 Kulturen in L0 und L2 byte-gleich.
+- **KARTEN-GESETZ**: `_colFor` backt Weiß nur, wo eine Textur-Karte die Farbe
+  trägt (Lab im Browser). Kartenlos (Worker → Welt, `colorNode` = Vertex-Farbe)
+  trägt der Vertex den Grundton — vorher standen die Häuser der Welt in weißen
+  Backsteinen (Beweis-Bild aaa9c, haus/arm). Die Materialien der kartenlosen
+  Gruppe sind darum weiß (keine Doppel-Tönung in r128-Lesern).

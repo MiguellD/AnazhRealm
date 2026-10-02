@@ -490,7 +490,7 @@
     // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3) }.
     function buildFoliageQuads(leaves, opts) {
         opts = opts || {};
-        const col = opts.leafColor || [0.29, 0.48, 0.17];
+        const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
         const bScale = opts.scale != null ? opts.scale : 2.35;
         const nScale = opts.needleScale != null ? opts.needleScale : 1.3;
         const list = leaves || [];
@@ -601,7 +601,7 @@
     //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc} }.
     function buildLeafBlades(leaves, opts) {
         opts = opts || {};
-        const col = opts.leafColor || [0.29, 0.48, 0.17];
+        const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
         const sMul = opts.scale != null ? opts.scale : 1.0;
         const cup = opts.cup != null ? opts.cup : 0.5;
         const shape =
@@ -1793,7 +1793,10 @@
         const M = rings.length;
         if (M < 2) return;
         const prof = barkProfile(P);
-        const baseR = rings[0].r,
+        // Der Basis-Radius ist der Strang-Fuß ÜBER dem Stammfuß-Puffer (V18.501): die Buttress-Ringe
+        // (fuss) laufen auf 0,1·R0 zu — aus ihnen las das Gesetz „Zweig" (Zehneck, keine Furchen, keine
+        // Narben am dicksten Stamm).
+        const baseR = (rings.find((x) => !x.fuss) || rings[0]).r,
             thick = clamp((baseR - trunkR * 0.12) / (trunkR * 0.88), 0, 1); // 0 Zweig .. 1 Stamm
         const bthick = barkThick !== undefined ? barkThick : thick; // Wurzel/Totast erben die STAMM-Oberflaeche (gleiche Furchentiefe), nicht die duenn-glatte
         const ridges =

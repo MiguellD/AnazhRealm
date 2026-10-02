@@ -285,10 +285,6 @@ class AnazhRealm {
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
-            // Gerichtetes GRÜNES Bounce-Fill: sonnen-ABGEWANDT, grün·atm.col — formt die Schattenseite mit
-            // Laub-Farbe statt richtungslosem Ambient. Gesetzt in initThreeJS, pro Frame geführt von
-            // _dayNightApplyDirectionalLight.
-            fillLight: null,
             // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.
             // Position folgt _applyDayNightToScene/_updateCelestialBodies.
             sunMesh: null,
@@ -15756,7 +15752,7 @@ class AnazhRealm {
         const wu = this.state.windUniforms;
         if (!wu) return null;
         this._ensureWindCoupling(TSL);
-        const { vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
+        const { vec3, float, sin, cos, max, positionWorld } = TSL;
         const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
         const wd = wu.uWindDir || null;
         const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
@@ -15765,7 +15761,11 @@ class AnazhRealm {
             .add(
                 dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
             );
-        const hf = max(positionLocal.y, float(0.0));
+        // Höhen-Gewicht = Höhe über der Wurzel. `positionLocal` ist im positionNode schon instanz-transformiert
+        // (r184: Instanzierung VOR positionNode) — bei einer InstancedMesh also Welt-Höhe (20+ m statt der
+        // Halm-Höhe); die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt sie unverfälscht.
+        // `opts.hoehe` reicht eine eigene Höhe in Metern (Studio-Vorlagen tragen die Template-Skala).
+        const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         const gust = sin(
             wu.uWindTime
                 .mul(float(0.4))
@@ -15927,7 +15927,14 @@ class AnazhRealm {
         // Nie PMREMGenerator.fromScene: greift in WebGL-Interna (`buffers`), unter WebGPURenderer (r184)
         // inkompatibel. Stattdessen eine CPU-Equirekt-Gradient-Textur als scene.environment.
         const nc = st.skyboxUniforms && st.skyboxUniforms.nebulaColor && st.skyboxUniforms.nebulaColor.value;
-        const sky = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
+        const tief = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
+        // DER SICHTBARE HIMMEL ALS LICHT: der Horizont ist die Nebel-Farbe — der Nebel deckt die Skybox, das
+        // IST der Himmel, den der Spieler sieht (die EINE tag/nacht/wetter-kohärente Horizont-Quelle); die
+        // Skybox-Tönung (nebulaColor) vertieft nur den Zenit. Gemessen 01.10.: aus nebulaColor allein lag
+        // der Schatten einer 50-%-Fläche bei sRGB 0/25/102 (kein Rot-Anteil, Licht wie unter Blaufolie).
+        const fc = st.scene.fog && st.scene.fog.color;
+        const hor = fc ? { r: fc.r, g: fc.g, b: fc.b } : tief;
+        const sky = { r: hor.r + tief.r, g: hor.g + tief.g, b: hor.b + tief.b }; // Drift-Schlüssel beider Quellen
         const last = st._skyEnvLastColor;
         // Idle-Freeze-Wand: die Tag-Nacht-Uhr driftet die Himmelsfarbe auch im Stehen; jede Regeneration
         // mit NEUER Texture-Identität ließ WebGPU die Pipelines aller env-samplenden PBR-Materialien neu
@@ -15958,16 +15965,24 @@ class AnazhRealm {
                 st._skyEnvTex = tex;
             }
             const d = st._skyEnvData;
+            // Die Farben sind LINEAR (THREE.Color), die Textur ist sRGB: kodieren statt roh schreiben — roh
+            // geschrieben dekodierte die Textur sie ein zweites Mal (tiefer, gesättigter).
+            const sRGB = (c) => {
+                const x = Math.max(0, Math.min(1, c));
+                return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055));
+            };
             for (let y = 0; y < H; y++) {
                 const v = 1 - y / (H - 1); // v=1 oben (Zenit) … 0 unten (Boden/Nadir)
-                // Boden 0.35× (erd-dunkel) → Horizont 1.0× → Zenit 1.6× (hell) — der Himmel-Auslesewert
-                const fac = v >= 0.5 ? 1.0 + 0.6 * ((v - 0.5) / 0.5) : 0.35 + 0.65 * (v / 0.5);
+                // Himmel: Horizont = Nebel-Farbe, zum Zenit halb in die Skybox-Tönung (klarer Himmel: oben
+                // tiefer blau, gleich hell); Boden 0.35× (erd-dunkel) → Horizont 1.0×.
+                const t = v >= 0.5 ? 0.5 * ((v - 0.5) / 0.5) : 0;
+                const fac = v >= 0.5 ? 1.0 : 0.35 + 0.65 * (v / 0.5);
                 // Subtiler Grün-Boden-Bounce: die untere Halbkugel (v<0.5) bekommt einen Grün-Stich, stärker zum
                 // Nadir, aus am Horizont — der Himmel bleibt unberührt.
                 const bounce = v < 0.5 ? 0.12 * (1 - v / 0.5) : 0; // 0 am Horizont → 0.12 am Nadir
-                const rr = Math.min(255, sky.r * fac * (1 - bounce * 0.5) * 255),
-                    gg = Math.min(255, sky.g * fac * (1 + bounce) * 255),
-                    bb = Math.min(255, sky.b * fac * (1 - bounce * 0.5) * 255);
+                const rr = sRGB((hor.r + (tief.r - hor.r) * t) * fac * (1 - bounce * 0.5)),
+                    gg = sRGB((hor.g + (tief.g - hor.g) * t) * fac * (1 + bounce)),
+                    bb = sRGB((hor.b + (tief.b - hor.b) * t) * fac * (1 - bounce * 0.5));
                 for (let x = 0; x < W; x++) {
                     const i = (y * W + x) * 4;
                     d[i] = rr;
@@ -16539,13 +16554,7 @@ class AnazhRealm {
         klon.traverse((n) => {
             if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
         });
-        // V18.463 — KLON-REBIND: SkinnedMesh.clone teilt das Template-Skelett —
-        // jede Instanz bindet auf IHRE geklonten Bones um (Bind-Matrix bleibt).
-        klon.traverse((n) => {
-            if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
-            const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
-            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
-        });
+        AnazhRealm._ofenKlonRebind(klon, teile);
         const f = (8 * 0.2125) / 6.0;
         const wrap = new THREE.Group();
         wrap.scale.setScalar(f);
@@ -16563,14 +16572,10 @@ class AnazhRealm {
             fernKlon.traverse((n) => {
                 if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
             });
-            // Klon-Rebind (das V18.463-Muster): geklonte SkinnedMeshes an die
-            // EIGENEN Bones — nie am geteilten Template-Skelett hängen lassen.
             fernKlon.traverse((n) => {
                 if (n.isMesh) n.castShadow = false;
-                if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
-                const bonesF = n.userData.__skinJoints.map((nm) => teileF[nm]).filter(Boolean);
-                if (bonesF.length) n.bind(new THREE.Skeleton(bonesF), n.bindMatrix.clone());
             });
+            AnazhRealm._ofenKlonRebind(fernKlon, teileF);
             fernKlon.visible = false;
             wrap.add(fernKlon);
             wrap.userData._menschFern = { nah: klon, fern: fernKlon };
@@ -17063,6 +17068,15 @@ class AnazhRealm {
             d = "";
         }
         return recId + "|" + (lod | 0) + "|" + d;
+    }
+    // KLON-REBIND (V18.463, ein Gesetz für Mensch UND Tier): SkinnedMesh.clone teilt das Template-Skelett —
+    // jede Instanz bindet auf IHRE geklonten Bones um (Bind-Matrix bleibt).
+    static _ofenKlonRebind(klon, teile) {
+        klon.traverse((n) => {
+            if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
+            const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
+            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
+        });
     }
     // Der Beipack-Leser (GENERISCH für jede Gelenk-Gattung — Tier UND Mensch):
     // Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an ihren Gelenken.
@@ -17615,8 +17629,10 @@ class AnazhRealm {
             const klon = t0.root.clone(true);
             const teile = {};
             klon.traverse((n) => {
-                if (n.isGroup && n.name) teile[n.name] = n;
+                if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
             });
+            // Die Tier-Haut (V18.497) ist geskinnt: der Klon bindet an SEINE Bones.
+            AnazhRealm._ofenKlonRebind(klon, teile);
             const tailSegs = (t0.tailNamen || []).map((n) => teile[n]).filter(Boolean);
             const wrap2 = new THREE.Group();
             wrap2.scale.setScalar(f2);
@@ -20866,17 +20882,17 @@ class AnazhRealm {
         return !!(u && u._kzNah !== true && (u._kzGlieder || u._kzVersuch));
     }
 
-    // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): die Strähnen zeichnen nur, solange ihre
-    // projizierte Breite FELL_BILDSCHIRM.pxMin erreicht — darunter ändern sie kein Pixel mehr (gemessen), das Tier
-    // tragen Körper-Fell + FELL_LOOK. Die Grenze folgt Bildhöhe, Sichtfeld und Tiergröße (jedes Holz, jede
-    // Auflösung); Hysterese gegen Flackern, geschaltet wird nur `visible`. Gemessen 30.09.: Strähnen = 205k von
-    // 333k Dreiecken eines Wolfs.
+    // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (seit V18.497 die Schalen, dazu
+    // Rest-Strähnen wie der Nasenrücken) zeichnet nur, solange seine projizierte Breite FELL_BILDSCHIRM.pxMin
+    // erreicht — darunter trägt die Haut mit FELL_LOOK das Tier. Die Grenze folgt Bildhöhe, Sichtfeld und
+    // Tiergröße (jedes Holz, jede Auflösung); Hysterese gegen Flackern, geschaltet wird nur `visible`.
     _fellBildschirmGesetz(creature, tB) {
         if (!tB.straehnen) {
             tB.straehnen = [];
             tB.wrap.traverse((o) => {
                 const kl = o.isMesh && o.userData && o.userData.__klasse;
-                if (typeof kl === "string" && kl.indexOf("straehne") === 0) tB.straehnen.push(o);
+                if (typeof kl === "string" && (kl.indexOf("straehne") === 0 || kl === "fellSchale"))
+                    tB.straehnen.push(o);
             });
         }
         if (!tB.straehnen.length) return;
@@ -21452,7 +21468,6 @@ class AnazhRealm {
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
                                 waterCells: new Uint8Array(msg.waterCells),
-                                surfMap: msg.surfMap ? new Float32Array(msg.surfMap) : null,
                             });
                         }
                     }
@@ -22016,7 +22031,16 @@ class AnazhRealm {
             const oy = base - lod0Cfg.floorDrop;
             this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
         }
-        return { mesh, kind: "filled", waterCells, lod, hasBVH, surfMap: meshData.surfMap || null };
+        const karte = this._bodenKarteAusMesh(meshData.positions, meshData.indices, meshData.colors, cx, cz, lod);
+        return {
+            mesh,
+            kind: "filled",
+            waterCells,
+            lod,
+            hasBVH,
+            surfMap: karte && karte.hoehe,
+            gruenMap: karte && karte.gruen,
+        };
     }
 
     // V18.275 — liegt der Chunk-Mittelpunkt im perf-geregelten `foliageRadius`? (Die
@@ -25368,9 +25392,6 @@ class AnazhRealm {
         // `preDensity`: hat der Aufrufer das Grid schon (Cell-Klassifikation), läuft die teure Sample-
         // Schleife (~90k `_terrainDensityAt`-Calls) nur einmal pro Chunk-Build.
         const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
-        // Die Oberflächen-Karte fällt als Nebenprodukt aus dem schon gesampelten Grid (Gras/Scatter lesen
-        // sie statt `_voxelSurfaceY`-Scans). Worker-Mirror: `gridSurfaceMap` in voxel-worker.js.
-        const surfMap = this._gridSurfaceMap(density, dimX + 1, dimY + 1, dimZ + 1, oy, step);
         const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -25403,52 +25424,116 @@ class AnazhRealm {
         // grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), main-only, Physik-Position unberührt.
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
-        geom.userData.surfMap = surfMap;
         return geom;
     }
 
-    // Oberflächen-Karte aus dem Density-Grid: pro Eck-Spalte (i,k) die oberste Luft→Fels-Kante,
-    // sub-zellig linear (= Iso des Meshers vor dem Glätten), NaN ohne Oberfläche; ~1 ms statt 256
-    // `_voxelSurfaceY`-Scans/Chunk. Worker-Mirror `gridSurfaceMap` in voxel-worker.js — BEIDE ändern.
-    _gridSurfaceMap(density, Nx, Ny, Nz, oy, step) {
-        const map = new Float32Array(Nx * Nz);
-        map.fill(NaN);
-        for (let k = 0; k < Nz; k++) {
-            for (let i = 0; i < Nx; i++) {
-                const colBase = i + k * Nx * Ny;
-                for (let j = Ny - 2; j >= 0; j--) {
-                    const a = density[colBase + j * Nx];
-                    const b = density[colBase + (j + 1) * Nx];
-                    if (a > 0 && b <= 0) {
-                        const t = a / (a - b);
-                        map[i + k * Nx] = oy + (j + t) * step;
-                        break;
+    // DIE BODEN-KARTE (V18.508): die Höhe des GERENDERTEN Bodens je Chunk, gerastert aus dem fertigen
+    // Mesh (Surface-Nets-Vertices nach Glättung + Crop) auf ein Gitter von step/BODEN_KARTE_TEILUNG (LOD 0:
+    // 0,45 m, Origin chunk − step, über das Pad (dim+3)·step); je Punkt die OBERSTE nicht-steile Fläche (Wände
+    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8). Vorher las die Karte die Dichte-Spalten
+    // (Nulldurchgang an den Gitter-Ecken) — gemessen 01.10.: an der Mess-Wiese −1004/−790 liegt der gerenderte
+    // Boden ±0,22 m (q05–q95, max +0,43) neben dem Gesetz, im Spawn-Chunk Median 45 cm; das 1,8-m-Netz trägt
+    // die Feinform der Funktion nicht, die Glättung verdoppelt die Abweichung. Die Karte trifft das Mesh im
+    // Median auf 0,9 cm. Ein Halm von 8–24 cm auf der
+    // Gesetzes-Höhe steckte so halb im sichtbaren Boden. Wer etwas AUF den sichtbaren Boden stellt (Gras,
+    // Streu, Deko), liest diese Karte; Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz
+    // (`_voxelSurfaceY`, deterministisch für den Lockstep — die Karte hängt am Streaming-Zustand).
+    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod) {
+        if (!pos || !idx || idx.length < 3) return null;
+        const cfg = this._voxelChunkConfig(lod || 0);
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const ox = cx * cfg.span - cfg.step;
+        const oz = cz * cfg.span - cfg.step;
+        const map = new Float32Array(M * M).fill(NaN);
+        const gruen = new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
+        for (let t = 0; t + 2 < idx.length; t += 3) {
+            const a = idx[t] * 3;
+            const b = idx[t + 1] * 3;
+            const c = idx[t + 2] * 3;
+            const ax = pos[a];
+            const az = pos[a + 2];
+            const bx = pos[b];
+            const bz = pos[b + 2];
+            const qx = pos[c];
+            const qz = pos[c + 2];
+            // Flächen-Neigung aus der GEOMETRIE (Betrag, wicklungs-frei): |n_y| ≥ 0,3·|n| trägt, Wände nicht.
+            // Die Gradienten-Normalen der Vertices kippen an dünnen Platten (gemessen: Spawn-Plattform 7 m
+            // unter dem sichtbaren Deckel), die Wicklung zeigt oben nach unten — beides taugt nicht als Wache.
+            const ux = bx - ax;
+            const uy = pos[b + 1] - pos[a + 1];
+            const uz = bz - az;
+            const vx = qx - ax;
+            const vy = pos[c + 1] - pos[a + 1];
+            const vz = qz - az;
+            const ny = uz * vx - ux * vz;
+            const nl = Math.hypot(uy * vz - uz * vy, ny, ux * vy - uy * vx);
+            if (!(Math.abs(ny) >= 0.3 * nl)) continue;
+            const d = (bz - qz) * (ax - qx) + (qx - bx) * (az - qz);
+            if (Math.abs(d) < 1e-9) continue;
+            const i0 = Math.max(0, Math.ceil((Math.min(ax, bx, qx) - ox) / h));
+            const i1 = Math.min(M - 1, Math.floor((Math.max(ax, bx, qx) - ox) / h));
+            const k0 = Math.max(0, Math.ceil((Math.min(az, bz, qz) - oz) / h));
+            const k1 = Math.min(M - 1, Math.floor((Math.max(az, bz, qz) - oz) / h));
+            for (let k = k0; k <= k1; k++) {
+                const pz = oz + k * h;
+                for (let i = i0; i <= i1; i++) {
+                    const px = ox + i * h;
+                    const w1 = ((bz - qz) * (px - qx) + (qx - bx) * (pz - qz)) / d;
+                    const w2 = ((qz - az) * (px - qx) + (ax - qx) * (pz - qz)) / d;
+                    const w3 = 1 - w1 - w2;
+                    if (w1 < -1e-6 || w2 < -1e-6 || w3 < -1e-6) continue;
+                    const y = w1 * pos[a + 1] + w2 * pos[b + 1] + w3 * pos[c + 1];
+                    const m = k * M + i;
+                    if (map[m] >= y) continue;
+                    map[m] = y;
+                    // Grün-Kanal: dieselbe Wiesen-Wache wie das Boden-Fragment (`_green` in
+                    // `_terrainGeologyAlbedo`: smoothstep(0, 0,1, g − (r+b)/2)) aus der Vertex-Farbe.
+                    if (col) {
+                        let g = 0;
+                        for (const [w, o] of [
+                            [w1, a],
+                            [w2, b],
+                            [w3, c],
+                        ])
+                            g += w * (col[o + 1] - 0.5 * (col[o] + col[o + 2]));
+                        const t2 = Math.max(0, Math.min(1, g / 0.1));
+                        gruen[m] = Math.round(255 * t2 * t2 * (3 - 2 * t2));
                     }
                 }
             }
         }
-        return map;
+        return { hoehe: map, gruen };
     }
 
-    // V18.97 — bilineare Oberflächen-Höhe aus der Chunk-Karte (`entry.surfMap`,
-    // padded Grid: Origin chunk−step, Nx = dim+4). null bei fehlender Karte /
-    // NaN-Ecke / außerhalb des Pads → der Aufrufer fällt auf `_voxelSurfaceY`.
+    // Bilineare Höhe des gerenderten Bodens aus der Boden-Karte (`entry.surfMap`, s. `_bodenKarteAusMesh`).
+    // null bei fehlender Karte / NaN-Ecke (kein Boden: Wand, Höhle, außerhalb) — der Aufrufer entscheidet.
     _chunkSurfaceAt(entry, cx, cz, x, z) {
-        const m = entry && entry.surfMap;
+        return this._chunkKarteAt(entry, entry && entry.surfMap, cx, cz, x, z);
+    }
+
+    // Der Grün-Kanal der Boden-Karte (0 = kein Wiesen-Boden, 1 = Wiese) am Ort, bilinear; null ohne Karte.
+    _chunkGruenAt(entry, cx, cz, x, z) {
+        const g = this._chunkKarteAt(entry, entry && entry.gruenMap, cx, cz, x, z);
+        return g === null ? null : g / 255;
+    }
+
+    _chunkKarteAt(entry, m, cx, cz, x, z) {
         if (!m) return null;
         const cfg = this._voxelChunkConfig(entry.lod || 0);
-        const Nx = cfg.dim + 4;
-        const ox = cx * cfg.span - cfg.step;
-        const oz = cz * cfg.span - cfg.step;
-        const u = (x - ox) / cfg.step;
-        const v = (z - oz) / cfg.step;
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const u = (x - (cx * cfg.span - cfg.step)) / h;
+        const v = (z - (cz * cfg.span - cfg.step)) / h;
         const i0 = Math.floor(u);
         const k0 = Math.floor(v);
-        if (i0 < 0 || k0 < 0 || i0 >= Nx - 1 || k0 >= Nx - 1) return null;
-        const a = m[i0 + k0 * Nx];
-        const b = m[i0 + 1 + k0 * Nx];
-        const c = m[i0 + (k0 + 1) * Nx];
-        const d = m[i0 + 1 + (k0 + 1) * Nx];
+        if (i0 < 0 || k0 < 0 || i0 >= M - 1 || k0 >= M - 1) return null;
+        const a = m[i0 + k0 * M];
+        const b = m[i0 + 1 + k0 * M];
+        const c = m[i0 + (k0 + 1) * M];
+        const d = m[i0 + 1 + (k0 + 1) * M];
         if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null;
         const fu = u - i0;
         const fv = v - k0;
@@ -26303,6 +26388,22 @@ class AnazhRealm {
     // Oberflächen-Normale, sonst Schatten-Akne-Rauten an Hängen.
     static get TERRAIN_NORMAL_FLATTEN() {
         return 1.0;
+    }
+
+    // Die Boden-Karte (`_bodenKarteAusMesh`) teilt den Voxel-Schritt in so viele Gitter-Abstände (LOD 0: 1,8 m / 4 =
+    // 0,45 m) — fein genug, dass die bilineare Lesung der Dreiecks-Fläche auf ≤ 2 cm folgt (Median).
+    static get BODEN_KARTE_TEILUNG() {
+        return 4;
+    }
+
+    // DIE NAH-WIESE (V18.508): nah am Auge wächst die Wiese aus dem Studio-Gras (Foundry „gras", Stufen
+    // aus `kindStages.grass`), jenseits trägt die Boden-Funktion. Kosten an den SCHIRM gebunden (Gebot 7):
+    // ein Kachel-Ring um die Kamera, nie je Chunk. `stufe1` = Radius der feinen Stufe (L1), `radius` =
+    // Ende der Büschel, `rand` = Ausdünnungs-Band davor (die Kachel zeigt nur einen Anteil ihrer zufällig
+    // geordneten Büschel), `kachel` = Kachel-Kante (Frustum-Cull-Einheit). Raster, Dichte-Gesetz und
+    // Skala kommen aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras).
+    static get NAH_WIESE() {
+        return Object.freeze({ kachel: 6, stufe1: 5, radius: 14, rand: 4, kachelnJeTakt: 1 });
     }
 
     // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Meadow-
@@ -29307,7 +29408,15 @@ class AnazhRealm {
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
             }
         }
-        return { mesh, kind: "filled", waterCells, lod, surfMap: geom.userData.surfMap || null };
+        const karte = this._bodenKarteAusMesh(
+            geom.attributes.position.array,
+            geom.index ? geom.index.array : null,
+            geom.attributes.color ? geom.attributes.color.array : null,
+            cx,
+            cz,
+            lod
+        );
+        return { mesh, kind: "filled", waterCells, lod, surfMap: karte && karte.hoehe, gruenMap: karte && karte.gruen };
     }
 
     // true, wenn der Spieler in diesem Chunk steht (`state.lastPlayerVoxelChunk`, je Streaming-Tick).
@@ -29390,9 +29499,10 @@ class AnazhRealm {
         const entry = {
             mesh: fresh.mesh,
             waterCells: fresh.waterCells || null,
-            // V18.97 — die Oberflächen-Karte (Grid-Nebenprodukt, beide Pfade):
-            // Gras/Deko lesen sie via `_chunkSurfaceAt` statt Dichte-Scans.
+            // Die Boden-Karte (der GERENDERTE Boden, `_bodenKarteAusMesh`, beide Pfade): Gras/Streu/Deko
+            // lesen sie via `_chunkSurfaceAt`.
             surfMap: fresh.surfMap || null,
+            gruenMap: fresh.gruenMap || null,
             lod,
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
@@ -30201,11 +30311,22 @@ class AnazhRealm {
         // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta).
         const colCtx = this._terrainColumnContext(x, z);
         let prevAir = true;
+        let prevD = null; // Dichte der Luft-Probe 1.2 m darüber (null = Garantie-Luft, nicht gemessen)
         for (let y = top; y >= bottom; y -= 1.2) {
             if (y > skipAbove) continue; // Garantie-Luft — Probe gespart, Gitter unverändert
-            const solid = this._fieldDensityAt(x, y, z, colCtx) > 0;
-            if (solid && prevAir) return y;
+            const d = this._fieldDensityAt(x, y, z, colCtx);
+            const solid = d > 0;
+            if (solid && prevAir) {
+                // DER NULLDURCHGANG statt des Gitterpunkts: die Oberfläche liegt zwischen der Fels-Probe y und
+                // der Luft-Probe y+1.2 — linear interpoliert wie die Marching-Cubes-Kante des Meshs. Der erste
+                // Fels-Gitterpunkt lag bis 1,2 m UNTER dem gezeichneten Boden (gemessen 01.10.: Haus, Tiere,
+                // Sonden-Kameras eingesunken; Kamera 0,5 m über dem Wert stand im Gelände).
+                const dLuft = prevD != null ? prevD : this._fieldDensityAt(x, y + 1.2, z, colCtx);
+                const t = d - dLuft > 1e-9 ? d / (d - dLuft) : 0;
+                return y + 1.2 * Math.min(1, Math.max(0, t));
+            }
             prevAir = !solid;
+            prevD = d;
         }
         return null;
     }
@@ -32543,6 +32664,233 @@ class AnazhRealm {
         this.state.voxelChunkGrass.delete(key);
     }
 
+    // DIE NAH-WIESE: je Kachel (NAH_WIESE.kachel) die Büschel nach dem Studio-Gesetz (buildForest, Schritt 7):
+    // Raster `understory.grassStep` in Welt-Koordinaten, Jitter ±0,34, Wurf gegen
+    // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (Kronen-Licht,
+    // Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
+    // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen.
+    // Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe
+    // Wiese bei jedem Besuch. Gibt die Büschel-Liste zurück oder null, solange ein Chunk unter der Kachel
+    // noch keine Boden-Karte hat.
+    _nahWieseKachelBueschel(tx, tz) {
+        const NW = AnazhRealm.NAH_WIESE;
+        const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
+        const step = uCfg && Number.isFinite(uCfg.grassStep) ? uCfg.grassStep : 0.72;
+        const GS = AnazhRealm.GRASS_SLOPE;
+        const cfg = this._voxelChunkConfig(0);
+        const seedInt = this._forestSeedInt();
+        const x0 = tx * NW.kachel;
+        const z0 = tz * NW.kachel;
+        const cl = (v) => Math.max(0, Math.min(1, v));
+        const out = [];
+        for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
+            for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
+                let hs = ((gi * 73856093) ^ (gj * 19349663) ^ seedInt ^ 0x6a09e667) >>> 0 || 1;
+                const w = () => {
+                    hs = (hs + 0x6d2b79f5) >>> 0;
+                    let t = hs;
+                    t = Math.imul(t ^ (t >>> 15), t | 1);
+                    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                };
+                const x = gi * step + (w() - 0.5) * 0.68;
+                const z = gj * step + (w() - 0.5) * 0.68;
+                const wurf = w();
+                const vorlage = w() < 0.5 ? 0 : 1;
+                const sk = 0.7 + w() * 0.7;
+                const rot = w() * Math.PI * 2;
+                const ordnung = w();
+                const cx = Math.floor(x / cfg.span);
+                const cz = Math.floor(z / cfg.span);
+                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
+                if (!entry || !entry.surfMap) {
+                    if (entry && entry.empty) continue;
+                    return null; // der Boden steht noch nicht — die Kachel wartet
+                }
+                const y = this._chunkSurfaceAt(entry, cx, cz, x, z);
+                if (y === null) continue;
+                const gruen = this._chunkGruenAt(entry, cx, cz, x, z) || 0;
+                if (gruen <= 0) continue;
+                if (typeof this._isAboveWaterAt === "function" && !this._isAboveWaterAt(x, z, 0.1)) continue;
+                const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
+                const L = this._canopyLightAt(x, z, y, m);
+                const hang = this._slopeAt(x, z, (px, pz) => {
+                    const v = this._chunkSurfaceAt(entry, cx, cz, px, pz);
+                    return v === null ? NaN : v;
+                });
+                const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
+                const pfad = this._pathFieldAt ? this._pathFieldAt(x, z, y) : 0;
+                const p = cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * gruen;
+                if (wurf >= p) continue;
+                out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung });
+            }
+        }
+        // Zufällige Ordnung: ein Präfix der Liste ist eine gleichmäßige Ausdünnung (das Rand-Band).
+        out.sort((a, b) => a.ordnung - b.ordnung);
+        return out;
+    }
+
+    // Entsorgen gibt die Foundry-Referenz zurück (V4(B)-Ref-Zähler `_liveRefs` der Cache-Gruppe): solange
+    // eine Kachel die Studio-Geometrie zeichnet, räumt der LRU sie nicht; war sie geräumt, fällt sie jetzt.
+    _nahWieseKachelEntsorgen(k) {
+        if (k.meshes) for (const im of k.meshes) if (im.parent) im.parent.remove(im);
+        k.meshes = null;
+        for (const src of k.quellen || []) {
+            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
+            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+        }
+        k.quellen = null;
+    }
+
+    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt
+    // Neubauten), Stufe L1/L2 nach Kachel-Distanz, das Rand-Band dünnt über `count`, ausserhalb fällt die
+    // Kachel. Ein Chunk-Neubau (Edit) oder ein neues Studio-Asset (Saison) baut die betroffenen Kacheln neu.
+    // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
+    _tickNahWiese(deadline) {
+        const st = this.state;
+        if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
+        const NW = AnazhRealm.NAH_WIESE;
+        if (!st.nahWiese) {
+            const gruppe = new THREE.Group();
+            gruppe.name = "nahWiese";
+            st.scene.add(gruppe);
+            st.nahWiese = { gruppe, kacheln: new Map(), chunkStand: new Map() };
+        }
+        const nw = st.nahWiese;
+        const cam = st.camera.position;
+        const tcx = Math.floor(cam.x / NW.kachel);
+        const tcz = Math.floor(cam.z / NW.kachel);
+        const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
+        // Chunk-Neubau → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden).
+        for (const [key, k] of nw.kacheln) {
+            if (!k.chunks) continue;
+            for (const ck of k.chunks) {
+                const e = st.voxelChunks && st.voxelChunks.get(ck);
+                if (!e || e.surfMap !== k.chunkKarten.get(ck)) {
+                    this._nahWieseKachelEntsorgen(k);
+                    nw.kacheln.delete(key);
+                    break;
+                }
+            }
+        }
+        const wunsch = [];
+        for (let dz = -reichweite; dz <= reichweite; dz++) {
+            for (let dx = -reichweite; dx <= reichweite; dx++) {
+                const tx = tcx + dx;
+                const tz = tcz + dz;
+                const d = Math.hypot((tx + 0.5) * NW.kachel - cam.x, (tz + 0.5) * NW.kachel - cam.z);
+                if (d > NW.radius + NW.kachel * 0.71) continue;
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
+            }
+        }
+        const gewollt = new Set(wunsch.map((w) => w.key));
+        for (const [key, k] of nw.kacheln) {
+            if (gewollt.has(key)) continue;
+            this._nahWieseKachelEntsorgen(k);
+            nw.kacheln.delete(key);
+        }
+        wunsch.sort((a, b) => a.d - b.d);
+        const cfg = this._voxelChunkConfig(0);
+        let gebaut = 0;
+        nw.offen = 0;
+        // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt.
+        const flatsJe = {};
+        for (const stufe of [1, 2])
+            flatsJe[stufe] = [0, 1].map((v) => this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe));
+        for (const w of wunsch) {
+            const stufe = w.d <= NW.stufe1 ? 1 : 2;
+            const anteil = Math.max(0, Math.min(1, (NW.radius - w.d) / NW.rand + 0.5));
+            let k = nw.kacheln.get(w.key);
+            const flats = flatsJe[stufe];
+            const bereit = flats.every((f) => f && f.leaves);
+            if (k && k.stufe === stufe && k.flats && k.flats[0] === flats[0] && k.flats[1] === flats[1]) {
+                for (const im of k.meshes || []) im.count = Math.round(im.userData.nGesamt * anteil);
+                continue;
+            }
+            if (!bereit || gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+                nw.offen++; // Studio-Asset kommt noch (Foundry-Anfrage läuft) oder das Takt-Budget ist leer
+                continue;
+            }
+            if (!k) {
+                const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
+                if (!bueschel) {
+                    nw.offen++;
+                    continue;
+                }
+                const chunks = new Set();
+                for (const [ex, ez] of [
+                    [0, 0],
+                    [1, 0],
+                    [0, 1],
+                    [1, 1],
+                ]) {
+                    const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
+                    const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
+                    chunks.add(`${cx},${cz}`);
+                }
+                const chunkKarten = new Map();
+                for (const ck of chunks) {
+                    const e = st.voxelChunks.get(ck);
+                    chunkKarten.set(ck, e ? e.surfMap : undefined);
+                }
+                k = { bueschel, chunks, chunkKarten, stufe: 0, flats: null, meshes: null };
+                nw.kacheln.set(w.key, k);
+            }
+            this._nahWieseKachelEntsorgen(k);
+            k.meshes = this._nahWieseKachelMeshes(k.bueschel, flats, w.key);
+            k.quellen = [];
+            for (const fl of flats)
+                for (const lf of fl.leaves)
+                    if (lf._srcGroup && !k.quellen.includes(lf._srcGroup)) {
+                        lf._srcGroup._liveRefs = (lf._srcGroup._liveRefs || 0) + 1;
+                        k.quellen.push(lf._srcGroup);
+                    }
+            for (const im of k.meshes) {
+                im.count = Math.round(im.userData.nGesamt * anteil);
+                nw.gruppe.add(im);
+            }
+            k.stufe = stufe;
+            k.flats = flats;
+            gebaut++;
+        }
+        return gebaut;
+    }
+
+    // Je Vorlage × Teil-Mesh EIN InstancedMesh (Matrix = Ort · Drehung · Studio-Streuung · Welt-Skala der
+    // Vorlage); Instanzen in Büschel-Ordnung, damit `count` die Ausdünnung trägt.
+    _nahWieseKachelMeshes(bueschel, flats, key) {
+        const out = [];
+        const m4 = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pv = new THREE.Vector3();
+        const sv = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        for (let v = 0; v < 2; v++) {
+            const liste = bueschel.filter((b) => b.vorlage === v);
+            if (!liste.length) continue;
+            for (const lf of flats[v].leaves) {
+                const im = new THREE.InstancedMesh(lf.geom, lf.mat, liste.length);
+                for (let i = 0; i < liste.length; i++) {
+                    const b = liste[i];
+                    pv.set(b.x, b.y, b.z);
+                    q.setFromAxisAngle(up, b.rot);
+                    sv.set(b.s, b.s, b.s);
+                    m4.compose(pv, q, sv).multiply(lf.localMatrix);
+                    im.setMatrixAt(i, m4);
+                }
+                im.instanceMatrix.needsUpdate = true;
+                im.castShadow = false;
+                im.receiveShadow = true;
+                im.computeBoundingSphere();
+                im.name = "nahWiese:" + key;
+                im.userData.nGesamt = liste.length;
+                im.userData.leafKey = lf.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
+                out.push(im);
+            }
+        }
+        return out;
+    }
+
     // === FÜLLE/DICHTE: GPU-instanzierte Klein-Vegetation ===
     // Die vier `worldFieldAt`-Felder als Biom-Stimmen: Blüten/Farne (lebendig), Fels-Brocken (dichte),
     // Glut-Gestrüpp (glut), Leucht-Sporen (magieleitung). Reine Deko (KEINE Physik/Kollision/Remesh),
@@ -33050,14 +33398,24 @@ class AnazhRealm {
                         // Per-Achsen-Skalierung für lebende (`wind`-)Arten: drei entkoppelte Faktoren (kurz+breit bzw.
                         // hoch+schmal) statt Klon-Halmen; andere Arten (Steinchen) bleiben uniform.
                         let item;
+                        let xFactor = 1;
+                        let yFactor = 1;
+                        let zFactor = 1;
                         if (sp.wind) {
                             // Drei eigene Würfe: y-Streckung [0.8, 1.25], xz-Breite [0.85, 1.15].
-                            const yFactor = 0.8 + rnd() * 0.45;
-                            const xFactor = 0.85 + rnd() * 0.3;
-                            const zFactor = 0.85 + rnd() * 0.3;
+                            yFactor = 0.8 + rnd() * 0.45;
+                            xFactor = 0.85 + rnd() * 0.3;
+                            zFactor = 0.85 + rnd() * 0.3;
+                        }
+                        // Jedes Stück steht auf dem GERENDERTEN Boden an SEINEM Ort (die Boden-Karte) — vorher trugen
+                        // alle Stücke einer 5,4-m-Zelle die Gesetzes-Höhe der Zellmitte (am Hang Meter daneben).
+                        // Ohne Boden (Wand, Höhle) fällt das Stück; die Würfe oben bleiben, der Strom ist stabil.
+                        const iy = this._chunkSurfaceAt(chunkEntryS, cx, cz, gx, gz);
+                        if (iy === null) continue;
+                        if (sp.wind) {
                             item = {
                                 x: gx,
-                                y: surfY + sp.yOff,
+                                y: iy + sp.yOff,
                                 z: gz,
                                 rot: rotK,
                                 sx: sclK * xFactor,
@@ -33065,7 +33423,7 @@ class AnazhRealm {
                                 sz: sclK * zFactor,
                             };
                         } else {
-                            item = { x: gx, y: surfY + sp.yOff, z: gz, rot: rotK, scale: sclK };
+                            item = { x: gx, y: iy + sp.yOff, z: gz, rot: rotK, scale: sclK };
                         }
                         buckets[si].push(item);
                     }
@@ -34509,16 +34867,10 @@ class AnazhRealm {
             fern: TSL.uniform(9000),
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
             seitenN: TSL.uniform(0),
-            // DAS LICHT DER WELT (_feldLichtSync): die vier Richt-Lichter, Ambient, Hemi und die
+            // DAS LICHT DER WELT (_feldLichtSync): das Richt-Licht (Sonne/Mond), Ambient, Hemi und die
             // Himmels-Umgebung — dieselben Quellen und dieselbe BRDF wie jedes Mesh.
             l0d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            l1d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            l2d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
-            l3d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
             l0c: TSL.uniform(new THREE.Vector3()),
-            l1c: TSL.uniform(new THREE.Vector3()),
-            l2c: TSL.uniform(new THREE.Vector3()),
-            l3c: TSL.uniform(new THREE.Vector3()),
             ambientFarbe: TSL.uniform(new THREE.Vector3()),
             hemiOben: TSL.uniform(new THREE.Vector3()),
             hemiUnten: TSL.uniform(new THREE.Vector3()),
@@ -34617,7 +34969,7 @@ class AnazhRealm {
         // Elevation-Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. textureDimensions braucht
         // f32/i32-Casts (WGSL-Spec).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l1d: vec3<f32>, l2d: vec3<f32>, l3d: vec3<f32>, l0c: vec3<f32>, l1c: vec3<f32>, l2c: vec3<f32>, l3c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -34995,12 +35347,11 @@ class AnazhRealm {
                 "    }\n" + // Seiten-Loop zu
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
                 "    if (bestT < 1e29) {\n" +
-                "        // DAS LICHT DER WELT: Richt-Lichter + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
+                "        // DAS LICHT DER WELT: Richt-Licht + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
                 "        // Himmels-Irradianz (albedo·env) — die Formel des MeshStandard-Diffus, ohne Ton-Klemme:\n" +
                 "        // die Belichtung macht die Ausgabe-Kette für Feld und Mesh gemeinsam.\n" +
                 "        let nY = bestN.y;\n" +
-                "        let direkt = l0c * max(dot(bestN, l0d), 0.0) + l1c * max(dot(bestN, l1d), 0.0)\n" +
-                "            + l2c * max(dot(bestN, l2d), 0.0) + l3c * max(dot(bestN, l3d), 0.0);\n" +
+                "        let direkt = l0c * max(dot(bestN, l0d), 0.0);\n" +
                 "        let hemi = mix(hemiUnten, hemiOben, nY * 0.5 + 0.5);\n" +
                 "        let env = select(mix(envMitte, envOben, nY), mix(envMitte, envUnten, -nY), nY < 0.0);\n" +
                 "        let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
@@ -35038,13 +35389,7 @@ class AnazhRealm {
             fwd: U.fwd,
             seitenN: U.seitenN,
             l0d: U.l0d,
-            l1d: U.l1d,
-            l2d: U.l2d,
-            l3d: U.l3d,
             l0c: U.l0c,
-            l1c: U.l1c,
-            l2c: U.l2c,
-            l3c: U.l3c,
             ambientFarbe: U.ambientFarbe,
             hemiOben: U.hemiOben,
             hemiUnten: U.hemiUnten,
@@ -36189,26 +36534,20 @@ class AnazhRealm {
     }
 
     // DAS LICHT DER WELT für den Feld-Pass: liest dieselben Quellen wie jedes MeshStandard —
-    // Sonne/Mond, Fill, Rim, Back (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
+    // Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
     // und die Himmels-Umgebung (Irradianz aus DENSELBEN Bytes wie `_skyEnvTex`, je Normalen-y).
     // Der Nebel ist `scene.fog` (linear, View-Tiefe) wie beim Mesh.
     _feldLichtSync(U) {
         const st = this.state;
-        const quellen = [st.directionalLight, st.fillLight, st.rimLight, st.backLight];
-        const dirs = [U.l0d, U.l1d, U.l2d, U.l3d];
-        const cols = [U.l0c, U.l1c, U.l2c, U.l3c];
         const nullV = this._nullVektor || (this._nullVektor = new THREE.Vector3());
-        for (let i = 0; i < 4; i++) {
-            const l = quellen[i];
-            if (!l || l.visible === false || !(l.intensity > 0)) {
-                cols[i].value.set(0, 0, 0);
-                continue;
-            }
-            dirs[i].value
+        const l = st.directionalLight;
+        if (!l || l.visible === false || !(l.intensity > 0)) U.l0c.value.set(0, 0, 0);
+        else {
+            U.l0d.value
                 .copy(l.position)
                 .sub(l.target && l.target.position ? l.target.position : nullV)
                 .normalize();
-            cols[i].value.set(l.color.r * l.intensity, l.color.g * l.intensity, l.color.b * l.intensity);
+            U.l0c.value.set(l.color.r * l.intensity, l.color.g * l.intensity, l.color.b * l.intensity);
         }
         const amb = st.ambientLight;
         const ai = amb && amb.visible !== false ? Math.max(0, amb.intensity || 0) : 0;
@@ -36238,21 +36577,32 @@ class AnazhRealm {
     // Kosinus-gefaltete Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt),
     // sRGB-dekodiert wie die Textur. Neu gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde.
     _feldEnvIrradianz(U) {
+        const e = this._himmelsIrradianz();
+        if (!e) {
+            U.envUnten.value.set(0, 0, 0);
+            U.envMitte.value.set(0, 0, 0);
+            U.envOben.value.set(0, 0, 0);
+            return;
+        }
+        U.envUnten.value.fromArray(e.unten);
+        U.envMitte.value.fromArray(e.mitte);
+        U.envOben.value.fromArray(e.oben);
+    }
+
+    // DIE HIMMELS-IRRADIANZ (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der Kosinus-gefaltete
+    // Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt), sRGB-dekodiert wie die Textur. Neu
+    // gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde. Leser: der Feld-Pass und die Belichtung.
+    _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;
         const tex = st._skyEnvTex;
         const scene = st.scene;
         const env = scene && scene.environment;
         const ei = scene && Number.isFinite(scene.environmentIntensity) ? scene.environmentIntensity : 1;
-        if (!d || !tex || !env) {
-            U.envUnten.value.set(0, 0, 0);
-            U.envMitte.value.set(0, 0, 0);
-            U.envOben.value.set(0, 0, 0);
-            return;
-        }
+        if (!d || !tex || !env) return null;
         const stempel = (tex.version || 0) + ":" + ei;
-        if (this._feldEnvStempel === stempel) return;
-        this._feldEnvStempel = stempel;
+        if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
+        this._himmelsIrrStempel = stempel;
         const W = tex.image.width;
         const H = tex.image.height;
         const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
@@ -36289,9 +36639,8 @@ class AnazhRealm {
             const k = ei / Math.PI;
             return [r * k, g * k, b * k];
         };
-        U.envUnten.value.fromArray(falte(-1));
-        U.envMitte.value.fromArray(falte(0));
-        U.envOben.value.fromArray(falte(1));
+        this._himmelsIrr = { unten: falte(-1), mitte: falte(0), oben: falte(1) };
+        return this._himmelsIrr;
     }
 
     _feldPassDispose() {
@@ -60366,11 +60715,12 @@ class AnazhRealm {
         return g;
     }
 
-    // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (roh, der Phyto-Pfad gewinnt); die
-    // Sättigung trägt das Licht-Rig, keine Pfad-Konstante.
+    // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (der Phyto-Pfad gewinnt). Das Farb-Gesetz
+    // der Vegetation (foundry-core `vegFarbe`, V18.506): der Hex ist eine sRGB-Absicht, die Albedo sein
+    // linearer Wert — `THREE.Color(hex)` dekodiert unter der Farb-Verwaltung von r184 genau so.
     _treeLeafBaseColor(skeleton, fo) {
-        const c0 = (skeleton && skeleton.foliageColor) || (fo && fo.color) || 0x4a8a3a;
-        return [((c0 >> 16) & 0xff) / 255, ((c0 >> 8) & 0xff) / 255, (c0 & 0xff) / 255];
+        const c = new THREE.Color((skeleton && skeleton.foliageColor) || (fo && fo.color) || 0x4a8a3a);
+        return [c.r, c.g, c.b];
     }
 
     // NAHER BAUM (LOD0): 30-Vert-Superformel-Blatt-Klingen aus den Nicht-Nadel-Phyto-Blättern über
@@ -60741,10 +61091,10 @@ class AnazhRealm {
         const uvs = new Float32Array(vCount * 2);
         // Kern-Farbe: das DUNKLE Innen-Grün (tiefer Kronen-Schatten) — die instanceColor (per-Spawn)
         // moduliert es wie die Karten, so matcht der Kern den Baum.
-        const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
-        const cr = (((c0 >> 16) & 0xff) / 255) * 0.5,
-            cg = (((c0 >> 8) & 0xff) / 255) * 0.62,
-            cb = ((c0 & 0xff) / 255) * 0.38;
+        const _kl = this._treeLeafBaseColor(skeleton, fo);
+        const cr = _kl[0] * 0.5,
+            cg = _kl[1] * 0.62,
+            cb = _kl[2] * 0.38;
         for (let i = 0; i < vCount; i++) {
             const ux = ip.getX(i),
                 uy = ip.getY(i),
@@ -61202,6 +61552,12 @@ class AnazhRealm {
         // rttFailed (Canvas bleibt), das Token entwertet die späte finally (sie darf den NÄCHSTEN Bake nicht
         // löschen); ein später Erfolg darf rttBaked noch setzen (der Swap ist idempotent).
         if (this._impostorBakePending) {
+            // Ein Bake-Auftrag, der beim Worker noch offen ist, wartet LEGITIM (die EINE Foundry-Frist zählt
+            // nur Arbeits-Zeit und schließt jedes Versprechen sicher ab) — der Wachhund greift erst, wenn kein
+            // Auftrag mehr offen ist und der Flug-Status trotzdem klemmt. Vorher verwarf er wartende Karten
+            // nach der Uhr ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
+            const fb = this._foundry;
+            if (fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) return 0;
             const since = this._impostorBakePendingSince || 0;
             if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) {
                 const hungKey = this._impostorBakePendingKey;
@@ -65187,7 +65543,14 @@ class AnazhRealm {
             } catch (_e) {
                 f.pending.delete(reqId);
                 resolve(null);
+                return;
             }
+            // Dieselbe EINE Frist (45 s Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller
+            // späteren Aufträge an.
+            this._foundryFrist(f, reqId, 45000, () => {
+                this.log("FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null", "WARN");
+                resolve(null);
+            });
         });
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (alle Slots sofort) und `_tickAutoSettlement`
@@ -65984,6 +66347,36 @@ class AnazhRealm {
             }
         }
     }
+    // DIE EINE FOUNDRY-FRIST: der Worker arbeitet seine Aufträge FIFO ab — die Uhr eines Auftrags läuft erst,
+    // wenn kein FRÜHER gesendeter mehr offen ist (vorher wartet er in der Schlange, nicht im Bau). Befund
+    // 01.10.: die Uhr ab Senden ließ Impostor-Karten in der belebten Welt ablaufen, bevor der Worker sie
+    // anfasste (strauch|16: 45 s Ablauf im Betrieb, 0,6 s bei freiem Worker) — drei Abläufe, und die Art
+    // stand terminal ohne Fernstufe. Nie verklemmt: der älteste offene Auftrag hat immer eine laufende Uhr.
+    _foundryFrist(f, reqId, dauerMs, beiAblauf) {
+        const nr = (id) => Number(String(id).replace(/^\D+/, ""));
+        const meine = nr(reqId);
+        let start = null;
+        const pruefe = () => {
+            if (!f.pending.has(reqId)) return; // beantwortet
+            let vorMir = false;
+            for (const k of f.pending.keys()) {
+                if (nr(k) < meine) {
+                    vorMir = true;
+                    break;
+                }
+            }
+            const jetzt = performance.now();
+            if (vorMir) start = null;
+            else if (start === null) start = jetzt;
+            if (start !== null && jetzt - start > dauerMs) {
+                f.pending.delete(reqId);
+                beiAblauf();
+                return;
+            }
+            setTimeout(pruefe, 1000);
+        };
+        setTimeout(pruefe, 1000);
+    }
     _foundryWorkerRequest(presetId, seed, lod, season, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
@@ -66002,17 +66395,14 @@ class AnazhRealm {
                 resolve(null);
                 return;
             }
-            // Großzügiges Timeout (45 s): ein Koniferen-lod0-Asset hat ~170k Verts und Anfragen stauen sich im
-            // Single-Thread-Worker hinter dem Prefetch; 10 s lief in null.
-            setTimeout(() => {
-                if (f.pending.has(reqId)) {
-                    f.pending.delete(reqId);
-                    // fail-LAUT (V18.462): das Timeout ist vom kalten Buch
-                    // unterscheidbar — der Aufrufer sieht sonst beide als null.
-                    this.log(`FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s ohne Reply → null`, "WARN");
-                    resolve(null);
-                }
-            }, 45000);
+            // 45 s ARBEITS-Zeit (die EINE Frist, `_foundryFrist`): ein Koniferen-lod0-Asset hat ~170k Verts;
+            // die Wartezeit in der Worker-Schlange zählt nicht mit.
+            this._foundryFrist(f, reqId, 45000, () => {
+                // fail-LAUT (V18.462): das Timeout ist vom kalten Buch
+                // unterscheidbar — der Aufrufer sieht sonst beide als null.
+                this.log(`FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`, "WARN");
+                resolve(null);
+            });
         });
     }
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
@@ -66035,19 +66425,16 @@ class AnazhRealm {
                 resolve(null);
                 return;
             }
-            // EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin
-            // des Tick. Der Tick-Watchdog greift erst danach (nur ein Versprechen, das nie abschließt).
+            // EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig
+            // leben; null → die Retry-Disziplin des Tick.
             const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
-            setTimeout(() => {
-                if (f.pending.has(reqId)) {
-                    f.pending.delete(reqId);
-                    this.log(
-                        `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s ohne Reply → null`,
-                        "WARN"
-                    );
-                    resolve(null);
-                }
-            }, frist);
+            this._foundryFrist(f, reqId, frist, () => {
+                this.log(
+                    `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`,
+                    "WARN"
+                );
+                resolve(null);
+            });
         });
     }
     // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
@@ -67756,6 +68143,18 @@ class AnazhRealm {
         const wurzel = (tb && tb.wrap) || cr;
         anker.add(wurzel);
         const gruppen = new Map();
+        const ankerVon = (start) => {
+            let a = start;
+            while (a && a !== cr && !anker.has(a)) a = a.parent;
+            return a && anker.has(a) ? a : wurzel;
+        };
+        const zuGruppe = (schluessel, o, n) => {
+            let g = gruppen.get(schluessel);
+            if (!g) gruppen.set(schluessel, (g = { meshes: [], verts: 0 }));
+            g.meshes.push(o);
+            g.verts += n;
+        };
+        cr.updateMatrixWorld(true);
         cr.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
             if (tb && tb.fern) {
@@ -67765,13 +68164,39 @@ class AnazhRealm {
                     p = p.parent;
                 }
             }
-            let a = o.parent;
-            while (a && a !== cr && !anker.has(a)) a = a.parent;
-            const schluessel = a && anker.has(a) ? a : wurzel;
-            let g = gruppen.get(schluessel);
-            if (!g) gruppen.set(schluessel, (g = { meshes: [], verts: 0 }));
-            g.meshes.push(o);
-            g.verts += o.geometry.attributes.position.count;
+            // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
+            // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
+            // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.
+            const si = o.isSkinnedMesh && o.skeleton ? o.geometry.attributes.skinIndex : null;
+            if (si) {
+                const pa = o.geometry.attributes.position;
+                const proBone = new Map();
+                for (let i = 0; i < pa.count; i++) {
+                    const b = si.getX(i);
+                    let l = proBone.get(b);
+                    if (!l) proBone.set(b, (l = []));
+                    l.push(i);
+                }
+                for (const [b, liste] of proBone) {
+                    const bone = o.skeleton.bones[b];
+                    const inv = o.skeleton.boneInverses[b];
+                    if (!bone || !inv) continue;
+                    const arr = new Float32Array(liste.length * 3);
+                    for (let n = 0; n < liste.length; n++) {
+                        arr[n * 3] = pa.getX(liste[n]);
+                        arr[n * 3 + 1] = pa.getY(liste[n]);
+                        arr[n * 3 + 2] = pa.getZ(liste[n]);
+                    }
+                    const stueck = {
+                        geometry: { attributes: { position: new THREE.BufferAttribute(arr, 3) } },
+                        material: o.material,
+                        matrixWorld: new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, inv).multiply(o.bindMatrix),
+                    };
+                    zuGruppe(ankerVon(bone), stueck, liste.length);
+                }
+                return;
+            }
+            zuGruppe(ankerVon(o.parent), o, o.geometry.attributes.position.count);
         });
         if (gruppen.size === 0) return null;
         const zielVon = (a) => {
@@ -67907,7 +68332,12 @@ class AnazhRealm {
         // HAAR_LOOK) hier gewoben wird. Der Ton-Anker (mp.color, linear) steht im Key — die Strähnen-Achse ist
         // die Luminanz-Ratio zum Ton; je Gattungs-Ton EIN Material (bounded: Gattungen × 4 Klassen).
         const klasseLook =
-            kind === "fell" || kind === "skin" || kind === "haut" || kind === "hair" || kind.indexOf("straehne") === 0;
+            kind === "fell" ||
+            kind === "fellSchale" ||
+            kind === "skin" ||
+            kind === "haut" ||
+            kind === "hair" ||
+            kind.indexOf("straehne") === 0;
         const key =
             (mp
                 ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
@@ -67995,7 +68425,8 @@ class AnazhRealm {
                 try {
                     const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
                     const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-                    const strand = kind === "hair" || kind.indexOf("straehne") === 0;
+                    const schale = kind === "fellSchale";
+                    const strand = kind === "hair" || kind.indexOf("straehne") === 0 || schale;
                     const L =
                         kind === "skin" || kind === "haut"
                             ? kkC && kkC.HAUT_LOOK
@@ -68018,15 +68449,51 @@ class AnazhRealm {
                                 ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
                                 : null;
                             const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
-                            const sT =
-                                tonL !== null
-                                    ? vcol
-                                          .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                          .div(tonL)
-                                          .sub(wA)
-                                          .div(Math.max(1e-3, 1 - wA))
-                                          .clamp(0.0, 1.0)
-                                    : TSL.float(1.0);
+                            // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
+                            // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
+                            // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
+                            // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
+                            // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
+                            // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
+                            const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
+                            if (schale) {
+                                const t = aS.x;
+                                const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
+                                const zelle = TSL.floor(p);
+                                const h1 = TSL.fract(
+                                    TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453)
+                                );
+                                const h2 = TSL.fract(
+                                    TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
+                                );
+                                const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
+                                    .sub(0.5)
+                                    .mul(0.4);
+                                const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
+                                const radius = aS.y
+                                    .sqrt()
+                                    .mul(0.62)
+                                    .mul(TSL.float(1.0).sub(t.mul(0.75)));
+                                const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
+                                const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
+                                mat.opacityNode = TSL.max(haar, wolle);
+                                mat.alphaTest = 0.5;
+                                const FS = AnazhRealm.FELL_SCHALE;
+                                mat.colorNode = TSL.vec4(
+                                    vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
+                                    1.0
+                                );
+                            }
+                            const sT = schale
+                                ? aS.x
+                                : tonL !== null
+                                  ? vcol
+                                        .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                        .div(tonL)
+                                        .sub(wA)
+                                        .div(Math.max(1e-3, 1 - wA))
+                                        .clamp(0.0, 1.0)
+                                  : TSL.float(1.0);
                             if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
                                 term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
                             if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
@@ -68039,7 +68506,8 @@ class AnazhRealm {
                             if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
                                 term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
                             // microFur-Sparkle (matFur: hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt kein garantiertes
-                            // uv — das Lokal-Raster (positionLocal × dichte) ersetzt es.
+                            // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
+                            // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
                             const mf = L.microFur;
                             if (
                                 mf &&
@@ -68050,7 +68518,7 @@ class AnazhRealm {
                                 TSL.sin &&
                                 TSL.step
                             ) {
-                                const cell = TSL.floor(TSL.positionLocal.xz.mul(mf.dichte));
+                                const cell = TSL.floor((TSL.positionGeometry || TSL.positionLocal).xz.mul(mf.dichte));
                                 const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
                                 term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
                             }
@@ -68066,8 +68534,9 @@ class AnazhRealm {
                             mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
                         }
                         // Atem-Noise-Displacement der Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier mx_noise, gleiche
-                        // Rausch-Klasse). NUR ungeskinnte Klassen (fell, skin); die haut-SkinnedMesh-Hülle bleibt still
-                        // (positionNode × Skinning-Komposition unbewiesen).
+                        // Rausch-Klasse) auf fell und skin. Die Tier-Haut (fell) ist seit V18.497 geskinnt: r184
+                        // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
+                        // Die haut-Hülle des Menschen bleibt still.
                         const at = L.atem;
                         if (
                             at &&
@@ -68137,6 +68606,15 @@ class AnazhRealm {
                     mat.userData.foundryCrossfade = true; // Linsen-Marker (kein Verhalten)
                 }
             }
+            // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
+            // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
+            // der Spieler biegt die Halme (uBend). Der Versatz liegt nach der Instanzierung → Welt-Richtung.
+            if (kind === "grass") {
+                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
+                const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
+                const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
+                if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+            }
             mat.userData = mat.userData || {};
             mat.userData.foundryKind = kind;
         } catch (_e) {
@@ -68189,6 +68667,9 @@ class AnazhRealm {
             geo.setAttribute("color", new T.BufferAttribute(carr, 3));
         }
         if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
+        // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
+        for (const nm of ["aWurzel", "aSchale"])
+            if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
         if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
@@ -68213,7 +68694,8 @@ class AnazhRealm {
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         }
-        mesh.castShadow = true;
+        // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
+        mesh.castShadow = m.kind !== "fellSchale";
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
         if (AnazhRealm.LOOK_KLASSEN.has(m.kind)) mesh.userData.__klasse = m.kind;
@@ -68736,10 +69218,6 @@ class AnazhRealm {
                 for (let _si = 0; _si < _stages.length; _si++) if (_stages[_si] <= lod) _sv = _stages[_si];
                 lod = _sv;
             }
-            // Host-Stufen-Wunsch als DATEN (KIND_POLICY.lodServe, z. B. haus {1:2}): NACH der kindStages-Klammer
-            // gemappt, damit die Schlüssel deklarierte Stufen sind; _servedLod hält den Wechsel churn-frei.
-            const _polL = _rec && AnazhRealm.KIND_POLICY[_rec.kind];
-            if (_polL && _polL.lodServe && _polL.lodServe[lod] != null) lod = _polL.lodServe[lod];
         } else {
             // Ein-Stufen-Klammer auch für tree-ish Arten: deklariert die Art GENAU EINE Stufe (Tor gate=[0]),
             // klemmt jeder Wunsch dorthin — sonst baut der Worker inhaltsgleiche Zweit-Groups (Doppel-Cache,
@@ -80568,6 +81046,7 @@ class AnazhRealm {
         this._updateCelestialBodies(angle, tint.lightMul);
         this._dayNightApplyHemiAndFog(angle, tint);
         this._dayNightApplyWaterMaterials(lightDir);
+        this._dayNightApplyBelichtung();
     }
 
     // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor/lightColor/
@@ -80894,61 +81373,6 @@ class AnazhRealm {
             // Tageslicht — die Karten tragen ihr eingebackenes SONNEN-Licht).
             if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht) this.state.atmoUniforms.tagLicht.value = 0;
         }
-        // Grünes BOUNCE-FILL: gerichtetes Licht von der sonnen-abgewandten Seite formt die Schattenseite
-        // statt flachem Ambient. Farbe grün·atm.col, Intensität 0.62·atm.lum·Wetter → nachts ~0.04.
-        const fl = this.state.fillLight;
-        if (fl) {
-            const F = AnazhRealm.FILL_LIGHT;
-            fl.position.set(
-                focusX - lightDir.x * F.dist,
-                focusY - lightDir.y * F.dist + F.lift,
-                focusZ - lightDir.z * F.dist
-            );
-            if (fl.target) {
-                fl.target.position.set(focusX, focusY, focusZ);
-                fl.target.updateMatrixWorld();
-            }
-            fl.color.setRGB(F.r * a.col.r, F.g * a.col.g, F.b * a.col.b);
-            // Das Laub-Bounce-Fill ist Sonnenlicht aus zweiter Hand — es stirbt mit demselben Horizont-Fade wie
-            // der Richtungs-Körper (sonst nachts grünstichiges Rest-Fill; Gate: Fill NACHT < 0.1).
-            fl.intensity =
-                F.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul * this._celestialHorizonFade(sunDir.y);
-        }
-        // RIM: kühles Gegenlicht von der sonnen-abgewandten Seite, seitlich versetzt (⟂ zur Sonne) → hebt
-        // Laub/Stamm gegen den Himmel ab. Farbe konstant kühl-blau (Himmels-Bounce), Intensität folgt dem
-        // Tageslicht (nachts führt der Mond).
-        const rl = this.state.rimLight;
-        if (rl) {
-            const R = AnazhRealm.RIM_LIGHT;
-            rl.position.set(
-                focusX - lightDir.x * R.dist + lightDir.z * 24,
-                focusY - lightDir.y * R.dist + R.lift,
-                focusZ - lightDir.z * R.dist - lightDir.x * 24
-            );
-            if (rl.target) {
-                rl.target.position.set(focusX, focusY, focusZ);
-                rl.target.updateMatrixWorld();
-            }
-            rl.color.setRGB(R.r, R.g, R.b);
-            rl.intensity = R.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
-        }
-        // Warmes BACK-Licht (viertes Richtlicht): von der rim-gegenüberliegenden Lateral-Seite (−z⊥), tiefer
-        // (lift 18) — formt die Schattenseiten der Stämme. Farbe konstant warm, Intensität folgt a.lum.
-        const bl = this.state.backLight;
-        if (bl) {
-            const B = AnazhRealm.BACK_LIGHT;
-            bl.position.set(
-                focusX - lightDir.x * B.dist - lightDir.z * 24,
-                focusY - lightDir.y * B.dist + B.lift,
-                focusZ - lightDir.z * B.dist + lightDir.x * 24
-            );
-            if (bl.target) {
-                bl.target.position.set(focusX, focusY, focusZ);
-                bl.target.updateMatrixWorld();
-            }
-            bl.color.setRGB(B.r, B.g, B.b);
-            bl.intensity = B.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
-        }
         // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
         // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
         // gibt die Tiefe gerichtet, kein Post-FX-Lift nötig. `nightFactor` 0=Tag → 1=Nacht.
@@ -80974,16 +81398,51 @@ class AnazhRealm {
         }
     }
 
-    // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
-    // moduliert (positive Emotion erhöht ambient leicht — Welt wirkt heller).
+    // DIE EINE TAG-ACHSE der Himmels-Lichter: 0 ab ~15° Sonnenhöhe (Tag), 1 am/unter dem Horizont (Nacht).
+    // Nebel-Erdanteil, Ambient- und Hemi-Nachtboden lesen sie.
+    _nachtAnteil(angle) {
+        return 1 - Math.max(0, Math.min(1, Math.sin(angle) / 0.25));
+    }
+
+    // DIE BELICHTUNG AUS DEM LICHT (V18.507): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV
+    // (die Kamera-Konvention der Profi-Engines, UE5-Belichtungs-Bias +1). Die Karte liest L = 0,18/π · E
+    // mit E = Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben (`_himmelsIrradianz`) + Hemi +
+    // Ambient — dieselben Lichter, die jedes Material liest. Vorher stand die Belichtung fest auf 1,0:
+    // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die ACES-Schulter. Die
+    // Nacht bleibt, wie sie geeicht ist (Deckel 1,0 — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
+    _dayNightApplyBelichtung() {
+        const st = this.state;
+        const rend = st.renderer;
+        const dl = st.directionalLight;
+        if (!rend || !dl) return;
+        const B = AnazhRealm.BELICHTUNG;
+        const Y = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const dir = this._belichtungRichtung || (this._belichtungRichtung = new THREE.Vector3());
+        dir.copy(dl.position);
+        if (dl.target) dir.sub(dl.target.position);
+        const dy = dir.lengthSq() > 0 ? Math.max(0, dir.normalize().y) : 0;
+        let E = Y(dl.color.r, dl.color.g, dl.color.b) * dl.intensity * dy;
+        const env = this._himmelsIrradianz(); // liefert E/π (die Antwort einer weißen Lambert-Fläche)
+        if (env) E += Math.PI * Y(env.oben[0], env.oben[1], env.oben[2]);
+        const hl = st.hemiLight;
+        if (hl) E += Y(hl.color.r, hl.color.g, hl.color.b) * hl.intensity;
+        const al = st.ambientLight;
+        if (al) E += Y(al.color.r, al.color.g, al.color.b) * al.intensity;
+        const karte = (0.18 / Math.PI) * E;
+        const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
+        rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+    }
+
+    // Ambient-Light = NUR der Nachthimmel-Boden (EIN Himmel, V18.507): am Tag IST die Himmels-Umgebung
+    // der Himmel (aus dem sichtbaren Himmel gemalt) — ein Tag-Ambient zählte ihn doppelt (Licht-Bilanz
+    // 01.10.: Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 0,36 der Sonne, klarer Himmel real 0,12–0,16).
+    // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden (0.04) mit Hemi (0.10) die
+    // Nacht-Kalibrierung Mond/(amb+hemi) ≥ 1.5. Er blendet mit `_nachtAnteil` (dieselbe Tag-Achse wie der
+    // Nebel). joy/awe/sorrow modulieren wie bisher.
     _dayNightApplyAmbient(angle) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const sunHeight = Math.max(0, Math.sin(angle));
-        // Richtungsloses Ambient fast null (Mittag 0.16, Nacht 0.04): die Form geben Key- + Fill-Licht,
-        // ein hoher Ambient wäscht NdotL aus. Nacht-Kalibrierung: Mond/(amb+hemi) ≥ 1.5
-        // (0.22/(0.04+0.10) ≈ 1.57; mit 0.06 Nacht-Ambient wäre es zu flach).
-        const baseAmb = 0.04 + 0.12 * sunHeight;
+        const baseAmb = 0.04 * this._nachtAnteil(angle);
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -81044,18 +81503,16 @@ class AnazhRealm {
                 }
             }
             hl.groundColor.copy(earth);
-            const sunHeight = Math.max(0, Math.sin(angle));
-            // Hemi: Nacht-Floor 0.1 + Tag-Term 0.45·LEGACY_LICHT (= Vorlagen-Hemi 0.55, r128→r184 übersetzt).
-            // Mit dem starken Key bleibt das Licht key-dominant (~4:1); der Nacht-Floor bleibt außerhalb der
-            // Übersetzung (die Mond-Nacht ist eigen getuned).
-            hl.intensity = (0.1 + 0.45 * AnazhRealm.LEGACY_LICHT * sunHeight) * tint.lightMul;
+            // Hemi = NUR der Nachthimmel-Boden 0.1 (EIN Himmel, V18.507): der Tag-Term (Vorlagen-Hemi 0.55·π)
+            // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
+            hl.intensity = 0.1 * this._nachtAnteil(angle) * tint.lightMul;
         }
         if (fog) {
             // Erd-Anteil der Nebel-/Aerial-Farbe (gMix): fernes Terrain bleibt ein dunklerer Dunst mit lesbarer
             // Silhouette — mit zu viel Himmelsanteil wird es deckungsgleich und die Sonne „scheint durch" die
             // Berge. Speist auch `au.skyColor` (Höhen-Melt + Wasser-Fog). gMix skaliert mit der Sonnenhöhe →
             // nachts 0, sonst dominiert der warme groundColor den dunklen Himmel (warm-brauner Horizont).
-            const dayAmt = Math.max(0, Math.min(1, Math.sin(angle) / 0.25)); // 1 ab ~15° Sonne, 0 am/unter Horizont
+            const dayAmt = 1 - this._nachtAnteil(angle); // 1 ab ~15° Sonne, 0 am/unter Horizont
             const gMix = 0.26 * dayAmt;
             const fogRn = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
             const fogGn = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
@@ -83251,33 +83708,14 @@ class AnazhRealm {
                 this.log(`Schatten-CSM nicht verfügbar (${e && e.message}) — eine Map wie bisher`, "WARN");
             }
         }
-        // Grünes BOUNCE-FILL: DirectionalLight von der sonnen-abgewandten Seite, ohne Schatten (reines
-        // Form-Licht). Farbe/Intensität/Position setzt _dayNightApplyDirectionalLight pro Frame aus der
-        // EINEN Atmosphäre-Quelle.
-        const fillLight = new THREE.DirectionalLight(0x557a4a, 0.6);
-        fillLight.castShadow = false;
-        scene.add(fillLight);
-        scene.add(fillLight.target);
-        // Vorlagen-RIM (phytogenesis Z.1294): kühles Gegenlicht (0xaaccff), OHNE Schatten, von der
-        // sonnen-abgewandten Seite — hebt Laub/Stamm-Kanten gegen den Himmel ab. Tag/Nacht-geführt.
-        const rimLight = new THREE.DirectionalLight(0xaaccff, 1.2);
-        rimLight.castShadow = false;
-        scene.add(rimLight);
-        scene.add(rimLight.target);
-        this.state.rimLight = rimLight;
-        // DAS WARME BACK-LICHT (Studio-Rig Z.726, das vierte Richtlicht 0xffd8a0 0.5):
-        // OHNE Schatten, von der rim-gegenüberliegenden Lateral-Seite, tief — hellt die
-        // Schatten-Seiten-Stämme warm wie im Studio. Tag/Nacht führt _dayNightApply….
-        const backLight = new THREE.DirectionalLight(0xffd8a0, 0.5);
-        backLight.castShadow = false;
-        scene.add(backLight);
-        scene.add(backLight.target);
-        this.state.backLight = backLight;
+        // KEIN Studio-Füll-Rig in der Welt (V18.503): Fill · Rim · Back ersetzen im Labor den Himmel, den
+        // es nicht hat — die Welt hat ihn (die Himmels-Umgebung aus dem SICHTBAREN Himmel). Gemessen 01.10.
+        // an einer 50-%-Fläche: mit Rig las die Schattenseite so hell wie die Sonnenseite (208 vs 214),
+        // ohne Rig 145 vs 219 — das Verhältnis der Realität (0,16–0,21).
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
         this.state.directionalLight = directionalLight;
-        this.state.fillLight = fillLight;
         // HemisphereLight: skyColor oben, groundColor unten, gemischt über normal.y → Tiefe ohne dynamische
         // Schatten. Die Werte sind nur Saat; _applyDayNightToScene überschreibt (Sky aus DAY_NIGHT_STOPS,
         // Ground aus worldFieldAt).
@@ -85275,6 +85713,7 @@ class AnazhRealm {
                         if (!this._tickDekoFernfeld()) this._tickDeckStreu();
                     }
                     this._tickScatterRegrow(performance.now());
+                    this._tickNahWiese(_dl);
                     this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();
                     const lastTileCheck = this._lastHydroTileCheck ?? -Infinity;
@@ -86165,7 +86604,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.496.0";
+AnazhRealm.VERSION = "18.508.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -86263,16 +86702,14 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     }),
     // Haus-Domäne (fachwerk-core, kind:"haus", 32 Kultur-Archetypen): fx.place mode "settlement" +
     // siteTag "haus" über den Settlement-Kanal (exportSettlement → spawnSettlement) → placeExtra null.
-    // Donor = begehbarer Substanz-Datenblock (blockerAABBs mit TÜR-LÜCKE); kindStages.haus = [0,1,2].
-    // lodServe: Stufe 1 wird am EINEN Flatten-Chokepoint auf 2 gemappt (L1 ≈ 75k ≈ L0 88k Tris spart
-    // nichts, L2 = 2.8k); die eingefrorene Lab-Wahrheit kindStages bleibt unberührt.
+    // Donor = begehbarer Substanz-Datenblock (blockerAABBs mit TÜR-LÜCKE); kindStages.haus = [0,1,2] —
+    // alle drei serviert: L1 ist seit V18.500 die FLÄCHEN-STUFE des Studios (17–33 % von L0, höchstens 31k).
     haus: Object.freeze({
         prefix: "haus_",
         donor: "haus_basis",
         grown: false,
         builtIn: false,
         placeExtra: null,
-        lodServe: Object.freeze({ 1: 2 }),
     }),
 });
 // KIND_SUBSTANCE (unten) — die Judge-SUBSTANZ der Donor-Domänen + Werkzeug-Klasse als EINGEFRORENE
@@ -89829,23 +90266,18 @@ AnazhRealm.MOONLIGHT = Object.freeze({ r: 0x9f / 255, g: 0xb8 / 255, b: 0xdc / 2
 // über die Luftmasse gibt Sonnenfarbe+Lichtmenge für JEDEN Winkel spektral-korrekt.
 AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913 unter
-// ACES); FILL_LIGHT = das grüne, sonnen-abgewandte Bounce-Licht (grün·atm.col, 0.62·lum, +22 m
-// Hebung). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1) — Füll-Licht wäscht NdotL sonst aus.
+// ACES). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
 // 1/π-BRDF-Normierung — physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem
-// r128-Studio kopierten Rig-Werte (Key · Fill · Rim · Hemi-Tag) laufen durch diesen EINEN Faktor;
+// r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = Math.PI;
-AnazhRealm.FILL_LIGHT = Object.freeze({ r: 0.333, g: 0.478, b: 0.29, base: 0.62, dist: 60, lift: 22 });
-// Vorlagen-RIM (phytogenesis Z.1294: DirectionalLight(0xaaccff, 1.2), von der sonnen-abgewandten
-// Seite): das kühle Gegenlicht, das die Laub-/Stamm-Kanten gegen den Himmel abhebt — das 5.
-// Licht der Vorlagen-Rig, das AnazhRealm fehlte (Schöpfer-Befund „Vorlage sculptet reicher").
-AnazhRealm.RIM_LIGHT = Object.freeze({ r: 0.667, g: 0.8, b: 1.0, base: 1.2, dist: 70, lift: 30 });
-// Warmes BACK-Licht (Studio-Rig: DirectionalLight(0xffd8a0, 0.5)), das vierte Richtlicht: formt mit
-// key+fill+rim die Schattenseite der Stämme. Warm-konstant (kein atm-Tint), von der
-// rim-gegenüberliegenden Lateral-Seite, tief (lift 18 < rim 30); Intensität folgt a.lum.
-AnazhRealm.BACK_LIGHT = Object.freeze({ r: 1.0, g: 0.847, b: 0.627, base: 0.5, dist: 65, lift: 18 });
+// DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`): `zielKarte` ist die Leuchtdichte der 18-%-Karte nach
+// der Belichtung, die ACES (three: x·k/0,6, RRT+ODT-Fit) auf Mittelgrau + 1 EV legt — Mittelgrau (sRGB 118 =
+// linear 0,18) braucht den Fit-Eingang 0,26227, also k·L = 2 · 0,26227 · 0,6 = 0,3147. `max` 1,0 hält die geeichte
+// Nacht, `min` ist nur die Wand gegen ein entartetes Licht.
+AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
 // Slope-Schwellen des Gras-Gates: voll bis `lo` (≈35°), weg bis `hi` (≈52°), sanfter Übergang.
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN
 // `_slopeAt`-Achse.
@@ -89999,13 +90431,18 @@ AnazhRealm.WALD_ZIEGEL = Object.freeze({
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: 55, aus: 65 });
 // Die Studio-Material-Klassen, für die der Material-Weber ein Lab-Shader-Gesetz trägt (FELL_LOOK · HAUT_LOOK ·
 // HAAR_LOOK) — die Extraktion reicht genau sie als `kind` durch.
-AnazhRealm.LOOK_KLASSEN = new Set(["fell", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
+AnazhRealm.LOOK_KLASSEN = new Set(["fell", "fellSchale", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
 // Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
 // Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
 // in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse `diag-fell-blick`, 720p, fov 75°): die Strähnen ändern
 // 23 592 px bei 1,5 m · 8 421 bei 3 m · 1 808 bei 6 m · 0 ab 10 m — viele Strähnen unter einem Pixel wirken als
 // Dichte, bis ~0,1 px je Strähne (≈ 8 m bei 720p, ≈ 12 m bei 1080p).
 AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ breiteM: 0.018, pxMin: 0.1, hyst: 0.1 });
+// Die Ton-Rampe der Fell-Schalen (V18.497): der Lab-wurzelAnker 0.12 gilt Strähnen, deren Wurzeln unter
+// anderen Strähnen verschwinden — Schalen zeigen die Unterwolle (t ≈ 0.17–0.34). Gemessen (Fell-Linse 4 m,
+// nur Wolf-Pixel, Haut darunter ≈ 28): 0.12 → 1.0 las 23,5 (−16 %, ein Sprung an der Schwelle des Fell-
+// Bildschirm-Gesetzes) · 0.55 → 1.1 las 28,1 (Parität) · 0.7 → 1.3 las 31,2 (+11 %).
+AnazhRealm.FELL_SCHALE = Object.freeze({ wurzel: 0.55, spitze: 1.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;
