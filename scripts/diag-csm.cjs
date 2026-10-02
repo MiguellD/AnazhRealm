@@ -174,7 +174,7 @@ const server = http.createServer((req, res) => {
         status.camBound &&
         Array.isArray(status.mapsAllocated) &&
         status.mapsAllocated.every(Boolean) &&
-        status.breaks.length === 3 &&
+        status.breaks.length === status.cascades &&
         errs.length === 0;
     console.log("PAGE-ERRORS:", errs.length ? errs.slice(0, 5).join(" | ") : "keine");
     console.log(ok ? "CSM-DIAG: GRÜN (Maps alloziert, Kaskaden gebunden, keine Fehler)" : "CSM-DIAG: ROT");

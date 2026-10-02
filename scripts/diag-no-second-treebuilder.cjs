@@ -44,11 +44,10 @@ const server = http.createServer((req, res) => {
             } catch (_e) {}
             await sleep(10);
         }
-        // Instanz-Gruppen (+ Batches) enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
+        // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
         const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g && g.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
         eat(r.state.archInstanceGroups);
-        eat(r.state.archBatches);
         // Klassifizieren: die FOUNDRY-Herkunft lebt im LEAF-Key (nach `#`): `f:`/`fimp:` = Foundry-Geometrie/
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
         // deren Leaf `f:tanne|…` ist). `fscatter:` im Namen = Foundry-Scatter. Ein GRAMMATIK-Baum hat einen

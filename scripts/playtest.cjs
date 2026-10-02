@@ -46285,13 +46285,17 @@ async function checkBandV18129HochBecken(ctx) {
     );
 }
 
-// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 3 Kaskaden mit Grenzen = DETAIL_CASCADE-Kanten.
-// Die CSM-Init ist LAZY (erster echter Material-Build) → unter gestubbtem Render sind breaks leer:
-// hier Konstruktion + Vertrag prüfen; Look + Map-Allokation misst `scripts/diag-csm.cjs`.
+// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 2 Kaskaden INNERHALB der Schatten-Reichweite
+// (V18.510): Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
+// SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
+// Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
+// einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
+// ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst `diag-csm.cjs`.
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const A = r.constructor;
         const out = {};
         out.vendorSymbol = typeof window.THREE.CSMShadowNode === "function";
         const csm = r.state.csmNode;
@@ -46301,20 +46305,36 @@ async function checkBandV18130CsmShadow(ctx) {
             out.fade = csm.fade === true;
             out.isShadowNode = r.state.directionalLight && r.state.directionalLight.shadow.shadowNode === csm;
             out.mode = csm.mode;
-            // Der Kaskaden-Vertrag: der custom-Split liefert EXAKT die
-            // DETAIL_CASCADE-Band-Kanten (Band 0 ~108 m, Band 1 ~367 m) / maxFar.
-            const breaks = [];
-            csm.customSplitsCallback(3, 0.5, 540, breaks);
             const span = r._voxelChunkConfig(0).span;
-            const bands = r.constructor.DETAIL_CASCADE;
-            const e0 = ((bands[0].maxRing + 0.5) * span) / 540;
-            const e1 = ((bands[1].maxRing + 0.5) * span) / 540;
-            out.breaksAreBandEdges =
-                breaks.length === 3 &&
-                Math.abs(breaks[0] - e0) < 1e-9 &&
-                Math.abs(breaks[1] - e1) < 1e-9 &&
-                breaks[2] === 1;
-            out.breaks = breaks.map((b) => +b.toFixed(3)).join(",");
+            const e0 = (A.DETAIL_CASCADE[0].maxRing + 0.5) * span;
+            const F = A.SCHATTEN_FERN_FAKTOR;
+            const fars = [A.PERF_SHADOW_RANGE_MIN * F, A.PERF_SHADOW_RANGE_MAX * F, 400 * F];
+            let kante = true,
+                minAnteil = 1;
+            const zeilen = [];
+            for (const far of fars) {
+                const breaks = [];
+                csm.customSplitsCallback(csm.cascades, 0.5, far, breaks);
+                if (breaks.length !== csm.cascades || breaks[breaks.length - 1] !== 1) kante = false;
+                if (Math.abs(breaks[0] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
+                let prev = 0;
+                for (const b of breaks) {
+                    minAnteil = Math.min(minAnteil, b - prev);
+                    prev = b;
+                }
+                zeilen.push(far.toFixed(0) + ":" + breaks.map((b) => b.toFixed(2)).join("/"));
+            }
+            out.breaksAreLaw = kante;
+            out.minAnteil = +minAnteil.toFixed(3);
+            out.breaks = zeilen.join(" ");
+            // die Boot-Tiefe liest dieselbe Größe wie der Regler (Decke × Faktor), nie eine eigene Zahl
+            const decke =
+                r.state.atmosphere && Number.isFinite(r.state.atmosphere.shadowRange)
+                    ? r.state.atmosphere.shadowRange
+                    : A.PERF_SHADOW_RANGE_MAX;
+            const applied = Number.isFinite(r._shadowRangeApplied) ? r._shadowRangeApplied : decke;
+            out.maxFarIstReichweite = Math.abs(csm.maxFar - applied * F) < 1e-6;
+            out.maxFar = +csm.maxFar.toFixed(1);
         }
         // KONSUM-Proben: der Bias-Hebel propagiert auf die Kaskaden-Lichter,
         // der Resize ruft updateFrustums (Addon-Vertrag).
@@ -46328,13 +46348,18 @@ async function checkBandV18130CsmShadow(ctx) {
     }
     check("V18.130 CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
     check(
-        "V18.130 CSM: 3 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
-        res.active && res.cascades === 3 && res.fade && res.isShadowNode
+        "V18.510 CSM: 2 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
+        res.active && res.cascades === 2 && res.fade && res.isShadowNode
     );
     check(
-        "V18.130 CSM: die Kaskaden-Grenzen SIND die DETAIL_CASCADE-Band-Kanten (custom-Split)",
-        res.active && res.mode === "custom" && res.breaksAreBandEdges,
-        `breaks=${res.breaks}`
+        "V18.510 CSM: Kaskade 0 endet an der Band-0-Kante, die letzte an maxFar = Reichweite × Faktor",
+        res.active && res.mode === "custom" && res.breaksAreLaw && res.maxFarIstReichweite,
+        `breaks=${res.breaks} maxFar=${res.maxFar}`
+    );
+    check(
+        "V18.510 CSM: jede Kaskade trägt ≥ 10 % der Tiefe über die ganze Reichweite (kein Streifen-Durchgang)",
+        res.active && res.minAnteil >= 0.1,
+        `min=${res.minAnteil} breaks=${res.breaks}`
     );
     check(
         "V18.130 CSM: setShadowBias propagiert auf die Kaskaden + Resize ruft updateFrustums",

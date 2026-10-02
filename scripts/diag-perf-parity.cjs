@@ -71,7 +71,7 @@ const CENSUS_SRC = `(function census(sceneRoot, camPos, radius) {
     sceneRoot.traverse((o) => {
         if (!o.visible) return;
         const g = o.geometry;
-        if (!g || !(o.isMesh || o.isInstancedMesh || o.isPoints || o.isBatchedMesh)) return;
+        if (!g || !(o.isMesh || o.isInstancedMesh || o.isPoints)) return;
         const pos = g.attributes && g.attributes.position;
         if (!pos) return;
         const idxCount = g.index ? g.index.count : pos.count;

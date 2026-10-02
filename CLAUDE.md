@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.509.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.510.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -81,13 +81,15 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 KI-Prompt lehrt die LIVE-Wörter aller Studios; „pflanz mir einen eichenhain am wasser" wirkt auch ohne
 Schlüssel. Offen: der echte LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.496 — AAA NAH (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"):** nah und
-mittel ist das Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern und
-in der Streaming-Rampe. Kreaturen ≤ 55 m Studio-Tier (`KREATUR_NAH_MESH`), Architektur in der
-Mesh-Zone = Cull-Radius 100–150 m, Streu-Bäume L0/L1 Mesh + L2 Studio-Billboard. Damit die Zone
-steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, EINE Bake-Uhr (45 s),
-Staging-Entlassung nie mit offenem Upload. Gemessen (`aaa8`): ungebaut 148–195 → 0, Bild = Studio-Wolf mit
-Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0); 97–283 dc / 28–832k Dreiecke je Bild (Stock-Schwelle ~1 M).
+**V18.496 — AAA NAH (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"):** nah und mittel ist das
+Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern und in der Streaming-Rampe:
+Kreaturen ≤ 55 m (`KREATUR_NAH_MESH`), Architektur im Cull-Radius 100–150 m, Streu-Bäume L0/L1 + L2-Billboard;
+Budget zählt gebaute Meshes, Bäcker nah zuerst, EINE Bake-Uhr (45 s). Gemessen (`aaa8`): ungebaut 148–195 → 0.
+
+**V18.510 — DIE DRAW-WAHRHEIT:** r184-WebGPU kennt kein Multi-Draw, ein BatchedMesh zeichnet je INSTANZ: der
+Batch-Pfad fiel (jedes Leaf eine InstancedMesh, Foundry-Teile EINES Materials verschmolzen: Geröll 16 → 1), die CSM
+trägt 2 Kaskaden (die dritte war ein 5-%-Streifen), die Instanz-Matrix heißt im WGSL fest (780 → 92 Pipelines), der
+Bundle-Replay bucht ins Info: Mess-Wiese 29 943 → 1 091 GPU-Befehle je Schatten-Frame (`werkbank zaehlen`).
 
 **V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin → `__huelleAusFeld`, 25 Bones), das
 Fell 6 Schalen (Wolf L0 315k → 57k Dreiecke); seit V18.509 hängen die starren Teile (Pfote · Ohr · Lid · Kopf ·
@@ -95,13 +97,10 @@ Kiefer) je Material als EIN starr gebundenes SkinnedMesh am Ofen-Chokepoint (`_o
 Tier), jede Hülle cullt gegen ihre Körper-Kugel: 5 Wölfe 730 → 310 Draws, Mensch nah 40 → 16 (`gate:kreatur-kosten`).
 
 **V18.500–508 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT · FARBE · WIESE:** Haus-L1 `flaechig`
-(L1 2251k → 561k), Weiß backt nur mit Karte (`aaa10`), Gelenk-Kugeln nur an der Gabel (`aaa11`);
-`_voxelSurfaceY` liest den Nulldurchgang; EINE Foundry-Frist ab Arbeitsbeginn; das FARB-GESETZ gilt
-für die Vegetation (Hex = sRGB-Absicht: Laub 0,42 → 0,16); EIN Himmel am Tag (die Umgebung — Hemi und
-Ambient tragen nur den Nachtboden) und die Belichtung aus dem Licht (18-%-Karte 212 → 173 = Mittelgrau
-+1 EV, Weiß ungeclippt, der Himmel blau); nah die NAH-WIESE (Studio-Gras nach dem Studio-Gesetz im
-Kachel-Ring um die Kamera, wiegt im Wind) auf der Boden-Karte = dem GERENDERTEN Boden (Gesetz ±0,2 m
-daneben): Armlänge Kontrast 0,32 → 10,99. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht`).
+(L1 2251k → 561k), Weiß backt nur mit Karte, Gelenk-Kugeln nur an der Gabel; `_voxelSurfaceY` liest den
+Nulldurchgang; das FARB-GESETZ gilt für die Vegetation (Laub 0,42 → 0,16); EIN Himmel am Tag und die Belichtung
+aus dem Licht (18-%-Karte 212 → 173 = Mittelgrau +1 EV); nah die NAH-WIESE (Studio-Gras im Kachel-Ring) auf dem
+GERENDERTEN Boden: Armlänge Kontrast 0,32 → 10,99. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht`).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
@@ -194,6 +193,9 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
     Funktion nicht (±0,2 m, Spawn-Chunk Median 46 cm). Was AUF dem Boden steht (Gras, Streu, Deko), liest die
     Boden-Karte (`_chunkSurfaceAt`, aus dem fertigen Mesh); Körper stehen auf dem Gesetz (Lockstep). Und im
     positionNode ist `positionLocal` schon instanziert (r184) — Höhen-Gewichte lesen `positionGeometry`.
+23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
+    Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
+    ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines).
 
 ## Workflows
 

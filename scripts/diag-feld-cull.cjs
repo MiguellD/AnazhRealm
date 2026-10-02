@@ -127,7 +127,7 @@ const server = http.createServer((req, res) => {
             let max = 0;
             if (r.state.archInstanceGroups) {
                 for (const g of r.state.archInstanceGroups.values()) {
-                    if (!g || !g.mesh || g.kind === "batch" || !g.mesh.isInstancedMesh) continue;
+                    if (!g || !g.mesh || !g.mesh.isInstancedMesh) continue;
                     if (!g.key.startsWith("fscatter:") || g.key.indexOf("@") < 0) continue;
                     n++;
                     if ((g.mesh.count | 0) > max) max = g.mesh.count | 0;

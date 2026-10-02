@@ -89,9 +89,9 @@ function check(name, ok, detail) {
         `ableitungen=${fernDeriveSites}`
     );
     check(
-        "F(Quelle): der Keying-Chokepoint mappt VOR dem Batch-Zweig (_archFernRegionKey zuerst)",
+        "F(Quelle): der Keying-Chokepoint mappt VOR dem Gruppen-Key (_archFernRegionKey zuerst)",
         gfHead.indexOf("this._archFernRegionKey(") >= 0 &&
-            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf("_archBatchGroupFor")
+            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf('const key = regional ? name + "#"')
     );
 
     await new Promise((r) => server.listen(PORT, r));
@@ -308,7 +308,7 @@ function check(name, ok, detail) {
                 let ursprungsHazard = 0;
                 if (r.state.archInstanceGroups) {
                     for (const [k, g] of r.state.archInstanceGroups) {
-                        if (!privat(k) || !g.mesh || g.kind === "batch" || !g.mesh.instanceMatrix) continue;
+                        if (!privat(k) || !g.mesh || !g.mesh.instanceMatrix) continue;
                         const arr = g.mesh.instanceMatrix.array;
                         for (let sl = 0; sl < g.next; sl++) {
                             const o = sl * 16;
@@ -356,11 +356,9 @@ function check(name, ok, detail) {
             if (fern.flat) {
                 const R = AR.ARCH_REGION_M;
                 const zaehle = () => {
-                    let w = 0,
-                        b = 0;
+                    let w = 0;
                     for (const k of r.state.archInstanceGroups.keys()) if (k.includes("@") && k.includes("#fimp:")) w++;
-                    if (r.state.archBatches) for (const k of r.state.archBatches.keys()) if (k.includes("@")) b++;
-                    return { w, b };
+                    return { w };
                 };
                 const welt = (S) => {
                     AR.SCATTER_FERN_SUPERREGION = S;
@@ -380,15 +378,13 @@ function check(name, ok, detail) {
                     const mit = zaehle();
                     for (const e of entries) r._archInstanceRemove(e);
                     const nach = zaehle();
-                    return { gruppen: mit.w - vor.w, batches: mit.b - vor.b, leck: nach.w - vor.w };
+                    return { gruppen: mit.w - vor.w, leck: nach.w - vor.w };
                 };
                 const a = welt(1); // VORHER: per-Region (die V18.300/V18.303-Welt)
                 const b = welt(S0); // NACHHER: Super-Region (Produktions-Konstante)
                 AR.SCATTER_FERN_SUPERREGION = S0;
                 fern.vorher = a.gruppen;
                 fern.nachher = b.gruppen;
-                fern.batchesVorher = a.batches;
-                fern.batchesNachher = b.batches;
                 fern.leckA = a.leck;
                 fern.leckB = b.leck;
             }
@@ -458,7 +454,7 @@ function check(name, ok, detail) {
                 out.f.vorher >= 16 &&
                 out.f.nachher >= 1 &&
                 out.f.vorher >= 4 * out.f.nachher,
-            `batches ${out.f.batchesVorher}→${out.f.batchesNachher} · S=${out.f.s0}`
+            `S=${out.f.s0}`
         );
         check(
             "F: Slot-Bilanz dicht — die Empty-Dispose räumt BEIDE Welten restlos",

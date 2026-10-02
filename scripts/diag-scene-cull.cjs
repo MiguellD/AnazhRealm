@@ -4,9 +4,9 @@
 //
 // Wo lebt die VIEW-UNABHÄNGIGE Last (frustumCulled=false → rendert egal wohin man
 // schaut)? Das ist der „kann mich nicht umsehen"-Hebel. Diese Linse bricht die GANZE
-// Szene nach Kategorie × Cull-Status auf — und nutzt `perObjectFrustumCulled` (die
-// GPU-per-Instanz-Cullung der BatchedMesh) korrekt (sonst zählt sie ein Batch falsch
-// als Phantom). Null-Renderer = die CPU-Geometrie ist da, kein swiftshader nötig.
+// Szene nach Kategorie × Cull-Status auf (`perObjectFrustumCulled` — die per-Instanz-
+// Cullung einer three-BatchedMesh — zählt nie als Phantom; die Welt baut seit V18.510
+// keine mehr). Null-Renderer = die CPU-Geometrie ist da, kein swiftshader nötig.
 // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1) — die Linse lernt den T3-BUNDLE-
 // CULL: Meshes in einer Region-BundleGroup tragen frustumCulled=false BEWUSST (die
 // Draw-Liste friert im RenderBundle ein, three-Culling wäre wirkungslos) — ihr
@@ -93,11 +93,10 @@ const server = http.createServer((req, res) => {
             const other = {}; // V18.362 — „other" nach echter Quelle aufschlüsseln (V18.266/.307: die Sammel-Kategorie versteckt den Schuldigen)
             scene.traverse((n) => {
                 if (!n.visible) return;
-                const isMesh = n.isMesh || n.isInstancedMesh || n.isBatchedMesh;
+                const isMesh = n.isMesh || n.isInstancedMesh;
                 if (!isMesh || !n.geometry) return;
                 let inst = 1;
                 if (n.isInstancedMesh) inst = n.count || 0;
-                else if (n.isBatchedMesh) inst = n._geometryCount || n.instanceCount || 1;
                 const tris = triOf(n.geometry) * (n.isInstancedMesh ? inst : 1);
                 // T3-Bundle-Cull: ein cullSphere-Ahne (Region-BundleGroup) cullt
                 // view-abhängig pro Region — das Mesh ist KEIN Phantom.
@@ -120,7 +119,7 @@ const server = http.createServer((req, res) => {
                 if (c === "other") {
                     const u = n.userData || {};
                     const ukeys = Object.keys(u).slice(0, 3).join(",");
-                    const sig = `${n.isInstancedMesh ? "inst" : n.isBatchedMesh ? "batch" : "mesh"}·${(n.material && (n.material.name || n.material.type)) || "?"}·tpg${triOf(n.geometry)}·u[${ukeys}]·n[${(n.name || "").slice(0, 18)}]`;
+                    const sig = `${n.isInstancedMesh ? "inst" : "mesh"}·${(n.material && (n.material.name || n.material.type)) || "?"}·tpg${triOf(n.geometry)}·u[${ukeys}]·n[${(n.name || "").slice(0, 18)}]`;
                     if (!other[sig]) other[sig] = { tris: 0, meshes: 0, inst: 0 };
                     other[sig].tris += tris;
                     other[sig].meshes += 1;

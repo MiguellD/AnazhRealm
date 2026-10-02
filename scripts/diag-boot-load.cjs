@@ -127,11 +127,11 @@ const server = http.createServer((req, res) => {
         if (s.scene)
             s.scene.traverse((o) => {
                 if (!o.visible) return;
-                if (!(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.geometry) return;
+                if (!(o.isMesh || o.isInstancedMesh) || !o.geometry) return;
                 meshCount++;
                 let t = triOf(o.geometry);
-                const inst = o.isInstancedMesh ? o.count || 0 : o.isBatchedMesh ? o._geometryCount || o.count || 1 : 1;
-                if (o.isInstancedMesh || o.isBatchedMesh) instMeshCount++;
+                const inst = o.isInstancedMesh ? o.count || 0 : 1;
+                if (o.isInstancedMesh) instMeshCount++;
                 const tt = t * (o.isInstancedMesh ? inst : 1);
                 totalTris += tt;
                 const nm = (
@@ -148,16 +148,14 @@ const server = http.createServer((req, res) => {
                 else cat.rest += tt;
             });
         // UNIQUE Geometrie-Dreiecke (Speicher/Upload) vs EFFEKTIV gezeichnete — der Instancing-Beweis:
-        // InstancedMesh teilt EINE geom (Speicher fällt), BatchedMesh KOPIERT je Instanz (Speicher = gezeichnet).
+        // InstancedMesh teilt EINE geom (Speicher fällt); die Welt baut seit V18.510 keine BatchedMesh mehr.
         const seenGeo = new Set();
         let uniqueTris = 0,
-            batchedCount = 0,
             instancedCount = 0,
             instancedDrawn = 0;
         if (s.scene)
             s.scene.traverse((o) => {
-                if (!o.visible || !(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.geometry) return;
-                if (o.isBatchedMesh) batchedCount++;
+                if (!o.visible || !(o.isMesh || o.isInstancedMesh) || !o.geometry) return;
                 if (o.isInstancedMesh) {
                     instancedCount++;
                     instancedDrawn += triOf(o.geometry) * (o.count || 0);
@@ -173,7 +171,6 @@ const server = http.createServer((req, res) => {
             uniqueGeomTris: Math.round(uniqueTris),
             meshCount,
             instMeshCount,
-            batchedMeshes: batchedCount,
             instancedMeshes: instancedCount,
             instancedDrawnTris: Math.round(instancedDrawn),
         };
@@ -188,7 +185,7 @@ const server = http.createServer((req, res) => {
         const big = [];
         if (s.scene)
             s.scene.traverse((o) => {
-                if (!o.visible || !(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.geometry) return;
+                if (!o.visible || !(o.isMesh || o.isInstancedMesh) || !o.geometry) return;
                 const per = triOf(o.geometry);
                 const inst = o.isInstancedMesh ? o.count || 0 : 1;
                 const tot = per * (o.isInstancedMesh ? inst : 1);
@@ -198,7 +195,7 @@ const server = http.createServer((req, res) => {
                     tris: Math.round(tot),
                     posCount: pc,
                     inst,
-                    kind: o.isInstancedMesh ? "InstMesh" : o.isBatchedMesh ? "Batched" : "Mesh",
+                    kind: o.isInstancedMesh ? "InstMesh" : "Mesh",
                     key: (o.userData && o.userData.archInstanceKey) || (o.name || "?").slice(0, 46),
                     mat: o.material && o.material.name ? o.material.name.slice(0, 24) : "",
                 });

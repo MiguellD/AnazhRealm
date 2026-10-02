@@ -375,7 +375,7 @@ function triasStaticLaws(anazhSrc) {
             const o = { ghost: 0, band: 0, hausGroups: 0 };
             if (r.state.archInstanceGroups)
                 for (const [key, g] of r.state.archInstanceGroups) {
-                    if (!g || g.kind === "batch" || !g.geom) continue;
+                    if (!g || !g.geom) continue;
                     const tris = g.geom.index ? g.geom.index.count / 3 : g.geom.attributes.position.count / 3;
                     o.ghost += Math.max(0, (g.mesh ? g.mesh.count : 0) - (g.liveCount || 0)) * tris;
                     if (key.indexOf("haus_") === 0) o.hausGroups++;

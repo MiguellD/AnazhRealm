@@ -132,7 +132,6 @@ const server = http.createServer((req, res) => {
             // Kopfraum darunter).
             const hz = r._flightRecorderHeapZensus ? r._flightRecorderHeapZensus() : null;
             o.szeneMB = hz ? hz.szeneMB : null;
-            o.batchFillPct = hz && hz.halter ? hz.halter.batchFillPct : null;
             // ── V1 + V3: STAND-FENSTER (Spieler steht, 400 Ticks im Regime) ──
             const mints0 = r._archGruppenMints || 0;
             const groups0 = st.archInstanceGroups ? st.archInstanceGroups.size : 0;
@@ -247,7 +246,7 @@ const server = http.createServer((req, res) => {
         `  V2 INGEST-TAKT: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort}`
     );
     console.log(`  V4 LINSEN: verdrahtet=${out.v4Linsen} (bundleDeckung ${out.deckungPct}%)`);
-    console.log(`  V5 SZENE-SPEICHER: ${out.szeneMB} MB (Band < 700) · batchFill ${out.batchFillPct}%`);
+    console.log(`  V5 SZENE-SPEICHER: ${out.szeneMB} MB (Band < 700)`);
     console.log(`  SELBSTTEST Churn-Linse feuert: ${out.selbsttestChurn}`);
     if (out.err) console.log(`  Fehler: ${out.err}`);
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));

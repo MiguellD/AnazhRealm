@@ -187,20 +187,18 @@ const server = http.createServer((req, res) => {
     });
     console.log("Kamera:", JSON.stringify(cam));
 
-    // Szene-Last messen. AnazhRealms Vegetation lebt in BatchedMesh (useBatchedArch) UND InstancedMesh
-    // (schwere Bäume + Impostoren) — beide zählen.
+    // Szene-Last messen. AnazhRealms Vegetation lebt in InstancedMesh (Bäume, Streu, Impostoren; seit
+    // V18.510 keine BatchedMesh mehr).
     const sceneStat = async (label) =>
         await page.evaluate((label) => {
             const r = window.anazhRealm;
             const s = r.state;
             let tris = 0,
-                batched = 0,
-                batchTris = 0,
                 inst = 0,
                 plainMeshes = 0;
             s.scene.traverse((o) => {
                 if (!o.visible) return;
-                if (!(o.isMesh || o.isInstancedMesh || o.isBatchedMesh)) return;
+                if (!(o.isMesh || o.isInstancedMesh)) return;
                 const g = o.geometry;
                 if (!g || !g.attributes || !g.attributes.position) return;
                 const vc = g.attributes.position.count;
@@ -209,17 +207,12 @@ const server = http.createServer((req, res) => {
                 const cnt = o.isInstancedMesh ? o.count : 1;
                 const t = perTris * cnt;
                 tris += t;
-                if (o.isBatchedMesh) {
-                    batched++;
-                    batchTris += t;
-                } else if (o.isInstancedMesh) inst += cnt;
+                if (o.isInstancedMesh) inst += cnt;
                 else plainMeshes++;
             });
             return {
                 label,
                 tris: Math.round(tris),
-                batchedMeshes: batched,
-                batchTris: Math.round(batchTris),
                 instances: inst,
                 plainMeshes,
             };
@@ -286,9 +279,9 @@ const server = http.createServer((req, res) => {
                 impostorsKept += o.count;
                 return;
             }
-            // Nah-Vegetation lebt in BatchedMesh (leichte Blatt-Karten/Gras) UND InstancedMesh
-            // (schwere Baum-Geometrie). Beide verstecken. Terrain/Wasser/Himmel sind plain Mesh → bleiben.
-            if (o.isBatchedMesh || o.isInstancedMesh) {
+            // Nah-Vegetation lebt in InstancedMesh (Blatt-Karten, Gras, Baum-Geometrie) → verstecken.
+            // Terrain/Wasser/Himmel sind plain Mesh → bleiben.
+            if (o.isInstancedMesh) {
                 o.userData.__tragbarHidden = true;
                 o.visible = false;
                 hidden++;

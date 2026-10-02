@@ -53,9 +53,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_bundleReifeWache (Record-Versiegelung)" },
     // Bundle-Pass-Physik (Wasser bleibt draußen, solange der Copy den Pass bricht)
     { file: "vendor/three.webgpu.min.js", sub: "currentPass.end()", organ: "Wasser-Bundle-Wand (copyFramebufferToTexture-Pass-Bruch)" },
-    // Batch-Staging + Füllstands-Linse
-    { file: "vendor/three.core.min.js", sub: "_nextVertexStart", organ: "heapZensus.batchFillPct (Residenz-Bilanz)" },
-    { file: "vendor/three.core.min.js", sub: "setGeometrySize", organ: "_archBatchAddGeometry (Klein-Münze + Wachstum)" },
+    // Bundle-Replay-Buchung: die Draw-Wahrheit im Info (der Replay zieht aufgenommene RenderObjects)
+    { file: "vendor/three.webgpu.min.js", sub: "_renderBundle(e,t,r){const{bundleGroup:s,camera:i,renderList:n}=e,a=this._currentRenderContext,o=this._bundles.get(s,i,a)", organ: "Bundle-Replay-Buchung (renderer._renderBundle → info.update)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getDrawParameters(){", organ: "Bundle-Replay-Buchung (Draw-Parameter)" },
+    // Der stabile Puffer-Name: InstanceNode baut die Matrix-Puffer, der WGSL-Builder nennt sie ohne Namen nach der id
+    { file: "vendor/three.webgpu.min.js", sub: "_createInstanceMatrixNode(e,t){let r;const{instanceMatrix:s}=this", organ: "Instanz-Puffer-Name (InstanceNode._createInstanceMatrixNode → setName)" },
+    { file: "vendor/three.webgpu.min.js", sub: '"NodeBuffer_"+', organ: "Instanz-Puffer-Name (der id-Name, den setName ersetzt)" },
     // instanceMatrix-Versions-Wächter (Kern-Setter)
     { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
     // Chunk-Boden-Entlassung (Upload-Probe: backend.get(attr).buffer existiert erst nach createAttribute)

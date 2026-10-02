@@ -216,7 +216,7 @@ const server = http.createServer((req, res) => {
             let emitters = 0,
                 leere = 0;
             st.scene.traverse((node) => {
-                if (!(node.isMesh || node.isInstancedMesh || node.isBatchedMesh || node.isPoints)) return;
+                if (!(node.isMesh || node.isInstancedMesh || node.isPoints)) return;
                 let vis = node.visible,
                     cur = node.parent;
                 while (cur && vis) {
@@ -240,13 +240,7 @@ const server = http.createServer((req, res) => {
                             label,
                             keys: keys.slice(0, 4),
                             name: node.name || "",
-                            type: node.isBatchedMesh
-                                ? "batch"
-                                : node.isInstancedMesh
-                                  ? "inst×" + node.count
-                                  : node.isPoints
-                                    ? "points"
-                                    : "mesh",
+                            type: node.isInstancedMesh ? "inst×" + node.count : node.isPoints ? "points" : "mesh",
                             verts: g.attributes.position.count,
                             userDataKeys: Object.keys(node.userData || {}).slice(0, 6),
                             parents: chain
