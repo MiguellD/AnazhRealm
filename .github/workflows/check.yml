@@ -159,6 +159,12 @@ jobs:
               # den `node --check` nicht sieht (Syntax bleibt valide). Die Schwester zu cut-method.cjs.
               run: npm run gate:page-error
 
+            - name: Fenster-Wand (ein Fenster-Wechsel macht die Welt nie wieder schwarz)
+              # Fährt den ECHTEN resize-Handler (GPU-frei) und prüft den Konsum: der EINE Leser der
+              # Viewport-Tiefe (das Wasser-Material) ist nach setSize neu gebunden, kein Mesh — auch kein
+              # ausgehängtes — trägt das alte, die Uniform-Werte reisen mit; der Selbsttest feuert.
+              run: npm run gate:fenster-wechsel
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-

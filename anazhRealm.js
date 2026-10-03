@@ -32375,6 +32375,46 @@ class AnazhRealm {
         return { submerged: true, surfaceY };
     }
 
+    // DIE TIEFE NACH DEM REALLOC: das Wasser ist der EINE Leser der Viewport-Tiefe (`viewportLinearDepth`
+    // → r184 ViewportDepthTextureNode, ein MSAA-Klon je Render-Ziel, kopiert im Pass-Bruch). Ein Resize
+    // (`setSize`) legt Szene-Tiefe und Klon neu an, die Textur-Bindung des Wasser-Materials zieht nicht nach:
+    // jeder Submit des Hauptpasses fällt („Destroyed texture … used in a submit", renderContext des Szene-
+    // Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster 1920→1600→1920). Das Material
+    // wird frisch gebaut (gleicher WGSL → Programm aus dem Cache), alle Uniform-Werte reisen mit.
+    _wasserTiefeNeuBinden() {
+        const st = this.state;
+        const alt = st.hydroSurfaceMaterial;
+        if (!alt) return 0;
+        const altU = st.hydroSurfaceUniforms || {};
+        st.hydroSurfaceMaterial = null;
+        const neu = this._ensureHydroSurfaceMaterial();
+        if (!neu) {
+            st.hydroSurfaceMaterial = alt;
+            return 0;
+        }
+        const neuU = st.hydroSurfaceUniforms || {};
+        for (const k of Object.keys(altU)) {
+            const a = altU[k],
+                n = neuU[k];
+            if (!a || !n || a === n || a.value == null) continue;
+            if (n.value && typeof n.value.copy === "function") n.value.copy(a.value);
+            else n.value = a.value;
+        }
+        // Szene (inkl. Bundles) UND die Chunk-Wasser-Ablage — ein gerade ausgehängtes Mesh nähme sonst das
+        // entsorgte Material wieder mit in die Welt.
+        let umgehaengt = 0;
+        const haenge = (o) => {
+            if (!o || o.material !== alt) return;
+            o.material = neu;
+            umgehaengt++;
+            if (o.parent && o.parent.isBundleGroup) o.parent.needsUpdate = true;
+        };
+        st.scene.traverse(haenge);
+        if (st.voxelChunkWaterIso) for (const m of st.voxelChunkWaterIso.values()) haenge(m);
+        alt.dispose();
+        return umgehaengt;
+    }
+
     // Der EINE Wasser-Shader für alle Iso-Wasser-Meshes (Ozean + See + Fluss): `aWave` ∈ [0,1]
     // (Ozean-Anteil, skaliert die Wellen; weich 0 am Ufer → kein Küsten-Riss), `aFlow` (Gefälle-
     // Tangente, Schaum stromab), `aShore` (Ufer-Schaum-Band). Sonne/Licht/Fog speist
@@ -84162,6 +84202,8 @@ class AnazhRealm {
             // B4 (V18.130) — die CSM-Frusta hängen an der Kamera-Projektion
             // (Addon-Vertrag: „call every time you change camera settings").
             if (this.state.csmNode && this.state.csmNode.camera) this.state.csmNode.updateFrustums();
+            // setSize legt Szene-Tiefe und Viewport-Tiefen-Klon neu an — der EINE Leser bindet neu.
+            this._wasserTiefeNeuBinden();
             this.log("Fenstergröße angepasst", "INFO");
         });
 
@@ -86821,7 +86863,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.514.0";
+AnazhRealm.VERSION = "18.515.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

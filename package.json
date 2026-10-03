@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.514.0",
+    "version": "18.515.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -27,6 +27,7 @@
         "look-golden": "node scripts/diag-look-golden.cjs",
         "blick": "node scripts/diag-blick.cjs",
         "gate:page-error": "node scripts/diag-page-error.cjs",
+        "gate:fenster-wechsel": "node scripts/diag-fenster-wechsel.cjs",
         "gate:persistence": "node scripts/diag-persistence.cjs",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
