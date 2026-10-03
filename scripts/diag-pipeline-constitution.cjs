@@ -194,9 +194,12 @@ law(
     /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC)
 );
 law(
-    "AnazhRealm clampt auf die deklarierten Stufen (`kindStages` im Flatten-Chokepoint)",
+    "AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)",
     true,
-    /kindStages\[_rec\.kind\]/.test(anazhNC)
+    /cfg\.kindStages\[rec\.kind\]/.test(anazhNC) &&
+        /_foundryFlattenFor\(entry, preset, lodOverride\) \{[\s\S]{0,3000}?lod = this\._foundryDeclaredStage\(preset, lod\)/.test(
+            anazhNC
+        )
 );
 // W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity`
 // ist der Chokepoint (Studio-Regime → 1, sonst Regler); Bau (`_scatterPass`), Buchhaltung
@@ -285,7 +288,8 @@ law(
 
 // N2 (Nervensystem-Plan, Phase beta: „Runtime = Validator") — DAS CORE-MANIFEST IST DIE EINE
 // KERN-QUELLE: die Worker-Kern-Liste lebt als DATEN in cores.manifest.json (der Worker-Boot
-// `_ensureAssetFoundry` + der IDB-Stempel `_foundryIdbInit` + der Vertrags-Validator lesen sie);
+// `_ensureAssetFoundry` + der Platten-Stempel der Transport-Schale `_foundrySchale` + der Vertrags-Validator
+// lesen sie);
 // die Bruecke liest die ns-Kerne GENERISCH aus self.__anazhCores — KEIN Kern-spezifisches
 // ns-Literal (self.__vehicleCore) mehr in der Bruecke. Ein dritter Kern ist eine Manifest-Zeile.
 {
@@ -304,9 +308,9 @@ law(
         /fetch\("cores\.manifest\.json" \+ v\)/.test(anazhNC) && /self\.__anazhCores=/.test(anazhNC)
     );
     law(
-        "N2: der IDB-Stempel hasht manifest-getrieben (cores.manifest.json in _foundryIdbInit)",
+        "N2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + core.scripts → _foundrySchale)",
         true,
-        /fetch\("cores\.manifest\.json\?v=" \+ V\)/.test(anazhNC)
+        /stempelUrls\.push\(/.test(anazhNC) && /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC)
     );
     law(
         "N2: die Bruecke traegt KEIN Kern-spezifisches ns-Literal mehr (self.__vehicleCore)",

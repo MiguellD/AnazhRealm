@@ -71,47 +71,47 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.508.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.514.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
-benutzen/teilen — bei p95 ≤ 33 ms auf dem Schöpfer-Holz (Flugschreiber-Trace). Feature-Stopp
+benutzen/teilen — bei p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp
 bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Bauplan über
 `_studioBlueprintForWord`, EIN Stempel `_studioStampFor`, geerdet + nie im Wasser, `near_water`); das
 KI-Prompt lehrt die LIVE-Wörter aller Studios; „pflanz mir einen eichenhain am wasser" wirkt auch ohne
 Schlüssel. Offen: der echte LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.496 — AAA NAH (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"):** nah und
-mittel ist das Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern und
-in der Streaming-Rampe. Kreaturen ≤ 55 m Studio-Tier (`KREATUR_NAH_MESH`), Architektur in der
-Mesh-Zone = Cull-Radius 100–150 m, Streu-Bäume L0/L1 Mesh + L2 Studio-Billboard. Damit die Zone
-steht: Budget zählt gebaute Meshes, Bäcker-Queue + Foundry-Rewarm nah zuerst, EINE Bake-Uhr
-(45 s), Staging-Entlassung nie mit offenem Upload (der `writeBuffer`-Wurf). Gemessen (`aaa8`):
-ungebaut 148–195 → 0, Bild = Studio-Wolf mit Fell, Eiche mit Laub/Ästen, Fachwerk-Haus (L0);
-97–283 dc / 28–832k Dreiecke je Bild (Stock-Schwelle ~1 M); V18.494/495 trägt git log.
+**V18.496 — AAA NAH (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"):** nah und mittel ist das
+Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern und in der Streaming-Rampe:
+Kreaturen ≤ 55 m (`KREATUR_NAH_MESH`), Architektur im Cull-Radius 100–150 m, Streu-Bäume L0/L1 + L2-Billboard;
+Budget zählt gebaute Meshes, Bäcker nah zuerst, EINE Bake-Uhr (45 s). Gemessen (`aaa8`): ungebaut 148–195 → 0.
 
-**V18.497–499 — HAUT + SCHALEN-FELL:** der Tier-Leib ist EINE geskinnte Haut (SDF-smin →
-`__huelleAusFeld`, 25 Bones), das Fell 6 Schalen aus den fellStreu-Zeilen, Kopf und Kiefer je eine
-starre Haut. Wolf L0 315k → 57k, L1 17,5k → 6,4k Dreiecke; Fell ↔ Haut hell gleich (−2/−4 %).
+**V18.510–514 — DRAW-WAHRHEIT · DATENFLUSS · TAKT · SCHATTEN:** r184-WebGPU zeichnet ein BatchedMesh je INSTANZ: der
+Batch-Pfad fiel (jedes Leaf eine InstancedMesh), 2 CSM-Kaskaden, feste WGSL-Puffer-Namen: Mess-Wiese 29 943 → 1 091
+GPU-Befehle (`werkbank zaehlen`). Die Transport-Schale `_foundrySchale` trägt den Foundry-Kanal IM Worker: Kanal 349 →
+214 MB je Boot, IDB-Put im Haupt-Thread 1,8 s → 0 (`werkbank fluss`). Der Spiel-Takt rechnet nur, was ihn betrifft: p50
+31 → 13 ms, p95 89 → 24 ms (`werkbank takt`). Der Schatten misst vom Auge (`uLodAuge`), nie von der Kaskaden-Kamera, ein
+L0-Baum wirft seine L1. Die Foundry-Schlange hält der Host, nah zuerst: nahe Eiche-L0 9,0 → 0,9 s (`gate:takt` T5/T6).
+
+**V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (25 Bones), das Fell 6 Schalen (Wolf L0 315k → 57k);
+starre Teile hängen je Material als EIN starr gebundenes SkinnedMesh am Ofen-Chokepoint (`_ofenAssembleAsset`), jede
+Hülle cullt gegen ihre Körper-Kugel: 5 Wölfe 730 → 310 Draws, Mensch nah 40 → 16 (`gate:kreatur-kosten`).
 
 **V18.500–508 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT · FARBE · WIESE:** Haus-L1 `flaechig`
-(L1 2251k → 561k), Weiß backt nur mit Karte (`aaa10`), Gelenk-Kugeln nur an der Gabel (`aaa11`);
-`_voxelSurfaceY` liest den Nulldurchgang; EINE Foundry-Frist ab Arbeitsbeginn; das FARB-GESETZ gilt
-für die Vegetation (Hex = sRGB-Absicht: Laub 0,42 → 0,16); EIN Himmel am Tag (die Umgebung — Hemi und
-Ambient tragen nur den Nachtboden) und die Belichtung aus dem Licht (18-%-Karte 212 → 173 = Mittelgrau
-+1 EV, Weiß ungeclippt, der Himmel blau); nah die NAH-WIESE (Studio-Gras nach dem Studio-Gesetz im
-Kachel-Ring um die Kamera, wiegt im Wind) auf der Boden-Karte = dem GERENDERTEN Boden (Gesetz ±0,2 m
-daneben): Armlänge Kontrast 0,32 → 10,99. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht`).
+(L1 2251k → 561k), Weiß backt nur mit Karte, Gelenk-Kugeln nur an der Gabel; `_voxelSurfaceY` liest den
+Nulldurchgang; das FARB-GESETZ gilt für die Vegetation (Laub 0,42 → 0,16); EIN Himmel am Tag und die Belichtung
+aus dem Licht (18-%-Karte 212 → 173 = Mittelgrau +1 EV); nah die NAH-WIESE (Studio-Gras im Kachel-Ring) auf dem
+GERENDERTEN Boden: Armlänge Kontrast 0,32 → 10,99. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht`).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
 NAH/MITTEL = Studio-Mesh + LOD-Kette (Tier · Baum · Haus · Streu) · FERN = Analog-Sätze (Glieder-
 Kapseln · Baum-Kegel + Kronen-Lappen · Fachwerk-/Box-Satz · Streu-Gesetz) · GRAS = nah Nah-Wiese,
 fern Boden-Funktion.
-OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS).
+OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
-`aaa8`–`aaa10`) · D gefallen (V18.508) · E gemessen; offen: der GPU-Trace.
+`aaa8`–`aaa10`) · D gefallen (V18.508) · E gemessen; offen: das Profi-Band auf jedem Standardgerät.
 
 ## Architektur (die Karte)
 
@@ -194,6 +194,24 @@ OFFEN: ein echter GPU-Trace auf dem Schöpfer-Holz (letzter: 14.07., 4–12 FPS)
     Funktion nicht (±0,2 m, Spawn-Chunk Median 46 cm). Was AUF dem Boden steht (Gras, Streu, Deko), liest die
     Boden-Karte (`_chunkSurfaceAt`, aus dem fertigen Mesh); Körper stehen auf dem Gesetz (Lockstep). Und im
     positionNode ist `positionLocal` schon instanziert (r184) — Höhen-Gewichte lesen `positionGeometry`.
+23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
+    Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
+    ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines).
+24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
+    je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
+    was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.
+25. **Der Takt kostet, was ihn betrifft, nie die Weltgröße:** billige Filter zuerst, teure Rechnung nur für Betroffene
+    (das Brennglas rechnete je Takt die Tags ALLER Bauten: Ø 20 ms) — `werkbank takt` zerlegt den Spiel-Takt je
+    Subsystem; geteilte Takt-Budgets gehen NAH zuerst über ALLE Verbraucher (`_weltBakeErlaubt(d2)`), nie „wer zuerst fragt",
+    und nie verhungert (die Nah-Schwelle gilt die erste Fenster-Hälfte; eine Zähl-Hülle reicht die Argumente durch). Der
+    Foundry-Worker ist so ein Budget: der Host hält seine Schlange (`_foundryAuftrag`, 12 im Flug, nah zuerst), nie FIFO.
+26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass rendert mit der Kaskaden-Kamera (`cameraPosition`
+    = Licht-Kamera, 145 m weit) und liest nur colorNode.a · map.a · maskShadowNode, nie opacityNode — jede LOD-Maske misst
+    vom Auge (`uLodAuge`), jeder Ausschnitt lebt in colorNode.a (`gate:foundry-crossfade` Schatten-Wahrheit). Schatten-
+    Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; vor dem Push läuft JEDER CI-Schritt lokal, nie eine Auswahl;
+    Echt-Renderer-Linsen auf CPU-Raster fahren das Software-Holz (`?holz=kienspan`) — auf „voll" kostet ein Compile 50–70 s;
+    swiftshader kompiliert synchron (kein KHR_parallel_shader_compile, `compileAsync` blockiert), `_gameLoopTick` rendert
+    selbst: jeder Linsen-Aufruf ist benannt und trägt höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`).
 
 ## Workflows
 

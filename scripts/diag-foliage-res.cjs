@@ -104,7 +104,7 @@ const server = http.createServer((req, res) => {
             grpPlaced = null,
             grpGrass = null;
         try {
-            // triviales geom+mat reicht für den InstancedMesh-Pfad (useBatchedArch default aus) —
+            // triviales geom+mat reicht für den InstancedMesh-Pfad (der einzige seit V18.510) —
             // wir prüfen die LAYER-Markierung des realen Erzeugungs-Pfads, nicht die Gras-Geometrie.
             const leaf = { geom: new THREE.BoxGeometry(1, 1, 1), mat: new THREE.MeshBasicMaterial() };
             const gF = r._archInstanceGroupFor("grown_probe_leaf", 0, leaf, "9,9");

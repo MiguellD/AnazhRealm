@@ -197,7 +197,7 @@ function pruefeTraceFelder(trace) {
             uploadBytesEwma: sns.uploadBytesEwma,
         };
         // (4b) V18.485 — DER PIPELINE-WARM-OFEN: der Boot münzt Konsum-Familien
-        // (InstancedMesh/BatchedMesh am Gruppen-Chokepoint); die Wärm-Maschine wird
+        // (InstancedMesh am Gruppen-Chokepoint); die Wärm-Maschine wird
         // hier DETERMINISTISCH leergepumpt (force-Seam — das Budget-Tor gehört dem
         // Spiel, die Linse prüft die Maschine) und muss danach leer sein.
         const ofenVor = {

@@ -36,7 +36,6 @@ function albedoSicht(opts) {
                 if (u.isHydrosphere) return "wasser";
                 if (u.voxelChunkX != null) return "boden";
                 if (u.archInstanceKey) return "inst:" + u.archInstanceKey;
-                if (u.archBatchKey) return "batch:" + u.archBatchKey;
                 if (p.name === "wolf" || p.name === "mensch") return p.name;
                 if (u._tierBaum || u.soul) return "tier";
                 if (u.sourceOp) return "gesetzt:" + u.sourceOp;

@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.508.0",
+    "version": "18.514.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -69,6 +69,8 @@
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
         "mint:asset-packs": "node scripts/mint-asset-packs.cjs",
         "gate:pack-contract": "node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs",
+        "gate:fluss": "node scripts/diag-fluss.cjs --selftest && node scripts/diag-fluss.cjs",
+        "gate:takt": "node scripts/diag-takt.cjs --selftest && node scripts/diag-takt.cjs",
         "gate:vehicle-contract": "node scripts/diag-vehicle-contract.cjs",
         "gate:fahrzeug-fern": "node scripts/diag-fahrzeug-fern.cjs",
         "gate:porta-contract": "node scripts/diag-porta-contract.cjs",
@@ -152,7 +154,7 @@
         "gate:betriebsgesetz": "node scripts/diag-betriebsgesetz.cjs",
         "gate:taille": "node scripts/diag-taille.cjs",
         "gate:arch-fachwerk": "node scripts/diag-arch-fachwerk-fit.cjs",
-        "gate:arch-feld": "node scripts/diag-arch-feld.cjs",
+        "gate:arch-feld": "node scripts/diag-arch-feld.cjs --selftest && node scripts/diag-arch-feld.cjs",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90",
         "lens:e-trace": "node scripts/diag-analog-e-metrology.cjs",
         "lens:wiese": "node scripts/diag-wiese.cjs",

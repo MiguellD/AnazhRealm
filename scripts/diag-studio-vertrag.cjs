@@ -27,7 +27,7 @@ const root = path.resolve(__dirname, "..");
 
 // Die registrierten Studio-Kerne — N2 (Nervensystem-Plan, „Runtime = Validator"): die Liste
 // kommt aus cores.manifest.json, der EINEN Kern-Quelle (Worker-Boot `_ensureAssetFoundry` +
-// IDB-Stempel `_foundryIdbInit` + dieser Validator lesen sie). Je Eintrag: file = `vertrag`
+// Platten-Stempel der Transport-Schale `_foundrySchale` + dieser Validator lesen sie). Je Eintrag: file = `vertrag`
 // (das Skript, das die Manifest-Blöcke trägt), deps = die übrigen scripts davor (z. B.
 // phyto-core vor foundry-core), ns = Namensraum-Kern (Vertrag v1.1 §7, Entscheid E-A): der
 // ZWEIT-Kern einer Laufzeit trägt seine Manifest-Blöcke namensgleich unter EINEM Objekt

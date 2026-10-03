@@ -397,7 +397,7 @@ async function renderAnazh() {
             let tris = 0,
                 inst = 0;
             r.state.scene.traverse((o) => {
-                if (!o.visible || !(o.isMesh || o.isInstancedMesh || o.isBatchedMesh)) return;
+                if (!o.visible || !(o.isMesh || o.isInstancedMesh)) return;
                 const g = o.geometry;
                 if (!g || !g.attributes || !g.attributes.position) return;
                 const idx = g.index ? g.index.count : g.attributes.position.count;
@@ -448,7 +448,7 @@ async function renderAnazh() {
                     instCol = [+c.r.toFixed(3), +c.g.toFixed(3), +c.b.toFixed(3)];
                 }
                 out.push({
-                    type: o.isBatchedMesh ? "batch" : o.isInstancedMesh ? "inst" : "mesh",
+                    type: o.isInstancedMesh ? "inst" : "mesh",
                     name: (o.name || "").slice(0, 60),
                     kind: o.material && o.material.userData ? o.material.userData.foundryKind : null,
                     hasColorAttr: !!col,

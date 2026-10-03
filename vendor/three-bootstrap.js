@@ -130,4 +130,15 @@ if (typeof CSMShadowNode === "function") {
 if (typeof WEBGPU.BundleGroup === "function") {
     THREE_GLOBAL.BundleGroup = WEBGPU.BundleGroup;
 }
+// V18.510 — die Instanz-Matrix als STORAGE (StorageInstancedBufferAttribute lebt NUR im three/webgpu-Bundle):
+// unter 64 KB legt r184 instanceMatrix als Uniform-Array MIT Länge in den Vertex-Shader — jede Kapazität
+// würde ein eigenes Programm. Soft-Anbindung: fehlt das Symbol, bleibt die InstancedMesh beim Uniform-Array.
+if (typeof WEBGPU.StorageInstancedBufferAttribute === "function") {
+    THREE_GLOBAL.StorageInstancedBufferAttribute = WEBGPU.StorageInstancedBufferAttribute;
+}
+// V18.510 — InstanceNode für den stabilen Puffer-Namen (der Stamm benennt die Instanz-Matrix im WGSL, sonst
+// trägt jede InstancedMesh `NodeBuffer_<id>` und wird ihr eigenes Programm). Soft: fehlt es, bleibt der id-Name.
+if (typeof WEBGPU.InstanceNode === "function") {
+    THREE_GLOBAL.InstanceNode = WEBGPU.InstanceNode;
+}
 window.THREE = THREE_GLOBAL;

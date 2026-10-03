@@ -5,7 +5,8 @@
 > darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
 > Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
 > seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
-> der echte GPU-Trace (die Überbelichtung fiel in V18.506–507, die Wiese auf Armlänge in V18.508).**
+> das Profi-Band auf jedem Standardgerät (Schöpfer-Wort 02.10.: „richter ist nicht mein rechner";
+> die Überbelichtung fiel in V18.506–507, die Wiese auf Armlänge in V18.508).**
 
 ## Die Sonde
 
@@ -373,3 +374,55 @@ nicht nachgemessen); L2
 (5–14 m) zeigt breite Blatt-Fächer; Büschel werfen keine Schatten; das 0,72-m-Raster liest am Hang als
 Reihe. Körper (Spieler, Tiere, Bäume) stehen weiter auf dem Gesetz — deterministisch für den Lockstep,
 ±0,2 m neben dem sichtbaren Boden.
+
+## V18.509 — die Starr-Bindung der Körper (02.10., Werkbank, Holz voll, 640×360)
+
+Die Frame-Zerlegung an der Mess-Wiese −1004/−790 (je Pass an/aus, Zeit bis `onSubmittedWorkDone`) nannte den
+CPU-Täter: 5 nahe Wölfe = 421 von 474 Draws — je Wolf 35 starre Teile als eigene Meshes, jedes mit Schatten-Draws
+je Kaskade. Der Ofen-Chokepoint verschmilzt Teile gleichen Materials zu EINEM starr gebundenen SkinnedMesh
+(Mensch UND Tier); jede geskinnte Hülle cullt gegen ihre Körper-Kugel.
+
+| Szene | vorher dc / Dreiecke | nachher dc / Dreiecke |
+|---|---|---|
+| 5 Wölfe im Blick (3–12 m) | 730 / 1 092 738 | 310 / 1 092 738 |
+| dieselben 5, Blick weg | 252 / 772 424 | 127 / 372 824 |
+| Wölfe am Bildrand | 537 / 989 366 | 245 / 911 706 |
+| ein Mensch (isoliert) | 127 / 567 317 | 51 / 500 285 |
+
+Kodier-Zeit des Renders (CPU, Median aus 9) 49,5 → 38,0 ms. Bild-Vergleich bei eingefrorener Zeit (isolierter Wolf,
+auch mitten im Gang): 2,3 % der Wolf-Pixel über 8 Stufen gegen 2,0 % Rauschen zweier gleicher Läufe — am selben Ort
+(Fell-Kanten, Kopf). Die Pose-Probe (`gate:kreatur-kosten` R) hält 0 von 252 480 Vertices eines gehenden Wolfs außerhalb
+seiner Kugeln.
+
+Benannt aus derselben Zerlegung, nicht geschnitten: der Feld-Pass (Welt-March) trug 34 % der GPU-Zeit (swiftshader) —
+fast ganz in den inneren Marches von 64 gesetzten Bäumen 4–75 m vor der Kamera, die in der Mesh-Zone als Kapsel-Satz
+standen, weil ihre L2-Karte noch nicht gebacken war (1 von 111 Karten nach 30 min; ein Bake dauert 0,8–4 s).
+
+## V18.510 — die Draw-Wahrheit (02.10., Werkbank `--holz voll`, 640×360)
+
+Der Zähler je Pass (`node scripts/werkbank.cjs zaehlen`: jeder Renderer-Draw, Region-Bundles für den Zähl-Frame neu
+aufgenommen) nannte an der Mess-Wiese −1004/−790 den Täter, den das HUD nicht sah: `renderer.info` bucht im
+Bundle-Replay nichts (HUD 79 dc, die GPU führte 7 770 Befehle im Hauptbild aus). 97,5 % der Befehle kamen aus 58
+Region-BatchedMeshes — r184-WebGPU kennt kein Multi-Draw, der Batch gibt je INSTANZ einen `drawIndexed` aus; Geröll
+kam als 16 Einzelsteine EINES Materials (16 Draws je Haufen und Pass). Jede der drei CSM-Kaskaden zeichnete alle
+Werfer ihrer Box, die dritte für einen 5-%-Streifen (Band-1-Kante 367 m jenseits jeder geregelten Reichweite).
+
+| je Frame mit Schatten-Update | vorher (V18.509) | nachher (V18.510) |
+|---|---|---|
+| GPU-Draw-Befehle gesamt | 29 943 | 1 091 |
+| Hauptbild | 7 770 | 532 |
+| je Kaskade | 7 391 (×3) | 279 (×2) |
+| Dreiecke | 8,88 M | 6,90 M |
+| Render-Pipelines (frische Welt, nach den ersten Bildern) | 780 | 92 |
+| Vertex-Programme | 761 | 72 |
+| Frame eingeschwungen (swiftshader, pixelgebunden) | 14,8 s | 13,3–13,6 s |
+| Render-CPU je Frame (Median) | 23–32 ms | 11–12 ms |
+
+Die Programm-Zahl: r184 nennt einen Puffer ohne Namen im WGSL `NodeBuffer_<id>` — jede Geometrie-Form bekam ihren
+eigenen Quelltext (675 Programme, ohne Ziffern 39 Familien); die Instanz-Matrix heißt jetzt fest und lebt als
+Storage-Puffer (die Kapazität steht nicht mehr im Shader). Bild bei eingefrorener Zeit und Böe (gleiches Protokoll,
+frische Welt, 360 s wachsen): Boden-Blick 1,0 % der Pixel über 8 Stufen (0,02 % über 24), Weit- und Abend-Blick
+3,7–3,8 % — an fernen Bäumen, deren Bau-Stand von Lauf zu Lauf streut (in beiden Ständen Kapsel-Kronen, solange die
+L2-Karte fehlt: 2–5 von 112 Karten nach 8 min). Was swiftshader nicht zeigt: wie viel 28 852 gesparte Befehle und
+688 gesparte Pipelines auf dem Schöpfer-Holz bringen — das misst der nächste Flugschreiber-Trace, dessen dc jetzt
+die echten Draws zählt.

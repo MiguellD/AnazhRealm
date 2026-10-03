@@ -5,7 +5,8 @@
 // der Weg dorthin: die Welt bleibt stehen, eine Methode aus dem Arbeitsbaum wird in die laufende
 // Seite getauscht, das Terrain-Material neu gebaut, das Bild ist in Sekunden da.
 //
-//   node scripts/werkbank.cjs start [--port 4490]          Welt + Steuer-Server (bleibt offen)
+//   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan]
+//                                                           Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
@@ -16,6 +17,14 @@
 //   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse
 //                                                           (scripts/lib/licht-linsen.cjs; Karte = 0,180)
 //   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
+//   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz]  DER DRAW-ZÄHLER: GPU-Befehle + Dreiecke je Pass
+//                                                           (Hauptbild · jede Kaskade) und Klasse, ein Frame
+//                                                           (scripts/lib/draw-zaehler.cjs)
+//   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE: was der Foundry-Kanal den Haupt-Thread
+//                                                           kostet (Bytes · Entpacken · Platte · Worker-Auslastung);
+//                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
+//   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
+//                                                           ruht (scripts/lib/takt-linse.cjs)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // Höhen relativ zum Boden: `bild` nimmt py/ly mit Präfix `+` als Abstand über `_voxelSurfaceY(px,pz)`
@@ -27,6 +36,9 @@ const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
+const { ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
+const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
+const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -36,6 +48,9 @@ const opt = (k, d) => {
 };
 const PORT = Number(opt("--port", process.env.WERKBANK_PORT || 4490));
 const SEITEN_PORT = PORT - 1;
+// Das Holz-Profil der Welt: ohne Wahl erkennt sie swiftshader und fährt „kienspan" (ohne Schatten,
+// kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
+const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 function rufe(weg, nutzlast) {
@@ -121,12 +136,15 @@ async function starte() {
     const fehler = [];
     page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
     const lade = async () => {
-        await page.goto(`http://127.0.0.1:${SEITEN_PORT}/index.html`, {
+        await page.goto(`http://127.0.0.1:${SEITEN_PORT}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(LINSEN_INSTALL);
+        await page.evaluate(ZAEHLER_INSTALL);
+        await page.evaluate(FLUSS_INSTALL);
+        await page.evaluate(TAKT_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
             while (
@@ -326,8 +344,45 @@ async function starte() {
                     }
                     return send({ klassen: liste, ordner, ms: Date.now() - t0 });
                 }
+                if (req.url === "/takt") {
+                    const o = await page.evaluate((k) => window.__taktZerlegung(k), {
+                        n: Number(b.n) || 120,
+                        extra: b.extra ? String(b.extra).split(",") : [],
+                    });
+                    return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
+                if (req.url === "/fluss") {
+                    const o = await page.evaluate(() => {
+                        const i = window.__flussLinse();
+                        return i && i.installiert ? i : window.__flussBericht();
+                    });
+                    return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
+                if (req.url === "/zaehlen") {
+                    const o = await page.evaluate(async (k) => {
+                        const r = window.anazhRealm;
+                        window.__buehne();
+                        if (k.px != null) {
+                            const boden = (x, z, v) =>
+                                typeof v === "string" && v[0] === "+"
+                                    ? r._voxelSurfaceY(x, z) + Number(v.slice(1))
+                                    : Number(v);
+                            const cam = r.state.camera;
+                            cam.position.set(+k.px, boden(+k.px, +k.pz, k.py), +k.pz);
+                            cam.lookAt(+k.lx, boden(+k.lx, +k.lz, k.ly), +k.lz + 1e-4);
+                            cam.updateMatrixWorld(true);
+                        }
+                        try {
+                            if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                        } catch (_e) {}
+                        return window.__drawZensus({ top: 16 });
+                    }, b);
+                    return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
                 if (req.url === "/licht")
-                    return send(Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 }));
+                    return send(
+                        Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 })
+                    );
                 if (req.url === "/reload") {
                     await lade();
                     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
@@ -374,10 +429,14 @@ async function starte() {
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo") o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner") });
     else if (cmd === "licht") o = await rufe("/licht");
+    else if (cmd === "fluss") o = await rufe("/fluss", {});
+    else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
+    else if (cmd === "zaehlen")
+        o = await rufe("/zaehlen", a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {});
     else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
-        console.log(fs.readFileSync(__filename, "utf8").split("\"use strict\"")[0].trimEnd());
+        console.log(fs.readFileSync(__filename, "utf8").split('"use strict"')[0].trimEnd());
         process.exit(1);
     }
     console.log(JSON.stringify(o, null, 1));

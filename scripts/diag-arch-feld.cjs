@@ -6,7 +6,18 @@
 // Foundry-Mesh lädt asynchron) — dauerhaft unsichtbar, wie 26 von 28 Weltgen-Bauten.
 // Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für
 // den ganzen Analog-Pfad blind) auf der Mess-Wiese −900/−850 und prüft:
-//   A  gesetzte Eiche UND Haus haben binnen 200 Takten ihren Feld-Slot
+//   A  nah (10 m · 26 m): gesetzte Eiche UND Haus sind binnen 200 Takten sichtbar — das Studio-Mesh steht
+//      ODER der Feld-Slot überbrückt (AAA nah, V18.496: nah ist das Mesh die Gestalt, das Feld trägt nur,
+//      bis es steht)
+//   AM nah steht danach das Studio-Mesh (Grenze 800 Takte) — erst dann schießt die Linse: das Bild zeigt die
+//      Gestalt, nicht die Brücke
+//   A' fern (jenseits der Mesh-Zone): gesetzte Eiche UND Haus bekommen ihren Feld-Slot — der Feld-Bake-Takt geht
+//      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte;
+//      gemessen 02.10.: Dorf mit 55 Foundry-Bauten Takt 111, mit 107 Bauten > 200 — der Takt vergab 84 Fits in
+//      200 Takten, alle in Distanz-Ordnung)
+//   S  statisch: in der Mesh-Zone wartet ein ungebackener Bau in DERSELBEN Distanz-Schlange wie fern
+//      (Befund 02.10.: in Listen-Reihenfolge fraß das Dorf den überbuchten Bake-Takt, das frisch gesetzte
+//      Haus blieb 200 Takte ohne Feld und ohne Mesh); --selftest injiziert den Listen-Ruf → S rot
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
 //   C  die Eiche hat ihren Fern-Satz auf dem Baum-Schlüssel (abaum:eiche:<v>)
 //   D  das Feld liest dasselbe Licht wie das Mesh: neutrale Feld-Box vs. MeshStandard-Box am
@@ -119,6 +130,60 @@ const SCHUSS_FN = async (kam) => {
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };
 
+// S — die Ziegel-Schlange: im Mesh-Zonen-Zweig von tickArchitectureCulling ruft ein Bau ohne Slot den
+// Ziegel NIE direkt (Listen-Reihenfolge), er reiht sich in die Distanz-Schlange.
+function schlangenGesetz(src) {
+    const a = src.indexOf("\n    tickArchitectureCulling() {");
+    if (a < 0) return { ok: false, grund: "tickArchitectureCulling fehlt" };
+    const b = src.indexOf("\n    }\n", a);
+    const body = src.slice(a, b);
+    const za = body.indexOf("if (distSq <= radiusSq) {");
+    const ze = body.indexOf("} else {", za);
+    if (za < 0 || ze < 0) return { ok: false, grund: "Mesh-Zonen-Zweig nicht gefunden" };
+    const zweig = body.slice(za, ze).replace(/\/\/.*$/gm, "");
+    const rufe = (zweig.match(/this\._archZiegelFern\(entry\)/g) || []).length;
+    const bewacht = (
+        zweig.match(
+            /if \(entry\._ziegelSlot \|\| entry\._ziegelGebacken \|\| ohneFeld\) this\._archZiegelFern\(entry\)/g
+        ) || []
+    ).length;
+    const schlange = /ziegelOffen\.push\(entry\)/.test(zweig);
+    // WER LÄDT, VERBRAUCHT KEINEN VERSUCH: im Nah-Zweig steht der Warte-Sprung VOR der Versuchs-Kappe, und ein
+    // Bau ohne Mesh merkt sich die Ankunfts-Generation (gemessen 03.10.: 24 Wartende fraßen die Kappe, das Haus
+    // dahinter blieb 800 Takte ohne Mesh).
+    const nah = body.slice(body.indexOf("for (const entry of nahOffen) {"));
+    const sprung = nah.indexOf("if (w && w.a === fA && jetztN - w.t < 1000) continue;");
+    const kappe = nah.indexOf("if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;");
+    const warten = sprung >= 0 && kappe > sprung && /else entry\._nahWartet = \{ a: fA, t: jetztN \};/.test(nah);
+    return {
+        ok: rufe === bewacht && schlange && warten,
+        grund: `Rufe ${rufe} · bewacht ${bewacht} · Schlange ${schlange} · Warten ohne Versuch ${warten}`,
+    };
+}
+{
+    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    if (process.argv.includes("--selftest")) {
+        const kaputt = stamm.replace(
+            "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);\n                else {\n                    // Steht",
+            "this._archZiegelFern(entry);\n                if (false) {\n                    // Steht"
+        );
+        const heil = schlangenGesetz(stamm);
+        const bruch = schlangenGesetz(kaputt);
+        // der zweite Bruch: Wartende verbrauchen wieder Versuche (der Sprung fällt)
+        const kaputt2 = stamm.replace("if (w && w.a === fA && jetztN - w.t < 1000) continue;", "");
+        const bruch2 = schlangenGesetz(kaputt2);
+        const ok = heil.ok && kaputt !== stamm && !bruch.ok && kaputt2 !== stamm && !bruch2.ok;
+        console.log(
+            `${ok ? "✅" : "❌"} SELBST-TEST S: heil ${heil.grund} · Listen-Ruf injiziert ${bruch.grund} · ` +
+                `Warte-Sprung entfernt ${bruch2.grund}`
+        );
+        process.exit(ok ? 0 : 1);
+    }
+    const S = schlangenGesetz(stamm);
+    console.log(`${S.ok ? "✅" : "❌"} S  Mesh-Zone reiht in die Distanz-Schlange (${S.grund})`);
+    if (!S.ok) process.exit(1);
+}
+
 (async () => {
     fs.mkdirSync(OUT, { recursive: true });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -156,12 +221,23 @@ const SCHUSS_FN = async (kam) => {
         if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
         const dlB = performance.now() + 90000;
         while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+        // Eine Ausnahme im Spiel-Takt wird gezählt und beim Namen genannt, nie geschluckt: sie bricht den Takt dort
+        // ab, wo sie fliegt — jeder Bau dahinter in der Liste bleibt ungebaut (das sah die Linse sonst als „AM null").
+        let taktFehlerN = 0,
+            taktFehler1 = null;
         const tick = async (n) => {
             for (let i = 0; i < n; i++) {
                 try {
                     if (r.state.world) r.state.world.timeOfDay = 0.5;
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch (e) {
+                    taktFehlerN++;
+                    if (!taktFehler1)
+                        taktFehler1 = String((e && e.stack) || e)
+                            .split("\n")
+                            .slice(0, 4)
+                            .join(" | ");
+                }
                 await sleep(40);
             }
         };
@@ -180,19 +256,56 @@ const SCHUSS_FN = async (kam) => {
             const e = r.spawnArchitecture(name, { x, y, z }, { rotationY: 0 });
             return { e, x, y, z };
         };
+        // Die Takt-Verbraucher (wer bekommt den Feld-Bake-Takt, wer nicht) — die Linse nennt den Hunger beim Namen.
+        const taktZaehl = {};
+        const taktRoh = r._weltBakeErlaubt.bind(r);
+        r._weltBakeErlaubt = function (...a) {
+            const ok = taktRoh(...a); // die Distanz reist mit — sonst gälte im Gate jeder Wunsch als „ganz nah"
+            const k = (new Error().stack.split("\n")[2] || "").trim().split(" ")[1] || "?";
+            const z2 = taktZaehl[k] || (taktZaehl[k] = { ja: 0, nein: 0 });
+            if (ok) z2.ja++;
+            else z2.nein++;
+            return ok;
+        };
         const B = setze("baum_eiche", 10);
         const Hh = setze(hausName, 26);
+        // FERN: jenseits der Mesh-Zone (Cull-Radius) ist das Feld die Gestalt.
+        const fernD = Math.round((r.state.architectureCullingRadius || 130) + 40);
+        const BF = setze("baum_eiche", fernD);
+        const HF = setze(hausName, fernD + 16);
         const eb = B.e,
             eh = Hh.e;
+        const ebF = BF.e,
+            ehF = HF.e;
         const idx = { baum: r.state.architectures.indexOf(eb), haus: r.state.architectures.indexOf(eh) };
+        // Sichtbar = das Mesh steht ODER der Feld-Slot trägt (AAA nah: das Feld überbrückt nur, bis das Mesh steht).
+        const sichtbar = (e) => !!(e && (r._archIsRendered(e) || e._ziegelSlot));
         let slotB = null,
-            slotH = null;
+            slotH = null,
+            slotBF = null,
+            slotHF = null;
         for (let t = 1; t <= 200; t++) {
             await tick(1);
-            if (slotB == null && eb && eb._ziegelSlot) slotB = t;
-            if (slotH == null && eh && eh._ziegelSlot) slotH = t;
-            if (slotB != null && slotH != null && t >= 40) break;
+            if (slotB == null && sichtbar(eb)) slotB = t;
+            if (slotH == null && sichtbar(eh)) slotH = t;
+            if (slotBF == null && ebF && ebF._ziegelSlot) slotBF = t;
+            if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
+            if (slotB != null && slotH != null && slotBF != null && slotHF != null && t >= 40) break;
         }
+        // NAH IST DAS MESH: die Feld-Brücke trägt nur, bis das Studio-Mesh steht — weiter takten, bis beide nahen
+        // Bauten als Mesh rendern; FERN gilt nah zuerst, nie verhungert: der Takt geht in Distanz-Ordnung, der ferne
+        // Bau wartet auf die Näheren und kommt an (Grenze 1000 Takte gesamt). Erst dann schießt die Linse.
+        let meshB = r._archIsRendered(eb) ? 0 : null,
+            meshH = r._archIsRendered(eh) ? 0 : null;
+        for (let t = 201; t <= 1000; t++) {
+            if (meshB != null && meshH != null && slotBF != null && slotHF != null) break;
+            await tick(1);
+            if (meshB == null && r._archIsRendered(eb)) meshB = t - 200;
+            if (meshH == null && r._archIsRendered(eh)) meshH = t - 200;
+            if (slotBF == null && ebF && ebF._ziegelSlot) slotBF = t;
+            if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
+        }
+        r._weltBakeErlaubt = taktRoh;
         // B — ausgebrannte Foundry-Bauten (aufgegeben ohne Slot):
         let foundryN = 0,
             ausgebrannt = 0,
@@ -205,6 +318,45 @@ const SCHUSS_FN = async (kam) => {
         }
         const wm = r.state.weltMarch;
         const variante = r._foundryVariantFor(eb ? eb.seed : 0);
+        // Der Zustand je gesetztem Bau (die Linse nennt den Täter, nicht nur „Takt null").
+        const zustand = (e) =>
+            e
+                ? {
+                      mesh: !!r._archIsRendered(e),
+                      slot: !!e._ziegelSlot,
+                      gebacken: !!e._ziegelGebacken,
+                      versuche: e._ziegelVersuche || 0,
+                      // Der Mesh-Weg: Wunsch-Stufe, Instanz-Flag und was der EINE Flat-Chokepoint für sie liefert
+                      // (lädt · kann nicht · bereit) — der Täter, wenn nah kein Mesh steht.
+                      stufe: e._lodLevel,
+                      instanz: !!e.instanced,
+                      weg: (() => {
+                          const p = r._archFoundryPreset(e);
+                          if (!p) return "grammatik";
+                          const fl = r._foundryFlattenFor(e, p, e._lodLevel | 0);
+                          return fl === null ? "laedt" : fl === false ? "kann-nicht" : fl.instanceable ? "bereit:L" + fl.lod : "nicht-instanzierbar";
+                      })(),
+                      // Foundry-Bau: steht die L1-Flat (Quelle des Fits) und der geteilte Baum-Satz schon?
+                      flat: r._archFoundryPreset(e)
+                          ? r._foundry.cache.has(
+                                r._archFoundryPreset(e) +
+                                    "|" +
+                                    r._foundryVariantFor(e.seed) +
+                                    "|1|" +
+                                    (r.state.season || "summer")
+                            )
+                          : null,
+                      satz: r._archFoundryPreset(e)
+                          ? !!(
+                                wm &&
+                                wm.kapselCache.has(
+                                    "abaum:" + r._archFoundryPreset(e) + ":" + r._foundryVariantFor(e.seed)
+                                )
+                            )
+                          : null,
+                      d: Math.round(Math.hypot(e.position.x - pm.x, e.position.z - pm.z)),
+                  }
+                : null;
         window.__afB = B;
         window.__afH = Hh;
         return {
@@ -213,11 +365,30 @@ const SCHUSS_FN = async (kam) => {
             n: r.state.architectures.length,
             slotB,
             slotH,
+            slotBF,
+            slotHF,
+            meshB,
+            meshH,
+            fernD,
+            takt: taktZaehl,
+            zBF: zustand(ebF),
+            zHF: zustand(ehF),
             versucheB: eb ? eb._ziegelVersuche || 0 : null,
             foundryN,
             mitSlot,
             ausgebrannt,
             geteilt: !!(wm && wm.kapselCache.has("abaum:eiche:" + variante)),
+            zB: zustand(eb),
+            zH: zustand(eh),
+            taktFehler: { n: taktFehlerN, erster: taktFehler1 },
+            werk: {
+                offen: r._foundry && r._foundry.pending ? r._foundry.pending.size : null,
+                angefragt: r._foundry && r._foundry.requested ? r._foundry.requested.size : null,
+                stau: r._foundryIngestQueue ? r._foundryIngestQueue.length : 0,
+            },
+            felderFrei: wm ? wm.freiFelder.length : null,
+            felderVoll: !!r._weltFelderVollWarn,
+            radius: Math.round(r.state.architectureCullingRadius || 0),
         };
     });
     if (!res || res.fatal) {
@@ -227,10 +398,26 @@ const SCHUSS_FN = async (kam) => {
         process.exit(1);
     }
     console.log(`Liste: ${res.n} Bauten · Eiche auf Platz ${res.idx.baum} · ${res.hausName} auf Platz ${res.idx.haus}`);
+    console.log(
+        `Zustand: Eiche ${JSON.stringify(res.zB)} · Haus ${JSON.stringify(res.zH)} · Feld-Liste frei ${res.felderFrei}` +
+            `${res.felderVoll ? " (VOLL gemeldet)" : ""} · Mesh-Zone ${res.radius} m · Foundry ${JSON.stringify(res.werk)}`
+    );
     const A = res.slotB != null && res.slotH != null;
+    const AF = res.slotBF != null && res.slotHF != null;
+    const AM = res.meshB != null && res.meshH != null;
     const Bk = res.ausgebrannt === 0;
     const C = res.geteilt;
-    console.log(`${A ? "✅" : "❌"} A  Feld-Slot: Eiche ab Takt ${res.slotB} · Haus ab Takt ${res.slotH} (Grenze 200)`);
+    console.log(
+        `${A ? "✅" : "❌"} A  nah sichtbar (Mesh oder Feld-Brücke): Eiche ab Takt ${res.slotB} · Haus ab Takt ${res.slotH} (Grenze 200)`
+    );
+    console.log(
+        `${AM ? "✅" : "❌"} AM nah steht das Studio-Mesh: Eiche ${res.meshB} · Haus ${res.meshH} Takte nach der Brücke (Grenze 800)`
+    );
+    console.log(
+        `${AF ? "✅" : "❌"} A' fern Feld-Slot (${res.fernD} m, jenseits der Mesh-Zone): Eiche ab Takt ${res.slotBF} · ` +
+            `Haus ab Takt ${res.slotHF} (Grenze 1000 — nah zuerst, nie verhungert)` +
+            (AF ? "" : ` — ${JSON.stringify(res.zBF)} · ${JSON.stringify(res.zHF)} · Takt ${JSON.stringify(res.takt)}`)
+    );
     console.log(
         `${Bk ? "✅" : "❌"} B  Foundry-Bauten: ${res.foundryN} · mit Slot ${res.mitSlot} · ausgebrannt ${res.ausgebrannt}`
     );
@@ -399,10 +586,16 @@ const SCHUSS_FN = async (kam) => {
     }
     await browser.close();
     server.close();
-    const gruen = A && Bk && C && D && pageErrors.length === 0;
+    const TF = !(res.taktFehler && res.taktFehler.n > 0);
+    console.log(
+        TF
+            ? "✅ T  keine Ausnahme im Spiel-Takt"
+            : `❌ T  ${res.taktFehler.n} Ausnahmen im Spiel-Takt — erste: ${res.taktFehler.erster}`
+    );
+    const gruen = A && AM && AF && Bk && C && D && TF && pageErrors.length === 0;
     console.log(
         gruen
-            ? "✅ GRÜN — gesetzte Dinge erscheinen im Feld (das Bild urteilt über die Gestalt)."
+            ? "✅ GRÜN — gesetzte Dinge erscheinen: nah als Mesh (das Feld überbrückt), fern im Feld."
             : `❌ ROT${pageErrors.length ? " · Page-Errors: " + pageErrors.slice(0, 2).join(" | ") : ""}`
     );
     process.exit(gruen ? 0 : 1);

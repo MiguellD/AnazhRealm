@@ -2,12 +2,12 @@
 // ~72 ms CPU-Submit; die Schwester-Hälfte der V18.474-Fern-Diät).
 //
 // DER BEFUND: `_archLeafMaterial` baute je Part-FARBE ein EIGENES MeshStandardNode-
-// Material, und der Batch-Key ist mat.uuid (`_archBatchGroupFor`) → jede Farbe
-// zersplitterte in eine eigene WebGPU-Pipeline + einen eigenen Draw-Call.
+// Material → jede Farbe zersplitterte in eine eigene Material-Familie (WebGPU-Pipeline; bis V18.509 auch
+// einen eigenen Batch = Draw-Call).
 // DIE HEILUNG: EIN geteiltes Material je TAG-SIGNATUR (`_sharedFoliageMaterial`,
 // das bewiesene V18.288-Muster); die Part-Farbe reist als INSTANZ-Farbe über den
 // bestehenden Tint-Kanal (leaf.tint → `_archSlotColor` → setColorAt — EINE Naht,
-// die Engine multipliziert instanceColor/vBatchColor auf den colorNode). AUSNAHME
+// die Engine multipliziert instanceColor auf den colorNode). AUSNAHME
 // (fail-closed): GLÜHENDE Substanz (das Emissiv im PBR-Bau konsumiert opts.color —
 // Glut/Quarz glimmen in der EIGENEN Farbe) behält die Farbe in der Signatur,
 // memoisiert teilen identische Parts trotzdem.
@@ -19,9 +19,9 @@
 //     die Dispose-Wand (geteilte Materialien fallen nie).
 //   S (Selbst-Test, A/B durch DIESELBE Pipe via ARCH_LEAF_MAT_SHARED): das ALTE
 //     Muster (Hebel=false) MUSS die Linse erkennen — 6 Farben = 6 Materialien =
-//     6 Batches; erst das beweist, dass der NEU-Block nicht vakuös grün ist.
+//     6 Material-Familien; erst das beweist, dass der NEU-Block nicht vakuös grün ist.
 //   N (Neu): Materialien je Tag-Signatur == 1 (6 Farben → EIN geteiltes weißes
-//     Material) · Batch-Zahl 6 → 1 (nur-sinkender Anker: ≤ RD_BATCH_ANKER) ·
+//     Material) · Familien-Zahl 6 → 1 (nur-sinkender Anker: ≤ RD_FAMILIEN_ANKER) ·
 //     Slot-Bilanz dicht (Empty-Dispose räumt beide Welten restlos).
 //   F (Farb-Wahrheit): Stichproben-Instanzen tragen ihre PART-Farbe über den
 //     Instanz-Kanal (getColorAt == _archPartTintColor, ≠ weiß, ≠ untereinander —
@@ -31,12 +31,9 @@
 //     identische Parts teilen memoisiert EIN Material).
 //   W (Welt): in der gebauten Dorf-/Wald-Szene stammt JEDES leaf.tint-Material
 //     aus dem EINEN _foliageMatCache (Map Signatur→Material ⇒ je Signatur genau
-//     EIN Material per Konstruktion); Leaves/Materialien/Batches dokumentiert.
-//   X (Index-Konsistenz, Review-Ernte V18.476): der r184-BatchedMesh verlangt
-//     „All geometries must consistently have index" — das geteilte Material
-//     kollabierte indizierte + non-indexed Leafs (Kronen-Kern/Schatten-Zwilling)
-//     in EINEN Batch → Wurf. Gemischte Fixture durch die echte Pipe: kein Wurf,
-//     zwei Batches (#i vs #x), Selbst-Test: ohne Marker wären die Keys identisch.
+//     EIN Material per Konstruktion); Leaves/Materialien/Gruppen dokumentiert.
+//   (Block X — die Index-Konsistenz des geteilten BatchedMesh — fiel V18.510 mit dem Batch-Pfad: jedes Leaf
+//   ist seine eigene InstancedMesh, gemischte Index-Formen teilen keinen Puffer mehr.)
 //
 //   node scripts/diag-render-diaet.cjs
 "use strict";
@@ -47,9 +44,9 @@ const path = require("path");
 
 const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 const root = path.resolve(__dirname, "..");
-// Der nur-sinkende ANKER: die 6-Farben-Fixture darf höchstens SO viele Batches
-// erzeugen (heute 1 — EIN geteiltes Material × EINE Region; er darf nie steigen).
-const RD_BATCH_ANKER = 1;
+// Der nur-sinkende ANKER: die 6-Farben-Fixture darf höchstens SO viele Material-Familien
+// erzeugen (heute 1 — EIN geteiltes Material; er darf nie steigen).
+const RD_FAMILIEN_ANKER = 1;
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -126,11 +123,6 @@ function check(name, ok, detail) {
         "Q: der Merge-Pfad (_mergeBlueprintByMaterial) zieht das geteilte Tag-Signatur-Material (dieselbe Klasse)",
         /const mat = this\._sharedFoliageMaterial\(matOpts\);\n[ ]{12}leaves\.push\(\{ geom: merged/.test(src)
     );
-    check(
-        "Q: der Batch-Key trägt die INDEX-KONSISTENZ am EINEN Chokepoint (idxKind #i/#x in _archBatchGroupFor)",
-        /const idxKind = leaf\.geom && leaf\.geom\.index \? "i" : "x";/.test(src) &&
-            src.includes('"#" + idxKind + (castShadow')
-    );
 
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
@@ -193,14 +185,18 @@ function check(name, ok, detail) {
             return r.state.blueprints[name];
         };
 
-        // Zähler in UNSEREN Regionen (streaming-fest: nur die Fixture-Regionen).
+        // Zähler in UNSEREN Regionen (streaming-fest: nur die Fixture-Regionen): Gruppen (w) und
+        // Material-Familien (b = verschiedene Materialien ihrer Meshes = Pipelines).
         const zaehle = (regTag) => {
-            let w = 0,
-                b = 0;
+            let w = 0;
+            const fam = new Set();
             if (r.state.archInstanceGroups)
-                for (const k of r.state.archInstanceGroups.keys()) if (k.includes(regTag)) w++;
-            if (r.state.archBatches) for (const k of r.state.archBatches.keys()) if (k.includes(regTag)) b++;
-            return { w, b };
+                for (const [k, g] of r.state.archInstanceGroups)
+                    if (k.includes(regTag)) {
+                        w++;
+                        if (g && g.mesh && g.mesh.material) fam.add(g.mesh.material);
+                    }
+            return { w, b: fam.size };
         };
         const R = AR.ARCH_REGION_M;
         // EINE Welt = Hebel + eigener Bauplan-Name + eigene Region (kein Cache-Kontakt).
@@ -233,7 +229,7 @@ function check(name, ok, detail) {
                     entries.push(e);
                 }
                 const mit = zaehle(regTag);
-                o.batches = mit.b - vor.b;
+                o.familien = mit.b - vor.b;
                 o.wrappers = mit.w - vor.w;
                 o.entries = entries;
                 o.probeFlat = flat;
@@ -255,7 +251,7 @@ function check(name, ok, detail) {
             leaves: alt.leaves,
             mats: alt.mats,
             tints: alt.tints,
-            batches: alt.batches,
+            familien: alt.familien,
             wrappers: alt.wrappers,
             err: alt.err || null,
         };
@@ -268,7 +264,7 @@ function check(name, ok, detail) {
             leaves: neu.leaves,
             mats: neu.mats,
             tints: neu.tints,
-            batches: neu.batches,
+            familien: neu.familien,
             wrappers: neu.wrappers,
             err: neu.err || null,
         };
@@ -385,70 +381,15 @@ function check(name, ok, detail) {
                 mats: mats.size,
                 fremde,
                 cacheMats: cacheMats.size,
-                batches: r.state.archBatches ? r.state.archBatches.size : 0,
                 wrappers: r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0,
             };
         } catch (e) {
             res.welt = { err: String((e && e.message) || e) };
         }
 
-        // ── X: die INDEX-KONSISTENZ (Review-Ernte V18.476) — gemischte Leafs
-        //    (ein indiziertes + ein non-indexed, DASSELBE geteilte Material)
-        //    durch die ECHTE Pipe. Genau die Klasse, die der volle Playtest
-        //    warf: das Teilen kollabierte die zufällige Per-Farbe-Trennung. ──
-        try {
-            const x = {};
-            AR.ARCH_LEAF_MAT_SHARED = true;
-            mkBp("rd_mixed", "stein", [0xcc3322, 0x2266cc]);
-            const mflat = r._archFlattenBlueprint("rd_mixed");
-            x.instanceable = !!(mflat && mflat.instanceable);
-            if (x.instanceable && mflat.leaves.length === 2) {
-                x.matGeteilt = mflat.leaves[0].mat === mflat.leaves[1].mat;
-                x.vorherIndiziert = !!(mflat.leaves[0].geom.index && mflat.leaves[1].geom.index);
-                // Leaf 1 wird NON-INDEXED (das Kronen-Kern-/Schatten-Zwilling-Muster),
-                // das Material bleibt DASSELBE geteilte — die Kollisions-Klasse.
-                mflat.leaves[1] = Object.assign({}, mflat.leaves[1], {
-                    geom: mflat.leaves[1].geom.toNonIndexed(),
-                });
-                const eM = {
-                    type: "rd_mixed",
-                    seed: 11,
-                    scale: 1,
-                    position: { x: 953 * R + 60, y: 0, z: 949 * R + 60 },
-                };
-                x.wurf = null;
-                try {
-                    r._archInstanceAdd(eM, mflat);
-                } catch (err) {
-                    x.wurf = String((err && err.message) || err);
-                }
-                if (!x.wurf && eM.instSlots && eM.instSlots.length === 2) {
-                    const g0 = r.state.archInstanceGroups.get(eM.instSlots[0].key);
-                    const g1 = r.state.archInstanceGroups.get(eM.instSlots[1].key);
-                    const k0 = g0 && g0.batch && g0.batch.batchKey;
-                    const k1 = g1 && g1.batch && g1.batch.batchKey;
-                    x.keys = [k0, k1];
-                    x.getrennt = !!(k0 && k1 && k0 !== k1);
-                    x.marker = !!(
-                        k0 &&
-                        k1 &&
-                        ((k0.includes("#i") && k1.includes("#x")) || (k0.includes("#x") && k1.includes("#i")))
-                    );
-                    // SELBST-TEST: OHNE den Marker wären die Keys IDENTISCH — die
-                    // Fixture hätte den alten Kollaps also wirklich gesehen (nicht vakuös).
-                    const strip = (k) => k.replace("#i", "#").replace("#x", "#");
-                    x.selbstTestKollaps = !!(k0 && k1 && strip(k0) === strip(k1));
-                    r._archInstanceRemove(eM);
-                }
-            }
-            res.mixed = x;
-        } catch (e) {
-            res.mixed = { err: String((e && e.message) || e) };
-        }
-
         // Aufräumen: Hebel auf Produktion, Fixturen fallen (kein Debris im Baum).
         AR.ARCH_LEAF_MAT_SHARED = true;
-        for (const n of ["rd_fixture_alt", "rd_fixture_neu", "rd_naht", "rd_glut_a", "rd_glut_b", "rd_mixed"]) {
+        for (const n of ["rd_fixture_alt", "rd_fixture_neu", "rd_naht", "rd_glut_a", "rd_glut_b"]) {
             delete r.state.blueprints[n];
             if (r.state.archFlattenCache) r.state.archFlattenCache.delete(n);
         }
@@ -464,9 +405,9 @@ function check(name, ok, detail) {
             out.alt.err || `mats=${out.alt.mats} tints=${out.alt.tints}`
         );
         check(
-            "S (Selbst-Test): das alte Muster zersplittert in 6 Batches (je Farbe ein Draw)",
-            out.alt.batches === 6,
-            `batches=${out.alt.batches} wrappers=${out.alt.wrappers}`
+            "S (Selbst-Test): das alte Muster zersplittert in 6 Material-Familien (je Farbe eine Pipeline)",
+            out.alt.familien === 6,
+            `familien=${out.alt.familien} wrappers=${out.alt.wrappers}`
         );
         check(
             "S: Slot-Bilanz der ALT-Welt dicht (Empty-Dispose räumt restlos)",
@@ -485,12 +426,12 @@ function check(name, ok, detail) {
             out.neu.matWeiss === true && out.neu.matMarker === true
         );
         check(
-            `N: DIE DIÄT — Batch-Zahl der 6-Farben-Fixture: vorher ${out.alt ? out.alt.batches : "?"} → nachher ${out.neu.batches} (nur-sinkender Anker ≤ ${RD_BATCH_ANKER})`,
-            Number.isFinite(out.neu.batches) &&
-                out.neu.batches >= 1 &&
-                out.neu.batches <= RD_BATCH_ANKER &&
+            `N: DIE DIÄT — Material-Familien der 6-Farben-Fixture: vorher ${out.alt ? out.alt.familien : "?"} → nachher ${out.neu.familien} (nur-sinkender Anker ≤ ${RD_FAMILIEN_ANKER})`,
+            Number.isFinite(out.neu.familien) &&
+                out.neu.familien >= 1 &&
+                out.neu.familien <= RD_FAMILIEN_ANKER &&
                 out.alt &&
-                out.alt.batches > out.neu.batches,
+                out.alt.familien > out.neu.familien,
             `wrappers ${out.alt ? out.alt.wrappers : "?"}→${out.neu.wrappers}`
         );
         check(
@@ -522,28 +463,9 @@ function check(name, ok, detail) {
         check(
             `W: Welt-Zensus — JEDES leaf.tint-Material stammt aus dem EINEN _foliageMatCache (je Signatur EIN Material; ${out.welt.leafTintLeaves} Leaves → ${out.welt.mats} Materialien)`,
             out.welt.leafTintLeaves > 0 && out.welt.fremde === 0,
-            `fremde=${out.welt.fremde} cacheMats=${out.welt.cacheMats} batches=${out.welt.batches} wrappers=${out.welt.wrappers}`
+            `fremde=${out.welt.fremde} cacheMats=${out.welt.cacheMats} wrappers=${out.welt.wrappers}`
         );
     } else check("W: Welt-Zensus erreicht", false, out.welt && out.welt.err);
-    if (out.mixed && !out.mixed.err) {
-        check(
-            "X: GEMISCHTE Index-Leafs (indiziert + non-indexed, DASSELBE geteilte Material) werfen NICHT (r184: „consistently have index“)",
-            out.mixed.instanceable === true &&
-                out.mixed.matGeteilt === true &&
-                out.mixed.vorherIndiziert === true &&
-                out.mixed.wurf === null,
-            out.mixed.wurf || `matGeteilt=${out.mixed.matGeteilt} vorherIndiziert=${out.mixed.vorherIndiziert}`
-        );
-        check(
-            "X: der Batch-Key trennt die Index-Klassen (#i vs #x) — zwei Batches statt Kollaps",
-            out.mixed.getrennt === true && out.mixed.marker === true,
-            out.mixed.keys ? out.mixed.keys.map((k) => (k || "?").slice(36)).join(" · ") : "keine keys"
-        );
-        check(
-            "X (Selbst-Test): OHNE den Marker wären die Keys identisch — die Fixture sieht die alte Kollaps-Klasse wirklich",
-            out.mixed.selbstTestKollaps === true
-        );
-    } else check("X: Index-Konsistenz-Block erreicht", false, out.mixed && out.mixed.err);
     check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();
@@ -553,7 +475,7 @@ function check(name, ok, detail) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Render-Diät steht: EIN geteiltes Material je Tag-Signatur (der Selbst-Test beweist, dass die Linse das alte Je-Farbe-ein-Material-Muster erkannt hätte), die Batch-Zahl kollabiert am mat.uuid-Chokepoint (Anker nur-sinkend), und jede Instanz trägt ihre Part-Farbe über den EINEN Tint-Kanal — Farb-Wahrheit statt Grau-Einheitsbrei."
+        "\n✅ GRÜN — die Render-Diät steht: EIN geteiltes Material je Tag-Signatur (der Selbst-Test beweist, dass die Linse das alte Je-Farbe-ein-Material-Muster erkannt hätte), die Material-Familien kollabieren je Signatur (Anker nur-sinkend), und jede Instanz trägt ihre Part-Farbe über den EINEN Tint-Kanal — Farb-Wahrheit statt Grau-Einheitsbrei."
     );
 })().catch((e) => {
     console.error("DIAG-FEHLER:", e);

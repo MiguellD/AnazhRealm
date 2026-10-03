@@ -20,8 +20,10 @@ v1.0 ist EIN gespielter Pfad, kein Feature-Katalog:
    (Drehbuch Schritt 18) · Regler-Wörter („knorrig", „hoch") auf die B4-Regler.
 5. **Benutzen / teilen** — betreten · fahren · halten · als Bauplan teilen.
 
-**Der FPS-Boden:** p95 ≤ 33 ms in der Standard-Szene auf dem Schöpfer-Holz, gemessen mit dem
-Flugschreiber-Export (`anazhRealmPerf.json`). **Feature-Stopp bis v1.0** — nur, was einen der fünf
+**Der FPS-Boden:** p95 ≤ 33 ms in der Standard-Szene auf JEDEM Standardgerät — der Richter ist das
+PROFI-BAND (60 fps · 208 DRW · ~680k TRI · 118 MB VRAM), nicht ein einzelner Rechner (Schöpfer-Wort 02.10.:
+„richter ist nicht mein rechner … die werte sind bekannt"); gemessen hardware-unabhängig (`werkbank zaehlen` ·
+`takt` · `fluss`) und mit dem Flugschreiber-Export (`anazhRealmPerf.json`). **Feature-Stopp bis v1.0** — nur, was einen der fünf
 Schritte oder den FPS-Boden trägt.
 
 ### §0.frozen · Die Frozen-Liste
@@ -31,8 +33,8 @@ Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit d
 mittel das Studio-Mesh mit seiner LOD-Kette, das Feld nur fern; die Mesh-Zone steht (0 ungebaut,
 `docs/abnahme-analog.md`); die Vegetation trägt seit V18.506 das Farb-Gesetz (Laub 0,42 → 0,16),
 seit V18.507 EIN Himmel am Tag und die Belichtung aus dem Licht (Karte 212 → 173), seit V18.508 nah
-die Nah-Wiese auf der Boden-Karte (D gefallen); offen: der echte GPU-Trace (die „dunklen
-Schattenseiten" waren die Linse, V18.503/504).
+die Nah-Wiese auf der Boden-Karte (D gefallen); offen: das Profi-Band auf jedem Standardgerät
+(Schöpfer-Wort 02.10.: „richter ist nicht mein rechner").
 
 ### §0.reste · Benannte Reste mit Wartebedingung (nichts erfinden)
 
@@ -87,10 +89,14 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
   `worldRules`; `_crystallizeGestureRule` live) · DSL/Weltregeln (`dslRun`-Sandbox).
 - **Schöpfung:** Crafting-Resonanz (`_blueprintProductVector`) · Werkstatt (`_makeCostGate` +
   `fertigeBlueprint`) · Hylomorphismus (`FORM_TAG_ACTIVATION`, frozen Signaturen — emergent-
-  korrekt, kein Ad-hoc-Tuning) · die EINE Pipe (Foundry `build-asset` für ALLE Gattungen).
+  korrekt, kein Ad-hoc-Tuning) · die EINE Pipe (Foundry `build-asset` für ALLE Gattungen) · ihr Transport
+  (`_foundrySchale` IM Worker: Platte · Konsum-Wand `FOUNDRY_LESEN` · Uint16-Index · Transfer — der Haupt-
+  Thread fasst keinen Asset-Cache an, `gate:fluss`) · ihre Schlange (`_foundryAuftrag`: der Host hält sie, 12 im
+  Worker, nah zuerst, ab 6 s Alter abwechselnd der Älteste — `gate:takt` T5/T6).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
-  Frequenzband (`_applySubstanceResponse`) · Schatten (Light-Space-Snap, EINE Map) · LOD-Kaskade
-  (`DETAIL_CASCADE`) · Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei).
+  Frequenzband (`_applySubstanceResponse`) · Schatten (2 CSM-Kaskaden; jede LOD-Maske misst vom Auge
+  `uLodAuge`, ein L0-Baum wirft seine L1 — `gate:foundry-crossfade`) · LOD-Kaskade (`DETAIL_CASCADE`) ·
+  Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei).
 - **Welt/Sozial:** Portal/Sub-Welten · Vibe-Pass (ed25519) · Bibliothek/Feed · Mesh (signaling +
   WebRTC + Compute-Sharing) · Fremd-Engine-Tor (Sandbox + Auto-Vendor).
 - **Spieler/UI:** `computePlayerStats` (equip-Fold) · Inventar/Hotbar/Equip · die 6 Räume +
@@ -112,7 +118,7 @@ der Sozial-Bogen schreibt sie).
 **Gemerkte Fäden (offen):** Orakel-Posten (ungebaut, nach v1.0): Ripple/Splash/Kielwasser ·
 Szenen-Refraktion · Host-Sequencer + Zustands-CRC für MP · Fahr-Kinematik (Gierrate∝Input×Tempo) ·
 Sync-Edit-Remesh im Worker · Kachel-Erosion async · Bloom-Mip-Kette · seeded PRNG für alle
-Gameplay-Würfe · Impostor-Elevation · Rigid-Bind-GPU-Skinning der Kreaturen · Avatar-Kleider =
+Gameplay-Würfe · Impostor-Elevation · Avatar-Kleider =
 Studio · VR/WebXR (0 Code) · das echte V18→V19-Zeit-Portal (Empfang gebaut;
 offen: ein ECHTER Alt-Build emittiert ein Artefakt, das ein Folge-Build isst) · Wasser-Zwei-
 Naturen-Vereinigung (statisches `L`-Substrat + CA zu EINER Natur + Wasserfall-Politur) ·

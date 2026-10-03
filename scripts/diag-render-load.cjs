@@ -189,11 +189,9 @@ const server = http.createServer((req, res) => {
             }
             bump(c, tris, 1, sc);
             if (node.isInstancedMesh) acc[c].instances += inst;
-            // frustumCulled-Aufschlüsselung. WICHTIG (V18.362): eine BatchedMesh mit
-            // `perObjectFrustumCulled=true` cullt PRO INSTANZ auf der GPU, auch wenn die
-            // Mesh selbst `frustumCulled=false` ist (sie spannt die Welt, kann nicht als
-            // EINE Einheit cullen) — sie ist also NICHT „noCull". Ohne diese Korrektur log
-            // der Finder die per-Objekt-gecullten Arch-Batches als 1,59M-Phantom-Last.
+            // frustumCulled-Aufschlüsselung. V18.362: ein Mesh mit `perObjectFrustumCulled=true` (three-
+            // BatchedMesh) cullt PRO INSTANZ, auch wenn es selbst `frustumCulled=false` trägt — NICHT „noCull".
+            // Die Welt baut seit V18.510 keine BatchedMesh mehr; die Klammer bleibt für fremde Szenen.
             const trulyNoCull = node.frustumCulled === false && node.perObjectFrustumCulled !== true;
             if (trulyNoCull) {
                 noCullTris += tris;

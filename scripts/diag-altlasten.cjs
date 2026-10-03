@@ -73,6 +73,20 @@ const FORBIDDEN = [
     // heisst `ei` (tetrapoda TIER_MATERIAL_KLASSEN); der erfundene Name las nie
     // einen Schreiber und der 0.85-Default gab jedem Kreatur-Auge 2.8x Glut.
     { token: "emissivIntensitaet", fiel: "AUGEN-GLUT-SCHNITT — der Bäcker liest kl.ei (die Gesetzbuch-Wahrheit)" },
+    // DIE DRAW-WAHRHEIT (V18.510) — der BatchedMesh-Pfad ist gefallen: r184-WebGPU kennt kein Multi-Draw,
+    // ein Batch gab je INSTANZ einen drawIndexed aus (29 191 von 29 943 GPU-Befehlen an der Mess-Wiese).
+    // Jedes Leaf ist eine InstancedMesh; der Name kommt nicht zurück.
+    { token: "BatchedMesh", fiel: "V18.510 — je Instanz ein Draw unter WebGPU; die InstancedMesh trägt" },
+    { token: "_archBatchGroupFor", fiel: "V18.510" },
+    { token: "_archBatchAddGeometry", fiel: "V18.510" },
+    { token: "_tickBatchStagingEntlassung", fiel: "V18.510 — kein Batch-Staging mehr" },
+    { token: "useBatchedArch", fiel: "V18.510" },
+    { token: "archBatches", fiel: "V18.510" },
+    // V18.511 — der Haupt-Thread fasst den Asset-Cache nie mehr an: Platte, Stempel, Get und Put leben in der
+    // Transport-Schale IM Worker (`_foundrySchale`).
+    { token: "_foundryIdbInit", fiel: "V18.511 — die Platte lebt in der Transport-Schale" },
+    { token: "_foundryIdbGet", fiel: "V18.511" },
+    { token: "_foundryIdbPut", fiel: "V18.511" },
     // BOOT-LITERAL-ABSCHIED 18.07. — die palettenfremden Haut-/Haar-Töne des
     // Boot-Menschen: Haut/Haar kommen aus koerper-core SKIN_TONES/HAIR_COLORS
     // (Anker-Farben Γ5 aus dem Welt-Seed bzw. benannte Kern-Anker im Bäcker).
@@ -391,6 +405,24 @@ function scanLabBuster() {
     return errs;
 }
 
+// DIE INSTANZ-WAND (V18.510): jede InstancedMesh der Welt entsteht im EINEN Chokepoint
+// `AnazhRealm._instanzMesh` (Instanz-Matrix als Storage). Ein Bau daran vorbei trägt die Kapazität
+// wieder als Uniform-Array-Länge in den Vertex-Shader — ein Programm + eine Pipeline je Kapazität
+// (gemessen 02.10.: 756 Vertex- auf 60 Fragment-Programme). Erlaubt: genau EIN `new THREE.InstancedMesh(`
+// (der Chokepoint selbst) + der Feld-Cull-Konsument (Kapazität fest 1, eigene Storage-Matrix).
+function scanInstanzWand(srcRoh) {
+    const code = stripComments(srcRoh);
+    const n = (code.match(/new THREE\.InstancedMesh\(/g) || []).length;
+    const errs = [];
+    if (n !== 1) errs.push(`Instanz-Wand: \`new THREE.InstancedMesh(\` steht ${n}× im Stamm (erlaubt: 1, der Chokepoint _instanzMesh)`);
+    const kopf = code.indexOf("static _instanzMesh(geom, mat, cap) {");
+    if (kopf < 0 || code.indexOf("new THREE.InstancedMesh(", kopf) - kopf > 200)
+        errs.push("Instanz-Wand: der Chokepoint `static _instanzMesh(geom, mat, cap)` trägt den Bau nicht");
+    if (!/StorageInstancedBufferAttribute\(m\.instanceMatrix\.array, 16\)/.test(code))
+        errs.push("Instanz-Wand: _instanzMesh legt die Matrix nicht als StorageInstancedBufferAttribute an");
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
@@ -400,6 +432,15 @@ function main() {
     );
 
     if (process.argv.includes("--selftest")) {
+        // Die Instanz-Wand muss feuern: ein zweiter Bau am Chokepoint vorbei.
+        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const instanzFeuert =
+            scanInstanzWand(stamm).length === 0 &&
+            scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1;
+        if (!instanzFeuert) {
+            console.log("❌ SELBST-TEST: die Instanz-Wand feuert nicht (oder steht heute rot)");
+            process.exit(1);
+        }
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
         const tmp = path.join(require("os").tmpdir(), "altlasten-selftest.js");
         fs.writeFileSync(tmp, 'const x = 1;\nfunction tickPhoenixDeath() {}\n// Kommentar darf "glutwesen" sagen\n');
@@ -414,14 +455,18 @@ function main() {
         process.exit(fired ? 0 : 1);
     }
 
-    const errs = scan(files).concat(checkSoulKeys()).concat(scanZwillinge()).concat(scanLabBuster());
+    const errs = scan(files)
+        .concat(checkSoulKeys())
+        .concat(scanZwillinge())
+        .concat(scanLabBuster())
+        .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")));
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch.`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint.`
     );
 }
 

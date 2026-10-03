@@ -881,14 +881,6 @@ class AnazhRealm {
             // capacity, count, free:[]}> — eine InstancedMesh je Leaf-Gruppe, lazy.
             archFlattenCache: null,
             archInstanceGroups: null,
-            // BatchedMesh-Pfad: Map<matKey, {mesh:BatchedMesh, geomIds, slotEntry}> — viele Geometrien je
-            // Draw + Per-Instanz-Frustum-Culling; die archInstanceGroups-Wrapper zeigen darauf.
-            archBatches: null,
-            // EINE BatchedMesh je REGION × Material × Schatten-Klasse kollabiert N InstancedMeshes (~1 Draw je
-            // Material, perObjectFrustumCulling in der Region). Klein je Region, on-demand gewachsen, mit dem
-            // Prune disposed — nie ein globaler Vorab-Alloc (der lief in 1 GB OOM). false = der
-            // InstancedMesh-Kontrollpfad, mit dem diag-arch-batch den Kollaps hardware-unabhängig beweist.
-            useBatchedArch: true,
             // Streu-Laub-Gruppen PRO 256m-REGION keyen: die instanz-bewusste Bounding-Sphere wird lokal →
             // frustumCulled=true lässt die Engine Regionen hinter dem Blick cullen (welt-weit gekeyt spannten sie
             // die ganze Welt, Umsehen cullte nie). false (+ umherlaufen) = A/B.
@@ -14383,13 +14375,12 @@ class AnazhRealm {
                     tris += t;
                 });
                 if (tris < 10000) continue;
-                // Das EINE Label-Urteil für Trace-Wale: liest alle Marker (archInstanceKey/archBatchKey/feldCull/
+                // Das EINE Label-Urteil für Trace-Wale: liest alle Marker (archInstanceKey/feldCull/
                 // inventar/kind), sonst strukturell (Typ×Instanzen×Verts) — nie das nichtssagende „Mesh".
                 const u = child.userData || {};
                 let name =
                     child.name ||
                     u.archInstanceKey ||
-                    u.archBatchKey ||
                     (u.feldCull ? "feldCull:" + u.feldCull : null) ||
                     u.inventar ||
                     u.bpName ||
@@ -14661,7 +14652,7 @@ class AnazhRealm {
 
     // Live-Set-Zensus: CPU-seitig gehaltene TypedArray-Bytes der Szene (Attribute + Index +
     // Instanz-Puffer, dedupliziert über Objekt-Identität) je Familie, plus große Halter außerhalb
-    // (Foundry-Cache · Batch-Zahl · Impostor-Atlanten). Reine Lese-Linse, nur am Export-Zeitpunkt.
+    // (Foundry-Cache · Impostor-Atlanten · entlassene Böden). Reine Lese-Linse, nur am Export-Zeitpunkt.
     _flightRecorderHeapZensus() {
         try {
             const sc = this.state.scene;
@@ -14684,7 +14675,6 @@ class AnazhRealm {
                     (o.name && o.name.split(":")[0]) ||
                     u.inventar ||
                     (u.archInstanceKey ? String(u.archInstanceKey).split("#")[0] : null) ||
-                    (u.archBatchKey ? "batch:" + String(u.archBatchKey).split("|")[0] : null) ||
                     (u.hydroKind ? "wasser" : null) ||
                     o.type;
                 if (g.attributes) for (const k in g.attributes) zaehle(g.attributes[k], nm);
@@ -14703,18 +14693,6 @@ class AnazhRealm {
                 top,
                 halter: (() => {
                     const f = this._foundry;
-                    // GOLD 2 (19.07.) — DIE RESIDENZ-BILANZ: genutzte vs. reservierte
-                    // Batch-Verts (die Pool-Effizienz der künftigen Welt-Puffer-
-                    // Arbeit; nach der Klein-Münze soll fillPct hoch stehen).
-                    let vKap = 0,
-                        vNutz = 0;
-                    if (this.state.archBatches)
-                        for (const b of this.state.archBatches.values()) {
-                            const g = b.mesh && b.mesh.geometry;
-                            const p = g && g.attributes && g.attributes.position;
-                            if (p) vKap += p.count;
-                            if (b.mesh && typeof b.mesh._nextVertexStart === "number") vNutz += b.mesh._nextVertexStart;
-                        }
                     // CHUNK-BODEN-ENTLASSUNG (19.07.) — die Linse NENNT den Schnitt:
                     // wie viele Böden entlassen sind + wie viele MB die Nullung trägt.
                     let entlN = 0;
@@ -14724,21 +14702,10 @@ class AnazhRealm {
                         foundryCacheN: f && f.cache ? f.cache.size : 0,
                         foundryCacheMB:
                             f && Number.isFinite(f.cacheBytes) ? +(f.cacheBytes / 1048576).toFixed(1) : null,
-                        batches: this.state.archBatches ? this.state.archBatches.size : 0,
-                        batchFillPct: vKap > 0 ? Math.round((vNutz / vKap) * 100) : null,
                         impostorAtlanten: this._impostorAtlasMap ? this._impostorAtlasMap.size : 0,
                         chunkEntlassenN: entlN,
                         chunkFreiMB: this.state._chunkEntlassenBytes
                             ? +(this.state._chunkEntlassenBytes / 1048576).toFixed(1)
-                            : 0,
-                        batchEntlassenN: (() => {
-                            let n = 0;
-                            if (this.state.archBatches)
-                                for (const b of this.state.archBatches.values()) if (b && b._entlassen) n++;
-                            return n;
-                        })(),
-                        batchFreiMB: this.state._batchEntlassenBytes
-                            ? +(this.state._batchEntlassenBytes / 1048576).toFixed(1)
                             : 0,
                     };
                 })(),
@@ -15398,7 +15365,7 @@ class AnazhRealm {
             opacity: uOpacity,
         };
 
-        const starField = new THREE.InstancedMesh(planeGeo, starMat, STAR_COUNT);
+        const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
         // Per-Instance-Matrix: Translation auf die Sphäre + Rotation (Normal zum Zentrum) + Scale
         // (worldSize). Einmal beim Build; die siderale Rotation läuft über starField.rotation.
         const tmpPos = new THREE.Vector3();
@@ -17078,6 +17045,131 @@ class AnazhRealm {
             if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
         });
     }
+    // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
+    // Kopf · Kiefer · Schwanzspitze …) hing als eigenes Mesh an seinem Gelenk — ein Draw plus ein Schatten-Draw
+    // je Teil. Gemessen 02.10. (Mess-Wiese, Holz voll): 5 nahe Wölfe = 421 von 474 Draws, je Wolf 35 starre
+    // Teile. Teile mit DEMSELBEN Material (Farbe reist als Vertex-Farbe), demselben Schatten- und Attribut-Satz
+    // verschmelzen zu EINEM SkinnedMesh; jeder Vertex hängt starr an sein Gelenk (skinIndex = Gelenk, Gewicht
+    // 1), die GPU posiert, was vorher der Szenen-Graph je Teil trug. Die Gelenke bleiben Gelenke: Gang,
+    // Lid-Skala, Iris, Halter, Fern-Fit (dominanter Bone) lesen dieselben Objekte. Geometrie im Wurzel-Raum der
+    // Bind-Pose; Klone binden über __skinJoints um (_ofenKlonRebind) wie die Haut.
+    static _ofenStarrBinden(root) {
+        root.updateMatrixWorld(true);
+        const wurzelInv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+        // Gelenk-Namen müssen eindeutig sein — der Klon findet seine Bones über den Namen.
+        const namen = new Map();
+        root.traverse((n) => {
+            if (!n.isMesh && n.name) namen.set(n.name, namen.has(n.name) ? null : n);
+        });
+        const gruppen = new Map();
+        root.traverse((n) => {
+            if (!n.isMesh || n.isSkinnedMesh || n.isInstancedMesh || !n.geometry || !n.parent) return;
+            if (Array.isArray(n.material) || !n.material || n.visible === false) return;
+            const g = n.geometry;
+            if (!g.attributes.position || (g.morphAttributes && Object.keys(g.morphAttributes).length)) return;
+            if (n.userData && n.userData.__tuer) return; // Tür-Flügel drehen sich selbst
+            let gelenk = n.parent;
+            while (gelenk && gelenk.isMesh) gelenk = gelenk.parent;
+            if (!gelenk || !gelenk.name || namen.get(gelenk.name) !== gelenk) return;
+            const sig = Object.keys(g.attributes)
+                .sort()
+                .map((k) => k + ":" + g.attributes[k].itemSize)
+                .join(",");
+            const key =
+                n.material.uuid +
+                "|" +
+                (n.castShadow ? 1 : 0) +
+                (n.receiveShadow ? 1 : 0) +
+                "|" +
+                ((n.userData && n.userData.__klasse) || "") +
+                "|" +
+                sig;
+            let gr = gruppen.get(key);
+            if (!gr) gruppen.set(key, (gr = []));
+            gr.push({ mesh: n, gelenk });
+        });
+        const m = new THREE.Matrix4();
+        const nm = new THREE.Matrix3();
+        const v = new THREE.Vector3();
+        for (const teile of gruppen.values()) {
+            if (teile.length < 2) continue;
+            const g0 = teile[0].mesh.geometry;
+            const attrNamen = Object.keys(g0.attributes);
+            let nV = 0,
+                nI = 0;
+            for (const t of teile) {
+                const g = t.mesh.geometry;
+                nV += g.attributes.position.count;
+                nI += g.index ? g.index.count : g.attributes.position.count;
+            }
+            const daten = {};
+            for (const a of attrNamen) daten[a] = new Float32Array(nV * g0.attributes[a].itemSize);
+            const index = nV > 65535 ? new Uint32Array(nI) : new Uint16Array(nI);
+            const skinIndex = new Uint16Array(nV * 4);
+            const skinWeight = new Float32Array(nV * 4);
+            const bones = [];
+            const boneIdx = new Map();
+            let ov = 0,
+                oi = 0;
+            for (const t of teile) {
+                const g = t.mesh.geometry;
+                const n = g.attributes.position.count;
+                m.multiplyMatrices(wurzelInv, t.mesh.matrixWorld);
+                nm.getNormalMatrix(m);
+                for (const a of attrNamen) {
+                    const src = g.attributes[a];
+                    const dst = daten[a];
+                    const k = src.itemSize;
+                    for (let i = 0; i < n; i++) {
+                        if (a === "position" || a === "normal") {
+                            v.fromBufferAttribute(src, i);
+                            if (a === "position") v.applyMatrix4(m);
+                            else v.applyMatrix3(nm).normalize();
+                            dst[(ov + i) * 3] = v.x;
+                            dst[(ov + i) * 3 + 1] = v.y;
+                            dst[(ov + i) * 3 + 2] = v.z;
+                        } else for (let c = 0; c < k; c++) dst[(ov + i) * k + c] = src.getComponent(i, c);
+                    }
+                }
+                let b = boneIdx.get(t.gelenk);
+                if (b === undefined) {
+                    b = bones.length;
+                    bones.push(t.gelenk);
+                    boneIdx.set(t.gelenk, b);
+                }
+                for (let i = 0; i < n; i++) {
+                    skinIndex[(ov + i) * 4] = b;
+                    skinWeight[(ov + i) * 4] = 1;
+                }
+                if (g.index) for (let i = 0; i < g.index.count; i++) index[oi++] = g.index.getX(i) + ov;
+                else for (let i = 0; i < n; i++) index[oi++] = ov + i;
+                ov += n;
+            }
+            const geo = new THREE.BufferGeometry();
+            for (const a of attrNamen) {
+                const src = g0.attributes[a];
+                geo.setAttribute(a, new THREE.BufferAttribute(daten[a], src.itemSize, src.normalized));
+            }
+            geo.setIndex(new THREE.BufferAttribute(index, 1));
+            geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
+            geo.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
+            const t0 = teile[0].mesh;
+            const starr = new THREE.SkinnedMesh(geo, t0.material);
+            starr.castShadow = t0.castShadow;
+            starr.receiveShadow = t0.receiveShadow;
+            starr.userData.sharedGeom = true;
+            if (t0.userData && t0.userData.__klasse) starr.userData.__klasse = t0.userData.__klasse;
+            starr.userData.__skinJoints = bones.map((b) => b.name);
+            for (const t of teile) t.mesh.parent.remove(t.mesh);
+            root.add(starr);
+            starr.updateMatrixWorld(true);
+            starr.bind(new THREE.Skeleton(bones), starr.matrixWorld.clone());
+            // Die Bind-Box reist mit (wie die der Haut aus dem Assemble): Box3-Leser der Welt-Gestalt messen den
+            // Klon sonst über ein frisch umgebundenes, noch nicht posiertes Skelett.
+            geo.computeBoundingBox();
+            starr.boundingBox = geo.boundingBox.clone();
+        }
+    }
     // Der Beipack-Leser (GENERISCH für jede Gelenk-Gattung — Tier UND Mensch):
     // Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an ihren Gelenken.
     // Liefert {root, teile, tailNamen, hoehe, minY} oder null.
@@ -17131,11 +17223,26 @@ class AnazhRealm {
                 if (!n.isSkinnedMesh) return;
                 n.userData.__skinJoints = skelett.skinJoints.slice();
                 n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
-                n.frustumCulled = false; // LBS bewegt Vertices — die Bind-BBox lügt
             });
         }
         const bb = new THREE.Box3().setFromObject(root);
         const hoehe = Number.isFinite(bb.max.y - bb.min.y) ? Math.max(1e-3, bb.max.y - bb.min.y) : 1;
+        AnazhRealm._ofenStarrBinden(root);
+        // DIE KÖRPER-KUGEL: jede geskinnte Hülle (Haut · Fell · Kleid · starre Teile) cullt gegen die Bind-Hülle
+        // des GANZEN Körpers × 1,25 — jede Pose bleibt darin (Glieder drehen um Gelenke im Leib). Die Bind-BBox
+        // der Einzel-Hülle log (darum zeichneten Haut und Fell nie gecullt), die Körper-Hülle nicht: außerhalb
+        // des Blicks und je Schatten-Kaskade fällt der Draw. Klone erben die Kugel (SkinnedMesh.copy).
+        if (!bb.isEmpty()) {
+            const kugel = bb.getBoundingSphere(new THREE.Sphere());
+            kugel.radius *= 1.25;
+            const inv = new THREE.Matrix4();
+            root.updateMatrixWorld(true);
+            root.traverse((n) => {
+                if (!n.isSkinnedMesh) return;
+                n.boundingSphere = kugel.clone().applyMatrix4(inv.copy(n.matrixWorld).invert());
+                n.frustumCulled = true;
+            });
+        }
         return {
             root,
             teile,
@@ -17649,9 +17756,14 @@ class AnazhRealm {
                 wrap3.scale.setScalar(f2);
                 wrap3.position.y = -t0.minY * f2;
                 const fernKlon = t1.root.clone(true);
+                const teileF = {};
+                fernKlon.traverse((n) => {
+                    if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
+                });
                 fernKlon.traverse((n) => {
                     if (n.isMesh) n.castShadow = false;
                 });
+                AnazhRealm._ofenKlonRebind(fernKlon, teileF); // die starr gebundenen Teile hängen an SEINEN Gelenken
                 wrap3.add(fernKlon);
                 wrap3.visible = false;
                 wrap3.userData._creatureSkin = true;
@@ -20856,7 +20968,7 @@ class AnazhRealm {
                     cr.visible = false;
                     continue;
                 }
-                if (!this._weltBakeErlaubt()) continue; // getaktet — bis dahin trägt der Körper
+                if (!this._weltBakeErlaubt(d2)) continue; // getaktet — bis dahin trägt der Körper
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
                 u._kzGlieder = this._kreaturGliederBacken(cr);
@@ -22141,6 +22253,43 @@ class AnazhRealm {
         // autoReset AUS: `_loopRender` ruft `info.reset()` EINMAL pro Frame und liest am Ende die volle Last
         // (Schatten + Haupt + Post-FX) für perfSense — sonst sähe es nur den letzten Post-FX-Pass.
         if (renderer.info) renderer.info.autoReset = false;
+        // DIE DRAW-WAHRHEIT IM INFO: r184 bucht einen Draw nur, wenn der Backend-Draw läuft — beim AUFNEHMEN
+        // eines RenderBundles; der Replay (`_renderBundle`, Versions-Treffer) zieht die aufgenommenen
+        // RenderObjects ohne Buchung. Die Region-Bundles tragen den ganzen statischen Bestand: HUD, Regler und
+        // Flugschreiber lasen an der Mess-Wiese 148 dc, wo die GPU 1 149 Befehle ausführte (02.10.). Der
+        // Replay bucht jetzt jeden aufgenommenen RenderObject wie der Backend-Draw (info.update).
+        if (renderer.info && typeof renderer._renderBundle === "function") {
+            const replayRoh = renderer._renderBundle;
+            renderer._renderBundle = function (bundle, sceneRef, lightsNode) {
+                const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
+                const daten = this.backend.get(rb);
+                const replay = daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version;
+                const aus = replayRoh.call(this, bundle, sceneRef, lightsNode);
+                if (replay && daten.renderObjects)
+                    for (const ro of daten.renderObjects) {
+                        const dp = ro.getDrawParameters();
+                        if (dp) this.info.update(ro.object, dp.vertexCount, dp.instanceCount);
+                    }
+                return aus;
+            };
+        }
+        // DER STABILE PUFFER-NAME: r184 nennt den Instanz-Matrix-Puffer im WGSL `NodeBuffer_<Knoten-id>`
+        // (WGSLNodeBuilder, ohne setName) — jede InstancedMesh bekam so ihren EIGENEN Quelltext, ihr eigenes
+        // Programm, ihre eigene Pipeline: gemessen 02.10. an der Mess-Wiese 675 Vertex-Programme, ohne die
+        // Ziffern 39 Familien — jede neue Streu-Gruppe ein Kompilat beim Laufen. Je Draw gibt es genau EINE
+        // Instanz-Matrix (und die Vorgänger-Matrix für Velocity) → ein fester Name macht gleiche Objekte gleich.
+        const IN = THREE.InstanceNode;
+        if (IN && IN.prototype && typeof IN.prototype._createInstanceMatrixNode === "function" && !IN.__anazhName) {
+            const matrixRoh = IN.prototype._createInstanceMatrixNode;
+            IN.prototype._createInstanceMatrixNode = function (assignBuffer, builder) {
+                const n = matrixRoh.call(this, assignBuffer, builder);
+                const puffer = n && n.node;
+                if (puffer && puffer.isBufferNode && typeof puffer.setName === "function")
+                    puffer.setName(assignBuffer ? "instanzMatrix" : "instanzMatrixVor");
+                return n;
+            };
+            IN.__anazhName = true;
+        }
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
@@ -27862,19 +28011,6 @@ class AnazhRealm {
                             return true;
                         }
                     }
-                    // Batch-Textur-Wächter: BatchedMesh trägt seine Instanz-Wahrheit in Daten-Texturen
-                    // (_matricesTexture/_colorsTexture/_indirectTexture), die equals() nicht sieht → EIN Refresh.
-                    if (obj && obj.isBatchedMesh === true) {
-                        const mt = obj._matricesTexture,
-                            ct = obj._colorsTexture,
-                            it = obj._indirectTexture;
-                        const v = (mt ? mt.version : -1) + "|" + (ct ? ct.version : -1) + "|" + (it ? it.version : -1);
-                        const d = this.getRenderObjectData(ro);
-                        if (d._anazhBatchV !== v) {
-                            d._anazhBatchV = v;
-                            return true;
-                        }
-                    }
                     // Atlas-Wächter: lebende Canvas-Atlanten (Impostor map/nmap, Blatt-Atlas) deklarieren sich an
                     // mat._anazhAtlasTexe (Textur-Knoten sieht equals() nicht) → Bake → EIN Refresh je Objekt.
                     const texe = ro && ro.material ? ro.material._anazhAtlasTexe : null;
@@ -28990,6 +29126,11 @@ class AnazhRealm {
                     uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
                     uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),
                     uLodFade0: _T.uniform(Number.isFinite(_D.fade0) ? _D.fade0 : 4),
+                    // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
+                    // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
+                    // `renderer.render(scene, shadow.camera)`, lightMargin 200 m): dort lagen nahe Bäume 145 m
+                    // „weit", jenseits jeder Stufe, und die Maske verwarf ihre Schatten-Fragmente alle.
+                    uLodAuge: _T.uniform(new THREE.Vector3()),
                 };
             }
         } catch (_e) {
@@ -29056,14 +29197,15 @@ class AnazhRealm {
                 const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
             }
-            // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen:
-            if (!T.attribute || !T.positionWorld || !T.cameraPosition || !T.length || !T.vec2) return null;
+            // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen, gemessen vom AUGE (`uLodAuge`):
+            // so maskiert der Schattenpass jede Stufe, wie das Auge sie sieht — jede Stufe wirft genau dort, wo sie
+            // gezeichnet wird.
+            const _auge = _lu.uLodAuge;
+            if (!T.attribute || !T.positionWorld || !_auge || !T.length || !T.vec2) return null;
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            const _cd = T.length(
-                T.vec2(T.cameraPosition.x.sub(T.positionWorld.x), T.cameraPosition.z.sub(T.positionWorld.z))
-            );
+            const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z)));
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             const _lkL = _lu.uLodRef.div(_aH0L.max(T.float(1e-3))).min(T.float(1.0));
             const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
@@ -29233,9 +29375,9 @@ class AnazhRealm {
                     _Tl &&
                     _lu &&
                     _lu.uLodRef &&
+                    _lu.uLodAuge &&
                     _Tl.attribute &&
                     _Tl.positionWorld &&
-                    _Tl.cameraPosition &&
                     _Tl.vec2 &&
                     _Tl.vec4 &&
                     _Tl.float &&
@@ -29251,7 +29393,7 @@ class AnazhRealm {
                     const _aH0 = _Tl.attribute("aH0", "float");
                     const _aH0L = _Tl.attribute("aH0L", "float");
                     const _pw = _Tl.positionWorld;
-                    const _cam = _Tl.cameraPosition;
+                    const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Kamera → Vertex-Weltposition (die Instanz-Transform steckt in
                     // positionWorld → per-Instanz korrekt, ohne den modelWorldMatrix-Ursprung).
                     const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_pw.x), _cam.z.sub(_pw.z)));
@@ -29892,10 +30034,10 @@ class AnazhRealm {
                 if (!di || (di.buffer === undefined && di.bufferGPU === undefined)) return false;
             }
             // NICHTS SCHWEBT: ein gebundenes Attribut mit offenem Upload (Version über der hochgeladenen oder
-            // offene updateRanges — BatchedMesh.setGeometryAt schreibt Teil-Uploads) darf nicht genullt werden:
-            // der nächste Render läse die Range aus dem Null-Array → writeBuffer „Number of bytes to write is
-            // too large" (Befund 30.09.: ungerenderte Batches — verdeckt/außer Frustum — sammeln Ranges, die
-            // Gnadenfrist läuft ab). Ungebundene Stagings laden nie → frei.
+            // offene updateRanges — Teil-Uploads) darf nicht genullt werden: der nächste Render läse die Range
+            // aus dem Null-Array → writeBuffer „Number of bytes to write is too large" (Befund 30.09.:
+            // ungerenderte Geometrie — verdeckt/außer Frustum — sammelt Ranges, die Gnadenfrist läuft ab).
+            // Ungebundene Stagings laden nie → frei.
             const am = r._attributes && r._attributes.data;
             if (am && typeof am.get === "function") {
                 const offen = (a) => {
@@ -32869,7 +33011,7 @@ class AnazhRealm {
             const liste = bueschel.filter((b) => b.vorlage === v);
             if (!liste.length) continue;
             for (const lf of flats[v].leaves) {
-                const im = new THREE.InstancedMesh(lf.geom, lf.mat, liste.length);
+                const im = AnazhRealm._instanzMesh(lf.geom, lf.mat, liste.length);
                 for (let i = 0; i < liste.length; i++) {
                     const b = liste[i];
                     pv.set(b.x, b.y, b.z);
@@ -33245,7 +33387,7 @@ class AnazhRealm {
         const geo = this._scatterSpeciesGeometry(species);
         const mat = this._scatterMaterial(species);
         if (!geo || !mat) return null;
-        const inst = new THREE.InstancedMesh(geo, mat, species.cap);
+        const inst = AnazhRealm._instanzMesh(geo, mat, species.cap);
         inst.count = 0;
         inst.castShadow = false;
         inst.receiveShadow = !species.emissive;
@@ -33798,7 +33940,7 @@ class AnazhRealm {
             const geo = this._scatterImpostorGeometry(sp);
             const mat = this._scatterMaterial(sp);
             if (!geo || !mat) return;
-            inst = new THREE.InstancedMesh(geo, mat, FF.cap);
+            inst = AnazhRealm._instanzMesh(geo, mat, FF.cap);
             inst.count = 0;
             inst.castShadow = false;
             inst.receiveShadow = false;
@@ -33935,7 +34077,7 @@ class AnazhRealm {
             const geo = this._scatterImpostorGeometry(sp);
             const mat = this._scatterMaterial(sp);
             if (!geo || !mat) return;
-            inst = new THREE.InstancedMesh(geo, mat, FF.cap);
+            inst = AnazhRealm._instanzMesh(geo, mat, FF.cap);
             inst.count = 0;
             inst.castShadow = false;
             inst.receiveShadow = false;
@@ -35520,16 +35662,45 @@ class AnazhRealm {
         return true;
     }
 
-    _weltBakeErlaubt() {
+    // DER EINE FELD-BAKE-TAKT, NAH ZUERST ÜBER ALLE VERBRAUCHER (Bau · Streu-Gesetz · Region-Ziegel · Kreatur-Fern-Fit):
+    // je Sekunden-Fenster höchstens 16 Fits (über Budget 4). In der ERSTEN Fenster-Hälfte wartet, wer weiter weg ist
+    // als der NÄCHSTE, den der Takt im Vor-Fenster abweisen musste — die Näheren fragen je Frame und sind dann bedient;
+    // was in der zweiten Hälfte übrig ist, bekommt, wer fragt (die Ziegel-Schlange fragt nach Distanz). Vorher bekam,
+    // wer im Frame zuerst fragte; und eine Schwelle über das GANZE Fenster ließ das übrige Budget liegen und die Fernen
+    // verhungern (gemessen 03.10., gate:arch-feld mit echter Distanz: 415 Freigaben in 1 000 Takten, die Eiche in
+    // 154 m nie). `d2` = Distanz² zum Spieler (ohne Angabe: vorne).
+    _weltBakeErlaubt(d2) {
+        const D = Number.isFinite(d2) ? d2 : 0;
         const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
         if (this._weltBakeFenster === undefined || jetzt - this._weltBakeFenster > 1000) {
             this._weltBakeFenster = jetzt;
             this._weltBakeN = 0;
+            this._weltBakeVorrang = Number.isFinite(this._weltBakeHunger) ? this._weltBakeHunger : Infinity;
+            this._weltBakeHunger = Infinity;
         }
         const max = this.state._frameOverBudget ? 4 : 16; // Bakes je Sekunde
-        if (this._weltBakeN >= max) return false;
+        const vorrang = jetzt - this._weltBakeFenster < 500 && D > this._weltBakeVorrang;
+        if (this._weltBakeN >= max || vorrang) {
+            if (!(D >= this._weltBakeHunger)) this._weltBakeHunger = D;
+            return false;
+        }
         this._weltBakeN++;
         return true;
+    }
+
+    // Distanz² eines Welt-Punkts zum Spieler (für den Bake-Takt; ohne Spieler: vorne).
+    _spielerD2(x, z) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return 0;
+        const dx = x - pm.x,
+            dz = z - pm.z;
+        return dx * dx + dz * dz;
+    }
+    // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Lage.
+    _archZiegelD2(entry) {
+        if (Number.isFinite(entry._ziegelD2)) return entry._ziegelD2;
+        const p = entry.position || { x: 0, z: 0 };
+        return this._spielerD2(p.x || 0, p.z || 0);
     }
 
     _weltMarchEnsure() {
@@ -35936,7 +36107,7 @@ class AnazhRealm {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
         const key = "abaum:" + preset + ":" + this._foundryVariantFor(fseed);
-        if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt()) return null; // Fit-Takt (Cache-Treffer sind frei)
+        if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt(this._spielerD2(x, z))) return null; // Fit-Takt (Treffer frei)
         const satz = this._weltKapselHolen(key, () => {
             const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
@@ -43849,7 +44020,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, season, heldOv || undefined).then((meshes) => {
+                this._foundryRequest(preset, variant, 0, season, heldOv || undefined, 0).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
                         try {
@@ -48920,7 +49091,7 @@ class AnazhRealm {
             mA.multiply(mB);
             try {
                 f.g.mesh.setMatrixAt(f.slot, mA);
-                if (f.g.kind !== "batch" && f.g.mesh.instanceMatrix) f.g.mesh.instanceMatrix.needsUpdate = true;
+                if (f.g.mesh.instanceMatrix) f.g.mesh.instanceMatrix.needsUpdate = true;
                 f.g.mesh.boundingSphere = null;
             } catch (_e) {
                 /* Slot kann nach Rebuild kurz stale sein — nächster Tick sammelt neu */
@@ -50576,11 +50747,8 @@ class AnazhRealm {
         for (const target of this.state.architectures || []) {
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
             if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
-            const targetBp = this.state.blueprints && this.state.blueprints[target.type];
-            if (!targetBp) continue;
-            const tags = this.computeCompoundTags(targetBp) || {};
-            if ((tags.brennbar || 0) < AnazhRealm.BRENNBAR_TAG_MIN) continue;
-            // Mindestens eine focusing-Architektur in Range?
+            // Mindestens eine focusing-Architektur in Range? ZUERST (billig) — die Compound-Tags rechnet nur ein
+            // Bau in Reichweite (Befund 02.10.: die Tags aller ~120 Bauten je Takt kosteten Ø 20 ms, max 62 ms).
             let inRange = false;
             for (const fa of focusing) {
                 const dx = fa.position.x - target.position.x;
@@ -50591,6 +50759,10 @@ class AnazhRealm {
                 }
             }
             if (!inRange) continue;
+            const targetBp = this.state.blueprints && this.state.blueprints[target.type];
+            if (!targetBp) continue;
+            const tags = this.computeCompoundTags(targetBp) || {};
+            if ((tags.brennbar || 0) < AnazhRealm.BRENNBAR_TAG_MIN) continue;
             target.heatBuildup = (target.heatBuildup || 0) + ratePerSec * dt;
             if (target.heatBuildup >= ignite) {
                 ignitions.push(target);
@@ -51839,23 +52011,17 @@ class AnazhRealm {
             const slot = this._archGroupAlloc(g);
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
-            // Der Batch-Pfad verwaltet Matrix-/Color-Buffer intern; nur InstancedMesh pflegt sie selbst.
-            // Die mesh-level boundingSphere MUSS nach jedem Add auf null (beide Pfade): THREE cacht sie sonst
-            // beim ersten Cull, spät gestreamte Instanzen liegen außerhalb und die ganze Region cullt weg.
+            // Die mesh-level boundingSphere MUSS nach jedem Add auf null: THREE cacht sie sonst beim ersten
+            // Cull, spät gestreamte Instanzen liegen außerhalb und die ganze Region cullt weg.
             // Slot-Farbe über den EINEN Chokepoint _archSlotColor (leaf.tint × Streu-Tint).
             const slotColor = this._archSlotColor(leaf, tintColor);
-            if (g.kind === "batch") {
-                if (slotColor) g.mesh.setColorAt(slot, slotColor);
-                g.mesh.boundingSphere = null;
-            } else {
-                g.mesh.instanceMatrix.needsUpdate = true;
-                if (slotColor) {
-                    g.mesh.setColorAt(slot, slotColor);
-                    if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
-                }
-                if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
-                g.mesh.boundingSphere = null;
+            g.mesh.instanceMatrix.needsUpdate = true;
+            if (slotColor) {
+                g.mesh.setColorAt(slot, slotColor);
+                if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
             }
+            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
+            g.mesh.boundingSphere = null;
             // slotEntry = null markiert den Slot als DEKO (kein Architektur-
             // Eintrag) → der Crosshair-Raycast (liest slotEntry) ignoriert ihn,
             // bis er promoted wird.
@@ -51889,8 +52055,8 @@ class AnazhRealm {
         // SUBMIT-WAL (Flugschreiber-Befund: sceneChildren wächst monoton beim Wandern,
         // Schöpfer-Trace 481 archInstanceGroup-Kinder): geht der LETZTE Bewohner einer
         // geteilten/globalen Hülle, verlässt sie die Szene WIRKLICH — dieselbe Empty-
-        // Dispose wie _archInstanceRemove (V4(B)); _disposeArchInstanceGroup ist batch-/
-        // refcount-/foundry-src-bewusst. Vorher blieb jede leere InstancedMesh-Hülle
+        // Dispose wie _archInstanceRemove (V4(B)); _disposeArchInstanceGroup ist
+        // foundry-src-bewusst. Vorher blieb jede leere InstancedMesh-Hülle
         // (count am High-Water, global = frustumCulled false) als toter Draw-Call +
         // Szene-Kind FÜR IMMER stehen — der eigentliche Submit-Wal.
         // GNADENFRIST (18.07.) — der Leer-Dispose läuft durch den EINEN Chokepoint
@@ -52337,7 +52503,7 @@ class AnazhRealm {
             // Gruppen mit ~2 Instanzen, GEMESSEN) → LOD1/2 wurden GLOBAL.
             // V18.390 (Eins W2 — der Wald-Kollaps, diff-A1 §5D): die VORLAGEN-WEISHEIT
             // „Bäume GLOBAL instanziert, NUR der Boden gekachelt" — die tree-Schicht
-            // geht auf ALLEN LODs global (wenige große Batches statt N Regionen ×
+            // geht auf ALLEN LODs global (wenige große Gruppen statt N Regionen ×
             // Varianten × Leaves; tragbar, weil A+C die Gruppen-Zahl gesenkt haben).
             // Boden-Schichten (under/litter/rock) BLEIBEN region-gekachelt — sie
             // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
@@ -52596,25 +52762,9 @@ class AnazhRealm {
         // mit ab (der Konsument fällt MIT seiner Familie, nie ein Geister-Draw).
         if (this._feldCull && this._feldCull.gewaender.has(groupKey)) this._feldCullVerlasse(groupKey);
         this.state.archInstanceGroups.delete(groupKey);
-        if (g.kind === "batch") {
-            // Der geteilte Region-Batch wird erst disposed, wenn kein Wrapper mehr darauf zeigt (refCount → 0) —
-            // sonst gäben mehrere Leaf-Wrapper einer Region den Mesh doppelt frei.
-            const batch = g.batch;
-            if (batch) {
-                batch.refCount = (batch.refCount || 1) - 1;
-                if (batch.refCount <= 0) {
-                    // T3 — parent-bewusst: der Batch kann in einer Region-BundleGroup hängen
-                    // (scene.remove wäre dort ein No-op = Leck + Geister-Draws im Replay).
-                    if (batch.mesh) this._archBundleSceneRemove(batch.mesh);
-                    if (batch.mesh && typeof batch.mesh.dispose === "function") batch.mesh.dispose();
-                    if (this.state.archBatches) this.state.archBatches.delete(batch.batchKey);
-                }
-            }
-            return;
-        }
         if (g.mesh) {
-            // SUBMIT-WAL — parent-bewusst (dieselbe scene.remove-Falle wie beim Batch):
-            // eine regionale Gruppe hängt in ihrer Region-BundleGroup; ein leeres Bundle
+            // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
+            // Region-BundleGroup; ein leeres Bundle
             // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
             this._archBundleSceneRemove(g.mesh);
             if (typeof g.mesh.dispose === "function") g.mesh.dispose();
@@ -52807,9 +52957,6 @@ class AnazhRealm {
         // CHUNK-BODEN-ENTLASSUNG (19.07.) — der Gnadenfrist-Tick nullt die
         // CPU-Arrays gesettelter, IDB-gedeckter Chunk-Böden (echt-only).
         this._tickChunkBodenEntlassung(performance.now());
-        // BATCH-STAGING-ENTLASSUNG (19.07.) — dasselbe Muster für die
-        // BatchedMesh-Stagings (Re-Hydrierung aus den lebenden Quellen).
-        this._tickBatchStagingEntlassung(performance.now());
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
         // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
@@ -59546,7 +59693,7 @@ class AnazhRealm {
 
     // Geteiltes Leaf-Material: EINES je TAG-SIGNATUR (_sharedFoliageMaterial); die Part-Farbe reist als
     // INSTANZ-Farbe (leaf.tint → _archSlotColor → setColorAt, neutral WEISS). Ein Material je Farbe
-    // zersplitterte den Batch-Key (mat.uuid, _archBatchGroupFor) in eigene Pipelines + Draws. AUSNAHME:
+    // zersplitterte die Pipelines (je Farbe eine Material-Familie). AUSNAHME:
     // GLÜHENDE Substanz behält die Farbe in der Signatur (Emissiv liest opts.color; Spiegel der Klammer
     // `emissiv − 0.5 > 0.01`, gate:render-diaet). ARCH_LEAF_MAT_SHARED=false nur als Linsen-Beweis.
     _archLeafMaterial(part) {
@@ -59817,7 +59964,7 @@ class AnazhRealm {
         }
         const grp = new THREE.Group();
         for (const leaf of flat.leaves) {
-            if (!leaf.geom || !leaf.mat) continue;
+            if (!leaf.geom || !leaf.mat || leaf.shadowTwin) continue; // der Schatten-Zwilling ist kamera-unsichtbar
             const mesh = new THREE.Mesh(leaf.geom, this._ghostMaterialFor(leaf.mat));
             mesh.applyMatrix4(leaf.localMatrix);
             mesh.castShadow = false;
@@ -59953,8 +60100,8 @@ class AnazhRealm {
         }
     }
 
-    // PIPELINE-WARM-OFEN: konsumiert wird ein Material als InstancedMesh (+Fassade+instanceColor) bzw.
-    // BatchedMesh — andere Pipeline-Keys als die PLAIN-Gruppe, an der gewärmt wurde → Sync-Compile. Darum
+    // PIPELINE-WARM-OFEN: konsumiert wird ein Material als InstancedMesh (+Fassade+instanceColor) — andere
+    // Pipeline-Keys als die PLAIN-Gruppe, an der gewärmt wurde → Sync-Compile. Darum
     // merkt der Ofen am GRUPPEN-MÜNZ-CHOKEPOINT jede NEUE Familie (Material × Archetyp, dedupliziert) und
     // wärmt sie budgetiert mit der LEBENDEN Gruppe als Compile-Wurzel (Key matcht). Headless → No-op;
     // eine ungewärmte Familie kompiliert beim ersten Draw synchron. Instanz-Felder (kein state.X).
@@ -60075,10 +60222,13 @@ class AnazhRealm {
     // die @s:-Fernstufen UND den region-privaten geroell-Teppich (der Wander-
     // Zensus V18.485 nannte ihn als schwersten Nicht-Baum-Rest: einstufig, sein
     // Name endet nie :2 → er erreicht die Super-Region nie). Bäume bleiben
-    // draußen (global gekeyt bzw. Impostor-Batches — kein "@" / kind batch).
+    // draußen (global gekeyt bzw. das Impostor-Billboard — sein Material trägt die
+    // Kamera-Kleber-Wand im Shader, die Kompaktierung kennt sie nicht).
     _feldCullKandidat(g) {
-        if (!g || !g.mesh || g.kind === "batch" || !g.mesh.isInstancedMesh) return false;
+        if (!g || !g.mesh || !g.mesh.isInstancedMesh) return false;
         if (g.shadowTwin || g.tuer) return false;
+        const _mud = g.mesh.material && g.mesh.material.userData;
+        if (_mud && _mud.impostorBillboard) return false;
         if (typeof g.key !== "string" || !g.key.startsWith("fscatter:")) return false;
         if (g.key.indexOf("@") < 0) return false; // regional/super-regional — der Bundle-Cull bleibt das äußere Tor
         if ((g.mesh.count | 0) < AnazhRealm.FELD_CULL.minInstanzen) return false;
@@ -61358,7 +61508,7 @@ class AnazhRealm {
                 ? { geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() }
                 : null;
             // OPAKER KRONEN-KERN (nur LOD0): füllt Löcher + schreibt Tiefe → early-Z (Toggle
-            // `state.foliageOpaqueCore`; EIN geteiltes Singleton-Material, eigene Opts-Signatur → eigenes Batch).
+            // `state.foliageOpaqueCore`; EIN geteiltes Singleton-Material, eigene Opts-Signatur → eigene Gruppe).
             // DREI Rollen durch DENSELBEN Leaf-/HISM-Pfad (castShadow/shadowTwin sind Leaf-Felder): cards
             // (Anzeige-Laub) und core (Füller, Layer 0) casten NICHT; der twin ist der opake, form-folgende
             // Schatten-Caster auf SHADOW_TWIN_LAYER. Toggle `state.foliageShadowTwin` (Default an).
@@ -61558,6 +61708,7 @@ class AnazhRealm {
             // nach der Uhr ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
             const fb = this._foundry;
             if (fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) return 0;
+            if (fb && fb.warte && fb.warte.some((a) => a.praefix === "imp")) return 0; // wartet in der Schlange
             const since = this._impostorBakePendingSince || 0;
             if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) {
                 const hungKey = this._impostorBakePendingKey;
@@ -62138,191 +62289,13 @@ class AnazhRealm {
             mat = this._buildToonNodeMaterial(opts);
             mat.userData.sharedFoliage = true;
             // OBSERVER-DIÄT: die sharedFoliage-Singletons hängen NUR an geteilten Sätzen (Atmo/LOD/Wind,
-            // renderGroup) + Attributen + Instanz-Daten; die Wächter decken instanceMatrix/instanceColor +
-            // BatchedMesh-Daten-Texturen. Impostor-Materialien laufen auch hier durch — ihre Atlanten deckt der
-            // ATLAS-WÄCHTER (mat._anazhAtlasTexe).
+            // renderGroup) + Attributen + Instanz-Daten; die Wächter decken instanceMatrix/instanceColor.
+            // Impostor-Materialien laufen auch hier durch — ihre Atlanten deckt der ATLAS-WÄCHTER
+            // (mat._anazhAtlasTexe).
             this._materialObserverDiaet(mat);
             this.state._foliageMatCache.set(sig, mat);
         }
         return mat;
-    }
-
-    // BatchedMesh-Pfad: ein Batch je (geteiltem Material × Schatten-Klasse); Leaf-Geometrien teilen ihn
-    // (addGeometry → geomId), der (name#leafIdx)-Wrapper zeigt auf Batch + geomId. Per-Instanz-
-    // Frustum-Culling an → Umsehen senkt die Draw-Last.
-    _archBatchGroupFor(name, leafIdx, leaf, regionKey) {
-        if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
-        if (!this.state.archBatches) this.state.archBatches = new Map();
-        // Region-gekeyt (wie der InstancedMesh-Pfad): lokale Bounding-Sphere → frustumCulled cullt die ganze
-        // Region beim Wegschauen; N region-InstancedMeshes kollabieren in ~1 Batch/Material. Ohne regionKey
-        // (große/globale Strukturen) der globale Batch.
-        const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
-        const key = regional ? name + "#" + leafIdx + "@" + regionKey : name + "#" + leafIdx;
-        const existing = this.state.archInstanceGroups.get(key);
-        if (existing) return existing;
-        // V18.349 — per-Leaf-Override (der opake Kronen-Kern setzt castShadow:false): ein einzelner
-        // Leaf darf den Namen-basierten Schatten-Default überstimmen; sonst der LOD-Default via Name.
-        const castShadow = leaf.castShadow !== undefined ? !!leaf.castShadow : this._archGroupCastsShadow(name);
-        // leaf.mat ist je TAG-SIGNATUR geteilt (_archLeafMaterial) → der mat.uuid-Key kollabiert die
-        // Part-Farben in EINEN Batch (Farbe = Instanz-Farbe, _archSlotColor). Der r184-BatchedMesh verlangt
-        // INDEX-KONSISTENZ → der Key trägt sie EXPLIZIT (#i/#x; Kronen-Kern/Schatten-Zwilling sind
-        // non-indexed) am EINEN Chokepoint.
-        const idxKind = leaf.geom && leaf.geom.index ? "i" : "x";
-        const batchKey =
-            (leaf.mat.uuid || "m") + "#" + idxKind + (castShadow ? "s" : "n") + (regional ? "@" + regionKey : "");
-        let batch = this.state.archBatches.get(batchKey);
-        if (!batch) {
-            // Batches KLEIN münzen und on-demand wachsen (setInstanceCount/setGeometrySize,
-            // _archBatchAddGeometry) — regional UND global: die volle Worst-Case-Reserve (~20 MB je Batch, meist
-            // für EINE winzige Geometrie) kostete CPU-Staging + GPU-Reserve ohne Zeichnung (Freeze +
-            // Speicherdruck). Kosten folgen dem Füllstand; die Kapazitäts-Deckel (32768/512) bleiben im Wachstum.
-            const MAXV = AnazhRealm.ARCH_BATCH_MINT_VERTS;
-            const MAXI = AnazhRealm.ARCH_BATCH_MINT_IDX;
-            const MAXINST = regional ? 512 : 2048;
-            const mesh = new THREE.BatchedMesh(MAXINST, MAXV, MAXI, leaf.mat);
-            mesh.castShadow = castShadow;
-            mesh.receiveShadow = true;
-            mesh.perObjectFrustumCulled = true; // die Engine cullt pro Instanz → Umsehen senkt die Last
-            mesh.frustumCulled = regional; // region-lokale Sphere → die ganze Region cullt beim Wegschauen
-            mesh.sortObjects = false;
-            mesh.userData.archBatchKey = batchKey;
-            // Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → die Kamera sieht ihn nie, der
-            // Schatten-Pass zählt ihn). Der Batch ist twin-rein (eigenes Singleton → eigener batchKey), also trägt
-            // der ganze Batch die Layer; kein FOLIAGE_LAYER.
-            if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-            else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub-Batch → FOLIAGE_LAYER
-            // RENDERBUNDLES: der regionale Batch hängt in der Region-BundleGroup → WebGPU recorded die Region
-            // EINMAL und replayed sie (Submit-CPU ≈ 0). Im Replay LEBEN Kamera/Licht/Fog/BatchedMesh-Matrizen, die
-            // DRAW-LISTE friert ein → (a) three-Culling wirkungslos: frustumCulled/perObjectFrustumCulled AUS,
-            // Region-Cull über die Bundle-Sichtbarkeit (_archRegionBundleCull); (b) JEDE Draw-Listen-Mutation MUSS
-            // invalidieren (_archBundleTouch). Globale Batches bleiben draußen (sie cullen PER INSTANZ).
-            const bundle = regional ? this._archRegionBundleFor(regionKey) : null;
-            if (bundle) {
-                mesh.frustumCulled = false;
-                mesh.perObjectFrustumCulled = false;
-                bundle.add(mesh);
-                bundle.needsUpdate = true;
-                this._bundleReifeWache(mesh); // Record droppt unfertige Pipelines — Touch NACH der Reife
-            } else if (this.state.scene) this.state.scene.add(mesh);
-            batch = {
-                batchKey,
-                mesh,
-                mat: leaf.mat,
-                castShadow,
-                regional,
-                geomIds: new Map(),
-                slotEntry: [],
-                refCount: 0,
-            };
-            this.state.archBatches.set(batchKey, batch);
-            // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Batch-Familie
-            // (Material × BatchedMesh, dedupliziert je Familie).
-            this._pipeOfenMerke("b", leaf.mat, mesh);
-        }
-        let geomId = batch.geomIds.get(leaf.geom);
-        if (geomId === undefined) {
-            geomId = this._archBatchAddGeometry(batch, leaf.geom);
-            batch.geomIds.set(leaf.geom, geomId);
-        }
-        // V18.353 PHASE A.2 — Refcount: mehrere Leaf-Wrapper teilen EINEN Region-Batch; der
-        // Batch wird erst disposed, wenn der LETZTE Wrapper geht (_disposeArchInstanceGroup).
-        batch.refCount++;
-        const g = {
-            kind: "batch",
-            key,
-            batch,
-            mesh: batch.mesh,
-            geomId,
-            geom: leaf.geom,
-            mat: leaf.mat,
-            castShadow,
-            regional,
-            slotEntry: batch.slotEntry,
-        };
-        g._ofenKey = "b|" + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER (s. _disposeArchInstanceGroup)
-        this.state.archInstanceGroups.set(key, g);
-        this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
-        return g;
-    }
-
-    // BATCH-STAGING-ENTLASSUNG: BatchedMesh hält die Merge-Geometrie doppelt (GPU + CPU-Staging), das
-    // Staging wird nach dem Upload nie gelesen → _tickBatchStagingEntlassung nullt es für gesettelte
-    // Batches (Gnadenfrist + Upload-Probe). RE-HYDRIERUNG ohne Platte: batch.geomIds trägt Quelle→Slot →
-    // Null-Arrays + setGeometryAt je Quelle VOR dem nächsten addGeometry/Wachstum (setGeometrySize kopiert
-    // lebenden Inhalt). Headless bleibt resident.
-    _batchStagingReHydrieren(batch) {
-        const bg = batch.mesh && batch.mesh.geometry;
-        if (!bg || batch._entlassen !== true) return;
-        for (const k in bg.attributes) {
-            const a = bg.attributes[k];
-            if (a && a.array && a.array.length === 0) a.array = new a.array.constructor(a.count * a.itemSize);
-        }
-        if (bg.index && bg.index.array && bg.index.array.length === 0)
-            bg.index.array = new bg.index.array.constructor(bg.index.count);
-        for (const [src, gid] of batch.geomIds) {
-            try {
-                batch.mesh.setGeometryAt(gid, src);
-            } catch (_e) {
-                /* toter Slot — der Rest re-hydriert weiter */
-            }
-        }
-        batch._entlassen = false;
-        this.state._batchEntlassenBytes = Math.max(
-            0,
-            (this.state._batchEntlassenBytes || 0) - (Number.isFinite(batch._entlassBytes) ? batch._entlassBytes : 0)
-        );
-        batch._entlassBytes = 0;
-        this._archBundleTouch(batch); // die Range-Uploads + der Re-Record decken jede Bahn
-    }
-    _tickBatchStagingEntlassung(now) {
-        const bs = this.state.archBatches;
-        if (!bs || !bs.size) return;
-        const r = this.state.renderer;
-        if (!r || r._isHeadlessNull) return; // headless: Gates lesen byte-alt
-        let budget = 3;
-        for (const batch of bs.values()) {
-            if (budget <= 0) break;
-            if (batch._entlassen || !batch.mesh || !batch.mesh.geometry) continue;
-            if (!Number.isFinite(batch._geoMutAt)) {
-                batch._geoMutAt = now; // Alt-Batch ohne Stempel: die Uhr startet jetzt
-                continue;
-            }
-            if (now - batch._geoMutAt < AnazhRealm.CHUNK_ENTLASS_GNADE_MS) continue;
-            const bg = batch.mesh.geometry;
-            if (!this._chunkBodenGpuHat(bg)) {
-                batch._geoMutAt = now; // nie gerendert/hochgeladen → Frist neu
-                continue;
-            }
-            // Null-Länge-SENTINEL statt null (Schöpfer-Trace 20.07.): der
-            // Pipeline-Bau liest array.constructor — der Typ muss überleben.
-            const frei = this._chunkBodenNulle(bg);
-            batch._entlassen = true;
-            batch._entlassBytes = frei;
-            this.state._batchEntlassenBytes = (this.state._batchEntlassenBytes || 0) + frei;
-            budget--;
-        }
-    }
-
-    // addGeometry mit Puffer-Wachstum bei Überlauf (setGeometrySize, V18.289-Probe).
-    _archBatchAddGeometry(batch, geom) {
-        // ENTLASSUNG: der Geometrie-Schreiber stempelt die Settle-Uhr und
-        // re-hydriert ein entlassenes Staging VOR jedem Schreiben/Wachstum.
-        batch._geoMutAt = performance.now();
-        if (batch._entlassen === true) this._batchStagingReHydrieren(batch);
-        try {
-            return batch.mesh.addGeometry(geom);
-        } catch {
-            const pos = geom.attributes.position ? geom.attributes.position.count : 0;
-            const idx = geom.index ? geom.index.count : pos;
-            const bg = batch.mesh.geometry;
-            const curV = bg && bg.attributes.position ? bg.attributes.position.count : 0;
-            const curI = bg && bg.index ? bg.index.count : 0;
-            batch.mesh.setGeometrySize(curV + pos + 8192, curI + idx + 24576);
-            // T3 — setGeometrySize baut die GPU-Puffer NEU → ein recorded Bundle
-            // referenziert die alten → Re-Record der Region erzwingen.
-            this._archBundleTouch(batch);
-            return batch.mesh.addGeometry(geom);
-        }
     }
 
     // RENDERBUNDLES: EINE BundleGroup je Streu-/Platzier-Region; der statische Subbaum wird einmal
@@ -62371,13 +62344,6 @@ class AnazhRealm {
         return bg;
     }
 
-    // Der EINE Invalidierungs-Chokepoint: jede Draw-Listen-Mutation eines Batches
-    // (addInstance/deleteInstance/setInstanceCount/setGeometrySize) muss hierher —
-    // needsUpdate++ recorded NUR das Bundle dieser Region neu (Sonde: reRecordBegins=1).
-    _archBundleTouch(batch) {
-        if (batch) this._archMeshBundleTouch(batch.mesh);
-    }
-
     // Bundle-Invalidierung für ein MESH in einer Region-BundleGroup: jede Mutation seiner Draw-Wahrheit
     // (Slot-Alloc/-Free · instanceMatrix/instanceColor · Fassade · count) muss hierher; sonst No-op.
     _archMeshBundleTouch(mesh) {
@@ -62386,7 +62352,7 @@ class AnazhRealm {
     }
 
     // Parent-bewusstes Entfernen (die scene.remove-Falle: remove() wirkt nur auf
-    // DIREKTE Kinder — ein Batch in der BundleGroup bliebe sonst hängen = Leck).
+    // DIREKTE Kinder — eine Gruppe in der BundleGroup bliebe sonst hängen = Leck).
     // Leere Bundles verlassen die Szene mit (Region weggestreamt).
     _archBundleSceneRemove(mesh) {
         const p = mesh ? mesh.parent : null;
@@ -62438,8 +62404,8 @@ class AnazhRealm {
         const r = st.renderer;
         if (!mesh || !r || r._isHeadlessNull || typeof r.compileAsync !== "function") return;
         if (!st.scene || !st.camera) return;
-        // LEER-WACHE: beim Gruppen-Mint ist die BatchedMesh-/Hüllen-Geometrie noch LEER (position kommt mit
-        // dem ersten addGeometry) — ein Compile jetzt baute eine FALSCH-Pipeline mit Null-Attributen
+        // LEER-WACHE: beim Gruppen-Mint kann die Hüllen-Geometrie noch LEER sein (position kommt mit dem
+        // ersten Beitritt) — ein Compile jetzt baute eine FALSCH-Pipeline mit Null-Attributen
         // (Warn-Fluten + Pipeline-Churn). Leere Bürger warten auf den ersten echten Beitritt.
         const g = mesh.geometry;
         if (!g || !g.attributes || !g.attributes.position) return;
@@ -62570,7 +62536,7 @@ class AnazhRealm {
                 if (bergAktiv) this._bundleQueryTick(bg, s, kante);
                 // REGION-ZIEGEL: ferne Regionen (Fern-Schicht-Mitglieder) tauschen ihre Draw-Liste gegen EINE
                 // March-Box (12 Tris). Bake budgetiert; needsUpdate verwirft den Ziegel (Re-Bake nächster Tick).
-                if (bergAktiv) this._bundleZiegelTick(bg);
+                if (bergAktiv) this._bundleZiegelTick(bg, kante);
             }
         }
     }
@@ -62643,7 +62609,7 @@ class AnazhRealm {
     // ═══ DER REGION-ZIEGEL ═══
     // Gestreutes (Wiese-Reste · Felsen · Kristalle · Bäume) ist Region-Inhalt: eine ferne Region wird EIN
     // 64³-Feld und zieht als SLOT in den EINEN Welt-March (Atlas + Liste) — kein eigenes Draw-Objekt.
-    _bundleZiegelTick(bg) {
+    _bundleZiegelTick(bg, kante) {
         const st = this.state;
         const u = bg.userData;
         if (u._fernSchicht !== true) {
@@ -62668,7 +62634,8 @@ class AnazhRealm {
             bg.visible = false;
             return;
         }
-        if (!this._weltBakeErlaubt()) return; // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt das Bundle (Streaming-Rampe)
+        // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt das Bundle (Streaming-Rampe)
+        if (!this._weltBakeErlaubt(Number.isFinite(kante) && kante > 0 ? kante * kante : 0)) return;
         u._ziegelBakeVersuch = true;
         const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
         u._ziegelSlot = zg ? this._weltFeldRegister(zg) : null;
@@ -62794,30 +62761,15 @@ class AnazhRealm {
         }
     }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
-        // V18.474 — die EINE Fern-Key-Ableitung VOR jedem Keying (der Batch-Zweig unten erbt
-        // sie mit): Fern-Leaves (Impostor-Quads/L2) kollabieren von der Region auf die
-        // SUPER-REGION (s. _archFernRegionKey — Chokepoint, kein zweiter Ableitungs-Ort).
+        // V18.474 — die EINE Fern-Key-Ableitung VOR jedem Keying: Fern-Leaves (Impostor-Quads/L2)
+        // kollabieren von der Region auf die SUPER-REGION (s. _archFernRegionKey — Chokepoint, kein zweiter
+        // Ableitungs-Ort).
         regionKey = this._archFernRegionKey(name, leaf, regionKey);
-        // Batch-Pfad (region-gekeyt, `useBatchedArch`). BatchedMesh KOPIERT je Geometrie, InstancedMesh
-        // REFERENZIERT eine geom → instanced bleiben: (a) Schwergewichte > ARCH_BATCH_KLEIN_VERTS, (b)
-        // Tür-Flügel (per-Frame-Scharnier-Matrizen), (c) MASKIERTE Stufen-Leaves (aLodLevel > 0: die Fassade
-        // trägt aH0×Skala), (d) aOccl-Träger (Impostor-Quads). Kleine Foundry-Leaves kollabieren in den
-        // Region-Batch (+ RenderBundle); für aLodLevel 0 ist die Fassade inert → look-treu.
-        const _aG = leaf && leaf.geom && leaf.geom.attributes;
-        const _lVerts = _aG && _aG.position ? _aG.position.count : 0;
-        const _maskiert = !!(
-            _aG &&
-            _aG.aLodLevel &&
-            _aG.aLodLevel.array &&
-            _aG.aLodLevel.array.length &&
-            _aG.aLodLevel.array[0] > 0.5
-        );
-        const heavyLeaf =
-            _lVerts > AnazhRealm.ARCH_INSTANCE_SHARE_VERTS ||
-            (leaf &&
-                leaf.instanceShare === true &&
-                (_lVerts > AnazhRealm.ARCH_BATCH_KLEIN_VERTS || !!leaf.tuer || _maskiert || !!(_aG && _aG.aOccl)));
-        if (this.state.useBatchedArch && !heavyLeaf) return this._archBatchGroupFor(name, leafIdx, leaf, regionKey);
+        // JEDES Leaf ist eine InstancedMesh: EIN Draw je Leaf × Region, gleich wie viele Platzierungen. Der
+        // BatchedMesh-Pfad (bis V18.509) fiel: r184-WebGPU kennt kein Multi-Draw, der Batch gibt je INSTANZ
+        // einen drawIndexed aus (WebGPUBackend: Schleife über _multiDrawCount) — gemessen 02.10. an der
+        // Mess-Wiese 7 339 Draws je Pass für 58 Batches, ×4 mit den Schatten-Kaskaden 29 191 von 29 943
+        // GPU-Befehlen eines Frames.
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
         const key = regional ? name + "#" + leafIdx + "@" + regionKey : name + "#" + leafIdx;
@@ -62833,7 +62785,7 @@ class AnazhRealm {
         const wantsFacade =
             leaf.geom && leaf.geom.attributes && (leaf.geom.attributes.aH0 || leaf.geom.attributes.aOccl);
         const groupGeom = wantsFacade ? this._lodInstanceFacade(leaf.geom, capacity) : leaf.geom;
-        const mesh = new THREE.InstancedMesh(groupGeom, leaf.mat, capacity);
+        const mesh = AnazhRealm._instanzMesh(groupGeom, leaf.mat, capacity);
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
         mesh.count = 0; // noch keine Instanz sichtbar
@@ -62873,7 +62825,7 @@ class AnazhRealm {
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
             tuer: leaf.tuer || null, // V18.465 — Tür-Flügel-Scharnier (Template-Raum)
         };
-        // Nur im NEU-Gruppen-Zweig (nicht im Batch-Pfad, nicht in _archInstanceGroupGrow → g-Identität
+        // Nur im NEU-Gruppen-Zweig (nicht in _archInstanceGroupGrow → g-Identität
         // bleibt): der Ref-Zähler der Cache-Gruppe steigt um 1, solange eine lebende InstancedMesh-Gruppe ihre
         // geteilte Geometrie hält; _disposeArchInstanceGroup dekrementiert 1:1.
         if (leaf && leaf._srcGroup) {
@@ -62931,10 +62883,9 @@ class AnazhRealm {
 
     // Kapazität verdoppeln: neue InstancedMesh, alte Matrizen kopieren.
     _archInstanceGroupGrow(g) {
-        if (g.kind === "batch") return; // Batch wächst in _archGroupAlloc (setInstanceCount)
         const newCap = g.capacity * 2;
         this._lodFacadeGrow(g.geom, newCap); // AUSLÖSCHUNGS-WELLE (Feld B) — Instanz-Attribute mitziehen
-        const next = new THREE.InstancedMesh(g.geom, g.mat, newCap);
+        const next = AnazhRealm._instanzMesh(g.geom, g.mat, newCap);
         next.castShadow = g.castShadow !== false; // V18.265 — Schatten-Distanz mitführen
         next.receiveShadow = true;
         next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
@@ -62981,21 +62932,9 @@ class AnazhRealm {
     // Einen Slot in der Gruppe belegen (Free-List zuerst, dann frischer Slot,
     // dann wachsen). Rückgabe: Slot-Index.
     _archGroupAlloc(g) {
-        // V18.356 — die LIVE-Instanzen pro Wrapper zählen (für die Empty-Dispose; bei BatchedMesh
-        // gibt es kein g.free/g.next, also ist liveCount die EINE Quelle für „dieser Wrapper ist leer").
+        // V18.356 — die LIVE-Instanzen pro Wrapper zählen: liveCount ist die EINE Quelle für „dieser
+        // Wrapper ist leer" (Free-Slots bleiben im High-Water, g.next zählt sie mit).
         g.liveCount = (g.liveCount || 0) + 1;
-        if (g.kind === "batch") {
-            let slot;
-            try {
-                slot = g.mesh.addInstance(g.geomId);
-            } catch {
-                // maxInstanceCount-Überlauf → Instanz-Kapazität verdoppeln (V18.289-Probe)
-                g.mesh.setInstanceCount((g.mesh.maxInstanceCount || 1024) * 2);
-                slot = g.mesh.addInstance(g.geomId);
-            }
-            this._archBundleTouch(g.batch); // T3 — Draw-Liste wuchs → Region-Bundle re-recorden
-            return slot;
-        }
         // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe/count in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
         this._archMeshBundleTouch(g.mesh);
@@ -63010,13 +62949,7 @@ class AnazhRealm {
     // singulär — dort schaltet die KAMERA-KLEBER-WAND im Shader (_buildPbrNodeMaterial, _lebt.select)
     // tote Slots stumm; der EINE Chokepoint dafür ist der Shader.
     _archGroupFree(g, slot) {
-        g.liveCount = Math.max(0, (g.liveCount || 0) - 1); // V18.356 — Empty-Dispose-Quelle (beide Arten)
-        if (g.kind === "batch") {
-            if (typeof g.mesh.deleteInstance === "function") g.mesh.deleteInstance(slot);
-            if (g.slotEntry) g.slotEntry[slot] = null;
-            this._archBundleTouch(g.batch); // T3 — Draw-Liste schrumpfte → Region-Bundle re-recorden
-            return;
-        }
+        g.liveCount = Math.max(0, (g.liveCount || 0) - 1); // V18.356 — die Empty-Dispose-Quelle
         // Die Null-Skala ERBT die letzte Instanz-POSITION (nur die obere 3×3 fällt auf 0) — sonst spannt die
         // lazy Bounding-Sphere zum Welt-Ursprung. _archZeroM ist Scratch (je Aufruf voll überschrieben).
         const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4());
@@ -63112,7 +63045,7 @@ class AnazhRealm {
                     return g;
                 })());
             const mat = this._archFundMat || (this._archFundMat = new THREE.MeshLambertMaterial({ color: 0x7a7168 })); // Bruchstein-Grau
-            const mesh = new THREE.InstancedMesh(geo, mat, 128);
+            const mesh = AnazhRealm._instanzMesh(geo, mat, 128);
             mesh.count = 0;
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
             mesh.receiveShadow = true;
@@ -63121,7 +63054,7 @@ class AnazhRealm {
         }
         if (!P.free.length && P.top >= P.cap) {
             // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
-            const bigger = new THREE.InstancedMesh(this._archFundGeo, this._archFundMat, P.cap * 2);
+            const bigger = AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2);
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
             bigger.count = P.mesh.count;
             bigger.frustumCulled = false;
@@ -63178,7 +63111,7 @@ class AnazhRealm {
         if (P) return P;
         const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
         const mat = this._stlWegeMat || (this._stlWegeMat = new THREE.MeshLambertMaterial({ color: 0xffffff })); // Farbe je Instanz (setColorAt)
-        const mesh = new THREE.InstancedMesh(geo, mat, 256);
+        const mesh = AnazhRealm._instanzMesh(geo, mat, 256);
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
         mesh.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color(1, 1, 1)));
@@ -63194,7 +63127,7 @@ class AnazhRealm {
         if (!P) return;
         if (P.top >= P.cap) {
             // Verdopplungs-Wachstum (Matrizen + Farben in einen frischen Pool).
-            const bigger = new THREE.InstancedMesh(this._stlWegeGeo, this._stlWegeMat, P.cap * 2);
+            const bigger = AnazhRealm._instanzMesh(this._stlWegeGeo, this._stlWegeMat, P.cap * 2);
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
             // Buffer anlegen SOLANGE count == neuer cap (r128-setColorAt-Semantik).
             bigger.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color()));
@@ -63396,22 +63329,15 @@ class AnazhRealm {
             // V18.181-merge-Λ Sub 3d / V18.475: die EINE Slot-Farbe (leaf.tint ×
             // Entry-Tint, _archSlotColor) — lazy Allocation des Color-Buffers.
             const slotColor = this._archSlotColor(leaf, tintColor);
-            if (g.kind === "batch") {
-                // BatchedMesh verwaltet Matrix-/Color-Buffer intern (kein .count/.instanceMatrix).
-                // V18.358 — ABER die mesh-level boundingSphere MUSS nach jedem Add invalidiert
-                // werden (THREE cacht sie sonst stale → spät-platzierte Bauten cullen im Blickfeld).
-                if (slotColor) g.mesh.setColorAt(slot, slotColor);
-                g.mesh.boundingSphere = null;
-            } else {
-                g.mesh.instanceMatrix.needsUpdate = true;
-                if (slotColor) {
-                    g.mesh.setColorAt(slot, slotColor);
-                    if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
-                }
-                if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
-                // boundingSphere invalidieren (Raycast-Cull, s. _archGroupFree).
-                g.mesh.boundingSphere = null;
+            g.mesh.instanceMatrix.needsUpdate = true;
+            if (slotColor) {
+                g.mesh.setColorAt(slot, slotColor);
+                if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
             }
+            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
+            // boundingSphere invalidieren (V18.358: THREE cacht sie sonst stale → spät platzierte Bauten
+            // cullen im Blickfeld; Raycast-Cull, s. _archGroupFree).
+            g.mesh.boundingSphere = null;
             if (g.slotEntry) g.slotEntry[slot] = entry;
             // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + vOcc).
             this._lodSlotStamp(g, slot, entry.scale, entry._occluded === true);
@@ -63466,14 +63392,12 @@ class AnazhRealm {
             if (!g) continue;
             m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
             g.mesh.setMatrixAt(slot, m);
-            if (g.kind !== "batch") {
-                g.mesh.instanceMatrix.needsUpdate = true;
-                // SUBMIT-WAL — Matrix-Mutation einer ggf. gebündelten Gruppe (Fahrzeug-
-                // Mount-Follow): das Region-Bundle re-recorden (nur während gefahren wird).
-                this._archMeshBundleTouch(g.mesh);
-            }
-            // boundingSphere invalidieren (Frustum-/Raycast-Cull, s. _archGroupFree) —
-            // gilt BEIDEN Arten (die V18.358-Batch-Lehre: THREE cacht sie sonst stale).
+            g.mesh.instanceMatrix.needsUpdate = true;
+            // SUBMIT-WAL — Matrix-Mutation einer ggf. gebündelten Gruppe (Fahrzeug-
+            // Mount-Follow): das Region-Bundle re-recorden (nur während gefahren wird).
+            this._archMeshBundleTouch(g.mesh);
+            // boundingSphere invalidieren (Frustum-/Raycast-Cull, s. _archGroupFree; die V18.358-Lehre:
+            // THREE cacht sie sonst stale).
             g.mesh.boundingSphere = null;
         }
     }
@@ -63516,9 +63440,8 @@ class AnazhRealm {
             if (entry.fundament) this._archFundamentFree(entry);
         }
         for (const key of placedRegionKeys) {
-            // Vollständig leer = liveCount 0 (EINE Quelle für InstancedMesh UND Batch — g.free/g.next allein ließ
-            // geprunte Batch-Bauten lecken). _disposeArchInstanceGroup ist batch-bewusst (refcount →
-            // Batch-Dispose). Durch den EINEN Leer-Chokepoint mit Gnadenfrist (headless sofort).
+            // Vollständig leer = liveCount 0 (die EINE Leer-Quelle — g.free/g.next zählen den High-Water mit).
+            // Durch den EINEN Leer-Chokepoint mit Gnadenfrist (headless sofort).
             this._archGroupLeerDispose(key);
         }
     }
@@ -63527,19 +63450,8 @@ class AnazhRealm {
     // Material leben im archFlattenCache (geteilt) → NICHT disposen; nur die
     // InstancedMesh-Wrapper (instanceMatrix-Buffer) freigeben + Map leeren.
     _archDisposeAllInstanceGroups() {
-        // V18.289 — die geteilten BatchedMeshes EINMAL disposen (mehrere Wrapper
-        // zeigen auf denselben Batch); die Wrapper selbst überspringen.
-        if (this.state.archBatches) {
-            for (const b of this.state.archBatches.values()) {
-                // T3 — parent-bewusst (Batch kann in einer Region-BundleGroup hängen)
-                if (b.mesh) this._archBundleSceneRemove(b.mesh);
-                if (b.mesh && typeof b.mesh.dispose === "function") b.mesh.dispose();
-            }
-            this.state.archBatches.clear();
-        }
         if (this.state.archInstanceGroups) {
             for (const g of this.state.archInstanceGroups.values()) {
-                if (g.kind === "batch") continue; // geteiltes mesh schon oben disposed
                 // SUBMIT-WAL — parent-bewusst: regionale InstancedMesh-Gruppen hängen
                 // in Region-BundleGroups (scene.remove wäre dort ein No-op = Leck).
                 if (g.mesh) this._archBundleSceneRemove(g.mesh);
@@ -64671,7 +64583,7 @@ class AnazhRealm {
         }
         const csm = this.state.csmNode;
         if (csm) {
-            csm.maxFar = m * 1.8;
+            csm.maxFar = m * AnazhRealm.SCHATTEN_FERN_FAKTOR;
             if (csm.camera) csm.updateFrustums();
         }
         this._shadowRangeApplied = m;
@@ -65091,6 +65003,7 @@ class AnazhRealm {
             // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker dieses Workers
             // (Kanal "bake-impostor" → Reply "impostor"). EIN Bäcker, ein Bake-Pfad.
             ready: false,
+            platte: false, // die Transport-Schale führt die Platte (gesetzt beim Worker-Boot)
             pending: new Map(),
             reqSeq: 1,
             cache: new Map(),
@@ -65111,8 +65024,9 @@ class AnazhRealm {
             // ZULETZT. Async: f.ready bleibt false bis zum ready-Handshake; jeder Fetch-/Parse-Fehler lässt es so.
             const v = "?v=" + (AnazhRealm.VERSION || "");
             fetch("cores.manifest.json" + v)
-                .then((res) => res.json())
-                .then((manifest) => {
+                .then((res) => res.text())
+                .then((manifestText) => {
+                    const manifest = JSON.parse(manifestText);
                     if (!Array.isArray(manifest) || !manifest.length) return; // fail-closed: kein Kern-Satz, kein Worker
                     const rel = [
                         "worlds/terrain/lib/three-r128.min.js",
@@ -65138,8 +65052,34 @@ class AnazhRealm {
                     const base = typeof window !== "undefined" && window.location ? window.location.href : "";
                     const abs = rel.map((p) => new URL(p + v, base).href);
                     // self.__anazhCores reist VOR den importScripts in den Worker (Brücke liest die ns-Kerne generisch);
-                    // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal.
+                    // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal. DIE TRANSPORT-SCHALE
+                    // steht davor (`_foundrySchale`): sie registriert ihren Kanal-Hörer VOR dem Studio.
+                    const stempelUrls = [];
+                    for (const core of manifest) {
+                        if (!core || !Array.isArray(core.scripts)) continue;
+                        for (const s of core.scripts)
+                            if (typeof s === "string" && s) stempelUrls.push(new URL(s + v, base).href);
+                    }
+                    // Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto.
+                    const rend = this.state.renderer;
+                    f.platte =
+                        typeof indexedDB !== "undefined" &&
+                        typeof crypto !== "undefined" &&
+                        !!crypto.subtle &&
+                        !(rend && rend._isHeadlessNull);
+                    const schale = {
+                        lesen: AnazhRealm.FOUNDRY_LESEN,
+                        format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
+                        platte: f.platte,
+                        manifestText,
+                        stempelUrls,
+                    };
                     const boot =
+                        "(function " +
+                        AnazhRealm._foundrySchale.toString() +
+                        ")(" +
+                        JSON.stringify(schale) +
+                        ");" +
                         "self.__PHYTO_FOUNDRY_WORKER=true;self.__anazhCores=" +
                         JSON.stringify(manifest) +
                         ";importScripts(" +
@@ -65190,6 +65130,7 @@ class AnazhRealm {
                                 pi(m.payload || null);
                             }
                         }
+                        this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
                     };
                 })
                 .catch(() => {
@@ -65198,12 +65139,6 @@ class AnazhRealm {
         } catch (_e) {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
-        // DER STILLE SAUG — den persistenten Asset-Cache PARALLEL zum Worker-Boot öffnen
-        // (Stempel-Hash + DB-Open laufen, während der Worker das Studio lädt): beim
-        // Prefetch ist die Platte schon bereit → der zweite Boot saugt in Millisekunden.
-        try {
-            this._foundryIdbInit(f);
-        } catch (_e2) {}
         return f;
     }
     // DER EINE INGEST-CHOKEPOINT für das Studio-Buch (Kanal "get-book" → Reply "book"): das Rezeptbuch
@@ -65421,113 +65356,163 @@ class AnazhRealm {
         const f = this._foundry;
         return f && f.recipes ? f.recipes[preset] || null : null;
     }
-    // ===== DER PERSISTENTE ASSET-CACHE =====
-    // Studio-Assets sind deterministisch (Rezept × Variante × LOD × Saison) → der Worker-Reply
-    // (structured-clone-sicher) wird unverändert in IndexedDB persistiert; der 2. Boot liest von Platte.
-    // Drift-Wand: der Stempel ist der HASH DER GENERATOR-QUELLEN — ein Studio-Edit bustet von selbst.
-    // Headless/Null-Renderer → AUS (gate-deterministisch); jeder Fehler fällt stumm auf den Worker.
-    _foundryIdbInit(f) {
-        if (f._idbReady) return f._idbReady;
-        const off = () => {
-            f._idbDead = true;
-            return null;
+    // ==================== DIE TRANSPORT-SCHALE: der Host-Teil des Foundry-Kanals IM Worker ====================
+    // Befund 02.10. (Fluss-Linse, Mess-Wiese, Holz voll): beim Boot liefen 262 Studio-Assets = 404 MB durch den
+    // HAUPT-Thread — strukturierter Klon beim Empfang (Σ 600 ms, max 76 ms je Antwort), IDB-Put-Serialisierung
+    // (Σ 3,7 s, max 207 ms) und IDB-Gets hinter den Schreib-Transaktionen (Median 3,3 s, max 60 s); 32 % der
+    // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
+    // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
+    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
+    //                 — der Haupt-Thread fasst den Asset-Cache nie mehr an (Store `anazhFoundryAssets/assets`).
+    //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
+    //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
+    //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
+    // Ein `build-asset` mit `platte` (Schlüssel `<preset>|<seed>|<lod>|<season>`) fragt erst die Platte; ein Miss
+    // geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und überträgt.
+    // `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut nie: Miss = leere Antwort. Diese Funktion
+    // läuft als Quelltext im Worker — sie greift auf nichts außerhalb ihres eigenen Rumpfs zu.
+    static _foundrySchale(cfg) {
+        const W = globalThis; // der Worker-Scope (self)
+        const LESEN = new Set(cfg.lesen);
+        const roh = W.postMessage.bind(W);
+        const schreibAuftrag = new Map(); // reqId → Platten-Schlüssel des Studio-Baus, der gerade läuft
+        let db = null;
+        let dbTot = !cfg.platte || typeof indexedDB === "undefined";
+        const platte = dbTot
+            ? Promise.resolve(null)
+            : Promise.all([cfg.manifestText, ...cfg.stempelUrls.map((u) => fetch(u).then((r) => r.text()))])
+                  .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
+                  .then((buf) => {
+                      const stempel =
+                          Array.from(new Uint8Array(buf))
+                              .map((b) => b.toString(16).padStart(2, "0"))
+                              .join("") +
+                          "|f" +
+                          cfg.format;
+                      return new Promise((resolve) => {
+                          const req = indexedDB.open("anazhFoundryAssets", 1);
+                          req.onupgradeneeded = () => req.result.createObjectStore("assets");
+                          req.onerror = () => resolve(null);
+                          req.onsuccess = () => {
+                              const d = req.result;
+                              const tx = d.transaction("assets", "readwrite");
+                              const st = tx.objectStore("assets");
+                              const g = st.get("__stamp");
+                              g.onsuccess = () => {
+                                  // Generator oder Transport-Format geändert → der GANZE Cache ist Drift → leeren.
+                                  if (g.result !== stempel) {
+                                      st.clear();
+                                      st.put(stempel, "__stamp");
+                                  }
+                              };
+                              tx.oncomplete = () => resolve(d);
+                              tx.onerror = () => resolve(null);
+                          };
+                      });
+                  })
+                  .catch(() => null)
+                  .then((d) => {
+                      db = d;
+                      if (!d) dbTot = true;
+                      return d;
+                  });
+        const lies = (key) =>
+            platte.then((d) =>
+                d
+                    ? new Promise((resolve) => {
+                          try {
+                              const g = d.transaction("assets", "readonly").objectStore("assets").get(key);
+                              g.onsuccess = () => resolve(g.result && g.result.meshes ? g.result.meshes : null);
+                              g.onerror = () => resolve(null);
+                          } catch (_e) {
+                              resolve(null);
+                          }
+                      })
+                    : null
+            );
+        const schlank = (meshes) => {
+            for (const m of meshes) {
+                if (!m || typeof m !== "object") continue;
+                for (const k of Object.keys(m)) {
+                    const a = m[k];
+                    if (a && a.array && ArrayBuffer.isView(a.array) && !LESEN.has(k)) delete m[k];
+                }
+                if (m.index instanceof Uint32Array && m.position && m.position.array.length / 3 <= 65536)
+                    m.index = Uint16Array.from(m.index);
+            }
+            return meshes;
         };
-        if (
-            typeof indexedDB === "undefined" ||
-            (this.state.renderer && this.state.renderer._isHeadlessNull) ||
-            typeof fetch !== "function" ||
-            typeof crypto === "undefined" ||
-            !crypto.subtle
-        ) {
-            f._idbReady = Promise.resolve(null);
-            f._idbDead = true;
-            return f._idbReady;
-        }
-        const V = AnazhRealm.VERSION;
-        // Stempel MANIFEST-getrieben: hasht den Manifest-Text + ALLE Kern-Skripte daraus (jeder Kern ist
-        // Generator-Quelle — sonst überleben stale Bakes einen Kern-Edit).
-        f._idbReady = fetch("cores.manifest.json?v=" + V)
-            .then((r) => r.text())
-            .then((manifestText) => {
-                const manifest = JSON.parse(manifestText);
-                const scripts = [];
-                if (Array.isArray(manifest)) {
-                    for (const core of manifest) {
-                        if (!core || !Array.isArray(core.scripts)) continue;
-                        for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
+        const puffer = (meshes) => {
+            const set = new Set();
+            for (const m of meshes) {
+                if (!m || typeof m !== "object") continue;
+                for (const k of Object.keys(m)) {
+                    const a = m[k];
+                    if (a && a.array && ArrayBuffer.isView(a.array)) set.add(a.array.buffer);
+                }
+                if (m.index && ArrayBuffer.isView(m.index)) set.add(m.index.buffer);
+            }
+            return Array.from(set);
+        };
+        const antwort = (m, meshes, vonPlatte) =>
+            roh(
+                {
+                    type: "asset",
+                    world: "terrain",
+                    cv: 1,
+                    reqId: m.reqId,
+                    presetId: m.presetId,
+                    seed: m.seed,
+                    lod: m.lod | 0,
+                    meshes,
+                    platte: vonPlatte,
+                },
+                puffer(meshes)
+            );
+        W.postMessage = function (msg, a, b) {
+            if (msg && msg.type === "asset" && Array.isArray(msg.meshes)) {
+                schlank(msg.meshes);
+                const key = schreibAuftrag.get(msg.reqId);
+                if (key !== undefined) {
+                    schreibAuftrag.delete(msg.reqId);
+                    // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
+                    if (db && !dbTot && msg.meshes.length) {
+                        try {
+                            db
+                                .transaction("assets", "readwrite")
+                                .objectStore("assets")
+                                .put({ meshes: msg.meshes }, key).onerror = () => {
+                                dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
+                            };
+                        } catch (_e) {
+                            dbTot = true;
+                        }
                     }
                 }
-                return Promise.all([
-                    Promise.resolve(manifestText),
-                    ...scripts.map((s) => fetch(s + "?v=" + V).then((r) => r.text())),
-                ]);
-            })
-            .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
-            .then((buf) => {
-                const stamp = Array.from(new Uint8Array(buf))
-                    .map((b) => b.toString(16).padStart(2, "0"))
-                    .join("");
-                return new Promise((resolve) => {
-                    const req = indexedDB.open("anazhFoundryAssets", 1);
-                    req.onupgradeneeded = () => {
-                        req.result.createObjectStore("assets");
-                    };
-                    req.onerror = () => resolve(off());
-                    req.onsuccess = () => {
-                        const db = req.result;
-                        const tx = db.transaction("assets", "readwrite");
-                        const st = tx.objectStore("assets");
-                        const g = st.get("__stamp");
-                        g.onsuccess = () => {
-                            if (g.result !== stamp) {
-                                // Generator geändert → der GANZE Cache ist potenziell drift → leeren.
-                                st.clear();
-                                st.put(stamp, "__stamp");
-                            }
-                        };
-                        tx.oncomplete = () => {
-                            f._idbDb = db;
-                            resolve(db);
-                        };
-                        tx.onerror = () => resolve(off());
-                    };
-                });
-            })
-            .catch(() => off());
-        return f._idbReady;
-    }
-    _foundryIdbGet(presetId, seed, lod, season) {
-        const f = this._foundry;
-        if (!f || f._idbDead) return Promise.resolve(null);
-        return this._foundryIdbInit(f).then((db) => {
-            if (!db) return null;
-            return new Promise((resolve) => {
-                try {
-                    const g = db
-                        .transaction("assets", "readonly")
-                        .objectStore("assets")
-                        .get(`${presetId}|${seed}|${lod}|${season}`);
-                    g.onsuccess = () => resolve(g.result && g.result.meshes ? g.result.meshes : null);
-                    g.onerror = () => resolve(null);
-                } catch (_e) {
-                    resolve(null);
-                }
+                return roh(msg, puffer(msg.meshes));
+            }
+            const p = msg && msg.payload;
+            if (msg && msg.type === "impostor" && p && p.albedo && p.normal && p.albedo.buffer !== p.normal.buffer)
+                return roh(msg, [p.albedo.buffer, p.normal.buffer]);
+            if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
+            return roh(msg, a, b);
+        };
+        // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
+        // Nachricht zuerst und hält nur die Platten-Aufträge an.
+        W.addEventListener("message", (ev) => {
+            const m = ev.data;
+            if (!m || m.type !== "build-asset" || typeof m.platte !== "string") return;
+            ev.stopImmediatePropagation();
+            lies(m.platte).then((hit) => {
+                if (hit) return antwort(m, hit, true);
+                if (m.nurPlatte) return antwort(m, [], true);
+                schreibAuftrag.set(m.reqId, m.platte);
+                const weiter = Object.assign({}, m);
+                delete weiter.platte;
+                delete weiter.nurPlatte;
+                if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
             });
         });
-    }
-    _foundryIdbPut(presetId, seed, lod, season, meshes) {
-        const f = this._foundry;
-        if (!f || f._idbDead || !f._idbDb || !meshes || !meshes.length) return;
-        try {
-            f._idbDb
-                .transaction("assets", "readwrite")
-                .objectStore("assets")
-                .put({ meshes }, `${presetId}|${seed}|${lod}|${season}`).onerror = () => {
-                f._idbDead = true; // Quota/Fehler → still auf den Worker-only-Pfad
-            };
-        } catch (_e) {
-            f._idbDead = true;
-        }
     }
     // Siedlung als DATEN anfragen: der Worker rechnet exportSettlement und liefert reine Slot-Daten (kein
     // Mesh, kein Cache — ein deliberater Akt). Fail-closed: kein Worker/nicht ready → null. Dieselbe
@@ -65535,23 +65520,16 @@ class AnazhRealm {
     _foundryRequestSettlement(dp) {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
-        return new Promise((resolve) => {
-            const reqId = "stl-" + f.reqSeq++;
-            f.pending.set(reqId, resolve);
-            try {
-                f.worker.postMessage({ type: "export-settlement", reqId, dp: dp || {} });
-            } catch (_e) {
-                f.pending.delete(reqId);
-                resolve(null);
-                return;
-            }
-            // Dieselbe EINE Frist (45 s Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller
-            // späteren Aufträge an.
-            this._foundryFrist(f, reqId, 45000, () => {
-                this.log("FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null", "WARN");
-                resolve(null);
-            });
-        });
+        // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
+        // Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller späteren Aufträge an.
+        return this._foundryAuftrag(
+            f,
+            "stl-",
+            { type: "export-settlement", dp: dp || {} },
+            0,
+            45000,
+            "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
+        );
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (alle Slots sofort) und `_tickAutoSettlement`
     // (über Ticks) heben jeden Slot hier. Blueprint-Name aus KIND_POLICY über den kind des LIVE-Rezepts
@@ -66271,43 +66249,35 @@ class AnazhRealm {
             }
         }
     }
-    _foundryRequest(presetId, seed, lod, season, ov) {
+    // `wo` = der Rang in der Worker-Schlange (`_foundryAuftrag`): die Position des Bestellers ({x,z}, d² wird beim
+    // Senden frisch gemessen) · eine Zahl (d², 0 = sofort: Hand, Werkstatt) · nichts = Vorrat (Bibliothek, Ofen, Bäcker).
+    _foundryRequest(presetId, seed, lod, season, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
         const s = season || "summer";
         // Regler-Kanal: ein nicht-leeres ov (Werkstatt-Overrides) umgeht die Platte KOMPLETT (kein Get/Put) —
-        // eine Vorschau ist ein Unikat und darf den Welt-Cache weder lesen noch vergiften. Ohne ov
-        // byte-identisch (Disk-first → Ship-Hook → Worker).
+        // eine Vorschau ist ein Unikat und darf den Welt-Cache weder lesen noch vergiften.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
-        // Platte zuerst (µs–ms), Worker nur beim Miss — auch VOR f.ready (Schlüssel + Reply sind worker-frei,
-        // der warme Boot liest die Bibliothek, während der Worker bootet); ein Miss davor bleibt null.
-        // DER INGEST-TAKT: jedes Ergebnis (Platte UND Worker) passiert _foundryIngestTakt; der Loop-Tick gibt
-        // je Frame nur wenige frei — sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in
-        // EINER LongTask. Misses und headless passieren sofort; Konsumenten tragen null-bis-fertig.
-        return (hasOv ? Promise.resolve(null) : this._foundryIdbGet(presetId, seed, lod, s))
-            .then((hit) => {
-                if (hit) return hit;
-                // Ship-Pfad-Hook (spec/pack/v0/CONTRACT.md): `window.__anazhLiveBake === false` überspringt den Live-
-                // Worker-Fallback (nur Packs/Platte, Miss = null). Default byte-gleich; Linse `gate:pack-contract`.
-                if (typeof window !== "undefined" && window.__anazhLiveBake === false) return null;
-                if (!f.ready || !f.worker) {
-                    // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
-                    // 1×/10 s); das Verhalten bleibt (Aufrufer deferrieren + heilen beim Ingest).
-                    const now = Date.now();
-                    if (!this._foundryKaltWarnAt || now - this._foundryKaltWarnAt > 10000) {
-                        this._foundryKaltWarnAt = now;
-                        this.log(
-                            `FOUNDRY KALT: build-asset(${presetId}) ohne Buch/Worker → null (heilt beim Ingest)`,
-                            "WARN"
-                        );
-                    }
-                    return null;
-                }
-                return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null).then((meshes) => {
-                    if (meshes && meshes.length && !hasOv) this._foundryIdbPut(presetId, seed, lod, s, meshes);
-                    return meshes;
-                });
-            })
+        // Ship-Pfad-Hook (spec/pack/v0/CONTRACT.md): `window.__anazhLiveBake === false` → NUR die Platte (die
+        // Transport-Schale baut nie, Miss = null). Default: Platte zuerst, Studio beim Miss (beides im Worker).
+        const nurPlatte = typeof window !== "undefined" && window.__anazhLiveBake === false;
+        const platte = f.platte && !hasOv ? `${presetId}|${seed}|${lod}|${s}` : null;
+        if (nurPlatte && !platte) return Promise.resolve(null);
+        if (!f.ready || !f.worker) {
+            // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
+            // 1×/10 s); das Verhalten bleibt (Aufrufer deferrieren + heilen beim Ingest).
+            const now = Date.now();
+            if (!this._foundryKaltWarnAt || now - this._foundryKaltWarnAt > 10000) {
+                this._foundryKaltWarnAt = now;
+                this.log(`FOUNDRY KALT: build-asset(${presetId}) ohne Buch/Worker → null (heilt beim Ingest)`, "WARN");
+            }
+            return Promise.resolve(null);
+        }
+        // DER INGEST-TAKT: jedes Ergebnis passiert _foundryIngestTakt; der Loop-Tick gibt je Frame nur wenige frei —
+        // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
+        // passieren sofort; Konsumenten tragen null-bis-fertig.
+        return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null, platte, nurPlatte, wo)
+            .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
@@ -66377,33 +66347,99 @@ class AnazhRealm {
         };
         setTimeout(pruefe, 1000);
     }
-    _foundryWorkerRequest(presetId, seed, lod, season, ov) {
+    _foundryWorkerRequest(presetId, seed, lod, season, ov, platte, nurPlatte, wo) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
-        const reqId = "r" + f.reqSeq++;
+        // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (die Bruecke reicht ov ausschliesslich an
+        // Zweit-Kern-buildInstance durch). `platte` (der Schlüssel) und `nurPlatte` liest die Transport-Schale
+        // und nimmt sie heraus, bevor das Studio die Anfrage sieht.
+        const msg = { type: "build-asset", presetId, seed, lod, season: season || "summer" };
+        if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
+        if (platte) msg.platte = platte;
+        if (nurPlatte) msg.nurPlatte = true;
+        // 45 s ARBEITS-Zeit (die EINE Frist, `_foundryFrist`): ein Koniferen-lod0-Asset hat ~170k Verts; die
+        // Wartezeit in der Schlange zählt nicht mit. fail-LAUT (V18.462): das Timeout ist vom kalten Buch
+        // unterscheidbar — der Aufrufer sieht sonst beide als null.
+        return this._foundryAuftrag(
+            f,
+            "r",
+            msg,
+            wo,
+            45000,
+            `FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`
+        );
+    }
+    // DIE EINE WORKER-SCHLANGE: der Foundry-Worker arbeitet FIFO, ein Bau dauert 0,1–25 s. Vorher ging jede Anfrage
+    // sofort per postMessage hinein — eine nahe Eiche-L0 wartete hinter JEDEM früher gestellten Vorrats- und
+    // Fernauftrag (gemessen 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9,0 s, die Tanne nach
+    // 9,4 s; gate:arch-feld: 17 offene Aufträge, Eiche in 10 m und Haus in 27 m 800 Takte ohne Mesh). Jetzt hält der
+    // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge im Worker (so viele, dass er ohne Rundlauf-Lücke arbeitet:
+    // der Vorrat läuft so schnell leer wie FIFO), der nächste geht NAH zuerst (d² zum Spieler,
+    // beim Senden frisch gemessen; Vorrat = ∞, unter Gleichen FIFO) — und nie verhungert: ist der älteste Wartende
+    // älter als FOUNDRY_ALTER_MS, wechselt die Wahl ab (der Älteste, dann der Nächste). Die Request-Nummer entsteht
+    // beim SENDEN: die EINE Frist (`_foundryFrist`) bleibt eine Arbeits-Uhr in Worker-Reihenfolge.
+    _foundryAuftrag(f, praefix, msg, wo, fristMs, ablaufWort) {
         return new Promise((resolve) => {
-            f.pending.set(reqId, resolve);
+            const q = f.warte || (f.warte = []);
+            q.push({ praefix, msg, wo, fristMs, ablaufWort, resolve, t: performance.now() });
+            this._foundryPumpe(f);
+        });
+    }
+    _foundryAuftragD2(wo) {
+        if (typeof wo === "number") return Number.isFinite(wo) ? wo : Infinity;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
+        const dx = wo.x - pm.x,
+            dz = wo.z - pm.z;
+        return dx * dx + dz * dz;
+    }
+    _foundryPumpe(f) {
+        const q = f && f.warte;
+        while (q && q.length && f.worker && f.pending.size < AnazhRealm.FOUNDRY_IM_FLUG) {
+            let i = 0;
+            let aeltester = false;
+            if (performance.now() - q[0].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
+            if (!aeltester) {
+                let best = this._foundryAuftragD2(q[0].wo);
+                for (let k = 1; k < q.length; k++) {
+                    const d2 = this._foundryAuftragD2(q[k].wo);
+                    if (d2 < best) {
+                        best = d2;
+                        i = k;
+                    }
+                }
+            }
+            const a = q.splice(i, 1)[0];
+            const reqId = a.praefix + f.reqSeq++;
+            f.pending.set(reqId, a.resolve);
             try {
-                // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (der ov-lose
-                // Message-Body bleibt byte-identisch zum Bestand; die Bruecke reicht ov
-                // ausschliesslich an Zweit-Kern-buildInstance durch).
-                const msg = { type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" };
-                if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
-                f.worker.postMessage(msg);
+                f.worker.postMessage(Object.assign({ reqId }, a.msg));
             } catch (_e) {
                 f.pending.delete(reqId);
-                resolve(null);
-                return;
+                a.resolve(null);
+                continue;
             }
-            // 45 s ARBEITS-Zeit (die EINE Frist, `_foundryFrist`): ein Koniferen-lod0-Asset hat ~170k Verts;
-            // die Wartezeit in der Worker-Schlange zählt nicht mit.
-            this._foundryFrist(f, reqId, 45000, () => {
-                // fail-LAUT (V18.462): das Timeout ist vom kalten Buch
-                // unterscheidbar — der Aufrufer sieht sonst beide als null.
-                this.log(`FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`, "WARN");
-                resolve(null);
+            this._foundryFrist(f, reqId, a.fristMs, () => {
+                this.log(a.ablaufWort, "WARN");
+                a.resolve(null);
+                this._foundryPumpe(f);
             });
-        });
+        }
+    }
+    // Ein Besteller, dessen Schlüssel schon wartet (der Boot-Vorrat fragte ihn zuerst), hebt dessen Rang auf seine
+    // Nähe — sonst wartete der nahe Bau mit Vorrats-Rang hinter dem ganzen Vorrat.
+    _foundryNaeher(f, presetId, seed, lod, season, wo) {
+        const q = f && f.warte;
+        if (!q || !q.length) return;
+        const d2 = this._foundryAuftragD2(wo);
+        for (const a of q) {
+            const m = a.msg;
+            if (m.type !== "build-asset" || m.ov || m.presetId !== presetId || m.seed !== seed || m.lod !== lod)
+                continue;
+            if (m.season !== season) continue;
+            if (d2 < this._foundryAuftragD2(a.wo)) a.wo = wo;
+            return;
+        }
     }
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
     // `bakeImpostorAtlas`, kein Nachbau). Resolvt mit payload oder null (Fehler/Timeout — der Tick-
@@ -66411,31 +66447,21 @@ class AnazhRealm {
     _foundryBakeImpostorRequest(presetId, seed, season, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
-        const reqId = "imp" + f.reqSeq++;
-        return new Promise((resolve) => {
-            f.pending.set(reqId, resolve);
-            try {
-                // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
-                // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
-                const msg = { type: "bake-impostor", reqId, presetId, seed, season: season || "summer" };
-                if (ov && typeof ov === "object") msg.ov = ov;
-                f.worker.postMessage(msg);
-            } catch (_e) {
-                f.pending.delete(reqId);
-                resolve(null);
-                return;
-            }
-            // EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig
-            // leben; null → die Retry-Disziplin des Tick.
-            const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
-            this._foundryFrist(f, reqId, frist, () => {
-                this.log(
-                    `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`,
-                    "WARN"
-                );
-                resolve(null);
-            });
-        });
+        // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
+        // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
+        const msg = { type: "bake-impostor", presetId, seed, season: season || "summer" };
+        if (ov && typeof ov === "object") msg.ov = ov;
+        // Durch DIE EINE WORKER-SCHLANGE mit Vorrats-Rang (die Fernstufe). EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS
+        // ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin des Tick.
+        const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
+        return this._foundryAuftrag(
+            f,
+            "imp",
+            msg,
+            null,
+            frist,
+            `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`
+        );
     }
     // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
     // 8-Winkel-Billboard-Atlas (Albedo + Normal) + Rahmen. AnazhRealm platziert das Billboard — kein
@@ -66674,12 +66700,17 @@ class AnazhRealm {
     // Darunter `_foundryEnsureImpostorRecord`: Studio-Atlas EINES (Preset,Variante) als Record in
     // `_impostorAtlasMap` (null = Bake läuft, false = Fehler → Geometrie). Die Pixel bäckt der Studio-
     // Bäcker im Worker; die LOD1-Gruppe liefert nur den vorläufigen Rahmen + die Silhouetten-Farbe.
-    _foundryDeclaredStage(preset, wish) {
+    // Die deklarierten Stufen einer Art (kindStages ihres Rezept-kinds) oder null.
+    _foundryKindStages(preset) {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[preset] : null;
         const cfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
         const st = rec && cfg && cfg.kindStages ? cfg.kindStages[rec.kind] : null;
-        if (!Array.isArray(st) || !st.length) return wish;
+        return Array.isArray(st) && st.length ? st : null;
+    }
+    _foundryDeclaredStage(preset, wish) {
+        const st = this._foundryKindStages(preset);
+        if (!st) return wish;
         let sv = st[0];
         for (let i = 0; i < st.length; i++) if (st[i] <= wish) sv = st[i];
         return sv;
@@ -67240,7 +67271,7 @@ class AnazhRealm {
         const fPreset = this._archFoundryPreset(entry);
         if (fPreset) return this._archFoundryZiegel(entry, fPreset, ovH);
         const key = `aarch:${entry.type}:${entry._lodVariantIndex || 0}${ovH}`;
-        if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
+        if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt
         const M = this._archWeltMatrix(entry);
         let fitWar = "hit";
         const handle = this._weltKapselSpawn(key, M, () => {
@@ -67308,7 +67339,7 @@ class AnazhRealm {
                 return true;
             }
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return false; // lädt noch — der nächste Tick fragt wieder, nichts verbrannt
-            if (!this._weltBakeErlaubt()) return false; // Fit-Takt (Treffer sind frei)
+            if (!this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt (Treffer sind frei)
         }
         const handle = this._weltKapselSpawn(key, this._archWeltMatrix(entry), () => {
             if (baum) return this._baumKapselFit(bf);
@@ -68404,8 +68435,10 @@ class AnazhRealm {
                     tex.colorSpace = T.SRGBColorSpace;
                     const uvN = TSL.attribute("uv", "vec2");
                     const texN = TSL.texture(tex, uvN);
-                    mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), 1.0);
-                    mat.opacityNode = texN.a;
+                    // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
+                    // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
+                    // Nadel-Karten warfen volle Rechtecke.
+                    mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), texN.a);
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                     // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
@@ -68630,6 +68663,7 @@ class AnazhRealm {
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
     // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
+    // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
     _foundryBuildMesh(m) {
         if (!m || !m.position || !m.position.array) return null;
         // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
@@ -69006,15 +69040,9 @@ class AnazhRealm {
                 return !!(rec && rec !== "pending" && rec !== false);
             }
         }
-        if (preset === "strauch") lod = Math.max(1, lod);
-        // Der Peek spiegelt auch die Ein-Stufen-Klammer des Flattens (Art mit GENAU einer deklarierten Stufe →
-        // jeder Wunsch klemmt dorthin) — sonst fragt er einen Key ab, den Flatten nie baut (falsch „kalt").
-        if (this._foundryPresetIsTree(preset)) {
-            const _rec2 = f.recipes && f.recipes[preset];
-            const _cfg2 = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-            const _st2 = _rec2 && _cfg2 && _cfg2.kindStages ? _cfg2.kindStages[_rec2.kind] : null;
-            if (Array.isArray(_st2) && _st2.length === 1) lod = _st2[0];
-        }
+        // Der Peek spiegelt die EINE Stufen-Klammer des Flattens (`_foundryDeclaredStage`) — sonst fragt er einen
+        // Key ab, den der Flatten nie baut (falsch „kalt").
+        if (this._foundryPresetIsTree(preset)) lod = this._foundryDeclaredStage(preset, lod);
         // PRÄGUNG-WELT — der Dock-Peek spiegelt den Flatten-Schlüssel: ein gestempelter
         // Eintrag ist erst „gedockt", wenn SEIN Unikat (|ov:-Key) im Cache liegt — sonst
         // urteilte der Rewarm „ready" über das falsche (ungeprägte) Asset.
@@ -69147,6 +69175,7 @@ class AnazhRealm {
         if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
         f.cache.set(key, v);
+        f.ankunft = (f.ankunft | 0) + 1; // die Ankunfts-Generation: Wartende im Nah-Zweig fragen erst danach wieder
         const CAP = AnazhRealm.FOUNDRY_CACHE_CAP || 256;
         const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;
         while (f.cache.size > CAP || f.cacheBytes > BYTES) {
@@ -69183,9 +69212,49 @@ class AnazhRealm {
         for (const ch of g.children) {
             if (ch.geometry && typeof ch.geometry.dispose === "function") ch.geometry.dispose();
         }
+        // die verschmolzenen Flat-Geometrien gehören der Gruppe (_foundryFlatVerschmelzen)
+        const fl = g._foundryFlat;
+        if (fl && Array.isArray(fl.leaves))
+            for (const lf of fl.leaves) {
+                if (lf._eigen && lf.geom && typeof lf.geom.dispose === "function") lf.geom.dispose();
+                // die L0-gestempelte Zwillings-Gestalt teilt die Puffer dieses Leafs — sie fällt mit ihm
+                if (lf._schattenGeom) {
+                    lf._schattenGeom.dispose();
+                    lf._schattenGeom = null;
+                }
+            }
         g._geomDisposed = true;
         const f = this._foundry;
         if (f) f._geomDisposedCount = (f._geomDisposedCount || 0) + g.children.length;
+        // Der Schatten-Stellvertreter gibt seine gepinnte L1-Quelle zurück.
+        const q = g._schattenQuelle;
+        if (q) {
+            g._schattenQuelle = null;
+            q._liveRefs = Math.max(0, (q._liveRefs || 0) - 1);
+            if (q._evicted && !(q._liveRefs > 0)) this._disposeFoundryGroupGeom(q);
+        }
+    }
+    // Die Gestalt, mit der ein Schatten-Zwilling wirft: die L1-Geometrie, als Stufe L0 gestempelt (aLodLevel 1).
+    // Dieselben Puffer, derselbe Stoff — die Dither-Blende liest die Stufe aus dem Stempel: der Zwilling wirft, wo
+    // die L0 gezeichnet wird, und weicht im L0→L1-Band, wo der L1-Partner einblendet. Kostet kein Programm; die
+    // Gestalt gehört dem L1-Leaf und fällt mit ihm (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1.
+    _foundrySchattenGeom(lf) {
+        const g = lf && lf.geom;
+        if (!g || !g.attributes || !g.attributes.aLodLevel) return g;
+        if (lf._schattenGeom) return lf._schattenGeom;
+        const z = new THREE.BufferGeometry();
+        for (const k in g.attributes) z.setAttribute(k, g.attributes[k]);
+        z.setAttribute(
+            "aLodLevel",
+            new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(1), 1)
+        );
+        if (g.index) z.setIndex(g.index);
+        z.drawRange.start = g.drawRange.start;
+        z.drawRange.count = g.drawRange.count;
+        if (g.boundingSphere) z.boundingSphere = g.boundingSphere.clone();
+        if (g.boundingBox) z.boundingBox = g.boundingBox.clone();
+        lf._schattenGeom = z;
+        return z;
     }
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
@@ -69200,36 +69269,24 @@ class AnazhRealm {
         // Fernwald = Overdraw); Fels/Kristall/Blume bleiben L2-Geometrie. Der fimp-Key trägt den ov-Hash: ein
         // gestempelter Eintrag zieht seine EIGENE Karte, bis dahin geprägte Geometrie (nie die ungeprägte).
         if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
-        // Stufen je Art als Vertrags-Daten (`PORTAL_RENDER_CONFIG.lod.kindStages`, live): die GRÖSSTE
-        // deklarierte Stufe ≤ der Distanz-Wahl, sonst die kleinste — nie eine Stufe, die das Studio nicht
-        // vorsieht. Ohne Config: die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD, fail-closed).
-        if (!this._foundryPresetIsTree(preset)) {
+        // DIE EINE STUFEN-KLAMMER (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
+        // live) für JEDE Art, baumartig oder nicht: die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die
+        // kleinste — nie eine Stufe, die das Studio nicht vorsieht. Befund 02.10. (Werkbank, Mess-Wiese): der
+        // Strauch (shrub [1,2]) galt als baumartig, der Baum-Zweig klemmte nur Ein-Stufen-Arten — nahe Büsche
+        // standen mit L0 (112k Dreiecke je Busch statt 45k, 25 s Worker-Bau einer nie deklarierten Stufe).
+        lod = this._foundryDeclaredStage(preset, lod);
+        if (!this._foundryPresetIsTree(preset) && !this._foundryKindStages(preset)) {
+            // Ohne Config: die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD, fail-closed). Ein BEKANNTES
+            // Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0] — nur die feine Stufe,
+            // der Wirt gradet selbst (L1=L0, L2=Auto-Impostor).
             const _rec = f.recipes && f.recipes[preset];
-            const _cfgLod = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-            let _stages = _rec && _cfgLod && _cfgLod.kindStages ? _cfgLod.kindStages[_rec.kind] : null;
-            if (!Array.isArray(_stages) || !_stages.length) {
-                const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : preset === "strauch" ? 2 : null;
-                // Fail-closed: ein BEKANNTES Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0]
-                // — nur die feine Stufe, der Wirt gradet selbst (L1=L0, L2=Auto-Impostor).
-                _stages = Number.isFinite(_kl) ? [_kl] : _rec ? [0] : null;
-            }
-            if (_stages) {
-                let _sv = _stages[0];
-                for (let _si = 0; _si < _stages.length; _si++) if (_stages[_si] <= lod) _sv = _stages[_si];
-                lod = _sv;
-            }
-        } else {
-            // Ein-Stufen-Klammer auch für tree-ish Arten: deklariert die Art GENAU EINE Stufe (Tor gate=[0]),
-            // klemmt jeder Wunsch dorthin — sonst baut der Worker inhaltsgleiche Zweit-Groups (Doppel-Cache,
-            // Doppel-Draw im Crossfade-Band). Mehr-Stufen-Arten (Baum [0,1,2] · Strauch [1,2]) unberührt.
-            const _rec2 = f.recipes && f.recipes[preset];
-            const _cfg2 = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-            const _st2 = _rec2 && _cfg2 && _cfg2.kindStages ? _cfg2.kindStages[_rec2.kind] : null;
-            if (Array.isArray(_st2) && _st2.length === 1) lod = _st2[0];
+            const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : null;
+            if (Number.isFinite(_kl)) lod = _kl;
+            else if (_rec) lod = 0;
         }
         const season = this.state.season || "summer";
         // Gestempelter Welt-Eintrag (entry.studioOv) baut sein Unikat: der ov-Hash trennt Cache-Key UND (via
-        // leafKey) den r184-Batch-Key — geprägt und ungeprägt vergiften sich nie. Der Request reicht ov als
+        // leafKey) den Gruppen-Key — geprägt und ungeprägt vergiften sich nie. Der Request reicht ov als
         // 5. Arg (IDB bewusst umgangen). Ohne Stempel: alter Key + Request.
         const entryOv = this._artifactStudioOv(entry);
         const key =
@@ -69239,24 +69296,49 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, season, entryOv || undefined).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                    } else {
-                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
-                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
-                        f.requested.delete(key);
+                // Ein L0-Baum wirft mit seiner L1 (Schatten-Stellvertreter): sie reist im selben Zug — sonst stellte
+                // sie sich erst nach der L0-Ankunft ans Ende der Worker-Schlange, und die L0 wartete doppelt.
+                if (
+                    lod === 0 &&
+                    !entryOv &&
+                    this._foundryPresetIsTree(preset) &&
+                    this._foundryDeclaredStage(preset, 1) === 1
+                )
+                    this._foundryFlattenFor(entry, preset, 1);
+                this._foundryRequest(preset, variant, lod, season, entryOv || undefined, entry.position).then(
+                    (meshes) => {
+                        if (meshes) {
+                            this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                            this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
+                        } else {
+                            // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
+                            // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
+                            f.requested.delete(key);
+                        }
+                        this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
                     }
-                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
-                });
-            }
+                );
+            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, season, entry.position);
             return null;
         }
         // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->
         // `false` = „Foundry kann das nicht", der Aufrufer faellt auf den AnazhRealm-Pfad zurueck.
         if (group === null || !group.children || !group.children.length) return false;
         if (!group._foundryFlat) {
+            // DER SCHATTEN-STELLVERTRETER: ein Baum zeichnet nah seine L0-Gestalt und wirft den Schatten seiner
+            // L1-Stufe — die L0-Teile casten nicht, die L1-Teile reisen als Schatten-Zwilling (`shadowTwin`,
+            // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Stufe L0 gestempelt
+            // (`_foundrySchattenGeom`: blendet wie L0, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
+            // Wechsel, Bundles und der Feld-Cull-Ausschluss tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
+            // Dreiecke in JEDE der zwei Kaskaden, ihre L1 trägt 11k. Ein Flat ist erst fertig, wenn seine Teile
+            // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1).
+            let schatten = null;
+            if (lod === 0 && this._foundryPresetIsTree(preset) && this._foundryDeclaredStage(preset, 1) === 1) {
+                const f1 = this._foundryFlattenFor(entry, preset, 1);
+                if (f1 === null) return null;
+                if (f1 && f1.instanceable && f1.lod === 1 && Array.isArray(f1.leaves) && f1.leaves.length)
+                    schatten = f1;
+            }
             const leaves = [];
             // Template→Welt-Übersetzung: das Studio platziert mit `SCALE[sp] · tr.s · 0.82` (eiche 4.16 · fichte
             // 4.85 · …) — ohne sie bleibt der Baum ein Zwerg, der strauch ein Riese. Sie lebt HIER (localMatrix
@@ -69267,7 +69349,7 @@ class AnazhRealm {
             // L0-Kante mitten im Sichtfeld. Der `leaf.castShadow`-Override gewinnt gegen `_archGroupCastsShadow`
             // (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im leafKey). Deckungsgleiche Werfer
             // verdunkeln nicht doppelt (Tiefen-Test).
-            const castsShadow = lod < 2;
+            const castsShadow = lod < 2 && !schatten;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -69282,11 +69364,27 @@ class AnazhRealm {
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
                     _srcGroup: group,
                     castShadow: castsShadow,
-                    // `instanceShare`: Foundry-Geometrie ist schwer (Konifere LOD0 ~170k Verts) und über Platzierungen
-                    // identisch — BatchedMesh KOPIERT je Instanz (N × 170k), InstancedMesh REFERENZIERT eine geom. Diese
-                    // Leaves gehen darum auf den InstancedMesh-Pfad; platzierte Architektur bleibt Batch.
-                    instanceShare: true,
                 });
+            }
+            this._foundryFlatVerschmelzen(group, leaves);
+            if (schatten && leaves.length) {
+                // Die L1-Teile (schon verschmolzen) als Zwilling; die L1-Cache-Gruppe bleibt gepinnt, solange
+                // dieser Flat lebt (`_disposeFoundryGroupGeom` gibt sie zurück).
+                for (const lf of schatten.leaves)
+                    leaves.push(
+                        Object.assign({}, lf, {
+                            leafKey: lf.leafKey + "#S",
+                            geom: this._foundrySchattenGeom(lf),
+                            castShadow: true,
+                            shadowTwin: true,
+                            _eigen: false, // die verschmolzene L1-Geometrie gehört der L1-Gruppe, nie diesem Flat
+                        })
+                    );
+                const quelle = schatten.leaves[0]._srcGroup;
+                if (quelle) {
+                    quelle._liveRefs = (quelle._liveRefs || 0) + 1;
+                    group._schattenQuelle = quelle;
+                }
             }
             group._foundryFlat = leaves.length
                 ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves }
@@ -69303,6 +69401,113 @@ class AnazhRealm {
             group._foundryFlat._baumGrammatik = group.userData.__baumGrammatik;
         }
         return group._foundryFlat;
+    }
+    // DIE INSTANZ-MATRIX OHNE KAPAZITÄT IM SHADER — der EINE Bau jeder InstancedMesh der Welt: r184 legt
+    // instanceMatrix bis 64 KB als UNIFORM-Array `array<mat4x4f, N>` in den Vertex-Shader (InstanceNode) —
+    // jede Kapazität (Büschel je Nah-Wiesen-Kachel, Gruppen-Wachstum 16 → 32 → …) wurde ein eigenes Programm
+    // und eine eigene Pipeline, kompiliert beim Laufen. Gemessen 02.10. an der Mess-Wiese: 756 Vertex-
+    // Programme auf 60 Fragment-Programme. Der Storage-Puffer ist laufzeit-dimensioniert (`array<mat4x4f>`):
+    // EIN Programm je Material × Attribut-Form, gleich wie viele Instanzen.
+    static _instanzMesh(geom, mat, cap) {
+        const m = new THREE.InstancedMesh(geom, mat, cap);
+        if (typeof THREE.StorageInstancedBufferAttribute === "function")
+            m.instanceMatrix = new THREE.StorageInstancedBufferAttribute(m.instanceMatrix.array, 16);
+        return m;
+    }
+    // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
+    // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass
+    // und Region. Teile gleichen Materials und gleicher Attribut-Form liegen im selben Template-Raum (localMatrix
+    // je Flat geteilt) → EINE Geometrie, ein Leaf. Tür-Flügel bleiben einzeln (eigene Scharnier-Matrix), schwere
+    // Teile (Baum-L0, > FOUNDRY_VERSCHMELZ_VERTS zusammen) auch — die Kopie verdoppelte ihren Speicher für einen
+    // Draw. Die verschmolzene Geometrie gehört der Cache-Gruppe (`_eigen`): ihr Dispose und ihre Bytes laufen mit.
+    _foundryFlatVerschmelzen(group, leaves) {
+        const sig = (lf) => {
+            const g = lf.geom;
+            if (lf.tuer || !g || !g.attributes || !g.attributes.position) return null;
+            if (g.groups && g.groups.length) return null;
+            if (g.morphAttributes && Object.keys(g.morphAttributes).length) return null;
+            const a = Object.keys(g.attributes)
+                .sort()
+                .map((k) => k + ":" + g.attributes[k].itemSize + (g.attributes[k].normalized ? "n" : ""))
+                .join(",");
+            return lf.mat.uuid + "|" + (lf.castShadow ? 1 : 0) + "|" + (g.index ? "i" : "x") + "|" + a;
+        };
+        const sippen = new Map();
+        for (let i = 0; i < leaves.length; i++) {
+            const k = sig(leaves[i]);
+            if (!k) continue;
+            if (!sippen.has(k)) sippen.set(k, []);
+            sippen.get(k).push(i);
+        }
+        const weg = new Set();
+        let bytes = 0;
+        for (const idx of sippen.values()) {
+            if (idx.length < 2) continue;
+            let n = 0;
+            for (const i of idx) n += leaves[i].geom.attributes.position.count;
+            if (n > AnazhRealm.FOUNDRY_VERSCHMELZ_VERTS) continue;
+            const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
+            if (!geo) continue;
+            const erst = leaves[idx[0]];
+            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true });
+            for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
+            for (const k in geo.attributes) bytes += geo.attributes[k].array.byteLength;
+            if (geo.index) bytes += geo.index.array.byteLength;
+        }
+        if (!weg.size) return;
+        for (let i = leaves.length - 1; i >= 0; i--) if (weg.has(i)) leaves.splice(i, 1);
+        // die Bytes der eigenen Geometrie buchen (die Räumung zieht group._cacheBytes wieder ab)
+        const f = this._foundry;
+        if (Number.isFinite(group._cacheBytes)) {
+            group._cacheBytes += bytes;
+            if (f && Number.isFinite(f.cacheBytes)) f.cacheBytes += bytes;
+        }
+    }
+    // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
+    // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form.
+    static _geoVerbinden(geoms) {
+        const g0 = geoms[0];
+        const namen = Object.keys(g0.attributes);
+        const indiziert = !!g0.index;
+        let nV = 0,
+            nI = 0;
+        for (const g of geoms) {
+            if (!!g.index !== indiziert || Object.keys(g.attributes).length !== namen.length) return null;
+            for (const k of namen) {
+                const a = g.attributes[k],
+                    b = g0.attributes[k];
+                if (!a || a.isInterleavedBufferAttribute || a.itemSize !== b.itemSize) return null;
+                if (a.normalized !== b.normalized || a.array.constructor !== b.array.constructor) return null;
+            }
+            nV += g.attributes.position.count;
+            if (indiziert) nI += g.index.count;
+        }
+        const out = new THREE.BufferGeometry();
+        for (const k of namen) {
+            const b = g0.attributes[k];
+            const arr = new b.array.constructor(nV * b.itemSize);
+            let o = 0;
+            for (const g of geoms) {
+                const a = g.attributes[k];
+                arr.set(a.array.subarray(0, a.count * a.itemSize), o);
+                o += a.count * a.itemSize;
+            }
+            out.setAttribute(k, new THREE.BufferAttribute(arr, b.itemSize, b.normalized));
+        }
+        if (indiziert) {
+            const idx = nV > 65535 ? new Uint32Array(nI) : new Uint16Array(nI);
+            let o = 0,
+                basis = 0;
+            for (const g of geoms) {
+                const ia = g.index.array;
+                for (let i = 0; i < g.index.count; i++) idx[o++] = ia[i] + basis;
+                basis += g.attributes.position.count;
+            }
+            out.setIndex(new THREE.BufferAttribute(idx, 1));
+        }
+        out.computeBoundingBox();
+        out.computeBoundingSphere();
+        return out;
     }
     // Die EINE Template→Welt-Scale-Quelle (Studio `SCALE[sp]·tr.s·0.82`): gecachte Scale-Matrix für die
     // Flat-Leaves. Bäume tragen den 0.82-Wald-Mul, strauch/blume die reinen Tabellen-Werte, Fels/Kristall/
@@ -71520,7 +71725,7 @@ class AnazhRealm {
         // die Welt wächst in den Lücken, nie auf Kosten des Spielers. Das Cullen läuft weiter (billig).
         const budget = this.state._frameOverBudget ? 0 : Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
-        const fernOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
+        const ziegelOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
         const nahOffen = this._archNahOffen || (this._archNahOffen = []);
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
         for (const entry of this.state.architectures) {
@@ -71533,8 +71738,19 @@ class AnazhRealm {
             // VOR dem Mesh. Jenseits des Radius ist der Box-/Kapsel-Satz die Gestalt (klein im Bild, billig).
             if (distSq <= radiusSq) {
                 // Der Ziegel-Ruf hängt NICHT am Mesh-Budget — er taktet sich selbst (Bake-Garantie, memoisiert).
-                this._archZiegelFern(entry);
+                // Lebende Slots aktivieren sofort; ungebackene Bauten warten in DERSELBEN Distanz-Schlange wie die
+                // fernen (Befund 02.10., gate:arch-feld: in Listen-Reihenfolge fraß das Dorf den überbuchten
+                // Bake-Takt, 24 von 226 Anfragen bewilligt — ein frisch gesetztes Haus in 27 m blieb 200 Takte
+                // ohne Feld UND ohne Mesh, unsichtbar).
+                entry._ziegelNah = true;
                 const echt = this._archIsRendered(entry);
+                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);
+                else {
+                    // Steht das Mesh schon, braucht der Bau keine Brücke: sein Satz bäckt NACH allen Bedürftigen
+                    // vor (für den Rand der Mesh-Zone) und stiehlt ihnen nie den Takt.
+                    entry._ziegelD2 = echt ? distSq + AnazhRealm.ZIEGEL_VORBACK_D2 : distSq;
+                    ziegelOffen.push(entry);
+                }
                 if (!echt) {
                     entry._nahD2 = distSq;
                     nahOffen.push(entry);
@@ -71542,13 +71758,14 @@ class AnazhRealm {
                 if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, !echt);
                 if (entry.mesh) entry.mesh.visible = echt;
             } else {
+                entry._ziegelNah = false;
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
                 if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);
                 else {
                     entry._ziegelD2 = distSq;
-                    fernOffen.push(entry);
+                    ziegelOffen.push(entry);
                 }
             }
         }
@@ -71557,12 +71774,20 @@ class AnazhRealm {
         // Das Budget zählt GEBAUTE Meshes, nicht Versuche: ein Eintrag, dessen Studio-Asset noch lädt (Flat null/
         // false — z. B. die L2-Karte im Bäcker), kehrt billig zurück und darf den fertigen dahinter nicht aushungern
         // (Befund 30.09.: die nächsten Karten-Wartenden fraßen jeden Takt das Budget, 7 bereite Eichen standen).
-        // Versuche sind gedeckelt (ARCH_NAH_VERSUCHE je Takt).
+        // Versuche sind gedeckelt (ARCH_NAH_VERSUCHE je Takt). WER LÄDT, VERBRAUCHT KEINEN VERSUCH: ein Bau, dessen
+        // Flat zuletzt null lieferte, wartet, bis die Foundry etwas Neues liefert (Ankunfts-Generation), höchstens
+        // 1 s — sonst fraßen 24 nähere Wartende hinter einem ausgelasteten Worker jeden Takt die Kappe, und ein
+        // sofort baubares Haus dahinter blieb 800 Takte ohne Mesh (gemessen 03.10., gate:arch-feld: 17 offene
+        // Worker-Aufträge, Haus „grammatik", mesh false).
         if (nahOffen.length) {
             nahOffen.sort((a, b) => a._nahD2 - b._nahD2);
+            const fA = this._foundry ? this._foundry.ankunft | 0 : 0;
+            const jetztN = typeof performance !== "undefined" ? performance.now() : Date.now();
             let versuche = 0,
                 hand = null; // über Budget: EIN Takt-Garantie-Blick je Tick, er deckt Versuche bis zum ersten Bau
             for (const entry of nahOffen) {
+                const w = entry._nahWartet;
+                if (w && w.a === fA && jetztN - w.t < 1000) continue;
                 if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;
                 if (built >= budget) {
                     if (hand === null) hand = this._handBauErlaubt(budget);
@@ -71570,17 +71795,24 @@ class AnazhRealm {
                 }
                 this._rebuildArchitectureMesh(entry);
                 if (this._archIsRendered(entry)) {
+                    entry._nahWartet = null;
                     if (built++ >= budget) hand = false;
                     if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
                     if (entry.mesh) entry.mesh.visible = true;
-                }
+                } else entry._nahWartet = { a: fA, t: jetztN };
             }
             nahOffen.length = 0;
         }
-        if (fernOffen.length) {
-            fernOffen.sort((a, b) => a._ziegelD2 - b._ziegelD2);
-            for (const entry of fernOffen) this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie)
-            fernOffen.length = 0;
+        // DIE EINE ZIEGEL-SCHLANGE (nah wie fern), nach Distanz: der Bake-Takt geht an den nächsten Bau. In der
+        // Mesh-Zone trägt ein frischer Slot nur, solange das Mesh nicht steht.
+        if (ziegelOffen.length) {
+            ziegelOffen.sort((a, b) => a._ziegelD2 - b._ziegelD2);
+            for (const entry of ziegelOffen) {
+                this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie)
+                if (entry._ziegelNah && entry._ziegelSlot)
+                    this._weltFeldAktiv(entry._ziegelSlot, !this._archIsRendered(entry));
+            }
+            ziegelOffen.length = 0;
         }
         // Foundry-Drain: baut kalte Foundry-Einträge + hebt vor Studio-ready gespawnte auf das Studio-Asset.
         // Budget-gedeckelt (pausiert über Budget) → die Erst-Welt konvergiert ohne Spike. Headless/Studio
@@ -72098,20 +72330,9 @@ class AnazhRealm {
             });
         }
         // Instanzierte Architekturen mit-raycasten: InstancedMesh-Treffer → g.slotEntry[instanceId].
-        // BatchedMesh (useBatchedArch) hat kein .count → IMMER raycasten; Treffer liefert batchId;
-        // mehrere Leaf-Wrapper teilen EINEN Batch-Mesh → via Set dedupen.
         if (this.state.archInstanceGroups) {
-            const seenBatch = new Set();
             for (const g of this.state.archInstanceGroups.values()) {
-                if (!g.mesh) continue;
-                if (g.kind === "batch") {
-                    if (!seenBatch.has(g.mesh)) {
-                        seenBatch.add(g.mesh);
-                        meshes.push(g.mesh);
-                    }
-                } else if (g.mesh.count > 0) {
-                    meshes.push(g.mesh);
-                }
+                if (g.mesh && g.mesh.count > 0) meshes.push(g.mesh);
             }
         }
         if (!meshes.length) return null;
@@ -72127,14 +72348,6 @@ class AnazhRealm {
             const key = hit.object.userData && hit.object.userData.archInstanceKey;
             const g = key && this.state.archInstanceGroups ? this.state.archInstanceGroups.get(key) : null;
             const entry = g && g.slotEntry ? g.slotEntry[hit.instanceId] : null;
-            return entry ? { entry, point: hit.point } : null;
-        }
-        // V18.356 — Batch-Treffer: BatchedMesh.raycast liefert `batchId` (der Instanz-Index);
-        // der Eintrag kommt aus batch.slotEntry[batchId] (alle Leaf-Wrapper teilen die slotEntry).
-        if (hit.object && hit.object.isBatchedMesh && typeof hit.batchId === "number") {
-            const bk = hit.object.userData && hit.object.userData.archBatchKey;
-            const batch = bk && this.state.archBatches ? this.state.archBatches.get(bk) : null;
-            const entry = batch && batch.slotEntry ? batch.slotEntry[hit.batchId] : null;
             return entry ? { entry, point: hit.point } : null;
         }
         let node = hit.object;
@@ -77259,7 +77472,7 @@ class AnazhRealm {
                 if (memo && memo.group && memo.group !== "pending") this._disposeFoundryGroupGeom(memo.group);
                 const fresh = { key, group: "pending" };
                 this._wsStudioOvMemo = fresh;
-                this._foundryRequest(preset, variant, lod, season, ov).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, season, ov, 0).then((meshes) => {
                     // Wechselte die Auswahl waehrend des Baus, verfaellt das Ergebnis (rohe
                     // Arrays, kein GPU-Leak — die Naht `_foundryBuildGroup` laeuft nur fuer
                     // das LEBENDE Memo).
@@ -77280,7 +77493,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, season).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, season, undefined, 0).then((meshes) => {
                     if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
                     else f.requested.delete(key);
                     rebuild();
@@ -83681,29 +83894,32 @@ class AnazhRealm {
         // Light-Target in den Szenengraph hängen, damit sein matrixWorld pro Frame aktualisiert wird —
         // _applyDayNightToScene setzt es auf den Spieler, das Shadow-Frustum folgt ihm.
         scene.add(directionalLight.target);
-        // Schatten-CSM: drei Kaskaden, deren GRENZEN die `DETAIL_CASCADE`-Band-Kanten sind — Kaskade 0 =
-        // Band 0 (~108 m, ~0.10 m/Texel), 1 = Mittelsicht (~367 m), 2 = Ferne bis maxFar. Der
-        // Light-Space-Texel-Snap lebt im Addon pro Kaskade; `fade` weicht die Übergänge. Kaskaden klonen
-        // mapSize/bias/normalBias vom Haupt-Licht (setShadowBias propagiert live); `setShadowRange` wirkt
-        // nur im Legacy-Pfad. Ohne Vendor-Symbol bleibt die EINE Map.
+        // Schatten-CSM: ZWEI Kaskaden innerhalb der Schatten-Reichweite (maxFar = die EINE Größe aus
+        // `_applyEffectiveShadowRange`, 180–306 m) — Kaskade 0 = Band 0 bis zur `DETAIL_CASCADE`-Kante
+        // (~108 m, ~0,17 m/Texel), Kaskade 1 = der Rest bis maxFar. Jede Kaskade zeichnet JEDEN Werfer in
+        // ihrer Box (die Boxen messen die Slice-Diagonale, 340–950 m) — eine Kaskade kostet einen vollen
+        // Werfer-Durchgang. Gemessen 02.10.: die Band-1-Kante (367 m) lag jenseits jeder geregelten
+        // Reichweite, die dritte Kaskade klemmte auf 0,95 und deckte einen 5-%-Streifen (285–300 m), für den sie
+        // alle Werfer ein drittes Mal zeichnete. Der Light-Space-Texel-Snap lebt im Addon pro Kaskade; `fade`
+        // weicht den Übergang. Kaskaden klonen mapSize/bias/normalBias vom Haupt-Licht (setShadowBias
+        // propagiert live). Ohne Vendor-Symbol bleibt die EINE Map.
         if (typeof THREE.CSMShadowNode === "function") {
             try {
                 const bands = AnazhRealm.DETAIL_CASCADE;
                 const span = this._voxelChunkConfig(0).span; // 43.2 m
                 const e0 = (bands[0].maxRing + 0.5) * span; // Band-0-Kante ~108 m
-                const e1 = (bands[1].maxRing + 0.5) * span; // Band-1-Kante ~367 m
                 const csm = new THREE.CSMShadowNode(directionalLight, {
-                    cascades: 3,
-                    maxFar: 540, // deckt Weltenring max (Ring 12 ≈ 540 m); Default-Fog deckt früher
+                    cascades: 2,
+                    maxFar: _shRange * AnazhRealm.SCHATTEN_FERN_FAKTOR, // der Regler fährt es live nach
                     mode: "custom",
                     customSplitsCallback: (cascades, near, far, breaks) => {
-                        breaks.push(Math.min(0.85, e0 / far), Math.min(0.95, e1 / far), 1);
+                        breaks.push(Math.min(0.85, e0 / far), 1);
                     },
                 });
                 csm.fade = true;
                 directionalLight.shadow.shadowNode = csm;
                 this.state.csmNode = csm;
-                this.log("Schatten-CSM aktiv (3 Kaskaden an den DETAIL_CASCADE-Bändern)", "INFO");
+                this.log("Schatten-CSM aktiv (2 Kaskaden: Band 0 · Rest bis zur Schatten-Reichweite)", "INFO");
             } catch (e) {
                 this.log(`Schatten-CSM nicht verfügbar (${e && e.message}) — eine Map wie bisher`, "WARN");
             }
@@ -84551,7 +84767,7 @@ class AnazhRealm {
             this.state.creatures.forEach((creature) => {
                 if (!this._kzBesitztFeld(creature)) creature.visible = this.isInFrustum(creature, frustum);
             });
-        // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Batches lebt auf der
+        // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Gruppen lebt auf der
         // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
         // diag-render-bundle). Nutzt das frisch gebaute _frustumCache von oben.
         this._archRegionBundleCull();
@@ -86283,6 +86499,7 @@ class AnazhRealm {
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
+            if (_lu.uLodAuge && this.state.camera) this.state.camera.getWorldPosition(_lu.uLodAuge.value);
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;
@@ -86604,7 +86821,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.508.0";
+AnazhRealm.VERSION = "18.514.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -87746,6 +87963,9 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // LOD_TRI_BUDGET_MUL — Welt-Straff-Faktor: der Ingest übersetzt die Studio-d0/d1 durch ihn
 // (20/40 → 12/26), das Studio-L0-Gesetz bleibt unberührt; volle Geometrie nur sehr nah.
 AnazhRealm.LOD_TRI_BUDGET_MUL = Object.freeze({ d0: 0.6, d1: 0.65 });
+// Die Ziegel-Schlange ordnet nach Bedarf: ein Bau, dessen Mesh in der Mesh-Zone schon steht, reiht sich um diese
+// Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
+AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 AnazhRealm.LOD_DISTANCES = {
     thresh01: 12, // Studio LOD_D0 20 × TRI_BUDGET_MUL.d0 — dist > 12 m → LOD1 (T2: Default == Post-Ingest, headless == live)
     thresh12: 26, // Studio LOD_D1 40 × TRI_BUDGET_MUL.d1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)
@@ -90317,23 +90537,14 @@ AnazhRealm.ARCH_REGION_CULL_MAX_SPAN = 128;
 // Add invalidiert). Konsument an GENAU EINER Stelle: _archFernRegionKey (gate:scatter-lod, Block F).
 AnazhRealm.SCATTER_FERN_SUPERREGION = 4;
 // Render-Diät: EIN geteiltes Leaf-Material je TAG-SIGNATUR statt je Part-Farbe — die Farbe reist als
-// Instanz-Farbe (leaf.tint → _archSlotColor → setColorAt), der mat.uuid-Batch-Key
-// (_archBatchGroupFor) kollabiert. Einziger Konsument: _archLeafMaterial; false = das alte
-// Je-Farbe-Muster, nur als A/B-Hebel der Linse (gate:render-diaet).
+// Instanz-Farbe (leaf.tint → _archSlotColor → setColorAt), die Pipelines kollabieren je Signatur.
+// Einziger Konsument: _archLeafMaterial; false = das alte Je-Farbe-Muster, nur als A/B-Hebel der Linse
+// (gate:render-diaet).
 AnazhRealm.ARCH_LEAF_MAT_SHARED = true;
-// Verts-Schwelle, ab der ein platziertes Leaf den InstancedMesh-Pfad (geteilte geom, N Matrizen)
-// statt des Region-Batch (Kopie je Instanz) nimmt: Bäume liegen weit darüber (EINE Geometrie statt
-// N Kopien), leichte Architektur bleibt im Region-Batch. 8192 < Batch-Kapazität (32768 Verts).
-AnazhRealm.ARCH_INSTANCE_SHARE_VERTS = 8192;
-// Unter dieser Verts-Schwelle lohnt instanceShare nicht: kleine Foundry-Leaves (Blume/Fels/
-// Kristall/Kiesel, unmaskiert) kollabieren in den Region-Batch (RenderBundle-Bahn) statt je
-// Art×Variante×Blatt×Region eine eigene InstancedMesh zu münzen.
-AnazhRealm.ARCH_BATCH_KLEIN_VERTS = 2048;
-// Batch-Münz-Größe: Batches starten KLEIN und wachsen über den Überlauf-Pfad (setGeometrySize +
-// Bundle-Touch) mit dem echten Füllstand — die volle 32k-Vert-Reserve je Region hielt ~620 MB
-// CPU-Staging (@ Ring 4).
-AnazhRealm.ARCH_BATCH_MINT_VERTS = 8192;
-AnazhRealm.ARCH_BATCH_MINT_IDX = 24576;
+// Das Verschmelzen der Foundry-Teile (_foundryFlatVerschmelzen): Teile EINES Materials werden EIN Leaf, solange
+// sie zusammen höchstens so viele Vertices tragen — Geröll (16 × 57), Blume, Fahrzeug-Teile ja; Baum-L0
+// (Konifere ~143k je Teil) nein: dort kostete die Kopie Speicher für einen einzigen gesparten Draw.
+AnazhRealm.FOUNDRY_VERSCHMELZ_VERTS = 65536;
 // V18.354 — PHASE B (Frame-Budget-Scheduler): der Boden des Deferrable-Budgets (ms). Selbst wenn
 // die Pflicht-Kosten (Physik/Render) das Frame-Ziel fast füllen, bleibt diese Kür-Zeit — das
 // Streaming ist eh heilig (prio 0, ungedrosselt), dieser Floor hält die niedrigeren Jobs am Leben.
@@ -90408,6 +90619,14 @@ AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
 // Über Budget = halbe Rate; der Stau schrumpft immer.
+// DIE KONSUM-WAND des Foundry-Kanals (V18.511): GENAU die Vertex-Attribute, die `_foundryBuildMesh` liest — die
+// Transport-Schale (`_foundrySchale`) streicht im Worker jedes andere VOR Kopie, Platte und Transfer (aWind · aCenter ·
+// aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
+// beide Seiten gegeneinander).
+AnazhRealm.FOUNDRY_LESEN = ["position", "normal", "color", "uv", "aWurzel", "aSchale", "skinIndex", "skinWeight"];
+// Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511). Ein
+// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 2;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test
@@ -90446,6 +90665,12 @@ AnazhRealm.FELL_SCHALE = Object.freeze({ wurzel: 0.55, spitze: 1.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;
+// DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
+// zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
+// schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:
+// 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
+AnazhRealm.FOUNDRY_IM_FLUG = 12;
+AnazhRealm.FOUNDRY_ALTER_MS = 6000;
 // DER EINE WELT-MARCH: alle Felder (Regionen · Bauten · Tiere) leben in EINEM 3D-Atlas + EINER
 // Feld-Listen-Textur; der Feld-Pass marcht sie in EINEM Draw mit echter Tiefe. Der Atlas allokiert in
 // EINHEITEN (32³) und BLÖCKEN (2×2×2 = 64³); die Kapazität trägt die Welt-Grenzen (maxCreatures +
@@ -90509,6 +90734,8 @@ AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", 
 // Voll-Renders zwischen Last-Floor und User-Ceiling (atmosphere.shadowRange); MIN < fog-far.
 AnazhRealm.PERF_SHADOW_RANGE_MIN = 100;
 AnazhRealm.PERF_SHADOW_RANGE_MAX = 170; // = der Default-Ceiling (Fallback, wenn atmosphere.shadowRange fehlt)
+// Die CSM-Tiefe (maxFar) je Meter Schatten-Reichweite: EINE Zahl für Boot und Regler (100–170 → 180–306 m).
+AnazhRealm.SCHATTEN_FERN_FAKTOR = 1.8;
 // V8 (Kür) — der GODRAY-Pegel-Ceiling: der Perf-Regler skaliert `_godrayScale` zwischen 0
 // (anhaltende Last → Schäfte aus) und diesem Max (Kopfraum → volle Optik). Reine Optik, also
 // gibt sie unter Render-Last früh nach; 0.8 ist ein sichtbarer, aber nicht überstrahlender Pegel.

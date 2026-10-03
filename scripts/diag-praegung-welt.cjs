@@ -218,7 +218,21 @@ function check(name, ok, detail) {
             const mU = await Promise.race([r._foundryRequest("gt", variant, 0, season), sleep(45000)]);
             if (Array.isArray(mU) && mU.length) {
                 const gTmp = r._foundryBuildGroup(mU, { lod: 0, preset: "gt" });
-                res.b.fpDirect = gTmp ? fpGroup(gTmp) : null;
+                // Seit V18.510 verschmilzt der Flatten die Teile EINES Materials (`_foundryFlatVerschmelzen`) —
+                // der direkte Bau geht durch DIESELBE Verschmelzung, sonst vergliche die Probe 328 Teile mit 23.
+                if (gTmp) {
+                    const leaves = [];
+                    for (const c of gTmp.children)
+                        if (c.geometry && c.material)
+                            leaves.push({
+                                geom: c.geometry,
+                                mat: c.material,
+                                tuer: c.userData && c.userData.__tuer ? c.userData.__tuer : undefined,
+                                castShadow: true,
+                            });
+                    r._foundryFlatVerschmelzen(gTmp, leaves);
+                    res.b.fpDirect = fpFlat({ leaves });
+                } else res.b.fpDirect = null;
             }
         } catch (e) {
             res.n.err = (e && e.message) || String(e);
