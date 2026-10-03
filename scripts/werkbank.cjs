@@ -31,6 +31,13 @@
 //                                                           Frame-Zeit · GPU-Zeit (timestamp-query) · Draws ·
 //                                                           Dreiecke · VRAM · Regler-Stand; „voll" hebt die
 //                                                           Regler-Decke (loadScale → 1, die volle Welt)
+//   node scripts/werkbank.cjs profil [sek] [--regler frei|voll] [--top n]
+//                                                           DAS CPU-PROFIL des echten Laufs (Chrome-Profiler,
+//                                                           200 µs): Selbst- und Gesamtzeit je Funktion — wer
+//                                                           den Takt trägt, beim Namen (nach einem `lauf`)
+//   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: Screenshot des präsentierten Canvas
+//                                                           (was der Spieler sieht) nach 1 s echtem Loop
+//   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // `start --echt` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
@@ -363,6 +370,45 @@ function lauf(k) {
     })();
 }
 
+// Das CPU-Profil verdichten: Selbstzeit je Funktion (Name + Datei:Zeile) und Gesamtzeit (jede Funktion
+// einmal je Stapel gezählt, Rekursion doppelt nie). Prozent beziehen sich auf die gesampelte Wanduhr.
+function profilAuswerten(p, top) {
+    const knoten = new Map(p.nodes.map((n) => [n.id, n]));
+    const selbst = new Map();
+    for (let i = 0; i < p.samples.length; i++) {
+        const id = p.samples[i];
+        selbst.set(id, (selbst.get(id) || 0) + (p.timeDeltas[i] || 0));
+    }
+    const gesamtUs = p.timeDeltas.reduce((a, b) => a + Math.max(0, b), 0) || 1;
+    const name = (n) => {
+        const c = n.callFrame;
+        const datei = (c.url || "").split("/").pop().split("?")[0];
+        return `${c.functionName || "(anonym)"} ${datei}:${c.lineNumber + 1}`;
+    };
+    const jeSelbst = new Map();
+    const jeGesamt = new Map();
+    const lauf = (id, stapel) => {
+        const n = knoten.get(id);
+        const k = name(n);
+        const s = selbst.get(id) || 0;
+        jeSelbst.set(k, (jeSelbst.get(k) || 0) + s);
+        const neu = stapel.has(k) ? stapel : new Set(stapel).add(k);
+        const summe = (n.children || []).reduce((a, c) => a + lauf(c, neu), s);
+        if (!stapel.has(k)) jeGesamt.set(k, (jeGesamt.get(k) || 0) + summe);
+        return summe;
+    };
+    lauf(p.nodes[0].id, new Set());
+    const liste = (m) =>
+        [...m.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, top)
+            .map(
+                ([k, us]) =>
+                    `${((100 * us) / gesamtUs).toFixed(1).padStart(5)} %  ${(us / 1000).toFixed(0).padStart(6)} ms  ${k}`
+            );
+    return { gesampeltMs: Math.round(gesamtUs / 1000), selbst: liste(jeSelbst), gesamt: liste(jeGesamt) };
+}
+
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const puppeteer = require("puppeteer");
@@ -413,7 +459,15 @@ async function starte() {
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
     await page.evaluateOnNewDocument(vramAbgriff);
     const fehler = [];
+    const zerstoert = { n: 0 };
     page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
+    // WebGPU-Validierung meldet sich nur als Konsolen-Fehler (kein pageerror) — die Wahrheit über schwarze Bilder.
+    page.on("console", (m) => {
+        if (/Destroyed texture|Destroyed buffer/.test(m.text())) zerstoert.n++;
+        if (m.type() === "error" || /WebGPU|GPUValidation|Invalid/.test(m.text()))
+            fehler.push(("[konsole] " + m.text()).split("\n").slice(0, 3).join(" | ").slice(0, 400));
+        if (fehler.length > 200) fehler.splice(0, fehler.length - 200);
+    });
     const lade = async () => {
         const basis = ECHT ? ECHT_SEITE : `http://127.0.0.1:${SEITEN_PORT}`;
         await page.goto(`${basis}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
@@ -544,6 +598,27 @@ async function starte() {
             } catch (_e) {}
             const t0 = Date.now();
             try {
+                // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
+                if (req.url === "/schirm") {
+                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei" });
+                    await page.evaluate(() => {
+                        const r = window.anazhRealm;
+                        r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t));
+                    });
+                    await new Promise((res) => setTimeout(res, 300));
+                    const datei = path.resolve(
+                        b.datei || path.join(root, "artifacts", "werkbank", `schirm-${Date.now()}.png`)
+                    );
+                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    await page.screenshot({ path: datei });
+                    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+                    return send({ datei, ms: Date.now() - t0 });
+                }
+                // DAS FENSTER: Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) — feuert das resize-Ereignis.
+                if (req.url === "/fenster") {
+                    await page.setViewport({ width: +b.w || 1920, height: +b.h || 1080, deviceScaleFactor: 1 });
+                    return send({ fenster: [+b.w || 1920, +b.h || 1080], ms: Date.now() - t0 });
+                }
                 if (req.url === "/status") {
                     const s = await page.evaluate(() => {
                         const st = window.anazhRealm.state;
@@ -555,7 +630,7 @@ async function starte() {
                             saison: st.season,
                         };
                     });
-                    return send(Object.assign(s, { fehler: fehler.slice(-5) }));
+                    return send(Object.assign(s, { zerstoert: zerstoert.n, fehler: fehler.slice(-12) }));
                 }
                 if (req.url === "/umstellen")
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
@@ -667,6 +742,25 @@ async function starte() {
                     });
                     return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
                 }
+                if (req.url === "/profil") {
+                    const cdp = await page.target().createCDPSession();
+                    await cdp.send("Profiler.enable");
+                    await cdp.send("Profiler.setSamplingInterval", { interval: 200 });
+                    await cdp.send("Profiler.start");
+                    const l = await page.evaluate(lauf, {
+                        sek: Number(b.sek) || 8,
+                        ein: 2,
+                        regler: b.regler || "voll",
+                    });
+                    const { profile } = await cdp.send("Profiler.stop");
+                    await cdp.detach();
+                    return send(
+                        Object.assign(profilAuswerten(profile, Number(b.top) || 30), {
+                            fps: l.fps,
+                            ms: Date.now() - t0,
+                        })
+                    );
+                }
                 if (req.url === "/licht")
                     return send(
                         Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 })
@@ -722,6 +816,10 @@ async function starte() {
     else if (cmd === "zaehlen")
         o = await rufe("/zaehlen", a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {});
     else if (cmd === "lauf") o = await rufe("/lauf", { sek: a[0], ein: opt("--ein"), regler: opt("--regler", "frei") });
+    else if (cmd === "profil")
+        o = await rufe("/profil", { sek: a[0], regler: opt("--regler", "voll"), top: opt("--top", 30) });
+    else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
+    else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
     else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
