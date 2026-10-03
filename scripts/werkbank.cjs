@@ -25,7 +25,7 @@
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
-//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll]
+//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei]
 //                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach
 //                                                           `--ein` Sekunden Einschwingen misst er `sek` Sekunden
 //                                                           Frame-Zeit · GPU-Zeit (timestamp-query) · Draws ·
@@ -219,7 +219,9 @@ function lauf(k) {
         const rend = st.renderer;
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         window.__buehne();
-        if (window.__tiereHalten) window.__tiereHalten();
+        // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei`: der Halte-Griff setzt x/z je Takt zurück,
+        // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
+        if (k.tiere !== "frei" && window.__tiereHalten) window.__tiereHalten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         if (st.playerMesh) st.playerMesh.visible = true;
@@ -739,6 +741,7 @@ async function starte() {
                         sek: Number(b.sek) || 20,
                         ein: b.ein != null ? Number(b.ein) : 30,
                         regler: b.regler || "frei",
+                        tiere: b.tiere || "halten",
                     });
                     return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
                 }
@@ -751,6 +754,7 @@ async function starte() {
                         sek: Number(b.sek) || 8,
                         ein: 2,
                         regler: b.regler || "voll",
+                        tiere: b.tiere || "halten",
                     });
                     const { profile } = await cdp.send("Profiler.stop");
                     await cdp.detach();
@@ -815,9 +819,20 @@ async function starte() {
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
     else if (cmd === "zaehlen")
         o = await rufe("/zaehlen", a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {});
-    else if (cmd === "lauf") o = await rufe("/lauf", { sek: a[0], ein: opt("--ein"), regler: opt("--regler", "frei") });
+    else if (cmd === "lauf")
+        o = await rufe("/lauf", {
+            sek: a[0],
+            ein: opt("--ein"),
+            regler: opt("--regler", "frei"),
+            tiere: opt("--tiere", "halten"),
+        });
     else if (cmd === "profil")
-        o = await rufe("/profil", { sek: a[0], regler: opt("--regler", "voll"), top: opt("--top", 30) });
+        o = await rufe("/profil", {
+            sek: a[0],
+            regler: opt("--regler", "voll"),
+            top: opt("--top", 30),
+            tiere: opt("--tiere", "halten"),
+        });
     else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
     else if (cmd === "reload") o = await rufe("/reload");
