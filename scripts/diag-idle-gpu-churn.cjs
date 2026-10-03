@@ -43,12 +43,17 @@ const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
     let pageErr = null;
     page.on("pageerror", (e) => { pageErr = (e.stack || e.message).split("\n")[0]; console.log("[PAGE-ERROR]", pageErr); });
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    // DAS HOLZ DER LINSE (gemessen 03.10.): sie rastert auf der CPU (swiftshader) — für Software-Holz sieht die Welt
+    // selbst „kienspan" vor (Ring 2, keine Schatten, kein Fern-Wasser; die Auto-Wahl erkennt es nur unter WebGPU, der
+    // WebGL2-Rückfall fuhr „voll"). Auf „voll" kostete ein Szenen-Render 7–110 s und jeder schwere Erst-Compile 50–70 s:
+    // die Linse lief 21–65 min. Ihr Gegenstand bleibt ganz: Wiederholungs-Compiles im Leerlauf und bei der Env-
+    // Regenerierung (Hauptpass); Churn im Schattenpass sieht sie auf diesem Holz nicht.
+    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // settle MIT gestubbtem Render (Tempo)
     await page.evaluate(async () => {
         const start = performance.now();
         let stubbed = false, lastSize = -1, stableFor = 0;
-        while (performance.now() - start < 120000) {
+        while (performance.now() - start < 240000) {
             const r = window.anazhRealm;
             if (r && !stubbed && r.state && r.state.renderer) {
                 window.__origRender = r.state.renderer.render.bind(r.state.renderer);
@@ -66,7 +71,15 @@ const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
                 try { r._gameLoopTick(performance.now()); } catch (_e) {}
                 const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                 if (sz === lastSize) stableFor++; else { stableFor = 0; lastSize = sz; }
-                if (sz > 30 && stableFor > 30) break;
+                // RUHE heißt auch: die Foundry hat geliefert (keine offenen Worker-Aufträge, Ingest leer) — sonst
+                // streamen schwere Stoffe NACH dem Warmup herein, und jeder späte Erst-Compile kostet auf
+                // swiftshader 50–70 s in EINEM Aufruf (gemessen 03.10.: 4 späte Compiles = 286 s).
+                const f = r._foundry;
+                const foundryRuhig = !f || ((!f.pending || f.pending.size === 0) && !(r._foundryIngestQueue && r._foundryIngestQueue.length));
+                // die Chunk-Schwelle folgt dem Ring des Holzes (kienspan: Ring 2 = 25 Chunks; voll: Ring 4)
+                const ring = r.state.chunkRingRadius || 2;
+                const soll = Math.min(31, (2 * ring + 1) * (2 * ring + 1));
+                if (sz >= soll && stableFor > 30 && (foundryRuhig || performance.now() - start > 180000)) break;
             }
             await new Promise((res) => setTimeout(res, 6));
         }
@@ -135,7 +148,36 @@ const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
     // 8 Frames in Folge NICHTS kompilieren (höchstens 80, Wand 240 s) — Erst-Compile-Nachzügler
     // landen im Warmup, echter Churn kompiliert JEDEN Frame und fällt im Idle-Fenster rot.
     if (!setup.err) {
-        const frame = () => page.evaluate(() => window.__frame());
+        // SCHEIBEN-WARMUP (CI 37077860950): der ERSTE volle Frame trug alle Erst-Compiles der Welt (265 Programme,
+        // WebGL2-swiftshader) in EINEM evaluate und riss die Protokoll-Frist (300 s) — je mehr Programme, desto
+        // sicherer. Darum wärmt die Linse zuerst in Scheiben: je evaluate sind nur SCHEIBE der sichtbaren Objekte
+        // sichtbar (Hauptbild UND Kaskaden, derselbe `_loopRender`), dann steht alles wieder. Kein evaluate trägt
+        // mehr als eine Scheibe Compiles, gleich wie groß die Welt ist; gemessen wird danach wie bisher.
+        const SCHEIBE = 16;
+        const nObj = await page.evaluate(() => {
+            const objs = [];
+            window.anazhRealm.state.scene.traverse((o) => { if ((o.isMesh || o.isPoints || o.isLine || o.isSprite) && o.visible) objs.push(o); });
+            window.__scheibenObjs = objs;
+            return objs.length;
+        });
+        let maxRufMs = 0;
+        for (let i = 0; i < nObj; i += SCHEIBE) {
+            const t0 = Date.now();
+            await page.evaluate((i, n) => {
+                const objs = window.__scheibenObjs, r = window.anazhRealm;
+                const an = new Set(objs.slice(i, i + n));
+                for (const o of objs) o.visible = an.has(o);
+                // die Kaskaden rendern nur auf Markierung (autoUpdate aus) — ungemarkt kompilierten die Schatten-
+                // Programme erst im ersten vollen Frame (gemessen: 70 Compiles in EINEM Render, 122 s)
+                if (r.state.renderer.shadowMap) r.state.renderer.shadowMap.needsUpdate = true;
+                try { r._loopRender(performance.now()); } catch (_e) {}
+                for (const o of objs) o.visible = true;
+            }, i, SCHEIBE);
+            maxRufMs = Math.max(maxRufMs, Date.now() - t0);
+        }
+        await page.evaluate(() => { window.__scheibenObjs = null; });
+        setup.scheiben = Math.ceil(nObj / SCHEIBE);
+        const frame = async () => { const t0 = Date.now(); const v = await page.evaluate(() => window.__frame()); maxRufMs = Math.max(maxRufMs, Date.now() - t0); return v; };
         for (let i = 0; i < 10; i++) await frame();
         const nachStart = await page.evaluate(() => window.__cc.gpuPipeline + window.__cc.glLink);
         let ruhig = 0,
@@ -148,7 +190,7 @@ const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
             ruhig = v === stand ? ruhig + 1 : 0;
             stand = v;
         }
-        Object.assign(setup, { warmupCompiles: stand, nachzuegler: stand - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 });
+        Object.assign(setup, { warmupCompiles: stand, nachzuegler: stand - nachStart, warmupExtra: extra, ruhe: ruhig >= 8, maxRufS: Math.round(maxRufMs / 1000) });
     }
     if (setup.err) { await browser.close(); server.close(); console.error("⛔ LINSE NICHT LAUFFÄHIG:", setup.err); process.exit(1); }
     if (setup.warmupCompiles === 0) { await browser.close(); server.close(); console.error("⛔ LINSE UNGÜLTIG: 0 Warmup-Compiles → der Zähler greift nicht (kein Compiler gewrappt) → die Linse wäre blind grün."); process.exit(1); }
@@ -197,7 +239,7 @@ const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
         console.log("  Compiles im Env-Fenster (Aufrufer):");
         for (const z of regen.spur) console.log("    · " + z.replace(/https?:\/\/127\.0\.0\.1:\d+\//g, "").slice(0, 400));
     }
-    console.log(`  Backend: ${setup.backend}  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}  ·  davon Nachzügler bis zur Ruhe: ${setup.nachzuegler} in ${setup.warmupExtra} Extra-Frames${setup.ruhe ? "" : " (RUHE NIE ERREICHT)"}\n`);
+    console.log(`  Backend: ${setup.backend}  ·  Scheiben-Warmup: ${setup.scheiben} Scheiben, längster Aufruf ${setup.maxRufS} s (Frist 300 s)  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}  ·  davon Nachzügler bis zur Ruhe: ${setup.nachzuegler} in ${setup.warmupExtra} Extra-Frames${setup.ruhe ? "" : " (RUHE NIE ERREICHT)"}\n`);
     const idleOk = idle.wdh <= IDLE_THRESHOLD && idle.gesamt <= KASKADE;
     const regenOk = regen.wdh <= REGEN_THRESHOLD && regen.gesamt <= KASKADE;
     console.log(`  CHECK A — reines Idle (16 Frames):      ${idle.wdh} Wiederholungs-Compiles (Schwelle ≤${IDLE_THRESHOLD}) · ${idle.gesamt - idle.wdh} Erst-Compiles (gesamt ≤${KASKADE})  ${idleOk ? "✅" : "❌ CHURN"}`);

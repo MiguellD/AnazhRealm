@@ -18,6 +18,13 @@
 //       wird die Linse rot.
 //   (4) --selftest: zwei verfälschte phyto-core-Kopien (IGN-Koeffizient · Rampen-Faktor)
 //       via vm → die Äquivalenz-Checks MÜSSEN feuern (die Linse ist nicht vakuös).
+//   (5) DIE SCHATTEN-WAHRHEIT (V18.513): der Schattenpass liest, was das Auge sieht. r184 rendert ihn mit
+//       der Kaskaden-Kamera (`cameraPosition` = Licht-Kamera, lightMargin 200 m → nahe Bäume lagen 145 m
+//       „weit", die Maske verwarf ALLE ihre Schatten-Fragmente) und liest nur colorNode.a · map.a ·
+//       maskShadowNode, nie opacityNode (die Nadel-Karten warfen Rechtecke). Statisch: jede LOD-Maske misst
+//       vom Auge (`uLodAuge`, je Frame aus der Haupt-Kamera), kein werfender Foundry-Stoff schneidet über
+//       opacityNode aus, der Schatten-Zwilling wirft mit der L0-gestempelten L1-Gestalt (`_foundrySchattenGeom`,
+//       derselbe Stoff) und besitzt sie nicht. --selftest bricht jede Klasse einzeln.
 // Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
 // CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
 // thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
@@ -552,6 +559,38 @@ async function runPartB() {
     return { out, pageErrors, attrWand, gnade };
 }
 
+// DIE SCHATTEN-WAHRHEIT (statisch, auf der kommentar-gestrippten Quelle) → Liste der Verstöße mit Namen.
+function schattenWahrheit(srcNC) {
+    const v = [];
+    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
+    if (!maske) v.push("_lodCrossfadeMaskNode fehlt");
+    else {
+        if (/cameraPosition/.test(maske)) v.push("die Foundry-Maske misst von cameraPosition (im Schattenpass die Licht-Kamera)");
+        if (!/_lu\.uLodAuge/.test(maske)) v.push("die Foundry-Maske liest das Auge (uLodAuge) nicht");
+    }
+    if (!/const _cam = _lu\.uLodAuge;/.test(srcNC)) v.push("die Grammatik-Blattmaske misst nicht vom Auge");
+    if (!/uLodAuge: _T\.uniform\(/.test(srcNC) || !/camera\.getWorldPosition\(_lu\.uLodAuge\.value\)/.test(srcNC))
+        v.push("uLodAuge fehlt im Uniform-Satz oder im Frame-Spiegel aus der Haupt-Kamera");
+    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp\)\s*/) || "";
+    if (!stoff) v.push("_foundryTreeMaterial(kind, mp) fehlt");
+    else {
+        const erlaubt = new Set(["TSL.max(haar, wolle)", "mat.opacityNode.mul(_keepX)"]); // Fell-Schale wirft nicht
+        for (const m of stoff.matchAll(/mat\.opacityNode = ([^;]+);/g))
+            if (!erlaubt.has(m[1].trim())) v.push("werfender Stoff schneidet über opacityNode aus: " + m[1].trim());
+    }
+    const flat = fnBody(srcNC, /_foundryFlattenFor\(entry, preset, lodOverride\)\s*/) || "";
+    if (!/geom: this\._foundrySchattenGeom\(lf\)/.test(flat))
+        v.push("der Schatten-Zwilling wirft mit der L1-Gestalt (L1-Stempel: blendet nah aus)");
+    const gestalt = fnBody(srcNC, /_foundrySchattenGeom\(lf\)\s*/) || "";
+    if (!/setAttribute\(\s*"aLodLevel",\s*new THREE\.BufferAttribute\(new Float32Array\([^)]*\)\.fill\(1\), 1\)\s*\)/.test(gestalt))
+        v.push("die Zwillings-Gestalt trägt nicht den L0-Stempel (aLodLevel 1)");
+    const weg = fnBody(srcNC, /_disposeFoundryGroupGeom\(g\)\s*/) || "";
+    if (!/lf\._schattenGeom\.dispose\(\)/.test(weg)) v.push("die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)");
+    if (!/shadowTwin: true,\s*_eigen: false/.test(flat))
+        v.push("der Schatten-Zwilling erbt das Eigentum der L1-Geometrie (der L0-Dispose zerstört sie)");
+    return v;
+}
+
 async function main() {
     const P = parseStudio();
     if (!P.ok) {
@@ -572,11 +611,32 @@ async function main() {
         const ras2 = buildRaster(core2, P, 0);
         const r2 = evaluate(core2, P, ras2);
         check("Selbst-Test 2: verfälschte f1o-Rampe → Masken-Äquivalenz feuert", r2.keepMismatch > 0);
+        // V3–V5: die drei Schatten-Klassen, je eine zurück in die Quelle → das Schatten-Gesetz MUSS sie nennen.
+        const nc = stripComments(anazhSrc);
+        const brueche = [
+            ["Pass-Kamera", nc.replace("const _auge = _lu.uLodAuge;", "const _auge = T.cameraPosition;")],
+            [
+                "Nadel-Alpha in opacityNode",
+                nc.replace(
+                    "mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), texN.a);",
+                    "mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), 1.0); mat.opacityNode = texN.a;"
+                ),
+            ],
+            ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
+            ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(1), 1)", "aLodLevel.count).fill(2), 1)")],
+            ["Zwillings-Gestalt leckt", nc.replace("lf._schattenGeom.dispose();", "")],
+            ["Zwilling besitzt L1-Geometrie", nc.replace("_eigen: false,", "")],
+        ];
+        check("Selbst-Test 3: die echte Quelle hält das Schatten-Gesetz", schattenWahrheit(nc).length === 0, schattenWahrheit(nc).join(" · "));
+        for (const [name, src] of brueche) {
+            const v = schattenWahrheit(src);
+            check(`Selbst-Test Schatten: „${name}" → das Gesetz nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRÜN — die Linse feuert auf beide Verfälschungs-Klassen.");
+        console.log("\n✅ SELBST-TEST GRÜN — die Linse feuert auf jede Verfälschungs-Klasse.");
         process.exit(0);
     }
 
@@ -647,6 +707,13 @@ async function main() {
             /thresh01/.test(ensureBody) &&
             /thresh12/.test(ensureBody) &&
             /uLodD0\.value = _D\.thresh01/.test(anazhNC)
+    );
+
+    const sw = schattenWahrheit(anazhNC);
+    check(
+        "SCHATTEN-WAHRHEIT: Masken vom Auge · kein opacityNode-Ausschnitt an Werfern · Zwilling L0-gestempelt",
+        sw.length === 0,
+        sw.join(" · ")
     );
 
     console.log("--- Teil 1+2: die Masken-Invarianten auf dem 64×64-Raster übers Band ---");

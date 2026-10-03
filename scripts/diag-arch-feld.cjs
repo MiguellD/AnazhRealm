@@ -148,7 +148,17 @@ function schlangenGesetz(src) {
         ) || []
     ).length;
     const schlange = /ziegelOffen\.push\(entry\)/.test(zweig);
-    return { ok: rufe === bewacht && schlange, grund: `Rufe ${rufe} · bewacht ${bewacht} · Schlange ${schlange}` };
+    // WER LÄDT, VERBRAUCHT KEINEN VERSUCH: im Nah-Zweig steht der Warte-Sprung VOR der Versuchs-Kappe, und ein
+    // Bau ohne Mesh merkt sich die Ankunfts-Generation (gemessen 03.10.: 24 Wartende fraßen die Kappe, das Haus
+    // dahinter blieb 800 Takte ohne Mesh).
+    const nah = body.slice(body.indexOf("for (const entry of nahOffen) {"));
+    const sprung = nah.indexOf("if (w && w.a === fA && jetztN - w.t < 1000) continue;");
+    const kappe = nah.indexOf("if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;");
+    const warten = sprung >= 0 && kappe > sprung && /else entry\._nahWartet = \{ a: fA, t: jetztN \};/.test(nah);
+    return {
+        ok: rufe === bewacht && schlange && warten,
+        grund: `Rufe ${rufe} · bewacht ${bewacht} · Schlange ${schlange} · Warten ohne Versuch ${warten}`,
+    };
 }
 {
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
@@ -159,8 +169,14 @@ function schlangenGesetz(src) {
         );
         const heil = schlangenGesetz(stamm);
         const bruch = schlangenGesetz(kaputt);
-        const ok = heil.ok && kaputt !== stamm && !bruch.ok;
-        console.log(`${ok ? "✅" : "❌"} SELBST-TEST S: heil ${heil.grund} · Listen-Ruf injiziert ${bruch.grund}`);
+        // der zweite Bruch: Wartende verbrauchen wieder Versuche (der Sprung fällt)
+        const kaputt2 = stamm.replace("if (w && w.a === fA && jetztN - w.t < 1000) continue;", "");
+        const bruch2 = schlangenGesetz(kaputt2);
+        const ok = heil.ok && kaputt !== stamm && !bruch.ok && kaputt2 !== stamm && !bruch2.ok;
+        console.log(
+            `${ok ? "✅" : "❌"} SELBST-TEST S: heil ${heil.grund} · Listen-Ruf injiziert ${bruch.grund} · ` +
+                `Warte-Sprung entfernt ${bruch2.grund}`
+        );
         process.exit(ok ? 0 : 1);
     }
     const S = schlangenGesetz(stamm);
@@ -205,12 +221,23 @@ function schlangenGesetz(src) {
         if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
         const dlB = performance.now() + 90000;
         while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+        // Eine Ausnahme im Spiel-Takt wird gezählt und beim Namen genannt, nie geschluckt: sie bricht den Takt dort
+        // ab, wo sie fliegt — jeder Bau dahinter in der Liste bleibt ungebaut (das sah die Linse sonst als „AM null").
+        let taktFehlerN = 0,
+            taktFehler1 = null;
         const tick = async (n) => {
             for (let i = 0; i < n; i++) {
                 try {
                     if (r.state.world) r.state.world.timeOfDay = 0.5;
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch (e) {
+                    taktFehlerN++;
+                    if (!taktFehler1)
+                        taktFehler1 = String((e && e.stack) || e)
+                            .split("\n")
+                            .slice(0, 4)
+                            .join(" | ");
+                }
                 await sleep(40);
             }
         };
@@ -232,8 +259,8 @@ function schlangenGesetz(src) {
         // Die Takt-Verbraucher (wer bekommt den Feld-Bake-Takt, wer nicht) — die Linse nennt den Hunger beim Namen.
         const taktZaehl = {};
         const taktRoh = r._weltBakeErlaubt.bind(r);
-        r._weltBakeErlaubt = function () {
-            const ok = taktRoh();
+        r._weltBakeErlaubt = function (...a) {
+            const ok = taktRoh(...a); // die Distanz reist mit — sonst gälte im Gate jeder Wunsch als „ganz nah"
             const k = (new Error().stack.split("\n")[2] || "").trim().split(" ")[1] || "?";
             const z2 = taktZaehl[k] || (taktZaehl[k] = { ja: 0, nein: 0 });
             if (ok) z2.ja++;
@@ -299,6 +326,16 @@ function schlangenGesetz(src) {
                       slot: !!e._ziegelSlot,
                       gebacken: !!e._ziegelGebacken,
                       versuche: e._ziegelVersuche || 0,
+                      // Der Mesh-Weg: Wunsch-Stufe, Instanz-Flag und was der EINE Flat-Chokepoint für sie liefert
+                      // (lädt · kann nicht · bereit) — der Täter, wenn nah kein Mesh steht.
+                      stufe: e._lodLevel,
+                      instanz: !!e.instanced,
+                      weg: (() => {
+                          const p = r._archFoundryPreset(e);
+                          if (!p) return "grammatik";
+                          const fl = r._foundryFlattenFor(e, p, e._lodLevel | 0);
+                          return fl === null ? "laedt" : fl === false ? "kann-nicht" : fl.instanceable ? "bereit:L" + fl.lod : "nicht-instanzierbar";
+                      })(),
                       // Foundry-Bau: steht die L1-Flat (Quelle des Fits) und der geteilte Baum-Satz schon?
                       flat: r._archFoundryPreset(e)
                           ? r._foundry.cache.has(
@@ -343,6 +380,12 @@ function schlangenGesetz(src) {
             geteilt: !!(wm && wm.kapselCache.has("abaum:eiche:" + variante)),
             zB: zustand(eb),
             zH: zustand(eh),
+            taktFehler: { n: taktFehlerN, erster: taktFehler1 },
+            werk: {
+                offen: r._foundry && r._foundry.pending ? r._foundry.pending.size : null,
+                angefragt: r._foundry && r._foundry.requested ? r._foundry.requested.size : null,
+                stau: r._foundryIngestQueue ? r._foundryIngestQueue.length : 0,
+            },
             felderFrei: wm ? wm.freiFelder.length : null,
             felderVoll: !!r._weltFelderVollWarn,
             radius: Math.round(r.state.architectureCullingRadius || 0),
@@ -357,7 +400,7 @@ function schlangenGesetz(src) {
     console.log(`Liste: ${res.n} Bauten · Eiche auf Platz ${res.idx.baum} · ${res.hausName} auf Platz ${res.idx.haus}`);
     console.log(
         `Zustand: Eiche ${JSON.stringify(res.zB)} · Haus ${JSON.stringify(res.zH)} · Feld-Liste frei ${res.felderFrei}` +
-            `${res.felderVoll ? " (VOLL gemeldet)" : ""} · Mesh-Zone ${res.radius} m`
+            `${res.felderVoll ? " (VOLL gemeldet)" : ""} · Mesh-Zone ${res.radius} m · Foundry ${JSON.stringify(res.werk)}`
     );
     const A = res.slotB != null && res.slotH != null;
     const AF = res.slotBF != null && res.slotHF != null;
@@ -543,7 +586,13 @@ function schlangenGesetz(src) {
     }
     await browser.close();
     server.close();
-    const gruen = A && AM && AF && Bk && C && D && pageErrors.length === 0;
+    const TF = !(res.taktFehler && res.taktFehler.n > 0);
+    console.log(
+        TF
+            ? "✅ T  keine Ausnahme im Spiel-Takt"
+            : `❌ T  ${res.taktFehler.n} Ausnahmen im Spiel-Takt — erste: ${res.taktFehler.erster}`
+    );
+    const gruen = A && AM && AF && Bk && C && D && TF && pageErrors.length === 0;
     console.log(
         gruen
             ? "✅ GRÜN — gesetzte Dinge erscheinen: nah als Mesh (das Feld überbrückt), fern im Feld."

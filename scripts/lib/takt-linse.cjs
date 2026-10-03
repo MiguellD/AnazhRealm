@@ -12,6 +12,8 @@
 const LOOP_METHODEN = [
     "updateFps",
     "_loopNexusUpdate",
+    "grokTick",
+    "dslTick",
     "_tickWorldRules",
     "updatePlayerEmotions",
     "tickPlayerBoosts",
@@ -76,11 +78,15 @@ function taktZerlegung(opts) {
         r._loopRender = function () {};
         const N = o.n || 120;
         const takte = [];
+        let buehneMs = 0;
         try {
             for (let i = 0; i < N; i++) {
+                // Die Bühne (Mittag · Sonne · Sommer) hält die Welt fest — außerhalb des gemessenen Takts.
+                const tb = performance.now();
+                if (window.__buehne) window.__buehne();
+                buehneMs += performance.now() - tb;
                 const t = performance.now();
                 try {
-                    if (window.__buehne) window.__buehne();
                     r._gameLoopTick(performance.now());
                 } catch (_e) {
                     /* ein reißender Takt zählt trotzdem */
@@ -98,7 +104,21 @@ function taktZerlegung(opts) {
             .map(([k, v]) => ({ name: k, mittel: Math.round((v.s / N) * 100) / 100, max: Math.round(v.max * 10) / 10 }))
             .sort((a, b) => b.mittel - a.mittel)
             .slice(0, o.top || 15);
-        return { takte: N, p50: q(0.5), p95: q(0.95), max: q(0.999), top };
+        // Der Rest: Takt-Zeit, die kein gehülltes Subsystem erklärt (ungehüllte Glieder, GC, Microtasks).
+        // (nur die Loop-Glieder zählen — `extra` sind meist tiefere, darin enthaltene Methoden)
+        const oben = new Set(o.liste || []);
+        const erklaert = Object.entries(acc).reduce((a, [k, v]) => (oben.has(k) ? a + v.s : a), 0);
+        const gesamt = takte.reduce((a, b) => a + b, 0);
+        const restMittel = Math.round(((gesamt - erklaert) / N) * 100) / 100;
+        return {
+            takte: N,
+            p50: q(0.5),
+            p95: q(0.95),
+            max: q(0.999),
+            restMittel,
+            buehneMittel: Math.round((buehneMs / N) * 100) / 100,
+            top,
+        };
     })();
 }
 

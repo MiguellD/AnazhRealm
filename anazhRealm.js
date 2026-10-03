@@ -29126,6 +29126,11 @@ class AnazhRealm {
                     uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
                     uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),
                     uLodFade0: _T.uniform(Number.isFinite(_D.fade0) ? _D.fade0 : 4),
+                    // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
+                    // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
+                    // `renderer.render(scene, shadow.camera)`, lightMargin 200 m): dort lagen nahe Bäume 145 m
+                    // „weit", jenseits jeder Stufe, und die Maske verwarf ihre Schatten-Fragmente alle.
+                    uLodAuge: _T.uniform(new THREE.Vector3()),
                 };
             }
         } catch (_e) {
@@ -29192,14 +29197,15 @@ class AnazhRealm {
                 const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
             }
-            // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen:
-            if (!T.attribute || !T.positionWorld || !T.cameraPosition || !T.length || !T.vec2) return null;
+            // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen, gemessen vom AUGE (`uLodAuge`):
+            // so maskiert der Schattenpass jede Stufe, wie das Auge sie sieht — jede Stufe wirft genau dort, wo sie
+            // gezeichnet wird.
+            const _auge = _lu.uLodAuge;
+            if (!T.attribute || !T.positionWorld || !_auge || !T.length || !T.vec2) return null;
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            const _cd = T.length(
-                T.vec2(T.cameraPosition.x.sub(T.positionWorld.x), T.cameraPosition.z.sub(T.positionWorld.z))
-            );
+            const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z)));
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             const _lkL = _lu.uLodRef.div(_aH0L.max(T.float(1e-3))).min(T.float(1.0));
             const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
@@ -29369,9 +29375,9 @@ class AnazhRealm {
                     _Tl &&
                     _lu &&
                     _lu.uLodRef &&
+                    _lu.uLodAuge &&
                     _Tl.attribute &&
                     _Tl.positionWorld &&
-                    _Tl.cameraPosition &&
                     _Tl.vec2 &&
                     _Tl.vec4 &&
                     _Tl.float &&
@@ -29387,7 +29393,7 @@ class AnazhRealm {
                     const _aH0 = _Tl.attribute("aH0", "float");
                     const _aH0L = _Tl.attribute("aH0L", "float");
                     const _pw = _Tl.positionWorld;
-                    const _cam = _Tl.cameraPosition;
+                    const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Kamera → Vertex-Weltposition (die Instanz-Transform steckt in
                     // positionWorld → per-Instanz korrekt, ohne den modelWorldMatrix-Ursprung).
                     const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_pw.x), _cam.z.sub(_pw.z)));
@@ -35657,10 +35663,12 @@ class AnazhRealm {
     }
 
     // DER EINE FELD-BAKE-TAKT, NAH ZUERST ÜBER ALLE VERBRAUCHER (Bau · Streu-Gesetz · Region-Ziegel · Kreatur-Fern-Fit):
-    // je Sekunden-Fenster höchstens 16 Fits (über Budget 4). Wer weiter weg ist als der NÄCHSTE, den der Takt im
-    // Vor-Fenster abweisen musste, wartet, ohne Budget zu verbrauchen — vorher bekam, wer im Frame zuerst fragte
-    // (Befund 02.10., gate:arch-feld: in der Boot-Welt blieb eine gesetzte Eiche in 170 m 200 Takte ohne Feld, Flat
-    // geladen, 0 Versuche). `d2` = Distanz² zum Spieler (ohne Angabe: vorne).
+    // je Sekunden-Fenster höchstens 16 Fits (über Budget 4). In der ERSTEN Fenster-Hälfte wartet, wer weiter weg ist
+    // als der NÄCHSTE, den der Takt im Vor-Fenster abweisen musste — die Näheren fragen je Frame und sind dann bedient;
+    // was in der zweiten Hälfte übrig ist, bekommt, wer fragt (die Ziegel-Schlange fragt nach Distanz). Vorher bekam,
+    // wer im Frame zuerst fragte; und eine Schwelle über das GANZE Fenster ließ das übrige Budget liegen und die Fernen
+    // verhungern (gemessen 03.10., gate:arch-feld mit echter Distanz: 415 Freigaben in 1 000 Takten, die Eiche in
+    // 154 m nie). `d2` = Distanz² zum Spieler (ohne Angabe: vorne).
     _weltBakeErlaubt(d2) {
         const D = Number.isFinite(d2) ? d2 : 0;
         const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -35671,7 +35679,8 @@ class AnazhRealm {
             this._weltBakeHunger = Infinity;
         }
         const max = this.state._frameOverBudget ? 4 : 16; // Bakes je Sekunde
-        if (this._weltBakeN >= max || D > this._weltBakeVorrang) {
+        const vorrang = jetzt - this._weltBakeFenster < 500 && D > this._weltBakeVorrang;
+        if (this._weltBakeN >= max || vorrang) {
             if (!(D >= this._weltBakeHunger)) this._weltBakeHunger = D;
             return false;
         }
@@ -59955,7 +59964,7 @@ class AnazhRealm {
         }
         const grp = new THREE.Group();
         for (const leaf of flat.leaves) {
-            if (!leaf.geom || !leaf.mat) continue;
+            if (!leaf.geom || !leaf.mat || leaf.shadowTwin) continue; // der Schatten-Zwilling ist kamera-unsichtbar
             const mesh = new THREE.Mesh(leaf.geom, this._ghostMaterialFor(leaf.mat));
             mesh.applyMatrix4(leaf.localMatrix);
             mesh.castShadow = false;
@@ -68375,8 +68384,10 @@ class AnazhRealm {
                     tex.colorSpace = T.SRGBColorSpace;
                     const uvN = TSL.attribute("uv", "vec2");
                     const texN = TSL.texture(tex, uvN);
-                    mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), 1.0);
-                    mat.opacityNode = texN.a;
+                    // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
+                    // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
+                    // Nadel-Karten warfen volle Rechtecke.
+                    mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), texN.a);
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                     // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
@@ -69113,6 +69124,7 @@ class AnazhRealm {
         if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
         f.cache.set(key, v);
+        f.ankunft = (f.ankunft | 0) + 1; // die Ankunfts-Generation: Wartende im Nah-Zweig fragen erst danach wieder
         const CAP = AnazhRealm.FOUNDRY_CACHE_CAP || 256;
         const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;
         while (f.cache.size > CAP || f.cacheBytes > BYTES) {
@@ -69152,11 +69164,46 @@ class AnazhRealm {
         // die verschmolzenen Flat-Geometrien gehören der Gruppe (_foundryFlatVerschmelzen)
         const fl = g._foundryFlat;
         if (fl && Array.isArray(fl.leaves))
-            for (const lf of fl.leaves)
+            for (const lf of fl.leaves) {
                 if (lf._eigen && lf.geom && typeof lf.geom.dispose === "function") lf.geom.dispose();
+                // die L0-gestempelte Zwillings-Gestalt teilt die Puffer dieses Leafs — sie fällt mit ihm
+                if (lf._schattenGeom) {
+                    lf._schattenGeom.dispose();
+                    lf._schattenGeom = null;
+                }
+            }
         g._geomDisposed = true;
         const f = this._foundry;
         if (f) f._geomDisposedCount = (f._geomDisposedCount || 0) + g.children.length;
+        // Der Schatten-Stellvertreter gibt seine gepinnte L1-Quelle zurück.
+        const q = g._schattenQuelle;
+        if (q) {
+            g._schattenQuelle = null;
+            q._liveRefs = Math.max(0, (q._liveRefs || 0) - 1);
+            if (q._evicted && !(q._liveRefs > 0)) this._disposeFoundryGroupGeom(q);
+        }
+    }
+    // Die Gestalt, mit der ein Schatten-Zwilling wirft: die L1-Geometrie, als Stufe L0 gestempelt (aLodLevel 1).
+    // Dieselben Puffer, derselbe Stoff — die Dither-Blende liest die Stufe aus dem Stempel: der Zwilling wirft, wo
+    // die L0 gezeichnet wird, und weicht im L0→L1-Band, wo der L1-Partner einblendet. Kostet kein Programm; die
+    // Gestalt gehört dem L1-Leaf und fällt mit ihm (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1.
+    _foundrySchattenGeom(lf) {
+        const g = lf && lf.geom;
+        if (!g || !g.attributes || !g.attributes.aLodLevel) return g;
+        if (lf._schattenGeom) return lf._schattenGeom;
+        const z = new THREE.BufferGeometry();
+        for (const k in g.attributes) z.setAttribute(k, g.attributes[k]);
+        z.setAttribute(
+            "aLodLevel",
+            new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(1), 1)
+        );
+        if (g.index) z.setIndex(g.index);
+        z.drawRange.start = g.drawRange.start;
+        z.drawRange.count = g.drawRange.count;
+        if (g.boundingSphere) z.boundingSphere = g.boundingSphere.clone();
+        if (g.boundingBox) z.boundingBox = g.boundingBox.clone();
+        lf._schattenGeom = z;
+        return z;
     }
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
@@ -69198,6 +69245,15 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
+                // Ein L0-Baum wirft mit seiner L1 (Schatten-Stellvertreter): sie reist im selben Zug — sonst stellte
+                // sie sich erst nach der L0-Ankunft ans Ende der Worker-Schlange, und die L0 wartete doppelt.
+                if (
+                    lod === 0 &&
+                    !entryOv &&
+                    this._foundryPresetIsTree(preset) &&
+                    this._foundryDeclaredStage(preset, 1) === 1
+                )
+                    this._foundryFlattenFor(entry, preset, 1);
                 this._foundryRequest(preset, variant, lod, season, entryOv || undefined).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
@@ -69216,6 +69272,20 @@ class AnazhRealm {
         // `false` = „Foundry kann das nicht", der Aufrufer faellt auf den AnazhRealm-Pfad zurueck.
         if (group === null || !group.children || !group.children.length) return false;
         if (!group._foundryFlat) {
+            // DER SCHATTEN-STELLVERTRETER: ein Baum zeichnet nah seine L0-Gestalt und wirft den Schatten seiner
+            // L1-Stufe — die L0-Teile casten nicht, die L1-Teile reisen als Schatten-Zwilling (`shadowTwin`,
+            // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Stufe L0 gestempelt
+            // (`_foundrySchattenGeom`: blendet wie L0, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
+            // Wechsel, Bundles und der Feld-Cull-Ausschluss tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
+            // Dreiecke in JEDE der zwei Kaskaden, ihre L1 trägt 11k. Ein Flat ist erst fertig, wenn seine Teile
+            // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1).
+            let schatten = null;
+            if (lod === 0 && this._foundryPresetIsTree(preset) && this._foundryDeclaredStage(preset, 1) === 1) {
+                const f1 = this._foundryFlattenFor(entry, preset, 1);
+                if (f1 === null) return null;
+                if (f1 && f1.instanceable && f1.lod === 1 && Array.isArray(f1.leaves) && f1.leaves.length)
+                    schatten = f1;
+            }
             const leaves = [];
             // Template→Welt-Übersetzung: das Studio platziert mit `SCALE[sp] · tr.s · 0.82` (eiche 4.16 · fichte
             // 4.85 · …) — ohne sie bleibt der Baum ein Zwerg, der strauch ein Riese. Sie lebt HIER (localMatrix
@@ -69226,7 +69296,7 @@ class AnazhRealm {
             // L0-Kante mitten im Sichtfeld. Der `leaf.castShadow`-Override gewinnt gegen `_archGroupCastsShadow`
             // (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im leafKey). Deckungsgleiche Werfer
             // verdunkeln nicht doppelt (Tiefen-Test).
-            const castsShadow = lod < 2;
+            const castsShadow = lod < 2 && !schatten;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -69244,6 +69314,25 @@ class AnazhRealm {
                 });
             }
             this._foundryFlatVerschmelzen(group, leaves);
+            if (schatten && leaves.length) {
+                // Die L1-Teile (schon verschmolzen) als Zwilling; die L1-Cache-Gruppe bleibt gepinnt, solange
+                // dieser Flat lebt (`_disposeFoundryGroupGeom` gibt sie zurück).
+                for (const lf of schatten.leaves)
+                    leaves.push(
+                        Object.assign({}, lf, {
+                            leafKey: lf.leafKey + "#S",
+                            geom: this._foundrySchattenGeom(lf),
+                            castShadow: true,
+                            shadowTwin: true,
+                            _eigen: false, // die verschmolzene L1-Geometrie gehört der L1-Gruppe, nie diesem Flat
+                        })
+                    );
+                const quelle = schatten.leaves[0]._srcGroup;
+                if (quelle) {
+                    quelle._liveRefs = (quelle._liveRefs || 0) + 1;
+                    group._schattenQuelle = quelle;
+                }
+            }
             group._foundryFlat = leaves.length
                 ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves }
                 : false;
@@ -71632,12 +71721,20 @@ class AnazhRealm {
         // Das Budget zählt GEBAUTE Meshes, nicht Versuche: ein Eintrag, dessen Studio-Asset noch lädt (Flat null/
         // false — z. B. die L2-Karte im Bäcker), kehrt billig zurück und darf den fertigen dahinter nicht aushungern
         // (Befund 30.09.: die nächsten Karten-Wartenden fraßen jeden Takt das Budget, 7 bereite Eichen standen).
-        // Versuche sind gedeckelt (ARCH_NAH_VERSUCHE je Takt).
+        // Versuche sind gedeckelt (ARCH_NAH_VERSUCHE je Takt). WER LÄDT, VERBRAUCHT KEINEN VERSUCH: ein Bau, dessen
+        // Flat zuletzt null lieferte, wartet, bis die Foundry etwas Neues liefert (Ankunfts-Generation), höchstens
+        // 1 s — sonst fraßen 24 nähere Wartende hinter einem ausgelasteten Worker jeden Takt die Kappe, und ein
+        // sofort baubares Haus dahinter blieb 800 Takte ohne Mesh (gemessen 03.10., gate:arch-feld: 17 offene
+        // Worker-Aufträge, Haus „grammatik", mesh false).
         if (nahOffen.length) {
             nahOffen.sort((a, b) => a._nahD2 - b._nahD2);
+            const fA = this._foundry ? this._foundry.ankunft | 0 : 0;
+            const jetztN = typeof performance !== "undefined" ? performance.now() : Date.now();
             let versuche = 0,
                 hand = null; // über Budget: EIN Takt-Garantie-Blick je Tick, er deckt Versuche bis zum ersten Bau
             for (const entry of nahOffen) {
+                const w = entry._nahWartet;
+                if (w && w.a === fA && jetztN - w.t < 1000) continue;
                 if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;
                 if (built >= budget) {
                     if (hand === null) hand = this._handBauErlaubt(budget);
@@ -71645,10 +71742,11 @@ class AnazhRealm {
                 }
                 this._rebuildArchitectureMesh(entry);
                 if (this._archIsRendered(entry)) {
+                    entry._nahWartet = null;
                     if (built++ >= budget) hand = false;
                     if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
                     if (entry.mesh) entry.mesh.visible = true;
-                }
+                } else entry._nahWartet = { a: fA, t: jetztN };
             }
             nahOffen.length = 0;
         }
@@ -86348,6 +86446,7 @@ class AnazhRealm {
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
+            if (_lu.uLodAuge && this.state.camera) this.state.camera.getWorldPosition(_lu.uLodAuge.value);
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;
@@ -86669,7 +86768,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.512.0";
+AnazhRealm.VERSION = "18.513.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

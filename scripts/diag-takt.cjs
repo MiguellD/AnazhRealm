@@ -11,8 +11,11 @@
 //   T3  der Feld-Bake-Takt (`_weltBakeErlaubt`) geht NAH zuerst über alle Verbraucher: wer im Vor-Fenster nah
 //       abgewiesen wurde, bekommt im nächsten zuerst (Befund: das Streu-Gesetz fragte im Frame vor den Bauten —
 //       eine gesetzte Eiche in 170 m blieb 200 Takte ohne Feld)
+//   T4  und nie verhungert: was in der zweiten Fenster-Hälfte übrig ist, bekommt auch der Ferne (V18.512 hielt die
+//       Schwelle das ganze Fenster: 415 Freigaben in 1 000 Takten, die ferne Eiche nie — gate:arch-feld mit echter
+//       Distanz, 03.10.)
 // --selftest: ein Takt, der wieder die Tags ALLER Bauten rechnet (die alte Reihenfolge), macht T1 rot; der alte
-// Wer-zuerst-fragt-Takt macht T3 rot.
+// Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot.
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -84,37 +87,59 @@ const SELBST = process.argv.includes("--selftest");
             const t2 = lauf(10);
             r.computeCompoundTags = roh;
             for (const e of bauten.concat(nah, [glas])) if (e) r.removeArchitecture(e);
-            // T3 — der Feld-Bake-Takt geht NAH zuerst über alle Verbraucher: Fenster 1 verbrauchen ferne Fits das
-            // Budget, ein naher wird abgewiesen; im Fenster 2 bekommt der nahe, der ferne wartet.
-            const erlaubt = selbst
-                ? function () {
-                      // die alte Klasse: wer im Fenster zuerst fragt, bekommt
-                      const j = performance.now();
-                      if (this._weltBakeFenster === undefined || j - this._weltBakeFenster > 1000) {
-                          this._weltBakeFenster = j;
-                          this._weltBakeN = 0;
-                      }
-                      if (this._weltBakeN >= (this.state._frameOverBudget ? 4 : 16)) return false;
-                      this._weltBakeN++;
-                      return true;
-                  }
-                : r._weltBakeErlaubt;
-            const ueber = st._frameOverBudget;
-            st._frameOverBudget = true;
-            r._weltBakeFenster = undefined;
-            r._weltBakeHunger = Infinity;
-            const fern = 300 * 300,
-                nahD = 20 * 20;
-            let fernJa = 0;
-            for (let i = 0; i < 4; i++) if (erlaubt.call(r, fern)) fernJa++;
-            const nah1 = erlaubt.call(r, nahD);
-            r._weltBakeFenster = performance.now() - 2000; // das nächste Fenster
-            const fern2 = erlaubt.call(r, fern);
-            const nah2 = erlaubt.call(r, nahD);
-            st._frameOverBudget = ueber;
-            r._weltBakeFenster = undefined;
-            r._weltBakeHunger = Infinity;
-            const t3 = { fernJa, nah1, fern2, nah2 };
+            // T3/T4 — der Feld-Bake-Takt: Fenster 1 verbrauchen ferne Fits das Budget, ein naher wird abgewiesen; im
+            // Fenster 2 bekommt zuerst der nahe (T3), und was in der zweiten Fenster-Hälfte übrig ist, auch der ferne (T4).
+            const werZuerst = function () {
+                // die alte Klasse: wer im Fenster zuerst fragt, bekommt
+                const j = performance.now();
+                if (this._weltBakeFenster === undefined || j - this._weltBakeFenster > 1000) {
+                    this._weltBakeFenster = j;
+                    this._weltBakeN = 0;
+                }
+                if (this._weltBakeN >= (this.state._frameOverBudget ? 4 : 16)) return false;
+                this._weltBakeN++;
+                return true;
+            };
+            const ganzesFenster = function (d2) {
+                // die V18.512-Klasse: die Schwelle gilt das GANZE Fenster
+                const D = Number.isFinite(d2) ? d2 : 0;
+                const j = performance.now();
+                if (this._weltBakeFenster === undefined || j - this._weltBakeFenster > 1000) {
+                    this._weltBakeFenster = j;
+                    this._weltBakeN = 0;
+                    this._weltBakeVorrang = Number.isFinite(this._weltBakeHunger) ? this._weltBakeHunger : Infinity;
+                    this._weltBakeHunger = Infinity;
+                }
+                if (this._weltBakeN >= (this.state._frameOverBudget ? 4 : 16) || D > this._weltBakeVorrang) {
+                    if (!(D >= this._weltBakeHunger)) this._weltBakeHunger = D;
+                    return false;
+                }
+                this._weltBakeN++;
+                return true;
+            };
+            const folge = (erlaubt) => {
+                const ueber = st._frameOverBudget;
+                st._frameOverBudget = true;
+                r._weltBakeFenster = undefined;
+                r._weltBakeHunger = Infinity;
+                const fern = 300 * 300,
+                    nahD = 20 * 20;
+                let fernJa = 0;
+                for (let i = 0; i < 4; i++) if (erlaubt.call(r, fern)) fernJa++;
+                const nah1 = erlaubt.call(r, nahD);
+                r._weltBakeFenster = performance.now() - 2000; // das nächste Fenster
+                const fern2 = erlaubt.call(r, fern);
+                const nah2 = erlaubt.call(r, nahD);
+                r._weltBakeFenster = performance.now() - 600; // dasselbe Fenster, zweite Hälfte
+                const fern3 = erlaubt.call(r, fern);
+                st._frameOverBudget = ueber;
+                r._weltBakeFenster = undefined;
+                r._weltBakeHunger = Infinity;
+                return { fernJa, nah1, fern2, nah2, fern3 };
+            };
+            const a = folge(selbst ? werZuerst : r._weltBakeErlaubt);
+            const b = selbst ? folge(ganzesFenster) : a;
+            const t3 = { fernJa: a.fernJa, nah1: a.nah1, fern2: a.fern2, nah2: a.nah2, fern3: b.fern3 };
             return { t1, t2, t3, n: bauten.length, reichweite: r.constructor.FOCUSING_HEAT_RANGE_M };
         }, SELBST);
     } finally {
@@ -128,11 +153,13 @@ const SELBST = process.argv.includes("--selftest");
     const T2 = aus.t2 <= 3 * 10;
     const t3 = aus.t3;
     const T3 = t3.fernJa === 4 && t3.nah1 === false && t3.nah2 === true && t3.fern2 === false;
+    const T4 = t3.fern3 === true;
     if (SELBST) {
-        const ok = !T1 && !T3;
+        const ok = !T1 && !T3 && !T4;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
-                `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}`
+                `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
+                `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -146,7 +173,8 @@ const SELBST = process.argv.includes("--selftest");
     console.log(
         `  ${T3 ? "✅" : "❌"} T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`
     );
-    if (!(T1 && T2 && T3)) {
+    console.log(`  ${T4 ? "✅" : "❌"} T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
+    if (!(T1 && T2 && T3 && T4)) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
     }

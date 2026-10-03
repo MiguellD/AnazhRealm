@@ -93,8 +93,9 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
   (`_foundrySchale` IM Worker: Platte · Konsum-Wand `FOUNDRY_LESEN` · Uint16-Index · Transfer — der Haupt-
   Thread fasst keinen Asset-Cache an, `gate:fluss`).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
-  Frequenzband (`_applySubstanceResponse`) · Schatten (Light-Space-Snap, EINE Map) · LOD-Kaskade
-  (`DETAIL_CASCADE`) · Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei).
+  Frequenzband (`_applySubstanceResponse`) · Schatten (2 CSM-Kaskaden; jede LOD-Maske misst vom Auge
+  `uLodAuge`, ein L0-Baum wirft seine L1 — `gate:foundry-crossfade`) · LOD-Kaskade (`DETAIL_CASCADE`) ·
+  Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei).
 - **Welt/Sozial:** Portal/Sub-Welten · Vibe-Pass (ed25519) · Bibliothek/Feed · Mesh (signaling +
   WebRTC + Compute-Sharing) · Fremd-Engine-Tor (Sandbox + Auto-Vendor).
 - **Spieler/UI:** `computePlayerStats` (equip-Fold) · Inventar/Hotbar/Equip · die 6 Räume +
