@@ -22298,6 +22298,31 @@ class AnazhRealm {
             };
             IN.__anazhName = true;
         }
+        // DIE SCHATTEN-DIÄT: r184 zeichnet jede Kaskade mit EINEM geteilten Schatten-Material je Licht
+        // (isShadowPassMaterial), in das je Objekt die Knoten des Original-Materials gehängt werden. Sein Beobachter
+        // meldet über context.getShadow immer hasNode → jedes gebündelte Objekt refreshte je Kaskade und Frame
+        // (gemessen 04.10. nach der Haupt-Diät: Blume 360, Geröll 224 von 1176 Refreshs je Frame). Trägt das
+        // ORIGINAL die Diät (nur geteilte renderGroup-Uniforms), fährt der Schatten-Beobachter dieselbe EINE Prüfung.
+        // Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
+        const NM =
+            THREE.MeshBasicNodeMaterial && Object.getPrototypeOf(THREE.MeshBasicNodeMaterial.prototype).constructor;
+        if (!NM || !NM.prototype || typeof NM.prototype.setupObserver !== "function")
+            this.log("SCHATTEN-DIÄT: r184-NodeMaterial.setupObserver nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!NM.__anazhSchattenDiaet) {
+            const beobRoh = NM.prototype.setupObserver;
+            NM.prototype.setupObserver = function (builder) {
+                const o = beobRoh.call(this, builder);
+                if (!o || this.isShadowPassMaterial !== true || typeof o.needsRefresh !== "function") return o;
+                const altNR = o.needsRefresh;
+                o.needsRefresh = function (ro, frame) {
+                    const om = ro && ro.object ? ro.object.material : null;
+                    if (!om || om._anazhDiaet !== true) return altNR.call(this, ro, frame);
+                    return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
+                };
+                return o;
+            };
+            NM.__anazhSchattenDiaet = true;
+        }
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
@@ -28008,30 +28033,7 @@ class AnazhRealm {
             if (typeof o.needsRefresh === "function") {
                 const altNR = o.needsRefresh;
                 o.needsRefresh = function (ro, frame) {
-                    const obj = ro && ro.object;
-                    if (obj && obj.isInstancedMesh === true) {
-                        const im = obj.instanceMatrix,
-                            ic = obj.instanceColor;
-                        const v = (im ? im.version : -1) + "|" + (ic ? ic.version : -1);
-                        const d = this.getRenderObjectData(ro);
-                        if (d._anazhInstV !== v) {
-                            d._anazhInstV = v;
-                            return true;
-                        }
-                    }
-                    // Atlas-Wächter: lebende Canvas-Atlanten (Impostor map/nmap, Blatt-Atlas) deklarieren sich an
-                    // mat._anazhAtlasTexe (Textur-Knoten sieht equals() nicht) → Bake → EIN Refresh je Objekt.
-                    const texe = ro && ro.material ? ro.material._anazhAtlasTexe : null;
-                    if (texe) {
-                        let va = "";
-                        for (let i = 0; i < texe.length; i++) va += (texe[i] ? texe[i].version : -1) + "|";
-                        const d = this.getRenderObjectData(ro);
-                        if (d._anazhAtlasV !== va) {
-                            d._anazhAtlasV = va;
-                            return true;
-                        }
-                    }
-                    return altNR.call(this, ro, frame);
+                    return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
                 };
             }
             return o;
@@ -86875,7 +86877,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.517.0";
+AnazhRealm.VERSION = "18.518.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -90838,6 +90840,66 @@ AnazhRealm._tuerOffenRad = function () {
     const o = AnazhRealm.Gesetz("porta:TUER_GESETZ.offen", null);
     if (Number.isFinite(o) && o > 0) return o;
     return AnazhRealm._kernPflichtBruch("porta:TUER_GESETZ.offen");
+};
+// DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
+// Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.
+// _configureRenderer; dort zählt die Diät des ORIGINAL-Materials am Objekt). `obs` = der Beobachter, `altNR`
+// seine Vendor-Bahn.
+//  (1) Instanz-Wächter: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH →
+//      Mutation → genau EIN Refresh.
+//  (2) Atlas-Wächter: lebende Canvas-Atlanten deklarieren sich an mat._anazhAtlasTexe → Bake → EIN Refresh.
+//  (3) DER BUNDLE-REPLAY: ein Objekt in einem gültigen statischen Bundle trägt unter der Diät nur geteilte
+//      renderGroup-Uniforms — r184 kürzt genau diesen Fall selbst ab (isBundle → false), aber erst NACH der
+//      renderId-Wand, die jedes Objekt mit eigenem Beobachter (eigene Geometrie = jede Pflanzen-Gruppe) je Render
+//      und Pass refresht: gemessen 04.10. (echte GPU, Mess-Wiese, Bundles ohne eine Neuaufnahme) 1813 von 1895
+//      Prüfungen je Frame, die Render-CPU 48 ms. Die renderGroup schreibt der erste echte Refresh des Renders,
+//      darum kürzt erst ein gestempelter Render ab; jeder echte Refresh zieht die Bundle-Version im Objekt-
+//      Datensatz nach (r184 tut das nur in equals(), das ein Einzel-Beobachter nie erreicht).
+AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
+    const rend = frame && frame.renderer;
+    const rid = frame ? frame.renderId : -1;
+    const auf = () => {
+        if (rend) rend._anazhDiaetRid = rid;
+        if (ro && ro.bundle) obs.getRenderObjectData(ro).version = ro.bundle.version;
+        return true;
+    };
+    const obj = ro && ro.object;
+    if (obj && obj.isInstancedMesh === true) {
+        const im = obj.instanceMatrix,
+            ic = obj.instanceColor;
+        const v = (im ? im.version : -1) + "|" + (ic ? ic.version : -1);
+        const d = obs.getRenderObjectData(ro);
+        if (d._anazhInstV !== v) {
+            d._anazhInstV = v;
+            return auf();
+        }
+    }
+    const mat =
+        ro && ro.material && ro.material.isShadowPassMaterial !== true
+            ? ro.material
+            : obj && obj.material && !Array.isArray(obj.material)
+              ? obj.material
+              : null;
+    const texe = mat ? mat._anazhAtlasTexe : null;
+    if (texe) {
+        let va = "";
+        for (let i = 0; i < texe.length; i++) va += (texe[i] ? texe[i].version : -1) + "|";
+        const d = obs.getRenderObjectData(ro);
+        if (d._anazhAtlasV !== va) {
+            d._anazhAtlasV = va;
+            return auf();
+        }
+    }
+    if (
+        rend &&
+        rend._anazhDiaetRid === rid &&
+        ro.bundle &&
+        ro.bundle.static === true &&
+        obs.renderObjects.has(ro) &&
+        obs.getRenderObjectData(ro).version === ro.bundle.version
+    )
+        return false;
+    return altNR.call(obs, ro, frame) ? auf() : false;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
 // einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +

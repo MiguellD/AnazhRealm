@@ -45,6 +45,15 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "setupObserver(e){return new", organ: "_materialObserverDiaet (Diät-Naht)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.hasNode=this.containsNode(", organ: "_materialObserverDiaet (hasNode-Kurzschluss)" },
     { file: "vendor/three.webgpu.min.js", sub: "needsRefresh(e,t){if(this.hasNode||this.hasAnimation", organ: "_materialObserverDiaet (Monitor-Bahn)" },
+    // Die EINE Diät-Prüfung: r184 refresht je Render vor seiner eigenen Bundle-Abkürzung; die Bundle-Version im
+    // Objekt-Datensatz pflegt nur equals()
+    { file: "vendor/three.webgpu.min.js", sub: "if(this.renderId!==r)return this.renderId=r,!0;const s=!0===e.object.static,i=null!==e.bundle&&!0===e.bundle.static&&this.getRenderObjectData(e).version===e.bundle.version", organ: "AnazhRealm._diaetRefresh (Bundle-Replay-Abkürzung vor der renderId-Wand)" },
+    { file: "vendor/three.webgpu.min.js", sub: "null!==e.bundle&&(a.version=e.bundle.version)", organ: "AnazhRealm._diaetRefresh (Bundle-Version im Objekt-Datensatz)" },
+    // Die Schatten-Diät: EIN Schatten-Material je Licht, die Original-Knoten hängen je Objekt darin
+    { file: "vendor/three.webgpu.min.js", sub: 't.isShadowPassMaterial=!0,t.name="ShadowMaterial"', organ: "Schatten-Diät (_configureRenderer, isShadowPassMaterial)" },
+    { file: "vendor/three.webgpu.min.js", sub: "e.isShadowPassMaterial){const{colorNode:t,depthNode:r,positionNode:s}=this._getShadowNodes(i)", organ: "Schatten-Diät (Original-Knoten im Override)" },
+    // Der Fenster-Wechsel: die Viewport-Tiefe ist ein Klon je Render-Ziel (der EINE Leser bindet nach setSize neu)
+    { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "_wasserTiefeNeuBinden (Viewport-Tiefen-Klon je Ziel)" },
     // Uniform-Heimat (shared-Gruppen-Klon-Weiche + renderGroup-Export)
     { file: "vendor/three.webgpu.min.js", sub: "groupNode.shared", organ: "_uniformHeimatTeilen (Klon-Weiche)" },
     { file: "vendor/three.webgpu.min.js", sub: "setGroup(e){return this.groupNode=e,this}", organ: "_uniformHeimatTeilen (setGroup)" },
@@ -68,6 +77,87 @@ const ANKER = [
         organ: "_chunkBodenGpuHat (Entlassungs-Upload-Probe)",
     },
 ];
+
+// Die Diät-Prüfung aus dem Stamm schneiden und gegen Schein-Beobachter fahren. `manipuliert` entfernt den
+// Render-Stempel (die Abkürzung griffe dann auch, bevor ein Refresh die geteilte renderGroup schrieb).
+function diaetLaden(manipuliert) {
+    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const a = stamm.indexOf("AnazhRealm._diaetRefresh = function");
+    const e = a < 0 ? -1 : stamm.indexOf("\n};\n", a);
+    if (a < 0 || e < 0) return null;
+    let src = stamm.slice(a, e + 3);
+    if (manipuliert) src = src.replace("rend._anazhDiaetRid === rid &&", "true &&");
+    const AnazhRealm = {};
+    new Function("AnazhRealm", src)(AnazhRealm);
+    return AnazhRealm._diaetRefresh;
+}
+function diaetLauf(fn) {
+    // Schein-Beobachter je Objekt (jede Pflanzen-Gruppe hat ihre eigene Geometrie → ihren eigenen Beobachter).
+    const beob = () => ({
+        renderObjects: new Map(),
+        renderId: -1,
+        getRenderObjectData(ro) {
+            let d = this.renderObjects.get(ro);
+            if (!d) {
+                d = { version: ro.bundle ? ro.bundle.version : undefined };
+                this.renderObjects.set(ro, d);
+            }
+            return d;
+        },
+    });
+    // Die r184-Vendor-Bahn eines TSL-Materials: renderId-Wand vor allem (hasNode/Erst-Init ⇒ true).
+    const altNR = function (ro, frame) {
+        if (!this.renderObjects.has(ro)) return this.getRenderObjectData(ro), true;
+        if (this.renderId !== frame.renderId) return (this.renderId = frame.renderId), true;
+        return false;
+    };
+    const rend = {};
+    const bundle = { static: true, version: 1 };
+    const objekte = [];
+    for (let i = 0; i < 50; i++) {
+        const obj = { isInstancedMesh: true, instanceMatrix: { version: 0 }, instanceColor: null, material: {} };
+        objekte.push({ ro: { object: obj, material: obj.material, bundle }, o: beob() });
+    }
+    const frei = { ro: { object: { material: {} }, material: {}, bundle: null }, o: beob() };
+    let rid = 0;
+    const render = (vorher) => {
+        rid++;
+        const frame = { renderer: rend, renderId: rid };
+        if (vorher) vorher();
+        let n = 0;
+        for (const x of objekte) if (fn(x.o, x.ro, frame, altNR)) n++;
+        const nFrei = fn(frei.o, frei.ro, frame, altNR) ? 1 : 0;
+        return { n, nFrei };
+    };
+    const r1 = render();
+    const r2 = render();
+    const r3 = render();
+    const r4 = render(() => objekte[7].ro.object.instanceMatrix.version++);
+    const r5 = render(() => bundle.version++);
+    const r6 = render();
+    return { r1, r2, r3, r4, r5, r6 };
+}
+function diaetProbe(selftest) {
+    const fehler = [];
+    const fn = diaetLaden(false);
+    if (!fn) return { fehler: ["AnazhRealm._diaetRefresh nicht im Stamm gefunden"], selbstFeuert: false };
+    const pruefe = (z) => {
+        const f = [];
+        if (z.r1.n !== 50) f.push(`Erst-Render: alle 50 Objekte initialisieren (ist ${z.r1.n})`);
+        if (z.r2.n !== 1 || z.r3.n !== 1)
+            f.push(`Bundle-Replay: je Render GENAU EIN Refresh (der Stempel schreibt die renderGroup) — ist ${z.r2.n}/${z.r3.n}`);
+        if (z.r4.n !== 2) f.push(`Instanz-Mutation: der Stempel-Refresh + das mutierte Objekt (ist ${z.r4.n})`);
+        if (z.r5.n !== 50) f.push(`Bundle-Neuaufnahme: alle 50 refreshen einmal (ist ${z.r5.n})`);
+        if (z.r6.n !== 1) f.push(`nach der Neuaufnahme wieder GENAU EIN Refresh (ist ${z.r6.n})`);
+        if ([z.r1, z.r2, z.r3, z.r4, z.r5, z.r6].some((r) => r.nFrei !== 1))
+            f.push("ein Objekt OHNE Bundle kürzt nie ab (Vendor-Bahn je Render)");
+        return f;
+    };
+    fehler.push(...pruefe(diaetLauf(fn)));
+    let selbstFeuert = false;
+    if (selftest) selbstFeuert = pruefe(diaetLauf(diaetLaden(true))).length > 0;
+    return { fehler, selbstFeuert };
+}
 
 function main() {
     const selftest = process.argv.includes("--selftest");
@@ -106,10 +196,20 @@ function main() {
         const sub = selftest && a.organ && a.organ.startsWith("_materialObserverDiaet (hasNode") ? a.sub + "_MANIPULIERT" : a.sub;
         if (!src.includes(sub)) errs.push(`ANKER GEFALLEN: "${a.sub}" fehlt in ${a.file} → Organ: ${a.organ}`);
     }
+    // (3) DIE DIÄT-PRÜFUNG am Schein-Beobachter (r184-Semantik: renderId-Wand, renderObjects, Datensatz mit
+    // Bundle-Version): AnazhRealm._diaetRefresh aus dem Stamm-Quelltext, deterministisch, GPU-frei.
+    const diaet = diaetProbe(selftest);
+    for (const e of diaet.fehler) errs.push("DIÄT: " + e);
     if (selftest) {
         const feuert = errs.some((e) => e.includes("hasNode"));
+        const diaetFeuert = diaet.selbstFeuert;
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
-        process.exit(feuert ? 0 : 1);
+        console.log(
+            diaetFeuert
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (ohne Render-Stempel bliebe die renderGroup ungeschrieben)"
+                : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
+        );
+        process.exit(feuert && diaetFeuert ? 0 : 1);
     }
     if (errs.length) {
         console.error("⛔ DIE VENDOR-ANKER-WAND:");
@@ -117,7 +217,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der 5 Laufzeit-Organe leben im Vendor.`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Beobachter (je Render GENAU EIN Refresh).`
     );
 }
 main();
