@@ -13350,12 +13350,9 @@ class AnazhRealm {
         // Dichte/Dünnen); das Streaming (= Bewegung) bleibt unangetastet.
         st._frameOverBudget =
             sense.frameMs > (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS);
-        // Architektur (vormals der Bang-Bang-Governor — jetzt EINE Quelle):
-        st.architectureCullingRadius = lerp(
-            AnazhRealm.ARCH_QUALITY_RADIUS_MIN,
-            AnazhRealm.ARCH_QUALITY_RADIUS_MAX,
-            effArch
-        );
+        // Architektur (vormals der Bang-Bang-Governor — jetzt EINE Quelle): das Ziel; der Radius selbst geht
+        // durch dieselbe Grenzzyklus-Wand wie das Laub (unten).
+        const archZiel = lerp(AnazhRealm.ARCH_QUALITY_RADIUS_MIN, AnazhRealm.ARCH_QUALITY_RADIUS_MAX, effArch);
         st.architectureBuildBudgetPerFrame = Math.round(
             lerp(AnazhRealm.ARCH_QUALITY_BUDGET_MIN, AnazhRealm.ARCH_QUALITY_BUDGET_MAX, effArch)
         );
@@ -13364,6 +13361,7 @@ class AnazhRealm {
         // Headless (Null-Renderer) → sofort MAX, damit das Gate die volle Welt sieht.
         if (st.renderer && st.renderer._isHeadlessNull) {
             st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+            st.architectureCullingRadius = archZiel;
         } else {
             // Der Radius wächst Chunk für Chunk nach Kapazität (die Dichte lebt PRO Chunk);
             // nie den Sicht-Radius erzwingen.
@@ -13393,14 +13391,24 @@ class AnazhRealm {
             if (st._frameOverBudget || _gpuVoll) this._folRuheSec = 0;
             else this._folRuheSec = (this._folRuheSec || 0) + Math.min(0.3, (sense.frameMs || 17) / 1000);
             const _frRuhig = (this._folRuheSec || 0) >= AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S;
-            st.foliageRadius =
-                frCur < frTarget
+            // DIE EINE Wand für BEIDE Cull-Radien (Laub + Architektur). Ohne sie folgte der Architektur-Radius
+            // dem PID Frame für Frame (gemessen 04.10., echte GPU, Mess-Wiese: 100↔150 m, 30 Wechsel in 94
+            // Frames): Bauten am Rand wurden gecullt und vom Foundry-Rewarm sofort neu gebaut, je Runde nahmen
+            // die großen Region-Bundles in allen drei Pässen neu auf — die CPU trieb den Regler, der Regler
+            // den Radius.
+            const wand = (cur, ziel) =>
+                cur < ziel
                     ? _frRuhig
-                        ? Math.min(frTarget, frCur + step)
-                        : frCur
-                    : frTarget < frCur - AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND
-                      ? Math.max(frTarget, frCur - step * 2)
-                      : frCur;
+                        ? Math.min(ziel, cur + step)
+                        : cur
+                    : ziel < cur - AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND
+                      ? Math.max(ziel, cur - step * 2)
+                      : cur;
+            st.foliageRadius = wand(frCur, frTarget);
+            st.architectureCullingRadius = wand(
+                Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : archZiel,
+                archZiel
+            );
         }
         // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle
         // (`dekoDensity` in `_buildVoxelChunkScatter`) → unter Last direkt weniger Dreiecke.
@@ -86863,7 +86871,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.515.0";
+AnazhRealm.VERSION = "18.516.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

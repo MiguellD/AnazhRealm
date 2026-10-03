@@ -242,6 +242,7 @@ const server = http.createServer((req, res) => {
                     st.perfSense = null;
                     for (let i = 0; i < 600; i++) feed(30, Object.assign({}, HONEST)); // auf den Boden
                     const s6Start = st.foliageRadius;
+                    const s6ArchStart = st.architectureCullingRadius;
                     for (let w = 0; w < 6; w++) {
                         for (let i = 0; i < 80; i++) feed(7, Object.assign({}, HONEST)); // kurzes Ruhe-Fenster
                         for (let i = 0; i < 20; i++) feed(30, Object.assign({}, HONEST)); // die Welle bricht
@@ -249,8 +250,15 @@ const server = http.createServer((req, res) => {
                     const s6NachPuls = st.foliageRadius;
                     o.s6PulsDelta = +Math.abs(s6NachPuls - s6Start).toFixed(2);
                     o.s6PulsStill = o.s6PulsDelta < 1e-6; // gepulster Kopfraum: der Radius steht
+                    // DIESELBE Wand trägt den Architektur-Radius (04.10.: er folgte dem PID Frame für Frame, 100↔150 m,
+                    // Rand-Bauten im Cull/Rewarm-Kreis — die großen Bundles nahmen je Frame neu auf).
+                    const s6ArchNachPuls = st.architectureCullingRadius;
+                    o.s6ArchPulsDelta = +Math.abs(s6ArchNachPuls - s6ArchStart).toFixed(2);
+                    o.s6ArchPulsStill = o.s6ArchPulsDelta < 1e-6;
                     for (let i = 0; i < 1200; i++) feed(7, Object.assign({}, HONEST)); // anhaltende Ruhe
                     o.s6RuheWaechst = st.foliageRadius > s6NachPuls + 1;
+                    o.s6ArchRuheWaechst = st.architectureCullingRadius > s6ArchNachPuls + 1;
+                    o.s6Arch = { start: s6ArchStart, nachPuls: s6ArchNachPuls, nachRuhe: st.architectureCullingRadius };
                     o.s6 = { start: s6Start, nachPuls: s6NachPuls, nachRuhe: st.foliageRadius };
                 }
             } finally {
@@ -308,6 +316,10 @@ const server = http.createServer((req, res) => {
         {
             name: `S6 GRENZZYKLUS-SCHNITT: gepulster Kopfraum bewegt den Radius NICHT (Δ ${out.s6PulsDelta}) · anhaltende Ruhe wächst (${out.s6 ? out.s6.nachPuls + "→" + out.s6.nachRuhe : "?"})`,
             pass: out.s6PulsStill === true && out.s6RuheWaechst === true,
+        },
+        {
+            name: `S6 DIESELBE WAND für den Architektur-Radius: gepulster Kopfraum bewegt ihn NICHT (Δ ${out.s6ArchPulsDelta}) · anhaltende Ruhe wächst (${out.s6Arch ? out.s6Arch.nachPuls + "→" + out.s6Arch.nachRuhe : "?"})`,
+            pass: out.s6ArchPulsStill === true && out.s6ArchRuheWaechst === true,
         },
         {
             name: `S4 SESSION-ZEIT-INVARIANZ: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${out.s4MaxDrift})`,
