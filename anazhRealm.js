@@ -67357,11 +67357,15 @@ class AnazhRealm {
 
     // Welche Foundry-Vorlage trägt diesen gesetzten Bau? null = kein Studio-Ding ODER ein Haus (Häuser
     // passen aus der Fachwerk-Grammatik). Ohne Rezeptbuch zählt die Vorlage trotzdem: der Eintrag wartet
-    // auf die Flat (nie Rückfall auf einen Temporär-Mesh-Fit).
+    // auf die Flat (nie Rückfall auf einen Temporär-Mesh-Fit). Die Vorlage liest der EINE Leser
+    // `_foundryPresetForEntry` (Basis-Art `_lodSpecies`, grown-Präfix): `entry.type` allein verfehlte die
+    // Wald-Varianten (`grown_busch_hazel_v2`) — sie fielen in den Temporär-Bau-Fit, der für Foundry-
+    // INSTANZEN nie passt (kein entry.mesh): je Versuch Slots belegen + freigeben, die Region-Bundles nahmen
+    // in allen Pässen neu auf (gemessen 04.10., echte GPU, Mess-Wiese: Hasel bei 125 m, 9 Bau/Cull in 4 s).
     _archFoundryPreset(entry) {
         const typ = entry && typeof entry.type === "string" ? entry.type : "";
         if (!typ || typ.startsWith("haus_") || !this._foundryEnabled()) return null;
-        const preset = this._foundryPresetFor(typ);
+        const preset = this._foundryPresetForEntry(entry);
         if (!preset) return null;
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[preset] : null;
@@ -86871,7 +86875,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.516.0";
+AnazhRealm.VERSION = "18.517.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
