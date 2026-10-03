@@ -25,7 +25,18 @@
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
+//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll]
+//                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach
+//                                                           `--ein` Sekunden Einschwingen misst er `sek` Sekunden
+//                                                           Frame-Zeit · GPU-Zeit (timestamp-query) · Draws ·
+//                                                           Dreiecke · VRAM · Regler-Stand; „voll" hebt die
+//                                                           Regler-Decke (loadScale → 1, die volle Welt)
 //   node scripts/werkbank.cjs reload | status | stop
+//
+// `start --echt` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
+// den laufenden save-server (`npm start`, :4312 — der Flugschreiber schreibt anazhRealmPerf.json); ohne
+// `--echt` bleibt es swiftshader auf dem eigenen Seiten-Port. In beiden zählt der VRAM-ABGRIFF jede
+// GPUDevice-Allokation (Puffer + Texturen, live nach destroy) — das ist der Speicher, nicht ein Proxy.
 //
 // Höhen relativ zum Boden: `bild` nimmt py/ly mit Präfix `+` als Abstand über `_voxelSurfaceY(px,pz)`
 // bzw. `(lx,lz)` (z. B. `+1.6`). Die Bilder sind dieselbe Aufnahme wie die Beweis-Sonden
@@ -51,6 +62,101 @@ const SEITEN_PORT = PORT - 1;
 // Das Holz-Profil der Welt: ohne Wahl erkennt sie swiftshader und fährt „kienspan" (ohne Schatten,
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
+const ECHT = argv.includes("--echt");
+const ECHT_SEITE = "http://localhost:4312";
+
+// DER VRAM-ABGRIFF: jede Allokation des GPUDevice (Puffer: size; Textur: alle Mip-Stufen × Schichten ×
+// Samples × Bytes je Texel) live mitgezählt, destroy zieht ab. Läuft vor jedem Seiten-Skript.
+function vramAbgriff() {
+    if (typeof GPUDevice === "undefined" || window.__vram) return;
+    const V = (window.__vram = { puffer: 0, texturen: 0, nPuffer: 0, nTexturen: 0, spitze: 0 });
+    const bpt = (f) => {
+        if (/^(bc1|bc4|etc2-rgb8unorm|etc2-rgb8a1|eac-r11)/.test(f)) return 0.5;
+        if (/^(bc|astc-4x4|etc2-rgba8|eac-rg11)/.test(f)) return 1;
+        if (/^astc/.test(f)) return 0.5;
+        if (/32float-stencil8/.test(f)) return 8;
+        if (/^(depth24plus|depth32float|depth24plus-stencil8)$/.test(f)) return 4;
+        if (/^(depth16unorm)$/.test(f)) return 2;
+        if (/^stencil8$/.test(f)) return 1;
+        const k = /^(r|rg|rgba|bgra)(8|16|32)/.exec(f);
+        if (k) return { r: 1, rg: 2, rgba: 4, bgra: 4 }[k[1]] * (Number(k[2]) / 8);
+        if (/^(rgb10a2|rg11b10|rgb9e5)/.test(f)) return 4;
+        return 4;
+    };
+    const spitze = () => (V.spitze = Math.max(V.spitze, V.puffer + V.texturen));
+    // Je Label (Ziffern gefaltet) die lebenden Bytes — `__vramBericht()` nennt die Großen beim Namen.
+    const jeLabel = new Map();
+    // Texturen tragen Format und Größe im Schlüssel (wenige, große), Puffer nur das Label.
+    const buche = (o, art, d, b) => {
+        const s = (d && d.size) || {};
+        const form =
+            art === "tex"
+                ? ` ${d.format} ${Array.isArray(s) ? s.join("x") : [s.width, s.height, s.depthOrArrayLayers || 1].join("x")}`
+                : "";
+        o.__vramK = art + ":" + String((d && d.label) || "?").replace(/\d+/g, "#") + form;
+        const e = jeLabel.get(o.__vramK) || { bytes: 0, n: 0 };
+        e.bytes += b;
+        e.n++;
+        jeLabel.set(o.__vramK, e);
+    };
+    window.__vramBericht = (top) =>
+        [...jeLabel.entries()]
+            .filter(([, e]) => e.n > 0)
+            .sort((a, b) => b[1].bytes - a[1].bytes)
+            .slice(0, top || 20)
+            .map(([k, e]) => ({ k, mb: +(e.bytes / 1048576).toFixed(1), n: e.n }));
+    const P = GPUDevice.prototype;
+    const cb = P.createBuffer;
+    P.createBuffer = function (d) {
+        const b = cb.call(this, d);
+        b.__vramB = (d && d.size) || 0;
+        V.puffer += b.__vramB;
+        V.nPuffer++;
+        buche(b, "buf", d, b.__vramB);
+        spitze();
+        return b;
+    };
+    const ct = P.createTexture;
+    P.createTexture = function (d) {
+        const t = ct.call(this, d);
+        const s = d.size || {};
+        const w = Array.isArray(s) ? s[0] : s.width || 1;
+        const h = Array.isArray(s) ? s[1] || 1 : s.height || 1;
+        const l = Array.isArray(s) ? s[2] || 1 : s.depthOrArrayLayers || 1;
+        let b = 0;
+        for (let m = 0; m < (d.mipLevelCount || 1); m++)
+            b +=
+                Math.max(1, w >> m) *
+                Math.max(1, h >> m) *
+                (d.dimension === "3d" ? Math.max(1, l >> m) : l) *
+                bpt(String(d.format || ""));
+        t.__vramB = b * (d.sampleCount || 1);
+        V.texturen += t.__vramB;
+        V.nTexturen++;
+        buche(t, "tex", d, t.__vramB);
+        spitze();
+        return t;
+    };
+    for (const [K, feld, n] of [
+        [GPUBuffer, "puffer", "nPuffer"],
+        [GPUTexture, "texturen", "nTexturen"],
+    ]) {
+        const d = K.prototype.destroy;
+        K.prototype.destroy = function () {
+            if (this.__vramB) {
+                V[feld] -= this.__vramB;
+                V[n]--;
+                const e = jeLabel.get(this.__vramK);
+                if (e) {
+                    e.bytes -= this.__vramB;
+                    e.n--;
+                }
+                this.__vramB = 0;
+            }
+            return d.call(this);
+        };
+    }
+}
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 function rufe(weg, nutzlast) {
@@ -94,6 +200,169 @@ function methodeAusQuelle(quelle, name) {
     return `(${m[1] || ""}function ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
 }
 
+// DER ECHTE LAUF (Seiten-Kontext): der Spiel-Loop läuft über rAF wie im Spiel; nach dem Einschwingen
+// zählt jeder Frame — Intervall (rAF-Zeitstempel = was der Spieler sieht), CPU-Takt, GPU-Zeit des Frames
+// (r184-Pool löst den LETZTEN Frame auf, Summe aller Pässe), Draws/Dreiecke aus `_perfFrame` (die Quelle
+// von HUD und Flugschreiber). Die Bühne (Mittag · Sonne · Sommer) und stille Tiere halten den Vergleich
+// gleich; „voll" hebt die Regler-Decke, der PID wächst loadScale → 1 (die volle Welt, wie die Cloud maß).
+function lauf(k) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const rend = st.renderer;
+        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+        window.__buehne();
+        if (window.__tiereHalten) window.__tiereHalten();
+        const decke = st.perfTargetMs;
+        if (k.regler === "voll") st.perfTargetMs = 1000;
+        if (st.playerMesh) st.playerMesh.visible = true;
+        // DIE PASS-UHR: r184 stempelt jeden Render-Pass mit `r:<Aufruf>:<Kontext>:f<Frame>`; der Stapel der
+        // gerade rendernden Kamera beim Stempeln nennt den Pass (haupt · k0/k1 · post), der Pool trägt die ms.
+        const csm = st.csmNode;
+        const passOf = (cam, sz) => {
+            if (cam === st.camera) return "haupt";
+            if (csm && csm.lights)
+                for (let i = 0; i < csm.lights.length; i++)
+                    if (csm.lights[i].shadow && csm.lights[i].shadow.camera === cam) return "k" + i;
+            return sz && sz.name === "Render Pipeline" ? "post" : (cam && (cam.name || cam.type)) || "?";
+        };
+        const be = rend.backend;
+        const stapel = [];
+        const uidPass = new Map();
+        const rohSzene = rend._renderScene;
+        const rohUid = be.updateTimeStampUID;
+        rend._renderScene = function (szene, kamera, ...rest) {
+            stapel.push(passOf(kamera, szene));
+            try {
+                return rohSzene.call(this, szene, kamera, ...rest);
+            } finally {
+                stapel.pop();
+            }
+        };
+        be.updateTimeStampUID = function (ctx) {
+            rohUid.call(this, ctx);
+            const uid = this.get(ctx).timestampUID;
+            if (messen && uid && uid[0] === "r") uidPass.set(uid, stapel[stapel.length - 1] || "?");
+        };
+        const proben = [];
+        let messen = false,
+            tVor = null,
+            gpuAm = r._gpuTsAtMs;
+        rend.setAnimationLoop((t) => {
+            // Das Wetter hält (der 120-s-Zug brachte im ersten Lauf Regen ins Messfenster).
+            st.weatherEffectTime = Math.min(st.weatherEffectTime || 0, 100);
+            const c0 = performance.now();
+            r._gameLoopTick(t);
+            if (!messen) return void (tVor = t);
+            // `_perfFrame` ist am Takt-Ende schon gefaltet und geleert; renderer.info trägt die Summe aller Pässe
+            // des Frames (der Loop setzt es je Frame zurück) — die HUD-Zahl. Bundle-Replays bucht r184 dort NICHT
+            // (Lehre 23): die Wahrheit je Pass und Klasse zählt `zaehlen`.
+            const ri = (rend.info && rend.info.render) || {};
+            const p = { dt: tVor == null ? null : t - tVor, cpu: performance.now() - c0 };
+            p.dc = ri.drawCalls;
+            p.tri = ri.triangles;
+            if (r._gpuTsAtMs !== gpuAm) {
+                p.gpu = r._gpuTsLast;
+                gpuAm = r._gpuTsAtMs;
+            }
+            tVor = t;
+            proben.push(p);
+        });
+        try {
+            await sleep(k.ein * 1000);
+            const v0 = Object.assign({}, window.__vram || {});
+            messen = true;
+            await sleep(k.sek * 1000);
+            messen = false;
+            rend.setAnimationLoop(null);
+            const pool = be.timestampQueryPool && be.timestampQueryPool.render;
+            if (pool) await rend.resolveTimestampsAsync("render");
+            const jePassFrame = {};
+            if (pool && pool.timestamps)
+                for (const [uid, pass] of uidPass) {
+                    const ms = pool.timestamps.get(uid);
+                    if (!Number.isFinite(ms)) continue;
+                    const f = uid.slice(uid.lastIndexOf(":f") + 2);
+                    const e = jePassFrame[pass] || (jePassFrame[pass] = {});
+                    e[f] = (e[f] || 0) + ms;
+                }
+            const quant = (arr, q) => {
+                const a = arr.filter(Number.isFinite).sort((x, y) => x - y);
+                return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
+            };
+            const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
+            const dt = spalte("dt"),
+                cpu = spalte("cpu"),
+                gpu = spalte("gpu"),
+                dc = spalte("dc"),
+                tri = spalte("tri");
+            const zahl = (a) => ({ p50: quant(a, 0.5), p95: quant(a, 0.95), p99: quant(a, 0.99), max: quant(a, 1) });
+            const s = st.perfSense || {};
+            const v = window.__vram || {};
+            const mb = (b) => (Number.isFinite(b) ? +(b / 1048576).toFixed(1) : null);
+            const cam = st.camera;
+            const dir = new window.THREE.Vector3();
+            cam.getWorldDirection(dir);
+            return {
+                regler: k.regler,
+                sekunden: k.sek,
+                frames: dt.length,
+                fps: dt.length ? +((1000 * dt.length) / dt.reduce((a, b) => a + b, 0)).toFixed(1) : null,
+                frameMs: zahl(dt),
+                cpuTaktMs: zahl(cpu),
+                gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
+                gpuJePassMs: Object.fromEntries(
+                    Object.entries(jePassFrame).map(([p, e]) => {
+                        const w = Object.values(e);
+                        return [p, { p50: quant(w, 0.5), p95: quant(w, 0.95), frames: w.length }];
+                    })
+                ),
+                draws: zahl(dc),
+                dreiecke: zahl(tri),
+                ueber17: dt.length ? +((100 * dt.filter((x) => x > 17).length) / dt.length).toFixed(1) : null,
+                ueber33: dt.length ? +((100 * dt.filter((x) => x > 33.4).length) / dt.length).toFixed(1) : null,
+                vramMB: {
+                    jetzt: mb(v.puffer + v.texturen),
+                    puffer: mb(v.puffer),
+                    texturen: mb(v.texturen),
+                    spitze: mb(v.spitze),
+                    nPuffer: v.nPuffer,
+                    nTexturen: v.nTexturen,
+                    wuchsImFenster: mb(v.puffer + v.texturen - (v0.puffer + v0.texturen)),
+                    gross: window.__vramBericht ? window.__vramBericht(14) : null,
+                },
+                stellgroessen: {
+                    loadScale: Number.isFinite(s.loadScale) ? +s.loadScale.toFixed(2) : null,
+                    renderScale: st._renderScale != null ? +(+st._renderScale).toFixed(2) : null,
+                    pixelRatio: rend.getPixelRatio ? rend.getPixelRatio() : null,
+                    foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
+                    foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
+                    archRadius: st.architectureCullingRadius != null ? Math.round(st.architectureCullingRadius) : null,
+                    ring: st._activeRingRadius,
+                    schattenIntervall: st._shadowMinInterval != null ? +(+st._shadowMinInterval).toFixed(1) : null,
+                    holz: st._holzProfil,
+                },
+                phasenEwmaMs: s.phase
+                    ? Object.fromEntries(Object.entries(s.phase).map(([a, b]) => [a, +(+b).toFixed(2)]))
+                    : null,
+                kamera: {
+                    pos: [cam.position.x, cam.position.y, cam.position.z].map((x) => +x.toFixed(1)),
+                    blick: [dir.x, dir.y, dir.z].map((x) => +x.toFixed(2)),
+                },
+                chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                wetter: st.weather,
+                saison: st.season,
+            };
+        } finally {
+            messen = false;
+            rend.setAnimationLoop(null);
+            rend._renderScene = rohSzene;
+            be.updateTimeStampUID = rohUid;
+            st.perfTargetMs = decke;
+        }
+    })();
+}
+
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const puppeteer = require("puppeteer");
@@ -117,26 +386,37 @@ async function starte() {
             res.end(data);
         });
     });
-    await new Promise((r) => seiten.listen(SEITEN_PORT, "127.0.0.1", r));
+    if (ECHT) {
+        // Der Flugschreiber schreibt nur vom save-server-Ursprung (isSaveServerHost) — ohne ihn kein Echt-Lauf.
+        const da = await new Promise((r) =>
+            http.get(ECHT_SEITE + "/", (res) => (res.resume(), r(res.statusCode === 200))).on("error", () => r(false))
+        );
+        if (!da) throw new Error(`--echt braucht den save-server auf ${ECHT_SEITE} (npm start)`);
+    } else await new Promise((r) => seiten.listen(SEITEN_PORT, "127.0.0.1", r));
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: !ECHT,
         protocolTimeout: 3600000,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
+        args: ECHT
+            ? ["--enable-unsafe-webgpu", "--ignore-gpu-blocklist", "--window-size=1940,1200"]
+            : [
+                  "--no-sandbox",
+                  "--disable-setuid-sandbox",
+                  "--enable-unsafe-webgpu",
+                  "--enable-features=Vulkan",
+                  "--use-vulkan=swiftshader",
+                  "--use-angle=swiftshader",
+                  "--enable-unsafe-swiftshader",
+              ],
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 640, height: 360 });
+    if (!ECHT) await page.setViewport({ width: 640, height: 360 });
+    await page.evaluateOnNewDocument(vramAbgriff);
     const fehler = [];
     page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
     const lade = async () => {
-        await page.goto(`http://127.0.0.1:${SEITEN_PORT}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
+        const basis = ECHT ? ECHT_SEITE : `http://127.0.0.1:${SEITEN_PORT}`;
+        await page.goto(`${basis}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
@@ -379,6 +659,14 @@ async function starte() {
                     }, b);
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
+                if (req.url === "/lauf") {
+                    const o = await page.evaluate(lauf, {
+                        sek: Number(b.sek) || 20,
+                        ein: b.ein != null ? Number(b.ein) : 30,
+                        regler: b.regler || "frei",
+                    });
+                    return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
+                }
                 if (req.url === "/licht")
                     return send(
                         Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 })
@@ -433,6 +721,7 @@ async function starte() {
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
     else if (cmd === "zaehlen")
         o = await rufe("/zaehlen", a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {});
+    else if (cmd === "lauf") o = await rufe("/lauf", { sek: a[0], ein: opt("--ein"), regler: opt("--regler", "frei") });
     else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
