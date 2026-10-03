@@ -165,7 +165,7 @@ async function main() {
         const iHook = code.indexOf("__anazhLiveBake");
         const iWorker = code.indexOf("_foundryWorkerRequest");
         check(iWorker > iHook, "Ordnung: der Hook VOR dem Worker-Auftrag");
-        check(/_foundryWorkerRequest\([^)]*platte, nurPlatte\)/.test(code), "Der Hook reist als nurPlatte zur Schale");
+        check(/_foundryWorkerRequest\([^)]*\bplatte, nurPlatte\b/.test(code), "Der Hook reist als nurPlatte zur Schale");
     }
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);

@@ -91,7 +91,8 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
   `fertigeBlueprint`) · Hylomorphismus (`FORM_TAG_ACTIVATION`, frozen Signaturen — emergent-
   korrekt, kein Ad-hoc-Tuning) · die EINE Pipe (Foundry `build-asset` für ALLE Gattungen) · ihr Transport
   (`_foundrySchale` IM Worker: Platte · Konsum-Wand `FOUNDRY_LESEN` · Uint16-Index · Transfer — der Haupt-
-  Thread fasst keinen Asset-Cache an, `gate:fluss`).
+  Thread fasst keinen Asset-Cache an, `gate:fluss`) · ihre Schlange (`_foundryAuftrag`: der Host hält sie, 12 im
+  Worker, nah zuerst, ab 6 s Alter abwechselnd der Älteste — `gate:takt` T5/T6).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
   Frequenzband (`_applySubstanceResponse`) · Schatten (2 CSM-Kaskaden; jede LOD-Maske misst vom Auge
   `uLodAuge`, ein L0-Baum wirft seine L1 — `gate:foundry-crossfade`) · LOD-Kaskade (`DETAIL_CASCADE`) ·

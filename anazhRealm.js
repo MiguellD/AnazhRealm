@@ -44020,7 +44020,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, season, heldOv || undefined).then((meshes) => {
+                this._foundryRequest(preset, variant, 0, season, heldOv || undefined, 0).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
                         try {
@@ -61708,6 +61708,7 @@ class AnazhRealm {
             // nach der Uhr ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
             const fb = this._foundry;
             if (fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) return 0;
+            if (fb && fb.warte && fb.warte.some((a) => a.praefix === "imp")) return 0; // wartet in der Schlange
             const since = this._impostorBakePendingSince || 0;
             if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) {
                 const hungKey = this._impostorBakePendingKey;
@@ -65129,6 +65130,7 @@ class AnazhRealm {
                                 pi(m.payload || null);
                             }
                         }
+                        this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
                     };
                 })
                 .catch(() => {
@@ -65518,23 +65520,16 @@ class AnazhRealm {
     _foundryRequestSettlement(dp) {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
-        return new Promise((resolve) => {
-            const reqId = "stl-" + f.reqSeq++;
-            f.pending.set(reqId, resolve);
-            try {
-                f.worker.postMessage({ type: "export-settlement", reqId, dp: dp || {} });
-            } catch (_e) {
-                f.pending.delete(reqId);
-                resolve(null);
-                return;
-            }
-            // Dieselbe EINE Frist (45 s Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller
-            // späteren Aufträge an.
-            this._foundryFrist(f, reqId, 45000, () => {
-                this.log("FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null", "WARN");
-                resolve(null);
-            });
-        });
+        // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
+        // Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller späteren Aufträge an.
+        return this._foundryAuftrag(
+            f,
+            "stl-",
+            { type: "export-settlement", dp: dp || {} },
+            0,
+            45000,
+            "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
+        );
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (alle Slots sofort) und `_tickAutoSettlement`
     // (über Ticks) heben jeden Slot hier. Blueprint-Name aus KIND_POLICY über den kind des LIVE-Rezepts
@@ -66254,7 +66249,9 @@ class AnazhRealm {
             }
         }
     }
-    _foundryRequest(presetId, seed, lod, season, ov) {
+    // `wo` = der Rang in der Worker-Schlange (`_foundryAuftrag`): die Position des Bestellers ({x,z}, d² wird beim
+    // Senden frisch gemessen) · eine Zahl (d², 0 = sofort: Hand, Werkstatt) · nichts = Vorrat (Bibliothek, Ofen, Bäcker).
+    _foundryRequest(presetId, seed, lod, season, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
         const s = season || "summer";
@@ -66279,7 +66276,7 @@ class AnazhRealm {
         // DER INGEST-TAKT: jedes Ergebnis passiert _foundryIngestTakt; der Loop-Tick gibt je Frame nur wenige frei —
         // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
         // passieren sofort; Konsumenten tragen null-bis-fertig.
-        return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null, platte, nurPlatte)
+        return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null, platte, nurPlatte, wo)
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
@@ -66350,35 +66347,99 @@ class AnazhRealm {
         };
         setTimeout(pruefe, 1000);
     }
-    _foundryWorkerRequest(presetId, seed, lod, season, ov, platte, nurPlatte) {
+    _foundryWorkerRequest(presetId, seed, lod, season, ov, platte, nurPlatte, wo) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
-        const reqId = "r" + f.reqSeq++;
+        // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (die Bruecke reicht ov ausschliesslich an
+        // Zweit-Kern-buildInstance durch). `platte` (der Schlüssel) und `nurPlatte` liest die Transport-Schale
+        // und nimmt sie heraus, bevor das Studio die Anfrage sieht.
+        const msg = { type: "build-asset", presetId, seed, lod, season: season || "summer" };
+        if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
+        if (platte) msg.platte = platte;
+        if (nurPlatte) msg.nurPlatte = true;
+        // 45 s ARBEITS-Zeit (die EINE Frist, `_foundryFrist`): ein Koniferen-lod0-Asset hat ~170k Verts; die
+        // Wartezeit in der Schlange zählt nicht mit. fail-LAUT (V18.462): das Timeout ist vom kalten Buch
+        // unterscheidbar — der Aufrufer sieht sonst beide als null.
+        return this._foundryAuftrag(
+            f,
+            "r",
+            msg,
+            wo,
+            45000,
+            `FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`
+        );
+    }
+    // DIE EINE WORKER-SCHLANGE: der Foundry-Worker arbeitet FIFO, ein Bau dauert 0,1–25 s. Vorher ging jede Anfrage
+    // sofort per postMessage hinein — eine nahe Eiche-L0 wartete hinter JEDEM früher gestellten Vorrats- und
+    // Fernauftrag (gemessen 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9,0 s, die Tanne nach
+    // 9,4 s; gate:arch-feld: 17 offene Aufträge, Eiche in 10 m und Haus in 27 m 800 Takte ohne Mesh). Jetzt hält der
+    // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge im Worker (so viele, dass er ohne Rundlauf-Lücke arbeitet:
+    // der Vorrat läuft so schnell leer wie FIFO), der nächste geht NAH zuerst (d² zum Spieler,
+    // beim Senden frisch gemessen; Vorrat = ∞, unter Gleichen FIFO) — und nie verhungert: ist der älteste Wartende
+    // älter als FOUNDRY_ALTER_MS, wechselt die Wahl ab (der Älteste, dann der Nächste). Die Request-Nummer entsteht
+    // beim SENDEN: die EINE Frist (`_foundryFrist`) bleibt eine Arbeits-Uhr in Worker-Reihenfolge.
+    _foundryAuftrag(f, praefix, msg, wo, fristMs, ablaufWort) {
         return new Promise((resolve) => {
-            f.pending.set(reqId, resolve);
+            const q = f.warte || (f.warte = []);
+            q.push({ praefix, msg, wo, fristMs, ablaufWort, resolve, t: performance.now() });
+            this._foundryPumpe(f);
+        });
+    }
+    _foundryAuftragD2(wo) {
+        if (typeof wo === "number") return Number.isFinite(wo) ? wo : Infinity;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!wo || !pm || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
+        const dx = wo.x - pm.x,
+            dz = wo.z - pm.z;
+        return dx * dx + dz * dz;
+    }
+    _foundryPumpe(f) {
+        const q = f && f.warte;
+        while (q && q.length && f.worker && f.pending.size < AnazhRealm.FOUNDRY_IM_FLUG) {
+            let i = 0;
+            let aeltester = false;
+            if (performance.now() - q[0].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
+            if (!aeltester) {
+                let best = this._foundryAuftragD2(q[0].wo);
+                for (let k = 1; k < q.length; k++) {
+                    const d2 = this._foundryAuftragD2(q[k].wo);
+                    if (d2 < best) {
+                        best = d2;
+                        i = k;
+                    }
+                }
+            }
+            const a = q.splice(i, 1)[0];
+            const reqId = a.praefix + f.reqSeq++;
+            f.pending.set(reqId, a.resolve);
             try {
-                // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (die Bruecke reicht ov ausschliesslich an
-                // Zweit-Kern-buildInstance durch). `platte` (der Schlüssel) und `nurPlatte` liest die Transport-Schale
-                // und nimmt sie heraus, bevor das Studio die Anfrage sieht.
-                const msg = { type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" };
-                if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
-                if (platte) msg.platte = platte;
-                if (nurPlatte) msg.nurPlatte = true;
-                f.worker.postMessage(msg);
+                f.worker.postMessage(Object.assign({ reqId }, a.msg));
             } catch (_e) {
                 f.pending.delete(reqId);
-                resolve(null);
-                return;
+                a.resolve(null);
+                continue;
             }
-            // 45 s ARBEITS-Zeit (die EINE Frist, `_foundryFrist`): ein Koniferen-lod0-Asset hat ~170k Verts;
-            // die Wartezeit in der Worker-Schlange zählt nicht mit.
-            this._foundryFrist(f, reqId, 45000, () => {
-                // fail-LAUT (V18.462): das Timeout ist vom kalten Buch
-                // unterscheidbar — der Aufrufer sieht sonst beide als null.
-                this.log(`FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`, "WARN");
-                resolve(null);
+            this._foundryFrist(f, reqId, a.fristMs, () => {
+                this.log(a.ablaufWort, "WARN");
+                a.resolve(null);
+                this._foundryPumpe(f);
             });
-        });
+        }
+    }
+    // Ein Besteller, dessen Schlüssel schon wartet (der Boot-Vorrat fragte ihn zuerst), hebt dessen Rang auf seine
+    // Nähe — sonst wartete der nahe Bau mit Vorrats-Rang hinter dem ganzen Vorrat.
+    _foundryNaeher(f, presetId, seed, lod, season, wo) {
+        const q = f && f.warte;
+        if (!q || !q.length) return;
+        const d2 = this._foundryAuftragD2(wo);
+        for (const a of q) {
+            const m = a.msg;
+            if (m.type !== "build-asset" || m.ov || m.presetId !== presetId || m.seed !== seed || m.lod !== lod)
+                continue;
+            if (m.season !== season) continue;
+            if (d2 < this._foundryAuftragD2(a.wo)) a.wo = wo;
+            return;
+        }
     }
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
     // `bakeImpostorAtlas`, kein Nachbau). Resolvt mit payload oder null (Fehler/Timeout — der Tick-
@@ -66386,31 +66447,21 @@ class AnazhRealm {
     _foundryBakeImpostorRequest(presetId, seed, season, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
-        const reqId = "imp" + f.reqSeq++;
-        return new Promise((resolve) => {
-            f.pending.set(reqId, resolve);
-            try {
-                // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
-                // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
-                const msg = { type: "bake-impostor", reqId, presetId, seed, season: season || "summer" };
-                if (ov && typeof ov === "object") msg.ov = ov;
-                f.worker.postMessage(msg);
-            } catch (_e) {
-                f.pending.delete(reqId);
-                resolve(null);
-                return;
-            }
-            // EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig
-            // leben; null → die Retry-Disziplin des Tick.
-            const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
-            this._foundryFrist(f, reqId, frist, () => {
-                this.log(
-                    `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`,
-                    "WARN"
-                );
-                resolve(null);
-            });
-        });
+        // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
+        // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
+        const msg = { type: "bake-impostor", presetId, seed, season: season || "summer" };
+        if (ov && typeof ov === "object") msg.ov = ov;
+        // Durch DIE EINE WORKER-SCHLANGE mit Vorrats-Rang (die Fernstufe). EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS
+        // ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin des Tick.
+        const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
+        return this._foundryAuftrag(
+            f,
+            "imp",
+            msg,
+            null,
+            frist,
+            `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`
+        );
     }
     // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
     // 8-Winkel-Billboard-Atlas (Albedo + Normal) + Rahmen. AnazhRealm platziert das Billboard — kein
@@ -69254,18 +69305,20 @@ class AnazhRealm {
                     this._foundryDeclaredStage(preset, 1) === 1
                 )
                     this._foundryFlattenFor(entry, preset, 1);
-                this._foundryRequest(preset, variant, lod, season, entryOv || undefined).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                    } else {
-                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
-                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
-                        f.requested.delete(key);
+                this._foundryRequest(preset, variant, lod, season, entryOv || undefined, entry.position).then(
+                    (meshes) => {
+                        if (meshes) {
+                            this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                            this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
+                        } else {
+                            // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
+                            // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
+                            f.requested.delete(key);
+                        }
+                        this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
                     }
-                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
-                });
-            }
+                );
+            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, season, entry.position);
             return null;
         }
         // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->
@@ -77419,7 +77472,7 @@ class AnazhRealm {
                 if (memo && memo.group && memo.group !== "pending") this._disposeFoundryGroupGeom(memo.group);
                 const fresh = { key, group: "pending" };
                 this._wsStudioOvMemo = fresh;
-                this._foundryRequest(preset, variant, lod, season, ov).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, season, ov, 0).then((meshes) => {
                     // Wechselte die Auswahl waehrend des Baus, verfaellt das Ergebnis (rohe
                     // Arrays, kein GPU-Leak — die Naht `_foundryBuildGroup` laeuft nur fuer
                     // das LEBENDE Memo).
@@ -77440,7 +77493,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, season).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, season, undefined, 0).then((meshes) => {
                     if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
                     else f.requested.delete(key);
                     rebuild();
@@ -86768,7 +86821,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.513.0";
+AnazhRealm.VERSION = "18.514.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -90612,6 +90665,12 @@ AnazhRealm.FELL_SCHALE = Object.freeze({ wurzel: 0.55, spitze: 1.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;
+// DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
+// zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
+// schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:
+// 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
+AnazhRealm.FOUNDRY_IM_FLUG = 12;
+AnazhRealm.FOUNDRY_ALTER_MS = 6000;
 // DER EINE WELT-MARCH: alle Felder (Regionen · Bauten · Tiere) leben in EINEM 3D-Atlas + EINER
 // Feld-Listen-Textur; der Feld-Pass marcht sie in EINEM Draw mit echter Tiefe. Der Atlas allokiert in
 // EINHEITEN (32³) und BLÖCKEN (2×2×2 = 64³); die Kapazität trägt die Welt-Grenzen (maxCreatures +

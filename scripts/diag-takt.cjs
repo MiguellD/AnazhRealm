@@ -14,8 +14,15 @@
 //   T4  und nie verhungert: was in der zweiten Fenster-Hälfte übrig ist, bekommt auch der Ferne (V18.512 hielt die
 //       Schwelle das ganze Fenster: 415 Freigaben in 1 000 Takten, die ferne Eiche nie — gate:arch-feld mit echter
 //       Distanz, 03.10.)
+//   T5  DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`) geht NAH zuerst: hinter vollem Worker (FOUNDRY_IM_FLUG) und zehn
+//       Vorrats-Aufträgen in der Schlange geht der nahe Bau als nächster hinein, ein schon wartender Vorrats-Schlüssel,
+//       den ein naher Bau verlangt, wird nachpriorisiert, und die Request-Nummer entsteht beim Senden (die EINE Frist
+//       bleibt eine Arbeits-Uhr). Befund 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9 s.
+//   T6  und nie verhungert: ist der älteste Wartende älter als FOUNDRY_ALTER_MS, geht er unter lauter Nahen spätestens
+//       als zweiter hinein.
 // --selftest: ein Takt, der wieder die Tags ALLER Bauten rechnet (die alte Reihenfolge), macht T1 rot; der alte
-// Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot.
+// Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot; die FIFO-Pumpe macht T5 rot,
+// die Nur-der-Nächste-Pumpe T6.
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -140,7 +147,80 @@ const SELBST = process.argv.includes("--selftest");
             const a = folge(selbst ? werZuerst : r._weltBakeErlaubt);
             const b = selbst ? folge(ganzesFenster) : a;
             const t3 = { fernJa: a.fernJa, nah1: a.nah1, fern2: a.fern2, nah2: a.nah2, fern3: b.fern3 };
-            return { t1, t2, t3, n: bauten.length, reichweite: r.constructor.FOCUSING_HEAT_RANGE_M };
+            // T5/T6 — die Worker-Schlange an einem Doppel-Worker (zeichnet die Sende-Reihenfolge auf; geantwortet wird
+            // in Worker-Reihenfolge, danach pumpt der Host wie im onmessage).
+            const pm = st.playerMesh.position;
+            const fEcht = r._foundry;
+            const pumpeEcht = Object.prototype.hasOwnProperty.call(r, "_foundryPumpe") ? r._foundryPumpe : null;
+            const fifo = function (f) {
+                // die alte Klasse: der Worker bekam jede Anfrage in Ankunfts-Reihenfolge
+                const q = f.warte;
+                while (q.length && f.pending.size < this.constructor.FOUNDRY_IM_FLUG) {
+                    const x = q.shift();
+                    const id = x.praefix + f.reqSeq++;
+                    f.pending.set(id, x.resolve);
+                    f.worker.postMessage(Object.assign({ reqId: id }, x.msg));
+                }
+            };
+            const nurNaechster = function (f) {
+                // ohne Alters-Wache: der Nächste gewinnt immer
+                const q = f.warte;
+                while (q.length && f.pending.size < this.constructor.FOUNDRY_IM_FLUG) {
+                    let i = 0;
+                    for (let k = 1; k < q.length; k++)
+                        if (this._foundryAuftragD2(q[k].wo) < this._foundryAuftragD2(q[i].wo)) i = k;
+                    const x = q.splice(i, 1)[0];
+                    const id = x.praefix + f.reqSeq++;
+                    f.pending.set(id, x.resolve);
+                    f.worker.postMessage(Object.assign({ reqId: id }, x.msg));
+                }
+            };
+            const schlange = (pumpe, lauf) => {
+                const gesendet = [];
+                const f = { ready: true, worker: { postMessage: (m) => gesendet.push(m) }, pending: new Map(), reqSeq: 1 };
+                r._foundry = f;
+                if (pumpe) r._foundryPumpe = pumpe;
+                const antworte = () => {
+                    const [id, res] = f.pending.entries().next().value;
+                    f.pending.delete(id);
+                    res([]);
+                    r._foundryPumpe(f);
+                };
+                const bestelle = (name, wo) => r._foundryWorkerRequest(name, 0, 0, "summer", null, null, false, wo);
+                try {
+                    return lauf(f, gesendet, antworte, bestelle);
+                } finally {
+                    r._foundry = fEcht;
+                    if (pumpeEcht) r._foundryPumpe = pumpeEcht;
+                    else delete r._foundryPumpe;
+                }
+            };
+            const K = r.constructor.FOUNDRY_IM_FLUG;
+            const t5 = schlange(selbst ? fifo : null, (f, gesendet, antworte, bestelle) => {
+                for (let i = 0; i < K; i++) bestelle("block" + i); // der Worker ist voll
+                for (let i = 0; i < 10; i++) bestelle(i === 4 ? "eiche" : "vorrat" + i);
+                bestelle("nah10", { x: pm.x + 10, z: pm.z });
+                r._foundryNaeher(f, "eiche", 0, 0, "summer", { x: pm.x + 5, z: pm.z }); // ein naher Bau verlangt den Vorrats-Schlüssel
+                antworte();
+                antworte();
+                const nr = gesendet.map((m) => Number(String(m.reqId).replace(/^\D+/, "")));
+                return {
+                    folge: gesendet.slice(K, K + 2).map((m) => m.presetId),
+                    nummernSteigen: nr.every((n, i) => i === 0 || n > nr[i - 1]),
+                    imFlug: f.pending.size,
+                    K,
+                };
+            });
+            const t6 = schlange(selbst ? nurNaechster : null, (f, gesendet, antworte, bestelle) => {
+                for (let i = 0; i < K; i++) bestelle("block" + i);
+                bestelle("alt");
+                f.warte[0].t -= r.constructor.FOUNDRY_ALTER_MS + 1000; // der Älteste wartet über der Alters-Wache
+                for (let i = 0; i < 6; i++) bestelle("nah" + i, { x: pm.x + 5 + i, z: pm.z });
+                antworte();
+                antworte();
+                return { folge: gesendet.slice(K, K + 2).map((m) => m.presetId) };
+            });
+            return { t1, t2, t3, t5, t6, n: bauten.length, reichweite: r.constructor.FOCUSING_HEAT_RANGE_M };
         }, SELBST);
     } finally {
         await realm.close();
@@ -154,12 +234,18 @@ const SELBST = process.argv.includes("--selftest");
     const t3 = aus.t3;
     const T3 = t3.fernJa === 4 && t3.nah1 === false && t3.nah2 === true && t3.fern2 === false;
     const T4 = t3.fern3 === true;
+    const t5 = aus.t5,
+        t6 = aus.t6;
+    const T5 = t5.folge[0] === "eiche" && t5.folge[1] === "nah10" && t5.nummernSteigen && t5.imFlug === t5.K;
+    const T6 = t6.folge.includes("alt");
     if (SELBST) {
-        const ok = !T1 && !T3 && !T4;
+        const ok = !T1 && !T3 && !T4 && !T5 && !T6;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
                 `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}`
+                `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}; ` +
+                `die FIFO-Pumpe sendet ${t5.folge.join("·")} → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
+                `die Nur-der-Nächste-Pumpe sendet ${t6.folge.join("·")} → T6 ${T6 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -174,7 +260,11 @@ const SELBST = process.argv.includes("--selftest");
         `  ${T3 ? "✅" : "❌"} T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`
     );
     console.log(`  ${T4 ? "✅" : "❌"} T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
-    if (!(T1 && T2 && T3 && T4)) {
+    console.log(
+        `  ${T5 ? "✅" : "❌"} T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug}`
+    );
+    console.log(`  ${T6 ? "✅" : "❌"} T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → ${t6.folge.join(" · ")}`);
+    if (!(T1 && T2 && T3 && T4 && T5 && T6)) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
     }

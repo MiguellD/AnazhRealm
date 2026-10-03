@@ -237,8 +237,8 @@ const VERHALTEN = [
         check("Selbst-Test 1: ein Wand-Name ohne Leser → S1 rot", t1 && !t1[1]);
         const t2 = statisch(
             stamm.replace(
-                "    _foundryRequest(presetId, seed, lod, season, ov) {",
-                '    _foundryRequest(presetId, seed, lod, season, ov) {\n        indexedDB.open("anazhFoundryAssets", 1);'
+                "    _foundryRequest(presetId, seed, lod, season, ov, wo) {",
+                '    _foundryRequest(presetId, seed, lod, season, ov, wo) {\n        indexedDB.open("anazhFoundryAssets", 1);'
             )
         ).gesetze.find((g) => g[0].startsWith("S2b"));
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);

@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.513.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.514.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -86,12 +86,12 @@ Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern un
 Kreaturen ≤ 55 m (`KREATUR_NAH_MESH`), Architektur im Cull-Radius 100–150 m, Streu-Bäume L0/L1 + L2-Billboard;
 Budget zählt gebaute Meshes, Bäcker nah zuerst, EINE Bake-Uhr (45 s). Gemessen (`aaa8`): ungebaut 148–195 → 0.
 
-**V18.510–513 — DRAW-WAHRHEIT · DATENFLUSS · TAKT · SCHATTEN:** r184-WebGPU zeichnet ein BatchedMesh je INSTANZ: der
+**V18.510–514 — DRAW-WAHRHEIT · DATENFLUSS · TAKT · SCHATTEN:** r184-WebGPU zeichnet ein BatchedMesh je INSTANZ: der
 Batch-Pfad fiel (jedes Leaf eine InstancedMesh), 2 CSM-Kaskaden, feste WGSL-Puffer-Namen: Mess-Wiese 29 943 → 1 091
 GPU-Befehle (`werkbank zaehlen`). Die Transport-Schale `_foundrySchale` trägt den Foundry-Kanal IM Worker: Kanal 349 →
 214 MB je Boot, IDB-Put im Haupt-Thread 1,8 s → 0 (`werkbank fluss`). Der Spiel-Takt rechnet nur, was ihn betrifft: p50
-31 → 13 ms, p95 89 → 24 ms (`werkbank takt`). Der Schatten liest, was das Auge sieht: die LOD-Maske misst vom Auge
-(`uLodAuge`), nie von der Kaskaden-Kamera (die Weide über dem Spieler warf keinen Schatten), ein L0-Baum wirft seine L1.
+31 → 13 ms, p95 89 → 24 ms (`werkbank takt`). Der Schatten misst vom Auge (`uLodAuge`), nie von der Kaskaden-Kamera, ein
+L0-Baum wirft seine L1. Die Foundry-Schlange hält der Host, nah zuerst: nahe Eiche-L0 9,0 → 0,9 s (`gate:takt` T5/T6).
 
 **V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (25 Bones), das Fell 6 Schalen (Wolf L0 315k → 57k);
 starre Teile hängen je Material als EIN starr gebundenes SkinnedMesh am Ofen-Chokepoint (`_ofenAssembleAsset`), jede
@@ -203,7 +203,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
 25. **Der Takt kostet, was ihn betrifft, nie die Weltgröße:** billige Filter zuerst, teure Rechnung nur für Betroffene
     (das Brennglas rechnete je Takt die Tags ALLER Bauten: Ø 20 ms) — `werkbank takt` zerlegt den Spiel-Takt je
     Subsystem; geteilte Takt-Budgets gehen NAH zuerst über ALLE Verbraucher (`_weltBakeErlaubt(d2)`), nie „wer zuerst fragt",
-    und nie verhungert (die Nah-Schwelle gilt die erste Fenster-Hälfte; eine Zähl-Hülle reicht die Argumente durch).
+    und nie verhungert (die Nah-Schwelle gilt die erste Fenster-Hälfte; eine Zähl-Hülle reicht die Argumente durch). Der
+    Foundry-Worker ist so ein Budget: der Host hält seine Schlange (`_foundryAuftrag`, 12 im Flug, nah zuerst), nie FIFO.
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass rendert mit der Kaskaden-Kamera (`cameraPosition`
     = Licht-Kamera, 145 m weit) und liest nur colorNode.a · map.a · maskShadowNode, nie opacityNode — jede LOD-Maske misst
     vom Auge (`uLodAuge`), jeder Ausschnitt lebt in colorNode.a (`gate:foundry-crossfade` Schatten-Wahrheit). Schatten-
