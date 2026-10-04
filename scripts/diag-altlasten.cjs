@@ -200,6 +200,12 @@ const FORBIDDEN = [
     { token: "_loopSkyboxPlanets", fiel: "V18.530 — _loopSkyboxZeit" },
     { token: "state.planets", fiel: "V18.530" },
     { token: "numPlanets", fiel: "V18.530" },
+    // DER WEG IST BODEN (V18.530) — Straßen/Feldwege/Platz/Äcker fielen als Box-Streifen in die Wege-Karte; der
+    // Pool trägt nur noch die hüfthohen Zäune (Zaun-Pool).
+    { token: "_stlWegeAddStrip", fiel: "V18.530 — Wege malen in die Wege-Karte, Zäune in _stlZaunAddStrip" },
+    { token: "_stlWegeEnsurePool", fiel: "V18.530 — _stlZaunEnsurePool" },
+    { token: "_stlWegeDisposePool", fiel: "V18.530 — _stlWegeDispose (Zaun-Pool + Wege-Karte)" },
+    { token: "state.stlWege", fiel: "V18.530 — state.stlZaun / state.wegeKarte" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

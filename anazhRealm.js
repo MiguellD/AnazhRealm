@@ -27866,7 +27866,12 @@ class AnazhRealm {
     // räumt nur Geometrie.
     _getVoxelChunkMaterial() {
         if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
-        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide, geomorph: true });
+        const mat = this._buildToonNodeMaterial({
+            vertexColors: true,
+            side: THREE.DoubleSide,
+            geomorph: true,
+            wegeKarte: true,
+        });
         // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
         // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/
         // Morph-Attributen — die equals()-Bahn sieht Rebuilds (neue Geometrie-id).
@@ -28276,10 +28281,24 @@ class AnazhRealm {
                         // (`_terrainGeologyAlbedo` → `_substanceCharacter`), sonst uniform 0.7 = Plastik-Sheen unterm IBL.
                         // Out-Param statt neuem Rückgabe-Typ → die `_terrainGeologyAlbedo`-Tests bleiben unberührt.
                         const _terrRough = {};
-                        const _geo = this._terrainGeologyAlbedo(_Ta, albedoNode, _Ta.positionWorld, _terrRough);
+                        // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
+                        // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie
+                        // UND die Material-Multiplikation (sonst färbte der Rasen den Weg grün: r184 multipliziert
+                        // colorNode mit der Vertex-Farbe — darum trägt der Chunk sie hier selbst, abseits des Wegs
+                        // rechnerisch identisch).
+                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
+                        const _geo = this._terrainGeologyAlbedo(
+                            _Ta,
+                            _bodenVc || albedoNode,
+                            _Ta.positionWorld,
+                            _terrRough
+                        );
                         if (_geo) {
                             albedoNode = _geo;
-                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
+                            if (_bodenVc && _Ta.vec4) {
+                                mat.vertexColors = false;
+                                mat.colorNode = _Ta.vec4(_geo.mul(_bodenVc), 1.0);
+                            } else if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
                     } else if (opts.useFlexAttr && _Ta.vec4) {
@@ -32563,7 +32582,7 @@ class AnazhRealm {
                     return v === null ? NaN : v;
                 });
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
-                const pfad = this._pathFieldAt ? this._pathFieldAt(x, z, y) : 0;
+                const pfad = this._pfadFeldAt(x, z, y);
                 const p = cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * gruen;
                 if (wurf >= p) continue;
                 out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung });
@@ -63069,14 +63088,177 @@ class AnazhRealm {
         this.state.archFundament = null;
     }
 
-    // ═══ DER WEGE-POOL (Straßen · Feldwege · Platz) ═══
-    // Das _archFundament-Muster: EIN InstancedMesh für ALLE Siedlungs-Boden-Streifen (1 Draw-Call,
-    // per-Instanz-Farbe); Höhe aus `getTerrainHeightAt`, Pitch aus den Endpunkt-Höhen. Kein Snapshot-Feld:
-    // die Streifen entstehen je Session deterministisch aus dem Settlement-Export (`_tickAutoSettlement`).
-    _stlWegeEnsurePool() {
+    // ═══ DIE WEGE-KARTE (V18.530): Siedlungs-Wege sind BODEN, kein Bauwerk ═══
+    // Befund 04.10. (Blick-Tour 1-nord · 3-markt · 4-west, echte GPU): Straßen, Feldwege, Platz und Äcker lagen als
+    // flache Box-Streifen (0,14 m) auf der Gesetz-Höhe — der sichtbare Boden (Surface-Nets, ±0,2 m) schnitt sie:
+    // harte Kanten, schwarze Linien zwischen den gekippten Segmenten (die Stirnflächen des nächsten Streifens),
+    // Gras stach durch, am Ring-Rand schwebten sie über der Leere. Jetzt trägt der Boden den Weg: eine welt-
+    // verankerte Karte um den Spieler (R = getretene Erde, G = Acker), weich gerändert aus dem Kapsel-/Kasten-
+    // Abstand, gelesen vom Boden-Shader (`_terrainGeologyAlbedo`: die Pfad-Erde der Boden-Palette, nur auf
+    // Begehbarem) und von der Wiese (`_pfadFeldAt`: kein Halm auf dem Weg) — DIESELBEN Bytes sind GPU-Textur
+    // und CPU-Leser. Die Formen (Segmente, Plätze, Äcker) bleiben je Siedlung gemerkt; ein Fenster-Umzug malt neu.
+    _wegeKarteEnsure() {
+        const st = this.state;
+        if (st.wegeKarte) return st.wegeKarte;
+        if (typeof THREE === "undefined") return null;
+        const W = AnazhRealm.WEGE_KARTE;
+        const N = Math.round(W.fensterM / W.texelM);
+        const daten = new Uint8Array(N * N * 2);
+        const tex = new THREE.DataTexture(daten, N, N, THREE.RGFormat, THREE.UnsignedByteType);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.generateMipmaps = false;
+        tex.needsUpdate = true;
+        const TSL = THREE.TSL;
+        const U =
+            TSL && TSL.uniform
+                ? this._uniformHeimatTeilen({
+                      mitte: TSL.uniform(new THREE.Vector2(0, 0)),
+                      groesse: TSL.uniform(W.fensterM),
+                  })
+                : null;
+        st.wegeKarte = { N, daten, tex, U, mitteX: 0, mitteZ: 0, formen: [], zentriert: false };
+        return st.wegeKarte;
+    }
+
+    // Eine Form in die Karte malen (nur innerhalb des Fensters, der Rand-Texel bleibt 0 — Clamp-to-Edge liest
+    // außerhalb nichts). Segment: Kapsel-Abstand zur Mittellinie; Rechteck: gedrehter Kasten-Abstand. Der Rand
+    // fällt über ±`randM` weich (smoothstep), Kanal 0 = Erde, 1 = Acker; überlappende Formen nehmen das Maximum.
+    _wegeKarteMale(wk, f) {
+        const W = AnazhRealm.WEGE_KARTE;
+        const N = wk.N;
+        const t = W.texelM;
+        const x0w = wk.mitteX - W.fensterM / 2;
+        const z0w = wk.mitteZ - W.fensterM / 2;
+        const ausdehnung = f.halb + W.randM + (f.typ === "kasten" ? Math.max(f.ex, f.ez) : 0);
+        const minX = Math.min(f.ax, f.bx) - ausdehnung;
+        const maxX = Math.max(f.ax, f.bx) + ausdehnung;
+        const minZ = Math.min(f.az, f.bz) - ausdehnung;
+        const maxZ = Math.max(f.az, f.bz) + ausdehnung;
+        const i0 = Math.max(1, Math.floor((minX - x0w) / t));
+        const i1 = Math.min(N - 2, Math.ceil((maxX - x0w) / t));
+        const j0 = Math.max(1, Math.floor((minZ - z0w) / t));
+        const j1 = Math.min(N - 2, Math.ceil((maxZ - z0w) / t));
+        if (i1 < i0 || j1 < j0) return;
+        const dx = f.bx - f.ax;
+        const dz = f.bz - f.az;
+        const ll = dx * dx + dz * dz;
+        const co = Math.cos(f.phi || 0);
+        const si = Math.sin(f.phi || 0);
+        for (let j = j0; j <= j1; j++) {
+            const pz = z0w + (j + 0.5) * t;
+            for (let i = i0; i <= i1; i++) {
+                const px = x0w + (i + 0.5) * t;
+                let d;
+                if (f.typ === "kasten") {
+                    // gedrehtes Rechteck um (ax, az), Halbachsen ex/ez, Drehung phi (yaw wie der alte Pool)
+                    const rx = px - f.ax;
+                    const rz = pz - f.az;
+                    const lx = Math.abs(co * rx - si * rz) - f.ex;
+                    const lz = Math.abs(si * rx + co * rz) - f.ez;
+                    d = Math.hypot(Math.max(lx, 0), Math.max(lz, 0)) + Math.min(Math.max(lx, lz), 0);
+                } else {
+                    let h = ll > 1e-6 ? ((px - f.ax) * dx + (pz - f.az) * dz) / ll : 0;
+                    h = h < 0 ? 0 : h > 1 ? 1 : h;
+                    d = Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
+                }
+                let q = (W.randM - d) / (2 * W.randM);
+                if (q <= 0) continue;
+                q = q >= 1 ? 1 : q * q * (3 - 2 * q);
+                const k = (j * N + i) * 2 + f.kanal;
+                const v = Math.round(q * 255);
+                if (v > wk.daten[k]) wk.daten[k] = v;
+            }
+        }
+    }
+
+    // Das Fenster folgt dem Spieler (Umzug ab `umzugM`, Mitte auf das Texel-Raster gerastet): leeren, alle
+    // gemerkten Formen neu malen, EIN Upload. Billig (eine Siedlung ≈ einige hundert Formen à ~100 Texel).
+    _tickWegeKarte(playerPos) {
+        const wk = this.state.wegeKarte;
+        if (!wk || !playerPos || wk.formen.length === 0) return;
+        const W = AnazhRealm.WEGE_KARTE;
+        if (wk.zentriert && Math.hypot(playerPos.x - wk.mitteX, playerPos.z - wk.mitteZ) < W.umzugM) return;
+        const raster = W.texelM * 16;
+        wk.mitteX = Math.round(playerPos.x / raster) * raster;
+        wk.mitteZ = Math.round(playerPos.z / raster) * raster;
+        wk.zentriert = true;
+        wk.daten.fill(0);
+        for (const f of wk.formen) this._wegeKarteMale(wk, f);
+        if (wk.U) wk.U.mitte.value.set(wk.mitteX, wk.mitteZ);
+        wk.tex.needsUpdate = true;
+    }
+
+    // Die getretene Erde an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest.
+    _wegeFeldAt(x, z) {
+        const wk = this.state.wegeKarte;
+        if (!wk || !wk.zentriert) return 0;
+        const W = AnazhRealm.WEGE_KARTE;
+        const fx = (x - (wk.mitteX - W.fensterM / 2)) / W.texelM - 0.5;
+        const fz = (z - (wk.mitteZ - W.fensterM / 2)) / W.texelM - 0.5;
+        const i = Math.floor(fx);
+        const j = Math.floor(fz);
+        if (i < 0 || j < 0 || i >= wk.N - 1 || j >= wk.N - 1) return 0;
+        const tx = fx - i;
+        const tz = fz - j;
+        const d = wk.daten;
+        const at = (a, b) => d[(b * wk.N + a) * 2] / 255;
+        return (
+            (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
+            (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
+        );
+    }
+
+    // Die Boden-Farbe unter den Wegen (TSL): die Vertex-Farbe mischt zur getretenen Erde (R) und zum Acker (G) der
+    // Wege-Karte, in den Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), nur auf
+    // Begehbarem — ein Hang unter dem Weg bleibt Hang.
+    _wegeBodenFarbe(_T, vc) {
+        const wk = this._wegeKarteEnsure();
+        if (!wk || !wk.U || !_T.texture || !_T.positionWorld || !_T.normalWorld) return vc;
+        const P = AnazhRealm.BODEN_FARBE;
+        const _wm = _T.texture(wk.tex, _T.positionWorld.xz.sub(wk.U.mitte).div(wk.U.groesse).add(0.5));
+        const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorld.y);
+        const e = P.packedDirt;
+        const a = P.dampEarth;
+        const mitErde = _T.mix(vc, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
+        return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar));
+    }
+
+    // DAS EINE PFAD-FELD der Wiese: der getrampelte Ufer-Pfad (Drainage, im Boden gebacken) ODER der Siedlungs-Weg
+    // (die Wege-Karte) — wo einer liegt, wächst kein Halm.
+    _pfadFeldAt(x, z, surfY) {
+        const a = this._pathFieldAt(x, z, surfY);
+        const b = this._wegeFeldAt(x, z);
+        return a > b ? a : b;
+    }
+
+    // Die Nah-Wiese über einem neuen Weg neu wachsen lassen: jede Kachel im Rechteck fällt, der nächste Takt baut
+    // sie auf dem Pfad-Feld neu.
+    _nahWieseNeuIn(x0, z0, x1, z1) {
+        const nw = this.state.nahWiese;
+        if (!nw) return 0;
+        const K = AnazhRealm.NAH_WIESE.kachel;
+        let n = 0;
+        for (const [key, k] of nw.kacheln) {
+            const [tx, tz] = key.split(",").map(Number);
+            if ((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1) continue;
+            this._nahWieseKachelEntsorgen(k);
+            nw.kacheln.delete(key);
+            n++;
+        }
+        return n;
+    }
+
+    // ═══ DER ZAUN-POOL ═══
+    // Das _archFundament-Muster: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
+    // per-Instanz-Farbe); Höhe aus `getTerrainHeightAt`, Pitch aus den Endpunkt-Höhen. Kein Snapshot-Feld: die
+    // Streifen entstehen je Session deterministisch aus dem Settlement-Export (`_tickAutoSettlement`).
+    _stlZaunEnsurePool() {
         const st = this.state;
         if (!st.scene) return null;
-        let P = st.stlWege;
+        let P = st.stlZaun;
         if (P) return P;
         const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
         const mat = this._stlWegeMat || (this._stlWegeMat = new THREE.MeshLambertMaterial({ color: 0xffffff })); // Farbe je Instanz (setColorAt)
@@ -63088,11 +63270,11 @@ class AnazhRealm {
         mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC (das Fundament-Muster)
         mesh.receiveShadow = true;
         st.scene.add(mesh);
-        P = st.stlWege = { mesh, cap: 256, top: 0 };
+        P = st.stlZaun = { mesh, cap: 256, top: 0 };
         return P;
     }
-    _stlWegeAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
-        const P = this._stlWegeEnsurePool();
+    _stlZaunAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
+        const P = this._stlZaunEnsurePool();
         if (!P) return;
         if (P.top >= P.cap) {
             // Verdopplungs-Wachstum (Matrizen + Farben in einen frischen Pool).
@@ -63126,82 +63308,85 @@ class AnazhRealm {
         P.mesh.instanceMatrix.needsUpdate = true;
         if (P.mesh.instanceColor) P.mesh.instanceColor.needsUpdate = true;
     }
-    // Wege+Platz EINES Settlement-Exports in den Pool heben — verankert am `origin`, je Segment
-    // Wasser-bewacht (`_isAboveWaterAt`; Fluss-Querungen bleiben offen, die bruecken-Schicht reist
-    // unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot).
+    // Die Boden-Schichten EINES Settlement-Exports (Straßen · Feldwege · Platz · Äcker) in die Wege-Karte und die
+    // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_isAboveWaterAt`; Fluss-Querungen
+    // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot).
     _stlWegeBuild(plan, origin, key) {
         if (!plan || !origin || !this.state.scene) return 0;
         if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         if (key && this._stlWegeKeys.has(key)) return 0;
         if (key) this._stlWegeKeys.add(key);
+        const wk = this._wegeKarteEnsure();
         let n = 0;
-        const MAX = 900; // Kappe je Siedlung (Pool-Hygiene)
-        const strasse = (pts, w, farbe) => {
+        const MAX = 900; // Kappe je Siedlung
+        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity };
+        const form = (f) => {
+            wk.formen.push(f);
+            if (wk.zentriert) this._wegeKarteMale(wk, f);
+            const r = f.halb + (f.typ === "kasten" ? Math.max(f.ex, f.ez) : 0);
+            box.x0 = Math.min(box.x0, f.ax - r, f.bx - r);
+            box.x1 = Math.max(box.x1, f.ax + r, f.bx + r);
+            box.z0 = Math.min(box.z0, f.az - r, f.bz - r);
+            box.z1 = Math.max(box.z1, f.az + r, f.bz + r);
+            n++;
+        };
+        const strasse = (pts, w) => {
             if (!Array.isArray(pts)) return;
             for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
                 const ax = origin.x + pts[i].x;
                 const az = origin.z + pts[i].z;
                 const bx = origin.x + pts[i + 1].x;
                 const bz = origin.z + pts[i + 1].z;
-                const dx = bx - ax;
-                const dz = bz - az;
-                const len = Math.hypot(dx, dz);
-                if (!(len > 0.01)) continue;
+                if (!(Math.hypot(bx - ax, bz - az) > 0.01)) continue;
                 if (!this._isAboveWaterAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
-                const y0 = this.getTerrainHeightAt(ax, az);
-                const y1 = this.getTerrainHeightAt(bx, bz);
-                if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
-                this._stlWegeAddStrip(
-                    (ax + bx) / 2,
-                    (y0 + y1) / 2 - 0.01, // Oberkante ~6 cm über Grund (sy 0.14)
-                    (az + bz) / 2,
-                    Math.atan2(dx, dz),
-                    -Math.atan2(y1 - y0, len), // Pitch: das Segment folgt dem Hang
-                    Math.max(1.2, w || 2.5),
-                    0.14,
-                    len + 0.3, // Überlapp — keine Lücken in Kurven
-                    farbe
-                );
-                n++;
+                form({ typ: "segment", kanal: 0, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 });
             }
         };
-        for (const rd of plan.roads || []) strasse(rd.pts, rd.w, rd.gen >= 2 ? 0x7c6b4e : 0x8a7456);
-        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, 0x83744f);
-        // Der PLATZ (Anger/Markt) — EIN gedrehtes Boden-Rechteck aus demselben Pool.
+        for (const rd of plan.roads || []) strasse(rd.pts, rd.w);
+        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w);
+        // Der PLATZ (Anger/Markt) — ein gedrehtes Erd-Rechteck; ein Gras-Anger bleibt Wiese.
         const pz = plan.platz;
-        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && n < MAX) {
+        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && pz.typ !== "gras" && n < MAX) {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
-            const wy = this.getTerrainHeightAt(wx, wz);
-            if (Number.isFinite(wy) && this._isAboveWaterAt(wx, wz, 0.2)) {
-                this._stlWegeAddStrip(
-                    wx,
-                    wy - 0.01,
-                    wz,
-                    pz.phi || 0,
-                    0,
-                    pz.ex * 2,
-                    0.12,
-                    pz.ez * 2,
-                    pz.typ === "gras" ? 0x66804a : 0x94805e
-                );
-                n++;
-            }
+            if (this._isAboveWaterAt(wx, wz, 0.2))
+                form({
+                    typ: "kasten",
+                    kanal: 0,
+                    ax: wx,
+                    az: wz,
+                    bx: wx,
+                    bz: wz,
+                    ex: pz.ex,
+                    ez: pz.ez,
+                    phi: pz.phi || 0,
+                    halb: 0,
+                });
         }
-        // SCHICHT-VOLLENDUNG (18.07.) — die ÄCKER (felder-Schicht): je OBB ein
-        // gedrehtes Boden-Rechteck (Acker-Braun) aus demselben Pool — dieselbe
-        // Mechanik wie der Platz, die Layout-Wahrheit des Gesetzbuchs lebt.
+        // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
+        // Gesetzbuchs lebt im Boden.
         for (const fd of plan.felder || []) {
             if (n >= MAX) break;
             if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
             const wx = origin.x + fd.cx;
             const wz = origin.z + fd.cz;
-            const wy = this.getTerrainHeightAt(wx, wz);
-            if (!Number.isFinite(wy) || !this._isAboveWaterAt(wx, wz, 0.2)) continue;
-            this._stlWegeAddStrip(wx, wy - 0.02, wz, fd.phi || 0, 0, fd.ex * 2, 0.1, fd.ez * 2, 0x6b5836);
-            n++;
+            if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
+            form({
+                typ: "kasten",
+                kanal: 1,
+                ax: wx,
+                az: wz,
+                bx: wx,
+                bz: wz,
+                ex: fd.ex,
+                ez: fd.ez,
+                phi: fd.phi || 0,
+                halb: 0,
+            });
         }
-        // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus demselben Pool (sy 0.85)
+        if (wk.zentriert) wk.tex.needsUpdate = true;
+        if (box.x0 < box.x1) this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+        // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
         for (const fz of plan.fences || []) {
             if (n >= MAX) break;
@@ -63218,7 +63403,7 @@ class AnazhRealm {
             const y0 = this.getTerrainHeightAt(ax, az);
             const y1 = this.getTerrainHeightAt(bx, bz);
             if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
-            this._stlWegeAddStrip(
+            this._stlZaunAddStrip(
                 (ax + bx) / 2,
                 (y0 + y1) / 2 + 0.42,
                 (az + bz) / 2,
@@ -63243,13 +63428,21 @@ class AnazhRealm {
         return !(/^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n));
     }
 
-    _stlWegeDisposePool() {
-        const P = this.state.stlWege;
+    _stlWegeDispose() {
+        const P = this.state.stlZaun;
         if (P && P.mesh) {
             if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
             P.mesh.dispose();
         }
-        this.state.stlWege = null;
+        this.state.stlZaun = null;
+        // Die Wege-Karte leert sich (die Formen gehören der alten Welt); die Textur bleibt (kein Re-Compile).
+        const wk = this.state.wegeKarte;
+        if (wk) {
+            wk.formen.length = 0;
+            wk.daten.fill(0);
+            wk.zentriert = false;
+            wk.tex.needsUpdate = true;
+        }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
     }
 
@@ -63445,9 +63638,9 @@ class AnazhRealm {
         // DORF-IN-TERRAIN — der Fundament-Pool fällt mit (Welt-Wechsel/Restore);
         // die Respawn-Schleife baut ihn lazy neu.
         this._archFundamentDisposePool();
-        // DORF-ERLEBNIS — der Wege-Pool fällt mit; der settlementCells-Rebuild
-        // (`_tickAutoSettlement`) baut die Streifen lazy + deterministisch neu.
-        this._stlWegeDisposePool();
+        // DORF-ERLEBNIS — Zaun-Pool + Wege-Karte fallen mit; der settlementCells-Rebuild
+        // (`_tickAutoSettlement`) baut sie lazy + deterministisch neu.
+        this._stlWegeDispose();
     }
 
     // Mesh aus Eintrag (re-)bauen: Daten getrennt von Sicht — ein Eintrag in `state.architectures` kann
@@ -69884,7 +70077,7 @@ class AnazhRealm {
                     const L = this._canopyLightAt(bxp, bzp, bsy, bFeuchte);
                     const slopeB = this._slopeAt(bxp, bzp);
                     const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
-                    const trail = this._pathFieldAt ? this._pathFieldAt(bxp, bzp, bsy) : 0;
+                    const trail = this._pfadFeldAt(bxp, bzp, bsy);
                     const dL = L - 0.4;
                     const pShrub = Math.exp(-(dL * dL) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42 * (1 - trail * 0.92);
                     if (hrnd() >= pShrub) continue;
@@ -85948,6 +86141,7 @@ class AnazhRealm {
         this._tickArchitectureLOD(5);
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
+        this._tickWegeKarte(playerPos); // die Wege-Karte folgt dem Spieler (No-op ohne Siedlungs-Wege)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
@@ -87443,6 +87637,10 @@ AnazhRealm.FERN_RING = Object.freeze({
     anchorQuant: 24,
     refreshVertsProTick: 600,
 });
+// WEGE_KARTE (`_wegeKarteEnsure`): das welt-verankerte Fenster der Siedlungs-Wege um den Spieler — 512 m Kante
+// (eine Siedlung samt Feldwegen), 0,5 m je Texel (ein 2,5-m-Weg = 5 Texel, die Kante bilinear weich), Umzug ab
+// 128 m Abstand zur Mitte, der Rand fällt über ±0,6 m (getretene Erde läuft in die Wiese aus).
+AnazhRealm.WEGE_KARTE = Object.freeze({ fensterM: 512, texelM: 0.5, umzugM: 128, randM: 0.6 });
 // FERN_FARBE (`_fernFarbeAt`, linear): das Kronendach des Waldes aus der Ferne = die Reflektanz geschlossener
 // Laubwald-Kronen im Sommer (Satelliten-Bänder blau ~0,02–0,03 · grün ~0,05–0,07 · rot ~0,02–0,03: das Blatt
 // trägt ~0,16 Grün, die Krone beschattet sich selbst); Wasser = das Fern-Blau als sRGB-Absicht (FARB-GESETZ:

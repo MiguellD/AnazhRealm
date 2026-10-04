@@ -86,8 +86,8 @@ function autoStaticLaws(anazhSrc) {
         [
             // SCHICHT-VOLLENDUNG (18.07.): die Hof-Bäume + Marktstände des
             // Exports heben durch den EINEN Chokepoint (Orchestrierung, kein
-            // Parallel-System), Zäune + Äcker durch den Wege-Pool.
-            "C-S6: der Erlebnis-Hebel konsumiert trees/staende (spawnArchitecture) + fences/felder (Wege-Pool)",
+            // Parallel-System), Zäune durch den Zaun-Pool, Wege + Äcker durch die Wege-Karte (V18.530: Boden).
+            "C-S6: der Erlebnis-Hebel konsumiert trees/staende (spawnArchitecture) + fences (Zaun-Pool) / felder (Wege-Karte)",
             (() => {
                 const i = nc.indexOf("_spawnSettlementErlebnis(plan, origin, so) {");
                 const j = i >= 0 ? nc.indexOf("_spawnSettlementFromExport(", i) : -1;
