@@ -135,12 +135,12 @@ class AnazhRealm {
             // _buildStarField(); mutiert von _dayNightApplyStarField.
             starFieldUniforms: null,
             // Live-Uniforms des TSL-Wasserfall-Materials (time, flowDir, flowSpeed, deep/shallow/foam, sunDir,
-            // light, fogColor/Near/Far); init in _ensureWaterfallMaterial(), geschrieben von
-            // _loopSkyboxPlanets (time) + _dayNightApplyWaterMaterials (sunDir, light, fog*).
+            // light); init in _ensureWaterfallMaterial(), geschrieben von _loopSkyboxPlanets (time) +
+            // _dayNightApplyWaterMaterials (sunDir, light).
             waterfallUniforms: null,
-            // Live-Uniforms des TSL-Hydrosphären-Materials (time, flowSpeed, deep/shallow/foam, sunDir, light,
-            // fogColor/Near/Far); init in _ensureHydroSurfaceMaterial(), geschrieben von
-            // _loopSkyboxPlanets (time) + _dayNightApplyWaterMaterials (sunDir, light, fog*).
+            // Live-Uniforms des TSL-Hydrosphären-Materials (time, flowSpeed, deep/shallow/foam, sunDir, light);
+            // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopSkyboxPlanets (time) +
+            // _dayNightApplyWaterMaterials (sunDir, light).
             hydroSurfaceUniforms: null,
             // Defer-Queue für GPU-Disposals. Ein Set, damit geteilte Materials (z. B. ein Compound mit EINEM
             // Material-Singleton) genau EINMAL dispose() bekommen — doppeltes dispose crasht WebGPU
@@ -290,13 +290,13 @@ class AnazhRealm {
             // Position folgt _applyDayNightToScene/_updateCelestialBodies.
             sunMesh: null,
             moonMesh: null,
-            // V8.27 6.G4.a — HemisphereLight + Fog refs, beide moduliert
-            // von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
+            // V8.27 6.G4.a — HemisphereLight, moduliert von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
             hemiLight: null,
-            fog: null,
-            // Aerial-Perspective-Uniforms (TSL): skyColor, density, hazeBase/hazeTop. Lazy beim ersten
-            // Terrain-Material-Build (_ensureAtmoUniforms), gespeist von _dayNightApplyHemiAndFog (EINE Quelle =
-            // die Fog-Farbe → tag/nacht/wetter-kohärent).
+            // DIE LUFT (V18.530): {U, faktor, farbe} — die EINE Luftperspektive (`_luftEnsure`, `scene.fogNode`),
+            // gespeist von _dayNightApplyHemiUndLuft (Tag-Nacht × Wetter × Sonne).
+            luft: null,
+            // Substanz-Uniforms (TSL: Mikro-Tiefe, Rim, Nacht-Boden, Mond-Rim …). Lazy beim ersten
+            // Terrain-Material-Build (_ensureAtmoUniforms).
             atmoUniforms: null,
             // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
             // starField folgt der Kamera + dreht sidereal mit timeOfDay.
@@ -307,9 +307,8 @@ class AnazhRealm {
             // true, wenn die AUGEN unter Wasser sind; treibt den Unterwasser-Tint — getrennt von
             // playerUnderwater (Körper), damit der Tint nicht schon beim Waten/Schwimmen erscheint.
             playerEyesUnderwater: false,
-            // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert).
-            // fogDistance: Multiplikator auf Fog-near/far (klein=dichter).
-            // (Cel-Stufen sind seit V18.236 gestrichen — PBR ist die EINE Wahrheit.)
+            // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert). Der Fog-Distanz-Regler fiel mit dem
+            // Nebel (V18.530 — die Luft ist Physik, `LUFT`). (Cel-Stufen sind seit V18.236 gestrichen — PBR ist die EINE Wahrheit.)
             atmosphere: {
                 // V17.109 — Schöpfer-getunte Basis-Werte (Browser-Sign-off 04.06.):
                 // 2.5D-Lichtung 100 % killt die Facetten, der Rest sein bevorzugter Look.
@@ -318,7 +317,6 @@ class AnazhRealm {
                 edgeSharp: 0.46,
                 triplanar: 2.0,
                 colorVar: 1.5,
-                fogDistance: 5.31, // Slider 177 % (= /3 × 100)
                 waterCull: 0.0,
                 // Wasser-Form: "cells" (Default, das Zell-Oberkanten-Sheet) | "iso" (alte Zell-Iso, Debug-A/B).
                 // Persistierte "surface"-Werte (L-Film, entfernt) heilen auf "cells".
@@ -331,7 +329,7 @@ class AnazhRealm {
                 // (waterfallSteep V18.111 gefallen — die A4-Plane ist geschnitten)
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
-                shadowRange: 170, // V18.352 — User-CEILING (Frustum-Halbbreite m); 300→170, der Nebel deckt eh >~150 m → fern-Schatten waren unsichtbar; tighter = billiger UND schärfer. Der Perf-Regler skaliert darunter (PERF_SHADOW_RANGE_MIN).
+                shadowRange: 170, // V18.352 — User-CEILING (Frustum-Halbbreite m); 300→170, der Nebel deckte damals >~150 m (bis V18.530) → fern-Schatten waren unsichtbar; tighter = billiger UND schärfer. Der Perf-Regler skaliert darunter (PERF_SHADOW_RANGE_MIN).
                 shadowBias: 1.0, // normalBias (Acne ↔ Peter-Panning)
                 // LOD-Schalter der Bäume (Browser-Toggle); false → _tickArchitectureLOD läuft im No-Op-Pfad,
                 // alle Bäume bleiben LOD0.
@@ -15211,7 +15209,7 @@ class AnazhRealm {
         }
         // V8.28 6.G4.b D — Welt-Wasser (Wave-Plane in Senken)
         this._buildWaterPlane();
-        // Die Ferne tragen Foundry-Wald + Nebel an der Wald-Kante — keine eigene Fern-Kulisse
+        // Die Ferne tragen Fern-Ring + Feld-Pass (die Luft dunstet sie, V18.530) — keine eigene Fern-Kulisse
         // (Canopy-Shell) auf dem Boot-Pfad.
     }
 
@@ -15899,11 +15897,11 @@ class AnazhRealm {
         // inkompatibel. Stattdessen eine CPU-Equirekt-Gradient-Textur als scene.environment.
         const nc = st.skyboxUniforms && st.skyboxUniforms.nebulaColor && st.skyboxUniforms.nebulaColor.value;
         const tief = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
-        // DER SICHTBARE HIMMEL ALS LICHT: der Horizont ist die Nebel-Farbe — der Nebel deckt die Skybox, das
-        // IST der Himmel, den der Spieler sieht (die EINE tag/nacht/wetter-kohärente Horizont-Quelle); die
-        // Skybox-Tönung (nebulaColor) vertieft nur den Zenit. Gemessen 01.10.: aus nebulaColor allein lag
-        // der Schatten einer 50-%-Fläche bei sRGB 0/25/102 (kein Rot-Anteil, Licht wie unter Blaufolie).
-        const fc = st.scene.fog && st.scene.fog.color;
+        // DER SICHTBARE HIMMEL ALS LICHT: der Horizont ist die In-Streu-Farbe der Luft — sie dunstet die Ferne
+        // in den Horizont, das IST der Himmel, den der Spieler sieht (die EINE tag/nacht/wetter-kohärente
+        // Horizont-Quelle); die Skybox-Tönung (nebulaColor) vertieft nur den Zenit. Gemessen 01.10.: aus
+        // nebulaColor allein lag der Schatten einer 50-%-Fläche bei sRGB 0/25/102 (Licht wie unter Blaufolie).
+        const fc = st.luft && st.luft.U.farbe.value;
         const hor = fc ? { r: fc.r, g: fc.g, b: fc.b } : tief;
         const sky = { r: hor.r + tief.r, g: hor.g + tief.g, b: hor.b + tief.b }; // Drift-Schlüssel beider Quellen
         const last = st._skyEnvLastColor;
@@ -26157,12 +26155,28 @@ class AnazhRealm {
         }
         return normals;
     }
-
-    // Welt-Feld-Farbe pro Voxel-Vertex als `color`-Attribut (stone/earth/lava/violet/snow/sediment) aus
-    // derselben fraktalen Sprache (worldFieldAt) → dieselben Biom-Regionen wie der Boden.
+    // Welt-Feld-Farbe pro Voxel-Vertex als `color`-Attribut: jeder Vertex durch DIE EINE BODEN-FARBE.
     _attachVoxelFieldColors(geom) {
         const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
         if (!pos || typeof this.worldFieldAt !== "function") return;
+        const n = pos.count;
+        const colors = new Float32Array(n * 3);
+        const out = [0, 0, 0];
+        for (let i = 0; i < n; i++) {
+            this._bodenFarbeAt(pos.getX(i), pos.getY(i), pos.getZ(i), out);
+            colors[i * 3] = out[0];
+            colors[i * 3 + 1] = out[1];
+            colors[i * 3 + 2] = out[2];
+        }
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    }
+
+    // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts (stone/earth/lava/violet/snow/
+    // sediment/Strand/Pfad) aus derselben fraktalen Sprache (worldFieldAt) → dieselben Biom-Regionen wie der
+    // Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der Fern-Ring und das Feld-Panorama lesen sie für die
+    // Ferne (kein vereinfachter Fern-Zwilling); der Worker spiegelt sie bit-identisch (`attachFieldColors`).
+    // `out` = [r, g, b] (linear, wie das Vertex-Attribut).
+    _bodenFarbeAt(x, y, z, out) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
@@ -26172,113 +26186,92 @@ class AnazhRealm {
         }
         const sandNoise = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
+        const B = AnazhRealm.BODEN_FARBE;
+        const { stone, earth, dampEarth, lava, violet, snow, sed, sand, packedDirt } = B;
         // V17.105 — Schnee-Schwelle als PROMINENZ (Relief über der kontinentalen
-        // Basis), nicht absolutes y. Browser-justierbar (HARTKODIERT + im Worker
-        // gespiegelt — eine Runtime-Tunable würde den Worker desyncen, V17.100).
-        const SNOW_PROM_START = 50;
-        const SNOW_PROM_FULL = 115;
-        const n = pos.count;
-        const colors = new Float32Array(n * 3);
+        // Basis), nicht absolutes y. HARTKODIERT + im Worker gespiegelt (eine Runtime-Tunable würde den
+        // Worker desyncen, V17.100).
+        const SNOW_PROM_START = B.schneeProminenzStart;
+        const SNOW_PROM_FULL = B.schneeProminenzVoll;
         const ss = (e0, e1, x) => {
             let t = (x - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        const stone = [0.42, 0.44, 0.49];
-        const earth = [0.27, 0.49, 0.19];
-        // dampEarth: dunklerer, satterer Erd-Ton; im Mix-Stack ZWEITER (nach earth, vor lava/snow/sed/
-        // strand) — Glut/Schnee bleiben überschreibend (ein Vulkan-Hang in Flussnähe bleibt Vulkan-Hang).
-        const dampEarth = [0.22, 0.18, 0.12];
-        // Vulkanische Erde ist DUNKLES Basalt (die Glut sitzt im PBR-Emissiv, nicht in der Albedo): dunkel/
-        // entsättigt + höhere Schwelle + gekappte Misch-Stärke, sonst malt glut≈0.95 den Boden pur hellrot.
-        // Worker-Mirror identisch.
-        const lava = [0.32, 0.19, 0.15];
-        const violet = [0.55, 0.36, 0.86];
-        const snow = [0.92, 0.93, 1.0];
-        const sed = [0.78, 0.72, 0.52];
-        // Sand-Tint am Ufer: Glocken-Profil (Peak +0.6 m über Wasser, 0 bei +2 m) + Submarine-Sand
-        // (−1.5..0 m, See-Boden Sediment statt Fels) → die Uferlinie wird eine emergente Beige-Linie.
-        const sand = [0.87, 0.78, 0.55];
-        const packedDirt = [0.32, 0.26, 0.18]; // V18.230 (Ω-O6) getrampelte Pfad-Erde
         // Feuchte-Sichtbarkeitskurve aus AnazhRealm.FEUCHTE (im Main justierbar); der Worker-Spiegel
         // hardkodiert sie — eine Runtime-Tunable bräche den bit-Vertrag.
         const F_VIS_LO = (AnazhRealm.FEUCHTE && AnazhRealm.FEUCHTE.sichtbarLo) || 0.3;
         const F_VIS_HI = (AnazhRealm.FEUCHTE && AnazhRealm.FEUCHTE.sichtbarHi) || 0.85;
-        for (let i = 0; i < n; i++) {
-            const x = pos.getX(i);
-            const y = pos.getY(i);
-            const z = pos.getZ(i);
-            const f = this.worldFieldAt(x, z);
-            const c = [stone[0], stone[1], stone[2]];
-            const mix = (target, t) => {
-                c[0] += (target[0] - c[0]) * t;
-                c[1] += (target[1] - c[1]) * t;
-                c[2] += (target[2] - c[2]) * t;
-            };
-            mix(earth, ss(0.25, 0.85, f.lebendig));
-            // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
-            // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
-            const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
-            mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
-            // Kronendach auf dem Boden: wo dicht gepflanzt wird (`_canopyLightAt` liest dieselben Treiber wie die
-            // Wald-Platzierung), ist der Boden dunkler, Lichtungen hell. Skalar-Multiplikator (feuchte als
-            // wetHint, kein Zweitaufruf); BIT-IDENTISCH im Worker `attachFieldColors` (Konstanten hardkodiert).
-            const cL = typeof this._canopyLightAt === "function" ? this._canopyLightAt(x, z, y, feuchte) : 1;
-            const _cShade = 0.58 + 0.46 * cL;
-            c[0] *= _cShade;
-            c[1] *= _cShade;
-            c[2] *= _cShade;
-            // Lichen: grüne Patina = feuchte × dichte (Stein, nicht Erde/Lava) × cluster (Flecken). Im Mix-Stack
-            // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Konstanten in
-            // AnazhRealm.LICHEN; der Worker spiegelt hardkodiert.
-            const LCH = AnazhRealm.LICHEN;
-            const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
-            const lichenMix =
-                ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
-                ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
-                lichenCluster *
-                LCH.strength;
-            mix(LCH.tint, lichenMix);
-            mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
-            mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
-            // Schnee auf PROMINENZ `y − cont0` (Relief über der λ7100-m-Basis), nicht absolutem y — sonst
-            // schmiert Schnee über ~halb den Boden (Hochkontrast-Flecken, die unter Licht driften). Robust gegen
-            // regionale Höhen (Prominenz max 70 m nah, 156 m fern). Wer die Terrain-Höhe ändert, MUSS die
-            // surf-relativen Schichten nachziehen. cont0 bit-identisch zum Worker (`attachFieldColors`).
-            const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-            const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-            const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
-            const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
-            mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
-            mix(sed, ss(-2, -14, y));
-            // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
-            // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
-            // (λ~290 m), (c) karge Fels-Patches ohne Sand.
-            const waterY = this._waterLevelAt(x, z);
-            const aboveWater = y - waterY;
-            if (aboveWater > -1.5 && aboveWater < 2.0) {
-                const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
-                const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
-                if (widthNoise > 0.18) {
-                    const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
-                    const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
-                    const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
-                    mix(sand, shoreBlend * intensity);
-                }
-                // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
-                // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:
-                // jeder See hat sein eigenes Mix aus Sand-Strand und Fels-Ufer.
+        const f = this.worldFieldAt(x, z);
+        const c = [stone[0], stone[1], stone[2]];
+        const mix = (target, t) => {
+            c[0] += (target[0] - c[0]) * t;
+            c[1] += (target[1] - c[1]) * t;
+            c[2] += (target[2] - c[2]) * t;
+        };
+        mix(earth, ss(0.25, 0.85, f.lebendig));
+        // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
+        // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
+        const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
+        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        // Kronendach auf dem Boden: wo dicht gepflanzt wird (`_canopyLightAt` liest dieselben Treiber wie die
+        // Wald-Platzierung), ist der Boden dunkler, Lichtungen hell. Skalar-Multiplikator (feuchte als
+        // wetHint, kein Zweitaufruf); BIT-IDENTISCH im Worker `attachFieldColors` (Konstanten hardkodiert).
+        const cL = typeof this._canopyLightAt === "function" ? this._canopyLightAt(x, z, y, feuchte) : 1;
+        const _cShade = 0.58 + 0.46 * cL;
+        c[0] *= _cShade;
+        c[1] *= _cShade;
+        c[2] *= _cShade;
+        // Lichen: grüne Patina = feuchte × dichte (Stein, nicht Erde/Lava) × cluster (Flecken). Im Mix-Stack
+        // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Konstanten in
+        // AnazhRealm.LICHEN; der Worker spiegelt hardkodiert.
+        const LCH = AnazhRealm.LICHEN;
+        const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        const lichenMix =
+            ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
+            ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
+            lichenCluster *
+            LCH.strength;
+        mix(LCH.tint, lichenMix);
+        mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
+        mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+        // Schnee auf PROMINENZ `y − cont0` (Relief über der λ7100-m-Basis), nicht absolutem y — sonst
+        // schmiert Schnee über ~halb den Boden (Hochkontrast-Flecken, die unter Licht driften). Robust gegen
+        // regionale Höhen (Prominenz max 70 m nah, 156 m fern). Wer die Terrain-Höhe ändert, MUSS die
+        // surf-relativen Schichten nachziehen. cont0 bit-identisch zum Worker (`attachFieldColors`).
+        const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+        const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+        const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
+        const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+        mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
+        mix(sed, ss(-2, -14, y));
+        // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
+        // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
+        // (λ~290 m), (c) karge Fels-Patches ohne Sand.
+        const waterY = this._waterLevelAt(x, z);
+        const aboveWater = y - waterY;
+        if (aboveWater > -1.5 && aboveWater < 2.0) {
+            const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
+            const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
+            if (widthNoise > 0.18) {
+                const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
+                const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
+                const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
+                mix(sand, shoreBlend * intensity);
             }
-            // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
-            // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
-            // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
-            const pathF = this._pathFieldAt(x, z, y);
-            if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
-            colors[i * 3] = c[0];
-            colors[i * 3 + 1] = c[1];
-            colors[i * 3 + 2] = c[2];
+            // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
+            // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:
+            // jeder See hat sein eigenes Mix aus Sand-Strand und Fels-Ufer.
         }
-        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
+        // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
+        // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
+        const pathF = this._pathFieldAt(x, z, y);
+        if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
+        out[0] = c[0];
+        out[1] = c[1];
+        out[2] = c[2];
+        return out;
     }
 
     // Test-Chunk (`voxel test`): ein Voxel-Chunk wird neben dem Spieler gemesht und in die Szene gestellt
@@ -26375,14 +26368,6 @@ class AnazhRealm {
     }
 
     // ===== ATLAS §09 · KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten =====
-    // Die äußerste Kante der Kaskade in Metern (kamera-relativ): Sicht-Ring ×
-    // Chunk-Span. Der Fog-/Aerial-Schleier koppelt hieran (§2-Synergie) → der
-    // Dunst wandert mit dem Sicht-Ring, die ferne LOD-Naht bleibt verborgen.
-    _detailViewDistance() {
-        const cfg = this._voxelChunkConfig();
-        return cfg.ringRadius * cfg.span;
-    }
-
     // Terrain-Chunk-LOD aus der Kaskaden-Tabelle (r≤2→0, r3-8→1, r9-10→2, r≥11→3). Mit `currentLod`
     // (Streaming-Tick) hält die Hysterese den Chunk im Deadband am Grat; ohne ist es die reine Band-LOD.
     _voxelChunkLodFor(cx, cz, pcx, pcz, currentLod = null) {
@@ -26441,8 +26426,7 @@ class AnazhRealm {
     }
 
     // Der gebaute zusammenhängende Ring: größtes k, dessen Ringe 0..k VOLL stehen (mesh ODER empty;
-    // pending/fehlend bricht). Der Lade-Nebel liest ihn pro Sync (≤ ~81 Map-Gets); null solange der
-    // Spieler-Chunk unbekannt ist.
+    // pending/fehlend bricht; ≤ ~81 Map-Gets); null solange der Spieler-Chunk unbekannt ist.
     _builtRingRadius() {
         const st = this.state;
         if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
@@ -26455,61 +26439,6 @@ class AnazhRealm {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
                     const e = st.voxelChunks.get(`${cx + dx},${cz + dz}`);
                     if (!e || (!e.mesh && !e.empty)) break outer;
-                }
-            }
-            k = ring;
-        }
-        return k;
-    }
-
-    // Gras-Front: größter Ring, in dem JEDER Chunk terrain-gebaut UND begrast ist (nicht mehr in
-    // `pendingGrass`; jenseits der Gras-LOD ≤4 trivial bereit). Gras baut ≤1 Chunk/Frame nach dem
-    // Terrain; der Lade-Nebel folgt dieser Front → er enthüllt nie bare Erde. Headless → Terrain-Front.
-    _builtGrassRingRadius() {
-        const st = this.state;
-        if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
-        if (st.renderer && st.renderer._isHeadlessNull) return this._builtRingRadius();
-        const cfg = this._voxelChunkConfig();
-        const { cx, cz } = st.lastPlayerVoxelChunk;
-        const pend = st.pendingGrass;
-        let k = -1;
-        outer: for (let ring = 0; ring <= cfg.ringRadius; ring++) {
-            for (let dx = -ring; dx <= ring; dx++) {
-                for (let dz = -ring; dz <= ring; dz++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
-                    const key = `${cx + dx},${cz + dz}`;
-                    const e = st.voxelChunks.get(key);
-                    if (!e || (!e.mesh && !e.empty)) break outer; // Terrain noch nicht gebaut
-                    if (pend && pend.has(key)) break outer; // Gras noch ausstehend → die Wiese fehlt
-                }
-            }
-            k = ring;
-        }
-        return k;
-    }
-
-    // Wasser-Front: größter Ring, in dem JEDER Chunk terrain-gebaut UND wasser-fertig ist; der Lade-Nebel
-    // deckelt darauf (sonst enthüllt er leere Seebetten — Wasser baut budgetiert nach dem Terrain).
-    // Wasser-fertig gdw. KEINE Wasser-Zellen ODER Sheet RESOLVED (`wi.has(key)`: Mesh oder bewusst null)
-    // — der kanonische ZUSTAND, nie die transiente Queue `pendingWaterIso` (Async-Roundtrips + CA-Re-
-    // Enqueue ließen die Front oszillieren → Nebel-Flackern). Monoton bis zum Prune. Headless → Terrain.
-    _builtWaterRingRadius() {
-        const st = this.state;
-        if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
-        if (st.renderer && st.renderer._isHeadlessNull) return this._builtRingRadius();
-        const cfg = this._voxelChunkConfig();
-        const { cx, cz } = st.lastPlayerVoxelChunk;
-        const wi = st.voxelChunkWaterIso;
-        let k = -1;
-        outer: for (let ring = 0; ring <= cfg.ringRadius; ring++) {
-            for (let dx = -ring; dx <= ring; dx++) {
-                for (let dz = -ring; dz <= ring; dz++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
-                    const key = `${cx + dx},${cz + dz}`;
-                    const e = st.voxelChunks.get(key);
-                    if (!e || (!e.mesh && !e.empty)) break outer; // Terrain noch nicht gebaut
-                    // Wasser-Zellen ohne resolved Sheet = die echte Streaming-Front → warten.
-                    if (e.waterCells && !(wi && wi.has(key))) break outer;
                 }
             }
             k = ring;
@@ -27969,11 +27898,6 @@ class AnazhRealm {
     // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
     // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
     // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
-    // V15.4 - Aerial-Perspective-Uniforms (TSL). EIN Satz, geteilt von allen
-    // Terrain-Materials, gespeist von _dayNightApplyHemiAndFog (EINE Quelle =
-    // die Fog-Farbe, also tag/nacht/wetter-kohaerent). density = 1/Sicht-
-    // Tiefe (klein -> Dunst greift erst weit), hazeBase/Top = Hoehen-Band, in
-    // dem Gipfel in den Himmel ausbleichen. Werte browser-justierbar.
     // ═══ DIE UNIFORM-HEIMAT (18.07., sechster Schöpfer-Trace: 60M Klein-Uploads
     // ≤16K = 9.3 GB, ~9k writeBuffer je Frame bei 631 Draws — die per-Draw-
     // Uniform-Bahn). WURZEL im Vendor gelesen (nie geraten): r184 KLONT jede
@@ -28038,14 +27962,6 @@ class AnazhRealm {
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
         if (!TSL || !TSL.uniform || !TSL.vec3) return null;
         this.state.atmoUniforms = {
-            skyColor: TSL.uniform(new THREE.Color(0.55, 0.62, 0.78)),
-            density: TSL.uniform(0.0085),
-            hazeBase: TSL.uniform(40.0),
-            hazeTop: TSL.uniform(150.0),
-            // Eye-relativer Höhen-Melt: nur Oberflächen HOCH über dem Auge UND weit weg verblassen (auf dem
-            // Gipfel kein Melt). hazeNear = innerhalb nie Melt; hazeFar = Distanz-Spanne bis zum vollen Faktor.
-            hazeNear: TSL.uniform(70.0),
-            hazeFar: TSL.uniform(350.0),
             // Tag-Licht-Achse (0 = tiefe Nacht, 1 = voller Tag); Schreiber: das EINE Himmels-Update
             // (_celestialHorizonFade). Konsument: die Impostor-Karte — ihr eingebackenes Tageslicht MUSS mit der
             // Sonne fallen (sonst glüht sie nachts).
@@ -28120,7 +28036,7 @@ class AnazhRealm {
             ),
             // Terrain-Mond-Rim: kühler Fresnel-Saum auf den vertexColors-Ebenen; den Wert treibt der Tag-Nacht-
             // Sync (nachts setTerrainMoonRim-Basis, tags 0 — kein Shader-Branch; EIN Schreiber:
-            // _dayNightApplyHemiAndFog).
+            // _dayNightApplyHemiUndLuft).
             terrainMoonRim: TSL.uniform(0.0),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
@@ -28131,20 +28047,9 @@ class AnazhRealm {
                     : (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3
             ),
         };
-        // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
-        // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
-        this._syncAtmoToViewDistance();
         // UNIFORM-HEIMAT: der geteilte Welt-Satz reist als EIN renderGroup-Buffer.
         this._uniformHeimatTeilen(this.state.atmoUniforms);
         return this.state.atmoUniforms;
-    }
-
-    // Die Aerial-Höhen-Melt-Ferne (hazeFar) wandert mit dem Sicht-Ring → ferne Ringe (9–12) verschwinden
-    // im Dunst (ihre LOD-Naht bleibt unsichtbar); bis Ring 8 gilt der Default-Floor (350 m).
-    _syncAtmoToViewDistance() {
-        const u = this.state.atmoUniforms;
-        if (!u || !u.hazeFar) return;
-        u.hazeFar.value = Math.max(350, this._detailViewDistance());
     }
 
     // Das Antwort-Profil emergiert aus den 10 Substanz-Tags (eine weitere LESART der Substanz-Wahrheit):
@@ -28208,9 +28113,8 @@ class AnazhRealm {
     }
 
     // ===== DIE EINE GETEILTE UMGEBUNGS-FUNKTION (Render-Harmonie) =====
-    // JEDE opake Ebene ruft sie identisch POST-lighting (`TSL.output`): Aerial-Perspektive ist In-Streuung
-    // zwischen Oberfläche und Auge, gehört also auf die lit-Farbe; Distanz-Haze trägt `scene.fog`, die
-    // Höhen-Aerial diese Funktion (kein Doppel-Nebel). Frequenzband per Profil (Gewicht 0 = Block fällt
+    // JEDE opake Ebene ruft sie identisch POST-lighting (`TSL.output`); die Luftperspektive (Distanz UND Höhe)
+    // trägt allein die Luft (`scene.fogNode`, `_luftEnsure`) — hier lebt kein Dunst. Frequenzband per Profil (Gewicht 0 = Block fällt
     // bit-gleich); Mikro-Tiefe output-seitig (bricht `material.color` nicht); die Albedo reicht der
     // Aufrufer (`layerOpts.albedoNode`, kein attribute()-Lookup). Fehler → `window.__aerialOutputError`.
     _applySubstanceResponse(mat, profile = {}, layerOpts = {}) {
@@ -28220,8 +28124,6 @@ class AnazhRealm {
             const _au = this.state.atmoUniforms;
             if (!_T || !_T.output || !_T.positionWorld || !_T.smoothstep || !_T.mix || !_au) return;
             const cfg = AnazhRealm.AERIAL || {
-                heightWeight: 0.6,
-                heightCap: 0.85,
                 microStrength: 0.1,
                 aoStrength: 0.35,
                 aoCap: 0.16,
@@ -28262,9 +28164,6 @@ class AnazhRealm {
                 const _rimCol = _T.mix(_T.vec3(0.85, 0.88, 0.98), _T.vec3(1.0, 0.72, 0.45), _p("waerme"));
                 _rgb = _rgb.add(_rimCol.mul(_fres.mul(_au.rimStrength).mul(_p("rim"))));
             }
-            // (J1) Aerial-Höhen-Melt, identisch für jede Ebene (scene.fog trägt die Distanz): hängt an der Höhe
-            // der Oberfläche ÜBER DEM AUGE × Distanz zum Auge (kamera-relativ) — nie an absoluter Welt-Höhe,
-            // sonst bleicht der Gipfel, auf dem du stehst.
             // Nacht-Boden als fuell-Antenne = additives Füll-Licht lit + albedo·floor·(1−lit), nie max()-Clamp
             // (der fraß AO/Cel/Triplanar zu einer flachen Fläche); (1−lit) dämpft es bei hellem Licht.
             if (_p("fuell") > 0 && _au.terrainNightFloor && layerOpts.albedoNode) {
@@ -28280,17 +28179,6 @@ class AnazhRealm {
                 const _moonCol = _T.vec3(0.55, 0.66, 1.0);
                 _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim).mul(_p("mond"))));
             }
-            const _cam = _T.cameraPosition;
-            const _aboveEye = _wp.y.sub(_cam.y); // < 0 (unter dem Auge) → smoothstep gibt 0
-            const _hazeNear = _au.hazeNear || _T.float(70.0);
-            const _hazeFar = _au.hazeFar || _T.float(350.0);
-            const _distF = _wp.sub(_cam).length().sub(_hazeNear).div(_hazeFar).clamp(0.0, 1.0);
-            const _haze = _T
-                .smoothstep(_au.hazeBase, _au.hazeTop, _aboveEye)
-                .mul(_distF)
-                .mul(cfg.heightWeight)
-                .clamp(0.0, cfg.heightCap);
-            _rgb = _T.mix(_rgb, _au.skyColor, _haze);
             mat.outputNode = _T.vec4(_rgb, _o.w);
         } catch (_e) {
             if (typeof window !== "undefined") window.__aerialOutputError = String((_e && _e.message) || _e);
@@ -32227,9 +32115,9 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         // MeshBasicNodeMaterial (TSL), NUR WebGPU (kein WebGL-Fallback — ohne WebGPU zeigt sich der Banner).
         // Wellen-Displacement, Tangenten-Kreuzprodukt-Normale, Fluss-/See-Foam, Blinn-Phong-Spec, Fresnel-
-        // Alpha, Fog; Attribute aFlow (vec2), aShore, aWave (float). Live-Uniforms in
+        // Alpha (die Luft: scene.fogNode); Attribute aFlow (vec2), aShore, aWave (float). Live-Uniforms in
         // state.hydroSurfaceUniforms (Schlüssel ohne u-Präfix, TSL-Konvention), mutiert von
-        // _loopSkyboxPlanets (time) + _dayNightApplyWaterMaterials (sunDir, light, fog*).
+        // _loopSkyboxPlanets (time) + _dayNightApplyWaterMaterials (sunDir, light).
         const TSL = THREE.TSL;
         if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
             this.log("HydroSurface-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
@@ -32290,9 +32178,6 @@ class AnazhRealm {
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
-        const uFogColor = uniform(new THREE.Color(0x88a0c8));
-        const uFogNear = uniform(35.0);
-        const uFogFar = uniform(150.0);
         // Tiefenpuffer-getriebene Uferlinie + Tiefen-Farbe: uShoreWidth/uDepthRange (Einheiten s. unten);
         // uEmotion ist der Kopplungs-Haken (0 = neutral). Initialisiert aus dem persistierten
         // Atmosphäre-Wert (Settings-Slider, überlebt Reload), sonst Default.
@@ -32422,10 +32307,8 @@ class AnazhRealm {
         // Bei Wasser-Mesh (nur Translation, keine Skalierung) identisch zu
         // mat3(modelMatrix) — die V8.44-Lehre.
         const vNormalWorld = normalize(modelNormalMatrix.mul(nrmFlipped));
-        // V8.45 — radiale Distanz (dreh-invariant) = |worldPos − cameraPos|.
-        const vFogDepth = length(vWorldPos.sub(cameraPosition));
 
-        // === FRAGMENT-STAGE: Wasserfarbe + Foam + Spec + Fog + Fresnel-Alpha.
+        // === FRAGMENT-STAGE: Wasserfarbe + Foam + Spec + Fresnel-Alpha (die Luft: scene.fogNode).
         const xz = vWorldPos.xz;
         // Normale nach oben gezwungen (cond-flip wie Vertex-Pfad).
         const nUpRaw = normalize(vNormalWorld);
@@ -32561,9 +32444,7 @@ class AnazhRealm {
         const spec = pow(max(dot(reflect(normalize(uSunDir).negate(), nFlow), viewDir), 0.0), float(WG.spec[0]));
         const withSpec = lit.add(uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight));
 
-        // Fog — Custom-Shader erbt THREE.Fog nicht.
-        const fogF = smoothstep(uFogNear, uFogFar, vFogDepth);
-        const colFogged = mix(withSpec, uFogColor, fogF);
+        // Die Luft legt der EINE Luft-Knoten auf (`scene.fogNode`, mat.fog) — kein eigener Wasser-Nebel.
 
         // Fresnel-Opazität: am Horizont fast opak, von oben klarer — liest den EINEN Schlick-Fresnel, die
         // Alpha-Anker 0.8/0.97 bleiben. Das Kern-Moiré steiler Läufe sitzt in der Mesh-Tessellation am
@@ -32579,7 +32460,7 @@ class AnazhRealm {
 
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.positionNode = pd;
-        mat.colorNode = vec4(colFogged, alphaCulled);
+        mat.colorNode = vec4(withSpec, alphaCulled);
         mat.transparent = true;
         // V13.9 — Cull-Schwelle: Fragmente mit Alpha≈0 (oben gecullt) werden
         // verworfen. 0.0001 liegt weit unter dem minimalen echten Wasser-Alpha
@@ -32609,9 +32490,6 @@ class AnazhRealm {
             skyCol: uSkyCol,
             sunCol: uSunCol,
             light: uLight,
-            fogColor: uFogColor,
-            fogNear: uFogNear,
-            fogFar: uFogFar,
             // V13.5 (Schicht 3) — im Browser-Audit justierbar; emotion ist der V14-Haken.
             shoreWidth: uShoreWidth,
             depthRange: uDepthRange,
@@ -34092,7 +33970,6 @@ class AnazhRealm {
             cameraPosition,
             sin,
             dot,
-            length,
             mix,
             smoothstep,
             clamp,
@@ -34113,9 +33990,6 @@ class AnazhRealm {
         const uFoam = uniform(new THREE.Color(0xdff1ff));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
-        const uFogColor = uniform(new THREE.Color(0x88a0c8));
-        const uFogNear = uniform(35.0);
-        const uFogFar = uniform(150.0);
 
         // 2D-Hash + Value-Noise — Vendor-Spiegel der GLSL-`hash`/`vnoise`-
         // Closures. Identische Magic-Konstanten (41.3, 289.1, 43758.5453).
@@ -34149,12 +34023,8 @@ class AnazhRealm {
         // mat4×vec4-Multiplikation in TSL via .mul().
         const wp = modelWorldMatrix.mul(vec4(displacedLocal, 1.0));
         const vWorldPos = wp.xyz;
-        // V8.45 — radiale View-Distanz (dreh-invariant) = length(viewPos),
-        // semantisch identisch zu length(mv.xyz). cameraPosition ist Welt-
-        // Raum; |worldPos − cameraPos| = view-radial Distanz.
-        const vFogDepth = length(vWorldPos.sub(cameraPosition));
 
-        // === FRAGMENT-STAGE: Schaum + Wasserfarbe + Sonnen-Spec + Fog.
+        // === FRAGMENT-STAGE: Schaum + Wasserfarbe + Sonnen-Spec (die Luft: scene.fogNode).
         const flow = uFlowDir.mul(flowTime);
         const sc = vUv.add(flow);
         // Vertikale Strähnen (hochfrequent quer, scrollend Flow hinab).
@@ -34180,9 +34050,7 @@ class AnazhRealm {
         const spec = pow(max(dot(n, halfV), 0.0), 40.0);
         const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.5).mul(uLight));
 
-        // Fog — wie Terrain + Meer (Custom-Shader erbt THREE.Fog nicht).
-        const fogF = smoothstep(uFogNear, uFogFar, vFogDepth);
-        const colFogged = mix(withSpec, uFogColor, fogF);
+        // Die Luft legt der EINE Luft-Knoten auf (`scene.fogNode`, mat.fog) — kein eigener Wasser-Nebel.
 
         // Alpha: dichter Körper, weiche Seiten-Ränder.
         const edgeX = smoothstep(0.0, 0.1, vUv.x).mul(smoothstep(1.0, 0.9, vUv.x));
@@ -34190,7 +34058,7 @@ class AnazhRealm {
 
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.positionNode = displacedLocal;
-        mat.colorNode = vec4(colFogged, alpha);
+        mat.colorNode = vec4(withSpec, alpha);
         mat.transparent = true;
         mat.depthWrite = false;
         mat.side = THREE.DoubleSide;
@@ -34204,9 +34072,6 @@ class AnazhRealm {
             foam: uFoam,
             sunDir: uSunDir,
             light: uLight,
-            fogColor: uFogColor,
-            fogNear: uFogNear,
-            fogFar: uFogFar,
         };
         this.state.waterfallMaterial = mat;
         return mat;
@@ -34268,10 +34133,9 @@ class AnazhRealm {
         const span = cfg0.span;
         const ringR = this._voxelChunkConfig().ringRadius;
         const F = AnazhRealm.FAR_WATER;
-        const fogFar = s.fog && Number.isFinite(s.fog.far) ? s.fog.far : 450;
-        // Aussenradius: bis knapp hinter die Sicht (Nebel deckt dahinter), gedeckelt; nie
-        // enger als 2 Chunks hinter der Ring-Kante (sonst Null-Band bei engem Boot-Nebel).
-        const outR = Math.max((ringR + 2.5) * span, Math.min(F.maxRadius, fogFar + F.margin));
+        // Aussenradius: die Luft trägt Kilometer (V18.530) — das Sheet reicht bis `maxRadius`, nie enger als
+        // 2 Chunks hinter der Ring-Kante; dahinter klemmt der Fern-Ring das Wasser auf den Spiegel.
+        const outR = Math.max((ringR + 2.5) * span, F.maxRadius);
         const m = s.farWater;
         if (m && m.builtRing === ringR && Math.abs(m.builtOutR - outR) < F.rebuildDelta) {
             const dx = pm.x - m.anchorX,
@@ -34393,7 +34257,7 @@ class AnazhRealm {
 
     // ===== DER FERN-RING (DIE FERNE IST FELD) =====
     // Jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz (`_terrainMacroSurfaceY(x, z, false)`)
-    // den Horizont als 3 Ring-Schalen: fixe Kosten (3 Draw-Calls, 2880 Vertices). Vertex-XZ auf ein
+    // den Horizont als 3 Ring-Schalen: fixe Kosten (3 Draw-Calls, 9216 Vertices). Vertex-XZ auf ein
     // grobes WELT-Gitter gesnappt → beim Re-Zentrieren schwimmen die Höhen nie. Headless AUS; Hook
     // `window.__anazhFernRing` (true/false) für die Linse `diag-fern-ring`.
 
@@ -34438,7 +34302,7 @@ class AnazhRealm {
             }
         }
         // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): Lambert +
-        // vertexColors (die Höhen-Farbrampe), fog default AN (der Nebel deckt),
+        // vertexColors (die Fern-Farbe), fog default AN (die Luft dunstet die Ferne),
         // DoubleSide (die Kamera darf unter den Saum tauchen, kein Loch).
         const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
         const meshes = [];
@@ -34478,44 +34342,28 @@ class AnazhRealm {
         return st.fernRing;
     }
 
-    // Die Höhen-Farbrampe (schlicht — der Nebel veredelt): Wasser-Blau flach,
-    // Ufer-Sand, Land Grün → Fels-Grau → Schnee-Weiß über die Höhe überm Spiegel.
-    _fernRingColorInto(col, i, law, wl, wet) {
-        const f = this._fernRingFarbe(law, wl, wet);
-        col.setXYZ(i, f[0], f[1], f[2]);
-    }
-
-    // DIE EINE FARBRAMPE (Ring-Schalen UND Feld-Pass lesen sie — kein Zwilling).
-    _fernRingFarbe(law, wl, wet) {
-        let r, g, b;
+    // DIE FERN-FARBE (V18.530): die Ferne trägt die Funktion — die Boden-Farbe (`_bodenFarbeAt`, dieselbe wie jeder
+    // Chunk-Vertex) unter dem Kronendach des Waldes mit der Deckung, die der Wald-Generator würfelt (phyto-core
+    // `forestGeburt` aus der Bestandsdichte); Wasser liegt flach auf dem Spiegel. Befund 04.10. (Blick-Tour, Luft
+    // offen): eine eigene Höhen-Rampe (Gras-Grün 0,30/0,46/0,24 roh als linear) malte die Ferne hell-gelbgrün und
+    // kahl, wo der Wald steht — der vereinfachte Fern-Zwilling ist gefallen. `out` = [r, g, b] (linear).
+    _fernFarbeAt(x, y, z, wet, out) {
+        const K = AnazhRealm.FERN_FARBE;
         if (wet) {
-            r = 0.15;
-            g = 0.32;
-            b = 0.45; // Wasser-Blau (flach auf den Spiegel geklemmt)
-        } else {
-            const h = law - wl; // Höhe überm Wasserspiegel führt die Rampe
-            const mix = (t, a0, a1) => a0 + (a1 - a0) * Math.max(0, Math.min(1, t));
-            if (h < 6) {
-                // Ufer-Sand → Gras-Grün (2..6 m Blende)
-                const t = (h - 2) / 4;
-                r = mix(t, 0.72, 0.3);
-                g = mix(t, 0.65, 0.46);
-                b = mix(t, 0.47, 0.24);
-            } else if (h < 90) {
-                // Grün → Fels-Grau (45..90 m Blende)
-                const t = (h - 45) / 45;
-                r = mix(t, 0.3, 0.47);
-                g = mix(t, 0.46, 0.46);
-                b = mix(t, 0.24, 0.44);
-            } else {
-                // Fels → Schnee-Weiß (130..180 m Blende)
-                const t = (h - 130) / 50;
-                r = mix(t, 0.47, 0.93);
-                g = mix(t, 0.46, 0.94);
-                b = mix(t, 0.44, 0.96);
-            }
+            out[0] = K.wasser[0];
+            out[1] = K.wasser[1];
+            out[2] = K.wasser[2];
+            return out;
         }
-        return [r, g, b];
+        this._bodenFarbeAt(x, y, z, out);
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        const deckung =
+            core && typeof core.forestGeburt === "function" ? core.forestGeburt(this._forestStandDensity(x, z)) : 0;
+        const k = K.kronendach;
+        out[0] += (k[0] - out[0]) * deckung;
+        out[1] += (k[1] - out[1]) * deckung;
+        out[2] += (k[2] - out[2]) * deckung;
+        return out;
     }
 
     // DER EINE Punkt-Helfer (CPU-Schleife UND Feld-Zeichner): globaler Vertex-Index → Schale/Lokal-
@@ -34572,7 +34420,17 @@ class AnazhRealm {
         if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60; // der Ring weicht
         const geo = fr.meshes[p.s].geometry;
         geo.attributes.position.setXYZ(p.li, p.x, y, p.z);
-        this._fernRingColorInto(geo.attributes.color, p.li, law, wl, wet);
+        // Die Fern-Farbe je Schnapp-Punkt gemerkt: die Schalen-Gitter sind welt-fest, ein Re-Anker rechnet nur die
+        // neuen Punkte (die Farbe kostet ~15 µs, ein voller Ring 9216 Punkte).
+        const memo = this._fernFarbeMemo || (this._fernFarbeMemo = new Map());
+        const key = p.x + "," + p.z;
+        let f = memo.get(key);
+        if (!f) {
+            if (memo.size > 16384) memo.clear();
+            f = this._fernFarbeAt(p.x, law, p.z, wet, [0, 0, 0]);
+            memo.set(key, f);
+        }
+        geo.attributes.color.setXYZ(p.li, f[0], f[1], f[2]);
     }
 
     // DIE EINE DECK-FORMEL (CPU-Refresh UND GPU-Maler mischen durch sie — kein
@@ -34877,6 +34735,9 @@ class AnazhRealm {
         // Organ existiert der Pass nicht (die Schalen tragen, byte-alt).
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
+        // DIE LUFT: der Pass dunstet mit denselben Knoten wie jedes Mesh — ohne sie gibt es ihn nicht.
+        const luft = this._luftEnsure();
+        if (!luft) return null;
         const P = AnazhRealm.FELD_PASS;
         const PN = AnazhRealm.FELD_PANO;
         const daten = new Float32Array(P.az * P.rad * 4);
@@ -34900,7 +34761,6 @@ class AnazhRealm {
             rMax: TSL.uniform(P.rMaxM),
             wl: TSL.uniform(0),
             hMax: TSL.uniform(500),
-            fogFarbe: TSL.uniform(new THREE.Color(0.62, 0.68, 0.78)),
             elevMax: TSL.uniform(PN.elevMax),
             nah: TSL.uniform(0.1),
             fern: TSL.uniform(9000),
@@ -34916,8 +34776,6 @@ class AnazhRealm {
             envUnten: TSL.uniform(new THREE.Vector3()),
             envMitte: TSL.uniform(new THREE.Vector3()),
             envOben: TSL.uniform(new THREE.Vector3()),
-            fogNah: TSL.uniform(1e6),
-            fogFern: TSL.uniform(2e6),
         };
         // Analog-B Slice 2 — IQ truncated cone
         const sdCappedConeFn = TSL.wgslFn(
@@ -34976,7 +34834,7 @@ class AnazhRealm {
                 "}"
         );
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -34984,6 +34842,7 @@ class AnazhRealm {
                 "    // ── DAS PANORAMA (die Ferne jenseits der Schalen) ──\n" +
                 "    var panoRgb = vec3<f32>(0.0);\n" +
                 "    var panoDa = false;\n" +
+                "    var panoT = 0.0;\n" +
                 "    let e = asin(clamp(dir.y, -1.0, 1.0));\n" +
                 "    if (abs(e) <= elevMax) {\n" +
                 "        let dim = textureDimensions(pano, 0);\n" +
@@ -34994,8 +34853,11 @@ class AnazhRealm {
                 "        let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
                 "        let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
                 "        if (pT.a > 0.0) {\n" +
-                "            let nebel = clamp((pT.a - rMin) / (rMax - rMin), 0.0, 1.0) * 0.85;\n" +
-                "            panoRgb = mix(pT.rgb, fogFarbe, nebel);\n" +
+                "            // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
+                "            // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer unten; die Luft legt der\n" +
+                "            // Pass-Knoten auf (EINE Luft für Mesh, Feld und Panorama).\n" +
+                "            panoRgb = pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe + hemiOben) * (1.0 / PI) + envOben);\n" +
+                "            panoT = pT.a;\n" +
                 "            panoDa = true;\n" +
                 "        }\n" +
                 "    }\n" +
@@ -35326,13 +35188,12 @@ class AnazhRealm {
                 "        let hemi = mix(hemiUnten, hemiOben, nY * 0.5 + 0.5);\n" +
                 "        let env = select(mix(envMitte, envOben, nY), mix(envMitte, envUnten, -nY), nY < 0.0);\n" +
                 "        let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
-                "        let vz = bestT * max(dot(dir, fwd), 1e-4);\n" +
-                "        let tiefe = clamp(fern * (vz - nah) / (vz * (fern - nah)), 0.0, 0.9999995);\n" +
-                "        let nebelF = smoothstep(fogNah, fogFern, vz);\n" +
-                "        return vec4<f32>(mix(bestRgb * licht, fogFarbe, nebelF), tiefe);\n" +
+                "        // Die Strahl-Länge reist im Alpha (> 0 Feld-Treffer, < 0 Panorama, 0 Himmel): der Pass-Knoten\n" +
+                "        // rechnet daraus die Tiefe und legt die EINE Luft auf.\n" +
+                "        return vec4<f32>(bestRgb * licht, bestT);\n" +
                 "    }\n" +
-                "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
-                "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
+                "    if (panoDa) { return vec4<f32>(panoRgb, -panoT); }\n" +
+                "    return vec4<f32>(0.0, 0.0, 0.0, 0.0);\n" +
                 "}",
             [sdCappedConeFn, sdEllipsoidCrownFn, gradEllipsoidCrownFn, kapselTexelFn] // Glättung + Cone + Ellipsoid-Noise (Analog-B Slice 2+3)
         );
@@ -35367,9 +35228,6 @@ class AnazhRealm {
             envUnten: U.envUnten,
             envMitte: U.envMitte,
             envOben: U.envOben,
-            fogNah: U.fogNah,
-            fogFern: U.fogFern,
-            fogFarbe: U.fogFarbe,
             // Die Szenen-Tiefe VOR dem Feld-Pass (r184-Viewport-Tiefe, Kopie im Pass-Bruch wie beim Wasser): die
             // Grenze des Marchs. Ein Leser der Viewport-Tiefe bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
             szeneTiefe: TSL.viewportDepthTexture().x,
@@ -35379,11 +35237,26 @@ class AnazhRealm {
             folge: TSL.texture(wm.folge),
             kapseln: TSL.texture(wm.kapseln),
         });
+        // DIE LUFT auf Feld und Panorama: derselbe Strahl (invVP · NDC) wie im WGSL, dieselben Luft-Knoten wie jedes
+        // Mesh (`_luftEnsure`) — die Ferne dunstet nach demselben Gesetz wie das Nahe, kein Pass-eigener Nebel.
+        const strahl = ruf.a;
+        const tStrahl = strahl.abs();
+        const fern4 = U.invVP.mul(TSL.vec4(ndcNode, 1.0, 1.0));
+        const dirN = fern4.xyz.div(fern4.w).sub(U.camPos).normalize();
+        const punkt = U.camPos.add(dirN.mul(tStrahl));
         mat.outputNode = TSL.Fn(() => {
-            TSL.Discard(ruf.a.lessThan(0.0)); // -1-Sentinel: kein Feld, kein Panorama → Himmel
-            return TSL.vec4(ruf.rgb, 1.0);
+            TSL.Discard(tStrahl.lessThan(0.25)); // 0-Sentinel: kein Feld, kein Panorama → Himmel
+            return TSL.vec4(TSL.mix(ruf.rgb, luft.farbe(U.camPos, punkt), luft.faktor(U.camPos, punkt)), 1.0);
         })();
-        mat.depthNode = ruf.a; // die March-Tiefe IST die Fragment-Tiefe (Feld ↔ Mesh komponieren)
+        // Die March-Tiefe IST die Fragment-Tiefe (Feld ↔ Mesh komponieren): View-Z aus der Strahl-Länge, das
+        // Panorama liegt hinter allem.
+        const vzStrahl = tStrahl.mul(TSL.max(TSL.dot(dirN, U.fwd), 1e-4));
+        const tiefeFeld = TSL.clamp(
+            U.fern.mul(vzStrahl.sub(U.nah)).div(vzStrahl.mul(U.fern.sub(U.nah))),
+            0.0,
+            0.9999995
+        );
+        mat.depthNode = TSL.select(strahl.lessThan(0.0), TSL.float(0.999999), tiefeFeld);
         const geo = new THREE.BufferGeometry();
         geo.setAttribute(
             "position",
@@ -35419,11 +35292,13 @@ class AnazhRealm {
         return st.feldPass;
     }
 
-    // Das Feld malt das polare Höhen+Farb-Feld: EIN Compute-Lauf des Zeichners
-    // über az×rad Polar-Punkte um den Ring-Anker, CPU packt Höhe (Wasser flach
-    // auf wl) + die EINE Ring-Rampe in die RGBA-Textur. Re-Anker → neu.
+    // Das Feld malt das polare Höhen+Farb-Feld: EIN Compute-Lauf des Zeichners über az×rad Polar-Punkte um den
+    // Ring-Anker, die CPU packt Höhe (Wasser flach auf wl) + die EINE Fern-Farbe budgetiert in die RGBA-Textur
+    // (`_feldPassFaerben`). Re-Anker → neu.
     _feldPassMal(fp, fr) {
         if (fp.flug) return;
+        // Der Anker eines laufenden Farb-Jobs ist schon unterwegs — erst ein NEUER Anker malt neu.
+        if (fp.farbJob && fp.farbJob.ankerX === fr.anchorX && fp.farbJob.ankerZ === fr.anchorZ) return;
         const P = AnazhRealm.FELD_PASS;
         const F = AnazhRealm.FERN_RING;
         const rMin = F.schalen[F.schalen.length - 1].aussen;
@@ -35447,35 +35322,61 @@ class AnazhRealm {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
                 if (!werte) return; // kein Device → der Pass bleibt unsichtbar, die Schalen tragen
-                const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-                let hMax = -Infinity;
-                for (let k = 0; k < n; k++) {
-                    const law = werte[k];
-                    const wet = law < wl;
-                    const y = wet ? wl : law;
-                    const f = this._fernRingFarbe(law, wl, wet);
-                    fp.daten[k * 4] = y;
-                    fp.daten[k * 4 + 1] = f[0];
-                    fp.daten[k * 4 + 2] = f[1];
-                    fp.daten[k * 4 + 3] = f[2];
-                    if (y > hMax) hMax = y;
-                }
-                fp.tex.needsUpdate = true;
-                fp.U.rMin.value = rMin;
-                fp.U.wl.value = wl;
-                fp.U.hMax.value = hMax + 5;
-                fp.U.anker.value.set(ankerX, ankerZ);
-                fp.anchorX = ankerX;
-                fp.anchorZ = ankerZ;
-                fp.laeufe++;
-                // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit
-                // gebackenem Panorama (_feldPanoramaMal setzt visible) — das
-                // Fragment liest NUR noch das Panorama, nie das rohe Feld.
-                this._feldPanoramaMal(fp);
+                // DIE FERN-FARBE kostet je Texel ~15 µs (az×rad Texel ≈ 0,1 s): sie malt budgetiert im Pass-Takt
+                // (`_feldPassFaerben`), das alte Feld bleibt sichtbar, bis das neue steht.
+                fp.farbJob = {
+                    werte,
+                    punkte,
+                    k: 0,
+                    n,
+                    rMin,
+                    ankerX,
+                    ankerZ,
+                    hMax: -Infinity,
+                    daten: new Float32Array(n * 4),
+                };
             })
             .catch(() => {
                 if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
             });
+    }
+
+    // Der Farb-Job des Feld-Malers: `budget` Texel je Takt durch die EINE Fern-Farbe (`_fernFarbeAt`), dann steht
+    // das neue Feld (Textur, Uniforms, Anker) und das Panorama backt. Liefert die gemalten Texel.
+    _feldPassFaerben(fp, budget) {
+        const job = fp.farbJob;
+        if (!job) return 0;
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        const f = [0, 0, 0];
+        const ende = Math.min(job.n, job.k + budget);
+        const k0 = job.k;
+        for (let k = job.k; k < ende; k++) {
+            const law = job.werte[k];
+            const wet = law < wl;
+            const y = wet ? wl : law;
+            this._fernFarbeAt(job.punkte[k * 2], y, job.punkte[k * 2 + 1], wet, f);
+            job.daten[k * 4] = y;
+            job.daten[k * 4 + 1] = f[0];
+            job.daten[k * 4 + 2] = f[1];
+            job.daten[k * 4 + 3] = f[2];
+            if (y > job.hMax) job.hMax = y;
+        }
+        job.k = ende;
+        if (job.k < job.n) return ende - k0;
+        fp.farbJob = null;
+        fp.daten.set(job.daten);
+        fp.tex.needsUpdate = true;
+        fp.U.rMin.value = job.rMin;
+        fp.U.wl.value = wl;
+        fp.U.hMax.value = job.hMax + 5;
+        fp.U.anker.value.set(job.ankerX, job.ankerZ);
+        fp.anchorX = job.ankerX;
+        fp.anchorZ = job.ankerZ;
+        fp.laeufe++;
+        // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
+        // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
+        this._feldPanoramaMal(fp);
+        return ende - k0;
     }
 
     // ═══ DER EINE WELT-MARCH: Atlas + Feld-Liste ═══
@@ -36470,6 +36371,7 @@ class AnazhRealm {
         if (!fp) fp = this._feldPassEnsure(fr);
         if (!fp) return;
         if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ) this._feldPassMal(fp, fr);
+        if (fp.farbJob) this._feldPassFaerben(fp, AnazhRealm.FELD_PASS.farbeJeTakt);
         const cam = st.camera;
         // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät) + Re-Bake bei
         // Kamera-Drift (Parallaxe/Horizont) — amortisiert, gen-gestempelt.
@@ -36516,7 +36418,7 @@ class AnazhRealm {
     // DAS LICHT DER WELT für den Feld-Pass: liest dieselben Quellen wie jedes MeshStandard —
     // Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
     // und die Himmels-Umgebung (Irradianz aus DENSELBEN Bytes wie `_skyEnvTex`, je Normalen-y).
-    // Der Nebel ist `scene.fog` (linear, View-Tiefe) wie beim Mesh.
+    // Die Luft legt der Pass-Knoten aus `_luftEnsure` auf (dieselben Fn wie `scene.fogNode`).
     _feldLichtSync(U) {
         const st = this.state;
         const nullV = this._nullVektor || (this._nullVektor = new THREE.Vector3());
@@ -36542,15 +36444,6 @@ class AnazhRealm {
             U.hemiUnten.value.set(0, 0, 0);
         }
         this._feldEnvIrradianz(U);
-        const fog = st.scene && st.scene.fog;
-        if (fog && fog.color) {
-            U.fogFarbe.value.copy(fog.color);
-            U.fogNah.value = Number.isFinite(fog.near) ? fog.near : 1e6;
-            U.fogFern.value = Number.isFinite(fog.far) ? Math.max(fog.far, U.fogNah.value + 1e-3) : 2e6;
-        } else {
-            U.fogNah.value = 1e6;
-            U.fogFern.value = 2e6;
-        }
     }
 
     // Die Himmels-Irradianz (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der
@@ -36690,6 +36583,7 @@ class AnazhRealm {
     // (der Tick baut die neue Welt lazy nach).
     _fernRingDispose() {
         this._feldPassDispose(); // der Pass ist Ring-Besitz — er fällt mit
+        this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
         const fr = this.state.fernRing;
         if (!fr) return;
         for (const m of fr.meshes || []) {
@@ -37435,10 +37329,9 @@ class AnazhRealm {
             chunkRingRadius: Number.isFinite(this.state.chunkRingRadius) ? this.state.chunkRingRadius : 4,
             // V18.389 (P5) — die Sichtbarkeit des sauberen Perf-Panels (default an).
             perfPanel: this.state.perfPanel !== false,
-            // V8.28 6.G4.b — Atmosphäre-Slider (fogDistance; Cel-Stufen sind
-            // seit V18.236 gestrichen). V13.9 — waterCull (uMinDepth) mit dabei.
+            // V8.28 6.G4.b — Atmosphäre-Slider (Cel-Stufen seit V18.236 und der Fog-Regler seit V18.530 gestrichen).
+            // V13.9 — waterCull (uMinDepth) mit dabei.
             atmosphere: {
-                fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
                 waterCull:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
@@ -41487,9 +41380,7 @@ class AnazhRealm {
             if (typeof state.perfPanel === "boolean") this.state.perfPanel = state.perfPanel;
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
-            if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
-            const fd = Number(state.atmosphere.fogDistance);
-            if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
+            if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
             // V18.92 — Wasser-Render-Modus (persistierte "surface"-Werte heilen im
@@ -64457,25 +64348,11 @@ class AnazhRealm {
     }
 
     // ===== ATLAS §19 · LICHT/WASSER-REGLER — alle Render-Setter (EINE Quelle je Regler) =====
-    // V8.28 6.G4.b C — Mutations-Pfad für den Fog-Distanz-Slider.
-    // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
-    // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
-    setFogDistance(mult) {
-        // V8.40 — Effekt-Bereich verdreifacht: Label „100%" = mult 3.0 (=
-        // heutiger 300%-Fog, neuer Default), Label „300%" = mult 9.0.
-        const m = Math.max(0.9, Math.min(9.0, Number(mult) || 3.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
-        this.state.atmosphere.fogDistance = m;
-        if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
     // Wasser-Cull (uMinDepth): dünnes Wasser pro Pixel verwerfen (waterThick < uMinDepth → Alpha 0
     // via mat.alphaTest). Wert in [0,1]-Lineardepth über camera near..far; 0 = aus.
     setWaterCull(minDepth) {
         const m = Math.max(0.0, Math.min(0.05, Number(minDepth) || 0.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.waterCull = m;
         // Das geteilte Hydro-Surface-Uniform live setzen (lazy initialisiert beim
         // ersten Material-Bau; nur setzen, wenn schon da).
@@ -64491,7 +64368,7 @@ class AnazhRealm {
     // Browser-Sign-off). Setzt alle gestreamten Wasser-Meshes neu (re-enqueued).
     setWaterRenderMode(mode) {
         const m = mode === "iso" ? "iso" : "cells";
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.waterRenderMode = m;
         // Alle Wasser-tragenden Chunks neu meshen, damit der Modus-Wechsel sofort
         // greift (die Zellen/Physik bleiben unberührt — nur der Render-Pfad).
@@ -64511,7 +64388,7 @@ class AnazhRealm {
     setWaterShoreWidth(width) {
         // V18.17 — wieder in VIEWPORT-Lineardepth (Ufer-Alpha-Saum gegen waterThick, V18.14-Ufer).
         const m = Math.max(0.001, Math.min(0.05, Number(width) || 0.0045));
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.waterShoreWidth = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.shoreWidth) {
             this.state.hydroSurfaceUniforms.shoreWidth.value = m;
@@ -64524,7 +64401,7 @@ class AnazhRealm {
     // schnell das Wasser mit der echten Tiefe ins Dunkle/Blaue kippt. Kleiner = schneller tief.
     setWaterDepthRange(range) {
         const m = Math.max(1.0, Math.min(15.0, Number(range) || 5.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.waterDepthRange = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthRange) {
             this.state.hydroSurfaceUniforms.depthRange.value = m;
@@ -64537,7 +64414,7 @@ class AnazhRealm {
     // kräuseln (0 = flach, 0.06 sanft, 1 = wie Ozean). Live an die Uniform.
     setLakeRipple(v) {
         const m = Math.max(0.0, Math.min(1.0, Number(v) || 0.06));
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.waterLakeRipple = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.lakeRipple) {
             this.state.hydroSurfaceUniforms.lakeRipple.value = m;
@@ -64551,7 +64428,7 @@ class AnazhRealm {
     // flache Fluss schäumt weniger; grösser = mehr Schaum auch im flachen Wasser.
     setWaterDepthFoam(meters) {
         const m = Math.max(0.1, Math.min(6.0, Number(meters) || 1.2));
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.waterDepthFoam = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthFoam) {
             this.state.hydroSurfaceUniforms.depthFoam.value = m;
@@ -64618,7 +64495,7 @@ class AnazhRealm {
         // Default; der aoCap im Shader bleibt der Sicherheits-Deckel.
         const v = Math.max(0, Math.min(2, Number(scale)));
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.cavityAO = m;
         if (this.state.atmoUniforms && this.state.atmoUniforms.aoScale) this.state.atmoUniforms.aoScale.value = m;
         if (typeof this.saveState === "function") this.saveState();
@@ -64634,7 +64511,7 @@ class AnazhRealm {
     setColorVariation(scale) {
         const v = Math.max(0, Math.min(2, Number(scale))); // V17.109 Headroom 0..2
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.colorVar = m;
         if (this.state.atmoUniforms && this.state.atmoUniforms.tintScale) this.state.atmoUniforms.tintScale.value = m;
         if (typeof this.saveState === "function") this.saveState();
@@ -64646,7 +64523,7 @@ class AnazhRealm {
     setSurfaceTexture(scale) {
         const v = Math.max(0, Math.min(4, Number(scale))); // V17.109 Headroom 0..4 (Schöpfer liebt die Striation, will >200%)
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.triplanar = m;
         if (this.state.atmoUniforms && this.state.atmoUniforms.triplanarScale)
             this.state.atmoUniforms.triplanarScale.value = m;
@@ -64660,7 +64537,7 @@ class AnazhRealm {
     setEdgeSharp(amount) {
         const v = Math.max(0, Math.min(1, Number(amount)));
         const m = Number.isFinite(v) ? v : 0.5;
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.edgeSharp = m;
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.localContrast)
             this.state.postProcessingUniforms.localContrast.value = m;
@@ -64693,7 +64570,7 @@ class AnazhRealm {
     setShadowRange(meters) {
         const v = Math.max(80, Math.min(400, Number(meters)));
         const m = Number.isFinite(v) ? v : 300;
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.shadowRange = m; // der User-CEILING (der Regler skaliert darunter)
         this._applyEffectiveShadowRange(m);
         if (typeof this.saveState === "function") this.saveState();
@@ -64705,7 +64582,7 @@ class AnazhRealm {
     setShadowBias(bias) {
         const v = Math.max(0, Math.min(3, Number(bias)));
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.shadowBias = m;
         const dl = this.state.directionalLight;
         if (dl && dl.shadow) dl.shadow.normalBias = m;
@@ -81364,7 +81241,7 @@ class AnazhRealm {
         this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm);
         this._dayNightApplyAmbient(angle);
         this._updateCelestialBodies(angle, tint.lightMul);
-        this._dayNightApplyHemiAndFog(angle, tint);
+        this._dayNightApplyHemiUndLuft(angle, tint, sunDir);
         this._dayNightApplyWaterMaterials(lightDir);
         this._dayNightApplyBelichtung();
     }
@@ -81768,44 +81645,97 @@ class AnazhRealm {
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
     }
 
-    // Nebel-Kante mit Trägheit, EINE Quelle `AnazhRealm.FOG_EDGE`: asymmetrisch (sanft weiten, kaum
-    // zurückziehen — gegen revealK-Jitter) + pro Frame gedeckelt (ein Ring-Sprung wird Drift statt Pop).
-    // Invarianten (diag-fog-inertia): ≤ maxStep/Frame, kontrahiert langsamer, monoton ohne Überschwingen.
-    _smoothFogEdge(prev, target) {
-        if (prev == null || !Number.isFinite(prev)) {
-            this._fogEdgeLowFrames = 0;
-            return target;
-        }
-        const E = AnazhRealm.FOG_EDGE;
-        // Puffer gegen Streaming-Jitter: die Kante weicht erst nach ANHALTEND niedrigerem Ziel
-        // (`shrinkSustainFrames`); der Zähler resettet bei jedem Aufwärts-Frame → ein oszillierendes Ziel
-        // erreicht die Schwelle nie (kein Pendeln). Weiten bleibt sofort.
-        let effTarget = target;
-        if (target < prev - 0.5) {
-            this._fogEdgeLowFrames = (this._fogEdgeLowFrames || 0) + 1;
-            if (this._fogEdgeLowFrames < E.shrinkSustainFrames) effTarget = prev;
-        } else {
-            this._fogEdgeLowFrames = 0;
-        }
-        const delta = effTarget - prev;
-        let step = delta * (delta > 0 ? E.expandRate : E.contractRate);
-        if (step > E.maxStep) step = E.maxStep;
-        else if (step < -E.maxStep) step = -E.maxStep;
-        return prev + step;
+    // ═══ DIE LUFT (V18.530): die EINE Luftperspektive — Physik statt Kulisse ═══
+    // Befund 04.10. (Blick-Tour, echte GPU, Mess-Wiese): der Nebel war eine lineare WAND an der Wald-Kante
+    // (`fog.far = foliageRadius`, unter Last 60 m) — aus 45 m Höhe nach ~100 m nur Grau-Blau; er kaschierte die
+    // Ring-Kante, die Fernform (Fern-Ring bis 8 km, Feld-Pass bis 40 km) war gebaut und unsichtbar. Jetzt trägt
+    // die Ferne die Funktion, die Luft dunstet sie nur: Extinktion β (Koschmieder: Sichtweite V = −ln 0,02 / β)
+    // aus reiner Luft (Rayleigh) + der Trübung des Wetters (fog-Kanal = Dunst, rain-Kanal = Niederschlag), mit
+    // der Höhe exponentiell abnehmend (Dunst-Skalenhöhe), längs des Strahls ANALYTISCH integriert; die
+    // In-Streuung ist der Horizont-Himmel + die Vorwärts-Keule der Sonne. EIN Knoten (`scene.fogNode`) für jedes
+    // Material, der Feld-Pass ruft DIESELBEN Fn-Knoten, die Linsen lesen `_luftSichtM`.
+
+    // Die Extinktion (1/m) am Bezugs-Niveau aus dem Wetter-Feld. Die Koeffizienten folgen aus den zwei
+    // beobachtbaren Ankern (`LUFT.sichtKlarM` bei sunny, `LUFT.sichtSturmM` bei stormy) über DIESELBE
+    // Wetter-Tabelle, die der Rest der Welt liest — kein freier Regler, ein neues Wetter-Wort erbt seine Luft.
+    _luftBeta(wf) {
+        const L = AnazhRealm.LUFT;
+        const W = AnazhRealm.WEATHER_FIELD;
+        const K = -Math.log(L.kontrast);
+        const dunst = (K / L.sichtKlarM - L.betaRayleigh) / W.sunny.fog;
+        const regen = (K / L.sichtSturmM - L.betaRayleigh - W.stormy.fog * dunst) / W.stormy.rain;
+        const f = wf || this._weatherFieldFor();
+        return L.betaRayleigh + Math.max(0, f.fog) * dunst + Math.max(0, f.rain) * regen;
     }
 
-    // HemisphereLight + Fog synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler; fog.color = Himmel
-    // mit kleinem Erd-Anteil (gMix, unten) — Nebel ist Luft, keine Dreck-Schicht.
-    // Unterwasser-Tint nur beim echten Tauchen (playerEyesUnderwater).
-    _dayNightApplyHemiAndFog(angle, tint) {
+    // Die Sichtweite (m) eines waagrechten Blicks in der Augenhöhe `y` (Kontrast fällt unter `LUFT.kontrast`):
+    // der CPU-Leser DERSELBEN Uniforms, die der Knoten liest (Linsen, Fern-Wasser-Reichweite).
+    _luftSichtM(y) {
+        const luft = this._luftEnsure();
+        const L = AnazhRealm.LUFT;
+        const K = -Math.log(L.kontrast);
+        if (!luft) return K / this._luftBeta();
+        const U = luft.U;
+        const yy = Number.isFinite(y) ? y : 0;
+        const beta = U.beta.value * Math.exp(-(yy - U.bezugY.value) / U.hoehe.value);
+        return beta > 0 ? K / beta : Infinity;
+    }
+
+    // Die Luft-Knoten (EINMAL je Szene): Uniforms in der geteilten renderGroup (Observer-Diät-Pflicht-Paar),
+    // `faktor(auge, punkt)` = 1 − e^{−τ} mit τ = β·e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k (k = Δy/H, k→0: 1 − k/2),
+    // `farbe(auge, punkt)` = Horizont-Himmel, zur Sonne hin die Keule. `scene.fogNode` ist der Leser jedes
+    // Materials (r184 `getFogNode`), der Feld-Pass ruft dieselben Fn.
+    _luftEnsure() {
+        const st = this.state;
+        if (st.luft) return st.luft;
+        if (typeof THREE === "undefined" || !st.scene) return null;
+        const T = THREE.TSL;
+        if (!T || !T.fog || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition) return null;
+        const L = AnazhRealm.LUFT;
+        const U = this._uniformHeimatTeilen({
+            beta: T.uniform(this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny)),
+            hoehe: T.uniform(L.skalenHoeheM),
+            bezugY: T.uniform(0),
+            farbe: T.uniform(new THREE.Color(0.651, 0.824, 0.925)),
+            sonneFarbe: T.uniform(new THREE.Color(0.651, 0.824, 0.925)),
+            sonneDir: T.uniform(new THREE.Vector3(0, 1, 0)),
+        });
+        const faktor = T.Fn(([auge, punkt]) => {
+            const v = punkt.sub(auge);
+            const d = v.length();
+            const k = v.y.div(U.hoehe);
+            const klein = k.abs().lessThan(1e-3);
+            const kSicher = T.select(klein, T.float(1e-3), k);
+            const fk = T.select(
+                klein,
+                T.float(1).sub(k.mul(0.5)),
+                T.float(1).sub(T.exp(kSicher.negate())).div(kSicher)
+            );
+            const hoehenTerm = T.exp(auge.y.sub(U.bezugY).div(U.hoehe).negate());
+            const tau = U.beta.mul(hoehenTerm).mul(d).mul(fk);
+            return T.float(1).sub(T.exp(tau.negate()));
+        });
+        const farbe = T.Fn(([auge, punkt]) => {
+            const dir = punkt.sub(auge).normalize();
+            const keule = T.pow(T.max(T.dot(dir, U.sonneDir), 0.0), L.mieKeule).mul(L.mieAnteil);
+            return T.mix(U.farbe, U.sonneFarbe, keule);
+        });
+        st.scene.fogNode = T.fog(farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld));
+        st.luft = { U, faktor, farbe };
+        return st.luft;
+    }
+
+    // HemisphereLight + die Luft synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler × Wetter × Sonne; die
+    // In-Streu-Farbe = Himmel mit kleinem Erd-Anteil (gMix, unten) — Luft ist Luft, keine Dreck-Schicht.
+    // Unterwasser trägt dieselbe Formel mit Wasser-Trübung (playerEyesUnderwater).
+    _dayNightApplyHemiUndLuft(angle, tint, sunDir) {
         const hl = this.state.hemiLight;
-        const fog = this.state.fog;
         const pm = this.state.playerMesh;
         if (hl) {
             hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
             const earth = new THREE.Color(0x463c2e); // Vorlagen-Hemi-Boden (phytogenesis Z.1291, warmes Braun statt 0x3a2818)
-            // `tint.auraK` gated auch den Feld-Term des Hemi-BODENS (er fließt über gMix in die Nebel-Farbe):
-            // bei Default auraK=0 sind Nebel/Boden rein Tag-Nacht+Wetter; Feld-Tönung nur über
+            // `tint.auraK` gated auch den Feld-Term des Hemi-BODENS (er fließt über gMix in die Luft-Farbe):
+            // bei Default auraK=0 sind Luft/Boden rein Tag-Nacht+Wetter; Feld-Tönung nur über
             // `atmosphere.auraTintStrength`.
             const _aKGround = tint && Number.isFinite(tint.auraK) ? tint.auraK : 0;
             if (_aKGround > 0 && pm && typeof this.auraAt === "function") {
@@ -81827,192 +81757,94 @@ class AnazhRealm {
             // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
             hl.intensity = 0.1 * this._nachtAnteil(angle) * tint.lightMul;
         }
-        if (fog) {
-            // Erd-Anteil der Nebel-/Aerial-Farbe (gMix): fernes Terrain bleibt ein dunklerer Dunst mit lesbarer
-            // Silhouette — mit zu viel Himmelsanteil wird es deckungsgleich und die Sonne „scheint durch" die
-            // Berge. Speist auch `au.skyColor` (Höhen-Melt + Wasser-Fog). gMix skaliert mit der Sonnenhöhe →
-            // nachts 0, sonst dominiert der warme groundColor den dunklen Himmel (warm-brauner Horizont).
-            const dayAmt = 1 - this._nachtAnteil(angle); // 1 ab ~15° Sonne, 0 am/unter Horizont
-            const gMix = 0.26 * dayAmt;
-            const fogRn = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
-            const fogGn = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
-            const fogBn = tint.skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
-            // Tag-Nebel nach dem Studio-Gesetz (EINE Quelle für Himmel+Nebel+Ferne): Helligkeit skyB aus der
-            // Sonnenhöhe zwischen den Ankern Tag 0xa6d2ec · Nacht 0x0a1326, die Dämmerungs-Glut ist atm.col.
-            // r128 las Hex als LINEAR → Rohwerte per setRGB, nie per Hex (sRGB→linear wäre zu dunkel).
-            // Nachts (dayAmt→0) bleibt der bisherige Pfad byte-genau (Mond-Nacht eigen).
-            const sunHeightF = Math.max(0, Math.sin(angle)); // eigener Scope (das hl-Block-sunHeight lebt dort)
-            const _fATM = this._atmosphere(sunHeightF);
-            const _fSS = (a, b, x) => {
-                let q = (x - a) / (b - a);
-                q = q < 0 ? 0 : q > 1 ? 1 : q;
-                return q * q * (3 - 2 * q);
-            };
-            const skyB = 0.045 + 0.955 * _fSS(-0.18, 0.42, sunHeightF);
-            let fdR = 0.039 + (0.651 - 0.039) * skyB; // 0x0a1326 → 0xa6d2ec, raw als LINEAR (r128-treu)
-            let fdG = 0.075 + (0.824 - 0.075) * skyB;
-            let fdB = 0.149 + (0.925 - 0.149) * skyB;
-            const lowSun =
-                Math.max(0, 1 - Math.abs(sunHeightF) / 0.28) * Math.max(0, Math.min(1, 1 + sunHeightF * 3.5));
-            const glut = lowSun * lowSun * 0.6;
-            fdR += (_fATM.col.r - fdR) * glut;
-            fdG += (_fATM.col.g - fdG) * glut;
-            fdB += (_fATM.col.b - fdB) * glut;
-            // Wetter dämpft wie bisher über den EINEN Tint-Kanal (skyMul: sunny 1 → stormy 0.42).
-            const wDim = 0.35 + 0.65 * tint.skyMul;
-            const fogR = fogRn * (1 - dayAmt) + fdR * wDim * dayAmt;
-            const fogG = fogGn * (1 - dayAmt) + fdG * wDim * dayAmt;
-            const fogB = fogBn * (1 - dayAmt) + fdB * wDim * dayAmt;
-            fog.color.setRGB(fogR, fogG, fogB);
-            // rainyMix (Wetter-Achse) zieht den Nebel dichter. Tiefe kommt aus dem höhen-dominanten Aerial-Term
-            // + Schatten, nie daraus, den Nebel heranzuziehen.
-            const rainyMix = this._weatherBlendedValue(0, 1); // D5a: Achsen-Lerp — stormy zieht den Nebel dichter
-            // Sicht-Distanz: sie folgt NATIV der Wald-Kante (`visualEdgeTarget`), das Wetter dimmt über
-            // `rainyMix`, der EINE Sicht-Regler ist der Ring-Slider (chunkRingRadius) — kein zweiter
-            // fog-Multiplikator; `atmosphere.fogDistance` bleibt nur persistiertes Datum (Alt-Snapshots).
-            // Der Nebel liegt nie jenseits der Ring-Kante ((ringRadius+0.5)·span), sonst ist der Rand sichtbar.
-            const vCfg = this._voxelChunkConfig();
-            const ringEdge = (vCfg.ringRadius + 0.5) * vCfg.span;
-            // Reveal-/Nebel-Ziel ist die DICHTE WALD-KANTE (foliageRadius, gekappt auf den gebauten Ring) wie
-            // im Studio (fog.far ~120 ≈ Wald-R 64): nie über den Wald in die baumlose Ferne sehen, jenseits
-            // deckt allein der Nebel. Die Tiefe kommt aus der Dichte in der Nebelkuppel, nicht aus Fernsicht.
-            const _folR = Number.isFinite(this.state.foliageRadius)
-                ? this.state.foliageRadius
-                : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
-            const visualEdgeTarget = Math.min(_folR, ringEdge);
-            // LADE-NEBEL: solange der Ziel-Ring nicht voll steht, deckt der Nebel die GEBAUTE zusammenhängende
-            // Kante und weicht mit der Welt (exp-geglättet, kein Pop) — sonst Blick über Ungebautes ins Leere.
-            // Nach Ring-Vollendung konvergiert er aufs Ziel; der harte Min-Deckel garantiert ≤ Ziel.
-            let visualEdge = visualEdgeTarget;
-            const builtK = this._builtRingRadius();
-            // Reveal-Ring = min(terrain, gras, wasser): das Gras baut ≤1 Chunk/Frame NACH dem Terrain → der
-            // Nebel weicht nur über bepflanztem Boden. Jenseits der Gras-LOD ≤4 gilt grassK == builtK.
-            const grassK = this._builtGrassRingRadius();
-            // V18.346 — der Reveal wartet AUCH auf die WASSER-Front (Schöpfer-HAUPTPROBLEM: der Nebel
-            // gab den leeren See frei, bevor seine Fläche stand). min(Terrain, Gras, Wasser) → der
-            // Nebel weicht erst, wenn der Boden bepflanzt UND der See gefüllt ist.
-            const waterK = this._builtWaterRingRadius();
-            const revealK = [builtK, grassK, waterK].reduce(
-                (acc, v) => (v === null ? acc : acc === null ? v : Math.min(acc, v)),
-                null
-            );
-            // Solange die Welt wächst (`_activeRingRadius < chunkRingRadius`), kappt der Nebel IMMER auf die
-            // gebaute Kante — „aktiver Ring gebaut" heißt nicht „Welt gebaut" (beim Ein-Chunk-Boot ist
-            // revealK == ringRadius == 0, keine Klammer griffe). Headless setzt activeRing sofort auf target.
-            const _targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
-            const _worldRamping = this.state._activeRingRadius != null && this.state._activeRingRadius < _targetRing;
-            if (revealK === null || revealK < 0) {
-                // Erwachen: noch kein Boden-Chunk (builtK null/-1) → enger Nebel-Kokon (AWAKEN_FOG_FAR) verbirgt
-                // Welt und ferne Spawns.
-                visualEdge = Math.min(visualEdgeTarget, AnazhRealm.AWAKEN_FOG_FAR);
-            } else if (revealK < vCfg.ringRadius || _worldRamping) {
-                // Boden + Wiese erscheinen → der Nebel WEITET zur bepflanzten Kante (exp-geglättet).
-                // Während die Welt noch zum Ziel-Ring wächst (`_worldRamping`) bleibt der Nebel HIER
-                // an der gebauten Kante — er öffnet erst zum Mantel, wenn der aktive Ring das Ziel erreicht.
-                visualEdge = Math.min(visualEdgeTarget, Math.max(46, (revealK + 0.5) * vCfg.span + 18));
-            }
-            // Harte Wasser-Kappe: jenseits der Wasser-Außenkante ((waterK+0.5)·span, ohne Feder) deckt der
-            // Nebel exakt — das Wasser-Iso baut NACH dem Terrain, die weiche Feder zeigte sonst trockenes
-            // Seebett. Hält das Wasser Schritt, liegt die Kappe ≥ der weichen Kante (kein Effekt); so kann der
-            // Nebel die Wasser-Front per Konstruktion nicht überholen.
-            if (waterK !== null && waterK >= 0 && waterK < vCfg.ringRadius) {
-                visualEdge = Math.min(visualEdge, Math.max(46, (waterK + 0.5) * vCfg.span));
-            }
-            // V18.350 — TRÄGHEIT statt 0.08-Jagd (Schöpfer „Nebel stürmt nicht vor/zurück"): EINE Quelle.
-            const sm = this._smoothFogEdge(this.state._fogEdgeSmooth, visualEdge);
-            this.state._fogEdgeSmooth = sm;
-            // fog.far-Basis = Wald-Kante (`visualEdgeTarget`) × sanfte rainyMix-Dimmung — die Wald-Kante IST
-            // die Sicht (Studio `_sightDist`); keine späte `studioRenderConfig.sight`-Weiche (race-anfällig).
-            // Der Lade-Nebel-Reveal bleibt als min()-Term.
-            const fogFarBase = visualEdgeTarget * (1 - rainyMix * 0.35);
-            fog.far = Math.min(fogFarBase, sm, visualEdgeTarget);
-            const fogNearBase = visualEdgeTarget * 0.35 * (1 - rainyMix * 0.35);
-            fog.near = Math.min(fogNearBase, fog.far * 0.45);
-            // Höhen-Öffnung: am Waldboden gilt die Studio-Sichtweite unverändert (ohne bereiten Fern-Ring
-            // passiert nichts). Steigt das Auge über die Umgebung (Gipfel, Turm, Kronen), öffnet sich der
-            // Schleier stetig zum Ring. Die 4 Umgebungs-Proben sind takt-gecacht.
-            {
-                const frO = this.state.fernRing;
-                const camO = this.state.camera;
-                if (frO && frO.ready && camO) {
-                    const FO = AnazhRealm.FERN_RING;
-                    const nowO = performance.now();
-                    if (!this._oeffnungAt || nowO - this._oeffnungAt > FO.oeffnungTaktMs) {
-                        this._oeffnungAt = nowO;
-                        const ox = camO.position.x;
-                        const oz = camO.position.z;
-                        let umg = -Infinity;
-                        for (let k = 0; k < 4; k++) {
-                            const h = this.getTerrainHeightAt(
-                                ox + (k & 1 ? FO.oeffnungProbeM : -FO.oeffnungProbeM) * (k & 2 ? 0 : 1),
-                                oz + (k & 1 ? FO.oeffnungProbeM : -FO.oeffnungProbeM) * (k & 2 ? 1 : 0)
-                            );
-                            if (Number.isFinite(h) && h > umg) umg = h;
-                        }
-                        this._oeffnungUmgebung = umg;
-                    }
-                    const ueber = Number.isFinite(this._oeffnungUmgebung)
-                        ? camO.position.y - this._oeffnungUmgebung
-                        : 0;
-                    const tO = Math.max(
-                        0,
-                        Math.min(1, (ueber - FO.oeffnungAbM) / Math.max(1, FO.oeffnungVollM - FO.oeffnungAbM))
-                    );
-                    if (tO > 0) {
-                        const zielFar = fog.far + (FO.sichtOeffnungM - fog.far) * tO;
-                        if (zielFar > fog.far) {
-                            fog.far = zielFar;
-                            fog.near = Math.max(fog.near, zielFar * 0.3);
-                        }
-                    }
-                }
-            }
-            // Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe (EINE Quelle → tag/nacht/wetter-kohärent);
-            // density + hazeTop folgen dem Wetter (rainy = dichter, tieferer Ausbleich-Punkt).
-            if (this.state.atmoUniforms) {
-                const au = this.state.atmoUniforms;
-                if (au.skyColor && au.skyColor.value && au.skyColor.value.setRGB) {
-                    au.skyColor.value.setRGB(fogR, fogG, fogB);
-                }
-                if (au.density) au.density.value = 0.0085 + rainyMix * 0.006;
-                if (au.hazeTop) au.hazeTop.value = 150 - rainyMix * 55;
-                // Höhen-Melt-Beginn (hazeNear) rückt bei feuchtem Wetter näher → ferne Berge verblassen stärker.
-                if (au.hazeNear) au.hazeNear.value = 70 - rainyMix * 30;
-                // Mond-Rim atmet mit der Nacht: voll bei Sonne unter dem Horizont, ausgeblendet bis Sonnenhöhe
-                // 0.25, tags 0; Regen dämpft. Der Wert IST das Shader-Gate.
-                if (au.terrainMoonRim) {
-                    const moonBase =
-                        this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
-                            ? this.state.atmosphere.moonRim
-                            : AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
-                    const sunUp = Math.max(0, Math.sin(angle));
-                    au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
-                }
-            }
+        // Erd-Anteil der In-Streu-Farbe (gMix): fernes Terrain bleibt ein dunklerer Dunst mit lesbarer Silhouette
+        // — mit zu viel Himmelsanteil wird es deckungsgleich und die Sonne „scheint durch" die Berge. gMix
+        // skaliert mit der Sonnenhöhe → nachts 0, sonst dominiert der warme groundColor den dunklen Himmel.
+        const dayAmt = 1 - this._nachtAnteil(angle); // 1 ab ~15° Sonne, 0 am/unter Horizont
+        const gMix = 0.26 * dayAmt;
+        const fogRn = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
+        const fogGn = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
+        const fogBn = tint.skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
+        // Tag-Luft nach dem Studio-Gesetz (EINE Quelle für Himmel+Luft+Ferne): Helligkeit skyB aus der
+        // Sonnenhöhe zwischen den Ankern Tag 0xa6d2ec · Nacht 0x0a1326, die Dämmerungs-Glut ist atm.col.
+        // r128 las Hex als LINEAR → Rohwerte per setRGB, nie per Hex (sRGB→linear wäre zu dunkel).
+        const sunHeightF = Math.max(0, Math.sin(angle));
+        const _fATM = this._atmosphere(sunHeightF);
+        const _fSS = (a, b, x) => {
+            let q = (x - a) / (b - a);
+            q = q < 0 ? 0 : q > 1 ? 1 : q;
+            return q * q * (3 - 2 * q);
+        };
+        const skyB = 0.045 + 0.955 * _fSS(-0.18, 0.42, sunHeightF);
+        let fdR = 0.039 + (0.651 - 0.039) * skyB; // 0x0a1326 → 0xa6d2ec, raw als LINEAR (r128-treu)
+        let fdG = 0.075 + (0.824 - 0.075) * skyB;
+        let fdB = 0.149 + (0.925 - 0.149) * skyB;
+        const lowSun = Math.max(0, 1 - Math.abs(sunHeightF) / 0.28) * Math.max(0, Math.min(1, 1 + sunHeightF * 3.5));
+        const glut = lowSun * lowSun * 0.6;
+        fdR += (_fATM.col.r - fdR) * glut;
+        fdG += (_fATM.col.g - fdG) * glut;
+        fdB += (_fATM.col.b - fdB) * glut;
+        // Wetter dämpft wie bisher über den EINEN Tint-Kanal (skyMul: sunny 1 → stormy 0.42).
+        const wDim = 0.35 + 0.65 * tint.skyMul;
+        const fogR = fogRn * (1 - dayAmt) + fdR * wDim * dayAmt;
+        const fogG = fogGn * (1 - dayAmt) + fdG * wDim * dayAmt;
+        const fogB = fogBn * (1 - dayAmt) + fdB * wDim * dayAmt;
+        const luft = this._luftEnsure();
+        if (luft) {
+            const L = AnazhRealm.LUFT;
+            const U = luft.U;
+            U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
             if (this.state.playerEyesUnderwater) {
-                // V8.32 — Tauch-Trübung ist fest, ignoriert fogDistance-Slider.
-                fog.color.setRGB(0.06, 0.19, 0.32);
-                fog.near = 4;
-                fog.far = 34;
+                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), keine Sonnen-Keule.
+                U.farbe.value.setRGB(0.06, 0.19, 0.32);
+                U.sonneFarbe.value.copy(U.farbe.value);
+                U.beta.value = -Math.log(L.kontrast) / L.unterwasserM;
+                U.hoehe.value = 1e9;
+            } else {
+                U.farbe.value.setRGB(fogR, fogG, fogB);
+                // Die Keule: zur Sonne hin streut der Dunst ihr (Rayleigh-gefiltertes) Licht vorwärts — der Glast
+                // im Gegenlicht, warm bei tiefer Sonne. Unter dem Horizont fällt sie mit der Sonne (Horizont-Fade).
+                const sd = sunDir || this._dayNightSunDirection(angle);
+                U.sonneDir.value.set(sd.x, sd.y, sd.z).normalize();
+                const sonnig = sd.y > 0 ? this._celestialHorizonFade(sd.y) * tint.skyMul : 0;
+                const hell = (0.2126 * fogR + 0.7152 * fogG + 0.0722 * fogB) * L.mieGlanz;
+                U.sonneFarbe.value.setRGB(
+                    fogR + (_fATM.col.r * hell - fogR) * sonnig,
+                    fogG + (_fATM.col.g * hell - fogG) * sonnig,
+                    fogB + (_fATM.col.b * hell - fogB) * sonnig
+                );
+                U.beta.value = this._luftBeta();
+                U.hoehe.value = L.skalenHoeheM;
             }
-            // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
-            // fehlte die Decke. Beim Tauchen (playerEyesUnderwater) wird das EINE geteilte Wasser-Material
-            // DoubleSide, beim Auftauchen zurück BackSide (von oben unverändert).
-            const hsm = this.state.hydroSurfaceMaterial;
-            if (hsm) {
-                const wantSide = this.state.playerEyesUnderwater ? THREE.DoubleSide : THREE.BackSide;
-                if (hsm.side !== wantSide) hsm.side = wantSide;
-            }
+        }
+        // Mond-Rim atmet mit der Nacht: voll bei Sonne unter dem Horizont, ausgeblendet bis Sonnenhöhe 0.25, tags
+        // 0; Regen dämpft. Der Wert IST das Shader-Gate.
+        const au = this.state.atmoUniforms;
+        if (au && au.terrainMoonRim) {
+            const rainyMix = this._weatherBlendedValue(0, 1);
+            const moonBase =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
+                    ? this.state.atmosphere.moonRim
+                    : AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
+            const sunUp = Math.max(0, Math.sin(angle));
+            au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
+        }
+        // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
+        // fehlte die Decke. Beim Tauchen (playerEyesUnderwater) wird das EINE geteilte Wasser-Material
+        // DoubleSide, beim Auftauchen zurück BackSide (von oben unverändert).
+        const hsm = this.state.hydroSurfaceMaterial;
+        if (hsm) {
+            const wantSide = this.state.playerEyesUnderwater ? THREE.DoubleSide : THREE.BackSide;
+            if (hsm.side !== wantSide) hsm.side = wantSide;
         }
     }
 
     // Wasser-Materialien (hydroSurfaceMaterial für Meer/Fluss/See + waterfallMaterial) teilen DIESELBE
-    // Tag-Nacht-Sprache: uSunDir + uLight + fog. `lightDir` ist der AKTIVE Himmelskörper (vom Aufrufer
-    // _applyDayNightToScene) → der Glitzer folgt tags der Sonne, nachts dem Mond.
+    // Tag-Nacht-Sprache: uSunDir + uLight (die Luft legt `scene.fogNode` auf). `lightDir` ist der AKTIVE
+    // Himmelskörper (vom Aufrufer _applyDayNightToScene) → der Glitzer folgt tags der Sonne, nachts dem Mond.
     _dayNightApplyWaterMaterials(lightDir) {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
-        const fog = this.state.fog;
         const lightVal = Math.max(0.22, dl.intensity);
         // Beide Wasser-Materialien sind TSL; Uniforms leben in state.waterfallUniforms /
         // state.hydroSurfaceUniforms — EINE Closure für beide.
@@ -82020,11 +81852,6 @@ class AnazhRealm {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
-            if (fog) {
-                if (uniforms.fogColor) uniforms.fogColor.value.copy(fog.color);
-                if (uniforms.fogNear) uniforms.fogNear.value = fog.near;
-                if (uniforms.fogFar) uniforms.fogFar.value = fog.far;
-            }
             // W10 — „das Wasser spiegelt DEN Himmel" (Studio-Kopplung 1:1): die
             // EINE Tag/Nacht-Himmelsfarbe (nebulaColor) speist die Spiegelung,
             // die EINE Licht-Farbe (Richtlicht = Rayleigh-Sonne/Mond) den Glitzer.
@@ -82696,9 +82523,6 @@ class AnazhRealm {
         const applyRingRadius = (v) => {
             this.state.chunkRingRadius = v;
             if (rsv) rsv.textContent = ringText(v);
-            // V17.114 U1 — der Sicht-Ring ist die Kaskaden-Kante: der Aerial-
-            // Schleier wandert mit (§2-Synergie), die ferne LOD-Naht bleibt im Dunst.
-            this._syncAtmoToViewDistance();
         };
         if (rs) {
             rs.value = String(this.state.chunkRingRadius || 4);
@@ -82835,23 +82659,6 @@ class AnazhRealm {
             });
         }
 
-        // V8.28 6.G4.b C — Atmosphäre-Slider: Fog-Distanz (die Cel-Stufen sind
-        // seit V18.236 gestrichen — PBR ist die EINE Material-Wahrheit).
-        const fogS = document.getElementById("slider-fog");
-        const fogVal = document.getElementById("slider-fog-val");
-        if (fogS) {
-            // V8.40 — Label = fogDistance / 3 × 100 (mult 3.0 → „100%"),
-            // Regler-Eingabe → setFogDistance(pct / 100 × 3).
-            const f0 = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
-            const fogPct = Math.round((f0 / 3) * 100);
-            fogS.value = String(fogPct);
-            if (fogVal) fogVal.textContent = `${fogPct} %`;
-            fogS.addEventListener("input", () => {
-                const pct = parseInt(fogS.value, 10);
-                this.setFogDistance((pct / 100) * 3);
-                if (fogVal) fogVal.textContent = `${pct} %`;
-            });
-        }
         // V13.9 — Wasser-Cull-Slider (uMinDepth). Range 0..200 → minDepth
         // 0..0.02 (Schritt 0.0001), feinfühlig im dünnen Lineardepth-Bereich.
         const wcS = document.getElementById("slider-watercull");
@@ -84048,11 +83855,9 @@ class AnazhRealm {
         const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
         scene.add(hemiLight);
         this.state.hemiLight = hemiLight;
-        // THREE.Fog (linear, klarer steuerbar als FogExp2); die Farbe synct _applyDayNightToScene mit dem
-        // Himmel. Start als enger Kokon (AWAKEN_FOG_FAR): Frame 0 zeigt nur Plattform + Dunst; der Nebel
-        // weitet ring-gekoppelt, sobald Boden erscheint.
-        scene.fog = new THREE.Fog(0x88a0c8, AnazhRealm.AWAKEN_FOG_FAR * 0.45, AnazhRealm.AWAKEN_FOG_FAR);
-        this.state.fog = scene.fog;
+        // DIE LUFT (`scene.fogNode`): die EINE Luftperspektive für jedes Material; Farbe, Extinktion und Sonne
+        // synct _applyDayNightToScene. Ungebautes deckt der Fern-Ring (Loch-Deckel), nie ein Nebel-Kokon.
+        this._luftEnsure();
         this.log("Beleuchtung hinzugefügt: Ambient (0.6), Directional (1.0) mit Schatten", "INFO");
         // Welle 6.G3 — initialer Lichtstand aus timeOfDay (Default 0.5 = Mittag).
         // Pro-Frame-Tick übernimmt danach.
@@ -86078,7 +85883,7 @@ class AnazhRealm {
                     // Wasser hält mit dem Terrain Schritt bis an die Ring-Kante: JEDER Rückstau zieht kräftig nach —
                     // sonst bleibt eine mitwandernde Wasser-Front hinter dem Terrain zurück (`waterK < builtK`).
                     // Der Worker trägt die CA-freie ferne See off-thread; die Zeit-Deadline schützt vor dem Freeze,
-                    // die harte Wasser-Kappe im Lade-Nebel deckt Restlücken.
+                    // Restlücken deckt der Fern-Ring (Loch-Deckel, Wasser flach auf dem Spiegel).
                     const backlog = st.pendingWaterIso && st.pendingWaterIso.size > 0;
                     const cap = backlog ? Math.max(base, 22) : base;
                     const dl = Math.min(Number.isFinite(ms) ? ms : Infinity, cap);
@@ -87581,13 +87386,12 @@ AnazhRealm.CA_STAU = Object.freeze({
 // Chebyshev-Chunk-Distanz); die ganze Welt leitet ihr Detail hier ab, kein per-Schicht-Schwellenwert.
 // `maxRing` = obere Ring-Grenze (× 43.2 m), `lod` = Geometrie-Stufe, `aiDiv` = KI-Richtung nur jeden
 // N-ten Frame (dazwischen glatt weiter). Ein Feld wächst erst mit seinem Leser (kein Passagier).
-// FAR_WATER — grobes Atlas-Wasser-Sheet jenseits des Voxel-Rings bis knapp hinter die Sicht
-// (`fog.far + margin`): `step` = span/4 (Grid auf Chunk-Grenzen), `drop` = Spiegel knapp unter der
+// FAR_WATER — grobes Atlas-Wasser-Sheet jenseits des Voxel-Rings bis `maxRadius` (dahinter trägt der
+// Fern-Ring den Spiegel flach, die Luft dunstet beide): `step` = span/4 (Grid auf Chunk-Grenzen), `drop` = Spiegel knapp unter der
 // Nah-Kräusel-Zone, `dip` taucht Ufer-Anker unters Terrain (edgeFade), `depth` = konstante
 // Tiefen-Farbe (O(1)-Bau), `reanchorDist`/`rebuildDelta` = Rebuild-Hysterese.
 AnazhRealm.FAR_WATER = Object.freeze({
     step: 10.8,
-    margin: 60,
     maxRadius: 720,
     drop: 0.35,
     dip: 3.5,
@@ -87597,14 +87401,17 @@ AnazhRealm.FAR_WATER = Object.freeze({
 });
 
 // FERN_RING (unten) — Fern-Kulisse aus dem EINEN Höhen-Gesetz (`_terrainMacroSurfaceY(x,z,false)`),
-// 3 Ring-Schalen (3 Draw-Calls fix). `winkel`/`reihen` = Segment-Gitter je Schale; `schalen[i].aussen`
+// 3 Ring-Schalen (3 Draw-Calls fix). `winkel`/`reihen` = Segment-Gitter je Schale (192×16: seit die Luft die
+// Ferne nicht mehr verdeckt (V18.530), trägt der Ring den Blick — 96×10 zeigte aus 45 m Fächer-Facetten über
+// 150–500 m tiefe Dreiecke); `schalen[i].aussen`
 // = Außenradius (Schale 1 ab Voxel-Ring-Kante + `randPad`); `snap` = grobes Welt-Gitter je Schale
 // (Vertex-XZ gerundet → Höhen schwimmen beim Re-Zentrieren nie); `saumDrop` = Tauchkante der
 // innersten Reihe; `wasserDrop` = Wasser-Klemme; `reanchorDist`/`anchorQuant` = Anker-Hysterese/
 // -Quantisierung; `refreshVertsProTick` = Höhen-Refresh-Budget je Frame.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
-// vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel).
-AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
+// vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt
+// `farbeJeTakt` Texel je Takt (≈ 11 ms bei 15 µs je Texel).
+AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000, farbeJeTakt: 768 });
 // FELD_PANO — Schattierungs-Persistenz: statt 96 Raymarch-Schritten je Himmel-Pixel je Frame marcht
 // EIN Compute ins Polar-Panorama (Farbe + Treffer-DISTANZ; der Nebel bleibt live im Fragment →
 // Tag/Nacht braucht keinen Re-Bake), das Fragment schlägt nur nach. Re-Bake nur bei Kamera-Drift;
@@ -87612,7 +87419,7 @@ AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
 AnazhRealm.FELD_PANO = Object.freeze({
     az: 768, // Azimut-Spalten (4× feiner als das 192er-Feld — die Winkel-Auflösung des Blicks)
     elev: 160, // Elevation-Zeilen (quadratisch am Horizont geballt)
-    elevMax: 0.35, // rad (~20°) — deckt die Höhen-Öffnung (camY 2800: Horizont-Terrain ≈ −19.3°)
+    elevMax: 0.35, // rad (~20°) — deckt den Blick vom Gipfel (camY 2800: Horizont-Terrain ≈ −19.3°)
     rebakeDist: 60, // m XZ-Drift bis zum Re-Bake (Parallaxe auf 8 km ≈ 0.4° — unter der Wahrnehmung)
     rebakeHoehe: 12, // m Y-Drift bis zum Re-Bake (Horizont-Verschiebung)
 });
@@ -87626,8 +87433,8 @@ AnazhRealm.FELD_CULL = {
     rand: 4, // konservative Hüllkugel-Marge in m (1-Frame-Latenz der Ebenen — nie ein Kanten-Pop)
 };
 AnazhRealm.FERN_RING = Object.freeze({
-    winkel: 96,
-    reihen: 10,
+    winkel: 192,
+    reihen: 16,
     schalen: Object.freeze([
         Object.freeze({ aussen: 1400, snap: 24 }),
         Object.freeze({ aussen: 3600, snap: 64 }),
@@ -87639,14 +87446,14 @@ AnazhRealm.FERN_RING = Object.freeze({
     reanchorDist: 180,
     anchorQuant: 24,
     refreshVertsProTick: 600,
-    // Höhen-Öffnung: am Waldboden gilt die Studio-Sichtweite; steigt das Auge über die Umgebung
-    // (4 Terrain-Proben im Probe-Radius), öffnet sich der Schleier zum Fern-Ring. Ohne bereiten Ring
-    // passiert nichts.
-    oeffnungAbM: 14, // m Augen-Höhe über der Umgebung: hier beginnt die Öffnung (~Kronen-Höhe)
-    oeffnungVollM: 55, // hier ist sie voll (Gipfel/Turm)
-    oeffnungProbeM: 150, // Radius der 4 Umgebungs-Proben
-    sichtOeffnungM: 2800, // die offene Sicht (fog.far-Ziel bei voller Öffnung)
-    oeffnungTaktMs: 500, // die Umgebungs-Proben sind gecacht (kein 4×-Sample je Frame)
+});
+// FERN_FARBE (`_fernFarbeAt`, linear): das Kronendach des Waldes aus der Ferne = die Reflektanz geschlossener
+// Laubwald-Kronen im Sommer (Satelliten-Bänder blau ~0,02–0,03 · grün ~0,05–0,07 · rot ~0,02–0,03: das Blatt
+// trägt ~0,16 Grün, die Krone beschattet sich selbst); Wasser = das Fern-Blau als sRGB-Absicht (FARB-GESETZ:
+// 0x265273 → linear), flach auf dem Spiegel.
+AnazhRealm.FERN_FARBE = Object.freeze({
+    kronendach: Object.freeze([0.03, 0.062, 0.022]),
+    wasser: Object.freeze([0.0196, 0.0863, 0.1706]),
 });
 
 // Lockstep-MP (nur Inputs übers Netz): `jitterReserve` = Frame-Reserve gegen Netz-Jitter (2 Frames
@@ -88961,6 +88768,25 @@ AnazhRealm.LICHEN = Object.freeze({
     // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
     tint: Object.freeze([0.42, 0.5, 0.34]),
 });
+// DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut; der Worker `attachFieldColors` spiegelt
+// sie hartkodiert — eine Änderung hier ist eine Änderung dort). dampEarth: dunklerer, satterer Erd-Ton, im
+// Mix-Stack ZWEITER (nach earth, vor lava/snow/sed/strand) — Glut/Schnee bleiben überschreibend. lava:
+// DUNKLES Basalt (die Glut sitzt im PBR-Emissiv, nicht in der Albedo). sand: Glocken-Profil am Ufer (Peak
+// +0,6 m über Wasser, 0 bei +2 m) + Submarine-Sand. packedDirt: getrampelte Pfad-Erde (V18.230 Ω-O6).
+// Schnee auf Prominenz: Start/Voll in m über der kontinentalen Basis.
+AnazhRealm.BODEN_FARBE = Object.freeze({
+    stone: Object.freeze([0.42, 0.44, 0.49]),
+    earth: Object.freeze([0.27, 0.49, 0.19]),
+    dampEarth: Object.freeze([0.22, 0.18, 0.12]),
+    lava: Object.freeze([0.32, 0.19, 0.15]),
+    violet: Object.freeze([0.55, 0.36, 0.86]),
+    snow: Object.freeze([0.92, 0.93, 1.0]),
+    sed: Object.freeze([0.78, 0.72, 0.52]),
+    sand: Object.freeze([0.87, 0.78, 0.55]),
+    packedDirt: Object.freeze([0.32, 0.26, 0.18]),
+    schneeProminenzStart: 50,
+    schneeProminenzVoll: 115,
+});
 
 // FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520,
 // magie λ160 m) — der Welt-Charakter emergiert aus dem Überlagerungs-Muster (Ecotone an
@@ -89456,14 +89282,9 @@ Object.defineProperty(AnazhRealm, "OAKESHOTT_TYPES", {
 // HSL-Spannweite je Architektur-Instanz (seed-deterministisch aus entry.tintH/S/V;
 // HISM-instanceColor): ±8 % Hue (kühles bis warmes Grün, nie grell), ±10 % Sättigung, ±6 % Helligkeit.
 AnazhRealm.INSTANCE_TINT = Object.freeze({ rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 });
-// Aerial-Atmosphäre: heightWeight = Distanz-Verblassung ferner Berge, microStrength =
-// Oberflächen-Mikrostruktur. Default-Quelle in `_ensureAtmoUniforms` (SUBSTANCE_RESPONSE-Antennen
-// lesen daraus).
+// Substanz-Antwort: microStrength = Oberflächen-Mikrostruktur, ao* = Kavitäts-AO. Default-Quelle in
+// `_ensureAtmoUniforms` (SUBSTANCE_RESPONSE-Antennen lesen daraus); die Luftperspektive ist `LUFT`.
 AnazhRealm.AERIAL = Object.freeze({
-    // Höhen-Melt sanft: Cap 0.45 — ferne Gipfel/Türme tönen zur Atmosphäre, behalten aber ihre
-    // Identität (ein hoher Cap wäscht sie zur Himmelsfarbe); Weight 0.55.
-    heightWeight: 0.55,
-    heightCap: 0.45,
     microStrength: 0.14,
     aoStrength: 0.38,
     aoCap: 0.18,
@@ -90700,7 +90521,7 @@ AnazhRealm.RING_RAMP_START = 0; // V18.397 — Start-Ring beim Boot = EIN EINZIG
 // Kopfraum-Gate und der Schrumpf-Pfad endet hier (2 = 5×5 Chunks um den Spieler,
 // auf kienspan zugleich der Deckel → dort ist die Welt FIX). Existenz vor Framerate.
 AnazhRealm.RING_EXIST_FLOOR = 2;
-// Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Lade-Nebel umhüllt ihn, der Void-Boden
+// Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
 // Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
@@ -90710,13 +90531,23 @@ AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstu
 // settled Flood-Spiegel). Annäherung weckt ferne Chunks über `_tickWaterCANearWake` (einmal je
 // Chunk, `entry._caWoken`); Strömung propagiert per `_exchangeWaterBoundary`.
 AnazhRealm.WAKE_CA_RADIUS = 3;
-// Erwachen: solange kein Boden-Chunk steht (`_builtRingRadius() < 0`), umhüllt der Nebel den Spieler
-// eng (~14 m Sicht); er weitet ring-gekoppelt, sobald der Boden erscheint.
-AnazhRealm.AWAKEN_FOG_FAR = 14;
-// Nebel-Trägheit: der Reveal-Ring springt in Integer-Schritten (× span) und jittert beim Streamen —
-// die Kante folgt träge: sanft weiten (expandRate), kaum zurückziehen (contractRate), pro Frame
-// gedeckelt (maxStep), Rückzug erst nach shrinkSustainFrames. expandRate↓ träger, maxStep↓ sanfter.
-AnazhRealm.FOG_EDGE = Object.freeze({ expandRate: 0.05, contractRate: 0.02, maxStep: 4, shrinkSustainFrames: 45 });
+// DIE LUFT (V18.530, `_luftEnsure`): Koschmieder-Extinktion mit Höhen-Abnahme. Die Anker sind BEOBACHTBARE
+// Sichtweiten (Kontrast eines Gelände-Pixels fällt unter `kontrast`): ein klarer Sommertag trägt Gelände-
+// Silhouetten 20 km weit (Mitteleuropa, Sommer-Dunst 15–30 km), Starkregen im Sturm 1,5 km. Die reine Luft ist
+// Rayleigh bei 550 nm auf Meereshöhe (1,16·10⁻⁵/m, V ≈ 340 km). Der Dunst sitzt in der Grenzschicht: Skalenhöhe
+// 1 km über dem Meeresspiegel. Die Keule: Anteil und Schärfe der Sonnen-Vorwärtsstreuung im Dunst (Henyey-
+// Greenstein g ≈ 0,7 ≈ cos^8 in der Keule), Glanz = ihre Helligkeit relativ zum Horizont-Himmel.
+AnazhRealm.LUFT = Object.freeze({
+    sichtKlarM: 20000,
+    sichtSturmM: 1500,
+    betaRayleigh: 1.16e-5,
+    kontrast: 0.02,
+    skalenHoeheM: 1000,
+    unterwasserM: 30,
+    mieKeule: 8,
+    mieAnteil: 0.45,
+    mieGlanz: 1.6,
+});
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
 // `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc, die EINE Mond-Farb-Quelle — `_atmosphere(e)` lerpt unter dem

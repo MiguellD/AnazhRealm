@@ -1392,6 +1392,14 @@
         const v = (d - 0.5) * contrast + mid;
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
+    // Die GEBURT eines Wald-Darts aus der Bestandsdichte: der Lichtungs-Boden hebt (0.04→0.30), auch gelichtete
+    // Säume tragen Wald. planForestCell würfelt dagegen; die Fernform des Hosts liest sie als Kronen-Deckung
+    // (EINE Formel für den gepflanzten und den fernen Wald).
+    function forestGeburt(sd) {
+        let t = (sd - 0.18) / (0.8 - 0.18);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return 0.3 + 0.7 * (t * t * (3 - 2 * t));
+    }
     // Arten-Nische Basis-Gewichte (wF/wT/wE/wB + base-wW ohne Wasser-Nähe).
     // Klima × Patch × Feuchte × Trockenheit × Offenheit — EINE Formel für Lab+Host.
     // wW = wet²·(1-dry)·0.8 + 0.01; Caller addiert waterProx²·6 (Host: feu, Lab: _wp).
@@ -1597,8 +1605,7 @@
             const x = (cx + rng()) * CELL;
             const z = (cz + rng()) * CELL;
             const sd = forestStandDensity(ctx.fbm, x, z);
-            // Der Lichtungs-Boden hebt (0.04→0.30): auch gelichtete Säume tragen Wald.
-            if (rng() > 0.3 + 0.7 * ss(0.18, 0.8, sd)) continue;
+            if (rng() > forestGeburt(sd)) continue;
             // Boden + Wasser: EIN Oberflächen-Scan, die Wasser-Marge selbst hergeleitet.
             const surfaceY = ctx.surfaceYAt(x, z);
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
@@ -2024,6 +2031,7 @@
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
         forestStandDensity: forestStandDensity,
+        forestGeburt: forestGeburt,
         forestNicheWeights: forestNicheWeights,
         forestTreeSize: forestTreeSize,
         forestMammutRoll: forestMammutRoll,

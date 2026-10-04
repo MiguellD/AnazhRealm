@@ -114,7 +114,7 @@ for (const g of [
     "gate:foundry-deadlock",
     "gate:portal-boot",
     "gate:foundry-impostor",
-    "gate:boot-fog-ring",
+    "gate:luft-sicht",
 ])
     law(`\`${g}\` verdrahtet`, true, pkg.includes('"' + g + '"'));
 

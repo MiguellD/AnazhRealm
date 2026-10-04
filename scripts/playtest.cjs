@@ -19132,25 +19132,11 @@ async function checkBandVoxelTerrainCore(ctx) {
                     r._voxelChunkLodFor(3, 0, 0, 0) === 1 &&
                     typeof r.constructor.LOD_HYSTERESIS_RINGS === "number";
                 out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
-                // §2-Synergie: hazeFar = max(350, ring × 43.2). Ring 12 → 518 (>Floor),
-                // Ring 4 → 350 (Floor = geliebte Sicht unverändert).
+                // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
+                // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
                 r._ensureAtmoUniforms();
-                const ringBefore = r.state.chunkRingRadius;
-                const activeBefore = r.state._activeRingRadius;
-                r.state.chunkRingRadius = 12;
-                r.state._activeRingRadius = 12; // V18.301-Ramp aufs Ziel (Steady-State-Kopplung testen, nicht den Warmup-Leftover)
-                r._syncAtmoToViewDistance();
-                const haze12 =
-                    r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
-                r.state.chunkRingRadius = 4;
-                r.state._activeRingRadius = 4;
-                r._syncAtmoToViewDistance();
-                const haze4 =
-                    r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
-                r.state.chunkRingRadius = ringBefore;
-                r.state._activeRingRadius = activeBefore;
-                r._syncAtmoToViewDistance();
-                out.hazeCouplesRing = Math.abs(haze12 - 12 * 43.2) < 1 && Math.abs(haze4 - 350) < 1;
+                out.hazeCouplesRing =
+                    r._syncAtmoToViewDistance === undefined && r.state.atmoUniforms.hazeFar === undefined;
                 // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
                 // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
                 out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
@@ -19218,7 +19204,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             );
             check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
             check(
-                "V17.114 U1 §2: der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (Floor 350 m)",
+                "V17.114 U1 §2 → V18.530: kein Ring-gekoppelter Schleier mehr (hazeFar + _syncAtmoToViewDistance fort)",
                 voxelP2bResults.hazeCouplesRing === true
             );
             check(
@@ -23669,18 +23655,19 @@ async function checkBandPhaseAFundament(ctx) {
                 }
             }
         }
-        // ── A5 · Fog liest die SICHTBARE Welt-Kante (N7.4: die Kulissen sind geschnitten —
-        // die Kante IST der Ring; der Studio-Nebel schliesst an der Wald-Kante).
+        // ── A5 · DIE LUFT TRÄGT (V18.530): die Ring-Kante ist kein Nebel-Rand mehr — die Fernform (Fern-Ring +
+        // Feld-Pass) trägt die Ferne, die Luft dunstet sie nach Koschmieder (klarer Tag ≥ 5 km Sicht).
         {
             const cfg = r._voxelChunkConfig();
             const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
-            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
-            const visualEdge = ringEdge;
+            const L = r.constructor.LUFT;
+            const sichtKlar = -Math.log(L.kontrast) / r._luftBeta(r.constructor.WEATHER_FIELD.sunny);
             out.a5 = {
-                fogFar: r.state.fog ? r.state.fog.far : null,
-                visualEdge,
-                coupled: !!r.state.fog && r.state.fog.far <= visualEdge + 0.001,
-                src: /visualEdge/.test(window.__codeOf(r._dayNightApplyHemiAndFog)),
+                sichtKlar,
+                ringEdge,
+                knoten: !!r.state.scene.fogNode && !r.state.scene.fog,
+                kanteKlar: Math.exp((-ringEdge * -Math.log(L.kontrast)) / sichtKlar) >= 0.9,
+                src: /_luftBeta\(\)/.test(window.__codeOf(r._dayNightApplyHemiUndLuft)),
             };
         }
         // ── B2 · Horizont-Mantel geschnitten (der Nebel schließt an der Wald-Kante, jenseits zeichnet
@@ -23753,11 +23740,11 @@ async function checkBandPhaseAFundament(ctx) {
         res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
     );
     check(
-        "A5: fog.far ≤ sichtbare Welt-Kante (Ring — eine Distanz, noch ein Gesicht)",
-        res.a5 && res.a5.coupled === true,
-        res.a5 ? `far=${res.a5.fogFar && res.a5.fogFar.toFixed(1)} edge=${res.a5.visualEdge.toFixed(1)}` : ""
+        "A5: die Luft trägt — scene.fogNode statt Nebel, klarer Tag ≥ 5 km Sicht, die Ring-Kante liegt klar",
+        res.a5 && res.a5.knoten === true && res.a5.sichtKlar >= 5000 && res.a5.kanteKlar === true,
+        res.a5 ? `sicht=${Math.round(res.a5.sichtKlar)} m kante=${res.a5.ringEdge.toFixed(1)} m` : ""
     );
-    check("A5: _dayNightApplyHemiAndFog liest die sichtbare Kante (Source)", res.a5 && res.a5.src === true);
+    check("A5: _dayNightApplyHemiUndLuft liest die Extinktion aus dem Wetter (_luftBeta)", res.a5 && res.a5.src === true);
     check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
     check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);
     check(
@@ -30650,11 +30637,10 @@ async function checkBandV18177AAA(ctx) {
         const out = {};
         // LIVE-Werte (was die Antennen wirklich lesen), NICHT Source-Strings.
         const aer = A.AERIAL || {};
-        out.heightWeight = aer.heightWeight;
         out.microStrength = aer.microStrength;
+        out.heightWeightFort = aer.heightWeight === undefined && aer.heightCap === undefined;
         out.aoStrength = aer.aoStrength;
         out.aoCap = aer.aoCap;
-        out.heightCap = aer.heightCap;
         out.frozen = Object.isFrozen(aer);
         // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse; __codeOf strippt die
         // Kommentare (sie dürfen das Wort zitieren), gesucht wird die echte Method-Definition.
@@ -30667,8 +30653,8 @@ async function checkBandV18177AAA(ctx) {
         res.frozen === true && res.noGetterShadow === true
     );
     check(
-        `V18.366: AERIAL heightWeight === 0.55 (Höhen-Melt sanfter gegen „völlig bleich", war 0.75 — GEMESSEN ${res.heightWeight})`,
-        Math.abs(res.heightWeight - 0.55) < 1e-9
+        "V18.530: AERIAL trägt keinen Höhen-Melt mehr (heightWeight/heightCap fort — die Luft ist `LUFT`)",
+        res.heightWeightFort === true
     );
     check(
         `V18.177 AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,
@@ -30848,7 +30834,7 @@ async function checkBandGammaGenese(ctx) {
         /dampEarth/.test(ctx.realm ? "" : "") ||
             /dampEarth/.test(
                 (await safeEvaluate(page, () =>
-                    window.anazhRealm ? window.__codeOf(window.anazhRealm._attachVoxelFieldColors) : ""
+                    window.anazhRealm ? window.__codeOf(window.anazhRealm._bodenFarbeAt) : ""
                 )) || ""
             )
     );
@@ -31084,13 +31070,13 @@ async function checkBandV18164WarumLicht(ctx) {
         out.moonUniform = !!au.terrainMoonRim;
         out.moonKonsum = /terrainMoonRim/.test(window.__codeOf(r._applySubstanceResponse));
         const tintProbe = { skyR: 0.1, skyG: 0.1, skyB: 0.2, lightMul: 1 };
-        r._dayNightApplyHemiAndFog(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
+        r._dayNightApplyHemiUndLuft(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
         const nightVal = au.terrainMoonRim.value;
-        r._dayNightApplyHemiAndFog(Math.PI / 2, tintProbe); // Mittag (sin=1)
+        r._dayNightApplyHemiUndLuft(Math.PI / 2, tintProbe); // Mittag (sin=1)
         const noonVal = au.terrainMoonRim.value;
         out.moonNachtGetrieben = nightVal > 0.01 && noonVal === 0;
         // Den echten Tag-Nacht-Zustand wiederherstellen (die Sonde schrieb
-        // synthetische Winkel in Hemi/Fog/Uniforms — Folge-Bands lesen sauber).
+        // synthetische Winkel in Hemi/Luft/Uniforms — Folge-Bands lesen sauber).
         if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
 
         // (5) der GEHEILTE M7-Persistenz-Riss (V8.59-Klasse): Snapshot trägt
@@ -31107,16 +31093,14 @@ async function checkBandV18164WarumLicht(ctx) {
             /setTerrainNightFloor/.test(srcRestore) &&
             /setTerrainMoonRim/.test(srcRestore);
 
-        // (6) §6.5 LADE-NEBEL: solange der Ziel-Ring nicht voll steht, deckt der Nebel die GEBAUTE Kante.
-        // KONSUM: der Fog-Sync liest _builtRingRadius; im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum = /_builtRingRadius/.test(window.__codeOf(r._dayNightApplyHemiAndFog));
+        // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
+        // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
+        out.ladeNebelKonsum =
+            !/_builtRingRadius|foliageRadius/.test(window.__codeOf(r._dayNightApplyHemiUndLuft)) &&
+            r._smoothFogEdge === undefined;
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
-        out.fogDeckel =
-            !!r.state.scene && !!r.state.scene.fog && Number.isFinite(r.state._fogEdgeSmooth)
-                ? r.state.scene.fog.far <= r.state._fogEdgeSmooth + 0.001 ||
-                  r.state.scene.fog.far <= 150 * 9 /* Formel-Min griff */
-                : true;
+        out.fogDeckel = !r.state.scene.fog && r.state._fogEdgeSmooth === undefined;
         return out;
     });
     check(
@@ -31137,7 +31121,7 @@ async function checkBandV18164WarumLicht(ctx) {
         res.persistenz && res.restoreLiest
     );
     check(
-        "V18.164 §6.5 LADE-NEBEL (Befund 23): der Fog-Sync liest die GEBAUTE Ring-Kante (_builtRingRadius) — der Boot-Blick in die Mantel-Stanze fällt; im warmen Ring steht der Spieler-Chunk",
+        "V18.164 §6.5 → V18.530: kein Lade-Nebel — die Luft liest keine Ring-Front (der Fern-Ring deckt Ungebautes); im warmen Ring steht der Spieler-Chunk",
         res.ladeNebelKonsum && res.builtRing && res.fogDeckel
     );
 }
@@ -32949,7 +32933,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // (G1) SNOWBAND auf PROMINENZ statt absolutem y: die Source trägt die PROMINENZ-Konstanten +
         // y − base − _cont0, die alte ss(12,42,y) fehlt, und der Schnee-Anteil der NAHEN Region
         // (±300 m) ist < 0.1.
-        const attachSrc = window.__codeOf(r._attachVoxelFieldColors);
+        const attachSrc = window.__codeOf(r._bodenFarbeAt);
         out.snowOnProminence = /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
         // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
@@ -33596,8 +33580,8 @@ async function checkBandV18199GammaMLichen(ctx) {
                 A.LICHEN.tint.length === 3;
         }
 
-        // (L2) Source-Probe Main: LICHEN-Mix lebt in _attachVoxelFieldColors
-        const mainSrc = window.__codeOf(r._attachVoxelFieldColors);
+        // (L2) Source-Probe Main: LICHEN-Mix lebt in der EINEN Boden-Farbe (_bodenFarbeAt)
+        const mainSrc = window.__codeOf(r._bodenFarbeAt);
         out.mainHasLichen = /LICHEN/.test(mainSrc) && /lichenMix/.test(mainSrc) && /lichenCluster/.test(mainSrc);
         // Position im Mix-Stack: NACH dampEarth, VOR lava
         out.mainOrderCorrect =
@@ -33653,7 +33637,7 @@ async function checkBandV18199GammaMLichen(ctx) {
 
     check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
     check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
-    check("V18.199 (L2a) Source: lichenMix + lichenCluster im _attachVoxelFieldColors", res.mainHasLichen === true);
+    check("V18.199 (L2a) Source: lichenMix + lichenCluster in der Boden-Farbe (_bodenFarbeAt)", res.mainHasLichen === true);
     check("V18.199 (L2b) Mix-Stack-Order: dampEarth → lichen → lava", res.mainOrderCorrect === true);
     check(
         `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
@@ -34668,7 +34652,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.gamma4Anker = typeof r._macroAnker === "function";
         out.gamma6Snowband =
             typeof r._attachVoxelFieldColors === "function" &&
-            /SNOW_PROM_START/.test(window.__codeOf(r._attachVoxelFieldColors));
+            /SNOW_PROM_START/.test(window.__codeOf(r._bodenFarbeAt));
         out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
         out.gammaMLichen = !!A.LICHEN;
         out.gammaMIronBands = !!A.IRON_BANDS;
@@ -37617,7 +37601,7 @@ async function checkBandWahrerAnblickGras(ctx) {
         // (_green → _halmW), und dieses Grün trägt lebendig + feuchte (_attachVoxelFieldColors) — Konsum
         // an beiden Nähten.
         const albedoSrc = window.__codeOf(r._terrainGeologyAlbedo);
-        const bakeSrc = window.__codeOf(r._attachVoxelFieldColors);
+        const bakeSrc = window.__codeOf(r._bodenFarbeAt);
         out.buildSetsColor = /const _halmW = _green/.test(albedoSrc) && /_halmHoch/.test(albedoSrc);
         out.buildComputesTint = /lebendig/.test(bakeSrc) && /_feuchteAt/.test(bakeSrc);
 
@@ -37760,7 +37744,7 @@ async function checkBandWahrerAnblickPfade(ctx) {
         out.pathBounded = bounded;
 
         // (B) CONSUM — der Boden-Bau packt die Pfad-Erde, der Gras-Bau weicht
-        const attachSrc = window.__codeOf(r._attachVoxelFieldColors);
+        const attachSrc = window.__codeOf(r._bodenFarbeAt);
         out.attachReadsPath = /_pathFieldAt/.test(attachSrc) && /packedDirt/.test(attachSrc);
         // V18.492: die Wiese weicht dem Pfad über den Boden — die Pfad-Erde senkt das
         // Albedo-Grün, und die Parallax-Halme wiegen mit genau diesem Grün (_halmW = _green…).
@@ -37832,12 +37816,14 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         out.buschParts = buschParts;
         out.buschIsRich = buschParts >= 8 || buschParts === 0;
 
-        // (V) die Atmosphäre koppelt ans Wetter über ALLE Dunst-Uniforms
-        r._ensureAtmoUniforms();
-        const fogSrc = window.__codeOf(r._dayNightApplyHemiAndFog);
-        out.hazeWeather = /hazeTop[^]*rainyMix/.test(fogSrc) && /density[^]*rainyMix/.test(fogSrc);
-        out.hazeNearWeather = /hazeNear[^]*rainyMix/.test(fogSrc);
-        out.hazeNearUniform = !!(r.state.atmoUniforms && r.state.atmoUniforms.hazeNear);
+        // (V) die Luft koppelt ans Wetter (V18.530): EINE Extinktion aus dem Wetter-Feld (fog- + rain-Kanal),
+        // gemessen am Konsum — Regen trübt die Sicht, Sturm mehr; die Luft-Uniforms tragen sie.
+        const WF = r.constructor.WEATHER_FIELD;
+        const fogSrc = window.__codeOf(r._dayNightApplyHemiUndLuft);
+        out.hazeWeather = /_luftBeta\(\)/.test(fogSrc) && /\.fog\b/.test(window.__codeOf(r._luftBeta));
+        out.hazeNearWeather =
+            r._luftBeta(WF.sunny) < r._luftBeta(WF.rainy) && r._luftBeta(WF.rainy) < r._luftBeta(WF.stormy);
+        out.hazeNearUniform = !!(r.state.luft && r.state.luft.U.beta && r.state.luft.U.hoehe);
 
         out.versionStr = A.VERSION;
         const pv = String(A.VERSION || "0.0.0")
@@ -37857,9 +37843,9 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
         res.buschIsRich === true
     );
-    check("Ω-OPSIS S5 (V1) Atmosphäre koppelt ans Wetter (hazeTop+density × rainyMix)", res.hazeWeather === true);
-    check("Ω-OPSIS S5 (V2) CONSUM: hazeNear rückt bei Feuchte näher (stärkerer Dunst)", res.hazeNearWeather === true);
-    check("Ω-OPSIS S5 (V3) hazeNear-Uniform existiert", res.hazeNearUniform === true);
+    check("Ω-OPSIS S5 (V1) → V18.530: die Luft koppelt ans Wetter (Extinktion aus dem fog-Kanal)", res.hazeWeather === true);
+    check("Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)", res.hazeNearWeather === true);
+    check("Ω-OPSIS S5 (V3) die Luft-Uniforms existieren (β, Skalenhöhe)", res.hazeNearUniform === true);
     check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
@@ -40723,13 +40709,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // 1. HemisphereLight im Scene + state-cached
         out.hemiLightExists = !!r.state.hemiLight && r.state.hemiLight.isHemisphereLight === true;
-        out.fogExists = !!r.state.fog && r.state.fog.isFog === true;
-        // Fog-Color sollte gesetzt sein nach erstem _applyDayNightToScene
+        out.fogExists = !!r.state.luft && !!r.state.scene.fogNode && !r.state.scene.fog;
+        // Die Luft-Farbe ist gesetzt nach erstem _applyDayNightToScene
         r._applyDayNightToScene();
-        out.fogColorSet =
-            r.state.fog &&
-            r.state.fog.color &&
-            (r.state.fog.color.r > 0 || r.state.fog.color.g > 0 || r.state.fog.color.b > 0);
+        const lf = r.state.luft && r.state.luft.U.farbe.value;
+        out.fogColorSet = !!lf && (lf.r > 0 || lf.g > 0 || lf.b > 0);
 
         // 2. Hemisphere-skyColor moduliert mit Tageszeit
         r.setTimeOfDay(0.5);
@@ -40838,8 +40822,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v827Results && !v827Results.error) {
         check("V8.27: Skybox-position.copy existiert (direkt vor render)", v827Results.skyboxPositionCopyExists);
         check("V8.27: state.hemiLight ist THREE.HemisphereLight", v827Results.hemiLightExists);
-        check("V8.27: state.fog ist THREE.Fog", v827Results.fogExists);
-        check("V8.27: Fog-Color wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
+        check("V8.27 → V18.530: die Luft steht (scene.fogNode, kein THREE.Fog)", v827Results.fogExists);
+        check("V8.27: die Luft-Farbe wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
         check(
             "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
             v827Results.hemiSkyFollowsDayCycle
@@ -40905,22 +40889,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
         out.chunkHasFieldAttribute = chunkHasField;
 
-        // --- Phase C: Fog ---
-        // Die Sicht folgt der Wald-Kante (visualEdgeTarget); der EINE Sicht-Regler ist chunkRingRadius —
-        // fogDistance treibt den Welt-Nebel NICHT (ein zweiter Regler wäre ein Parallelpfad). Probe: fog.near
-        // slider-unabhängig (Toleranz = Nebel-Glättung, maxStep 4 m/Apply) + Quelle nutzt die Kanten-Formel.
-        r.state.playerEyesUnderwater = false;
-        r.setFogDistance(0.5);
-        r._applyDayNightToScene();
-        const fogNear05 = r.state.fog ? r.state.fog.near : -1;
-        r.setFogDistance(2.0);
-        r._applyDayNightToScene();
-        const fogNear20 = r.state.fog ? r.state.fog.near : -1;
+        // --- Phase C: die Luft (V18.530) ---
+        // Die Luftperspektive ist Physik (`_luftEnsure` → scene.fogNode, Koschmieder aus dem Wetter-Feld): kein
+        // Nebel-Regler mehr — der tote Fog-Distanz-Knopf (setFogDistance + slider-fog) ist mit dem Nebel gefallen.
         out.fogSliderWorks =
-            fogNear05 > 0 &&
-            Math.abs(fogNear20 - fogNear05) < 5 &&
-            /visualEdgeTarget \* 0\.35/.test(window.__codeOf(r._dayNightApplyHemiAndFog));
-        r.setFogDistance(1.0);
+            r.setFogDistance === undefined &&
+            !document.getElementById("slider-fog") &&
+            /_luftBeta\(\)/.test(window.__codeOf(r._dayNightApplyHemiUndLuft));
 
         // --- Phase D: Wind + Wolken + Wasser ---
         // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
@@ -41056,11 +41031,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
         out.aerialNoError = !window.__aerialOutputError;
         out.aerialOutputError = window.__aerialOutputError || null;
-        // (7) Der Höhen-Melt ist AUGEN-relativ (`cameraPosition`: Distanz + Höhe über Auge), nie absolute
-        // Welt-Höhe — sonst bleicht Klettern den Boden. Source-Probe gegen `smoothstep(.., positionWorld.y)`.
-        const _aerSrc =
-            typeof r._applySubstanceResponse === "function" ? window.__codeOf(r._applySubstanceResponse) : "";
-        out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hazeNear");
+        // (7) Die Luft ist AUGEN-relativ (V18.530: der Luft-Knoten integriert vom Auge `cameraPosition` zum Punkt,
+        // die Höhen-Abnahme über die Skalenhöhe) — nie absolute Welt-Höhe, sonst bleicht Klettern den Boden.
+        const _aerSrc = window.__codeOf(r._luftEnsure);
+        out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hoehe");
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
         const ppSrc = r._ensurePostProcessing ? window.__codeOf(r._ensurePostProcessing) : "";
@@ -41074,11 +41048,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Pfad ist gestrichen.
         out.waterSystemOk = r.state.voxelChunkWaterIso instanceof Map;
 
-        // --- Atmosphäre-Persistenz ---
-        r.setFogDistance(1.5);
+        // --- Atmosphäre-Persistenz --- (V18.530: der Nebel-Regler ist fort, die Mikro-Struktur trägt den Beweis)
+        const microAlt = r.state.atmosphere ? r.state.atmosphere.microStrength : undefined;
+        r.setMicroStrength(0.15);
         const snap = r.buildStateSnapshot();
-        out.atmospherePersisted = !!(snap && snap.atmosphere && Math.abs(snap.atmosphere.fogDistance - 1.5) < 0.01);
-        r.setFogDistance(1.0);
+        out.atmospherePersisted = !!(snap && snap.atmosphere && Math.abs(snap.atmosphere.microStrength - 0.15) < 0.01);
+        r.setMicroStrength(microAlt == null ? r.constructor.AERIAL.microStrength : microAlt);
         // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
         // persistieren in state.atmosphere (so liest der Slider den Wert ab).
         r._ensureAtmoUniforms();
@@ -41137,7 +41112,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
         check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
         check(
-            "V8.28 C→Studio-Modell: Welt-Nebel ist fogDistance-UNABHÄNGIG (die Wald-Kante führt, der Ring ist der Sicht-Regler)",
+            "V8.28 C→V18.530: kein Nebel-Regler — die Luft ist Physik (setFogDistance + slider-fog fort, die Luft liest das Wetter)",
             v828Results.fogSliderWorks
         );
         check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
@@ -41186,7 +41161,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.structDynamicColorPreserved
         );
         check(
-            "V17.106: der Aerial-Höhen-Melt ist EYE-RELATIV (cameraPosition + hazeNear, nicht absolute Höhe)",
+            "V17.106 → V18.530: die Luft ist EYE-RELATIV (vom Auge integriert, Höhen-Abnahme über die Skalenhöhe)",
             v828Results.aerialEyeRelative
         );
         check(
@@ -41568,44 +41543,30 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Source-Patterns im _ensureHydroSurfaceMaterial-Builder.
         const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wm) {
+            // V18.530: das Wasser trägt KEINEN eigenen Nebel mehr — die EINE Luft (scene.fogNode) dunstet es wie
+            // jedes Material (mat.fog), die Fog-Uniforms sind fort.
             out.waterFogUniforms = !!(
                 r.state.hydroSurfaceUniforms &&
-                r.state.hydroSurfaceUniforms.fogColor &&
-                r.state.hydroSurfaceUniforms.fogNear
+                r.state.hydroSurfaceUniforms.fogColor === undefined &&
+                r.state.hydroSurfaceUniforms.fogNear === undefined &&
+                wm.fog !== false &&
+                r.state.scene.fogNode
             );
             const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
             // Heterogenität aus der Mehr-Skalen-Dünung (`oceanSwell`: value-noise-Oktaven 0.05/0.12/0.23 mit
             // eigener Drift) statt Gerstner-Warp → kein periodisches Raster, keine parallelen Kämme.
             out.waterHeteroSwell =
                 /oceanSwell\s*=\s*Fn/.test(builderSrc) && /0\.05/.test(builderSrc) && /0\.23/.test(builderSrc);
-            // Fog-Mix via TSL: smoothstep(uFogNear, uFogFar, vFogDepth) + mix.
-            out.waterFogInShader = /smoothstep\(uFogNear,\s*uFogFar/.test(builderSrc);
+            // Kein Wasser-eigener Nebel-Mix mehr im Builder (die Luft ist EINE).
+            out.waterFogInShader = !/uFogNear|uFogFar|uFogColor/.test(builderSrc);
         }
-        // Fog-Slider propagiert in die Custom-Shader-Uniforms.
-        // playerEyesUnderwater deterministisch ausnullen (sonst
-        // erzwingt der Tauch-Tint fog.near=4 unabhängig vom Slider).
-        r.state.playerEyesUnderwater = false;
-        r.setFogDistance(0.4);
-        r._applyDayNightToScene();
-        const tnNear =
-            r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
-                ? r.state.terrainMaterial.uniforms.fogFar.value
-                : -1;
-        r.setFogDistance(1.8);
-        r._applyDayNightToScene();
-        const tnFar =
-            r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
-                ? r.state.terrainMaterial.uniforms.fogFar.value
-                : -1;
-        out.fogSliderReachesTerrain = tnFar > tnNear;
-        r.setFogDistance(1.0);
 
         return out;
     });
 
     if (v831Results && !v831Results.error) {
-        check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
-        check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
+        check("V8.31 → V18.530: das Wasser dunstet durch die EINE Luft (scene.fogNode, keine Fog-Uniforms)", v831Results.waterFogUniforms);
+        check("V8.31 → V18.530: kein Wasser-eigener Nebel-Mix im Builder", v831Results.waterFogInShader);
         check("V8.31: Wasser-Wellen heterogen (Mehr-Skalen organische Dünung, V18.368)", v831Results.waterHeteroSwell);
     } else {
         check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
@@ -41644,8 +41605,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // mehr playerUnderwater. V9.56-i: die Hemi+Fog-Phase lebt jetzt
         // im _dayNightApplyHemiAndFog-Helfer (Source-Pattern wandert mit).
         {
-            const src = window.__codeOf(r._dayNightApplyHemiAndFog);
-            out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
+            const src = window.__codeOf(r._dayNightApplyHemiUndLuft);
+            out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /unterwasserM/.test(src);
         }
 
         // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
@@ -41660,13 +41621,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 /alpha0 = mix\(float\(0\.8\), float\(0\.97\), fres\)/.test(builderSrc);
         }
 
-        // Fog-Slider erlaubt bis 300 %.
-        const fs = document.getElementById("slider-fog");
-        out.fogSliderTo300 = !!(fs && parseInt(fs.max, 10) === 300);
-        // setFogDistance akzeptiert 3.0.
-        r.setFogDistance(3.0);
-        out.fogDistanceTo3 = Math.abs(r.state.atmosphere.fogDistance - 3.0) < 0.01;
-        r.setFogDistance(1.0);
+        // V18.530: der Fog-Regler ist mit dem Nebel gefallen (die Luft ist Physik) — weder Slider noch Setter.
+        out.fogSliderTo300 = !document.getElementById("slider-fog");
+        out.fogDistanceTo3 = r.setFogDistance === undefined;
 
         return out;
     });
@@ -41676,8 +41633,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
         check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
         check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) treibt Spiegel + Alpha", v832Results.waterFresnel);
-        check("V8.32: Fog-Slider geht bis 300 %", v832Results.fogSliderTo300);
-        check("V8.32: setFogDistance akzeptiert 3.0", v832Results.fogDistanceTo3);
+        check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
+        check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
     } else {
         check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
     }
@@ -46435,13 +46392,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
             !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
 
-        // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
-        const origFog = r.state.atmosphere ? r.state.atmosphere.fogDistance : 3.0;
-        out.fogTripleRange =
-            r.setFogDistance(9.0) === 9.0 && r.setFogDistance(0.5) === 0.9 && r.setFogDistance(3.0) === 3.0;
-        out.fogDefault3 = r.setFogDistance() === 3.0;
-        r.setFogDistance(origFog);
-        out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(window.__codeOf(r.slidersInitDOM));
+        // V18.530: der Fog-Regler (0.9 .. 9.0) ist mit dem Nebel gefallen — die Luft ist Physik; die Absenz
+        // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
+        out.fogTripleRange = r.setFogDistance === undefined;
+        out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
+        out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
 
         // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
         const appScript = [...document.querySelectorAll("script")].find((s) =>
@@ -46454,9 +46409,9 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
-        check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
-        check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
-        check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
+        check("V8.40 → V18.530: kein Fog-Regler-Setter mehr", v840Results.fogTripleRange);
+        check("V8.40 → V18.530: kein persistiertes fogDistance mehr", v840Results.fogDefault3);
+        check("V8.40 → V18.530: keine Fog-Slider-Verdrahtung mehr", v840Results.fogHandlerTriples);
         check("V8.41: anazhRealm.js mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
     } else {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");

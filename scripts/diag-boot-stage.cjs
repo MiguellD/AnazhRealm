@@ -13,7 +13,8 @@
 //   BIBLIO  Foundry ready + Prefetch fertig
 //   IMPOST  Bake-Queue leer + kein Bake pending (non-headless; der Null-
 //           Renderer no-opt den RTT-Bake gate-treu → Term dort übersprungen)
-//   NEBEL   fog.far settled + geöffnet (kein Ramp-Kappen mehr)
+//   LUFT    die EINE Luftperspektive steht (scene.fogNode, Sichtweite ≥ 5 km) — die Fernform trägt die
+//           Ferne, kein Lade-Nebel kappt sie (V18.530)
 // Zeitleiste: t(Kontrolle) / t(Bibliothek) / t(Ring) / t(Impostoren) / t(Bühne)
 // in TICKS (Mechanik-Reihenfolge, hardware-unabhängig) + Wall-Clock (Container-
 // Anhalt; die Schöpfer-GPU-Zahl liefert W8). --selftest beweist die Linse feuert
@@ -92,13 +93,11 @@ const server = http.createServer((req, res) => {
                     _deferredRegions: deferred,
                 };
             };
-            const fogFar = () => (st.scene && st.scene.fog ? st.scene.fog.far : -1);
+            const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);
             // ── PUMPEN + MEILENSTEINE (Ticks + ms) ──
             const t0 = performance.now();
             let ticks = 0;
             const mark = {};
-            let fogPrev = -1,
-                fogStable = 0;
             const MAXT = 6000;
             while (ticks < MAXT) {
                 try {
@@ -106,17 +105,11 @@ const server = http.createServer((req, res) => {
                 } catch (_e) {}
                 ticks++;
                 const T = terms();
-                const ff = fogFar();
-                if (Math.abs(ff - fogPrev) < 0.5) fogStable++;
-                else {
-                    fogStable = 0;
-                    fogPrev = ff;
-                }
-                const fogOpen = fogStable > 30 && ff > 60;
+                const luftSteht = !!(st.scene && st.scene.fogNode) && sichtM() >= 5000;
                 if (!mark.biblio && T.biblio) mark.biblio = { ticks, ms: performance.now() - t0 };
                 if (!mark.ring && T.ring) mark.ring = { ticks, ms: performance.now() - t0 };
                 if (!mark.impost && T.impost && T.biblio) mark.impost = { ticks, ms: performance.now() - t0 };
-                if (T.ring && T.grass && T.water && T.streu && T.biblio && T.impost && fogOpen) {
+                if (T.ring && T.grass && T.water && T.streu && T.biblio && T.impost && luftSteht) {
                     mark.stage = { ticks, ms: performance.now() - t0 };
                     o.terms = T;
                     break;
@@ -125,7 +118,7 @@ const server = http.createServer((req, res) => {
             }
             if (!mark.stage) o.terms = terms();
             o.headless = headless;
-            o.fogFar = +fogFar().toFixed(1);
+            o.sichtM = Math.round(sichtM());
             o.timeline = {
                 biblio: mark.biblio || null,
                 ring: mark.ring || null,
@@ -220,7 +213,7 @@ const server = http.createServer((req, res) => {
         `  t(Impostoren)  ${fm(tl.impost)}${out.headless ? "  (headless: RTT-Term übersprungen, gate-treu)" : ""}`
     );
     console.log(
-        `  t(BÜHNE)       ${fm(tl.stage)}   (${out.chunks} Chunks · ${out.impostorRecords} Impostor-Records · fog.far ${out.fogFar} m)`
+        `  t(BÜHNE)       ${fm(tl.stage)}   (${out.chunks} Chunks · ${out.impostorRecords} Impostor-Records · Sichtweite ${out.sichtM} m)`
     );
     const T = out.terms;
     const checks = [

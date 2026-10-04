@@ -173,6 +173,27 @@ const FORBIDDEN = [
     { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
     { token: '"@p:"', fiel: "Welle B" },
     { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
+    // DIE LUFT (V18.530) — der Nebel war eine lineare Wand an der Wald-Kante und verdeckte die gebaute Fernform;
+    // die EINE Luftperspektive (`_luftEnsure` → scene.fogNode) ist Physik. Die Nebel-Kulisse ist ganz fort.
+    { token: "new THREE.Fog(", fiel: "V18.530 — die Luft ist scene.fogNode, kein linearer Nebel" },
+    { token: "_dayNightApplyHemiAndFog", fiel: "V18.530 — _dayNightApplyHemiUndLuft" },
+    { token: "_smoothFogEdge", fiel: "V18.530 — kein Lade-Nebel, der Fern-Ring deckt Ungebautes" },
+    { token: "_fogEdgeSmooth", fiel: "V18.530" },
+    { token: "_builtGrassRingRadius", fiel: "V18.530 — die Gras-Front trieb nur den Lade-Nebel" },
+    { token: "_builtWaterRingRadius", fiel: "V18.530 — die Wasser-Front trieb nur den Lade-Nebel" },
+    { token: "AWAKEN_FOG_FAR", fiel: "V18.530 — kein Erwachen-Kokon" },
+    { token: "FOG_EDGE", fiel: "V18.530 — keine Nebel-Kanten-Trägheit" },
+    { token: "sichtOeffnungM", fiel: "V18.530 — keine Höhen-Öffnung, die Luft trägt in jeder Höhe" },
+    { token: "_oeffnungUmgebung", fiel: "V18.530" },
+    { token: "_syncAtmoToViewDistance", fiel: "V18.530 — kein Ring-gekoppelter Schleier" },
+    { token: "_detailViewDistance", fiel: "V18.530" },
+    { token: "hazeFar", fiel: "V18.530 — kein Höhen-Melt neben der Luft" },
+    { token: "hazeNear", fiel: "V18.530" },
+    { token: "setFogDistance", fiel: "V18.530 — der tote Fog-Distanz-Regler" },
+    { token: "fogDistance", fiel: "V18.530" },
+    { token: "slider-fog", fiel: "V18.530" },
+    { token: "uFogNear", fiel: "V18.530 — kein Wasser-eigener Nebel" },
+    { token: "_fernRingFarbe", fiel: "V18.530 — die Fern-Farbe liest die Boden-Farbe + den Wald (_fernFarbeAt)" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
