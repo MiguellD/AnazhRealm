@@ -37829,9 +37829,9 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// Schatten-Cache: der Schatten-Pass ist ein zweiter Voll-Render; beim Umsehen bewegt sich die
-// Schatten-Kamera nicht (folgt der Spieler-Position) → autoUpdate=false + `_loopShadowUpdate`
-// rendert nur bei Bewegung/Sonne/Max-Staleness neu. Das Intervall ist eine Regelkreis-Stellgröße.
+// Der Schatten-Takt (V18.524; ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
+// Leser (shadow.autoUpdate/needsUpdate) — die nahe Kaskade im Regler-Intervall (≤ SCHATTEN_TAKT.nahMax), die ferne
+// im fernFaktor-Takt. Das Intervall ist eine Regelkreis-Stellgröße.
 async function checkBandV18264ShadowCache(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -37840,49 +37840,49 @@ async function checkBandV18264ShadowCache(ctx) {
         const st = r.state;
         const out = {};
         out.hasMethod = typeof r._loopShadowUpdate === "function";
-        const sm = st.renderer && st.renderer.shadowMap;
-        out.autoUpdateOff = !!sm && sm.autoUpdate === false;
         out.hasLever = Array.isArray(A.PERF_LEVERS && A.PERF_LEVERS.shadowMinInterval);
         // CONSUM: der Aktuator fährt _shadowMinInterval (source-probe).
         out.actuatorDrives = /_shadowMinInterval/.test(window.__codeOf(r._nexusPerfActuate));
-        if (!out.hasMethod || !sm) {
-            return out;
-        }
-        // BEHAVIORAL: statisch (Umsehen) → übersprungen; Bewegung → updated.
-        const pm = st.playerMesh;
-        const savedX = pm ? pm.position.x : 0;
+        const csm = st.csmNode;
+        const lichter = csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
+        out.lichter = lichter.length;
+        if (!out.hasMethod || !lichter.length || !A.SCHATTEN_TAKT) return out;
+        const zaehle = (n) => {
+            const z = lichter.map(() => 0);
+            for (let i = 0; i < n; i++) {
+                lichter.forEach((l) => l.shadow && (l.shadow.needsUpdate = false));
+                r._loopShadowUpdate();
+                lichter.forEach((l, k) => l.shadow && l.shadow.needsUpdate && z[k]++);
+            }
+            return z;
+        };
+        const ivAlt = st._shadowMinInterval;
         st._shadowMinInterval = 1;
-        r._shadowLast = null; // sauberer Start
-        let staticUpdates = 0;
-        for (let i = 0; i < 30; i++) {
-            sm.needsUpdate = false;
-            r._loopShadowUpdate();
-            if (sm.needsUpdate) staticUpdates++;
-        }
-        let movingUpdates = 0;
-        for (let i = 0; i < 30; i++) {
-            if (pm) pm.position.x += 2;
-            sm.needsUpdate = false;
-            r._loopShadowUpdate();
-            if (sm.needsUpdate) movingUpdates++;
-        }
-        if (pm) pm.position.x = savedX;
         r._shadowLast = null;
-        out.staticUpdates = staticUpdates; // ~1/30 (nur die hardStale-Sicherheit)
-        out.movingUpdates = movingUpdates; // ~30/30 bei minInterval=1
-        out.staticSkips = staticUpdates <= 2; // im Stand fast komplett übersprungen
-        out.movingRenders = movingUpdates >= 20; // Bewegung rendert den Schatten
+        zaehle(1);
+        const z1 = zaehle(30);
+        st._shadowMinInterval = 4;
+        const z4 = zaehle(60);
+        st._shadowMinInterval = ivAlt;
+        r._shadowLast = null;
+        out.autoUpdateOff = lichter.every((l) => l.shadow && l.shadow.autoUpdate === false);
+        out.nah1 = z1[0];
+        out.nah4 = z4[0];
+        out.fern1 = lichter.length > 1 ? z1[1] : null;
+        out.nahJedenFrame = z1[0] === 30;
+        out.nahGedeckelt = z4[0] === 60 / Math.min(A.SCHATTEN_TAKT.nahMax, 4);
+        out.fernSeltener = lichter.length < 2 || z1[1] === 30 / A.SCHATTEN_TAKT.fernFaktor;
         return out;
     });
-    check("V18.264: _loopShadowUpdate + autoUpdate=false (Schatten-Cache)", res.hasMethod && res.autoUpdateOff);
+    check("V18.524: _loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.hasMethod && res.autoUpdateOff);
     check("V18.264: shadowMinInterval ist eine Regelkreis-Stellgröße (CONSUM)", res.hasLever && res.actuatorDrives);
     check(
-        `V18.264: STATISCH (Umsehen) überspringt den Schatten-Pass (${res.staticUpdates}/30 Updates)`,
-        res.staticSkips === true
+        `V18.524: die nahe Schatten-Map rendert im Regler-Takt (Intervall 1: ${res.nah1}/30, Intervall 4: ${res.nah4}/60)`,
+        res.nahJedenFrame === true && res.nahGedeckelt === true
     );
     check(
-        `V18.264: BEWEGUNG rendert den Schatten (${res.movingUpdates}/30) — kein Durchhängen`,
-        res.movingRenders === true
+        `V18.524: die ferne Kaskade rendert seltener (${res.fern1 == null ? "ohne CSM" : res.fern1 + "/30"})`,
+        res.fernSeltener === true
     );
 }
 

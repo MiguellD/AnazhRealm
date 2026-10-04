@@ -253,34 +253,25 @@ const server = http.createServer((req, res) => {
             }
         });
 
-        // V18.264 — SCHATTEN-CACHE-VERIFIKATION: statisch (Umsehen) → übersprungen,
-        // Bewegung → updated. Misst, wie oft der Schatten-Pass über 30 Frames feuert.
+        // DER SCHATTEN-TAKT (V18.524): je Kaskade am echten Leser (shadow.needsUpdate) — über 30 Frames gezählt,
+        // die nahe Kaskade im Regler-Takt, die ferne seltener (SCHATTEN_TAKT.fernFaktor).
         const shadowCache = (() => {
-            if (typeof r._loopShadowUpdate !== "function" || !s.renderer || !s.renderer.shadowMap) return null;
-            const sm = s.renderer.shadowMap;
-            const pm = s.playerMesh;
+            if (typeof r._loopShadowUpdate !== "function") return null;
+            const csm = s.csmNode;
+            const lichter = csm && csm.lights && csm.lights.length ? csm.lights : s.directionalLight ? [s.directionalLight] : [];
             s._shadowMinInterval = 1;
-            // (a) STATISCH: Position fix, 30 Frames → wie oft needsUpdate?
-            let staticUpdates = 0;
+            const n = lichter.map(() => 0);
             for (let i = 0; i < 30; i++) {
-                sm.needsUpdate = false;
+                lichter.forEach((l) => l.shadow && (l.shadow.needsUpdate = false));
                 r._loopShadowUpdate();
-                if (sm.needsUpdate) staticUpdates++;
+                lichter.forEach((l, k) => l.shadow && l.shadow.needsUpdate && n[k]++);
             }
-            // (b) BEWEGUNG: jeden Frame verschieben → wie oft?
-            let movingUpdates = 0;
-            for (let i = 0; i < 30; i++) {
-                if (pm) pm.position.x += 2;
-                sm.needsUpdate = false;
-                r._loopShadowUpdate();
-                if (sm.needsUpdate) movingUpdates++;
-            }
-            return { staticUpdates, movingUpdates, autoUpdate: sm.autoUpdate };
+            return { staticUpdates: n.join("/"), movingUpdates: n.join("/"), autoUpdate: lichter.map((l) => l.shadow && l.shadow.autoUpdate).join("/") };
         })();
         // Schatten-Config
         const dl = (scene.children || []).find((c) => c.isDirectionalLight) || s.sunLight || s.directionalLight;
         const shadowCfg = {
-            autoUpdate: s.renderer && s.renderer.shadowMap ? s.renderer.shadowMap.autoUpdate : null,
+            autoUpdate: s.directionalLight && s.directionalLight.shadow ? s.directionalLight.shadow.autoUpdate : null,
             mapSize: dl && dl.shadow ? dl.shadow.mapSize.x + "x" + dl.shadow.mapSize.y : "?",
             type: s.renderer && s.renderer.shadowMap ? s.renderer.shadowMap.type : null,
         };

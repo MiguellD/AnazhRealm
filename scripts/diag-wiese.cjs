@@ -62,7 +62,7 @@ const RENDER_FN = async (kam, W, H, png) => {
         try {
             if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
         } catch (_e) {}
-        if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
+        r._schattenAlleNeu();
         const auf = await window.__ausgabeAufnahme(W, H, 1); // die EINE Aufnahme: der echte, getonte Frame
         u8 = auf.u8;
         info = auf.info;

@@ -216,7 +216,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 for (const o of objs) o.visible = an.has(o);
                 // die Kaskaden rendern nur auf Markierung (autoUpdate aus) — ungemarkt kompilierten die Schatten-
                 // Programme erst im ersten vollen Frame (gemessen: 70 Compiles in EINEM Render, 122 s)
-                if (s.renderer.shadowMap) s.renderer.shadowMap.needsUpdate = true;
+                r._schattenAlleNeu();
                 const k0 = cnt(), z0 = performance.now();
                 try { r._loopRender(performance.now()); } catch (_e) {}
                 objs.forEach((o, i) => (o.visible = vorher[i]));

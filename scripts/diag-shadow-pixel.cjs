@@ -70,7 +70,7 @@ const server = http.createServer((req, res) => {
         if (s.voxelChunks) for (const entry of s.voxelChunks.values()) { if (entry && entry.mesh) terrainMeshes.push(entry.mesh); }
 
         const renderFrame = () => {
-            if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+            r._schattenAlleNeu();
             renderer.info.reset();
             try { r._loopRender(performance.now()); } catch (_e) {}
             return { calls: renderer.info.render.drawCalls != null ? renderer.info.render.drawCalls : renderer.info.render.calls, tris: renderer.info.render.triangles };

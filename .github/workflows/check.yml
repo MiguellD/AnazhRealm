@@ -171,6 +171,12 @@ jobs:
               # ist aufsteigend und eine untere Schranke, Tick und Shader konsumieren sie; die Selbsttests feuern.
               run: npm run gate:seiten-ordnung
 
+            - name: Schatten-Wand (je CSM-Kaskade am echten Leser: nah im Regler-Takt, fern seltener)
+              # Fährt den ECHTEN _loopShadowUpdate gegen Schein-Kaskaden (GPU-frei): autoUpdate aus, nah jeden Frame
+              # (Intervall 1) bzw. höchstens jeden nahMax-ten, fern im fernFaktor-Takt, ein Sonnen-Sprung erzwingt
+              # beide; der Selbsttest zeigt, dass der alte Schreiber (renderer.shadowMap.needsUpdate) keine erreicht.
+              run: npm run gate:schatten-takt
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-

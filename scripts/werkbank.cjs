@@ -527,6 +527,7 @@ function gpuBank(k) {
             for (let i = 0; i < n; i++) {
                 const c0 = performance.now();
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+                r._loopShadowUpdate(); // der Schatten-Takt wie im Loop (je Kaskade am echten Leser)
                 r._loopRender(performance.now() / 1000);
                 cpu += performance.now() - c0;
             }
@@ -702,7 +703,7 @@ async function starte() {
                 try {
                     if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
                 } catch (_e) {}
-                if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
+                r._schattenAlleNeu();
                 auf = await window.__ausgabeAufnahme(k.w, k.h, 1);
             }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter

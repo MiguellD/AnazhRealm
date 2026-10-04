@@ -94,7 +94,7 @@ const SICHT_FN = async (a) => {
         try {
             if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
         } catch (_e) {}
-        if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
+        r._schattenAlleNeu();
         const rt = new THREE_.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
         const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
         rend.setRenderTarget(rt);
@@ -156,7 +156,7 @@ const SCHUSS_FN = async (kam) => {
     if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
     // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
-    if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
+    r._schattenAlleNeu();
     // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, ACES + sRGB)
     // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
     const auf = await window.__ausgabeAufnahme(640, 360, 1);

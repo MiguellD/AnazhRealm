@@ -68,7 +68,7 @@ function drawZensus(opts) {
             st.scene.traverse((n) => {
                 if (n.isBundleGroup) n.needsUpdate = true;
             });
-            if (rend.shadowMap) rend.shadowMap.needsUpdate = true;
+            r._schattenAlleNeu();
             if (q) await q.onSubmittedWorkDone();
             const t0 = performance.now();
             r._loopRender(performance.now() / 1000);

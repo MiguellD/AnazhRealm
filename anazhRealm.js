@@ -22253,11 +22253,9 @@ class AnazhRealm {
         // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
         // Samples — Performance-Win).
         renderer.shadowMap.type = THREE.PCFShadowMap;
-        // Native Shadow-Pipeline (MeshToonNodeMaterial konsumiert die Shadow-Map). autoUpdate AUS: der Pass
-        // (~ein zweiter Voll-Render) liefe jeden Frame; `_loopShadowUpdate` setzt `needsUpdate` nur bei
-        // Spieler-Bewegung, Sonnen-Wanderung oder Max-Staleness → beim Umsehen entfällt er.
-        renderer.shadowMap.autoUpdate = false;
-        renderer.shadowMap.needsUpdate = true; // der erste Frame baut die Map
+        // Native Shadow-Pipeline (MeshToonNodeMaterial konsumiert die Shadow-Map). Der Takt der Schatten-Renders lebt
+        // JE LICHT (`shadow.autoUpdate`/`needsUpdate`, `_loopShadowUpdate`) — `renderer.shadowMap.autoUpdate/
+        // needsUpdate` liest r184 nicht.
         // autoReset AUS: `_loopRender` ruft `info.reset()` EINMAL pro Frame und liest am Ende die volle Last
         // (Schatten + Haupt + Post-FX) für perfSense — sonst sähe es nur den letzten Post-FX-Pass.
         if (renderer.info) renderer.info.autoReset = false;
@@ -86656,43 +86654,54 @@ class AnazhRealm {
         }
     }
 
-    // SCHATTEN-CACHE: der Schatten-Pass ist ein zweiter Voll-Render; die Schatten-Kamera folgt der
-    // Spieler-POSITION, nicht dem Blick → beim Umsehen ist die Map identisch. autoUpdate=false: neu
-    // rendern nur bei Bewegung / Sonnen-Sprung / Max-Staleness. Das Intervall bei Bewegung
-    // (_shadowMinInterval) fährt der Perf-Regelkreis — kein zweiter Regler.
+    // Alle Schatten-Maps im nächsten Render neu — die EINE Markierung (Werkzeuge vor einer Aufnahme): je Licht am
+    // echten Leser.
+    _schattenAlleNeu() {
+        const csm = this.state.csmNode;
+        const dl = this.state.directionalLight;
+        const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
+        for (const l of lichter) if (l.shadow) l.shadow.needsUpdate = true;
+    }
+
+    // DER SCHATTEN-TAKT je Kaskade (04.10., echte GPU): r184 liest `renderer.shadowMap.needsUpdate` NICHT — der
+    // EINE Leser ist `ShadowNode.updateBefore` mit `shadow.needsUpdate || shadow.autoUpdate` je Licht, und
+    // `LightShadow.autoUpdate` (true) reist in jede CSM-Kaskade. Der alte Cache (V18.264) schrieb ins Leere: beide
+    // Kaskaden renderten JEDEN Frame (Profil: updateShadow ~9,5 ms CPU je Frame). Hier fährt der Takt die echten
+    // Leser: die NAHE Kaskade folgt dem Regler-Intervall (gedeckelt auf `nahMax` — laufende Tiere werfen nah),
+    // die FERNE rendert im `fernFaktor`-fachen Takt; ein Sonnen-Sprung erzwingt alle. Ohne CSM trägt das Haupt-
+    // Licht die EINE Map im Nah-Takt. Eine übersprungene Kaskade bleibt konsistent: `shadow.updateMatrices` läuft
+    // nur in `renderShadow` (Vendor-Anker), die Matrix gehört zur Map.
     _loopShadowUpdate() {
         const r = this.state.renderer;
         if (!r || !r.shadowMap) return;
         const dl = this.state.directionalLight;
-        const pm = this.state.playerMesh;
         const frame = (this._shadowFrame = (this._shadowFrame || 0) + 1);
-        if (!this._shadowLast) this._shadowLast = { frame: -999, px: NaN, pz: NaN, sx: 0, sy: 0, sz: 0 };
+        if (!this._shadowLast) this._shadowLast = { sx: 0, sy: 0, sz: 0, k: [] };
         const L = this._shadowLast;
-        const px = pm ? pm.position.x : 0,
-            pz = pm ? pm.position.z : 0;
         const sx = dl ? dl.position.x : 0,
             sy = dl ? dl.position.y : 0,
             sz = dl ? dl.position.z : 0;
-        const moved = (px - L.px) ** 2 + (pz - L.pz) ** 2 > 0.01; // jede echte Bewegung
-        // `sunMoved` fängt nur den DISKRETEN Sprung (manueller Tageszeit-Wechsel, Δ² ≥ 10³): die
-        // Sonnen-Position (focus + sunDir·200) trägt auch die Tag-Nacht-Drift (Δ² ~1e-3/Frame), die auf den
-        // Staleness-Pfad (hardStale) gehört. Schwelle 4.0 liegt weit über der 30-Frame-Akkumulation (Cache
-        // greift im Stand) und weit unter jedem Sprung; in der schnellen Dämmerung trippt sie öfter.
+        // `sunMoved` fängt nur den DISKRETEN Sprung (manueller Tageszeit-Wechsel, Δ² ≥ 10³): die Sonnen-Position
+        // (focus + sunDir·200) trägt auch die Tag-Nacht-Drift (Δ² ~1e-3/Frame), die der Takt ohnehin mitnimmt.
         const sunMoved = (sx - L.sx) ** 2 + (sy - L.sy) ** 2 + (sz - L.sz) ** 2 > 4.0;
-        const since = frame - L.frame;
-        // selbst bei Bewegung höchstens alle minInterval Frames (vom Regler gefahren);
-        // eine harte Staleness-Grenze garantiert, dass die Map nie veraltet (Sonne/Geo).
-        const minInterval = Math.max(1, Math.round(this.state._shadowMinInterval || 1));
-        const hardStale = 30;
-        const doUpdate = ((moved || sunMoved) && since >= minInterval) || since >= hardStale;
-        if (doUpdate) {
-            r.shadowMap.needsUpdate = true;
-            L.frame = frame;
-            L.px = px;
-            L.pz = pz;
+        if (sunMoved) {
             L.sx = sx;
             L.sy = sy;
             L.sz = sz;
+        }
+        const T = AnazhRealm.SCHATTEN_TAKT;
+        const minInterval = Math.max(1, Math.round(this.state._shadowMinInterval || 1));
+        const csm = this.state.csmNode;
+        const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
+        for (let i = 0; i < lichter.length; i++) {
+            const sh = lichter[i].shadow;
+            if (!sh) continue;
+            sh.autoUpdate = false;
+            const takt = i === 0 ? Math.min(T.nahMax, minInterval) : minInterval * T.fernFaktor;
+            if (sunMoved || !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt)) {
+                sh.needsUpdate = true;
+                L.k[i] = frame;
+            }
         }
     }
 
@@ -87117,7 +87126,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.523.0";
+AnazhRealm.VERSION = "18.524.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -91045,6 +91054,9 @@ AnazhRealm.PERF_TARGET_MS = 17;
 // DIE GPU-LEINE (_gpuLeineFrei): höchstens so viele Frames dürfen zugleich auf der GPU unterwegs sein — mehr ist nur
 // Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
 AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
+// DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade rendert im Regler-Intervall, höchstens
+// jeden `nahMax`-ten Frame (laufende Tiere werfen nah); die ferne im `fernFaktor`-fachen Takt.
+AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
 // Abstand UNTER der Decke liegt (17 − 4 = 13 ms ≈ 77 fps). Das Totband [13..17 ms] ist die
 // Lunge des Systems: dazwischen hält der Regler → fps ruht über 60 statt am 59er-Anschlag.
