@@ -85,12 +85,12 @@ function pageHtml() {
     for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
     return btoa(s);
   };
-  // DER ATLAS-STECKBRIEF gegen den MALER (04.10.): der Kern-Maler malt den broadleaf-Atlas hier im
-  // Seiten-Kontext (der Worker malt keinen) — je Zelle die Ausdehnung von Alpha>0 um die Zellmitte (Anteil der
-  // halben Zelle) und die mittlere Alpha-Deckung der ganzen Zelle.
+  // DER ATLAS-STECKBRIEF gegen den MALER (04.10.): der Kern-Maler malt den EINEN Blatt-Atlas hier im
+  // Seiten-Kontext — je Zelle (0..2 Breitblatt, 3 Nadel) die Ausdehnung von Alpha>0 um die Zellmitte (Anteil
+  // der halben Zelle) und die mittlere Alpha-Deckung der ganzen Zelle.
   window.__atlas = () => {
     const core = window.__phytoCore;
-    const cv = core.bakeLeafAtlasCanvas(document, { cell3: "broadleaf" });
+    const cv = core.bakeLeafAtlasCanvas(document);
     const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
     const Z = cv.width / 4, H = cv.height, ext = [0, 0, 0, 0], fill = [0, 0, 0, 0];
     for (let y = 0; y < H; y++) for (let x = 0; x < cv.width; x++) {
@@ -100,7 +100,12 @@ function pageHtml() {
       if (e > ext[c]) ext[c] = e;
       fill[c] += a / 255;
     }
-    return { ext, fill: fill.map((f) => f / (Z * H)), steckbrief: core.BLATT_ATLAS_BREIT };
+    return {
+      ext,
+      fill: fill.map((f) => f / (Z * H)),
+      steckbrief: core.BLATT_ATLAS_BREIT,
+      nadel: core.BLATT_ATLAS_NADEL,
+    };
   };
   window.__aget = (type) => ask({ type });                 // get-recipes / -world-params / -render-config
   window.__build = (msg) => ask(Object.assign({ type: "build-asset" }, msg)).then((r) => ({
