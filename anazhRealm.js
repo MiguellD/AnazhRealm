@@ -86747,7 +86747,9 @@ class AnazhRealm {
             // Birken und Büsche als gerasterte Geister; FXAA sah das Muster als Kante und ließ es stehen). Erste
             // Stufe der Kette (Studio-Gesetz phytogenesis FIX v32: zeitliche Auflösung VOR den Nachbearbeitungen):
             // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
-            // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity.
+            // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity. Kosten (04.10., echte GPU
+            // Radeon 890M, 1080p, ruhig, gpu-bank 200 Frames × 12 Paare gegen FXAA): +1,1 ms je Frame (die Pass-
+            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB.
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
             if (this.state._traa && typeof THREE.TRAANode !== "function") {
