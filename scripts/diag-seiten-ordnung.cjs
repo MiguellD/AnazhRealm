@@ -15,6 +15,7 @@
 //   O4  große Hüllen teilen keine Seite mit normalen
 //   F1  die Folge ist aufsteigend, enthält jede belegte Seite und ist eine UNTERE Schranke (≤ echter Box-Abstand)
 //   K1  Konsum: der Tick ordnet + reicht die Folge, der Shader liest sie und bricht ab
+//   K2  die Kapsel-Liste liegt 2D (Breite ≤ 8192, ≥ 8192 Kapseln), der Shader liest nur über kapselTexel
 //   S1  Selbsttest: verwürfelte Seiten sind weit (O3 feuert); S2: ein Umzug ohne Handle-Nachzug bricht O1
 //
 //   node scripts/diag-seiten-ordnung.cjs
@@ -160,6 +161,9 @@ function probe(modus) {
         folgeVoll: belegteSeiten === alleBelegt && nF === alleBelegt,
         tick: String(r._tickFeldPass),
         pass: String(r._feldPassEnsure),
+        kapselBreite: wm.kapseln.image.width,
+        kapselHoehe: wm.kapseln.image.height,
+        kapselKap: W.kapseln,
     };
 }
 
@@ -204,6 +208,16 @@ function probe(modus) {
                 /_weltSeitenFolge\(/.test(a.tick) &&
                 /if \(fo\.y >= bestT\) \{ break; \}/.test(a.pass) &&
                 /folge: TSL\.texture\(wm\.folge\)/.test(a.pass)
+        );
+        check(
+            "K2 die Kapsel-Liste liegt 2D im WebGPU-Limit, der Shader liest nur über kapselTexel",
+            a.kapselBreite <= 8192 &&
+                a.kapselHoehe > 1 &&
+                a.kapselBreite * a.kapselHoehe === a.kapselKap * 2 &&
+                a.kapselKap >= 8192 &&
+                /kapselTexel\(kapseln, /.test(a.pass) &&
+                !/textureLoad\(kapseln, /.test(a.pass),
+            `${a.kapselBreite}×${a.kapselHoehe} Texel, ${a.kapselKap} Kapseln`
         );
         const w = await page.evaluate(probe, "wuerfeln");
         const h = await page.evaluate(probe, "ohneHandle");

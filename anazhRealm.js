@@ -35187,6 +35187,14 @@ class AnazhRealm {
         // Der Blick (rohes WGSL): Richtung aus invVP → Azimut/Elevation → Panorama-Texel (quadratische
         // Elevation-Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. textureDimensions braucht
         // f32/i32-Casts (WGSL-Spec).
+        // Die Kapsel-Liste liegt 2D (Zeilen à textureDimensions.x Texel): eine 1D-Zeile stieß ans garantierte WebGPU-
+        // Limit (8192 Texel = 4096 Kapseln, 04.10. zu 59 % belegt, als die Fern-Streu ins Gesetz zog).
+        const kapselTexelFn = TSL.wgslFn(
+            "fn kapselTexel(k: texture_2d<f32>, i: i32) -> vec4<f32> {\n" +
+                "    let b = i32(textureDimensions(k, 0).x);\n" +
+                "    return textureLoad(k, vec2<i32>(i % b, i / b), 0);\n" +
+                "}"
+        );
         const blick = TSL.wgslFn(
             "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
@@ -35296,7 +35304,7 @@ class AnazhRealm {
                 "                // die Kosten binden an getroffene Kugeln, nie an die Streu-Zahl.\n" +
                 "                let basis = i32(-t1.w - 0.5);\n" +
                 "                for (var pk: i32 = 0; pk < anzahl; pk = pk + 1) {\n" +
-                "                    let gA = textureLoad(kapseln, vec2<i32>(basis + pk * 2, 0), 0);\n" +
+                "                    let gA = kapselTexel(kapseln, basis + pk * 2);\n" +
                 "                    if (gA.w < 0.001) { continue; }\n" +
                 "                    let oc = gA.xyz - camPos;\n" +
                 "                    let bq = dot(oc, dir);\n" +
@@ -35306,7 +35314,7 @@ class AnazhRealm {
                 "                    let tGa = max(bq - sq, tN2);\n" +
                 "                    let tGe = min(min(bq + sq, tF2), bestT);\n" +
                 "                    if (tGe <= tGa) { continue; }\n" +
-                "                    let gB = textureLoad(kapseln, vec2<i32>(basis + pk * 2 + 1, 0), 0);\n" +
+                "                    let gB = kapselTexel(kapseln, basis + pk * 2 + 1);\n" +
                 "                    let cy = cos(gB.x);\n" +
                 "                    let sy = sin(gB.x);\n" +
                 "                    let sk = max(gB.y, 1e-4);\n" +
@@ -35322,8 +35330,8 @@ class AnazhRealm {
                 "                        var dmG = 1e30;\n" +
                 "                        var nkG = 0;\n" +
                 "                        for (var k2: i32 = 0; k2 < anzG; k2 = k2 + 1) {\n" +
-                "                            let qA = textureLoad(kapseln, vec2<i32>(poG + k2 * 2, 0), 0);\n" +
-                "                            let qB = textureLoad(kapseln, vec2<i32>(poG + k2 * 2 + 1, 0), 0);\n" +
+                "                            let qA = kapselTexel(kapseln, poG + k2 * 2);\n" +
+                "                            let qB = kapselTexel(kapseln, poG + k2 * 2 + 1);\n" +
                 "                            var dkG = 0.0;\n" +
                 "                            if (qA.w >= 0.0) {\n" +
                 "                                if (qB.w < 0.0) {\n" +
@@ -35356,8 +35364,8 @@ class AnazhRealm {
                 "                        if (dmG * sk < 0.008) {\n" +
                 "                            bestT = tG;\n" +
                 "                            getroffen = true;\n" +
-                "                            let qA = textureLoad(kapseln, vec2<i32>(poG + nkG * 2, 0), 0);\n" +
-                "                            let qB = textureLoad(kapseln, vec2<i32>(poG + nkG * 2 + 1, 0), 0);\n" +
+                "                            let qA = kapselTexel(kapseln, poG + nkG * 2);\n" +
+                "                            let qB = kapselTexel(kapseln, poG + nkG * 2 + 1);\n" +
                 "                            var gvG = vec3<f32>(0.0);\n" +
                 "                            var ciG: u32 = 0u;\n" +
                 "                            if (qA.w >= 0.0) {\n" +
@@ -35427,8 +35435,8 @@ class AnazhRealm {
                 "                var dm = 1e30;\n" +
                 "                var nk = 0;\n" +
                 "                for (var k: i32 = 0; k < anzahl; k = k + 1) {\n" +
-                "                    let pA = textureLoad(kapseln, vec2<i32>(po + k * 2, 0), 0);\n" +
-                "                    let pB = textureLoad(kapseln, vec2<i32>(po + k * 2 + 1, 0), 0);\n" +
+                "                    let pA = kapselTexel(kapseln, po + k * 2);\n" +
+                "                    let pB = kapselTexel(kapseln, po + k * 2 + 1);\n" +
                 "                    var dk = 0.0;\n" +
                 "                    if (pA.w >= 0.0) {\n" +
                 "                        if (pB.w < 0.0) {\n" +
@@ -35462,8 +35470,8 @@ class AnazhRealm {
                 "                if (dm < 0.008) {\n" +
                 "                    bestT = tK;\n" +
                 "                    getroffen = true;\n" +
-                "                    let pA = textureLoad(kapseln, vec2<i32>(po + nk * 2, 0), 0);\n" +
-                "                    let pB = textureLoad(kapseln, vec2<i32>(po + nk * 2 + 1, 0), 0);\n" +
+                "                    let pA = kapselTexel(kapseln, po + nk * 2);\n" +
+                "                    let pB = kapselTexel(kapseln, po + nk * 2 + 1);\n" +
                 "                    var gvK = vec3<f32>(0.0);\n" +
                 "                    var ci: u32 = 0u;\n" +
                 "                    if (pA.w >= 0.0) {\n" +
@@ -35600,7 +35608,7 @@ class AnazhRealm {
                 "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
                 "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
                 "}",
-            [feldTriAbtastFn, feldTriGradFn, sdCappedConeFn, sdEllipsoidCrownFn, gradEllipsoidCrownFn] // Glättung + Cone + Ellipsoid-Noise (Analog-B Slice 2+3)
+            [feldTriAbtastFn, feldTriGradFn, sdCappedConeFn, sdEllipsoidCrownFn, gradEllipsoidCrownFn, kapselTexelFn] // Glättung + Cone + Ellipsoid-Noise (Analog-B Slice 2+3)
         );
         // DER EINE WELT-MARCH schreibt ECHTE TIEFE (depthNode, das Fern-Schirm-
         // Muster): der Pass ist OPAK und komponiert per Depth-Test mit allem —
@@ -35850,7 +35858,13 @@ class AnazhRealm {
         // Glied-Raum sphere-getract, digitalisiert nur am Schirm. Ein Eintrag markiert sich mit
         // d = −anzahl (texel0.w), texel1.w = Kapsel-Texel-Offset. ~1 KB je Gattung statt MB-Bricks.
         const kapselDaten = new Float32Array(W.kapseln * 2 * 4);
-        const kapseln = new THREE.DataTexture(kapselDaten, W.kapseln * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+        const kapseln = new THREE.DataTexture(
+            kapselDaten,
+            W.kapselZeile,
+            (W.kapseln * 2) / W.kapselZeile,
+            THREE.RGBAFormat,
+            THREE.FloatType
+        );
         kapseln.minFilter = THREE.NearestFilter;
         kapseln.magFilter = THREE.NearestFilter;
         kapseln.needsUpdate = true;
@@ -87192,7 +87206,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.526.0";
+AnazhRealm.VERSION = "18.527.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -91064,7 +91078,8 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     ordnenAb: 48, // Zu-/Abgänge, nach denen die Seiten neu geordnet werden
     ordnenMs: 1000, // höchstens so oft (ms) — die Ordnung kopiert die Liste (≤ 512 KB) einmal
     spalten: 512, // Felder je Listen-Textur-Zeile (Breite = 512×8 = 4096 Texel, WebGPU-sicher)
-    kapseln: 4096, // ANALOG-Primitive (2 Texel je Kapsel/Box — das Gesetz statt des Rasters; Textur 8192×1)
+    kapseln: 8192, // ANALOG-Primitive (2 Texel je Kapsel/Box — das Gesetz statt des Rasters; Textur kapselZeile × 4)
+    kapselZeile: 4096, // Texel je Zeile der Kapsel-Liste (der Shader liest die Breite aus der Textur: kapselTexel)
     // Verteilungs-Gesetz: Klein-Streu wohnt als GESETZ-BLOCK je Kachel — EIN Feld-Eintrag trägt bis zu
     // gesetzBlock Plätze als Kapsel-Slots (32 B je Platz statt 128-B-Feld-Slot je Instanz); die Felder
     // bleiben Kreaturen/Bauten/Bäumen.
