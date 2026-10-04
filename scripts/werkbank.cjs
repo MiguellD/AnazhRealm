@@ -42,7 +42,7 @@
 //                                                           reine GPU-Zeit je Frame (wenn GPU-gebunden)
 //   node scripts/werkbank.cjs reload | status | stop
 //
-// `start --echt` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
+// `start --echt [--seite <url>]` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
 // den laufenden save-server (`npm start`, :4312 — der Flugschreiber schreibt anazhRealmPerf.json); ohne
 // `--echt` bleibt es swiftshader auf dem eigenen Seiten-Port. In beiden zählt der VRAM-ABGRIFF jede
 // GPUDevice-Allokation (Puffer + Texturen, live nach destroy) — das ist der Speicher, nicht ein Proxy.
@@ -72,7 +72,15 @@ const SEITEN_PORT = PORT - 1;
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 const ECHT = argv.includes("--echt");
-const ECHT_SEITE = "http://localhost:4312";
+// DIE SEITE der echten Welt: `--seite` (oder WERKBANK_SEITE) hat EINE Bedeutung — die URL des save-servers
+// (Ursprung, z. B. http://localhost:4312), nie eine Portnummer. Alles andere bricht laut ab, statt still eine
+// falsche Adresse („5312/") zu bauen.
+const ECHT_SEITE = (() => {
+    const s = String(opt("--seite", process.env.WERKBANK_SEITE || "http://localhost:4312"));
+    if (!/^https?:\/\/[^/\s]+\/?$/.test(s))
+        throw new Error(`--seite/WERKBANK_SEITE erwartet die URL des save-servers (http://host:port), nicht „${s}"`);
+    return s.replace(/\/$/, "");
+})();
 
 // DER VRAM-ABGRIFF: jede Allokation des GPUDevice (Puffer: size; Textur: alle Mip-Stufen × Schichten ×
 // Samples × Bytes je Texel) live mitgezählt, destroy zieht ab. Läuft vor jedem Seiten-Skript.
