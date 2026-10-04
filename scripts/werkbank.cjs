@@ -38,6 +38,8 @@
 //   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: Screenshot des präsentierten Canvas
 //                                                           (was der Spieler sieht) nach 1 s echtem Loop
 //   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
+//   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: n Frames ohne rAF/VSync hintereinander, die
+//                                                           reine GPU-Zeit je Frame (wenn GPU-gebunden)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // `start --echt` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
@@ -507,6 +509,53 @@ function profilAuswerten(p, top) {
     return { gesampeltMs: Math.round(gesamtUs / 1000), selbst: liste(jeSelbst), gesamt: liste(jeGesamt) };
 }
 
+// DIE GPU-BANK (Seiten-Kontext): n Frames direkt hintereinander rendern (ohne rAF, ohne VSync), dann auf die GPU
+// warten. Liegt die GPU je Frame über der CPU, ist Gesamtzeit / n die reine GPU-Zeit je Frame — die rAF-Kadenz rastet
+// am VSync ein und misst nur bei tiefer Schlange die GPU (gemessen 04.10.: 33,5 ms „Boden" war CPU 16 ms + VSync).
+function gpuBank(k) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const rend = r.state.renderer;
+        const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
+        if (!q) return { fehler: "kein GPU-Device" };
+        rend.setAnimationLoop(null);
+        window.__buehne();
+        const runde = async (n) => {
+            await q.onSubmittedWorkDone();
+            const t0 = performance.now();
+            let cpu = 0;
+            for (let i = 0; i < n; i++) {
+                const c0 = performance.now();
+                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+                r._loopRender(performance.now() / 1000);
+                cpu += performance.now() - c0;
+            }
+            const tAb = performance.now();
+            await q.onSubmittedWorkDone();
+            const t1 = performance.now();
+            return { jeFrame: (t1 - t0) / n, cpuJeFrame: cpu / n, nachlauf: t1 - tAb };
+        };
+        await runde(3); // warm
+        const n = k.n || 12;
+        const rr = [];
+        for (let i = 0; i < (k.runden || 3); i++) rr.push(await runde(n));
+        const med = (key) => {
+            const v = rr.map((x) => x[key]).sort((a, b) => a - b);
+            return +v[Math.floor(v.length / 2)].toFixed(2);
+        };
+        const jeFrame = med("jeFrame"),
+            cpu = med("cpuJeFrame");
+        return {
+            n,
+            runden: rr.length,
+            gpuJeFrameMs: jeFrame,
+            cpuJeFrameMs: cpu,
+            gpuGebunden: jeFrame > cpu * 1.15,
+            nachlaufMs: med("nachlauf"),
+        };
+    })();
+}
+
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const puppeteer = require("puppeteer");
@@ -649,6 +698,7 @@ async function starte() {
             }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
+            window.__letzteAufnahme = auf.u8;
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
@@ -717,6 +767,12 @@ async function starte() {
                     await page.setViewport({ width: +b.w || 1920, height: +b.h || 1080, deviceScaleFactor: 1 });
                     return send({ fenster: [+b.w || 1920, +b.h || 1080], ms: Date.now() - t0 });
                 }
+                if (req.url === "/gpu-bank")
+                    return send(
+                        Object.assign(await page.evaluate(gpuBank, { n: +b.n || 12, runden: +b.runden || 3 }), {
+                            ms: Date.now() - t0,
+                        })
+                    );
                 if (req.url === "/status") {
                     const s = await page.evaluate(() => {
                         const st = window.anazhRealm.state;
@@ -933,6 +989,7 @@ async function starte() {
         });
     else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
+    else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
