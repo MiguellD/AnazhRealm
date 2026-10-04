@@ -327,7 +327,7 @@ function lauf(k) {
                     karten:
                         (r._impostorBakeQueue || []).length +
                         (r._impostorBakePending ? 1 : 0) +
-                        (z.silhouetteWartend || 0) +
+                        (z.wartend || 0) +
                         (z.haengendeBakes || 0),
                     meshOffen: offen,
                 };

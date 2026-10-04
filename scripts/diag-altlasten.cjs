@@ -173,6 +173,20 @@ const FORBIDDEN = [
     { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
     { token: '"@p:"', fiel: "Welle B" },
     { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
+    // W6 — DER EINE KARTEN-ATLAS: je Karte zwei CanvasTextures, ein Material, eine Gruppe und ein Programm (die
+    // Sichthöhe als Fragment-Konstante), das Umdrehen je Karte im Haupt-Thread, die Silhouette, der Re-Frame mit
+    // Bundle-Neuaufnahme und das Rahmen-Quad je Karte sind gefallen; die Karte ist eine Schicht (`_impostorAtlas`).
+    { token: "_ensureImpostorAtlas", fiel: "W6 — der Canvas-Atlas je Karte (_impostorAtlas: EINE Array-Textur)" },
+    { token: "_impostorAtlasMap", fiel: "W6 — die Record-Map je Karte (_impostorAtlas().zellen)" },
+    { token: "_paintStudioAtlasCells", fiel: "W6 — das Umdrehen im Haupt-Thread (Studio-Layout lädt ohne Umdrehen)" },
+    { token: "_reframeImpostorFlat", fiel: "W6 — der Rahmen reist je Instanz (aRahmen)" },
+    { token: "_bakeImpostorSilhouetteCanvas", fiel: "W6 — die Silhouette erreichte das Auge nie" },
+    { token: "_buildImpostorCrossGeometry", fiel: "W6 — EIN Einheits-Quad (_impostorQuad)" },
+    { token: "impostorKey", fiel: "W6 — EIN Karten-Material (impostorAtlas)" },
+    { token: "_rec.frame", fiel: "W6 — die Programm-Konstante der Sichthöhe (aRahmen.y × Instanz-Skala)" },
+    { token: "rttBaked", fiel: "W6 — die Zelle ist gebacken" },
+    { token: "rttFailed", fiel: "W6 — die Zelle ist gescheitert" },
+    { token: "silhouetteWartend", fiel: "W6 — der Zensus zählt wartende Zellen" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
@@ -477,6 +491,40 @@ function scanInstanzWand(srcRoh) {
     return errs;
 }
 
+// DIE KARTEN-WAND (W6): die Karten-Methoden malen nichts im Haupt-Thread — keine CanvasTexture, kein Canvas, kein
+// getContext/putImageData (bis V18.528: je Karte zwei 1024×256-Canvases, Pixel je Zelle umgedreht). Die Schicht
+// kommt kodiert aus dem Worker und wird kopiert (`_impostorAtlasSchreibe`).
+const KARTEN_METHODEN = [
+    "_impostorAtlas() {",
+    "_impostorAtlasTexturen(at, bedarf) {",
+    "_impostorAtlasSchreibe(at, idx, payload) {",
+    "_impostorZelleNeu(at, key, preset, variant, ov) {",
+    "_impostorQuad(at) {",
+    "_impostorAtlasMaterial() {",
+    "_impostorLeaf(z, localMatrix) {",
+    "_tickImpostorBake() {",
+    "_applyStudioImpostorPayload(z, payload) {",
+    "_buildImpostorLeaf(bp, skel) {",
+    "_foundryEnsureImpostorRecord(preset, variant, ov) {",
+    "_foundryBuildImpostorFlat(entry, preset) {",
+];
+function scanKartenWand(srcRoh) {
+    const code = stripComments(srcRoh);
+    const errs = [];
+    for (const kopf of KARTEN_METHODEN) {
+        const a = code.indexOf("\n    " + kopf);
+        const b = a < 0 ? -1 : code.indexOf("\n    }\n", a);
+        if (a < 0 || b < 0) {
+            errs.push(`Karten-Wand: die Methode \`${kopf.split("(")[0]}\` fehlt (der Atlas braucht den Anker)`);
+            continue;
+        }
+        const rumpf = code.slice(a, b);
+        for (const t of ["CanvasTexture", 'createElement("canvas")', "getContext(", "putImageData", "drawImage("])
+            if (rumpf.indexOf(t) >= 0) errs.push(`Karten-Wand: \`${kopf.split("(")[0]}\` malt wieder (${t})`);
+    }
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
@@ -493,6 +541,19 @@ function main() {
             scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1;
         if (!instanzFeuert) {
             console.log("❌ SELBST-TEST: die Instanz-Wand feuert nicht (oder steht heute rot)");
+            process.exit(1);
+        }
+        // Die Karten-Wand muss feuern: ein Canvas im Schicht-Schreiber.
+        const kartenFeuert =
+            scanKartenWand(stamm).length === 0 &&
+            scanKartenWand(
+                stamm.replace(
+                    "    _impostorAtlasSchreibe(at, idx, payload) {",
+                    '    _impostorAtlasSchreibe(at, idx, payload) {\n        const cv = document.createElement("canvas");'
+                )
+            ).length === 1;
+        if (!kartenFeuert) {
+            console.log("❌ SELBST-TEST: die Karten-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
@@ -513,14 +574,15 @@ function main() {
         .concat(checkSoulKeys())
         .concat(scanZwillinge())
         .concat(scanLabBuster())
-        .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")));
+        .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")));
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint.`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread.`
     );
 }
 

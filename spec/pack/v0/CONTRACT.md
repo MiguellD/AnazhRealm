@@ -28,14 +28,17 @@ Platten-, Cache- und leafKey-Stamm. Ein GEPRÄGTER Körper (Ofen-Mensch, Tier mi
 seinen ov-Hash an: `<preset>|<gestalt>|<lod>|ov:<hash>` (`_studioOvHash`, reihenfolgefest) — nur die Werkstatt-Vorschau
 und die Hand (`wo === 0` mit ov) sind Unikate ohne Platte.
 
-DIE KARTE (V18.527) liegt im selben Store:
+DIE KARTE (V18.527, W6 als Atlas-Schicht) liegt im selben Store:
 
 ```text
-karte|<preset>|<gestalt>[|ov:<hash>]      →  { payload: { cw, ch, V, aspect, height, albedo, normal } }
+karte|<preset>|<gestalt>[|ov:<hash>]|<fmt>  →  { payload: { cw, ch, V, nt, fmt, frame: { halfH, halfW }, albedo, normal, opak, deckung } }
 ```
 
-(`_foundryKartenKey`; `albedo`/`normal` Uint8Array je cw·ch·V·4 — die Bake-Antwort des Studios, vor dem Transfer
-geschrieben; ein leerer/fehlerhafter Bake wird nie persistiert).
+(`_foundryKartenKey` + Schicht-Format `fmt` = `bc` | `rgba8`; die Schale kodiert die Studio-Karte mit dem Karten-Codec
+aus phyto-core (`karteKodiere`): `albedo` = BC1-sRGB mit deckungstreuen Mips (`bc`) bzw. rgba8-sRGB Stufe 0, `normal`
+= BC5 bzw. rg8 auf 1/`nt`, die Stufen hintereinander nach `karteMasse` — eine Schicht 0,25 MiB in `bc`. Geschrieben
+vor dem Transfer; ein leerer/fehlerhafter Bake wird nie persistiert. Der Host lädt die Schicht ohne Umdrehen in den
+EINEN Karten-Atlas, `_impostorAtlas`.)
 
 - `preset` — ein Schlüssel aus dem Studio-Rezeptbuch (`get-recipes`; Bäume `eiche fichte tanne
 birke weide mammut` · Boden `gras strauch blume` · Fels `findling basalt sediment zacken
@@ -108,7 +111,7 @@ stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + shell_
 | Stempel-Mismatch               | Store leeren + neuen Stempel schreiben (Bust VON SELBST bei Generator- und Format-Edit)         |
 | Headless/Null-Renderer         | Platte AUS (`cfg.platte` false, gate-deterministisch); der Schlüssel reist, die Schale entscheidet |
 | Vorrat (`vorrat: true`)        | liegt der Körper auf der Platte oder gibt es keine: leere Antwort ohne Bau; sonst Bau → Put → leer |
-| Karte (`bake-impostor`)        | Treffer: `impostor`-Antwort von der Platte (`platte: true`), kein Bake; Miss: Bake → Put → Transfer |
+| Karte (`bake-impostor`)        | Treffer (gleiches `fmt`): `impostor` von der Platte (`platte: true`), kein Bake; Miss: Bake → Kodierung → Put → Transfer; `nurPlatte`-Miss: payload null |
 | Jeder IDB-/Quota-/Parse-Fehler | die Schale schreibt nicht mehr und fragt nur noch das Studio (nie ein Nutzer-sichtbarer Fehler) |
 | Leerer/`null`-Reply            | wird NIE persistiert (der Put verlangt `meshes.length`; die Art bleibt nachfragbar)             |
 

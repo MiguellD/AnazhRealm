@@ -55,18 +55,21 @@ graceful-leeres Ergebnis (die Gates fangen einen fehlenden Kern sofort).
 
 Der 8-Winkel-Impostor-Atlas backt im STUDIO-Bäcker des Foundry-Workers (phytogenesis
 `bakeImpostorAtlas` über den Kanal `bake-impostor` → Reply `impostor`): `_tickImpostorBake`
-fragt je Record (`presetId`, `seed = variantIndex`, `season`), `_applyStudioImpostorPayload`
-malt die vertikal gestapelten, bottom-up Reply-Pixel Y-geflippt in den horizontalen Welt-Atlas
-(ATOMIC `tex.image`-Swap, Textur-Identität stabil) und übernimmt den Studio-Rahmen
-(`payload.aspect/height` — RAHMEN-EINHEIT, `_reframeImpostorFlat` schreibt ein schon
-instanziertes Quad in place um). Der frühere Welt-RTT-Nachbau (`_bakeImpostorAtlasRTT` ·
+fragt je Atlas-Zelle (`presetId`, `seed = Gestalt`, Golden-Sommer, Schicht-Format `fmt`), die
+Transport-Schale kodiert die Karte im Worker mit dem Karten-Codec (phyto-core: deckungstreue
+Mips, BC1-sRGB/BC5 bzw. rgba8/rg8) und legt sie auf die Platte, `_applyStudioImpostorPayload`
+kopiert die Schicht ohne Umdrehen in den EINEN Karten-Atlas (W6, `_impostorAtlas`: eine
+Array-Textur je Albedo/Normale, EIN Material, EINE globale Gruppe `IMPOSTOR_ATLAS_GRUPPE`;
+Schicht und Bake-Rahmen reisen je Instanz als aZelle/aRahmen über `_lodSlotStamp`). Gefallen:
+der Canvas-Atlas je Karte, das Umdrehen im Haupt-Thread, die Silhouette, der Re-Frame
+(`gate:altlasten`). Der frühere Welt-RTT-Nachbau (`_bakeImpostorAtlasRTT` ·
 `_impostorBlitPixels` · `_impostorDilate` · `_foundryBakeLeaves`) ist GESCHNITTEN — ein Bäcker,
 eine Quelle; die Bake-DISZIPLIN blieb (ein Bake in Flug · Watchdog `IMPOSTOR_BAKE_TIMEOUT_MS` ·
-3× Retry, dann terminal `rttFailed` · Zensus-Zähler). KEIN GL-Bake-iframe: die drei
-iframe-Impostor-Methoden (`_foundryRequestImpostor` · `_foundryEnsureBakeIframe` ·
-`_foundryBuildImpostorRecord`) bleiben geschnitten. Headless/Null-Renderer → der
-Silhouetten-Fallback trägt (nichts wird enqueued, gate-treu); der Atlas-LOOK ist das
-Schöpfer-Auge auf echter GPU.
+3× Retry, dann gescheitert · Zensus). KEIN GL-Bake-iframe: die drei iframe-Impostor-Methoden
+(`_foundryRequestImpostor` · `_foundryEnsureBakeIframe` · `_foundryBuildImpostorRecord`) bleiben
+geschnitten. Headless/Null-Renderer → nichts wird gebacken, der L1-Rahmen trägt die Mechanik;
+Layout und Kleber-Wand prüft `gate:foundry-impostor` auf swiftshader-WebGPU, den Look die
+Blick-Sonde auf echter GPU.
 
 ### Gesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht
 

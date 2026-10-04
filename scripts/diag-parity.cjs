@@ -348,7 +348,7 @@ async function renderAnazh() {
                 }
             } catch (_e) {}
             const qLen0 = r._impostorBakeQueue ? r._impostorBakeQueue.length : 0;
-            const recs0 = r._impostorAtlasMap ? r._impostorAtlasMap.size : 0;
+            const recs0 = r._kartenAtlas ? r._kartenAtlas.zellen.size : 0;
             r.state.renderer.render = window.__origRender;
             r._impostorBakePending = false;
             // P0 (Bühnen-Ordnung, 09.07.) — die Bake-Queue wartet in Produktion auf die Bühne

@@ -19,7 +19,9 @@
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
 //   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 Format-Wechsel leert die Platte
-//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V9 Karten auf der Platte (V18.527)
+//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V9 Karten auf der Platte (V18.527), als Atlas-Schicht
+//       kodiert (W6: Karten-Codec im Worker, Format im Schlüssel) · V10 das Format trennt die Platte · V11 nurPlatte
+//       bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes
 // STATISCH (V18.527): S5 keine Saison in Schlüssel/Auftrag, Flip-Maschine fort · S6 keine tote Fracht · S7 der
 //   Stempel hasht die Shells, jeder Welt-Körper schickt seinen Schlüssel, Karten tragen `karte|…`
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
@@ -137,10 +139,10 @@ function statisch(src) {
         iSkip >= 0 && iReq > iSkip && !/lods:\s*\[2\]/.test(code)
     );
     const recS = teil("_foundryEnsureImpostorRecord(");
-    const iStudio = recS ? recS.indexOf("this._ensureImpostorAtlas(key, null)") : -1;
+    const iStudio = recS ? recS.indexOf("this._impostorZelleNeu(at, key, preset, variant, ovK)") : -1;
     const iZug = recS ? recS.indexOf("this._foundryRequest(") : -1;
     pruef(
-        "S6b die Karte zieht mit echtem Renderer keine Körper-Stufe (rahmenloser Studio-Record vor jedem _foundryRequest)",
+        "S6b die Karte zieht mit echtem Renderer keine Körper-Stufe (rahmenlose Atlas-Zelle vor jedem _foundryRequest)",
         iStudio >= 0 && iZug > iStudio && /rendR && !rendR\._isHeadlessNull/.test(recS)
     );
     pruef(
@@ -158,10 +160,15 @@ function statisch(src) {
         "S7b jeder Welt-Körper schickt seinen Schlüssel (geprägt mit ov-Hash), die Schale entscheidet über die Platte",
         !/f\.platte/.test(reqS) && /this\._foundryKoerperKey\(presetId, seed, lod, hasOv \? ov : null\)/.test(reqS)
     );
+    const bakeS = teil("_foundryBakeImpostorRequest(") || "";
     pruef(
-        "S7c Karten tragen ihren Platten-Schlüssel, die Schale schreibt jeden frischen Bake",
-        /msg\.platte = "karte\|" \+ this\._foundryKartenKey\(/.test(teil("_foundryBakeImpostorRequest(") || "") &&
-            /schreib\(auftrag\.key, \{ payload: p \}\)/.test(sc)
+        "S7c Karten tragen ihren Platten-Schlüssel mit Schicht-Format, die Schale schreibt jede kodierte Schicht",
+        /msg\.platte =\s*"karte\|" \+ this\._foundryKartenKey\([^;]*\+ "\|" \+ fmt;/.test(bakeS) &&
+            /schreib\(auftragK\.key, \{ payload: k \}\)/.test(sc)
+    );
+    pruef(
+        "S7d die Karte wird im Worker zur Atlas-Schicht (Karten-Codec), ein Platten-Treffer passt zum Format",
+        /core\.karteKodiere\(p, auftragK\.fmt\)/.test(sc) && /karteOk\(p\) && p\.fmt === fmt/.test(sc)
     );
     return { gesetze: aus, schale };
 }
@@ -216,8 +223,21 @@ function gestalten(src) {
 
 // Das Studio-Double: antwortet auf build-asset wie die Brücke (frische Puffer, aWind + Uint32-Index), zählt Bauten
 // und meldet, ob sein letzter Puffer nach dem Senden abgelöst ist (= übertragen statt kopiert). Es merkt sich die
-// Saison, die es sah (der Saison-Nagel), und bäckt Karten (bake-impostor → impostor, frische Pixel-Puffer).
+// Saison, die es sah (der Saison-Nagel), und bäckt Karten (bake-impostor → impostor: das Studio-Payload des Bäckers,
+// Albedo + Normale auf 1/nt, Rahmen; klein gehalten 16×32×8 — die Schale kodiert es mit dem ECHTEN Karten-Codec aus
+// phyto-core, den der Worker wie im Spiel lädt).
+const KARTE = { cw: 16, ch: 32, V: 8, nt: 2 };
+// Die Schicht-Maße derselben Karte je Format — aus dem Karten-Gesetz (phyto-core, rein, per vm geladen).
+const MASSE = (() => {
+    const ctx = { Math, Uint8Array, Float32Array, Float64Array, Int32Array };
+    ctx.globalThis = ctx;
+    ctx.self = ctx;
+    require("vm").runInNewContext(fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"), ctx);
+    const m = (fmt) => ctx.__phytoCore.karteMasse(KARTE.cw, KARTE.ch, KARTE.V, KARTE.nt, fmt);
+    return { bc: m("bc"), rgba8: m("rgba8") };
+})();
 const STUDIO = `
+importScripts(location.origin + "/phyto-core.js");
 let gebaut = 0, gebacken = 0, letzte = null;
 const saisons = [];
 self.onmessage = (e) => {
@@ -225,9 +245,11 @@ self.onmessage = (e) => {
     if (m.type === "build-asset" || m.type === "bake-impostor") saisons.push(m.season === undefined ? "-" : m.season);
     if (m.type === "bake-impostor") {
         gebacken++;
-        const albedo = new Uint8Array(128 * 256 * 8 * 4).fill(200), normal = new Uint8Array(128 * 256 * 8 * 4).fill(128);
+        const K = ${JSON.stringify(KARTE)};
+        const albedo = new Uint8Array(K.cw * K.ch * K.V * 4).fill(200),
+            normal = new Uint8Array((K.cw / K.nt) * ((K.ch * K.V) / K.nt) * 4).fill(128);
         self.postMessage({ type: "impostor", world: "terrain", reqId: m.reqId, presetId: m.presetId, seed: m.seed,
-            payload: { cw: 128, ch: 256, V: 8, aspect: 0.5, height: 9.5, albedo, normal } });
+            payload: Object.assign({ frame: { halfH: 4.75, halfW: 2.4 }, albedo, normal }, K) });
     } else if (m.type === "build-asset") {
         gebaut++;
         const pos = new Float32Array(9);
@@ -250,6 +272,10 @@ async function verhalten(schaleSrc) {
             res.setHeader("Content-Type", "application/javascript");
             return res.end("// kern");
         }
+        if (req.url.startsWith("/phyto-core.js")) {
+            res.setHeader("Content-Type", "application/javascript");
+            return res.end(fs.readFileSync(path.join(root, "phyto-core.js")));
+        }
         res.setHeader("Content-Type", "text/html");
         res.end("<!doctype html><meta charset=utf-8><title>fluss</title>");
     });
@@ -259,7 +285,7 @@ async function verhalten(schaleSrc) {
         const page = await browser.newPage();
         await page.goto(`http://127.0.0.1:${PORT}/`);
         return await page.evaluate(
-            async (schale, studio) => {
+            async (schale, studio, masse) => {
                 const neu = (format, platte) => {
                     const cfg = {
                         lesen: ["position", "normal", "color", "uv"],
@@ -359,7 +385,14 @@ async function verhalten(schaleSrc) {
                 // Sommer — jeder Bau ist Golden-Sommer, die Farbe trägt der Host.
                 const C = neu(3, false);
                 await C.frag({ type: "build-asset", reqId: "s1", presetId: "x", seed: 2, lod: 1, season: "autumn" });
-                const k1 = await C.frag({ type: "bake-impostor", reqId: "s2", presetId: "x", seed: 2, season: "winter" });
+                const k1 = await C.frag({
+                    type: "bake-impostor",
+                    reqId: "s2",
+                    presetId: "x",
+                    seed: 2,
+                    season: "winter",
+                    fmt: "rgba8",
+                });
                 const q4 = await C.frag({ type: "frage" }, "antwort");
                 aus.nagel = !!(
                     q4 &&
@@ -396,31 +429,75 @@ async function verhalten(schaleSrc) {
                 const q6 = await E.frag({ type: "frage" }, "antwort");
                 aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
                 E.w.terminate();
-                // V9 KARTEN AUF DIE PLATTE: der erste Bake geht ans Studio und wird geschrieben, der zweite kommt von der
-                // Platte (platte:true, die Pixel unversehrt), das Studio bäckt nur einmal.
+                // V9 KARTEN AUF DIE PLATTE, ALS ATLAS-SCHICHT: der erste Bake geht ans Studio, die Schale kodiert ihn
+                // (BC, Stufen nach karteMasse, sRGB-Albedo) und schreibt ihn; der zweite kommt von der Platte (platte:
+                // true, Schicht und Rahmen unversehrt), das Studio bäckt nur einmal.
+                const karte = (w, reqId, presetId, seed, fmt, extra) =>
+                    w.frag(
+                        Object.assign(
+                            { type: "bake-impostor", reqId, presetId, seed, fmt, platte: `karte|${presetId}|${seed}|${fmt}` },
+                            extra || {}
+                        )
+                    );
+                const schicht = (k, fmt) =>
+                    !!(
+                        k &&
+                        k.payload &&
+                        k.payload.fmt === fmt &&
+                        k.payload.albedo.length === masse[fmt].aBytes &&
+                        k.payload.normal.length === masse[fmt].nBytes &&
+                        k.payload.frame.halfH === 4.75 &&
+                        k.payload.opak > 0
+                    );
                 const F = neu(3, true);
-                const kp1 = await F.frag({ type: "bake-impostor", reqId: "kp1", presetId: "eiche", seed: 2, platte: "karte|eiche|2" });
+                const kp1 = await karte(F, "kp1", "eiche", 2, "bc");
                 await ruhe(400);
-                const kp2 = await F.frag({ type: "bake-impostor", reqId: "kp2", presetId: "eiche", seed: 2, platte: "karte|eiche|2" });
+                const kp2 = await karte(F, "kp2", "eiche", 2, "bc");
                 const q7 = await F.frag({ type: "frage" }, "antwort");
                 aus.karte = !!(
-                    kp1 &&
+                    schicht(kp1, "bc") &&
                     !kp1.platte &&
-                    kp1.payload &&
-                    kp2 &&
+                    schicht(kp2, "bc") &&
                     kp2.platte === true &&
-                    kp2.payload &&
-                    kp2.payload.albedo.length === 128 * 256 * 8 * 4 &&
-                    kp2.payload.albedo[7] === 200 &&
-                    kp2.payload.height === 9.5 &&
+                    kp2.payload.albedo[0] === kp1.payload.albedo[0] &&
                     q7 &&
                     q7.gebacken === 1
                 );
+                // V10 DAS FORMAT TRENNT DIE PLATTE: dieselbe Karte als rgba8 (Gerät ohne BC-Feature) trifft die BC-Schicht
+                // nie — das Studio bäckt sie, die Schale kodiert rgba8.
+                const kr1 = await karte(F, "kr1", "eiche", 2, "rgba8");
+                const q8 = await F.frag({ type: "frage" }, "antwort");
+                aus.kartenFormat = !!(schicht(kr1, "rgba8") && !kr1.platte && q8 && q8.gebacken === 2);
+                // V11 nurPlatte (Ship-Hook) bäckt keine Karte: ein Miss antwortet payload null.
+                const kn = await karte(F, "kn1", "tanne", 1, "bc", { nurPlatte: true });
+                const q9 = await F.frag({ type: "frage" }, "antwort");
+                aus.karteNurPlatte = !!(kn && kn.payload === null && q9 && q9.gebacken === 2);
+                // V12 DER ZWEIT-BOOT: n Karten im Erst-Boot gebacken, ein frischer Worker (gleiche Platte, gleicher
+                // Stempel) liefert alle n von der Platte und bäckt 0.
+                await karte(F, "kz1", "fichte", 1, "bc");
+                await karte(F, "kz2", "birke", 2, "bc");
+                await ruhe(400);
                 F.w.terminate();
+                const G = neu(3, true);
+                const zweit = [];
+                for (const [p, s] of [
+                    ["eiche", 2],
+                    ["fichte", 1],
+                    ["birke", 2],
+                ])
+                    zweit.push(await karte(G, "zb" + p, p, s, "bc"));
+                const q10 = await G.frag({ type: "frage" }, "antwort");
+                aus.zweitBoot = !!(
+                    zweit.every((k) => schicht(k, "bc") && k.platte === true) &&
+                    q10 &&
+                    q10.gebacken === 0
+                );
+                G.w.terminate();
                 return aus;
             },
             schaleSrc.replace(/^ {4}static /, ""),
-            STUDIO
+            STUDIO,
+            MASSE
         );
     } finally {
         await browser.close();
@@ -534,8 +611,8 @@ const WELT_MESSEN = async () => {
     for (const x of fl.posts)
         if (x.t === "build-asset" && !x.ov) (samen[x.p] = samen[x.p] || []).includes(x.s) || samen[x.p].push(x.s);
     const karten = {};
-    for (const k of r._impostorAtlasMap ? r._impostorAtlasMap.keys() : [])
-        if (k.startsWith("fimp:")) {
+    for (const k of r._kartenAtlas ? r._kartenAtlas.zellen.keys() : [])
+        if (k.startsWith("fimp:") && !k.startsWith("fimp:g:")) {
             const sp = k.slice(5).split("|")[0];
             karten[sp] = (karten[sp] || 0) + 1;
         }
@@ -721,7 +798,10 @@ const VERHALTEN = [
     ["V7 Saison-Nagel: Herbst-Körper und Winter-Karte erreichen das Studio als Sommer", "nagel"],
     ["V8 Vorrat: einmal gebaut, auf die Platte, leere Antwort; der Abruf trifft die Platte", "vorrat"],
     ["V8b Vorrat ohne Platte: leere Antwort, kein Bau", "vorratOhnePlatte"],
-    ["V9 Karten auf der Platte: der zweite Bake kommt von der Platte, das Studio bäckt einmal", "karte"],
+    ["V9 Karten auf der Platte als Atlas-Schicht: der zweite Bake kommt von der Platte, das Studio bäckt einmal", "karte"],
+    ["V10 das Schicht-Format trennt die Platte (rgba8 trifft die BC-Schicht nie)", "kartenFormat"],
+    ["V11 nurPlatte bäckt keine Karte (Miss = payload null)", "karteNurPlatte"],
+    ["V12 Zweit-Boot: 3 Karten von der Platte, 0 Bakes", "zweitBoot"],
 ];
 
 (async () => {
@@ -848,9 +928,24 @@ const VERHALTEN = [
         );
         const v4 = await verhalten(ohneVorrat);
         check("Selbst-Test 12: Schale schickt den Vorrats-Körper zum Haupt-Thread → V8 rot", ohneVorrat !== schale && v4.vorrat === false);
-        const ohneKartenPut = schale.replace("if (karteOk(p)) schreib(auftrag.key, { payload: p });", "");
+        const ohneKartenPut = schale.replace("if (auftragK.key) schreib(auftragK.key, { payload: k });", "");
         const v5 = await verhalten(ohneKartenPut);
-        check("Selbst-Test 13: Schale ohne Karten-Put → V9 rot (jeder Boot bäckt die Karte neu)", ohneKartenPut !== schale && v5.karte === false);
+        check(
+            "Selbst-Test 13: Schale ohne Karten-Put → V9 und V12 rot (jeder Boot bäckt die Karte neu)",
+            ohneKartenPut !== schale && v5.karte === false && v5.zweitBoot === false
+        );
+        const ohneKodierung = schale.replace("core.karteKodiere(p, auftragK.fmt)", "p");
+        const v6 = await verhalten(ohneKodierung);
+        check(
+            "Selbst-Test 15: Schale ohne Karten-Codec (rohe Studio-Pixel) → V9 rot",
+            ohneKodierung !== schale && v6.karte === false
+        );
+        const t16 = statisch(stamm.replace('+ "|" + fmt;', ";")).gesetze.find((g) => g[0].startsWith("S7c"));
+        check("Selbst-Test 16: Karten-Schlüssel ohne Format → S7c rot", t16 && !t16[1]);
+        const t17 = statisch(stamm.replace("karteOk(p) && p.fmt === fmt", "karteOk(p)")).gesetze.find((g) =>
+            g[0].startsWith("S7d")
+        );
+        check("Selbst-Test 17: Platten-Treffer ohne Format-Prüfung → S7d rot", t17 && !t17[1]);
         const t14 = statisch(
             stamm.replace(
                 "                    for (const core of manifest) {\n                        if (core && typeof core.shell === \"string\" && core.shell)\n                            stempelUrls.push(new URL(core.shell + v, base).href);\n                    }\n",
