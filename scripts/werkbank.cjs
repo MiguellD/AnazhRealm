@@ -602,7 +602,8 @@ function gpuBank(k) {
 
 // DAS EINSCHWINGEN DER BAND-MESSUNG (Seiten-Kontext): der Spiel-Takt läuft mit der Bühne (Mittag · Sonne · Sommer),
 // bis der Bau ruht — die Foundry-Schlange leer und kein Auftrag im Flug, kein Karten-Bake offen, kein Streu-Nachschub,
-// kein Chunk im Bau, und die Zahl der Chunks, der lebenden Instanzen und der ungebauten Bauten in der Mesh-Zone steht
+// keine aufgeschobene Streu-Region, kein Chunk im Bau, und die Zahl der Chunks, der lebenden Instanzen und der
+// ungebauten Bauten in der Mesh-Zone steht
 // still — `ruhig` Takte am Stück. Ein Bau, der in Ruhe ungebaut bleibt (Bake-Lücke), steht im Ergebnis, er hält das
 // Einschwingen nicht auf. Deckel `capMs`: dann `eingeschwungen: false`, und die Ratsche verweigert den Nachzug — ein
 // Einzelbild der wachsenden Welt pinnte sonst ihre halbe Gestalt (drei Läufe am selben Ort: Tier 7/88/110, Boden
@@ -653,6 +654,11 @@ function bandEinschwingen(k) {
             if (kb) o.kartenBake = kb;
             if (r._scatterRefillPending) o.streuNachschub = 1;
             if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
+            // Eine aufgeschobene Streu-Region wartet auf ein Asset oder eine Karte — ruhig ist die Welt erst ohne sie
+            // (eine, die in Ruhe aufgeschoben bleibt, ist ein Befund: die Messung schwingt nicht ein).
+            let aufgeschoben = 0;
+            if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg._deferredFoundry) aufgeschoben++;
+            if (aufgeschoben) o.streuAufgeschoben = aufgeschoben;
             const s = stand();
             if (s.loadScale < 1) o.loadScale = s.loadScale;
             if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
