@@ -222,6 +222,16 @@ function validateManifest(m) {
                         v.push(`B2c: lod.budget.${k}[${st}].${f} muss endlich > 0 sein`);
                 if ("klinge" in z && !(Number.isInteger(z.klinge) && z.klinge >= 2))
                     v.push(`B2c: lod.budget.${k}[${st}].klinge muss eine ganze Zahl ≥ 2 sein`);
+                // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].
+                if ("dichte" in z) {
+                    const d = z.dichte;
+                    if (!d || typeof d !== "object" || !Object.keys(d).length)
+                        v.push(`B2c: lod.budget.${k}[${st}].dichte muss ein Objekt je Kronen-Art sein`);
+                    else
+                        for (const art of Object.keys(d))
+                            if (!(typeof d[art] === "number" && d[art] > 0 && d[art] <= 1))
+                                v.push(`B2c: lod.budget.${k}[${st}].dichte.${art} muss in (0, 1] liegen`);
+                }
                 if ("deckung" in z) {
                     const d = z.deckung;
                     if (!Array.isArray(d) || d.length !== 2 || !(d[0] > 0 && d[0] <= 1 && d[1] >= 1 && isFinite(d[1])))
@@ -734,7 +744,7 @@ function validateManifest(m) {
                 kindStages: { shrub: [1, 2] },
                 budget: {
                     shrub: {
-                        1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1 },
+                        1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1, dichte: { laub: 1.5 } },
                         2: { tris: 5, draws: 2, schatten: false },
                     },
                 },
@@ -780,6 +790,7 @@ function validateManifest(m) {
             bv.some((s) => s.includes("gestalten.eiche muss")) &&
             bvB.some((s) => s.includes("nadelKarte muss")) &&
             bvB.some((s) => s.includes("klinge muss")) &&
+            bvB.some((s) => s.includes("dichte.laub muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&

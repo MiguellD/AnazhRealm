@@ -94,11 +94,44 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
   (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
 - DARF-Regler einer Stufe (Form geprüft): `blattKarte` / `nadelKarte` (Kartenkante in Blatt- bzw.
-  Nadel-Längen, endlich > 0) · `klinge` (Kontur-Segmente der Klinge, ganze Zahl ≥ 2) · `deckung` (Band
-  [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
+  Nadel-Längen, endlich > 0) · `klinge` (Kontur-Segmente der Klinge, ganze Zahl ≥ 2) · `dichte` (je
+  Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte bzw. Strähne trägt, in (0, 1]) ·
+  `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
 - **Konsum:** `gate:asset-contract` baut jede gelieferte Gitter-Stufe über die echte Brücke (Goldens +
-  jedes Rezept der Art bei Samen 7) und hält Dreiecke ≤ `tris`, Sippen ≤ `draws` — Rot nennt den Täter;
-  der Selbsttest halbiert jede Zeile (und senkt `draws` um eins) und MUSS rot werden.
+  jedes Rezept der Art bei Samen 7 + jede Gestalt der Welt, die Samen 1..V aus `gestalten`) und hält
+  Dreiecke ≤ `tris`, Sippen ≤ `draws` — Rot nennt den Täter; der Selbsttest halbiert jede Zeile (und senkt
+  `draws` um eins) und MUSS rot werden. Die Deckung misst er an gebauten L0/L1-Paaren als Verhältnis der
+  mittleren Projektionen; eine 1,5-fache L0-Karte MUSS das Band sprengen.
+- **Die Baum-L0 (W5, 04.10. — das Soll-Bild zuerst, Lehre 18).** Befund (Lab, echte GPU, Samen 1/2/7/12345):
+  die L0 trug 77–207k Dreiecke je Baum, 70–80 % davon Einzel-Klingen (28 Dreiecke je Blatt, eine Klinge von
+  ~1,4 m Welt-Länge las auf Armlänge als Riesenblatt), die Weide 68–117k Rinde in Peitschen und Reisig.
+  Haushalt: Baum L0/L1+Werfer 150k über Hauptbild + k0 + k1 der Mess-Wiese; bei den Studio-Distanzen
+  (d0 = 20 m, der Host-Umweg `LOD_TRI_BUDGET_MUL` 20/40 → 12/26 ist gefallen) stehen dort 14 L0-Bäume
+  (4 Eichen, 2 Birken, 5 Tannen, 2 Fichten, 1 Weide) → **10 714 Dreiecke je L0-Baum, trüge die L0 den Haushalt
+  allein**. Das Soll-Bild je Art (SpeedTree/UE-Praxis: Laub-Cluster-Karten mit Alpha, Rinde mit wenigen Ringen
+  und Vertex-Farbe/AO, Silhouette vor Einzelblatt):
+  - **Laub (Eiche, Birke):** Cluster-Karten aus den Breitblatt-Zellen des EINEN Atlas auf 45 % der
+    gewachsenen Blattstellen, Kante 2,52 Blattgrößen (L1: 21 % mit 3,69) — Deckung 0,99 der Klingen;
+  - **Nadel (Fichte, Tanne, Mammut):** Nadel-Karten aus der Nadel-Zelle auf 12 % der Nadeln, Kante 1,65
+    Nadellängen (L1: 2,65 % mit 3,5) — Deckung 1,01 der Nadel-Röhren;
+  - **Trauer (Weide):** Strähnen — jede dritte Klinge (`dichte.trauer` 0,34) 1/dichte so lang bei gleicher
+    Breite, 4 Segmente: entlang der Peitsche schließt sich die Strähne;
+  - **Rinde:** Stamm und Starkäste (≥ 0,3·trunkR) ganz; Äste darunter jeden 2. Ring in der Radial-Teilung der
+    L1, Reisig unter 0,06·trunkR jeden 3. in der der L2; ganze Stränge unter 0,05·trunkR (Nadel 0,03, Trauer
+    0,04) fallen als Strang — kein Stummel; Wurzeln: die Primärstränge mit allen Ringen;
+  - **Strauch:** seine Nahstufe ist `shrub[1]` (11,6k ≤ 12k, unverändert).
+  Gebogene Normalen (Kronen-Normale, Vorderseite nach außen) wurden im Lab gemessen und verworfen: der
+  Doppelseiten-Stoff ohne Durchlicht färbte die Unteransicht dunkel (8-m-Blick unter der Eiche L* 23,2 → 14,0)
+  und setzte Glanzspitzen. Das Soll-Bild braucht höchstens 17,3k (Tanne s2, Eiche s2 17,2k): **`tree[0]` =
+  18 000 Dreiecke, 3 Sippen, wirft seine L1** — die Zeile liegt offen 1,68× über dem Haushalts-Anteil, das
+  L0-Band der Mess-Wiese verschiebt sich auf ~209k (vorher bei 20 m 2,16 M, bei den alten 12 m 647k); der
+  L1-Überhang (46 Bäume × ≤ 10k + Werfer) ist nicht diese Zeile.
+- **Der EINE Blatt-Atlas als Textur** (`bakeLeafAtlasBild`, phyto-core): die gemalte Leinwand blutet (nicht
+  deckende Texel tragen das Zell-Mittel statt Schwarz), alle Zellen tragen dasselbe lineare Mittel `wert`,
+  die Mip-Kette ist deckungstreu (Castaño: je Stufe hält derselbe Texel-Anteil die Alpha-Schwelle 0,5); jeder
+  Leser teilt die Atlas-Farbe durch `wert` — die Karten-Albedo ist im Mittel die Vertex-Farbe (FARB-GESETZ),
+  wie die Klinge. Gemessen (Lab, Albedo-Sicht): die Nadel-Karte las vorher mit 47 % ihrer Albedo, die
+  Nadel-Deckung fiel auf Mip-Stufe 4 von 0,24 auf 0,14.
 - v1.3 trägt es foundry-core (tree · shrub · grass · flower · rock); die Zweit-Kerne folgen mit der
   Studio-Übertragung (Transport `zusatzBudget`, offen).
 

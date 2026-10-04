@@ -235,17 +235,30 @@ const PORTAL_RENDER_CONFIG = {
         // baseline-v18432.md; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
         // Fichte, 47,1k beim Strauch, mehr als die Fichte): die L1-Zeilen sind OBERGRENZEN, gegen die gebaut ist
         // (tree[1] 10k: Nadel-Karten + jeder 2. Ring + Primaer-Wurzeln + schlanke Trauer-Klinge; shrub[1] 12k:
-        // Reisig-Schnitt) — die gebaute Geometrie fiel auf sie, nicht sie auf die Geometrie. tree[0] (das Nahbild,
-        // in dieser Welle unangetastet), grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr
-        // Band-Schnitt ist offen (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe
-        // und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt je Stufe streng,
-        // draws steigt nie). Die Kosten-Regler der L1-Krone wohnen in tree[1]: blattKarte (Kante der Laub-Karte in
-        // Blatt-Groessen), nadelKarte (Kante der Nadel-Karte in Nadel-Laengen), klinge (Segmente der Trauer-
-        // Klinge), deckung (das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss —
-        // Wahrnehmung ~ n·s², FIX v29; gate:asset-contract misst es an gebauten L0/L1-Paaren).
+        // Reisig-Schnitt) — die gebaute Geometrie fiel auf sie, nicht sie auf die Geometrie. tree[0] (W5, das
+        // Nahbild bis d0 = 20 m): aus dem Haushalt Baum L0/L1+Werfer 150k ueber 14 L0-Baeume der Mess-Wiese = 10 714 je
+        // Baum; das Soll-Bild (Cluster-Karten dichter und feiner als L1, Stamm und Starkaeste ganz) braucht 17,3k
+        // (Tanne s2) — die Zeile steht offen bei 18 000, der Haushalt verschiebt sich um das L0-Band (docs/studio-
+        // vertrag.md B2c). grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
+        // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
+        // Gestalt der Welt — und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt
+        // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
+        // Laub-Karte in Blatt-Groessen), nadelKarte (Kante der Nadel-Karte in Nadel-Laengen), klinge (Segmente der
+        // Trauer-Klinge), dichte (L0: Anteil der gewachsenen Blattstellen, die eine Karte bzw. Straehne tragen — die L1
+        // traegt ihren Anteil im Phaenotyp), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die L0-Krone
+        // desselben Baums bedeckt — Wahrnehmung ~ n·s², FIX v29; gate:asset-contract misst es an gebauten L0/L1-Paaren
+        // als mittlere Projektion; es haelt beide Kronen, die L0 ist auf die Klingen von gestern geeicht: 0,99–1,02).
         budget: {
             tree: {
-                0: { tris: 230000, draws: 3, schatten: 1 },
+                0: {
+                    tris: 18000,
+                    draws: 3,
+                    schatten: 1,
+                    blattKarte: 2.52,
+                    nadelKarte: 1.65,
+                    klinge: 4,
+                    dichte: { laub: 0.45, nadel: 0.12, trauer: 0.34 },
+                },
                 1: {
                     tris: 10000,
                     draws: 3,
@@ -926,8 +939,9 @@ function emitRoots(P) {
         colB = new THREE.Color(P.barkB).multiplyScalar(0.58);
     for (const st of strands) {
         // L1 traegt nur die PRIMAER-Straenge (H4): gewachsen wird das ganze Wurzelwerk (derselbe rnd()-Strom wie L0,
-        // FIX v35), gebaut nur die Tiefe 0 — die Verzweigungen liegen ab 12 m unter dem Pixel und im Boden.
-        if (__lod === 1 && st.tiefe > 0) continue;
+        // FIX v35), gebaut nur die Tiefe 0 — die Verzweigungen liegen ab 12 m unter dem Pixel und im Boden. Die
+        // Baum-L0 ebenso (W5): die Primaer-Straenge mit allen Ringen, die Verzweigungen liegen im Boden.
+        if ((__lod === 1 || (__lod === 0 && P.kind !== "shrub")) && st.tiefe > 0) continue;
         // H1 auch hier: jeder 2. Ring, Erst- und Letzt-Ring bleiben.
         const R = st.ringe,
             ringe = __lod === 1 && R.length > 3 ? R.filter((_, i) => i % 2 === 0 || i === R.length - 1) : R;
@@ -954,7 +968,9 @@ function fbm2(x, y) {
     return __rindenGesetz().fbm2(x, y);
 }
 
-function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick) {
+// `lodRoehre` (W5): die Roehren-Aufloesung eines Strangs, wenn sie von der Bau-Stufe abweicht (die L0 baut duenne
+// Aeste mit der Radial-Teilung der L1, Reisig mit der der L2) — ohne: die Bau-Stufe.
+function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick, lodRoehre) {
     return __rindenGesetz().buildTubeGesetz(
         { perp: perp, vcross: vcross, vlen: vlen, vnorm: vnorm, vsub: vsub, clamp: clamp, lerp: lerp, THREE: THREE },
         geos,
@@ -965,7 +981,7 @@ function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick
         trunkR,
         noFlute,
         barkThick,
-        typeof __lod !== "undefined" ? __lod : undefined
+        lodRoehre !== undefined ? lodRoehre : typeof __lod !== "undefined" ? __lod : undefined
     );
 }
 function emitTree(P) {
@@ -984,8 +1000,25 @@ function emitTree(P) {
         const rCut = (P._trunkR || 0.1) * kCut;
         nodes.segs = nodes.segs.filter((s) => Math.max(s.r0, s.r1) >= rCut);
     }
+    // DIE NAHKRONE L0 (W5, 04.10. — Studio-Budget tree[0], NACH dem Wuchs: kein rnd()-Zug, FIX v35): das Laub wird
+    // Cluster-Karten aus dem EINEN Blatt-Atlas (Laub → Breitblatt-Zellen, Nadel → Nadel-Zelle), der Trauerwuchs
+    // Straehnen; je Kronen-Art traegt der Anteil `dichte` der gewachsenen Blattstellen eine Karte bzw. Klinge
+    // (Index-Stride wie die L1). Die Rinde: ganze Straenge unter 0,05·trunkR (Nadel 0,03, Trauer 0,04) fallen — der Strang,
+    // nicht das Segment: kein Stummel, jeder bleibende Ast laeuft bis zur Spitze aus; Aeste unter 0,3·trunkR tragen
+    // jeden 2. Ring in der Radial-Teilung der L1, Reisig unter 0,06·trunkR jeden 3. in der der L2; Stamm und
+    // Starkaeste bleiben ganz (Erst/Letzt/Fuss bleiben, Gabeln behalten die Gelenk-Kugeln). Der Strauch (L0 nie
+    // geliefert) bleibt, wie er ist.
+    const _L0 = __lod === 0 && P.kind !== "shrub";
+    const _trauer = (P.trop || 0) >= 0.55;
+    const _b0 = PORTAL_RENDER_CONFIG.lod.budget.tree[0];
+    let _f0 = 1;
+    if (_L0) {
+        const _art = P.conifer ? "nadel" : _trauer ? "trauer" : "laub";
+        _f0 = _b0 && _b0.dichte ? _b0.dichte[_art] : undefined;
+        if (!(_f0 > 0 && _f0 <= 1)) throw new Error("[phyto] lod.budget.tree[0].dichte." + _art + " fehlt");
+    }
     {
-        const lfL = P._lf != null ? P._lf : 1;
+        const lfL = _L0 ? _f0 : P._lf != null ? P._lf : 1;
         if (lfL < 1 && nodes.leaves.length > 3) {
             const L = nodes.leaves,
                 keep = Math.max(3, Math.round(L.length * lfL)),
@@ -1052,14 +1085,21 @@ function emitTree(P) {
         }
         // L1 traegt jeden ZWEITEN Ring (H1, nach dem Wuchs — das Skelett und der rnd()-Strom bleiben die von L0,
         // FIX v35): Erst- und Letzt-Ring bleiben, der Stammfuss wird danach vorangestellt und bleibt ganz.
-        if (__lod === 1 && rings.length > 3) rings = rings.filter((_, i) => i % 2 === 0 || i === rings.length - 1);
+        // Die L0 (W5) duennt nur die Aeste: unter 0,06·trunkR jeden 3. Ring, unter 0,3·trunkR jeden 2.
+        if (_L0 && rings[0].r < nodes.trunkR * 0.06 && rings.length > 4)
+            rings = rings.filter((_, i) => i % 3 === 0 || i === rings.length - 1);
+        else if ((__lod === 1 || (_L0 && rings[0].r < nodes.trunkR * 0.3)) && rings.length > 3)
+            rings = rings.filter((_, i) => i % 2 === 0 || i === rings.length - 1);
         return rings;
     }
     for (const rid of runs.keys()) {
         const mm = meta[rid];
         if (mm && mm.isLead) continue;
+        if (_L0 && runs.get(rid)[0].r0 < nodes.trunkR * (P.conifer ? 0.03 : _trauer ? 0.04 : 0.05)) continue;
         let rings = strandRings(rid);
         const baseRing = rings[0];
+        const _roehre =
+            _L0 && baseRing.r < nodes.trunkR * 0.3 ? (baseRing.r < nodes.trunkR * 0.06 ? 2 : 1) : undefined;
         if (rings.length > 1 && baseRing.c[1] < nodes.height * 0.04 && baseRing.r > nodes.trunkR * 0.6) {
             // Stammfuss: Buttress in den Boden fuehren (absenken, verjuengen, schliessen) — die Ringe tragen `fuss`, das Rinden-Gesetz liest den Strang-Radius darueber
             const R0 = baseRing.r,
@@ -1072,7 +1112,7 @@ function emitTree(P) {
                 { c: [cx, -bd * 0.18, cz], r: R0 * 0.84, sway: 0, depth: baseRing.depth, fuss: true },
             ].concat(rings);
         }
-        buildTube(barkGeos, rings, P, barkBase, barkTip, nodes.trunkR);
+        buildTube(barkGeos, rings, P, barkBase, barkTip, nodes.trunkR, undefined, undefined, _roehre);
         const s0 = runs.get(rid)[0];
         const rMutter = s0.depth > 0 ? __mutterRing(s0) : 0;
         if (s0.depth > 0 && baseRing.r > nodes.trunkR * 0.035 && !(rMutter > 0 && baseRing.r < rMutter * 0.8)) {
@@ -1132,7 +1172,7 @@ function emitTree(P) {
     // haengenden Straehnen SIND ihr Look —, aber eine schlanke (budget.tree[1].klinge Segmente statt 14); der
     // Strauch ist die nahe Stufe (L0 wird auf L1 geklemmt) und bleibt Klinge.
     const _b1 = PORTAL_RENDER_CONFIG.lod.budget.tree[1];
-    let useTexL = __lod === 1 && P.kind !== "shrub" && (P.trop || 0) < 0.55;
+    let useTexL = (__lod === 1 || _L0) && P.kind !== "shrub" && (P.trop || 0) < 0.55;
     if (useTexL && !_leafAtlas) {
         try {
             bakeLeafAtlas();
@@ -1160,13 +1200,17 @@ function emitTree(P) {
     // Kante, Zelle und Klinge der L1-Krone liest das BUDGET (PORTAL_RENDER_CONFIG.lod.budget.tree[1]) und den
     // Atlas-Steckbrief des Kerns — fehlt eins, ist das ein Vertragsbruch, kein stiller Rueckfall auf ein Literal.
     const _atl = self.__phytoCore;
-    const _blattKarte = useTexL && !P.conifer ? _b1.blattKarte : 0;
-    const _nadelKarte = useTexL && P.conifer ? _b1.nadelKarte : 0;
+    // Die L0 liest ihre Zeile (tree[0]) wie die L1 die ihre: Kante der Laub-Karte in Blatt-Groessen, der Nadel-Karte
+    // in Nadel-Laengen, Segmente der Trauer-Klinge. Deckung ~ dichte · Kante² (Wahrnehmung ~ n·s², FIX v29).
+    const _bz = _L0 ? _b0 : _b1,
+        _zn = _L0 ? "tree[0]" : "tree[1]";
+    const _blattKarte = useTexL && !P.conifer ? _bz.blattKarte : 0;
+    const _nadelKarte = useTexL && P.conifer ? _bz.nadelKarte : 0;
     if (useTexL && !(P.conifer ? _nadelKarte > 0 : _blattKarte > 0))
-        throw new Error("[phyto] lod.budget.tree[1]." + (P.conifer ? "nadelKarte" : "blattKarte") + " fehlt");
-    const _klinge = __lod === 1 && P.kind !== "shrub" && (P.trop || 0) >= 0.55 ? _b1.klinge : undefined;
+        throw new Error("[phyto] lod.budget." + _zn + "." + (P.conifer ? "nadelKarte" : "blattKarte") + " fehlt");
+    const _klinge = (__lod === 1 || _L0) && P.kind !== "shrub" && (P.trop || 0) >= 0.55 ? _bz.klinge : undefined;
     if (_klinge !== undefined && !(Number.isInteger(_klinge) && _klinge >= 2))
-        throw new Error("[phyto] lod.budget.tree[1].klinge fehlt");
+        throw new Error("[phyto] lod.budget." + _zn + ".klinge fehlt");
     for (const l of nodes.leaves) {
         if (l.needle) {
             const col = vegFarbe(0x2e5526).lerp(lc, 0.2);
@@ -1221,8 +1265,24 @@ function emitTree(P) {
                 );
             } // FIX v32: ALLE Blattstellen, 2 statt 28 Dreiecke. Die Kante kommt aus dem Budget (lod.budget.tree[1].blattKarte, 04.10.: 1,8 statt 2,35 — gemessen deckte die Krone 1,7x L0, die Atlas-Fuellung ist 0,16, nicht ~0,85)
             else {
-                const lp = P.leafShape;
-                pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, lp, tint, 1, l.sway, l.phase, l.omega, 0.5, _klinge);
+                // Die Trauer-STRAEHNE der L0 (W5): jede gehaltene Klinge ist 1/dichte so lang bei gleicher Breite —
+                // die Flaeche der ausgelassenen haengt an ihr, entlang der Peitsche schliesst sich die Straehne.
+                const lp = _L0 ? Object.assign({}, P.leafShape, { wsc: P.leafShape.wsc * _f0 }) : P.leafShape;
+                pushLeaf(
+                    folGeos,
+                    l.pos,
+                    l.dir,
+                    l.up,
+                    _L0 ? l.scale / _f0 : l.scale,
+                    lp,
+                    tint,
+                    1,
+                    l.sway,
+                    l.phase,
+                    l.omega,
+                    0.5,
+                    _klinge
+                );
             }
         }
     }
