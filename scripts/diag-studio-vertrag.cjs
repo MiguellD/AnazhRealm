@@ -164,6 +164,33 @@ function validateManifest(m) {
             }
         }
     }
+    // B2b (04.10.) — DAS BUDGET je Art × Stufe: jede Art ist eine deklarierte Art, jede Stufe eine
+    // gelieferte Stufe dieser Art; blattKarte endlich > 0, deckung ein Band [lo, hi] mit 0 < lo <= 1 <= hi.
+    // Die Konsum-Wand (gebaute L0/L1-Paare) steht in gate:asset-contract.
+    if (lodC && lodC.budget) {
+        const ks = lodC.kindStages || {};
+        for (const k in lodC.budget) {
+            if (!ks[k]) {
+                v.push(`B2b: lod.budget.${k} — Art ohne kindStages`);
+                continue;
+            }
+            for (const st in lodC.budget[k]) {
+                const z = lodC.budget[k][st];
+                if (ks[k].indexOf(Number(st)) < 0) v.push(`B2b: lod.budget.${k}[${st}] — keine gelieferte Stufe`);
+                if (!z || typeof z !== "object") {
+                    v.push(`B2b: lod.budget.${k}[${st}] ist kein Objekt`);
+                    continue;
+                }
+                if ("blattKarte" in z && !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte)))
+                    v.push(`B2b: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
+                if ("deckung" in z) {
+                    const d = z.deckung;
+                    if (!Array.isArray(d) || d.length !== 2 || !(d[0] > 0 && d[0] <= 1 && d[1] >= 1 && isFinite(d[1])))
+                        v.push(`B2b: lod.budget.${k}[${st}].deckung muss ein Band [lo<=1<=hi] sein`);
+                }
+            }
+        }
+    }
     const pl = m.cfg && m.cfg.placement;
     if (pl) {
         if (pl.scale)
@@ -585,7 +612,13 @@ function validateManifest(m) {
         vertrag: 1,
         presets: { testkaputt: { s: { a: 0.5 } }, "BÖSE ID": { kind: "tree" } },
         build: function () {},
-        cfg: { placement: { rarity: { x: 7 } }, lod: { kindStages: { kaputt: [9], falschrum: [2, 1] } } },
+        cfg: {
+            placement: { rarity: { x: 7 } },
+            lod: {
+                kindStages: { kaputt: [9], falschrum: [2, 1], tree: [0, 1, 2] },
+                budget: { geist: { 0: {} }, tree: { 3: { blattKarte: -1 }, 1: { deckung: [1.2, 0.9] } } },
+            },
+        },
         params: null,
         lehren: null,
     };
@@ -610,12 +643,16 @@ function validateManifest(m) {
         verhalten: { aktionen: { a: {} }, stimmung: { x: { aktionen: ["fremd"], alle: [1, 2] } } },
     });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Budget · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
             bv.some((s) => s.includes("kindStages.kaputt")) &&
             bv.some((s) => s.includes("kindStages.falschrum")) &&
+            bv.some((s) => s.includes("budget.geist")) &&
+            bv.some((s) => s.includes("budget.tree[3] — keine gelieferte Stufe")) &&
+            bv.some((s) => s.includes("blattKarte muss")) &&
+            bv.some((s) => s.includes("deckung muss")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&

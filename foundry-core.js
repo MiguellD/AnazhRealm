@@ -203,6 +203,14 @@ const PORTAL_RENDER_CONFIG = {
         ref: 12.0,
         hyst: 3.4,
         kindStages: { tree: [0, 1, 2], shrub: [1, 2], grass: [1, 2], flower: [0], rock: [0] },
+        // DAS BUDGET je Art × Stufe (04.10., echte GPU an der Mess-Wiese): was eine gelieferte Stufe kosten
+        // darf, als DATEN neben ihrer Stufen-Wahrheit. tree[1].blattKarte = die Kante der L1-Blattkarte in
+        // Blatt-Groessen (vorher das Literal 2,35 — zusammen mit ls 2,05 und dem Quadrat der Karte rasterte
+        // die L1-Krone 10,5x die Flaeche der L0-Klingen bei 1,7x ihrer Deckung: 162 Bildschichten, 8-12 ms
+        // GPU). deckung = das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss
+        // (Kartenflaeche x Atlas-Fuellung / Klingenflaeche — Wahrnehmung ~ n·s², FIX v29); gate:asset-
+        // contract misst es an gebauten L0/L1-Paaren und haelt es (die Budget-Wand).
+        budget: { tree: { 1: { blattKarte: 1.8, deckung: [0.8, 1.15] } } },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
     // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die
@@ -790,13 +798,15 @@ function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega
     // (buildFoliageQuads) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie ist byte-
     // identisch; nur das WIND-Attribut-Schema divergiert (AnazhRealm: aFlex/aPhase — die Vorlage:
     // aWind/aCenter/aType), darum hängt der Wrapper die Vorlagen-Attribute HIER an (der Kern bleibt
-    // rein). opts.cell routet die exakte Atlas-Zelle (Vorlage: (_lq++)&3). Fallback → Inline.
+    // rein). opts.cell routet die exakte Atlas-Zelle (Vorlage: (_lq++)&3). Der Kern schneidet die Karte auf den Atlas-Kern
+    // (BLATT_ATLAS_BREIT — dieser Atlas ist broadleaf). Ohne Samen kein stiller Inline-Zwilling: lauter Bruch.
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.buildFoliageQuads === "function") {
         const _r = __core.buildFoliageQuads([{ pos: pos, dir: dir, up: up, scale: scale, sway: sway, phase: phase }], {
             leafColor: [color.r, color.g, color.b],
             scale: 1,
             cell: cell,
+            kern: __core.BLATT_ATLAS_BREIT.kern,
         });
         if (_r && _r.count) {
             const g = new THREE.BufferGeometry();
@@ -824,59 +834,7 @@ function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega
             return;
         }
     }
-    const cr = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-    const e1 = vnorm(dir.slice()); // FIX v32: dir liegt IN der Blattflaeche (wie pushLeaf) — vorher war dir die NORMALE: Weiden-Peitschen (dir~abwaerts) wurden horizontale Lamellen, von der Seite = Streifen-Geister
-    let uv0 = up && Math.abs(up[0]) + Math.abs(up[1]) + Math.abs(up[2]) > 1e-4 ? up.slice() : [0, 1, 0];
-    let r = cr(uv0, e1);
-    let rl = Math.hypot(r[0], r[1], r[2]);
-    if (rl < 1e-4) {
-        r = cr([1, 0, 0], e1);
-        rl = Math.hypot(r[0], r[1], r[2]);
-    }
-    r = [r[0] / rl, r[1] / rl, r[2] / rl];
-    const roll = Math.sin(phase * 3.7) * 0.45,
-        ca = Math.cos(roll),
-        sa = Math.sin(roll); // begrenzter Roll (+-26 Grad) statt Vollrotation -> Cluster liegen wie Laub, nicht wie Schindeln
-    const r1 = [e1[0] * ca + r[0] * sa, e1[1] * ca + r[1] * sa, e1[2] * ca + r[2] * sa];
-    const r2 = [r[0] * ca - e1[0] * sa, r[1] * ca - e1[1] * sa, r[2] * ca - e1[2] * sa];
-    const n = vnorm(cr(r1, r2));
-    const s = scale * 0.5,
-        g = new THREE.BufferGeometry();
-    const P = [],
-        N = [],
-        U = [],
-        C = [],
-        W = [],
-        CT = [],
-        T = [];
-    const corner = [
-        [-1, -1],
-        [1, -1],
-        [1, 1],
-        [-1, 1],
-    ];
-    const u0 = cell * 0.25,
-        u1 = u0 + 0.25;
-    for (let i = 0; i < 4; i++) {
-        const cx = corner[i][0] * s,
-            cy = corner[i][1] * s;
-        P.push(pos[0] + r1[0] * cx + r2[0] * cy, pos[1] + r1[1] * cx + r2[1] * cy, pos[2] + r1[2] * cx + r2[2] * cy);
-        N.push(n[0], n[1], n[2]);
-        U.push(i === 0 || i === 3 ? u0 : u1, i < 2 ? 0 : 1);
-        C.push(color.r, color.g, color.b);
-        W.push(sway, phase, omega);
-        CT.push(pos[0], pos[1], pos[2]);
-        T.push(1);
-    }
-    g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
-    g.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3));
-    g.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2));
-    g.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
-    g.setAttribute("aWind", new THREE.Float32BufferAttribute(W, 3));
-    g.setAttribute("aCenter", new THREE.Float32BufferAttribute(CT, 3));
-    g.setAttribute("aType", new THREE.Float32BufferAttribute(T, 1));
-    g.setIndex([0, 1, 2, 0, 2, 3]);
-    arr.push(g);
+    throw new Error("[phyto] pushLeafClusterQuad: __phytoCore.buildFoliageQuads fehlt (der Samen ist Pflicht)");
 }
 
 function growTreeNodes(P) {
@@ -1223,6 +1181,10 @@ function emitTree(P) {
         );
     const folGeosTex = [];
     let _lq = 0;
+    // Die Kartenkante der L1-Krone liest das BUDGET (PORTAL_RENDER_CONFIG.lod.budget.tree[1]) — fehlt es,
+    // ist das ein Vertragsbruch, kein stiller Rueckfall auf ein Literal.
+    const _blattKarte = useTexL ? PORTAL_RENDER_CONFIG.lod.budget.tree[1].blattKarte : 0;
+    if (useTexL && !(_blattKarte > 0)) throw new Error("[phyto] lod.budget.tree[1].blattKarte fehlt");
     for (const l of nodes.leaves) {
         if (l.needle) {
             const col = vegFarbe(0x2e5526).lerp(lc, 0.2);
@@ -1251,14 +1213,14 @@ function emitTree(P) {
                     l.pos,
                     l.dir,
                     l.up,
-                    l.scale * 2.35,
+                    l.scale * _blattKarte,
                     tint,
                     l.sway,
                     l.phase,
                     l.omega,
                     _lq++ & 3
                 );
-            } // FIX v32: ALLE Blattstellen, Quad nur 2.35x (0.6-1.2m statt 1.5-2.3m) + dichter gemalter Atlas -> Deckung ~0.85 ohne einzeln lesbare Riesenkarten; 2 statt 28 Dreiecke bleibt
+            } // FIX v32: ALLE Blattstellen, 2 statt 28 Dreiecke. Die Kante kommt aus dem Budget (lod.budget.tree[1].blattKarte, 04.10.: 1,8 statt 2,35 — gemessen deckte die Krone 1,7x L0, die Atlas-Fuellung ist 0,16, nicht ~0,85)
             else pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, P.leafShape, tint, 1, l.sway, l.phase, l.omega, 0.5);
         }
     }

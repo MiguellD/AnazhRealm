@@ -16,7 +16,9 @@ const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golde
 // Die kuratierte Fall-Liste (Playbook P1): 6 Baum-Presets über die Matrix + je 1 Nicht-Baum.
 const TREES = ["eiche", "fichte", "birke", "weide", "mammut", "tanne"];
 const T_SEEDS = [7, 12345];
-const T_LODS = [0, 2];
+// L1 ist eine GELIEFERTE Stufe (die Mittelfeld-Krone, Blattkarten bei Eiche/Birke) — seit 04.10. eingefroren wie
+// L0/L2; gate:asset-contract misst an den L0/L1-Paaren die Budget-Deckung.
+const T_LODS = [0, 1, 2];
 const T_SEASONS = ["summer", "winter"];
 const OTHERS = ["findling", "kristalle", "blume", "strauch"]; // je 1 Fall, seed 7 / L0 / summer
 

@@ -68521,12 +68521,15 @@ class AnazhRealm {
                 // Vertex-Farben) + Roughness 0.93; `_foundryBarkNormalTexture` bleibt für einen tangenten-echten Pfad.
                 mat.colorNode = TSL.vec4(vcol, 1.0);
             } else if (kind === "foliageTex") {
-                // Nadel-/Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad),
-                // RGB × Vertex-Farbe (die Vorlagen-Blattfarbe faerbt den Atlas).
+                // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
+                // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER Atlas, auf den die Studio-Karten routen: vier
+                // Breitblatt-Zellen (foundry-core `bakeLeafAtlas`, cell=(_lq++)&3) — bis V18.520 lag hier der
+                // Nadel-Modus, jede vierte L1-Karte von Eiche/Birke trug eine Nadel-Spray. Der Studio-Zuschnitt
+                // (`BLATT_ATLAS_BREIT.kern`) gilt nur für DIESEN Atlas.
                 const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
                 const canvas =
                     core && typeof core.bakeLeafAtlasCanvas === "function"
-                        ? core.bakeLeafAtlasCanvas(document, { cell3: "needle" })
+                        ? core.bakeLeafAtlasCanvas(document, { cell3: "broadleaf" })
                         : null;
                 if (canvas && TSL.texture) {
                     const tex = new T.CanvasTexture(canvas);
@@ -86979,7 +86982,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.520.0";
+AnazhRealm.VERSION = "18.521.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

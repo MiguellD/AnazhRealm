@@ -379,6 +379,15 @@
         };
     }
 
+    // DER ATLAS-STECKBRIEF (04.10., echte GPU): was der Maler im broadleaf-Modus in eine Zelle setzt, als
+    // ZAHL — damit die Karte nur rastert, was der Atlas trägt. `kern` = halbe Ausdehnung des Clusters um die
+    // Zellmitte, als Anteil der halben Zelle (gemalt reicht Alpha>0 in allen vier Zellen höchstens bis
+    // 0,7148); `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (0,1403/0,1749/0,1692/0,1611). Gemessen:
+    // die L1-Laubkarten verwarfen 84 % ihrer Fragmente — der Rand jenseits `kern` ist reines Discard.
+    // Der Nadel-Modus (Zelle 2 und 3 bis an den Rand) hat keinen Kern < 1. gate:asset-contract malt den
+    // Atlas und hält beide Zahlen gegen den Maler (ein Maler-Wechsel ohne neuen Steckbrief ist ROT).
+    const BLATT_ATLAS_BREIT = { kern: 0.72, fuellung: 0.1614 };
+
     // DAS NEUE KLEID Welle 1 — DER BLATT-ATLAS aus der Vorlage (`bakeLeafAtlas`, byte-treu).
     // Der Atlas trägt NUR den WERT (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-
     // Farbe (albedo = Vertex-Blatt × Atlas-Wert) — kein Doppel-Tönen. 4 Zellen: 0..2 =
@@ -487,12 +496,17 @@
     // sie in eine BufferGeometry + hängt sein Material an (das dieselben Attribute liest). Die
     // Attribut-Namen matchen AnazhRealms Laub-Material: position/normal/color/aFlex/aPhase/uv.
     // `leaves`: [{pos:[x,y,z], dir:[..], up:[..], scale, needle, sway, phase}] (aus growSkeleton).
-    // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3) }.
+    // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3), kern (Atlas-Kern der
+    //          Breitblatt-Zellen, `BLATT_ATLAS_BREIT.kern` für den broadleaf-Atlas; ohne = 1, die ganze Zelle) }.
+    // Der Kern schneidet Quad UND UV um die Zellmitte gleich zu: jeder verbleibende Punkt liest dasselbe
+    // Texel wie vorher (bildgleich), nur der leere Rand wird nicht mehr gerastert. Nadel-Karten bleiben ganz.
     function buildFoliageQuads(leaves, opts) {
         opts = opts || {};
         const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
         const bScale = opts.scale != null ? opts.scale : 2.35;
         const nScale = opts.needleScale != null ? opts.needleScale : 1.3;
+        const kern = opts.kern != null ? opts.kern : 1;
+        if (!(kern > 0 && kern <= 1)) throw new Error("buildFoliageQuads: kern muss in (0, 1] liegen, ist " + kern);
         const list = leaves || [];
         const M = list.length;
         const positions = new Float32Array(M * 4 * 3);
@@ -534,9 +548,13 @@
             // opts.cell erzwingt die Atlas-Zelle (die Vorlage routet cell=(_lq++)&3 pro Blatt);
             // ohne opts.cell bleibt AnazhRealms Zyklus (needle→3, sonst li%3) unverändert.
             const cell = opts.cell != null ? opts.cell : needle ? 3 : li % 3;
-            const s = (l.scale || 0.5) * (needle ? nScale : bScale) * 0.5;
-            const u0 = cell * 0.25,
-                u1 = u0 + 0.25;
+            const k = needle ? 1 : kern;
+            const s = (l.scale || 0.5) * (needle ? nScale : bScale) * 0.5 * k;
+            // k = 1: u0 = cell·0.25, u1 = u0 + 0.25, v 0..1 — exakt die alten Werte (Byte-Treue ohne Kern).
+            const u0 = cell * 0.25 + 0.125 * (1 - k),
+                u1 = u0 + 0.25 * k,
+                v0 = 0.5 * (1 - k),
+                v1 = v0 + k;
             const fx = Math.max(0, Math.min(1, l.sway != null ? l.sway : 0.7));
             const base = qi * 4;
             for (let i = 0; i < 4; i++) {
@@ -555,7 +573,7 @@
                 aFlex[vw] = fx;
                 aPhase[vw] = ph + i * 0.3;
                 uvs[vw * 2] = i === 0 || i === 3 ? u0 : u1;
-                uvs[vw * 2 + 1] = i < 2 ? 0 : 1;
+                uvs[vw * 2 + 1] = i < 2 ? v0 : v1;
                 vw++;
             }
             indices[iw++] = base;
@@ -2048,6 +2066,7 @@
         treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         buildFoliageQuads: buildFoliageQuads,
+        BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Kern + Füllung) der broadleaf-Zellen
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
         superR: superR,
         LEAF_SHAPES: LEAF_SHAPES,

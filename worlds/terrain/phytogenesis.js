@@ -4933,6 +4933,9 @@ init();
                 ref: c.lod.ref,
                 hyst: c.lod.hyst,
                 kindStages: c.lod.kindStages ? JSON.parse(JSON.stringify(c.lod.kindStages)) : undefined,
+                // DAS BUDGET je Art × Stufe reist mit (04.10.) — ohne diese Zeile fiele es auf dem Weg zum
+                // Host still weg (die Whitelist kopiert feldweise).
+                budget: c.lod.budget ? JSON.parse(JSON.stringify(c.lod.budget)) : undefined,
             },
             density: {
                 cell: c.density.cell,

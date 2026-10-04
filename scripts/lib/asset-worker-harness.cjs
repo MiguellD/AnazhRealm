@@ -54,7 +54,7 @@ const WORKER_SCRIPTS = (() => {
 })();
 
 function pageHtml() {
-    return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script>
+    return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/phyto-core.js"></script><script>
 (() => {
   const S = (window.__AW = { ready: false, error: null });
   const boot =
@@ -84,6 +84,23 @@ function pageHtml() {
     let s = "";
     for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
     return btoa(s);
+  };
+  // DER ATLAS-STECKBRIEF gegen den MALER (04.10.): der Kern-Maler malt den broadleaf-Atlas hier im
+  // Seiten-Kontext (der Worker malt keinen) — je Zelle die Ausdehnung von Alpha>0 um die Zellmitte (Anteil der
+  // halben Zelle) und die mittlere Alpha-Deckung der ganzen Zelle.
+  window.__atlas = () => {
+    const core = window.__phytoCore;
+    const cv = core.bakeLeafAtlasCanvas(document, { cell3: "broadleaf" });
+    const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+    const Z = cv.width / 4, H = cv.height, ext = [0, 0, 0, 0], fill = [0, 0, 0, 0];
+    for (let y = 0; y < H; y++) for (let x = 0; x < cv.width; x++) {
+      const a = d[(y * cv.width + x) * 4 + 3]; if (!a) continue;
+      const c = Math.min(3, Math.floor(x / Z)), lx = x - c * Z;
+      const e = Math.max(Math.abs(lx + 0.5 - Z / 2), Math.abs(y + 0.5 - H / 2)) / (Z / 2);
+      if (e > ext[c]) ext[c] = e;
+      fill[c] += a / 255;
+    }
+    return { ext, fill: fill.map((f) => f / (Z * H)), steckbrief: core.BLATT_ATLAS_BREIT };
   };
   window.__aget = (type) => ask({ type });                 // get-recipes / -world-params / -render-config
   window.__build = (msg) => ask(Object.assign({ type: "build-asset" }, msg)).then((r) => ({
@@ -138,7 +155,8 @@ async function runWithWorker(port, cb) {
         if (!st.ready) throw new Error("Worker ready-Timeout");
         const build = (msg) => page.evaluate((m) => window.__build(m), msg);
         const getData = (type) => page.evaluate((t) => window.__aget(t), type);
-        const out = await cb({ build, getData, pageErrors });
+        const atlas = () => page.evaluate(() => window.__atlas());
+        const out = await cb({ build, getData, atlas, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {
