@@ -51270,6 +51270,11 @@ class AnazhRealm {
                 this._lodSlotOcclusionRefresh(entry);
             }
             if (newLOD === entry._lodLevel) {
+                // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
+                if (entry._bruecke) {
+                    entry._bruecke = false;
+                    this._lodSlotOcclusionRefresh(entry);
+                }
                 // Band-Pflege ohne Primär-Wechsel: der Eintrag wandert durchs Dither-Crossfade-Band, die
                 // Doppel-Mitgliedschaft folgt der Partner-Wahl. Band-Add/-Remove zählt aufs selbe Spike-Budget.
                 // Flag-Wand zuerst (foundryCrossfade aus → billiger Tick).
@@ -62869,9 +62874,14 @@ class AnazhRealm {
             if (!Array.isArray(list)) continue;
             for (const ref of list) {
                 const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
-                if (g) this._lodSlotStamp(g, ref.slot, entry.scale, entry._occluded === true);
+                if (g) this._lodSlotStamp(g, ref.slot, entry.scale, this._lodSlotVoll(entry));
             }
         }
+    }
+    // Zeichnet die Karte dieses Eintrags VOLL (vOcc 1, kein Distanz-Fade)? Der verdeckt-demotierte Baum (Studio-vOcc)
+    // und die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`).
+    _lodSlotVoll(entry) {
+        return entry._occluded === true || entry._bruecke === true;
     }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         // V18.474 — die EINE Fern-Key-Ableitung VOR jedem Keying: Fern-Leaves (Impostor-Quads/L2)
@@ -63444,7 +63454,7 @@ class AnazhRealm {
             g.mesh.boundingSphere = null;
             if (g.slotEntry) g.slotEntry[slot] = entry;
             // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + vOcc).
-            this._lodSlotStamp(g, slot, entry.scale, entry._occluded === true);
+            this._lodSlotStamp(g, slot, entry.scale, this._lodSlotVoll(entry));
             slots.push({ key: g.key, slot });
         }
         // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
@@ -63537,6 +63547,7 @@ class AnazhRealm {
         if (!bandOnly) {
             entry.instSlots = null;
             entry.instanced = false;
+            entry._bruecke = false; // die Brücke lebt nur mit ihrer Karten-Instanz
             // DORF-IN-TERRAIN — der Sockel fällt mit dem primären Instanz-Leben
             // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
             if (entry.fundament) this._archFundamentFree(entry);
@@ -63599,8 +63610,25 @@ class AnazhRealm {
             }
             const fFlat = this._foundryFlattenFor(entry, fPreset, entry._lodLevel);
             if (fFlat && fFlat.instanceable) {
+                entry._bruecke = false;
                 this._archInstanceAdd(entry, fFlat);
                 return null;
+            }
+            // DIE BRÜCKE: lädt die Wunsch-Stufe eines kalten Baums noch (die Anfrage ist eben gestellt), steht bis dahin
+            // seine gedockte Studio-Karte — VOLL gestempelt (`_lodSlotVoll`), denn diesseits ihres Bands blendete die
+            // Stufen-Maske sie aus. Der LOD-Tick wechselt auf die Wunsch-Stufe, sobald sie gedockt ist (er hält die
+            // Karte bis dahin). Vorher stand hier nichts: der Kapsel-Satz des Felds war nah und mittel die Gestalt.
+            // Eine 3D-Stufe kann keine Brücke sein — die Maske blendet L0/L1 außerhalb ihres Bands aus.
+            if (!entry.instanced && entry._lodLevel < 2 && this._foundryPresetIsTree(fPreset)) {
+                // Der Ruf stellt die Karte auch an (Record + Bedarf-Stempel, nah zuerst in die Worker-Schlange) und
+                // liefert sie, sobald sie gebacken ist — die Platte trägt sie meist schon.
+                const karte = this._foundryFlattenFor(entry, fPreset, 2);
+                if (karte && karte.instanceable) {
+                    entry._bruecke = true;
+                    entry._lodLevel = 2;
+                    this._archInstanceAdd(entry, karte);
+                    return null;
+                }
             }
             // Kennt die Foundry die Art, ist sie die EINE Quelle: null (lädt) ODER false (Bake-Lücke) → KALT
             // lassen, NIE die Grammatik; Culling-Tick/Refill bauen ihn als Studio, sobald das Asset da ist.
@@ -69170,36 +69198,50 @@ class AnazhRealm {
     // Rewarm entscheidet vor dem Platzieren: gedockt → billige Instance, sonst Bake-Anfrage (limitiert).
     // Die LOD-Wahl spiegelt `_rebuildArchitectureMesh`/`_foundryFlattenFor` (kalt → Distanz-LOD).
     _foundryEntryReady(entry, preset) {
-        const f = this._foundry;
-        if (!f || !preset) return false;
-        const variant = this._foundryVariantFor(entry.seed, preset);
-        if (variant == null) return false;
         const cold = !entry.instanced && !entry.mesh;
-        let lod = cold
+        const lod = cold
             ? this._foundryLodForEntry(entry)
             : Number.isFinite(entry._lodLevel)
               ? entry._lodLevel
               : this._foundryLodForEntry(entry);
-        if (lod < 0) lod = 0;
+        return this._foundryStufeBereit(entry, preset, lod);
+    }
+    // Platziert `_rebuildArchitectureMesh` diesen KALTEN Eintrag jetzt — ist seine Wunsch-Stufe gedockt oder, bei einem
+    // Baum, seine Karte als Brücke? Dann ist das Platzieren ein Slot, kein Bau (tickArchitectureCulling).
+    _foundryPlatzBereit(entry, preset) {
+        if (this._foundryEntryReady(entry, preset)) return true;
+        return (
+            this._foundryPresetIsTree(preset) &&
+            this._foundryLodForEntry(entry) < 2 &&
+            this._foundryStufeBereit(entry, preset, 2)
+        );
+    }
+    // Der Dock-Peek EINER Stufe (rein lesend, kein Bake): liegt Stufe `lod` dieses Eintrags gedockt bereit? Der
+    // Eintrags-Peek oben fragt seine Wunsch-Stufe, die Brücke (`_rebuildArchitectureMesh`) die Karte.
+    _foundryStufeBereit(entry, preset, lod) {
+        const f = this._foundry;
+        if (!f || !preset) return false;
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return false;
+        if (!Number.isFinite(lod) || lod < 0) lod = 0;
         if (lod > 2) lod = 2;
         // Baum-Fernstufe = das Billboard (Impostor-Record), nicht die Cache-Geometrie. Gestempelt: „gedockt"
         // erst, wenn SEINE ov-Karte gebacken ist (sonst baut der Rewarm die geprägte Geometrie).
         if (lod >= 2 && this._foundryPresetIsTree(preset)) {
             const key = "fimp:" + this._foundryKartenKey(preset, variant, this._artifactStudioOv(entry));
             const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
-            // T1 BLOB-TOD-Spiegel: mit echtem Renderer ist „gedockt" erst die GEBACKENE
-            // Karte (rttBaked) — der Flatten serviert bis dahin Geometrie (unten weiter
-            // zum Geometrie-Key-Urteil statt falschem „ready" über den Platzhalter).
+            // T1 BLOB-TOD-Spiegel: mit echtem Renderer ist „gedockt" erst die GEBACKENE Karte (rttBaked) — bis dahin
+            // liefert der Flatten für die Baum-Fernstufe nichts (`_foundryBuildImpostorFlat` → false), nie Geometrie.
+            // Bis 04.10. fiel der Peek hier auf den L2-Geometrie-Schlüssel durch und sagte „gedockt", wo nichts kam:
+            // die Nah-Linse nannte 172 Takte lang „gedockt, noch nicht platziert".
             const rendP = this.state && this.state.renderer;
-            if (rec && rec !== "pending" && rec !== false && rendP && !rendP._isHeadlessNull && !rec.rttBaked) {
-                // fällt durch zum Geometrie-Key unten (die Stufen-Klammer klemmt lod)
-            } else {
-                return !!(rec && rec !== "pending" && rec !== false);
-            }
+            const echt = !!(rendP && !rendP._isHeadlessNull);
+            return !!(rec && rec !== "pending" && rec !== false && (rec.rttBaked || !echt));
         }
-        // Der Peek spiegelt die EINE Stufen-Klammer des Flattens (`_foundryDeclaredStage`) — sonst fragt er einen
-        // Key ab, den der Flatten nie baut (falsch „kalt").
-        if (this._foundryPresetIsTree(preset)) lod = this._foundryDeclaredStage(preset, lod);
+        // Der Peek ruft die EINE Stufen-Klammer des Flattens (`_foundryServierStufe`) — sonst fragt er einen Key ab,
+        // den der Flatten nie baut (falsch „kalt"). Bis 04.10. klemmte er nur Bäume: ein Fels (kindStages [0]) in 40 m
+        // fragte L2, der Flatten servierte L0 — der Peek sah „lädt", die Platzierung lief über das Bau-Budget.
+        lod = this._foundryServierStufe(preset, lod);
         // PRÄGUNG-WELT — der Dock-Peek spiegelt den Flatten-Schlüssel: ein gestempelter
         // Eintrag ist erst „gedockt", wenn SEIN Unikat (|ov:-Key) im Cache liegt — sonst
         // urteilte der Rewarm „ready" über das falsche (ungeprägte) Asset.
@@ -69422,6 +69464,22 @@ class AnazhRealm {
         lf._schattenGeom = z;
         return z;
     }
+    // DIE EINE STUFEN-KLAMMER der Geometrie-Stufen (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
+    // live) für JEDE Art, baumartig oder nicht: die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die kleinste —
+    // nie eine Stufe, die das Studio nicht vorsieht. Ohne Config die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD,
+    // fail-closed); ein BEKANNTES Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0] — nur die
+    // feine Stufe, der Wirt gradet selbst (L1=L0, L2=Auto-Impostor). Leser: der Flatten und sein Dock-Peek.
+    _foundryServierStufe(preset, lod) {
+        lod = this._foundryDeclaredStage(preset, lod);
+        if (!this._foundryPresetIsTree(preset) && !this._foundryKindStages(preset)) {
+            const f = this._foundry;
+            const rec = f && f.recipes ? f.recipes[preset] : null;
+            const kl = rec ? AnazhRealm.FOUNDRY_KIND_LOD[rec.kind] : null;
+            if (Number.isFinite(kl)) lod = kl;
+            else if (rec) lod = 0;
+        }
+        return lod;
+    }
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
@@ -69441,16 +69499,7 @@ class AnazhRealm {
         // kleinste — nie eine Stufe, die das Studio nicht vorsieht. Befund 02.10. (Werkbank, Mess-Wiese): der
         // Strauch (shrub [1,2]) galt als baumartig, der Baum-Zweig klemmte nur Ein-Stufen-Arten — nahe Büsche
         // standen mit L0 (112k Dreiecke je Busch statt 45k, 25 s Worker-Bau einer nie deklarierten Stufe).
-        lod = this._foundryDeclaredStage(preset, lod);
-        if (!this._foundryPresetIsTree(preset) && !this._foundryKindStages(preset)) {
-            // Ohne Config: die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD, fail-closed). Ein BEKANNTES
-            // Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0] — nur die feine Stufe,
-            // der Wirt gradet selbst (L1=L0, L2=Auto-Impostor).
-            const _rec = f.recipes && f.recipes[preset];
-            const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : null;
-            if (Number.isFinite(_kl)) lod = _kl;
-            else if (_rec) lod = 0;
-        }
+        lod = this._foundryServierStufe(preset, lod);
         // Gestempelter Welt-Eintrag (entry.studioOv) baut sein Unikat: der ov-Hash trennt Cache-Key UND (via
         // leafKey) den Gruppen-Key — geprägt und ungeprägt vergiften sich nie. Der Request reicht ov als
         // 4. Arg. Ohne Stempel: der Körper-Schlüssel ohne ov.
@@ -69702,12 +69751,11 @@ class AnazhRealm {
         const p = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!p || !entry || !entry.position) return 1;
         const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
-        // Kalt-Estimate-Schwellen = die Studio-LOD (LOD_DISTANCES): <thresh01 = L0 · bis thresh12 = L1 ·
-        // darüber L2 Billboard. Dieselben Grenzen wie `_chooseLODForDistance` → Estimate und LOD-Tick stimmen.
-        const D = AnazhRealm.LOD_DISTANCES;
-        if (d < D.thresh01) return 0;
-        if (d < D.thresh12) return 1;
-        return 2;
+        // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
+        // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe
+        // Distanz: die Rampe setzte einen großen Baum in 40 m auf die Karte (dithernd, grau), und der LOD-Tick holte
+        // ihn erst Takte später auf L1 (5 Wechsel je Takt, 04.10. an der Mess-Wiese 191 Plätze im ersten Takt).
+        return this._chooseLODForDistance(d, undefined, this._lodTreeVisHeight(entry));
     }
     // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
     _seasonName(phase) {
@@ -71888,16 +71936,44 @@ class AnazhRealm {
         if (nahOffen.length) {
             nahOffen.sort((a, b) => a._nahD2 - b._nahD2);
             const fA = this._foundry ? this._foundry.ankunft | 0 : 0;
-            const jetztN = typeof performance !== "undefined" ? performance.now() : Date.now();
+            const uhr = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+            const jetztN = uhr();
+            // DIE GEDOCKTE STUDIO-STUFE IST KEIN BAU: liegt die Wunsch-Stufe (oder als Brücke die Karte) gedockt bereit,
+            // kostet das Platzieren einen Instanz-Slot — gemessen 04.10. (echte GPU, Mess-Wiese): 197 Einträge in
+            // 2,5 ms. Es läuft am Bau-Budget und an der Versuchs-Kappe vorbei, nah zuerst, begrenzt nur von der
+            // Platzier-Uhr (`ARCH_PLATZ_MS`). Vorher zählte es wie ein Grammatik-Bau: über Budget ein Eintrag je
+            // 250 ms — nach der Rückkehr an die Mess-Wiese standen 165 Analog-Sätze < 64 m und schmolzen 20 s lang
+            // (die Klumpen der Blick-Tour).
+            // Ist das Bau-Budget erschöpft, endet nur das BAUEN (`bauZu`), nie der Gang: der erste nahe Eintrag, dessen
+            // Asset noch lädt oder dessen Grammatik baut, brach vorher die Schleife — alle gedockten dahinter warteten.
+            const platzBis = jetztN + AnazhRealm.ARCH_PLATZ_MS;
+            const fAn = this._foundryEnabled();
             let versuche = 0,
+                bauZu = false,
                 hand = null; // über Budget: EIN Takt-Garantie-Blick je Tick, er deckt Versuche bis zum ersten Bau
             for (const entry of nahOffen) {
+                const fPre = fAn ? this._foundryPresetForEntry(entry) : null;
+                if (fPre && uhr() < platzBis && this._foundryPlatzBereit(entry, fPre)) {
+                    this._rebuildArchitectureMesh(entry);
+                    if (this._archIsRendered(entry)) {
+                        entry._nahWartet = null;
+                        if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
+                        continue;
+                    }
+                }
+                if (bauZu) continue;
                 const w = entry._nahWartet;
                 if (w && w.a === fA && jetztN - w.t < 1000) continue;
-                if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;
+                if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) {
+                    bauZu = true;
+                    continue;
+                }
                 if (built >= budget) {
                     if (hand === null) hand = this._handBauErlaubt(budget);
-                    if (!hand) break;
+                    if (!hand) {
+                        bauZu = true;
+                        continue;
+                    }
                 }
                 this._rebuildArchitectureMesh(entry);
                 if (this._archIsRendered(entry)) {
@@ -90879,6 +90955,9 @@ AnazhRealm.FELL_SCHALE = Object.freeze({ wurzel: 0.55, spitze: 1.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;
+// Die Platzier-Uhr der Mesh-Zone (ms je Takt): so lange setzt der Culling-Tick kalte Einträge, deren Studio-Stufe
+// gedockt bereitliegt — ohne Bau-Budget, nah zuerst. 197 Plätze kosteten 2,5 ms (04.10., echte GPU, Mess-Wiese).
+AnazhRealm.ARCH_PLATZ_MS = 4;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
 // schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:
