@@ -83903,6 +83903,7 @@ class AnazhRealm {
         const holz = await this._holzWahl();
         this._applyHolzProfil(holz);
         const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
+        this.state._fxaa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
         // Opt-in Headless-Null-Renderer (GPU-frei) für Mechanik-Playtest / Server-Sim, sonst der echte
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
@@ -83912,7 +83913,9 @@ class AnazhRealm {
                 ? this._makeHeadlessRenderer(canvas)
                 : new THREE.WebGPURenderer({
                       canvas,
-                      antialias: holzProf.antialias !== false,
+                      // KEIN MSAA: die Kantenglättung ist FXAA am Ende der Post-Kette (_fxaaNode; das Holz-Profil
+                      // schaltet sie). MSAA 4× kostete gemessen ~7 ms GPU und 267 MB VRAM (04.10., Radeon 890M).
+                      antialias: false,
                       trackTimestamp: true,
                       // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
                       forceWebGL: AnazhRealm._forceWebGL(),
@@ -86643,7 +86646,12 @@ class AnazhRealm {
             const degrayed = mix(contrasted, warm, greyness.mul(u.degrayStrength).mul(float(1.0).sub(u.nightFactor)));
             const graded = degrayed.max(vec3(0, 0, 0));
 
-            pp.outputNode = graded;
+            // DIE KANTENGLÄTTUNG: FXAA nach dem Tonemapping (die Ausgabe-Wandlung zieht hierher vor, die Post-Kette
+            // wandelt danach nicht noch einmal) — statt MSAA 4× im Szenen-Ziel.
+            if (this.state._fxaa) {
+                pp.outputNode = this._fxaaNode(TSL, TSL.renderOutput(graded));
+                pp.outputColorTransform = false;
+            } else pp.outputNode = graded;
             this.state.postProcessing = pp;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
             return pp;
@@ -86652,6 +86660,44 @@ class AnazhRealm {
             this.log(`Post-Processing-Aufbau scheiterte (${err && err.message}) — direkter Render-Pfad.`, "INFO");
             return null;
         }
+    }
+
+    // FXAA (Lottes, die Konsolen-Variante von FXAA 3.11 — 9 Taps): auf dem fertigen LDR-Bild (Zwischen-Textur), Luma
+    // wahrnehmungsgewichtet; entlang der Kanten-Richtung zwei bzw. vier Proben gemittelt, die breitere Mittelung nur,
+    // wenn sie im lokalen Luma-Band bleibt (sonst übersprang sie eine Kante).
+    _fxaaNode(TSL, ldr) {
+        const { convertToTexture, screenUV, screenSize, vec2, vec3, vec4, float, dot, min, max, abs, clamp, select } =
+            TSL;
+        const tex = convertToTexture(ldr);
+        const px = vec2(1.0, 1.0).div(screenSize);
+        const L = vec3(0.299, 0.587, 0.114);
+        const nb = (dx, dy) => dot(tex.sample(screenUV.add(px.mul(vec2(dx, dy)))).rgb, L);
+        const lNW = nb(-1, -1);
+        const lNE = nb(1, -1);
+        const lSW = nb(-1, 1);
+        const lSE = nb(1, 1);
+        const lM = dot(tex.sample(screenUV).rgb, L);
+        const lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+        const lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+        const dirX = lNW.add(lNE).sub(lSW.add(lSE)).negate();
+        const dirY = lNW.add(lSW).sub(lNE.add(lSE));
+        const reduce = max(
+            lNW
+                .add(lNE)
+                .add(lSW)
+                .add(lSE)
+                .mul(0.25 / 8),
+            float(1 / 128)
+        );
+        const rcp = float(1.0).div(min(abs(dirX), abs(dirY)).add(reduce));
+        const dir = clamp(vec2(dirX, dirY).mul(rcp), vec2(-8.0, -8.0), vec2(8.0, 8.0)).mul(px);
+        const s = (k) => tex.sample(screenUV.add(dir.mul(k))).rgb;
+        const rgbA = s(1 / 3 - 0.5)
+            .add(s(2 / 3 - 0.5))
+            .mul(0.5);
+        const rgbB = rgbA.mul(0.5).add(s(-0.5).add(s(0.5)).mul(0.25));
+        const lB = dot(rgbB, L);
+        return vec4(select(lB.lessThan(lMin).or(lB.greaterThan(lMax)), rgbA, rgbB), 1.0);
     }
 
     // Alle Schatten-Maps im nächsten Render neu — die EINE Markierung (Werkzeuge vor einer Aufnahme): je Licht am
@@ -87126,7 +87172,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.524.0";
+AnazhRealm.VERSION = "18.525.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
