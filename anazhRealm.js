@@ -20967,10 +20967,10 @@ class AnazhRealm {
     }
 
     // ═══ DER KREATUR-ZIEGEL: nah das Studio-Tier, fern die Glieder-Kapseln ═══
-    // Nah (KREATUR_NAH_MESH, mit Hysterese) IST das Studio-Tier (tierBaum-Mesh) die Gestalt — seine
-    // Kapseln schweigen, der Frustum-Schreiber führt die Sichtbarkeit. Fern ist jedes GLIED Achse +
-    // Radius + Farbe (dedupl. je Gattung×Glied), je Frame reist die Knochen-Matrix in die Liste
-    // (_weltFeldMatrix) → der March sphere-tract im Glied-Raum. Bake getaktet, headless unverändert.
+    // Nah (KREATUR_NAH_MESH, mit Hysterese) IST das Studio-Tier (tierBaum-Mesh) die Gestalt — seine Kapseln schweigen,
+    // three cullt es je Pass (Körper-Kugel gegen Blick und Kaskaden-Box). Fern ist jedes GLIED Achse + Radius + Farbe
+    // (dedupl. je Gattung×Glied), je Frame reist die Knochen-Matrix in die Liste (_weltFeldMatrix) → der March
+    // sphere-tract im Glied-Raum. Bake getaktet, headless unverändert.
     _tickKreaturZiegel(playerPos) {
         const st = this.state;
         if (!playerPos || (st.renderer && st.renderer._isHeadlessNull)) return;
@@ -20987,7 +20987,7 @@ class AnazhRealm {
             u._kzNah = u._kzNah === true ? d2 < aus2 : d2 < ein2;
             if (u._kzNah) {
                 if (u._kzGlieder) for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, false);
-                continue; // das Studio-Tier trägt (Sichtbarkeit: Frustum-Schreiber)
+                continue; // das Studio-Tier trägt (gecullt je Pass an seiner Körper-Kugel)
             }
             if (!u._kzGlieder) {
                 if (u._kzVersuch) {
@@ -21015,7 +21015,7 @@ class AnazhRealm {
     }
 
     // Gehört dieses Tier dem Feld? Nur FERN und sobald ein Bake-Versuch lief (mit Gliedern oder
-    // gescheitert); nah und in der Bake-Rampe schaltet der Frustum-Schreiber das Studio-Tier.
+    // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass.
     _kzBesitztFeld(cr) {
         const u = cr && cr.userData;
         return !!(u && u._kzNah !== true && (u._kzGlieder || u._kzVersuch));
@@ -27508,7 +27508,7 @@ class AnazhRealm {
         }
         // Der CPU-Körper des Chunk-Wassers (Map-Wahrheit, Sonden lesen seine Geometrie); gezeichnet wird er als
         // Bereich im Wasser-Satz (Welle B: EIN Objekt für das Wasser des ganzen Rings, ausserhalb jedes Bundles —
-        // viewportLinearDepth erzwingt einen Pass-Bruch, den der Bundle-Encoder nicht kann).
+        // die Szenen-Tiefe `_szeneTiefe` erzwingt einen Pass-Bruch, den der Bundle-Encoder nicht kann).
         const mesh = new THREE.Mesh(geom, mat);
         mesh.userData = {
             isHydrosphere: true,
@@ -29289,8 +29289,9 @@ class AnazhRealm {
                     uLodFade0: _T.uniform(Number.isFinite(_D.fade0) ? _D.fade0 : 4),
                     // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
                     // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
-                    // `renderer.render(scene, shadow.camera)`, lightMargin 200 m): dort lagen nahe Bäume 145 m
-                    // „weit", jenseits jeder Stufe, und die Maske verwarf ihre Schatten-Fragmente alle.
+                    // `renderer.render(scene, shadow.camera)`; bis V18.529 stand sie 200 m über der Box, heute über
+                    // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
+                    // verwarf ihre Schatten-Fragmente alle.
                     uLodAuge: _T.uniform(new THREE.Vector3()),
                     // DER PERF-STRECK der Wahrnehmungs-Distanz (_lodPerfMul, je Frame gespiegelt): jede Maske misst
                     // die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
@@ -32333,11 +32334,11 @@ class AnazhRealm {
         return { submerged: true, surfaceY };
     }
 
-    // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert die
-    // Tiefe in jedem Pass, der ihn liest (updateBefore). Wasser (`viewportLinearDepth`, der Modul-Knoten) und Feld-Pass
-    // (ein zweiter `viewportDepthTexture()`) zogen zwei Kopien derselben Szenen-Tiefe — je Frame zwei Vollbild-Kopien,
-    // bei 1080p 2 × 7,9 MB (gemessen 04.10.: zwei „szene:tiefenkopie" am Szene-Ziel). Beide Leser lesen diesen EINEN
-    // Knoten; der Name reist mit dem Klon in den VRAM-Zensus.
+    // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert
+    // die Tiefe in jedem Pass, der ihn liest (updateBefore). Wasser (bis V18.529 der Modul-Knoten der linearen Tiefe)
+    // und Feld-Pass (ein zweiter `viewportDepthTexture()`) zogen zwei Kopien derselben Szenen-Tiefe — je Frame zwei
+    // Vollbild-Kopien, bei 1080p 2 × 7,9 MB (gemessen 04.10.: zwei „szene:tiefenkopie" am Szene-Ziel). Beide Leser
+    // lesen diesen EINEN Knoten; der Name reist mit dem Klon in den VRAM-Zensus.
     _szeneTiefe() {
         if (!this._szeneTiefeKnoten) {
             this._szeneTiefeKnoten = THREE.TSL.viewportDepthTexture();
@@ -32347,10 +32348,10 @@ class AnazhRealm {
     }
 
     // DIE TIEFE NACH DEM REALLOC: die Leser der Viewport-Tiefe (r184 ViewportDepthTextureNode, ein MSAA-Klon je
-    // Render-Ziel, kopiert im Pass-Bruch; der EINE Knoten `_szeneTiefe`) sind das Wasser (weiche Ufer) und der Feld-Pass
-    // (die Tiefen-Grenze des Marchs). Ein Resize (`setSize`) legt Szene-Tiefe und Klon neu an, die Textur-Bindung
-    // eines Lesers zieht nicht nach: jeder Submit des Hauptpasses fällt („Destroyed texture … used in a submit",
-    // renderContext des Szene-Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster
+    // Render-Ziel, kopiert im Pass-Bruch; der EINE Knoten `_szeneTiefe`) sind das Wasser (weiche Ufer) und der
+    // Feld-Pass (die Tiefen-Grenze des Marchs). Ein Resize (`setSize`) legt Szene-Tiefe und Klon neu an, die
+    // Textur-Bindung eines Lesers zieht nicht nach: jeder Submit des Hauptpasses fällt („Destroyed texture … used in a
+    // submit", renderContext des Szene-Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster
     // 1920→1600→1920). Das Wasser-Material wird frisch gebaut (gleicher WGSL → Programm aus dem Cache), alle
     // Uniform-Werte reisen mit; der Feld-Pass fällt und baut sich im nächsten Fern-Ring-Takt neu (frisch gebunden).
     _tiefenLeserNeuBinden() {
@@ -32601,7 +32602,7 @@ class AnazhRealm {
         const n = cond(nUpRaw.y.lessThan(0.0), nUpRaw.mul(-1.0), nUpRaw);
 
         // === SCHICHT 3: Tiefenpuffer-Uferlinie ===
-        // waterThick = viewportLinearDepth (Terrain dahinter) − linearDepth(depth) (dieses Fragment): ~0 an
+        // waterThick = linearDepth(_szeneTiefe) (Terrain dahinter) − linearDepth(depth) (dieses Fragment): ~0 an
         // der Uferlinie, pro Pixel → die weiche Kante folgt dem Terrain, egal wie grob das Mesh. Ufer-Alpha
         // (`edgeFade`) liest `waterThick` (Viewport-Einheiten); die Tiefen-FARBE (`deepen`) liest die glatte
         // Meter-Tiefe `aDepth` — `waterThick` sähe die facettierte Sohle (Kontur-Bänder).
@@ -60246,8 +60247,10 @@ class AnazhRealm {
     // Rahmenpuffer-Ziel der Leinwand (Ton-Abbildung an): rgba16f + Tiefe, dazu die Viewport-Tiefen-Kopie, die Wasser
     // und Feld-Pass dort anlegen — drei Bildschirm-Ziele (bei 1080p 31,6 MB), die kein Frame je beschreibt (gemessen
     // 04.10.: jede Reife-Wache und jeder Ofen-Posten rief es). Der Frame zeichnet die Szene ins Ziel des Szenen-Passes
-    // — gegen DAS wird kompiliert (dieselben Formate, derselbe Pipeline-Schlüssel). compileAsync liest das Ziel synchron
-    // vor seinem ersten await; danach gilt wieder das alte. Ohne Post-Kette (gescheitert) bleibt das Leinwand-Ziel.
+    // — gegen DAS wird kompiliert (dieselben Formate, derselbe Pipeline-Schlüssel). compileAsync liest das Ziel
+    // synchron vor seinem ersten await; danach gilt wieder das alte. Ohne Post-Kette (gescheitert) bleibt das
+    // Leinwand-Ziel. compileAsync ruft synchron den Vorher-Haken der Szene (nie den Nachher-Haken): `_imKompilat` hält
+    // ihn still — ein Kompilat stellt keine Kaskade und wählt keine Werfer (`_passSicht`).
     _kompiliere(obj, cam, szene) {
         const r = this.state.renderer;
         const pp = this._ensurePostProcessing();
@@ -60259,9 +60262,11 @@ class AnazhRealm {
             r.setRenderTarget(ziel);
             r.setMRT(sp.getMRT()); // wie PassNode.compileAsync: Ziel UND MRT des Passes tragen den Pipeline-Schlüssel
         }
+        this._imKompilat = true;
         try {
             return Promise.resolve(r.compileAsync(obj, cam, szene || null));
         } finally {
+            this._imKompilat = false;
             if (ziel) {
                 r.setRenderTarget(alt);
                 r.setMRT(altMrt);
@@ -62849,8 +62854,49 @@ class AnazhRealm {
         };
         s.bloecke.set(key, b);
         this._chunkSatzViews(s, b);
+        this._chunkSatzHuelle(s, b);
         s.schmutzig = true;
         return b;
+    }
+
+    // DIE HÜLLE eines Boden-Bereichs (Welt-AABB + `randM`): der Boden lebt außerhalb jedes Bundles (EIN Szenen-Mesh),
+    // die Kaskaden-Box liest ihn trotzdem — als Empfänger-Band (der Boden unter der Scheibe empfängt) und als Werfer
+    // (ein Hang zur Sonne hin wirft über die nahe Ebene). Der Shader zeichnet zwischen Position und Morph-Ziel; das
+    // Ziel zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Nur Sätze, die werfen.
+    _chunkSatzHuelle(s, b) {
+        if (s.spec.schatten !== true) return;
+        const h = b.huelle || (b.huelle = new THREE.Box3());
+        h.makeEmpty();
+        const A = b.geom.attributes;
+        const P = A.position.array,
+            Z = A.aMorphTarget ? A.aMorphTarget.array : null,
+            W = A.aMorphWeight ? A.aMorphWeight.array : null;
+        let x0 = Infinity,
+            y0 = Infinity,
+            z0 = Infinity,
+            x1 = -Infinity,
+            y1 = -Infinity,
+            z1 = -Infinity;
+        const dazu = (q, k) => {
+            const x = q[k],
+                y = q[k + 1],
+                z = q[k + 2];
+            if (x < x0) x0 = x;
+            if (x > x1) x1 = x;
+            if (y < y0) y0 = y;
+            if (y > y1) y1 = y;
+            if (z < z0) z0 = z;
+            if (z > z1) z1 = z;
+        };
+        for (let v = 0, k = 0; v < b.vAnzahl; v++, k += 3) {
+            dazu(P, k);
+            if (Z && W && W[v] > 0) dazu(Z, k);
+        }
+        if (x1 >= x0) {
+            h.min.set(x0, y0, z0);
+            h.max.set(x1, y1, z1);
+            h.expandByScalar(AnazhRealm.SCHATTEN_KASKADE.randM);
+        }
     }
 
     // Der Austritt: die Chunk-Geometrie behält ihre Daten als EIGENE Kopie (ihr Bereich wird frei und neu
@@ -62879,6 +62925,7 @@ class AnazhRealm {
             ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
             ga.needsUpdate = true;
         }
+        this._chunkSatzHuelle(s, b); // der Geomorph legt neue Ziele — die Hülle folgt
     }
 
     _chunkSatzSichtbar(art, sichtbar) {
@@ -62956,8 +63003,8 @@ class AnazhRealm {
     // DIE WERFER-HÜLLE eines Region-Bundles (W7): die Welt-AABB seiner WERFENDEN Kinder (castShadow), aus dem Inhalt —
     // je Instanz die Geometrie-Kugel (drehungsfest: Billboards, Wind), je Mesh seine Box, plus `randM`. Einmal je
     // Schatten-Takt (`_shadowFrame`, die Kaskaden-Box und jeder Schatten-Pass lesen dieselbe Hülle); je Kind hält ein
-    // Zahlen-Schlüssel (Instanz-/Positions-Version · Zahl · Geometrie · Welt-Lage) seine Box, nur geänderte Kinder rechnen
-    // neu. Ohne Bundle-Version: dieselbe Hülle trägt eine schlichte Gruppe. null = wirft nicht.
+    // Zahlen-Schlüssel (Instanz-/Positions-Version · Zahl · Geometrie · Welt-Lage) seine Box, nur geänderte Kinder
+    // rechnen neu. Ohne Bundle-Version: dieselbe Hülle trägt eine schlichte Gruppe. null = wirft nicht.
     _bundleWerferHuelle(bg) {
         const u = bg.userData;
         const takt = this._shadowFrame || 0;
@@ -63025,8 +63072,8 @@ class AnazhRealm {
                         b.applyMatrix4(o.matrixWorld);
                     }
                 } else {
-                    // die Box der Geometrie, wie three die Kugel liest: der Besitzer hält sie (die Boden-Entlassung
-                    // rechnet sie VOR dem Leeren, _chunkBodenNulle) — aus geleerten Arrays rechnet hier nichts.
+                    // die Box der Geometrie, wie three die Kugel liest (Bundle-Inhalt ist statisch: einmal je
+                    // Geometrie)
                     if (!g.boundingBox) g.computeBoundingBox();
                     b.copy(g.boundingBox).applyMatrix4(o.matrixWorld);
                 }
@@ -84513,9 +84560,13 @@ class AnazhRealm {
                 csm.fade = true;
                 csm._init = (builder) => this._kaskadenGeburt(csm, builder);
                 // Die Lichter stellt der Haupt-Pass VOR jeder Karte (`_passSicht` → `_kaskadenPassen`). Das Addon
-                // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 ·
-                // k1 · Fit), jede Karte lief mit der Box des Vor-Frames.
+                // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 · k1
+                // · Fit), jede Karte lief mit der Box des Vor-Frames. Sein zweiter Schreiber fällt mit:
+                // `updateFrustums` (Reichweiten-Wechsel, _applyEffectiveShadowRange) schrieb das Diagonal-Quadrat in
+                // jede Kaskaden-Kamera — die Box schreibt EINER, der Fit (Brüche und Frusta rechnet updateFrustums
+                // weiter).
                 csm.updateBefore = () => {};
+                csm._updateShadowBounds = () => {};
                 directionalLight.shadow.shadowNode = csm;
                 this.state.csmNode = csm;
                 this.log("Schatten-CSM aktiv (2 Kaskaden: Band 0 · Rest bis zur Schatten-Reichweite)", "INFO");
@@ -87105,18 +87156,20 @@ class AnazhRealm {
     }
 
     // ═══ DIE KASKADEN-BOX (W7) ═══
-    // Das r184-Addon setzte jede Kaskade auf ein QUADRAT mit der Diagonale ihrer Frustum-Scheibe (Kaskade 0 347 m,
-    // Kaskade 1 957 m bei 306 m Reichweite): der Blick deckte ein Viertel davon, und beide Kaskaden zeichneten dieselbe
-    // Werfer-Menge (echte GPU 04.10., Mess-Wiese: k0 = k1 = 209 Befehle · 1,23 M Dreiecke). Hier misst die Box die
-    // SCHEIBE im Licht-Raum: ihre acht Ecken (mit dem Fade-Saum des Shaders), geschnitten mit dem Höhenband der
-    // Empfänger (die Werfer-Hüllen unter der Scheibe — Himmel und Fels-Inneres empfangen nichts); die Größe rastet in
-    // Schritten von Scheiben-Tiefe / rasterTeiler (eine Drehung schimmert nicht bei jedem Grad), das Zentrum auf das
-    // Texel-Raster der festen Licht-Basis (Gehen schimmert nicht). Die nahe Ebene steht über dem höchsten Werfer der
-    // Box (die Szene-Kante entlang des Lichts), die ferne unter der tiefsten Scheiben-Ecke. Eine Kaskade außerhalb
-    // ihres Takts behält ihre Karte, solange die Box die Scheibe deckt — sonst rendert sie in diesem Frame neu.
-    // Ersetzt die Licht-Stellung des Addons (`CSMShadowNode.updateBefore`, je Instanz stumm; die Vendor-Datei bleibt
-    // unberührt) und läuft im Haken des Haupt-Passes VOR den Karten (`_passSicht`); Licht und Ziel der Kaskade tragen
-    // ihre Welt-Matrix sofort — `updateMatrices` liest sie im selben Frame.
+    // Das r184-Addon setzte jede Kaskade auf ein QUADRAT mit der Diagonale ihrer Frustum-Scheibe (echte GPU,
+    // Mess-Wiese, 306 m Reichweite: k0 339 m, k1 961 m): der Blick deckte ein Viertel davon, und beide Kaskaden
+    // zeichneten dieselbe Werfer-Menge (echte GPU 04.10., V18.528: k0 = k1 = 209 Befehle · 1,23 M Dreiecke). Hier misst
+    // die Box die SCHEIBE im Licht-Raum: ihre acht Ecken (mit dem Fade-Saum des Shaders), geschnitten mit dem Höhenband
+    // der Empfänger (die Hüllen unter der Scheibe — Bundles UND Boden-Satz; Himmel und Fels-Inneres empfangen nichts);
+    // die Größe rastet in Schritten von Scheiben-Tiefe / rasterTeiler (eine Drehung schimmert nicht bei jedem Grad;
+    // gemessen 04.10., echte GPU, stehende Render-Kamera, Box-Blick je 1° gedreht: Bild-Änderung 1,4–1,9 Luma-Stufen
+    // mit und ohne Rast-Wechsel, das Addon-Quadrat ohne Wechsel ebenso — der Wechsel liegt im Rauschen der zeitlichen
+    // Auflösung), das Zentrum auf das Texel-Raster der festen Licht-Basis (Gehen schimmert nicht). Die nahe Ebene steht
+    // über dem höchsten Werfer der Box (die Szene-Kante entlang des Lichts), die ferne unter der tiefsten
+    // Scheiben-Ecke. Eine Kaskade außerhalb ihres Takts behält ihre Karte, solange die Box die Scheibe deckt — sonst
+    // rendert sie in diesem Frame neu. Ersetzt die Licht-Stellung des Addons (`CSMShadowNode.updateBefore`, je Instanz
+    // stumm; die Vendor-Datei bleibt unberührt) und läuft im Haken des Haupt-Passes VOR den Karten (`_passSicht`);
+    // Licht und Ziel der Kaskade tragen ihre Welt-Matrix sofort — `updateMatrices` liest sie im selben Frame.
     _kaskadenPassen(csm) {
         const licht = csm.light;
         const eltern = licht && licht.parent;
@@ -87161,7 +87214,6 @@ class AnazhRealm {
             punkte: Array.from({ length: 32 }, V),
             huellen: [],
             ab: [],
-            direkt: [],
             saum: [0, 1],
         };
         return this._kaskadenS;
@@ -87181,7 +87233,9 @@ class AnazhRealm {
         return aus;
     }
 
-    // Die WERFER-HÜLLEN aller Region-Bundles (null = das Bundle wirft nicht).
+    // Die WERFER-HÜLLEN der Welt: jedes Region-Bundle (null = wirft nicht) und jeder Bereich des Boden-Satzes (der
+    // Boden lebt außerhalb jedes Bundles — ohne ihn fiele der Boden unter dem Band aus der Box, und ein Hang zur Sonne
+    // hin läge über der nahen Ebene). Auf dem WebGL2-Rückfall (keine Bundles) trägt der Boden das Band allein.
     _kaskadenHuellen(S) {
         const aus = S.huellen;
         aus.length = 0;
@@ -87191,6 +87245,9 @@ class AnazhRealm {
                 const h = this._bundleWerferHuelle(bg);
                 if (h) aus.push(h);
             }
+        const boden = this.state.chunkSaetze ? this.state.chunkSaetze.get("boden") : null;
+        if (boden && boden.mesh.visible)
+            for (const b of boden.bloecke.values()) if (b.huelle && !b.huelle.isEmpty()) aus.push(b.huelle);
         return aus;
     }
 
@@ -87282,8 +87339,8 @@ class AnazhRealm {
         const ab = this._kaskadenSaum(csm.breaks, i, csm.fade === true, S.saum);
         const schritt = Math.max(1, ((ab[1] - ab[0]) * (far - cam.near)) / K.rasterTeiler);
         // Die Größe rastet und trägt mindestens einen Texel Luft je Seite (der Raster-Versatz des Zentrums); eine Größe
-        // hält, solange sie die Scheibe so deckt und höchstens einen Schritt zu groß ist (Hysterese gegen das Pendeln an
-        // einer Raster-Kante).
+        // hält, solange sie die Scheibe so deckt und höchstens einen Schritt zu groß ist (Hysterese gegen das Pendeln
+        // an einer Raster-Kante).
         const mass = (w, n, altM) => {
             let m = schritt * Math.ceil(w / schritt);
             if (m - w < (2 * m) / n) m += schritt;
@@ -87332,8 +87389,9 @@ class AnazhRealm {
         return f;
     }
 
-    // Der höchste Werfer über der Licht-Raum-Box [bx0,bx1]×[by0,by1] (Licht-z, zum Licht hin wachsend): die Werfer-Hüllen
-    // der Bundles (ihre acht Ecken) und die freien Werfer außerhalb der Bundles — Tiere, Spieler, Inseln.
+    // Der höchste Werfer über der Licht-Raum-Box [bx0,bx1]×[by0,by1] (Licht-z, zum Licht hin wachsend): die
+    // Werfer-Hüllen (Bundles und Boden-Satz, ihre acht Ecken) und die freien Werfer außerhalb davon — Tiere, Spieler,
+    // Inseln, Bauplan-Bauten als eigene Gruppe.
     _kaskadenWerferOben(huellen, S, bx0, bx1, by0, by1) {
         let zt = -Infinity;
         const v = S.v;
@@ -87371,14 +87429,43 @@ class AnazhRealm {
             const bs = g.boundingSphere;
             frei(is.position.x + bs.center.x, is.position.y + bs.center.y, is.position.z + bs.center.z, bs.radius);
         }
+        // Bauplan-Bauten, die als eigene Gruppe in der Szene stehen (kein Bundle, kein Instanz-Satz): ihre Welt-Kugel,
+        // einmal je Lage gerechnet (gate:schatten-werfer W6 nennt jede Werfer-Klasse, die hier fehlt).
+        for (const e of st.architectures || []) {
+            const m = e && e.mesh;
+            if (!m || m.parent !== st.scene || m.visible === false) continue;
+            const k = this._werferKugel(m);
+            if (k) frei(k.center.x, k.center.y, k.center.z, k.radius);
+        }
         return zt;
+    }
+
+    // Die Welt-Kugel eines freien Werfers (Gruppe), gecacht je Lage und Kinderzahl; null = leer.
+    _werferKugel(m) {
+        const ud = m.userData;
+        const mw = m.matrixWorld.elements;
+        if (
+            ud._wfKugel !== undefined &&
+            ud._wfKx === mw[12] &&
+            ud._wfKy === mw[13] &&
+            ud._wfKz === mw[14] &&
+            ud._wfKn === m.children.length
+        )
+            return ud._wfKugel;
+        const box = new THREE.Box3().setFromObject(m);
+        ud._wfKugel = box.isEmpty() ? null : box.getBoundingSphere(new THREE.Sphere());
+        ud._wfKx = mw[12];
+        ud._wfKy = mw[13];
+        ud._wfKz = mw[14];
+        ud._wfKn = m.children.length;
+        return ud._wfKugel;
     }
 
     // DIE KASKADEN-GEBURT (ersetzt `CSMShadowNode._init` je Instanz, die Vendor-Datei bleibt unberührt): das Addon legt
     // beim ersten Material-Bau die Kaskaden-Lichter und ihre Schatten-Knoten an; DANACH, noch vor dem Bau der Karten-
-    // Ziele, setzt der Host Größe und Format. Nichts wird später umgebaut: eine Karte, die nach dem ersten Frame wechselt,
-    // risse jedes aufgezeichnete Render-Bundle (seine Bind-Gruppe hält die alte Textur — gemessen 04.10.: „Destroyed
-    // texture used in a submit").
+    // Ziele, setzt der Host Größe und Format. Nichts wird später umgebaut: eine Karte, die nach dem ersten Frame
+    // wechselt, risse jedes aufgezeichnete Render-Bundle (seine Bind-Gruppe hält die alte Textur — gemessen 04.10.:
+    // „Destroyed texture used in a submit").
     _kaskadenGeburt(csm, builder) {
         THREE.CSMShadowNode.prototype._init.call(csm, builder);
         this._kaskadenKarten(csm);
@@ -87414,16 +87501,22 @@ class AnazhRealm {
     }
 
     // DIE SCHLANKEN KARTEN-ZIELE: r184 legt jede Schatten-Karte als Render-Ziel mit rgba8-Farbe + depth24plus an
-    // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted` (aus);
-    // fallen kann sie nicht — der r184-Pipeline-Bau liest Format und Farbraum aus `textures[0]` (getCurrentColorFormat ·
-    // getCurrentColorSpace), ein Ziel ohne Farbe bräche jede Schatten-Pipeline. Darum r8 (¼ von rgba8); die Tiefe trägt
-    // 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). Der Knoten baut sein Ziel durch diese Hülle —
-    // Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus nennt die Kaskade beim Namen.
+    // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted`
+    // (aus); fallen kann sie nicht — der r184-Pipeline-Bau liest Format und Farbraum aus `textures[0]`
+    // (getCurrentColorFormat · getCurrentColorSpace), ein Ziel ohne Farbe bräche jede Schatten-Pipeline. Darum r8
+    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). Der Knoten baut
+    // sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus nennt die
+    // Kaskade beim Namen.
     _kaskadenZiele(csm) {
         const knoten = csm._shadowNodes || [];
         for (let i = 0; i < knoten.length; i++) {
             const sn = knoten[i];
-            if (!sn || typeof sn.setupRenderTarget !== "function") continue;
+            if (!sn || typeof sn.setupRenderTarget !== "function") {
+                // laut statt still: ohne die r184-Stelle bliebe die Karte rgba8 + depth24plus (gate:vendor-anker pinnt
+                // sie)
+                this.log(`KASKADEN-ZIELE: Kaskade ${i} ohne ShadowNode.setupRenderTarget (Vendor-Drift)`, "ERROR");
+                continue;
+            }
             const roh = sn.setupRenderTarget;
             sn.setupRenderTarget = (shadow, builder) => {
                 const z = roh.call(sn, shadow, builder);
@@ -87437,23 +87530,27 @@ class AnazhRealm {
     }
 
     // DIE SICHT JE PASS (scene.onBeforeRender / onAfterRender): die Region-Bundles tragen ihren Cull auf `visible`
-    // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle
-    // im Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch
-    // wenn sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · Berg
-    // · Query), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
+    // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle im
+    // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn
+    // sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · Berg ·
+    // Query), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
     // seine Box gegen das Frustum der Pass-Kamera (die Kaskaden-Box samt Werfer-Raum zum Licht). Was in keiner Kaskade
-    // liegt, wirft nicht; was nur im Schatten liegt, wirft. Ein Region-Bundle zeichnet im Schatten-Pass direkt
-    // (`isBundleGroup` ruht für diesen Pass): sein Replay hielte die Wahl seiner letzten Aufnahme fest. Jeder Pass
-    // beginnt mit der Rückkehr (abgewählte Werfer sichtbar, Bundles Bundles, Haupt-Urteil) — auch nach einem Abbruch.
+    // liegt, wirft nicht; was nur im Schatten liegt, wirft. Im Schatten-Pass ist ein Region-Bundle eine Gruppe: ein
+    // Render unter dem Override-Stoff sammelt keine Bundles (die Bundle-Wahrheit am Chokepoint `_renderScene`), three
+    // projiziert seine Kinder frisch — die Wahl hier wirkt je Pass. Jeder Haken beginnt mit der Rückkehr (abgewählte
+    // Werfer sichtbar, Haupt-Urteil) — auch nach einem Abbruch, und VOR der Kaskaden-Box (sie misst den ganzen
+    // Bestand). Ein Kompilat (`_kompiliere`: r184-compileAsync ruft den Vorher-Haken, nie den Nachher-Haken) stellt
+    // nichts.
     _passSicht(kamera, nach) {
+        if (this._imKompilat === true) return;
+        const S = this._kaskadenSchmier();
+        this._passSichtZurueck(S);
         // Der Haupt-Pass stellt die Kaskaden: sein Haken läuft nach der Kamera-Matrix und VOR jedem Schatten-Pass
         // dieses Frames (die Karten rendern im Knoten-updateBefore seiner Objekte) — Loop, Sonde und Zähler gleich.
         const csm = this.state.csmNode;
         if (!nach && csm && csm.camera && kamera === csm.camera) this._kaskadenPassen(csm);
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
-        const S = this._kaskadenSchmier();
-        this._passSichtZurueck(S);
         const k = nach ? -1 : this._schattenKameraIndex(kamera);
         if (k < 0) {
             for (const bg of map.values()) {
@@ -87471,14 +87568,6 @@ class AnazhRealm {
             bg.visible = vis;
             if (!vis) continue;
             n++;
-            // Ein Bundle zeichnet im Schatten-Pass DIREKT und frisch: `static` (r184-Vorgabe) ließe seine Kinder ohne
-            // Uniform-Refresh ziehen (gemessen 04.10., Karte k0 zurückgelesen: direkt gezogen lag die Welt eine halbe
-            // Karte versetzt; im Replay von V18.528 fehlte mittags der Kronen-Schatten der Birke vor dem Blick).
-            if (bg.isBundleGroup === true) {
-                bg.isBundleGroup = false;
-                bg.static = false;
-                S.direkt.push(bg);
-            }
             this._werferWahl(bg, S.frustum, S.ab);
         }
         const z = this._werferZensus || (this._werferZensus = []);
@@ -87507,11 +87596,6 @@ class AnazhRealm {
     _passSichtZurueck(S) {
         for (let i = 0; i < S.ab.length; i++) S.ab[i].visible = true;
         S.ab.length = 0;
-        for (let i = 0; i < S.direkt.length; i++) {
-            S.direkt[i].isBundleGroup = true;
-            S.direkt[i].static = true;
-        }
-        S.direkt.length = 0;
     }
 
     // Kaskaden-Index einer Schatten-Kamera (die EINE Map ohne CSM = 0), sonst −1.

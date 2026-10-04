@@ -51,7 +51,8 @@ function drawZensus(opts) {
             const u = top.userData || {};
             if (u._tierBaum) return "tier";
             if (top === st.playerMesh) return "spieler";
-            // eine Region trägt ihren Schlüssel — im Schatten-Pass zeichnet ihr Bundle direkt (isBundleGroup ruht, W7)
+            // eine Region trägt ihr Bundle und ihren Schlüssel (im Schatten-Pass ist sie eine Gruppe: der Override-Stoff
+            // sammelt keine Bundles, ihre Kinder zeichnen direkt)
             if (top.isBundleGroup || u.regionKey !== undefined) {
                 let m = obj;
                 while (m.parent && m.parent !== top) m = m.parent;

@@ -14,5 +14,9 @@
     "vendor/TRAANode.js": {
         "bytes": 21820,
         "fnv": "94714d8"
+    },
+    "vendor/CSMShadowNode.js": {
+        "bytes": 13876,
+        "fnv": "5c495efa"
     }
 }

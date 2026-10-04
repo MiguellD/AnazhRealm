@@ -41,6 +41,7 @@ const PINS = [
     { file: "vendor/three.core.min.js", hash: null },
     { file: "vendor/three.tsl.min.js", hash: null },
     { file: "vendor/TRAANode.js", hash: null },
+    { file: "vendor/CSMShadowNode.js", hash: null },
 ];
 
 // Die Anker: Vendor-Substring → abhängiges Stamm-Organ.
@@ -129,6 +130,21 @@ const ANKER = [
     { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "TRAA-Tiefen-Kopie (Textur zu Textur, gleiches Format)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
     { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
+    // DIE KASKADEN-BOX (W7: _kaskadenGeburt · _kaskadenPassen · _kaskadenZiele · _passSicht): der Host ersetzt je Instanz
+    // die Licht-Stellung des Addons (updateBefore stumm, sein Zweit-Schreiber _updateShadowBounds stumm), ruft dessen
+    // _init vom Prototyp, liest seine Kaskaden-Uniform und den Fade-Saum des Shaders, hüllt den Ziel-Bau jedes
+    // Kaskaden-Knotens; die Szenen-Haken laufen je Render vor der Projektion und danach — auch im Kompilat (nur vorher).
+    { file: "vendor/CSMShadowNode.js", sub: "_init( { camera, renderer } ) {", organ: "_kaskadenGeburt (ruft CSMShadowNode.prototype._init)" },
+    { file: "vendor/CSMShadowNode.js", sub: "this._shadowNodes.push( shadow( lwLight, lShadow ) );", organ: "_kaskadenZiele (je Kaskaden-Knoten die Hülle um setupRenderTarget)" },
+    { file: "vendor/CSMShadowNode.js", sub: "this._updateShadowBounds();", organ: "der stumme Zweit-Schreiber (updateFrustums ruft _updateShadowBounds — je Instanz stumm)" },
+    { file: "vendor/CSMShadowNode.js", sub: "updateBefore( /*builder*/ ) {", organ: "_kaskadenPassen ersetzt die Licht-Stellung (updateBefore je Instanz stumm)" },
+    { file: "vendor/CSMShadowNode.js", sub: "margin.assign( float( 0.25 ).mul( closestEdge.pow( 2.0 ) ) );", organ: "_kaskadenSaum + gate:schatten-werfer K1 (der Fade-Saum des Shaders)" },
+    { file: "vendor/CSMShadowNode.js", sub: "const cascades = reference( '_cascades', 'vec2', this )", organ: "gate:schatten-werfer K1 (die Kaskaden-Uniform, die der Shader liest)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'r.name="ShadowDepthTexture",r.compareFunction=', organ: "_kaskadenZiele (ShadowNode.setupRenderTarget baut Tiefe …)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'return s.texture.name="ShadowMap",s.texture.type=e.mapType,s.depthTexture=r,{shadowMap:s,depthTexture:r}}', organ: "_kaskadenZiele (… und Farbe, die Hülle setzt r8 + 16 bit)" },
+    { file: "vendor/three.webgpu.min.js", sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
+    { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
+    { file: "vendor/three.webgpu.min.js", sub: "c.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,d);const g=this._renderLists.get(l,t)", organ: "_kompiliere (compileAsync ruft den Vorher-Haken synchron — die Wache _imKompilat)" },
     // instanceMatrix-Versions-Wächter (Kern-Setter)
     { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
     // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
