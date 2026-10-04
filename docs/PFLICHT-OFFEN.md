@@ -3,8 +3,8 @@
 > Das EINZIGE Offen-Dokument (BETRIEBSGESETZ, CLAUDE.md). Gesetzt vom Schöpfer am 21.07.
 > mit EINEM Wort: **„analog!"** — die Importe sind ANALOG (das Gesetz: Kapseln · Boxen ·
 > Verteilungen), digitalisiert wird NUR am effektiven Bildschirm (der March sphere-tract
-> die Beschreibung je Pixel). Der Voxel-Brick fällt auf die CACHE-Rolle für Fernes/echt
-> Irreguläres zurück. `gate:betriebsgesetz` liest diese Datei.
+> die Beschreibung je Pixel). Der Voxel-Brick fiel erst auf die CACHE-Rolle für Fernes zurück,
+> mit V18.528 ganz (kein 3D-Atlas mehr, −128 MB). `gate:betriebsgesetz` liest diese Datei.
 >
 > Diese Datei ist eine LISTE, kein Logbuch: je Eintrag EIN Status-Satz, die Chronik ist
 > `git log`. (V18.492: 446 „Stand-Stempel"-Zeilen der September-Welle entfernt — sie

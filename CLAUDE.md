@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.527.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.528.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -104,7 +104,7 @@ aus dem Licht (18-%-Karte 212 → 173 = Mittelgrau +1 EV); nah die NAH-WIESE (St
 GERENDERTEN Boden: Armlänge Kontrast 0,32 → 10,99. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht`).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
-EIN Pass, zwei Payloads (Analog-Primitive Kapsel+Box · Voxel-Brick nur als Region-Fern-Cache) ·
+EIN Pass, EINE Payload (Analog-Primitive Kapsel+Box + Gesetz-Plätze; die Voxel-Bricks fielen V18.528) ·
 NAH/MITTEL = Studio-Mesh + LOD-Kette (Tier · Baum · Haus · Streu) · FERN = Analog-Sätze (Glieder-
 Kapseln · Baum-Kegel + Kronen-Lappen · Fachwerk-/Box-Satz · Streu-Gesetz) · GRAS = nah Nah-Wiese,
 fern Boden-Funktion.

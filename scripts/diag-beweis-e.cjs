@@ -215,7 +215,6 @@ const SCHUSS_FN = async (kam) => {
     zahlen.weltMarch = wm
         ? {
               belegt: wm.belegt,
-              bricks: wm.brickCache ? wm.brickCache.size : null,
               kapseln: wm.kapselCache ? wm.kapselCache.size : null,
               gesetzBloecke: wm.gesetzBloecke || 0,
           }
@@ -735,7 +734,7 @@ const SCHUSS_FN = async (kam) => {
         };
         const z = s.zahlen;
         console.log(
-            `${substanz ? "✅" : "❌"} ${klasse}/${art}: dc=${z.dc} tris=${z.tris} · Feld=${z.weltMarch ? `belegt ${z.weltMarch.belegt} kapseln ${z.weltMarch.kapseln} bricks ${z.weltMarch.bricks}` : "–"} · Pass=${z.feldPass ? (z.feldPass.sichtbar ? "sichtbar" : "UNSICHTBAR") : "–"} · ${path.relative(root, file)}`
+            `${substanz ? "✅" : "❌"} ${klasse}/${art}: dc=${z.dc} tris=${z.tris} · Feld=${z.weltMarch ? `belegt ${z.weltMarch.belegt} kapseln ${z.weltMarch.kapseln}` : "–"} · Pass=${z.feldPass ? (z.feldPass.sichtbar ? "sichtbar" : "UNSICHTBAR") : "–"} · ${path.relative(root, file)}`
         );
         if (z.herkunft && z.herkunft.length) console.log("      Herkunft (Dreiecke): " + z.herkunft.join(" · "));
     };

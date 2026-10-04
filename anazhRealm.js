@@ -14581,18 +14581,14 @@ class AnazhRealm {
                           tests: this._bergCullTests || 0,
                           verdecktFrames: this._bergCullVerdeckt || 0,
                       },
-                      // DER EINE WELT-MARCH im Trace: wie viele Felder leben im
-                      // Atlas (belegt) und wie viel Raum bleibt (Blöcke 64³ ·
-                      // Einheiten 32³ · Listen-Plätze) — die Kapazitäts-Wahrheit.
+                      // DER EINE WELT-MARCH im Trace: wie viele Einträge leben (belegt), wie viel Listen-Raum
+                      // bleibt, wie viele Analog-Sätze und Gesetz-Plätze — die Kapazitäts-Wahrheit.
                       weltMarch: this.state.weltMarch
                           ? {
                                 belegt: this.state.weltMarch.belegt, // Feld-EINTRÄGE (Instanzen)
                                 seiten: Math.ceil(this.state.weltMarch.obergrenze / AnazhRealm.WELT_MARCH.seite), // March-Loop-Grenze in SEITEN
-                                bricks: this.state.weltMarch.brickCache.size, // GETEILTE Gestalten (Dedup)
                                 // ANALOG E — Kapsel-Dedup in den Flugschreiber (nicht nur Live-Konsole)
                                 kapseln: this.state.weltMarch.kapselCache ? this.state.weltMarch.kapselCache.size : 0,
-                                bloeckeFrei: this.state.weltMarch.freiGross.length,
-                                einheitenFrei: this.state.weltMarch.freiKlein.length,
                                 felderFrei: this.state.weltMarch.freiFelder.length,
                                 // DAS VERTEILUNGS-GESETZ (C): Klein-Streu-Blöcke + Plätze
                                 gesetzBloecke: this.state.weltMarch.gesetzBloecke || 0,
@@ -22899,16 +22895,15 @@ class AnazhRealm {
         const dc = typeof dcLive === "number" ? dcLive : s ? s.renderCalls : null;
         const tris = typeof trisLive === "number" ? trisLive : s ? s.renderTris : null;
         const belegt = wm ? wm.belegt : null;
-        const bricks = wm && wm.brickCache ? wm.brickCache.size : null;
         const kapseln = wm && wm.kapselCache ? wm.kapselCache.size : null;
         const gesetzB = wm ? wm.gesetzBloecke : null;
         const gesetzP = wm ? wm.gesetzPlaetze : null;
         const posS = pos ? `${Math.round(pos.x)}/${Math.round(pos.y)}/${Math.round(pos.z)}` : "?/?/?";
-        const pflicht = [dc, tris, belegt, bricks, kapseln];
+        const pflicht = [dc, tris, belegt, kapseln];
         const ok = pflicht.every((x) => typeof x === "number" && Number.isFinite(x));
         const head = ok ? "E OK" : "E ROT";
         return (
-            `${head} V${v} tris=${n(tris)} dc=${n(dc)} belegt=${n(belegt)} bricks=${n(bricks)}` +
+            `${head} V${v} tris=${n(tris)} dc=${n(dc)} belegt=${n(belegt)}` +
             ` kapseln=${n(kapseln)} gesetzB=${n(gesetzB)} gesetzP=${n(gesetzP)} pos=${posS}`
         );
     }
@@ -35042,16 +35037,7 @@ class AnazhRealm {
         if (!this._gpuComputeFaehig() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
             return null;
         const TSL = THREE.TSL;
-        if (
-            !TSL ||
-            !TSL.wgslFn ||
-            !TSL.texture ||
-            !TSL.texture3D ||
-            !TSL.Fn ||
-            !TSL.Discard ||
-            !TSL.uniform ||
-            !TSL.positionGeometry
-        )
+        if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.Fn || !TSL.Discard || !TSL.uniform || !TSL.positionGeometry)
             return null;
         // DER EINE WELT-MARCH: Atlas + Feld-Liste sind Pass-Bindings — ohne das
         // Organ existiert der Pass nicht (die Schalen tragen, byte-alt).
@@ -35099,46 +35085,6 @@ class AnazhRealm {
             fogNah: TSL.uniform(1e6),
             fogFern: TSL.uniform(2e6),
         };
-        // March-Glättung: Treffer per Bisektion auf der TRILINEAREN Dichte verfeinern (Iso 0.25 liegt
-        // zwischen den Voxeln → keine Treppen). Farbe = Ecken-Mittel (durch a geteilt), Normale =
-        // analytischer Gradient derselben 8 Ecken. Rohes WGSL mit textureLoad, kein Sampler (WGSL-Spec).
-        const feldTriAbtastFn = TSL.wgslFn(
-            "fn feldTriAbtast(atlas: texture_3d<f32>, loI: vec3<i32>, hiI: vec3<i32>, vox: vec3<f32>) -> vec4<f32> {\n" +
-                "    let f0 = floor(vox - 0.5);\n" +
-                "    let fr = vox - 0.5 - f0;\n" +
-                "    let b = loI + vec3<i32>(f0);\n" +
-                "    let s0 = textureLoad(atlas, clamp(b, loI, hiI), 0);\n" +
-                "    let s1 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 0), loI, hiI), 0);\n" +
-                "    let s2 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 0), loI, hiI), 0);\n" +
-                "    let s3 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 0), loI, hiI), 0);\n" +
-                "    let s4 = textureLoad(atlas, clamp(b + vec3<i32>(0, 0, 1), loI, hiI), 0);\n" +
-                "    let s5 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 1), loI, hiI), 0);\n" +
-                "    let s6 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 1), loI, hiI), 0);\n" +
-                "    let s7 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 1), loI, hiI), 0);\n" +
-                "    let c0 = mix(mix(s0, s1, fr.x), mix(s2, s3, fr.x), fr.y);\n" +
-                "    let c1 = mix(mix(s4, s5, fr.x), mix(s6, s7, fr.x), fr.y);\n" +
-                "    return mix(c0, c1, fr.z);\n" +
-                "}"
-        );
-        const feldTriGradFn = TSL.wgslFn(
-            "fn feldTriGrad(atlas: texture_3d<f32>, loI: vec3<i32>, hiI: vec3<i32>, vox: vec3<f32>) -> vec3<f32> {\n" +
-                "    let f0 = floor(vox - 0.5);\n" +
-                "    let fr = vox - 0.5 - f0;\n" +
-                "    let b = loI + vec3<i32>(f0);\n" +
-                "    let a0 = textureLoad(atlas, clamp(b, loI, hiI), 0).a;\n" +
-                "    let a1 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 0), loI, hiI), 0).a;\n" +
-                "    let a2 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 0), loI, hiI), 0).a;\n" +
-                "    let a3 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 0), loI, hiI), 0).a;\n" +
-                "    let a4 = textureLoad(atlas, clamp(b + vec3<i32>(0, 0, 1), loI, hiI), 0).a;\n" +
-                "    let a5 = textureLoad(atlas, clamp(b + vec3<i32>(1, 0, 1), loI, hiI), 0).a;\n" +
-                "    let a6 = textureLoad(atlas, clamp(b + vec3<i32>(0, 1, 1), loI, hiI), 0).a;\n" +
-                "    let a7 = textureLoad(atlas, clamp(b + vec3<i32>(1, 1, 1), loI, hiI), 0).a;\n" +
-                "    let gx = mix(mix(a1 - a0, a3 - a2, fr.y), mix(a5 - a4, a7 - a6, fr.y), fr.z);\n" +
-                "    let gy = mix(mix(a2 - a0, a3 - a1, fr.x), mix(a6 - a4, a7 - a5, fr.x), fr.z);\n" +
-                "    let gz = mix(mix(a4 - a0, a5 - a1, fr.x), mix(a6 - a2, a7 - a3, fr.x), fr.y);\n" +
-                "    return vec3<f32>(gx, gy, gz);\n" +
-                "}"
-        );
         // Analog-B Slice 2 — IQ truncated cone
         const sdCappedConeFn = TSL.wgslFn(
             "fn sdCappedCone(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, ra: f32, rb: f32) -> f32 {\n" +
@@ -35196,7 +35142,7 @@ class AnazhRealm {
                 "}"
         );
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -35264,7 +35210,7 @@ class AnazhRealm {
                 "        let bx = (j % 512) * 8;\n" +
                 "        let t0 = textureLoad(liste, vec2<i32>(bx, ty), 0);\n" +
                 "        let d = t0.w;\n" +
-                "        if (d > -0.5 && d < 1.0) { continue; }\n" + // 0 = leer; negativ = ANALOG-Kapsel
+                "        if (d > -0.5) { continue; }\n" + // 0 = leer; negativ = ANALOG-Kapsel
                 "        let t1 = textureLoad(liste, vec2<i32>(bx + 1, ty), 0);\n" +
                 "        let tA = (t0.xyz - camPos) * inv;\n" +
                 "        let tB = (t1.xyz - camPos) * inv;\n" +
@@ -35534,60 +35480,6 @@ class AnazhRealm {
                 "            }\n" +
                 "            continue;\n" + // Kapsel-Eintrag abgeschlossen — kein Brick-March
                 "        }\n" +
-                "        let u = i32(t1.w + 0.5);\n" +
-                "        let orig = vec3<f32>(f32(u % 16) * 32.0, f32((u / 16) % 16) * 32.0, f32(u / 256) * 32.0);\n" +
-                "        // ÜBER-ABTASTUNG (√3-Marge): d Schritte sind voxel-wahr nur für\n" +
-                "        // achsparallele Strahlen; ein Diagonalstrahl durchquert bis √3·d\n" +
-                "        // Zellen — dünne Glieder (Bein/Schwanz) tunnelten sonst durch.\n" +
-                "        let schritte = i32(d * 1.732 + 0.5);\n" +
-                "        let stepN = f32(schritte);\n" +
-                "        let loI = vec3<i32>(orig);\n" +
-                "        let hiI = loI + vec3<i32>(i32(d) - 1);\n" +
-                "        var tDavor = tN2;\n" +
-                "        for (var k: i32 = 0; k < schritte; k = k + 1) {\n" +
-                "            let t = tN2 + (tF2 - tN2) * (f32(k) + 0.5) / stepN;\n" +
-                "            if (t >= bestT) { break; }\n" +
-                "            let pL = oL + dL * t;\n" +
-                "            let uvw = clamp((pL - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999));\n" +
-                "            let texel = vec3<i32>(orig + uvw * d);\n" +
-                "            let tex = textureLoad(atlas, texel, 0);\n" +
-                "            if (tex.a > 0.25) {\n" +
-                "                // DIE MARCH-GLÄTTUNG: Bisektion auf der TRILINEAREN Dichte —\n" +
-                "                // die 0.25-Iso-Fläche liegt ZWISCHEN den Voxeln, nicht auf dem\n" +
-                "                // Texel-Gitter (die Treppen fallen, ohne ein Byte mehr Speicher).\n" +
-                "                var tLo = tDavor;\n" +
-                "                var tHi = t;\n" +
-                "                for (var rr: i32 = 0; rr < 4; rr = rr + 1) {\n" +
-                "                    let tM = (tLo + tHi) * 0.5;\n" +
-                "                    let vM = clamp((oL + dL * tM - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999)) * d;\n" +
-                "                    if (feldTriAbtast(atlas, loI, hiI, vM).a > 0.25) { tHi = tM; } else { tLo = tM; }\n" +
-                "                }\n" +
-                "                let vH = clamp((oL + dL * tHi - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999)) * d;\n" +
-                "                let cH = feldTriAbtast(atlas, loI, hiI, vH);\n" +
-                "                bestT = tHi;\n" +
-                "                getroffen = true;\n" +
-                "                // Ecken-MITTEL statt Voxel-Farbe: durch a geteilt — leere Ecken\n" +
-                "                // (rgba=0) dunkeln den Rand sonst zum Halo ab. Der Bäcker koppelt\n" +
-                "                // rgb und alpha im SELBEN 90er-Schritt (gemeinsamer Deckel) —\n" +
-                "                // rgb/a IST die Albedo, auf jeder Füllstufe, ohne Eich-Faktor.\n" +
-                "                bestRgb = clamp(cH.rgb / max(cH.a, 0.05), vec3<f32>(0.0), vec3<f32>(1.0));\n" +
-                "                // GRADIENT-NORMALE (Dichte fällt nach außen → Normale = −∇a),\n" +
-                "                // analytisch aus DENSELBEN 8 Ecken (glatt statt Facetten):\n" +
-                "                let gv = -feldTriGrad(atlas, loI, hiI, vH);\n" +
-                "                if (dot(gv, gv) < 1e-8) {\n" +
-                "                    bestN = -dir;\n" + // degeneriert: direkt zur Kamera (WELT-Raum, kein Transform)
-                "                } else {\n" +
-                "                    // lokal → Welt via invᵀ (Zeilen der inversen = Spalten der Transponierten):\n" +
-                "                    bestN = normalize(vec3<f32>(\n" +
-                "                        r0.x * gv.x + r1.x * gv.y + r2.x * gv.z,\n" +
-                "                        r0.y * gv.x + r1.y * gv.y + r2.y * gv.z,\n" +
-                "                        r0.z * gv.x + r1.z * gv.y + r2.z * gv.z\n" +
-                "                    ));\n" +
-                "                }\n" +
-                "                break;\n" +
-                "            }\n" +
-                "            tDavor = t;\n" +
-                "        }\n" +
                 "    }\n" +
                 "    }\n" + // Seiten-Loop zu
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
@@ -35608,7 +35500,7 @@ class AnazhRealm {
                 "    if (panoDa) { return vec4<f32>(panoRgb, 0.9999990); }\n" +
                 "    return vec4<f32>(0.0, 0.0, 0.0, -1.0);\n" +
                 "}",
-            [feldTriAbtastFn, feldTriGradFn, sdCappedConeFn, sdEllipsoidCrownFn, gradEllipsoidCrownFn, kapselTexelFn] // Glättung + Cone + Ellipsoid-Noise (Analog-B Slice 2+3)
+            [sdCappedConeFn, sdEllipsoidCrownFn, gradEllipsoidCrownFn, kapselTexelFn] // Glättung + Cone + Ellipsoid-Noise (Analog-B Slice 2+3)
         );
         // DER EINE WELT-MARCH schreibt ECHTE TIEFE (depthNode, das Fern-Schirm-
         // Muster): der Pass ist OPAK und komponiert per Depth-Test mit allem —
@@ -35652,7 +35544,6 @@ class AnazhRealm {
             liste: TSL.texture(wm.liste),
             folge: TSL.texture(wm.folge),
             kapseln: TSL.texture(wm.kapseln),
-            atlas: TSL.texture3D(wm.atlas),
         });
         mat.outputNode = TSL.Fn(() => {
             TSL.Discard(ruf.a.lessThan(0.0)); // -1-Sentinel: kein Feld, kein Panorama → Himmel
@@ -35818,13 +35709,6 @@ class AnazhRealm {
         // headless Playtest ruft niemand hierher (alle Konsumenten sind gewallt).
         if (typeof THREE === "undefined") return null;
         const W = AnazhRealm.WELT_MARCH;
-        const atlasDaten = new Uint8Array(W.breite * W.hoehe * W.tiefe * 4);
-        const atlas = new THREE.Data3DTexture(atlasDaten, W.breite, W.hoehe, W.tiefe);
-        atlas.format = THREE.RGBAFormat;
-        atlas.minFilter = THREE.LinearFilter;
-        atlas.magFilter = THREE.LinearFilter;
-        atlas.unpackAlignment = 1;
-        atlas.needsUpdate = true;
         // LISTE v2, 8 Texel je Feld: [wAABB.min|d] [wAABB.max|einheit] [inv r0] [inv r1] [inv r2]
         // [lokalMin|0] [lokalGroesse|0] [frei]. Die inverse Welt-Matrix trägt Rotation + Animation, die
         // Welt-AABB ist der billige Vortest, die lokale Box das Brick-Zuhause. 2D-Layout: 512 Felder × 8 =
@@ -35868,14 +35752,7 @@ class AnazhRealm {
         kapseln.minFilter = THREE.NearestFilter;
         kapseln.magFilter = THREE.NearestFilter;
         kapseln.needsUpdate = true;
-        // Block-Anker als Einheits-Indizes (Einheits-Gitter 16×16×4 → Blöcke 8×8×2):
-        const bloecke = [];
-        for (let bz = 0; bz < 2; bz++)
-            for (let by = 0; by < 8; by++)
-                for (let bx = 0; bx < 8; bx++) bloecke.push(bx * 2 + by * 2 * 16 + bz * 2 * 256);
         st.weltMarch = {
-            atlas,
-            atlasDaten,
             liste,
             listeDaten,
             seiten,
@@ -35895,92 +35772,15 @@ class AnazhRealm {
             gesetzBloecke: 0, // lebende Gesetz-Blöcke (die Kapazitäts-Linse zählt mit)
             gesetzPlaetze: 0, // belegte Plätze über alle Blöcke (Instanz-Wahrheit der Klein-Streu)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
-            freiGross: bloecke, // je 64³ (2×2×2 Einheiten, Anker-Einheits-Index)
-            freiKlein: [], // je 32³ (aus gesplitteten Blöcken)
-            freiKleinSet: new Set(), // O(1)-Mitgliedschaft für die Wieder-Vereinigung
-            brickCache: new Map(), // DEDUP (Gesetz #0): key → geteiltes Brick {einheit,d,refs,...}
             belegt: 0, // Feld-EINTRÄGE (Instanzen)
             obergrenze: 0, // höchster je vergebener Feld-Index + 1 (der Shader-Loop endet dort)
         };
         return st.weltMarch;
     }
 
-    // ── DIE TEURE SEITE: ein BRICK (Atlas-Einheit/Block) allozieren + hochladen.
-    // Kein Feld-Slot — nur die geteilte Gestalt. null bei Atlas-Erschöpfung
-    // (schreit EINMAL laut). Die Voxel-Daten sind danach im Atlas aufgegangen.
-    _weltBrickAlloc(zg) {
-        const wm = this._weltMarchEnsure();
-        if (!wm || !zg || !zg.tex) return null;
-        const W = AnazhRealm.WELT_MARCH;
-        const d = zg.tex.image.width; // Quell-Dim (32 = Einheit · 64 = Block)
-        let einheit = null;
-        let gross = false;
-        if (d <= W.einheit) {
-            if (wm.freiKlein.length === 0 && wm.freiGross.length > 0) {
-                const b = wm.freiGross.pop(); // ein Block splittet in 8 Einheiten
-                for (let dz = 0; dz < 2; dz++)
-                    for (let dy = 0; dy < 2; dy++)
-                        for (let dx = 0; dx < 2; dx++) {
-                            const u = b + dx + dy * 16 + dz * 256;
-                            wm.freiKlein.push(u);
-                            wm.freiKleinSet.add(u);
-                        }
-            }
-            if (wm.freiKlein.length > 0) {
-                einheit = wm.freiKlein.pop();
-                wm.freiKleinSet.delete(einheit);
-            }
-        } else if (wm.freiGross.length > 0) {
-            einheit = wm.freiGross.pop();
-            gross = true;
-        }
-        if (einheit === null) {
-            if (!this._weltMarchVollWarn) {
-                this._weltMarchVollWarn = true;
-                this.log("WELT-MARCH ERSCHÖPFT: kein Atlas-Platz für ein Brick — das Feld FEHLT sichtbar", "WARN");
-            }
-            return null;
-        }
-        const src = zg.tex.image.data;
-        const ox = (einheit % 16) * W.einheit;
-        const oy = (Math.floor(einheit / 16) % 16) * W.einheit;
-        const oz = Math.floor(einheit / 256) * W.einheit;
-        for (let z = 0; z < d; z++)
-            for (let y = 0; y < d; y++) {
-                const si = (z * d * d + y * d) * 4;
-                const di = (((oz + z) * W.hoehe + (oy + y)) * W.breite + ox) * 4;
-                wm.atlasDaten.set(src.subarray(si, si + d * 4), di);
-            }
-        wm.atlas.needsUpdate = true;
-        if (zg.tex.dispose) zg.tex.dispose(); // die Einzel-Textur ist im Atlas aufgegangen
-        return { einheit, gross, d, lokalMin: zg.bbMin, lokalGroesse: zg.bbGroesse, refs: 0, key: null };
-    }
-
-    // ── DER BRICK-CACHE (Dedup: EINE Gestalt je Vorlage) ──
-    // Region-Fern-Cache (+ ggf. Band-0-Feinheiten): identische Keys teilen EIN Brick, jede Instanz ist
-    // nur ein Feld-Eintrag (Matrix). zgFn läuft nur beim Cache-Miss (lazy Bake). Kreatur-Glieder sind
-    // KAPSELN (_weltKapselHolen).
-    _weltBrickHolen(key, zgFn) {
-        const wm = this._weltMarchEnsure();
-        if (!wm) return null;
-        let brick = wm.brickCache.get(key);
-        if (brick) {
-            brick.refs++;
-            return brick;
-        }
-        const zg = zgFn();
-        if (!zg) return null;
-        brick = this._weltBrickAlloc(zg);
-        if (!brick) return null;
-        brick.key = key;
-        brick.refs = 1;
-        wm.brickCache.set(key, brick);
-        return brick;
-    }
-
     // ── DIE BILLIGE SEITE: ein FELD-EINTRAG (EIN Listen-Slot) zeigt auf ein
     // Brick. matrixWorld gegeben → platziert/animiert (Matrix der Matrix);
-    // sonst Identität (statisches Welt-Raum-Brick == lokale Box).
+    // sonst Identität (statischer Welt-Raum-Satz == lokale Box, z. B. ein Gesetz-Block).
     _weltFeldEintrag(brick, matrixWorld) {
         const wm = this.state.weltMarch;
         if (!wm || !brick) return null;
@@ -35997,8 +35797,8 @@ class AnazhRealm {
         const o = feld * 32; // 8 Texel × 4 Floats
         const lm = brick.lokalMin;
         const lg = brick.lokalGroesse;
-        L[o + 3] = brick.d; // d > 0 = aktiv UND das Schrittmaß des March
-        L[o + 7] = brick.einheit; // der Shader leitet den Atlas-Ursprung ab
+        L[o + 3] = brick.d; // d < 0 = Analog-Satz (−Anzahl der Primitive), 0 = leer
+        L[o + 7] = brick.einheit; // erster Texel des Satzes in der Kapsel-Liste
         L[o + 20] = lm.x;
         L[o + 21] = lm.y;
         L[o + 22] = lm.z;
@@ -36013,7 +35813,7 @@ class AnazhRealm {
         if (matrixWorld) {
             this._weltFeldMatrix(handle, matrixWorld); // inv + Welt-AABB aus der Matrix
         } else {
-            // Identität: Welt-AABB == lokale Box (statisches Welt-Raum-Brick)
+            // Identität: Welt-AABB == lokale Box (statischer Welt-Raum-Satz)
             L[o] = lm.x;
             L[o + 1] = lm.y;
             L[o + 2] = lm.z;
@@ -36527,42 +36327,6 @@ class AnazhRealm {
         else this._weltFeldFrei(handle);
     }
 
-    // DIE DEDUP-BAHN (die EINE Registrier-Wurzel für alles Wiederholte): ein
-    // Brick je Vorlage (key), viele Feld-Einträge (Matrix). Rückgabe: Handle
-    // oder null (Erschöpfung — kein Rückweg).
-    _weltFeldSpawn(key, matrixWorld, zgFn) {
-        // Fail-closed: Bäume sind nah/mittel Studio-Instanzen, fern (gesetzt) ihr Kapsel-Satz — kein
-        // Voxel-Brick-Dedup mehr. Alte Keys "baum:…" sterben hier sichtbar.
-        if (typeof key === "string" && key.startsWith("baum:")) return null;
-        // ANALOG C (fail-closed): Architektur = Box-Satz (_archZiegelFern /
-        // aarch:… via _weltKapselSpawn). Alte Voxel-Keys "arch:…" sterben hier.
-        if (typeof key === "string" && key.startsWith("arch:")) return null;
-        const brick = this._weltBrickHolen(key, zgFn);
-        if (!brick) return null;
-        const handle = this._weltFeldEintrag(brick, matrixWorld || null);
-        if (!handle) {
-            brick.refs--; // Feld-Liste voll: den eben geholten Ref zurückgeben
-            if (brick.refs <= 0) this._weltBrickFrei(brick);
-            return null;
-        }
-        return handle;
-    }
-
-    // DIE ANONYME BAHN (kein Dedup — einzigartiger Inhalt, z.B. Region-Streu):
-    // EIN eigenes Brick, EIN Feld, refs=1. Rückwärts-kompatibel.
-    _weltFeldRegister(zg, matrixWorld) {
-        const brick = this._weltBrickAlloc(zg);
-        if (!brick) return null;
-        brick.refs = 1;
-        brick.key = null; // anonym → nie im Cache
-        const handle = this._weltFeldEintrag(brick, matrixWorld || null);
-        if (!handle) {
-            this._weltBrickFrei(brick);
-            return null;
-        }
-        return handle;
-    }
-
     _weltFeldAktiv(handle, an) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
@@ -36634,44 +36398,16 @@ class AnazhRealm {
     _weltBrickFrei(brick) {
         const wm = this.state.weltMarch;
         if (!wm || !brick || brick._frei) return; // Doppel-Frei-Wand
+        // Seit dem Abschied der Voxel-Bricks (V18.528) trägt der Welt-March nur Analog-Sätze: Kapsel-Sätze und
+        // Gesetz-Vorlagen. Ein anderer Satz ist ein Bruch, kein stilles Weiter.
+        if (!brick.artKapsel)
+            throw new Error("[welt-march] _weltBrickFrei: kein Kapsel-Satz (Voxel-Bricks sind verabschiedet)");
         brick._frei = true;
-        if (brick.artKapsel) {
-            // KAPSEL-Frei: Segment in die Längen-Freiliste, Cache räumen — kein Atlas.
-            wm.kapselCache.delete(brick.key);
-            let seg = wm.freiKapselSeg.get(brick.anzahl || 1);
-            if (!seg) wm.freiKapselSeg.set(brick.anzahl || 1, (seg = []));
-            seg.push(brick.slot);
-            return;
-        }
-        if (brick.key) wm.brickCache.delete(brick.key);
-        if (brick.gross) {
-            wm.freiGross.push(brick.einheit);
-            return;
-        }
-        // DIE WIEDER-VEREINIGUNG (gegen die Ein-Weg-Fragmentierung): liegen ALLE
-        // 8 Einheiten des Block-Ankers frei, verschmelzen sie zurück zu EINEM
-        // 64³-Block — sonst verhungerte ein Region-/Bau-Feld mit der Zeit.
-        const u = brick.einheit;
-        wm.freiKleinSet.add(u);
-        const ex = u % 16,
-            ey = Math.floor(u / 16) % 16,
-            ez = Math.floor(u / 256);
-        const ax = ex & ~1,
-            ay = ey & ~1,
-            az = ez & ~1;
-        const anker = ax + ay * 16 + az * 256;
-        const geschwister = [];
-        for (let dz = 0; dz < 2; dz++)
-            for (let dy = 0; dy < 2; dy++)
-                for (let dx = 0; dx < 2; dx++) geschwister.push(anker + dx + dy * 16 + dz * 256);
-        if (geschwister.every((g) => wm.freiKleinSet.has(g))) {
-            for (const g of geschwister) wm.freiKleinSet.delete(g);
-            const gs = new Set(geschwister);
-            wm.freiKlein = wm.freiKlein.filter((x) => !gs.has(x));
-            wm.freiGross.push(anker); // der Block ist wieder ganz
-        } else {
-            wm.freiKlein.push(u);
-        }
+        // KAPSEL-Frei: Segment in die Längen-Freiliste, Cache räumen.
+        wm.kapselCache.delete(brick.key);
+        let seg = wm.freiKapselSeg.get(brick.anzahl || 1);
+        if (!seg) wm.freiKapselSeg.set(brick.anzahl || 1, (seg = []));
+        seg.push(brick.slot);
     }
 
     // Ein FELD-EINTRAG stirbt: der Listen-Slot fällt frei, das Brick nur, wenn
@@ -37093,12 +36829,8 @@ class AnazhRealm {
             fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
             fr.gpuFlug = false;
         }
-        // Fern-Schicht: lebt der kadenzierte Fern-Pass, wandern die Schalen auf FERN_LAYER (der Schirm malt
-        // sie samt Tiefe in den Haupt-Pass), sonst Layer 0. Selbstheilend in beide Richtungen.
-        {
-            const zielMask = this.state.fernSchicht ? 1 << AnazhRealm.FERN_LAYER : 1;
-            for (const m of fr.meshes) if (m.layers.mask !== zielMask) m.layers.mask = zielMask;
-        }
+        // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
+        for (const m of fr.meshes) if (m.layers.mask !== 1) m.layers.mask = 1;
         // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
@@ -62614,7 +62346,6 @@ class AnazhRealm {
             if (p.children.length === 0) {
                 if (p.parent) p.parent.remove(p);
                 this._bundleQueryProxyTod(p); // ④ — der Query-Proxy fällt mit dem Bundle
-                this._bundleZiegelTod(p); // der Region-Ziegel fällt mit
                 if (this.state._regionBundles) this.state._regionBundles.delete(p.userData.regionKey);
             }
         }
@@ -62770,24 +62501,12 @@ class AnazhRealm {
                 }
             }
             bg.visible = vis;
-            // FERN-SCHICHT-MITGLIEDSCHAFT: Bundles mit Kugel-NAHKANTE jenseits FERN_SCHICHT.dist ziehen in den
-            // kadenzierten Fern-Pass (Hysterese-Band). Frische Kinder erben beim nächsten Re-Record — bis dahin
-            // rendern sie korrekt im Haupt-Pass.
             if (s && this.state.camera) {
-                const FS = AnazhRealm.FERN_SCHICHT;
                 const cp = this.state.camera.position;
                 const kante = Math.hypot(s.center.x - cp.x, s.center.z - cp.z) - s.radius;
-                // (Trace .36: der Layer-Flip fiel mit der Fern-Schicht — die
-                // Flagge ist reine DISTANZ-Wahrheit, der Region-Ziegel liest sie.)
-                const istFern = bg.userData._fernSchicht === true;
-                if (!istFern && kante > FS.dist + FS.band) bg.userData._fernSchicht = true;
-                else if (istFern && kante < FS.dist - FS.band) bg.userData._fernSchicht = false;
                 // ④ WALD-VOR-WALD (echtes Depth-Occlusion): der Query-Proxy testet
                 // die KOMPLETTE Frame-Tiefe (Bäume + Fern-Schirm) — nativ.
                 if (bergAktiv) this._bundleQueryTick(bg, s, kante);
-                // REGION-ZIEGEL: ferne Regionen (Fern-Schicht-Mitglieder) tauschen ihre Draw-Liste gegen EINE
-                // March-Box (12 Tris). Bake budgetiert; needsUpdate verwirft den Ziegel (Re-Bake nächster Tick).
-                if (bergAktiv) this._bundleZiegelTick(bg, kante);
             }
         }
     }
@@ -62857,50 +62576,6 @@ class AnazhRealm {
         }
     }
 
-    // ═══ DER REGION-ZIEGEL ═══
-    // Gestreutes (Wiese-Reste · Felsen · Kristalle · Bäume) ist Region-Inhalt: eine ferne Region wird EIN
-    // 64³-Feld und zieht als SLOT in den EINEN Welt-March (Atlas + Liste) — kein eigenes Draw-Objekt.
-    _bundleZiegelTick(bg, kante) {
-        const st = this.state;
-        const u = bg.userData;
-        if (u._fernSchicht !== true) {
-            // nah (oder Schicht aus): das echte Bundle rendert (= die feinste
-            // Abtaststufe DESSELBEN Feldes), das Fern-Feld ruht
-            if (u._ziegelSlot) this._weltFeldAktiv(u._ziegelSlot, false);
-            return;
-        }
-        if (u._ziegelSlot) {
-            if (bg.needsUpdate === true) {
-                // Mutation → das Feld ist stale: verwerfen, nächster Tick backt neu
-                this._bundleZiegelTod(bg);
-                return;
-            }
-            this._weltFeldAktiv(u._ziegelSlot, true);
-            bg.visible = false; // das Feld IST die Region — die Draw-Liste ruht ganz
-            return;
-        }
-        if (u._ziegelBakeVersuch) {
-            // KEIN RÜCKWEG: der Bake ist gefallen (Erschöpfung/leere Gruppe) —
-            // die ferne Region rendert NIE als Mesh weiter, das Fehlen ist sichtbar
-            bg.visible = false;
-            return;
-        }
-        // Bake-Garantie: getaktet, nie verhungert — bis dahin trägt das Bundle (Streaming-Rampe)
-        if (!this._weltBakeErlaubt(Number.isFinite(kante) && kante > 0 ? kante * kante : 0)) return;
-        u._ziegelBakeVersuch = true;
-        const zg = this._ziegelBackenAusGruppe(bg, AnazhRealm.WALD_ZIEGEL.dimRegion);
-        u._ziegelSlot = zg ? this._weltFeldRegister(zg) : null;
-        if (!u._ziegelSlot) bg.visible = false; // Feld fehlt → nichts erscheint (laut benannt im Register)
-    }
-
-    _bundleZiegelTod(bg) {
-        const u = bg && bg.userData;
-        if (!u) return;
-        if (u._ziegelSlot) this._weltFeldFrei(u._ziegelSlot);
-        u._ziegelSlot = null;
-        u._ziegelBakeVersuch = false;
-    }
-
     // Proxy-Abbau (der Bundle-Tod räumt sein Query-Objekt — kein Szene-Leck).
     _bundleQueryProxyTod(bg) {
         const q = bg && bg.userData && bg.userData._occlProxy;
@@ -62908,10 +62583,6 @@ class AnazhRealm {
         if (q.parent) q.parent.remove(q);
         bg.userData._occlProxy = null;
     }
-
-    // (Die Layer-Flip-Maschinerie der Fern-Schicht fiel mit ihr — Trace .36:
-    // der zweite Pass war die Flacker-/Draw-Wurzel; _fernSchicht ist heute
-    // die reine Distanz-Flagge des Region-Ziegels.)
 
     // V18.300 — `regionKey` (optional): eine REGION-gekeyte Gruppe trägt nur die
     // Instanzen EINER 256m-Streu-Region → ihre instanz-bewusste Bounding-Sphere ist
@@ -63716,7 +63387,6 @@ class AnazhRealm {
             for (const bg of this.state._regionBundles.values()) {
                 if (bg.parent) bg.parent.remove(bg);
                 this._bundleQueryProxyTod(bg); // ④ — Query-Proxys fallen mit (kein Szene-Leck)
-                this._bundleZiegelTod(bg); // Region-Ziegel fallen mit
             }
             this.state._regionBundles.clear();
         }
@@ -67393,95 +67063,6 @@ class AnazhRealm {
                 }
             }
         }
-    }
-
-    // ═══ DER WALD-ZIEGEL ═══
-    // Einzel-Baum-Brick gefallen (Bäume: Studio-LOD-Kette, fern der Kapsel-Satz). Bleibt als fail-closed
-    // Naht (return null); Bricks nur als Region-Fern-Cache (_bundleZiegelTick / dimRegion).
-    _waldZiegelBacken(srcGeo, dim) {
-        void srcGeo;
-        void dim;
-        return null;
-    }
-
-    // DER UNIVERSAL-BÄCKER: backt eine ganze GRUPPE (was ein Studio exportiert und spawnArchitecture
-    // zusammensetzt) in EIN Feld; Kinder ohne Vertex-Farben splatten ihre Material-Farbe. Mit wurzelInv
-    // (Dedup-Bahn) im LOKALEN Raum der Vorlage → platzierungsfrei, identische Vorlagen teilen das Brick.
-    // Ohne wurzelInv: Welt-Raum-Feld (Region-Streu).
-    _ziegelBackenAusGruppe(gruppe, dim, wurzelInv) {
-        // ANALOG C (fail-closed): Architektur-Voxel-Stufe (dimArch) ist GEFALLEN —
-        // Bau = Box-Satz (_archBoxFit / aarch:…). Nur Region-Fern-CACHE (dimRegion)
-        // bleibt die erlaubte Brick-Rolle (PFLICHT-Header: Fernes/Irreguläres).
-        if (dim === AnazhRealm.WALD_ZIEGEL.dimArch) return null;
-        if (!gruppe || typeof THREE === "undefined") return null;
-        const d = dim || AnazhRealm.WALD_ZIEGEL.dim;
-        gruppe.updateMatrixWorld(true);
-        const lokal = wurzelInv ? new THREE.Matrix4() : null;
-        // Bounding-Box im Ziel-Raum (Welt ODER Vorlagen-lokal):
-        const bb = new THREE.Box3();
-        if (wurzelInv) {
-            const vv = new THREE.Vector3();
-            const mm = new THREE.Matrix4();
-            gruppe.traverse((o) => {
-                if (!o.isMesh && !o.isInstancedMesh) return;
-                const pos = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-                if (!pos || !pos.count) return;
-                const cnt = o.isInstancedMesh ? Math.max(1, o.count | 0) : 1;
-                const schr = pos.count > 4000 ? Math.ceil(pos.count / 4000) : 1;
-                for (let k = 0; k < cnt; k++) {
-                    if (o.isInstancedMesh) {
-                        o.getMatrixAt(k, mm);
-                        mm.premultiply(o.matrixWorld).premultiply(wurzelInv);
-                    } else {
-                        mm.multiplyMatrices(wurzelInv, o.matrixWorld);
-                    }
-                    for (let i = 0; i < pos.count; i += schr)
-                        bb.expandByPoint(vv.fromBufferAttribute(pos, i).applyMatrix4(mm));
-                }
-            });
-        } else {
-            bb.setFromObject(gruppe);
-        }
-        if (bb.isEmpty()) return null;
-        const sx = Math.max(1e-6, bb.max.x - bb.min.x);
-        const sy = Math.max(1e-6, bb.max.y - bb.min.y);
-        const sz = Math.max(1e-6, bb.max.z - bb.min.z);
-        const daten = new Uint8Array(d * d * d * 4);
-        const mI = new THREE.Matrix4();
-        const splat = (g, col, mc, welt, sollProben) => {
-            // welt bringt in den Ziel-Raum; lokal-Bahn faltet wurzelInv davor.
-            const m = lokal ? lokal.multiplyMatrices(wurzelInv, welt) : welt;
-            this._feldFlaechenSplat(daten, d, bb.min, sx, sy, sz, g, col, mc, m, sollProben);
-        };
-        gruppe.traverse((o) => {
-            if (!o.isMesh && !o.isInstancedMesh) return;
-            const g = o.geometry;
-            const pos = g && g.attributes && g.attributes.position;
-            if (!pos || !pos.count) return;
-            const col = g.attributes.color || null;
-            const mc = !col && o.material && o.material.color ? o.material.color : null;
-            if (o.isInstancedMesh) {
-                // ALLES ist Region-Inhalt (Bäume · Felsen · Kristalle · Streu):
-                // jede Instanz sät ihre Flächen durch ihre Matrix — die ganze
-                // Population wird EIN Feld; das Proben-Budget teilt sich fair.
-                const n = Math.max(1, o.count | 0);
-                const proInstanz = Math.max(600, Math.floor((d * d * 24) / n));
-                for (let k = 0; k < n; k++) {
-                    o.getMatrixAt(k, mI);
-                    mI.premultiply(o.matrixWorld);
-                    splat(g, col, mc, mI, proInstanz);
-                }
-            } else {
-                splat(g, col, mc, o.matrixWorld, d * d * 24);
-            }
-        });
-        const tex = new THREE.Data3DTexture(daten, d, d, d);
-        tex.format = THREE.RGBAFormat;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.unpackAlignment = 1;
-        tex.needsUpdate = true;
-        return { tex, bbMin: bb.min.clone(), bbGroesse: new THREE.Vector3(sx, sy, sz) };
     }
 
     // Die WELT-PLATZIERUNGS-MATRIX eines Eintrags aus seiner Transform allein
@@ -86540,9 +86121,8 @@ class AnazhRealm {
             // Depth-View des Render-Kontexts (s. _loopRender).
             if (typeof scenePass.setResolutionScale === "function") scenePass.setResolutionScale(1);
             this.state.scenePass = scenePass;
-            // Keine Fern-Schicht: ein zweiter Szene-Pass ließ Material-Diät/Uniform-Updates zwischen den Pässen
-            // racen (Schwarz-Flackern) — EIN Szene-Pass, eine Diät-Wahrheit; ferne Regionen tragen die Ziegel.
-            this.state.fernSchicht = null;
+            // EIN Szene-Pass, eine Diät-Wahrheit: ein zweiter Szene-Pass (die Fern-Schicht) ließ Material-Diät
+            // und Uniform-Updates zwischen den Pässen racen (Schwarz-Flackern); das Ferne trägt der Welt-March.
             // API-korrekt: der sampelbare Textur-Node kommt aus
             // getTextureNode() (PassNode != TextureNode — .sample() lebt am
             // TextureNode). Das ist das offizielle MRT/pass-Muster.
@@ -86957,14 +86537,6 @@ class AnazhRealm {
             } catch (err) {
                 this.state.postProcessingFailed = true;
                 this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
-                // FAIL-OPEN der FERN-SCHICHT: ohne Post-Kette gibt es keinen
-                // Fern-Pass/Schirm — Ring + Bundles heilen zurück auf Layer 0
-                // (der Ring-Tick + der Bundle-Cull stempeln selbst zurück).
-                if (this.state.fernSchicht) {
-                    const sch = this.state.fernSchicht.schirm;
-                    if (sch && sch.parent) sch.parent.remove(sch);
-                    this.state.fernSchicht = null;
-                }
                 this.state.renderer.render(this.state.scene, this.state.camera);
             }
         } else {
@@ -87206,7 +86778,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.527.0";
+AnazhRealm.VERSION = "18.528.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -90973,17 +90545,6 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanf
 // trägt die Layer ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unverändert), ist so aber für einen
 // Laub-Pass (`pass.setLayers(FOLIAGE_LAYER)`) isoliert wählbar. Headless → 1.
 AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
-// FERN_LAYER — Layer der kadenzierten Fern-Schicht (Cache von Farbe+Tiefe ferner statischer
-// Bundles). Die Schicht ist zurückgebaut (`state.fernSchicht` = null → EIN Szene-Pass); der
-// Fern-Ring bleibt dann auf Layer 0.
-AnazhRealm.FERN_LAYER = 2; // Render-Layer der Fern-Schicht (exklusiv — Layer 0 fällt beim Flip)
-AnazhRealm.FERN_SCHICHT = Object.freeze({
-    dist: 400, // m — Bundles, deren Kugel-NAHKANTE jenseits liegt, ziehen in die Schicht
-    band: 60, // Hysterese-Band gegen Flip-Flattern an der Grenze
-    kadenz: 4, // Frames zwischen Fern-Renders im Stand (75 % der Fern-Schattierung gespart)
-    posDelta: 2, // m Kamera-Translation, die einen sofortigen Fern-Render erzwingt
-    rotDelta: 0.02, // Quaternion-Dot-Abweichung (Rotation), die sofort neu rendert
-});
 // Schatten-Zwilling-Layer (0 = Welt, 1 = Laub-Pass, 2 = Zwilling): `mesh.layers.set(2)` nimmt den
 // opaken Kronen-Caster AUS Layer 0 → die Haupt-Kamera sieht ihn nie;
 // `directionalLight.shadow.camera.layers.enable(2)` (vor der CSM-Konstruktion, die Kaskaden erben
@@ -91016,20 +90577,6 @@ AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fp
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test
 // Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz — je bergiger die Welt, desto billiger.
-// WALD_ZIEGEL: nur der Region-Fern-CACHE (dimRegion) lebt; der Einzel-Baum-Brick
-// (_waldZiegelBacken/dim) ist fail-closed — Baum-Bahn = Kapsel.
-AnazhRealm.WALD_ZIEGEL = Object.freeze({
-    dim: 32, // tot für Einzel-Baum (fail-closed); Legacy-Default für _ziegelBackenAusGruppe
-    schritte: 24, // March-Schritte der Basis-Stufe (TSL-unrollt, Godray-Muster)
-    // dimArch/schritteArch/dimFein sind tot-Markierungen (fail-closed Leserin in
-    // _ziegelBackenAusGruppe): Architektur = Box-Satz (aarch:…), Kreatur-Glieder = Kapseln.
-    // Lebend: nur dimRegion (256-m-Region-Fern-CACHE).
-    dimArch: 64, // tot ANALOG C (fail-closed); Architektur = _archBoxFit, nicht Voxel
-    schritteArch: 48, // tot mit dimArch
-    dimRegion: 64, // Region-Stufe (Wald+Fels+Streu einer 256-m-Region, 1 MB) — erlaubter CACHE
-    schritteRegion: 40,
-    dimFein: 64, // tot ANALOG A (Kreatur-Glieder = Kapseln, kein Fein-Brick)
-});
 // Bis hierher ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die
 // Glieder-Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten).
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: 55, aus: 65 });
@@ -91056,17 +90603,14 @@ AnazhRealm.ARCH_NAH_VERSUCHE = 24;
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
-// DER EINE WELT-MARCH: alle Felder (Regionen · Bauten · Tiere) leben in EINEM 3D-Atlas + EINER
-// Feld-Listen-Textur; der Feld-Pass marcht sie in EINEM Draw mit echter Tiefe. Der Atlas allokiert in
-// EINHEITEN (32³) und BLÖCKEN (2×2×2 = 64³); die Kapazität trägt die Welt-Grenzen (maxCreatures +
-// Fern-Regionen + Bauten-Caps) mit Kopfraum. Schrittmaß = Feld-Auflösung (d Schritte je d³-Feld).
-// Fern ist das Feld die Gestalt (nah trägt das Studio-Mesh); eine Erschöpfung schreit EINMAL laut.
-// Kapseln/Boxen haben keine Import-Auflösung — der Strahl digitalisiert am Schirm.
+// DER EINE WELT-MARCH: alles Ferne (Baum-Kegel + Kronen-Lappen · Box-Sätze der Bauten · Glieder-Kapseln ·
+// Streu-Gesetz) lebt als ANALOG-Satz in EINER Feld-Listen-Textur + EINER Kapsel-Liste; der Feld-Pass marcht sie
+// in EINEM Draw mit echter Tiefe. Fern ist das Feld die Gestalt (nah trägt das Studio-Mesh); eine Erschöpfung
+// schreit EINMAL laut. Kapseln/Boxen haben keine Import-Auflösung — der Strahl digitalisiert am Schirm. Der
+// Voxel-Brick-Atlas (512×512×128, 128 MB VRAM + 128 MB Heap-Spiegel) ist verabschiedet (V18.528): er wurde im
+// Spiel nie mehr belegt (gemessen 0 Zuteilungen), sein einziger Nutzer, der Region-Ziegel, hing an der toten
+// Fern-Schicht.
 AnazhRealm.WELT_MARCH = Object.freeze({
-    breite: 512, // Atlas-X (16 Einheiten)
-    hoehe: 512, // Atlas-Y (16 Einheiten)
-    tiefe: 128, // Atlas-Z (4 Einheiten) — 512×512×128 RGBA8 = 128 MB
-    einheit: 32, // Voxel je Einheits-Kante (Kreatur/Baum-Klasse; 64er = Block aus 8)
     // SEITEN-EBENE: die Feld-Liste hat SEITEN à 32 Einträge mit CPU-gepflegter Hüll-AABB — der March
     // testet erst die Seite (2 Loads), dann ihre Mitglieder: Per-Pixel-Kosten binden an getroffene
     // Seiten statt an die Welt-Größe. Zeitliche Allokations-Nähe ist KEINE räumliche Nähe (gemessen 04.10.:

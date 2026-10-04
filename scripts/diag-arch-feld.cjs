@@ -118,7 +118,6 @@ const SCHUSS_FN = async (kam) => {
     zahlen.weltMarch = wm
         ? {
               belegt: wm.belegt,
-              bricks: wm.brickCache ? wm.brickCache.size : null,
               kapseln: wm.kapselCache ? wm.kapselCache.size : null,
               gesetzBloecke: wm.gesetzBloecke || 0,
           }

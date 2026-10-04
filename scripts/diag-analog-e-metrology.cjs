@@ -27,7 +27,7 @@ function ladeTrace(pfad) {
 function pruefeWeltMarch(wm, label) {
   const maengel = [];
   if (!wm || typeof wm !== "object") { maengel.push(label + ": weltMarch fehlt (null)"); return maengel; }
-  ["belegt", "bricks", "gesetzBloecke"].forEach(function (k) {
+  ["belegt", "gesetzBloecke"].forEach(function (k) {
     if (typeof wm[k] !== "number") maengel.push(label + "." + k + " nicht numerisch");
   });
   return maengel;
@@ -70,7 +70,8 @@ function codeVertrag(src) {
   function hit(re) { return re.test(src); }
   return {
     exportBelegt: hit(/belegt:\s*this\.state\.weltMarch\.belegt/),
-    exportBricks: hit(/bricks:\s*this\.state\.weltMarch\.brickCache\.size/),
+    // V18.528: die Voxel-Bricks sind verabschiedet — der Export trägt keinen brickCache mehr (Absenz-Wand)
+    exportOhneBricks: !hit(/brickCache/) && !hit(/freiGross|freiKlein/),
     exportGesetz: hit(/gesetzBloecke:\s*this\.state\.weltMarch\.gesetzBloecke/),
     exportKapselCache: hit(/kapseln:\s*this\.state\.weltMarch\.kapselCache/) || hit(/kapseln:\s*[^\n]*kapselCache/),
     kapselCacheExists: hit(/kapselCache:\s*new Map\(/),
@@ -102,7 +103,6 @@ function smokeMetrologieZeile(src) {
     state: {
       weltMarch: {
         belegt: 84,
-        brickCache: { size: 0 },
         kapselCache: { size: 36 },
         gesetzBloecke: 0,
         gesetzPlaetze: 0
@@ -128,7 +128,7 @@ function smokeMetrologieZeile(src) {
   // fail-closed: fehlende kapseln → E ROT
   const rotThis = {
     state: {
-      weltMarch: { belegt: 1, brickCache: { size: 0 }, gesetzBloecke: 0, gesetzPlaetze: 0 },
+      weltMarch: { belegt: 1, gesetzBloecke: 0, gesetzPlaetze: 0 },
       renderer: { info: { render: { drawCalls: 1, triangles: 2 } } },
       playerMesh: { position: { x: 0, y: 0, z: 0 } }
     }
@@ -156,7 +156,7 @@ function main() {
   if (src) {
     vertrag = codeVertrag(src);
     check("Export trägt belegt", vertrag.exportBelegt);
-    check("Export trägt bricks (brickCache.size)", vertrag.exportBricks);
+    check("Export trägt KEINE Voxel-Bricks mehr (brickCache/freiGross/freiKlein abwesend, V18.528)", vertrag.exportOhneBricks);
     check("Export trägt gesetzBloecke", vertrag.exportGesetz);
     check("Export trägt dc/tris (steady)", vertrag.exportDcTris);
     check("kapselCache existiert im State", vertrag.kapselCacheExists);
@@ -182,10 +182,10 @@ function main() {
     check("steadyState.weltMarch numerisch", wmMaengel.length === 0, wmMaengel.join("; ") || undefined);
     if (wm && typeof wm === "object") {
       console.log("  weltMarch Snapshot:");
-      console.log("    belegt=" + wm.belegt + "  bricks=" + wm.bricks + "  gesetzBloecke=" + wm.gesetzBloecke +
+      console.log("    belegt=" + wm.belegt + "  gesetzBloecke=" + wm.gesetzBloecke +
         (wm.gesetzPlaetze != null ? "  gesetzPlaetze=" + wm.gesetzPlaetze : "") +
         (wm.seiten != null ? "  seiten=" + wm.seiten : ""));
-      if (wm.bloeckeFrei != null) note("frei: bloecke=" + wm.bloeckeFrei + " einheiten=" + wm.einheitenFrei + " felder=" + wm.felderFrei);
+      if (wm.felderFrei != null) note("frei: felder=" + wm.felderFrei);
       if (typeof wm.kapseln === "number") {
         note("kapseln=" + wm.kapseln + " (Dedup-Sätze)");
         check("steadyState.weltMarch.kapseln numerisch", true, String(wm.kapseln));

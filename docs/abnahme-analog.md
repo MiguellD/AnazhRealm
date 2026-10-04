@@ -39,8 +39,8 @@
 über EINE Feld-Liste; **das Licht** liest `_feldLichtSync` aus denselben Quellen wie jedes
 MeshStandard (vier Richt-Lichter, Ambient, Hemi, Himmels-Irradianz aus `_skyEnvTex`, Lambert =
 albedo/π, `scene.fog`); Dedup je Vorlage im `kapselCache` (`_weltKapselHolen`/`_weltKapselSpawn`),
-Bake-Takt `_weltBakeErlaubt` (16/s, 4/s über Budget). Voxel-Bricks nur noch als Region-Fern-Cache
-(`dimRegion`); jeder andere Brick-Weg ist fail-closed (`_weltFeldSpawn("arch:…"|"baum:…")` → null).
+Bake-Takt `_weltBakeErlaubt` (16/s, 4/s über Budget). Die Voxel-Bricks sind verabschiedet (V18.528):
+kein 3D-Atlas, kein Brick-Zweig im WGSL, kein Region-Ziegel — der Welt-March trägt EINE Payload.
 Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
 
 | Art | pA.w | pB.w |

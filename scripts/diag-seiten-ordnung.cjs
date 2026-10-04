@@ -57,15 +57,17 @@ function probe(modus) {
     const wm = r._weltMarchEnsure();
     let s = 12345;
     const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-    const brick = (g) => ({ d: 32, einheit: 0, lokalMin: new T.Vector3(0, 0, 0), lokalGroesse: g, refs: 1 });
-    const klein = new T.Vector3(4, 8, 4);
-    const gross = new T.Vector3(220, 30, 180);
+    // Die Einträge sind ECHTE Analog-Sätze über den Chokepoint _weltKapselSpawn (seit V18.528 die einzige Payload):
+    // je Größe EIN Box-Satz, geteilt per Dedup wie im Spiel.
+    const klein = "seiten-probe:klein";
+    const gross = "seiten-probe:gross";
+    const box = (g) => () => [{ box: true, c: new T.Vector3(g[0] / 2, g[1] / 2, g[2] / 2), h: new T.Vector3(g[0] / 2, g[1] / 2, g[2] / 2) }];
     const handles = [];
     const M = new T.Matrix4();
     for (let i = 0; i < 900; i++) {
-        const g = i % 60 === 0 ? gross : klein;
+        const gr = i % 60 === 0;
         M.makeTranslation((rnd() - 0.5) * 600, rnd() * 20, (rnd() - 0.5) * 600);
-        handles.push(r._weltFeldEintrag(brick(g), M));
+        handles.push(r._weltKapselSpawn(gr ? gross : klein, M, box(gr ? [220, 30, 180] : [4, 8, 4])));
     }
     for (let i = 0; i < handles.length; i += 7) r._weltFeldFrei(handles[i]); // Lücken wie im Spiel
     const leben = handles.filter((h, i) => i % 7 !== 0);
@@ -80,7 +82,7 @@ function probe(modus) {
             let normal = false;
             for (let q = 0; q < W.seite; q++) {
                 const h = wm.handles[p * W.seite + q];
-                if (h && h.brick.lokalGroesse === klein) normal = true;
+                if (h && h.brick.key === klein) normal = true;
             }
             if (S[so + 3] > 0 && normal) {
                 b += Math.max(S[so + 4] - S[so], S[so + 6] - S[so + 2]);
@@ -119,7 +121,7 @@ function probe(modus) {
         for (let q = 0; q < W.seite; q++) {
             const h = wm.handles[p * W.seite + q];
             if (!h) continue;
-            if (h.brick.lokalGroesse === gross) g++;
+            if (h.brick.key === gross) g++;
             else n++;
         }
         if (n > 0 && g > 0) gemischt++;
@@ -151,7 +153,7 @@ function probe(modus) {
         reist,
         doppelt,
         obergrenze: wm.obergrenze,
-        ideal: Math.round(Math.sqrt((600 * 600) / Math.ceil(leben.filter((h) => h.brick.lokalGroesse === klein).length / W.seite))),
+        ideal: Math.round(Math.sqrt((600 * 600) / Math.ceil(leben.filter((h) => h.brick.key === klein).length / W.seite))),
         vorher: Math.round(vorher),
         nachher: Math.round(nachher),
         gemischt,

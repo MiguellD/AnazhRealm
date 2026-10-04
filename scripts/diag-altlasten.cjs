@@ -119,6 +119,27 @@ const FORBIDDEN = [
     { token: "FILL_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
     { token: "RIM_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
     { token: "BACK_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
+    // ABSCHIED DER VOXEL-BRICKS (V18.528): der Welt-March trägt EINE Payload — Analog-Primitive (Kapsel+Box)
+    // und Gesetz-Plätze. Der 128-MB-3D-Atlas, der Brick-Zweig im Feld-Pass-WGSL, der Region-Ziegel (Fern-Cache)
+    // und die toten Reste der Fern-Schicht fielen in EINER Welle.
+    { token: "_weltBrickAlloc", fiel: "V18.528 — kein Voxel-Atlas mehr, Felder sind Analog-Sätze" },
+    { token: "_weltBrickHolen", fiel: "V18.528 — kein Brick-Dedup, der Kapsel-Cache dedupliziert" },
+    { token: "_weltFeldSpawn", fiel: "V18.528 — Feld-Einträge entstehen nur als Kapsel-Satz (_baumKapselFit)" },
+    { token: "_weltFeldRegister", fiel: "V18.528 — kein Brick-Register" },
+    { token: "brickCache", fiel: "V18.528 — der Kapsel-Cache ist der EINE Dedup" },
+    { token: "freiGross", fiel: "V18.528 — kein 64³-Block-Allokator" },
+    { token: "freiKlein", fiel: "V18.528 — kein 32³-Einheiten-Allokator" },
+    { token: "atlasDaten", fiel: "V18.528 — der 512×512×128-RGBA8-Atlas (128 MB) fiel" },
+    { token: "feldTriAbtast", fiel: "V18.528 — der trilineare Brick-March im WGSL fiel" },
+    { token: "feldTriGrad", fiel: "V18.528 — der trilineare Brick-Gradient im WGSL fiel" },
+    { token: "_bundleZiegelTick", fiel: "V18.528 — der Region-Ziegel (Fern-Cache) fiel, das Ferne trägt der Welt-March" },
+    { token: "_bundleZiegelTod", fiel: "V18.528" },
+    { token: "_ziegelBackenAusGruppe", fiel: "V18.528 — der Gruppen-Bäcker fiel mit dem Region-Ziegel" },
+    { token: "_waldZiegelBacken", fiel: "V18.528 — der Einzel-Baum-Brick war fail-closed, nun physisch fort" },
+    { token: "WALD_ZIEGEL", fiel: "V18.528" },
+    { token: "FERN_SCHICHT", fiel: "V18.528 — EIN Szene-Pass (Trace .36)" },
+    { token: "FERN_LAYER", fiel: "V18.528 — EIN Szene-Pass, die Schalen leben auf Layer 0" },
+    { token: "fernSchicht", fiel: "V18.528 — EIN Szene-Pass (Trace .36)" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
