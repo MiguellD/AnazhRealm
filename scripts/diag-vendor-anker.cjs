@@ -55,6 +55,14 @@ const ANKER = [
     // Die Schatten-Diät: EIN Schatten-Material je Licht, die Original-Knoten hängen je Objekt darin
     { file: "vendor/three.webgpu.min.js", sub: 't.isShadowPassMaterial=!0,t.name="ShadowMaterial"', organ: "Schatten-Diät (_configureRenderer, isShadowPassMaterial)" },
     { file: "vendor/three.webgpu.min.js", sub: "e.isShadowPassMaterial){const{colorNode:t,depthNode:r,positionNode:s}=this._getShadowNodes(i)", organ: "Schatten-Diät (Original-Knoten im Override)" },
+    // DER SCHATTEN-STOFF JE OBJEKT: renderObject setzt je Objekt alphaTest des Originals auf den EINEN geteilten
+    // Schatten-Stoff, der Setter zählt bei jedem Wechsel über 0 die Version; jede Version prüft je Bürger den Schlüssel
+    // und die Pipeline — _configureRenderer trägt je Objekt die Version des Original-Materials in den Stoff.
+    { file: "vendor/three.core.min.js", sub: "set alphaTest(t){this._alphaTest>0!=t>0&&this.version++,this._alphaTest=t}", organ: "Schatten-Stoff je Objekt (der Setter, den der Stoff überschreibt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "e.alphaTest=i.alphaTest,e.alphaMap=i.alphaMap,e.transparent=", organ: "Schatten-Stoff je Objekt (renderObject setzt die Werte je Objekt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "(l.version!==t.version||l.needsUpdate)&&(l.initialCacheKey!==l.getCacheKey()", organ: "Schatten-Stoff je Objekt (Version → Schlüssel-Prüfung je Bürger)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.material===s&&t.materialVersion===s.version", organ: "Schatten-Stoff je Objekt (Version → Pipeline-Prüfung je Bürger)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._currentRenderObjectFunction=this._renderObjectFunction||this.renderObject", organ: "Schatten-Stoff je Objekt (renderObject am Renderer gelesen)" },
     // Der Fenster-Wechsel: die Viewport-Tiefe ist ein Klon je Render-Ziel (der EINE Leser bindet nach setSize neu)
     { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "_tiefenLeserNeuBinden (Viewport-Tiefen-Klon je Ziel)" },
     // Der Schatten-Takt (_loopShadowUpdate): der EINE Leser je Licht, die Matrix nur im Schatten-Render, die
@@ -258,6 +266,64 @@ function diaetProbe(selftest) {
     return { fehler, selbstFeuert, stand };
 }
 
+// DIE SCHATTEN-STOFF-PROBE: den Block aus _configureRenderer schneiden und an einem Schein-Renderer fahren, dessen
+// renderObject wie r184 je Objekt alphaTest des Originals auf den geteilten Stoff setzt und je Bürger den Schlüssel
+// prüft, sobald die Stoff-Version wechselt. Der Setter ist der Vendor-Text (Anker oben). 40 Objekte, Blätter und
+// Stämme im Wechsel: im Stand prüft kein Bürger, ein eigener alphaTest-Wechsel prüft genau EINEN.
+function schattenStoffProbe(ohne) {
+    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const kopf = 'if (typeof renderer.renderObject === "function" && !renderer.__anazhSchattenStoff) {';
+    const a = stamm.indexOf(kopf);
+    const e = a < 0 ? -1 : stamm.indexOf("renderer.__anazhSchattenStoff = true;", a);
+    const zu = e < 0 ? -1 : stamm.indexOf("}", e);
+    if (zu < 0) return { fehler: ["der Schatten-Stoff-Block fehlt in _configureRenderer"] };
+    const einbau = new Function("renderer", stamm.slice(a, zu + 1));
+    const core = fs.readFileSync(path.join(root, "vendor/three.core.min.js"), "latin1");
+    const setter = "set alphaTest(t){this._alphaTest>0!=t>0&&this.version++,this._alphaTest=t}";
+    if (!core.includes(setter)) return { fehler: ["der Vendor-Setter alphaTest fehlt (Anker)"] };
+    const Stoff = new Function(
+        `return class { constructor() { this.version = 0; this._alphaTest = 0; this.allowOverride = true; } get alphaTest() { return this._alphaTest; } ${setter} }`
+    )();
+    const sm = new Stoff();
+    sm.isShadowPassMaterial = true;
+    const szene = { overrideMaterial: sm };
+    const gesehen = new Map();
+    let pruefungen = 0;
+    const renderer = {
+        renderObject(object, scene, camera, geometry, material) {
+            const s = scene.overrideMaterial;
+            s.alphaTest = material.alphaTest;
+            const v = gesehen.get(object);
+            if (v !== s.version) {
+                if (v !== undefined) pruefungen++;
+                gesehen.set(object, s.version);
+            }
+        },
+    };
+    if (!ohne) einbau(renderer);
+    const objekte = [];
+    for (let i = 0; i < 40; i++) {
+        const m = new Stoff();
+        m.alphaTest = i % 2 ? 0.5 : 0;
+        objekte.push({ o: { i }, m });
+    }
+    const frame = () => {
+        pruefungen = 0;
+        for (const x of objekte) renderer.renderObject(x.o, szene, null, null, x.m);
+        return pruefungen;
+    };
+    frame();
+    frame();
+    const stand = frame();
+    objekte[4].m.alphaTest = 0.5;
+    const eigener = frame();
+    const fehler = [];
+    if (stand !== 0)
+        fehler.push(`Schatten-Stoff: ${stand} von 40 Bürgern prüfen im Stand je Frame ihren Schlüssel (die geteilte Version springt je Objekt)`);
+    if (eigener !== 1) fehler.push(`Schatten-Stoff: ein eigener alphaTest-Wechsel prüft ${eigener} Bürger (Soll genau 1)`);
+    return { fehler, stand, eigener };
+}
+
 function main() {
     const selftest = process.argv.includes("--selftest");
     const errs = [];
@@ -299,6 +365,9 @@ function main() {
     // Wand, equals()): AnazhRealm._diaetRefresh aus dem Stamm-Quelltext, deterministisch, GPU-frei.
     const diaet = diaetProbe(selftest);
     for (const e of diaet.fehler) errs.push("DIÄT: " + e);
+    // (4) DIE SCHATTEN-STOFF-PROBE (der Block aus _configureRenderer am Schein-Renderer, Setter aus dem Vendor).
+    const stoff = schattenStoffProbe(false);
+    for (const e of stoff.fehler) errs.push("SCHATTEN: " + e);
     if (selftest) {
         const feuert = errs.some((e) => e.includes("hasNode"));
         const diaetFeuert = diaet.selbstFeuert;
@@ -308,7 +377,13 @@ function main() {
                 ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
-        process.exit(feuert && diaetFeuert ? 0 : 1);
+        const stoffFeuert = schattenStoffProbe(true).fehler.length > 0;
+        console.log(
+            stoffFeuert
+                ? "✅ SELBST-TEST: die Schatten-Stoff-Probe feuert (ohne den Block prüft jeder Bürger je Frame seinen Schlüssel)"
+                : "❌ SELBST-TEST: die Schatten-Stoff-Probe ist vakuös"
+        );
+        process.exit(feuert && diaetFeuert && stoffFeuert ? 0 : 1);
     }
     if (errs.length) {
         console.error("⛔ DIE VENDOR-ANKER-WAND:");
@@ -316,7 +391,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Programm und Render geschrieben; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50).`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Programm und Render geschrieben; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}.`
     );
 }
 main();

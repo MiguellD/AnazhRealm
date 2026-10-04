@@ -22236,6 +22236,39 @@ class AnazhRealm {
             };
             NM.__anazhSchattenDiaet = true;
         }
+        // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
+        // Originals auf den EINEN geteilten Schatten-Stoff; der Material-Setter zählt bei jedem Wechsel über 0 die
+        // Version hoch. Ausgeschnittene Blätter und volle Stämme wechseln sich ab → die Version sprang je Objekt, jeder
+        // Schatten-Bürger rechnete je Kaskade und Frame seinen ganzen Material-Schlüssel neu (getCacheKey ·
+        // getMaterialCacheKey) und prüfte seine Pipeline neu (gemessen 04.10., echte GPU, Mess-Wiese, ohne die Region-
+        // Bundles, deren Replay es verdeckte: 342 ms Schlüssel-Rechnung in 8 s, die Schatten-Pässe 1330 → 585 ms). Der
+        // Schatten-Stoff trägt jetzt je Objekt die Version des Original-Materials: ein Bürger prüft seinen Schlüssel
+        // genau dann, wenn SEIN Material sich änderte (auch dessen eigener alphaTest-Wechsel), der geteilte Setter
+        // zählt nichts mehr.
+        if (typeof renderer.renderObject === "function" && !renderer.__anazhSchattenStoff) {
+            const objektRoh = renderer.renderObject;
+            const still = new WeakSet();
+            renderer.renderObject = function (object, scene, camera, geometry, material, ...rest) {
+                const sm = scene ? scene.overrideMaterial : null;
+                if (sm && sm.isShadowPassMaterial === true && material && material.allowOverride === true) {
+                    if (!still.has(sm)) {
+                        Object.defineProperty(sm, "alphaTest", {
+                            configurable: true,
+                            get() {
+                                return this._alphaTest;
+                            },
+                            set(v) {
+                                this._alphaTest = v;
+                            },
+                        });
+                        still.add(sm);
+                    }
+                    sm.version = material.version;
+                }
+                return objektRoh.call(this, object, scene, camera, geometry, material, ...rest);
+            };
+            renderer.__anazhSchattenStoff = true;
+        }
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
