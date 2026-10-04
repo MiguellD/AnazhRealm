@@ -618,10 +618,11 @@ async function main() {
         const brueche = [
             ["Pass-Kamera", nc.replace("const _auge = _lu.uLodAuge;", "const _auge = T.cameraPosition;")],
             [
-                "Nadel-Alpha in opacityNode",
+                // Der EINE Blatt-Atlas (Laub- und Nadel-Karten, Welle C) färbt mit der Saison-Laubfarbe (Welle A).
+                "Blatt-Alpha in opacityNode",
                 nc.replace(
-                    "mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), texN.a);",
-                    "mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), 1.0); mat.opacityNode = texN.a;"
+                    "mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), texN.a);",
+                    "mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), 1.0); mat.opacityNode = texN.a;"
                 ),
             ],
             ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
@@ -632,7 +633,11 @@ async function main() {
         check("Selbst-Test 3: die echte Quelle hält das Schatten-Gesetz", schattenWahrheit(nc).length === 0, schattenWahrheit(nc).join(" · "));
         for (const [name, src] of brueche) {
             const v = schattenWahrheit(src);
-            check(`Selbst-Test Schatten: „${name}" → das Gesetz nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
+            check(
+                `Selbst-Test Schatten: „${name}" → das Gesetz nennt ihn`,
+                src !== nc && v.length > 0,
+                src === nc ? "ANKER FEHLT — die Injektion trifft die Quelle nicht (Probe nachziehen)" : v.join(" · ")
+            );
         }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");

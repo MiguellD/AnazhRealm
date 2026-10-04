@@ -27096,7 +27096,13 @@ async function checkBandWelle6HCreatures(ctx) {
             const task = r._getCreatureTask(c0);
             const dir = r._tickCreatureTaskDirection(c0, task, "happy");
             out.gatherDirNonZero = dir && Math.abs(dir.x) + Math.abs(dir.z) > 0;
-            out.gatherDirTargetsX = dir && dir.x > 0;
+            // Die Mechanik wählt das NÄCHSTE Holz (der gepflanzte Baum oder ein näherer der Welt) — die Richtung
+            // muss zu DEM gewählten Ziel zeigen, nicht zu einer festen Achse (ortsabhängig, flackerte mit der Streu).
+            const ziel = task.args._target;
+            out.gatherDirTargetsX =
+                !!dir &&
+                !!ziel &&
+                dir.x * (ziel.position.x - c0.position.x) + dir.z * (ziel.position.z - c0.position.z) > 0;
             out.targetCached = !!task.args._target;
 
             // Gather-Ernte bei haltDist landet in carrying (Bring-Phase folgt), nicht direkt im Inventar.
@@ -30503,8 +30509,14 @@ async function checkBandLambda4Streu(ctx) {
         // V18.175 — per-Achsen-Skalierung.
         out.perAchsenCode = /sp\.wind/.test(src) && /sx:.*sy:.*sz:/s.test(src);
         out.consumerCode = /scl\.set\(it\.sx,\s*it\.sy,\s*it\.sz\)/.test(src);
-        // V18.174 — instanceColor pro-Instanz (Hash-Stream, setColorAt).
-        out.instanceColorCode = /hashInstanceTint/.test(src) && /setColorAt\(i,\s*tintColor\)/.test(src);
+        // V18.174 — instanceColor pro-Instanz (Hash-Stream). Seit dem Streu-Satz (Welle B) schreibt der Chunk den Tint
+        // als Block (tintColor → farben) und _streuNahEin lädt den Block in die instanceColor der Art-Mesh (Teil-Upload).
+        const satzSrc = window.__codeOf(r._streuNahEin);
+        out.instanceColorCode =
+            /hashInstanceTint/.test(src) &&
+            /tintColor\.toArray\(farben,\s*i \* 3\)/.test(src) &&
+            /instanceColor\.array\.set\(farben,\s*start \* 3\)/.test(satzSrc) &&
+            /instanceColor\.addUpdateRange\(/.test(satzSrc);
         const matSrc = window.__codeOf(r._scatterMaterial);
         // Pro-Instanz-Tint läuft über den nativen InstanceNode-Pfad (setupDiffuseColor × instanceColor):
         // das Material setzt useInstanceTint, liest aber nie manuell `attribute("instanceColor")` (die
@@ -30540,7 +30552,7 @@ async function checkBandLambda4Streu(ctx) {
         res.consumerCode === true
     );
     check(
-        "Λ.4 Streu (V18.174): _buildVoxelChunkScatter setzt instanceColor via hashInstanceTint + setColorAt",
+        "Λ.4 Streu (V18.174): _buildVoxelChunkScatter tönt je Instanz via hashInstanceTint, _streuNahEin lädt den Block in instanceColor",
         res.instanceColorCode === true
     );
     check(

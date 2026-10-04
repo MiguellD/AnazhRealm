@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.528.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.529.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -86,6 +86,11 @@ Studio-Mesh mit seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern un
 Kreaturen ≤ 55 m (`KREATUR_NAH_MESH`), Architektur im Cull-Radius 100–150 m, Streu-Bäume L0/L1 + L2-Billboard;
 Budget zählt gebaute Meshes, Bäcker nah zuerst, EINE Bake-Uhr (45 s). Gemessen (`aaa8`): ungebaut 148–195 → 0.
 
+**V18.525–529 — FXAA · FERN-STREU IM GESETZ · VOXEL-ABSCHIED · GENE · SATZ · L1-BUDGET:** Gestalten je Art aus dem
+Studio-Budget, die Saison eine Farbe, Karten + Körper auf der Platte (Zweit-Boot 0 MB Neubau); Boden · Wasser · Klein-Streu
+EIN Satz je Material; Budget B2c je Art × Stufe, die Pflanzen-L1 fällt darauf (Fichte 39k → 7k). Mess-Wiese, echte GPU:
+1076 → 492 Befehle, 4,60 → 2,98 M Dreiecke, VRAM 494 → 268 MB (`werkbank zaehlen`).
+
 **V18.510–514 — DRAW-WAHRHEIT · DATENFLUSS · TAKT · SCHATTEN:** r184-WebGPU zeichnet ein BatchedMesh je INSTANZ: der
 Batch-Pfad fiel (jedes Leaf eine InstancedMesh), 2 CSM-Kaskaden, feste WGSL-Puffer-Namen: Mess-Wiese 29 943 → 1 091
 GPU-Befehle (`werkbank zaehlen`). Die Transport-Schale `_foundrySchale` trägt den Foundry-Kanal IM Worker: Kanal 349 →
@@ -93,15 +98,10 @@ GPU-Befehle (`werkbank zaehlen`). Die Transport-Schale `_foundrySchale` trägt d
 31 → 13 ms, p95 89 → 24 ms (`werkbank takt`). Der Schatten misst vom Auge (`uLodAuge`), nie von der Kaskaden-Kamera, ein
 L0-Baum wirft seine L1. Die Foundry-Schlange hält der Host, nah zuerst: nahe Eiche-L0 9,0 → 0,9 s (`gate:takt` T5/T6).
 
-**V18.497–509 — DER KÖRPER:** der Tier-Leib ist EINE geskinnte Haut (25 Bones), das Fell 6 Schalen (Wolf L0 315k → 57k);
-starre Teile hängen je Material als EIN starr gebundenes SkinnedMesh am Ofen-Chokepoint (`_ofenAssembleAsset`), jede
-Hülle cullt gegen ihre Körper-Kugel: 5 Wölfe 730 → 310 Draws, Mensch nah 40 → 16 (`gate:kreatur-kosten`).
-
-**V18.500–508 — FLÄCHEN-STUFE · KARTEN-GESETZ · RINDE · BODEN · LICHT · FARBE · WIESE:** Haus-L1 `flaechig`
-(L1 2251k → 561k), Weiß backt nur mit Karte, Gelenk-Kugeln nur an der Gabel; `_voxelSurfaceY` liest den
-Nulldurchgang; das FARB-GESETZ gilt für die Vegetation (Laub 0,42 → 0,16); EIN Himmel am Tag und die Belichtung
-aus dem Licht (18-%-Karte 212 → 173 = Mittelgrau +1 EV); nah die NAH-WIESE (Studio-Gras im Kachel-Ring) auf dem
-GERENDERTEN Boden: Armlänge Kontrast 0,32 → 10,99. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht`).
+**V18.497–509 — KÖRPER · FLÄCHEN · FARBE · LICHT · WIESE:** der Tier-Leib EINE geskinnte Haut, starre Teile je Material
+am Ofen-Chokepoint (`_ofenAssembleAsset`, 5 Wölfe 730 → 310 Draws); Haus-L1 `flaechig`; das FARB-GESETZ für die
+Vegetation; EIN Himmel, die Belichtung aus dem Licht (Mittelgrau +1 EV); die NAH-WIESE auf dem gerenderten Boden.
+Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht`) · `gate:kreatur-kosten`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH:
 EIN Pass, EINE Payload (Analog-Primitive Kapsel+Box + Gesetz-Plätze; die Voxel-Bricks fielen V18.528) ·
