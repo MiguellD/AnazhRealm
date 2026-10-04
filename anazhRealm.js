@@ -27386,19 +27386,17 @@ class AnazhRealm {
             geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
             geom.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
+        // Der CPU-Körper des Chunk-Wassers (Map-Wahrheit, Sonden lesen seine Geometrie); gezeichnet wird er als
+        // Bereich im Wasser-Satz (Welle B: EIN Objekt für das Wasser des ganzen Rings, ausserhalb jedes Bundles —
+        // viewportLinearDepth erzwingt einen Pass-Bruch, den der Bundle-Encoder nicht kann).
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
         mesh.userData = {
             isHydrosphere: true,
             hydroKind: "chunk-water-iso",
             voxelChunkX: cx,
             voxelChunkZ: cz,
         };
-        // Das Iso-Mesh ist das EINZIGE Wasser-Mesh, default sichtbar. Wasser bleibt AUSSERHALB der Chunk-
-        // Bundles (außer `wasserImBundle`): sein viewportLinearDepth (weiche Ufer) erzwingt
-        // copyFramebufferToTexture = Pass-Bruch, den der Bundle-Encoder nicht kann (der Render wirft).
-        if (this.state.wasserImBundle === true) this._chunkBundleAnker(mesh, cx, cz);
-        else this.state.scene.add(mesh);
+        this._chunkSatzEin("wasser", key, geom, key);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
     }
@@ -27474,18 +27472,15 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        // CPU-Körper wie der Iso-Pfad; gezeichnet als Bereich im Wasser-Satz (Sync- und Worker-Sheet, ein Eintritt).
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
         mesh.userData = {
             isHydrosphere: true,
             hydroKind: "chunk-water-cellsheet",
             voxelChunkX: cx,
             voxelChunkZ: cz,
         };
-        // CHUNK-EINBÜRGERUNG: draußen wie der Iso-Pfad (viewportLinearDepth =
-        // Pass-Bruch, bundle-unverträglich — s. dort).
-        if (this.state.wasserImBundle === true) this._chunkBundleAnker(mesh, cx, cz);
-        else this.state.scene.add(mesh);
+        this._chunkSatzEin("wasser", key, geom, key);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
     }
@@ -27973,8 +27968,8 @@ class AnazhRealm {
     _disposeVoxelChunkWaterIso(key) {
         if (!this.state.voxelChunkWaterIso) return;
         const mesh = this.state.voxelChunkWaterIso.get(key);
+        this._chunkSatzAus("wasser", key); // DER SATZ: der Bereich wird frei, der Index legt sich neu
         if (mesh) {
-            this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(mesh.geometry);
         }
@@ -62440,6 +62435,24 @@ class AnazhRealm {
                 richtung: 1, // nah → fern
                 userData: { chunkSatz: "boden", inventar: "boden-satz" },
             };
+        if (art === "wasser")
+            return {
+                name: "wasserSatz",
+                attr: [
+                    ["position", 3],
+                    ["aFlow", 2],
+                    ["aWave", 1],
+                    ["aDepth", 1],
+                    ["aSlope", 1],
+                    ["aShore", 1],
+                ],
+                mat: this._ensureHydroSurfaceMaterial(),
+                schatten: false,
+                empfang: false,
+                renderOrder: 1, // transparent — nach den opaken Objekten
+                richtung: -1, // fern → nah (transparent: der Maler-Algorithmus innerhalb des Satzes)
+                userData: { chunkSatz: "wasser", isHydrosphere: true, hydroKind: "chunk-water-satz" },
+            };
         throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
     }
 
@@ -87266,6 +87279,7 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // frische Geometrie mit vollem Upload.
 AnazhRealm.CHUNK_SATZ = Object.freeze({
     boden: Object.freeze({ v: 229376, i: 1 << 20 }),
+    wasser: Object.freeze({ v: 1 << 16, i: 1 << 18 }),
 });
 // Foundry-Cache-GEWICHTS-DECKEL: `_foundryCacheSet` bilanziert die typed-array-Bytes je Eintrag
 // (`_cacheBytes`) und räumt LRU, bis Byte-Budget UND Entries-Cap stehen (ein Eintrags-Zähler ist

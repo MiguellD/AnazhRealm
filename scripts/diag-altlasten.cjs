@@ -130,6 +130,9 @@ const FORBIDDEN = [
     { token: "CHUNK_ENTLASS_GNADE_MS", fiel: "Welle B" },
     { token: "_entlassBytes", fiel: "Welle B" },
     { token: "_chunkRehydrierLauf", fiel: "Welle B" },
+    // Das Chunk-Wasser ist EIN Satz ausserhalb jedes Bundles (der Pass-Bruch des viewportLinearDepth) — das
+    // Bundle-Flag hatte keinen Leser, der es je setzte.
+    { token: "wasserImBundle", fiel: "Welle B — das Wasser des Rings ist der Wasser-Satz" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
