@@ -71,12 +71,19 @@ function tiereHalten() {
     };
 }
 
+// DAS GANZE BILD (04.10., echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
+// des Frames in Originalgröße, nie das verkleinerte Bild — 1280×720 aus 1920×1080 waren ein 2/3-Ausschnitt,
+// 640×360 ein Drittel (gemessen: dieselbe Kamera, 640 = die linke obere 640×360-Ecke des 1920er Bildes). Die
+// Aufnahme rendert darum IMMER in Canvas-Größe (was der Spieler sieht) und mittelt danach auf W×H herunter.
 function ausgabeAufnahme(W, H, warm) {
     return (async () => {
         const r = window.anazhRealm;
         const T = window.THREE;
         const rend = r.state.renderer;
-        const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+        const db = rend.getDrawingBufferSize(new T.Vector2());
+        const BW = Math.max(1, Math.round(db.x));
+        const BH = Math.max(1, Math.round(db.y));
+        const rt = new T.RenderTarget(BW, BH, { depthBuffer: true, samples: 0 });
         const prevOut = typeof rend.getOutputRenderTarget === "function" ? rend.getOutputRenderTarget() : null;
         rend.setOutputRenderTarget(rt);
         try {
@@ -107,17 +114,48 @@ function ausgabeAufnahme(W, H, warm) {
                 infoDrawCalls: ri.drawCalls,
                 infoTriangles: ri.triangles,
             };
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, BW, BH);
             const ms = performance.now() - t0;
             // WebGPU kopiert Zeilen auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster
             // durch: bei W·4 ∤ 256 (z. B. 480 oder 160 px) lag jede Zeile versetzt — gestreifte Bilder,
             // Mittel über Polster-Nullen (gemessen 01.10.: 8×8-Probe exakt ¼ zu dunkel). Hier fällt es.
             const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-            const zeile = W * 4;
-            const schritt = roh.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
-            if (schritt === zeile) return { u8: roh, info, ms };
-            const u8 = new Uint8Array(zeile * H);
-            for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
+            const zeile = BW * 4;
+            const schritt = roh.length > zeile * BH ? Math.ceil(zeile / 256) * 256 : zeile;
+            let voll = roh;
+            if (schritt !== zeile) {
+                voll = new Uint8Array(zeile * BH);
+                for (let y = 0; y < BH; y++) voll.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
+            }
+            if (BW === W && BH === H) return { u8: voll, info, ms };
+            // Flächen-Mittel: jedes Ziel-Pixel mittelt die Canvas-Pixel, die es überdeckt (Box-Filter).
+            const u8 = new Uint8Array(W * H * 4);
+            for (let y = 0; y < H; y++) {
+                const y0 = Math.floor((y * BH) / H);
+                const y1 = Math.max(y0 + 1, Math.floor(((y + 1) * BH) / H));
+                for (let x = 0; x < W; x++) {
+                    const x0 = Math.floor((x * BW) / W);
+                    const x1 = Math.max(x0 + 1, Math.floor(((x + 1) * BW) / W));
+                    let s0 = 0,
+                        s1 = 0,
+                        s2 = 0,
+                        s3 = 0;
+                    for (let yy = y0; yy < y1; yy++)
+                        for (let xx = x0; xx < x1; xx++) {
+                            const i = (yy * BW + xx) * 4;
+                            s0 += voll[i];
+                            s1 += voll[i + 1];
+                            s2 += voll[i + 2];
+                            s3 += voll[i + 3];
+                        }
+                    const n = (y1 - y0) * (x1 - x0);
+                    const o = (y * W + x) * 4;
+                    u8[o] = Math.round(s0 / n);
+                    u8[o + 1] = Math.round(s1 / n);
+                    u8[o + 2] = Math.round(s2 / n);
+                    u8[o + 3] = Math.round(s3 / n);
+                }
+            }
             return { u8, info, ms };
         } finally {
             rend.setOutputRenderTarget(prevOut);

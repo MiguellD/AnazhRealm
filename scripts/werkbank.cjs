@@ -43,7 +43,8 @@
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // `start --echt` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
-// den laufenden save-server (`npm start`, :4312 — der Flugschreiber schreibt anazhRealmPerf.json); ohne
+// den laufenden save-server (`npm start`, :4312 — der Flugschreiber schreibt anazhRealmPerf.json; `--seite <port>`
+// wählt einen anderen); ohne
 // `--echt` bleibt es swiftshader auf dem eigenen Seiten-Port. In beiden zählt der VRAM-ABGRIFF jede
 // GPUDevice-Allokation (Puffer + Texturen, live nach destroy) — das ist der Speicher, nicht ein Proxy.
 //
@@ -72,7 +73,9 @@ const SEITEN_PORT = PORT - 1;
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 const ECHT = argv.includes("--echt");
-const ECHT_SEITE = "http://localhost:4312";
+// Der save-server-Port der Echt-Seite: Default 4312 (der Flugschreiber schreibt nur von dort); parallele
+// Wellen fahren ihren eigenen (`--seite 5312`, `PORT=5312 node save-server.js`) — ohne Flugschreiber.
+const ECHT_SEITE = `http://localhost:${Number(opt("--seite", process.env.WERKBANK_SEITE || 4312))}`;
 
 // DER VRAM-ABGRIFF: jede Allokation des GPUDevice (Puffer: size; Textur: alle Mip-Stufen × Schichten ×
 // Samples × Bytes je Texel) live mitgezählt, destroy zieht ab. Läuft vor jedem Seiten-Skript.
