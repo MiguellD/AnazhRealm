@@ -28593,17 +28593,15 @@ class AnazhRealm {
                                     // Offsets dem kollabierten Quad noch Sliver-Fläche geben.
                                     _alpha = _lebt.select(_samp.a, _Ta.float(0.0));
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
-                                    // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = rec.frame.halfH·2
-                                    // × _sInst. Maske + CPU-Doppel-Mitgliedschaft (`_updateFoundryLodBand`) schalten zusammen am
+                                    // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der aH0-Stempel
+                                    // der Fassade (Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie die L1 und die CPU).
+                                    // Maske + CPU-Doppel-Mitgliedschaft (`_updateFoundryLodBand`) schalten zusammen am
                                     // foundryCrossfade-Flag (default an).
                                     if (this.state && this.state.foundryCrossfade === true) {
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
                                             distNode: _Ta.sqrt(_hl2),
-                                            visHeightNode:
-                                                _rec.frame && Number.isFinite(_rec.frame.halfH)
-                                                    ? _Ta.float(_rec.frame.halfH * 2).mul(_sInst)
-                                                    : null,
+                                            visHeightNode: _Ta.attribute("aH0", "float"),
                                         });
                                         if (_keepFin) _alpha = _alpha.mul(_keepFin);
                                     }
@@ -29316,8 +29314,11 @@ class AnazhRealm {
                 if (!_dist) return null;
                 let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Perf-Streck wie die CPU (_lodPerfMul)
                 if (opts.visHeightNode) {
+                    // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
+                    // durch die rohe: unter Last (Perf ×1,3) blendete die L1 nach der gestreckten Distanz aus, das
+                    // Billboard ohne Streck ein, bei 20 m stand der Baum zu 50 % durchsichtig.
                     const _k = _lu.uLodRef.div(opts.visHeightNode.max(T.float(1e-3))).min(T.float(1.0));
-                    _vCD = _dist.mul(_k);
+                    _vCD = _vCD.mul(_k);
                 }
                 const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
                 const _occl = T.attribute ? T.attribute("aOccl", "float") : null;
@@ -29348,9 +29349,10 @@ class AnazhRealm {
             const _foliage = !!(opts && opts.foliage);
             // keep Stufe L0 (lod=0): Laub keep = clamp(2f0−1) < dh · Rinde keep = f0 < dh.
             const _keep0 = _foliage ? T.step(_f0.mul(2.0).sub(1.0).clamp(0.0, 1.0), _dh) : T.step(_f0, _dh);
-            // keep Stufe L1 (lod=1): (Laub min(2f0,1) ≥ dh · Rinde f0 ≥ dh) UND f1o < dh.
+            // keep Stufe L1 (lod=1): (Laub min(2f0,1) ≥ dh · Rinde f0 ≥ dh) UND f1o < dh. Die einzige Nah-Stufe einer
+            // Art ohne L0 (aLodLevel 3, der Strauch) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
             const _fadeIn = _foliage ? T.step(_dh, _f0.mul(2.0).min(T.float(1.0))) : T.step(_dh, _f0);
-            const _keep1 = _fadeIn.mul(T.step(_f1o, _dh));
+            const _keep1 = _fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh));
             // Stufen-Wahl per aLodLevel (1 → keep0 · 2 → keep1) + das vLod>0.5-Gate (0 → ungemaskt).
             const _stageKeep = T.mix(_keep0, _keep1, T.step(T.float(1.5), _aLod));
             const _masked = T.step(T.float(0.5), _aLod);
@@ -51369,6 +51371,7 @@ class AnazhRealm {
             // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
             // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
             const visH = this._lodTreeVisHeight(entry);
+            if (visH === null) continue; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
             let newLOD = this._chooseLODForDistance(dist, entry._lodLevel, visH);
             // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
             // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
@@ -51490,8 +51493,10 @@ class AnazhRealm {
     // (Blatt-Metrik), bis dn < D1+M (Baum-Metrik) · Billboard ab dn > D1−FADE−M. Partner = Nachbar der
     // Primär-Stufe im Band (die Bänder überlappen bei den Defaults nie), sonst null. dn/dnL aus der
     // EINEN Quelle _lodPerceptionDistance (Blatt auf leafVisCap gekappt, wie der aH0L-Stempel).
+    // undefined = die Höhe ist (noch) nicht bekannt: kein Urteil, das Band bleibt.
     _foundryLodBandPartner(entry, dist) {
-        return this._lodBandPartnerFor(dist, this._lodTreeVisHeight(entry), entry._lodLevel | 0);
+        const visH = this._lodTreeVisHeight(entry);
+        return visH === null ? undefined : this._lodBandPartnerFor(dist, visH, entry._lodLevel | 0);
     }
     // Entry-freier Partner-Kern: Architektur-Einträge UND der Scatter fragen DIESELBE Regel, welche
     // zweite Stufe im Dither-Crossfade-Band wohnt (Mitgliedschaft ±M um die Fade-Fenster).
@@ -51539,6 +51544,7 @@ class AnazhRealm {
             preset = presetOpt || this._foundryPresetForEntry(entry);
             if (preset && this._foundryPresetIsTree(preset)) {
                 desired = this._foundryLodBandPartner(entry, dist);
+                if (desired === undefined) return false; // die Höhen-Stufe lädt: das Band bleibt, wie es ist
                 if (desired === entry._lodLevel) desired = null; // defensiv: Partner nie == Primär
             }
         }
@@ -52275,6 +52281,11 @@ class AnazhRealm {
                 // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
                 // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
                 const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf.scale);
+                if (visH === null) {
+                    // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
+                    region._deferredFoundry = true;
+                    continue;
+                }
                 const lod = this._chooseLODForDistance(dist, undefined, visH);
                 // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
                 // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
@@ -52315,12 +52326,17 @@ class AnazhRealm {
     }
 
     // Die Sichthöhe einer Streu-Zelle für die Stufenwahl: Fels 0 (roh), ein Foundry-Baum der Stempel seines Assets
-    // (_foundrySichtHoehe — dieselbe Zahl, die seine Masken lesen), sonst der Grammatik-Bauplan.
+    // (_foundrySichtHoehe — dieselbe Zahl, die seine Masken lesen; null = die Höhen-Stufe lädt, die Zelle wartet),
+    // sonst der Grammatik-Bauplan.
     _scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, scale) {
         if (layer.kind === "rock") return 0;
         const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
         if (preset && this._foundryPresetIsTree(preset))
-            return this._foundrySichtHoehe(preset, this._scatterFoundrySeed(cellX, cellZ, variantIndex), scale, null);
+            return this._foundrySichtHoehe(
+                preset,
+                { seed: this._scatterFoundrySeed(cellX, cellZ, variantIndex) },
+                scale
+            );
         return this._lodTreeVisHeightFor(species, variantIndex, scale);
     }
 
@@ -52591,6 +52607,7 @@ class AnazhRealm {
                 cell.variantIndex,
                 tf.scale
             );
+            if (visH === null) continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
             if (newLod === cell.lod) continue;
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
@@ -53053,29 +53070,47 @@ class AnazhRealm {
         if (!entry) return 0;
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
-        if (preset && this._foundryPresetIsTree(preset))
-            return this._foundrySichtHoehe(preset, entry.seed, s, this._artifactStudioOv(entry));
+        if (preset && this._foundryPresetIsTree(preset)) return this._foundrySichtHoehe(preset, entry, s);
         if (!entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return 0;
         return this._lodTreeVisHeightFor(entry._lodSpecies, entry._lodVariantIndex, s);
     }
 
-    // DIE EINE SICHTHÖHE EINES FOUNDRY-BAUMS — die Zahl, die seine Masken lesen: der aH0-Stempel der Höhen-Stufe
-    // (_foundryHoehenStufe; Template-Höhe × Preset-Welt-Skala, gesetzt in _foundryBuildGroup) × Instanz-Skala, exakt
-    // was die Instanz-Fassade je Slot stempelt (_lodSlotStamp). Befund 04.10. (Werkbank, Mess-Wiese): die CPU las die
+    // DIE EINE SICHTHÖHE EINES FOUNDRY-BAUMS — die Zahl, die seine Masken lesen: die Höhe der Höhen-Stufe
+    // (_foundryBaumHoehe; Template-Höhe × Preset-Welt-Skala) × Instanz-Skala, exakt was die Instanz-Fassade je Slot
+    // stempelt (_lodSlotStamp) — für L0, L1 UND das Billboard. Befund 04.10. (Werkbank, Mess-Wiese): die CPU las die
     // Höhe aus dem Grammatik-Bauplan, den _buildVariantLODs bei lebender Foundry nie baut — 190 von 190 Bäumen
     // standen mit Sichthöhe 0, die Stufenwahl lief roh, die Masken mit 17–60 m Sichthöhe: zwischen ~12 und ~25 m stand
     // ein Baum als L1 ALLEIN, deren Maske ihn erst halb einblendet (Birke 15,7 m: Rinde zu 66 % gezeichnet, die L0
-    // fehlte) — die gerasterten Geister. 0 = die Stufe ist noch nicht gebaut (dann steht auch keine Geometrie).
-    _foundrySichtHoehe(preset, seed, scale, ov) {
-        const f = this._foundry;
-        if (!f || !f.cache) return 0;
-        const gestalt = this._foundryVariantFor(seed, preset);
-        if (gestalt == null) return 0;
-        const g = f.cache.get(this._foundryKoerperKey(preset, gestalt, this._foundryHoehenStufe(preset), ov));
-        const ch = g && g.children && g.children[0];
-        const a = ch && ch.geometry && ch.geometry.attributes ? ch.geometry.attributes.aH0 : null;
-        const h0 = a && a.array && a.array.length ? a.array[0] : 0;
+    // fehlte) — die gerasterten Geister. null = die Höhe ist (noch) nicht bekannt: KEIN Stufen-Urteil, nie roh.
+    _foundrySichtHoehe(preset, entry, scale) {
+        const h0 = this._foundryBaumHoehe(preset, entry);
+        if (h0 == null) return null;
         return h0 * (Number.isFinite(scale) && scale > 0 ? scale : 1);
+    }
+
+    // Die Höhe eines Baum-Körpers (Art · Gestalt · Prägung) aus dem Höhen-Buch (_foundryCacheSet: Körper-Schlüssel
+    // der Höhen-Stufe → _foundryGruppenHoehe). Unbekannt: die Höhen-Stufe wird bestellt (der EINE Bestell-Weg
+    // _foundryFlattenFor, nah zuerst über die Eintrags-Position) und null kommt zurück — der Aufrufer wartet wie auf
+    // ein ladendes Asset. Kann das Studio die Höhen-Stufe nicht bauen, meldet sich das einmal je Körper LAUT.
+    _foundryBaumHoehe(preset, entry) {
+        const f = this._foundry;
+        const gestalt = f ? this._foundryVariantFor(entry.seed, preset) : null;
+        if (gestalt == null) return null; // Buch kalt
+        const stufe = this._foundryHoehenStufe(preset);
+        const key = this._foundryKoerperKey(preset, gestalt, stufe, this._artifactStudioOv(entry));
+        const h0 = f.hoehen ? f.hoehen.get(key) : undefined;
+        if (h0 > 0) return h0;
+        if (this._foundryFlattenFor(entry, preset, stufe) === false) {
+            if (!f.hoeheFehlt) f.hoeheFehlt = new Set();
+            if (!f.hoeheFehlt.has(key)) {
+                f.hoeheFehlt.add(key);
+                this.log(
+                    `Foundry: die Höhen-Stufe ${key} ist nicht baubar — dieser Baum bekommt keine Stufe.`,
+                    "ERROR"
+                );
+            }
+        }
+        return null;
     }
 
     // Die Höhen-Stufe eines Baum-Presets: die L1 (sie reist mit jeder L0, der Schatten-Stellvertreter, und trägt
@@ -53085,18 +53120,11 @@ class AnazhRealm {
         return this._foundryDeclaredStage(preset, 1);
     }
 
-    // Eine Stufe eines Baums auf die Höhe seiner Höhen-Stufe stempeln (aH0; aH0L Laub gekappt auf leafVisCap, Rinde
-    // == aH0) — VOR dem Flat-Bau, also bevor eine Instanz-Fassade die Vorlage liest. Gemessen 04.10.: L0 und L1
+    // Eine Stufe eines Baums auf die Höhe h0 seiner Höhen-Stufe stempeln (aH0; aH0L Laub gekappt auf leafVisCap,
+    // Rinde == aH0) — VOR dem Flat-Bau, also bevor eine Instanz-Fassade die Vorlage liest. Gemessen 04.10.: L0 und L1
     // derselben Variante wichen je Stufen-Ausdehnung 1–4 % (eiche|15 23,19 / 24,15 m) — im L0/L1-Band ein Lochgitter
-    // in der Rinde. Ist die Höhen-Stufe (noch) nicht gebaut, bleibt der eigene Stempel.
-    _foundryStufenHoeheAngleichen(group, preset, variant, lod, ov) {
-        const ziel = this._foundryHoehenStufe(preset);
-        if (lod === ziel || !group || !group.children) return;
-        const ref = this._foundry && this._foundry.cache.get(this._foundryKoerperKey(preset, variant, ziel, ov));
-        const ch0 = ref && ref.children && ref.children[0];
-        const a = ch0 && ch0.geometry && ch0.geometry.attributes ? ch0.geometry.attributes.aH0 : null;
-        const h0 = a && a.array && a.array.length ? a.array[0] : 0;
-        if (!(h0 > 0)) return;
+    // in der Rinde.
+    _foundryStufenHoeheAngleichen(group, h0) {
         const D = AnazhRealm.LOD_DISTANCES;
         const capL = D && Number.isFinite(D.leafVisCap) ? D.leafVisCap : 24;
         for (const ch of group.children) {
@@ -62048,7 +62076,9 @@ class AnazhRealm {
     // Normale = PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → der Shader dekodiert
     // Rotation + Skala; Shading-Normale aus dem Normal-Atlas. color WEISS (Tint via instanceColor),
     // aFlex = (y/H)². BoundingBox/Sphere um ±halfW aufgeblasen — sonst cullt frustumCulled die Linie.
-    _buildImpostorCrossGeometry(skeleton, frameOverride) {
+    // h0 = die Sichthöhe der Vorlage (aH0, je Slot × Instanz-Skala gestempelt): der Foundry-Baum reicht die Höhe
+    // seiner Höhen-Stufe, die Grammatik-Karte trägt ihren eigenen Rahmen (frame.halfH·2).
+    _buildImpostorCrossGeometry(skeleton, frameOverride, h0) {
         if (typeof THREE === "undefined") return null;
         // Der Rahmen kommt entweder aus einem AnazhRealm-Skelett ODER direkt (der Studio-Foundry-
         // Bake reicht seinen eigenen Rahmen `{totalH,halfH,halfW}` herein → das Quad sitzt exakt
@@ -62102,6 +62132,11 @@ class AnazhRealm {
         // Occlusion-Kanal des Studio-Billboards (aOccl, Default 0): per-Vertex hier (WebGPU-Attribut-Pflicht
         // für jeden Nutzer der Impostor-Materialien); HISM-Gruppen ersetzen ihn per Instanz-Fassade (→ 1).
         g.setAttribute("aOccl", new THREE.BufferAttribute(new Float32Array(VC), 1));
+        // Die Sichthöhe der Billboard-Maske (_lodCrossfadeMaskNode impostor): die Instanz-Fassade ersetzt sie je Slot
+        // (_lodSlotStamp: Vorlage × Instanz-Skala) — dieselbe Zahl wie die L1 desselben Baums.
+        const hV = frameOverride && Number.isFinite(frameOverride.halfH) ? h0 : H;
+        if (!(hV > 0)) return null; // ein Foundry-Billboard ohne Höhe hätte keine wahre Maske
+        g.setAttribute("aH0", new THREE.BufferAttribute(new Float32Array(VC).fill(hV), 1));
         g.setAttribute("aImpX", new THREE.BufferAttribute(impX, 1));
         g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
         g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
@@ -67340,7 +67375,12 @@ class AnazhRealm {
         }
         if (!rec.frame) return false;
         if (rec._flat) return rec._flat;
-        const geom = this._buildImpostorCrossGeometry(null, rec.frame);
+        // Das Billboard blendet nach DERSELBEN Sichthöhe wie seine 3D-Stufen (das Studio: die Karten-Instanz trägt bh,
+        // die Sichthöhe des echten Baums): die Höhe der Höhen-Stufe als aH0-Stempel, je Slot × Instanz-Skala — nie
+        // die Rahmen-Höhe des Bakes (sie wich bis ~2 % + Bake-Rand ab). Unbekannt: die Karte wartet.
+        const hz = this._foundryBaumHoehe(preset, entry);
+        if (hz == null) return null;
+        const geom = this._buildImpostorCrossGeometry(null, rec.frame, hz);
         if (!geom) return false;
         const laubMat = this.state.materials && this.state.materials.laub;
         const matOpts = {
@@ -69117,6 +69157,23 @@ class AnazhRealm {
         if (m.tuer && typeof m.tuer.seite === "number") mesh.userData.__tuer = m.tuer;
         return mesh;
     }
+    // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
+    // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl.
+    _foundryGruppenHoehe(group, preset) {
+        let minY = Infinity,
+            maxY = -Infinity;
+        for (const ch of group.children) {
+            const pa = ch.geometry && ch.geometry.attributes.position ? ch.geometry.attributes.position.array : null;
+            if (!pa) continue;
+            for (let i = 1; i < pa.length; i += 3) {
+                if (pa[i] < minY) minY = pa[i];
+                if (pa[i] > maxY) maxY = pa[i];
+            }
+        }
+        const wsM = preset ? this._foundryWorldScaleMatrix(preset) : null;
+        const ws = wsM && wsM.elements ? wsM.elements[0] || 1 : 1;
+        return maxY > minY ? Math.max(0.1, (maxY - minY) * ws) : 0.1;
+    }
     _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
         const T = THREE;
@@ -69135,10 +69192,14 @@ class AnazhRealm {
         } catch (_e) {
             return null;
         }
+        // DIE HÖHE EINES BAUM-KÖRPERS (Template-Höhe × Preset-Welt-Skala) — eine Eigenschaft des Körpers, auch ohne
+        // Masken-Stempel: das Höhen-Buch (_foundryCacheSet) hält sie über jede Cache-Räumung.
+        if (group && group.children.length && stage && stage.preset && this._foundryPresetIsTree(stage.preset))
+            group._hoehe = this._foundryGruppenHoehe(group, stage.preset);
         if (group && group.children.length && this.state && this.state.foundryCrossfade === true) {
-            // Stufen-/SSE-Stempel (das Attribut-Vokabular der Studio-Blende): aLodLevel = 1 (L0) · 2 (L1) · 0
-            // (ungemaskt: Nicht-Baum-Kinds + Impostor, wie das Studio-`vLod>0.5`-Gate); aH0 = Welt-Sichthöhe der
-            // Gruppe (Template-Höhe × Preset-Welt-Skala); aH0L = Blatt-Sichthöhe (Laub gekappt auf
+            // Stufen-/SSE-Stempel (das Attribut-Vokabular der Studio-Blende): aLodLevel = 1 (L0) · 2 (L1) · 3 (die
+            // einzige Nah-Stufe einer Art ohne L0) · 0 (ungemaskt: Nicht-Baum-Kinds, wie das Studio-`vLod>0.5`-Gate);
+            // aH0 = Welt-Sichthöhe der Gruppe (_foundryGruppenHoehe); aH0L = Blatt-Sichthöhe (Laub gekappt auf
             // LOD_DISTANCES.leafVisCap, Rinde aH0L == aH0). VOR dem Warm-Kompilieren stempeln (compileAsync
             // braucht das Pipeline-Layout).
             try {
@@ -69150,27 +69211,19 @@ class AnazhRealm {
                     this._foundryPresetIsTree(stage.preset)
                 );
                 // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Der Strauch
-                // ([1, 2]) hat keine: seine L1 ist nah die volle Gestalt (Studio: nah stages[0], fern stages[letzte])
-                // und bleibt ungemaskt; gemessen 04.10. (Werkbank, Mess-Wiese): ein Strauch auf 8,9 m zu 66 %
-                // durchsichtig, die L0-Hälfte der Blende fehlte.
+                // ([1, 2]) hat keine: seine L1 ist nah die volle Gestalt (Studio: nah stages[0], fern stages[letzte]),
+                // sie blendet nie ein (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 %
+                // durchsichtig, die L0-Hälfte der Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) —
+                // ungemaskt stand sie dort doppelt mit dem Billboard und sprang am Bandende weg.
                 const _aLodVal =
                     _isTree && _lodS === 0
                         ? 1
-                        : _isTree && _lodS === 1 && this._foundryDeclaredStage(stage.preset, 0) === 0
-                          ? 2
+                        : _isTree && _lodS === 1
+                          ? this._foundryDeclaredStage(stage.preset, 0) === 0
+                              ? 2
+                              : 3
                           : 0;
-                let _minY = Infinity,
-                    _maxY = -Infinity;
-                for (const ch of group.children) {
-                    const pa = ch.geometry.attributes.position.array;
-                    for (let i = 1; i < pa.length; i += 3) {
-                        if (pa[i] < _minY) _minY = pa[i];
-                        if (pa[i] > _maxY) _maxY = pa[i];
-                    }
-                }
-                const _wsM = stage && stage.preset ? this._foundryWorldScaleMatrix(stage.preset) : null;
-                const _ws = _wsM && _wsM.elements ? _wsM.elements[0] || 1 : 1;
-                const _h0 = Math.max(0.1, (_maxY - _minY) * _ws);
+                const _h0 = this._foundryGruppenHoehe(group, stage && stage.preset);
                 const _D = AnazhRealm.LOD_DISTANCES;
                 const _capL = _D && Number.isFinite(_D.leafVisCap) ? _D.leafVisCap : 24;
                 for (const ch of group.children) {
@@ -69562,6 +69615,9 @@ class AnazhRealm {
         if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
         f.cache.set(key, v);
+        // DAS HÖHEN-BUCH: die Höhe eines Baum-Körpers je Körper-Schlüssel — deterministisch (gleicher Schlüssel =
+        // gleiche Geometrie), wenige Bytes, nie geräumt: die LRU vergisst die Geometrie, nie die Höhe.
+        if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);
         f.ankunft = (f.ankunft | 0) + 1; // die Ankunfts-Generation: Wartende im Nah-Zweig fragen erst danach wieder
         const CAP = AnazhRealm.FOUNDRY_CACHE_CAP;
         const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;
@@ -69723,9 +69779,13 @@ class AnazhRealm {
                 if (f1 && f1.instanceable && f1.lod === 1 && Array.isArray(f1.leaves) && f1.leaves.length)
                     schatten = f1;
             }
-            // EINE Sichthöhe je Baum über alle Stufen (vor dem Flat: die Instanz-Fassaden lesen die Vorlage).
-            if (this._foundryPresetIsTree(preset))
-                this._foundryStufenHoeheAngleichen(group, preset, variant, lod, entryOv);
+            // EINE Sichthöhe je Baum über alle Stufen (vor dem Flat: die Instanz-Fassaden lesen die Vorlage). Ohne
+            // bekannte Höhe der Höhen-Stufe wartet die Stufe (nie mit eigenem Stempel).
+            if (this._foundryPresetIsTree(preset) && lod !== this._foundryHoehenStufe(preset)) {
+                const hz = this._foundryBaumHoehe(preset, entry);
+                if (hz == null) return null;
+                this._foundryStufenHoeheAngleichen(group, hz);
+            }
             const leaves = [];
             // Template→Welt-Übersetzung: das Studio platziert mit `SCALE[sp] · tr.s · 0.82` (eiche 4.16 · fichte
             // 4.85 · …) — ohne sie bleibt der Baum ein Zwerg, der strauch ein Riese. Sie lebt HIER (localMatrix

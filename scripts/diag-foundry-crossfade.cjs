@@ -348,6 +348,34 @@ async function runPartB() {
         }
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
+        // DER STRAUCH (Art ohne L0, kindStages [1, 2]): seine L1 ist die einzige Nah-Stufe (aLodLevel 3) — sie blendet
+        // nie ein, aber im L1/L2-Band zum Billboard aus. Eigener Ort, eigener Sweep.
+        const sx = px + 400,
+            sz = pz;
+        const sy = r._voxelSurfaceY(sx, sz) || 1;
+        const sKey = r._growTreeBlueprintForSpawn("busch_hazel", "w54-strauch-sweep");
+        const sEntry = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
+        res.strauchPreset = sEntry ? r._foundryPresetForEntry(sEntry) : null;
+        const sWarm = { 1: false, 2: false };
+        const dlS = performance.now() + 120000;
+        while (sEntry && performance.now() < dlS && !(sWarm[1] && sWarm[2])) {
+            for (const lod of [1, 2]) {
+                if (!sWarm[lod]) {
+                    const fl = r._foundryFlattenFor(sEntry, res.strauchPreset, lod);
+                    if (fl && fl.instanceable) sWarm[lod] = true;
+                }
+            }
+            if (!(sWarm[1] && sWarm[2])) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                await sleep(120);
+            }
+        }
+        res.strauchWarm = { l1: sWarm[1], l2: sWarm[2] };
+        // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
+        // ihn mit warmen Stufen neu und räumt ihn wieder.
+        if (sEntry) r.removeArchitecture(sEntry);
         // Quieszenz: keine offenen Worker-Anfragen mehr → keine async-Placements im Sweep.
         const dl3 = performance.now() + 20000;
         while (f.pending && f.pending.size > 0 && performance.now() < dl3) await sleep(100);
@@ -434,59 +462,64 @@ async function runPartB() {
             const core = window.__phytoCore;
             const lodRefLive = Number.isFinite(st.lodRef) && st.lodRef > 0 ? st.lodRef : cfg.lodRef;
             const cfgM = { d0: cfg.thresh01, d1: cfg.thresh12, fade: cfg.fade, fade0: cfg.fade0 };
+            // Je residentem Slot: der Fassaden-Stempel (aH0/aH0L) und die Maske, die sein Stoff fährt — aLodLevel 1 =
+            // L0-Formel · 2 = L1-Formel · 3 = die einzige Nah-Stufe (nur die Fern-Ausblendung f1o) · 0 = frei; das
+            // Billboard (ohne aLodLevel) die fin-Formel mit SEINEM Stempel (seit 04.10. trägt es die Höhe der L1).
+            // Der Schatten-Zwilling (SHADOW_TWIN_LAYER) zählt nicht: die Kamera sieht ihn nie.
             const stempelVon = (ref) => {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
-                const a = g && g.mesh && g.mesh.geometry && g.mesh.geometry.attributes;
-                return a && a.aH0 && a.aH0L ? { h: a.aH0.array[ref.slot], hL: a.aH0L.array[ref.slot] } : null;
+                if (!g || !g.mesh || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) return null;
+                const a = g.mesh.geometry && g.mesh.geometry.attributes;
+                if (!a || !a.aH0 || !a.aH0L) return null;
+                const al = a.aLodLevel ? a.aLodLevel.array[0] : null;
+                const modus = al == null ? "fin" : al > 2.5 ? "l1e" : al > 1.5 ? "l1" : al > 0.5 ? "l0" : "frei";
+                return { h: a.aH0.array[ref.slot], hL: a.aH0L.array[ref.slot], modus };
             };
-            const lochSweep = (fd) => {
+            const MODUS_LOD = { l0: 0, l1: 1, l1e: 1, fin: 2 };
+            const lochSweep = (fd, E) => {
+                const e0 = E || { entry, px, py, pz };
                 st._foliageDensityScale = fd;
                 const k = r._lodPerfMul();
-                const o = { perf: +k.toFixed(3), proben: 0, loecher: 0, stempelUngleich: 0, beispiel: null };
-                for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
-                    st.playerMesh.position.set(px - raw, py, pz);
+                const o = { perf: +k.toFixed(3), proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
+                for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
+                    st.playerMesh.position.set(e0.px - raw, e0.py, e0.pz);
                     r._archLODCursor = 0;
                     for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99);
                     const stufen = new Map();
-                    let fern = false;
-                    for (const list of [entry.instSlots, entry.instSlotsBand])
+                    for (const list of [e0.entry.instSlots, e0.entry.instSlotsBand])
                         if (Array.isArray(list))
                             for (const ref of list) {
-                                const l = stageOfKey(ref.key);
-                                if (l === 2) {
-                                    fern = true; // das Billboard trägt keinen aH0-Stempel (Rahmen-Höhe × Instanz-Skala)
-                                    continue;
-                                }
                                 const sp = stempelVon(ref);
-                                if (l == null || !sp) continue;
-                                const e = stufen.get(l) || { h: 0, hL: Infinity };
+                                if (!sp) continue;
+                                const e = stufen.get(sp.modus) || { h: 0, hL: Infinity };
                                 e.h = Math.max(e.h, sp.h);
                                 e.hL = Math.min(e.hL, sp.hL);
-                                stufen.set(l, e);
+                                stufen.set(sp.modus, e);
+                                o.modi[sp.modus] = (o.modi[sp.modus] || 0) + 1;
                             }
                     if (!stufen.size) continue;
-                    // Das Billboard blendet mit der Sichthöhe seines Rahmens ein — gemessen an der Stufe darunter.
-                    if (fern) {
-                        const h3 = Math.max(...[...stufen.values()].map((e) => e.h));
-                        stufen.set(2, { h: h3, hL: h3 });
-                    }
                     o.proben++;
-                    const visH = r._lodTreeVisHeight(entry);
-                    for (const e of stufen.values())
-                        if (!(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
+                    const visH = r._lodTreeVisHeight(e0.entry);
+                    for (const [m, e] of stufen)
+                        if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
                     for (const fol of [false, true])
                         for (let i = 0; i < 64; i++) {
                             const dh = (i + 0.5) / 64;
                             let behalten = false;
-                            for (const [l, e] of stufen) {
+                            for (const [m, e] of stufen) {
+                                if (m === "frei") {
+                                    behalten = true;
+                                    continue;
+                                }
                                 const dS = raw * k * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
                                 const dL = raw * k * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
-                                if (core.lodCrossfadeMask(dS, dh, cfgM, l, fol, dL).keep) behalten = true;
+                                const z = core.lodCrossfadeMask(dS, dh, cfgM, MODUS_LOD[m], fol, dL);
+                                if (m === "l1e" ? z.f1o < dh : z.keep) behalten = true;
                             }
                             if (!behalten) {
                                 o.loecher++;
                                 if (!o.beispiel)
-                                    o.beispiel = { raw, stufen: [...stufen.keys()], visH: +visH.toFixed(2), stempel: [...stufen.values()].map((e) => +e.h.toFixed(2)), laub: fol };
+                                    o.beispiel = { raw, modi: [...stufen.keys()], visH: +visH.toFixed(2), stempel: [...stufen.values()].map((e) => +e.h.toFixed(2)), laub: fol };
                             }
                         }
                 }
@@ -496,9 +529,28 @@ async function runPartB() {
             if (core && typeof core.lodCrossfadeMask === "function" && typeof r._lodPerfMul === "function") {
                 const fdMin = A.PERF_FOLIAGE_DENSITY_MIN;
                 res.stufenWahrheit = { voll: lochSweep(1), last: lochSweep(fdMin) };
+                const s2 = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
+                if (s2) {
+                    // Der Strauch im selben Gesetz: sein Sweep, voll und unter Last (eigene Architektur-Liste).
+                    if (!s2.instanced) r._rebuildArchitectureMesh(s2);
+                    st.architectures = [s2];
+                    const E = { entry: s2, px: sx, py: sy, pz: sz };
+                    res.stufenWahrheit.strauch = { voll: lochSweep(1, E), last: lochSweep(fdMin, E) };
+                    r.removeArchitecture(s2); // räumt aus der Sweep-Liste (removeArchitecture sucht dort)
+                    st.architectures = [entry];
+                }
                 const echt = r._lodTreeVisHeight;
                 r._lodTreeVisHeight = () => 0; // die Gegenprobe: der Leser vor dem 04.10.
-                res.stufenWahrheit.gegenprobe = lochSweep(fdMin);
+                // voll UND unter Last: der Perf-Streck verdeckt den rohen Leser teilweise (er rückt die Masken näher)
+                const g1 = lochSweep(1);
+                const g2 = lochSweep(fdMin);
+                res.stufenWahrheit.gegenprobe = {
+                    perf: g1.perf + "/" + g2.perf,
+                    proben: g1.proben + g2.proben,
+                    loecher: g1.loecher + g2.loecher,
+                    stempelUngleich: g1.stempelUngleich + g2.stempelUngleich,
+                    beispiel: g1.beispiel || g2.beispiel,
+                };
                 delete r._lodTreeVisHeight;
                 if (r._lodTreeVisHeight !== echt) res.stufenWahrheit.err = "Leser nicht zurückgesetzt";
                 lochSweep(1); // die Stufen auf den echten Leser zurück
@@ -686,8 +738,35 @@ function perfWahrheit(srcNC) {
     if (!/const _cd = T\.length\([\s\S]*?\)\.mul\(\s*_lu\.uLodPerf\s*\);/.test(maske))
         v.push("die Stufen-Maske misst die Auge-Distanz ohne uLodPerf");
     if (!/let _vCD = _dist\.mul\(_lu\.uLodPerf\);/.test(maske)) v.push("die Billboard-Maske misst ohne uLodPerf");
+    // Der Sichthöhen-Zweig des Billboards rechnet AUF der gestreckten Distanz (bis 04.10. ersetzte er sie durch die rohe).
+    if (!/_vCD = _vCD\.mul\(_k\);/.test(maske)) v.push("die Billboard-Maske ersetzt die gestreckte Distanz durch die rohe (Perf-Streck verloren)");
+    // Das Billboard liest den aH0-Stempel seiner Fassade (die Höhe der L1), nie die Rahmen-Höhe des Bakes.
+    if (!/visHeightNode: _Ta\.attribute\("aH0", "float"\)/.test(srcNC))
+        v.push("das Billboard misst mit eigener Höhe statt dem aH0-Stempel der L1");
+    const kreuz = fnBody(srcNC, /_buildImpostorCrossGeometry\(skeleton, frameOverride, h0\)\s*/) || "";
+    if (!/setAttribute\("aH0",/.test(kreuz)) v.push("die Billboard-Vorlage trägt keinen aH0-Stempel");
+    // Die einzige Nah-Stufe (Strauch: keine L0) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
+    if (!/_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*3/.test(srcNC))
+        v.push("die L1 einer Art ohne L0 (Strauch) ist ungemaskt — sie blendet nicht zum Billboard aus");
+    if (!/_fadeIn\.max\(T\.step\(T\.float\(2\.5\), _aLod\)\)\.mul\(T\.step\(_f1o, _dh\)\)/.test(maske))
+        v.push("die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)");
     const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry\)\s*\{/) || "";
     if (!/_foundrySichtHoehe\(/.test(hoehe)) v.push("_lodTreeVisHeight liest den Foundry-Stempel nicht (_foundrySichtHoehe)");
+    // Ohne bekannte Höhe KEIN Stufen-Urteil (null), nie still 0 (roh, ohne Perf — der alte Geist); die Höhe lebt im
+    // Höhen-Buch, nicht im LRU der Geometrie.
+    const sicht = fnBody(srcNC, /\n {4}_foundrySichtHoehe\(preset, entry, scale\)\s*\{/) || "";
+    if (!/if \(h0 == null\) return null;/.test(sicht)) v.push("_foundrySichtHoehe fällt ohne Höhe still auf 0 (roh) zurück");
+    const buch = fnBody(srcNC, /\n {4}_foundryBaumHoehe\(preset, entry\)\s*\{/) || "";
+    if (!/f\.hoehen/.test(buch)) v.push("_foundryBaumHoehe liest nicht das Höhen-Buch");
+    const satz = fnBody(srcNC, /\n {4}_foundryCacheSet\(key, v\)\s*\{/) || "";
+    if (!/f\.hoehen = new Map\(\)\)\)\.set\(key, v\._hoehe\)/.test(satz)) v.push("der Cache-Chokepoint schreibt das Höhen-Buch nicht");
+    for (const [name, re] of [
+        ["_tickArchitectureLOD", /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/],
+        ["_tickScatterLod", /\n {4}_tickScatterLod\([^)]*\)\s*\{/],
+    ]) {
+        const b = fnBody(srcNC, re) || "";
+        if (!/if \(visH === null\) continue;/.test(b)) v.push(name + " urteilt ohne bekannte Höhe (visH null)");
+    }
     return v;
 }
 
@@ -743,9 +822,16 @@ async function main() {
             ["kein Frame-Spiegel", nc.replace("_lu.uLodPerf.value = this._lodPerfMul();", "")],
             ["Maske ohne Perf", nc.replace(/const _cd = T\.length\(([\s\S]*?)\)\.mul\(\s*_lu\.uLodPerf\s*\);/, "const _cd = T.length($1);")],
             ["Billboard ohne Perf", nc.replace("let _vCD = _dist.mul(_lu.uLodPerf);", "let _vCD = _dist;")],
+            ["Billboard-Höhe ersetzt den Streck", nc.replace("_vCD = _vCD.mul(_k);", "_vCD = _dist.mul(_k);")],
+            ["Billboard mit Rahmen-Höhe", nc.replace('visHeightNode: _Ta.attribute("aH0", "float"),', "visHeightNode: null,")],
+            ["Strauch-L1 ungemaskt", nc.replace(/(_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*)3/, "$10")],
+            ["Maske ohne einzige Nah-Stufe", nc.replace("_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
+            ["Sichthöhe still 0", nc.replace("if (h0 == null) return null;", "if (h0 == null) return 0;")],
+            ["Höhe nur im LRU", nc.replace("if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],
+            ["LOD-Takt urteilt ohne Höhe", nc.replace("if (visH === null) continue;", "")],
             [
                 "Sichthöhe aus dem Grammatik-Bauplan",
-                nc.replace("return this._foundrySichtHoehe(preset, entry.seed, s, this._artifactStudioOv(entry));", "return 0;"),
+                nc.replace("return this._foundrySichtHoehe(preset, entry, s);", "return 0;"),
             ],
         ]) {
             const v = perfWahrheit(src);
@@ -990,6 +1076,26 @@ async function main() {
             SW.gegenprobe.loecher > 0,
             z(SW.gegenprobe)
         );
+        check(
+            "STUFEN-WAHRHEIT: das Billboard stand im Sweep mit SEINEM Stempel (= die Höhe der L1, kein Rahmen-Modell)",
+            (SW.voll.modi.fin || 0) > 0 && (SW.last.modi.fin || 0) > 0,
+            JSON.stringify({ voll: SW.voll.modi, last: SW.last.modi })
+        );
+        const ST = SW.strauch;
+        check(
+            "STRAUCH: Preset strauch, L1 und Billboard warm",
+            out.strauchPreset === "strauch" && out.strauchWarm && out.strauchWarm.l1 && out.strauchWarm.l2,
+            JSON.stringify({ preset: out.strauchPreset, warm: out.strauchWarm })
+        );
+        if (ST) {
+            check(
+                "STRAUCH: die L1 ist die einzige Nah-Stufe (aLodLevel 3) und trifft das Billboard im Band",
+                (ST.voll.modi.l1e || 0) > 0 && (ST.voll.modi.fin || 0) > 0 && !ST.voll.modi.frei,
+                JSON.stringify(ST.voll.modi)
+            );
+            check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
+            check("STRAUCH: kein Loch unter Last (Perf-Streck)", ST.last.proben >= 8 && ST.last.loecher === 0 && ST.last.stempelUngleich === 0, z(ST.last));
+        } else check("STRAUCH-Sweep lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
