@@ -30,6 +30,7 @@
         "gate:fenster-wechsel": "node scripts/diag-fenster-wechsel.cjs",
         "gate:seiten-ordnung": "node scripts/diag-seiten-ordnung.cjs",
         "gate:schatten-takt": "node scripts/diag-schatten-takt.cjs",
+        "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
         "gate:persistence": "node scripts/diag-persistence.cjs",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
