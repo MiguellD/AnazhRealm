@@ -372,14 +372,12 @@ async function checkBandRing2Extended(ctx) {
         const suggestion = r.chatSuggest("setze wettr rainy");
         out.suggestionForTypo = suggestion === "setze wetter rainy";
 
-        // 4. Phase 3b: set_visible-Primitiv + Chat-Routing — `toggleTerrain` wirkt auf `state.voxelChunks`.
+        // 4. Phase 3b: set_visible-Primitiv + Chat-Routing — `toggleTerrain` schaltet den Boden-Satz (Welle B:
+        // der ganze Ring ist EIN Objekt, die Chunk-Meshes sind CPU-Körper).
         const voxelChunksBefore = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
         const someVoxelVisible = () => {
-            if (!r.state.voxelChunks) return false;
-            for (const e of r.state.voxelChunks.values()) {
-                if (e && !e.empty && e.mesh && e.mesh.visible) return true;
-            }
-            return false;
+            const s = r.state.chunkSaetze ? r.state.chunkSaetze.get("boden") : null;
+            return !!(s && s.mesh && s.mesh.visible && s.mesh.parent === r.state.scene);
         };
         r.processChatCommand("Boden deaktivieren");
         out.terrainHiddenViaDsl = voxelChunksBefore > 0 && !someVoxelVisible();
@@ -18378,13 +18376,14 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Gate-Welt hat hohe Warmup-frameMs.
         st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
-        if (st.voxelChunks) st.voxelChunks.delete(tk); // nicht existent → nur entfernen, kein Re-Populate
+        // nicht existent → durch den EINEN Abbau (Welle B: der Boden-Satz verliert den Bereich mit), kein Re-Populate
+        if (st.voxelChunks && st.voxelChunks.has(tk)) r._disposeVoxelChunk(tk);
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
         // (4) V18.282 — RESPONSIVITÄT: Frame ÜBER BUDGET → das Wachstum PAUSIERT; Frame frei → es läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
-        if (st.voxelChunks) st.voxelChunks.delete(tk2);
+        if (st.voxelChunks && st.voxelChunks.has(tk2)) r._disposeVoxelChunk(tk2);
         st.foliageRadius = 9999;
         st.pendingFoliageChunks = new Set([tk2]);
         st._frameOverBudget = true;
@@ -24308,9 +24307,6 @@ async function checkBandV171Scatter(ctx) {
         // (2) Methoden existieren.
         out.buildExists = typeof r._buildVoxelChunkScatter === "function";
         out.disposeExists = typeof r._disposeVoxelChunkScatter === "function";
-        out.acquireExists = typeof r._acquireScatterMesh === "function";
-        out.releaseExists = typeof r._releaseScatterMesh === "function";
-        out.drainExists = typeof r._drainScatterMeshPools === "function";
         out.geomExists = typeof r._scatterSpeciesGeometry === "function";
         out.matExists = typeof r._scatterMaterial === "function";
         if (!out.buildExists || !out.geomExists || !out.matExists) return out;
@@ -24369,24 +24365,27 @@ async function checkBandV171Scatter(ctx) {
         const key = `${best.cx},${best.cz}`;
         // Sauberer Start.
         r._disposeVoxelChunkScatter(key);
-        r._drainScatterMeshPools();
 
         r._buildVoxelChunkScatter(best.cx, best.cz);
         const list1 = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.get(key) : null;
         out.scatterEntrySet = Array.isArray(list1);
-        const countMeshes = (list) =>
-            Array.isArray(list) ? list.reduce((s, it) => s + (it.mesh ? it.mesh.count : 0), 0) : 0;
+        // Welle B — DER STREU-SATZ: je Chunk die Block-Größen je Art; der Block wohnt in der EINEN Art-Mesh.
+        const countMeshes = (list) => (Array.isArray(list) ? list.reduce((s, it) => s + (it.n || 0), 0) : 0);
         const total1 = countMeshes(list1);
         out.totalInstances1 = total1;
         out.hasInstances = total1 > 0;
         out.meshesAreInstanced =
-            Array.isArray(list1) && list1.every((it) => it.mesh && it.mesh.isInstancedMesh === true);
-        // Caps respektiert (count ≤ species.cap pro Art).
+            Array.isArray(list1) &&
+            list1.every((it) => {
+                const b = r._streuNahBereich(it.name, key);
+                return !!b && b.mesh.isInstancedMesh === true && b.n === it.n && b.mesh.name === "streuNah:" + it.name;
+            });
+        // Caps respektiert (Block-Größe ≤ species.cap pro Art).
         out.capsRespected =
             Array.isArray(list1) &&
             list1.every((it) => {
                 const sp = species.find((s) => s.name === it.name);
-                return sp && it.mesh.count <= sp.cap;
+                return sp && it.n <= sp.cap;
             });
 
         // (5) Determinismus: dispose → rebuild → identische Gesamt-Instanzzahl.
@@ -24398,36 +24397,45 @@ async function checkBandV171Scatter(ctx) {
         out.totalInstances2 = total2;
         out.deterministic = total1 === total2;
 
-        // (6) Pool-Recycling: nach Dispose sind die Meshes im Art-Pool, ein
-        // erneuter Build poppt dieselben Mesh-Objekte (Identity).
-        const firstMesh = Array.isArray(list2) && list2[0] ? list2[0].mesh : null;
+        // (6) Welle B — DER STREU-SATZ: der Dispose nimmt den Block aus der Art-Mesh (Anzahl sinkt um seine
+        // Größe), der Neubau hängt ihn an DIESELBE Art-Mesh (Identity) — keine Mesh je Chunk, kein Pool.
         const firstName = Array.isArray(list2) && list2[0] ? list2[0].name : null;
+        const artFirst = firstName && r.state.streuNah ? r.state.streuNah.get(firstName) : null;
+        const firstMesh = artFirst ? artFirst.mesh : null;
+        const vorAnzahl = artFirst ? artFirst.anzahl : -1;
+        const firstN = Array.isArray(list2) && list2[0] ? list2[0].n : 0;
         r._disposeVoxelChunkScatter(key);
-        const poolForFirst = firstName && r.state._scatterMeshPools ? r.state._scatterMeshPools.get(firstName) : null;
-        out.poolHasReleased = Array.isArray(poolForFirst) && poolForFirst.includes(firstMesh);
+        out.satzReleased =
+            !!artFirst && artFirst.anzahl === vorAnzahl - firstN && !r._streuNahBereich(firstName, key);
         r._buildVoxelChunkScatter(best.cx, best.cz);
-        const list3 = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.get(key) : null;
-        const reMesh = Array.isArray(list3) && list3.find((it) => it.name === firstName);
-        out.poolRecycledIdentity = !!(reMesh && reMesh.mesh === firstMesh);
+        const reB = firstName ? r._streuNahBereich(firstName, key) : null;
+        out.satzIdentity = !!(reB && reB.mesh === firstMesh && artFirst.anzahl === vorAnzahl);
 
-        // (7) Cap-Disziplin des Pools: viele Build/Dispose-Zyklen → Pool bounded.
-        let maxPool = 0;
+        // (7) Satz-Disziplin: viele Build/Dispose-Zyklen → die Anzahl je Art kehrt zurück, die Art-Mesh wächst nie
+        // (die Szene trägt höchstens EINE Streu-Mesh je Art).
+        const anzahlVor = new Map();
+        const kapVor = new Map();
+        for (const [n, a] of r.state.streuNah) {
+            anzahlVor.set(n, a.anzahl);
+            kapVor.set(n, a.kap);
+        }
         for (let i = 0; i < 40; i++) {
             r._disposeVoxelChunkScatter(key);
             r._buildVoxelChunkScatter(best.cx, best.cz);
-            for (const pool of r.state._scatterMeshPools.values()) {
-                if (pool.length > maxPool) maxPool = pool.length;
-            }
         }
-        const maxCap = Math.max(...species.map((s) => s.pool || 16));
-        out.poolBounded = maxPool <= maxCap;
+        let streuMeshes = 0;
+        r.state.scene.traverse((o) => {
+            if (o.isInstancedMesh && o.userData && o.userData.inventar === "streu-klein") streuMeshes++;
+        });
+        out.satzBounded =
+            [...r.state.streuNah].every(([n, a]) => a.anzahl === anzahlVor.get(n) && a.kap === kapVor.get(n)) &&
+            streuMeshes <= r.state.streuNah.size;
 
         // (8) Deferred-Queue: enqueue → tick baut (Wasser-Iso-Pattern). Der Tick
         // baut nur, wenn der Chunk in voxelChunks präsent ist — für den Test
         // einen Stub injizieren, falls die Region nicht gestreamt ist.
         out.queueApiExists = typeof r._enqueueScatter === "function" && typeof r._tickPendingScatter === "function";
         r._disposeVoxelChunkScatter(key);
-        r._drainScatterMeshPools();
         let injectedStub = false;
         if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
         if (!r.state.voxelChunks.has(key)) {
@@ -24444,7 +24452,6 @@ async function checkBandV171Scatter(ctx) {
 
         // Aufräumen + Spieler-Chunk restaurieren.
         r._disposeVoxelChunkScatter(key);
-        r._drainScatterMeshPools();
         r.state.lastPlayerVoxelChunk = prevLpc;
         out.cleanedUp = !(r.state.voxelChunkScatter && r.state.voxelChunkScatter.has(key));
         return out;
@@ -24472,10 +24479,6 @@ async function checkBandV171Scatter(ctx) {
         res.buildExists === true && res.disposeExists === true
     );
     check(
-        "V17.1 Scatter: Pool-API (acquire/release/drain) existiert",
-        res.acquireExists === true && res.releaseExists === true && res.drainExists === true
-    );
-    check(
         "V17.1 Scatter: Geometrie-Singleton trägt Vertex-Farb-Attribut",
         res.geomHasColor === true && res.geomHasPosition === true
     );
@@ -24492,9 +24495,12 @@ async function checkBandV171Scatter(ctx) {
     check("V17.1 Scatter: Instanz-Zahl je Art respektiert den konstanten Cap", res.capsRespected === true);
     check("V17.1 Scatter: deterministisch (selbe Region → selbe Instanz-Zahl)", res.deterministic === true);
     check("V17.1 Scatter: Dispose entfernt den Scatter-Eintrag", res.entryGoneAfterDispose === true);
-    check("V17.1 Scatter: Dispose gibt Mesh in den Art-Pool zurück", res.poolHasReleased === true);
-    check("V17.1 Scatter: Pool recycelt dasselbe Mesh-Objekt (Identity)", res.poolRecycledIdentity === true);
-    check("V17.1 Scatter: Pool bleibt bounded über 40 Build/Dispose-Zyklen", res.poolBounded === true);
+    check("Welle B Streu-Satz: Dispose nimmt den Chunk-Block aus der Art-Mesh", res.satzReleased === true);
+    check("Welle B Streu-Satz: der Neubau hängt den Block an DIESELBE Art-Mesh (Identity)", res.satzIdentity === true);
+    check(
+        "Welle B Streu-Satz: 40 Build/Dispose-Zyklen — Anzahl kehrt zurück, kein Wachsen, ≤ 1 Streu-Mesh je Art",
+        res.satzBounded === true
+    );
     check("V17.1 Scatter: deferred-Queue-API (enqueue/tick) existiert", res.queueApiExists === true);
     check("V17.1 Scatter: _enqueueScatter reiht den Chunk ein", res.enqueued === true);
     check(
@@ -27860,8 +27866,8 @@ async function checkBandV18133Forage(ctx) {
         if (r.state.voxelChunkScatter) {
             for (const [key, list] of r.state.voxelChunkScatter) {
                 for (const it of list) {
-                    if (it.mesh && it.mesh.count > 0) {
-                        pick = { key, name: it.name, index: 0, mesh: it.mesh };
+                    if (it.n > 0) {
+                        pick = { key, name: it.name, index: 0 };
                         break;
                     }
                 }
@@ -27880,7 +27886,8 @@ async function checkBandV18133Forage(ctx) {
             out.harvested = ok1 && countMat() - before === 1;
             out.doubleRejected = r._harvestScatterPick(pick) === false;
             const m = new window.THREE.Matrix4();
-            pick.mesh.getMatrixAt(0, m);
+            const bereich = r._streuNahBereich(pick.name, pick.key); // Welle B: der Block in der Art-Mesh
+            bereich.mesh.getMatrixAt(bereich.start + pick.index, m);
             out.zeroScaled = Math.abs(m.elements[0]) < 1e-6;
             // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) +
             // Scatter des Chunks neu (die Instanz kehrt sofort zurueck).
