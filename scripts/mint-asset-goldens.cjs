@@ -21,6 +21,9 @@ const T_SEEDS = [7, 12345];
 const T_LODS = [0, 1, 2];
 const T_SEASONS = ["summer", "winter"];
 const OTHERS = ["findling", "kristalle", "blume", "strauch"]; // je 1 Fall, seed 7 / L0 / summer
+// Die GELIEFERTE Strauch-Stufe (kindStages shrub [1,2], L0 wird auf L1 geklemmt) — seit 04.10. eingefroren wie die
+// Baum-L1 (der Reisig-Schnitt der Budget-Welle trifft sie, gate:asset-contract hält sie byte-genau).
+const EXTRA = [{ presetId: "strauch", seed: 7, lod: 1, season: "summer" }];
 
 function cases() {
     const out = [];
@@ -28,6 +31,7 @@ function cases() {
         for (const presetId of TREES)
             for (const seed of T_SEEDS) for (const lod of T_LODS) out.push({ presetId, seed, lod, season });
     for (const presetId of OTHERS) out.push({ presetId, seed: 7, lod: 0, season: "summer" });
+    for (const c of EXTRA) out.push(Object.assign({}, c));
     return out;
 }
 const fileFor = (c) => `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}.json`;
