@@ -72,7 +72,7 @@ const SEITEN_PORT = PORT - 1;
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 const ECHT = argv.includes("--echt");
-const ECHT_SEITE = "http://localhost:4312";
+const ECHT_SEITE = opt("--seite", process.env.WERKBANK_SEITE || "http://localhost:4312");
 
 // DER VRAM-ABGRIFF: jede Allokation des GPUDevice (Puffer: size; Textur: alle Mip-Stufen × Schichten ×
 // Samples × Bytes je Texel) live mitgezählt, destroy zieht ab. Läuft vor jedem Seiten-Skript.
@@ -273,8 +273,8 @@ function lauf(k) {
                 return void (tVor = t);
             }
             // `_perfFrame` ist am Takt-Ende schon gefaltet und geleert; renderer.info trägt die Summe aller Pässe
-            // des Frames (der Loop setzt es je Frame zurück) — die HUD-Zahl. Bundle-Replays bucht r184 dort NICHT
-            // (Lehre 23): die Wahrheit je Pass und Klasse zählt `zaehlen`.
+            // des Frames (der Loop setzt es je Frame zurück) — die HUD-Zahl; die Wahrheit je Pass und Klasse zählt
+            // `zaehlen` (Lehre 23).
             const ri = (rend.info && rend.info.render) || {};
             const p = { dt: tVor == null ? null : t - tVor, cpu: performance.now() - c0, gerendert };
             if (gerendert) {

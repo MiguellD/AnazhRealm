@@ -14,8 +14,7 @@
 // - `readRenderTargetPixelsAsync` liefert die Zeilen auf 256 Byte ausgerichtet (bytesPerRow); bei
 //   W·Bytes ∤ 256 liegt jede Zeile versetzt (eine 8×8-Probe las exakt ¼).
 // - Bei ruhendem Loop schaltet niemand den NODE-FRAME weiter: Licht-Uniforms bleiben auf dem Stand des
-//   ersten Schusses. Vor jedem Render `nodeFrame.update()`. Und: Meshes in einer `BundleGroup` folgen
-//   `visible` erst nach `needsUpdate` (sonst spielt das aufgezeichnete Bündel weiter).
+//   ersten Schusses. Vor jedem Render `nodeFrame.update()`.
 
 function albedoSicht(opts) {
     return (async () => {
@@ -86,10 +85,6 @@ function albedoSicht(opts) {
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
         const cam = st.camera;
         const srgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
         const lies = async () => {
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
@@ -102,7 +97,6 @@ function albedoSicht(opts) {
         };
         const schuss = async (sicht) => {
             for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
-            bundles();
             const pass = async (e) => {
                 for (const [l] of lichtAlt) l.intensity = 0;
                 A.color.setRGB(1, 1, 1);
@@ -240,7 +234,6 @@ function albedoSicht(opts) {
             }
         } finally {
             for (const m of meshes) m.visible = visAlt.get(m);
-            bundles();
             for (const [l, i, c] of lichtAlt) {
                 l.intensity = i;
                 l.color.copy(c);
@@ -307,10 +300,6 @@ function lichtBilanz() {
             if (e === 31) return f ? NaN : Infinity;
             return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
         };
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
         const mess = async (n) => {
             karte.position.copy(basis);
             karte.lookAt(basis.clone().add(n));
@@ -353,7 +342,6 @@ function lichtBilanz() {
             };
         try {
             for (const m of meshes) m.visible = false;
-            bundles();
             if (sc.fog) {
                 sc.fog.near = 1e7;
                 sc.fog.far = 2e7;
@@ -374,7 +362,6 @@ function lichtBilanz() {
             }
         } finally {
             for (const m of meshes) m.visible = visAlt.get(m);
-            bundles();
             for (const [l, i] of lichtAlt) l.intensity = i;
             sc.environment = envAlt;
             if (fogAlt) {

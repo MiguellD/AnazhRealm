@@ -2,8 +2,8 @@
 // Schatten-Kaskade) und je KLASSE, an EINEM echten Frame. Befund 02.10.: das HUD (renderer.info) sah die
 // Region-Bundles im Replay nicht (148 dc), die GPU führte 29 943 Befehle aus — 97,5 % davon aus
 // BatchedMeshes, die unter WebGPU je INSTANZ einen drawIndexed ausgeben. Die Zahl hier kommt vom
-// Renderer-Draw selbst (`_renderObjectDirect`), die Region-Bundles werden für den Zähl-Frame neu
-// aufgenommen (sonst zöge der Replay sie ungesehen).
+// Renderer-Draw selbst (`_renderObjectDirect`); seit die Region-Bundles fielen (04.10.), zieht jeder Draw
+// durch ihn — kein Replay zieht ungesehen.
 //
 //   Seite:     window.__drawZensus({ top: 16 }) → { passe: {haupt, k0, k1, …}, klassen, programme, frameMs }
 //   Werkbank:  node scripts/werkbank.cjs zaehlen [px py pz lx ly lz]   (Höhen mit `+` relativ zum Boden)
@@ -51,12 +51,13 @@ function drawZensus(opts) {
             const u = top.userData || {};
             if (u._tierBaum) return "tier";
             if (top === st.playerMesh) return "spieler";
-            if (top.isBundleGroup) {
+            // Eine Region-Gruppe (die Cull-Einheit der Streu) nennt ihre Mitglieder nach deren Instanz-Schlüssel.
+            if (u.regionKey != null && top !== obj) {
                 let m = obj;
                 while (m.parent && m.parent !== top) m = m.parent;
                 const k = (m.userData && m.userData.archInstanceKey) || null;
                 if (k) return instKlasse(k);
-                return "bundle:" + name(m);
+                return "region:" + name(m);
             }
             if (u.archInstanceKey) return instKlasse(u.archInstanceKey);
             return name(top);
@@ -87,9 +88,6 @@ function drawZensus(opts) {
         const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
         let frameMs = null;
         try {
-            st.scene.traverse((n) => {
-                if (n.isBundleGroup) n.needsUpdate = true;
-            });
             r._schattenAlleNeu();
             if (q) await q.onSubmittedWorkDone();
             const t0 = performance.now();
@@ -102,7 +100,9 @@ function drawZensus(opts) {
         const passe = {};
         const klassen = {};
         for (const [k, v] of Object.entries(zaehl)) {
-            const [kl, p] = k.split("|");
+            // Der Pass steht hinter dem LETZTEN Strich (Studio-Schlüssel tragen selbst `|`).
+            const kl = k.slice(0, k.lastIndexOf("|")),
+                p = k.slice(k.lastIndexOf("|") + 1);
             const e = passe[p] || (passe[p] = { cmd: 0, tris: 0 });
             e.cmd += v.cmd;
             e.tris += Math.round(v.tris);

@@ -195,8 +195,11 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     Boden-Karte (`_chunkSurfaceAt`, aus dem fertigen Mesh); Körper stehen auf dem Gesetz (Lockstep). Und im
     positionNode ist `positionLocal` schon instanziert (r184) — Höhen-Gewichte lesen `positionGeometry`.
 23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
-    Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
-    ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines).
+    Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm) — Kosten zählt `werkbank zaehlen`
+    (GPU-Befehle je Pass und Klasse, Programme, Pipelines). Ein RenderBundle trägt in r184 die Kamera nicht: der
+    Renderer hält `_currentRenderBundle` ohne Stapel, der Schatten-Render im ersten Objekt des Hauptpasses
+    (ShadowNode.updateBefore) setzt ihn mitten in der Aufnahme auf null — der Replay refreshte 1 von 129 Draws, die
+    Region-Bundles fielen (04.10.); jede Abkürzung der Diät schreibt die geteilte Gruppe je PROGRAMM (`gate:vendor-anker`).
 24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
     je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
     was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.
@@ -207,8 +210,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     Foundry-Worker ist so ein Budget: der Host hält seine Schlange (`_foundryAuftrag`, 12 im Flug, nah zuerst), nie FIFO.
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass rendert mit der Kaskaden-Kamera (`cameraPosition`
     = Licht-Kamera, 145 m weit) und liest nur colorNode.a · map.a · maskShadowNode, nie opacityNode — jede LOD-Maske misst
-    vom Auge (`uLodAuge`), jeder Ausschnitt lebt in colorNode.a (`gate:foundry-crossfade` Schatten-Wahrheit). Schatten-
-    Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; vor dem Push läuft JEDER CI-Schritt lokal, nie eine Auswahl;
+    vom Auge (`uLodAuge`), jeder Ausschnitt lebt in colorNode.a (`gate:foundry-crossfade` Schatten-Wahrheit). Vor dem
+    Push läuft JEDER CI-Schritt lokal, nie eine Auswahl;
     Echt-Renderer-Linsen auf CPU-Raster fahren das Software-Holz (`?holz=kienspan`) — auf „voll" kostet ein Compile 50–70 s;
     swiftshader kompiliert synchron (kein KHR_parallel_shader_compile, `compileAsync` blockiert), `_gameLoopTick` rendert
     selbst: jeder Linsen-Aufruf ist benannt und trägt höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`).

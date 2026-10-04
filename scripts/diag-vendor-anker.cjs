@@ -3,11 +3,12 @@
 // DIE VENDOR-ANKER-WAND — gate:vendor-anker (GOLD 3, 19.07.)
 //
 // Der Stamm patcht/liest den minifizierten three-r184-Vendor zur Laufzeit an
-// fünf Organen (Observer-Diät · Uniform-Heimat · Reife-Wache · Batch-Textur-
-// Wächter · Bundle-Pass-Physik). Jeder dieser Eingriffe hängt an EXAKTEN
-// Vendor-Wahrheiten (Methoden-/Feld-Namen, Verhaltens-Signaturen). Ein
-// three-Versions-Sprung würde sie STILL brechen — die Welt liefe, aber die
-// Diät griffe nie, die Reife-Wache wache über nichts.
+// seinen Organen (Observer-Diät + Kamera-Treue · Schatten-Diät · Uniform-Heimat ·
+// Schatten-Takt · Instanz-Puffer-Name · Satz-Teil-Upload). Jeder dieser Eingriffe
+// hängt an EXAKTEN Vendor-Wahrheiten (Methoden-/Feld-Namen, Verhaltens-
+// Signaturen). Ein three-Versions-Sprung würde sie STILL brechen — die Welt liefe,
+// aber die Diät griffe nie. (Die Region-RenderBundles fielen 04.10. — mit ihnen die
+// Reife-Wache, die Bundle-Reihenfolge, die Replay-Buchung und ihre Anker.)
 //
 // Diese Wand pinnt: (1) den Fingerabdruck (Größe + FNV-Hash) jeder Vendor-
 // Datei — ein Bump ist ein BEWUSSTER Akt (Hash hier nachziehen = der Vertrag,
@@ -45,19 +46,15 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "setupObserver(e){return new", organ: "_materialObserverDiaet (Diät-Naht)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.hasNode=this.containsNode(", organ: "_materialObserverDiaet (hasNode-Kurzschluss)" },
     { file: "vendor/three.webgpu.min.js", sub: "needsRefresh(e,t){if(this.hasNode||this.hasAnimation", organ: "_materialObserverDiaet (Monitor-Bahn)" },
-    // Die EINE Diät-Prüfung: r184 refresht je Render vor seiner eigenen Bundle-Abkürzung; die Bundle-Version im
-    // Objekt-Datensatz pflegt nur equals()
-    { file: "vendor/three.webgpu.min.js", sub: "if(this.renderId!==r)return this.renderId=r,!0;const s=!0===e.object.static,i=null!==e.bundle&&!0===e.bundle.static&&this.getRenderObjectData(e).version===e.bundle.version", organ: "AnazhRealm._diaetRefresh (Bundle-Replay-Abkürzung vor der renderId-Wand)" },
-    { file: "vendor/three.webgpu.min.js", sub: "null!==e.bundle&&(a.version=e.bundle.version)", organ: "AnazhRealm._diaetRefresh (Bundle-Version im Objekt-Datensatz)" },
+    // DIE KAMERA-TREUE des direkten Pfads: Beobachter UND geteilte Bindegruppe (render · frame: Kamera-Matrizen,
+    // uLodAuge) hängen am PROGRAMM (NodeBuilderState), nie an der Welt; die renderId-Wand je Beobachter schreibt sie
+    // je Programm und Render. Jede Abkürzung der Diät muss diese Gruppe je Programm und Render selbst schreiben.
+    { file: "vendor/three.webgpu.min.js", sub: "getMonitor(){return this._monitor||(this._monitor=this.getNodeBuilderState().observer)}", organ: "AnazhRealm._diaetRefresh (Beobachter je Programm)" },
+    { file: "vendor/three.webgpu.min.js", sub: "createBindings(){const e=[];for(const t of this.bindings){if(!0!==t.bindings[0].groupNode.shared){", organ: "AnazhRealm._diaetRefresh (geteilte Gruppe je Programm)" },
+    { file: "vendor/three.webgpu.min.js", sub: "if(this.renderId!==r)return this.renderId=r,!0;", organ: "AnazhRealm._diaetRefresh (renderId-Wand je Beobachter)" },
     // Die Schatten-Diät: EIN Schatten-Material je Licht, die Original-Knoten hängen je Objekt darin
     { file: "vendor/three.webgpu.min.js", sub: 't.isShadowPassMaterial=!0,t.name="ShadowMaterial"', organ: "Schatten-Diät (_configureRenderer, isShadowPassMaterial)" },
     { file: "vendor/three.webgpu.min.js", sub: "e.isShadowPassMaterial){const{colorNode:t,depthNode:r,positionNode:s}=this._getShadowNodes(i)", organ: "Schatten-Diät (Original-Knoten im Override)" },
-    // Die Bundle-Reihenfolge: r184 sammelt Bundles und führt sie erst in finishRender aus (nach allen direkten Draws);
-    // _configureRenderer führt sie direkt nach _renderBundles aus und setzt den gemerkten Pass-Zustand zurück
-    { file: "vendor/three.webgpu.min.js", sub: "finishRender(e){const t=this.get(e),r=e.occlusionQueryCount;t.renderBundles.length>0&&t.currentPass.executeBundles(t.renderBundles)", organ: "Bundle-Reihenfolge (_configureRenderer, executeBundles erst in finishRender)" },
-    { file: "vendor/three.webgpu.min.js", sub: "S.length>0&&this._renderBundles(S,l,R),!0===this.opaque&&w.length>0&&this._renderObjects(w,t,l,R)", organ: "Bundle-Reihenfolge (Bundles vor den opaken Direkt-Draws)" },
-    { file: "vendor/three.webgpu.min.js", sub: "addBundle(e,t){this.get(e).renderBundles.push(this.get(t).bundleGPU)}", organ: "Bundle-Reihenfolge (die gesammelte Liste)" },
-    { file: "vendor/three.webgpu.min.js", sub: "t.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null},t.renderBundles=[]", organ: "Bundle-Reihenfolge (Pass-Zustand nach executeBundles)" },
     // Der Fenster-Wechsel: die Viewport-Tiefe ist ein Klon je Render-Ziel (der EINE Leser bindet nach setSize neu)
     { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "_tiefenLeserNeuBinden (Viewport-Tiefen-Klon je Ziel)" },
     // Der Schatten-Takt (_loopShadowUpdate): der EINE Leser je Licht, die Matrix nur im Schatten-Render, die
@@ -69,14 +66,6 @@ const ANKER = [
     // Uniform-Heimat (shared-Gruppen-Klon-Weiche + renderGroup-Export)
     { file: "vendor/three.webgpu.min.js", sub: "groupNode.shared", organ: "_uniformHeimatTeilen (Klon-Weiche)" },
     { file: "vendor/three.webgpu.min.js", sub: "setGroup(e){return this.groupNode=e,this}", organ: "_uniformHeimatTeilen (setGroup)" },
-    // Reife-Wache (Record droppt unfertige Pipelines + versiegelt danach)
-    { file: "vendor/three.webgpu.min.js", sub: "isReady(u)&&", organ: null, weich: true },
-    { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_bundleReifeWache (Record-Versiegelung)" },
-    // Bundle-Pass-Physik (Wasser bleibt draußen, solange der Copy den Pass bricht)
-    { file: "vendor/three.webgpu.min.js", sub: "currentPass.end()", organ: "Wasser-Bundle-Wand (copyFramebufferToTexture-Pass-Bruch)" },
-    // Bundle-Replay-Buchung: die Draw-Wahrheit im Info (der Replay zieht aufgenommene RenderObjects)
-    { file: "vendor/three.webgpu.min.js", sub: "_renderBundle(e,t,r){const{bundleGroup:s,camera:i,renderList:n}=e,a=this._currentRenderContext,o=this._bundles.get(s,i,a)", organ: "Bundle-Replay-Buchung (renderer._renderBundle → info.update)" },
-    { file: "vendor/three.webgpu.min.js", sub: "getDrawParameters(){", organ: "Bundle-Replay-Buchung (Draw-Parameter)" },
     // Der stabile Puffer-Name: InstanceNode baut die Matrix-Puffer, der WGSL-Builder nennt sie ohne Namen nach der id
     { file: "vendor/three.webgpu.min.js", sub: "_createInstanceMatrixNode(e,t){let r;const{instanceMatrix:s}=this", organ: "Instanz-Puffer-Name (InstanceNode._createInstanceMatrixNode → setName)" },
     { file: "vendor/three.webgpu.min.js", sub: '"NodeBuffer_"+', organ: "Instanz-Puffer-Name (der id-Name, den setName ersetzt)" },
@@ -91,85 +80,182 @@ const ANKER = [
     },
 ];
 
-// Die Diät-Prüfung aus dem Stamm schneiden und gegen Schein-Beobachter fahren. `manipuliert` entfernt den
-// Render-Stempel (die Abkürzung griffe dann auch, bevor ein Refresh die geteilte renderGroup schrieb).
+// DIE DIÄT-PRÜFUNG (Kamera-Treue des direkten Pfads): die Diät-Funktionen aus dem Stamm schneiden (vom ersten
+// `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
+// Semantik: EIN Beobachter und EINE geteilte Gruppe je Programm, mehrere Objekte je Programm, die Vendor-Bahn
+// (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest: "abkuerzung" kürzt jedes bekannte Objekt
+// ohne Schreiben ab (die Klasse der Bundle-Abkürzung V18.518), "schreiben" nimmt der Diät ihr Schreiben der
+// geteilten Gruppe (falls sie eins hat).
 function diaetLaden(manipuliert) {
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
-    const a = stamm.indexOf("AnazhRealm._diaetRefresh = function");
-    const e = a < 0 ? -1 : stamm.indexOf("\n};\n", a);
-    if (a < 0 || e < 0) return null;
+    const b = stamm.indexOf("AnazhRealm._diaetRefresh = function");
+    if (b < 0) return null;
+    const s0 = stamm.indexOf("AnazhRealm._diaetGeteiltSchreiben = function");
+    const a = s0 >= 0 && s0 < b ? s0 : b;
+    const e = stamm.indexOf("\n};\n", b);
+    if (e < 0) return null;
     let src = stamm.slice(a, e + 3);
-    if (manipuliert) src = src.replace("rend._anazhDiaetRid === rid &&", "true &&");
+    if (manipuliert === "schreiben") {
+        const vor = src;
+        src = src.split("AnazhRealm._diaetGeteiltSchreiben(rend, ro);").join("");
+        if (src === vor) return null;
+    }
     const AnazhRealm = {};
     new Function("AnazhRealm", src)(AnazhRealm);
-    return AnazhRealm._diaetRefresh;
+    const echt = AnazhRealm._diaetRefresh;
+    if (manipuliert === "abkuerzung")
+        return (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : echt(obs, ro, frame, altNR));
+    return echt;
 }
 function diaetLauf(fn) {
-    // Schein-Beobachter je Objekt (jede Pflanzen-Gruppe hat ihre eigene Geometrie → ihren eigenen Beobachter).
-    const beob = () => ({
+    const N_PROG = 20,
+        N_OBJ = 50;
+    let geschrieben = null,
+        objektDurchDiaet = 0;
+    const beobachter = () => ({
         renderObjects: new Map(),
         renderId: -1,
+        hasNode: false,
+        hasAnimation: false,
         getRenderObjectData(ro) {
             let d = this.renderObjects.get(ro);
             if (!d) {
-                d = { version: ro.bundle ? ro.bundle.version : undefined };
+                d = { welt: ro.object.welt };
                 this.renderObjects.set(ro, d);
             }
             return d;
         },
+        needsVelocity() {
+            return false;
+        },
+        getLights() {
+            return [];
+        },
+        equals(ro) {
+            const d = this.getRenderObjectData(ro);
+            if (d.welt !== ro.object.welt) {
+                d.welt = ro.object.welt;
+                return false;
+            }
+            return true;
+        },
     });
-    // Die r184-Vendor-Bahn eines TSL-Materials: renderId-Wand vor allem (hasNode/Erst-Init ⇒ true).
+    // Die r184-Vendor-Bahn eines Beobachters: Kopf (hasNode/Animation/Erst-Init) → renderId-Wand → equals().
     const altNR = function (ro, frame) {
-        if (!this.renderObjects.has(ro)) return this.getRenderObjectData(ro), true;
-        if (this.renderId !== frame.renderId) return (this.renderId = frame.renderId), true;
-        return false;
+        if (this.hasNode || this.hasAnimation || !this.renderObjects.has(ro)) {
+            this.getRenderObjectData(ro);
+            return true;
+        }
+        if (this.renderId !== frame.renderId) {
+            this.renderId = frame.renderId;
+            return true;
+        }
+        return this.equals(ro, [], frame.renderId) !== true;
     };
-    const rend = {};
-    const bundle = { static: true, version: 1 };
+    // Der Schein-Renderer: was die Diät selbst schreibt (Knoten der Gruppe + Upload), zählt je Programm.
+    const rend = {
+        _nodes: {
+            updateBefore() {},
+            getNodeFrameForRender: () => ({ updateNode() {} }),
+        },
+        _bindings: {
+            _update(g) {
+                if (g.bindings[0].groupNode.shared === true) geschrieben.set(g.prog, (geschrieben.get(g.prog) || 0) + 1);
+                else objektDurchDiaet++;
+            },
+        },
+    };
+    const programme = [];
+    for (let p = 0; p < N_PROG; p++)
+        programme.push({
+            id: p,
+            obs: beobachter(),
+            geteilt: { prog: p, bindings: [{ groupNode: { shared: true } }] },
+            nbs: {
+                updateNodes: [{ getUpdateType: () => "render" }, { getUpdateType: () => "object" }],
+                updateBeforeNodes: [],
+                updateAfterNodes: [],
+            },
+        });
     const objekte = [];
-    for (let i = 0; i < 50; i++) {
-        const obj = { isInstancedMesh: true, instanceMatrix: { version: 0 }, instanceColor: null, material: {} };
-        objekte.push({ ro: { object: obj, material: obj.material, bundle }, o: beob() });
+    for (let i = 0; i < N_OBJ; i++) {
+        const prog = programme[i % N_PROG];
+        const obj = {
+            isInstancedMesh: true,
+            instanceMatrix: { version: 0 },
+            instanceColor: null,
+            material: { _anazhDiaet: true },
+            welt: 0,
+        };
+        const objektGruppe = { bindings: [{ groupNode: { shared: false } }] };
+        objekte.push({
+            prog,
+            ro: {
+                object: obj,
+                material: obj.material,
+                lightsNode: {},
+                getBindings: () => [prog.geteilt, objektGruppe],
+                getNodeBuilderState: () => prog.nbs,
+            },
+        });
     }
-    const frei = { ro: { object: { material: {} }, material: {}, bundle: null }, o: beob() };
     let rid = 0;
     const render = (vorher) => {
         rid++;
         const frame = { renderer: rend, renderId: rid };
         if (vorher) vorher();
-        let n = 0;
-        for (const x of objekte) if (fn(x.o, x.ro, frame, altNR)) n++;
-        const nFrei = fn(frei.o, frei.ro, frame, altNR) ? 1 : 0;
-        return { n, nFrei };
+        geschrieben = new Map();
+        objektDurchDiaet = 0;
+        const voll = new Set();
+        for (let i = 0; i < objekte.length; i++) {
+            const x = objekte[i];
+            // Ein Voll-Refresh schreibt alle Gruppen des Objekts (die Vendor-Bahn), die geteilte eingeschlossen.
+            if (fn(x.prog.obs, x.ro, frame, altNR)) {
+                voll.add(i);
+                geschrieben.set(x.prog.id, (geschrieben.get(x.prog.id) || 0) + 1);
+            }
+        }
+        let fehlt = 0;
+        for (const p of programme) if (!geschrieben.get(p.id)) fehlt++;
+        return { voll, fehlt, objektDurchDiaet };
     };
     const r1 = render();
     const r2 = render();
     const r3 = render();
-    const r4 = render(() => objekte[7].ro.object.instanceMatrix.version++);
-    const r5 = render(() => bundle.version++);
+    const r4 = render(() => objekte[7].ro.object.welt++);
+    const r5 = render(() => objekte[11].ro.object.instanceMatrix.version++);
     const r6 = render();
     return { r1, r2, r3, r4, r5, r6 };
 }
 function diaetProbe(selftest) {
     const fehler = [];
-    const fn = diaetLaden(false);
+    const fn = diaetLaden(null);
     if (!fn) return { fehler: ["AnazhRealm._diaetRefresh nicht im Stamm gefunden"], selbstFeuert: false };
     const pruefe = (z) => {
         const f = [];
-        if (z.r1.n !== 50) f.push(`Erst-Render: alle 50 Objekte initialisieren (ist ${z.r1.n})`);
-        if (z.r2.n !== 1 || z.r3.n !== 1)
-            f.push(`Bundle-Replay: je Render GENAU EIN Refresh (der Stempel schreibt die renderGroup) — ist ${z.r2.n}/${z.r3.n}`);
-        if (z.r4.n !== 2) f.push(`Instanz-Mutation: der Stempel-Refresh + das mutierte Objekt (ist ${z.r4.n})`);
-        if (z.r5.n !== 50) f.push(`Bundle-Neuaufnahme: alle 50 refreshen einmal (ist ${z.r5.n})`);
-        if (z.r6.n !== 1) f.push(`nach der Neuaufnahme wieder GENAU EIN Refresh (ist ${z.r6.n})`);
-        if ([z.r1, z.r2, z.r3, z.r4, z.r5, z.r6].some((r) => r.nFrei !== 1))
-            f.push("ein Objekt OHNE Bundle kürzt nie ab (Vendor-Bahn je Render)");
+        if (z.r1.voll.size !== 50) f.push(`Erst-Render: alle 50 Objekte initialisieren (ist ${z.r1.voll.size})`);
+        for (const [k, r] of Object.entries(z)) {
+            if (r.fehlt)
+                f.push(
+                    `Kamera-Treue ${k}: ${r.fehlt} von 20 Programmen ohne geschriebene geteilte Gruppe — sie zeigen die Kamera ihres letzten Refreshs`
+                );
+            if (r.objektDurchDiaet) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (nur die geteilte ist ihre)`);
+        }
+        if (!z.r4.voll.has(7)) f.push("Objekt-Wahrheit: ein bewegtes Objekt refresht voll (equals)");
+        if (!z.r5.voll.has(11)) f.push("Instanz-Wächter: eine Instanz-Mutation refresht voll");
         return f;
     };
-    fehler.push(...pruefe(diaetLauf(fn)));
+    const z = diaetLauf(fn);
+    fehler.push(...pruefe(z));
+    const stand = [z.r2.voll.size, z.r3.voll.size, z.r6.voll.size];
     let selbstFeuert = false;
-    if (selftest) selbstFeuert = pruefe(diaetLauf(diaetLaden(true))).length > 0;
-    return { fehler, selbstFeuert };
+    if (selftest) {
+        const abk = pruefe(diaetLauf(diaetLaden("abkuerzung")));
+        const schreibFn = diaetLaden("schreiben");
+        const ohneSchreiben = schreibFn ? pruefe(diaetLauf(schreibFn)) : ["(kein Schreiben in der Diät)"];
+        selbstFeuert = abk.some((e) => e.startsWith("Kamera-Treue")) && ohneSchreiben.length > 0;
+    }
+    return { fehler, selbstFeuert, stand };
 }
 
 function main() {
@@ -209,8 +295,8 @@ function main() {
         const sub = selftest && a.organ && a.organ.startsWith("_materialObserverDiaet (hasNode") ? a.sub + "_MANIPULIERT" : a.sub;
         if (!src.includes(sub)) errs.push(`ANKER GEFALLEN: "${a.sub}" fehlt in ${a.file} → Organ: ${a.organ}`);
     }
-    // (3) DIE DIÄT-PRÜFUNG am Schein-Beobachter (r184-Semantik: renderId-Wand, renderObjects, Datensatz mit
-    // Bundle-Version): AnazhRealm._diaetRefresh aus dem Stamm-Quelltext, deterministisch, GPU-frei.
+    // (3) DIE DIÄT-PRÜFUNG am Schein-Programm (r184-Semantik: Beobachter + geteilte Gruppe je Programm, renderId-
+    // Wand, equals()): AnazhRealm._diaetRefresh aus dem Stamm-Quelltext, deterministisch, GPU-frei.
     const diaet = diaetProbe(selftest);
     for (const e of diaet.fehler) errs.push("DIÄT: " + e);
     if (selftest) {
@@ -219,7 +305,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (ohne Render-Stempel bliebe die renderGroup ungeschrieben)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         process.exit(feuert && diaetFeuert ? 0 : 1);
@@ -230,7 +316,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Beobachter (je Render GENAU EIN Refresh).`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Programm und Render geschrieben; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50).`
     );
 }
 main();

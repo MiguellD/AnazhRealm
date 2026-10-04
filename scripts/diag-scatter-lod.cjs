@@ -66,8 +66,8 @@ function check(name, ok, detail) {
     );
     // ── F (Quelle): EIN Keying-Chokepoint, kein zweiter Ableitungs-Ort ──
     // Die Konstante hat GENAU fünf Code-Vorkommen: Definition + der eine ABLEITUNGS-
-    // Leser in _archFernRegionKey + drei RADIUS-Leser in _archRegionBundleFor (T3 —
-    // die analytische Bundle-Cull-Kugel einer Super-Region skaliert mit S; sie LIEST
+    // Leser in _archFernRegionKey + drei RADIUS-Leser in _archRegionGruppeFor (T3 —
+    // die analytische Cull-Kugel einer Super-Region skaliert mit S; sie LIEST
     // die Konstante, LEITET aber keinen Key ab). Die Ableitungs-Einzigkeit prüft die
     // eigene Probe darunter: der `s:`-Super-Key wird an GENAU EINER Stelle gebaut.
     // (Probe gewandert in DAS FELD URTEILT [das-feld-zeichnet §2 Stufe 1]: vorkommen

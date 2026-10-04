@@ -173,6 +173,26 @@ const FORBIDDEN = [
     { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
     { token: '"@p:"', fiel: "Welle B" },
     { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
+    // DER BUNDLE-ABSCHIED (04.10.): die Region-RenderBundles fielen ganz. r184 führt `_currentRenderBundle` ohne
+    // Stapel — der Schatten-Render, den das erste lichtempfangende Objekt im Hauptpass auslöst (ShadowNode.
+    // updateBefore), setzt ihn mitten in der Aufnahme auf null: die Region nahm 129 Draws auf und verfolgte 1, der
+    // Replay refreshte nur diesen einen — der Rest zeigte die Kamera seiner letzten Aufnahme. Die Region ist eine
+    // schlichte Gruppe mit derselben Kugel; jedes Mitglied zeichnet direkt.
+    { token: "BundleGroup", fiel: "04.10. — die Region ist eine THREE.Group (_archRegionGruppeFor)" },
+    { token: "regionBundle:", fiel: "04.10. — die Region heißt `region:<key>`" },
+    { token: "_regionBundles", fiel: "04.10. — state._regionGruppen" },
+    { token: "useRegionRenderBundles", fiel: "04.10. — kein Kill-Switch, kein Zwilling" },
+    { token: "_archRegionBundle", fiel: "04.10. — _archRegionGruppeFor / _archRegionCull" },
+    { token: "_archMeshBundleTouch", fiel: "04.10. — keine Aufnahme, nichts zu invalidieren" },
+    { token: "_archBundleSceneRemove", fiel: "04.10. — _archMeshAushaengen" },
+    { token: "_bundleReifeWache", fiel: "04.10. — kein Record, der unfertige Pipelines droppt" },
+    { token: "_bundleQuery", fiel: "04.10. — _regionVerdeckungTick / _regionVerdeckungProxyTod" },
+    { token: "BundleDeckung", fiel: "04.10. — kein Bündel, keine Deckung" },
+    { token: "bundleDeckung", fiel: "04.10." },
+    { token: "_renderBundle", fiel: "04.10. — keine Replay-Buchung, keine Bundle-Reihenfolge am Renderer" },
+    { token: "executeBundles", fiel: "04.10." },
+    { token: "_anazhDiaetRid", fiel: "04.10. — die Bundle-Abkürzung der Diät fiel mit (Render-Stempel)" },
+    { token: "_diaetGeteilteOffen", fiel: "04.10. — das Nachziehen von 8cf8cb5 hatte nur Replay-Bürger zum Gegenstand" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

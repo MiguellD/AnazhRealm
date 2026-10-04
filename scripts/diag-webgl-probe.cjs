@@ -4,16 +4,16 @@
 //
 // Der r184-WebGPURenderer fällt ohne Adapter (oder via forceWebGL) STILL auf
 // den WebGL2-Backend zurück. Bis heute war diese Geschichte UNBEWIESEN: die
-// WGSL-Konsumenten (Feld-Cull-Compute · Fullscreen-Feld-Pass) und die Render-
-// Bundles existieren als KLASSEN auch dort weiter — Existenz-Prüfungen sind
-// blind (die V18.267-Falle in GPU-Form). Diese Probe erzwingt den Rückfall
+// WGSL-Konsumenten (Feld-Cull-Compute · Fullscreen-Feld-Pass) existieren als
+// KLASSEN auch dort weiter — Existenz-Prüfungen sind blind (die V18.267-Falle in GPU-Form). Diese Probe erzwingt den Rückfall
 // (window.__anazhForceWebGL → der EINE Hook, alle 5 Renderer-Münzstellen)
 // und beweist auf echtem (swiftshader-)GL:
 //   W1 der Backend IST WebGL (der Hook wirkt; isWebGPURenderer bliebe true)
 //   W2 der Rückfall wird EINMAL LAUT benannt (WARN „WebGL2-Rückfall") —
 //      fail-soft wäre der Bruch (Schöpfer-Wort 17.07.)
 //   W3 die Wände halten: Feld-Cull adoptiert NIE · kein Feld-Pass ·
-//      keine Region-RenderBundles (deren API lebt nur im WebGPU-Backend)
+//      kein RenderBundle in der Szene (die Region ist eine schlichte Gruppe —
+//      die Region-RenderBundles fielen 04.10. auf jedem Backend)
 //   W4 der Fern-Ring verfeinert auf CPU (cursor wandert — das Gesetz trägt)
 //   W5 die Welt LEBT: Loop-Ticks laufen, der Spieler steht auf endlicher
 //      Position, ein echter Render in ein RenderTarget liefert SUBSTANZ
@@ -87,7 +87,11 @@ const server = http.createServer((req, res) => {
             // W3 — die Wände:
             o.feldCullRuht = !r._feldCull || (r._feldCull.adoptiert === 0 && r._feldCull.gewaender.size === 0);
             o.feldPassRuht = !st.feldPass;
-            o.bundlesRuhen = !st._regionBundles || st._regionBundles.size === 0;
+            let _bg = 0;
+            st.scene.traverse((x) => {
+                if (x.isBundleGroup === true) _bg++;
+            });
+            o.bundlesRuhen = _bg === 0;
             o.computeFaehig = r._gpuComputeFaehig(); // MUSS false sein (die Wand-Quelle selbst)
             // W4 — der Fern-Ring verfeinert auf CPU (den Tick deterministisch pumpen):
             const pm = st.playerMesh;
@@ -179,7 +183,7 @@ const server = http.createServer((req, res) => {
     if (!lautEcht) errs.push("W2: der Rückfall wurde NICHT laut benannt (kein WebGL2-Rückfall-WARN)");
     if (!out.feldCullRuht) errs.push("W3: der Feld-Cull adoptierte auf WebGL (die Wand hält nicht)");
     if (!out.feldPassRuht) errs.push("W3: der Feld-Pass entstand auf WebGL (die Wand hält nicht)");
-    if (!out.bundlesRuhen) errs.push("W3: Region-RenderBundles entstanden auf WebGL (Crash-Klasse)");
+    if (!out.bundlesRuhen) errs.push("W3: ein RenderBundle lebt in der Szene (Crash-Klasse auf WebGL)");
     if (out.computeFaehig) errs.push("W3: _gpuComputeFaehig meldet true auf WebGL (die Quelle lügt)");
     if (!out.fernRingDa || !(out.fernRingCursor > 0))
         errs.push(`W4: der Fern-Ring verfeinert nicht (da=${out.fernRingDa}, cursor=${out.fernRingCursor})`);
@@ -196,7 +200,7 @@ const server = http.createServer((req, res) => {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU."
+        "\n✅ GRÜN — die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten ruhen hinter der EINEN Backend-Wand, kein RenderBundle lebt, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU."
     );
     process.exit(0);
 })().catch((e) => {

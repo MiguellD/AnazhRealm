@@ -5,14 +5,14 @@
 // 78 Chunk-Meshes in JEDEM Pass (234 Befehle), die Klein-Streu je Chunk und Art eine InstancedMesh
 // (162), das Wasser je Chunk ein Mesh, die Fern-Deko einen Deck-Zwilling, der platzierte Bau je
 // 256-m-Region eine Gruppe je Leaf (`@p:`). Die Wand zählt die Render-Bürger je Klasse direkt im
-// Szenen-Baum (Null-Renderer — Bundles sind headless reine Gruppen, die Chunk-Meshes werden gebaut):
+// Szenen-Baum (Null-Renderer — die Chunk-Meshes werden gebaut, Region-Gruppen sind schlichte Gruppen):
 //   (a) BODEN — höchstens EIN Objekt trägt das Boden-Material (der Satz, Stitch eingeschlossen),
 //       kein `voxelChunk:`-Name lebt im Szenen-Baum;
 //   (b) WASSER — höchstens EIN Chunk-Wasser-Objekt (der Satz);
 //   (c) STREU — höchstens EINE Klein-Streu-InstancedMesh je Art (≤ Zahl der Arten), keine Deck-Streu
 //       (der Zwilling des Fernfelds), höchstens EINE Fern-InstancedMesh je Art; je Art eine dichte Block-
 //       Tabelle (lückenlos, Summe = Anzahl = mesh.count), deckungsgleich mit voxelChunkScatter;
-//   (d) BAU — keine Instanz-Gruppe mit `@p:` im Schlüssel, kein `p:`-Region-Bundle;
+//   (d) BAU — keine Instanz-Gruppe mit `@p:` im Schlüssel, keine `p:`-Region-Gruppe;
 //   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (Bereiche, Index-Zahl), nie die Zahl
 //       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
 //   (f) TREUE — jeder Satz-Bereich trägt byte-gleich die Arrays seines Chunks (Index um den Bereichs-
@@ -48,8 +48,8 @@ function urteil(z) {
         v.push(
             `BAU: ${z.pGruppen.length} Instanz-Gruppen mit \`@p:\` im Schlüssel — ${z.pGruppen.slice(0, 4).join(", ")}`
         );
-    if (z.pBundles.length > 0)
-        v.push(`BAU: ${z.pBundles.length} \`p:\`-Region-Bundles — ${z.pBundles.slice(0, 4).join(", ")}`);
+    if (z.pRegionen.length > 0)
+        v.push(`BAU: ${z.pRegionen.length} \`p:\`-Region-Gruppen — ${z.pRegionen.slice(0, 4).join(", ")}`);
     return v;
 }
 
@@ -64,7 +64,7 @@ function selbsttest() {
         deck: 0,
         fern: { blume: 1 },
         pGruppen: [],
-        pBundles: [],
+        pRegionen: [],
     };
     const fehler = [];
     if (urteil(gruen).length !== 0) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
@@ -213,7 +213,7 @@ function check(name, ok, detail) {
             }
             r._tickChunkSatz();
 
-            // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Bundles eingeschlossen).
+            // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Region-Gruppen eingeschlossen).
             const arten = r.constructor.KLEIN_VEGETATION_SPECIES;
             const zensus = () => {
                 const bodenMat = s.voxelChunkMaterial;
@@ -227,7 +227,7 @@ function check(name, ok, detail) {
                     deck: 0,
                     fern: {},
                     pGruppen: [],
-                    pBundles: [],
+                    pRegionen: [],
                     szeneKinder: s.scene.children.length,
                     renderBuerger: 0,
                 };
@@ -284,8 +284,8 @@ function check(name, ok, detail) {
                             if (g.mesh.castShadow) z.bau.glutWerfer++;
                         }
                     }
-                if (s._regionBundles)
-                    for (const k of s._regionBundles.keys()) if (String(k).startsWith("p:")) z.pBundles.push(k);
+                if (s._regionGruppen)
+                    for (const k of s._regionGruppen.keys()) if (String(k).startsWith("p:")) z.pRegionen.push(k);
                 z.boden.tris = Math.round(z.boden.tris);
                 z.wasser.tris = Math.round(z.wasser.tris);
                 return z;
@@ -424,7 +424,7 @@ function check(name, ok, detail) {
         `\n  Zensus: ${out.chunks} Chunks · Boden ${z.boden.objekte} Objekte (${z.boden.tris} Dreiecke) · Wasser ${z.wasser.objekte}` +
             ` · Klein-Streu ${Object.values(z.streuNah).reduce((a, b) => a + b, 0)} Meshes (${z.streuInstanzen} Instanzen)` +
             ` · Fern ${Object.values(z.fern).reduce((a, b) => a + b, 0)} · Deck ${z.deck} · @p:-Gruppen ${z.pGruppen.length}` +
-            ` · p:-Bundles ${z.pBundles.length} · Render-Bürger ${z.renderBuerger} · Szenen-Kinder ${z.szeneKinder}` +
+            ` · p:-Regionen ${z.pRegionen.length} · Render-Bürger ${z.renderBuerger} · Szenen-Kinder ${z.szeneKinder}` +
             `\n  Bau: ${z.bau.gruppen} Gruppen (${z.bau.werfer} werfen) · Glut ${z.bau.glut} (${z.bau.glutWerfer} werfen)\n`
     );
     for (const x of out.saetze || [])

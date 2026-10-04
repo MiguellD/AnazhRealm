@@ -12,8 +12,9 @@
 //      headless resolvt sofort (byte-schnelle Gates).
 //   V3 GRUPPEN-STABILITÄT: im Stand wächst archInstanceGroups nicht monoton
 //      (Reaper darf schrumpfen, nichts darf klettern).
-//   V4 LINSEN-KONSUM: der gebaute Trace trägt bundleDeckung + ingestTakt +
-//      gruppenChurn (die Mess-Flächen der Doktrin sind verdrahtet, nicht Deko).
+//   V4 LINSEN-KONSUM: der gebaute Trace trägt ingestTakt + gruppenChurn (die
+//      Mess-Flächen der Doktrin sind verdrahtet, nicht Deko; die Bundle-Deckung
+//      fiel 04.10. mit den Region-RenderBundles).
 //   SELBSTTEST: ein absichtlicher Mint+Dispose im Fenster MUSS die Churn-Zähler
 //      bewegen — die Linse ist nicht blind.
 //   node scripts/diag-leistungs-vertrag.cjs
@@ -222,14 +223,11 @@ const server = http.createServer((req, res) => {
             const ss = trace && trace.steadyState;
             o.v4Linsen = !!(
                 ss &&
-                ss.bundleDeckung &&
-                Number.isFinite(ss.bundleDeckung.deckungPct) &&
                 ss.ingestTakt &&
                 Number.isFinite(ss.ingestTakt.frei) &&
                 ss.gruppenChurn &&
                 Number.isFinite(ss.gruppenChurn.mints)
             );
-            o.deckungPct = ss && ss.bundleDeckung ? ss.bundleDeckung.deckungPct : null;
         } catch (e) {
             o.err = (e && e.message) || String(e);
         }
@@ -245,7 +243,7 @@ const server = http.createServer((req, res) => {
     console.log(
         `  V2 INGEST-TAKT: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort}`
     );
-    console.log(`  V4 LINSEN: verdrahtet=${out.v4Linsen} (bundleDeckung ${out.deckungPct}%)`);
+    console.log(`  V4 LINSEN: verdrahtet=${out.v4Linsen}`);
     console.log(`  V5 SZENE-SPEICHER: ${out.szeneMB} MB (Band < 700)`);
     console.log(`  SELBSTTEST Churn-Linse feuert: ${out.selbsttestChurn}`);
     if (out.err) console.log(`  Fehler: ${out.err}`);
@@ -263,7 +261,7 @@ const server = http.createServer((req, res) => {
     if (!out.v2Reihenfolge) errs.push("V2: Freigaben NICHT in Ankunfts-Reihenfolge");
     if (!out.v2UeberBudgetEins) errs.push("V2: über Budget gab der Tick nicht exakt 1 frei");
     if (!out.v2HeadlessSofort) errs.push("V2: headless resolvte NICHT sofort (Gates würden kriechen)");
-    if (!out.v4Linsen) errs.push("V4: die Mess-Flächen (bundleDeckung/ingestTakt/gruppenChurn) fehlen im Trace");
+    if (!out.v4Linsen) errs.push("V4: die Mess-Flächen (ingestTakt/gruppenChurn) fehlen im Trace");
     if (!(Number.isFinite(out.szeneMB) && out.szeneMB < 700))
         errs.push(`V5: Szene-Live-Set ${out.szeneMB} MB ≥ 700 (die Klein-Münze/Residenz-Disziplin ist verletzt)`);
     if (!out.selbsttestChurn) errs.push("SELBSTTEST: die Churn-Linse zählte einen echten Mint NICHT (blind)");

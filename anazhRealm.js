@@ -14601,9 +14601,6 @@ class AnazhRealm {
                           stau: this._foundryIngestQueue ? this._foundryIngestQueue.length : 0,
                           stauMax: this._foundryIngestMaxQ || 0,
                       },
-                      // (e) Bundle-Deckung: Anteil sichtbarer Render-Objekte in Region-RenderBundles — die
-                      // Nicht-Bundle-Population IST die per-Draw-Uniform-Bahn.
-                      bundleDeckung: this._flightRecorderBundleDeckung(),
                       // (f) DER LIVE-SET-ZENSUS (zehnte Welle — GC-Wal): GC-Pausen
                       // skalieren mit dem LIVE-SET (3-GB-Heap des sechsten Traces),
                       // nicht mit der Rate — der Trace kannte nur Zähler, nie BYTES.
@@ -14715,47 +14712,6 @@ class AnazhRealm {
                     };
                 })(),
             };
-        } catch {
-            return null; // der Flugschreiber darf NIE stören
-        }
-    }
-
-    // Bundle-Deckung: der per-Draw-Uniform-Sturm skaliert mit den Render-Objekten AUSSERHALB der
-    // Region-RenderBundles. Zählt sichtbare Renderables in/außerhalb, nennt die Top-Draußen-Familien.
-    _flightRecorderBundleDeckung() {
-        try {
-            const sc = this.state.scene;
-            if (!sc) return null;
-            let drin = 0,
-                draussen = 0;
-            const fam = new Map();
-            const walk = (o, imBundle) => {
-                const inB = imBundle || o.isBundleGroup === true;
-                if ((o.isMesh || o.isPoints || o.isLine) && o.visible !== false) {
-                    if (inB) drin++;
-                    else {
-                        draussen++;
-                        const u = o.userData || {};
-                        const label =
-                            o.name ||
-                            u.archInstanceKey ||
-                            u.inventar ||
-                            u.kind ||
-                            (o.material && (o.material.name || o.material.type)) ||
-                            o.type;
-                        const kurz = String(label).split(/[#@|]/)[0].slice(0, 32);
-                        fam.set(kurz, (fam.get(kurz) || 0) + 1);
-                    }
-                }
-                if (o.children) for (const c of o.children) walk(c, inB);
-            };
-            walk(sc, false);
-            const top = Array.from(fam.entries())
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 8)
-                .map(([name, n]) => ({ name, n }));
-            const gesamt = drin + draussen;
-            return { drin, draussen, deckungPct: gesamt ? Math.round((drin / gesamt) * 100) : 0, topDraussen: top };
         } catch {
             return null; // der Flugschreiber darf NIE stören
         }
@@ -22238,26 +22194,6 @@ class AnazhRealm {
         // autoReset AUS: `_loopRender` ruft `info.reset()` EINMAL pro Frame und liest am Ende die volle Last
         // (Schatten + Haupt + Post-FX) für perfSense — sonst sähe es nur den letzten Post-FX-Pass.
         if (renderer.info) renderer.info.autoReset = false;
-        // DIE DRAW-WAHRHEIT IM INFO: r184 bucht einen Draw nur, wenn der Backend-Draw läuft — beim AUFNEHMEN
-        // eines RenderBundles; der Replay (`_renderBundle`, Versions-Treffer) zieht die aufgenommenen
-        // RenderObjects ohne Buchung. Die Region-Bundles tragen den ganzen statischen Bestand: HUD, Regler und
-        // Flugschreiber lasen an der Mess-Wiese 148 dc, wo die GPU 1 149 Befehle ausführte (02.10.). Der
-        // Replay bucht jetzt jeden aufgenommenen RenderObject wie der Backend-Draw (info.update).
-        if (renderer.info && typeof renderer._renderBundle === "function") {
-            const replayRoh = renderer._renderBundle;
-            renderer._renderBundle = function (bundle, sceneRef, lightsNode) {
-                const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
-                const daten = this.backend.get(rb);
-                const replay = daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version;
-                const aus = replayRoh.call(this, bundle, sceneRef, lightsNode);
-                if (replay && daten.renderObjects)
-                    for (const ro of daten.renderObjects) {
-                        const dp = ro.getDrawParameters();
-                        if (dp) this.info.update(ro.object, dp.vertexCount, dp.instanceCount);
-                    }
-                return aus;
-            };
-        }
         // DER STABILE PUFFER-NAME: r184 nennt den Instanz-Matrix-Puffer im WGSL `NodeBuffer_<Knoten-id>`
         // (WGSLNodeBuilder, ohne setName) — jede InstancedMesh bekam so ihren EIGENEN Quelltext, ihr eigenes
         // Programm, ihre eigene Pipeline: gemessen 02.10. an der Mess-Wiese 675 Vertex-Programme, ohne die
@@ -22277,7 +22213,7 @@ class AnazhRealm {
         }
         // DIE SCHATTEN-DIÄT: r184 zeichnet jede Kaskade mit EINEM geteilten Schatten-Material je Licht
         // (isShadowPassMaterial), in das je Objekt die Knoten des Original-Materials gehängt werden. Sein Beobachter
-        // meldet über context.getShadow immer hasNode → jedes gebündelte Objekt refreshte je Kaskade und Frame
+        // meldet über context.getShadow immer hasNode → jedes Diät-Objekt refreshte je Kaskade und Frame
         // (gemessen 04.10. nach der Haupt-Diät: Blume 360, Geröll 224 von 1176 Refreshs je Frame). Trägt das
         // ORIGINAL die Diät (nur geteilte renderGroup-Uniforms), fährt der Schatten-Beobachter dieselbe EINE Prüfung.
         // Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
@@ -22299,33 +22235,6 @@ class AnazhRealm {
                 return o;
             };
             NM.__anazhSchattenDiaet = true;
-        }
-        // DIE BUNDLE-REIHENFOLGE: r184 sammelt die Bundles eines Passes und führt sie erst in finishRender aus — NACH
-        // allen direkten Draws. Der Feld-Pass („letzter Draw, nur Himmel-Pixel überleben") und das Wasser liefen so
-        // VOR Pflanzen, Boden und Bauten (alles Bundles): der Feld-March traced JEDES Pixel gegen einen fast leeren
-        // Tiefenpuffer, das Wasser mischte sich gegen den leeren Grund und seine Ufer-Tiefe sah keinen Boden (gemessen
-        // 04.10., echte GPU, Mess-Wiese). Die Bundles laufen jetzt sofort nach ihrer Aufnahme/ihrem Replay, die
-        // direkten Draws danach — die Reihenfolge, die der Code behauptet. executeBundles leert den Pass-Zustand, der
-        // gemerkte Zustand fällt mit (dasselbe Muster wie r184 nach dem Pass-Bruch). Array-Kameras behalten ihren Pfad.
-        if (typeof renderer._renderBundles === "function" && renderer.backend && renderer.backend.isWebGPUBackend) {
-            const bundlesRoh = renderer._renderBundles;
-            renderer._renderBundles = function (bundles, sceneRef, lightsNode) {
-                const aus = bundlesRoh.call(this, bundles, sceneRef, lightsNode);
-                const rc = this._currentRenderContext;
-                const d = rc ? this.backend.get(rc) : null;
-                if (
-                    d &&
-                    d.currentPass &&
-                    d.renderBundles &&
-                    d.renderBundles.length > 0 &&
-                    !this.backend._isRenderCameraDepthArray(rc)
-                ) {
-                    d.currentPass.executeBundles(d.renderBundles);
-                    d.renderBundles = [];
-                    d.currentSets = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
-                }
-                return aus;
-            };
         }
     }
 
@@ -27362,8 +27271,7 @@ class AnazhRealm {
             geom.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
         // Der CPU-Körper des Chunk-Wassers (Map-Wahrheit, Sonden lesen seine Geometrie); gezeichnet wird er als
-        // Bereich im Wasser-Satz (Welle B: EIN Objekt für das Wasser des ganzen Rings, ausserhalb jedes Bundles —
-        // viewportLinearDepth erzwingt einen Pass-Bruch, den der Bundle-Encoder nicht kann).
+        // Bereich im Wasser-Satz (Welle B: EIN Objekt für das Wasser des ganzen Rings).
         const mesh = new THREE.Mesh(geom, mat);
         mesh.userData = {
             isHydrosphere: true,
@@ -32203,14 +32111,13 @@ class AnazhRealm {
             if (n.value && typeof n.value.copy === "function") n.value.copy(a.value);
             else n.value = a.value;
         }
-        // Szene (inkl. Bundles) UND die Chunk-Wasser-Ablage — ein gerade ausgehängtes Mesh nähme sonst das
+        // Szene (inkl. Region-Gruppen) UND die Chunk-Wasser-Ablage — ein gerade ausgehängtes Mesh nähme sonst das
         // entsorgte Material wieder mit in die Welt.
         let umgehaengt = 0;
         const haenge = (o) => {
             if (!o || o.material !== alt) return;
             o.material = neu;
             umgehaengt++;
-            if (o.parent && o.parent.isBundleGroup) o.parent.needsUpdate = true;
         };
         st.scene.traverse(haenge);
         if (st.voxelChunkWaterIso) for (const m of st.voxelChunkWaterIso.values()) haenge(m);
@@ -34546,7 +34453,7 @@ class AnazhRealm {
 
     // Der Ring weicht dem Gebauten: trägt ein GEBAUTER, sichtbarer Chunk die Säule, existiert der Ring
     // dort nicht (keine zweite Terrain-Wahrheit über/unter Edits). Sichtbar = Mesh + jede Eltern-Stufe
-    // (Region-Bundles blenden als Gruppe).
+    // (Region-Gruppen blenden als Gruppe).
     _chunkDecktRing(x, z) {
         const st = this.state;
         if (!st.voxelChunks || st.voxelChunks.size === 0) return false;
@@ -51867,7 +51774,7 @@ class AnazhRealm {
 
     // Der EINE Leer-Chokepoint: headless reapt SOFORT; im Spiel bekommt die leere Hülle
     // ARCH_LEER_GNADE_MS — sonst macht jede Oszillation um liveCount 0 (Wandern/LOD) einen Voll-Dispose +
-    // Re-Mint (Mesh, GPU-Puffer, Bundle, Pipeline). Kehrt ein Bewohner zurück, löscht _archGroupAlloc
+    // Re-Mint (Mesh, GPU-Puffer, Pipeline). Kehrt ein Bewohner zurück, löscht _archGroupAlloc
     // _leerSeit; sonst räumt der Reaper-Tick. Preis: eine leere Hülle ≤ Frist als toter Draw.
     _archGroupLeerDispose(key) {
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
@@ -51901,7 +51808,7 @@ class AnazhRealm {
                 continue;
             }
             // Die Churn-Linse ist Aktuator: ein bekannter Wiederkehrer (Mint-Zahl ≥ 2) bekommt Frist × Mints,
-            // gedeckelt ×6 (60 s). Eine leere Hülle im Bundle ist ≈ frei; der Reaper bleibt die harte Schranke.
+            // gedeckelt ×6 (60 s). Eine leere Hülle (count 0) zeichnet nichts; der Reaper bleibt die harte Schranke.
             const _mc = (this._archGruppenMintMap && this._archGruppenMintMap.get(key)) || 1;
             if (now - g._leerSeit >= gnade * Math.min(6, Math.max(1, _mc))) {
                 this._disposeArchInstanceGroup(key);
@@ -52332,7 +52239,7 @@ class AnazhRealm {
             // kollabiert am Keying-Chokepoint auf die SUPER-REGION (_archFernRegionKey
             // matcht fscatter:*:2/_lod2 → `@s:` — keine V18.303-DC-Explosion),
             // L0/L1 bleiben region-privat (`@regX,regZ`); regional=true gibt
-            // frustumCulled/Bundle-Cull, _disposeScatterRegion + Empty-Reap halten
+            // den Region-Cull (_archRegionCull), _disposeScatterRegion + Empty-Reap halten
             // die Counts. Bäume bleiben GLOBAL (V18.390-Weisheit — ihr Fern-Wal
             // ist per _tickScatterLod aufs Billboard geheilt).
             this.state.useRegionFoliageCull !== false && layer.kind !== "tree" ? regX + "," + regZ : null,
@@ -52583,10 +52490,9 @@ class AnazhRealm {
         if (this._feldCull && this._feldCull.gewaender.has(groupKey)) this._feldCullVerlasse(groupKey);
         this.state.archInstanceGroups.delete(groupKey);
         if (g.mesh) {
-            // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
-            // Region-BundleGroup; ein leeres Bundle
-            // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
-            this._archBundleSceneRemove(g.mesh);
+            // Parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer Region-Gruppe; eine
+            // leere Region-Gruppe verlässt die Szene mit (_archMeshAushaengen räumt beides).
+            this._archMeshAushaengen(g.mesh);
             if (typeof g.mesh.dispose === "function") g.mesh.dispose();
             // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
             // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
@@ -60073,7 +59979,7 @@ class AnazhRealm {
         const _mud = g.mesh.material && g.mesh.material.userData;
         if (_mud && _mud.impostorBillboard) return false;
         if (typeof g.key !== "string" || !g.key.startsWith("fscatter:")) return false;
-        if (g.key.indexOf("@") < 0) return false; // regional/super-regional — der Bundle-Cull bleibt das äußere Tor
+        if (g.key.indexOf("@") < 0) return false; // regional/super-regional — der Region-Cull bleibt das äußere Tor
         if ((g.mesh.count | 0) < AnazhRealm.FELD_CULL.minInstanzen) return false;
         const geom = g.mesh.geometry;
         if (!geom || !geom.attributes || !geom.attributes.position) return false;
@@ -60205,24 +60111,18 @@ class AnazhRealm {
             kons.instanceMatrix = dstM.value;
             if (hatTint) kons.instanceColor = dstC.value;
             kons.count = cap;
-            kons.frustumCulled = false; // der Cull IST der Compute — nichts friert im Bundle-Replay ein
+            kons.frustumCulled = false; // der Cull IST der Compute
             kons.castShadow = false; // der Schatten-Wurf bleibt an der CPU-Quelle (Twin-Layer, s.u.)
             kons.receiveShadow = quelle.receiveShadow === true;
             kons.layers.mask = origMask;
             kons.raycast = function () {}; // Picking bleibt am CPU-Original (slotEntry-Wahrheit)
             kons.userData.feldCull = g.key; // Linsen-Marker
             const parent = quelle.parent;
-            if (parent) {
-                parent.add(kons);
-                if (parent.isBundleGroup) {
-                    parent.needsUpdate = true;
-                    this._bundleReifeWache(kons); // Record droppt unfertige Pipelines (s. _bundleReifeWache)
-                }
-            } else if (this.state.scene) this.state.scene.add(kons);
+            if (parent) parent.add(kons);
+            else if (this.state.scene) this.state.scene.add(kons);
             // Die Quelle bleibt WAHRHEIT (Slots/Matrizen/Raycast) und Schatten-Werfer, verlässt aber die Kamera
             // (SHADOW_TWIN_LAYER: nur der Schatten-Pass zählt Layer 2) — Schatten bleiben CPU-frustum-wahr.
             quelle.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-            this._archMeshBundleTouch(quelle);
             // (7) der Pipeline-Warm-Ofen sieht die NEUE Familie (Material × Storage-InstancedMesh × Indirect)
             this._pipeOfenMerke("fc", g.mat, kons);
             const gew = {
@@ -60297,11 +60197,7 @@ class AnazhRealm {
         fc.gewaender.delete(schluessel);
         fc.verlassen++;
         const kons = gew.kons;
-        const parent = kons ? kons.parent : null;
-        if (parent) {
-            parent.remove(kons);
-            if (parent.isBundleGroup) parent.needsUpdate = true;
-        }
+        if (kons && kons.parent) kons.parent.remove(kons);
         // OFEN-WIEDERANKER (Review-Notiz H): auch die fc-Familie verlässt den
         // Dedup — ein Re-Mint wärmt asynchron statt für immer zu schweigen.
         if (this._pipeOfenDone && gew.gruppe && gew.gruppe.mat) this._pipeOfenDone.delete("fc|" + gew.gruppe.mat.uuid);
@@ -60312,7 +60208,6 @@ class AnazhRealm {
         if (g && g.mesh) {
             g.mesh.visible = true;
             if (gew.origMask !== undefined) g.mesh.layers.mask = gew.origMask; // zurück von der Twin-Layer
-            this._archMeshBundleTouch(g.mesh);
         }
     }
     // Die EINEN Frustum-Ebenen in die geteilten Uniforms (der Tick speist sie
@@ -60377,7 +60272,7 @@ class AnazhRealm {
         this._feldCullPlanesAus(this._frustumCache);
         for (const gew of Array.from(fc.gewaender.values())) {
             const q = gew.quelleMesh;
-            // Super-Region unsichtbar (CPU-Bundle-Cull) → kein Compute nötig:
+            // Region-Gruppe unsichtbar (der CPU-Region-Cull) → kein Compute nötig:
             const p = gew.kons.parent;
             if (p && p.visible === false) continue;
             if (q.instanceMatrix.version !== gew.srcVersion) {
@@ -61763,10 +61658,6 @@ class AnazhRealm {
             g.boundingBox.max.z += hw;
         }
         if (g.boundingSphere) g.boundingSphere.radius += hw;
-        // SUBMIT-WAL — das Quad wird von HISM-Gruppen geteilt, die in Region-Bundles
-        // hängen können (gecachtes Replay lädt keine Attribut-Updates hoch): der
-        // SELTENE Studio-Re-Frame (einmal je Art-Bake) recorded alle Region-Bundles neu.
-        if (this.state._regionBundles) for (const bg of this.state._regionBundles.values()) bg.needsUpdate = true;
     }
 
     // Deterministische Silhouette (Key-Hash + skeleton.kind): v=0 → Canvas UNTEN (Stamm-Fuß), v=1 → OBEN
@@ -62224,32 +62115,25 @@ class AnazhRealm {
         return mat;
     }
 
-    // RENDERBUNDLES: EINE BundleGroup je Streu-/Platzier-Region; der statische Subbaum wird einmal
-    // recorded und replayed (kein per-Frame-Encode je Draw). Dynamisches (Kreaturen/Wasser/Spieler) bleibt
-    // DRAUSSEN: im Replay leben nur Uniform-/Textur-Bindings, Attribute wie instanceMatrix frieren ein.
-    // Kill-Switch: `anazhRealm.state.useRegionRenderBundles=false` (+ Reload).
-    _archRegionBundleFor(regionKey) {
-        if (regionKey == null || this.state.useRegionRenderBundles === false) return null;
-        if (typeof THREE.BundleGroup !== "function") return null; // Vendor ohne Bundles → alter Pfad
-        // Nur das WebGPU-Backend implementiert die Bundle-API (beginBundle/finishBundle/addBundle) — auf dem
-        // WebGL2-Rückfall wirft eine BundleGroup im Render-Loop. Klassen-Existenz ist blind; das Urteil fällt
-        // am BACKEND. Headless: Bundles sind reine Gruppen-Knoten.
-        {
-            const _r = this.state.renderer;
-            if (_r && !_r._isHeadlessNull && !(_r.backend && _r.backend.isWebGPUBackend === true)) return null;
-        }
+    // DIE REGION-GRUPPE: EINE schlichte Gruppe je Streu-Region (`x,z`) bzw. Fern-Superregion (`s:x,z`) ist die
+    // Cull-Einheit ihrer Instanz-Gruppen. Ihre Kugel (`userData.cullSphere`) entscheidet die Sichtbarkeit aller
+    // Mitglieder (Frustum · Berg-Schatten · Verdeckungs-Abfrage, _archRegionCull); jedes Mitglied zeichnet direkt
+    // mit dem Stand DIESES Frames. Die Region-RenderBundles fielen (04.10.): jede Slot-Mutation nahm die Region neu
+    // auf (die Aufnahme kodiert alle Draws, teurer als direktes Zeichnen), und ein Replay ohne Neu-Aufnahme
+    // refresht nur, wessen Beobachter es verlangt — die Kamera-Matrizen reisen in der geteilten Gruppe JE PROGRAMM,
+    // die Diät-Abkürzung schrieb je Render nur die des Stempel-Objekts: der Rest zeigte die alte Kamera.
+    // Kugel: Über-Inklusion ist sicher (nur GPU-Preis), Unter-Inklusion wäre ein Pop → großzügiger Höhen-Puffer.
+    _archRegionGruppeFor(regionKey) {
+        if (regionKey == null) return null;
         const scene = this.state.scene;
         if (!scene) return null;
-        let map = this.state._regionBundles;
-        if (!map) map = this.state._regionBundles = new Map();
-        let bg = map.get(regionKey);
-        if (!bg) {
-            bg = new THREE.BundleGroup();
-            bg.name = "regionBundle:" + regionKey;
-            bg.userData.regionKey = regionKey;
-            // Analytische Region-Kugel für den Frame-Cull (ersetzt das im Replay eingefrorene three-Culling).
-            // Keys: "x,z" · Super-Region "s:x,z". Über-Inklusion ist sicher (nur GPU-Preis), Unter-Inklusion
-            // wäre ein Pop → großzügiger Höhen-/Überhang-Puffer.
+        let map = this.state._regionGruppen;
+        if (!map) map = this.state._regionGruppen = new Map();
+        let rg = map.get(regionKey);
+        if (!rg) {
+            rg = new THREE.Group();
+            rg.name = "region:" + regionKey;
+            rg.userData.regionKey = regionKey;
             const m = /^(s:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
             if (m) {
                 const S = m[1]
@@ -62259,38 +62143,29 @@ class AnazhRealm {
                     : 1;
                 const R = AnazhRealm.ARCH_REGION_M * S;
                 const cy = (Number.isFinite(this.state.terrainBaseHeight) ? this.state.terrainBaseHeight : 0) + 40;
-                bg.userData.cullSphere = new THREE.Sphere(
+                rg.userData.cullSphere = new THREE.Sphere(
                     new THREE.Vector3((Number(m[2]) + 0.5) * R, cy, (Number(m[3]) + 0.5) * R),
                     R * Math.SQRT1_2 + 140
                 );
             }
-            scene.add(bg);
-            map.set(regionKey, bg);
+            scene.add(rg);
+            map.set(regionKey, rg);
         }
-        return bg;
+        return rg;
     }
 
-    // Bundle-Invalidierung für ein MESH in einer Region-BundleGroup: jede Mutation seiner Draw-Wahrheit
-    // (Slot-Alloc/-Free · instanceMatrix/instanceColor · Fassade · count) muss hierher; sonst No-op.
-    _archMeshBundleTouch(mesh) {
-        const p = mesh ? mesh.parent : null;
-        if (p && p.isBundleGroup) p.needsUpdate = true;
-    }
-
-    // Parent-bewusstes Entfernen (die scene.remove-Falle: remove() wirkt nur auf
-    // DIREKTE Kinder — eine Gruppe in der BundleGroup bliebe sonst hängen = Leck).
-    // Leere Bundles verlassen die Szene mit (Region weggestreamt).
-    _archBundleSceneRemove(mesh) {
+    // Parent-bewusstes Aushängen (die scene.remove-Falle: remove() wirkt nur auf DIREKTE Kinder — ein Mesh in
+    // seiner Region-Gruppe bliebe sonst hängen = Leck). Eine leere Region-Gruppe verlässt die Szene mit.
+    _archMeshAushaengen(mesh) {
         const p = mesh ? mesh.parent : null;
         if (!p) return;
         p.remove(mesh);
-        if (p.isBundleGroup) {
-            p.needsUpdate = true;
-            if (p.children.length === 0) {
-                if (p.parent) p.parent.remove(p);
-                this._bundleQueryProxyTod(p); // ④ — der Query-Proxy fällt mit dem Bundle
-                if (this.state._regionBundles) this.state._regionBundles.delete(p.userData.regionKey);
-            }
+        const map = this.state._regionGruppen;
+        const key = p.userData ? p.userData.regionKey : undefined;
+        if (p.children.length === 0 && key != null && map && map.get(key) === p) {
+            if (p.parent) p.parent.remove(p);
+            this._regionVerdeckungProxyTod(p); // der Query-Proxy fällt mit der Region
+            map.delete(key);
         }
     }
 
@@ -62589,28 +62464,6 @@ class AnazhRealm {
         s.anker = anker;
     }
 
-    // ═══ DIE REIFE-WACHE ═══
-    // Der Vendor-Record DROPPT unfertige Draws (nur `_pipelines.isReady`) und friert das Bundle danach ein
-    // → ein Bürger mit noch async kompilierender Pipeline fiel stumm aus dem Replay. Darum kompiliert
-    // jeder Bundle-Beitritt seinen Bürger async FERTIG und touched DANN den aktuellen Bundle-Parent
-    // (Re-Record garantiert nach der Reife). Headless/kein compileAsync: No-op.
-    _bundleReifeWache(mesh) {
-        const st = this.state;
-        const r = st.renderer;
-        if (!mesh || !r || r._isHeadlessNull || typeof r.compileAsync !== "function") return;
-        if (!st.scene || !st.camera) return;
-        // LEER-WACHE: beim Gruppen-Mint kann die Hüllen-Geometrie noch LEER sein (position kommt mit dem
-        // ersten Beitritt) — ein Compile jetzt baute eine FALSCH-Pipeline mit Null-Attributen
-        // (Warn-Fluten + Pipeline-Churn). Leere Bürger warten auf den ersten echten Beitritt.
-        const g = mesh.geometry;
-        if (!g || !g.attributes || !g.attributes.position) return;
-        Promise.resolve(r.compileAsync(mesh, st.camera, st.scene))
-            .catch(() => {})
-            .finally(() => {
-                const p = mesh.parent;
-                if (p && p.isBundleGroup === true) p.needsUpdate = true;
-            });
-    }
     // ═══ DER BERG-SCHATTEN (feld-natives Hi-Z) ═══
     // Verdeckung aus dem EIGENEN Gesetz statt Depth-Pyramide: Sichtlinie Kamera → Kugel-OBERKANTE gegen
     // `_terrainMacroSurfaceY`, drei Azimut-Linien (Mitte ± Radius); nur wenn ALLE drei überragt sind, ist
@@ -62648,11 +62501,11 @@ class AnazhRealm {
         return true;
     }
 
-    // Pro Frame (aus _loopFrustumCulling): die Bundle-Sichtbarkeit IST das Region-Culling (_projectObject
-    // wertet `visible` auch für gecachte Bundles aus). Frustum (jeden Frame) → BERG-SCHATTEN (amortisiert,
-    // nur frustum-sichtbare Kugeln, 2-Treffer-Hysterese).
-    _archRegionBundleCull() {
-        const map = this.state._regionBundles;
+    // Pro Frame (aus _loopFrustumCulling): die Sichtbarkeit der Region-Gruppe IST das Region-Culling
+    // (_projectObject steigt in eine unsichtbare Gruppe nicht ab — in jedem Pass). Frustum (jeden Frame) →
+    // BERG-SCHATTEN (amortisiert, nur frustum-sichtbare Kugeln, 2-Treffer-Hysterese) → Verdeckungs-Abfrage.
+    _archRegionCull() {
+        const map = this.state._regionGruppen;
         if (!map || map.size === 0) return;
         const fr = this._frustumCache;
         if (!fr) return;
@@ -62665,15 +62518,15 @@ class AnazhRealm {
         const B = AnazhRealm.BERG_CULL;
         const now = performance.now();
         let budget = B.budgetJeFrame;
-        for (const bg of map.values()) {
-            const s = bg.userData.cullSphere;
+        for (const rg of map.values()) {
+            const s = rg.userData.cullSphere;
             if (!s) {
-                bg.visible = true;
+                rg.visible = true;
                 continue;
             }
             let vis = fr.intersectsSphere(s);
             if (vis && bergAktiv) {
-                const u = bg.userData;
+                const u = rg.userData;
                 const testMs = u._bergVerdeckt ? B.testMsVerdeckt : B.testMsSichtbar;
                 if (budget > 0 && (!u._bergTestAt || now - u._bergTestAt > testMs)) {
                     budget--;
@@ -62691,13 +62544,13 @@ class AnazhRealm {
                     this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // Linse (Frame-Summen)
                 }
             }
-            bg.visible = vis;
+            rg.visible = vis;
             if (s && this.state.camera) {
                 const cp = this.state.camera.position;
                 const kante = Math.hypot(s.center.x - cp.x, s.center.z - cp.z) - s.radius;
                 // ④ WALD-VOR-WALD (echtes Depth-Occlusion): der Query-Proxy testet
                 // die KOMPLETTE Frame-Tiefe (Bäume + Fern-Schirm) — nativ.
-                if (bergAktiv) this._bundleQueryTick(bg, s, kante);
+                if (bergAktiv) this._regionVerdeckungTick(rg, s, kante);
             }
         }
     }
@@ -62707,9 +62560,9 @@ class AnazhRealm {
     // occlusionTest (ANY_SAMPLES_PASSED): 0 Fragmente → Region TOTAL verdeckt. Verdikt async (1–2 Frames
     // alt), 2er-Hysterese, Un-Cull sofort, < BERG_CULL.minDist nie. Der Render-Kontext wird am Proxy
     // gefangen (onBeforeRender) → backend.isOccluded(ctx, proxy).
-    _bundleQueryTick(bg, s, kante) {
+    _regionVerdeckungTick(rg, s, kante) {
         const st = this.state;
-        const u = bg.userData;
+        const u = rg.userData;
         if (kante < AnazhRealm.BERG_CULL.minDist) {
             if (u._occlProxy) u._occlProxy.visible = false;
             u._occlTreffer = 0;
@@ -62724,7 +62577,7 @@ class AnazhRealm {
         if (!probeFenster) {
             if (u._occlProxy) u._occlProxy.visible = false;
             if (u._occlVerdeckt) {
-                bg.visible = false;
+                rg.visible = false;
                 this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1;
             }
             return;
@@ -62761,18 +62614,18 @@ class AnazhRealm {
                 u._occlVerdeckt = false; // sichtbar → SOFORT zurück
             }
             if (u._occlVerdeckt) {
-                bg.visible = false;
+                rg.visible = false;
                 this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // dieselbe Linse
             }
         }
     }
 
-    // Proxy-Abbau (der Bundle-Tod räumt sein Query-Objekt — kein Szene-Leck).
-    _bundleQueryProxyTod(bg) {
-        const q = bg && bg.userData && bg.userData._occlProxy;
+    // Proxy-Abbau (der Tod der Region-Gruppe räumt ihr Query-Objekt — kein Szene-Leck).
+    _regionVerdeckungProxyTod(rg) {
+        const q = rg && rg.userData && rg.userData._occlProxy;
         if (!q) return;
         if (q.parent) q.parent.remove(q);
-        bg.userData._occlProxy = null;
+        rg.userData._occlProxy = null;
     }
 
     // V18.300 — `regionKey` (optional): eine REGION-gekeyte Gruppe trägt nur die
@@ -62855,10 +62708,6 @@ class AnazhRealm {
             ao.array[slot] = occluded ? 1 : 0;
             ao.needsUpdate = true;
         }
-        // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotOcclusionRefresh,
-        // AUSSERHALB des Alloc-Pfads): das Region-Bundle re-recorden, sonst friert
-        // der Wert im gecachten Replay ein.
-        this._archMeshBundleTouch(g.mesh);
     }
     // Occlusion-Wechsel OHNE LOD-Switch (fern-verdeckt ↔ fern-frei): die aOccl-Werte
     // der lebenden Slots nachziehen (das Studio schreibt vOcc pro Tick — der Host
@@ -62905,7 +62754,8 @@ class AnazhRealm {
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
         mesh.count = 0; // noch keine Instanz sichtbar
-        // regional → lokale BBox → die Engine cullt beim Umsehen; global → nutzlos (verteilt).
+        // Global (welt-verteilte Instanzen) → die Gruppen-Hülle ist nutzlos, kein Cull. Regional cullt die
+        // Region-Gruppe (unten); ein Tür-Flügel bleibt einzeln (seine Hülle ist lokal).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
         // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
@@ -62913,17 +62763,13 @@ class AnazhRealm {
         // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
         if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
         else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
-        // Auch die REGIONALE InstancedMesh-Gruppe hängt in der Region-BundleGroup; jede Mutation (Alloc/Free/
-        // Slot-Stempel/Matrix/Grow) läuft durch die Chokepoints mit _archMeshBundleTouch. Tür-Flügel
-        // (leaf.tuer) bleiben DRAUSSEN (per-Frame-Matrizen, _tickTorFluegel). GLOBALE Gruppen ziehen in EIN
-        // "@global"-Bundle: der Key matcht das Kugel-Regex nicht → keine cullSphere → immer sichtbar,
-        // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
-        const bundle = !leaf.tuer ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
-        if (bundle) {
-            mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
-            bundle.add(mesh);
-            bundle.needsUpdate = true;
-            this._bundleReifeWache(mesh); // Record droppt unfertige Pipelines — Touch NACH der Reife
+        // Die REGIONALE InstancedMesh-Gruppe hängt in ihrer Region-Gruppe: deren Kugel ist ihr EINER
+        // Sichtbarkeits-Besitzer (die Mitglieds-Hülle liefe nach jedem Slot-Wechsel neu über alle Instanzen).
+        // Tür-Flügel (leaf.tuer, per-Frame-Matrizen, _tickTorFluegel) und GLOBALE Gruppen hängen direkt in der Szene.
+        const region = regional && !leaf.tuer ? this._archRegionGruppeFor(regionKey) : null;
+        if (region) {
+            mesh.frustumCulled = false;
+            region.add(mesh);
         } else if (this.state.scene) this.state.scene.add(mesh);
         // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
         // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
@@ -63004,7 +62850,7 @@ class AnazhRealm {
         const next = AnazhRealm._instanzMesh(g.geom, g.mat, newCap);
         next.castShadow = g.castShadow !== false; // V18.265 — Schatten-Distanz mitführen
         next.receiveShadow = true;
-        next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
+        next.frustumCulled = g.mesh.frustumCulled; // derselbe Sichtbarkeits-Besitzer wie beim Mint
         next.userData.archInstanceKey = g.key;
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
@@ -63027,14 +62873,12 @@ class AnazhRealm {
         }
         next.count = g.next;
         next.instanceMatrix.needsUpdate = true;
-        // SUBMIT-WAL — parent-bewusster Swap (die scene.remove-Falle): eine regionale
-        // Gruppe hängt in ihrer Region-BundleGroup — der gewachsene Mesh bleibt im
-        // SELBEN Parent, das Bundle re-recorded (der alte Mesh referenziert tote Buffer).
+        // Parent-bewusster Swap (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer Region-Gruppe —
+        // der gewachsene Mesh bleibt im SELBEN Parent.
         const parent = g.mesh.parent;
         if (parent) {
             parent.remove(g.mesh);
             parent.add(next);
-            if (parent.isBundleGroup) parent.needsUpdate = true;
         } else if (this.state.scene) this.state.scene.add(next);
         g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
         g.mesh = next;
@@ -63051,9 +62895,6 @@ class AnazhRealm {
         // V18.356 — die LIVE-Instanzen pro Wrapper zählen: liveCount ist die EINE Quelle für „dieser
         // Wrapper ist leer" (Free-Slots bleiben im High-Water, g.next zählt sie mit).
         g.liveCount = (g.liveCount || 0) + 1;
-        // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe/count in diesen Slot
-        // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
-        this._archMeshBundleTouch(g.mesh);
         g._leerSeit = 0; // GNADENFRIST — ein Bewohner kehrt zurück: die Hülle lebt, kein Re-Mint
         if (g.free.length > 0) return g.free.pop();
         if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
@@ -63076,7 +62917,6 @@ class AnazhRealm {
         ze[8] = ze[9] = ze[10] = 0;
         g.mesh.setMatrixAt(slot, z);
         g.mesh.instanceMatrix.needsUpdate = true;
-        this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — Matrix-Mutation → Region-Bundle re-recorden
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
         // (Crosshair-Pick) sphere-cullt gegen die gecachte Bounding; ohne Reset
         // verfehlt der Raycast Instanzen, die nach dem letzten Cache dazukamen.
@@ -63497,9 +63337,6 @@ class AnazhRealm {
             m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
             g.mesh.setMatrixAt(slot, m);
             g.mesh.instanceMatrix.needsUpdate = true;
-            // SUBMIT-WAL — Matrix-Mutation einer ggf. gebündelten Gruppe (Fahrzeug-
-            // Mount-Follow): das Region-Bundle re-recorden (nur während gefahren wird).
-            this._archMeshBundleTouch(g.mesh);
             // boundingSphere invalidieren (Frustum-/Raycast-Cull, s. _archGroupFree; die V18.358-Lehre:
             // THREE cacht sie sonst stale).
             g.mesh.boundingSphere = null;
@@ -63554,21 +63391,21 @@ class AnazhRealm {
     _archDisposeAllInstanceGroups() {
         if (this.state.archInstanceGroups) {
             for (const g of this.state.archInstanceGroups.values()) {
-                // SUBMIT-WAL — parent-bewusst: regionale InstancedMesh-Gruppen hängen
-                // in Region-BundleGroups (scene.remove wäre dort ein No-op = Leck).
-                if (g.mesh) this._archBundleSceneRemove(g.mesh);
+                // Parent-bewusst: regionale InstancedMesh-Gruppen hängen in ihrer Region-Gruppe
+                // (scene.remove wäre dort ein No-op = Leck).
+                if (g.mesh) this._archMeshAushaengen(g.mesh);
                 if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
             }
             this.state.archInstanceGroups.clear();
         }
-        // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore);
-        // NACH den Gruppen (die Instanzen-Räumung oben kann Bundles schon leeren+löschen).
-        if (this.state._regionBundles) {
-            for (const bg of this.state._regionBundles.values()) {
-                if (bg.parent) bg.parent.remove(bg);
-                this._bundleQueryProxyTod(bg); // ④ — Query-Proxys fallen mit (kein Szene-Leck)
+        // Verwaiste (bereits leere) Region-Gruppen mit abbauen (Welt-Wechsel/Restore); NACH den Gruppen (die
+        // Instanzen-Räumung oben kann Region-Gruppen schon leeren und löschen).
+        if (this.state._regionGruppen) {
+            for (const rg of this.state._regionGruppen.values()) {
+                if (rg.parent) rg.parent.remove(rg);
+                this._regionVerdeckungProxyTod(rg); // ④ — Query-Proxys fallen mit (kein Szene-Leck)
             }
-            this.state._regionBundles.clear();
+            this.state._regionGruppen.clear();
         }
         // DORF-IN-TERRAIN — der Fundament-Pool fällt mit (Welt-Wechsel/Restore);
         // die Respawn-Schleife baut ihn lazy neu.
@@ -69492,7 +69329,7 @@ class AnazhRealm {
             // L1-Stufe — die L0-Teile casten nicht, die L1-Teile reisen als Schatten-Zwilling (`shadowTwin`,
             // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Stufe L0 gestempelt
             // (`_foundrySchattenGeom`: blendet wie L0, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
-            // Wechsel, Bundles und der Feld-Cull-Ausschluss tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
+            // Wechsel, Region-Gruppe und der Feld-Cull-Ausschluss tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
             // Dreiecke in JEDE der zwei Kaskaden, ihre L1 trägt 11k. Ein Flat ist erst fertig, wenn seine Teile
             // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1).
             let schatten = null;
@@ -84947,10 +84784,9 @@ class AnazhRealm {
             this.state.creatures.forEach((creature) => {
                 if (!this._kzBesitztFeld(creature)) creature.visible = this.isInFrustum(creature, frustum);
             });
-        // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Gruppen lebt auf der
-        // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
-        // diag-render-bundle). Nutzt das frisch gebaute _frustumCache von oben.
-        this._archRegionBundleCull();
+        // Die Region-Kugeln cullen ihre Gruppen (Frustum · Berg-Schatten · Verdeckungs-Abfrage) mit dem frisch
+        // gebauten _frustumCache von oben.
+        this._archRegionCull();
     }
 
     _loopAnimateUfos(currentTime) {
@@ -86790,8 +86626,8 @@ class AnazhRealm {
         // Steht die Post-Pipeline, rendert sie die Szene; bei postProcessingFailed direkter
         // renderer.render() — nie ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
-        // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: compileAsync/_bundleReifeWache
-        // submitten intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
+        // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: compileAsync
+        // submittet intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
         // Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
         // Ökonomie; eine Wahrnehmungs-Auflösung nur realloc-frei (Viewport-Scaling).
         if (pp && !this.state.postProcessingFailed) {
@@ -90766,7 +90602,7 @@ AnazhRealm.STUDIO_WORT = Object.freeze({
     haus: "haus_",
     haeuser: "haus_",
 });
-// Die Streu-Region-Kantenlänge (= _bakeRegionConfig().sizeM, 256 m): Region-Bundles und Fern-Superregion der
+// Die Streu-Region-Kantenlänge (= _bakeRegionConfig().sizeM, 256 m): Region-Gruppen (Cull-Einheit) und Fern-Superregion der
 // Streu. Der platzierte Bau keyt seit Welle B nicht mehr regional (global in der Mesh-Zone).
 AnazhRealm.ARCH_REGION_M = 256;
 // Fern-Superregion (4×4 Regionen à 256 m = 1024 m): Fern-Leaves (camera-facing Impostor-Quads) haben
@@ -90857,7 +90693,7 @@ AnazhRealm.FOUNDRY_LESEN = ["position", "normal", "color", "uv", "aWurzel", "aSc
 AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
-// Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test
+// Berg-Schatten (feld-natives Hi-Z, s. _archRegionCull): konservativer Sichtlinien-Test
 // Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz — je bergiger die Welt, desto billiger.
 // Bis hierher ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die
 // Glieder-Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten).
@@ -90928,7 +90764,7 @@ AnazhRealm.BERG_CULL = Object.freeze({
 // (`_applyRenderScale`). Deaktiviert per PERF_RENDER_SCALE_MIN = 1 (setPixelRatio flackert schwarz).
 AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
 AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
-AnazhRealm.RES_SCALE_DWELL_MS = 1200; // Verweil-Hysterese je Auflösungs-Stufe (Destroyed-Texture-Wand: Realloc gebunden + Bundle-Re-Record amortisiert)
+AnazhRealm.RES_SCALE_DWELL_MS = 1200; // Verweil-Hysterese je Auflösungs-Stufe (Destroyed-Texture-Wand: Realloc gebunden)
 // Die zwei Radius-Wände gegen den Grenzzyklus: Wachsen erst nach so vielen SIM-Sekunden ohne
 // Über-Budget-Frame (kein Jagen kurzlebigen Kopfraums); Schrumpfen erst ab diesem Ziel-Abstand in
 // Metern (Kanten-Zellen flattern nicht; ein echter Überlast-Sturz schrumpft voll).
@@ -91015,21 +90851,13 @@ AnazhRealm._tuerOffenRad = function () {
 //  (1) Instanz-Wächter: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH →
 //      Mutation → genau EIN Refresh.
 //  (2) Atlas-Wächter: lebende Canvas-Atlanten deklarieren sich an mat._anazhAtlasTexe → Bake → EIN Refresh.
-//  (3) DER BUNDLE-REPLAY: ein Objekt in einem gültigen statischen Bundle trägt unter der Diät nur geteilte
-//      renderGroup-Uniforms — r184 kürzt genau diesen Fall selbst ab (isBundle → false), aber erst NACH der
-//      renderId-Wand, die jedes Objekt mit eigenem Beobachter (eigene Geometrie = jede Pflanzen-Gruppe) je Render
-//      und Pass refresht: gemessen 04.10. (echte GPU, Mess-Wiese, Bundles ohne eine Neuaufnahme) 1813 von 1895
-//      Prüfungen je Frame, die Render-CPU 48 ms. Die renderGroup schreibt der erste echte Refresh des Renders,
-//      darum kürzt erst ein gestempelter Render ab; jeder echte Refresh zieht die Bundle-Version im Objekt-
-//      Datensatz nach (r184 tut das nur in equals(), das ein Einzel-Beobachter nie erreicht).
+// Sonst entscheidet die Vendor-Bahn (renderId-Wand je Beobachter, dann equals()). DIE KAMERA-TREUE: Beobachter UND
+// geteilte Bindegruppe (render · frame: cameraViewMatrix · cameraProjectionMatrix · uLodAuge) hängen in r184 am
+// PROGRAMM (NodeBuilderState), nie an der Welt — die renderId-Wand schreibt sie je Programm und Render genau einmal.
+// Eine Abkürzung VOR dieser Wand friert sie ein: die Bundle-Abkürzung (V18.518, gefallen 04.10. mit den Region-
+// Bundles) schrieb je Render nur die Gruppe des Stempel-Objekts, 98 von 99 Programmen zeigten die alte Kamera.
+// gate:vendor-anker fährt die Treue am Schein-Beobachter.
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
-    const rend = frame && frame.renderer;
-    const rid = frame ? frame.renderId : -1;
-    const auf = () => {
-        if (rend) rend._anazhDiaetRid = rid;
-        if (ro && ro.bundle) obs.getRenderObjectData(ro).version = ro.bundle.version;
-        return true;
-    };
     const obj = ro && ro.object;
     if (obj && obj.isInstancedMesh === true) {
         const im = obj.instanceMatrix,
@@ -91038,7 +90866,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         const d = obs.getRenderObjectData(ro);
         if (d._anazhInstV !== v) {
             d._anazhInstV = v;
-            return auf();
+            return true;
         }
     }
     const mat =
@@ -91054,19 +90882,10 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         const d = obs.getRenderObjectData(ro);
         if (d._anazhAtlasV !== va) {
             d._anazhAtlasV = va;
-            return auf();
+            return true;
         }
     }
-    if (
-        rend &&
-        rend._anazhDiaetRid === rid &&
-        ro.bundle &&
-        ro.bundle.static === true &&
-        obs.renderObjects.has(ro) &&
-        obs.getRenderObjectData(ro).version === ro.bundle.version
-    )
-        return false;
-    return altNR.call(obs, ro, frame) ? auf() : false;
+    return altNR.call(obs, ro, frame);
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
 // einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +
