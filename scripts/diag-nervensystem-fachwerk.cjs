@@ -432,20 +432,20 @@ function ksRow(src, name) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient (kein [0]-Kollaps — der Merge lebt)",
-        /\|2\|/.test(out.f.k2 || ""),
+        /^[^|]*\|[^|]*\|2(\||$)/.test(out.f.k2 || ""),
         out.f.err || String(out.f.k2)
     );
     check(
         "F (Flächen-Stufe): die Wahl 1 wird mit der ECHTEN Stufe |1| bedient (kein Host-Mapping)",
-        /\|1\|/.test(out.f.k1 || ""),
+        /^[^|]*\|[^|]*\|1(\||$)/.test(out.f.k1 || ""),
         String(out.f.k1)
     );
     check(
         "F: die Wahl 5 faltet der Chokepoint auf Stufe 2 (lod>2-Klemme)",
-        /\|2\|/.test(out.f.k5 || ""),
+        /^[^|]*\|[^|]*\|2(\||$)/.test(out.f.k5 || ""),
         String(out.f.k5)
     );
-    check("F: die Wahl 0 bleibt die feine Stufe |0|", /\|0\|/.test(out.f.k0 || ""), String(out.f.k0));
+    check("F: die Wahl 0 bleibt die feine Stufe |0|", /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.k0 || ""), String(out.f.k0));
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {

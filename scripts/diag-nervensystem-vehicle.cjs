@@ -411,12 +411,12 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
-        !/\|2\|/.test(out.f.gtKey || ""),
+        !/^[^|]*\|[^|]*\|2(\||$)/.test(out.f.gtKey || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
         out.f.err || String(out.f.gtKey)
     );
     check(
         "F: unbekannter kind OHNE Eintrag klemmt fail-closed auf [0]",
-        /\|0\|/.test(out.f.torKey || ""),
+        /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.torKey || ""),
         String(out.f.torKey)
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

@@ -281,12 +281,20 @@ function check(name, ok, detail) {
                 // Tick-Grenze (outerM + 96) — die Rück-Wanderung muss greifen.
                 pm.x = dz2.x + 420;
                 pm.z = dz2.z;
+                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): seit V18.527 trägt eine Art
+                // nur ihre Budget-Gestalten (strauch 1), also teilen sich alle Zellen der Region dieselbe Hülle — der
+                // Tick muss die ganze Region demoten, bevor sie leer ist. Gewartet wird auf Zelle UND Hülle.
+                const huelleLeer = () =>
+                    privKeysVor.every((k) => {
+                        const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
+                        return !g || (g.liveCount | 0) === 0;
+                    });
                 let dWandel = 0;
                 const dlW2 = performance.now() + 45000;
                 while (!dWandel && performance.now() < dlW2) {
                     for (let i = 0; i < 40 && !dWandel; i++) {
                         r._tickScatterLod(pm, 8, 800);
-                        if (dz2.lod === 2) dWandel = 1;
+                        if (dz2.lod === 2 && huelleLeer()) dWandel = 1;
                     }
                     if (!dWandel) await new Promise((r2) => setTimeout(r2, 150));
                 }
