@@ -59,26 +59,8 @@
             const a = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
             return vnorm(vcross(d, a));
         };
-        // 2D-Value-Noise (deterministischer Hash, seedfrei — für den Gnarl-Dick-Modulator).
-        const vn2 = (x, y) => {
-            const xi = Math.floor(x),
-                yi = Math.floor(y),
-                xf = x - xi,
-                yf = y - yi;
-            const h = (a, b) => {
-                let nH = (Math.imul(a, 1597) + Math.imul(b, 51749)) | 0;
-                nH = (nH << 13) ^ nH;
-                const nn = Math.imul(nH, nH);
-                const t = (Math.imul(nn, 15731) + 789221) | 0;
-                const m = (Math.imul(nH, t) + 1376312589) | 0;
-                return 1 - (m & 0x7fffffff) / 1073741824;
-            };
-            const u = xf * xf * (3 - 2 * xf),
-                v = yf * yf * (3 - 2 * yf);
-            const x1 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u,
-                x2 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
-            return (x1 + (x2 - x1) * v) * 0.5 + 0.5;
-        };
+        // 2D-Value-Noise des Gnarl-Dick-Modulators: DIESELBE `vn2` wie das Rinden-Gesetz unten (Modul-Funktion
+        // dieses Kerns, gehoben) — der byte-gleiche Inline-Zwilling ist gefallen.
 
         const segs = [],
             leaves = [];
@@ -1780,8 +1762,11 @@
         };
         const u = xf * xf * (3 - 2 * xf),
             v = yf * yf * (3 - 2 * yf);
-        const x1 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u,
-            x2 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
+        // Vier Gitter-Hashes statt sechs — dieselben IEEE-Operationen, byte-gleich (wie der Wuchs-Zwilling oben).
+        const h00 = h(xi, yi),
+            h01 = h(xi, yi + 1);
+        const x1 = h00 + (h(xi + 1, yi) - h00) * u,
+            x2 = h01 + (h(xi + 1, yi + 1) - h01) * u;
         return (x1 + (x2 - x1) * v) * 0.5 + 0.5;
     }
 
