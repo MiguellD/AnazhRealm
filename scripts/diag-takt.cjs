@@ -186,7 +186,7 @@ const SELBST = process.argv.includes("--selftest");
                     res([]);
                     r._foundryPumpe(f);
                 };
-                const bestelle = (name, wo) => r._foundryWorkerRequest(name, 0, 0, "summer", null, null, false, wo);
+                const bestelle = (name, wo) => r._foundryWorkerRequest(name, 0, 0, null, null, false, wo); // V18.527: ohne Saison
                 try {
                     return lauf(f, gesendet, antworte, bestelle);
                 } finally {
@@ -200,7 +200,7 @@ const SELBST = process.argv.includes("--selftest");
                 for (let i = 0; i < K; i++) bestelle("block" + i); // der Worker ist voll
                 for (let i = 0; i < 10; i++) bestelle(i === 4 ? "eiche" : "vorrat" + i);
                 bestelle("nah10", { x: pm.x + 10, z: pm.z });
-                r._foundryNaeher(f, "eiche", 0, 0, "summer", { x: pm.x + 5, z: pm.z }); // ein naher Bau verlangt den Vorrats-Schlüssel
+                r._foundryNaeher(f, "eiche", 0, 0, { x: pm.x + 5, z: pm.z }); // ein naher Bau verlangt den Vorrats-Schlüssel
                 antworte();
                 antworte();
                 const nr = gesendet.map((m) => Number(String(m.reqId).replace(/^\D+/, "")));
