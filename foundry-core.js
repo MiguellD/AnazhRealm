@@ -278,15 +278,14 @@ const PORTAL_RENDER_CONFIG = {
             grass: { 1: { tris: 1700, draws: 1, schatten: false }, 2: { tris: 320, draws: 1, schatten: false } },
             flower: { 0: { tris: 3600, draws: 2, schatten: 0 }, 2: { tris: 380, draws: 2, schatten: false } },
             rock: { 0: { tris: 1300, draws: 1, schatten: 0 } },
-            // DER WALDBODEN (04.10.) — aus dem Haushalt abgeleitet (Nah-Streu 9 Befehle / 40k Dreiecke an der Mess-
-            // Wiese, wellen-plan W0): die Nah-Streu der Welt dient L0 nur im Armlängen-Kreis (wenige Instanzen, das
-            // Nahbild), L1 im Rest des Nah-Rings — dort tragen ~250 Pflanzen ≤ 40k, also ≤ ~160 Dreiecke je Pflanze:
-            // die L1 aggregiert (Wedel als EIN gezacktes Band, Schilf-Rispe als EIN Band, Gestrüpp-Büschel als Raute,
-            // n·s²) und trägt EINEN Stoff (ein Befehl je Gestalt), keine Schatten (die Nah-Streu wirft nicht). Die
-            // Zeilen sind die gemessene Hülle über 17 Samen (echte Brücke, gate:asset-contract).
+            // DER WALDBODEN (04.10.) — gegen den Haushalt gebaut (Nah-Streu 9 Befehle / 40k Dreiecke an der Mess-Wiese,
+            // wellen-plan W0): L0 dient die Nah-Streu der Welt nur im Armlängen-Kreis (wenige Instanzen, das Nahbild),
+            // die leichte Stufe im Rest des Rings; sie aggregiert (Wedel als EIN gezacktes Band, Schilf-Rispe als EIN
+            // Band, Gestrüpp-Büschel als Raute, n·s²) und trägt EINEN Stoff (ein Befehl je Gestalt), die Nah-Streu wirft
+            // nicht (schatten false). Die Zeilen sind die gemessene Hülle über 17 Samen (echte Brücke).
             fern: { 0: { tris: 3800, draws: 1, schatten: false }, 1: { tris: 150, draws: 1, schatten: false } },
             reed: { 0: { tris: 2200, draws: 1, schatten: false }, 1: { tris: 300, draws: 1, schatten: false } },
-            brush: { 0: { tris: 5600, draws: 2, schatten: false }, 1: { tris: 360, draws: 1, schatten: false } },
+            brush: { 0: { tris: 3700, draws: 2, schatten: false }, 1: { tris: 300, draws: 1, schatten: false } },
             deadwood: { 0: { tris: 5400, draws: 1, schatten: false }, 1: { tris: 640, draws: 1, schatten: false } },
             // DIE GESTALTEN je Art (04.10.): wie viele verschiedene Individuen (Samen) eine Art in der Welt traegt —
             // die Zahlen, mit denen der Studio-Wald pflanzt (buildForest liest sie, Welt-Varianten-Wahl ebenso);
@@ -378,7 +377,8 @@ const PORTAL_RENDER_CONFIG = {
         // Neigung |∇h|; die Bänder [a, b, c, d] (Trapez): licht = Kronen-Licht 0..1 (Farn im Schatten, Blume im
         // Saum), feucht = Boden-Feuchte 0..1 (0 = gewöhnlicher Boden, 1 = Ufer/Niederung), ufer = m über dem Wasser
         // (negativ = Flachwasser — der Schilfgürtel steht im Wasser), fels = Steinigkeit 0..1. feuchtLicht = wie weit
-        // Feuchte die Licht-Grenze einer Schatten-Art hebt (der Farn steht im feuchten Saum auch heller).
+        // Feuchte die Licht-Grenze einer Schatten-Art hebt (der Farn steht im feuchten Saum auch heller); weite = wie
+        // weit die Nah-Streu der Welt die Art trägt (m, kleine Arten enden früher; ohne Zeile der ganze Nah-Ring).
         // labor: false = das Labor trägt die Art mit seinen eigenen Boden-Schichten (Blumen · Kies).
         boden: {
             farn: {
@@ -391,7 +391,7 @@ const PORTAL_RENDER_CONFIG = {
             },
             gestruepp: {
                 ring: "nah",
-                dichte: 3,
+                dichte: 2.5,
                 skala: [0.7, 1.3],
                 hang: 1.0,
                 licht: [0.22, 0.42, 0.82, 1.02],
@@ -402,6 +402,7 @@ const PORTAL_RENDER_CONFIG = {
                 dichte: 6,
                 skala: [0.7, 1.3],
                 hang: 0.8,
+                weite: 18,
                 licht: [0.4, 0.7, 1.5, 2],
                 labor: false,
             },
@@ -436,9 +437,10 @@ const PORTAL_RENDER_CONFIG = {
             },
             geroell: {
                 ring: "nah",
-                dichte: 1.5,
+                dichte: 1,
                 skala: [0.18, 0.4],
                 hang: 1.4,
+                weite: 12,
                 fels: [0.46, 0.62, 1.5, 2],
                 labor: false,
             },
@@ -2069,7 +2071,7 @@ function emitGestruepp(P) {
             z = [];
         for (let j = 0; j < P.zweige; j++) {
             const bl = [];
-            for (let b = 0; b < 5; b++) bl.push([rrange(0.8, 1.2), rrange(-0.6, 0.6), rnd()]);
+            for (let b = 0; b < 4; b++) bl.push([rrange(0.8, 1.2), rrange(-0.6, 0.6), rnd()]);
             z.push({ t: rrange(0.25, 0.95), az: rnd() * 6.2831853, len: P.hoehe * rrange(0.1, 0.24), bl });
         }
         R.push({ az, el, len, base, z });
@@ -3528,10 +3530,10 @@ function deriveParamsWaldboden(pre, d, IR, J, O) {
     if (pre.kind === "brush")
         return {
             kind: "brush",
-            ruten: Math.max(6, Math.round(lerp(9, 15, d.leaf) * J(0.15))), // bogige Ruten aus dem Wurzelstock
+            ruten: Math.max(6, Math.round(lerp(8, 12, d.leaf) * J(0.15))), // bogige Ruten aus dem Wurzelstock
             hoehe: lerp(0.55, 1.0, d.slim) * J(0.12),
             bogen: clamp(0.6 + d.trop * 0.9, 0.3, 1.4), // wie stark die Ruten überhängen
-            zweige: Math.round(lerp(6, 10, d.leaf)), // Seitenzweige je Rute
+            zweige: Math.round(lerp(5, 8, d.leaf)), // Seitenzweige je Rute
             blatt: lerp(0.05, 0.085, d.leaf) * J(0.1), // Blattlänge (m)
             blattDichte: d.leaf,
             barkA: fx.barkA,

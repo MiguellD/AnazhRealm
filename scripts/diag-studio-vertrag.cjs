@@ -276,6 +276,8 @@ function validateManifest(m) {
                 if (z.ring !== "nah" && z.ring !== "wald") v.push(`B3b: placement.boden.${id}.ring muss nah|wald sein`);
                 if (!(typeof z.dichte === "number" && z.dichte > 0))
                     v.push(`B3b: placement.boden.${id}.dichte muss Zahl > 0 sein`);
+                if (z.weite !== undefined && !(typeof z.weite === "number" && z.weite > 0))
+                    v.push(`B3b: placement.boden.${id}.weite muss Zahl > 0 sein`);
                 if (!Array.isArray(z.skala) || z.skala.length !== 2 || !(z.skala[0] > 0 && z.skala[0] <= z.skala[1]))
                     v.push(`B3b: placement.boden.${id}.skala muss [min ≤ max] > 0 sein`);
                 for (const band of ["licht", "feucht", "ufer", "fels"]) {
@@ -747,7 +749,7 @@ function validateManifest(m) {
                 rarity: { x: 7 },
                 boden: {
                     geist: { ring: "nah", dichte: 1, skala: [1, 2] },
-                    "BÖSE ID": { ring: "fern", dichte: 0, skala: [2, 1], licht: [0.5, 0.2, 1, 2] },
+                    "BÖSE ID": { ring: "fern", dichte: 0, skala: [2, 1], licht: [0.5, 0.2, 1, 2], weite: -3 },
                 },
             },
             lod: {
@@ -827,6 +829,7 @@ function validateManifest(m) {
             bv.some((s) => s.includes("placement.boden.BÖSE ID.dichte muss")) &&
             bv.some((s) => s.includes("placement.boden.BÖSE ID.skala muss")) &&
             bv.some((s) => s.includes("placement.boden.BÖSE ID.licht muss ein Trapez")) &&
+            bv.some((s) => s.includes("placement.boden.BÖSE ID.weite muss")) &&
             bvB.some((s) => s.includes("nadelKarte muss")) &&
             bvB.some((s) => s.includes("klinge muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&

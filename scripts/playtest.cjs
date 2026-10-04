@@ -18394,13 +18394,13 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
 
         // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"):
-        // der Aktuator fährt `_foliageDensityScale`; der NAHE Scatter (`_buildVoxelChunkScatter`)
+        // der Aktuator fährt `_foliageDensityScale`; die NAH-STREU (`_nahStreuKachel`, Waldboden 04.10.)
         // UND der FERNE Compute-Scatter (`_scatterPass`, die MASSE der Render-Last) LESEN ihn.
         out.actuateDrivesDensity = /_foliageDensityScale/.test(window.__codeOf(r._nexusPerfActuate));
         // N7.2 (Dual-Regime senken, V9.56-i — die Probe wandert mit): auch der NAHE Scatter
         // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (wie der ferne, W1);
         // dass DIE den Regler liest, beweist `farScatterReadsDensity` direkt darunter.
-        out.scatterReadsDensity = /_effectiveFoliageDensity/.test(window.__codeOf(r._buildVoxelChunkScatter));
+        out.scatterReadsDensity = /_effectiveFoliageDensity/.test(window.__codeOf(r._nahStreuKachel));
         // W1 (Paritäts-Vollendung) — die Probe wandert mit dem Code (V9.56-i): der ferne Scatter
         // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (Gesetz #0), und DIE liest
         // den Regler. Kette statt Literal — und via __codeOf (kommentar-gestrippt, kein vakuöses Grün).
@@ -24256,257 +24256,164 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     }
 }
 
-// Klein-Vegetation (GPU-instanziert aus worldFieldAt): Arten-Registry · Vertex-Farbe (Material liest
-// `attribute("color")`) · Material baut · echte Instanzen · Determinismus beim Re-Streamen · Pool-
-// Recycling (Cap) · Dispose in die Pools. Headless ist pixel-blind — hier die Datenstruktur.
-async function checkBandV171Scatter(ctx) {
+// DIE NAH-STREU (Waldboden 04.10.): der Boden nah am Auge wächst aus dem Pflanzen-Studio — die Arten sind die
+// Boden-Zeilen des Studios (placement.boden, ring "nah"), gesetzt nach dem EINEN Boden-Gesetz (__phytoCore.
+// bodenGewicht), gebaut über die Foundry (Studio-Teile mit leafKey "f:…"). Konsum statt Existenz: eine echte Kachel
+// am Spieler wird gesetzt (deterministisch), der Takt baut ihre Blöcke in die Senken (InstancedMesh je Art × Gestalt ×
+// Stufe × Teil), Entsorgen und Neubau halten die Block-Tabelle dicht. Headless ist pixel-blind — hier die Struktur.
+async function checkBandNahStreu(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        const Ctor = r.constructor;
-        const species = Ctor.KLEIN_VEGETATION_SPECIES;
-
-        // (1) Registry.
-        out.registryArray = Array.isArray(species);
-        out.speciesCount = out.registryArray ? species.length : 0;
-        // Γ1 (V18.166): „feuchte" ist gültige fünfte Stimme (schilf liest sie;
-        // sie kommt aus der Hydrosphäre statt aus worldFieldAt — genese-plan).
-        const validFields = ["lebendig", "dichte", "glut", "magieleitung", "feuchte"];
-        out.allFieldsValid =
-            out.registryArray &&
-            species.every(
-                (s) =>
-                    typeof s.name === "string" &&
-                    validFields.includes(s.field) &&
-                    typeof s.cap === "number" &&
-                    s.cap > 0 &&
-                    typeof s.floor === "number" &&
-                    Array.isArray(s.scale)
-            );
-        // Alle vier Felder kommen als Stimme vor (die vier Biom-Stimmen).
-        out.allFourVoices = out.registryArray && validFields.every((f) => species.some((s) => s.field === f));
-        // V17.4 — Pollen-Partikel-Art (emissive + drift, lebendig-gated).
-        const pollen = out.registryArray ? species.find((s) => s.name === "pollen") : null;
-        out.hasPollen = !!(pollen && pollen.emissive === true && pollen.drift === true && pollen.field === "lebendig");
-        // Die kohärente Böen-Welle lebt in der EINEN Quelle `_windSwayOffset`; Gras + Streu LESEN sie.
-        // Probe auf __codeOf (kommentar-bereinigt): (a) beide Reader rufen `_windSwayOffset`, gust +
-        // Pollen-drift sind da; (b) gust lebt NUR dort, nie inline re-geforkt (sonst driftet er).
+        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+        // (1) Der Wind: die kohärente Böen-Welle lebt NUR in `_windSwayOffset`, der Gras-Leser ruft sie.
         const grassSrc = r._grassInstanceMat ? window.__codeOf(r._grassInstanceMat) : "";
-        const motionSrc = r._applyScatterMotion ? window.__codeOf(r._applyScatterMotion) : "";
         const swaySrc = r._windSwayOffset ? window.__codeOf(r._windSwayOffset) : "";
-        out.gustWave =
-            swaySrc.includes("gust") &&
-            grassSrc.includes("_windSwayOffset") &&
-            motionSrc.includes("_windSwayOffset") &&
-            motionSrc.includes("drift");
-        out.windCollapsed = swaySrc.includes("gust") && !grassSrc.includes("gust") && !motionSrc.includes("gust");
-
-        // (2) Methoden existieren.
-        out.buildExists = typeof r._buildVoxelChunkScatter === "function";
-        out.disposeExists = typeof r._disposeVoxelChunkScatter === "function";
-        out.geomExists = typeof r._scatterSpeciesGeometry === "function";
-        out.matExists = typeof r._scatterMaterial === "function";
-        if (!out.buildExists || !out.geomExists || !out.matExists) return out;
-
-        // (3) Geometrie trägt Vertex-Farbe; Material baut.
-        const g0 = r._scatterSpeciesGeometry(species[0]);
-        out.geomHasColor = !!(g0 && g0.getAttribute && g0.getAttribute("color") && g0.getAttribute("color").count > 0);
-        out.geomHasPosition = !!(
-            g0 &&
-            g0.getAttribute &&
-            g0.getAttribute("position") &&
-            g0.getAttribute("position").count > 0
-        );
-        const m0 = r._scatterMaterial(species[0]);
-        out.matBuilt = !!m0;
-        // Geometrie ist Singleton (zweiter Aufruf → selbe Instanz).
-        out.geomSingleton = r._scatterSpeciesGeometry(species[0]) === g0;
-
-        // (4) Streu-Build in einer lebendig-reichen, trockenen Region. Scanne
-        // Chunk-Zentren nach dem höchsten lebendig über Land.
-        const span = r._voxelChunkConfig().span;
-        let best = null;
-        let bestVal = -1;
-        for (let cx = -8; cx <= 8 && bestVal < 0.85; cx++) {
-            for (let cz = -8; cz <= 8; cz++) {
-                const wx = (cx + 0.5) * span;
-                const wz = (cz + 0.5) * span;
-                const f = r.worldFieldAt(wx, wz);
-                if (!f) continue;
-                // V18.508: die Streu steht auf der Boden-Karte des GEBAUTEN Chunks — nur gebaute Chunks.
-                const ce = r.state.voxelChunks && r.state.voxelChunks.get(`${cx},${cz}`);
-                if (!ce || !ce.surfMap) continue;
-                const surfY = r._voxelSurfaceY(wx, wz);
-                if (surfY === null || !Number.isFinite(surfY)) continue;
-                const waterY = r._waterLevelAt(wx, wz);
-                if (surfY < waterY + 0.2) continue;
-                const score = Math.max(f.lebendig, f.dichte, f.glut, f.magieleitung);
-                if (score > bestVal) {
-                    bestVal = score;
-                    best = { cx, cz };
+        out.gustWave = swaySrc.includes("gust") && grassSrc.includes("_windSwayOffset") && !grassSrc.includes("gust");
+        // (2) Die Kette als Quelltext: die Kachel liest das Boden-Gesetz, der Takt die Foundry (kein Host-Bauer).
+        const kSrc = window.__codeOf(r._nahStreuKachel);
+        const tSrc = window.__codeOf(r._tickNahStreu);
+        const aSrc = window.__codeOf(r._nahStreuArten);
+        out.kettenQuelle =
+            /bodenGewicht/.test(kSrc) &&
+            /_canopyLightAt/.test(kSrc) &&
+            /_feuchteAt/.test(kSrc) &&
+            /_nahStreuSpiegel/.test(kSrc) &&
+            /_hydroRiverAt/.test(window.__codeOf(r._nahStreuSpiegel)) &&
+            /_foundryFlattenFor/.test(tSrc) &&
+            /_foundryDeclaredStage/.test(tSrc) &&
+            /_foundryVariantFor/.test(tSrc) &&
+            /placement\.boden/.test(aSrc) &&
+            /ring !== "nah"/.test(aSrc);
+        // (3) Die Arten kommen aus dem Studio-Buch (warten, bis Buch + Render-Config stehen).
+        let arten = null;
+        for (let i = 0; i < 300 && !arten; i++) {
+            arten = r._nahStreuArten();
+            if (!arten) await sleep(200);
+        }
+        out.arten = arten ? arten.map((a) => a.id) : null;
+        const buch = r._foundry && r._foundry.recipes;
+        out.artenAusDemBuch =
+            !!arten &&
+            arten.length >= 5 &&
+            arten.every((a) => buch && buch[a.id] && buch[a.id].kind === a.kind && a.zeile.ring === "nah");
+        if (!arten) return out;
+        // (4) Eine Kachel mit Pflanzen nahe dem Spieler (die Chunks stehen), zweimal gesetzt = dieselbe Streu.
+        const NS = r.constructor.NAH_STREU;
+        const pp = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+        let kachel = null;
+        for (let ring = 0; ring <= 6 && !kachel; ring++) {
+            for (let dz = -ring; dz <= ring && !kachel; dz++) {
+                for (let dx = -ring; dx <= ring && !kachel; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+                    const tx = Math.floor(pp.x / NS.kachel) + dx;
+                    const tz = Math.floor(pp.z / NS.kachel) + dz;
+                    const satz = r._nahStreuKachel(tx, tz, arten);
+                    if (satz && satz.items.length) kachel = { tx, tz, satz };
                 }
             }
         }
-        out.foundSpot = !!best;
-        out.bestFieldVal = bestVal;
-        if (!best) {
-            // Keine trockene Feld-reiche Region im Scan-Fenster — unmessbar =
-            // bestanden (V13.1-Default; in einer wasserreichen Welt möglich).
-            out.scatterUnmeasurable = true;
+        out.kachelGefunden = !!kachel;
+        if (!kachel) return out;
+        const zweit = r._nahStreuKachel(kachel.tx, kachel.tz, arten);
+        out.deterministisch =
+            !!zweit &&
+            zweit.items.length === kachel.satz.items.length &&
+            zweit.items.every((it, i) => it.id === kachel.satz.items[i].id && it.x === kachel.satz.items[i].x);
+        out.idsEindeutig = new Set(kachel.satz.items.map((it) => it.id)).size === kachel.satz.items.length;
+        // (5) Der Takt baut den Ring: bis eine Senke Instanzen trägt (die Studio-Teile reisen asynchron).
+        const cam = r.state.camera;
+        const camVor = cam.position.clone();
+        cam.position.set(pp.x, pp.y + 1.6, pp.z);
+        let senken = null;
+        for (let i = 0; i < 600; i++) {
+            r._tickNahStreu();
+            const ns = r.state.nahStreu;
+            if (ns && [...ns.senken.values()].some((a) => a.anzahl > 0) && (ns.offen === 0 || i > 150)) {
+                senken = ns.senken;
+                break;
+            }
+            await sleep(100);
+        }
+        out.ringGebaut = !!senken;
+        if (!senken) {
+            cam.position.copy(camVor);
             return out;
         }
-
-        // Spieler-Chunk auf den Spot setzen (ringDist=0 → alle Arten bauen).
-        const prevLpc = r.state.lastPlayerVoxelChunk;
-        r.state.lastPlayerVoxelChunk = { cx: best.cx, cz: best.cz };
-        const key = `${best.cx},${best.cz}`;
-        // Sauberer Start.
-        r._disposeVoxelChunkScatter(key);
-
-        r._buildVoxelChunkScatter(best.cx, best.cz);
-        const list1 = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.get(key) : null;
-        out.scatterEntrySet = Array.isArray(list1);
-        // Welle B — DER STREU-SATZ: je Chunk die Block-Größen je Art; der Block wohnt in der EINEN Art-Mesh.
-        const countMeshes = (list) => (Array.isArray(list) ? list.reduce((s, it) => s + (it.n || 0), 0) : 0);
-        const total1 = countMeshes(list1);
-        out.totalInstances1 = total1;
-        out.hasInstances = total1 > 0;
-        out.meshesAreInstanced =
-            Array.isArray(list1) &&
-            list1.every((it) => {
-                const b = r._streuNahBereich(it.name, key);
-                return !!b && b.mesh.isInstancedMesh === true && b.n === it.n && b.mesh.name === "streuNah:" + it.name;
-            });
-        // Caps respektiert (Block-Größe ≤ species.cap pro Art).
-        out.capsRespected =
-            Array.isArray(list1) &&
-            list1.every((it) => {
-                const sp = species.find((s) => s.name === it.name);
-                return sp && it.n <= sp.cap;
-            });
-
-        // (5) Determinismus: dispose → rebuild → identische Gesamt-Instanzzahl.
-        r._disposeVoxelChunkScatter(key);
-        out.entryGoneAfterDispose = !(r.state.voxelChunkScatter && r.state.voxelChunkScatter.has(key));
-        r._buildVoxelChunkScatter(best.cx, best.cz);
-        const list2 = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.get(key) : null;
-        const total2 = countMeshes(list2);
-        out.totalInstances2 = total2;
-        out.deterministic = total1 === total2;
-
-        // (6) Welle B — DER STREU-SATZ: der Dispose nimmt den Block aus der Art-Mesh (Anzahl sinkt um seine
-        // Größe), der Neubau hängt ihn an DIESELBE Art-Mesh (Identity) — keine Mesh je Chunk, kein Pool.
-        const firstName = Array.isArray(list2) && list2[0] ? list2[0].name : null;
-        const artFirst = firstName && r.state.streuNah ? r.state.streuNah.get(firstName) : null;
-        const firstMesh = artFirst ? artFirst.mesh : null;
-        const vorAnzahl = artFirst ? artFirst.anzahl : -1;
-        const firstN = Array.isArray(list2) && list2[0] ? list2[0].n : 0;
-        r._disposeVoxelChunkScatter(key);
-        out.satzReleased =
-            !!artFirst && artFirst.anzahl === vorAnzahl - firstN && !r._streuNahBereich(firstName, key);
-        r._buildVoxelChunkScatter(best.cx, best.cz);
-        const reB = firstName ? r._streuNahBereich(firstName, key) : null;
-        out.satzIdentity = !!(reB && reB.mesh === firstMesh && artFirst.anzahl === vorAnzahl);
-
-        // (7) Satz-Disziplin: viele Build/Dispose-Zyklen → die Anzahl je Art kehrt zurück, die Art-Mesh wächst nie
-        // (die Szene trägt höchstens EINE Streu-Mesh je Art).
-        const anzahlVor = new Map();
-        const kapVor = new Map();
-        for (const [n, a] of r.state.streuNah) {
-            anzahlVor.set(n, a.anzahl);
-            kapVor.set(n, a.kap);
-        }
-        for (let i = 0; i < 40; i++) {
-            r._disposeVoxelChunkScatter(key);
-            r._buildVoxelChunkScatter(best.cx, best.cz);
-        }
+        const ns = r.state.nahStreu;
+        // (6) Jede Senke ist ein Studio-Teil (leafKey f:…), eine InstancedMesh, wirft nicht; die Block-Tabelle ist
+        // dicht (Starts lückenlos, Σ n = Anzahl = mesh.count, je Block die Ernte-Identitäten).
         let streuMeshes = 0;
         r.state.scene.traverse((o) => {
             if (o.isInstancedMesh && o.userData && o.userData.inventar === "streu-klein") streuMeshes++;
         });
-        out.satzBounded =
-            [...r.state.streuNah].every(([n, a]) => a.anzahl === anzahlVor.get(n) && a.kap === kapVor.get(n)) &&
-            streuMeshes <= r.state.streuNah.size;
-
-        // (8) Deferred-Queue: enqueue → tick baut (Wasser-Iso-Pattern). Der Tick
-        // baut nur, wenn der Chunk in voxelChunks präsent ist — für den Test
-        // einen Stub injizieren, falls die Region nicht gestreamt ist.
-        out.queueApiExists = typeof r._enqueueScatter === "function" && typeof r._tickPendingScatter === "function";
-        r._disposeVoxelChunkScatter(key);
-        let injectedStub = false;
-        if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
-        if (!r.state.voxelChunks.has(key)) {
-            r.state.voxelChunks.set(key, { mesh: null, lod: 0, stub: true });
-            injectedStub = true;
+        out.jeSenkeEineMesh = streuMeshes === ns.senken.size;
+        out.studioTeile = [...ns.senken.values()].every(
+            (a) =>
+                a.mesh.isInstancedMesh === true &&
+                a.mesh.name === "streuNah:" + a.key &&
+                typeof a.leafKey === "string" &&
+                a.leafKey.startsWith("f:") &&
+                a.mesh.castShadow === false
+        );
+        out.tabelleDicht = [...ns.senken.values()].every((a) => {
+            let start = 0;
+            for (const k of a.ordnung) {
+                const b = a.bloecke.get(k);
+                if (!b || b.start !== start || b.ids.length !== b.n) return false;
+                start += b.n;
+            }
+            return start === a.anzahl && a.mesh.count === a.anzahl;
+        });
+        // (7) Satz-Disziplin: eine gebaute Kachel entsorgen → ihre Blöcke treten aus; neu bauen → dieselben Zahlen.
+        const [kKey, kz] = [...ns.kacheln].find(([, k]) => k.senken.size > 0) || [];
+        if (kz) {
+            const vor = new Map([...ns.senken].map(([k, a]) => [k, a.anzahl]));
+            const blockN = new Map([...kz.senken].map((sk) => [sk, ns.senken.get(sk).bloecke.get(kKey).n]));
+            r._nahStreuKachelEntsorgen(kz);
+            out.entsorgt = [...blockN].every(([sk, n]) => ns.senken.get(sk).anzahl === vor.get(sk) - n);
+            for (let i = 0; i < 300 && kz.zustand === null; i++) {
+                r._tickNahStreu();
+                if (kz.zustand === null) await sleep(50);
+            }
+            out.neuGleich = [...ns.senken].every(([k, a]) => a.anzahl === vor.get(k));
         }
-        r._enqueueScatter(best.cx, best.cz);
-        out.enqueued = !!(r.state.pendingScatter && r.state.pendingScatter.has(key));
-        const builtN = r._tickPendingScatter(8);
-        out.tickBuiltAtLeastOne = builtN >= 1;
-        out.queueBuiltScatter = !!(r.state.voxelChunkScatter && r.state.voxelChunkScatter.has(key));
-        r._disposeVoxelChunkScatter(key);
-        if (injectedStub) r.state.voxelChunks.delete(key);
-
-        // Aufräumen + Spieler-Chunk restaurieren.
-        r._disposeVoxelChunkScatter(key);
-        r.state.lastPlayerVoxelChunk = prevLpc;
-        out.cleanedUp = !(r.state.voxelChunkScatter && r.state.voxelChunkScatter.has(key));
+        cam.position.copy(camVor);
         return out;
     });
 
     if (res.error) {
-        check("V17.1 Scatter: Band (realm verfügbar)", false, res.error);
+        check("Nah-Streu: Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("V17.1 Scatter: KLEIN_VEGETATION_SPECIES ist ein Array", res.registryArray === true);
-    check("V17.1 Scatter: ≥5 Biom-Stimmen (Arten) registriert", res.speciesCount >= 5);
-    check("V17.4: Pollen-Partikel-Art (emissive + drift, lebendig)", res.hasPollen === true);
     check(
-        "V18.310: kohärente Böen-Welle aus EINER Quelle — Gras + Scatter lesen _windSwayOffset (gust dort, drift erhalten)",
+        "V18.310: Wind-Kollaps ECHT — gust lebt NUR in _windSwayOffset, der Gras-Leser ruft sie",
         res.gustWave === true
     );
     check(
-        "V18.310: Wind-Kollaps ECHT — gust lebt NUR in _windSwayOffset, nicht inline re-geforkt",
-        res.windCollapsed === true
-    );
-    check("V17.1 Scatter: jede Art hat gültiges Feld + konstanten Cap + Skala", res.allFieldsValid === true);
-    check("V17.1 Scatter: alle vier worldFieldAt-Felder werden als Stimme genutzt", res.allFourVoices === true);
-    check(
-        "V17.1 Scatter: _buildVoxelChunkScatter + _disposeVoxelChunkScatter existieren",
-        res.buildExists === true && res.disposeExists === true
+        "Nah-Streu: die Kachel liest das Boden-Gesetz + die Welt-Leser, der Takt die Foundry (kein Host-Bauer)",
+        res.kettenQuelle === true
     );
     check(
-        "V17.1 Scatter: Geometrie-Singleton trägt Vertex-Farb-Attribut",
-        res.geomHasColor === true && res.geomHasPosition === true
+        "Nah-Streu: die Arten sind Studio-Zeilen (placement.boden ring nah) mit Rezept im Buch (≥ 5)",
+        res.artenAusDemBuch === true,
+        JSON.stringify(res.arten)
     );
-    check("V17.1 Scatter: Geometrie ist ein Singleton (gecacht pro Art)", res.geomSingleton === true);
-    check("V17.1 Scatter: Material baut (NodeMaterial oder Fallback)", res.matBuilt === true);
-    if (res.scatterUnmeasurable) {
-        check("V17.1 Scatter: keine trockene Feld-reiche Region im Scan — unmessbar = bestanden", true);
-        return;
+    check("Nah-Streu: eine Kachel am Spieler trägt Pflanzen", res.kachelGefunden === true);
+    if (!res.kachelGefunden) return;
+    check("Nah-Streu: dieselbe Kachel = dieselbe Streu (Γ5, Würfe je Zelle)", res.deterministisch === true);
+    check("Nah-Streu: die Ernte-Identität je Pflanze ist eindeutig", res.idsEindeutig === true);
+    check("Nah-Streu: der Takt baut den Ring (Studio-Teile kommen an, nichts offen)", res.ringGebaut === true);
+    if (!res.ringGebaut) return;
+    check("Nah-Streu: je Senke genau EINE InstancedMesh in der Szene", res.jeSenkeEineMesh === true);
+    check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), wirft nicht", res.studioTeile === true);
+    check("Nah-Streu: die Block-Tabelle ist dicht (Σ n = Anzahl = count, Identitäten je Block)", res.tabelleDicht === true);
+    if (res.entsorgt !== undefined) {
+        check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken", res.entsorgt === true);
+        check("Nah-Streu: der Neubau stellt dieselben Zahlen her", res.neuGleich === true);
     }
-    check("V17.1 Scatter: lebendig-reiche Region gefunden (Streu-Spot)", res.foundSpot === true);
-    check("V17.1 Scatter: Build setzt einen Scatter-Eintrag (Array)", res.scatterEntrySet === true);
-    check("V17.1 Scatter: echte GPU-Instanzen gestreut (> 0)", res.hasInstances === true);
-    check("V17.1 Scatter: alle Meshes sind InstancedMesh", res.meshesAreInstanced === true);
-    check("V17.1 Scatter: Instanz-Zahl je Art respektiert den konstanten Cap", res.capsRespected === true);
-    check("V17.1 Scatter: deterministisch (selbe Region → selbe Instanz-Zahl)", res.deterministic === true);
-    check("V17.1 Scatter: Dispose entfernt den Scatter-Eintrag", res.entryGoneAfterDispose === true);
-    check("Welle B Streu-Satz: Dispose nimmt den Chunk-Block aus der Art-Mesh", res.satzReleased === true);
-    check("Welle B Streu-Satz: der Neubau hängt den Block an DIESELBE Art-Mesh (Identity)", res.satzIdentity === true);
-    check(
-        "Welle B Streu-Satz: 40 Build/Dispose-Zyklen — Anzahl kehrt zurück, kein Wachsen, ≤ 1 Streu-Mesh je Art",
-        res.satzBounded === true
-    );
-    check("V17.1 Scatter: deferred-Queue-API (enqueue/tick) existiert", res.queueApiExists === true);
-    check("V17.1 Scatter: _enqueueScatter reiht den Chunk ein", res.enqueued === true);
-    check(
-        "V17.1 Scatter: _tickPendingScatter baut den eingereihten Chunk",
-        res.tickBuiltAtLeastOne === true && res.queueBuiltScatter === true
-    );
-    check("V17.1 Scatter: Aufräumen vollständig (kein Scene-/Map-Leck)", res.cleanedUp === true);
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
@@ -27674,75 +27581,32 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
-// U4 — die DEKO LIEST DIE KASKADE: das Band entscheidet mesh (Band 0, 5×5) / impostor (Band 1+2 —
-// EIN Fernfeld-InstancedMesh pro Art: +6 Draw-Calls statt per-Chunk-Explosion) / none (Band 3).
-// Voller Welt-Beweis: `scripts/diag-deko-fernfeld.cjs`.
-async function checkBandV18131DekoKaskade(ctx) {
+// Waldboden 04.10. — die DEKO-KASKADE IST GEFALLEN: die Klein-Vegetation hing an den Chunk-Bändern (mesh · Kreuz-
+// Fernfeld · none); die Nah-Streu hängt am Schirm (Kachel-Ring um die Kamera, NAH_STREU), jenseits trägt der Boden.
+// Die Kaskade trägt nur noch LOD + KI-Takt; der Loop tickt die Nah-Streu im scatterDeco-Job.
+async function checkBandWaldbodenKaskade(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
         const bands = r.constructor.DETAIL_CASCADE;
-        out.dekoFields = bands.every((b) => typeof b.deko === "string" && Number.isFinite(b.dekoDichte));
-        out.bandPlan =
-            bands[0].deko === "mesh" &&
-            bands[1].deko === "impostor" &&
-            bands[2].deko === "impostor" &&
-            bands[3].deko === "none";
-        out.dichteFaellt =
-            bands[0].dekoDichte > bands[1].dekoDichte &&
-            bands[1].dekoDichte > bands[2].dekoDichte &&
-            bands[3].dekoDichte === 0;
-        const species = r.constructor.KLEIN_VEGETATION_SPECIES;
-        out.ringFiel = species.every((sp) => typeof sp.ring === "undefined");
-        // KONSUM-Proben (V17.31): der Scatter liest das Band, der Loop tickt das
-        // Fernfeld terrain-nachrangig.
-        out.scatterReadsBand = /_detailBand\(ringDist\)/.test(window.__codeOf(r._buildVoxelChunkScatter));
-        // V18.358 — der Fernfeld-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
-        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(window.__codeOf(r._buildDeferrableJobs));
-        // WebGPU-strikt (V10.0-g.1): die Impostor-Geometrie trägt das color-
-        // Attribut, das das geteilte Art-Material liest.
-        const geo = r._scatterImpostorGeometry(species[0]);
-        out.impostorHasColor = !!(geo && geo.attributes && geo.attributes.color && geo.attributes.position);
-        // Behavioral: das Fernfeld baut deterministisch (ein voller Durchlauf,
-        // dann Re-Anker + zweiter — identische Instanz-Zahlen, ≤6 Meshes).
-        if (r.state.lastPlayerVoxelChunk && r.state.voxelChunks && r.state.voxelChunks.size > 5) {
-            for (let i = 0; i < 14; i++) r._tickDekoFernfeld();
-            const ff = r.state.dekoFernfeld;
-            const c1 = {};
-            if (ff) for (const [name, mesh] of ff.meshes) c1[name] = mesh.count;
-            if (ff) ff.anchor = null;
-            for (let i = 0; i < 14; i++) r._tickDekoFernfeld();
-            const c2 = {};
-            if (ff) for (const [name, mesh] of ff.meshes) c2[name] = mesh.count;
-            out.fernfeldDeterministisch = !!ff && JSON.stringify(c1) === JSON.stringify(c2);
-            out.fernfeldBounded = !!ff && ff.meshes.size <= species.length;
-            out.fernfeldMeasured = true;
-        } else {
-            out.fernfeldMeasured = false; // Welt zu jung — unmessbar = bestanden (V13.1-Default)
-        }
+        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.lod));
+        const jobs = window.__codeOf(r._buildDeferrableJobs);
+        out.loopTicktNahStreu = /_tickNahStreu\(/.test(jobs) && /_tickNahWiese\(/.test(jobs);
+        const NS = r.constructor.NAH_STREU;
+        out.schirmGebunden =
+            !!NS && NS.stufe0 < NS.radius && NS.kachel > 0 && NS.radius <= 40 && NS.kachel % NS.zelle === 0;
         return out;
     });
     if (!res) {
-        check("V18.131 Deko-Kaskade: Sonde lief", false, "evaluate warf");
+        check("Waldboden-Kaskade: Sonde lief", false, "evaluate warf");
         return;
     }
+    check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (LOD + KI-Takt)", res.kaskadeOhneDeko === true);
+    check("Waldboden: der scatterDeco-Job tickt Nah-Wiese UND Nah-Streu", res.loopTicktNahStreu === true);
     check(
-        "V18.131 Deko-Kaskade: DETAIL_CASCADE trägt deko+dekoDichte (mesh·impostor·impostor·none, fallend)",
-        res.dekoFields && res.bandPlan && res.dichteFaellt
-    );
-    check("V18.131 Deko-Kaskade: die per-Art-ring-Felder FIELEN (das Band ist die eine Quelle)", res.ringFiel);
-    check(
-        "V18.131 Deko-Kaskade: KONSUM verdrahtet (Scatter liest das Band · der Loop tickt das Fernfeld)",
-        res.scatterReadsBand && res.loopTicksFernfeld
-    );
-    check(
-        "V18.131 Deko-Kaskade: die Impostor-Geometrie trägt color+position (WebGPU-strikt, geteiltes Material)",
-        res.impostorHasColor
-    );
-    check(
-        "V18.131 Deko-Kaskade: das Fernfeld baut deterministisch + bounded (oder Welt zu jung = unmessbar)",
-        !res.fernfeldMeasured || (res.fernfeldDeterministisch && res.fernfeldBounded)
+        "Waldboden: die Nah-Streu ist schirm-gebunden (Armlänge < Radius ≤ 40 m, Kachel = n · Zelle)",
+        res.schirmGebunden === true
     );
 }
 
@@ -27840,8 +27704,8 @@ async function checkBandV18132FerneSeen(ctx) {
     }
 }
 
-// S6-B ERNTBARE FLORA: Raycast auf die Klein-Vegetations-InstancedMeshes (instanceId = stabiler
-// Bucket-Index), Ertrag kraut/essenz (Arten-Daten `ernte`), Session-Gedächtnis + Regrow (nicht
+// S6-B ERNTBARE FLORA: Raycast auf die Senken der Nah-Streu (instanceId → Kachel-Block → Ernte-Identität der
+// Pflanze), Ertrag je Studio-kind (STREU_ERNTE: kraut · stein · holz), Session-Gedächtnis + Regrow (nicht
 // persistiert); gepflücktes kraut speist den Trank-Bauplan durchs Mach-Tor.
 async function checkBandV18133Forage(ctx) {
     const { page, check } = ctx;
@@ -27852,38 +27716,38 @@ async function checkBandV18133Forage(ctx) {
         out.materials =
             !!(mats.kraut && mats.kraut.builtIn && mats.kraut.tags.lebendig >= 0.9) &&
             !!(mats.essenz && mats.essenz.builtIn && mats.essenz.tags.magieleitung >= 0.9);
-        const species = r.constructor.KLEIN_VEGETATION_SPECIES;
-        out.allYields = species.every((sp) => typeof sp.ernte === "string" && !!mats[sp.ernte]);
+        const ernte = r.constructor.STREU_ERNTE;
+        out.allYields = !!ernte && Object.values(ernte).every((m) => typeof m === "string" && !!mats[m]);
         out.forageConst = !!r.constructor.FORAGE && Number.isFinite(r.constructor.FORAGE.regrowMs);
-        // KONSUM-Proben: die Maus-Geste routet Flora, der Build filtert die
-        // Ernte, der Streaming-Slot tickt den Regrow.
+        // KONSUM-Proben: die Maus-Geste routet Flora, der Kachel-Bau filtert die Ernte, der Streaming-Slot tickt
+        // den Regrow.
         out.gestureRoutes = /_pickScatterAtCrosshair/.test(window.__codeOf(r.tryMouseBreak));
-        out.buildFilters = /scatterHarvested/.test(window.__codeOf(r._buildVoxelChunkScatter));
-        // V18.358 — der Regrow-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
+        out.buildFilters = /scatterHarvested/.test(window.__codeOf(r._tickNahStreu));
         out.loopRegrows = /_tickScatterRegrow/.test(window.__codeOf(r._buildDeferrableJobs));
         // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
         // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
         out.trankKraut =
             r.state.blueprints.trank_lebenssaft &&
             r.state.blueprints.trank_lebenssaft.parts.some((pp) => pp.material === "kraut");
-        // Behavioral (wenn Scatter da — sonst unmessbar=bestanden, V13.1):
+        // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden, V13.1): die erste Pflanze einer
+        // erntbaren Senke pflücken.
         let pick = null;
-        if (r.state.voxelChunkScatter) {
-            for (const [key, list] of r.state.voxelChunkScatter) {
-                for (const it of list) {
-                    if (it.n > 0) {
-                        pick = { key, name: it.name, index: 0 };
-                        break;
-                    }
+        const ns = r.state.nahStreu;
+        if (ns)
+            for (const a of ns.senken.values()) {
+                if (!a.ernte || a.anzahl === 0) continue;
+                const key = a.ordnung[0];
+                const b = a.bloecke.get(key);
+                if (b && b.n > 0) {
+                    pick = { key, senke: a.key, name: a.preset, id: b.ids[0] };
+                    break;
                 }
-                if (pick) break;
             }
-        }
         if (pick) {
-            const sp = species.find((x) => x.name === pick.name);
+            const a = ns.senken.get(pick.senke);
             const countMat = () => {
                 let n = 0;
-                for (const sl of r.state.player.inventory || []) if (sl && sl.material === sp.ernte) n += sl.count || 0;
+                for (const sl of r.state.player.inventory || []) if (sl && sl.material === a.ernte) n += sl.count || 0;
                 return n;
             };
             const before = countMat();
@@ -27891,19 +27755,19 @@ async function checkBandV18133Forage(ctx) {
             out.harvested = ok1 && countMat() - before === 1;
             out.doubleRejected = r._harvestScatterPick(pick) === false;
             const m = new window.THREE.Matrix4();
-            const bereich = r._streuNahBereich(pick.name, pick.key); // Welle B: der Block in der Art-Mesh
-            bereich.mesh.getMatrixAt(bereich.start + pick.index, m);
+            const bereich = r._streuNahBereich(pick.senke, pick.key); // der Block der Kachel in der Senke
+            bereich.mesh.getMatrixAt(bereich.start + bereich.ids.indexOf(pick.id), m);
             out.zeroScaled = Math.abs(m.elements[0]) < 1e-6;
-            // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) +
-            // Scatter des Chunks neu (die Instanz kehrt sofort zurueck).
-            const perChunk = r.state.scatterHarvested.get(pick.key);
-            if (perChunk) {
-                perChunk.delete(`${pick.name}:0`);
-                if (perChunk.size === 0) r.state.scatterHarvested.delete(pick.key);
+            // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) + die Kachel neu (die Pflanze kehrt
+            // mit dem nächsten Nah-Streu-Takt zurück).
+            const jeKachel = r.state.scatterHarvested.get(pick.key);
+            if (jeKachel) {
+                jeKachel.delete(pick.id);
+                if (jeKachel.size === 0) r.state.scatterHarvested.delete(pick.key);
             }
-            r._disposeVoxelChunkScatter(pick.key);
-            const [cx, cz] = pick.key.split(",").map(Number);
-            r._buildVoxelChunkScatter(cx, cz);
+            const k = ns.kacheln.get(pick.key);
+            if (k) k.zustand = null;
+            r._tickNahStreu();
             out.measured = true;
         } else {
             out.measured = false;
@@ -27916,11 +27780,11 @@ async function checkBandV18133Forage(ctx) {
     }
     check("V18.133 Foraging: die Alchemie-Materialien kraut+essenz stehen (builtIn, Tag-Profil)", res.materials);
     check(
-        "V18.133 Foraging: jede Art traegt einen existierenden Ernte-Stoff (Daten-Vertrag)",
+        "V18.133 Foraging: jede Studio-Art trägt einen existierenden Ernte-Stoff (STREU_ERNTE je kind)",
         res.allYields && res.forageConst
     );
     check(
-        "V18.133 Foraging: KONSUM verdrahtet (Geste routet Flora · Build filtert Ernte · Loop tickt Regrow)",
+        "V18.133 Foraging: KONSUM verdrahtet (Geste routet Flora · Kachel-Bau filtert Ernte · Loop tickt Regrow)",
         res.gestureRoutes && res.buildFilters && res.loopRegrows
     );
     check(
@@ -30500,70 +30364,34 @@ async function checkBandLambda4Streu(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
-        // V18.187-Welle-11 (Reviewer-Befund): die Probe trägt jetzt ALLE drei
-        // Λ.4-Stufen (V18.174 instanceColor + V18.175 per-Achsen + V18.176
-        // 12 Geometrien), nicht nur die V18.175-Skalierung.
-        const src = window.__codeOf(r._buildVoxelChunkScatter);
-        // V18.175 — per-Achsen-Skalierung.
-        out.perAchsenCode = /sp\.wind/.test(src) && /sx:.*sy:.*sz:/s.test(src);
-        out.consumerCode = /scl\.set\(it\.sx,\s*it\.sy,\s*it\.sz\)/.test(src);
-        // V18.174 — instanceColor pro-Instanz (Hash-Stream). Seit dem Streu-Satz (Welle B) schreibt der Chunk den Tint
-        // als Block (tintColor → farben) und _streuNahEin lädt den Block in die instanceColor der Art-Mesh (Teil-Upload).
-        const satzSrc = window.__codeOf(r._streuNahEin);
-        out.instanceColorCode =
-            /hashInstanceTint/.test(src) &&
-            /tintColor\.toArray\(farben,\s*i \* 3\)/.test(src) &&
-            /instanceColor\.array\.set\(farben,\s*start \* 3\)/.test(satzSrc) &&
-            /instanceColor\.addUpdateRange\(/.test(satzSrc);
-        const matSrc = window.__codeOf(r._scatterMaterial);
-        // Pro-Instanz-Tint läuft über den nativen InstanceNode-Pfad (setupDiffuseColor × instanceColor):
-        // das Material setzt useInstanceTint, liest aber nie manuell `attribute("instanceColor")` (die
-        // geteilte Geometrie trägt es nicht). Negativ-Probe auf kommentar-gestripptem Code (matCode).
-        const matCode = window.__codeOf(matSrc);
-        out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && !/attribute\("instanceColor"/.test(matCode);
-        // V18.176 — 12 Gestalt-Varianten (3 je Art: blume/farn/gestruepp/schilf).
-        const species = A.KLEIN_VEGETATION_SPECIES;
-        const names = new Set(species.map((s) => s.name));
-        const blume3 = names.has("blume_tulpe") && names.has("blume_klee") && names.has("blume_mohn");
-        const farn3 = names.has("farn_normal") && names.has("farn_breit") && names.has("farn_schmal");
-        const gestruepp3 =
-            names.has("gestruepp_busch") && names.has("gestruepp_decker") && names.has("gestruepp_stecher");
-        const schilf3 = names.has("schilf_reihe") && names.has("schilf_tuff") && names.has("schilf_rohr");
-        out.zwoelfGeometrien = blume3 && farn3 && gestruepp3 && schilf3;
-        // Build-Methode kennt die 12 Geom-Cases.
-        const geomSrc = window.__codeOf(r._scatterSpeciesGeometry);
-        out.geomBuilderHat12 =
-            /blume_tulpe/.test(geomSrc) &&
-            /blume_klee/.test(geomSrc) &&
-            /blume_mohn/.test(geomSrc) &&
-            /farn_breit/.test(geomSrc) &&
-            /gestruepp_decker/.test(geomSrc) &&
-            /schilf_rohr/.test(geomSrc);
+        // Waldboden 04.10. — die Vielfalt der Nah-Streu kommt aus dem STUDIO: die Gestalten je Art (budget.
+        // gestalten, je Same eine Gestalt über `_foundryVariantFor`) + ein neutral-naher Tint je Instanz über den
+        // nativen InstanceNode-Pfad (die Senke setzt instanceColor; der Studio-Stoff setzt useInstanceTint, liest
+        // nie manuell `attribute("instanceColor")`). Die zwölf Host-Gestalten (Tulpe/Klee/Mohn …) fielen.
+        const bSrc = window.__codeOf(r._nahStreuBloecke);
+        const mSrc = window.__codeOf(r._streuNahMesh);
+        const fSrc = window.__codeOf(r._foundryTreeMaterial);
+        out.tintJeInstanz = /farben/.test(bSrc) && /instanceColor = new THREE\.InstancedBufferAttribute/.test(mSrc);
+        out.stoffNativ = /useInstanceTint/.test(fSrc) && !/attribute\("instanceColor"/.test(fSrc);
+        const arten = r._nahStreuArten() || [];
+        const G = {};
+        for (const a of arten) G[a.id] = r._foundryGestalten(a.id);
+        out.gestalten = G;
+        out.massenZwei = arten.length > 0 && ["farn", "schilf", "blume"].every((id) => G[id] === 2);
+        out.alleGestalten = arten.length > 0 && arten.every((a) => Number.isInteger(G[a.id]) && G[a.id] >= 1);
         return out;
     });
+    check("Λ.4 Streu (Waldboden): ein Tint je Instanz über instanceColor der Senke", res.tintJeInstanz === true);
     check(
-        "Λ.4 Streu (V18.175): _buildVoxelChunkScatter setzt entkoppelte sx/sy/sz für wind-Arten",
-        res.perAchsenCode === true
+        "Λ.4 Streu (V18.267): der Studio-Stoff trägt useInstanceTint OHNE manuelles attribute(instanceColor)",
+        res.stoffNativ === true
     );
     check(
-        "Λ.4 Streu (V18.175): Consumer liest sx/sy/sz statt uniform scale (Per-Achsen-Skalierung wirkt)",
-        res.consumerCode === true
+        "Λ.4 Streu (Waldboden): jede Art trägt ihre Studio-Gestalten, die Massen-Arten (Farn · Schilf · Blume) zwei",
+        res.alleGestalten === true && res.massenZwei === true,
+        JSON.stringify(res.gestalten)
     );
-    check(
-        "Λ.4 Streu (V18.174): _buildVoxelChunkScatter tönt je Instanz via hashInstanceTint, _streuNahEin lädt den Block in instanceColor",
-        res.instanceColorCode === true
-    );
-    check(
-        "Λ.4 Streu (V18.267): _scatterMaterial trägt useInstanceTint OHNE manuelles attribute(instanceColor) (nativer Auto-Multiply, kein Konsolen-Fehler)",
-        res.materialUseInstanceTint === true
-    );
-    check(
-        "Λ.4 Streu (V18.176): 12 Gestalt-Varianten in KLEIN_VEGETATION_SPECIES (3 je blume/farn/gestruepp/schilf)",
-        res.zwoelfGeometrien === true
-    );
-    check("Λ.4 Streu (V18.176): _scatterSpeciesGeometry baut die 12 Geom-Varianten", res.geomBuilderHat12 === true);
 }
 
 async function checkBandLambda5MischwaldSynthese(ctx) {
@@ -30697,9 +30525,7 @@ async function checkBandGammaGenese(ctx) {
             out.struct =
                 typeof r._feuchteAt === "function" &&
                 typeof r._hydroDistAt === "function" &&
-                typeof r._kronenMult === "function" &&
-                Object.isFrozen(A.FEUCHTE) &&
-                Object.isFrozen(A.KRONEN);
+                Object.isFrozen(A.FEUCHTE);
             // (2) FEUCHTE am ECHTEN Fluss: der Senkrecht-Walk findet die Bank
             // (erste Land-Zelle neben der Mittellinie) — dort muss das Feld
             // mindestens den schilf-floor tragen; Legacy-Tor an derselben Stelle.
@@ -30751,49 +30577,34 @@ async function checkBandGammaGenese(ctx) {
                 if (a0 <= 0.7) aff = { a0, a1: r.spawnAffinityForBlueprint("baum_eiche", x, z, 1) };
             }
             if (aff) out.affDelta = aff.a1 - aff.a0;
-            // (4) KRONEN-Verhalten an kontrollierten c-Werten: Wald-Punkt
-            // (c > 0.3) und Lichtungs-Punkt (c < −0.3) aus dem Klump-Feld.
-            let pWald = null;
-            let pLicht = null;
-            for (let i = 0; i < 4096 && (!pWald || !pLicht); i++) {
-                const x = -800 + (i % 64) * 25;
-                const z = -800 + Math.floor(i / 64) * 25;
-                const c = r._clumpAt(x, z, 0.006);
-                if (!pWald && c > 0.3) pWald = { x, z };
-                if (!pLicht && c < -0.3) pLicht = { x, z };
-            }
-            if (pWald && pLicht) {
-                const u = { kronen: "unter" };
-                const l = { kronen: "lichtung" };
-                const rd = { kronen: "rand" };
-                out.kron = {
-                    unterWald: r._kronenMult(u, pWald.x, pWald.z),
-                    unterLicht: r._kronenMult(u, pLicht.x, pLicht.z),
-                    lichtWald: r._kronenMult(l, pWald.x, pWald.z),
-                    lichtLicht: r._kronenMult(l, pLicht.x, pLicht.z),
-                    randWald: r._kronenMult(rd, pWald.x, pWald.z),
-                    neutral: r._kronenMult({}, pWald.x, pWald.z),
+            // (4) Γ2 — DAS BODEN-GESETZ (Waldboden 04.10., die Host-Kronen-Lesart fiel): die Studio-Zeilen, die die
+            // Nah-Streu liest, differenzieren an kontrollierten Umwelten — Farn im Schatten (die Feuchte hebt seine
+            // Licht-Grenze), Schilf nur am gemessenen Ufer (Pflicht-Band), Blume im Licht.
+            const boden = A._studioRenderConfig && A._studioRenderConfig.placement && A._studioRenderConfig.placement.boden;
+            const wG = window.__phytoCore && window.__phytoCore.bodenGewicht;
+            if (boden && typeof wG === "function" && boden.farn && boden.schilf && boden.blume) {
+                out.gesetz = {
+                    farnSchatten: wG(boden.farn, { licht: 0.25, feucht: 0 }),
+                    farnLicht: wG(boden.farn, { licht: 0.9, feucht: 0 }),
+                    farnSaumTrocken: wG(boden.farn, { licht: 0.66, feucht: 0 }),
+                    farnSaumFeucht: wG(boden.farn, { licht: 0.66, feucht: 1 }),
+                    schilfUfer: wG(boden.schilf, { licht: 0.8, ufer: 0 }),
+                    schilfTrocken: wG(boden.schilf, { licht: 0.8, ufer: 5 }),
+                    schilfUngemessen: wG(boden.schilf, { licht: 0.8 }),
+                    blumeLicht: wG(boden.blume, { licht: 0.9 }),
+                    blumeSchatten: wG(boden.blume, { licht: 0.2 }),
                 };
             }
-            // (5) Arten-Daten + KONSUM BEIDER Gating-Stellen: nah-Mesh UND Fernfeld lesen feldNass/minGen/kronen
-            // identisch — sonst ploppt die Dichte am Band-Übergang. schilf/farn sind in Gestalt-Varianten
-            // gespalten (schilf_reihe/_tuff/_rohr, farn_normal/_breit/_schmal) → Suche per Präfix.
-            const species = A.KLEIN_VEGETATION_SPECIES;
-            const schilf = species.find((s) => s.name === "schilf" || s.name.startsWith("schilf_"));
-            const farn = species.find((s) => s.name === "farn" || s.name.startsWith("farn_"));
-            out.schilfData = !!(schilf && schilf.field === "feuchte" && schilf.minGen === 2);
-            out.farnDual = !!(
-                farn &&
-                farn.feldNass === "feuchte" &&
-                Number.isFinite(farn.floorNass) &&
-                farn.kronen === "unter"
-            );
-            const nahSrc = window.__codeOf(r._buildVoxelChunkScatter);
-            const fernSrc = window.__codeOf(r._buildDekoFernfeldSpecies);
-            const reads = (src) =>
-                /feldNass/.test(src) && /_kronenMult/.test(src) && /minGen/.test(src) && /_feuchteAt/.test(src);
-            out.gatingNah = reads(nahSrc);
-            out.gatingFern = reads(fernSrc);
+            // (5) KONSUM: die Nah-Streu misst Feuchte · Kronen-Licht · Ufer-Höhe und wertet mit dem Boden-Gesetz; die
+            // Zeilen tragen Schilf am Ufer und den Farn mit Feuchte-Licht.
+            const kSrc = window.__codeOf(r._nahStreuKachel);
+            out.gatingNah =
+                /bodenGewicht/.test(kSrc) &&
+                /_feuchteAt/.test(kSrc) &&
+                /_canopyLightAt/.test(kSrc) &&
+                /_nahStreuSpiegel/.test(kSrc);
+            out.schilfData = !!(boden && boden.schilf && Array.isArray(boden.schilf.ufer) && boden.schilf.ring === "nah");
+            out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
             out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
             out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(
                 window.__codeOf(r._vegetationSampleSpawn)
@@ -30802,9 +30613,9 @@ async function checkBandGammaGenese(ctx) {
             // im Worldgen nie würfeln — P2P-Drift-Klasse).
             const fns = [
                 "_vegetationSampleSpawn",
-                "_buildVoxelChunkScatter",
-                "_buildDekoFernfeldSpecies",
-                "_kronenMult",
+                "_nahStreuKachel",
+                "_tickNahStreu",
+                "_nahStreuBloecke",
                 "_feuchteAt",
                 "_hydroDistAt",
                 "worldFieldAt",
@@ -30828,7 +30639,7 @@ async function checkBandGammaGenese(ctx) {
         }
         return out;
     });
-    check("Γ Struktur: _feuchteAt/_hydroDistAt/_kronenMult leben, FEUCHTE+KRONEN frozen", res.struct === true);
+    check("Γ Struktur: _feuchteAt/_hydroDistAt leben, FEUCHTE frozen", res.struct === true);
     check(
         `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank && res.feuchteBank.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
         res.bankFound && res.feuchteBank >= 0.62
@@ -30973,21 +30784,23 @@ async function checkBandGammaGenese(ctx) {
     );
 
     check(
-        "Γ2 KRONEN differenzieren: unter wächst im Wald-Klumpen, lichtung in der Lücke, rand meidet beide Pole, ohne kronen-Feld neutral 1",
-        res.kron &&
-            res.kron.unterWald > 1 &&
-            res.kron.unterLicht < 0.05 &&
-            res.kron.lichtLicht > 1 &&
-            res.kron.lichtWald < 0.05 &&
-            res.kron.randWald < 0.6 &&
-            res.kron.neutral === 1
+        "Γ2 BODEN-GESETZ differenziert: Farn im Schatten (Feuchte hebt die Licht-Grenze), Schilf nur am gemessenen Ufer, Blume im Licht",
+        !!res.gesetz &&
+            res.gesetz.farnSchatten > 0.9 &&
+            res.gesetz.farnLicht === 0 &&
+            res.gesetz.farnSaumFeucht > res.gesetz.farnSaumTrocken &&
+            res.gesetz.schilfUfer > 0.9 &&
+            res.gesetz.schilfTrocken === 0 &&
+            res.gesetz.schilfUngemessen === 0 &&
+            res.gesetz.blumeLicht > res.gesetz.blumeSchatten,
+        JSON.stringify(res.gesetz)
     );
     check(
-        "Γ1/Γ2 Doppel-Gating-WAND: nah-Streu UND Fernfeld lesen feldNass/minGen/kronen/feuchte identisch; Boden + Spawn-Pass konsumieren",
-        res.gatingNah && res.gatingFern && res.bodenLiest && res.spawnReicht
+        "Γ1/Γ2 KONSUM: die Nah-Streu misst Feuchte/Kronen-Licht/Ufer und wertet mit dem Boden-Gesetz; Boden + Spawn-Pass konsumieren",
+        res.gatingNah && res.bodenLiest && res.spawnReicht
     );
     check(
-        "Γ1 Arten-Daten: schilf (field feuchte, minGen 2) + farn Dual-Feld (feldNass/floorNass, kronen unter)",
+        "Γ1 Arten-Daten: Schilf trägt das Ufer-Band (ring nah), der Farn das Feuchte-Licht",
         res.schilfData && res.farnDual
     );
     check(
@@ -36719,7 +36532,7 @@ async function checkBandV18219bisVollendung(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben im
+            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/nahStreu/scatterRegrow) leben im
             // Frame-Budget-Scheduler → `_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs` zählen
             // als Loop-Verdrahtungs-Quellen.
             if (
@@ -37113,7 +36926,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben im
+            // Die deferrable Ticks (archLOD/canopy/scatter/waterIso/nahStreu/scatterRegrow) leben im
             // Frame-Budget-Scheduler → `_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs` zählen
             // als Loop-Verdrahtungs-Quellen.
             if (
@@ -38821,7 +38634,7 @@ async function checkBandM8MakroFenster(ctx) {
 
 // Reflexions-Audit — vier Wände: (1) der Schatten-Weite-Slider treibt unter CSM csm.maxFar (kein
 // toter Knopf) · (2) Kachel-Erosion ohne flowTo-Ballast · (3) die Bestbewertet-Rail liest die
-// aggregierte Wertung · (4) EIN per-Chunk-RNG _scatterChunkRng (Scatter + Fernfeld).
+// aggregierte Wertung · (4) die Nah-Streu würfelt je (Zelle, Art) aus Zelle + Welt-Seed (Γ5, Waldboden 04.10.).
 // Gegenprobe: die CSM-Haupt-Map rendert NICHT (mainMap=false).
 async function checkBandV18136Audit(ctx) {
     const { page, check } = ctx;
@@ -38845,11 +38658,9 @@ async function checkBandV18136Audit(ctx) {
         out.tileLean = /eTile\.flowTo = null/.test(window.__codeOf(r._ensureHydroTilesAround));
         // (3) die Rail liest die Gemeinschafts-Aggregation.
         out.trendsAgg = /_feedRatingAgg/.test(window.__codeOf(r._renderFeedTrends));
-        // (4) EIN RNG-Helfer, zwei Konsumenten (V9.82).
-        out.oneRng =
-            typeof r._scatterChunkRng === "function" &&
-            /_scatterChunkRng/.test(window.__codeOf(r._buildVoxelChunkScatter)) &&
-            /_scatterChunkRng/.test(window.__codeOf(r._buildDekoFernfeldSpecies));
+        // (4) Γ5: der Wurf-Strom der Nah-Streu hängt nur an Zelle, Art und Welt-Seed (nie Math.random).
+        const kSrc = window.__codeOf(r._nahStreuKachel);
+        out.oneRng = /gi \* 73856093/.test(kSrc) && /seedInt/.test(kSrc) && !/Math\.random/.test(kSrc);
         return out;
     });
     if (!res) {
@@ -38862,7 +38673,7 @@ async function checkBandV18136Audit(ctx) {
     );
     check("V18.136 Audit: Kachel-Erosion ohne flowTo-Ballast (64 KB/Kachel gespart)", res.tileLean);
     check("V18.136 Audit: die Bestbewertet-Rail liest die Gemeinschafts-Aggregation", res.trendsAgg);
-    check("V18.136 Audit: EIN per-Chunk-RNG (Scatter + Fernfeld verdichtet, V9.82)", res.oneRng);
+    check("V18.136 Audit: die Nah-Streu würfelt je Zelle aus dem Welt-Seed (Γ5, kein Math.random)", res.oneRng);
 }
 
 // Ω2 must-preserve als Gesetz: Unbekanntes überlebt jeden Serialize/Restore bit-gleich (EINE Quelle
@@ -55719,7 +55530,7 @@ async function checkBandRing6Workshop(ctx) {
             // V11.0-a..d (Gras-Mesh-Pool) — V18.492 GESCHNITTEN mit dem Pool selbst: die
             // Wiese ist Boden-Funktion (21.07.), kein Halm-Mesh → kein Pool, kein Band.
             // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
-            await timed(checkBandV171Scatter, ctx);
+            await timed(checkBandNahStreu, ctx);
 
             // Band 3 — Atmosphäre, Welt-Portal/Vibe-Pass/Bibliothek, Übersetzer + Untrusted-Tor, späte Politur.
             await timed(checkBandWelle6XAudit, ctx);
@@ -55751,7 +55562,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandG8R5LivingImmune, ctx);
             await timed(checkBandV18129HochBecken, ctx);
             await timed(checkBandV18130CsmShadow, ctx);
-            await timed(checkBandV18131DekoKaskade, ctx);
+            await timed(checkBandWaldbodenKaskade, ctx);
             await timed(checkBandV18132FerneSeen, ctx);
             await timed(checkBandV18133Forage, ctx);
             await timed(checkBandV18134Social, ctx);

@@ -42,7 +42,11 @@ die Nah-Wiese auf der Boden-Karte (D gefallen); offen: das Profi-Band auf jedem 
 - N5.4 scatter-Verdrahtung [erstes scatter-Rezept] · N6.5 spring/pitch [M4-Entscheid] ·
   Rüstung/Trank-Rezepte + Geräte-Gestalten [Lab-Presets] · W-A2 Auto-Impostor [eine Worldgen-
   Massen-Domäne ohne ehrliche Stufen] · TAA-Lite [dann rotiert `uDitherT`] · plantForest ↔
-  planForestCell [nur unter Byte-Beweis] · Totholz-Saat + start_plattform [bis fachwerk sie deckt].
+  planForestCell [nur unter Byte-Beweis] · start_plattform [bis fachwerk sie deckt].
+- **Benannt gestrichen (Waldboden 04.10.):** mit dem Klein-Vegetations-Zwilling fielen final die Leucht-Sporen
+  und der Pollen (die einzige Essenz-Ernte — das Studio trägt keine Schwebe-Teilchen), das Kreuz-Fernfeld und
+  die Deck-Streu (jenseits der Nah-Streu trägt der Boden) und das minGen-Tor des Schilfs (es wächst am
+  gemessenen Ufer jeder Welt). Totstamm und Stumpf trägt die Nah-Streu als Studio-Arten.
 - **Bewusst rot:** diag-genom „0 Gigant" (heilen oder begründen) · diag-atmosphere Fill-NACHT
   (Waise seit V18.464).
 - **Das Drehbuch** (`docs/abnahme-drehbuch.md`): `npm run look-golden -- --mint` auf echter GPU.
@@ -96,7 +100,8 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
   Frequenzband (`_applySubstanceResponse`) · Schatten (2 CSM-Kaskaden; jede LOD-Maske misst vom Auge
   `uLodAuge`, ein L0-Baum wirft seine L1 — `gate:foundry-crossfade`) · LOD-Kaskade (`DETAIL_CASCADE`) ·
-  Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei).
+  Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei + die Nah-Streu: die Studio-Bodenarten im Kachel-Ring
+  um die Kamera, gesetzt nach dem Boden-Gesetz `placement.boden` / `bodenGewicht`).
 - **Welt/Sozial:** Portal/Sub-Welten · Vibe-Pass (ed25519) · Bibliothek/Feed · Mesh (signaling +
   WebRTC + Compute-Sharing) · Fremd-Engine-Tor (Sandbox + Auto-Vendor).
 - **Spieler/UI:** `computePlayerStats` (equip-Fold) · Inventar/Hotbar/Equip · die 6 Räume +

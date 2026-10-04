@@ -102,15 +102,9 @@ class AnazhRealm {
             voxelTerrainActive: true,
             voxelChunks: null,
             voxelChunkGrass: null,
-            // GPU-instanzierte Klein-Vegetation aus den VIER worldFieldAt-Feldern: reine Deko (keine Physik),
-            // am Voxel-Chunk-Lifecycle, je Art konstanter Cap (Uniform-Capacity) + Distanz-LOD.
-            // voxelChunkScatter = Map<chunkKey, [{name, n}]> (die Block-Größen je Art); die Blöcke wohnen im
-            // Streu-Satz streuNah = Map<artName, {mesh, bloecke, …}> (EINE InstancedMesh je Art, Welle B);
-            // _scatterMats/_scatterGeoms = Map<artName, NodeMaterial | BufferGeometry-Singleton>.
-            voxelChunkScatter: null,
-            streuNah: null,
-            _scatterMats: null,
-            _scatterGeoms: null,
+            // DIE NAH-STREU (Waldboden 04.10.): der Kachel-Ring der Studio-Bodenarten um die Kamera —
+            // { kacheln: Map<"tx,tz", {items, chunks, senken, zustand}>, senken: Map<"art:v:L:teil", {mesh, bloecke…}> }.
+            nahStreu: null,
             // Wasser-Mesh je Voxel-Chunk (Map<key, Mesh|null>) — der EINZIGE Wasser-Render-Pfad, gebaut aus
             // entry.waterCells; die Form wählt waterRenderMode.
             voxelChunkWaterIso: null,
@@ -865,9 +859,6 @@ class AnazhRealm {
             // V12.0-perf.h — deferred-Queue für den Wasser-Iso-Build (Set von
             // "cx,cz"-Keys), per-Frame budgetiert (Streaming-Hitch-Heilung).
             pendingWaterIso: null,
-            // Deferred-Queue der Klein-Vegetation (Set von Chunk-Keys): der Chunk finalisiert sofort, das
-            // Streuen (worldFieldAt + Surface-Scan je Zelle) läuft ≤ Budget/Frame nach → kein Streaming-Hitch.
-            pendingScatter: null,
             // Deferred-Queue fürs Gras (Set von Chunk-Keys): _buildVoxelChunkGrass (~34 ms) ist der teuerste
             // Per-Chunk-Posten — synchron im Finalize triebe er Rebuild-Spikes. Der Tick baut ≤1/Frame auf
             // einem ruhigen (nicht-Streaming-)Frame nach; 1 Frame später ist imperzeptibel.
@@ -13408,7 +13399,7 @@ class AnazhRealm {
             );
         }
         // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle
-        // (`dekoDensity` in `_buildVoxelChunkScatter`) → unter Last direkt weniger Dreiecke.
+        // (die Last-Dichte der Nah-Streu, `_nahStreuKachel`) → unter Last direkt weniger Dreiecke.
         // Verdichtet nur in den Lücken, lichtet sofort; headless → 1.
         if (st.renderer && st.renderer._isHeadlessNull) {
             st._foliageDensityScale = 1;
@@ -14806,7 +14797,7 @@ class AnazhRealm {
                 worldRules: sz(st.worldRules),
                 rigidBodies: sz(st.rigidBodies),
                 pendingWaterIso: sz(st.pendingWaterIso),
-                pendingScatter: sz(st.pendingScatter),
+                nahStreu: st.nahStreu ? st.nahStreu.kacheln.size : 0,
                 pendingGrass: sz(st.pendingGrass),
                 pendingFoliage: sz(st.pendingFoliageChunks),
                 floatingIslands: sz(st.floatingIslands),
@@ -15714,8 +15705,8 @@ class AnazhRealm {
         return mat;
     }
 
-    // DIE KANONISCHE WIND-SWAY-GRÖSSE — alle Wind-Leser (Gras, Streu `_applyScatterMotion`) LESEN sie;
-    // Charakter als Parameter: `ampX` (Gras 1.5, Streu 1.2), `windScale` (Wipfel-Dämpfen, fehlt → 1).
+    // DIE KANONISCHE WIND-SWAY-GRÖSSE — jeder Wind-Leser LIEST sie;
+    // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
     // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);
     // gust = sin(uWindTime·0.4 − dot(worldXZ, uWindDir)·0.0384)·0.45 + 0.7 (wandernde Böe, λ~164 m).
     // uBend-Sphären biegen Halme radial weg (min(hf,1)). Render-rein; gibt den vec3-Versatz zurück.
@@ -19282,275 +19273,6 @@ class AnazhRealm {
     }
     static get CREATURE_DRINK_SPEED() {
         return AnazhRealm._verhaltenGesetz().aufgaben.trinkTempo; // m/s — gleich wie gather, sichtbares Bewegen
-    }
-    // Arten-Registry der GPU-instanzierten Klein-Vegetation: die worldFieldAt-Felder werden Biom-Stimmen
-    // (lebendig → Blüten+Farne, dichte → Fels, glut → Glut-Gestrüpp, magieleitung → Leucht-Sporen).
-    // EIN Streu-Mechanismus (`_buildVoxelChunkScatter`), die Arten sind Daten. Je Art KONSTANTER `cap`
-    // (gleich große Pool-Meshes → keine Bind-Group-Cache-Pollution); field/floor = wo, perCell = Dichte,
-    // pool ≥ Ring-Chunks + Headroom; den Distanz-LOD trägt DETAIL_CASCADE (deko/dekoDichte).
-    static get KLEIN_VEGETATION_SPECIES() {
-        // Die LEBENDEN Streu-Arten in DREI Gestalt-Varianten je Art (blume/farn/gestrüpp/schilf). Jede
-        // Variante teilt die Affinitäts-Daten (field/floor/kronen) und konkurriert als eigene Art; perCell ÷ 3
-        // → die Gesamt-Dichte bleibt. Tags emergieren via ernte→kraut, nie aus species.name.
-        return [
-            // === BLUME × 3 (Tulpe · Klee · Mohn) ===
-            {
-                name: "blume_tulpe",
-                ernte: "kraut",
-                field: "lebendig",
-                floor: 0.5,
-                kronen: "lichtung",
-                perCell: 1.1,
-                cap: 200,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.5, 1.0],
-                color: [0.86, 0.32, 0.46],
-                color2: [0.95, 0.82, 0.3],
-                geom: "blume_tulpe",
-            },
-            {
-                name: "blume_klee",
-                ernte: "kraut",
-                field: "lebendig",
-                floor: 0.5,
-                kronen: "lichtung",
-                perCell: 1.1,
-                cap: 200,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.45, 0.85],
-                color: [0.55, 0.78, 0.4],
-                color2: [0.92, 0.92, 0.94],
-                geom: "blume_klee",
-            },
-            {
-                name: "blume_mohn",
-                ernte: "kraut",
-                field: "lebendig",
-                floor: 0.5,
-                kronen: "lichtung",
-                perCell: 1.0,
-                cap: 180,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.55, 1.05],
-                color: [0.92, 0.18, 0.15],
-                color2: [0.18, 0.1, 0.08],
-                geom: "blume_mohn",
-            },
-            // === FARN × 3 (normal · breit · schmal) ===
-            {
-                name: "farn_normal",
-                ernte: "kraut",
-                field: "lebendig",
-                floor: 0.32,
-                feldNass: "feuchte",
-                floorNass: 0.3,
-                kronen: "unter",
-                perCell: 0.8,
-                cap: 160,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.6, 1.2],
-                color: [0.22, 0.46, 0.2],
-                color2: [0.34, 0.6, 0.26],
-                geom: "farn_normal",
-            },
-            {
-                name: "farn_breit",
-                ernte: "kraut",
-                field: "lebendig",
-                floor: 0.32,
-                feldNass: "feuchte",
-                floorNass: 0.3,
-                kronen: "unter",
-                perCell: 0.8,
-                cap: 160,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.5, 1.0],
-                color: [0.28, 0.5, 0.22],
-                color2: [0.4, 0.66, 0.3],
-                geom: "farn_breit",
-            },
-            {
-                name: "farn_schmal",
-                ernte: "kraut",
-                field: "lebendig",
-                floor: 0.32,
-                feldNass: "feuchte",
-                floorNass: 0.3,
-                kronen: "unter",
-                perCell: 0.8,
-                cap: 160,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.7, 1.3],
-                color: [0.2, 0.42, 0.18],
-                color2: [0.32, 0.55, 0.24],
-                geom: "farn_schmal",
-            },
-            // === GESTRÜPP × 3 (Busch-Kugel · Bodendecker · Dürre-Stecher) ===
-            {
-                name: "gestruepp_busch",
-                ernte: "kraut",
-                field: "glut",
-                floor: 0.5,
-                kronen: "rand",
-                perCell: 0.6,
-                cap: 110,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.6, 1.3],
-                color: [0.55, 0.3, 0.16],
-                color2: [0.68, 0.42, 0.2],
-                geom: "gestruepp_busch",
-            },
-            {
-                name: "gestruepp_decker",
-                ernte: "kraut",
-                field: "glut",
-                floor: 0.5,
-                kronen: "rand",
-                perCell: 0.6,
-                cap: 110,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.65, 1.4],
-                color: [0.48, 0.34, 0.2],
-                color2: [0.62, 0.46, 0.26],
-                geom: "gestruepp_decker",
-            },
-            {
-                name: "gestruepp_stecher",
-                ernte: "kraut",
-                field: "glut",
-                floor: 0.5,
-                kronen: "rand",
-                perCell: 0.6,
-                cap: 110,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.55, 1.2],
-                color: [0.6, 0.36, 0.18],
-                color2: [0.75, 0.5, 0.24],
-                geom: "gestruepp_stecher",
-            },
-            // dichte → Fels-Brocken/Kiesel: graubraune Low-Poly-Steine, steinige
-            // Regionen. Statisch (kein Wind), empfängt Schatten, weiter sichtbar.
-            {
-                name: "fels",
-                ernte: "stein", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
-                field: "dichte",
-                floor: 0.46,
-                perCell: 1.4,
-                cap: 256,
-                wind: false,
-                emissive: false,
-                yOff: -0.05,
-                scale: [0.4, 1.4],
-                color: [0.4, 0.38, 0.36],
-                color2: [0.5, 0.47, 0.43],
-                geom: "fels",
-            },
-            // magieleitung → Leucht-Sporen: kleine schwebende leuchtende Motes in
-            // magischen Regionen. Emissive → speist das V17.0-Bloom (Synergie).
-            {
-                name: "spore",
-                ernte: "essenz", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
-                field: "magieleitung",
-                floor: 0.62,
-                perCell: 1.6,
-                cap: 224,
-                wind: false,
-                emissive: true,
-                yOff: 0.5,
-                scale: [0.4, 0.9],
-                color: [0.5, 0.85, 1.0],
-                color2: [0.75, 0.6, 1.0],
-                geom: "spore",
-            },
-            // lebendig → Pollen-Partikel: warm leuchtende Motes über üppigen Wiesen (`drift` = entkoppeltes
-            // Treiben); weicher Boost 1.15 — Schweben im Licht, kein Glühwurm. Reine Deko.
-            {
-                name: "pollen",
-                ernte: "essenz", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
-                field: "lebendig",
-                floor: 0.55,
-                perCell: 1.3,
-                cap: 200,
-                wind: false,
-                emissive: true,
-                emissiveBoost: 1.15,
-                drift: true,
-                yOff: 1.3,
-                scale: [0.45, 0.9],
-                color: [1.0, 0.93, 0.66],
-                color2: [1.0, 0.82, 0.5],
-                geom: "spore",
-            },
-            // SCHILF: NUR in Genese-2-Welten (minGen-Gate), liest die FEUCHTE direkt → Säume an Flüssen und
-            // Niederungen.
-            // === SCHILF × 3 (Halme-Reihe · Tuff · hoch-Rohr) ===
-            {
-                name: "schilf_reihe",
-                ernte: "kraut",
-                field: "feuchte",
-                floor: 0.62,
-                minGen: 2,
-                perCell: 0.9,
-                cap: 100,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.9, 1.7],
-                color: [0.33, 0.48, 0.2],
-                color2: [0.66, 0.64, 0.3],
-                geom: "schilf_reihe",
-            },
-            {
-                name: "schilf_tuff",
-                ernte: "kraut",
-                field: "feuchte",
-                floor: 0.62,
-                minGen: 2,
-                perCell: 0.9,
-                cap: 100,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [0.8, 1.5],
-                color: [0.3, 0.44, 0.18],
-                color2: [0.6, 0.6, 0.28],
-                geom: "schilf_tuff",
-            },
-            {
-                name: "schilf_rohr",
-                ernte: "kraut",
-                field: "feuchte",
-                floor: 0.62,
-                minGen: 2,
-                perCell: 0.9,
-                cap: 100,
-                wind: true,
-                emissive: false,
-                yOff: 0,
-                scale: [1.2, 2.4],
-                color: [0.38, 0.52, 0.22],
-                color2: [0.72, 0.7, 0.34],
-                geom: "schilf_rohr",
-            },
-        ];
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten. SCHLUSS-WELLE
     // 17.07.: die Zahlen wohnen im tetrapoda-Gesetzbuch (VERHALTEN.aufgaben).
@@ -24046,8 +23768,6 @@ class AnazhRealm {
             // aus der alten Welt sind nicht mehr relevant (Atlas + Surface
             // sind neu generiert, alte Positionen können kollidieren).
             this.state.pendingVegSpawns = [];
-            // V17.1 — auch die Scatter-Queue leeren (alte Chunk-Keys ungültig).
-            this.state.pendingScatter = new Set();
             for (const a of this.state.architectures || []) {
                 if (!a || !a.position) continue;
                 const cx = Math.floor(a.position.x / vspan);
@@ -29697,10 +29417,6 @@ class AnazhRealm {
                 // Skirt) → es wurde gar nicht disposed → BEHALTEN.
             }
         }
-        // Klein-Vegetation (Blüten/Farne/Gestrüpp/Fels/Sporen) aus den worldFieldAt-Feldern: DEFERRED
-        // (enqueue), damit der Surface-Scan nicht im Streaming-Frame liegt; der Tick streut ≤budget/Frame,
-        // nahe zuerst. Reine Deko — kein Determinismus-/Physik-Eingriff.
-        this._enqueueScatter(cx, cz);
         // Wasser-Iso sonst deferred (~78 ms Surface-Nets, ≤budget/Frame → kein Streaming-Spike). Beim
         // Edit-Rebuild (`syncWater`) SYNCHRON — sonst fehlt der Iso 1–2 Frames am Edit-Punkt (Flackern).
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
@@ -30209,16 +29925,12 @@ class AnazhRealm {
         // keepGrass: ein Rebuild ohne Oberflächen-Änderung (Struktur-Spawn/Skirt/LOD) behält das Gras (kein
         // Flackern, kein ~34-ms-Rebuild); Prune + oberflächen-ändernde Rebuilds disposen.
         if (!keepGrass) this._disposeVoxelChunkGrass(key);
-        // V17.1 — die Klein-Vegetation des Chunks zurück in die Art-Pools.
-        this._disposeVoxelChunkScatter(key);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
         // disposen (einziger Wasser-Render-Pfad; der alte Quad-Pfad ist weg).
         this._disposeVoxelChunkWaterIso(key);
         // V12.0-perf.h — ausstehenden Wasser-Iso-Build für diesen Chunk
         // verwerfen (Chunk ist weg, nichts mehr zu bauen).
         if (this.state.pendingWaterIso) this.state.pendingWaterIso.delete(key);
-        // V17.1 — ausstehenden Scatter-Build für diesen Chunk verwerfen.
-        if (this.state.pendingScatter) this.state.pendingScatter.delete(key);
         // Welle A — ausstehenden Gras-Build für diesen Chunk verwerfen.
         if (this.state.pendingGrass) this.state.pendingGrass.delete(key);
         this.state.voxelChunks.delete(key);
@@ -32876,362 +32588,167 @@ class AnazhRealm {
         return out;
     }
 
-    // === FÜLLE/DICHTE: GPU-instanzierte Klein-Vegetation ===
-    // Die vier `worldFieldAt`-Felder als Biom-Stimmen: Blüten/Farne (lebendig), Fels-Brocken (dichte),
-    // Glut-Gestrüpp (glut), Leucht-Sporen (magieleitung). Reine Deko (KEINE Physik/Kollision/Remesh),
-    // am Chunk-Lifecycle wie das Gras, instanziert mit konstanten Caps je Art (Uniform-Capacity),
-    // Distanz-LOD je Art (`ring`), deterministisch gestreut (stabil beim Re-Streamen).
-
-    // Geometrie-Singleton je Art (state._scatterGeoms): non-indexed + computeVertexNormals → flat-
-    // shaded Toon. Vertex-Farben aus species.color/color2 gebacken; das Material liest
-    // `attribute("color")` (NodeMaterial ignoriert `vertexColors:true`). Wurzel bei y=0 — der Wind
-    // nutzt `positionLocal.y` als Höhen-Faktor. Bewusst low-poly.
-    _scatterSpeciesGeometry(species) {
-        if (!this.state._scatterGeoms) this.state._scatterGeoms = new Map();
-        const cache = this.state._scatterGeoms;
-        if (cache.has(species.name)) return cache.get(species.name);
-        if (typeof THREE === "undefined") return null;
-        const P = [];
-        const C = [];
-        const c = species.color;
-        const c2 = species.color2 || species.color;
-        // Vertex-Push-Helfer: v(point, color), tri(a,b,d, ca[,cb,cd]).
-        const v = (p, col) => {
-            P.push(p[0], p[1], p[2]);
-            C.push(col[0], col[1], col[2]);
-        };
-        const tri = (a, b, d, ca, cb, cd) => {
-            v(a, ca);
-            v(b, cb || ca);
-            v(d, cd || ca);
-        };
-        // Ein schmales, zur Spitze verjüngtes, nach vorn gebogenes Blatt/Zweig
-        // (für Blüten-Stiel, Farn-Wedel, Gestrüpp-Zweig). rot = Fächer-Winkel,
-        // h = Höhe, w0 = Wurzelbreite, lean = Biegung, cBase/cTip = Farben.
-        const strip = (rot, h, w0, lean, cBase, cTip, seg) => {
-            const cr = Math.cos(rot);
-            const sr = Math.sin(rot);
-            const S = seg || 3;
-            const ringPts = [];
-            for (let s = 0; s <= S; s++) {
-                const t = s / S;
-                ringPts.push({ w: w0 * (1 - t * 0.82), y: t * h, bend: lean * t * t });
-            }
-            const pt = (e, r) => {
-                const lx = e * r.w * 0.5;
-                const lz = r.bend;
-                return [lx * cr - lz * sr, r.y, lx * sr + lz * cr];
-            };
-            for (let s = 0; s < S; s++) {
-                const A = ringPts[s];
-                const B = ringPts[s + 1];
-                const tA = s / S;
-                const tB = (s + 1) / S;
-                const colA = [
-                    cBase[0] + (cTip[0] - cBase[0]) * tA,
-                    cBase[1] + (cTip[1] - cBase[1]) * tA,
-                    cBase[2] + (cTip[2] - cBase[2]) * tA,
-                ];
-                const colB = [
-                    cBase[0] + (cTip[0] - cBase[0]) * tB,
-                    cBase[1] + (cTip[1] - cBase[1]) * tB,
-                    cBase[2] + (cTip[2] - cBase[2]) * tB,
-                ];
-                const a0 = pt(-1, A);
-                const a1 = pt(1, A);
-                const b0 = pt(-1, B);
-                const b1 = pt(1, B);
-                tri(a0, a1, b1, colA, colA, colB);
-                tri(a0, b1, b0, colA, colB, colB);
-            }
-        };
-        const stemG = [0.2, 0.4, 0.16];
-        // Drei unterschiedliche Gestalten je lebender Art (blume Tulpe/Klee/Mohn · farn normal/breit/schmal
-        // · gestrüpp Busch/Decker/Stecher · schilf Reihe/Tuff/Rohr); die alten Namen "blume"/"farn"/
-        // "gestruepp" (alte Saves) fallen auf die Normal-Variante.
-        if (species.geom === "blume_tulpe" || species.geom === "blume") {
-            // TULPE: Stiel + glockenförmiger Kelch (6 Blütenblätter, hoch+schmal).
-            strip(0.0, 0.18, 0.018, 0.0, stemG, [0.28, 0.5, 0.22], 2);
-            strip(1.6, 0.18, 0.016, 0.0, stemG, [0.28, 0.5, 0.22], 2);
-            const top = [0, 0.24, 0];
-            const r = 0.06;
-            const yTip = 0.175;
-            const N = 6;
-            for (let i = 0; i < N; i++) {
-                const a0 = (i / N) * Math.PI * 2;
-                const a1 = ((i + 1) / N) * Math.PI * 2;
-                const p0 = [Math.cos(a0) * r, yTip, Math.sin(a0) * r];
-                const p1 = [Math.cos(a1) * r, yTip, Math.sin(a1) * r];
-                tri(top, p0, p1, c2, c, c);
-            }
-        } else if (species.geom === "blume_klee") {
-            // KLEE: 3 flache Blätter sehr niedrig, fast bodendeckend.
-            const stemH = 0.06;
-            strip(0.0, stemH, 0.012, 0.0, stemG, [0.28, 0.5, 0.22], 2);
-            for (let i = 0; i < 3; i++) {
-                const a = (i / 3) * Math.PI * 2;
-                const cx = Math.cos(a) * 0.04;
-                const cz = Math.sin(a) * 0.04;
-                const r = 0.075;
-                const yBlatt = stemH + 0.008;
-                // Blatt als gerundetes Dreieck (3 Vertices um Zentrum)
-                const p0 = [cx + Math.cos(a) * r, yBlatt, cz + Math.sin(a) * r];
-                const p1 = [cx + Math.cos(a + 0.7) * r * 0.6, yBlatt + 0.004, cz + Math.sin(a + 0.7) * r * 0.6];
-                const p2 = [cx + Math.cos(a - 0.7) * r * 0.6, yBlatt + 0.004, cz + Math.sin(a - 0.7) * r * 0.6];
-                tri(p0, p1, p2, c, c2, c);
-                // Blatt-Unterseite (DoubleSide-Render macht es sichtbar von unten)
-                tri(p0, p2, p1, c, c, c2);
-            }
-            // kleines Mittel-Blüte (weiss)
-            const cBlute = [0.98, 0.98, 0.99];
-            const center = [0, stemH + 0.012, 0];
-            for (let i = 0; i < 5; i++) {
-                const a0 = (i / 5) * Math.PI * 2;
-                const a1 = ((i + 1) / 5) * Math.PI * 2;
-                const r = 0.025;
-                tri(
-                    center,
-                    [Math.cos(a0) * r, stemH + 0.014, Math.sin(a0) * r],
-                    [Math.cos(a1) * r, stemH + 0.014, Math.sin(a1) * r],
-                    cBlute,
-                    cBlute,
-                    cBlute
-                );
-            }
-        } else if (species.geom === "blume_mohn") {
-            // MOHN: hoher Stiel + flache breite Scheibe (4 Blütenblätter).
-            strip(0.0, 0.22, 0.014, 0.0, stemG, [0.28, 0.5, 0.22], 2);
-            strip(1.6, 0.22, 0.013, 0.0, stemG, [0.28, 0.5, 0.22], 2);
-            const yScheibe = 0.22;
-            const N = 4;
-            const r = 0.13;
-            // Schwarzes Zentrum
-            const dark = [0.18, 0.1, 0.08];
-            const center = [0, yScheibe, 0];
-            for (let i = 0; i < N; i++) {
-                const a0 = (i / N) * Math.PI * 2;
-                const a1 = ((i + 1) / N) * Math.PI * 2;
-                const am = (a0 + a1) / 2;
-                // Breites Blütenblatt — Trapez
-                const pOuter = [Math.cos(am) * r, yScheibe + 0.002, Math.sin(am) * r];
-                const pSide1 = [Math.cos(a0) * r * 0.35, yScheibe + 0.001, Math.sin(a0) * r * 0.35];
-                const pSide2 = [Math.cos(a1) * r * 0.35, yScheibe + 0.001, Math.sin(a1) * r * 0.35];
-                tri(center, pSide1, pOuter, dark, c, c);
-                tri(center, pOuter, pSide2, dark, c, c);
-            }
-        } else if (species.geom === "farn_normal" || species.geom === "farn") {
-            // FARN normal: 4 breite gebogene Wedel, fächerförmig.
-            strip(0.0, 0.42, 0.07, 0.16, c, c2, 3);
-            strip(1.57, 0.4, 0.065, 0.18, c, c2, 3);
-            strip(3.14, 0.44, 0.07, 0.15, c, c2, 3);
-            strip(4.71, 0.38, 0.06, 0.2, c, c2, 3);
-        } else if (species.geom === "farn_breit") {
-            // FARN breit: niederliegend gespreizt — 6 niedrige weite Wedel.
-            for (let i = 0; i < 6; i++) {
-                const rot = (i / 6) * Math.PI * 2;
-                strip(rot, 0.22, 0.11, 0.3, c, c2, 3); // tief gebogen → liegend
-            }
-        } else if (species.geom === "farn_schmal") {
-            // FARN schmal: vertikal aufrecht — 2 hohe steile Wedel.
-            strip(0.0, 0.7, 0.05, 0.04, c, c2, 4);
-            strip(1.57, 0.65, 0.045, 0.05, c, c2, 4);
-            strip(3.14, 0.68, 0.05, 0.04, c, c2, 4);
-        } else if (species.geom === "gestruepp_busch" || species.geom === "gestruepp") {
-            // BUSCH: 5 steife dünne Zweige, leicht auseinander.
-            for (let i = 0; i < 5; i++) {
-                const rot = (i / 5) * Math.PI * 2 + 0.3;
-                strip(rot, 0.26 + (i % 2) * 0.06, 0.022, 0.05 + (i % 3) * 0.03, c, c2, 2);
-            }
-        } else if (species.geom === "gestruepp_decker") {
-            // BODENDECKER: flach-breit, viele kleine Zweige nahe am Boden.
-            for (let i = 0; i < 8; i++) {
-                const rot = (i / 8) * Math.PI * 2;
-                strip(rot, 0.14, 0.035, 0.18, c, c2, 2); // sehr niedrig, stark gebogen
-            }
-        } else if (species.geom === "gestruepp_stecher") {
-            // DÜRRE-STECHER: 3 hohe kahle Stäbe, aufrecht.
-            strip(0.0, 0.5, 0.018, 0.02, c, c2, 2);
-            strip(2.1, 0.55, 0.018, 0.02, c, c2, 2);
-            strip(4.2, 0.45, 0.018, 0.02, c, c2, 2);
-        } else if (species.geom === "schilf_reihe") {
-            // SCHILF Halme-Reihe: 3 parallel aufrechte Halme.
-            strip(0.0, 0.52, 0.025, 0.02, c, c2, 3);
-            strip(0.0, 0.48, 0.024, 0.02, c, c2, 3);
-            strip(0.0, 0.55, 0.026, 0.02, c, c2, 3);
-        } else if (species.geom === "schilf_tuff") {
-            // SCHILF Tuff: kompakt-dicht, viele Halme in alle Richtungen.
-            for (let i = 0; i < 7; i++) {
-                const rot = (i / 7) * Math.PI * 2;
-                strip(rot, 0.35 + (i % 3) * 0.07, 0.022, 0.04, c, c2, 3);
-            }
-        } else if (species.geom === "schilf_rohr") {
-            // SCHILF hoch-Rohr: 1 hoher Halm (3m bei scale=1), nahe am Wasser.
-            strip(0.0, 1.1, 0.045, 0.04, c, c2, 5);
-            strip(1.57, 1.05, 0.042, 0.04, c, c2, 5);
-        } else if (species.geom === "fels") {
-            // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen).
-            const top = [0, 0.34, 0];
-            const bot = [0, 0, 0];
-            const mid = [
-                [0.22, 0.13, 0.05],
-                [0.04, 0.15, 0.24],
-                [-0.24, 0.12, 0.02],
-                [-0.03, 0.14, -0.23],
-            ];
-            const cTop = c2;
-            const cBot = [c[0] * 0.7, c[1] * 0.7, c[2] * 0.7];
-            for (let i = 0; i < 4; i++) {
-                const a = mid[i];
-                const b = mid[(i + 1) % 4];
-                tri(top, a, b, cTop, c, c);
-                tri(bot, b, a, cBot, c, c);
-            }
-        } else if (species.geom === "spore") {
-            // Winziger leuchtender Oktaeder (emissive → speist V17.0-Bloom).
-            const R = 0.06;
-            const top = [0, R * 1.4, 0];
-            const bot = [0, -R * 1.4, 0];
-            const mid = [
-                [R, 0, 0],
-                [0, 0, R],
-                [-R, 0, 0],
-                [0, 0, -R],
-            ];
-            for (let i = 0; i < 4; i++) {
-                const a = mid[i];
-                const b = mid[(i + 1) % 4];
-                tri(top, a, b, c, c2, c);
-                tri(bot, b, a, c, c, c2);
-            }
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
-        geo.computeVertexNormals();
-        geo.computeBoundingSphere();
-        cache.set(species.name, geo);
-        return geo;
+    // ═══ DIE NAH-STREU (Waldboden 04.10.) ═══
+    // Nah am Auge wächst der Boden aus dem Pflanzen-Studio: Farn · Gestrüpp · Blume · Schilf · liegendes Totholz ·
+    // Stumpf · Geröll, gesetzt nach dem EINEN Boden-Gesetz (`placement.boden`, ring "nah"; Auswerter
+    // `__phytoCore.bodenGewicht` — derselbe, mit dem der Labor-Wald pflanzt) und gebaut über die Foundry
+    // (`_foundryFlattenFor`: kindStages · budget.gestalten). Der Host erzeugt keine Gestalt — der Klein-Vegetations-
+    // Zwilling (eigene Strip-/Kreuz-Geometrie je Art, Deko-Fernfeld, Deck-Streu) ist gefallen. Kosten an den SCHIRM
+    // gebunden: ein Kachel-Ring um die Kamera (NAH_STREU), L0 im Armlängen-Kreis (`stufe0`), jenseits die leichte
+    // Stufe der Art, das Rand-Band dünnt. Je Art × Gestalt × Stufe × Teil EINE InstancedMesh `streuNah:…` (die
+    // Senke) für den ganzen Ring, eine Kachel ist ein BLOCK darin (Block-Tabelle; Eintritt hinten, Austritt rückt
+    // nach — Teil-Uploads). Jenseits des Rings trägt der Boden (Boden-Farbe) und die Strauch-/Blumen-Schicht der
+    // Streu-Regionen.
+    static get NAH_STREU() {
+        return Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, radius: 24, rand: 5, kachelnJeTakt: 3 });
     }
 
-    // Node-Material je Art (state._scatterMats): weiche Arten (wind:true) teilen die Gras-Wind-
-    // positionNode; Sporen (emissive) schweben, UNLIT + hell → Bloom lässt sie glühen; sonst lit
-    // Lambert. Albedo = Vertex-Farbe + Welt-Noise-Variation. Ohne TSL: klassisches Lambert.
-    _scatterMaterial(species) {
-        if (!this.state._scatterMats) this.state._scatterMats = new Map();
-        const cache = this.state._scatterMats;
-        if (cache.has(species.name)) return cache.get(species.name);
-        if (typeof THREE === "undefined") return null;
-        const TSL = THREE.TSL;
-        const c = species.color;
-        const fallbackHex =
-            (Math.round(Math.min(1, c[0]) * 255) << 16) |
-            (Math.round(Math.min(1, c[1]) * 255) << 8) |
-            Math.round(Math.min(1, c[2]) * 255);
-        let mat = null;
-        try {
-            if (species.emissive && TSL && typeof THREE.MeshBasicNodeMaterial === "function") {
-                mat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
-                const { vec4, float, attribute } = TSL;
-                const vcol = attribute("color", "vec3");
-                // V17.4 — per-Art-Boost: Magie-Sporen leuchten stark (1.7),
-                // Pollen weich (1.15) → Pollen ist warmes Schweben, kein Glühwurm.
-                mat.colorNode = vec4(vcol.mul(float(species.emissiveBoost || 1.7)), float(1.0));
-                this._applyScatterMotion(mat, species, TSL);
-            } else if (TSL && typeof THREE.MeshLambertNodeMaterial === "function") {
-                mat = new THREE.MeshLambertNodeMaterial({
-                    side: species.wind ? THREE.DoubleSide : THREE.FrontSide,
-                });
-                const { vec4, vec3, float, attribute, max } = TSL;
-                const vcol = attribute("color", "vec3");
-                let albedo = vcol;
-                if (TSL.mx_noise_float && TSL.positionWorld) {
-                    const bn = TSL.mx_noise_float(TSL.positionWorld.mul(float(0.5)));
-                    albedo = albedo.mul(float(1.0).add(bn.mul(float(0.16))));
-                    albedo = max(albedo, vec3(0, 0, 0));
+    // Was eine Boden-Art beim Pflücken gibt — Spieler-Ökonomie, keine Gestalt: je Studio-kind.
+    static get STREU_ERNTE() {
+        return Object.freeze({
+            fern: "kraut",
+            reed: "kraut",
+            brush: "kraut",
+            flower: "kraut",
+            rock: "stein",
+            deadwood: "holz",
+        });
+    }
+
+    // Die Arten der Nah-Streu: die Boden-Zeilen mit ring "nah", deren Preset das LIVE-Buch trägt, nach Namen
+    // sortiert (die Wurf-Reihenfolge ist Daten-Identität). null, solange Buch oder Render-Config fehlen — die Streu
+    // wartet, sie rät nie.
+    _nahStreuArten() {
+        const cfg = AnazhRealm._studioRenderConfig;
+        const boden = cfg && cfg.placement ? cfg.placement.boden : null;
+        const buch = this._foundry ? this._foundry.recipes : null;
+        if (!boden || !buch) return null;
+        const c = this._nahStreuArtenCache;
+        if (c && c.boden === boden && c.buch === buch) return c.arten;
+        const arten = [];
+        for (const id of Object.keys(boden).sort()) {
+            const zeile = boden[id];
+            const rec = buch[id];
+            if (!zeile || zeile.ring !== "nah" || !rec) continue;
+            // Die Weite der Art (Studio-Zeile `weite`, m): kleine Arten enden früher, keine reicht über den Ring.
+            const weite = Math.min(AnazhRealm.NAH_STREU.radius, Number.isFinite(zeile.weite) ? zeile.weite : Infinity);
+            arten.push({ id, zeile, kind: rec.kind, ernte: AnazhRealm.STREU_ERNTE[rec.kind] || null, weite });
+        }
+        this._nahStreuArtenCache = { boden, buch, arten };
+        return arten;
+    }
+
+    // Der Wasser-Spiegel, an dem das Ufer-Band des Boden-Gesetzes misst: See und Meer (`_waterLevelAt`) oder — im
+    // Fluss-Kanal samt Bank-Rampe — die Fluss-Oberfläche (`_hydroRiverAt`); der Schilfgürtel säumt beide.
+    _nahStreuSpiegel(x, z) {
+        const see = this._waterLevelAt(x, z);
+        const fluss = this._hydroRiverAt(x, z);
+        return fluss && Number.isFinite(fluss.surfaceY) ? Math.max(see, fluss.surfaceY) : see;
+    }
+
+    // Die Pflanzen einer Kachel nach dem Boden-Gesetz: je Zelle (NAH_STREU.zelle) EINE Umwelt-Messung (Kronen-Licht
+    // · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
+    // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
+    // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
+    // Ernte-Identität `gi|gj|art|i` bleibt). Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`), Pfade bleiben frei,
+    // nur Arten mit Ufer-Band stehen im Wasser. Rückgabe { items, chunks } oder null, solange ein Chunk unter der
+    // Kachel noch keine Boden-Karte hat.
+    _nahStreuKachel(tx, tz, arten) {
+        const NS = AnazhRealm.NAH_STREU;
+        const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
+        if (!core || typeof core.bodenGewicht !== "function")
+            throw new Error("_nahStreuKachel: das Boden-Gesetz (__phytoCore.bodenGewicht) fehlt");
+        const span = this._voxelChunkConfig(0).span;
+        const seedInt = this._forestSeedInt();
+        const last = this._effectiveFoliageDensity();
+        const Z = NS.zelle;
+        const n = Math.round(NS.kachel / Z);
+        const items = [];
+        const chunks = new Map();
+        const ort = (x, z) => {
+            const cx = Math.floor(x / span);
+            const cz = Math.floor(z / span);
+            const ck = `${cx},${cz}`;
+            return { e: this.state.voxelChunks ? this.state.voxelChunks.get(ck) : null, cx, cz, ck };
+        };
+        for (let gj = tz * n; gj < tz * n + n; gj++) {
+            for (let gi = tx * n; gi < tx * n + n; gi++) {
+                const x = (gi + 0.5) * Z;
+                const z = (gj + 0.5) * Z;
+                const o = ort(x, z);
+                if (!o.e || !o.e.surfMap) {
+                    if (o.e && o.e.empty) continue;
+                    return null; // der Boden steht noch nicht — die Kachel wartet
                 }
-                // Lebende Streu (wind && !emissive) trägt einen seed-deterministischen Tint je Instanz (setColorAt);
-                // hier nur das useInstanceTint-Flag. KEIN manueller `attribute("instanceColor")`: Three.js
-                // multipliziert instanceColor selbst, und die geteilte Geometrie trägt das Attribut nicht.
-                if (species.wind && !species.emissive) {
-                    mat.userData = mat.userData || {};
-                    mat.userData.useInstanceTint = true;
+                chunks.set(o.ck, o.e.surfMap);
+                const y = this._chunkSurfaceAt(o.e, o.cx, o.cz, x, z);
+                if (y === null) continue;
+                if (this._pathFieldAt(x, z, y) > 0.5) continue; // der Pfad bleibt frei (Labor: trailAt < 3 m)
+                const feucht = this._feuchteAt(x, z, y);
+                const feld = this.worldFieldAt(x, z);
+                const u = {
+                    licht: this._canopyLightAt(x, z, y, feucht),
+                    feucht,
+                    ufer: y - this._nahStreuSpiegel(x, z),
+                    fels: feld ? feld.dichte : null,
+                    hang: this._slopeAt(x, z, (px, pz) => {
+                        const v = this._chunkSurfaceAt(o.e, o.cx, o.cz, px, pz);
+                        return v === null ? NaN : v;
+                    }),
+                };
+                for (let a = 0; a < arten.length; a++) {
+                    const A = arten[a];
+                    const lam = A.zeile.dichte * Z * Z * 0.01 * core.bodenGewicht(A.zeile, u) * last;
+                    if (!(lam > 0)) continue;
+                    let hs =
+                        ((gi * 73856093) ^ (gj * 19349663) ^ ((a + 1) * 0x85ebca6b) ^ seedInt ^ 0x5eedb0de) >>> 0 || 1;
+                    const w = () => {
+                        hs = (hs + 0x6d2b79f5) >>> 0;
+                        let t = hs;
+                        t = Math.imul(t ^ (t >>> 15), t | 1);
+                        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                    };
+                    const anzahl = Math.floor(lam + w());
+                    for (let i = 0; i < anzahl; i++) {
+                        const px = x + (w() - 0.5) * Z;
+                        const pz = z + (w() - 0.5) * Z;
+                        const s = A.zeile.skala[0] + w() * (A.zeile.skala[1] - A.zeile.skala[0]);
+                        const rot = w() * Math.PI * 2;
+                        const same = (w() * 4294967296) >>> 0;
+                        const ordnung = w();
+                        const op = ort(px, pz);
+                        if (!op.e || !op.e.surfMap) continue; // über die Kante in einen ungebauten Chunk: fällt
+                        const py = this._chunkSurfaceAt(op.e, op.cx, op.cz, px, pz);
+                        if (py === null) continue;
+                        if (!A.zeile.ufer && py < this._nahStreuSpiegel(px, pz) + 0.1) continue;
+                        chunks.set(op.ck, op.e.surfMap);
+                        items.push({ art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung });
+                    }
                 }
-                mat.colorNode = vec4(albedo, float(1.0));
-                if (species.wind) this._applyScatterMotion(mat, species, TSL);
-            } else {
-                mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
             }
-        } catch {
-            mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
         }
-        // OBSERVER-DIÄT: die Streu-Graphen (auch deko-fernfeld — derselbe
-        // Chokepoint) hängen nur an geteilten Wind-Uniforms + Attributen.
-        this._materialObserverDiaet(mat);
-        cache.set(species.name, mat);
-        return mat;
+        return { items, chunks };
     }
 
-    // Wind/Schweben als TSL-positionNode. Weiche Arten: höhen-gewichtetes Wiegen mit denselben
-    // windUniforms wie das Gras (EINE Wind-Quelle); Sporen: ganzkörperliches vertikales Schweben.
-    _applyScatterMotion(mat, species, TSL) {
-        if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
-            // windUniforms wird beim ersten Gras-Material erzeugt — sicherstellen.
-            this._grassInstanceMat();
-        }
-        const wu = this.state.windUniforms;
-        if (!wu) return;
-        const { vec3, float, sin, cos, positionLocal, positionWorld } = TSL;
-        if (species.emissive) {
-            if (species.drift) {
-                // V17.4 — Pollen schwebt: sanfter horizontaler + vertikaler Drift
-                // (entkoppelte Frequenzen → organisches Treiben, kein Gleichtakt).
-                // Reine Deko-Bewegung in der Luft, gegated auf lebendig-Zonen.
-                const ph = positionWorld.x.mul(float(0.5)).add(positionWorld.z.mul(float(0.4)));
-                const dx = sin(wu.uWindTime.mul(float(0.7)).add(ph)).mul(float(0.25));
-                const dy = sin(wu.uWindTime.mul(float(1.1)).add(ph.mul(float(1.3))))
-                    .mul(float(0.5))
-                    .add(float(0.5))
-                    .mul(float(0.32));
-                const dz = cos(wu.uWindTime.mul(float(0.55)).add(ph)).mul(float(0.22));
-                mat.positionNode = positionLocal.add(vec3(dx, dy, dz));
-                return;
-            }
-            const bob = sin(wu.uWindTime.mul(float(2.0)).add(positionWorld.x.mul(float(0.6))))
-                .mul(float(0.5))
-                .add(float(0.5))
-                .mul(float(0.16));
-            mat.positionNode = positionLocal.add(vec3(float(0.0), bob, float(0.0)));
-            return;
-        }
-        // Dieselbe Böen-Welle wie das Gras aus der EINEN Quelle `_windSwayOffset` (Gleichtakt). Art-
-        // Charakter als Parameter: Amplitude 1.2, windScale dämpft je Art (Bäume ~0.2 → nur das Laub
-        // wiegt; Default 1.0).
-        const windScale = typeof species.windScale === "number" ? species.windScale : 1.0;
-        const sway = this._windSwayOffset(TSL, { ampX: 1.2, windScale });
-        mat.positionNode = sway ? positionLocal.add(sway) : positionLocal;
-    }
-
-    // ═══ DER STREU-SATZ (Welle B) ═══
-    // Die Klein-Streu folgt dem Gesetz des Fernfelds („EIN InstancedMesh je Art“): je Art EINE InstancedMesh
-    // `streuNah:<art>` für den ganzen Nah-Band-Ring, ein Chunk ist ein BLOCK darin (Block-Tabelle chunkKey →
-    // {start, n} in Puffer-Ordnung). Befund: 188 Klein-Streu-Meshes (je Chunk und Art eine Pool-InstancedMesh,
-    // je eine im Region-Bundle) für 15 Arten. Ein Eintritt hängt seinen Block hinten an, ein Austritt rückt die
-    // folgenden Blöcke nach (copyWithin) — beides ein Teil-Upload ab dem geänderten Slot. Eine leere Art ist
-    // unsichtbar (kein Befehl). Die Instanz-Identität für Ernte und Pick bleibt `${art}:${i}` je Chunk.
-    _streuNahArt(sp) {
-        const st = this.state;
-        if (!st.streuNah) st.streuNah = new Map();
-        let a = st.streuNah.get(sp.name);
+    // Die Senke einer (Art, Gestalt, Stufe, Teil): EINE InstancedMesh für den ganzen Ring. Sie hält die Studio-
+    // Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine LRU-Räumung zerstört sie nie.
+    _streuNahSenke(art, v, stufe, p, lf) {
+        const ns = this.state.nahStreu;
+        const key = `${art.id}:${v}:L${stufe}:${p}`;
+        let a = ns.senken.get(key);
         if (a) return a;
-        const geo = this._scatterSpeciesGeometry(sp);
-        const mat = this._scatterMaterial(sp);
-        if (!geo || !mat) throw new Error(`_streuNahArt(${sp.name}): Geometrie oder Material fehlt`);
         a = {
-            sp,
-            name: sp.name,
-            geo,
-            mat,
-            tint: !!(mat.userData && mat.userData.useInstanceTint),
+            key,
+            name: "streuNah:" + key,
+            preset: art.id,
+            ernte: art.ernte,
+            geo: lf.geom,
+            mat: lf.mat,
+            lokal: lf.localMatrix,
+            leafKey: lf.leafKey,
+            tint: !!(lf.mat && lf.mat.userData && lf.mat.userData.useInstanceTint),
+            quelle: lf._srcGroup || null,
             mesh: null,
             kap: 0,
             anzahl: 0,
@@ -33239,20 +32756,22 @@ class AnazhRealm {
             ordnung: [],
             wachse: 0,
         };
-        this._streuNahMesh(a, Math.max(64, sp.cap * 4));
-        st.streuNah.set(sp.name, a);
+        if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
+        this._streuNahMesh(a, 64);
+        ns.senken.set(key, a);
         return a;
     }
 
-    // Die Art-InstancedMesh (neu oder gewachsen ×1,5): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
+    // Die Senken-InstancedMesh (neu oder gewachsen ×1,5): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
     _streuNahMesh(a, kap) {
         const alt = a.mesh;
         const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
-        m.name = "streuNah:" + a.name;
-        m.castShadow = false;
-        m.receiveShadow = !a.sp.emissive;
-        m.frustumCulled = false; // der Nah-Band-Ring umspannt den Spieler
+        m.name = a.name;
+        m.castShadow = false; // die Nah-Streu wirft nicht (budget schatten false)
+        m.receiveShadow = true;
+        m.frustumCulled = false; // der Ring umspannt die Kamera
         m.userData.inventar = "streu-klein";
+        m.userData.leafKey = a.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
         if (a.tint) m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(kap * 3).fill(1), 3);
         if (alt) {
             m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
@@ -33269,12 +32788,12 @@ class AnazhRealm {
         this.state.scene.add(m);
     }
 
-    // Ein Chunk-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Arten) — hinten angehängt.
-    _streuNahEin(a, chunkKey, matrizen, farben) {
-        if (a.bloecke.has(chunkKey)) this._streuNahAus(a.name, chunkKey);
+    // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Instanz).
+    _streuNahEin(a, kachelKey, matrizen, farben, ids) {
+        if (a.bloecke.has(kachelKey)) this._streuNahAus(a, kachelKey);
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
-            throw new Error(`_streuNahEin(${a.name}, ${chunkKey}): die Tint-Art braucht n×3 Farben`);
+            throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): die Tint-Senke braucht n×3 Farben`);
         if (a.anzahl + n > a.kap) this._streuNahMesh(a, Math.max(a.anzahl + n, Math.ceil(a.kap * 1.5)));
         const m = a.mesh;
         const start = a.anzahl;
@@ -33287,17 +32806,16 @@ class AnazhRealm {
             m.instanceColor.needsUpdate = true;
         }
         a.anzahl += n;
-        a.bloecke.set(chunkKey, { start, n });
-        a.ordnung.push(chunkKey);
+        a.bloecke.set(kachelKey, { start, n, ids });
+        a.ordnung.push(kachelKey);
         m.count = a.anzahl;
         m.visible = a.anzahl > 0;
         m.boundingSphere = null; // der Pick-Raycast cullt gegen die Hülle
     }
 
-    // Ein Chunk-Block tritt aus: die folgenden Blöcke rücken nach, ihre Starts sinken um n.
-    _streuNahAus(name, chunkKey) {
-        const a = this.state.streuNah ? this.state.streuNah.get(name) : null;
-        const b = a ? a.bloecke.get(chunkKey) : null;
+    // Ein Kachel-Block tritt aus: die folgenden Blöcke rücken nach, ihre Starts sinken um n.
+    _streuNahAus(a, kachelKey) {
+        const b = a ? a.bloecke.get(kachelKey) : null;
         if (!b) return false;
         const m = a.mesh;
         const ende = b.start + b.n;
@@ -33312,8 +32830,8 @@ class AnazhRealm {
             }
         }
         a.anzahl -= b.n;
-        a.bloecke.delete(chunkKey);
-        const i = a.ordnung.indexOf(chunkKey);
+        a.bloecke.delete(kachelKey);
+        const i = a.ordnung.indexOf(kachelKey);
         a.ordnung.splice(i, 1);
         for (let k = i; k < a.ordnung.length; k++) a.bloecke.get(a.ordnung[k]).start -= b.n;
         m.count = a.anzahl;
@@ -33322,230 +32840,200 @@ class AnazhRealm {
         return true;
     }
 
-    // Der Bereich eines Chunks in seiner Art (Ernte, Sonden): {mesh, start, n} oder null.
-    _streuNahBereich(name, chunkKey) {
-        const a = this.state.streuNah ? this.state.streuNah.get(name) : null;
-        const b = a ? a.bloecke.get(chunkKey) : null;
-        return b ? { mesh: a.mesh, start: b.start, n: b.n } : null;
+    // Der Bereich einer Kachel in einer Senke (Ernte, Sonden): {mesh, start, n, ids} oder null.
+    _streuNahBereich(senkeKey, kachelKey) {
+        const ns = this.state.nahStreu;
+        const a = ns ? ns.senken.get(senkeKey) : null;
+        const b = a ? a.bloecke.get(kachelKey) : null;
+        return b ? { mesh: a.mesh, start: b.start, n: b.n, ids: b.ids } : null;
     }
 
-    // Der EINE Streu-Mechanismus für alle Arten: jede Zelle EINMAL sampeln (worldFieldAt + Surface +
-    // Wasser, geteilt), dann je Art deterministisch aus ihrem Feld streuen. Distanz-LOD band-getrieben
-    // (DETAIL_CASCADE.deko). Idempotent (Map-Guard); der LOD-Rebuild ruft dispose→build.
-    _buildVoxelChunkScatter(cx, cz) {
-        if (!this.state.scene || typeof THREE === "undefined") return;
-        if (typeof this.worldFieldAt !== "function" || typeof this._voxelSurfaceY !== "function") return;
-        if (!this.state.voxelChunkScatter) this.state.voxelChunkScatter = new Map();
-        const key = `${cx},${cz}`;
-        if (this.state.voxelChunkScatter.has(key)) return;
-        // V18.389 (P2) — der billige Oberflächen-Sampler (surfMap → `_chunkSurfaceAt`,
-        // sonst `_voxelSurfaceY`) für die Zell-Slope des Unterwuchses (wie das Gras).
-        const chunkEntryS = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
-        const surfSampler = (x, z) => {
-            if (chunkEntryS && chunkEntryS.surfMap) {
-                const v = this._chunkSurfaceAt(chunkEntryS, cx, cz, x, z);
-                if (v !== null) return v;
+    // Eine Kachel verlässt den Ring (oder baut neu): ihre Blöcke treten aus allen Senken aus.
+    _nahStreuKachelEntsorgen(k) {
+        const ns = this.state.nahStreu;
+        for (const sk of k.senken) this._streuNahAus(ns.senken.get(sk), k.key);
+        k.senken.clear();
+        k.zustand = null;
+    }
+
+    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
+    // die Stufe je Art aus der Kachel-Distanz (≤ stufe0 die Armlänge L0, sonst die leichteste deklarierte Stufe —
+    // `_foundryDeclaredStage`, mit Hysterese), das Rand-Band dünnt über die Würfel-Ordnung (Viertel-Stufen), außerhalb
+    // fällt die Kachel. Ein Chunk-Neubau (Edit) baut die betroffenen Kacheln neu, eine Ernte blendet aus, das
+    // Nachwachsen baut neu. Wartet eine Art auf ihr Studio-Asset, wartet die Kachel (die Anfrage läuft nah zuerst).
+    // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
+    _tickNahStreu(deadline) {
+        const st = this.state;
+        if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
+        const arten = this._nahStreuArten();
+        if (!arten) return 0;
+        const NS = AnazhRealm.NAH_STREU;
+        if (!st.nahStreu) st.nahStreu = { kacheln: new Map(), senken: new Map(), offen: 0 };
+        const ns = st.nahStreu;
+        const cam = st.camera.position;
+        const tcx = Math.floor(cam.x / NS.kachel);
+        const tcz = Math.floor(cam.z / NS.kachel);
+        const reichweite = Math.ceil(NS.radius / NS.kachel) + 1;
+        // Chunk-Neubau → die betroffenen Kacheln neu (ihre Pflanzen standen auf dem alten Boden).
+        for (const [key, k] of ns.kacheln) {
+            if (!k.chunks) continue;
+            for (const [ck, karte] of k.chunks) {
+                const e = st.voxelChunks && st.voxelChunks.get(ck);
+                if (!e || e.surfMap !== karte) {
+                    this._nahStreuKachelEntsorgen(k);
+                    ns.kacheln.delete(key);
+                    break;
+                }
             }
-            return this._voxelSurfaceY(x, z);
+        }
+        const wunsch = [];
+        for (let dz = -reichweite; dz <= reichweite; dz++) {
+            for (let dx = -reichweite; dx <= reichweite; dx++) {
+                const tx = tcx + dx;
+                const tz = tcz + dz;
+                const d = Math.hypot((tx + 0.5) * NS.kachel - cam.x, (tz + 0.5) * NS.kachel - cam.z);
+                if (d > NS.radius + NS.kachel * 0.71) continue;
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
+            }
+        }
+        const gewollt = new Set(wunsch.map((w) => w.key));
+        for (const [key, k] of ns.kacheln) {
+            if (gewollt.has(key)) continue;
+            this._nahStreuKachelEntsorgen(k);
+            ns.kacheln.delete(key);
+        }
+        wunsch.sort((a, b) => a.d - b.d);
+        const geerntet = st.scatterHarvested;
+        let gebaut = 0;
+        ns.offen = 0;
+        for (const w of wunsch) {
+            let k = ns.kacheln.get(w.key);
+            const war0 = !!(k && k.nah);
+            const nah = war0 ? w.d <= NS.stufe0 + 1 : w.d <= NS.stufe0 - 1 || (!k && w.d <= NS.stufe0);
+            // Je Art ihr Rand-Band vor ihrer Weite (Viertel-Stufen der Würfel-Ordnung): kleine Arten dünnen früher aus.
+            const anteile = arten.map(
+                (A) => Math.ceil(Math.max(0, Math.min(1, (A.weite - w.d) / NS.rand + 0.5)) * 4) / 4
+            );
+            const zustand = (nah ? "L0" : "Lf") + "|" + anteile.join(",");
+            if (k && k.zustand === zustand) continue;
+            if (gebaut >= NS.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+                ns.offen++;
+                continue;
+            }
+            if (!k) {
+                const satz = this._nahStreuKachel(w.tx, w.tz, arten);
+                if (!satz) {
+                    ns.offen++;
+                    continue;
+                }
+                k = { key: w.key, items: satz.items, chunks: satz.chunks, senken: new Set(), zustand: null, nah };
+                ns.kacheln.set(w.key, k);
+            }
+            // Je (Art, Gestalt, Stufe) die Studio-Teile — fehlt eines (Anfrage läuft), wartet die ganze Kachel; jede
+            // fehlende Gruppe fragt im selben Lauf an (die Anfragen reisen parallel, nah zuerst).
+            const gruppen = new Map();
+            const fehlend = new Set();
+            const ernte = geerntet ? geerntet.get(w.key) : null;
+            let bereit = true;
+            for (const it of k.items) {
+                if (it.ordnung >= anteile[it.art]) continue;
+                if (ernte && ernte.has(it.id)) continue;
+                const art = arten[it.art];
+                const v = this._foundryVariantFor(it.same, art.id);
+                const stufe = this._foundryDeclaredStage(art.id, nah ? 0 : 2);
+                const gk = `${it.art}:${v}:${stufe}`;
+                if (fehlend.has(gk)) continue;
+                let g = gruppen.get(gk);
+                if (!g) {
+                    // Der Ort reist mit: die Foundry-Schlange bedient nah zuerst (`_foundryAuftrag`).
+                    const ort = { seed: it.same, position: { x: it.x, y: it.y, z: it.z } };
+                    const flat = v == null ? null : this._foundryFlattenFor(ort, art.id, stufe);
+                    if (flat === false) {
+                        this._nahStreuKaputt(art.id, stufe); // das Studio kann die Stufe nicht: laut, benannt
+                        fehlend.add(gk);
+                        continue;
+                    }
+                    if (!flat || !Array.isArray(flat.leaves) || !flat.leaves.length) {
+                        bereit = false;
+                        fehlend.add(gk);
+                        continue;
+                    }
+                    g = { art, v, stufe, flat, liste: [] };
+                    gruppen.set(gk, g);
+                }
+                g.liste.push(it);
+            }
+            if (!bereit) {
+                ns.offen++;
+                continue;
+            }
+            this._nahStreuKachelEntsorgen(k);
+            this._nahStreuBloecke(k, gruppen);
+            k.zustand = zustand;
+            k.nah = nah;
+            gebaut++;
+        }
+        return gebaut;
+    }
+
+    // Eine Art, deren Stufe das Studio nicht bauen kann (leere Antwort), fehlt im Bild — LAUT: einmal je (Art, Stufe)
+    // ein ERROR mit Namen und der Zähler `nahStreu.kaputt`, den die Wand liest; die übrigen Arten bauen weiter.
+    _nahStreuKaputt(preset, stufe) {
+        const ns = this.state.nahStreu;
+        if (!ns.kaputt) ns.kaputt = new Set();
+        const k = preset + ":L" + stufe;
+        if (ns.kaputt.has(k)) return;
+        ns.kaputt.add(k);
+        this.log(`Nah-Streu: das Studio liefert ${k} leer — die Art fehlt im Bild`, "ERROR");
+    }
+
+    // Die Blöcke einer Kachel: je Gruppe × Studio-Teil EIN Block in seiner Senke (Matrix = Ort · Drehung · Skala ·
+    // Welt-Skala des Teils), ein neutral-naher Tint je Instanz (±8 % Luminanz, ±3 % warm/kühl — aus einem eigenen
+    // Hash-Strom, nie aus den Platzierungs-Würfen).
+    _nahStreuBloecke(k, gruppen) {
+        const m4 = this._tmpStreuM4 || (this._tmpStreuM4 = new THREE.Matrix4());
+        const q = this._tmpStreuQ || (this._tmpStreuQ = new THREE.Quaternion());
+        const pv = this._tmpStreuP || (this._tmpStreuP = new THREE.Vector3());
+        const sv = this._tmpStreuS || (this._tmpStreuS = new THREE.Vector3());
+        const up = this._tmpStreuUp || (this._tmpStreuUp = new THREE.Vector3(0, 1, 0));
+        const tint = (same, achse) => {
+            let h = Math.imul(same ^ ((achse + 1) * 0x9e3779b9), 0x85ebca6b) >>> 0;
+            h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
+            return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
         };
-        // Ring-Distanz zum Spieler (wie das Gras) — gated den Distanz-LOD.
-        const lpc = this.state.lastPlayerVoxelChunk;
-        const pcx = lpc ? lpc.cx : cx;
-        const pcz = lpc ? lpc.cz : cz;
-        const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-        // U4 (V18.131) — die Deko liest die KASKADE statt per-Art-`ring`: das
-        // Band entscheidet mesh/impostor/none + die Dichte. Jenseits des
-        // mesh-Bands trägt das EINE Fernfeld pro Art (s. _tickDekoFernfeld).
-        const band = this._detailBand(ringDist);
-        if (band.deko !== "mesh") return;
-        const atmoD =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
-                ? this.state.atmosphere.dekoDensity
-                : 1; // globaler Dichte-Faktor — Konsolen-tunbar (U4-Plan-Slider, UI = S-Entscheid)
-        // Kapazitäts-geregelte Dichte (lichtet die Instanz-Zahl unter Last; undefined → 1). Die Studio/
-        // Regler-Gabel lebt EINMAL in `_effectiveFoliageDensity` — hier nur der Draht.
-        const densityScale = this._effectiveFoliageDensity();
-        const dekoDensity = (band.dekoDichte || 1) * atmoD * densityScale;
-        const { span } = this._voxelChunkConfig();
-        const ox = cx * span;
-        const oz = cz * span;
-        // 8×8 Sample-Raster: je Zelle worldFieldAt + _voxelSurfaceY (Dichte-Scan); 8² hält die Wall-Time je
-        // Chunk niedrig, die Dichte trägt das Cluster-Streuen je Zelle (perCell × ±step Jitter).
-        const SAMPLES = 8;
-        const step = span / SAMPLES;
-        // Pro Art ein deterministischer rng-Strom (dekorreliert via Art-Index,
-        // stabil beim Re-Streamen → kein Flackern). Mulberry32-Stil wie das Gras.
-        const buckets = species.map(() => []);
-        const rngs = species.map((_sp, si) => this._scatterChunkRng(cx, cz, si));
-        for (let zi = 0; zi < SAMPLES; zi++) {
-            for (let xi = 0; xi < SAMPLES; xi++) {
-                const bx = ox + (xi + 0.5) * step;
-                const bz = oz + (zi + 0.5) * step;
-                const f = this.worldFieldAt(bx, bz);
-                if (!f) continue;
-                const surfY = this._voxelSurfaceY(bx, bz);
-                if (surfY === null || !Number.isFinite(surfY)) continue;
-                // Nicht unter Wasser (0.1 m Marge wie das Gras).
-                const waterY = this._waterLevelAt(bx, bz);
-                if (surfY < waterY + 0.1) continue;
-                // Cliff-Skip: billige Macro-Referenz der Zelle (kein Density-Scan); ein gejittertes Item > 1.2 m
-                // unter der Zell-Macro (über einem Abbruch) fällt aus → kahle Kante statt schwebendem Stein.
-                const cellMacro = this._terrainMacroSurfaceY(bx, bz, false);
-                // Γ1 — die Feuchte EINMAL pro Zelle (surfY liegt vor; Legacy → 0).
-                const gen2 = this._genVersion() >= 2;
-                const feuchteCell = gen2 ? this._feuchteAt(bx, bz, surfY) : 0;
-                // V18.389 (P2 UNTERWUCHS) — EINMAL pro Zelle: das Bodenlicht (Kronendach-
-                // Nische) + die Slope. Die Bodendecker (Blume/Farn/Strauch) reagieren darauf
-                // (`_undergrowthGroundFactor`), Steinchen/Sporen bleiben unberührt (Faktor 1).
-                const nicheC = this._understoryNiche(this._canopyLightAt(bx, bz, surfY, feuchteCell));
-                const slopeC = this._slopeAt(bx, bz, surfSampler);
-                for (let si = 0; si < species.length; si++) {
-                    const sp = species[si];
-                    if (sp.minGen && this._genVersion() < sp.minGen) continue; // Γ1 — schilf nur Genese ≥ 2
-                    if (buckets[si].length >= sp.cap) continue;
-                    // Γ1 — Dual-Feld: in Genese-2 liest eine Art ihr Nass-Feld
-                    // (farn → feuchte), Legacy bleibt beim Stamm-Feld.
-                    const useNass = gen2 && sp.feldNass;
-                    const fieldKey = useNass ? sp.feldNass : sp.field;
-                    const floorV = useNass && Number.isFinite(sp.floorNass) ? sp.floorNass : sp.floor;
-                    const fv = fieldKey === "feuchte" ? feuchteCell : f[fieldKey] || 0;
-                    if (fv < floorV) continue;
-                    const norm = (fv - floorV) / Math.max(0.001, 1 - floorV);
-                    const rnd = rngs[si];
-                    // Γ2 — die Kronen-Lesart formt die Verteilung (mittelwert-neutral).
-                    const kron = this._kronenMult(sp, bx, bz);
-                    // V18.389 (P2) — die Kronendach×Slope-Reaktion der Bodendecker (der
-                    // P1-Wald-aligned Faktor; neutral 1 für Nicht-Bodendecker).
-                    const undergrowthF = this._undergrowthGroundFactor(sp, nicheC, slopeC);
-                    const count = Math.floor(
-                        sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron * undergrowthF + rnd() * 0.8
-                    );
-                    const sMin = sp.scale[0];
-                    const sMax = sp.scale[1];
-                    for (let k = 0; k < count && buckets[si].length < sp.cap; k++) {
-                        const gx = bx + (rnd() - 0.5) * step;
-                        const gz = bz + (rnd() - 0.5) * step;
-                        const sclK = sMin + rnd() * (sMax - sMin);
-                        const rotK = rnd() * Math.PI * 2;
-                        if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
-                        // Per-Achsen-Skalierung für lebende (`wind`-)Arten: drei entkoppelte Faktoren (kurz+breit bzw.
-                        // hoch+schmal) statt Klon-Halmen; andere Arten (Steinchen) bleiben uniform.
-                        let item;
-                        let xFactor = 1;
-                        let yFactor = 1;
-                        let zFactor = 1;
-                        if (sp.wind) {
-                            // Drei eigene Würfe: y-Streckung [0.8, 1.25], xz-Breite [0.85, 1.15].
-                            yFactor = 0.8 + rnd() * 0.45;
-                            xFactor = 0.85 + rnd() * 0.3;
-                            zFactor = 0.85 + rnd() * 0.3;
-                        }
-                        // Jedes Stück steht auf dem GERENDERTEN Boden an SEINEM Ort (die Boden-Karte) — vorher trugen
-                        // alle Stücke einer 5,4-m-Zelle die Gesetzes-Höhe der Zellmitte (am Hang Meter daneben).
-                        // Ohne Boden (Wand, Höhle) fällt das Stück; die Würfe oben bleiben, der Strom ist stabil.
-                        const iy = this._chunkSurfaceAt(chunkEntryS, cx, cz, gx, gz);
-                        if (iy === null) continue;
-                        if (sp.wind) {
-                            item = {
-                                x: gx,
-                                y: iy + sp.yOff,
-                                z: gz,
-                                rot: rotK,
-                                sx: sclK * xFactor,
-                                sy: sclK * yFactor,
-                                sz: sclK * zFactor,
-                            };
-                        } else {
-                            item = { x: gx, y: iy + sp.yOff, z: gz, rot: rotK, scale: sclK };
-                        }
-                        buckets[si].push(item);
+        for (const g of gruppen.values()) {
+            const n = g.liste.length;
+            for (let p = 0; p < g.flat.leaves.length; p++) {
+                const lf = g.flat.leaves[p];
+                if (!lf || !lf.geom || !lf.mat || lf.shadowTwin) continue;
+                const a = this._streuNahSenke(g.art, g.v, g.stufe, p, lf);
+                const matrizen = new Float32Array(n * 16);
+                const farben = a.tint ? new Float32Array(n * 3) : null;
+                const ids = new Array(n);
+                for (let i = 0; i < n; i++) {
+                    const it = g.liste[i];
+                    pv.set(it.x, it.y, it.z);
+                    q.setFromAxisAngle(up, it.rot);
+                    sv.set(it.s, it.s, it.s);
+                    m4.compose(pv, q, sv).multiply(a.lokal);
+                    m4.toArray(matrizen, i * 16);
+                    ids[i] = it.id;
+                    if (farben) {
+                        const l = 0.92 + tint(it.same, 0) * 0.16;
+                        const wk = (tint(it.same, 1) - 0.5) * 0.06;
+                        farben[i * 3] = Math.min(1.08, l + wk);
+                        farben[i * 3 + 1] = l;
+                        farben[i * 3 + 2] = Math.min(1.08, Math.max(0, l - wk));
                     }
                 }
+                this._streuNahEin(a, k.key, matrizen, farben, ids);
+                k.senken.add(a.key);
             }
         }
-        const liste = [];
-        const m = new THREE.Matrix4();
-        const q = new THREE.Quaternion();
-        const pos = new THREE.Vector3();
-        const scl = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
-        // S6-B (V18.133) — der Ernte-Filter: gepflueckte Indizes bleiben ueber
-        // Re-Streams verborgen (Skala 0 — der Index ist stabil, das RNG
-        // deterministisch), bis der Regrow-Tick sie freigibt.
-        const harvested = this.state.scatterHarvested ? this.state.scatterHarvested.get(key) : null;
-        // Tint je Instanz aus einem eigenen Hash-Stream je (cxa, cza, si, idx, axis) — deterministisch und
-        // ohne den Positions-rng zu verbrauchen (Γ5-Stream-Gesetz).
-        const tintColor = this._scatterTmpTintColor || (this._scatterTmpTintColor = new THREE.Color());
-        const hashInstanceTint = (cxa, cza, si, idx, axis) => {
-            let v =
-                ((cxa | 0) * 2654435761) ^
-                ((cza | 0) * 40503) ^
-                ((si + 1) * 73856093) ^
-                ((idx + 1) * 19349663) ^
-                ((axis + 1) * 0x85ebca6b);
-            v = ((v ^ (v >>> 13)) * 1274126177) >>> 0;
-            return (v ^ (v >>> 16)) / 4294967296;
-        };
-        for (let si = 0; si < species.length; si++) {
-            const items = buckets[si];
-            if (items.length === 0) continue;
-            const sp = species[si];
-            // DER STREU-SATZ: der Block dieses Chunks in der Art-InstancedMesh (`_streuNahEin`).
-            const art = this._streuNahArt(sp);
-            const wantTint = art.tint;
-            const matrizen = new Float32Array(items.length * 16);
-            const farben = wantTint ? new Float32Array(items.length * 3) : null;
-            for (let i = 0; i < items.length; i++) {
-                const it = items[i];
-                pos.set(it.x, it.y, it.z);
-                q.setFromAxisAngle(up, it.rot);
-                if (harvested && harvested.has(`${sp.name}:${i}`)) {
-                    scl.set(0, 0, 0);
-                } else if (Number.isFinite(it.sx) && Number.isFinite(it.sy) && Number.isFinite(it.sz)) {
-                    // V18.181-merge-Λ Sub 3f Λ.4 (Welle 6-Nachhol): wenn das Item
-                    // die entkoppelten Achs-Faktoren trägt (lebende wind-Arten),
-                    // applizieren sie pro Mesh; sonst uniform wie vorher.
-                    scl.set(it.sx, it.sy, it.sz);
-                } else {
-                    scl.set(it.scale, it.scale, it.scale);
-                }
-                m.compose(pos, q, scl);
-                m.toArray(matrizen, i * 16);
-                if (wantTint) {
-                    // Neutral-naher Tint: ±8 % Luminanz + ±3 % warm/kühl. Nie drei rohe RGB-Hashes — die zerstören die
-                    // Arten-Farbe multiplikativ (rot/violette Farne, im Mittel 50 % zu dunkel).
-                    const _tl = 0.92 + hashInstanceTint(cx, cz, si, i, 0) * 0.16;
-                    const _tw = (hashInstanceTint(cx, cz, si, i, 1) - 0.5) * 0.06;
-                    tintColor.setRGB(Math.min(1.08, _tl + _tw), _tl, Math.min(1.08, Math.max(0, _tl - _tw)));
-                    tintColor.toArray(farben, i * 3);
-                }
-            }
-            this._streuNahEin(art, key, matrizen, farben);
-            liste.push({ name: sp.name, n: items.length });
-        }
-        // Je Chunk die Liste seiner Arten mit Block-Größe (Idempotenz-Wache, Regrow, Sonden); der Block selbst
-        // wohnt in der Art (`_streuNahBereich`).
-        this.state.voxelChunkScatter.set(key, liste);
     }
 
-    _disposeVoxelChunkScatter(key) {
-        if (!this.state.voxelChunkScatter) return;
-        const list = this.state.voxelChunkScatter.get(key);
-        if (list) for (const it of list) this._streuNahAus(it.name, key); // DER STREU-SATZ: Block raus, Rest rückt nach
-        this.state.voxelChunkScatter.delete(key);
-    }
-
-    // V17.1 — deferred-Queue (Set von Chunk-Keys). Der Finalize enqueued; der
-    // per-Frame-Tick streut nach. Hält den teuren Surface-Scan aus dem
-    // kritischen Streaming-Frame (das Wasser-Iso-Pattern, V12.0-perf.h).
-    _enqueueScatter(cx, cz) {
-        if (!this.state.pendingScatter) this.state.pendingScatter = new Set();
-        this.state.pendingScatter.add(`${cx},${cz}`);
-    }
-
-    // Gras deferred (~34 ms/Chunk, der dominante Rebuild-Posten), Spiegel von `_enqueueScatter`/
-    // `_tickPendingScatter` → kein Aufschlag auf den Streaming-/Spawn-Drain-Frame.
+    // Gras deferred (~34 ms/Chunk, der dominante Rebuild-Posten) → kein Aufschlag auf den Streaming-/Spawn-
+    // Drain-Frame.
     _enqueueGrass(cx, cz) {
         if (!this.state.pendingGrass) this.state.pendingGrass = new Set();
         this.state.pendingGrass.add(`${cx},${cz}`);
@@ -33587,70 +33075,22 @@ class AnazhRealm {
         return built;
     }
 
-    // Per-Frame-Tick: streut ≤maxPerFrame Chunks, NAHE zuerst (priorisiert wie
-    // der Wasser-Iso-Tick), ferne (jenseits maxRing — dort baut die Streuung
-    // ohnehin nichts) aus der Queue werfen → kein unbegrenztes Wachstum.
-    _tickPendingScatter(maxPerFrame = 2) {
-        const queue = this.state.pendingScatter;
-        if (!queue || queue.size === 0) return 0;
-        const lpc = this.state.lastPlayerVoxelChunk;
-        // U4 (V18.131) — die mesh-Reichweite kommt aus der Kaskade (Band 0),
-        // nicht mehr aus per-Art-`ring`-Feldern.
-        const maxRing = AnazhRealm.DETAIL_CASCADE[0].maxRing;
-        let keys = [...queue];
-        if (lpc) {
-            const distOf = (k) => {
-                const ci = k.indexOf(",");
-                const kx = parseInt(k.slice(0, ci), 10);
-                const kz = parseInt(k.slice(ci + 1), 10);
-                return Math.max(Math.abs(kx - lpc.cx), Math.abs(kz - lpc.cz));
-            };
-            for (const k of keys) if (distOf(k) > maxRing) queue.delete(k);
-            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
-        }
-        let built = 0;
-        for (const key of keys) {
-            if (built >= maxPerFrame) break;
-            queue.delete(key);
-            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
-            if (this.state.voxelChunkScatter && this.state.voxelChunkScatter.has(key)) continue;
-            const comma = key.indexOf(",");
-            const cx = parseInt(key.slice(0, comma), 10);
-            const cz = parseInt(key.slice(comma + 1), 10);
-            this._buildVoxelChunkScatter(cx, cz);
-            built++;
-        }
-        return built;
-    }
-
-    // ===== FORAGING: die Klein-Vegetation ist pflückbar =====
-    // Kein Parallel-System: der PICK raycastet die bestehenden Scatter-InstancedMeshes (instanceId =
-    // stabiler Bucket-Index), die ERNTE setzt Skala 0 + merkt sie in `state.scatterHarvested` (der
-    // Build-Filter hält sie über Re-Streams verborgen), der REGROW-Tick lässt sie nach FORAGE.regrowMs
-    // nachwachsen. `_scatterChunkRng` = der EINE per-Chunk-Art-RNG (Mulberry32) für Scatter + Fernfeld.
-    _scatterChunkRng(cx, cz, si) {
-        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
-        return () => {
-            rs = (rs + 0x6d2b79f5) >>> 0;
-            let t = rs;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-    }
-
+    // ===== FORAGING: die Nah-Streu ist pflückbar =====
+    // Kein Parallel-System: der PICK raycastet die Senken der Nah-Streu (instanceId → Kachel-Block → die Ernte-
+    // Identität `gi|gj|art|i` der Pflanze), die ERNTE blendet die Pflanze in allen Teilen aus (Skala 0) und merkt sie
+    // in `state.scatterHarvested` (Kachel → Identität → Zeit; der Kachel-Bau lässt sie weg), der REGROW-Tick lässt sie
+    // nach FORAGE.regrowMs nachwachsen (die Kachel baut neu).
     _pickScatterAtCrosshair() {
-        const sn = this.state.streuNah;
-        if (!sn || sn.size === 0 || !this.state.camera) return null;
+        const ns = this.state.nahStreu;
+        if (!ns || ns.senken.size === 0 || !this.state.camera) return null;
         if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
         this.state.camera.getWorldDirection(this._tmpCamDir);
-        // Je Art EINE InstancedMesh (der Streu-Satz); die Block-Tabelle bildet instanceId auf (Chunk, Index) ab.
         const meshes = [];
-        const artVon = new Map();
-        for (const a of sn.values()) {
-            if (a.anzahl === 0) continue;
+        const senkeVon = new Map();
+        for (const a of ns.senken.values()) {
+            if (a.anzahl === 0 || !a.ernte) continue;
             meshes.push(a.mesh);
-            artVon.set(a.mesh, a);
+            senkeVon.set(a.mesh, a);
         }
         if (!meshes.length) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
@@ -33659,12 +33099,12 @@ class AnazhRealm {
         const hits = this._tmpRaycaster.intersectObjects(meshes, false);
         for (const hit of hits) {
             if (!hit.object || typeof hit.instanceId !== "number") continue;
-            const a = artVon.get(hit.object);
+            const a = senkeVon.get(hit.object);
             if (!a) continue;
             for (const key of a.ordnung) {
                 const b = a.bloecke.get(key);
                 if (hit.instanceId >= b.start && hit.instanceId < b.start + b.n)
-                    return { key, name: a.name, index: hit.instanceId - b.start, point: hit.point };
+                    return { key, senke: a.key, name: a.preset, id: b.ids[hit.instanceId - b.start], point: hit.point };
             }
         }
         return null;
@@ -33672,42 +33112,47 @@ class AnazhRealm {
 
     _harvestScatterPick(pick) {
         if (!pick) return false;
-        const sp = AnazhRealm.KLEIN_VEGETATION_SPECIES.find((x) => x.name === pick.name);
-        if (!sp || !sp.ernte) return false;
-        const bereich = this._streuNahBereich(pick.name, pick.key);
-        if (!bereich || !(pick.index >= 0 && pick.index < bereich.n)) return false;
-        // Session-Gedaechtnis: `${art}:${index}` → Ernte-Zeit (der Build-Filter
-        // + der Regrow-Tick lesen es). NICHT persistiert (Flora waechst nach).
+        const ns = this.state.nahStreu;
+        const a = ns ? ns.senken.get(pick.senke) : null;
+        if (!a || !a.ernte) return false;
+        const kachel = ns.kacheln.get(pick.key);
+        if (!kachel || !kachel.items.some((it) => it.id === pick.id)) return false;
+        // Session-Gedächtnis: Kachel → Identität → Ernte-Zeit (der Kachel-Bau + der Regrow-Tick lesen es). NICHT
+        // persistiert (Flora wächst nach).
         if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
-        let perChunk = this.state.scatterHarvested.get(pick.key);
-        if (!perChunk) {
-            perChunk = new Map();
-            this.state.scatterHarvested.set(pick.key, perChunk);
+        let jeKachel = this.state.scatterHarvested.get(pick.key);
+        if (!jeKachel) {
+            jeKachel = new Map();
+            this.state.scatterHarvested.set(pick.key, jeKachel);
         }
-        const id = `${pick.name}:${pick.index}`;
-        if (perChunk.has(id)) return false; // schon gepflueckt (Doppel-Klick-Race)
-        perChunk.set(id, performance.now());
-        // Die Instanz verschwindet SOFORT (Skala 0 am selben Index — stabil).
+        if (jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
+        jeKachel.set(pick.id, performance.now());
+        // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): Skala 0 am Slot.
         if (!this._tmpForageMat) this._tmpForageMat = new THREE.Matrix4();
         this._tmpForageMat.makeScale(0, 0, 0);
-        const slot = bereich.start + pick.index;
-        bereich.mesh.setMatrixAt(slot, this._tmpForageMat);
-        bereich.mesh.instanceMatrix.addUpdateRange(slot * 16, 16);
-        bereich.mesh.instanceMatrix.needsUpdate = true;
-        bereich.mesh.boundingSphere = null;
-        const got = this.addMaterialToInventory(sp.ernte, 1);
+        for (const sk of kachel.senken) {
+            const s = ns.senken.get(sk);
+            const b = s ? s.bloecke.get(pick.key) : null;
+            const i = b ? b.ids.indexOf(pick.id) : -1;
+            if (i < 0) continue;
+            const slot = b.start + i;
+            s.mesh.setMatrixAt(slot, this._tmpForageMat);
+            s.mesh.instanceMatrix.addUpdateRange(slot * 16, 16);
+            s.mesh.instanceMatrix.needsUpdate = true;
+            s.mesh.boundingSphere = null;
+        }
+        const got = this.addMaterialToInventory(a.ernte, 1);
         this.log(
-            got ? `Gepflueckt: ${pick.name} → 1× ${sp.ernte}` : `Gepflueckt: ${pick.name} — aber das Inventar ist voll`,
+            got ? `Gepflückt: ${a.preset} → 1× ${a.ernte}` : `Gepflückt: ${a.preset} — aber das Inventar ist voll`,
             "INFO"
         );
-        // Die Tat praegt (V17.30-Substrat — sanft, wie das Sammeln).
+        // Die Tat prägt (V17.30-Substrat — sanft, wie das Sammeln).
         if (typeof this._feelAction === "function") this._feelAction("harvest");
         return true;
     }
 
-    // Der Regrow-Tick (im ruhigen Streaming-Slot, ~0.1 Hz): abgelaufene Ernten
-    // fallen aus dem Gedaechtnis, der Chunk-Scatter baut neu → die Flora steht
-    // wieder. Billig: ein Map-Sweep, Rebuild nur bei echtem Ablauf.
+    // Der Regrow-Tick (~0.1 Hz): abgelaufene Ernten fallen aus dem Gedächtnis, die Kachel baut neu (ihr Zustand
+    // fällt, der Nah-Streu-Takt baut sie im nächsten Lauf) → die Flora steht wieder.
     _tickScatterRegrow(now) {
         const last = this._lastScatterRegrowCheck ?? -Infinity;
         if (now - last < 10000) return;
@@ -33715,352 +33160,19 @@ class AnazhRealm {
         const sh = this.state.scatterHarvested;
         if (!sh || sh.size === 0) return;
         const ttl = AnazhRealm.FORAGE.regrowMs;
-        for (const [key, perChunk] of sh) {
-            let regrown = false;
-            for (const [id, t] of perChunk) {
+        const ns = this.state.nahStreu;
+        for (const [key, jeKachel] of sh) {
+            let nach = false;
+            for (const [id, t] of jeKachel) {
                 if (now - t > ttl) {
-                    perChunk.delete(id);
-                    regrown = true;
+                    jeKachel.delete(id);
+                    nach = true;
                 }
             }
-            if (perChunk.size === 0) sh.delete(key);
-            if (regrown && this.state.voxelChunkScatter && this.state.voxelChunkScatter.has(key)) {
-                this._disposeVoxelChunkScatter(key);
-                this._enqueueScatter(...key.split(",").map(Number));
-            }
+            if (jeKachel.size === 0) sh.delete(key);
+            const k = nach && ns ? ns.kacheln.get(key) : null;
+            if (k) k.zustand = null;
         }
-    }
-
-    // ===== DAS DEKO-FERNFELD: ein Impostor-Mesh pro Art =====
-    // Jenseits von Band 0 trägt EIN InstancedMesh je Art die ferne Deko (~6 statt ~1600 Draw-Calls).
-    // Re-Anker beim Spieler-Chunk-Wechsel, eine Art pro Tick; Platzierung aus demselben per-Chunk-RNG
-    // wie der Scatter, Oberfläche aus `_chunkSurfaceAt` (ohne Karte wird die Spalte übersprungen, kein
-    // Scan). Render-only, main-only.
-    static get DEKO_FERNFELD() {
-        return Object.freeze({
-            cap: 1024, // Instanzen pro Art (das ganze Fernfeld)
-            samples: 4, // 4×4 Sample-Raster pro Chunk (gröber als nah: 8×8)
-            scaleMul: 1.35, // Impostoren leicht größer (gleichen die Dünne optisch aus)
-        });
-    }
-
-    // Impostor-Geometrie: KREUZ aus zwei vertikalen Quads (4 Tris) mit color→color2-Verlauf als
-    // Vertex-Farbe — teilt das Art-Material (`_scatterMaterial`, Wind/Emissive gratis). Schwebende
-    // Arten (yOff > 0) bekommen eine kleine Raute.
-    _scatterImpostorGeometry(species) {
-        if (!this.state._scatterImpostorGeoms) this.state._scatterImpostorGeoms = new Map();
-        const cache = this.state._scatterImpostorGeoms;
-        if (cache.has(species.name)) return cache.get(species.name);
-        if (typeof THREE === "undefined") return null;
-        const P = [];
-        const C = [];
-        const c = species.color;
-        const c2 = species.color2 || species.color;
-        const v = (x, y, z, col) => {
-            P.push(x, y, z);
-            C.push(col[0], col[1], col[2]);
-        };
-        if (species.yOff > 0.2) {
-            // Mote: kleine vertikale Raute (2 Tris), Mittelfarbe hell.
-            const r = 0.32;
-            v(0, -r, 0, c);
-            v(r, 0, 0, c2);
-            v(0, r, 0, c2);
-            v(0, -r, 0, c);
-            v(0, r, 0, c2);
-            v(-r, 0, 0, c2);
-        } else {
-            const h = 1.0;
-            const w = 0.42;
-            const quad = (ax, az, bx, bz) => {
-                // zwei Tris: Boden trägt color, Spitze color2 (wie die strip-Verläufe).
-                v(ax, 0, az, c);
-                v(bx, 0, bz, c);
-                v(bx, h, bz, c2);
-                v(ax, 0, az, c);
-                v(bx, h, bz, c2);
-                v(ax, h, az, c2);
-            };
-            quad(-w, 0, w, 0);
-            quad(0, -w, 0, w);
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
-        geo.computeVertexNormals();
-        cache.set(species.name, geo);
-        return geo;
-    }
-
-    // Der Fernfeld-Tick: re-ankert beim Spieler-Chunk-Wechsel (oder wenn sich
-    // die Welt substanziell änderte — Chunk-Zahl-Drift) und baut EINE Art pro
-    // Aufruf neu. Aufruf terrain-nachrangig (nur auf ruhigen Frames, V17.1).
-    _tickDekoFernfeld() {
-        const lpc = this.state.lastPlayerVoxelChunk;
-        if (!lpc || !this.state.scene || !this.state.voxelChunks) return 0;
-        const ff = this._dekoFernfeldZustand();
-        const anchor = `${lpc.cx},${lpc.cz}`;
-        const size = this.state.voxelChunks.size;
-        if (ff.anchor !== anchor || Math.abs(size - ff.chunkCount) > 8) {
-            ff.anchor = anchor;
-            ff.chunkCount = size;
-            ff.queue = AnazhRealm.KLEIN_VEGETATION_SPECIES.map((_s, i) => i);
-        }
-        if (ff.queue.length === 0) return 0;
-        const si = ff.queue.shift();
-        this._buildDekoFernfeldSpecies(si, lpc.cx, lpc.cz);
-        return 1;
-    }
-
-    _buildDekoFernfeldSpecies(si, pcx, pcz) {
-        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-        const sp = species[si];
-        if (!sp || typeof THREE === "undefined") return;
-        if (sp.minGen && this._genVersion() < sp.minGen) return; // Γ1 — schilf nur Genese ≥ 2
-        const isGround389 = !!sp.kronen; // V18.389 (P2) — nur Bodendecker tragen die Kronendach-Reaktion
-        const FF = AnazhRealm.DEKO_FERNFELD;
-        const ff = this._dekoFernfeldZustand();
-        const block = new Float32Array(FF.cap * 16);
-        const atmoD =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
-                ? this.state.atmosphere.dekoDensity
-                : 1;
-        const cfg = this._voxelChunkConfig(0);
-        const m = new THREE.Matrix4();
-        const q = new THREE.Quaternion();
-        const pos = new THREE.Vector3();
-        const scl = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
-        let n = 0;
-        for (const [key, entry] of this.state.voxelChunks) {
-            if (n >= FF.cap) break;
-            if (!entry || entry.empty || !entry.surfMap) continue;
-            const comma = key.indexOf(",");
-            const cx = parseInt(key.slice(0, comma), 10);
-            const cz = parseInt(key.slice(comma + 1), 10);
-            const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-            const band = this._detailBand(ringDist);
-            if (band.deko !== "impostor") continue;
-            // Kapazitäts-geregelte Dichte auch im Fernfeld (undefined → 1); die Gabel lebt EINMAL in
-            // `_effectiveFoliageDensity`.
-            const fdScale = this._effectiveFoliageDensity();
-            const dekoDensity = (band.dekoDichte || 0) * atmoD * fdScale;
-            if (dekoDensity <= 0) continue;
-            // Derselbe RNG-Strom wie der nahe Scatter, aber anders konsumiert (4×4 statt 8×8) → Positionen
-            // entsprechen sich NICHT 1:1. Das Fernfeld ist in sich deterministisch (kein Re-Anker-Flackern);
-            // der Platzwechsel am Band-Übergang liegt im Fog-Abstand (~130 m).
-            const rnd = this._scatterChunkRng(cx, cz, si);
-            const S = FF.samples;
-            const stepXZ = cfg.span / S;
-            const ox = cx * cfg.span;
-            const oz = cz * cfg.span;
-            for (let zi = 0; zi < S && n < FF.cap; zi++) {
-                for (let xi = 0; xi < S && n < FF.cap; xi++) {
-                    const bx = ox + (xi + 0.5) * stepXZ;
-                    const bz = oz + (zi + 0.5) * stepXZ;
-                    const f = this.worldFieldAt(bx, bz);
-                    if (!f) continue;
-                    // Γ1/Γ2 — DIESELBE Lesart wie der Nah-Pass (die Doppel-Gating-
-                    // WAND: ein Multiplikator, zwei Aufrufer — sonst ploppt die
-                    // Dichte beim Band-Übergang). surfY aus der V18.97-Karte.
-                    const gen2ff = this._genVersion() >= 2;
-                    const useNass = gen2ff && sp.feldNass;
-                    const fieldKey = useNass ? sp.feldNass : sp.field;
-                    const floorV = useNass && Number.isFinite(sp.floorNass) ? sp.floorNass : sp.floor;
-                    const fv =
-                        fieldKey === "feuchte"
-                            ? gen2ff
-                                ? this._feuchteAt(bx, bz, this._chunkSurfaceAt(entry, cx, cz, bx, bz))
-                                : 0
-                            : f[fieldKey] || 0;
-                    if (fv < floorV) continue;
-                    const norm = (fv - floorV) / Math.max(0.001, 1 - floorV);
-                    const kron = this._kronenMult(sp, bx, bz);
-                    // V18.389 (P2 UNTERWUCHS) — DIESELBE Bodendecker-Reaktion wie der Nah-Pass
-                    // (die Doppel-Gating-WAND: sonst ploppt die Dichte am Band-Übergang). Nur für
-                    // Bodendecker (isGround389) → kein Slope-/Feuchte-Scan für Steinchen/Sporen.
-                    let undergrowthF = 1;
-                    if (isGround389) {
-                        const surfCellFF = this._chunkSurfaceAt(entry, cx, cz, bx, bz);
-                        const wetCellFF = gen2ff ? this._feuchteAt(bx, bz, surfCellFF) : 0;
-                        const nicheFF = this._understoryNiche(this._canopyLightAt(bx, bz, surfCellFF, wetCellFF));
-                        const slopeFF = this._slopeAt(bx, bz, (x, z) => {
-                            const v = this._chunkSurfaceAt(entry, cx, cz, x, z);
-                            return v !== null ? v : this._voxelSurfaceY(x, z);
-                        });
-                        undergrowthF = this._undergrowthGroundFactor(sp, nicheFF, slopeFF);
-                    }
-                    const count = Math.floor(
-                        sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron * undergrowthF + rnd() * 0.8
-                    );
-                    for (let k = 0; k < count && n < FF.cap; k++) {
-                        const gx = bx + (rnd() - 0.5) * stepXZ;
-                        const gz = bz + (rnd() - 0.5) * stepXZ;
-                        const sclK = (sp.scale[0] + rnd() * (sp.scale[1] - sp.scale[0])) * FF.scaleMul;
-                        const rotK = rnd() * Math.PI * 2;
-                        const surfY = this._chunkSurfaceAt(entry, cx, cz, gx, gz);
-                        if (surfY === null || !Number.isFinite(surfY)) continue;
-                        if (surfY < this._waterLevelAt(gx, gz) + 0.1) continue;
-                        pos.set(gx, surfY + sp.yOff, gz);
-                        q.setFromAxisAngle(up, rotK);
-                        scl.set(sclK, sclK, sclK);
-                        m.compose(pos, q, scl);
-                        m.toArray(block, n * 16);
-                        n++;
-                    }
-                }
-            }
-        }
-        ff.fern.set(sp.name, block.slice(0, n * 16));
-        this._dekoFernSetzen(sp);
-    }
-
-    // Der Zustand des Fern-Felds (Fern- UND Deck-Block je Art leben hier; lazy, beide Ticks lesen ihn).
-    _dekoFernfeldZustand() {
-        if (!this.state.dekoFernfeld)
-            this.state.dekoFernfeld = {
-                anchor: null,
-                queue: [],
-                meshes: new Map(),
-                chunkCount: 0,
-                fern: new Map(),
-                deck: new Map(),
-            };
-        return this.state.dekoFernfeld;
-    }
-
-    // EINE InstancedMesh je Art für die ganze Ferne (Welle B): der Fern-Block (gebaute Chunks im impostor-Band)
-    // und dahinter der Deck-Block (ungebaute Chunks jenseits des Rings) — dieselbe Geometrie, dasselbe Material,
-    // derselbe RNG-Strom; die Deck-Streu war ihr Zwilling mit eigener Mesh je Art. Eine leere Art zeichnet nicht.
-    _dekoFernSetzen(sp) {
-        const ff = this._dekoFernfeldZustand();
-        const FF = AnazhRealm.DEKO_FERNFELD;
-        let inst = ff.meshes.get(sp.name);
-        if (!inst) {
-            const geo = this._scatterImpostorGeometry(sp);
-            const mat = this._scatterMaterial(sp);
-            if (!geo || !mat) throw new Error(`_dekoFernSetzen(${sp.name}): Geometrie oder Material fehlt`);
-            inst = AnazhRealm._instanzMesh(geo, mat, 2 * FF.cap);
-            inst.castShadow = false;
-            inst.receiveShadow = false;
-            inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
-            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Fern-Impostor-Ring der
-            // kleinen Streu (dieselbe Familie wie streu-klein, nur die Fern-Stufe).
-            inst.userData.inventar = "deko-fernfeld";
-            if (!this.state.scene) throw new Error(`_dekoFernSetzen(${sp.name}): keine Szene`);
-            this.state.scene.add(inst);
-            ff.meshes.set(sp.name, inst);
-        }
-        const fern = ff.fern.get(sp.name);
-        const deck = ff.deck.get(sp.name);
-        const nF = fern ? fern.length / 16 : 0;
-        const nD = deck ? deck.length / 16 : 0;
-        if (fern) inst.instanceMatrix.array.set(fern, 0);
-        if (deck) inst.instanceMatrix.array.set(deck, nF * 16);
-        inst.count = nF + nD;
-        inst.visible = nF + nD > 0;
-        if (nF + nD > 0) {
-            inst.instanceMatrix.addUpdateRange(0, (nF + nD) * 16);
-            inst.instanceMatrix.needsUpdate = true;
-        }
-    }
-
-    // ═══ DIE DECK-STREU (Vegetation auf dem Fern-Deckel) ═══
-    // Dasselbe Streu-Gesetz wie das Fernfeld (worldFieldAt · _scatterChunkRng · Dichte · Wasser-Wand),
-    // für UNGEBAUTE Chunks jenseits des Rings; die Höhe liest das EINE Makro-Gesetz (includeDetail, die
-    // Quelle der Chunks). Eine Art je Tick, re-ankert mit dem Spieler-Chunk; gebaute Chunks decken per
-    // Depth.
-    _tickDeckStreu() {
-        const lpc = this.state.lastPlayerVoxelChunk;
-        if (!lpc || !this.state.scene) return 0;
-        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [] };
-        const ds = this.state.deckStreu;
-        const anchor = `${lpc.cx},${lpc.cz}`;
-        if (ds.anchor !== anchor) {
-            ds.anchor = anchor;
-            ds.queue = AnazhRealm.KLEIN_VEGETATION_SPECIES.map((_s, i) => i);
-        }
-        if (ds.queue.length === 0) return 0;
-        this._buildDeckStreuSpecies(ds.queue.shift(), lpc.cx, lpc.cz);
-        return 1;
-    }
-
-    _buildDeckStreuSpecies(si, pcx, pcz) {
-        const sp = AnazhRealm.KLEIN_VEGETATION_SPECIES[si];
-        if (!sp || typeof THREE === "undefined") return;
-        if (sp.minGen && this._genVersion() < sp.minGen) return;
-        const FF = AnazhRealm.DEKO_FERNFELD;
-        const ff = this._dekoFernfeldZustand();
-        const block = new Float32Array(FF.cap * 16);
-        const atmoD =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
-                ? this.state.atmosphere.dekoDensity
-                : 1;
-        const cfg = this._voxelChunkConfig(0);
-        const targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
-        const bandBis = targetRing + 4; // ~4 Ring-Reihen jenseits des Ziels (der sichtbare Mittel-Ring)
-        const m = new THREE.Matrix4();
-        const q = new THREE.Quaternion();
-        const pos = new THREE.Vector3();
-        const scl = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
-        const fdScale = this._effectiveFoliageDensity();
-        const gen2 = this._genVersion() >= 2;
-        let n = 0;
-        for (let cz = pcz - bandBis; cz <= pcz + bandBis && n < FF.cap; cz++) {
-            for (let cx = pcx - bandBis; cx <= pcx + bandBis && n < FF.cap; cx++) {
-                const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-                if (ringDist <= targetRing) continue; // die geladene Welt trägt das echte Fernfeld
-                const key = `${cx},${cz}`;
-                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
-                if (entry && entry.surfMap) continue; // gebaut → das Fernfeld deckt (kein Doppel)
-                const band = this._detailBand(ringDist);
-                const dekoDensity = (band && band.dekoDichte ? band.dekoDichte : 0.35) * atmoD * fdScale;
-                if (dekoDensity <= 0) continue;
-                const rnd = this._scatterChunkRng(cx, cz, si); // DERSELBE Strom wie Fernfeld/Nah
-                const S = FF.samples;
-                const stepXZ = cfg.span / S;
-                const ox = cx * cfg.span;
-                const oz = cz * cfg.span;
-                for (let zi = 0; zi < S && n < FF.cap; zi++) {
-                    for (let xi = 0; xi < S && n < FF.cap; xi++) {
-                        const bx = ox + (xi + 0.5) * stepXZ;
-                        const bz = oz + (zi + 0.5) * stepXZ;
-                        const f = this.worldFieldAt(bx, bz);
-                        if (!f) continue;
-                        const useNass = gen2 && sp.feldNass;
-                        const fieldKey = useNass ? sp.feldNass : sp.field;
-                        const floorV = useNass && Number.isFinite(sp.floorNass) ? sp.floorNass : sp.floor;
-                        const fv =
-                            fieldKey === "feuchte"
-                                ? gen2
-                                    ? this._feuchteAt(bx, bz, this._terrainMacroSurfaceY(bx, bz, true))
-                                    : 0
-                                : f[fieldKey] || 0;
-                        if (fv < floorV) continue;
-                        const norm = (fv - floorV) / Math.max(0.001, 1 - floorV);
-                        const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
-                        for (let k = 0; k < count && n < FF.cap; k++) {
-                            const gx = bx + (rnd() - 0.5) * stepXZ;
-                            const gz = bz + (rnd() - 0.5) * stepXZ;
-                            const sclK = (sp.scale[0] + rnd() * (sp.scale[1] - sp.scale[0])) * FF.scaleMul;
-                            const rotK = rnd() * Math.PI * 2;
-                            const surfY = this._terrainMacroSurfaceY(gx, gz, true); // das EINE Gesetz (Vor-Bau)
-                            if (!Number.isFinite(surfY)) continue;
-                            if (surfY < this._waterLevelAt(gx, gz) + 0.1) continue;
-                            pos.set(gx, surfY + sp.yOff, gz);
-                            q.setFromAxisAngle(up, rotK);
-                            scl.set(sclK, sclK, sclK);
-                            m.compose(pos, q, scl);
-                            m.toArray(block, n * 16);
-                            n++;
-                        }
-                    }
-                }
-            }
-        }
-        ff.deck.set(sp.name, block.slice(0, n * 16));
-        this._dekoFernSetzen(sp);
     }
 
     // Wasserfall-Material (ruht: die Plane ist geschnitten, es bleibt für eine eigene Vertikal-Form; der
@@ -64895,42 +64007,6 @@ class AnazhRealm {
         return L < 0 ? 0 : L > 1 ? 1 : L;
     }
 
-    // Aus Bodenlicht L die drei Nischen-Wahrscheinlichkeiten: Gras überlinear ins Helle, Blume im Saum
-    // (mittleres Licht), Farn im Schatten. Reine Funktion von L (byte-treu aus der Vorlage).
-    _understoryNiche(L) {
-        const ss = (e0, e1, v) => {
-            let t = (v - e0) / (e1 - e0);
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            return t * t * (3 - 2 * t);
-        };
-        const cl = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-        return {
-            gras: cl(Math.pow(L, 1.5) * 1.05), // überlinear: Gras in die hellsten Flecken
-            blume: ss(0.35, 0.62, L) * (1 - ss(0.72, 0.95, L)) * 0.7, // Saum/Sonne
-            farn: (1 - ss(0.28, 0.6, L)) * ss(0.08, 0.25, L) * 0.8, // Schatten unter Dach
-        };
-    }
-
-    // DER EINE Bodendecker-Faktor (Kronendach × Slope), den BEIDE Streu-Pfade lesen
-    // (`_buildVoxelChunkScatter` + `_buildDekoFernfeldSpecies`) sonst ploppt die Dichte am Bandwechsel.
-    // niche + slope rechnet der Aufrufer je Zelle → pur. Nur Arten mit `kronen` reagieren, sonst 1.
-    _undergrowthGroundFactor(sp, niche, slope) {
-        if (!sp || !sp.kronen) return 1;
-        const U = AnazhRealm.UNDERGROWTH;
-        const GS = AnazhRealm.GRASS_SLOPE;
-        let f;
-        if (sp.kronen === "lichtung")
-            f = U.blumeFloor + niche.blume; // Blume: Saum/Sonne
-        else if (sp.kronen === "unter")
-            f = U.farnFloor + niche.farn; // Farn: Schatten unterm Dach
-        else if (sp.kronen === "rand")
-            f = U.blumeFloor + niche.blume * 0.7; // Strauch: Halbschatten-nah
-        else return 1;
-        // Slope-Gate: Bodendecker meiden die Felswand (die EINE GRASS_SLOPE-Quelle, V18.351).
-        const slopeF = Math.max(0, Math.min(1, 1 - (slope - GS.lo) / (GS.hi - GS.lo)));
-        return f * slopeF;
-    }
-
     // ─── DER WALD-GENERATOR (die phytogenesis-plantForest-Ökologie, übersetzt) ───
     // Variabel-radius Poisson-Disc (Kronen-Schüchternheit) + Arten-Nische + reverse-J-Größe + bimodaler
     // Dichte-Gradient + Mammut-Nische. ZELL-DETERMINISTISCH statt globaler Poisson: jede FOREST.cell-Zelle
@@ -70066,23 +69142,6 @@ class AnazhRealm {
             }
         }
         return planted;
-    }
-
-    // Kronen-Lesart: EIN Klump-Feld (dasselbe c wie der Baum-Leser, λ~167 m), je Klein-Art anders gelesen
-    // — Farne UNTER Wald-Clustern, Blumen in LICHTUNGEN, Gestrüpp am Saum. Die Norm-Faktoren
-    // (AnazhRealm.KRONEN) halten die Chunk-Menge mittelwert-neutral.
-    _kronenMult(sp, x, z) {
-        if (!sp || !sp.kronen) return 1;
-        const c = this._clumpAt(x, z, 0.006);
-        const K = AnazhRealm.KRONEN;
-        const ss = (v) => {
-            const t = Math.max(0, Math.min(1, (v - 0.05) / 0.5));
-            return t * t * (3 - 2 * t);
-        };
-        if (sp.kronen === "unter") return ss(c) * K.unterNorm;
-        if (sp.kronen === "lichtung") return ss(-c) * K.lichtungNorm;
-        if (sp.kronen === "rand") return Math.exp(-((c / 0.18) * (c / 0.18))) * K.randNorm;
-        return 1;
     }
 
     // Landmark-Form: die Hangneigung wählt die Formations-Variante (steil → aufragend, flach → gedrungen).
@@ -86101,15 +85160,10 @@ class AnazhRealm {
                         : undefined;
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
-                    const grassBuilt = this._tickPendingGrass(1);
-                    const scatterBuilt = grassBuilt ? 1 : this._tickPendingScatter(2);
-                    if (!grassBuilt && !scatterBuilt) {
-                        // Fernfeld zuerst (geladene Chunks), dann die DECK-STREU
-                        // (ungebaute Band-Chunks — Vegetation vor dem Bau, ⑤).
-                        if (!this._tickDekoFernfeld()) this._tickDeckStreu();
-                    }
+                    this._tickPendingGrass(1);
                     this._tickScatterRegrow(performance.now());
                     this._tickNahWiese(_dl);
+                    this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();
                     const lastTileCheck = this._lastHydroTileCheck ?? -Infinity;
@@ -87656,12 +86710,11 @@ AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, maxStepsPerTick: 10, dri
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // Band 0 ist 5×5 (maxRing 2): die LOD0↔LOD1-Naht liegt ~100 m weg (nebel-verdeckt) statt sichtbar bei
-    // ~50 m. `deko`: "mesh" = per-Chunk-Instanz-Scatter, "impostor" = das EINE Fernfeld-Mesh pro Art
-    // (_tickDekoFernfeld — per-Chunk wären es ~1600 Draw-Calls); dekoDichte fällt mit dem Band.
-    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1, deko: "mesh", dekoDichte: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
-    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1, deko: "impostor", dekoDichte: 0.3 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
-    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3, deko: "impostor", dekoDichte: 0.12 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
-    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6, deko: "none", dekoDichte: 0 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+    // ~50 m. (Die Deko-Bänder fielen 04.10. mit dem Klein-Vegetations-Zwilling: die Nah-Streu hängt am Schirm.)
+    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
+    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
 ]);
 
 // LOD-Hysterese: ein bestehender Chunk wechselt die LOD erst, wenn r die Band-Grenze um diese
@@ -89572,8 +88625,7 @@ AnazhRealm.SPATIAL_HOLLOW_SHAPES = Object.freeze(new Set(["sphere", "torus"]));
 // und einer 5-Vertex-Tal-Polyline (U-Profil + Innentrog); die Noise-Schichten texturieren darauf.
 // Spillpunkt-Garantie: Tal-End-Vertex == Becken-Zentrum + monoton fallender talFloor → kein
 // closed basin.
-// FEUCHTE/KRONEN (unten) — die fünfte Welt-Stimme (aus der Hydrosphäre abgeleitet, nicht Noise) +
-// das ökologische Differenzial auf dem EINEN Klump-Feld.
+// FEUCHTE (unten) — die fünfte Welt-Stimme (aus der Hydrosphäre abgeleitet, nicht Noise).
 AnazhRealm.MACRO_ANKER = Object.freeze({
     // Massiv: anisotrope smoothstep-Glocke (Vertiefung-Übergang zu Ridge-Noise)
     spawnRadius: 700, // Massiv-Spawn um (0,0) — bewusst nah am Spieler-Spawn
@@ -89611,15 +88663,6 @@ AnazhRealm.FEUCHTE = Object.freeze({
     sichtbarLo: 0.3,
     sichtbarHi: 0.85,
 });
-// KRONEN-Lesart: dasselbe c wie der Baum-Leser (λ~167 m, _clumpAt 0.006) — strukturell an die realen
-// Wälder gekoppelt, ohne Baum-Positionen abzufragen. Die norm-Faktoren machen die Multiplikatoren
-// mittelwert-neutral (die Chunk-Gesamtmenge bleibt ±10 %, diag-genese misst).
-AnazhRealm.KRONEN = Object.freeze({
-    unterNorm: 3.35, // 1 / E[smoothstep(0.05,0.55,c)] — diag-genese GEMESSEN (E=0.2981)
-    lichtungNorm: 3.37, // E=0.2967
-    randNorm: 4.65, // 1 / E[exp(−(c/0.18)²)] — E=0.2149
-});
-
 // Platzierungs-Dichte: der Wald ist dicht, wo feucht+flach+niedrig, licht auf Hang+Höhe; alle Achsen
 // mittelwert-nah (Gesamt-Baumzahl bleibt, die Verteilung wird Ökologie). Gelesen von
 // `_placementStandAt` + `_placementDensityFactor` (EINE Quelle für Bäume + Unterwuchs).
@@ -89664,17 +88707,12 @@ AnazhRealm.ROCK_GEOLOGY_FORMS = Object.freeze({
     aufschluss: Object.freeze(["nadel", "stapel"]), // aufragender Grat-Aufschluss
 });
 
-// UNTERWUCHS: das Kronendach-Licht ist die EINE Quelle für „wie viel Boden-Grün wächst hier" (dichter
-// Wald = dunkel, Lichtung = Wiese). Die Kronen-Deckung nutzt dieselben Treiber wie die
-// Baum-Platzierung (`_placementStandAt("forest")` × wet × Höhe, ohne Slope/Perf) → konsistent mit dem
-// echten Wald. `canopyK` = exp-Dämpfung des Bodenlichts; die *Floor-Werte lassen spärliches Grün.
+// UNTERWUCHS: das Kronendach-Licht ist die EINE Quelle für „wie viel Licht den Boden erreicht" (dichter Wald =
+// dunkel, Lichtung = Wiese) — die Nah-Wiese und das Boden-Gesetz der Nah-Streu lesen es. Die Kronen-Deckung nutzt
+// dieselben Treiber wie die Baum-Platzierung (`_placementStandAt("forest")` × wet × Höhe, ohne Slope/Perf) →
+// konsistent mit dem echten Wald. `canopyK` = exp-Dämpfung des Bodenlichts.
 AnazhRealm.UNDERGROWTH = Object.freeze({
     canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
-    grassFloor: 0.12, // Gras wächst am dunklen Waldboden spärlich weiter (nie ganz null)
-    grassGain: 0.95, // die Lichtungs-Verdichtung (× understory-`gras` = pow(L,1.5))
-    grassWet: 0.35, // Feuchte-Antrieb aufs Gras (Vorlagen-meadow += m·0.22, geweitet)
-    blumeFloor: 0.3, // Blume: Saum/Sonne — die Nische fügt hinzu, der Floor hält Rest-Präsenz
-    farnFloor: 0.3, // Farn: Schatten unterm Dach — Floor + Schatten-Nische
 });
 
 // STUDIO_WORLD_SCALE — Studio-Welt-Scale-Tabelle (Vorlage phytogenesis, byte-treu): das Studio baut
@@ -90815,7 +89853,7 @@ AnazhRealm.RING_GROW_SUSTAIN_MS = 1500;
 // schwache HW fällt danach gebunden in die volle V18.318-Hysterese zurück.
 AnazhRealm.RING_BOOT_WINDOW_MS = 10000;
 // Kapazitäts-gewachsene DICHTE, Schwester von `foliageRadius`: fährt die Instanz-Zahl pro Zelle
-// (`dekoDensity`-Multiplikator in `_buildVoxelChunkScatter`) — weniger Instanzen senken die Dreiecke
+// (die Last-Dichte der Nah-Streu, `_nahStreuKachel`) — weniger Instanzen senken die Dreiecke
 // direkt (anders als LOD-Schwellen auf gebackener Geometrie). Build-zeit (greift beim
 // Streamen/Spawn); headless → 1.
 AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.22; // V18.303 0.4→0.22: das Laub ist 90 % der GPU-Last (gemessen 2.21M Tris) → eine kämpfende GPU darf es weiter ausdünnen (perf-gated: starke Hardware bleibt voll)

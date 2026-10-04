@@ -1,10 +1,10 @@
 // diag-genese.cjs — Γ-Bogen-Messgerät (genese-plan): vier Messungen am ECHTEN Boot.
 //   A  genVersion der frischen Welt (ensureWorldMeta-Stempel → 2)
-//   B  KRONEN-Kalibrierung: E[ss(c)], E[ss(−c)], E[gauss] über die Klump-Verteilung
-//      → implizite Norm-Faktoren (1/E); B5+-Regel: Mittel-Multiplikator 1 ±10 %
+//   (B  KRONEN-Kalibrierung fiel 04.10. mit der Host-Kronen-Lesart — das Boden-Gesetz des Studios ist die EINE
+//       Platzierung der Nah-Streu)
 //   C  FEUCHTE-Feld: Fluss-Ufer hoch (≥ schilf-floor) · trocken+hoch = 0 · Legacy = 0
-//   D  UFER-LEBEN end-to-end: _buildVoxelChunkScatter am Fluss-Chunk → schilf > 0,
-//      am trockenen Chunk → 0; Legacy (genVersion 1) → schilf 0 (minGen-Tor)
+//   D  UFER-LEBEN end-to-end: die Nah-Streu (`_nahStreuKachel`, Boden-Gesetz) setzt am Fluss-Chunk Schilf
+//      (Ufer-Band am Fluss-Spiegel), am trockenen Chunk keines
 //   E  Math.random-ZENSUS in worldgen-erreichbaren Pfaden (Γ5-Verbot)
 //   node scripts/diag-genese.cjs
 
@@ -72,54 +72,6 @@ function startSaveServer() {
         });
         console.log("A — GENESE-VERSION");
         check(a.gen === 2, `frische Welt trägt genVersion 2`, `_genVersion()=${a.gen}, worldMeta=${a.meta}`);
-
-        // ---- B: KRONEN-Kalibrierung -----------------------------------------
-        const b = await page.evaluate(() => {
-            const r = window.anazhRealm;
-            const K = r.constructor.KRONEN;
-            const ss = (v) => {
-                const t = Math.max(0, Math.min(1, (v - 0.05) / 0.5));
-                return t * t * (3 - 2 * t);
-            };
-            let sU = 0;
-            let sL = 0;
-            let sR = 0;
-            let n = 0;
-            // 220×220 @ 7 m = 1540 m Spann ≈ 9 Wellenlängen des λ~167-m-Felds.
-            for (let zi = 0; zi < 220; zi++) {
-                for (let xi = 0; xi < 220; xi++) {
-                    const c = r._clumpAt(-770 + xi * 7, -770 + zi * 7, 0.006);
-                    sU += ss(c);
-                    sL += ss(-c);
-                    sR += Math.exp(-((c / 0.18) * (c / 0.18)));
-                    n++;
-                }
-            }
-            return {
-                eU: sU / n,
-                eL: sL / n,
-                eR: sR / n,
-                normU: K.unterNorm,
-                normL: K.lichtungNorm,
-                normR: K.randNorm,
-            };
-        });
-        console.log("B — KRONEN-KALIBRIERUNG (Mittel-Multiplikator soll 1 ±10 %)");
-        const mU = b.eU * b.normU;
-        const mL = b.eL * b.normL;
-        const mR = b.eR * b.normR;
-        console.log(
-            `    E[unter]=${b.eU.toFixed(4)} → Norm-Soll ${(1 / b.eU).toFixed(2)} (ist ${b.normU}) · Mittel ${mU.toFixed(3)}`
-        );
-        console.log(
-            `    E[licht]=${b.eL.toFixed(4)} → Norm-Soll ${(1 / b.eL).toFixed(2)} (ist ${b.normL}) · Mittel ${mL.toFixed(3)}`
-        );
-        console.log(
-            `    E[rand ]=${b.eR.toFixed(4)} → Norm-Soll ${(1 / b.eR).toFixed(2)} (ist ${b.normR}) · Mittel ${mR.toFixed(3)}`
-        );
-        check(Math.abs(mU - 1) <= 0.1, "unter mittelwert-neutral");
-        check(Math.abs(mL - 1) <= 0.1, "lichtung mittelwert-neutral");
-        check(Math.abs(mR - 1) <= 0.1, "rand mittelwert-neutral");
 
         // ---- C: FEUCHTE-Feld -------------------------------------------------
         const c = await page.evaluate(() => {
@@ -232,25 +184,22 @@ function startSaveServer() {
             }
             const out = { best };
             if (!best || best.s === 0) return out;
-            const countOf = (key, name) => {
-                const list = r.state.voxelChunkScatter && r.state.voxelChunkScatter.get(key);
-                if (!list) return 0;
-                const it = list.find((e) => e.name === name);
-                return it ? it.n : 0; // Welle B: die Block-Größe der Art im Streu-Satz
+            const arten = r._nahStreuArten();
+            const NS = r.constructor.NAH_STREU;
+            const n = Math.round(span / NS.kachel);
+            // Die Schilf-Pflanzen der Kacheln eines Chunks (die Nah-Streu am Boden-Gesetz, Ufer am Fluss-Spiegel).
+            const schilfIm = (cx, cz) => {
+                if (!arten) return -1;
+                const ai = arten.findIndex((a) => a.id === "schilf");
+                let z = 0;
+                for (let tz = cz * n; tz < cz * n + n; tz++)
+                    for (let tx = cx * n; tx < cx * n + n; tx++) {
+                        const satz = r._nahStreuKachel(tx, tz, arten);
+                        if (satz) for (const it of satz.items) if (it.art === ai) z++;
+                    }
+                return z;
             };
-            const build = (cx, cz) => {
-                const key = `${cx},${cz}`;
-                r._disposeVoxelChunkScatter(key);
-                const lpc = r.state.lastPlayerVoxelChunk;
-                r.state.lastPlayerVoxelChunk = { cx, cz };
-                r._buildVoxelChunkScatter(cx, cz);
-                r.state.lastPlayerVoxelChunk = lpc;
-                return key;
-            };
-            // Genese 2 am Fluss-Chunk:
-            const keyR = build(best.cx, best.cz);
-            out.schilfFluss = countOf(keyR, "schilf");
-            out.farnFluss = countOf(keyR, "farn");
+            out.schilfFluss = schilfIm(best.cx, best.cz);
             // Trockener Chunk (aus C wiederverwendet — Raster-Scan):
             const F = r.constructor.FEUCHTE;
             let dry = null;
@@ -265,19 +214,7 @@ function startSaveServer() {
                     if (sy - r._waterLevelAt(x, z) <= F.hoeheFern + 3) continue;
                     dry = { cx: Math.floor(x / span), cz: Math.floor(z / span) };
                 }
-            if (dry) {
-                const keyD = build(dry.cx, dry.cz);
-                out.schilfTrocken = countOf(keyD, "schilf");
-                r._disposeVoxelChunkScatter(keyD);
-            }
-            // LEGACY am selben Fluss-Chunk: minGen-Tor → schilf 0.
-            const orig = r.state.worldMeta.genVersion;
-            r.state.worldMeta.genVersion = 1;
-            build(best.cx, best.cz);
-            out.schilfLegacy = countOf(keyR, "schilf");
-            out.farnLegacy = countOf(keyR, "farn");
-            r.state.worldMeta.genVersion = orig;
-            r._disposeVoxelChunkScatter(keyR);
+            if (dry) out.schilfTrocken = schilfIm(dry.cx, dry.cz);
             return out;
         });
         console.log("D — UFER-LEBEN end-to-end");
@@ -287,10 +224,9 @@ function startSaveServer() {
             d.best ? `chunk(${d.best.cx},${d.best.cz}) bankCells=${d.best.s}` : ""
         );
         if (d.best && d.best.s > 0) {
-            check(d.schilfFluss > 0, `schilf wächst am Ufer`, `n=${d.schilfFluss} (farn=${d.farnFluss})`);
+            check(d.schilfFluss > 0, `schilf wächst am Ufer`, `n=${d.schilfFluss}`);
             if (Number.isFinite(d.schilfTrocken))
                 check(d.schilfTrocken === 0, `schilf bleibt der Trocknis fern`, `n=${d.schilfTrocken}`);
-            check(d.schilfLegacy === 0, `Legacy-Welt: schilf ruht (minGen-Tor)`, `n=${d.schilfLegacy}`);
         }
 
         // ---- E: Math.random-Zensus (Γ5) -------------------------------------
@@ -298,9 +234,9 @@ function startSaveServer() {
             const r = window.anazhRealm;
             const fns = [
                 "_vegetationSampleSpawn",
-                "_buildVoxelChunkScatter",
-                "_buildDekoFernfeldSpecies",
-                "_kronenMult",
+                "_nahStreuKachel",
+                "_tickNahStreu",
+                "_nahStreuBloecke",
                 "_feuchteAt",
                 "_hydroDistAt",
                 "worldFieldAt",

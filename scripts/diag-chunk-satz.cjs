@@ -9,9 +9,10 @@
 //   (a) BODEN — höchstens EIN Objekt trägt das Boden-Material (der Satz, Stitch eingeschlossen),
 //       kein `voxelChunk:`-Name lebt im Szenen-Baum;
 //   (b) WASSER — höchstens EIN Chunk-Wasser-Objekt (der Satz);
-//   (c) STREU — höchstens EINE Klein-Streu-InstancedMesh je Art (≤ Zahl der Arten), keine Deck-Streu
-//       (der Zwilling des Fernfelds), höchstens EINE Fern-InstancedMesh je Art; je Art eine dichte Block-
-//       Tabelle (lückenlos, Summe = Anzahl = mesh.count), deckungsgleich mit voxelChunkScatter;
+//   (c) STREU — die Nah-Streu (Waldboden 04.10.: Studio-Arten, Kachel-Ring um die Kamera) trägt höchstens EINE
+//       InstancedMesh je Senke (Art × Gestalt × Stufe × Teil, ≤ Zahl der Senken), keine Deck-Streu und keine
+//       Fern-Deko (beide fielen); je Senke eine dichte Block-Tabelle (lückenlos, Summe = Anzahl = mesh.count, je
+//       Block die Ernte-Identitäten), jeder Block gehört einer lebenden Kachel des Rings;
 //   (d) BAU — keine Instanz-Gruppe mit `@p:` im Schlüssel, kein `p:`-Region-Bundle;
 //   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (Bereiche, Index-Zahl), nie die Zahl
 //       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
@@ -19,7 +20,7 @@
 //       Anfang verschoben), die Index-Blöcke liegen nah → fern;
 //   (g) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
-// direkt in der Szene, einer Gruppe `x#0@p:0,0` und einem zweiten `streuNah` derselben Art MUSS rot
+// direkt in der Szene, einer Gruppe `x#0@p:0,0`, einem zweiten `streuNah` derselben Senke und einer Fern-Deko MUSS rot
 // fallen und jeden Täter mit Namen und Zahl nennen — eine Wand, die hier nicht feuert, ist selbst rot.
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
@@ -37,13 +38,14 @@ function urteil(z) {
             `BODEN: ${z.voxelChunkNamen.length} \`voxelChunk:\`-Objekte im Szenen-Baum — ${z.voxelChunkNamen.slice(0, 4).join(", ")}`
         );
     if (z.wasser.objekte > 1) v.push(`WASSER: ${z.wasser.objekte} Chunk-Wasser-Objekte (Soll ≤ 1, der Satz)`);
-    for (const [art, n] of Object.entries(z.streuNah))
-        if (n > 1) v.push(`STREU: ${n} Klein-Streu-InstancedMeshes der Art ${art} (Soll ≤ 1 je Art)`);
+    for (const [senke, n] of Object.entries(z.streuNah))
+        if (n > 1) v.push(`STREU: ${n} Nah-Streu-InstancedMeshes der Senke ${senke} (Soll ≤ 1 je Senke)`);
     const streuSumme = Object.values(z.streuNah).reduce((a, b) => a + b, 0);
-    if (streuSumme > z.arten) v.push(`STREU: ${streuSumme} Klein-Streu-InstancedMeshes (Soll ≤ ${z.arten} Arten)`);
-    if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (der Zwilling des Fernfelds, Soll 0)`);
-    for (const [art, n] of Object.entries(z.fern))
-        if (n > 1) v.push(`STREU: ${n} Fern-InstancedMeshes der Art ${art} (Soll ≤ 1 je Art)`);
+    if (streuSumme > z.senken)
+        v.push(`STREU: ${streuSumme} Nah-Streu-InstancedMeshes (Soll ≤ ${z.senken} Senken)`);
+    if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (gefallen, Soll 0)`);
+    const fernSumme = Object.values(z.fern).reduce((a, b) => a + b, 0);
+    if (fernSumme > 0) v.push(`STREU: ${fernSumme} Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)`);
     if (z.pGruppen.length > 0)
         v.push(
             `BAU: ${z.pGruppen.length} Instanz-Gruppen mit \`@p:\` im Schlüssel — ${z.pGruppen.slice(0, 4).join(", ")}`
@@ -59,10 +61,10 @@ function selbsttest() {
         boden: { objekte: 1, namen: ["bodenSatz"] },
         voxelChunkNamen: [],
         wasser: { objekte: 1 },
-        streuNah: { blume: 1, farn: 1 },
-        arten: 15,
+        streuNah: { "blume:1:L2:0": 1, "farn:2:L1:0": 1 },
+        senken: 8,
         deck: 0,
-        fern: { blume: 1 },
+        fern: {},
         pGruppen: [],
         pBundles: [],
     };
@@ -84,9 +86,14 @@ function selbsttest() {
             muss: [/BAU: 1 Instanz-Gruppen mit `@p:`.*x#0@p:0,0/],
         },
         {
-            name: "zweites streuNah derselben Art",
-            z: { ...gruen, streuNah: { blume: 2, farn: 1 } },
-            muss: [/STREU: 2 Klein-Streu-InstancedMeshes der Art blume/],
+            name: "zweites streuNah derselben Senke",
+            z: { ...gruen, streuNah: { "blume:1:L2:0": 2, "farn:2:L1:0": 1 } },
+            muss: [/STREU: 2 Nah-Streu-InstancedMeshes der Senke blume:1:L2:0/],
+        },
+        {
+            name: "die Fern-Deko lebt",
+            z: { ...gruen, fern: { blume: 1 } },
+            muss: [/STREU: 1 Fern-Deko-InstancedMeshes/],
         },
         {
             name: "Deck-Zwilling lebt",
@@ -196,14 +203,13 @@ function check(name, ok, detail) {
                 if (sz > 20 && stable > 60) break;
                 if (ticks % 10 === 0) await pause();
             }
-            for (let i = 0; i < 60; i++) {
-                const a = r._tickPendingScatter(8);
-                const b = r._tickPendingWaterIso(8);
-                if (!a && !b) break;
-            }
-            for (let i = 0; i < 40; i++) {
-                r._tickDekoFernfeld();
-                r._tickDeckStreu();
+            for (let i = 0; i < 60; i++) if (!r._tickPendingWaterIso(8)) break;
+            // Die Nah-Streu: der Kachel-Ring um die Kamera, bis Studio-Teile ankommen und nichts mehr offen ist.
+            for (let i = 0; i < 900; i++) {
+                r._tickNahStreu();
+                const ns = s.nahStreu;
+                if (ns && ns.senken.size > 0 && ns.offen === 0) break;
+                await new Promise((ok) => setTimeout(ok, 100));
             }
             for (let i = 0; i < 30; i++) {
                 try {
@@ -214,7 +220,7 @@ function check(name, ok, detail) {
             r._tickChunkSatz();
 
             // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Bundles eingeschlossen).
-            const arten = r.constructor.KLEIN_VEGETATION_SPECIES;
+            const senkenZahl = s.nahStreu ? s.nahStreu.senken.size : 0;
             const zensus = () => {
                 const bodenMat = s.voxelChunkMaterial;
                 const z = {
@@ -223,7 +229,7 @@ function check(name, ok, detail) {
                     wasser: { objekte: 0, tris: 0 },
                     streuNah: {},
                     streuInstanzen: 0,
-                    arten: arten.length,
+                    senken: senkenZahl,
                     deck: 0,
                     fern: {},
                     pGruppen: [],
@@ -238,11 +244,7 @@ function check(name, ok, detail) {
                     const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
                     return (dr / 3) * (o.isInstancedMesh ? o.count : 1);
                 };
-                const artVon = (o) => {
-                    if (o.name && o.name.startsWith("streuNah:")) return o.name.slice(9);
-                    const sp = arten.find((a) => r._scatterMaterial(a) === o.material);
-                    return sp ? sp.name : "?";
-                };
+                const artVon = (o) => (o.name && o.name.startsWith("streuNah:") ? o.name.slice(9) : o.name || "?");
                 s.scene.traverse((o) => {
                     if (!o.isMesh || o.visible === false) return;
                     if (o.isInstancedMesh && !(o.count > 0)) return;
@@ -295,20 +297,20 @@ function check(name, ok, detail) {
             for (const e of s.voxelChunks.values()) if (e && !e.empty && e.mesh) chunks++;
             res.chunks = chunks;
 
-            // ── (c) DER STREU-SATZ: je Art ist die Block-Tabelle dicht (lückenlos in Puffer-Ordnung, Summe = Anzahl =
-            // mesh.count) und deckungsgleich mit voxelChunkScatter (je Chunk dieselbe Block-Größe).
+            // ── (c) DER STREU-SATZ: je Senke ist die Block-Tabelle dicht (lückenlos in Puffer-Ordnung, Summe = Anzahl
+            // = mesh.count, je Block die Ernte-Identitäten) und jeder Block gehört einer lebenden Kachel des Rings.
             res.streu = { arten: 0, bloecke: 0, dicht: true, fehler: [] };
-            if (s.streuNah)
-                for (const [name, a] of s.streuNah) {
+            const ns = s.nahStreu;
+            if (ns)
+                for (const [name, a] of ns.senken) {
                     res.streu.arten++;
                     let pos = 0;
-                    for (const ck of a.ordnung) {
-                        const b = a.bloecke.get(ck);
-                        const list = s.voxelChunkScatter ? s.voxelChunkScatter.get(ck) : null;
-                        const it = list ? list.find((x) => x.name === name) : null;
-                        if (!b || b.start !== pos || !it || it.n !== b.n) {
+                    for (const kk of a.ordnung) {
+                        const b = a.bloecke.get(kk);
+                        const k = ns.kacheln.get(kk);
+                        if (!b || b.start !== pos || b.ids.length !== b.n || !k || !k.senken.has(name)) {
                             res.streu.dicht = false;
-                            if (res.streu.fehler.length < 4) res.streu.fehler.push(name + "@" + ck);
+                            if (res.streu.fehler.length < 4) res.streu.fehler.push(name + "@" + kk);
                         }
                         pos += b ? b.n : 0;
                         res.streu.bloecke++;
@@ -422,7 +424,7 @@ function check(name, ok, detail) {
     const z = out.zensus;
     console.log(
         `\n  Zensus: ${out.chunks} Chunks · Boden ${z.boden.objekte} Objekte (${z.boden.tris} Dreiecke) · Wasser ${z.wasser.objekte}` +
-            ` · Klein-Streu ${Object.values(z.streuNah).reduce((a, b) => a + b, 0)} Meshes (${z.streuInstanzen} Instanzen)` +
+            ` · Nah-Streu ${Object.values(z.streuNah).reduce((a, b) => a + b, 0)} Meshes (${z.streuInstanzen} Instanzen)` +
             ` · Fern ${Object.values(z.fern).reduce((a, b) => a + b, 0)} · Deck ${z.deck} · @p:-Gruppen ${z.pGruppen.length}` +
             ` · p:-Bundles ${z.pBundles.length} · Render-Bürger ${z.renderBuerger} · Szenen-Kinder ${z.szeneKinder}` +
             `\n  Bau: ${z.bau.gruppen} Gruppen (${z.bau.werfer} werfen) · Glut ${z.bau.glut} (${z.bau.glutWerfer} werfen)\n`
@@ -441,10 +443,10 @@ function check(name, ok, detail) {
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);
     check(
-        "(c) STREU-SATZ — je Art eine dichte Block-Tabelle, deckungsgleich mit voxelChunkScatter",
+        "(c) STREU-SATZ — je Senke der Nah-Streu eine dichte Block-Tabelle, jeder Block einer lebenden Kachel",
         !!out.streu && out.streu.arten > 0 && out.streu.dicht === true,
         out.streu
-            ? `${out.streu.arten} Arten · ${out.streu.bloecke} Blöcke${out.streu.fehler.length ? " — " + out.streu.fehler.join(", ") : ""}`
+            ? `${out.streu.arten} Senken · ${out.streu.bloecke} Blöcke${out.streu.fehler.length ? " — " + out.streu.fehler.join(", ") : ""}`
             : "kein Streu-Satz"
     );
     const saetze = out.saetze || [];

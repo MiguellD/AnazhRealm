@@ -23,7 +23,7 @@ function drawZensus(opts) {
             return camera && camera.isOrthographicCamera ? "ortho" : "anders";
         };
         // DER TÄTER HAT EINEN NAMEN (Welle B): ein Unbenannter heißt nach seinem Inventar-Stempel (streu-klein ·
-        // terrain-stitch · deko-fernfeld) bzw. seiner Wasser-Art (hydroKind), erst dann nach dem Typ — „Mesh" als
+        // terrain-stitch) bzw. seiner Wasser-Art (hydroKind), erst dann nach dem Typ — „Mesh" als
         // Klasse verschluckte 229 Befehle aus sechs Familien.
         const name = (x) => {
             if (x.name) return x.name.replace(/[-_:#]?[-\d].*$/, "") || "?";
