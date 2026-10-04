@@ -520,7 +520,12 @@
                 sa = Math.sin(roll);
             const r1 = [e1[0] * ca + r[0] * sa, e1[1] * ca + r[1] * sa, e1[2] * ca + r[2] * sa];
             const r2 = [r[0] * ca - e1[0] * sa, r[1] * ca - e1[1] * sa, r[2] * ca - e1[2] * sa];
-            const nrm = _vnorm(_vcross(r1, r2));
+            // Die Normale zweier orthonormaler Achsen: eine Komponente, die mathematisch 0 ist, bleibt als
+            // Auslöschungs-Rest (~1e-18) stehen — und dessen Wert hängt am letzten Bit von sin/cos, das die
+            // Plattformen verschieden runden (V8: Linux glibc-libm, Windows fdlibm). float32 trägt den Rest
+            // exakt: tanne-s12345-L1 Quad 95 war y = 2,17e-18 (Windows) gegen 3,14e-18 (Linux-CI). Reste unter
+            // 1e-9 sind kein Gesetz, sondern Rauschen — sie werden 0, die Karte ist auf jeder Plattform bitgleich.
+            const nrm = _vnorm(_vcross(r1, r2)).map((c) => (Math.abs(c) < 1e-9 ? 0 : c));
             const needle = !!l.needle;
             // opts.cell erzwingt die Atlas-Zelle (die Studio-Karten routen sie je Blatt); ohne opts.cell der
             // Zyklus des Steckbriefs (Nadel → ihre Zelle, sonst li % Breitblatt-Zellen).
