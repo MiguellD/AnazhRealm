@@ -60,6 +60,15 @@ jobs:
             - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
               run: npm run gate:source-probes
 
+            - name: Band-Wand (W0 — Haushalt des Profi-Bands, Ratsche, Absenz der gefallenen Band-Täter, Textur-Namen)
+              # GPU-frei, reines Node: der Haushalt (spec/profiband/haushalt.json) hält das Band 208 Befehle / 680k
+              # Dreiecke, die Ratsche trägt jede Klasse × Pass, jeder gefallene Band-Täter ist grep=0 im
+              # kommentar-bereinigten Code, jede Textur und jedes Bildziel des Stamms trägt den Namen seines Erzeugers.
+              # --selftest zuerst: neun injizierte Fälle (unbenanntes Mesh, namenlose Textur ohne Ziel, Fern-Geröll-L0
+              # bei 200 m, Klasse über der Ratsche …) werden rot, ein sauberer Zensus bleibt grün. Die Messung selbst:
+              # `werkbank band` (echte GPU).
+              run: npm run gate:profiband
+
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
               # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry

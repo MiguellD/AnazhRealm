@@ -1,0 +1,148 @@
+{
+    "version": 1,
+    "zweck": "DER HAUSHALT DES PROFI-BANDS (W0): das Soll je Klasse an der Mess-Wiese, Hauptbild + Kaskade k0 + k1. Richter: `node scripts/werkbank.cjs band` (echte GPU, Integration); Wand: `npm run gate:profiband` (Summe <= Band, Schema, Absenz). Eine Klasse ordnet die Täter-Schlüssel des Draw-Zählers (`<familie>:<preset>:L<stufe>` oder Name) über ihre Regeln; die erste passende Klasse in Listen-Reihenfolge gewinnt, `rest` nimmt jeden benannten Rest, `UNBENANNT:*` nimmt keine.",
+    "quelle": "artifacts/profiband/wellen-plan.md W0 (Synthese 04.10.) · Band: docs/analyse/perf-paritaet-baseline-v18432.md",
+    "band": { "befehle": 208, "dreiecke": 680000, "vramMB": 118, "fps": 60, "gpuMs": 16.7 },
+    "messort": {
+        "spieler": [-900, -850],
+        "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+        "paesse": ["haupt", "k0", "k1"]
+    },
+    "klassen": [
+        {
+            "id": "boden",
+            "titel": "Boden (Chunks · Ring · Naht · Wasser)",
+            "befehle": 12,
+            "dreiecke": 200000,
+            "regeln": [{ "muster": "^(voxelChunk|terrain-stitch|fern-ring|chunk-water-iso|chunk-water-cellsheet|farWater)$" }]
+        },
+        {
+            "id": "karten",
+            "titel": "Karten (jede Fernstufe L2)",
+            "befehle": 1,
+            "dreiecke": 1000,
+            "regeln": [{ "stufe": [2] }]
+        },
+        {
+            "id": "baum",
+            "titel": "Baum L0/L1 + Werfer",
+            "befehle": 40,
+            "dreiecke": 150000,
+            "regeln": [{ "familie": ["f", "fscatter"], "art": ["tree"], "stufe": [0, 1] }, { "muster": "^kronendach$" }]
+        },
+        {
+            "id": "busch",
+            "titel": "Busch",
+            "befehle": 8,
+            "dreiecke": 40000,
+            "regeln": [
+                { "familie": ["f", "fscatter"], "art": ["shrub"], "stufe": [0, 1] },
+                { "muster": "^g:grown_busch" }
+            ]
+        },
+        {
+            "id": "nahWiese",
+            "titel": "Nah-Wiese",
+            "befehle": 4,
+            "dreiecke": 80000,
+            "regeln": [{ "muster": "^nahWiese$" }]
+        },
+        {
+            "id": "streu",
+            "titel": "Nah-Streu (Klein-Streu, Deck- und Fernfeld-Deko, Streu-Arten)",
+            "befehle": 9,
+            "dreiecke": 40000,
+            "regeln": [
+                { "muster": "^(streu-klein|deck-streu|deko-fernfeld)$" },
+                { "familie": ["fscatter"], "art": ["flower", "grass", "rock", "boulder", "scree", "crystal", "columns"], "stufe": [0, 1] },
+                { "familie": ["f"], "art": ["flower", "grass"], "stufe": [0, 1] }
+            ]
+        },
+        {
+            "id": "tier",
+            "titel": "Tier",
+            "befehle": 30,
+            "dreiecke": 60000,
+            "regeln": [{ "muster": "^tier$" }]
+        },
+        {
+            "id": "bau",
+            "titel": "Bau (Haus · Tor · Fahrzeug · Glut · Markt · Fundament · Wege)",
+            "befehle": 40,
+            "dreiecke": 60000,
+            "regeln": [
+                { "familie": ["f"], "art": ["haus", "gate", "vehicle", "weapon"], "stufe": [0, 1] },
+                { "muster": "^g:(glut|markt|haus|tor)" },
+                { "muster": "^(bau|siedlung-wege)" }
+            ]
+        },
+        {
+            "id": "formationen",
+            "titel": "Formationen (gesetzter Fels, Kristall, Säulen)",
+            "befehle": 20,
+            "dreiecke": 30000,
+            "regeln": [
+                { "familie": ["f"], "art": ["rock", "boulder", "scree", "crystal", "columns"], "stufe": [0, 1] },
+                { "muster": "^g:(fels|kristall|zacken|basalt|sediment|geroell)" }
+            ]
+        },
+        {
+            "id": "einzelstuecke",
+            "titel": "Einzelstücke (jeder benannte Rest: Himmel, Spieler, Feld-Pass, Portal, Wetter …)",
+            "befehle": 25,
+            "dreiecke": 15000,
+            "rest": true,
+            "regeln": []
+        },
+        {
+            "id": "reserve",
+            "titel": "Reserve",
+            "befehle": 19,
+            "dreiecke": 4000,
+            "regeln": []
+        }
+    ],
+    "stufenWand": [
+        {
+            "familie": ["fscatter"],
+            "stufe": 0,
+            "maxM": 64,
+            "grund": "Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu-Fernring 64–384 m); ein L0-Mesh dort ist fail-soft."
+        },
+        {
+            "familie": ["f"],
+            "art": ["tree"],
+            "stufe": 0,
+            "maxM": 64,
+            "grund": "Ein Baum zeigt L0 nur nah: LOD_DISTANCES.thresh01 12 m × Sichthöhen-Dehnung × perfDistMulMax 1,3 bleibt für jeden Studio-Baum unter 64 m."
+        }
+    ],
+    "absenz": {
+        "dateien": ["anazhRealm.js", "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js", "feld-wgsl.js"],
+        "wellen": [
+            {
+                "welle": "W2 — Abschied der Voxel-Bricks (V18.528): der Welt-March trägt EINE Payload, der 128-MB-3D-Atlas fiel (VRAM 625 → 494 MB)",
+                "namen": [
+                    { "token": "_weltBrickAlloc", "fiel": "kein Voxel-Atlas mehr, Felder sind Analog-Sätze" },
+                    { "token": "_weltBrickHolen", "fiel": "kein Brick-Dedup, der Kapsel-Cache dedupliziert" },
+                    { "token": "_weltFeldSpawn", "fiel": "Feld-Einträge entstehen nur als Kapsel-Satz (_baumKapselFit)" },
+                    { "token": "_weltFeldRegister", "fiel": "kein Brick-Register" },
+                    { "token": "brickCache", "fiel": "der Kapsel-Cache ist der EINE Dedup" },
+                    { "token": "freiGross", "fiel": "kein 64³-Block-Allokator" },
+                    { "token": "freiKlein", "fiel": "kein 32³-Einheiten-Allokator" },
+                    { "token": "atlasDaten", "fiel": "der 512×512×128-RGBA8-Atlas (128 MB) fiel" },
+                    { "token": "feldTriAbtast", "fiel": "der trilineare Brick-March im WGSL fiel" },
+                    { "token": "feldTriGrad", "fiel": "der trilineare Brick-Gradient im WGSL fiel" },
+                    { "token": "_bundleZiegelTick", "fiel": "der Region-Ziegel (Fern-Cache) fiel, das Ferne trägt der Welt-March" },
+                    { "token": "_bundleZiegelTod", "fiel": "mit dem Region-Ziegel" },
+                    { "token": "_ziegelBackenAusGruppe", "fiel": "der Gruppen-Bäcker fiel mit dem Region-Ziegel" },
+                    { "token": "_waldZiegelBacken", "fiel": "der Einzel-Baum-Brick war fail-closed, nun physisch fort" },
+                    { "token": "WALD_ZIEGEL", "fiel": "mit dem Region-Ziegel" },
+                    { "token": "FERN_SCHICHT", "fiel": "EIN Szene-Pass (Trace .36)" },
+                    { "token": "FERN_LAYER", "fiel": "EIN Szene-Pass, die Schalen leben auf Layer 0" },
+                    { "token": "fernSchicht", "fiel": "EIN Szene-Pass (Trace .36)" }
+                ]
+            }
+        ]
+    }
+}

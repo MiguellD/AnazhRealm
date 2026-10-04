@@ -1,0 +1,168 @@
+{
+    "version": 1,
+    "zweck": "DIE RATSCHE DES PROFI-BANDS (W0): der zuletzt gemessene Ist-Wert je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) an der Mess-Wiese — eine Klasse darf nur FALLEN. `werkbank band` ist rot, sobald ein Ist über seiner Ratsche liegt (plus `toleranzPct`). `null` = noch nicht gemessen. Gesetzt und gesenkt wird sie nur auf der echten GPU: `node scripts/werkbank.cjs start --echt` · `umstellen -900 -850` · `band --ratsche` (nur bei GRÜN; setzt null-Felder, senkt gemessene, hebt nie — heben ist ein begründeter Akt von Hand im Commit). Schema: `npm run gate:profiband`.",
+    "gemessen": null,
+    "toleranzPct": 0,
+    "gesamt": {
+        "befehle": null,
+        "dreiecke": null,
+        "vramMB": null
+    },
+    "klassen": {
+        "boden": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "karten": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "baum": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "busch": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "nahWiese": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "streu": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "tier": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "bau": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "formationen": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "einzelstuecke": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "reserve": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        }
+    },
+    "vramMB": {}
+}
