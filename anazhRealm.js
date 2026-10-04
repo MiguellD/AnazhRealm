@@ -22238,33 +22238,18 @@ class AnazhRealm {
         // autoReset AUS: `_loopRender` ruft `info.reset()` EINMAL pro Frame und liest am Ende die volle Last
         // (Schatten + Haupt + Post-FX) für perfSense — sonst sähe es nur den letzten Post-FX-Pass.
         if (renderer.info) renderer.info.autoReset = false;
-        // DIE DRAW-WAHRHEIT IM INFO: r184 bucht einen Draw nur, wenn der Backend-Draw läuft — beim AUFNEHMEN
-        // eines RenderBundles; der Replay (`_renderBundle`, Versions-Treffer) zieht die aufgenommenen
-        // RenderObjects ohne Buchung. Die Region-Bundles tragen den ganzen statischen Bestand: HUD, Regler und
-        // Flugschreiber lasen an der Mess-Wiese 148 dc, wo die GPU 1 149 Befehle ausführte (02.10.). Der
-        // Replay bucht jetzt jeden aufgenommenen RenderObject wie der Backend-Draw (info.update).
-        if (renderer.info && typeof renderer._renderBundle === "function") {
-            const replayRoh = renderer._renderBundle;
-            renderer._renderBundle = function (bundle, sceneRef, lightsNode) {
-                const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
-                const daten = this.backend.get(rb);
-                const replay = daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version;
-                const aus = replayRoh.call(this, bundle, sceneRef, lightsNode);
-                if (replay && daten.renderObjects)
-                    for (const ro of daten.renderObjects) {
-                        const dp = ro.getDrawParameters();
-                        if (dp) this.info.update(ro.object, dp.vertexCount, dp.instanceCount);
-                    }
-                return aus;
-            };
-        }
         // DER STABILE PUFFER-NAME: r184 nennt den Instanz-Matrix-Puffer im WGSL `NodeBuffer_<Knoten-id>`
         // (WGSLNodeBuilder, ohne setName) — jede InstancedMesh bekam so ihren EIGENEN Quelltext, ihr eigenes
         // Programm, ihre eigene Pipeline: gemessen 02.10. an der Mess-Wiese 675 Vertex-Programme, ohne die
         // Ziffern 39 Familien — jede neue Streu-Gruppe ein Kompilat beim Laufen. Je Draw gibt es genau EINE
         // Instanz-Matrix (und die Vorgänger-Matrix für Velocity) → ein fester Name macht gleiche Objekte gleich.
         const IN = THREE.InstanceNode;
-        if (IN && IN.prototype && typeof IN.prototype._createInstanceMatrixNode === "function" && !IN.__anazhName) {
+        if (!IN || !IN.prototype || typeof IN.prototype._createInstanceMatrixNode !== "function")
+            this.log(
+                "INSTANZ-PUFFER-NAME: r184-InstanceNode._createInstanceMatrixNode nicht gefunden (Vendor-Drift)",
+                "ERROR"
+            );
+        else if (!IN.__anazhName) {
             const matrixRoh = IN.prototype._createInstanceMatrixNode;
             IN.prototype._createInstanceMatrixNode = function (assignBuffer, builder) {
                 const n = matrixRoh.call(this, assignBuffer, builder);
@@ -22277,7 +22262,7 @@ class AnazhRealm {
         }
         // DIE SCHATTEN-DIÄT: r184 zeichnet jede Kaskade mit EINEM geteilten Schatten-Material je Licht
         // (isShadowPassMaterial), in das je Objekt die Knoten des Original-Materials gehängt werden. Sein Beobachter
-        // meldet über context.getShadow immer hasNode → jedes gebündelte Objekt refreshte je Kaskade und Frame
+        // meldet über context.getShadow immer hasNode → jedes Diät-Objekt refreshte je Kaskade und Frame
         // (gemessen 04.10. nach der Haupt-Diät: Blume 360, Geröll 224 von 1176 Refreshs je Frame). Trägt das
         // ORIGINAL die Diät (nur geteilte renderGroup-Uniforms), fährt der Schatten-Beobachter dieselbe EINE Prüfung.
         // Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
@@ -22300,6 +22285,73 @@ class AnazhRealm {
             };
             NM.__anazhSchattenDiaet = true;
         }
+        // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
+        // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
+        if (renderer._isHeadlessNull) return;
+        // DIE DRAW-WAHRHEIT IM INFO: r184 bucht einen Draw nur, wenn der Backend-Draw läuft — beim AUFNEHMEN
+        // eines RenderBundles; der Replay (`_renderBundle`, Versions-Treffer) zieht die aufgenommenen
+        // RenderObjects ohne Buchung. Die Region-Bundles tragen den ganzen statischen Bestand: HUD, Regler und
+        // Flugschreiber lasen an der Mess-Wiese 148 dc, wo die GPU 1 149 Befehle ausführte (02.10.). Der
+        // Replay bucht jetzt jeden aufgenommenen RenderObject wie der Backend-Draw (info.update).
+        if (!renderer.info || typeof renderer._renderBundle !== "function")
+            this.log("DRAW-WAHRHEIT: r184-Renderer._renderBundle nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhReplayBuchung) {
+            const replayRoh = renderer._renderBundle;
+            renderer._renderBundle = function (bundle, sceneRef, lightsNode) {
+                const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
+                const daten = this.backend.get(rb);
+                const replay = daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version;
+                const aus = replayRoh.call(this, bundle, sceneRef, lightsNode);
+                if (replay && daten.renderObjects)
+                    for (const ro of daten.renderObjects) {
+                        const dp = ro.getDrawParameters();
+                        if (dp) this.info.update(ro.object, dp.vertexCount, dp.instanceCount);
+                    }
+                return aus;
+            };
+            renderer.__anazhReplayBuchung = true;
+        }
+        // DIE BUNDLE-WAHRHEIT AM CHOKEPOINT `_renderScene` (r184 gelesen, vendor/three.webgpu.min.js): jeder Render —
+        // Hauptbild, jede Schatten-Kaskade, jeder Post-Pass — läuft durch ihn, auch verschachtelt (der Schatten startet
+        // am ersten Licht-Empfänger MITTEN im Hauptbild).
+        // (1) DER AUFNAHME-STAPEL: `_renderBundle` setzt `_currentRenderBundle` zum Aufnehmen und danach auf null, ohne
+        //     Stapel; `_renderObjectDirect` verfolgt einen Draw nur, solange der Zeiger steht, und der Replay refresht nur
+        //     Verfolgte. Der Schatten-Render nullte den Zeiger der Haupt-Aufnahme: gemessen 04.10. (echte GPU, Mess-
+        //     Wiese) 107 von 237 aufgenommenen Draws verfolgt, der Rest behielt die Kamera seiner Aufnahme. Jeder Render
+        //     sichert den Zeiger der äußeren Aufnahme und gibt ihn zurück; ein verschachtelter Render nimmt nie in sie auf.
+        // (2) KEIN BUNDLE UNTER EINEM OVERRIDE-STOFF: `renderObject` richtet den geteilten Override-Stoff (Schatten:
+        //     isShadowPassMaterial) je Objekt ein (alphaTest · alphaMap · Seite · Knoten des Originals); Knoten und Seite
+        //     setzt es danach zurück, alphaTest · alphaMap bleiben vom zuletzt direkt gezeichneten Werfer. Der Replay
+        //     refresht seine Bürger außerhalb davon — gegen diesen fremden Stoff-Zustand. Gemessen 04.10.: der Schatten-
+        //     Replay warf das ausgeschnittene Laub voll (81 % gleiche Pixel gegen den direkten Pfad, Rauschboden 90 %;
+        //     mit dem alphaTest eines vollen Werfers reproduzierbar 0,817 gegen 0,902), eine Neuaufnahme je Frame stellte
+        //     90 % her. Ein Render mit overrideMaterial sammelt keine Bundles: `_projectObject` liest eine BundleGroup als
+        //     Gruppe, solange `backend.beginBundle` fehlt. gate:vendor-anker pinnt beide Stellen und fährt den Block am
+        //     Schein-Renderer, gate:kamera-treue an einer Bühne am echten WebGPU mit Schatten.
+        if (typeof renderer._renderScene !== "function" || !renderer.backend)
+            this.log("BUNDLE-WAHRHEIT: r184-Renderer._renderScene nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhBundleWahrheit) {
+            const szeneRoh = renderer._renderScene;
+            const be = renderer.backend;
+            renderer._renderScene = function (scene, camera, useFrameBufferTarget) {
+                const aufnahme = this._currentRenderBundle;
+                const override = !!(scene && scene.overrideMaterial);
+                const eigen = Object.prototype.hasOwnProperty.call(be, "beginBundle");
+                const beginRoh = be.beginBundle;
+                this._currentRenderBundle = null;
+                if (override) be.beginBundle = undefined;
+                try {
+                    return szeneRoh.call(this, scene, camera, useFrameBufferTarget);
+                } finally {
+                    this._currentRenderBundle = aufnahme;
+                    if (override) {
+                        if (eigen) be.beginBundle = beginRoh;
+                        else delete be.beginBundle;
+                    }
+                }
+            };
+            renderer.__anazhBundleWahrheit = true;
+        }
         // DIE BUNDLE-REIHENFOLGE: r184 sammelt die Bundles eines Passes und führt sie erst in finishRender aus — NACH
         // allen direkten Draws. Der Feld-Pass („letzter Draw, nur Himmel-Pixel überleben") und das Wasser liefen so
         // VOR Pflanzen, Boden und Bauten (alles Bundles): der Feld-March traced JEDES Pixel gegen einen fast leeren
@@ -22307,25 +22359,78 @@ class AnazhRealm {
         // 04.10., echte GPU, Mess-Wiese). Die Bundles laufen jetzt sofort nach ihrer Aufnahme/ihrem Replay, die
         // direkten Draws danach — die Reihenfolge, die der Code behauptet. executeBundles leert den Pass-Zustand, der
         // gemerkte Zustand fällt mit (dasselbe Muster wie r184 nach dem Pass-Bruch). Array-Kameras behalten ihren Pfad.
-        if (typeof renderer._renderBundles === "function" && renderer.backend && renderer.backend.isWebGPUBackend) {
-            const bundlesRoh = renderer._renderBundles;
-            renderer._renderBundles = function (bundles, sceneRef, lightsNode) {
-                const aus = bundlesRoh.call(this, bundles, sceneRef, lightsNode);
-                const rc = this._currentRenderContext;
-                const d = rc ? this.backend.get(rc) : null;
-                if (
-                    d &&
-                    d.currentPass &&
-                    d.renderBundles &&
-                    d.renderBundles.length > 0 &&
-                    !this.backend._isRenderCameraDepthArray(rc)
-                ) {
-                    d.currentPass.executeBundles(d.renderBundles);
-                    d.renderBundles = [];
-                    d.currentSets = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+        // Nur das WebGPU-Backend nimmt Bundles auf (der WebGL2-Rückfall liest jede BundleGroup als Gruppe).
+        if (renderer.backend && renderer.backend.isWebGPUBackend) {
+            if (
+                typeof renderer._renderBundles !== "function" ||
+                typeof renderer.backend._isRenderCameraDepthArray !== "function"
+            )
+                this.log("BUNDLE-REIHENFOLGE: r184-Renderer._renderBundles nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!renderer.__anazhBundleReihenfolge) {
+                const bundlesRoh = renderer._renderBundles;
+                renderer._renderBundles = function (bundles, sceneRef, lightsNode) {
+                    const aus = bundlesRoh.call(this, bundles, sceneRef, lightsNode);
+                    const rc = this._currentRenderContext;
+                    const d = rc ? this.backend.get(rc) : null;
+                    if (
+                        d &&
+                        d.currentPass &&
+                        d.renderBundles &&
+                        d.renderBundles.length > 0 &&
+                        !this.backend._isRenderCameraDepthArray(rc)
+                    ) {
+                        d.currentPass.executeBundles(d.renderBundles);
+                        d.renderBundles = [];
+                        d.currentSets = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+                    }
+                    return aus;
+                };
+                renderer.__anazhBundleReihenfolge = true;
+            }
+        }
+        // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
+        // Originals auf den EINEN geteilten Schatten-Stoff; der Material-Setter zählt bei jedem Wechsel über 0 die
+        // Version hoch. Ausgeschnittene Blätter und volle Stämme wechseln sich ab → die Version sprang je Objekt, jeder
+        // Schatten-Bürger rechnete je Kaskade und Frame seinen ganzen Material-Schlüssel neu (getCacheKey ·
+        // getMaterialCacheKey) und prüfte seine Pipeline neu (gemessen 04.10., echte GPU, Mess-Wiese, Schattenpass
+        // direkt: 342 ms Schlüssel-Rechnung in 8 s, die Schatten-Pässe 1330 → 585 ms). Der Schatten-Stoff trägt jetzt je
+        // Objekt die Version des Original-Materials: ein Bürger prüft seinen Schlüssel genau dann, wenn SEIN Material
+        // sich änderte (auch dessen eigener alphaTest-Wechsel), der geteilte Setter zählt nichts mehr.
+        if (typeof renderer.renderObject !== "function")
+            this.log("SCHATTEN-STOFF: r184-Renderer.renderObject nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhSchattenStoff) {
+            const objektRoh = renderer.renderObject;
+            const still = new WeakSet();
+            renderer.renderObject = function (
+                object,
+                scene,
+                camera,
+                geometry,
+                material,
+                group,
+                lightsNode,
+                clip,
+                passId
+            ) {
+                const sm = scene ? scene.overrideMaterial : null;
+                if (sm && sm.isShadowPassMaterial === true && material && material.allowOverride === true) {
+                    if (!still.has(sm)) {
+                        Object.defineProperty(sm, "alphaTest", {
+                            configurable: true,
+                            get() {
+                                return this._alphaTest;
+                            },
+                            set(v) {
+                                this._alphaTest = v;
+                            },
+                        });
+                        still.add(sm);
+                    }
+                    sm.version = material.version;
                 }
-                return aus;
+                return objektRoh.call(this, object, scene, camera, geometry, material, group, lightsNode, clip, passId);
             };
+            renderer.__anazhSchattenStoff = true;
         }
     }
 
@@ -62226,11 +62331,13 @@ class AnazhRealm {
 
     // RENDERBUNDLES: EINE BundleGroup je Streu-/Platzier-Region; der statische Subbaum wird einmal
     // recorded und replayed (kein per-Frame-Encode je Draw). Dynamisches (Kreaturen/Wasser/Spieler) bleibt
-    // DRAUSSEN: im Replay leben nur Uniform-/Textur-Bindings, Attribute wie instanceMatrix frieren ein.
-    // Kill-Switch: `anazhRealm.state.useRegionRenderBundles=false` (+ Reload).
+    // DRAUSSEN: im Replay leben nur Uniform-/Textur-Bindings, Attribute wie instanceMatrix frieren ein. Die Bundles
+    // sind der EINE Weg (04.10. in EINER Welt gegen den direkten Pfad gemessen, echte GPU, Mess-Wiese: Render-CPU p50
+    // −1,1 ms im Stand, −0,3 ms im Gehen trotz ~0,8 Neuaufnahmen je Frame, +11 % gezeichnete Frames); ihre Wahrheit
+    // (Aufnahme-Stapel, kein Bundle unter einem Override-Stoff) hält `_configureRenderer` am Chokepoint `_renderScene`,
+    // die Klasse THREE.BundleGroup pinnt gate:vendor-anker.
     _archRegionBundleFor(regionKey) {
-        if (regionKey == null || this.state.useRegionRenderBundles === false) return null;
-        if (typeof THREE.BundleGroup !== "function") return null; // Vendor ohne Bundles → alter Pfad
+        if (regionKey == null) return null;
         // Nur das WebGPU-Backend implementiert die Bundle-API (beginBundle/finishBundle/addBundle) — auf dem
         // WebGL2-Rückfall wirft eine BundleGroup im Render-Loop. Klassen-Existenz ist blind; das Urteil fällt
         // am BACKEND. Headless: Bundles sind reine Gruppen-Knoten.
@@ -91011,25 +91118,45 @@ AnazhRealm._tuerOffenRad = function () {
 // DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
 // Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.
 // _configureRenderer; dort zählt die Diät des ORIGINAL-Materials am Objekt). `obs` = der Beobachter, `altNR`
-// seine Vendor-Bahn.
+// seine Vendor-Bahn. Sie läuft im direkten Draw UND im Bundle-Replay (r184 ruft needsRefresh je verfolgtem Bürger).
 //  (1) Instanz-Wächter: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH →
 //      Mutation → genau EIN Refresh.
 //  (2) Atlas-Wächter: lebende Canvas-Atlanten deklarieren sich an mat._anazhAtlasTexe → Bake → EIN Refresh.
-//  (3) DER BUNDLE-REPLAY: ein Objekt in einem gültigen statischen Bundle trägt unter der Diät nur geteilte
-//      renderGroup-Uniforms — r184 kürzt genau diesen Fall selbst ab (isBundle → false), aber erst NACH der
-//      renderId-Wand, die jedes Objekt mit eigenem Beobachter (eigene Geometrie = jede Pflanzen-Gruppe) je Render
-//      und Pass refresht: gemessen 04.10. (echte GPU, Mess-Wiese, Bundles ohne eine Neuaufnahme) 1813 von 1895
-//      Prüfungen je Frame, die Render-CPU 48 ms. Die renderGroup schreibt der erste echte Refresh des Renders,
-//      darum kürzt erst ein gestempelter Render ab; jeder echte Refresh zieht die Bundle-Version im Objekt-
-//      Datensatz nach (r184 tut das nur in equals(), das ein Einzel-Beobachter nie erreicht).
+//  (3) DIE KAMERA-TREUE: Beobachter UND geteilte Bindegruppe (render · frame: cameraViewMatrix ·
+//      cameraProjectionMatrix · uLodAuge) hängen in r184 am PROGRAMM (NodeBuilderState), und jedes Objekt mit eigener
+//      Geometrie hat sein eigenes (gemessen 04.10. an der Mess-Wiese: 218 von 234 Programmen sind Diät-Programme).
+//      Die renderId-Wand des Vendors refreshte darum JEDES Objekt in JEDEM Pass voll; die Bundle-Abkürzung (V18.518)
+//      ließ je Render nur das Stempel-Objekt refreshen, 98 von 99 Programmen zeigten die Kamera ihrer letzten
+//      Aufnahme. Die Diät schreibt je Programm und Render die geteilten Gruppen (_diaetGeteiltSchreiben: updateBefore,
+//      die render-/frame-Knoten, der Upload genau dieser Gruppen) und fragt dann equals() (Welt-Matrix · Material ·
+//      Geometrie · Lichter): voll nur, was sich änderte. Diät-Stoffe tragen nur geteilte renderGroup-Uniforms
+//      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
+//      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
+//      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
+AnazhRealm._diaetGeteiltSchreiben = function (rend, ro) {
+    const nbs = ro.getNodeBuilderState();
+    let k = nbs._anazhGeteilt;
+    if (!k) {
+        const knoten = [];
+        for (const n of nbs.updateNodes) if (n.getUpdateType() !== "object") knoten.push(n);
+        const gruppen = [];
+        for (const g of ro.getBindings()) {
+            const b0 = g.bindings && g.bindings[0];
+            if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
+        }
+        k = nbs._anazhGeteilt = { knoten, gruppen };
+    }
+    rend._nodes.updateBefore(ro);
+    if (k.knoten.length) {
+        const nf = rend._nodes.getNodeFrameForRender(ro);
+        for (const n of k.knoten) nf.updateNode(n);
+    }
+    if (k.gruppen.length) {
+        const alle = ro.getBindings();
+        for (const g of k.gruppen) rend._bindings._update(g, alle);
+    }
+};
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
-    const rend = frame && frame.renderer;
-    const rid = frame ? frame.renderId : -1;
-    const auf = () => {
-        if (rend) rend._anazhDiaetRid = rid;
-        if (ro && ro.bundle) obs.getRenderObjectData(ro).version = ro.bundle.version;
-        return true;
-    };
     const obj = ro && ro.object;
     if (obj && obj.isInstancedMesh === true) {
         const im = obj.instanceMatrix,
@@ -91038,7 +91165,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         const d = obs.getRenderObjectData(ro);
         if (d._anazhInstV !== v) {
             d._anazhInstV = v;
-            return auf();
+            return true;
         }
     }
     const mat =
@@ -91054,19 +91181,24 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         const d = obs.getRenderObjectData(ro);
         if (d._anazhAtlasV !== va) {
             d._anazhAtlasV = va;
-            return auf();
+            return true;
         }
     }
+    const rend = frame && frame.renderer;
     if (
-        rend &&
-        rend._anazhDiaetRid === rid &&
-        ro.bundle &&
-        ro.bundle.static === true &&
-        obs.renderObjects.has(ro) &&
-        obs.getRenderObjectData(ro).version === ro.bundle.version
+        !rend ||
+        obs.hasAnimation === true ||
+        !obs.renderObjects.has(ro) ||
+        obs.needsVelocity(rend) ||
+        ro.getNodeBuilderState().updateAfterNodes.length > 0
     )
-        return false;
-    return altNR.call(obs, ro, frame) ? auf() : false;
+        return altNR.call(obs, ro, frame);
+    const rid = frame.renderId;
+    if (obs.renderId !== rid) {
+        obs.renderId = rid;
+        AnazhRealm._diaetGeteiltSchreiben(rend, ro);
+    }
+    return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
 // einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +

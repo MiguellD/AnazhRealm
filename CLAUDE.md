@@ -196,7 +196,11 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     positionNode ist `positionLocal` schon instanziert (r184) — Höhen-Gewichte lesen `positionGeometry`.
 23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
     Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
-    ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines).
+    ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines). Ein Bundle
+    trägt nur, was sein Replay refresht: r184 hält `_currentRenderBundle` ohne Stapel (der Schatten-Render mitten in
+    der Aufnahme nullt ihn) und refresht Replay-Bürger außerhalb von renderObject (unter einem Override-Stoff gegen
+    dessen geteilten Zustand) — `_renderScene` stapelt den Zeiger und nimmt unter overrideMaterial nie auf, die Diät
+    schreibt je PROGRAMM die geteilten Gruppen (`gate:kamera-treue`, Bühne am echten WebGPU mit Schatten).
 24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
     je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
     was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.

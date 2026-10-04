@@ -173,6 +173,14 @@ const FORBIDDEN = [
     { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
     { token: '"@p:"', fiel: "Welle B" },
     { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
+    // DIE BUNDLE-WAHRHEIT (04.10.): die Region-Bundles sind der EINE Weg (gegen den direkten Pfad gemessen), ihr Replay
+    // trägt die Kamera über den Aufnahme-Stapel am Chokepoint `_renderScene` und die Diät je Programm. Gefallen: die
+    // Bundle-Abkürzung der Diät mit Render-Stempel (V18.518 — je Render schrieb nur das Stempel-Objekt die geteilte
+    // Gruppe), ihr Nachziehen aus welle-bild-wahrheit (8cf8cb5, nie integriert) und der Kill-Switch (ein Flag = ein
+    // zweiter Weg).
+    { token: "_anazhDiaetRid", fiel: "Bundle-Wahrheit — die Diät schreibt je Programm und Render, kein Stempel" },
+    { token: "_diaetGeteilteOffen", fiel: "Bundle-Wahrheit — das Nachziehen der Abkürzung (8cf8cb5) wird nie integriert" },
+    { token: "useRegionRenderBundles", fiel: "Bundle-Wahrheit — kein Kill-Switch, die Bundles sind der EINE Weg" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
