@@ -203,14 +203,49 @@ const PORTAL_RENDER_CONFIG = {
         ref: 12.0,
         hyst: 3.4,
         kindStages: { tree: [0, 1, 2], shrub: [1, 2], grass: [1, 2], flower: [0], rock: [0] },
-        // DAS BUDGET je Art × Stufe (04.10., echte GPU an der Mess-Wiese): was eine gelieferte Stufe kosten
-        // darf, als DATEN neben ihrer Stufen-Wahrheit. tree[1].blattKarte = die Kante der L1-Blattkarte in
-        // Blatt-Groessen (vorher das Literal 2,35 — zusammen mit ls 2,05 und dem Quadrat der Karte rasterte
-        // die L1-Krone 10,5x die Flaeche der L0-Klingen bei 1,7x ihrer Deckung: 162 Bildschichten, 8-12 ms
-        // GPU). deckung = das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss
-        // (Kartenflaeche x Atlas-Fuellung / Klingenflaeche — Wahrnehmung ~ n·s², FIX v29); gate:asset-
-        // contract misst es an gebauten L0/L1-Paaren und haelt es (die Budget-Wand).
-        budget: { tree: { 1: { blattKarte: 1.8, deckung: [0.8, 1.15] } } },
+        // DAS BUDGET je Art × Stufe (Studio-Vertrag B2c, 04.10.): was eine GELIEFERTE Stufe kosten darf, als
+        // DATEN neben ihrer Stufen-Wahrheit — fuer JEDE deklarierte Stufe JEDER Art eine Zeile:
+        //   tris     = Obergrenze der Dreiecke je Instanz (gebaut ueber die echte Bruecke, ueber alle Samen);
+        //   draws    = Obergrenze der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) =
+        //              Draws je Instanz-Gruppe und Pass;
+        //   schatten = die Stufe, deren Gestalt den Schatten wirft (L0-Baum wirft seine L1), oder false;
+        //   karte    = die Stufe IST die Studio-Karte (bakeImpostorAtlas aus L1, beim Host das Achsen-Quad mit
+        //              2 Dreiecken) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
+        //              karte ⇔ KIND_POLICY.impostor des Hosts).
+        // Herleitung aus dem Profi-Band (680k Dreiecke je Frame ueber alle Paesse, docs/analyse/perf-paritaet-
+        // baseline-v18432.md; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
+        // Fichte, 47,1k beim Strauch, mehr als die Fichte): die L1-Zeilen sind OBERGRENZEN, gegen die gebaut ist
+        // (tree[1] 10k: Nadel-Karten + jeder 2. Ring + Primaer-Wurzeln + schlanke Trauer-Klinge; shrub[1] 12k:
+        // Reisig-Schnitt) — die gebaute Geometrie fiel auf sie, nicht sie auf die Geometrie. tree[0] (das Nahbild,
+        // in dieser Welle unangetastet), grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr
+        // Band-Schnitt ist offen (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe
+        // und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt je Stufe streng,
+        // draws steigt nie). Die Kosten-Regler der L1-Krone wohnen in tree[1]: blattKarte (Kante der Laub-Karte in
+        // Blatt-Groessen), nadelKarte (Kante der Nadel-Karte in Nadel-Laengen), klinge (Segmente der Trauer-
+        // Klinge), deckung (das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss —
+        // Wahrnehmung ~ n·s², FIX v29; gate:asset-contract misst es an gebauten L0/L1-Paaren).
+        budget: {
+            tree: {
+                0: { tris: 230000, draws: 3, schatten: 1 },
+                1: {
+                    tris: 10000,
+                    draws: 3,
+                    schatten: 1,
+                    blattKarte: 1.8,
+                    nadelKarte: 3.5,
+                    klinge: 4,
+                    deckung: [0.8, 1.15],
+                },
+                2: { tris: 2, draws: 1, schatten: false, karte: true },
+            },
+            shrub: {
+                1: { tris: 12000, draws: 2, schatten: 1 },
+                2: { tris: 2, draws: 1, schatten: false, karte: true },
+            },
+            grass: { 1: { tris: 1700, draws: 1, schatten: false }, 2: { tris: 320, draws: 1, schatten: false } },
+            flower: { 0: { tris: 3600, draws: 2, schatten: 0 } },
+            rock: { 0: { tris: 1300, draws: 1, schatten: 0 } },
+        },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
     // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die
@@ -589,26 +624,19 @@ function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, co
     arr.push(g);
 }
 
-function superR(phi, m, n1, n2, n3, a, b) {
-    const t = (m * phi) / 4;
-    const p1 = Math.pow(Math.abs(Math.cos(t) / a), n2);
-    const p2 = Math.pow(Math.abs(Math.sin(t) / b), n3);
-    return Math.pow(p1 + p2, -1 / n1);
-}
-
-function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup) {
+function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, seg) {
     // DER GETEILTE SAMEN: die 30-Vert-Superformel-Blatt-KLINGE (Kontur + Quer-Mulde) lebt in
     // phyto-core.js (buildLeafBlades) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie-
     // REZEPTUR ist geteilt (identische superR-Kontur, cup, 14 Segmente, Basis). Divergenzen: das
     // Wind-Attribut-Schema (AnazhRealm aFlex/aPhase — Vorlage aWind/aCenter/aType, HIER angehängt)
     // und eine sub-mikron Float-Noise (≤1 ULP, ~1e-6 m; buildLeafBlades' Additions-Reihenfolge +
     // Math.hypot = AnazhRealms eingefrorene Arithmetik) → pixel-identisch, kein Look-Change. Alle
-    // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op. Fallback → Inline.
+    // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op. `seg` = Kontur-Segmente (ohne = 14).
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.buildLeafBlades === "function") {
         const _r = __core.buildLeafBlades(
             [{ pos: center, dir: dirOut, up: up, scale: scale, needle: false, sway: sway, phase: phase }],
-            { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp }
+            { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp, seg: seg }
         );
         if (_r && _r.count) {
             const g = new THREE.BufferGeometry();
@@ -639,59 +667,8 @@ function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, 
             return;
         }
     }
-    const right = vnorm(vcross(dirOut, up));
-    const u2 = vnorm(vcross(right, dirOut));
-    const seg = 14,
-        positions = [],
-        idx = [],
-        uvs = [];
-    for (let i = 0; i <= seg; i++) {
-        const s = i / seg;
-        const phi = lerp(0.0, Math.PI, s); // halber Umlauf -> Tropfen
-        const w = superR(phi, lp.m, lp.n1, lp.n2, lp.n3, lp.a, lp.b) * lp.wsc;
-        const along = s * scale;
-        const cupZ = -cup * (s - s * s) * scale;
-        const cl = vadd(vadd(vadd(center, vscl(dirOut, along)), vscl(right, -w * scale)), vscl(u2, cupZ));
-        const cr = vadd(vadd(vadd(center, vscl(dirOut, along)), vscl(right, w * scale)), vscl(u2, cupZ));
-        positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
-        uvs.push(0, s, 1, s);
-    }
-    for (let i = 0; i < seg; i++) {
-        const a0 = i * 2,
-            b0 = i * 2 + 1,
-            a1 = i * 2 + 2,
-            b1 = i * 2 + 3;
-        idx.push(a0, b0, a1, b0, b1, a1);
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    const n = g.attributes.position.count;
-    const aw = new Float32Array(n * 3),
-        ac = new Float32Array(n * 3),
-        at = new Float32Array(n),
-        cl = new Float32Array(n * 3);
-    const _lph = sway * 1.5 + center[0] * 0.6 + center[2] * 0.6,
-        _lom = clamp(2.6 - sway * 1.6, 0.5, 2.6);
-    for (let i = 0; i < n; i++) {
-        aw[i * 3] = sway;
-        aw[i * 3 + 1] = _lph;
-        aw[i * 3 + 2] = _lom;
-        ac[i * 3] = center[0];
-        ac[i * 3 + 1] = center[1];
-        ac[i * 3 + 2] = center[2];
-        at[i] = type;
-        cl[i * 3] = color.r;
-        cl[i * 3 + 1] = color.g;
-        cl[i * 3 + 2] = color.b;
-    }
-    g.setAttribute("aWind", new THREE.BufferAttribute(aw, 3));
-    g.setAttribute("aCenter", new THREE.BufferAttribute(ac, 3));
-    g.setAttribute("aType", new THREE.BufferAttribute(at, 1));
-    g.setAttribute("color", new THREE.BufferAttribute(cl, 3));
-    arr.push(g);
+    // Ohne Samen kein stiller Inline-Zwilling (die alte 14-Segment-Kopie kannte keine schlanke Klinge): lauter Bruch.
+    throw new Error("[phyto] pushLeaf: __phytoCore.buildLeafBlades fehlt (der Samen ist Pflicht)");
 }
 
 function pushNeedle(arr, base, dir, len, color, sway, phase, omega) {
@@ -715,74 +692,16 @@ function pushNeedle(arr, base, dir, len, color, sway, phase, omega) {
 
 function bakeLeafAtlas() {
     if (_leafAtlas) return;
-    // DER GETEILTE SAMEN: der Blatt-Atlas lebt in phyto-core.js (bakeLeafAtlasCanvas) — dieselbe
-    // EINE Quelle, die AnazhRealm liest. Ein Edit am Cluster-Rezept fliesst hierher UND nach
-    // AnazhRealm. cell3:'broadleaf' malt die 4 Breitblatt-Zellen byte-treu (gleiche mulberry32-
-    // Ziehungen); AnazhRealm nutzt cell3:'needle' (Nadel-Zelle) → beide behalten ihren Look.
-    // Fallback auf den Inline-Bau, falls der Samen (noch) nicht geladen ist.
-    let cv = null;
+    // DER GETEILTE SAMEN: der Blatt-Atlas lebt in phyto-core.js (bakeLeafAtlasCanvas) — EIN Maler, EIN Layout
+    // fuer Studio, Foundry-Worker und Host (Zellen 0..2 Breitblatt, 3 Nadel-Spray; die Karten routen ueber
+    // BLATT_ATLAS_BREIT/BLATT_ATLAS_NADEL). Der Worker hat kein document — er malt in eine OffscreenCanvas.
+    // Ohne Samen kein stiller Inline-Zwilling (der alte Inline-Maler mit vier Breitblatt-Zellen ist gefallen).
     const __core = typeof self !== "undefined" && self.__phytoCore;
-    if (__core && typeof __core.bakeLeafAtlasCanvas === "function") {
-        cv = __core.bakeLeafAtlasCanvas(typeof document !== "undefined" ? document : null, { cell3: "broadleaf" });
-    }
-    if (!cv) {
-        cv = __mkCanvas(1024, 256);
-        const x = cv.getContext("2d");
-        const rg = mulberry32(0xbeef); // eigener Strom!
-        for (let c = 0; c < 4; c++) {
-            const ox = c * 256 + 128,
-                oy = 150;
-            const n = 8 + (c & 1);
-            for (let i = 0; i < n; i++) {
-                const a = (i / n) * 6.2831 + rg() * 0.9,
-                    R = i === 0 ? 0 : 22 + rg() * 38;
-                const lx = ox + Math.cos(a) * R,
-                    ly = oy + Math.sin(a) * R * 0.72 - 18;
-                const rot = a + 1.5708 + (rg() - 0.5) * 0.8,
-                    L = 76 + rg() * 30,
-                    W = L * (0.46 + rg() * 0.16);
-                const v = 0.88 + rg() * 0.34; // FIX v37: Wert um Mittel ~1 (vorher 0.62-1.0 -> Cluster ~35% dunkler als flach getoente L0-Blaetter = Farbsprung an der Blende); Variation bleibt als gemalte Tiefe
-                x.save();
-                x.translate(lx, ly);
-                x.rotate(rot);
-                const g = x.createLinearGradient(0, -L * 0.5, 0, L * 0.5);
-                g.addColorStop(
-                    0,
-                    "rgba(" +
-                        Math.min(255, Math.round(250 * v)) +
-                        "," +
-                        Math.min(255, Math.round(255 * v)) +
-                        "," +
-                        Math.min(255, Math.round(238 * v)) +
-                        ",1)"
-                );
-                g.addColorStop(
-                    1,
-                    "rgba(" +
-                        Math.min(255, Math.round(206 * v)) +
-                        "," +
-                        Math.min(255, Math.round(220 * v)) +
-                        "," +
-                        Math.min(255, Math.round(186 * v)) +
-                        ",1)"
-                );
-                x.fillStyle = g;
-                x.beginPath();
-                x.moveTo(0, -L * 0.5);
-                x.quadraticCurveTo(W * 0.62, -L * 0.14, 0, L * 0.5); // Blattrand rechts
-                x.quadraticCurveTo(-W * 0.62, -L * 0.14, 0, -L * 0.5); // Blattrand links
-                x.closePath();
-                x.fill();
-                x.strokeStyle = "rgba(90,104,78,0.40)";
-                x.lineWidth = 2; // Mittelrippe
-                x.beginPath();
-                x.moveTo(0, -L * 0.42);
-                x.lineTo(0, L * 0.42);
-                x.stroke();
-                x.restore();
-            }
-        }
-    }
+    if (!__core || typeof __core.bakeLeafAtlasCanvas !== "function")
+        throw new Error("[phyto] bakeLeafAtlas: __phytoCore.bakeLeafAtlasCanvas fehlt (der Samen ist Pflicht)");
+    const doc = typeof document !== "undefined" ? document : { createElement: () => __mkCanvas(1, 1) };
+    const cv = __core.bakeLeafAtlasCanvas(doc);
+    if (!cv) throw new Error("[phyto] bakeLeafAtlas: der Maler lieferte keine Leinwand");
     _leafAtlas = new THREE.CanvasTexture(cv);
     _leafAtlas.minFilter = THREE.LinearMipmapLinearFilter;
     _leafAtlas.magFilter = THREE.LinearFilter;
@@ -793,21 +712,26 @@ function bakeLeafAtlas() {
     foliageMatTex.needsUpdate = true;
 }
 
-function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega, cell) {
+function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega, cell, nadel) {
     // DER GETEILTE SAMEN: die Blatt-Karten-GEOMETRIE (Quad + UV/Normale) lebt in phyto-core.js
     // (buildFoliageQuads) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie ist byte-
     // identisch; nur das WIND-Attribut-Schema divergiert (AnazhRealm: aFlex/aPhase — die Vorlage:
     // aWind/aCenter/aType), darum hängt der Wrapper die Vorlagen-Attribute HIER an (der Kern bleibt
-    // rein). opts.cell routet die exakte Atlas-Zelle (Vorlage: (_lq++)&3). Der Kern schneidet die Karte auf den Atlas-Kern
-    // (BLATT_ATLAS_BREIT — dieser Atlas ist broadleaf). Ohne Samen kein stiller Inline-Zwilling: lauter Bruch.
+    // rein). opts.cell routet die exakte Atlas-Zelle. Die Laub-Karte schneidet der Kern auf den Breitblatt-Kern
+    // (BLATT_ATLAS_BREIT); die Nadel-Karte (nadel = true) traegt die ganze Nadel-Zelle (BLATT_ATLAS_NADEL), ihre
+    // Kante kommt fertig in scale. Ohne Samen kein stiller Inline-Zwilling: lauter Bruch.
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.buildFoliageQuads === "function") {
-        const _r = __core.buildFoliageQuads([{ pos: pos, dir: dir, up: up, scale: scale, sway: sway, phase: phase }], {
-            leafColor: [color.r, color.g, color.b],
-            scale: 1,
-            cell: cell,
-            kern: __core.BLATT_ATLAS_BREIT.kern,
-        });
+        const _r = __core.buildFoliageQuads(
+            [{ pos: pos, dir: dir, up: up, scale: scale, sway: sway, phase: phase, needle: !!nadel }],
+            {
+                leafColor: [color.r, color.g, color.b],
+                scale: 1,
+                needleScale: 1,
+                cell: cell,
+                kern: __core.BLATT_ATLAS_BREIT.kern,
+            }
+        );
         if (_r && _r.count) {
             const g = new THREE.BufferGeometry();
             g.setAttribute("position", new THREE.Float32BufferAttribute(_r.positions, 3));
@@ -850,10 +774,12 @@ function growTreeNodes(P) {
     // (Ladefehler), gibt es ein graceful-leeres Ergebnis statt einer driftenden Kopie.
     var __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.growSkeleton === "function") {
+        // Baum-L1 traegt das Blatt-Budget der L0 (20000 statt 9000): die L1-Krone ist eine Teilmenge der L0-Blaetter
+        // (Stride _lf), so haengt ihre Deckung nie davon ab, ob eine Art die Kappe erreicht (Fichte/Tanne taten es).
         const __gsLBl = typeof __lod === "undefined" ? 0 : __lod;
         const __gsLB =
             (globalThis.PHYTO_LEAFBUDGET && globalThis.PHYTO_LEAFBUDGET[__gsLBl]) ||
-            (P.kind === "shrub" ? [4000, 1500, 1400] : [20000, 9000, 7000])[__gsLBl];
+            (P.kind === "shrub" ? [4000, 1500, 1400] : [20000, 20000, 7000])[__gsLBl];
         const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), rnd);
         if (__gsR && __gsR.segs && __gsR.segs.length) {
             P._trunkR = __gsR.trunkR;
@@ -931,7 +857,7 @@ function growRoot(strands, pos, dir, radius, len, depth, P, rt) {
         p = vadd(p, vscl(d, (len / STEPS) * rrange(0.82, 1.18)));
         rings.push({ c: p.slice(), r: lerp(radius, radius * 0.5, f), sway: 0, depth: 1 });
     }
-    strands.push(rings);
+    strands.push({ ringe: rings, tiefe: depth });
     const endR = rings[rings.length - 1].r,
         area = Math.pow(endR, P.delta);
     const nb = depth < 2 && rnd() < 0.72 ? rt.nb : rnd() < 0.4 ? 1 : 0; // arttypische Verzweigung
@@ -967,8 +893,14 @@ function emitRoots(P) {
     const geos = [];
     const colA = new THREE.Color(P.barkA).multiplyScalar(0.72),
         colB = new THREE.Color(P.barkB).multiplyScalar(0.58);
-    for (const rings of strands) {
-        buildTube(geos, rings, P, colA, colB, P._trunkR); // Wurzel tritt aus dem Strebepfeiler-Wulst aus -> fliessender Uebergang, keine Fuge noetig
+    for (const st of strands) {
+        // L1 traegt nur die PRIMAER-Straenge (H4): gewachsen wird das ganze Wurzelwerk (derselbe rnd()-Strom wie L0,
+        // FIX v35), gebaut nur die Tiefe 0 — die Verzweigungen liegen ab 12 m unter dem Pixel und im Boden.
+        if (__lod === 1 && st.tiefe > 0) continue;
+        // H1 auch hier: jeder 2. Ring, Erst- und Letzt-Ring bleiben.
+        const R = st.ringe,
+            ringe = __lod === 1 && R.length > 3 ? R.filter((_, i) => i % 2 === 0 || i === R.length - 1) : R;
+        buildTube(geos, ringe, P, colA, colB, P._trunkR); // Wurzel tritt aus dem Strebepfeiler-Wulst aus -> fliessender Uebergang, keine Fuge noetig
     }
     addMerged(geos, barkMat);
 }
@@ -1012,8 +944,13 @@ function emitTree(P) {
      fallen aus der Geometrie (das ist Pipe-Modell-treu: duenn = jung = fern unsichtbar), Blaetter werden per
      Index-Stride ausgeduennt (rng-frei, dieselbe Technik wie das Budget). Stamm, Winkel, Windphasen und Farben
      sind jetzt ueber L0/L1/L2 UND das Billboard dasselbe Individuum. */
-    if (__lod > 0 && P.kind !== "shrub") {
-        const rCut = (P._trunkR || 0.1) * (__lod === 1 ? 0.05 : 0.13);
+    // Der Radius-Schnitt der L1 (H2/H5, nach dem Wuchs): Laub 0,05·trunkR; Konifere und Trauerwuchs 0,08 (ihre
+    // duennen Aeste liegen unter den Nadel-Karten bzw. hinter dem Blatt-Vorhang); der Strauch 0,15 — seine L1
+    // ist die nahe Stufe, geschnitten wird nur das Reisig unter der Blatt-Masse. Die L2 bleibt, wie sie war.
+    if (__lod > 0 && !(P.kind === "shrub" && __lod === 2)) {
+        const kCut =
+            __lod === 2 ? 0.13 : P.kind === "shrub" ? 0.15 : P.conifer || (P.trop || 0) >= 0.55 ? 0.08 : 0.05;
+        const rCut = (P._trunkR || 0.1) * kCut;
         nodes.segs = nodes.segs.filter((s) => Math.max(s.r0, s.r1) >= rCut);
     }
     {
@@ -1082,6 +1019,9 @@ function emitTree(P) {
             for (const s of sl) rings.push({ c: s.p1, r: s.r1 * ffR(s.p1[1]), sway: s.sway1, depth: s.depth });
             rid = leadChild[rid];
         }
+        // L1 traegt jeden ZWEITEN Ring (H1, nach dem Wuchs — das Skelett und der rnd()-Strom bleiben die von L0,
+        // FIX v35): Erst- und Letzt-Ring bleiben, der Stammfuss wird danach vorangestellt und bleibt ganz.
+        if (__lod === 1 && rings.length > 3) rings = rings.filter((_, i) => i % 2 === 0 || i === rings.length - 1);
         return rings;
     }
     for (const rid of runs.keys()) {
@@ -1156,7 +1096,12 @@ function emitTree(P) {
     }
     const lc = vegFarbe(seasonTint),
         lc2 = vegFarbe(seasonAccent);
-    let useTexL = __lod === 1 && !P.conifer && P.kind !== "shrub" && (P.trop || 0) < 0.55; // FIX v32: Trauerwuchs (Weide) bleibt geometrisch — haengende Straehnen SIND ihr Look   // FIX v31: Mittelfeld-Laubbaeume -> Textur-Cluster (Nadeln bleiben Geometrie: billig + Cluster saehen falsch aus; Straeucher bleiben nah-chunky)
+    // DIE L1-KRONE (FIX v31/v32, H5 04.10.): Laub UND Nadel tragen L1 als KARTEN aus dem EINEN Atlas (Laub →
+    // Breitblatt-Zellen, Nadel → die Nadel-Zelle); der Trauerwuchs (Weide, trop ≥ 0,55) bleibt Klinge — die
+    // haengenden Straehnen SIND ihr Look —, aber eine schlanke (budget.tree[1].klinge Segmente statt 14); der
+    // Strauch ist die nahe Stufe (L0 wird auf L1 geklemmt) und bleibt Klinge.
+    const _b1 = PORTAL_RENDER_CONFIG.lod.budget.tree[1];
+    let useTexL = __lod === 1 && P.kind !== "shrub" && (P.trop || 0) < 0.55;
     if (useTexL && !_leafAtlas) {
         try {
             bakeLeafAtlas();
@@ -1172,32 +1117,55 @@ function emitTree(P) {
         console.log(
             "[phyto] L1-Bau: " +
                 (useTexL
-                    ? "Multi-Blatt-KARTEN"
-                    : P.conifer
-                      ? "Nadel-GEOMETRIE (Cluster an Koniferen bewusst aus)"
-                      : (P.trop || 0) >= 0.55
-                        ? "Trauerwuchs-GEOMETRIE (Straehnen-Look)"
-                        : "GEOMETRIE")
+                    ? P.conifer
+                        ? "Nadel-KARTEN"
+                        : "Multi-Blatt-KARTEN"
+                    : (P.trop || 0) >= 0.55
+                      ? "Trauerwuchs-KLINGEN (Straehnen-Look)"
+                      : "GEOMETRIE")
         );
     const folGeosTex = [];
     let _lq = 0;
-    // Die Kartenkante der L1-Krone liest das BUDGET (PORTAL_RENDER_CONFIG.lod.budget.tree[1]) — fehlt es,
-    // ist das ein Vertragsbruch, kein stiller Rueckfall auf ein Literal.
-    const _blattKarte = useTexL ? PORTAL_RENDER_CONFIG.lod.budget.tree[1].blattKarte : 0;
-    if (useTexL && !(_blattKarte > 0)) throw new Error("[phyto] lod.budget.tree[1].blattKarte fehlt");
+    // Kante, Zelle und Klinge der L1-Krone liest das BUDGET (PORTAL_RENDER_CONFIG.lod.budget.tree[1]) und den
+    // Atlas-Steckbrief des Kerns — fehlt eins, ist das ein Vertragsbruch, kein stiller Rueckfall auf ein Literal.
+    const _atl = self.__phytoCore;
+    const _blattKarte = useTexL && !P.conifer ? _b1.blattKarte : 0;
+    const _nadelKarte = useTexL && P.conifer ? _b1.nadelKarte : 0;
+    if (useTexL && !(P.conifer ? _nadelKarte > 0 : _blattKarte > 0))
+        throw new Error("[phyto] lod.budget.tree[1]." + (P.conifer ? "nadelKarte" : "blattKarte") + " fehlt");
+    const _klinge = __lod === 1 && P.kind !== "shrub" && (P.trop || 0) >= 0.55 ? _b1.klinge : undefined;
+    if (_klinge !== undefined && !(Number.isInteger(_klinge) && _klinge >= 2))
+        throw new Error("[phyto] lod.budget.tree[1].klinge fehlt");
     for (const l of nodes.leaves) {
         if (l.needle) {
             const col = vegFarbe(0x2e5526).lerp(lc, 0.2);
-            pushNeedle(
-                folGeos,
-                l.pos,
-                l.dir,
-                l.scale * (__lod === 1 ? 1.65 : __lod === 2 ? 2.6 : 1),
-                col,
-                l.sway,
-                l.phase,
-                l.omega
-            ); // FIX v38 (AUDIT-FUND): Nadel-Aggregation war NIE wahr — ls floss nur in Blattkarten, nie in pushNeedle: L1 verlor 64% Nadeln ohne Laengen-Ausgleich (Deckung ~0.36 -> duenne Mittelfeld-Fichten). Deckung ~ n*len^2: 0.36*1.65^2 ~ 0.98 — gehaltene Nadeln laenger, Krone dicht.
+            if (useTexL) {
+                // H5: die Nadel-KARTE — eine Nadel-Spray je gehaltener Nadelstelle, Kante = nadelKarte Nadel-Laengen
+                // (die Deckung gegen die L0-Nadeln haelt gate:asset-contract im Band budget.tree[1].deckung).
+                pushLeafClusterQuad(
+                    folGeosTex,
+                    l.pos,
+                    l.dir,
+                    l.up,
+                    l.scale * _nadelKarte,
+                    col,
+                    l.sway,
+                    l.phase,
+                    l.omega,
+                    _atl.BLATT_ATLAS_NADEL.zelle,
+                    true
+                );
+            } else
+                pushNeedle(
+                    folGeos,
+                    l.pos,
+                    l.dir,
+                    l.scale * (__lod === 2 ? 2.6 : 1),
+                    col,
+                    l.sway,
+                    l.phase,
+                    l.omega
+                ); // FIX v38: Deckung ~ n*len^2 — die gehaltenen Nadeln der L2 sind laenger, die Krone bleibt dicht.
         } else {
             const _tj = (() => {
                 const s = Math.sin(l.pos[0] * 127.1 + l.pos[1] * 311.7 + l.pos[2] * 74.7) * 43758.5453;
@@ -1218,10 +1186,13 @@ function emitTree(P) {
                     l.sway,
                     l.phase,
                     l.omega,
-                    _lq++ & 3
+                    _lq++ % _atl.BLATT_ATLAS_BREIT.zellen
                 );
             } // FIX v32: ALLE Blattstellen, 2 statt 28 Dreiecke. Die Kante kommt aus dem Budget (lod.budget.tree[1].blattKarte, 04.10.: 1,8 statt 2,35 — gemessen deckte die Krone 1,7x L0, die Atlas-Fuellung ist 0,16, nicht ~0,85)
-            else pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, P.leafShape, tint, 1, l.sway, l.phase, l.omega, 0.5);
+            else {
+                const lp = P.leafShape;
+                pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, lp, tint, 1, l.sway, l.phase, l.omega, 0.5, _klinge);
+            }
         }
     }
     addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
@@ -2391,7 +2362,7 @@ function deriveParamsPlant(pre) {
     const IR = mulberry32(((Math.floor(SEED) + 1) * 2246822519) >>> 0);
     const J = (a) => 1 + (IR() - 0.5) * 2 * a,
         O = (a) => (IR() - 0.5) * 2 * a; // Individuum pro Saat
-    const lf = __lod === 0 ? 1 : __lod === 1 ? (fx && fx.conifer ? 0.36 : 0.21) : 0.16,
+    const lf = __lod === 0 ? 1 : __lod === 1 ? (fx && fx.conifer ? 0.0265 : 0.21) : 0.16,
         ls =
             __lod === 0
                 ? 1

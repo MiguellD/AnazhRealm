@@ -59,26 +59,8 @@
             const a = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
             return vnorm(vcross(d, a));
         };
-        // 2D-Value-Noise (deterministischer Hash, seedfrei — für den Gnarl-Dick-Modulator).
-        const vn2 = (x, y) => {
-            const xi = Math.floor(x),
-                yi = Math.floor(y),
-                xf = x - xi,
-                yf = y - yi;
-            const h = (a, b) => {
-                let nH = (Math.imul(a, 1597) + Math.imul(b, 51749)) | 0;
-                nH = (nH << 13) ^ nH;
-                const nn = Math.imul(nH, nH);
-                const t = (Math.imul(nn, 15731) + 789221) | 0;
-                const m = (Math.imul(nH, t) + 1376312589) | 0;
-                return 1 - (m & 0x7fffffff) / 1073741824;
-            };
-            const u = xf * xf * (3 - 2 * xf),
-                v = yf * yf * (3 - 2 * yf);
-            const x1 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u,
-                x2 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
-            return (x1 + (x2 - x1) * v) * 0.5 + 0.5;
-        };
+        // 2D-Value-Noise des Gnarl-Dick-Modulators: DIESELBE `vn2` wie das Rinden-Gesetz unten (Modul-Funktion
+        // dieses Kerns, gehoben) — der byte-gleiche Inline-Zwilling ist gefallen.
 
         const segs = [],
             leaves = [];
@@ -379,43 +361,33 @@
         };
     }
 
-    // DER ATLAS-STECKBRIEF (04.10., echte GPU): was der Maler im broadleaf-Modus in eine Zelle setzt, als
-    // ZAHL — damit die Karte nur rastert, was der Atlas trägt. `kern` = halbe Ausdehnung des Clusters um die
-    // Zellmitte, als Anteil der halben Zelle (gemalt reicht Alpha>0 in allen vier Zellen höchstens bis
-    // 0,7148); `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (0,1403/0,1749/0,1692/0,1611). Gemessen:
-    // die L1-Laubkarten verwarfen 84 % ihrer Fragmente — der Rand jenseits `kern` ist reines Discard.
-    // Der Nadel-Modus (Zelle 2 und 3 bis an den Rand) hat keinen Kern < 1. gate:asset-contract malt den
-    // Atlas und hält beide Zahlen gegen den Maler (ein Maler-Wechsel ohne neuen Steckbrief ist ROT).
-    const BLATT_ATLAS_BREIT = { kern: 0.72, fuellung: 0.1614 };
+    // DER ATLAS-STECKBRIEF (04.10., echte GPU): was der Maler in eine Zelle setzt, als ZAHL — damit die
+    // Karte nur rastert, was der Atlas trägt. EIN Atlas, vier Zellen: 0..2 Breitblatt-Cluster (Laub-Karten
+    // routen `zelle % zellen`), 3 die Nadel-Spray (Nadel-Karten der Koniferen-L1). `kern` = halbe Ausdehnung
+    // um die Zellmitte als Anteil der halben Zelle (Breitblatt reicht Alpha>0 höchstens bis 0,7148 — die
+    // Laub-Karte schneidet auf ihn zu, gemessen verwarfen die ungeschnittenen Karten 84 % ihrer Fragmente);
+    // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (Breitblatt 0,1403/0,1749/0,1693, Nadel 0,2446). Die
+    // Nadel-Spray reicht bis an den Zellrand (kern 1, gemalt 0,9961) und wird auf ihre Zelle geschnitten — vorher
+    // blutete sie in Zelle 2. gate:asset-contract malt den Atlas und hält jede Zahl gegen den Maler.
+    const BLATT_ATLAS_BREIT = { zellen: 3, kern: 0.72, fuellung: 0.1615 };
+    const BLATT_ATLAS_NADEL = { zelle: 3, kern: 1, fuellung: 0.2446 };
 
-    // DAS NEUE KLEID Welle 1 — DER BLATT-ATLAS aus der Vorlage (`bakeLeafAtlas`, byte-treu).
-    // Der Atlas trägt NUR den WERT (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-
-    // Farbe (albedo = Vertex-Blatt × Atlas-Wert) — kein Doppel-Tönen. 4 Zellen: 0..2 =
-    // Breitblatt-Cluster (die Vorlage), 3 = Nadel-Spray (Wert-only, für Koniferen). Der
-    // Aufrufer übergibt `doc` (document) — Canvas ist eine Main-Thread-Ressource; im Worker
-    // wird der Atlas NICHT gemalt (nur die Geometrie), darum kein `doc` → null.
-    function bakeLeafAtlasCanvas(doc, opts) {
+    // DER BLATT-ATLAS — EINE Quelle für jeden Leser (Studio, Foundry-Worker, Host): er trägt NUR den WERT
+    // (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-Farbe (albedo = Vertex-Blatt × Atlas-Wert).
+    // Zellen 0..2 = Breitblatt-Cluster (die Vorlage), 3 = Nadel-Spray (Koniferen). `doc` ist alles mit
+    // createElement("canvas") — das document des Main-Threads oder die OffscreenCanvas-Hülle des Workers
+    // (foundry-core); ohne → null. Der broadleaf-Modus (vier Breitblatt-Zellen) ist gefallen: Laub und Nadel
+    // teilen EINEN Atlas, EIN Material, EINE Textur.
+    function bakeLeafAtlasCanvas(doc) {
         if (!doc || typeof doc.createElement !== "function") return null;
-        opts = opts || {};
-        // DIVERGENZ-AUFLÖSUNG (Vorlage `bakeLeafAtlas`): die Vorlage malt 4 BREITBLATT-Zellen,
-        // AnazhRealm braucht Zelle 3 als NADEL-Spray (seine Koniferen). `opts.cell3`:
-        //   'needle' (default → AnazhRealm unverändert) — 3 Breitblatt + 1 Nadel-Zelle.
-        //   'broadleaf' → 4 Breitblatt-Cluster wie die Vorlage (byte-treu).
-        // Der RNG: AnazhRealm erbt seinen bisherigen Strom (`_atlasRnd`), die Vorlage-Treue
-        // verlangt DENSELBEN Strom wie ihr `mulberry32(0xBEEF)` → im broadleaf-Modus (oder
-        // explizit via opts.mulberry) mulberry32; sonst _atlasRnd. So bleibt jeder Leser
-        // byte-identisch zu SEINER heutigen Ausgabe.
-        const cell3 = opts.cell3 || "needle";
-        const useMulberry = opts.mulberry != null ? opts.mulberry : cell3 === "broadleaf";
         const cv = doc.createElement("canvas");
         cv.width = 1024;
         cv.height = 256;
         const x = cv.getContext("2d");
         if (!x) return null;
-        const rg = useMulberry ? mulberry32(0xbeef) : _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG)
-        // Zellen 0..2 (bzw. 0..3 im broadleaf-Modus) — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
-        const broadCells = cell3 === "broadleaf" ? 4 : 3;
-        for (let c = 0; c < broadCells; c++) {
+        const rg = _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG; == mulberry32(0xBEEF))
+        // Zellen 0..2 — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
+        for (let c = 0; c < BLATT_ATLAS_BREIT.zellen; c++) {
             const ox = c * 256 + 128,
                 oy = 150;
             const n = 8 + (c & 1);
@@ -458,12 +430,16 @@
                 x.restore();
             }
         }
-        // Zelle 3 — Nadel-Spray (Wert-only) für Koniferen (die Vorlage macht Nadeln als
-        // Geometrie; AnazhRealm rendert einatlasig → eine Nadel-Zelle hält das eine Material).
-        // Im broadleaf-Modus (Vorlage-Treue) ist Zelle 3 bereits als Breitblatt gemalt.
-        if (cell3 !== "broadleaf") {
-            const ox = 3 * 256 + 128,
+        // Zelle 3 — Nadel-Spray (Wert-only) für die Koniferen-L1, auf IHRE Zelle geschnitten (die Striche
+        // reichen bis 176 px um die Mitte, die halbe Zelle misst 128 px).
+        {
+            const z0 = BLATT_ATLAS_NADEL.zelle * 256;
+            const ox = z0 + 128,
                 oy = 128;
+            x.save();
+            x.beginPath();
+            x.rect(z0, 0, 256, 256);
+            x.clip();
             const nn = 70;
             for (let i = 0; i < nn; i++) {
                 const a = (i / nn) * 6.2831 * 3.2 + rg() * 0.5,
@@ -486,6 +462,7 @@
                 x.stroke();
                 x.restore();
             }
+            x.restore();
         }
         return cv;
     }
@@ -496,8 +473,8 @@
     // sie in eine BufferGeometry + hängt sein Material an (das dieselben Attribute liest). Die
     // Attribut-Namen matchen AnazhRealms Laub-Material: position/normal/color/aFlex/aPhase/uv.
     // `leaves`: [{pos:[x,y,z], dir:[..], up:[..], scale, needle, sway, phase}] (aus growSkeleton).
-    // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3), kern (Atlas-Kern der
-    //          Breitblatt-Zellen, `BLATT_ATLAS_BREIT.kern` für den broadleaf-Atlas; ohne = 1, die ganze Zelle) }.
+    // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3), cell (erzwingt die Zelle),
+    //          kern (Atlas-Kern der Breitblatt-Zellen, `BLATT_ATLAS_BREIT.kern`; ohne = 1, die ganze Zelle) }.
     // Der Kern schneidet Quad UND UV um die Zellmitte gleich zu: jeder verbleibende Punkt liest dasselbe
     // Texel wie vorher (bildgleich), nur der leere Rand wird nicht mehr gerastert. Nadel-Karten bleiben ganz.
     function buildFoliageQuads(leaves, opts) {
@@ -545,10 +522,11 @@
             const r2 = [r[0] * ca - e1[0] * sa, r[1] * ca - e1[1] * sa, r[2] * ca - e1[2] * sa];
             const nrm = _vnorm(_vcross(r1, r2));
             const needle = !!l.needle;
-            // opts.cell erzwingt die Atlas-Zelle (die Vorlage routet cell=(_lq++)&3 pro Blatt);
-            // ohne opts.cell bleibt AnazhRealms Zyklus (needle→3, sonst li%3) unverändert.
-            const cell = opts.cell != null ? opts.cell : needle ? 3 : li % 3;
-            const k = needle ? 1 : kern;
+            // opts.cell erzwingt die Atlas-Zelle (die Studio-Karten routen sie je Blatt); ohne opts.cell der
+            // Zyklus des Steckbriefs (Nadel → ihre Zelle, sonst li % Breitblatt-Zellen).
+            const cell =
+                opts.cell != null ? opts.cell : needle ? BLATT_ATLAS_NADEL.zelle : li % BLATT_ATLAS_BREIT.zellen;
+            const k = needle ? BLATT_ATLAS_NADEL.kern : kern;
             const s = (l.scale || 0.5) * (needle ? nScale : bScale) * 0.5 * k;
             // k = 1: u0 = cell·0.25, u1 = u0 + 0.25, v 0..1 — exakt die alten Werte (Byte-Treue ohne Kern).
             const u0 = cell * 0.25 + 0.125 * (1 - k),
@@ -616,7 +594,8 @@
     // pro Blatt (das THREE-`computeVertexNormals`-Gesetz, ohne THREE).
     // `leaves`: [{pos, dir, up, scale, needle, sway, phase}] (aus growSkeleton).
     // `opts`: { leafColor:[r,g,b], scale (Multiplikator, Vorlage roh=1), cup (~0.5),
-    //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc} }.
+    //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc},
+    //           seg (Kontur-Segmente, ohne = 14 — die schlanke L1-Klinge des Trauerwuchses trägt weniger) }.
     function buildLeafBlades(leaves, opts) {
         opts = opts || {};
         const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
@@ -626,7 +605,8 @@
             opts.leafShape && typeof opts.leafShape === "object"
                 ? opts.leafShape
                 : LEAF_SHAPES[opts.leafShape] || LEAF_SHAPES.ovate;
-        const SEG = 14; // (SEG+1)·2 = 30 Verts, SEG·2 = 28 Tris je Blatt (Vorlage pushLeaf)
+        const SEG = opts.seg != null ? opts.seg : 14; // (SEG+1)·2 = 30 Verts, SEG·2 = 28 Tris je Blatt (Vorlage pushLeaf)
+        if (!(Number.isInteger(SEG) && SEG >= 2)) throw new Error("buildLeafBlades: seg muss eine ganze Zahl ≥ 2 sein");
         const VPL = (SEG + 1) * 2;
         const IPL = SEG * 6;
         const list = leaves || [];
@@ -1780,8 +1760,11 @@
         };
         const u = xf * xf * (3 - 2 * xf),
             v = yf * yf * (3 - 2 * yf);
-        const x1 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u,
-            x2 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
+        // Vier Gitter-Hashes statt sechs — dieselben IEEE-Operationen, byte-gleich (wie der Wuchs-Zwilling oben).
+        const h00 = h(xi, yi),
+            h01 = h(xi, yi + 1);
+        const x1 = h00 + (h(xi + 1, yi) - h00) * u,
+            x2 = h01 + (h(xi + 1, yi + 1) - h01) * u;
         return (x1 + (x2 - x1) * v) * 0.5 + 0.5;
     }
 
@@ -2066,7 +2049,8 @@
         treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         buildFoliageQuads: buildFoliageQuads,
-        BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Kern + Füllung) der broadleaf-Zellen
+        BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
+        BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
         superR: superR,
         LEAF_SHAPES: LEAF_SHAPES,
