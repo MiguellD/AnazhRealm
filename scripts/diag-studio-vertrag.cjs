@@ -249,6 +249,43 @@ function validateManifest(m) {
             for (const k in pl.rarity)
                 if (!(typeof pl.rarity[k] === "number" && pl.rarity[k] > 0 && pl.rarity[k] <= 1))
                     v.push(`B3: placement.rarity.${k} muss in (0,1] liegen`);
+        // B3b (Waldboden 04.10.) — DAS BODEN-GESETZ (placement.boden): jede Zeile ist eine Studio-Art DIESES Kerns,
+        // deren kind Stufen UND für jede Stufe eine Budget-Zeile trägt (die Nah-Streu der Welt baut sie über die
+        // Foundry) und die eine eigene Gestalten-Zeile hat (nie '*' = 16); ring ∈ {nah, wald}, dichte > 0,
+        // skala [min ≤ max] > 0, jedes Band ein Trapez [a ≤ b ≤ c ≤ d].
+        if (pl.boden) {
+            const L = (m.cfg && m.cfg.lod) || {};
+            const ksB = L.kindStages || {};
+            const BB = L.budget || {};
+            for (const id in pl.boden) {
+                const z = pl.boden[id] || {};
+                const pre = m.presets && m.presets[id];
+                if (!pre) {
+                    v.push(`B3b: placement.boden.${id} — kein Preset dieses Kerns`);
+                    continue;
+                }
+                const st = ksB[pre.kind];
+                if (!Array.isArray(st) || !st.length)
+                    v.push(`B3b: placement.boden.${id} — kind ${pre.kind} ohne kindStages`);
+                else
+                    for (const sv of st)
+                        if (!(BB[pre.kind] && BB[pre.kind][sv]))
+                            v.push(`B3b: placement.boden.${id} — Budget ${pre.kind}[${sv}] fehlt`);
+                if (!(BB.gestalten && Number.isInteger(BB.gestalten[id]) && BB.gestalten[id] >= 1))
+                    v.push(`B3b: placement.boden.${id} — keine eigene Gestalten-Zeile`);
+                if (z.ring !== "nah" && z.ring !== "wald") v.push(`B3b: placement.boden.${id}.ring muss nah|wald sein`);
+                if (!(typeof z.dichte === "number" && z.dichte > 0))
+                    v.push(`B3b: placement.boden.${id}.dichte muss Zahl > 0 sein`);
+                if (!Array.isArray(z.skala) || z.skala.length !== 2 || !(z.skala[0] > 0 && z.skala[0] <= z.skala[1]))
+                    v.push(`B3b: placement.boden.${id}.skala muss [min ≤ max] > 0 sein`);
+                for (const band of ["licht", "feucht", "ufer", "fels"]) {
+                    const t = z[band];
+                    if (t === undefined) continue;
+                    if (!Array.isArray(t) || t.length !== 4 || !(t[0] <= t[1] && t[1] <= t[2] && t[2] <= t[3]))
+                        v.push(`B3b: placement.boden.${id}.${band} muss ein Trapez [a ≤ b ≤ c ≤ d] sein`);
+                }
+            }
+        }
     }
     // SYNERGIE-WELLE (v1.2) — DIE EINE B4-FORM: die Regler-Tabellen reisen als MAP
     // PARAMS_BY_KIND ({ <kind>: rows }) — auch Ein-Kind-Kerne. Das flache PARAMS ist
@@ -706,7 +743,13 @@ function validateManifest(m) {
         presets: { testkaputt: { s: { a: 0.5 } }, "BÖSE ID": { kind: "tree" } },
         build: function () {},
         cfg: {
-            placement: { rarity: { x: 7 } },
+            placement: {
+                rarity: { x: 7 },
+                boden: {
+                    geist: { ring: "nah", dichte: 1, skala: [1, 2] },
+                    "BÖSE ID": { ring: "fern", dichte: 0, skala: [2, 1], licht: [0.5, 0.2, 1, 2] },
+                },
+            },
             lod: {
                 kindStages: { kaputt: [9], falschrum: [2, 1], tree: [0, 1, 2] },
                 budget: {
@@ -761,7 +804,7 @@ function validateManifest(m) {
         verhalten: { aktionen: { a: {} }, stimmung: { x: { aktionen: ["fremd"], alle: [1, 2] } } },
     });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Budget · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
@@ -778,6 +821,12 @@ function validateManifest(m) {
             bv.some((s) => s.includes("deckung muss")) &&
             bv.some((s) => s.includes("gestalten trägt keine")) &&
             bv.some((s) => s.includes("gestalten.eiche muss")) &&
+            bv.some((s) => s.includes("placement.boden.geist — kein Preset")) &&
+            bv.some((s) => s.includes("placement.boden.BÖSE ID — keine eigene Gestalten-Zeile")) &&
+            bv.some((s) => s.includes("placement.boden.BÖSE ID.ring muss")) &&
+            bv.some((s) => s.includes("placement.boden.BÖSE ID.dichte muss")) &&
+            bv.some((s) => s.includes("placement.boden.BÖSE ID.skala muss")) &&
+            bv.some((s) => s.includes("placement.boden.BÖSE ID.licht muss ein Trapez")) &&
             bvB.some((s) => s.includes("nadelKarte muss")) &&
             bvB.some((s) => s.includes("klinge muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&

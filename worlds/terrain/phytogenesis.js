@@ -555,6 +555,7 @@ function build() {
         const P = deriveParamsPlant(pre);
         if (P.kind === "flower") emitFlower(P);
         else if (P.kind === "grass") emitGrass(P);
+        else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P); // der Waldboden: dieselbe Tafel wie buildInstance
         else {
             const nodes = emitTree(P);
             console.log(
@@ -2824,6 +2825,87 @@ function buildForest() {
             "far"
         ); /* Straeucher gekachelt wie Gras -> frustum-gecullt (der zweite Dreiecks-Hebel) */
 
+    // 8) DER WALDBODEN (04.10.) — Farn · Schilf · Gestruepp · liegendes Totholz · Stumpf · stehendes Totholz nach dem
+    // EINEN Boden-Gesetz (PORTAL_RENDER_CONFIG.placement.boden, Auswerter __phytoCore.bodenGewicht): dieselben Zeilen,
+    // aus denen die Nah-Streu der Welt pflanzt (Labor = Welt). Ein eigener Hash-Strom — der RNG()-Strom bleibt
+    // unberuehrt, alles davor wuerfelt byte-gleich. Die Gestalten sind die Samen 1..V der Welt (budget.gestalten),
+    // nah die Stufe stages[0], fern stages[1], gekachelt wie Gras und Strauch. Zeilen mit labor:false (Blume, Geroell)
+    // traegt das Labor mit seinen eigenen Boden-Schichten oben.
+    let nW = 0;
+    {
+        const BODEN = (_PL && _PL.boden) || {};
+        const PC = self.__phytoCore;
+        const hb = mulberry32(((SEEDI ^ 0xb0de5eed) + 11) >>> 0);
+        const W0 = water();
+        // Ufer = m ueber dem Spiegel des naechsten Wassers (Meer · Teiche · Bach), null fern von jedem Wasser.
+        const uferAt = (x, z) => {
+            const g = forestGroundH(x, z);
+            let u = null;
+            const nimm = (wh) => {
+                const v = g - wh;
+                if (u === null || v < u) u = v;
+            };
+            if (seaward(x, z) > 0) nimm(SEA_LEVEL);
+            for (const p of [W0.pondLo, W0.pondHi]) if (Math.hypot(x - p.x, z - p.z) < p.Rb + 2) nimm(p.wh);
+            const sd = _streamDH(x, z);
+            if (sd[0] < W0.CW + 2) nimm(sd[1]);
+            return u;
+        };
+        const arten = [];
+        for (const id of Object.keys(BODEN)) {
+            const zl = BODEN[id];
+            if (!zl || zl.labor === false || !PRESETS[id] || !PC || typeof PC.bodenGewicht !== "function") continue;
+            const kind = PRESETS[id].kind;
+            const st = _KS[kind] && _KS[kind].length ? _KS[kind] : [0];
+            const V = Math.max(1, (_GEST && _GEST[id]) || 1);
+            const nah = [],
+                fern = [],
+                pl = [];
+            for (let g = 0; g < V; g++) {
+                nah.push(buildInstance(id, g + 1, st[0]));
+                fern.push(buildInstance(id, g + 1, st.length > 1 ? st[1] : st[0]));
+                pl.push([]);
+            }
+            const sk = Number.isFinite(SCALE[id]) ? SCALE[id] : 1;
+            arten.push({ id, zl, nah, fern, pl, V, welt: sk * (kind === "tree" ? TREE_SCALE_MUL : 1), zwei: st.length > 1 });
+        }
+        const STEP = 2;
+        for (let gx = -R; gx <= R; gx += STEP)
+            for (let gz = -R; gz <= R; gz += STEP) {
+                if (gx * gx + gz * gz > R * R) continue;
+                const x = gx + (hb() - 0.5) * STEP,
+                    z = gz + (hb() - 0.5) * STEP;
+                if (inCaveZone(x, z) || trailAt(x, z) < 3.0) continue;
+                const nass = waterSurfaceAt(x, z) !== null;
+                const u = {
+                    licht: lightAt(x, z),
+                    feucht: moistAt(x, z),
+                    fels: rockAt(x, z),
+                    hang: slopeAt(x, z).s,
+                    ufer: uferAt(x, z),
+                };
+                for (const a of arten) {
+                    if (nass && !a.zl.ufer) continue;
+                    const lam = a.zl.dichte * STEP * STEP * 0.01 * PC.bodenGewicht(a.zl, u);
+                    const n = Math.floor(lam + hb());
+                    for (let k = 0; k < n; k++) {
+                        const px = x + (hb() - 0.5) * STEP,
+                            pz = z + (hb() - 0.5) * STEP,
+                            s = a.welt * (a.zl.skala[0] + hb() * (a.zl.skala[1] - a.zl.skala[0])),
+                            rotY = hb() * 6.283;
+                        a.pl[Math.min(a.V - 1, Math.floor(hb() * a.V))].push({ x: px, y: forestGroundH(px, pz), z: pz, rotY, s });
+                        nW++;
+                    }
+                }
+            }
+        // Kachel-Art: das stehende Totholz (ring wald) reicht wie der Strauch (88 m), der Boden wie Gras (67 m).
+        for (const a of arten) {
+            const tk = a.zl.ring === "wald" ? "shrub" : "boden:" + a.id;
+            addTiled(a.nah, a.pl, tk, a.zwei ? "near" : "single");
+            if (a.zwei) addTiled(a.fern, a.pl, tk, "far");
+        }
+    }
+
     forestGroup.traverse((o) => {
         if (
             o.isMesh &&
@@ -2860,6 +2942,8 @@ function buildForest() {
             nF +
             " Straeucher=" +
             nS +
+            " Waldboden=" +
+            nW +
             " | DRAW-MESHES=" +
             drawMeshes +
             " | Lichtung(" +
@@ -4950,6 +5034,9 @@ init();
                       treeScaleMul: c.placement.treeScaleMul,
                       scale: Object.assign({}, c.placement.scale),
                       rarity: Object.assign({}, c.placement.rarity),
+                      // Das Boden-Gesetz (Waldboden 04.10.) reist mit — die Nah-Streu und die Fern-Schicht der Welt
+                      // lesen DIESELBEN Zeilen wie der Labor-Wald (ohne diese Zeile fiele es still weg).
+                      boden: c.placement.boden ? JSON.parse(JSON.stringify(c.placement.boden)) : undefined,
                   }
                 : null,
         };

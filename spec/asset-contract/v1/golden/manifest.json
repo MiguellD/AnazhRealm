@@ -1,10 +1,10 @@
 {
   "cv": 1,
-  "mintedCases": 77,
+  "mintedCases": 94,
   "files": {
-    "recipes.json": "a71f16558cafb427d9b21e375bf0136909546df41c8af57c009108019d5d3b09",
+    "recipes.json": "f14d472ecfc10c0e81dba83c9e491371cffe45a0eca04d4edb1f4e83cc06ecd3",
     "world-params.json": "a2fa75ab8ce5f2c6496b9b108b4bc4f2df7cf7560870c9f9972d3ce944193969",
-    "render-config.json": "01e4d6af9b679865240dfe04895d9982b6015696d09403957631d47b756d0deb",
+    "render-config.json": "40fd7718783b05d71340d55aef4b4c75a61ae88d10f5e33a9280f6a4f7340ff7",
     "eiche-s7-L0-summer.json": "0f6a1f2904e2b922c5ec0947b684dca2322d688ce8caaca53c6e45bfc60e0782",
     "eiche-s7-L1-summer.json": "da24c859f3c4e5913c8f9b4257ea130c55a940b76f7203bd3bd4701006e3d354",
     "eiche-s7-L2-summer.json": "20316fae3e9c6fc11e3eef6357d29c0e40c94261692f7e188a00d6a9401f24f1",
@@ -81,6 +81,23 @@
     "kristalle-s7-L0-summer.json": "11692c2f84a0fad5380e540905c648e929039d173b393525a07986a258f00d22",
     "blume-s7-L0-summer.json": "94365825d1a94e54d84e98b4b7894d4408ba32175e280a9f98d67ae77baef3f5",
     "strauch-s7-L0-summer.json": "1a73a6724055de85250526a3e5f983a48a14267581d9aa2ac87254780997a3ec",
-    "strauch-s7-L1-summer.json": "7588bdf1574e861d6d47da87b7be52b6e1522f5d88bd993266212d97b68a11af"
+    "strauch-s7-L1-summer.json": "7588bdf1574e861d6d47da87b7be52b6e1522f5d88bd993266212d97b68a11af",
+    "farn-s7-L0-summer.json": "6dd1e743ad69458187b746b15094e548944af7f8b5fb7907b4bac3bfd84fda8a",
+    "farn-s7-L1-summer.json": "8ef0ee745d7f5f09d500c39f501ecf530b6086fb2990fba57e263646511abe37",
+    "schilf-s7-L0-summer.json": "68f984e323a16e81ed0a201314264e38fa8bd8d6adf24e3aece480bb92e0a08a",
+    "schilf-s7-L1-summer.json": "5e6098c4834108c56ef92e29427e642c0faa1713ed5278048ecbf13b2639d563",
+    "gestruepp-s7-L0-summer.json": "e5c95aa555f43864b13b7f3110ec26b0b760245477abad74944a87264cf3ca30",
+    "gestruepp-s7-L1-summer.json": "f1028823395adfa75d8bd07cf5b103d2460945a210895d5d4b77d8022f8735fc",
+    "totstamm-s7-L0-summer.json": "a9391c80c22ee4e678863cd752050100ea6e9b289fdaffb0a1dfb468b27085e7",
+    "totstamm-s7-L1-summer.json": "95ed74753750e4b5894afefd308893c65b5f4f0ac9fe179a2c0e9461385f03cd",
+    "stumpf-s7-L0-summer.json": "203f1afab1d10ec282569e1b1b410d3b02e74d7e6252e5714042034885a5a6b3",
+    "stumpf-s7-L1-summer.json": "8a6a8e36c4327c3944e3b86f67b151abcb35df8302913abf762a9a776ec08c90",
+    "buche-s7-L0-summer.json": "8e6be6d1bd5db7aa215337496d0c2320b574b15d6859f82f11257b8cbbebde8e",
+    "buche-s7-L1-summer.json": "97b17e7063eaae9588e97de84748df19e49cc3974e3611b27f4d2822fde08d4b",
+    "karst-s7-L0-summer.json": "5404016c9858cc8d272e93f7c5ed1508596a8afdf6d4582bd54ad8610b510704",
+    "karst-s7-L1-summer.json": "a2508fd44baa85724b67e1a76d7420b83333ae5df2f090121094bd165716ae0c",
+    "totholz-s7-L0-summer.json": "c3667bc3376c7a8abd4c9b5ec245139e84230330bdeb4c1aeca9c7f9e4f0e959",
+    "totholz-s7-L1-summer.json": "6207087cf5e019e1e8bc912ed71ad7d8f47d12cd3f87ddb3cd04edfc982aa5ab",
+    "blume-s7-L2-summer.json": "7f45bb807eb5842f98f6f689099e3b7e37fb6f7feaeb1e096361ebd4cfd04370"
   }
 }
