@@ -33305,7 +33305,10 @@ class AnazhRealm {
             strip(0.0, 1.1, 0.045, 0.04, c, c2, 5);
             strip(1.57, 1.05, 0.042, 0.04, c, c2, 5);
         } else if (species.geom === "fels") {
-            // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen).
+            // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen). Gegen den Uhrzeigersinn von AUSSEN gesehen
+            // (die Normale zeigt nach außen): bis 04.10. zeigten alle acht nach innen — der Fels (Lambert, FrontSide)
+            // zeigte seine Innen-Rückwand im eigenen Schatten, schwarz (Werkbank, Mess-Wiese: jeder der 1067 Brocken; die
+            // Linse gate:streu-wahrheit prüft jede FrontSide-Art auf Außen-Normalen).
             const top = [0, 0.34, 0];
             const bot = [0, 0, 0];
             const mid = [
@@ -33319,8 +33322,8 @@ class AnazhRealm {
             for (let i = 0; i < 4; i++) {
                 const a = mid[i];
                 const b = mid[(i + 1) % 4];
-                tri(top, a, b, cTop, c, c);
-                tri(bot, b, a, cBot, c, c);
+                tri(top, b, a, cTop, c, c);
+                tri(bot, a, b, cBot, c, c);
             }
         } else if (species.geom === "spore") {
             // Winziger leuchtender Oktaeder (emissive → speist V17.0-Bloom).
@@ -33336,8 +33339,8 @@ class AnazhRealm {
             for (let i = 0; i < 4; i++) {
                 const a = mid[i];
                 const b = mid[(i + 1) % 4];
-                tri(top, a, b, c, c2, c);
-                tri(bot, b, a, c, c, c2);
+                tri(top, b, a, c, c, c2);
+                tri(bot, a, b, c, c2, c);
             }
         }
         const geo = new THREE.BufferGeometry();
@@ -33351,7 +33354,12 @@ class AnazhRealm {
 
     // Node-Material je Art (state._scatterMats): weiche Arten (wind:true) teilen die Gras-Wind-
     // positionNode; Sporen (emissive) schweben, UNLIT + hell → Bloom lässt sie glühen; sonst lit
-    // Lambert. Albedo = Vertex-Farbe + Welt-Noise-Variation. Ohne TSL: klassisches Lambert.
+    // Standard (rau, nicht-metallisch). Albedo = Vertex-Farbe + Welt-Noise-Variation.
+    // DER EINE HIMMEL FÜR DIE STREU (04.10.): die Welt trägt ihr Umgebungs-Licht nur als scene.environment (kein
+    // Ambient-/Hemi-Licht, Intensität 0); r184-Lambert liest die Umgebung nur als Spiegelung (BasicEnvironmentNode),
+    // nie als diffuse Einstrahlung — jeder Lambert-Stoff war im Schatten SCHWARZ (Fels, Farn, Schilf, Blumen,
+    // Gestrüpp: 13 Stoffe, 133 Gruppen an der Mess-Wiese). Standard mit Rauheit 1 liest den Himmel wie jeder Stoff
+    // der Welt.
     _scatterMaterial(species) {
         if (!this.state._scatterMats) this.state._scatterMats = new Map();
         const cache = this.state._scatterMats;
@@ -33373,9 +33381,11 @@ class AnazhRealm {
                 // Pollen weich (1.15) → Pollen ist warmes Schweben, kein Glühwurm.
                 mat.colorNode = vec4(vcol.mul(float(species.emissiveBoost || 1.7)), float(1.0));
                 this._applyScatterMotion(mat, species, TSL);
-            } else if (TSL && typeof THREE.MeshLambertNodeMaterial === "function") {
-                mat = new THREE.MeshLambertNodeMaterial({
+            } else if (TSL && typeof THREE.MeshStandardNodeMaterial === "function") {
+                mat = new THREE.MeshStandardNodeMaterial({
                     side: species.wind ? THREE.DoubleSide : THREE.FrontSide,
+                    roughness: 1,
+                    metalness: 0,
                 });
                 const { vec4, vec3, float, attribute, max } = TSL;
                 const vcol = attribute("color", "vec3");
@@ -33395,10 +33405,10 @@ class AnazhRealm {
                 mat.colorNode = vec4(albedo, float(1.0));
                 if (species.wind) this._applyScatterMotion(mat, species, TSL);
             } else {
-                mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
+                mat = new THREE.MeshStandardMaterial({ color: fallbackHex, side: THREE.DoubleSide, roughness: 1 });
             }
         } catch {
-            mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
+            mat = new THREE.MeshStandardMaterial({ color: fallbackHex, side: THREE.DoubleSide, roughness: 1 });
         }
         // OBSERVER-DIÄT: die Streu-Graphen (auch deko-fernfeld — derselbe
         // Chokepoint) hängen nur an geteilten Wind-Uniforms + Attributen.
@@ -63069,7 +63079,13 @@ class AnazhRealm {
                     g.translate(0, -0.5, 0); // Ursprung = OBERKANTE (top-anchored)
                     return g;
                 })());
-            const mat = this._archFundMat || (this._archFundMat = new THREE.MeshLambertMaterial({ color: 0x7a7168 })); // Bruchstein-Grau
+            const mat =
+                this._archFundMat ||
+                (this._archFundMat = new THREE.MeshStandardNodeMaterial({
+                    color: 0x7a7168,
+                    roughness: 1,
+                    metalness: 0,
+                })); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz)
             const mesh = AnazhRealm._instanzMesh(geo, mat, 128);
             mesh.count = 0;
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht

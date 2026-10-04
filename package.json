@@ -153,6 +153,7 @@
         "gate:apparat": "node scripts/diag-apparat.cjs --selftest && node scripts/diag-apparat.cjs && node scripts/diag-vendor-anker.cjs",
         "gate:leistungs-vertrag": "node scripts/diag-leistungs-vertrag.cjs",
         "gate:vendor-anker": "node scripts/diag-vendor-anker.cjs --selftest && node scripts/diag-vendor-anker.cjs",
+        "gate:streu-wahrheit": "node scripts/diag-streu-wahrheit.cjs --selftest && node scripts/diag-streu-wahrheit.cjs",
         "gate:konsum-bilanz": "node scripts/diag-konsum-bilanz.cjs",
         "gate:betriebsgesetz": "node scripts/diag-betriebsgesetz.cjs",
         "gate:taille": "node scripts/diag-taille.cjs",

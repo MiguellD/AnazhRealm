@@ -60,6 +60,11 @@ jobs:
             - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
               run: npm run gate:source-probes
 
+            - name: Streu-Wahrheit (Außen-Normalen jeder einseitigen Art, Streu-Stoffe lesen den EINEN Himmel)
+              # GPU-frei, reines Node: baut jede Klein-Streu-Art über den Stamm-Bauplan und prüft die Flächen-Normalen;
+              # _scatterMaterial baut kein Lambert (r184-Lambert liest scene.environment nie diffus — schwarz im Schatten).
+              run: npm run gate:streu-wahrheit
+
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
               # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
