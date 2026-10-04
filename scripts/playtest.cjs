@@ -68,6 +68,26 @@ async function gatherInitialFinalState(page) {
         } catch (e) {
             grokRenderProbe = "ERR:" + (e && e.message);
         }
+        // DER SZENEN-ZENSUS (Band-Linse): jedes Renderable der Szene trägt seine Täter-Klasse (AnazhRealm#_taeterKlasse,
+        // dieselbe wie Draw-Zähler, Flugschreiber und Albedo-Sicht) — ein namenloses Objekt heißt UNBENANNT:<type> und
+        // bricht die Band-Linse der echten GPU (`werkbank band`).
+        const szenenZensus = { renderables: 0, klassen: 0, unbenannt: [] };
+        {
+            const klassen = new Set();
+            r.state.scene.traverse((o) => {
+                if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return;
+                szenenZensus.renderables++;
+                const k = r._taeterKlasse(o);
+                klassen.add(k);
+                if (k.startsWith("UNBENANNT:") && szenenZensus.unbenannt.length < 8) {
+                    const kette = [];
+                    for (let q = o; q && q !== r.state.scene && kette.length < 4; q = q.parent)
+                        kette.push(q.type + (q.name ? "(" + q.name + ")" : ""));
+                    szenenZensus.unbenannt.push(k + " < " + kette.join(" < "));
+                }
+            });
+            szenenZensus.klassen = klassen.size;
+        }
         return {
             terrainEverGenerated: r.state.terrainEverGenerated,
             chunkMapSize: r.state.chunkMap?.size || 0,
@@ -87,6 +107,7 @@ async function gatherInitialFinalState(page) {
             grokLastSpoke: r.state.grok?.lastSpoke || 0,
             grokRenderProbe,
             grokRenderEmptyGuard,
+            szenenZensus,
         };
     });
 }
@@ -125,6 +146,12 @@ function checkInitialState(ctx) {
         `playerY=${finalState.playerY?.toFixed(2)}`
     );
     check("Kreaturen gespawnt", finalState.creatures >= 5, `creatures=${finalState.creatures}`);
+    check(
+        "Szenen-Zensus (Band-Linse): jedes Renderable trägt seine Täter-Klasse — kein UNBENANNT",
+        finalState.szenenZensus.renderables > 0 && finalState.szenenZensus.unbenannt.length === 0,
+        `renderables=${finalState.szenenZensus.renderables} klassen=${finalState.szenenZensus.klassen} ` +
+            `unbenannt=[${finalState.szenenZensus.unbenannt.join(" · ")}]`
+    );
     check(
         "Fliegende Inseln gespawnt",
         finalState.floatingIslands >= 1,
