@@ -28467,8 +28467,14 @@ class AnazhRealm {
                                     const _v0 = _Ta.floor(_fV);
                                     const _fb = _Ta.fract(_fV);
                                     const _v1 = _Ta.mod(_v0.add(_Ta.float(1.0)), _V);
-                                    const _uvA = _Ta.vec2(_uv.x, _uv.y.add(_v0).div(_V));
-                                    const _uvB = _Ta.vec2(_uv.x, _uv.y.add(_v1).div(_V));
+                                    // Die Ansichten liegen Kante an Kante: die Unterkante (Stammfuß) der Ansicht v+1 grenzt an die
+                                    // Oberkante der Ansicht v. Ohne Klemme las der bilineare Filter am Quad-Rand einen halben Mip-Texel
+                                    // der Nachbar-Ansicht (Echt-GPU 04.10.: ein Stamm-Strich über jeder Krone). Die Klemme hält einen
+                                    // halben Texel der gröberen der zwei gemischten Stufen Abstand (≈ 1 fwidth der Ansichts-Höhe).
+                                    const _halb = _Ta.fwidth(_uv.y).clamp(0.0, 0.25);
+                                    const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
+                                    const _uvA = _Ta.vec2(_uv.x, _vIn.add(_v0).div(_V));
+                                    const _uvB = _Ta.vec2(_uv.x, _vIn.add(_v1).div(_V));
                                     const _samp = _Ta.mix(
                                         _at.mapNode.sample(_uvA).depth(_schicht),
                                         _at.mapNode.sample(_uvB).depth(_schicht),

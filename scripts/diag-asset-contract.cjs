@@ -26,7 +26,7 @@ function parseName(f) {
 // DER KARTEN-RUNDLAUF (W6, Karten-Gesetz in phyto-core): je Fall (Art, Same) bäckt das Studio die Karte, der Codec
 // kodiert sie zur Atlas-Schicht (BC1-sRGB-Albedo mit deckungstreuen Mips, BC5-Normale auf 1/normalTeiler) und
 // dekodiert sie zurück. Die Wand: Alpha an der Schwelle bitgleich · Albedo-PSNR ≥ 32 dB (opake Texel) · Normalwinkel
-// im Mittel ≤ 4° · Mip-Deckung jeder Stufe = Stufe 0 ± 3 % · die lineare Kronenfarbe der als sRGB dekodierten Schicht
+// im Mittel ≤ 4° · Mip-Deckung jeder Stufe = Stufe 0 ± 3 % · Schicht ≤ 0,25 MiB · die lineare Kronenfarbe der als sRGB dekodierten Schicht
 // = Studio-Eingang ± 3 % (die Blick-Tour sah die linearen Bytes als sRGB gelesen: Laub 0,12 → 0,013, die Krone schwarz).
 const KARTEN_FAELLE = [
     ["eiche", 1],
@@ -40,6 +40,8 @@ function kartenUrteil(m) {
     if (m.alphaFehl !== 0) aus.push(`Alpha an der Schwelle nicht bitgleich (${m.alphaFehl} Texel)`);
     if (!(m.psnr >= 32)) aus.push(`Albedo-PSNR ${(m.psnr || 0).toFixed(2)} dB < 32`);
     if (!(m.winkelMittel <= 4)) aus.push(`Normalwinkel Ø ${(m.winkelMittel || 0).toFixed(2)}° > 4°`);
+    // das Karten-Budget: eine Schicht (Albedo + Normale, alle Stufen) kostet höchstens 0,25 MiB — Karten-MB ≤ Zellen × 0,25
+    if (!(m.bytes <= 0.25 * 1048576)) aus.push(`Schicht ${((m.bytes || 0) / 1048576).toFixed(3)} MiB > 0,25 MiB`);
     const d = m.deckung || [];
     if (!d.length || d.some((x) => !(Math.abs(x - d[0]) <= 0.03 * d[0])))
         aus.push(`Mip-Deckung ${d.map((x) => x.toFixed(4)).join("/")} weicht > 3 % von Stufe 0 ab`);
@@ -426,11 +428,13 @@ function deckungsUrteil(paare, band, at) {
                     farbe: erst.farbe && { ein: erst.farbe.ein, aus: erst.farbe.ein.map((v) => v * 0.11) },
                 })
             ).some((x) => x.startsWith("Kronen-Farbe"));
+        // die rgba8-Schicht (1,5 MiB: Albedo 1 MiB + rg8-Normale) sprengt das BC-Budget
+        const s4 = kartenUrteil(Object.assign({}, erst, { bytes: 1.25 * 1048576 })).some((x) => x.startsWith("Schicht"));
         console.log(
             `Selbsttest Karten-Linse: gestörte BC1-Albedo wird rot ${s1 ? "✅" : "❌"} · Box-Mip sprengt die Deckungs-Wand ${s2 ? "✅" : "❌"} · ` +
-                `linear-als-sRGB (Blick-Tour: 0,12 → 0,013) wird rot ${s3 ? "✅" : "❌"}`
+                `linear-als-sRGB (Blick-Tour: 0,12 → 0,013) wird rot ${s3 ? "✅" : "❌"} · 1,25-MiB-Schicht sprengt das Budget ${s4 ? "✅" : "❌"}`
         );
-        if (!s1 || !s2 || !s3) fails.push("Selbsttest der Karten-Linse feuert nicht");
+        if (!s1 || !s2 || !s3 || !s4) fails.push("Selbsttest der Karten-Linse feuert nicht");
     } else fails.push("Karten-Rundlauf lief nicht");
 
     console.log("=== ASSET-VERTRAG v1 — Konformanz-Gate ===");

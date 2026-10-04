@@ -116,8 +116,8 @@ async function driveImpostor(page) {
                 };
                 // drei Instanzen über BEIDE Slot-Chokepoints: Streu (zwei Arten, Region 3,4) + ein gesetzter Eintrag
                 const vor = new Set(r.state.archInstanceGroups ? r.state.archInstanceGroups.keys() : []);
-                r._scatterInstanceAdd("fscatter:eiche:1:2", 10, 0, 10, 0.3, 1.1, null, "3,4", flat1);
-                r._scatterInstanceAdd("fscatter:fichte:1:2", 20, 0, 10, 0.7, 0.9, null, "3,4", flat2);
+                const sE = r._scatterInstanceAdd("fscatter:eiche:1:2", 10, 0, 10, 0.3, 1.1, null, "3,4", flat1);
+                const sF = r._scatterInstanceAdd("fscatter:fichte:1:2", 20, 0, 10, 0.7, 0.9, null, "3,4", flat2);
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
                 const neu = [...r.state.archInstanceGroups.keys()].filter((k) => !vor.has(k));
@@ -131,8 +131,10 @@ async function driveImpostor(page) {
                 out.gruppen = {
                     neu,
                     karten,
-                    zellen: [0, 1, 2].map((i) => slot(i)[0]),
-                    rahmen: [0, 1, 2].flatMap((i) => slot(i).slice(1, 3)),
+                    // die Slots, die DIESE Probe belegt hat (die Welt kann die Gruppe schon füllen)
+                    zellen: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].map((i) => slot(i)[0]),
+                    rahmen: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].flatMap((i) => slot(i).slice(1, 3)),
+                    slotGruppen: [sE[0].key, sF[0].key, entry.instSlots[0].key],
                     erwartet: [l1.zelle, l2.zelle, l1.zelle],
                     erwartetRahmen: [...l1.rahmen, ...l2.rahmen, ...l1.rahmen],
                     instanziert: !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4),
@@ -406,6 +408,8 @@ async function kleberProbe(page, fmtWunsch) {
         const G = A.gruppen;
         if (G.karten.length !== 1)
             errs.push(`A: ${G.karten.length} Karten-Gruppen statt EINER (${G.karten.slice(0, 4).join(" · ")})`);
+        if (!G.slotGruppen.every((k) => k === "impostor#fimp:atlas"))
+            errs.push(`A: die Probe-Slots liegen nicht in der Atlas-Gruppe (${G.slotGruppen.join(" · ")})`);
         if (!G.instanziert) errs.push("A: aKarte ist kein Instanz-vec4 der Karten-Gruppe");
         if (!(G.vertexPuffer <= 8))
             errs.push(`A: die Karten-Pipeline trägt ${G.vertexPuffer} Vertex-Puffer (WebGPU-Grenze 8): ${G.attribute.join(" · ")}`);
