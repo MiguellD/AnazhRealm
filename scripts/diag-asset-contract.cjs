@@ -62,14 +62,19 @@ function meshDiff(tag, gold, live) {
     return null;
 }
 
-// DIE BUDGET-WAND (04.10., echte GPU an der Mess-Wiese): die L1-Laubkarten von Eiche/Birke rasterten 10,5x
-// die Fläche der L0-Klingen desselben Baums (162 Bildschichten, 8-12 ms GPU), weil die Karte die leere
-// Atlas-Zelle mitschleppte und ihre Kante (2,35 Blatt-Größen) die Krone 1,7x bedeckte. Zwei Urteile, rein:
-//  (A) STECKBRIEF — der gemalte broadleaf-Atlas passt in den deklarierten Kern (Alpha>0 nie jenseits `kern`,
-//      sonst schnitte der Zuschnitt Blätter ab) und seine Füllung ist die deklarierte (±0,01).
-//  (D) DECKUNG — gebaute L1-Kartenfläche × Kern-Füllung / gebaute L0-Klingenfläche liegt im Budget-Band
-//      (die Karte ist auf den Kern zugeschnitten: Kern-Füllung = fuellung / kern², die Zell-Füllung im Quadrat)
-//      (render-config lod.budget.tree[1].deckung), je Art × Samen × Saison.
+/// DIE BUDGET-WAND (04.10., echte GPU an der Mess-Wiese) — der KONSUM des Budgets (render-config lod.budget,
+// Studio-Vertrag B2c), gelesen NACH dem Transport aus dem get-book-Umschlag:
+//  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle
+//      plus jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt) und gegen ihre Zeile gehalten:
+//      Dreiecke ≤ tris, Sippen (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) ≤ draws. Rot nennt den
+//      Täter: `tree[1] weide-s12345-L1-summer: 10204 Dreiecke > 10000`. Die Karten-Stufe (karte) ist kein
+//      Gitter — ihre L2-Geometrie wird nicht geliefert (die Karten-Linse in gate:studio-vertrag hält das).
+//  (A) STECKBRIEF — der gemalte EINE Blatt-Atlas passt in die deklarierten Kerne (Alpha>0 nie jenseits `kern`)
+//      und seine Füllungen sind die deklarierten (±0,01): Breitblatt-Zellen und Nadel-Zelle.
+//  (D) DECKUNG — die gebaute L1-Krone bedeckt die L0-Krone desselben Baums im Band budget.tree[1].deckung:
+//      Laub-Karte (Fläche × Kern-Füllung / Klingen-Fläche; Kern-Füllung = fuellung / kern²), Nadel-Karte
+//      (Cauchy: die mittlere Projektion eines Nadel-Rohrs ist Oberfläche/4, die einer Karte Fläche × Füllung/2
+//      → 2 · Fläche × Füllung / Rohr-Fläche) und Trauer-Klinge (Klingen-Fläche L1 / L0), je Art × Samen × Saison.
 const dekodiere = (b64, Typ) => {
     const b = Buffer.from(b64, "base64");
     return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
@@ -95,24 +100,71 @@ function flaeche(meshes, kind) {
     }
     return a;
 }
-function steckbriefUrteil(atlas, sb) {
+// Dreiecke und Sippen einer gebauten Antwort (Beipack ohne position zählt nicht).
+function kosten(meshes) {
+    const ms = (meshes || []).filter((m) => m.attrs && m.attrs.position);
+    let tris = 0;
+    const sippen = new Set();
+    for (const m of ms) {
+        tris += m.index
+            ? Buffer.from(m.index, "base64").length / 12
+            : Buffer.from(m.attrs.position.b64, "base64").length / 36;
+        const form = Object.keys(m.attrs)
+            .sort()
+            .map((k) => k + ":" + m.attrs[k].itemSize)
+            .join(",");
+        sippen.add(m.kind + "|" + JSON.stringify(m.mat || null) + "|" + (m.index ? "i" : "x") + "|" + form);
+    }
+    return { tris, sippen: sippen.size };
+}
+function kostenUrteil(messungen, budget) {
     const v = [];
-    if (!sb || !(sb.kern > 0) || !(sb.fuellung > 0)) return ["Steckbrief BLATT_ATLAS_BREIT fehlt"];
-    atlas.ext.forEach((e, c) => {
-        if (e > sb.kern) v.push(`Zelle ${c}: Alpha reicht bis ${e.toFixed(4)} > kern ${sb.kern}`);
-    });
-    const f = atlas.fill.reduce((s, x) => s + x, 0) / atlas.fill.length;
-    if (Math.abs(f - sb.fuellung) > 0.01) v.push(`Füllung ${f.toFixed(4)} ≠ Steckbrief ${sb.fuellung}`);
+    for (const mm of messungen) {
+        const z = budget[mm.kind] && budget[mm.kind][mm.lod];
+        if (!z) {
+            v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: keine Budget-Zeile`);
+            continue;
+        }
+        if (z.karte) continue;
+        if (mm.tris > z.tris) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.tris} Dreiecke > ${z.tris}`);
+        if (mm.sippen > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.sippen} Sippen > ${z.draws} draws`);
+    }
     return v;
 }
-const kernFuellung = (sb) => sb.fuellung / (sb.kern * sb.kern);
-function deckungsUrteil(paare, band, fuellung) {
+function steckbriefUrteil(atlas, breit, nadel) {
+    const v = [];
+    if (!breit || !(breit.kern > 0) || !(breit.fuellung > 0) || !(breit.zellen >= 1))
+        return ["Steckbrief BLATT_ATLAS_BREIT fehlt"];
+    if (!nadel || !(nadel.kern > 0) || !(nadel.fuellung > 0) || !Number.isInteger(nadel.zelle))
+        return ["Steckbrief BLATT_ATLAS_NADEL fehlt"];
+    for (let c = 0; c < breit.zellen; c++)
+        if (atlas.ext[c] > breit.kern)
+            v.push(`Zelle ${c}: Alpha reicht bis ${atlas.ext[c].toFixed(4)} > kern ${breit.kern}`);
+    const f = atlas.fill.slice(0, breit.zellen).reduce((s, x) => s + x, 0) / breit.zellen;
+    if (Math.abs(f - breit.fuellung) > 0.01)
+        v.push(`Breitblatt-Füllung ${f.toFixed(4)} ≠ Steckbrief ${breit.fuellung}`);
+    if (atlas.ext[nadel.zelle] > nadel.kern)
+        v.push(
+            `Nadel-Zelle ${nadel.zelle}: Alpha reicht bis ${atlas.ext[nadel.zelle].toFixed(4)} > kern ${nadel.kern}`
+        );
+    if (Math.abs(atlas.fill[nadel.zelle] - nadel.fuellung) > 0.01)
+        v.push(`Nadel-Füllung ${atlas.fill[nadel.zelle].toFixed(4)} ≠ Steckbrief ${nadel.fuellung}`);
+    return v;
+}
+// Deckung je Paar: p.art ∈ laub | nadel | klinge, p.l0 = L0-Laubfläche, p.l1 = L1-Fläche (Karte bzw. Klinge).
+function deckungsWert(p, at) {
+    if (p.art === "laub") return (p.l1 * (at.steckbrief.fuellung / (at.steckbrief.kern * at.steckbrief.kern))) / p.l0;
+    if (p.art === "nadel") return (2 * p.l1 * at.nadel.fuellung) / p.l0;
+    return p.l1 / p.l0;
+}
+function deckungsUrteil(paare, band, at) {
     const v = [];
     for (const [k, p] of Object.entries(paare)) {
         if (!(p.l0 > 0) || !(p.l1 > 0)) continue;
-        const d = (p.l1 * fuellung) / p.l0;
+        const d = deckungsWert(p, at);
         p.deckung = d;
-        if (d < band[0] || d > band[1]) v.push(`${k}: L1 deckt ${d.toFixed(2)}x L0, Band [${band.join(", ")}]`);
+        if (d < band[0] || d > band[1])
+            v.push(`${k} (${p.art}): L1 deckt ${d.toFixed(2)}x L0, Band [${band.join(", ")}]`);
     }
     return v;
 }
@@ -132,6 +184,7 @@ function deckungsUrteil(paare, band, fuellung) {
     const fails = [];
     let ok = 0;
     const paare = {};
+    const messungen = [];
     let wand = null;
     await runWithWorker(PORT, async ({ build, getData, atlas }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
@@ -150,6 +203,22 @@ function deckungsUrteil(paare, band, fuellung) {
             const live = JSON.stringify(bookReply[field]);
             if (live !== gold) fails.push(`${key}: divergiert vom eingefrorenen JSON`);
         }
+        const buch = bookReply.book || {};
+        const lodB = bookReply.renderConfig && bookReply.renderConfig.lod;
+        const budget = lodB && lodB.budget;
+        const stufen = (lodB && lodB.kindStages) || {};
+        const artVon = (preset) => buch[preset] && buch[preset].kind;
+        const gemessen = new Set();
+        const miss = (c, a, fall) => {
+            const kind = artVon(c.presetId);
+            if (!budget || !budget[kind]) return;
+            // Nur GELIEFERTE Stufen: eine nicht deklarierte (die Strauch-L0, der Host klemmt sie auf L1) bleibt
+            // ein Byte-Golden ohne Budget.
+            if (!Array.isArray(stufen[kind]) || stufen[kind].indexOf(c.lod) < 0) return;
+            const k = kosten(a.meshes);
+            messungen.push({ kind, lod: c.lod, fall, tris: k.tris, sippen: k.sippen });
+            gemessen.add(c.presetId + "|" + c.lod);
+        };
         for (const f of files) {
             const c = parseName(f);
             const gold = JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8"));
@@ -169,47 +238,124 @@ function deckungsUrteil(paare, band, fuellung) {
             const de = meshDiff(f, gold.meshes, rec.meshes);
             if (de) fails.push(de);
             else ok++;
-            if (c.lod <= 1) {
+            miss(c, a, f.replace(/\.json$/, ""));
+            if (c.lod <= 1 && artVon(c.presetId) === "tree") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
-                const pp = paare[pk] || (paare[pk] = { l0: 0, l1: 0 });
+                const fx = (buch[c.presetId] && buch[c.presetId].fx) || {};
+                const pp = paare[pk] || (paare[pk] = { l0: 0, l1: 0, art: null });
                 if (c.lod === 0) pp.l0 = flaeche(a.meshes, "foliage");
-                else pp.l1 = flaeche(a.meshes, "foliageTex");
+                else {
+                    const karte = flaeche(a.meshes, "foliageTex");
+                    pp.art = karte > 0 ? (fx.conifer ? "nadel" : "laub") : "klinge";
+                    pp.l1 = karte > 0 ? karte : flaeche(a.meshes, "foliage");
+                }
             }
             if (fails.length >= 8) break;
         }
-        // DIE BUDGET-WAND — gegen den Maler und die gebauten Paare.
+        // Jede gelieferte Gitter-Stufe jedes Rezepts einer Art mit Budget, die kein Golden trägt: Samen 7, Sommer.
+        if (budget)
+            for (const preset of Object.keys(buch)) {
+                const kind = artVon(preset);
+                if (!budget[kind] || !Array.isArray(stufen[kind])) continue;
+                for (const lod of stufen[kind]) {
+                    const z = budget[kind][lod];
+                    if ((z && z.karte) || gemessen.has(preset + "|" + lod)) continue;
+                    const c = { presetId: preset, seed: 7, lod, season: "summer" };
+                    miss(c, await build(c), `${preset}-s7-L${lod}-summer`);
+                }
+            }
         const at = await atlas();
-        const lodB = bookReply.renderConfig && bookReply.renderConfig.lod && bookReply.renderConfig.lod.budget;
-        const band = lodB && lodB.tree && lodB.tree[1] && lodB.tree[1].deckung;
-        wand = { at, band, karte: lodB && lodB.tree && lodB.tree[1] && lodB.tree[1].blattKarte };
-        if (!Array.isArray(band)) fails.push("Budget: render-config trägt kein lod.budget.tree[1].deckung");
+        const band = budget && budget.tree && budget.tree[1] && budget.tree[1].deckung;
+        wand = { at, band, budget, stufen, b1: budget && budget.tree && budget.tree[1] };
+        if (!budget) fails.push("Budget: render-config trägt kein lod.budget");
+        else if (!Array.isArray(band)) fails.push("Budget: render-config trägt kein lod.budget.tree[1].deckung");
         else {
-            fails.push(...steckbriefUrteil(at, at.steckbrief).map((x) => "Steckbrief: " + x));
-            fails.push(...deckungsUrteil(paare, band, kernFuellung(at.steckbrief)).map((x) => "Deckung: " + x));
+            fails.push(...kostenUrteil(messungen, budget).map((x) => "Kosten: " + x));
+            fails.push(...steckbriefUrteil(at, at.steckbrief, at.nadel).map((x) => "Steckbrief: " + x));
+            fails.push(...deckungsUrteil(paare, band, at).map((x) => "Deckung: " + x));
         }
     });
-    const gemessen = Object.entries(paare).filter(([, p]) => p.deckung != null);
-    if (wand && Array.isArray(wand.band)) {
+    if (wand && wand.budget && Array.isArray(wand.band)) {
+        const B = wand.budget;
+        // Die Kosten je Zeile: Maximum über alle gebauten Fälle, der Täter-Kandidat steht daneben.
+        const zeilen = [];
+        for (const k of Object.keys(wand.stufen))
+            for (const st of wand.stufen[k]) {
+                const z = B[k] && B[k][st];
+                if (!z) continue;
+                const mm = messungen.filter((x) => x.kind === k && x.lod === st);
+                if (z.karte) {
+                    const mx = mm.reduce((s, x) => Math.max(s, x.tris), 0);
+                    zeilen.push(
+                        `${k}[${st}] Karte (${z.tris})${mm.length ? ` · L2-Gitter nicht geliefert, max ${mx}` : ""}`
+                    );
+                    continue;
+                }
+                const top = mm.reduce((s, x) => (!s || x.tris > s.tris ? x : s), null);
+                zeilen.push(
+                    `${k}[${st}] ${top ? top.tris : "—"}/${z.tris} (${mm.length} Fälle, max ${top ? top.fall : "—"})`
+                );
+            }
+        console.log("Budget-Wand (Dreiecke max/Zeile):\n  " + zeilen.join("\n  "));
+        const at = wand.at;
         console.log(
-            `Atlas-Kern: Alpha bis ${Math.max(...wand.at.ext).toFixed(4)} (Steckbrief ${wand.at.steckbrief.kern}) · ` +
-                `Füllung ${(wand.at.fill.reduce((s, x) => s + x, 0) / 4).toFixed(4)} (Steckbrief ${wand.at.steckbrief.fuellung})`
+            `Atlas: Breitblatt-Kern bis ${Math.max(...at.ext.slice(0, at.steckbrief.zellen)).toFixed(4)} (Steckbrief ${at.steckbrief.kern}) · ` +
+                `Füllung ${(at.fill.slice(0, at.steckbrief.zellen).reduce((s, x) => s + x, 0) / at.steckbrief.zellen).toFixed(4)} (${at.steckbrief.fuellung}) · ` +
+                `Nadel-Zelle bis ${at.ext[at.nadel.zelle].toFixed(4)} · Füllung ${at.fill[at.nadel.zelle].toFixed(4)} (${at.nadel.fuellung})`
         );
+        const gemesseneP = Object.entries(paare).filter(([, p]) => p.deckung != null);
         console.log(
             `L1-Deckung (Band ${wand.band.join("–")}): ` +
-                gemessen.map(([k, p]) => `${k} ${p.deckung.toFixed(2)}`).join(" · ")
+                gemesseneP.map(([k, p]) => `${k} ${p.art} ${p.deckung.toFixed(2)}`).join(" · ")
         );
-        // SELBST-TEST — die Wand ist nicht vakuös: (1) die Karte von gestern (Kante 2,35 statt blattKarte)
-        // MUSS das Band sprengen; (2) ein Kern unter der gemalten Ausdehnung MUSS den Steckbrief brechen;
-        // (3) ohne gemessene Paare wäre die Deckung vakuös.
+        // SELBST-TESTS — die Wand ist nicht vakuös:
+        //  (1) JEDE Gitter-Zeile halbiert (tris/2) und um eine Sippe gesenkt MUSS rot werden;
+        //  (2) jede Gitter-Zeile hat ≥ 1 gebauten Fall;
+        //  (3) die Laub-Karte von gestern (Kante 2,35 statt blattKarte) MUSS das Band sprengen;
+        //  (4) eine Nadel-Karte 1,5× so lang MUSS das Band sprengen;
+        //  (5) ein Kern unter der gemalten Ausdehnung MUSS den Steckbrief brechen;
+        //  (6) Deckung an Laub-, Nadel- und Klingen-Paaren gemessen.
+        const halb = [],
+            leer = [];
+        for (const k of Object.keys(wand.stufen))
+            for (const st of wand.stufen[k]) {
+                const z = B[k] && B[k][st];
+                if (!z || z.karte) continue;
+                if (!messungen.some((x) => x.kind === k && x.lod === st)) {
+                    leer.push(`${k}[${st}]`);
+                    continue;
+                }
+                for (const [feld, wert] of [
+                    ["tris", Math.floor(z.tris / 2)],
+                    ["draws", z.draws - 1],
+                ]) {
+                    const B2 = JSON.parse(JSON.stringify(B));
+                    B2[k][st][feld] = wert;
+                    if (!kostenUrteil(messungen, B2).some((x) => x.startsWith(`${k}[${st}] `)))
+                        halb.push(`${k}[${st}].${feld}`);
+                }
+            }
+        const s1 = halb.length === 0;
+        const s2 = leer.length === 0;
+        const laubP = gemesseneP.filter(([, p]) => p.art === "laub");
+        const nadelP = gemesseneP.filter(([, p]) => p.art === "nadel");
         const gestern = {};
-        for (const [k, p] of gemessen) gestern[k] = { l0: p.l0, l1: p.l1 * Math.pow(2.35 / wand.karte, 2) };
-        const s1 = deckungsUrteil(gestern, wand.band, kernFuellung(wand.at.steckbrief)).length === gemessen.length;
-        const s2 = steckbriefUrteil(wand.at, { kern: 0.6, fuellung: wand.at.steckbrief.fuellung }).length > 0;
-        const s3 = gemessen.length >= 4;
+        for (const [k, p] of laubP)
+            gestern[k] = Object.assign({}, p, { l1: p.l1 * Math.pow(2.35 / wand.b1.blattKarte, 2) });
+        const s3 = laubP.length > 0 && deckungsUrteil(gestern, wand.band, at).length === laubP.length;
+        const lang = {};
+        for (const [k, p] of nadelP) lang[k] = Object.assign({}, p, { l1: p.l1 * 2.25 });
+        const s4 = nadelP.length > 0 && deckungsUrteil(lang, wand.band, at).length === nadelP.length;
+        const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel).length > 0;
+        const arten = new Set(gemesseneP.map(([, p]) => p.art));
+        const s6 = arten.has("laub") && arten.has("nadel") && arten.has("klinge");
         console.log(
-            `Selbsttest Budget-Wand: Karte 2,35 sprengt das Band ${s1 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s2 ? "✅" : "❌"} · ${gemessen.length} Paare ${s3 ? "✅" : "❌"}`
+            `Selbsttest Budget-Wand: jede Zeile halbiert/−1 Sippe wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
+                `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 2,35 sprengt das Band ${s3 ? "✅" : "❌"} · ` +
+                `Nadel-Karte 1,5× sprengt das Band ${s4 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s5 ? "✅" : "❌"} · ` +
+                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"}`
         );
-        if (!s1 || !s2 || !s3) fails.push("Selbsttest der Budget-Wand feuert nicht");
+        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6) fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
 
     console.log("=== ASSET-VERTRAG v1 — Konformanz-Gate ===");

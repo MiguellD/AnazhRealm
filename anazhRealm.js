@@ -68519,18 +68519,12 @@ class AnazhRealm {
                 mat.colorNode = TSL.vec4(vcol, 1.0);
             } else if (kind === "foliageTex") {
                 // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
-                // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER Atlas, auf den die Studio-Karten routen: vier
-                // Breitblatt-Zellen (foundry-core `bakeLeafAtlas`, cell=(_lq++)&3) — bis V18.520 lag hier der
-                // Nadel-Modus, jede vierte L1-Karte von Eiche/Birke trug eine Nadel-Spray. Der Studio-Zuschnitt
-                // (`BLATT_ATLAS_BREIT.kern`) gilt nur für DIESEN Atlas.
-                const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-                const canvas =
-                    core && typeof core.bakeLeafAtlasCanvas === "function"
-                        ? core.bakeLeafAtlasCanvas(document, { cell3: "broadleaf" })
-                        : null;
-                if (canvas && TSL.texture) {
-                    const tex = new T.CanvasTexture(canvas);
-                    tex.colorSpace = T.SRGBColorSpace;
+                // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
+                // (phyto-core `bakeLeafAtlasCanvas`): Zellen 0..2 Breitblatt (Laub-Karten, `BLATT_ATLAS_BREIT`),
+                // Zelle 3 Nadel-Spray (Nadel-Karten der Koniferen-L1, `BLATT_ATLAS_NADEL`) — dieselbe Textur wie
+                // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
+                const tex = this._ensureFoliageClusterAtlas();
+                if (tex && TSL.texture) {
                     const uvN = TSL.attribute("uv", "vec2");
                     const texN = TSL.texture(tex, uvN);
                     // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass

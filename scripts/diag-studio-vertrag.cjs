@@ -164,16 +164,20 @@ function validateManifest(m) {
             }
         }
     }
-    // B2b (04.10.) — DAS BUDGET je Art × Stufe: jede Art ist eine deklarierte Art, jede Stufe eine
-    // gelieferte Stufe dieser Art; blattKarte endlich > 0, deckung ein Band [lo, hi] mit 0 < lo <= 1 <= hi.
-    // Die Konsum-Wand (gebaute L0/L1-Paare) steht in gate:asset-contract.
+    // B2c (04.10.) — DAS BUDGET je Art × Stufe (docs/studio-vertrag.md B2c): trägt ein Kern `lod.budget`, dann
+    // VOLLSTÄNDIG — jede Art aus seinen kindStages × jede deklarierte Stufe hat eine Zeile {tris, draws,
+    // schatten}; tris ganzzahlig > 0, draws ganzzahlig ≥ 1, schatten = eine deklarierte Stufe der Art oder
+    // false; MONOTON — tris fällt je Stufe streng, draws steigt nie; die Karten-Stufe (karte: true) ist die
+    // letzte Stufe und wirft nicht. Die DARF-Regler (blattKarte/nadelKarte endlich > 0, klinge ganzzahlig ≥ 2,
+    // deckung ein Band [lo<=1<=hi]) halten ihre Form. Die Konsum-Wand (gebaute Stufen) steht in gate:asset-contract.
     if (lodC && lodC.budget) {
         const ks = lodC.kindStages || {};
-        for (const k in lodC.budget) {
+        const B = lodC.budget;
+        for (const k in B) {
             // B2c (04.10.) — DIE GESTALTEN je Art (Samen-Zahl je Preset, '*' = jede Art ohne Zeile): ganze Zahlen >= 1,
             // die '*'-Zeile ist Pflicht (die Welt-Varianten-Wahl liest sie für jede Fremd-Art).
             if (k === "gestalten") {
-                const g = lodC.budget.gestalten;
+                const g = B.gestalten;
                 if (!g || typeof g !== "object") v.push("B2c: lod.budget.gestalten ist kein Objekt");
                 else {
                     if (!("*" in g)) v.push("B2c: lod.budget.gestalten trägt keine '*'-Zeile");
@@ -184,23 +188,54 @@ function validateManifest(m) {
                 continue;
             }
             if (!ks[k]) {
-                v.push(`B2b: lod.budget.${k} — Art ohne kindStages`);
+                v.push(`B2c: lod.budget.${k} — Art ohne kindStages`);
                 continue;
             }
-            for (const st in lodC.budget[k]) {
-                const z = lodC.budget[k][st];
-                if (ks[k].indexOf(Number(st)) < 0) v.push(`B2b: lod.budget.${k}[${st}] — keine gelieferte Stufe`);
+            for (const st in B[k])
+                if (ks[k].indexOf(Number(st)) < 0) v.push(`B2c: lod.budget.${k}[${st}] — keine gelieferte Stufe`);
+        }
+        for (const k in ks) {
+            const stufen = Array.isArray(ks[k]) ? ks[k] : [];
+            let vor = null;
+            for (const st of stufen) {
+                const z = B[k] && B[k][st];
                 if (!z || typeof z !== "object") {
-                    v.push(`B2b: lod.budget.${k}[${st}] ist kein Objekt`);
+                    v.push(`B2c: lod.budget.${k}[${st}] fehlt (jede deklarierte Stufe trägt eine Zeile)`);
+                    vor = null;
                     continue;
                 }
-                if ("blattKarte" in z && !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte)))
-                    v.push(`B2b: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
+                if (!(Number.isInteger(z.tris) && z.tris > 0))
+                    v.push(`B2c: lod.budget.${k}[${st}].tris muss eine ganze Zahl > 0 sein`);
+                if (!(Number.isInteger(z.draws) && z.draws >= 1))
+                    v.push(`B2c: lod.budget.${k}[${st}].draws muss eine ganze Zahl ≥ 1 sein`);
+                if (!(z.schatten === false || (Number.isInteger(z.schatten) && stufen.indexOf(z.schatten) >= 0)))
+                    v.push(`B2c: lod.budget.${k}[${st}].schatten muss eine deklarierte Stufe oder false sein`);
+                if ("karte" in z) {
+                    if (z.karte !== true) v.push(`B2c: lod.budget.${k}[${st}].karte ist nur als true erlaubt`);
+                    else if (st !== stufen[stufen.length - 1] || z.schatten !== false)
+                        v.push(
+                            `B2c: lod.budget.${k}[${st}].karte — nur die letzte Stufe ist Karte, und sie wirft nicht`
+                        );
+                }
+                for (const f of ["blattKarte", "nadelKarte"])
+                    if (f in z && !(typeof z[f] === "number" && z[f] > 0 && isFinite(z[f])))
+                        v.push(`B2c: lod.budget.${k}[${st}].${f} muss endlich > 0 sein`);
+                if ("klinge" in z && !(Number.isInteger(z.klinge) && z.klinge >= 2))
+                    v.push(`B2c: lod.budget.${k}[${st}].klinge muss eine ganze Zahl ≥ 2 sein`);
                 if ("deckung" in z) {
                     const d = z.deckung;
                     if (!Array.isArray(d) || d.length !== 2 || !(d[0] > 0 && d[0] <= 1 && d[1] >= 1 && isFinite(d[1])))
-                        v.push(`B2b: lod.budget.${k}[${st}].deckung muss ein Band [lo<=1<=hi] sein`);
+                        v.push(`B2c: lod.budget.${k}[${st}].deckung muss ein Band [lo<=1<=hi] sein`);
                 }
+                if (vor) {
+                    if (!(z.tris < vor.z.tris))
+                        v.push(
+                            `B2c: lod.budget.${k} — tris fällt nicht streng (${vor.st}: ${vor.z.tris} → ${st}: ${z.tris})`
+                        );
+                    if (z.draws > vor.z.draws)
+                        v.push(`B2c: lod.budget.${k} — draws steigt (${vor.st}: ${vor.z.draws} → ${st}: ${z.draws})`);
+                }
+                vor = { st, z };
             }
         }
     }
@@ -423,6 +458,8 @@ function validateManifest(m) {
     );
 
     // §3/§4 — jeder registrierte Kern erfüllt den Vertrag.
+    const budgets = {}; // B2c: lod.budget je Kern (Datei → Budget), für die Karten-Linse unten
+    const ohneBudget = []; // Kerne mit kindStages, aber ohne Budget — die Studio-Übertragung (offen, benannt)
     for (const entry of CORES) {
         console.log(`\n--- Kern: ${entry.file} ---`);
         let m = null;
@@ -433,6 +470,9 @@ function validateManifest(m) {
             continue;
         }
         const viol = validateManifest(m);
+        const lodM = m.cfg && m.cfg.lod;
+        if (lodM && lodM.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
+        else if (lodM && lodM.kindStages) ohneBudget.push(entry.file);
         check(`${entry.file}: 0 Vertrags-Verletzungen`, viol.length === 0, viol[0] || "");
         for (let i = 1; i < viol.length; i++) console.log(`      ↳ ${viol[i]}`);
         const n = m.presets ? Object.keys(m.presets).length : 0;
@@ -466,6 +506,46 @@ function validateManifest(m) {
         // unbekannter kind hat keine Policy-Zeile und wird uebersprungen (must-ignore).
         "G4.1: der Auto-Register-Chokepoint filtert per Policy (must-ignore, wirft nie)",
         !!reg && /KP\[rec\.kind\]/.test(reg[0]) && /if \(!pol\) continue/.test(reg[0])
+    );
+
+    // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
+    // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget
+    // trägt. Weichen sie ab, misst die Konsum-Wand eine Stufe, die nie ins Bild kommt (oder umgekehrt).
+    const kartenUrteil = (src, bud) => {
+        const kp = src.match(/AnazhRealm\.KIND_POLICY = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
+        if (!kp) return ["KIND_POLICY im Stamm nicht gefunden"];
+        const f = [];
+        for (const datei in bud) {
+            const { budget, kindStages } = bud[datei];
+            for (const k in kindStages) {
+                const st = kindStages[k];
+                const letzte = budget[k] && budget[k][st[st.length - 1]];
+                const karte = !!(letzte && letzte.karte === true);
+                const imp = new RegExp("\\n\\s*" + k + ": Object\\.freeze\\(\\{[^}]*impostor: true").test(kp[1]);
+                if (karte !== imp)
+                    f.push(
+                        `${k}: Studio-Karte ${karte ? "ja" : "nein"} ≠ Host-Impostor ${imp ? "ja" : "nein"} (${datei})`
+                    );
+            }
+        }
+        return f;
+    };
+    const kU = kartenUrteil(realm, budgets);
+    check(
+        "B2c KARTEN-LINSE: budget[kind][letzte].karte ⇔ KIND_POLICY[kind].impostor (je Art mit Budget)",
+        Object.keys(budgets).length >= 1 && kU.length === 0,
+        kU[0] || Object.keys(budgets).join(", ")
+    );
+    const kSelbst = kartenUrteil(
+        realm.replace(/\n(\s*)shrub: Object\.freeze\(\{ impostor: true \}\)/, "\n$1shrub: Object.freeze({})"),
+        budgets
+    );
+    check(
+        "SELBST-TEST: ein Host ohne Strauch-Impostor feuert die Karten-Linse",
+        kSelbst.some((s) => s.startsWith("shrub:"))
+    );
+    console.log(
+        `      Budget (B2c) trägt: ${Object.keys(budgets).join(", ") || "—"} · ohne Budget (Studio-Übertragung offen): ${ohneBudget.join(", ") || "—"}`
     );
 
     // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
@@ -631,7 +711,11 @@ function validateManifest(m) {
                 kindStages: { kaputt: [9], falschrum: [2, 1], tree: [0, 1, 2] },
                 budget: {
                     geist: { 0: {} },
-                    tree: { 3: { blattKarte: -1 }, 1: { deckung: [1.2, 0.9] } },
+                    tree: {
+                        3: {},
+                        0: { tris: 100, draws: 1, schatten: false },
+                        1: { tris: 200, draws: 0, schatten: "ja", karte: true, blattKarte: -1, deckung: [1.2, 0.9] },
+                    },
                     gestalten: { eiche: 0 },
                 },
             },
@@ -640,6 +724,23 @@ function validateManifest(m) {
         lehren: null,
     };
     const bv = validateManifest(broken);
+    // B2c — ein zweites Budget: Regler-Form (nadelKarte/klinge) und steigende draws.
+    const bvB = validateManifest({
+        vertrag: 1,
+        presets: { a: { kind: "shrub" } },
+        build: function () {},
+        cfg: {
+            lod: {
+                kindStages: { shrub: [1, 2] },
+                budget: {
+                    shrub: {
+                        1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1 },
+                        2: { tris: 5, draws: 2, schatten: false },
+                    },
+                },
+            },
+        },
+    });
     const bvVer = validateManifest({ vertrag: null, presets: { a: { kind: "tree" } }, build: function () {} });
     // §8 — ein MESHFREI-Kern mit buildInstance ist widersprüchlich (die Linse feuert).
     const bvMesh = validateManifest({
@@ -668,10 +769,18 @@ function validateManifest(m) {
             bv.some((s) => s.includes("kindStages.falschrum")) &&
             bv.some((s) => s.includes("budget.geist")) &&
             bv.some((s) => s.includes("budget.tree[3] — keine gelieferte Stufe")) &&
+            bv.some((s) => s.includes("budget.tree[2] fehlt")) &&
+            bv.some((s) => s.includes("tris fällt nicht streng")) &&
+            bv.some((s) => s.includes("tree[1].draws muss")) &&
+            bv.some((s) => s.includes("tree[1].schatten muss")) &&
+            bv.some((s) => s.includes("tree[1].karte — nur die letzte Stufe")) &&
             bv.some((s) => s.includes("blattKarte muss")) &&
             bv.some((s) => s.includes("deckung muss")) &&
             bv.some((s) => s.includes("gestalten trägt keine")) &&
             bv.some((s) => s.includes("gestalten.eiche muss")) &&
+            bvB.some((s) => s.includes("nadelKarte muss")) &&
+            bvB.some((s) => s.includes("klinge muss")) &&
+            bvB.some((s) => s.includes("draws steigt")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&
