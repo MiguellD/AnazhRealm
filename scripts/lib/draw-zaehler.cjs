@@ -104,7 +104,11 @@ function drawZensus(opts) {
         const passe = {};
         const klassen = {};
         for (const [k, v] of Object.entries(zaehl)) {
-            const [kl, p] = k.split("|");
+            // der Pass steht hinter dem LETZTEN Trenner — Klassen-Namen tragen selbst „|" (Studio-Leaves `f:<preset>|…`);
+            // split("|") las ihre Teile als Pässe („1", „2") und nahm die Befehle aus k0/k1
+            const t = k.lastIndexOf("|");
+            const kl = k.slice(0, t),
+                p = k.slice(t + 1);
             const e = passe[p] || (passe[p] = { cmd: 0, tris: 0 });
             e.cmd += v.cmd;
             e.tris += Math.round(v.tris);
