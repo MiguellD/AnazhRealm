@@ -61838,6 +61838,9 @@ class AnazhRealm {
     //     Frame verdrahtet; headless der EINZIGE Pfad.
     // (2) LAZY + BUDGETIERT: `_tickImpostorBake` fragt den Studio-Bäcker ("bake-impostor") und swappt die
     //     Pixel ATOMAR in `tex.image` (Textur-Identität stabil → kein Pipeline-Recompile).
+    // DER STUDIO-RECORD (`skeleton === null`, V18.527): die Foundry-Karte mit echtem Renderer — die Silhouette erreichte
+    // das Auge dort nie (der Flatten serviert bis zum Bake Geometrie), Rahmen und Höhe liefert das Bake-Payload. Der
+    // Record entsteht ohne Silhouette und rahmenlos, der Bake wird sofort eingereiht.
     _ensureImpostorAtlas(key, skeleton) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         if (this._impostorAtlasMap.has(key)) return this._impostorAtlasMap.get(key);
@@ -61848,16 +61851,17 @@ class AnazhRealm {
         const V = _ic.views || 8,
             cw = _ic.cellW || 128,
             ch = _ic.cellH || 256;
+        const studio = skeleton === null;
         // (1) Fallback: die deterministische Silhouette in alle 8 Zellen (bis der
         // Studio-Bake sie ersetzt zeigt jede Peilung dasselbe Bild = V18.388-Qualität).
-        const cell = this._bakeImpostorSilhouetteCanvas(key, skeleton, cw, ch);
-        if (!cell) return null;
+        const cell = studio ? null : this._bakeImpostorSilhouetteCanvas(key, skeleton, cw, ch);
+        if (!studio && !cell) return null;
         const atlasCanvas = document.createElement("canvas");
         atlasCanvas.width = cw * V;
         atlasCanvas.height = ch;
         const actx = atlasCanvas.getContext("2d", { willReadFrequently: true });
         if (!actx) return null;
-        for (let v = 0; v < V; v++) actx.drawImage(cell, v * cw, 0, cw, ch);
+        if (cell) for (let v = 0; v < V; v++) actx.drawImage(cell, v * cw, 0, cw, ch);
         // Neutraler Normal-Atlas: (0.5,0.5,1) = Normale ZUR Kamera (Vorlage Z.1622,
         // Hintergrund-Clear) → per-Fragment-Licht degradiert graziös zur Fläche.
         const nrmCanvas = document.createElement("canvas");
@@ -61900,9 +61904,9 @@ class AnazhRealm {
         };
         this._impostorAtlasMap.set(key, rec);
         // (2) den echten Studio-Bake einreihen — NUR mit echtem Renderer (headless/
-        // Null-Renderer → der Canvas-Fallback trägt, gate-treu).
+        // Null-Renderer → der Canvas-Fallback trägt, gate-treu); der Studio-Record bäckt rahmenlos.
         const rend = this.state && this.state.renderer;
-        if (rend && !rend._isHeadlessNull && rec.frame) {
+        if (rend && !rend._isHeadlessNull && (rec.frame || studio)) {
             if (!this._impostorBakeQueue) this._impostorBakeQueue = [];
             this._impostorBakeQueue.push(key);
         }
@@ -65698,6 +65702,21 @@ class AnazhRealm {
                       })
                     : null
             );
+        // Liegt der Schlüssel auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
+        const hat = (key) =>
+            platte.then((d) =>
+                d
+                    ? new Promise((resolve) => {
+                          try {
+                              const c = d.transaction("assets", "readonly").objectStore("assets").count(key);
+                              c.onsuccess = () => resolve(c.result > 0);
+                              c.onerror = () => resolve(false);
+                          } catch (_e) {
+                              resolve(false);
+                          }
+                      })
+                    : false
+            );
         const schlank = (meshes) => {
             for (const m of meshes) {
                 if (!m || typeof m !== "object") continue;
@@ -65740,8 +65759,8 @@ class AnazhRealm {
         W.postMessage = function (msg, a, b) {
             if (msg && msg.type === "asset" && Array.isArray(msg.meshes)) {
                 schlank(msg.meshes);
-                const key = schreibAuftrag.get(msg.reqId);
-                if (key !== undefined) {
+                const auftrag = schreibAuftrag.get(msg.reqId);
+                if (auftrag !== undefined) {
                     schreibAuftrag.delete(msg.reqId);
                     // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
                     if (db && !dbTot && msg.meshes.length) {
@@ -65749,13 +65768,15 @@ class AnazhRealm {
                             db
                                 .transaction("assets", "readwrite")
                                 .objectStore("assets")
-                                .put({ meshes: msg.meshes }, key).onerror = () => {
+                                .put({ meshes: msg.meshes }, auftrag.key).onerror = () => {
                                 dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
                             };
                         } catch (_e) {
                             dbTot = true;
                         }
                     }
+                    // Der Vorrat: der Körper liegt jetzt auf der Platte — zum Haupt-Thread reist er nicht (kein Leser).
+                    if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));
                 }
                 return roh(msg, puffer(msg.meshes));
             }
@@ -65780,10 +65801,19 @@ class AnazhRealm {
                 if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
             };
             if (m.type !== "build-asset" || typeof m.platte !== "string") return studio();
+            if (m.vorrat) {
+                // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
+                // wärmen) —, antwortet die Schale leer ohne Bau; sonst baut das Studio, die Schale schreibt.
+                return hat(m.platte).then((da) => {
+                    if (da || dbTot) return antwort(m, [], da);
+                    schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: true });
+                    studio();
+                });
+            }
             lies(m.platte).then((hit) => {
                 if (hit) return antwort(m, hit, true);
                 if (m.nurPlatte) return antwort(m, [], true);
-                schreibAuftrag.set(m.reqId, m.platte);
+                schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: false });
                 studio();
             });
         });
@@ -66653,6 +66683,30 @@ class AnazhRealm {
             `FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`
         );
     }
+    // DER VORRAT AUF DER PLATTE (V18.527): ein Körper, den noch kein Leser braucht (Garage-Fahrzeuge vor dem ersten Spawn),
+    // wärmt NUR die Platte — die Transport-Schale baut, schreibt und antwortet leer; der Haupt-Thread baut keine Gruppe
+    // ohne Leser (bis V18.526 lief jeder Vorrats-Körper je Boot durch `_foundryBuildGroup`). Liegt er schon auf der Platte
+    // oder gibt es keine (Null-Renderer, Quota), antwortet die Schale sofort leer. true = gewärmt, null = Timeout.
+    _foundryVorrat(presetId, seed, lod) {
+        const f = this._foundry;
+        if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        const msg = {
+            type: "build-asset",
+            presetId,
+            seed,
+            lod,
+            platte: this._foundryKoerperKey(presetId, seed, lod),
+            vorrat: true,
+        };
+        return this._foundryAuftrag(
+            f,
+            "r",
+            msg,
+            null,
+            45000,
+            `FOUNDRY TIMEOUT: Vorrat(${presetId}) nach 45 s Arbeit ohne Reply → null`
+        ).then((m) => (m ? true : null));
+    }
     // DIE EINE WORKER-SCHLANGE: der Foundry-Worker arbeitet FIFO, ein Bau dauert 0,1–25 s. Vorher ging jede Anfrage
     // sofort per postMessage hinein — eine nahe Eiche-L0 wartete hinter JEDEM früher gestellten Vorrats- und
     // Fernauftrag (gemessen 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9,0 s, die Tanne nach
@@ -66718,7 +66772,14 @@ class AnazhRealm {
         const d2 = this._foundryAuftragD2(wo);
         for (const a of q) {
             const m = a.msg;
-            if (m.type !== "build-asset" || m.ov || m.presetId !== presetId || m.seed !== seed || m.lod !== lod)
+            if (
+                m.type !== "build-asset" ||
+                m.ov ||
+                m.vorrat ||
+                m.presetId !== presetId ||
+                m.seed !== seed ||
+                m.lod !== lod
+            )
                 continue;
             if (d2 < this._foundryAuftragD2(a.wo)) a.wo = wo;
             return;
@@ -67011,8 +67072,26 @@ class AnazhRealm {
         if (cached === "pending") return null;
         if (cached !== undefined) return cached; // Record ODER false (Foundry kann das nicht)
         if (typeof THREE === "undefined" || typeof document === "undefined") return null;
-        // Bake-Subjekt: die LOD1-Geometrie aus dem Foundry-Cache (fehlt sie: EINMAL anfordern) — bzw. die
-        // deklarierte Stufe der Art (Tor gate=[0] bäckt aus L0, nie eine L1, die der Kern nicht vorsieht).
+        // KARTE OHNE L1-ZUG (V18.527): mit echtem Renderer bäckt das Studio die Karte aus seinem eigenen Bake-Subjekt —
+        // Rahmen und Höhe reisen im Payload (`_applyStudioImpostorPayload`), die Silhouette erreichte das Auge nie. Der
+        // Record entsteht rahmenlos (`_ensureImpostorAtlas(key, null)`) und reiht den Bake sofort ein; keine Körper-
+        // Stufe wird für die Karte gezogen (bis V18.526 je Karte eine L1, headless 112 Aufträge ohne Leser).
+        const rendR = this.state && this.state.renderer;
+        if (rendR && !rendR._isHeadlessNull) {
+            const recS = this._ensureImpostorAtlas(key, null);
+            if (!recS) {
+                this._impostorAtlasMap.set(key, false);
+                return false;
+            }
+            recS.foundry = true;
+            recS.species = preset;
+            recS.variantIndex = variant;
+            if (ovK) recS.ov = ovK;
+            this._scatterRefillPending = true;
+            return recS;
+        }
+        // Der Null-Renderer (headless, dort bäckt nie jemand) trägt die Silhouette: ihr Rahmen + ihre Farbe kommen aus
+        // der LOD1-Geometrie (fehlt sie: EINMAL anfordern) — bzw. der deklarierten Stufe der Art (Tor gate=[0] aus L0).
         const bakeLod = this._foundryDeclaredStage(preset, 1);
         const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
@@ -67145,8 +67224,9 @@ class AnazhRealm {
         const ovE = this._artifactStudioOv(entry);
         const rec = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined);
         if (rec === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
-        if (!rec || !rec.map || !rec.frame) return false;
-        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler.
+        if (!rec || !rec.map) return false;
+        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler —
+        // auch für den rahmenlosen Studio-Record (sein Rahmen kommt erst mit dem Bake).
         if (!rec.rttBaked && entry && entry.position) {
             const pp = this.state.playerMesh && this.state.playerMesh.position;
             if (pp) {
@@ -67163,6 +67243,7 @@ class AnazhRealm {
             const rendB = this.state && this.state.renderer;
             if (!rec.rttBaked && rendB && !rendB._isHeadlessNull) return false;
         }
+        if (!rec.frame) return false;
         if (rec._flat) return rec._flat;
         const geom = this._buildImpostorCrossGeometry(null, rec.frame);
         if (!geom) return false;
@@ -69157,8 +69238,8 @@ class AnazhRealm {
         return false;
     }
     _foundryLibrarySpec() {
-        // Nur die LEICHTE Ferne (lod2 ~15k) vorab backen → sofort Wald ohne Startup-Speicher-Freeze (lod0/1
-        // ~170k); lod0/lod1 lädt on-demand für die nächsten Bäume (_foundryFlattenFor + _foundryLodForEntry).
+        // Der Vorrat wärmt GENE, keine Körper ohne Leser: Boden-Arten ihre deklarierten Stufen je Gestalt, Karten-Arten
+        // (Bäume, Strauch) nur ihre Karten — L0/L1 lädt nah auf Abruf (_foundryFlattenFor + _foundryLodForEntry).
         return {
             species: [
                 "eiche",
@@ -69184,10 +69265,10 @@ class AnazhRealm {
             ],
             // Die Samen je Art sind ihre Gestalten 1..V (Studio-Budget `lod.budget.gestalten`, `_foundryGestalten`) —
             // genau die Körper, die `_foundryVariantFor` wählt; kein eigenes Samen-Literal.
-            lods: [2],
             // FOUNDRY-WARM (Spawn-tot-Heilung): Garage-Fahrzeuge + Siedlung brauchen
             // warmes Buch/build-asset — sonst stirbt In-Welt-Spawn (fahrzeug_*/dorf)
-            // als stilles Nichts. Wenige Seeds, lod 0 (vehicle kindStages = [0]).
+            // als stilles Nichts. Wenige Seeds, lod 0 (vehicle kindStages = [0]). Sie wärmen NUR die Platte
+            // (`_foundryVorrat`): vor dem ersten Spawn liest niemand ihre Körper.
             critical: {
                 species: ["gt", "supersport", "limousine", "kompakt_fwd", "suv"],
                 seeds: [1, 7],
@@ -69205,19 +69286,17 @@ class AnazhRealm {
         // deklarierten Stufen wärmen statt zu raten.
         for (let _w = 0; _w < 40 && !(f.recipeCount > 0 && AnazhRealm._studioRenderConfig); _w++)
             await new Promise((r) => setTimeout(r, 50));
-        const _cfgLodP = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-        const _ksP = (_cfgLodP && _cfgLodP.kindStages) || null;
         // Paralleler Saug: ALLE Anfragen feuern SOFORT (der Worker arbeitet seine serielle Queue Rücken an
         // Rücken ab) statt await je Asset (Worker idle zwischen Antworten). Post kostet den Main-Frame nichts.
         const jobs = [];
         for (const sp of spec.species) {
-            // Boden-Arten wärmen EXAKT ihre deklarierten Stufen (kindStages — Gras/Strauch [1,2], Blume/Fels [0];
-            // ohne Daten [0,2]) → der nahe Streu-Pass findet seine Stufe warm. Bäume nur LOD 2 (LOD 0/1
-            // on-demand — die Startup-Speicher-Wand; die Fern-Karte trägt der Impostor).
-            const _isTreeP = typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(sp);
-            const _recP = f.recipes && f.recipes[sp];
-            const _declared = !_isTreeP && _recP && _ksP && Array.isArray(_ksP[_recP.kind]) ? _ksP[_recP.kind] : null;
-            const _lods = _isTreeP ? spec.lods : _declared || Array.from(new Set(spec.lods.concat([0])));
+            // Karten-Arten (Bäume, Strauch: KIND_POLICY impostor) wärmen KEINE Geometrie — ihre Fernstufe IST die Karte
+            // (`_foundryFlattenFor` lenkt lod ≥ 2 auf sie), L0/L1 lädt nah auf Abruf. Bis V18.526 bestellte der Vorrat
+            // je Art L2-Geometrie, die kein Leser las (headless 56 Aufträge, ~38 MB je Boot).
+            if (this._foundryPresetIsTree(sp)) continue;
+            // Boden-Arten wärmen EXAKT ihre deklarierten Stufen (kindStages — Gras [1,2], Blume/Fels [0]; ohne Daten
+            // [2,0]) → der nahe Streu-Pass findet seine Stufe warm.
+            const _lods = this._foundryKindStages(sp) || [2, 0];
             const _V = this._foundryGestalten(sp);
             if (!_V) this.log(`FOUNDRY VORRAT: ${sp} ohne Gestalten-Budget im Buch — kein Vorrat`, "WARN");
             for (let sd = 1; sd <= _V; sd++) {
@@ -69237,8 +69316,8 @@ class AnazhRealm {
                 }
             }
         }
-        // Auch die Baum-Billboards (Impostor) vorwärmen — der Fern-Scatter serviert LOD2 = Studio-Billboard.
-        // Jeder Record-Miss postet seine LOD1-Anfrage sofort; der Bake folgt budgetiert (`_tickImpostorBake`).
+        // Die Karten vorwärmen — EINE je Gestalt; der Fern-Scatter serviert LOD2 = Studio-Billboard. Mit echtem Renderer
+        // reiht der Record den Studio-Bake direkt ein (rahmenlos, kein Körper-Zug); headless trägt die Silhouette.
         for (const sp of spec.species) {
             if (!this._foundryPresetIsTree(sp)) continue;
             const _VK = this._foundryGestalten(sp); // EINE Karte je Gestalt (Studio-Budget)
@@ -69261,21 +69340,18 @@ class AnazhRealm {
             }
             for (const sd of crit.seeds || [7]) {
                 for (const lod of crit.lods || [0]) {
-                    const key = this._foundryKoerperKey(sp, sd, lod);
-                    if (f.cache.has(key)) continue;
+                    if (f.cache.has(this._foundryKoerperKey(sp, sd, lod))) continue;
                     critJobs.push(
-                        this._foundryRequest(sp, sd, lod)
-                            .then((meshes) => {
-                                if (meshes)
-                                    this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
-                                else
+                        this._foundryVorrat(sp, sd, lod)
+                            .then((warm) => {
+                                if (!warm)
                                     this.log(
-                                        `FOUNDRY WARM: build-asset(${sp}|${sd}|lod${lod}) leer — Spawn riskiert kalt-404`,
+                                        `FOUNDRY WARM: Vorrat(${sp}|${sd}|lod${lod}) ohne Antwort — Spawn riskiert kalt-404`,
                                         "ERROR"
                                     );
                             })
                             .catch((e) => {
-                                this.log(`FOUNDRY WARM: build-asset(${sp}) warf (${e && e.message})`, "ERROR");
+                                this.log(`FOUNDRY WARM: Vorrat(${sp}) warf (${e && e.message})`, "ERROR");
                             })
                     );
                 }

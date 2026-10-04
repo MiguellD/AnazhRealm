@@ -122,6 +122,26 @@ function statisch(src) {
         "S5c die Schale nagelt den Sommer auf jeden Körper- und Karten-Auftrag",
         /m\.type !== "build-asset" && m\.type !== "bake-impostor"/.test(sc) && /season:\s*"summer"/.test(sc)
     );
+    // TOTE FRACHT (V18.527): Karten-Arten bestellen im Vorrat keine Geometrie, die Karte zieht mit echtem Renderer keine
+    // Körper-Stufe, der Fahrzeug-Vorrat wärmt nur die Platte.
+    const preS = pre ? strip(pre) : "";
+    const iSkip = preS.indexOf("if (this._foundryPresetIsTree(sp)) continue;");
+    const iReq = preS.indexOf("this._foundryRequest(sp, sd, lod)");
+    pruef(
+        "S6a der Vorrat bestellt für Karten-Arten keine Geometrie (kein L2-Körper ohne Leser)",
+        iSkip >= 0 && iReq > iSkip && !/lods:\s*\[2\]/.test(code)
+    );
+    const recS = teil("_foundryEnsureImpostorRecord(");
+    const iStudio = recS ? recS.indexOf("this._ensureImpostorAtlas(key, null)") : -1;
+    const iZug = recS ? recS.indexOf("this._foundryRequest(") : -1;
+    pruef(
+        "S6b die Karte zieht mit echtem Renderer keine Körper-Stufe (rahmenloser Studio-Record vor jedem _foundryRequest)",
+        iStudio >= 0 && iZug > iStudio && /rendR && !rendR\._isHeadlessNull/.test(recS)
+    );
+    pruef(
+        "S6c der Fahrzeug-Vorrat wärmt nur die Platte (_foundryVorrat, die Schale antwortet leer)",
+        /this\._foundryVorrat\(sp, sd, lod\)/.test(preS) && /meshes: \[\], vorrat: true/.test(sc)
+    );
     return { gesetze: aus, schale };
 }
 
@@ -329,6 +349,32 @@ async function verhalten(schaleSrc) {
                     k1.payload.albedo
                 );
                 C.w.terminate();
+                // V8 DER VORRAT: ein Vorrats-Auftrag baut einmal, schreibt die Platte und antwortet LEER; der nächste
+                // Abruf desselben Körpers kommt von der Platte, ein zweiter Vorrat baut nicht.
+                const D = neu(3, true);
+                const v1 = await D.frag({ type: "build-asset", reqId: "v1", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0", vorrat: true });
+                await ruhe(400);
+                const v2 = await D.frag({ type: "build-asset", reqId: "v2", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0", vorrat: true });
+                const v3 = await D.frag({ type: "build-asset", reqId: "v3", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0" });
+                const q5 = await D.frag({ type: "frage" }, "antwort");
+                aus.vorrat = !!(
+                    v1 &&
+                    v1.meshes.length === 0 &&
+                    v2 &&
+                    v2.meshes.length === 0 &&
+                    v3 &&
+                    v3.platte === true &&
+                    v3.meshes.length === 2 &&
+                    q5 &&
+                    q5.gebaut === 1
+                );
+                D.w.terminate();
+                // V8b ohne Platte wärmt der Vorrat nichts: leere Antwort, KEIN Bau.
+                const E = neu(3, false);
+                const v4 = await E.frag({ type: "build-asset", reqId: "v4", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0", vorrat: true });
+                const q6 = await E.frag({ type: "frage" }, "antwort");
+                aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
+                E.w.terminate();
                 return aus;
             },
             schaleSrc.replace(/^ {4}static /, ""),
@@ -432,7 +478,12 @@ const WELT_MESSEN = async () => {
             const sp = k.slice(5).split("|")[0];
             karten[sp] = (karten[sp] || 0) + 1;
         }
-    const boot = { posts: fl.posts.length, antworten: fl.antworten.length };
+    const boot = {
+        posts: fl.posts.length,
+        antworten: fl.antworten.length,
+        // tote Fracht: L2-Geometrie einer Karten-Art (Baum/Strauch) — ihre Fernstufe ist die Karte, kein Leser liest sie
+        kartenArtL2: fl.posts.filter((x) => x.t === "build-asset" && x.l === 2 && r._foundryPresetIsTree(x.p)).length,
+    };
     const instanziert = () => (r.state.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
     // sonst misst W2 nichts), dann der Wechsel: Aufträge an den Worker und NEUE Foundry-Cache-Schlüssel danach. Instanz-
@@ -494,6 +545,11 @@ function urteilWelt(d) {
     }
     pruef("W1a jede Baum-/Strauch-Art bestellt nur ihre Gestalten 1..V", !raus.length, raus.slice(0, 6).join(" · "));
     pruef("W1b Karten-Records je Art = Budget-Gestalten", !kartenFalsch.length, kartenFalsch.join(" · "));
+    pruef(
+        "W1c keine tote Fracht: 0 L2-Körper einer Karten-Art bestellt (die Fernstufe ist die Karte)",
+        d.boot.kartenArtL2 === 0,
+        `${d.boot.kartenArtL2} Aufträge`
+    );
     const s = d.saison;
     pruef(
         "W2a der Saison-Wechsel baut nichts (0 Aufträge, 0 neue Körper-Schlüssel; Kontroll-Fenster ruhig)",
@@ -565,6 +621,8 @@ const VERHALTEN = [
     ["V5 nurPlatte: Miss = leere Antwort, kein Bau", "nurPlatte"],
     ["V6 ein neues Transport-Format leert die Platte", "format"],
     ["V7 Saison-Nagel: Herbst-Körper und Winter-Karte erreichen das Studio als Sommer", "nagel"],
+    ["V8 Vorrat: einmal gebaut, auf die Platte, leere Antwort; der Abruf trifft die Platte", "vorrat"],
+    ["V8b Vorrat ohne Platte: leere Antwort, kein Bau", "vorratOhnePlatte"],
 ];
 
 (async () => {
@@ -627,7 +685,7 @@ const VERHALTEN = [
             G: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, "*": 16 },
             samen: { eiche: [1, 2], weide: [1] },
             karten: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1 },
-            boot: { posts: 200, antworten: 200 },
+            boot: { posts: 200, antworten: 200, kartenArtL2: 0 },
             saison: {
                 kontrolle: { posts: 0, removes: 300 },
                 posts: 0,
@@ -661,6 +719,20 @@ const VERHALTEN = [
             "Selbst-Test 10d: 16 Eichen-Karten → W1b rot",
             rot(Object.assign({}, gut, { karten: Object.assign({}, gut.karten, { eiche: 16 }) }), "W1b")
         );
+        check(
+            "Selbst-Test 10f: 56 Baum-L2-Aufträge im Boot → W1c rot",
+            rot(Object.assign({}, gut, { boot: Object.assign({}, gut.boot, { kartenArtL2: 56 }) }), "W1c")
+        );
+        const t11 = statisch(
+            stamm.replace("            if (this._foundryPresetIsTree(sp)) continue;\n            // Boden-Arten", "            // Boden-Arten")
+        ).gesetze.find((g) => g[0].startsWith("S6a"));
+        check("Selbst-Test 11: Vorrat bestellt wieder Karten-Art-Geometrie → S6a rot", t11 && !t11[1]);
+        const ohneVorrat = schale.replace(
+            "if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));",
+            ""
+        );
+        const v4 = await verhalten(ohneVorrat);
+        check("Selbst-Test 12: Schale schickt den Vorrats-Körper zum Haupt-Thread → V8 rot", ohneVorrat !== schale && v4.vorrat === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Wand ist vakuös.");
             process.exit(1);
