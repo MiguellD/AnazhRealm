@@ -2361,16 +2361,10 @@ function buildForest() {
     for (let i = 0; i < _GEST.strauch; i++) _shrubSeeds.push(Math.floor(RNG() * 1e6)); // Budget-Gestalten (1 = ein Wurf wie zuvor)
     const shrubT = _shrubSeeds.map((sd) => buildInstance("strauch", sd, _ksN("shrub", 2)));
     const shrubTF = _shrubSeeds.map((sd) => buildInstance("strauch", sd, _ksF("shrub", 2)));
-    const _grasSeedA = Math.floor(RNG() * 1e6),
-        _grasSeedB = Math.floor(RNG() * 1e6);
-    const grassT = [
-        buildInstance("gras", _grasSeedA, _ksN("grass", 2)),
-        buildInstance("gras", _grasSeedB, _ksN("grass", 2)),
-    ];
-    const grassTF = [
-        buildInstance("gras", _grasSeedA, _ksF("grass", 2)),
-        buildInstance("gras", _grasSeedB, _ksF("grass", 2)),
-    ];
+    const _grasSeeds = [];
+    for (let i = 0; i < _GEST.gras; i++) _grasSeeds.push(Math.floor(RNG() * 1e6)); // Budget-Gestalten (2 Wuerfe wie zuvor)
+    const grassT = _grasSeeds.map((sd) => buildInstance("gras", sd, _ksN("grass", 2)));
+    const grassTF = _grasSeeds.map((sd) => buildInstance("gras", sd, _ksF("grass", 2)));
     const flowerT = [
         buildInstance("blume", Math.floor(RNG() * 1e6), 0),
         buildInstance("blume", Math.floor(RNG() * 1e6), 0),
