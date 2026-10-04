@@ -194,6 +194,12 @@ const FORBIDDEN = [
     { token: "slider-fog", fiel: "V18.530" },
     { token: "uFogNear", fiel: "V18.530 — kein Wasser-eigener Nebel" },
     { token: "_fernRingFarbe", fiel: "V18.530 — die Fern-Farbe liest die Boden-Farbe + den Wald (_fernFarbeAt)" },
+    // DER HIMMEL (V18.530) — die drei Math.random-Planeten-Kugeln fielen: die Wandelsterne sind Punkte des
+    // Sternfelds, die Dämmerung setzt die Grenzgröße.
+    { token: "_buildSkyPlanets", fiel: "V18.530 — die Wandelsterne leben im Sternfeld" },
+    { token: "_loopSkyboxPlanets", fiel: "V18.530 — _loopSkyboxZeit" },
+    { token: "state.planets", fiel: "V18.530" },
+    { token: "numPlanets", fiel: "V18.530" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

@@ -128,18 +128,18 @@ class AnazhRealm {
             voxelRebuildAttempts: null,
             skybox: null,
             // Live-Uniforms der TSL-Skybox (time, nebulaColor, cloudCover), init in createGalaxySkybox();
-            // geschrieben von DSL skybox_color, _dayNightApplySkybox und _loopSkyboxPlanets.
+            // geschrieben von DSL skybox_color, _dayNightApplySkybox und _loopSkyboxZeit.
             skyboxUniforms: null,
             // V10.0-f-2 — Live-Uniforms des TSL-Stern-Felds (uniform-Knoten):
             // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
             // _buildStarField(); mutiert von _dayNightApplyStarField.
             starFieldUniforms: null,
             // Live-Uniforms des TSL-Wasserfall-Materials (time, flowDir, flowSpeed, deep/shallow/foam, sunDir,
-            // light); init in _ensureWaterfallMaterial(), geschrieben von _loopSkyboxPlanets (time) +
+            // light); init in _ensureWaterfallMaterial(), geschrieben von _loopSkyboxZeit (time) +
             // _dayNightApplyWaterMaterials (sunDir, light).
             waterfallUniforms: null,
             // Live-Uniforms des TSL-Hydrosphären-Materials (time, flowSpeed, deep/shallow/foam, sunDir, light);
-            // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopSkyboxPlanets (time) +
+            // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopSkyboxZeit (time) +
             // _dayNightApplyWaterMaterials (sunDir, light).
             hydroSurfaceUniforms: null,
             // Defer-Queue für GPU-Disposals. Ein Set, damit geteilte Materials (z. B. ein Compound mit EINEM
@@ -152,7 +152,6 @@ class AnazhRealm {
             windUniforms: null,
             _grassMat: null,
             floatingIslands: [],
-            planets: [],
             minHeight: 0,
             maxHeight: 0,
             // Kein aktiver Schreiber (Heightfield-Chunks fort; PBR ist die EINE Material-Wahrheit); nur
@@ -14991,7 +14990,7 @@ class AnazhRealm {
         // Skybox als MeshBasicNodeMaterial (TSL, WebGPU): Nebula-Noise + horizont-genordete Wolken.
         // vDir = normalize(positionLocal) hält den Sample-Punkt in Welt-Richtung, egal wo der Spieler steht.
         // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): DSL skybox_color (nebulaColor),
-        // _dayNightApplySkybox (nebulaColor + cloudCover), _loopSkyboxPlanets (time pro Frame).
+        // _dayNightApplySkybox (nebulaColor + cloudCover), _loopSkyboxZeit (time pro Frame).
         const TSL = THREE.TSL;
         if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
             // Sicherheits-Wand: ohne Node-Build fällt nichts in die Szene.
@@ -15196,12 +15195,10 @@ class AnazhRealm {
         this.state.skybox = skybox;
         this.log("Galaxy-Skybox erstellt (V10.0-f-1 TSL)");
 
-        // Planeten + Sternfeld sind Fern-Deko: sie bauen NACH der Bühne (`_tickBootFernDeko`), der Himmel
-        // selbst bleibt Boot. Headless baut sofort (die Playtest-Bänder sehen die volle Szene). Alle
-        // Konsumenten (_followCelestialBodies · _loopSkyboxPlanets · _dayNightApplyStarField · Kamera-Pin)
-        // sind null-/leer-sicher (state.planets=[], starField/starFieldUniforms null-Guards).
+        // Das Sternfeld (mit den Wandelsternen) ist Fern-Deko: es baut NACH der Bühne (`_tickBootFernDeko`), der
+        // Himmel selbst bleibt Boot. Headless baut sofort (die Playtest-Bänder sehen die volle Szene). Alle
+        // Konsumenten (_dayNightApplyStarField · Kamera-Pin) sind null-sicher (starField/starFieldUniforms).
         if (this.state.renderer && this.state.renderer._isHeadlessNull) {
-            this._buildSkyPlanets();
             // V8.28 6.G4.b A — echtes Stern-Feld als THREE.Points
             this._buildStarField();
         } else {
@@ -15213,49 +15210,7 @@ class AnazhRealm {
         // (Canopy-Shell) auf dem Boot-Pfad.
     }
 
-    // Die drei Planeten. Math.random ist hier Γ5-legitim (reine Himmels-Deko, keine Welt-Substanz).
-    // Idempotent: ein zweiter Bau ersetzt die alten (Remove + Dispose, kein Doppel-Heap).
-    _buildSkyPlanets() {
-        if (!this.state.scene || typeof THREE === "undefined") return;
-        if (Array.isArray(this.state.planets)) {
-            for (const p of this.state.planets) {
-                this.state.scene.remove(p);
-                if (p.geometry) p.geometry.dispose();
-                if (p.material) p.material.dispose();
-            }
-        }
-        this.state.planets = [];
-        // V18.331 — Dev-Drossel revertiert (Cold-Start ist nach dem Perf-/Worldgen-/
-        // Determinismus-Bogen schnell): Planeten zurück auf 3.
-        const numPlanets = 3;
-        for (let i = 0; i < numPlanets; i++) {
-            const planetSize = Math.random() * 20 + 10;
-            const planetGeometry = new THREE.SphereGeometry(planetSize, 32, 32);
-            const planetMaterial = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(Math.random(), Math.random(), Math.random()),
-            });
-            const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-            planet.frustumCulled = false; // Himmelskörper — immer rendern
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI;
-            const radius = 400 + Math.random() * 50;
-            // Feste Himmelsrichtung als skyOffset: `_followCelestialBodies` heftet den Planeten pro Frame an
-            // `camera.position + skyOffset` (kamera-relativ wie das Stern-Feld) — er steht fest am Himmel.
-            planet.userData.skyOffset = new THREE.Vector3(
-                radius * Math.sin(phi) * Math.cos(theta),
-                radius * Math.cos(phi),
-                radius * Math.sin(phi) * Math.sin(theta)
-            );
-            planet.position.copy(planet.userData.skyOffset);
-            this.state.scene.add(planet);
-            this.state.planets.push(planet);
-            this.log(
-                `Planet ${i} erstellt: Position (${planet.position.x.toFixed(2)}, ${planet.position.y.toFixed(2)}, ${planet.position.z.toFixed(2)})`
-            );
-        }
-    }
-
-    // Deferierter Fern-Deko-Bau: Planeten + Sternfeld erscheinen EINMAL, sobald die Bühne steht —
+    // Deferierter Fern-Deko-Bau: das Sternfeld (mit den Wandelsternen) erscheint EINMAL, sobald die Bühne steht —
     // synchron im Boot stähle er dem Boden-Streaming den Frame. No-op ohne `_fernDekoDeferred`
     // (headless baut sofort in createGalaxySkybox).
     _tickBootFernDeko() {
@@ -15263,11 +15218,10 @@ class AnazhRealm {
         if (!this._buehneSteht()) return;
         this._fernDekoDeferred = false;
         try {
-            this._buildSkyPlanets();
             this._buildStarField();
         } catch (err) {
             // Fern-Deko darf den ewigen Loop nie reißen — laut, aber nicht tödlich.
-            this.log(`Fern-Deko-Bau (Planeten/Sterne) fehlgeschlagen: ${err.message}`, "WARN");
+            this.log(`Fern-Deko-Bau (Sterne) fehlgeschlagen: ${err.message}`, "WARN");
         }
     }
 
@@ -15275,9 +15229,17 @@ class AnazhRealm {
     // Kamera-Rotation (Blinken); diskrete Quads rastert die GPU mit echtem Anti-Aliasing.
     // ~2800 Sterne deterministisch aus worldMeta.seed; Größe + Hue je Stern (O/B bläulich ↔ K/M gelblich);
     // Sidereal-Rotation mit timeOfDay um eine geneigte Achse, Position folgt der Kamera; AdditiveBlending.
+    // DIE SICHTBARKEIT IST PHYSIK (V18.530): jeder Punkt trägt seine scheinbare Helligkeit als Größenklasse
+    // (`aMag`), die Dämmerung setzt die Grenzgröße (`_himmelGrenzgroesse`) — mittags ist NICHTS sichtbar,
+    // in der Dämmerung erscheint zuerst der Abendstern, dann die hellen Sterne, in tiefer Nacht alle.
+    // DIE WANDELSTERNE (`HIMMEL.wandelsterne`) sind die hellsten Punkte desselben Feldes — keine Kugeln.
+    // Befund 04.10. (Blick-Tour 7-birke): drei Math.random-Kugeln (10–30 m auf 400 m = 3–8° — 6–16 Monde
+    // breit, Zufallsfarbe, unbeleuchtet) standen am Mittagshimmel; die pinke war die sichtbare.
     _buildStarField() {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        const STAR_COUNT = 2800;
+        const WANDEL = AnazhRealm.HIMMEL.wandelsterne;
+        const FIX_COUNT = 2800;
+        const STAR_COUNT = FIX_COUNT + WANDEL.length;
         const RADIUS = 480; // knapp innerhalb der Skybox-Sphere (500)
         // Deterministischer RNG aus dem Welt-Seed — alle Mitspieler sehen
         // denselben Himmel (Vision: eine Welt, ein Sternbild).
@@ -15297,10 +15259,12 @@ class AnazhRealm {
         const positions = new Float32Array(STAR_COUNT * 3);
         const colors = new Float32Array(STAR_COUNT * 3);
         const sizes = new Float32Array(STAR_COUNT);
+        const mags = new Float32Array(STAR_COUNT);
         const warm = new THREE.Color(1.0, 0.92, 0.75); // K/M-Sterne (gelblich)
         const cool = new THREE.Color(0.78, 0.86, 1.0); // O/B-Sterne (bläulich)
         const tmpCol = new THREE.Color();
         for (let i = 0; i < STAR_COUNT; i++) {
+            const w = i >= FIX_COUNT ? WANDEL[i - FIX_COUNT] : null;
             // Gleichmaessige Verteilung auf der Kugel (kein Pol-Cluster)
             const u = rng();
             const v = rng();
@@ -15323,6 +15287,17 @@ class AnazhRealm {
             colors[i * 3] = tmpCol.r * bright;
             colors[i * 3 + 1] = tmpCol.g * bright;
             colors[i * 3 + 2] = tmpCol.b * bright;
+            // Die Größenklasse aus demselben Wurf: die meisten Sterne lichtschwach (6), wenige hell (bis −1).
+            mags[i] =
+                AnazhRealm.HIMMEL.sternMagSchwach - (AnazhRealm.HIMMEL.sternMagSchwach + 1) * Math.pow(sizeRoll, 3);
+            if (w) {
+                // Ein Wandelstern: dieselbe Kugel-Verteilung, eigene Farbe, eigene Helligkeit, ein Hauch größer.
+                sizes[i] = w.groesse;
+                colors[i * 3] = w.farbe[0];
+                colors[i * 3 + 1] = w.farbe[1];
+                colors[i * 3 + 2] = w.farbe[2];
+                mags[i] = w.mag;
+            }
         }
         // Jeder Stern ist ein 4-Vertex-Quad in einer InstancedMesh: die Quad-uv ist per TSL
         // `attribute("uv", "vec2")` WGSL-konform lesbar → Soft-Falloff smoothstep(0.5..0.08).
@@ -15337,6 +15312,9 @@ class AnazhRealm {
         const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
 
         const uOpacity = uniform(0.5);
+        // Die Grenzgröße des Himmels (`_himmelGrenzgroesse`): ein Punkt leuchtet, wenn er heller ist als sie
+        // (weich über ±0,5 Größenklassen).
+        const uGrenze = uniform(-10);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
 
@@ -15350,7 +15328,8 @@ class AnazhRealm {
         // Attribute (gesetzt via mesh.setColorAt(i, color), gebunden im
         // Shader via attribute("instanceColor", "vec3")).
         const instColor = attribute("instanceColor", "vec3");
-        starMat.colorNode = vec4(instColor, falloff.mul(uOpacity));
+        const sichtbar = uGrenze.sub(attribute("aMag", "float")).add(0.5).clamp(0.0, 1.0);
+        starMat.colorNode = vec4(instColor, falloff.mul(uOpacity).mul(sichtbar));
 
         // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
         starMat.transparent = true;
@@ -15365,6 +15344,7 @@ class AnazhRealm {
 
         this.state.starFieldUniforms = {
             opacity: uOpacity,
+            grenze: uGrenze,
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
@@ -15395,6 +15375,7 @@ class AnazhRealm {
         if (starField.instanceColor) {
             planeGeo.setAttribute("instanceColor", starField.instanceColor);
         }
+        planeGeo.setAttribute("aMag", new THREE.InstancedBufferAttribute(mags, 1));
         starField.frustumCulled = false;
         // Sterne werfen und empfangen keine Schatten (unendlich ferne Billboards).
         starField.castShadow = false;
@@ -32117,7 +32098,7 @@ class AnazhRealm {
         // Wellen-Displacement, Tangenten-Kreuzprodukt-Normale, Fluss-/See-Foam, Blinn-Phong-Spec, Fresnel-
         // Alpha (die Luft: scene.fogNode); Attribute aFlow (vec2), aShore, aWave (float). Live-Uniforms in
         // state.hydroSurfaceUniforms (Schlüssel ohne u-Präfix, TSL-Konvention), mutiert von
-        // _loopSkyboxPlanets (time) + _dayNightApplyWaterMaterials (sunDir, light).
+        // _loopSkyboxZeit (time) + _dayNightApplyWaterMaterials (sunDir, light).
         const TSL = THREE.TSL;
         if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
             this.log("HydroSurface-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
@@ -33950,7 +33931,7 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         // MeshBasicNodeMaterial (TSL): vertikales Wasser-Tuch mit billow-Displacement entlang der Normale
         // (positionNode), Schaum-Strähnen (vnoise) + Blinn-Phong-Glitzern + Fog (colorNode); transparent +
-        // depthWrite + DoubleSide. Uniforms in state.waterfallUniforms: time (_loopSkyboxPlanets),
+        // depthWrite + DoubleSide. Uniforms in state.waterfallUniforms: time (_loopSkyboxZeit),
         // flowDir/flowSpeed (statisch), deep/shallow/foam, sunDir/light/fog* (_dayNightApplyWaterMaterials).
         const TSL = THREE.TSL;
         if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
@@ -81457,15 +81438,38 @@ class AnazhRealm {
         if (!this.state._skyEnvFailed) this._ensureSkyEnvironment();
     }
 
-    // Stern-Feld-Opacity: nur nachts sichtbar (umgekehrt zur Sonnenhöhe), durch Wetter gedämpft;
-    // die Uniform lebt in state.starFieldUniforms.
+    // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor), das Wetter
+    // dämpft (Wolken); die Uniforms leben in state.starFieldUniforms.
     _dayNightApplyStarField(t, skyMul) {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
         const sa = t * Math.PI * 2 - Math.PI / 2;
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
-        const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
-        u.opacity.value = nightFactor * skyMul;
+        u.opacity.value = skyMul;
+        if (u.grenze) u.grenze.value = this._himmelGrenzgroesse(sunHeight);
+    }
+
+    // DIE GRENZGRÖSSE des Himmels (scheinbare Helligkeit, ab der ein Punkt sichtbar ist) aus der Sonnenhöhe: die
+    // Dämmerungs-Anker `HIMMEL.grenzgroesse` (Sonnenhöhe in Grad → Größenklasse), linear dazwischen.
+    _himmelGrenzgroesse(sunHeight) {
+        const A = AnazhRealm.HIMMEL.grenzgroesse;
+        const h = (Math.asin(Math.max(-1, Math.min(1, sunHeight))) * 180) / Math.PI;
+        if (h >= A[0][0]) return A[0][1];
+        for (let i = 1; i < A.length; i++) {
+            if (h >= A[i][0]) {
+                const t = (h - A[i - 1][0]) / (A[i][0] - A[i - 1][0]);
+                return A[i - 1][1] + (A[i][1] - A[i - 1][1]) * t;
+            }
+        }
+        return A[A.length - 1][1];
+    }
+
+    // Die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1 Tag) aus der Sonnenhöhe — DIE EINE
+    // Himmels-Helligkeit: die In-Streu-Farbe der Luft und die Blässe des Mondes lesen sie.
+    _himmelHell(sunHeight) {
+        let q = (sunHeight + 0.18) / 0.6;
+        q = q < 0 ? 0 : q > 1 ? 1 : q;
+        return 0.045 + 0.955 * q * q * (3 - 2 * q);
     }
 
     // DirectionalLight: Position folgt dem Spieler (Shadow-Frustum zentriert), Target am Spieler-Boden,
@@ -81770,12 +81774,7 @@ class AnazhRealm {
         // r128 las Hex als LINEAR → Rohwerte per setRGB, nie per Hex (sRGB→linear wäre zu dunkel).
         const sunHeightF = Math.max(0, Math.sin(angle));
         const _fATM = this._atmosphere(sunHeightF);
-        const _fSS = (a, b, x) => {
-            let q = (x - a) / (b - a);
-            q = q < 0 ? 0 : q > 1 ? 1 : q;
-            return q * q * (3 - 2 * q);
-        };
-        const skyB = 0.045 + 0.955 * _fSS(-0.18, 0.42, sunHeightF);
+        const skyB = this._himmelHell(sunHeightF);
         let fdR = 0.039 + (0.651 - 0.039) * skyB; // 0x0a1326 → 0xa6d2ec, raw als LINEAR (r128-treu)
         let fdG = 0.075 + (0.824 - 0.075) * skyB;
         let fdB = 0.149 + (0.925 - 0.149) * skyB;
@@ -81897,6 +81896,12 @@ class AnazhRealm {
             if (!moon.userData.skyOffset) moon.userData.skyOffset = new THREE.Vector3();
             moon.userData.skyOffset.set(mx, my, mz);
             moon.visible = my > -10;
+            // Der Mond am Taghimmel ist BLASS: seine Leuchtdichte gegen die des Himmels (`HIMMEL.mondGegenHimmel`)
+            // — nachts fast deckend, am Tag ein heller Schleier.
+            if (moon.material) {
+                const hell = this._himmelHell(Math.sin(angle));
+                moon.material.opacity = 0.98 / (1 + hell / AnazhRealm.HIMMEL.mondGegenHimmel);
+            }
         }
     }
 
@@ -81912,8 +81917,6 @@ class AnazhRealm {
         };
         pin(this.state.sunMesh);
         pin(this.state.moonMesh);
-        const planets = this.state.planets;
-        if (planets) for (let i = 0; i < planets.length; i++) pin(planets[i]);
     }
 
     // Treibt timeOfDay nach Echtzeit + dayLength; currentTime in Sekunden (performance.now()/1000).
@@ -84353,7 +84356,7 @@ class AnazhRealm {
                 // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
                 this._tickBootPhase3(performance.now());
 
-                // ### Fern-Deko (P0.3 Bühnen-Ordnung) — Planeten + Sternfeld NACH der Bühne ###
+                // ### Fern-Deko (P0.3 Bühnen-Ordnung) — das Sternfeld NACH der Bühne ###
                 // No-op, wenn nichts deferiert ist (headless baut sofort in createGalaxySkybox).
                 this._tickBootFernDeko();
 
@@ -84428,8 +84431,8 @@ class AnazhRealm {
                 this._loopVoxelStreaming();
                 this._perfSenseLap("streaming", _pt);
 
-                // ### Skybox und Planeten ### (V9.44-f → _loopSkyboxPlanets)
-                this._loopSkyboxPlanets(currentTime);
+                // ### Skybox-Zeit ### (V9.44-f → _loopSkyboxZeit)
+                this._loopSkyboxZeit(currentTime);
 
                 // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
                 this._tickPortalMembranes(currentTime);
@@ -85961,19 +85964,12 @@ class AnazhRealm {
         return this._runFrameScheduler(this.state.playerMesh.position);
     }
 
-    _loopSkyboxPlanets(currentTime) {
-        // ### Skybox und Planeten ###
+    _loopSkyboxZeit(currentTime) {
         // time-Uniform lebt in state.skyboxUniforms; Existenz-Probe, weil createGalaxySkybox bei
         // Vendor-Bruch früh returnen kann.
         if (this.state.skyboxUniforms && this.state.skyboxUniforms.time) {
             this.state.skyboxUniforms.time.value = currentTime;
         }
-        this.state.planets.forEach((planet) => {
-            const theta = currentTime / 10;
-            const radius = 400;
-            planet.position.x = radius * Math.cos(theta);
-            planet.position.z = radius * Math.sin(theta);
-        });
     }
 
     _loopAutoSave(currentTime) {
@@ -86478,7 +86474,7 @@ class AnazhRealm {
             const tod = this.state.timeOfDay || 0;
             this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
         }
-        // WELLE J3 — Sonne·Mond·Planeten SYNCHRON an die Kamera heften (wie das
+        // WELLE J3 — Sonne·Mond SYNCHRON an die Kamera heften (wie das
         // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu
         // orbiten + neben dem fernen Spieler durchs Terrain zu rasen.
         this._followCelestialBodies();
@@ -90547,6 +90543,32 @@ AnazhRealm.LUFT = Object.freeze({
     mieKeule: 8,
     mieAnteil: 0.45,
     mieGlanz: 1.6,
+});
+// DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe
+// in Grad, Grenzgröße des bloßen Auges]: im hellen Tag (≥ 10°) ist nichts zu sehen, nahe dem Horizont gerade die
+// Venus, bei Sonnenuntergang der Abendstern (−3), am Ende der bürgerlichen Dämmerung (−6°) die hellsten Sterne
+// (+1,5), der nautischen (−12°) +4, in astronomischer Nacht (−18°) +6. `sternMagSchwach` = die schwächsten
+// Sterne des Feldes (+6). `wandelsterne` = die hellen Planeten als PUNKTE des Feldes (Venus −4,2 weißgelb,
+// Jupiter −2,3 cremeweiß, Mars −1,0 rötlich; Pixel knapp über dem hellsten Stern). `mondGegenHimmel` =
+// Leuchtdichte des Vollmonds gegen den blauen Tageshimmel (≈ 2500 : 5000 cd/m²) — am Tag ein blasser Schleier.
+AnazhRealm.HIMMEL = Object.freeze({
+    grenzgroesse: Object.freeze(
+        [
+            [10, -5],
+            [2, -4.5],
+            [0, -3],
+            [-6, 1.5],
+            [-12, 4],
+            [-18, 6],
+        ].map((a) => Object.freeze(a))
+    ),
+    sternMagSchwach: 6,
+    wandelsterne: Object.freeze([
+        Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]), groesse: 7.5 }),
+        Object.freeze({ mag: -2.3, farbe: Object.freeze([1.0, 0.94, 0.82]), groesse: 7.0 }),
+        Object.freeze({ mag: -1.0, farbe: Object.freeze([1.0, 0.66, 0.46]), groesse: 6.8 }),
+    ]),
+    mondGegenHimmel: 0.5,
 });
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.

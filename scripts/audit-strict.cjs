@@ -530,7 +530,6 @@ async function auditStateAndMethods() {
                 "rigidBodies",
                 "groundHeightField",
                 "groundMesh",
-                "planets",
                 "cameraMode",
                 "chunkRingRadius",
                 "hotbar",

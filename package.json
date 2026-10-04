@@ -109,6 +109,7 @@
         "gate:portal-boot": "node scripts/diag-portal-boot.cjs",
         "gate:foundry-deadlock": "node scripts/diag-foundry-deadlock.cjs",
         "gate:luft-sicht": "node scripts/diag-luft-sicht.cjs --selftest",
+        "gate:himmel-tag": "node scripts/diag-himmel-tag.cjs --selftest",
         "gate:foundry-impostor": "node scripts/diag-foundry-impostor.cjs",
         "gate:foundry-crossfade": "node scripts/diag-foundry-crossfade.cjs --selftest && node scripts/diag-foundry-crossfade.cjs",
         "gate:v1-resolve": "node scripts/diag-v1-resolve.cjs",

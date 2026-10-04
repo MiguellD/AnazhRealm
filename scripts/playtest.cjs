@@ -40401,19 +40401,19 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.worldFieldAt = origWFA;
         r.state.playerMesh.position.x = 0;
 
-        // --- Vision 8: Stern-Feld (V8.28 THREE.Points) folgt Tageszeit
-        // V10.0-f-2 Doku-Sync: Stern-Material ist jetzt PointsNodeMaterial,
-        // Opacity-Uniform lebt in state.starFieldUniforms (uniform-Knoten).
-        const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.opacity;
+        // --- Vision 8: Stern-Feld folgt Tageszeit (V18.530: die Dämmerung setzt die GRENZGRÖSSE — mittags ist kein
+        // Punkt heller als sie, auch kein Wandelstern; um Mitternacht leuchten alle bis +6).
+        const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.grenze;
         out.starIntensityExists = !!starU;
         if (starU) {
             r.setTimeOfDay(0.5); // Mittag
             r._applyDayNightToScene();
-            const starsMittag = starU.value;
+            const grenzeMittag = starU.value;
             r.setTimeOfDay(0); // Mitternacht
             r._applyDayNightToScene();
-            const starsNacht = starU.value;
-            out.starsBrighterAtNight = starsNacht > starsMittag + 0.2;
+            const grenzeNacht = starU.value;
+            const hellster = Math.min(...r.constructor.HIMMEL.wandelsterne.map((w) => w.mag));
+            out.starsBrighterAtNight = grenzeMittag < hellster - 0.5 && grenzeNacht >= r.constructor.HIMMEL.sternMagSchwach;
         }
 
         // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
@@ -40512,7 +40512,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
             wave6g3v2Results.starIntensityExists
         );
-        check("Welle 6.G3 V2 Vision: Sterne nachts sichtbar stärker als tags", wave6g3v2Results.starsBrighterAtNight);
+        check("Welle 6.G3 V2 Vision → V18.530: mittags ist kein Punkt sichtbar (Grenzgröße unter dem hellsten Wandelstern), nachts alle bis +6", wave6g3v2Results.starsBrighterAtNight);
         check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
         check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
         check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
@@ -41122,7 +41122,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
         check(
-            "V17.J3: _followCelestialBodies existiert (Sonne/Mond/Planeten kamera-relativ)",
+            "V17.J3: _followCelestialBodies existiert (Sonne/Mond kamera-relativ; die Wandelsterne leben im Sternfeld)",
             v828Results.celestialFollowExists
         );
         check(
