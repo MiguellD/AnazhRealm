@@ -165,6 +165,14 @@ const FORBIDDEN = [
     { token: "_drainScatterMeshPools", fiel: "Welle B" },
     { token: "_scatterMeshPools", fiel: "Welle B" },
     { token: '"deck-streu"', fiel: "Welle B — die Deck-Streu ist der zweite Block der Fern-Mesh je Art" },
+    // Der platzierte Bau keyt nicht mehr regional: die 256-m-Region (`p:x,z`) brachte keinen Cull (ihre Kugel
+    // schneidet das Frustum praktisch immer), sie vervielfachte nur die Gruppen je Leaf.
+    { token: "_archPlacedRegionKey", fiel: "Welle B — der platzierte Bau ist global, ein Studio-Leaf keyt nach Geometrie" },
+    { token: "useRegionArchCull", fiel: "Welle B" },
+    { token: "ARCH_REGION_CULL_MAX_SPAN", fiel: "Welle B" },
+    { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
+    { token: '"@p:"', fiel: "Welle B" },
+    { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

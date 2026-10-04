@@ -73,7 +73,8 @@ function check(name, ok, detail) {
     // (Probe gewandert in DAS FELD URTEILT [das-feld-zeichnet §2 Stufe 1]: vorkommen
     // war schon VOR der Welle 5 — der T3-Kugel-Konsum fehlte der Zählung.)
     const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
-    const fernDeriveSites = (src.match(/\+ "s:" \+/g) || []).length;
+    // (Welle B: der platzierte Bau trägt kein p:-Präfix mehr — der Super-Key BEGINNT mit "s:")
+    const fernDeriveSites = (src.match(/"s:" \+ Math\.floor/g) || []).length;
     const gfIdx = src.indexOf("_archInstanceGroupFor(name, leafIdx, leaf, regionKey) {");
     // 8000 Zeichen: der Granularitäts-Kollaps-Block (V18.491.14) sitzt zwischen
     // Keying und Batch-Zweig — das Fenster muss BEIDE Anker tragen.
@@ -91,7 +92,7 @@ function check(name, ok, detail) {
     check(
         "F(Quelle): der Keying-Chokepoint mappt VOR dem Gruppen-Key (_archFernRegionKey zuerst)",
         gfHead.indexOf("this._archFernRegionKey(") >= 0 &&
-            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf('const key = regional ? name + "#"')
+            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf("const basis = name")
     );
 
     await new Promise((r) => server.listen(PORT, r));
@@ -155,7 +156,7 @@ function check(name, ok, detail) {
             c.slots.some((s) => {
                 if (!s || typeof s.key !== "string") return false;
                 const at = s.key.indexOf("@");
-                return at >= 0 && !(s.key.startsWith("@s:", at) || s.key.startsWith("@p:s:", at));
+                return at >= 0 && !(s.key.startsWith("@s:", at));
             });
         const sucheProbe = (nurNah) => {
             for (const reg of map.values()) {
@@ -273,7 +274,7 @@ function check(name, ok, detail) {
                 dblk.bpVor = dz2.bpName;
                 const privat = (k) => {
                     const at = k.indexOf("@");
-                    return at >= 0 && !(k.startsWith("@s:", at) || k.startsWith("@p:s:", at));
+                    return at >= 0 && !(k.startsWith("@s:", at));
                 };
                 const privKeysVor = dz2.slots.map((s) => s.key).filter(privat);
                 dblk.privateSlotsVor = privKeysVor.length;
@@ -304,7 +305,7 @@ function check(name, ok, detail) {
                     dz2.slots.length > 0 &&
                     dz2.slots.every((s) => {
                         const at = s.key.indexOf("@");
-                        return at >= 0 && (s.key.startsWith("@s:", at) || s.key.startsWith("@p:s:", at));
+                        return at >= 0 && (s.key.startsWith("@s:", at));
                     });
                 // die private Hülle: ge-reapt (weg) oder restlos leer
                 dblk.huelleWeg = privKeysVor.every((k) => {
@@ -345,13 +346,13 @@ function check(name, ok, detail) {
             fern.s0 = S0;
             // Unit: die EINE Key-Funktion — fern+Region → Super-Region; nicht-fern/null/gemappt unberührt.
             fern.unit =
-                r._archFernRegionKey("x", { leafKey: "fimp:a" }, "p:7,9") ===
-                    "p:s:" + Math.floor(7 / S0) + "," + Math.floor(9 / S0) &&
+                r._archFernRegionKey("x", { leafKey: "fimp:a" }, "7,9") ===
+                    "s:" + Math.floor(7 / S0) + "," + Math.floor(9 / S0) &&
                 r._archFernRegionKey("fscatter:eiche:3:2", {}, "5,5") ===
                     "s:" + Math.floor(5 / S0) + "," + Math.floor(5 / S0) &&
-                r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1:0" }, "p:7,9") === "p:7,9" &&
+                r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1:0" }, "7,9") === "7,9" &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, null) === null &&
-                r._archFernRegionKey("x", { leafKey: "fimp:a" }, "p:s:1,2") === "p:s:1,2";
+                r._archFernRegionKey("x", { leafKey: "fimp:a" }, "s:1,2") === "s:1,2";
             // Das strauch-Impostor-Flat über die ECHTE Pipe ziehen (LOD1-Subjekt lädt async).
             let flat = null;
             const dlF = performance.now() + 30000;
@@ -363,28 +364,36 @@ function check(name, ok, detail) {
             fern.flat = !!(flat && flat.instanceable && flat.lod === 2);
             if (fern.flat) {
                 const R = AR.ARCH_REGION_M;
+                // Welle B: der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
+                // streut das Fern-Flat (Name `fscatter:…:2` = Fern-Stufe) über den echten Streu-Eintritt in 4×4
+                // Regionen und räumt über den echten Streu-Austritt.
+                const PROBE = "fscatter:diaetprobe:0:2";
                 const zaehle = () => {
                     let w = 0;
-                    for (const k of r.state.archInstanceGroups.keys()) if (k.includes("@") && k.includes("#fimp:")) w++;
+                    for (const k of r.state.archInstanceGroups.keys()) if (k.startsWith(PROBE + "#") && k.includes("@")) w++;
                     return { w };
                 };
                 const welt = (S) => {
                     AR.SCATTER_FERN_SUPERREGION = S;
                     const vor = zaehle();
-                    const entries = [];
+                    const alle = [];
                     for (let gx = 0; gx < 4; gx++)
                         for (let gz = 0; gz < 4; gz++) {
-                            const e = {
-                                type: "busch_hazel",
-                                seed: 7,
-                                scale: 1,
-                                position: { x: (900 + gx) * R + 8, y: 0, z: (900 + gz) * R + 8 },
-                            };
-                            r._archInstanceAdd(e, flat);
-                            entries.push(e);
+                            const slots = r._scatterInstanceAdd(
+                                PROBE,
+                                (900 + gx) * R + 8,
+                                0,
+                                (900 + gz) * R + 8,
+                                0,
+                                1,
+                                null,
+                                900 + gx + "," + (900 + gz),
+                                flat
+                            );
+                            if (slots) alle.push(slots);
                         }
                     const mit = zaehle();
-                    for (const e of entries) r._archInstanceRemove(e);
+                    for (const slots of alle) r._scatterFreeSlots(slots);
                     const nach = zaehle();
                     return { gruppen: mit.w - vor.w, leck: nach.w - vor.w };
                 };

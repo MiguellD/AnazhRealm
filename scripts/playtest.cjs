@@ -21621,9 +21621,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
                 // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
                 // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
                 out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
-                // V18.353 PHASE A.1 — die platzierte Architektur ist jetzt region-gekeyt
-                // (`baum_kiefer#0@p:regX,regZ`, frustum-cullbar) statt global (`baum_kiefer#0`);
-                // der Test folgt dem Refactor: eine baum_kiefer#0-Gruppe (region-gekeyt ODER global).
+                // Welle B — die platzierte Architektur ist global (`baum_kiefer#0`, die Regions-Achse @p: fiel;
+                // ein Studio-Leaf keyt nach seiner Studio-Geometrie): eine baum_kiefer#0-Gruppe.
                 out.cutoverGroupExists = !!(
                     r.state.archInstanceGroups &&
                     [...r.state.archInstanceGroups.keys()].some((k) => k.indexOf("baum_kiefer#0") === 0)
@@ -21729,7 +21728,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             res.cutoverHasCollision
         );
         check(
-            "V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert (V18.353: region-gekeyt @p:)",
+            "V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert (Welle B: global, ohne @p:)",
             res.cutoverGroupExists
         );
         check(

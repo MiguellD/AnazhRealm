@@ -86,19 +86,19 @@ const server = http.createServer((req, res) => {
         // (1) headless → _foliageResScale === 1 (der Aktuator lief im Warmup mit dem Null-Renderer).
         out.headlessRes = st._foliageResScale;
 
-        // (2) _markFoliageLayer: Foliage-Key vs placed (`p:`) vs global.
+        // (2) _markFoliageLayer: Foliage-Key vs placed (Welle B: global, kein Regions-Schlüssel) vs global.
         const mk = (regionKey, regional) => {
             const m = new THREE.Object3D();
             r._markFoliageLayer(m, regionKey, regional);
             return { l0: (m.layers.mask & 1) !== 0, l1: (m.layers.mask & (1 << LAYER)) !== 0 };
         };
         out.foliageMark = mk("3,4", true); // region-gestreute Vegetation → Layer 0 + FOLIAGE_LAYER
-        out.placedMark = mk("p:3,4", true); // platzierte Struktur → nur Layer 0
+        out.placedMark = mk(null, false); // platzierte Struktur (global seit Welle B) → nur Layer 0
         out.globalMark = mk(null, false); // global (grosse Struktur) → nur Layer 0
 
         // (2b) ECHTE Gruppen über den REALEN Erzeugungs-Pfad (`_archInstanceGroupFor`/-Batch + Gras),
         // deterministisch statt warmup-abhängig: eine region-gestreute Vegetations-Gruppe trägt
-        // FOLIAGE_LAYER + Layer 0; eine platzierte (`p:`) trägt nur Layer 0; Gras trägt beide.
+        // FOLIAGE_LAYER + Layer 0; eine platzierte (global) trägt nur Layer 0; Gras trägt beide.
         const layersOf = (m) => ({ l0: (m.layers.mask & 1) !== 0, l1: (m.layers.mask & (1 << LAYER)) !== 0 });
         let grpFoliage = null,
             grpPlaced = null,
@@ -109,7 +109,7 @@ const server = http.createServer((req, res) => {
             const leaf = { geom: new THREE.BoxGeometry(1, 1, 1), mat: new THREE.MeshBasicMaterial() };
             const gF = r._archInstanceGroupFor("grown_probe_leaf", 0, leaf, "9,9");
             grpFoliage = gF && gF.mesh ? layersOf(gF.mesh) : null;
-            const gP = r._archInstanceGroupFor("p_probe", 0, leaf, "p:9,9");
+            const gP = r._archInstanceGroupFor("p_probe", 0, leaf, null);
             grpPlaced = gP && gP.mesh ? layersOf(gP.mesh) : null;
             if (typeof r._acquireGrassMesh === "function" && st._grassConeGeometry) {
                 const gm = r._acquireGrassMesh();
