@@ -170,6 +170,19 @@ function validateManifest(m) {
     if (lodC && lodC.budget) {
         const ks = lodC.kindStages || {};
         for (const k in lodC.budget) {
+            // B2c (04.10.) — DIE GESTALTEN je Art (Samen-Zahl je Preset, '*' = jede Art ohne Zeile): ganze Zahlen >= 1,
+            // die '*'-Zeile ist Pflicht (die Welt-Varianten-Wahl liest sie für jede Fremd-Art).
+            if (k === "gestalten") {
+                const g = lodC.budget.gestalten;
+                if (!g || typeof g !== "object") v.push("B2c: lod.budget.gestalten ist kein Objekt");
+                else {
+                    if (!("*" in g)) v.push("B2c: lod.budget.gestalten trägt keine '*'-Zeile");
+                    for (const sp in g)
+                        if (!(Number.isInteger(g[sp]) && g[sp] >= 1))
+                            v.push(`B2c: lod.budget.gestalten.${sp} muss eine ganze Zahl >= 1 sein`);
+                }
+                continue;
+            }
             if (!ks[k]) {
                 v.push(`B2b: lod.budget.${k} — Art ohne kindStages`);
                 continue;
@@ -616,7 +629,11 @@ function validateManifest(m) {
             placement: { rarity: { x: 7 } },
             lod: {
                 kindStages: { kaputt: [9], falschrum: [2, 1], tree: [0, 1, 2] },
-                budget: { geist: { 0: {} }, tree: { 3: { blattKarte: -1 }, 1: { deckung: [1.2, 0.9] } } },
+                budget: {
+                    geist: { 0: {} },
+                    tree: { 3: { blattKarte: -1 }, 1: { deckung: [1.2, 0.9] } },
+                    gestalten: { eiche: 0 },
+                },
             },
         },
         params: null,
@@ -653,6 +670,8 @@ function validateManifest(m) {
             bv.some((s) => s.includes("budget.tree[3] — keine gelieferte Stufe")) &&
             bv.some((s) => s.includes("blattKarte muss")) &&
             bv.some((s) => s.includes("deckung muss")) &&
+            bv.some((s) => s.includes("gestalten trägt keine")) &&
+            bv.some((s) => s.includes("gestalten.eiche muss")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&

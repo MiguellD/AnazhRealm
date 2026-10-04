@@ -429,7 +429,7 @@ const server = http.createServer((req, res) => {
                 // Szene noch Räumungs-Buch kennen ihn → die Inventur MUSS ihn als lost fangen.
                 if (f) {
                     if (!f.requested) f.requested = new Set();
-                    const ghost = "selftest_geist|1|0|summer";
+                    const ghost = "selftest_geist|1|0";
                     f.requested.add(ghost);
                     const inv2 = inventory();
                     o.selftestLost = {

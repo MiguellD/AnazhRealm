@@ -45,7 +45,6 @@ function selftest() {
             presetId: "synthetik",
             seed: 1,
             lod: 2,
-            season: "summer",
             meshes: [
                 {
                     kind: "bark",
@@ -122,7 +121,15 @@ async function main() {
             "## r128→r184-Übersetzung am Chokepoint",
         ];
         for (const s of sections) check(md.includes(s), `CONTRACT.md trägt „${s}"`);
-        for (const marker of ["<preset>|<seed>|<lod>|<season>", "SHA-256", "__anazhLiveBake", "LEGACY_LICHT", "cv"])
+        for (const marker of [
+            "<preset>|<gestalt>|<lod>",
+            "karte|<preset>|<gestalt>",
+            "shell_1",
+            "SHA-256",
+            "__anazhLiveBake",
+            "LEGACY_LICHT",
+            "cv",
+        ])
             check(md.includes(marker), `CONTRACT.md trägt den Anker „${marker}"`);
     }
 
@@ -146,15 +153,24 @@ async function main() {
             /core\.scripts/.test(b) && /stempelUrls/.test(b),
             "Stempel: ALLE Manifest-Skripte (core.scripts) reisen mit"
         );
+        check(
+            /stempelUrls\.push\(new URL\(core\.shell \+ v, base\)\.href\)/.test(b),
+            "Stempel: die Shells (core.shell — Mesh-Extraktion + Karten-Bäcker) reisen mit (V18.527)"
+        );
         check(/SHA-256/.test(sc), "Stempel: SHA-256-Digest in der Schale");
         check(
             /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(sc),
             "Stempel: Manifest-Text vor den Skripten (die Formel)"
         );
         check(/"\|f" \+\s*cfg\.format/.test(sc), "Stempel: das Transport-Format reist mit (|f<n>)");
-        const iNur = sc.indexOf("m.nurPlatte");
-        const iStudio = sc.indexOf("W.onmessage(");
-        check(iNur >= 0 && iStudio > iNur, "Ship-Hook in der Schale: nurPlatte antwortet VOR dem Studio-Bau");
+        // Im Körper-Platten-Zweig (nach dem Lesen) antwortet nurPlatte VOR dem Weiterreichen ans Studio (`studio()`).
+        const iThen = sc.indexOf("const hit = wert && Array.isArray(wert.meshes)");
+        const iNur = iThen >= 0 ? sc.indexOf("m.nurPlatte", iThen) : -1;
+        const iStudio = iThen >= 0 ? sc.indexOf("studio()", iThen) : -1;
+        check(
+            iThen >= 0 && iNur > iThen && iStudio > iNur && /W\.onmessage\(/.test(sc),
+            "Ship-Hook in der Schale: nurPlatte antwortet VOR dem Studio-Bau"
+        );
     }
     const req = PK.methodSource(anazh, "_foundryRequest", ["_foundryIngestTakt("]);
     check(!!req, "_foundryRequest im Stamm gefunden");
@@ -184,16 +200,16 @@ async function main() {
         // Hook-Verhalten: false → null TROTZ ready-Worker (der Fallback ist übersprungen).
         const hooked = await realm.page.evaluate(async () => {
             window.__anazhLiveBake = false;
-            const m = await window.anazhRealm._foundryRequest("eiche", 5, 2, "summer");
+            const m = await window.anazhRealm._foundryRequest("eiche", 5, 2);
             delete window.__anazhLiveBake; // Default wiederherstellen (die Gate-Hook-Lehre: sichern/restoren)
             return m === null;
         });
         check(hooked, "Verhalten: __anazhLiveBake=false → _foundryRequest null trotz ready-Worker");
         // Default-Pfad: Hook weg → der Worker liefert (byte-Wahrheit für den Roundtrip).
-        const ser = await realm.page.evaluate(() => window.__packSer("eiche", 7, 2, "summer"));
+        const ser = await realm.page.evaluate(() => window.__packSer("eiche", 7, 2));
         check(
             !!(ser && ser.meshes && ser.meshes.length),
-            `Live-Reply eiche|7|2|summer: ${ser ? ser.meshes.length : 0} Meshes`
+            `Live-Reply eiche|7|2: ${ser ? ser.meshes.length : 0} Meshes`
         );
         if (!ser) throw new Error("kein Live-Reply");
         const rec = await realm.page.evaluate(() => {

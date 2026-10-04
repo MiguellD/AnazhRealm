@@ -363,7 +363,7 @@ async function runPartB() {
         res.factor = factor;
         const stageOfKey = (k) => {
             if (/#fimp:/.test(k)) return 2;
-            const m = /#f:[^|]+\|\d+\|(\d)\|/.exec(k);
+            const m = /#f:[^|]+\|\d+\|(\d)[|:]/.exec(k);
             return m ? +m[1] : null;
         };
         const stagesOf = (e) => {

@@ -392,7 +392,7 @@ function deriveGestalt(srcNC) {
             }
             const alt = { w: +(mxx - mnx).toFixed(2), h: +(mxy - mny).toFixed(2), d: +(mxz - mnz).toFixed(2) };
             const meshes = await Promise.race([
-                r._foundryRequest(gestalt, 3, 0, r.state.season || "summer"),
+                r._foundryRequest(gestalt, 3, 0),
                 new Promise((res3) => setTimeout(() => res3(null), 45000)),
             ]);
             if (!Array.isArray(meshes) || !meshes.length) {

@@ -3,7 +3,7 @@
 // eine Datei — kein zweiter Boot-/Encode-/Vergleichs-Pfad, der driften kann.
 //
 // Der Vertrag lebt in `spec/pack/v0/CONTRACT.md`:
-//   v0  = der IST-IDB-Kanon (Key `preset|seed|lod|season` · Val `{meshes}` = Worker-Reply ·
+//   v0  = der IST-IDB-Kanon (Key `preset|gestalt|lod[|ov:<hash>]` · Val `{meshes}` = Worker-Reply ·
 //         Stempel = SHA-256(Manifest-Text + alle Manifest-Skripte)).
 //   v1  = die Pack-Hülle (cv/key/meta/components + meshes mit b64-Puffern) — die Mint-Artefakte.
 //
@@ -114,8 +114,9 @@ function methodSource(src, name, nextAnchors) {
 
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
-// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … ` (UTF-8; srcs.join("\n")). Die Platte
-// hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-Format) — der Pack-Index trägt den reinen Generator-Hash.
+// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + shell_1 + …` (UTF-8; srcs.join("\n"); die
+// Shells seit V18.527). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-Format) — der Pack-Index trägt
+// den reinen Generator-Hash.
 function computeStamp(root) {
     const r = root || ROOT;
     const manifestText = fs.readFileSync(path.join(r, "cores.manifest.json"), "utf8");
@@ -126,6 +127,7 @@ function computeStamp(root) {
             if (!core || !Array.isArray(core.scripts)) continue;
             for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
         }
+        for (const core of manifest) if (core && typeof core.shell === "string" && core.shell) scripts.push(core.shell);
     }
     const srcs = [manifestText];
     for (const s of scripts) srcs.push(fs.readFileSync(path.join(r, s), "utf8"));
@@ -149,8 +151,8 @@ function coreIdFor(rec, manifest) {
 
 // ---------------------------------------------------------------------------
 // Pack v1 — Datei-Namen, Hülle, Roundtrip.
-function packFileName(presetId, seed, lod, season) {
-    return `${presetId}-s${seed}-L${lod}-${season}.json`;
+function packFileName(presetId, seed, lod) {
+    return `${presetId}-s${seed}-L${lod}.json`;
 }
 
 // Aus dem im Browser serialisierten Live-Reply (`__packSer`) die v1-Pack-Hülle bauen.
@@ -159,11 +161,10 @@ function packFileName(presetId, seed, lod, season) {
 function packFromReply(ser, meta) {
     return {
         cv: 1,
-        key: `${ser.presetId}|${ser.seed}|${ser.lod}|${ser.season}`,
+        key: `${ser.presetId}|${ser.seed}|${ser.lod}`,
         presetId: ser.presetId,
         seed: ser.seed,
         lod: ser.lod,
-        season: ser.season,
         meta: meta || {},
         components: {},
         meshes: (ser.meshes || []).map((m) => {
@@ -183,7 +184,7 @@ function packFromReply(ser, meta) {
 // (vor der Kodierung) gerechneten Werte. Liefert die Liste der Divergenzen ([] = byte-gleich).
 function comparePackToReply(pack, ser) {
     const diffs = [];
-    const tag = ser ? `${ser.presetId}|${ser.seed}|${ser.lod}|${ser.season}` : "?";
+    const tag = ser ? `${ser.presetId}|${ser.seed}|${ser.lod}` : "?";
     if (!pack || !Array.isArray(pack.meshes)) return [`${tag}: Pack ohne meshes`];
     if (pack.cv !== 1) diffs.push(`${tag}: cv ${pack.cv} != 1`);
     if (!ser || !Array.isArray(ser.meshes)) return diffs.concat([`${tag}: Live-Reply fehlt`]);
@@ -227,7 +228,7 @@ function comparePackToReply(pack, ser) {
 
 function writePack(dir, pack) {
     fs.mkdirSync(dir, { recursive: true });
-    const f = path.join(dir, packFileName(pack.presetId, pack.seed, pack.lod, pack.season));
+    const f = path.join(dir, packFileName(pack.presetId, pack.seed, pack.lod));
     fs.writeFileSync(f, JSON.stringify(pack) + "\n");
     return f;
 }
@@ -326,7 +327,7 @@ async function waitLibraryWarm(page, timeoutMs) {
     }, timeoutMs || 180000);
 }
 
-// Den Live-Reply-Serialisierer in die Seite pflanzen: `window.__packSer(preset,seed,lod,season)`
+// Den Live-Reply-Serialisierer in die Seite pflanzen: `window.__packSer(preset,seed,lod)`
 // ruft `_foundryRequest` (der EINE Produktions-Pfad) und liefert je Puffer { itemSize, type,
 // bytes, b64, sha256 } — sha256 UNABHÄNGIG von b64 über die rohen Bytes (crypto.subtle;
 // 127.0.0.1 ist ein secure context). Der Node-Leser beweist damit die Kodierung selbst.
@@ -343,9 +344,9 @@ async function installPackSerializer(page) {
                 .map((b) => b.toString(16).padStart(2, "0"))
                 .join("");
         };
-        window.__packSer = async (presetId, seed, lod, season) => {
+        window.__packSer = async (presetId, seed, lod) => {
             const r = window.anazhRealm;
-            const meshes = await r._foundryRequest(presetId, seed, lod, season);
+            const meshes = await r._foundryRequest(presetId, seed, lod);
             if (!meshes || !meshes.length) return null;
             const out = [];
             for (const m of meshes) {
@@ -369,7 +370,7 @@ async function installPackSerializer(page) {
                 }
                 out.push(om);
             }
-            return { presetId, seed, lod, season, meshes: out };
+            return { presetId, seed, lod, meshes: out };
         };
     });
 }

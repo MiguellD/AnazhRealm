@@ -281,12 +281,20 @@ function check(name, ok, detail) {
                 // Tick-Grenze (outerM + 96) — die Rück-Wanderung muss greifen.
                 pm.x = dz2.x + 420;
                 pm.z = dz2.z;
+                // Die private Hülle ist eine GETEILTE Gruppe (Art × Gestalt × Stufe × Region): seit V18.527 trägt eine Art
+                // nur ihre Budget-Gestalten (strauch 1), also teilen sich alle Zellen der Region dieselbe Hülle — der
+                // Tick muss die ganze Region demoten, bevor sie leer ist. Gewartet wird auf Zelle UND Hülle.
+                const huelleLeer = () =>
+                    privKeysVor.every((k) => {
+                        const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
+                        return !g || (g.liveCount | 0) === 0;
+                    });
                 let dWandel = 0;
                 const dlW2 = performance.now() + 45000;
                 while (!dWandel && performance.now() < dlW2) {
                     for (let i = 0; i < 40 && !dWandel; i++) {
                         r._tickScatterLod(pm, 8, 800);
-                        if (dz2.lod === 2) dWandel = 1;
+                        if (dz2.lod === 2 && huelleLeer()) dWandel = 1;
                     }
                     if (!dWandel) await new Promise((r2) => setTimeout(r2, 150));
                 }
@@ -341,7 +349,7 @@ function check(name, ok, detail) {
                     "p:s:" + Math.floor(7 / S0) + "," + Math.floor(9 / S0) &&
                 r._archFernRegionKey("fscatter:eiche:3:2", {}, "5,5") ===
                     "s:" + Math.floor(5 / S0) + "," + Math.floor(5 / S0) &&
-                r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1|summer:0" }, "p:7,9") === "p:7,9" &&
+                r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1:0" }, "p:7,9") === "p:7,9" &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, null) === null &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, "p:s:1,2") === "p:s:1,2";
             // Das strauch-Impostor-Flat über die ECHTE Pipe ziehen (LOD1-Subjekt lädt async).

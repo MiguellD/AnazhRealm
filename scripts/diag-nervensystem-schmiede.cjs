@@ -316,7 +316,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup) =====
         try {
             const meshes = await Promise.race([
-                r._foundryRequest("langschwert", 7, 0, "summer"),
+                r._foundryRequest("langschwert", 7, 0),
                 new Promise((res3) => setTimeout(() => res3(null), 30000)),
             ]);
             res.e.meshCount = Array.isArray(meshes) ? meshes.length : -1;
@@ -568,7 +568,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 klemmt fuer kind:weapon auf Stufe 0 (fail-closed [0])",
-        /\|0\|/.test(out.f.key || ""),
+        /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
         out.f.err || String(out.f.key)
     );
     // ===== H: DIE HAND (W-A4b) — eigene Zaehlung =====

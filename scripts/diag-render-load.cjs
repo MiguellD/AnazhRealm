@@ -227,12 +227,12 @@ const server = http.createServer((req, res) => {
                 const k = String(u2.archInstanceKey || "");
                 // WELLE S2 — die FOUNDRY-Keys tragen ihr LOD im leafKey, NICHT im _lodN-Namen:
                 //   `fimp:...`               → L2 (Studio-Billboard-Impostor, der Baum-Fernpfad)
-                //   `f:preset|var|LOD|season:p` → LOD ist das 3. |-Feld
+                //   `f:preset|gestalt|LOD[|ov:…]:p` → LOD ist das 3. |-Feld (V18.527: keine Saison mehr)
                 // ohne diese Erkennung bucketet die alte `/_lod1#/`-Regex JEDEN Foundry-Baum als
                 // LOD0 (die „LOD1 0 / LOD2 0"-Fehlmessung, obwohl L1-Bäume existierten).
                 // Der archInstanceKey ist `entry.type#leafKey[@region]` (z.B.
-                // `baum_tanne#f:tanne|11|1|summer:2`) → das Foundry-LOD steht NACH dem `#`.
-                const fLodM = /(?:^|#)f:[^|#]*\|[^|#]*\|(\d)\|/.exec(k);
+                // `baum_tanne#f:tanne|2|1:2`) → das Foundry-LOD steht NACH dem `#`.
+                const fLodM = /(?:^|#)f:[^|#]*\|[^|#]*\|(\d)[|:]/.exec(k);
                 const bucket = /(?:^|#)fimp:/.test(k)
                     ? "lod2"
                     : fLodM
