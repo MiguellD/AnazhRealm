@@ -589,26 +589,19 @@ function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, co
     arr.push(g);
 }
 
-function superR(phi, m, n1, n2, n3, a, b) {
-    const t = (m * phi) / 4;
-    const p1 = Math.pow(Math.abs(Math.cos(t) / a), n2);
-    const p2 = Math.pow(Math.abs(Math.sin(t) / b), n3);
-    return Math.pow(p1 + p2, -1 / n1);
-}
-
-function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup) {
+function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, seg) {
     // DER GETEILTE SAMEN: die 30-Vert-Superformel-Blatt-KLINGE (Kontur + Quer-Mulde) lebt in
     // phyto-core.js (buildLeafBlades) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie-
     // REZEPTUR ist geteilt (identische superR-Kontur, cup, 14 Segmente, Basis). Divergenzen: das
     // Wind-Attribut-Schema (AnazhRealm aFlex/aPhase — Vorlage aWind/aCenter/aType, HIER angehängt)
     // und eine sub-mikron Float-Noise (≤1 ULP, ~1e-6 m; buildLeafBlades' Additions-Reihenfolge +
     // Math.hypot = AnazhRealms eingefrorene Arithmetik) → pixel-identisch, kein Look-Change. Alle
-    // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op. Fallback → Inline.
+    // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op. `seg` = Kontur-Segmente (ohne = 14).
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.buildLeafBlades === "function") {
         const _r = __core.buildLeafBlades(
             [{ pos: center, dir: dirOut, up: up, scale: scale, needle: false, sway: sway, phase: phase }],
-            { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp }
+            { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp, seg: seg }
         );
         if (_r && _r.count) {
             const g = new THREE.BufferGeometry();
@@ -639,59 +632,8 @@ function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, 
             return;
         }
     }
-    const right = vnorm(vcross(dirOut, up));
-    const u2 = vnorm(vcross(right, dirOut));
-    const seg = 14,
-        positions = [],
-        idx = [],
-        uvs = [];
-    for (let i = 0; i <= seg; i++) {
-        const s = i / seg;
-        const phi = lerp(0.0, Math.PI, s); // halber Umlauf -> Tropfen
-        const w = superR(phi, lp.m, lp.n1, lp.n2, lp.n3, lp.a, lp.b) * lp.wsc;
-        const along = s * scale;
-        const cupZ = -cup * (s - s * s) * scale;
-        const cl = vadd(vadd(vadd(center, vscl(dirOut, along)), vscl(right, -w * scale)), vscl(u2, cupZ));
-        const cr = vadd(vadd(vadd(center, vscl(dirOut, along)), vscl(right, w * scale)), vscl(u2, cupZ));
-        positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
-        uvs.push(0, s, 1, s);
-    }
-    for (let i = 0; i < seg; i++) {
-        const a0 = i * 2,
-            b0 = i * 2 + 1,
-            a1 = i * 2 + 2,
-            b1 = i * 2 + 3;
-        idx.push(a0, b0, a1, b0, b1, a1);
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    const n = g.attributes.position.count;
-    const aw = new Float32Array(n * 3),
-        ac = new Float32Array(n * 3),
-        at = new Float32Array(n),
-        cl = new Float32Array(n * 3);
-    const _lph = sway * 1.5 + center[0] * 0.6 + center[2] * 0.6,
-        _lom = clamp(2.6 - sway * 1.6, 0.5, 2.6);
-    for (let i = 0; i < n; i++) {
-        aw[i * 3] = sway;
-        aw[i * 3 + 1] = _lph;
-        aw[i * 3 + 2] = _lom;
-        ac[i * 3] = center[0];
-        ac[i * 3 + 1] = center[1];
-        ac[i * 3 + 2] = center[2];
-        at[i] = type;
-        cl[i * 3] = color.r;
-        cl[i * 3 + 1] = color.g;
-        cl[i * 3 + 2] = color.b;
-    }
-    g.setAttribute("aWind", new THREE.BufferAttribute(aw, 3));
-    g.setAttribute("aCenter", new THREE.BufferAttribute(ac, 3));
-    g.setAttribute("aType", new THREE.BufferAttribute(at, 1));
-    g.setAttribute("color", new THREE.BufferAttribute(cl, 3));
-    arr.push(g);
+    // Ohne Samen kein stiller Inline-Zwilling (die alte 14-Segment-Kopie kannte keine schlanke Klinge): lauter Bruch.
+    throw new Error("[phyto] pushLeaf: __phytoCore.buildLeafBlades fehlt (der Samen ist Pflicht)");
 }
 
 function pushNeedle(arr, base, dir, len, color, sway, phase, omega) {
