@@ -499,10 +499,17 @@ function scanInstanzWand(srcRoh) {
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
-    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen.
-    const files = ["anazhRealm.js", "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js"].map(
-        (f) => path.join(root, f)
-    );
+    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. feld-wgsl.js (der Welt-March im WGSL) steht
+    // mit drin: der trilineare Brick-March (feldTriAbtast/feldTriGrad, V18.528) fiel dort (Integration W0 — die
+    // Band-Wand trug dieselbe Liste ein zweites Mal, die Rückkehr-Wand ist die EINE).
+    const files = [
+        "anazhRealm.js",
+        "voxel-worker.js",
+        "index.html",
+        "signaling-server.js",
+        "foundry-core.js",
+        "feld-wgsl.js",
+    ].map((f) => path.join(root, f));
 
     if (process.argv.includes("--selftest")) {
         // Die Instanz-Wand muss feuern: ein zweiter Bau am Chokepoint vorbei.

@@ -23,7 +23,10 @@ v1.0 ist EIN gespielter Pfad, kein Feature-Katalog:
 **Der FPS-Boden:** p95 ≤ 33 ms in der Standard-Szene auf JEDEM Standardgerät — der Richter ist das
 PROFI-BAND (60 fps · 208 DRW · ~680k TRI · 118 MB VRAM), nicht ein einzelner Rechner (Schöpfer-Wort 02.10.:
 „richter ist nicht mein rechner … die werte sind bekannt"); gemessen hardware-unabhängig (`werkbank zaehlen` ·
-`takt` · `fluss`) und mit dem Flugschreiber-Export (`anazhRealmPerf.json`). **Feature-Stopp bis v1.0** — nur, was einen der fünf
+`takt` · `fluss`) und mit dem Flugschreiber-Export (`anazhRealmPerf.json`). Der Richter-Befehl ist `werkbank band`:
+jeder Befehl, jedes Dreieck, jedes MB beim Täter-Namen gegen den Haushalt und die Ratsche (`spec/profiband/`, Wand
+`gate:profiband`; die volle Welt eingeschwungen, das Band ROT, solange ein Ist darüber liegt; die Ratsche ist die Hülle
+einer Serie der echten GPU — `werkbank ratsche` —, eine Klasse darf nur fallen). **Feature-Stopp bis v1.0** — nur, was einen der fünf
 Schritte oder den FPS-Boden trägt.
 
 ### §0.frozen · Die Frozen-Liste

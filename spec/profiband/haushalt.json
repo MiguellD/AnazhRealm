@@ -1,0 +1,277 @@
+{
+    "version": 1,
+    "zweck": "DER HAUSHALT DES PROFI-BANDS (W0): das Soll je Klasse an der Mess-Wiese, Hauptbild + Kaskade k0 + k1. Richter: `node scripts/werkbank.cjs band` (echte GPU, Integration); Wand: `npm run gate:profiband` (Summe <= Band, Schema, verankerte Muster). Eine Klasse ordnet die Täter-Klassen des Stamms (`AnazhRealm#_taeterKlasse`: `<familie>:<preset>:L<stufe>`, `tier:<seele>`, sonst der Erzeuger-Name) über ihre Regeln; die erste passende Klasse in Listen-Reihenfolge gewinnt. Es gibt KEINE Sammelzeile: ein Täter, den keine Regel nimmt, ist ROT (`haushalt`) — jede Welle, die eine neue Klasse zeichnet, trägt hier ihre Regel ein.",
+    "quelle": "Band: docs/analyse/perf-paritaet-baseline-v18432.md (das Schöpfer-HUD-Referenzspiel 09.07.: 60 fps · DRW 208 · TRI ~680k · VRAM 117,7 MB), docs/roadmap.md §0 (der FPS-Boden). Soll je Klasse: der Wellen-Plan zum Profi-Band (Synthese 04.10., W0).",
+    "band": {
+        "befehle": 208,
+        "dreiecke": 680000,
+        "vramMB": 118,
+        "gpuMs": 16.7,
+        "fps": 60
+    },
+    "messort": {
+        "spieler": [
+            -900,
+            -850
+        ],
+        "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+        "paesse": [
+            "haupt",
+            "k0",
+            "k1"
+        ]
+    },
+    "klassen": [
+        {
+            "id": "boden",
+            "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
+            "befehle": 12,
+            "dreiecke": 200000,
+            "regeln": [
+                {
+                    "muster": "^(bodenSatz|wasserSatz|voxelChunk|fern-ring|farWater|chunk-water-[a-z]+)$"
+                }
+            ]
+        },
+        {
+            "id": "karten",
+            "titel": "Karten (jede Fernstufe L2)",
+            "befehle": 1,
+            "dreiecke": 1000,
+            "regeln": [
+                {
+                    "stufe": [
+                        2
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "baum",
+            "titel": "Baum L0/L1 + Werfer",
+            "befehle": 40,
+            "dreiecke": 150000,
+            "regeln": [
+                {
+                    "familie": [
+                        "f",
+                        "fscatter"
+                    ],
+                    "art": [
+                        "tree"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "muster": "^kronendach$"
+                }
+            ]
+        },
+        {
+            "id": "busch",
+            "titel": "Busch",
+            "befehle": 8,
+            "dreiecke": 40000,
+            "regeln": [
+                {
+                    "familie": [
+                        "f",
+                        "fscatter"
+                    ],
+                    "art": [
+                        "shrub"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "muster": "^g:grown_busch:L[01]$"
+                }
+            ]
+        },
+        {
+            "id": "nahWiese",
+            "titel": "Nah-Wiese",
+            "befehle": 4,
+            "dreiecke": 80000,
+            "regeln": [
+                {
+                    "muster": "^nahWiese$"
+                }
+            ]
+        },
+        {
+            "id": "streu",
+            "titel": "Nah-Streu (Streu-Satz je Art, Fernfeld-Deko, Streu-Arten des Studios)",
+            "befehle": 9,
+            "dreiecke": 40000,
+            "regeln": [
+                {
+                    "muster": "^streuNah:"
+                },
+                {
+                    "muster": "^(streu-klein|deko-fernfeld)$"
+                },
+                {
+                    "familie": [
+                        "fscatter"
+                    ],
+                    "art": [
+                        "flower",
+                        "grass",
+                        "rock",
+                        "boulder",
+                        "scree",
+                        "crystal",
+                        "columns"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "familie": [
+                        "f"
+                    ],
+                    "art": [
+                        "flower",
+                        "grass"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "tier",
+            "titel": "Tier",
+            "befehle": 30,
+            "dreiecke": 60000,
+            "regeln": [
+                {
+                    "muster": "^tier:"
+                }
+            ]
+        },
+        {
+            "id": "bau",
+            "titel": "Bau (Haus · Tor · Fahrzeug · Glut · Markt · Fundament · Wege)",
+            "befehle": 40,
+            "dreiecke": 60000,
+            "regeln": [
+                {
+                    "familie": [
+                        "f"
+                    ],
+                    "art": [
+                        "haus",
+                        "gate",
+                        "vehicle",
+                        "weapon"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "muster": "^g:(glut|glutbrunnen|markt|marktstand_dorf|brunnen_dorf|haus|tor|esse|esse_meister|brennkolben|webstuhl|drehbank|seelenstein_altar|welt_portal|welt_strom|start_plattform):L[01]$"
+                },
+                {
+                    "muster": "^bau:"
+                },
+                {
+                    "muster": "^(bau-fundament|siedlung-wege)$"
+                }
+            ]
+        },
+        {
+            "id": "formationen",
+            "titel": "Formationen (gesetzter Fels, Kristall, Säulen)",
+            "befehle": 20,
+            "dreiecke": 30000,
+            "regeln": [
+                {
+                    "familie": [
+                        "f"
+                    ],
+                    "art": [
+                        "rock",
+                        "boulder",
+                        "scree",
+                        "crystal",
+                        "columns"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "muster": "^g:(fels|kristall|zacken|basalt|sediment|geroell)[a-z_]*:L[01]$"
+                },
+                {
+                    "muster": "^g:(stein_block|stamm_gefallen):L[01]$"
+                }
+            ]
+        },
+        {
+            "id": "einzelstuecke",
+            "titel": "Einzelstücke (Himmel, Spieler, Feld-Pass, Inseln, Portal, Wetter, Bau-Werkzeug …)",
+            "befehle": 25,
+            "dreiecke": 15000,
+            "regeln": [
+                {
+                    "muster": "^(himmel|himmel-[a-z]+|spieler|p2p-spieler|p2p-namensschild|feld-pass|dsl-insel|dsl-ufo|kreatur-aura|kreatur-traglast|dorf-rauch|pfeil|portal-membran|portal-nebel|wetter-regen|bau-phantom|bau-platzhalter|occl-proxy)$"
+                }
+            ]
+        },
+        {
+            "id": "leerHuellen",
+            "titel": "Leere Hüllen (tote Draws: eine Instanz-Gruppe ohne lebende Instanz in der Gnadenfrist des Leer-Chokepoints)",
+            "befehle": 0,
+            "dreiecke": 0,
+            "regeln": [
+                {
+                    "muster": "^leer:"
+                }
+            ]
+        },
+        {
+            "id": "reserve",
+            "titel": "Reserve",
+            "befehle": 19,
+            "dreiecke": 4000,
+            "regeln": []
+        }
+    ],
+    "stufenWand": [
+        {
+            "familie": [
+                "fscatter"
+            ],
+            "stufe": 0,
+            "maxM": 64,
+            "grund": "Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu-Fernring 64–384 m); ein L0-Mesh dort ist fail-soft."
+        },
+        {
+            "familie": [
+                "f"
+            ],
+            "art": [
+                "tree"
+            ],
+            "stufe": 0,
+            "maxM": 64,
+            "grund": "Ein Baum zeigt L0 nur nah: LOD_DISTANCES.thresh01 12 m × Sichthöhen-Dehnung × perfDistMulMax 1,3 bleibt für jeden Studio-Baum unter 64 m."
+        }
+    ]
+}

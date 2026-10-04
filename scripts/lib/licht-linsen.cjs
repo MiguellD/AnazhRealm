@@ -5,8 +5,8 @@
 //   wirklich ausgibt. Licht: nur das Umgebungslicht, weiß, Stärke π (Lambert: albedo/π · π = albedo);
 //   Sonne, Hemi, Himmels-Umgebung und Nebel aus. Emission und eingebackenes Licht fallen über die
 //   Differenz (Umgebungslicht π) − (Umgebungslicht 0) heraus. Eine 18-%-Karte liest 0,180 (Selbst-
-//   Eichung, gemessen 01.10.). Je Mesh-Klasse (Boden · Instanz-Schlüssel · Tier · …) ein Schuss aufs
-//   nächste Exemplar, Statistik + Bild (sRGB-kodiert, Hintergrund magenta).
+//   Eichung, gemessen 01.10.). Je Täter-Klasse des Stamms (bodenSatz · f:<preset>:L<stufe> · tier:<seele> · …)
+//   ein Schuss aufs nächste Exemplar, Statistik + Bild (sRGB-kodiert, Hintergrund magenta).
 // __lichtBilanz() — DIE LICHT-BILANZ: eine 18-%-Karte über dem Kronendach in drei Lagen (oben · zur
 //   Sonne · von der Sonne), je Licht einzeln und alle zusammen; E = π·L/0,18.
 //
@@ -29,20 +29,11 @@ function albedoSicht(opts) {
         const W = opts.w || 320,
             H = opts.h || 200;
         const nur = opts.nur ? new RegExp(opts.nur) : null;
+        // Die Klasse ist die Täter-Klasse des Stamms (`_taeterKlasse` — dieselbe wie Draw-Zähler, Puffer-Zensus und
+        // Flugschreiber). Keinen Schuss bekommen das Wasser (es spiegelt), der Himmel und der Mensch (Spieler, Peers).
         const klasse = (o) => {
-            let p = o;
-            while (p && p !== sc) {
-                const u = p.userData || {};
-                if (u.isHydrosphere) return "wasser";
-                if (u.voxelChunkX != null) return "boden";
-                if (u.archInstanceKey) return "inst:" + u.archInstanceKey;
-                if (p.name === "wolf" || p.name === "mensch") return p.name;
-                if (u._tierBaum || u.soul) return "tier";
-                if (u.sourceOp) return "gesetzt:" + u.sourceOp;
-                if (u.isGraukarte) return "graukarte";
-                p = p.parent;
-            }
-            return "sonst";
+            for (let p = o; p && p !== sc; p = p.parent) if (p.userData && p.userData.isHydrosphere) return "wasser";
+            return r._taeterKlasse(o);
         };
         const pp = st.playerMesh.position;
         const karte = new T.Mesh(
@@ -54,7 +45,7 @@ function albedoSicht(opts) {
                 side: T.DoubleSide,
             })
         );
-        karte.userData.isGraukarte = true;
+        karte.name = "graukarte";
         karte.position.set(pp.x + 40, pp.y + 30, pp.z + 40);
         sc.add(karte);
         karte.updateMatrixWorld(true);
@@ -210,12 +201,12 @@ function albedoSicht(opts) {
             return best;
         };
         const ergebnisse = [];
-        const klassen = [...new Set(kl.values())].filter((k) => !/^(sonst|wasser|mensch)/.test(k));
+        const klassen = [...new Set(kl.values())].filter((k) => !/^(wasser$|himmel|spieler$|p2p-spieler$|UNBENANNT:)/.test(k));
         try {
             for (const k of klassen) {
                 if (nur && !nur.test(k)) continue;
                 let z = null;
-                if (k === "boden") {
+                if (k === "bodenSatz" || k === "voxelChunk") {
                     const y = r._voxelSurfaceY(pp.x, pp.z);
                     cam.position.set(pp.x, y + 14, pp.z + 0.01);
                     cam.lookAt(pp.x, y, pp.z);

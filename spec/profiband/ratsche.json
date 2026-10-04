@@ -1,0 +1,190 @@
+{
+    "version": 1,
+    "zweck": "DIE RATSCHE DES PROFI-BANDS (W0): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie an der Mess-Wiese — eine Klasse darf nur FALLEN. `werkbank band` ist rot, sobald ein Ist über seiner Ratsche liegt (über max(Ratsche × (1 + toleranzPct/100), Ratsche + toleranzAbs)). `null` = noch nicht gemessen. Gesetzt und gesenkt wird sie nur aus einer SERIE der echten GPU: `node scripts/werkbank.cjs start --echt --serie <name>` · `umstellen -900 -850` · `band --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche a.json b.json …` (≥ 4 Läufe, Erst- und Zweit-Boot, jeder eingeschwungen: die volle Welt (Regler-Decke offen, loadScale 1) baut nichts mehr — Chunks, Foundry-Schlange, Karten-Bäcker, aufgeschobene Streu, Mesh-Zone, Instanz-Zahl ruhig; LINSE sauber). Die Ratsche setzt null-Felder, senkt gemessene und hebt nie — heben ist ein begründeter Akt von Hand im Commit. Die Toleranz ist ein Rand über der gemessenen Streuung der Serie (jeder Lauf gegen die Hülle der übrigen). Freie Klassen (`frei`) messen den Weltzustand, ihre Kosten je Einheit hält das genannte Gate. Schema: `npm run gate:profiband`.",
+    "gemessen": null,
+    "toleranzPct": 1,
+    "toleranzAbs": {
+        "befehle": 2,
+        "dreiecke": 5000,
+        "vramMB": 2
+    },
+    "frei": {
+        "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.",
+        "leerHuellen": "Weltzustand der Gnadenfrist: eine geleerte Instanz-Gruppe zeichnet bis ARCH_LEER_GNADE_MS × Mints (bis 60 s) ihren High-Water-count aus Null-Matrizen weiter — wie viele gerade in der Frist stehen, hängt am Takt, nicht an den Kosten (in der Serie 0 bis 30 Befehle). Die Frist und das Räumen hält gate:foundry-crossfade (Reaper); im Band zählen die toten Draws voll."
+    },
+    "gesamt": {
+        "befehle": null,
+        "dreiecke": null,
+        "vramMB": null
+    },
+    "klassen": {
+        "boden": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "karten": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "baum": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "busch": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "nahWiese": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "streu": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "tier": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "bau": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "formationen": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "einzelstuecke": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "leerHuellen": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "reserve": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        }
+    }
+}

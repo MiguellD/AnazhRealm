@@ -5,8 +5,21 @@
 // Renderer-Draw selbst (`_renderObjectDirect`), die Region-Bundles werden für den Zähl-Frame neu
 // aufgenommen (sonst zöge der Replay sie ungesehen).
 //
-//   Seite:     window.__drawZensus({ top: 16 }) → { passe: {haupt, k0, k1, …}, klassen, programme, frameMs }
+// DIE TÄTER-KLASSE (W0, Band-Linse): jeder Befehl trägt einen Namen, der den Täter nennt — die Klasse ist die des
+// Stamms (`AnazhRealm#_taeterKlasse`, `AnazhRealm._instanzKlasse`): Instanz-Gruppen als `<familie>:<preset>:L<stufe>`
+// (f · fimp · fscatter · g), `tier:<seele>`, `spieler`, sonst der Name des Erzeugers; ohne jeden Namen
+// `UNBENANNT:<type>` — ein Linsen-Fehler (die Band-Linse ist rot, bis der Erzeuger das Objekt benennt). `unbenannt`
+// trägt je Fall eine Spur (Eltern-Kette, Material, Geometrie), die den Erzeuger finden lässt.
+//   - Je Klasse im Hauptbild: lebende Instanzen und ihr Abstand zur Kamera (dMin/dMax, freie Null-Matrix-Slots
+//     zählen nicht) — eine Nah-Stufe in der Ferne ist der stille L0-Rückfall (die Band-Linse liest `stufenWand`).
+//   - `art` = die Studio-Art des Presets (Rezept-`kind` der lebenden Foundry), wo die Klasse ein Foundry-Preset trägt.
+//
+//   Seite:     window.__drawZensus({ top: 16, alle: false }) → { passe, klassen, unbenannt, programme, frameMs }
+//              window.__pufferZensus() → { mb, klassen: [{klasse, mb}] }  (Geometrie-Puffer je Täter-Klasse)
+//              window.__texturZensus() → { mb, erzeuger: [{erzeuger, mb, n}], unbenannt }  (Textur-Objekte je Erzeuger)
 //   Werkbank:  node scripts/werkbank.cjs zaehlen [px py pz lx ly lz]   (Höhen mit `+` relativ zum Boden)
+//              node scripts/werkbank.cjs band                          (Klasse × Stufe × Pass gegen den Haushalt)
+//   Node:      require("./draw-zaehler.cjs").texturErzeuger — dieselbe Funktion (die Band-Wand prüft sie headless).
 
 function drawZensus(opts) {
     return (async () => {
@@ -22,51 +35,18 @@ function drawZensus(opts) {
                     if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
             return camera && camera.isOrthographicCamera ? "ortho" : "anders";
         };
-        // DER TÄTER HAT EINEN NAMEN (Welle B): ein Unbenannter heißt nach seinem Inventar-Stempel (streu-klein ·
-        // terrain-stitch · deko-fernfeld) bzw. seiner Wasser-Art (hydroKind), erst dann nach dem Typ — „Mesh" als
-        // Klasse verschluckte 229 Befehle aus sechs Familien.
-        const name = (x) => {
-            if (x.name) return x.name.replace(/[-_:#]?[-\d].*$/, "") || "?";
-            const u = x.userData || {};
-            return u.inventar || u.hydroKind || x.type || "?";
-        };
-        // Ein Instanz-Schlüssel ist `typ#leaf@region` (oder `leaf@region`, wenn das Leaf eine Studio-Identität
-        // trägt): Studio-Leaves (`f:<preset>|…`, `fimp:<preset>…`) zählen je Preset getrennt — gleiche Studio-
-        // Geometrie unter zwei Bau-Typen ist sichtbar als zwei Klassen desselben Presets.
-        const instKlasse = (k) => {
-            const s = String(k);
-            const at = s.indexOf("@");
-            const body = at >= 0 ? s.slice(0, at) : s;
-            const h = body.indexOf("#");
-            const typ = h >= 0 ? body.slice(0, h) : "";
-            const leaf = h >= 0 ? body.slice(h + 1) : body;
-            const m = /^(f|fimp):([^|:]+)/.exec(leaf);
-            if (m) return "inst:" + (typ ? typ + "/" : "") + m[1] + ":" + m[2];
-            return "inst:" + (typ || leaf);
-        };
-        const klasse = (obj) => {
-            let n = obj;
-            while (n && n.parent && n.parent !== st.scene) n = n.parent;
-            const top = n || obj;
-            const u = top.userData || {};
-            if (u._tierBaum) return "tier";
-            if (top === st.playerMesh) return "spieler";
-            // eine Region trägt ihr Bundle und ihren Schlüssel (im Schatten-Pass ist sie eine Gruppe: der Override-Stoff
-            // sammelt keine Bundles, ihre Kinder zeichnen direkt)
-            if (top.isBundleGroup || u.regionKey !== undefined) {
-                let m = obj;
-                while (m.parent && m.parent !== top) m = m.parent;
-                const k = (m.userData && m.userData.archInstanceKey) || null;
-                if (k) return instKlasse(k);
-                return "bundle:" + name(m);
-            }
-            if (u.archInstanceKey) return instKlasse(u.archInstanceKey);
-            return name(top);
-        };
+        // DIE TÄTER-KLASSE ist die des Stamms (`_taeterKlasse`): der Flugschreiber, die Albedo-Sicht und der Szenen-Zensus
+        // des Playtests buchen unter denselben Namen.
+        const klasse = (obj) => r._taeterKlasse(obj);
         const zaehl = {};
+        const nah = {};
+        const unbenannt = new Map();
+        const cam = st.camera.position;
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
-            const k = klasse(object) + "|" + passOf(camera);
+            const kl = klasse(object);
+            const pass = passOf(camera);
+            const k = kl + "|" + pass;
             const g = object.geometry;
             let cmd = 1,
                 tris = 0;
@@ -84,6 +64,50 @@ function drawZensus(opts) {
             e.obj++;
             e.cmd += cmd;
             e.tris += tris;
+            // Die Nähe der Klasse im Hauptbild: jede lebende Instanz (Null-Matrix = freier Slot) bzw. das Objekt.
+            if (pass === "haupt") {
+                const w = nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0 });
+                const mw = object.matrixWorld.elements;
+                const miss = (x, y, z) => {
+                    const wx = mw[0] * x + mw[4] * y + mw[8] * z + mw[12];
+                    const wy = mw[1] * x + mw[5] * y + mw[9] * z + mw[13];
+                    const wz = mw[2] * x + mw[6] * y + mw[10] * z + mw[14];
+                    const d = Math.hypot(wx - cam.x, wy - cam.y, wz - cam.z);
+                    w.inst++;
+                    if (d < w.dMin) w.dMin = d;
+                    if (d > w.dMax) w.dMax = d;
+                };
+                if (object.isInstancedMesh && object.instanceMatrix) {
+                    const a = object.instanceMatrix.array;
+                    for (let i = 0; i < object.count; i++) {
+                        const b = i * 16;
+                        if (a[b] === 0 && a[b + 1] === 0 && a[b + 2] === 0) continue;
+                        miss(a[b + 12], a[b + 13], a[b + 14]);
+                    }
+                } else if (g && g.boundingSphere) {
+                    const c = g.boundingSphere.center;
+                    miss(c.x, c.y, c.z);
+                } else miss(0, 0, 0);
+            }
+            // Die Spur je unbenanntem Erzeuger (Material × Geometrie × Pass), höchstens 24.
+            const spur = kl.startsWith("UNBENANNT:")
+                ? k + "|" + ((material && (material.name || material.type)) || "") + "|" + (g ? g.name || g.type : "")
+                : null;
+            if (spur && !unbenannt.has(spur) && unbenannt.size < 24) {
+                const kette = [];
+                for (let p = object; p && p !== st.scene && kette.length < 6; p = p.parent)
+                    kette.push(p.type + (p.name ? "(" + p.name + ")" : ""));
+                unbenannt.set(spur, {
+                    klasse: kl,
+                    pass,
+                    kette: kette.join(" < "),
+                    material: (material && (material.name || material.type)) || null,
+                    geometrie: g ? g.name || g.type : null,
+                    vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
+                    instanzen: object.isInstancedMesh ? object.count : null,
+                    userData: Object.keys(object.userData || {}).slice(0, 8),
+                });
+            }
             return roh.call(this, object, material, scene, camera, ...rest);
         };
         const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
@@ -101,6 +125,13 @@ function drawZensus(opts) {
         } finally {
             rend._renderObjectDirect = roh;
         }
+        // Die Studio-Art je Foundry-Klasse (Rezept-`kind`): die Band-Wand ordnet über sie, nie über Art-Namen-Listen.
+        const rezepte = r._foundry && r._foundry.recipes ? r._foundry.recipes : {};
+        const artOf = (kl) => {
+            const m = /^(f|fimp|fscatter):([^:]+):/.exec(kl);
+            const rz = m ? rezepte[m[2]] : null;
+            return rz && rz.kind ? rz.kind : null;
+        };
         const passe = {};
         const klassen = {};
         for (const [k, v] of Object.entries(zaehl)) {
@@ -112,19 +143,35 @@ function drawZensus(opts) {
             const e = passe[p] || (passe[p] = { cmd: 0, tris: 0 });
             e.cmd += v.cmd;
             e.tris += Math.round(v.tris);
-            const kk = klassen[kl] || (klassen[kl] = { cmd: 0, tris: 0, je: {} });
+            const kk = klassen[kl] || (klassen[kl] = { cmd: 0, tris: 0, je: {}, jeTris: {} });
             kk.cmd += v.cmd;
             kk.tris += Math.round(v.tris);
             kk.je[p] = v.cmd;
+            kk.jeTris[p] = Math.round(v.tris);
         }
         const gesamt = Object.values(passe).reduce((a, e) => ({ cmd: a.cmd + e.cmd, tris: a.tris + e.tris }), {
             cmd: 0,
             tris: 0,
         });
-        const top = Object.entries(klassen)
+        const liste = Object.entries(klassen)
             .sort((a, b) => b[1].cmd - a[1].cmd)
-            .slice(0, o.top || 16)
-            .map(([kl, v]) => ({ klasse: kl, cmd: v.cmd, tris: v.tris, je: v.je }));
+            .slice(0, o.alle ? Infinity : o.top || 16)
+            .map(([kl, v]) => {
+                const w = nah[kl];
+                const st0 = /:L(\d)$/.exec(kl);
+                return {
+                    klasse: kl,
+                    stufe: st0 ? Number(st0[1]) : null,
+                    art: artOf(kl),
+                    cmd: v.cmd,
+                    tris: v.tris,
+                    je: v.je,
+                    jeTris: v.jeTris,
+                    inst: w ? w.inst : 0,
+                    dMin: w && Number.isFinite(w.dMin) ? Math.round(w.dMin) : null,
+                    dMax: w && w.inst ? Math.round(w.dMax) : null,
+                };
+            });
         // Die Programm-Linse: verschiedene Vertex-/Fragment-Programme und Render-Pipelines. Ein Puffer-Name je
         // Objekt (r184 `NodeBuffer_<id>`) machte jede InstancedMesh zu ihrem eigenen Programm — „familien" zählt
         // die Vertex-Programme ohne Ziffern: liegt `programme.vertex` weit darüber, kompiliert die Welt je Objekt.
@@ -139,8 +186,154 @@ function drawZensus(opts) {
                 pipelines: P.caches ? P.caches.size : null,
             };
         }
-        return { gesamt, passe, klassen: top, programme, frameMs, kaskaden: csm ? csm.cascades : 0 };
+        return {
+            gesamt,
+            passe,
+            klassen: liste,
+            unbenannt: [...unbenannt.values()],
+            programme,
+            frameMs,
+            kaskaden: csm ? csm.cascades : 0,
+            kamera: [cam.x, cam.y, cam.z].map((x) => +x.toFixed(1)),
+        };
     })();
 }
 
-module.exports = { ZAEHLER_INSTALL: `window.__drawZensus = ${drawZensus.toString()};` };
+// DIE SZENEN-PUFFER je Täter-Klasse: die Geometrie-Puffer tragen in r184 kein Label (`buf:?` im VRAM-Abgriff) —
+// gezählt wird hier ihr CPU-Spiegel (jede Attribut-/Index-/Instanz-Matrix einmal, nach Klasse), dieselbe Klasse wie
+// der Draw-Zähler. Die Differenz zu `buf:?` ist, was außerhalb der Szene auf der GPU liegt.
+function pufferZensus() {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const gesehen = new Set();
+    const je = new Map();
+    let gesamt = 0;
+    const zaehle = (a, kl) => {
+        if (!a || !a.array || gesehen.has(a.array)) return;
+        gesehen.add(a.array);
+        const b = a.array.byteLength || 0;
+        gesamt += b;
+        je.set(kl, (je.get(kl) || 0) + b);
+    };
+    st.scene.traverse((o) => {
+        const g = o.geometry;
+        if (!g || !g.attributes) return;
+        const kl = r._taeterKlasse(o);
+        for (const k in g.attributes) zaehle(g.attributes[k], kl);
+        zaehle(g.index, kl);
+        if (o.isInstancedMesh) {
+            zaehle(o.instanceMatrix, kl);
+            zaehle(o.instanceColor, kl);
+        }
+    });
+    const mb = (b) => +(b / 1048576).toFixed(2);
+    return {
+        mb: mb(gesamt),
+        klassen: [...je.entries()].sort((a, b) => b[1] - a[1]).map(([klasse, b]) => ({ klasse, mb: mb(b) })),
+    };
+}
+
+// DIE FALTUNG EINES VRAM-LABELS — EINE Regel für den Abgriff beim Anlegen (werkbank `vramAbgriff`), das Umbuchen des
+// Textur-Zensus und das Urteil (band-urteil `erzeugerOf`): eine Ziffern-Folge fällt zu `#`, wenn sie ein Schlüssel-Teil
+// ist — hinter einem Trenner (`eiche|3|summer` → `eiche|#|summer`, `NodeBuffer_412` → `NodeBuffer_#`), als r184-
+// Kennung vor `_` (`bindingBuffer1381_object`, `bindingBuffer3_render` → `bindingBuffer#_…`) oder ab zwei Ziffern am
+// Label-Ende; Namen mit Ziffern bleiben ganz (`r184-ausgabe`, `p2p-namensschild`, `kaskade0`). Die alte Faltung jeder
+// Ziffer machte aus `r184-ausgabe` `r#-ausgabe`; ohne die Kennungs-Regel zerfiel der Puffer-Bericht in 4 174 Erzeuger.
+function vramFalte(s) {
+    return String(s).replace(/(^|[^A-Za-z\d])\d+|(?<=[A-Za-z])\d+(?=_)|(?<=[A-Za-z])\d{2,}$/g, (m, vor) =>
+        vor === undefined ? "#" : vor + "#"
+    );
+}
+
+// DER ERZEUGER EINER TEXTUR: ihr Name (der Stamm benennt jede, die er anlegt — gate:profiband H4); ohne Namen der
+// Name ihres Render-Ziels. r184 legt zu jedem Ziel mit Tiefen-Puffer die DepthTexture selbst an (namenlos, ihr
+// `renderTarget` zeigt auf das Ziel → `<ziel>:tiefe`) und das Ausgabe-Ziel des Renderers (`isPostProcessingRenderTarget`,
+// Tonemapping zur Leinwand) ohne Namen (→ `r184-ausgabe`). Sonst null — ein Linsen-Fehler (`tex:?`).
+function texturErzeuger(t) {
+    if (t.name) return t.name;
+    const rt = t.renderTarget;
+    if (!rt) return null;
+    const ziel = rt.isPostProcessingRenderTarget
+        ? "r184-ausgabe"
+        : rt.texture && rt.texture !== t && rt.texture.name
+          ? rt.texture.name
+          : "";
+    if (!ziel) return null;
+    return t.isDepthTexture ? ziel + ":tiefe" : ziel;
+}
+
+// DER TEXTUR-ZENSUS je Erzeuger: jedes lebende Textur-Objekt des Renderers (`info.memoryMap`, Backend-unabhängig —
+// auch auf dem WebGL2-Rückfall), Bytes nach r184s eigener Schätzung. Auf WebGPU bucht er zugleich die GPU-Textur
+// jedes Objekts, das erst über sein Ziel einen Namen hat, im VRAM-Abgriff der Werkbank (`__vramUmbuchen`) unter
+// diesen Erzeuger um — der Abgriff sieht nur das Label, das beim Anlegen galt. `unbenannt` trägt je namenlosem
+// Objekt die Spur (Klasse, Format, Größe, Ziel).
+function texturZensus() {
+    const rend = window.anazhRealm.state.renderer;
+    const backend = rend.backend;
+    const je = new Map();
+    const unbenannt = [];
+    let gesamt = 0,
+        n = 0;
+    for (const [t, v] of rend.info.memoryMap) {
+        if (!t || !t.isTexture) continue;
+        const b = typeof v === "number" ? v : 0;
+        n++;
+        gesamt += b;
+        const erz = window.__texturErzeuger(t);
+        const key = erz ? erz.split(/[:#|]/)[0] || "?" : "?";
+        const e = je.get(key) || { erzeuger: key, bytes: 0, n: 0 };
+        e.bytes += b;
+        e.n++;
+        je.set(key, e);
+        if (erz && !t.name && window.__vramUmbuchen && backend && typeof backend.get === "function") {
+            const d = backend.get(t);
+            for (const g of [d.texture, d.msaaTexture])
+                if (g && typeof g.__vramK === "string" && g.__vramK.startsWith("tex:? "))
+                    window.__vramUmbuchen(g, "tex:" + window.__vramFalte(erz) + g.__vramK.slice(5));
+        }
+        if (!erz && unbenannt.length < 24)
+            unbenannt.push({
+                // Die Art aus r184s eigenen Flaggen (der Klassen-Name ist minifiziert).
+                klasse:
+                    [
+                        "DepthTexture",
+                        "CanvasTexture",
+                        "DataTexture",
+                        "DataArrayTexture",
+                        "Data3DTexture",
+                        "CubeTexture",
+                        "FramebufferTexture",
+                        "VideoTexture",
+                        "CompressedTexture",
+                        "RenderTargetTexture",
+                    ].find((a) => t["is" + a] === true) || "Texture",
+                tiefe: !!t.isDepthTexture,
+                format: t.format,
+                typ: t.type,
+                groesse: t.image ? [t.image.width, t.image.height] : null,
+                ziel: t.renderTarget ? { breite: t.renderTarget.width, hoehe: t.renderTarget.height } : null,
+                mb: +(b / 1048576).toFixed(2),
+            });
+    }
+    const mb = (x) => +(x / 1048576).toFixed(2);
+    return {
+        n,
+        mb: mb(gesamt),
+        erzeuger: [...je.values()]
+            .sort((a, b) => b.bytes - a.bytes)
+            .map((e) => ({ erzeuger: e.erzeuger, mb: mb(e.bytes), n: e.n })),
+        unbenannt,
+    };
+}
+
+module.exports = {
+    texturErzeuger,
+    vramFalte,
+    // Die Faltung lebt ab Dokument-Start (der Abgriff bucht schon beim ersten Anlegen): `page.evaluateOnNewDocument`.
+    FALTE_INSTALL: `window.__vramFalte = ${vramFalte.toString()};`,
+    ZAEHLER_INSTALL:
+        `window.__drawZensus = ${drawZensus.toString()};` +
+        `window.__pufferZensus = ${pufferZensus.toString()};` +
+        `window.__texturErzeuger = ${texturErzeuger.toString()};` +
+        `window.__texturZensus = ${texturZensus.toString()};`,
+};

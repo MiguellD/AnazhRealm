@@ -65,6 +65,16 @@ jobs:
               # _scatterMaterial baut kein Lambert (r184-Lambert liest scene.environment nie diffus — schwarz im Schatten).
               run: npm run gate:streu-wahrheit
 
+            - name: Band-Wand (W0 — Haushalt des Profi-Bands, Ratsche, Textur-Namen, Täter-Klasse des Stamms)
+              # GPU-frei, reines Node: der Haushalt (spec/profiband/haushalt.json) hält das Band 208 Befehle / 680k
+              # Dreiecke ohne Sammelzeile und mit verankerten Mustern, die Ratsche trägt jede Klasse × Pass (Hülle einer
+              # eingeschwungenen Serie der echten GPU), jede Textur des Stamms trägt den Namen ihres Erzeugers, die
+              # Täter-Klasse des Stamms (_taeterKlasse) klassifiziert jede Schlüssel-Form. --selftest zuerst: 15
+              # injizierte Fälle (unbenanntes Mesh, Täter ohne Haushalt-Regel, Fern-Geröll-L0 bei 200 m, Klasse über der
+              # Ratsche, Band überschritten bei sauberer Linse …) werden rot, ein sauberer Zensus im Band bleibt grün.
+              # Die Messung selbst: `werkbank band` / `werkbank ratsche` (echte GPU).
+              run: npm run gate:profiband
+
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
               # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
