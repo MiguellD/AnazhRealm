@@ -234,8 +234,9 @@ const PORTAL_RENDER_CONFIG = {
             // DIE GESTALTEN je Art (04.10.): wie viele verschiedene Individuen (Samen) eine Art in der Welt traegt —
             // die Zahlen, mit denen der Studio-Wald pflanzt (buildForest liest sie, Welt-Varianten-Wahl ebenso);
             // jede Gestalt ist ein Satz Koerper L0/L1 + EINE Karte. '*' = jede Art ohne eigene Zeile. Eine
-            // Aenderung hier ist ein Wald-Re-Roll (der Studio-Wald zieht je Gestalt einen RNG()-Wurf).
-            gestalten: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, "*": 16 },
+            // Aenderung hier ist ein Wald-Re-Roll (der Studio-Wald zieht je Gestalt einen RNG()-Wurf). gras 2 = die zwei
+            // Halm-Vorlagen des Studio-Walds (grassT) = die zwei Studio-Vorlagen der Nah-Wiese.
+            gestalten: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, gras: 2, "*": 16 },
         },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
