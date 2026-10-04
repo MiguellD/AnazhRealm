@@ -14701,20 +14701,24 @@ class AnazhRealm {
                 top,
                 halter: (() => {
                     const f = this._foundry;
-                    // CHUNK-BODEN-ENTLASSUNG (19.07.) — die Linse NENNT den Schnitt:
-                    // wie viele Böden entlassen sind + wie viele MB die Nullung trägt.
-                    let entlN = 0;
-                    if (this.state.voxelChunks)
-                        for (const e of this.state.voxelChunks.values()) if (e && e._entlassen === true) entlN++;
+                    // DER SATZ (Welle B) — die Linse NENNT die Pool-Puffer: Bereiche, Kapazität, Wachstum je Art.
+                    const saetze = {};
+                    if (this.state.chunkSaetze)
+                        for (const [art, s] of this.state.chunkSaetze)
+                            saetze[art] = {
+                                bereiche: s.bloecke.size,
+                                vEnde: s.vEnde,
+                                vKap: s.vKap,
+                                index: s.geom.drawRange.count,
+                                iKap: s.iKap,
+                                wachse: s.wachse,
+                            };
                     return {
                         foundryCacheN: f && f.cache ? f.cache.size : 0,
                         foundryCacheMB:
                             f && Number.isFinite(f.cacheBytes) ? +(f.cacheBytes / 1048576).toFixed(1) : null,
                         impostorAtlanten: this._impostorAtlasMap ? this._impostorAtlasMap.size : 0,
-                        chunkEntlassenN: entlN,
-                        chunkFreiMB: this.state._chunkEntlassenBytes
-                            ? +(this.state._chunkEntlassenBytes / 1048576).toFixed(1)
-                            : 0,
+                        chunkSaetze: saetze,
                     };
                 })(),
             };
@@ -22130,10 +22134,9 @@ class AnazhRealm {
             "aMorphWeight",
             new THREE.Float32BufferAttribute(new Float32Array(meshData.positions.length / 3), 1)
         );
+        // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         // Kein Chunk-BVH (~9 ms/Chunk Lauf-Freeze): die Kollision liest das Dichtefeld direkt
         // (`_stepCharacter`, `_creatureGroundY`), der Mesh ist nur Visual. `hasBVH` bleibt false,
@@ -22478,14 +22481,8 @@ class AnazhRealm {
         // liest das Dichtefeld) — der Toggle schaltet nur die SICHTBARKEIT.
         const vc = this.state.voxelChunks;
         if (vc && vc.size > 0) {
-            for (const entry of vc.values()) {
-                if (!entry || entry.empty) continue;
-                const mesh = entry.mesh;
-                if (mesh) mesh.visible = visible;
-            }
-            // `visible` liest der Record, nie das Replay — ohne Re-Record wäre der Toggle in Bundles inert bzw.
-            // split-brain; darum werden alle Region-Bundles neu recordet.
-            if (this.state._regionBundles) for (const bg of this.state._regionBundles.values()) bg.needsUpdate = true;
+            // DER SATZ: der ganze Ring ist EIN Objekt — der Toggle schaltet ihn.
+            this._chunkSatzSichtbar("boden", visible);
             this.log(`Boden ${visible ? "aktiviert" : "deaktiviert"}`);
         } else {
             this.log("Boden nicht vorhanden – Erzeuge neuen Boden...");
@@ -29555,10 +29552,9 @@ class AnazhRealm {
         this._attachVoxelFieldColors(geom);
         // Material-Singleton für alle Chunks (Vertex-Farben leben pro Geometrie; PBR, roughness/metalness
         // aus den Tags). NIEMALS disposen — sonst sterben alle anderen Chunks mit (s. `_disposeVoxelChunk`).
+        // Der CPU-Körper des Chunks (gezeichnet als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         // Kein Chunk-BVH (Kollision liest feld-nativ das Dichtefeld). waterCells = EINZIGE Wasser-Wahrheit
         // je Chunk (im entry); das Trocken-Gate spart den ~200-ms-Cell-Bau, null überspringt der Iso-Bau.
@@ -29665,12 +29661,11 @@ class AnazhRealm {
             this.state.voxelChunks.set(key, { empty: true });
             return null;
         }
-        // CHUNK-EINBÜRGERUNG (18.07.): der Boden zieht in die Region-BundleGroup.
-        this._chunkBundleAnker(fresh.mesh, cx, cz);
-        // TRACE-IDENTITÄT (18.07., Schöpfer-Trace: fünf anonyme „Mesh"-Wale bis
-        // 2.8M Tris — niemand wusste WER): der Chunk-Boden trägt seinen Namen;
-        // der triZensus des Flugschreibers NENNT damit den Wal statt „Mesh".
+        // DER SATZ (Welle B): der Boden ist ein BEREICH im Boden-Satz (ein Befehl je Pass für den ganzen Ring);
+        // der Chunk-Mesh bleibt der CPU-Körper (Boden-Karte, Geomorph, Stitch-Quelle) und betritt die Szene nie.
+        // Worker- und Sync-Bau speisen denselben Eintritt.
         if (fresh.mesh && !fresh.mesh.name) fresh.mesh.name = "voxelChunk:" + key + ":lod" + lod;
+        this._chunkSatzEin("boden", key, fresh.mesh.geometry, key);
         // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
         // Mesh-Pfad). Sync-Build baut immer BVH → default true.
         const entry = {
@@ -29775,13 +29770,6 @@ class AnazhRealm {
         this._applyCrossLodGeomorph(cx - 1, cz);
         this._applyCrossLodGeomorph(cx, cz + 1);
         this._applyCrossLodGeomorph(cx, cz - 1);
-        // CHUNK-BODEN-ENTLASSUNG: der frische Bau stellt sich zur Gnadenfrist an
-        // (ob entlassen wird, entscheidet der Tick: echt + Upload + IDB-gedeckt
-        // + edit-frei; headless nie — die Gates lesen byte-alt).
-        {
-            if (!this.state._chunkEntlassQueue) this.state._chunkEntlassQueue = new Map();
-            this.state._chunkEntlassQueue.set(key, { cx, cz, mesh: entry.mesh, seit: performance.now() });
-        }
         return entry;
     }
 
@@ -29789,16 +29777,12 @@ class AnazhRealm {
     // Nachbarn → die T-junction schließt. Render-only: setzt NUR aMorphTarget/aMorphWeight, Positionen
     // (Physik, Determinismus, BVH) bleiben; der Shader morpht via `geomorph`. Main-only (liest Nachbar-
     // MESHES). `entry.hasMorph` = Fast-Path: ohne Cross-LOD-Grenze + ohne alten Morph sofort zurück.
+    // Die Morph-Arrays sind Views auf den Boden-Satz: der Pass schreibt direkt hinein und markiert seinen
+    // Bereich (`_chunkSatzMarke`) — vergessen hieße: der Morph friert auf der GPU ein (T-Junction-Riss).
     _applyCrossLodGeomorph(cx, cz) {
         if (!this.state.voxelChunks) return;
         const entry = this.state.voxelChunks.get(`${cx},${cz}`);
         if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) return;
-        // CHUNK-BODEN-ENTLASSUNG: ein entlassener Boden re-hydriert erst seine
-        // CPU-Arrays (IDB, async) — der Lauf ruft DIESEN Pass danach erneut.
-        if (entry._entlassen) {
-            if (entry._entlassen === true) this._chunkBodenReHydrieren(cx, cz);
-            return;
-        }
         const geom = entry.mesh.geometry;
         const pos = geom.attributes.position;
         const tgtAttr = geom.attributes.aMorphTarget;
@@ -29820,13 +29804,6 @@ class AnazhRealm {
             if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
             const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
             if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
-            // CHUNK-BODEN-ENTLASSUNG: ein entlassener Nachbar wird erst
-            // re-hydriert; der Warter läuft DIESEN Pass danach komplett neu.
-            if (nb._entlassen) {
-                if (nb._entlassen === true)
-                    this._chunkBodenReHydrieren(cx + dx, cz + dz, () => this._applyCrossLodGeomorph(cx, cz));
-                continue;
-            }
             coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
         }
         // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
@@ -29936,9 +29913,8 @@ class AnazhRealm {
             }
         }
         entry.hasMorph = touched;
-        tgtAttr.needsUpdate = true;
-        wAttr.needsUpdate = true;
-        this._rebuildLodStitchBand(entry, bandVerts);
+        this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"]);
+        this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`);
     }
 
     // STITCH-BAND (Arme-Leute-Transvoxel): wo der Morph-Cap greift (Cliffs), bliebe ein Spalt. Pro
@@ -29946,9 +29922,12 @@ class AnazhRealm {
     // Loops, kein Polyline-Sortieren) ein Quad von der feinen Kante (position) zur groben Fläche
     // (aMorphTarget). Render-only, keine BVH, main-only. Trägt ALLE Material-Attribute des Terrain-
     // Toons (WebGPU-strikt): color vom Quell-Vertex, aMorphTarget = Identität/w=0 (kein Doppel-Morph).
-    _rebuildLodStitchBand(entry, bandVerts) {
+    // Dasselbe Material wie der Boden → ein Bereich `stitch:<chunk>` IM Boden-Satz (derselbe Befehl); der
+    // Band-Mesh bleibt CPU-Körper (Naht-Sonden lesen seine Geometrie).
+    _rebuildLodStitchBand(entry, bandVerts, key) {
+        // Der Band-Bereich gehört dem Chunk-Key (nicht dem Eintrag): auch ein Neubau räumt ein altes Band.
+        this._chunkSatzAus("boden", "stitch:" + key);
         if (entry.lodStitchMesh) {
-            this._archBundleSceneRemove(entry.lodStitchMesh); // Bundle-Parent-bewusst
             this._queueGeometryDispose(entry.lodStitchMesh.geometry);
             entry.lodStitchMesh = null;
         }
@@ -30026,204 +30005,8 @@ class AnazhRealm {
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
         bg.setIndex(I);
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
-        mesh.castShadow = false;
-        mesh.receiveShadow = true;
-        // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: das LOD-Stitch-Band + der Skirt
-        // sind Terrain-Familie (render-only Naht-Brücke), namenlos direkt unter Scene —
-        // ohne Stempel wären sie der Fail-Closed-Fallback der Inventur-Linse.
-        mesh.userData.inventar = "terrain-stitch";
-        // CHUNK-EINBÜRGERUNG: das Band folgt dem Parent seines Chunk-Bodens —
-        // dieselbe Region-BundleGroup per Konstruktion (oder Szene, byte-alt).
-        {
-            const p = entry.mesh && entry.mesh.parent;
-            if (p && p.isBundleGroup === true) {
-                mesh.frustumCulled = false;
-                p.add(mesh);
-                p.needsUpdate = true;
-                this._bundleKugelWeite(p, mesh);
-                this._bundleReifeWache(mesh);
-            } else if (this.state.scene) this.state.scene.add(mesh);
-        }
+        this._chunkSatzEin("boden", "stitch:" + key, bg, key);
         entry.lodStitchMesh = mesh;
-    }
-
-    // ═══ DIE CHUNK-BODEN-ENTLASSUNG ═══
-    // Nach Upload (manuelle Backend-Probe, WebGPU kennt kein onUploadCallback) + Gnadenfrist werden
-    // die CPU-Arrays gesettelter, edit-freier, IDB-gedeckter Böden GENULLT (die Physik liest das Feld).
-    // Einziger Leser danach: der Geomorph-Pass; er re-hydriert byte-identisch aus IDB (position/normal/
-    // color/index nie mutiert → kein needsUpdate). Headless bleibt resident; 3×3-Edits blocken.
-    _chunkBodenGpuHat(geo) {
-        // Upload-Probe: der Backend-Datensatz trägt .buffer (WebGPU) bzw. .bufferGPU (WebGL) erst NACH
-        // createAttribute — vorher nullen = weißes Loch. Nur position + index proben: gebundene Attribute
-        // laden im selben Render, ungebundene Stagings (z. B. uv ohne Leser) NIE, sind aber frei nullbar.
-        try {
-            const r = this.state.renderer;
-            const be = r && r.backend;
-            if (!be || typeof be.get !== "function") return false;
-            const pos = geo.attributes && geo.attributes.position;
-            if (!pos) return false;
-            const d = be.get(pos);
-            if (!d || (d.buffer === undefined && d.bufferGPU === undefined)) return false;
-            if (geo.index) {
-                const di = be.get(geo.index);
-                if (!di || (di.buffer === undefined && di.bufferGPU === undefined)) return false;
-            }
-            // NICHTS SCHWEBT: ein gebundenes Attribut mit offenem Upload (Version über der hochgeladenen oder
-            // offene updateRanges — Teil-Uploads) darf nicht genullt werden: der nächste Render läse die Range
-            // aus dem Null-Array → writeBuffer „Number of bytes to write is too large" (Befund 30.09.:
-            // ungerenderte Geometrie — verdeckt/außer Frustum — sammelt Ranges, die Gnadenfrist läuft ab).
-            // Ungebundene Stagings laden nie → frei.
-            const am = r._attributes && r._attributes.data;
-            if (am && typeof am.get === "function") {
-                const offen = (a) => {
-                    if (!a || !a.array || !a.array.length) return false;
-                    const rec = am.get(a);
-                    if (!rec || rec.version === undefined) return false;
-                    return rec.version < a.version || (a.updateRanges && a.updateRanges.length > 0);
-                };
-                for (const k in geo.attributes) if (offen(geo.attributes[k])) return false;
-                if (offen(geo.index)) return false;
-            }
-            return true;
-        } catch (_e) {
-            return false;
-        }
-    }
-    _chunkBodenNulle(geo) {
-        // Nie null setzen: der Vendor liest attribute.array.constructor beim (lazy, späten) Pipeline-Bau
-        // (getTypeFromArray) → null crasht jeden Frame. Daher Null-Länge-Sentinel derselben Typ-Klasse;
-        // die Re-Hydrierung erkennt length === 0.
-        let frei = 0;
-        for (const k in geo.attributes) {
-            const a = geo.attributes[k];
-            if (a && a.array && a.array.byteLength) {
-                frei += a.array.byteLength;
-                a.array = new a.array.constructor(0);
-            }
-        }
-        if (geo.index && geo.index.array && geo.index.array.byteLength) {
-            frei += geo.index.array.byteLength;
-            geo.index.array = new geo.index.array.constructor(0);
-        }
-        return frei;
-    }
-    _tickChunkBodenEntlassung(now) {
-        const q = this.state._chunkEntlassQueue;
-        if (!q || !q.size) return;
-        const r = this.state.renderer;
-        if (!r || r._isHeadlessNull) return; // headless: Gates lesen die Arrays byte-alt
-        const c = this._chunkIdb;
-        if (!c || !c._idbDb || c._idbDead) return;
-        let budget = 2;
-        for (const [key, eintrag] of q) {
-            if (budget <= 0) break;
-            if (now - eintrag.seit < AnazhRealm.CHUNK_ENTLASS_GNADE_MS) continue;
-            const entry = this.state.voxelChunks && this.state.voxelChunks.get(key);
-            // nur der IDENTISCHE, lebende, un-entlassene Bau — sonst verfällt der Posten.
-            if (!entry || entry.empty || entry._entlassen || !entry.mesh || entry.mesh !== eintrag.mesh) {
-                q.delete(key);
-                continue;
-            }
-            if (!this._chunkFootprintEditFrei(eintrag.cx, eintrag.cz)) {
-                q.delete(key);
-                continue;
-            }
-            if (!this._chunkBodenGpuHat(entry.mesh.geometry)) {
-                eintrag.seit = now; // noch nicht hochgeladen (nie gerendert) → Frist neu
-                continue;
-            }
-            q.delete(key);
-            budget--;
-            const idbKey = this._chunkIdbKey(eintrag.cx, eintrag.cz, entry.lod);
-            this._chunkIdbGet(idbKey).then((payload) => {
-                if (!payload || payload.empty || !payload.positions) {
-                    // Platte (noch) leer: BOUNDED re-armieren — der Worker-Put
-                    // kann nach dem Finalize kommen; Sync-Bauten ohne Put
-                    // fallen nach 5 Proben ehrlich aus der Entlassung.
-                    eintrag.versuche = (eintrag.versuche | 0) + 1;
-                    if (eintrag.versuche < 5 && !q.has(key)) {
-                        eintrag.seit = now;
-                        q.set(key, eintrag);
-                    }
-                    return;
-                }
-                const e2 = this.state.voxelChunks && this.state.voxelChunks.get(key);
-                if (!e2 || e2 !== entry || e2._entlassen || !e2.mesh || e2.mesh !== eintrag.mesh) return;
-                if (!this._chunkFootprintEditFrei(eintrag.cx, eintrag.cz)) return;
-                let frei = this._chunkBodenNulle(e2.mesh.geometry);
-                if (
-                    e2.lodStitchMesh &&
-                    e2.lodStitchMesh.geometry &&
-                    this._chunkBodenGpuHat(e2.lodStitchMesh.geometry)
-                ) {
-                    frei += this._chunkBodenNulle(e2.lodStitchMesh.geometry);
-                }
-                e2._entlassen = true;
-                e2._entlassBytes = frei;
-                this.state._chunkEntlassenBytes = (this.state._chunkEntlassenBytes || 0) + frei;
-            });
-        }
-    }
-    // Grenz-Re-Hydrierung: CPU-Arrays eines entlassenen Chunks aus den IDB-Rohbytes (byte-identisch,
-    // KEIN needsUpdate), danach der eigene Geomorph-Pass, dann die Warter (z. B. der Nachbar-Pass).
-    _chunkBodenReHydrieren(cx, cz, dann) {
-        const key = `${cx},${cz}`;
-        const entry = this.state.voxelChunks && this.state.voxelChunks.get(key);
-        if (!entry || entry._entlassen !== true || !entry.mesh || !entry.mesh.geometry) {
-            if (dann) dann();
-            return;
-        }
-        if (!this._chunkRehydrierLauf) this._chunkRehydrierLauf = new Map();
-        const lauf = this._chunkRehydrierLauf;
-        if (lauf.has(key)) {
-            if (dann) lauf.get(key).push(dann); // EIN Lauf, viele Warter
-            return;
-        }
-        lauf.set(key, dann ? [dann] : []);
-        const mesh = entry.mesh;
-        this._chunkIdbGet(this._chunkIdbKey(cx, cz, entry.lod)).then((payload) => {
-            const warter = lauf.get(key) || [];
-            lauf.delete(key);
-            const e2 = this.state.voxelChunks && this.state.voxelChunks.get(key);
-            if (!e2 || e2 !== entry || e2._entlassen !== true || e2.mesh !== mesh) return; // frischer Bau trägt Arrays
-            if (!payload || !payload.positions) {
-                // Platte verloren (Ventil-Clear/Quota): ehrlich markieren — der
-                // Pass überspringt diesen Chunk, bis ihn der normale Streaming-
-                // Rebuild ersetzt (die Existenz-Probe macht das SELTEN).
-                e2._entlassVerloren = true;
-                this.log(
-                    `Chunk-Re-Hydrierung ${key}: IDB-Bytes fehlen — Boden bleibt bis zum Rebuild ungemorpht`,
-                    "WARN"
-                );
-                return;
-            }
-            const geo = mesh.geometry;
-            const setArr = (name, arr) => {
-                const a = geo.attributes[name];
-                if (a && arr) a.array = arr;
-            };
-            setArr("position", payload.positions);
-            setArr("normal", payload.normals);
-            setArr("color", payload.colors);
-            if (geo.index && payload.indices) geo.index.array = payload.indices;
-            // Morph-Attribute: der Pass überschreibt sie VOLL — frische Arrays.
-            setArr("aMorphTarget", new Float32Array(payload.positions.length));
-            setArr("aMorphWeight", new Float32Array(payload.positions.length / 3));
-            e2._entlassen = false;
-            this.state._chunkEntlassenBytes = Math.max(
-                0,
-                (this.state._chunkEntlassenBytes || 0) - (Number.isFinite(e2._entlassBytes) ? e2._entlassBytes : 0)
-            );
-            e2._entlassBytes = 0;
-            this._applyCrossLodGeomorph(cx, cz);
-            for (const w of warter) {
-                try {
-                    w();
-                } catch (_e) {
-                    /* Warter-Fehler isoliert */
-                }
-            }
-        });
     }
 
     // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5):
@@ -30428,15 +30211,15 @@ class AnazhRealm {
         // V18.275 — ein gepruneter Chunk verlässt auch die Foliage-Warteschlange (kein Leck).
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
+        this._chunkSatzAus("boden", key); // DER SATZ: der Bereich wird frei, der Index legt sich neu
         if (entry && entry.mesh) {
-            this._archBundleSceneRemove(entry.mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
             // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
-        // A1 — das Cross-LOD-Stitch-Band des Chunks räumen (render-only Begleiter).
+        // A1 — das Cross-LOD-Stitch-Band des Chunks räumen (sein Bereich im Boden-Satz gehört dem Chunk-Key).
+        this._chunkSatzAus("boden", "stitch:" + key);
         if (entry && entry.lodStitchMesh) {
-            this._archBundleSceneRemove(entry.lodStitchMesh);
             this._queueGeometryDispose(entry.lodStitchMesh.geometry);
             entry.lodStitchMesh = null;
         }
@@ -53186,9 +52969,6 @@ class AnazhRealm {
         // GNADENFRIST (18.07.) — der Gruppen-Reaper räumt abgelaufene leere Hüllen (1×/s;
         // headless entsteht nie ein Kandidat — der Leer-Chokepoint reapt dort sofort).
         this._tickArchGruppenReaper(performance.now());
-        // CHUNK-BODEN-ENTLASSUNG (19.07.) — der Gnadenfrist-Tick nullt die
-        // CPU-Arrays gesettelter, IDB-gedeckter Chunk-Böden (echt-only).
-        this._tickChunkBodenEntlassung(performance.now());
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
         // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
@@ -62629,6 +62409,283 @@ class AnazhRealm {
             this._bundleKugelWeite(bundle, mesh);
             this._bundleReifeWache(mesh);
         } else if (this.state.scene) this.state.scene.add(mesh);
+    }
+
+    // ═══ DER SATZ (Welle B) ═══
+    // Die Draw-Einheit ist Material × Geometrie über den ganzen Ring, nie Chunk × Material. Befund (Inventur der
+    // echten GPU, Mess-Wiese): 78 Chunk-Böden zeichneten in JEDEM Pass einzeln — 234 GPU-Befehle, weil der Vendor
+    // den Bundle-Replay je (Bundle, Kamera) zieht und seine Mitglieder nie cullt. Je Satz-Art (Boden · Wasser)
+    // lebt EIN Szenen-Mesh mit Pool-Puffern; ein Chunk (bzw. sein Stitch-Band) ist ein BEREICH darin. Die Vertex-
+    // Bereiche vergibt First-Fit aus einer Freiliste, lebende Bereiche wandern nie: die Chunk-Geometrie trägt
+    // subarray-Views auf den Satz (jeder CPU-Leser bleibt byte-gleich, der Geomorph schreibt hinein und markiert
+    // seinen Bereich). Der Index (Uint32 — writeBuffer verlangt 4-Byte-Ausrichtung) wird je Render ab dem ersten
+    // geänderten Block neu gelegt, Boden nah → fern (Early-Z, wie three's Objekt-Sortierung), Wasser fern → nah
+    // (transparent). Jeder Schreibvorgang ist ein Teil-Upload (addUpdateRange → queue.writeBuffer(offset));
+    // ein Wachsen (×1,5) baut eine frische Geometrie und zeigt die Views neu.
+    _chunkSatzArt(art) {
+        if (art === "boden")
+            return {
+                name: "bodenSatz",
+                attr: [
+                    ["position", 3],
+                    ["normal", 3],
+                    ["color", 3],
+                    ["aMorphTarget", 3],
+                    ["aMorphWeight", 1],
+                ],
+                mat: this._getVoxelChunkMaterial(),
+                schatten: true, // der Boden wirft in beiden Kaskaden (Hang auf Tal) — 1 Befehl je Kaskade
+                empfang: true,
+                renderOrder: 0,
+                richtung: 1, // nah → fern
+                userData: { chunkSatz: "boden", inventar: "boden-satz" },
+            };
+        throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
+    }
+
+    // Der Satz einer Art (lazy): EIN Szenen-Kind, frustumCulled=false (der Ring umspannt den Spieler).
+    _chunkSatz(art) {
+        const st = this.state;
+        if (!st.chunkSaetze) st.chunkSaetze = new Map();
+        let s = st.chunkSaetze.get(art);
+        if (s) return s;
+        if (!st.scene) throw new Error(`_chunkSatz(${art}): keine Szene`);
+        const spec = this._chunkSatzArt(art);
+        const C = AnazhRealm.CHUNK_SATZ[art];
+        if (!C) throw new Error(`_chunkSatz: keine Start-Kapazität für „${art}" (CHUNK_SATZ)`);
+        s = {
+            art,
+            spec,
+            attrNamen: spec.attr.map((a) => a[0]),
+            geom: null,
+            mesh: null,
+            vKap: 0,
+            iKap: 0,
+            vEnde: 0,
+            vFrei: [],
+            bloecke: new Map(),
+            ordnung: [],
+            schmutzig: false,
+            anker: null,
+            verborgen: false,
+            wachse: 0,
+        };
+        this._chunkSatzGeometrie(s, C.v, C.i);
+        const mesh = new THREE.Mesh(s.geom, spec.mat);
+        mesh.name = spec.name;
+        mesh.frustumCulled = false;
+        mesh.castShadow = spec.schatten;
+        mesh.receiveShadow = spec.empfang;
+        mesh.renderOrder = spec.renderOrder;
+        mesh.visible = false; // bis der erste Index liegt
+        Object.assign(mesh.userData, spec.userData);
+        s.mesh = mesh;
+        st.chunkSaetze.set(art, s);
+        st.scene.add(mesh);
+        return s;
+    }
+
+    // Die Pool-Geometrie (neu oder gewachsen): Inhalt bis zum Hochwasser bzw. zur gelegten Index-Zahl kopiert,
+    // die Views aller Bereiche neu gezeigt, die alte Geometrie geht in die verzögerte Entsorgung.
+    _chunkSatzGeometrie(s, vKap, iKap) {
+        const alt = s.geom;
+        const g = new THREE.BufferGeometry();
+        for (const [name, is] of s.spec.attr) {
+            const arr = new Float32Array(vKap * is);
+            if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * is));
+            g.setAttribute(name, new THREE.BufferAttribute(arr, is));
+        }
+        const idx = new Uint32Array(iKap);
+        const iN = alt ? alt.drawRange.count : 0;
+        if (iN > 0) idx.set(alt.index.array.subarray(0, iN));
+        g.setIndex(new THREE.BufferAttribute(idx, 1));
+        g.setDrawRange(0, iN);
+        // frustumCulled=false: die Hülle wird nie gelesen — eine ehrliche „überall"-Kugel statt eines Laufs über
+        // die ganze Kapazität
+        g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
+        s.geom = g;
+        s.vKap = vKap;
+        s.iKap = iKap;
+        for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
+        if (s.mesh) s.mesh.geometry = g;
+        if (alt) {
+            s.wachse++;
+            this._queueGeometryDispose(alt);
+        }
+    }
+
+    _chunkSatzViews(s, b) {
+        for (const [name, is] of s.spec.attr)
+            b.geom.attributes[name].array = s.geom.attributes[name].array.subarray(
+                b.vStart * is,
+                (b.vStart + b.vAnzahl) * is
+            );
+    }
+
+    // First-Fit aus der Freiliste, sonst am Hochwasser; reicht die Kapazität nicht, wächst der Satz.
+    _chunkSatzVAlloc(s, n) {
+        const frei = s.vFrei;
+        for (let i = 0; i < frei.length; i++) {
+            const f = frei[i];
+            if (f[1] < n) continue;
+            const start = f[0];
+            if (f[1] === n) frei.splice(i, 1);
+            else {
+                f[0] += n;
+                f[1] -= n;
+            }
+            return start;
+        }
+        if (s.vEnde + n > s.vKap) this._chunkSatzGeometrie(s, Math.max(s.vEnde + n, Math.ceil(s.vKap * 1.5)), s.iKap);
+        const start = s.vEnde;
+        s.vEnde += n;
+        return start;
+    }
+
+    // Bereich zurück in die (nach Start sortierte) Freiliste, Nachbarn verschmelzen; berührt er das Hochwasser,
+    // sinkt es.
+    _chunkSatzVFrei(s, start, n) {
+        const frei = s.vFrei;
+        let i = 0;
+        while (i < frei.length && frei[i][0] < start) i++;
+        frei.splice(i, 0, [start, n]);
+        if (i + 1 < frei.length && frei[i][0] + frei[i][1] === frei[i + 1][0]) {
+            frei[i][1] += frei[i + 1][1];
+            frei.splice(i + 1, 1);
+        }
+        if (i > 0 && frei[i - 1][0] + frei[i - 1][1] === frei[i][0]) {
+            frei[i - 1][1] += frei[i][1];
+            frei.splice(i, 1);
+        }
+        const letzt = frei[frei.length - 1];
+        if (letzt && letzt[0] + letzt[1] === s.vEnde) {
+            s.vEnde = letzt[0];
+            frei.pop();
+        }
+    }
+
+    // DER EINE EINTRITT eines Chunk-Bürgers in die Szene: `key` ist der Bereichs-Name (Chunk-Key oder
+    // `stitch:<chunk>`), `chunkKey` sein Chunk (für die Nah-fern-Ordnung). Fail-closed: jedes Satz-Attribut muss
+    // mit seiner Breite vorliegen, ein Index muss da sein — ein fehlender Wert ist ein lauter Bruch.
+    _chunkSatzEin(art, key, geom, chunkKey) {
+        const s = this._chunkSatz(art);
+        if (s.bloecke.has(key)) this._chunkSatzAus(art, key);
+        const n = geom && geom.attributes && geom.attributes.position ? geom.attributes.position.count : 0;
+        for (const [name, is] of s.spec.attr) {
+            const a = geom && geom.attributes ? geom.attributes[name] : null;
+            if (!a || a.itemSize !== is || a.count !== n)
+                throw new Error(
+                    `_chunkSatzEin(${art}, ${key}): Attribut ${name} fehlt oder passt nicht (${n} Vertices)`
+                );
+        }
+        if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
+        const vStart = this._chunkSatzVAlloc(s, n);
+        const g = s.geom; // nach dem Alloc: ein Wachsen tauscht die Geometrie
+        for (const [name, is] of s.spec.attr) {
+            const ga = g.attributes[name];
+            ga.array.set(geom.attributes[name].array, vStart * is);
+            ga.addUpdateRange(vStart * is, n * is);
+            ga.needsUpdate = true;
+        }
+        const li = geom.index.array;
+        const idx = new Uint32Array(li.length);
+        for (let i = 0; i < li.length; i++) idx[i] = li[i] + vStart;
+        const ck = String(chunkKey);
+        const komma = ck.indexOf(",");
+        const b = {
+            key,
+            chunkKey: ck,
+            cx: Number(ck.slice(0, komma)),
+            cz: Number(ck.slice(komma + 1)),
+            geom,
+            vStart,
+            vAnzahl: n,
+            idx,
+            iAnzahl: idx.length,
+            iStart: -1,
+        };
+        s.bloecke.set(key, b);
+        this._chunkSatzViews(s, b);
+        s.schmutzig = true;
+        return b;
+    }
+
+    // Der Austritt: die Chunk-Geometrie behält ihre Daten als EIGENE Kopie (ihr Bereich wird frei und neu
+    // vergeben), der Index legt sich im nächsten Takt neu.
+    _chunkSatzAus(art, key) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
+        const b = s ? s.bloecke.get(key) : null;
+        if (!b) return false;
+        for (const name of s.attrNamen) {
+            const a = b.geom.attributes[name];
+            if (a) a.array = a.array.slice();
+        }
+        this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
+        s.bloecke.delete(key);
+        s.schmutzig = true;
+        return true;
+    }
+
+    // Ein CPU-Schreiber (Geomorph) hat Attribute seines Bereichs geändert → genau dieser Bereich lädt hoch.
+    _chunkSatzMarke(art, key, namen) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
+        const b = s ? s.bloecke.get(key) : null;
+        if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
+        for (const name of namen) {
+            const ga = s.geom.attributes[name];
+            ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
+            ga.needsUpdate = true;
+        }
+    }
+
+    _chunkSatzSichtbar(art, sichtbar) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
+        if (!s) return;
+        s.verborgen = !sichtbar;
+        s.mesh.visible = sichtbar && s.geom.drawRange.count > 0;
+    }
+
+    // Je Render (vor dem Zeichnen): jeder geänderte Satz legt seinen Index ab dem ersten geänderten Block neu;
+    // ein Spieler-Chunk-Wechsel sortiert die Blöcke neu (Ring-Distanz).
+    _tickChunkSatz() {
+        const saetze = this.state.chunkSaetze;
+        if (!saetze || saetze.size === 0) return;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        const anker = lpc ? lpc.cx + "," + lpc.cz : "";
+        for (const s of saetze.values()) if (s.schmutzig || s.anker !== anker) this._chunkSatzOrdnen(s, lpc, anker);
+    }
+
+    _chunkSatzOrdnen(s, lpc, anker) {
+        const pcx = lpc ? lpc.cx : 0,
+            pcz = lpc ? lpc.cz : 0;
+        const r = s.spec.richtung;
+        const neu = Array.from(s.bloecke.values());
+        for (const b of neu) b._d = lpc ? Math.max(Math.abs(b.cx - pcx), Math.abs(b.cz - pcz)) : 0;
+        neu.sort((a, b) => (a._d - b._d) * r || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+        const alt = s.ordnung;
+        let p = 0;
+        while (p < alt.length && p < neu.length && alt[p] === neu[p]) p++;
+        const ab = p > 0 ? neu[p - 1].iStart + neu[p - 1].iAnzahl : 0;
+        let summe = ab;
+        for (let k = p; k < neu.length; k++) summe += neu[k].iAnzahl;
+        if (summe > s.iKap) this._chunkSatzGeometrie(s, s.vKap, Math.max(summe, Math.ceil(s.iKap * 1.5)));
+        const index = s.geom.index;
+        let iPos = ab;
+        for (let k = p; k < neu.length; k++) {
+            const b = neu[k];
+            b.iStart = iPos;
+            index.array.set(b.idx, iPos);
+            iPos += b.iAnzahl;
+        }
+        if (iPos > ab) {
+            index.addUpdateRange(ab, iPos - ab);
+            index.needsUpdate = true;
+        }
+        s.geom.setDrawRange(0, iPos);
+        s.mesh.visible = !s.verborgen && iPos > 0;
+        s.ordnung = neu;
+        s.schmutzig = false;
+        s.anker = anker;
     }
 
     // ═══ DIE REIFE-WACHE ═══
@@ -86773,6 +86830,9 @@ class AnazhRealm {
 
     _loopRender(currentTime) {
         // ### Rendering ###
+        // DER SATZ (Welle B): alle Chunk-Ein-/Austritte dieses Frames legen ihren Index JETZT, direkt vor dem
+        // Zeichnen — ein frei gewordener und im selben Frame neu vergebener Bereich ist nie ungelegt sichtbar.
+        this._tickChunkSatz();
         // Skybox-Position DIREKT vor dem Render kopieren (die Kamera ist hier schon aktualisiert).
         // WAHRNEHMUNGS-SENSE: Winkel- + Translations-Geschwindigkeit des Blicks → `_camMotion01` ∈ [0..1];
         // fast-attack, short-decay (~170 ms). Reine Beobachtung; der Perf-Aktuator liest sie.
@@ -87200,10 +87260,13 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 256;
 // Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
-// CHUNK-BODEN-ENTLASSUNG (19.07.) — die Gnadenfrist zwischen Finalize und dem
-// Nullen der CPU-Arrays: lang genug, dass der Streaming-Schwall (Nachbar-
-// Rebuilds re-morphen die Grenze) abklingt, kurz genug für den GC-Wal.
-AnazhRealm.CHUNK_ENTLASS_GNADE_MS = 10000;
+// DER SATZ (Welle B, `_chunkSatz`) — die Start-Kapazität je Satz-Art (Vertices · Indizes): gemessen am
+// vollen Ring 4 am Spawn (81 Chunks + 16 Stitch-Bänder = 179 046 Vertices · 858 234 Indizes) plus Luft für
+// Fragmentierung und Gebirge, damit eine typische Sitzung nie wächst; ein Wachsen (×1,5) kostet eine
+// frische Geometrie mit vollem Upload.
+AnazhRealm.CHUNK_SATZ = Object.freeze({
+    boden: Object.freeze({ v: 229376, i: 1 << 20 }),
+});
 // Foundry-Cache-GEWICHTS-DECKEL: `_foundryCacheSet` bilanziert die typed-array-Bytes je Eintrag
 // (`_cacheBytes`) und räumt LRU, bis Byte-Budget UND Entries-Cap stehen (ein Eintrags-Zähler ist
 // byte-blind: Haus-L0 ≈ 7–8 MB, Blume wenige KB). Die Kappe MUSS über dem Ring-Working-Set liegen

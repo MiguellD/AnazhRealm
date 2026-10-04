@@ -372,14 +372,12 @@ async function checkBandRing2Extended(ctx) {
         const suggestion = r.chatSuggest("setze wettr rainy");
         out.suggestionForTypo = suggestion === "setze wetter rainy";
 
-        // 4. Phase 3b: set_visible-Primitiv + Chat-Routing — `toggleTerrain` wirkt auf `state.voxelChunks`.
+        // 4. Phase 3b: set_visible-Primitiv + Chat-Routing — `toggleTerrain` schaltet den Boden-Satz (Welle B:
+        // der ganze Ring ist EIN Objekt, die Chunk-Meshes sind CPU-Körper).
         const voxelChunksBefore = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
         const someVoxelVisible = () => {
-            if (!r.state.voxelChunks) return false;
-            for (const e of r.state.voxelChunks.values()) {
-                if (e && !e.empty && e.mesh && e.mesh.visible) return true;
-            }
-            return false;
+            const s = r.state.chunkSaetze ? r.state.chunkSaetze.get("boden") : null;
+            return !!(s && s.mesh && s.mesh.visible && s.mesh.parent === r.state.scene);
         };
         r.processChatCommand("Boden deaktivieren");
         out.terrainHiddenViaDsl = voxelChunksBefore > 0 && !someVoxelVisible();
@@ -18378,13 +18376,14 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Gate-Welt hat hohe Warmup-frameMs.
         st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
-        if (st.voxelChunks) st.voxelChunks.delete(tk); // nicht existent → nur entfernen, kein Re-Populate
+        // nicht existent → durch den EINEN Abbau (Welle B: der Boden-Satz verliert den Bereich mit), kein Re-Populate
+        if (st.voxelChunks && st.voxelChunks.has(tk)) r._disposeVoxelChunk(tk);
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
         // (4) V18.282 — RESPONSIVITÄT: Frame ÜBER BUDGET → das Wachstum PAUSIERT; Frame frei → es läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
-        if (st.voxelChunks) st.voxelChunks.delete(tk2);
+        if (st.voxelChunks && st.voxelChunks.has(tk2)) r._disposeVoxelChunk(tk2);
         st.foliageRadius = 9999;
         st.pendingFoliageChunks = new Set([tk2]);
         st._frameOverBudget = true;

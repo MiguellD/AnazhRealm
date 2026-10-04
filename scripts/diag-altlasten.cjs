@@ -119,6 +119,17 @@ const FORBIDDEN = [
     { token: "FILL_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
     { token: "RIM_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
     { token: "BACK_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
+    // DER SATZ (Welle B) — der Boden ist EIN Satz je Material (ein Befehl je Pass für den ganzen Ring), die
+    // Chunk-Geometrie trägt Views auf ihn: die Boden-Entlassung (CPU-Arrays nullen, aus IDB re-hydrieren) hat
+    // keinen Gegenstand mehr und kommt nicht zurück.
+    { token: "_chunkBodenGpuHat", fiel: "Welle B — der Boden-Satz hält die CPU-Arrays (Views)" },
+    { token: "_chunkBodenNulle", fiel: "Welle B" },
+    { token: "_tickChunkBodenEntlassung", fiel: "Welle B" },
+    { token: "_chunkBodenReHydrieren", fiel: "Welle B" },
+    { token: "_chunkEntlass", fiel: "Welle B — Entlass-Schlange und -Bytes" },
+    { token: "CHUNK_ENTLASS_GNADE_MS", fiel: "Welle B" },
+    { token: "_entlassBytes", fiel: "Welle B" },
+    { token: "_chunkRehydrierLauf", fiel: "Welle B" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
