@@ -267,6 +267,15 @@ jobs:
               # Dispose-Storno mitten in der Fortsetzung crasht nie. Headless=One-Shot (gate-treu).
               run: npm run gate:scatter-slice
 
+            - name: Streu-Fernform aus dem Studio-Budget (W1 — jenseits Welt-d1 kein stilles L0)
+              # B2c lod.budget[kind].fern (karte · gesetz · boden) ist KONSUM: der Flip rock.fern="boden" baut
+              # eine Region neu und ihre Fels-Zellen tragen form boden; keine Nicht-Baum-Streu-Instanz steht
+              # jenseits Welt-d1 + Hysterese; wartende Gesetz-Zellen legen im Tick keine Slots an; Geröll passt
+              # fern aus seinen 6 größten Steinen. Selbst-Tests: eine injizierte Geröll-L0-Instanz bei 200 m
+              # wird rot (mit Namen), die erschöpfte Kapsel-Liste lässt Zellen warten (0 L0) und die Wand rot,
+              # ein fehlendes fern bricht fail-closed (KERN-PFLICHT).
+              run: npm run gate:streu-fern
+
             - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
               # Beweist headless, dass zwei same-LOD-Face-Nachbarn an ihrer GETEILTEN Boundary-Zeile
               # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht

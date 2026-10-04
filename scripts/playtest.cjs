@@ -36028,7 +36028,9 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             out.laubIsDunkel = laubG < 0x80; // gedämpftes Grün (war 0x8b → jetzt < 0x80)
         }
 
-        // ─── (W9) baum_totholz in TREE_NAMES + candidates ────────────
+        // ─── (W9) W1: baum_totholz ist aus TREE_NAMES + candidates GEFALLEN ───
+        // Totholz zeichnete nur die Streu (belaubte Alias-Eiche); es kehrt als Studio-Art (Welle Waldboden) zurück
+        // (roadmap §0.reste).
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
         out.candidatesIncludeTotholz = /["']baum_totholz["']/.test(spawnSrc);
 
@@ -36085,8 +36087,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         res.laubIsDunkel === true
     );
     check(
-        "V18.215 (W9) baum_totholz in _vegetationSampleSpawn-candidates (Plan §8.2)",
-        res.candidatesIncludeTotholz === true
+        "W1 (W9) baum_totholz ist aus den _vegetationSampleSpawn-Kandidaten gefallen (Studio-Art Waldboden offen)",
+        res.candidatesIncludeTotholz === false
     );
 }
 
@@ -36550,12 +36552,50 @@ async function checkBandV18218LODStufen(ctx) {
             const t12 = A.LOD_DISTANCES.thresh12;
             out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
             out.sprung2to0 = r._chooseLODForDistance(Math.max(0, t01 - h * 2), 2) === 0;
-            // Konsum: die Fern-Entscheidung der Streu liest die GEWÜNSCHTE Stufe, der Tick quittiert eine nicht
-            // gegriffene Fernform nicht (Wiederholung), beide fragen die EINE Gesetz-Bahn-Bedingung.
-            const mSrc = window.__codeOf(r._scatterMaterializeCell);
-            const tSrc = window.__codeOf(r._tickScatterLod);
-            out.fernWunsch = /(_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()/.test(mSrc);
-            out.fernWiederholung = /newLod >= 2 && layer.kind !== "tree" && this._streuGesetzBahnOffen()/.test(tSrc);
+        }
+        // W1 — DIE FERNFORM IST KONSUM, nicht Quelltext: die Fels-Zellen einer NEU GEBAUTEN Region tragen, was das
+        // Studio-Budget sagt (B2c `rock.fern`). Geflippt auf "boden" stehen sie ohne Geometrie, zurück auf "gesetz"
+        // als Gesetz-Platz (headless `wartet`, die Gesetz-Bahn zeichnet nur ein echter Renderer) — nie mit Slots.
+        {
+            const B = A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.budget;
+            const map = r._ensureScatterRegionMap();
+            const pm = r.state.playerMesh && r.state.playerMesh.position;
+            if (B && B.rock && pm && r._foundryEnabled()) {
+                const felsFern = (reg) =>
+                    (reg && Array.isArray(reg.cells) ? reg.cells : []).filter((c) => c.layer === "rock" && c.lod >= 2);
+                const bau = (k) => {
+                    const [x, z] = k.split(",").map(Number);
+                    r._disposeScatterRegion(k);
+                    return r._scatterRegion(x, z, pm);
+                };
+                // die Region mit den meisten Fern-Felsen; trägt keine gebaute welche, den Ring um den Spieler bauen
+                let key = null,
+                    best = 0;
+                for (const [k, reg] of map) {
+                    const n = felsFern(reg).length;
+                    if (n > best) [best, key] = [n, k];
+                }
+                const RM = A.SCATTER.regionM;
+                for (let dz = -1; dz <= 1 && !key; dz++)
+                    for (let dx = -1; dx <= 1 && !key; dx++) {
+                        const k = Math.floor(pm.x / RM) + dx + "," + (Math.floor(pm.z / RM) + dz);
+                        if (felsFern(bau(k)).length) key = k;
+                    }
+                out.fernRegion = key;
+                if (key) {
+                    const alt = B.rock.fern;
+                    try {
+                        B.rock.fern = "boden";
+                        const fz = felsFern(bau(key));
+                        out.fernBoden = fz.length > 0 && fz.every((c) => c.form === "boden" && !c.slots.length && !c.feld);
+                    } finally {
+                        B.rock.fern = alt;
+                    }
+                    const fz2 = felsFern(bau(key));
+                    out.fernGesetz = fz2.length > 0 && fz2.every((c) => c.form === "gesetz" && !c.slots.length);
+                    out.fernZellen = fz2.length;
+                }
+            }
         }
 
         // ─── (C) LOD-Baupläne werden gebaut (3 Stufen) ───
@@ -36677,8 +36717,8 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
     check("V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0", res.sprung0to2 === true && res.sprung2to0 === true);
     check(
-        "V18.526 CONSUM: die Fern-Streu liest die gewünschte Stufe, der Tick wiederholt eine nicht gegriffene Fernform",
-        res.fernWunsch === true && res.fernWiederholung === true
+        `W1 KONSUM: rock.fern="boden" → die neu gebaute Region trägt form boden ohne Geometrie, zurück → gesetz (Region ${res.fernRegion}, ${res.fernZellen} Fern-Felsen)`,
+        res.fernBoden === true && res.fernGesetz === true
     );
 
     // (C) Variant-LOD-Bauplane
@@ -37194,16 +37234,19 @@ async function checkBandV18224ScatterPromotion(ctx) {
             if (Array.isArray(SC.layers)) {
                 const treeCap = (SC.layers.find((l) => l.name === "tree") || {}).cap || 0;
                 const underCap = (SC.layers.find((l) => l.name === "under") || {}).cap || 0;
-                const litterCap = (SC.layers.find((l) => l.name === "litter") || {}).cap || 0;
+                // W1: die Streu-Schicht litter fiel final (baum_totholz war eine belaubte Alias-Eiche) — die
+                // drei Strata sind Bäume · Understory · Fels.
+                const rockCap = (SC.layers.find((l) => l.name === "rock") || {}).cap || 0;
+                out.litterGefallen = !SC.layers.some((l) => l.name === "litter" || l.kind === "litter");
                 // Die Bäume sind die prominente Substanz (treeCap ≥ underCap); das Understory ist sekundär —
                 // Dichte FPS-bewusst, nicht maximal (dichtes Gestrüpp kostet FPS + Sicht).
                 out.treeProminentRebalance = treeCap >= underCap && treeCap > 0;
-                out.hasThreeStrata = treeCap > 0 && underCap > 0 && litterCap > 0;
+                out.hasThreeStrata = treeCap > 0 && underCap > 0 && rockCap > 0;
                 // Design-Kapazität: FPS-bewusst populiert (nicht mehr „≥150 hunderte")
                 const chunkSpan = 43.2; // _voxelChunkConfig().span
                 const chunksPerRegion = (SC.regionM / chunkSpan) * (SC.regionM / chunkSpan);
                 out.chunksPerRegion = chunksPerRegion;
-                out.designPerChunk = (treeCap + underCap + litterCap) / chunksPerRegion;
+                out.designPerChunk = (treeCap + underCap + rockCap) / chunksPerRegion;
                 out.perChunkActual = out.regionInstanceCount / chunksPerRegion;
             }
             // Die Streu schrieb in HISM-Gruppen (ein Draw-Call pro Variante-Leaf)
@@ -37360,13 +37403,17 @@ async function checkBandV18224ScatterPromotion(ctx) {
         "V18.224/233 (M2) Bäume sind die prominente Substanz (treeCap ≥ underCap, Rebalance)",
         res.treeProminentRebalance === true
     );
-    check("V18.224 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Streu)", res.hasThreeStrata === true);
     check(
-        `V18.224 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`,
+        "V18.224/W1 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Fels), litter ist gefallen",
+        res.hasThreeStrata === true && res.litterGefallen === true
+    );
+    check(
+        `V18.224/W1 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`,
         res.byLayer &&
             Number.isFinite(res.byLayer.tree) &&
             Number.isFinite(res.byLayer.under) &&
-            Number.isFinite(res.byLayer.litter)
+            Number.isFinite(res.byLayer.rock) &&
+            !("litter" in res.byLayer)
     );
     // Die Dichte-Schwellen folgen den FPS-bewusst gesenkten Scatter-Caps — die Welt ist BEWUSST sparsam.
     check(
