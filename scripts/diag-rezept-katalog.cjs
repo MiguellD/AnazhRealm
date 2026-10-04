@@ -143,13 +143,13 @@ function check(name, ok, detail) {
             return { s: Math.round(s * 1000) / 1000, n };
         };
         try {
-            const m0 = await Promise.race([r._foundryRequest("drachentor", 7, 0, "summer"), sleep(45000)]);
+            const m0 = await Promise.race([r._foundryRequest("drachentor", 7, 0), sleep(45000)]);
             // Schluessel-SET vorher (nicht nur die Groesse: Hintergrund-Ticks duerfen fremde
             // Keys anlegen — die Wand ist, dass der OV-Request KEINEN drachentor-Key legt).
             const keysBefore = new Set(f.cache.keys());
             const reqBefore = new Set(f.requested ? Array.from(f.requested) : []);
             const mOv = await Promise.race([
-                r._foundryRequest("drachentor", 7, 0, "summer", { mass: 0.02 }),
+                r._foundryRequest("drachentor", 7, 0, { mass: 0.02 }),
                 sleep(45000),
             ]);
             res.b.meshes0 = Array.isArray(m0) ? m0.length : -1;
@@ -169,9 +169,9 @@ function check(name, ok, detail) {
             // ERFINDER-WELLE — der ov-Kanal erreicht jetzt auch den PFLANZEN-Pfad
             // (Bruecke reicht msg.ov an foundry-core.buildInstance): die Blume formt.
             const bKeysBefore = new Set(f.cache.keys());
-            const b0 = await Promise.race([r._foundryRequest("blume", 3, 0, "summer"), sleep(45000)]);
+            const b0 = await Promise.race([r._foundryRequest("blume", 3, 0), sleep(45000)]);
             const bOv = await Promise.race([
-                r._foundryRequest("blume", 3, 0, "summer", { height: 2.2, bloomCount: 9 }),
+                r._foundryRequest("blume", 3, 0, { height: 2.2, bloomCount: 9 }),
                 sleep(45000),
             ]);
             res.b.blume0 = csum(b0);

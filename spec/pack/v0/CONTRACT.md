@@ -20,16 +20,22 @@
 Ein Eintrag je gebackenem Asset im IndexedDB-Store `anazhFoundryAssets/assets`:
 
 ```text
-<preset>|<seed>|<lod>|<season>
+<preset>|<gestalt>|<lod>
 ```
+
+Der EINE Schlüssel-Münzer ist `_foundryKoerperKey(preset, gestalt, lod)` (anazhRealm.js) — derselbe String ist
+Platten-, Cache- und leafKey-Stamm.
 
 - `preset` — ein Schlüssel aus dem Studio-Rezeptbuch (`get-recipes`; Bäume `eiche fichte tanne
 birke weide mammut` · Boden `gras strauch blume` · Fels `findling basalt sediment zacken
 geroell` · Kristall `kristalle` · Zweit-Kern z. B. `gt supersport …`).
-- `seed` — die Gestalt (Integer 1..V; V = `PORTAL_RENDER_CONFIG.lod.budget.gestalten[preset]`, sonst `'*'`;
+- `gestalt` — der Same (Integer 1..V; V = `PORTAL_RENDER_CONFIG.lod.budget.gestalten[preset]`, sonst `'*'`;
   `_foundryVariantFor(seed, preset)` wählt sie aus den hohen Hash-Bits, die Bibliothek wärmt 1..V).
 - `lod` — `0 | 1 | 2` (beim Gras trägt die Stufen-Position den `stage`-Wert desselben Formats).
-- `season` — `spring | summer | autumn | winter` (Default `summer`).
+- KEINE Saison (V18.527): jeder Körper ist Golden-Sommer gebacken — die Transport-Schale nagelt `season: "summer"`
+  auf jeden `build-asset`/`bake-impostor`, bevor das Studio ihn sieht; das Jahr färbt der Host über die Uniform
+  `uSeasonMul` (SAISON_GESETZ). Die 36 Sommer↔Winter-Golden-Paare (`spec/asset-contract`) unterscheiden sich nur in
+  `foliage.color`/`foliageTex.color` — Position, Normale, UV, Index und Rinde sind byte-gleich.
 
 Dazu EIN Meta-Schlüssel `__stamp` (der Stempel, s. u.). Schreiber UND Leser ist seit V18.511 die
 **Transport-Schale** `_foundrySchale` (anazhRealm.js): der Host-Teil des Foundry-Kanals, der IM Worker vor dem
@@ -91,11 +97,11 @@ stamp = SHA-256( manifestText + "\n" + script_1 + "\n" + … + script_n ) + "|f"
 
 ## Der Request-Pfad + der Ship-Hook (N3.4)
 
-`_foundryRequest(presetId, seed, lod, season)` — die EINE Lese-Reihenfolge:
+`_foundryRequest(presetId, seed, lod, ov, wo)` — die EINE Lese-Reihenfolge:
 
 ```text
 1. Hook             window.__anazhLiveBake === false  →  nurPlatte      (ohne Platte: return null)
-2. Auftrag          _foundryWorkerRequest(…, platte = "<preset>|<seed>|<lod>|<season>", nurPlatte)
+2. Auftrag          _foundryWorkerRequest(…, platte = "<preset>|<gestalt>|<lod>", nurPlatte)
 3. Schale (Worker)  Platte zuerst → Treffer; Miss + nurPlatte → leere Antwort (Host: null);
                     Miss → Studio → Wand · Verengung · Put · Transfer
 ```
@@ -116,11 +122,11 @@ identifiziert die Domäne daten-getrieben, `components` trägt das Wörterbuch v
 den Vertrag. Artefakt-Form (`scripts/mint-asset-packs.cjs` → `artifacts/packs/`):
 
 ```text
-Datei   <preset>-s<seed>-L<lod>-<season>.json
+Datei   <preset>-s<gestalt>-L<lod>.json
 Inhalt  {
   cv: 1,                                  // Vertrags-Version des Pack-Kanons
-  key: "<preset>|<seed>|<lod>|<season>",  // der v0-Schlüssel, unverändert
-  presetId, seed, lod, season,            // der Schlüssel aufgefaltet (Lesbarkeit)
+  key: "<preset>|<gestalt>|<lod>",        // der v0-Schlüssel, unverändert
+  presetId, seed, lod,                    // der Schlüssel aufgefaltet (Lesbarkeit; seed = die Gestalt)
   meta: { kind, coreId },                 // kind aus dem Rezeptbuch; coreId daten-getrieben (s. u.)
   components: {},                         // OPTIONAL: das Wörterbuch v1 (nervensystem-plan §2.4:
                                           // identity/render/place/drive/body/wield/portal) — heute

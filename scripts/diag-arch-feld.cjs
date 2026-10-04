@@ -339,11 +339,11 @@ function schlangenGesetz(src) {
                       // Foundry-Bau: steht die L1-Flat (Quelle des Fits) und der geteilte Baum-Satz schon?
                       flat: r._archFoundryPreset(e)
                           ? r._foundry.cache.has(
-                                r._archFoundryPreset(e) +
-                                    "|" +
-                                    r._foundryVariantFor(e.seed, r._archFoundryPreset(e)) +
-                                    "|1|" +
-                                    (r.state.season || "summer")
+                                r._foundryKoerperKey(
+                                    r._archFoundryPreset(e),
+                                    r._foundryVariantFor(e.seed, r._archFoundryPreset(e)),
+                                    1
+                                )
                             )
                           : null,
                       satz: r._archFoundryPreset(e)

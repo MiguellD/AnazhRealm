@@ -293,7 +293,7 @@ function ksRow(src, name) {
             res.e.meshCount = {};
             for (const L of [0, 1, 2]) {
                 const meshes = await Promise.race([
-                    r._foundryRequest("alemannisch", 7, L, "summer"),
+                    r._foundryRequest("alemannisch", 7, L),
                     new Promise((res3) => setTimeout(() => res3(null), 45000)),
                 ]);
                 res.e.meshCount[L] = Array.isArray(meshes) ? meshes.length : -1;

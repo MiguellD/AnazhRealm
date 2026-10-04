@@ -359,7 +359,7 @@ function triasStaticLaws(anazhSrc) {
                 if (Number.isFinite(e._lodLevel)) s.lodLevelFinite++;
                 if (!e.instanced || !e.instSlots) continue;
                 s.instanced++;
-                const m = e.instSlots[0] && e.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)\|/);
+                const m = e.instSlots[0] && e.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)[|:]/);
                 const lod = m ? m[1] : "?";
                 s.lods[lod] = (s.lods[lod] || 0) + 1;
                 for (const { key } of e.instSlots) {
@@ -437,7 +437,7 @@ function triasStaticLaws(anazhSrc) {
             }
             res.l1Level = h0b._lodLevel;
             res.l1Served = h0b._servedLod;
-            const mS = h0b.instanced && h0b.instSlots[0] && h0b.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)\|/);
+            const mS = h0b.instanced && h0b.instSlots[0] && h0b.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)[|:]/);
             res.l1Slot = mS ? Number(mS[1]) : null;
         }
 
@@ -462,7 +462,7 @@ function triasStaticLaws(anazhSrc) {
         const h0 = near3[0];
         tp(h0.position.x + 6, h0.position.z);
         await pumpRender(120);
-        const m0 = h0.instanced && h0.instSlots[0] && h0.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)\|/);
+        const m0 = h0.instanced && h0.instSlots[0] && h0.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)[|:]/);
         res.promotedLod = m0 ? Number(m0[1]) : null;
 
         // (5) +500 m -> alles gecullt: der DECKEL ueber Churn.

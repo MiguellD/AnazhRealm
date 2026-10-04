@@ -182,7 +182,7 @@ function simplex3(x, y, z) {
 
 /* ---------- Geteilte Uniforms: Wind (Eigenfreq) + Saison (Phaenologie) ----- */
 // uSeasonMul: aktueller Saison-Tint / Bau-Tint -> Laubfarbe drivet KONTINUIERLICH, ohne Rebuild
-const _seasonBuiltTint = new THREE.Color(0x4f7a30); // Tint, mit dem die Geometrie zuletzt gebacken wurde (Referenz fuer das Verhaeltnis)
+const _seasonBuiltTint = new THREE.Color(SAISON_GESETZ.bau); // Tint, mit dem die Geometrie zuletzt gebacken wurde (Referenz fuer das Verhaeltnis; SAISON_GESETZ.bau = Sommer)
 // DIE BODEN-PALETTE — EINE Quelle fuer die Terrain-Farbgebung UND den world-params-Export (die
 // Foundry reicht sie an AnazhRealm, dessen Boden/Fels-Farben sie live lesen). Editiert der Schoepfer
 // hier eine Farbe, folgt der AnazhRealm-Boden beim naechsten Laden — kein hartkodiertes Abbild mehr.
@@ -2562,7 +2562,7 @@ function buildForest() {
         vertexShader:
             "uniform float uFogNear,uFogFar,uK,uTime,uWind,uLodRef;uniform vec3 uWindDir;attribute float aCell;attribute float aDepthBias;attribute float aOccl;varying float vOcc;varying vec2 vUv;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;void main(){vOcc=aOccl;vUv=vec2((uv.x+aCell)/uK,uv.y);vec3 inst=instanceMatrix[3].xyz;float _th=fract(sin(dot(inst.xz,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(inst.xz,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);float sx=length(instanceMatrix[0].xyz),sy=length(instanceMatrix[1].xyz);float aRot=atan(-instanceMatrix[0].z,instanceMatrix[0].x);vec3 up=vec3(0.0,1.0,0.0);vec3 look=cameraPosition-inst;look.y=0.0;float ll=length(look);float szV=length(instanceMatrix[2].xyz);vCD=ll*min(uLodRef/max(szV,0.001),1.0);look=(ll>1e-4)?look/ll:vec3(0.0,0.0,1.0);vLk=look;float ang=atan(look.x,look.z);vView=fract((ang-aRot)/6.2831853+1.0);vec3 right=normalize(cross(up,look));vRt=right;vec3 wp=inst+right*(position.x*sx)+up*(position.y*sy);float sway=sin(uTime*1.7+inst.x*0.35+inst.z*0.27)*position.y*position.y*sy*0.012*(0.4+1.2*uWind);wp.xz+=uWindDir.xz*sway;vec4 mv=viewMatrix*vec4(wp,1.0);mv.z-=aDepthBias;vFog=clamp((-mv.z-uFogNear)/(uFogFar-uFogNear),0.0,1.0);gl_Position=projectionMatrix*mv;}" /* aRot aus T*Ry*S dekodiert; sway: Kronenspitze (y^2) pendelt in Windrichtung; vRt/vLk = Zell-Rahmen; FIX v27 vTintI = derselbe Positions-Hash wie das 3D-Laub -> Kronenfarbe konstant ueber L0/L1/L2 */,
         fragmentShader:
-            "uniform sampler2D map,nmap;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uFade,uV,uD1,uPres,uLodMaskOn,uDitherT;varying vec2 vUv;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;varying float vOcc;void main(){float fV=vView*uV;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,uV);vec2 uvA=vec2(vUv.x,(vUv.y+v0)/uV),uvB=vec2(vUv.x,(vUv.y+v1)/uV);vec4 t=mix(texture2D(map,uvA),texture2D(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=0.34+(1.0-clamp(uPres,0.0,1.0))*0.5;if(t.a<ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(max(min(fin*2.0,1.0),vOcc)<_dh)discard;}vec3 nc=mix(texture2D(nmap,uvA).xyz,texture2D(nmap,uvB).xyz,fb)*2.0-1.0;vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);float sunW=mix(0.34,1.0,lam);vec3 alb=t.rgb*mix(vec3(1.0),uSeasonMul,0.8)*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);}" /* SAISONINVARIANTER ATLAS + FIX v27 Per-Baum-Tint (gleicher Hash wie 3D) -> kein Hue-Pop beim L1->L2-Uebergang */,
+            "uniform sampler2D map,nmap;uniform vec3 uFogColor,uSunDir,uSunCol,uHemiCol,uSeasonMul;uniform float uFade,uV,uD1,uPres,uLodMaskOn,uDitherT;varying vec2 vUv;varying float vFog;varying float vCD;varying float vView;varying vec3 vLk;varying vec3 vRt;varying vec3 vTintI;varying float vOcc;void main(){float fV=vView*uV;float v0=floor(fV);float fb=fract(fV);float v1=mod(v0+1.0,uV);vec2 uvA=vec2(vUv.x,(vUv.y+v0)/uV),uvB=vec2(vUv.x,(vUv.y+v1)/uV);vec4 t=mix(texture2D(map,uvA),texture2D(map,uvB),fb);float fin=clamp((vCD-(uD1-uFade))/uFade,0.0,1.0);float ath=0.34+(1.0-clamp(uPres,0.0,1.0))*0.5;if(t.a<ath)discard;if(uLodMaskOn>0.5){float _dh=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(0.06711056,0.00583715)))+uDitherT);if(max(min(fin*2.0,1.0),vOcc)<_dh)discard;}vec3 nc=mix(texture2D(nmap,uvA).xyz,texture2D(nmap,uvB).xyz,fb)*2.0-1.0;vec3 N=normalize(vRt*nc.x+vec3(0.0,1.0,0.0)*nc.y+vLk*nc.z);float lam=clamp((dot(N,uSunDir)+0.18)/1.18,0.0,1.0);float sunW=mix(0.34,1.0,lam);vec3 alb=t.rgb*mix(vec3(1.0),uSeasonMul," + SAISON_GESETZ.kartenGewicht.toFixed(1) + ")*clamp(vec3(1.0)+vTintI,0.0,2.0);vec3 lit=alb*(uHemiCol+uSunCol*sunW);vec3 c=mix(lit,uFogColor,vFog*0.9);gl_FragColor=vec4(c,1.0);}" /* SAISONINVARIANTER ATLAS + FIX v27 Per-Baum-Tint (gleicher Hash wie 3D) -> kein Hue-Pop beim L1->L2-Uebergang */,
         side: THREE.DoubleSide,
         transparent: false,
         depthTest: true,
@@ -3571,13 +3571,9 @@ function weatherTargets(w) {
 }
 weatherTargets(WWEATHER);
 function seasonColors(t) {
-    // kontinuierliche Jahreszeit -> Laubfarbe (Build) + Praesenz/Bluete (live)
-    const seq = [
-        { ti: 0x6a9a3e, ac: 0x88b450, pr: 0.72, bl: 0.85 },
-        { ti: 0x4f7a30, ac: 0x6f9a3a, pr: 1.0, bl: 0.12 },
-        { ti: 0xb0702a, ac: 0xd2922f, pr: 0.55, bl: 0.0 },
-        { ti: 0x6e6650, ac: 0x847c64, pr: 0.06, bl: 0.0 },
-    ];
+    // kontinuierliche Jahreszeit -> Laubfarbe (Build) + Praesenz/Bluete (live); die Stuetzstellen sind das
+    // SAISON_GESETZ (foundry-core) — dieselben Zahlen faerben die Welt (uSeasonMul).
+    const seq = SAISON_GESETZ.stuetzen;
     const f = (((t % 1) + 1) % 1) * 4,
         i = Math.floor(f) % 4,
         j = (i + 1) % 4,
@@ -3642,9 +3638,9 @@ function updateWorld(dt) {
     wxRain += (wxRainT - wxRain) * 0.02;
     seasonColors(WSEASON);
     SEASON.uSeasonMul.value.setRGB(
-        clamp(seasonTint.r / Math.max(_seasonBuiltTint.r, 1e-3), 0.25, 4.0),
-        clamp(seasonTint.g / Math.max(_seasonBuiltTint.g, 1e-3), 0.25, 4.0),
-        clamp(seasonTint.b / Math.max(_seasonBuiltTint.b, 1e-3), 0.25, 4.0)
+        clamp(seasonTint.r / Math.max(_seasonBuiltTint.r, 1e-3), SAISON_GESETZ.mulMin, SAISON_GESETZ.mulMax),
+        clamp(seasonTint.g / Math.max(_seasonBuiltTint.g, 1e-3), SAISON_GESETZ.mulMin, SAISON_GESETZ.mulMax),
+        clamp(seasonTint.b / Math.max(_seasonBuiltTint.b, 1e-3), SAISON_GESETZ.mulMin, SAISON_GESETZ.mulMax)
     ); // Laub folgt der Saison pro FRAME (Sommer-gebacken -> Herbst: R hoch, B runter), kein Rebuild-Takt mehr
     const dayLen = lerp(9.0, 15.8, 0.5 + 0.5 * Math.cos((WSEASON - 0.25) * 6.2831)); // Sommer lang, Winter kurz
     const sr = 12 - dayLen / 2,

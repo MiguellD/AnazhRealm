@@ -17439,7 +17439,7 @@ class AnazhRealm {
                 if (fM.skin === null || fM.hair === null) break; // Kern kalt → der Guss schreit ohnehin
                 const keyM = this._ofenMenschKey(dM, fM.skin, fM.hair, lodM);
                 if (memo.has(keyM)) continue;
-                this._foundryRequest("mensch", 0, lodM, "summer", {
+                this._foundryRequest("mensch", 0, lodM, {
                     dials: dM,
                     skinColor: fM.skin,
                     hairColor: fM.hair,
@@ -17466,7 +17466,7 @@ class AnazhRealm {
             for (const lod of [0, 1]) {
                 const key = this._ofenKreaturKey(recId, d.dials, lod);
                 if (memo.has(key)) continue;
-                this._foundryRequest(recId, 0, lod, "summer", d.istDefault ? null : d.dials).then((meshes) => {
+                this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
                     if (!meshes || !meshes.length) {
                         if (!memo.has(key))
                             this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
@@ -28535,10 +28535,23 @@ class AnazhRealm {
                                     // Das eingebackene Tageslicht fällt mit der Sonne (tagLicht-Uniform) — sonst leuchtet die Karte
                                     // nachts heller als echte Geometrie; Boden 0.12 = Mond-Silhouette.
                                     const _auN = this._ensureAtmoUniforms();
+                                    // Die Karte ist Golden-Sommer gebacken; das Jahr färbt sie wie der Studio-Impostor:
+                                    // alb × mix(1, uSeasonMul, SAISON_GESETZ.kartenGewicht) (V18.527, kein Neubau).
+                                    const _suK = this._ensureSeasonUniforms();
+                                    const _albK =
+                                        _suK && _suK.uSeasonMul
+                                            ? _samp.rgb.mul(
+                                                  _Ta.mix(
+                                                      _Ta.vec3(1.0, 1.0, 1.0),
+                                                      _suK.uSeasonMul,
+                                                      _Ta.float(AnazhRealm._saisonGesetz().kartenGewicht)
+                                                  )
+                                              )
+                                            : _samp.rgb;
                                     albedoNode =
                                         _auN && _auN.tagLicht
-                                            ? _samp.rgb.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)))
-                                            : _samp.rgb;
+                                            ? _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)))
+                                            : _albK;
                                     mat.alphaTest = 0.34; // Vorlagen-ath (weiche Kronen-Ränder bleiben)
                                     // ── Normal-Atlas → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nc = _Ta
@@ -44194,7 +44207,7 @@ class AnazhRealm {
 
     // Die EINE Quelle der gehaltenen Studio-Gruppe, drei-wertig wie _workshopStudioPreviewFrom:
     // THREE.Group (Wrapper via _workshopWrapFoundryGroup) · "pending" (Part-Bau bleibt sichtbar) · null
-    // (Part-Pfad byte-alt). Cache-Schlüssel == Werkstatt/Welt (preset|variant|0|season) → ein Werkstatt-
+    // (Part-Pfad byte-alt). Cache-Schlüssel == Werkstatt/Welt (`_foundryKoerperKey`, Stufe 0) → ein Werkstatt-
     // Asset dient der Hand instant. Miss → GENAU EINE Anfrage + EIN _refreshHeldMesh bei Ankunft. Der
     // Wrapper zählt _liveRefs (LRU disposed nie Gehaltenes); _disposeSoulGroup gibt den Ref zurück.
     _heldFoundryGroup(bpName) {
@@ -44234,19 +44247,17 @@ class AnazhRealm {
         for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
         const variant = this._foundryVariantFor(seedNum, preset);
         if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Hand wartet (der Part-Bau trägt)
-        const season = this.state.season || "summer";
         // Der beim Guss gestempelte Charakter (bp.studioOv) reist in den Hand-Bau: der ov-Hash trennt den
-        // Cache-Schlüssel (ungeprägt bleibt byte-alt), das ov geht als 5. Arg an _foundryRequest
-        // (das die IDB-Platte per hasOv umgeht).
+        // Cache-Schlüssel (ungeprägt bleibt byte-alt), das ov geht als 4. Arg an _foundryRequest.
         const heldOv = this._artifactStudioOv(bp);
         // Stufe 0 — die Hand ist NAH (kindStages.weapon == [0]; für mehrstufige Arten ist 0 die reiche Stufe).
-        const key = preset + "|" + variant + "|0|" + season + (heldOv ? "|ov:" + this._studioOvHash(heldOv) : "");
+        const key = this._foundryKoerperKey(preset, variant, 0, heldOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, season, heldOv || undefined, 0).then((meshes) => {
+                this._foundryRequest(preset, variant, 0, heldOv || undefined, 0).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
                         try {
@@ -51717,7 +51728,7 @@ class AnazhRealm {
         // Foundry-LOD: kennt die Foundry die Art, ist sie die EINE Quelle — auch für einen KALTEN Baum ohne
         // instFoundry: ihre Stufe servieren ODER den aktuellen Zustand halten, NIE Grammatik (sonst erweckt
         // der Switch einen gewachsenen Nachbau). Die Distanz-Wahl newLOD führt; kein entry.type-Wechsel —
-        // das Studio-LOD lebt im leafKey (`f:preset|variant|lod|season`). Grammatik nur bei Foundry aus oder
+        // das Studio-LOD lebt im leafKey (`f:preset|gestalt|lod`). Grammatik nur bei Foundry aus oder
         // unbekannter Art.
         if (this._foundryEnabled()) {
             const preset = this._foundryPresetForEntry(entry);
@@ -62046,13 +62057,11 @@ class AnazhRealm {
         this._impostorBakePendingSince = performance.now();
         this._impostorBakePendingKey = key;
         const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
-        // Seed = derselbe wie der bisherige Bake-Gegenstand: die Foundry-LOD1 wurde je Record mit
-        // `_foundryRequest(preset, variant, 1, season)` gebaut → seed = rec.variantIndex; die
-        // Saison reist aus dem Record (fimp-Key trägt sie), sonst die aktuelle Welt-Saison.
-        const season = rec.season || (st && st.season) || "summer";
+        // Seed = die Gestalt des Records (rec.variantIndex) — dieselbe wie seine Körper-Stufen. Keine Saison: die
+        // Karte ist Golden-Sommer, das Jahr färbt der Karten-Stoff (uSeasonMul).
         // BÄCKER-OV (V18.478) — ist der Record geprägt (rec.ov, aus _foundryEnsureImpostorRecord),
         // bäckt der Studio-Bäcker das UNIKAT (die ov reist mit); ungeprägte Records byte-alt.
-        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, season, rec.ov || undefined)
+        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, rec.ov || undefined)
             .then((payload) => {
                 if (!this._applyStudioImpostorPayload(rec, payload))
                     throw new Error("Studio-Bäcker ohne brauchbaren Payload für " + key);
@@ -63257,7 +63266,7 @@ class AnazhRealm {
         const lk = leaf && typeof leaf.leafKey === "string" ? leaf.leafKey : "";
         const fern =
             lk.startsWith("fimp:") ||
-            /^f:[^|]*\|\d+\|2\|/.test(lk) ||
+            /^f:[^|]*\|\d+\|2[|:]/.test(lk) ||
             (typeof name === "string" && (name.endsWith("_lod2") || /^fscatter:.*:2$/.test(name)));
         if (!fern) return regionKey;
         const S = AnazhRealm.SCATTER_FERN_SUPERREGION;
@@ -65626,7 +65635,7 @@ class AnazhRealm {
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
-    // Ein `build-asset` mit `platte` (Schlüssel `<preset>|<seed>|<lod>|<season>`) fragt erst die Platte; ein Miss
+    // Ein `build-asset` mit `platte` (Schlüssel `_foundryKoerperKey`: `<preset>|<gestalt>|<lod>`) fragt erst die Platte; ein Miss
     // geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und überträgt.
     // `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut nie: Miss = leere Antwort. Diese Funktion
     // läuft als Quelltext im Worker — sie greift auf nichts außerhalb ihres eigenen Rumpfs zu.
@@ -65757,19 +65766,25 @@ class AnazhRealm {
             return roh(msg, a, b);
         };
         // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
-        // Nachricht zuerst und hält nur die Platten-Aufträge an.
+        // Nachricht zuerst und hält jeden Körper- und Karten-Auftrag an. DER SAISON-NAGEL (V18.527): jeder Bau ist
+        // Golden-Sommer — das Studio sieht season "summer", gleich was der Auftrag trägt; das Jahr färbt der Host
+        // (uSeasonMul). So kann kein Saison-Rest im Studio (setSeasonColors) einen Körper oder die Platte färben.
         W.addEventListener("message", (ev) => {
             const m = ev.data;
-            if (!m || m.type !== "build-asset" || typeof m.platte !== "string") return;
+            if (!m || (m.type !== "build-asset" && m.type !== "bake-impostor")) return;
             ev.stopImmediatePropagation();
+            const weiter = Object.assign({}, m, { season: "summer" });
+            delete weiter.platte;
+            delete weiter.nurPlatte;
+            const studio = () => {
+                if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
+            };
+            if (m.type !== "build-asset" || typeof m.platte !== "string") return studio();
             lies(m.platte).then((hit) => {
                 if (hit) return antwort(m, hit, true);
                 if (m.nurPlatte) return antwort(m, [], true);
                 schreibAuftrag.set(m.reqId, m.platte);
-                const weiter = Object.assign({}, m);
-                delete weiter.platte;
-                delete weiter.nurPlatte;
-                if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
+                studio();
             });
         });
     }
@@ -66508,19 +66523,29 @@ class AnazhRealm {
             }
         }
     }
+    // DIE KÖRPER-IDENTITÄT (V18.527): ein Foundry-Körper ist (Art, Gestalt, Stufe) und — geprägt — sein ov-Hash.
+    // Keine Saison: jeder Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"), das Jahr
+    // trägt die Uniform `uSeasonMul` (`_tickSeason`). Cache-Schlüssel, Platten-Schlüssel und leafKey-Stamm sind
+    // DIESER eine String — ein Saison-Wechsel baut nichts neu.
+    _foundryKoerperKey(preset, gestalt, lod, ov) {
+        return preset + "|" + gestalt + "|" + lod + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+    }
+    // Die Karte eines (Art, Gestalt[, ov]): Record-Schlüssel "fimp:" + dieser String.
+    _foundryKartenKey(preset, gestalt, ov) {
+        return preset + "|" + gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+    }
     // `wo` = der Rang in der Worker-Schlange (`_foundryAuftrag`): die Position des Bestellers ({x,z}, d² wird beim
     // Senden frisch gemessen) · eine Zahl (d², 0 = sofort: Hand, Werkstatt) · nichts = Vorrat (Bibliothek, Ofen, Bäcker).
-    _foundryRequest(presetId, seed, lod, season, ov, wo) {
+    _foundryRequest(presetId, seed, lod, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
-        const s = season || "summer";
         // Regler-Kanal: ein nicht-leeres ov (Werkstatt-Overrides) umgeht die Platte KOMPLETT (kein Get/Put) —
         // eine Vorschau ist ein Unikat und darf den Welt-Cache weder lesen noch vergiften.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
         // Ship-Pfad-Hook (spec/pack/v0/CONTRACT.md): `window.__anazhLiveBake === false` → NUR die Platte (die
         // Transport-Schale baut nie, Miss = null). Default: Platte zuerst, Studio beim Miss (beides im Worker).
         const nurPlatte = typeof window !== "undefined" && window.__anazhLiveBake === false;
-        const platte = f.platte && !hasOv ? `${presetId}|${seed}|${lod}|${s}` : null;
+        const platte = f.platte && !hasOv ? this._foundryKoerperKey(presetId, seed, lod) : null;
         if (nurPlatte && !platte) return Promise.resolve(null);
         if (!f.ready || !f.worker) {
             // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
@@ -66535,7 +66560,7 @@ class AnazhRealm {
         // DER INGEST-TAKT: jedes Ergebnis passiert _foundryIngestTakt; der Loop-Tick gibt je Frame nur wenige frei —
         // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
         // passieren sofort; Konsumenten tragen null-bis-fertig.
-        return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null, platte, nurPlatte, wo)
+        return this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, wo)
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
@@ -66606,13 +66631,13 @@ class AnazhRealm {
         };
         setTimeout(pruefe, 1000);
     }
-    _foundryWorkerRequest(presetId, seed, lod, season, ov, platte, nurPlatte, wo) {
+    _foundryWorkerRequest(presetId, seed, lod, ov, platte, nurPlatte, wo) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (die Bruecke reicht ov ausschliesslich an
         // Zweit-Kern-buildInstance durch). `platte` (der Schlüssel) und `nurPlatte` liest die Transport-Schale
-        // und nimmt sie heraus, bevor das Studio die Anfrage sieht.
-        const msg = { type: "build-asset", presetId, seed, lod, season: season || "summer" };
+        // und nimmt sie heraus, bevor das Studio die Anfrage sieht; die Saison setzt NUR die Schale (Sommer).
+        const msg = { type: "build-asset", presetId, seed, lod };
         if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
         if (platte) msg.platte = platte;
         if (nurPlatte) msg.nurPlatte = true;
@@ -66687,7 +66712,7 @@ class AnazhRealm {
     }
     // Ein Besteller, dessen Schlüssel schon wartet (der Boot-Vorrat fragte ihn zuerst), hebt dessen Rang auf seine
     // Nähe — sonst wartete der nahe Bau mit Vorrats-Rang hinter dem ganzen Vorrat.
-    _foundryNaeher(f, presetId, seed, lod, season, wo) {
+    _foundryNaeher(f, presetId, seed, lod, wo) {
         const q = f && f.warte;
         if (!q || !q.length) return;
         const d2 = this._foundryAuftragD2(wo);
@@ -66695,7 +66720,6 @@ class AnazhRealm {
             const m = a.msg;
             if (m.type !== "build-asset" || m.ov || m.presetId !== presetId || m.seed !== seed || m.lod !== lod)
                 continue;
-            if (m.season !== season) continue;
             if (d2 < this._foundryAuftragD2(a.wo)) a.wo = wo;
             return;
         }
@@ -66703,12 +66727,13 @@ class AnazhRealm {
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
     // `bakeImpostorAtlas`, kein Nachbau). Resolvt mit payload oder null (Fehler/Timeout — der Tick-
     // Aufrufer trägt den Retry). Dasselbe pending-Routing wie build-asset, reqIds mit Präfix "imp".
-    _foundryBakeImpostorRequest(presetId, seed, season, ov) {
+    _foundryBakeImpostorRequest(presetId, seed, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
         // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
-        const msg = { type: "bake-impostor", presetId, seed, season: season || "summer" };
+        // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
+        const msg = { type: "bake-impostor", presetId, seed };
         if (ov && typeof ov === "object") msg.ov = ov;
         // Durch DIE EINE WORKER-SCHLANGE mit Vorrats-Rang (die Fernstufe). EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS
         // ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin des Tick.
@@ -66975,13 +67000,13 @@ class AnazhRealm {
         return sv;
     }
 
-    _foundryEnsureImpostorRecord(preset, variant, season, ov) {
+    _foundryEnsureImpostorRecord(preset, variant, ov) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seinen eigenen Record:
         // der fimp-Key + das LOD1-Bake-Subjekt (gkey) + der Bake tragen den ov-Hash
-        // (die EINE _studioOvHash-Quelle). Ohne ov byte-identisch (Key + gkey byte-alt).
-        const ovH = ov && typeof ov === "object" ? "|ov:" + this._studioOvHash(ov) : "";
-        const key = "fimp:" + preset + "|" + variant + "|" + season + ovH;
+        // (die EINE _studioOvHash-Quelle). Keine Saison: die Karte ist Golden-Sommer, das Jahr färbt der Stoff.
+        const ovK = ov && typeof ov === "object" ? ov : null;
+        const key = "fimp:" + this._foundryKartenKey(preset, variant, ovK);
         const cached = this._impostorAtlasMap.get(key);
         if (cached === "pending") return null;
         if (cached !== undefined) return cached; // Record ODER false (Foundry kann das nicht)
@@ -66989,7 +67014,7 @@ class AnazhRealm {
         // Bake-Subjekt: die LOD1-Geometrie aus dem Foundry-Cache (fehlt sie: EINMAL anfordern) — bzw. die
         // deklarierte Stufe der Art (Tor gate=[0] bäckt aus L0, nie eine L1, die der Kern nicht vorsieht).
         const bakeLod = this._foundryDeclaredStage(preset, 1);
-        const gkey = preset + "|" + variant + "|" + bakeLod + "|" + (season || "summer") + ovH;
+        const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
             const f = this._ensureAssetFoundry();
@@ -66997,7 +67022,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(gkey)) {
                 f.requested.add(gkey);
-                this._foundryRequest(preset, variant, bakeLod, season || "summer", ov || undefined).then((meshes) => {
+                this._foundryRequest(preset, variant, bakeLod, ov || undefined).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: bakeLod, preset }));
                         this._scatterRefillPending = true;
@@ -67005,7 +67030,7 @@ class AnazhRealm {
                         // Bake-Queue füllt sich, `_tickImpostorBake` drainet) — sonst entsteht er erst beim nächsten
                         // zufälligen Leser.
                         try {
-                            this._foundryEnsureImpostorRecord(preset, variant, season, ov || undefined);
+                            this._foundryEnsureImpostorRecord(preset, variant, ov || undefined);
                         } catch (_ei) {}
                     } else {
                         f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
@@ -67103,7 +67128,6 @@ class AnazhRealm {
         rec.foundry = true;
         rec.species = preset;
         rec.variantIndex = variant;
-        rec.season = season || "summer"; // reist mit dem Bake-Request zum Studio-Bäcker
         // BÄCKER-OV (V18.478) — der Record merkt sich seine Prägung: _tickImpostorBake
         // reicht rec.ov an den Studio-Bäcker, damit die Karte das Unikat trägt.
         if (ov && typeof ov === "object") rec.ov = ov;
@@ -67116,11 +67140,10 @@ class AnazhRealm {
     _foundryBuildImpostorFlat(entry, preset) {
         const variant = this._foundryVariantFor(entry.seed, preset);
         if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
-        const season = this.state.season || "summer";
         // Ein geprägtes Entry zieht seinen ov-Record; ist er noch nicht gebacken (null), fällt der Pfad auf
         // GEOMETRIE (nie kalt, nie die ungeprägte Karte). Ungeprägt: ovE null → alter Pfad.
         const ovE = this._artifactStudioOv(entry);
-        const rec = this._foundryEnsureImpostorRecord(preset, variant, season, ovE || undefined);
+        const rec = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined);
         if (rec === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
         if (!rec || !rec.map || !rec.frame) return false;
         // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler.
@@ -68682,6 +68705,12 @@ class AnazhRealm {
             // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
             // `_foundryBuildGroup` garantiert das color-Attribut.
             const vcol = TSL.attribute("color", "vec3");
+            // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
+            // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
+            // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
+            const _suF =
+                kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
+            const laubFarbe = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
             if (isBark) {
                 // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
                 // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
@@ -68706,7 +68735,7 @@ class AnazhRealm {
                     // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                     // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
                     // Nadel-Karten warfen volle Rechtecke.
-                    mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), texN.a);
+                    mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), texN.a);
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                     // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
@@ -68714,7 +68743,7 @@ class AnazhRealm {
                     // bleibt fail-closed sichtbar statt still eingefroren).
                     mat._anazhAtlasTexe = [tex];
                 } else {
-                    mat.colorNode = TSL.vec4(vcol, 1.0);
+                    mat.colorNode = TSL.vec4(laubFarbe, 1.0);
                 }
             } else if (klasseLook) {
                 // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
@@ -68885,9 +68914,9 @@ class AnazhRealm {
                 const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
                 mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
             } else {
-                // Fels/Kristall/Blume/Laub: die Vertex-Farbe, die Regler (rough/metal/flat/env) sind
-                // schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
-                mat.colorNode = TSL.vec4(vcol, 1.0);
+                // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
+                // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
+                mat.colorNode = TSL.vec4(laubFarbe, 1.0);
             }
             // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
             // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
@@ -69193,11 +69222,10 @@ class AnazhRealm {
             if (!_V) this.log(`FOUNDRY VORRAT: ${sp} ohne Gestalten-Budget im Buch — kein Vorrat`, "WARN");
             for (let sd = 1; sd <= _V; sd++) {
                 for (const lod of _lods) {
-                    const season = this.state.season || "summer";
-                    const key = sp + "|" + sd + "|" + lod + "|" + season;
+                    const key = this._foundryKoerperKey(sp, sd, lod);
                     if (f.cache.has(key)) continue;
                     jobs.push(
-                        this._foundryRequest(sp, sd, lod, season)
+                        this._foundryRequest(sp, sd, lod)
                             .then((meshes) => {
                                 // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null
                                 // cachen -> die Art bleibt on-demand nachfragbar.
@@ -69211,13 +69239,12 @@ class AnazhRealm {
         }
         // Auch die Baum-Billboards (Impostor) vorwärmen — der Fern-Scatter serviert LOD2 = Studio-Billboard.
         // Jeder Record-Miss postet seine LOD1-Anfrage sofort; der Bake folgt budgetiert (`_tickImpostorBake`).
-        const impSeason = this.state.season || "summer";
         for (const sp of spec.species) {
             if (!this._foundryPresetIsTree(sp)) continue;
             const _VK = this._foundryGestalten(sp); // EINE Karte je Gestalt (Studio-Budget)
             for (let v = 1; v <= _VK; v++) {
                 try {
-                    this._foundryEnsureImpostorRecord(sp, v, impSeason);
+                    this._foundryEnsureImpostorRecord(sp, v);
                 } catch (_e) {}
             }
         }
@@ -69234,11 +69261,10 @@ class AnazhRealm {
             }
             for (const sd of crit.seeds || [7]) {
                 for (const lod of crit.lods || [0]) {
-                    const season = this.state.season || "summer";
-                    const key = sp + "|" + sd + "|" + lod + "|" + season;
+                    const key = this._foundryKoerperKey(sp, sd, lod);
                     if (f.cache.has(key)) continue;
                     critJobs.push(
-                        this._foundryRequest(sp, sd, lod, season)
+                        this._foundryRequest(sp, sd, lod)
                             .then((meshes) => {
                                 if (meshes)
                                     this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
@@ -69292,13 +69318,10 @@ class AnazhRealm {
               : this._foundryLodForEntry(entry);
         if (lod < 0) lod = 0;
         if (lod > 2) lod = 2;
-        const season = this.state.season || "summer";
         // Baum-Fernstufe = das Billboard (Impostor-Record), nicht die Cache-Geometrie. Gestempelt: „gedockt"
         // erst, wenn SEINE ov-Karte gebacken ist (sonst baut der Rewarm die geprägte Geometrie).
         if (lod >= 2 && this._foundryPresetIsTree(preset)) {
-            const peekOv = this._artifactStudioOv(entry);
-            const key =
-                "fimp:" + preset + "|" + variant + "|" + season + (peekOv ? "|ov:" + this._studioOvHash(peekOv) : "");
+            const key = "fimp:" + this._foundryKartenKey(preset, variant, this._artifactStudioOv(entry));
             const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
             // T1 BLOB-TOD-Spiegel: mit echtem Renderer ist „gedockt" erst die GEBACKENE
             // Karte (rttBaked) — der Flatten serviert bis dahin Geometrie (unten weiter
@@ -69316,9 +69339,7 @@ class AnazhRealm {
         // PRÄGUNG-WELT — der Dock-Peek spiegelt den Flatten-Schlüssel: ein gestempelter
         // Eintrag ist erst „gedockt", wenn SEIN Unikat (|ov:-Key) im Cache liegt — sonst
         // urteilte der Rewarm „ready" über das falsche (ungeprägte) Asset.
-        const readyOv = this._artifactStudioOv(entry);
-        const key =
-            preset + "|" + variant + "|" + lod + "|" + season + (readyOv ? "|ov:" + this._studioOvHash(readyOv) : "");
+        const key = this._foundryKoerperKey(preset, variant, lod, this._artifactStudioOv(entry));
         return f.cache.has(key) && f.cache.get(key) != null;
     }
     _foundryRewarmColdTrees() {
@@ -69485,7 +69506,7 @@ class AnazhRealm {
         }
         return true;
     }
-    // Geteilte Foundry-Geometrie EINMAL freigeben (season im Key → je Saison ein Satz, sonst Leck). NUR
+    // Geteilte Foundry-Geometrie EINMAL freigeben (jede LRU-Räumung, sonst Leck). NUR
     // Geometrie — das Material ist per kind geteilt → NIE. Idempotent via `_geomDisposed`; der Zähler
     // bilanziert gegen `_geomBuiltCount` (die Leck-Linse).
     _disposeFoundryGroupGeom(g) {
@@ -69566,13 +69587,11 @@ class AnazhRealm {
             if (Number.isFinite(_kl)) lod = _kl;
             else if (_rec) lod = 0;
         }
-        const season = this.state.season || "summer";
         // Gestempelter Welt-Eintrag (entry.studioOv) baut sein Unikat: der ov-Hash trennt Cache-Key UND (via
         // leafKey) den Gruppen-Key — geprägt und ungeprägt vergiften sich nie. Der Request reicht ov als
-        // 5. Arg (IDB bewusst umgangen). Ohne Stempel: alter Key + Request.
+        // 4. Arg. Ohne Stempel: der Körper-Schlüssel ohne ov.
         const entryOv = this._artifactStudioOv(entry);
-        const key =
-            preset + "|" + variant + "|" + lod + "|" + season + (entryOv ? "|ov:" + this._studioOvHash(entryOv) : "");
+        const key = this._foundryKoerperKey(preset, variant, lod, entryOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
@@ -69587,20 +69606,18 @@ class AnazhRealm {
                     this._foundryDeclaredStage(preset, 1) === 1
                 )
                     this._foundryFlattenFor(entry, preset, 1);
-                this._foundryRequest(preset, variant, lod, season, entryOv || undefined, entry.position).then(
-                    (meshes) => {
-                        if (meshes) {
-                            this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                            this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                        } else {
-                            // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
-                            // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
-                            f.requested.delete(key);
-                        }
-                        this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
+                this._foundryRequest(preset, variant, lod, entryOv || undefined, entry.position).then((meshes) => {
+                    if (meshes) {
+                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
+                    } else {
+                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
+                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
+                        f.requested.delete(key);
                     }
-                );
-            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, season, entry.position);
+                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
+                });
+            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, entry.position);
             return null;
         }
         // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->
@@ -69836,9 +69853,10 @@ class AnazhRealm {
         if (p < 0.75) return "autumn";
         return "winter";
     }
-    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): `_grassInstanceMat` liest
-    // `uSeasonMul` als Albedo-Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein
-    // Rebuild). Abgeleitet, nicht im Snapshot (audit-strict-Whitelist).
+    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): die Nah-Wiese (`_grassInstanceMat`), das
+    // Foundry-Laub/-Gras (`_foundryTreeMaterial`) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
+    // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
+    // (audit-strict-Whitelist).
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
@@ -69851,55 +69869,41 @@ class AnazhRealm {
         return this.state.seasonUniforms;
     }
 
-    // Saison-Tint: 4-Keyframe-Ring über seasonPhase (0..1) → Albedo-Multiplikator (Frühling gelbgrün ·
-    // Sommer 0x5fa743 = ×1 · Herbst gold-orange · Winter graubraun), je Kanal clamp(tint/summer, 0.25, 4).
-    // Rein (ohne TSL) → THREE.Color; das Gate ruft es GPU-frei.
-    _seasonTint(phase) {
-        const p = ((phase % 1) + 1) % 1;
-        // Keyframes zentriert auf die Saison-Mitten (spring .125 · summer .375 ·
-        // autumn .625 · winter .875), als Ring interpoliert (t wickelt um 1).
-        const KF = [
-            { t: 0.125, c: [0.52, 0.68, 0.28] }, // Frühling — frisches Gelbgrün
-            { t: 0.375, c: [0.373, 0.655, 0.263] }, // Sommer — 0x5fa743 (Gras-Basis → ×1)
-            { t: 0.625, c: [0.74, 0.52, 0.2] }, // Herbst — gold-orange
-            { t: 0.875, c: [0.5, 0.45, 0.38] }, // Winter — graubraun
-        ];
-        // finde das Segment [i, i+1] das p (ringförmig) enthält.
-        let i0 = KF.length - 1;
-        for (let i = 0; i < KF.length; i++) {
-            const a = KF[i].t;
-            const b = KF[(i + 1) % KF.length].t;
-            const inSeg = a < b ? p >= a && p < b : p >= a || p < b; // Wrap-Segment (winter→spring)
-            if (inSeg) {
-                i0 = i;
-                break;
-            }
-        }
-        const k0 = KF[i0];
-        const k1 = KF[(i0 + 1) % KF.length];
-        let span = k1.t - k0.t;
-        if (span <= 0) span += 1;
-        let u = (((p - k0.t) % 1) + 1) % 1;
-        u = span > 0 ? u / span : 0;
-        u = u * u * (3 - 2 * u); // smoothstep — sanfte Saison-Übergänge
-        const summer = KF[1].c; // der neutrale Sommer-Bezug (÷ → ×1 im Sommer)
-        const cl = (v) => (v < 0.25 ? 0.25 : v > 4 ? 4 : v);
-        const out = new THREE.Color(
-            cl((k0.c[0] + (k1.c[0] - k0.c[0]) * u) / summer[0]),
-            cl((k0.c[1] + (k1.c[1] - k0.c[1]) * u) / summer[1]),
-            cl((k0.c[2] + (k1.c[2] - k0.c[2]) * u) / summer[2])
-        );
+    // uSeasonMul nach dem STUDIO-GESETZ (phytogenesis.js updateWorld, SAISON_GESETZ in foundry-core): die Saison-
+    // Tönung linear zwischen den vier Stützstellen (Studio-t: 0 Frühling · .25 Sommer · .5 Herbst · .75 Winter), je
+    // Kanal clamp(tönung / bau, mulMin, mulMax) — in den Paletten-Werten (roh /255), wie das Studio mit r128-Farben
+    // rechnet. Die Welt-Phase zählt die Saison-MITTEN (Sommer 0,375) → t = phase − 0,125; Sommer ist ×1. Rein (ohne
+    // TSL), schreibt in `out` (r/g/b); das Gate ruft es GPU-frei.
+    _saisonMul(phase, out) {
+        const SG = AnazhRealm._saisonGesetz();
+        const t = (((phase - 0.125) % 1) + 1) % 1;
+        const f = t * 4;
+        const i = Math.floor(f) % 4;
+        const j = (i + 1) % 4;
+        const k = f - Math.floor(f);
+        const a = SG.stuetzen[i].ti;
+        const b = SG.stuetzen[j].ti;
+        const kanal = (hex, s) => ((hex >> s) & 255) / 255;
+        const mul = (s) => {
+            const v = (kanal(a, s) + (kanal(b, s) - kanal(a, s)) * k) / Math.max(kanal(SG.bau, s), 1e-3);
+            return v < SG.mulMin ? SG.mulMin : v > SG.mulMax ? SG.mulMax : v;
+        };
+        out.r = mul(16);
+        out.g = mul(8);
+        out.b = mul(0);
         return out;
     }
 
-    // Die langsame Jahres-Uhr: treibt seasonPhase, leitet die Saison ab; wechselt sie, backt die
-    // Foundry ihre Assets in der neuen Jahreszeit neu (Herbst golden, Winter kahl).
+    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. DIE SAISON IST EINE FARBE (V18.527):
+    // jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"),
+    // das Jahr trägt die EINE Uniform `uSeasonMul` — Laub, Gras und Karte multiplizieren ihre Albedo damit (die Karte
+    // zu SAISON_GESETZ.kartenGewicht). Kein Neubau, kein Schlüssel-Wechsel: die 36 Sommer↔Winter-Golden-Paare
+    // unterscheiden sich nur in der Laubfarbe (foliage.color), das Studio färbt sein Jahr genauso.
     _tickSeason(currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        // Nur der DRIFT wartet auf die Bühne (geladene Saison + uSeasonMul-Tönung laufen immer): ein Saison-
-        // Wechsel triggert `_foundrySeasonChanged` (neu backen) — nicht im Boot. `_lastSeasonTime` bleibt bis
-        // zur Bühne null → der erste Tick startet mit dt=0 (kein Zeit-Sprung).
+        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). `_lastSeasonTime` bleibt bis zur Bühne null →
+        // der erste Tick startet mit dt=0 (kein Zeit-Sprung).
         if (st.autoSeason !== false && this._buehneSteht()) {
             const now = currentTime || 0;
             if (this._lastSeasonTime == null) this._lastSeasonTime = now;
@@ -69908,19 +69912,12 @@ class AnazhRealm {
             const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
             st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
         }
-        // V6 (Look-Finale, 2c) — die Wiesen-Tönung folgt der Saison kontinuierlich
-        // (KEIN Rebuild): `uSeasonMul` wird jeden Frame aus seasonPhase gesetzt.
         const su = this._ensureSeasonUniforms();
-        if (su && su.uSeasonMul && su.uSeasonMul.value && su.uSeasonMul.value.copy) {
-            su.uSeasonMul.value.copy(this._seasonTint(st.seasonPhase));
-        }
-        const name = this._seasonName(st.seasonPhase);
-        if (name !== st.season) {
-            st.season = name;
-            this._foundrySeasonChanged();
-        }
+        if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
+        st.season = this._seasonName(st.seasonPhase);
     }
-    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter".
+    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
+    // Tönung folgt im nächsten Tick (kein Neubau).
     setSeason(name) {
         const map = {
             fruehling: "spring",
@@ -69936,45 +69933,8 @@ class AnazhRealm {
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
-        if (this.state.season !== key) {
-            this.state.season = key;
-            this._foundrySeasonChanged();
-        }
+        this.state.season = key;
         return true;
-    }
-    // Jahreszeit-Wechsel: alle foundry-instanzierten Assets ent-instanzieren -> sie bauen beim
-    // naechsten Rebuild mit der neuen Saison-Farbe neu (der Culling/Rewarm holt sie zurueck).
-    _foundrySeasonChanged() {
-        if (!this._foundry) return;
-        const archs = this.state.architectures;
-        if (!Array.isArray(archs)) return;
-        // Saison-Flip progressiv: statt alle Foundry-Instanzen in EINEM Frame zu entfernen (O(archs)-Spike),
-        // füllt sich eine Queue; `_drainSeasonFlip` (Scheduler-Job prio 3) macht je Frame SEASON_FLIP_PER_TICK
-        // KALT, `_foundryRewarmColdTrees` re-platziert sie in der neuen Saison (kein zweiter Rewarm-Pfad).
-        // Queue/Cursor sind Instanz-Felder (nicht serialisiert).
-        this._seasonFlipQueue = archs.filter(
-            (e) => e && e.instanced && typeof e.type === "string" && this._foundryPresetForEntry(e)
-        );
-        this._seasonFlipCursor = 0;
-    }
-    // V4 — der progressive Drain: entfernt je Frame bis SEASON_FLIP_PER_TICK Alt-Saison-Instanzen (macht sie
-    // kalt); der budgetierte Rewarm platziert sie neu. COUNT-gedeckelt (auch headless progressiv = die
-    // messbare Zahl); die `ms`-Deadline ist ein optionaler Sekundär-Guard (leeres Budget → 0 Arbeit).
-    _drainSeasonFlip(ms) {
-        const q = this._seasonFlipQueue;
-        if (!q || this._seasonFlipCursor >= q.length) {
-            this._seasonFlipQueue = null;
-            return;
-        }
-        let n = Math.min(AnazhRealm.SEASON_FLIP_PER_TICK || 24, q.length - this._seasonFlipCursor);
-        while (n-- > 0) {
-            const e = q[this._seasonFlipCursor++];
-            if (e && e.instanced) {
-                this._archInstanceRemove(e);
-                e.instanced = false;
-            }
-        }
-        if (this._seasonFlipCursor >= q.length) this._seasonFlipQueue = null;
     }
     // ==================== WETTER: sichtbarer Regen ====================
     // AnazhRealm hat state.weather (sunny/rainy/stormy) schon fuer Himmel/Wind/Naesse — hier der
@@ -77743,19 +77703,19 @@ class AnazhRealm {
             const oven = this._workshopOvenPreview(ovenRec, preset, ov, lod);
             if (oven !== undefined) return oven;
         }
-        const season = this.state.season || "summer";
         const variant = this._foundryVariantFor(seedNum, preset);
         if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Vorschau wartet
         if (ov) {
-            // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB).
-            const key = preset + "|" + variant + "|" + lod + "|" + season + "|" + JSON.stringify(ov);
+            // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB) — der Memo-Schlüssel ist
+            // das volle ov (eine Vorschau ist ein Unikat).
+            const key = this._foundryKoerperKey(preset, variant, lod) + "|" + JSON.stringify(ov);
             const memo = this._wsStudioOvMemo;
             if (!memo || memo.key !== key) {
                 // Auswahl-/ov-Wechsel: das alte Memo faellt, seine EIGENE Geometrie wird frei.
                 if (memo && memo.group && memo.group !== "pending") this._disposeFoundryGroupGeom(memo.group);
                 const fresh = { key, group: "pending" };
                 this._wsStudioOvMemo = fresh;
-                this._foundryRequest(preset, variant, lod, season, ov, 0).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, ov, 0).then((meshes) => {
                     // Wechselte die Auswahl waehrend des Baus, verfaellt das Ergebnis (rohe
                     // Arrays, kein GPU-Leak — die Naht `_foundryBuildGroup` laeuft nur fuer
                     // das LEBENDE Memo).
@@ -77769,14 +77729,14 @@ class AnazhRealm {
             if (!memo.group || !memo.group.children || !memo.group.children.length) return false;
             return this._workshopWrapFoundryGroup(memo.group);
         }
-        const key = preset + "|" + variant + "|" + lod + "|" + season; // Same + LOD aus der Auswahl = echte Pipeline-Daten
+        const key = this._foundryKoerperKey(preset, variant, lod); // Same + LOD aus der Auswahl = echte Pipeline-Daten
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             // Noch nicht gezogen → GENAU EINMAL anfragen (die requested-Wache), Vorschau bei Ankunft neu bauen.
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, season, undefined, 0).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, undefined, 0).then((meshes) => {
                     if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
                     else f.requested.delete(key);
                     rebuild();
@@ -86297,11 +86257,6 @@ class AnazhRealm {
                     }
                 },
             },
-            {
-                name: "seasonFlip",
-                prio: 3, // V4 — die progressive Saison-Flip-Entfernung: unter allem (nach Deko), wartet bei
-                run: (ms) => this._drainSeasonFlip(ms), // leerem Budget; nur aktiv nach einem Saison-Wechsel
-            },
         ];
     }
 
@@ -87701,10 +87656,6 @@ AnazhRealm.FOUNDRY_BUILD_PER_TICK = 4;
 // ist EIN Thread) → streng limitiert, damit die Bake-Schlange nicht flutet.
 AnazhRealm.FOUNDRY_PLACE_PER_TICK = 48; // gedockte Assets (billiger Instance) je Frame im Leerlauf
 AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK = 3; // NEUE Studio-Bake-Anfragen je Frame (Ein-Thread-Schlange schonen)
-// V4 — DER SAISON-FLIP IST PROGRESSIV: wieviele Alt-Saison-Foundry-Instanzen je Tick der Drain kalt macht
-// (dann re-platziert der budgetierte `_foundryRewarmColdTrees` sie in der neuen Saison). Klein → der Flip
-// verteilt sich über Ticks (kein O(archs)-Entfern-Spike); die Instanz-Zahl erholt sich progressiv.
-AnazhRealm.SEASON_FLIP_PER_TICK = 24;
 
 // Distanz-Decay des Wasser-Automaten: jeder LATERALE Transfer liefert nur diesen Anteil ab → Wasser
 // dünnt geometrisch mit der Hop-Entfernung (KEEP^n), kein Pooling am LOD-Ring-Damm; der Quellen-Pin
@@ -87977,6 +87928,23 @@ AnazhRealm._kernPflichtBruch = function (pfad) {
             pfad +
             " ist unlesbar — das Gesetzbuch fehlt oder ist alt (index.html lädt alle Kerne; _kernPflichtWand meldet den Ausfall)."
     );
+};
+// DAS SAISON-GESETZ (foundry-core SAISON_GESETZ, V18.527): die Jahres-Stützstellen des Studios — der EINE Leser
+// (`_saisonMul`, Karten-Stoff), fail-closed in EINER Gültigkeits-Wand.
+AnazhRealm._saisonGesetz = function () {
+    const SG = AnazhRealm.Gesetz("terrain:SAISON_GESETZ", null);
+    if (
+        SG &&
+        Array.isArray(SG.stuetzen) &&
+        SG.stuetzen.length === 4 &&
+        SG.stuetzen.every((s) => s && Number.isFinite(s.ti)) &&
+        Number.isFinite(SG.bau) &&
+        Number.isFinite(SG.mulMin) &&
+        Number.isFinite(SG.mulMax) &&
+        Number.isFinite(SG.kartenGewicht)
+    )
+        return SG;
+    return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");
 };
 AnazhRealm._bewegungsKoeff = function (stat) {
     const row = AnazhRealm.Gesetz("koerper:bewegung." + stat, null);

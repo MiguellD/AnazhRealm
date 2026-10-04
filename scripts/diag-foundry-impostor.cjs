@@ -81,7 +81,7 @@ async function driveImpostor(page) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                const v = r._foundryEnsureImpostorRecord("eiche", 0, "summer");
+                const v = r._foundryEnsureImpostorRecord("eiche", 0);
                 if (v && v !== true) {
                     rec = v;
                     break;

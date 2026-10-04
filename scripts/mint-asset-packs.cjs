@@ -1,5 +1,5 @@
 // mint-asset-packs.cjs — N3.3 (Pack-Kanon): die warme Foundry-Bibliothek als Pack-v1-Artefakte
-// münzen (`artifacts/packs/<preset>-s<seed>-L<lod>-<season>.json` + `index.json`).
+// münzen (`artifacts/packs/<preset>-s<seed>-L<lod>.json` + `index.json`).
 //
 // EIN WERKZEUG, KEIN CI-GATE (der Mint ist eine bewusste Handlung; die Dauer-Linse ist
 // `gate:pack-contract`). Es bootet AnazhRealm foundry-ON headless (Null-Renderer — die IDB ist
@@ -13,13 +13,12 @@
 // Artefakt ZURÜCK, dekodiert und vergleicht sha256 + Byte-Länge — eine Divergenz macht den
 // Lauf rot (Exit 1). r128 lebt NUR im Mint-Worker (Ü1/Ü2 übersetzt der Host-Chokepoint, N3.5).
 //
-// SAISON-DISZIPLIN (Asset-Vertrag v1: `season` ist STATEFUL): die Bibliothek ist ein-saisonal
-// (state.season) → jeder Reply ist ordnungs-unabhängig deterministisch. Ein künftiger Multi-
-// Saison-Mint muss die Zustands-Trajektorie in Saison-Blöcken fahren.
+// SAISON (V18.527): jeder Welt-Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season
+// "summer"), das Jahr färbt der Host über uSeasonMul — ein Pack ist saisonfrei.
 //
 //   node scripts/mint-asset-packs.cjs                       # mintet die warme Bibliothek
 //   node scripts/mint-asset-packs.cjs --limit 8             # nur die ersten N Schlüssel
-//   node scripts/mint-asset-packs.cjs --preset eiche --seed 7 --lod 2 --season summer
+//   node scripts/mint-asset-packs.cjs --preset eiche --seed 7 --lod 2
 //   node scripts/mint-asset-packs.cjs --verify              # bestehende Artefakte gegen
 //                                                           # frische Live-Replies richten
 // Exit-Codes: 0 = grün · 1 = Divergenz/stale/fehlend · 2 = Harness-Fehler.
@@ -33,7 +32,7 @@ const PORT = Number(process.env.PACK_PORT || 4561);
 const OUT_DIR = path.resolve(PK.ROOT, "artifacts", "packs");
 
 function parseArgs(argv) {
-    const a = { verify: false, limit: 0, preset: null, seed: null, lod: null, season: null };
+    const a = { verify: false, limit: 0, preset: null, seed: null, lod: null };
     for (let i = 2; i < argv.length; i++) {
         const v = argv[i];
         if (v === "--verify") a.verify = true;
@@ -41,15 +40,14 @@ function parseArgs(argv) {
         else if (v === "--preset") a.preset = String(argv[++i]);
         else if (v === "--seed") a.seed = Number(argv[++i]);
         else if (v === "--lod") a.lod = Number(argv[++i]);
-        else if (v === "--season") a.season = String(argv[++i]);
     }
     return a;
 }
 
 function parseKey(key) {
     const p = String(key).split("|");
-    if (p.length !== 4) return null;
-    return { presetId: p[0], seed: Number(p[1]), lod: Number(p[2]), season: p[3] };
+    if (p.length !== 3) return null; // geprägte Körper (|ov:<hash>) sind Unikate, kein Bibliotheks-Pack
+    return { presetId: p[0], seed: Number(p[1]), lod: Number(p[2]) };
 }
 
 (async () => {
@@ -104,7 +102,7 @@ function parseKey(key) {
         if (args.verify) {
             cases = verifyFiles.map((f) => {
                 const pack = PK.readPack(path.join(OUT_DIR, f));
-                return { presetId: pack.presetId, seed: pack.seed, lod: pack.lod, season: pack.season, file: f };
+                return { presetId: pack.presetId, seed: pack.seed, lod: pack.lod, file: f };
             });
         } else if (args.preset) {
             cases = [
@@ -112,7 +110,6 @@ function parseKey(key) {
                     presetId: args.preset,
                     seed: Number.isFinite(args.seed) ? args.seed : 7,
                     lod: Number.isFinite(args.lod) ? args.lod : 2,
-                    season: args.season || "summer",
                 },
             ];
         } else {
@@ -134,18 +131,17 @@ function parseKey(key) {
         const diffs = [];
         for (const c of cases) {
             const ser = await realm.page.evaluate(
-                (p, s, l, se) => window.__packSer(p, s, l, se),
+                (p, s, l) => window.__packSer(p, s, l),
                 c.presetId,
                 c.seed,
-                c.lod,
-                c.season
+                c.lod
             );
             if (!ser) {
                 if (args.verify)
-                    diffs.push(`${c.presetId}|${c.seed}|${c.lod}|${c.season}: Live-Reply null (Artefakt verwaist?)`);
+                    diffs.push(`${c.presetId}|${c.seed}|${c.lod}: Live-Reply null (Artefakt verwaist?)`);
                 else {
                     skipped++;
-                    console.log(`  ~ übersprungen (Reply null): ${c.presetId}|${c.seed}|${c.lod}|${c.season}`);
+                    console.log(`  ~ übersprungen (Reply null): ${c.presetId}|${c.seed}|${c.lod}`);
                 }
                 continue;
             }

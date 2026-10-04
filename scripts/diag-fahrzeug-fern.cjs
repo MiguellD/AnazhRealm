@@ -169,15 +169,21 @@ function pruefeQuelle(quelle) {
     )
         rot.push("_foundryFlattenFor: die lod>=2-Impostor-Route fehlt (Fernstufe serviert Geometrie)");
     if (
-        !/if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) \{\s*\n\s*const peekOv = this\._artifactStudioOv\(entry\);/.test(
+        !/if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) \{\s*\n\s*const key = "fimp:" \+ this\._foundryKartenKey\(preset, variant, this\._artifactStudioOv\(entry\)\);/.test(
             quelle
         )
     )
         rot.push(
             "_foundryEntryReady: der Dock-Peek kennt die lod>=2-Impostor-Route (mit ov-Spiegel) nicht (Rewarm urteilt übers falsche Asset)"
         );
-    // Bäcker-ov: der fimp-Key + das Bake-Subjekt (gkey) + der Bake tragen den ov-Hash.
-    if (!/const ovH = ov && typeof ov === "object" \? "\|ov:" \+ this\._studioOvHash\(ov\) : "";/.test(quelle))
+    // Bäcker-ov: der fimp-Key + das Bake-Subjekt (gkey) + der Bake tragen den ov-Hash (V18.527: die EINEN
+    // Schlüssel-Münzer `_foundryKartenKey`/`_foundryKoerperKey` hängen ihn an).
+    if (
+        !/const key = "fimp:" \+ this\._foundryKartenKey\(preset, variant, ovK\);/.test(quelle) ||
+        !/_foundryKartenKey\(preset, gestalt, ov\) \{\s*\n\s*return preset \+ "\|" \+ gestalt \+ \(ov \? "\|ov:" \+ this\._studioOvHash\(ov\) : ""\);/.test(
+            quelle
+        )
+    )
         rot.push(
             "_foundryEnsureImpostorRecord: der ov-Hash fehlt im fimp-Key (geprägte Karte kollabiert mit der ungeprägten)"
         );
@@ -280,8 +286,8 @@ function selbstTest() {
     ]);
     // 4b. Der ov-Hash aus dem fimp-Key gestrippt -> MUSS feuern (geprägte Karte kollabiert).
     const ohneOvHash = STAMM.replace(
-        'const ovH = ov && typeof ov === "object" ? "|ov:" + this._studioOvHash(ov) : "";',
-        'const ovH = "";'
+        'return preset + "|" + gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");',
+        'return preset + "|" + gestalt;'
     );
     faelle.push([
         "ohne den ov-Hash im fimp-Key -> feuert (geprägte Karte kollabiert mit der ungeprägten)",

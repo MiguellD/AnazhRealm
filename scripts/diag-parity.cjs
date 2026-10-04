@@ -342,10 +342,9 @@ async function renderAnazh() {
             while (f && f._prefetching && performance.now() < dlP) await new Promise((res) => setTimeout(res, 200));
             try {
                 const spec = r._foundryLibrarySpec();
-                const season = r.state.season || "summer";
                 for (const sp of spec.species) {
                     if (typeof r._foundryPresetIsTree === "function" && !r._foundryPresetIsTree(sp)) continue;
-                    for (let v = 1; v <= r._foundryGestalten(sp); v++) r._foundryEnsureImpostorRecord(sp, v, season);
+                    for (let v = 1; v <= r._foundryGestalten(sp); v++) r._foundryEnsureImpostorRecord(sp, v);
                 }
             } catch (_e) {}
             const qLen0 = r._impostorBakeQueue ? r._impostorBakeQueue.length : 0;

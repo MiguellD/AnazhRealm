@@ -268,7 +268,7 @@ function ksRow(src, name) {
         // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup) =====
         try {
             const meshes = await Promise.race([
-                r._foundryRequest("drachentor", 7, 0, "summer"),
+                r._foundryRequest("drachentor", 7, 0),
                 new Promise((res3) => setTimeout(() => res3(null), 30000)),
             ]);
             res.e.meshCount = Array.isArray(meshes) ? meshes.length : -1;

@@ -101,7 +101,7 @@ const server = http.createServer((req, res) => {
             while (!(f.recipeCount > 0) && performance.now() < dlR) await new Promise((res) => setTimeout(res, 100));
             out.recipeCount = f.recipeCount || 0;
             // DER KERN-BEWEIS: eine echte build-asset-Anfrage durch den Worker — liefert sie Meshes?
-            const meshes = await r._foundryRequest("eiche", 7, 0, "summer");
+            const meshes = await r._foundryRequest("eiche", 7, 0);
             out.meshes = meshes ? meshes.length : 0;
             out.verts = meshes
                 ? meshes.reduce((s, m) => {
@@ -122,7 +122,7 @@ const server = http.createServer((req, res) => {
     console.log("=== P3a — FOUNDRY-WARM (Worker produziert in AnazhRealm, headless) ===");
     console.log(`  _foundryEnabled(): ${S.workerEnabled}  ·  f.worker: ${S.hasWorker}`);
     console.log(`  ready nach: ${S.readyMs} ms  ·  recipeCount: ${S.recipeCount}`);
-    console.log(`  _foundryRequest("eiche",7,0,summer): ${S.meshes} Meshes · ${S.verts} Verts`);
+    console.log(`  _foundryRequest("eiche",7,0): ${S.meshes} Meshes · ${S.verts} Verts`);
     if (S.err) console.log(`  Fehler: ${S.err}`);
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
 

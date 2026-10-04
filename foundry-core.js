@@ -171,7 +171,26 @@ var WALD_VIS = { lab: "astung-glade", host: "none" };
 var KACHEL_GESETZ = { size: 12 };
 var KACHEL_VIS = { lab: "tile-12", host: "none" };
 
-var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS };
+// V18.527 — DAS SAISON-GESETZ: die Jahres-Stuetzstellen des Terrain-Studios als ZAHLEN (vorher Literale in
+// phytogenesis.js seasonColors / _seasonBuiltTint / Impostor-GLSL). EINE Quelle, zwei Leser: der Studio-Wald
+// (seasonColors -> Laub-Toenung, Praesenz, Bluete; uSeasonMul im Laub- und Karten-Shader) und die Welt (jeder
+// Welt-Koerper ist Sommer gebacken, das Jahr traegt uSeasonMul = clamp(ti(t) / bau, mulMin, mulMax) je Kanal,
+// die Karte folgt zu kartenGewicht). t: 0 Fruehling / .25 Sommer / .5 Herbst / .75 Winter, linear im Ring.
+// var (nicht const): reist als globalThis.SAISON_GESETZ zum Studio-Leser — wie HIMMEL/WASSER.
+// prettier-ignore
+var SAISON_GESETZ = {
+    stuetzen: [
+        { ti: 0x6a9a3e, ac: 0x88b450, pr: 0.72, bl: 0.85 },
+        { ti: 0x4f7a30, ac: 0x6f9a3a, pr: 1.0, bl: 0.12 },
+        { ti: 0xb0702a, ac: 0xd2922f, pr: 0.55, bl: 0.0 },
+        { ti: 0x6e6650, ac: 0x847c64, pr: 0.06, bl: 0.0 },
+    ],
+    bau: 0x4f7a30,       // die Toenung, mit der ein Koerper gebacken ist (Sommer, setSeasonColors("summer"))
+    mulMin: 0.25, mulMax: 4.0,
+    kartenGewicht: 0.8,  // die Karte folgt der Saison zu 80 % (Impostor-Shader mix(1, uSeasonMul, 0.8))
+};
+
+var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
 
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke

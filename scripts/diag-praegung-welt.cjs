@@ -62,14 +62,14 @@ function check(name, ok, detail) {
     console.log("=== PRÄGUNG-WELT — Quell-Proben (die Naht lebt im Stamm) ===");
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     check(
-        "Q: _foundryFlattenFor liest den Entry-Stempel + reicht ihn als 5. Arg",
+        "Q: _foundryFlattenFor liest den Entry-Stempel + reicht ihn als 4. Arg",
         /const entryOv = this\._artifactStudioOv\(entry\);/.test(stamm) &&
-            /_foundryRequest\(preset, variant, lod, season, entryOv \|\| undefined\)/.test(stamm)
+            /_foundryRequest\(preset, variant, lod, entryOv \|\| undefined\b/.test(stamm)
     );
     check(
-        "Q: _heldFoundryGroup liest den Bauplan-Stempel + reicht ihn als 5. Arg",
+        "Q: _heldFoundryGroup liest den Bauplan-Stempel + reicht ihn als 4. Arg",
         /const heldOv = this\._artifactStudioOv\(bp\);/.test(stamm) &&
-            /_foundryRequest\(preset, variant, 0, season, heldOv \|\| undefined\)/.test(stamm)
+            /_foundryRequest\(preset, variant, 0, heldOv \|\| undefined\b/.test(stamm)
     );
     check(
         "Q: der Guss stempelt (_forgeMaterialAndFreeze + schöpfer-wield rufen _stampStudioOv)",
@@ -167,7 +167,6 @@ function check(name, ok, detail) {
             r.state.blueprints.fahrzeug_gt
         );
         if (!res.warm.ready || !res.warm.langschwert || !res.warm.gt || !res.warm.bps) return res;
-        const season = r.state.season || "summer";
         const KC = r.constructor.KIND_CHARAKTER;
         const VC = globalThis.__vehicleCore;
         res.warm.charakter = !!(KC && KC.weapon && KC.vehicle && VC && VC.CULTURES);
@@ -214,8 +213,8 @@ function check(name, ok, detail) {
             // Byte-Identität: der direkte ov-lose Request baut dieselbe Geometrie wie
             // der ungeprägte Flatten-Pfad (der Schlüssel trägt keinen ov-Hash).
             const variant = r._foundryVariantFor(7, "gt");
-            res.b.plainKeyExact = f.cache.has("gt|" + variant + "|0|" + season);
-            const mU = await Promise.race([r._foundryRequest("gt", variant, 0, season), sleep(45000)]);
+            res.b.plainKeyExact = f.cache.has("gt|" + variant + "|0");
+            const mU = await Promise.race([r._foundryRequest("gt", variant, 0), sleep(45000)]);
             if (Array.isArray(mU) && mU.length) {
                 const gTmp = r._foundryBuildGroup(mU, { lod: 0, preset: "gt" });
                 // Seit V18.510 verschmilzt der Flatten die Teile EINES Materials (`_foundryFlatVerschmelzen`) —
@@ -419,7 +418,7 @@ function check(name, ok, detail) {
             out.b.ovKeys.length >= 2,
         `plain=${JSON.stringify(out.b.plainKeys)} ov=${(out.b.ovKeys || []).length}`
     );
-    check("der exakte Alt-Schlüssel (preset|variant|lod|season) lebt unverändert", out.b.plainKeyExact === true);
+    check("der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert", out.b.plainKeyExact === true);
     check("kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)", out.b.noJsonKeys === true);
     check(
         "REINHEIT beide Richtungen: der ungeprägte Fingerabdruck bleibt NACH geprägten Bauten gleich",

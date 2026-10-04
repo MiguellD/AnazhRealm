@@ -341,7 +341,7 @@ function check(name, ok, detail) {
                     "p:s:" + Math.floor(7 / S0) + "," + Math.floor(9 / S0) &&
                 r._archFernRegionKey("fscatter:eiche:3:2", {}, "5,5") ===
                     "s:" + Math.floor(5 / S0) + "," + Math.floor(5 / S0) &&
-                r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1|summer:0" }, "p:7,9") === "p:7,9" &&
+                r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1:0" }, "p:7,9") === "p:7,9" &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, null) === null &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, "p:s:1,2") === "p:s:1,2";
             // Das strauch-Impostor-Flat über die ECHTE Pipe ziehen (LOD1-Subjekt lädt async).
