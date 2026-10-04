@@ -4,7 +4,7 @@
 // GESCHNITTEN. Drei Teile:
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt eine Atlas-Zelle mit Rahmen an (aus
 //     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
-//     Schicht und der Rahmen reisen je Instanz (aZelle, aRahmen) über beide Slot-Chokepoints; der Bake-Tick spricht
+//     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; der Bake-Tick spricht
 //     den Kanal "bake-impostor"; KEIN asset-foundry-iframe im DOM; die gefallenen Methoden sind weg.
 //   C (swiftshader-WebGPU, HART): das LAYOUT — eine synthetische Karte durch den echten Codec + Schicht-Schreiber
 //     steht links oben (nicht gedreht, nicht gespiegelt) — und die Kamera-Kleber-Wand (tote Slots zeichnen nichts).
@@ -123,16 +123,21 @@ async function driveImpostor(page) {
                 const neu = [...r.state.archInstanceGroups.keys()].filter((k) => !vor.has(k));
                 const karten = [...r.state.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:/.test(k));
                 const g = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
-                const az = g && g.mesh.geometry.attributes.aZelle;
-                const ar = g && g.mesh.geometry.attributes.aRahmen;
+                const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, verdeckt) je Slot
+                const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
+                // die WebGPU-Grenze: höchstens 8 Vertex-Puffer je Pipeline (Echt-GPU 04.10.: 10 → das Bundle starb)
+                const geo = g && g.mesh.geometry;
+                const puffer = geo ? Object.keys(geo.attributes).length + (g.mesh.instanceColor ? 1 : 0) : 99;
                 out.gruppen = {
                     neu,
                     karten,
-                    zellen: az ? Array.from(az.array.slice(0, 3)) : null,
-                    rahmen: ar ? Array.from(ar.array.slice(0, 6)) : null,
+                    zellen: [0, 1, 2].map((i) => slot(i)[0]),
+                    rahmen: [0, 1, 2].flatMap((i) => slot(i).slice(1, 3)),
                     erwartet: [l1.zelle, l2.zelle, l1.zelle],
                     erwartetRahmen: [...l1.rahmen, ...l2.rahmen, ...l1.rahmen],
-                    instanziert: !!(az && az.isInstancedBufferAttribute && ar && ar.isInstancedBufferAttribute),
+                    instanziert: !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4),
+                    vertexPuffer: puffer,
+                    attribute: geo ? Object.keys(geo.attributes) : [],
                 };
             }
             // BÄCKER-VEREINIGUNG: der Bake-Tick spricht den Studio-Kanal, der RTT-Nachbau ist weg.
@@ -189,8 +194,8 @@ async function driveImpostor(page) {
 //     camera-facing Quad. Die Wand: _lebt = probe²>1e-12 + select ⇒ toter Slot: _sInst=0 UND _alpha=0.
 //     SELBSTTEST — ein Monster-Slot (Skala 1000) MUSS den Schirm fluten; derselbe Slot durch den ECHTEN Free-Chokepoint
 //     befreit ⇒ ~0 Pixel in seiner Schirm-Hälfte; der lebende Slot zeichnet weiter.
-async function kleberProbe(page) {
-    return await page.evaluate(async () => {
+async function kleberProbe(page, fmtWunsch) {
+    return await page.evaluate(async (fmtWunsch) => {
         const r = window.anazhRealm;
         const out = { err: null };
         try {
@@ -201,7 +206,9 @@ async function kleberProbe(page) {
                 H = 128;
             ren.setSize(W, H, false);
             // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
-            out.fmt = ren.hasFeature("texture-compression-bc") ? "bc" : "rgba8";
+            // BEIDE Format-Stufen desselben Pfads: BC (Adapter-Feature) und rgba8/rg8 (DataArrayTexture, GPU-Mips)
+            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc")) return { fmt: "bc", ohneFeature: true };
+            out.fmt = fmtWunsch;
             r._kartenAtlas = undefined;
             const at = r._impostorAtlas();
             at.fmt = out.fmt;
@@ -351,7 +358,7 @@ async function kleberProbe(page) {
             out.err = (e && e.message) || String(e);
         }
         return out;
-    });
+    }, fmtWunsch);
 }
 
 (async () => {
@@ -366,7 +373,7 @@ async function kleberProbe(page) {
     });
     const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
-    const C = await kleberProbe(pageA);
+    const Cs = [await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     await browserA.close();
 
     console.log("=== P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS — TEIL A: MECHANIK (Null-Renderer) ===");
@@ -399,12 +406,14 @@ async function kleberProbe(page) {
         const G = A.gruppen;
         if (G.karten.length !== 1)
             errs.push(`A: ${G.karten.length} Karten-Gruppen statt EINER (${G.karten.slice(0, 4).join(" · ")})`);
-        if (!G.instanziert) errs.push("A: aZelle/aRahmen sind keine Instanz-Attribute der Karten-Gruppe");
+        if (!G.instanziert) errs.push("A: aKarte ist kein Instanz-vec4 der Karten-Gruppe");
+        if (!(G.vertexPuffer <= 8))
+            errs.push(`A: die Karten-Pipeline trägt ${G.vertexPuffer} Vertex-Puffer (WebGPU-Grenze 8): ${G.attribute.join(" · ")}`);
         else {
             if (JSON.stringify(G.zellen) !== JSON.stringify(G.erwartet))
-                errs.push(`A: aZelle je Slot ${JSON.stringify(G.zellen)} ≠ ${JSON.stringify(G.erwartet)}`);
+                errs.push(`A: aKarte.x je Slot ${JSON.stringify(G.zellen)} ≠ ${JSON.stringify(G.erwartet)}`);
             const rOk = G.rahmen.every((v, i) => Math.abs(v - G.erwartetRahmen[i]) < 1e-5);
-            if (!rOk) errs.push(`A: aRahmen je Slot ${JSON.stringify(G.rahmen)} ≠ ${JSON.stringify(G.erwartetRahmen)}`);
+            if (!rOk) errs.push(`A: aKarte.yz je Slot ${JSON.stringify(G.rahmen)} ≠ ${JSON.stringify(G.erwartetRahmen)}`);
         }
     }
     if (A.vereinigung) {
@@ -422,35 +431,41 @@ async function kleberProbe(page) {
     }
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
-    console.log("\n=== TEIL C — DIE KARTEN-WAND (Layout + tote Slots zeichnen NICHTS, swiftshader-WebGPU) ===");
-    console.log(`  Schicht-Format des Probe-Renderers: ${C.fmt} · geschrieben: ${C.geschrieben} · Wiring: ${C.billboard}`);
-    console.log(`  Eichung der Lese-Richtung: ${JSON.stringify(C.eichung)}`);
-    console.log(
-        `  LAYOUT (Karte: links oben opak) — Quadranten px: lo ${C.layout && C.layout.lo} · ro ${C.layout && C.layout.ro}` +
-            ` · lu ${C.layout && C.layout.lu} · ru ${C.layout && C.layout.ru}`
-    );
-    if (C.layout) console.log(`  Schirm-Box ${JSON.stringify(C.box)} · Zeilen ${JSON.stringify(C.layout.zeilen)}`);
-    console.log(`  Selbsttest Monster-Slot (Skala 1000) Pixel: ${C.monsterPx} (Linse MUSS Müll sehen)`);
-    console.log(`  Free-Chokepoint Null-3×3+Translation: ${C.freeNull3x3}`);
-    console.log(`  nach _archGroupFree — lebender Slot: ${C.lebtPx} px · toter Slot: ${C.totPx} px`);
-    if (C.err) console.log(`  Fehler: ${C.err}`);
-    if (C.err) errs.push(`C: Karten-Probe brach ab — ${C.err}`);
-    else {
-        if (!C.billboard) errs.push("C: das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)");
-        if (!C.geschrieben) errs.push("C: die kodierte Schicht wurde nicht in den Atlas geschrieben");
-        if (!(C.eichung && C.eichung.markerPx > 4)) errs.push("C: die Eichung sah den Marker nicht (Probe blind)");
+    for (const C of Cs) {
+        const F = `C[${C.fmt}]`;
+        console.log(`\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + tote Slots zeichnen NICHTS, swiftshader-WebGPU) ===`);
+        if (C.ohneFeature) {
+            console.log("  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Blick-Sonde)");
+            continue;
+        }
+        console.log(`  geschrieben: ${C.geschrieben} · Wiring: ${C.billboard}`);
+        console.log(`  Eichung der Lese-Richtung: ${JSON.stringify(C.eichung)}`);
+        console.log(
+            `  LAYOUT (Karte: links oben opak) — Quadranten px: lo ${C.layout && C.layout.lo} · ro ${C.layout && C.layout.ro}` +
+                ` · lu ${C.layout && C.layout.lu} · ru ${C.layout && C.layout.ru}`
+        );
+        if (C.layout) console.log(`  Schirm-Box ${JSON.stringify(C.box)} · Zeilen ${JSON.stringify(C.layout.zeilen)}`);
+        console.log(`  Selbsttest Monster-Slot (Skala 1000) Pixel: ${C.monsterPx} (Linse MUSS Müll sehen)`);
+        console.log(`  Free-Chokepoint Null-3×3+Translation: ${C.freeNull3x3}`);
+        console.log(`  nach _archGroupFree — lebender Slot: ${C.lebtPx} px · toter Slot: ${C.totPx} px`);
+        if (C.err) {
+            console.log(`  Fehler: ${C.err}`);
+            errs.push(`${F}: Karten-Probe brach ab — ${C.err}`);
+            continue;
+        }
+        if (!C.billboard) errs.push(`${F}: das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)`);
+        if (!C.geschrieben) errs.push(`${F}: die kodierte Schicht wurde nicht in den Atlas geschrieben`);
+        if (!(C.eichung && C.eichung.markerPx > 4)) errs.push(`${F}: die Eichung sah den Marker nicht (Probe blind)`);
         const L = C.layout || {};
         const rest = (L.ro || 0) + (L.lu || 0) + (L.ru || 0);
         if (!(L.lo > 40 && L.lo > 6 * rest))
-            errs.push(
-                `C: die Karte steht NICHT links oben (lo ${L.lo} · Rest ${rest}) — Layout gedreht oder gespiegelt`
-            );
+            errs.push(`${F}: die Karte steht NICHT links oben (lo ${L.lo} · Rest ${rest}) — Layout gedreht oder gespiegelt`);
         if (!(C.monsterPx > 200))
-            errs.push(`C-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`);
-        if (!C.freeNull3x3) errs.push("C: _archGroupFree schrieb nicht die erwartete Null-3×3 mit lebender Translation");
-        if (!(C.lebtPx > 40)) errs.push(`C: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
+            errs.push(`${F}-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`);
+        if (!C.freeNull3x3) errs.push(`${F}: _archGroupFree schrieb nicht die erwartete Null-3×3 mit lebender Translation`);
+        if (!(C.lebtPx > 40)) errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
         if (!(C.totPx <= 8))
-            errs.push(`C: der TOTE Slot zeichnet noch ${C.totPx} px (> 8) — die Kamera-Kleber-Wand hält NICHT`);
+            errs.push(`${F}: der TOTE Slot zeichnet noch ${C.totPx} px (> 8) — die Kamera-Kleber-Wand hält NICHT`);
     }
 
     // ===== TEIL B — DER RTT-BAKE LÄUFT (echter swiftshader-Renderer, OPT-IN) =====

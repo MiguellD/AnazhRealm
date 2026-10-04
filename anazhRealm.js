@@ -28418,11 +28418,12 @@ class AnazhRealm {
                         let _alpha = _Ta.float(1.0);
                         if (opts.impostorAtlas && _Ta.attribute) {
                             // DIE KARTE (der EINE Karten-Atlas, `_impostorAtlas`): der ferne LOD2-Baum ist EIN camera-facing
-                            // Quad, das die ZWEI angrenzenden Peilungs-Ansichten SEINER Atlas-Schicht (aZelle) sampelt (Blend
+                            // Quad, das die ZWEI angrenzenden Peilungs-Ansichten SEINER Atlas-Schicht (aKarte.x) sampelt (Blend
                             // über fract) und die Instanz-Rotation respektiert. Instanz-Dekodierung ohne Instanz-Matrix: die
-                            // Geometrie-Normale ist ein PROBE (1,0,0) → normalLocal = (cos r, 0, −sin r)/s. Rahmen (Halbbreite,
-                            // Höhe — template-lokal) reist je Instanz (aRahmen): EIN Programm für jede Karte jeder Art.
-                            // Normal-Atlas (rg) → mat.normalNode (VIEW-space) an die EINE PBR-Lichtung; Tint via instanceColor.
+                            // Geometrie-Normale ist ein PROBE (1,0,0) → normalLocal = (cos r, 0, −sin r)/s. Schicht, Rahmen
+                            // (Halbbreite, Höhe — template-lokal) und Verdeckung reisen je Instanz in EINEM vec4 (aKarte): EIN
+                            // Programm für jede Karte jeder Art, fünf Vertex-Puffer (position · normal · uv · aKarte ·
+                            // instanceColor). Normal-Atlas (rg) → mat.normalNode (VIEW-space) an die EINE PBR-Lichtung.
                             let _wired = false;
                             try {
                                 const _at = this._impostorAtlas();
@@ -28432,10 +28433,12 @@ class AnazhRealm {
                                         _at.nmapNode = _Ta.texture(_at.nmap);
                                     }
                                     const _V = _Ta.float(_at.V);
-                                    const _aImpX = _Ta.attribute("aImpX", "float"); // ±1
-                                    const _rahmen = _Ta.attribute("aRahmen", "vec2"); // (Halbbreite, Höhe)
+                                    const _uv = _Ta.attribute("uv", "vec2");
+                                    const _ecke = _uv.x.mul(_Ta.float(2.0)).sub(_Ta.float(1.0)); // die Ecke ±1
+                                    const _karte = _Ta.attribute("aKarte", "vec4"); // (Schicht, Halbbreite, Höhe, verdeckt)
+                                    const _rahmen = _karte.yz;
                                     // die Schicht: ein interpolierter Instanz-Wert kann 2,9999 lesen — gerundet, nie gekappt
-                                    const _schicht = _Ta.floor(_Ta.attribute("aZelle", "float").add(_Ta.float(0.5)));
+                                    const _schicht = _Ta.floor(_karte.x.add(_Ta.float(0.5)));
                                     // ── Instanz-Dekodierung (der Normal-Probe) ──
                                     // Ein FREIER Slot (_archGroupFree: Null-3×3) macht den Probe singulär → NaN/0⃗; ein Clamp machte
                                     // daraus ein welt-spannendes Quad an der Kamera. NaN übersteht jede Arithmetik, nur select verwirft
@@ -28449,7 +28452,7 @@ class AnazhRealm {
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
-                                    const _k = _aImpX.mul(_rahmen.x).mul(_sInst);
+                                    const _k = _ecke.mul(_rahmen.x).mul(_sInst);
                                     const _hx = _Ta.positionWorld.x.sub(_Ta.cameraPosition.x);
                                     const _hz = _Ta.positionWorld.z.sub(_Ta.cameraPosition.z);
                                     const _hl2 = _hx.mul(_hx).add(_hz.mul(_hz));
@@ -28464,7 +28467,6 @@ class AnazhRealm {
                                     const _v0 = _Ta.floor(_fV);
                                     const _fb = _Ta.fract(_fV);
                                     const _v1 = _Ta.mod(_v0.add(_Ta.float(1.0)), _V);
-                                    const _uv = _Ta.attribute("uv", "vec2");
                                     const _uvA = _Ta.vec2(_uv.x, _uv.y.add(_v0).div(_V));
                                     const _uvB = _Ta.vec2(_uv.x, _uv.y.add(_v1).div(_V));
                                     const _samp = _Ta.mix(
@@ -28484,6 +28486,7 @@ class AnazhRealm {
                                             impostor: true,
                                             distNode: _Ta.sqrt(_hl2),
                                             visHeightNode: _rahmen.y.mul(_sInst),
+                                            occlNode: _karte.w,
                                         });
                                         if (_keepFin) _alpha = _alpha.mul(_keepFin);
                                     }
@@ -28547,7 +28550,7 @@ class AnazhRealm {
                                     const _lx = _lkX.div(_ll);
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
-                                    const _off = _aImpX.mul(_rahmen.x).mul(_sInst);
+                                    const _off = _ecke.mul(_rahmen.x).mul(_sInst);
                                     // leichter Wind (Vorlagen-sway: die Kronenspitze pendelt, y²=aFlex)
                                     let _swayX = _Ta.float(0.0);
                                     let _swayZ = _Ta.float(0.0);
@@ -28555,7 +28558,7 @@ class AnazhRealm {
                                         this._grassInstanceMat();
                                     const _wu = this.state.windUniforms;
                                     if (_wu && _wu.uWindTime && opts.useFlexAttr) {
-                                        const _fx = _Ta.attribute("aFlex", "float").clamp(0.0, 1.0);
+                                        const _fx = _uv.y.mul(_uv.y); // das Wind-Gewicht y² (die Kronenspitze pendelt)
                                         // Der Impostor liest DIESELBE Richtungs-Quelle uWindDir wie Baum/Gras → die ferne Karte wogt im
                                         // Gleichtakt mit dem nahen Laub (kein Richtungs-Riss am 40-m-Crossfade).
                                         const _wcu = this._ensureWindCoupling(_Ta);
@@ -29195,7 +29198,7 @@ class AnazhRealm {
                     .add(_lu.uDitherT)
             );
             if (opts && opts.impostor === true) {
-                // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — aOccl reist als
+                // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) return null;
@@ -29205,7 +29208,7 @@ class AnazhRealm {
                     _vCD = _dist.mul(_k);
                 }
                 const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
-                const _occl = T.attribute ? T.attribute("aOccl", "float") : null;
+                const _occl = opts.occlNode || null; // die Verdeckung der Karte (aKarte.w)
                 const _fin = _f1i.mul(2.0).min(T.float(1.0));
                 const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
@@ -51254,7 +51257,7 @@ class AnazhRealm {
                     entry._occluded === true
                 );
                 // AUSLÖSCHUNGS-WELLE (Feld B, vOcc) — ein Occlusion-WECHSEL ohne Stufen-
-                // Switch (fern-verdeckt ↔ fern-frei auf L2) zieht die aOccl-Slots nach
+                // Switch (fern-verdeckt ↔ fern-frei auf L2) zieht die Verdeckungs-Slots (aKarte.w) nach
                 // (das Studio-vOcc: die Karte des verdeckt-demotierten Baums blendet VOLL).
                 if (entry._occluded !== occ) {
                     entry._occluded = occ;
@@ -60075,7 +60078,7 @@ class AnazhRealm {
         if ((g.mesh.count | 0) < AnazhRealm.FELD_CULL.minInstanzen) return false;
         const geom = g.mesh.geometry;
         if (!geom || !geom.attributes || !geom.attributes.position) return false;
-        // Per-Instanz-Attribute (LOD-Fassade aH0/aH0L/aOccl) reisen in der
+        // Per-Instanz-Attribute (LOD-Fassade aH0/aH0L/aKarte) reisen in der
         // Kompaktierung mit — nur die bekannte float-Form (itemSize 1) ist gedeckt.
         for (const an in geom.attributes) {
             const a = geom.attributes[an];
@@ -60108,7 +60111,7 @@ class AnazhRealm {
             const hatTint = !!quelle.instanceColor;
             const srcC = hatTint ? TSL.instancedArray(cap, "vec3") : null;
             const dstC = hatTint ? TSL.instancedArray(cap, "vec3") : null;
-            // Per-Instanz-Attribute der LOD-Fassade (aH0/aH0L/aOccl — float, Kandidaten-
+            // Per-Instanz-Attribute der LOD-Fassade (aH0/aH0L — float, Kandidaten-
             // Wand geprüft): die Kompaktierung ORDNET UM, also reisen sie MIT (Quell-
             // Spiegel → kompaktes Ziel; der Konsument liest die Ziel-Attribute).
             const instAttrs = [];
@@ -61596,48 +61599,40 @@ class AnazhRealm {
         return z;
     }
 
-    // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}): aImpX = ±1 (die Ecke legt der Shader
-    // mit aRahmen.x · Instanz-Skala an), aZelle/aRahmen als Vertex-Platzhalter — die Instanz-Fassade ersetzt sie je
-    // Slot. Geometrie-Normale = PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → Rotation + Skala.
-    // color WEISS (Tint via instanceColor), aFlex = y².
+    // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,
+    // normal (PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → Rotation + Skala), uv (u = Ecke:
+    // ±1 = 2u−1, v = Höhe: Wind-Gewicht v²). Je Instanz EIN vec4 `aKarte` = (Schicht, Halbbreite, Höhe, verdeckt) —
+    // template-lokal, die Fassade ersetzt den Platzhalter je Slot; dazu instanceColor (Tint). Befund Echt-GPU 04.10.:
+    // mit color/aImpX/aFlex/aPhase/aOccl/aZelle/aRahmen trug die Pipeline 10 Vertex-Puffer (WebGPU-Grenze 8) — das
+    // @global-Bundle wurde ungültig, keine Karte zeichnete.
     _impostorQuad(at) {
         if (at.quad) return at.quad;
         const VC = 6;
         const ecken = [
-            [-1, 0, 0, 0],
-            [1, 0, 1, 0],
-            [1, 1, 1, 1],
-            [-1, 1, 0, 1],
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
         ];
         const tri = [0, 1, 2, 0, 2, 3];
         const pos = new Float32Array(VC * 3),
             nor = new Float32Array(VC * 3),
-            col = new Float32Array(VC * 3).fill(1),
             uv = new Float32Array(VC * 2),
-            impX = new Float32Array(VC),
-            flex = new Float32Array(VC);
+            karte = new Float32Array(VC * 4);
         for (let ti = 0; ti < VC; ti++) {
             const c = ecken[tri[ti]];
             pos[ti * 3 + 1] = c[1];
             nor[ti * 3] = 1;
-            uv[ti * 2] = c[2];
-            uv[ti * 2 + 1] = c[3];
-            impX[ti] = c[0];
-            flex[ti] = c[1] * c[1];
+            uv[ti * 2] = c[0];
+            uv[ti * 2 + 1] = c[1];
+            karte[ti * 4 + 1] = 1; // Platzhalter: Schicht 0, Rahmen 1 × 1, frei
+            karte[ti * 4 + 2] = 1;
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
-        g.setAttribute("color", new THREE.BufferAttribute(col, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-        // Occlusion-Kanal des Studio-Billboards (aOccl), Schicht und Rahmen: Vertex-Platzhalter (WebGPU-Attribut-
-        // Pflicht), die Instanz-Fassade ersetzt sie (`_lodInstanceFacade`).
-        g.setAttribute("aOccl", new THREE.BufferAttribute(new Float32Array(VC), 1));
-        g.setAttribute("aZelle", new THREE.BufferAttribute(new Float32Array(VC), 1));
-        g.setAttribute("aRahmen", new THREE.BufferAttribute(new Float32Array(VC * 2).fill(1), 2));
-        g.setAttribute("aImpX", new THREE.BufferAttribute(impX, 1));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
-        g.setAttribute("aPhase", new THREE.BufferAttribute(new Float32Array(VC), 1));
+        g.setAttribute("aKarte", new THREE.BufferAttribute(karte, 4));
         g.computeBoundingBox();
         g.computeBoundingSphere();
         at.quad = g;
@@ -62776,8 +62771,8 @@ class AnazhRealm {
             g2.setAttribute("aH0", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
             g2.setAttribute("aH0L", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
         }
-        // Occlusion (Billboard-vOcc) und — die Karte — Atlas-Schicht + Rahmen je Slot (`_lodSlotStamp`).
-        for (const k of ["aOccl", "aZelle", "aRahmen"]) {
+        // Die Karte: Atlas-Schicht + Rahmen + Billboard-Verdeckung je Slot in EINEM vec4 (`_lodSlotStamp`).
+        for (const k of ["aKarte"]) {
             const n = AnazhRealm.LOD_INSTANZ_ATTRIBUTE[k];
             if (srcGeom.attributes[k])
                 g2.setAttribute(k, new THREE.InstancedBufferAttribute(new Float32Array(capacity * n), n));
@@ -62819,26 +62814,24 @@ class AnazhRealm {
                 a0L.needsUpdate = true;
             }
         }
-        const ao = geom.attributes.aOccl;
-        if (ao && ao.isInstancedBufferAttribute && slot < ao.array.length) {
-            ao.array[slot] = occluded ? 1 : 0;
-            ao.needsUpdate = true;
-        }
-        const az = geom.attributes.aZelle,
-            ar = geom.attributes.aRahmen;
-        if (leaf && Number.isFinite(leaf.zelle) && az && ar && slot < az.array.length) {
-            az.array[slot] = leaf.zelle;
-            ar.array[slot * 2] = leaf.rahmen[0];
-            ar.array[slot * 2 + 1] = leaf.rahmen[1];
-            az.needsUpdate = true;
-            ar.needsUpdate = true;
+        // Die Karte: EIN vec4 je Slot (Schicht, Halbbreite, Höhe, verdeckt) — die Verdeckung stempelt jeder Ruf, Schicht
+        // und Rahmen nur, wenn das Leaf eine Karte trägt.
+        const ak = geom.attributes.aKarte;
+        if (ak && ak.isInstancedBufferAttribute && slot * 4 < ak.array.length) {
+            ak.array[slot * 4 + 3] = occluded ? 1 : 0;
+            if (leaf && Number.isFinite(leaf.zelle)) {
+                ak.array[slot * 4] = leaf.zelle;
+                ak.array[slot * 4 + 1] = leaf.rahmen[0];
+                ak.array[slot * 4 + 2] = leaf.rahmen[1];
+            }
+            ak.needsUpdate = true;
         }
         // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotOcclusionRefresh,
         // AUSSERHALB des Alloc-Pfads): das Region-Bundle re-recorden, sonst friert
         // der Wert im gecachten Replay ein.
         this._archMeshBundleTouch(g.mesh);
     }
-    // Occlusion-Wechsel OHNE LOD-Switch (fern-verdeckt ↔ fern-frei): die aOccl-Werte
+    // Occlusion-Wechsel OHNE LOD-Switch (fern-verdeckt ↔ fern-frei): die Verdeckungs-Werte (aKarte.w)
     // der lebenden Slots nachziehen (das Studio schreibt vOcc pro Tick — der Host
     // nur am WECHSEL, derselbe Wert dazwischen).
     _lodSlotOcclusionRefresh(entry) {
@@ -62880,7 +62873,7 @@ class AnazhRealm {
         // Baum-Stufen · aOccl = Impostor), bekommt die Gruppe die INSTANZ-FASSADE
         // (per-Instanz-Metrik wie das Studio; s. _lodInstanceFacade).
         const wantsFacade =
-            leaf.geom && leaf.geom.attributes && (leaf.geom.attributes.aH0 || leaf.geom.attributes.aOccl);
+            leaf.geom && leaf.geom.attributes && (leaf.geom.attributes.aH0 || leaf.geom.attributes.aKarte);
         const groupGeom = wantsFacade ? this._lodInstanceFacade(leaf.geom, capacity) : leaf.geom;
         const mesh = AnazhRealm._instanzMesh(groupGeom, leaf.mat, capacity);
         mesh.castShadow = castShadow;
@@ -88120,8 +88113,8 @@ AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 45000;
 // globalen Gruppe (`_archInstanceGroupFor`), die Schicht wählt aZelle (`_impostorAtlas`).
 AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
 // Die Instanz-Attribute der LOD-Fassade (`_lodInstanceFacade`) mit ihrer Breite: Sichthöhen (aH0/aH0L), Billboard-
-// Occlusion (aOccl) und die Karte (aZelle = Atlas-Schicht, aRahmen = Halbbreite + Höhe, template-lokal).
-AnazhRealm.LOD_INSTANZ_ATTRIBUTE = { aH0: 1, aH0L: 1, aOccl: 1, aZelle: 1, aRahmen: 2 };
+// die Karte (aKarte = Atlas-Schicht, Halbbreite, Höhe — template-lokal — und Billboard-Verdeckung).
+AnazhRealm.LOD_INSTANZ_ATTRIBUTE = { aH0: 1, aH0L: 1, aKarte: 4 };
 {
     const _streuEco =
         (typeof globalThis !== "undefined" && globalThis.__phytoCore && globalThis.__phytoCore.SCATTER_STRATUM) || {};

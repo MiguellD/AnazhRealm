@@ -187,6 +187,12 @@ const FORBIDDEN = [
     { token: "rttBaked", fiel: "W6 — die Zelle ist gebacken" },
     { token: "rttFailed", fiel: "W6 — die Zelle ist gescheitert" },
     { token: "silhouetteWartend", fiel: "W6 — der Zensus zählt wartende Zellen" },
+    // W6 Echt-GPU: zehn Vertex-Puffer (WebGPU-Grenze 8) machten das @global-Bundle ungültig — die Karte trägt drei
+    // Vertex-Attribute (position · normal · uv) und EIN Instanz-vec4 aKarte (Schicht, Halbbreite, Höhe, verdeckt).
+    { token: "aOccl", fiel: "W6 — die Verdeckung ist aKarte.w" },
+    { token: "aZelle", fiel: "W6 — die Schicht ist aKarte.x" },
+    { token: "aRahmen", fiel: "W6 — der Rahmen ist aKarte.yz" },
+    { token: "aImpX", fiel: "W6 — die Ecke ist 2·uv.x − 1" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
