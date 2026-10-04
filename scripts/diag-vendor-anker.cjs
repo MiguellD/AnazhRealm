@@ -150,6 +150,8 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "c.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,d);const g=this._renderLists.get(l,t)", organ: "_kompiliere (compileAsync ruft den Vorher-Haken synchron — die Wache _imKompilat)" },
+    // compileAsync wartet vor dem Lesen des Ziels auf init() — ein Kompilat davor läse die Leinwand (23,7 MB Rahmenpuffer)
+    { file: "vendor/three.webgpu.min.js", sub: "!1===this._initialized&&await this.init();const s=this._nodes.nodeFrame,i=s.renderId,n=this._currentRenderContext", organ: "_kompiliere (erst init, dann das Ziel)" },
     // instanceMatrix-Versions-Wächter (Kern-Setter)
     { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
     // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem

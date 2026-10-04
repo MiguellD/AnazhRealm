@@ -60308,8 +60308,13 @@ class AnazhRealm {
     // synchron vor seinem ersten await; danach gilt wieder das alte. Ohne Post-Kette (gescheitert) bleibt das
     // Leinwand-Ziel. compileAsync ruft synchron den Vorher-Haken der Szene (nie den Nachher-Haken): `_imKompilat` hält
     // ihn still — ein Kompilat stellt keine Kaskade und wählt keine Werfer (`_passSicht`).
+    // Vor dem Ende von init() wartet compileAsync ZUERST auf init() und liest das Ziel erst danach — dann trug der
+    // Renderer längst wieder das alte (die Leinwand): das Kompilat legte das Rahmenpuffer-Ziel der Leinwand an (rgba16f +
+    // Tiefe, bei 1080p 23,7 MB, nie beschrieben, für die ganze Sitzung resident; die Band-Linse fand es im Zweit-Boot,
+    // wo die Platte die Welt vor dem Ende von init() füllt: VRAM 217,6 statt 194,4 MB). Erst init, dann das Ziel.
     _kompiliere(obj, cam, szene) {
         const r = this.state.renderer;
+        if (r._initialized === false) return r.init().then(() => this._kompiliere(obj, cam, szene));
         const pp = this._ensurePostProcessing();
         const sp = pp && !this.state.postProcessingFailed ? this.state.scenePass : null;
         const ziel = sp && sp.renderTarget ? sp.renderTarget : null;
