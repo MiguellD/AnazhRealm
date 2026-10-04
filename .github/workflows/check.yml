@@ -165,6 +165,12 @@ jobs:
               # ausgehängtes — trägt das alte, die Uniform-Werte reisen mit; der Selbsttest feuert.
               run: npm run gate:fenster-wechsel
 
+            - name: Seiten-Wand (der Welt-March testet enge Seiten nah zuerst und bricht hinter dem Treffer ab)
+              # Fährt die ECHTEN Organ-Methoden (GPU-frei) auf Einträgen in Erzeugungs-Reihenfolge: jeder Eintrag
+              # reist mit seinem Handle, die Seiten werden eng (Hilbert), große Hüllen wohnen getrennt, die Folge
+              # ist aufsteigend und eine untere Schranke, Tick und Shader konsumieren sie; die Selbsttests feuern.
+              run: npm run gate:seiten-ordnung
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-

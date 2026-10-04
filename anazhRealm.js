@@ -35190,7 +35190,7 @@ class AnazhRealm {
         // Elevation-Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. textureDimensions braucht
         // f32/i32-Casts (WGSL-Spec).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -35234,8 +35234,14 @@ class AnazhRealm {
                 "    let inv = 1.0 / dir;\n" +
                 "    // SEITEN-VORTEST (2 Loads je Seite à 32 Einträge): die Per-Pixel-\n" +
                 "    // Kosten binden an GETROFFENE Seiten, nie an die Welt-Größe.\n" +
+                "    // DIE SEITEN-FOLGE (_weltSeitenFolge): nur belegte Seiten, sortiert nach dem Box-Abstand zur\n" +
+                "    // Kamera (.x = Seite, .y = Abstand) — eine untere Schranke jedes Strahl-Eintritts: liegt sie\n" +
+                "    // hinter dem besten Treffer (oder der Szenen-Tiefe), trifft KEINE weitere Seite mehr.\n" +
                 "    let nP = i32(seitenN + 0.5);\n" +
-                "    for (var p: i32 = 0; p < nP; p = p + 1) {\n" +
+                "    for (var pi: i32 = 0; pi < nP; pi = pi + 1) {\n" +
+                "        let fo = textureLoad(folge, vec2<i32>(pi, 0), 0);\n" +
+                "        if (fo.y >= bestT) { break; }\n" +
+                "        let p = i32(fo.x + 0.5);\n" +
                 "        let s0 = textureLoad(seiten, vec2<i32>(p * 2, 0), 0);\n" +
                 "        if (s0.w < 1.0) { continue; }\n" +
                 "        let s1 = textureLoad(seiten, vec2<i32>(p * 2 + 1, 0), 0);\n" +
@@ -35638,6 +35644,7 @@ class AnazhRealm {
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
+            folge: TSL.texture(wm.folge),
             kapseln: TSL.texture(wm.kapseln),
             atlas: TSL.texture3D(wm.atlas),
         });
@@ -35834,6 +35841,13 @@ class AnazhRealm {
         seiten.minFilter = THREE.NearestFilter;
         seiten.magFilter = THREE.NearestFilter;
         seiten.needsUpdate = true;
+        // DIE SEITEN-FOLGE (1 Texel je belegter Seite: [Seite|Box-Abstand zur Kamera]), je Takt nach dem Abstand
+        // sortiert — der March testet nah zuerst und bricht ab, sobald der Abstand hinter dem Treffer liegt.
+        const folgeDaten = new Float32Array(seitenZahl * 4);
+        const folge = new THREE.DataTexture(folgeDaten, seitenZahl, 1, THREE.RGBAFormat, THREE.FloatType);
+        folge.minFilter = THREE.NearestFilter;
+        folge.magFilter = THREE.NearestFilter;
+        folge.needsUpdate = true;
         // Kapsel-Liste (analytische Primitive): 2 Texel je Kapsel [A.xyz|radius][B.xyz|farbePacked], im
         // Glied-Raum sphere-getract, digitalisiert nur am Schirm. Ein Eintrag markiert sich mit
         // d = −anzahl (texel0.w), texel1.w = Kapsel-Texel-Offset. ~1 KB je Gattung statt MB-Bricks.
@@ -35855,6 +35869,11 @@ class AnazhRealm {
             seiten,
             seitenDaten,
             seitenDirty: new Set(), // Seiten mit veralteter Hüll-AABB (der Pass-Tick pflegt)
+            folge,
+            folgeDaten,
+            handles: new Array(W.felder).fill(null), // Slot → Handle (die Seiten-Ordnung zieht handle.feld mit)
+            unordnung: 0, // Einträge + Freigaben seit der letzten Seiten-Ordnung
+            geordnetT: 0, // performance.now() der letzten Seiten-Ordnung
             kapseln,
             kapselDaten,
             kapselCursor: 0, // Bump-Allokator (Mehr-Kapsel-Sätze brauchen ZUSAMMENHÄNGENDE Slots)
@@ -35977,6 +35996,8 @@ class AnazhRealm {
         L[o + 26] = lg.z;
         L[o + 27] = 0; // lokale Box Größe
         const handle = { feld, brick };
+        wm.handles[feld] = handle;
+        wm.unordnung++;
         if (matrixWorld) {
             this._weltFeldMatrix(handle, matrixWorld); // inv + Welt-AABB aus der Matrix
         } else {
@@ -36051,6 +36072,101 @@ class AnazhRealm {
         }
         wm.seitenDirty.clear();
         wm.seiten.needsUpdate = true;
+    }
+
+    // DIE SEITEN-ORDNUNG (04.10., echte GPU an der Mess-Wiese): die Slots fielen in Erzeugungs-Reihenfolge
+    // (`freiFelder.pop()`), die Seiten-Hüllen spannten 200–900 m — fast jeder Strahl traf ~22 Seiten und
+    // testete Hunderte Einträge, der Welt-March kostete 13–17 ms je Frame. Hier wandern die Einträge in
+    // Hilbert-Reihenfolge ihrer Mittelpunkte (Zelle `ordnungZelleM`), große Hüllen (> `ordnungGrossM`) in eigene
+    // Seiten am Ende — die Seiten werden ENG. Die Handles ziehen mit (jeder Leser liest `handle.feld` frisch).
+    _weltSeitenOrdnen(wm) {
+        const W = AnazhRealm.WELT_MARCH;
+        const L = wm.listeDaten;
+        const Z = W.ordnungZelleM;
+        const zelle = (v) => Math.max(0, Math.min(65535, Math.floor(v / Z) + 32768));
+        // Hilbert-Index (16 Bit je Achse): die Kurve springt nie — Morton-Läufe überquerten Quadranten-Grenzen
+        // und machten einzelne Seiten so breit wie die Welt (Linse: 255 m statt der idealen 122 m).
+        const hilbert = (x, y) => {
+            let d = 0;
+            for (let s = 32768; s > 0; s >>= 1) {
+                const rx = x & s ? 1 : 0;
+                const ry = y & s ? 1 : 0;
+                d += s * s * ((3 * rx) ^ ry);
+                if (ry === 0) {
+                    if (rx === 1) {
+                        x = 65535 - x;
+                        y = 65535 - y;
+                    }
+                    const t = x;
+                    x = y;
+                    y = t;
+                }
+            }
+            return d;
+        };
+        const alteGrenze = wm.obergrenze;
+        const aktiv = [];
+        for (let f = 0; f < alteGrenze; f++) {
+            const h = wm.handles[f];
+            if (!h) continue;
+            const o = f * 32;
+            const gross = Math.max(L[o + 4] - L[o], L[o + 6] - L[o + 2]) > W.ordnungGrossM ? 1 : 0;
+            const m = hilbert(zelle((L[o] + L[o + 4]) * 0.5), zelle((L[o + 2] + L[o + 6]) * 0.5));
+            aktiv.push({ h, f, gross, m });
+        }
+        aktiv.sort((a, b) => a.gross - b.gross || a.m - b.m);
+        const alt = L.slice(0, alteGrenze * 32);
+        L.fill(0, 0, alteGrenze * 32);
+        const handles = new Array(W.felder).fill(null);
+        let slot = 0;
+        let grossAb = -1;
+        for (const e of aktiv) {
+            if (e.gross && grossAb < 0) {
+                slot = Math.ceil(slot / W.seite) * W.seite; // die Großen beginnen eine eigene Seite
+                grossAb = slot;
+            }
+            L.set(alt.subarray(e.f * 32, e.f * 32 + 32), slot * 32);
+            e.h.feld = slot;
+            handles[slot] = e.h;
+            slot++;
+        }
+        wm.handles = handles;
+        wm.obergrenze = slot;
+        wm.freiFelder = [];
+        for (let f = W.felder - 1; f >= 0; f--) if (!handles[f]) wm.freiFelder.push(f); // pop() = kleinster Slot
+        const seitenBis = Math.ceil(Math.max(alteGrenze, slot) / W.seite);
+        for (let p = 0; p < seitenBis; p++) wm.seitenDirty.add(p);
+        wm.liste.needsUpdate = true;
+        wm.unordnung = 0;
+        wm.geordnetT = performance.now();
+    }
+
+    // DIE SEITEN-FOLGE je Takt: die belegten Seiten nach dem Abstand Kamera → Seiten-Hülle (0 innen), nah
+    // zuerst. Der Abstand ist eine untere Schranke jedes Strahl-Eintritts in die Seite — der Shader bricht ab,
+    // sobald er hinter dem besten Treffer liegt. Liefert die Zahl der belegten Seiten (die Loop-Grenze).
+    _weltSeitenFolge(wm, cam) {
+        const S = wm.seitenDaten;
+        const O = wm.folgeDaten;
+        const nS = Math.ceil(wm.obergrenze / AnazhRealm.WELT_MARCH.seite);
+        const f = wm._folge || (wm._folge = []);
+        f.length = 0;
+        for (let p = 0; p < nS; p++) {
+            const so = p * 8;
+            if (!(S[so + 3] > 0)) continue;
+            const dx = Math.max(S[so] - cam.x, 0, cam.x - S[so + 4]);
+            const dy = Math.max(S[so + 1] - cam.y, 0, cam.y - S[so + 5]);
+            const dz = Math.max(S[so + 2] - cam.z, 0, cam.z - S[so + 6]);
+            // Abstand (abgerundet auf 1/16 m — bleibt untere Schranke) und Seite in EINER ganzen, sortierbaren Zahl
+            f.push(Math.floor(Math.hypot(dx, dy, dz) * 16) * 4096 + p);
+        }
+        f.sort((a, b) => a - b);
+        for (let i = 0; i < f.length; i++) {
+            const p = f[i] % 4096;
+            O[i * 4] = p;
+            O[i * 4 + 1] = (f[i] - p) / 65536;
+        }
+        wm.folge.needsUpdate = true;
+        return f.length;
     }
 
     // ═══ DIE KAPSEL-BAHN ═══
@@ -36552,6 +36668,8 @@ class AnazhRealm {
         wm.liste.needsUpdate = true;
         this._weltSeiteDirty(wm, handle.feld);
         wm.freiFelder.push(handle.feld);
+        wm.handles[handle.feld] = null;
+        wm.unordnung++;
         wm.belegt--;
         const brick = handle.brick;
         if (brick) {
@@ -36792,8 +36910,15 @@ class AnazhRealm {
             const wm = st.weltMarch;
             // SEITEN-PFLEGE: schmutzige Hüll-AABBs in EINEM Gang, dann die
             // Loop-Grenze in SEITEN (der Shader testet Seiten, nie rohe Felder).
-            if (wm) this._weltSeitenPflegen(wm);
-            fp.U.seitenN.value = wm ? Math.ceil(wm.obergrenze / AnazhRealm.WELT_MARCH.seite) : 0;
+            // SEITEN-ORDNUNG: nach `ordnenAb` Zu-/Abgängen (höchstens alle `ordnenMs`) wandern die Einträge
+            // räumlich zusammen; dann die Hüllen, dann die Folge nah→fern (die Loop-Grenze = belegte Seiten).
+            if (wm) {
+                const WM = AnazhRealm.WELT_MARCH;
+                if (wm.unordnung >= WM.ordnenAb && performance.now() - wm.geordnetT >= WM.ordnenMs)
+                    this._weltSeitenOrdnen(wm);
+                this._weltSeitenPflegen(wm);
+            }
+            fp.U.seitenN.value = wm ? this._weltSeitenFolge(wm, cam.position) : 0;
             this._feldLichtSync(fp.U);
         }
     }
@@ -86982,7 +87107,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.521.0";
+AnazhRealm.VERSION = "18.522.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -90845,9 +90970,14 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     einheit: 32, // Voxel je Einheits-Kante (Kreatur/Baum-Klasse; 64er = Block aus 8)
     // SEITEN-EBENE: die Feld-Liste hat SEITEN à 32 Einträge mit CPU-gepflegter Hüll-AABB — der March
     // testet erst die Seite (2 Loads), dann ihre Mitglieder: Per-Pixel-Kosten binden an getroffene
-    // Seiten statt an die Welt-Größe. Zeitliche Allokations-Nähe = räumliche Nähe → Seiten clustern.
+    // Seiten statt an die Welt-Größe. Zeitliche Allokations-Nähe ist KEINE räumliche Nähe (gemessen 04.10.:
+    // Seiten-Hüllen 200–900 m) — die Seiten-Ordnung (_weltSeitenOrdnen) sortiert die Einträge räumlich.
     felder: 4096, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld; Textur 4096×8)
-    seite: 32, // Einträge je Seite (64 Seiten × 2 AABB-Texel = 128×1-Textur)
+    seite: 32, // Einträge je Seite (128 Seiten × 2 AABB-Texel = 256×1-Textur)
+    ordnungZelleM: 16, // Hilbert-Zelle der Seiten-Ordnung (m)
+    ordnungGrossM: 96, // Hüllen breiter als das wohnen in eigenen Seiten am Ende (sie blähten jede Seite)
+    ordnenAb: 48, // Zu-/Abgänge, nach denen die Seiten neu geordnet werden
+    ordnenMs: 1000, // höchstens so oft (ms) — die Ordnung kopiert die Liste (≤ 512 KB) einmal
     spalten: 512, // Felder je Listen-Textur-Zeile (Breite = 512×8 = 4096 Texel, WebGPU-sicher)
     kapseln: 4096, // ANALOG-Primitive (2 Texel je Kapsel/Box — das Gesetz statt des Rasters; Textur 8192×1)
     // Verteilungs-Gesetz: Klein-Streu wohnt als GESETZ-BLOCK je Kachel — EIN Feld-Eintrag trägt bis zu
