@@ -268,6 +268,39 @@ function check(name, ok, detail) {
                     await new Promise((r2) => setTimeout(r2, 60));
                 }
             }
+            // DIE VORAUSSETZUNG WIRD GEBAUT, NICHT ERHOFFT (Integration 04.10.): nach dem L-Sprung stand an der neuen
+            // Spieler-Stelle oft keine NAHE zwei-stufige Boden-Zelle (Zensus: 81 Strauch-Zellen, alle Fern-Stufe @s:) —
+            // die Probe war Glück der Welt-Lage. Dann tritt der Spieler 8 m an die nächste zwei-stufige Zelle der
+            // BODEN-Schichten (nicht die globale Baum-Schicht) und der Takt holt sie auf ihre Nah-Stufe (privat, @reg).
+            if (!dz2) {
+                const boden = (c) => {
+                    const l = r._scatterLayerByName && r._scatterLayerByName.get(c.layer);
+                    return !!l && l.kind !== "tree";
+                };
+                let kand = null,
+                    kd = Infinity;
+                for (const reg of map.values())
+                    for (const c of reg.cells || []) {
+                        if (!c.slots || !zweiStufig(c) || !boden(c)) continue;
+                        const d = Math.hypot(c.x - pm.x, c.z - pm.z);
+                        if (d < kd) {
+                            kd = d;
+                            kand = c;
+                        }
+                    }
+                dblk.kandidatDistanz = kand ? +kd.toFixed(1) : null;
+                if (kand) {
+                    pm.x = kand.x - 8;
+                    pm.z = kand.z;
+                    const dlN = performance.now() + 45000;
+                    while (!(kand.lod < 2 && b2Privat(kand)) && performance.now() < dlN) {
+                        r._tickScatterStreaming(pm);
+                        for (let i = 0; i < 20; i++) r._tickScatterLod(pm, 8, 800);
+                        await new Promise((r2) => setTimeout(r2, 100));
+                    }
+                    if (kand.lod < 2 && b2Privat(kand)) dz2 = kand;
+                }
+            }
             dblk.zelleGefunden = !!dz2;
             if (dz2) {
                 dblk.lodVor = dz2.lod;
@@ -437,7 +470,7 @@ function check(name, ok, detail) {
         check(
             "D: private Boden-Zelle GEFUNDEN (B2-Population, zwei-stufig)",
             out.d.zelleGefunden === true,
-            out.d.err || `bp=${out.d.bpVor || "—"} lodVor=${out.d.lodVor}`
+            out.d.err || `bp=${out.d.bpVor || "—"} lodVor=${out.d.lodVor} Kandidat ${out.d.kandidatDistanz == null ? "direkt" : out.d.kandidatDistanz + " m"}`
         );
         if (out.d.zelleGefunden) {
             check(
