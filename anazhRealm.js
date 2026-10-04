@@ -7249,6 +7249,7 @@ class AnazhRealm {
         };
         p2p.peers.set(peerId, entry);
         entry.mesh = this._p2pBuildPlaceholderMesh(peerId);
+        if (entry.mesh) entry.mesh.name = "p2p-spieler";
         if (entry.mesh && this.state.scene) this.state.scene.add(entry.mesh);
         return entry;
     }
@@ -7315,6 +7316,7 @@ class AnazhRealm {
             this.state.scene.remove(entry.mesh);
             this._p2pDisposeMesh(entry.mesh);
         }
+        group.name = "p2p-spieler";
         this.state.scene.add(group);
         entry.mesh = group;
         entry.meshKind = kind;
@@ -7355,11 +7357,13 @@ class AnazhRealm {
             ctx.fillText("✓ " + fingerprint, 128, 67);
         }
         const tex = new THREE.CanvasTexture(canvas);
+        tex.name = "p2p-namensschild";
         // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded (fillStyle="#xxx").
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.needsUpdate = true;
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
         const sprite = new THREE.Sprite(mat);
+        sprite.name = "p2p-namensschild";
         sprite.scale.set(2.6, hasFp ? 0.98 : 0.65, 1);
         sprite.renderOrder = 5;
         return sprite;
@@ -15191,6 +15195,7 @@ class AnazhRealm {
         };
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+        skybox.name = "himmel";
         // V10.0-j — Skybox wirft keine Schatten (BackSide-Hülle um die Welt).
         skybox.castShadow = false;
         skybox.receiveShadow = false;
@@ -15237,6 +15242,7 @@ class AnazhRealm {
                 color: new THREE.Color(Math.random(), Math.random(), Math.random()),
             });
             const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+            planet.name = "himmel-planet";
             planet.frustumCulled = false; // Himmelskörper — immer rendern
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.random() * Math.PI;
@@ -15370,6 +15376,7 @@ class AnazhRealm {
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
+        starField.name = "himmel-sterne";
         // Per-Instance-Matrix: Translation auf die Sphäre + Rotation (Normal zum Zentrum) + Scale
         // (worldSize). Einmal beim Build; die siderale Rotation läuft über starField.rotation.
         const tmpPos = new THREE.Vector3();
@@ -15538,6 +15545,7 @@ class AnazhRealm {
         mesh.castShadow = false;
         mesh.receiveShadow = true;
         mesh.renderOrder = 2;
+        mesh.name = "kronendach";
         mesh.userData.kind = "canopyChunk";
         mesh.userData.regX = regX;
         mesh.userData.regZ = regZ;
@@ -15928,6 +15936,7 @@ class AnazhRealm {
             if (!st._skyEnvTex) {
                 st._skyEnvData = new Uint8Array(W * H * 4);
                 const tex = new THREE.DataTexture(st._skyEnvData, W, H);
+                tex.name = "himmel-umgebung";
                 tex.mapping = THREE.EquirectangularReflectionMapping;
                 tex.colorSpace = THREE.SRGBColorSpace;
                 tex.generateMipmaps = true; // Mip-Kette → raue Metalle blenden die Reflexion weich
@@ -20558,6 +20567,7 @@ class AnazhRealm {
         cx.fillStyle = g;
         cx.fillRect(0, 0, 64, 64);
         this._creatureAuraTextureCache = new THREE.CanvasTexture(canvas);
+        this._creatureAuraTextureCache.name = "kreatur-aura";
         // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded.
         this._creatureAuraTextureCache.colorSpace = THREE.SRGBColorSpace;
         return this._creatureAuraTextureCache;
@@ -20597,6 +20607,7 @@ class AnazhRealm {
         });
         mat.color.setHSL(hue / 360, 0.6, 0.65);
         const sprite = new THREE.Sprite(mat);
+        sprite.name = "kreatur-aura";
         sprite.scale.set(1.4, 1.4, 1);
         const auraY = this._creatureAuraOffsetY(creature);
         sprite.position.set(creature.position.x, creature.position.y + auraY, creature.position.z);
@@ -20649,6 +20660,7 @@ class AnazhRealm {
         });
         spriteMat.color.setHex(colorHex);
         const sprite = new THREE.Sprite(spriteMat);
+        sprite.name = "kreatur-traglast";
         sprite.scale.set(0.7, 0.7, 1);
         const offY = (this._creatureAuraOffsetY ? this._creatureAuraOffsetY(creature) : 0.9) + 0.5;
         sprite.position.set(creature.position.x, creature.position.y + offY, creature.position.z);
@@ -22249,6 +22261,11 @@ class AnazhRealm {
         // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
         // Samples — Performance-Win).
         renderer.shadowMap.type = THREE.PCFShadowMap;
+        // DIE VIEWPORT-TIEFE TRÄGT IHREN NAMEN: r184 legt für jeden Leser der Szenen-Tiefe (Wasser
+        // `viewportLinearDepth`, Feld-Pass `viewportDepthTexture`) EINE geteilte DepthTexture an und klont sie je
+        // Render-Ziel — namenlos; der VRAM-Zensus sah `tex:?` (1080p: 8 MB je Klon). Der Name sitzt am Original,
+        // bevor der erste Klon entsteht.
+        THREE.TSL.viewportDepthTexture().value.name = "viewport-tiefe";
         // Native Shadow-Pipeline (MeshToonNodeMaterial konsumiert die Shadow-Map). Der Takt der Schatten-Renders lebt
         // JE LICHT (`shadow.autoUpdate`/`needsUpdate`, `_loopShadowUpdate`) — `renderer.shadowMap.autoUpdate/
         // needsUpdate` liest r184 nicht.
@@ -26335,6 +26352,7 @@ class AnazhRealm {
         // V10.0-g — Voxel-Test-Mesh nutzt den ToonNodeMaterial-Helper (WebGPU-kompatibel).
         const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         const mesh = new THREE.Mesh(geom, mat);
+        mesh.name = "voxel-testchunk";
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         this.state.scene.add(mesh);
@@ -35047,6 +35065,7 @@ class AnazhRealm {
         const PN = AnazhRealm.FELD_PANO;
         const daten = new Float32Array(P.az * P.rad * 4);
         const tex = new THREE.DataTexture(daten, P.az, P.rad, THREE.RGBAFormat, THREE.FloatType);
+        tex.name = "feld-pass-ring";
         tex.minFilter = THREE.NearestFilter;
         tex.magFilter = THREE.NearestFilter;
         tex.needsUpdate = true;
@@ -35055,6 +35074,7 @@ class AnazhRealm {
         // gelesen vom billigen Fragment — der 96-Schritt-March je Pixel ist tot.
         const panoDaten = new Float32Array(PN.az * PN.elev * 4);
         const panoTex = new THREE.DataTexture(panoDaten, PN.az, PN.elev, THREE.RGBAFormat, THREE.FloatType);
+        panoTex.name = "feld-pass-panorama";
         panoTex.minFilter = THREE.NearestFilter;
         panoTex.magFilter = THREE.NearestFilter;
         panoTex.needsUpdate = true;
@@ -35721,6 +35741,7 @@ class AnazhRealm {
             THREE.RGBAFormat,
             THREE.FloatType
         );
+        liste.name = "welt-march-liste";
         liste.minFilter = THREE.NearestFilter;
         liste.magFilter = THREE.NearestFilter;
         liste.needsUpdate = true;
@@ -35728,6 +35749,7 @@ class AnazhRealm {
         const seitenZahl = W.felder / W.seite;
         const seitenDaten = new Float32Array(seitenZahl * 2 * 4);
         const seiten = new THREE.DataTexture(seitenDaten, seitenZahl * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+        seiten.name = "welt-march-seiten";
         seiten.minFilter = THREE.NearestFilter;
         seiten.magFilter = THREE.NearestFilter;
         seiten.needsUpdate = true;
@@ -35735,6 +35757,7 @@ class AnazhRealm {
         // sortiert — der March testet nah zuerst und bricht ab, sobald der Abstand hinter dem Treffer liegt.
         const folgeDaten = new Float32Array(seitenZahl * 4);
         const folge = new THREE.DataTexture(folgeDaten, seitenZahl, 1, THREE.RGBAFormat, THREE.FloatType);
+        folge.name = "welt-march-folge";
         folge.minFilter = THREE.NearestFilter;
         folge.magFilter = THREE.NearestFilter;
         folge.needsUpdate = true;
@@ -35749,6 +35772,7 @@ class AnazhRealm {
             THREE.RGBAFormat,
             THREE.FloatType
         );
+        kapseln.name = "welt-march-kapseln";
         kapseln.minFilter = THREE.NearestFilter;
         kapseln.magFilter = THREE.NearestFilter;
         kapseln.needsUpdate = true;
@@ -48360,6 +48384,7 @@ class AnazhRealm {
             data[i * 4 + 3] = 255;
         }
         const topTex = new T.DataTexture(data, W, 1, T.RGBAFormat);
+        topTex.name = "portal-membran";
         topTex.minFilter = T.LinearFilter;
         topTex.magFilter = T.LinearFilter;
         topTex.needsUpdate = true;
@@ -49171,6 +49196,7 @@ class AnazhRealm {
                 new THREE_REF.MeshLambertMaterial({ color: color, transparent: true, opacity: a0 })
             );
             pm.position.set(qq.x, qq.y, qq.z);
+            pm.name = "dorf-rauch";
             scene.add(pm);
             dr.teilchen.push({
                 m: pm,
@@ -60770,6 +60796,7 @@ class AnazhRealm {
             core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document) : null;
         if (!canvas) return null;
         const tex = new THREE.CanvasTexture(canvas);
+        tex.name = "laub-cluster-atlas";
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.generateMipmaps = true;
         tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -61583,6 +61610,7 @@ class AnazhRealm {
         }
         const mkTex = (cv, srgb) => {
             const t = new THREE.CanvasTexture(cv);
+            t.name = (srgb ? "karte-albedo:" : "karte-normal:") + key;
             if (srgb) t.colorSpace = THREE.SRGBColorSpace; // nmap bleibt linear (Normalen sind DATEN)
             t.generateMipmaps = true;
             t.minFilter = THREE.LinearMipmapLinearFilter;
@@ -62968,6 +62996,7 @@ class AnazhRealm {
                 })());
             const mat = this._archFundMat || (this._archFundMat = new THREE.MeshLambertMaterial({ color: 0x7a7168 })); // Bruchstein-Grau
             const mesh = AnazhRealm._instanzMesh(geo, mat, 128);
+            mesh.name = "bau-fundament";
             mesh.count = 0;
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
             mesh.receiveShadow = true;
@@ -62977,6 +63006,7 @@ class AnazhRealm {
         if (!P.free.length && P.top >= P.cap) {
             // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
             const bigger = AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2);
+            bigger.name = "bau-fundament";
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
             bigger.count = P.mesh.count;
             bigger.frustumCulled = false;
@@ -63034,6 +63064,7 @@ class AnazhRealm {
         const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
         const mat = this._stlWegeMat || (this._stlWegeMat = new THREE.MeshLambertMaterial({ color: 0xffffff })); // Farbe je Instanz (setColorAt)
         const mesh = AnazhRealm._instanzMesh(geo, mat, 256);
+        mesh.name = "siedlung-wege";
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
         mesh.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color(1, 1, 1)));
@@ -63050,6 +63081,7 @@ class AnazhRealm {
         if (P.top >= P.cap) {
             // Verdopplungs-Wachstum (Matrizen + Farben in einen frischen Pool).
             const bigger = AnazhRealm._instanzMesh(this._stlWegeGeo, this._stlWegeMat, P.cap * 2);
+            bigger.name = "siedlung-wege";
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
             // Buffer anlegen SOLANGE count == neuer cap (r128-setColorAt-Semantik).
             bigger.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color()));
@@ -63454,6 +63486,7 @@ class AnazhRealm {
                     new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true })
                 );
                 ph.position.set(entry.position.x || 0, (entry.position.y || 0) + 0.3, entry.position.z || 0);
+                ph.name = "bau-platzhalter";
                 ph.userData.__kaltPlatzhalter = entry.type;
                 this.state.scene.add(ph);
                 return ph;
@@ -63462,6 +63495,7 @@ class AnazhRealm {
         }
         const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
         const group = builder(entry.seed);
+        group.name = "bau:" + entry.type;
         group.position.set(entry.position.x || 0, baseY, entry.position.z || 0);
         if (Number.isFinite(entry.scale) && entry.scale !== 1) {
             group.scale.setScalar(entry.scale);
@@ -63544,6 +63578,7 @@ class AnazhRealm {
         island.position.set(x, y, z);
         island.castShadow = true;
         island.receiveShadow = true;
+        island.name = "dsl-insel";
         island.userData.sourceOp = "spawn_island";
         this.state.scene.add(island);
         if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
@@ -63576,6 +63611,7 @@ class AnazhRealm {
         const ufo = new THREE.Mesh(geo, mat);
         ufo.position.set(x, y, z);
         ufo.visible = true;
+        ufo.name = "dsl-ufo";
         ufo.userData = { baseY: y, speed: 0.5 + Math.random() * 0.5, sourceOp: "spawn_ufo" };
         this.state.scene.add(ufo);
         if (!Array.isArray(this.state.ufos)) this.state.ufos = [];
@@ -66925,6 +66961,7 @@ class AnazhRealm {
                 }
             x.putImageData(img, 0, 0);
             const tex = new THREE.CanvasTexture(c);
+            tex.name = "rinde-normal";
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.repeat.set(2, 7);
             tex.needsUpdate = true;
@@ -68271,6 +68308,7 @@ class AnazhRealm {
                         : null;
                 if (canvas && TSL.texture) {
                     const tex = new T.CanvasTexture(canvas);
+                    tex.name = "laub-blattatlas";
                     tex.colorSpace = T.SRGBColorSpace;
                     const uvN = TSL.attribute("uv", "vec2");
                     const texN = TSL.texture(tex, uvN);
@@ -71767,6 +71805,7 @@ class AnazhRealm {
         // Auswahl-Hänger); Transparenz/castShadow regelt `_buildPlacementGhost` (gecachter Material-Klon).
         // Die Studio-Gestalt führt, wenn das Studio sie trägt (dieselbe Quelle wie der finale Eintrag).
         const phantom = this._buildPlacementGhost(this.state.blueprints[blueprintName]);
+        phantom.name = "bau-phantom";
         if (this.state.scene) this.state.scene.add(phantom);
         bm.phantomMesh = phantom;
         this._updateBuildModeHud();
@@ -72069,6 +72108,7 @@ class AnazhRealm {
                 if (studio) {
                     if (this.state.scene) this.state.scene.remove(bm.phantomMesh);
                     this._disposeSoulGroup(bm.phantomMesh);
+                    studio.name = "bau-phantom";
                     bm.phantomMesh = studio;
                     if (this.state.scene) this.state.scene.add(studio);
                 }
@@ -73099,6 +73139,7 @@ class AnazhRealm {
                 this._pfeilMat = new THREE.MeshBasicMaterial({ color: 0x8a6a3a });
             }
             pf.mesh = new THREE.Mesh(this._pfeilGeo, this._pfeilMat);
+            pf.mesh.name = "pfeil";
             pf.mesh.position.set(pf.x, pf.y, pf.z);
             this.state.scene.add(pf.mesh);
         } catch (_e) {
@@ -83683,6 +83724,7 @@ class AnazhRealm {
             opacity: 0.95,
         });
         const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.name = "himmel-sonne";
         sunMesh.frustumCulled = false; // immer rendern (Himmelskörper)
         scene.add(sunMesh);
         this.state.sunMesh = sunMesh;
@@ -83694,6 +83736,7 @@ class AnazhRealm {
             opacity: 0.9,
         });
         const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonMesh.name = "himmel-mond";
         moonMesh.frustumCulled = false;
         scene.add(moonMesh);
         this.state.moonMesh = moonMesh;
@@ -86283,6 +86326,9 @@ class AnazhRealm {
         const { convertToTexture, screenUV, screenSize, vec2, vec3, vec4, float, dot, min, max, abs, clamp, select } =
             TSL;
         const tex = convertToTexture(ldr);
+        // Das Bildziel trägt den Namen seines Erzeugers; den Tiefen-Puffer, den r184 dazu anlegt, nennt die Band-Linse
+        // über sein Ziel (`fxaa-eingang:tiefe`, scripts/lib/draw-zaehler.cjs `texturErzeuger`).
+        tex.renderTarget.texture.name = "fxaa-eingang";
         const px = vec2(1.0, 1.0).div(screenSize);
         const L = vec3(0.299, 0.587, 0.114);
         const nb = (dx, dy) => dot(tex.sample(screenUV.add(px.mul(vec2(dx, dy)))).rgb, L);
