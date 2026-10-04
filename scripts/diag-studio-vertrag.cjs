@@ -100,6 +100,7 @@ function loadCore(entry) {
             " presets: N.PRESETS || null," +
             " build: N.buildInstance || null," +
             " meshfrei: N.MESHFREI === 1," + // v1.1 §8 — components-only-Kern (B2 N/A)
+            " zweit: true," + // W8 — ein Zweit-Kern zählt die Gestalten seiner Rezepte selbst (B2c)
             " cfg: N.PORTAL_RENDER_CONFIG || null," +
             " paramsByKind: N.PARAMS_BY_KIND || null," +
             " arena: N.ARENA || null," + // V18.486 — Gefühls-Blöcke sind Vertrag
@@ -175,15 +176,24 @@ function validateManifest(m) {
         const B = lodC.budget;
         for (const k in B) {
             // B2c (04.10.) — DIE GESTALTEN je Art (Samen-Zahl je Preset, '*' = jede Art ohne Zeile): ganze Zahlen >= 1,
-            // die '*'-Zeile ist Pflicht (die Welt-Varianten-Wahl liest sie für jede Fremd-Art).
+            // die '*'-Zeile ist Pflicht im HAUPT-Kern (die Welt-Varianten-Wahl liest sie für jede Art ohne Zeile).
+            // W8 — ein ZWEIT-Kern zählt die Gestalten SEINER Rezepte selbst (das Wirts-16 gehört dem Gesetzbuch):
+            // VOLLSTÄNDIG je eigenem Rezept, kein fremdes Rezept, keine '*'-Zeile (die gehört dem Haupt-Kern).
             if (k === "gestalten") {
                 const g = B.gestalten;
                 if (!g || typeof g !== "object") v.push("B2c: lod.budget.gestalten ist kein Objekt");
                 else {
-                    if (!("*" in g)) v.push("B2c: lod.budget.gestalten trägt keine '*'-Zeile");
+                    if (!m.zweit && !("*" in g)) v.push("B2c: lod.budget.gestalten trägt keine '*'-Zeile");
                     for (const sp in g)
                         if (!(Number.isInteger(g[sp]) && g[sp] >= 1))
                             v.push(`B2c: lod.budget.gestalten.${sp} muss eine ganze Zahl >= 1 sein`);
+                    if (m.zweit) {
+                        const P = m.presets || {};
+                        for (const sp in g)
+                            if (!(sp in P)) v.push(`B2c: lod.budget.gestalten.${sp} — kein Rezept dieses Kerns`);
+                        for (const id in P)
+                            if (!(id in g)) v.push(`B2c: lod.budget.gestalten.${id} fehlt (je Rezept eine Zahl)`);
+                    }
                 }
                 continue;
             }
@@ -222,6 +232,10 @@ function validateManifest(m) {
                         v.push(`B2c: lod.budget.${k}[${st}].${f} muss endlich > 0 sein`);
                 if ("klinge" in z && !(Number.isInteger(z.klinge) && z.klinge >= 2))
                     v.push(`B2c: lod.budget.${k}[${st}].klinge muss eine ganze Zahl ≥ 2 sein`);
+                // W8 — `band` = das Profi-Band-Ziel der Stufe, solange die gebaute Huelle (`tris`) darueber liegt:
+                // ganze Zahl > 0 und < tris (erreicht die Stufe das Band, faellt das Feld und tris IST das Band).
+                if ("band" in z && !(Number.isInteger(z.band) && z.band > 0 && Number.isInteger(z.tris) && z.band < z.tris))
+                    v.push(`B2c: lod.budget.${k}[${st}].band muss eine ganze Zahl > 0 und < tris sein`);
                 if ("deckung" in z) {
                     const d = z.deckung;
                     if (!Array.isArray(d) || d.length !== 2 || !(d[0] > 0 && d[0] <= 1 && d[1] >= 1 && isFinite(d[1])))
@@ -459,7 +473,8 @@ function validateManifest(m) {
 
     // §3/§4 — jeder registrierte Kern erfüllt den Vertrag.
     const budgets = {}; // B2c: lod.budget je Kern (Datei → Budget), für die Karten-Linse unten
-    const ohneBudget = []; // Kerne mit kindStages, aber ohne Budget — die Studio-Übertragung (offen, benannt)
+    const ohneBudget = []; // W8: ein Kern mit Gestalt (kindStages) ohne Budget ist ein Vertrags-Bruch
+    const ohneGestalten = []; // W8: ein Zweit-Kern mit Gestalt ohne lod.budget.gestalten ebenso
     for (const entry of CORES) {
         console.log(`\n--- Kern: ${entry.file} ---`);
         let m = null;
@@ -473,6 +488,8 @@ function validateManifest(m) {
         const lodM = m.cfg && m.cfg.lod;
         if (lodM && lodM.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
         else if (lodM && lodM.kindStages) ohneBudget.push(entry.file);
+        if (entry.ns && lodM && lodM.kindStages && !(lodM.budget && lodM.budget.gestalten))
+            ohneGestalten.push(entry.file);
         check(`${entry.file}: 0 Vertrags-Verletzungen`, viol.length === 0, viol[0] || "");
         for (let i = 1; i < viol.length; i++) console.log(`      ↳ ${viol[i]}`);
         const n = m.presets ? Object.keys(m.presets).length : 0;
@@ -508,9 +525,24 @@ function validateManifest(m) {
         !!reg && /KP\[rec\.kind\]/.test(reg[0]) && /if \(!pol\) continue/.test(reg[0])
     );
 
+    // W8 — JEDER Kern mit Gestalt trägt sein Budget (B2c), jeder Zweit-Kern seine Gestalten je Rezept: die
+    // Studio-Übertragung ist kein offener Rest mehr. Klang trägt keine Gestalt (keine kindStages) und kein Budget.
+    check(
+        "B2c: jeder Kern mit Gestalt (kindStages) trägt lod.budget",
+        ohneBudget.length === 0 && Object.keys(budgets).length >= 7,
+        ohneBudget.length ? "Budget fehlt: " + ohneBudget.join(", ") : Object.keys(budgets).join(", ")
+    );
+    check(
+        "B2c: jeder Zweit-Kern mit Gestalt zählt seine Gestalten (lod.budget.gestalten — Gesetzbuch statt Wirts-16)",
+        ohneGestalten.length === 0,
+        ohneGestalten.join(", ")
+    );
+
     // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
     // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget
-    // trägt. Weichen sie ab, misst die Konsum-Wand eine Stufe, die nie ins Bild kommt (oder umgekehrt).
+    // trägt. Weichen sie ab, misst die Konsum-Wand eine Stufe, die nie ins Bild kommt (oder umgekehrt). Eine
+    // EINSTUFIGE Art (nur Stufe 0 — Tor, Fahrzeug) liefert keine Karten-Stufe: ihre Fernkarte backt der Wirt aus
+    // Stufe 0 (Studio-Vertrag B2, „L2-Auto-Impostor ist Sache des Wirts").
     const kartenUrteil = (src, bud) => {
         const kp = src.match(/AnazhRealm\.KIND_POLICY = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
         if (!kp) return ["KIND_POLICY im Stamm nicht gefunden"];
@@ -522,7 +554,7 @@ function validateManifest(m) {
                 const letzte = budget[k] && budget[k][st[st.length - 1]];
                 const karte = !!(letzte && letzte.karte === true);
                 const imp = new RegExp("\\n\\s*" + k + ": Object\\.freeze\\(\\{[^}]*impostor: true").test(kp[1]);
-                if (karte !== imp)
+                if (karte ? !imp : imp && st.length > 1)
                     f.push(
                         `${k}: Studio-Karte ${karte ? "ja" : "nein"} ≠ Host-Impostor ${imp ? "ja" : "nein"} (${datei})`
                     );
@@ -544,9 +576,7 @@ function validateManifest(m) {
         "SELBST-TEST: ein Host ohne Strauch-Impostor feuert die Karten-Linse",
         kSelbst.some((s) => s.startsWith("shrub:"))
     );
-    console.log(
-        `      Budget (B2c) trägt: ${Object.keys(budgets).join(", ") || "—"} · ohne Budget (Studio-Übertragung offen): ${ohneBudget.join(", ") || "—"}`
-    );
+    console.log(`      Budget (B2c) trägt: ${Object.keys(budgets).join(", ") || "—"}`);
 
     // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
     // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
@@ -727,6 +757,7 @@ function validateManifest(m) {
     // B2c — ein zweites Budget: Regler-Form (nadelKarte/klinge) und steigende draws.
     const bvB = validateManifest({
         vertrag: 1,
+        zweit: true,
         presets: { a: { kind: "shrub" } },
         build: function () {},
         cfg: {
@@ -734,13 +765,25 @@ function validateManifest(m) {
                 kindStages: { shrub: [1, 2] },
                 budget: {
                     shrub: {
-                        1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1 },
+                        1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1, band: 10 },
                         2: { tris: 5, draws: 2, schatten: false },
                     },
+                    // W8 — Gestalten eines Zweit-Kerns: eine 0 und ein fremdes Rezept.
+                    gestalten: { a: 0, geist: 2 },
                 },
             },
         },
     });
+    bvB.push(
+        ...validateManifest({
+            vertrag: 1,
+            zweit: true,
+            presets: { a: { kind: "shrub" }, b: { kind: "shrub" } },
+            build: function () {},
+            // W8 — ein Zweit-Kern ohne Zahl für Rezept b und mit der '*'-Zeile des Haupt-Kerns.
+            cfg: { lod: { kindStages: { shrub: [1] }, budget: { shrub: { 1: { tris: 9, draws: 1, schatten: false } }, gestalten: { a: 1, "*": 3 } } } },
+        })
+    );
     const bvVer = validateManifest({ vertrag: null, presets: { a: { kind: "tree" } }, build: function () {} });
     // §8 — ein MESHFREI-Kern mit buildInstance ist widersprüchlich (die Linse feuert).
     const bvMesh = validateManifest({
@@ -781,6 +824,11 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("nadelKarte muss")) &&
             bvB.some((s) => s.includes("klinge muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&
+            bvB.some((s) => s.includes("shrub[1].band muss")) &&
+            bvB.some((s) => s.includes("gestalten.a muss")) &&
+            bvB.some((s) => s.includes("gestalten.geist — kein Rezept")) &&
+            bvB.some((s) => s.includes("gestalten.* — kein Rezept")) &&
+            bvB.some((s) => s.includes("gestalten.b fehlt")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&

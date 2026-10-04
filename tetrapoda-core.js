@@ -26,7 +26,25 @@
     // (bauTier: Stufe 0 = voller Gelenk-Baum · Stufe 1 = gemergtes Fern-Standbild).
     // B2 bleibt N/A (kein buildInstance) — die Zeile ist die VERTRAGS-Wahrheit der
     // Pipe-Bäckerei (BAKERS_BY_KIND), gemessen von gate:konsum-matrix/gate:tier-fern.
-    var PORTAL_RENDER_CONFIG = { lod: { kindStages: { kreatur: [0, 1] } } };
+    // B2c-Daten (W8, rein additiv): DAS BUDGET je Ofen-Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
+    // Hülle über alle Gattungen × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-
+    // Ziel (Haushalt, offen solange tris darüber liegt), draws = Draws je Tier und Pass nach der Wirts-Regel: das
+    // Budget-Gesetz am Ausgang (Brücke UND Sync-Guss des Wirts-Ofens, phyto-core budgetErzwingen) faltet die
+    // starren Stoffe je Bindungs-Klasse (Haut und Fell-Schale bleiben); schatten = die werfende Stufe.
+    // gestalten = Individuen je Gattung (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
+    var GESTALTEN_JE_REZEPT = 16;
+    var PORTAL_RENDER_CONFIG = {
+        lod: {
+            kindStages: { kreatur: [0, 1] },
+            budget: {
+                kreatur: {
+                    0: { tris: 62000, band: 20000, draws: 8, schatten: 0 },
+                    1: { tris: 7000, band: 3000, draws: 1, schatten: 1 },
+                },
+                gestalten: {},
+            },
+        },
+    };
 
     // ── Die vier Gattungen (byte-treu Lab Z.62): fuenf allometrische Dials je Art ──
     // prettier-ignore
@@ -2256,6 +2274,9 @@
             P: P,
         };
     }
+
+    // W8 — die Gestalten je Rezept (B2c): JEDE Gattung trägt GESTALTEN_JE_REZEPT Individuen (eine neue zählt mit).
+    for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__tetrapodaCore = {

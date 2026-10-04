@@ -25,7 +25,25 @@
     // (bakeMenschInstance: Stufe 0 = feiner Gelenk-Baum · Stufe 1 = gemergter
     // Fern-Guss, _menschFernToggle). B2 bleibt N/A (kein buildInstance) — die
     // Zeile ist die VERTRAGS-Wahrheit der Pipe-Bäckerei (BAKERS_BY_KIND).
-    var PORTAL_RENDER_CONFIG = { lod: { kindStages: { koerper: [0, 1] } } };
+    // B2c-Daten (W8, rein additiv): DAS BUDGET je Ofen-Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
+    // Hülle (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel (Haushalt, offen solange tris
+    // darüber liegt), draws = Draws je Körper und Pass nach der Wirts-Regel: das Budget-Gesetz am Ausgang (Brücke
+    // UND Sync-Guss des Wirts-Ofens, phyto-core budgetErzwingen) faltet die starren Stoffe und die Stoff-Hüllen
+    // je Bindungs-Klasse (Haut bleibt Haut); schatten = die werfende Stufe. gestalten = Individuen je Rezept (das
+    // bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
+    var GESTALTEN_JE_REZEPT = 16;
+    var PORTAL_RENDER_CONFIG = {
+        lod: {
+            kindStages: { koerper: [0, 1] },
+            budget: {
+                koerper: {
+                    0: { tris: 166000, band: 40000, draws: 8, schatten: 0 },
+                    1: { tris: 40000, band: 8000, draws: 4, schatten: 1 },
+                },
+                gestalten: {},
+            },
+        },
+    };
 
     // ── Der Lab-Startzustand (byte-treu Lab Z.105) — Morph-Dials + String-Wahlen ──
     // prettier-ignore
@@ -1049,6 +1067,9 @@
     // NINJA_VIS — intentional dual (Feel-Entscheid .179). Do NOT Fake-merge arcade into Host.
     // lab:"arcade-ninja" = NINJA_FEEL. host:"parkour-real" = fx.bewegung.parkour / _parkourGesetz.
     var NINJA_VIS = { lab: "arcade-ninja", host: "parkour-real" };
+
+    // W8 — die Gestalten je Rezept (B2c): JEDES Rezept trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
+    for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {

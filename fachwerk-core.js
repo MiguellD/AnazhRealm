@@ -70,8 +70,28 @@
     var STUDIO_VERTRAG = 1; // G4.3 — EINE Versions-Semantik (v1.1 ist Adressierungs-Norm, kein Block-Bruch)
 
     // ── B2-Daten: die Stufen-Wahrheit der Domäne (kindStages-Vertrag, Herleitung im Kopf) ──
+    // ── B2c-Daten (W8, rein additiv): DAS BUDGET je Stufe — was eine gelieferte Haus-Stufe kosten darf
+    //    (docs/studio-vertrag.md B2c). tris = die gebaute Hülle über alle 32 Stile × 16 Gestalten (gate:asset-
+    //    contract baut jede, die Zeile ist die Ratsche: sie darf nur fallen); band = das Profi-Band-Ziel der
+    //    Stufe (Haushalt, artifacts/profiband/wellen-plan.md W1) — offen, solange tris darüber liegt; draws =
+    //    Draws je Instanz und Pass nach der Wirts-Regel: das Budget-Gesetz am Studio-Ausgang (phyto-core
+    //    budgetErzwingen) faltet die Stoffe darauf (L1/L2-Stoffe unterscheiden sich nur in der Rauheit, die
+    //    Farbe reist als Vertex-Farbe); schatten = die werfende Stufe (L2 wirft nicht). gestalten = wie viele
+    //    Individuen (Samen 1..V) die Welt je Stil trägt — das bisherige Wirts-16 gehört dem Gesetzbuch
+    //    (gefüllt je Rezept unten bei PRESETS, `GESTALTEN_JE_REZEPT`).
+    var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
-        lod: { kindStages: { haus: [0, 1, 2] } },
+        lod: {
+            kindStages: { haus: [0, 1, 2] },
+            budget: {
+                haus: {
+                    0: { tris: 132000, band: 40000, draws: 10, schatten: 0 },
+                    1: { tris: 44000, band: 10000, draws: 4, schatten: 1 },
+                    2: { tris: 7000, band: 2000, draws: 1, schatten: false },
+                },
+                gestalten: {},
+            },
+        },
     };
     var HOST_STUFEN = PORTAL_RENDER_CONFIG.lod.kindStages.haus;
 
@@ -3125,6 +3145,9 @@
     var EXPL_VIS = { lab: "explode-y-30", host: "none" };
 
 
+
+    // W8 — die Gestalten je Rezept (B2c): JEDER Stil trägt GESTALTEN_JE_REZEPT Individuen (ein neuer Stil zählt mit).
+    for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
     root.__fachwerkCore = {

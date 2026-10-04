@@ -31,8 +31,18 @@
     // ── B2-Daten: die Stufen-Wahrheit der Domäne (kindStages-Vertrag) ──
     // Fahrzeuge tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind
     // Sache des Wirts (docs/studio-vertrag.md B2 / W7b-Merge am EINEN Ingest).
+    // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
+    // Hülle über alle Fahrzeuge × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-
+    // Ziel (Haushalt, offen solange tris darüber liegt), draws = Draws je Fahrzeug und Pass nach der Wirts-Regel: das
+    // Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen) faltet die Stoffe darauf (Lack · Glas · Chrom ·
+    // Gummi · …; Glut — die Lichter — faltet nie). gestalten = Individuen je Fahrzeug (das bisherige Wirts-16,
+    // gefüllt je Rezept unten bei PRESETS).
+    const GESTALTEN_JE_REZEPT = 16;
     const PORTAL_RENDER_CONFIG = {
-        lod: { kindStages: { vehicle: [0] } },
+        lod: {
+            kindStages: { vehicle: [0] },
+            budget: { vehicle: { 0: { tris: 32000, band: 20000, draws: 12, schatten: 0 } }, gestalten: {} },
+        },
     };
 
     // ── Materialien (geteilt, nie disposen) ── — lazy (der Validator-vm lädt ohne THREE; erst der erste Bau ruft sie)
@@ -2712,6 +2722,9 @@
         g.updateMatrixWorld(true);
         return g;
     }
+
+    // W8 — die Gestalten je Rezept (B2c): JEDES Fahrzeug trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
+    for (const _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
     root.__vehicleCore = {
