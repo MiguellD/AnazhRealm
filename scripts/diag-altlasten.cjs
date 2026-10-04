@@ -173,6 +173,9 @@ const FORBIDDEN = [
     { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
     { token: '"@p:"', fiel: "Welle B" },
     { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
+    // W5 (Wald-L0): die Welt liest die Studio-Distanzen d0/d1 — der Host-Umweg, der sie auf 12/26 m umrechnete
+    // (die Kosten der Nahstufe lebten im Host statt im Asset), ist gefallen; das Budget trägt tree[0].
+    { token: "LOD_TRI_BUDGET_MUL", fiel: "W5 — die Kosten wohnen im Asset (lod.budget.tree[0]), Lehre 19" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

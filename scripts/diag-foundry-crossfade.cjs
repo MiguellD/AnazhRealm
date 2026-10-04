@@ -364,6 +364,9 @@ async function runPartB() {
         const stageOfKey = (k) => {
             // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
             // Welle A: der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
+            // Der Schatten-Zwilling der L0 (`…#S`, wirft die L1-Gestalt, kamera-unsichtbar) ist keine Stufe — mit den
+            // Studio-Distanzen (W5, d0 20 m) steht die L0 auch AUSSERHALB des Bandes, wo er sonst als L1 zählte.
+            if (/#S$/.test(k)) return null;
             if (/(^|#)fimp:/.test(k)) return 2;
             const m = /(^|#)f:[^|]+\|\d+\|(\d)[|:]/.exec(k);
             return m ? +m[2] : null;
@@ -454,12 +457,9 @@ async function runPartB() {
             }
         }
         // Blatt-Kappe 24 (Studio): großer Baum (bh 36) bei dr 20 → dnL = 20·min(lodRef/24, 1).
-        // 18.07. — DIE STALE KANTE FIEL: die alte Erwartung nagelte „12.6" fest (Studio-D0 20
-        // − FADE0 − M), aber das Haus wendet BEWUSST LOD_TRI_BUDGET_MUL auf die Schwellen an
-        // (T2: thresh01 = 20×0.6 = 12 → Kante 4.6, dnL 10 > 4.6 ⇒ Partner IST korrekt — die
-        // Band-Erwartung konnte seit der T2-Welle nie grün sein). Jetzt rechnet der FORMEL-
-        // ZWILLING die Erwartung aus der LIVE-cfg (dasselbe Muster wie stageStudio oben);
-        // der Kappen-Beweis (leafVisCap == 24, NICHT an ref gekoppelt) bleibt hart.
+        // Die Erwartung rechnet aus der LIVE-cfg (dasselbe Muster wie stageStudio oben) — seit W5 liest die
+        // Welt die Studio-Distanzen ohne Umweg (thresh01 = d0 = 20 → Kante 12.6, dnL 10 < 12.6 ⇒ kein
+        // Partner); der Kappen-Beweis (leafVisCap == 24, NICHT an ref gekoppelt) bleibt hart.
         res.leafCapPartner = r._lodBandPartnerFor(20, 36, 0);
         res.leafCapValue = cfg.leafVisCap;
         {
@@ -659,25 +659,21 @@ async function main() {
         P.cfg ? `d0=${P.cfg.d0} d1=${P.cfg.d1} fade=${P.cfg.fade} fade0=${P.cfg.fade0}` : ""
     );
     check("GLSL: die fin-EINblendung des Billboards (phytogenesis _impMat)", P.finRamp && P.finBranch);
-    // Die Config-Heimat-Parität: LOD_DISTANCES-Defaults == Studio-lod-Zahlen DURCH den
-    // WELT-Straff-Faktor (TRI-BUDGET T2, 16.07.: LOD_TRI_BUDGET_MUL übersetzt d0/d1 am
-    // Ingest-Chokepoint — die Defaults müssen dem Post-Ingest-Wert gleichen, headless == live).
+    // Die Config-Heimat-Parität: LOD_DISTANCES-Defaults == Studio-lod-Zahlen (W5, Lehre 19: die Welt liest
+    // die Studio-Distanzen, kein Host-Umweg rechnet d0/d1 um — die Defaults gleichen dem Post-Ingest-Wert,
+    // headless == live; gate:altlasten haelt den gefallenen Umweg fern).
     const mLD =
         /AnazhRealm\.LOD_DISTANCES = \{[\s\S]*?thresh01:\s*([\d.]+),[\s\S]*?thresh12:\s*([\d.]+),[\s\S]*?fade:\s*([\d.]+),[\s\S]*?fade0:\s*([\d.]+),/.exec(
             anazhSrc
         );
-    const mTB = /AnazhRealm\.LOD_TRI_BUDGET_MUL = Object\.freeze\(\{ d0:\s*([\d.]+), d1:\s*([\d.]+) \}\)/.exec(anazhSrc);
-    const tbD0 = mTB ? +mTB[1] : 1,
-        tbD1 = mTB ? +mTB[2] : 1;
     check(
-        "LOD_DISTANCES-Defaults == Studio-lod-Zahlen × LOD_TRI_BUDGET_MUL (thresh01/thresh12) · fade/fade0 studio-gleich",
+        "LOD_DISTANCES-Defaults == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0)",
         !!mLD &&
-            !!mTB &&
-            +mLD[1] === P.cfg.d0 * tbD0 &&
-            +mLD[2] === P.cfg.d1 * tbD1 &&
+            +mLD[1] === P.cfg.d0 &&
+            +mLD[2] === P.cfg.d1 &&
             +mLD[3] === P.cfg.fade &&
             +mLD[4] === P.cfg.fade0,
-        mLD ? `${mLD[1]}/${mLD[2]}/${mLD[3]}/${mLD[4]} (mul ${tbD0}/${tbD1})` : "LOD_DISTANCES nicht geparst"
+        mLD ? `${mLD[1]}/${mLD[2]}/${mLD[3]}/${mLD[4]}` : "LOD_DISTANCES nicht geparst"
     );
     // phyto-core trägt DIESELBEN IGN-Koeffizienten im CODE (kommentar-gestrippte Quelle):
     const coreNC = stripComments(coreSrcRaw);

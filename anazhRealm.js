@@ -65432,12 +65432,10 @@ class AnazhRealm {
         const L = config.lod;
         const D = AnazhRealm.LOD_DISTANCES;
         if (L && typeof L === "object") {
-            // TRI-BUDGET (T2, 16.07.) — die Studio-Distanzen reisen durch den WELT-
-            // Straff-Faktor (LOD_TRI_BUDGET_MUL, s. Datenblock): das Studio führt,
-            // die Welt übersetzt tri-budgetiert (32M-Zensus/30M-Trace → Ziel ≤8M).
-            const _tb = AnazhRealm.LOD_TRI_BUDGET_MUL || { d0: 1, d1: 1 };
-            if (Number.isFinite(L.d0)) D.thresh01 = L.d0 * _tb.d0;
-            if (Number.isFinite(L.d1)) D.thresh12 = L.d1 * _tb.d1;
+            // Die Welt liest die Studio-Distanzen (W5, Lehre 19): die Kosten einer Stufe wohnen im Asset (Studio-
+            // Budget lod.budget, gate:asset-contract), nie in einem Host-Umweg, der d0/d1 umrechnet.
+            if (Number.isFinite(L.d0)) D.thresh01 = L.d0;
+            if (Number.isFinite(L.d1)) D.thresh12 = L.d1;
             if (Number.isFinite(L.fade)) D.fade = L.fade;
             if (Number.isFinite(L.fade0)) D.fade0 = L.fade0;
             if (Number.isFinite(L.hyst)) D.hysteresis = L.hyst;
@@ -88211,15 +88209,12 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // mit min(lodRef/visHeight, 1) — ein großer Baum schaltet später, ein kleiner nie früher;
 // `perfDistMulMax` = max. Distanz-Multiplikator unter Last (der EINE Regler `_foliageDensityScale`);
 // beides via `_lodPerceptionDistance`.
-// LOD_TRI_BUDGET_MUL — Welt-Straff-Faktor: der Ingest übersetzt die Studio-d0/d1 durch ihn
-// (20/40 → 12/26), das Studio-L0-Gesetz bleibt unberührt; volle Geometrie nur sehr nah.
-AnazhRealm.LOD_TRI_BUDGET_MUL = Object.freeze({ d0: 0.6, d1: 0.65 });
 // Die Ziegel-Schlange ordnet nach Bedarf: ein Bau, dessen Mesh in der Mesh-Zone schon steht, reiht sich um diese
 // Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
 AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 AnazhRealm.LOD_DISTANCES = {
-    thresh01: 12, // Studio LOD_D0 20 × TRI_BUDGET_MUL.d0 — dist > 12 m → LOD1 (T2: Default == Post-Ingest, headless == live)
-    thresh12: 26, // Studio LOD_D1 40 × TRI_BUDGET_MUL.d1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)
+    thresh01: 20, // Studio LOD_D0 — dist > 20 m → LOD1 (Default == Post-Ingest, headless == live)
+    thresh12: 40, // Studio LOD_D1 — dist > 40 m → LOD2/Impostor (Studio-Billboard-Grenze)
     hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
     lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
