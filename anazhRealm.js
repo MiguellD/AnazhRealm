@@ -90,6 +90,31 @@ class AnazhRealm {
             // Dither-Rotation und die Reprojektion hängen, und ihre Reprojektions-Matrix (_traaKameraBewegung).
             traaNode: null,
             _traaR: null,
+            // DIE LAUFZEIT-FELDER, die erst ihr Leser anlegt (lazy) — hier mit ihrem Leer-Wert benannt, damit die
+            // State-Linse (audit:strict) jeden Lese-Pfad gegen eine Init-Wahrheit prüft und Tippfehler beim Namen nennt.
+            scenePass: null, // der Szene-Pass der Post-Kette (_ensurePostProcessing)
+            weltMarch: null, // der EINE Welt-March (_weltMarchEnsure)
+            feldPass: null, // der Feld-Pass des Fern-Rings
+            deckStreu: null, // die Deck-Streu des Fernfelds
+            chunkSaetze: null, // Map Art → Boden-/Wasser-Satz (_chunkSatzEin)
+            _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
+            archFundament: null, // der Fundament-Pool (_archFundamentAlloc)
+            stlWege: null, // der Wege-Pool der Siedlungen
+            _chunkIdbMiss: null, // Set der Chunk-Platten-Fehlgriffe
+            _chunkIdbHits: 0,
+            _chunkIdbHitByKey: null,
+            _pfeile: null,
+            _deviceLost: null, // der Grund eines verlorenen GPU-Geräts
+            _schrittKlang: null,
+            _holzExplizit: false,
+            creaturesHidden: false,
+            _mountVorKamera: null,
+            _parkourSlide: null,
+            _parkourKletter: 0,
+            _wandKontaktNx: 0,
+            _wandKontaktNz: 0,
+            _wandKontaktAt: null,
+            _cWasDown: false,
             // WebGPU-Pflicht: false bis renderer.init() async durch ist — der Loop rendert bis dahin nicht.
             // Fehlt navigator.gpu, wirft der Bootstrap mit User-Meldung; kein WebGL-Pfad (NodeMaterials
             // rendern nicht auf WebGLRenderer).
