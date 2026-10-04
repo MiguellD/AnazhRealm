@@ -721,19 +721,25 @@ function bakeLeafAtlas() {
     // fuer Studio, Foundry-Worker und Host (Zellen 0..2 Breitblatt, 3 Nadel-Spray; die Karten routen ueber
     // BLATT_ATLAS_BREIT/BLATT_ATLAS_NADEL). Der Worker hat kein document — er malt in eine OffscreenCanvas.
     // Ohne Samen kein stiller Inline-Zwilling (der alte Inline-Maler mit vier Breitblatt-Zellen ist gefallen).
+    // Die TEXTUR ist das Atlas-Bild des Kerns (W5, bakeLeafAtlasBild): blutend, Zell-Mittel gleich, deckungstreue
+    // Mips, Zeilen in Textur-Ordnung — der Stoff teilt die Atlas-Farbe durch `wert` (FARB-GESETZ: die Karten-Albedo
+    // ist im Mittel die Vertex-Farbe, wie die Klinge).
     const __core = typeof self !== "undefined" && self.__phytoCore;
-    if (!__core || typeof __core.bakeLeafAtlasCanvas !== "function")
-        throw new Error("[phyto] bakeLeafAtlas: __phytoCore.bakeLeafAtlasCanvas fehlt (der Samen ist Pflicht)");
+    if (!__core || typeof __core.bakeLeafAtlasBild !== "function")
+        throw new Error("[phyto] bakeLeafAtlas: __phytoCore.bakeLeafAtlasBild fehlt (der Samen ist Pflicht)");
     const doc = typeof document !== "undefined" ? document : { createElement: () => __mkCanvas(1, 1) };
-    const cv = __core.bakeLeafAtlasCanvas(doc);
-    if (!cv) throw new Error("[phyto] bakeLeafAtlas: der Maler lieferte keine Leinwand");
-    _leafAtlas = new THREE.CanvasTexture(cv);
+    const bild = __core.bakeLeafAtlasBild(doc);
+    if (!bild) throw new Error("[phyto] bakeLeafAtlas: der Maler lieferte keine Leinwand");
+    _leafAtlas = new THREE.DataTexture(bild.daten, bild.breite, bild.hoehe, THREE.RGBAFormat);
+    _leafAtlas.mipmaps = bild.mips;
+    _leafAtlas.generateMipmaps = false;
     _leafAtlas.minFilter = THREE.LinearMipmapLinearFilter;
     _leafAtlas.magFilter = THREE.LinearFilter;
-    _leafAtlas.generateMipmaps = true;
     _leafAtlas.anisotropy = 8;
     if (THREE.sRGBEncoding !== undefined) _leafAtlas.encoding = THREE.sRGBEncoding;
+    _leafAtlas.needsUpdate = true;
     foliageMatTex.map = _leafAtlas;
+    foliageMatTex.color.setRGB(1 / bild.wert[0], 1 / bild.wert[1], 1 / bild.wert[2]);
     foliageMatTex.needsUpdate = true;
 }
 

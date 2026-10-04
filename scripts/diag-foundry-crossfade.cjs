@@ -618,12 +618,10 @@ async function main() {
         const brueche = [
             ["Pass-Kamera", nc.replace("const _auge = _lu.uLodAuge;", "const _auge = T.cameraPosition;")],
             [
-                // Der EINE Blatt-Atlas (Laub- und Nadel-Karten, Welle C) färbt mit der Saison-Laubfarbe (Welle A).
+                // Der EINE Blatt-Atlas (Laub- und Nadel-Karten, Welle C) färbt mit der Saison-Laubfarbe (Welle A); W5 teilt
+                // die Atlas-Farbe durch ihren `wert` — gesucht wird die Alpha-Stelle der Karten-colorNode, zeilenumbruch-fest.
                 "Blatt-Alpha in opacityNode",
-                nc.replace(
-                    "mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), texN.a);",
-                    "mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), 1.0); mat.opacityNode = texN.a;"
-                ),
+                nc.replace(/(\.mul\(laubFarbe\),\s*)texN\.a(\s*\);)/, "$11.0$2 mat.opacityNode = texN.a;"),
             ],
             ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
             ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(1), 1)", "aLodLevel.count).fill(2), 1)")],

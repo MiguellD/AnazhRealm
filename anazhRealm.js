@@ -28606,8 +28606,11 @@ class AnazhRealm {
                                 const _atlas = this._ensureFoliageClusterAtlas();
                                 if (_atlas && _Ta.texture && _Ta.attribute) {
                                     const _samp = _Ta.texture(_atlas, _Ta.attribute("uv", "vec2"));
+                                    const _w = _atlas.userData.wert;
                                     _alpha = _samp.a;
-                                    albedoNode = albedoNode.mul(_samp.rgb);
+                                    albedoNode = albedoNode.mul(
+                                        _samp.rgb.mul(_Ta.vec3(1 / _w[0], 1 / _w[1], 1 / _w[2]))
+                                    );
                                     mat.alphaTest = 0.5;
                                     _wired = true;
                                 }
@@ -60618,20 +60621,23 @@ class AnazhRealm {
         return this._mergeAttributedGeometries(geomList, ["aFlex", "aPhase"]);
     }
 
-    // Der Blatt-Atlas kommt aus phyto-core (`bakeLeafAtlas`) — kein Parallel-Painter. Er trägt nur den
-    // WERT (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-Farbe; EINE Textur, die Card-UVs
-    // (`__phytoCore.buildFoliageQuads`) routen die Zelle. Canvas = Main-Thread-Ressource → `document`
-    // wird gereicht, der Worker malt keinen Atlas.
+    // Der Blatt-Atlas kommt aus phyto-core — kein Parallel-Painter: das Atlas-BILD (`bakeLeafAtlasBild`, W5) ist
+    // die gemalte Leinwand, geblutet, mit gleichen Zell-Mitteln und deckungstreuen Mips (die Box-Mips der Leinwand
+    // mischten Schwarz in jeden Rand und mittelten die Nadelstriche unter die Alpha-Schwelle). Er trägt nur den
+    // WERT um sein Mittel `wert` (userData.wert) — jeder Leser teilt durch ihn, die Artfarbe kommt aus der
+    // Vertex-Farbe (FARB-GESETZ); EINE Textur, die Card-UVs (`__phytoCore.buildFoliageQuads`) routen die Zelle.
+    // Canvas = Main-Thread-Ressource → `document` wird gereicht, der Worker malt keinen Atlas.
     _ensureFoliageClusterAtlas() {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const canvas =
-            core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document) : null;
-        if (!canvas) return null;
-        const tex = new THREE.CanvasTexture(canvas);
+        const bild = core && typeof core.bakeLeafAtlasBild === "function" ? core.bakeLeafAtlasBild(document) : null;
+        if (!bild) return null;
+        const tex = new THREE.DataTexture(bild.daten, bild.breite, bild.hoehe, THREE.RGBAFormat);
         tex.colorSpace = THREE.SRGBColorSpace;
-        tex.generateMipmaps = true;
+        tex.mipmaps = bild.mips;
+        tex.generateMipmaps = false;
+        tex.userData.wert = bild.wert;
         tex.minFilter = THREE.LinearMipmapLinearFilter;
         tex.magFilter = THREE.LinearFilter;
         tex.wrapS = THREE.ClampToEdgeWrapping;
@@ -68601,10 +68607,14 @@ class AnazhRealm {
                 if (tex && TSL.texture) {
                     const uvN = TSL.attribute("uv", "vec2");
                     const texN = TSL.texture(tex, uvN);
+                    const w = tex.userData.wert;
                     // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                     // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                    // Nadel-Karten warfen volle Rechtecke.
-                    mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), texN.a);
+                    // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe geteilt durch ihren `wert` (FARB-GESETZ).
+                    mat.colorNode = TSL.vec4(
+                        texN.rgb.mul(TSL.vec3(1 / w[0], 1 / w[1], 1 / w[2])).mul(laubFarbe),
+                        texN.a
+                    );
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                     // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
