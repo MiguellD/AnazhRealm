@@ -72,7 +72,9 @@ const SEITEN_PORT = PORT - 1;
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 const ECHT = argv.includes("--echt");
-const ECHT_SEITE = "http://localhost:4312";
+// Der save-server-Ursprung des Echt-Laufs: parallele Werkbänke fahren je einen eigenen (`PORT=… node
+// save-server.js` aus ihrem Arbeitsbaum) und nennen ihn hier.
+const ECHT_SEITE = opt("--seite", process.env.WERKBANK_SEITE || "http://localhost:4312");
 
 // DER VRAM-ABGRIFF: jede Allokation des GPUDevice (Puffer: size; Textur: alle Mip-Stufen × Schichten ×
 // Samples × Bytes je Texel) live mitgezählt, destroy zieht ab. Läuft vor jedem Seiten-Skript.
