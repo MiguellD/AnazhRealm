@@ -25,7 +25,7 @@
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
-//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei]
+//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s]
 //                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach
 //                                                           `--ein` Sekunden Einschwingen misst er `sek` Sekunden
 //                                                           Frame-Zeit · GPU-Zeit (timestamp-query) · Draws ·
@@ -256,34 +256,113 @@ function lauf(k) {
         const proben = [];
         let messen = false,
             tVor = null,
+            tRenderVor = null,
             gpuAm = r._gpuTsAtMs;
         rend.setAnimationLoop((t) => {
             // Das Wetter hält (der 120-s-Zug brachte im ersten Lauf Regen ins Messfenster).
             st.weatherEffectTime = Math.min(st.weatherEffectTime || 0, 100);
             const c0 = performance.now();
+            const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             r._gameLoopTick(t);
-            if (!messen) return void (tVor = t);
+            // Unter der GPU-Leine rendert nicht jeder Takt — gezählt werden GERENDERTE Frames (der Takt läuft weiter).
+            const gerendert = !r._gpuLeine || r._gpuLeine.gerendert > g0;
+            if (!messen) {
+                if (gerendert) tRenderVor = t;
+                return void (tVor = t);
+            }
             // `_perfFrame` ist am Takt-Ende schon gefaltet und geleert; renderer.info trägt die Summe aller Pässe
             // des Frames (der Loop setzt es je Frame zurück) — die HUD-Zahl. Bundle-Replays bucht r184 dort NICHT
             // (Lehre 23): die Wahrheit je Pass und Klasse zählt `zaehlen`.
             const ri = (rend.info && rend.info.render) || {};
-            const p = { dt: tVor == null ? null : t - tVor, cpu: performance.now() - c0 };
+            const p = { dt: tVor == null ? null : t - tVor, cpu: performance.now() - c0, gerendert };
+            if (gerendert) {
+                p.dtRender = tRenderVor == null ? null : t - tRenderVor;
+                tRenderVor = t;
+            }
             p.dc = ri.drawCalls;
             p.tri = ri.triangles;
             if (r._gpuTsAtMs !== gpuAm) {
                 p.gpu = r._gpuTsLast;
                 gpuAm = r._gpuTsAtMs;
             }
+            // DIE GPU-WAHRHEIT: die Pass-Stempel sahen nur einen Teil (das Wasser bricht den Hauptpass für die
+            // Tiefen-Kopie, der Neustart überschreibt die Stempel; Arbeit außerhalb der Pässe fehlt ganz). Der
+            // Abstand der GPU-Fertig-Zeitpunkte ist der echte Durchsatz, CPU-Ende → GPU-fertig der Verzug, den der
+            // Spieler als Eingabe-Lag spürt.
+            const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
+            if (q && gerendert) {
+                const cEnde = performance.now();
+                q.onSubmittedWorkDone().then(() => {
+                    p.gpuFertig = performance.now();
+                    p.verzug = p.gpuFertig - cEnde;
+                });
+            }
             tVor = t;
             proben.push(p);
         });
         try {
             await sleep(k.ein * 1000);
+            // DIE RUHE: zwischen frischen Welten streute die GPU um ±5 ms (Foundry, Karten-Bäcker, Streaming noch
+            // unterwegs). Mit `--ruhe <max s>` misst der Lauf erst, wenn 3 s lang alles steht: Chunks gleich, Foundry-
+            // Schlange + Ingest leer, Karten-Bäcker ohne Wartende/Hängende, die Mesh-Zone fertig oder 10 s ohne Fortschritt.
+            const ruheZustand = () => {
+                const f = r._foundry;
+                const z = typeof r._impostorCensus === "function" ? r._impostorCensus() || {} : {};
+                const pm = st.playerMesh.position;
+                const R2 = (st.architectureCullingRadius || 0) ** 2;
+                let offen = 0;
+                for (const e of st.architectures || []) {
+                    const dx = e.position.x - pm.x,
+                        dz = e.position.z - pm.z;
+                    if (dx * dx + dz * dz <= R2 && !r._archIsRendered(e)) offen++;
+                }
+                return {
+                    chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                    foundry:
+                        (f && f.pending ? f.pending.size : 0) +
+                        (f && f.warte ? f.warte.length : 0) +
+                        (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0),
+                    karten:
+                        (r._impostorBakeQueue || []).length +
+                        (r._impostorBakePending ? 1 : 0) +
+                        (z.silhouetteWartend || 0) +
+                        (z.haengendeBakes || 0),
+                    meshOffen: offen,
+                };
+            };
+            let ruhe = null;
+            if (k.ruhe > 0) {
+                const t0 = performance.now();
+                let vor = ruheZustand(),
+                    ruhigSeit = performance.now(),
+                    offenSeit = performance.now(),
+                    ruhig = false;
+                while (performance.now() - t0 < k.ruhe * 1000) {
+                    await sleep(250);
+                    const z = ruheZustand();
+                    if (z.meshOffen !== vor.meshOffen) offenSeit = performance.now();
+                    const still =
+                        z.chunks === vor.chunks &&
+                        z.foundry === 0 &&
+                        z.karten === 0 &&
+                        (z.meshOffen === 0 || performance.now() - offenSeit > 10000);
+                    if (!still) ruhigSeit = performance.now();
+                    vor = z;
+                    if (performance.now() - ruhigSeit >= 3000) {
+                        ruhig = true;
+                        break;
+                    }
+                }
+                ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
+            }
             const v0 = Object.assign({}, window.__vram || {});
             messen = true;
             await sleep(k.sek * 1000);
             messen = false;
             rend.setAnimationLoop(null);
+            // Die GPU-Fertig-Meldungen laufen der CPU hinterher — warten, bis die Schlange leer ist.
+            if (rend.backend && rend.backend.device) await rend.backend.device.queue.onSubmittedWorkDone();
+            await sleep(50);
             const pool = be.timestampQueryPool && be.timestampQueryPool.render;
             if (pool) await rend.resolveTimestampsAsync("render");
             const jePassFrame = {};
@@ -300,8 +379,9 @@ function lauf(k) {
                 return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
             };
             const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
-            const dt = spalte("dt"),
-                cpu = spalte("cpu"),
+            const dt = spalte("dtRender"),
+                takt = spalte("dt"),
+                cpu = proben.filter((p) => p.gerendert).map((p) => p.cpu),
                 gpu = spalte("gpu"),
                 dc = spalte("dc"),
                 tri = spalte("tri");
@@ -319,7 +399,22 @@ function lauf(k) {
                 fps: dt.length ? +((1000 * dt.length) / dt.reduce((a, b) => a + b, 0)).toFixed(1) : null,
                 frameMs: zahl(dt),
                 cpuTaktMs: zahl(cpu),
+                taktMs: zahl(takt),
+                leine: r._gpuLeine
+                    ? {
+                          ausgesetztPct: +(
+                              (100 * proben.filter((p) => !p.gerendert).length) /
+                              Math.max(1, proben.length)
+                          ).toFixed(1),
+                          imFlug: r._gpuLeine.imFlug,
+                      }
+                    : null,
                 gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
+                gpuDurchsatzMs: (() => {
+                    const g = proben.map((p) => p.gpuFertig).filter(Number.isFinite);
+                    return zahl(g.slice(1).map((x, i) => x - g[i]));
+                })(),
+                gpuVerzugMs: zahl(spalte("verzug")),
                 gpuJePassMs: Object.fromEntries(
                     Object.entries(jePassFrame).map(([p, e]) => {
                         const w = Object.values(e);
@@ -359,6 +454,7 @@ function lauf(k) {
                     blick: [dir.x, dir.y, dir.z].map((x) => +x.toFixed(2)),
                 },
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                ruhe,
                 wetter: st.weather,
                 saison: st.season,
             };
@@ -740,6 +836,7 @@ async function starte() {
                     const o = await page.evaluate(lauf, {
                         sek: Number(b.sek) || 20,
                         ein: b.ein != null ? Number(b.ein) : 30,
+                        ruhe: Number(b.ruhe) || 0,
                         regler: b.regler || "frei",
                         tiere: b.tiere || "halten",
                     });
@@ -825,6 +922,7 @@ async function starte() {
             ein: opt("--ein"),
             regler: opt("--regler", "frei"),
             tiere: opt("--tiere", "halten"),
+            ruhe: opt("--ruhe", 0),
         });
     else if (cmd === "profil")
         o = await rufe("/profil", {
