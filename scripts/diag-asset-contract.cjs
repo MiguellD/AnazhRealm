@@ -236,8 +236,16 @@ function deckungsUrteil(paare, band, at) {
                 continue;
             }
             const de = meshDiff(f, gold.meshes, rec.meshes);
-            if (de) fails.push(de);
-            else ok++;
+            if (de) {
+                fails.push(de);
+                // Die Linse nennt den Täter: die gebauten Bytes des ersten divergierenden Attributs reisen ins Log
+                // (base64, gedeckelt), damit ein Plattform-Unterschied (CI-Runner gegen Präge-Maschine) Wert für Wert
+                // gegen den lokalen Bau verglichen werden kann — ein sha256 allein nennt keinen Wert.
+                const mm = /Mesh(\d+)\.(\w+): sha256-Divergenz/.exec(de);
+                const roh = mm && a.meshes[+mm[1]] && a.meshes[+mm[1]].attrs[mm[2]];
+                if (roh && roh.b64 && roh.b64.length <= 65536)
+                    console.log(`DIVERGENZ-BYTES ${f} Mesh${mm[1]}.${mm[2]} ${roh.b64}`);
+            } else ok++;
             miss(c, a, f.replace(/\.json$/, ""));
             if (c.lod <= 1 && artVon(c.presetId) === "tree") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
