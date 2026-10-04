@@ -52270,7 +52270,9 @@ class AnazhRealm {
         // (kindStages Blume/Fels [0]) klemmten jede Fern-Zelle auf ihr L0-Mesh — gemessen 04.10. an der Mess-Wiese
         // 482 Blumen in 208 Meshes und 880 Geröll in 128 Meshes, alle 85–384 m, 954 Befehle / 4,65 M Dreiecke über
         // drei Pässe. Die Fernform ist das Gesetz (Plätze im Welt-March, Passung aus der Studio-Gestalt).
-        if (foundryFlat && foundryPreset && layer.kind !== "tree") {
+        // Die Gesetz-Bahn beginnt erst an der Nah-Grenze (`ANALOG_NAH_M`): diesseits ist auch die Fern-Stufe der Streu
+        // ihr Studio-Mesh, nie ein Kapsel-Satz.
+        if (foundryFlat && foundryPreset && layer.kind !== "tree" && dist >= AnazhRealm.ANALOG_NAH_M) {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             if ((_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()) {
                 const fh = this._streuGesetzSpawn(
@@ -52455,7 +52457,15 @@ class AnazhRealm {
             const visH =
                 layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(cell.species, cell.variantIndex, tf.scale);
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
-            if (newLod === cell.lod) continue;
+            // DIE NAH-GRENZE (`ANALOG_NAH_M`) wechselt die Bahn auch ohne Stufen-Wechsel: eine Gesetz-Zelle, die näher
+            // kommt, tauscht auf ihre Studio-Stufe; eine Studio-Fernzelle, die sich entfernt, zieht ins Gesetz (8 m
+            // Totband gegen Flattern). Sonst blieb der Kapsel-Satz einer Fern-Zelle stehen, wenn der Spieler auf sie zuging.
+            const nahM = AnazhRealm.ANALOG_NAH_M;
+            const bahnWechsel =
+                newLod >= 2 &&
+                layer.kind !== "tree" &&
+                (cell.feld ? dist < nahM : dist >= nahM + 8 && String(cell.bpName).startsWith("fscatter:"));
+            if (newLod === cell.lod && !bahnWechsel) continue;
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
             // `fade` m näher wäre es noch L2 — kein Flackern am Dither-Band). Die leere private Hülle reapt
             // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
@@ -90941,9 +90951,14 @@ AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fp
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test
 // Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz — je bergiger die Welt, desto billiger.
-// Bis hierher ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die
-// Glieder-Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten).
-AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: 55, aus: 65 });
+// DIE EINE NAH-GRENZE DES ANALOG-FELDS (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"): bis hierher ist
+// das Studio-Mesh die Gestalt jeder Klasse (Baum · Bau · Tier · Streu), jenseits darf der Analog-Satz tragen. Ein
+// Analog-Satz diesseits ist ein Befund mit Namen (`_analogZensus`, gate:analog-nah).
+AnazhRealm.ANALOG_NAH_M = 64;
+// Bis zur Nah-Grenze ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die Glieder-
+// Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
+// ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
+AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
 // Die Studio-Material-Klassen, für die der Material-Weber ein Lab-Shader-Gesetz trägt (FELL_LOOK · HAUT_LOOK ·
 // HAAR_LOOK) — die Extraktion reicht genau sie als `kind` durch.
 AnazhRealm.LOOK_KLASSEN = new Set(["fell", "fellSchale", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
