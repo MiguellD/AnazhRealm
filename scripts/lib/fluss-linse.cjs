@@ -108,16 +108,24 @@ function flussBericht() {
     };
     const sum = (a, k) => a.reduce((s, x) => s + (k ? x[k] : x), 0);
     const r1 = (x) => Math.round(x * 10) / 10;
+    // Je Kanal: was von der Platte kam und was der Worker NEU baute (MB) — im Zweit-Boot einer Mess-Serie (die
+    // Werkbank hält ihr Profil) ist `neuMb` die Neubau-Zahl, die der Spieler beim zweiten Start bezahlt.
     const kanal = {};
     for (const d of L.done) {
-        const k = kanal[d.type] || (kanal[d.type] = { n: 0, mb: 0, desMs: 0, desMax: 0, platte: 0 });
+        const k =
+            kanal[d.type] || (kanal[d.type] = { n: 0, mb: 0, desMs: 0, desMax: 0, platte: 0, platteMb: 0, neuMb: 0 });
         k.n++;
         k.mb += d.bytes / 1e6;
         k.desMs += d.des;
         k.desMax = Math.max(k.desMax, d.des);
-        if (d.platte) k.platte++;
+        if (d.platte) {
+            k.platte++;
+            k.platteMb += d.bytes / 1e6;
+        } else k.neuMb += d.bytes / 1e6;
     }
     for (const k of Object.values(kanal)) {
+        k.platteMb = r1(k.platteMb);
+        k.neuMb = r1(k.neuMb);
         k.mb = r1(k.mb);
         k.desMs = Math.round(k.desMs);
         k.desMax = r1(k.desMax);

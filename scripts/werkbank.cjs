@@ -17,9 +17,10 @@
 //   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse
 //                                                           (scripts/lib/licht-linsen.cjs; Karte = 0,180)
 //   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
-//   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz]  DER DRAW-ZÄHLER: GPU-Befehle + Dreiecke je Pass
-//                                                           (Hauptbild · jede Kaskade) und Klasse, ein Frame
-//                                                           (scripts/lib/draw-zaehler.cjs)
+//   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
+//                                                           DER DRAW-ZÄHLER: GPU-Befehle + Dreiecke je Pass
+//                                                           (Hauptbild · jede Kaskade) und Täter-Klasse, ein Frame
+//                                                           (scripts/lib/draw-zaehler.cjs; Top 16, --alle alle)
 //   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE: was der Foundry-Kanal den Haupt-Thread
 //                                                           kostet (Bytes · Entpacken · Platte · Worker-Auslastung);
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
@@ -40,7 +41,19 @@
 //   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: n Frames ohne rAF/VSync hintereinander, die
 //                                                           reine GPU-Zeit je Frame (wenn GPU-gebunden)
+//   node scripts/werkbank.cjs band [--datei f.json] [--ratsche]
+//                                                           DIE BAND-LINSE (W0): Zensus Klasse × Stufe × Pass + VRAM je
+//                                                           Erzeuger + gpu-bank gegen den Haushalt und die Ratsche
+//                                                           (spec/profiband/, scripts/lib/band-urteil.cjs) → Tabelle
+//                                                           Ist/Soll/Täter; Exit 1 bei ROT (Linsen-Fehler · Nah-Stufe
+//                                                           fern · über der Ratsche). `--ratsche` (nur --echt, nur
+//                                                           GRÜN) senkt die Ratsche auf das Ist, hebt sie nie
 //   node scripts/werkbank.cjs reload | status | stop
+//
+// DIE MESS-SERIE: jeder `start` fährt ein eigenes Browser-Profil (Scratch, beim `stop` gelöscht) — der erste Boot ist
+// ein ERST-Boot (leere Platte), jedes `reload` ein ZWEIT-Boot (die Foundry-Platte im Profil bleibt). `--serie <name>`
+// hält das Profil unter artifacts/werkbank/profil-<name> über Neustarts hinweg (der Spieler, der das Spiel morgen
+// wieder öffnet). `status` und `band` nennen die Boot-Art; `fluss` zählt Platte gegen Neubau (MB).
 //
 // `start --echt` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
 // den laufenden save-server (`npm start`, :4312 — der Flugschreiber schreibt anazhRealmPerf.json); ohne
@@ -59,6 +72,7 @@ const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
+const BAND = require("./lib/band-urteil.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -73,6 +87,7 @@ const SEITEN_PORT = PORT - 1;
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 const ECHT = argv.includes("--echt");
 const ECHT_SEITE = "http://localhost:4312";
+const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 
 // DER VRAM-ABGRIFF: jede Allokation des GPUDevice (Puffer: size; Textur: alle Mip-Stufen × Schichten ×
 // Samples × Bytes je Texel) live mitgezählt, destroy zieht ab. Läuft vor jedem Seiten-Skript.
@@ -107,6 +122,21 @@ function vramAbgriff() {
         e.bytes += b;
         e.n++;
         jeLabel.set(o.__vramK, e);
+    };
+    // Ein GPU-Objekt unter einen anderen Schlüssel umbuchen: die Band-Linse (`__texturZensus`) nennt namenlose
+    // Texturen über ihr three-Objekt, der Abgriff sah nur das Label beim Anlegen.
+    window.__vramUmbuchen = (o, k) => {
+        if (!o.__vramB || o.__vramK === k) return;
+        const alt = jeLabel.get(o.__vramK);
+        if (alt) {
+            alt.bytes -= o.__vramB;
+            alt.n--;
+        }
+        o.__vramK = k;
+        const e = jeLabel.get(k) || { bytes: 0, n: 0 };
+        e.bytes += o.__vramB;
+        e.n++;
+        jeLabel.set(k, e);
     };
     window.__vramBericht = (top) =>
         [...jeLabel.entries()]
@@ -587,8 +617,18 @@ async function starte() {
         );
         if (!da) throw new Error(`--echt braucht den save-server auf ${ECHT_SEITE} (npm start)`);
     } else await new Promise((r) => seiten.listen(SEITEN_PORT, "127.0.0.1", r));
+    // DAS PROFIL DER MESS-SERIE: ohne eigenes Profil legte puppeteer je Start ein namenloses an — jede Zahl war eine
+    // Erst-Boot-Zahl („17 von 319 von der Platte"). Scratch je Start (beim `stop` gelöscht) oder benannt (`--serie`).
+    const profil = SERIE
+        ? path.join(root, "artifacts", "werkbank", "profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"))
+        : path.join(require("os").tmpdir(), `werkbank-profil-${PORT}-${Date.now()}`);
+    const serieNeu = !fs.existsSync(profil);
+    fs.mkdirSync(profil, { recursive: true });
+    const boot = { serie: SERIE || null, profil, serieNeu, ladungen: 0 };
+    const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
     const browser = await puppeteer.launch({
         headless: !ECHT,
+        userDataDir: profil,
         protocolTimeout: 3600000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
         args: ECHT
@@ -626,6 +666,7 @@ async function starte() {
         if (fehler.length > 200) fehler.splice(0, fehler.length - 200);
     });
     const lade = async () => {
+        boot.ladungen++;
         const basis = ECHT ? ECHT_SEITE : `http://127.0.0.1:${SEITEN_PORT}`;
         await page.goto(`${basis}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
             waitUntil: "domcontentloaded",
@@ -795,7 +836,13 @@ async function starte() {
                             saison: st.season,
                         };
                     });
-                    return send(Object.assign(s, { zerstoert: zerstoert.n, fehler: fehler.slice(-12) }));
+                    return send(
+                        Object.assign(s, {
+                            boot: Object.assign({ art: bootArt() }, boot),
+                            zerstoert: zerstoert.n,
+                            fehler: fehler.slice(-12),
+                        })
+                    );
                 }
                 if (req.url === "/umstellen")
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
@@ -895,9 +942,100 @@ async function starte() {
                         try {
                             if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                         } catch (_e) {}
-                        return window.__drawZensus({ top: 16 });
+                        return window.__drawZensus({ top: 16, alle: !!k.alle });
                     }, b);
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
+                // DIE BAND-LINSE: ein Zähl-Frame (alle Klassen) + der VRAM je Erzeuger + die Szenen-Puffer je Klasse +
+                // die GPU-Bank (nur mit GPU-Device) + der Fluss — geurteilt gegen Haushalt und Ratsche (spec/profiband).
+                if (req.url === "/band") {
+                    const roh = await page.evaluate(async () => {
+                        const r = window.anazhRealm;
+                        window.__buehne();
+                        try {
+                            if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                        } catch (_e) {}
+                        const zensus = await window.__drawZensus({ alle: true });
+                        // Der Textur-Zensus zuerst: er bucht die über ihr Ziel benannten Texturen im Abgriff um.
+                        const texturen = window.__texturZensus();
+                        const v = window.__vram;
+                        const mb = (x) => +(x / 1048576).toFixed(1);
+                        return {
+                            zensus,
+                            texturen,
+                            vram:
+                                v && v.nTexturen + v.nPuffer > 0
+                                    ? {
+                                          mb: mb(v.puffer + v.texturen),
+                                          puffer: mb(v.puffer),
+                                          texturen: mb(v.texturen),
+                                          spitze: mb(v.spitze),
+                                          liste: window.__vramBericht(100000),
+                                      }
+                                    : null,
+                            puffer: window.__pufferZensus(),
+                            fluss: window.__flussBericht ? window.__flussBericht() : null,
+                        };
+                    });
+                    const gpu = await page.evaluate(gpuBank, { n: 12, runden: 3 });
+                    const { haushalt, ratsche } = BAND.ladeSpec();
+                    const u = BAND.bandUrteil({
+                        zensus: roh.zensus,
+                        vram: roh.vram,
+                        texturen: roh.texturen,
+                        haushalt,
+                        ratsche,
+                    });
+                    // Der Foundry-Kanal dieser Ladung über alle Antwort-Arten (asset · impostor · book …): Platte gegen
+                    // Neubau — im Zweit-Boot der Serie die Neubau-Zahl, die der Spieler beim zweiten Start bezahlt.
+                    let fl = null;
+                    for (const k of Object.values((roh.fluss && roh.fluss.kanal) || {})) {
+                        fl = fl || { n: 0, platte: 0, mb: 0, platteMb: 0, neuMb: 0 };
+                        for (const f of Object.keys(fl)) fl[f] += k[f] || 0;
+                    }
+                    if (fl) for (const f of ["mb", "platteMb", "neuMb"]) fl[f] = +fl[f].toFixed(1);
+                    Object.assign(u, {
+                        kamera: roh.zensus.kamera,
+                        boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
+                        fluss: fl,
+                        gpu,
+                        puffer: roh.puffer,
+                        unbenannt: roh.zensus.unbenannt,
+                        frameMs: roh.zensus.frameMs,
+                        programme: roh.zensus.programme,
+                    });
+                    const datei = path.resolve(
+                        b.datei || path.join(root, "artifacts", "werkbank", `band-${Date.now()}.json`)
+                    );
+                    // DIE RATSCHE NACHZIEHEN (`--ratsche`): nur die echte GPU am Messort setzt sie, nur bei GRÜN — ein
+                    // swiftshader-/WebGL2-Lauf zeichnet ohne Region-Bundles auf anderem Holz, seine Zahlen sind keine Ratsche.
+                    let nachzug = null;
+                    if (b.ratsche) {
+                        if (!ECHT) nachzug = { verweigert: "die Ratsche setzt nur die echte GPU (start --echt)" };
+                        else if (u.urteil !== "GRUEN") nachzug = { verweigert: "ROT — erst die Befunde heilen" };
+                        else {
+                            const r = BAND.ratscheNachziehen(BAND.ladeSpec().ratsche, u, {
+                                datum: new Date().toISOString(),
+                                kamera: u.kamera,
+                                boot: u.boot.art,
+                            });
+                            if (r.aenderungen.length)
+                                fs.writeFileSync(
+                                    path.join(root, "spec", "profiband", "ratsche.json"),
+                                    JSON.stringify(r.ratsche, null, 4) + "\n"
+                                );
+                            nachzug = { aenderungen: r.aenderungen };
+                        }
+                    }
+                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    fs.writeFileSync(datei, JSON.stringify(Object.assign(u, { ratscheNachgezogen: nachzug }), null, 1));
+                    return send({
+                        urteil: u.urteil,
+                        tabelle: BAND.bandTabelle(u),
+                        ratsche: nachzug,
+                        datei,
+                        ms: Date.now() - t0,
+                    });
                 }
                 if (req.url === "/lauf") {
                     const o = await page.evaluate(lauf, {
@@ -946,6 +1084,13 @@ async function starte() {
                     // Eine tote Seite lässt close() werfen — der catch unten sendete dann ein zweites Mal
                     // (ERR_HTTP_HEADERS_SENT) und riss den Prozess ohne Chrome-Abbau herunter.
                     await browser.close().catch((e) => tod("close: " + ((e && e.message) || e)));
+                    // Das Scratch-Profil stirbt mit der Serie; ein benanntes (`--serie`) bleibt für den nächsten Start.
+                    if (!SERIE)
+                        try {
+                            fs.rmSync(profil, { recursive: true, force: true, maxRetries: 5 });
+                        } catch (e) {
+                            tod("Profil bleibt liegen: " + ((e && e.message) || e));
+                        }
                     process.exit(0);
                 }
                 send({ fehler: "unbekannter Weg " + req.url });
@@ -984,8 +1129,26 @@ async function starte() {
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
     else if (cmd === "zaehlen")
-        o = await rufe("/zaehlen", a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {});
-    else if (cmd === "lauf")
+        o = await rufe(
+            "/zaehlen",
+            Object.assign(
+                { alle: argv.includes("--alle") },
+                a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {}
+            )
+        );
+    else if (cmd === "band") {
+        o = await rufe("/band", { datei: opt("--datei"), ratsche: argv.includes("--ratsche") });
+        if (o && o.tabelle) {
+            console.log(o.tabelle + "\n\n" + (o.datei || ""));
+            if (o.ratsche)
+                console.log(
+                    o.ratsche.verweigert
+                        ? `Ratsche NICHT nachgezogen: ${o.ratsche.verweigert}`
+                        : `Ratsche nachgezogen (${o.ratsche.aenderungen.length}): ${o.ratsche.aenderungen.join(" · ") || "nichts fiel"}`
+                );
+            process.exit(o.urteil === "GRUEN" && !(o.ratsche && o.ratsche.verweigert) ? 0 : 1);
+        }
+    } else if (cmd === "lauf")
         o = await rufe("/lauf", {
             sek: a[0],
             ein: opt("--ein"),
