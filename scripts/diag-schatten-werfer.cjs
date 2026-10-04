@@ -20,7 +20,9 @@
 //   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
 //   K4  außerhalb des Takts: dieselbe Kamera → keine Kaskade rendert; 40° gedreht → beide rendern (die Scheibe lief
 //       aus der Box)
-//   K5  die Karten-Größe folgt der Texel-Dichte (sqrt(Referenz-Fläche)/N ≤ texelM, kleinste Zweierpotenz)
+//   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (kleinste Zweierpotenz)
+//   K6  Drehen (360 × 1°, Mittag): die längste Kante je Texel bleibt ≤ 1,05 · texelM; die Rast-Wechsel der Box-Größe
+//       (jeder ist ein Neu-Abtasten aller Schatten-Kanten) werden gezählt
 //   W1  je Kaskaden-Pass liegt JEDES sichtbare Bundle mit seiner Werfer-Hülle und JEDER sichtbare Werfer mit seiner
 //       Box im Frustum der Pass-Kamera; nach dem Pass: Haupt-Urteil, jeder Werfer zurück; ein Bundle bleibt Bundle
 //   W2  ein Werfer 2 km vor der Kamera (im Haupt-Urteil sichtbar) wirft in keine Kaskade
@@ -219,7 +221,7 @@ function probe(selbsttest) {
     alleNeu();
     r._kaskadenPassen(csm);
     aus.k1Abend = empfaenger();
-    // K5 — die Texel-Dichte trägt die Karte
+    // K5 — die längste Kante der Referenz-Scheibe trägt die Karte
     {
         const far = A.PERF_SHADOW_RANGE_MAX * A.SCHATTEN_FERN_FAKTOR;
         const br = [];
@@ -230,16 +232,40 @@ function probe(selbsttest) {
             r._kaskadenSaum(br, i, csm.fade === true, saum);
             const dA = cam.near + saum[0] * (far - cam.near),
                 dB = cam.near + saum[1] * (far - cam.near);
-            const wurzel = Math.sqrt(2 * halb * dB * (dB - dA));
+            const kante = Math.hypot(2 * halb * dB, dB - dA);
             const tx = K.texelM[Math.min(i, K.texelM.length - 1)];
             return {
                 n,
-                texel: +(wurzel / n).toFixed(3),
+                kante: +kante.toFixed(1),
+                texel: +(kante / n).toFixed(3),
                 soll: tx,
-                kleinste: wurzel / n <= tx && wurzel / (n / 2) > tx,
+                kleinste: kante / n <= tx && (n >= K.karteMax || kante / (n / 2) > tx),
             };
         });
     }
+    // K6 — Drehen: 360 × 1° am Mittag, je Kaskade die längste Kante je Texel und die Rast-Wechsel der Größe
+    {
+        tag(0.5);
+        const k6 = csm.lights.map((l) => ({ maxTexel: 0, wechsel: 0, W: null, H: null, n: l.shadow.mapSize.width }));
+        for (let g = 0; g < 360; g++) {
+            blick((g * Math.PI) / 180);
+            alleNeu();
+            r._kaskadenPassen(csm);
+            csm._anazhFit.forEach((f, i) => {
+                const e = k6[i];
+                e.maxTexel = Math.max(e.maxTexel, Math.max(f.W, f.H) / e.n);
+                if (e.W !== null && (f.W !== e.W || f.H !== e.H)) e.wechsel++;
+                e.W = f.W;
+                e.H = f.H;
+            });
+        }
+        aus.k6 = k6.map((e, i) => ({
+            maxTexel: +e.maxTexel.toFixed(3),
+            soll: K.texelM[Math.min(i, K.texelM.length - 1)],
+            wechsel: e.wechsel,
+        }));
+    }
+
     // ── W5: der Boden außerhalb der Bundles (Tal empfängt, Hang wirft) ──
     const w5 = (huellenRegel) => {
         tag(0.5);
@@ -620,9 +646,14 @@ function probe(selbsttest) {
             `still ${a.k4still} · gedreht ${a.k4dreh}`
         );
         check(
-            "K5 die Karte folgt der Texel-Dichte (kleinste Zweierpotenz)",
+            "K5 die Karte trägt die längste Kante bei texelM (kleinste Zweierpotenz)",
             a.k5.every((k) => k.kleinste),
-            a.k5.map((k, i) => `k${i} ${k.n} → ${k.texel} m (Soll ${k.soll})`).join(" · ")
+            a.k5.map((k, i) => `k${i} ${k.n}: ${k.kante} m → ${k.texel} m (Soll ${k.soll})`).join(" · ")
+        );
+        check(
+            "K6 Drehen 360°: die längste Box-Kante je Texel ≤ 1,05 · texelM",
+            a.k6.every((k) => k.maxTexel <= 1.05 * k.soll),
+            a.k6.map((k, i) => `k${i} max ${k.maxTexel} m (Soll ${k.soll}) · ${k.wechsel} Rast-Wechsel`).join(" · ")
         );
         check("W1 jeder Kaskaden-Pass wirft nur Bundles in seiner Box", a.w.falsch === 0, `${a.w.falsch} falsch`);
         check("W1 … und darin nur Werfer in seiner Box", a.w.kindFalsch === 0, `${a.w.kindFalsch} falsch`);
