@@ -256,12 +256,17 @@ function diaetProbe(selftest) {
     const z = diaetLauf(fn);
     fehler.push(...pruefe(z));
     const stand = [z.r2.voll.size, z.r3.voll.size, z.r6.voll.size];
+    // Die Kamera-Treue kostet im Stand keinen Voll-Refresh: je Programm schreibt die Diät nur die geteilte Gruppe.
+    if (stand.some((n) => n !== 0))
+        fehler.push(`Stand: ${stand.join("/")} Voll-Refreshs je Render (Soll 0 — die renderId-Wand refresht jedes Programm voll)`);
     let selbstFeuert = false;
     if (selftest) {
         const abk = pruefe(diaetLauf(diaetLaden("abkuerzung")));
         const schreibFn = diaetLaden("schreiben");
-        const ohneSchreiben = schreibFn ? pruefe(diaetLauf(schreibFn)) : ["(kein Schreiben in der Diät)"];
-        selbstFeuert = abk.some((e) => e.startsWith("Kamera-Treue")) && ohneSchreiben.length > 0;
+        const ohneSchreiben = schreibFn ? pruefe(diaetLauf(schreibFn)) : null;
+        selbstFeuert =
+            abk.some((e) => e.startsWith("Kamera-Treue")) &&
+            (ohneSchreiben === null || ohneSchreiben.some((e) => e.startsWith("Kamera-Treue")));
     }
     return { fehler, selbstFeuert, stand };
 }

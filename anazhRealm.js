@@ -90884,12 +90884,39 @@ AnazhRealm._tuerOffenRad = function () {
 //  (1) Instanz-Wächter: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH →
 //      Mutation → genau EIN Refresh.
 //  (2) Atlas-Wächter: lebende Canvas-Atlanten deklarieren sich an mat._anazhAtlasTexe → Bake → EIN Refresh.
-// Sonst entscheidet die Vendor-Bahn (renderId-Wand je Beobachter, dann equals()). DIE KAMERA-TREUE: Beobachter UND
-// geteilte Bindegruppe (render · frame: cameraViewMatrix · cameraProjectionMatrix · uLodAuge) hängen in r184 am
-// PROGRAMM (NodeBuilderState), nie an der Welt — die renderId-Wand schreibt sie je Programm und Render genau einmal.
-// Eine Abkürzung VOR dieser Wand friert sie ein: die Bundle-Abkürzung (V18.518, gefallen 04.10. mit den Region-
-// Bundles) schrieb je Render nur die Gruppe des Stempel-Objekts, 98 von 99 Programmen zeigten die alte Kamera.
-// gate:vendor-anker fährt die Treue am Schein-Beobachter.
+//  (3) DIE KAMERA-TREUE DES DIREKTEN PFADS: Beobachter UND geteilte Bindegruppe (render · frame: cameraViewMatrix ·
+//      cameraProjectionMatrix · uLodAuge) hängen in r184 am PROGRAMM (NodeBuilderState), und jedes Objekt mit eigener
+//      Geometrie hat sein eigenes — die renderId-Wand des Vendors refreshte darum JEDES Objekt in JEDEM Pass voll
+//      (Knoten, Objekt-Gruppe, Geometrie-Prüfung). Die Diät schreibt stattdessen je Programm und Render die geteilten
+//      Gruppen (_diaetGeteiltSchreiben: updateBefore, die render-/frame-Knoten, der Upload genau dieser Gruppen) und
+//      fragt dann equals() (Welt-Matrix · Material · Geometrie · Lichter): voll nur, was sich änderte. Diät-Stoffe tragen
+//      nur geteilte renderGroup-Uniforms (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit
+//      dem Objekt. Die Bundle-Abkürzung (V18.518, gefallen 04.10.) schrieb die Gruppe nur für das Stempel-Objekt.
+//      Kopf wie der Vendor: Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn.
+//      gate:vendor-anker fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
+AnazhRealm._diaetGeteiltSchreiben = function (rend, ro) {
+    const nbs = ro.getNodeBuilderState();
+    let k = nbs._anazhGeteilt;
+    if (!k) {
+        const knoten = [];
+        for (const n of nbs.updateNodes) if (n.getUpdateType() !== "object") knoten.push(n);
+        const gruppen = [];
+        for (const g of ro.getBindings()) {
+            const b0 = g.bindings && g.bindings[0];
+            if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
+        }
+        k = nbs._anazhGeteilt = { knoten, gruppen };
+    }
+    rend._nodes.updateBefore(ro);
+    if (k.knoten.length) {
+        const nf = rend._nodes.getNodeFrameForRender(ro);
+        for (const n of k.knoten) nf.updateNode(n);
+    }
+    if (k.gruppen.length) {
+        const alle = ro.getBindings();
+        for (const g of k.gruppen) rend._bindings._update(g, alle);
+    }
+};
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
     if (obj && obj.isInstancedMesh === true) {
@@ -90918,7 +90945,21 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             return true;
         }
     }
-    return altNR.call(obs, ro, frame);
+    const rend = frame && frame.renderer;
+    if (
+        !rend ||
+        obs.hasAnimation === true ||
+        !obs.renderObjects.has(ro) ||
+        obs.needsVelocity(rend) ||
+        ro.getNodeBuilderState().updateAfterNodes.length > 0
+    )
+        return altNR.call(obs, ro, frame);
+    const rid = frame.renderId;
+    if (obs.renderId !== rid) {
+        obs.renderId = rid;
+        AnazhRealm._diaetGeteiltSchreiben(rend, ro);
+    }
+    return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
 // einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +
