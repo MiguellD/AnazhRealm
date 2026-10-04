@@ -46,6 +46,10 @@ import * as TSL from "three/tsl";
 // LICHT-Raum (floor(center/texel)·texel in der Light-Orientierung) —
 // die V17.111-R1-Lehre ist im Addon pro Kaskade schon Gesetz.
 import { CSMShadowNode } from "./CSMShadowNode.js";
+// DIE ZEITLICHE AUFLÖSUNG (04.10.): das r184-Addon `examples/jsm/tsl/display/TRAANode.js`, verbatim vendort
+// (Quelle: npm three@0.184.0, unpkg). Importiert 'three/webgpu' + 'three/tsl' — unsere Import-Map-Pfade. Die
+// Post-Kette (_ensurePostProcessing) baut es als erste Stufe; FXAA ist gefallen.
+import TRAANode from "./TRAANode.js";
 
 // Defensive Existence-Checks: bei Vendor-Versionswechsel (r184→r190+) können
 // Symbol-Namen verschwinden — wir wollen klare Bootstrap-Fehler, KEINE stille
@@ -122,6 +126,8 @@ THREE_GLOBAL.TSL = TSL;
 if (typeof CSMShadowNode === "function") {
     THREE_GLOBAL.CSMShadowNode = CSMShadowNode;
 }
+// Die zeitliche Auflösung ist die EINE Kantenglättung — hart angebunden (der Import selbst fällt laut, fehlt die Datei).
+THREE_GLOBAL.TRAANode = TRAANode;
 // T3 (DC-SUBMIT-TÖTER) — BundleGroup lebt NUR im three/webgpu-Bundle (r184:
 // WebGPU-RenderBundles; der Renderer replayed statischer Subbäume statt sie
 // jeden Frame neu zu encoden). Soft-Anbindung wie PostProcessing/CSM: fehlt

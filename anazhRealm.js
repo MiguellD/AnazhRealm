@@ -83518,7 +83518,7 @@ class AnazhRealm {
         const holz = await this._holzWahl();
         this._applyHolzProfil(holz);
         const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
-        this.state._fxaa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
+        this.state._traa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
         // Opt-in Headless-Null-Renderer (GPU-frei) für Mechanik-Playtest / Server-Sim, sonst der echte
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
@@ -83528,8 +83528,9 @@ class AnazhRealm {
                 ? this._makeHeadlessRenderer(canvas)
                 : new THREE.WebGPURenderer({
                       canvas,
-                      // KEIN MSAA: die Kantenglättung ist FXAA am Ende der Post-Kette (_fxaaNode; das Holz-Profil
-                      // schaltet sie). MSAA 4× kostete gemessen ~7 ms GPU und 267 MB VRAM (04.10., Radeon 890M).
+                      // KEIN MSAA: die Kantenglättung ist die zeitliche Auflösung (TRAA) am Anfang der Post-Kette
+                      // (_ensurePostProcessing; das Holz-Profil schaltet sie). MSAA 4× kostete gemessen ~7 ms GPU
+                      // und 267 MB VRAM (04.10., Radeon 890M).
                       antialias: false,
                       trackTimestamp: true,
                       // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
@@ -86126,7 +86127,24 @@ class AnazhRealm {
             // API-korrekt: der sampelbare Textur-Node kommt aus
             // getTextureNode() (PassNode != TextureNode — .sample() lebt am
             // TextureNode). Das ist das offizielle MRT/pass-Muster.
-            const sceneColor = typeof scenePass.getTextureNode === "function" ? scenePass.getTextureNode() : scenePass;
+            let sceneColor = scenePass.getTextureNode();
+            // DIE ZEITLICHE AUFLÖSUNG (TRAA, vendor/TRAANode.js = r184 verbatim) statt FXAA am Ende: die Kamera
+            // springt je Frame um einen Halton-Subpixel, die Geschichte wird reprojiziert und gegen die Varianz der
+            // 3×3-Nachbarschaft geklemmt — Kanten sind echt übersampelt, und die rotierende LOD-Dither-Blende
+            // (uDitherT, _loopRender) mittelt sich zu einer glatten Überblendung statt eines Gitters (Befund 04.10.:
+            // Birken und Büsche als gerasterte Geister; FXAA sah das Muster als Kante und ließ es stehen). Erste
+            // Stufe der Kette (Studio-Gesetz phytogenesis FIX v32: zeitliche Auflösung VOR den Nachbearbeitungen):
+            // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
+            // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity.
+            const traa = this.state._traa
+                ? new THREE.TRAANode(
+                      sceneColor,
+                      scenePass.getTextureNode("depth"),
+                      this._traaKameraBewegung(TSL, scenePass.getTextureNode("depth")),
+                      this.state.camera
+                  )
+                : null;
+            if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
                 // Bloom-Schwelle 0.86: nur sehr helle Spitzen (Sonnen-Disc, Wasser-Glitzer) bloomen, nicht der
@@ -86260,13 +86278,11 @@ class AnazhRealm {
             const degrayed = mix(contrasted, warm, greyness.mul(u.degrayStrength).mul(float(1.0).sub(u.nightFactor)));
             const graded = degrayed.max(vec3(0, 0, 0));
 
-            // DIE KANTENGLÄTTUNG: FXAA nach dem Tonemapping (die Ausgabe-Wandlung zieht hierher vor, die Post-Kette
-            // wandelt danach nicht noch einmal) — statt MSAA 4× im Szenen-Ziel.
-            if (this.state._fxaa) {
-                pp.outputNode = this._fxaaNode(TSL, TSL.renderOutput(graded));
-                pp.outputColorTransform = false;
-            } else pp.outputNode = graded;
+            // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
+            pp.outputNode = graded;
             this.state.postProcessing = pp;
+            // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
+            this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
             return pp;
         } catch (err) {
@@ -86276,42 +86292,44 @@ class AnazhRealm {
         }
     }
 
-    // FXAA (Lottes, die Konsolen-Variante von FXAA 3.11 — 9 Taps): auf dem fertigen LDR-Bild (Zwischen-Textur), Luma
-    // wahrnehmungsgewichtet; entlang der Kanten-Richtung zwei bzw. vier Proben gemittelt, die breitere Mittelung nur,
-    // wenn sie im lokalen Luma-Band bleibt (sonst übersprang sie eine Kante).
-    _fxaaNode(TSL, ldr) {
-        const { convertToTexture, screenUV, screenSize, vec2, vec3, vec4, float, dot, min, max, abs, clamp, select } =
-            TSL;
-        const tex = convertToTexture(ldr);
-        const px = vec2(1.0, 1.0).div(screenSize);
-        const L = vec3(0.299, 0.587, 0.114);
-        const nb = (dx, dy) => dot(tex.sample(screenUV.add(px.mul(vec2(dx, dy)))).rgb, L);
-        const lNW = nb(-1, -1);
-        const lNE = nb(1, -1);
-        const lSW = nb(-1, 1);
-        const lSE = nb(1, 1);
-        const lM = dot(tex.sample(screenUV).rgb, L);
-        const lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
-        const lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-        const dirX = lNW.add(lNE).sub(lSW.add(lSE)).negate();
-        const dirY = lNW.add(lSW).sub(lNE.add(lSE));
-        const reduce = max(
-            lNW
-                .add(lNE)
-                .add(lSW)
-                .add(lSE)
-                .mul(0.25 / 8),
-            float(1 / 128)
-        );
-        const rcp = float(1.0).div(min(abs(dirX), abs(dirY)).add(reduce));
-        const dir = clamp(vec2(dirX, dirY).mul(rcp), vec2(-8.0, -8.0), vec2(8.0, 8.0)).mul(px);
-        const s = (k) => tex.sample(screenUV.add(dir.mul(k))).rgb;
-        const rgbA = s(1 / 3 - 0.5)
-            .add(s(2 / 3 - 0.5))
-            .mul(0.5);
-        const rgbB = rgbA.mul(0.5).add(s(-0.5).add(s(0.5)).mul(0.25));
-        const lB = dot(rgbB, L);
-        return vec4(select(lB.lessThan(lMin).or(lB.greaterThan(lMax)), rgbA, rgbB), 1.0);
+    // DIE KAMERA-BEWEGUNG je Pixel für die zeitliche Auflösung — das Studio-Gesetz TAA-Lite (phytogenesis FIX v32):
+    // „die Welt ist statisch, also ist Kamerabewegung EXAKT reprojezierbar (Szenentiefe + ViewProj des letzten
+    // Frames); Wind/Wasser fängt der Nachbarschafts-Klemm". Ein Pixel (uv, Tiefe) im Clip-Raum dieses Frames, mal
+    // R = PV_vor · PV_jetzt⁻¹ (`_traaReprojektion`, je Frame in float64 auf der CPU gefaltet — keine Welt-
+    // Translation im Shader), liegt im Clip-Raum des vorigen Frames; die Differenz der NDC ist die Bewegung, die
+    // TRAANode als `velocityNode.load(texel)` liest. Keine MRT-Velocity: sie schriebe je Fragment JEDES Materials
+    // ein zweites Ziel und rechnete je Vertex die Vorgänger-Transformation, und ihre Objekt-Uniforms
+    // (previousModelWorldMatrix) zieht die Diät/Bundle-Abkürzung (_diaetRefresh) gebündelten Objekten nie nach —
+    // der ganze Wald hätte die Bewegung seiner letzten Aufnahme getragen. Was sich selbst bewegt (Tiere, Wind),
+    // fängt die Varianz-Klemme der Geschichte.
+    _traaKameraBewegung(TSL, tiefe) {
+        const { vec2, vec4 } = TSL;
+        const R = TSL.uniform(new THREE.Matrix4());
+        this.state._traaR = { R, jetzt: new THREE.Matrix4(), vor: new THREE.Matrix4(), neu: true };
+        return {
+            load: (texel) => {
+                const uvT = texel.div(vec2(tiefe.size()));
+                const ndc = vec2(uvT.x.mul(2).sub(1), uvT.y.oneMinus().mul(2).sub(1));
+                const vor = R.mul(vec4(ndc, tiefe.load(texel).r, 1));
+                return ndc.sub(vor.xy.div(vor.w));
+            },
+        };
+    }
+
+    // Die Reprojektion des Frames: vor dem Post-Render (die Kamera trägt noch keinen TRAA-Versatz, der lebt nur
+    // zwischen onBefore-/onAfterRenderPipeline), einmal je gerendertem Frame.
+    _traaReprojektion() {
+        const z = this.state._traaR;
+        const cam = this.state.camera;
+        if (!z || !cam) return;
+        cam.updateMatrixWorld();
+        z.vor.copy(z.jetzt);
+        z.jetzt.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        if (z.neu) {
+            z.vor.copy(z.jetzt);
+            z.neu = false;
+        }
+        z.R.value.copy(z.jetzt).invert().premultiply(z.vor);
     }
 
     // Alle Schatten-Maps im nächsten Render neu — die EINE Markierung (Werkzeuge vor einer Aufnahme): je Licht am
@@ -86454,12 +86472,13 @@ class AnazhRealm {
             this._tickGrasBend();
         }
         // uLodRef spiegelt live die EINE Quelle `state.lodRef` (Slider ohne Mesh-Rebuild; dieselbe Zahl
-        // liest `_lodPerceptionDistance`), uLodMaskOn den A/B-Toggle. uDitherT bleibt statisch: rotierendes
-        // Dither ohne TAA wäre kriechendes Rauschen — Rotation erst hinter einem TAA-Gate (`state.taaLite`).
+        // liest `_lodPerceptionDistance`), uLodMaskOn den A/B-Toggle. uDitherT rotiert golden-ratio, wo die
+        // zeitliche Auflösung in der Kette steht (state.traaNode, _ensurePostProcessing): das zeitliche Mittel ist die
+        // glatte Blende (statisch wäre das Mittel das Muster). Ohne TRAA (Holz kienspan) bleibt es statisch —
+        // rotierendes Dither ohne zeitliche Auflösung wäre kriechendes Rauschen (Studio-Gesetz phytogenesis FIX v32).
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
-            if (_lu.uDitherT && this.state.taaLite === true)
-                _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
@@ -86532,6 +86551,7 @@ class AnazhRealm {
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
+                if (this.state.traaNode) this._traaReprojektion();
                 if (typeof pp.render === "function") pp.render();
                 else pp.renderAsync();
             } catch (err) {

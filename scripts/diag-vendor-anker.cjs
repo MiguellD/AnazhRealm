@@ -37,6 +37,7 @@ const PINS = [
     { file: "vendor/three.webgpu.min.js", hash: null },
     { file: "vendor/three.core.min.js", hash: null },
     { file: "vendor/three.tsl.min.js", hash: null },
+    { file: "vendor/TRAANode.js", hash: null },
 ];
 
 // Die Anker: Vendor-Substring → abhängiges Stamm-Organ.
@@ -86,6 +87,17 @@ const ANKER = [
     // Der stabile Puffer-Name: InstanceNode baut die Matrix-Puffer, der WGSL-Builder nennt sie ohne Namen nach der id
     { file: "vendor/three.webgpu.min.js", sub: "_createInstanceMatrixNode(e,t){let r;const{instanceMatrix:s}=this", organ: "Instanz-Puffer-Name (InstanceNode._createInstanceMatrixNode → setName)" },
     { file: "vendor/three.webgpu.min.js", sub: '"NodeBuffer_"+', organ: "Instanz-Puffer-Name (der id-Name, den setName ersetzt)" },
+    // Die zeitliche Auflösung (TRAANode r184 verbatim): der Stamm reicht die Kamera-Bewegung als `load(texel)` (NDC,
+    // y oben), setzt die Reprojektion VOR dem Post-Render (der Halton-Versatz lebt nur zwischen den Pipeline-Haken),
+    // die Tiefen-Kopie braucht gleiche Formate (Szenen-Tiefe und Geschichte beide depth24plus), die Aufnahme rendert
+    // eine Halton-Runde (31 Versätze) und schaltet den Node-Frame (TRAA rechnet je FRAME)
+    { file: "vendor/TRAANode.js", sub: "const offsetUV = this.velocityNode.load( closestPositionTexel ).xy.mul( vec2( 0.5, - 0.5 ) );", organ: "_traaKameraBewegung (velocityNode.load → NDC-Bewegung)" },
+    { file: "vendor/TRAANode.js", sub: "renderPipeline.context.onBeforeRenderPipeline = () => {", organ: "_traaReprojektion (der Versatz lebt nur im Post-Render)" },
+    { file: "vendor/three.webgpu.min.js", sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
+    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "TRAA-Tiefen-Kopie (Geschichte depth24plus wie die Szenen-Tiefe)" },
+    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "TRAA-Tiefen-Kopie (Textur zu Textur, gleiches Format)" },
+    { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
+    { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
     // instanceMatrix-Versions-Wächter (Kern-Setter)
     { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
     // Chunk-Boden-Entlassung (Upload-Probe: backend.get(attr).buffer existiert erst nach createAttribute)
