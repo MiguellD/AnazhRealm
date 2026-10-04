@@ -34,6 +34,8 @@
 //       Bauplan-Bau als eigene Gruppe)
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
+//   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
+//       Szenen-Tiefe (`_szeneTiefe`), kein Modul-Knoten der linearen Tiefe, kein namenloses Bildziel (convertToTexture)
 //   A1  Absenz: kein Frustum-Schreiber nimmt Inseln/Mesh-Tieren den Schatten; das Addon schreibt keine Box (updateBefore
 //       und _updateShadowBounds stumm), der Haken des Haupt-Passes stellt die Kaskaden (Konsum), Schatten-Pässe und
 //       Kompilate stellen nichts; die Sicht je Pass schaltet keine Bundle-Eigenschaft
@@ -42,6 +44,7 @@
 //   S4  Selbsttest: die beiden alten Frustum-Schreiber der Tiere fängt die Absenz-Regel
 //   S5  Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera (der Zweit-Schreiber ist echt)
 //   S6  Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden
+//   S7  Selbsttest: ein zweiter compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
 const puppeteer = require("puppeteer");
@@ -72,6 +75,68 @@ const server = http.createServer((req, res) => {
         res.end(data);
     });
 });
+
+// Kommentare strippen, Strings bewahren (zeichenweise, string-bewusst — die diag-altlasten-Methode).
+function ohneKommentare(src) {
+    let out = "";
+    let mode = "code";
+    for (let i = 0; i < src.length; i++) {
+        const c = src[i],
+            c2 = src[i + 1];
+        if (mode === "code") {
+            if (c === "/" && c2 === "/") {
+                mode = "line";
+                i++;
+                continue;
+            }
+            if (c === "/" && c2 === "*") {
+                mode = "block";
+                i++;
+                continue;
+            }
+            if (c === "'") mode = "sq";
+            else if (c === '"') mode = "dq";
+            else if (c === "`") mode = "tpl";
+            out += c;
+            continue;
+        }
+        if (mode === "line") {
+            if (c === "\n") {
+                mode = "code";
+                out += c;
+            }
+            continue;
+        }
+        if (mode === "block") {
+            if (c === "*" && c2 === "/") {
+                mode = "code";
+                i++;
+            }
+            continue;
+        }
+        if (c === "\\") {
+            out += c + (c2 || "");
+            i++;
+            continue;
+        }
+        if ((mode === "sq" && c === "'") || (mode === "dq" && c === '"') || (mode === "tpl" && c === "`")) mode = "code";
+        out += c;
+    }
+    return out;
+}
+
+// Z2 — die Bildziele je Leser, gezählt im kommentar-bereinigten Stamm.
+function bildZiele(src) {
+    const code = ohneKommentare(src);
+    const n = (re) => (code.match(re) || []).length;
+    return {
+        kompilat: n(/\.compileAsync\(/g),
+        tiefe: n(/viewportDepthTexture\(/g),
+        linear: n(/viewportLinearDepth/g),
+        namenlos: n(/convertToTexture\(/g),
+    };
+}
+const bildZieleGut = (z) => z.kompilat === 1 && z.tiefe === 1 && z.linear === 0 && z.namenlos === 0;
 
 function probe(selbsttest) {
     const r = window.anazhRealm;
@@ -474,6 +539,12 @@ function probe(selbsttest) {
                 csm._shadowNodes.every((sn) => Object.prototype.hasOwnProperty.call(sn, "setupRenderTarget")),
         };
     }
+    // ── Z2 (Seite): der EINE Kompilier-Weg und die EINE Szenen-Tiefe leben in ihren Methoden ──
+    aus.z2 = {
+        kompiliere: /\.compileAsync\(/.test(window.__codeOf(r._kompiliere)),
+        szeneTiefe: /viewportDepthTexture\(/.test(window.__codeOf(r._szeneTiefe)),
+    };
+
     // ── A1: Absenz + Konsum ──
     // die alten Frustum-Schreiber der Tiere: `creature.visible = inFrustum` und `… = this.isInFrustum(creature, frustum)`
     const TIER_SCHREIBER = /\.visible\s*=\s*(?:this\.isInFrustum\(|inFrustum\b)/;
@@ -594,6 +665,9 @@ function probe(selbsttest) {
         if (!cond) ok = false;
     };
     try {
+        // Z2 — die Bildziele je Leser im Stamm (GPU-frei, vor dem Boot)
+        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const z2 = bildZiele(stamm);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 120000,
@@ -681,6 +755,11 @@ function probe(selbsttest) {
             a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt,
             JSON.stringify(a.z1)
         );
+        check(
+            "Z2 Bildziele je Leser: EIN compileAsync (_kompiliere), EINE Szenen-Tiefe (_szeneTiefe), kein namenloses Ziel",
+            bildZieleGut(z2) && a.z2.kompiliere && a.z2.szeneTiefe,
+            `${JSON.stringify(z2)} · ${JSON.stringify(a.z2)}`
+        );
         check("A1 kein Frustum-Schreiber für Inseln", a.a1.inselnFrei);
         check("A1 kein Frustum-Schreiber für Mesh-Tiere", a.a1.tiereFrei);
         check(
@@ -710,6 +789,8 @@ function probe(selbsttest) {
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
             check("S6 Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden", a.s6 === true);
+            const zs = bildZiele(stamm + "\nr.compileAsync(o, k);\nconst t = TSL.viewportDepthTexture();\n");
+            check("S7 Selbsttest: ein zweiter Kompilier-Weg, eine zweite Szenen-Tiefe machen Z2 rot", !bildZieleGut(zs));
         }
         check("keine Page-Errors", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     } catch (e) {

@@ -188,6 +188,10 @@ const FORBIDDEN = [
     // DIE INTEGRATION der Bild-Wahrheit (04.10.): der Gruppen-Schlüssel mit Saison war ein Zwilling des saisonfreien
     // Körper-Schlüssels (V18.527) und traf im Cache nie; die Höhe eines Baum-Körpers lebt im Höhen-Buch.
     { token: "_foundryGruppenKey", fiel: "Integration bild-wahrheit — _foundryKoerperKey ist der EINE Körper-Schlüssel" },
+    // DIE BILDZIELE JE LESER (W7, integriert 04.10.): der Modul-Knoten der linearen Szenen-Tiefe hielt seinen EIGENEN
+    // Tiefen-Klon und kopierte je Frame neben dem Feld-Pass ein zweites Mal — die Szenen-Tiefe ist der EINE Knoten
+    // `_szeneTiefe` (gate:schatten-werfer Z2 zählt die Leser).
+    { token: "viewportLinearDepth", fiel: "W7 — _szeneTiefe ist die EINE Szenen-Tiefe (Wasser und Feld-Pass)" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
