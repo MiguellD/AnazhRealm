@@ -131,6 +131,8 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
     { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "TRAA-Tiefen-Kopie (Geschichte depth24plus wie die Szenen-Tiefe)" },
     { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "TRAA-Tiefen-Kopie (Textur zu Textur, gleiches Format)" },
+    // Die Platzhalter-Tiefe (1×1, namenlos, ohne Ziel): der Stamm nennt sie über den Knoten (Band-Linse, Textur-Zensus)
+    { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
     { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
     // DIE KASKADEN-BOX (W7: _kaskadenGeburt · _kaskadenPassen · _kaskadenZiele · _passSicht): der Host ersetzt je Instanz

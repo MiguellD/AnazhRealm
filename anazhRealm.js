@@ -87026,6 +87026,9 @@ class AnazhRealm {
                       this.state.camera
                   )
                 : null;
+            // Die Platzhalter-Tiefe des Knotens (1×1, bis die Geschichte ihre Tiefe trägt) hat weder Namen noch Ziel —
+            // die Band-Linse nennt jedes Textur-Objekt beim Erzeuger (gate:vendor-anker pinnt die Vendor-Zeile).
+            if (traa) traa._previousDepthNode.value.name = "TRAANode.vortiefe";
             if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
