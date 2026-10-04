@@ -4,14 +4,14 @@
 // für immer SCHWARZ. `renderer.setSize` legt Szene-Tiefe und den Viewport-Tiefen-Klon neu an; das Wasser
 // ist der EINE Leser der Viewport-Tiefe (`viewportLinearDepth`), seine Textur-Bindung zog nicht nach — jeder
 // Submit des Hauptpasses fiel („Destroyed texture … used in a submit"). Die Heilung sitzt am EINEN
-// Chokepoint, dem resize-Handler: `_wasserTiefeNeuBinden` baut den Leser frisch, die Uniform-Werte reisen mit.
+// Chokepoint, dem resize-Handler: `_tiefenLeserNeuBinden` baut den Leser frisch, die Uniform-Werte reisen mit.
 //
 // Diese Linse (Null-Renderer, GPU-frei) fährt den ECHTEN resize-Handler und prüft den KONSUM:
 //   F1  nach dem Wechsel trägt kein Mesh mehr das alte Wasser-Material — weder in der Szene noch in der
 //       Chunk-Wasser-Ablage (ein ausgehängtes Mesh nähme es sonst wieder in die Welt)
 //   F2  das neue Material ist das EINE `hydroSurfaceMaterial`, alle Wasser-Meshes tragen es
 //   F3  die Uniform-Werte reisen mit (ein Probe-Wert überlebt den Neubau)
-//   S1  Selbsttest: mit gestubbtem `_wasserTiefeNeuBinden` (no-op) MUSS F1 rot werden
+//   S1  Selbsttest: mit gestubbtem `_tiefenLeserNeuBinden` (no-op) MUSS F1 rot werden
 // Den Pixel-Beweis trägt die echte GPU: `werkbank fenster <w> <h>` + `status` (Zähler `zerstoert`).
 //
 //   node scripts/diag-fenster-wechsel.cjs
@@ -63,8 +63,8 @@ async function probe(page, w, h, stub) {
         if (k) u[k].value = 0.4321;
         window.__fenster = { alt, drin, draussen, k, roh: null };
         if (stub) {
-            window.__fenster.roh = Object.getPrototypeOf(r)._wasserTiefeNeuBinden;
-            r._wasserTiefeNeuBinden = () => 0;
+            window.__fenster.roh = Object.getPrototypeOf(r)._tiefenLeserNeuBinden;
+            r._tiefenLeserNeuBinden = () => 0;
         }
     }, stub);
     await page.setViewport({ width: w, height: h });
@@ -88,7 +88,7 @@ async function probe(page, w, h, stub) {
         };
         st.scene.remove(f.drin);
         st.voxelChunkWaterIso.delete("fensterProbe");
-        if (f.roh) delete r._wasserTiefeNeuBinden;
+        if (f.roh) delete r._tiefenLeserNeuBinden;
         return aus;
     });
 }

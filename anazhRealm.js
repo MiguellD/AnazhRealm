@@ -22323,6 +22323,33 @@ class AnazhRealm {
             };
             NM.__anazhSchattenDiaet = true;
         }
+        // DIE BUNDLE-REIHENFOLGE: r184 sammelt die Bundles eines Passes und führt sie erst in finishRender aus — NACH
+        // allen direkten Draws. Der Feld-Pass („letzter Draw, nur Himmel-Pixel überleben") und das Wasser liefen so
+        // VOR Pflanzen, Boden und Bauten (alles Bundles): der Feld-March traced JEDES Pixel gegen einen fast leeren
+        // Tiefenpuffer, das Wasser mischte sich gegen den leeren Grund und seine Ufer-Tiefe sah keinen Boden (gemessen
+        // 04.10., echte GPU, Mess-Wiese). Die Bundles laufen jetzt sofort nach ihrer Aufnahme/ihrem Replay, die
+        // direkten Draws danach — die Reihenfolge, die der Code behauptet. executeBundles leert den Pass-Zustand, der
+        // gemerkte Zustand fällt mit (dasselbe Muster wie r184 nach dem Pass-Bruch). Array-Kameras behalten ihren Pfad.
+        if (typeof renderer._renderBundles === "function" && renderer.backend && renderer.backend.isWebGPUBackend) {
+            const bundlesRoh = renderer._renderBundles;
+            renderer._renderBundles = function (bundles, sceneRef, lightsNode) {
+                const aus = bundlesRoh.call(this, bundles, sceneRef, lightsNode);
+                const rc = this._currentRenderContext;
+                const d = rc ? this.backend.get(rc) : null;
+                if (
+                    d &&
+                    d.currentPass &&
+                    d.renderBundles &&
+                    d.renderBundles.length > 0 &&
+                    !this.backend._isRenderCameraDepthArray(rc)
+                ) {
+                    d.currentPass.executeBundles(d.renderBundles);
+                    d.renderBundles = [];
+                    d.currentSets = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+                }
+                return aus;
+            };
+        }
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
@@ -32385,14 +32412,16 @@ class AnazhRealm {
         return { submerged: true, surfaceY };
     }
 
-    // DIE TIEFE NACH DEM REALLOC: das Wasser ist der EINE Leser der Viewport-Tiefe (`viewportLinearDepth`
-    // → r184 ViewportDepthTextureNode, ein MSAA-Klon je Render-Ziel, kopiert im Pass-Bruch). Ein Resize
-    // (`setSize`) legt Szene-Tiefe und Klon neu an, die Textur-Bindung des Wasser-Materials zieht nicht nach:
-    // jeder Submit des Hauptpasses fällt („Destroyed texture … used in a submit", renderContext des Szene-
-    // Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster 1920→1600→1920). Das Material
-    // wird frisch gebaut (gleicher WGSL → Programm aus dem Cache), alle Uniform-Werte reisen mit.
-    _wasserTiefeNeuBinden() {
+    // DIE TIEFE NACH DEM REALLOC: die Leser der Viewport-Tiefe (r184 ViewportDepthTextureNode, ein MSAA-Klon je
+    // Render-Ziel, kopiert im Pass-Bruch) sind das Wasser (`viewportLinearDepth`, weiche Ufer) und der Feld-Pass
+    // (die Tiefen-Grenze des Marchs). Ein Resize (`setSize`) legt Szene-Tiefe und Klon neu an, die Textur-Bindung
+    // eines Lesers zieht nicht nach: jeder Submit des Hauptpasses fällt („Destroyed texture … used in a submit",
+    // renderContext des Szene-Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster
+    // 1920→1600→1920). Das Wasser-Material wird frisch gebaut (gleicher WGSL → Programm aus dem Cache), alle
+    // Uniform-Werte reisen mit; der Feld-Pass fällt und baut sich im nächsten Fern-Ring-Takt neu (frisch gebunden).
+    _tiefenLeserNeuBinden() {
         const st = this.state;
+        if (st.feldPass) this._feldPassDispose();
         const alt = st.hydroSurfaceMaterial;
         if (!alt) return 0;
         const altU = st.hydroSurfaceUniforms || {};
@@ -35161,7 +35190,7 @@ class AnazhRealm {
         // Elevation-Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. textureDimensions braucht
         // f32/i32-Casts (WGSL-Spec).
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>, atlas: texture_3d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
@@ -35191,6 +35220,15 @@ class AnazhRealm {
                 "    // d IST das Schrittmaß (voxel-wahr), die Normale kommt aus dem\n" +
                 "    // Dichte-Gradienten und die Sonne beleuchtet (kein Nacht-Glühen).\n" +
                 "    var bestT = 1e30;\n" +
+                "    var getroffen = false;\n" +
+                "    // DIE TIEFEN-GRENZE: steht vor diesem Pixel schon Geometrie (die Szenen-Tiefe vor dem Feld-Pass),\n" +
+                "    // traced der March nur bis dorthin — dahinter verwürfe ihn der Depth-Test ohnehin. Der Pass schreibt\n" +
+                "    // seine Tiefe selbst (depthNode), darum gibt es keinen frühen Tiefentest: ohne die Grenze lief der\n" +
+                "    // ganze Sphere-Trace für JEDES Pixel (gemessen 04.10., echte GPU: 40–50 ms je Frame).\n" +
+                "    if (szeneTiefe < 0.9999999) {\n" +
+                "        let vzS = fern * nah / max(fern - szeneTiefe * (fern - nah), 1e-6);\n" +
+                "        bestT = vzS / max(dot(dir, fwd), 1e-4);\n" +
+                "    }\n" +
                 "    var bestRgb = vec3<f32>(0.0);\n" +
                 "    var bestN = vec3<f32>(0.0, 1.0, 0.0);\n" +
                 "    let inv = 1.0 / dir;\n" +
@@ -35313,6 +35351,7 @@ class AnazhRealm {
                 "                        }\n" +
                 "                        if (dmG * sk < 0.008) {\n" +
                 "                            bestT = tG;\n" +
+                "                            getroffen = true;\n" +
                 "                            let qA = textureLoad(kapseln, vec2<i32>(poG + nkG * 2, 0), 0);\n" +
                 "                            let qB = textureLoad(kapseln, vec2<i32>(poG + nkG * 2 + 1, 0), 0);\n" +
                 "                            var gvG = vec3<f32>(0.0);\n" +
@@ -35418,6 +35457,7 @@ class AnazhRealm {
                 "                }\n" +
                 "                if (dm < 0.008) {\n" +
                 "                    bestT = tK;\n" +
+                "                    getroffen = true;\n" +
                 "                    let pA = textureLoad(kapseln, vec2<i32>(po + nk * 2, 0), 0);\n" +
                 "                    let pB = textureLoad(kapseln, vec2<i32>(po + nk * 2 + 1, 0), 0);\n" +
                 "                    var gvK = vec3<f32>(0.0);\n" +
@@ -35513,6 +35553,7 @@ class AnazhRealm {
                 "                let vH = clamp((oL + dL * tHi - lm) / lg, vec3<f32>(0.001), vec3<f32>(0.999)) * d;\n" +
                 "                let cH = feldTriAbtast(atlas, loI, hiI, vH);\n" +
                 "                bestT = tHi;\n" +
+                "                getroffen = true;\n" +
                 "                // Ecken-MITTEL statt Voxel-Farbe: durch a geteilt — leere Ecken\n" +
                 "                // (rgba=0) dunkeln den Rand sonst zum Halo ab. Der Bäcker koppelt\n" +
                 "                // rgb und alpha im SELBEN 90er-Schritt (gemeinsamer Deckel) —\n" +
@@ -35538,7 +35579,7 @@ class AnazhRealm {
                 "    }\n" +
                 "    }\n" + // Seiten-Loop zu
                 "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
-                "    if (bestT < 1e29) {\n" +
+                "    if (getroffen) {\n" +
                 "        // DAS LICHT DER WELT: Richt-Licht + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
                 "        // Himmels-Irradianz (albedo·env) — die Formel des MeshStandard-Diffus, ohne Ton-Klemme:\n" +
                 "        // die Belichtung macht die Ausgabe-Kette für Feld und Mesh gemeinsam.\n" +
@@ -35591,6 +35632,9 @@ class AnazhRealm {
             fogNah: U.fogNah,
             fogFern: U.fogFern,
             fogFarbe: U.fogFarbe,
+            // Die Szenen-Tiefe VOR dem Feld-Pass (r184-Viewport-Tiefe, Kopie im Pass-Bruch wie beim Wasser): die
+            // Grenze des Marchs. Ein Leser der Viewport-Tiefe bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
+            szeneTiefe: TSL.viewportDepthTexture().x,
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
@@ -84217,7 +84261,7 @@ class AnazhRealm {
             // (Addon-Vertrag: „call every time you change camera settings").
             if (this.state.csmNode && this.state.csmNode.camera) this.state.csmNode.updateFrustums();
             // setSize legt Szene-Tiefe und Viewport-Tiefen-Klon neu an — der EINE Leser bindet neu.
-            this._wasserTiefeNeuBinden();
+            this._tiefenLeserNeuBinden();
             this.log("Fenstergröße angepasst", "INFO");
         });
 
@@ -86935,7 +86979,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.519.0";
+AnazhRealm.VERSION = "18.520.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
