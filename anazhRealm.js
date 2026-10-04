@@ -84816,10 +84816,16 @@ class AnazhRealm {
             // Block-Spike eines Sync-Builds). LÄUFT IMMER, auch nach einem abgefangenen Frame-Fehler.
             // Unter der GPU-Leine zählt der Abstand zwischen GERENDERTEN Frames — der Regler, das HUD und der Flugschreiber
             // sähen sonst den 60-Hz-Takt der Simulation, wo die GPU weniger Bilder schafft.
-            const _fms = this._gpuLeineFrameMs(t, delta * 1000);
+            // Die Faltung steht unter derselben Fehler-Grenze wie der Frame (V18.278: ein werfender Frame-Schritt —
+            // auch updateFps — erstarrt den Loop nicht, er wird gezählt).
+            const _fms = this._gpuLeineFrameMs(delta * 1000);
             if (_fms != null) {
-                this.updateFps(_fms / 1000);
-                this._perfSenseFoldFrame(_fms, _fms / 1000);
+                try {
+                    this.updateFps(_fms / 1000);
+                    this._perfSenseFoldFrame(_fms, _fms / 1000);
+                } catch (err) {
+                    this._loopErrorBoundary(err);
+                }
             }
             // Ingest-Takt ebenfalls auf der LÄUFT-IMMER-Seite: im try-Block hungerte ein persistenter
             // Phasen-Fehler den Drain für immer aus. Sekunden-normalisiert: `delta` (s) treibt eine
@@ -84862,7 +84868,7 @@ class AnazhRealm {
     _gpuLeineFrei() {
         const L =
             this._gpuLeine ||
-            (this._gpuLeine = { imFlug: 0, gerendert: 0, ausgesetzt: 0, letzterRenderMs: null, versuch: false });
+            (this._gpuLeine = { imFlug: 0, gerendert: 0, ausgesetzt: 0, sammelMs: 0, versuch: false });
         L.versuch = false;
         if (this._gpuLeineQueue() && L.imFlug >= AnazhRealm.GPU_FRAMES_IM_FLUG) {
             L.ausgesetzt++;
@@ -84888,14 +84894,18 @@ class AnazhRealm {
         }
     }
     // Der Frame-Takt für Perf-Sinn, HUD und Flugschreiber: der Abstand zwischen GERENDERTEN Frames (null = der Takt
-    // hat nicht gerendert). Ein Frame-Fehler nach der Frei-Prüfung zählt als Versuch — der Regler atmet weiter.
-    _gpuLeineFrameMs(nowMs, deltaMs) {
+    // hat nicht gerendert) — die SUMME der Takt-Deltas seit dem letzten gerenderten Takt. Rendert jeder Takt, ist
+    // das exakt das Takt-Delta; eine Loop-Pause (Portal, inaktiver Tab) zählt nicht als Frame-Zeit (die Wanduhr-
+    // Lücke seit dem letzten Render warf `updateFps` das Fenster weg — Playtest W12). Ein Frame-Fehler nach der
+    // Frei-Prüfung zählt als Versuch — der Regler atmet weiter.
+    _gpuLeineFrameMs(deltaMs) {
         const L = this._gpuLeine;
         if (!L) return deltaMs;
+        L.sammelMs += deltaMs;
         if (!L.versuch) return null;
-        const vor = L.letzterRenderMs;
-        L.letzterRenderMs = nowMs;
-        return vor == null ? deltaMs : Math.max(0.001, nowMs - vor);
+        const ms = L.sammelMs;
+        L.sammelMs = 0;
+        return ms;
     }
 
     // Die EINE Fehler-Grenze des ewigen Loops: ein Frame-Throw landet hier statt den Loop zu brechen —
@@ -87107,7 +87117,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.522.0";
+AnazhRealm.VERSION = "18.523.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
