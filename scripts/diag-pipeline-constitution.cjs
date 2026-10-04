@@ -194,10 +194,11 @@ law(
     /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC)
 );
 law(
-    "AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)",
+    "AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryServierStufe` → `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)",
     true,
     /cfg\.kindStages\[rec\.kind\]/.test(anazhNC) &&
-        /_foundryFlattenFor\(entry, preset, lodOverride\) \{[\s\S]{0,3000}?lod = this\._foundryDeclaredStage\(preset, lod\)/.test(
+        /_foundryServierStufe\(preset, lod\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);/.test(anazhNC) &&
+        /_foundryFlattenFor\(entry, preset, lodOverride\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(
             anazhNC
         )
 );

@@ -192,11 +192,18 @@ function pruefeQuelle(quelle) {
     // (M) DIE GERITTEN-WAND — verhaltensecht: Distanz-Autorität + Fahr-Pin.
     const lodFuer = ladeMethode(quelle, "_foundryLodForEntry", "entry");
     const D = ladeLodDistances(quelle);
-    if (!lodFuer || !D) rot.push("_foundryLodForEntry/LOD_DISTANCES nicht instanzierbar");
+    const wahl = ladeMethode(quelle, "_chooseLODForDistance", "distance, currentLOD, visHeight");
+    if (!lodFuer || !D || !wahl) rot.push("_foundryLodForEntry/_chooseLODForDistance/LOD_DISTANCES nicht instanzierbar");
     else {
         const fn = lodFuer({ LOD_DISTANCES: D });
         const pm = { x: 100, y: 5, z: -30 };
-        const stub = { state: { playerMesh: { position: pm } } };
+        // Der Schätzer fragt die EINE Stufen-Wahl (`_chooseLODForDistance`) mit der Sichthöhe (`_lodTreeVisHeight`,
+        // ein Fahrzeug ist kein Baum: 0 = rohe Distanz) — beide aus der Quelle, nie nachgebaut.
+        const stub = {
+            state: { playerMesh: { position: pm } },
+            _chooseLODForDistance: wahl({ LOD_DISTANCES: D }),
+            _lodTreeVisHeight: () => 0,
+        };
         // Fahr-Invariante: das gerittene Entry SITZT auf der Spieler-Position → Stufe 0.
         const geritten = fn.call(stub, { position: { x: pm.x, y: pm.y, z: pm.z } });
         if (geritten !== 0)

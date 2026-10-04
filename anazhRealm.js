@@ -20897,7 +20897,7 @@ class AnazhRealm {
         if (steht) {
             st._buehneStand = true;
             this.log(
-                "Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Impostor-Bakes · Fern-Deko) starten.",
+                "Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.",
                 "INFO"
             );
         }
@@ -35212,8 +35212,10 @@ class AnazhRealm {
                 "}"
         );
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
+                "    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende wie die Studio-Stufen (__phytoCore.lodDitherIGN)\n" +
+                "    let schwundIgn = fract(52.9829189 * fract(schirm.x * 0.06711056 + schirm.y * 0.00583715) + ditherT);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
                 "    let PI = 3.14159265358979;\n" +
@@ -35289,10 +35291,12 @@ class AnazhRealm {
                 "        let tN = max(max(tMin3.x, tMin3.y), max(tMin3.z, 0.5));\n" +
                 "        let tF = min(tMax3.x, min(tMax3.y, tMax3.z));\n" +
                 "        if (tF <= tN || tN >= bestT) { continue; }\n" +
+                "        let lm4 = textureLoad(liste, vec2<i32>(bx + 5, ty), 0);\n" +
+                "        if (lm4.w > 0.0 && schwundIgn < lm4.w) { continue; }\n" + // der Satz dithert aus, sein Mesh übernimmt
                 "        let r0 = textureLoad(liste, vec2<i32>(bx + 2, ty), 0);\n" +
                 "        let r1 = textureLoad(liste, vec2<i32>(bx + 3, ty), 0);\n" +
                 "        let r2 = textureLoad(liste, vec2<i32>(bx + 4, ty), 0);\n" +
-                "        let lm = textureLoad(liste, vec2<i32>(bx + 5, ty), 0).xyz;\n" +
+                "        let lm = lm4.xyz;\n" +
                 "        let lg = textureLoad(liste, vec2<i32>(bx + 6, ty), 0).xyz;\n" +
                 "        let c4 = vec4<f32>(camPos, 1.0);\n" +
                 "        let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
@@ -35609,6 +35613,9 @@ class AnazhRealm {
             // Die Szenen-Tiefe VOR dem Feld-Pass (r184-Viewport-Tiefe, Kopie im Pass-Bruch wie beim Wasser): die
             // Grenze des Marchs. Ein Leser der Viewport-Tiefe bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
             szeneTiefe: this._szeneTiefe().x,
+            // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
+            schirm: TSL.screenCoordinate.xy,
+            ditherT: this._ensureLodUniforms().uDitherT,
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
@@ -35845,6 +35852,7 @@ class AnazhRealm {
             gesetzKacheln: new Map(), // DAS VERTEILUNGS-GESETZ: kachelKey → [Gesetz-Blöcke der Klein-Streu]
             gesetzBloecke: 0, // lebende Gesetz-Blöcke (die Kapazitäts-Linse zählt mit)
             gesetzPlaetze: 0, // belegte Plätze über alle Blöcke (Instanz-Wahrheit der Klein-Streu)
+            schwund: new Set(), // Handles, deren Satz gerade ausdithert (_weltFeldAktiv aus → _weltSchwundTakt)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             belegt: 0, // Feld-EINTRÄGE (Instanzen)
             obergrenze: 0, // höchster je vergebener Feld-Index + 1 (der Shader-Loop endet dort)
@@ -35881,7 +35889,7 @@ class AnazhRealm {
         L[o + 25] = lg.y;
         L[o + 26] = lg.z;
         L[o + 27] = 0; // lokale Box Größe
-        const handle = { feld, brick };
+        const handle = { feld, brick, _anT: performance.now() };
         wm.handles[feld] = handle;
         wm.unordnung++;
         if (matrixWorld) {
@@ -36403,16 +36411,141 @@ class AnazhRealm {
         else this._weltFeldFrei(handle);
     }
 
+    // An: sofort (und ein laufender Schwund bricht ab). Aus: DER SCHWUND — übernimmt ein Mesh (Studio-Stufe, Tier), dithert
+    // der Satz über `WELT_SCHWUND_MS` aus (Texel 5.w = Schwund-Anteil, dieselbe IGN-Blende wie die Stufen), statt im
+    // selben Frame zu verschwinden: der Übergang Satz → Mesh trägt keinen Pop. Ohne gezeichneten Feld-Pass fällt er sofort.
     _weltFeldAktiv(handle, an) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
+        const L = wm.listeDaten;
         const o = handle.feld * 32;
-        const soll = an ? handle.brick.d : 0;
-        if (wm.listeDaten[o + 3] !== soll) {
-            wm.listeDaten[o + 3] = soll;
-            wm.liste.needsUpdate = true;
-            this._weltSeiteDirty(wm, handle.feld);
+        if (an) {
+            if (handle._schwundT0 !== undefined) {
+                handle._schwundT0 = undefined;
+                wm.schwund.delete(handle);
+                L[o + 23] = 0;
+                wm.liste.needsUpdate = true;
+            }
+            if (L[o + 3] !== handle.brick.d) {
+                L[o + 3] = handle.brick.d;
+                handle._anT = performance.now(); // seit wann der Satz zeichnet (die Nah-Linse nennt die Dauer)
+                wm.liste.needsUpdate = true;
+                this._weltSeiteDirty(wm, handle.feld);
+            }
+            return;
         }
+        if (L[o + 3] === 0 || handle._schwundT0 !== undefined) return;
+        const fp = this.state.feldPass;
+        if (fp && fp.mesh && fp.mesh.visible) {
+            handle._schwundT0 = performance.now();
+            wm.schwund.add(handle);
+            return;
+        }
+        L[o + 3] = 0;
+        wm.liste.needsUpdate = true;
+        this._weltSeiteDirty(wm, handle.feld);
+    }
+
+    // DIE NAH-LINSE (gate:analog-nah, Werkbank): jeder zeichnende Analog-Satz diesseits der Nah-Grenze (`ANALOG_NAH_M`,
+    // waagrecht vom Spieler zur Hülle) beim NAMEN — Klasse, Träger, Abstand, seit wann er zeichnet und warum dort kein
+    // Mesh steht. Rein lesend. `{ nah: [...], zaehl: { klasse: n } }`; ohne Welt-March null.
+    _analogZensus() {
+        const st = this.state;
+        const wm = st.weltMarch;
+        const pm = st.playerMesh && st.playerMesh.position;
+        if (!wm || !pm) return null;
+        const N = AnazhRealm.ANALOG_NAH_M;
+        const L = wm.listeDaten;
+        const K = wm.kapselDaten;
+        const jetzt = performance.now();
+        const traeger = new Map();
+        for (const e of st.architectures || []) if (e && e._ziegelSlot) traeger.set(e._ziegelSlot, { bau: e });
+        for (const c of st.creatures || []) {
+            const u = c && c.userData;
+            if (u && u._kzGlieder) for (const gl of u._kzGlieder) traeger.set(gl.handle, { tier: c });
+        }
+        const nah = [];
+        const zaehl = {};
+        const grundBau = (e) => {
+            if (this._archIsRendered(e)) return "Mesh steht — der Satz schwindet";
+            const preset = this._foundryEnabled() ? this._foundryPresetForEntry(e) : null;
+            if (!preset) return "Grammatik-Bau wartet aufs Bau-Budget";
+            const lod = this._foundryLodForEntry(e);
+            if (this._foundryStufeBereit(e, preset, lod))
+                return "Studio-Stufe L" + lod + " gedockt, noch nicht platziert";
+            if (!this._foundryPresetIsTree(preset)) return "Studio-Stufe L" + lod + " lädt (Foundry)";
+            if (lod >= 2) return "Studio-Karte wartet auf den Karten-Bäcker";
+            return "Studio-Stufe L" + lod + " lädt (Foundry), die Karte als Brücke ist noch nicht gebacken";
+        };
+        for (let f = 0; f < wm.obergrenze; f++) {
+            const h = wm.handles[f];
+            if (!h) continue;
+            const o = f * 32;
+            if (L[o + 3] === 0) continue;
+            const t = traeger.get(h);
+            const bloc = h.brick && h.brick.gesetz;
+            let d;
+            if (bloc) {
+                d = Infinity;
+                for (let i = 0; i < h.brick.anzahl; i++) {
+                    const q = (h.brick.slot + i) * 8;
+                    if (K[q + 3] > 0) d = Math.min(d, Math.hypot(K[q] - pm.x, K[q + 2] - pm.z));
+                }
+            } else {
+                const dx = Math.max(L[o] - pm.x, 0, pm.x - L[o + 4]);
+                const dz = Math.max(L[o + 2] - pm.z, 0, pm.z - L[o + 6]);
+                d = Math.hypot(dx, dz);
+            }
+            const klasse = t && t.bau ? "bau" : t && t.tier ? "tier" : bloc ? "streu-gesetz" : "unbekannt";
+            if (!(d < N)) continue;
+            zaehl[klasse] = (zaehl[klasse] || 0) + 1;
+            const z = {
+                klasse,
+                d: Math.round(d * 10) / 10,
+                seitMs: Number.isFinite(h._anT) ? Math.round(jetzt - h._anT) : null,
+                schwindet: h._schwundT0 !== undefined,
+                satz: (h.brick && h.brick.key) || null,
+            };
+            if (t && t.bau) {
+                const e = t.bau;
+                z.name = e.type + "@" + Math.round(e.position.x) + "," + Math.round(e.position.z);
+                z.grund = grundBau(e);
+            } else if (t && t.tier) {
+                const u = t.tier.userData || {};
+                z.name = (u.gattung || u.recipe || u.soul || "tier") + "#" + t.tier.id;
+                z.grund = u._kzNah ? "nah, der Satz schwindet" : "Fern-Hysterese (Nah-Grenze " + N + " m)";
+            } else if (bloc) {
+                z.name = "Gesetz-Block " + (h.brick.slot | 0);
+                z.grund = "Gesetz-Platz diesseits der Nah-Grenze";
+            } else {
+                z.name = "Feld " + f;
+                z.grund = "ohne Träger";
+            }
+            nah.push(z);
+        }
+        nah.sort((a, b) => a.d - b.d);
+        return { nah, zaehl, grenzeM: N };
+    }
+
+    // Der Schwund-Takt (je Feld-Pass-Takt): Anteil = Zeit / WELT_SCHWUND_MS in Texel 5.w; am Ende fällt der Satz aus der
+    // Zeichnung (d = 0). Die Handles tragen ihren Slot frisch (die Seiten-Ordnung verschiebt ihn).
+    _weltSchwundTakt(wm) {
+        if (!wm || !wm.schwund.size) return;
+        const L = wm.listeDaten;
+        const jetzt = performance.now();
+        for (const h of wm.schwund) {
+            const o = h.feld * 32;
+            const s = (jetzt - h._schwundT0) / AnazhRealm.WELT_SCHWUND_MS;
+            if (h._frei || s >= 1) {
+                wm.schwund.delete(h);
+                h._schwundT0 = undefined;
+                if (h._frei) continue;
+                L[o + 3] = 0;
+                L[o + 23] = 0;
+                this._weltSeiteDirty(wm, h.feld);
+            } else L[o + 23] = Math.max(1e-3, s);
+        }
+        wm.liste.needsUpdate = true;
     }
 
     // Das Feld folgt seinem GLIED: die Liste bekommt die inverse Welt-Matrix des Knochens (der March
@@ -36710,6 +36843,7 @@ class AnazhRealm {
         if (!fp) fp = this._feldPassEnsure(fr);
         if (!fp) return;
         if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ) this._feldPassMal(fp, fr);
+        this._weltSchwundTakt(st.weltMarch);
         const cam = st.camera;
         // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät) + Re-Bake bei
         // Kamera-Drift (Parallaxe/Horizont) — amortisiert, gen-gestempelt.
@@ -51521,6 +51655,11 @@ class AnazhRealm {
                 this._lodSlotOcclusionRefresh(entry);
             }
             if (newLOD === entry._lodLevel) {
+                // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
+                if (entry._bruecke) {
+                    entry._bruecke = false;
+                    this._lodSlotOcclusionRefresh(entry);
+                }
                 // Band-Pflege ohne Primär-Wechsel: der Eintrag wandert durchs Dither-Crossfade-Band, die
                 // Doppel-Mitgliedschaft folgt der Partner-Wahl. Band-Add/-Remove zählt aufs selbe Spike-Budget.
                 // Flag-Wand zuerst (foundryCrossfade aus → billiger Tick).
@@ -52542,7 +52681,9 @@ class AnazhRealm {
         // (kindStages Blume/Fels [0]) klemmten jede Fern-Zelle auf ihr L0-Mesh — gemessen 04.10. an der Mess-Wiese
         // 482 Blumen in 208 Meshes und 880 Geröll in 128 Meshes, alle 85–384 m, 954 Befehle / 4,65 M Dreiecke über
         // drei Pässe. Die Fernform ist das Gesetz (Plätze im Welt-March, Passung aus der Studio-Gestalt).
-        if (foundryFlat && foundryPreset && layer.kind !== "tree") {
+        // Die Gesetz-Bahn beginnt erst an der Nah-Grenze (`ANALOG_NAH_M`): diesseits ist auch die Fern-Stufe der Streu
+        // ihr Studio-Mesh, nie ein Kapsel-Satz.
+        if (foundryFlat && foundryPreset && layer.kind !== "tree" && dist >= AnazhRealm.ANALOG_NAH_M) {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             if ((_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()) {
                 const fh = this._streuGesetzSpawn(
@@ -52734,7 +52875,15 @@ class AnazhRealm {
             );
             if (visH === null) continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
-            if (newLod === cell.lod) continue;
+            // DIE NAH-GRENZE (`ANALOG_NAH_M`) wechselt die Bahn auch ohne Stufen-Wechsel: eine Gesetz-Zelle, die näher
+            // kommt, tauscht auf ihre Studio-Stufe; eine Studio-Fernzelle, die sich entfernt, zieht ins Gesetz (8 m
+            // Totband gegen Flattern). Sonst blieb der Kapsel-Satz einer Fern-Zelle stehen, wenn der Spieler auf sie zuging.
+            const nahM = AnazhRealm.ANALOG_NAH_M;
+            const bahnWechsel =
+                newLod >= 2 &&
+                layer.kind !== "tree" &&
+                (cell.feld ? dist < nahM : dist >= nahM + 8 && String(cell.bpName).startsWith("fscatter:"));
+            if (newLod === cell.lod && !bahnWechsel) continue;
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
             // `fade` m näher wäre es noch L2 — kein Flackern am Dither-Band). Die leere private Hülle reapt
             // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
@@ -53059,10 +53208,6 @@ class AnazhRealm {
         // Idle-Pass (Chunk-Streaming baut nichts): Merge-Cache der Hotbar-Baupläne vorwärmen → Auswahl/
         // Ghost/Platzieren ohne Hänger. Eins/Tick, nur unter Budget.
         this._tickBlueprintPrebake();
-        // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte 8-View-Impostor-Bake
-        // (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker; lazy beim ersten
-        // LOD2-Bedarf enqueued; headless/Null-Renderer = No-op — der Fallback trägt, gate-treu).
-        this._tickImpostorBake();
         // GNADENFRIST (18.07.) — der Gruppen-Reaper räumt abgelaufene leere Hüllen (1×/s;
         // headless entsteht nie ein Kandidat — der Leer-Chokepoint reapt dort sofort).
         this._tickArchGruppenReaper(performance.now());
@@ -61935,10 +62080,11 @@ class AnazhRealm {
     _tickImpostorBake() {
         const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
-        // Die BAKE-QUEUE WARTET AUF DIE BÜHNE: jeder RTT-Bake stiehlt GPU vom Boden-Streaming; bis dahin trägt
-        // die Canvas-Silhouette. Danach drained die Queue (der Bake senkt netto Last → die Bühne öffnet
-        // notfalls über den Wall-Clock-Deckel). Headless steht die Bühne sofort (gate:boot-stage).
-        if (!this._buehneSteht()) return 0;
+        // Die Karte wartet NICHT auf die Bühne: der Bäcker ist das Studio im Foundry-Worker (die Platte liefert gebackene
+        // Karten sofort), kein RTT auf der Boden-GPU — und mit echtem Renderer trägt bis zur Karte nichts (der Canvas-
+        // Platzhalter erreicht das Auge nie, `_foundryBuildImpostorFlat`), nur der Kapsel-Satz des Felds. Bis 04.10. war
+        // das ein Kreis: die Bühne wartete auf die Streu-Regionen, die Regionen auf ihre Karten, die Karten auf die
+        // Bühne — gelöst erst vom 90-s-Deckel; beim Boot an der Mess-Wiese standen so 141 Kapsel-Sätze < 64 m.
         // BAKE-WATCHDOG: ein hängender async Bake (GPU-Readback ohne echte Frames resolvt nie) klemmte
         // `_impostorBakePending` → die Queue verhungerte still. Nach der Bake-Uhr (+2 s) wird der Record
         // rttFailed (Canvas bleibt), das Token entwertet die späte finally (sie darf den NÄCHSTEN Bake nicht
@@ -62033,7 +62179,7 @@ class AnazhRealm {
         // Karte ist Golden-Sommer, das Jahr färbt der Karten-Stoff (uSeasonMul).
         // BÄCKER-OV (V18.478) — ist der Record geprägt (rec.ov, aus _foundryEnsureImpostorRecord),
         // bäckt der Studio-Bäcker das UNIKAT (die ov reist mit); ungeprägte Records byte-alt.
-        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, rec.ov || undefined)
+        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, rec.ov || undefined, rec._bedarfD2)
             .then((payload) => {
                 if (!this._applyStudioImpostorPayload(rec, payload))
                     throw new Error("Studio-Bäcker ohne brauchbaren Payload für " + key);
@@ -63421,9 +63567,14 @@ class AnazhRealm {
             if (!Array.isArray(list)) continue;
             for (const ref of list) {
                 const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
-                if (g) this._lodSlotStamp(g, ref.slot, entry.scale, entry._occluded === true);
+                if (g) this._lodSlotStamp(g, ref.slot, entry.scale, this._lodSlotVoll(entry));
             }
         }
+    }
+    // Zeichnet die Karte dieses Eintrags VOLL (vOcc 1, kein Distanz-Fade)? Der verdeckt-demotierte Baum (Studio-vOcc)
+    // und die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`).
+    _lodSlotVoll(entry) {
+        return entry._occluded === true || entry._bruecke === true;
     }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         // V18.474 — die EINE Fern-Key-Ableitung VOR jedem Keying: Fern-Leaves (Impostor-Quads/L2)
@@ -64010,7 +64161,7 @@ class AnazhRealm {
             g.mesh.boundingSphere = null;
             if (g.slotEntry) g.slotEntry[slot] = entry;
             // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + vOcc).
-            this._lodSlotStamp(g, slot, entry.scale, entry._occluded === true);
+            this._lodSlotStamp(g, slot, entry.scale, this._lodSlotVoll(entry));
             slots.push({ key: g.key, slot });
         }
         // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
@@ -64103,6 +64254,7 @@ class AnazhRealm {
         if (!bandOnly) {
             entry.instSlots = null;
             entry.instanced = false;
+            entry._bruecke = false; // die Brücke lebt nur mit ihrer Karten-Instanz
             // DORF-IN-TERRAIN — der Sockel fällt mit dem primären Instanz-Leben
             // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
             if (entry.fundament) this._archFundamentFree(entry);
@@ -64165,8 +64317,25 @@ class AnazhRealm {
             }
             const fFlat = this._foundryFlattenFor(entry, fPreset, entry._lodLevel);
             if (fFlat && fFlat.instanceable) {
+                entry._bruecke = false;
                 this._archInstanceAdd(entry, fFlat);
                 return null;
+            }
+            // DIE BRÜCKE: lädt die Wunsch-Stufe eines kalten Baums noch (die Anfrage ist eben gestellt), steht bis dahin
+            // seine gedockte Studio-Karte — VOLL gestempelt (`_lodSlotVoll`), denn diesseits ihres Bands blendete die
+            // Stufen-Maske sie aus. Der LOD-Tick wechselt auf die Wunsch-Stufe, sobald sie gedockt ist (er hält die
+            // Karte bis dahin). Vorher stand hier nichts: der Kapsel-Satz des Felds war nah und mittel die Gestalt.
+            // Eine 3D-Stufe kann keine Brücke sein — die Maske blendet L0/L1 außerhalb ihres Bands aus.
+            if (!entry.instanced && entry._lodLevel < 2 && this._foundryPresetIsTree(fPreset)) {
+                // Der Ruf stellt die Karte auch an (Record + Bedarf-Stempel, nah zuerst in die Worker-Schlange) und
+                // liefert sie, sobald sie gebacken ist — die Platte trägt sie meist schon.
+                const karte = this._foundryFlattenFor(entry, fPreset, 2);
+                if (karte && karte.instanceable) {
+                    entry._bruecke = true;
+                    entry._lodLevel = 2;
+                    this._archInstanceAdd(entry, karte);
+                    return null;
+                }
             }
             // Kennt die Foundry die Art, ist sie die EINE Quelle: null (lädt) ODER false (Bake-Lücke) → KALT
             // lassen, NIE die Grammatik; Culling-Tick/Refill bauen ihn als Studio, sobald das Asset da ist.
@@ -67238,7 +67407,7 @@ class AnazhRealm {
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
     // `bakeImpostorAtlas`, kein Nachbau). Resolvt mit payload oder null (Fehler/Timeout — der Tick-
     // Aufrufer trägt den Retry). Dasselbe pending-Routing wie build-asset, reqIds mit Präfix "imp".
-    _foundryBakeImpostorRequest(presetId, seed, ov) {
+    _foundryBakeImpostorRequest(presetId, seed, ov, bedarfD2) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
@@ -67249,14 +67418,17 @@ class AnazhRealm {
         // KARTEN AUF DIE PLATTE (V18.527): die Karte trägt ihren Platten-Schlüssel (`karte|` + Karten-Schlüssel, geprägt
         // mit ov-Hash) — die Schale liest zuerst und schreibt jeden frischen Bake; ein Zweit-Boot bäckt keine Karte neu.
         msg.platte = "karte|" + this._foundryKartenKey(presetId, seed, ov && typeof ov === "object" ? ov : null);
-        // Durch DIE EINE WORKER-SCHLANGE mit Vorrats-Rang (die Fernstufe). EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS
-        // ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin des Tick.
+        // Durch DIE EINE WORKER-SCHLANGE im Rang ihres nächsten Wartenden (`rec._bedarfD2`, d² zum Spieler; ohne Bedarf
+        // Vorrats-Rang). Bis 04.10. reiste jede Karte mit Vorrats-Rang: beim Boot an der Mess-Wiese wartete sie 11 s
+        // hinter 150 Geometrie-Aufträgen, die Bäume, die sie brauchten, standen so lange als Kapsel-Klumpen. EINE Uhr
+        // (IMPOSTOR_BAKE_TIMEOUT_MS ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die
+        // Retry-Disziplin des Tick.
         const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
         return this._foundryAuftrag(
             f,
             "imp",
             msg,
-            null,
+            Number.isFinite(bedarfD2) ? bedarfD2 : null,
             frist,
             `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`
         );
@@ -67989,7 +68161,11 @@ class AnazhRealm {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return false;
         if (entry._ziegelSlot) {
-            this._weltFeldAktiv(entry._ziegelSlot, true);
+            // Der Slot zeichnet, außer in der Mesh-Zone über dem stehenden Mesh — dieselbe Regel wie der Culling-Tick.
+            // Vorher schaltete dieser Ruf jeden Takt AN und der Culling-Tick gleich wieder AUS (je Takt jede Seite der
+            // Mesh-Zone schmutzig) — der Schwund begann so jeden Takt von vorn und endete nie (gemessen 04.10.: 197
+            // Sätze dauerhaft „schwindend").
+            this._weltFeldAktiv(entry._ziegelSlot, !(entry._ziegelNah && this._archIsRendered(entry)));
             return false;
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
@@ -68940,6 +69116,10 @@ class AnazhRealm {
             const si = o.isSkinnedMesh && o.skeleton ? o.geometry.attributes.skinIndex : null;
             if (si) {
                 const pa = o.geometry.attributes.position;
+                // Die Farbe reist mit dem Stück: die Tier-Haut trägt ihre Albedo als Vertex-Farbe (Material weiß,
+                // colorNode) — ein Stück nur aus Positionen fiel im Fit auf das Material-Weiß (gemessen 04.10. an
+                // der Mess-Wiese: alle Glieder von Fuchs, Reh und Bär 255,255,255 — die weiße Wurst am Boden).
+                const ca = o.geometry.attributes.color || null;
                 const proBone = new Map();
                 for (let i = 0; i < pa.count; i++) {
                     const b = si.getX(i);
@@ -68952,13 +69132,21 @@ class AnazhRealm {
                     const inv = o.skeleton.boneInverses[b];
                     if (!bone || !inv) continue;
                     const arr = new Float32Array(liste.length * 3);
+                    const farr = ca ? new Float32Array(liste.length * 3) : null;
                     for (let n = 0; n < liste.length; n++) {
                         arr[n * 3] = pa.getX(liste[n]);
                         arr[n * 3 + 1] = pa.getY(liste[n]);
                         arr[n * 3 + 2] = pa.getZ(liste[n]);
+                        if (farr) {
+                            farr[n * 3] = ca.getX(liste[n]);
+                            farr[n * 3 + 1] = ca.getY(liste[n]);
+                            farr[n * 3 + 2] = ca.getZ(liste[n]);
+                        }
                     }
+                    const attribute = { position: new THREE.BufferAttribute(arr, 3) };
+                    if (farr) attribute.color = new THREE.BufferAttribute(farr, 3);
                     const stueck = {
-                        geometry: { attributes: { position: new THREE.BufferAttribute(arr, 3) } },
+                        geometry: { attributes: attribute },
                         material: o.material,
                         matrixWorld: new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, inv).multiply(o.bindMatrix),
                     };
@@ -69022,38 +69210,57 @@ class AnazhRealm {
     }
 
     // Kapsel-Fit: Glied-Meshes im Knochen-LOKALEN Raum → EINE Kapsel entlang der größten Ausdehnung
-    // (Radius = Mittel der Neben-Halbachsen), Farbe = Mittel der Vertex-/Material-Farben. Mehr Kapseln je
-    // Glied wären eine Verfeinerung DERSELBEN Bahn, nie ein neues System.
+    // (Radius = Mittel der Neben-Halbachsen), Farbe = Mittel der Vertex-/Material-Farben je Teil, nach Fläche
+    // gewogen. Mehr Kapseln je Glied wären eine Verfeinerung DERSELBEN Bahn, nie ein neues System.
     _gliedKapselFit(meshes, wurzelInv) {
         if (!meshes || !meshes.length || typeof THREE === "undefined") return null;
         const v = new THREE.Vector3();
         const mL = new THREE.Matrix4();
         const bb = new THREE.Box3();
+        const bbT = new THREE.Box3();
+        const gr = new THREE.Vector3();
         bb.makeEmpty();
+        // Die Farbe ist das Mittel, das man von fern SIEHT: je Teil sein Vertex-Mittel, gewogen mit der Hüll-Fläche des
+        // Teils — nicht je Vertex (Augäpfel und Zähne tragen viele Vertices auf wenig Fläche; das Reh-Haupt lag
+        // vertex-gemittelt bei 86,70,58 statt am Fell).
         let fr = 0,
             fg = 0,
             fb = 0,
-            fn = 0;
+            fw = 0;
         for (const o of meshes) {
             mL.multiplyMatrices(wurzelInv, o.matrixWorld);
             const pos = o.geometry.attributes.position;
             const col = o.geometry.attributes.color || null;
             const mc = !col && o.material && o.material.color ? o.material.color : null;
             const schritt = pos.count > 4000 ? Math.ceil(pos.count / 4000) : 1;
+            bbT.makeEmpty();
+            let tr = 0,
+                tg = 0,
+                tb = 0,
+                tn = 0;
             for (let i = 0; i < pos.count; i += schritt) {
-                bb.expandByPoint(v.fromBufferAttribute(pos, i).applyMatrix4(mL));
+                v.fromBufferAttribute(pos, i).applyMatrix4(mL);
+                bb.expandByPoint(v);
+                bbT.expandByPoint(v);
                 if (col) {
-                    fr += col.getX(i);
-                    fg += col.getY(i);
-                    fb += col.getZ(i);
-                    fn++;
+                    tr += col.getX(i);
+                    tg += col.getY(i);
+                    tb += col.getZ(i);
+                    tn++;
                 } else if (mc) {
-                    fr += mc.r;
-                    fg += mc.g;
-                    fb += mc.b;
-                    fn++;
+                    tr += mc.r;
+                    tg += mc.g;
+                    tb += mc.b;
+                    tn++;
                 }
             }
+            if (!tn || bbT.isEmpty()) continue;
+            bbT.getSize(gr);
+            const flaeche = Math.max(1e-6, 2 * (gr.x * gr.y + gr.y * gr.z + gr.z * gr.x));
+            fr += (tr / tn) * flaeche;
+            fg += (tg / tn) * flaeche;
+            fb += (tb / tn) * flaeche;
+            fw += flaeche;
         }
         if (bb.isEmpty()) return null;
         const c = bb.getCenter(new THREE.Vector3());
@@ -69068,7 +69275,7 @@ class AnazhRealm {
         a[ax] -= lang;
         const b = c.clone();
         b[ax] += lang;
-        return { a, b, r, farbe: fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null };
+        return { a, b, r, farbe: fw > 0 ? { r: fr / fw, g: fg / fw, b: fb / fw } : null };
     }
 
     // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der
@@ -69768,36 +69975,50 @@ class AnazhRealm {
     // Rewarm entscheidet vor dem Platzieren: gedockt → billige Instance, sonst Bake-Anfrage (limitiert).
     // Die LOD-Wahl spiegelt `_rebuildArchitectureMesh`/`_foundryFlattenFor` (kalt → Distanz-LOD).
     _foundryEntryReady(entry, preset) {
-        const f = this._foundry;
-        if (!f || !preset) return false;
-        const variant = this._foundryVariantFor(entry.seed, preset);
-        if (variant == null) return false;
         const cold = !entry.instanced && !entry.mesh;
-        let lod = cold
+        const lod = cold
             ? this._foundryLodForEntry(entry)
             : Number.isFinite(entry._lodLevel)
               ? entry._lodLevel
               : this._foundryLodForEntry(entry);
-        if (lod < 0) lod = 0;
+        return this._foundryStufeBereit(entry, preset, lod);
+    }
+    // Platziert `_rebuildArchitectureMesh` diesen KALTEN Eintrag jetzt — ist seine Wunsch-Stufe gedockt oder, bei einem
+    // Baum, seine Karte als Brücke? Dann ist das Platzieren ein Slot, kein Bau (tickArchitectureCulling).
+    _foundryPlatzBereit(entry, preset) {
+        if (this._foundryEntryReady(entry, preset)) return true;
+        return (
+            this._foundryPresetIsTree(preset) &&
+            this._foundryLodForEntry(entry) < 2 &&
+            this._foundryStufeBereit(entry, preset, 2)
+        );
+    }
+    // Der Dock-Peek EINER Stufe (rein lesend, kein Bake): liegt Stufe `lod` dieses Eintrags gedockt bereit? Der
+    // Eintrags-Peek oben fragt seine Wunsch-Stufe, die Brücke (`_rebuildArchitectureMesh`) die Karte.
+    _foundryStufeBereit(entry, preset, lod) {
+        const f = this._foundry;
+        if (!f || !preset) return false;
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return false;
+        if (!Number.isFinite(lod) || lod < 0) lod = 0;
         if (lod > 2) lod = 2;
         // Baum-Fernstufe = das Billboard (Impostor-Record), nicht die Cache-Geometrie. Gestempelt: „gedockt"
         // erst, wenn SEINE ov-Karte gebacken ist (sonst baut der Rewarm die geprägte Geometrie).
         if (lod >= 2 && this._foundryPresetIsTree(preset)) {
             const key = "fimp:" + this._foundryKartenKey(preset, variant, this._artifactStudioOv(entry));
             const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
-            // T1 BLOB-TOD-Spiegel: mit echtem Renderer ist „gedockt" erst die GEBACKENE
-            // Karte (rttBaked) — der Flatten serviert bis dahin Geometrie (unten weiter
-            // zum Geometrie-Key-Urteil statt falschem „ready" über den Platzhalter).
+            // T1 BLOB-TOD-Spiegel: mit echtem Renderer ist „gedockt" erst die GEBACKENE Karte (rttBaked) — bis dahin
+            // liefert der Flatten für die Baum-Fernstufe nichts (`_foundryBuildImpostorFlat` → false), nie Geometrie.
+            // Bis 04.10. fiel der Peek hier auf den L2-Geometrie-Schlüssel durch und sagte „gedockt", wo nichts kam:
+            // die Nah-Linse nannte 172 Takte lang „gedockt, noch nicht platziert".
             const rendP = this.state && this.state.renderer;
-            if (rec && rec !== "pending" && rec !== false && rendP && !rendP._isHeadlessNull && !rec.rttBaked) {
-                // fällt durch zum Geometrie-Key unten (die Stufen-Klammer klemmt lod)
-            } else {
-                return !!(rec && rec !== "pending" && rec !== false);
-            }
+            const echt = !!(rendP && !rendP._isHeadlessNull);
+            return !!(rec && rec !== "pending" && rec !== false && (rec.rttBaked || !echt));
         }
-        // Der Peek spiegelt die EINE Stufen-Klammer des Flattens (`_foundryDeclaredStage`) — sonst fragt er einen
-        // Key ab, den der Flatten nie baut (falsch „kalt").
-        if (this._foundryPresetIsTree(preset)) lod = this._foundryDeclaredStage(preset, lod);
+        // Der Peek ruft die EINE Stufen-Klammer des Flattens (`_foundryServierStufe`) — sonst fragt er einen Key ab,
+        // den der Flatten nie baut (falsch „kalt"). Bis 04.10. klemmte er nur Bäume: ein Fels (kindStages [0]) in 40 m
+        // fragte L2, der Flatten servierte L0 — der Peek sah „lädt", die Platzierung lief über das Bau-Budget.
+        lod = this._foundryServierStufe(preset, lod);
         // PRÄGUNG-WELT — der Dock-Peek spiegelt den Flatten-Schlüssel: ein gestempelter
         // Eintrag ist erst „gedockt", wenn SEIN Unikat (|ov:-Key) im Cache liegt — sonst
         // urteilte der Rewarm „ready" über das falsche (ungeprägte) Asset.
@@ -70023,6 +70244,22 @@ class AnazhRealm {
         lf._schattenGeom = z;
         return z;
     }
+    // DIE EINE STUFEN-KLAMMER der Geometrie-Stufen (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
+    // live) für JEDE Art, baumartig oder nicht: die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die kleinste —
+    // nie eine Stufe, die das Studio nicht vorsieht. Ohne Config die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD,
+    // fail-closed); ein BEKANNTES Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0] — nur die
+    // feine Stufe, der Wirt gradet selbst (L1=L0, L2=Auto-Impostor). Leser: der Flatten und sein Dock-Peek.
+    _foundryServierStufe(preset, lod) {
+        lod = this._foundryDeclaredStage(preset, lod);
+        if (!this._foundryPresetIsTree(preset) && !this._foundryKindStages(preset)) {
+            const f = this._foundry;
+            const rec = f && f.recipes ? f.recipes[preset] : null;
+            const kl = rec ? AnazhRealm.FOUNDRY_KIND_LOD[rec.kind] : null;
+            if (Number.isFinite(kl)) lod = kl;
+            else if (rec) lod = 0;
+        }
+        return lod;
+    }
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
@@ -70042,16 +70279,7 @@ class AnazhRealm {
         // kleinste — nie eine Stufe, die das Studio nicht vorsieht. Befund 02.10. (Werkbank, Mess-Wiese): der
         // Strauch (shrub [1,2]) galt als baumartig, der Baum-Zweig klemmte nur Ein-Stufen-Arten — nahe Büsche
         // standen mit L0 (112k Dreiecke je Busch statt 45k, 25 s Worker-Bau einer nie deklarierten Stufe).
-        lod = this._foundryDeclaredStage(preset, lod);
-        if (!this._foundryPresetIsTree(preset) && !this._foundryKindStages(preset)) {
-            // Ohne Config: die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD, fail-closed). Ein BEKANNTES
-            // Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0] — nur die feine Stufe,
-            // der Wirt gradet selbst (L1=L0, L2=Auto-Impostor).
-            const _rec = f.recipes && f.recipes[preset];
-            const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : null;
-            if (Number.isFinite(_kl)) lod = _kl;
-            else if (_rec) lod = 0;
-        }
+        lod = this._foundryServierStufe(preset, lod);
         // Gestempelter Welt-Eintrag (entry.studioOv) baut sein Unikat: der ov-Hash trennt Cache-Key UND (via
         // leafKey) den Gruppen-Key — geprägt und ungeprägt vergiften sich nie. Der Request reicht ov als
         // 4. Arg. Ohne Stempel: der Körper-Schlüssel ohne ov.
@@ -70310,12 +70538,11 @@ class AnazhRealm {
         const p = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!p || !entry || !entry.position) return 1;
         const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
-        // Kalt-Estimate-Schwellen = die Studio-LOD (LOD_DISTANCES): <thresh01 = L0 · bis thresh12 = L1 ·
-        // darüber L2 Billboard. Dieselben Grenzen wie `_chooseLODForDistance` → Estimate und LOD-Tick stimmen.
-        const D = AnazhRealm.LOD_DISTANCES;
-        if (d < D.thresh01) return 0;
-        if (d < D.thresh12) return 1;
-        return 2;
+        // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
+        // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe
+        // Distanz: die Rampe setzte einen großen Baum in 40 m auf die Karte (dithernd, grau), und der LOD-Tick holte
+        // ihn erst Takte später auf L1 (5 Wechsel je Takt, 04.10. an der Mess-Wiese 191 Plätze im ersten Takt).
+        return this._chooseLODForDistance(d, undefined, this._lodTreeVisHeight(entry));
     }
     // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
     _seasonName(phase) {
@@ -72496,16 +72723,44 @@ class AnazhRealm {
         if (nahOffen.length) {
             nahOffen.sort((a, b) => a._nahD2 - b._nahD2);
             const fA = this._foundry ? this._foundry.ankunft | 0 : 0;
-            const jetztN = typeof performance !== "undefined" ? performance.now() : Date.now();
+            const uhr = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+            const jetztN = uhr();
+            // DIE GEDOCKTE STUDIO-STUFE IST KEIN BAU: liegt die Wunsch-Stufe (oder als Brücke die Karte) gedockt bereit,
+            // kostet das Platzieren einen Instanz-Slot — gemessen 04.10. (echte GPU, Mess-Wiese): 197 Einträge in
+            // 2,5 ms. Es läuft am Bau-Budget und an der Versuchs-Kappe vorbei, nah zuerst, begrenzt nur von der
+            // Platzier-Uhr (`ARCH_PLATZ_MS`). Vorher zählte es wie ein Grammatik-Bau: über Budget ein Eintrag je
+            // 250 ms — nach der Rückkehr an die Mess-Wiese standen 165 Analog-Sätze < 64 m und schmolzen 20 s lang
+            // (die Klumpen der Blick-Tour).
+            // Ist das Bau-Budget erschöpft, endet nur das BAUEN (`bauZu`), nie der Gang: der erste nahe Eintrag, dessen
+            // Asset noch lädt oder dessen Grammatik baut, brach vorher die Schleife — alle gedockten dahinter warteten.
+            const platzBis = jetztN + AnazhRealm.ARCH_PLATZ_MS;
+            const fAn = this._foundryEnabled();
             let versuche = 0,
+                bauZu = false,
                 hand = null; // über Budget: EIN Takt-Garantie-Blick je Tick, er deckt Versuche bis zum ersten Bau
             for (const entry of nahOffen) {
+                const fPre = fAn ? this._foundryPresetForEntry(entry) : null;
+                if (fPre && uhr() < platzBis && this._foundryPlatzBereit(entry, fPre)) {
+                    this._rebuildArchitectureMesh(entry);
+                    if (this._archIsRendered(entry)) {
+                        entry._nahWartet = null;
+                        if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
+                        continue;
+                    }
+                }
+                if (bauZu) continue;
                 const w = entry._nahWartet;
                 if (w && w.a === fA && jetztN - w.t < 1000) continue;
-                if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;
+                if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) {
+                    bauZu = true;
+                    continue;
+                }
                 if (built >= budget) {
                     if (hand === null) hand = this._handBauErlaubt(budget);
-                    if (!hand) break;
+                    if (!hand) {
+                        bauZu = true;
+                        continue;
+                    }
                 }
                 this._rebuildArchitectureMesh(entry);
                 if (this._archIsRendered(entry)) {
@@ -86757,6 +87012,12 @@ class AnazhRealm {
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
         this._tickArchitectureLOD(5);
+        // DER KARTEN-BÄCKER (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker, die Platte liefert gebackene
+        // Karten sofort; lazy beim ersten L2-Bedarf enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
+        // Gesetz („EAGER, netto last-senkend"). Bis 04.10. hing er im Deko-Job (prio 2: nur ohne Chunk-Bau im Frame,
+        // unter Last jeden 4. Frame) — beim Boot an der Mess-Wiese standen 60 s lang 10 von 11 Karten ungebacken in der
+        // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).
+        this._tickImpostorBake();
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
@@ -91974,9 +92235,14 @@ AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fp
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test
 // Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz — je bergiger die Welt, desto billiger.
-// Bis hierher ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die
-// Glieder-Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten).
-AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: 55, aus: 65 });
+// DIE EINE NAH-GRENZE DES ANALOG-FELDS (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"): bis hierher ist
+// das Studio-Mesh die Gestalt jeder Klasse (Baum · Bau · Tier · Streu), jenseits darf der Analog-Satz tragen. Ein
+// Analog-Satz diesseits ist ein Befund mit Namen (`_analogZensus`, gate:analog-nah).
+AnazhRealm.ANALOG_NAH_M = 64;
+// Bis zur Nah-Grenze ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die Glieder-
+// Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
+// ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
+AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
 // Die Studio-Material-Klassen, für die der Material-Weber ein Lab-Shader-Gesetz trägt (FELL_LOOK · HAUT_LOOK ·
 // HAAR_LOOK) — die Extraktion reicht genau sie als `kind` durch.
 AnazhRealm.LOOK_KLASSEN = new Set(["fell", "fellSchale", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
@@ -91994,6 +92260,9 @@ AnazhRealm.FELL_SCHALE = Object.freeze({ wurzel: 0.55, spitze: 1.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;
+// Die Platzier-Uhr der Mesh-Zone (ms je Takt): so lange setzt der Culling-Tick kalte Einträge, deren Studio-Stufe
+// gedockt bereitliegt — ohne Bau-Budget, nah zuerst. 197 Plätze kosteten 2,5 ms (04.10., echte GPU, Mess-Wiese).
+AnazhRealm.ARCH_PLATZ_MS = 4;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
 // schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:
@@ -92027,6 +92296,9 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     gesetzKachelM: 64, // Kachel-Kante der Gesetz-Blöcke (Schirm-Bindung: kleine Hüll-AABBs)
     gesetzBlock: 16, // Plätze je Block (1 Kapsel-Slot = 2 Texel je Platz)
 });
+// DER SCHWUND (ms): so lange dithert ein Analog-Satz aus, wenn sein Mesh übernimmt (`_weltFeldAktiv`) — der
+// Übergang Satz → Studio-Stufe trägt die Blende der Stufen statt eines Pops.
+AnazhRealm.WELT_SCHWUND_MS = 500;
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
     proben: 5, // Höhen-Proben je Sichtlinie

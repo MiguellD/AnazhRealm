@@ -152,7 +152,8 @@ function schlangenGesetz(src) {
     // dahinter blieb 800 Takte ohne Mesh).
     const nah = body.slice(body.indexOf("for (const entry of nahOffen) {"));
     const sprung = nah.indexOf("if (w && w.a === fA && jetztN - w.t < 1000) continue;");
-    const kappe = nah.indexOf("if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;");
+    // Die Kappe beendet nur das BAUEN (`bauZu`), der Gang läuft weiter: gedockte Studio-Stufen dahinter platzieren.
+    const kappe = nah.indexOf("if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) {");
     const warten = sprung >= 0 && kappe > sprung && /else entry\._nahWartet = \{ a: fA, t: jetztN \};/.test(nah);
     return {
         ok: rufe === bewacht && schlange && warten,
@@ -294,13 +295,15 @@ function schlangenGesetz(src) {
         // NAH IST DAS MESH: die Feld-Brücke trägt nur, bis das Studio-Mesh steht — weiter takten, bis beide nahen
         // Bauten als Mesh rendern; FERN gilt nah zuerst, nie verhungert: der Takt geht in Distanz-Ordnung, der ferne
         // Bau wartet auf die Näheren und kommt an (Grenze 1000 Takte gesamt). Erst dann schießt die Linse.
-        let meshB = r._archIsRendered(eb) ? 0 : null,
-            meshH = r._archIsRendered(eh) ? 0 : null;
+        // Die Brücke (die Karte eines kalten Baums, dessen Wunsch-Stufe lädt) zählt nicht als Gestalt.
+        const gestalt = (e) => r._archIsRendered(e) && !e._bruecke;
+        let meshB = gestalt(eb) ? 0 : null,
+            meshH = gestalt(eh) ? 0 : null;
         for (let t = 201; t <= 1000; t++) {
             if (meshB != null && meshH != null && slotBF != null && slotHF != null) break;
             await tick(1);
-            if (meshB == null && r._archIsRendered(eb)) meshB = t - 200;
-            if (meshH == null && r._archIsRendered(eh)) meshH = t - 200;
+            if (meshB == null && gestalt(eb)) meshB = t - 200;
+            if (meshH == null && gestalt(eh)) meshH = t - 200;
             if (slotBF == null && ebF && ebF._ziegelSlot) slotBF = t;
             if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
         }
