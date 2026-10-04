@@ -1897,7 +1897,7 @@ function emitFern(P) {
                 const t = t0 + (1 - t0) * (j / K1),
                     tp = j / K1,
                     prof = Math.pow(Math.sin(Math.PI * Math.pow(tp, 0.62)), 0.85),
-                    lp = P.fiederLen * w.L * (0.16 + 0.84 * prof) * (j % 2 ? 0.62 : 1.0);
+                    lp = P.fiederLen * w.L * (0.16 + 0.84 * prof) * (j % 2 ? 0.22 : 1.0); // tiefe Buchten bis nahe der Rhachis: die Silhouette liest gefiedert, nicht gelappt
                 const e = sideAt(t);
                 const fw = vnorm(vadd(vscl(e.d, 0.32), vscl(e.n, -0.08)));
                 const col = c0.clone().lerp(c1, 0.5 + 0.5 * tp).lerp(c2, tp * 0.4).multiplyScalar(sh);
