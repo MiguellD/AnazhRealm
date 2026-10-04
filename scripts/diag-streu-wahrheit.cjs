@@ -8,12 +8,19 @@
 //       Mit FrontSide zeichnete jeder Brocken seine Innen-Rückwand, im eigenen Schatten: schwarz (1067 Brocken).
 //   (2) DER HIMMEL: die Welt trägt ihr Umgebungs-Licht nur als scene.environment (Ambient/Hemi 0); r184-Lambert
 //       liest die Umgebung nur als Spiegelung, nie diffus — jeder Lambert-Stoff war im Schatten schwarz.
+// Integration (04.10.): die Klasse fällt GANZ — der ganze Stamm baut keinen Lambert-Stoff (Wege-Kisten, Fern-Ring,
+// Rauch, Gras, Fundament standen noch Lambert), und die Host-Streu backt ihre Farbe durch das FARB-GESETZ (die
+// Paletten sind sRGB-Absicht; roh stand der Fels im Schatten heller als die Wiese in der Sonne).
 // Die Linse (Node, ohne Browser):
 //   (1) baut jede Art über DEN Stamm-Bauplan (_scatterSpeciesGeometry aus anazhRealm.js, KLEIN_VEGETATION_SPECIES
 //       aus demselben Quelltext) und prüft für jede einseitig gezeichnete Art (nicht wind, nicht emissiv —
 //       dieselbe Seiten-Regel wie _scatterMaterial), dass JEDE Dreiecks-Normale vom Schwerpunkt weg zeigt;
-//   (2) prüft den kommentar-freien _scatterMaterial: kein Lambert, der lit Zweig ist MeshStandardNodeMaterial.
-// --selftest: der Fels im alten Uhrzeigersinn und der Lambert-Zweig zurück → beide MÜSSEN beim Namen feuern.
+//   (2) prüft den kommentar-freien Stamm: kein Lambert-Stoff irgendwo, _scatterMaterial und _archFundMat bauen
+//       MeshStandardNodeMaterial;
+//   (3) DAS FARB-GESETZ: beide Streu-Bauer (_scatterSpeciesGeometry, _scatterImpostorGeometry) backen je lit Art die
+//       Vertex-Farbe = sRGB→linear des rohen Bauplans (eigene Referenz-Formel), leuchtende Arten roh.
+// --selftest: der Fels im alten Uhrzeigersinn, der Lambert-Zweig, Lambert-Wege, ein Lambert-Fundament, ein Bauer
+// ohne Farb-Gesetz und ein rohes Gesetz → alle MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
@@ -105,14 +112,52 @@ function pruefe(src) {
     if (!arten || !bau)
         return { fehler: ["KLEIN_VEGETATION_SPECIES oder _scatterSpeciesGeometry nicht im Stamm gefunden"], geprueft: 0 };
     const liste = new Function(arten)();
-    const bauFn = new Function("THREE", "species", bau.slice(1, -1));
+    const bauFn = new Function("THREE", "AnazhRealm", "species", bau.slice(1, -1));
+    const fernBau = rumpf(src, /\n {4}_scatterImpostorGeometry\(species\)\s*\{/);
+    const fernFn = fernBau ? new Function("THREE", "AnazhRealm", "species", fernBau.slice(1, -1)) : null;
+    if (!fernFn) fehler.push("_scatterImpostorGeometry nicht im Stamm gefunden");
+    const gesetzSrc = rumpf(src, /\nAnazhRealm\._streuAlbedo = function \(species, C\)\s*\{/);
+    if (!gesetzSrc) fehler.push("AnazhRealm._streuAlbedo (das Farb-Gesetz der Host-Streu) nicht im Stamm gefunden");
+    const GESETZ = { _streuAlbedo: gesetzSrc ? new Function("species", "C", gesetzSrc.slice(1, -1)) : (sp, C) => C };
+    const ROH = { _streuAlbedo: (sp, C) => C };
     const kontext = { state: {} };
+    const baue = (fn, A, sp) => {
+        kontext.state = {};
+        return fn.call(kontext, THREE_SCHEIN, A, sp);
+    };
+    // (3) DAS FARB-GESETZ: je Art und Bauer die gebackene Farbe gegen sRGB→linear des rohen Bauplans (Float32).
+    const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    let farbArten = 0;
+    for (const sp of liste)
+        for (const [bauer, fn] of [
+            ["_scatterSpeciesGeometry", bauFn],
+            ["_scatterImpostorGeometry", fernFn],
+        ]) {
+            if (!fn) continue;
+            const echt = baue(fn, GESETZ, sp);
+            const roh = baue(fn, ROH, sp);
+            const E = echt && echt.attributes.color ? echt.attributes.color.array : null;
+            const R = roh && roh.attributes.color ? roh.attributes.color.array : null;
+            if (!E || !R || E.length !== R.length || !E.length) {
+                fehler.push(`${sp.name}: ${bauer} backt keine Farbe`);
+                continue;
+            }
+            let ab = 0;
+            for (let i = 0; i < E.length; i++) {
+                const soll = Math.fround(sp.emissive ? R[i] : lin(R[i]));
+                if (Math.abs(E[i] - soll) > 1e-6) ab++;
+            }
+            if (ab)
+                fehler.push(
+                    `${sp.name}: ${bauer} backt ${ab} von ${E.length} Farbwerten nicht nach dem Farb-Gesetz (${sp.emissive ? "leuchtend: roh" : "sRGB-Absicht → linear"})`
+                );
+            farbArten++;
+        }
     let geprueft = 0;
     for (const sp of liste) {
         const einseitig = !sp.emissive && !sp.wind; // _scatterMaterial: wind → DoubleSide, sonst FrontSide; emissiv unlit
         if (!einseitig) continue;
-        kontext.state = {};
-        const g = bauFn.call(kontext, THREE_SCHEIN, sp);
+        const g = baue(bauFn, GESETZ, sp);
         const P = g && g.attributes.position ? g.attributes.position.array : null;
         if (!P || P.length < 9) {
             fehler.push(`${sp.name}: keine Geometrie`);
@@ -152,7 +197,13 @@ function pruefe(src) {
         if (innen) fehler.push(`${sp.name}: ${innen} von ${nTri} Flächen-Normalen zeigen nach INNEN (FrontSide zeigt die Rückwand)`);
     }
     if (!geprueft) fehler.push("keine einseitige Art geprüft — die Linse sähe nichts");
-    const stoff = rumpf(ohneKommentare(src), /\n {4}_scatterMaterial\(species\)\s*\{/) || "";
+    // (2) DIE LAMBERT-WAND: kein Stoff der Welt ist Lambert (der ganze kommentar-freie Stamm).
+    const nc = ohneKommentare(src);
+    const lambert = [...nc.matchAll(/MeshLambert\w*/g)].length;
+    if (lambert) fehler.push(`${lambert} Lambert-Stoff(e) im Stamm — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
+    if (!/\(this\._archFundMat = new THREE\.MeshStandardNodeMaterial\(/.test(nc))
+        fehler.push("_archFundMat (das Fundament) baut nicht MeshStandardNodeMaterial");
+    const stoff = rumpf(nc, /\n {4}_scatterMaterial\(species\)\s*\{/) || "";
     if (!stoff) fehler.push("_scatterMaterial nicht gefunden");
     else {
         if (/Lambert/.test(stoff)) fehler.push("_scatterMaterial baut Lambert — r184-Lambert liest den Himmel (scene.environment) nie diffus");
@@ -160,7 +211,7 @@ function pruefe(src) {
         if (!/side: species\.wind \? THREE\.DoubleSide : THREE\.FrontSide/.test(stoff))
             fehler.push("_scatterMaterial: die Seiten-Regel (wind → DoubleSide, sonst FrontSide) hat sich verschoben — die Linse prüft die falsche Menge");
     }
-    return { fehler, geprueft };
+    return { fehler, geprueft, farbArten };
 }
 
 function main() {
@@ -173,6 +224,36 @@ function main() {
                 QUELLE.replace("mat = new THREE.MeshStandardNodeMaterial({\n                    side: species.wind", "mat = new THREE.MeshLambertNodeMaterial({\n                    side: species.wind"),
                 /Lambert/,
             ],
+            [
+                "Lambert-Wege",
+                QUELLE.replace(
+                    "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })",
+                    "new THREE.MeshLambertMaterial({ color: 0xffffff })"
+                ),
+                /Lambert-Stoff/,
+            ],
+            [
+                "Lambert-Fundament",
+                QUELLE.replace("(this._archFundMat = new THREE.MeshStandardNodeMaterial({", "(this._archFundMat = new THREE.MeshLambertMaterial({"),
+                /_archFundMat/,
+            ],
+            [
+                "Nah-Streu ohne Farb-Gesetz",
+                QUELLE.replace(
+                    'geo.setAttribute("color", new THREE.Float32BufferAttribute(AnazhRealm._streuAlbedo(species, C), 3));\n        geo.computeVertexNormals();\n        geo.computeBoundingSphere();',
+                    'geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));\n        geo.computeVertexNormals();\n        geo.computeBoundingSphere();'
+                ),
+                /_scatterSpeciesGeometry backt/,
+            ],
+            [
+                "Fern-Streu ohne Farb-Gesetz",
+                QUELLE.replace(
+                    'geo.setAttribute("color", new THREE.Float32BufferAttribute(AnazhRealm._streuAlbedo(species, C), 3));\n        geo.computeVertexNormals();\n        cache.set',
+                    'geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));\n        geo.computeVertexNormals();\n        cache.set'
+                ),
+                /_scatterImpostorGeometry backt/,
+            ],
+            ["Farb-Gesetz roh", QUELLE.replace("    if (species && species.emissive) return C;\n", "    return C;\n"), /sRGB-Absicht/],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
         console.log(`${ok ? "✅" : "❌"} SELBST-TEST: die echte Quelle ist grün${ok ? "" : " — " + echt.fehler.join(" · ")}`);
@@ -191,7 +272,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE STREU-WAHRHEIT steht — ${r.geprueft} einseitige Arten mit Außen-Normalen (jede Fläche zeigt vom Schwerpunkt weg), die Streu-Stoffe lesen den EINEN Himmel (Standard, kein Lambert).`
+        `✅ DIE STREU-WAHRHEIT steht — ${r.geprueft} einseitige Arten mit Außen-Normalen (jede Fläche zeigt vom Schwerpunkt weg), kein Lambert-Stoff im Stamm (Streu, Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), ${r.farbArten} Art×Bauer backen ihre Farbe nach dem Farb-Gesetz.`
     );
 }
 main();

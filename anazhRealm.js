@@ -15617,15 +15617,20 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshLambertNodeMaterial !== "function") {
-            // Defensive (Bootstrap-Bruch): klassisches MeshLambertMaterial OHNE
-            // Wind. Im WebGPU-required-Normalbetrieb (V12.0-a) nie erreicht.
-            this.state._grassMat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
+        if (!TSL || typeof THREE.MeshStandardNodeMaterial !== "function") {
+            // Defensive (Bootstrap-Bruch): klassisches Standard OHNE Wind. Im WebGPU-required-Normalbetrieb
+            // (V12.0-a) nie erreicht.
+            this.state._grassMat = new THREE.MeshStandardMaterial({
+                color: 0x5fa743,
+                side: THREE.DoubleSide,
+                roughness: 1,
+                metalness: 0,
+            });
             return this.state._grassMat;
         }
-        // Natives MeshLambertNodeMaterial (lights=true): die WebGPU-Lighting-Pipeline rechnet Licht +
-        // Schatten selbst (kein manuelles Half-Lambert/Shadow-Sampling). Kein gradientMap — die Halme
-        // bleiben smooth-Lambert (gewollt). Wind-Displacement als TSL-positionNode.
+        // Natives MeshStandardNodeMaterial (rau, nicht-metallisch): die WebGPU-Lighting-Pipeline rechnet Licht +
+        // Schatten selbst und liest den EINEN Himmel (scene.environment) diffus — r184-Lambert las ihn nie, der
+        // Halm im Schatten trug nur sein Gegenlicht-Leuchten. Wind-Displacement als TSL-positionNode.
         const { uniform, vec3, float, max, positionLocal, positionWorld } = TSL;
         if (!this.state.windUniforms) {
             this.state.windUniforms = {
@@ -15642,7 +15647,12 @@ class AnazhRealm {
         if (!wu.uBladeH) wu.uBladeH = uniform(AnazhRealm.GRASS_BLADE_H);
         // UNIFORM-HEIMAT: der geteilte Wind-Satz reist als EIN renderGroup-Buffer.
         this._uniformHeimatTeilen(wu);
-        const mat = new THREE.MeshLambertNodeMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
+        const mat = new THREE.MeshStandardNodeMaterial({
+            color: 0x5fa743,
+            side: THREE.DoubleSide,
+            roughness: 1,
+            metalness: 0,
+        });
 
         // Wind-positionNode aus der EINEN Quelle `_windSwayOffset`; das Gras liest volle Amplitude
         // (ampX 1.5, kein windScale). Die Höhengewichtung steckt in der Geometrie
@@ -15652,7 +15662,7 @@ class AnazhRealm {
 
         // Gras-Albedo-Variation (render-only): (a) Spitzen-Gradient (Wurzel dunkler/kühler → Spitze
         // heller) + (b) per-Clump-Noise über die Welt-Position (~1,6 m Wellenlänge). `colorNode` ist auf
-        // lit NodeMaterial die DIFFUSE Albedo — Lambert, Wind, Tag-Nacht bleiben aktiv. Kein
+        // lit NodeMaterial die DIFFUSE Albedo — Licht, Wind, Tag-Nacht bleiben aktiv. Kein
         // attribute()-Lookup (sonst Schwärze-Klasse), kein Geometrie-Eingriff. try/catch → flach-grün.
         try {
             if (TSL.mx_noise_float && TSL.mix && TSL.clamp) {
@@ -15687,13 +15697,13 @@ class AnazhRealm {
                     albedo = TSL.mix(albedo, vec3(0.46, 0.38, 0.18), aSeed);
                 }
                 // Die Wiese folgt der Saison: Albedo × die EINE Saison-Tönung `uSeasonMul` (aus seasonPhase in
-                // `_tickSeason`); Lambert/Wind/Translucency bleiben aktiv.
+                // `_tickSeason`); Licht/Wind/Translucency bleiben aktiv.
                 const _su = this._ensureSeasonUniforms();
                 if (_su && _su.uSeasonMul) albedo = albedo.mul(_su.uSeasonMul);
                 mat.colorNode = TSL.vec4(albedo, float(1.0));
             }
         } catch {
-            /* TSL/Noise nicht verfuegbar -> flaches Lambert-Grün (Default-color) */
+            /* TSL/Noise nicht verfuegbar -> flaches Grün (Default-color) */
         }
 
         // Das Gras dockt ans Frequenzband: dieselben Band-Uniforms über den EINEN Empfänger (kein
@@ -15708,7 +15718,7 @@ class AnazhRealm {
                 albedoNode: TSL.vec3 ? TSL.vec3(0.108, 0.225, 0.031) : null,
             });
         } catch {
-            /* Band optional — Gras bleibt pures Lambert */
+            /* Band optional — Gras bleibt ohne Band */
         }
 
         // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
@@ -26781,7 +26791,7 @@ class AnazhRealm {
                 // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare) hängen AUCH am fuell/mond-Band — sonst ist ein
                 // Bau nachts dunkler als das Terrain (Silhouetten).
                 werk: Object.freeze({ micro: 1, rim: 1, waerme: 1, fuell: 1, mond: 0.7, emissiv: 1 }),
-                // Gras (Schritt 3, eigenes Lambert-Material — KEIN Merge): es
+                // Gras (Schritt 3, eigenes Material — KEIN Merge): es
                 // konsumiert dieselben Band-Uniforms (E1: floor-Hebel traf das
                 // Gras mit −2.0, jetzt antwortet es).
                 gras: Object.freeze({ micro: 0, rim: 0, waerme: 1, fuell: 1, mond: 0, emissiv: 0 }),
@@ -33230,7 +33240,7 @@ class AnazhRealm {
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(AnazhRealm._streuAlbedo(species, C), 3));
         geo.computeVertexNormals();
         geo.computeBoundingSphere();
         cache.set(species.name, geo);
@@ -33917,7 +33927,7 @@ class AnazhRealm {
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(AnazhRealm._streuAlbedo(species, C), 3));
         geo.computeVertexNormals();
         cache.set(species.name, geo);
         return geo;
@@ -34528,7 +34538,7 @@ class AnazhRealm {
     // grobes WELT-Gitter gesnappt → beim Re-Zentrieren schwimmen die Höhen nie. Headless AUS; Hook
     // `window.__anazhFernRing` (true/false) für die Linse `diag-fern-ring`.
 
-    // Baut EINMAL die 3 Schalen (96 Winkel × 10 Reihen) + das EINE Lambert-Material (vertexColors,
+    // Baut EINMAL die 3 Schalen (96 Winkel × 10 Reihen) + das EINE Material (vertexColors,
     // Nebel per Default). Die Höhen füllt `_fernRingRefresh` budgetiert über Frames — bis dahin
     // unsichtbar.
     _fernRingEnsure(playerPos) {
@@ -34568,10 +34578,15 @@ class AnazhRealm {
                 indices.push(v00, v01, v10, v01, v11, v10);
             }
         }
-        // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): Lambert +
-        // vertexColors (die Höhen-Farbrampe), fog default AN (der Nebel deckt),
-        // DoubleSide (die Kamera darf unter den Saum tauchen, kein Loch).
-        const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): Standard (rau, nicht-metallisch — es liest den EINEN
+        // Himmel wie das nahe Terrain; Lambert ließ jeden sonnenabgewandten Hang schwarz) + vertexColors (die
+        // Höhen-Farbrampe), fog default AN (der Nebel deckt), DoubleSide (die Kamera darf unter den Saum tauchen).
+        const material = new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            side: THREE.DoubleSide,
+            roughness: 1,
+            metalness: 0,
+        });
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
             const geo = new THREE.BufferGeometry();
@@ -34749,7 +34764,7 @@ class AnazhRealm {
             const geo = fr.meshes[s].geometry;
             geo.attributes.position.needsUpdate = true;
             geo.attributes.color.needsUpdate = true;
-            geo.computeVertexNormals(); // 960 Vertices — billig, Lambert braucht Normalen
+            geo.computeVertexNormals(); // 960 Vertices — billig, das Licht braucht Normalen
         }
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
@@ -49035,7 +49050,7 @@ class AnazhRealm {
     }
 
     // ═══ KAMIN-RAUCH ═══
-    // Quellen aus Settlement-Einträgen mit rauchQuelle; Lab-Partikel (Box + Lambert) wenn THREE+scene da,
+    // Quellen aus Settlement-Einträgen mit rauchQuelle; Lab-Partikel (matte Box) wenn THREE+scene da,
     // sonst Quellen-Liste + einmaliger Log/Flugschreiber-Stempel. Invariante: Rauch ⟺ chimney.
     // Haus-Türen: _tickHausTueren dreht nahe Häuser (< 40 m) durch DENSELBEN _tickTorFluegel.
     _updateDorfRauch(_dt) {
@@ -49134,7 +49149,15 @@ class AnazhRealm {
             const qq = quellen[(Math.random() * quellen.length) | 0];
             const pm = new THREE_REF.Mesh(
                 new THREE_REF.BoxGeometry(size, size, size),
-                new THREE_REF.MeshLambertMaterial({ color: color, transparent: true, opacity: a0 })
+                // RAUCH_VIS "box-lambert" ist die matte Kiste des Labors; in der Welt liest Matt den EINEN Himmel
+                // nur als Standard (rau) — r184-Lambert liest scene.environment nie diffus.
+                new THREE_REF.MeshStandardMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: a0,
+                    roughness: 1,
+                    metalness: 0,
+                })
             );
             pm.position.set(qq.x, qq.y, qq.z);
             scene.add(pm);
@@ -63456,7 +63479,11 @@ class AnazhRealm {
         let P = st.stlWege;
         if (P) return P;
         const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
-        const mat = this._stlWegeMat || (this._stlWegeMat = new THREE.MeshLambertMaterial({ color: 0xffffff })); // Farbe je Instanz (setColorAt)
+        // Farbe je Instanz (setColorAt); Standard (rau, nicht-metallisch) liest den EINEN Himmel — r184-Lambert liest
+        // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
+        const mat =
+            this._stlWegeMat ||
+            (this._stlWegeMat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }));
         const mesh = AnazhRealm._instanzMesh(geo, mat, 256);
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
@@ -91347,6 +91374,21 @@ AnazhRealm._tuerOffenRad = function () {
 //      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
 //      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
+// DAS FARB-GESETZ DER HOST-STREU (das Studio-Gesetz foundry-core vegFarbe, V18.506, für die Klein-Streu des Hosts):
+// ein Paletten-Wert der Streu-Arten (KLEIN_VEGETATION_SPECIES color/color2 und die Bauplan-Literale) ist eine
+// sRGB-ABSICHT, die Albedo ist sein linearer Wert — gelesen beim BACKEN der Vertex-Farbe (_scatterSpeciesGeometry,
+// _scatterImpostorGeometry). Bis 04.10. lagen die Werte roh im Stoff: Farn bis 0,66, der Fels 0,40–0,50 — mit dem
+// Himmel (Standard statt Lambert) stand der Brocken im Schatten heller als die Wiese in der Sonne (Luma 112 gegen 33).
+// Leuchtende Arten (emissiv, unlit) bleiben roh: ihr Wert ist Leuchtkraft, keine Albedo.
+AnazhRealm._streuAlbedo = function (species, C) {
+    if (species && species.emissive) return C;
+    const out = new Array(C.length);
+    for (let i = 0; i < C.length; i++) {
+        const v = C[i];
+        out[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    return out;
+};
 AnazhRealm._diaetGeteiltSchreiben = function (rend, ro) {
     const nbs = ro.getNodeBuilderState();
     let k = nbs._anazhGeteilt;
