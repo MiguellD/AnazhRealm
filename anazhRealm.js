@@ -35963,10 +35963,12 @@ class AnazhRealm {
     // (je 2 Texel [Pos|Hüllradius][yaw|scale|po|anzahl]); March: Kugel-Vortest → Sphere-Tracing des
     // geteilten Vorlagen-Satzes im Platz-Raum. Plätze = die Γ5-deterministischen Raster-Plätze des
     // Zellen-Chokepoints (kein Shader-Hash-Zwilling). Band 0 bleibt Mesh (_scatterInstanceAdd).
-    // Die Gesetz-Bahn der Fern-Streu ist offen, wo ein echter Renderer den Welt-March zeichnet (der Null-Renderer
-    // ist für den Analog-Pfad blind) — die EINE Bedingung für Materialisierung und LOD-Tick.
+    // Die Gesetz-Bahn der Fern-Streu ist offen, wo der Welt-March GEZEICHNET wird — dieselbe Backend-Wand wie der
+    // Feld-Pass (`_feldPassEnsure`: rohes WGSL, nur das WebGPU-Backend; der Null-Renderer ist für den Analog-Pfad
+    // blind) — die EINE Bedingung für Materialisierung und LOD-Tick. Auf dem WebGL2-Rückfall belegten Gesetz-Plätze
+    // Kapsel-Liste und Fit-Takt für einen Pass, der nie lief (Werkbank 04.10.: „Feld-Pass ruht").
     _streuGesetzBahnOffen() {
-        return !(this.state.renderer && this.state.renderer._isHeadlessNull);
+        return this._gpuComputeFaehig();
     }
 
     // Die PASSUNG der Fernform aus der Studio-Gestalt (die geometrische Stufe ≤ 1, die das Studio liefert): die
