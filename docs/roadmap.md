@@ -41,7 +41,7 @@ die Nah-Wiese auf der Boden-Karte (D gefallen); offen: das Profi-Band auf jedem 
 - **typeof-Ratchet** (`gate:apparat`) sinkt nur mit Konsum-Urteil je Probe, nie blind.
 - N5.4 scatter-Verdrahtung [erstes scatter-Rezept] · N6.5 spring/pitch [M4-Entscheid] ·
   Rüstung/Trank-Rezepte + Geräte-Gestalten [Lab-Presets] · W-A2 Auto-Impostor [eine Worldgen-
-  Massen-Domäne ohne ehrliche Stufen] · TAA-Lite [dann rotiert `uDitherT`] · plantForest ↔
+  Massen-Domäne ohne ehrliche Stufen] · plantForest ↔
   planForestCell [nur unter Byte-Beweis] · Totholz-Saat + start_plattform [bis fachwerk sie deckt].
 - **Bewusst rot:** diag-genom „0 Gigant" (heilen oder begründen) · diag-atmosphere Fill-NACHT
   (Waise seit V18.464).

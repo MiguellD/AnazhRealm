@@ -29251,6 +29251,9 @@ class AnazhRealm {
                     // `renderer.render(scene, shadow.camera)`, lightMargin 200 m): dort lagen nahe Bäume 145 m
                     // „weit", jenseits jeder Stufe, und die Maske verwarf ihre Schatten-Fragmente alle.
                     uLodAuge: _T.uniform(new THREE.Vector3()),
+                    // DER PERF-STRECK der Wahrnehmungs-Distanz (_lodPerfMul, je Frame gespiegelt): jede Maske misst
+                    // die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
+                    uLodPerf: _T.uniform(1),
                 };
             }
         } catch (_e) {
@@ -29284,7 +29287,8 @@ class AnazhRealm {
                 !_lu.uLodD0 ||
                 !_lu.uLodD1 ||
                 !_lu.uLodFade ||
-                !_lu.uLodFade0
+                !_lu.uLodFade0 ||
+                !_lu.uLodPerf
             )
                 return null;
             // W5.4 (Schritt 3) — die Band-Zahlen als LIVE-Uniforms (Quelle LOD_DISTANCES via
@@ -29306,7 +29310,7 @@ class AnazhRealm {
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) return null;
-                let _vCD = _dist;
+                let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Perf-Streck wie die CPU (_lodPerfMul)
                 if (opts.visHeightNode) {
                     const _k = _lu.uLodRef.div(opts.visHeightNode.max(T.float(1e-3))).min(T.float(1.0));
                     _vCD = _dist.mul(_k);
@@ -29325,7 +29329,10 @@ class AnazhRealm {
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z)));
+            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (_lodPerfMul).
+            const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z))).mul(
+                _lu.uLodPerf
+            );
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             const _lkL = _lu.uLodRef.div(_aH0L.max(T.float(1e-3))).min(T.float(1.0));
             const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
@@ -29516,7 +29523,7 @@ class AnazhRealm {
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Kamera → Vertex-Weltposition (die Instanz-Transform steckt in
                     // positionWorld → per-Instanz korrekt, ohne den modelWorldMatrix-Ursprung).
-                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_pw.x), _cam.z.sub(_pw.z)));
+                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_pw.x), _cam.z.sub(_pw.z))).mul(_lu.uLodPerf);
                     const _ref = _lu.uLodRef;
                     const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
                     const _lkL = _ref.div(_aH0L.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
@@ -33174,7 +33181,10 @@ class AnazhRealm {
             strip(0.0, 1.1, 0.045, 0.04, c, c2, 5);
             strip(1.57, 1.05, 0.042, 0.04, c, c2, 5);
         } else if (species.geom === "fels") {
-            // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen).
+            // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen). Gegen den Uhrzeigersinn von AUSSEN gesehen
+            // (die Normale zeigt nach außen): bis 04.10. zeigten alle acht nach innen — der Fels (Lambert, FrontSide)
+            // zeigte seine Innen-Rückwand im eigenen Schatten, schwarz (Werkbank, Mess-Wiese: jeder der 1067 Brocken; die
+            // Linse gate:streu-wahrheit prüft jede FrontSide-Art auf Außen-Normalen).
             const top = [0, 0.34, 0];
             const bot = [0, 0, 0];
             const mid = [
@@ -33188,8 +33198,8 @@ class AnazhRealm {
             for (let i = 0; i < 4; i++) {
                 const a = mid[i];
                 const b = mid[(i + 1) % 4];
-                tri(top, a, b, cTop, c, c);
-                tri(bot, b, a, cBot, c, c);
+                tri(top, b, a, cTop, c, c);
+                tri(bot, a, b, cBot, c, c);
             }
         } else if (species.geom === "spore") {
             // Winziger leuchtender Oktaeder (emissive → speist V17.0-Bloom).
@@ -33205,8 +33215,8 @@ class AnazhRealm {
             for (let i = 0; i < 4; i++) {
                 const a = mid[i];
                 const b = mid[(i + 1) % 4];
-                tri(top, a, b, c, c2, c);
-                tri(bot, b, a, c, c, c2);
+                tri(top, b, a, c, c, c2);
+                tri(bot, a, b, c, c2, c);
             }
         }
         const geo = new THREE.BufferGeometry();
@@ -33220,7 +33230,12 @@ class AnazhRealm {
 
     // Node-Material je Art (state._scatterMats): weiche Arten (wind:true) teilen die Gras-Wind-
     // positionNode; Sporen (emissive) schweben, UNLIT + hell → Bloom lässt sie glühen; sonst lit
-    // Lambert. Albedo = Vertex-Farbe + Welt-Noise-Variation. Ohne TSL: klassisches Lambert.
+    // Standard (rau, nicht-metallisch). Albedo = Vertex-Farbe + Welt-Noise-Variation.
+    // DER EINE HIMMEL FÜR DIE STREU (04.10.): die Welt trägt ihr Umgebungs-Licht nur als scene.environment (kein
+    // Ambient-/Hemi-Licht, Intensität 0); r184-Lambert liest die Umgebung nur als Spiegelung (BasicEnvironmentNode),
+    // nie als diffuse Einstrahlung — jeder Lambert-Stoff war im Schatten SCHWARZ (Fels, Farn, Schilf, Blumen,
+    // Gestrüpp: 13 Stoffe, 133 Gruppen an der Mess-Wiese). Standard mit Rauheit 1 liest den Himmel wie jeder Stoff
+    // der Welt.
     _scatterMaterial(species) {
         if (!this.state._scatterMats) this.state._scatterMats = new Map();
         const cache = this.state._scatterMats;
@@ -33242,9 +33257,11 @@ class AnazhRealm {
                 // Pollen weich (1.15) → Pollen ist warmes Schweben, kein Glühwurm.
                 mat.colorNode = vec4(vcol.mul(float(species.emissiveBoost || 1.7)), float(1.0));
                 this._applyScatterMotion(mat, species, TSL);
-            } else if (TSL && typeof THREE.MeshLambertNodeMaterial === "function") {
-                mat = new THREE.MeshLambertNodeMaterial({
+            } else if (TSL && typeof THREE.MeshStandardNodeMaterial === "function") {
+                mat = new THREE.MeshStandardNodeMaterial({
                     side: species.wind ? THREE.DoubleSide : THREE.FrontSide,
+                    roughness: 1,
+                    metalness: 0,
                 });
                 const { vec4, vec3, float, attribute, max } = TSL;
                 const vcol = attribute("color", "vec3");
@@ -33264,10 +33281,10 @@ class AnazhRealm {
                 mat.colorNode = vec4(albedo, float(1.0));
                 if (species.wind) this._applyScatterMotion(mat, species, TSL);
             } else {
-                mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
+                mat = new THREE.MeshStandardMaterial({ color: fallbackHex, side: THREE.DoubleSide, roughness: 1 });
             }
         } catch {
-            mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
+            mat = new THREE.MeshStandardMaterial({ color: fallbackHex, side: THREE.DoubleSide, roughness: 1 });
         }
         // OBSERVER-DIÄT: die Streu-Graphen (auch deko-fernfeld — derselbe
         // Chokepoint) hängen nur an geteilten Wind-Uniforms + Attributen.
@@ -52253,7 +52270,7 @@ class AnazhRealm {
                 const variantIndex = h % N;
                 // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
                 // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
-                const visH = layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
+                const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf.scale);
                 const lod = this._chooseLODForDistance(dist, undefined, visH);
                 // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
                 // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
@@ -52287,10 +52304,20 @@ class AnazhRealm {
     }
 
     // Der EINE Foundry-Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall): die Materialisierung
-    // (Primär-Stufe · Gesetz-Bahn · Band-Partner) und die Promotion zum echten Eintrag lesen ihn — die Gestalt
-    // (`_foundryVariantFor`) bleibt beim Kristallisieren dieselbe.
+    // (Primär-Stufe · Gesetz-Bahn · Band-Partner), die Sichthöhe der Stufenwahl und die Promotion zum echten Eintrag
+    // lesen ihn — die Gestalt (`_foundryVariantFor`) bleibt beim Kristallisieren dieselbe.
     _scatterFoundrySeed(cellX, cellZ, variantIndex) {
         return ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+    }
+
+    // Die Sichthöhe einer Streu-Zelle für die Stufenwahl: Fels 0 (roh), ein Foundry-Baum der Stempel seines Assets
+    // (_foundrySichtHoehe — dieselbe Zahl, die seine Masken lesen), sonst der Grammatik-Bauplan.
+    _scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, scale) {
+        if (layer.kind === "rock") return 0;
+        const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+        if (preset && this._foundryPresetIsTree(preset))
+            return this._foundrySichtHoehe(preset, this._scatterFoundrySeed(cellX, cellZ, variantIndex), scale, null);
+        return this._lodTreeVisHeightFor(species, variantIndex, scale);
     }
 
     // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
@@ -52552,8 +52579,14 @@ class AnazhRealm {
             const dist = Math.sqrt(dx * dx + dz * dz);
             if (dist > SC.outerM + 96) continue; // jenseits räumt der Region-Ring selbst
             const tf = this._scatterCellTransform(cell.cellX, cell.cellZ, cell.cellM, layer.scaleBase, layer.scaleVar);
-            const visH =
-                layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(cell.species, cell.variantIndex, tf.scale);
+            const visH = this._scatterSichtHoehe(
+                layer,
+                cell.species,
+                cell.cellX,
+                cell.cellZ,
+                cell.variantIndex,
+                tf.scale
+            );
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
             if (newLod === cell.lod) continue;
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
@@ -52970,16 +53003,22 @@ class AnazhRealm {
         const stretchMax = cfg.visStretchMax > 0 && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
         const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
-        // Perf-Multiplikator aus der EINEN Regler-Quelle.
+        return rawDist * heightFactor * this._lodPerfMul();
+    }
+
+    // Der Perf-Multiplikator der Wahrnehmungs-Distanz aus der EINEN Regler-Quelle (_foliageDensityScale): unter Last
+    // schalten alle Stufen früher. ZWEI Leser, EINE Zahl: die CPU-Stufenwahl (_lodPerceptionDistance) UND die
+    // Shader-Masken (uLodPerf, je Frame in _loopRender gespiegelt) — liest nur die CPU ihn, legt sie die Stufe um,
+    // deren Fragmente die Maske noch verwirft (gemessen 04.10. unter Last, fd 0,22 → ×1,3: die Birke auf 15,7 m
+    // stand als L1 allein, ihre Rinde zu 66 % gezeichnet — ein Geist).
+    _lodPerfMul() {
+        const cfg = AnazhRealm.LOD_DISTANCES;
         const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
         const fdMin = AnazhRealm.PERF_FOLIAGE_DENSITY_MIN != null ? AnazhRealm.PERF_FOLIAGE_DENSITY_MIN : 0.4;
-        const mulMax = Number.isFinite(cfg.perfDistMulMax) && cfg.perfDistMulMax >= 1 ? cfg.perfDistMulMax : 1.5;
-        let perfMul = 1;
-        if (fd < 1 && fdMin < 1) {
-            const frac = Math.max(0, Math.min(1, (1 - fd) / (1 - fdMin)));
-            perfMul = 1 + (mulMax - 1) * frac;
-        }
-        return rawDist * heightFactor * perfMul;
+        const mulMax = cfg && Number.isFinite(cfg.perfDistMulMax) && cfg.perfDistMulMax >= 1 ? cfg.perfDistMulMax : 1.5;
+        if (!(fd < 1 && fdMin < 1)) return 1;
+        const frac = Math.max(0, Math.min(1, (1 - fd) / (1 - fdMin)));
+        return 1 + (mulMax - 1) * frac;
     }
 
     // Sichthöhe eines Baum-Eintrags = y-Ausdehnung des LOD0-Bauplans × entry.scale. Gecacht je
@@ -53007,9 +53046,65 @@ class AnazhRealm {
     // V18.387 — die Sichthöhe eines bereits gespawnten Architektur-Eintrags
     // (Baum-HISM). Nicht-Baum-Einträge → 0 (der Chooser läuft dann roh).
     _lodTreeVisHeight(entry) {
-        if (!entry || !entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return 0;
+        if (!entry) return 0;
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
+        if (preset && this._foundryPresetIsTree(preset))
+            return this._foundrySichtHoehe(preset, entry.seed, s, this._artifactStudioOv(entry));
+        if (!entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return 0;
         return this._lodTreeVisHeightFor(entry._lodSpecies, entry._lodVariantIndex, s);
+    }
+
+    // DIE EINE SICHTHÖHE EINES FOUNDRY-BAUMS — die Zahl, die seine Masken lesen: der aH0-Stempel der Höhen-Stufe
+    // (_foundryHoehenStufe; Template-Höhe × Preset-Welt-Skala, gesetzt in _foundryBuildGroup) × Instanz-Skala, exakt
+    // was die Instanz-Fassade je Slot stempelt (_lodSlotStamp). Befund 04.10. (Werkbank, Mess-Wiese): die CPU las die
+    // Höhe aus dem Grammatik-Bauplan, den _buildVariantLODs bei lebender Foundry nie baut — 190 von 190 Bäumen
+    // standen mit Sichthöhe 0, die Stufenwahl lief roh, die Masken mit 17–60 m Sichthöhe: zwischen ~12 und ~25 m stand
+    // ein Baum als L1 ALLEIN, deren Maske ihn erst halb einblendet (Birke 15,7 m: Rinde zu 66 % gezeichnet, die L0
+    // fehlte) — die gerasterten Geister. 0 = die Stufe ist noch nicht gebaut (dann steht auch keine Geometrie).
+    _foundrySichtHoehe(preset, seed, scale, ov) {
+        const f = this._foundry;
+        if (!f || !f.cache) return 0;
+        const gestalt = this._foundryVariantFor(seed, preset);
+        if (gestalt == null) return 0;
+        const g = f.cache.get(this._foundryKoerperKey(preset, gestalt, this._foundryHoehenStufe(preset), ov));
+        const ch = g && g.children && g.children[0];
+        const a = ch && ch.geometry && ch.geometry.attributes ? ch.geometry.attributes.aH0 : null;
+        const h0 = a && a.array && a.array.length ? a.array[0] : 0;
+        return h0 * (Number.isFinite(scale) && scale > 0 ? scale : 1);
+    }
+
+    // Die Höhen-Stufe eines Baum-Presets: die L1 (sie reist mit jeder L0, der Schatten-Stellvertreter, und trägt
+    // jeden Mittel-Baum) — alle Stufen eines Baums stempeln IHRE Höhe (_foundryStufenHoeheAngleichen), sonst
+    // trennen L0 und L1 die Rinde nicht mehr exakt (keepL0 XOR keepL1 braucht dasselbe f0 auf beiden).
+    _foundryHoehenStufe(preset) {
+        return this._foundryDeclaredStage(preset, 1);
+    }
+
+    // Eine Stufe eines Baums auf die Höhe seiner Höhen-Stufe stempeln (aH0; aH0L Laub gekappt auf leafVisCap, Rinde
+    // == aH0) — VOR dem Flat-Bau, also bevor eine Instanz-Fassade die Vorlage liest. Gemessen 04.10.: L0 und L1
+    // derselben Variante wichen je Stufen-Ausdehnung 1–4 % (eiche|15 23,19 / 24,15 m) — im L0/L1-Band ein Lochgitter
+    // in der Rinde. Ist die Höhen-Stufe (noch) nicht gebaut, bleibt der eigene Stempel.
+    _foundryStufenHoeheAngleichen(group, preset, variant, lod, ov) {
+        const ziel = this._foundryHoehenStufe(preset);
+        if (lod === ziel || !group || !group.children) return;
+        const ref = this._foundry && this._foundry.cache.get(this._foundryKoerperKey(preset, variant, ziel, ov));
+        const ch0 = ref && ref.children && ref.children[0];
+        const a = ch0 && ch0.geometry && ch0.geometry.attributes ? ch0.geometry.attributes.aH0 : null;
+        const h0 = a && a.array && a.array.length ? a.array[0] : 0;
+        if (!(h0 > 0)) return;
+        const D = AnazhRealm.LOD_DISTANCES;
+        const capL = D && Number.isFinite(D.leafVisCap) ? D.leafVisCap : 24;
+        for (const ch of group.children) {
+            const at = ch.geometry && ch.geometry.attributes;
+            if (!at || !at.aH0 || !at.aH0L) continue;
+            const fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
+            const fol = fk === "foliage" || fk === "foliageTex" || fk === "grass";
+            at.aH0.array.fill(h0);
+            at.aH0L.array.fill(fol ? Math.min(h0, capL) : h0);
+            at.aH0.needsUpdate = true;
+            at.aH0L.needsUpdate = true;
+        }
     }
 
     _chooseLODForDistance(distance, currentLOD, visHeight) {
@@ -63248,7 +63343,13 @@ class AnazhRealm {
                     g.translate(0, -0.5, 0); // Ursprung = OBERKANTE (top-anchored)
                     return g;
                 })());
-            const mat = this._archFundMat || (this._archFundMat = new THREE.MeshLambertMaterial({ color: 0x7a7168 })); // Bruchstein-Grau
+            const mat =
+                this._archFundMat ||
+                (this._archFundMat = new THREE.MeshStandardNodeMaterial({
+                    color: 0x7a7168,
+                    roughness: 1,
+                    metalness: 0,
+                })); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz)
             const mesh = AnazhRealm._instanzMesh(geo, mat, 128);
             mesh.count = 0;
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
@@ -69044,7 +69145,16 @@ class AnazhRealm {
                     typeof this._foundryPresetIsTree === "function" &&
                     this._foundryPresetIsTree(stage.preset)
                 );
-                const _aLodVal = _isTree && _lodS === 0 ? 1 : _isTree && _lodS === 1 ? 2 : 0;
+                // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Der Strauch
+                // ([1, 2]) hat keine: seine L1 ist nah die volle Gestalt (Studio: nah stages[0], fern stages[letzte])
+                // und bleibt ungemaskt; gemessen 04.10. (Werkbank, Mess-Wiese): ein Strauch auf 8,9 m zu 66 %
+                // durchsichtig, die L0-Hälfte der Blende fehlte.
+                const _aLodVal =
+                    _isTree && _lodS === 0
+                        ? 1
+                        : _isTree && _lodS === 1 && this._foundryDeclaredStage(stage.preset, 0) === 0
+                          ? 2
+                          : 0;
                 let _minY = Infinity,
                     _maxY = -Infinity;
                 for (const ch of group.children) {
@@ -69609,6 +69719,9 @@ class AnazhRealm {
                 if (f1 && f1.instanceable && f1.lod === 1 && Array.isArray(f1.leaves) && f1.leaves.length)
                     schatten = f1;
             }
+            // EINE Sichthöhe je Baum über alle Stufen (vor dem Flat: die Instanz-Fassaden lesen die Vorlage).
+            if (this._foundryPresetIsTree(preset))
+                this._foundryStufenHoeheAngleichen(group, preset, variant, lod, entryOv);
             const leaves = [];
             // Template→Welt-Übersetzung: das Studio platziert mit `SCALE[sp] · tr.s · 0.82` (eiche 4.16 · fichte
             // 4.85 · …) — ohne sie bleibt der Baum ein Zwerg, der strauch ein Riese. Sie lebt HIER (localMatrix
@@ -83893,7 +84006,7 @@ class AnazhRealm {
         const holz = await this._holzWahl();
         this._applyHolzProfil(holz);
         const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
-        this.state._fxaa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
+        this.state._traa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
         // Opt-in Headless-Null-Renderer (GPU-frei) für Mechanik-Playtest / Server-Sim, sonst der echte
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
@@ -83903,8 +84016,9 @@ class AnazhRealm {
                 ? this._makeHeadlessRenderer(canvas)
                 : new THREE.WebGPURenderer({
                       canvas,
-                      // KEIN MSAA: die Kantenglättung ist FXAA am Ende der Post-Kette (_fxaaNode; das Holz-Profil
-                      // schaltet sie). MSAA 4× kostete gemessen ~7 ms GPU und 267 MB VRAM (04.10., Radeon 890M).
+                      // KEIN MSAA: die Kantenglättung ist die zeitliche Auflösung (TRAA) am Anfang der Post-Kette
+                      // (_ensurePostProcessing; das Holz-Profil schaltet sie). MSAA 4× kostete gemessen ~7 ms GPU
+                      // und 267 MB VRAM (04.10., Radeon 890M).
                       antialias: false,
                       trackTimestamp: true,
                       // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
@@ -86496,7 +86610,24 @@ class AnazhRealm {
             // API-korrekt: der sampelbare Textur-Node kommt aus
             // getTextureNode() (PassNode != TextureNode — .sample() lebt am
             // TextureNode). Das ist das offizielle MRT/pass-Muster.
-            const sceneColor = typeof scenePass.getTextureNode === "function" ? scenePass.getTextureNode() : scenePass;
+            let sceneColor = scenePass.getTextureNode();
+            // DIE ZEITLICHE AUFLÖSUNG (TRAA, vendor/TRAANode.js = r184 verbatim) statt FXAA am Ende: die Kamera
+            // springt je Frame um einen Halton-Subpixel, die Geschichte wird reprojiziert und gegen die Varianz der
+            // 3×3-Nachbarschaft geklemmt — Kanten sind echt übersampelt, und die rotierende LOD-Dither-Blende
+            // (uDitherT, _loopRender) mittelt sich zu einer glatten Überblendung statt eines Gitters (Befund 04.10.:
+            // Birken und Büsche als gerasterte Geister; FXAA sah das Muster als Kante und ließ es stehen). Erste
+            // Stufe der Kette (Studio-Gesetz phytogenesis FIX v32: zeitliche Auflösung VOR den Nachbearbeitungen):
+            // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
+            // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity.
+            const traa = this.state._traa
+                ? new THREE.TRAANode(
+                      sceneColor,
+                      scenePass.getTextureNode("depth"),
+                      this._traaKameraBewegung(TSL, scenePass.getTextureNode("depth")),
+                      this.state.camera
+                  )
+                : null;
+            if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
                 // Bloom-Schwelle 0.86: nur sehr helle Spitzen (Sonnen-Disc, Wasser-Glitzer) bloomen, nicht der
@@ -86630,13 +86761,11 @@ class AnazhRealm {
             const degrayed = mix(contrasted, warm, greyness.mul(u.degrayStrength).mul(float(1.0).sub(u.nightFactor)));
             const graded = degrayed.max(vec3(0, 0, 0));
 
-            // DIE KANTENGLÄTTUNG: FXAA nach dem Tonemapping (die Ausgabe-Wandlung zieht hierher vor, die Post-Kette
-            // wandelt danach nicht noch einmal) — statt MSAA 4× im Szenen-Ziel.
-            if (this.state._fxaa) {
-                pp.outputNode = this._fxaaNode(TSL, TSL.renderOutput(graded));
-                pp.outputColorTransform = false;
-            } else pp.outputNode = graded;
+            // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
+            pp.outputNode = graded;
             this.state.postProcessing = pp;
+            // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
+            this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
             return pp;
         } catch (err) {
@@ -86646,42 +86775,44 @@ class AnazhRealm {
         }
     }
 
-    // FXAA (Lottes, die Konsolen-Variante von FXAA 3.11 — 9 Taps): auf dem fertigen LDR-Bild (Zwischen-Textur), Luma
-    // wahrnehmungsgewichtet; entlang der Kanten-Richtung zwei bzw. vier Proben gemittelt, die breitere Mittelung nur,
-    // wenn sie im lokalen Luma-Band bleibt (sonst übersprang sie eine Kante).
-    _fxaaNode(TSL, ldr) {
-        const { convertToTexture, screenUV, screenSize, vec2, vec3, vec4, float, dot, min, max, abs, clamp, select } =
-            TSL;
-        const tex = convertToTexture(ldr);
-        const px = vec2(1.0, 1.0).div(screenSize);
-        const L = vec3(0.299, 0.587, 0.114);
-        const nb = (dx, dy) => dot(tex.sample(screenUV.add(px.mul(vec2(dx, dy)))).rgb, L);
-        const lNW = nb(-1, -1);
-        const lNE = nb(1, -1);
-        const lSW = nb(-1, 1);
-        const lSE = nb(1, 1);
-        const lM = dot(tex.sample(screenUV).rgb, L);
-        const lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
-        const lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-        const dirX = lNW.add(lNE).sub(lSW.add(lSE)).negate();
-        const dirY = lNW.add(lSW).sub(lNE.add(lSE));
-        const reduce = max(
-            lNW
-                .add(lNE)
-                .add(lSW)
-                .add(lSE)
-                .mul(0.25 / 8),
-            float(1 / 128)
-        );
-        const rcp = float(1.0).div(min(abs(dirX), abs(dirY)).add(reduce));
-        const dir = clamp(vec2(dirX, dirY).mul(rcp), vec2(-8.0, -8.0), vec2(8.0, 8.0)).mul(px);
-        const s = (k) => tex.sample(screenUV.add(dir.mul(k))).rgb;
-        const rgbA = s(1 / 3 - 0.5)
-            .add(s(2 / 3 - 0.5))
-            .mul(0.5);
-        const rgbB = rgbA.mul(0.5).add(s(-0.5).add(s(0.5)).mul(0.25));
-        const lB = dot(rgbB, L);
-        return vec4(select(lB.lessThan(lMin).or(lB.greaterThan(lMax)), rgbA, rgbB), 1.0);
+    // DIE KAMERA-BEWEGUNG je Pixel für die zeitliche Auflösung — das Studio-Gesetz TAA-Lite (phytogenesis FIX v32):
+    // „die Welt ist statisch, also ist Kamerabewegung EXAKT reprojezierbar (Szenentiefe + ViewProj des letzten
+    // Frames); Wind/Wasser fängt der Nachbarschafts-Klemm". Ein Pixel (uv, Tiefe) im Clip-Raum dieses Frames, mal
+    // R = PV_vor · PV_jetzt⁻¹ (`_traaReprojektion`, je Frame in float64 auf der CPU gefaltet — keine Welt-
+    // Translation im Shader), liegt im Clip-Raum des vorigen Frames; die Differenz der NDC ist die Bewegung, die
+    // TRAANode als `velocityNode.load(texel)` liest. Keine MRT-Velocity: sie schriebe je Fragment JEDES Materials
+    // ein zweites Ziel und rechnete je Vertex die Vorgänger-Transformation, und ihre Objekt-Uniforms
+    // (previousModelWorldMatrix) zieht die Diät/Bundle-Abkürzung (_diaetRefresh) gebündelten Objekten nie nach —
+    // der ganze Wald hätte die Bewegung seiner letzten Aufnahme getragen. Was sich selbst bewegt (Tiere, Wind),
+    // fängt die Varianz-Klemme der Geschichte.
+    _traaKameraBewegung(TSL, tiefe) {
+        const { vec2, vec4 } = TSL;
+        const R = TSL.uniform(new THREE.Matrix4());
+        this.state._traaR = { R, jetzt: new THREE.Matrix4(), vor: new THREE.Matrix4(), neu: true };
+        return {
+            load: (texel) => {
+                const uvT = texel.div(vec2(tiefe.size()));
+                const ndc = vec2(uvT.x.mul(2).sub(1), uvT.y.oneMinus().mul(2).sub(1));
+                const vor = R.mul(vec4(ndc, tiefe.load(texel).r, 1));
+                return ndc.sub(vor.xy.div(vor.w));
+            },
+        };
+    }
+
+    // Die Reprojektion des Frames: vor dem Post-Render (die Kamera trägt noch keinen TRAA-Versatz, der lebt nur
+    // zwischen onBefore-/onAfterRenderPipeline), einmal je gerendertem Frame.
+    _traaReprojektion() {
+        const z = this.state._traaR;
+        const cam = this.state.camera;
+        if (!z || !cam) return;
+        cam.updateMatrixWorld();
+        z.vor.copy(z.jetzt);
+        z.jetzt.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        if (z.neu) {
+            z.vor.copy(z.jetzt);
+            z.neu = false;
+        }
+        z.R.value.copy(z.jetzt).invert().premultiply(z.vor);
     }
 
     // Alle Schatten-Maps im nächsten Render neu — die EINE Markierung (Werkzeuge vor einer Aufnahme): je Licht am
@@ -86827,17 +86958,19 @@ class AnazhRealm {
             this._tickGrasBend();
         }
         // uLodRef spiegelt live die EINE Quelle `state.lodRef` (Slider ohne Mesh-Rebuild; dieselbe Zahl
-        // liest `_lodPerceptionDistance`), uLodMaskOn den A/B-Toggle. uDitherT bleibt statisch: rotierendes
-        // Dither ohne TAA wäre kriechendes Rauschen — Rotation erst hinter einem TAA-Gate (`state.taaLite`).
+        // liest `_lodPerceptionDistance`), uLodMaskOn den A/B-Toggle. uDitherT rotiert golden-ratio, wo die
+        // zeitliche Auflösung in der Kette steht (state.traaNode, _ensurePostProcessing): das zeitliche Mittel ist die
+        // glatte Blende (statisch wäre das Mittel das Muster). Ohne TRAA (Holz kienspan) bleibt es statisch —
+        // rotierendes Dither ohne zeitliche Auflösung wäre kriechendes Rauschen (Studio-Gesetz phytogenesis FIX v32).
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
-            if (_lu.uDitherT && this.state.taaLite === true)
-                _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
             if (_lu.uLodAuge && this.state.camera) this.state.camera.getWorldPosition(_lu.uLodAuge.value);
+            if (_lu.uLodPerf) _lu.uLodPerf.value = this._lodPerfMul();
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;
@@ -86905,6 +87038,7 @@ class AnazhRealm {
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
+                if (this.state.traaNode) this._traaReprojektion();
                 if (typeof pp.render === "function") pp.render();
                 else pp.renderAsync();
             } catch (err) {

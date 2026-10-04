@@ -10,5 +10,9 @@
     "vendor/three.tsl.min.js": {
         "bytes": 23265,
         "fnv": "5438276"
+    },
+    "vendor/TRAANode.js": {
+        "bytes": 21820,
+        "fnv": "94714d8"
     }
 }

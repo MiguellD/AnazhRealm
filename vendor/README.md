@@ -28,6 +28,7 @@ Drei reasons we host these instead of using a CDN:
 > sind gelöscht. Historie: git-log ≤ V18.330 + `docs/archiv/eigene-physik-plan.md`.
 | `CSMShadowNode.js` | `three@0.184.0` (`examples/jsm/csm/CSMShadowNode.js`) | B4/V18.130 — Cascaded Shadow Maps fuer den WebGPURenderer, verbatim (importiert `three/webgpu` + `three/tsl` via Import-Map + `./CSMFrustum.js` relativ). Traegt den Light-Space-Texel-Snap PRO Kaskade eingebaut (`updateBefore`) |
 | `CSMFrustum.js` | `three@0.184.0` (`examples/jsm/csm/CSMFrustum.js`) | Frustum-Split-Helfer von CSMShadowNode (importiert nur `three`) |
+| `TRAANode.js` | `three@0.184.0` (`examples/jsm/tsl/display/TRAANode.js`, unpkg) | 04.10. — die zeitliche Auflösung (Temporal Reprojection AA), verbatim; die EINE Kantenglättung der Post-Kette (`_ensurePostProcessing`, FXAA ist gefallen). Der Stamm reicht als `velocityNode` die Kamera-Bewegung aus der Tiefe (`_traaKameraBewegung`, Studio-Gesetz TAA-Lite) — keine MRT-Velocity. Fingerabdruck + Anker in `anker.lock.json` / `gate:vendor-anker` |
 
 **V10.0-Bogen (Three.js r134 → r160 + WebGPU, 26-27.05.2026)** — Migration in vier Schritten: UMD `three.min.js` r134 → ESM r160 + Inline-Importmap mit CSP-SHA256-Hash + 238 Addon-Files aus `examples/jsm/` + WebGPURenderer aktiv mit Hot-Swap-Safety-Net. Welt rendert dauerhaft auf WebGPU.
 
