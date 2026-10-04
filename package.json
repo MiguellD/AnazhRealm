@@ -158,6 +158,7 @@
         "gate:taille": "node scripts/diag-taille.cjs",
         "gate:arch-fachwerk": "node scripts/diag-arch-fachwerk-fit.cjs",
         "gate:arch-feld": "node scripts/diag-arch-feld.cjs --selftest && node scripts/diag-arch-feld.cjs",
+        "gate:analog-nah": "node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90",
         "lens:e-trace": "node scripts/diag-analog-e-metrology.cjs",
         "lens:wiese": "node scripts/diag-wiese.cjs",

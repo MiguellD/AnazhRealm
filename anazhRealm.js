@@ -34976,8 +34976,10 @@ class AnazhRealm {
                 "}"
         );
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, fogNah: f32, fogFern: f32, fogFarbe: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
+                "    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende wie die Studio-Stufen (__phytoCore.lodDitherIGN)\n" +
+                "    let schwundIgn = fract(52.9829189 * fract(schirm.x * 0.06711056 + schirm.y * 0.00583715) + ditherT);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
                 "    let PI = 3.14159265358979;\n" +
@@ -35053,10 +35055,12 @@ class AnazhRealm {
                 "        let tN = max(max(tMin3.x, tMin3.y), max(tMin3.z, 0.5));\n" +
                 "        let tF = min(tMax3.x, min(tMax3.y, tMax3.z));\n" +
                 "        if (tF <= tN || tN >= bestT) { continue; }\n" +
+                "        let lm4 = textureLoad(liste, vec2<i32>(bx + 5, ty), 0);\n" +
+                "        if (lm4.w > 0.0 && schwundIgn < lm4.w) { continue; }\n" + // der Satz dithert aus, sein Mesh übernimmt
                 "        let r0 = textureLoad(liste, vec2<i32>(bx + 2, ty), 0);\n" +
                 "        let r1 = textureLoad(liste, vec2<i32>(bx + 3, ty), 0);\n" +
                 "        let r2 = textureLoad(liste, vec2<i32>(bx + 4, ty), 0);\n" +
-                "        let lm = textureLoad(liste, vec2<i32>(bx + 5, ty), 0).xyz;\n" +
+                "        let lm = lm4.xyz;\n" +
                 "        let lg = textureLoad(liste, vec2<i32>(bx + 6, ty), 0).xyz;\n" +
                 "        let c4 = vec4<f32>(camPos, 1.0);\n" +
                 "        let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
@@ -35373,6 +35377,9 @@ class AnazhRealm {
             // Die Szenen-Tiefe VOR dem Feld-Pass (r184-Viewport-Tiefe, Kopie im Pass-Bruch wie beim Wasser): die
             // Grenze des Marchs. Ein Leser der Viewport-Tiefe bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
             szeneTiefe: TSL.viewportDepthTexture().x,
+            // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
+            schirm: TSL.screenCoordinate.xy,
+            ditherT: this._ensureLodUniforms().uDitherT,
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
@@ -35605,6 +35612,7 @@ class AnazhRealm {
             gesetzKacheln: new Map(), // DAS VERTEILUNGS-GESETZ: kachelKey → [Gesetz-Blöcke der Klein-Streu]
             gesetzBloecke: 0, // lebende Gesetz-Blöcke (die Kapazitäts-Linse zählt mit)
             gesetzPlaetze: 0, // belegte Plätze über alle Blöcke (Instanz-Wahrheit der Klein-Streu)
+            schwund: new Set(), // Handles, deren Satz gerade ausdithert (_weltFeldAktiv aus → _weltSchwundTakt)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             belegt: 0, // Feld-EINTRÄGE (Instanzen)
             obergrenze: 0, // höchster je vergebener Feld-Index + 1 (der Shader-Loop endet dort)
@@ -35641,7 +35649,7 @@ class AnazhRealm {
         L[o + 25] = lg.y;
         L[o + 26] = lg.z;
         L[o + 27] = 0; // lokale Box Größe
-        const handle = { feld, brick };
+        const handle = { feld, brick, _anT: performance.now() };
         wm.handles[feld] = handle;
         wm.unordnung++;
         if (matrixWorld) {
@@ -36163,16 +36171,141 @@ class AnazhRealm {
         else this._weltFeldFrei(handle);
     }
 
+    // An: sofort (und ein laufender Schwund bricht ab). Aus: DER SCHWUND — übernimmt ein Mesh (Studio-Stufe, Tier), dithert
+    // der Satz über `WELT_SCHWUND_MS` aus (Texel 5.w = Schwund-Anteil, dieselbe IGN-Blende wie die Stufen), statt im
+    // selben Frame zu verschwinden: der Übergang Satz → Mesh trägt keinen Pop. Ohne gezeichneten Feld-Pass fällt er sofort.
     _weltFeldAktiv(handle, an) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
+        const L = wm.listeDaten;
         const o = handle.feld * 32;
-        const soll = an ? handle.brick.d : 0;
-        if (wm.listeDaten[o + 3] !== soll) {
-            wm.listeDaten[o + 3] = soll;
-            wm.liste.needsUpdate = true;
-            this._weltSeiteDirty(wm, handle.feld);
+        if (an) {
+            if (handle._schwundT0 !== undefined) {
+                handle._schwundT0 = undefined;
+                wm.schwund.delete(handle);
+                L[o + 23] = 0;
+                wm.liste.needsUpdate = true;
+            }
+            if (L[o + 3] !== handle.brick.d) {
+                L[o + 3] = handle.brick.d;
+                handle._anT = performance.now(); // seit wann der Satz zeichnet (die Nah-Linse nennt die Dauer)
+                wm.liste.needsUpdate = true;
+                this._weltSeiteDirty(wm, handle.feld);
+            }
+            return;
         }
+        if (L[o + 3] === 0 || handle._schwundT0 !== undefined) return;
+        const fp = this.state.feldPass;
+        if (fp && fp.mesh && fp.mesh.visible) {
+            handle._schwundT0 = performance.now();
+            wm.schwund.add(handle);
+            return;
+        }
+        L[o + 3] = 0;
+        wm.liste.needsUpdate = true;
+        this._weltSeiteDirty(wm, handle.feld);
+    }
+
+    // DIE NAH-LINSE (gate:analog-nah, Werkbank): jeder zeichnende Analog-Satz diesseits der Nah-Grenze (`ANALOG_NAH_M`,
+    // waagrecht vom Spieler zur Hülle) beim NAMEN — Klasse, Träger, Abstand, seit wann er zeichnet und warum dort kein
+    // Mesh steht. Rein lesend. `{ nah: [...], zaehl: { klasse: n } }`; ohne Welt-March null.
+    _analogZensus() {
+        const st = this.state;
+        const wm = st.weltMarch;
+        const pm = st.playerMesh && st.playerMesh.position;
+        if (!wm || !pm) return null;
+        const N = AnazhRealm.ANALOG_NAH_M;
+        const L = wm.listeDaten;
+        const K = wm.kapselDaten;
+        const jetzt = performance.now();
+        const traeger = new Map();
+        for (const e of st.architectures || []) if (e && e._ziegelSlot) traeger.set(e._ziegelSlot, { bau: e });
+        for (const c of st.creatures || []) {
+            const u = c && c.userData;
+            if (u && u._kzGlieder) for (const gl of u._kzGlieder) traeger.set(gl.handle, { tier: c });
+        }
+        const nah = [];
+        const zaehl = {};
+        const grundBau = (e) => {
+            if (this._archIsRendered(e)) return "Mesh steht — der Satz schwindet";
+            const preset = this._foundryEnabled() ? this._foundryPresetForEntry(e) : null;
+            if (!preset) return "Grammatik-Bau wartet aufs Bau-Budget";
+            const lod = this._foundryLodForEntry(e);
+            if (this._foundryStufeBereit(e, preset, lod))
+                return "Studio-Stufe L" + lod + " gedockt, noch nicht platziert";
+            if (!this._foundryPresetIsTree(preset)) return "Studio-Stufe L" + lod + " lädt (Foundry)";
+            if (lod >= 2) return "Studio-Karte wartet auf den Karten-Bäcker";
+            return "Studio-Stufe L" + lod + " lädt (Foundry), die Karte als Brücke ist noch nicht gebacken";
+        };
+        for (let f = 0; f < wm.obergrenze; f++) {
+            const h = wm.handles[f];
+            if (!h) continue;
+            const o = f * 32;
+            if (L[o + 3] === 0) continue;
+            const t = traeger.get(h);
+            const bloc = h.brick && h.brick.gesetz;
+            let d;
+            if (bloc) {
+                d = Infinity;
+                for (let i = 0; i < h.brick.anzahl; i++) {
+                    const q = (h.brick.slot + i) * 8;
+                    if (K[q + 3] > 0) d = Math.min(d, Math.hypot(K[q] - pm.x, K[q + 2] - pm.z));
+                }
+            } else {
+                const dx = Math.max(L[o] - pm.x, 0, pm.x - L[o + 4]);
+                const dz = Math.max(L[o + 2] - pm.z, 0, pm.z - L[o + 6]);
+                d = Math.hypot(dx, dz);
+            }
+            const klasse = t && t.bau ? "bau" : t && t.tier ? "tier" : bloc ? "streu-gesetz" : "unbekannt";
+            if (!(d < N)) continue;
+            zaehl[klasse] = (zaehl[klasse] || 0) + 1;
+            const z = {
+                klasse,
+                d: Math.round(d * 10) / 10,
+                seitMs: Number.isFinite(h._anT) ? Math.round(jetzt - h._anT) : null,
+                schwindet: h._schwundT0 !== undefined,
+                satz: (h.brick && h.brick.key) || null,
+            };
+            if (t && t.bau) {
+                const e = t.bau;
+                z.name = e.type + "@" + Math.round(e.position.x) + "," + Math.round(e.position.z);
+                z.grund = grundBau(e);
+            } else if (t && t.tier) {
+                const u = t.tier.userData || {};
+                z.name = (u.gattung || u.recipe || u.soul || "tier") + "#" + t.tier.id;
+                z.grund = u._kzNah ? "nah, der Satz schwindet" : "Fern-Hysterese (Nah-Grenze " + N + " m)";
+            } else if (bloc) {
+                z.name = "Gesetz-Block " + (h.brick.slot | 0);
+                z.grund = "Gesetz-Platz diesseits der Nah-Grenze";
+            } else {
+                z.name = "Feld " + f;
+                z.grund = "ohne Träger";
+            }
+            nah.push(z);
+        }
+        nah.sort((a, b) => a.d - b.d);
+        return { nah, zaehl, grenzeM: N };
+    }
+
+    // Der Schwund-Takt (je Feld-Pass-Takt): Anteil = Zeit / WELT_SCHWUND_MS in Texel 5.w; am Ende fällt der Satz aus der
+    // Zeichnung (d = 0). Die Handles tragen ihren Slot frisch (die Seiten-Ordnung verschiebt ihn).
+    _weltSchwundTakt(wm) {
+        if (!wm || !wm.schwund.size) return;
+        const L = wm.listeDaten;
+        const jetzt = performance.now();
+        for (const h of wm.schwund) {
+            const o = h.feld * 32;
+            const s = (jetzt - h._schwundT0) / AnazhRealm.WELT_SCHWUND_MS;
+            if (h._frei || s >= 1) {
+                wm.schwund.delete(h);
+                h._schwundT0 = undefined;
+                if (h._frei) continue;
+                L[o + 3] = 0;
+                L[o + 23] = 0;
+                this._weltSeiteDirty(wm, h.feld);
+            } else L[o + 23] = Math.max(1e-3, s);
+        }
+        wm.liste.needsUpdate = true;
     }
 
     // Das Feld folgt seinem GLIED: die Liste bekommt die inverse Welt-Matrix des Knochens (der March
@@ -36470,6 +36603,7 @@ class AnazhRealm {
         if (!fp) fp = this._feldPassEnsure(fr);
         if (!fp) return;
         if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ) this._feldPassMal(fp, fr);
+        this._weltSchwundTakt(st.weltMarch);
         const cam = st.camera;
         // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät) + Re-Bake bei
         // Kamera-Drift (Parallaxe/Horizont) — amortisiert, gen-gestempelt.
@@ -67451,7 +67585,11 @@ class AnazhRealm {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return false;
         if (entry._ziegelSlot) {
-            this._weltFeldAktiv(entry._ziegelSlot, true);
+            // Der Slot zeichnet, außer in der Mesh-Zone über dem stehenden Mesh — dieselbe Regel wie der Culling-Tick.
+            // Vorher schaltete dieser Ruf jeden Takt AN und der Culling-Tick gleich wieder AUS (je Takt jede Seite der
+            // Mesh-Zone schmutzig) — der Schwund begann so jeden Takt von vorn und endete nie (gemessen 04.10.: 197
+            // Sätze dauerhaft „schwindend").
+            this._weltFeldAktiv(entry._ziegelSlot, !(entry._ziegelNah && this._archIsRendered(entry)));
             return false;
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
@@ -68561,7 +68699,7 @@ class AnazhRealm {
         a[ax] -= lang;
         const b = c.clone();
         b[ax] += lang;
-        return { a, b, r, farbe: fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null };
+        return { a, b, r, farbe: fw > 0 ? { r: fr / fw, g: fg / fw, b: fb / fw } : null };
     }
 
     // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der
@@ -91043,6 +91181,9 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     gesetzKachelM: 64, // Kachel-Kante der Gesetz-Blöcke (Schirm-Bindung: kleine Hüll-AABBs)
     gesetzBlock: 16, // Plätze je Block (1 Kapsel-Slot = 2 Texel je Platz)
 });
+// DER SCHWUND (ms): so lange dithert ein Analog-Satz aus, wenn sein Mesh übernimmt (`_weltFeldAktiv`) — der
+// Übergang Satz → Studio-Stufe trägt die Blende der Stufen statt eines Pops.
+AnazhRealm.WELT_SCHWUND_MS = 500;
 AnazhRealm.BERG_CULL = Object.freeze({
     minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
     proben: 5, // Höhen-Proben je Sichtlinie

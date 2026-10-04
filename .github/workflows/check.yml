@@ -560,6 +560,14 @@ jobs:
               # Pipelines neu kompilieren — sonst exit≠0 und der Build wird ROT, bevor jemand friert.
               run: npm run gpu-lens
 
+            - name: Nah-Linse (echter Renderer — kein Analog-Satz diesseits der Nah-Grenze 64 m)
+              # Nah und mittel ist das Studio-Mesh die Gestalt, das Analog-Feld trägt erst jenseits ANALOG_NAH_M. Fährt
+              # den ECHTEN Renderer (swiftshader) an der Mess-Wiese und liest `_analogZensus` (jeder zeichnende Satz
+              # < 64 m beim Namen: Klasse · Träger · Abstand · seit wann · warum kein Mesh): eingeschwungen satzfrei,
+              # Ruhe ohne Satz, nach 400 m fort und zurück satzfrei binnen 120 Takten. --selftest zuerst: ein
+              # erzwungener Kapsel-Satz in 20 m wird rot und genannt.
+              run: npm run gate:analog-nah
+
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
               # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
               # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·
