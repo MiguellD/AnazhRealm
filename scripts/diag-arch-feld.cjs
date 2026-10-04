@@ -317,7 +317,7 @@ function schlangenGesetz(src) {
             else if (a._ziegelGebacken) ausgebrannt++;
         }
         const wm = r.state.weltMarch;
-        const variante = r._foundryVariantFor(eb ? eb.seed : 0);
+        const variante = r._foundryVariantFor(eb ? eb.seed : 0, "eiche");
         // Der Zustand je gesetztem Bau (die Linse nennt den Täter, nicht nur „Takt null").
         const zustand = (e) =>
             e
@@ -341,7 +341,7 @@ function schlangenGesetz(src) {
                           ? r._foundry.cache.has(
                                 r._archFoundryPreset(e) +
                                     "|" +
-                                    r._foundryVariantFor(e.seed) +
+                                    r._foundryVariantFor(e.seed, r._archFoundryPreset(e)) +
                                     "|1|" +
                                     (r.state.season || "summer")
                             )
@@ -350,7 +350,7 @@ function schlangenGesetz(src) {
                           ? !!(
                                 wm &&
                                 wm.kapselCache.has(
-                                    "abaum:" + r._archFoundryPreset(e) + ":" + r._foundryVariantFor(e.seed)
+                                    "abaum:" + r._archFoundryPreset(e) + ":" + r._foundryVariantFor(e.seed, r._archFoundryPreset(e))
                                 )
                             )
                           : null,

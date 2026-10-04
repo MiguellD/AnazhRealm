@@ -36320,7 +36320,9 @@ class AnazhRealm {
     _streuGesetzSpawn(preset, fseed, x, surfY, z, yaw, scale) {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
-        const key = "abaum:" + preset + ":" + this._foundryVariantFor(fseed);
+        const gestalt = this._foundryVariantFor(fseed, preset);
+        if (gestalt == null) return null; // Buch kalt — die Instanz-Bahn trägt
+        const key = "abaum:" + preset + ":" + gestalt;
         if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt(this._spielerD2(x, z))) return null; // Fit-Takt (Treffer frei)
         const satz = this._weltKapselHolen(key, () => {
             const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
@@ -44230,7 +44232,8 @@ class AnazhRealm {
         let seedNum = 0;
         const seedStr = String(rawSeed);
         for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
-        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
+        const variant = this._foundryVariantFor(seedNum, preset);
+        if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Hand wartet (der Part-Bau trägt)
         const season = this.state.season || "summer";
         // Der beim Guss gestempelte Charakter (bp.studioOv) reist in den Hand-Bau: der ov-Hash trennt den
         // Cache-Schlüssel (ungeprägt bleibt byte-alt), das ov geht als 5. Arg an _foundryRequest
@@ -52604,6 +52607,13 @@ class AnazhRealm {
         return emitted;
     }
 
+    // Der EINE Foundry-Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall): die Materialisierung
+    // (Primär-Stufe · Gesetz-Bahn · Band-Partner) und die Promotion zum echten Eintrag lesen ihn — die Gestalt
+    // (`_foundryVariantFor`) bleibt beim Kristallisieren dieselbe.
+    _scatterFoundrySeed(cellX, cellZ, variantIndex) {
+        return ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+    }
+
     // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
     // Instanz-Slots (Foundry-Flat oder Grammatik, inkl. Band-Partner + Tint) auf der gewünschten Stufe
     // → Zellen-Datensatz oder null (deferriert/ungemappt). Leser: Region-Bau + _tickScatterLod.
@@ -52633,9 +52643,16 @@ class AnazhRealm {
         // Ist beides nicht bereit: DEFERRIEREN, NIE Grammatik als Lückenbüßer. Nur eine wirklich
         // ungemappte Art fällt auf Grammatik (dort die einzige Quelle); Foundry aus → alles Grammatik.
         const foundryPreset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+        // Der EINE Streu-Same der Zelle (`_scatterFoundrySeed`): Primär-Stufe, Gesetz-Bahn, Band-Partner und die
+        // Promotion lesen ihn — dieselbe Gestalt auf jeder Bahn.
+        const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex) : 0;
+        const gestalt = foundryPreset ? this._foundryVariantFor(fseed, foundryPreset) : null;
+        if (foundryPreset && gestalt == null) {
+            if (!ctxNoDefer) region._deferredFoundry = true; // Buch kalt → deferrieren wie ein ladendes Asset
+            return null;
+        }
         if (foundryPreset) {
             const preset = foundryPreset;
-            const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
             let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
             if (
                 !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
@@ -52650,7 +52667,7 @@ class AnazhRealm {
             }
             if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
                 foundryFlat = ff;
-                bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
+                bpName = "fscatter:" + preset + ":" + gestalt + ":" + ff.lod;
             } else {
                 // Studio-Asset noch nicht da → DEFERRIEREN (KEIN Grammatik-Nachbau). Die Region merkt
                 // sich das → `_tickScatterFoundryRefill` streamt sie neu, sobald das Studio liefert.
@@ -52677,10 +52694,9 @@ class AnazhRealm {
         if (foundryFlat && foundryPreset && layer.kind !== "tree") {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             if ((_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()) {
-                const fseedB = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
                 const fh = this._streuGesetzSpawn(
                     foundryPreset,
-                    fseedB,
+                    fseed,
                     tf.x,
                     Number.isFinite(surfY) ? surfY : 0,
                     tf.z,
@@ -52697,7 +52713,7 @@ class AnazhRealm {
                         species,
                         variantIndex,
                         lod: 2, // die Gesetz-Bahn IST die Fern-Stufe (auch wo die Studio-Stufe geklemmt ist)
-                        bpName: "abaum:" + foundryPreset + ":" + this._foundryVariantFor(fseedB),
+                        bpName: "abaum:" + foundryPreset + ":" + gestalt,
                         slots: [],
                         feld: fh,
                         x: tf.x,
@@ -52759,13 +52775,11 @@ class AnazhRealm {
         ) {
             const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             const _partner = this._lodBandPartnerFor(dist, visH, _curLod);
-            // derselbe deterministische Varianten-Seed wie der Primär-Flat (Formel-Zwilling)
-            const _fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
             if (_partner != null && _partner !== _curLod) {
-                const pf = this._foundryFlattenFor({ seed: _fseed }, foundryPreset, _partner);
+                const pf = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
                     const pSlots = this._scatterInstanceAdd(
-                        "fscatter:" + foundryPreset + ":" + this._foundryVariantFor(_fseed) + ":" + pf.lod,
+                        "fscatter:" + foundryPreset + ":" + gestalt + ":" + pf.lod,
                         tf.x,
                         Number.isFinite(surfY) ? surfY : 0,
                         tf.z,
@@ -53052,10 +53066,18 @@ class AnazhRealm {
         // Promoted-Bitmask setzen (vor dem Spawn — spawnArchitecture markiert
         // ebenfalls, doppelt ist idempotent)
         this._scatterMarkCellPromoted(tf.x, tf.z, layerName);
+        // Der Same der Zelle reist mit (Γ5): der echte Eintrag trägt DIESELBE Gestalt wie seine Streu-Instanz —
+        // ohne ihn würfelte spawnArchitecture Math.random, und die Gestalt wechselte am Promotions-Ring.
         const entry = this.spawnArchitecture(
             keys[0],
             { x: tf.x, y: (Number.isFinite(surfY) ? surfY : 0) + 0.5, z: tf.z },
-            { silent: true, precise: true, scale: tf.scale, rotationY: tf.yaw }
+            {
+                silent: true,
+                precise: true,
+                scale: tf.scale,
+                rotationY: tf.yaw,
+                seed: this._scatterFoundrySeed(cellEntry.cellX, cellEntry.cellZ, cellEntry.variantIndex),
+            }
         );
         if (entry) {
             // Provenienz (Plan §2): geboren aus Welt-Genese-Cell, durch Berührung
@@ -66884,7 +66906,7 @@ class AnazhRealm {
             }
             // Formations-Varianten (`kristall_var7`/`fels_var3`) verfehlen den exakten Lookup → Suffix abstreifen:
             // Kristall → das EINE Rezept `kristalle`; Fels nach Form-Klasse (brocken→findling · geroell→geroell ·
-            // nadel→zacken · stapel→sediment, sonst sediment); Instanz-Variation: `_foundryVariantFor(seed)`.
+            // nadel→zacken · stapel→sediment, sonst sediment); Instanz-Variation: `_foundryVariantFor(seed, preset)`.
             // `glut_var` bleibt bewusst Part-Look (nicht gemappt).
             const vm = entry.type.match(/^(kristall|fels)_var\d+$/);
             if (vm) {
@@ -67092,7 +67114,8 @@ class AnazhRealm {
     // dem 8-Winkel-Impostor-Material, das den Studio-Atlas sampelt. Gecacht auf dem Record (alle Instanzen
     // von Preset|Variante teilen die Geometrie). null solange der Bake läuft, false bei Fehler.
     _foundryBuildImpostorFlat(entry, preset) {
-        const variant = this._foundryVariantFor(entry.seed);
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
         const season = this.state.season || "summer";
         // Ein geprägtes Entry zieht seinen ov-Record; ist er noch nicht gebacken (null), fällt der Pfad auf
         // GEOMETRIE (nie kalt, nie die ungeprägte Karte). Ungeprägt: ovE null → alter Pfad.
@@ -67570,7 +67593,8 @@ class AnazhRealm {
         const wm = this._weltMarchEnsure();
         if (!wm) return false;
         const baum = this._foundryPresetIsTree(preset);
-        const variant = this._foundryVariantFor(entry.seed);
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return false; // Buch kalt — der nächste Tick fragt wieder, nichts verbrannt
         const key = baum ? `abaum:${preset}:${variant}${ovH}` : `aarch:${entry.type}:f${variant}${ovH}`;
         let bf = null;
         if (!wm.kapselCache.has(key)) {
@@ -69129,10 +69153,8 @@ class AnazhRealm {
                 "zacken",
                 "sediment",
             ],
-            // 8 der 12 Varianten vorab (lod2 leicht ~15k) -> die ferne Panorama-Vielfalt steht
-            // sofort (dort fallen Klone am meisten auf); die restlichen Varianten + lod0/lod1
-            // laden on-demand fuer die naechsten Baeume. _foundryVariantFor waehlt 1..16.
-            seeds: [1, 2, 3, 4, 5, 6, 7, 8],
+            // Die Samen je Art sind ihre Gestalten 1..V (Studio-Budget `lod.budget.gestalten`, `_foundryGestalten`) —
+            // genau die Körper, die `_foundryVariantFor` wählt; kein eigenes Samen-Literal.
             lods: [2],
             // FOUNDRY-WARM (Spawn-tot-Heilung): Garage-Fahrzeuge + Siedlung brauchen
             // warmes Buch/build-asset — sonst stirbt In-Welt-Spawn (fahrzeug_*/dorf)
@@ -69167,7 +69189,9 @@ class AnazhRealm {
             const _recP = f.recipes && f.recipes[sp];
             const _declared = !_isTreeP && _recP && _ksP && Array.isArray(_ksP[_recP.kind]) ? _ksP[_recP.kind] : null;
             const _lods = _isTreeP ? spec.lods : _declared || Array.from(new Set(spec.lods.concat([0])));
-            for (const sd of spec.seeds) {
+            const _V = this._foundryGestalten(sp);
+            if (!_V) this.log(`FOUNDRY VORRAT: ${sp} ohne Gestalten-Budget im Buch — kein Vorrat`, "WARN");
+            for (let sd = 1; sd <= _V; sd++) {
                 for (const lod of _lods) {
                     const season = this.state.season || "summer";
                     const key = sp + "|" + sd + "|" + lod + "|" + season;
@@ -69189,8 +69213,9 @@ class AnazhRealm {
         // Jeder Record-Miss postet seine LOD1-Anfrage sofort; der Bake folgt budgetiert (`_tickImpostorBake`).
         const impSeason = this.state.season || "summer";
         for (const sp of spec.species) {
-            if (typeof this._foundryPresetIsTree === "function" && !this._foundryPresetIsTree(sp)) continue;
-            for (let v = 1; v <= 16; v++) {
+            if (!this._foundryPresetIsTree(sp)) continue;
+            const _VK = this._foundryGestalten(sp); // EINE Karte je Gestalt (Studio-Budget)
+            for (let v = 1; v <= _VK; v++) {
                 try {
                     this._foundryEnsureImpostorRecord(sp, v, impSeason);
                 } catch (_e) {}
@@ -69257,7 +69282,8 @@ class AnazhRealm {
     _foundryEntryReady(entry, preset) {
         const f = this._foundry;
         if (!f || !preset) return false;
-        const variant = this._foundryVariantFor(entry.seed);
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return false;
         const cold = !entry.instanced && !entry.mesh;
         let lod = cold
             ? this._foundryLodForEntry(entry)
@@ -69366,15 +69392,26 @@ class AnazhRealm {
         }
     }
     // `_foundryFlattenFor` (unten): Eintrag → Instancing-Leaves aus der echten Vorlagen-Geometrie, je
-    // Art:Variante:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
-    // Varianten-Quelle: aus dem region+positions-deterministischen Baum-Seed eine von N=16 Gestalten
-    // (gleicher Seed == gleicher Baum) + per-Instanz scale/yaw/tint; den Speicher beschränkt die LRU.
-    _foundryVariantCount() {
-        return 16;
+    // Art:Gestalt:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
+    // DIE GESTALT eines Samens (V18.527): eine von V Gestalten je Art, V aus dem Studio-Budget
+    // (`PORTAL_RENDER_CONFIG.lod.budget.gestalten` über das Buch — eiche/fichte/birke/tanne 2 · weide/mammut/strauch 1 ·
+    // '*' 16), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
+    // alte `h % 16` hing an den unteren Bits, die im Baum-Raster periodisch laufen — dieselbe Gestalt 16 Zellen weiter
+    // mit 0,339 statt 1/16 (ein Klon-Gitter mit 54 m Periode). Ohne Buch null: der Aufrufer deferriert, nie eine
+    // geratene Zahl. Gleicher Same = gleicher Baum, scale/yaw/tint je Instanz.
+    _foundryVariantFor(seed, preset) {
+        const V = this._foundryGestalten(preset);
+        if (!V) return null;
+        const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
+        return 1 + Math.floor((h * V) / 4294967296);
     }
-    _foundryVariantFor(seed) {
-        const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix: gute Streuung
-        return (h % this._foundryVariantCount()) + 1;
+    // Die Gestalten-Zahl einer Art (die Budget-Zeile, sonst '*'); 0 = Buch kalt. Der Vorrat wärmt 1..V.
+    _foundryGestalten(preset) {
+        const cfg = AnazhRealm._studioRenderConfig;
+        const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
+        if (!G) return 0;
+        const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
+        return Number.isInteger(V) && V >= 1 ? V : 0;
     }
     // Foundry-Cache = LRU: ein Treffer wandert nach hinten, beim Überlauf fällt die älteste Gestalt. Eine
     // Räumung zerstört nie einen sichtbaren Baum (Dispose nur ohne lebende Instanz-Gruppe, s.
@@ -69503,7 +69540,8 @@ class AnazhRealm {
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
-        const variant = this._foundryVariantFor(entry.seed);
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return null; // Buch kalt: wie ein ladendes Asset (der Tick baut nach)
         // DIE EINE LOD-AUTORITÄT: die Distanz-LOD (`_tickArchitectureLOD` → `entry._lodLevel`) FÜHRT, die
         // Foundry serviert genau diese Stufe; `lodOverride` reicht sie herein (sonst Distanz-Schätzung).
         let lod = Number.isFinite(lodOverride) ? lodOverride : this._foundryLodForEntry(entry);
@@ -77706,7 +77744,8 @@ class AnazhRealm {
             if (oven !== undefined) return oven;
         }
         const season = this.state.season || "summer";
-        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
+        const variant = this._foundryVariantFor(seedNum, preset);
+        if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Vorschau wartet
         if (ov) {
             // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB).
             const key = preset + "|" + variant + "|" + lod + "|" + season + "|" + JSON.stringify(ov);

@@ -26,7 +26,8 @@ Ein Eintrag je gebackenem Asset im IndexedDB-Store `anazhFoundryAssets/assets`:
 - `preset` — ein Schlüssel aus dem Studio-Rezeptbuch (`get-recipes`; Bäume `eiche fichte tanne
 birke weide mammut` · Boden `gras strauch blume` · Fels `findling basalt sediment zacken
 geroell` · Kristall `kristalle` · Zweit-Kern z. B. `gt supersport …`).
-- `seed` — die Varianten-Zahl (Integer; die Bibliothek wärmt 1..8, `_foundryVariantFor` wählt 1..16).
+- `seed` — die Gestalt (Integer 1..V; V = `PORTAL_RENDER_CONFIG.lod.budget.gestalten[preset]`, sonst `'*'`;
+  `_foundryVariantFor(seed, preset)` wählt sie aus den hohen Hash-Bits, die Bibliothek wärmt 1..V).
 - `lod` — `0 | 1 | 2` (beim Gras trägt die Stufen-Position den `stage`-Wert desselben Formats).
 - `season` — `spring | summer | autumn | winter` (Default `summer`).
 

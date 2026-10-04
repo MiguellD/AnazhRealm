@@ -210,7 +210,14 @@ const PORTAL_RENDER_CONFIG = {
         // GPU). deckung = das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss
         // (Kartenflaeche x Atlas-Fuellung / Klingenflaeche — Wahrnehmung ~ n·s², FIX v29); gate:asset-
         // contract misst es an gebauten L0/L1-Paaren und haelt es (die Budget-Wand).
-        budget: { tree: { 1: { blattKarte: 1.8, deckung: [0.8, 1.15] } } },
+        budget: {
+            tree: { 1: { blattKarte: 1.8, deckung: [0.8, 1.15] } },
+            // DIE GESTALTEN je Art (04.10.): wie viele verschiedene Individuen (Samen) eine Art in der Welt traegt —
+            // die Zahlen, mit denen der Studio-Wald pflanzt (buildForest liest sie, Welt-Varianten-Wahl ebenso);
+            // jede Gestalt ist ein Satz Koerper L0/L1 + EINE Karte. '*' = jede Art ohne eigene Zeile. Eine
+            // Aenderung hier ist ein Wald-Re-Roll (der Studio-Wald zieht je Gestalt einen RNG()-Wurf).
+            gestalten: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, "*": 16 },
+        },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
     // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die

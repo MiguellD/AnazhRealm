@@ -213,7 +213,7 @@ function check(name, ok, detail) {
             res.b.fpU2 = flatU2 ? fpFlat(flatU2) : null;
             // Byte-Identität: der direkte ov-lose Request baut dieselbe Geometrie wie
             // der ungeprägte Flatten-Pfad (der Schlüssel trägt keinen ov-Hash).
-            const variant = r._foundryVariantFor(7);
+            const variant = r._foundryVariantFor(7, "gt");
             res.b.plainKeyExact = f.cache.has("gt|" + variant + "|0|" + season);
             const mU = await Promise.race([r._foundryRequest("gt", variant, 0, season), sleep(45000)]);
             if (Array.isArray(mU) && mU.length) {

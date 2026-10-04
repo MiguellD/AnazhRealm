@@ -66,7 +66,76 @@ function statisch(src) {
             /AnazhRealm\.FOUNDRY_LESEN/.test(bootCode) &&
             /AnazhRealm\.FOUNDRY_PLATTE_FORMAT/.test(bootCode)
     );
+    // GESTALTEN (V18.527): die EINE Varianten-Wahl liest das Studio-Budget, jeder Aufrufer reicht seine Art.
+    const code = strip(src);
+    const einArg = [...code.matchAll(/_foundryVariantFor\(([^()]*)\)/g)].filter((m) => !/,/.test(m[1]));
+    pruef(
+        "S4a jede Varianten-Wahl trägt ihre Art (_foundryVariantFor(seed, preset)), kein _foundryVariantCount",
+        !einArg.length && !/_foundryVariantCount/.test(code),
+        einArg.length ? `ein-Argument-Aufruf: ${einArg[0][0]}` : ""
+    );
+    const pre = methode(src, "async _foundryPrefetchLibrary() {");
+    pruef(
+        "S4b der Vorrat wärmt die Gestalten 1..V (kein Samen-/Karten-Literal)",
+        pre && /_foundryGestalten\(sp\)/.test(strip(pre)) && !/<=\s*16\b|seeds:\s*\[1, 2/.test(strip(pre))
+    );
+    const formel = (code.match(/\*\s*73856093\)\s*\^\s*\(cellZ\s*\*\s*19349663\)\s*\^\s*\(variantIndex \+ 1\)/g) || [])
+        .length;
+    const prom = methode(src, "_promoteScatterCell(cellEntry) {");
+    pruef(
+        "S4c EIN Streu-Same (_scatterFoundrySeed), die Promotion trägt ihn (kein Math.random-Same)",
+        formel === 1 && prom && /seed:\s*this\._scatterFoundrySeed\(/.test(strip(prom)),
+        `Formel ${formel}×`
+    );
     return { gesetze: aus, schale };
+}
+
+// DIE KLON-LINSE (V18.527): die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten`, als Quelltext
+// gezogen) gegen das eingefrorene Studio-Budget (render-config-Golden) auf dem echten Streu-Gitter
+// (`_scatterFoundrySeed`, 600 × 600 Zellen): je Art mit V ≥ 2 trägt jede Gestalt 1/V ± 0,03, und die Nachbar-
+// sowie die 16-Zellen-Versatz-Gleichheit bleibt ≤ 1/V + 0,03 — das alte `h % 16` (untere Bits) legte ein Klon-
+// Gitter (dieselbe Gestalt 16 Zellen weiter). Jede Art liegt im Bereich 1..V.
+function gestalten(src) {
+    const rc = JSON.parse(
+        fs.readFileSync(path.join(root, "spec", "asset-contract", "v1", "golden", "render-config.json"), "utf8")
+    );
+    const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
+    const teile = ["_foundryVariantFor(seed, preset) {", "_foundryGestalten(preset) {", "_scatterFoundrySeed("].map(
+        (k) => methode(src, k)
+    );
+    if (!G || teile.some((t) => !t)) return { ok: false, detail: "Budget oder Methode fehlt", arten: {} };
+    const AR = { _studioRenderConfig: { lod: { budget: { gestalten: G } } } };
+    const r = new Function("AnazhRealm", "return {" + teile.join(",") + "};")(AR);
+    const arten = {};
+    let ok = true;
+    for (const zeile of Object.keys(G)) {
+        const sp = zeile === "*" ? "haus" : zeile; // '*' trägt jede Art ohne eigene Zeile (Haus, Fahrzeug, Tor …)
+        const V = G[zeile];
+        const H = new Array(V + 1).fill(0);
+        let n = 0,
+            nb = 0,
+            o16 = 0,
+            raus = 0;
+        for (let x = -300; x < 300; x++)
+            for (let z = -300; z < 300; z++) {
+                const g = r._foundryVariantFor(r._scatterFoundrySeed(x, z, 0), sp);
+                if (!(g >= 1 && g <= V)) raus++;
+                else H[g]++;
+                n++;
+                if (g === r._foundryVariantFor(r._scatterFoundrySeed(x + 1, z, 0), sp)) nb++;
+                if (g === r._foundryVariantFor(r._scatterFoundrySeed(x + 16, z, 0), sp)) o16++;
+            }
+        const anteil = H.slice(1).map((h) => h / n);
+        const artOk =
+            raus === 0 &&
+            (V < 2 ||
+                (anteil.every((a) => Math.abs(a - 1 / V) <= 0.03) &&
+                    nb / n <= 1 / V + 0.03 &&
+                    o16 / n <= 1 / V + 0.03));
+        arten[zeile === "*" ? "*(haus)" : sp] = { V, nachbar: +(nb / n).toFixed(3), versatz16: +(o16 / n).toFixed(3), raus, ok: artOk };
+        if (!artOk) ok = false;
+    }
+    return { ok, arten };
 }
 
 // Das Studio-Double: antwortet auf build-asset wie die Brücke (frische Puffer, aWind + Uint32-Index), zählt Bauten
@@ -242,6 +311,24 @@ const VERHALTEN = [
             )
         ).gesetze.find((g) => g[0].startsWith("S2b"));
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
+        const t5 = gestalten(
+            stamm.replace("return 1 + Math.floor((h * V) / 4294967296);", "return (h % V) + 1;")
+        );
+        check("Selbst-Test 5: Gestalten-Wahl aus den unteren Bits (h % V) → Klon-Linse rot", !t5.ok);
+        const t6 = statisch(
+            stamm.replace(
+                "const variant = this._foundryVariantFor(entry.seed, preset);",
+                "const variant = this._foundryVariantFor(entry.seed);"
+            )
+        ).gesetze.find((g) => g[0].startsWith("S4a"));
+        check("Selbst-Test 6: eine Varianten-Wahl ohne Art → S4a rot", t6 && !t6[1]);
+        const t7 = statisch(
+            stamm.replace(
+                "seed: this._scatterFoundrySeed(cellEntry.cellX, cellEntry.cellZ, cellEntry.variantIndex),",
+                ""
+            )
+        ).gesetze.find((g) => g[0].startsWith("S4c"));
+        check("Selbst-Test 7: Promotion ohne Zellen-Samen → S4c rot", t7 && !t7[1]);
         const { schale } = statisch(stamm);
         const v1 = await verhalten(schale.replace("return roh(msg, puffer(msg.meshes));", "return roh(msg);"));
         check("Selbst-Test 3: Schale ohne Transfer → V3 rot", v1.transfer === false);
@@ -251,12 +338,20 @@ const VERHALTEN = [
             console.error("\n❌ SELBST-TEST ROT — die Wand ist vakuös.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRÜN — die Wand feuert auf alle vier Bruch-Klassen.");
+        console.log("\n✅ SELBST-TEST GRÜN — die Wand feuert auf jede injizierte Bruch-Klasse.");
         process.exit(0);
     }
     console.log("=== FLUSS-WAND — statisch ===");
     const { gesetze, schale } = statisch(stamm);
     for (const [n, ok, d] of gesetze) check(n, ok, d);
+    console.log("=== FLUSS-WAND — Klon-Linse (Gestalten aus dem Studio-Budget, 600 × 600 Streu-Zellen) ===");
+    const gs = gestalten(stamm);
+    for (const [sp, a] of Object.entries(gs.arten))
+        check(
+            `G ${sp}: V=${a.V} · Nachbar ${a.nachbar} · Versatz-16 ${a.versatz16}${a.raus ? " · außerhalb 1..V " + a.raus : ""}`,
+            a.ok
+        );
+    if (!Object.keys(gs.arten).length) check("G die Klon-Linse misst (Budget + Methoden gefunden)", false, gs.detail);
     if (!schale) {
         console.error("\n❌ ROT — keine Schale im Stamm.");
         process.exit(1);

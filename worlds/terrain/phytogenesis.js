@@ -2334,12 +2334,10 @@ function buildForest() {
                 return g;
             });
     }; // 3 LOD-Stufen, gleiche Seeds -> selber Baum, andere Detailtiefe
-    mp("eiche", 2);
-    mp("fichte", 2);
-    mp("birke", 2);
-    mp("tanne", 2);
-    mp("weide", 1);
-    mp("mammut", 1);
+    // DIE GESTALTEN je Art lesen das Studio-Budget (PORTAL_RENDER_CONFIG.lod.budget.gestalten) — dieselben Zahlen
+    // waehlt die Welt (`_foundryVariantFor`). Reihenfolge + Zahl der RNG()-Wuerfe wie zuvor (2/2/2/2/1/1).
+    const _GEST = PORTAL_RENDER_CONFIG.lod.budget.gestalten;
+    for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut"]) mp(sp, _GEST[sp]);
     // Impostor-Baubeschreibung fuer JEDE (Art,Variante)-Kombination sichern -> Fern-Billboard = derselbe Baum wie das 3D-LOD, kein generischer Ersatz
     _impSpecs = [];
     _impCellOf = {};
@@ -2359,9 +2357,10 @@ function buildForest() {
     const _KS = (PORTAL_RENDER_CONFIG.lod && PORTAL_RENDER_CONFIG.lod.kindStages) || {};
     const _ksN = (k, d) => (_KS[k] && _KS[k].length ? _KS[k][0] : d) | 0;
     const _ksF = (k, d) => (_KS[k] && _KS[k].length ? _KS[k][_KS[k].length - 1] : d) | 0;
-    const _shrubSeed = Math.floor(RNG() * 1e6);
-    const shrubT = [buildInstance("strauch", _shrubSeed, _ksN("shrub", 2))];
-    const shrubTF = [buildInstance("strauch", _shrubSeed, _ksF("shrub", 2))];
+    const _shrubSeeds = [];
+    for (let i = 0; i < _GEST.strauch; i++) _shrubSeeds.push(Math.floor(RNG() * 1e6)); // Budget-Gestalten (1 = ein Wurf wie zuvor)
+    const shrubT = _shrubSeeds.map((sd) => buildInstance("strauch", sd, _ksN("shrub", 2)));
+    const shrubTF = _shrubSeeds.map((sd) => buildInstance("strauch", sd, _ksF("shrub", 2)));
     const _grasSeedA = Math.floor(RNG() * 1e6),
         _grasSeedB = Math.floor(RNG() * 1e6);
     const grassT = [
