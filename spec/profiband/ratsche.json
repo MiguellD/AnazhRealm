@@ -1,7 +1,20 @@
 {
     "version": 1,
     "zweck": "DIE RATSCHE DES PROFI-BANDS (W0): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie an der Mess-Wiese — eine Klasse darf nur FALLEN. `werkbank band` ist rot, sobald ein Ist über seiner Ratsche liegt (über max(Ratsche × (1 + toleranzPct/100), Ratsche + toleranzAbs)). `null` = noch nicht gemessen. Gesetzt und gesenkt wird sie nur aus einer SERIE der echten GPU: `node scripts/werkbank.cjs start --echt --serie <name>` · `umstellen -900 -850` · `band --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche a.json b.json …` (≥ 4 Läufe, Erst- und Zweit-Boot, jeder eingeschwungen: die volle Welt (Regler-Decke offen, loadScale 1) baut nichts mehr — Chunks, Foundry-Schlange, Karten-Bäcker, aufgeschobene Streu, Mesh-Zone, Instanz-Zahl ruhig; LINSE sauber). Die Ratsche setzt null-Felder, senkt gemessene und hebt nie — heben ist ein begründeter Akt von Hand im Commit. Die Toleranz ist ein Rand über der gemessenen Streuung der Serie (jeder Lauf gegen die Hülle der übrigen). Freie Klassen (`frei`) messen den Weltzustand, ihre Kosten je Einheit hält das genannte Gate. Schema: `npm run gate:profiband`.",
-    "gemessen": null,
+    "gemessen": {
+        "datum": "2026-10-04T22:44:42.096Z",
+        "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+        "eingeschwungen": true,
+        "laeufe": 6,
+        "boots": [
+            "erst/1",
+            "erst/1",
+            "zweit/2",
+            "zweit/2",
+            "erst/1",
+            "zweit/2"
+        ]
+    },
     "toleranzPct": 1,
     "toleranzAbs": {
         "befehle": 2,
@@ -13,93 +26,93 @@
         "leerHuellen": "Weltzustand der Gnadenfrist: eine geleerte Instanz-Gruppe zeichnet bis ARCH_LEER_GNADE_MS × Mints (bis 60 s) ihren High-Water-count aus Null-Matrizen weiter — wie viele gerade in der Frist stehen, hängt am Takt, nicht an den Kosten (in der Serie 0 bis 30 Befehle). Die Frist und das Räumen hält gate:foundry-crossfade (Reaper); im Band zählen die toten Draws voll."
     },
     "gesamt": {
-        "befehle": null,
-        "dreiecke": null,
-        "vramMB": null
+        "befehle": 296,
+        "dreiecke": 4095487,
+        "vramMB": 232.6
     },
     "klassen": {
         "boden": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 6,
+                "dreiecke": 268150
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 245696
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 245696
             }
         },
         "karten": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 66,
+                "dreiecke": 31894
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "baum": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 36,
+                "dreiecke": 1888682
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 36,
+                "dreiecke": 577972
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 8,
+                "dreiecke": 258164
             }
         },
         "busch": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 2,
+                "dreiecke": 80948
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 2,
+                "dreiecke": 80948
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "nahWiese": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 25,
+                "dreiecke": 248352
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "streu": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 27,
+                "dreiecke": 43400
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "tier": {
@@ -118,44 +131,44 @@
         },
         "bau": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 24,
+                "dreiecke": 61336
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 10,
+                "dreiecke": 4416
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 4,
+                "dreiecke": 4272
             }
         },
         "formationen": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 15,
+                "dreiecke": 10880
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 14,
+                "dreiecke": 10240
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 8,
+                "dreiecke": 5760
             }
         },
         "einzelstuecke": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 11,
+                "dreiecke": 28681
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "leerHuellen": {
@@ -174,17 +187,44 @@
         },
         "reserve": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         }
+    },
+    "vramMB": {
+        "buf:?": 94.4,
+        "tex:TRAANode.history": 23.7,
+        "tex:output": 15.8,
+        "tex:TRAANode.resolve": 15.8,
+        "tex:karte-albedo": 14.7,
+        "tex:karte-normal": 14.7,
+        "tex:kaskade0": 12,
+        "tex:kaskade1": 12,
+        "tex:depthBuffer": 7.9,
+        "tex:depth": 7.9,
+        "tex:szene": 7.9,
+        "tex:feld-pass-panorama": 1.9,
+        "tex:laub-cluster-atlas": 1.3,
+        "tex:PMREM.cubeUv": 1,
+        "tex:welt-march-liste": 0.5,
+        "tex:welt-march-kapseln": 0.3,
+        "tex:himmel-umgebung": 0,
+        "buf:bindingBufferundefined_UniformBuffer_": 0,
+        "buf:buffer_timestamp_resolve_render": 0,
+        "buf:buffer_timestamp_result_render": 0,
+        "buf:bindingBuffer": 0,
+        "tex:welt-march-seiten": 0,
+        "tex:welt-march-folge": 0,
+        "tex:DFG_LUT": 0,
+        "tex:TRAANode.vortiefe": 0
     }
 }
