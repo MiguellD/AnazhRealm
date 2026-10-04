@@ -121,7 +121,15 @@ async function main() {
             "## r128→r184-Übersetzung am Chokepoint",
         ];
         for (const s of sections) check(md.includes(s), `CONTRACT.md trägt „${s}"`);
-        for (const marker of ["<preset>|<gestalt>|<lod>", "SHA-256", "__anazhLiveBake", "LEGACY_LICHT", "cv"])
+        for (const marker of [
+            "<preset>|<gestalt>|<lod>",
+            "karte|<preset>|<gestalt>",
+            "shell_1",
+            "SHA-256",
+            "__anazhLiveBake",
+            "LEGACY_LICHT",
+            "cv",
+        ])
             check(md.includes(marker), `CONTRACT.md trägt den Anker „${marker}"`);
     }
 
@@ -145,14 +153,18 @@ async function main() {
             /core\.scripts/.test(b) && /stempelUrls/.test(b),
             "Stempel: ALLE Manifest-Skripte (core.scripts) reisen mit"
         );
+        check(
+            /stempelUrls\.push\(new URL\(core\.shell \+ v, base\)\.href\)/.test(b),
+            "Stempel: die Shells (core.shell — Mesh-Extraktion + Karten-Bäcker) reisen mit (V18.527)"
+        );
         check(/SHA-256/.test(sc), "Stempel: SHA-256-Digest in der Schale");
         check(
             /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(sc),
             "Stempel: Manifest-Text vor den Skripten (die Formel)"
         );
         check(/"\|f" \+\s*cfg\.format/.test(sc), "Stempel: das Transport-Format reist mit (|f<n>)");
-        // Im Platten-Zweig (nach dem Lesen) antwortet nurPlatte VOR dem Weiterreichen ans Studio (`studio()`).
-        const iThen = sc.indexOf("lies(m.platte).then");
+        // Im Körper-Platten-Zweig (nach dem Lesen) antwortet nurPlatte VOR dem Weiterreichen ans Studio (`studio()`).
+        const iThen = sc.indexOf("const hit = wert && Array.isArray(wert.meshes)");
         const iNur = iThen >= 0 ? sc.indexOf("m.nurPlatte", iThen) : -1;
         const iStudio = iThen >= 0 ? sc.indexOf("studio()", iThen) : -1;
         check(

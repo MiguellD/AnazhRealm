@@ -522,8 +522,8 @@ function triasStaticLaws(anazhSrc) {
         // Budget 512 MB = ~2x Kopfraum, KEIN Arbeits-Mengen-Churn [der Crossfade-Sweep
         // fing ein zu enges Budget]), dann synthetisch beweisen (Scratch-Swap, Sicherung
         // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege deckeln am
-        // BYTE-Budget (512/8 = 64, weit vor CAP 256); 300 leichte deckeln an der
-        // Entries-Zweitwand (256).
+        // BYTE-Budget (512/8 = 64, weit vor dem Eintrags-Deckel); Deckel + 44 leichte deckeln an der
+        // Entries-Zweitwand (FOUNDRY_CACHE_CAP, seit V18.527 512).
         const f2 = r._ensureAssetFoundry();
         res.warmCacheMB = Math.round(((f2.cacheBytes || 0) / 1048576) * 10) / 10;
         res.warmCacheSize = f2.cache.size;
@@ -550,7 +550,10 @@ function triasStaticLaws(anazhSrc) {
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
-        for (let i = 0; i < 300; i++) r._foundryCacheSet("leicht|" + i, mkFake(0.001));
+        // V18.527: der Deckel trägt einen ganzen Boot (FOUNDRY_CACHE_CAP, 512) — die Zweitwand wird mit Deckel + 44
+        // leichten Einträgen bewiesen, gelesen aus der EINEN Konstante.
+        res.cap = r.constructor.FOUNDRY_CACHE_CAP;
+        for (let i = 0; i < res.cap + 44; i++) r._foundryCacheSet("leicht|" + i, mkFake(0.001));
         res.lightSize = f2.cache.size;
         f2.cache = savedC.cache;
         f2.cacheBytes = savedC.bytes;
@@ -626,11 +629,14 @@ function triasStaticLaws(anazhSrc) {
             `ring=${out.l1RingDist}m level=${out.l1Level} served=${out.l1Served} slot=${out.l1Slot}`
         );
         check(
-            "B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP 256)",
+            `B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP ${out.cap})`,
             out.heavySize === 64 && out.heavyBytesOk === true,
             `size=${out.heavySize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
         );
-        check("B13 (E/Zweitwand): 300 leichte Eintraege deckeln an der Entries-Wand (256)", out.lightSize === 256);
+        check(
+            `B13 (E/Zweitwand): ${out.cap + 44} leichte Eintraege deckeln an der Entries-Wand (${out.cap})`,
+            Number.isInteger(out.cap) && out.cap > 64 && out.lightSize === out.cap
+        );
         if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

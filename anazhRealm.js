@@ -65326,11 +65326,18 @@ class AnazhRealm {
                     // self.__anazhCores reist VOR den importScripts in den Worker (Brücke liest die ns-Kerne generisch);
                     // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal. DIE TRANSPORT-SCHALE
                     // steht davor (`_foundrySchale`): sie registriert ihren Kanal-Hörer VOR dem Studio.
+                    // Der Stempel hasht JEDE Generator-Quelle: die Kern-Skripte UND die Shells (V18.527) — die Shell
+                    // phytogenesis.js trägt `__extractAssetMesh` (backt matrixWorld in die Vertices) und
+                    // `bakeImpostorAtlas` (die Karte); ein Shell-Edit ohne Stempel lieferte stale Körper und Karten.
                     const stempelUrls = [];
                     for (const core of manifest) {
                         if (!core || !Array.isArray(core.scripts)) continue;
                         for (const s of core.scripts)
                             if (typeof s === "string" && s) stempelUrls.push(new URL(s + v, base).href);
+                    }
+                    for (const core of manifest) {
+                        if (core && typeof core.shell === "string" && core.shell)
+                            stempelUrls.push(new URL(core.shell + v, base).href);
                     }
                     // Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto.
                     const rend = this.state.renderer;
@@ -65634,15 +65641,18 @@ class AnazhRealm {
     // (Σ 3,7 s, max 207 ms) und IDB-Gets hinter den Schreib-Transaktionen (Median 3,3 s, max 60 s); 32 % der
     // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
     // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
-    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
+    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte + Shells, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
     //                 — der Haupt-Thread fasst den Asset-Cache nie mehr an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
-    // Ein `build-asset` mit `platte` (Schlüssel `_foundryKoerperKey`: `<preset>|<gestalt>|<lod>`) fragt erst die Platte; ein Miss
-    // geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und überträgt.
-    // `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut nie: Miss = leere Antwort. Diese Funktion
-    // läuft als Quelltext im Worker — sie greift auf nichts außerhalb ihres eigenen Rumpfs zu.
+    //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
+    // Ein `build-asset` mit `platte` (Schlüssel `_foundryKoerperKey`: `<preset>|<gestalt>|<lod>[|ov:…]`) fragt erst die
+    // Platte; ein Miss geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und
+    // überträgt. `vorrat` wärmt nur die Platte (leere Antwort). Ein `bake-impostor` mit `platte` (`karte|…`) liest die
+    // Karte zuerst und schreibt jeden frischen Bake `{ payload }`. `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`)
+    // baut nie: Miss = leere Antwort. Diese Funktion läuft als Quelltext im Worker — sie greift auf nichts außerhalb
+    // ihres eigenen Rumpfs zu.
     static _foundrySchale(cfg) {
         const W = globalThis; // der Worker-Scope (self)
         const LESEN = new Set(cfg.lesen);
@@ -65688,19 +65698,38 @@ class AnazhRealm {
                       if (!d) dbTot = true;
                       return d;
                   });
+        // Der Platten-Wert eines Schlüssels: Körper `{ meshes }`, Karte `{ payload }` (oder null).
         const lies = (key) =>
             platte.then((d) =>
                 d
                     ? new Promise((resolve) => {
                           try {
                               const g = d.transaction("assets", "readonly").objectStore("assets").get(key);
-                              g.onsuccess = () => resolve(g.result && g.result.meshes ? g.result.meshes : null);
+                              g.onsuccess = () => resolve(g.result && typeof g.result === "object" ? g.result : null);
                               g.onerror = () => resolve(null);
                           } catch (_e) {
                               resolve(null);
                           }
                       })
                     : null
+            );
+        const schreib = (key, wert) => {
+            if (!db || dbTot) return;
+            try {
+                db.transaction("assets", "readwrite").objectStore("assets").put(wert, key).onerror = () => {
+                    dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
+                };
+            } catch (_e) {
+                dbTot = true;
+            }
+        };
+        // Eine Karte ist brauchbar, wenn beide Atlanten als eigene Puffer reisen (die Nicht-Leere prüft der Host).
+        const karteOk = (p) =>
+            !!(
+                p &&
+                ArrayBuffer.isView(p.albedo) &&
+                ArrayBuffer.isView(p.normal) &&
+                p.albedo.buffer !== p.normal.buffer
             );
         // Liegt der Schlüssel auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
         const hat = (key) =>
@@ -65763,26 +65792,22 @@ class AnazhRealm {
                 if (auftrag !== undefined) {
                     schreibAuftrag.delete(msg.reqId);
                     // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
-                    if (db && !dbTot && msg.meshes.length) {
-                        try {
-                            db
-                                .transaction("assets", "readwrite")
-                                .objectStore("assets")
-                                .put({ meshes: msg.meshes }, auftrag.key).onerror = () => {
-                                dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
-                            };
-                        } catch (_e) {
-                            dbTot = true;
-                        }
-                    }
+                    if (msg.meshes.length) schreib(auftrag.key, { meshes: msg.meshes });
                     // Der Vorrat: der Körper liegt jetzt auf der Platte — zum Haupt-Thread reist er nicht (kein Leser).
                     if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));
                 }
                 return roh(msg, puffer(msg.meshes));
             }
             const p = msg && msg.payload;
-            if (msg && msg.type === "impostor" && p && p.albedo && p.normal && p.albedo.buffer !== p.normal.buffer)
-                return roh(msg, [p.albedo.buffer, p.normal.buffer]);
+            if (msg && msg.type === "impostor") {
+                // KARTEN AUF DIE PLATTE: ein frischer Studio-Bake wird VOR dem Transfer geschrieben (nie ein leerer).
+                const auftrag = schreibAuftrag.get(msg.reqId);
+                if (auftrag !== undefined) {
+                    schreibAuftrag.delete(msg.reqId);
+                    if (karteOk(p)) schreib(auftrag.key, { payload: p });
+                }
+                if (karteOk(p)) return roh(msg, [p.albedo.buffer, p.normal.buffer]);
+            }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
             return roh(msg, a, b);
         };
@@ -65800,7 +65825,29 @@ class AnazhRealm {
             const studio = () => {
                 if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
             };
-            if (m.type !== "build-asset" || typeof m.platte !== "string") return studio();
+            if (typeof m.platte !== "string") return studio();
+            if (m.type === "bake-impostor") {
+                // Die Karte von der Platte: Treffer → Antwort ohne Bake (zero-copy); Miss → das Studio bäckt, die
+                // Schale schreibt (postMessage oben).
+                return lies(m.platte).then((wert) => {
+                    const p = wert && wert.payload;
+                    if (karteOk(p))
+                        return roh(
+                            {
+                                type: "impostor",
+                                world: "terrain",
+                                reqId: m.reqId,
+                                presetId: m.presetId,
+                                seed: m.seed,
+                                payload: p,
+                                platte: true,
+                            },
+                            [p.albedo.buffer, p.normal.buffer]
+                        );
+                    schreibAuftrag.set(m.reqId, { key: m.platte, karte: true });
+                    studio();
+                });
+            }
             if (m.vorrat) {
                 // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
                 // wärmen) —, antwortet die Schale leer ohne Bau; sonst baut das Studio, die Schale schreibt.
@@ -65810,7 +65857,8 @@ class AnazhRealm {
                     studio();
                 });
             }
-            lies(m.platte).then((hit) => {
+            lies(m.platte).then((wert) => {
+                const hit = wert && Array.isArray(wert.meshes) ? wert.meshes : null;
                 if (hit) return antwort(m, hit, true);
                 if (m.nurPlatte) return antwort(m, [], true);
                 schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: false });
@@ -66569,13 +66617,16 @@ class AnazhRealm {
     _foundryRequest(presetId, seed, lod, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
-        // Regler-Kanal: ein nicht-leeres ov (Werkstatt-Overrides) umgeht die Platte KOMPLETT (kein Get/Put) —
-        // eine Vorschau ist ein Unikat und darf den Welt-Cache weder lesen noch vergiften.
+        // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
+        // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
         // Ship-Pfad-Hook (spec/pack/v0/CONTRACT.md): `window.__anazhLiveBake === false` → NUR die Platte (die
         // Transport-Schale baut nie, Miss = null). Default: Platte zuerst, Studio beim Miss (beides im Worker).
         const nurPlatte = typeof window !== "undefined" && window.__anazhLiveBake === false;
-        const platte = f.platte && !hasOv ? this._foundryKoerperKey(presetId, seed, lod) : null;
+        // Der Platten-Schlüssel reist mit JEDEM Welt-Körper — ob eine Platte lebt, entscheidet die Schale (cfg.platte,
+        // Quota). Ein geprägter Körper (Ofen-Mensch, Tier mit Reglern, gestempelter Eintrag) trägt seinen ov-Hash und
+        // trifft beim nächsten Boot die Platte; nur die Werkstatt-Vorschau und die Hand (wo === 0 mit ov) sind Unikate.
+        const platte = hasOv && wo === 0 ? null : this._foundryKoerperKey(presetId, seed, lod, hasOv ? ov : null);
         if (nurPlatte && !platte) return Promise.resolve(null);
         if (!f.ready || !f.worker) {
             // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
@@ -66796,6 +66847,9 @@ class AnazhRealm {
         // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
         const msg = { type: "bake-impostor", presetId, seed };
         if (ov && typeof ov === "object") msg.ov = ov;
+        // KARTEN AUF DIE PLATTE (V18.527): die Karte trägt ihren Platten-Schlüssel (`karte|` + Karten-Schlüssel, geprägt
+        // mit ov-Hash) — die Schale liest zuerst und schreibt jeden frischen Bake; ein Zweit-Boot bäckt keine Karte neu.
+        msg.platte = "karte|" + this._foundryKartenKey(presetId, seed, ov && typeof ov === "object" ? ov : null);
         // Durch DIE EINE WORKER-SCHLANGE mit Vorrats-Rang (die Fernstufe). EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS
         // ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin des Tick.
         const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
@@ -69554,7 +69608,7 @@ class AnazhRealm {
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
         f.cache.set(key, v);
         f.ankunft = (f.ankunft | 0) + 1; // die Ankunfts-Generation: Wartende im Nah-Zweig fragen erst danach wieder
-        const CAP = AnazhRealm.FOUNDRY_CACHE_CAP || 256;
+        const CAP = AnazhRealm.FOUNDRY_CACHE_CAP;
         const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;
         while (f.cache.size > CAP || f.cacheBytes > BYTES) {
             const oldest = f.cache.keys().next().value;
@@ -87263,10 +87317,11 @@ class AnazhRealm {
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
 AnazhRealm.VERSION = "18.526.0";
-// Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
-// Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
-// „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
-AnazhRealm.FOUNDRY_CACHE_CAP = 256;
+// Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
+// räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
+// `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
+// 512 lässt das Doppelte Luft. Den Speicher deckelt FOUNDRY_CACHE_BYTES (das Gewicht), dieser Deckel die Zahl.
+AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
@@ -91078,9 +91133,10 @@ AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief
 // aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
 // beide Seiten gegeneinander).
 AnazhRealm.FOUNDRY_LESEN = ["position", "normal", "color", "uv", "aWurzel", "aSchale", "skinIndex", "skinWeight"];
-// Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511). Ein
-// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 2;
+// Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
+// saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527). Ein
+// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit) — die alte Saison-Platte fällt einmal.
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test

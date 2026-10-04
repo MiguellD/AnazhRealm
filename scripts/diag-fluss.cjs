@@ -19,6 +19,11 @@
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
 //   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 Format-Wechsel leert die Platte
+//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V9 Karten auf der Platte (V18.527)
+// STATISCH (V18.527): S5 keine Saison in Schlüssel/Auftrag, Flip-Maschine fort · S6 keine tote Fracht · S7 der
+//   Stempel hasht die Shells, jeder Welt-Körper schickt seinen Schlüssel, Karten tragen `karte|…`
+// WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
+//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
@@ -141,6 +146,22 @@ function statisch(src) {
     pruef(
         "S6c der Fahrzeug-Vorrat wärmt nur die Platte (_foundryVorrat, die Schale antwortet leer)",
         /this\._foundryVorrat\(sp, sd, lod\)/.test(preS) && /meshes: \[\], vorrat: true/.test(sc)
+    );
+    // DIE PLATTE TRÄGT DEN ZWEIT-BOOT (V18.527): der Stempel hasht auch die Shells, jeder Welt-Körper schickt seinen
+    // Schlüssel (die Schale entscheidet), Karten reisen mit `karte|…` und werden geschrieben.
+    pruef(
+        "S7a der Stempel hasht die Shells (core.shell — Mesh-Extraktion + Karten-Bäcker)",
+        /stempelUrls\.push\(new URL\(core\.shell \+ v, base\)\.href\)/.test(bootCode)
+    );
+    const reqS = teil("_foundryRequest(presetId, seed, lod, ov, wo) {") || "";
+    pruef(
+        "S7b jeder Welt-Körper schickt seinen Schlüssel (geprägt mit ov-Hash), die Schale entscheidet über die Platte",
+        !/f\.platte/.test(reqS) && /this\._foundryKoerperKey\(presetId, seed, lod, hasOv \? ov : null\)/.test(reqS)
+    );
+    pruef(
+        "S7c Karten tragen ihren Platten-Schlüssel, die Schale schreibt jeden frischen Bake",
+        /msg\.platte = "karte\|" \+ this\._foundryKartenKey\(/.test(teil("_foundryBakeImpostorRequest(") || "") &&
+            /schreib\(auftrag\.key, \{ payload: p \}\)/.test(sc)
     );
     return { gesetze: aus, schale };
 }
@@ -375,6 +396,27 @@ async function verhalten(schaleSrc) {
                 const q6 = await E.frag({ type: "frage" }, "antwort");
                 aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
                 E.w.terminate();
+                // V9 KARTEN AUF DIE PLATTE: der erste Bake geht ans Studio und wird geschrieben, der zweite kommt von der
+                // Platte (platte:true, die Pixel unversehrt), das Studio bäckt nur einmal.
+                const F = neu(3, true);
+                const kp1 = await F.frag({ type: "bake-impostor", reqId: "kp1", presetId: "eiche", seed: 2, platte: "karte|eiche|2" });
+                await ruhe(400);
+                const kp2 = await F.frag({ type: "bake-impostor", reqId: "kp2", presetId: "eiche", seed: 2, platte: "karte|eiche|2" });
+                const q7 = await F.frag({ type: "frage" }, "antwort");
+                aus.karte = !!(
+                    kp1 &&
+                    !kp1.platte &&
+                    kp1.payload &&
+                    kp2 &&
+                    kp2.platte === true &&
+                    kp2.payload &&
+                    kp2.payload.albedo.length === 128 * 256 * 8 * 4 &&
+                    kp2.payload.albedo[7] === 200 &&
+                    kp2.payload.height === 9.5 &&
+                    q7 &&
+                    q7.gebacken === 1
+                );
+                F.w.terminate();
                 return aus;
             },
             schaleSrc.replace(/^ {4}static /, ""),
@@ -392,6 +434,17 @@ async function verhalten(schaleSrc) {
 // W2 SAISON: ein Wechsel auf Herbst baut nichts (0 Aufträge, 0 entfernte Instanzen), die Uniform uSeasonMul dreht.
 const WELT_HAKEN = () => {
     window.__anazhHeadlessNullRenderer = true;
+    // Die Platte AN unter dem Null-Renderer (nur in dieser Sonde): der Boot-Blob der Transport-Schale trägt
+    // cfg.platte=false (gate-deterministisch); hier wird er true — der Host schickt seine Schlüssel ohnehin immer, die
+    // Schale entscheidet. So misst die Sonde den Zweit-Boot mit echter IndexedDB im echten Studio-Worker.
+    const B0 = window.Blob;
+    const B1 = function (teile, opt) {
+        if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].indexOf("_foundrySchale") >= 0)
+            teile = [teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
+        return new B0(teile, opt);
+    };
+    B1.prototype = B0.prototype;
+    window.Blob = B1;
     const W0 = window.Worker;
     const fl = (window.__fl = { posts: [], antworten: [] });
     const bytes = (m) => {
@@ -421,7 +474,15 @@ const WELT_HAKEN = () => {
             this.addEventListener("message", (e) => {
                 const m = e.data;
                 if (m && (m.type === "asset" || m.type === "impostor"))
-                    fl.antworten.push({ t: m.type, platte: m.platte === true, bytes: bytes(m), p: m.presetId });
+                    fl.antworten.push({
+                        t: m.type,
+                        platte: m.platte === true,
+                        vorrat: m.vorrat === true,
+                        bytes: bytes(m),
+                        p: m.presetId,
+                        s: m.seed,
+                        l: m.lod,
+                    });
             });
         }
         postMessage(m, t) {
@@ -478,12 +539,26 @@ const WELT_MESSEN = async () => {
             const sp = k.slice(5).split("|")[0];
             karten[sp] = (karten[sp] || 0) + 1;
         }
+    const MB = (arr) => arr.reduce((a, x) => a + x.bytes, 0) / 1048576;
+    const gebaut = fl.antworten.filter((x) => !x.platte);
     const boot = {
         posts: fl.posts.length,
         antworten: fl.antworten.length,
         // tote Fracht: L2-Geometrie einer Karten-Art (Baum/Strauch) — ihre Fernstufe ist die Karte, kein Leser liest sie
         kartenArtL2: fl.posts.filter((x) => x.t === "build-asset" && x.l === 2 && r._foundryPresetIsTree(x.p)).length,
+        // ein Boot räumt nie im LRU (der Deckel trägt den ganzen Boot)
+        lru: f.lruEvicted ? f.lruEvicted.size : 0,
+        cache: f.cache.size,
+        gebautMB: MB(gebaut),
+        gebautN: gebaut.length,
+        platteMB: MB(fl.antworten.filter((x) => x.platte)),
+        platteN: fl.antworten.filter((x) => x.platte).length,
+        gebautListe: gebaut
+            .filter((x) => x.bytes > 0)
+            .slice(0, 12)
+            .map((x) => `${x.p}|${x.s}|${x.l}`),
     };
+    if (window.__flussNurBoot) return { boot, bootMB: MB(fl.antworten) };
     const instanziert = () => (r.state.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
     // sonst misst W2 nichts), dann der Wechsel: Aufträge an den Worker und NEUE Foundry-Cache-Schlüssel danach. Instanz-
@@ -550,6 +625,21 @@ function urteilWelt(d) {
         d.boot.kartenArtL2 === 0,
         `${d.boot.kartenArtL2} Aufträge`
     );
+    pruef(
+        "W1d ein Boot räumt nie im LRU (FOUNDRY_CACHE_CAP trägt den ganzen Boot)",
+        d.boot.lru === 0,
+        `${d.boot.lru} Räumungen · ${d.boot.cache} Körper im Cache`
+    );
+    const z = d.zweit && d.zweit.boot;
+    pruef(
+        "W3 der Zweit-Boot kommt von der Platte: Kanal-Neubau ≤ 5 MB, die Platte trägt den Boot",
+        z && z.gebautMB <= 5 && z.platteN >= 50,
+        z
+            ? `Erst-Boot gebaut ${d.boot.gebautMB.toFixed(1)} MB · Zweit-Boot gebaut ${z.gebautMB.toFixed(2)} MB ` +
+                  `(${z.gebautN} Antworten), von der Platte ${z.platteMB.toFixed(1)} MB (${z.platteN})` +
+                  (z.gebautListe.length ? ` · neu: ${z.gebautListe.join(" ")}` : "")
+            : "kein Zweit-Boot gemessen"
+    );
     const s = d.saison;
     pruef(
         "W2a der Saison-Wechsel baut nichts (0 Aufträge, 0 neue Körper-Schlüssel; Kontroll-Fenster ruhig)",
@@ -604,7 +694,15 @@ async function welt() {
         page.on("pageerror", (e) => console.log("  [Seiten-Fehler]", String((e && e.message) || e).split("\n")[0]));
         await page.evaluateOnNewDocument(WELT_HAKEN);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
-        return await page.evaluate(WELT_MESSEN);
+        const erst = await page.evaluate(WELT_MESSEN);
+        // W3 DER ZWEIT-BOOT: dieselbe Welt lädt neu (gleicher Browser = dieselbe IndexedDB, derselbe Stempel) — was jetzt
+        // noch gebaut wird, hat die Platte verfehlt.
+        await page.evaluateOnNewDocument(() => {
+            window.__flussNurBoot = true;
+        });
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+        const zweit = await page.evaluate(WELT_MESSEN);
+        return Object.assign({}, erst, { zweit });
     } finally {
         await browser.close();
         server.close();
@@ -623,6 +721,7 @@ const VERHALTEN = [
     ["V7 Saison-Nagel: Herbst-Körper und Winter-Karte erreichen das Studio als Sommer", "nagel"],
     ["V8 Vorrat: einmal gebaut, auf die Platte, leere Antwort; der Abruf trifft die Platte", "vorrat"],
     ["V8b Vorrat ohne Platte: leere Antwort, kein Bau", "vorratOhnePlatte"],
+    ["V9 Karten auf der Platte: der zweite Bake kommt von der Platte, das Studio bäckt einmal", "karte"],
 ];
 
 (async () => {
@@ -685,7 +784,10 @@ const VERHALTEN = [
             G: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, "*": 16 },
             samen: { eiche: [1, 2], weide: [1] },
             karten: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1 },
-            boot: { posts: 200, antworten: 200, kartenArtL2: 0 },
+            boot: { posts: 200, antworten: 200, kartenArtL2: 0, lru: 0, cache: 230, gebautMB: 70, gebautN: 190 },
+            zweit: {
+                boot: { gebautMB: 0.4, gebautN: 3, platteMB: 69, platteN: 187, gebautListe: ["wolf|0|0"] },
+            },
             saison: {
                 kontrolle: { posts: 0, removes: 300 },
                 posts: 0,
@@ -723,6 +825,19 @@ const VERHALTEN = [
             "Selbst-Test 10f: 56 Baum-L2-Aufträge im Boot → W1c rot",
             rot(Object.assign({}, gut, { boot: Object.assign({}, gut.boot, { kartenArtL2: 56 }) }), "W1c")
         );
+        check(
+            "Selbst-Test 10g: der Boot räumt 162 Körper im LRU → W1d rot",
+            rot(Object.assign({}, gut, { boot: Object.assign({}, gut.boot, { lru: 162 }) }), "W1d")
+        );
+        check(
+            "Selbst-Test 10h: der Zweit-Boot baut 470 MB neu (Saison im Schlüssel, Karten nie auf der Platte) → W3 rot",
+            rot(
+                Object.assign({}, gut, {
+                    zweit: { boot: Object.assign({}, gut.zweit.boot, { gebautMB: 470, platteN: 17 }) },
+                }),
+                "W3"
+            )
+        );
         const t11 = statisch(
             stamm.replace("            if (this._foundryPresetIsTree(sp)) continue;\n            // Boden-Arten", "            // Boden-Arten")
         ).gesetze.find((g) => g[0].startsWith("S6a"));
@@ -733,6 +848,16 @@ const VERHALTEN = [
         );
         const v4 = await verhalten(ohneVorrat);
         check("Selbst-Test 12: Schale schickt den Vorrats-Körper zum Haupt-Thread → V8 rot", ohneVorrat !== schale && v4.vorrat === false);
+        const ohneKartenPut = schale.replace("if (karteOk(p)) schreib(auftrag.key, { payload: p });", "");
+        const v5 = await verhalten(ohneKartenPut);
+        check("Selbst-Test 13: Schale ohne Karten-Put → V9 rot (jeder Boot bäckt die Karte neu)", ohneKartenPut !== schale && v5.karte === false);
+        const t14 = statisch(
+            stamm.replace(
+                "                    for (const core of manifest) {\n                        if (core && typeof core.shell === \"string\" && core.shell)\n                            stempelUrls.push(new URL(core.shell + v, base).href);\n                    }\n",
+                ""
+            )
+        ).gesetze.find((g) => g[0].startsWith("S7a"));
+        check("Selbst-Test 14: Stempel ohne Shells → S7a rot", t14 && !t14[1]);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Wand ist vakuös.");
             process.exit(1);

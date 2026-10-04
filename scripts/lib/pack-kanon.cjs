@@ -114,8 +114,9 @@ function methodSource(src, name, nextAnchors) {
 
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
-// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … ` (UTF-8; srcs.join("\n")). Die Platte
-// hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-Format) — der Pack-Index trägt den reinen Generator-Hash.
+// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + shell_1 + …` (UTF-8; srcs.join("\n"); die
+// Shells seit V18.527). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-Format) — der Pack-Index trägt
+// den reinen Generator-Hash.
 function computeStamp(root) {
     const r = root || ROOT;
     const manifestText = fs.readFileSync(path.join(r, "cores.manifest.json"), "utf8");
@@ -126,6 +127,7 @@ function computeStamp(root) {
             if (!core || !Array.isArray(core.scripts)) continue;
             for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
         }
+        for (const core of manifest) if (core && typeof core.shell === "string" && core.shell) scripts.push(core.shell);
     }
     const srcs = [manifestText];
     for (const s of scripts) srcs.push(fs.readFileSync(path.join(r, s), "utf8"));

@@ -281,9 +281,11 @@ jobs:
               # Konsum-Wand (FOUNDRY_LESEN == die Leser von _foundryBuildMesh), Uint16-Index, Transfer.
               # Statisch: Wand == Leser, der Asset-Store lebt NUR in der Schale. Verhalten: echter Worker +
               # IndexedDB (Wand · Verengung · abgelöster Puffer · Platten-Treffer · nurPlatte · Format-Bust ·
-              # Saison-Nagel). V18.527: Gestalten aus dem Studio-Budget (Klon-Linse, hohe Hash-Bits), keine
-              # Saison im Körper-Schlüssel; Welt-Sonde (Null-Renderer, echter Studio-Worker): Gestalten je Art =
-              # Budget, ein Saison-Wechsel baut 0. --selftest zuerst: jede Bruch-Klasse macht die Wand rot.
+              # Saison-Nagel · Vorrat · Karten-Platte). V18.527: Gestalten aus dem Studio-Budget (Klon-Linse, hohe
+              # Hash-Bits), keine Saison im Körper-Schlüssel, keine tote Fracht, der Stempel hasht die Shells;
+              # Welt-Sonde (Null-Renderer, echter Studio-Worker, Platte an): Gestalten je Art = Budget, 0 Karten-Art-
+              # L2, 0 LRU-Räumungen im Boot, ein Saison-Wechsel baut 0, der Zweit-Boot baut <= 5 MB neu.
+              # --selftest zuerst: jede Bruch-Klasse macht die Wand rot.
               run: npm run gate:fluss
 
             - name: Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)

@@ -23,8 +23,19 @@ Ein Eintrag je gebackenem Asset im IndexedDB-Store `anazhFoundryAssets/assets`:
 <preset>|<gestalt>|<lod>
 ```
 
-Der EINE Schlüssel-Münzer ist `_foundryKoerperKey(preset, gestalt, lod)` (anazhRealm.js) — derselbe String ist
-Platten-, Cache- und leafKey-Stamm.
+Der EINE Schlüssel-Münzer ist `_foundryKoerperKey(preset, gestalt, lod, ov)` (anazhRealm.js) — derselbe String ist
+Platten-, Cache- und leafKey-Stamm. Ein GEPRÄGTER Körper (Ofen-Mensch, Tier mit Reglern, gestempelter Eintrag) hängt
+seinen ov-Hash an: `<preset>|<gestalt>|<lod>|ov:<hash>` (`_studioOvHash`, reihenfolgefest) — nur die Werkstatt-Vorschau
+und die Hand (`wo === 0` mit ov) sind Unikate ohne Platte.
+
+DIE KARTE (V18.527) liegt im selben Store:
+
+```text
+karte|<preset>|<gestalt>[|ov:<hash>]      →  { payload: { cw, ch, V, aspect, height, albedo, normal } }
+```
+
+(`_foundryKartenKey`; `albedo`/`normal` Uint8Array je cw·ch·V·4 — die Bake-Antwort des Studios, vor dem Transfer
+geschrieben; ein leerer/fehlerhafter Bake wird nie persistiert).
 
 - `preset` — ein Schlüssel aus dem Studio-Rezeptbuch (`get-recipes`; Bäume `eiche fichte tanne
 birke weide mammut` · Boden `gras strauch blume` · Fels `findling basalt sediment zacken
@@ -72,14 +83,18 @@ Ein persistierter Bake IST eine Kopie → sein Stempel MUSS der Hash der GENERAT
 ihr den Manifest-Text und die Skript-URLs):
 
 ```text
-stamp = SHA-256( manifestText + "\n" + script_1 + "\n" + … + script_n ) + "|f" + FOUNDRY_PLATTE_FORMAT
+stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + shell_1 + … + shell_m ) + "|f" + FOUNDRY_PLATTE_FORMAT
 ```
 
 - `manifestText` — der ROHE Text von `cores.manifest.json` (ein Manifest-Edit = neuer Kern-Satz = Bust).
 - `script_i` — der Text JEDES `scripts[]`-Eintrags ALLER Manifest-Kerne, in Manifest-Reihenfolge
   (heute: `phyto-core.js`, `foundry-core.js`, `vehicle-core.js`) — jeder Kern ist Generator-Quelle.
+- `shell_j` — der Text JEDER `shell` der Manifest-Kerne (heute `worlds/terrain/phytogenesis.js`; V18.527): die Shell
+  trägt `__extractAssetMesh` (backt matrixWorld in die Vertices) und `bakeImpostorAtlas` (die Karte) — ein Shell-Edit
+  leert die Platte.
 - Jeder Fetch trägt den `?v=<VERSION>`-Cache-Buster (Gesetz: jede separat geladene versionierte Datei).
-- `|f<n>` — das Transport-Format (heute 2): eine geänderte Konsum-Wand oder Verengung leert den Cache von selbst.
+- `|f<n>` — das Transport-Format (heute 3: saisonfreie Schlüssel + Karten, V18.527; 2 = Konsum-Wand + Uint16-Index):
+  eine geänderte Konsum-Wand, Verengung oder Schlüssel-Form leert den Cache von selbst.
 - Beim DB-Open wird `__stamp` gelesen: Mismatch → `store.clear()` + neuen Stempel schreiben
   (der GANZE Cache ist potenziell Drift). Match → der Cache lebt weiter.
 
@@ -91,7 +106,9 @@ stamp = SHA-256( manifestText + "\n" + script_1 + "\n" + … + script_n ) + "|f"
 | Cache-Miss                     | die Schale reicht den Auftrag an das Studio; dessen Antwort → Wand · Verengung · Put · Transfer |
 | Worker noch nicht ready        | ehrliches `null` (`FOUNDRY KALT`) — der Aufrufer deferriert + fragt später (gate-treu)          |
 | Stempel-Mismatch               | Store leeren + neuen Stempel schreiben (Bust VON SELBST bei Generator- und Format-Edit)         |
-| Headless/Null-Renderer         | Platte AUS (`f.platte` false, gate-deterministisch — der Studio-Pfad bleibt der geprüfte)        |
+| Headless/Null-Renderer         | Platte AUS (`cfg.platte` false, gate-deterministisch); der Schlüssel reist, die Schale entscheidet |
+| Vorrat (`vorrat: true`)        | liegt der Körper auf der Platte oder gibt es keine: leere Antwort ohne Bau; sonst Bau → Put → leer |
+| Karte (`bake-impostor`)        | Treffer: `impostor`-Antwort von der Platte (`platte: true`), kein Bake; Miss: Bake → Put → Transfer |
 | Jeder IDB-/Quota-/Parse-Fehler | die Schale schreibt nicht mehr und fragt nur noch das Studio (nie ein Nutzer-sichtbarer Fehler) |
 | Leerer/`null`-Reply            | wird NIE persistiert (der Put verlangt `meshes.length`; die Art bleibt nachfragbar)             |
 
