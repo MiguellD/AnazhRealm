@@ -18,7 +18,10 @@
 //   (2) prüft den kommentar-freien Stamm: kein Lambert-Stoff irgendwo, _scatterMaterial und _archFundMat bauen
 //       MeshStandardNodeMaterial;
 //   (3) DAS FARB-GESETZ: beide Streu-Bauer (_scatterSpeciesGeometry, _scatterImpostorGeometry) backen je lit Art die
-//       Vertex-Farbe = sRGB→linear des rohen Bauplans (eigene Referenz-Formel), leuchtende Arten roh.
+//       Vertex-Farbe = sRGB→linear des rohen Bauplans (eigene Referenz-Formel), leuchtende Arten roh;
+//   (4) DIE KARTEN-FARBE: die Studio-Karte reist linear (Render-Target), die Welt-Karte ist sRGB markiert — der Maler
+//       (_applyStudioImpostorPayload) kodiert die Albedo über AnazhRealm._linearZuSrgb8 (die Tafel gegen die
+//       Referenz-Formel geprüft), die Normalen bleiben Daten.
 // --selftest: der Fels im alten Uhrzeigersinn, der Lambert-Zweig, Lambert-Wege, ein Lambert-Fundament, ein Bauer
 // ohne Farb-Gesetz und ein rohes Gesetz → alle MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
@@ -203,6 +206,24 @@ function pruefe(src) {
     if (lambert) fehler.push(`${lambert} Lambert-Stoff(e) im Stamm — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
     if (!/\(this\._archFundMat = new THREE\.MeshStandardNodeMaterial\(/.test(nc))
         fehler.push("_archFundMat (das Fundament) baut nicht MeshStandardNodeMaterial");
+    // (4) DIE KARTEN-FARBE
+    const tafelSrc = rumpf(src, /\nAnazhRealm\._linearZuSrgb8 = \(\(\) => \{/);
+    if (!tafelSrc) fehler.push("AnazhRealm._linearZuSrgb8 (die Karten-Kodierung) nicht im Stamm gefunden");
+    else {
+        const tafel = new Function(tafelSrc.slice(1, -1))();
+        let ab = 0;
+        for (let i = 0; i < 256; i++) {
+            const v = i / 255;
+            const soll = Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255);
+            if (!tafel || tafel[i] !== soll) ab++;
+        }
+        if (ab) fehler.push(`die Karten-Kodierung weicht in ${ab} von 256 Stufen von linear → sRGB ab`);
+    }
+    const karte = rumpf(nc, /\n {4}_applyStudioImpostorPayload\(rec, payload\)\s*\{/) || "";
+    if (!/this\._paintStudioAtlasCells\(colCtx, payload\.albedo, cw, ch, V, AnazhRealm\._linearZuSrgb8\)/.test(karte))
+        fehler.push("die Studio-Karte (linear) wird ohne sRGB-Kodierung in die sRGB-Welt-Karte gemalt — die GPU dekodiert sie doppelt (Albedo^2,2)");
+    if (!/this\._paintStudioAtlasCells\(nrmCtx, payload\.normal, cw, ch, V\)/.test(karte))
+        fehler.push("die Normalen-Karte wird kodiert — Normalen sind Daten");
     const stoff = rumpf(nc, /\n {4}_scatterMaterial\(species\)\s*\{/) || "";
     if (!stoff) fehler.push("_scatterMaterial nicht gefunden");
     else {
@@ -254,6 +275,15 @@ function main() {
                 /_scatterImpostorGeometry backt/,
             ],
             ["Farb-Gesetz roh", QUELLE.replace("    if (species && species.emissive) return C;\n", "    return C;\n"), /sRGB-Absicht/],
+            [
+                "Karte ohne Kodierung",
+                QUELLE.replace(
+                    "this._paintStudioAtlasCells(colCtx, payload.albedo, cw, ch, V, AnazhRealm._linearZuSrgb8);",
+                    "this._paintStudioAtlasCells(colCtx, payload.albedo, cw, ch, V);"
+                ),
+                /doppelt/,
+            ],
+            ["Karten-Tafel falsch", QUELLE.replace("1.055 * Math.pow(v, 1 / 2.4) - 0.055", "Math.pow(v, 1 / 2.2)"), /Karten-Kodierung weicht/],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
         console.log(`${ok ? "✅" : "❌"} SELBST-TEST: die echte Quelle ist grün${ok ? "" : " — " + echt.fehler.join(" · ")}`);
@@ -272,7 +302,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE STREU-WAHRHEIT steht — ${r.geprueft} einseitige Arten mit Außen-Normalen (jede Fläche zeigt vom Schwerpunkt weg), kein Lambert-Stoff im Stamm (Streu, Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), ${r.farbArten} Art×Bauer backen ihre Farbe nach dem Farb-Gesetz.`
+        `✅ DIE STREU-WAHRHEIT steht — ${r.geprueft} einseitige Arten mit Außen-Normalen (jede Fläche zeigt vom Schwerpunkt weg), kein Lambert-Stoff im Stamm (Streu, Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), ${r.farbArten} Art×Bauer backen ihre Farbe nach dem Farb-Gesetz, die Studio-Karte wird sRGB-kodiert gemalt.`
     );
 }
 main();

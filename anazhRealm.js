@@ -61945,7 +61945,14 @@ class AnazhRealm {
         colCanvas.height = ch;
         const colCtx = colCanvas.getContext("2d");
         if (!colCtx) return false;
-        this._paintStudioAtlasCells(colCtx, payload.albedo, cw, ch, V);
+        // DIE KARTE TRÄGT, WAS DAS LABOR LIEST: der Studio-Bäcker liest seinen Atlas aus einem Render-Target zurück —
+        // LINEAR (ein Render-Target wandelt nie nach sRGB; das Labor sampelt ihn linear). Die Welt-Karte ist sRGB
+        // markiert (der Canvas-Platzhalter malt sRGB, ein Wechsel des Farbraums kompilierte jeden Karten-Stoff neu):
+        // die Albedo wird darum beim Malen nach sRGB kodiert, die GPU dekodiert sie zurück. Bis 04.10. dekodierte sie
+        // die linearen Bytes ein zweites Mal — seit dem FARB-GESETZ (V18.506, lineare Vertex-Farben im Bake) lag jede
+        // Karte bei Albedo^2,2 (Albedo-Sicht: Eichen-Karte Y 0,009–0,014 gegen ihre L1 0,127, Nadel 0,003): die Krone
+        // war so dunkel, dass Himmels-Spiegelung und Sonnen-Glanz sie grau-beige färbten.
+        this._paintStudioAtlasCells(colCtx, payload.albedo, cw, ch, V, AnazhRealm._linearZuSrgb8);
         rec.map.image = colCanvas;
         rec.map.needsUpdate = true;
         if (rec.nmap && payload.normal && payload.normal.length === need) {
@@ -61978,7 +61985,8 @@ class AnazhRealm {
     // Eine vertikal gestapelte, bottom-up Studio-Atlas-Spalte (cw × ch·V) in die horizontale
     // Welt-Atlas-Zeile malen: Zelle v = Puffer-Zeilen v·ch..(v+1)·ch (Zeile v·ch = BILD-UNTERKANTE
     // der Ansicht v, GL-Konvention) → Y-Flip je Zelle → putImageData bei x=v·cw.
-    _paintStudioAtlasCells(ctx, buf, cw, ch, V) {
+    // kodiere = eine 256er-Tafel für R, G, B (Alpha und Normalen-Daten bleiben roh).
+    _paintStudioAtlasCells(ctx, buf, cw, ch, V, kodiere) {
         const row = cw * 4;
         for (let v = 0; v < V; v++) {
             const img = ctx.createImageData(cw, ch);
@@ -61986,7 +61994,10 @@ class AnazhRealm {
             for (let y = 0; y < ch; y++) {
                 const src = (base + (ch - 1 - y)) * row;
                 const dst = y * row;
-                for (let i = 0; i < row; i++) img.data[dst + i] = buf[src + i];
+                if (kodiere)
+                    for (let i = 0; i < row; i++)
+                        img.data[dst + i] = (i & 3) === 3 ? buf[src + i] : kodiere[buf[src + i]];
+                else for (let i = 0; i < row; i++) img.data[dst + i] = buf[src + i];
             }
             ctx.putImageData(img, v * cw, 0);
         }
@@ -91374,6 +91385,16 @@ AnazhRealm._tuerOffenRad = function () {
 //      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
 //      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
+// Die 8-Bit-Kodierung linear → sRGB (IEC 61966-2-1) als Tafel: die Studio-Karte reist linear, die Welt-Karte ist sRGB.
+AnazhRealm._linearZuSrgb8 = (() => {
+    const t = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) {
+        const v = i / 255;
+        const s = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+        t[i] = Math.max(0, Math.min(255, Math.round(s * 255)));
+    }
+    return t;
+})();
 // DAS FARB-GESETZ DER HOST-STREU (das Studio-Gesetz foundry-core vegFarbe, V18.506, für die Klein-Streu des Hosts):
 // ein Paletten-Wert der Streu-Arten (KLEIN_VEGETATION_SPECIES color/color2 und die Bauplan-Literale) ist eine
 // sRGB-ABSICHT, die Albedo ist sein linearer Wert — gelesen beim BACKEN der Vertex-Farbe (_scatterSpeciesGeometry,
