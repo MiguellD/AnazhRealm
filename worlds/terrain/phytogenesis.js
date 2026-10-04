@@ -1422,7 +1422,7 @@ function plantForest(R, seedInt) {
         else if ((pick -= wT) < 0) sp = "tanne"; // → baum_tanne
         else if ((pick -= wE) < 0) sp = "eiche"; // → baum_eiche
         else if ((pick -= wB) < 0) sp = "birke"; // → baum_birke
-        else sp = "weide"; // → baum_erle (mammut → baum_buche via promote)
+        else sp = "weide"; // → baum_erle (mammut → baum_mammut via promote)
         if (_de < openWaterM) continue; // im offenen Wasser waechst NICHTS
         if (_de < wetSaumM && sp !== "weide") continue; // nur die Weide steht im nassen Saum; der Rest wuerde versaufen -> sie verstehen das Wasser
         if (seaward(x, z) > seawardWeideM && sp !== "weide") continue; // MEER: nasser Strand-Saum -> nur Weide (Baeume kennen die Feuchtigkeit)

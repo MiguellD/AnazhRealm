@@ -1512,7 +1512,7 @@
             eiche: "baum_eiche",
             birke: "baum_birke",
             weide: "baum_erle",
-            mammut: "baum_buche",
+            mammut: "baum_mammut",
         },
         hostToLab: {
             baum_kiefer: "fichte",
@@ -1520,7 +1520,7 @@
             baum_eiche: "eiche",
             baum_birke: "birke",
             baum_erle: "weide",
-            baum_buche: "mammut",
+            baum_mammut: "mammut",
         },
         labNames: ["fichte", "tanne", "eiche", "birke", "weide", "mammut"],
         verjPool: ["birke", "eiche", "fichte", "tanne"],
@@ -1656,13 +1656,13 @@
             // sp !== baum_erle (Species-Gate Caller-lokal — sonst Drift an prio/keep/…).
             let s = forestTreeSize(rng, sd);
             let T = (F.crown[sp] || 4.0) * s; // Auto-Arten ohne Kronen-Eintrag → generischer 4-m-Radius
-            // MAMMUT-Nische (baum_buche, selten + riesig) an dichten, trockenen Kernen.
+            // MAMMUT-Nische (baum_mammut, selten + riesig) an dichten, trockenen Kernen.
             if (sp !== "baum_erle") {
                 const m = forestMammutRoll(rng, sd, clim);
                 if (m.promote) {
-                    sp = "baum_buche";
+                    sp = "baum_mammut";
                     s = m.s;
-                    T = F.crown.baum_buche * s;
+                    T = F.crown.baum_mammut * s;
                 }
             }
             const prio = rng(); // Kronen-Schüchternheit: das prio-Maximum im Konflikt-Radius gewinnt

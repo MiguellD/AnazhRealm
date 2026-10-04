@@ -55877,6 +55877,7 @@ class AnazhRealm {
             ["baum_erle", "Erle"],
             ["baum_buche", "Buche"],
             ["baum_tanne", "Tanne"],
+            ["baum_mammut", "Mammutbaum"], // die Mammut-Nische des Wald-Generators (04.10., vorher als baum_buche)
         ];
         for (const [species, label] of TREE_SPECIES) {
             const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
@@ -65780,15 +65781,16 @@ class AnazhRealm {
             baum_weide: "weide",
             baum_mammut: "mammut",
             baum_kiefer: "fichte",
-            // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide, baum_buche → mammut,
-            // Totholz-Snag → kahle Eiche — sonst fielen erle/buche/totholz aus der Foundry-Pipe.
+            // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide. Buche, Karst-Baum und stehendes
+            // Totholz sind seit 04.10. eigene Studio-Arten (die Aliase auf Mammut und belaubte Eiche fielen), die
+            // Mammut-Nische des Wald-Generators heißt baum_mammut.
             baum_erle: "weide",
-            baum_buche: "mammut",
-            baum_totholz: "eiche",
+            baum_buche: "buche",
+            baum_totholz: "totholz",
+            baum_karst: "karst",
             // Restliche Wald-Nischen (`_scatterSpeciesForLayer`) auf die nächste Studio-Art: Zypresse (schlanke
-            // Konifere) → tanne, Karst-Klippenbaum (knorrig) → eiche, Palme (Einzelstamm mit Krone) → weide.
+            // Konifere) → tanne, Palme (Einzelstamm mit Krone) → weide.
             baum_zypresse: "tanne",
-            baum_karst: "eiche",
             baum_palme: "weide",
             // Fels: ALLE 6 Vorlagen-Stein-Rezepte (emitRock), nach Charakter verteilt — vorher
             // fielen sediment/zacken/geroell durch (nur findling/basalt genutzt = Rueckzug).
@@ -86229,7 +86231,6 @@ AnazhRealm.ALT_DOPPEL = Object.freeze({
     kristall_geode: "kristalle",
     baum_kiefer: "fichte",
     baum_erle: "weide",
-    baum_buche: "mammut",
     reittier_holzross: "garage (fahrzeug_*, drive)",
     koerper_human: "mensch (koerperstudio)",
     koerper_wesen: "deer (tetrapoda)",
@@ -87464,6 +87465,43 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             clusterSize: [2, 3],
             color: 0x2c5a2c,
             size: 0.62,
+        }),
+    }),
+    // Mammutbaum (04.10.): die Riesen-Nische des Wald-Generators — hoher Säulenstamm, die Krone erst im oberen
+    // Drittel, kurze hängende Äste mit Nadel-Sprays (die Grammatik-Gestalt vor dem Studio-Asset; die Welt zeigt das
+    // Studio-Mammut).
+    baum_mammut: Object.freeze({
+        height: [16, 24],
+        crown: "cone",
+        trunk: Object.freeze({ segs: 7, wander: 0.03, taper: 0.82, baseR: 0.72 }),
+        L1: Object.freeze({
+            density: 1.6,
+            whorl: 0,
+            childStart: 0.38,
+            childEnd: 0.97,
+            angleBase: 1.55,
+            lenRatio: 0.22,
+            droop: 0.4,
+            tipCurl: 0.18,
+            radRatio: 0.36,
+        }),
+        L2: Object.freeze({
+            density: 1.8,
+            whorl: 0,
+            childStart: 0.15,
+            childEnd: 0.97,
+            angleBase: 1.0,
+            lenRatio: 0.2,
+            droop: 0.45,
+            tipCurl: 0.1,
+            radRatio: 0.45,
+        }),
+        foliage: Object.freeze({
+            kind: "needleSpray",
+            anchorLevel: 1,
+            clusterSize: [2, 3],
+            color: 0x3a6a30,
+            size: 0.66,
         }),
     }),
     baum_kiefer: Object.freeze({
@@ -88752,7 +88790,7 @@ AnazhRealm.FOREST = Object.freeze({
         baum_eiche: 5.2, // Eiche — breiter Beästungsradius (tiefe, feuchte Lagen)
         baum_birke: 3.2, // Birke — Pionier
         baum_erle: 4.5, // Weide-Nische — nasser Saum
-        baum_buche: 9.2, // Mammut-Nische — selten, riesig (dichte trockene Kerne)
+        baum_mammut: 9.2, // Mammut-Nische — selten, riesig (dichte trockene Kerne)
     }),
 });
 
