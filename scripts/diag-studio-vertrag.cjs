@@ -191,8 +191,24 @@ function validateManifest(m) {
                 v.push(`B2c: lod.budget.${k} — Art ohne kindStages`);
                 continue;
             }
-            for (const st in B[k])
+            for (const st in B[k]) {
+                if (st === "fern") continue; // die Fernform der Art (unten), keine Stufe
                 if (ks[k].indexOf(Number(st)) < 0) v.push(`B2c: lod.budget.${k}[${st}] — keine gelieferte Stufe`);
+            }
+            // DIE FERNFORM (B2c 04.10.): was die Art jenseits Welt-d1 ist — "karte" (ihre Karten-Stufe), "gesetz" (ihr
+            // Satz im Welt-March) oder "boden" (keine Geometrie). "karte" genau dann, wenn die letzte Stufe Karte ist.
+            // Pflicht ist sie am Konsum: der Host-Leser (_foundryFernForm) bricht fail-closed, wo eine gestreute Art
+            // sie nicht trägt (gate:streu-fern).
+            if ("fern" in B[k]) {
+                const fern = B[k].fern;
+                const st = Array.isArray(ks[k]) ? ks[k] : [];
+                const letzte = st.length ? B[k][st[st.length - 1]] : null;
+                const karte = !!(letzte && letzte.karte === true);
+                if (fern !== "gesetz" && fern !== "boden" && fern !== "karte")
+                    v.push(`B2c: lod.budget.${k}.fern muss "gesetz", "boden" oder "karte" sein`);
+                else if ((fern === "karte") !== karte)
+                    v.push(`B2c: lod.budget.${k}.fern — "karte" genau dann, wenn die letzte Stufe Karte ist`);
+            }
         }
         for (const k in ks) {
             const stufen = Array.isArray(ks[k]) ? ks[k] : [];
@@ -715,6 +731,7 @@ function validateManifest(m) {
                         3: {},
                         0: { tris: 100, draws: 1, schatten: false },
                         1: { tris: 200, draws: 0, schatten: "ja", karte: true, blattKarte: -1, deckung: [1.2, 0.9] },
+                        fern: "nebel",
                     },
                     gestalten: { eiche: 0 },
                 },
@@ -736,6 +753,7 @@ function validateManifest(m) {
                     shrub: {
                         1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1 },
                         2: { tris: 5, draws: 2, schatten: false },
+                        fern: "karte",
                     },
                 },
             },
@@ -761,7 +779,7 @@ function validateManifest(m) {
         verhalten: { aktionen: { a: {} }, stimmung: { x: { aktionen: ["fremd"], alle: [1, 2] } } },
     });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Budget · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Budget · Fernform · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
@@ -781,6 +799,8 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("nadelKarte muss")) &&
             bvB.some((s) => s.includes("klinge muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&
+            bv.some((s) => s.includes("tree.fern muss")) &&
+            bvB.some((s) => s.includes("shrub.fern — \"karte\" genau dann")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&

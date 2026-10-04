@@ -243,6 +243,12 @@ const PORTAL_RENDER_CONFIG = {
         // Blatt-Groessen), nadelKarte (Kante der Nadel-Karte in Nadel-Laengen), klinge (Segmente der Trauer-
         // Klinge), deckung (das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss —
         // Wahrnehmung ~ n·s², FIX v29; gate:asset-contract misst es an gebauten L0/L1-Paaren).
+        // DIE FERNFORM je Art (`fern`, B2c 04.10.): was die Art jenseits Welt-d1 IST — "karte" = ihre Karten-Stufe
+        // (Baum, Strauch: das gebackene Billboard), "gesetz" = ihr Satz im Welt-March (Blume, Fels: die Passung der
+        // Studio-Gestalt als Primitive, 0 Draws; der Fels aus seinen einzelnen Steinen), "boden" = keine Geometrie,
+        // die Boden-Funktion trägt die Farbe (Gras: die Studio-Wiese endet nah, jenseits zeichnet der Boden). Kein
+        // Builder liest sie (keine Mesh-Byte-Wirkung); der Host-Zellen-Chokepoint liest sie VOR jedem Mesh-Zug —
+        // eine Fern-Zelle fragt nie ein geklemmtes L0 an (gate:streu-fern).
         budget: {
             tree: {
                 0: { tris: 230000, draws: 3, schatten: 1 },
@@ -256,14 +262,20 @@ const PORTAL_RENDER_CONFIG = {
                     deckung: [0.8, 1.15],
                 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
+                fern: "karte",
             },
             shrub: {
                 1: { tris: 12000, draws: 2, schatten: 1 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
+                fern: "karte",
             },
-            grass: { 1: { tris: 1700, draws: 1, schatten: false }, 2: { tris: 320, draws: 1, schatten: false } },
-            flower: { 0: { tris: 3600, draws: 2, schatten: 0 } },
-            rock: { 0: { tris: 1300, draws: 1, schatten: 0 } },
+            grass: {
+                1: { tris: 1700, draws: 1, schatten: false },
+                2: { tris: 320, draws: 1, schatten: false },
+                fern: "boden",
+            },
+            flower: { 0: { tris: 3600, draws: 2, schatten: 0 }, fern: "gesetz" },
+            rock: { 0: { tris: 1300, draws: 1, schatten: 0 }, fern: "gesetz" },
             // DIE GESTALTEN je Art (04.10.): wie viele verschiedene Individuen (Samen) eine Art in der Welt traegt —
             // die Zahlen, mit denen der Studio-Wald pflanzt (buildForest liest sie, Welt-Varianten-Wahl ebenso);
             // jede Gestalt ist ein Satz Koerper L0/L1 + EINE Karte. '*' = jede Art ohne eigene Zeile. Eine

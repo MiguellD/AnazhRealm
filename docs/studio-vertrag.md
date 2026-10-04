@@ -81,7 +81,7 @@ Ein Top-Level-Objekt `PRESETS`: `{ <rezeptId>: Rezept }`.
 
 #### B2c — DAS BUDGET je Art × Stufe (SOLL; trägt ein Kern es, dann VOLLSTÄNDIG)
 
-`PORTAL_RENDER_CONFIG.lod.budget = { <kind>: { <stufe>: { tris, draws, schatten, karte?, …Regler } } }` —
+`PORTAL_RENDER_CONFIG.lod.budget = { <kind>: { <stufe>: { tris, draws, schatten, karte?, …Regler }, fern? } }` —
 was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 
 - **Vollständig:** jede Art aus den eigenen `kindStages` × jede deklarierte Stufe trägt eine Zeile;
@@ -99,6 +99,14 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - **Konsum:** `gate:asset-contract` baut jede gelieferte Gitter-Stufe über die echte Brücke (Goldens +
   jedes Rezept der Art bei Samen 7) und hält Dreiecke ≤ `tris`, Sippen ≤ `draws` — Rot nennt den Täter;
   der Selbsttest halbiert jede Zeile (und senkt `draws` um eins) und MUSS rot werden.
+- **`fern`** je Art (kein Stufen-Schlüssel): was die Art jenseits Welt-d1 IST — `"karte"` (ihre
+  Karten-Stufe; genau dann, wenn die letzte Stufe `karte: true` trägt), `"gesetz"` (ihr Satz im
+  Welt-March: die Passung der Studio-Gestalt als Primitive, 0 Draws, kein Schatten-Wurf) oder `"boden"`
+  (keine Geometrie, die Boden-Funktion trägt die Farbe). foundry-core: tree/shrub `karte` ·
+  flower/rock `gesetz` · grass `boden`. Kein Builder liest sie. Pflicht am Konsum: der Host-Leser
+  (`_foundryFernForm`) liest sie im Zellen-Chokepoint VOR jedem Mesh-Zug und bricht fail-closed
+  (KERN-PFLICHT), wo eine gestreute Art sie nicht trägt; eine `gesetz`-Zelle, deren Satz nicht steht
+  (Fit-Takt, erschöpfte Kapsel-Liste), WARTET ohne Geometrie — nie das Mesh-L0 (`gate:streu-fern`).
 - v1.3 trägt es foundry-core (tree · shrub · grass · flower · rock); die Zweit-Kerne folgen mit der
   Studio-Übertragung (Transport `zusatzBudget`, offen).
 
