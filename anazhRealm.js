@@ -20810,7 +20810,7 @@ class AnazhRealm {
         if (steht) {
             st._buehneStand = true;
             this.log(
-                "Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Impostor-Bakes · Fern-Deko) starten.",
+                "Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.",
                 "INFO"
             );
         }
@@ -52780,10 +52780,6 @@ class AnazhRealm {
         // Idle-Pass (Chunk-Streaming baut nichts): Merge-Cache der Hotbar-Baupläne vorwärmen → Auswahl/
         // Ghost/Platzieren ohne Hänger. Eins/Tick, nur unter Budget.
         this._tickBlueprintPrebake();
-        // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte 8-View-Impostor-Bake
-        // (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker; lazy beim ersten
-        // LOD2-Bedarf enqueued; headless/Null-Renderer = No-op — der Fallback trägt, gate-treu).
-        this._tickImpostorBake();
         // GNADENFRIST (18.07.) — der Gruppen-Reaper räumt abgelaufene leere Hüllen (1×/s;
         // headless entsteht nie ein Kandidat — der Leer-Chokepoint reapt dort sofort).
         this._tickArchGruppenReaper(performance.now());
@@ -61545,10 +61541,11 @@ class AnazhRealm {
     _tickImpostorBake() {
         const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
-        // Die BAKE-QUEUE WARTET AUF DIE BÜHNE: jeder RTT-Bake stiehlt GPU vom Boden-Streaming; bis dahin trägt
-        // die Canvas-Silhouette. Danach drained die Queue (der Bake senkt netto Last → die Bühne öffnet
-        // notfalls über den Wall-Clock-Deckel). Headless steht die Bühne sofort (gate:boot-stage).
-        if (!this._buehneSteht()) return 0;
+        // Die Karte wartet NICHT auf die Bühne: der Bäcker ist das Studio im Foundry-Worker (die Platte liefert gebackene
+        // Karten sofort), kein RTT auf der Boden-GPU — und mit echtem Renderer trägt bis zur Karte nichts (der Canvas-
+        // Platzhalter erreicht das Auge nie, `_foundryBuildImpostorFlat`), nur der Kapsel-Satz des Felds. Bis 04.10. war
+        // das ein Kreis: die Bühne wartete auf die Streu-Regionen, die Regionen auf ihre Karten, die Karten auf die
+        // Bühne — gelöst erst vom 90-s-Deckel; beim Boot an der Mess-Wiese standen so 141 Kapsel-Sätze < 64 m.
         // BAKE-WATCHDOG: ein hängender async Bake (GPU-Readback ohne echte Frames resolvt nie) klemmte
         // `_impostorBakePending` → die Queue verhungerte still. Nach der Bake-Uhr (+2 s) wird der Record
         // rttFailed (Canvas bleibt), das Token entwertet die späte finally (sie darf den NÄCHSTEN Bake nicht
@@ -61643,7 +61640,7 @@ class AnazhRealm {
         // Karte ist Golden-Sommer, das Jahr färbt der Karten-Stoff (uSeasonMul).
         // BÄCKER-OV (V18.478) — ist der Record geprägt (rec.ov, aus _foundryEnsureImpostorRecord),
         // bäckt der Studio-Bäcker das UNIKAT (die ov reist mit); ungeprägte Records byte-alt.
-        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, rec.ov || undefined)
+        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, rec.ov || undefined, rec._bedarfD2)
             .then((payload) => {
                 if (!this._applyStudioImpostorPayload(rec, payload))
                     throw new Error("Studio-Bäcker ohne brauchbaren Payload für " + key);
@@ -66696,7 +66693,7 @@ class AnazhRealm {
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
     // `bakeImpostorAtlas`, kein Nachbau). Resolvt mit payload oder null (Fehler/Timeout — der Tick-
     // Aufrufer trägt den Retry). Dasselbe pending-Routing wie build-asset, reqIds mit Präfix "imp".
-    _foundryBakeImpostorRequest(presetId, seed, ov) {
+    _foundryBakeImpostorRequest(presetId, seed, ov, bedarfD2) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
@@ -66707,14 +66704,17 @@ class AnazhRealm {
         // KARTEN AUF DIE PLATTE (V18.527): die Karte trägt ihren Platten-Schlüssel (`karte|` + Karten-Schlüssel, geprägt
         // mit ov-Hash) — die Schale liest zuerst und schreibt jeden frischen Bake; ein Zweit-Boot bäckt keine Karte neu.
         msg.platte = "karte|" + this._foundryKartenKey(presetId, seed, ov && typeof ov === "object" ? ov : null);
-        // Durch DIE EINE WORKER-SCHLANGE mit Vorrats-Rang (die Fernstufe). EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS
-        // ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin des Tick.
+        // Durch DIE EINE WORKER-SCHLANGE im Rang ihres nächsten Wartenden (`rec._bedarfD2`, d² zum Spieler; ohne Bedarf
+        // Vorrats-Rang). Bis 04.10. reiste jede Karte mit Vorrats-Rang: beim Boot an der Mess-Wiese wartete sie 11 s
+        // hinter 150 Geometrie-Aufträgen, die Bäume, die sie brauchten, standen so lange als Kapsel-Klumpen. EINE Uhr
+        // (IMPOSTOR_BAKE_TIMEOUT_MS ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die
+        // Retry-Disziplin des Tick.
         const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
         return this._foundryAuftrag(
             f,
             "imp",
             msg,
-            null,
+            Number.isFinite(bedarfD2) ? bedarfD2 : null,
             frist,
             `FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach ${Math.round(frist / 1000)} s Arbeit ohne Reply → null`
         );
@@ -86214,6 +86214,12 @@ class AnazhRealm {
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
         this._tickArchitectureLOD(5);
+        // DER KARTEN-BÄCKER (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker, die Platte liefert gebackene
+        // Karten sofort; lazy beim ersten L2-Bedarf enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
+        // Gesetz („EAGER, netto last-senkend"). Bis 04.10. hing er im Deko-Job (prio 2: nur ohne Chunk-Bau im Frame,
+        // unter Last jeden 4. Frame) — beim Boot an der Mess-Wiese standen 60 s lang 10 von 11 Karten ungebacken in der
+        // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).
+        this._tickImpostorBake();
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
