@@ -186,20 +186,18 @@ const server = http.createServer((req, res) => {
         // H3 — DAS INVENTAR-WÖRTERBUCH der gestempelten Bau-Quellen (userData.inventar am
         // Bau-Chokepoint; die einst 222 unbekannten Emitter, per Instrumentierung an der
         // QUELLE geklärt statt geraten):
-        //   streu-klein    — _acquireScatterMesh (KLEIN_VEGETATION je Chunk, kein Studio-Zwilling)
-        //   deko-fernfeld  — _buildDekoFernfeldSpecies (Fern-Impostor-Ring derselben Familie)
+        //   streu-klein    — _streuNahMesh (KLEIN_VEGETATION, EINE InstancedMesh je Art, kein Studio-Zwilling)
+        //   deko-fernfeld  — _dekoFernSetzen (Fern-Impostor-Ring derselben Familie; seit Welle B trägt dieselbe
+        //                    Art-Mesh hinter dem Fern-Block die Deck-Streu — der Zwilling `deck-streu` fiel)
         //   boden-satz     — _chunkSatz("boden") (Welle B: der Terrain-Ring als EIN Satz, Stitch-Bänder
         //                    eingeschlossen — die Chunk-Meshes sind CPU-Körper ausserhalb der Szene)
         //   wetter-regen   — _ensureRainSystem (Niederschlags-Punkte, nur bei rainy/stormy sichtbar)
-        //   deck-streu     — die Vor-Bau-Stufe des Fernfelds (Deck-Streu, 20.07.: Vegetation vor dem
-        //                    Bau, dieselbe Familie wie deko-fernfeld; V18.492 ins Wörterbuch)
         // FAIL-CLOSED: ein Stempel, den das Wörterbuch nicht kennt, ist eine VERLETZUNG.
         const INVENTAR = {
             "streu-klein": { b: "substanz", why: "streu-klein (KLEIN_VEGETATION, kein Studio-Zwilling)" },
             "deko-fernfeld": { b: "substanz", why: "deko-fernfeld (Fern-Impostor der kleinen Streu)" },
             "boden-satz": { b: "substanz", why: "boden-satz (Terrain-Ring + Stitch als EIN Satz)" },
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
-            "deck-streu": { b: "substanz", why: "deck-streu (Vor-Bau-Stufe des Fernfelds)" },
         };
         const chainOf = (node) => {
             const c = [];

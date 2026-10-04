@@ -104,10 +104,11 @@ class AnazhRealm {
             voxelChunkGrass: null,
             // GPU-instanzierte Klein-Vegetation aus den VIER worldFieldAt-Feldern: reine Deko (keine Physik),
             // am Voxel-Chunk-Lifecycle, je Art konstanter Cap (Uniform-Capacity) + Distanz-LOD.
-            // voxelChunkScatter = Map<chunkKey, InstancedMesh[]>; _scatterMeshPools/_scatterMats/_scatterGeoms
-            // = Map<artName, mesh[] | NodeMaterial | BufferGeometry-Singleton>.
+            // voxelChunkScatter = Map<chunkKey, [{name, n}]> (die Block-Größen je Art); die Blöcke wohnen im
+            // Streu-Satz streuNah = Map<artName, {mesh, bloecke, …}> (EINE InstancedMesh je Art, Welle B);
+            // _scatterMats/_scatterGeoms = Map<artName, NodeMaterial | BufferGeometry-Singleton>.
             voxelChunkScatter: null,
-            _scatterMeshPools: null,
+            streuNah: null,
             _scatterMats: null,
             _scatterGeoms: null,
             // Wasser-Mesh je Voxel-Chunk (Map<key, Mesh|null>) — der EINZIGE Wasser-Render-Pfad, gebaut aus
@@ -19299,8 +19300,7 @@ class AnazhRealm {
     static get KLEIN_VEGETATION_SPECIES() {
         // Die LEBENDEN Streu-Arten in DREI Gestalt-Varianten je Art (blume/farn/gestrüpp/schilf). Jede
         // Variante teilt die Affinitäts-Daten (field/floor/kronen) und konkurriert als eigene Art; perCell ÷ 3
-        // und pool ÷ 3 → Gesamt-Dichte + Speicher bleiben. Tags emergieren via ernte→kraut, nie aus
-        // species.name.
+        // → die Gesamt-Dichte bleibt. Tags emergieren via ernte→kraut, nie aus species.name.
         return [
             // === BLUME × 3 (Tulpe · Klee · Mohn) ===
             {
@@ -19311,7 +19311,6 @@ class AnazhRealm {
                 kronen: "lichtung",
                 perCell: 1.1,
                 cap: 200,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19328,7 +19327,6 @@ class AnazhRealm {
                 kronen: "lichtung",
                 perCell: 1.1,
                 cap: 200,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19345,7 +19343,6 @@ class AnazhRealm {
                 kronen: "lichtung",
                 perCell: 1.0,
                 cap: 180,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19365,7 +19362,6 @@ class AnazhRealm {
                 kronen: "unter",
                 perCell: 0.8,
                 cap: 160,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19384,7 +19380,6 @@ class AnazhRealm {
                 kronen: "unter",
                 perCell: 0.8,
                 cap: 160,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19403,7 +19398,6 @@ class AnazhRealm {
                 kronen: "unter",
                 perCell: 0.8,
                 cap: 160,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19421,7 +19415,6 @@ class AnazhRealm {
                 kronen: "rand",
                 perCell: 0.6,
                 cap: 110,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19438,7 +19431,6 @@ class AnazhRealm {
                 kronen: "rand",
                 perCell: 0.6,
                 cap: 110,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19455,7 +19447,6 @@ class AnazhRealm {
                 kronen: "rand",
                 perCell: 0.6,
                 cap: 110,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19473,7 +19464,6 @@ class AnazhRealm {
                 floor: 0.46,
                 perCell: 1.4,
                 cap: 256,
-                pool: 32,
                 wind: false,
                 emissive: false,
                 yOff: -0.05,
@@ -19491,7 +19481,6 @@ class AnazhRealm {
                 floor: 0.62,
                 perCell: 1.6,
                 cap: 224,
-                pool: 28,
                 wind: false,
                 emissive: true,
                 yOff: 0.5,
@@ -19509,7 +19498,6 @@ class AnazhRealm {
                 floor: 0.55,
                 perCell: 1.3,
                 cap: 200,
-                pool: 28,
                 wind: false,
                 emissive: true,
                 emissiveBoost: 1.15,
@@ -19531,7 +19519,6 @@ class AnazhRealm {
                 minGen: 2,
                 perCell: 0.9,
                 cap: 100,
-                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19548,7 +19535,6 @@ class AnazhRealm {
                 minGen: 2,
                 perCell: 0.9,
                 cap: 100,
-                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19565,7 +19551,6 @@ class AnazhRealm {
                 minGen: 2,
                 perCell: 0.9,
                 cap: 100,
-                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -33223,73 +33208,122 @@ class AnazhRealm {
         mat.positionNode = sway ? positionLocal.add(sway) : positionLocal;
     }
 
-    // Pool-Recycling je Art (`state._scatterMeshPools` = Map<name, mesh[]>, eigener `pool`-Cap);
-    // Geometry + Material sind Art-Singletons. Alle Meshes einer Art haben denselben `cap` → keine
-    // Bind-Group-Cache-Verschmutzung (Uniform-Capacity).
-    _acquireScatterMesh(species) {
-        if (!this.state._scatterMeshPools) this.state._scatterMeshPools = new Map();
-        let pool = this.state._scatterMeshPools.get(species.name);
-        if (!pool) {
-            pool = [];
-            this.state._scatterMeshPools.set(species.name, pool);
-        }
-        if (pool.length > 0) {
-            const m = pool.pop();
-            m.visible = true;
-            m.count = 0;
-            return m;
-        }
-        const geo = this._scatterSpeciesGeometry(species);
-        const mat = this._scatterMaterial(species);
-        if (!geo || !mat) return null;
-        const inst = AnazhRealm._instanzMesh(geo, mat, species.cap);
-        inst.count = 0;
-        inst.castShadow = false;
-        inst.receiveShadow = !species.emissive;
-        // Identitäts-Stempel am Bau-Chokepoint (gate:asset-inventory): die kleine Streu (KLEIN_VEGETATION,
-        // bewusst ohne Studio-Zwilling) trägt ihre Inventar-Klasse. Hier, nicht am Aufrufer: der Pool
-        // recycelt das Mesh samt Stempel.
-        inst.userData.inventar = "streu-klein";
-        return inst;
+    // ═══ DER STREU-SATZ (Welle B) ═══
+    // Die Klein-Streu folgt dem Gesetz des Fernfelds („EIN InstancedMesh je Art“): je Art EINE InstancedMesh
+    // `streuNah:<art>` für den ganzen Nah-Band-Ring, ein Chunk ist ein BLOCK darin (Block-Tabelle chunkKey →
+    // {start, n} in Puffer-Ordnung). Befund: 188 Klein-Streu-Meshes (je Chunk und Art eine Pool-InstancedMesh,
+    // je eine im Region-Bundle) für 15 Arten. Ein Eintritt hängt seinen Block hinten an, ein Austritt rückt die
+    // folgenden Blöcke nach (copyWithin) — beides ein Teil-Upload ab dem geänderten Slot. Eine leere Art ist
+    // unsichtbar (kein Befehl). Die Instanz-Identität für Ernte und Pick bleibt `${art}:${i}` je Chunk.
+    _streuNahArt(sp) {
+        const st = this.state;
+        if (!st.streuNah) st.streuNah = new Map();
+        let a = st.streuNah.get(sp.name);
+        if (a) return a;
+        const geo = this._scatterSpeciesGeometry(sp);
+        const mat = this._scatterMaterial(sp);
+        if (!geo || !mat) throw new Error(`_streuNahArt(${sp.name}): Geometrie oder Material fehlt`);
+        a = {
+            sp,
+            name: sp.name,
+            geo,
+            mat,
+            tint: !!(mat.userData && mat.userData.useInstanceTint),
+            mesh: null,
+            kap: 0,
+            anzahl: 0,
+            bloecke: new Map(),
+            ordnung: [],
+            wachse: 0,
+        };
+        this._streuNahMesh(a, Math.max(64, sp.cap * 4));
+        st.streuNah.set(sp.name, a);
+        return a;
     }
 
-    _releaseScatterMesh(species, mesh) {
-        if (!mesh) return;
-        if (!this.state._scatterMeshPools) this.state._scatterMeshPools = new Map();
-        let pool = this.state._scatterMeshPools.get(species.name);
-        if (!pool) {
-            pool = [];
-            this.state._scatterMeshPools.set(species.name, pool);
+    // Die Art-InstancedMesh (neu oder gewachsen ×1,5): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
+    _streuNahMesh(a, kap) {
+        const alt = a.mesh;
+        const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
+        m.name = "streuNah:" + a.name;
+        m.castShadow = false;
+        m.receiveShadow = !a.sp.emissive;
+        m.frustumCulled = false; // der Nah-Band-Ring umspannt den Spieler
+        m.userData.inventar = "streu-klein";
+        if (a.tint) m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(kap * 3).fill(1), 3);
+        if (alt) {
+            m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
+            if (a.tint) m.instanceColor.array.set(alt.instanceColor.array.subarray(0, a.anzahl * 3));
+            if (alt.parent) alt.parent.remove(alt);
+            alt.dispose();
+            a.wachse++;
         }
-        this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
-        mesh.visible = false;
-        mesh.count = 0;
-        const cap = species.pool || 16;
-        if (pool.length >= cap) {
-            const oldest = pool.shift();
-            if (oldest && oldest.instanceMatrix && typeof oldest.instanceMatrix.array !== "undefined") {
-                oldest.instanceMatrix.array = null;
-            }
-        }
-        pool.push(mesh);
+        m.count = a.anzahl;
+        m.visible = a.anzahl > 0;
+        a.mesh = m;
+        a.kap = kap;
+        if (!this.state.scene) throw new Error(`_streuNahMesh(${a.name}): keine Szene`);
+        this.state.scene.add(m);
     }
 
-    // Definiert + test-bewacht, im Produktions-Pfad nicht verdrahtet (Reload räumt
-    // auf → Leak-Schutz-Saat, V18-Audit).
-    _drainScatterMeshPools() {
-        if (!this.state._scatterMeshPools) {
-            this.state._scatterMeshPools = new Map();
-            return;
+    // Ein Chunk-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Arten) — hinten angehängt.
+    _streuNahEin(a, chunkKey, matrizen, farben) {
+        if (a.bloecke.has(chunkKey)) this._streuNahAus(a.name, chunkKey);
+        const n = matrizen.length / 16;
+        if (a.tint && (!farben || farben.length !== n * 3))
+            throw new Error(`_streuNahEin(${a.name}, ${chunkKey}): die Tint-Art braucht n×3 Farben`);
+        if (a.anzahl + n > a.kap) this._streuNahMesh(a, Math.max(a.anzahl + n, Math.ceil(a.kap * 1.5)));
+        const m = a.mesh;
+        const start = a.anzahl;
+        m.instanceMatrix.array.set(matrizen, start * 16);
+        m.instanceMatrix.addUpdateRange(start * 16, n * 16);
+        m.instanceMatrix.needsUpdate = true;
+        if (a.tint) {
+            m.instanceColor.array.set(farben, start * 3);
+            m.instanceColor.addUpdateRange(start * 3, n * 3);
+            m.instanceColor.needsUpdate = true;
         }
-        for (const pool of this.state._scatterMeshPools.values()) {
-            for (const mesh of pool) {
-                this._archBundleSceneRemove(mesh); // Bundle-Parent-bewusst
-                if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
-                    mesh.instanceMatrix.array = null;
-                }
+        a.anzahl += n;
+        a.bloecke.set(chunkKey, { start, n });
+        a.ordnung.push(chunkKey);
+        m.count = a.anzahl;
+        m.visible = a.anzahl > 0;
+        m.boundingSphere = null; // der Pick-Raycast cullt gegen die Hülle
+    }
+
+    // Ein Chunk-Block tritt aus: die folgenden Blöcke rücken nach, ihre Starts sinken um n.
+    _streuNahAus(name, chunkKey) {
+        const a = this.state.streuNah ? this.state.streuNah.get(name) : null;
+        const b = a ? a.bloecke.get(chunkKey) : null;
+        if (!b) return false;
+        const m = a.mesh;
+        const ende = b.start + b.n;
+        if (ende < a.anzahl) {
+            m.instanceMatrix.array.copyWithin(b.start * 16, ende * 16, a.anzahl * 16);
+            m.instanceMatrix.addUpdateRange(b.start * 16, (a.anzahl - ende) * 16);
+            m.instanceMatrix.needsUpdate = true;
+            if (a.tint) {
+                m.instanceColor.array.copyWithin(b.start * 3, ende * 3, a.anzahl * 3);
+                m.instanceColor.addUpdateRange(b.start * 3, (a.anzahl - ende) * 3);
+                m.instanceColor.needsUpdate = true;
             }
-            pool.length = 0;
         }
+        a.anzahl -= b.n;
+        a.bloecke.delete(chunkKey);
+        const i = a.ordnung.indexOf(chunkKey);
+        a.ordnung.splice(i, 1);
+        for (let k = i; k < a.ordnung.length; k++) a.bloecke.get(a.ordnung[k]).start -= b.n;
+        m.count = a.anzahl;
+        m.visible = a.anzahl > 0;
+        m.boundingSphere = null;
+        return true;
+    }
+
+    // Der Bereich eines Chunks in seiner Art (Ernte, Sonden): {mesh, start, n} oder null.
+    _streuNahBereich(name, chunkKey) {
+        const a = this.state.streuNah ? this.state.streuNah.get(name) : null;
+        const b = a ? a.bloecke.get(chunkKey) : null;
+        return b ? { mesh: a.mesh, start: b.start, n: b.n } : null;
     }
 
     // Der EINE Streu-Mechanismus für alle Arten: jede Zelle EINMAL sampeln (worldFieldAt + Surface +
@@ -33427,7 +33461,7 @@ class AnazhRealm {
                 }
             }
         }
-        const meshes = [];
+        const liste = [];
         const m = new THREE.Matrix4();
         const q = new THREE.Quaternion();
         const pos = new THREE.Vector3();
@@ -33454,10 +33488,11 @@ class AnazhRealm {
             const items = buckets[si];
             if (items.length === 0) continue;
             const sp = species[si];
-            const inst = this._acquireScatterMesh(sp);
-            if (!inst) continue;
-            inst.count = items.length;
-            const wantTint = !!(inst.material && inst.material.userData && inst.material.userData.useInstanceTint);
+            // DER STREU-SATZ: der Block dieses Chunks in der Art-InstancedMesh (`_streuNahEin`).
+            const art = this._streuNahArt(sp);
+            const wantTint = art.tint;
+            const matrizen = new Float32Array(items.length * 16);
+            const farben = wantTint ? new Float32Array(items.length * 3) : null;
             for (let i = 0; i < items.length; i++) {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
@@ -33473,42 +33508,28 @@ class AnazhRealm {
                     scl.set(it.scale, it.scale, it.scale);
                 }
                 m.compose(pos, q, scl);
-                inst.setMatrixAt(i, m);
+                m.toArray(matrizen, i * 16);
                 if (wantTint) {
                     // Neutral-naher Tint: ±8 % Luminanz + ±3 % warm/kühl. Nie drei rohe RGB-Hashes — die zerstören die
                     // Arten-Farbe multiplikativ (rot/violette Farne, im Mittel 50 % zu dunkel).
                     const _tl = 0.92 + hashInstanceTint(cx, cz, si, i, 0) * 0.16;
                     const _tw = (hashInstanceTint(cx, cz, si, i, 1) - 0.5) * 0.06;
                     tintColor.setRGB(Math.min(1.08, _tl + _tw), _tl, Math.min(1.08, Math.max(0, _tl - _tw)));
-                    inst.setColorAt(i, tintColor);
+                    tintColor.toArray(farben, i * 3);
                 }
             }
-            inst.instanceMatrix.needsUpdate = true;
-            if (wantTint && inst.instanceColor) inst.instanceColor.needsUpdate = true;
-            // Frustum-Cull-Cache nach Pool-Recycle neu rechnen (die
-            // V11.0-d.fix.gras-Wurzel: stale boundingSphere cullt das Mesh raus).
-            if (inst.geometry && inst.geometry.boundingSphere === null) inst.geometry.computeBoundingSphere();
-            inst.boundingBox = null;
-            inst.boundingSphere = null;
-            if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
-            if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
-            this._chunkBundleAnker(inst, cx, cz); // CHUNK-EINBÜRGERUNG: Streu in die Region-BundleGroup
-            meshes.push({ name: sp.name, mesh: inst });
+            this._streuNahEin(art, key, matrizen, farben);
+            liste.push({ name: sp.name, n: items.length });
         }
-        this.state.voxelChunkScatter.set(key, meshes);
+        // Je Chunk die Liste seiner Arten mit Block-Größe (Idempotenz-Wache, Regrow, Sonden); der Block selbst
+        // wohnt in der Art (`_streuNahBereich`).
+        this.state.voxelChunkScatter.set(key, liste);
     }
 
     _disposeVoxelChunkScatter(key) {
         if (!this.state.voxelChunkScatter) return;
         const list = this.state.voxelChunkScatter.get(key);
-        if (list && list.length) {
-            const reg = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-            for (const it of list) {
-                const sp = reg.find((s) => s.name === it.name);
-                if (sp) this._releaseScatterMesh(sp, it.mesh);
-                else this._archBundleSceneRemove(it.mesh); // Bundle-Parent-bewusst
-            }
-        }
+        if (list) for (const it of list) this._streuNahAus(it.name, key); // DER STREU-SATZ: Block raus, Rest rückt nach
         this.state.voxelChunkScatter.delete(key);
     }
 
@@ -33616,18 +33637,17 @@ class AnazhRealm {
     }
 
     _pickScatterAtCrosshair() {
-        const sc = this.state.voxelChunkScatter;
-        if (!sc || sc.size === 0 || !this.state.camera) return null;
+        const sn = this.state.streuNah;
+        if (!sn || sn.size === 0 || !this.state.camera) return null;
         if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
         this.state.camera.getWorldDirection(this._tmpCamDir);
+        // Je Art EINE InstancedMesh (der Streu-Satz); die Block-Tabelle bildet instanceId auf (Chunk, Index) ab.
         const meshes = [];
-        const meta = new Map();
-        for (const [key, list] of sc) {
-            for (const it of list) {
-                if (!it.mesh || it.mesh.count === 0) continue;
-                meshes.push(it.mesh);
-                meta.set(it.mesh, { key, name: it.name });
-            }
+        const artVon = new Map();
+        for (const a of sn.values()) {
+            if (a.anzahl === 0) continue;
+            meshes.push(a.mesh);
+            artVon.set(a.mesh, a);
         }
         if (!meshes.length) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
@@ -33636,17 +33656,23 @@ class AnazhRealm {
         const hits = this._tmpRaycaster.intersectObjects(meshes, false);
         for (const hit of hits) {
             if (!hit.object || typeof hit.instanceId !== "number") continue;
-            const m = meta.get(hit.object);
-            if (!m) continue;
-            return { key: m.key, name: m.name, index: hit.instanceId, mesh: hit.object, point: hit.point };
+            const a = artVon.get(hit.object);
+            if (!a) continue;
+            for (const key of a.ordnung) {
+                const b = a.bloecke.get(key);
+                if (hit.instanceId >= b.start && hit.instanceId < b.start + b.n)
+                    return { key, name: a.name, index: hit.instanceId - b.start, point: hit.point };
+            }
         }
         return null;
     }
 
     _harvestScatterPick(pick) {
-        if (!pick || !pick.mesh) return false;
+        if (!pick) return false;
         const sp = AnazhRealm.KLEIN_VEGETATION_SPECIES.find((x) => x.name === pick.name);
         if (!sp || !sp.ernte) return false;
+        const bereich = this._streuNahBereich(pick.name, pick.key);
+        if (!bereich || !(pick.index >= 0 && pick.index < bereich.n)) return false;
         // Session-Gedaechtnis: `${art}:${index}` → Ernte-Zeit (der Build-Filter
         // + der Regrow-Tick lesen es). NICHT persistiert (Flora waechst nach).
         if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
@@ -33661,8 +33687,11 @@ class AnazhRealm {
         // Die Instanz verschwindet SOFORT (Skala 0 am selben Index — stabil).
         if (!this._tmpForageMat) this._tmpForageMat = new THREE.Matrix4();
         this._tmpForageMat.makeScale(0, 0, 0);
-        pick.mesh.setMatrixAt(pick.index, this._tmpForageMat);
-        pick.mesh.instanceMatrix.needsUpdate = true;
+        const slot = bereich.start + pick.index;
+        bereich.mesh.setMatrixAt(slot, this._tmpForageMat);
+        bereich.mesh.instanceMatrix.addUpdateRange(slot * 16, 16);
+        bereich.mesh.instanceMatrix.needsUpdate = true;
+        bereich.mesh.boundingSphere = null;
         const got = this.addMaterialToInventory(sp.ernte, 1);
         this.log(
             got ? `Gepflueckt: ${pick.name} → 1× ${sp.ernte}` : `Gepflueckt: ${pick.name} — aber das Inventar ist voll`,
@@ -33766,9 +33795,7 @@ class AnazhRealm {
     _tickDekoFernfeld() {
         const lpc = this.state.lastPlayerVoxelChunk;
         if (!lpc || !this.state.scene || !this.state.voxelChunks) return 0;
-        if (!this.state.dekoFernfeld)
-            this.state.dekoFernfeld = { anchor: null, queue: [], meshes: new Map(), chunkCount: 0 };
-        const ff = this.state.dekoFernfeld;
+        const ff = this._dekoFernfeldZustand();
         const anchor = `${lpc.cx},${lpc.cz}`;
         const size = this.state.voxelChunks.size;
         if (ff.anchor !== anchor || Math.abs(size - ff.chunkCount) > 8) {
@@ -33789,23 +33816,8 @@ class AnazhRealm {
         if (sp.minGen && this._genVersion() < sp.minGen) return; // Γ1 — schilf nur Genese ≥ 2
         const isGround389 = !!sp.kronen; // V18.389 (P2) — nur Bodendecker tragen die Kronendach-Reaktion
         const FF = AnazhRealm.DEKO_FERNFELD;
-        const ff = this.state.dekoFernfeld;
-        let inst = ff.meshes.get(sp.name);
-        if (!inst) {
-            const geo = this._scatterImpostorGeometry(sp);
-            const mat = this._scatterMaterial(sp);
-            if (!geo || !mat) return;
-            inst = AnazhRealm._instanzMesh(geo, mat, FF.cap);
-            inst.count = 0;
-            inst.castShadow = false;
-            inst.receiveShadow = false;
-            inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
-            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Fern-Impostor-Ring der
-            // kleinen Streu (dieselbe Familie wie streu-klein, nur die Fern-Stufe).
-            inst.userData.inventar = "deko-fernfeld";
-            this.state.scene.add(inst);
-            ff.meshes.set(sp.name, inst);
-        }
+        const ff = this._dekoFernfeldZustand();
+        const block = new Float32Array(FF.cap * 16);
         const atmoD =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
                 ? this.state.atmosphere.dekoDensity
@@ -33890,14 +33902,64 @@ class AnazhRealm {
                         q.setFromAxisAngle(up, rotK);
                         scl.set(sclK, sclK, sclK);
                         m.compose(pos, q, scl);
-                        inst.setMatrixAt(n, m);
+                        m.toArray(block, n * 16);
                         n++;
                     }
                 }
             }
         }
-        inst.count = n;
-        inst.instanceMatrix.needsUpdate = true;
+        ff.fern.set(sp.name, block.slice(0, n * 16));
+        this._dekoFernSetzen(sp);
+    }
+
+    // Der Zustand des Fern-Felds (Fern- UND Deck-Block je Art leben hier; lazy, beide Ticks lesen ihn).
+    _dekoFernfeldZustand() {
+        if (!this.state.dekoFernfeld)
+            this.state.dekoFernfeld = {
+                anchor: null,
+                queue: [],
+                meshes: new Map(),
+                chunkCount: 0,
+                fern: new Map(),
+                deck: new Map(),
+            };
+        return this.state.dekoFernfeld;
+    }
+
+    // EINE InstancedMesh je Art für die ganze Ferne (Welle B): der Fern-Block (gebaute Chunks im impostor-Band)
+    // und dahinter der Deck-Block (ungebaute Chunks jenseits des Rings) — dieselbe Geometrie, dasselbe Material,
+    // derselbe RNG-Strom; die Deck-Streu war ihr Zwilling mit eigener Mesh je Art. Eine leere Art zeichnet nicht.
+    _dekoFernSetzen(sp) {
+        const ff = this._dekoFernfeldZustand();
+        const FF = AnazhRealm.DEKO_FERNFELD;
+        let inst = ff.meshes.get(sp.name);
+        if (!inst) {
+            const geo = this._scatterImpostorGeometry(sp);
+            const mat = this._scatterMaterial(sp);
+            if (!geo || !mat) throw new Error(`_dekoFernSetzen(${sp.name}): Geometrie oder Material fehlt`);
+            inst = AnazhRealm._instanzMesh(geo, mat, 2 * FF.cap);
+            inst.castShadow = false;
+            inst.receiveShadow = false;
+            inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
+            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Fern-Impostor-Ring der
+            // kleinen Streu (dieselbe Familie wie streu-klein, nur die Fern-Stufe).
+            inst.userData.inventar = "deko-fernfeld";
+            if (!this.state.scene) throw new Error(`_dekoFernSetzen(${sp.name}): keine Szene`);
+            this.state.scene.add(inst);
+            ff.meshes.set(sp.name, inst);
+        }
+        const fern = ff.fern.get(sp.name);
+        const deck = ff.deck.get(sp.name);
+        const nF = fern ? fern.length / 16 : 0;
+        const nD = deck ? deck.length / 16 : 0;
+        if (fern) inst.instanceMatrix.array.set(fern, 0);
+        if (deck) inst.instanceMatrix.array.set(deck, nF * 16);
+        inst.count = nF + nD;
+        inst.visible = nF + nD > 0;
+        if (nF + nD > 0) {
+            inst.instanceMatrix.addUpdateRange(0, (nF + nD) * 16);
+            inst.instanceMatrix.needsUpdate = true;
+        }
     }
 
     // ═══ DIE DECK-STREU (Vegetation auf dem Fern-Deckel) ═══
@@ -33908,7 +33970,7 @@ class AnazhRealm {
     _tickDeckStreu() {
         const lpc = this.state.lastPlayerVoxelChunk;
         if (!lpc || !this.state.scene) return 0;
-        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [], meshes: new Map() };
+        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [] };
         const ds = this.state.deckStreu;
         const anchor = `${lpc.cx},${lpc.cz}`;
         if (ds.anchor !== anchor) {
@@ -33925,22 +33987,8 @@ class AnazhRealm {
         if (!sp || typeof THREE === "undefined") return;
         if (sp.minGen && this._genVersion() < sp.minGen) return;
         const FF = AnazhRealm.DEKO_FERNFELD;
-        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [], meshes: new Map() };
-        const ds = this.state.deckStreu;
-        let inst = ds.meshes.get(sp.name);
-        if (!inst) {
-            const geo = this._scatterImpostorGeometry(sp);
-            const mat = this._scatterMaterial(sp);
-            if (!geo || !mat) return;
-            inst = AnazhRealm._instanzMesh(geo, mat, FF.cap);
-            inst.count = 0;
-            inst.castShadow = false;
-            inst.receiveShadow = false;
-            inst.frustumCulled = false;
-            inst.userData.inventar = "deck-streu"; // H3-Identität: die Vor-Bau-Stufe des Fernfelds
-            this.state.scene.add(inst);
-            ds.meshes.set(sp.name, inst);
-        }
+        const ff = this._dekoFernfeldZustand();
+        const block = new Float32Array(FF.cap * 16);
         const atmoD =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
                 ? this.state.atmosphere.dekoDensity
@@ -34001,15 +34049,15 @@ class AnazhRealm {
                             q.setFromAxisAngle(up, rotK);
                             scl.set(sclK, sclK, sclK);
                             m.compose(pos, q, scl);
-                            inst.setMatrixAt(n, m);
+                            m.toArray(block, n * 16);
                             n++;
                         }
                     }
                 }
             }
         }
-        inst.count = n;
-        inst.instanceMatrix.needsUpdate = true;
+        ff.deck.set(sp.name, block.slice(0, n * 16));
+        this._dekoFernSetzen(sp);
     }
 
     // Wasserfall-Material (ruht: die Plane ist geschnitten, es bleibt für eine eigene Vertikal-Form; der
@@ -62381,31 +62429,6 @@ class AnazhRealm {
         }
     }
 
-    // ═══ DIE CHUNK-EINBÜRGERUNG ═══
-    // Die statischen Chunk-Populationen (Terrain-Boden · LOD-Stitch · Gras · Streu · Wasser-Sheet/Iso;
-    // Animation = geteilte Takt-Uniforms, im Replay lebendig) ziehen in die Region-BundleGroups
-    // (p:-Keying, EIN Ableitungs-Ort wie _archPlacedRegionKey) — als direkte Szene-Kinder zahlten sie je
-    // Frame den vollen renderObject-Walk. Rebuild/Pool = Remove+Add = Re-Record nur der Region.
-    _chunkBundleRegionKey(cx, cz) {
-        const cfg = this._voxelChunkConfig();
-        const span = cfg && Number.isFinite(cfg.span) ? cfg.span : 43.2;
-        const R = AnazhRealm.ARCH_REGION_M;
-        return "p:" + Math.floor((cx * span) / R) + "," + Math.floor((cz * span) / R);
-    }
-    _chunkBundleAnker(mesh, cx, cz) {
-        if (!mesh) return;
-        let bundle = null;
-        if (Number.isFinite(cx) && Number.isFinite(cz))
-            bundle = this._archRegionBundleFor(this._chunkBundleRegionKey(cx, cz));
-        if (bundle) {
-            mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
-            bundle.add(mesh);
-            bundle.needsUpdate = true;
-            this._bundleKugelWeite(bundle, mesh);
-            this._bundleReifeWache(mesh);
-        } else if (this.state.scene) this.state.scene.add(mesh);
-    }
-
     // ═══ DER SATZ (Welle B) ═══
     // Die Draw-Einheit ist Material × Geometrie über den ganzen Ring, nie Chunk × Material. Befund (Inventur der
     // echten GPU, Mess-Wiese): 78 Chunk-Böden zeichneten in JEDEM Pass einzeln — 234 GPU-Befehle, weil der Vendor
@@ -62723,28 +62746,6 @@ class AnazhRealm {
                 if (p && p.isBundleGroup === true) p.needsUpdate = true;
             });
     }
-    // Die Region-Kugel MUSS ihren Inhalt decken (Unter-Inklusion = Pop): Berg-Chunks ragen über den
-    // Höhen-Puffer → die Kugel wächst am Add um die Hülle des Neulings.
-    _bundleKugelWeite(bundle, mesh) {
-        const s = bundle && bundle.userData && bundle.userData.cullSphere;
-        if (!s || !mesh) return;
-        let bs = null;
-        try {
-            if (mesh.isInstancedMesh === true && typeof mesh.computeBoundingSphere === "function") {
-                if (!mesh.boundingSphere) mesh.computeBoundingSphere();
-                bs = mesh.boundingSphere;
-            } else if (mesh.geometry) {
-                if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
-                bs = mesh.geometry.boundingSphere;
-            }
-        } catch (_e) {
-            return;
-        }
-        if (!bs || !Number.isFinite(bs.radius) || bs.radius <= 0) return;
-        const d = s.center.distanceTo(bs.center) + bs.radius;
-        if (d > s.radius) s.radius = d;
-    }
-
     // ═══ DER BERG-SCHATTEN (feld-natives Hi-Z) ═══
     // Verdeckung aus dem EIGENEN Gesetz statt Depth-Pyramide: Sichtlinie Kamera → Kugel-OBERKANTE gegen
     // `_terrainMacroSurfaceY`, drei Azimut-Linien (Mitte ± Radius); nur wenn ALLE drei überragt sind, ist
