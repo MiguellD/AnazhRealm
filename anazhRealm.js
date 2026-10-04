@@ -68402,6 +68402,10 @@ class AnazhRealm {
             const si = o.isSkinnedMesh && o.skeleton ? o.geometry.attributes.skinIndex : null;
             if (si) {
                 const pa = o.geometry.attributes.position;
+                // Die Farbe reist mit dem Stück: die Tier-Haut trägt ihre Albedo als Vertex-Farbe (Material weiß,
+                // colorNode) — ein Stück nur aus Positionen fiel im Fit auf das Material-Weiß (gemessen 04.10. an
+                // der Mess-Wiese: alle Glieder von Fuchs, Reh und Bär 255,255,255 — die weiße Wurst am Boden).
+                const ca = o.geometry.attributes.color || null;
                 const proBone = new Map();
                 for (let i = 0; i < pa.count; i++) {
                     const b = si.getX(i);
@@ -68414,13 +68418,21 @@ class AnazhRealm {
                     const inv = o.skeleton.boneInverses[b];
                     if (!bone || !inv) continue;
                     const arr = new Float32Array(liste.length * 3);
+                    const farr = ca ? new Float32Array(liste.length * 3) : null;
                     for (let n = 0; n < liste.length; n++) {
                         arr[n * 3] = pa.getX(liste[n]);
                         arr[n * 3 + 1] = pa.getY(liste[n]);
                         arr[n * 3 + 2] = pa.getZ(liste[n]);
+                        if (farr) {
+                            farr[n * 3] = ca.getX(liste[n]);
+                            farr[n * 3 + 1] = ca.getY(liste[n]);
+                            farr[n * 3 + 2] = ca.getZ(liste[n]);
+                        }
                     }
+                    const attribute = { position: new THREE.BufferAttribute(arr, 3) };
+                    if (farr) attribute.color = new THREE.BufferAttribute(farr, 3);
                     const stueck = {
-                        geometry: { attributes: { position: new THREE.BufferAttribute(arr, 3) } },
+                        geometry: { attributes: attribute },
                         material: o.material,
                         matrixWorld: new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, inv).multiply(o.bindMatrix),
                     };
@@ -68484,38 +68496,57 @@ class AnazhRealm {
     }
 
     // Kapsel-Fit: Glied-Meshes im Knochen-LOKALEN Raum → EINE Kapsel entlang der größten Ausdehnung
-    // (Radius = Mittel der Neben-Halbachsen), Farbe = Mittel der Vertex-/Material-Farben. Mehr Kapseln je
-    // Glied wären eine Verfeinerung DERSELBEN Bahn, nie ein neues System.
+    // (Radius = Mittel der Neben-Halbachsen), Farbe = Mittel der Vertex-/Material-Farben je Teil, nach Fläche
+    // gewogen. Mehr Kapseln je Glied wären eine Verfeinerung DERSELBEN Bahn, nie ein neues System.
     _gliedKapselFit(meshes, wurzelInv) {
         if (!meshes || !meshes.length || typeof THREE === "undefined") return null;
         const v = new THREE.Vector3();
         const mL = new THREE.Matrix4();
         const bb = new THREE.Box3();
+        const bbT = new THREE.Box3();
+        const gr = new THREE.Vector3();
         bb.makeEmpty();
+        // Die Farbe ist das Mittel, das man von fern SIEHT: je Teil sein Vertex-Mittel, gewogen mit der Hüll-Fläche des
+        // Teils — nicht je Vertex (Augäpfel und Zähne tragen viele Vertices auf wenig Fläche; das Reh-Haupt lag
+        // vertex-gemittelt bei 86,70,58 statt am Fell).
         let fr = 0,
             fg = 0,
             fb = 0,
-            fn = 0;
+            fw = 0;
         for (const o of meshes) {
             mL.multiplyMatrices(wurzelInv, o.matrixWorld);
             const pos = o.geometry.attributes.position;
             const col = o.geometry.attributes.color || null;
             const mc = !col && o.material && o.material.color ? o.material.color : null;
             const schritt = pos.count > 4000 ? Math.ceil(pos.count / 4000) : 1;
+            bbT.makeEmpty();
+            let tr = 0,
+                tg = 0,
+                tb = 0,
+                tn = 0;
             for (let i = 0; i < pos.count; i += schritt) {
-                bb.expandByPoint(v.fromBufferAttribute(pos, i).applyMatrix4(mL));
+                v.fromBufferAttribute(pos, i).applyMatrix4(mL);
+                bb.expandByPoint(v);
+                bbT.expandByPoint(v);
                 if (col) {
-                    fr += col.getX(i);
-                    fg += col.getY(i);
-                    fb += col.getZ(i);
-                    fn++;
+                    tr += col.getX(i);
+                    tg += col.getY(i);
+                    tb += col.getZ(i);
+                    tn++;
                 } else if (mc) {
-                    fr += mc.r;
-                    fg += mc.g;
-                    fb += mc.b;
-                    fn++;
+                    tr += mc.r;
+                    tg += mc.g;
+                    tb += mc.b;
+                    tn++;
                 }
             }
+            if (!tn || bbT.isEmpty()) continue;
+            bbT.getSize(gr);
+            const flaeche = Math.max(1e-6, 2 * (gr.x * gr.y + gr.y * gr.z + gr.z * gr.x));
+            fr += (tr / tn) * flaeche;
+            fg += (tg / tn) * flaeche;
+            fb += (tb / tn) * flaeche;
+            fw += flaeche;
         }
         if (bb.isEmpty()) return null;
         const c = bb.getCenter(new THREE.Vector3());
