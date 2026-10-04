@@ -110,8 +110,12 @@ function pageHtml() {
   window.__aget = (type) => ask({ type });                 // get-recipes / -world-params / -render-config
   window.__build = (msg) => ask(Object.assign({ type: "build-asset" }, msg)).then((r) => ({
     presetId: r.presetId, seed: r.seed, lod: r.lod, cv: r.cv,
+    budget: r.budget || null, budgetBruch: r.budgetBruch || null,
     meshes: (r.meshes || []).map((m) => {
       const out = { kind: m.kind, mat: m.mat, attrs: {} };
+      // Scharnier + Gelenk reisen mit (die Draw-Regel liest sie; der Fingerabdruck nicht).
+      if (m.tuer) out.tuer = m.tuer;
+      if (m.joint) out.joint = m.joint;
       for (const k of Object.keys(m)) {
         if (m[k] && m[k].array && m[k].itemSize) out.attrs[k] = { itemSize: m[k].itemSize, b64: b64(m[k].array) };
       }
@@ -119,6 +123,32 @@ function pageHtml() {
       return out;
     }),
   }));
+  // DIE KOSTEN VIELER STUFEN (W8, ohne Puffer-Transport): jede Stufe gebaut über die echte Brücke, gezählt mit
+  // DERSELBEN Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen); die Brücken-Antwort trägt ihren Budget-
+  // Bericht mit. Die Liste läuft über einen Arbeits-Pool (dieselbe Boot-Kette je Worker; der erste ist der Haupt-Worker).
+  const pool = [ask];
+  const poolMehr = (n) => {
+    while (pool.length < n) {
+      const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+      const pend = new Map();
+      w.onmessage = (ev) => { const m = ev.data; const p = m && pend.get(m.reqId); if (p) { pend.delete(m.reqId); p(m); } };
+      pool.push((msg) => new Promise((res) => { const reqId = "p" + seq++; pend.set(reqId, res); w.postMessage(Object.assign({ reqId }, msg)); }));
+    }
+  };
+  window.__kostenListe = async (liste) => {
+    poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
+    const out = new Array(liste.length);
+    let next = 0;
+    await Promise.all(pool.map(async (frag) => {
+      while (next < liste.length) {
+        const i = next++;
+        const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
+        const k = window.__phytoCore.budgetSippen(r.meshes || []);
+        out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null };
+      }
+    }));
+    return out;
+  };
 })();
 </script></body>`;
 }
@@ -159,9 +189,17 @@ async function runWithWorker(port, cb) {
         if (st.error) throw new Error("WORKER-BOOT: " + st.error);
         if (!st.ready) throw new Error("Worker ready-Timeout");
         const build = (msg) => page.evaluate((m) => window.__build(m), msg);
+        // In Scheiben zu 120 Stufen: jede Scheibe ein eigener evaluate (der protocolTimeout gilt je Ruf — 2 224
+        // Zweit-Kern-Stufen in EINEM Ruf rissen ihn unter Last).
+        const kostenListe = async (liste) => {
+            const out = [];
+            for (let i = 0; i < liste.length; i += 120)
+                out.push(...(await page.evaluate((l) => window.__kostenListe(l), liste.slice(i, i + 120))));
+            return out;
+        };
         const getData = (type) => page.evaluate((t) => window.__aget(t), type);
         const atlas = () => page.evaluate(() => window.__atlas());
-        const out = await cb({ build, getData, atlas, pageErrors });
+        const out = await cb({ build, kostenListe, getData, atlas, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {

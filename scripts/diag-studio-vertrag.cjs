@@ -578,6 +578,32 @@ function validateManifest(m) {
     );
     console.log(`      Budget (B2c) trägt: ${Object.keys(budgets).join(", ") || "—"}`);
 
+    // W8 — DAS BUDGET-GESETZ HAT SEINE LESER (Quell-Proben, Kommentare gestrippt): die Brücke faltet jede Zweit-Kern-
+    // Gestalt am Ausgang (`__replyBuildAsset` → phyto-core budgetErzwingen auf der Zeile des EIGENEN Kerns), der
+    // Sync-Guss des Wirts-Ofens (Tier UND Mensch) verlässt das Studio an derselben Stelle (`_ofenBudget`), und der
+    // Material-Cache des Wirts keyt mit DERSELBEN Stoff-Identität (budgetStoff), mit der das Gesetz zählt.
+    const phytoNC = fs
+        .readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/[^\n]*/g, "");
+    const leserUrteil = (realmSrc, phytoSrc) => {
+        const f = [];
+        const reply = phytoSrc.match(/function __replyBuildAsset\(msg\) \{[\s\S]*?\n {4}\}\n/);
+        if (!reply || !/if \(isZweitKern\) \{[\s\S]*?budgetZeile\(zweit\.kern\.PORTAL_RENDER_CONFIG[\s\S]*?budgetErzwingen\(meshes/.test(reply[0]))
+            f.push("Brücke: __replyBuildAsset faltet die Zweit-Kern-Gestalt nicht (budgetErzwingen)");
+        const ofen = realmSrc.match(/\n {4}_ofenBudget\(core, kind, lod, eintraege, name\) \{[\s\S]*?\n {4}\}/);
+        if (!ofen || !/budgetErzwingen\(eintraege/.test(ofen[0])) f.push("Wirt: _ofenBudget faltet nicht");
+        const ofenRufe = (realmSrc.match(/this\._ofenAssembleAsset\(this\._ofenBudget\(core, "(kreatur|koerper)"/g) || []).length;
+        if (ofenRufe !== 2) f.push(`Wirt: der Sync-Guss läuft ${ofenRufe}/2 mal durch _ofenBudget (Tier + Mensch)`);
+        if (!/const key = globalThis\.__phytoCore\.budgetStoff\(kind, mp\)/.test(realmSrc))
+            f.push("Wirt: _foundryTreeMaterial keyt nicht mit budgetStoff");
+        return f;
+    };
+    const lU = leserUrteil(realm, phytoNC);
+    check("W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel)", lU.length === 0, lU[0] || "");
+    const lSelbst = leserUrteil(realm.replace("budgetErzwingen(eintraege", "budgetSippen(eintraege"), phytoNC);
+    check("SELBST-TEST: ein Ofen ohne Faltung feuert die Leser-Probe", lSelbst.some((s) => s.includes("_ofenBudget")));
+
     // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
     // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
     // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).

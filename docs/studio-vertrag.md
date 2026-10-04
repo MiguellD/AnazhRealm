@@ -96,11 +96,34 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - DARF-Regler einer Stufe (Form geprüft): `blattKarte` / `nadelKarte` (Kartenkante in Blatt- bzw.
   Nadel-Längen, endlich > 0) · `klinge` (Kontur-Segmente der Klinge, ganze Zahl ≥ 2) · `deckung` (Band
   [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
+- `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die
+  gebaute Hülle `tris` darüber liegt — offen und benannt, die Wand druckt den Faktor; erreicht die Stufe
+  das Band, fällt das Feld und `tris` IST das Band. `tris` bleibt die Ratsche (darf nur fallen).
+- `gestalten` (je Rezept, ganze Zahl ≥ 1): wie viele Individuen (Samen 1..V) die Welt von einem Rezept
+  trägt (`_foundryVariantFor`). Der Haupt-Kern trägt dazu die `'*'`-Zeile (jede Pflanzen-/Fels-Art ohne
+  eigene Zeile); ein Zweit-Kern zählt JEDES eigene Rezept selbst, kein fremdes, keine `'*'`-Zeile (W8:
+  das Wirts-16 gehört dem Gesetzbuch).
+- **Das Budget-Gesetz (W8, phyto-core `budgetErzwingen`):** der EINE Ausgang jeder Zweit-Kern-Gestalt —
+  die Brücke (`__replyBuildAsset`) UND der Sync-Guss des Wirts-Ofens (`_ofenBudget`, Tier + Mensch)
+  falten eine Stufe über `draws` auf ihre Zeile: Stoffe (der Wirts-Material-Schlüssel `budgetStoff`; die
+  Farbe reist als Vertex-Farbe) fallen innerhalb ihrer Bindungs-Klasse (starr · Haut · je Tür-Flügel ·
+  Schalen-Fell) zusammen, der kleinere in den nächsten (Rauheit · Metall · Art · Seite …), Glut faltet nie;
+  Flügel-Teile werden je Flügel × Stoff EIN Teil (das Scharnier reist mit). Innerhalb der Zeile ist es ein
+  No-op (byte-gleich). Dreiecke faltet es nicht: über `tris` oder bleibend über `draws` reist ein
+  `budgetBruch` mit, der Wirt loggt ERROR, die Wand wird rot — nie still.
+- **Transport:** jeder Zweit-Kern reist sein `lod.budget` unter `cfg.lod.zusatzBudget[<id>]` (neben
+  `zusatzKindStages`, N7.5); der EINE Merge `kerneVereinen` (phyto-core, gerufen NUR in
+  `_foundryIngestRenderConfig`) legt die Zeilen je Art und die Gestalten je Rezept disjunkt first-wins in
+  `lod.budget`.
 - **Konsum:** `gate:asset-contract` baut jede gelieferte Gitter-Stufe über die echte Brücke (Goldens +
-  jedes Rezept der Art bei Samen 7) und hält Dreiecke ≤ `tris`, Sippen ≤ `draws` — Rot nennt den Täter;
-  der Selbsttest halbiert jede Zeile (und senkt `draws` um eins) und MUSS rot werden.
-- v1.3 trägt es foundry-core (tree · shrub · grass · flower · rock); die Zweit-Kerne folgen mit der
-  Studio-Übertragung (Transport `zusatzBudget`, offen).
+  jedes Rezept der Art bei Samen 7; jedes Zweit-Kern-Rezept über JEDEN Samen 1..V seiner Gestalten) und
+  hält Dreiecke ≤ `tris`, Draws ≤ `draws` (phyto-core `budgetSippen`, die Regel des Wirts) — Rot nennt den
+  Täter; Selbsttests: jede Zeile halbiert MUSS rot werden, ohne `zusatzBudget` fehlt das Budget für alle
+  sechs Zweit-Kerne, je Zweit-Art liegt ≥ 1 Fall ungefaltet über `draws` (die Faltung ist der Konsument).
+  Im Wirt: `gate:portal-gestalt` (das Tor kommt auf `gate[0].draws` an, ≤ 8 Flügel-Slots) und
+  `gate:kreatur-kosten` (Ofen-Guss).
+- Es tragen: foundry-core (tree · shrub · grass · flower · rock · gestalten) und alle sechs Zweit-Kerne
+  (vehicle · gate · weapon · haus · koerper · kreatur); klang trägt keine Gestalt und kein Budget.
 
 ### B3 — PLACEMENT (SOLL)
 
@@ -289,6 +312,7 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 | ----- | ----------------------- | ------------------- | -------------- |
 | B1 REZEPTE | ✅ 15 Rezepte, 5 kinds | vehicle-core: PRESETS+CULTURES | ✅ porta-core: 7 Ordnungen `kind:"gate"` |
 | B2 BUILD | ✅ buildInstance, LOD 0/1/2, Goldens v1 | buildVehicle → v3-Goldens | ✅ buildInstance → v4-Goldens (`gate:porta-contract`) |
+| B2c BUDGET | ✅ tree · shrub · grass · flower · rock + gestalten | ✅ vehicle[0] (12 Draws, W8) | ✅ gate[0] (16 Draws, Flügel × Stoff, W8) |
 | B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | ✅ als Rezept-Daten: `fx.place {mode:"site", siteTag:"tor"}` (N5.6 — streut heute nicht) |
 | B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | ✅ PARAMS aus SLIDERS abgeleitet (eine Quelle) |
 | B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | ⏳ `messen` (Stich→Schub→Dicke) ✅, pass/warn-Bänder trägt das Lab nicht |

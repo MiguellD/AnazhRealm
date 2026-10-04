@@ -89,7 +89,7 @@ function countOcc(src, needle) {
 }
 
 // ===== TEIL A: die statischen Gesetze =====
-function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
+function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     const anazhNC = stripComments(anazhSrc);
     const phytoNC = stripComments(phytoSrc);
     const out = [];
@@ -112,15 +112,24 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
             /stempelUrls\.push\(/.test(anazhNC) &&
             /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC),
     ]);
-    // A3 — Chokepoint-Gesetz: der N7.5-Merge (zusatzKindStages-Leser) lebt NUR in
-    // _foundryIngestRenderConfig; ein zweiter Ingest-Pfad wird rot.
+    // A3 — Chokepoint-Gesetz (N7.5, W8 erweitert): die Zweit-Kern-Blöcke (zusatzKindStages · zusatzBudget mit den
+    // Gestalten je Rezept) mergt NUR phyto-core `kerneVereinen`, gerufen EINMAL im Stamm — in
+    // _foundryIngestRenderConfig; der Stamm nennt keines der Zusatz-Felder selbst (ein zweiter Ingest-Pfad wird rot).
     const ingest = fnBody(anazhNC, /_foundryIngestRenderConfig\(config\)\s*/);
-    const totalZk = countOcc(anazhNC, "zusatzKindStages");
-    const inIngest = ingest ? countOcc(ingest, "zusatzKindStages") : 0;
+    const zusatz = ["zusatzKindStages", "zusatzBudget"];
+    const imStamm = zusatz.reduce((s, z) => s + countOcc(anazhNC, z), 0);
+    const rufe = countOcc(anazhNC, "kerneVereinen(");
+    const imIngest = ingest ? countOcc(ingest, "kerneVereinen(config)") : 0;
+    const vereinen = fnBody(stripComments(pcSrc), /function kerneVereinen\(cfg\)\s*/) || "";
     out.push([
-        "A3: der N7.5-Merge lebt NUR in _foundryIngestRenderConfig (kein zweiter Ingest-Pfad)",
-        ingest !== null && inIngest >= 1 && totalZk === inIngest,
-        `gesamt=${totalZk} im Chokepoint=${inIngest}`,
+        "A3: der Zweit-Kern-Merge lebt NUR in _foundryIngestRenderConfig (phyto-core kerneVereinen, kein zweiter Ingest-Pfad)",
+        ingest !== null &&
+            imIngest === 1 &&
+            rufe === 1 &&
+            imStamm === 0 &&
+            zusatz.every((z) => vereinen.includes(z)) &&
+            vereinen.includes('kind === "gestalten"'),
+        `Zusatz-Felder im Stamm=${imStamm} · kerneVereinen-Rufe=${rufe} (im Chokepoint ${imIngest})`,
     ]);
     out.push([
         "A4: der kindStages-Clamp traegt das Fail-Closed-[0] (bekanntes Rezept ohne Eintrag)",
@@ -139,8 +148,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
             !/self\.__vehicleCore/.test(phytoNC),
     ]);
     out.push([
-        "A6: die Bruecke exportiert zusatzKindStages je Kern generisch (zusatzKindStages[zk.id])",
-        /zusatzKindStages\[zk\.id\]/.test(phytoNC),
+        "A6: die Bruecke exportiert Stufen, Budget und Gestalten je Kern generisch (zusatz…[zk.id])",
+        /zusatzKindStages\[zk\.id\]/.test(phytoNC) && /zusatzBudget\[zk\.id\]/.test(phytoNC),
     ]);
     out.push([
         "A7: build-asset dispatcht an den ERSTEN Kern, dessen PRESETS das Preset traegt",
@@ -173,19 +182,20 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
+    const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: das Fail-Closed-[0] entfernt -> A4 muss rot werden.
         const broken1 = anazhSrc.replace("else if (_rec) lod = 0;", "else if (_rec) lod = lod;");
-        const a4 = staticLaws(broken1, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A4"));
+        const a4 = staticLaws(broken1, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A4"));
         check("Selbst-Test 1: Fail-Closed entfernt -> A4 feuert", a4 && a4[1] === false);
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const broken2 = anazhSrc.replace(
             "_foundryRequestSettlement(dp) {",
             "_foundryRequestSettlement(dp) {\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
         );
-        const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A3"));
+        const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
@@ -196,7 +206,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     }
 
     console.log("=== ZWEIT-KERN — TEIL A: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

@@ -12,6 +12,8 @@
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
+require("../phyto-core.js"); // das Budget-Gesetz (budgetSippen · kerneVereinen) — dieselbe Datei wie Worker und Wirt
+const PC = globalThis.__phytoCore;
 
 const PORT = Number(process.env.CONTRACT_PORT || 4542);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
@@ -100,22 +102,22 @@ function flaeche(meshes, kind) {
     }
     return a;
 }
-// Dreiecke und Sippen einer gebauten Antwort (Beipack ohne position zählt nicht).
+// Dreiecke und Draws einer gebauten Antwort — DIESELBE Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen:
+// je Stoff × Attribut-Form ein Draw, jedes Flügel-Teil und jede Haut eines; Beipack ohne position zählt nicht).
 function kosten(meshes) {
-    const ms = (meshes || []).filter((m) => m.attrs && m.attrs.position);
-    let tris = 0;
-    const sippen = new Set();
-    for (const m of ms) {
-        tris += m.index
-            ? Buffer.from(m.index, "base64").length / 12
-            : Buffer.from(m.attrs.position.b64, "base64").length / 36;
-        const form = Object.keys(m.attrs)
-            .sort()
-            .map((k) => k + ":" + m.attrs[k].itemSize)
-            .join(",");
-        sippen.add(m.kind + "|" + JSON.stringify(m.mat || null) + "|" + (m.index ? "i" : "x") + "|" + form);
-    }
-    return { tris, sippen: sippen.size };
+    const teile = (meshes || [])
+        .filter((m) => m.attrs && m.attrs.position)
+        .map((m) => {
+            const t = { kind: m.kind, mat: m.mat };
+            if (m.tuer) t.tuer = m.tuer;
+            if (m.joint) t.joint = m.joint;
+            for (const k of Object.keys(m.attrs))
+                t[k] = { array: dekodiere(m.attrs[k].b64, Float32Array), itemSize: m.attrs[k].itemSize };
+            if (m.index) t.index = dekodiere(m.index, Uint32Array);
+            return t;
+        });
+    const k = PC.budgetSippen(teile);
+    return { tris: k.tris, draws: k.draws };
 }
 function kostenUrteil(messungen, budget) {
     const v = [];
@@ -127,7 +129,7 @@ function kostenUrteil(messungen, budget) {
         }
         if (z.karte) continue;
         if (mm.tris > z.tris) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.tris} Dreiecke > ${z.tris}`);
-        if (mm.sippen > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.sippen} Sippen > ${z.draws} draws`);
+        if (mm.draws > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.draws} Draws > ${z.draws}`);
     }
     return v;
 }
@@ -186,7 +188,7 @@ function deckungsUrteil(paare, band, at) {
     const paare = {};
     const messungen = [];
     let wand = null;
-    await runWithWorker(PORT, async ({ build, getData, atlas }) => {
+    await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -204,9 +206,18 @@ function deckungsUrteil(paare, band, at) {
             if (live !== gold) fails.push(`${key}: divergiert vom eingefrorenen JSON`);
         }
         const buch = bookReply.book || {};
-        const lodB = bookReply.renderConfig && bookReply.renderConfig.lod;
+        // DER UMSCHLAG WIE DER WIRT IHN LIEST (W8): die Zweit-Kern-Blöcke (Stufen · Budget · Gestalten) fallen über
+        // DIESELBE Funktion in die EINEN Karten wie in `_foundryIngestRenderConfig` (phyto-core kerneVereinen).
+        const vereint = (rc) => PC.kerneVereinen(JSON.parse(JSON.stringify(rc || {})));
+        const rcV = vereint(bookReply.renderConfig);
+        const lodB = rcV.lod;
         const budget = lodB && lodB.budget;
         const stufen = (lodB && lodB.kindStages) || {};
+        const gestalten = (budget && budget.gestalten) || {};
+        // Die Arten der Zweit-Kerne (aus dem Umschlag, VOR dem Merge): je Art ihr Kern.
+        const kernVonArt = {};
+        const zks = (bookReply.renderConfig && bookReply.renderConfig.lod && bookReply.renderConfig.lod.zusatzKindStages) || {};
+        for (const core in zks) for (const k in zks[core]) if (!(k in kernVonArt)) kernVonArt[k] = core;
         const artVon = (preset) => buch[preset] && buch[preset].kind;
         const gemessen = new Set();
         const miss = (c, a, fall) => {
@@ -215,8 +226,9 @@ function deckungsUrteil(paare, band, at) {
             // Nur GELIEFERTE Stufen: eine nicht deklarierte (die Strauch-L0, der Host klemmt sie auf L1) bleibt
             // ein Byte-Golden ohne Budget.
             if (!Array.isArray(stufen[kind]) || stufen[kind].indexOf(c.lod) < 0) return;
-            const k = kosten(a.meshes);
-            messungen.push({ kind, lod: c.lod, fall, tris: k.tris, sippen: k.sippen });
+            const k = a.meshes ? kosten(a.meshes) : a;
+            messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
+            if (a.budgetBruch) fails.push(`Budget-Bruch ${fall}: ${JSON.stringify(a.budgetBruch)}`);
             gemessen.add(c.presetId + "|" + c.lod);
         };
         for (const f of files) {
@@ -253,20 +265,40 @@ function deckungsUrteil(paare, band, at) {
             if (fails.length >= 8) break;
         }
         // Jede gelieferte Gitter-Stufe jedes Rezepts einer Art mit Budget, die kein Golden trägt: Samen 7, Sommer.
-        if (budget)
-            for (const preset of Object.keys(buch)) {
-                const kind = artVon(preset);
-                if (!budget[kind] || !Array.isArray(stufen[kind])) continue;
-                for (const lod of stufen[kind]) {
-                    const z = budget[kind][lod];
-                    if ((z && z.karte) || gemessen.has(preset + "|" + lod)) continue;
-                    const c = { presetId: preset, seed: 7, lod, season: "summer" };
-                    miss(c, await build(c), `${preset}-s7-L${lod}-summer`);
-                }
+        // W8 — die Rezepte der ZWEIT-Kerne baut die Wand über JEDEN Samen, den die Welt von ihnen zieht (Gestalt 1..V,
+        // V = lod.budget.gestalten[rezept] aus IHREM Gesetzbuch, `_foundryVariantFor`), und jede deklarierte Stufe —
+        // gezählt in der Seite (ohne Puffer-Transport). Fehlt die Gestalten-Zahl, ist das ein Bruch (nie still).
+        const alle = Object.keys(buch).filter((p) => budget && budget[artVon(p)] && Array.isArray(stufen[artVon(p)]));
+        const welt = [];
+        for (const preset of alle) {
+            const kind = artVon(preset);
+            if (kernVonArt[kind] && !(Number.isInteger(gestalten[preset]) && gestalten[preset] >= 1)) {
+                fails.push(`Gestalten: ${kernVonArt[kind]}-Rezept ${preset} trägt keine Gestalten-Zahl (lod.budget.gestalten)`);
+                continue;
             }
+            for (const lod of stufen[kind]) {
+                const z = budget[kind][lod];
+                if (z && z.karte) continue;
+                if (kernVonArt[kind]) {
+                    for (let s = 1; s <= gestalten[preset]; s++)
+                        welt.push({ presetId: preset, seed: s, lod, season: "summer" });
+                    continue;
+                }
+                if (gemessen.has(preset + "|" + lod)) continue;
+                const c = { presetId: preset, seed: 7, lod, season: "summer" };
+                miss(c, await build(c), `${preset}-s7-L${lod}-summer`);
+            }
+        }
+        const weltK = welt.length ? await kostenListe(welt) : [];
+        welt.forEach((c, i) => miss(c, weltK[i], `${c.presetId}-s${c.seed}-L${c.lod}`));
+        // SELBST-TEST S3 (W8) vorbereitet: der Umschlag OHNE zusatzBudget — welche Kerne verlieren ihre Zeilen?
+        const ohneZB = JSON.parse(JSON.stringify(bookReply.renderConfig || {}));
+        if (ohneZB.lod) delete ohneZB.lod.zusatzBudget;
+        const budgetOhneZB = (vereint(ohneZB).lod || {}).budget || {};
+        wand = { budgetOhneZB, kernVonArt };
         const at = await atlas();
         const band = budget && budget.tree && budget.tree[1] && budget.tree[1].deckung;
-        wand = { at, band, budget, stufen, b1: budget && budget.tree && budget.tree[1] };
+        wand = Object.assign(wand, { at, band, budget, stufen, b1: budget && budget.tree && budget.tree[1] });
         if (!budget) fails.push("Budget: render-config trägt kein lod.budget");
         else if (!Array.isArray(band)) fails.push("Budget: render-config trägt kein lod.budget.tree[1].deckung");
         else {
@@ -292,11 +324,16 @@ function deckungsUrteil(paare, band, at) {
                     continue;
                 }
                 const top = mm.reduce((s, x) => (!s || x.tris > s.tris ? x : s), null);
+                const dMax = mm.reduce((s, x) => Math.max(s, x.draws), 0);
+                const vor = mm.reduce((s, x) => Math.max(s, x.budget && x.budget.vorher ? x.budget.vorher.draws : 0), 0);
                 zeilen.push(
-                    `${k}[${st}] ${top ? top.tris : "—"}/${z.tris} (${mm.length} Fälle, max ${top ? top.fall : "—"})`
+                    `${k}[${st}] ${top ? top.tris : "—"}/${z.tris} · Draws ${dMax}/${z.draws}` +
+                        (vor ? ` (ungefaltet bis ${vor})` : "") +
+                        (z.band ? ` · Band ${z.band} (${top ? (top.tris / z.band).toFixed(1) : "—"}×)` : "") +
+                        ` (${mm.length} Fälle, max ${top ? top.fall : "—"})`
                 );
             }
-        console.log("Budget-Wand (Dreiecke max/Zeile):\n  " + zeilen.join("\n  "));
+        console.log("Budget-Wand (Dreiecke max/Zeile · Draws max/Zeile):\n  " + zeilen.join("\n  "));
         const at = wand.at;
         console.log(
             `Atlas: Breitblatt-Kern bis ${Math.max(...at.ext.slice(0, at.steckbrief.zellen)).toFixed(4)} (Steckbrief ${at.steckbrief.kern}) · ` +
@@ -309,12 +346,15 @@ function deckungsUrteil(paare, band, at) {
                 gemesseneP.map(([k, p]) => `${k} ${p.art} ${p.deckung.toFixed(2)}`).join(" · ")
         );
         // SELBST-TESTS — die Wand ist nicht vakuös:
-        //  (1) JEDE Gitter-Zeile halbiert (tris/2) und um eine Sippe gesenkt MUSS rot werden;
+        //  (1) JEDE Gitter-Zeile halbiert (tris/2, draws/2) MUSS rot werden;
         //  (2) jede Gitter-Zeile hat ≥ 1 gebauten Fall;
         //  (3) die Laub-Karte von gestern (Kante 2,35 statt blattKarte) MUSS das Band sprengen;
         //  (4) eine Nadel-Karte 1,5× so lang MUSS das Band sprengen;
         //  (5) ein Kern unter der gemalten Ausdehnung MUSS den Steckbrief brechen;
-        //  (6) Deckung an Laub-, Nadel- und Klingen-Paaren gemessen.
+        //  (6) Deckung an Laub-, Nadel- und Klingen-Paaren gemessen;
+        //  (7, W8) der Umschlag OHNE zusatzBudget: „Budget fehlt" für JEDEN der sechs Zweit-Kerne mit Gestalt;
+        //  (8, W8) die Faltung ist der Konsument: je Zweit-Kern-Art liegt ≥ 1 Fall UNGEFALTET über draws (die
+        //      Brücke meldet vorher > Zeile) und GEFALTET darin (die Kosten oben).
         const halb = [],
             leer = [];
         for (const k of Object.keys(wand.stufen))
@@ -327,7 +367,7 @@ function deckungsUrteil(paare, band, at) {
                 }
                 for (const [feld, wert] of [
                     ["tris", Math.floor(z.tris / 2)],
-                    ["draws", z.draws - 1],
+                    ["draws", Math.floor(z.draws / 2)],
                 ]) {
                     const B2 = JSON.parse(JSON.stringify(B));
                     B2[k][st][feld] = wert;
@@ -349,13 +389,27 @@ function deckungsUrteil(paare, band, at) {
         const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
         const s6 = arten.has("laub") && arten.has("nadel") && arten.has("klinge");
+        const fehlt = new Set();
+        for (const x of kostenUrteil(messungen, wand.budgetOhneZB))
+            if (x.endsWith("keine Budget-Zeile")) fehlt.add(wand.kernVonArt[x.slice(0, x.indexOf("["))]);
+        const zweitKerne = new Set(
+            messungen.filter((x) => wand.kernVonArt[x.kind]).map((x) => wand.kernVonArt[x.kind])
+        );
+        const s7 = zweitKerne.size === 6 && [...zweitKerne].every((c) => fehlt.has(c));
+        const zweitArten = [...new Set(messungen.filter((x) => x.budget).map((x) => x.kind))];
+        const ohneFaltung = zweitArten.filter(
+            (k) => !messungen.some((x) => x.kind === k && x.budget.vorher.draws > B[k][x.lod].draws)
+        );
+        const s8 = zweitArten.length === 6 && ohneFaltung.length === 0;
         console.log(
-            `Selbsttest Budget-Wand: jede Zeile halbiert/−1 Sippe wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
+            `Selbsttest Budget-Wand: jede Zeile halbiert wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
                 `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 2,35 sprengt das Band ${s3 ? "✅" : "❌"} · ` +
                 `Nadel-Karte 1,5× sprengt das Band ${s4 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s5 ? "✅" : "❌"} · ` +
-                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"}`
+                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"} · ` +
+                `ohne zusatzBudget fehlt das Budget für ${fehlt.size}/6 Zweit-Kerne ${s7 ? "✅" : "❌ " + [...zweitKerne].filter((c) => !fehlt.has(c)).join(",")} · ` +
+                `ungefaltet über draws je Zweit-Art ${s8 ? "✅" : "❌ " + ohneFaltung.join(",")}`
         );
-        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6) fails.push("Selbsttest der Budget-Wand feuert nicht");
+        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8) fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
 
     console.log("=== ASSET-VERTRAG v1 — Konformanz-Gate ===");

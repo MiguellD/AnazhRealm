@@ -17276,7 +17276,7 @@ class AnazhRealm {
                 });
                 if (g.userData && g.userData.__skelett)
                     eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
-                asm = this._ofenAssembleAsset(eintraege);
+                asm = this._ofenAssembleAsset(this._ofenBudget(core, "kreatur", lod, eintraege, recId));
             }
         } catch (e) {
             this.log("Kreatur-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
@@ -17284,6 +17284,17 @@ class AnazhRealm {
         }
         if (asm) memo.set(key, asm);
         return asm;
+    }
+    // DAS BUDGET-GESETZ im Sync-Guss (W8): der Haupt-Thread-Guss verlässt das Studio an DERSELBEN Stelle wie die
+    // Worker-Antwort (`__replyBuildAsset`) — phyto-core `budgetErzwingen` auf der Zeile des Kerns (seine
+    // PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]); ein Bruch schreit, nie still.
+    _ofenBudget(core, kind, lod, eintraege, name) {
+        const PC = globalThis.__phytoCore;
+        const bz = PC.budgetZeile(core && core.PORTAL_RENDER_CONFIG, kind, lod | 0);
+        const res = PC.budgetErzwingen(eintraege, bz && bz.zeile);
+        if (res.bericht.bruch.length)
+            this.log("BUDGET-BRUCH " + name + " L" + (lod | 0) + ": " + JSON.stringify(res.bericht.bruch), "ERROR");
+        return res.meshes;
     }
     // Sync-Pendant des Shell-Extractors (phytogenesis __extractAssetMesh): DIESELBE Eintrags-Form, damit
     // _ofenAssembleKreatur/_foundryBuildMesh die EINE Konversion bleiben. Arrays reisen als Referenz.
@@ -17406,7 +17417,7 @@ class AnazhRealm {
                 });
                 if (g.userData && g.userData.__skelett)
                     eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
-                asm = this._ofenAssembleAsset(eintraege);
+                asm = this._ofenAssembleAsset(this._ofenBudget(core, "koerper", lod, eintraege, "mensch"));
             }
         } catch (e) {
             this.log("Mensch-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
@@ -65215,6 +65226,12 @@ class AnazhRealm {
                         } else if (m.type === "book") {
                             this._foundryIngestBook(m);
                         } else if (m.type === "asset") {
+                            // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
+                            if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
+                                this.log(
+                                    "BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch),
+                                    "ERROR"
+                                );
                             const p = f.pending.get(m.reqId);
                             if (p) {
                                 f.pending.delete(m.reqId);
@@ -65442,22 +65459,13 @@ class AnazhRealm {
                 // uLodRef, in _loopRender gespiegelt).
                 if (this.state) this.state.lodRef = L.ref;
             }
-            // DER MERGE-CHOKEPOINT: die kind-Blöcke der Zweit-Kerne (cfg.lod.zusatzKindStages) werden NUR hier
-            // kind-weise disjunkt in die EINE kindStages-Karte gemergt — first-wins (foundry-core führt), nie
-            // überschreiben; unbekannte Felder must-ignore. Der Clamp-Leser (_studioRenderConfig.lod.kindStages,
-            // _foundryFlattenFor) sieht den Merge.
-            const zk = L.zusatzKindStages;
-            if (zk && typeof zk === "object") {
-                const ks = L.kindStages && typeof L.kindStages === "object" ? L.kindStages : (L.kindStages = {});
-                for (const core in zk) {
-                    const blk = zk[core];
-                    if (!blk || typeof blk !== "object") continue;
-                    for (const kind in blk) {
-                        if (!(kind in ks) && Array.isArray(blk[kind])) ks[kind] = blk[kind];
-                    }
-                }
-            }
         }
+        // DER MERGE-CHOKEPOINT: die Blöcke der Zweit-Kerne — Stufen (N7.5), Budget je Art (B2c) und Gestalten je Rezept
+        // (W8) — fallen NUR hier in die EINEN Karten `lod.kindStages` / `lod.budget` / `lod.budget.gestalten`,
+        // disjunkt, first-wins (foundry-core führt), unbekannte Felder must-ignore (phyto-core `kerneVereinen` —
+        // dieselbe Funktion liest die Wand auf dem Umschlag). Der Clamp-Leser (_foundryFlattenFor) und die Gestalten-
+        // Wahl (_foundryGestalten: ein Haus, ein Tor, eine Klinge zählt seine Gestalten aus SEINEM Gesetzbuch) sehen ihn.
+        globalThis.__phytoCore.kerneVereinen(config);
     }
     // Das Rezept eines Presets (aus dem Studio-Buch) — die EINE Rezept-Quelle fuer den Blueprint.
     _foundryRecipeFor(preset) {
@@ -68532,16 +68540,10 @@ class AnazhRealm {
             kind === "haut" ||
             kind === "hair" ||
             kind.indexOf("straehne") === 0;
-        const key =
-            (mp
-                ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
-                : kind) +
-            (xfade ? "|xf" : "") +
-            (mp && mp.webe ? "|w:" + mp.webe : "") +
-            (emis ? "|e:" + emis.map((v) => v.toFixed(2)).join(",") + "@" + emisI.toFixed(2) : "") +
-            (klasseLook && mp && Array.isArray(mp.color) && mp.color.length === 3
-                ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
-                : "");
+        // DER SCHLÜSSEL IST DIE EINE MATERIAL-IDENTITÄT (phyto-core `budgetStoff`, W8): Art · Regler · SEITE · Gewebe ·
+        // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
+        // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
+        const key = globalThis.__phytoCore.budgetStoff(kind, mp) + (xfade ? "|xf" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -69280,7 +69282,8 @@ class AnazhRealm {
     // Art:Gestalt:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
     // DIE GESTALT eines Samens (V18.527): eine von V Gestalten je Art, V aus dem Studio-Budget
     // (`PORTAL_RENDER_CONFIG.lod.budget.gestalten` über das Buch — eiche/fichte/birke/tanne 2 · weide/mammut/strauch 1 ·
-    // '*' 16), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
+    // '*' 16; seit W8 zählt jeder Zweit-Kern die Gestalten SEINER Rezepte selbst, Haus/Tor/Fahrzeug/Klinge/Körper/Tier
+    // je 16, gemergt am Ingest), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
     // alte `h % 16` hing an den unteren Bits, die im Baum-Raster periodisch laufen — dieselbe Gestalt 16 Zellen weiter
     // mit 0,339 statt 1/16 (ein Klon-Gitter mit 54 m Periode). Ohne Buch null: der Aufrufer deferriert, nie eine
     // geratene Zahl. Gleicher Same = gleicher Baum, scale/yaw/tint je Instanz.

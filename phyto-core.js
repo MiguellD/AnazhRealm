@@ -2009,6 +2009,446 @@
     };
     var WX_VIS = { lab: "wx-4", host: "none" };
 
+    // ═══ DAS BUDGET-GESETZ (Studio-Vertrag B2c, W8): der EINE Ausgang jeder Studio-Gestalt ═══
+    // Eine gelieferte Stufe kostet höchstens ihre Budget-Zeile `PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]`
+    // ({tris, draws, schatten}) — die Zeile ist DATEN des Kerns, dieses Gesetz ihr Konsument. Es arbeitet auf den
+    // engine-neutralen Teilen der Brücke ({kind, mat, joint?, tuer?, position, normal, color, uv, skin…, index}) —
+    // dieselbe Form trägt die Antwort von `build-asset` (Worker), der Sync-Guss des Wirts-Ofens (Haupt-Thread) und
+    // jede Wand (Node, gate:asset-contract). Es zählt mit der Regel des Wirts:
+    //   STOFF  = das Material, das der Wirt baut (`_foundryTreeMaterial` liest `budgetStoff` als Schlüssel): Art ·
+    //            Rauheit · Metall · flach · Umgebung · Seite · Gewebe · Glut · Fell-/Haut-Ton. Die Farbe ist KEIN
+    //            Stoff — sie reist als Vertex-Farbe.
+    //   DRAW   = je (Stoff × Attribut-Form) EIN Draw: der Flatten verschmilzt Teile eines Stoffs (bis
+    //            `verschmelzVerts` zusammen), der Ofen bindet starre Teile eines Stoffs über alle Gelenke (`_ofen-
+    //            StarrBinden`); jedes Flügel-Teil (eigenes Scharnier) und jede Haut (eigenes SkinnedMesh) ist ein Draw.
+    // FALTEN, wenn die Stufe über `draws` liegt: die Teile gehen in Bindungs-Klassen (starr · Haut · je Tür-Flügel ·
+    // Schalen-Fell) — über eine Klasse hinweg faltet nichts (sonst bricht das Gelenk, die Haut oder das Scharnier);
+    // Glut (lum(emissive)·Intensität ≥ `glut`) faltet nie. Innerhalb einer Klasse fällt je Schritt das Stoff-Paar
+    // mit dem kleinsten Seh-Fehler = sichtbare Fläche × Seh-Abstand (Rauheit · 2×Metall · Art · flach · Umgebung ·
+    // Gewebe · Seite · Rest-Glimmen) — die kleinere Fläche in die größere, deterministisch, ohne Zufall. Die Farbe des gefalteten Teils wird
+    // Vertex-Farbe (wie der Wirt sie füllt); ein beidseitiges Teil in einem einseitigen Stoff bekommt seine Rück-
+    // seite als Dreiecke (gleiches Bild). Danach wird je Klasse × Stoff × Gelenk EIN Teil (bis `teilVertsMax`).
+    // Innerhalb der Zeile ist das Gesetz ein No-op (die Teile reisen byte-gleich). Dreiecke faltet es nicht: liegt
+    // die Stufe über `tris` oder bleibt sie über `draws`, steht ein BRUCH im Bericht — der Aufrufer schreit, die
+    // Wand (gate:asset-contract) wird rot. Nie still.
+    var BUDGET_GESETZ = Object.freeze({
+        glut: 0.05, // lum(emissive) × Intensität, ab der ein Stoff leuchtet (Tor-Rahmen 0,09–0,48 · Fenster 1,1)
+        teilVertsMax: 196608, // höchstens so viele Vertices je gefaltetem Teil (der Wirt verwirft Teile > 200 000)
+        verschmelzVerts: 65536, // der Flatten verschmilzt Teile EINES Stoffs nur bis zu dieser Summe (sonst je Teil)
+        formAttr: ["uv", "aWurzel", "aSchale", "skinIndex"], // die Attribute, die der Wirt nur trägt, wo sie reisen
+    });
+    function _budgetLook(kind) {
+        return (
+            kind === "fell" ||
+            kind === "fellSchale" ||
+            kind === "skin" ||
+            kind === "haut" ||
+            kind === "hair" ||
+            (typeof kind === "string" && kind.indexOf("straehne") === 0)
+        );
+    }
+    function _budgetDoppelt(kind) {
+        return kind === "foliage" || kind === "foliageTex" || kind === "grass";
+    }
+    // Der Stoff-Schlüssel — DIE EINE Material-Identität (der Wirt keyt seinen Material-Cache damit).
+    function budgetStoff(kind, mp) {
+        const k = kind || "bark";
+        const rinde = k === "bark" || k === "stem";
+        const r = mp && typeof mp.roughness === "number" ? mp.roughness : rinde ? 0.93 : k === "grass" ? 0.7 : 0.62;
+        const mt = mp && typeof mp.metalness === "number" ? mp.metalness : 0;
+        const fl = mp ? !!mp.flatShading : false;
+        const env = mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : k === "grass" ? 0.18 : 1;
+        const em = mp && Array.isArray(mp.emissive) && mp.emissive.length === 3 ? mp.emissive : null;
+        const emI = em && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : em ? 1 : 0;
+        return (
+            (mp ? k + "|" + r.toFixed(2) + "|" + mt.toFixed(2) + "|" + (fl ? 1 : 0) + "|" + env.toFixed(2) : k) +
+            (!_budgetDoppelt(k) && mp && mp.side === 2 ? "|s2" : "") +
+            (mp && mp.webe ? "|w:" + mp.webe : "") +
+            (em ? "|e:" + em.map((v) => v.toFixed(2)).join(",") + "@" + emI.toFixed(2) : "") +
+            (_budgetLook(k) && mp && Array.isArray(mp.color) && mp.color.length === 3
+                ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
+                : "")
+        );
+    }
+    function budgetSeite(kind, mp) {
+        return _budgetDoppelt(kind) || (mp && mp.side === 2) ? 2 : 0;
+    }
+    function budgetGlut(mp) {
+        const em = mp && Array.isArray(mp.emissive) && mp.emissive.length === 3 ? mp.emissive : null;
+        if (!em) return 0;
+        const emI = typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : 1;
+        return (0.2126 * em[0] + 0.7152 * em[1] + 0.0722 * em[2]) * emI;
+    }
+    function _budgetTeil(m) {
+        return !!(m && m.position && m.position.array);
+    }
+    function _budgetTris(m) {
+        return m.index ? m.index.length / 3 : m.position.array.length / 9;
+    }
+    function _budgetForm(m) {
+        let f = m.index ? "i" : "x";
+        for (const a of BUDGET_GESETZ.formAttr) if (m[a] && m[a].array) f += "," + a;
+        return f;
+    }
+    // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht).
+    function budgetSippen(meshes) {
+        let tris = 0,
+            verts = 0,
+            draws = 0;
+        const gr = new Map();
+        for (const m of meshes || []) {
+            if (!_budgetTeil(m)) continue;
+            const nv = m.position.array.length / 3;
+            tris += _budgetTris(m);
+            verts += nv;
+            if (m.tuer || (m.skinIndex && m.skinIndex.array)) {
+                draws++;
+                continue;
+            }
+            const k = budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+            let g = gr.get(k);
+            if (!g) gr.set(k, (g = { n: 0, v: 0, gelenk: false }));
+            g.n++;
+            g.v += nv;
+            if (m.joint) g.gelenk = true;
+        }
+        for (const g of gr.values()) draws += g.gelenk || g.n < 2 || g.v <= BUDGET_GESETZ.verschmelzVerts ? 1 : g.n;
+        return { tris: tris, verts: verts, draws: draws };
+    }
+    // Die Zeile einer Bau-Anfrage: die GRÖSSTE deklarierte Stufe ≤ dem Wunsch (sonst die kleinste) — dieselbe Klammer,
+    // mit der Kern und Wirt die Stufe wählen — und ihre Budget-Zeile (null, wenn der Kern keine trägt).
+    function budgetZeile(cfg, kind, wunsch) {
+        const lod = cfg && cfg.lod;
+        const st = lod && lod.kindStages && lod.kindStages[kind];
+        if (!Array.isArray(st) || !st.length) return null;
+        let stufe = st[0];
+        for (const s of st) if (s <= wunsch && s > stufe) stufe = s;
+        const z = lod.budget && lod.budget[kind] ? lod.budget[kind][stufe] : null;
+        return { stufe: stufe, zeile: z && typeof z === "object" ? z : null };
+    }
+    // DER MERGE DER ZWEIT-KERNE (N7.5 + W8): die Brücke reicht je Kern seine Stufen (`lod.zusatzKindStages[<id>]`)
+    // und sein Budget (`lod.zusatzBudget[<id>]` — die Zeilen je Art UND seine Gestalten je Rezept `gestalten`)
+    // getrennt — hier fallen sie in die EINEN Karten `lod.kindStages` / `lod.budget` (je Art) und
+    // `lod.budget.gestalten` (je Rezept), disjunkt, first-wins (foundry-core führt), unbekannte Felder must-ignore.
+    // Der Wirt ruft es NUR in `_foundryIngestRenderConfig`, die Wand auf dem Umschlag — EIN Merge, kein Zwilling.
+    function kerneVereinen(cfg) {
+        const L = cfg && cfg.lod;
+        const zk = L && L.zusatzKindStages;
+        if (zk && typeof zk === "object") {
+            const ks = L.kindStages && typeof L.kindStages === "object" ? L.kindStages : (L.kindStages = {});
+            for (const core in zk) {
+                const blk = zk[core];
+                if (!blk || typeof blk !== "object") continue;
+                for (const kind in blk) if (!(kind in ks) && Array.isArray(blk[kind])) ks[kind] = blk[kind];
+            }
+        }
+        const zb = L && L.zusatzBudget;
+        if (zb && typeof zb === "object") {
+            const B = L.budget && typeof L.budget === "object" ? L.budget : (L.budget = {});
+            for (const core in zb) {
+                const blk = zb[core];
+                if (!blk || typeof blk !== "object") continue;
+                for (const kind in blk) {
+                    const z = blk[kind];
+                    if (!z || typeof z !== "object") continue;
+                    if (kind === "gestalten") {
+                        const G = B.gestalten && typeof B.gestalten === "object" ? B.gestalten : (B.gestalten = {});
+                        for (const id in z)
+                            if (id !== "*" && !(id in G) && Number.isInteger(z[id]) && z[id] >= 1) G[id] = z[id];
+                    } else if (!(kind in B)) B[kind] = z;
+                }
+            }
+        }
+        return cfg;
+    }
+    function _budgetAbstand(S, T) {
+        if (S.glut >= BUDGET_GESETZ.glut || T.glut >= BUDGET_GESETZ.glut) return Infinity; // Glut faltet nie
+        const a = S.mat || {},
+            b = T.mat || {};
+        const n = (v, d) => (typeof v === "number" ? v : d);
+        let d =
+            Math.abs(n(a.roughness, 0.7) - n(b.roughness, 0.7)) + 2 * Math.abs(n(a.metalness, 0) - n(b.metalness, 0));
+        if (S.kind !== T.kind) d += 0.6;
+        if (!!a.flatShading !== !!b.flatShading) d += 0.3;
+        d += Math.abs(n(a.envMapIntensity, 1) - n(b.envMapIntensity, 1));
+        if ((a.webe || "") !== (b.webe || "")) d += 0.4;
+        if (S.seite !== T.seite) d += 0.1;
+        return d + 4 * (S.glut + T.glut); // ein Rest-Glimmen (unter der Glut-Schwelle) geht verloren
+    }
+    // Normalen eines Teils ohne Normalen (flächengewichtet, wie computeVertexNormals).
+    function _budgetNormalen(P, I) {
+        const N = new Float32Array(P.length);
+        const nT = I ? I.length : P.length / 3;
+        for (let t = 0; t < nT; t += 3) {
+            const a = (I ? I[t] : t) * 3,
+                b = (I ? I[t + 1] : t + 1) * 3,
+                c = (I ? I[t + 2] : t + 2) * 3;
+            const ux = P[b] - P[a],
+                uy = P[b + 1] - P[a + 1],
+                uz = P[b + 2] - P[a + 2];
+            const vx = P[c] - P[a],
+                vy = P[c + 1] - P[a + 1],
+                vz = P[c + 2] - P[a + 2];
+            const nx = uy * vz - uz * vy,
+                ny = uz * vx - ux * vz,
+                nz = ux * vy - uy * vx;
+            for (const o of [a, b, c]) {
+                N[o] += nx;
+                N[o + 1] += ny;
+                N[o + 2] += nz;
+            }
+        }
+        for (let i = 0; i < N.length; i += 3) {
+            const l = Math.hypot(N[i], N[i + 1], N[i + 2]) || 1;
+            N[i] /= l;
+            N[i + 1] /= l;
+            N[i + 2] /= l;
+        }
+        return N;
+    }
+    // Die sichtbare Fläche eines Teils (Summe der Dreiecks-Flächen im Gestalt-Raum) — das Gewicht der Faltung.
+    function _budgetFlaeche(m) {
+        const P = m.position.array,
+            I = m.index || null;
+        const nT = I ? I.length : P.length / 3;
+        let A = 0;
+        for (let t = 0; t + 2 < nT; t += 3) {
+            const a = (I ? I[t] : t) * 3,
+                b = (I ? I[t + 1] : t + 1) * 3,
+                c = (I ? I[t + 2] : t + 2) * 3;
+            const ux = P[b] - P[a],
+                uy = P[b + 1] - P[a + 1],
+                uz = P[b + 2] - P[a + 2];
+            const vx = P[c] - P[a],
+                vy = P[c + 1] - P[a + 1],
+                vz = P[c + 2] - P[a + 2];
+            A += 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
+        }
+        return A;
+    }
+    // Verbindet Teile EINES Ziel-Stoffs zu einem Teil: Attribute, die jedes Teil trägt, reisen; Normale und Farbe
+    // trägt jedes Teil (fehlt sie: berechnet bzw. die Teil-Farbe `mat.color` als Vertex-Farbe — wie der Wirt sie
+    // füllt); ein beidseitiges Teil in einem einseitigen Stoff bekommt seine Rückseite als gespiegelte Dreiecke.
+    function _budgetVerbinden(teile, ziel, attrs) {
+        let nV = 0,
+            nI = 0;
+        for (const p of teile) {
+            const v = p.m.position.array.length / 3;
+            const i = p.m.index ? p.m.index.length : v;
+            const k = p.rueck ? 2 : 1;
+            nV += v * k;
+            nI += i * k;
+        }
+        const out = { kind: ziel.kind, mat: Object.assign({}, ziel.mat) };
+        const A = {};
+        for (const a of attrs) A[a.name] = new Float32Array(nV * a.size);
+        const index = new Uint32Array(nI);
+        let ov = 0,
+            oi = 0;
+        for (const p of teile) {
+            const m = p.m;
+            const P = m.position.array;
+            const v = P.length / 3;
+            const I = m.index || null;
+            const nT = I ? I.length : v;
+            for (let pass = 0; pass < (p.rueck ? 2 : 1); pass++) {
+                const vz = pass ? -1 : 1;
+                for (const a of attrs) {
+                    const dst = A[a.name];
+                    const s = a.size;
+                    if (a.name === "normal" && !(m.normal && m.normal.array)) {
+                        const N = _budgetNormalen(P, I);
+                        for (let q = 0; q < v * 3; q++) dst[ov * 3 + q] = N[q] * vz;
+                    } else if (a.name === "color" && !(m.color && m.color.array)) {
+                        const c =
+                            m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3 ? m.mat.color : [1, 1, 1];
+                        for (let q = 0; q < v; q++) {
+                            dst[(ov + q) * 3] = c[0];
+                            dst[(ov + q) * 3 + 1] = c[1];
+                            dst[(ov + q) * 3 + 2] = c[2];
+                        }
+                    } else {
+                        const src = m[a.name].array;
+                        const si = m[a.name].itemSize || s;
+                        const sg = a.name === "normal" ? vz : 1;
+                        for (let q = 0; q < v; q++)
+                            for (let c = 0; c < s; c++) dst[(ov + q) * s + c] = sg * src[q * si + c];
+                    }
+                }
+                for (let t = 0; t < nT; t += 3) {
+                    const i0 = (I ? I[t] : t) + ov,
+                        i1 = (I ? I[t + 1] : t + 1) + ov,
+                        i2 = (I ? I[t + 2] : t + 2) + ov;
+                    index[oi++] = i0;
+                    index[oi++] = pass ? i2 : i1;
+                    index[oi++] = pass ? i1 : i2;
+                }
+                ov += v;
+            }
+        }
+        for (const a of attrs) out[a.name] = { array: A[a.name], itemSize: a.size };
+        out.index = index;
+        return out;
+    }
+    function _budgetFalten(meshes, ziel, bericht) {
+        const teile = [],
+            beipack = [];
+        for (const m of meshes) (_budgetTeil(m) ? teile : beipack).push(m);
+        const gruppen = [];
+        const nachSchluessel = new Map();
+        for (const m of teile) {
+            const haut = !!(m.skinIndex && m.skinIndex.array);
+            const klasse =
+                (m.tuer ? "T:" + JSON.stringify(m.tuer) : haut ? "H" : "S") + (m.aWurzel || m.aSchale ? "|schale" : "");
+            const stoff = budgetStoff(m.kind, m.mat);
+            const key = klasse + "#" + stoff;
+            let g = nachSchluessel.get(key);
+            if (!g) {
+                g = {
+                    nr: gruppen.length,
+                    klasse,
+                    stoff,
+                    kind: m.kind,
+                    mat: m.mat || {},
+                    teile: [],
+                    tris: 0,
+                    flaeche: 0,
+                    verts: 0,
+                    gross: -1,
+                };
+                g.seite = budgetSeite(m.kind, m.mat);
+                g.glut = budgetGlut(m.mat);
+                nachSchluessel.set(key, g);
+                gruppen.push(g);
+            }
+            const t = _budgetTris(m);
+            const fl = _budgetFlaeche(m);
+            g.teile.push({ m, seite: budgetSeite(m.kind, m.mat), quelle: g });
+            g.tris += t;
+            g.flaeche += fl;
+            g.verts += m.position.array.length / 3;
+            if (fl > g.gross) {
+                g.gross = fl;
+                g.mat = m.mat || {};
+            }
+        }
+        const lebend = () => gruppen.filter((g) => !g.in);
+        const zaehle = () =>
+            lebend().reduce((s, g) => s + Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax)), 0);
+        // Je Schritt fällt das Paar mit dem kleinsten SEH-FEHLER = Fläche des faltenden Stoffs × Seh-Abstand: was das
+        // Auge kaum sieht (kleine Fläche) oder kaum unterscheidet (kleiner Abstand), fällt zuerst; die kleinere Fläche
+        // faltet in die größere. (Die Dreiecks-Zahl ist kein Seh-Maß: eine Glas-Fassade aus 12 Dreiecken deckt 850 m².)
+        while (zaehle() > ziel) {
+            let best = null;
+            const L = lebend();
+            for (const S of L)
+                for (const T of L) {
+                    if (S === T || S.klasse !== T.klasse) continue;
+                    if (S.flaeche > T.flaeche || (S.flaeche === T.flaeche && S.nr < T.nr)) continue; // die kleinere faltet
+                    const d = _budgetAbstand(S, T);
+                    if (!isFinite(d)) continue;
+                    const k = S.flaeche * d;
+                    if (
+                        !best ||
+                        k < best.k - 1e-12 ||
+                        (Math.abs(k - best.k) <= 1e-12 &&
+                            (d < best.d - 1e-12 || (Math.abs(d - best.d) <= 1e-12 && S.nr < best.S.nr)))
+                    )
+                        best = { S, T, d, k };
+                }
+            if (!best) break;
+            const { S, T } = best;
+            for (const p of S.teile) T.teile.push(p);
+            T.tris += S.tris;
+            T.flaeche += S.flaeche;
+            T.verts += S.verts;
+            S.in = T;
+            bericht.faltungen.push({
+                von: S.stoff,
+                nach: T.stoff,
+                tris: S.tris,
+                flaeche: +S.flaeche.toFixed(3),
+                abstand: +best.d.toFixed(3),
+            });
+        }
+        const out = [];
+        for (const g of lebend()) {
+            // Die Attribut-Form der Gruppe: was JEDES Teil trägt (Normale + Farbe immer — der Wirt füllt sie).
+            const attrs = [
+                { name: "position", size: 3 },
+                { name: "normal", size: 3 },
+                { name: "color", size: 3 },
+            ];
+            const p0 = g.teile[0].m;
+            for (const a of Object.keys(p0)) {
+                if (a === "position" || a === "normal" || a === "color") continue;
+                const at = p0[a];
+                if (!at || !at.array || !at.itemSize) continue;
+                if (g.teile.every((p) => p.m[a] && p.m[a].array && p.m[a].itemSize === at.itemSize))
+                    attrs.push({ name: a, size: at.itemSize });
+            }
+            for (const p of g.teile) p.rueck = p.seite === 2 && g.seite !== 2;
+            // Je Gelenk ein Eimer (geometrisch faltet nur, was am selben Gelenk hängt; der Ofen bindet die Eimer
+            // eines Stoffs starr zu EINEM Draw). Unverändert reist ein Teil, an dem nichts zu tun ist: allein im
+            // Eimer, eigener Stoff, eigene Seite, kein Attribut, das die Gruppe nicht trägt.
+            const eimer = new Map();
+            for (const p of g.teile) {
+                const j = p.m.joint || "";
+                if (!eimer.has(j)) eimer.set(j, []);
+                eimer.get(j).push(p);
+            }
+            for (const [j, ps] of eimer) {
+                const roh =
+                    ps.length === 1 &&
+                    ps[0].quelle === g &&
+                    !ps[0].rueck &&
+                    Object.keys(ps[0].m).every(
+                        (a) => !(ps[0].m[a] && ps[0].m[a].array) || attrs.some((x) => x.name === a)
+                    );
+                if (roh) {
+                    out.push(ps[0].m);
+                    continue;
+                }
+                let stueck = [],
+                    v = 0;
+                const flush = () => {
+                    if (!stueck.length) return;
+                    const e = _budgetVerbinden(stueck, g, attrs);
+                    if (j) e.joint = j;
+                    if (stueck[0].m.tuer) e.tuer = stueck[0].m.tuer;
+                    out.push(e);
+                    stueck = [];
+                    v = 0;
+                };
+                for (const p of ps) {
+                    const pv = (p.m.position.array.length / 3) * (p.rueck ? 2 : 1);
+                    if (stueck.length && v + pv > BUDGET_GESETZ.teilVertsMax) flush();
+                    stueck.push(p);
+                    v += pv;
+                }
+                flush();
+            }
+        }
+        for (const b of beipack) out.push(b);
+        return out;
+    }
+    // DER AUSGANG: faltet eine gelieferte Stufe auf ihre Zeile und berichtet vorher/nachher + Bruch.
+    function budgetErzwingen(meshes, zeile) {
+        const vor = budgetSippen(meshes);
+        const bericht = { vorher: { tris: vor.tris, draws: vor.draws }, nachher: null, faltungen: [], bruch: [] };
+        if (!zeile || !(zeile.draws >= 1) || !(zeile.tris > 0)) {
+            bericht.nachher = bericht.vorher;
+            bericht.bruch.push({ feld: "zeile" });
+            return { meshes: meshes, bericht: bericht };
+        }
+        const out = vor.draws > zeile.draws ? _budgetFalten(meshes || [], zeile.draws, bericht) : meshes;
+        const nach = budgetSippen(out);
+        bericht.nachher = { tris: nach.tris, draws: nach.draws };
+        if (nach.draws > zeile.draws) bericht.bruch.push({ feld: "draws", ist: nach.draws, soll: zeile.draws });
+        if (nach.tris > zeile.tris) bericht.bruch.push({ feld: "tris", ist: nach.tris, soll: zeile.tris });
+        return { meshes: out, bericht: bericht };
+    }
+
     root.__phytoCore = {
         vn2: vn2,
         fbm2: fbm2,
@@ -2059,5 +2499,13 @@
         buildBarkTubeArrays: buildBarkTubeArrays,
         lodDitherIGN: lodDitherIGN, // W5.3 — das foundry-core-_dh (Interleaved-Gradient-Noise), byte-genau
         lodCrossfadeMask: lodCrossfadeMask, // W5.3 — die EINE Studio-Dither-Blenden-Quelle (FIX v37)
+        BUDGET_GESETZ: BUDGET_GESETZ, // W8 — das Budget-Gesetz: Glut-Schwelle, Teil-Deckel, Verschmelz-Deckel, Form
+        budgetStoff: budgetStoff, // die EINE Material-Identität (Wirts-Material-Cache, Faltung, Wand)
+        budgetSeite: budgetSeite,
+        budgetGlut: budgetGlut,
+        budgetSippen: budgetSippen, // Dreiecke + Draws einer gelieferten Stufe nach der Regel des Wirts
+        budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
+        kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)
+        budgetErzwingen: budgetErzwingen, // DER Ausgang: faltet auf die Zeile, berichtet vorher/nachher + Bruch
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

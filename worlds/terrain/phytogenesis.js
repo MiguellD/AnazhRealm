@@ -4958,15 +4958,20 @@ init();
         // GENERISCH aus der Manifest-Schleife): der EMPFAENGER mergt am EINEN Ingest-Chokepoint
         // (_foundryIngestRenderConfig), ein Kern ueberschreibt nie den Block eines anderen.
         // must-ignore-fest: ein v1-only-Leser ignoriert das Zusatz-Feld schlicht.
+        // W8 — DAS BUDGET DER ZWEIT-KERNE reist auf demselben Weg (je Kern sein lod.budget — Zeilen je Art und
+        // Gestalten je Rezept — unter cfg.lod.zusatzBudget[<id>]): die Whitelist kopiert feldweise, ohne diese
+        // Zeilen fiele es still weg. Der Empfaenger mergt NUR in _foundryIngestRenderConfig (phyto-core kerneVereinen).
         try {
             for (const zk of __zweitKerne()) {
-                const ks =
-                    zk.kern.PORTAL_RENDER_CONFIG && zk.kern.PORTAL_RENDER_CONFIG.lod
-                        ? zk.kern.PORTAL_RENDER_CONFIG.lod.kindStages
-                        : null;
+                const prc = zk.kern.PORTAL_RENDER_CONFIG;
+                const ks = prc && prc.lod ? prc.lod.kindStages : null;
                 if (!ks || !cfg.lod) continue;
                 if (!cfg.lod.zusatzKindStages) cfg.lod.zusatzKindStages = {};
                 cfg.lod.zusatzKindStages[zk.id] = JSON.parse(JSON.stringify(ks));
+                if (prc.lod.budget) {
+                    if (!cfg.lod.zusatzBudget) cfg.lod.zusatzBudget = {};
+                    cfg.lod.zusatzBudget[zk.id] = JSON.parse(JSON.stringify(prc.lod.budget));
+                }
             }
         } catch (_e) {}
         return cfg;
@@ -5203,6 +5208,8 @@ init();
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
         let meshes = [];
+        let budgetBruch = null; // W8: der Bruch des Budget-Gesetzes (nur Zweit-Kerne), reist mit
+        let budgetBericht = null; // W8: Stufe + Kosten vorher/nachher (nur Zweit-Kerne), reist mit
         // JAHRESZEIT (Vorlagen-Phaenologie): AnazhRealm reicht die aktuelle Saison herein, die
         // Foundry backt die Assets in DIESER Jahreszeit (Blatt-Farbe/Praesenz Fruehling..Winter).
         if (msg.season && typeof setSeasonColors === "function") {
@@ -5273,6 +5280,28 @@ init();
                     if (o.geometry) o.geometry.dispose();
                 }
             });
+            // DAS BUDGET-GESETZ AM AUSGANG (Studio-Vertrag B2c, W8): jede Zweit-Kern-Gestalt verlaesst das Studio
+            // auf ihrer Budget-Zeile (PORTAL_RENDER_CONFIG.lod.budget[kind][stufe] des EIGENEN Kerns) — die Stoffe
+            // falten je Bindungs-Klasse auf `draws` (phyto-core `budgetErzwingen`; innerhalb der Zeile byte-gleich).
+            // Ein Bruch (Zeile fehlt, Stufe ueber tris/draws) reist als `budgetBruch` mit und schreit hier; die Wand
+            // (gate:asset-contract) baut jede Stufe und wird rot. Die Pflanzen tragen ihr Budget im Bau selbst.
+            if (isZweitKern) {
+                const PC = (typeof self !== "undefined" ? self : globalThis).__phytoCore;
+                const pk = zweit.kern.PRESETS[msg.presetId];
+                const bz = PC.budgetZeile(zweit.kern.PORTAL_RENDER_CONFIG, pk && pk.kind, msg.lod | 0);
+                const res = PC.budgetErzwingen(meshes, bz && bz.zeile);
+                meshes = res.meshes;
+                budgetBericht = {
+                    stufe: bz ? bz.stufe : null,
+                    vorher: res.bericht.vorher,
+                    nachher: res.bericht.nachher,
+                    faltungen: res.bericht.faltungen.length,
+                };
+                if (res.bericht.bruch.length) {
+                    budgetBruch = res.bericht.bruch;
+                    console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + ": " + JSON.stringify(budgetBruch));
+                }
+            }
         } catch (e) {
             meshes = [];
             try {
@@ -5293,6 +5322,10 @@ init();
                     seed: msg.seed,
                     lod: msg.lod | 0,
                     meshes,
+                    // must-ignore: nur Zweit-Kern-Antworten tragen den Budget-Bericht (Pflanzen bleiben byte-alt),
+                    // nur ein gebrochenes Budget den Bruch.
+                    ...(budgetBericht ? { budget: budgetBericht } : {}),
+                    ...(budgetBruch ? { budgetBruch } : {}),
                 },
                 "*"
             );
