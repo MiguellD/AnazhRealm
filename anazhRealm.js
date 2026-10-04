@@ -36311,6 +36311,12 @@ class AnazhRealm {
     // (je 2 Texel [Pos|Hüllradius][yaw|scale|po|anzahl]); March: Kugel-Vortest → Sphere-Tracing des
     // geteilten Vorlagen-Satzes im Platz-Raum. Plätze = die Γ5-deterministischen Raster-Plätze des
     // Zellen-Chokepoints (kein Shader-Hash-Zwilling). Band 0 bleibt Mesh (_scatterInstanceAdd).
+    // Die Gesetz-Bahn der Fern-Streu ist offen, wo ein echter Renderer den Welt-March zeichnet (der Null-Renderer
+    // ist für den Analog-Pfad blind) — die EINE Bedingung für Materialisierung und LOD-Tick.
+    _streuGesetzBahnOffen() {
+        return !(this.state.renderer && this.state.renderer._isHeadlessNull);
+    }
+
     _streuGesetzSpawn(preset, fseed, x, surfY, z, yaw, scale) {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
@@ -52664,9 +52670,13 @@ class AnazhRealm {
         // PLATZ im Gesetz-Block ihrer Kachel (kein Feld-Listen-Slot je Instanz). Bäume tragen ihre ganze
         // Studio-LOD-Kette als Instanzen — L0/L1 Mesh, L2 das gebackene Studio-Billboard; Kapsel-Kronen sind
         // nah und mittel keine Baum-Gestalt. Scheitert der Gesetz-Spawn (Fit-Takt), trägt die Instanz-Bahn.
+        // Die Fern-Entscheidung liest die GEWÜNSCHTE Stufe (Distanz), nicht nur die servierte: einstufige Arten
+        // (kindStages Blume/Fels [0]) klemmten jede Fern-Zelle auf ihr L0-Mesh — gemessen 04.10. an der Mess-Wiese
+        // 482 Blumen in 208 Meshes und 880 Geröll in 128 Meshes, alle 85–384 m, 954 Befehle / 4,65 M Dreiecke über
+        // drei Pässe. Die Fernform ist das Gesetz (Plätze im Welt-March, Passung aus der Studio-Gestalt).
         if (foundryFlat && foundryPreset && layer.kind !== "tree") {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
-            if (_cellLodF >= 2 && !(this.state.renderer && this.state.renderer._isHeadlessNull)) {
+            if ((_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()) {
                 const fseedB = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
                 const fh = this._streuGesetzSpawn(
                     foundryPreset,
@@ -52686,7 +52696,7 @@ class AnazhRealm {
                         promotable: layer.promotable === true,
                         species,
                         variantIndex,
-                        lod: _cellLodF,
+                        lod: 2, // die Gesetz-Bahn IST die Fern-Stufe (auch wo die Studio-Stufe geklemmt ist)
                         bpName: "abaum:" + foundryPreset + ":" + this._foundryVariantFor(fseedB),
                         slots: [],
                         feld: fh,
@@ -52895,6 +52905,11 @@ class AnazhRealm {
             if (rec.bpName === cell.bpName) {
                 this._scatterFreeSlots(rec.slots);
                 if (rec.feld) this._scatterFeldFrei(rec.feld); // Duplikat-Eintrag (Dedup-Refcount räumt)
+                // Die Fernform (Gesetz-Bahn) griff nicht (Fit-Takt) — die Zelle quittiert den Fern-Wunsch NICHT, sie
+                // versucht es im nächsten Durchlauf erneut (sonst zeichnete sie für immer ihr L0). Nur eine erschöpfte
+                // Kapsel-Liste beendet den Versuch (sie meldet sich einmal laut).
+                if (newLod >= 2 && layer.kind !== "tree" && this._streuGesetzBahnOffen() && !this._weltKapselnVollWarn)
+                    continue;
                 cell.lod = newLod;
                 continue;
             }
@@ -53320,7 +53335,11 @@ class AnazhRealm {
         // Hysterese: wir wechseln NUR, wenn die Distanz die nächste Schwelle
         // PLUS hysteresis überschreitet, oder die vorige MINUS hysteresis
         // unterschreitet.
+        // Jede Schwelle trägt ihre eigene Hysterese; liegt die Distanz jenseits ZWEIER Schwellen, springt die Wahl
+        // durch (Teleport, rollender Streu-Tick): ein Schritt je Aufruf liess region-private Fern-Streu, die nur in
+        // die Fern-Stufe zurückwandern darf, für immer auf L0 stehen (04.10.: 1121 Blumen/Geröll in 85–384 m).
         if (cur === 0) {
+            if (d > t12 + h) return 2;
             if (d > t01 + h) return 1;
             return 0;
         }
@@ -53330,6 +53349,7 @@ class AnazhRealm {
             return 1;
         }
         // cur === 2
+        if (d < t01 - h) return 0;
         if (d < t12 - h) return 1;
         return 2;
     }
@@ -87172,7 +87192,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.525.0";
+AnazhRealm.VERSION = "18.526.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

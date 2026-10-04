@@ -36500,6 +36500,17 @@ async function checkBandV18218LODStufen(ctx) {
             // Hysterese: cur=1 + dist=60m → kehrt zurück zu 0 (unter -h-Buffer)
             out.hyst1to0Below = r._chooseLODForDistance(t01 - h * 2, 1) === 0; // 60 → 0
             out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
+            // V18.526 — Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
+            // private Fern-Streu, die nur nach 2 zurückwandern darf, für immer auf L0).
+            const t12 = A.LOD_DISTANCES.thresh12;
+            out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
+            out.sprung2to0 = r._chooseLODForDistance(Math.max(0, t01 - h * 2), 2) === 0;
+            // Konsum: die Fern-Entscheidung der Streu liest die GEWÜNSCHTE Stufe, der Tick quittiert eine nicht
+            // gegriffene Fernform nicht (Wiederholung), beide fragen die EINE Gesetz-Bahn-Bedingung.
+            const mSrc = window.__codeOf(r._scatterMaterializeCell);
+            const tSrc = window.__codeOf(r._tickScatterLod);
+            out.fernWunsch = /(_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()/.test(mSrc);
+            out.fernWiederholung = /newLod >= 2 && layer.kind !== "tree" && this._streuGesetzBahnOffen()/.test(tSrc);
         }
 
         // ─── (C) LOD-Baupläne werden gebaut (3 Stufen) ───
@@ -36619,6 +36630,11 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (B6) Hysterese cur=0 + dist=t01+2h → wechselt 1", res.hyst0to1Above === true);
     check("V18.218 (B7) Hysterese cur=1 + dist=t01−2h → kehrt zu 0", res.hyst1to0Below === true);
     check("V18.218 (B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
+    check("V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0", res.sprung0to2 === true && res.sprung2to0 === true);
+    check(
+        "V18.526 CONSUM: die Fern-Streu liest die gewünschte Stufe, der Tick wiederholt eine nicht gegriffene Fernform",
+        res.fernWunsch === true && res.fernWiederholung === true
+    );
 
     // (C) Variant-LOD-Bauplane
     check("V18.218 (C1) _buildVariantLODs liefert 3 Bauplan-Keys", res.lodKeysReturned === true);
