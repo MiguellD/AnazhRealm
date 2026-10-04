@@ -10,7 +10,8 @@
 // Klasse · Träger · Abstand · seit wann · warum dort kein Mesh steht). Ein Satz, dessen Mesh schon übernimmt und der
 // ausdithert (der Schwund, 500 ms), ist kein Befund.
 //   S  statisch: die drei Wurzeln der Klumpen-Rampe stehen als Struktur (Bäcker frei · Karten-Rang · Nah-Gang ganz)
-//   E  Einschwingen: binnen GRENZE_E Takten fällt die Zahl auf 0 — Spitze, Dauer und die Längsten beim Namen
+//   E  Einschwingen: binnen GRENZE_E Takten steht die Welt (Bauten in der Mesh-Zone, Chunks gleich, Foundry-Schlange und
+//      Karten-Bäcker leer) und 30 Takte am Stück ohne Satz — Spitze, Dauer und die Längsten beim Namen
 //   R  Ruhe: RUHE Takte eingeschwungen, in keinem ein Satz < 64 m
 //   T  Rampe: 400 m fort (bis der Ring dort steht), zurück — binnen GRENZE_T Takten 0 Sätze < 64 m
 //   --selftest: ein erzwungener Kapsel-Satz in 20 m (ohne Träger) — die Linse wird rot und nennt ihn
@@ -218,13 +219,39 @@ function urteil(z) {
                 const ohne = r._analogZensus();
                 return { selbst: true, gesetzt: !!h, z, ohne, taktFehler: { n: taktFehlerN, erster: taktFehler1 } };
             }
-            // E — Einschwingen: Spitze, erster satzfreier Takt, Dauer je Täter
+            // E — Einschwingen: Spitze, erster satzfreier Takt, Dauer je Täter. Eingeschwungen heißt die WELT steht, nicht nur
+            // „gerade kein Satz" (in den ersten Takten ist noch kein Bau gestreamt — ein satzfreier Anfang ist vakuös):
+            // Bauten in der Mesh-Zone, Chunks 20 Takte gleich, Foundry-Schlange und Karten-Bäcker leer, dann 30 Takte satzfrei.
+            const ruhig = (() => {
+                let vor = -1,
+                    gleich = 0;
+                return () => {
+                    const st = r.state;
+                    const n = st.voxelChunks ? st.voxelChunks.size : 0;
+                    gleich = n === vor ? gleich + 1 : 0;
+                    vor = n;
+                    const f = r._foundry;
+                    const pm = st.playerMesh.position;
+                    const R2 = (st.architectureCullingRadius || 0) ** 2;
+                    let bauten = 0;
+                    for (const e of st.architectures || [])
+                        if ((e.position.x - pm.x) ** 2 + (e.position.z - pm.z) ** 2 <= R2) bauten++;
+                    return (
+                        gleich >= 20 &&
+                        bauten > 0 &&
+                        !!(f && f.ready && f.pending.size === 0 && !(f.warte && f.warte.length)) &&
+                        !(r._impostorBakeQueue && r._impostorBakeQueue.length) &&
+                        !r._impostorBakePending
+                    );
+                };
+            })();
             let spitze = 0,
                 frei = null,
                 freiSeit = 0;
             const dauer = new Map();
             for (let t = 1; t <= k.grenzeE; t++) {
                 await tick();
+                const welt = ruhig();
                 const h = hart();
                 if (!h) continue;
                 spitze = Math.max(spitze, h.length);
@@ -236,9 +263,9 @@ function urteil(z) {
                     dauer.set(key, d);
                 }
                 if (t % 100 === 0) console.log("[N] Einschwingen Takt " + t + ": " + h.length + " Sätze < 64 m");
-                if (h.length === 0) {
+                if (h.length === 0 && welt) {
                     if (frei === null) frei = t;
-                    if (++freiSeit >= 30) break; // 30 Takte am Stück satzfrei = eingeschwungen
+                    if (++freiSeit >= 30) break; // die Welt steht und 30 Takte am Stück satzfrei = eingeschwungen
                 } else {
                     frei = null;
                     freiSeit = 0;
