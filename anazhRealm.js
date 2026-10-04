@@ -32405,8 +32405,21 @@ class AnazhRealm {
         return { submerged: true, surfaceY };
     }
 
+    // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert die
+    // Tiefe in jedem Pass, der ihn liest (updateBefore). Wasser (`viewportLinearDepth`, der Modul-Knoten) und Feld-Pass
+    // (ein zweiter `viewportDepthTexture()`) zogen zwei Kopien derselben Szenen-Tiefe — je Frame zwei Vollbild-Kopien,
+    // bei 1080p 2 × 7,9 MB (gemessen 04.10.: zwei „szene:tiefenkopie" am Szene-Ziel). Beide Leser lesen diesen EINEN
+    // Knoten; der Name reist mit dem Klon in den VRAM-Zensus.
+    _szeneTiefe() {
+        if (!this._szeneTiefeKnoten) {
+            this._szeneTiefeKnoten = THREE.TSL.viewportDepthTexture();
+            this._szeneTiefeKnoten.defaultFramebuffer.name = "szene:tiefenkopie";
+        }
+        return this._szeneTiefeKnoten;
+    }
+
     // DIE TIEFE NACH DEM REALLOC: die Leser der Viewport-Tiefe (r184 ViewportDepthTextureNode, ein MSAA-Klon je
-    // Render-Ziel, kopiert im Pass-Bruch) sind das Wasser (`viewportLinearDepth`, weiche Ufer) und der Feld-Pass
+    // Render-Ziel, kopiert im Pass-Bruch; der EINE Knoten `_szeneTiefe`) sind das Wasser (weiche Ufer) und der Feld-Pass
     // (die Tiefen-Grenze des Marchs). Ein Resize (`setSize`) legt Szene-Tiefe und Klon neu an, die Textur-Bindung
     // eines Lesers zieht nicht nach: jeder Submit des Hauptpasses fällt („Destroyed texture … used in a submit",
     // renderContext des Szene-Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster
@@ -32493,7 +32506,6 @@ class AnazhRealm {
             select: cond,
             Fn,
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
-            viewportLinearDepth,
             linearDepth,
             depth,
         } = TSL;
@@ -32665,7 +32677,7 @@ class AnazhRealm {
         // der Uferlinie, pro Pixel → die weiche Kante folgt dem Terrain, egal wie grob das Mesh. Ufer-Alpha
         // (`edgeFade`) liest `waterThick` (Viewport-Einheiten); die Tiefen-FARBE (`deepen`) liest die glatte
         // Meter-Tiefe `aDepth` — `waterThick` sähe die facettierte Sohle (Kontur-Bänder).
-        const sceneLin = viewportLinearDepth;
+        const sceneLin = linearDepth(this._szeneTiefe());
         const fragLin = linearDepth(depth);
         const waterThick = max(sceneLin.sub(fragLin), float(0.0));
         const edgeFade = smoothstep(float(0.0), uShoreWidth, waterThick); // 0 an der geom. Uferlinie → 1 dahinter (V18.14-Form)
@@ -35538,7 +35550,7 @@ class AnazhRealm {
             fogFarbe: U.fogFarbe,
             // Die Szenen-Tiefe VOR dem Feld-Pass (r184-Viewport-Tiefe, Kopie im Pass-Bruch wie beim Wasser): die
             // Grenze des Marchs. Ein Leser der Viewport-Tiefe bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
-            szeneTiefe: TSL.viewportDepthTexture().x,
+            szeneTiefe: this._szeneTiefe().x,
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
@@ -60048,7 +60060,7 @@ class AnazhRealm {
         if (!obj) return;
         if (renderer && scene && cam && typeof renderer.compileAsync === "function") {
             const done = disposeAfter ? () => this._disposeSoulGroup(obj) : () => {};
-            Promise.resolve(renderer.compileAsync(obj, cam, scene))
+            this._kompiliere(obj, cam, scene)
                 .catch(() => {})
                 .finally(done);
         } else if (disposeAfter) {
@@ -60073,13 +60085,40 @@ class AnazhRealm {
         const stage = this._bootWarmStage || 0;
         if (stage === 0 && chunks >= 3) {
             this._bootWarmStage = 1;
-            Promise.resolve(r.compileAsync(sc, cam)).catch(() => {});
+            this._kompiliere(sc, cam, null).catch(() => {});
             return;
         }
         const built = typeof this._builtRingRadius === "function" ? this._builtRingRadius() : null;
         if (stage >= 1 && built !== null && built >= (st._activeRingRadius || 1)) {
             this._bootWarmDone = true;
-            Promise.resolve(r.compileAsync(sc, cam)).catch(() => {});
+            this._kompiliere(sc, cam, null).catch(() => {});
+        }
+    }
+
+    // DAS KOMPILIER-ZIEL (W7): r184-compileAsync kompiliert gegen das GESETZTE Render-Ziel — ohne eines gegen das
+    // Rahmenpuffer-Ziel der Leinwand (Ton-Abbildung an): rgba16f + Tiefe, dazu die Viewport-Tiefen-Kopie, die Wasser
+    // und Feld-Pass dort anlegen — drei Bildschirm-Ziele (bei 1080p 31,6 MB), die kein Frame je beschreibt (gemessen
+    // 04.10.: jede Reife-Wache und jeder Ofen-Posten rief es). Der Frame zeichnet die Szene ins Ziel des Szenen-Passes
+    // — gegen DAS wird kompiliert (dieselben Formate, derselbe Pipeline-Schlüssel). compileAsync liest das Ziel synchron
+    // vor seinem ersten await; danach gilt wieder das alte. Ohne Post-Kette (gescheitert) bleibt das Leinwand-Ziel.
+    _kompiliere(obj, cam, szene) {
+        const r = this.state.renderer;
+        const pp = this._ensurePostProcessing();
+        const sp = pp && !this.state.postProcessingFailed ? this.state.scenePass : null;
+        const ziel = sp && sp.renderTarget ? sp.renderTarget : null;
+        const alt = ziel ? r.getRenderTarget() : null;
+        const altMrt = ziel ? r.getMRT() : null;
+        if (ziel) {
+            r.setRenderTarget(ziel);
+            r.setMRT(sp.getMRT()); // wie PassNode.compileAsync: Ziel UND MRT des Passes tragen den Pipeline-Schlüssel
+        }
+        try {
+            return Promise.resolve(r.compileAsync(obj, cam, szene || null));
+        } finally {
+            if (ziel) {
+                r.setRenderTarget(alt);
+                r.setMRT(altMrt);
+            }
         }
     }
 
@@ -62391,7 +62430,7 @@ class AnazhRealm {
         // (Warn-Fluten + Pipeline-Churn). Leere Bürger warten auf den ersten echten Beitritt.
         const g = mesh.geometry;
         if (!g || !g.attributes || !g.attributes.position) return;
-        Promise.resolve(r.compileAsync(mesh, st.camera, st.scene))
+        this._kompiliere(mesh, st.camera, st.scene)
             .catch(() => {})
             .finally(() => {
                 const p = mesh.parent;
@@ -86282,7 +86321,10 @@ class AnazhRealm {
     _fxaaNode(TSL, ldr) {
         const { convertToTexture, screenUV, screenSize, vec2, vec3, vec4, float, dot, min, max, abs, clamp, select } =
             TSL;
-        const tex = convertToTexture(ldr);
+        // Das Zwischen-Ziel trägt das fertige LDR-Bild (getont, sRGB-kodiert) — 8 bit wie die Leinwand, ohne Tiefe: der
+        // Pass zeichnet ein Vollbild-Dreieck, kein Leser fragt Tiefe (r184-Vorgabe: rgba16f + depth24plus, bei 1080p 23,7 MB).
+        const tex = convertToTexture(ldr, null, null, { type: THREE.UnsignedByteType, depthBuffer: false });
+        tex.renderTarget.texture.name = "fxaa:eingang";
         const px = vec2(1.0, 1.0).div(screenSize);
         const L = vec3(0.299, 0.587, 0.114);
         const nb = (dx, dy) => dot(tex.sample(screenUV.add(px.mul(vec2(dx, dy)))).rgb, L);
