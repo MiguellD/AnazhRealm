@@ -41452,8 +41452,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 /WG\.spec\[0\]/.test(builderSrc) &&
                 /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
                 /normalize\(uSunDir\)/.test(builderSrc);
-            // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via viewportLinearDepth + waterThick.
-            waterDepthShoreline = /viewportLinearDepth/.test(builderSrc) && /waterThick/.test(builderSrc);
+            // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via Szenen-Tiefe + waterThick — die Szenen-Tiefe ist der EINE
+            // Knoten _szeneTiefe (W7: Wasser und Feld-Pass lesen dieselbe Kopie, vorher zwei).
+            waterDepthShoreline =
+                /linearDepth\(this\._szeneTiefe\(\)\)/.test(builderSrc) && /waterThick/.test(builderSrc);
             // V13.9 (Schicht 3): dünnes Wand-Bluten pro Pixel cullen — der Builder
             // nutzt uMinDepth + alphaCulled + discardet via alphaTest.
             waterMinDepthCull =
@@ -41530,7 +41532,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
-        check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (viewportLinearDepth)", v830Results.waterDepthShoreline);
+        check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)", v830Results.waterDepthShoreline);
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);

@@ -182,6 +182,14 @@ jobs:
               # beide; der Selbsttest zeigt, dass der alte Schreiber (renderer.shadowMap.needsUpdate) keine erreicht.
               run: npm run gate:schatten-takt
 
+            - name: Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)
+              # Faehrt die ECHTEN Methoden an einer echten CSM-Instanz (GPU-frei): die Box deckt die Frustum-Scheibe
+              # (Mittag/Abend), ist eng, rastet und schnappt aufs Texel-Raster; die Karte folgt der Texel-Dichte, ihre
+              # Ziele sind r8 + 16 bit ab dem Bau; je Pass nur Regionen und Werfer in der Kaskaden-Box, ein Werfer 2 km
+              # fern wirft nie, einer hinter dem Blick wirft; der Fit laeuft im Haken des Haupt-Passes vor den Karten.
+              # Der Selbsttest zeigt, dass die alte Regel (jeder Pass liest das Haupt-Urteil) rot wird.
+              run: npm run gate:schatten-werfer
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
