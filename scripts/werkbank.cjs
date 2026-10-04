@@ -608,6 +608,15 @@ async function starte() {
     const fehler = [];
     const zerstoert = { n: 0 };
     page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
+    // Der Tod der Seite beim NAMEN (04.10.: zweimal „detached Frame" ohne Spur — Absturz, Schließen oder
+    // Navigation waren nicht zu unterscheiden): jedes Ende landet mit Uhrzeit im Werkbank-Log.
+    const tod = (was) => console.log(`[seite] ${new Date().toISOString()} ${was}`);
+    page.on("error", (e) => tod("ABSTURZ " + ((e && e.message) || e)));
+    page.on("close", () => tod("GESCHLOSSEN"));
+    page.on("framenavigated", (f) => {
+        if (f === page.mainFrame()) tod("navigiert " + f.url());
+    });
+    browser.on("disconnected", () => tod("Browser getrennt"));
     // WebGPU-Validierung meldet sich nur als Konsolen-Fehler (kein pageerror) — die Wahrheit über schwarze Bilder.
     page.on("console", (m) => {
         if (/Destroyed texture|Destroyed buffer/.test(m.text())) zerstoert.n++;
@@ -737,6 +746,7 @@ async function starte() {
         req.on("data", (c) => (d += c));
         req.on("end", async () => {
             const send = (o) => {
+                if (res.headersSent) return;
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify(o));
             };
@@ -932,7 +942,9 @@ async function starte() {
                     // Ports SOFORT frei geben (sonst fand ein Neustart :4489 noch belegt — gemessen 01.10.).
                     seiten.close();
                     steuer.close();
-                    await browser.close();
+                    // Eine tote Seite lässt close() werfen — der catch unten sendete dann ein zweites Mal
+                    // (ERR_HTTP_HEADERS_SENT) und riss den Prozess ohne Chrome-Abbau herunter.
+                    await browser.close().catch((e) => tod("close: " + ((e && e.message) || e)));
                     process.exit(0);
                 }
                 send({ fehler: "unbekannter Weg " + req.url });
