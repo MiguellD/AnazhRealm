@@ -362,9 +362,10 @@ async function runPartB() {
         res.visH = visH;
         res.factor = factor;
         const stageOfKey = (k) => {
-            if (/#fimp:/.test(k)) return 2;
-            const m = /#f:[^|]+\|\d+\|(\d)\|/.exec(k);
-            return m ? +m[1] : null;
+            // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`
+            if (/(^|#)fimp:/.test(k)) return 2;
+            const m = /(^|#)f:[^|]+\|\d+\|(\d)\|/.exec(k);
+            return m ? +m[2] : null;
         };
         const stagesOf = (e) => {
             const s = new Set();

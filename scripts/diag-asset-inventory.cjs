@@ -164,9 +164,11 @@ const server = http.createServer((req, res) => {
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
         const VEG =
             /(^|[#@:_])(baum_|strauch|busch|gras|blume|farn|pilz|kiesel|fels|findling|geroell|basalt|sediment|zacken|kristall|stamm_gefallen|totholz|grown_)/i;
+        // Welle B: der platzierte Bau keyt nach Studio-Geometrie — ein Schlüssel OHNE Typ ist selbst das Leaf.
         const leafOf = (k) => {
             const i = k.indexOf("#");
-            return i >= 0 ? k.slice(i + 1) : "";
+            if (i >= 0) return k.slice(i + 1);
+            return /^(f:|fimp:)/.test(k) ? k : "";
         };
         const classifyKey = (k) => {
             if (k.startsWith("fscatter:")) return { b: "studio", why: "fscatter" };

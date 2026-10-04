@@ -274,7 +274,7 @@ function deriveGestalt(srcNC) {
         res.c.instFoundry = entry.instFoundry === true;
         res.c.slotCount = Array.isArray(entry.instSlots) ? entry.instSlots.length : 0;
         res.c.allSlotsFoundry =
-            Array.isArray(entry.instSlots) && entry.instSlots.every((s) => String(s.key).includes("#f:verkalkt|"));
+            Array.isArray(entry.instSlots) && entry.instSlots.every((s) => /(^|#)f:verkalkt\|/.test(String(s.key)));
         res.c.meshNull = entry.mesh === null || entry.mesh === undefined;
         // KEIN Doppel-Bild: keine LEBENDE welt_terrain-Gruppe ausserhalb des f:-Namensraums.
         res.c.partGroupsAlive = 0;

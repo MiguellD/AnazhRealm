@@ -914,10 +914,6 @@ class AnazhRealm {
             // (Material-Cache-Key; Live-Toggle wirkt nur auf neue Gruppen) — sofortiges A/B ist state.lodMaskOn
             // (uLodMaskOn: Maske aus ohne Rebuild; das Band bleibt opak stehen, kein Loch).
             foundryCrossfade: true,
-            // Platzierte Architektur region-keyen (p:regX,regZ) für kleine/mittlere Bauten → lokale
-            // Bounding-Sphere, frustumCulled=true, Umsehen cullt sie. false (+ umsehen) = A/B; der
-            // Master-Schalter useRegionFoliageCull deckelt beides (Streu + placed).
-            useRegionArchCull: true,
             // Mesh-Merge: je Bauplan-Variante EINE merged Geometry je (shape, material)-Gruppe (typisch
             // bark + foliage) → ~2 Draws statt ~80. Map<bpName, {leaves:[{geom, mat, localMatrix=Identity}]}>,
             // gelesen von _archFlattenBlueprint bei bp._isMerged (genVersion ≥ 6). Welt-gebunden: disposed in
@@ -14776,14 +14772,13 @@ class AnazhRealm {
         try {
             const m = this.state.archInstanceGroups;
             if (!m || !m.size) return null;
-            const k = { fscatter: 0, fimp: 0, foundry: 0, superRegion: 0, platziert: 0, streuRegion: 0, global: 0 };
+            const k = { fscatter: 0, fimp: 0, foundry: 0, superRegion: 0, streuRegion: 0, global: 0 };
             for (const key of m.keys()) {
                 if (typeof key !== "string") continue;
                 if (key.startsWith("fscatter:")) k.fscatter++;
-                else if (key.includes("#fimp:")) k.fimp++;
-                else if (key.includes("#f:")) k.foundry++;
-                if (key.includes("@s:") || key.includes("@p:s:")) k.superRegion++;
-                else if (key.includes("@p:")) k.platziert++;
+                else if (/(^|#)fimp:/.test(key)) k.fimp++;
+                else if (/(^|#)f:/.test(key)) k.foundry++;
+                if (key.includes("@s:")) k.superRegion++;
                 else if (key.includes("@")) k.streuRegion++;
                 else k.global++;
             }
@@ -52082,15 +52077,11 @@ class AnazhRealm {
         return slots;
     }
 
-    // Die EINE Reap-Frage: darf eine leere Gruppe (liveCount 0) ganz entsorgt werden? JA für
-    // Foundry-Globale (#f:/#fimp:, wachsen beim Wandern unbegrenzt) und jede regionale (@p:, @s:,
-    // @regX,regZ — per Slot geleert würde sie beim Region-Tod nie mehr eingesammelt = Leck).
-    // Neuaufbau lazy via _archInstanceGroupFor. NEIN nur für Grammatik-Globale (kein @, kein #f:).
-    _archGroupKeyReapable(key) {
-        if (typeof key !== "string") return false;
-        return /#(f:|fimp:)/.test(key) || key.includes("@");
-    }
-
+    // Welle B — JEDE leere Gruppe fällt (die Reap-Frage nach dem Schlüssel-Format ist gefallen): seit der platzierte
+    // Bau global keyt, hätte die alte Ausnahme „Grammatik-Globale bleiben" jede leere Bau-Hülle als toten Draw
+    // (count am High-Water) für immer stehen lassen. Der EINE Leer-Chokepoint (_archGroupLeerDispose) prüft
+    // liveCount 0 und gibt der Hülle im Spiel die Gnadenfrist (kein Churn); Neuaufbau lazy via
+    // _archInstanceGroupFor.
     _scatterFreeSlots(slots) {
         if (!Array.isArray(slots)) return;
         const reap = [];
@@ -52098,7 +52089,7 @@ class AnazhRealm {
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             if (g) {
                 this._archGroupFree(g, slot);
-                if (this._archGroupKeyReapable(key)) reap.push(key);
+                reap.push(key);
             }
         }
         // SUBMIT-WAL (Flugschreiber-Befund: sceneChildren wächst monoton beim Wandern,
@@ -52669,12 +52660,12 @@ class AnazhRealm {
             // Zellen mit region-privaten Slots (@regX,regZ) dürfen zurück in die Fern-Stufe wandern (der
             // Ursprungs-Bounding-Sphere-Hazard ist an der Wurzel weg: die Null-Skala erbt die Position,
             // _archGroupFree) — sonst frieren Millionen L1-Tris ein. Promotions (→ näher) bleiben dem
-            // Region-Lifecycle. Super-Region-Slots (`@s:`/`@p:s:`, _archFernRegionKey) wandern beidseitig.
+            // Region-Lifecycle. Super-Region-Slots (`@s:`, _archFernRegionKey) wandern beidseitig.
             let hatRegional = false;
             for (const s of cell.slots) {
                 if (s && typeof s.key === "string") {
                     const at = s.key.indexOf("@");
-                    if (at >= 0 && !(s.key.startsWith("@s:", at) || s.key.startsWith("@p:s:", at))) {
+                    if (at >= 0 && !s.key.startsWith("@s:", at)) {
                         hatRegional = true;
                         break;
                     }
@@ -52691,7 +52682,7 @@ class AnazhRealm {
             if (newLod === cell.lod) continue;
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
             // `fade` m näher wäre es noch L2 — kein Flackern am Dither-Band). Die leere private Hülle reapt
-            // _scatterFreeSlots über _archGroupKeyReapable.
+            // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
             if (hatRegional) {
                 const fadeM = Number.isFinite(AnazhRealm.LOD_DISTANCES.fade) ? AnazhRealm.LOD_DISTANCES.fade : 8;
                 if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH) !== 2)
@@ -59790,6 +59781,19 @@ class AnazhRealm {
         return mat;
     }
 
+    // Welle B — DIE LICHTQUELLE: ein Teil, dessen Genom das Leuchten trägt (`emissiveBoost`, das Glut-/Kristall-
+    // Genom) UND dessen Substanz glimmt (dieselbe Klammer `emissiv − 0.5 > 0.01` wie _archLeafMaterial). Die Klammer
+    // allein trifft auch Holz, Laub, Leder (ihr Glimmen ist ein Ton, kein Feuer) — erst die Genom-Deklaration macht
+    // den Teil zum Licht. Eine Lichtquelle wirft keinen Schatten (Glut-Bett und -Zungen; das Becken wirft).
+    _archTeilLeuchtet(part) {
+        if (!part || !Number.isFinite(part.emissiveBoost)) return false;
+        const def =
+            typeof part.material === "string" && this.state.materials ? this.state.materials[part.material] : null;
+        const profil =
+            def && def.tags ? this._substanceResponseProfile(def.tags) : AnazhRealm.SUBSTANCE_RESPONSE.defaults.werk;
+        return Math.max(0, (Number(profil && profil.emissiv) || 0) - 0.5) > 0.01;
+    }
+
     // Minimaler Geometrie-Merger (BufferGeometryUtils.mergeGeometries fehlt im vendored Bundle). Erwartet
     // IDENTISCHE Attribute (position, normal, color), Eingänge optional indexed; Ausgabe nicht-indiziert.
     _mergeGeometries(geometries) {
@@ -62296,11 +62300,19 @@ class AnazhRealm {
                 // Marker (Farbe NICHT in der Signatur), reist die Part-Farbe als
                 // Instanz-Farbe (der EINE Slot-Farb-Chokepoint _archSlotColor).
                 if (mat.userData && mat.userData.leafTint) leaf.tint = this._archPartTintColor(part);
+                // Welle B — Glut-Teile werfen nicht (Lichtquelle, _archTeilLeuchtet; aus beiden Kaskaden raus).
+                if (this._archTeilLeuchtet(part)) leaf.castShadow = false;
                 leaves.push(leaf);
             }
             seen.delete(blueprint.name);
         };
         recurse(bp, new THREE.Matrix4(), 0, new Set());
+        // Welle B — DIE DRAW-EINHEIT IST MATERIAL × GEOMETRIE: LICHTQUELLEN-Teile (_archTeilLeuchtet; ihr Material
+        // backt die Farbe, sie werfen nicht) verschmelzen je Material und Attribut-Form zu EINEM Leaf (Geometrie im
+        // Bauplan-Raum, localMatrix = Identität) — dieselben Dreiecke, dasselbe Material, ein Befehl statt je Teil
+        // einer (die Glut-Zungen einer Variante: 1–3 → 1). Jeder andere Teil bleibt je Teil (deckungsgleich zum
+        // klassischen Bau). Der Foundry-Flat trägt dasselbe Gesetz (_foundryFlatVerschmelzen).
+        if (!blocked && leaves.length > 1) leaves.splice(0, leaves.length, ...this._archLeavesVerschmelzen(leaves));
         if (blocked || leaves.length === 0) {
             // Unbenutzte Leaf-Ressourcen freigeben (nicht instancbar).
             for (const l of leaves) {
@@ -62317,6 +62329,79 @@ class AnazhRealm {
         result.leaves = leaves;
         cache.set(name, result);
         return result;
+    }
+
+    // Die Verschmelzung des Per-Teil-Flattens (Reihenfolge = erstes Vorkommen; ein Einzelner bleibt unberührt).
+    _archLeavesVerschmelzen(leaves) {
+        const sig = (lf) => {
+            const g = lf.geom;
+            if (!g || !g.attributes || !g.attributes.position || lf.tuer || lf.shadowTwin) return null;
+            // nur Lichtquellen (castShadow false aus _archTeilLeuchtet) ohne Instanz-Farb-Kanal
+            if (lf.castShadow !== false || lf.tint !== undefined) return null;
+            if (g.groups && g.groups.length) return null;
+            for (const k in g.attributes) if (g.attributes[k].isInterleavedBufferAttribute) return null;
+            const a = Object.keys(g.attributes)
+                .sort()
+                .map((k) => k + ":" + g.attributes[k].itemSize + (g.attributes[k].normalized ? "n" : ""))
+                .join(",");
+            return [lf.mat.uuid, g.index ? "i" : "x", a].join("|");
+        };
+        const sippen = new Map();
+        const aus = [];
+        for (const lf of leaves) {
+            const k = sig(lf);
+            if (k === null) {
+                aus.push(lf);
+                continue;
+            }
+            let sp = sippen.get(k);
+            if (!sp) {
+                sp = [];
+                sippen.set(k, sp);
+                aus.push(sp); // Platzhalter an der Stelle des ersten Vorkommens
+            }
+            sp.push(lf);
+        }
+        return aus.map((x) => {
+            if (!Array.isArray(x)) return x;
+            if (x.length === 1) return x[0];
+            // Attribut-treu (jedes Attribut der Sippe, Index mit Vertex-Versatz) — die Teile im Bauplan-Raum.
+            const geoms = x.map((lf) => lf.geom.clone().applyMatrix4(lf.localMatrix));
+            const merged = new THREE.BufferGeometry();
+            let vSumme = 0;
+            for (const g of geoms) vSumme += g.attributes.position.count;
+            for (const name of Object.keys(geoms[0].attributes)) {
+                const a0 = geoms[0].attributes[name];
+                const arr = new a0.array.constructor(vSumme * a0.itemSize);
+                let o = 0;
+                for (const g of geoms) {
+                    const a = g.attributes[name];
+                    arr.set(a.array.subarray(0, a.count * a.itemSize), o);
+                    o += a.count * a.itemSize;
+                }
+                merged.setAttribute(name, new THREE.BufferAttribute(arr, a0.itemSize, a0.normalized));
+            }
+            if (geoms[0].index) {
+                let iSumme = 0;
+                for (const g of geoms) iSumme += g.index.count;
+                const idx = vSumme > 65535 ? new Uint32Array(iSumme) : new Uint16Array(iSumme);
+                let o = 0,
+                    v = 0;
+                for (const g of geoms) {
+                    const li = g.index.array;
+                    for (let i = 0; i < g.index.count; i++) idx[o + i] = li[i] + v;
+                    o += g.index.count;
+                    v += g.attributes.position.count;
+                }
+                merged.setIndex(new THREE.BufferAttribute(idx, 1));
+            }
+            for (const g of geoms) g.dispose();
+            for (const lf of x) lf.geom.dispose();
+            merged.computeBoundingBox();
+            const out = { geom: merged, mat: x[0].mat, localMatrix: new THREE.Matrix4() };
+            if (x[0].castShadow === false) out.castShadow = false;
+            return out;
+        });
     }
 
     // === Instancing (HISM-Registry) ===
@@ -62382,11 +62467,11 @@ class AnazhRealm {
             bg.name = "regionBundle:" + regionKey;
             bg.userData.regionKey = regionKey;
             // Analytische Region-Kugel für den Frame-Cull (ersetzt das im Replay eingefrorene three-Culling).
-            // Keys: "x,z" · "p:x,z" · Super-Region "s:x,z"/"p:s:x,z". Über-Inklusion ist sicher (nur GPU-Preis),
-            // Unter-Inklusion wäre ein Pop → großzügiger Höhen-/Überhang-Puffer.
-            const m = /^(p:)?(s:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
+            // Keys: "x,z" · Super-Region "s:x,z". Über-Inklusion ist sicher (nur GPU-Preis), Unter-Inklusion
+            // wäre ein Pop → großzügiger Höhen-/Überhang-Puffer.
+            const m = /^(s:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
             if (m) {
-                const S = m[2]
+                const S = m[1]
                     ? Number.isFinite(AnazhRealm.SCATTER_FERN_SUPERREGION) && AnazhRealm.SCATTER_FERN_SUPERREGION > 1
                         ? AnazhRealm.SCATTER_FERN_SUPERREGION
                         : 4
@@ -62394,7 +62479,7 @@ class AnazhRealm {
                 const R = AnazhRealm.ARCH_REGION_M * S;
                 const cy = (Number.isFinite(this.state.terrainBaseHeight) ? this.state.terrainBaseHeight : 0) + 40;
                 bg.userData.cullSphere = new THREE.Sphere(
-                    new THREE.Vector3((Number(m[3]) + 0.5) * R, cy, (Number(m[4]) + 0.5) * R),
+                    new THREE.Vector3((Number(m[2]) + 0.5) * R, cy, (Number(m[3]) + 0.5) * R),
                     R * Math.SQRT1_2 + 140
                 );
             }
@@ -62983,8 +63068,8 @@ class AnazhRealm {
     // wählen. Placed Architektur (`p:`-Region-Key ODER global) bleibt Layer-0-only (kein Laub).
     _markFoliageLayer(mesh, regionKey, regional) {
         if (!mesh || !mesh.layers || typeof mesh.layers.enable !== "function") return;
-        // Foliage = region-gestreute Vegetation; die platzierte Architektur trägt den `p:`-Präfix.
-        const isFoliage = regional !== false && !(typeof regionKey === "string" && regionKey.startsWith("p:"));
+        // Foliage = region-gestreute Vegetation; die platzierte Architektur ist global (Welle B).
+        const isFoliage = regional !== false && regionKey != null;
         if (isFoliage) mesh.layers.enable(AnazhRealm.FOLIAGE_LAYER);
     }
 
@@ -63080,7 +63165,10 @@ class AnazhRealm {
         // GPU-Befehlen eines Frames.
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
-        const key = regional ? name + "#" + leafIdx + "@" + regionKey : name + "#" + leafIdx;
+        // Welle B — ein Bau-Schlüssel ist Studio-Geometrie: ruft der platzierte Bau mit leerem Typ (das Leaf trägt
+        // eine Studio-Identität), ist der Leaf-Schlüssel selbst die Gruppe (felsbogen und felsturm teilen zacken).
+        const basis = name ? name + "#" + leafIdx : String(leafIdx);
+        const key = regional ? basis + "@" + regionKey : basis;
         let g = this.state.archInstanceGroups.get(key);
         if (g) return g;
         const capacity = 16;
@@ -63277,28 +63365,9 @@ class AnazhRealm {
         g.free.push(slot);
     }
 
-    // Region-Key einer PLATZIERTEN Struktur (null = global); braucht useRegionFoliageCull UND
-    // useRegionArchCull. `p:` trennt den Namensraum von der Streu (`_disposeScatterRegion` iteriert nur
-    // @regX,regZ → entsorgt nie eine platzierte Gruppe). GROSSE Strukturen (Span > Schwelle): global.
-    _archPlacedRegionKey(entry) {
-        if (this.state.useRegionArchCull === false || this.state.useRegionFoliageCull === false) return null;
-        if (!entry || !entry.position) return null;
-        const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        // BÄUME sind GLOBAL instanziert (erkannt über die EINE Wald-Quelle FOREST.crown): region-gekeyt
-        // zersplitterten sie in N Regionen × Leaf-Gruppen — der Draw-Call-Preis überwog den Cull-Gewinn.
-        // Totholz/Karst/Büsche bleiben regional (Boden, tragen die Cull-Rate).
-        if (bp && typeof bp._grownSpecies === "string" && AnazhRealm.FOREST.crown[bp._grownSpecies]) return null;
-        const ext = this._compoundVisualExtent(bp);
-        const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
-        const span = Math.max(ext.dx || 0, ext.dz || 0) * scale;
-        if (span > AnazhRealm.ARCH_REGION_CULL_MAX_SPAN) return null; // groß → global (kein Cull-Gewinn)
-        const R = AnazhRealm.ARCH_REGION_M;
-        return "p:" + Math.floor((entry.position.x || 0) / R) + "," + Math.floor((entry.position.z || 0) / R);
-    }
-
     // Die EINE Fern-Key-Ableitung: trägt ein Leaf die FERN-Stufe (Impostor `fimp:` · Foundry-L2 `f:…|2|…`
     // · Grammatik `_lod2` · Streu `fscatter:…:2`), mappt sein Region-Key auf die SUPER-REGION (4×4, Marker
-    // `s:`) — camera-facing Quads nutzen den Region-Cull kaum. Deckt auch platzierte Fern-Leaves (`p:`);
+    // `s:`) — camera-facing Quads nutzen den Region-Cull kaum. Der platzierte Bau ist global (null-Key, Welle B);
     // BAUM-Streu bleibt global (null-Key). Ein Super-Key ist über Regionen GETEILT: _disposeScatterRegion
     // räumt nur den eigenen `@regX,regZ`-Suffix, die Empty-Dispose (`_archInstanceRemove`) den Rest.
     _archFernRegionKey(name, leaf, regionKey) {
@@ -63311,9 +63380,9 @@ class AnazhRealm {
         if (!fern) return regionKey;
         const S = AnazhRealm.SCATTER_FERN_SUPERREGION;
         if (!(Number.isFinite(S) && S > 1)) return regionKey; // S=1 = das alte per-Region-Keying (A/B-Hebel der Linse)
-        const m = /^(p:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
+        const m = /^(-?\d+),(-?\d+)$/.exec(String(regionKey));
         if (!m) return regionKey; // schon gemappt (s:) oder fremdes Format → unberührt (idempotent)
-        return (m[1] || "") + "s:" + Math.floor(Number(m[2]) / S) + "," + Math.floor(Number(m[3]) / S);
+        return "s:" + Math.floor(Number(m[1]) / S) + "," + Math.floor(Number(m[2]) / S);
     }
 
     // Die EINE Slot-Farbe (Chokepoint von _archInstanceAdd + _scatterInstanceAdd): Part-Farbe (leaf.tint)
@@ -63621,16 +63690,23 @@ class AnazhRealm {
         } else {
             tintColor.setRGB(1, 1, 1);
         }
-        // V18.353 — PHASE A.1 (Draw-Call-Kollaps): der REGION-Key der platzierten Struktur
-        // (`p:regX,regZ`, EINMAL pro Eintrag). Kleine/mittlere Bauten gehen in eine
-        // region-lokale Gruppe → frustumCulled=true → Umsehen cullt sie (das V18.300-Muster).
-        const regionKey = this._archPlacedRegionKey(entry);
+        // Welle B — der platzierte Bau ist GLOBAL (kein Regions-Schlüssel): er lebt nur in der Mesh-Zone (Cull-Radius
+        // 100–150 m), jenseits trägt der Box-Satz im Welt-March; eine 256-m-Region brachte keinen Cull (ihre Kugel
+        // R·√½ + 140 m schneidet das Frustum praktisch immer), sie vervielfachte nur die Gruppen je Leaf (@p:).
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
             // Der Leaf-Schluessel ist normal der Array-Index; ein Leaf DARF ihn ueberschreiben
             // (leaf.leafKey) — so bekommt Foundry-Geometrie je Art:Variante:LOD:Teil eine EIGENE
             // InstancedMesh-Gruppe im BESTEHENDEN HISM (Vielfalt + LOD + Instancing, kein Parallelpfad).
-            const g = this._archInstanceGroupFor(entry.type, leaf.leafKey != null ? leaf.leafKey : i, leaf, regionKey);
+            // Trägt das Leaf eine Studio-Identität (f:/fimp:), IST sie die Gruppe — ohne den Bau-Typ (zwei Typen
+            // mit derselben Studio-Geometrie zeichnen in EINER Gruppe).
+            const studio = typeof leaf.leafKey === "string" && /^(f|fimp):/.test(leaf.leafKey);
+            const g = this._archInstanceGroupFor(
+                studio ? "" : entry.type,
+                leaf.leafKey != null ? leaf.leafKey : i,
+                leaf,
+                null
+            );
             const slot = this._archGroupAlloc(g);
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
@@ -63724,18 +63800,16 @@ class AnazhRealm {
             if (!bandOnly) entry.instanced = false;
             return;
         }
-        // Region-private PLATZIERTE Gruppen (@p:), die nach dem Freigeben LEER sind, GANZ entsorgen (wie
-        // _disposeScatterRegion) → keine leeren Gruppen beim Erkunden; Neuaufbau lazy (_archInstanceGroupFor).
-        const placedRegionKeys = new Set();
+        // Gruppen, die nach dem Freigeben LEER sind, GANZ entsorgen (wie _disposeScatterRegion) → keine leeren
+        // Gruppen beim Erkunden; Neuaufbau lazy (_archInstanceGroupFor). Welle B: JEDE Gruppe ist reapbar (die
+        // geteilte Geometrie geht via _disposeArchInstanceGroup deferred frei; Leer-Bedingung liveCount<=0).
+        const geleerte = new Set();
         for (const list of lists)
             for (const { key, slot } of list) {
                 const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
                 if (g) {
                     this._archGroupFree(g, slot);
-                    // Die EINE Reap-Frage (_archGroupKeyReapable, geteilt mit _scatterFreeSlots) fasst auch GLOBALE
-                    // Foundry-Gruppen (`#f:`/`#fimp:`) und die Fern-Super-Region (@s:): die leere Hülle wird entsorgt, die
-                    // geteilte Geometrie via _disposeArchInstanceGroup deferred frei. Leer-Bedingung bleibt liveCount<=0.
-                    if (this._archGroupKeyReapable(key)) placedRegionKeys.add(key);
+                    geleerte.add(key);
                 }
             }
         entry.instSlotsBand = null;
@@ -63747,7 +63821,7 @@ class AnazhRealm {
             // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
             if (entry.fundament) this._archFundamentFree(entry);
         }
-        for (const key of placedRegionKeys) {
+        for (const key of geleerte) {
             // Vollständig leer = liveCount 0 (die EINE Leer-Quelle — g.free/g.next zählen den High-Water mit).
             // Durch den EINEN Leer-Chokepoint mit Gnadenfrist (headless sofort).
             this._archGroupLeerDispose(key);
@@ -90974,12 +91048,9 @@ AnazhRealm.STUDIO_WORT = Object.freeze({
     haus: "haus_",
     haeuser: "haus_",
 });
-// V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die Region-Geometrie für das
-// Frustum-Cullen der PLATZIERTEN Architektur. ARCH_REGION_M = _bakeRegionConfig().sizeM (256 m) →
-// platzierte Bauten teilen die Streu-Region-Kantenlänge (eine Welt-Karte). Strukturen mit
-// horizontalem Span > MAX_SPAN bleiben global (ihre Bounding-Sphere spannt zu weit → kein Cull-Wert).
+// Die Streu-Region-Kantenlänge (= _bakeRegionConfig().sizeM, 256 m): Region-Bundles und Fern-Superregion der
+// Streu. Der platzierte Bau keyt seit Welle B nicht mehr regional (global in der Mesh-Zone).
 AnazhRealm.ARCH_REGION_M = 256;
-AnazhRealm.ARCH_REGION_CULL_MAX_SPAN = 128;
 // Fern-Superregion (4×4 Regionen à 256 m = 1024 m): Fern-Leaves (camera-facing Impostor-Quads) haben
 // wenig per-Region-Cull-Nutzen, kosten aber je winziger Gruppe einen Draw-Call — eine Gruppe je Art
 // deckt die Fern-Sicht und bleibt endlich (Rücken-Cull lebt; instanz-bewusste Bounding-Sphere, jeder
