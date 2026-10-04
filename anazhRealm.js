@@ -28655,14 +28655,17 @@ class AnazhRealm {
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
                                     const _off = _aImpX.mul(_sInst);
-                                    // leichter Wind (Vorlagen-sway: die Kronenspitze pendelt, y²=aFlex)
+                                    // leichter Wind (Vorlagen-sway: die Kronenspitze pendelt, Gewicht (y/H)² = uv.y² — das uv trägt die
+                                    // Quad-Höhe ohnehin, auch nach dem Re-Frame; ein eigenes aFlex-Attribut wäre der neunte
+                                    // Vertex-Puffer, seit die Sichthöhe aH0 je Slot reist (WebGPU: höchstens 8))
                                     let _swayX = _Ta.float(0.0);
                                     let _swayZ = _Ta.float(0.0);
                                     if (!this.state.windUniforms && typeof this._grassInstanceMat === "function")
                                         this._grassInstanceMat();
                                     const _wu = this.state.windUniforms;
                                     if (_wu && _wu.uWindTime && opts.useFlexAttr) {
-                                        const _fx = _Ta.attribute("aFlex", "float").clamp(0.0, 1.0);
+                                        const _fy = _Ta.attribute("uv", "vec2").y;
+                                        const _fx = _fy.mul(_fy);
                                         // Der Impostor liest DIESELBE Richtungs-Quelle uWindDir wie Baum/Gras → die ferne Karte wogt im
                                         // Gleichtakt mit dem nahen Laub (kein Richtungs-Riss am 40-m-Crossfade).
                                         const _wcu = this._ensureWindCoupling(_Ta);
@@ -61969,8 +61972,8 @@ class AnazhRealm {
     // RE-FRAME: war das Billboard-Quad beim Bake-Eintreffen schon instanziert, werden seine Attribute IN
     // PLACE auf den Studio-Rahmen umgeschrieben (rec._flat.leaves[0].geom teilen alle HISM-Gruppen;
     // gleiche Buffer-Größe = Re-Upload, Identität stabil → kein Recompile). Ecken-Wahrheit im uv (u=1 ↔
-    // +halfW · v=1 ↔ y=H, wie `_buildImpostorCrossGeometry`); aFlex=(v)² bleibt. Rest: die
-    // Crossfade-Sichthöhe (halfH·2, Shader-Konstante in `_buildPbrNodeMaterial`) behält den Vor-Bake-Wert.
+    // +halfW · v=1 ↔ y=H, wie `_buildImpostorCrossGeometry`); das Wind-Gewicht v² liest der Shader aus dem uv. Die
+    // Crossfade-Sichthöhe (aH0, die Höhe der Höhen-Stufe je Slot) hängt nicht am Rahmen.
     _reframeImpostorFlat(rec) {
         const leaf = rec && rec._flat && Array.isArray(rec._flat.leaves) ? rec._flat.leaves[0] : null;
         const g = leaf && leaf.geom;
@@ -62097,7 +62100,6 @@ class AnazhRealm {
         const colors = new Float32Array(VC * 3);
         const uvs = new Float32Array(VC * 2);
         const impX = new Float32Array(VC);
-        const flex = new Float32Array(VC);
         const phase = new Float32Array(VC); // aPhase (konstant, useFlexAttr-Vertrag)
         // Ecken: bl,br,tr,tl → (xOffset, y, u, v); u=1 liegt bei +aImpX = entlang
         // `right = cross(up, look)` — exakt die Bake-Kamera-Rechtsachse (+x).
@@ -62124,8 +62126,6 @@ class AnazhRealm {
             uvs[v2] = c[2];
             uvs[v2 + 1] = c[3];
             impX[ti] = c[0];
-            const fy = c[1] / H;
-            flex[ti] = fy * fy; // (y/H)² → Basis 0, Spitze 1
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -62141,7 +62141,6 @@ class AnazhRealm {
         if (!(hV > 0)) return null; // ein Foundry-Billboard ohne Höhe hätte keine wahre Maske
         g.setAttribute("aH0", new THREE.BufferAttribute(new Float32Array(VC).fill(hV), 1));
         g.setAttribute("aImpX", new THREE.BufferAttribute(impX, 1));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
         g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.computeBoundingBox();
         g.computeBoundingSphere();
