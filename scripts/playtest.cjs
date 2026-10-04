@@ -36525,12 +36525,50 @@ async function checkBandV18218LODStufen(ctx) {
             const t12 = A.LOD_DISTANCES.thresh12;
             out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
             out.sprung2to0 = r._chooseLODForDistance(Math.max(0, t01 - h * 2), 2) === 0;
-            // Konsum: die Fern-Entscheidung der Streu liest die GEWÜNSCHTE Stufe, der Tick quittiert eine nicht
-            // gegriffene Fernform nicht (Wiederholung), beide fragen die EINE Gesetz-Bahn-Bedingung.
-            const mSrc = window.__codeOf(r._scatterMaterializeCell);
-            const tSrc = window.__codeOf(r._tickScatterLod);
-            out.fernWunsch = /(_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()/.test(mSrc);
-            out.fernWiederholung = /newLod >= 2 && layer.kind !== "tree" && this._streuGesetzBahnOffen()/.test(tSrc);
+        }
+        // W1 — DIE FERNFORM IST KONSUM, nicht Quelltext: die Fels-Zellen einer NEU GEBAUTEN Region tragen, was das
+        // Studio-Budget sagt (B2c `rock.fern`). Geflippt auf "boden" stehen sie ohne Geometrie, zurück auf "gesetz"
+        // als Gesetz-Platz (headless `wartet`, die Gesetz-Bahn zeichnet nur ein echter Renderer) — nie mit Slots.
+        {
+            const B = A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.budget;
+            const map = r._ensureScatterRegionMap();
+            const pm = r.state.playerMesh && r.state.playerMesh.position;
+            if (B && B.rock && pm && r._foundryEnabled()) {
+                const felsFern = (reg) =>
+                    (reg && Array.isArray(reg.cells) ? reg.cells : []).filter((c) => c.layer === "rock" && c.lod >= 2);
+                const bau = (k) => {
+                    const [x, z] = k.split(",").map(Number);
+                    r._disposeScatterRegion(k);
+                    return r._scatterRegion(x, z, pm);
+                };
+                // die Region mit den meisten Fern-Felsen; trägt keine gebaute welche, den Ring um den Spieler bauen
+                let key = null,
+                    best = 0;
+                for (const [k, reg] of map) {
+                    const n = felsFern(reg).length;
+                    if (n > best) [best, key] = [n, k];
+                }
+                const RM = A.SCATTER.regionM;
+                for (let dz = -1; dz <= 1 && !key; dz++)
+                    for (let dx = -1; dx <= 1 && !key; dx++) {
+                        const k = Math.floor(pm.x / RM) + dx + "," + (Math.floor(pm.z / RM) + dz);
+                        if (felsFern(bau(k)).length) key = k;
+                    }
+                out.fernRegion = key;
+                if (key) {
+                    const alt = B.rock.fern;
+                    try {
+                        B.rock.fern = "boden";
+                        const fz = felsFern(bau(key));
+                        out.fernBoden = fz.length > 0 && fz.every((c) => c.form === "boden" && !c.slots.length && !c.feld);
+                    } finally {
+                        B.rock.fern = alt;
+                    }
+                    const fz2 = felsFern(bau(key));
+                    out.fernGesetz = fz2.length > 0 && fz2.every((c) => c.form === "gesetz" && !c.slots.length);
+                    out.fernZellen = fz2.length;
+                }
+            }
         }
 
         // ─── (C) LOD-Baupläne werden gebaut (3 Stufen) ───
@@ -36652,8 +36690,8 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
     check("V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0", res.sprung0to2 === true && res.sprung2to0 === true);
     check(
-        "V18.526 CONSUM: die Fern-Streu liest die gewünschte Stufe, der Tick wiederholt eine nicht gegriffene Fernform",
-        res.fernWunsch === true && res.fernWiederholung === true
+        `W1 KONSUM: rock.fern="boden" → die neu gebaute Region trägt form boden ohne Geometrie, zurück → gesetz (Region ${res.fernRegion}, ${res.fernZellen} Fern-Felsen)`,
+        res.fernBoden === true && res.fernGesetz === true
     );
 
     // (C) Variant-LOD-Bauplane

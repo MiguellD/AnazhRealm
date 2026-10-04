@@ -89,6 +89,12 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - `tris` (ganze Zahl > 0) = Obergrenze der Dreiecke je Instanz · `draws` (ganze Zahl ≥ 1) = Obergrenze
   der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index = Draws je Instanz-Gruppe
   und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1), oder `false`.
+- **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
+  Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
+  `false` wirft nicht) und für die Nah-Wiese — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
+  fehlender Zeile. Ein Zwilling wirft selbst (der Validator hält es: kein Zwillings-Kreis). Eine Art eines
+  Kerns ohne Budget trägt bis zu ihrer Zeile die Wirt-Stufen-Regel (B2: jede Stufe wirft sich, die
+  Fernstufe nie; `AnazhRealm._WIRT_WURF`, fällt mit dem Budget aller Kerne).
 - **Monoton:** `tris` fällt je Stufe streng, `draws` steigt nie.
 - `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Studio-Karte (bakeImpostorAtlas),
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt

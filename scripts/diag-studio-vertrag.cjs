@@ -226,6 +226,13 @@ function validateManifest(m) {
                     v.push(`B2c: lod.budget.${k}[${st}].draws muss eine ganze Zahl ≥ 1 sein`);
                 if (!(z.schatten === false || (Number.isInteger(z.schatten) && stufen.indexOf(z.schatten) >= 0)))
                     v.push(`B2c: lod.budget.${k}[${st}].schatten muss eine deklarierte Stufe oder false sein`);
+                // Der Zwilling wirft selbst (der Host zieht ihn als Schatten-Gestalt; ein Kreis 0→1→0 liefe endlos).
+                else if (
+                    z.schatten !== false &&
+                    z.schatten !== st &&
+                    !(B[k][z.schatten] && B[k][z.schatten].schatten === z.schatten)
+                )
+                    v.push(`B2c: lod.budget.${k}[${st}].schatten — der Zwilling (Stufe ${z.schatten}) wirft nicht selbst`);
                 if ("karte" in z) {
                     if (z.karte !== true) v.push(`B2c: lod.budget.${k}[${st}].karte ist nur als true erlaubt`);
                     else if (st !== stufen[stufen.length - 1] || z.schatten !== false)
@@ -748,13 +755,15 @@ function validateManifest(m) {
         build: function () {},
         cfg: {
             lod: {
-                kindStages: { shrub: [1, 2] },
+                kindStages: { shrub: [1, 2], rock: [0, 1] },
                 budget: {
                     shrub: {
                         1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1 },
                         2: { tris: 5, draws: 2, schatten: false },
                         fern: "karte",
                     },
+                    // ein Zwillings-Kreis 0 → 1 → 0
+                    rock: { 0: { tris: 10, draws: 1, schatten: 1 }, 1: { tris: 5, draws: 1, schatten: 0 } },
                 },
             },
         },
@@ -801,6 +810,7 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("draws steigt")) &&
             bv.some((s) => s.includes("tree.fern muss")) &&
             bvB.some((s) => s.includes("shrub.fern — \"karte\" genau dann")) &&
+            bvB.some((s) => s.includes("rock[0].schatten — der Zwilling (Stufe 1) wirft nicht selbst")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&

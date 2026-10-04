@@ -32822,7 +32822,9 @@ class AnazhRealm {
                 nw.kacheln.set(w.key, k);
             }
             this._nahWieseKachelEntsorgen(k);
-            k.meshes = this._nahWieseKachelMeshes(k.bueschel, flats, w.key);
+            // Der Wurf der Wiese ist das Studio-Budget (B2c grass[stufe].schatten: die Stufe wirft selbst oder nicht).
+            const wirft = this._foundryBudgetZeile("gras", stufe).schatten === stufe;
+            k.meshes = this._nahWieseKachelMeshes(k.bueschel, flats, w.key, wirft);
             k.quellen = [];
             for (const fl of flats)
                 for (const lf of fl.leaves)
@@ -32842,8 +32844,9 @@ class AnazhRealm {
     }
 
     // Je Vorlage × Teil-Mesh EIN InstancedMesh (Matrix = Ort · Drehung · Studio-Streuung · Welt-Skala der
-    // Vorlage); Instanzen in Büschel-Ordnung, damit `count` die Ausdünnung trägt.
-    _nahWieseKachelMeshes(bueschel, flats, key) {
+    // Vorlage); Instanzen in Büschel-Ordnung, damit `count` die Ausdünnung trägt. `wirft` = der Budget-Wurf der Stufe;
+    // ein Schatten-Zwilling des Flats (Budget nennt eine andere Stufe) wirft auf der Zwillings-Ebene, unsichtbar.
+    _nahWieseKachelMeshes(bueschel, flats, key, wirft) {
         const out = [];
         const m4 = new THREE.Matrix4();
         const q = new THREE.Quaternion();
@@ -32864,7 +32867,8 @@ class AnazhRealm {
                     im.setMatrixAt(i, m4);
                 }
                 im.instanceMatrix.needsUpdate = true;
-                im.castShadow = false;
+                im.castShadow = lf.shadowTwin === true || wirft === true;
+                if (lf.shadowTwin) im.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
                 im.receiveShadow = true;
                 im.computeBoundingSphere();
                 im.name = "nahWiese:" + key;
@@ -35955,7 +35959,7 @@ class AnazhRealm {
     }
 
     // ═══ DAS VERTEILUNGS-GESETZ (analoge Klein-Streu) ═══
-    // under/litter/rock auf der Fern-Stufe (Zellen-LOD 2): je 64-m-KACHEL EIN Feld-Eintrag mit einem BLOCK von Plätzen
+    // Arten mit Fernform "gesetz" (B2c: Blume, Fels) auf der Fern-Stufe: je 64-m-KACHEL EIN Feld-Eintrag mit einem BLOCK von Plätzen
     // (je 2 Texel [Pos|Hüllradius][yaw|scale|po|anzahl]); March: Kugel-Vortest → Sphere-Tracing des
     // geteilten Vorlagen-Satzes im Platz-Raum. Plätze = die Γ5-deterministischen Raster-Plätze des
     // Zellen-Chokepoints (kein Shader-Hash-Zwilling). Band 0 bleibt Mesh (_scatterInstanceAdd).
@@ -35965,18 +35969,28 @@ class AnazhRealm {
         return !(this.state.renderer && this.state.renderer._isHeadlessNull);
     }
 
+    // Die PASSUNG der Fernform aus der Studio-Gestalt (die geometrische Stufe ≤ 1, die das Studio liefert): die
+    // Primitive kommen aus den UNVERSCHMOLZENEN Teilen der Cache-Gruppe — der Fels-Haufen sind seine einzelnen Steine,
+    // nicht das EINE verschmolzene Leaf (dessen Hülle passte als liegende 3,6-m-Kapsel). `_baumKapselFit` nimmt die 6
+    // volumen-größten (Ellipsoid wo kompakt, sonst Kapsel; die Baum-Grammatik reist mit). null = die Stufe lädt noch.
+    _streuGesetzFit(preset, fseed) {
+        const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
+        if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null;
+        const I = this._foundryWorldScaleMatrix(preset);
+        const teile = [];
+        for (const c of bf.leaves[0]._srcGroup.children)
+            if (c && c.geometry && c.material) teile.push({ geom: c.geometry, mat: c.material, localMatrix: I });
+        return this._baumKapselFit({ leaves: teile, _baumGrammatik: bf._baumGrammatik });
+    }
+
     _streuGesetzSpawn(preset, fseed, x, surfY, z, yaw, scale) {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
         const gestalt = this._foundryVariantFor(fseed, preset);
-        if (gestalt == null) return null; // Buch kalt — die Instanz-Bahn trägt
+        if (gestalt == null) return null; // Buch kalt — die Zelle wartet
         const key = "abaum:" + preset + ":" + gestalt;
         if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt(this._spielerD2(x, z))) return null; // Fit-Takt (Treffer frei)
-        const satz = this._weltKapselHolen(key, () => {
-            const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
-            if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null; // Geometrie-Stufe lädt noch → die Instanz-Bahn trägt (Streaming-Rampe)
-            return this._baumKapselFit(bf);
-        });
+        const satz = this._weltKapselHolen(key, () => this._streuGesetzFit(preset, fseed));
         if (!satz) return null;
         const W = AnazhRealm.WELT_MARCH;
         const kachel = Math.floor(x / W.gesetzKachelM) + "," + Math.floor(z / W.gesetzKachelM);
@@ -52227,6 +52241,47 @@ class AnazhRealm {
         }
         if (foundryPreset) {
             const preset = foundryPreset;
+            // DIE FERNFORM VOR JEDEM MESH-ZUG (Studio-Vertrag B2c `lod.budget[kind].fern`, `_foundryFernForm`): mit
+            // Fern-Wunsch IST die Art, was ihr Budget sagt — "karte" geht den Mesh-Pfad unten (die Karten-Stufe),
+            // "gesetz" ist ihr PLATZ im Gesetz-Block ihrer Kachel (die Passung der Studio-Gestalt, kein Feld-Listen-
+            // Slot je Instanz), "boden" ist keine Geometrie (die Boden-Funktion trägt). Steht der Satz nicht (Fit-
+            // Takt, Gesetz-Bahn ohne echten Renderer, erschöpfte Kapsel-Liste — die meldet sich laut), WARTET die
+            // Zelle ohne Geometrie und der LOD-Tick wiederholt — nie das geklemmte L0 über die Instanz-Bahn (bis
+            // V18.526 der stille Rückfall: headless an der Mess-Wiese 1564 Blume/Geröll-L0-Instanzen jenseits 29,4 m).
+            if (lod >= 2) {
+                const fern = this._foundryFernForm(preset);
+                if (fern !== "karte") {
+                    const feld =
+                        fern === "gesetz" && this._streuGesetzBahnOffen()
+                            ? this._streuGesetzSpawn(
+                                  preset,
+                                  fseed,
+                                  tf.x,
+                                  Number.isFinite(surfY) ? surfY : 0,
+                                  tf.z,
+                                  tf.yaw || 0,
+                                  tf.scale || 1
+                              )
+                            : null;
+                    return {
+                        cellX,
+                        cellZ,
+                        cellM,
+                        layer: layer.name,
+                        promotable: layer.promotable === true,
+                        species,
+                        variantIndex,
+                        lod: 2,
+                        form: fern,
+                        wartet: fern === "gesetz" && !feld,
+                        bpName: (fern === "gesetz" ? "abaum:" : "boden:") + preset + ":" + gestalt,
+                        slots: [],
+                        feld,
+                        x: tf.x,
+                        z: tf.z,
+                    };
+                }
+            }
             let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
             if (
                 !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
@@ -52256,45 +52311,6 @@ class AnazhRealm {
             const keys = this._buildVariantLODs(species, variantIndex);
             if (!keys) return null;
             bpName = keys[lod] || keys[0];
-        }
-        // Analog-Bahn NUR FERN und nur für die KLEIN-Streu: auf der Fern-Stufe (Zellen-LOD 2) wohnt sie als
-        // PLATZ im Gesetz-Block ihrer Kachel (kein Feld-Listen-Slot je Instanz). Bäume tragen ihre ganze
-        // Studio-LOD-Kette als Instanzen — L0/L1 Mesh, L2 das gebackene Studio-Billboard; Kapsel-Kronen sind
-        // nah und mittel keine Baum-Gestalt. Scheitert der Gesetz-Spawn (Fit-Takt), trägt die Instanz-Bahn.
-        // Die Fern-Entscheidung liest die GEWÜNSCHTE Stufe (Distanz), nicht nur die servierte: einstufige Arten
-        // (kindStages Blume/Fels [0]) klemmten jede Fern-Zelle auf ihr L0-Mesh — gemessen 04.10. an der Mess-Wiese
-        // 482 Blumen in 208 Meshes und 880 Geröll in 128 Meshes, alle 85–384 m, 954 Befehle / 4,65 M Dreiecke über
-        // drei Pässe. Die Fernform ist das Gesetz (Plätze im Welt-March, Passung aus der Studio-Gestalt).
-        if (foundryFlat && foundryPreset && layer.kind !== "tree") {
-            const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
-            if ((_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()) {
-                const fh = this._streuGesetzSpawn(
-                    foundryPreset,
-                    fseed,
-                    tf.x,
-                    Number.isFinite(surfY) ? surfY : 0,
-                    tf.z,
-                    tf.yaw || 0,
-                    tf.scale || 1
-                );
-                if (fh) {
-                    return {
-                        cellX,
-                        cellZ,
-                        cellM,
-                        layer: layer.name,
-                        promotable: layer.promotable === true,
-                        species,
-                        variantIndex,
-                        lod: 2, // die Gesetz-Bahn IST die Fern-Stufe (auch wo die Studio-Stufe geklemmt ist)
-                        bpName: "abaum:" + foundryPreset + ":" + gestalt,
-                        slots: [],
-                        feld: fh,
-                        x: tf.x,
-                        z: tf.z,
-                    };
-                }
-            }
         }
         // Instanz-Tint NEUTRAL-NAH: ±8 % Luminanz + ein Hauch warm/kühl, nie ein Farbwurf — die Felder
         // h/s/v werden als r/g/b konsumiert (_scatterInstanceAdd) und multiplizieren die Studio-Blattfarbe.
@@ -52375,14 +52391,33 @@ class AnazhRealm {
             promotable: layer.promotable === true,
             species,
             variantIndex,
-            // Die MATERIALISIERTE Stufe: diente der Boot-Spalt das Billboard, trägt der Datensatz lod=2 und der
-            // LOD-Tick heilt die Zelle, sobald die echte Stufe gecacht ist.
-            lod: foundryFlat && Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod,
+            // Der WUNSCH (die Distanz-Stufe) ist der Hysterese-Zustand — eine Stufen-Klammer (Blume/Fels [0], Strauch
+            // [1,2]) friert die Zelle sonst auf ihrer gelieferten Stufe ein, und der Fern-Wunsch käme nie an. Einzig
+            // das Boot-Billboard (Karte für einen Nah-Wunsch, solange die Gestalt lädt) trägt lod=2: der LOD-Tick heilt
+            // die Zelle, sobald die echte Stufe gecacht ist.
+            lod: foundryFlat && foundryFlat.lod === 2 && lod < 2 ? 2 : lod,
+            form: foundryFlat && foundryFlat.lod === 2 ? "karte" : "mesh",
             bpName,
             slots,
             x: tf.x,
             z: tf.z,
         };
+    }
+
+    // Trägt eine Mesh-Zelle auf der neuen Wunsch-Stufe DIESELBE Gestalt? Foundry: die Stufen-Klammer der Art
+    // (`_foundryDeclaredStage`) bildet beide Wünsche auf dieselbe gelieferte Stufe ab (der Fern-Wunsch 2 nie — dort
+    // entscheidet die Fernform). Grammatik: derselbe Bauplan-Schlüssel. Fernform-Datensätze (slots []) nie.
+    _scatterGleicheGestalt(cell, newLod) {
+        if (!cell.slots.length) return false;
+        const fp = this._foundryEnabled() ? this._foundryPresetFor(cell.species) : null;
+        if (fp)
+            return (
+                newLod < 2 &&
+                cell.lod < 2 &&
+                this._foundryDeclaredStage(fp, newLod) === this._foundryDeclaredStage(fp, cell.lod)
+            );
+        const keys = this._buildVariantLODs(cell.species, cell.variantIndex);
+        return !!keys && (keys[newLod] || keys[0]) === cell.bpName;
     }
 
     // Scatter-LOD-Tick: Stufe + Band-Partner wurden beim Region-Bau zur BAU-Zeit-Distanz gewählt, der
@@ -52450,7 +52485,16 @@ class AnazhRealm {
             const visH =
                 layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(cell.species, cell.variantIndex, tf.scale);
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
-            if (newLod === cell.lod) continue;
+            // Eine WARTENDE Gesetz-Zelle (ihr Satz stand beim Bau nicht: Fit-Takt, Kapsel-Liste) wiederholt den Spawn,
+            // solange ihr Fern-Wunsch gilt — slot-frei, nur wo ein echter Renderer den Welt-March zeichnet.
+            const warten = cell.wartet === true && newLod === cell.lod && this._streuGesetzBahnOffen();
+            if (newLod === cell.lod && !warten) continue;
+            // DIESELBE GESTALT auf der neuen Stufe (Stufen-Klammer kindStages: Blume/Fels [0], Strauch [1,2];
+            // Grammatik ohne eigene Stufe) → nur den Wunsch quittieren: kein Materialisieren, kein Duplikat-Slot.
+            if (!warten && this._scatterGleicheGestalt(cell, newLod)) {
+                cell.lod = newLod;
+                continue;
+            }
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
             // `fade` m näher wäre es noch L2 — kein Flackern am Dither-Band). Die leere private Hülle reapt
             // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
@@ -52488,19 +52532,8 @@ class AnazhRealm {
                 true
             );
             if (!rec) continue;
-            // Stufen-geklemmte Arten (kindStages einstufig, z. B. Fels) liefern denselben bpName: kein Slot-Tausch
-            // — die frischen Duplikat-Slots sofort zurückgeben, nur den Hysterese-Zustand quittieren.
-            if (rec.bpName === cell.bpName) {
-                this._scatterFreeSlots(rec.slots);
-                if (rec.feld) this._scatterFeldFrei(rec.feld); // Duplikat-Eintrag (Dedup-Refcount räumt)
-                // Die Fernform (Gesetz-Bahn) griff nicht (Fit-Takt) — die Zelle quittiert den Fern-Wunsch NICHT, sie
-                // versucht es im nächsten Durchlauf erneut (sonst zeichnete sie für immer ihr L0). Nur eine erschöpfte
-                // Kapsel-Liste beendet den Versuch (sie meldet sich einmal laut).
-                if (newLod >= 2 && layer.kind !== "tree" && this._streuGesetzBahnOffen() && !this._weltKapselnVollWarn)
-                    continue;
-                cell.lod = newLod;
-                continue;
-            }
+            if (warten && rec.wartet) continue; // der Satz steht weiter nicht — die Zelle wartet, kein Zug
+            const hatteSlots = cell.slots.length > 0;
             this._scatterFreeSlots(cell.slots);
             if (cell.feld) {
                 this._scatterFeldFrei(cell.feld); // die alte Feld-Stufe fällt mit dem Band-Wechsel
@@ -52510,7 +52543,10 @@ class AnazhRealm {
             cell.bpName = rec.bpName;
             cell.slots = rec.slots;
             cell.feld = rec.feld || null;
-            realloc++;
+            cell.form = rec.form;
+            cell.wartet = rec.wartet === true;
+            // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
+            if (hatteSlots || rec.slots.length) realloc++;
         }
         return realloc;
     }
@@ -66943,6 +66979,38 @@ class AnazhRealm {
         for (let i = 0; i < st.length; i++) if (st[i] <= wish) sv = st[i];
         return sv;
     }
+    // DAS BUDGET je Art × Stufe (Studio-Vertrag B2c, `PORTAL_RENDER_CONFIG.lod.budget`, live): der EINE Host-Leser des
+    // Wurfs. `schatten` = die Stufe, deren Gestalt wirft (die eigene, eine andere = Schatten-Zwilling, false = keine).
+    // Fail-closed (KERN-PFLICHT): ein Buch ohne Budget, eine Budget-Art ohne die gelieferte Stufe, ein Wurf auf eine
+    // nicht gelieferte Stufe. Eine Art eines Kerns OHNE Budget (die Zweit-Kerne, Studio-Übertragung offen —
+    // gate:studio-vertrag nennt sie) trägt bis zu ihrer Zeile die Wirt-Stufen-Regel des Vertrags (B2: L1/L2 dem Wirt
+    // zugewiesen): jede Stufe wirft sich selbst, die Fernstufe 2 nie.
+    _foundryBudgetZeile(preset, stufe) {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[preset] : null;
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        if (!rec || !L || !L.budget) return AnazhRealm._kernPflichtBruch("phyto:lod.budget (" + preset + ")");
+        const art = L.budget[rec.kind];
+        if (!art) return AnazhRealm._WIRT_WURF[Math.max(0, Math.min(2, stufe | 0))];
+        const z = art[stufe];
+        const w = z ? z.schatten : undefined;
+        // Ein Zwilling (w ≠ stufe) muss selbst werfen — sonst kreiste der Zwillings-Zug (B2c-Validator: dieselbe Regel).
+        if (!(w === false || (Number.isInteger(w) && art[w] && (w === stufe || art[w].schatten === w))))
+            return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
+        return z;
+    }
+    // DIE FERNFORM einer Art (B2c `lod.budget[kind].fern`): "karte" · "gesetz" · "boden" — was die Art jenseits
+    // Welt-d1 IST. Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem Mesh-Zug. Fail-closed: eine
+    // gestreute Art ohne gültige Fernform ist ein KERN-PFLICHT-Bruch, nie ein stilles L0.
+    _foundryFernForm(preset) {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[preset] : null;
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const art = rec && L && L.budget ? L.budget[rec.kind] : null;
+        const fern = art ? art.fern : null;
+        if (fern === "gesetz" || fern === "boden" || fern === "karte") return fern;
+        return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + (rec ? rec.kind : preset) + ".fern");
+    }
 
     _foundryEnsureImpostorRecord(preset, variant, ov) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
@@ -69461,15 +69529,13 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                // Ein L0-Baum wirft mit seiner L1 (Schatten-Stellvertreter): sie reist im selben Zug — sonst stellte
-                // sie sich erst nach der L0-Ankunft ans Ende der Worker-Schlange, und die L0 wartete doppelt.
-                if (
-                    lod === 0 &&
-                    !entryOv &&
-                    this._foundryPresetIsTree(preset) &&
-                    this._foundryDeclaredStage(preset, 1) === 1
-                )
-                    this._foundryFlattenFor(entry, preset, 1);
+                // Wirft die Stufe mit einer ANDEREN Gestalt (Budget `schatten`: der L0-Baum wirft seine L1), reist diese
+                // im selben Zug — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
+                // Stufe wartete doppelt.
+                if (!entryOv) {
+                    const _wurf = this._foundryBudgetZeile(preset, lod).schatten;
+                    if (_wurf !== false && _wurf !== lod) this._foundryFlattenFor(entry, preset, _wurf);
+                }
                 this._foundryRequest(preset, variant, lod, entryOv || undefined, entry.position).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
@@ -69494,13 +69560,16 @@ class AnazhRealm {
             // (`_foundrySchattenGeom`: blendet wie L0, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
             // Wechsel, Bundles und der Feld-Cull-Ausschluss tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
             // Dreiecke in JEDE der zwei Kaskaden, ihre L1 trägt 11k. Ein Flat ist erst fertig, wenn seine Teile
-            // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1).
+            // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1). WER wirft, sagt das Studio-Budget (B2c
+            // `schatten` je Art × Stufe, `_foundryBudgetZeile`): die eigene Stufe wirft selbst, eine andere reist als
+            // Zwilling, false wirft nicht — nie ein Stufen-Literal im Host.
+            const wurf = this._foundryBudgetZeile(preset, lod).schatten;
             let schatten = null;
-            if (lod === 0 && this._foundryPresetIsTree(preset) && this._foundryDeclaredStage(preset, 1) === 1) {
-                const f1 = this._foundryFlattenFor(entry, preset, 1);
-                if (f1 === null) return null;
-                if (f1 && f1.instanceable && f1.lod === 1 && Array.isArray(f1.leaves) && f1.leaves.length)
-                    schatten = f1;
+            if (wurf !== false && wurf !== lod) {
+                const fw = this._foundryFlattenFor(entry, preset, wurf);
+                if (fw === null) return null;
+                if (fw && fw.instanceable && fw.lod === wurf && Array.isArray(fw.leaves) && fw.leaves.length)
+                    schatten = fw;
             }
             const leaves = [];
             // Template→Welt-Übersetzung: das Studio platziert mit `SCALE[sp] · tr.s · 0.82` (eiche 4.16 · fichte
@@ -69508,11 +69577,11 @@ class AnazhRealm {
             // der Flat-Leaves), jede Platzierung (Wald · Scatter · Understory · L2) erbt sie; der Impostor-Rahmen
             // bleibt TEMPLATE-LOKAL (der Studio-Bäcker framet ungescalt, ein Scale sprengte den Atlas).
             const I = this._foundryWorldScaleMatrix(preset);
-            // Schatten: L0 UND L1 werfen, nur die Fernstufe (lod 2/Impostor) nie — sonst Schatten-Pop an der
-            // L0-Kante mitten im Sichtfeld. Der `leaf.castShadow`-Override gewinnt gegen `_archGroupCastsShadow`
-            // (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im leafKey). Deckungsgleiche Werfer
-            // verdunkeln nicht doppelt (Tiefen-Test).
-            const castsShadow = lod < 2 && !schatten;
+            // Schatten: die Stufe wirft ihre eigene Gestalt genau dann, wenn das Budget sie nennt (B2c: Baum L0 → L1-
+            // Zwilling, L1 selbst, Karte nie; Strauch/Blume/Fels selbst; Gras nie). Der `leaf.castShadow`-Override
+            // gewinnt gegen `_archGroupCastsShadow` (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im
+            // leafKey). Deckungsgleiche Werfer verdunkeln nicht doppelt (Tiefen-Test).
+            const castsShadow = wurf === lod;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -87070,6 +87139,14 @@ AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
 // (Studio + AnazhRealm lesen dieselbe Quelle). Diese Karte ist nur der fail-closed-Fallback, bis der
 // Config angedockt ist — nie eine ungeprüfte Stufe servieren.
 AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, rock: 0 });
+// DIE WIRT-STUFEN-REGEL des Wurfs (Studio-Vertrag B2: L1/L2 dem Wirt zugewiesen): trägt der Kern einer Art kein Budget
+// (die Zweit-Kerne bis zu ihrer B2c-Zeile, gate:studio-vertrag nennt sie), wirft jede Stufe sich selbst, die Fernstufe
+// nie. Einziger Leser `_foundryBudgetZeile`; mit dem Budget aller Kerne hat die Tafel keinen Leser mehr und fällt.
+AnazhRealm._WIRT_WURF = Object.freeze([
+    Object.freeze({ schatten: 0 }),
+    Object.freeze({ schatten: 1 }),
+    Object.freeze({ schatten: false }),
+]);
 // KIND_POLICY (unten) — DIE EINE DOMÄNEN-POLICY des Rezept-Buchs; eine neue Domäne ist EINE Zeile
 // (+ Donor), kein Logik-Zweig. Felder: prefix (Blueprint = prefix+id; auch _foundryPresetFor) ·
 // donor (Judge-Parts-Spender, fail-closed) · grown (Pflanzen-Identität via _grownSpecies, der NAME

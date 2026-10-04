@@ -173,8 +173,10 @@ const FORBIDDEN = [
     { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
     { token: '"@p:"', fiel: "Welle B" },
     { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
-    // W1 — die Streu-Schicht litter (→ baum_totholz, eine belaubte Alias-Eiche) fiel final — Totholz kommt als
-    // Studio-Art, nie als Schicht.
+    // W1 — DIE FERNFORM AUS DEM BUDGET: der Zellen-Chokepoint liest B2c `fern` VOR jedem Mesh-Zug; die geklemmte
+    // Stufe als Fern-Tor (und mit ihr der stille L0-Rückfall über die Instanz-Bahn) ist gefallen. Die Streu-Schicht
+    // litter (→ baum_totholz, eine belaubte Alias-Eiche) fiel final — Totholz kommt als Studio-Art, nie als Schicht.
+    { token: "_cellLodF", fiel: "W1 — die Fernform je Art (`_foundryFernForm`), nie die geklemmte Stufe" },
     { token: '"litter"', fiel: "W1 — die Streu-Schicht litter fiel final (kein Totholz-Körper im Studio)" },
 ];
 
