@@ -174,6 +174,19 @@ function validateManifest(m) {
         const ks = lodC.kindStages || {};
         const B = lodC.budget;
         for (const k in B) {
+            // B2c (04.10.) — DIE GESTALTEN je Art (Samen-Zahl je Preset, '*' = jede Art ohne Zeile): ganze Zahlen >= 1,
+            // die '*'-Zeile ist Pflicht (die Welt-Varianten-Wahl liest sie für jede Fremd-Art).
+            if (k === "gestalten") {
+                const g = B.gestalten;
+                if (!g || typeof g !== "object") v.push("B2c: lod.budget.gestalten ist kein Objekt");
+                else {
+                    if (!("*" in g)) v.push("B2c: lod.budget.gestalten trägt keine '*'-Zeile");
+                    for (const sp in g)
+                        if (!(Number.isInteger(g[sp]) && g[sp] >= 1))
+                            v.push(`B2c: lod.budget.gestalten.${sp} muss eine ganze Zahl >= 1 sein`);
+                }
+                continue;
+            }
             if (!ks[k]) {
                 v.push(`B2c: lod.budget.${k} — Art ohne kindStages`);
                 continue;
@@ -703,6 +716,7 @@ function validateManifest(m) {
                         0: { tris: 100, draws: 1, schatten: false },
                         1: { tris: 200, draws: 0, schatten: "ja", karte: true, blattKarte: -1, deckung: [1.2, 0.9] },
                     },
+                    gestalten: { eiche: 0 },
                 },
             },
         },
@@ -762,6 +776,8 @@ function validateManifest(m) {
             bv.some((s) => s.includes("tree[1].karte — nur die letzte Stufe")) &&
             bv.some((s) => s.includes("blattKarte muss")) &&
             bv.some((s) => s.includes("deckung muss")) &&
+            bv.some((s) => s.includes("gestalten trägt keine")) &&
+            bv.some((s) => s.includes("gestalten.eiche muss")) &&
             bvB.some((s) => s.includes("nadelKarte muss")) &&
             bvB.some((s) => s.includes("klinge muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&

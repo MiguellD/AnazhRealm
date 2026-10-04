@@ -268,7 +268,7 @@ function ksRow(src, name) {
         // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup) =====
         try {
             const meshes = await Promise.race([
-                r._foundryRequest("drachentor", 7, 0, "summer"),
+                r._foundryRequest("drachentor", 7, 0),
                 new Promise((res3) => setTimeout(() => res3(null), 30000)),
             ]);
             res.e.meshCount = Array.isArray(meshes) ? meshes.length : -1;
@@ -368,7 +368,7 @@ function ksRow(src, name) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 klemmt fuer kind:gate auf Stufe 0 (fail-closed [0])",
-        /\|0\|/.test(out.f.key || ""),
+        /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
         out.f.err || String(out.f.key)
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

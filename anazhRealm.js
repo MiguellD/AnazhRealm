@@ -104,10 +104,11 @@ class AnazhRealm {
             voxelChunkGrass: null,
             // GPU-instanzierte Klein-Vegetation aus den VIER worldFieldAt-Feldern: reine Deko (keine Physik),
             // am Voxel-Chunk-Lifecycle, je Art konstanter Cap (Uniform-Capacity) + Distanz-LOD.
-            // voxelChunkScatter = Map<chunkKey, InstancedMesh[]>; _scatterMeshPools/_scatterMats/_scatterGeoms
-            // = Map<artName, mesh[] | NodeMaterial | BufferGeometry-Singleton>.
+            // voxelChunkScatter = Map<chunkKey, [{name, n}]> (die Block-Größen je Art); die Blöcke wohnen im
+            // Streu-Satz streuNah = Map<artName, {mesh, bloecke, …}> (EINE InstancedMesh je Art, Welle B);
+            // _scatterMats/_scatterGeoms = Map<artName, NodeMaterial | BufferGeometry-Singleton>.
             voxelChunkScatter: null,
-            _scatterMeshPools: null,
+            streuNah: null,
             _scatterMats: null,
             _scatterGeoms: null,
             // Wasser-Mesh je Voxel-Chunk (Map<key, Mesh|null>) — der EINZIGE Wasser-Render-Pfad, gebaut aus
@@ -913,10 +914,6 @@ class AnazhRealm {
             // (Material-Cache-Key; Live-Toggle wirkt nur auf neue Gruppen) — sofortiges A/B ist state.lodMaskOn
             // (uLodMaskOn: Maske aus ohne Rebuild; das Band bleibt opak stehen, kein Loch).
             foundryCrossfade: true,
-            // Platzierte Architektur region-keyen (p:regX,regZ) für kleine/mittlere Bauten → lokale
-            // Bounding-Sphere, frustumCulled=true, Umsehen cullt sie. false (+ umsehen) = A/B; der
-            // Master-Schalter useRegionFoliageCull deckelt beides (Streu + placed).
-            useRegionArchCull: true,
             // Mesh-Merge: je Bauplan-Variante EINE merged Geometry je (shape, material)-Gruppe (typisch
             // bark + foliage) → ~2 Draws statt ~80. Map<bpName, {leaves:[{geom, mat, localMatrix=Identity}]}>,
             // gelesen von _archFlattenBlueprint bei bp._isMerged (genVersion ≥ 6). Welt-gebunden: disposed in
@@ -14697,20 +14694,24 @@ class AnazhRealm {
                 top,
                 halter: (() => {
                     const f = this._foundry;
-                    // CHUNK-BODEN-ENTLASSUNG (19.07.) — die Linse NENNT den Schnitt:
-                    // wie viele Böden entlassen sind + wie viele MB die Nullung trägt.
-                    let entlN = 0;
-                    if (this.state.voxelChunks)
-                        for (const e of this.state.voxelChunks.values()) if (e && e._entlassen === true) entlN++;
+                    // DER SATZ (Welle B) — die Linse NENNT die Pool-Puffer: Bereiche, Kapazität, Wachstum je Art.
+                    const saetze = {};
+                    if (this.state.chunkSaetze)
+                        for (const [art, s] of this.state.chunkSaetze)
+                            saetze[art] = {
+                                bereiche: s.bloecke.size,
+                                vEnde: s.vEnde,
+                                vKap: s.vKap,
+                                index: s.geom.drawRange.count,
+                                iKap: s.iKap,
+                                wachse: s.wachse,
+                            };
                     return {
                         foundryCacheN: f && f.cache ? f.cache.size : 0,
                         foundryCacheMB:
                             f && Number.isFinite(f.cacheBytes) ? +(f.cacheBytes / 1048576).toFixed(1) : null,
                         impostorAtlanten: this._impostorAtlasMap ? this._impostorAtlasMap.size : 0,
-                        chunkEntlassenN: entlN,
-                        chunkFreiMB: this.state._chunkEntlassenBytes
-                            ? +(this.state._chunkEntlassenBytes / 1048576).toFixed(1)
-                            : 0,
+                        chunkSaetze: saetze,
                     };
                 })(),
             };
@@ -14767,14 +14768,13 @@ class AnazhRealm {
         try {
             const m = this.state.archInstanceGroups;
             if (!m || !m.size) return null;
-            const k = { fscatter: 0, fimp: 0, foundry: 0, superRegion: 0, platziert: 0, streuRegion: 0, global: 0 };
+            const k = { fscatter: 0, fimp: 0, foundry: 0, superRegion: 0, streuRegion: 0, global: 0 };
             for (const key of m.keys()) {
                 if (typeof key !== "string") continue;
                 if (key.startsWith("fscatter:")) k.fscatter++;
-                else if (key.includes("#fimp:")) k.fimp++;
-                else if (key.includes("#f:")) k.foundry++;
-                if (key.includes("@s:") || key.includes("@p:s:")) k.superRegion++;
-                else if (key.includes("@p:")) k.platziert++;
+                else if (/(^|#)fimp:/.test(key)) k.fimp++;
+                else if (/(^|#)f:/.test(key)) k.foundry++;
+                if (key.includes("@s:")) k.superRegion++;
                 else if (key.includes("@")) k.streuRegion++;
                 else k.global++;
             }
@@ -17435,7 +17435,7 @@ class AnazhRealm {
                 if (fM.skin === null || fM.hair === null) break; // Kern kalt → der Guss schreit ohnehin
                 const keyM = this._ofenMenschKey(dM, fM.skin, fM.hair, lodM);
                 if (memo.has(keyM)) continue;
-                this._foundryRequest("mensch", 0, lodM, "summer", {
+                this._foundryRequest("mensch", 0, lodM, {
                     dials: dM,
                     skinColor: fM.skin,
                     hairColor: fM.hair,
@@ -17462,7 +17462,7 @@ class AnazhRealm {
             for (const lod of [0, 1]) {
                 const key = this._ofenKreaturKey(recId, d.dials, lod);
                 if (memo.has(key)) continue;
-                this._foundryRequest(recId, 0, lod, "summer", d.istDefault ? null : d.dials).then((meshes) => {
+                this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
                     if (!meshes || !meshes.length) {
                         if (!memo.has(key))
                             this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
@@ -19291,8 +19291,7 @@ class AnazhRealm {
     static get KLEIN_VEGETATION_SPECIES() {
         // Die LEBENDEN Streu-Arten in DREI Gestalt-Varianten je Art (blume/farn/gestrüpp/schilf). Jede
         // Variante teilt die Affinitäts-Daten (field/floor/kronen) und konkurriert als eigene Art; perCell ÷ 3
-        // und pool ÷ 3 → Gesamt-Dichte + Speicher bleiben. Tags emergieren via ernte→kraut, nie aus
-        // species.name.
+        // → die Gesamt-Dichte bleibt. Tags emergieren via ernte→kraut, nie aus species.name.
         return [
             // === BLUME × 3 (Tulpe · Klee · Mohn) ===
             {
@@ -19303,7 +19302,6 @@ class AnazhRealm {
                 kronen: "lichtung",
                 perCell: 1.1,
                 cap: 200,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19320,7 +19318,6 @@ class AnazhRealm {
                 kronen: "lichtung",
                 perCell: 1.1,
                 cap: 200,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19337,7 +19334,6 @@ class AnazhRealm {
                 kronen: "lichtung",
                 perCell: 1.0,
                 cap: 180,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19357,7 +19353,6 @@ class AnazhRealm {
                 kronen: "unter",
                 perCell: 0.8,
                 cap: 160,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19376,7 +19371,6 @@ class AnazhRealm {
                 kronen: "unter",
                 perCell: 0.8,
                 cap: 160,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19395,7 +19389,6 @@ class AnazhRealm {
                 kronen: "unter",
                 perCell: 0.8,
                 cap: 160,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19413,7 +19406,6 @@ class AnazhRealm {
                 kronen: "rand",
                 perCell: 0.6,
                 cap: 110,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19430,7 +19422,6 @@ class AnazhRealm {
                 kronen: "rand",
                 perCell: 0.6,
                 cap: 110,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19447,7 +19438,6 @@ class AnazhRealm {
                 kronen: "rand",
                 perCell: 0.6,
                 cap: 110,
-                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19465,7 +19455,6 @@ class AnazhRealm {
                 floor: 0.46,
                 perCell: 1.4,
                 cap: 256,
-                pool: 32,
                 wind: false,
                 emissive: false,
                 yOff: -0.05,
@@ -19483,7 +19472,6 @@ class AnazhRealm {
                 floor: 0.62,
                 perCell: 1.6,
                 cap: 224,
-                pool: 28,
                 wind: false,
                 emissive: true,
                 yOff: 0.5,
@@ -19501,7 +19489,6 @@ class AnazhRealm {
                 floor: 0.55,
                 perCell: 1.3,
                 cap: 200,
-                pool: 28,
                 wind: false,
                 emissive: true,
                 emissiveBoost: 1.15,
@@ -19523,7 +19510,6 @@ class AnazhRealm {
                 minGen: 2,
                 perCell: 0.9,
                 cap: 100,
-                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19540,7 +19526,6 @@ class AnazhRealm {
                 minGen: 2,
                 perCell: 0.9,
                 cap: 100,
-                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -19557,7 +19542,6 @@ class AnazhRealm {
                 minGen: 2,
                 perCell: 0.9,
                 cap: 100,
-                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -22126,10 +22110,9 @@ class AnazhRealm {
             "aMorphWeight",
             new THREE.Float32BufferAttribute(new Float32Array(meshData.positions.length / 3), 1)
         );
+        // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         // Kein Chunk-BVH (~9 ms/Chunk Lauf-Freeze): die Kollision liest das Dichtefeld direkt
         // (`_stepCharacter`, `_creatureGroundY`), der Mesh ist nur Visual. `hasBVH` bleibt false,
@@ -22474,14 +22457,8 @@ class AnazhRealm {
         // liest das Dichtefeld) — der Toggle schaltet nur die SICHTBARKEIT.
         const vc = this.state.voxelChunks;
         if (vc && vc.size > 0) {
-            for (const entry of vc.values()) {
-                if (!entry || entry.empty) continue;
-                const mesh = entry.mesh;
-                if (mesh) mesh.visible = visible;
-            }
-            // `visible` liest der Record, nie das Replay — ohne Re-Record wäre der Toggle in Bundles inert bzw.
-            // split-brain; darum werden alle Region-Bundles neu recordet.
-            if (this.state._regionBundles) for (const bg of this.state._regionBundles.values()) bg.needsUpdate = true;
+            // DER SATZ: der ganze Ring ist EIN Objekt — der Toggle schaltet ihn.
+            this._chunkSatzSichtbar("boden", visible);
             this.log(`Boden ${visible ? "aktiviert" : "deaktiviert"}`);
         } else {
             this.log("Boden nicht vorhanden – Erzeuge neuen Boden...");
@@ -27384,19 +27361,17 @@ class AnazhRealm {
             geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
             geom.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
+        // Der CPU-Körper des Chunk-Wassers (Map-Wahrheit, Sonden lesen seine Geometrie); gezeichnet wird er als
+        // Bereich im Wasser-Satz (Welle B: EIN Objekt für das Wasser des ganzen Rings, ausserhalb jedes Bundles —
+        // viewportLinearDepth erzwingt einen Pass-Bruch, den der Bundle-Encoder nicht kann).
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
         mesh.userData = {
             isHydrosphere: true,
             hydroKind: "chunk-water-iso",
             voxelChunkX: cx,
             voxelChunkZ: cz,
         };
-        // Das Iso-Mesh ist das EINZIGE Wasser-Mesh, default sichtbar. Wasser bleibt AUSSERHALB der Chunk-
-        // Bundles (außer `wasserImBundle`): sein viewportLinearDepth (weiche Ufer) erzwingt
-        // copyFramebufferToTexture = Pass-Bruch, den der Bundle-Encoder nicht kann (der Render wirft).
-        if (this.state.wasserImBundle === true) this._chunkBundleAnker(mesh, cx, cz);
-        else this.state.scene.add(mesh);
+        this._chunkSatzEin("wasser", key, geom, key);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
     }
@@ -27472,18 +27447,15 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        // CPU-Körper wie der Iso-Pfad; gezeichnet als Bereich im Wasser-Satz (Sync- und Worker-Sheet, ein Eintritt).
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
         mesh.userData = {
             isHydrosphere: true,
             hydroKind: "chunk-water-cellsheet",
             voxelChunkX: cx,
             voxelChunkZ: cz,
         };
-        // CHUNK-EINBÜRGERUNG: draußen wie der Iso-Pfad (viewportLinearDepth =
-        // Pass-Bruch, bundle-unverträglich — s. dort).
-        if (this.state.wasserImBundle === true) this._chunkBundleAnker(mesh, cx, cz);
-        else this.state.scene.add(mesh);
+        this._chunkSatzEin("wasser", key, geom, key);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
     }
@@ -27971,8 +27943,8 @@ class AnazhRealm {
     _disposeVoxelChunkWaterIso(key) {
         if (!this.state.voxelChunkWaterIso) return;
         const mesh = this.state.voxelChunkWaterIso.get(key);
+        this._chunkSatzAus("wasser", key); // DER SATZ: der Bereich wird frei, der Index legt sich neu
         if (mesh) {
-            this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(mesh.geometry);
         }
@@ -28530,10 +28502,23 @@ class AnazhRealm {
                                     // Das eingebackene Tageslicht fällt mit der Sonne (tagLicht-Uniform) — sonst leuchtet die Karte
                                     // nachts heller als echte Geometrie; Boden 0.12 = Mond-Silhouette.
                                     const _auN = this._ensureAtmoUniforms();
+                                    // Die Karte ist Golden-Sommer gebacken; das Jahr färbt sie wie der Studio-Impostor:
+                                    // alb × mix(1, uSeasonMul, SAISON_GESETZ.kartenGewicht) (V18.527, kein Neubau).
+                                    const _suK = this._ensureSeasonUniforms();
+                                    const _albK =
+                                        _suK && _suK.uSeasonMul
+                                            ? _samp.rgb.mul(
+                                                  _Ta.mix(
+                                                      _Ta.vec3(1.0, 1.0, 1.0),
+                                                      _suK.uSeasonMul,
+                                                      _Ta.float(AnazhRealm._saisonGesetz().kartenGewicht)
+                                                  )
+                                              )
+                                            : _samp.rgb;
                                     albedoNode =
                                         _auN && _auN.tagLicht
-                                            ? _samp.rgb.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)))
-                                            : _samp.rgb;
+                                            ? _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)))
+                                            : _albK;
                                     mat.alphaTest = 0.34; // Vorlagen-ath (weiche Kronen-Ränder bleiben)
                                     // ── Normal-Atlas → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nc = _Ta
@@ -29550,10 +29535,9 @@ class AnazhRealm {
         this._attachVoxelFieldColors(geom);
         // Material-Singleton für alle Chunks (Vertex-Farben leben pro Geometrie; PBR, roughness/metalness
         // aus den Tags). NIEMALS disposen — sonst sterben alle anderen Chunks mit (s. `_disposeVoxelChunk`).
+        // Der CPU-Körper des Chunks (gezeichnet als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         // Kein Chunk-BVH (Kollision liest feld-nativ das Dichtefeld). waterCells = EINZIGE Wasser-Wahrheit
         // je Chunk (im entry); das Trocken-Gate spart den ~200-ms-Cell-Bau, null überspringt der Iso-Bau.
@@ -29660,12 +29644,11 @@ class AnazhRealm {
             this.state.voxelChunks.set(key, { empty: true });
             return null;
         }
-        // CHUNK-EINBÜRGERUNG (18.07.): der Boden zieht in die Region-BundleGroup.
-        this._chunkBundleAnker(fresh.mesh, cx, cz);
-        // TRACE-IDENTITÄT (18.07., Schöpfer-Trace: fünf anonyme „Mesh"-Wale bis
-        // 2.8M Tris — niemand wusste WER): der Chunk-Boden trägt seinen Namen;
-        // der triZensus des Flugschreibers NENNT damit den Wal statt „Mesh".
+        // DER SATZ (Welle B): der Boden ist ein BEREICH im Boden-Satz (ein Befehl je Pass für den ganzen Ring);
+        // der Chunk-Mesh bleibt der CPU-Körper (Boden-Karte, Geomorph, Stitch-Quelle) und betritt die Szene nie.
+        // Worker- und Sync-Bau speisen denselben Eintritt.
         if (fresh.mesh && !fresh.mesh.name) fresh.mesh.name = "voxelChunk:" + key + ":lod" + lod;
+        this._chunkSatzEin("boden", key, fresh.mesh.geometry, key);
         // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
         // Mesh-Pfad). Sync-Build baut immer BVH → default true.
         const entry = {
@@ -29770,13 +29753,6 @@ class AnazhRealm {
         this._applyCrossLodGeomorph(cx - 1, cz);
         this._applyCrossLodGeomorph(cx, cz + 1);
         this._applyCrossLodGeomorph(cx, cz - 1);
-        // CHUNK-BODEN-ENTLASSUNG: der frische Bau stellt sich zur Gnadenfrist an
-        // (ob entlassen wird, entscheidet der Tick: echt + Upload + IDB-gedeckt
-        // + edit-frei; headless nie — die Gates lesen byte-alt).
-        {
-            if (!this.state._chunkEntlassQueue) this.state._chunkEntlassQueue = new Map();
-            this.state._chunkEntlassQueue.set(key, { cx, cz, mesh: entry.mesh, seit: performance.now() });
-        }
         return entry;
     }
 
@@ -29784,16 +29760,12 @@ class AnazhRealm {
     // Nachbarn → die T-junction schließt. Render-only: setzt NUR aMorphTarget/aMorphWeight, Positionen
     // (Physik, Determinismus, BVH) bleiben; der Shader morpht via `geomorph`. Main-only (liest Nachbar-
     // MESHES). `entry.hasMorph` = Fast-Path: ohne Cross-LOD-Grenze + ohne alten Morph sofort zurück.
+    // Die Morph-Arrays sind Views auf den Boden-Satz: der Pass schreibt direkt hinein und markiert seinen
+    // Bereich (`_chunkSatzMarke`) — vergessen hieße: der Morph friert auf der GPU ein (T-Junction-Riss).
     _applyCrossLodGeomorph(cx, cz) {
         if (!this.state.voxelChunks) return;
         const entry = this.state.voxelChunks.get(`${cx},${cz}`);
         if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) return;
-        // CHUNK-BODEN-ENTLASSUNG: ein entlassener Boden re-hydriert erst seine
-        // CPU-Arrays (IDB, async) — der Lauf ruft DIESEN Pass danach erneut.
-        if (entry._entlassen) {
-            if (entry._entlassen === true) this._chunkBodenReHydrieren(cx, cz);
-            return;
-        }
         const geom = entry.mesh.geometry;
         const pos = geom.attributes.position;
         const tgtAttr = geom.attributes.aMorphTarget;
@@ -29815,13 +29787,6 @@ class AnazhRealm {
             if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
             const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
             if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
-            // CHUNK-BODEN-ENTLASSUNG: ein entlassener Nachbar wird erst
-            // re-hydriert; der Warter läuft DIESEN Pass danach komplett neu.
-            if (nb._entlassen) {
-                if (nb._entlassen === true)
-                    this._chunkBodenReHydrieren(cx + dx, cz + dz, () => this._applyCrossLodGeomorph(cx, cz));
-                continue;
-            }
             coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
         }
         // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
@@ -29931,9 +29896,8 @@ class AnazhRealm {
             }
         }
         entry.hasMorph = touched;
-        tgtAttr.needsUpdate = true;
-        wAttr.needsUpdate = true;
-        this._rebuildLodStitchBand(entry, bandVerts);
+        this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"]);
+        this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`);
     }
 
     // STITCH-BAND (Arme-Leute-Transvoxel): wo der Morph-Cap greift (Cliffs), bliebe ein Spalt. Pro
@@ -29941,9 +29905,12 @@ class AnazhRealm {
     // Loops, kein Polyline-Sortieren) ein Quad von der feinen Kante (position) zur groben Fläche
     // (aMorphTarget). Render-only, keine BVH, main-only. Trägt ALLE Material-Attribute des Terrain-
     // Toons (WebGPU-strikt): color vom Quell-Vertex, aMorphTarget = Identität/w=0 (kein Doppel-Morph).
-    _rebuildLodStitchBand(entry, bandVerts) {
+    // Dasselbe Material wie der Boden → ein Bereich `stitch:<chunk>` IM Boden-Satz (derselbe Befehl); der
+    // Band-Mesh bleibt CPU-Körper (Naht-Sonden lesen seine Geometrie).
+    _rebuildLodStitchBand(entry, bandVerts, key) {
+        // Der Band-Bereich gehört dem Chunk-Key (nicht dem Eintrag): auch ein Neubau räumt ein altes Band.
+        this._chunkSatzAus("boden", "stitch:" + key);
         if (entry.lodStitchMesh) {
-            this._archBundleSceneRemove(entry.lodStitchMesh); // Bundle-Parent-bewusst
             this._queueGeometryDispose(entry.lodStitchMesh.geometry);
             entry.lodStitchMesh = null;
         }
@@ -30021,204 +29988,8 @@ class AnazhRealm {
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
         bg.setIndex(I);
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
-        mesh.castShadow = false;
-        mesh.receiveShadow = true;
-        // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: das LOD-Stitch-Band + der Skirt
-        // sind Terrain-Familie (render-only Naht-Brücke), namenlos direkt unter Scene —
-        // ohne Stempel wären sie der Fail-Closed-Fallback der Inventur-Linse.
-        mesh.userData.inventar = "terrain-stitch";
-        // CHUNK-EINBÜRGERUNG: das Band folgt dem Parent seines Chunk-Bodens —
-        // dieselbe Region-BundleGroup per Konstruktion (oder Szene, byte-alt).
-        {
-            const p = entry.mesh && entry.mesh.parent;
-            if (p && p.isBundleGroup === true) {
-                mesh.frustumCulled = false;
-                p.add(mesh);
-                p.needsUpdate = true;
-                this._bundleKugelWeite(p, mesh);
-                this._bundleReifeWache(mesh);
-            } else if (this.state.scene) this.state.scene.add(mesh);
-        }
+        this._chunkSatzEin("boden", "stitch:" + key, bg, key);
         entry.lodStitchMesh = mesh;
-    }
-
-    // ═══ DIE CHUNK-BODEN-ENTLASSUNG ═══
-    // Nach Upload (manuelle Backend-Probe, WebGPU kennt kein onUploadCallback) + Gnadenfrist werden
-    // die CPU-Arrays gesettelter, edit-freier, IDB-gedeckter Böden GENULLT (die Physik liest das Feld).
-    // Einziger Leser danach: der Geomorph-Pass; er re-hydriert byte-identisch aus IDB (position/normal/
-    // color/index nie mutiert → kein needsUpdate). Headless bleibt resident; 3×3-Edits blocken.
-    _chunkBodenGpuHat(geo) {
-        // Upload-Probe: der Backend-Datensatz trägt .buffer (WebGPU) bzw. .bufferGPU (WebGL) erst NACH
-        // createAttribute — vorher nullen = weißes Loch. Nur position + index proben: gebundene Attribute
-        // laden im selben Render, ungebundene Stagings (z. B. uv ohne Leser) NIE, sind aber frei nullbar.
-        try {
-            const r = this.state.renderer;
-            const be = r && r.backend;
-            if (!be || typeof be.get !== "function") return false;
-            const pos = geo.attributes && geo.attributes.position;
-            if (!pos) return false;
-            const d = be.get(pos);
-            if (!d || (d.buffer === undefined && d.bufferGPU === undefined)) return false;
-            if (geo.index) {
-                const di = be.get(geo.index);
-                if (!di || (di.buffer === undefined && di.bufferGPU === undefined)) return false;
-            }
-            // NICHTS SCHWEBT: ein gebundenes Attribut mit offenem Upload (Version über der hochgeladenen oder
-            // offene updateRanges — Teil-Uploads) darf nicht genullt werden: der nächste Render läse die Range
-            // aus dem Null-Array → writeBuffer „Number of bytes to write is too large" (Befund 30.09.:
-            // ungerenderte Geometrie — verdeckt/außer Frustum — sammelt Ranges, die Gnadenfrist läuft ab).
-            // Ungebundene Stagings laden nie → frei.
-            const am = r._attributes && r._attributes.data;
-            if (am && typeof am.get === "function") {
-                const offen = (a) => {
-                    if (!a || !a.array || !a.array.length) return false;
-                    const rec = am.get(a);
-                    if (!rec || rec.version === undefined) return false;
-                    return rec.version < a.version || (a.updateRanges && a.updateRanges.length > 0);
-                };
-                for (const k in geo.attributes) if (offen(geo.attributes[k])) return false;
-                if (offen(geo.index)) return false;
-            }
-            return true;
-        } catch (_e) {
-            return false;
-        }
-    }
-    _chunkBodenNulle(geo) {
-        // Nie null setzen: der Vendor liest attribute.array.constructor beim (lazy, späten) Pipeline-Bau
-        // (getTypeFromArray) → null crasht jeden Frame. Daher Null-Länge-Sentinel derselben Typ-Klasse;
-        // die Re-Hydrierung erkennt length === 0.
-        let frei = 0;
-        for (const k in geo.attributes) {
-            const a = geo.attributes[k];
-            if (a && a.array && a.array.byteLength) {
-                frei += a.array.byteLength;
-                a.array = new a.array.constructor(0);
-            }
-        }
-        if (geo.index && geo.index.array && geo.index.array.byteLength) {
-            frei += geo.index.array.byteLength;
-            geo.index.array = new geo.index.array.constructor(0);
-        }
-        return frei;
-    }
-    _tickChunkBodenEntlassung(now) {
-        const q = this.state._chunkEntlassQueue;
-        if (!q || !q.size) return;
-        const r = this.state.renderer;
-        if (!r || r._isHeadlessNull) return; // headless: Gates lesen die Arrays byte-alt
-        const c = this._chunkIdb;
-        if (!c || !c._idbDb || c._idbDead) return;
-        let budget = 2;
-        for (const [key, eintrag] of q) {
-            if (budget <= 0) break;
-            if (now - eintrag.seit < AnazhRealm.CHUNK_ENTLASS_GNADE_MS) continue;
-            const entry = this.state.voxelChunks && this.state.voxelChunks.get(key);
-            // nur der IDENTISCHE, lebende, un-entlassene Bau — sonst verfällt der Posten.
-            if (!entry || entry.empty || entry._entlassen || !entry.mesh || entry.mesh !== eintrag.mesh) {
-                q.delete(key);
-                continue;
-            }
-            if (!this._chunkFootprintEditFrei(eintrag.cx, eintrag.cz)) {
-                q.delete(key);
-                continue;
-            }
-            if (!this._chunkBodenGpuHat(entry.mesh.geometry)) {
-                eintrag.seit = now; // noch nicht hochgeladen (nie gerendert) → Frist neu
-                continue;
-            }
-            q.delete(key);
-            budget--;
-            const idbKey = this._chunkIdbKey(eintrag.cx, eintrag.cz, entry.lod);
-            this._chunkIdbGet(idbKey).then((payload) => {
-                if (!payload || payload.empty || !payload.positions) {
-                    // Platte (noch) leer: BOUNDED re-armieren — der Worker-Put
-                    // kann nach dem Finalize kommen; Sync-Bauten ohne Put
-                    // fallen nach 5 Proben ehrlich aus der Entlassung.
-                    eintrag.versuche = (eintrag.versuche | 0) + 1;
-                    if (eintrag.versuche < 5 && !q.has(key)) {
-                        eintrag.seit = now;
-                        q.set(key, eintrag);
-                    }
-                    return;
-                }
-                const e2 = this.state.voxelChunks && this.state.voxelChunks.get(key);
-                if (!e2 || e2 !== entry || e2._entlassen || !e2.mesh || e2.mesh !== eintrag.mesh) return;
-                if (!this._chunkFootprintEditFrei(eintrag.cx, eintrag.cz)) return;
-                let frei = this._chunkBodenNulle(e2.mesh.geometry);
-                if (
-                    e2.lodStitchMesh &&
-                    e2.lodStitchMesh.geometry &&
-                    this._chunkBodenGpuHat(e2.lodStitchMesh.geometry)
-                ) {
-                    frei += this._chunkBodenNulle(e2.lodStitchMesh.geometry);
-                }
-                e2._entlassen = true;
-                e2._entlassBytes = frei;
-                this.state._chunkEntlassenBytes = (this.state._chunkEntlassenBytes || 0) + frei;
-            });
-        }
-    }
-    // Grenz-Re-Hydrierung: CPU-Arrays eines entlassenen Chunks aus den IDB-Rohbytes (byte-identisch,
-    // KEIN needsUpdate), danach der eigene Geomorph-Pass, dann die Warter (z. B. der Nachbar-Pass).
-    _chunkBodenReHydrieren(cx, cz, dann) {
-        const key = `${cx},${cz}`;
-        const entry = this.state.voxelChunks && this.state.voxelChunks.get(key);
-        if (!entry || entry._entlassen !== true || !entry.mesh || !entry.mesh.geometry) {
-            if (dann) dann();
-            return;
-        }
-        if (!this._chunkRehydrierLauf) this._chunkRehydrierLauf = new Map();
-        const lauf = this._chunkRehydrierLauf;
-        if (lauf.has(key)) {
-            if (dann) lauf.get(key).push(dann); // EIN Lauf, viele Warter
-            return;
-        }
-        lauf.set(key, dann ? [dann] : []);
-        const mesh = entry.mesh;
-        this._chunkIdbGet(this._chunkIdbKey(cx, cz, entry.lod)).then((payload) => {
-            const warter = lauf.get(key) || [];
-            lauf.delete(key);
-            const e2 = this.state.voxelChunks && this.state.voxelChunks.get(key);
-            if (!e2 || e2 !== entry || e2._entlassen !== true || e2.mesh !== mesh) return; // frischer Bau trägt Arrays
-            if (!payload || !payload.positions) {
-                // Platte verloren (Ventil-Clear/Quota): ehrlich markieren — der
-                // Pass überspringt diesen Chunk, bis ihn der normale Streaming-
-                // Rebuild ersetzt (die Existenz-Probe macht das SELTEN).
-                e2._entlassVerloren = true;
-                this.log(
-                    `Chunk-Re-Hydrierung ${key}: IDB-Bytes fehlen — Boden bleibt bis zum Rebuild ungemorpht`,
-                    "WARN"
-                );
-                return;
-            }
-            const geo = mesh.geometry;
-            const setArr = (name, arr) => {
-                const a = geo.attributes[name];
-                if (a && arr) a.array = arr;
-            };
-            setArr("position", payload.positions);
-            setArr("normal", payload.normals);
-            setArr("color", payload.colors);
-            if (geo.index && payload.indices) geo.index.array = payload.indices;
-            // Morph-Attribute: der Pass überschreibt sie VOLL — frische Arrays.
-            setArr("aMorphTarget", new Float32Array(payload.positions.length));
-            setArr("aMorphWeight", new Float32Array(payload.positions.length / 3));
-            e2._entlassen = false;
-            this.state._chunkEntlassenBytes = Math.max(
-                0,
-                (this.state._chunkEntlassenBytes || 0) - (Number.isFinite(e2._entlassBytes) ? e2._entlassBytes : 0)
-            );
-            e2._entlassBytes = 0;
-            this._applyCrossLodGeomorph(cx, cz);
-            for (const w of warter) {
-                try {
-                    w();
-                } catch (_e) {
-                    /* Warter-Fehler isoliert */
-                }
-            }
-        });
     }
 
     // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5):
@@ -30423,15 +30194,15 @@ class AnazhRealm {
         // V18.275 — ein gepruneter Chunk verlässt auch die Foliage-Warteschlange (kein Leck).
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
+        this._chunkSatzAus("boden", key); // DER SATZ: der Bereich wird frei, der Index legt sich neu
         if (entry && entry.mesh) {
-            this._archBundleSceneRemove(entry.mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
             // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
-        // A1 — das Cross-LOD-Stitch-Band des Chunks räumen (render-only Begleiter).
+        // A1 — das Cross-LOD-Stitch-Band des Chunks räumen (sein Bereich im Boden-Satz gehört dem Chunk-Key).
+        this._chunkSatzAus("boden", "stitch:" + key);
         if (entry && entry.lodStitchMesh) {
-            this._archBundleSceneRemove(entry.lodStitchMesh);
             this._queueGeometryDispose(entry.lodStitchMesh.geometry);
             entry.lodStitchMesh = null;
         }
@@ -33440,73 +33211,122 @@ class AnazhRealm {
         mat.positionNode = sway ? positionLocal.add(sway) : positionLocal;
     }
 
-    // Pool-Recycling je Art (`state._scatterMeshPools` = Map<name, mesh[]>, eigener `pool`-Cap);
-    // Geometry + Material sind Art-Singletons. Alle Meshes einer Art haben denselben `cap` → keine
-    // Bind-Group-Cache-Verschmutzung (Uniform-Capacity).
-    _acquireScatterMesh(species) {
-        if (!this.state._scatterMeshPools) this.state._scatterMeshPools = new Map();
-        let pool = this.state._scatterMeshPools.get(species.name);
-        if (!pool) {
-            pool = [];
-            this.state._scatterMeshPools.set(species.name, pool);
-        }
-        if (pool.length > 0) {
-            const m = pool.pop();
-            m.visible = true;
-            m.count = 0;
-            return m;
-        }
-        const geo = this._scatterSpeciesGeometry(species);
-        const mat = this._scatterMaterial(species);
-        if (!geo || !mat) return null;
-        const inst = AnazhRealm._instanzMesh(geo, mat, species.cap);
-        inst.count = 0;
-        inst.castShadow = false;
-        inst.receiveShadow = !species.emissive;
-        // Identitäts-Stempel am Bau-Chokepoint (gate:asset-inventory): die kleine Streu (KLEIN_VEGETATION,
-        // bewusst ohne Studio-Zwilling) trägt ihre Inventar-Klasse. Hier, nicht am Aufrufer: der Pool
-        // recycelt das Mesh samt Stempel.
-        inst.userData.inventar = "streu-klein";
-        return inst;
+    // ═══ DER STREU-SATZ (Welle B) ═══
+    // Die Klein-Streu folgt dem Gesetz des Fernfelds („EIN InstancedMesh je Art“): je Art EINE InstancedMesh
+    // `streuNah:<art>` für den ganzen Nah-Band-Ring, ein Chunk ist ein BLOCK darin (Block-Tabelle chunkKey →
+    // {start, n} in Puffer-Ordnung). Befund: 188 Klein-Streu-Meshes (je Chunk und Art eine Pool-InstancedMesh,
+    // je eine im Region-Bundle) für 15 Arten. Ein Eintritt hängt seinen Block hinten an, ein Austritt rückt die
+    // folgenden Blöcke nach (copyWithin) — beides ein Teil-Upload ab dem geänderten Slot. Eine leere Art ist
+    // unsichtbar (kein Befehl). Die Instanz-Identität für Ernte und Pick bleibt `${art}:${i}` je Chunk.
+    _streuNahArt(sp) {
+        const st = this.state;
+        if (!st.streuNah) st.streuNah = new Map();
+        let a = st.streuNah.get(sp.name);
+        if (a) return a;
+        const geo = this._scatterSpeciesGeometry(sp);
+        const mat = this._scatterMaterial(sp);
+        if (!geo || !mat) throw new Error(`_streuNahArt(${sp.name}): Geometrie oder Material fehlt`);
+        a = {
+            sp,
+            name: sp.name,
+            geo,
+            mat,
+            tint: !!(mat.userData && mat.userData.useInstanceTint),
+            mesh: null,
+            kap: 0,
+            anzahl: 0,
+            bloecke: new Map(),
+            ordnung: [],
+            wachse: 0,
+        };
+        this._streuNahMesh(a, Math.max(64, sp.cap * 4));
+        st.streuNah.set(sp.name, a);
+        return a;
     }
 
-    _releaseScatterMesh(species, mesh) {
-        if (!mesh) return;
-        if (!this.state._scatterMeshPools) this.state._scatterMeshPools = new Map();
-        let pool = this.state._scatterMeshPools.get(species.name);
-        if (!pool) {
-            pool = [];
-            this.state._scatterMeshPools.set(species.name, pool);
+    // Die Art-InstancedMesh (neu oder gewachsen ×1,5): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
+    _streuNahMesh(a, kap) {
+        const alt = a.mesh;
+        const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
+        m.name = "streuNah:" + a.name;
+        m.castShadow = false;
+        m.receiveShadow = !a.sp.emissive;
+        m.frustumCulled = false; // der Nah-Band-Ring umspannt den Spieler
+        m.userData.inventar = "streu-klein";
+        if (a.tint) m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(kap * 3).fill(1), 3);
+        if (alt) {
+            m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
+            if (a.tint) m.instanceColor.array.set(alt.instanceColor.array.subarray(0, a.anzahl * 3));
+            if (alt.parent) alt.parent.remove(alt);
+            alt.dispose();
+            a.wachse++;
         }
-        this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
-        mesh.visible = false;
-        mesh.count = 0;
-        const cap = species.pool || 16;
-        if (pool.length >= cap) {
-            const oldest = pool.shift();
-            if (oldest && oldest.instanceMatrix && typeof oldest.instanceMatrix.array !== "undefined") {
-                oldest.instanceMatrix.array = null;
-            }
-        }
-        pool.push(mesh);
+        m.count = a.anzahl;
+        m.visible = a.anzahl > 0;
+        a.mesh = m;
+        a.kap = kap;
+        if (!this.state.scene) throw new Error(`_streuNahMesh(${a.name}): keine Szene`);
+        this.state.scene.add(m);
     }
 
-    // Definiert + test-bewacht, im Produktions-Pfad nicht verdrahtet (Reload räumt
-    // auf → Leak-Schutz-Saat, V18-Audit).
-    _drainScatterMeshPools() {
-        if (!this.state._scatterMeshPools) {
-            this.state._scatterMeshPools = new Map();
-            return;
+    // Ein Chunk-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Arten) — hinten angehängt.
+    _streuNahEin(a, chunkKey, matrizen, farben) {
+        if (a.bloecke.has(chunkKey)) this._streuNahAus(a.name, chunkKey);
+        const n = matrizen.length / 16;
+        if (a.tint && (!farben || farben.length !== n * 3))
+            throw new Error(`_streuNahEin(${a.name}, ${chunkKey}): die Tint-Art braucht n×3 Farben`);
+        if (a.anzahl + n > a.kap) this._streuNahMesh(a, Math.max(a.anzahl + n, Math.ceil(a.kap * 1.5)));
+        const m = a.mesh;
+        const start = a.anzahl;
+        m.instanceMatrix.array.set(matrizen, start * 16);
+        m.instanceMatrix.addUpdateRange(start * 16, n * 16);
+        m.instanceMatrix.needsUpdate = true;
+        if (a.tint) {
+            m.instanceColor.array.set(farben, start * 3);
+            m.instanceColor.addUpdateRange(start * 3, n * 3);
+            m.instanceColor.needsUpdate = true;
         }
-        for (const pool of this.state._scatterMeshPools.values()) {
-            for (const mesh of pool) {
-                this._archBundleSceneRemove(mesh); // Bundle-Parent-bewusst
-                if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
-                    mesh.instanceMatrix.array = null;
-                }
+        a.anzahl += n;
+        a.bloecke.set(chunkKey, { start, n });
+        a.ordnung.push(chunkKey);
+        m.count = a.anzahl;
+        m.visible = a.anzahl > 0;
+        m.boundingSphere = null; // der Pick-Raycast cullt gegen die Hülle
+    }
+
+    // Ein Chunk-Block tritt aus: die folgenden Blöcke rücken nach, ihre Starts sinken um n.
+    _streuNahAus(name, chunkKey) {
+        const a = this.state.streuNah ? this.state.streuNah.get(name) : null;
+        const b = a ? a.bloecke.get(chunkKey) : null;
+        if (!b) return false;
+        const m = a.mesh;
+        const ende = b.start + b.n;
+        if (ende < a.anzahl) {
+            m.instanceMatrix.array.copyWithin(b.start * 16, ende * 16, a.anzahl * 16);
+            m.instanceMatrix.addUpdateRange(b.start * 16, (a.anzahl - ende) * 16);
+            m.instanceMatrix.needsUpdate = true;
+            if (a.tint) {
+                m.instanceColor.array.copyWithin(b.start * 3, ende * 3, a.anzahl * 3);
+                m.instanceColor.addUpdateRange(b.start * 3, (a.anzahl - ende) * 3);
+                m.instanceColor.needsUpdate = true;
             }
-            pool.length = 0;
         }
+        a.anzahl -= b.n;
+        a.bloecke.delete(chunkKey);
+        const i = a.ordnung.indexOf(chunkKey);
+        a.ordnung.splice(i, 1);
+        for (let k = i; k < a.ordnung.length; k++) a.bloecke.get(a.ordnung[k]).start -= b.n;
+        m.count = a.anzahl;
+        m.visible = a.anzahl > 0;
+        m.boundingSphere = null;
+        return true;
+    }
+
+    // Der Bereich eines Chunks in seiner Art (Ernte, Sonden): {mesh, start, n} oder null.
+    _streuNahBereich(name, chunkKey) {
+        const a = this.state.streuNah ? this.state.streuNah.get(name) : null;
+        const b = a ? a.bloecke.get(chunkKey) : null;
+        return b ? { mesh: a.mesh, start: b.start, n: b.n } : null;
     }
 
     // Der EINE Streu-Mechanismus für alle Arten: jede Zelle EINMAL sampeln (worldFieldAt + Surface +
@@ -33644,7 +33464,7 @@ class AnazhRealm {
                 }
             }
         }
-        const meshes = [];
+        const liste = [];
         const m = new THREE.Matrix4();
         const q = new THREE.Quaternion();
         const pos = new THREE.Vector3();
@@ -33671,10 +33491,11 @@ class AnazhRealm {
             const items = buckets[si];
             if (items.length === 0) continue;
             const sp = species[si];
-            const inst = this._acquireScatterMesh(sp);
-            if (!inst) continue;
-            inst.count = items.length;
-            const wantTint = !!(inst.material && inst.material.userData && inst.material.userData.useInstanceTint);
+            // DER STREU-SATZ: der Block dieses Chunks in der Art-InstancedMesh (`_streuNahEin`).
+            const art = this._streuNahArt(sp);
+            const wantTint = art.tint;
+            const matrizen = new Float32Array(items.length * 16);
+            const farben = wantTint ? new Float32Array(items.length * 3) : null;
             for (let i = 0; i < items.length; i++) {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
@@ -33690,42 +33511,28 @@ class AnazhRealm {
                     scl.set(it.scale, it.scale, it.scale);
                 }
                 m.compose(pos, q, scl);
-                inst.setMatrixAt(i, m);
+                m.toArray(matrizen, i * 16);
                 if (wantTint) {
                     // Neutral-naher Tint: ±8 % Luminanz + ±3 % warm/kühl. Nie drei rohe RGB-Hashes — die zerstören die
                     // Arten-Farbe multiplikativ (rot/violette Farne, im Mittel 50 % zu dunkel).
                     const _tl = 0.92 + hashInstanceTint(cx, cz, si, i, 0) * 0.16;
                     const _tw = (hashInstanceTint(cx, cz, si, i, 1) - 0.5) * 0.06;
                     tintColor.setRGB(Math.min(1.08, _tl + _tw), _tl, Math.min(1.08, Math.max(0, _tl - _tw)));
-                    inst.setColorAt(i, tintColor);
+                    tintColor.toArray(farben, i * 3);
                 }
             }
-            inst.instanceMatrix.needsUpdate = true;
-            if (wantTint && inst.instanceColor) inst.instanceColor.needsUpdate = true;
-            // Frustum-Cull-Cache nach Pool-Recycle neu rechnen (die
-            // V11.0-d.fix.gras-Wurzel: stale boundingSphere cullt das Mesh raus).
-            if (inst.geometry && inst.geometry.boundingSphere === null) inst.geometry.computeBoundingSphere();
-            inst.boundingBox = null;
-            inst.boundingSphere = null;
-            if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
-            if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
-            this._chunkBundleAnker(inst, cx, cz); // CHUNK-EINBÜRGERUNG: Streu in die Region-BundleGroup
-            meshes.push({ name: sp.name, mesh: inst });
+            this._streuNahEin(art, key, matrizen, farben);
+            liste.push({ name: sp.name, n: items.length });
         }
-        this.state.voxelChunkScatter.set(key, meshes);
+        // Je Chunk die Liste seiner Arten mit Block-Größe (Idempotenz-Wache, Regrow, Sonden); der Block selbst
+        // wohnt in der Art (`_streuNahBereich`).
+        this.state.voxelChunkScatter.set(key, liste);
     }
 
     _disposeVoxelChunkScatter(key) {
         if (!this.state.voxelChunkScatter) return;
         const list = this.state.voxelChunkScatter.get(key);
-        if (list && list.length) {
-            const reg = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-            for (const it of list) {
-                const sp = reg.find((s) => s.name === it.name);
-                if (sp) this._releaseScatterMesh(sp, it.mesh);
-                else this._archBundleSceneRemove(it.mesh); // Bundle-Parent-bewusst
-            }
-        }
+        if (list) for (const it of list) this._streuNahAus(it.name, key); // DER STREU-SATZ: Block raus, Rest rückt nach
         this.state.voxelChunkScatter.delete(key);
     }
 
@@ -33833,18 +33640,17 @@ class AnazhRealm {
     }
 
     _pickScatterAtCrosshair() {
-        const sc = this.state.voxelChunkScatter;
-        if (!sc || sc.size === 0 || !this.state.camera) return null;
+        const sn = this.state.streuNah;
+        if (!sn || sn.size === 0 || !this.state.camera) return null;
         if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
         this.state.camera.getWorldDirection(this._tmpCamDir);
+        // Je Art EINE InstancedMesh (der Streu-Satz); die Block-Tabelle bildet instanceId auf (Chunk, Index) ab.
         const meshes = [];
-        const meta = new Map();
-        for (const [key, list] of sc) {
-            for (const it of list) {
-                if (!it.mesh || it.mesh.count === 0) continue;
-                meshes.push(it.mesh);
-                meta.set(it.mesh, { key, name: it.name });
-            }
+        const artVon = new Map();
+        for (const a of sn.values()) {
+            if (a.anzahl === 0) continue;
+            meshes.push(a.mesh);
+            artVon.set(a.mesh, a);
         }
         if (!meshes.length) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
@@ -33853,17 +33659,23 @@ class AnazhRealm {
         const hits = this._tmpRaycaster.intersectObjects(meshes, false);
         for (const hit of hits) {
             if (!hit.object || typeof hit.instanceId !== "number") continue;
-            const m = meta.get(hit.object);
-            if (!m) continue;
-            return { key: m.key, name: m.name, index: hit.instanceId, mesh: hit.object, point: hit.point };
+            const a = artVon.get(hit.object);
+            if (!a) continue;
+            for (const key of a.ordnung) {
+                const b = a.bloecke.get(key);
+                if (hit.instanceId >= b.start && hit.instanceId < b.start + b.n)
+                    return { key, name: a.name, index: hit.instanceId - b.start, point: hit.point };
+            }
         }
         return null;
     }
 
     _harvestScatterPick(pick) {
-        if (!pick || !pick.mesh) return false;
+        if (!pick) return false;
         const sp = AnazhRealm.KLEIN_VEGETATION_SPECIES.find((x) => x.name === pick.name);
         if (!sp || !sp.ernte) return false;
+        const bereich = this._streuNahBereich(pick.name, pick.key);
+        if (!bereich || !(pick.index >= 0 && pick.index < bereich.n)) return false;
         // Session-Gedaechtnis: `${art}:${index}` → Ernte-Zeit (der Build-Filter
         // + der Regrow-Tick lesen es). NICHT persistiert (Flora waechst nach).
         if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
@@ -33878,8 +33690,11 @@ class AnazhRealm {
         // Die Instanz verschwindet SOFORT (Skala 0 am selben Index — stabil).
         if (!this._tmpForageMat) this._tmpForageMat = new THREE.Matrix4();
         this._tmpForageMat.makeScale(0, 0, 0);
-        pick.mesh.setMatrixAt(pick.index, this._tmpForageMat);
-        pick.mesh.instanceMatrix.needsUpdate = true;
+        const slot = bereich.start + pick.index;
+        bereich.mesh.setMatrixAt(slot, this._tmpForageMat);
+        bereich.mesh.instanceMatrix.addUpdateRange(slot * 16, 16);
+        bereich.mesh.instanceMatrix.needsUpdate = true;
+        bereich.mesh.boundingSphere = null;
         const got = this.addMaterialToInventory(sp.ernte, 1);
         this.log(
             got ? `Gepflueckt: ${pick.name} → 1× ${sp.ernte}` : `Gepflueckt: ${pick.name} — aber das Inventar ist voll`,
@@ -33983,9 +33798,7 @@ class AnazhRealm {
     _tickDekoFernfeld() {
         const lpc = this.state.lastPlayerVoxelChunk;
         if (!lpc || !this.state.scene || !this.state.voxelChunks) return 0;
-        if (!this.state.dekoFernfeld)
-            this.state.dekoFernfeld = { anchor: null, queue: [], meshes: new Map(), chunkCount: 0 };
-        const ff = this.state.dekoFernfeld;
+        const ff = this._dekoFernfeldZustand();
         const anchor = `${lpc.cx},${lpc.cz}`;
         const size = this.state.voxelChunks.size;
         if (ff.anchor !== anchor || Math.abs(size - ff.chunkCount) > 8) {
@@ -34006,23 +33819,8 @@ class AnazhRealm {
         if (sp.minGen && this._genVersion() < sp.minGen) return; // Γ1 — schilf nur Genese ≥ 2
         const isGround389 = !!sp.kronen; // V18.389 (P2) — nur Bodendecker tragen die Kronendach-Reaktion
         const FF = AnazhRealm.DEKO_FERNFELD;
-        const ff = this.state.dekoFernfeld;
-        let inst = ff.meshes.get(sp.name);
-        if (!inst) {
-            const geo = this._scatterImpostorGeometry(sp);
-            const mat = this._scatterMaterial(sp);
-            if (!geo || !mat) return;
-            inst = AnazhRealm._instanzMesh(geo, mat, FF.cap);
-            inst.count = 0;
-            inst.castShadow = false;
-            inst.receiveShadow = false;
-            inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
-            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Fern-Impostor-Ring der
-            // kleinen Streu (dieselbe Familie wie streu-klein, nur die Fern-Stufe).
-            inst.userData.inventar = "deko-fernfeld";
-            this.state.scene.add(inst);
-            ff.meshes.set(sp.name, inst);
-        }
+        const ff = this._dekoFernfeldZustand();
+        const block = new Float32Array(FF.cap * 16);
         const atmoD =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
                 ? this.state.atmosphere.dekoDensity
@@ -34107,14 +33905,64 @@ class AnazhRealm {
                         q.setFromAxisAngle(up, rotK);
                         scl.set(sclK, sclK, sclK);
                         m.compose(pos, q, scl);
-                        inst.setMatrixAt(n, m);
+                        m.toArray(block, n * 16);
                         n++;
                     }
                 }
             }
         }
-        inst.count = n;
-        inst.instanceMatrix.needsUpdate = true;
+        ff.fern.set(sp.name, block.slice(0, n * 16));
+        this._dekoFernSetzen(sp);
+    }
+
+    // Der Zustand des Fern-Felds (Fern- UND Deck-Block je Art leben hier; lazy, beide Ticks lesen ihn).
+    _dekoFernfeldZustand() {
+        if (!this.state.dekoFernfeld)
+            this.state.dekoFernfeld = {
+                anchor: null,
+                queue: [],
+                meshes: new Map(),
+                chunkCount: 0,
+                fern: new Map(),
+                deck: new Map(),
+            };
+        return this.state.dekoFernfeld;
+    }
+
+    // EINE InstancedMesh je Art für die ganze Ferne (Welle B): der Fern-Block (gebaute Chunks im impostor-Band)
+    // und dahinter der Deck-Block (ungebaute Chunks jenseits des Rings) — dieselbe Geometrie, dasselbe Material,
+    // derselbe RNG-Strom; die Deck-Streu war ihr Zwilling mit eigener Mesh je Art. Eine leere Art zeichnet nicht.
+    _dekoFernSetzen(sp) {
+        const ff = this._dekoFernfeldZustand();
+        const FF = AnazhRealm.DEKO_FERNFELD;
+        let inst = ff.meshes.get(sp.name);
+        if (!inst) {
+            const geo = this._scatterImpostorGeometry(sp);
+            const mat = this._scatterMaterial(sp);
+            if (!geo || !mat) throw new Error(`_dekoFernSetzen(${sp.name}): Geometrie oder Material fehlt`);
+            inst = AnazhRealm._instanzMesh(geo, mat, 2 * FF.cap);
+            inst.castShadow = false;
+            inst.receiveShadow = false;
+            inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
+            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Fern-Impostor-Ring der
+            // kleinen Streu (dieselbe Familie wie streu-klein, nur die Fern-Stufe).
+            inst.userData.inventar = "deko-fernfeld";
+            if (!this.state.scene) throw new Error(`_dekoFernSetzen(${sp.name}): keine Szene`);
+            this.state.scene.add(inst);
+            ff.meshes.set(sp.name, inst);
+        }
+        const fern = ff.fern.get(sp.name);
+        const deck = ff.deck.get(sp.name);
+        const nF = fern ? fern.length / 16 : 0;
+        const nD = deck ? deck.length / 16 : 0;
+        if (fern) inst.instanceMatrix.array.set(fern, 0);
+        if (deck) inst.instanceMatrix.array.set(deck, nF * 16);
+        inst.count = nF + nD;
+        inst.visible = nF + nD > 0;
+        if (nF + nD > 0) {
+            inst.instanceMatrix.addUpdateRange(0, (nF + nD) * 16);
+            inst.instanceMatrix.needsUpdate = true;
+        }
     }
 
     // ═══ DIE DECK-STREU (Vegetation auf dem Fern-Deckel) ═══
@@ -34125,7 +33973,7 @@ class AnazhRealm {
     _tickDeckStreu() {
         const lpc = this.state.lastPlayerVoxelChunk;
         if (!lpc || !this.state.scene) return 0;
-        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [], meshes: new Map() };
+        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [] };
         const ds = this.state.deckStreu;
         const anchor = `${lpc.cx},${lpc.cz}`;
         if (ds.anchor !== anchor) {
@@ -34142,22 +33990,8 @@ class AnazhRealm {
         if (!sp || typeof THREE === "undefined") return;
         if (sp.minGen && this._genVersion() < sp.minGen) return;
         const FF = AnazhRealm.DEKO_FERNFELD;
-        if (!this.state.deckStreu) this.state.deckStreu = { anchor: null, queue: [], meshes: new Map() };
-        const ds = this.state.deckStreu;
-        let inst = ds.meshes.get(sp.name);
-        if (!inst) {
-            const geo = this._scatterImpostorGeometry(sp);
-            const mat = this._scatterMaterial(sp);
-            if (!geo || !mat) return;
-            inst = AnazhRealm._instanzMesh(geo, mat, FF.cap);
-            inst.count = 0;
-            inst.castShadow = false;
-            inst.receiveShadow = false;
-            inst.frustumCulled = false;
-            inst.userData.inventar = "deck-streu"; // H3-Identität: die Vor-Bau-Stufe des Fernfelds
-            this.state.scene.add(inst);
-            ds.meshes.set(sp.name, inst);
-        }
+        const ff = this._dekoFernfeldZustand();
+        const block = new Float32Array(FF.cap * 16);
         const atmoD =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
                 ? this.state.atmosphere.dekoDensity
@@ -34218,15 +34052,15 @@ class AnazhRealm {
                             q.setFromAxisAngle(up, rotK);
                             scl.set(sclK, sclK, sclK);
                             m.compose(pos, q, scl);
-                            inst.setMatrixAt(n, m);
+                            m.toArray(block, n * 16);
                             n++;
                         }
                     }
                 }
             }
         }
-        inst.count = n;
-        inst.instanceMatrix.needsUpdate = true;
+        ff.deck.set(sp.name, block.slice(0, n * 16));
+        this._dekoFernSetzen(sp);
     }
 
     // Wasserfall-Material (ruht: die Plane ist geschnitten, es bleibt für eine eigene Vertikal-Form; der
@@ -36134,7 +35968,9 @@ class AnazhRealm {
     _streuGesetzSpawn(preset, fseed, x, surfY, z, yaw, scale) {
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
-        const key = "abaum:" + preset + ":" + this._foundryVariantFor(fseed);
+        const gestalt = this._foundryVariantFor(fseed, preset);
+        if (gestalt == null) return null; // Buch kalt — die Instanz-Bahn trägt
+        const key = "abaum:" + preset + ":" + gestalt;
         if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt(this._spielerD2(x, z))) return null; // Fit-Takt (Treffer frei)
         const satz = this._weltKapselHolen(key, () => {
             const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
@@ -43938,7 +43774,7 @@ class AnazhRealm {
 
     // Die EINE Quelle der gehaltenen Studio-Gruppe, drei-wertig wie _workshopStudioPreviewFrom:
     // THREE.Group (Wrapper via _workshopWrapFoundryGroup) · "pending" (Part-Bau bleibt sichtbar) · null
-    // (Part-Pfad byte-alt). Cache-Schlüssel == Werkstatt/Welt (preset|variant|0|season) → ein Werkstatt-
+    // (Part-Pfad byte-alt). Cache-Schlüssel == Werkstatt/Welt (`_foundryKoerperKey`, Stufe 0) → ein Werkstatt-
     // Asset dient der Hand instant. Miss → GENAU EINE Anfrage + EIN _refreshHeldMesh bei Ankunft. Der
     // Wrapper zählt _liveRefs (LRU disposed nie Gehaltenes); _disposeSoulGroup gibt den Ref zurück.
     _heldFoundryGroup(bpName) {
@@ -43976,20 +43812,19 @@ class AnazhRealm {
         let seedNum = 0;
         const seedStr = String(rawSeed);
         for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
-        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
-        const season = this.state.season || "summer";
+        const variant = this._foundryVariantFor(seedNum, preset);
+        if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Hand wartet (der Part-Bau trägt)
         // Der beim Guss gestempelte Charakter (bp.studioOv) reist in den Hand-Bau: der ov-Hash trennt den
-        // Cache-Schlüssel (ungeprägt bleibt byte-alt), das ov geht als 5. Arg an _foundryRequest
-        // (das die IDB-Platte per hasOv umgeht).
+        // Cache-Schlüssel (ungeprägt bleibt byte-alt), das ov geht als 4. Arg an _foundryRequest.
         const heldOv = this._artifactStudioOv(bp);
         // Stufe 0 — die Hand ist NAH (kindStages.weapon == [0]; für mehrstufige Arten ist 0 die reiche Stufe).
-        const key = preset + "|" + variant + "|0|" + season + (heldOv ? "|ov:" + this._studioOvHash(heldOv) : "");
+        const key = this._foundryKoerperKey(preset, variant, 0, heldOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, season, heldOv || undefined, 0).then((meshes) => {
+                this._foundryRequest(preset, variant, 0, heldOv || undefined, 0).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
                         try {
@@ -51460,7 +51295,7 @@ class AnazhRealm {
         // Foundry-LOD: kennt die Foundry die Art, ist sie die EINE Quelle — auch für einen KALTEN Baum ohne
         // instFoundry: ihre Stufe servieren ODER den aktuellen Zustand halten, NIE Grammatik (sonst erweckt
         // der Switch einen gewachsenen Nachbau). Die Distanz-Wahl newLOD führt; kein entry.type-Wechsel —
-        // das Studio-LOD lebt im leafKey (`f:preset|variant|lod|season`). Grammatik nur bei Foundry aus oder
+        // das Studio-LOD lebt im leafKey (`f:preset|gestalt|lod`). Grammatik nur bei Foundry aus oder
         // unbekannter Art.
         if (this._foundryEnabled()) {
             const preset = this._foundryPresetForEntry(entry);
@@ -52002,15 +51837,11 @@ class AnazhRealm {
         return slots;
     }
 
-    // Die EINE Reap-Frage: darf eine leere Gruppe (liveCount 0) ganz entsorgt werden? JA für
-    // Foundry-Globale (#f:/#fimp:, wachsen beim Wandern unbegrenzt) und jede regionale (@p:, @s:,
-    // @regX,regZ — per Slot geleert würde sie beim Region-Tod nie mehr eingesammelt = Leck).
-    // Neuaufbau lazy via _archInstanceGroupFor. NEIN nur für Grammatik-Globale (kein @, kein #f:).
-    _archGroupKeyReapable(key) {
-        if (typeof key !== "string") return false;
-        return /#(f:|fimp:)/.test(key) || key.includes("@");
-    }
-
+    // Welle B — JEDE leere Gruppe fällt (die Reap-Frage nach dem Schlüssel-Format ist gefallen): seit der platzierte
+    // Bau global keyt, hätte die alte Ausnahme „Grammatik-Globale bleiben" jede leere Bau-Hülle als toten Draw
+    // (count am High-Water) für immer stehen lassen. Der EINE Leer-Chokepoint (_archGroupLeerDispose) prüft
+    // liveCount 0 und gibt der Hülle im Spiel die Gnadenfrist (kein Churn); Neuaufbau lazy via
+    // _archInstanceGroupFor.
     _scatterFreeSlots(slots) {
         if (!Array.isArray(slots)) return;
         const reap = [];
@@ -52018,7 +51849,7 @@ class AnazhRealm {
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             if (g) {
                 this._archGroupFree(g, slot);
-                if (this._archGroupKeyReapable(key)) reap.push(key);
+                reap.push(key);
             }
         }
         // SUBMIT-WAL (Flugschreiber-Befund: sceneChildren wächst monoton beim Wandern,
@@ -52350,6 +52181,13 @@ class AnazhRealm {
         return emitted;
     }
 
+    // Der EINE Foundry-Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall): die Materialisierung
+    // (Primär-Stufe · Gesetz-Bahn · Band-Partner) und die Promotion zum echten Eintrag lesen ihn — die Gestalt
+    // (`_foundryVariantFor`) bleibt beim Kristallisieren dieselbe.
+    _scatterFoundrySeed(cellX, cellZ, variantIndex) {
+        return ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+    }
+
     // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
     // Instanz-Slots (Foundry-Flat oder Grammatik, inkl. Band-Partner + Tint) auf der gewünschten Stufe
     // → Zellen-Datensatz oder null (deferriert/ungemappt). Leser: Region-Bau + _tickScatterLod.
@@ -52379,9 +52217,16 @@ class AnazhRealm {
         // Ist beides nicht bereit: DEFERRIEREN, NIE Grammatik als Lückenbüßer. Nur eine wirklich
         // ungemappte Art fällt auf Grammatik (dort die einzige Quelle); Foundry aus → alles Grammatik.
         const foundryPreset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+        // Der EINE Streu-Same der Zelle (`_scatterFoundrySeed`): Primär-Stufe, Gesetz-Bahn, Band-Partner und die
+        // Promotion lesen ihn — dieselbe Gestalt auf jeder Bahn.
+        const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex) : 0;
+        const gestalt = foundryPreset ? this._foundryVariantFor(fseed, foundryPreset) : null;
+        if (foundryPreset && gestalt == null) {
+            if (!ctxNoDefer) region._deferredFoundry = true; // Buch kalt → deferrieren wie ein ladendes Asset
+            return null;
+        }
         if (foundryPreset) {
             const preset = foundryPreset;
-            const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
             let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
             if (
                 !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
@@ -52396,7 +52241,7 @@ class AnazhRealm {
             }
             if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
                 foundryFlat = ff;
-                bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
+                bpName = "fscatter:" + preset + ":" + gestalt + ":" + ff.lod;
             } else {
                 // Studio-Asset noch nicht da → DEFERRIEREN (KEIN Grammatik-Nachbau). Die Region merkt
                 // sich das → `_tickScatterFoundryRefill` streamt sie neu, sobald das Studio liefert.
@@ -52423,10 +52268,9 @@ class AnazhRealm {
         if (foundryFlat && foundryPreset && layer.kind !== "tree") {
             const _cellLodF = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             if ((_cellLodF >= 2 || lod >= 2) && this._streuGesetzBahnOffen()) {
-                const fseedB = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
                 const fh = this._streuGesetzSpawn(
                     foundryPreset,
-                    fseedB,
+                    fseed,
                     tf.x,
                     Number.isFinite(surfY) ? surfY : 0,
                     tf.z,
@@ -52443,7 +52287,7 @@ class AnazhRealm {
                         species,
                         variantIndex,
                         lod: 2, // die Gesetz-Bahn IST die Fern-Stufe (auch wo die Studio-Stufe geklemmt ist)
-                        bpName: "abaum:" + foundryPreset + ":" + this._foundryVariantFor(fseedB),
+                        bpName: "abaum:" + foundryPreset + ":" + gestalt,
                         slots: [],
                         feld: fh,
                         x: tf.x,
@@ -52505,13 +52349,11 @@ class AnazhRealm {
         ) {
             const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             const _partner = this._lodBandPartnerFor(dist, visH, _curLod);
-            // derselbe deterministische Varianten-Seed wie der Primär-Flat (Formel-Zwilling)
-            const _fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
             if (_partner != null && _partner !== _curLod) {
-                const pf = this._foundryFlattenFor({ seed: _fseed }, foundryPreset, _partner);
+                const pf = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
                     const pSlots = this._scatterInstanceAdd(
-                        "fscatter:" + foundryPreset + ":" + this._foundryVariantFor(_fseed) + ":" + pf.lod,
+                        "fscatter:" + foundryPreset + ":" + gestalt + ":" + pf.lod,
                         tf.x,
                         Number.isFinite(surfY) ? surfY : 0,
                         tf.z,
@@ -52589,12 +52431,12 @@ class AnazhRealm {
             // Zellen mit region-privaten Slots (@regX,regZ) dürfen zurück in die Fern-Stufe wandern (der
             // Ursprungs-Bounding-Sphere-Hazard ist an der Wurzel weg: die Null-Skala erbt die Position,
             // _archGroupFree) — sonst frieren Millionen L1-Tris ein. Promotions (→ näher) bleiben dem
-            // Region-Lifecycle. Super-Region-Slots (`@s:`/`@p:s:`, _archFernRegionKey) wandern beidseitig.
+            // Region-Lifecycle. Super-Region-Slots (`@s:`, _archFernRegionKey) wandern beidseitig.
             let hatRegional = false;
             for (const s of cell.slots) {
                 if (s && typeof s.key === "string") {
                     const at = s.key.indexOf("@");
-                    if (at >= 0 && !(s.key.startsWith("@s:", at) || s.key.startsWith("@p:s:", at))) {
+                    if (at >= 0 && !s.key.startsWith("@s:", at)) {
                         hatRegional = true;
                         break;
                     }
@@ -52611,7 +52453,7 @@ class AnazhRealm {
             if (newLod === cell.lod) continue;
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
             // `fade` m näher wäre es noch L2 — kein Flackern am Dither-Band). Die leere private Hülle reapt
-            // _scatterFreeSlots über _archGroupKeyReapable.
+            // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
             if (hatRegional) {
                 const fadeM = Number.isFinite(AnazhRealm.LOD_DISTANCES.fade) ? AnazhRealm.LOD_DISTANCES.fade : 8;
                 if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH) !== 2)
@@ -52798,10 +52640,18 @@ class AnazhRealm {
         // Promoted-Bitmask setzen (vor dem Spawn — spawnArchitecture markiert
         // ebenfalls, doppelt ist idempotent)
         this._scatterMarkCellPromoted(tf.x, tf.z, layerName);
+        // Der Same der Zelle reist mit (Γ5): der echte Eintrag trägt DIESELBE Gestalt wie seine Streu-Instanz —
+        // ohne ihn würfelte spawnArchitecture Math.random, und die Gestalt wechselte am Promotions-Ring.
         const entry = this.spawnArchitecture(
             keys[0],
             { x: tf.x, y: (Number.isFinite(surfY) ? surfY : 0) + 0.5, z: tf.z },
-            { silent: true, precise: true, scale: tf.scale, rotationY: tf.yaw }
+            {
+                silent: true,
+                precise: true,
+                scale: tf.scale,
+                rotationY: tf.yaw,
+                seed: this._scatterFoundrySeed(cellEntry.cellX, cellEntry.cellZ, cellEntry.variantIndex),
+            }
         );
         if (entry) {
             // Provenienz (Plan §2): geboren aus Welt-Genese-Cell, durch Berührung
@@ -52932,9 +52782,6 @@ class AnazhRealm {
         // GNADENFRIST (18.07.) — der Gruppen-Reaper räumt abgelaufene leere Hüllen (1×/s;
         // headless entsteht nie ein Kandidat — der Leer-Chokepoint reapt dort sofort).
         this._tickArchGruppenReaper(performance.now());
-        // CHUNK-BODEN-ENTLASSUNG (19.07.) — der Gnadenfrist-Tick nullt die
-        // CPU-Arrays gesettelter, IDB-gedeckter Chunk-Böden (echt-only).
-        this._tickChunkBodenEntlassung(performance.now());
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
         // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
@@ -59713,6 +59560,19 @@ class AnazhRealm {
         return mat;
     }
 
+    // Welle B — DIE LICHTQUELLE: ein Teil, dessen Genom das Leuchten trägt (`emissiveBoost`, das Glut-/Kristall-
+    // Genom) UND dessen Substanz glimmt (dieselbe Klammer `emissiv − 0.5 > 0.01` wie _archLeafMaterial). Die Klammer
+    // allein trifft auch Holz, Laub, Leder (ihr Glimmen ist ein Ton, kein Feuer) — erst die Genom-Deklaration macht
+    // den Teil zum Licht. Eine Lichtquelle wirft keinen Schatten (Glut-Bett und -Zungen; das Becken wirft).
+    _archTeilLeuchtet(part) {
+        if (!part || !Number.isFinite(part.emissiveBoost)) return false;
+        const def =
+            typeof part.material === "string" && this.state.materials ? this.state.materials[part.material] : null;
+        const profil =
+            def && def.tags ? this._substanceResponseProfile(def.tags) : AnazhRealm.SUBSTANCE_RESPONSE.defaults.werk;
+        return Math.max(0, (Number(profil && profil.emissiv) || 0) - 0.5) > 0.01;
+    }
+
     // Minimaler Geometrie-Merger (BufferGeometryUtils.mergeGeometries fehlt im vendored Bundle). Erwartet
     // IDENTISCHE Attribute (position, normal, color), Eingänge optional indexed; Ausgabe nicht-indiziert.
     _mergeGeometries(geometries) {
@@ -61551,6 +61411,9 @@ class AnazhRealm {
     //     Frame verdrahtet; headless der EINZIGE Pfad.
     // (2) LAZY + BUDGETIERT: `_tickImpostorBake` fragt den Studio-Bäcker ("bake-impostor") und swappt die
     //     Pixel ATOMAR in `tex.image` (Textur-Identität stabil → kein Pipeline-Recompile).
+    // DER STUDIO-RECORD (`skeleton === null`, V18.527): die Foundry-Karte mit echtem Renderer — die Silhouette erreichte
+    // das Auge dort nie (der Flatten serviert bis zum Bake Geometrie), Rahmen und Höhe liefert das Bake-Payload. Der
+    // Record entsteht ohne Silhouette und rahmenlos, der Bake wird sofort eingereiht.
     _ensureImpostorAtlas(key, skeleton) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         if (this._impostorAtlasMap.has(key)) return this._impostorAtlasMap.get(key);
@@ -61561,16 +61424,17 @@ class AnazhRealm {
         const V = _ic.views || 8,
             cw = _ic.cellW || 128,
             ch = _ic.cellH || 256;
+        const studio = skeleton === null;
         // (1) Fallback: die deterministische Silhouette in alle 8 Zellen (bis der
         // Studio-Bake sie ersetzt zeigt jede Peilung dasselbe Bild = V18.388-Qualität).
-        const cell = this._bakeImpostorSilhouetteCanvas(key, skeleton, cw, ch);
-        if (!cell) return null;
+        const cell = studio ? null : this._bakeImpostorSilhouetteCanvas(key, skeleton, cw, ch);
+        if (!studio && !cell) return null;
         const atlasCanvas = document.createElement("canvas");
         atlasCanvas.width = cw * V;
         atlasCanvas.height = ch;
         const actx = atlasCanvas.getContext("2d", { willReadFrequently: true });
         if (!actx) return null;
-        for (let v = 0; v < V; v++) actx.drawImage(cell, v * cw, 0, cw, ch);
+        if (cell) for (let v = 0; v < V; v++) actx.drawImage(cell, v * cw, 0, cw, ch);
         // Neutraler Normal-Atlas: (0.5,0.5,1) = Normale ZUR Kamera (Vorlage Z.1622,
         // Hintergrund-Clear) → per-Fragment-Licht degradiert graziös zur Fläche.
         const nrmCanvas = document.createElement("canvas");
@@ -61613,9 +61477,9 @@ class AnazhRealm {
         };
         this._impostorAtlasMap.set(key, rec);
         // (2) den echten Studio-Bake einreihen — NUR mit echtem Renderer (headless/
-        // Null-Renderer → der Canvas-Fallback trägt, gate-treu).
+        // Null-Renderer → der Canvas-Fallback trägt, gate-treu); der Studio-Record bäckt rahmenlos.
         const rend = this.state && this.state.renderer;
-        if (rend && !rend._isHeadlessNull && rec.frame) {
+        if (rend && !rend._isHeadlessNull && (rec.frame || studio)) {
             if (!this._impostorBakeQueue) this._impostorBakeQueue = [];
             this._impostorBakeQueue.push(key);
         }
@@ -61770,13 +61634,11 @@ class AnazhRealm {
         this._impostorBakePendingSince = performance.now();
         this._impostorBakePendingKey = key;
         const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
-        // Seed = derselbe wie der bisherige Bake-Gegenstand: die Foundry-LOD1 wurde je Record mit
-        // `_foundryRequest(preset, variant, 1, season)` gebaut → seed = rec.variantIndex; die
-        // Saison reist aus dem Record (fimp-Key trägt sie), sonst die aktuelle Welt-Saison.
-        const season = rec.season || (st && st.season) || "summer";
+        // Seed = die Gestalt des Records (rec.variantIndex) — dieselbe wie seine Körper-Stufen. Keine Saison: die
+        // Karte ist Golden-Sommer, das Jahr färbt der Karten-Stoff (uSeasonMul).
         // BÄCKER-OV (V18.478) — ist der Record geprägt (rec.ov, aus _foundryEnsureImpostorRecord),
         // bäckt der Studio-Bäcker das UNIKAT (die ov reist mit); ungeprägte Records byte-alt.
-        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, season, rec.ov || undefined)
+        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, rec.ov || undefined)
             .then((payload) => {
                 if (!this._applyStudioImpostorPayload(rec, payload))
                     throw new Error("Studio-Bäcker ohne brauchbaren Payload für " + key);
@@ -62219,11 +62081,19 @@ class AnazhRealm {
                 // Marker (Farbe NICHT in der Signatur), reist die Part-Farbe als
                 // Instanz-Farbe (der EINE Slot-Farb-Chokepoint _archSlotColor).
                 if (mat.userData && mat.userData.leafTint) leaf.tint = this._archPartTintColor(part);
+                // Welle B — Glut-Teile werfen nicht (Lichtquelle, _archTeilLeuchtet; aus beiden Kaskaden raus).
+                if (this._archTeilLeuchtet(part)) leaf.castShadow = false;
                 leaves.push(leaf);
             }
             seen.delete(blueprint.name);
         };
         recurse(bp, new THREE.Matrix4(), 0, new Set());
+        // Welle B — DIE DRAW-EINHEIT IST MATERIAL × GEOMETRIE: LICHTQUELLEN-Teile (_archTeilLeuchtet; ihr Material
+        // backt die Farbe, sie werfen nicht) verschmelzen je Material und Attribut-Form zu EINEM Leaf (Geometrie im
+        // Bauplan-Raum, localMatrix = Identität) — dieselben Dreiecke, dasselbe Material, ein Befehl statt je Teil
+        // einer (die Glut-Zungen einer Variante: 1–3 → 1). Jeder andere Teil bleibt je Teil (deckungsgleich zum
+        // klassischen Bau). Der Foundry-Flat trägt dasselbe Gesetz (_foundryFlatVerschmelzen).
+        if (!blocked && leaves.length > 1) leaves.splice(0, leaves.length, ...this._archLeavesVerschmelzen(leaves));
         if (blocked || leaves.length === 0) {
             // Unbenutzte Leaf-Ressourcen freigeben (nicht instancbar).
             for (const l of leaves) {
@@ -62240,6 +62110,79 @@ class AnazhRealm {
         result.leaves = leaves;
         cache.set(name, result);
         return result;
+    }
+
+    // Die Verschmelzung des Per-Teil-Flattens (Reihenfolge = erstes Vorkommen; ein Einzelner bleibt unberührt).
+    _archLeavesVerschmelzen(leaves) {
+        const sig = (lf) => {
+            const g = lf.geom;
+            if (!g || !g.attributes || !g.attributes.position || lf.tuer || lf.shadowTwin) return null;
+            // nur Lichtquellen (castShadow false aus _archTeilLeuchtet) ohne Instanz-Farb-Kanal
+            if (lf.castShadow !== false || lf.tint !== undefined) return null;
+            if (g.groups && g.groups.length) return null;
+            for (const k in g.attributes) if (g.attributes[k].isInterleavedBufferAttribute) return null;
+            const a = Object.keys(g.attributes)
+                .sort()
+                .map((k) => k + ":" + g.attributes[k].itemSize + (g.attributes[k].normalized ? "n" : ""))
+                .join(",");
+            return [lf.mat.uuid, g.index ? "i" : "x", a].join("|");
+        };
+        const sippen = new Map();
+        const aus = [];
+        for (const lf of leaves) {
+            const k = sig(lf);
+            if (k === null) {
+                aus.push(lf);
+                continue;
+            }
+            let sp = sippen.get(k);
+            if (!sp) {
+                sp = [];
+                sippen.set(k, sp);
+                aus.push(sp); // Platzhalter an der Stelle des ersten Vorkommens
+            }
+            sp.push(lf);
+        }
+        return aus.map((x) => {
+            if (!Array.isArray(x)) return x;
+            if (x.length === 1) return x[0];
+            // Attribut-treu (jedes Attribut der Sippe, Index mit Vertex-Versatz) — die Teile im Bauplan-Raum.
+            const geoms = x.map((lf) => lf.geom.clone().applyMatrix4(lf.localMatrix));
+            const merged = new THREE.BufferGeometry();
+            let vSumme = 0;
+            for (const g of geoms) vSumme += g.attributes.position.count;
+            for (const name of Object.keys(geoms[0].attributes)) {
+                const a0 = geoms[0].attributes[name];
+                const arr = new a0.array.constructor(vSumme * a0.itemSize);
+                let o = 0;
+                for (const g of geoms) {
+                    const a = g.attributes[name];
+                    arr.set(a.array.subarray(0, a.count * a.itemSize), o);
+                    o += a.count * a.itemSize;
+                }
+                merged.setAttribute(name, new THREE.BufferAttribute(arr, a0.itemSize, a0.normalized));
+            }
+            if (geoms[0].index) {
+                let iSumme = 0;
+                for (const g of geoms) iSumme += g.index.count;
+                const idx = vSumme > 65535 ? new Uint32Array(iSumme) : new Uint16Array(iSumme);
+                let o = 0,
+                    v = 0;
+                for (const g of geoms) {
+                    const li = g.index.array;
+                    for (let i = 0; i < g.index.count; i++) idx[o + i] = li[i] + v;
+                    o += g.index.count;
+                    v += g.attributes.position.count;
+                }
+                merged.setIndex(new THREE.BufferAttribute(idx, 1));
+            }
+            for (const g of geoms) g.dispose();
+            for (const lf of x) lf.geom.dispose();
+            merged.computeBoundingBox();
+            const out = { geom: merged, mat: x[0].mat, localMatrix: new THREE.Matrix4() };
+            if (x[0].castShadow === false) out.castShadow = false;
+            return out;
+        });
     }
 
     // === Instancing (HISM-Registry) ===
@@ -62305,11 +62248,11 @@ class AnazhRealm {
             bg.name = "regionBundle:" + regionKey;
             bg.userData.regionKey = regionKey;
             // Analytische Region-Kugel für den Frame-Cull (ersetzt das im Replay eingefrorene three-Culling).
-            // Keys: "x,z" · "p:x,z" · Super-Region "s:x,z"/"p:s:x,z". Über-Inklusion ist sicher (nur GPU-Preis),
-            // Unter-Inklusion wäre ein Pop → großzügiger Höhen-/Überhang-Puffer.
-            const m = /^(p:)?(s:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
+            // Keys: "x,z" · Super-Region "s:x,z". Über-Inklusion ist sicher (nur GPU-Preis), Unter-Inklusion
+            // wäre ein Pop → großzügiger Höhen-/Überhang-Puffer.
+            const m = /^(s:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
             if (m) {
-                const S = m[2]
+                const S = m[1]
                     ? Number.isFinite(AnazhRealm.SCATTER_FERN_SUPERREGION) && AnazhRealm.SCATTER_FERN_SUPERREGION > 1
                         ? AnazhRealm.SCATTER_FERN_SUPERREGION
                         : 4
@@ -62317,7 +62260,7 @@ class AnazhRealm {
                 const R = AnazhRealm.ARCH_REGION_M * S;
                 const cy = (Number.isFinite(this.state.terrainBaseHeight) ? this.state.terrainBaseHeight : 0) + 40;
                 bg.userData.cullSphere = new THREE.Sphere(
-                    new THREE.Vector3((Number(m[3]) + 0.5) * R, cy, (Number(m[4]) + 0.5) * R),
+                    new THREE.Vector3((Number(m[2]) + 0.5) * R, cy, (Number(m[3]) + 0.5) * R),
                     R * Math.SQRT1_2 + 140
                 );
             }
@@ -62351,29 +62294,299 @@ class AnazhRealm {
         }
     }
 
-    // ═══ DIE CHUNK-EINBÜRGERUNG ═══
-    // Die statischen Chunk-Populationen (Terrain-Boden · LOD-Stitch · Gras · Streu · Wasser-Sheet/Iso;
-    // Animation = geteilte Takt-Uniforms, im Replay lebendig) ziehen in die Region-BundleGroups
-    // (p:-Keying, EIN Ableitungs-Ort wie _archPlacedRegionKey) — als direkte Szene-Kinder zahlten sie je
-    // Frame den vollen renderObject-Walk. Rebuild/Pool = Remove+Add = Re-Record nur der Region.
-    _chunkBundleRegionKey(cx, cz) {
-        const cfg = this._voxelChunkConfig();
-        const span = cfg && Number.isFinite(cfg.span) ? cfg.span : 43.2;
-        const R = AnazhRealm.ARCH_REGION_M;
-        return "p:" + Math.floor((cx * span) / R) + "," + Math.floor((cz * span) / R);
+    // ═══ DER SATZ (Welle B) ═══
+    // Die Draw-Einheit ist Material × Geometrie über den ganzen Ring, nie Chunk × Material. Befund (Inventur der
+    // echten GPU, Mess-Wiese): 78 Chunk-Böden zeichneten in JEDEM Pass einzeln — 234 GPU-Befehle, weil der Vendor
+    // den Bundle-Replay je (Bundle, Kamera) zieht und seine Mitglieder nie cullt. Je Satz-Art (Boden · Wasser)
+    // lebt EIN Szenen-Mesh mit Pool-Puffern; ein Chunk (bzw. sein Stitch-Band) ist ein BEREICH darin. Die Vertex-
+    // Bereiche vergibt First-Fit aus einer Freiliste, lebende Bereiche wandern nie: die Chunk-Geometrie trägt
+    // subarray-Views auf den Satz (jeder CPU-Leser bleibt byte-gleich, der Geomorph schreibt hinein und markiert
+    // seinen Bereich). Der Index (Uint32 — writeBuffer verlangt 4-Byte-Ausrichtung) wird je Render ab dem ersten
+    // geänderten Block neu gelegt, Boden nah → fern (Early-Z, wie three's Objekt-Sortierung), Wasser fern → nah
+    // (transparent). Jeder Schreibvorgang ist ein Teil-Upload (addUpdateRange → queue.writeBuffer(offset));
+    // ein Wachsen (×1,5) baut eine frische Geometrie und zeigt die Views neu.
+    _chunkSatzArt(art) {
+        if (art === "boden")
+            return {
+                name: "bodenSatz",
+                attr: [
+                    ["position", 3],
+                    ["normal", 3],
+                    ["color", 3],
+                    ["aMorphTarget", 3],
+                    ["aMorphWeight", 1],
+                ],
+                mat: this._getVoxelChunkMaterial(),
+                schatten: true, // der Boden wirft in beiden Kaskaden (Hang auf Tal) — 1 Befehl je Kaskade
+                empfang: true,
+                renderOrder: 0,
+                richtung: 1, // nah → fern
+                userData: { chunkSatz: "boden", inventar: "boden-satz" },
+            };
+        if (art === "wasser")
+            return {
+                name: "wasserSatz",
+                attr: [
+                    ["position", 3],
+                    ["aFlow", 2],
+                    ["aWave", 1],
+                    ["aDepth", 1],
+                    ["aSlope", 1],
+                    ["aShore", 1],
+                ],
+                mat: this._ensureHydroSurfaceMaterial(),
+                schatten: false,
+                empfang: false,
+                renderOrder: 1, // transparent — nach den opaken Objekten
+                richtung: -1, // fern → nah (transparent: der Maler-Algorithmus innerhalb des Satzes)
+                userData: { chunkSatz: "wasser", isHydrosphere: true, hydroKind: "chunk-water-satz" },
+            };
+        throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
     }
-    _chunkBundleAnker(mesh, cx, cz) {
-        if (!mesh) return;
-        let bundle = null;
-        if (Number.isFinite(cx) && Number.isFinite(cz))
-            bundle = this._archRegionBundleFor(this._chunkBundleRegionKey(cx, cz));
-        if (bundle) {
-            mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
-            bundle.add(mesh);
-            bundle.needsUpdate = true;
-            this._bundleKugelWeite(bundle, mesh);
-            this._bundleReifeWache(mesh);
-        } else if (this.state.scene) this.state.scene.add(mesh);
+
+    // Der Satz einer Art (lazy): EIN Szenen-Kind, frustumCulled=false (der Ring umspannt den Spieler).
+    _chunkSatz(art) {
+        const st = this.state;
+        if (!st.chunkSaetze) st.chunkSaetze = new Map();
+        let s = st.chunkSaetze.get(art);
+        if (s) return s;
+        if (!st.scene) throw new Error(`_chunkSatz(${art}): keine Szene`);
+        const spec = this._chunkSatzArt(art);
+        const C = AnazhRealm.CHUNK_SATZ[art];
+        if (!C) throw new Error(`_chunkSatz: keine Start-Kapazität für „${art}" (CHUNK_SATZ)`);
+        s = {
+            art,
+            spec,
+            attrNamen: spec.attr.map((a) => a[0]),
+            geom: null,
+            mesh: null,
+            vKap: 0,
+            iKap: 0,
+            vEnde: 0,
+            vFrei: [],
+            bloecke: new Map(),
+            ordnung: [],
+            schmutzig: false,
+            anker: null,
+            verborgen: false,
+            wachse: 0,
+        };
+        this._chunkSatzGeometrie(s, C.v, C.i);
+        const mesh = new THREE.Mesh(s.geom, spec.mat);
+        mesh.name = spec.name;
+        mesh.frustumCulled = false;
+        mesh.castShadow = spec.schatten;
+        mesh.receiveShadow = spec.empfang;
+        mesh.renderOrder = spec.renderOrder;
+        mesh.visible = false; // bis der erste Index liegt
+        Object.assign(mesh.userData, spec.userData);
+        s.mesh = mesh;
+        st.chunkSaetze.set(art, s);
+        st.scene.add(mesh);
+        return s;
+    }
+
+    // Die Pool-Geometrie (neu oder gewachsen): Inhalt bis zum Hochwasser bzw. zur gelegten Index-Zahl kopiert,
+    // die Views aller Bereiche neu gezeigt, die alte Geometrie geht in die verzögerte Entsorgung.
+    _chunkSatzGeometrie(s, vKap, iKap) {
+        const alt = s.geom;
+        const g = new THREE.BufferGeometry();
+        for (const [name, is] of s.spec.attr) {
+            const arr = new Float32Array(vKap * is);
+            if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * is));
+            g.setAttribute(name, new THREE.BufferAttribute(arr, is));
+        }
+        const idx = new Uint32Array(iKap);
+        const iN = alt ? alt.drawRange.count : 0;
+        if (iN > 0) idx.set(alt.index.array.subarray(0, iN));
+        g.setIndex(new THREE.BufferAttribute(idx, 1));
+        g.setDrawRange(0, iN);
+        // frustumCulled=false: die Hülle wird nie gelesen — eine ehrliche „überall"-Kugel statt eines Laufs über
+        // die ganze Kapazität
+        g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
+        s.geom = g;
+        s.vKap = vKap;
+        s.iKap = iKap;
+        for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
+        if (s.mesh) s.mesh.geometry = g;
+        if (alt) {
+            s.wachse++;
+            this._queueGeometryDispose(alt);
+        }
+    }
+
+    _chunkSatzViews(s, b) {
+        for (const [name, is] of s.spec.attr)
+            b.geom.attributes[name].array = s.geom.attributes[name].array.subarray(
+                b.vStart * is,
+                (b.vStart + b.vAnzahl) * is
+            );
+    }
+
+    // First-Fit aus der Freiliste, sonst am Hochwasser; reicht die Kapazität nicht, wächst der Satz.
+    _chunkSatzVAlloc(s, n) {
+        const frei = s.vFrei;
+        for (let i = 0; i < frei.length; i++) {
+            const f = frei[i];
+            if (f[1] < n) continue;
+            const start = f[0];
+            if (f[1] === n) frei.splice(i, 1);
+            else {
+                f[0] += n;
+                f[1] -= n;
+            }
+            return start;
+        }
+        if (s.vEnde + n > s.vKap) this._chunkSatzGeometrie(s, Math.max(s.vEnde + n, Math.ceil(s.vKap * 1.5)), s.iKap);
+        const start = s.vEnde;
+        s.vEnde += n;
+        return start;
+    }
+
+    // Bereich zurück in die (nach Start sortierte) Freiliste, Nachbarn verschmelzen; berührt er das Hochwasser,
+    // sinkt es.
+    _chunkSatzVFrei(s, start, n) {
+        const frei = s.vFrei;
+        let i = 0;
+        while (i < frei.length && frei[i][0] < start) i++;
+        frei.splice(i, 0, [start, n]);
+        if (i + 1 < frei.length && frei[i][0] + frei[i][1] === frei[i + 1][0]) {
+            frei[i][1] += frei[i + 1][1];
+            frei.splice(i + 1, 1);
+        }
+        if (i > 0 && frei[i - 1][0] + frei[i - 1][1] === frei[i][0]) {
+            frei[i - 1][1] += frei[i][1];
+            frei.splice(i, 1);
+        }
+        const letzt = frei[frei.length - 1];
+        if (letzt && letzt[0] + letzt[1] === s.vEnde) {
+            s.vEnde = letzt[0];
+            frei.pop();
+        }
+    }
+
+    // DER EINE EINTRITT eines Chunk-Bürgers in die Szene: `key` ist der Bereichs-Name (Chunk-Key oder
+    // `stitch:<chunk>`), `chunkKey` sein Chunk (für die Nah-fern-Ordnung). Fail-closed: jedes Satz-Attribut muss
+    // mit seiner Breite vorliegen, ein Index muss da sein — ein fehlender Wert ist ein lauter Bruch.
+    _chunkSatzEin(art, key, geom, chunkKey) {
+        const s = this._chunkSatz(art);
+        if (s.bloecke.has(key)) this._chunkSatzAus(art, key);
+        const n = geom && geom.attributes && geom.attributes.position ? geom.attributes.position.count : 0;
+        for (const [name, is] of s.spec.attr) {
+            const a = geom && geom.attributes ? geom.attributes[name] : null;
+            if (!a || a.itemSize !== is || a.count !== n)
+                throw new Error(
+                    `_chunkSatzEin(${art}, ${key}): Attribut ${name} fehlt oder passt nicht (${n} Vertices)`
+                );
+        }
+        if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
+        const vStart = this._chunkSatzVAlloc(s, n);
+        const g = s.geom; // nach dem Alloc: ein Wachsen tauscht die Geometrie
+        for (const [name, is] of s.spec.attr) {
+            const ga = g.attributes[name];
+            ga.array.set(geom.attributes[name].array, vStart * is);
+            ga.addUpdateRange(vStart * is, n * is);
+            ga.needsUpdate = true;
+        }
+        const li = geom.index.array;
+        const idx = new Uint32Array(li.length);
+        for (let i = 0; i < li.length; i++) idx[i] = li[i] + vStart;
+        const ck = String(chunkKey);
+        const komma = ck.indexOf(",");
+        const b = {
+            key,
+            chunkKey: ck,
+            cx: Number(ck.slice(0, komma)),
+            cz: Number(ck.slice(komma + 1)),
+            geom,
+            vStart,
+            vAnzahl: n,
+            idx,
+            iAnzahl: idx.length,
+            iStart: -1,
+        };
+        s.bloecke.set(key, b);
+        this._chunkSatzViews(s, b);
+        s.schmutzig = true;
+        return b;
+    }
+
+    // Der Austritt: die Chunk-Geometrie behält ihre Daten als EIGENE Kopie (ihr Bereich wird frei und neu
+    // vergeben), der Index legt sich im nächsten Takt neu.
+    _chunkSatzAus(art, key) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
+        const b = s ? s.bloecke.get(key) : null;
+        if (!b) return false;
+        for (const name of s.attrNamen) {
+            const a = b.geom.attributes[name];
+            if (a) a.array = a.array.slice();
+        }
+        this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
+        s.bloecke.delete(key);
+        s.schmutzig = true;
+        return true;
+    }
+
+    // Ein CPU-Schreiber (Geomorph) hat Attribute seines Bereichs geändert → genau dieser Bereich lädt hoch.
+    _chunkSatzMarke(art, key, namen) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
+        const b = s ? s.bloecke.get(key) : null;
+        if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
+        for (const name of namen) {
+            const ga = s.geom.attributes[name];
+            ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
+            ga.needsUpdate = true;
+        }
+    }
+
+    _chunkSatzSichtbar(art, sichtbar) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
+        if (!s) return;
+        s.verborgen = !sichtbar;
+        s.mesh.visible = sichtbar && s.geom.drawRange.count > 0;
+    }
+
+    // Je Render (vor dem Zeichnen): jeder geänderte Satz legt seinen Index ab dem ersten geänderten Block neu;
+    // ein Spieler-Chunk-Wechsel sortiert die Blöcke neu (Ring-Distanz).
+    _tickChunkSatz() {
+        const saetze = this.state.chunkSaetze;
+        if (!saetze || saetze.size === 0) return;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        const anker = lpc ? lpc.cx + "," + lpc.cz : "";
+        for (const s of saetze.values()) if (s.schmutzig || s.anker !== anker) this._chunkSatzOrdnen(s, lpc, anker);
+    }
+
+    _chunkSatzOrdnen(s, lpc, anker) {
+        const pcx = lpc ? lpc.cx : 0,
+            pcz = lpc ? lpc.cz : 0;
+        const r = s.spec.richtung;
+        const neu = Array.from(s.bloecke.values());
+        for (const b of neu) b._d = lpc ? Math.max(Math.abs(b.cx - pcx), Math.abs(b.cz - pcz)) : 0;
+        neu.sort((a, b) => (a._d - b._d) * r || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+        const alt = s.ordnung;
+        let p = 0;
+        while (p < alt.length && p < neu.length && alt[p] === neu[p]) p++;
+        const ab = p > 0 ? neu[p - 1].iStart + neu[p - 1].iAnzahl : 0;
+        let summe = ab;
+        for (let k = p; k < neu.length; k++) summe += neu[k].iAnzahl;
+        if (summe > s.iKap) this._chunkSatzGeometrie(s, s.vKap, Math.max(summe, Math.ceil(s.iKap * 1.5)));
+        const index = s.geom.index;
+        let iPos = ab;
+        for (let k = p; k < neu.length; k++) {
+            const b = neu[k];
+            b.iStart = iPos;
+            index.array.set(b.idx, iPos);
+            iPos += b.iAnzahl;
+        }
+        if (iPos > ab) {
+            index.addUpdateRange(ab, iPos - ab);
+            index.needsUpdate = true;
+        }
+        s.geom.setDrawRange(0, iPos);
+        s.mesh.visible = !s.verborgen && iPos > 0;
+        s.ordnung = neu;
+        s.schmutzig = false;
+        s.anker = anker;
     }
 
     // ═══ DIE REIFE-WACHE ═══
@@ -62398,28 +62611,6 @@ class AnazhRealm {
                 if (p && p.isBundleGroup === true) p.needsUpdate = true;
             });
     }
-    // Die Region-Kugel MUSS ihren Inhalt decken (Unter-Inklusion = Pop): Berg-Chunks ragen über den
-    // Höhen-Puffer → die Kugel wächst am Add um die Hülle des Neulings.
-    _bundleKugelWeite(bundle, mesh) {
-        const s = bundle && bundle.userData && bundle.userData.cullSphere;
-        if (!s || !mesh) return;
-        let bs = null;
-        try {
-            if (mesh.isInstancedMesh === true && typeof mesh.computeBoundingSphere === "function") {
-                if (!mesh.boundingSphere) mesh.computeBoundingSphere();
-                bs = mesh.boundingSphere;
-            } else if (mesh.geometry) {
-                if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
-                bs = mesh.geometry.boundingSphere;
-            }
-        } catch (_e) {
-            return;
-        }
-        if (!bs || !Number.isFinite(bs.radius) || bs.radius <= 0) return;
-        const d = s.center.distanceTo(bs.center) + bs.radius;
-        if (d > s.radius) s.radius = d;
-    }
-
     // ═══ DER BERG-SCHATTEN (feld-natives Hi-Z) ═══
     // Verdeckung aus dem EIGENEN Gesetz statt Depth-Pyramide: Sichtlinie Kamera → Kugel-OBERKANTE gegen
     // `_terrainMacroSurfaceY`, drei Azimut-Linien (Mitte ± Radius); nur wenn ALLE drei überragt sind, ist
@@ -62597,8 +62788,8 @@ class AnazhRealm {
     // wählen. Placed Architektur (`p:`-Region-Key ODER global) bleibt Layer-0-only (kein Laub).
     _markFoliageLayer(mesh, regionKey, regional) {
         if (!mesh || !mesh.layers || typeof mesh.layers.enable !== "function") return;
-        // Foliage = region-gestreute Vegetation; die platzierte Architektur trägt den `p:`-Präfix.
-        const isFoliage = regional !== false && !(typeof regionKey === "string" && regionKey.startsWith("p:"));
+        // Foliage = region-gestreute Vegetation; die platzierte Architektur ist global (Welle B).
+        const isFoliage = regional !== false && regionKey != null;
         if (isFoliage) mesh.layers.enable(AnazhRealm.FOLIAGE_LAYER);
     }
 
@@ -62694,7 +62885,10 @@ class AnazhRealm {
         // GPU-Befehlen eines Frames.
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
-        const key = regional ? name + "#" + leafIdx + "@" + regionKey : name + "#" + leafIdx;
+        // Welle B — ein Bau-Schlüssel ist Studio-Geometrie: ruft der platzierte Bau mit leerem Typ (das Leaf trägt
+        // eine Studio-Identität), ist der Leaf-Schlüssel selbst die Gruppe (felsbogen und felsturm teilen zacken).
+        const basis = name ? name + "#" + leafIdx : String(leafIdx);
+        const key = regional ? basis + "@" + regionKey : basis;
         let g = this.state.archInstanceGroups.get(key);
         if (g) return g;
         const capacity = 16;
@@ -62891,28 +63085,9 @@ class AnazhRealm {
         g.free.push(slot);
     }
 
-    // Region-Key einer PLATZIERTEN Struktur (null = global); braucht useRegionFoliageCull UND
-    // useRegionArchCull. `p:` trennt den Namensraum von der Streu (`_disposeScatterRegion` iteriert nur
-    // @regX,regZ → entsorgt nie eine platzierte Gruppe). GROSSE Strukturen (Span > Schwelle): global.
-    _archPlacedRegionKey(entry) {
-        if (this.state.useRegionArchCull === false || this.state.useRegionFoliageCull === false) return null;
-        if (!entry || !entry.position) return null;
-        const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        // BÄUME sind GLOBAL instanziert (erkannt über die EINE Wald-Quelle FOREST.crown): region-gekeyt
-        // zersplitterten sie in N Regionen × Leaf-Gruppen — der Draw-Call-Preis überwog den Cull-Gewinn.
-        // Totholz/Karst/Büsche bleiben regional (Boden, tragen die Cull-Rate).
-        if (bp && typeof bp._grownSpecies === "string" && AnazhRealm.FOREST.crown[bp._grownSpecies]) return null;
-        const ext = this._compoundVisualExtent(bp);
-        const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
-        const span = Math.max(ext.dx || 0, ext.dz || 0) * scale;
-        if (span > AnazhRealm.ARCH_REGION_CULL_MAX_SPAN) return null; // groß → global (kein Cull-Gewinn)
-        const R = AnazhRealm.ARCH_REGION_M;
-        return "p:" + Math.floor((entry.position.x || 0) / R) + "," + Math.floor((entry.position.z || 0) / R);
-    }
-
     // Die EINE Fern-Key-Ableitung: trägt ein Leaf die FERN-Stufe (Impostor `fimp:` · Foundry-L2 `f:…|2|…`
     // · Grammatik `_lod2` · Streu `fscatter:…:2`), mappt sein Region-Key auf die SUPER-REGION (4×4, Marker
-    // `s:`) — camera-facing Quads nutzen den Region-Cull kaum. Deckt auch platzierte Fern-Leaves (`p:`);
+    // `s:`) — camera-facing Quads nutzen den Region-Cull kaum. Der platzierte Bau ist global (null-Key, Welle B);
     // BAUM-Streu bleibt global (null-Key). Ein Super-Key ist über Regionen GETEILT: _disposeScatterRegion
     // räumt nur den eigenen `@regX,regZ`-Suffix, die Empty-Dispose (`_archInstanceRemove`) den Rest.
     _archFernRegionKey(name, leaf, regionKey) {
@@ -62920,14 +63095,14 @@ class AnazhRealm {
         const lk = leaf && typeof leaf.leafKey === "string" ? leaf.leafKey : "";
         const fern =
             lk.startsWith("fimp:") ||
-            /^f:[^|]*\|\d+\|2\|/.test(lk) ||
+            /^f:[^|]*\|\d+\|2[|:]/.test(lk) ||
             (typeof name === "string" && (name.endsWith("_lod2") || /^fscatter:.*:2$/.test(name)));
         if (!fern) return regionKey;
         const S = AnazhRealm.SCATTER_FERN_SUPERREGION;
         if (!(Number.isFinite(S) && S > 1)) return regionKey; // S=1 = das alte per-Region-Keying (A/B-Hebel der Linse)
-        const m = /^(p:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
+        const m = /^(-?\d+),(-?\d+)$/.exec(String(regionKey));
         if (!m) return regionKey; // schon gemappt (s:) oder fremdes Format → unberührt (idempotent)
-        return (m[1] || "") + "s:" + Math.floor(Number(m[2]) / S) + "," + Math.floor(Number(m[3]) / S);
+        return "s:" + Math.floor(Number(m[1]) / S) + "," + Math.floor(Number(m[2]) / S);
     }
 
     // Die EINE Slot-Farbe (Chokepoint von _archInstanceAdd + _scatterInstanceAdd): Part-Farbe (leaf.tint)
@@ -63235,16 +63410,23 @@ class AnazhRealm {
         } else {
             tintColor.setRGB(1, 1, 1);
         }
-        // V18.353 — PHASE A.1 (Draw-Call-Kollaps): der REGION-Key der platzierten Struktur
-        // (`p:regX,regZ`, EINMAL pro Eintrag). Kleine/mittlere Bauten gehen in eine
-        // region-lokale Gruppe → frustumCulled=true → Umsehen cullt sie (das V18.300-Muster).
-        const regionKey = this._archPlacedRegionKey(entry);
+        // Welle B — der platzierte Bau ist GLOBAL (kein Regions-Schlüssel): er lebt nur in der Mesh-Zone (Cull-Radius
+        // 100–150 m), jenseits trägt der Box-Satz im Welt-March; eine 256-m-Region brachte keinen Cull (ihre Kugel
+        // R·√½ + 140 m schneidet das Frustum praktisch immer), sie vervielfachte nur die Gruppen je Leaf (@p:).
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
             // Der Leaf-Schluessel ist normal der Array-Index; ein Leaf DARF ihn ueberschreiben
             // (leaf.leafKey) — so bekommt Foundry-Geometrie je Art:Variante:LOD:Teil eine EIGENE
             // InstancedMesh-Gruppe im BESTEHENDEN HISM (Vielfalt + LOD + Instancing, kein Parallelpfad).
-            const g = this._archInstanceGroupFor(entry.type, leaf.leafKey != null ? leaf.leafKey : i, leaf, regionKey);
+            // Trägt das Leaf eine Studio-Identität (f:/fimp:), IST sie die Gruppe — ohne den Bau-Typ (zwei Typen
+            // mit derselben Studio-Geometrie zeichnen in EINER Gruppe).
+            const studio = typeof leaf.leafKey === "string" && /^(f|fimp):/.test(leaf.leafKey);
+            const g = this._archInstanceGroupFor(
+                studio ? "" : entry.type,
+                leaf.leafKey != null ? leaf.leafKey : i,
+                leaf,
+                null
+            );
             const slot = this._archGroupAlloc(g);
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
@@ -63338,18 +63520,16 @@ class AnazhRealm {
             if (!bandOnly) entry.instanced = false;
             return;
         }
-        // Region-private PLATZIERTE Gruppen (@p:), die nach dem Freigeben LEER sind, GANZ entsorgen (wie
-        // _disposeScatterRegion) → keine leeren Gruppen beim Erkunden; Neuaufbau lazy (_archInstanceGroupFor).
-        const placedRegionKeys = new Set();
+        // Gruppen, die nach dem Freigeben LEER sind, GANZ entsorgen (wie _disposeScatterRegion) → keine leeren
+        // Gruppen beim Erkunden; Neuaufbau lazy (_archInstanceGroupFor). Welle B: JEDE Gruppe ist reapbar (die
+        // geteilte Geometrie geht via _disposeArchInstanceGroup deferred frei; Leer-Bedingung liveCount<=0).
+        const geleerte = new Set();
         for (const list of lists)
             for (const { key, slot } of list) {
                 const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
                 if (g) {
                     this._archGroupFree(g, slot);
-                    // Die EINE Reap-Frage (_archGroupKeyReapable, geteilt mit _scatterFreeSlots) fasst auch GLOBALE
-                    // Foundry-Gruppen (`#f:`/`#fimp:`) und die Fern-Super-Region (@s:): die leere Hülle wird entsorgt, die
-                    // geteilte Geometrie via _disposeArchInstanceGroup deferred frei. Leer-Bedingung bleibt liveCount<=0.
-                    if (this._archGroupKeyReapable(key)) placedRegionKeys.add(key);
+                    geleerte.add(key);
                 }
             }
         entry.instSlotsBand = null;
@@ -63361,7 +63541,7 @@ class AnazhRealm {
             // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
             if (entry.fundament) this._archFundamentFree(entry);
         }
-        for (const key of placedRegionKeys) {
+        for (const key of geleerte) {
             // Vollständig leer = liveCount 0 (die EINE Leer-Quelle — g.free/g.next zählen den High-Water mit).
             // Durch den EINEN Leer-Chokepoint mit Gnadenfrist (headless sofort).
             this._archGroupLeerDispose(key);
@@ -64975,11 +65155,18 @@ class AnazhRealm {
                     // self.__anazhCores reist VOR den importScripts in den Worker (Brücke liest die ns-Kerne generisch);
                     // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal. DIE TRANSPORT-SCHALE
                     // steht davor (`_foundrySchale`): sie registriert ihren Kanal-Hörer VOR dem Studio.
+                    // Der Stempel hasht JEDE Generator-Quelle: die Kern-Skripte UND die Shells (V18.527) — die Shell
+                    // phytogenesis.js trägt `__extractAssetMesh` (backt matrixWorld in die Vertices) und
+                    // `bakeImpostorAtlas` (die Karte); ein Shell-Edit ohne Stempel lieferte stale Körper und Karten.
                     const stempelUrls = [];
                     for (const core of manifest) {
                         if (!core || !Array.isArray(core.scripts)) continue;
                         for (const s of core.scripts)
                             if (typeof s === "string" && s) stempelUrls.push(new URL(s + v, base).href);
+                    }
+                    for (const core of manifest) {
+                        if (core && typeof core.shell === "string" && core.shell)
+                            stempelUrls.push(new URL(core.shell + v, base).href);
                     }
                     // Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto.
                     const rend = this.state.renderer;
@@ -65283,15 +65470,18 @@ class AnazhRealm {
     // (Σ 3,7 s, max 207 ms) und IDB-Gets hinter den Schreib-Transaktionen (Median 3,3 s, max 60 s); 32 % der
     // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
     // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
-    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
+    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte + Shells, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
     //                 — der Haupt-Thread fasst den Asset-Cache nie mehr an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
-    // Ein `build-asset` mit `platte` (Schlüssel `<preset>|<seed>|<lod>|<season>`) fragt erst die Platte; ein Miss
-    // geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und überträgt.
-    // `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut nie: Miss = leere Antwort. Diese Funktion
-    // läuft als Quelltext im Worker — sie greift auf nichts außerhalb ihres eigenen Rumpfs zu.
+    //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
+    // Ein `build-asset` mit `platte` (Schlüssel `_foundryKoerperKey`: `<preset>|<gestalt>|<lod>[|ov:…]`) fragt erst die
+    // Platte; ein Miss geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und
+    // überträgt. `vorrat` wärmt nur die Platte (leere Antwort). Ein `bake-impostor` mit `platte` (`karte|…`) liest die
+    // Karte zuerst und schreibt jeden frischen Bake `{ payload }`. `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`)
+    // baut nie: Miss = leere Antwort. Diese Funktion läuft als Quelltext im Worker — sie greift auf nichts außerhalb
+    // ihres eigenen Rumpfs zu.
     static _foundrySchale(cfg) {
         const W = globalThis; // der Worker-Scope (self)
         const LESEN = new Set(cfg.lesen);
@@ -65337,19 +65527,53 @@ class AnazhRealm {
                       if (!d) dbTot = true;
                       return d;
                   });
+        // Der Platten-Wert eines Schlüssels: Körper `{ meshes }`, Karte `{ payload }` (oder null).
         const lies = (key) =>
             platte.then((d) =>
                 d
                     ? new Promise((resolve) => {
                           try {
                               const g = d.transaction("assets", "readonly").objectStore("assets").get(key);
-                              g.onsuccess = () => resolve(g.result && g.result.meshes ? g.result.meshes : null);
+                              g.onsuccess = () => resolve(g.result && typeof g.result === "object" ? g.result : null);
                               g.onerror = () => resolve(null);
                           } catch (_e) {
                               resolve(null);
                           }
                       })
                     : null
+            );
+        const schreib = (key, wert) => {
+            if (!db || dbTot) return;
+            try {
+                db.transaction("assets", "readwrite").objectStore("assets").put(wert, key).onerror = () => {
+                    dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
+                };
+            } catch (_e) {
+                dbTot = true;
+            }
+        };
+        // Eine Karte ist brauchbar, wenn beide Atlanten als eigene Puffer reisen (die Nicht-Leere prüft der Host).
+        const karteOk = (p) =>
+            !!(
+                p &&
+                ArrayBuffer.isView(p.albedo) &&
+                ArrayBuffer.isView(p.normal) &&
+                p.albedo.buffer !== p.normal.buffer
+            );
+        // Liegt der Schlüssel auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
+        const hat = (key) =>
+            platte.then((d) =>
+                d
+                    ? new Promise((resolve) => {
+                          try {
+                              const c = d.transaction("assets", "readonly").objectStore("assets").count(key);
+                              c.onsuccess = () => resolve(c.result > 0);
+                              c.onerror = () => resolve(false);
+                          } catch (_e) {
+                              resolve(false);
+                          }
+                      })
+                    : false
             );
         const schlank = (meshes) => {
             for (const m of meshes) {
@@ -65393,45 +65617,81 @@ class AnazhRealm {
         W.postMessage = function (msg, a, b) {
             if (msg && msg.type === "asset" && Array.isArray(msg.meshes)) {
                 schlank(msg.meshes);
-                const key = schreibAuftrag.get(msg.reqId);
-                if (key !== undefined) {
+                const auftrag = schreibAuftrag.get(msg.reqId);
+                if (auftrag !== undefined) {
                     schreibAuftrag.delete(msg.reqId);
                     // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
-                    if (db && !dbTot && msg.meshes.length) {
-                        try {
-                            db
-                                .transaction("assets", "readwrite")
-                                .objectStore("assets")
-                                .put({ meshes: msg.meshes }, key).onerror = () => {
-                                dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
-                            };
-                        } catch (_e) {
-                            dbTot = true;
-                        }
-                    }
+                    if (msg.meshes.length) schreib(auftrag.key, { meshes: msg.meshes });
+                    // Der Vorrat: der Körper liegt jetzt auf der Platte — zum Haupt-Thread reist er nicht (kein Leser).
+                    if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));
                 }
                 return roh(msg, puffer(msg.meshes));
             }
             const p = msg && msg.payload;
-            if (msg && msg.type === "impostor" && p && p.albedo && p.normal && p.albedo.buffer !== p.normal.buffer)
-                return roh(msg, [p.albedo.buffer, p.normal.buffer]);
+            if (msg && msg.type === "impostor") {
+                // KARTEN AUF DIE PLATTE: ein frischer Studio-Bake wird VOR dem Transfer geschrieben (nie ein leerer).
+                const auftrag = schreibAuftrag.get(msg.reqId);
+                if (auftrag !== undefined) {
+                    schreibAuftrag.delete(msg.reqId);
+                    if (karteOk(p)) schreib(auftrag.key, { payload: p });
+                }
+                if (karteOk(p)) return roh(msg, [p.albedo.buffer, p.normal.buffer]);
+            }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
             return roh(msg, a, b);
         };
         // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
-        // Nachricht zuerst und hält nur die Platten-Aufträge an.
+        // Nachricht zuerst und hält jeden Körper- und Karten-Auftrag an. DER SAISON-NAGEL (V18.527): jeder Bau ist
+        // Golden-Sommer — das Studio sieht season "summer", gleich was der Auftrag trägt; das Jahr färbt der Host
+        // (uSeasonMul). So kann kein Saison-Rest im Studio (setSeasonColors) einen Körper oder die Platte färben.
         W.addEventListener("message", (ev) => {
             const m = ev.data;
-            if (!m || m.type !== "build-asset" || typeof m.platte !== "string") return;
+            if (!m || (m.type !== "build-asset" && m.type !== "bake-impostor")) return;
             ev.stopImmediatePropagation();
-            lies(m.platte).then((hit) => {
+            const weiter = Object.assign({}, m, { season: "summer" });
+            delete weiter.platte;
+            delete weiter.nurPlatte;
+            const studio = () => {
+                if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
+            };
+            if (typeof m.platte !== "string") return studio();
+            if (m.type === "bake-impostor") {
+                // Die Karte von der Platte: Treffer → Antwort ohne Bake (zero-copy); Miss → das Studio bäckt, die
+                // Schale schreibt (postMessage oben).
+                return lies(m.platte).then((wert) => {
+                    const p = wert && wert.payload;
+                    if (karteOk(p))
+                        return roh(
+                            {
+                                type: "impostor",
+                                world: "terrain",
+                                reqId: m.reqId,
+                                presetId: m.presetId,
+                                seed: m.seed,
+                                payload: p,
+                                platte: true,
+                            },
+                            [p.albedo.buffer, p.normal.buffer]
+                        );
+                    schreibAuftrag.set(m.reqId, { key: m.platte, karte: true });
+                    studio();
+                });
+            }
+            if (m.vorrat) {
+                // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
+                // wärmen) —, antwortet die Schale leer ohne Bau; sonst baut das Studio, die Schale schreibt.
+                return hat(m.platte).then((da) => {
+                    if (da || dbTot) return antwort(m, [], da);
+                    schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: true });
+                    studio();
+                });
+            }
+            lies(m.platte).then((wert) => {
+                const hit = wert && Array.isArray(wert.meshes) ? wert.meshes : null;
                 if (hit) return antwort(m, hit, true);
                 if (m.nurPlatte) return antwort(m, [], true);
-                schreibAuftrag.set(m.reqId, m.platte);
-                const weiter = Object.assign({}, m);
-                delete weiter.platte;
-                delete weiter.nurPlatte;
-                if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
+                schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: false });
+                studio();
             });
         });
     }
@@ -66170,19 +66430,32 @@ class AnazhRealm {
             }
         }
     }
+    // DIE KÖRPER-IDENTITÄT (V18.527): ein Foundry-Körper ist (Art, Gestalt, Stufe) und — geprägt — sein ov-Hash.
+    // Keine Saison: jeder Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"), das Jahr
+    // trägt die Uniform `uSeasonMul` (`_tickSeason`). Cache-Schlüssel, Platten-Schlüssel und leafKey-Stamm sind
+    // DIESER eine String — ein Saison-Wechsel baut nichts neu.
+    _foundryKoerperKey(preset, gestalt, lod, ov) {
+        return preset + "|" + gestalt + "|" + lod + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+    }
+    // Die Karte eines (Art, Gestalt[, ov]): Record-Schlüssel "fimp:" + dieser String.
+    _foundryKartenKey(preset, gestalt, ov) {
+        return preset + "|" + gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+    }
     // `wo` = der Rang in der Worker-Schlange (`_foundryAuftrag`): die Position des Bestellers ({x,z}, d² wird beim
     // Senden frisch gemessen) · eine Zahl (d², 0 = sofort: Hand, Werkstatt) · nichts = Vorrat (Bibliothek, Ofen, Bäcker).
-    _foundryRequest(presetId, seed, lod, season, ov, wo) {
+    _foundryRequest(presetId, seed, lod, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
-        const s = season || "summer";
-        // Regler-Kanal: ein nicht-leeres ov (Werkstatt-Overrides) umgeht die Platte KOMPLETT (kein Get/Put) —
-        // eine Vorschau ist ein Unikat und darf den Welt-Cache weder lesen noch vergiften.
+        // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
+        // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
         // Ship-Pfad-Hook (spec/pack/v0/CONTRACT.md): `window.__anazhLiveBake === false` → NUR die Platte (die
         // Transport-Schale baut nie, Miss = null). Default: Platte zuerst, Studio beim Miss (beides im Worker).
         const nurPlatte = typeof window !== "undefined" && window.__anazhLiveBake === false;
-        const platte = f.platte && !hasOv ? `${presetId}|${seed}|${lod}|${s}` : null;
+        // Der Platten-Schlüssel reist mit JEDEM Welt-Körper — ob eine Platte lebt, entscheidet die Schale (cfg.platte,
+        // Quota). Ein geprägter Körper (Ofen-Mensch, Tier mit Reglern, gestempelter Eintrag) trägt seinen ov-Hash und
+        // trifft beim nächsten Boot die Platte; nur die Werkstatt-Vorschau und die Hand (wo === 0 mit ov) sind Unikate.
+        const platte = hasOv && wo === 0 ? null : this._foundryKoerperKey(presetId, seed, lod, hasOv ? ov : null);
         if (nurPlatte && !platte) return Promise.resolve(null);
         if (!f.ready || !f.worker) {
             // Fail-LAUT: das kalte Buch benennt den null-Pfad mit einem ratenbegrenzten Konsolen-Wort (max
@@ -66197,7 +66470,7 @@ class AnazhRealm {
         // DER INGEST-TAKT: jedes Ergebnis passiert _foundryIngestTakt; der Loop-Tick gibt je Frame nur wenige frei —
         // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
         // passieren sofort; Konsumenten tragen null-bis-fertig.
-        return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null, platte, nurPlatte, wo)
+        return this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, wo)
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
@@ -66268,13 +66541,13 @@ class AnazhRealm {
         };
         setTimeout(pruefe, 1000);
     }
-    _foundryWorkerRequest(presetId, seed, lod, season, ov, platte, nurPlatte, wo) {
+    _foundryWorkerRequest(presetId, seed, lod, ov, platte, nurPlatte, wo) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (die Bruecke reicht ov ausschliesslich an
         // Zweit-Kern-buildInstance durch). `platte` (der Schlüssel) und `nurPlatte` liest die Transport-Schale
-        // und nimmt sie heraus, bevor das Studio die Anfrage sieht.
-        const msg = { type: "build-asset", presetId, seed, lod, season: season || "summer" };
+        // und nimmt sie heraus, bevor das Studio die Anfrage sieht; die Saison setzt NUR die Schale (Sommer).
+        const msg = { type: "build-asset", presetId, seed, lod };
         if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
         if (platte) msg.platte = platte;
         if (nurPlatte) msg.nurPlatte = true;
@@ -66289,6 +66562,30 @@ class AnazhRealm {
             45000,
             `FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s Arbeit ohne Reply → null`
         );
+    }
+    // DER VORRAT AUF DER PLATTE (V18.527): ein Körper, den noch kein Leser braucht (Garage-Fahrzeuge vor dem ersten Spawn),
+    // wärmt NUR die Platte — die Transport-Schale baut, schreibt und antwortet leer; der Haupt-Thread baut keine Gruppe
+    // ohne Leser (bis V18.526 lief jeder Vorrats-Körper je Boot durch `_foundryBuildGroup`). Liegt er schon auf der Platte
+    // oder gibt es keine (Null-Renderer, Quota), antwortet die Schale sofort leer. true = gewärmt, null = Timeout.
+    _foundryVorrat(presetId, seed, lod) {
+        const f = this._foundry;
+        if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        const msg = {
+            type: "build-asset",
+            presetId,
+            seed,
+            lod,
+            platte: this._foundryKoerperKey(presetId, seed, lod),
+            vorrat: true,
+        };
+        return this._foundryAuftrag(
+            f,
+            "r",
+            msg,
+            null,
+            45000,
+            `FOUNDRY TIMEOUT: Vorrat(${presetId}) nach 45 s Arbeit ohne Reply → null`
+        ).then((m) => (m ? true : null));
     }
     // DIE EINE WORKER-SCHLANGE: der Foundry-Worker arbeitet FIFO, ein Bau dauert 0,1–25 s. Vorher ging jede Anfrage
     // sofort per postMessage hinein — eine nahe Eiche-L0 wartete hinter JEDEM früher gestellten Vorrats- und
@@ -66349,15 +66646,21 @@ class AnazhRealm {
     }
     // Ein Besteller, dessen Schlüssel schon wartet (der Boot-Vorrat fragte ihn zuerst), hebt dessen Rang auf seine
     // Nähe — sonst wartete der nahe Bau mit Vorrats-Rang hinter dem ganzen Vorrat.
-    _foundryNaeher(f, presetId, seed, lod, season, wo) {
+    _foundryNaeher(f, presetId, seed, lod, wo) {
         const q = f && f.warte;
         if (!q || !q.length) return;
         const d2 = this._foundryAuftragD2(wo);
         for (const a of q) {
             const m = a.msg;
-            if (m.type !== "build-asset" || m.ov || m.presetId !== presetId || m.seed !== seed || m.lod !== lod)
+            if (
+                m.type !== "build-asset" ||
+                m.ov ||
+                m.vorrat ||
+                m.presetId !== presetId ||
+                m.seed !== seed ||
+                m.lod !== lod
+            )
                 continue;
-            if (m.season !== season) continue;
             if (d2 < this._foundryAuftragD2(a.wo)) a.wo = wo;
             return;
         }
@@ -66365,13 +66668,17 @@ class AnazhRealm {
     // Fernstufe EINES (Preset,Seed) beim Studio-Bäcker anfragen (Kanal "bake-impostor" → phytogenesis
     // `bakeImpostorAtlas`, kein Nachbau). Resolvt mit payload oder null (Fehler/Timeout — der Tick-
     // Aufrufer trägt den Retry). Dasselbe pending-Routing wie build-asset, reqIds mit Präfix "imp".
-    _foundryBakeImpostorRequest(presetId, seed, season, ov) {
+    _foundryBakeImpostorRequest(presetId, seed, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
         // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
-        const msg = { type: "bake-impostor", presetId, seed, season: season || "summer" };
+        // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
+        const msg = { type: "bake-impostor", presetId, seed };
         if (ov && typeof ov === "object") msg.ov = ov;
+        // KARTEN AUF DIE PLATTE (V18.527): die Karte trägt ihren Platten-Schlüssel (`karte|` + Karten-Schlüssel, geprägt
+        // mit ov-Hash) — die Schale liest zuerst und schreibt jeden frischen Bake; ein Zweit-Boot bäckt keine Karte neu.
+        msg.platte = "karte|" + this._foundryKartenKey(presetId, seed, ov && typeof ov === "object" ? ov : null);
         // Durch DIE EINE WORKER-SCHLANGE mit Vorrats-Rang (die Fernstufe). EINE Uhr (IMPOSTOR_BAKE_TIMEOUT_MS
         // ARBEITS-Zeit, `_foundryFrist`): der pending-Eintrag darf nie ewig leben; null → die Retry-Disziplin des Tick.
         const frist = AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS;
@@ -66568,7 +66875,7 @@ class AnazhRealm {
             }
             // Formations-Varianten (`kristall_var7`/`fels_var3`) verfehlen den exakten Lookup → Suffix abstreifen:
             // Kristall → das EINE Rezept `kristalle`; Fels nach Form-Klasse (brocken→findling · geroell→geroell ·
-            // nadel→zacken · stapel→sediment, sonst sediment); Instanz-Variation: `_foundryVariantFor(seed)`.
+            // nadel→zacken · stapel→sediment, sonst sediment); Instanz-Variation: `_foundryVariantFor(seed, preset)`.
             // `glut_var` bleibt bewusst Part-Look (nicht gemappt).
             const vm = entry.type.match(/^(kristall|fels)_var\d+$/);
             if (vm) {
@@ -66637,21 +66944,39 @@ class AnazhRealm {
         return sv;
     }
 
-    _foundryEnsureImpostorRecord(preset, variant, season, ov) {
+    _foundryEnsureImpostorRecord(preset, variant, ov) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seinen eigenen Record:
         // der fimp-Key + das LOD1-Bake-Subjekt (gkey) + der Bake tragen den ov-Hash
-        // (die EINE _studioOvHash-Quelle). Ohne ov byte-identisch (Key + gkey byte-alt).
-        const ovH = ov && typeof ov === "object" ? "|ov:" + this._studioOvHash(ov) : "";
-        const key = "fimp:" + preset + "|" + variant + "|" + season + ovH;
+        // (die EINE _studioOvHash-Quelle). Keine Saison: die Karte ist Golden-Sommer, das Jahr färbt der Stoff.
+        const ovK = ov && typeof ov === "object" ? ov : null;
+        const key = "fimp:" + this._foundryKartenKey(preset, variant, ovK);
         const cached = this._impostorAtlasMap.get(key);
         if (cached === "pending") return null;
         if (cached !== undefined) return cached; // Record ODER false (Foundry kann das nicht)
         if (typeof THREE === "undefined" || typeof document === "undefined") return null;
-        // Bake-Subjekt: die LOD1-Geometrie aus dem Foundry-Cache (fehlt sie: EINMAL anfordern) — bzw. die
-        // deklarierte Stufe der Art (Tor gate=[0] bäckt aus L0, nie eine L1, die der Kern nicht vorsieht).
+        // KARTE OHNE L1-ZUG (V18.527): mit echtem Renderer bäckt das Studio die Karte aus seinem eigenen Bake-Subjekt —
+        // Rahmen und Höhe reisen im Payload (`_applyStudioImpostorPayload`), die Silhouette erreichte das Auge nie. Der
+        // Record entsteht rahmenlos (`_ensureImpostorAtlas(key, null)`) und reiht den Bake sofort ein; keine Körper-
+        // Stufe wird für die Karte gezogen (bis V18.526 je Karte eine L1, headless 112 Aufträge ohne Leser).
+        const rendR = this.state && this.state.renderer;
+        if (rendR && !rendR._isHeadlessNull) {
+            const recS = this._ensureImpostorAtlas(key, null);
+            if (!recS) {
+                this._impostorAtlasMap.set(key, false);
+                return false;
+            }
+            recS.foundry = true;
+            recS.species = preset;
+            recS.variantIndex = variant;
+            if (ovK) recS.ov = ovK;
+            this._scatterRefillPending = true;
+            return recS;
+        }
+        // Der Null-Renderer (headless, dort bäckt nie jemand) trägt die Silhouette: ihr Rahmen + ihre Farbe kommen aus
+        // der LOD1-Geometrie (fehlt sie: EINMAL anfordern) — bzw. der deklarierten Stufe der Art (Tor gate=[0] aus L0).
         const bakeLod = this._foundryDeclaredStage(preset, 1);
-        const gkey = preset + "|" + variant + "|" + bakeLod + "|" + (season || "summer") + ovH;
+        const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
             const f = this._ensureAssetFoundry();
@@ -66659,7 +66984,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(gkey)) {
                 f.requested.add(gkey);
-                this._foundryRequest(preset, variant, bakeLod, season || "summer", ov || undefined).then((meshes) => {
+                this._foundryRequest(preset, variant, bakeLod, ov || undefined).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: bakeLod, preset }));
                         this._scatterRefillPending = true;
@@ -66667,7 +66992,7 @@ class AnazhRealm {
                         // Bake-Queue füllt sich, `_tickImpostorBake` drainet) — sonst entsteht er erst beim nächsten
                         // zufälligen Leser.
                         try {
-                            this._foundryEnsureImpostorRecord(preset, variant, season, ov || undefined);
+                            this._foundryEnsureImpostorRecord(preset, variant, ov || undefined);
                         } catch (_ei) {}
                     } else {
                         f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
@@ -66765,7 +67090,6 @@ class AnazhRealm {
         rec.foundry = true;
         rec.species = preset;
         rec.variantIndex = variant;
-        rec.season = season || "summer"; // reist mit dem Bake-Request zum Studio-Bäcker
         // BÄCKER-OV (V18.478) — der Record merkt sich seine Prägung: _tickImpostorBake
         // reicht rec.ov an den Studio-Bäcker, damit die Karte das Unikat trägt.
         if (ov && typeof ov === "object") rec.ov = ov;
@@ -66776,15 +67100,16 @@ class AnazhRealm {
     // dem 8-Winkel-Impostor-Material, das den Studio-Atlas sampelt. Gecacht auf dem Record (alle Instanzen
     // von Preset|Variante teilen die Geometrie). null solange der Bake läuft, false bei Fehler.
     _foundryBuildImpostorFlat(entry, preset) {
-        const variant = this._foundryVariantFor(entry.seed);
-        const season = this.state.season || "summer";
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
         // Ein geprägtes Entry zieht seinen ov-Record; ist er noch nicht gebacken (null), fällt der Pfad auf
         // GEOMETRIE (nie kalt, nie die ungeprägte Karte). Ungeprägt: ovE null → alter Pfad.
         const ovE = this._artifactStudioOv(entry);
-        const rec = this._foundryEnsureImpostorRecord(preset, variant, season, ovE || undefined);
+        const rec = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined);
         if (rec === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
-        if (!rec || !rec.map || !rec.frame) return false;
-        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler.
+        if (!rec || !rec.map) return false;
+        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler —
+        // auch für den rahmenlosen Studio-Record (sein Rahmen kommt erst mit dem Bake).
         if (!rec.rttBaked && entry && entry.position) {
             const pp = this.state.playerMesh && this.state.playerMesh.position;
             if (pp) {
@@ -66801,6 +67126,7 @@ class AnazhRealm {
             const rendB = this.state && this.state.renderer;
             if (!rec.rttBaked && rendB && !rendB._isHeadlessNull) return false;
         }
+        if (!rec.frame) return false;
         if (rec._flat) return rec._flat;
         const geom = this._buildImpostorCrossGeometry(null, rec.frame);
         if (!geom) return false;
@@ -67165,7 +67491,8 @@ class AnazhRealm {
         const wm = this._weltMarchEnsure();
         if (!wm) return false;
         const baum = this._foundryPresetIsTree(preset);
-        const variant = this._foundryVariantFor(entry.seed);
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return false; // Buch kalt — der nächste Tick fragt wieder, nichts verbrannt
         const key = baum ? `abaum:${preset}:${variant}${ovH}` : `aarch:${entry.type}:f${variant}${ovH}`;
         let bf = null;
         if (!wm.kapselCache.has(key)) {
@@ -68253,6 +68580,12 @@ class AnazhRealm {
             // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
             // `_foundryBuildGroup` garantiert das color-Attribut.
             const vcol = TSL.attribute("color", "vec3");
+            // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
+            // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
+            // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
+            const _suF =
+                kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
+            const laubFarbe = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
             if (isBark) {
                 // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
                 // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
@@ -68271,7 +68604,7 @@ class AnazhRealm {
                     // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                     // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
                     // Nadel-Karten warfen volle Rechtecke.
-                    mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), texN.a);
+                    mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), texN.a);
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                     // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
@@ -68279,7 +68612,7 @@ class AnazhRealm {
                     // bleibt fail-closed sichtbar statt still eingefroren).
                     mat._anazhAtlasTexe = [tex];
                 } else {
-                    mat.colorNode = TSL.vec4(vcol, 1.0);
+                    mat.colorNode = TSL.vec4(laubFarbe, 1.0);
                 }
             } else if (klasseLook) {
                 // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
@@ -68450,9 +68783,9 @@ class AnazhRealm {
                 const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
                 mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
             } else {
-                // Fels/Kristall/Blume/Laub: die Vertex-Farbe, die Regler (rough/metal/flat/env) sind
-                // schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
-                mat.colorNode = TSL.vec4(vcol, 1.0);
+                // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
+                // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
+                mat.colorNode = TSL.vec4(laubFarbe, 1.0);
             }
             // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
             // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
@@ -68693,8 +69026,8 @@ class AnazhRealm {
         return false;
     }
     _foundryLibrarySpec() {
-        // Nur die LEICHTE Ferne (lod2 ~15k) vorab backen → sofort Wald ohne Startup-Speicher-Freeze (lod0/1
-        // ~170k); lod0/lod1 lädt on-demand für die nächsten Bäume (_foundryFlattenFor + _foundryLodForEntry).
+        // Der Vorrat wärmt GENE, keine Körper ohne Leser: Boden-Arten ihre deklarierten Stufen je Gestalt, Karten-Arten
+        // (Bäume, Strauch) nur ihre Karten — L0/L1 lädt nah auf Abruf (_foundryFlattenFor + _foundryLodForEntry).
         return {
             species: [
                 "eiche",
@@ -68718,14 +69051,12 @@ class AnazhRealm {
                 "zacken",
                 "sediment",
             ],
-            // 8 der 12 Varianten vorab (lod2 leicht ~15k) -> die ferne Panorama-Vielfalt steht
-            // sofort (dort fallen Klone am meisten auf); die restlichen Varianten + lod0/lod1
-            // laden on-demand fuer die naechsten Baeume. _foundryVariantFor waehlt 1..16.
-            seeds: [1, 2, 3, 4, 5, 6, 7, 8],
-            lods: [2],
+            // Die Samen je Art sind ihre Gestalten 1..V (Studio-Budget `lod.budget.gestalten`, `_foundryGestalten`) —
+            // genau die Körper, die `_foundryVariantFor` wählt; kein eigenes Samen-Literal.
             // FOUNDRY-WARM (Spawn-tot-Heilung): Garage-Fahrzeuge + Siedlung brauchen
             // warmes Buch/build-asset — sonst stirbt In-Welt-Spawn (fahrzeug_*/dorf)
-            // als stilles Nichts. Wenige Seeds, lod 0 (vehicle kindStages = [0]).
+            // als stilles Nichts. Wenige Seeds, lod 0 (vehicle kindStages = [0]). Sie wärmen NUR die Platte
+            // (`_foundryVorrat`): vor dem ersten Spawn liest niemand ihre Körper.
             critical: {
                 species: ["gt", "supersport", "limousine", "kompakt_fwd", "suv"],
                 seeds: [1, 7],
@@ -68743,26 +69074,25 @@ class AnazhRealm {
         // deklarierten Stufen wärmen statt zu raten.
         for (let _w = 0; _w < 40 && !(f.recipeCount > 0 && AnazhRealm._studioRenderConfig); _w++)
             await new Promise((r) => setTimeout(r, 50));
-        const _cfgLodP = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
-        const _ksP = (_cfgLodP && _cfgLodP.kindStages) || null;
         // Paralleler Saug: ALLE Anfragen feuern SOFORT (der Worker arbeitet seine serielle Queue Rücken an
         // Rücken ab) statt await je Asset (Worker idle zwischen Antworten). Post kostet den Main-Frame nichts.
         const jobs = [];
         for (const sp of spec.species) {
-            // Boden-Arten wärmen EXAKT ihre deklarierten Stufen (kindStages — Gras/Strauch [1,2], Blume/Fels [0];
-            // ohne Daten [0,2]) → der nahe Streu-Pass findet seine Stufe warm. Bäume nur LOD 2 (LOD 0/1
-            // on-demand — die Startup-Speicher-Wand; die Fern-Karte trägt der Impostor).
-            const _isTreeP = typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(sp);
-            const _recP = f.recipes && f.recipes[sp];
-            const _declared = !_isTreeP && _recP && _ksP && Array.isArray(_ksP[_recP.kind]) ? _ksP[_recP.kind] : null;
-            const _lods = _isTreeP ? spec.lods : _declared || Array.from(new Set(spec.lods.concat([0])));
-            for (const sd of spec.seeds) {
+            // Karten-Arten (Bäume, Strauch: KIND_POLICY impostor) wärmen KEINE Geometrie — ihre Fernstufe IST die Karte
+            // (`_foundryFlattenFor` lenkt lod ≥ 2 auf sie), L0/L1 lädt nah auf Abruf. Bis V18.526 bestellte der Vorrat
+            // je Art L2-Geometrie, die kein Leser las (headless 56 Aufträge, ~38 MB je Boot).
+            if (this._foundryPresetIsTree(sp)) continue;
+            // Boden-Arten wärmen EXAKT ihre deklarierten Stufen (kindStages — Gras [1,2], Blume/Fels [0]; ohne Daten
+            // [2,0]) → der nahe Streu-Pass findet seine Stufe warm.
+            const _lods = this._foundryKindStages(sp) || [2, 0];
+            const _V = this._foundryGestalten(sp);
+            if (!_V) this.log(`FOUNDRY VORRAT: ${sp} ohne Gestalten-Budget im Buch — kein Vorrat`, "WARN");
+            for (let sd = 1; sd <= _V; sd++) {
                 for (const lod of _lods) {
-                    const season = this.state.season || "summer";
-                    const key = sp + "|" + sd + "|" + lod + "|" + season;
+                    const key = this._foundryKoerperKey(sp, sd, lod);
                     if (f.cache.has(key)) continue;
                     jobs.push(
-                        this._foundryRequest(sp, sd, lod, season)
+                        this._foundryRequest(sp, sd, lod)
                             .then((meshes) => {
                                 // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null
                                 // cachen -> die Art bleibt on-demand nachfragbar.
@@ -68774,14 +69104,14 @@ class AnazhRealm {
                 }
             }
         }
-        // Auch die Baum-Billboards (Impostor) vorwärmen — der Fern-Scatter serviert LOD2 = Studio-Billboard.
-        // Jeder Record-Miss postet seine LOD1-Anfrage sofort; der Bake folgt budgetiert (`_tickImpostorBake`).
-        const impSeason = this.state.season || "summer";
+        // Die Karten vorwärmen — EINE je Gestalt; der Fern-Scatter serviert LOD2 = Studio-Billboard. Mit echtem Renderer
+        // reiht der Record den Studio-Bake direkt ein (rahmenlos, kein Körper-Zug); headless trägt die Silhouette.
         for (const sp of spec.species) {
-            if (typeof this._foundryPresetIsTree === "function" && !this._foundryPresetIsTree(sp)) continue;
-            for (let v = 1; v <= 16; v++) {
+            if (!this._foundryPresetIsTree(sp)) continue;
+            const _VK = this._foundryGestalten(sp); // EINE Karte je Gestalt (Studio-Budget)
+            for (let v = 1; v <= _VK; v++) {
                 try {
-                    this._foundryEnsureImpostorRecord(sp, v, impSeason);
+                    this._foundryEnsureImpostorRecord(sp, v);
                 } catch (_e) {}
             }
         }
@@ -68798,22 +69128,18 @@ class AnazhRealm {
             }
             for (const sd of crit.seeds || [7]) {
                 for (const lod of crit.lods || [0]) {
-                    const season = this.state.season || "summer";
-                    const key = sp + "|" + sd + "|" + lod + "|" + season;
-                    if (f.cache.has(key)) continue;
+                    if (f.cache.has(this._foundryKoerperKey(sp, sd, lod))) continue;
                     critJobs.push(
-                        this._foundryRequest(sp, sd, lod, season)
-                            .then((meshes) => {
-                                if (meshes)
-                                    this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
-                                else
+                        this._foundryVorrat(sp, sd, lod)
+                            .then((warm) => {
+                                if (!warm)
                                     this.log(
-                                        `FOUNDRY WARM: build-asset(${sp}|${sd}|lod${lod}) leer — Spawn riskiert kalt-404`,
+                                        `FOUNDRY WARM: Vorrat(${sp}|${sd}|lod${lod}) ohne Antwort — Spawn riskiert kalt-404`,
                                         "ERROR"
                                     );
                             })
                             .catch((e) => {
-                                this.log(`FOUNDRY WARM: build-asset(${sp}) warf (${e && e.message})`, "ERROR");
+                                this.log(`FOUNDRY WARM: Vorrat(${sp}) warf (${e && e.message})`, "ERROR");
                             })
                     );
                 }
@@ -68846,7 +69172,8 @@ class AnazhRealm {
     _foundryEntryReady(entry, preset) {
         const f = this._foundry;
         if (!f || !preset) return false;
-        const variant = this._foundryVariantFor(entry.seed);
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return false;
         const cold = !entry.instanced && !entry.mesh;
         let lod = cold
             ? this._foundryLodForEntry(entry)
@@ -68855,13 +69182,10 @@ class AnazhRealm {
               : this._foundryLodForEntry(entry);
         if (lod < 0) lod = 0;
         if (lod > 2) lod = 2;
-        const season = this.state.season || "summer";
         // Baum-Fernstufe = das Billboard (Impostor-Record), nicht die Cache-Geometrie. Gestempelt: „gedockt"
         // erst, wenn SEINE ov-Karte gebacken ist (sonst baut der Rewarm die geprägte Geometrie).
         if (lod >= 2 && this._foundryPresetIsTree(preset)) {
-            const peekOv = this._artifactStudioOv(entry);
-            const key =
-                "fimp:" + preset + "|" + variant + "|" + season + (peekOv ? "|ov:" + this._studioOvHash(peekOv) : "");
+            const key = "fimp:" + this._foundryKartenKey(preset, variant, this._artifactStudioOv(entry));
             const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
             // T1 BLOB-TOD-Spiegel: mit echtem Renderer ist „gedockt" erst die GEBACKENE
             // Karte (rttBaked) — der Flatten serviert bis dahin Geometrie (unten weiter
@@ -68879,9 +69203,7 @@ class AnazhRealm {
         // PRÄGUNG-WELT — der Dock-Peek spiegelt den Flatten-Schlüssel: ein gestempelter
         // Eintrag ist erst „gedockt", wenn SEIN Unikat (|ov:-Key) im Cache liegt — sonst
         // urteilte der Rewarm „ready" über das falsche (ungeprägte) Asset.
-        const readyOv = this._artifactStudioOv(entry);
-        const key =
-            preset + "|" + variant + "|" + lod + "|" + season + (readyOv ? "|ov:" + this._studioOvHash(readyOv) : "");
+        const key = this._foundryKoerperKey(preset, variant, lod, this._artifactStudioOv(entry));
         return f.cache.has(key) && f.cache.get(key) != null;
     }
     _foundryRewarmColdTrees() {
@@ -68955,15 +69277,26 @@ class AnazhRealm {
         }
     }
     // `_foundryFlattenFor` (unten): Eintrag → Instancing-Leaves aus der echten Vorlagen-Geometrie, je
-    // Art:Variante:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
-    // Varianten-Quelle: aus dem region+positions-deterministischen Baum-Seed eine von N=16 Gestalten
-    // (gleicher Seed == gleicher Baum) + per-Instanz scale/yaw/tint; den Speicher beschränkt die LRU.
-    _foundryVariantCount() {
-        return 16;
+    // Art:Gestalt:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
+    // DIE GESTALT eines Samens (V18.527): eine von V Gestalten je Art, V aus dem Studio-Budget
+    // (`PORTAL_RENDER_CONFIG.lod.budget.gestalten` über das Buch — eiche/fichte/birke/tanne 2 · weide/mammut/strauch 1 ·
+    // '*' 16), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
+    // alte `h % 16` hing an den unteren Bits, die im Baum-Raster periodisch laufen — dieselbe Gestalt 16 Zellen weiter
+    // mit 0,339 statt 1/16 (ein Klon-Gitter mit 54 m Periode). Ohne Buch null: der Aufrufer deferriert, nie eine
+    // geratene Zahl. Gleicher Same = gleicher Baum, scale/yaw/tint je Instanz.
+    _foundryVariantFor(seed, preset) {
+        const V = this._foundryGestalten(preset);
+        if (!V) return null;
+        const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
+        return 1 + Math.floor((h * V) / 4294967296);
     }
-    _foundryVariantFor(seed) {
-        const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix: gute Streuung
-        return (h % this._foundryVariantCount()) + 1;
+    // Die Gestalten-Zahl einer Art (die Budget-Zeile, sonst '*'); 0 = Buch kalt. Der Vorrat wärmt 1..V.
+    _foundryGestalten(preset) {
+        const cfg = AnazhRealm._studioRenderConfig;
+        const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
+        if (!G) return 0;
+        const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
+        return Number.isInteger(V) && V >= 1 ? V : 0;
     }
     // Foundry-Cache = LRU: ein Treffer wandert nach hinten, beim Überlauf fällt die älteste Gestalt. Eine
     // Räumung zerstört nie einen sichtbaren Baum (Dispose nur ohne lebende Instanz-Gruppe, s.
@@ -69009,7 +69342,7 @@ class AnazhRealm {
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
         f.cache.set(key, v);
         f.ankunft = (f.ankunft | 0) + 1; // die Ankunfts-Generation: Wartende im Nah-Zweig fragen erst danach wieder
-        const CAP = AnazhRealm.FOUNDRY_CACHE_CAP || 256;
+        const CAP = AnazhRealm.FOUNDRY_CACHE_CAP;
         const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;
         while (f.cache.size > CAP || f.cacheBytes > BYTES) {
             const oldest = f.cache.keys().next().value;
@@ -69037,7 +69370,7 @@ class AnazhRealm {
         }
         return true;
     }
-    // Geteilte Foundry-Geometrie EINMAL freigeben (season im Key → je Saison ein Satz, sonst Leck). NUR
+    // Geteilte Foundry-Geometrie EINMAL freigeben (jede LRU-Räumung, sonst Leck). NUR
     // Geometrie — das Material ist per kind geteilt → NIE. Idempotent via `_geomDisposed`; der Zähler
     // bilanziert gegen `_geomBuiltCount` (die Leck-Linse).
     _disposeFoundryGroupGeom(g) {
@@ -69092,7 +69425,8 @@ class AnazhRealm {
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
-        const variant = this._foundryVariantFor(entry.seed);
+        const variant = this._foundryVariantFor(entry.seed, preset);
+        if (variant == null) return null; // Buch kalt: wie ein ladendes Asset (der Tick baut nach)
         // DIE EINE LOD-AUTORITÄT: die Distanz-LOD (`_tickArchitectureLOD` → `entry._lodLevel`) FÜHRT, die
         // Foundry serviert genau diese Stufe; `lodOverride` reicht sie herein (sonst Distanz-Schätzung).
         let lod = Number.isFinite(lodOverride) ? lodOverride : this._foundryLodForEntry(entry);
@@ -69117,13 +69451,11 @@ class AnazhRealm {
             if (Number.isFinite(_kl)) lod = _kl;
             else if (_rec) lod = 0;
         }
-        const season = this.state.season || "summer";
         // Gestempelter Welt-Eintrag (entry.studioOv) baut sein Unikat: der ov-Hash trennt Cache-Key UND (via
         // leafKey) den Gruppen-Key — geprägt und ungeprägt vergiften sich nie. Der Request reicht ov als
-        // 5. Arg (IDB bewusst umgangen). Ohne Stempel: alter Key + Request.
+        // 4. Arg. Ohne Stempel: der Körper-Schlüssel ohne ov.
         const entryOv = this._artifactStudioOv(entry);
-        const key =
-            preset + "|" + variant + "|" + lod + "|" + season + (entryOv ? "|ov:" + this._studioOvHash(entryOv) : "");
+        const key = this._foundryKoerperKey(preset, variant, lod, entryOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
@@ -69138,20 +69470,18 @@ class AnazhRealm {
                     this._foundryDeclaredStage(preset, 1) === 1
                 )
                     this._foundryFlattenFor(entry, preset, 1);
-                this._foundryRequest(preset, variant, lod, season, entryOv || undefined, entry.position).then(
-                    (meshes) => {
-                        if (meshes) {
-                            this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                            this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                        } else {
-                            // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
-                            // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
-                            f.requested.delete(key);
-                        }
-                        this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
+                this._foundryRequest(preset, variant, lod, entryOv || undefined, entry.position).then((meshes) => {
+                    if (meshes) {
+                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
+                    } else {
+                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
+                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
+                        f.requested.delete(key);
                     }
-                );
-            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, season, entry.position);
+                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
+                });
+            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, entry.position);
             return null;
         }
         // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->
@@ -69387,9 +69717,10 @@ class AnazhRealm {
         if (p < 0.75) return "autumn";
         return "winter";
     }
-    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): `_grassInstanceMat` liest
-    // `uSeasonMul` als Albedo-Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein
-    // Rebuild). Abgeleitet, nicht im Snapshot (audit-strict-Whitelist).
+    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): die Nah-Wiese (`_grassInstanceMat`), das
+    // Foundry-Laub/-Gras (`_foundryTreeMaterial`) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
+    // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
+    // (audit-strict-Whitelist).
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
@@ -69402,55 +69733,41 @@ class AnazhRealm {
         return this.state.seasonUniforms;
     }
 
-    // Saison-Tint: 4-Keyframe-Ring über seasonPhase (0..1) → Albedo-Multiplikator (Frühling gelbgrün ·
-    // Sommer 0x5fa743 = ×1 · Herbst gold-orange · Winter graubraun), je Kanal clamp(tint/summer, 0.25, 4).
-    // Rein (ohne TSL) → THREE.Color; das Gate ruft es GPU-frei.
-    _seasonTint(phase) {
-        const p = ((phase % 1) + 1) % 1;
-        // Keyframes zentriert auf die Saison-Mitten (spring .125 · summer .375 ·
-        // autumn .625 · winter .875), als Ring interpoliert (t wickelt um 1).
-        const KF = [
-            { t: 0.125, c: [0.52, 0.68, 0.28] }, // Frühling — frisches Gelbgrün
-            { t: 0.375, c: [0.373, 0.655, 0.263] }, // Sommer — 0x5fa743 (Gras-Basis → ×1)
-            { t: 0.625, c: [0.74, 0.52, 0.2] }, // Herbst — gold-orange
-            { t: 0.875, c: [0.5, 0.45, 0.38] }, // Winter — graubraun
-        ];
-        // finde das Segment [i, i+1] das p (ringförmig) enthält.
-        let i0 = KF.length - 1;
-        for (let i = 0; i < KF.length; i++) {
-            const a = KF[i].t;
-            const b = KF[(i + 1) % KF.length].t;
-            const inSeg = a < b ? p >= a && p < b : p >= a || p < b; // Wrap-Segment (winter→spring)
-            if (inSeg) {
-                i0 = i;
-                break;
-            }
-        }
-        const k0 = KF[i0];
-        const k1 = KF[(i0 + 1) % KF.length];
-        let span = k1.t - k0.t;
-        if (span <= 0) span += 1;
-        let u = (((p - k0.t) % 1) + 1) % 1;
-        u = span > 0 ? u / span : 0;
-        u = u * u * (3 - 2 * u); // smoothstep — sanfte Saison-Übergänge
-        const summer = KF[1].c; // der neutrale Sommer-Bezug (÷ → ×1 im Sommer)
-        const cl = (v) => (v < 0.25 ? 0.25 : v > 4 ? 4 : v);
-        const out = new THREE.Color(
-            cl((k0.c[0] + (k1.c[0] - k0.c[0]) * u) / summer[0]),
-            cl((k0.c[1] + (k1.c[1] - k0.c[1]) * u) / summer[1]),
-            cl((k0.c[2] + (k1.c[2] - k0.c[2]) * u) / summer[2])
-        );
+    // uSeasonMul nach dem STUDIO-GESETZ (phytogenesis.js updateWorld, SAISON_GESETZ in foundry-core): die Saison-
+    // Tönung linear zwischen den vier Stützstellen (Studio-t: 0 Frühling · .25 Sommer · .5 Herbst · .75 Winter), je
+    // Kanal clamp(tönung / bau, mulMin, mulMax) — in den Paletten-Werten (roh /255), wie das Studio mit r128-Farben
+    // rechnet. Die Welt-Phase zählt die Saison-MITTEN (Sommer 0,375) → t = phase − 0,125; Sommer ist ×1. Rein (ohne
+    // TSL), schreibt in `out` (r/g/b); das Gate ruft es GPU-frei.
+    _saisonMul(phase, out) {
+        const SG = AnazhRealm._saisonGesetz();
+        const t = (((phase - 0.125) % 1) + 1) % 1;
+        const f = t * 4;
+        const i = Math.floor(f) % 4;
+        const j = (i + 1) % 4;
+        const k = f - Math.floor(f);
+        const a = SG.stuetzen[i].ti;
+        const b = SG.stuetzen[j].ti;
+        const kanal = (hex, s) => ((hex >> s) & 255) / 255;
+        const mul = (s) => {
+            const v = (kanal(a, s) + (kanal(b, s) - kanal(a, s)) * k) / Math.max(kanal(SG.bau, s), 1e-3);
+            return v < SG.mulMin ? SG.mulMin : v > SG.mulMax ? SG.mulMax : v;
+        };
+        out.r = mul(16);
+        out.g = mul(8);
+        out.b = mul(0);
         return out;
     }
 
-    // Die langsame Jahres-Uhr: treibt seasonPhase, leitet die Saison ab; wechselt sie, backt die
-    // Foundry ihre Assets in der neuen Jahreszeit neu (Herbst golden, Winter kahl).
+    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. DIE SAISON IST EINE FARBE (V18.527):
+    // jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"),
+    // das Jahr trägt die EINE Uniform `uSeasonMul` — Laub, Gras und Karte multiplizieren ihre Albedo damit (die Karte
+    // zu SAISON_GESETZ.kartenGewicht). Kein Neubau, kein Schlüssel-Wechsel: die 36 Sommer↔Winter-Golden-Paare
+    // unterscheiden sich nur in der Laubfarbe (foliage.color), das Studio färbt sein Jahr genauso.
     _tickSeason(currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        // Nur der DRIFT wartet auf die Bühne (geladene Saison + uSeasonMul-Tönung laufen immer): ein Saison-
-        // Wechsel triggert `_foundrySeasonChanged` (neu backen) — nicht im Boot. `_lastSeasonTime` bleibt bis
-        // zur Bühne null → der erste Tick startet mit dt=0 (kein Zeit-Sprung).
+        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). `_lastSeasonTime` bleibt bis zur Bühne null →
+        // der erste Tick startet mit dt=0 (kein Zeit-Sprung).
         if (st.autoSeason !== false && this._buehneSteht()) {
             const now = currentTime || 0;
             if (this._lastSeasonTime == null) this._lastSeasonTime = now;
@@ -69459,19 +69776,12 @@ class AnazhRealm {
             const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
             st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
         }
-        // V6 (Look-Finale, 2c) — die Wiesen-Tönung folgt der Saison kontinuierlich
-        // (KEIN Rebuild): `uSeasonMul` wird jeden Frame aus seasonPhase gesetzt.
         const su = this._ensureSeasonUniforms();
-        if (su && su.uSeasonMul && su.uSeasonMul.value && su.uSeasonMul.value.copy) {
-            su.uSeasonMul.value.copy(this._seasonTint(st.seasonPhase));
-        }
-        const name = this._seasonName(st.seasonPhase);
-        if (name !== st.season) {
-            st.season = name;
-            this._foundrySeasonChanged();
-        }
+        if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
+        st.season = this._seasonName(st.seasonPhase);
     }
-    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter".
+    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
+    // Tönung folgt im nächsten Tick (kein Neubau).
     setSeason(name) {
         const map = {
             fruehling: "spring",
@@ -69487,45 +69797,8 @@ class AnazhRealm {
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
-        if (this.state.season !== key) {
-            this.state.season = key;
-            this._foundrySeasonChanged();
-        }
+        this.state.season = key;
         return true;
-    }
-    // Jahreszeit-Wechsel: alle foundry-instanzierten Assets ent-instanzieren -> sie bauen beim
-    // naechsten Rebuild mit der neuen Saison-Farbe neu (der Culling/Rewarm holt sie zurueck).
-    _foundrySeasonChanged() {
-        if (!this._foundry) return;
-        const archs = this.state.architectures;
-        if (!Array.isArray(archs)) return;
-        // Saison-Flip progressiv: statt alle Foundry-Instanzen in EINEM Frame zu entfernen (O(archs)-Spike),
-        // füllt sich eine Queue; `_drainSeasonFlip` (Scheduler-Job prio 3) macht je Frame SEASON_FLIP_PER_TICK
-        // KALT, `_foundryRewarmColdTrees` re-platziert sie in der neuen Saison (kein zweiter Rewarm-Pfad).
-        // Queue/Cursor sind Instanz-Felder (nicht serialisiert).
-        this._seasonFlipQueue = archs.filter(
-            (e) => e && e.instanced && typeof e.type === "string" && this._foundryPresetForEntry(e)
-        );
-        this._seasonFlipCursor = 0;
-    }
-    // V4 — der progressive Drain: entfernt je Frame bis SEASON_FLIP_PER_TICK Alt-Saison-Instanzen (macht sie
-    // kalt); der budgetierte Rewarm platziert sie neu. COUNT-gedeckelt (auch headless progressiv = die
-    // messbare Zahl); die `ms`-Deadline ist ein optionaler Sekundär-Guard (leeres Budget → 0 Arbeit).
-    _drainSeasonFlip(ms) {
-        const q = this._seasonFlipQueue;
-        if (!q || this._seasonFlipCursor >= q.length) {
-            this._seasonFlipQueue = null;
-            return;
-        }
-        let n = Math.min(AnazhRealm.SEASON_FLIP_PER_TICK || 24, q.length - this._seasonFlipCursor);
-        while (n-- > 0) {
-            const e = q[this._seasonFlipCursor++];
-            if (e && e.instanced) {
-                this._archInstanceRemove(e);
-                e.instanced = false;
-            }
-        }
-        if (this._seasonFlipCursor >= q.length) this._seasonFlipQueue = null;
     }
     // ==================== WETTER: sichtbarer Regen ====================
     // AnazhRealm hat state.weather (sunny/rainy/stormy) schon fuer Himmel/Wind/Naesse — hier der
@@ -77294,18 +77567,19 @@ class AnazhRealm {
             const oven = this._workshopOvenPreview(ovenRec, preset, ov, lod);
             if (oven !== undefined) return oven;
         }
-        const season = this.state.season || "summer";
-        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
+        const variant = this._foundryVariantFor(seedNum, preset);
+        if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Vorschau wartet
         if (ov) {
-            // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB).
-            const key = preset + "|" + variant + "|" + lod + "|" + season + "|" + JSON.stringify(ov);
+            // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB) — der Memo-Schlüssel ist
+            // das volle ov (eine Vorschau ist ein Unikat).
+            const key = this._foundryKoerperKey(preset, variant, lod) + "|" + JSON.stringify(ov);
             const memo = this._wsStudioOvMemo;
             if (!memo || memo.key !== key) {
                 // Auswahl-/ov-Wechsel: das alte Memo faellt, seine EIGENE Geometrie wird frei.
                 if (memo && memo.group && memo.group !== "pending") this._disposeFoundryGroupGeom(memo.group);
                 const fresh = { key, group: "pending" };
                 this._wsStudioOvMemo = fresh;
-                this._foundryRequest(preset, variant, lod, season, ov, 0).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, ov, 0).then((meshes) => {
                     // Wechselte die Auswahl waehrend des Baus, verfaellt das Ergebnis (rohe
                     // Arrays, kein GPU-Leak — die Naht `_foundryBuildGroup` laeuft nur fuer
                     // das LEBENDE Memo).
@@ -77319,14 +77593,14 @@ class AnazhRealm {
             if (!memo.group || !memo.group.children || !memo.group.children.length) return false;
             return this._workshopWrapFoundryGroup(memo.group);
         }
-        const key = preset + "|" + variant + "|" + lod + "|" + season; // Same + LOD aus der Auswahl = echte Pipeline-Daten
+        const key = this._foundryKoerperKey(preset, variant, lod); // Same + LOD aus der Auswahl = echte Pipeline-Daten
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             // Noch nicht gezogen → GENAU EINMAL anfragen (die requested-Wache), Vorschau bei Ankunft neu bauen.
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, season, undefined, 0).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, undefined, 0).then((meshes) => {
                     if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
                     else f.requested.delete(key);
                     rebuild();
@@ -85847,11 +86121,6 @@ class AnazhRealm {
                     }
                 },
             },
-            {
-                name: "seasonFlip",
-                prio: 3, // V4 — die progressive Saison-Flip-Entfernung: unter allem (nach Deko), wartet bei
-                run: (ms) => this._drainSeasonFlip(ms), // leerem Budget; nur aktiv nach einem Saison-Wechsel
-            },
         ];
     }
 
@@ -86361,6 +86630,9 @@ class AnazhRealm {
 
     _loopRender(currentTime) {
         // ### Rendering ###
+        // DER SATZ (Welle B): alle Chunk-Ein-/Austritte dieses Frames legen ihren Index JETZT, direkt vor dem
+        // Zeichnen — ein frei gewordener und im selben Frame neu vergebener Bereich ist nie ungelegt sichtbar.
+        this._tickChunkSatz();
         // Skybox-Position DIREKT vor dem Render kopieren (die Kamera ist hier schon aktualisiert).
         // WAHRNEHMUNGS-SENSE: Winkel- + Translations-Geschwindigkeit des Blicks → `_camMotion01` ∈ [0..1];
         // fast-attack, short-decay (~170 ms). Reine Beobachtung; der Perf-Aktuator liest sie.
@@ -86773,17 +87045,22 @@ class AnazhRealm {
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
 AnazhRealm.VERSION = "18.528.0";
-// Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
-// Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
-// „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
-AnazhRealm.FOUNDRY_CACHE_CAP = 256;
+// Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
+// räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
+// `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
+// 512 lässt das Doppelte Luft. Den Speicher deckelt FOUNDRY_CACHE_BYTES (das Gewicht), dieser Deckel die Zahl.
+AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
-// CHUNK-BODEN-ENTLASSUNG (19.07.) — die Gnadenfrist zwischen Finalize und dem
-// Nullen der CPU-Arrays: lang genug, dass der Streaming-Schwall (Nachbar-
-// Rebuilds re-morphen die Grenze) abklingt, kurz genug für den GC-Wal.
-AnazhRealm.CHUNK_ENTLASS_GNADE_MS = 10000;
+// DER SATZ (Welle B, `_chunkSatz`) — die Start-Kapazität je Satz-Art (Vertices · Indizes): gemessen am
+// vollen Ring 4 am Spawn (81 Chunks + 16 Stitch-Bänder = 179 046 Vertices · 858 234 Indizes) plus Luft für
+// Fragmentierung und Gebirge, damit eine typische Sitzung nie wächst; ein Wachsen (×1,5) kostet eine
+// frische Geometrie mit vollem Upload.
+AnazhRealm.CHUNK_SATZ = Object.freeze({
+    boden: Object.freeze({ v: 229376, i: 1 << 20 }),
+    wasser: Object.freeze({ v: 1 << 16, i: 1 << 18 }),
+});
 // Foundry-Cache-GEWICHTS-DECKEL: `_foundryCacheSet` bilanziert die typed-array-Bytes je Eintrag
 // (`_cacheBytes`) und räumt LRU, bis Byte-Budget UND Entries-Cap stehen (ein Eintrags-Zähler ist
 // byte-blind: Haus-L0 ≈ 7–8 MB, Blume wenige KB). Die Kappe MUSS über dem Ring-Working-Set liegen
@@ -87242,10 +87519,6 @@ AnazhRealm.FOUNDRY_BUILD_PER_TICK = 4;
 // ist EIN Thread) → streng limitiert, damit die Bake-Schlange nicht flutet.
 AnazhRealm.FOUNDRY_PLACE_PER_TICK = 48; // gedockte Assets (billiger Instance) je Frame im Leerlauf
 AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK = 3; // NEUE Studio-Bake-Anfragen je Frame (Ein-Thread-Schlange schonen)
-// V4 — DER SAISON-FLIP IST PROGRESSIV: wieviele Alt-Saison-Foundry-Instanzen je Tick der Drain kalt macht
-// (dann re-platziert der budgetierte `_foundryRewarmColdTrees` sie in der neuen Saison). Klein → der Flip
-// verteilt sich über Ticks (kein O(archs)-Entfern-Spike); die Instanz-Zahl erholt sich progressiv.
-AnazhRealm.SEASON_FLIP_PER_TICK = 24;
 
 // Distanz-Decay des Wasser-Automaten: jeder LATERALE Transfer liefert nur diesen Anteil ab → Wasser
 // dünnt geometrisch mit der Hop-Entfernung (KEEP^n), kein Pooling am LOD-Ring-Damm; der Quellen-Pin
@@ -87518,6 +87791,23 @@ AnazhRealm._kernPflichtBruch = function (pfad) {
             pfad +
             " ist unlesbar — das Gesetzbuch fehlt oder ist alt (index.html lädt alle Kerne; _kernPflichtWand meldet den Ausfall)."
     );
+};
+// DAS SAISON-GESETZ (foundry-core SAISON_GESETZ, V18.527): die Jahres-Stützstellen des Studios — der EINE Leser
+// (`_saisonMul`, Karten-Stoff), fail-closed in EINER Gültigkeits-Wand.
+AnazhRealm._saisonGesetz = function () {
+    const SG = AnazhRealm.Gesetz("terrain:SAISON_GESETZ", null);
+    if (
+        SG &&
+        Array.isArray(SG.stuetzen) &&
+        SG.stuetzen.length === 4 &&
+        SG.stuetzen.every((s) => s && Number.isFinite(s.ti)) &&
+        Number.isFinite(SG.bau) &&
+        Number.isFinite(SG.mulMin) &&
+        Number.isFinite(SG.mulMax) &&
+        Number.isFinite(SG.kartenGewicht)
+    )
+        return SG;
+    return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");
 };
 AnazhRealm._bewegungsKoeff = function (stat) {
     const row = AnazhRealm.Gesetz("koerper:bewegung." + stat, null);
@@ -90476,12 +90766,9 @@ AnazhRealm.STUDIO_WORT = Object.freeze({
     haus: "haus_",
     haeuser: "haus_",
 });
-// V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die Region-Geometrie für das
-// Frustum-Cullen der PLATZIERTEN Architektur. ARCH_REGION_M = _bakeRegionConfig().sizeM (256 m) →
-// platzierte Bauten teilen die Streu-Region-Kantenlänge (eine Welt-Karte). Strukturen mit
-// horizontalem Span > MAX_SPAN bleiben global (ihre Bounding-Sphere spannt zu weit → kein Cull-Wert).
+// Die Streu-Region-Kantenlänge (= _bakeRegionConfig().sizeM, 256 m): Region-Bundles und Fern-Superregion der
+// Streu. Der platzierte Bau keyt seit Welle B nicht mehr regional (global in der Mesh-Zone).
 AnazhRealm.ARCH_REGION_M = 256;
-AnazhRealm.ARCH_REGION_CULL_MAX_SPAN = 128;
 // Fern-Superregion (4×4 Regionen à 256 m = 1024 m): Fern-Leaves (camera-facing Impostor-Quads) haben
 // wenig per-Region-Cull-Nutzen, kosten aber je winziger Gruppe einen Draw-Call — eine Gruppe je Art
 // deckt die Fern-Sicht und bleibt endlich (Rücken-Cull lebt; instanz-bewusste Bounding-Sphere, jeder
@@ -90564,9 +90851,10 @@ AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief
 // aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
 // beide Seiten gegeneinander).
 AnazhRealm.FOUNDRY_LESEN = ["position", "normal", "color", "uv", "aWurzel", "aSchale", "skinIndex", "skinWeight"];
-// Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511). Ein
-// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 2;
+// Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
+// saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527). Ein
+// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit) — die alte Saison-Platte fällt einmal.
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test

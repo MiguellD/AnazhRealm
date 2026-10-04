@@ -10,7 +10,7 @@
 //   SUBSTANZ   — Welt-Substanz ohne Studio-Gegenstück, bewusst KEINE Silhouetten-Frage
 //                (Terrain-Chunks · Wasser [isHydrosphere] · Himmel/Gestirne · Kreaturen ·
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
-//                GESTEMPELTEN Bau-Quellen: streu-klein · deko-fernfeld · terrain-stitch ·
+//                GESTEMPELTEN Bau-Quellen: streu-klein · deko-fernfeld · boden-satz ·
 //                wetter-regen — die einst 222 „unbekannten" Emitter, an der QUELLE geklärt).
 //   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (glut* [E-E] · start_plattform +
 //                fliegende Inseln [E-F]); im Parity-Shot seit W2 versteckt, in der Welt daheim.
@@ -164,9 +164,11 @@ const server = http.createServer((req, res) => {
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
         const VEG =
             /(^|[#@:_])(baum_|strauch|busch|gras|blume|farn|pilz|kiesel|fels|findling|geroell|basalt|sediment|zacken|kristall|stamm_gefallen|totholz|grown_)/i;
+        // Welle B: der platzierte Bau keyt nach Studio-Geometrie — ein Schlüssel OHNE Typ ist selbst das Leaf.
         const leafOf = (k) => {
             const i = k.indexOf("#");
-            return i >= 0 ? k.slice(i + 1) : "";
+            if (i >= 0) return k.slice(i + 1);
+            return /^(f:|fimp:)/.test(k) ? k : "";
         };
         const classifyKey = (k) => {
             if (k.startsWith("fscatter:")) return { b: "studio", why: "fscatter" };
@@ -186,19 +188,18 @@ const server = http.createServer((req, res) => {
         // H3 — DAS INVENTAR-WÖRTERBUCH der gestempelten Bau-Quellen (userData.inventar am
         // Bau-Chokepoint; die einst 222 unbekannten Emitter, per Instrumentierung an der
         // QUELLE geklärt statt geraten):
-        //   streu-klein    — _acquireScatterMesh (KLEIN_VEGETATION je Chunk, kein Studio-Zwilling)
-        //   deko-fernfeld  — _buildDekoFernfeldSpecies (Fern-Impostor-Ring derselben Familie)
-        //   terrain-stitch — _rebuildLodStitchBand (LOD-Naht-Band + Skirt, Terrain-Familie)
+        //   streu-klein    — _streuNahMesh (KLEIN_VEGETATION, EINE InstancedMesh je Art, kein Studio-Zwilling)
+        //   deko-fernfeld  — _dekoFernSetzen (Fern-Impostor-Ring derselben Familie; seit Welle B trägt dieselbe
+        //                    Art-Mesh hinter dem Fern-Block die Deck-Streu — der Zwilling `deck-streu` fiel)
+        //   boden-satz     — _chunkSatz("boden") (Welle B: der Terrain-Ring als EIN Satz, Stitch-Bänder
+        //                    eingeschlossen — die Chunk-Meshes sind CPU-Körper ausserhalb der Szene)
         //   wetter-regen   — _ensureRainSystem (Niederschlags-Punkte, nur bei rainy/stormy sichtbar)
-        //   deck-streu     — die Vor-Bau-Stufe des Fernfelds (Deck-Streu, 20.07.: Vegetation vor dem
-        //                    Bau, dieselbe Familie wie deko-fernfeld; V18.492 ins Wörterbuch)
         // FAIL-CLOSED: ein Stempel, den das Wörterbuch nicht kennt, ist eine VERLETZUNG.
         const INVENTAR = {
             "streu-klein": { b: "substanz", why: "streu-klein (KLEIN_VEGETATION, kein Studio-Zwilling)" },
             "deko-fernfeld": { b: "substanz", why: "deko-fernfeld (Fern-Impostor der kleinen Streu)" },
-            "terrain-stitch": { b: "substanz", why: "terrain-stitch (LOD-Naht-Band + Skirt)" },
+            "boden-satz": { b: "substanz", why: "boden-satz (Terrain-Ring + Stitch als EIN Satz)" },
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
-            "deck-streu": { b: "substanz", why: "deck-streu (Vor-Bau-Stufe des Fernfelds)" },
         };
         const chainOf = (node) => {
             const c = [];
@@ -315,7 +316,7 @@ const server = http.createServer((req, res) => {
         // ── Positiv-Beweis der Stempel: mindestens EINE gestempelte Klasse lebt in der
         // Szene (sonst wäre das Inventar-Wörterbuch toter Code — KONSUM, nicht Existenz).
         o.stampedClasses = Object.keys(o.zensus.detail.substanz).filter((k) =>
-            /^(streu-klein|deko-fernfeld|terrain-stitch|wetter-regen)/.test(k)
+            /^(streu-klein|deko-fernfeld|boden-satz|wetter-regen)/.test(k)
         ).length;
 
         // ── HÄLFTE 2 — DIE INVENTUR (H3: requested ⊆ visible|cached).
@@ -430,7 +431,7 @@ const server = http.createServer((req, res) => {
                 // Szene noch Räumungs-Buch kennen ihn → die Inventur MUSS ihn als lost fangen.
                 if (f) {
                     if (!f.requested) f.requested = new Set();
-                    const ghost = "selftest_geist|1|0|summer";
+                    const ghost = "selftest_geist|1|0";
                     f.requested.add(ghost);
                     const inv2 = inventory();
                     o.selftestLost = {

@@ -274,7 +274,7 @@ function deriveGestalt(srcNC) {
         res.c.instFoundry = entry.instFoundry === true;
         res.c.slotCount = Array.isArray(entry.instSlots) ? entry.instSlots.length : 0;
         res.c.allSlotsFoundry =
-            Array.isArray(entry.instSlots) && entry.instSlots.every((s) => String(s.key).includes("#f:verkalkt|"));
+            Array.isArray(entry.instSlots) && entry.instSlots.every((s) => /(^|#)f:verkalkt\|/.test(String(s.key)));
         res.c.meshNull = entry.mesh === null || entry.mesh === undefined;
         // KEIN Doppel-Bild: keine LEBENDE welt_terrain-Gruppe ausserhalb des f:-Namensraums.
         res.c.partGroupsAlive = 0;
@@ -392,7 +392,7 @@ function deriveGestalt(srcNC) {
             }
             const alt = { w: +(mxx - mnx).toFixed(2), h: +(mxy - mny).toFixed(2), d: +(mxz - mnz).toFixed(2) };
             const meshes = await Promise.race([
-                r._foundryRequest(gestalt, 3, 0, r.state.season || "summer"),
+                r._foundryRequest(gestalt, 3, 0),
                 new Promise((res3) => setTimeout(() => res3(null), 45000)),
             ]);
             if (!Array.isArray(meshes) || !meshes.length) {

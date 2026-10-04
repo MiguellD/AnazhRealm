@@ -140,6 +140,39 @@ const FORBIDDEN = [
     { token: "FERN_SCHICHT", fiel: "V18.528 — EIN Szene-Pass (Trace .36)" },
     { token: "FERN_LAYER", fiel: "V18.528 — EIN Szene-Pass, die Schalen leben auf Layer 0" },
     { token: "fernSchicht", fiel: "V18.528 — EIN Szene-Pass (Trace .36)" },
+    // DER SATZ (Welle B) — der Boden ist EIN Satz je Material (ein Befehl je Pass für den ganzen Ring), die
+    // Chunk-Geometrie trägt Views auf ihn: die Boden-Entlassung (CPU-Arrays nullen, aus IDB re-hydrieren) hat
+    // keinen Gegenstand mehr und kommt nicht zurück.
+    { token: "_chunkBodenGpuHat", fiel: "Welle B — der Boden-Satz hält die CPU-Arrays (Views)" },
+    { token: "_chunkBodenNulle", fiel: "Welle B" },
+    { token: "_tickChunkBodenEntlassung", fiel: "Welle B" },
+    { token: "_chunkBodenReHydrieren", fiel: "Welle B" },
+    { token: "_chunkEntlass", fiel: "Welle B — Entlass-Schlange und -Bytes" },
+    { token: "CHUNK_ENTLASS_GNADE_MS", fiel: "Welle B" },
+    { token: "_entlassBytes", fiel: "Welle B" },
+    { token: "_chunkRehydrierLauf", fiel: "Welle B" },
+    // Das Chunk-Wasser ist EIN Satz ausserhalb jedes Bundles (der Pass-Bruch des viewportLinearDepth) — das
+    // Bundle-Flag hatte keinen Leser, der es je setzte.
+    { token: "wasserImBundle", fiel: "Welle B — das Wasser des Rings ist der Wasser-Satz" },
+    // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
+    // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
+    // sind gefallen.
+    { token: "_chunkBundleAnker", fiel: "Welle B — der Satz ist der EINE Eintritt (_chunkSatzEin / _streuNahEin)" },
+    { token: "_chunkBundleRegionKey", fiel: "Welle B" },
+    { token: "_bundleKugelWeite", fiel: "Welle B — kein Chunk-Bürger wächst eine Region-Kugel mehr" },
+    { token: "_acquireScatterMesh", fiel: "Welle B — der Streu-Satz je Art (_streuNahArt)" },
+    { token: "_releaseScatterMesh", fiel: "Welle B" },
+    { token: "_drainScatterMeshPools", fiel: "Welle B" },
+    { token: "_scatterMeshPools", fiel: "Welle B" },
+    { token: '"deck-streu"', fiel: "Welle B — die Deck-Streu ist der zweite Block der Fern-Mesh je Art" },
+    // Der platzierte Bau keyt nicht mehr regional: die 256-m-Region (`p:x,z`) brachte keinen Cull (ihre Kugel
+    // schneidet das Frustum praktisch immer), sie vervielfachte nur die Gruppen je Leaf.
+    { token: "_archPlacedRegionKey", fiel: "Welle B — der platzierte Bau ist global, ein Studio-Leaf keyt nach Geometrie" },
+    { token: "useRegionArchCull", fiel: "Welle B" },
+    { token: "ARCH_REGION_CULL_MAX_SPAN", fiel: "Welle B" },
+    { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
+    { token: '"@p:"', fiel: "Welle B" },
+    { token: "_archGroupKeyReapable", fiel: "Welle B — jede leere Gruppe fällt durch den Leer-Chokepoint" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

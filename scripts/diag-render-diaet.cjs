@@ -185,7 +185,7 @@ function check(name, ok, detail) {
             return r.state.blueprints[name];
         };
 
-        // Zähler in UNSEREN Regionen (streaming-fest: nur die Fixture-Regionen): Gruppen (w) und
+        // Zähler UNSERER Fixturen (streaming-fest: nur die Gruppen des Fixtur-Bauplans): Gruppen (w) und
         // Material-Familien (b = verschiedene Materialien ihrer Meshes = Pipelines).
         const zaehle = (regTag) => {
             let w = 0;
@@ -215,7 +215,8 @@ function check(name, ok, detail) {
                 o.leaves = flat.leaves.length;
                 o.mats = mats.size; // Materialien je Tag-Signatur (alle 6 Parts = stein)
                 o.tints = flat.leaves.filter((l) => l.tint !== undefined).length;
-                const regTag = "@p:" + rx + "," + rz;
+                // Welle B: der platzierte Bau ist global — die Fixtur zählt über ihren EIGENEN Bauplan-Namen
+                const regTag = name + "#";
                 const vor = zaehle(regTag);
                 const entries = [];
                 for (let i = 0; i < 4; i++) {

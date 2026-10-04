@@ -93,15 +93,16 @@ const server = http.createServer((req, res) => {
         for (let i = 0; i < 12; i++) r._tickDekoFernfeld();
         const ff = r.state.dekoFernfeld;
         const counts = {};
-        if (ff) for (const [name, mesh] of ff.meshes) counts[name] = mesh.count;
+        // Welle B: die Art-Mesh trägt Fern- UND Deck-Block — gezählt wird der Fern-Block
+        if (ff) for (const [name, blk] of ff.fern) counts[name] = blk.length / 16;
         const near = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.size : 0;
         let nearInst = 0;
         if (r.state.voxelChunkScatter)
-            for (const list of r.state.voxelChunkScatter.values()) for (const it of list) nearInst += it.mesh.count;
+            for (const list of r.state.voxelChunkScatter.values()) for (const it of list) nearInst += it.n;
         ff.anchor = null;
         for (let i = 0; i < 12; i++) r._tickDekoFernfeld();
         const counts2 = {};
-        for (const [name, mesh] of ff.meshes) counts2[name] = mesh.count;
+        for (const [name, blk] of ff.fern) counts2[name] = blk.length / 16;
         const bands = r.constructor.DETAIL_CASCADE;
         const dichteFaellt =
             bands[0].dekoDichte > bands[1].dekoDichte &&

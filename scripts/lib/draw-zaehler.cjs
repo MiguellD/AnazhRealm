@@ -22,7 +22,28 @@ function drawZensus(opts) {
                     if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
             return camera && camera.isOrthographicCamera ? "ortho" : "anders";
         };
-        const name = (x) => (x.name ? x.name.replace(/[-_:#]?[-\d].*$/, "") : x.type) || "?";
+        // DER TÄTER HAT EINEN NAMEN (Welle B): ein Unbenannter heißt nach seinem Inventar-Stempel (streu-klein ·
+        // terrain-stitch · deko-fernfeld) bzw. seiner Wasser-Art (hydroKind), erst dann nach dem Typ — „Mesh" als
+        // Klasse verschluckte 229 Befehle aus sechs Familien.
+        const name = (x) => {
+            if (x.name) return x.name.replace(/[-_:#]?[-\d].*$/, "") || "?";
+            const u = x.userData || {};
+            return u.inventar || u.hydroKind || x.type || "?";
+        };
+        // Ein Instanz-Schlüssel ist `typ#leaf@region` (oder `leaf@region`, wenn das Leaf eine Studio-Identität
+        // trägt): Studio-Leaves (`f:<preset>|…`, `fimp:<preset>…`) zählen je Preset getrennt — gleiche Studio-
+        // Geometrie unter zwei Bau-Typen ist sichtbar als zwei Klassen desselben Presets.
+        const instKlasse = (k) => {
+            const s = String(k);
+            const at = s.indexOf("@");
+            const body = at >= 0 ? s.slice(0, at) : s;
+            const h = body.indexOf("#");
+            const typ = h >= 0 ? body.slice(0, h) : "";
+            const leaf = h >= 0 ? body.slice(h + 1) : body;
+            const m = /^(f|fimp):([^|:]+)/.exec(leaf);
+            if (m) return "inst:" + (typ ? typ + "/" : "") + m[1] + ":" + m[2];
+            return "inst:" + (typ || leaf);
+        };
         const klasse = (obj) => {
             let n = obj;
             while (n && n.parent && n.parent !== st.scene) n = n.parent;
@@ -34,9 +55,10 @@ function drawZensus(opts) {
                 let m = obj;
                 while (m.parent && m.parent !== top) m = m.parent;
                 const k = (m.userData && m.userData.archInstanceKey) || null;
-                if (k) return "inst:" + String(k).split("#")[0];
+                if (k) return instKlasse(k);
                 return "bundle:" + name(m);
             }
+            if (u.archInstanceKey) return instKlasse(u.archInstanceKey);
             return name(top);
         };
         const zaehl = {};

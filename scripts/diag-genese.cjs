@@ -236,7 +236,7 @@ function startSaveServer() {
                 const list = r.state.voxelChunkScatter && r.state.voxelChunkScatter.get(key);
                 if (!list) return 0;
                 const it = list.find((e) => e.name === name);
-                return it && it.mesh ? it.mesh.count : 0;
+                return it ? it.n : 0; // Welle B: die Block-Größe der Art im Streu-Satz
             };
             const build = (cx, cz) => {
                 const key = `${cx},${cz}`;

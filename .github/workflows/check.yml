@@ -280,8 +280,12 @@ jobs:
               # Die Transport-Schale läuft IM Foundry-Worker vor dem Studio: Platte (Stempel · Get · Put),
               # Konsum-Wand (FOUNDRY_LESEN == die Leser von _foundryBuildMesh), Uint16-Index, Transfer.
               # Statisch: Wand == Leser, der Asset-Store lebt NUR in der Schale. Verhalten: echter Worker +
-              # IndexedDB (Wand · Verengung · abgelöster Puffer · Platten-Treffer · nurPlatte · Format-Bust).
-              # --selftest zuerst: vier injizierte Brüche machen die Wand rot (nicht vakuös).
+              # IndexedDB (Wand · Verengung · abgelöster Puffer · Platten-Treffer · nurPlatte · Format-Bust ·
+              # Saison-Nagel · Vorrat · Karten-Platte). V18.527: Gestalten aus dem Studio-Budget (Klon-Linse, hohe
+              # Hash-Bits), keine Saison im Körper-Schlüssel, keine tote Fracht, der Stempel hasht die Shells;
+              # Welt-Sonde (Null-Renderer, echter Studio-Worker, Platte an): Gestalten je Art = Budget, 0 Karten-Art-
+              # L2, 0 LRU-Räumungen im Boot, ein Saison-Wechsel baut 0, der Zweit-Boot baut <= 5 MB neu.
+              # --selftest zuerst: jede Bruch-Klasse macht die Wand rot.
               run: npm run gate:fluss
 
             - name: Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)
@@ -289,6 +293,13 @@ jobs:
               # computeCompoundTags 0-mal; 3 Bauten in Reichweite → höchstens 3 je Takt. Befund: Ø 20 ms je
               # Spiel-Takt für die Tags aller Bauten. --selftest: die alte Reihenfolge macht die Wand rot.
               run: npm run gate:takt
+
+            - name: Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)
+              # Zählt die Render-Bürger je Klasse im Szenen-Baum (GPU-frei): höchstens EIN Boden-Satz (Stitch eingeschlossen),
+              # EIN Wasser-Satz, je Art EINE Klein-Streu- und EINE Fern-Mesh, keine Deck-Streu, kein @p:-Bau, kein
+              # p:-Bundle; Treue (Views byte-gleich, Index verschoben, Blöcke nah → fern) und Konsum (ein Chunk-Abbau
+              # ändert den Satz, nicht die Szene). --selftest zuerst: injizierte Täter fallen rot und werden genannt.
+              run: npm run gate:chunk-satz
 
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
               # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
@@ -355,28 +366,23 @@ jobs:
               # strukturell laut. Selbst-Tests: injizierte Fremd-Emitter + synthetisch verlorener Key → rot.
               run: npm run gate:asset-inventory
 
-            - name: V4 Saison-Flip progressiv — kein O(archs)-Entfern-Spike beim Jahreszeit-Wechsel
-              # V4(A): der Saison-Wechsel füllt eine Queue statt alle Foundry-Instanzen synchron zu entfernen;
-              # der `_drainSeasonFlip`-Scheduler-Job (prio 3) macht je Frame <= SEASON_FLIP_PER_TICK kalt, der
-              # budgetierte Rewarm re-platziert sie in der neuen Saison. Null-Renderer + Foundry-ON: 0 synchrone
-              # Removes im Flip-Call (war O(archs)), Drain <= Budget/Frame, Instanz-Zahl erholt sich.
-              run: npm run gate:season-flip
-
             - name: V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht
               # V6 (Look-Finale, Track 1): der EINE LOOK-Wetter-Leser liefert die fünf Kanäle transition-aware;
               # grey stormy>=0.8 & sunny==0 (entsättigt das LICHT, nie den Himmel), wind stormy >=5x sunny,
               # rain kontinuierlich (0/~0.6/1.0), fog über die Transition monoton. Null-Renderer, GPU-frei.
               run: npm run gate:weather-vector
 
-            - name: V6 Wiese folgt der Saison — _grassInstanceMat liest uSeasonMul, _seasonTint verschieden je Phase
-              # V6 (Look-Finale, Track 2): das Gras faltet die Saison-Tönungs-Uniform in die Albedo (KONSUM-Beweis);
-              # _seasonTint gibt für die vier Saison-Phasen verschiedene Tönungen (Winter != Sommer, Sommer neutral).
+            - name: Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau
+              # Jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken; das Jahr trägt die EINE Uniform
+              # uSeasonMul. Node-Orakel: _saisonMul des Stamms == seasonColors + uSeasonMul-Zeile der Studio-Shell
+              # (64 Phasen, Sommer exakt x1); die Stützstellen leben NUR im SAISON_GESETZ (foundry-core); Nah-Wiese,
+              # Foundry-Laub/-Gras und Karten-Stoff lesen die Uniform. --selftest zuerst: fünf Brüche → rot.
               run: npm run gate:season-meadow
 
-            - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das per-Saison-Leck
-              # V4(B): die geteilte Foundry-Baum-Geometrie wird jetzt freigegeben (LRU-Räumung → dispose,
-              # sobald kein InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-
-              # Zähler über 4 Saison-Zyklen: dispose feuert, der Speicher bleibt flach (kein lineares Leck),
+            - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das LRU-Leck
+              # V4(B): die geteilte Foundry-Geometrie wird freigegeben (LRU-Räumung → dispose, sobald kein
+              # InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-Zähler über
+              # 4 Churn-Zyklen (Deckel 32, 96 Gestalten): dispose feuert, der Speicher bleibt flach (kein lineares Leck),
               # REF-GUARD: keine Geometrie wird disposed solange _liveRefs > 0 (kein Use-after-free).
               run: npm run gate:foundry-memory
 

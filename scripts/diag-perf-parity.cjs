@@ -243,7 +243,7 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
             try {
                 for (const lod of [0, 1, 2]) {
                     const meshes = await Promise.race([
-                        r._foundryRequest("eiche", 7, lod, "summer"),
+                        r._foundryRequest("eiche", 7, lod),
                         new Promise((res3) => setTimeout(() => res3(null), 25000)),
                     ]);
                     let verts = 0;

@@ -127,7 +127,7 @@ const fmt = (n) =>
                 let meshes = null;
                 try {
                     meshes = await Promise.race([
-                        r._foundryRequest(id, 0, lod, "summer"),
+                        r._foundryRequest(id, 0, lod),
                         sleep(60000).then(() => "zeit"),
                     ]);
                 } catch (e) {
