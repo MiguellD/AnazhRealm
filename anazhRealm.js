@@ -90737,14 +90737,65 @@ AnazhRealm._tuerOffenRad = function () {
 //      renderGroup-Uniforms — r184 kürzt genau diesen Fall selbst ab (isBundle → false), aber erst NACH der
 //      renderId-Wand, die jedes Objekt mit eigenem Beobachter (eigene Geometrie = jede Pflanzen-Gruppe) je Render
 //      und Pass refresht: gemessen 04.10. (echte GPU, Mess-Wiese, Bundles ohne eine Neuaufnahme) 1813 von 1895
-//      Prüfungen je Frame, die Render-CPU 48 ms. Die renderGroup schreibt der erste echte Refresh des Renders,
-//      darum kürzt erst ein gestempelter Render ab; jeder echte Refresh zieht die Bundle-Version im Objekt-
-//      Datensatz nach (r184 tut das nur in equals(), das ein Einzel-Beobachter nie erreicht).
+//      Prüfungen je Frame, die Render-CPU 48 ms. Abgekürzt wird erst ein gestempelter Render (der erste echte
+//      Refresh stempelt); jeder echte Refresh zieht die Bundle-Version im Objekt-Datensatz nach (r184 tut das nur
+//      in equals(), das ein Einzel-Beobachter nie erreicht).
+//  (4) DIE KAMERA-TREUE: die geteilte Bindegruppe (render · frame) ist in r184 KEINE Welt-Größe, sondern je
+//      PROGRAMM eine eigene (NodeBuilderState.createBindings reicht die geteilte Gruppe des Zustands durch, der
+//      Beobachter selbst hängt am Zustand: getMonitor → getNodeBuilderState().observer). In jeder reisen
+//      cameraViewMatrix · cameraProjectionMatrix · uLodAuge. Die Abkürzung (3) schrieb nur die Gruppe des EINEN
+//      Stempel-Objekts — gemessen 04.10. (echte GPU, Mess-Wiese): 135 Bundle-Objekte in 99 render-Gruppen, 98
+//      behielten die Kamera ihrer letzten Aufnahme. Zwei Kameras zeigten dasselbe Bild (Gleichheit 0,993), Bäume
+//      und Büsche klebten am Schirm, bis ein Bundle neu aufnahm, Schatten fielen aus der alten Kaskade. Darum
+//      zieht die Abkürzung je Render JEDE geteilte Gruppe einmal nach (Knoten der Gruppe + Upload, nie die
+//      Objekt-Gruppe): Kamera-Gleichheit 0,993 → 0,011, die Bahn kostet 1,8 ms Render-CPU je Frame (98 Gruppen).
+// Die geteilten Bindegruppen eines Render-Objekts (gecacht im Objekt-Datensatz); offen = die in diesem Render
+// noch nicht geschriebenen (und ab jetzt als geschrieben gestempelt).
+AnazhRealm._diaetGeteilteOffen = function (obs, ro, rid) {
+    const d = obs.getRenderObjectData(ro);
+    let gs = d._anazhGeteilt;
+    if (!gs) {
+        gs = [];
+        for (const g of ro.getBindings()) {
+            const b0 = g.bindings && g.bindings[0];
+            if (b0 && b0.groupNode && b0.groupNode.shared === true) gs.push(g);
+        }
+        d._anazhGeteilt = gs;
+    }
+    let offen = null;
+    for (const g of gs)
+        if (g._anazhRid !== rid) {
+            g._anazhRid = rid;
+            (offen || (offen = [])).push(g);
+        }
+    return offen;
+};
+// Die offenen geteilten Gruppen schreiben: die Render-/Frame-Knoten des Programms (Kamera-Matrizen; je Render
+// dedupliziert im Vendor-NodeFrame) und der Upload der Gruppe — die Objekt-Gruppe bleibt unberührt.
+AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, offen) {
+    const nbs = ro.getNodeBuilderState();
+    let rk = nbs._anazhGeteilteKnoten;
+    if (!rk) {
+        rk = [];
+        for (const n of nbs.updateNodes) if (n.getUpdateType() !== "object") rk.push(n);
+        nbs._anazhGeteilteKnoten = rk;
+    }
+    if (rk.length) {
+        const nf = rend._nodes.getNodeFrameForRender(ro);
+        for (const n of rk) nf.updateNode(n);
+    }
+    const alle = ro.getBindings();
+    for (const g of offen) rend._bindings._update(g, alle);
+};
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const rend = frame && frame.renderer;
     const rid = frame ? frame.renderId : -1;
     const auf = () => {
-        if (rend) rend._anazhDiaetRid = rid;
+        if (rend) {
+            rend._anazhDiaetRid = rid;
+            // der echte Refresh schreibt alle Gruppen des Objekts — seine geteilten gelten für diesen Render
+            if (ro && typeof ro.getBindings === "function") AnazhRealm._diaetGeteilteOffen(obs, ro, rid);
+        }
         if (ro && ro.bundle) obs.getRenderObjectData(ro).version = ro.bundle.version;
         return true;
     };
@@ -90782,8 +90833,11 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         ro.bundle.static === true &&
         obs.renderObjects.has(ro) &&
         obs.getRenderObjectData(ro).version === ro.bundle.version
-    )
+    ) {
+        const offen = AnazhRealm._diaetGeteilteOffen(obs, ro, rid);
+        if (offen) AnazhRealm._diaetGeteiltSchreiben(rend, ro, offen);
         return false;
+    }
     return altNR.call(obs, ro, frame) ? auf() : false;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr

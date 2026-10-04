@@ -49,6 +49,12 @@ const ANKER = [
     // Objekt-Datensatz pflegt nur equals()
     { file: "vendor/three.webgpu.min.js", sub: "if(this.renderId!==r)return this.renderId=r,!0;const s=!0===e.object.static,i=null!==e.bundle&&!0===e.bundle.static&&this.getRenderObjectData(e).version===e.bundle.version", organ: "AnazhRealm._diaetRefresh (Bundle-Replay-Abkürzung vor der renderId-Wand)" },
     { file: "vendor/three.webgpu.min.js", sub: "null!==e.bundle&&(a.version=e.bundle.version)", organ: "AnazhRealm._diaetRefresh (Bundle-Version im Objekt-Datensatz)" },
+    // Die Kamera-Treue: Beobachter UND geteilte Bindegruppe (render · frame) hängen am Programm (NodeBuilderState),
+    // nie an der Welt — die Abkürzung zieht jede geteilte Gruppe je Render nach (Knoten + Upload)
+    { file: "vendor/three.webgpu.min.js", sub: "getMonitor(){return this._monitor||(this._monitor=this.getNodeBuilderState().observer)}", organ: "AnazhRealm._diaetRefresh (Beobachter je Programm)" },
+    { file: "vendor/three.webgpu.min.js", sub: "createBindings(){const e=[];for(const t of this.bindings){if(!0!==t.bindings[0].groupNode.shared){", organ: "AnazhRealm._diaetGeteilteOffen (geteilte Gruppe je Programm)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateForRender(e){const t=this.getNodeFrameForRender(e),r=e.getNodeBuilderState();for(const e of r.updateNodes)t.updateNode(e)}", organ: "AnazhRealm._diaetGeteiltSchreiben (Knoten des Programms)" },
+    { file: "vendor/three.webgpu.min.js", sub: "_updateBindings(e){for(const t of e)this._update(t,e)}", organ: "AnazhRealm._diaetGeteiltSchreiben (Upload je Gruppe)" },
     // Die Schatten-Diät: EIN Schatten-Material je Licht, die Original-Knoten hängen je Objekt darin
     { file: "vendor/three.webgpu.min.js", sub: 't.isShadowPassMaterial=!0,t.name="ShadowMaterial"', organ: "Schatten-Diät (_configureRenderer, isShadowPassMaterial)" },
     { file: "vendor/three.webgpu.min.js", sub: "e.isShadowPassMaterial){const{colorNode:t,depthNode:r,positionNode:s}=this._getShadowNodes(i)", organ: "Schatten-Diät (Original-Knoten im Override)" },
@@ -90,21 +96,30 @@ const ANKER = [
     },
 ];
 
-// Die Diät-Prüfung aus dem Stamm schneiden und gegen Schein-Beobachter fahren. `manipuliert` entfernt den
-// Render-Stempel (die Abkürzung griffe dann auch, bevor ein Refresh die geteilte renderGroup schrieb).
+// Die Diät-Prüfung aus dem Stamm schneiden (die geteilten Gruppen + die Prüfung) und gegen Schein-Beobachter
+// fahren. `manipuliert`: "stempel" entfernt den Render-Stempel (die Abkürzung griffe, bevor ein Refresh schrieb),
+// "kamera" entfernt das Nachziehen der geteilten Gruppen (98 von 99 Programmen behielten die alte Kamera).
 function diaetLaden(manipuliert) {
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
-    const a = stamm.indexOf("AnazhRealm._diaetRefresh = function");
-    const e = a < 0 ? -1 : stamm.indexOf("\n};\n", a);
-    if (a < 0 || e < 0) return null;
+    const a = stamm.indexOf("AnazhRealm._diaetGeteilteOffen = function");
+    const b = stamm.indexOf("AnazhRealm._diaetRefresh = function");
+    const e = b < 0 ? -1 : stamm.indexOf("\n};\n", b);
+    if (a < 0 || b < a || e < 0) return null;
     let src = stamm.slice(a, e + 3);
-    if (manipuliert) src = src.replace("rend._anazhDiaetRid === rid &&", "true &&");
+    if (manipuliert === "stempel") src = src.replace("rend._anazhDiaetRid === rid &&", "true &&");
+    if (manipuliert === "kamera") src = src.replace("if (offen) AnazhRealm._diaetGeteiltSchreiben(rend, ro, offen);", "");
     const AnazhRealm = {};
     new Function("AnazhRealm", src)(AnazhRealm);
     return AnazhRealm._diaetRefresh;
 }
 function diaetLauf(fn) {
     // Schein-Beobachter je Objekt (jede Pflanzen-Gruppe hat ihre eigene Geometrie → ihren eigenen Beobachter).
+    // Je Objekt ein Programm: Beobachter + geteilte render-Gruppe + Knoten-Zustand (r184: alles am NodeBuilderState).
+    const schreib = { gruppen: new Map(), objektGruppe: 0, knoten: 0 };
+    const programm = () => ({
+        render: { bindings: [{ groupNode: { shared: true } }] },
+        nbs: { updateNodes: [{ getUpdateType: () => "render" }, { getUpdateType: () => "object" }] },
+    });
     const beob = () => ({
         renderObjects: new Map(),
         renderId: -1,
@@ -123,12 +138,28 @@ function diaetLauf(fn) {
         if (this.renderId !== frame.renderId) return (this.renderId = frame.renderId), true;
         return false;
     };
-    const rend = {};
+    const rend = {
+        _nodes: { getNodeFrameForRender: () => ({ updateNode: (k) => (k.getUpdateType() === "object" ? null : schreib.knoten++) }) },
+        _bindings: {
+            _update: (g) => {
+                if (!g.bindings[0].groupNode.shared) schreib.objektGruppe++;
+                schreib.gruppen.set(g, (schreib.gruppen.get(g) || 0) + 1);
+            },
+        },
+    };
     const bundle = { static: true, version: 1 };
     const objekte = [];
+    const ro = (obj, p) => ({
+        object: obj,
+        material: obj.material,
+        bundle,
+        getBindings: () => [p.render, { bindings: [{ groupNode: { shared: false } }] }],
+        getNodeBuilderState: () => p.nbs,
+    });
     for (let i = 0; i < 50; i++) {
         const obj = { isInstancedMesh: true, instanceMatrix: { version: 0 }, instanceColor: null, material: {} };
-        objekte.push({ ro: { object: obj, material: obj.material, bundle }, o: beob() });
+        const p = programm();
+        objekte.push({ ro: ro(obj, p), o: beob(), p });
     }
     const frei = { ro: { object: { material: {} }, material: {}, bundle: null }, o: beob() };
     let rid = 0;
@@ -136,10 +167,27 @@ function diaetLauf(fn) {
         rid++;
         const frame = { renderer: rend, renderId: rid };
         if (vorher) vorher();
+        schreib.gruppen.clear();
+        schreib.objektGruppe = 0;
+        schreib.knoten = 0;
         let n = 0;
-        for (const x of objekte) if (fn(x.o, x.ro, frame, altNR)) n++;
+        const voll = new Set();
+        for (const x of objekte)
+            if (fn(x.o, x.ro, frame, altNR)) {
+                n++;
+                voll.add(x.p.render);
+            }
         const nFrei = fn(frei.o, frei.ro, frame, altNR) ? 1 : 0;
-        return { n, nFrei };
+        // Kamera-Treue: jede render-Gruppe ist in diesem Render geschrieben — vom echten Refresh (voll) oder
+        // genau EINMAL von der Abkürzung; die Objekt-Gruppe schreibt die Abkürzung nie.
+        let fehlt = 0,
+            doppelt = 0;
+        for (const x of objekte) {
+            const w = schreib.gruppen.get(x.p.render) || 0;
+            if (w > 1) doppelt++;
+            if (w === 0 && !voll.has(x.p.render)) fehlt++;
+        }
+        return { n, nFrei, fehlt, doppelt, objektGruppe: schreib.objektGruppe, knoten: schreib.knoten };
     };
     const r1 = render();
     const r2 = render();
@@ -151,8 +199,8 @@ function diaetLauf(fn) {
 }
 function diaetProbe(selftest) {
     const fehler = [];
-    const fn = diaetLaden(false);
-    if (!fn) return { fehler: ["AnazhRealm._diaetRefresh nicht im Stamm gefunden"], selbstFeuert: false };
+    const fn = diaetLaden(null);
+    if (!fn) return { fehler: ["AnazhRealm._diaetGeteilteOffen … _diaetRefresh nicht im Stamm gefunden"], selbstFeuert: false };
     const pruefe = (z) => {
         const f = [];
         if (z.r1.n !== 50) f.push(`Erst-Render: alle 50 Objekte initialisieren (ist ${z.r1.n})`);
@@ -161,13 +209,22 @@ function diaetProbe(selftest) {
         if (z.r4.n !== 2) f.push(`Instanz-Mutation: der Stempel-Refresh + das mutierte Objekt (ist ${z.r4.n})`);
         if (z.r5.n !== 50) f.push(`Bundle-Neuaufnahme: alle 50 refreshen einmal (ist ${z.r5.n})`);
         if (z.r6.n !== 1) f.push(`nach der Neuaufnahme wieder GENAU EIN Refresh (ist ${z.r6.n})`);
+        for (const [k, r] of Object.entries(z))
+            if (r.fehlt || r.doppelt || r.objektGruppe)
+                f.push(
+                    `Kamera-Treue ${k}: jede geteilte Gruppe GENAU EINMAL je Render (ungeschrieben ${r.fehlt}, doppelt ${r.doppelt}, Objekt-Gruppe ${r.objektGruppe}) — sonst klebt das Programm an der Kamera seiner letzten Aufnahme`
+                );
         if ([z.r1, z.r2, z.r3, z.r4, z.r5, z.r6].some((r) => r.nFrei !== 1))
             f.push("ein Objekt OHNE Bundle kürzt nie ab (Vendor-Bahn je Render)");
         return f;
     };
     fehler.push(...pruefe(diaetLauf(fn)));
     let selbstFeuert = false;
-    if (selftest) selbstFeuert = pruefe(diaetLauf(diaetLaden(true))).length > 0;
+    if (selftest) {
+        const stempel = pruefe(diaetLauf(diaetLaden("stempel")));
+        const kamera = pruefe(diaetLauf(diaetLaden("kamera")));
+        selbstFeuert = stempel.length > 0 && kamera.some((e) => e.startsWith("Kamera-Treue"));
+    }
     return { fehler, selbstFeuert };
 }
 
@@ -218,7 +275,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (ohne Render-Stempel bliebe die renderGroup ungeschrieben)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (ohne Render-Stempel abgekürzt; ohne Nachziehen klebt die Kamera)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         process.exit(feuert && diaetFeuert ? 0 : 1);
@@ -229,7 +286,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Beobachter (je Render GENAU EIN Refresh).`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Beobachter (je Render GENAU EIN Refresh, jede geteilte Gruppe GENAU EINMAL geschrieben).`
     );
 }
 main();
