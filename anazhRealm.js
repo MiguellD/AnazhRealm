@@ -86,6 +86,10 @@ class AnazhRealm {
             // (_ensurePostProcessing). Der Loop ruft postProcessing.renderAsync(), sonst renderer.render().
             postProcessing: null,
             postProcessingFailed: false,
+            // Die zeitliche Auflösung der Post-Kette (TRAANode, _ensurePostProcessing): der Knoten, an dem die
+            // Dither-Rotation und die Reprojektion hängen, und ihre Reprojektions-Matrix (_traaKameraBewegung).
+            traaNode: null,
+            _traaR: null,
             // WebGPU-Pflicht: false bis renderer.init() async durch ist — der Loop rendert bis dahin nicht.
             // Fehlt navigator.gpu, wirft der Bootstrap mit User-Meldung; kein WebGL-Pfad (NodeMaterials
             // rendern nicht auf WebGLRenderer).
@@ -86619,6 +86623,15 @@ class AnazhRealm {
             // Stufe der Kette (Studio-Gesetz phytogenesis FIX v32: zeitliche Auflösung VOR den Nachbearbeitungen):
             // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
             // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity.
+            // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
+            // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
+            if (this.state._traa && typeof THREE.TRAANode !== "function") {
+                this.log(
+                    "Post-Kette: THREE.TRAANode fehlt — vendor/three-bootstrap.js ist eine veraltete Kopie (der ?v=-Buster folgt der Version).",
+                    "ERROR"
+                );
+                throw new Error("THREE.TRAANode fehlt im Bootstrap");
+            }
             const traa = this.state._traa
                 ? new THREE.TRAANode(
                       sceneColor,
@@ -86782,18 +86795,23 @@ class AnazhRealm {
     // Translation im Shader), liegt im Clip-Raum des vorigen Frames; die Differenz der NDC ist die Bewegung, die
     // TRAANode als `velocityNode.load(texel)` liest. Keine MRT-Velocity: sie schriebe je Fragment JEDES Materials
     // ein zweites Ziel und rechnete je Vertex die Vorgänger-Transformation, und ihre Objekt-Uniforms
-    // (previousModelWorldMatrix) zieht die Diät/Bundle-Abkürzung (_diaetRefresh) gebündelten Objekten nie nach —
-    // der ganze Wald hätte die Bewegung seiner letzten Aufnahme getragen. Was sich selbst bewegt (Tiere, Wind),
+    // (previousModelWorldMatrix) schreibt die Diät (_diaetRefresh) nur, wenn sich das Objekt ändert (equals) —
+    // der ganze stehende Wald hätte die Bewegung seines letzten Refreshs getragen. Was sich selbst bewegt (Tiere, Wind),
     // fängt die Varianz-Klemme der Geschichte.
     _traaKameraBewegung(TSL, tiefe) {
         const { vec2, vec4 } = TSL;
         const R = TSL.uniform(new THREE.Matrix4());
         this.state._traaR = { R, jetzt: new THREE.Matrix4(), vor: new THREE.Matrix4(), neu: true };
+        // Die Tiefen-Textur trägt [0, 1]; die NDC-Tiefe der Projektion ist es nur im WebGPU-Raum. Im WebGL2-Raum
+        // (forceWebGL, gate:webgl-probe) liegt sie in [−1, 1]: z = 2·Tiefe − 1, sonst reprojiziert jeder Pixel beim
+        // Laufen an die falsche Stelle (Schlieren). Die Textur-Zeilen dreht TSL je Rückend selbst (load, isFlipY).
+        const webgpuRaum = this.state.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
         return {
             load: (texel) => {
                 const uvT = texel.div(vec2(tiefe.size()));
                 const ndc = vec2(uvT.x.mul(2).sub(1), uvT.y.oneMinus().mul(2).sub(1));
-                const vor = R.mul(vec4(ndc, tiefe.load(texel).r, 1));
+                const d = tiefe.load(texel).r;
+                const vor = R.mul(vec4(ndc, webgpuRaum ? d : d.mul(2).sub(1), 1));
                 return ndc.sub(vor.xy.div(vor.w));
             },
         };
