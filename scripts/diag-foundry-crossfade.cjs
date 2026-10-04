@@ -760,6 +760,13 @@ function perfWahrheit(srcNC) {
     if (!/f\.hoehen/.test(buch)) v.push("_foundryBaumHoehe liest nicht das Höhen-Buch");
     const satz = fnBody(srcNC, /\n {4}_foundryCacheSet\(key, v\)\s*\{/) || "";
     if (!/f\.hoehen = new Map\(\)\)\)\.set\(key, v\._hoehe\)/.test(satz)) v.push("der Cache-Chokepoint schreibt das Höhen-Buch nicht");
+    // Die Blatt-Kappe der CPU gilt der VORLAGE wie der Stempel (aH0L = min(Vorlage, Kappe) × s; Studio phytogenesis
+    // bhL = min(H0, Kappe) · sc), nie der skalierten Höhe — und jeder Aufrufer reicht seine Instanz-Skala.
+    const partner = fnBody(srcNC, /\n {4}_lodBandPartnerFor\(dist, visH, cur, s\)\s*\{/) || "";
+    if (!/Math\.min\(visH \/ sS, capL\) \* sS/.test(partner))
+        v.push("die CPU-Blatt-Kappe kappt die skalierte Höhe (min(h·s, 24)) statt der Vorlage (min(h, 24)·s)");
+    for (const m of srcNC.matchAll(/this\._lodBandPartnerFor\(([^)]*)\)/g))
+        if (m[1].split(",").length < 4) v.push("ein Aufrufer von _lodBandPartnerFor reicht keine Instanz-Skala: " + m[1].trim());
     for (const [name, re] of [
         ["_tickArchitectureLOD", /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/],
         ["_tickScatterLod", /\n {4}_tickScatterLod\([^)]*\)\s*\{/],
@@ -829,6 +836,8 @@ async function main() {
             ["Sichthöhe still 0", nc.replace("if (h0 == null) return null;", "if (h0 == null) return 0;")],
             ["Höhe nur im LRU", nc.replace("if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],
             ["LOD-Takt urteilt ohne Höhe", nc.replace("if (visH === null) continue;", "")],
+            ["CPU-Blatt-Kappe auf der skalierten Höhe", nc.replace("Math.min(visH / sS, capL) * sS", "Math.min(visH, capL)")],
+            ["Streu-Partner ohne Skala", nc.replace("this._lodBandPartnerFor(dist, visH, _curLod, tf.scale)", "this._lodBandPartnerFor(dist, visH, _curLod)")],
             [
                 "Sichthöhe aus dem Grammatik-Bauplan",
                 nc.replace("return this._foundrySichtHoehe(preset, entry, s);", "return 0;"),

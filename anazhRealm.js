@@ -51496,11 +51496,13 @@ class AnazhRealm {
     // undefined = die Höhe ist (noch) nicht bekannt: kein Urteil, das Band bleibt.
     _foundryLodBandPartner(entry, dist) {
         const visH = this._lodTreeVisHeight(entry);
-        return visH === null ? undefined : this._lodBandPartnerFor(dist, visH, entry._lodLevel | 0);
+        return visH === null ? undefined : this._lodBandPartnerFor(dist, visH, entry._lodLevel | 0, entry.scale);
     }
     // Entry-freier Partner-Kern: Architektur-Einträge UND der Scatter fragen DIESELBE Regel, welche
     // zweite Stufe im Dither-Crossfade-Band wohnt (Mitgliedschaft ±M um die Fade-Fenster).
-    _lodBandPartnerFor(dist, visH, cur) {
+    // s = die Instanz-Skala: die Blatt-Kappe gilt der VORLAGE (Stempel aH0L = min(Vorlage, Kappe) × s, Studio
+    // phytogenesis Z.2582 bhL = min(H0, Kappe) · sc — CPU == GPU), nie der skalierten Höhe.
+    _lodBandPartnerFor(dist, visH, cur, s) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return null;
         const M = Number.isFinite(cfg.hysteresis) ? cfg.hysteresis : 0;
@@ -51512,7 +51514,8 @@ class AnazhRealm {
         cur = Math.max(0, Math.min(2, cur | 0));
         if (cur === 0) {
             const capL = Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 24;
-            const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH, capL)) : dist;
+            const sS = Number.isFinite(s) && s > 0 ? s : 1;
+            const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH / sS, capL) * sS) : dist;
             return dnL > D0 - FADE0 - M ? 1 : null;
         }
         if (cur === 1) {
@@ -52500,7 +52503,7 @@ class AnazhRealm {
             this._foundryPresetIsTree(foundryPreset)
         ) {
             const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
-            const _partner = this._lodBandPartnerFor(dist, visH, _curLod);
+            const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
             if (_partner != null && _partner !== _curLod) {
                 const pf = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
