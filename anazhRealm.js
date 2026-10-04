@@ -30088,6 +30088,11 @@ class AnazhRealm {
         // Nie null setzen: der Vendor liest attribute.array.constructor beim (lazy, späten) Pipeline-Bau
         // (getTypeFromArray) → null crasht jeden Frame. Daher Null-Länge-Sentinel derselben Typ-Klasse;
         // die Re-Hydrierung erkennt length === 0.
+        // Die HÜLLEN stehen vor der Entlassung: nach ihr zählt `position.count` weiter, das Array ist leer — ein
+        // späteres computeBoundingBox/-Sphere läse `undefined` und legte NaN ab (gemessen 04.10.: 27 von 49 Böden,
+        // jede Werfer-Hülle ihrer Region NaN → die Region warf in jede Kaskade). Die Positionen mutieren nie (s. o.).
+        if (!geo.boundingBox) geo.computeBoundingBox();
+        if (!geo.boundingSphere) geo.computeBoundingSphere();
         let frei = 0;
         for (const k in geo.attributes) {
             const a = geo.attributes[k];
