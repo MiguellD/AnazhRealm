@@ -79,6 +79,29 @@ Ein Top-Level-Objekt `PRESETS`: `{ <rezeptId>: Rezept }`.
   sha256-Goldens, NIE regenerieren) — jede Domäne bekommt ihren Ordner
   (v1 Pflanzen · v2 Kreatur-Haut · v3 Fahrzeuge · v4 Tore …).
 
+#### B2c — DAS BUDGET je Art × Stufe (SOLL; trägt ein Kern es, dann VOLLSTÄNDIG)
+
+`PORTAL_RENDER_CONFIG.lod.budget = { <kind>: { <stufe>: { tris, draws, schatten, karte?, …Regler } } }` —
+was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
+
+- **Vollständig:** jede Art aus den eigenen `kindStages` × jede deklarierte Stufe trägt eine Zeile;
+  keine Zeile für eine nicht deklarierte Stufe oder Art.
+- `tris` (ganze Zahl > 0) = Obergrenze der Dreiecke je Instanz · `draws` (ganze Zahl ≥ 1) = Obergrenze
+  der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index = Draws je Instanz-Gruppe
+  und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1), oder `false`.
+- **Monoton:** `tris` fällt je Stufe streng, `draws` steigt nie.
+- `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Studio-Karte (bakeImpostorAtlas),
+  ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
+  (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
+- DARF-Regler einer Stufe (Form geprüft): `blattKarte` / `nadelKarte` (Kartenkante in Blatt- bzw.
+  Nadel-Längen, endlich > 0) · `klinge` (Kontur-Segmente der Klinge, ganze Zahl ≥ 2) · `deckung` (Band
+  [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
+- **Konsum:** `gate:asset-contract` baut jede gelieferte Gitter-Stufe über die echte Brücke (Goldens +
+  jedes Rezept der Art bei Samen 7) und hält Dreiecke ≤ `tris`, Sippen ≤ `draws` — Rot nennt den Täter;
+  der Selbsttest halbiert jede Zeile (und senkt `draws` um eins) und MUSS rot werden.
+- v1.3 trägt es foundry-core (tree · shrub · grass · flower · rock); die Zweit-Kerne folgen mit der
+  Studio-Übertragung (Transport `zusatzBudget`, offen).
+
 ### B3 — PLACEMENT (SOLL)
 
 Ein Block `PORTAL_RENDER_CONFIG.placement`: wie oft, wo, wie groß.

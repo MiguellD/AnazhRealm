@@ -203,14 +203,49 @@ const PORTAL_RENDER_CONFIG = {
         ref: 12.0,
         hyst: 3.4,
         kindStages: { tree: [0, 1, 2], shrub: [1, 2], grass: [1, 2], flower: [0], rock: [0] },
-        // DAS BUDGET je Art × Stufe (04.10., echte GPU an der Mess-Wiese): was eine gelieferte Stufe kosten
-        // darf, als DATEN neben ihrer Stufen-Wahrheit. tree[1].blattKarte = die Kante der L1-Blattkarte in
-        // Blatt-Groessen (vorher das Literal 2,35 — zusammen mit ls 2,05 und dem Quadrat der Karte rasterte
-        // die L1-Krone 10,5x die Flaeche der L0-Klingen bei 1,7x ihrer Deckung: 162 Bildschichten, 8-12 ms
-        // GPU). deckung = das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss
-        // (Kartenflaeche x Atlas-Fuellung / Klingenflaeche — Wahrnehmung ~ n·s², FIX v29); gate:asset-
-        // contract misst es an gebauten L0/L1-Paaren und haelt es (die Budget-Wand).
-        budget: { tree: { 1: { blattKarte: 1.8, deckung: [0.8, 1.15] } } },
+        // DAS BUDGET je Art × Stufe (Studio-Vertrag B2c, 04.10.): was eine GELIEFERTE Stufe kosten darf, als
+        // DATEN neben ihrer Stufen-Wahrheit — fuer JEDE deklarierte Stufe JEDER Art eine Zeile:
+        //   tris     = Obergrenze der Dreiecke je Instanz (gebaut ueber die echte Bruecke, ueber alle Samen);
+        //   draws    = Obergrenze der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) =
+        //              Draws je Instanz-Gruppe und Pass;
+        //   schatten = die Stufe, deren Gestalt den Schatten wirft (L0-Baum wirft seine L1), oder false;
+        //   karte    = die Stufe IST die Studio-Karte (bakeImpostorAtlas aus L1, beim Host das Achsen-Quad mit
+        //              2 Dreiecken) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
+        //              karte ⇔ KIND_POLICY.impostor des Hosts).
+        // Herleitung aus dem Profi-Band (680k Dreiecke je Frame ueber alle Paesse, docs/analyse/perf-paritaet-
+        // baseline-v18432.md; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
+        // Fichte, 47,1k beim Strauch, mehr als die Fichte): die L1-Zeilen sind OBERGRENZEN, gegen die gebaut ist
+        // (tree[1] 10k: Nadel-Karten + jeder 2. Ring + Primaer-Wurzeln + schlanke Trauer-Klinge; shrub[1] 12k:
+        // Reisig-Schnitt) — die gebaute Geometrie fiel auf sie, nicht sie auf die Geometrie. tree[0] (das Nahbild,
+        // in dieser Welle unangetastet), grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr
+        // Band-Schnitt ist offen (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe
+        // und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt je Stufe streng,
+        // draws steigt nie). Die Kosten-Regler der L1-Krone wohnen in tree[1]: blattKarte (Kante der Laub-Karte in
+        // Blatt-Groessen), nadelKarte (Kante der Nadel-Karte in Nadel-Laengen), klinge (Segmente der Trauer-
+        // Klinge), deckung (das Band, in dem die gebaute L1-Krone die L0-Krone desselben Baums bedecken muss —
+        // Wahrnehmung ~ n·s², FIX v29; gate:asset-contract misst es an gebauten L0/L1-Paaren).
+        budget: {
+            tree: {
+                0: { tris: 230000, draws: 3, schatten: 1 },
+                1: {
+                    tris: 10000,
+                    draws: 3,
+                    schatten: 1,
+                    blattKarte: 1.8,
+                    nadelKarte: 3.5,
+                    klinge: 4,
+                    deckung: [0.8, 1.15],
+                },
+                2: { tris: 2, draws: 1, schatten: false, karte: true },
+            },
+            shrub: {
+                1: { tris: 12000, draws: 2, schatten: 1 },
+                2: { tris: 2, draws: 1, schatten: false, karte: true },
+            },
+            grass: { 1: { tris: 1700, draws: 1, schatten: false }, 2: { tris: 320, draws: 1, schatten: false } },
+            flower: { 0: { tris: 3600, draws: 2, schatten: 0 } },
+            rock: { 0: { tris: 1300, draws: 1, schatten: 0 } },
+        },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
     // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die
