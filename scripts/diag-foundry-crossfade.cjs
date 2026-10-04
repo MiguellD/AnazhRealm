@@ -423,6 +423,85 @@ async function runPartB() {
                     band: Number.isFinite(entry._lodBandLevel) ? entry._lodBandLevel : null,
                 });
             }
+            // ════ DIE STUFEN-WAHRHEIT (04.10.): die CPU legt die Stufen nach DERSELBEN Distanz, die die Masken lesen.
+            // Je Probe: die residenten Stufen (Primär + Band) mit IHREN Fassaden-Stempeln (aH0/aH0L je Slot), die
+            // Masken-Distanz roh × Perf-Streck × min(lodRef/Stempel, 1), die Maske __phytoCore.lodCrossfadeMask über
+            // 64 Dither-Werte je Rinde/Laub — ein Wert, den KEINE residente Stufe behält, ist ein LOCH (der Spieler
+            // sieht durch den Baum: der gerasterte Geist). Gegenprobe im selben Lauf: der alte Leser (Sichthöhe 0)
+            // MUSS Löcher zeigen, sonst ist die Probe blind.
+            const core = window.__phytoCore;
+            const lodRefLive = Number.isFinite(st.lodRef) && st.lodRef > 0 ? st.lodRef : cfg.lodRef;
+            const cfgM = { d0: cfg.thresh01, d1: cfg.thresh12, fade: cfg.fade, fade0: cfg.fade0 };
+            const stempelVon = (ref) => {
+                const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
+                const a = g && g.mesh && g.mesh.geometry && g.mesh.geometry.attributes;
+                return a && a.aH0 && a.aH0L ? { h: a.aH0.array[ref.slot], hL: a.aH0L.array[ref.slot] } : null;
+            };
+            const lochSweep = (fd) => {
+                st._foliageDensityScale = fd;
+                const k = r._lodPerfMul();
+                const o = { perf: +k.toFixed(3), proben: 0, loecher: 0, stempelUngleich: 0, beispiel: null };
+                for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
+                    st.playerMesh.position.set(px - raw, py, pz);
+                    r._archLODCursor = 0;
+                    for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99);
+                    const stufen = new Map();
+                    let fern = false;
+                    for (const list of [entry.instSlots, entry.instSlotsBand])
+                        if (Array.isArray(list))
+                            for (const ref of list) {
+                                const l = stageOfKey(ref.key);
+                                if (l === 2) {
+                                    fern = true; // das Billboard trägt keinen aH0-Stempel (Rahmen-Höhe × Instanz-Skala)
+                                    continue;
+                                }
+                                const sp = stempelVon(ref);
+                                if (l == null || !sp) continue;
+                                const e = stufen.get(l) || { h: 0, hL: Infinity };
+                                e.h = Math.max(e.h, sp.h);
+                                e.hL = Math.min(e.hL, sp.hL);
+                                stufen.set(l, e);
+                            }
+                    if (!stufen.size) continue;
+                    // Das Billboard blendet mit der Sichthöhe seines Rahmens ein — gemessen an der Stufe darunter.
+                    if (fern) {
+                        const h3 = Math.max(...[...stufen.values()].map((e) => e.h));
+                        stufen.set(2, { h: h3, hL: h3 });
+                    }
+                    o.proben++;
+                    const visH = r._lodTreeVisHeight(entry);
+                    for (const e of stufen.values())
+                        if (!(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
+                    for (const fol of [false, true])
+                        for (let i = 0; i < 64; i++) {
+                            const dh = (i + 0.5) / 64;
+                            let behalten = false;
+                            for (const [l, e] of stufen) {
+                                const dS = raw * k * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
+                                const dL = raw * k * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
+                                if (core.lodCrossfadeMask(dS, dh, cfgM, l, fol, dL).keep) behalten = true;
+                            }
+                            if (!behalten) {
+                                o.loecher++;
+                                if (!o.beispiel)
+                                    o.beispiel = { raw, stufen: [...stufen.keys()], visH: +visH.toFixed(2), stempel: [...stufen.values()].map((e) => +e.h.toFixed(2)), laub: fol };
+                            }
+                        }
+                }
+                return o;
+            };
+            const fdVor = st._foliageDensityScale;
+            if (core && typeof core.lodCrossfadeMask === "function" && typeof r._lodPerfMul === "function") {
+                const fdMin = A.PERF_FOLIAGE_DENSITY_MIN;
+                res.stufenWahrheit = { voll: lochSweep(1), last: lochSweep(fdMin) };
+                const echt = r._lodTreeVisHeight;
+                r._lodTreeVisHeight = () => 0; // die Gegenprobe: der Leser vor dem 04.10.
+                res.stufenWahrheit.gegenprobe = lochSweep(fdMin);
+                delete r._lodTreeVisHeight;
+                if (r._lodTreeVisHeight !== echt) res.stufenWahrheit.err = "Leser nicht zurückgesetzt";
+                lochSweep(1); // die Stufen auf den echten Leser zurück
+            } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask oder _lodPerfMul fehlt" };
+            st._foliageDensityScale = fdVor;
         } finally {
             st.architectures = savedArchs;
             r._archLODCursor = savedCursor;
@@ -591,6 +670,25 @@ function schattenWahrheit(srcNC) {
     return v;
 }
 
+// DIE PERF-WAHRHEIT (statisch): der Perf-Streck der Wahrnehmungs-Distanz hat ZWEI Leser und EINE Zahl — die CPU-
+// Stufenwahl (_lodPerceptionDistance → _lodPerfMul) und jede Shader-Maske (Auge-Distanz × uLodPerf, je Frame aus
+// _lodPerfMul gespiegelt). Liest nur die CPU ihn, legt sie unter Last eine Stufe um, die die Maske noch ausblendet.
+// Dazu die Sichthöhe: die CPU liest den Foundry-Stempel (_foundrySichtHoehe), den die Maske liest.
+function perfWahrheit(srcNC) {
+    const v = [];
+    const pd = fnBody(srcNC, /_lodPerceptionDistance\(rawDist, visHeight\)\s*/) || "";
+    if (!/this\._lodPerfMul\(\)/.test(pd)) v.push("_lodPerceptionDistance liest den Perf-Streck nicht aus _lodPerfMul");
+    if (!/_lu\.uLodPerf\.value = this\._lodPerfMul\(\);/.test(srcNC))
+        v.push("uLodPerf wird nicht je Frame aus _lodPerfMul gespiegelt");
+    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
+    if (!/const _cd = T\.length\([\s\S]*?\)\.mul\(\s*_lu\.uLodPerf\s*\);/.test(maske))
+        v.push("die Stufen-Maske misst die Auge-Distanz ohne uLodPerf");
+    if (!/let _vCD = _dist\.mul\(_lu\.uLodPerf\);/.test(maske)) v.push("die Billboard-Maske misst ohne uLodPerf");
+    const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry\)\s*\{/) || "";
+    if (!/_foundrySichtHoehe\(/.test(hoehe)) v.push("_lodTreeVisHeight liest den Foundry-Stempel nicht (_foundrySichtHoehe)");
+    return v;
+}
+
 async function main() {
     const P = parseStudio();
     if (!P.ok) {
@@ -631,6 +729,20 @@ async function main() {
         for (const [name, src] of brueche) {
             const v = schattenWahrheit(src);
             check(`Selbst-Test Schatten: „${name}" → das Gesetz nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
+        }
+        check("Selbst-Test Perf: die echte Quelle hält die Perf-Wahrheit", perfWahrheit(nc).length === 0, perfWahrheit(nc).join(" · "));
+        for (const [name, src] of [
+            ["CPU ohne Perf-Helfer", nc.replace("return rawDist * heightFactor * this._lodPerfMul();", "return rawDist * heightFactor;")],
+            ["kein Frame-Spiegel", nc.replace("_lu.uLodPerf.value = this._lodPerfMul();", "")],
+            ["Maske ohne Perf", nc.replace(/const _cd = T\.length\(([\s\S]*?)\)\.mul\(\s*_lu\.uLodPerf\s*\);/, "const _cd = T.length($1);")],
+            ["Billboard ohne Perf", nc.replace("let _vCD = _dist.mul(_lu.uLodPerf);", "let _vCD = _dist;")],
+            [
+                "Sichthöhe aus dem Grammatik-Bauplan",
+                nc.replace("return this._foundrySichtHoehe(preset, entry.seed, s, this._artifactStudioOv(entry));", "return 0;"),
+            ],
+        ]) {
+            const v = perfWahrheit(src);
+            check(`Selbst-Test Perf: „${name}" → die Wahrheit nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
         }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
@@ -709,6 +821,8 @@ async function main() {
             /uLodD0\.value = _D\.thresh01/.test(anazhNC)
     );
 
+    const pw = perfWahrheit(anazhNC);
+    check("PERF-WAHRHEIT: CPU-Stufenwahl und jede Maske lesen denselben Perf-Streck und dieselbe Sichthöhe", pw.length === 0, pw.join(" · "));
     const sw = schattenWahrheit(anazhNC);
     check(
         "SCHATTEN-WAHRHEIT: Masken vom Auge · kein opacityNode-Ausschnitt an Werfern · Zwilling L0-gestempelt",
@@ -854,6 +968,22 @@ async function main() {
     } else if (out && !out.err) {
         check("Z (Stufen-Zensus) lief", false, "zensus fehlt");
     }
+    const SW = out && out.stufenWahrheit;
+    if (SW && !SW.err) {
+        const z = (o) => `${o.proben} Proben · Löcher ${o.loecher} · Stempel≠CPU ${o.stempelUngleich} · Perf ×${o.perf}${o.beispiel ? " · z. B. " + JSON.stringify(o.beispiel) : ""}`;
+        check(
+            "STUFEN-WAHRHEIT: die CPU-Sichthöhe IST der Fassaden-Stempel jeder residenten Stufe (L0 = L1 = Höhen-Stufe)",
+            SW.voll.proben >= 8 && SW.voll.stempelUngleich === 0 && SW.last.stempelUngleich === 0,
+            z(SW.voll)
+        );
+        check("STUFEN-WAHRHEIT: kein Loch über den Sweep (volle Leistung)", SW.voll.loecher === 0, z(SW.voll));
+        check("STUFEN-WAHRHEIT: kein Loch unter Last (Perf-Streck in CPU UND Maske)", SW.last.proben >= 8 && SW.last.loecher === 0, z(SW.last));
+        check(
+            "STUFEN-WAHRHEIT Gegenprobe: der alte Leser (Sichthöhe 0) zeigt Löcher — die Probe sieht den Geist",
+            SW.gegenprobe.loecher > 0,
+            z(SW.gegenprobe)
+        );
+    } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
