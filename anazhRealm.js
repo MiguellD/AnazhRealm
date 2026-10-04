@@ -84421,9 +84421,6 @@ class AnazhRealm {
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
             // Stack geloggt, die Welt läuft weiter (der Headless-Pump fängt selbst ab — sieht den Freeze nie).
             try {
-                // ### FPS aktualisieren ###
-                this.updateFps(delta);
-
                 // Foundry so FRÜH wie möglich anwerfen: das Studio-iframe lädt ~1–2 s, und `_ensureAssetFoundry`
                 // entstünde sonst erst lazy beim ersten Foundry-Baum (`_foundryRewarmColdTrees` liest `_foundry`,
                 // erzeugt es nicht). Billig (nur iframe); das Gate (foundry-aus → null, headless-Null → No-op)
@@ -84628,11 +84625,16 @@ class AnazhRealm {
                 this._kernPflichtWand();
                 // Feld-Cull: pro-Instanz-GPU-Urteil der schwersten Scatter-Familien — die Compute-Pässe laufen VOR
                 // dem Render (Kompaktierung + instanceCount in den Indirect-Puffer), der Draw liest GPU-seitig.
-                this._feldCullTick();
-                _pt = performance.now();
-                this._loopShadowUpdate();
-                this._loopRender(currentTime);
-                this._perfSenseLap("render", _pt);
+                // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
+                // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (_gpuLeineFrei).
+                if (this._gpuLeineFrei()) {
+                    this._feldCullTick();
+                    _pt = performance.now();
+                    this._loopShadowUpdate();
+                    this._loopRender(currentTime);
+                    this._perfSenseLap("render", _pt);
+                    this._gpuLeineAnlegen();
+                }
             } catch (err) {
                 // Ein Frame-Fehler erstarrt die Welt NICHT mehr (V18.278) — abfangen, loggen, weiter.
                 this._loopErrorBoundary(err);
@@ -84640,7 +84642,13 @@ class AnazhRealm {
 
             // Frame-Ende: Perf-Sense falten (EWMA) + PID-Regler treiben; frameMs = delta·1000 (fängt auch den
             // Block-Spike eines Sync-Builds). LÄUFT IMMER, auch nach einem abgefangenen Frame-Fehler.
-            this._perfSenseFoldFrame(delta * 1000, delta);
+            // Unter der GPU-Leine zählt der Abstand zwischen GERENDERTEN Frames — der Regler, das HUD und der Flugschreiber
+            // sähen sonst den 60-Hz-Takt der Simulation, wo die GPU weniger Bilder schafft.
+            const _fms = this._gpuLeineFrameMs(t, delta * 1000);
+            if (_fms != null) {
+                this.updateFps(_fms / 1000);
+                this._perfSenseFoldFrame(_fms, _fms / 1000);
+            }
             // Ingest-Takt ebenfalls auf der LÄUFT-IMMER-Seite: im try-Block hungerte ein persistenter
             // Phasen-Fehler den Drain für immer aus. Sekunden-normalisiert: `delta` (s) treibt eine
             // fps-unabhängige Freigabe-Rate (gedeckelt) — die Welt lädt mit der Wanduhr, nicht der Framerate.
@@ -84666,6 +84674,56 @@ class AnazhRealm {
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
         this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
+    }
+
+    // ═══ DIE GPU-LEINE ═══
+    // WebGPU lässt die CPU beliebig viele Frames vorauslaufen: gemessen 04.10. (echte GPU, Radeon 890M, Mess-Wiese,
+    // Regler voll) war ein Frame erst 600 ms nach dem CPU-Ende auf der GPU fertig (≈ 10 Frames in der Schlange) —
+    // jede Eingabe sah der Spieler 0,6 s später. Die Leine hält höchstens GPU_FRAMES_IM_FLUG Frames unterwegs: ist
+    // sie gespannt, rechnet der Takt (Simulation, Eingabe, Streaming), schickt aber nichts an die GPU. Der EINE
+    // Zähler lebt an diesem Chokepoint (Frei-Prüfung vor dem Render, Anmelden nach den Submits des Frames).
+    // Headless (kein Device): immer frei, byte-alt.
+    _gpuLeineQueue() {
+        const r = this.state.renderer;
+        return r && !r._isHeadlessNull && r.backend && r.backend.device ? r.backend.device.queue : null;
+    }
+    _gpuLeineFrei() {
+        const L =
+            this._gpuLeine ||
+            (this._gpuLeine = { imFlug: 0, gerendert: 0, ausgesetzt: 0, letzterRenderMs: null, versuch: false });
+        L.versuch = false;
+        if (this._gpuLeineQueue() && L.imFlug >= AnazhRealm.GPU_FRAMES_IM_FLUG) {
+            L.ausgesetzt++;
+            return false;
+        }
+        L.versuch = true;
+        return true;
+    }
+    _gpuLeineAnlegen() {
+        const L = this._gpuLeine;
+        if (!L) return;
+        L.gerendert++;
+        const q = this._gpuLeineQueue();
+        if (!q) return;
+        L.imFlug++;
+        const los = () => {
+            L.imFlug = Math.max(0, L.imFlug - 1);
+        };
+        try {
+            q.onSubmittedWorkDone().then(los, los);
+        } catch (_e) {
+            los();
+        }
+    }
+    // Der Frame-Takt für Perf-Sinn, HUD und Flugschreiber: der Abstand zwischen GERENDERTEN Frames (null = der Takt
+    // hat nicht gerendert). Ein Frame-Fehler nach der Frei-Prüfung zählt als Versuch — der Regler atmet weiter.
+    _gpuLeineFrameMs(nowMs, deltaMs) {
+        const L = this._gpuLeine;
+        if (!L) return deltaMs;
+        if (!L.versuch) return null;
+        const vor = L.letzterRenderMs;
+        L.letzterRenderMs = nowMs;
+        return vor == null ? deltaMs : Math.max(0.001, nowMs - vor);
     }
 
     // Die EINE Fehler-Grenze des ewigen Loops: ein Frame-Throw landet hier statt den Loop zu brechen —
@@ -86877,7 +86935,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.518.0";
+AnazhRealm.VERSION = "18.519.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -90797,6 +90855,9 @@ AnazhRealm.SCHATTEN_FERN_FAKTOR = 1.8;
 // gibt sie unter Render-Last früh nach; 0.8 ist ein sichtbarer, aber nicht überstrahlender Pegel.
 AnazhRealm.PERF_GODRAY_MAX = 0.8;
 AnazhRealm.PERF_TARGET_MS = 17;
+// DIE GPU-LEINE (_gpuLeineFrei): höchstens so viele Frames dürfen zugleich auf der GPU unterwegs sein — mehr ist nur
+// Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
+AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
 // Abstand UNTER der Decke liegt (17 − 4 = 13 ms ≈ 77 fps). Das Totband [13..17 ms] ist die
 // Lunge des Systems: dazwischen hält der Regler → fps ruht über 60 statt am 59er-Anschlag.
