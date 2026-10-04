@@ -51748,16 +51748,16 @@ class AnazhRealm {
         return "baum_karst";
     }
 
-    // V18.225 — die Spezies-Wahl pro SCHICHT (Plan §13 „5 Strata"). Canopy nutzt
-    // den Baum-Picker; Understory verteilt Strauch/Kraut/Bodenflora nach Feld
-    // (feucht → Farn, lebendig → Blume, sonst Hazel); Streu ist Totholz.
+    // V18.225 — die Spezies-Wahl pro SCHICHT. Canopy nutzt den Baum-Picker; Understory verteilt
+    // Strauch/Kraut/Bodenflora nach Feld (feucht → Farn, lebendig → Blume, sonst Hazel); Fels nach Hash.
+    // Die Streu-Schicht „litter" (→ baum_totholz) fiel W1 final: das Studio hat keinen Totholz-Körper, sie
+    // zeichnete eine belaubte 21-m-Eiche — Totholz kommt als Studio-Art (Welle Waldboden), nie als Alias.
     _scatterSpeciesForLayer(kind, lebendig, moisture, hash) {
         if (kind === "under") {
             if (moisture > 0.55) return "farn_busch"; // Kraut-Stratum (feuchte Senken)
             if (lebendig > 0.5) return "blume_gross"; // Bodenflora (üppige Lichtungen)
             return "busch_hazel"; // Strauch-Stratum (Standard-Understory)
         }
-        if (kind === "litter") return "baum_totholz"; // Streu-Stratum (gefallenes Holz)
         if (kind === "rock") {
             // V18.227 (Ω-OPSIS Säule II Ω-O5) — Fels-Stratum: meist Kiesel, an
             // exponierten Graten gelegentlich ein grösserer Felsbrocken (hash-
@@ -52007,8 +52007,8 @@ class AnazhRealm {
         const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
-        // V18.225 — die FÜNF Strata über drei Pässe (Canopy · Understory ·
-        // Streu). Jeder Pass sein eigenes Zell-Raster + Cap. Die Pässe teilen
+        // V18.225 — die Strata über drei Pässe (Canopy · Understory · Fels).
+        // Jeder Pass sein eigenes Zell-Raster + Cap. Die Pässe teilen
         // die gebackenen Felder + die Bitmask + die HISM-Gruppen.
         const layers = SC.layers || [
             {
@@ -52322,7 +52322,7 @@ class AnazhRealm {
             // „Bäume GLOBAL instanziert, NUR der Boden gekachelt" — die tree-Schicht
             // geht auf ALLEN LODs global (wenige große Gruppen statt N Regionen ×
             // Varianten × Leaves; tragbar, weil A+C die Gruppen-Zahl gesenkt haben).
-            // Boden-Schichten (under/litter/rock) BLEIBEN region-gekachelt — sie
+            // Boden-Schichten (under/rock) BLEIBEN region-gekachelt — sie
             // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
             // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1) — der Dither-Wal fällt.
             // MESSGRUND (V18.481-Trace): 7 anonyme Fern-Batches, 1188 Tris/Instanz,
@@ -70163,9 +70163,11 @@ class AnazhRealm {
         const AFFINITY_FLOOR = 0.18;
         // Kandidaten: alle Baumarten lesen dieselben Tags (holz+laub) → die Verteilung emergiert aus aff² ohne
         // Affinitäts-Verschiebung; die Variante (jung/normal/alt) wird seed-deterministisch NACH dem Sieg
-        // gewählt. baum_totholz ist eine deklarierte Tag-Variation (form-begründet); karst klettert Klippen
-        // (slopeMax 1.6). Büsche stehen NICHT hier — sie spawnen am Slot, wenn der Baum scheitert (sonst
-        // verschöbe ihre Tag-Drift die Baum-Verteilung).
+        // gewählt. karst klettert Klippen (slopeMax 1.6). Büsche stehen NICHT hier — sie spawnen am Slot, wenn
+        // der Baum scheitert (sonst verschöbe ihre Tag-Drift die Baum-Verteilung). baum_totholz fiel W1 aus den
+        // Kandidaten: ein Baum-Sieg setzt hier keinen Baum (Wald-Marker, Bäume pflanzt `_forestPlantChunk`), gezeichnet
+        // hat Totholz nur die Streu-Schicht litter — als belaubte Alias-Eiche (das Studio hat keinen Totholz-Körper).
+        // Es kehrt als Studio-Art der Welle Waldboden zurück (roadmap §0.reste).
         const candidates = [
             "baum_eiche",
             "baum_kiefer",
@@ -70173,7 +70175,6 @@ class AnazhRealm {
             "baum_erle",
             "baum_buche",
             "baum_tanne",
-            "baum_totholz",
             "baum_karst",
             "stein_block",
             "kristall_geode",
@@ -70264,8 +70265,7 @@ class AnazhRealm {
         const probe = (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2;
         // Wald-Dichte: Bäume sind in lebendig-hohen Regionen VIEL wahrscheinlicher → echte Wälder aus den
         // bestehenden, abbaubaren Bäumen (kein paralleles Deko-System); getragen von HISM-Instancing,
-        // Lazy-Collision (< 40 m) und Distanz-Culling. Felsen/Geoden/Glutbrunnen bleiben spärliche Landmarken;
-        // baum_totholz (lebendig↓) bleibt in trockenen Lücken stehen.
+        // Lazy-Collision (< 40 m) und Distanz-Culling. Felsen/Geoden/Glutbrunnen bleiben spärliche Landmarken.
         const TREE_NAMES = new Set([
             "baum_eiche",
             "baum_kiefer",
@@ -70273,7 +70273,6 @@ class AnazhRealm {
             "baum_erle",
             "baum_buche",
             "baum_tanne",
-            "baum_totholz",
             "baum_karst", // V18.216 — Klippen-Baum, derselbe Wald-Masken-Boost
         ]);
         const isTree = TREE_NAMES.has(bestName);
@@ -88268,7 +88267,6 @@ AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 45000;
     };
     const _ecoTree = _eco("tree", { floor: 0.1, scaleBase: 0.6, scaleVar: 1.5, slopeMax: 1.45 });
     const _ecoUnder = _eco("under", { floor: 0.06, scaleBase: 0.8, scaleVar: 0.5, slopeMax: 1.0 });
-    const _ecoLitter = _eco("litter", { floor: 0.04, scaleBase: 0.8, scaleVar: 0.4, slopeMax: 1.25 });
     const _ecoRock = _eco("rock", { floor: 0.02, scaleBase: 0.6, scaleVar: 1.0, slopeMax: 1.6 });
     // V18.491.118 — ecology from `__phytoCore.SCATTER_STRATUM`; caps stay Host.
     AnazhRealm.SCATTER = Object.freeze({
@@ -88283,9 +88281,9 @@ AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 45000;
         densityScale: 1.5, // Multiplikator auf die lebendig-getriebene Wahrscheinlichkeit
         slopeMax: _ecoTree.slopeMax, // Steilhänge tragen weniger Scatter (Fels-Zone)
         maxRegionsPerFrame: 1, // bounded: max 1 Region/Frame generieren (Plan §5)
-        // Mehrschichtige Dichte: fünf Vegetations-Strata — Canopy (Bäume) + Strauch + Kraut + Bodenflora +
-        // Streu (Totholz); Strauch/Kraut/Blume teilen den feineren under-Pass, jeder Pass mit eigenem
-        // Zell-Raster + Cap. Region = 256 m ≈ 35 Chunks.
+        // Mehrschichtige Dichte: Canopy (Bäume) + Strauch + Kraut + Bodenflora + Fels; Strauch/Kraut/Blume
+        // teilen den feineren under-Pass, jeder Pass mit eigenem Zell-Raster + Cap. Region = 256 m ≈ 35 Chunks.
+        // Die Streu-Schicht (litter → baum_totholz, eine belaubte Eiche als „Totholz") fiel W1 final.
         layers: Object.freeze([
             // Baum-Schicht: wenige, große, varianz-reiche Bäume (hohes scaleVar → ragende Alte + junge) statt
             // vieler dünner Stacheln; der niedrige cap hält offenes Waldland (Terrain/Fels/Blumen sichtbar).
@@ -88314,19 +88312,6 @@ AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 45000;
                 scaleVar: _ecoUnder.scaleVar,
                 slopeMax: _ecoUnder.slopeMax,
                 kind: "under",
-                promotable: false,
-            }),
-            // Streu: Totholz am Boden (2.8m-Zelle, sparse). V18.267: 250→150 (mit-
-            // entlastet — Totholz war der 2.-grösste gewachsene Render-Posten).
-            Object.freeze({
-                name: "litter",
-                cellM: 2.8,
-                cap: 22, // V18.303 40→22 (das Laub = 90 % der GPU-Last); V18.296 150→40
-                floor: _ecoLitter.floor,
-                scaleBase: _ecoLitter.scaleBase,
-                scaleVar: _ecoLitter.scaleVar,
-                slopeMax: _ecoLitter.slopeMax,
-                kind: "litter",
                 promotable: false,
             }),
             // FELS: Kiesel + Brocken, wo der Fels durchbricht (rockExposure aus slope+trocken+kahl). Eigener

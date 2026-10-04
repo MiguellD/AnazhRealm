@@ -1566,7 +1566,6 @@
     const SCATTER_STRATUM = {
         tree: { floor: 0.1, scaleBase: 0.6, scaleVar: 1.5, slopeMax: 1.45 },
         under: { floor: 0.06, scaleBase: 0.8, scaleVar: 0.5, slopeMax: 1.0 },
-        litter: { floor: 0.04, scaleBase: 0.8, scaleVar: 0.4, slopeMax: 1.25 },
         rock: { floor: 0.02, scaleBase: 0.6, scaleVar: 1.0, slopeMax: 1.6 },
     };
     function scatterStratum(name) {

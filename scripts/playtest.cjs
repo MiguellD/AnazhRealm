@@ -36001,7 +36001,9 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             out.laubIsDunkel = laubG < 0x80; // gedämpftes Grün (war 0x8b → jetzt < 0x80)
         }
 
-        // ─── (W9) baum_totholz in TREE_NAMES + candidates ────────────
+        // ─── (W9) W1: baum_totholz ist aus TREE_NAMES + candidates GEFALLEN ───
+        // Totholz zeichnete nur die Streu (belaubte Alias-Eiche); es kehrt als Studio-Art (Welle Waldboden) zurück
+        // (roadmap §0.reste).
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
         out.candidatesIncludeTotholz = /["']baum_totholz["']/.test(spawnSrc);
 
@@ -36058,8 +36060,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         res.laubIsDunkel === true
     );
     check(
-        "V18.215 (W9) baum_totholz in _vegetationSampleSpawn-candidates (Plan §8.2)",
-        res.candidatesIncludeTotholz === true
+        "W1 (W9) baum_totholz ist aus den _vegetationSampleSpawn-Kandidaten gefallen (Studio-Art Waldboden offen)",
+        res.candidatesIncludeTotholz === false
     );
 }
 
@@ -37167,16 +37169,19 @@ async function checkBandV18224ScatterPromotion(ctx) {
             if (Array.isArray(SC.layers)) {
                 const treeCap = (SC.layers.find((l) => l.name === "tree") || {}).cap || 0;
                 const underCap = (SC.layers.find((l) => l.name === "under") || {}).cap || 0;
-                const litterCap = (SC.layers.find((l) => l.name === "litter") || {}).cap || 0;
+                // W1: die Streu-Schicht litter fiel final (baum_totholz war eine belaubte Alias-Eiche) — die
+                // drei Strata sind Bäume · Understory · Fels.
+                const rockCap = (SC.layers.find((l) => l.name === "rock") || {}).cap || 0;
+                out.litterGefallen = !SC.layers.some((l) => l.name === "litter" || l.kind === "litter");
                 // Die Bäume sind die prominente Substanz (treeCap ≥ underCap); das Understory ist sekundär —
                 // Dichte FPS-bewusst, nicht maximal (dichtes Gestrüpp kostet FPS + Sicht).
                 out.treeProminentRebalance = treeCap >= underCap && treeCap > 0;
-                out.hasThreeStrata = treeCap > 0 && underCap > 0 && litterCap > 0;
+                out.hasThreeStrata = treeCap > 0 && underCap > 0 && rockCap > 0;
                 // Design-Kapazität: FPS-bewusst populiert (nicht mehr „≥150 hunderte")
                 const chunkSpan = 43.2; // _voxelChunkConfig().span
                 const chunksPerRegion = (SC.regionM / chunkSpan) * (SC.regionM / chunkSpan);
                 out.chunksPerRegion = chunksPerRegion;
-                out.designPerChunk = (treeCap + underCap + litterCap) / chunksPerRegion;
+                out.designPerChunk = (treeCap + underCap + rockCap) / chunksPerRegion;
                 out.perChunkActual = out.regionInstanceCount / chunksPerRegion;
             }
             // Die Streu schrieb in HISM-Gruppen (ein Draw-Call pro Variante-Leaf)
@@ -37333,13 +37338,17 @@ async function checkBandV18224ScatterPromotion(ctx) {
         "V18.224/233 (M2) Bäume sind die prominente Substanz (treeCap ≥ underCap, Rebalance)",
         res.treeProminentRebalance === true
     );
-    check("V18.224 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Streu)", res.hasThreeStrata === true);
     check(
-        `V18.224 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`,
+        "V18.224/W1 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Fels), litter ist gefallen",
+        res.hasThreeStrata === true && res.litterGefallen === true
+    );
+    check(
+        `V18.224/W1 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`,
         res.byLayer &&
             Number.isFinite(res.byLayer.tree) &&
             Number.isFinite(res.byLayer.under) &&
-            Number.isFinite(res.byLayer.litter)
+            Number.isFinite(res.byLayer.rock) &&
+            !("litter" in res.byLayer)
     );
     // Die Dichte-Schwellen folgen den FPS-bewusst gesenkten Scatter-Caps — die Welt ist BEWUSST sparsam.
     check(
