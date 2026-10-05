@@ -200,7 +200,7 @@ async function welt() {
             const Z = st.stlZaun;
             if (Z && Z.mesh) senke("siedlung-zaun", Z.mesh, Z.top);
             const nw = st.nahWiese;
-            if (nw) for (const k of nw.kacheln.values()) for (const im of k.meshes || []) senke(im.name || "nahWiese", im, null);
+            if (nw) for (const a of nw.senken.values()) senke(a.name, a.mesh, a.anzahl);
             const ns = st.nahStreu;
             if (ns)
                 for (const a of ns.senken.values()) {

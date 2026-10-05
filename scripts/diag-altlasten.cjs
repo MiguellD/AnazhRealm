@@ -377,6 +377,12 @@ const FORBIDDEN = [
     { token: "FeldCull", fiel: "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern" },
     { token: "FELD_CULL", fiel: "05.10." },
     { token: "IndirectStorageBufferAttribute", fiel: "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt" },
+    // DIE NAH-WIESE IST EIN SATZ (Welle 6, 05.10.): je Kachel × Vorlage eine InstancedMesh (56 Meshes, 20 Befehle, die
+    // Kachel cullte nur als Ganzes, die Stufe hing an der Kachel-Mitte) — jetzt EINE Senke je Vorlage × Stufe × Teil,
+    // gefüllt vom Sicht-Satz je Büschel (`_nahWieseSicht`). Der Kachel-Mesh-Bau und sein Entsorgen kehren nie zurück.
+    { token: "_nahWieseKachelMeshes", fiel: "Welle 6 — die Senken der Nah-Wiese (_nahWieseSenken, _nahWieseSicht)" },
+    { token: "_nahWieseKachelEntsorgen", fiel: "Welle 6 — die Kachel trägt nur Daten (_nahWieseKachelFaellt)" },
+    { token: '"nahWiese:" + key', fiel: "Welle 6 — kein Mesh je Kachel (nahWiese:<v>:L<stufe>:<teil>)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
