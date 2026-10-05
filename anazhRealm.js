@@ -33109,8 +33109,9 @@ class AnazhRealm {
     }
 
     // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
-    // die Stufe je Art aus der Kachel-Distanz (≤ stufe0 die Armlänge L0, sonst die leichteste deklarierte Stufe —
-    // `_foundryDeclaredStage`, mit Hysterese), das Rand-Band dünnt über die Würfel-Ordnung (Viertel-Stufen), außerhalb
+    // die Stufe je PFLANZE aus ihrer Distanz zur Kamera (die Armlänge `stufe0` trägt L0, sonst die leichteste
+    // deklarierte Stufe — `_foundryDeclaredStage`, mit Hysterese, `_nahStreuArmlaenge`), das Rand-Band dünnt über die
+    // Würfel-Ordnung (Viertel-Stufen), außerhalb
     // fällt die Kachel. Ein Chunk-Neubau (Edit) baut die betroffenen Kacheln neu, eine Ernte blendet aus, das
     // Nachwachsen baut neu. Wartet eine Art auf ihr Studio-Asset, wartet die Kachel (die Anfrage läuft nah zuerst).
     // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
@@ -33145,7 +33146,10 @@ class AnazhRealm {
                 const tz = tcz + dz;
                 const d = Math.hypot((tx + 0.5) * NS.kachel - cam.x, (tz + 0.5) * NS.kachel - cam.z);
                 if (d > NS.radius + NS.kachel * 0.71) continue;
-                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
+                // die kürzeste Distanz Kamera → Kachel-Rechteck: reicht der Armlängen-Kreis hinein?
+                const ex = Math.max(tx * NS.kachel - cam.x, 0, cam.x - (tx + 1) * NS.kachel);
+                const ez = Math.max(tz * NS.kachel - cam.z, 0, cam.z - (tz + 1) * NS.kachel);
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d, imKreis: Math.hypot(ex, ez) <= NS.stufe0 + 1 });
             }
         }
         const gewollt = new Set(wunsch.map((w) => w.key));
@@ -33160,14 +33164,12 @@ class AnazhRealm {
         ns.offen = 0;
         for (const w of wunsch) {
             let k = ns.kacheln.get(w.key);
-            const war0 = !!(k && k.nah);
-            const nah = war0 ? w.d <= NS.stufe0 + 1 : w.d <= NS.stufe0 - 1 || (!k && w.d <= NS.stufe0);
             // Je Art ihr Rand-Band vor ihrer Weite (Viertel-Stufen der Würfel-Ordnung): kleine Arten dünnen früher aus.
             const anteile = arten.map(
                 (A) => Math.ceil(Math.max(0, Math.min(1, (A.weite - w.d) / NS.rand + 0.5)) * 4) / 4
             );
-            const zustand = (nah ? "L0" : "Lf") + "|" + anteile.join(",");
-            if (k && k.zustand === zustand) continue;
+            const rand = anteile.join(",");
+            if (k && k.zustand === this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand) continue;
             if (gebaut >= NS.kachelnJeTakt || (deadline && performance.now() > deadline)) {
                 ns.offen++;
                 continue;
@@ -33178,9 +33180,17 @@ class AnazhRealm {
                     ns.offen++;
                     continue;
                 }
-                k = { key: w.key, items: satz.items, chunks: satz.chunks, senken: new Set(), zustand: null, nah };
+                k = {
+                    key: w.key,
+                    items: satz.items,
+                    chunks: satz.chunks,
+                    senken: new Set(),
+                    zustand: null,
+                    nahZahl: 0,
+                };
                 ns.kacheln.set(w.key, k);
             }
+            const zustand = this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand;
             // Je (Art, Gestalt, Stufe) die Studio-Teile — fehlt eines (Anfrage läuft), wartet die ganze Kachel; jede
             // fehlende Gruppe fragt im selben Lauf an (die Anfragen reisen parallel, nah zuerst).
             const gruppen = new Map();
@@ -33192,7 +33202,7 @@ class AnazhRealm {
                 if (ernte && ernte.has(it.id)) continue;
                 const art = arten[it.art];
                 const v = this._foundryVariantFor(it.same, art.id);
-                const stufe = this._foundryDeclaredStage(art.id, nah ? 0 : 2);
+                const stufe = this._foundryDeclaredStage(art.id, it.nah ? 0 : 2);
                 const gk = `${it.art}:${v}:${stufe}`;
                 if (fehlend.has(gk)) continue;
                 let g = gruppen.get(gk);
@@ -33222,10 +33232,32 @@ class AnazhRealm {
             this._nahStreuKachelEntsorgen(k);
             this._nahStreuBloecke(k, gruppen);
             k.zustand = zustand;
-            k.nah = nah;
             gebaut++;
         }
         return gebaut;
+    }
+
+    // DIE ARMLÄNGE JE PFLANZE (Integration 05.10.): L0 trägt jede Pflanze im Kreis `stufe0` um die Kamera (Eintritt
+    // ≤ stufe0, Austritt > stufe0 + 0,75 m, horizontal), gleich in welcher Kachel sie steht. Bis 05.10. entschied die
+    // Kachel-MITTE (4-m-Kachel, L0 erst ab ≤ 2,5 m Mitten-Distanz): die Nachbar-Kachel zeigte ihren Farn auf 0,1 m als
+    // L1-Band (Prüfer Waldboden, Befund 5). Setzt `it.nah` und gibt die Signatur der L0-Pflanzen zurück — ändert sie
+    // sich, baut die Kachel neu (der Zustand der Kachel trägt sie). Eine Kachel jenseits des Kreises ohne L0 kostet nichts.
+    _nahStreuArmlaenge(k, cam, imKreis) {
+        if (!imKreis && !k.nahZahl) return "";
+        const NS = AnazhRealm.NAH_STREU;
+        let sig = "";
+        let n = 0;
+        for (let i = 0; i < k.items.length; i++) {
+            const it = k.items[i];
+            const d = imKreis ? Math.hypot(it.x - cam.x, it.z - cam.z) : Infinity;
+            it.nah = it.nah ? d <= NS.stufe0 + 0.75 : d <= NS.stufe0;
+            if (it.nah) {
+                sig += i + ",";
+                n++;
+            }
+        }
+        k.nahZahl = n;
+        return sig;
     }
 
     // Eine Art, deren Stufe das Studio nicht bauen kann (leere Antwort), fehlt im Bild — LAUT: einmal je (Art, Stufe)
