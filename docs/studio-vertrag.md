@@ -179,7 +179,11 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
     Boden-Rand reichen (R1), S7 baut sie neu (unten);
   - **Rinde:** so W5 — die Stränge unter 0,03–0,05·trunkR fielen samt den Zweigen, die Karten trugen (R2: Fichte
     656 von 1406, Mammut 541 von 905 Karten ohne Zweig); S7 (unten);
-  - **Strauch:** seine Nahstufe ist `shrub[1]` (11,6k ≤ 12k, unverändert).
+  - **Strauch:** seit Welle 6 (05.10.) eine Kette wie der Baum (`kindStages.shrub` [0, 1, 2]): die Nahstufe
+    `shrub[0]` (bis d0 12 m) ist die alte Stufe Byte für Byte (Samen 1 8 612, Samen 7 7 096 Dreiecke — der Golden
+    `strauch-s7-L0` trägt die Fingerabdrücke des alten `strauch-s7-L1`) und trägt die Kronen-Zeile beider Stufen;
+    die Mittelstufe `shrub[1]` (12–26 m) dieselben Karten, das Holz ab 0,35·trunkR als Vierkant auf jedem 3. Ring
+    (1 020 / 1 040 ≤ 1 100); beide werfen die Mittelstufe. Mess-Wiese (Band-Klasse busch): 121k → 34k Dreiecke.
   Gebogene Normalen (Kronen-Normale, Vorderseite nach außen) wurden im Lab gemessen und verworfen: der
   Doppelseiten-Stoff ohne Durchlicht färbte die Unteransicht dunkel (8-m-Blick unter der Eiche L* 23,2 → 14,0)
   und setzte Glanzspitzen. Das Soll-Bild braucht höchstens 17,3k (Tanne s2, Eiche s2 17,2k): **`tree[0]` =

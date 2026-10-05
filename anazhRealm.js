@@ -29061,7 +29061,7 @@ class AnazhRealm {
             // keep Stufe L0 (lod=0): Laub keep = clamp(2f0−1) < dh · Rinde keep = f0 < dh.
             const _keep0 = _foliage ? T.step(_f0.mul(2.0).sub(1.0).clamp(0.0, 1.0), _dh) : T.step(_f0, _dh);
             // keep Stufe L1 (lod=1): (Laub min(2f0,1) ≥ dh · Rinde f0 ≥ dh) UND f1o < dh. Die einzige Nah-Stufe einer
-            // Art ohne L0 (aLodLevel 3, der Strauch) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
+            // Art ohne L0 (aLodLevel 3) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
             const _fadeIn = _foliage ? T.step(_dh, _f0.mul(2.0).min(T.float(1.0))) : T.step(_dh, _f0);
             const _keep1 = _fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh));
             // Stufen-Wahl per aLodLevel (1 → keep0 · 2 → keep1) + das vLod>0.5-Gate (0 → ungemaskt).
@@ -68861,11 +68861,11 @@ class AnazhRealm {
                     typeof this._foundryPresetIsTree === "function" &&
                     this._foundryPresetIsTree(stage.preset)
                 );
-                // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Der Strauch
-                // ([1, 2]) hat keine: seine L1 ist nah die volle Gestalt (Studio: nah stages[0], fern stages[letzte]),
-                // sie blendet nie ein (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 %
-                // durchsichtig, die L0-Hälfte der Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) —
-                // ungemaskt stand sie dort doppelt mit dem Billboard und sprang am Bandende weg.
+                // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Eine Art ohne
+                // L0 (bis Welle 6 der Strauch, [1, 2]) trägt nah die volle Gestalt in der L1, sie blendet nie ein
+                // (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 % durchsichtig, die L0-Hälfte der
+                // Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) — ungemaskt stand sie dort doppelt mit
+                // dem Billboard und sprang am Bandende weg. Seit Welle 6 trägt der Strauch die Kette wie der Baum.
                 const _aLodVal =
                     _isTree && _lodS === 0
                         ? 1

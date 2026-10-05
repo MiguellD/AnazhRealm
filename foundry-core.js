@@ -208,7 +208,8 @@ const PORTAL_RENDER_CONFIG = {
     // = die Membership-Hysterese (M); `ref` = die Referenz-Sichthoehe (uLodRef).
     // kindStages (08.07.) — DIE STUFEN-WAHRHEIT JE ART ALS DATEN (die eine Quelle fuer den
     // Studio-Wald UND jeden Empfaenger): welche buildInstance-Stufen eine Art TRAEGT und
-    // NUTZT. Baeume die volle Kaskade (0/1 + Billboard-Atlas jenseits d1); Gras + Strauch
+    // NUTZT. Baeume und seit Welle 6 der Strauch die volle Kaskade (0/1 + Billboard-Atlas jenseits d1; die zwei
+    // Strauch-Gitter bauen nach dem Rezept der Stufe 1, budget.shrub); Gras
     // ZWEISTUFIG (nah = reiche Stufe, fern = die breiten-/formkompensierte billige — die
     // Rezepte tragen die Kompensation: Gras K=5/3 Halme mit wMul 1.7/4.6); Fels EINSTUFIG
     // (Kleinst-Deko — eine Distanz-Stufe waere Deko ohne Wert), die Blume seit 04.10. [0, 2]
@@ -232,7 +233,7 @@ const PORTAL_RENDER_CONFIG = {
         // jeher gebaut, nur nie deklariert — die Nah-Streu dient sie jenseits der Armlänge statt der L0 (~2 500).
         kindStages: {
             tree: [0, 1, 2],
-            shrub: [1, 2],
+            shrub: [0, 1, 2],
             grass: [1, 2],
             flower: [0, 2],
             rock: [0],
@@ -309,8 +310,17 @@ const PORTAL_RENDER_CONFIG = {
             // Dreiecke der Klingen (8 820 → 630) an die Ruten zurueck (Strauch-L1 11 572 → 7 442, Samen 7). Zweiter Schnitt
             // (05.10., Blatt-Mass): das Atlas-Blatt ist halb so lang — die Karte waechst (2,1 → 3,0), nur der Anteil
             // dichte.laub der Blattstellen traegt eine (315 → 142 Karten): Hasel-Blatt 0,036 → 0,051 m, Bild-Deckung 1,10.
+            // DIE STRAUCH-KETTE (Welle 6, 05.10., Lehre 19): die eine Gitter-Stufe trug das Reisig von 0 bis 26 m — 93 % ihrer
+            // Dreiecke (Samen 1: 8 328 Rinde + 284 Karten), an der Mess-Wiese 7 Straeucher auf 9–29 m, je 8 612 Dreiecke im
+            // Hauptbild UND in der Kaskade (121k gegen das Band 40k). Jetzt zwei Gitter-Stufen nach dem Rezept der Stufe 1:
+            // shrub[0] die Nah-Stufe (bis d0 12 m) — die alte Stufe Byte fuer Byte, ihre Zeile traegt die KRONE (Kante und
+            // Dichte der Karten) fuer beide; shrub[1] die Mittel-Stufe (12–26 m) — dieselben Karten, das Holz erst ab
+            // schnitt 0,35·trunkR (Welt ~1,9 cm: auf 12 m misst ein Pixel 1,7 cm, das duennere Reisig liegt darunter und
+            // hinter der Blatt-Masse), jeder Strang ausser dem Stamm-Kern (rute 0,99) Vierkant auf jedem 3. Ring: Samen 1
+            // 8 612 → 1 020 Dreiecke, Samen 7 7 096 → 1 040. Beide werfen die Mittel-Stufe (schatten 1: die Nah-Stufe wirft
+            // ihren Zwilling wie der L0-Baum); das Dither-Band zwischen ihnen tauscht nur das Holz.
             shrub: {
-                1: {
+                0: {
                     tris: 12000,
                     draws: 2,
                     schatten: 1,
@@ -319,6 +329,7 @@ const PORTAL_RENDER_CONFIG = {
                     schnitt: 0.05,
                     rute: 0.15,
                 },
+                1: { tris: 1100, draws: 2, schatten: 1, schnitt: 0.35, rute: 0.99 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
@@ -1344,25 +1355,33 @@ function emitTree(P) {
      sind jetzt ueber L0/L1/L2 UND das Billboard dasselbe Individuum. */
     // Der Radius-Schnitt der L1 (H2/H5, nach dem Wuchs): Laub 0,05·trunkR; Konifere und Trauerwuchs 0,08 (ihre
     // duennen Aeste liegen unter den Nadel-Karten bzw. hinter dem Blatt-Vorhang); der Strauch liest seinen Schnitt aus
-    // dem Budget (shrub[1].schnitt, 05.10.: das Reisig unter der Blatt-Masse IST sein Nahbild — die Karten-Krone gibt
-    // die Dreiecke der Klingen an die Ruten zurück). Die L2 bleibt, wie sie war.
-    // Unter shrub[1].rute·trunkR ist der Strang Reisig: Vierkant-Roehre (die Radial-Teilung der L2) auf jedem 3. Ring.
-    const _bS1 = PORTAL_RENDER_CONFIG.lod.budget.shrub[1];
+    // dem Budget (shrub[<Stufe>].schnitt, 05.10.: das Reisig unter der Blatt-Masse IST sein Nahbild — die Karten-Krone
+    // gibt die Dreiecke der Klingen an die Ruten zurück). Die L2 bleibt, wie sie war.
+    // Unter shrub[<Stufe>].rute·trunkR ist der Strang Reisig: Vierkant-Roehre (die Radial-Teilung der L2) auf jedem 3. Ring.
+    // DIE STRAUCH-KETTE (Welle 6): beide Gitter-Stufen bauen nach dem Rezept der Stufe 1 (`buildInstance` setzt __lod 1),
+    // `__strauchZeile` nennt die Holz-Zeile (0 = die Nah-Stufe, 1 = die Mittel-Stufe; ohne Wahl — der Labor-Knopf L1 —
+    // die Mittel-Stufe); die Krone (Kante und Dichte der Karten) liest jede aus shrub[0]: dieselben Karten in beiden.
     const _strauchRute = P.kind === "shrub" && __lod === 1;
+    const _sZ = _strauchRute ? (__strauchZeile === 0 ? 0 : 1) : null;
+    const _bS = _strauchRute ? PORTAL_RENDER_CONFIG.lod.budget.shrub[_sZ] : null,
+        _bSK = _strauchRute ? PORTAL_RENDER_CONFIG.lod.budget.shrub[0] : null;
     if (
         _strauchRute &&
         !(
-            _bS1 &&
-            _bS1.schnitt > 0 &&
-            _bS1.rute > _bS1.schnitt &&
-            _bS1.rute < 1 &&
-            _bS1.blattKarte > 0 &&
-            _bS1.dichte &&
-            _bS1.dichte.laub > 0 &&
-            _bS1.dichte.laub <= 1
+            _bS &&
+            _bS.schnitt > 0 &&
+            _bS.rute > _bS.schnitt &&
+            _bS.rute < 1 &&
+            _bSK &&
+            _bSK.blattKarte > 0 &&
+            _bSK.dichte &&
+            _bSK.dichte.laub > 0 &&
+            _bSK.dichte.laub <= 1
         )
     )
-        throw new Error("[phyto] lod.budget.shrub[1].schnitt/rute/blattKarte/dichte fehlt (1 > rute > schnitt > 0)");
+        throw new Error(
+            "[phyto] lod.budget.shrub[" + _sZ + "].schnitt/rute oder shrub[0].blattKarte/dichte fehlt (1 > rute > schnitt > 0)"
+        );
     // DIE TRAUER-L1 (05.10.): ihre Peitschen sind Straehnen wie in der L0 — die Bahn jeder belaubten Peitsche wird VOR
     // dem Radius-Schnitt festgehalten (die Peitsche ist duenner als 0,08·trunkR und faellt aus der Rinde; ihre Straehne
     // haengt an der Bahn). Befund (Blick-Tour V18.530, Bild 01; Raycast `f:weide|1|1:2`): die L1 trug schlanke Klingen
@@ -1382,7 +1401,7 @@ function emitTree(P) {
             __lod === 2
                 ? 0.13
                 : P.kind === "shrub"
-                  ? _bS1.schnitt
+                  ? _bS.schnitt
                   : P.conifer || (P.trop || 0) >= 0.55
                     ? 0.08
                     : 0.05;
@@ -1431,11 +1450,11 @@ function emitTree(P) {
         }
     }
     {
-        // Der Strauch traegt in seiner L1 nur den Anteil shrub[1].dichte.laub der Blattstellen als Karte (05.10.: die
-        // Karte misst blattKarte Blatt-Groessen — das Blatt des Atlas ist halb so lang wie gestern, die Karte waechst,
-        // ihre Zahl faellt bei gleicher Bild-Deckung).
+        // Der Strauch traegt in seinen Gitter-Stufen nur den Anteil shrub[0].dichte.laub der Blattstellen als Karte
+        // (05.10.: die Karte misst blattKarte Blatt-Groessen — das Blatt des Atlas ist halb so lang wie gestern, die Karte
+        // waechst, ihre Zahl faellt bei gleicher Bild-Deckung; Welle 6: die Kronen-Zeile shrub[0] fuer Nah- und Mittel-Stufe).
         const lfP = P._lf != null ? P._lf : 1;
-        const lfL = _L0 ? (_trauer ? 1 : _f0) : _strauchRute ? lfP * _bS1.dichte.laub : lfP;
+        const lfL = _L0 ? (_trauer ? 1 : _f0) : _strauchRute ? lfP * _bSK.dichte.laub : lfP;
         if (lfL < 1 && nodes.leaves.length > 3) {
             const L = nodes.leaves,
                 keep = Math.max(3, Math.round(L.length * lfL)),
@@ -1527,7 +1546,7 @@ function emitTree(P) {
         // Das Strauch-Reisig (L1 unter shrub[1].rute·trunkR) duennt wie das Reisig der Baum-L0: jeder 3. Ring.
         if (
             ((_L0 && rings[0].r < nodes.trunkR * _rz.reisig) ||
-                (_strauchRute && rings[0].r < nodes.trunkR * _bS1.rute)) &&
+                (_strauchRute && rings[0].r < nodes.trunkR * _bS.rute)) &&
             rings.length > 2
         )
             rings = rings.filter((_, i) => i % 3 === 0 || i === rings.length - 1);
@@ -1545,7 +1564,7 @@ function emitTree(P) {
         const _roehre =
             _L0 && baseRing.r < nodes.trunkR * _rz.ast
                 ? 1
-                : _strauchRute && baseRing.r < nodes.trunkR * _bS1.rute
+                : _strauchRute && baseRing.r < nodes.trunkR * _bS.rute
                   ? 2
                   : undefined;
         if (rings.length > 1 && baseRing.c[1] < nodes.height * 0.04 && baseRing.r > nodes.trunkR * 0.6) {
@@ -1650,8 +1669,8 @@ function emitTree(P) {
     const _atl = self.__phytoCore;
     // Die L0 liest ihre Zeile (tree[0]) wie die L1 die ihre: Kante der Laub-Karte in Blatt-Groessen, der Nadel-Karte
     // in Nadel-Laengen. Deckung ~ dichte · Kante² (Wahrnehmung ~ n·s², FIX v29).
-    const _bz = _strauchKarte ? _bS1 : _L0 ? _b0 : _b1,
-        _zn = _strauchKarte ? "shrub[1]" : _L0 ? "tree[0]" : "tree[1]";
+    const _bz = _strauchKarte ? _bSK : _L0 ? _b0 : _b1,
+        _zn = _strauchKarte ? "shrub[0]" : _L0 ? "tree[0]" : "tree[1]";
     const _blattKarte = useTexL && !P.conifer ? _bz.blattKarte : 0;
     const _nadelKarte = useTexL && P.conifer ? _bz.nadelKarte : 0;
     if (useTexL && !(P.conifer ? _nadelKarte > 0 : _blattKarte > 0))
@@ -4161,6 +4180,10 @@ var PARAMS_BY_KIND = {
         { id: "droop", lab: "Neigung", min: 0.04, max: 1.35, step: 0.01, def: 0.5, grp: "Halm" },
     ],
 };
+// DIE STRAUCH-ZEILE (Welle 6): Nah- und Mittel-Stufe des Strauchs bauen nach dem Rezept der Stufe 1 (Karten-Krone,
+// Blatt-Aggregation, Ring-Duennung) — was sie trennt, ist ihre Holz-Zeile im Budget (shrub[0] das Reisig bis 0,05·trunkR,
+// shrub[1] die Ruten). `buildInstance` setzt sie je Bau und stellt sie zurueck; null = keine Wahl (emitTree: Mittel-Stufe).
+var __strauchZeile = null;
 function buildInstance(presetId, seed, lod, ov) {
     const sS = subject,
         sSeed = SEED,
@@ -4168,8 +4191,11 @@ function buildInstance(presetId, seed, lod, ov) {
         sLod = __lod,
         sRock = __rockKind,
         sRNG = RNG,
-        sDials = __dials;
-    __lod = lod;
+        sDials = __dials,
+        sZeile = __strauchZeile;
+    const _strauch = !!(PRESETS[presetId] && PRESETS[presetId].kind === "shrub" && lod <= 1);
+    __lod = _strauch ? 1 : lod;
+    __strauchZeile = _strauch ? lod : null;
     SEED = seed;
     CURRENT = presetId;
     RNG = mulberry32(Math.floor(seed) >>> 0);
@@ -4206,6 +4232,7 @@ function buildInstance(presetId, seed, lod, ov) {
     __rockKind = sRock;
     RNG = sRNG;
     __dials = sDials;
+    __strauchZeile = sZeile;
     return g;
 }
 
