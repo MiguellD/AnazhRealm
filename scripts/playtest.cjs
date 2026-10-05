@@ -27825,13 +27825,17 @@ async function checkBandV18133Forage(ctx) {
                 return n;
             };
             const before = countMat();
+            const vorher = r._streuNahBereich(pick.senke, pick.key); // der Block der Kachel in der Senke
+            const nVor = vorher.n;
+            const zahlVor = a.mesh.count;
             const ok1 = r._harvestScatterPick(pick);
             out.harvested = ok1 && countMat() - before === 1;
             out.doubleRejected = r._harvestScatterPick(pick) === false;
-            const m = new window.THREE.Matrix4();
-            const bereich = r._streuNahBereich(pick.senke, pick.key); // der Block der Kachel in der Senke
-            bereich.mesh.getMatrixAt(bereich.start + bereich.ids.indexOf(pick.id), m);
-            out.zeroScaled = Math.abs(m.elements[0]) < 1e-6;
+            // Die Pflanze tritt aus dem Block aus (die Senke bleibt dicht, kein Null-Slot): ihre Identität fehlt, der
+            // Block und die Instanz-Zahl der Senke sinken um eins.
+            const bereich = r._streuNahBereich(pick.senke, pick.key);
+            out.ausgetreten =
+                !!bereich && !bereich.ids.includes(pick.id) && bereich.n === nVor - 1 && a.mesh.count === zahlVor - 1;
             // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) + die Kachel neu (die Pflanze kehrt
             // mit dem nächsten Nah-Streu-Takt zurück).
             const jeKachel = r.state.scatterHarvested.get(pick.key);
@@ -27866,8 +27870,8 @@ async function checkBandV18133Forage(ctx) {
         res.trankKraut
     );
     check(
-        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · Instanz Skala 0 · Doppel-Pflueck abgelehnt) — oder unmessbar",
-        !res.measured || (res.harvested && res.doubleRejected && res.zeroScaled)
+        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt) — oder unmessbar",
+        !res.measured || (res.harvested && res.doubleRejected && res.ausgetreten)
     );
 }
 

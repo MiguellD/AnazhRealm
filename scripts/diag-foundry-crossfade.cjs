@@ -30,7 +30,7 @@
 // thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
 //   IM Band [Schwelle−fade−M, Schwelle+M] hält er Slots in BEIDEN Stufen-Gruppen,
 //   außerhalb in EXAKT einer, NIE 0 — und die SLOT-BILANZ über den ganzen Sweep ist dicht
-//   (Σ liveCount zurück auf die Baseline · je Gruppe next − free.length == liveCount ·
+//   (Σ liveCount zurück auf die Baseline · je Gruppe dicht: count == liveCount, Marke i trägt Slot i ·
 //   kein slotEntry-Rest). Der Sweep läuft SYNCHRON in einem Block (keine async-Interleaves),
 //   alle drei Stufen sind VOR der Baseline gewärmt (kein Rewarm-Störer).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -415,10 +415,15 @@ async function runPartB() {
                 for (const [k, g] of st.archInstanceGroups) {
                     live += g.liveCount || 0;
                     perKey[k] = g.liveCount || 0;
-                    if (g.kind !== "batch" && Array.isArray(g.free)) {
-                        if ((g.next || 0) - g.free.length !== (g.liveCount || 0)) inconsistent++;
+                    // Die Gruppe ist DICHT (`_archGroupFree` verdichtet): count == liveCount, jede Marke in [0, count)
+                    // trägt ihren eigenen Slot, dahinter keine.
+                    const n = g.liveCount || 0;
+                    if (!g.mesh || g.mesh.count !== n || g.mesh.visible !== n > 0) inconsistent++;
+                    for (let i = 0; i < g.slotRef.length; i++) {
+                        const ref = g.slotRef[i];
+                        if (i < n ? !ref || ref.slot !== i : !!ref) inconsistent++;
                     }
-                    if (Array.isArray(g.slotEntry)) for (const se of g.slotEntry) if (se === entry) entryRefs++;
+                    for (const se of g.slotEntry) if (se === entry) entryRefs++;
                 }
             return { live, perKey, inconsistent, entryRefs };
         };
@@ -1052,7 +1057,7 @@ async function main() {
             B.liveBefore === B.liveAfter,
             `${B.liveBefore} → ${B.liveAfter}`
         );
-        check("SLOT-BILANZ: je Gruppe next − free == liveCount (konsistent)", B.inconsistentAfter === 0);
+        check("SLOT-BILANZ: je Gruppe dicht (count == liveCount, Marke i trägt Slot i)", B.inconsistentAfter === 0);
         check(
             "SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)",
             B.entryRefsAfter === 0 && B.slotsAfter === false && B.bandAfter === false

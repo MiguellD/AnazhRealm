@@ -91,7 +91,8 @@ const server = http.createServer((req, res) => {
         const wsSrc = code(r._workshopFoundryPreviewGroup);
         res.probes.wsRoutesImpostor = /_foundryBuildImpostorFlat/.test(wsSrc);
         res.probes.wsTreeGated = /_foundryPresetIsTree/.test(wsSrc);
-        res.probes.wsInstanced = /InstancedMesh/.test(wsSrc);
+        // die Vorschau baut ihre InstancedMesh im EINEN Chokepoint der Welt (Instanz-Wand, gate:altlasten)
+        res.probes.wsInstanced = /AnazhRealm\._instanzMesh\(/.test(wsSrc);
         res.probes.wsLod2 = /lod === 2/.test(wsSrc);
 
         // ===== BEHAVIORAL — der Aufruf mit einem Baum @lod2 wirft nicht + liefert die Impostor-Geometrie =====
@@ -146,7 +147,7 @@ const server = http.createServer((req, res) => {
     console.log("  TEIL B — Werkstatt-L2 = Billboard:");
     console.log(`    routet durch Impostor:      ${out.probes.wsRoutesImpostor} (erw true)`);
     console.log(`    nur für BÄUME (gated):      ${out.probes.wsTreeGated} (erw true)`);
-    console.log(`    als InstancedMesh gebaut:   ${out.probes.wsInstanced} (erw true)`);
+    console.log(`    InstancedMesh (Chokepoint): ${out.probes.wsInstanced} (erw true)`);
     console.log(`    L2-Zweig (lod === 2):       ${out.probes.wsLod2} (erw true)`);
     console.log("  BEHAVIORAL:");
     console.log(`    Foundry ready: ${out.behavior.foundryReady} · Baum-Bauplan: ${out.behavior.treeBp}`);
@@ -168,7 +169,7 @@ const server = http.createServer((req, res) => {
         errs.push("B: der L2-Impostor-Zweig ist nicht auf BÄUME gegatet (`_foundryPresetIsTree`)");
     if (!out.probes.wsInstanced)
         errs.push(
-            "B: die Werkstatt-L2-Vorschau baut den Impostor nicht als InstancedMesh (Rotation/Skala aus der Instanz-Matrix)"
+            "B: die Werkstatt-L2-Vorschau baut den Impostor nicht über AnazhRealm._instanzMesh (Rotation/Skala aus der Instanz-Matrix, EIN Chokepoint)"
         );
     if (!out.probes.wsLod2) errs.push("B: der L2-Zweig (lod === 2) fehlt");
     if (pageErrors.length) errs.push(`Seiten-Fehler: ${pageErrors.length}`);

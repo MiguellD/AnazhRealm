@@ -22,8 +22,7 @@
         "vramMB": 2
     },
     "frei": {
-        "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.",
-        "leerHuellen": "Weltzustand der Gnadenfrist: eine geleerte Instanz-Gruppe zeichnet bis ARCH_LEER_GNADE_MS × Mints (bis 60 s) ihren High-Water-count aus Null-Matrizen weiter — wie viele gerade in der Frist stehen, hängt am Takt, nicht an den Kosten (in der Serie 0 bis 30 Befehle). Die Frist und das Räumen hält gate:foundry-crossfade (Reaper); im Band zählen die toten Draws voll."
+        "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
     },
     "gesamt": {
         "befehle": 296,
@@ -173,16 +172,16 @@
         },
         "leerHuellen": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "reserve": {
