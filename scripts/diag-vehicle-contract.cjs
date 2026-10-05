@@ -142,7 +142,7 @@ function compare(golden, actual) {
         let farbe = null;
         VC.buildInstance("gt", s, 0).traverse((o) => {
             const m = o.material;
-            if (m && m.userData && m.userData.__stoff === "lack" && m.metalness >= 0.5 && !farbe) farbe = m.color.getHex();
+            if (m && m.userData && m.userData.__lack && !farbe) farbe = m.color.getHex(); // der Karosserie-Lack (lackStoff)
         });
         return farbe;
     });

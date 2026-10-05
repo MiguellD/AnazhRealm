@@ -40,7 +40,7 @@ const rim=new THREE.DirectionalLight(0x6fd0e8,0.6);rim.position.set(-2,3,6);scen
    Skript geladen) — EINE Quelle für Shell UND AnazhRealm-Foundry (G2.1, kein
    Nachbau). Die Shell behält Szene/UI/Overlays/Fahrmodell und LIEST den Kern. ── */
 const VC=window.__vehicleCore;
-const M=VC.materials();            // dieselben geteilten Materialien (nie disposen); Lack-Wechsel mutiert M.paint
+const M=VC.materials();            // dieselben geteilten Materialien (nie disposen); der Lack-Wechsel wählt VC.lackStoff (W5)
 let bodyMat=M.clay; // umschaltbar Clay/Lack
 const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,bowEnds,cgHeightOf,carPhys,A_PITCH_MAX,A_LAT_MAX,CULTURES,PRESETS}=VC;
 const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
@@ -189,15 +189,14 @@ function syncLayerButtons(){LY.forEach(([key],i)=>ldiv.children[i].classList.tog
 let kin=false;const kinB=document.getElementById('kin');
 kinB.onclick=()=>{kin=!kin;kinB.classList.toggle('on');};
 const clayB=document.getElementById('clay');
-clayB.onclick=()=>{bodyMat=(bodyMat===M.clay)?M.paint:M.clay;clayB.classList.toggle('on');rebuild();};
-// V18.491.230 — Lab Lack-Swatches ← LACK_GESETZ fail-soft; Host none (LACK_VIS).
-const PAINTS_FALLBACK=[['Clay',0x8d9499,1],['Signalrot',0xc4181b,0],['Racing-Grün',0x1d4a30,0],['Silber',0xb6babf,0],['Tiefschwarz',0x111319,0],['Azurblau',0x1c5190,0],['Solargelb',0xe2b21e,0],['Kupfer-Orange',0xc8641a,0],['Perlweiss',0xe8eaee,0]];
-const _LG=(typeof VC!=='undefined'&&VC&&VC.LACK_GESETZ)||(window.__vehicleCore&&window.__vehicleCore.LACK_GESETZ)||null;
-const PAINTS=(Array.isArray(_LG)&&_LG.length===9)?_LG.map(t=>[t[0],t[1],t[2]]):PAINTS_FALLBACK.map(t=>[t[0],t[1],t[2]]);
+let lackMat=VC.lackStoff(5);   // W5: der Lack der Leiste ist der Lack der Welt (vehicle-core `lackStoff`: Farbe + Lack-Art + Klarlack); Start Azurblau
+clayB.onclick=()=>{bodyMat=(bodyMat===M.clay)?lackMat:M.clay;clayB.classList.toggle('on');rebuild();};
+// V18.491.230 — Lab Lack-Swatches = das LACK_GESETZ des Kerns (W5: der Zwilling PAINTS_FALLBACK fiel — VC ist Pflicht, M kommt schon aus VC.materials()).
+const PAINTS=VC.LACK_GESETZ;
 const prow=document.getElementById('paintrow');
-PAINTS.forEach(pt=>{const sw=document.createElement('button');sw.className='sw';sw.title=pt[0];
+PAINTS.forEach((pt,li)=>{const sw=document.createElement('button');sw.className='sw';sw.title=pt[0];
   sw.style.cssText='width:21px;height:21px;border-radius:50%;border:2px solid rgba(120,150,175,.32);background:#'+pt[1].toString(16).padStart(6,'0')+';cursor:pointer;padding:0;flex:none';
-  sw.onclick=()=>{if(pt[2]){bodyMat=M.clay;}else{VC.farbeLinear(M.paint.color,pt[1]);bodyMat=M.paint;}   // W5: das Farbfeld IST der Lack (FARB-GESETZ — sRGB-Absicht → linear, dieselbe Kurve wie die Welt)
+  sw.onclick=()=>{if(pt[2]){bodyMat=M.clay;}else{lackMat=VC.lackStoff(li);bodyMat=lackMat;}   // W5: das Farbfeld IST der Lack der Welt (FARB-GESETZ + Lack-Art, derselbe Stoff je Lack)
     document.querySelectorAll('#paintrow .sw').forEach(b=>b.style.boxShadow='');sw.style.boxShadow='0 0 0 2px var(--steel-bright)';clayB.classList.toggle('on',!pt[2]);rebuild();};
   prow.appendChild(sw);});
 // Ergebnis: nur das fertige Fahrzeug (Haut + Räder + Zelle/Sitze), ohne Hilfsgeometrie & Notizen

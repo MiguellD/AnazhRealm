@@ -271,17 +271,34 @@
     // DER LACK DER WELT (W5): das Labor zeigt das Ton-Modell (Clay, die Anatomie-Ansicht) und den Lack der Leiste; die
     // Welt fuhr bisher das Ton-Modell — jeder Wagen weiß-grau (Albedo 0,55 am Mittag). Jede Gestalt trägt ihren Lack aus
     // dem LACK_GESETZ: der Same (die Gestalt 1..16 des Wirts) wählt reihum einen der acht Lacke (Clay ausgenommen), je
-    // Lack EIN geteiltes Material (der Lack-Stoff des Labors mit seiner Farbe — Klarlack, Metallic, Seh-Klasse metall).
+    // Lack EIN geteiltes Material (der Lack-Stoff mit Farbe und Lack-Art — Klarlack, Seh-Klasse metall), dasselbe, das
+    // die Lack-Leiste des Labors setzt.
     const LACK_STOFFE = {};
     function lackIndex(seed) {
         const n = LACK_GESETZ.length - 1;
         const s = Math.floor(Number(seed) || 0);
         return 1 + (((s % n) + n) % n);
     }
+    // DIE LACK-ART (W5): ein Autolack ist ein Schichten-Stoff — der Basislack trägt die Farbe, der Klarlack den Spiegel.
+    // UNI (Signalrot, Solargelb, Tiefschwarz …) ist pigmentiert: ein Dielektrikum, die Farbe streut diffus; METALLIC
+    // (Silber, Azurblau, Kupfer) trägt Flocken: die Farbe spiegelt, gestreut über die Flocken-Rauheit. Bis W5 war jeder
+    // Lack ein Metall mit 0,85 und Rauheit 0,22 — ein gefärbter Spiegel, der im Wald den offenen Horizont der Himmels-
+    // Umgebung zurückwarf und ab ~9 m glasig las. Der Klarlack (1,0 / 0,03) trägt beide (die Referenz: three.js-Autolack).
+    const LACK_ART = {
+        uni: { metalness: 0, roughness: 0.4, clearcoatRoughness: 0.03 },
+        metallic: { metalness: 0.7, roughness: 0.35, clearcoatRoughness: 0.03 },
+    };
     function lackStoff(i) {
         if (LACK_STOFFE[i]) return LACK_STOFFE[i];
         const m = materials().paint.clone();
-        farbeLinear(m.color, LACK_GESETZ[i][1]);
+        const z = LACK_GESETZ[i];
+        const art = LACK_ART[z[3]] || LACK_ART.uni;
+        farbeLinear(m.color, z[1]);
+        m.metalness = art.metalness;
+        m.roughness = art.roughness;
+        m.clearcoat = 1;
+        m.clearcoatRoughness = art.clearcoatRoughness;
+        m.userData.__lack = z[0];
         LACK_STOFFE[i] = m;
         return m;
     }
@@ -2261,21 +2278,22 @@
 
     // ── LACK / PAINT SWATCHES (.230) — Lab Garage Lack-Swatches als DATEN.
     // V18.491.230 Lab Garage Lack-Swatches; seit W5 trägt die Welt sie je Gestalt (`lackIndex`/`lackStoff`, LACK_VIS.host).
-    // Die Hex sind sRGB-Absichten (das Farbfeld der Leiste IST der Lack — `farbeLinear`).
+    // Die Hex sind sRGB-Absichten (das Farbfeld der Leiste IST der Lack — `farbeLinear`); das vierte Feld ist die
+    // LACK-ART (`LACK_ART`: uni pigmentiert · metallic geflockt), Labor und Welt lesen denselben Stoff (`lackStoff`).
     const LACK_GESETZ = [
-        ["Clay", 0x8d9499, 1],
-        ["Signalrot", 0xc4181b, 0],
-        ["Racing-Grün", 0x1d4a30, 0],
-        ["Silber", 0xb6babf, 0],
-        ["Tiefschwarz", 0x111319, 0],
-        ["Azurblau", 0x1c5190, 0],
-        ["Solargelb", 0xe2b21e, 0],
-        ["Kupfer-Orange", 0xc8641a, 0],
-        ["Perlweiss", 0xe8eaee, 0],
+        ["Clay", 0x8d9499, 1, "uni"],
+        ["Signalrot", 0xc4181b, 0, "uni"],
+        ["Racing-Grün", 0x1d4a30, 0, "uni"],
+        ["Silber", 0xb6babf, 0, "metallic"],
+        ["Tiefschwarz", 0x111319, 0, "uni"],
+        ["Azurblau", 0x1c5190, 0, "metallic"],
+        ["Solargelb", 0xe2b21e, 0, "uni"],
+        ["Kupfer-Orange", 0xc8641a, 0, "metallic"],
+        ["Perlweiss", 0xe8eaee, 0, "uni"],
     ];
 
     // LACK_VIS — intentional Lab paint swatches (Feel-Entscheid .230).
-    // lab:"swatches-9" = LACK_GESETZ 9 [name, hex, clayFlag] triples; host:"gestalt-8" = der Same der Gestalt wählt reihum
+    // lab:"swatches-9" = LACK_GESETZ 9 [name, hex, clayFlag, art]; host:"gestalt-8" = der Same der Gestalt wählt reihum
     // einen der 8 Lacke (Clay bleibt die Anatomie-Ansicht des Labors).
     const LACK_VIS = { lab: "swatches-9", host: "gestalt-8" };
 
