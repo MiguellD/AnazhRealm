@@ -12,6 +12,8 @@
 //                einer Welle braucht ihre Regel (die stille Rest-Zeile nahm `bodenSatz` als „Einzelstück")
 //     stufe      eine Nah-Stufe in der Ferne (die `stufenWand` des Haushalts — der stille L0-Rückfall)
 //     ratsche    eine Klasse × Pass (oder ein VRAM-Erzeuger, oder die Summe) über ihrem letzten Ist plus Toleranz
+//     leck       VRAM, den kein Bild trägt: Geometrie-Puffer, die nur der Foundry-Cache (`buf:ruhend`) oder nur r184s
+//                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6)
 //
 // Die RATSCHE zieht nur die HÜLLE einer Mess-Serie nach (`werkbank ratsche`: ≥ 4 eingeschwungene Läufe der vollen
 // Welt aus Erst- und Zweit-Boot, je Klasse × Pass das Maximum) und nur ohne Linsen-Fehler (unbenannt · haushalt ·
@@ -43,7 +45,11 @@ const familieOf = (klasse) => {
 const istUnbenannt = (klasse) => /^UNBENANNT:/.test(klasse);
 const ganz = (x) => Number.isInteger(x) && x >= 0;
 const nullOderZahl = (x) => x === null || (typeof x === "number" && Number.isFinite(x) && x >= 0);
-const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche"];
+const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche", "leck"];
+// DER SPEICHER OHNE BILD (W6): ein Geometrie-Puffer, den kein Objekt des Szenen-Graphen zeichnet und den nur der Foundry-Cache
+// (`ruhend`) oder nur r184s Attribut-Register (`verwaist`) hält (`__pufferZensus`, draw-zaehler) — VRAM an der Geschichte
+// statt am Schirm. Jedes MB davon ist ein LECK, der Täter steht im Urteil beim Namen.
+const LECK_ERZEUGER = /^buf:(ruhend|verwaist)$/;
 // Eine FREIE Klasse misst den Weltzustand, nicht die Kosten (die Tiere wandern: an der Mess-Wiese 0 bis 3 Arten im Bild):
 // die Ratsche hält sie nicht, ihre Kosten je Einheit hält das Gate, das ihr Grund nennt. Im Band zählt sie voll.
 const freiGrund = (ratsche, id) => (ratsche && ratsche.frei && ratsche.frei[id]) || null;
@@ -341,12 +347,28 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche }) {
             const e = je.get(key) || { erzeuger: key, mb: 0, n: 0, form: [] };
             e.mb += v.mb;
             e.n += v.n;
-            if (e.form.length < 3) e.form.push(v.k);
+            e.form.push(v);
             je.set(key, e);
             if (art === "tex" && erzeuger === "?")
                 rot.push({ art: "unbenannt", text: `${v.k}: ${v.mb} MB in ${v.n} Texturen ohne Erzeuger-Namen` });
         }
-        const liste = [...je.values()].map((e) => ((e.mb = +e.mb.toFixed(1)), e)).sort((a, b) => b.mb - a.mb);
+        // Je Erzeuger seine drei größten Schlüssel (die Täter-Klassen eines Halters, die Formen einer Textur).
+        const liste = [...je.values()]
+            .map((e) => {
+                e.mb = +e.mb.toFixed(1);
+                e.form = e.form
+                    .sort((a, b) => b.mb - a.mb)
+                    .slice(0, 3)
+                    .map((v) => v.k);
+                return e;
+            })
+            .sort((a, b) => b.mb - a.mb);
+        for (const e of liste)
+            if (LECK_ERZEUGER.test(e.erzeuger) && e.mb > 0)
+                rot.push({
+                    art: "leck",
+                    text: `VRAM-Leck ${e.erzeuger}: ${e.mb} MB in ${e.n} Puffern, die kein Bild trägt (${e.form.join(" · ")})`,
+                });
         const rv = (ratsche && ratsche.vramMB) || {};
         for (const e of liste)
             if (ueberRatsche(e.mb, rv[e.erzeuger], ratsche, "vramMB"))
@@ -428,6 +450,10 @@ function ratscheNachziehen(ratsche, u, gemessen) {
         setze(neu.gesamt, "vramMB", u.vram.mb, "gesamt.vramMB");
         neu.vramMB = neu.vramMB || {};
         for (const e of u.vram.erzeuger) setze(neu.vramMB, e.erzeuger, e.mb, "vramMB." + e.erzeuger);
+        // Ein Erzeuger, den der Abgriff nicht mehr sieht, ist GEFALLEN (W6: die Leinwand-Tiefe `tex:depthBuffer`, die
+        // namenlosen `buf:?`) — seine Ratsche zieht auf 0, sonst kehrte er still bis zur alten Hülle zurück.
+        const lebt = new Set(u.vram.erzeuger.map((e) => e.erzeuger));
+        for (const k of Object.keys(neu.vramMB)) if (!lebt.has(k)) setze(neu.vramMB, k, 0, "vramMB." + k);
     }
     if (aenderungen.length) neu.gemessen = gemessen;
     return { ratsche: neu, aenderungen };
@@ -493,7 +519,16 @@ function bandTabelle(u) {
         z.push("");
         z.push(`VRAM ${u.vram.mb} MB / Band ${u.vram.band} MB (${u.abstand.vram}×) — je Erzeuger:`);
         for (const e of u.vram.erzeuger.slice(0, 18))
-            z.push("  " + lpad(e.mb.toFixed(1), 7) + " MB  " + pad(e.n, 6) + e.erzeuger);
+            z.push(
+                "  " +
+                    lpad(e.mb.toFixed(1), 7) +
+                    " MB  " +
+                    pad(e.n, 6) +
+                    e.erzeuger +
+                    (e.erzeuger.startsWith("buf:") && e.form && e.form.length && e.form[0] !== e.erzeuger
+                        ? "  (" + e.form.map((k) => k.slice(e.erzeuger.length + 1)).join(" · ") + ")"
+                        : "")
+            );
     } else if (u.texturen) {
         z.push("");
         z.push(

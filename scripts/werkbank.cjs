@@ -23,6 +23,9 @@
 //                                                           DER DRAW-ZÄHLER: GPU-Befehle + Dreiecke je Pass
 //                                                           (Hauptbild · jede Kaskade) und Täter-Klasse, ein Frame
 //                                                           (scripts/lib/draw-zaehler.cjs; Top 16, --alle alle)
+//   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: nach erzwungenem GC jeder Geometrie-Puffer beim
+//                                                           Halter (szene · bild · ruhend · verwaist — scripts/lib/draw-
+//                                                           zaehler.cjs `__pufferZensus`) und der VRAM je Schlüssel
 //   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE: was der Foundry-Kanal den Haupt-Thread
 //                                                           kostet (Bytes · Entpacken · Platte · Worker-Auslastung);
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
@@ -106,9 +109,13 @@ const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 
 // DER VRAM-ABGRIFF: jede Allokation des GPUDevice (Puffer: size; Textur: alle Mip-Stufen × Schichten ×
 // Samples × Bytes je Texel) live mitgezählt, destroy zieht ab. Läuft vor jedem Seiten-Skript.
+// DIE GC-WAHRHEIT: ein GPU-Objekt, das niemand zerstört, dessen Hülle aber der Garbage-Collector nimmt, gibt Chrome frei —
+// der Abgriff bucht es dann aus (`V.gc` zählt diese Bytes). Ohne sie zählte er Tote als Speicher: die Uniform-Puffer je
+// Render-Objekt (r184 `bindingBuffer…`) zerstört niemand, sie fallen mit ihrem Objekt. Die Band-Linse liest den Speicher
+// nach einem erzwungenen GC (`/band`), nie den Stand, den die Laune des Collectors gerade lässt.
 function vramAbgriff() {
     if (typeof GPUDevice === "undefined" || window.__vram) return;
-    const V = (window.__vram = { puffer: 0, texturen: 0, nPuffer: 0, nTexturen: 0, spitze: 0 });
+    const V = (window.__vram = { puffer: 0, texturen: 0, nPuffer: 0, nTexturen: 0, spitze: 0, gc: 0 });
     const bpt = (f) => {
         if (/^(bc1|bc4|etc2-rgb8unorm|etc2-rgb8a1|eac-r11)/.test(f)) return 0.5;
         if (/^(bc|astc-4x4|etc2-rgba8|eac-rg11)/.test(f)) return 1;
@@ -126,6 +133,25 @@ function vramAbgriff() {
     // Je Label die lebenden Bytes — `__vramBericht()` nennt die Großen beim Namen; das Label faltet die EINE Regel
     // `__vramFalte` (scripts/lib/draw-zaehler.cjs, ab Dokument-Start installiert).
     const jeLabel = new Map();
+    // Der Halter je GPU-Objekt ({b, k, feld, n}) — er überlebt das Objekt, damit der Collector es ausbuchen kann.
+    const aus = (h) => {
+        if (!h.b) return;
+        V[h.feld] -= h.b;
+        V[h.n]--;
+        const e = jeLabel.get(h.k);
+        if (e) {
+            e.bytes -= h.b;
+            e.n--;
+        }
+        h.b = 0;
+    };
+    const gc =
+        typeof FinalizationRegistry === "function"
+            ? new FinalizationRegistry((h) => {
+                  V.gc += h.b;
+                  aus(h);
+              })
+            : null;
     // Texturen tragen Format und Größe im Schlüssel (wenige, große), Puffer nur das Label.
     const buche = (o, art, d, b) => {
         const s = (d && d.size) || {};
@@ -134,23 +160,31 @@ function vramAbgriff() {
                 ? ` ${d.format} ${Array.isArray(s) ? s.join("x") : [s.width, s.height, s.depthOrArrayLayers || 1].join("x")}`
                 : "";
         o.__vramK = art + ":" + window.__vramFalte((d && d.label) || "?") + form;
+        const h = (o.__vramH = {
+            b,
+            k: o.__vramK,
+            feld: art === "tex" ? "texturen" : "puffer",
+            n: art === "tex" ? "nTexturen" : "nPuffer",
+        });
+        if (gc) gc.register(o, h, h);
         const e = jeLabel.get(o.__vramK) || { bytes: 0, n: 0 };
         e.bytes += b;
         e.n++;
         jeLabel.set(o.__vramK, e);
     };
-    // Ein GPU-Objekt unter einen anderen Schlüssel umbuchen: die Band-Linse (`__texturZensus`) nennt namenlose
-    // Texturen über ihr three-Objekt, der Abgriff sah nur das Label beim Anlegen.
+    // Ein GPU-Objekt unter einen anderen Schlüssel umbuchen: die Band-Linse (`__texturZensus`, `__pufferZensus`) nennt
+    // namenlose Texturen und Puffer über ihr three-Objekt, der Abgriff sah nur das Label beim Anlegen.
     window.__vramUmbuchen = (o, k) => {
-        if (!o.__vramB || o.__vramK === k) return;
-        const alt = jeLabel.get(o.__vramK);
+        const h = o.__vramH;
+        if (!h || !h.b || h.k === k) return;
+        const alt = jeLabel.get(h.k);
         if (alt) {
-            alt.bytes -= o.__vramB;
+            alt.bytes -= h.b;
             alt.n--;
         }
-        o.__vramK = k;
+        o.__vramK = h.k = k;
         const e = jeLabel.get(k) || { bytes: 0, n: 0 };
-        e.bytes += o.__vramB;
+        e.bytes += h.b;
         e.n++;
         jeLabel.set(k, e);
     };
@@ -159,15 +193,16 @@ function vramAbgriff() {
             .filter(([, e]) => e.n > 0)
             .sort((a, b) => b[1].bytes - a[1].bytes)
             .slice(0, top || 20)
-            .map(([k, e]) => ({ k, mb: +(e.bytes / 1048576).toFixed(1), n: e.n }));
+            // drei Stellen: die vielen kleinen Halter-Schlüssel (`buf:szene:<Klasse>`) summieren sich im Urteil
+            .map(([k, e]) => ({ k, mb: +(e.bytes / 1048576).toFixed(3), n: e.n }));
     const P = GPUDevice.prototype;
     const cb = P.createBuffer;
     P.createBuffer = function (d) {
         const b = cb.call(this, d);
-        b.__vramB = (d && d.size) || 0;
-        V.puffer += b.__vramB;
+        const n = (d && d.size) || 0;
+        V.puffer += n;
         V.nPuffer++;
-        buche(b, "buf", d, b.__vramB);
+        buche(b, "buf", d, n);
         spitze();
         return b;
     };
@@ -185,28 +220,20 @@ function vramAbgriff() {
                 Math.max(1, h >> m) *
                 (d.dimension === "3d" ? Math.max(1, l >> m) : l) *
                 bpt(String(d.format || ""));
-        t.__vramB = b * (d.sampleCount || 1);
-        V.texturen += t.__vramB;
+        b *= d.sampleCount || 1;
+        V.texturen += b;
         V.nTexturen++;
-        buche(t, "tex", d, t.__vramB);
+        buche(t, "tex", d, b);
         spitze();
         return t;
     };
-    for (const [K, feld, n] of [
-        [GPUBuffer, "puffer", "nPuffer"],
-        [GPUTexture, "texturen", "nTexturen"],
-    ]) {
+    for (const K of [GPUBuffer, GPUTexture]) {
         const d = K.prototype.destroy;
         K.prototype.destroy = function () {
-            if (this.__vramB) {
-                V[feld] -= this.__vramB;
-                V[n]--;
-                const e = jeLabel.get(this.__vramK);
-                if (e) {
-                    e.bytes -= this.__vramB;
-                    e.n--;
-                }
-                this.__vramB = 0;
+            const h = this.__vramH;
+            if (h) {
+                if (gc) gc.unregister(h);
+                aus(h);
             }
             return d.call(this);
         };
@@ -1039,6 +1066,32 @@ async function starte() {
                     });
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
+                // DIE PUFFER-LINSE: nach einem erzwungenen GC jeder Geometrie-Puffer beim Halter (szene · bild · ruhend ·
+                // verwaist, `__pufferZensus`) und der VRAM je Schlüssel — ohne Einschwingen, ohne Proben (der Stand jetzt).
+                if (req.url === "/puffer") {
+                    const cdp = await page.target().createCDPSession();
+                    await cdp.send("HeapProfiler.collectGarbage");
+                    await cdp.detach();
+                    const o = await page.evaluate(async (top) => {
+                        for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
+                        // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
+                        window.__buehne();
+                        await window.__drawZensus({ top: 1 });
+                        window.__texturZensus();
+                        const puffer = window.__pufferZensus();
+                        const v = window.__vram || {};
+                        const mb = (x) => +(x / 1048576).toFixed(1);
+                        return {
+                            vramMB: mb((v.puffer || 0) + (v.texturen || 0)),
+                            pufferMB: mb(v.puffer || 0),
+                            texturenMB: mb(v.texturen || 0),
+                            gcMB: mb(v.gc || 0),
+                            puffer,
+                            gross: window.__vramBericht ? window.__vramBericht(top) : null,
+                        };
+                    }, Number(b.top) || 30);
+                    return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
                 if (req.url === "/zaehlen") {
                     const o = await page.evaluate(async (k) => {
                         const r = window.anazhRealm;
@@ -1071,14 +1124,23 @@ async function starte() {
                         ruhig: Number(b.ruhig) || 30,
                     });
                     const proben = await page.evaluate(bandProben, { n: Number(b.proben) || 6, zwischen: 20 });
-                    const roh = await page.evaluate(() => {
+                    // DER SPEICHER NACH DEM COLLECTOR: was niemand zerstört, aber auch niemand mehr hält, gibt Chrome mit
+                    // dem GC frei (der Abgriff bucht es dann aus) — gemessen wird das Lebende, nicht die Laune des GC.
+                    const cdp = await page.target().createCDPSession();
+                    await cdp.send("HeapProfiler.collectGarbage");
+                    await cdp.detach();
+                    const roh = await page.evaluate(async () => {
+                        // Die Finalisierer des Collectors laufen als eigene Aufgaben.
+                        for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
                         // Die Regler-Decke zurück (bandEinschwingen hob sie für die volle Welt).
                         if (window.__bandDecke != null) {
                             window.anazhRealm.state.perfTargetMs = window.__bandDecke;
                             window.__bandDecke = null;
                         }
-                        // Der Textur-Zensus zuerst: er bucht die über ihr Ziel benannten Texturen im Abgriff um.
+                        // Die Zensus-Linsen zuerst: sie buchen die über ihr three-Objekt benannten Texturen und Puffer im
+                        // Abgriff um (Texturen über ihr Ziel, Puffer über ihren Halter).
                         const texturen = window.__texturZensus();
+                        const puffer = window.__pufferZensus();
                         const v = window.__vram;
                         const mb = (x) => +(x / 1048576).toFixed(1);
                         const pm = window.anazhRealm.state.playerMesh.position;
@@ -1092,10 +1154,11 @@ async function starte() {
                                           puffer: mb(v.puffer),
                                           texturen: mb(v.texturen),
                                           spitze: mb(v.spitze),
+                                          gc: mb(v.gc || 0),
                                           liste: window.__vramBericht(100000),
                                       }
                                     : null,
-                            puffer: window.__pufferZensus(),
+                            puffer,
                             fluss: window.__flussBericht ? window.__flussBericht() : null,
                         };
                     });
@@ -1256,6 +1319,7 @@ async function starte() {
     else if (cmd === "licht") o = await rufe("/licht");
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
+    else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
     else if (cmd === "zaehlen")
         o = await rufe(

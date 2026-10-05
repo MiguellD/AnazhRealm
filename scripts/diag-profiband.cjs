@@ -28,7 +28,8 @@
 // `tex:?` wird rot · die Schlüssel-Formen des Stamms ergeben ihre Klasse · ein Textur-Objekt ohne Namen und Ziel wird
 // rot · die Ratsche zieht nur nach unten · ein Zensus über dem Band ist BAND-rot bei sauberer Linse, ein Zensus im
 // Band GRÜN · das Maximum über die Proben · die Täter-Klasse an Szenen-Knoten (Tier, Region, Spieler, Namens-Schwanz) ·
-// eine freie Klasse (Weltzustand, mit Gate der Kosten je Einheit) trägt keine Ratsche · die Hülle einer Serie.
+// eine freie Klasse (Weltzustand, mit Gate der Kosten je Einheit) trägt keine Ratsche · die Hülle einer Serie · ein
+// Geometrie-Puffer ohne Bild (`buf:verwaist` · `buf:ruhend`) ist ein Leck, ein gezeichneter nicht.
 //
 //   node scripts/diag-profiband.cjs [--selftest]          (npm run gate:profiband)
 "use strict";
@@ -500,6 +501,50 @@ function selbsttest() {
             /siedlung-wege/.test(n16.errs[0]) &&
             namenLeben(haushalt, stamm).errs.length === 0 &&
             namenLeben({ klassen: [{ id: "boden", regeln: [{ muster: "^voxelChunk$" }] }] }, stamm).errs.length === 0
+    );
+
+    // S17 — DER SPEICHER OHNE BILD (W6): ein Geometrie-Puffer, den nur r184s Register (`buf:verwaist`) oder nur der Foundry-
+    // Cache (`buf:ruhend`) hält, ist ein LECK (LINSE rot, der Täter beim Namen); die gezeichneten (`buf:szene`) und die vom
+    // Frame gezeichneten (`buf:bild`) nicht; die Halter-Schlüssel falten zu ihrem Halter, die größten Täter reisen mit.
+    const v17 = (liste) => urteil([], null, { mb: 100, liste });
+    const u17 = v17([
+        { k: "buf:szene:bodenSatz", mb: 21.0, n: 6 },
+        { k: "buf:szene:f:eiche:L0", mb: 1.7, n: 30 },
+        { k: "buf:szene:spieler", mb: 8.0, n: 48 },
+        { k: "buf:bild:vertex", mb: 0.001, n: 2 },
+    ]);
+    const u17b = v17([
+        { k: "buf:szene:bodenSatz", mb: 21.0, n: 6 },
+        { k: "buf:verwaist:instanzMatrix", mb: 2.3, n: 1530 },
+        { k: "buf:ruhend:eiche|#|#", mb: 1.2, n: 26 },
+    ]);
+    const lecks = u17b.rot.filter((x) => x.art === "leck");
+    const szene = u17.vram.erzeuger.find((e) => e.erzeuger === "buf:szene");
+    t(
+        "buf:verwaist und buf:ruhend → LINSE rot `leck` mit Täter; buf:szene und buf:bild nicht; die Halter falten, die " +
+            "größten Täter reisen mit",
+        !hatRot(u17, "leck") &&
+            u17.linse === "SAUBER" &&
+            lecks.length === 2 &&
+            u17b.linse === "ROT" &&
+            lecks.some((x) => /buf:verwaist: 2.3 MB in 1530 Puffern.*instanzMatrix/.test(x.text)) &&
+            lecks.some((x) => /buf:ruhend.*eiche/.test(x.text)) &&
+            BAND.erzeugerOf("buf:szene:f:eiche:L0").erzeuger === "szene" &&
+            BAND.erzeugerOf("buf:verwaist:instanzMatrix").erzeuger === "verwaist" &&
+            szene &&
+            szene.mb === 30.7 &&
+            szene.form[0] === "buf:szene:bodenSatz" &&
+            szene.form[1] === "buf:szene:spieler"
+    );
+    // S18 — ein gefallener VRAM-Erzeuger (der Abgriff sieht ihn nicht mehr) zieht seine Ratsche auf 0, ein lebender sinkt.
+    const r18 = JSON.parse(JSON.stringify(rt));
+    r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };
+    const n18 = BAND.ratscheNachziehen(r18, u17, { datum: "selbsttest", eingeschwungen: true });
+    t(
+        "Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt",
+        n18.ratsche.vramMB["tex:depthBuffer"] === 0 &&
+            n18.ratsche.vramMB["buf:szene"] === 30.7 &&
+            n18.ratsche.vramMB["buf:bild"] === 0
     );
 
     const rot = tests.filter((x) => !x.ok);
