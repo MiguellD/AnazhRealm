@@ -50946,7 +50946,12 @@ class AnazhRealm {
         if (occlOn) this._maybeRebuildOcclusionGrid();
         let switches = 0;
         const sliceLen = Math.min(archs.length, 256); // wieviele Einträge pro Frame ANSCHAUEN
+        // Der Cursor rückt um die BESUCHTEN Einträge vor: endete die Scheibe am Wechsel-Budget, ging der Rest der Scheibe
+        // bis 05.10. eine ganze Runde leer aus (gate:fernwald D: nach 18 m Weg stand der Baum am Radius 40 Takte ohne
+        // seinen Zonen-Stempel).
+        let besucht = 0;
         for (let i = 0; i < sliceLen && switches < maxSwitchesPerFrame; i++) {
+            besucht = i + 1;
             const idx = (this._archLODCursor + i) % archs.length;
             const entry = archs[idx];
             if (!entry || !entry.instanced) continue;
@@ -51007,7 +51012,7 @@ class AnazhRealm {
             const success = this._switchArchitectureLOD(entry, newLOD);
             if (success) switches++;
         }
-        this._archLODCursor = (this._archLODCursor + sliceLen) % archs.length;
+        this._archLODCursor = (this._archLODCursor + besucht) % archs.length;
         return switches;
     }
 
