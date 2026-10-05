@@ -69,8 +69,8 @@ const server = http.createServer((req, res) => {
         if (ak && r._kartenAtlas) {
             const artVon = new Map();
             for (const z of r._kartenAtlas.zellen.values()) artVon.set(z.idx, z.preset);
-            const frei = new Set(ag.free || []);
-            for (let s = 0; s < ag.mesh.count; s++) if (!frei.has(s) && artVon.has(ak.array[s * 4])) presets.add(artVon.get(ak.array[s * 4]));
+            // Die Gruppe ist dicht (`_archGroupFree` verdichtet): jeder Slot in [0, count) lebt.
+            for (let s = 0; s < ag.mesh.count; s++) if (artVon.has(ak.array[s * 4])) presets.add(artVon.get(ak.array[s * 4]));
         }
         o.foundryPresets = Array.from(presets).sort();
         return o;

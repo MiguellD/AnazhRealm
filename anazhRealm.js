@@ -14384,7 +14384,8 @@ class AnazhRealm {
     //   - eine Instanz-Gruppe (`archInstanceKey`) →
     //     `AnazhRealm._instanzKlasse`, gleich ob sie in einem Region-Bundle hängt oder direkt in der Szene; eine Gruppe
     //     ohne lebende Instanz heißt `leer:<klasse>` — die leere Hülle in der Gnadenfrist des Leer-Chokepoints
-    //     (`_archGroupLeerDispose`) zeichnet weiter ihren High-Water-count aus Null-Matrizen, ein toter Draw;
+    //     (`_archGroupLeerDispose`); sie zeichnet nie (count 0, unsichtbar — `_archGroupFree`), zeichnet sie doch, ist
+    //     sie ein toter Draw und die Band-Linse nennt ihn (Haushalt 0, `gate:freie-slots`);
     //   - ein Tier `tier:<seele>`, der Spieler `spieler`;
     //   - sonst der Name des obersten Szenen-Knotens, dann des gezeichneten Objekts (`_taeterName`); unter einer Region
     //     ist der Täter ihr Kind, nie die Region (im Schatten-Pass zeichnen die Kinder direkt);
@@ -28256,15 +28257,12 @@ class AnazhRealm {
                                     // die Schicht: ein interpolierter Instanz-Wert kann 2,9999 lesen — gerundet, nie gekappt
                                     const _schicht = _Ta.floor(_karte.x.add(_Ta.float(0.5)));
                                     // ── Instanz-Dekodierung (der Normal-Probe) ──
-                                    // Ein FREIER Slot (_archGroupFree: Null-3×3) macht den Probe singulär → NaN/0⃗; ein Clamp machte
-                                    // daraus ein welt-spannendes Quad an der Kamera. NaN übersteht jede Arithmetik, nur select verwirft
-                                    // es → fail-closed via _lebt.select: toter Slot ⇒ _sInst 0 UND _alpha 0 (alphaTest verwirft).
+                                    // Jede gezeichnete Instanz lebt: die Gruppe ist dicht, count = lebende Instanzen (`_archGroupFree`
+                                    // verdichtet) — die Null-3×3 eines freien Slots, die den Probe singulär machte (das welt-spannende
+                                    // Quad an der Kamera), erreicht den Shader nie.
                                     const _probe = _Ta.normalLocal;
-                                    const _probeL2 = _probe.dot(_probe);
-                                    const _lebt = _probeL2.greaterThan(_Ta.float(1e-12));
-                                    const _invS = _Ta.sqrt(_probeL2).max(_Ta.float(1e-5));
-                                    const _sInst = _lebt.select(_Ta.float(1.0).div(_invS), _Ta.float(0.0));
-                                    const _aRot = _lebt.select(_Ta.atan(_probe.z.negate(), _probe.x), _Ta.float(0.0));
+                                    const _sInst = _Ta.float(1.0).div(_Ta.sqrt(_probe.dot(_probe)));
+                                    const _aRot = _Ta.atan(_probe.z.negate(), _probe.x);
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -28303,9 +28301,7 @@ class AnazhRealm {
                                     const _gY = _uvStetig.dFdy();
                                     const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
                                     const _samp = _Ta.mix(_probeA(_at.mapNode, _uvA), _probeA(_at.mapNode, _uvB), _fb);
-                                    // KAMERA-KLEBER-WAND (2. Riegel): toter Slot ⇒ alpha 0 — der alphaTest verwirft jedes
-                                    // Fragment, selbst wenn Sway-Offsets dem kollabierten Quad noch Sliver-Fläche geben.
-                                    _alpha = _lebt.select(_samp.a, _Ta.float(0.0));
+                                    _alpha = _samp.a;
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1
@@ -32629,7 +32625,7 @@ class AnazhRealm {
             const flats = flatsJe[stufe];
             const bereit = flats.every((f) => f && f.leaves);
             if (k && k.stufe === stufe && k.flats && k.flats[0] === flats[0] && k.flats[1] === flats[1]) {
-                for (const im of k.meshes || []) im.count = Math.round(im.userData.nGesamt * anteil);
+                for (const im of k.meshes || []) AnazhRealm._instanzZahl(im, Math.round(im.userData.nGesamt * anteil));
                 continue;
             }
             if (!bereit || gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
@@ -32673,7 +32669,7 @@ class AnazhRealm {
                         k.quellen.push(lf._srcGroup);
                     }
             for (const im of k.meshes) {
-                im.count = Math.round(im.userData.nGesamt * anteil);
+                AnazhRealm._instanzZahl(im, Math.round(im.userData.nGesamt * anteil));
                 nw.gruppe.add(im);
             }
             k.stufe = stufe;
@@ -32923,8 +32919,7 @@ class AnazhRealm {
             alt.dispose();
             a.wachse++;
         }
-        m.count = a.anzahl;
-        m.visible = a.anzahl > 0;
+        AnazhRealm._instanzZahl(m, a.anzahl);
         a.mesh = m;
         a.kap = kap;
         if (!this.state.scene) throw new Error(`_streuNahMesh(${a.name}): keine Szene`);
@@ -32951,8 +32946,7 @@ class AnazhRealm {
         a.anzahl += n;
         a.bloecke.set(kachelKey, { start, n, ids });
         a.ordnung.push(kachelKey);
-        m.count = a.anzahl;
-        m.visible = a.anzahl > 0;
+        AnazhRealm._instanzZahl(m, a.anzahl);
         m.boundingSphere = null; // der Pick-Raycast cullt gegen die Hülle
     }
 
@@ -32960,27 +32954,37 @@ class AnazhRealm {
     _streuNahAus(a, kachelKey) {
         const b = a ? a.bloecke.get(kachelKey) : null;
         if (!b) return false;
+        this._streuNahLuecke(a, kachelKey, 0, b.n);
+        a.bloecke.delete(kachelKey);
+        a.ordnung.splice(a.ordnung.indexOf(kachelKey), 1);
+        return true;
+    }
+
+    // Die Senke bleibt DICHT: n Instanzen ab Block-Index i treten aus dem Block der Kachel aus, alles Folgende rückt
+    // nach, die Starts der folgenden Blöcke sinken um n — eine leere Stelle zeichnet nie. Der Kachel-Austritt (der
+    // ganze Block) und die Ernte (eine Pflanze) gehen hier durch.
+    _streuNahLuecke(a, kachelKey, i, n) {
+        const b = a.bloecke.get(kachelKey);
         const m = a.mesh;
-        const ende = b.start + b.n;
+        const von = b.start + i;
+        const ende = von + n;
         if (ende < a.anzahl) {
-            m.instanceMatrix.array.copyWithin(b.start * 16, ende * 16, a.anzahl * 16);
-            m.instanceMatrix.addUpdateRange(b.start * 16, (a.anzahl - ende) * 16);
+            m.instanceMatrix.array.copyWithin(von * 16, ende * 16, a.anzahl * 16);
+            m.instanceMatrix.addUpdateRange(von * 16, (a.anzahl - ende) * 16);
             m.instanceMatrix.needsUpdate = true;
             if (a.tint) {
-                m.instanceColor.array.copyWithin(b.start * 3, ende * 3, a.anzahl * 3);
-                m.instanceColor.addUpdateRange(b.start * 3, (a.anzahl - ende) * 3);
+                m.instanceColor.array.copyWithin(von * 3, ende * 3, a.anzahl * 3);
+                m.instanceColor.addUpdateRange(von * 3, (a.anzahl - ende) * 3);
                 m.instanceColor.needsUpdate = true;
             }
         }
-        a.anzahl -= b.n;
-        a.bloecke.delete(kachelKey);
-        const i = a.ordnung.indexOf(kachelKey);
-        a.ordnung.splice(i, 1);
-        for (let k = i; k < a.ordnung.length; k++) a.bloecke.get(a.ordnung[k]).start -= b.n;
-        m.count = a.anzahl;
-        m.visible = a.anzahl > 0;
+        a.anzahl -= n;
+        b.n -= n;
+        b.ids.splice(i, n);
+        for (let k = a.ordnung.indexOf(kachelKey) + 1; k < a.ordnung.length; k++)
+            a.bloecke.get(a.ordnung[k]).start -= n;
+        AnazhRealm._instanzZahl(m, a.anzahl);
         m.boundingSphere = null;
-        return true;
     }
 
     // Der Bereich einer Kachel in einer Senke (Ernte, Sonden): {mesh, start, n, ids} oder null.
@@ -33003,7 +33007,7 @@ class AnazhRealm {
     // die Stufe je PFLANZE aus ihrer Distanz zur Kamera (die Armlänge `stufe0` trägt L0, sonst die leichteste
     // deklarierte Stufe — `_foundryDeclaredStage`, mit Hysterese, `_nahStreuArmlaenge`), das Rand-Band dünnt über die
     // Würfel-Ordnung (Viertel-Stufen), außerhalb
-    // fällt die Kachel. Ein Chunk-Neubau (Edit) baut die betroffenen Kacheln neu, eine Ernte blendet aus, das
+    // fällt die Kachel. Ein Chunk-Neubau (Edit) baut die betroffenen Kacheln neu, eine Ernte nimmt aus, das
     // Nachwachsen baut neu. Wartet eine Art auf ihr Studio-Asset, wartet die Kachel (die Anfrage läuft nah zuerst).
     // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
     _tickNahStreu(deadline) {
@@ -33259,7 +33263,7 @@ class AnazhRealm {
 
     // ===== FORAGING: die Nah-Streu ist pflückbar =====
     // Kein Parallel-System: der PICK raycastet die Senken der Nah-Streu (instanceId → Kachel-Block → die Ernte-
-    // Identität `gi|gj|art|i` der Pflanze), die ERNTE blendet die Pflanze in allen Teilen aus (Skala 0) und merkt sie
+    // Identität `gi|gj|art|i` der Pflanze), die ERNTE nimmt die Pflanze in allen Teilen aus der Senke und merkt sie
     // in `state.scatterHarvested` (Kachel → Identität → Zeit; der Kachel-Bau lässt sie weg), der REGROW-Tick lässt sie
     // nach FORAGE.regrowMs nachwachsen (die Kachel baut neu).
     _pickScatterAtCrosshair() {
@@ -33309,19 +33313,14 @@ class AnazhRealm {
         }
         if (jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
         jeKachel.set(pick.id, performance.now());
-        // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): Skala 0 am Slot.
-        if (!this._tmpForageMat) this._tmpForageMat = new THREE.Matrix4();
-        this._tmpForageMat.makeScale(0, 0, 0);
+        // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
+        // ihrer Kachel in jeder Senke aus (die Senke bleibt dicht, `_streuNahLuecke`).
         for (const sk of kachel.senken) {
             const s = ns.senken.get(sk);
             const b = s ? s.bloecke.get(pick.key) : null;
             const i = b ? b.ids.indexOf(pick.id) : -1;
             if (i < 0) continue;
-            const slot = b.start + i;
-            s.mesh.setMatrixAt(slot, this._tmpForageMat);
-            s.mesh.instanceMatrix.addUpdateRange(slot * 16, 16);
-            s.mesh.instanceMatrix.needsUpdate = true;
-            s.mesh.boundingSphere = null;
+            this._streuNahLuecke(s, pick.key, i, 1);
         }
         const got = this.addMaterialToInventory(a.ernte, 1);
         this.log(
@@ -48552,7 +48551,8 @@ class AnazhRealm {
 
     // Flügel drehen im Template-Raum VOR der Welt-Scale auf den gebackenen Geschlossen-Vertices:
     // M = EntryWorld · WorldScale · T(h)·R_y(±a)·T(−h); Vorzeichen = seite·sign(zf) (leafL −a · leafR +a,
-    // hinten gespiegelt). Flügel-Slots je Eintrag EINMAL aus entry.instSlots, neu bei Slot-Wechsel.
+    // hinten gespiegelt). Flügel-Marken je Eintrag EINMAL aus entry.instSlots, neu bei Slot-Wechsel; der Slot wird je
+    // Tick frisch aus der Marke gelesen (das Verdichten der Gruppe zieht ihn um, `_archGroupFree`).
     _tickTorFluegel(rec, entry, act) {
         const slots = entry.instSlots;
         if (!Array.isArray(slots) || !slots.length) return;
@@ -48563,7 +48563,7 @@ class AnazhRealm {
             if (groups) {
                 for (const s of slots) {
                     const g = groups.get(s.key);
-                    if (g && g.tuer) rec._fluegel.push({ g, slot: s.slot, tuer: g.tuer });
+                    if (g && g.tuer) rec._fluegel.push({ g, ref: s, tuer: g.tuer });
                 }
             }
             // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
@@ -48602,13 +48602,10 @@ class AnazhRealm {
             // den Instanz-Matrizen des Erst-Baus. Wir komponieren neu:
             mA.multiplyMatrices(ew, this._foundryWorldScaleMatrix(rec.tor.gestalt));
             mA.multiply(mB);
-            try {
-                f.g.mesh.setMatrixAt(f.slot, mA);
-                if (f.g.mesh.instanceMatrix) f.g.mesh.instanceMatrix.needsUpdate = true;
-                f.g.mesh.boundingSphere = null;
-            } catch (_e) {
-                /* Slot kann nach Rebuild kurz stale sein — nächster Tick sammelt neu */
-            }
+            if (!(f.ref.slot >= 0)) continue; // die Marke ist frei (Rebuild): der nächste Slot-Wechsel sammelt neu
+            f.g.mesh.setMatrixAt(f.ref.slot, mA);
+            f.g.mesh.instanceMatrix.needsUpdate = true;
+            f.g.mesh.boundingSphere = null;
         }
     }
 
@@ -51545,7 +51542,9 @@ class AnazhRealm {
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
             const g = this._archInstanceGroupFor(blueprintName, i, leaf, regionKey);
-            const slot = this._archGroupAlloc(g);
+            // Kein Eintrag (slotEntry null = DEKO) → der Crosshair-Raycast ignoriert den Slot, bis er promoted wird.
+            const ref = this._archGroupAlloc(g, null);
+            const slot = ref.slot;
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
             // Die mesh-level boundingSphere MUSS nach jedem Add auf null: THREE cacht sie sonst beim ersten
@@ -51557,41 +51556,33 @@ class AnazhRealm {
                 g.mesh.setColorAt(slot, slotColor);
                 if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
             }
-            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
             g.mesh.boundingSphere = null;
-            // slotEntry = null markiert den Slot als DEKO (kein Architektur-
-            // Eintrag) → der Crosshair-Raycast (liest slotEntry) ignoriert ihn,
-            // bis er promoted wird.
-            if (g.slotEntry) g.slotEntry[slot] = null;
             // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (reverse-J-Skala), die Karte ihre Schicht.
             this._lodSlotStamp(g, slot, scale, false, leaf);
-            slots.push({ key: g.key, slot });
+            slots.push(ref);
         }
         return slots;
     }
 
     // Welle B — JEDE leere Gruppe fällt (die Reap-Frage nach dem Schlüssel-Format ist gefallen): seit der platzierte
-    // Bau global keyt, hätte die alte Ausnahme „Grammatik-Globale bleiben" jede leere Bau-Hülle als toten Draw
-    // (count am High-Water) für immer stehen lassen. Der EINE Leer-Chokepoint (_archGroupLeerDispose) prüft
-    // liveCount 0 und gibt der Hülle im Spiel die Gnadenfrist (kein Churn); Neuaufbau lazy via
-    // _archInstanceGroupFor.
+    // Bau global keyt, hätte die alte Ausnahme „Grammatik-Globale bleiben" jede leere Bau-Hülle als Szene-Kind für
+    // immer stehen lassen. Der EINE Leer-Chokepoint (_archGroupLeerDispose) prüft liveCount 0 und gibt der Hülle im
+    // Spiel die Gnadenfrist (kein Churn); Neuaufbau lazy via _archInstanceGroupFor.
     _scatterFreeSlots(slots) {
         if (!Array.isArray(slots)) return;
         const reap = [];
-        for (const { key, slot } of slots) {
-            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+        for (const ref of slots) {
+            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
             if (g) {
-                this._archGroupFree(g, slot);
-                reap.push(key);
+                this._archGroupFree(g, ref);
+                reap.push(ref.key);
             }
         }
         // SUBMIT-WAL (Flugschreiber-Befund: sceneChildren wächst monoton beim Wandern,
         // Schöpfer-Trace 481 archInstanceGroup-Kinder): geht der LETZTE Bewohner einer
         // geteilten/globalen Hülle, verlässt sie die Szene WIRKLICH — dieselbe Empty-
         // Dispose wie _archInstanceRemove (V4(B)); _disposeArchInstanceGroup ist
-        // foundry-src-bewusst. Vorher blieb jede leere InstancedMesh-Hülle
-        // (count am High-Water, global = frustumCulled false) als toter Draw-Call +
-        // Szene-Kind FÜR IMMER stehen — der eigentliche Submit-Wal.
+        // foundry-src-bewusst.
         // GNADENFRIST (18.07.) — der Leer-Dispose läuft durch den EINEN Chokepoint
         // (_archGroupLeerDispose): sofort headless (byte-alt), im echten Spiel erst
         // nach der Frist (der Churn-Befund: Familien oszillieren um liveCount 0).
@@ -51601,7 +51592,8 @@ class AnazhRealm {
     // Der EINE Leer-Chokepoint: headless reapt SOFORT; im Spiel bekommt die leere Hülle
     // ARCH_LEER_GNADE_MS — sonst macht jede Oszillation um liveCount 0 (Wandern/LOD) einen Voll-Dispose +
     // Re-Mint (Mesh, GPU-Puffer, Bundle, Pipeline). Kehrt ein Bewohner zurück, löscht _archGroupAlloc
-    // _leerSeit; sonst räumt der Reaper-Tick. Preis: eine leere Hülle ≤ Frist als toter Draw.
+    // _leerSeit; sonst räumt der Reaper-Tick. Die wartende Hülle zeichnet nicht (count 0, unsichtbar —
+    // `_archGroupFree`); sie kostet nur ihren Puffer und ihren Platz im Bundle.
     _archGroupLeerDispose(key) {
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
         if (!g || (g.liveCount || 0) > 0) return;
@@ -52204,8 +52196,8 @@ class AnazhRealm {
             const layer = this._scatterLayerByName.get(cell.layer);
             if (!layer) continue;
             // Zellen mit region-privaten Slots (@regX,regZ) dürfen zurück in die Fern-Stufe wandern (der
-            // Ursprungs-Bounding-Sphere-Hazard ist an der Wurzel weg: die Null-Skala erbt die Position,
-            // _archGroupFree) — sonst frieren Millionen L1-Tris ein. Promotions (→ näher) bleiben dem
+            // Ursprungs-Bounding-Sphere-Hazard ist an der Wurzel weg: die Gruppe ist dicht, die Kugel umspannt nur
+            // Lebende, _archGroupFree) — sonst frieren Millionen L1-Tris ein. Promotions (→ näher) bleiben dem
             // Region-Lifecycle. Super-Region-Slots (`@s:`, _archFernRegionKey) wandern beidseitig.
             let hatRegional = false;
             for (const s of cell.slots) {
@@ -59902,10 +59894,17 @@ class AnazhRealm {
             const post = q.shift();
             const mesh = post && post.mesh;
             if (!mesh || !mesh.geometry || !mesh.material) continue;
+            // Eine leere Hülle ist unsichtbar (`_archGroupFree`); der Compile projiziert synchron und übersähe sie —
+            // für ihn steht sie kurz sichtbar (die Familie ist dieselbe, ob die Hülle gerade Bewohner trägt oder nicht).
+            const leer = mesh.visible === false;
+            if (leer) mesh.visible = true;
             this._pipeOfenGewaermt = (this._pipeOfenGewaermt || 0) + 1;
             try {
                 this._warmCompilePipeline(mesh, false);
-            } catch (_e) {}
+            } catch (_e) {
+            } finally {
+                if (leer) mesh.visible = false;
+            }
         }
     }
 
@@ -62194,13 +62193,13 @@ class AnazhRealm {
                         x1 = -Infinity,
                         y1 = -Infinity,
                         z1 = -Infinity;
+                    // Jede Instanz in [0, count) lebt (die Gruppe ist dicht, `_archGroupFree`).
                     for (let i = 0, k = 0; i < n; i++, k += 16) {
                         const s2 = Math.max(
                             a[k] * a[k] + a[k + 1] * a[k + 1] + a[k + 2] * a[k + 2],
                             a[k + 4] * a[k + 4] + a[k + 5] * a[k + 5] + a[k + 6] * a[k + 6],
                             a[k + 8] * a[k + 8] + a[k + 9] * a[k + 9] + a[k + 10] * a[k + 10]
                         );
-                        if (!(s2 > 1e-12)) continue; // freie Slots (Null-Skala, _archGroupFree) werfen nicht
                         const r = R * Math.sqrt(s2);
                         const cx = a[k] * c.x + a[k + 4] * c.y + a[k + 8] * c.z + a[k + 12];
                         const cy = a[k + 1] * c.x + a[k + 5] * c.y + a[k + 9] * c.z + a[k + 13];
@@ -62557,7 +62556,6 @@ class AnazhRealm {
         const mesh = AnazhRealm._instanzMesh(groupGeom, leaf.mat, capacity);
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
-        mesh.count = 0; // noch keine Instanz sichtbar
         // regional → lokale BBox → die Engine cullt beim Umsehen; global → nutzlos (verteilt).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
@@ -62578,16 +62576,18 @@ class AnazhRealm {
             bundle.needsUpdate = true;
             this._bundleReifeWache(mesh); // Record droppt unfertige Pipelines — Touch NACH der Reife
         } else if (this.state.scene) this.state.scene.add(mesh);
-        // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
-        // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
+        // slotRef: Slot-Index → die Slot-Marke {key, slot} (der Rückverweis des Umzugs, `_archGroupAlloc`); slotEntry:
+        // Slot-Index → Architektur-Eintrag (der Crosshair-Raycast). Leer geboren: count 0, unsichtbar, bis der erste Bewohner kommt —
+        // erst NACH dem Reife-Compile (er projiziert synchron und sähe eine unsichtbare Hülle nicht).
+        AnazhRealm._instanzZahl(mesh, 0);
         g = {
             key,
             mesh,
             geom: groupGeom,
             mat: leaf.mat,
             capacity,
-            next: 0,
-            free: [],
+            liveCount: 0,
+            slotRef: [],
             slotEntry: [],
             castShadow,
             regional,
@@ -62663,8 +62663,10 @@ class AnazhRealm {
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
         // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
         if (g.shadowTwin) next.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        // Die lebenden Instanzen liegen dicht in [0, liveCount) (`_archGroupFree` verdichtet) — nur sie reisen mit.
+        const n = g.liveCount || 0;
         const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());
-        for (let i = 0; i < g.next; i++) {
+        for (let i = 0; i < n; i++) {
             g.mesh.getMatrixAt(i, tmp);
             next.setMatrixAt(i, tmp);
         }
@@ -62672,13 +62674,13 @@ class AnazhRealm {
         // alle Bäume auf default-Weiß.
         if (g.mesh.instanceColor) {
             const tmpC = this._archTmpCopyColor || (this._archTmpCopyColor = new THREE.Color());
-            for (let i = 0; i < g.next; i++) {
+            for (let i = 0; i < n; i++) {
                 g.mesh.getColorAt(i, tmpC);
                 next.setColorAt(i, tmpC);
             }
             if (next.instanceColor) next.instanceColor.needsUpdate = true;
         }
-        next.count = g.next;
+        AnazhRealm._instanzZahl(next, n);
         next.instanceMatrix.needsUpdate = true;
         // SUBMIT-WAL — parent-bewusster Swap (die scene.remove-Falle): eine regionale
         // Gruppe hängt in ihrer Region-BundleGroup — der gewachsene Mesh bleibt im
@@ -62694,44 +62696,80 @@ class AnazhRealm {
         g.capacity = newCap;
     }
 
-    // Einen Slot in der Gruppe belegen (Free-List zuerst, dann frischer Slot,
-    // dann wachsen). Rückgabe: Slot-Index.
-    _archGroupAlloc(g) {
-        // V18.356 — die LIVE-Instanzen pro Wrapper zählen: liveCount ist die EINE Quelle für „dieser
-        // Wrapper ist leer" (Free-Slots bleiben im High-Water, g.next zählt sie mit).
-        g.liveCount = (g.liveCount || 0) + 1;
-        // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe/count in diesen Slot
+    // DER EINE SLOT-CHOKEPOINT (Belegen · Freigeben): die lebenden Instanzen einer Gruppe liegen DICHT in
+    // [0, liveCount), `mesh.count` IST liveCount — einen freien Slot gibt es nicht, eine leere Hülle zeichnet nicht
+    // (count 0, unsichtbar — in keinem Pass, auch nicht in der Gnadenfrist). Befund 05.10. (Radeon 890M, Mess-Wiese,
+    // drei Schleifen à 1,2 km): die Free-Liste hielt count am Höchststand, die Null-3×3 lief durch jeden Vertex-Shader
+    // — 890 freie Slots mit 1,73 M Dreiecken in 202 Gruppen, 92 leere Hüllen zeichneten 0,99 M Dreiecke ins Hauptbild.
+    // Belegen hängt an das Ende; die Rückgabe ist die SLOT-MARKE {key, slot} (`g.slotRef[slot]`, der Rückverweis des
+    // Umzugs; `g.slotEntry[slot]` trägt den Architektur-Eintrag für den Raycast, Streu null). Wer eine Marke hält, liest
+    // `slot` frisch: Freigeben zieht die letzte Instanz in die Lücke und schreibt ihre Marke um.
+    _archGroupAlloc(g, entry) {
+        const slot = g.liveCount || 0;
+        if (slot >= g.capacity) this._archInstanceGroupGrow(g);
+        const ref = { key: g.key, slot };
+        g.slotRef[slot] = ref;
+        g.slotEntry[slot] = entry || null;
+        g.liveCount = slot + 1;
+        AnazhRealm._instanzZahl(g.mesh, g.liveCount);
+        // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
         this._archMeshBundleTouch(g.mesh);
         g._leerSeit = 0; // GNADENFRIST — ein Bewohner kehrt zurück: die Hülle lebt, kein Re-Mint
-        if (g.free.length > 0) return g.free.pop();
-        if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
-        return g.next++;
+        return ref;
     }
 
-    // Slot freigeben: Matrix auf Null-Scale (unsichtbar), Slot in die Free-List; mesh.count bleibt am
-    // High-Water (Null-Instanzen zeichnen nichts). Impostor-Quads: die Null-3×3 macht den Normal-Probe
-    // singulär — dort schaltet die KAMERA-KLEBER-WAND im Shader (_buildPbrNodeMaterial, _lebt.select)
-    // tote Slots stumm; der EINE Chokepoint dafür ist der Shader.
-    _archGroupFree(g, slot) {
-        g.liveCount = Math.max(0, (g.liveCount || 0) - 1); // V18.356 — die Empty-Dispose-Quelle
-        // Die Null-Skala ERBT die letzte Instanz-POSITION (nur die obere 3×3 fällt auf 0) — sonst spannt die
-        // lazy Bounding-Sphere zum Welt-Ursprung. _archZeroM ist Scratch (je Aufruf voll überschrieben).
-        const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4());
-        g.mesh.getMatrixAt(slot, z);
-        const ze = z.elements;
-        ze[0] = ze[1] = ze[2] = 0;
-        ze[4] = ze[5] = ze[6] = 0;
-        ze[8] = ze[9] = ze[10] = 0;
-        g.mesh.setMatrixAt(slot, z);
-        g.mesh.instanceMatrix.needsUpdate = true;
-        this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — Matrix-Mutation → Region-Bundle re-recorden
+    // Freigeben = verdichten: die LETZTE lebende Instanz zieht in die Lücke (`_instanzUmzug`: Matrix, Farbe, die
+    // Instanz-Attribute der Fassade) und ihre Marke mit; count sinkt. Eine Marke, die in dieser Gruppe nicht (mehr)
+    // lebt — doppelt freigegeben, oder ihre Gruppe fiel und wurde neu gemünzt —, gibt nichts frei (false): sie
+    // besitzt hier keinen Slot.
+    _archGroupFree(g, ref) {
+        const slot = ref ? ref.slot : -1;
+        if (!(slot >= 0) || g.slotRef[slot] !== ref) return false;
+        const letzt = g.liveCount - 1;
+        if (slot !== letzt) {
+            AnazhRealm._instanzUmzug(g.mesh, letzt, slot);
+            const zieht = g.slotRef[letzt];
+            zieht.slot = slot;
+            g.slotRef[slot] = zieht;
+            g.slotEntry[slot] = g.slotEntry[letzt];
+        }
+        g.slotRef[letzt] = null;
+        g.slotEntry[letzt] = null;
+        ref.slot = -1;
+        g.liveCount = letzt;
+        AnazhRealm._instanzZahl(g.mesh, letzt);
+        this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — count-/Matrix-Mutation → Region-Bundle re-recorden
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
         // (Crosshair-Pick) sphere-cullt gegen die gecachte Bounding; ohne Reset
         // verfehlt der Raycast Instanzen, die nach dem letzten Cache dazukamen.
         g.mesh.boundingSphere = null;
-        if (g.slotEntry) g.slotEntry[slot] = null;
-        g.free.push(slot);
+        return true;
+    }
+
+    // DER UMZUG EINER INSTANZ (Verdichten): alles, was je Slot reist, rückt von `von` nach `nach` — die Matrix, die
+    // Farbe und die Instanz-Attribute der LOD-Fassade (`LOD_INSTANZ_ATTRIBUTE`, nur wo die Geometrie die Fassade der
+    // Gruppe ist; eine geteilte Quell-Geometrie trägt keine Instanz-Werte). Die EINE Liste der Instanz-Größen für jede
+    // verdichtende Senke (Instanz-Gruppen · Fundament-Pool). Volle Uploads (needsUpdate ohne Bereich): ein Bereich
+    // schnitte die Schreiber desselben Frames ab.
+    static _instanzUmzug(mesh, von, nach) {
+        const im = mesh.instanceMatrix;
+        im.array.copyWithin(nach * 16, von * 16, von * 16 + 16);
+        im.needsUpdate = true;
+        const ic = mesh.instanceColor;
+        if (ic) {
+            ic.array.copyWithin(nach * 3, von * 3, von * 3 + 3);
+            ic.needsUpdate = true;
+        }
+        const geo = mesh.geometry;
+        if (geo && geo.userData && geo.userData._lodFacade)
+            for (const k in AnazhRealm.LOD_INSTANZ_ATTRIBUTE) {
+                const a = geo.attributes[k];
+                if (!a || !a.isInstancedBufferAttribute) continue;
+                const s = a.itemSize;
+                a.array.copyWithin(nach * s, von * s, von * s + s);
+                a.needsUpdate = true;
+            }
     }
 
     // Die EINE Fern-Key-Ableitung: trägt ein Leaf die FERN-Stufe (Impostor `fimp:` · Foundry-L2 `f:…|2|…`
@@ -62772,7 +62810,8 @@ class AnazhRealm {
     // schreibt stattdessen in `entry.instSlotsBand` (+ `entry._lodBandLevel`) — die ZWEITE Stufe im
     // Dither-Crossfade-Band. Add/Remove NUR durch diese zwei Chokepoints.
     // ═══ DAS FUNDAMENT-PODEST ═══
-    // EIN InstancedMesh-Pool für ALLE Haus-Sockel (1 Draw-Call, Verdopplung, freie Slots = Null-Matrix).
+    // EIN InstancedMesh-Pool für ALLE Haus-Sockel (1 Draw-Call, Verdopplung; dicht wie jede Instanz-Senke: Freigeben
+    // zieht den letzten Sockel in die Lücke, `_instanzUmzug` — ein freier Slot zeichnet nie).
     // Geometrie = die der Blocker (`_archFundamentBox`, Unterkante 0.6 m unter der tiefsten Footprint-
     // Ecke); Lebenszyklus an den Instanz-Nähten, kein Snapshot-Feld.
     _archFundamentEnsure(entry) {
@@ -62799,18 +62838,20 @@ class AnazhRealm {
                 })); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz)
             const mesh = AnazhRealm._instanzMesh(geo, mat, 128);
             mesh.name = "bau-fundament";
-            mesh.count = 0;
+            AnazhRealm._instanzZahl(mesh, 0);
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
             mesh.receiveShadow = true;
             st.scene.add(mesh);
-            P = st.archFundament = { mesh, cap: 128, top: 0, free: [], byId: new Map() };
+            // byId: Eintrag → Slot; idAt: Slot → Eintrag (der Rückverweis des Umzugs).
+            P = st.archFundament = { mesh, cap: 128, byId: new Map(), idAt: [] };
         }
-        if (!P.free.length && P.top >= P.cap) {
+        const slot = P.mesh.count;
+        if (slot >= P.cap) {
             // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
             const bigger = AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2);
             bigger.name = "bau-fundament";
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
-            bigger.count = P.mesh.count;
+            AnazhRealm._instanzZahl(bigger, P.mesh.count);
             bigger.frustumCulled = false;
             bigger.receiveShadow = true;
             st.scene.add(bigger);
@@ -62819,7 +62860,6 @@ class AnazhRealm {
             P.mesh = bigger;
             P.cap *= 2;
         }
-        const slot = P.free.length ? P.free.pop() : P.top++;
         const m = this._archFundTmpM || (this._archFundTmpM = new THREE.Matrix4());
         const q = this._archFundTmpQ || (this._archFundTmpQ = new THREE.Quaternion());
         const v = this._archFundTmpV || (this._archFundTmpV = new THREE.Vector3());
@@ -62828,9 +62868,11 @@ class AnazhRealm {
         q.setFromAxisAngle(ax, box.ry);
         m.compose(v.set(box.x, box.topY, box.z), q, sc.set(box.ex * 2, box.topY - box.botY, box.ez * 2));
         P.mesh.setMatrixAt(slot, m);
-        if (slot + 1 > P.mesh.count) P.mesh.count = slot + 1;
+        AnazhRealm._instanzZahl(P.mesh, slot + 1);
         P.mesh.instanceMatrix.needsUpdate = true;
+        P.mesh.boundingSphere = null;
         P.byId.set(entry.id, slot);
+        P.idAt[slot] = entry.id;
     }
     _archFundamentFree(entry) {
         const P = this.state.archFundament;
@@ -62838,11 +62880,16 @@ class AnazhRealm {
         const slot = P.byId.get(entry.id);
         if (slot === undefined) return;
         P.byId.delete(entry.id);
-        P.free.push(slot);
-        const m = this._archFundTmpM || (this._archFundTmpM = new THREE.Matrix4());
-        m.makeScale(0, 0, 0); // Null-Matrix = unsichtbar (kein Kompaktier-Aufwand)
-        P.mesh.setMatrixAt(slot, m);
-        P.mesh.instanceMatrix.needsUpdate = true;
+        const letzt = P.mesh.count - 1;
+        if (slot !== letzt) {
+            AnazhRealm._instanzUmzug(P.mesh, letzt, slot);
+            const zieht = P.idAt[letzt];
+            P.idAt[slot] = zieht;
+            P.byId.set(zieht, slot);
+        }
+        P.idAt.length = letzt;
+        AnazhRealm._instanzZahl(P.mesh, letzt);
+        P.mesh.boundingSphere = null;
     }
     _archFundamentDisposePool() {
         const P = this.state.archFundament;
@@ -63086,7 +63133,7 @@ class AnazhRealm {
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
         mesh.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color(1, 1, 1)));
-        mesh.count = 0;
+        AnazhRealm._instanzZahl(mesh, 0);
         mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC (das Fundament-Muster)
         mesh.receiveShadow = true;
         st.scene.add(mesh);
@@ -63104,7 +63151,7 @@ class AnazhRealm {
             // Buffer anlegen SOLANGE count == neuer cap (r128-setColorAt-Semantik).
             bigger.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color()));
             if (P.mesh.instanceColor) bigger.instanceColor.array.set(P.mesh.instanceColor.array);
-            bigger.count = P.mesh.count;
+            AnazhRealm._instanzZahl(bigger, P.mesh.count);
             bigger.frustumCulled = false;
             bigger.receiveShadow = true;
             this.state.scene.add(bigger);
@@ -63125,7 +63172,7 @@ class AnazhRealm {
         m.compose(v.set(x, y, z), q, s.set(sx, sy, sz));
         P.mesh.setMatrixAt(slot, m);
         P.mesh.setColorAt(slot, c.setHex(farbe));
-        if (slot + 1 > P.mesh.count) P.mesh.count = slot + 1;
+        AnazhRealm._instanzZahl(P.mesh, P.top);
         P.mesh.instanceMatrix.needsUpdate = true;
         if (P.mesh.instanceColor) P.mesh.instanceColor.needsUpdate = true;
     }
@@ -63321,7 +63368,8 @@ class AnazhRealm {
                 leaf,
                 null
             );
-            const slot = this._archGroupAlloc(g);
+            const ref = this._archGroupAlloc(g, entry);
+            const slot = ref.slot;
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
             // V18.181-merge-Λ Sub 3d / V18.475: die EINE Slot-Farbe (leaf.tint ×
@@ -63332,14 +63380,12 @@ class AnazhRealm {
                 g.mesh.setColorAt(slot, slotColor);
                 if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
             }
-            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
             // boundingSphere invalidieren (V18.358: THREE cacht sie sonst stale → spät platzierte Bauten
             // cullen im Blickfeld; Raycast-Cull, s. _archGroupFree).
             g.mesh.boundingSphere = null;
-            if (g.slotEntry) g.slotEntry[slot] = entry;
             // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + vOcc), die Karte ihre Schicht.
             this._lodSlotStamp(g, slot, entry.scale, this._lodSlotVoll(entry), leaf);
-            slots.push({ key: g.key, slot });
+            slots.push(ref);
         }
         // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
         // Snapshot, kein state.X). Der Primär-Zustand des Eintrags bleibt byte-unberührt.
@@ -63419,11 +63465,11 @@ class AnazhRealm {
         // geteilte Geometrie geht via _disposeArchInstanceGroup deferred frei; Leer-Bedingung liveCount<=0).
         const geleerte = new Set();
         for (const list of lists)
-            for (const { key, slot } of list) {
-                const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+            for (const ref of list) {
+                const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
                 if (g) {
-                    this._archGroupFree(g, slot);
-                    geleerte.add(key);
+                    this._archGroupFree(g, ref);
+                    geleerte.add(ref.key);
                 }
             }
         entry.instSlotsBand = null;
@@ -63437,7 +63483,7 @@ class AnazhRealm {
             if (entry.fundament) this._archFundamentFree(entry);
         }
         for (const key of geleerte) {
-            // Vollständig leer = liveCount 0 (die EINE Leer-Quelle — g.free/g.next zählen den High-Water mit).
+            // Vollständig leer = liveCount 0 (die EINE Leer-Quelle, count folgt ihr).
             // Durch den EINEN Leer-Chokepoint mit Gnadenfrist (headless sofort).
             this._archGroupLeerDispose(key);
         }
@@ -69488,6 +69534,13 @@ class AnazhRealm {
             m.instanceMatrix = new THREE.StorageInstancedBufferAttribute(m.instanceMatrix.array, 16);
         return m;
     }
+    // DIE INSTANZ-ZAHL — der EINE Schreiber von `count` jeder Instanz-Senke (Instanz-Gruppen · Fundament · Zaun ·
+    // Nah-Wiese · Nah-Streu): jede Senke ist DICHT ([0, n) lebt, ein freier Slot existiert nicht), und eine leere ist
+    // unsichtbar — sie betritt keinen Pass (kein Render-Objekt, kein Bundle-Platz, kein Schatten-Werfer).
+    static _instanzZahl(mesh, n) {
+        mesh.count = n;
+        mesh.visible = n > 0;
+    }
     // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass
     // und Region. Teile gleichen Materials und gleicher Attribut-Form liegen im selben Template-Raum (localMatrix
@@ -72371,11 +72424,11 @@ class AnazhRealm {
         const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
         if (!intersects.length) return null;
         const hit = intersects[0];
-        // Instanced-Treffer: instanceId → Eintrag via slotEntry.
+        // Instanced-Treffer: instanceId → Eintrag via slotEntry (Streu trägt null).
         if (hit.object && hit.object.isInstancedMesh && typeof hit.instanceId === "number") {
             const key = hit.object.userData && hit.object.userData.archInstanceKey;
             const g = key && this.state.archInstanceGroups ? this.state.archInstanceGroups.get(key) : null;
-            const entry = g && g.slotEntry ? g.slotEntry[hit.instanceId] : null;
+            const entry = g ? g.slotEntry[hit.instanceId] : null;
             return entry ? { entry, point: hit.point } : null;
         }
         let node = hit.object;

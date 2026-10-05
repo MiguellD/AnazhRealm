@@ -7,7 +7,8 @@
 //     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; der Bake-Tick spricht
 //     den Kanal "bake-impostor"; KEIN asset-foundry-iframe im DOM; die gefallenen Methoden sind weg.
 //   C (swiftshader-WebGPU, HART): das LAYOUT — eine synthetische Karte durch den echten Codec + Schicht-Schreiber
-//     steht links oben (nicht gedreht, nicht gespiegelt) — und die Kamera-Kleber-Wand (tote Slots zeichnen nichts).
+//     steht links oben (nicht gedreht, nicht gespiegelt) — und die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie:
+//     die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte in die Lücke).
 //   B (echter swiftshader-Renderer, OPT-IN): der Studio-Bake läuft (`__impostorRttBaked` steigt) ohne page-error.
 //   node scripts/diag-foundry-impostor.cjs
 const puppeteer = require("puppeteer");
@@ -189,12 +190,14 @@ async function driveImpostor(page) {
 //     Unterkante wie readPixels) reist durch den ECHTEN Karten-Codec (__phytoCore.karteKodiere, BC wenn der Adapter
 //     es kann, sonst rgba8) und den ECHTEN Schicht-Schreiber in den Atlas — das Bild MUSS links oben stehen (die Karte
 //     steht richtig herum und ist nicht gespiegelt).
-// (2) DIE KAMERA-KLEBER-WAND (18.07., Schöpfer: „Felsen/Kristalle/Autos/Feueresse hängen an der Kamera"): Wurzel —
-//     _archGroupFree lässt die Null-3×3 mit lebender Translation zurück; der Impostor-positionNode baut das Quad aus
-//     Translation + Normal-Probe NEU — der singulär gewordene Probe machte den toten Slot zu einem welt-spannenden
-//     camera-facing Quad. Die Wand: _lebt = probe²>1e-12 + select ⇒ toter Slot: _sInst=0 UND _alpha=0.
+// (2) DIE KAMERA-KLEBER-WAND (18.07., Schöpfer: „Felsen/Kristalle/Autos/Feueresse hängen an der Kamera"): Wurzel war
+//     der FREIE Slot — seine Null-3×3 mit lebender Translation machte den Normal-Probe des Impostor-positionNode
+//     singulär, der tote Slot wurde ein welt-spannendes camera-facing Quad. Seit 05.10. gibt es keinen freien Slot mehr:
+//     _archGroupFree verdichtet (die letzte Instanz zieht mit Matrix, Farbe und Karte in die Lücke, count sinkt), der
+//     Shader-Riegel (_lebt.select) fiel mit ihm.
 //     SELBSTTEST — ein Monster-Slot (Skala 1000) MUSS den Schirm fluten; derselbe Slot durch den ECHTEN Free-Chokepoint
-//     befreit ⇒ ~0 Pixel in seiner Schirm-Hälfte; der lebende Slot zeichnet weiter.
+//     befreit ⇒ ~0 Pixel in seiner Schirm-Hälfte; der Lebende zeichnet aus seinem neuen Slot weiter, mit SEINER Karte
+//     (das Layout links oben zählt nach dem Umzug).
 async function kleberProbe(page, fmtWunsch) {
     return await page.evaluate(async (fmtWunsch) => {
         const r = window.anazhRealm;
@@ -272,16 +275,20 @@ async function kleberProbe(page, fmtWunsch) {
             const geo = r._lodInstanceFacade(leaf.geom, 2);
             const mesh = new T.InstancedMesh(geo, mat, 2);
             mesh.frustumCulled = false;
+            // Die Slots kommen aus dem ECHTEN Belege-Chokepoint (Marken, count, Sichtbarkeit).
+            const gruppe = { key: "gate:kleber", mesh, capacity: 2, liveCount: 0, slotRef: [], slotEntry: [] };
+            const refMonster = r._archGroupAlloc(gruppe, null);
+            const refLebt = r._archGroupAlloc(gruppe, null);
             const M = new T.Matrix4();
-            // Slot 0 (LEBT): links im Bild. Slot 1 (erst MONSTER, dann befreit): rechts im Bild.
-            M.compose(new T.Vector3(-6, 0, 0), new T.Quaternion(), new T.Vector3(1, 1, 1));
-            mesh.setMatrixAt(0, M);
+            // Slot 0 (erst MONSTER, dann befreit): rechts im Bild. Slot 1 (LEBT): links im Bild — beim Befreien zieht er
+            // in Slot 0 (Matrix UND Karte: das Layout der Nachher-Zählung liest seine umgezogene Schicht).
             M.compose(new T.Vector3(6, 0, 0), new T.Quaternion(), new T.Vector3(1000, 1000, 1000));
-            mesh.setMatrixAt(1, M);
-            mesh.count = 2;
+            mesh.setMatrixAt(refMonster.slot, M);
+            M.compose(new T.Vector3(-6, 0, 0), new T.Quaternion(), new T.Vector3(1, 1, 1));
+            mesh.setMatrixAt(refLebt.slot, M);
             mesh.instanceMatrix.needsUpdate = true;
-            r._lodSlotStamp({ mesh }, 0, 1, false, leaf);
-            r._lodSlotStamp({ mesh }, 1, 1, false, leafV);
+            r._lodSlotStamp({ mesh }, refMonster.slot, 1, false, leafV);
+            r._lodSlotStamp({ mesh }, refLebt.slot, 1, false, leaf);
             const szene = new T.Scene();
             szene.add(mesh);
             szene.add(new T.AmbientLight(0xffffff, 3));
@@ -339,14 +346,21 @@ async function kleberProbe(page, fmtWunsch) {
             };
             const vorher = await zaehle();
             out.monsterPx = vorher.rechts;
-            // (2) DIE WAND: Slot 1 durch den ECHTEN Free-Chokepoint befreien.
-            const fakeG = { mesh, free: [], slotEntry: null, liveCount: 2 };
-            r._archGroupFree(fakeG, 1);
-            out.freeNull3x3 = (() => {
+            // (2) DIE WAND: den Monster-Slot durch den ECHTEN Free-Chokepoint befreien — die Gruppe verdichtet.
+            r._archGroupFree(gruppe, refMonster);
+            out.umzug = (() => {
                 const chk = new T.Matrix4();
-                mesh.getMatrixAt(1, chk);
+                mesh.getMatrixAt(0, chk);
                 const e = chk.elements;
-                return e[0] === 0 && e[5] === 0 && e[10] === 0 && Math.abs(e[12] - 6) < 1e-6;
+                return (
+                    mesh.count === 1 &&
+                    refLebt.slot === 0 &&
+                    refMonster.slot === -1 &&
+                    gruppe.slotRef[0] === refLebt &&
+                    !gruppe.slotRef[1] &&
+                    Math.abs(e[0] - 1) < 1e-6 &&
+                    Math.abs(e[12] + 6) < 1e-6
+                );
             })();
             const nachher = await zaehle();
             // das Layout zählt nach der Befreiung (der Monster-Slot deckt vorher auch die linke Box)
@@ -466,7 +480,7 @@ function strichWand(src) {
 
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
-        console.log(`\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + tote Slots zeichnen NICHTS, swiftshader-WebGPU) ===`);
+        console.log(`\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, swiftshader-WebGPU) ===`);
         if (C.ohneFeature) {
             console.log("  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Blick-Sonde)");
             continue;
@@ -479,8 +493,8 @@ function strichWand(src) {
         );
         if (C.layout) console.log(`  Schirm-Box ${JSON.stringify(C.box)} · Zeilen ${JSON.stringify(C.layout.zeilen)}`);
         console.log(`  Selbsttest Monster-Slot (Skala 1000) Pixel: ${C.monsterPx} (Linse MUSS Müll sehen)`);
-        console.log(`  Free-Chokepoint Null-3×3+Translation: ${C.freeNull3x3}`);
-        console.log(`  nach _archGroupFree — lebender Slot: ${C.lebtPx} px · toter Slot: ${C.totPx} px`);
+        console.log(`  Free-Chokepoint verdichtet (count 1, der Lebende zog in Slot 0): ${C.umzug}`);
+        console.log(`  nach _archGroupFree — lebender Slot: ${C.lebtPx} px · befreiter Slot: ${C.totPx} px`);
         if (C.err) {
             console.log(`  Fehler: ${C.err}`);
             errs.push(`${F}: Karten-Probe brach ab — ${C.err}`);
@@ -495,10 +509,10 @@ function strichWand(src) {
             errs.push(`${F}: die Karte steht NICHT links oben (lo ${L.lo} · Rest ${rest}) — Layout gedreht oder gespiegelt`);
         if (!(C.monsterPx > 200))
             errs.push(`${F}-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`);
-        if (!C.freeNull3x3) errs.push(`${F}: _archGroupFree schrieb nicht die erwartete Null-3×3 mit lebender Translation`);
+        if (!C.umzug) errs.push(`${F}: _archGroupFree verdichtete nicht (count, Marke oder Matrix des Umzugs falsch)`);
         if (!(C.lebtPx > 40)) errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
         if (!(C.totPx <= 8))
-            errs.push(`${F}: der TOTE Slot zeichnet noch ${C.totPx} px (> 8) — die Kamera-Kleber-Wand hält NICHT`);
+            errs.push(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
     }
 
     console.log("\n=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ===");
@@ -569,7 +583,7 @@ function strichWand(src) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, tote Slots zeichnen nichts, jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
+        "\n✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
     );
     process.exit(0);
 })().catch((e) => {
