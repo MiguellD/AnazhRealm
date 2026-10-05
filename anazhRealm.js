@@ -49862,6 +49862,52 @@ class AnazhRealm {
         return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6) };
     }
 
+    // DIE EBENE DER RÄDER bei (x, z) in Fahrt-Richtung `fahrtYaw` (sin, cos): die vier Aufstandspunkte
+    // (`_rittAufstand`) auf dem Boden-Gesetz → Höhe der Ebene unter dem Ursprung, Nick (Bug ab = +) und Wank (die
+    // Flanke (cos, −sin) oben = +), alle aus DENSELBEN Proben. Das alte max() über Bug/Heck hob den Ursprung auf den
+    // höchsten Punkt, und der Gelände-Nick kippte ihn dann noch einmal: am Hang schwebte der Wagen um halbe Länge ×
+    // Steigung. null, wenn eine Probe fehlt. Leser: der Ritt (`_tickMountedMovement`) und der Stand (`_fahrzeugStand`).
+    _rittEbene(entry, x, z, fahrtYaw) {
+        const st = this._rittAufstand(entry);
+        const fX = Math.sin(fahrtYaw);
+        const fZ = Math.cos(fahrtYaw);
+        const qX = Math.cos(fahrtYaw);
+        const qZ = -Math.sin(fahrtYaw);
+        const h = (l, q) => this.getTerrainHeightAt(x + fX * l + qX * q, z + fZ * l + qZ * q);
+        const vRe = h(st.vorn, st.quer);
+        const vLi = h(st.vorn, -st.quer);
+        const hRe = h(st.hinten, st.quer);
+        const hLi = h(st.hinten, -st.quer);
+        if (!Number.isFinite(vRe) || !Number.isFinite(vLi) || !Number.isFinite(hRe) || !Number.isFinite(hLi))
+            return null;
+        const hV = (vRe + vLi) / 2;
+        const hH = (hRe + hLi) / 2;
+        const lang = Math.max(0.5, st.vorn - st.hinten);
+        return {
+            y: hH + ((hV - hH) * -st.hinten) / lang,
+            nick: Math.atan2(hH - hV, lang),
+            wank: Math.atan2((vRe + hRe) / 2 - (vLi + hLi) / 2, Math.max(0.5, 2 * st.quer)),
+        };
+    }
+
+    // DER STAND eines Studio-Fahrzeugs (W5): es parkt, wie es fährt — auf der Ebene seiner vier Räder (Höhe, Nick,
+    // Wank aus `_rittEbene`); ohne ihn stand der Wagen waagrecht, am Hang hob ein Rad 0,3 m ab. Der Rahmen (längs x)
+    // und die Fahrt-Richtung (Template-Gier + π/2) stehen ab hier am Eintrag. Leser: der Spawn (jeder Pfad: Hotbar,
+    // DSL, Wiederherstellen) und der Abstieg trägt die letzte Ritt-Pose ohnehin.
+    _fahrzeugStand(entry) {
+        const fzg = this._fahrzeugGesetzFor(entry);
+        if (!fzg || !fzg.drive || !fzg.drive.huelle) return;
+        entry._fahrAchseX = true;
+        entry._rideYaw = (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + Math.PI / 2;
+        const eb = this._rittEbene(entry, entry.position.x, entry.position.z, entry._rideYaw);
+        if (!eb) return;
+        entry.position.y = eb.y + 0.5;
+        entry._terrainPitchZiel = eb.nick;
+        entry._terrainRollZiel = eb.wank;
+        entry._rideTerrainPitch = Math.max(-0.7, Math.min(0.7, eb.nick));
+        entry._rideRoll = Math.max(-0.7, Math.min(0.7, eb.wank));
+    }
+
     // Die Template-Gier zu einer Fahrt-Richtung (sin, cos): ein Studio-Fahrzeug liegt längs x (Bug +x) — R_y(φ)
     // trägt +x nach (cos φ, −sin φ), also φ = Fahrt − π/2; ein Teile-Werk fährt in +z (φ = Fahrt).
     _rittGier(entry, fahrtYaw) {
@@ -49927,29 +49973,14 @@ class AnazhRealm {
         // auf den Boden und das Gefährt versänke.
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         let groundY = this.getTerrainHeightAt(pm.x, pm.z);
-        // DER KONTAKT: die Räder stehen auf der Ebene durch ihre vier Aufstandspunkte (`_rittAufstand`: das
-        // Studio-Gesetz an den Achsen, ein Teile-Werk an Bug/Heck und Flanken) — Höhe unter dem Ursprung, Nick und
-        // Wank aus DENSELBEN Proben. Das alte max() über Bug/Heck hob den Ursprung auf den höchsten Punkt und der
-        // Gelände-Nick kippte ihn dann noch einmal: am Hang schwebte der Wagen um halbe Länge × Steigung. Der
-        // HANGABTRIEB im Bewegungs-Tick liest dasselbe Nick-Ziel.
+        // DER KONTAKT: die Räder stehen auf der Ebene durch ihre vier Aufstandspunkte (`_rittEbene`). Der HANGABTRIEB
+        // im Bewegungs-Tick liest dasselbe Nick-Ziel.
         if (Number.isFinite(groundY) && Number.isFinite(entry._rideYaw)) {
-            const st = this._rittAufstand(entry);
-            const fX = Math.sin(entry._rideYaw);
-            const fZ = Math.cos(entry._rideYaw);
-            const qX = Math.cos(entry._rideYaw);
-            const qZ = -Math.sin(entry._rideYaw);
-            const h = (l, q) => this.getTerrainHeightAt(pm.x + fX * l + qX * q, pm.z + fZ * l + qZ * q);
-            const vRe = h(st.vorn, st.quer);
-            const vLi = h(st.vorn, -st.quer);
-            const hRe = h(st.hinten, st.quer);
-            const hLi = h(st.hinten, -st.quer);
-            if (Number.isFinite(vRe) && Number.isFinite(vLi) && Number.isFinite(hRe) && Number.isFinite(hLi)) {
-                const hV = (vRe + vLi) / 2;
-                const hH = (hRe + hLi) / 2;
-                const lang = Math.max(0.5, st.vorn - st.hinten);
-                groundY = hH + ((hV - hH) * -st.hinten) / lang;
-                entry._terrainPitchZiel = Math.atan2(hH - hV, lang);
-                entry._terrainRollZiel = Math.atan2((vRe + hRe) / 2 - (vLi + hLi) / 2, Math.max(0.5, 2 * st.quer));
+            const eb = this._rittEbene(entry, pm.x, pm.z, entry._rideYaw);
+            if (eb) {
+                groundY = eb.y;
+                entry._terrainPitchZiel = eb.nick;
+                entry._terrainRollZiel = eb.wank;
             }
         }
         // Boot-Schwimmen: ein floats-Gefährt reitet die geglättete Lauf-Fläche, wo sie über dem Terrain
@@ -64395,6 +64426,8 @@ class AnazhRealm {
                 }
             }
         }
+        // DER STAND (W5): ein Studio-Fahrzeug parkt auf der Ebene seiner vier Räder (Höhe · Nick · Wank).
+        this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).

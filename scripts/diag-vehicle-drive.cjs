@@ -159,6 +159,20 @@ function fahrGefuehlVerdict(g) {
     return out;
 }
 
+// ── B-f (W5 Gegenstände, 05.10.) — DAS STAND-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Ein geparkter
+// Wagen steht, wie er fährt: auf der Ebene seiner vier Räder (`_fahrzeugStand` beim Spawn). Vorher stand er waagrecht
+// auf dem Boden unter seinem Ursprung — an der Mess-Wiese hob er am 20-%-Hang ein Rad 0,49 m (längs) bis 0,76 m (quer)
+// aus dem Boden oder versenkte es. Gemessen an der GERENDERTEN Matrix (`_archEntryWorldMatrix`) gegen das Boden-Gesetz:
+//   spalt ≤ 0,12 m — der größte |Rad-Spalt| über alle Hang-Proben (dieselbe Schwelle wie der Ritt-Kontakt)
+//   proben ≥ 4     — die Probe fand Hänge (längs UND quer geparkt), sonst ist sie leer
+const STAND = { spaltM: 0.12, probenMin: 4 };
+function standVerdict(s) {
+    const out = [];
+    if (!s || !(s.proben >= STAND.probenMin)) return [`proben ${(s && s.proben) || 0}`];
+    if (!(s.spaltM <= STAND.spaltM)) out.push(`spalt ${(s.spaltM || 0).toFixed(3)} m`);
+    return out;
+}
+
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 require(path.join(root, "vehicle-core.js"));
@@ -310,6 +324,16 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                 `Selbst-Test 10 (B-e): ‚${name}' → die Fahr-Gefühl-Linse feuert`,
                 fahrGefuehlVerdict(Object.assign({}, gesund, bruch)).length === 1
             );
+        // V7 (B-f, W5): das STAND-Verdikt feuert auf den waagrecht geparkten Wagen und auf eine leere Probe.
+        check("Selbst-Test 11 (B-f): gesunder Stand == 0 Verstoesse", standVerdict({ proben: 6, spaltM: 0.05 }).length === 0);
+        check(
+            "Selbst-Test 12 (B-f): ‚der Wagen parkt waagrecht am Hang (Rad 0,49 m frei)' → die Stand-Linse feuert",
+            standVerdict({ proben: 6, spaltM: 0.49 }).length === 1
+        );
+        check(
+            "Selbst-Test 13 (B-f): ‚keine Hang-Probe gefunden' → die Stand-Linse feuert",
+            standVerdict({ proben: 0, spaltM: 0 }).length === 1
+        );
         // V4 (B2): ein Stamm OHNE die Chokepoint-Bindung → die A6-Wand feuert.
         const brokenAnazh = anazhSrc.replace("this._archInstanceUpdate(entry);", "");
         const a6 = staticLaws(vcSrc, garageSrc, brokenAnazh, phytoSrc).filter((l) => l[0].startsWith("A6"));
@@ -712,6 +736,50 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         } catch (e) {
             res.gefuehlErr = (e && e.message) || String(e);
         }
+        // ===== B-f (W5 Gegenstände, 05.10.): DER STAND AM HANG =====
+        // Je Hang-Probe um die Mess-Wiese (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der
+        // Spawn-Pfad wie Hotbar/DSL: Basis auf dem Boden unter dem Ursprung); gemessen werden die vier Aufstandspunkte der
+        // GERENDERTEN Matrix gegen das Boden-Gesetz.
+        try {
+            const mo = expected.messort;
+            const M = new THREE.Matrix4();
+            const v3 = new THREE.Vector3();
+            const hang = [];
+            for (let dx = -40; dx <= 40 && hang.length < 6; dx += 8)
+                for (let dz = -40; dz <= 40 && hang.length < 6; dz += 8) {
+                    const x = mo[0] + dx;
+                    const z = mo[1] + dz;
+                    const hh = (a, b) => r.getTerrainHeightAt(a, b);
+                    const g = Math.hypot((hh(x + 2, z) - hh(x - 2, z)) / 4, (hh(x, z + 2) - hh(x, z - 2)) / 4);
+                    const ws = r._waterRunSurfaceAt(x, z);
+                    if (!(g >= 0.12 && g <= 0.35) || (Number.isFinite(ws) && ws > hh(x, z) - 0.3)) continue;
+                    hang.push({ x, z, g, rot: hang.length % 2 ? Math.PI / 2 : 0 });
+                }
+            let spaltM = 0;
+            const je = [];
+            for (const p of hang) {
+                const e3 = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: p.x, y: r.getTerrainHeightAt(p.x, p.z) + 0.5, z: p.z },
+                    { silent: true, precise: true, rotationY: p.rot, seed: 11 }
+                );
+                if (!e3) continue;
+                const h = r._fahrzeugGesetzFor(e3).drive.huelle;
+                r._archEntryWorldMatrix(e3, M);
+                let maxS = 0;
+                for (const ax of [h.fAx, h.rAx])
+                    for (const sz of [-1, 1]) {
+                        v3.set(ax, 0, (sz * h.spur) / 2).applyMatrix4(M);
+                        maxS = Math.max(maxS, Math.abs(v3.y - r.getTerrainHeightAt(v3.x, v3.z)));
+                    }
+                spaltM = Math.max(spaltM, maxS);
+                je.push(+maxS.toFixed(3));
+                r.removeArchitecture(e3);
+            }
+            res.stand = { proben: je.length, spaltM, je, steigung: hang.map((p) => +p.g.toFixed(2)) };
+        } catch (e) {
+            res.standErr = (e && e.message) || String(e);
+        }
         void expected;
         return res;
     }, nodeExpected);
@@ -800,6 +868,15 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         gv.length === 0,
         out.gefuehlErr ||
             `achse ${(g.achseGrad || 0).toFixed(1)}° · kontakt ${(g.kontaktM || 0).toFixed(3)} m (p75, max ${(g.kontaktMax || 0).toFixed(2)}) · lenk ${(g.lenkSpitzeG || 0).toFixed(2)} g · schwimm ${(g.schwimmGrad || 0).toFixed(1)}° · tempo ${((g.tempoRest || 0) * 100).toFixed(0)} % von ${(g.vStart || 0).toFixed(1)} m/s${gv.length ? " — Täter: " + gv.join(", ") + " · größter Spalt " + JSON.stringify(g.kontaktBei || null) : ""}`
+    );
+    // B-f (W5): der Stand am Hang — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const sv = standVerdict(out.stand);
+    const st = out.stand || {};
+    check(
+        "B-f/W5: STAND — ein geparkter GT steht am Hang auf seinen vier Rädern (längs und quer)",
+        sv.length === 0,
+        out.standErr ||
+            `größter Rad-Spalt ${(st.spaltM || 0).toFixed(3)} m über ${st.proben || 0} Hang-Proben (Steigung ${JSON.stringify(st.steigung || [])}, je ${JSON.stringify(st.je || [])})${sv.length ? " — Täter: " + sv.join(", ") : ""}`
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
