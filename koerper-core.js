@@ -667,8 +667,8 @@
 
     // ════════════════════════════════════════════════════════════════════
     // DIE GESTALT DES MENSCHEN NAH (Welle 5, „der Mensch nah: Hände, Gesicht, Augen"): die Maße, mit denen bauMensch
-    // Hand, Arm, Kopf, Gesicht und Hals-Rahmen baut — als DATEN (MESHFREI §8), gemessen an der Anthropometrie
-    // (erwachsener Mann 1,80 m). labProportionen,
+    // Hand, Arm, Kopf, Gesicht und Hals-Rahmen baut, und die Raster, mit denen der Ofen Kopf und Hände zu EINER Haut
+    // gießt — als DATEN (MESHFREI §8), gemessen an der Anthropometrie (erwachsener Mann 1,80 m). labProportionen,
     // labMorph und labLandmarks bleiben eingefroren (gate:koerper-kern); die Faktoren wirken im Bau.
     //   hand: mass skaliert jede Länge der Hand, breite zusätzlich Mittelhand, Finger-Abstand und -Dicke (vorher 1,45×
     //     zu lang und 1,8× zu breit — die Rechen-Hand der Tour) · unterarm: Querschnitt der Unterarm-Ellipse und die
@@ -685,6 +685,9 @@
     //     kinnZurueck = das Kinn hinter die Unterlippe.
     //   rumpf: brustkorb/nacken = Höhen-Faktoren der Brustkorb-Ellipse und des oberen Rückens (beide reichten bis ans
     //     Kinn — jede Hülle über ihnen verschluckte den Hals).
+    //   kopfHaut: Raster und Verrundung im Kopf-Raum (1 Einheit ≈ 0,21 m: 5,5 mm, 12 mm — das Budget koerper L0 hält),
+    //     mundSpalt = halbe Breite der Mund-Linie als Anteil des Abstands der Lippen-Mitten · handHaut: Raster und
+    //     Verrundung im Körper-Raum (1 Einheit ≈ 0,29 m: 3,5 mm, 6 mm; die Welt bewegt die Finger nicht).
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
@@ -696,6 +699,8 @@
         gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
+        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.35 }),
+        handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
     });
     // DAS SOLL in Zahlen (gate:mensch-anatomie, normiert auf die Körperhöhe Hk; Bänder um den erwachsenen Mann):
     // handL = Hand-Länge (Handgelenk bis Fingerspitze, 0,108 Hk) · handB = Mittelhand-Breite ohne Daumen (0,047) ·

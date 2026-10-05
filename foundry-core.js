@@ -4850,17 +4850,24 @@ function __tierAbstand(p, x, y, z) {
 // Die Fell-Ellipsoide eines Teil-Baums im Raum `ref` (Matrix ref⁻¹ · Welt): Kugeln der Klasse fell, die
 // `nimm(node)` zulässt. Zu fein fürs Raster (kleinste Halbachse < minVox·vox) bleibt Primitiv, dünner als
 // minDicke·vox wächst (Dicken-Erhalt). Groß vor klein sortiert (das Innere wird früh TIEF).
-function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon) {
+// klassen: die Stoff-Klassen, deren Kugeln die Haut tragen (Tier: fell; Mensch-Kopf: skin + lips, Welle 5);
+// zylinder: auch Zylinder tragen sie, als Ellipsoid über ihrem größeren Radius und ihrer halben Höhe (der Nasenrücken,
+// die Kiefer-Äste des Menschen-Kopfs — sonst stünden sie als Stäbe auf der glatten Haut).
+function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon, klassen, zylinder) {
     const inv = new THREE.Matrix4().copy(ref.matrixWorld).invert();
     const sp = new THREE.Vector3();
     const prims = [];
+    const kls = klassen || ["fell"];
     baum.traverse((node) => {
         if (!node.isMesh || !node.geometry || !node.geometry.parameters) return;
         const kl = node.material && node.material.userData && node.material.userData.__klasse;
-        if (kl !== "fell" || !nimm(node)) return;
-        const r = node.geometry.parameters.radius;
-        if (!(r > 0) || node.geometry.type !== "SphereGeometry") return;
+        if (!kls.includes(kl) || !nimm(node)) return;
+        const gp = node.geometry.parameters;
+        const zyl = zylinder && node.geometry.type === "CylinderGeometry";
+        const r = zyl ? Math.max(gp.radiusTop, gp.radiusBottom) : gp.radius;
+        if (!(r > 0) || !(zyl || node.geometry.type === "SphereGeometry")) return;
         const M = new THREE.Matrix4().multiplyMatrices(inv, node.matrixWorld);
+        if (zyl) M.multiply(new THREE.Matrix4().makeScale(1, gp.height / (2 * r), 1));
         const e = M.elements;
         const sx = Math.sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]),
             sy = Math.sqrt(e[4] * e[4] + e[5] * e[5] + e[6] * e[6]),
@@ -5536,6 +5543,80 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
+        }
+    }
+    // DIE KOPF-HAUT (Welle 5, „der Mensch nah: das Gesicht"): das Gesicht war ein Haufen einzelner Kugeln (Kiefer,
+    // Kinn, Wangen, Masseter, Lippen — jede mit eigener Kante, der Kartoffel-Kopf der Tour). Wie beim Tier (V18.499)
+    // gießt derselbe SDF-Guss die Haut- und Lippen-Kugeln des Kopfes (ohne die Augen-Gruppen: ihre Lider blinzeln) zu
+    // EINER glatten Fläche im Kopf-Raum; die Lippe ist eine Farbe der Haut (Vertex, je Punkt das nächste Primitiv),
+    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — das Fern-Standbild bleibt der Primitiv-Guss.
+    if (!fein && typeof kern.surfaceNets === "function" && kern.MENSCH_GESTALT && B.parts.head) {
+        const kopf = B.parts.head;
+        const KH = kern.MENSCH_GESTALT.kopfHaut;
+        const augen = [B.augen.eyeL, B.augen.eyeR].filter(Boolean);
+        const unterAuge = (n) => {
+            for (let c = n; c; c = c.parent) if (augen.includes(c)) return true;
+            return false;
+        };
+        B.character.updateMatrixWorld(true);
+        const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips"], true);
+        // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
+        kopf.traverse((n) => {
+            if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
+        });
+        if (prims.length < 2) throw new Error("MENSCH-HAUT: der Kopf trägt keine Haut-Primitive");
+        const Fk = __tierFeld(prims, KH.vox, KH.blend);
+        const geo = __huelleAusFeld(kern, Fk.f, Fk.nx, Fk.ny, Fk.nz, Fk.lo, KH.vox, 0, 0, null, null, 0);
+        if (!geo) throw new Error("MENSCH-HAUT: die Kopf-Haut lieferte keine Fläche");
+        // je Vertex die Farbe des nächsten Primitivs (normierter Abstand |Mi·p|/r − 1), linear wie das Material
+        const farbeVon = new Map();
+        for (const p of prims) {
+            const c = p.node.material.color;
+            farbeVon.set(p, [c.r, c.g, c.b]);
+        }
+        // die Mund-Linie liegt zwischen den Lippen-Mitten (Kopf-Raum), ihre Breite ist ein Bruchteil der Lippen-Höhe
+        const oL = B.augen.upperLipRef,
+            uL = B.augen.lowerLipRef;
+        const mundY = (oL.position.y + uL.position.y) / 2,
+            mundH = Math.abs(oL.position.y - uL.position.y);
+        const pa = geo.attributes.position;
+        const col = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+            const x = pa.getX(i),
+                y = pa.getY(i),
+                z = pa.getZ(i);
+            let best = prims[0],
+                bd = Infinity;
+            for (const p of prims) {
+                const m = p.Mi;
+                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
+                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
+                if (d < bd) {
+                    bd = d;
+                    best = p;
+                }
+            }
+            // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten (dunkel, ein Viertel der Lippe)
+            const fb = farbeVon.get(best);
+            const spalt = best.node.material.userData.__klasse === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
+            col.set(spalt ? [fb[0] * 0.25, fb[1] * 0.2, fb[2] * 0.2] : fb, i * 3);
+        }
+        geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+        kopf.add(new THREE.Mesh(geo, matFuer("haut"))); // Kopf-lokal gebacken (Identität)
+        // DIE HAND-HAUT: Handfläche, Finger (Zylinder als Ellipsoide) und Daumen werden EINE Fläche je Hand — vorher
+        // hingen vier Zylinder-Stäbe an einer Kugel (die Rechen-Hand der Tour).
+        const HH = kern.MENSCH_GESTALT.handHaut;
+        for (const hn of ["hand1", "hand-1"]) {
+            const hand = B.parts[hn];
+            if (!hand) continue;
+            const hp = __tierPrims(hand, hand, () => true, HH.vox, HH.blend, () => null, ["skin"], true);
+            if (hp.length < 2) throw new Error("MENSCH-HAUT: die Hand trägt keine Haut-Primitive");
+            const Fh = __tierFeld(hp, HH.vox, HH.blend);
+            const hg = __huelleAusFeld(kern, Fh.f, Fh.nx, Fh.ny, Fh.nz, Fh.lo, HH.vox, 0, 0, null, null, 0);
+            if (!hg) throw new Error("MENSCH-HAUT: die Hand-Haut lieferte keine Fläche");
+            hand.add(new THREE.Mesh(hg, matFuer("haut"))); // Hand-lokal gebacken (Identität)
         }
     }
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
