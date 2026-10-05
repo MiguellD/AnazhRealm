@@ -153,6 +153,16 @@ function lodTick(now){ if(!dorf||!dorfB) return; if(now-lastLOD<240) return; las
     if(soll!==C.stufe){ const p2=(soll<C.stufe)?vprio(dx,dz,d2):d2+800;                        // Aufwertungen VOR Abwertungen, vorn vor hinten
       if(p2<bd){ bd=p2; best=ck; bs=soll; } } }
   if(best){ dorfChunks[best].stufe=bs; rebakeChunk(best, true); } }                          // Stufen-Wechsel in der Ferne: Blende verdeckt den Silhouetten-Sprung
+// AUSSTATTUNG am Ort: das Gesetzbuch baut (buildInstance, Stufe 0), die Gestalt 1..V aus der Lage gewürfelt (die Welt
+// würfelt sie aus dem Samen des Eintrags — dieselben V Individuen).
+function ausstattungAm(id, x, z, ry){
+  const V=(FC.AUSSTATTUNG[id]&&FC.AUSSTATTUNG[id].gestalten)||1;
+  const h=(Math.imul(Math.round(x*10)|0, 73856093) ^ Math.imul(Math.round(z*10)|0, 19349663))>>>0;
+  const g=FC.buildInstance(id, 1+(h%V), 0);
+  g.position.set(x,0,z); g.rotation.y=ry||0;
+  g.traverse(o=>{ if(o.isMesh) o.receiveShadow=true; });
+  return g;
+}
 function buildDorf(dp){
   if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; }
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
@@ -311,14 +321,8 @@ function buildDorf(dp){
       const ox=-Math.sin(bk.th)*sz*(bk.w/2-0.1), oz=Math.cos(bk.th)*sz*(bk.w/2-0.1);
       ra.position.set(bk.x+ox,0.7,bk.z+oz); ra.rotation.y=ang; ra.castShadow=true; dorfGroup.add(ra);
       solids.push({min:[-bk.len/2,0,-0.1],max:[bk.len/2,1.1,0.1], th:ang, tx:bk.x+ox, tz:bk.z+oz}); } });
-  lay.brunnen.forEach(b3=>{ const bg2=new THREE.Group(); bg2.position.set(b3.x,0,b3.z);
-    for(let a2=0;a2<8;a2++){ const w=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.7,0.28),mLay('stein'));
-      w.position.set(Math.cos(a2/8*2*Math.PI)*1.05,0.35,Math.sin(a2/8*2*Math.PI)*1.05); w.rotation.y=-a2/8*2*Math.PI; bg2.add(w); }
-    const wa=new THREE.Mesh(new THREE.BoxGeometry(1.7,0.06,1.7),M.dunkel); wa.position.y=0.55; bg2.add(wa);
-    [-1,1].forEach(sx=>{ const p2=new THREE.Mesh(new THREE.BoxGeometry(0.12,2.0,0.12),mLay('holz')); p2.position.set(sx*1.0,1.0,0); bg2.add(p2); });
-    const rf=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.1,1.6),M.ziegel); rf.position.y=2.05; rf.rotation.z=0.12; bg2.add(rf);
-    bg2.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}}); dorfGroup.add(bg2);
-    solids.push({min:[b3.x-1.35,0,b3.z-1.35],max:[b3.x+1.35,0.75,b3.z+1.35]}); });
+  lay.brunnen.forEach(b3=>{ const bg2=ausstattungAm('brunnen', b3.x, b3.z, 0); dorfGroup.add(bg2);   // AUSSTATTUNG: der Ziehbrunnen kommt aus dem Gesetzbuch (Lab = Welt)
+    solids.push({min:[b3.x-0.95,0,b3.z-0.95],max:[b3.x+0.95,0.75,b3.z+0.95]}); });
   lay.fences.forEach(f=>{ const dx=f.x1-f.x0, dz=f.z1-f.z0, len=Math.hypot(dx,dz); if(len<0.8)return;
     const ang=Math.atan2(-dz,dx), mx=(f.x0+f.x1)/2, mz=(f.z0+f.z1)/2, np=Math.max(2,Math.round(len/1.6)+1);
     for(let q2=0;q2<np;q2++){ const fpo=new THREE.Mesh(new THREE.BoxGeometry(0.09,1.0,0.09),mLay('holz'));
@@ -331,15 +335,10 @@ function buildDorf(dp){
     const nfu=Math.max(2,(f.ez*2/1.6)|0); for(let q2=1;q2<nfu;q2++){ const fu=new THREE.Mesh(new THREE.BoxGeometry(f.ex*2-0.8,0.05,0.28),mLay('boden'));
       const lz=-f.ez+q2*2*f.ez/nfu, c2=Math.cos(f.phi), s3=Math.sin(f.phi);
       fu.position.set(f.cx+lz*s3,0.11,f.cz+lz*c2); fu.rotation.y=f.phi; fu.receiveShadow=true; dorfGroup.add(fu); } });
-  lay.staende.forEach(st=>{ const g2=new THREE.Group(); g2.position.set(st.x,0,st.z);
-    [[-0.9,-0.6],[0.9,-0.6],[-0.9,0.6],[0.9,0.6]].forEach(q2=>{ const po=new THREE.Mesh(new THREE.BoxGeometry(0.1,2.0,0.1),mLay('holz')); po.position.set(q2[0],1.0,q2[1]); g2.add(po); });
-    const da=new THREE.Mesh(new THREE.BoxGeometry(2.3,0.08,1.7),M.ziegel2); da.position.y=2.05; da.rotation.x=0.1; g2.add(da);
-    const th2=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.08,1.0),mLay('holz')); th2.position.y=0.95; g2.add(th2);
-    const mk3=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.05,0.9), new THREE.MeshLambertMaterial({color:[0xb0533a,0x8a6d3b,0x5f7a4a,0x9c8f5f][(st.x*7+st.z*3&3+0)>>>0&3]}));   // MARKISEN-GESETZ: Tuch überm Stand — Marktfarbe aus der Position gewürfelt
-    mk3.position.set(0,2.14,-0.85); mk3.rotation.x=0.42; g2.add(mk3);
-    for(const wx of [-0.55,0.15,0.7]){ const korb=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.3,0.42), mLay('lattung')); korb.position.set(wx,1.14,(wx*13&1)?0.18:-0.15); g2.add(korb); }   // WAREN auf dem Tisch
-    g2.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}}); dorfGroup.add(g2);
-    solids.push({min:[st.x-1.0,0,st.z-0.7],max:[st.x+1.0,1.0,st.z+0.7]}); });
+  lay.staende.forEach(st=>{ const pz=lay.platz;                                                 // AUSSTATTUNG: der Marktstand kommt aus dem Gesetzbuch, die Front schaut zur Platz-Mitte (dieselbe Regel wie die Welt)
+    const ry=pz? Math.atan2(-(pz.cx-st.x), -(pz.cz-st.z)) : 0;
+    dorfGroup.add(ausstattungAm('marktstand', st.x, st.z, ry));
+    solids.push({min:[-1.05,0,-0.5],max:[1.05,0.9,0.5], th:ry, tx:st.x, tz:st.z}); });
   { let dh=((plan.seed||7)*1103515245+12345)>>>0; const dr=()=>{ dh^=dh<<13; dh^=dh>>>17; dh^=dh<<5; dh>>>=0; return (dh&0xffff)/0x10000; };   /*AUSSTATTUNGS-DNA + PLATZIERUNGS-BEDINGUNGS-GESETZ: jedes Ding hat REALITAETS-Bedingungen — frei() prueft Fahrbahn+Fluss, setzFrei() streut bis erfuellt*/
     const frei=(x,z,r)=>{
       for(const rd2 of lay.roads){ for(let i2=0;i2+1<rd2.pts.length;i2++){ const A2=rd2.pts[i2],B3=rd2.pts[i2+1];
@@ -615,6 +614,8 @@ function buildHouse(params){
   if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); }
   if(typeof ground!=='undefined') ground.visible=true; const _ch=document.getElementById('chronik'); if(_ch)_ch.style.display='none'; dorfRauch.teilchen.forEach(T2=>{scene.remove(T2.m);}); dorfRauch.teilchen.length=0; dorfRauch.quellen.length=0;
   const lodSt=(document.getElementById('pLOD'))?(+document.getElementById('pLOD').value|0):0;   // LOD-SONDE: >0 = Dorf-Bake-Pfad statt Editor-Haus
+  const ausId=document.getElementById('pAus')?document.getElementById('pAus').value:'haus';      // AUSSTATTUNG statt Haus (Feuerstelle · Marktstand · Ziehbrunnen)
+  if(ausId!=='haus'&&FC.AUSSTATTUNG[ausId]){ buildAusstattungLab(ausId, lodSt); return; }
   if(lodSt>0){ buildHausLOD(params, lodSt); return; }
   { const inf=document.getElementById('lodInfo'); if(inf)inf.style.display='none'; }
   haus=HAUS(THREE,mat,params); houseGroup=haus.build(); scene.add(houseGroup);
@@ -627,6 +628,22 @@ function buildHouse(params){
   if(haus.chimney){const c=haus.chimney; fire.position.set((c.min[0]+c.max[0])/2, D.baseY+0.6, (c.min[2]+c.max[2])/2);}
   // Checkbox-Zustände + Explosion auf neues Haus anwenden
   ORDER.forEach(k=>{ if(haus.subsystems[k]){ haus.subsystems[k].visible=checks[k].checked; haus.subsystems[k].position.y=explode*(EXPL[k]||0); } });
+}
+
+// ════════════════ AUSSTATTUNG (Einzelstück) ════════════════
+// LAB = WELT: dieselbe buildInstance wie der Foundry-Worker der Welt — die LOD-Sonde wählt die Stufe (Editor/Ring A =
+// nah · Chunk-Stufen = mittel), der Samen-Knopf die Gestalt. Das Herdlicht des Labors steht in der Glut der Feuerstelle.
+function buildAusstattungLab(id, lodSt){
+  haus=null; solids=[]; doorList.length=0; lodSpawn={x:0, z:3.2};
+  const V=FC.AUSSTATTUNG[id].gestalten||1, stufe=lodSt>=2?1:0;
+  houseGroup=FC.buildInstance(id, 1+((SEED>>>0)%V), stufe); let tris=0, dc=0;
+  houseGroup.traverse(o=>{ if(o.isMesh){ o.receiveShadow=true; tris+=(o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3; dc++; } });
+  scene.add(houseGroup);
+  const bb=new THREE.Box3().setFromObject(houseGroup);
+  D={W:bb.max.x-bb.min.x, D:bb.max.z-bb.min.z, ridgeY:Math.max(1.4, bb.max.y), baseY:0, eaveY:bb.max.y}; P={};
+  fire.position.set(0, id==='feuerstelle'?0.35:-60, 0);
+  const inf=document.getElementById('lodInfo'); if(inf){ inf.style.display='block';
+    inf.textContent=FC.AUSSTATTUNG[id].lab+' · Gestalt '+(1+((SEED>>>0)%V))+'/'+V+' · Stufe '+stufe+'\n'+dc+' Rollen-Meshes · '+(tris|0).toLocaleString('de-DE')+' Dreiecke'; }
 }
 
 // ════════════════ LOD-SONDE (Einzelhaus) ════════════════
@@ -694,6 +711,7 @@ function regen(keepCam){ labels(); if($('pDorf')&&$('pDorf').checked){ buildDorf
 ['pJahr','pKlima','pLeute','pWohl'].forEach(id=>$(id)&&$(id).addEventListener('input',()=>{ applyMeta(); regen(true); }));   // META-GESETZ treibt alle Regler
 $('pK').addEventListener('change',()=>{ applyKultur($('pK').value, SEED); $('vK').textContent=($('pK').value==='samen'?'Samen→'+kulturFromSeed(SEED):$('pK').value); regen(true); });
 $('pZeit').addEventListener('change',()=>setZeit($('pZeit').value));
+if($('pAus')) $('pAus').addEventListener('change',()=>{ $('vAus').textContent=$('pAus').options[$('pAus').selectedIndex].text; regen(false); });
 $('pSeed').onclick=()=>{ SEED=(Math.random()*1e6|0)+1; if($('pK').value!=='manuell'){ applyKultur($('pK').value, SEED); $('vK').textContent=($('pK').value==='samen'?'Samen→'+kulturFromSeed(SEED):$('pK').value); } regen(true); };
 ['pAnnex','pBalcony','pDoppel','pTerrain','pTreppgiebel','pKuppel','pPortikus','pArkade','pTurm','pZinnen','pVeranda','pVorkragung','pPilotis','pTerrasse'].forEach(id=>$(id).addEventListener('change',()=>regen(true)));
 if($('pLOD')){ const lodLbl=()=>{ $('vLOD').textContent=LODNAME[+$('pLOD').value|0]; };     // LOD-SONDE: Kamera bleibt stehen → Stufen direkt vergleichbar

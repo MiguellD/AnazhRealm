@@ -84,13 +84,22 @@
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { haus: [0, 1, 2] },
+            kindStages: { haus: [0, 1, 2], ausstattung: [0, 1] },
             budget: {
                 haus: {
                     0: { tris: 132000, band: 40000, draws: 11, schatten: 0 },
                     1: { tris: 44000, band: 10000, draws: 4, schatten: 1 },
                     2: { tris: 7000, band: 2000, draws: 3, schatten: false },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
+                    fernform: "gesetz",
+                },
+                // DIE AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen, unten): die Hülle der gebauten Gestalten (gemessen
+                // 05.10.: nah höchstens 3338 Dreiecke — der Brunnen, mittel 595 — die Feuerstelle); je Stufe höchstens zwei
+                // Draws — der Stoff und eine Seh-Klasse dazu (die Glut der Feuerstelle · das Wasser des Brunnens); jede
+                // Stufe wirft selbst (die Glut nie — der Wirt liest ihre Seh-Klasse).
+                ausstattung: {
+                    0: { tris: 3400, draws: 2, schatten: 0 },
+                    1: { tris: 620, draws: 2, schatten: 1 },
                     fernform: "gesetz",
                 },
                 gestalten: {},
@@ -1546,7 +1555,7 @@
     for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.84+r2()*0.3;
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; return tx; }catch(e){ return null; } }
+  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
     // prettier-ignore
     function texDach(grund,seed2){ try{                                                           // TEXTUR-SAME DECKUNG: Biberschwanz (Deckmaß 0.32m, Breite 0.18, Halbversatz, Schattenfuge = Reihenüberdeckung)
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -1558,7 +1567,7 @@
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
       cx.fillRect(x+off,y-rw,zb-2,rw-1);
       cx.fillStyle='rgba(0,0,0,0.27)'; cx.fillRect(x+off,y-3,zb-2,3); } }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; return tx; }catch(e){ return null; } }
+  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
     // prettier-ignore
     function texPutz(seed2){ try{                                                                /*TEXTUR-SAME PUTZ: Kellenwurf — koernige Sprenkel + horizontale Kellenzuege, deterministisch*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -1567,7 +1576,7 @@
   for(let k=0;k<5200;k++){ const t=0.86+r2()*0.20; cx.fillStyle='rgba('+(255*t|0)+','+(255*t|0)+','+(252*t|0)+',0.5)';
     cx.fillRect((r2()*256)|0,(r2()*256)|0, 1+((r2()*2)|0), 1+((r2()*2)|0)); }
   for(let y=0;y<256;y+=9+((r2()*7)|0)){ cx.fillStyle='rgba(120,116,108,0.10)'; cx.fillRect(0,y,256,1); }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; return tx; }catch(e){ return null; } }
+  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
     // prettier-ignore
     function texStein(seed2){ try{                                                                /*TEXTUR-SAME NATURSTEIN: Quaderverband 46×28cm, Fuge 1.6, Halbversatz, Bruchton je Stein*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -1578,7 +1587,7 @@
     for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.88+r2()*0.24;
       cx.fillStyle='rgb('+(255*t*0.92|0)+','+(255*t*0.90|0)+','+(255*t*0.86|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; return tx; }catch(e){ return null; } }
+  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  MATERIALIEN (Rollen → Three-Material) — LAZY (vehicle-/schmiede-Muster):
@@ -1594,6 +1603,10 @@
     var _texPu = null;
     var _texSt = null;
     var M = null;
+    // DAS FARB-GESETZ der Architektur (05.10.): je Rolle das Hex als sRGB-ABSICHT (der Wähler, die Palette) — der Bake
+    // (`_colFor`) und die Stoffe des Labors zeigen seinen LINEAREN Wert. Bis 05.10. las die Welt das Hex roh als linear:
+    // Putz 0,89 statt 0,77, Holz 0,30 statt 0,06, Ziegel 0,35 statt 0,12 — das weiße Haus mit blassem Fachwerk.
+    var _HEX = {};
     var _roleByMat = new Map();
     // DIE SEH-KLASSE je Rolle (Integration W8, rein additiv — docs/studio-vertrag.md B2c): was der Stoff dem AUGE ist
     // (phyto-core BUDGET_GESETZ.seh); das Budget-Gesetz am Studio-Ausgang faltet nur innerhalb EINER Klasse — das Glas
@@ -1660,7 +1673,17 @@
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
+      for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
+      M.feuer.userData.__leucht=LEUCHT_FEUER;                                                   // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
       return M; }
+    // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × 2,5 (die Flammen-Wurzel 0,55/0,30/0,08 leuchtet
+    // 1,4/0,75/0,2, die Glut-Mitte 0,75/0,25/0,08, ihr Rand 0,15/0,10/0,08). Bis 05.10. leuchtete jede Glut-Fläche gleich
+    // (0xff5212 × 1,5) — das Bett las sich als cremige Scheibe, die Flamme als gelber Kegel.
+    // prettier-ignore
+    const LEUCHT_FEUER=2.5;
+    // Das Labor (r128) liest dasselbe Gesetz: sein Standard-Shader nimmt die Vertex-Farbe als Leuchten (Lab = Welt).
+    // prettier-ignore
+    function _leuchtLab(m){ const k=m.userData.__leucht; m.onBeforeCompile=function(s){ s.fragmentShader=s.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance = vColor * '+k.toFixed(3)+';\n#endif'); }; }
     // mat — die Rollen-Auflösung (byte-treu Lab Z.2996 `const mat=r=>M[r]||M.holz;` + Lazy-Guard).
     // prettier-ignore
     function mat(r){ const MM=materials(); return MM[r]||MM.holz; }
@@ -1709,9 +1732,12 @@
 };
     // prettier-ignore
     const KULTNAMES=['alemannisch','fraenkisch','niedersaechsisch','mittelalterlich','holzhuette','franzoesisch','italienisch','modern','volle_moderne','hochhaus','roemisch','tudor','alpenchalet','hollaendisch','hanseatisch','georgian','viktorianisch','griechisch','spanisch','andalusisch','provenzalisch','pueblo','marokkanisch','skandinavisch','norwegisch','russisch','schwarzwald','japanisch','gotisch','barock','renaissance','chinesisch'];
-    // tintM — byte-treu Lab Z.1629; EINE dokumentierte Naht: materials() vorweg (M ist im Kern lazy).
+    // tintM — byte-treu Lab Z.1629; EINE dokumentierte Naht: materials() vorweg (M ist im Kern lazy). Zweite Naht
+    // (FARB-GESETZ 05.10.): _setzeHex hält die sRGB-Absicht in _HEX und zeigt den linearen Wert.
     // prettier-ignore
-    function tintM(col){ materials(); for(const k in DEFCOL){ if(M[k]) M[k].color.setHex((col&&col[k]!=null)?col[k]:DEFCOL[k]); } if(M.blockholz){ const _lh=(c,f)=>{const r=Math.min(255,((c>>16&255)*f)|0),g=Math.min(255,((c>>8&255)*f)|0),b=Math.min(255,((c&255)*f)|0);return (r<<16)|(g<<8)|b;}; const _hz=(col&&col.holz!=null)?col.holz:DEFCOL.holz; M.blockholz.color.setHex((col&&col.blockholz!=null)?col.blockholz:_lh(_hz,1.4)); } }
+    function _setzeHex(k,hx){ _HEX[k]=hx; M[k].color.setHex(hx).convertSRGBToLinear(); }
+    // prettier-ignore
+    function tintM(col){ materials(); for(const k in DEFCOL){ if(M[k]) _setzeHex(k,(col&&col[k]!=null)?col[k]:DEFCOL[k]); } if(M.blockholz){ const _lh=(c,f)=>{const r=Math.min(255,((c>>16&255)*f)|0),g=Math.min(255,((c>>8&255)*f)|0),b=Math.min(255,((c&255)*f)|0);return (r<<16)|(g<<8)|b;}; const _hz=(col&&col.holz!=null)?col.holz:DEFCOL.holz; _setzeHex('blockholz',(col&&col.blockholz!=null)?col.blockholz:_lh(_hz,1.4)); } }
     // prettier-ignore
     function kulturFromSeed(seed){ const idx=((Math.round(seed*131+7)*2654435761)>>>0)%KULTNAMES.length; return KULTNAMES[idx]; }
     // ── kulturParams — REINE Kultur-Ableitung (identische Streu-Sequenz wie früher applyKultur: pitch→W→D→st) ──
@@ -1752,7 +1778,7 @@
     // prettier-ignore
     const _MM={};
     // prettier-ignore
-    function _mmFor(role){ if(!_MM[role]){ const m=M[role].clone(); m.vertexColors=true; m.color=new THREE.Color(0xffffff); _MM[role]=m; } return _MM[role]; }
+    function _mmFor(role){ if(!_MM[role]){ const m=M[role].clone(); m.vertexColors=true; m.color=new THREE.Color(0xffffff); if(m.userData.__leucht) _leuchtLab(m); _MM[role]=m; } return _MM[role]; }
     // prettier-ignore
     const _ML={};
     // prettier-ignore
@@ -1765,11 +1791,17 @@
     const _MAPPED={backstein:1,ziegel:2,ziegel2:3}; // Rollen, deren FARBE die Textur-Karte trägt
     // prettier-ignore
     function _colFor(role,kol){ if(_MAPPED[role]&&!(kol&&kol[role]!=null)&&M[role]&&M[role].map) return [0.985,0.985,0.985];   // KARTEN-GESETZ (V18.500): weiß NUR, wo eine Karte die Farbe trägt — kartenlos (Worker → Welt: colorNode = Vertex-Farbe) trägt der Vertex den Grundton, sonst steht die Welt in weißen Ziegeln   // DOPPEL-TÖNUNGS-FIX: Karte×Vertex — der Bake bleibt weiß, sonst multipliziert der Browser DEFCOL-Rot AUF die Ziegel-Karte
-  const hx=(kol&&kol[role]!=null)?kol[role]:((DEFCOL[role]!=null)?DEFCOL[role]:M[role].color.getHex());
+  const hx=(kol&&kol[role]!=null)?kol[role]:((DEFCOL[role]!=null)?DEFCOL[role]:(_HEX[role]!=null?_HEX[role]:0xffffff));
   let r=((hx>>16)&255)/255, g=((hx>>8)&255)/255, b=(hx&255)/255;
   if(role==='holz'||role==='stamm'||role==='blockholz'){ const lum=(r+g+b)/3;                 // BALKEN-LICHT-GESETZ: dunkle Holz-Paletten saufen unter Beleuchtung×ACES ins Schwarz ab (Michis „schwarze Balken auf weißer Fassade"); Luminanz-Boden 0.14 hebt sanft, Farbton bleibt, Kultur-Hierarchie bleibt (dunkel-Rolle unberührt)
     if(lum<0.14&&lum>0.001){ const f=0.14/lum; r=Math.min(1,r*f); g=Math.min(1,g*f); b=Math.min(1,b*f); } }
-  return [r,g,b]; }
+  return [_lin(r),_lin(g),_lin(b)]; }                                                          // FARB-GESETZ: die Absicht (sRGB, oben samt Balken-Boden) wird ihr linearer Wert — die Welt liest den Vertex linear
+    // DIE EINE sRGB→linear-Kurve des Gesetzbuchs (IEC 61966-2-1), auf das Raster 2^-16 gelegt: Math.pow darf zwischen
+    // V8-Bauten in der letzten Stelle abweichen, die Bytes nicht.
+    // prettier-ignore
+    function _lin(c){ const v=c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4); return Math.round(v*65536)/65536; }
+    // prettier-ignore
+    function _linHex(hx){ return [_lin(((hx>>16)&255)/255), _lin(((hx>>8)&255)/255), _lin((hx&255)/255)]; }
     // prettier-ignore
     function _baseFor(o,role,kol){ const b=_colFor(role,kol), f=o.userData&&o.userData.__fuge; if(!f||(M[role]&&M[role].map)) return b;   // FUGEN-TON (Flächen-Stufe, kartenlos): Stein-Anteil × Stein-Ton + Rest × Fugen-Ton — der Mittelton, den der Verband aus der Ferne zeigt
   const m2=_colFor(_roleByMat.get(f.mat)||'lehm',kol), a=f.anteil; return [b[0]*a+m2[0]*(1-a), b[1]*a+m2[1]*(1-a), b[2]*a+m2[2]*(1-a)]; }
@@ -2801,7 +2833,7 @@
         if (!_mmGrund[role]) {
             var m = _mmFor(role).clone();
             m.map = null;
-            m.color = new THREE.Color(DEFCOL[role] != null ? DEFCOL[role] : 0xffffff);
+            m.color = new THREE.Color(DEFCOL[role] != null ? DEFCOL[role] : 0xffffff).convertSRGBToLinear(); // FARB-GESETZ
             _mmGrund[role] = m;
         }
         return _mmGrund[role];
@@ -2840,6 +2872,8 @@
     function buildInstance(rezeptId, seed, lod, ov) {
         var pre = PRESETS[rezeptId];
         if (!pre) return null;
+        // DIE AUSSTATTUNG (unten) baut ihr eigenes Gesetz — dieselben Rollen, derselbe Bake, eigene Stufen.
+        if (pre.kind === "ausstattung") return buildAusstattung(rezeptId, seed, lod, ov);
         materials();
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
@@ -2853,6 +2887,1048 @@
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
         if (gm.__tuerFluegel) for (var tf = 0; tf < gm.__tuerFluegel.length; tf++) g.add(gm.__tuerFluegel[tf]);
         g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe };
+        g.updateMatrixWorld(true);
+        return g;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DIE AUSSTATTUNG — Feuerstelle · Marktstand · Ziehbrunnen (Architektur-Welle 05.10.)
+    //  Befund (Blick-Tour V18.530 „08-markt", Werkbank an der Mess-Wiese, echte GPU): der Wirt baute die drei aus
+    //  eigenen Teilen — die Glut ein Zylinder mit Scheibe und Kegel (13 im 70-m-Kreis, 24 GPU-Befehle, 69k
+    //  Dreiecke), der Marktstand sechs Bretter mit je einem Draw (Albedo 0,034), der Brunnen ein Zylinder. Das
+    //  Gesetzbuch der Architektur trägt sie jetzt selbst, mit DERSELBEN Stoff-Wahrheit wie das Haus: die Rollen-
+    //  Materialien, der Rollen-Bake (bakeLOD: Kontakt-AO · Material-Illusion · Welt-UV), die Farbe im Vertex
+    //  (kartenlos) — das Labor-Dorf und die Welt bauen dieselben Bytes.
+    //  DIE MASSE (Realität): Feuerstelle Ring-Innen-Ø 0,9–1,1 m aus Feldsteinen 17–27 cm, Scheite 40–55 cm × Ø
+    //  9–12 cm im Stern, Glutbett Ø 0,76 m, Flammen 25–55 cm · Marktstand Tisch 2,0 × 0,9 m auf 0,86 m
+    //  (Arbeitshöhe), Pfosten 9 cm, Plane vorn 2,25 / hinten 1,95 m (Gefälle nach hinten), Volant 18 cm ·
+    //  Ziehbrunnen Kranz außen Ø 1,84 m, Brüstung 0,73 m, Wand 0,3 m aus Quadern in Lagen, Haspel auf 1,5 m,
+    //  First 2,62 m, Schindeldach.
+    //  DIE STUFEN: 0 = nah (Fasen an jeder Kante, Waren, Ruß, Moos, Schindeln, Eisen) · 1 = mittel (dieselbe
+    //  Silhouette an denselben Orten — jeder Zufall zieht aus seinem eigenen Strom, die Stufe wählt nur die
+    //  Feinheit; Kanten scharf, Kleinteile fallen). DAS VERWITTERUNGS-GESETZ (je Vertex, im Asset-Raum): Erdsaum
+    //  unter 0,25 m (dunkler, ins Graugrüne), Moos auf liegenden Steinflächen, Ruß an der Glut zugewandten
+    //  Steinen und an den Scheit-Enden, Sonnenbleiche auf Holz, das nach oben schaut; die Stärke ist der Regler
+    //  `verwitterung`. DIE GLUT (Rollen feuer · flamme, Seh-Klasse glut) leuchtet und wirft nie.
+    //  PLATTFORMGLEICH: jede Zahl, die den Kern verlässt, liegt auf dem Raster 2^-12 (Normalen 2^-14, −0 wird 0) —
+    //  sin/cos dürfen zwischen V8-Bauten in der letzten Stelle abweichen, die Bytes nicht.
+    // ═══════════════════════════════════════════════════════════════════════
+    var AUS_STUFEN = PORTAL_RENDER_CONFIG.lod.kindStages.ausstattung;
+    // Die drei Rezepte: Label, wie viele Individuen die Welt trägt (B2c gestalten), der Ort als Daten (site — der
+    // Wirt setzt sie über seine Schichten: Glut-Feld · Dorfplatz).
+    // DIE TRITTFLÄCHE (`tritt`, Asset-Raum, reist als fx-Daten): um eine Feuerstelle, einen Brunnen, einen Stand ist der
+    // Boden getreten — der Wirt malt sie in seine Wege-Karte (Erde statt Wiese, kein Halm durch Glut und Kranz).
+    var AUSSTATTUNG = {
+        feuerstelle: { lab: "Feuerstelle · Steinring, Scheite, Glut", gestalten: 2, siteTag: "glut", salz: 0x1f3a, tritt: { typ: "kreis", r: 1.05 } },
+        marktstand: { lab: "Marktstand · Plane und Waren", gestalten: 3, siteTag: "platz", salz: 0x2b51, tritt: { typ: "kasten", ex: 1.45, ez: 1.05 } },
+        brunnen: { lab: "Ziehbrunnen · Steinkranz, Haspel, Schindeldach", gestalten: 2, siteTag: "platz", salz: 0x3c77, tritt: { typ: "kreis", r: 1.75 } },
+    };
+    // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
+    var AUS_PARAMS = [
+        { id: "groesse", lab: "Größe", min: 0.8, max: 1.25, step: 0.05, def: 1, law: "das Grundmaß (Ring · Tisch · Kranz); die Proportionen folgen", grp: "FORM" },
+        { id: "fuelle", lab: "Fülle", min: 0, max: 1, step: 0.05, def: 0.6, law: "wie viel das Ding trägt — Scheite und Flamme · Waren · Seil und Eimer", grp: "AUSSTATTUNG" },
+        { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter der Fläche — Ruß, Erdsaum, Moos, Sonnenbleiche", grp: "MATERIAL" },
+    ];
+    for (var _aus in AUSSTATTUNG) {
+        PRESETS[_aus] = {
+            kind: "ausstattung",
+            lab: AUSSTATTUNG[_aus].lab,
+            s: { groesse: 1, fuelle: 0.6, verwitterung: 0.5 },
+            fx: {
+                place: { mode: "site", siteTag: AUSSTATTUNG[_aus].siteTag },
+                tritt: Object.assign({}, AUSSTATTUNG[_aus].tritt),
+            },
+        };
+    }
+
+    // Die Stoffe, die das Haus nicht trägt (rein additiv, der Lab-Block oben bleibt wörtlich): die Plane (Tuch,
+    // beidseitig) und die Ware (weiße Basis — die Farbe jeder Frucht reist im Vertex). Glutbett, glimmende Scheit-
+    // Stirnen und Flammen sind EIN Stoff, das Herdfeuer des Hauses (`feuer`, Seh-Klasse glut): eine Glut, ein Draw —
+    // die Flamme liest sich durch ihre hellere Vertex-Farbe und ihre Form.
+    function ausMaterialien() {
+        var MM = materials();
+        if (MM.tuch) return MM;
+        MM.tuch = new THREE.MeshStandardMaterial({ color: 0xb0533a, roughness: 0.93, metalness: 0, vertexColors: true, side: THREE.DoubleSide });
+        MM.ware = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.78, metalness: 0, vertexColors: true });
+        var neu = ["tuch", "ware"];
+        for (var i = 0; i < neu.length; i++) {
+            _roleByMat.set(MM[neu[i]], neu[i]);
+            MM[neu[i]].userData.__seh = SEH_DER_ROLLE[neu[i]];
+            _HEX[neu[i]] = MM[neu[i]].color.getHex(); // FARB-GESETZ: die Absicht für den Bake, der Stoff zeigt den linearen Wert
+            MM[neu[i]].color.convertSRGBToLinear();
+        }
+        return MM;
+    }
+    SEH_DER_ROLLE.tuch = "stoff";
+    SEH_DER_ROLLE.ware = "stoff";
+
+    // Die Regler: Rezept-s, dann ov — nur die eigenen ids, geklemmt (fremde Schlüssel: must-ignore; `__`-Schlüssel
+    // sind Steuer-Passagiere, nie Bau-Parameter).
+    function ausParams(pre, ov) {
+        var P = {};
+        for (var i = 0; i < AUS_PARAMS.length; i++) {
+            var d = AUS_PARAMS[i];
+            var v = pre && pre.s && typeof pre.s[d.id] === "number" ? pre.s[d.id] : d.def;
+            if (ov && typeof ov === "object" && typeof ov[d.id] === "number" && isFinite(ov[d.id])) v = ov[d.id];
+            P[d.id] = Math.max(d.min, Math.min(d.max, v));
+        }
+        return P;
+    }
+
+    // Ein Zufalls-Strom je (Same, Teilsystem) — mulberry32, nur Ganzzahl-Arithmetik (plattformgleich). Eigene Ströme
+    // je Teilsystem halten die Gestalt über die Stufen deckungsgleich (L1 zieht dieselben Zahlen, baut nur gröber).
+    function ausZufall(seed, salz) {
+        var h = (Math.imul((seed >>> 0) ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(salz | 0, 0xc2b2ae35)) >>> 0;
+        h = (h ^ (h >>> 16)) >>> 0 || 0x6d2b79f5;
+        return function () {
+            h = (h + 0x6d2b79f5) >>> 0;
+            var t = h;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    function ausGeo(pos, nrm, idx) {
+        var g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        if (nrm) g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+        g.setIndex(idx);
+        if (!nrm) g.computeVertexNormals();
+        return g;
+    }
+    // Konvexe Vielecke, je Fläche eigene Ecken (harte Kanten); `mitte` richtet jede Fläche nach außen (Newell-Normale).
+    function ausVielecke(polys, mitte) {
+        var pos = [],
+            nrm = [],
+            idx = [],
+            v = 0;
+        for (var p = 0; p < polys.length; p++) {
+            var P = polys[p],
+                n = P.length,
+                nx = 0,
+                ny = 0,
+                nz = 0,
+                cx = 0,
+                cy = 0,
+                cz = 0,
+                i;
+            for (i = 0; i < n; i++) {
+                var a = P[i],
+                    b = P[(i + 1) % n];
+                nx += (a[1] - b[1]) * (a[2] + b[2]);
+                ny += (a[2] - b[2]) * (a[0] + b[0]);
+                nz += (a[0] - b[0]) * (a[1] + b[1]);
+                cx += a[0];
+                cy += a[1];
+                cz += a[2];
+            }
+            var l = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            if (!(l > 1e-12)) continue;
+            nx /= l;
+            ny /= l;
+            nz /= l;
+            var Q = P;
+            if ((cx / n - mitte[0]) * nx + (cy / n - mitte[1]) * ny + (cz / n - mitte[2]) * nz < 0) {
+                Q = P.slice().reverse();
+                nx = -nx;
+                ny = -ny;
+                nz = -nz;
+            }
+            for (i = 0; i < n; i++) {
+                pos.push(Q[i][0], Q[i][1], Q[i][2]);
+                nrm.push(nx, ny, nz);
+            }
+            for (i = 1; i < n - 1; i++) idx.push(v, v + i, v + i + 1);
+            v += n;
+        }
+        return ausGeo(pos, nrm, idx);
+    }
+    // DIE GEFASTE KISTE (Zimmermanns-Gesetz: keine Kante bleibt scharf — die Fase fängt das Licht): sechs Flächen,
+    // zwölf Fasen, acht Eck-Dreiecke = 44 Dreiecke; f = 0 die scharfe Kiste (12).
+    function ausKiste(lx, ly, lz, f) {
+        var hx = lx / 2,
+            hy = ly / 2,
+            hz = lz / 2;
+        f = Math.min(f || 0, hx * 0.45, hy * 0.45, hz * 0.45);
+        var polys = [],
+            S = [-1, 1],
+            i,
+            j,
+            k;
+        if (!(f > 1e-4)) {
+            var C = function (sx, sy, sz) {
+                return [sx * hx, sy * hy, sz * hz];
+            };
+            for (i = 0; i < 2; i++) {
+                var s = S[i];
+                polys.push([C(s, -1, -1), C(s, 1, -1), C(s, 1, 1), C(s, -1, 1)]);
+                polys.push([C(-1, s, -1), C(1, s, -1), C(1, s, 1), C(-1, s, 1)]);
+                polys.push([C(-1, -1, s), C(1, -1, s), C(1, 1, s), C(-1, 1, s)]);
+            }
+            return ausVielecke(polys, [0, 0, 0]);
+        }
+        // Ecke (sx,sy,sz) auf der Fläche der Achse a: die Fläche liegt voll außen, die zwei anderen Achsen um f eingerückt.
+        var E = function (sx, sy, sz, a) {
+            return [a === 0 ? sx * hx : sx * (hx - f), a === 1 ? sy * hy : sy * (hy - f), a === 2 ? sz * hz : sz * (hz - f)];
+        };
+        for (i = 0; i < 2; i++) {
+            var t = S[i];
+            polys.push([E(t, -1, -1, 0), E(t, 1, -1, 0), E(t, 1, 1, 0), E(t, -1, 1, 0)]);
+            polys.push([E(-1, t, -1, 1), E(1, t, -1, 1), E(1, t, 1, 1), E(-1, t, 1, 1)]);
+            polys.push([E(-1, -1, t, 2), E(1, -1, t, 2), E(1, 1, t, 2), E(-1, 1, t, 2)]);
+        }
+        for (i = 0; i < 2; i++)
+            for (j = 0; j < 2; j++) {
+                var sa = S[i],
+                    sb = S[j];
+                polys.push([E(sa, sb, -1, 0), E(sa, sb, 1, 0), E(sa, sb, 1, 1), E(sa, sb, -1, 1)]);
+                polys.push([E(sa, -1, sb, 0), E(sa, 1, sb, 0), E(sa, 1, sb, 2), E(sa, -1, sb, 2)]);
+                polys.push([E(-1, sa, sb, 1), E(1, sa, sb, 1), E(1, sa, sb, 2), E(-1, sa, sb, 2)]);
+            }
+        for (i = 0; i < 2; i++)
+            for (j = 0; j < 2; j++)
+                for (k = 0; k < 2; k++) polys.push([E(S[i], S[j], S[k], 0), E(S[i], S[j], S[k], 1), E(S[i], S[j], S[k], 2)]);
+        return ausVielecke(polys, [0, 0, 0]);
+    }
+    // DER DREHKÖRPER: ein Profil [[r, y], …] (unten → oben) um die y-Achse, `seg` Teilungen ohne Naht-Duplikat (die
+    // Seite bleibt glatt); r = 0 schließt spitz; `boden`/`deckel` schließen flach mit harter Kante. Ein Profil, das
+    // nach innen zurückläuft (Korb, Eimer), dreht seine Normale selbst nach innen. `jitter(i, k)` darf je Ring-Punkt
+    // den Radius verformen (Rinde, Glut).
+    function ausDreh(profil, seg, boden, deckel, jitter) {
+        var pos = [],
+            idx = [],
+            ring = [],
+            n = profil.length,
+            i,
+            k;
+        for (i = 0; i < n; i++) {
+            var r = profil[i][0],
+                y = profil[i][1];
+            if (r <= 1e-6) {
+                ring.push({ a: pos.length / 3, spitz: true });
+                pos.push(0, y, 0);
+                continue;
+            }
+            ring.push({ a: pos.length / 3, spitz: false });
+            for (k = 0; k < seg; k++) {
+                var w = (k / seg) * Math.PI * 2,
+                    rj = jitter ? r * jitter(i, k) : r;
+                pos.push(Math.cos(w) * rj, y, Math.sin(w) * rj);
+            }
+        }
+        for (i = 0; i < n - 1; i++) {
+            var A = ring[i],
+                B = ring[i + 1];
+            if (A.spitz && B.spitz) continue;
+            for (k = 0; k < seg; k++) {
+                var k1 = (k + 1) % seg;
+                if (A.spitz) idx.push(A.a, B.a + k, B.a + k1);
+                else if (B.spitz) idx.push(A.a + k, B.a, A.a + k1);
+                else idx.push(A.a + k, B.a + k, B.a + k1, A.a + k, B.a + k1, A.a + k1);
+            }
+        }
+        var g = ausGeo(pos, null, idx);
+        if (!boden && !deckel) return g;
+        var P2 = Array.prototype.slice.call(g.attributes.position.array),
+            N2 = Array.prototype.slice.call(g.attributes.normal.array),
+            I2 = Array.prototype.slice.call(g.index.array);
+        var kappe = function (ri, unten) {
+            var R0 = ring[ri];
+            if (R0.spitz) return;
+            var c = P2.length / 3,
+                ny = unten ? -1 : 1;
+            P2.push(0, profil[ri][1], 0);
+            N2.push(0, ny, 0);
+            for (var kk = 0; kk < seg; kk++) {
+                P2.push(pos[(R0.a + kk) * 3], pos[(R0.a + kk) * 3 + 1], pos[(R0.a + kk) * 3 + 2]);
+                N2.push(0, ny, 0);
+            }
+            for (kk = 0; kk < seg; kk++) {
+                var a1 = c + 1 + kk,
+                    b1 = c + 1 + ((kk + 1) % seg);
+                if (unten) I2.push(c, a1, b1);
+                else I2.push(c, b1, a1);
+            }
+        };
+        if (boden) kappe(0, true);
+        if (deckel) kappe(n - 1, false);
+        g.dispose();
+        return ausGeo(P2, N2, I2);
+    }
+    // DER FELDSTEIN: ein Ikosaeder (Stufe 0: 20 Flächen · 1: 80), je Richtung von drei Wellen-Lappen verbeult, an zwei
+    // Bruchflächen gekappt, unten abgeplattet (er liegt, er balanciert nicht), glatt schattiert. `glatt`: ohne Bruch
+    // (Frucht, Brot, Sack — dieselbe Knolle).
+    function ausFeldstein(z, fein, lx, ly, lz, glatt) {
+        var t = (1 + Math.sqrt(5)) / 2;
+        var V = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]];
+        var F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+        var i, j;
+        for (i = 0; i < V.length; i++) {
+            var l0 = Math.sqrt(V[i][0] * V[i][0] + V[i][1] * V[i][1] + V[i][2] * V[i][2]);
+            V[i] = [V[i][0] / l0, V[i][1] / l0, V[i][2] / l0];
+        }
+        if (fein) {
+            var mitten = {},
+                F2 = [];
+            var mitte = function (a, b) {
+                var key = a < b ? a + "_" + b : b + "_" + a;
+                if (mitten[key] !== undefined) return mitten[key];
+                var m = [(V[a][0] + V[b][0]) / 2, (V[a][1] + V[b][1]) / 2, (V[a][2] + V[b][2]) / 2];
+                var lm = Math.sqrt(m[0] * m[0] + m[1] * m[1] + m[2] * m[2]);
+                V.push([m[0] / lm, m[1] / lm, m[2] / lm]);
+                mitten[key] = V.length - 1;
+                return mitten[key];
+            };
+            for (i = 0; i < F.length; i++) {
+                var f = F[i],
+                    ab = mitte(f[0], f[1]),
+                    bc = mitte(f[1], f[2]),
+                    ca = mitte(f[2], f[0]);
+                F2.push([f[0], ab, ca], [f[1], bc, ab], [f[2], ca, bc], [ab, bc, ca]);
+            }
+            F = F2;
+        }
+        // drei Lappen: Richtung, Frequenz, Phase, Höhe — und zwei BRUCHFLÄCHEN (ein Feldstein ist gebrochen, nie ein Ei):
+        // Richtung + Abstand der Ebene. Zahlen in fester Folge (auch die grobe Stufe zieht alle).
+        var L = [],
+            B = [];
+        for (j = 0; j < 3; j++) {
+            var ux = z() * 2 - 1,
+                uy = z() * 2 - 1,
+                uz = z() * 2 - 1,
+                lu = Math.sqrt(ux * ux + uy * uy + uz * uz) || 1;
+            L.push([ux / lu, uy / lu, uz / lu, 2.2 + z() * 1.6, z() * 6.2832, 0.05 + z() * 0.07]);
+        }
+        for (j = 0; j < 2; j++) {
+            var bw = z() * 6.2832,
+                bh = (z() - 0.3) * 0.9;
+            var bl = Math.sqrt(1 + bh * bh);
+            B.push([Math.cos(bw) / bl, bh / bl, Math.sin(bw) / bl, 0.62 + z() * 0.22]);
+        }
+        var pos = [],
+            idx = [];
+        for (i = 0; i < V.length; i++) {
+            var d = V[i],
+                r = 1;
+            for (j = 0; j < 3; j++) r += L[j][5] * Math.cos(L[j][3] * (d[0] * L[j][0] + d[1] * L[j][1] + d[2] * L[j][2]) + L[j][4]);
+            for (j = 0; j < 2 && !glatt; j++) {
+                var dn = d[0] * B[j][0] + d[1] * B[j][1] + d[2] * B[j][2];
+                if (dn > 0.05 && r * dn > B[j][3]) r = B[j][3] / dn; // auf die Bruchfläche zurück
+            }
+            var y = d[1] * r;
+            if (y < -0.45) y = -0.45 + (y + 0.45) * 0.25; // die Liegefläche
+            pos.push((d[0] * r * lx) / 2, (y * ly) / 2, (d[2] * r * lz) / 2);
+        }
+        for (i = 0; i < F.length; i++) idx.push(F[i][0], F[i][1], F[i][2]);
+        return ausGeo(pos, null, idx);
+    }
+    // Ein Teil an seinen Ort: Rotation (Euler XYZ) + Verschiebung direkt in die Geometrie (der Bake liest Asset-Raum).
+    var _ausM = null,
+        _ausE = null;
+    function ausSetze(geo, x, y, z, rx, ry, rz) {
+        if (!_ausM) {
+            _ausM = new THREE.Matrix4();
+            _ausE = new THREE.Euler();
+        }
+        _ausE.set(rx || 0, ry || 0, rz || 0);
+        _ausM.makeRotationFromEuler(_ausE);
+        _ausM.setPosition(x, y, z);
+        geo.applyMatrix4(_ausM);
+        return geo;
+    }
+    // Ein Teil entlang einer Strecke a → b (lokale y-Achse = Strecke, Ursprung = a).
+    var _ausQ = null;
+    function ausStrecke(geo, a, b) {
+        if (!_ausQ) _ausQ = new THREE.Quaternion();
+        var dx = b[0] - a[0],
+            dy = b[1] - a[1],
+            dz = b[2] - a[2],
+            l = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+        _ausQ.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx / l, dy / l, dz / l));
+        var m = new THREE.Matrix4().makeRotationFromQuaternion(_ausQ);
+        m.setPosition(a[0], a[1], a[2]);
+        geo.applyMatrix4(m);
+        return geo;
+    }
+    // DAS VERWITTERUNGS-GESETZ: der Ton-Faktor je Vertex aus Lage (Asset-Raum), Normale und Rolle. `fn` (optional)
+    // liefert das Eigene des Teils: ton [r,g,b] (der Stein, das Brett) und russ (0..1).
+    var AUS_ERDE = [0.62, 0.66, 0.55],
+        AUS_MOOS = [0.6, 0.76, 0.45],
+        AUS_BLEICHE = [1.12, 1.1, 1.06],
+        AUS_RUSS = [0.2, 0.19, 0.18];
+    function ausFaerbe(geo, rolle, w, fn) {
+        var P = geo.attributes.position,
+            N = geo.attributes.normal,
+            n = P.count,
+            c = new Float32Array(n * 3);
+        var stein = rolle === "stein",
+            holz = rolle === "holz" || rolle === "lattung" || rolle === "stamm";
+        var glut = rolle === "feuer";
+        for (var i = 0; i < n; i++) {
+            var x = P.getX(i),
+                y = P.getY(i),
+                zz = P.getZ(i),
+                nx = N.getX(i),
+                ny = N.getY(i),
+                nz = N.getZ(i);
+            var r = 1,
+                g = 1,
+                b = 1,
+                e = fn ? fn(x, y, zz, nx, ny, nz) : null;
+            if (e && e.ton) {
+                r = e.ton[0];
+                g = e.ton[1];
+                b = e.ton[2];
+            }
+            if (!glut) {
+                var s = Math.max(0, Math.min(1, (0.25 - Math.max(y, -0.1)) / 0.35)) * w * 0.85;
+                r *= 1 + (AUS_ERDE[0] - 1) * s;
+                g *= 1 + (AUS_ERDE[1] - 1) * s;
+                b *= 1 + (AUS_ERDE[2] - 1) * s;
+                if (stein) {
+                    var m = w * 0.55 * Math.max(0, Math.min(1, (ny - 0.4) / 0.6)) * Math.max(0, Math.min(1, (0.4 - y) / 0.4));
+                    r *= 1 + (AUS_MOOS[0] - 1) * m;
+                    g *= 1 + (AUS_MOOS[1] - 1) * m;
+                    b *= 1 + (AUS_MOOS[2] - 1) * m;
+                }
+                if (holz) {
+                    var bl = w * 0.4 * Math.max(0, Math.min(1, (ny - 0.6) / 0.4));
+                    r *= 1 + (AUS_BLEICHE[0] - 1) * bl;
+                    g *= 1 + (AUS_BLEICHE[1] - 1) * bl;
+                    b *= 1 + (AUS_BLEICHE[2] - 1) * bl;
+                }
+                var ru = e && e.russ ? Math.max(0, Math.min(1, e.russ)) : 0;
+                r *= 1 + (AUS_RUSS[0] - 1) * ru;
+                g *= 1 + (AUS_RUSS[1] - 1) * ru;
+                b *= 1 + (AUS_RUSS[2] - 1) * ru;
+            }
+            c[i * 3] = r;
+            c[i * 3 + 1] = g;
+            c[i * 3 + 2] = b;
+        }
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(c, 3));
+        return geo;
+    }
+    function ausTeil(g, geo, rolle) {
+        var m = new THREE.Mesh(geo, mat(rolle));
+        g.add(m);
+        return m;
+    }
+    // Ein Ton-Faktor um 1 (Brett gegen Brett, Stein gegen Stein): Helligkeit ± spanne, warm/kalt ± warm.
+    function ausTon(z, spanne, warm) {
+        var l = 1 + (z() - 0.5) * 2 * spanne,
+            w = (z() - 0.5) * 2 * warm;
+        return [l + w, l, l - w];
+    }
+    // Ein ZIEL (lineare Albedo) auf einer Rolle: der Ton-Faktor, den der Bake auf ihren Grundton (`_colFor`, linear) legt.
+    function ausAuf(ziel, rolle, kol) {
+        var b = _colFor(rolle, kol || null);
+        return [ziel[0] / b[0], ziel[1] / b[1], ziel[2] / b[2]];
+    }
+
+    // ── DIE FEUERSTELLE: Steinring · Aschebett · Glutbett · Scheite im Stern · Flammen · (nah) Holzvorrat ──
+    function ausFeuerstelle(g, p, seed, stufe, kol) {
+        var G = p.groesse,
+            F = p.fuelle,
+            W = p.verwitterung,
+            fein = stufe === 0;
+        var zR = ausZufall(seed, 0x51),
+            zS = ausZufall(seed, 0x52),
+            zF = ausZufall(seed, 0x53),
+            zV = ausZufall(seed, 0x54);
+        var R = 0.58 * G;
+        // DER STEINRING — Feldsteine tangential gelegt, ein Drittel eingesunken; die der Glut zugewandte Seite trägt Ruß.
+        var nStein = 11 + Math.round(F * 3 + zR() * 2);
+        for (var i = 0; i < nStein; i++) {
+            var w = ((i + 0.5 + (zR() - 0.5) * 0.4) / nStein) * Math.PI * 2;
+            var rr = R + (zR() - 0.5) * 0.07 * G;
+            var b = (0.17 + zR() * 0.1) * G,
+                tq = b * (0.68 + zR() * 0.3),
+                h = b * (0.52 + zR() * 0.26);
+            var ton = ausTon(zR, 0.13, 0.04),
+                kipp = (zR() - 0.5) * 0.3;
+            var geo = ausFeldstein(zR, fein, b, h, tq);
+            ausSetze(geo, Math.cos(w) * rr, h * 0.5 - 0.055 * G, Math.sin(w) * rr, kipp, -w - Math.PI / 2, 0);
+            ausFaerbe(geo, "stein", W, function (x, y, zz, nx, ny, nz) {
+                var lr = Math.sqrt(x * x + zz * zz) || 1;
+                var innen = Math.max(0, -(x * nx + zz * nz) / lr) * Math.max(0, Math.min(1, (y + 0.03) / 0.1));
+                return { ton: ton, russ: innen * (0.55 + 0.45 * W) };
+            });
+            ausTeil(g, geo, "stein");
+        }
+        // DAS ASCHEBETT — eine flache Grube: die Asche liegt auf Bodenhöhe, ihr Rand taucht 14 cm unter den Boden (am Hang
+        // schneidet die Welt-Fläche sie, kein Spalt, keine Kante). Nah franst der Rand aus, die Asche geht nach außen in
+        // getretene Erde über (Blick 05.10.: eine graue Achteck-Platte lag erhaben auf dem Gras).
+        var ascheS = fein ? 14 : 8;
+        var asche = ausDreh(
+            [[R * 1.05, -0.14], [R * 0.85, -0.025], [R * 0.45, -0.004], [0, 0.002]],
+            ascheS,
+            false,
+            false,
+            fein
+                ? function (pi, k) {
+                      return pi < 2 ? 1 + ((((k * 7 + pi * 3) % 5) - 2) * 0.05) : 1;
+                  }
+                : null
+        );
+        var tonAsche = [0.5, 0.5, 0.52],
+            tonErde = ausAuf([0.08, 0.065, 0.05], "lehm", kol);
+        ausFaerbe(asche, "lehm", W, function (x, y, zz) {
+            var d = Math.sqrt(x * x + zz * zz) / R;
+            var e = Math.max(0, Math.min(1, (d - 0.75) / 0.27));
+            return {
+                ton: [tonAsche[0] + (tonErde[0] - tonAsche[0]) * e, tonAsche[1] + (tonErde[1] - tonAsche[1]) * e, tonAsche[2] + (tonErde[2] - tonAsche[2]) * e],
+                russ: Math.max(0, Math.min(1, (0.55 - d) / 0.3)) * 0.8,
+            };
+        });
+        ausTeil(g, asche, "lehm");
+        // DAS GLUTBETT — ein flacher, knolliger Hügel, heiß in der Mitte.
+        var glutR = 0.38 * G;
+        var glut = ausDreh(
+            [[glutR, -0.03], [glutR * 0.78, 0.03], [glutR * 0.42, 0.068], [0, 0.078]],
+            fein ? 12 : 7,
+            false,
+            false,
+            fein
+                ? function (pi, k) {
+                      return 1 + (((pi * 7 + k * 13) % 5) - 2) * 0.035;
+                  }
+                : null
+        );
+        // DIE GLUT LEUCHTET, SIE IST NICHT HELL: die Albedo der Kohle ist dunkel (Mitte 0,30/0,10/0,03 · Rand
+        // 0,06/0,04/0,03 linear), das Leuchten trägt der Stoff (feuer: emissiv) — sonst bleicht die Sonne die Glut zu Creme.
+        ausFaerbe(glut, "feuer", W, function (x, y, zz) {
+            var d = Math.min(1, Math.sqrt(x * x + zz * zz) / glutR);
+            return { ton: ausAuf([0.06 + 0.24 * (1 - d), 0.04 + 0.06 * (1 - d), 0.03], "feuer") };
+        });
+        ausTeil(g, glut, "feuer");
+        // DIE SCHEITE IM STERN — das innere Ende liegt auf der Glut (verkohlt, glimmend), das äußere auf der Asche.
+        var nScheit = 3 + Math.round(F * 3);
+        for (i = 0; i < nScheit; i++) {
+            var a = ((i + 0.5 + (zS() - 0.5) * 0.5) / nScheit) * Math.PI * 2;
+            var rs = (0.045 + zS() * 0.016) * G,
+                rIn = (0.08 + zS() * 0.05) * G,
+                rAus = (0.44 + zS() * 0.08) * G;
+            var pIn = [Math.cos(a) * rIn, 0.11 + zS() * 0.04, Math.sin(a) * rIn],
+                pAus = [Math.cos(a) * rAus, 0.045, Math.sin(a) * rAus];
+            var ddx = pIn[0] - pAus[0],
+                ddy = pIn[1] - pAus[1],
+                ddz = pIn[2] - pAus[2],
+                len = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
+            var rinde = ausTon(zS, 0.1, 0.03);
+            var sj = Math.floor(zS() * 1000);
+            var scheit = ausDreh(
+                [[rs, 0], [rs * 0.96, len]],
+                fein ? 7 : 5,
+                true,
+                true,
+                fein
+                    ? function (pi, k) {
+                          return 1 + ((((sj + k * 7 + pi * 3) % 6) - 2.5) * 0.03);
+                      }
+                    : null
+            );
+            ausStrecke(scheit, pAus, pIn);
+            ausFaerbe(scheit, "holz", W, function (x, y, zz, nx, ny, nz) {
+                var d = Math.sqrt(x * x + zz * zz);
+                var kohle = Math.max(0, Math.min(1, (0.3 * G - d) / (0.2 * G)));
+                // die Schnittfläche außen ist hell (frisches Holz), innen verkohlt
+                var dot = (nx * ddx + ny * ddy + nz * ddz) / len;
+                var hirn = dot < -0.8 ? [1.55, 1.38, 1.12] : null;
+                return { ton: hirn || rinde, russ: kohle * 0.95 };
+            });
+            ausTeil(g, scheit, "holz");
+            if (fein) {
+                // die glimmende Stirn am inneren Ende
+                var stirn = ausDreh([[rs * 0.82, 0], [0, 0.012]], 7, true, false);
+                ausStrecke(stirn, pIn, [pIn[0] + ddx / len, pIn[1] + ddy / len, pIn[2] + ddz / len]);
+                ausFaerbe(stirn, "feuer", W, function () {
+                    return { ton: ausAuf([0.3, 0.1, 0.03], "feuer") };
+                });
+                ausTeil(g, stirn, "feuer");
+            }
+        }
+        // DIE FLAMMEN — schmale Zungen aus der Glut, jede in ihrem Zug gebogen (der Wind ist der Wirt, die Form das Gesetz);
+        // die Fülle trägt Zahl und Höhe. Albedo dunkel-orange (unten 0,55/0,30/0,08 · Spitze 0,45/0,14/0,035), das Licht
+        // ist der Stoff.
+        var nFl = F < 0.15 ? 0 : 3 + Math.round(F * 2);
+        var zunge = [[0, 0], [0.5, 0.06], [0.56, 0.2], [0.44, 0.42], [0.26, 0.64], [0.1, 0.86], [0, 1]];
+        for (i = 0; i < nFl; i++) {
+            var fh = (0.2 + zF() * 0.3) * (0.6 + 0.6 * F) * G * (i === 0 ? 1.25 : 1),
+                fw = fh * (0.24 + zF() * 0.08),
+                fa = zF() * Math.PI * 2,
+                fd = (i === 0 ? 0 : 0.05 + zF() * 0.08) * G,
+                zx = (zF() - 0.5) * 0.5,
+                zzz = (zF() - 0.5) * 0.5,
+                fdreh = zF() * Math.PI;
+            var prof = [];
+            for (var q = 0; q < zunge.length; q++) prof.push([zunge[q][0] * fw, zunge[q][1] * fh]);
+            var fl = ausDreh(prof, fein ? 6 : 3, false, false); // fern dreikantig — dieselben Zungen, dieselbe Höhe
+            // der Zug: die Zunge biegt sich quadratisch mit der Höhe (Spitze bis ±0,25·h aus dem Lot)
+            var P3 = fl.attributes.position;
+            for (var v3 = 0; v3 < P3.count; v3++) {
+                var tt = P3.getY(v3) / fh;
+                P3.setX(v3, P3.getX(v3) + zx * fh * tt * tt);
+                P3.setZ(v3, P3.getZ(v3) + zzz * fh * tt * tt);
+            }
+            fl.computeVertexNormals();
+            ausSetze(fl, Math.cos(fa) * fd, 0.045, Math.sin(fa) * fd, 0, fdreh, 0);
+            ausFaerbe(fl, "feuer", W, function (x, y) {
+                var t = Math.max(0, Math.min(1, (y - 0.045) / fh));
+                return { ton: ausAuf([0.55 - 0.1 * t, 0.3 - 0.16 * t, 0.08 - 0.045 * t], "feuer") };
+            });
+            ausTeil(g, fl, "feuer");
+        }
+        // DER HOLZVORRAT (nach Gestalt): Scheite neben dem Ring, zwei Lagen — er gehört zur Silhouette, beide Stufen tragen ihn.
+        var hatVorrat = zV() < 0.67 && F > 0.3,
+            va = zV() * Math.PI * 2;
+        if (hatVorrat) {
+            var cxV = Math.cos(va) * (R + 0.42 * G),
+                czV = Math.sin(va) * (R + 0.42 * G),
+                tx = -Math.sin(va),
+                tz = Math.cos(va);
+            // Lagen im Stapel-Raum: [quer, hoch] — zwei unten, eins oder zwei oben in der Mulde
+            var lagen = [[-0.055, 0.05], [0.055, 0.05], [0, 0.135], [0.11, 0.135]];
+            var nV = 3 + (zV() < 0.5 ? 1 : 0);
+            for (i = 0; i < nV; i++) {
+                var lv = lagen[i],
+                    rv = 0.05 * G,
+                    lenV = (0.42 + zV() * 0.12) * G,
+                    tv = ausTon(zV, 0.1, 0.03);
+                var sv = ausDreh([[rv, 0], [rv, lenV]], fein ? 6 : 4, true, true);
+                ausSetze(sv, lenV / 2, 0, 0, 0, 0, Math.PI / 2); // liegend, längs x, mittig
+                ausSetze(sv, 0, lv[1] * G, lv[0] * G, 0, 0, 0); // seine Lage im Stapel
+                ausSetze(sv, cxV, -0.01, czV, 0, -va - Math.PI / 2, 0); // der Stapel tangential am Ring
+                ausFaerbe(sv, "holz", W, function (x, y, zz, nx, ny, nz) {
+                    return { ton: Math.abs(nx * tx + nz * tz) > 0.8 ? [1.5, 1.34, 1.1] : tv };
+                });
+                ausTeil(g, sv, "holz");
+            }
+        }
+    }
+
+    // ── DER MARKTSTAND: vier Pfosten · Bretter-Tisch mit Zargen · Ablage · Pfetten und Sparren · gestreifte Plane mit
+    //    Volant · (nah) Waren in Körben, Kisten, ein Fass, ein Sack ──
+    function ausMarktstand(g, p, seed, stufe, kol) {
+        var G = p.groesse,
+            F = p.fuelle,
+            W = p.verwitterung,
+            fein = stufe === 0;
+        var zH = ausZufall(seed, 0x61),
+            zW = ausZufall(seed, 0x63);
+        var fa = fein ? 0.011 : 0;
+        var bx = 1.0 * G,
+            bz = 0.45,
+            hT = 0.86,
+            hV = 2.25,
+            hH = 1.95,
+            tief = 0.35,
+            pf = 0.09;
+        var holz = function (geo, ton, rolle) {
+            ausFaerbe(geo, rolle || "holz", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, rolle || "holz");
+        };
+        var sx, sz, i;
+        // DIE PFOSTEN — vorn hoch, hinten niedrig (die Plane wirft das Wasser nach hinten); 35 cm im Boden.
+        for (sx = -1; sx <= 1; sx += 2)
+            for (sz = -1; sz <= 1; sz += 2) {
+                var hp = (sz < 0 ? hV : hH) + tief;
+                holz(ausSetze(ausKiste(pf, hp, pf, fa), sx * (bx - 0.05), hp / 2 - tief, sz * (bz - 0.03), 0, 0, 0), ausTon(zH, 0.06, 0.02));
+            }
+        // DER TISCH — fünf Bretter mit Fuge, vier Zargen darunter.
+        var nB = 5,
+            bw = (2 * bz + 0.06) / nB;
+        for (i = 0; i < nB; i++)
+            holz(ausSetze(ausKiste(2 * bx + 0.12, 0.034, bw - 0.012, fa * 0.6), 0, hT - 0.017, -bz - 0.03 + bw * (i + 0.5), 0, 0, 0), ausTon(zH, 0.09, 0.03));
+        for (sz = -1; sz <= 1; sz += 2) holz(ausSetze(ausKiste(2 * bx - 0.14, 0.1, 0.03, fa * 0.5), 0, hT - 0.085, sz * (bz - 0.07), 0, 0, 0), ausTon(zH, 0.05, 0.02));
+        for (sx = -1; sx <= 1; sx += 2) holz(ausSetze(ausKiste(0.03, 0.1, 2 * bz - 0.16, fa * 0.5), sx * (bx - 0.1), hT - 0.085, 0, 0, 0, 0), ausTon(zH, 0.05, 0.02));
+        // DIE ABLAGE auf 28 cm — drei Bretter auf zwei Riegeln.
+        for (i = 0; i < 3; i++)
+            holz(ausSetze(ausKiste(2 * bx - 0.06, 0.026, 0.25, fa * 0.5), 0, 0.28, -0.28 + i * 0.28, 0, 0, 0), ausTon(zH, 0.08, 0.03), "lattung");
+        for (sx = -1; sx <= 1; sx += 2) holz(ausSetze(ausKiste(0.05, 0.05, 2 * bz, fa * 0.4), sx * (bx - 0.05), 0.24, 0, 0, 0, 0), ausTon(zH, 0.05, 0.02));
+        // PFETTEN und SPARREN — der Dachrahmen auf den Pfostenköpfen.
+        var yV = hV + 0.03,
+            yH = hH + 0.03;
+        holz(ausSetze(ausKiste(2 * bx + 0.34, 0.08, 0.07, fa), 0, yV - 0.04, -(bz - 0.03), 0, 0, 0), ausTon(zH, 0.05, 0.02));
+        holz(ausSetze(ausKiste(2 * bx + 0.34, 0.08, 0.07, fa), 0, yH - 0.04, bz - 0.03, 0, 0, 0), ausTon(zH, 0.05, 0.02));
+        var neig = Math.atan2(yV - yH, 2 * bz + 0.5);
+        var zV0 = -bz - 0.28,
+            zH0 = bz + 0.22,
+            yAt = function (zz) {
+                return yV + ((zz + bz) / (2 * bz)) * (yH - yV);
+            };
+        for (sx = -1; sx <= 1; sx += 2) {
+            var lS = Math.sqrt((zH0 - zV0) * (zH0 - zV0) + (yAt(zH0) - yAt(zV0)) * (yAt(zH0) - yAt(zV0)));
+            holz(ausSetze(ausKiste(0.05, 0.07, lS, fa * 0.7), sx * bx, (yAt(zV0) + yAt(zH0)) / 2 + 0.035, (zV0 + zH0) / 2, neig, 0, 0), ausTon(zH, 0.05, 0.02));
+        }
+        // DIE PLANE — sechs Bahnen im Wechsel Farbe/Naturtuch, zwischen den Sparren durchhängend; vorn der Volant.
+        var hx = bx + 0.2,
+            nBahn = 6,
+            tuchB = kol.tuch,
+            creme = AUS_NATURTUCH;
+        var tonCreme = ausAuf(_linHex(creme), "tuch", { tuch: tuchB }); // die Naturbahn: das Leinen auf dem Grundton der Plane
+        var nx0 = fein ? 3 : 1,
+            nz0 = fein ? 4 : 1,
+            sack = fein ? 0.045 : 0;
+        for (var bi = 0; bi < nBahn; bi++) {
+            var xa = -hx + (2 * hx * bi) / nBahn,
+                xb = -hx + (2 * hx * (bi + 1)) / nBahn;
+            var pos = [],
+                idx = [];
+            for (var iz = 0; iz <= nz0; iz++)
+                for (var ix = 0; ix <= nx0; ix++) {
+                    var x = xa + ((xb - xa) * ix) / nx0,
+                        tz = iz / nz0,
+                        zz = zV0 + (zH0 - zV0) * tz;
+                    var tx = Math.abs(x) / hx;
+                    pos.push(x, yAt(zz) + 0.06 - sack * (1 - tx * tx) * 4 * tz * (1 - tz), zz);
+                }
+            for (iz = 0; iz < nz0; iz++)
+                for (ix = 0; ix < nx0; ix++) {
+                    var a0 = iz * (nx0 + 1) + ix;
+                    idx.push(a0, a0 + nx0 + 1, a0 + 1, a0 + 1, a0 + nx0 + 1, a0 + nx0 + 2);
+                }
+            var bahn = ausGeo(pos, null, idx);
+            var bt = bi % 2 ? tonCreme : [1, 1, 1];
+            ausFaerbe(bahn, "tuch", W * 0.5, function () {
+                return { ton: bt };
+            });
+            ausTeil(g, bahn, "tuch");
+            // der Volant: Bogen-Zacken unter der Vorderkante dieser Bahn
+            var vp = [],
+                vi = [],
+                yk = yAt(zV0) + 0.06,
+                nZ = fein ? 2 : 1;
+            for (var zi = 0; zi < nZ; zi++) {
+                var x0 = xa + ((xb - xa) * zi) / nZ,
+                    x1 = xa + ((xb - xa) * (zi + 1)) / nZ,
+                    xm = (x0 + x1) / 2,
+                    v0 = vp.length / 3;
+                vp.push(x0, yk, zV0, x1, yk, zV0, x1, yk - 0.1, zV0, xm, yk - 0.18, zV0, x0, yk - 0.1, zV0);
+                vi.push(v0, v0 + 4, v0 + 3, v0, v0 + 3, v0 + 1, v0 + 1, v0 + 3, v0 + 2);
+            }
+            var vol = ausGeo(vp, null, vi);
+            ausFaerbe(vol, "tuch", W * 0.5, function () {
+                return { ton: bt };
+            });
+            ausTeil(g, vol, "tuch");
+        }
+        // DIE WAREN (nah) — Körbe mit Obst und Rüben, Brote, eine Kiste auf der Ablage, ein Fass, ein Sack.
+        var nKorb = 1 + Math.round(F * 2),
+            sorten = [[[0.55, 0.09, 0.06], [0.62, 0.14, 0.07], [0.45, 0.55, 0.12]], [[0.76, 0.62, 0.42], [0.7, 0.55, 0.36], [0.58, 0.2, 0.32]], [[0.38, 0.56, 0.24], [0.33, 0.5, 0.2], [0.42, 0.6, 0.28]]];
+        var korbProfil = [[0, 0], [0.15, 0], [0.185, 0.13], [0.172, 0.135], [0.142, 0.022], [0, 0.022]];
+        for (i = 0; i < nKorb; i++) {
+            var kx = (-0.62 + (1.24 * (i + 0.5)) / nKorb) * G + (zW() - 0.5) * 0.1,
+                kz = -0.08 + (zW() - 0.5) * 0.1,
+                sorte = sorten[Math.floor(zW() * 3) % 3],
+                nObst = 6 + Math.floor(zW() * 4);
+            var obst = [];
+            for (var o = 0; o < nObst; o++) obst.push([zW() * Math.PI * 2, zW() * 0.1, zW(), zW()]);
+            if (!fein) {
+                // fern: der Korb als Kegelstumpf, seine Füllung als Farbe der Kuppe (Ware ÷ Korb-Ton)
+                var kl = ausDreh([[0.16, 0], [0.18, 0.15], [0, 0.17]], 6, true, false);
+                ausSetze(kl, kx, hT, kz, 0, 0, 0);
+                var kuppe = ausAuf(sorte[0], "lattung", kol);
+                ausFaerbe(kl, "lattung", W, function (x, y) {
+                    return { ton: y > hT + 0.13 ? kuppe : [1, 1, 1] };
+                });
+                ausTeil(g, kl, "lattung");
+                continue;
+            }
+            var korb = ausDreh(korbProfil, 10, false, false);
+            ausSetze(korb, kx, hT, kz, 0, 0, 0);
+            ausFaerbe(korb, "lattung", W, function (x, y) {
+                return { ton: [1.04 - (Math.floor((y - hT) * 60) % 2) * 0.12, 1.0 - (Math.floor((y - hT) * 60) % 2) * 0.12, 0.92] };
+            });
+            ausTeil(g, korb, "lattung");
+            for (o = 0; o < obst.length; o++) {
+                var ob = obst[o],
+                    rr2 = 0.034 + ob[2] * 0.012,
+                    farbe = sorte[Math.floor(ob[3] * 3) % 3];
+                var frucht = ausFeldstein(ausZufall(seed + o * 31 + i * 7, 0x66), false, rr2 * 2, rr2 * 1.8, rr2 * 2, true);
+                ausSetze(frucht, kx + Math.cos(ob[0]) * ob[1], hT + 0.1 + (o % 3) * 0.035, kz + Math.sin(ob[0]) * ob[1], 0, ob[0], 0);
+                ausFaerbe(frucht, "ware", 0, function () {
+                    return { ton: farbe };
+                });
+                ausTeil(g, frucht, "ware");
+            }
+        }
+        // die Kiste auf der Ablage (Latten) und Brote darin
+        var kiX = (zW() - 0.5) * 0.9,
+            hatFass = zW() < 0.7,
+            fassSeite = zW() < 0.5 ? -1 : 1,
+            hatSack = zW() < 0.6;
+        if (fein) {
+            for (i = 0; i < 4; i++) {
+                var lat = i < 2 ? ausKiste(0.56, 0.07, 0.02, 0.004) : ausKiste(0.02, 0.07, 0.34, 0.004);
+                var lp = i === 0 ? [0, -0.16] : i === 1 ? [0, 0.16] : i === 2 ? [-0.27, 0] : [0.27, 0];
+                for (var lagN = 0; lagN < 2; lagN++) holz(ausSetze(lat.clone(), kiX + lp[0], 0.33 + lagN * 0.085, lp[1], 0, 0, 0), ausTon(zW, 0.06, 0.03), "lattung");
+                lat.dispose();
+            }
+            for (i = 0; i < 3; i++) {
+                var brot = ausFeldstein(ausZufall(seed + i * 13, 0x67), false, 0.2, 0.09, 0.11, true);
+                ausSetze(brot, kiX - 0.16 + i * 0.16, 0.33, 0, 0, 0.2 + i * 0.4, 0);
+                ausFaerbe(brot, "ware", 0, function (x, y) {
+                    return { ton: y > 0.36 ? [0.58, 0.36, 0.17] : [0.72, 0.52, 0.3] };
+                });
+                ausTeil(g, brot, "ware");
+            }
+            if (hatSack) {
+                var sk = ausFeldstein(ausZufall(seed, 0x68), true, 0.36, 0.42, 0.3, true);
+                ausSetze(sk, -kiX * 0.6 + (kiX > 0 ? -0.35 : 0.35), 0.29 + 0.2, 0.05, 0, 0.5, 0);
+                ausFaerbe(sk, "stroh", W * 0.5, null);
+                ausTeil(g, sk, "stroh");
+            }
+        }
+        // das Fass neben dem Tisch (Dauben-Bauch, Reifen aus Eisen nah, Holz fern)
+        if (hatFass) {
+            var fx = fassSeite * (bx + 0.36),
+                fz = -0.05;
+            var fass = ausDreh([[0.2, 0], [0.235, 0.16], [0.245, 0.31], [0.235, 0.46], [0.2, 0.62], [0, 0.62]], fein ? 12 : 7, true, false);
+            ausSetze(fass, fx, -0.02, fz, 0, 0, 0);
+            ausFaerbe(fass, "holz", W, function (x, y, zz, nx, ny, nz) {
+                var dauben = (Math.floor((Math.atan2(zz - fz, x - fx) + Math.PI) * 2.6) % 2) * 0.08;
+                return { ton: ny > 0.9 ? [1.18, 1.08, 0.92] : [1.02 - dauben, 0.98 - dauben, 0.94 - dauben] };
+            });
+            ausTeil(g, fass, "holz");
+            if (fein)
+                for (i = 0; i < 2; i++) {
+                    var yr = i ? 0.47 : 0.12;
+                    var reif = ausDreh([[0.236, -0.018], [0.241, 0], [0.236, 0.018]], 12, false, false);
+                    ausSetze(reif, fx, yr - 0.02, fz, 0, 0, 0);
+                    ausFaerbe(reif, "holz", 0, function () {
+                        return { ton: [0.42, 0.4, 0.38] }; // geschmiedetes Band, dunkel angelaufen
+                    });
+                    ausTeil(g, reif, "holz");
+                }
+        }
+    }
+
+    // ── DER ZIEHBRUNNEN: Steinkranz aus Quadern in drei Lagen (fern ein Drehkörper) · Deckplatten · dunkler Schacht ·
+    //    Wasserspiegel · zwei Pfosten · Haspel mit Kurbel · Seil und Eimer · Satteldach aus Schindeln ──
+    function ausBrunnen(g, p, seed, stufe) {
+        var G = p.groesse,
+            F = p.fuelle,
+            W = p.verwitterung,
+            fein = stufe === 0;
+        var zK = ausZufall(seed, 0x71),
+            zD = ausZufall(seed, 0x72),
+            zH = ausZufall(seed, 0x73);
+        var ri = 0.62 * G,
+            ra = 0.92 * G,
+            rm = (ri + ra) / 2,
+            hK = 0.66,
+            hD = 0.07,
+            fa = fein ? 0.016 : 0;
+        var i, k;
+        // DER KRANZ — nah Quader im Verband (jede zweite Lage um einen halben Stein versetzt), fern der Ring.
+        var nQ = 12,
+            lagen = [[-0.24, 0.22], [0.22, 0.44], [0.44, hK]];
+        for (var li = 0; li < lagen.length; li++)
+            for (k = 0; k < nQ; k++) {
+                var tonQ = ausTon(zK, 0.1, 0.04),
+                    jit = (zK() - 0.5) * 0.08;
+                if (!fein) continue;
+                var w = ((k + (li % 2) * 0.5 + jit) / nQ) * Math.PI * 2,
+                    hq = lagen[li][1] - lagen[li][0] - 0.008,
+                    lq = (2 * Math.PI * rm) / nQ - 0.014;
+                var q = ausKiste(lq, hq, ra - ri, fa);
+                ausSetze(q, Math.cos(w) * rm, (lagen[li][0] + lagen[li][1]) / 2, Math.sin(w) * rm, 0, -w - Math.PI / 2, 0);
+                ausFaerbe(q, "stein", W, function () {
+                    return { ton: tonQ };
+                });
+                ausTeil(g, q, "stein");
+            }
+        if (!fein) {
+            // fern der Ring mit dem Kragen der Deckplatten (dieselbe Hülle wie nah)
+            var ring = ausDreh([[ra, -0.24], [ra, hK], [ra + 0.08, hK], [ra + 0.08, hK + hD], [ri, hK + hD], [ri, -0.24]], 12, false, false);
+            ausFaerbe(ring, "stein", W, null);
+            ausTeil(g, ring, "stein");
+        }
+        // DIE DECKPLATTEN — kragen nach außen über, die Fuge sitzt über der Lagenfuge versetzt.
+        for (k = 0; k < nQ; k++) {
+            var tonD = ausTon(zK, 0.08, 0.03);
+            if (!fein) continue;
+            var wd = ((k + 0.25) / nQ) * Math.PI * 2;
+            var dp = ausKiste((2 * Math.PI * (rm + 0.03)) / nQ - 0.01, hD, ra - ri + 0.1, 0.014);
+            ausSetze(dp, Math.cos(wd) * (rm + 0.03), hK + hD / 2, Math.sin(wd) * (rm + 0.03), 0, -wd - Math.PI / 2, 0);
+            ausFaerbe(dp, "stein", W, function () {
+                return { ton: [tonD[0] * 1.06, tonD[1] * 1.06, tonD[2] * 1.06] };
+            });
+            ausTeil(g, dp, "stein");
+        }
+        // DER SCHACHT — die Innenwand dunkelt mit der Tiefe; der Wasserspiegel liegt 0,55 m unter dem Boden.
+        var schacht = ausDreh([[ri, hK], [ri, -1.2]], fein ? 16 : 10, false, false);
+        ausFaerbe(schacht, "stein", W, function (x, y) {
+            var t = Math.max(0, Math.min(1, (hK - y) / 1.4));
+            var d = 1 - 0.85 * t;
+            return { ton: [d, d, d * 1.02] };
+        });
+        ausTeil(g, schacht, "stein");
+        var wasser = ausDreh([[ri, -0.55], [0, -0.55]], fein ? 16 : 10, false, false);
+        ausFaerbe(wasser, "glas", 0, null);
+        ausTeil(g, wasser, "glas");
+        // DIE PFOSTEN — 14 cm, 30 cm im Boden, tragen den First.
+        var px = ra + 0.13,
+            yF = 2.62,
+            hPf = yF + 0.3 - 0.05;
+        var tonP = [ausTon(zH, 0.06, 0.02), ausTon(zH, 0.06, 0.02)];
+        for (i = 0; i < 2; i++) {
+            var pfo = ausKiste(0.14, hPf, 0.14, fa);
+            ausSetze(pfo, (i ? 1 : -1) * px, hPf / 2 - 0.3, 0, 0, 0, 0);
+            ausFaerbe(pfo, "holz", W, (function (t) {
+                return function () {
+                    return { ton: t };
+                };
+            })(tonP[i]));
+            ausTeil(g, pfo, "holz");
+        }
+        // DIE HASPEL — Welle durch beide Pfosten, Trommel in der Mitte, Kurbel rechts.
+        var yH = 1.5;
+        var welle = ausDreh([[0.055, 0], [0.055, 2 * px + 0.34]], fein ? 8 : 5, true, true);
+        ausSetze(welle, 0, 0, 0, 0, 0, Math.PI / 2);
+        ausSetze(welle, px + 0.17, yH, 0, 0, 0, 0);
+        ausFaerbe(welle, "holz", W, null);
+        ausTeil(g, welle, "holz");
+        var trommel = ausDreh([[0.11, 0], [0.115, 0.45], [0.11, 0.9]], fein ? 10 : 6, true, true);
+        ausSetze(trommel, 0, 0, 0, 0, 0, Math.PI / 2);
+        ausSetze(trommel, 0.45, yH, 0, 0, 0, 0);
+        ausFaerbe(trommel, "lattung", W, null);
+        ausTeil(g, trommel, "lattung");
+        var arm = ausKiste(0.045, 0.34, 0.045, fa * 0.6);
+        ausSetze(arm, px + 0.2, yH - 0.15, 0, 0, 0, 0);
+        ausFaerbe(arm, "holz", W, null);
+        ausTeil(g, arm, "holz");
+        var griff = ausDreh([[0.024, 0], [0.024, 0.2]], fein ? 6 : 4, true, true);
+        ausSetze(griff, 0, 0, 0, 0, 0, -Math.PI / 2);
+        ausSetze(griff, px + 0.2, yH - 0.3, 0, 0, 0, 0);
+        ausFaerbe(griff, "holz", W, null);
+        ausTeil(g, griff, "holz");
+        // SEIL und EIMER — die Fülle hebt den Eimer (leer am Kranz, voll am Seil hoch).
+        var yE = 0.86 + F * 0.22;
+        var seil = ausDreh([[0.013, 0], [0.013, yH - 0.11 - (yE + 0.3)]], fein ? 5 : 4, false, false);
+        ausSetze(seil, 0.05, yE + 0.3, 0, 0, 0, 0);
+        ausFaerbe(seil, "ware", 0, function () {
+            return { ton: [0.42, 0.36, 0.25] }; // Hanf
+        });
+        ausTeil(g, seil, "ware");
+        var eimer = ausDreh([[0, 0], [0.125, 0], [0.15, 0.24], [0.138, 0.245], [0.114, 0.02], [0, 0.02]], fein ? 10 : 6, false, false);
+        ausSetze(eimer, 0.05, yE, 0, 0, 0, 0);
+        ausFaerbe(eimer, "holz", W, function (x, y, zz) {
+            var d = (Math.floor((Math.atan2(zz, x - 0.05) + Math.PI) * 2.2) % 2) * 0.07;
+            return { ton: [1.08 - d, 1.02 - d, 0.95 - d] };
+        });
+        ausTeil(g, eimer, "holz");
+        if (fein) {
+            for (i = 0; i < 2; i++) {
+                var er = ausDreh([[0.131 + i * 0.016, -0.012], [0.135 + i * 0.016, 0], [0.131 + i * 0.016, 0.012]], 10, false, false);
+                ausSetze(er, 0.05, yE + 0.04 + i * 0.16, 0, 0, 0, 0);
+                ausFaerbe(er, "holz", 0, function () {
+                    return { ton: [0.42, 0.4, 0.38] }; // Eisenband, dunkel angelaufen
+                });
+                ausTeil(g, er, "holz");
+            }
+            var buegel = ausKiste(0.3, 0.012, 0.012, 0);
+            ausSetze(buegel, 0.05, yE + 0.3, 0, 0, 0, 0);
+            ausFaerbe(buegel, "holz", 0, function () {
+                return { ton: [0.42, 0.4, 0.38] };
+            });
+            ausTeil(g, buegel, "holz");
+        }
+        // DAS DACH — First auf den Pfosten, Sparren-Paare, Schindeln in Reihen (fern zwei Flächen) mit Moos am Fuß.
+        var hz = 0.86,
+            yT = 2.16,
+            lx = 2 * px + 0.5,
+            dach = Math.atan2(yF - yT, hz),
+            lS = Math.sqrt(hz * hz + (yF - yT) * (yF - yT)) + 0.08;
+        var first = ausKiste(lx - 0.1, 0.12, 0.12, fa);
+        ausSetze(first, 0, yF - 0.02, 0, 0, 0, 0);
+        ausFaerbe(first, "holz", W, null);
+        ausTeil(g, first, "holz");
+        for (var sd = -1; sd <= 1; sd += 2) {
+            // Rx(sd·dach): die Fläche fällt nach außen (z → ±hz) zur Traufe ab
+            for (i = 0; i < 2; i++) {
+                var sp = ausKiste(0.06, 0.08, lS, fa * 0.7);
+                ausSetze(sp, (i ? 1 : -1) * px, (yF + yT) / 2 - 0.03, (sd * hz) / 2, sd * dach, 0, 0);
+                ausFaerbe(sp, "holz", W, null);
+                ausTeil(g, sp, "holz");
+            }
+            var nR = fein ? 6 : 1;
+            for (var rI = 0; rI < nR; rI++) {
+                var tonR = ausTon(zD, 0.12, 0.04);
+                var tR = fein ? (rI + 0.5) / nR : 0.5,
+                    bR = fein ? lS / nR + 0.06 : lS,
+                    dR = fein ? 0.026 : 0.05;
+                var yR = yF - (yF - yT) * tR + 0.06 + (fein ? (rI % 2) * 0.006 : 0),
+                    zR = sd * hz * tR;
+                var reihe = ausKiste(lx + 0.06, dR, bR, fein ? 0.006 : 0);
+                ausSetze(reihe, 0, yR, zR, sd * dach, 0, 0);
+                ausFaerbe(reihe, "stamm", W, function (x, y, zz, nx, ny) {
+                    var moos = W * 0.45 * Math.max(0, Math.min(1, (0.5 - (yF - y) / (yF - yT)) * -2)) * Math.max(0, ny);
+                    return { ton: [tonR[0] * (1 - 0.3 * moos), tonR[1] * (1 + 0.05 * moos), tonR[2] * (1 - 0.35 * moos)] };
+                });
+                ausTeil(g, reihe, "stamm");
+            }
+        }
+    }
+
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen };
+    // Die Palette der Gestalt: verwittertes Holz, Feldstein, Plane — gewürfelt aus dem Samen (eigener Strom), die
+    // Plane in den Färber-Farben des Markts (Krapp · Ocker · Salbei · Waid · Malve) und Naturleinen. Jedes Hex ist eine
+    // sRGB-ABSICHT (das FARB-GESETZ, `_colFor` legt es linear in den Vertex); die linearen Werte liegen im Band der Natur
+    // (diag-albedo-zensus), NACH Kontakt-AO und Erdsaum gemessen: Feldstein und Quader 0,22–0,33 · verwittertes Holz
+    // 0,12–0,20 · Plane 0,10–0,25 · Naturleinen 0,41 · Asche 0,18 (gate:fachwerk-contract misst sie je Rolle).
+    var AUS_PLANE = [0xa8483a, 0xb08a3e, 0x5e7d4c, 0x3f5f86, 0x7a5f8a];
+    var AUS_NATURTUCH = 0xb8ae96;
+    function ausFarben(rezeptId, seed) {
+        var z = ausZufall(seed, 0x81);
+        var pick = function (a) {
+            return a[Math.floor(z() * a.length) % a.length];
+        };
+        if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
+        if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
+        return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
+    }
+    // Das Raster der Bytes (plattformgleich): 2^-12, Normalen 2^-14, −0 → 0.
+    function ausRaster(g) {
+        g.traverse(function (o) {
+            if (!o.geometry) return;
+            var A = o.geometry.attributes;
+            for (var name in A) {
+                var q = name === "normal" ? 16384 : 4096,
+                    arr = A[name].array;
+                for (var i = 0; i < arr.length; i++) arr[i] = Math.round(arr[i] * q) / q + 0;
+            }
+        });
+    }
+    // B2 der Ausstattung: buildInstance(id, seed, lod, ov) → EINE Gruppe, je Rolle EIN gebakter Mesh (die Glut wirft
+    // nicht), Stufe = die größte deklarierte ≤ lod (sonst die kleinste). ov.seed überstimmt das seed-Argument.
+    function buildAusstattung(rezeptId, seed, lod, ov) {
+        var pre = PRESETS[rezeptId];
+        if (!pre || pre.kind !== "ausstattung" || !AUS_BAU[rezeptId]) return null;
+        ausMaterialien();
+        var p = ausParams(pre, ov || null);
+        var sd = ov && typeof ov === "object" && ov.seed != null ? Number(ov.seed) : Number(seed);
+        if (!isFinite(sd)) sd = 1;
+        sd = (Math.round(sd) ^ AUSSTATTUNG[rezeptId].salz) >>> 0;
+        var L = lod | 0,
+            stufe = AUS_STUFEN[0];
+        for (var i = 0; i < AUS_STUFEN.length; i++) if (AUS_STUFEN[i] <= L) stufe = AUS_STUFEN[i];
+        var kol = ausFarben(rezeptId, sd);
+        var roh = new THREE.Group();
+        AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
+        roh.updateMatrixWorld(true);
+        var geoms = {};
+        bakeLOD(roh, kol, geoms, 0, true);
+        var g = geomsZuGruppe(geoms, kol);
+        g.traverse(function (o) {
+            if (o.isMesh && o.material && o.material.emissive && o.material.emissive.getHex() !== 0) o.castShadow = false;
+        });
+        ausRaster(g);
+        g.userData = { kind: "ausstattung", rezeptId: rezeptId, seed: seed, lod: stufe };
         g.updateMatrixWorld(true);
         return g;
     }
@@ -3183,8 +4259,10 @@
 
 
 
-    // W8 — die Gestalten je Rezept (B2c): JEDER Stil trägt GESTALTEN_JE_REZEPT Individuen (ein neuer Stil zählt mit).
-    for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
+    // W8 — die Gestalten je Rezept (B2c): JEDER Stil trägt GESTALTEN_JE_REZEPT Individuen (ein neuer Stil zählt mit);
+    // die Ausstattung zählt ihre eigenen (AUSSTATTUNG[id].gestalten — wenige, die Instanzen teilen sich die Draws).
+    for (var _gid in PRESETS)
+        PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = AUSSTATTUNG[_gid] ? AUSSTATTUNG[_gid].gestalten : GESTALTEN_JE_REZEPT;
 
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
     root.__fachwerkCore = {
@@ -3192,8 +4270,10 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
-        PARAMS_BY_KIND: { haus: PARAMS },
+        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS },
         buildInstance: buildInstance,
+        // DIE AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen) — das Labor-Dorf baut seine Brunnen und Stände hierüber
+        AUSSTATTUNG: AUSSTATTUNG,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
         RAUCH_GESETZ: RAUCH_GESETZ,
