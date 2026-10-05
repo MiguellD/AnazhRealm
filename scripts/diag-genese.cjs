@@ -1,5 +1,5 @@
 // diag-genese.cjs — Γ-Bogen-Messgerät (genese-plan): vier Messungen am ECHTEN Boot.
-//   A  genVersion der frischen Welt (ensureWorldMeta-Stempel → 2)
+//   A  genVersion der frischen Welt (ensureWorldMeta-Stempel = die aktuelle _genVersion())
 //   (B  KRONEN-Kalibrierung fiel 04.10. mit der Host-Kronen-Lesart — das Boden-Gesetz des Studios ist die EINE
 //       Platzierung der Nah-Streu)
 //   C  FEUCHTE-Feld: Fluss-Ufer hoch (≥ schilf-floor) · trocken+hoch = 0 · Legacy = 0
@@ -71,7 +71,8 @@ function startSaveServer() {
             return { gen: r._genVersion(), meta: (r.state.worldMeta && r.state.worldMeta.genVersion) || null };
         });
         console.log("A — GENESE-VERSION");
-        check(a.gen === 2, `frische Welt trägt genVersion 2`, `_genVersion()=${a.gen}, worldMeta=${a.meta}`);
+        // die aktuelle Genese-Version (der Stempel wandert mit der Genese — das Literal 2 war stale)
+        check(a.gen >= 2 && a.meta === a.gen, `frische Welt trägt die aktuelle genVersion`, `_genVersion()=${a.gen}, worldMeta=${a.meta}`);
 
         // ---- C: FEUCHTE-Feld -------------------------------------------------
         const c = await page.evaluate(() => {
@@ -151,7 +152,7 @@ function startSaveServer() {
         if (c.bank) check(c.feuchteLegacy === 0, `Legacy (genVersion 1) → feuchte 0`, `=${c.feuchteLegacy}`);
 
         // ---- D: UFER-LEBEN end-to-end ---------------------------------------
-        const d = await page.evaluate(() => {
+        const d = await page.evaluate(async () => {
             const r = window.anazhRealm;
             const span = r._voxelChunkConfig().span;
             const hydro = r.state.hydrosphere;
@@ -184,37 +185,69 @@ function startSaveServer() {
             }
             const out = { best };
             if (!best || best.s === 0) return out;
-            const arten = r._nahStreuArten();
+            // Das Studio-Buch dockt asynchron (Foundry-Worker): die Nah-Streu wartet, bis Buch und Render-Config stehen.
+            let arten = null;
+            for (let i = 0; i < 600 && !arten; i++) {
+                arten = r._nahStreuArten();
+                if (!arten) await new Promise((ok) => setTimeout(ok, 100));
+            }
+            // Die Boden-Karten des Mess-Chunks und seiner Nachbarn bauen (eine Kachel am Rand liest den Nachbarn).
+            const baue = async (cx, cz) => {
+                for (let i = 0; i < 600; i++) {
+                    let fehlt = 0;
+                    for (let dz = -1; dz <= 1; dz++)
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const e = r._ensureVoxelChunkAt(cx + dx, cz + dz);
+                            if (!e || (!e.surfMap && !e.empty)) fehlt++;
+                        }
+                    if (!fehlt) return true;
+                    await new Promise((ok) => setTimeout(ok, 50));
+                }
+                return false;
+            };
             const NS = r.constructor.NAH_STREU;
             const n = Math.round(span / NS.kachel);
-            // Die Schilf-Pflanzen der Kacheln eines Chunks (die Nah-Streu am Boden-Gesetz, Ufer am Fluss-Spiegel).
+            // Die Schilf-Pflanzen der Kacheln eines Chunks (die Nah-Streu am Boden-Gesetz, Ufer am Fluss-Spiegel) und wie
+            // viele Kacheln gemessen sind — eine wartende Kachel (Boden ungebaut) zählt nie als „kein Schilf".
             const schilfIm = (cx, cz) => {
-                if (!arten) return -1;
+                if (!arten) return { n: -1, gemessen: 0, kacheln: 0 };
                 const ai = arten.findIndex((a) => a.id === "schilf");
                 let z = 0;
+                let gemessen = 0;
+                let kacheln = 0;
                 for (let tz = cz * n; tz < cz * n + n; tz++)
                     for (let tx = cx * n; tx < cx * n + n; tx++) {
+                        kacheln++;
                         const satz = r._nahStreuKachel(tx, tz, arten);
-                        if (satz) for (const it of satz.items) if (it.art === ai) z++;
+                        if (!satz) continue;
+                        gemessen++;
+                        for (const it of satz.items) if (it.art === ai) z++;
                     }
-                return z;
+                return { n: z, gemessen, kacheln };
             };
+            out.bodenFluss = await baue(best.cx, best.cz);
             out.schilfFluss = schilfIm(best.cx, best.cz);
-            // Trockener Chunk (aus C wiederverwendet — Raster-Scan):
+            // Trockener Chunk: unter den GEBAUTEN Chunks (die Boden-Karte steht — sonst wartet jede Kachel und die
+            // Messung wäre leer) der erste fern vom Fluss und hoch über dem Wasser.
             const F = r.constructor.FEUCHTE;
             let dry = null;
-            for (let zi = -12; zi <= 12 && !dry; zi++)
-                for (let xi = -12; xi <= 12 && !dry; xi++) {
-                    const x = xi * 80;
-                    const z = zi * 80;
-                    const hd = r._hydroDistAt(x, z);
-                    if (Number.isFinite(hd.dist) && hd.dist < hd.halfW + F.flussReichweite + 10) continue;
-                    const sy = r._voxelSurfaceY(x, z);
-                    if (sy === null || !Number.isFinite(sy)) continue;
-                    if (sy - r._waterLevelAt(x, z) <= F.hoeheFern + 3) continue;
-                    dry = { cx: Math.floor(x / span), cz: Math.floor(z / span) };
-                }
-            if (dry) out.schilfTrocken = schilfIm(dry.cx, dry.cz);
+            for (const [key, e] of r.state.voxelChunks || []) {
+                if (dry) break;
+                if (!e || !e.surfMap) continue;
+                const [cx, cz] = key.split(",").map(Number);
+                const x = (cx + 0.5) * span;
+                const z = (cz + 0.5) * span;
+                const hd = r._hydroDistAt(x, z);
+                if (Number.isFinite(hd.dist) && hd.dist < hd.halfW + F.flussReichweite + span) continue;
+                const sy = r._voxelSurfaceY(x, z);
+                if (sy === null || !Number.isFinite(sy)) continue;
+                if (sy - r._waterLevelAt(x, z) <= F.hoeheFern + 3) continue;
+                dry = { cx, cz };
+            }
+            if (dry) {
+                out.bodenTrocken = await baue(dry.cx, dry.cz);
+                out.schilfTrocken = schilfIm(dry.cx, dry.cz);
+            }
             return out;
         });
         console.log("D — UFER-LEBEN end-to-end");
@@ -224,9 +257,14 @@ function startSaveServer() {
             d.best ? `chunk(${d.best.cx},${d.best.cz}) bankCells=${d.best.s}` : ""
         );
         if (d.best && d.best.s > 0) {
-            check(d.schilfFluss > 0, `schilf wächst am Ufer`, `n=${d.schilfFluss}`);
-            if (Number.isFinite(d.schilfTrocken))
-                check(d.schilfTrocken === 0, `schilf bleibt der Trocknis fern`, `n=${d.schilfTrocken}`);
+            const sf = d.schilfFluss || {};
+            check(sf.n > 0, `schilf wächst am Ufer`, `n=${sf.n} (${sf.gemessen}/${sf.kacheln} Kacheln gemessen)`);
+            const st = d.schilfTrocken || {};
+            check(
+                st.gemessen > 0 && st.n === 0,
+                `schilf bleibt der Trocknis fern (gemessen, nie leer grün)`,
+                d.schilfTrocken ? `n=${st.n} (${st.gemessen}/${st.kacheln} Kacheln gemessen)` : "kein gebauter trockener Chunk"
+            );
         }
 
         // ---- E: Math.random-Zensus (Γ5) -------------------------------------

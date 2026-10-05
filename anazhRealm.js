@@ -32868,16 +32868,20 @@ class AnazhRealm {
     // wartet, sie rät nie.
     _nahStreuArten() {
         const cfg = AnazhRealm._studioRenderConfig;
-        const boden = cfg && cfg.placement ? cfg.placement.boden : null;
         const buch = this._foundry ? this._foundry.recipes : null;
-        if (!boden || !buch) return null;
+        if (!cfg || !buch) return null;
+        // Buch und Render-Config docken in EINER Nachricht: steht beides, ist ein fehlendes Boden-Gesetz oder eine
+        // Boden-Zeile ohne Rezept ein KERN-PFLICHT-Bruch (laut), nie eine still leere Nah-Streu.
+        const boden = cfg.placement ? cfg.placement.boden : null;
+        if (!boden) return AnazhRealm._kernPflichtBruch("phyto:placement.boden");
         const c = this._nahStreuArtenCache;
         if (c && c.boden === boden && c.buch === buch) return c.arten;
         const arten = [];
         for (const id of Object.keys(boden).sort()) {
             const zeile = boden[id];
+            if (!zeile || zeile.ring !== "nah") continue;
             const rec = buch[id];
-            if (!zeile || zeile.ring !== "nah" || !rec) continue;
+            if (!rec) return AnazhRealm._kernPflichtBruch("phyto:placement.boden." + id + " (kein Rezept im Buch)");
             // Die Weite der Art (Studio-Zeile `weite`, m): kleine Arten enden früher, keine reicht über den Ring.
             const weite = Math.min(AnazhRealm.NAH_STREU.radius, Number.isFinite(zeile.weite) ? zeile.weite : Infinity);
             arten.push({ id, zeile, kind: rec.kind, ernte: AnazhRealm.STREU_ERNTE[rec.kind] || null, weite });
@@ -32966,7 +32970,10 @@ class AnazhRealm {
                         const same = (w() * 4294967296) >>> 0;
                         const ordnung = w();
                         const op = ort(px, pz);
-                        if (!op.e || !op.e.surfMap) continue; // über die Kante in einen ungebauten Chunk: fällt
+                        if (!op.e || !op.e.surfMap) {
+                            if (op.e && op.e.empty) continue; // ein leerer Chunk trägt keine Fläche
+                            return null; // der Nachbar-Boden steht noch nicht — die Kachel wartet (nie nach Streaming-Reihenfolge)
+                        }
                         const py = this._chunkSurfaceAt(op.e, op.cx, op.cz, px, pz);
                         if (py === null) continue;
                         if (!A.zeile.ufer && py < this._nahStreuSpiegel(px, pz) + 0.1) continue;

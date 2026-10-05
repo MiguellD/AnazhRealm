@@ -40,9 +40,10 @@ function urteil(z) {
     if (z.wasser.objekte > 1) v.push(`WASSER: ${z.wasser.objekte} Chunk-Wasser-Objekte (Soll ≤ 1, der Satz)`);
     for (const [senke, n] of Object.entries(z.streuNah))
         if (n > 1) v.push(`STREU: ${n} Nah-Streu-InstancedMeshes der Senke ${senke} (Soll ≤ 1 je Senke)`);
-    const streuSumme = Object.values(z.streuNah).reduce((a, b) => a + b, 0);
-    if (streuSumme > z.senken)
-        v.push(`STREU: ${streuSumme} Nah-Streu-InstancedMeshes (Soll ≤ ${z.senken} Senken)`);
+    // Eine Streu-InstancedMesh, die keiner Senke gehört (eine alte Senken-Mesh nach dem Wachsen, ein Host-Bauer), ist
+    // eine Waise — sie zeichnet ohne Block-Tabelle (Integration 05.10.: die Schranke `Summe ≤ Senken` las dieselbe
+    // Map, aus der sie zählte, und sah unsichtbare Senken als Platz).
+    if (z.waisen > 0) v.push(`STREU: ${z.waisen} Nah-Streu-InstancedMeshes ohne Senke (Waisen, Soll 0)`);
     if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (gefallen, Soll 0)`);
     const fernSumme = Object.values(z.fern).reduce((a, b) => a + b, 0);
     if (fernSumme > 0) v.push(`STREU: ${fernSumme} Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)`);
@@ -62,7 +63,7 @@ function selbsttest() {
         voxelChunkNamen: [],
         wasser: { objekte: 1 },
         streuNah: { "blume:1:L2:0": 1, "farn:2:L1:0": 1 },
-        senken: 8,
+        waisen: 0,
         deck: 0,
         fern: {},
         pGruppen: [],
@@ -89,6 +90,11 @@ function selbsttest() {
             name: "zweites streuNah derselben Senke",
             z: { ...gruen, streuNah: { "blume:1:L2:0": 2, "farn:2:L1:0": 1 } },
             muss: [/STREU: 2 Nah-Streu-InstancedMeshes der Senke blume:1:L2:0/],
+        },
+        {
+            name: "eine Waise ohne Senke",
+            z: { ...gruen, waisen: 1 },
+            muss: [/STREU: 1 Nah-Streu-InstancedMeshes ohne Senke/],
         },
         {
             name: "die Fern-Deko lebt",
@@ -220,8 +226,8 @@ function check(name, ok, detail) {
             r._tickChunkSatz();
 
             // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Bundles eingeschlossen).
-            const senkenZahl = s.nahStreu ? s.nahStreu.senken.size : 0;
             const zensus = () => {
+                const senkenMeshes = new Set(s.nahStreu ? [...s.nahStreu.senken.values()].map((a) => a.mesh) : []);
                 const bodenMat = s.voxelChunkMaterial;
                 const z = {
                     boden: { objekte: 0, namen: [], tris: 0 },
@@ -229,7 +235,7 @@ function check(name, ok, detail) {
                     wasser: { objekte: 0, tris: 0 },
                     streuNah: {},
                     streuInstanzen: 0,
-                    senken: senkenZahl,
+                    waisen: 0,
                     deck: 0,
                     fern: {},
                     pGruppen: [],
@@ -264,6 +270,7 @@ function check(name, ok, detail) {
                         const a = artVon(o);
                         z.streuNah[a] = (z.streuNah[a] || 0) + 1;
                         z.streuInstanzen += o.count;
+                        if (!senkenMeshes.has(o)) z.waisen++;
                     }
                     if (u.inventar === "deck-streu") z.deck++;
                     if (u.inventar === "deko-fernfeld") {

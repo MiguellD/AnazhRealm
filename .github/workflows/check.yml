@@ -331,7 +331,7 @@ jobs:
 
             - name: Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)
               # Zählt die Render-Bürger je Klasse im Szenen-Baum (GPU-frei): höchstens EIN Boden-Satz (Stitch eingeschlossen),
-              # EIN Wasser-Satz, je Art EINE Klein-Streu- und EINE Fern-Mesh, keine Deck-Streu, kein @p:-Bau, kein
+              # EIN Wasser-Satz, je Nah-Streu-Senke EINE InstancedMesh (keine Waise), keine Deck-Streu, kein @p:-Bau, kein
               # p:-Bundle; Treue (Views byte-gleich, Index verschoben, Blöcke nah → fern) und Konsum (ein Chunk-Abbau
               # ändert den Satz, nicht die Szene). --selftest zuerst: injizierte Täter fallen rot und werden genannt.
               run: npm run gate:chunk-satz
