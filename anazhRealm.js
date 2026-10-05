@@ -70342,17 +70342,15 @@ class AnazhRealm {
     }
     // DIE EINE STUFEN-KLAMMER der Geometrie-Stufen (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
     // live) für JEDE Art, baumartig oder nicht: die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die kleinste —
-    // nie eine Stufe, die das Studio nicht vorsieht. Ohne Config die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD,
-    // fail-closed); ein BEKANNTES Rezept ohne kindStages-Eintrag (neue Domäne vor ihrem Merge) gilt als [0] — nur die
-    // feine Stufe, der Wirt gradet selbst (L1=L0, L2=Auto-Impostor). Leser: der Flatten und sein Dock-Peek.
+    // nie eine Stufe, die das Studio nicht vorsieht. Ein BEKANNTES Rezept ohne kindStages-Eintrag (eine Zweit-Kern-Art,
+    // neue Domäne vor ihrem Merge) gilt als [0] — nur die feine Stufe, der Wirt gradet selbst (L1=L0, L2=Auto-Impostor).
+    // Ohne Config gibt es keine Stufe: der Wurf-Leser (`_foundryBudgetZeile`) bricht KERN-PFLICHT (die Fallback-Karte
+    // FOUNDRY_KIND_LOD fiel 05.10. — Buch und Config docken in EINER Nachricht). Leser: der Flatten und sein Dock-Peek.
     _foundryServierStufe(preset, lod) {
         lod = this._foundryDeclaredStage(preset, lod);
         if (!this._foundryPresetIsTree(preset) && !this._foundryKindStages(preset)) {
             const f = this._foundry;
-            const rec = f && f.recipes ? f.recipes[preset] : null;
-            const kl = rec ? AnazhRealm.FOUNDRY_KIND_LOD[rec.kind] : null;
-            if (Number.isFinite(kl)) lod = kl;
-            else if (rec) lod = 0;
+            if (f && f.recipes && f.recipes[preset]) lod = 0;
         }
         return lod;
     }
@@ -88539,10 +88537,6 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
 // (~351 MB @ Ring 4) — darunter fallen gewärmte Assets vor dem Konsum (gate:foundry-crossfade).
 // Räumung graziös (re-anfragbar; _liveRefs: nie ein sichtbarer Baum).
 AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
-// Stufen-Fallback-Karte je Art: die LEBENDE Wahrheit ist `PORTAL_RENDER_CONFIG.lod.kindStages`
-// (Studio + AnazhRealm lesen dieselbe Quelle). Diese Karte ist nur der fail-closed-Fallback, bis der
-// Config angedockt ist — nie eine ungeprüfte Stufe servieren.
-AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, rock: 0 });
 // DIE WIRT-STUFEN-REGEL des Wurfs (Studio-Vertrag B2: L1/L2 dem Wirt zugewiesen): trägt der Kern einer Art kein Budget
 // (die Zweit-Kerne bis zu ihrer B2c-Zeile, gate:studio-vertrag nennt sie), wirft jede Stufe sich selbst, die Fernstufe
 // nie. Einziger Leser `_foundryBudgetZeile`; mit dem Budget aller Kerne hat die Tafel keinen Leser mehr und fällt.

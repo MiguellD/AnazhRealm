@@ -92,10 +92,7 @@ const fmt = (n) =>
                     const z = cfg.zusatzKindStages[dom];
                     if (z && Array.isArray(z[rec.kind])) st = z[rec.kind];
                 }
-            if (!Array.isArray(st) || !st.length) {
-                const kl = A.FOUNDRY_KIND_LOD ? A.FOUNDRY_KIND_LOD[rec.kind] : null;
-                st = Number.isFinite(kl) ? [kl] : [0];
-            }
+            if (!Array.isArray(st) || !st.length) st = [0]; // der Wirt gradet selbst (_foundryServierStufe)
             return st;
         };
         const zaehle = (meshes) => {

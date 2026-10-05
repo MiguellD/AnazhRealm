@@ -200,6 +200,9 @@ const FORBIDDEN = [
     // Integration mittel-klumpen + W1 (05.10.): die Gesetz-Bahn-Wand der Streu war eine Kopie der Backend-Wand des
     // Feld-Passes.
     { token: "_streuGesetzBahnOffen", fiel: "Integration 05.10. — _weltMarchGezeichnet, dieselbe Wand wie der Feld-Pass" },
+    // Integration 05.10.: die Fallback-Karte der Stufen ohne Config war tot (ohne Config bricht der Wurf-Leser, Buch und
+    // Config docken in EINER Nachricht).
+    { token: "FOUNDRY_KIND_LOD", fiel: "Integration 05.10. — _foundryServierStufe, ohne Config KERN-PFLICHT" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
