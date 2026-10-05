@@ -154,27 +154,13 @@ const server = http.createServer((req, res) => {
             out.msgs.push("Worker nicht bereit");
             return out;
         }
-        // Welt EINFRIEREN + SETTLED-CA SIMULIEREN: der rAF-Loop würde sonst streamen. `_gameLoopTick`
-        // →no-op. Dann der HARTE B1-Beweis: `waterCAActive` LEEREN (nichts fliesst → der
-        // `waterCAActive`-Gate lässt alle durch) UND `waterLevelCells` aus dem FLOOD SEEDEN für
-        // ALLE Wasser-Chunks (`_seedWaterLevel` = der CA-Ruhe-Spiegel). So liest der Main-ctx einen
-        // FLOOD-Level (CA-Delta d=0) → wir prüfen, dass der Worker-STATIC-Sheet byte-identisch zum
-        // Main-CA-FLOOD-Sheet ist — DAS ist die Grundlage der `waterCAActive`-Route (settled = flood
-        // = identisch). Schärfer als der reine CA-freie Vergleich.
+        // Welt EINFRIEREN: der rAF-Loop würde sonst streamen. `_gameLoopTick` →no-op. Dann `waterCAActive`
+        // LEEREN (nichts fliesst → der `waterCAActive`-Gate lässt alle durch). Das Sheet liest den Live-Pegel
+        // nie (05.10.: das GEZEICHNETE Dach, `entry._caDach`); ein Chunk mit Dach im 3×3 baut der Main
+        // (`_waterSheetCaFree` false) — verglichen wird genau die Worker-Route: dachlos = Flood = identisch.
         r._gameLoopTick = () => {};
         if (r.state.waterCAActive) r.state.waterCAActive.clear();
         if (r.state.waterStauFields) r.state.waterStauFields.clear();
-        if (!r.state.waterLevelCells) r.state.waterLevelCells = new Map();
-        else r.state.waterLevelCells.clear();
-        for (const [k, e] of r.state.voxelChunks) {
-            if (e && e.waterCells && e.waterCells.length) {
-                try {
-                    r.state.waterLevelCells.set(k, r._seedWaterLevel(e.waterCells));
-                } catch (_e) {
-                    /* */
-                }
-            }
-        }
         // Kandidaten: CA-freie Chunks, deren Main-Sheet NICHT null ist (also Wasser tragen).
         const keys = [...r.state.voxelChunks.keys()];
         const cand = [];

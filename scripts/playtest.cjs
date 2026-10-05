@@ -23300,14 +23300,27 @@ async function checkBandPhasenBF(ctx) {
                 const dimSq = dim * dim;
                 const level = new Float64Array(dimSq * dimY);
                 for (let c = 0; c < dimSq; c++) level[3 * dimSq + c] = 0.8;
-                const a = { key, level, band: { jMin: 0, jMax: dimY - 1 } };
+                // Zellen: Luft (0) — die Entscheidung legt das Dach als WUNSCH ab (`_caDachNeu`, j + Füllgrad, offen),
+                // gezeichnet wird es erst mit dem eigenen Bau (`_buildVoxelChunkWaterCellSheet`).
+                const cells = new Uint8Array(dimSq * dimY);
+                const a = { key, level, cells, band: { jMin: 0, jMax: dimY - 1 } };
+                const e = r.state.voxelChunks.get(key);
                 const first = r._caRoofChanged(a, dim, dimY);
+                const dachNachErst = e._caDachNeu ? e._caDachNeu[0] : null;
+                const offenNachErst = e._caDachOffen === true && !e._caDach;
                 const second = r._caRoofChanged(a, dim, dimY);
                 level[4 * dimSq] = 0.9;
+                const zwischen = e._caDachNeu[0]; // ohne Entscheidung: der Wunsch bleibt
                 const third = r._caRoofChanged(a, dim, dimY);
                 const fourth = r._caRoofChanged(a, dim, dimY);
+                const dachNachDritt = e._caDachNeu[0];
                 const src = r._tickWorldWaterCA ? window.__codeOf(r._tickWorldWaterCA) : "";
-                return first && !second && third && !fourth && /_caRoofChanged/.test(src);
+                const dachOk =
+                    offenNachErst &&
+                    Math.abs(dachNachErst - 3.8) < 1e-6 &&
+                    Math.abs(zwischen - 3.8) < 1e-6 &&
+                    Math.abs(dachNachDritt - 4.9) < 1e-6;
+                return first && !second && third && !fourth && dachOk && /_caRoofChanged/.test(src);
             } finally {
                 if (saved === undefined) r.state.voxelChunks.delete(key);
                 else r.state.voxelChunks.set(key, saved);
@@ -33470,14 +33483,15 @@ async function checkBandV18199GammaMLichen(ctx) {
             out.dichteLo = A.LICHEN.dichteLo;
             out.dichteHi = A.LICHEN.dichteHi;
             out.strength = A.LICHEN.strength;
-            out.tint = A.LICHEN.tint;
+            // Die Flechten-Farbe ist die der Boden-Palette (Studio PORTAL_GROUND.flechte nach dem Farb-Gesetz).
+            out.tint = A.BODEN_FARBE.flechte;
             out.constsSensible =
                 A.LICHEN.feuchteLo < A.LICHEN.feuchteHi &&
                 A.LICHEN.dichteLo < A.LICHEN.dichteHi &&
                 A.LICHEN.strength > 0 &&
                 A.LICHEN.strength < 1 &&
-                Array.isArray(A.LICHEN.tint) &&
-                A.LICHEN.tint.length === 3;
+                Array.isArray(out.tint) &&
+                out.tint.length === 3;
         }
 
         // (L2) Source-Probe Main: LICHEN-Mix lebt in der EINEN Boden-Farbe (_bodenFarbeAt)
@@ -41277,10 +41291,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 /WG\.spec\[0\]/.test(builderSrc) &&
                 /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
                 /normalize\(uSunDir\)/.test(builderSrc);
-            // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via Szenen-Tiefe + waterThick — die Szenen-Tiefe ist der EINE
-            // Knoten _szeneTiefe (W7: Wasser und Feld-Pass lesen dieselbe Kopie, vorher zwei).
+            // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via Szenen-Tiefe — die Szenen-Tiefe ist der EINE Knoten
+            // _szeneTiefe (W7: Wasser und Feld-Pass lesen dieselbe Kopie, vorher zwei). Seit dem Durchlass-Gesetz
+            // (05.10.) in METERN optischen Wegs (wegM, × cameraFar − cameraNear), nie in Viewport-Einheiten.
             waterDepthShoreline =
-                /linearDepth\(this\._szeneTiefe\(\)\)/.test(builderSrc) && /waterThick/.test(builderSrc);
+                /linearDepth\(this\._szeneTiefe\(\)\)/.test(builderSrc) &&
+                /const wegM = /.test(builderSrc) &&
+                /cameraFar\.sub\(cameraNear\)/.test(builderSrc);
             // V13.9 (Schicht 3): dünnes Wand-Bluten pro Pixel cullen — der Builder
             // nutzt uMinDepth + alphaCulled + discardet via alphaTest.
             waterMinDepthCull =
@@ -41363,7 +41380,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
         check("V13.9.2: setWaterCull-Setter (Slider + Persistenz) vorhanden", v830Results.waterCullSetter);
         check(
-            "V13.9: Wasser-Shader cullt dünnes Bluten (waterThick<uMinDepth via alphaTest)",
+            "V13.9: Wasser-Shader cullt dünnes Bluten (optischer Weg < uMinDepth via alphaTest)",
             v830Results.waterMinDepthCull
         );
         check(
@@ -41465,12 +41482,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wFresMat) {
             const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
-            // Fresnel = pow(1 - max(dot(viewDir, n), 0), 3) im colorNode-Tree.
-            // W10 — das Band WANDERT: der EINE Fresnel ist Schlick (WASSER_GESETZ.fresnel),
-            // treibt Spiegel UND Alpha (alpha0 liest fres).
+            // W10 — das Band WANDERT: der EINE Fresnel ist Schlick (WASSER_GESETZ.fresnel), treibt Spiegel UND
+            // Deckung — seit dem Durchlass-Gesetz (05.10.) spiegelt er DEN Himmel (die Himmels-Umgebung, nie die
+            // Zenit-Tönung × Sonnen-Stärke) und deckt mit α = 1 − T·(1 − F)·(1 − Schaum).
             out.waterFresnel =
                 /WG\.fresnel\[0\]/.test(builderSrc) &&
-                /alpha0 = mix\(float\(0\.8\), float\(0\.97\), fres\)/.test(builderSrc);
+                /himmel\.mul\(fres\)/.test(builderSrc) &&
+                /texture\(this\._himmelUmgebungTex\(\), equirectUV\(/.test(builderSrc) &&
+                /T\.mul\(float\(1\.0\)\.sub\(fres\)\)/.test(builderSrc) &&
+                !/uSkyCol/.test(builderSrc);
         }
 
         // V18.530: der Fog-Regler ist mit dem Nebel gefallen (die Luft ist Physik) — weder Slider noch Setter.
@@ -41484,7 +41504,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
         check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
-        check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) treibt Spiegel + Alpha", v832Results.waterFresnel);
+        check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung", v832Results.waterFresnel);
         check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
         check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
     } else {

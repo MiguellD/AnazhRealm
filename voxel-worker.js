@@ -128,7 +128,8 @@ self.onmessage = function (e) {
             // sendet den 3×3-Zell-Block (eigener Chunk + 8 Nachbarn, je Uint8Array oder
             // null), der Worker baut das Sheet (byte-identisch zu `_computeWaterSheetData`)
             // + transferiert die Geometrie-Arrays zurück. Main macht nur BufferGeometry +
-            // Mesh (`_applyWorkerWaterSheet`). `getLevel` undefined → CA-frei.
+            // Mesh (`_applyWorkerWaterSheet`). `getDach` undefined → dachlos (der Main baut jede
+            // Nachbarschaft mit gezeichnetem Dach selbst, `_waterSheetCaFree`).
             const { cx, cz, requestId, smoothPasses, cells } = msg;
             const ctx = {
                 smoothPasses: smoothPasses | 0,
@@ -138,7 +139,7 @@ self.onmessage = function (e) {
                     if (dx < -1 || dx > 1 || dz < -1 || dz > 1) return null;
                     return cells[(dz + 1) * 3 + (dx + 1)] || null;
                 },
-                getLevel: () => undefined,
+                getDach: () => undefined,
             };
             const data = buildWaterSheetGeometry(cx, cz, ctx);
             if (!data) {
@@ -198,6 +199,8 @@ function applyStateSnapshot(snap) {
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
+    // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
+    if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
     // Γ4-Vollendung V18.193 — Erbgut-Anker vom Main übernehmen + Cache
     // invalidieren (sonst klebt der alte re-computed Anker im Worker, wenn
     // der Main ihn aus dem Bündel-Import frisch eingespielt hat).
@@ -1243,7 +1246,7 @@ function caColumnScan(cells, level, colBase, dimSq, dimY) {
 // B1 (V18.345) — DER WASSER-SHEET-WORKER-MIRROR: bit-identischer Spiegel von Main
 // `_computeWaterSheetData` (anazhRealm.js). Die EINE pure-typed-array-Mathematik des
 // Zell-Oberkanten-Sheets — `ctx.getCells(ncx,ncz)` liest den gesendeten 3×3-Zell-Block,
-// `ctx.getLevel` ist im Streaming-Pfad immer undefined (CA-frei → nur Flood). Liefert
+// `ctx.getDach` ist im Streaming-Pfad immer undefined (dachlos → nur Flood). Liefert
 // plain Arrays {positions, indices, aFlow, aWave, aDepth, aSlope} oder null. MUSS Zeile
 // für Zeile mit dem Main wandern (diag-worker-watersheet, maxDiff 0). Substitutionen vs
 // Main: this._voxelChunkConfig→voxelChunkConfig, this.state.terrainBaseHeight→state.baseHeight,
@@ -1307,14 +1310,16 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                     dryFallback = true;
                 }
             }
-            const level = ctx.getLevel(srcCX, srcCZ);
-            const sc = caColumnScan(src, level, li + lk * dim, dimSq, dimY);
+            // Flood + Boden aus den Zellen, das Live-Dach aus dem gezeichneten Dach (Mirror; im Worker dachlos).
+            const dach = ctx.getDach(srcCX, srcCZ);
+            const sc = caColumnScan(src, null, li + lk * dim, dimSq, dimY);
+            const live = dach ? dach[li + lk * dim] : -1;
             solidG[gi] = sc.solidTopJ >= 0 ? oy + sc.solidTopJ * step : oy;
             if (dryFallback) continue;
             if (sc.floodTopJ < 0) {
-                if (level && sc.liveTopJ >= 0) {
+                if (dach && live >= 0) {
                     // V18.377 — depthG global als kontinuierliche Tiefe (tops − geglättetes Bett).
-                    topG[gi] = oy + (sc.liveTopJ + sc.liveFrac) * step;
+                    topG[gi] = oy + live * step;
                 }
                 continue;
             }
@@ -1324,9 +1329,9 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             // V18.475 (F2, Mirror) — das Bett reist mit (solidG + step, Doku im Main).
             const L = waterRunSurfaceAt(wx, wz, solidG[gi] + step);
             let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
-            if (level) {
+            if (dach) {
                 const floodRel = (sc.floodTopJ + 1) * step;
-                const liveRel = sc.liveTopJ < 0 ? 0 : (sc.liveTopJ + sc.liveFrac) * step;
+                const liveRel = live < 0 ? 0 : live * step;
                 let d = liveRel - floodRel;
                 if (d > -0.05 && d < 0.05) d = 0;
                 top += Math.max(-14, Math.min(4, d));
@@ -2041,13 +2046,16 @@ function attachFieldColors(positions) {
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         return t * t * (3 - 2 * t);
     };
-    const stone = [0.42, 0.44, 0.49];
-    const earth = [0.27, 0.49, 0.19];
+    // DIE BODEN-PALETTE kommt vom Main (Init-Schnappschuss `bodenPalette`, dieselben linearen Zahlen wie
+    // `AnazhRealm.BODEN_FARBE`) — ohne sie färbt der Worker nicht (laut, kein stiller Ersatz).
+    const P = state.bodenPalette;
+    if (!P) throw new Error("attachFieldColors: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    const stone = P.rock;
+    const earth = P.mead;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): Mirror von Main
-    // _attachVoxelFieldColors. dampEarth + Sichtbarkeits-Kurve hardkodiert
-    // (V17.100-Lehre — bit-Vertrag mit Main; bei Konstanten-Änderung beide
-    // mit-ziehen).
-    const dampEarth = [0.22, 0.18, 0.12];
+    // `_bodenFarbeAt`. Die Sichtbarkeits-Kurve hardkodiert (V17.100-Lehre — bit-Vertrag mit Main; bei
+    // Konstanten-Änderung beide mit-ziehen).
+    const dampEarth = P.wet;
     const F_VIS_LO = 0.3;
     const F_VIS_HI = 0.85;
     // V18.199 — Γ-M LICHEN Worker-Mirror (V17.100-Lehre: Konstanten hier
@@ -2058,13 +2066,13 @@ function attachFieldColors(positions) {
     const LICHEN_DICHTE_LO = 0.5;
     const LICHEN_DICHTE_HI = 0.85;
     const LICHEN_STRENGTH = 0.22;
-    const lichenTint = [0.42, 0.5, 0.34];
-    const lava = [0.32, 0.19, 0.15]; // Ω-OPSIS Säule I — dunkles Basalt (Main-Mirror, Determinismus)
-    const violet = [0.55, 0.36, 0.86];
-    const snow = [0.92, 0.93, 1.0];
-    const sed = [0.78, 0.72, 0.52];
-    const sand = [0.87, 0.78, 0.55];
-    const packedDirt = [0.32, 0.26, 0.18]; // V18.230 (Ω-O6) getrampelte Pfad-Erde
+    const lichenTint = P.flechte;
+    const lava = P.basalt; // Ω-OPSIS Säule I — dunkles Basalt
+    const violet = P.magie;
+    const snow = P.schnee;
+    const sed = P.sediment;
+    const sand = P.sand;
+    const packedDirt = P.dirt; // V18.230 (Ω-O6) getrampelte Pfad-Erde
     const sandNoise = state.noise; // Mirror anazhRealm._voxelNoise (selber Seed)
     const base = state.baseHeight || 0;
     // V17.105 — Schnee-Prominenz-Schwelle (Mirror von _attachVoxelFieldColors).
@@ -2106,7 +2114,9 @@ function attachFieldColors(positions) {
             LICHEN_STRENGTH;
         mix(lichenTint, lichenMix);
         mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt (Main-Mirror)
-        mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+        // Der Magie-Akzent in Flecken (Main-Spiegel `_bodenFarbeAt`).
+        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-
         // identisch zum Main (`_attachVoxelFieldColors`): cont0 = λ7100-m-
         // kontinentale Basis; Schnee-Caps nur auf genuine Erhebungen statt über
@@ -2116,9 +2126,10 @@ function attachFieldColors(positions) {
         const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
         const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
-        mix(sed, ss(-2, -14, y));
+        // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
         const waterY = waterLevelAt(x, z);
         const aboveWater = y - waterY;
+        mix(sed, ss(-0.5, -4, aboveWater));
         if (aboveWater > -1.5 && aboveWater < 2.0 && sandNoise) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;

@@ -4952,16 +4952,9 @@ init();
     // fragen den Umschlag).
     function __worldParamsPayload() {
         // Reine Daten (JSON-klonbar): NUR die Werte, die AnazhRealm auch LIEST (kein toter Passagier).
+        // Die Boden-Palette reist NICHT mehr hier: AnazhRealm liest PORTAL_GROUND synchron im Terrain-Namensraum
+        // (__terrainCore.PORTAL_GROUND, foundry-core) — der Voxel-Worker braucht sie vor dem ersten Chunk.
         const params = {
-            // Boden-Palette -> MEADOW_GREEN + TERRAIN_GEOLOGY. dirt/sand leben lokal im Studio-Terrain,
-            // aber AnazhRealms Sand/Erde sitzt im determinismus-gesperrten Worker-Pfad (V17.100: eine
-            // Runtime-Tunable braeche den bit-Vertrag) -> nicht exportiert.
-            ground: {
-                lit: PORTAL_GROUND.lit,
-                mead: PORTAL_GROUND.mead,
-                rock: PORTAL_GROUND.rock,
-                wet: PORTAL_GROUND.wet,
-            },
             // ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe. AnazhRealms Tag/Nacht-Zyklus
             // animiert den Rest; NUR der Mittags-Stop folgt dem Studio (additiv, kein Einfrieren).
             sky: { top: PORTAL_SKY.top, sun: PORTAL_SKY.sun },

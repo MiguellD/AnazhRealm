@@ -343,9 +343,9 @@ class AnazhRealm {
                 // Wasser-Form: "cells" (Default, das Zell-Oberkanten-Sheet) | "iso" (alte Zell-Iso, Debug-A/B).
                 // Persistierte "surface"-Werte (L-Film, entfernt) heilen auf "cells".
                 waterRenderMode: "cells",
-                // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.).
-                waterShoreWidth: 0.0305, // Ufer-Alpha-Saum in VIEWPORT-Lineardepth (gegen waterThick, V18.14-Ufer); kleiner = schärfer
-                waterDepthRange: 10.9, // Meter bis volle Tiefen-Farbe (gegen aDepth); kleiner = schneller tief
+                // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.). Ufer-Saum
+                // und Tiefen-Farbe sind seit dem Durchlass-Gesetz keine Regler mehr (Beer-Lambert über den
+                // optischen Weg in Metern, `_ensureHydroSurfaceMaterial`).
                 waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
                 waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
                 // (waterfallSteep V18.111 gefallen — die A4-Plane ist geschnitten)
@@ -15708,9 +15708,9 @@ class AnazhRealm {
                 // Farb-Bruch aus dem Boden; die Spitze bleibt sattes Grün, nicht gelb.
                 const _mg = AnazhRealm.MEADOW_GREEN;
                 const baseCol = vec3(_mg[0], _mg[1], _mg[2]);
-                // Spitze = Sommer-Grasakzent `seasonAccent` (0x6f9a3a) × 1.08 aus worlds/terrain/phytogenesis.js
-                // (die emitGrass-tipCol-Formel), sRGB→linear — dieselbe Konvention wie MEADOW_GREEN.
-                const tipCol = vec3(0.1874, 0.383, 0.0492);
+                // Spitze = der Sommer-Grasakzent des Studios (GRAS_SPITZE, dieselbe Spitze wie die Boden-Wiese).
+                const _sp = AnazhRealm.GRAS_SPITZE;
+                const tipCol = vec3(_sp[0], _sp[1], _sp[2]);
                 let albedo = TSL.mix(baseCol, tipCol, hfN);
                 const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
                 albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
@@ -15972,21 +15972,9 @@ class AnazhRealm {
             return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
         }
         try {
-            // Env 128×64 (feinere IBL-Mip-Kette); dasselbe DataTexture-Objekt + PMREM-RT werden
-            // wiederverwendet → kein Texture-Identitäts-Wechsel, 0 Recompiles.
-            const W = 128,
-                H = 64;
-            if (!st._skyEnvTex) {
-                st._skyEnvData = new Uint8Array(W * H * 4);
-                const tex = new THREE.DataTexture(st._skyEnvData, W, H);
-                tex.name = "himmel-umgebung";
-                tex.mapping = THREE.EquirectangularReflectionMapping;
-                tex.colorSpace = THREE.SRGBColorSpace;
-                tex.generateMipmaps = true; // Mip-Kette → raue Metalle blenden die Reflexion weich
-                tex.minFilter = THREE.LinearMipmapLinearFilter;
-                tex.magFilter = THREE.LinearFilter;
-                st._skyEnvTex = tex;
-            }
+            const tex = this._himmelUmgebungTex();
+            const W = tex.image.width,
+                H = tex.image.height;
             const d = st._skyEnvData;
             // Die Farben sind LINEAR (THREE.Color), die Textur ist sRGB: kodieren statt roh schreiben — roh
             // geschrieben dekodierte die Textur sie ein zweites Mal (tiefer, gesättigter).
@@ -15994,8 +15982,12 @@ class AnazhRealm {
                 const x = Math.max(0, Math.min(1, c));
                 return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055));
             };
+            // DIE ZEILEN-RICHTUNG: Zeile 0 liegt bei uv.v = 0, und three legt v = 0 nach UNTEN (equirectUV: v =
+            // asin(dir.y)/π + 0,5; eine DataTexture ohne flipY). Bis V18.530 stand der Zenit in Zeile 0 — der Himmel
+            // stand KOPF: eine weiße Karte nach oben las die Boden-Hälfte (0,43/0,59/0,62, grün), nach unten den
+            // Himmel (0,52/0,70/0,85), ein Spiegel nach oben spiegelte den Boden (Linse 05.10., echte GPU).
             for (let y = 0; y < H; y++) {
-                const v = 1 - y / (H - 1); // v=1 oben (Zenit) … 0 unten (Boden/Nadir)
+                const v = y / (H - 1); // v=0 unten (Boden/Nadir) … 1 oben (Zenit) — die Zeile, die three sampelt
                 // Himmel: Horizont = Nebel-Farbe, zum Zenit halb in die Skybox-Tönung (klarer Himmel: oben
                 // tiefer blau, gleich hell); Boden 0.35× (erd-dunkel) → Horizont 1.0×.
                 const t = v >= 0.5 ? 0.5 * ((v - 0.5) / 0.5) : 0;
@@ -16043,6 +16035,26 @@ class AnazhRealm {
             st._skyEnvFailed = true;
             return false;
         }
+    }
+
+    // DIE HIMMELS-UMGEBUNG als Textur (128×64 Equirekt, sRGB): EIN Objekt, gemalt von `_ensureSkyEnvironment`, gelesen
+    // von PMREM (die IBL jedes PBR-Stoffs) UND vom Wasser (der Spiegel des Himmels, roh — es ist glatt). Dasselbe
+    // DataTexture-Objekt bleibt über jede Regeneration → kein Texture-Identitäts-Wechsel, 0 Recompiles.
+    _himmelUmgebungTex() {
+        const st = this.state;
+        if (st._skyEnvTex) return st._skyEnvTex;
+        const W = 128,
+            H = 64;
+        st._skyEnvData = new Uint8Array(W * H * 4);
+        const tex = new THREE.DataTexture(st._skyEnvData, W, H);
+        tex.name = "himmel-umgebung";
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.generateMipmaps = true; // Mip-Kette → raue Metalle blenden die Reflexion weich
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        st._skyEnvTex = tex;
+        return tex;
     }
 
     // ===== ATLAS §06 · KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd =====
@@ -21442,6 +21454,9 @@ class AnazhRealm {
             // Der persistierte macroAnker reist mit — sonst baut der Worker nach einer Konstanten-Änderung
             // einen anderen Anker als der Main (Naht-Drift). null bei gen < 3.
             macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
+            // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
+            // kein hartkodierter Spiegel der Farben.
+            bodenPalette: AnazhRealm.BODEN_FARBE,
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -21621,14 +21636,18 @@ class AnazhRealm {
     _waterSheetCaFree(cx, cz) {
         const active = this.state.waterCAActive;
         const stau = this.state.waterStauFields;
+        const chunks = this.state.voxelChunks;
         const hasActive = active && active.size > 0;
         const hasStau = stau && stau.size > 0;
-        if (!hasActive && !hasStau) return true;
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const k = `${cx + dx},${cz + dz}`;
                 if (hasActive && active.has(k)) return false;
                 if (hasStau && stau.has(k)) return false;
+                // Ein gezeichnetes oder gewünschtes Dach im 3×3 (der Automat lief dort) baut der Main: der Worker kennt
+                // es nicht — ein dachloses Worker-Sheet neben einem Main-Sheet mit Dach wäre die Wasser-Naht.
+                const e = chunks ? chunks.get(k) : null;
+                if (e && (e._caDach || e._caDachOffen)) return false;
             }
         }
         return true;
@@ -25530,6 +25549,7 @@ class AnazhRealm {
         const oz = cz * cfg.span - cfg.step;
         const map = new Float32Array(M * M).fill(NaN);
         const gruen = new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
+        const gs = AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle;
         for (let t = 0; t + 2 < idx.length; t += 3) {
             const a = idx[t] * 3;
             const b = idx[t + 1] * 3;
@@ -25571,7 +25591,7 @@ class AnazhRealm {
                     if (map[m] >= y) continue;
                     map[m] = y;
                     // Grün-Kanal: dieselbe Wiesen-Wache wie das Boden-Fragment (`_green` in
-                    // `_terrainGeologyAlbedo`: smoothstep(0, 0,1, g − (r+b)/2)) aus der Vertex-Farbe.
+                    // `_terrainGeologyAlbedo`: smoothstep(0, gruenSchwelle, g − (r+b)/2)) aus der Vertex-Farbe.
                     if (col) {
                         let g = 0;
                         for (const [w, o] of [
@@ -25580,7 +25600,7 @@ class AnazhRealm {
                             [w3, c],
                         ])
                             g += w * (col[o + 1] - 0.5 * (col[o] + col[o + 2]));
-                        const t2 = Math.max(0, Math.min(1, g / 0.1));
+                        const t2 = Math.max(0, Math.min(1, g / gs));
                         gruen[m] = Math.round(255 * t2 * t2 * (3 - 2 * t2));
                     }
                 }
@@ -26076,11 +26096,15 @@ class AnazhRealm {
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     }
 
-    // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts (stone/earth/lava/violet/snow/
-    // sediment/Strand/Pfad) aus derselben fraktalen Sprache (worldFieldAt) → dieselben Biom-Regionen wie der
-    // Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der Fern-Ring und das Feld-Panorama lesen sie für die
-    // Ferne (kein vereinfachter Fern-Zwilling); der Worker spiegelt sie bit-identisch (`attachFieldColors`).
-    // `out` = [r, g, b] (linear, wie das Vertex-Attribut).
+    // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
+    // (worldFieldAt) → dieselben Biom-Regionen wie der Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der
+    // Fern-Ring und das Feld-Panorama lesen sie für die Ferne (kein vereinfachter Fern-Zwilling); der Worker
+    // rechnet sie bit-identisch (`attachFieldColors`) mit DERSELBEN Palette (`bodenPalette` im Schnappschuss).
+    // Die Farben sind die Studio-Palette nach dem FARB-GESETZ (`BODEN_FARBE`): bis V18.530 trug der Boden Absichts-
+    // Werte roh als linear (der Stein 0,42/0,44/0,49 mit dem Magie-Violett darüber: weiß-lavendel, Blick-Tour 05).
+    // Magie ist ein AKZENT in Flecken, der Seegrund unter jedem Wasser Schlick. Die Laubstreu liegt NICHT hier: sie
+    // folgt den echten Kronen (`_kronenStreuNeu` → `_wegeBodenFarbe`). `out` = [r, g, b] (linear, wie das Vertex-
+    // Attribut).
     _bodenFarbeAt(x, y, z, out) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
@@ -26091,13 +26115,21 @@ class AnazhRealm {
         }
         const sandNoise = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        const B = AnazhRealm.BODEN_FARBE;
-        const { stone, earth, dampEarth, lava, violet, snow, sed, sand, packedDirt } = B;
+        const P = AnazhRealm.BODEN_FARBE;
+        const stone = P.rock;
+        const earth = P.mead;
+        const dampEarth = P.wet;
+        const lava = P.basalt;
+        const violet = P.magie;
+        const snow = P.schnee;
+        const sed = P.sediment;
+        const sand = P.sand;
+        const packedDirt = P.dirt;
         // V17.105 — Schnee-Schwelle als PROMINENZ (Relief über der kontinentalen
         // Basis), nicht absolutes y. HARTKODIERT + im Worker gespiegelt (eine Runtime-Tunable würde den
         // Worker desyncen, V17.100).
-        const SNOW_PROM_START = B.schneeProminenzStart;
-        const SNOW_PROM_FULL = B.schneeProminenzVoll;
+        const SNOW_PROM_START = AnazhRealm.SCHNEE_PROMINENZ.start;
+        const SNOW_PROM_FULL = AnazhRealm.SCHNEE_PROMINENZ.voll;
         const ss = (e0, e1, x) => {
             let t = (x - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
@@ -26128,8 +26160,8 @@ class AnazhRealm {
         c[1] *= _cShade;
         c[2] *= _cShade;
         // Lichen: grüne Patina = feuchte × dichte (Stein, nicht Erde/Lava) × cluster (Flecken). Im Mix-Stack
-        // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Konstanten in
-        // AnazhRealm.LICHEN; der Worker spiegelt hardkodiert.
+        // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Schwellen in
+        // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
         const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
         const lichenMix =
@@ -26137,9 +26169,11 @@ class AnazhRealm {
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
             lichenCluster *
             LCH.strength;
-        mix(LCH.tint, lichenMix);
+        mix(P.flechte, lichenMix);
         mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
-        mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+        // Der Magie-Akzent: Flecken (λ ≈ 11 m, ein Sechstel der Fläche, höchstens 30 %) in den Magie-Regionen — nie die Grundfarbe.
+        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Schnee auf PROMINENZ `y − cont0` (Relief über der λ7100-m-Basis), nicht absolutem y — sonst
         // schmiert Schnee über ~halb den Boden (Hochkontrast-Flecken, die unter Licht driften). Robust gegen
         // regionale Höhen (Prominenz max 70 m nah, 156 m fern). Wer die Terrain-Höhe ändert, MUSS die
@@ -26149,12 +26183,14 @@ class AnazhRealm {
         const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
         const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
-        mix(sed, ss(-2, -14, y));
+        // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
+        // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
+        const waterY = this._waterLevelAt(x, z);
+        const aboveWater = y - waterY;
+        mix(sed, ss(-0.5, -4, aboveWater));
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
         // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
         // (λ~290 m), (c) karge Fels-Patches ohne Sand.
-        const waterY = this._waterLevelAt(x, z);
-        const aboveWater = y - waterY;
         if (aboveWater > -1.5 && aboveWater < 2.0) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
@@ -26420,43 +26456,76 @@ class AnazhRealm {
         return Object.freeze({ kachel: 6, stufe1: 5, radius: 14, rand: 4, kachelnJeTakt: 1 });
     }
 
+    // DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut): die Studio-Palette PORTAL_GROUND
+    // (foundry-core, synchron über den Terrain-Namensraum) nach dem FARB-GESETZ — jedes Hex ist eine sRGB-
+    // ABSICHT, die Albedo sein linearer Wert. Bis V18.530 trug die Welt ihren eigenen Zwilling (stone · earth ·
+    // dampEarth …) mit Absichts-Werten ROH als linear (Stein 0,42/0,44/0,49 statt 0,15, Sand 0,87 statt 0,58);
+    // der Chunk-Stoff multiplizierte die Vertex-Farbe ein zweites Mal (Albedo = Farbe², ein zufälliges Gamma 2
+    // für den Boden, das die Wiese MEADOW_GREEN·Farbe nur halb so hell ließ). Einmal je Sitzung dekodiert;
+    // der Voxel-Worker bekommt DIESELBEN Zahlen im Init-Schnappschuss (`bodenPalette`), kein Spiegel. Ohne die
+    // Palette bricht der Boden laut (Kern-Pflicht).
+    static get BODEN_FARBE() {
+        if (AnazhRealm._bodenFarbeMemo) return AnazhRealm._bodenFarbeMemo;
+        const PG =
+            AnazhRealm.Gesetz("terrain:PORTAL_GROUND", null) || AnazhRealm._kernPflichtBruch("terrain:PORTAL_GROUND");
+        const out = {};
+        for (const k of Object.keys(PG)) out[k] = Object.freeze(AnazhRealm._srgbHexLinear(PG[k]));
+        AnazhRealm._bodenFarbeMemo = Object.freeze(out);
+        return AnazhRealm._bodenFarbeMemo;
+    }
+
+    // Das FARB-GESETZ als EINE Rechnung: ein sRGB-Hex (die Absicht des Farbwählers) → [r, g, b] linear (die
+    // sRGB-Übertragungs-Funktion IEC 61966-2-1). Rein, ohne THREE (die Palette steht vor dem Renderer).
+    static _srgbHexLinear(hex) {
+        const dek = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        return [dek(((hex >> 16) & 255) / 255), dek(((hex >> 8) & 255) / 255), dek((hex & 255) / 255)];
+    }
+
     // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Meadow-
     // Boden-Tint (`_terrainGeologyAlbedo`) → der Halm wächst nahtlos aus dem Boden. Die Halm-Spitze
-    // bleibt heller; die lush/dry-instanceColor moduliert Halm und Boden ko-variant.
+    // bleibt heller; die lush/dry-instanceColor moduliert Halm und Boden ko-variant. Es IST der Wiesen-Grund
+    // der Boden-Palette (`mead`), dieselbe Farbe wie der Vertex der Wiese.
     static get MEADOW_GREEN() {
-        // Der Wiesen-Grund liest die Studio-Boden-Farbe `cMead` (worlds/terrain/phytogenesis.js) LIVE über
-        // `get-world-params` (`_studioGround.mead`), sRGB→linear; Fallback = der bisherige Wert (0x55632f).
-        const s = AnazhRealm._studioGround;
-        if (s && s.mead) return s.mead;
-        return [0.0908, 0.1248, 0.0284];
+        return AnazhRealm.BODEN_FARBE.mead;
+    }
+
+    // Die Gras-SPITZE: der Sommer-Grasakzent des Studios (SAISON_GESETZ, Sommer-Stütze `ac` 0x6f9a3a) nach der
+    // emitGrass-tipCol-Formel (× 1,08 in sRGB) und dem FARB-GESETZ linear (0,187/0,383/0,049). EINE Quelle für die
+    // Halm-Spitze des Nah-Grases und die Halme der Boden-Wiese (`_terrainGeologyAlbedo`) — bis 05.10. stand sie als
+    // Literal im Gras-Stoff, der Boden kannte sie nicht.
+    static get GRAS_SPITZE() {
+        if (AnazhRealm._grasSpitzeMemo) return AnazhRealm._grasSpitzeMemo;
+        const ac = AnazhRealm._saisonGesetz().stuetzen[1].ac;
+        if (!Number.isFinite(ac)) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.stuetzen[1].ac");
+        const dek = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const kanal = (s) => dek(Math.min(1, (((ac >> s) & 255) / 255) * 1.08));
+        AnazhRealm._grasSpitzeMemo = Object.freeze([kanal(16), kanal(8), kanal(0)]);
+        return AnazhRealm._grasSpitzeMemo;
     }
 
     // Per-Fragment-Multi-Klassen-Geologie: die Klassen emergieren aus der Welt-Wahrheit — steile Hänge
     // tragen keine lockere Erde (sie rutscht) → Fels bricht durch. `_steep = 1 − normalWorld.y`: 0 flach,
     // 0.29 ≈ 45°, 0.5 = 60°, 1 senkrecht. Das Profil ist konservativ (nur echte Hänge versteinern).
     static get TERRAIN_GEOLOGY() {
-        // Fels-/Moos-/Waldkern-Tints lesen LIVE die Studio-Palette (`_studioGround.rock/wet/lit` via
-        // `get-world-params`); Fallback = Portal-cRock/cWet/cLit (sRGB→linear).
-        const s = AnazhRealm._studioGround;
+        // Fels- und Moos-Tint SIND die Boden-Palette (rock · wet). Die Schwellen sind linear (der Vertex trägt
+        // seit dem Farb-Gesetz die Albedo): `gruenSchwelle` ist die EINE Wiesen-Wache (g − (r+b)/2), die das
+        // Boden-Fragment UND der Grün-Kanal der Boden-Karte lesen (Wiese 0,066, Streu und Fels < 0).
+        const P = AnazhRealm.BODEN_FARBE;
         return Object.freeze({
             rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
             screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band)
             screeHi: 0.48,
-            rockTint: (s && s.rock) || [0.147, 0.1221, 0.0976], // Portal-`cRock` (0x6b6258) live/Fallback
+            rockTint: P.rock,
             rockLumMix: 0.5, // wie stark die REGIONALE Luminanz den Stein tönt
             //                  (schneebedeckter Gipfel-Fels heller, Glut-Hang wärmer)
             rockBand: 0.14, // Sediment-Schichtungs-Bänderung (Noise in Welt-Y)
             screeMix: 0.5, // Geröll = die Mitte zwischen Boden und Fels
-            mossTint: (s && s.wet) || [0.0331, 0.0513, 0.0232], // Portal-`cWet` (0x33402a) live/Fallback
-            mossDampLo: 0.16, // unter dieser Basis-Luminanz = „feucht/Niederung"
-            mossDampHi: 0.34, //   (die Feuchte lebt schon im dampEarth-Basis-Mix)
+            mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
+            gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
+            mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
+            mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
             mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
-            // Waldboden-Kern: der schattige Unterwuchs ist dunkler (`cLit`). Wie die Vorlage `cMead.lerp(cLit,
-            // standDensity)`, nur steht hier die Feuchte-im-Schatten (`_damp`, aus dem `_feuchteAt`-Albedo) für
-            // die Standdichte → beschattete Niederungen werden waldig, trockene Lichtungen bleiben Wiese.
-            litTint: (s && s.lit) || [0.0252, 0.0369, 0.0152], // Portal-`cLit` (0x2c3621) live/Fallback
-            floorMax: 0.55, // Deckel der Wald-Kern-Übernahme (komplementär zu mossMax/meadowW)
             roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
             //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
             //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
@@ -27229,6 +27298,22 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        // Der eigene Bau ZEICHNET das gewünschte Dach (`_caDachNeu` der Re-Mesh-Entscheidung): ab jetzt zeigt der
+        // Chunk es, also lesen die acht Nachbarn es — sie bauen neu (die Kante wandert mit, s. `_caDachAus`).
+        if (entry._caDachOffen) {
+            const alt = entry._caDach;
+            entry._caDach = entry._caDachNeu;
+            entry._caDachNeu = alt || null; // der Puffer kehrt als nächster Wunsch-Puffer zurück (alloc-frei)
+            entry._caDachOffen = false;
+            if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
+            for (let dz = -1; dz <= 1; dz++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (!dx && !dz) continue;
+                    const nk = `${cx + dx},${cz + dz}`;
+                    const nb = this.state.voxelChunks.get(nk);
+                    if (nb && nb.waterCells) this.state.pendingWaterIso.add(nk);
+                }
+        }
         const data = this._computeWaterSheetData(cx, cz, this._mainWaterSheetCtx(cx, cz, entry));
         if (!data) {
             this.state.voxelChunkWaterIso.set(key, null);
@@ -27237,11 +27322,11 @@ class AnazhRealm {
         return this._finalizeWaterSheetMesh(cx, cz, key, data);
     }
 
-    // B1 — der Main-Zell-Kontext: liest die geladenen Chunk-Zellen + den CA-Level-Spiegel.
-    // Der Worker-Pendant (im `water-sheet`-Handler) liest stattdessen den gesendeten Block.
+    // B1 — der Main-Zell-Kontext: liest die geladenen Chunk-Zellen + DAS GEZEICHNETE DACH jedes Chunks
+    // (`entry._caDach`, s. `_caDachAus`). Der Worker-Pendant (im `water-sheet`-Handler) liest stattdessen den
+    // gesendeten Block (dachlos: der Worker baut nur dachlose Nachbarschaften, `_waterSheetCaFree`).
     _mainWaterSheetCtx(cx, cz, entry) {
         const voxelChunks = this.state.voxelChunks;
-        const levelMap = this.state.waterLevelCells;
         // V18.91 — OBERFLÄCHENSPANNUNG (Schöpfer: „nicht geknäulte Alufolie"): die
         // Glätt-Pässe (browser-justierbar 0..6). PAD = Pässe + 1 (naht-symmetrisch).
         const smoothRaw =
@@ -27255,7 +27340,15 @@ class AnazhRealm {
                 const nb = voxelChunks.get(`${ncx},${ncz}`);
                 return nb && nb.waterCells ? nb.waterCells : null;
             },
-            getLevel: (ncx, ncz) => (levelMap ? levelMap.get(`${ncx},${ncz}`) : undefined),
+            // DIE WASSER-NAHT (Linse 05.10., echte GPU): ein Sheet las den LIVE-Pegel seiner Nachbarn, der Nachbar
+            // selbst zeigte den Pegel SEINES letzten Baus (das Re-Mesh folgt nur der sichtbaren Dach-Änderung, über
+            // Takte verteilt) — die gemeinsame Kante stand auf zwei Höhen (bis 5,9 cm, 68 Stufen an 22 Kanten):
+            // durch den Schlitz die dunkle Linie über dem See. Jedes Sheet liest darum das GEZEICHNETE Dach, das
+            // die Re-Mesh-Entscheidung schreibt — dieselbe Zahl, die der Nachbar zeichnet.
+            getDach: (ncx, ncz) => {
+                const e = ncx === cx && ncz === cz ? entry : voxelChunks.get(`${ncx},${ncz}`);
+                return e && e._caDach ? e._caDach : undefined;
+            },
         };
     }
 
@@ -27360,17 +27453,20 @@ class AnazhRealm {
                         dryFallback = true;
                     }
                 }
-                const level = ctx.getLevel(srcCX, srcCZ);
-                const sc = this._caColumnScan(src, level, li + lk * dim, dimSq, dimY);
+                // Flood und Boden aus den Zellen; das LIVE-Dach (oberste Zeile + Füllgrad > 0,5) aus dem gezeichneten
+                // Dach des Quell-Chunks (`ctx.getDach`, −1 = keins) — nie der Live-Pegel (die Wasser-Naht).
+                const dach = ctx.getDach(srcCX, srcCZ);
+                const sc = this._caColumnScan(src, null, li + lk * dim, dimSq, dimY);
+                const live = dach ? dach[li + lk * dim] : -1;
                 solidG[gi] = sc.solidTopJ >= 0 ? oy + sc.solidTopJ * step : oy;
                 if (dryFallback) continue; // trocken — topG bleibt NaN (symmetrisch)
                 // Live-only-Spalten (der CA trug Wasser in flood-trockene Spalten) sind NASS ab Level > 0.5:
                 // Top = Live-Dach (sub-zellig via liveFrac), kein L-Anker (jenseits der statischen Domäne).
                 if (sc.floodTopJ < 0) {
-                    if (level && sc.liveTopJ >= 0) {
+                    if (dach && live >= 0) {
                         // V18.377 — depthG (aDepth) wird GLOBAL als KONTINUIERLICHE Tiefe
                         // gesetzt (tops − geglättetes Bett, NACH dem Glätten); hier nur topG.
-                        topG[gi] = oy + (sc.liveTopJ + sc.liveFrac) * step;
+                        topG[gi] = oy + live * step;
                     }
                     continue; // sonst trocken (topG bleibt NaN)
                 }
@@ -27384,10 +27480,10 @@ class AnazhRealm {
                 // Rim-Füllung (Bett < rim per Flood); nur „unbekannt" (−Inf) verliert sie.
                 const L = this._waterRunSurfaceAt(wx, wz, solidG[gi] + step);
                 let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
-                // LIVE: der CA-Delta obendrauf (Live-Dach − Flood-Dach, geclampt).
-                if (level) {
+                // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
+                if (dach) {
                     const floodRel = (sc.floodTopJ + 1) * step;
-                    const liveRel = sc.liveTopJ < 0 ? 0 : (sc.liveTopJ + sc.liveFrac) * step;
+                    const liveRel = live < 0 ? 0 : live * step;
                     let d = liveRel - floodRel;
                     if (d > -0.05 && d < 0.05) d = 0;
                     top += Math.max(-14, Math.min(4, d));
@@ -28207,10 +28303,10 @@ class AnazhRealm {
                         // Out-Param statt neuem Rückgabe-Typ → die `_terrainGeologyAlbedo`-Tests bleiben unberührt.
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
-                        // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie
-                        // UND die Material-Multiplikation (sonst färbte der Rasen den Weg grün: r184 multipliziert
-                        // colorNode mit der Vertex-Farbe — darum trägt der Chunk sie hier selbst, abseits des Wegs
-                        // rechnerisch identisch).
+                        // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
+                        // Die Geologie TRÄGT die Vertex-Farbe schon: der Chunk-Stoff zeichnet sie EINMAL (vertexColors
+                        // aus — r184 multiplizierte colorNode sonst ein zweites Mal mit ihr: Albedo = Farbe², die
+                        // Wiese MEADOW_GREEN × Farbe; seit dem Farb-Gesetz des Bodens ist der Vertex die Albedo).
                         const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
                         const _geo = this._terrainGeologyAlbedo(
                             _Ta,
@@ -28222,7 +28318,7 @@ class AnazhRealm {
                             albedoNode = _geo;
                             if (_bodenVc && _Ta.vec4) {
                                 mat.vertexColors = false;
-                                mat.colorNode = _Ta.vec4(_geo.mul(_bodenVc), 1.0);
+                                mat.colorNode = _Ta.vec4(_geo, 1.0);
                             } else if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
@@ -28554,7 +28650,11 @@ class AnazhRealm {
                         };
                         _baseN = _baseN.add(_grad(_B.freq, _B.strength)).add(_grad(_B.freq2, _B.strength2));
                     }
-                    mat.normalNode = _Tn.normalize(_baseN);
+                    // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView): die geflattete Welt-Normale
+                    // über die Kamera-Matrix. Bis 05.10. stand sie roh als Welt-Normale darin — die Licht-Normale des
+                    // Bodens kippte mit der Kamera-Neigung, und `normalWorld` (= normalView zurück in die Welt) las aus
+                    // 45 m senkrecht von oben eine Wand: die flache Wiese wurde Fels (Linse 05.10., echte GPU).
+                    mat.normalNode = _Tn.normalize(_baseN).transformDirection(_Tn.cameraViewMatrix);
                 }
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
@@ -28715,7 +28815,9 @@ class AnazhRealm {
                 .add(f(0.5));
             const mossLow = objLocal ? f(1.0).sub(yLow) : f(1.0); // Terrain: Flachheit treibt, kein object-y
             const mossW = mossDrive.mul(mossPatch).mul(mossLow).mul(flatN).clamp(0, 1);
-            albedo = _T.mix(albedo, _T.vec3(0.26, 0.38, 0.18), mossW.mul(f(0.4)));
+            // Die Moos-Farbe reist als Parameter: der Boden trägt das Moos seiner Palette (`mossTint`, linear).
+            const moos = opts.mossTint || [0.26, 0.38, 0.18];
+            albedo = _T.mix(albedo, _T.vec3(moos[0], moos[1], moos[2]), mossW.mul(f(0.4)));
             // (5) COUNTER-SHADING (unten dunkler, oben heller) — nur object-lokal (Terrain: kein object-y).
             if (objLocal) albedo = albedo.mul(_T.mix(f(0.8), f(1.16), yLow));
             out.albedo = albedo;
@@ -28755,12 +28857,12 @@ class AnazhRealm {
     // unveränderte Albedo.
     _terrainGeologyAlbedo(_T, albedo, wp, roughOut) {
         try {
-            if (!_T || !_T.smoothstep || !_T.normalWorld || !_T.vec3 || !_T.mix || !_T.float) return albedo;
+            if (!_T || !_T.smoothstep || !_T.normalWorldGeometry || !_T.vec3 || !_T.mix || !_T.float) return albedo;
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
             // STEILE ∈ [0,1] aus der ROHEN Geometrie-Normale (NICHT der geflatteten
-            // Shading-Normale) = die echte Hangneigung.
-            const _steep = _T.float(1.0).sub(_T.normalWorld.y).clamp(0.0, 1.0);
+            // Shading-Normale, die `normalWorld` im Farb-Knoten trägt) = die echte Hangneigung.
+            const _steep = _T.float(1.0).sub(_T.normalWorldGeometry.y).clamp(0.0, 1.0);
             const _rockW = _T.smoothstep(_T.float(G.rockLo), _T.float(G.rockHi), _steep);
             const _screeW = _T
                 .smoothstep(_T.float(G.screeLo), _T.float(G.screeHi), _steep)
@@ -28787,76 +28889,51 @@ class AnazhRealm {
             const _g2 = _out.y;
             const _rb2 = _out.x.add(_out.z).mul(0.5);
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
-            const _green = _T.smoothstep(_T.float(0.0), _T.float(0.1), _g2.sub(_rb2));
+            const _green = _T.smoothstep(_T.float(0.0), _T.float(G.gruenSchwelle), _g2.sub(_rb2));
             const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
             const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
             // Feuchte-Glanz: eine nasse, KAHLE Niederung (damp hoch, nicht grün) glänzt (niedrigere Rauheit);
             // Moos bleibt matt. Aus DEMSELBEN Feld, das das Moos treibt.
             const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
-            // Trockene braun-gelbe Flecken: nicht feucht (inverse damp) UND flach UND nicht grün, moduliert von
-            // einem großen Patch-Noise → distinkte Dürre-Flecken aus demselben damp-Feld.
-            const _dryPatch = _T.mx_noise_float
-                ? _T
-                      .mx_noise_float(_T.vec3(wp.x.mul(0.085), wp.z.mul(0.085), _T.float(0.0)))
-                      .mul(0.5)
-                      .add(0.5)
-                : _T.float(0.5);
-            const _dryW = _T
-                .float(1.0)
-                .sub(_damp)
-                .mul(_T.float(1.0).sub(_green))
-                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_dryPatch)
-                .mul(_T.float(0.62))
-                .clamp(0.0, 1.0);
-            _out = _T.mix(_out, _out.mul(_T.vec3(1.32, 1.12, 0.6)), _dryW);
-            // Meadow-Grund: wo flach + grün tönt der Boden selbst zu vollem Wiesen-Grün → spärliche Halme lesen
-            // als dichte Wiese (≈0 Perf, nur Albedo). Patch-Noise (`wp·0.13`) lässt karge Stellen emergieren.
+            // (Die „trockenen braun-gelben Flecken" — Albedo × (1,32 · 1,12 · 0,6) auf jedem nicht-grünen, nicht-
+            // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
+            // Meadow-Grund: wo flach + grün tönt der Boden selbst zur Wiese → spärliche Halme lesen als dichte Wiese
+            // (≈0 Perf, nur Albedo). Patch-Noise (`wp·0.13`) lässt karge Stellen emergieren.
             const _meadowPatch = _T.mx_noise_float
                 ? _T
                       .mx_noise_float(_T.vec3(wp.x.mul(0.13), wp.z.mul(0.13), _T.float(7.0)))
                       .mul(_T.float(0.5))
                       .add(_T.float(0.5))
                 : _T.float(0.6);
+            // Die Deckung: die Halme verdecken den Grund (aus der Ferne 65–85 %, die karge Stelle zeigt mehr Erde).
             const _meadowW = _green
                 .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_T.float(1.0).sub(_dryW))
-                .mul(_meadowPatch)
-                .mul(_T.float(0.55))
+                .mul(_meadowPatch.mul(_T.float(0.5)).add(_T.float(0.5)))
                 .clamp(0.0, 1.0);
-            // V18.346 — der Meadow-Grund liest dasselbe geteilte MEADOW_GREEN wie die Gras-Halm-Wurzel
-            // (Gesetz #0) → Boden + Gras verschmelzen by construction (Schöpfer „Synergie fehlt").
+            // V18.346 — der Meadow-Grund liest dieselben Gras-Farben wie das Nah-Gras (Gesetz #0) → Boden + Gras
+            // verschmelzen by construction (Schöpfer „Synergie fehlt"): die Wurzel MEADOW_GREEN, die Spitze
+            // GRAS_SPITZE. Aus der Ferne trägt der Boden das MITTEL des Halms — das Integral der Halm-Farbe unten
+            // (h ∈ [0, 1]: mix(Wurzel, Spitze, h) · (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,18 wie das
+            // Studio-Gras der Nah-Wiese (Albedo-Linse 05.10.: 0,18–0,20) —, nicht die Erde darunter (bis 05.10. der
+            // Wiesen-Grund `mead`: aus 45 m eine oliv-gelbe Steppe).
             const _mg = AnazhRealm.MEADOW_GREEN;
-            _out = _T.mix(_out, _T.vec3(_mg[0], _mg[1], _mg[2]), _meadowW);
-            // Waldboden-Kern: der schattige Unterwuchs senkt sich zum Wald-Kern-Ton (TERRAIN_GEOLOGY.litTint),
-            // `cMead.lerp(cLit, standDensity)` mit der Feuchte-im-Schatten (`_damp`) als Standdichte — dieselbe
-            // Logik, die die Bäume in feuchte, flache Niederungen setzt. Aus denselben Feldern (`_green`, `_flat`,
-            // `_damp`, `1−_dryW`); Patch-Noise → kein uniformer Teppich.
-            const _lit = G.litTint;
-            const _forestPatch = _T.mx_noise_float
-                ? _T
-                      .mx_noise_float(_T.vec3(wp.x.mul(0.09), wp.z.mul(0.09), _T.float(19.0)))
-                      .mul(_T.float(0.5))
-                      .add(_T.float(0.5))
-                : _T.float(0.6);
-            const _floorW = _green
-                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_damp) // NUR die feuchte/beschattete Niederung — die helle Lichtung bleibt Wiese
-                .mul(_T.float(1.0).sub(_dryW)) // die trockene Dürre bleibt bräunlich
-                .mul(_forestPatch)
-                .mul(_T.float(G.floorMax))
-                .clamp(0.0, 1.0);
-            _out = _T.mix(_out, _T.vec3(_lit[0], _lit[1], _lit[2]), _floorW);
+            const _sp = AnazhRealm.GRAS_SPITZE;
+            const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
+            const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
+            const _krone = _wurzel.mul(_T.float(0.383)).add(_spitze.mul(_T.float(0.442)));
+            _out = _T.mix(_out, _krone, _meadowW);
+            // (Der Waldboden liegt unter den echten Kronen — `_wegeBodenFarbe` mischt die Laubstreu der Kronen-Karte;
+            // der Fragment-Zwilling, der grüne feuchte Niederungen zum dunklen Wald-Kern-Ton zog, ist gefallen.)
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
             // Schattierung des Bodens, NAH eingeblendet (fern trägt der Meadow-Grund). ≈0 Kosten (Noise + Mix),
-            // EINE Farbe (MEADOW_GREEN).
+            // DIESELBEN Gras-Farben wie das Nah-Gras.
             if (_T.cameraPosition && _T.mx_noise_float) {
                 // Die Wiese mit Tiefe: die Halme sind eine PARALLAX-FUNKTION — ein Halm-Noise-Höhenfeld, das der
                 // Blick in 8 Schichten durchsticht (Relief-March): hohe Halme fangen den Strahl früh (helle Spitze),
                 // Lücken lassen ihn zum dunklen Wurzelgrund. Das Höhenfeld wird per smoothstep an die ECHTE
                 // mx_noise-Verteilung (eng um 0.5) gemappt — sonst kollabiert es auf 1-2 Schichten. Halm-Frequenz
-                // 9/m (~11-cm-Büschel), Büschel-Maske 2.7/m, Kontrast Wurzelgrund↔Spitze 0.35..1.30; MEADOW_GREEN.
+                // 9/m (~11-cm-Büschel), Büschel-Maske 2.7/m; die Farben MEADOW_GREEN → GRAS_SPITZE.
                 const _camD = wp.sub(_T.cameraPosition).length();
                 const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
                 const _blick = wp.sub(_T.cameraPosition).normalize(); // Auge → Boden
@@ -28882,7 +28959,7 @@ class AnazhRealm {
                         .add(0.5)
                 );
                 let _traf = _T.float(0.0); // 0 = noch kein Halm getroffen (branchenlos)
-                let _trefH = _T.float(0.0); // Schicht-Höhe des Treffers (0 = Wurzelgrund)
+                let _trefH = _T.float(0.0); // Halm-Höhe des Treffers (0 = Wurzelgrund)
                 for (let _s = 0; _s < 8; _s++) {
                     const _li = 1.0 - _s / 8.0; // Schicht von oben (1.0) nach unten (0.125)
                     const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
@@ -28895,19 +28972,37 @@ class AnazhRealm {
                     // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
                     const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(_tuft);
                     const _erst = _T.step(_T.float(_li), _h).mul(_T.float(1.0).sub(_traf));
-                    _trefH = _trefH.add(_erst.mul(_T.float(_li)));
+                    // Die Treffer-Höhe ist die HALM-Höhe (stetig), nie die Schicht: acht Schicht-Stufen lasen sich
+                    // auf Armlänge als Höhenlinien (Linse 05.10.).
+                    _trefH = _trefH.add(_erst.mul(_h));
                     _traf = _traf.add(_erst);
                 }
-                const _mg2 = AnazhRealm.MEADOW_GREEN;
-                // Spitze hell (1.30), Wurzelgrund tief-dunkel (0.35) — die Tiefe liest
-                // sich als Eigen-Schatten zwischen den Büscheln:
-                const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.35).add(_trefH.mul(_T.float(0.95))));
+                // Der getroffene Halm trägt die Farbe SEINER Höhe — derselbe Verlauf Wurzel → Spitze wie das Nah-Gras —,
+                // tiefer liegende Treffer im Eigen-Schatten der Büschel (0,65 … 1); die Lücke zeigt den Wurzelgrund im
+                // Schatten (0,5 × Wurzel). Bis 05.10. war der Halm die Wurzelfarbe × 0,35 … 1,30: ein Oliv-Tarnmuster
+                // unter grellen Nah-Halmen.
+                // Wo die Nah-Wiese steht (Radius NAH_WIESE.radius), tragen IHRE Halme das Gras; der Boden darunter ist
+                // ihr ruhigerer Wurzelgrund (das Relief zu 40 % über dem Halm-Mittel im Schatten, × 0,7) — das volle
+                // Relief erst zu ihrem Rand hin (die acht Schichten lasen sich auf Armlänge als Höhenlinien, Linse 05.10.).
+                const _nwR = AnazhRealm.NAH_WIESE.radius;
+                const _relief = _T
+                    .smoothstep(_T.float(_nwR * 0.5), _T.float(_nwR), _camD)
+                    .mul(0.6)
+                    .add(0.4);
+                const _halmCol = _T.mix(
+                    _krone.mul(_T.float(0.7)),
+                    _T.mix(
+                        _wurzel.mul(_T.float(0.5)),
+                        _T.mix(_wurzel, _spitze, _trefH).mul(_T.float(0.65).add(_trefH.mul(_T.float(0.35)))),
+                        _traf
+                    ),
+                    _relief
+                );
                 const _halmW = _green
                     .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                    .mul(_T.float(1.0).sub(_dryW))
                     .mul(_nah)
                     // Wo die Gewichte Wiese sagen, BESITZT das Gras den Pixel (0.95) — ein niedrigerer Deckel gibt
-                    // Büschel-Fleckung; der Kontrast kommt aus _halmCol 0.35..1.30, nie aus der Verdünnung.
+                    // Büschel-Fleckung; der Kontrast kommt aus _halmCol (Lücke ↔ Spitze), nie aus der Verdünnung.
                     .mul(_T.float(0.95))
                     .clamp(0.0, 1.0);
                 _out = _T.mix(_out, _halmCol, _halmW);
@@ -28923,6 +29018,7 @@ class AnazhRealm {
                 objectLocal: false,
                 flatness: _flat.mul(_T.float(1.0).sub(_rockW)),
                 mossDrive: _mossDrive,
+                mossTint: G.mossTint,
                 roughBase: G.roughBase,
                 wetDrive: _wetDrive,
                 hardDrive: _hardDrive,
@@ -31882,8 +31978,11 @@ class AnazhRealm {
         this.state.hydrosphereMeshes = meshes;
         // V9.75 — schon gestreamte Voxel-Chunks bekommen ihr Iso-Mesh neu
         // gebaut, damit Chunks aus der Pre-Hydrosphäre-Phase (vor dem Atlas)
-        // die Lake/Fluss-Wahrheit aus `_waterLevelAt` jetzt sehen.
+        // die Lake/Fluss-Wahrheit aus `_waterLevelAt` jetzt sehen. ZWEI PHASEN (die Wasser-Naht): erst die Zellen
+        // ALLER Chunks, dann die Sheets — ein Sheet liest die Zellen seiner Nachbarn; im Wechsel gebaut las der
+        // frühere Chunk die alten Zellen des späteren, und niemand baute ihn danach neu (Kante auf zwei Höhen).
         if (this.state.voxelChunks) {
+            const neu = [];
             for (const key of this.state.voxelChunks.keys()) {
                 const ci = key.indexOf(",");
                 const cx = Number(key.slice(0, ci));
@@ -31904,13 +32003,14 @@ class AnazhRealm {
                             null,
                             0
                         );
-                        this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                        neu.push([cx, cz]);
                     } else {
                         entry.waterCells = null;
                         this._disposeVoxelChunkWaterIso(`${cx},${cz}`);
                     }
                 }
             }
+            for (const [cx, cz] of neu) this._buildVoxelChunkWaterIsoSurface(cx, cz);
         }
         this.log(
             `V9.75: Hydrosphäre gerendert — Iso-Wasser (${hydro.waterfalls.length} Fall-Läufe im CA-Wildwasser)`,
@@ -32084,7 +32184,6 @@ class AnazhRealm {
             modelNormalMatrix,
             cameraPosition,
             sin,
-            cos,
             dot,
             length,
             mix,
@@ -32102,44 +32201,43 @@ class AnazhRealm {
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
             linearDepth,
             depth,
+            cameraNear,
+            cameraFar,
+            exp,
+            texture,
+            equirectUV,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
-        // Zehn Live-Uniforms (uniform-Knoten mit .value-Setter)
+        // Die Live-Uniforms (uniform-Knoten mit .value-Setter)
         const uTime = uniform(0.0);
         const uFlowSpeed = uniform(0.5);
-        // Wasser-Farben = Studio-Gesetz WASSER_GESETZ (lebt NUR in foundry-core/__terrainCore; dieselben
-        // Zahlen injiziert das Studio-GLSL): Beer-Lambert shallowC=exp(-wK*flach) · deepC=exp(-wK*tief) ·
-        // Schaum verbatim, raw als linear (r128-Farb-Gesetz). Der Leser ist fail-closed, keine Kopie hier.
+        // Das Studio-Gesetz WASSER_GESETZ (lebt NUR in foundry-core/__terrainCore; dieselben Zahlen injiziert das
+        // Studio-GLSL): Beer-Lambert-Absorption wK (1/m) · Schlick-Fresnel · Sonnen-Glanz · Schaum. Der Leser ist
+        // fail-closed, keine Kopie hier.
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-        const _wgBeer = (d) =>
-            new THREE.Color().setRGB(Math.exp(-WG.wK[0] * d), Math.exp(-WG.wK[1] * d), Math.exp(-WG.wK[2] * d));
-        const uDeep = uniform(_wgBeer(WG.tief));
-        const uShallow = uniform(_wgBeer(WG.flach));
+        // DER WASSER-KÖRPER: was die optisch tiefe Wassersäule zurückstreut — R∞ = 0,33 · b_b / (a + b_b) je Kanal
+        // (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m): 0,005/0,016/
+        // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
+        // Anzeige-Blau des Studios (exp(−wK·tief), als sRGB-Absicht dekodiert 0,0003/0,027/0,107): aus 45 m ein
+        // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
+        const koerperAlbedo = vec3(...WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu)));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
-        // W10 — das Wasser spiegelt DEN Himmel (uSkyCol = die eine Tag/Nacht-
-        // Quelle) und glitzert in der Rayleigh-Sonnenfarbe (uSunCol) — Schreiber:
-        // _dayNightApplyWaterMaterials.
-        const uSkyCol = uniform(new THREE.Color(0.8, 0.87, 0.91));
+        // Das Licht des Orts (Schreiber `_dayNightApplyWaterMaterials`): uIrr = E/π einer waagrechten Fläche (Sonne
+        // + Himmels-Umgebung + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
+        // Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die Sonne selbst).
+        const uIrr = uniform(new THREE.Color(1, 1, 1));
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
-        // Tiefenpuffer-getriebene Uferlinie + Tiefen-Farbe: uShoreWidth/uDepthRange (Einheiten s. unten);
-        // uEmotion ist der Kopplungs-Haken (0 = neutral). Initialisiert aus dem persistierten
-        // Atmosphäre-Wert (Settings-Slider, überlebt Reload), sonst Default.
+        // uEmotion ist der Kopplungs-Haken (0 = neutral). Die Regler initialisiert der persistierte Atmosphäre-
+        // Wert (Settings-Slider, überlebt Reload), sonst Default.
         const atmoW = this.state.atmosphere || {};
-        // uShoreWidth in VIEWPORT-Lineardepth (edgeFade ← waterThick), uDepthRange in METER (deepen ←
-        // aDepth). Self-heal: ein persistierter Meter-uShoreWidth (> 0.1) → Default 0.0045; ein alter
-        // Viewport-uDepthRange (< 0.5) → 5.0.
-        const persShore = atmoW.waterShoreWidth;
-        const uShoreWidth = uniform(Number.isFinite(persShore) && persShore <= 0.1 ? persShore : 0.0045);
-        const persRange = atmoW.waterDepthRange;
-        const uDepthRange = uniform(Number.isFinite(persRange) && persRange >= 0.5 ? persRange : 5.0);
         const uEmotion = uniform(0.0);
-        // Mindest-Wasser-Dicke: Fragmente mit waterThick < uMinDepth fallen per alphaTest (der 16-m-Atlas-
-        // Spiegel blutet minimal über Voxel-Grate → flaches Blatt); tiefes Wasser bleibt. Default 0.0025,
-        // live über setWaterCull, aus dem persistierten Wert initialisiert.
+        // Mindest-Wasser-Dicke (Meter optischer Weg): Fragmente darunter fallen per alphaTest (der 16-m-Atlas-
+        // Spiegel blutet minimal über Voxel-Grate → flaches Blatt); tiefes Wasser bleibt. Default 0 (der
+        // Durchlass macht dünnes Wasser schon durchsichtig), live über setWaterCull.
         const initMinDepth =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                 ? this.state.atmosphere.waterCull
@@ -32261,26 +32359,26 @@ class AnazhRealm {
         const nUpRaw = normalize(vNormalWorld);
         const n = cond(nUpRaw.y.lessThan(0.0), nUpRaw.mul(-1.0), nUpRaw);
 
-        // === SCHICHT 3: Tiefenpuffer-Uferlinie ===
-        // waterThick = linearDepth(_szeneTiefe) (Terrain dahinter) − linearDepth(depth) (dieses Fragment): ~0 an
-        // der Uferlinie, pro Pixel → die weiche Kante folgt dem Terrain, egal wie grob das Mesh. Ufer-Alpha
-        // (`edgeFade`) liest `waterThick` (Viewport-Einheiten); die Tiefen-FARBE (`deepen`) liest die glatte
-        // Meter-Tiefe `aDepth` — `waterThick` sähe die facettierte Sohle (Kontur-Bänder).
+        // === DER OPTISCHE WEG (Meter, pro Pixel) ===
+        // Der Tiefenpuffer (Terrain dahinter, `_szeneTiefe`) minus dieses Fragment als Sicht-Tiefe in METERN
+        // (`linearDepth` ist [0,1] über cameraNear…cameraFar), auf den Sicht-Strahl gestreckt (Strahl-Länge ÷
+        // Sicht-Tiefe des Fragments): der Weg des Lichts vom Grund durchs Wasser ins Auge — ~0 an der Uferlinie, die
+        // weiche Kante folgt dem Terrain, egal wie grob das Mesh. Bis V18.530 las das Ufer die [0,1]-Tiefe roh gegen
+        // Viewport-Regler (Saum 0,0305, Schaum ×12): die Luft hob cameraFar auf 8500 m → der Saum war 259 m breit (die
+        // Seen standen bei Alpha 0,4 statt durchscheinend), der Ufer-Schaum 3 km (Blick-Tour 07: weiß wie Eis).
         const sceneLin = linearDepth(this._szeneTiefe());
         const fragLin = linearDepth(depth);
-        const waterThick = max(sceneLin.sub(fragLin), float(0.0));
-        const edgeFade = smoothstep(float(0.0), uShoreWidth, waterThick); // 0 an der geom. Uferlinie → 1 dahinter (V18.14-Form)
-        const shoreLine = float(1.0).sub(edgeFade); // 1 genau an der Uferlinie (fürs Ufer-Schaum-Band)
-        const deepen = smoothstep(float(0.0), uDepthRange, aDepthV); // Tiefen-FARBE: glatte Meter-Tiefe (kaleidoskop-frei)
-
-        // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise, am Ozean
-        // nach Gerstner-Wellenhöhe — über aWave gemischt, weicher Übergang.
-        const baseN = vnoise(xz.mul(0.05).add(uTime.mul(0.03)));
+        const _tiefeM = cameraFar.sub(cameraNear);
+        const _fragTiefeM = fragLin.mul(_tiefeM).add(cameraNear).max(float(1e-3));
+        const wegM = max(sceneLin.sub(fragLin), float(0.0))
+            .mul(_tiefeM)
+            .mul(length(cameraPosition.sub(vWorldPos)).div(_fragTiefeM));
         const waveT = clamp(vWave.mul(0.5).add(0.5), 0.0, 1.0);
-        const mixT = mix(float(0.32).add(baseN.mul(0.42)), waveT, aWaveV);
-        // Tiefen-Farbe (Schicht 3): tieferes Wasser zieht zur deep-Farbe → echte
-        // Tiefenwahrnehmung statt flachem Einheits-Blau, dem Terrain folgend.
-        const baseCol = mix(mix(uDeep, uShallow, mixT), uDeep, deepen.mul(0.55));
+        // DER DURCHLASS (Beer-Lambert, WASSER_GESETZ.wK je Kanal): der Weg vom Grund zum Auge plus der Weg des
+        // Lichts vom Spiegel zum Grund (die Säulen-Tiefe aDepth) — am Ufer scheint der Grund durch (T → 1), im
+        // Tiefen deckt der Wasser-Körper (T → 0; 1 m grün 0,14).
+        const durchlass = exp(vec3(WG.wK[0], WG.wK[1], WG.wK[2]).mul(wegM.add(aDepthV)).negate());
+        const T = dot(durchlass, vec3(0.2126, 0.7152, 0.0722));
 
         // FOAM: Fluss-vs-See-Trennung (vorher GLSL if/else, jetzt cond-Blend).
         // fmag > 0.01 → Fluss-Strähnen scrollen stromab.
@@ -32302,9 +32400,8 @@ class AnazhRealm {
         const riverS2 = vnoise(adv.mul(0.2));
         const riverFoam = clamp(riverS1.add(riverS2.mul(0.4)).div(1.4).sub(0.44).mul(2.0), 0.0, 1.0);
 
-        // LAKE/OCEAN-PFAD
-        const rip = vnoise(xz.mul(0.13).add(uTime.mul(0.05)));
-        const lakeBaseFoam = clamp(rip.sub(0.74).mul(2.6), 0.0, 1.0).mul(0.5);
+        // LAKE/OCEAN-PFAD — ruhiges Wasser trägt keinen Schaum: der „See-Schimmer" (Noise-Flecken bis 0,5 Schaum)
+        // fiel mit dem Durchlass-Gesetz — im weißen Spiegel unsichtbar, auf dunklem Wasser weiße Kacheln (Linse 05.10.).
         // V9.48 — Ufer-Schaum-Band (vShore: 1 an Wasserlinie, 0 im offenen See)
         const band = smoothstep(0.04, 0.9, aShoreV);
         const sn1 = vnoise(xz.mul(0.34).add(uTime.mul(0.15)));
@@ -32314,7 +32411,7 @@ class AnazhRealm {
         const shoreFoam = clamp(band.mul(float(0.4).add(sn.mul(0.9))).mul(lap), 0.0, 1.0);
         // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated)
         const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
-        const lakeFoam = max(max(lakeBaseFoam, shoreFoam), crest.mul(0.6));
+        const lakeFoam = max(shoreFoam, crest.mul(0.6));
 
         // Foam-Zweige MISCHEN statt hart schalten: `riverness` (0 See … 1 Fluss) blendet die Strähnen in den
         // Schimmer → keine Naht am Übergang. Breite fmag-Rampe 0.04→0.5, weil `aFlow` eine taperende
@@ -32328,13 +32425,12 @@ class AnazhRealm {
         // (ersetzt das für Chunk-Wasser tote aShore-Band). Glitzer glatt (0.8 + 0.2·noise) — stärkere
         // Speckel-Varianz machte das Band als distinkte Textur lesbar.
         const shoreSparkle = float(0.8).add(vnoise(xz.mul(0.5).add(uTime.mul(0.2))).mul(0.2));
-        // Der Schaum-Saum sitzt an `shoreLine` UND ist auf echte flache Tiefe gegated (`realShallow`:
+        // Der Schaum-Saum sitzt an der Uferlinie UND ist auf echte flache Tiefe gegated (`realShallow`:
         // aDepth < uDepthFoam m) → nur die echte Kante schäumt, nicht der ganze flache Fluss.
         const realShallow = float(1.0).sub(smoothstep(float(0.0), uDepthFoam, aDepthV));
-        // Die Schaum-FARBE liest ein 12× weiteres, tiefenbasiertes Ufer-Band (`foamShore`, weiche Rampe,
-        // Peak 0.3) statt der haarscharfen `shoreLine` (sonst ein harter weißer Strich); der ALPHA-Rand
-        // bleibt am scharfen `shoreLine` → die Kante bleibt crisp, nur der Schaum verschmilzt. Shader-only.
-        const foamShore = float(1.0).sub(smoothstep(float(0.0), uShoreWidth.mul(12.0), waterThick));
+        // Das Ufer-Band des Schaums: der optische Weg unter dem Ufer-Maß des Gesetzes (WASSER_GESETZ.schaum.ufer,
+        // 0,26 m), weiche Rampe, Spitze 0,3.
+        const foamShore = float(1.0).sub(smoothstep(float(0.0), float(WG.schaum.ufer), wegM));
         const depthFoam = foamShore.mul(realShallow).mul(shoreSparkle).mul(0.3);
         // Detail-Fade mit der Kamera-Distanz (70 → 200 m): die hochfrequenten Schaum-Strähnen + Schimmer-
         // Noise aliasen ab ~100 m zu Moiré. Basis-/Tiefen-Farbe und Sonnen-Glitzern bleiben. Render-only.
@@ -32352,8 +32448,6 @@ class AnazhRealm {
         // im Wasser); default 0 = exakt das alte Bild.
         const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
 
-        const colWithFoam = mix(baseCol, uFoam, foamD.mul(0.7));
-
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
         // Advektiertes Mehr-Oktav-Noise statt `sin(dot(xz,fdir))` (parallele Glitzer-Linien); Amplitude
@@ -32370,48 +32464,51 @@ class AnazhRealm {
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        // Schlick-Fresnel + Himmel-Spiegelung (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2; der Fallback-
-        // Zenit-Abfall (upY des reflektierten Strahls → sky·dim) verbatim wie die Vorlage. EIN Fresnel für
-        // Spiegel UND Alpha; die Planar-Spiegel-Textur bleibt Studio-Sache (Perf).
+        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
         const ndvW = clamp(dot(nFlow, viewDir), 0.0, 1.0);
         const fres = float(WG.fresnel[0]).add(
             float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
         );
-        const upYW = clamp(reflect(viewDir.negate(), nFlow).y.mul(0.5).add(0.5), 0.0, 1.0);
-        const skyMirror = mix(uSkyCol, uSkyCol.mul(WG.spiegel.dim), upYW);
-        const mirrored = mix(colWithFoam, skyMirror, fres);
-        // W10 — die LICHT-SCHATTIERUNG der Vorlage: ×(l0 + l1·diff + l2·Wellenhöhe),
-        // uLight trägt Tag/Nacht weiter (die Welt-Gain-Quelle bleibt EINE).
-        const diffW = max(dot(nFlow, normalize(uSunDir)), 0.0);
-        const lit = mirrored
-            .mul(float(WG.licht[0]).add(diffW.mul(WG.licht[1])).add(vWave.mul(WG.licht[2])))
-            .mul(uLight);
-        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn
-        // aus dem Gesetz, Farbe = die Rayleigh-Sonne (uSunCol) statt Fix-Warmweiß.
+        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
+        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
+        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
+        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
+        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
+        const _R = reflect(viewDir.negate(), nFlow);
+        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
+        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
+        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
+        // (Rayleigh-Farbe uSunCol × ihre Stärke uLight).
         const spec = pow(max(dot(reflect(normalize(uSunDir).negate(), nFlow), viewDir), 0.0), float(WG.spec[0]));
-        const withSpec = lit.add(uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight));
+        const glanz = uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight);
+        // Was das Wasser selbst zurückwirft: der Körper im Licht des Orts (Volumen-Albedo × E/π), soweit er den
+        // Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Der Schaum ist eine
+        // diffuse weiße Fläche im selben Licht, er deckt (fw).
+        const eigen = koerperAlbedo
+            .mul(uIrr)
+            .mul(float(1.0).sub(T))
+            .mul(float(1.0).sub(fres))
+            .add(himmel.mul(fres))
+            .add(glanz);
+        const fw = foamD.mul(0.7);
+        // DIE DECKUNG (Standard-Blending: Bild = C·α + Grund·(1−α)): der Grund kommt mit T·(1−F)·(1−fw) durch, also
+        // α = 1 − T·(1−F)·(1−fw) und C = (fw·Schaum + (1−fw)·eigen) / α — am Ufer scheint der Grund (α → F),
+        // im Tiefen deckt der dunkle Körper, unter flachem Winkel der Himmel (F → 1). α ≥ F ≥ 0,02: kein Pol.
+        const alpha = float(1.0).sub(T.mul(float(1.0).sub(fres)).mul(float(1.0).sub(fw)));
+        const farbe = mix(eigen, uFoam.mul(uIrr), fw).div(max(alpha, float(1e-3)));
 
         // Die Luft legt der EINE Luft-Knoten auf (`scene.fogNode`, mat.fog) — kein eigener Wasser-Nebel.
 
-        // Fresnel-Opazität: am Horizont fast opak, von oben klarer — liest den EINEN Schlick-Fresnel, die
-        // Alpha-Anker 0.8/0.97 bleiben. Das Kern-Moiré steiler Läufe sitzt in der Mesh-Tessellation am
-        // Grazing-Blick, nicht in der Normale.
-        const alpha0 = mix(float(0.8), float(0.97), fres);
-        // An der Uferlinie auf den 0.4-Boden ausfaden (`edgeFade` aus `waterThick`, pro Pixel terrain-
-        // folgend): weicher Saum statt harter Mesh-Kante, heilt auch streifendes Z-Fighting. Nie auf null
-        // aus `aDepth` faden (das Ufer würde ein vertikaler Tiefen-Fade). aShore (Pool = 1) hält den Saum.
-        const alpha = alpha0.mul(mix(float(0.4), float(1.0), max(edgeFade, aShoreV)));
-        // Dünnes Wand-Bluten pro Pixel cullen: waterThick < uMinDepth → Alpha 0, das Fragment fällt per
+        // Dünnes Wand-Bluten pro Pixel cullen: optischer Weg < uMinDepth (m) → Alpha 0, das Fragment fällt per
         // mat.alphaTest weg. Bei uMinDepth = 0 unverändert; tiefes Wasser bleibt.
-        const alphaCulled = cond(waterThick.lessThan(uMinDepth), float(0.0), alpha);
+        const alphaCulled = cond(wegM.lessThan(uMinDepth), float(0.0), alpha);
 
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.positionNode = pd;
-        mat.colorNode = vec4(withSpec, alphaCulled);
+        mat.colorNode = vec4(farbe, alphaCulled);
         mat.transparent = true;
-        // V13.9 — Cull-Schwelle: Fragmente mit Alpha≈0 (oben gecullt) werden
-        // verworfen. 0.0001 liegt weit unter dem minimalen echten Wasser-Alpha
-        // (~0.32), discardet also NUR die gecullten — default-Bild unberührt.
+        // V13.9 — Cull-Schwelle: Fragmente mit Alpha≈0 (oben gecullt) werden verworfen. 0.0001 liegt weit unter
+        // dem minimalen echten Wasser-Alpha (F ≥ 0,02), discardet also NUR die gecullten.
         mat.alphaTest = 0.0001;
         // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
         // also kann nichts mehr durch eine andere Wasserfläche scheinen.
@@ -32430,16 +32527,12 @@ class AnazhRealm {
         this.state.hydroSurfaceUniforms = {
             time: uTime,
             flowSpeed: uFlowSpeed,
-            deep: uDeep,
-            shallow: uShallow,
             foam: uFoam,
             sunDir: uSunDir,
-            skyCol: uSkyCol,
+            irr: uIrr,
             sunCol: uSunCol,
             light: uLight,
-            // V13.5 (Schicht 3) — im Browser-Audit justierbar; emotion ist der V14-Haken.
-            shoreWidth: uShoreWidth,
-            depthRange: uDepthRange,
+            // emotion ist der V14-Haken.
             emotion: uEmotion,
             minDepth: uMinDepth,
             depthFoam: uDepthFoam,
@@ -32530,7 +32623,10 @@ class AnazhRealm {
                 });
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
-                const p = cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * gruen;
+                // Unter einer echten Krone liegt Laub, kaum ein Halm (15 %) — dieselbe Kronen-Karte wie der Boden.
+                const streu = this._kronenStreuAt(x, z);
+                const p =
+                    cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * (1 - streu * 0.85) * gruen;
                 if (wurf >= p) continue;
                 out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung });
             }
@@ -36200,10 +36296,11 @@ class AnazhRealm {
         const W = tex.image.width;
         const H = tex.image.height;
         const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-        // Zeile y → Elevation (v=1 Zenit … 0 Nadir), Farbe der Zeile (Spalte 0: azimut-konstant)
+        // Zeile y → Elevation (v = y/(H−1): 0 Nadir … 1 Zenit, dieselbe Zeilen-Richtung wie das GPU-Sampling,
+        // `_ensureSkyEnvironment`), Farbe der Zeile (Spalte 0: azimut-konstant)
         const zeilen = [];
         for (let y = 0; y < H; y++) {
-            const v = 1 - y / (H - 1);
+            const v = y / (H - 1);
             const el = (v - 0.5) * Math.PI; // −π/2 … π/2
             const i = y * W * 4;
             zeilen.push({ el, r: lin(d[i] / 255), g: lin(d[i + 1] / 255), b: lin(d[i + 2] / 255) });
@@ -37059,16 +37156,8 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
-                // V18.6 U-W4 — Wasser-Render-Modus + Tiefen-Ufer-Hebel persistieren.
+                // V18.6 U-W4 — Wasser-Render-Modus persistieren.
                 waterRenderMode: this._waterRenderMode(),
-                waterShoreWidth:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
-                        ? this.state.atmosphere.waterShoreWidth
-                        : 1.0,
-                waterDepthRange:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
-                        ? this.state.atmosphere.waterDepthRange
-                        : 5.0,
                 // V18.14/.15 — Makro-Kontext-Regler persistieren.
                 waterDepthFoam:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
@@ -41111,13 +41200,6 @@ class AnazhRealm {
             if (typeof state.atmosphere.waterRenderMode === "string") {
                 this.setWaterRenderMode(state.atmosphere.waterRenderMode);
             }
-            // uShoreWidth auf VIEWPORT-Skala (edgeFade←waterThick), uDepthRange in METER (deepen←aDepth).
-            // Self-heal: ein alter Meter-Uferwert (>0.1) → 0.0045, ein alter Viewport-DepthRange (<0.5) → 5.0;
-            // der Setter clampt nochmal.
-            const sw = Number(state.atmosphere.waterShoreWidth);
-            if (Number.isFinite(sw)) this.setWaterShoreWidth(sw > 0.1 ? 0.0045 : sw);
-            const dr = Number(state.atmosphere.waterDepthRange);
-            if (Number.isFinite(dr)) this.setWaterDepthRange(dr < 0.5 ? 5.0 : dr);
             const lr = Number(state.atmosphere.waterLakeRipple);
             if (Number.isFinite(lr)) this.setLakeRipple(Math.max(0.0, Math.min(1.0, lr)));
             // V18.14 M1/M3 — die Makro-Kontext-Regler (vor dem Hydrosphäre-Mesh-Bau setzen,
@@ -51822,8 +51904,18 @@ class AnazhRealm {
                 );
                 if (!rec) continue;
                 region.cells.push(rec);
-                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn
-                if (layer.promotable) this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
+                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
+                if (layer.promotable) {
+                    this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
+                    // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
+                    const kc = AnazhRealm.FOREST.crown[species];
+                    const kr = kc
+                        ? kc * tf.scale
+                        : Number.isFinite(visH)
+                          ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe
+                          : 0;
+                    this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr);
+                }
                 emitted++;
             }
         }
@@ -63225,17 +63317,31 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         const W = AnazhRealm.WEGE_KARTE;
         const TSL = THREE.TSL;
-        const stufen = W.stufen.map((S) => {
-            const N = Math.round(S.fensterM / S.texelM);
-            const daten = new Uint8Array(N * N * 2);
-            const tex = new THREE.DataTexture(daten, N, N, THREE.RGFormat, THREE.UnsignedByteType);
-            tex.name = "wege-karte:" + S.name;
+        const karte = (N, daten, format, name) => {
+            const tex = new THREE.DataTexture(daten, N, N, format, THREE.UnsignedByteType);
+            tex.name = name;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
             tex.wrapS = THREE.ClampToEdgeWrapping;
             tex.wrapT = THREE.ClampToEdgeWrapping;
             tex.generateMipmaps = false;
             tex.needsUpdate = true;
+            return tex;
+        };
+        const stufen = W.stufen.map((S, si) => {
+            const N = Math.round(S.fensterM / S.texelM);
+            const daten = new Uint8Array(N * N * 2);
+            const tex = karte(N, daten, THREE.RGFormat, "wege-karte:" + S.name);
+            // DIE KRONEN-STREU dieser Stufe: dasselbe Fenster, dieselbe Mitte (also dasselbe UV), eigenes Raster.
+            const kN = Math.round(S.fensterM / AnazhRealm.LAUB_STREU.texelM[si]);
+            const kDaten = new Uint8Array(kN * kN);
+            const kronen = {
+                N: kN,
+                daten: kDaten,
+                tex: karte(kN, kDaten, THREE.RedFormat, "kronen-streu:" + S.name),
+                schmutz: false,
+                upload: 0,
+            };
             const U =
                 TSL && TSL.uniform
                     ? this._uniformHeimatTeilen({
@@ -63243,10 +63349,89 @@ class AnazhRealm {
                           groesse: TSL.uniform(S.fensterM),
                       })
                     : null;
-            return { S, N, daten, tex, U, mitteX: 0, mitteZ: 0, zentriert: false };
+            return { S, N, daten, tex, kronen, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
-        st.wegeKarte = { stufen, siedlungen: [] };
+        st.wegeKarte = { stufen, siedlungen: [], kronen: new Map() };
         return st.wegeKarte;
+    }
+
+    // ═══ DIE KRONEN-STREU (Welle 5 Boden): der Waldboden liegt unter den ECHTEN Kronen ═══
+    // Befund 05.10. (echte GPU, Mess-Wiese, 207 Bäume gegen das Feld): die Laubstreu folgte dem Kronenlicht-Feld
+    // (`_canopyLightAt`, der Platzierungs-Bestand) — die Bäume stehen aber nach `lebendig` (Baum-Streu) und dem
+    // Wald-Generator (Bestandsdichte, Kronen-Schüchternheit, Kappen): wo das Feld „geschlossen" sagte (Licht 0,2–0,4)
+    // stand im 10-m-Kreis 0,01 Baum, und die Streu lag als braune Steppe in der offenen Wiese. Jetzt malt JEDE
+    // gepflanzte Krone (Wald-Generator `_forestPlantChunk`, Baum-Streu `_scatterPass`; Radius `FOREST.crown[art] ×
+    // Skala`, dieselbe Zahl wie die Kronen-Schüchternheit) eine weiche Scheibe in die Kronen-Karte jeder Wege-Stufe; der
+    // Boden-Stoff mischt dort die Laubstreu der Palette (`_wegeBodenFarbe`), die Nah-Wiese lichtet dort ihre Halme. Das
+    // Register hält die Kronen im fernen Fenster (ein Umzug malt neu und vergisst, was dahinter liegt).
+    _kronenStreuNeu(schluessel, x, z, radius) {
+        const wk = this._wegeKarteEnsure();
+        if (!wk || !(radius > 0)) return;
+        // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt — die Karte summiert.
+        const alt = wk.kronen.get(schluessel);
+        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
+        wk.kronen.set(schluessel, [x, z, radius]);
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._kronenStreuMale(stufe, x, z, radius);
+    }
+
+    // Eine Krone in EINE Stufe malen: `dichte` bis `kern` × Radius, weich (smoothstep) bis `rand` × Radius; die Kronen
+    // SUMMIEREN sich (gekappt) — unter einer einzelnen Krone dringt noch Gras durch, wo Kronen sich schließen, deckt
+    // die Streu den ganzen Grund.
+    _kronenStreuMale(stufe, x, z, radius) {
+        const K = AnazhRealm.LAUB_STREU;
+        const kr = stufe.kronen;
+        const N = kr.N;
+        const t = stufe.S.fensterM / N;
+        const x0w = stufe.mitteX - stufe.S.fensterM / 2;
+        const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
+        const aussen = radius * K.rand;
+        const innen = radius * K.kern;
+        const i0 = Math.max(0, Math.floor((x - aussen - x0w) / t));
+        const i1 = Math.min(N - 1, Math.ceil((x + aussen - x0w) / t));
+        const j0 = Math.max(0, Math.floor((z - aussen - z0w) / t));
+        const j1 = Math.min(N - 1, Math.ceil((z + aussen - z0w) / t));
+        if (i1 < i0 || j1 < j0) return;
+        const d = kr.daten;
+        for (let j = j0; j <= j1; j++) {
+            const pz = z0w + (j + 0.5) * t - z;
+            for (let i = i0; i <= i1; i++) {
+                const px = x0w + (i + 0.5) * t - x;
+                let q = (aussen - Math.hypot(px, pz)) / (aussen - innen);
+                if (q <= 0) continue;
+                q = q >= 1 ? 1 : q * q * (3 - 2 * q);
+                const k = j * N + i;
+                d[k] = Math.min(255, d[k] + Math.round(q * K.dichte * 255));
+            }
+        }
+        kr.schmutz = true;
+    }
+
+    // Die Kronen-Streu an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest (dieselbe
+    // Stufen-Wahl wie `_wegeFeldAt`).
+    _kronenStreuAt(x, z) {
+        const wk = this.state.wegeKarte;
+        if (!wk) return 0;
+        const [nah, fern] = wk.stufen;
+        const g = AnazhRealm._wegeStufeNah(nah.N);
+        const innen =
+            Math.abs((x - nah.mitteX) / nah.S.fensterM) < g && Math.abs((z - nah.mitteZ) / nah.S.fensterM) < g;
+        const stufe = innen ? nah : fern;
+        if (!stufe.zentriert) return 0;
+        const kr = stufe.kronen;
+        const N = kr.N;
+        const t = stufe.S.fensterM / N;
+        const fx = (x - (stufe.mitteX - stufe.S.fensterM / 2)) / t - 0.5;
+        const fz = (z - (stufe.mitteZ - stufe.S.fensterM / 2)) / t - 0.5;
+        const i = Math.floor(fx);
+        const j = Math.floor(fz);
+        if (i < 0 || j < 0 || i >= N - 1 || j >= N - 1) return 0;
+        const tx = fx - i;
+        const tz = fz - j;
+        const at = (a, b) => kr.daten[b * N + a] / 255;
+        return (
+            (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
+            (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
+        );
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
@@ -63321,24 +63506,51 @@ class AnazhRealm {
     // die Nähe, nie an die Zahl besuchter Siedlungen), EIN Upload je umgezogener Stufe.
     _tickWegeKarte(playerPos) {
         const wk = this.state.wegeKarte;
-        if (!wk || !playerPos || wk.siedlungen.length === 0) return;
+        if (!wk || !playerPos || (wk.siedlungen.length === 0 && wk.kronen.size === 0)) return;
+        const jetzt = performance.now();
+        const fernS = wk.stufen[wk.stufen.length - 1].S;
         for (const stufe of wk.stufen) {
             const S = stufe.S;
-            if (stufe.zentriert && Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) < S.umzugM)
-                continue;
-            const raster = S.texelM * 16;
-            stufe.mitteX = Math.round(playerPos.x / raster) * raster;
-            stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
-            stufe.zentriert = true;
-            stufe.daten.fill(0);
-            const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
-            for (const sd of wk.siedlungen) {
-                if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
-                if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
-                for (const f of sd.formen) this._wegeKarteMale(stufe, f);
+            if (!stufe.zentriert || Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) >= S.umzugM) {
+                const raster = S.texelM * 16;
+                stufe.mitteX = Math.round(playerPos.x / raster) * raster;
+                stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
+                stufe.zentriert = true;
+                stufe.daten.fill(0);
+                const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
+                let wege = 0;
+                for (const sd of wk.siedlungen) {
+                    if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
+                    if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
+                    for (const f of sd.formen) this._wegeKarteMale(stufe, f);
+                    wege++;
+                }
+                if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
+                // Eine leere Karte bleibt leer — kein Upload ohne Weg (der Umzug kommt auch für die Kronen).
+                if (wege > 0 || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
+                stufe.wegeLeer = wege === 0;
+                // Die Kronen der Stufe neu malen; der Umzug der FERNEN Stufe vergisst die Kronen jenseits ihres Fensters.
+                stufe.kronen.daten.fill(0);
+                const hk = S.fensterM / 2;
+                for (const [k, c] of wk.kronen) {
+                    const ax = Math.abs(c[0] - stufe.mitteX) - c[2];
+                    const az = Math.abs(c[1] - stufe.mitteZ) - c[2];
+                    if (ax > hk || az > hk) {
+                        if (S === fernS) wk.kronen.delete(k);
+                        continue;
+                    }
+                    this._kronenStreuMale(stufe, c[0], c[1], c[2]);
+                }
+                stufe.kronen.schmutz = true;
+                stufe.kronen.upload = -Infinity; // nach dem Umzug sofort hochladen
             }
-            if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
-            stufe.tex.needsUpdate = true;
+            // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`).
+            const kr = stufe.kronen;
+            if (kr.schmutz && jetzt - kr.upload >= AnazhRealm.LAUB_STREU.uploadMs) {
+                kr.tex.needsUpdate = true;
+                kr.schmutz = false;
+                kr.upload = jetzt;
+            }
         }
     }
 
@@ -63370,13 +63582,14 @@ class AnazhRealm {
         );
     }
 
-    // Die Boden-Farbe unter den Wegen (TSL): die Vertex-Farbe mischt zur getretenen Erde (R) und zum Acker (G) der
+    // Die Boden-Farbe unter Kronen und Wegen (TSL): die Vertex-Farbe mischt zur Laubstreu der Kronen-Karte, zur
+    // getretenen Erde (R) und zum Acker (G) der
     // Wege-Karte, in den Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), nur auf
     // Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
     // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
     _wegeBodenFarbe(_T, vc) {
         const wk = this._wegeKarteEnsure();
-        if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorld)
+        if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorldGeometry)
             throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
         const P = AnazhRealm.BODEN_FARBE;
         const [nah, fern] = wk.stufen;
@@ -63386,10 +63599,25 @@ class AnazhRealm {
         const wFern = _T.texture(fern.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5));
         const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
         const _wm = _T.mix(wFern, wNah, innen);
-        const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorld.y);
-        const e = P.packedDirt;
-        const a = P.dampEarth;
-        const mitErde = _T.mix(vc, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
+        const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
+        // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
+        // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster).
+        const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).r;
+        const kFern = _T.texture(fern.kronen.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5)).r;
+        // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
+        const _laubRausch = _T.mx_noise_float
+            ? _T.mx_noise_float(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3))).mul(0.3)
+            : _T.float(0.0);
+        const _k = _T
+            .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
+            .mul(_begehbar);
+        const l = P.lit;
+        // Unter der Krone liegt die Streu, und das Kronendach dunkelt den Grund (das Studio-Gesetz: × 0,58 im
+        // Bestandeskern, `c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain).
+        const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k).mul(_T.float(1.0).sub(_k.mul(_T.float(0.42))));
+        const e = P.dirt;
+        const a = P.wet;
+        const mitErde = _T.mix(mitStreu, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
         return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar));
     }
 
@@ -63614,14 +63842,18 @@ class AnazhRealm {
             P.mesh.dispose();
         }
         this.state.stlZaun = null;
-        // Die Wege-Karte leert sich (die Formen gehören der alten Welt); die Textur bleibt (kein Re-Compile).
+        // Die Wege-Karte leert sich (die Formen und die Kronen gehören der alten Welt; die neue pflanzt neu); die
+        // Texturen bleiben (kein Re-Compile).
         const wk = this.state.wegeKarte;
         if (wk) {
             wk.siedlungen.length = 0;
+            wk.kronen.clear();
             for (const stufe of wk.stufen) {
                 stufe.daten.fill(0);
                 stufe.zentriert = false;
                 stufe.tex.needsUpdate = true;
+                stufe.kronen.daten.fill(0);
+                stufe.kronen.tex.needsUpdate = true;
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
@@ -64735,8 +64967,8 @@ class AnazhRealm {
     }
 
     // ===== ATLAS §19 · LICHT/WASSER-REGLER — alle Render-Setter (EINE Quelle je Regler) =====
-    // Wasser-Cull (uMinDepth): dünnes Wasser pro Pixel verwerfen (waterThick < uMinDepth → Alpha 0
-    // via mat.alphaTest). Wert in [0,1]-Lineardepth über camera near..far; 0 = aus.
+    // Wasser-Cull (uMinDepth): dünnes Wasser pro Pixel verwerfen (optischer Weg < uMinDepth → Alpha 0
+    // via mat.alphaTest). Wert in METERN optischen Wegs (0 … 0,05 m, seit dem Durchlass-Gesetz); 0 = aus.
     setWaterCull(minDepth) {
         const m = Math.max(0.0, Math.min(0.05, Number(minDepth) || 0.0));
         if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
@@ -64765,33 +64997,6 @@ class AnazhRealm {
                 const comma = key.indexOf(",");
                 this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
             }
-        }
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
-    // V18.6 U-W4 — die Tiefen-Uferlinie (uShoreWidth, [0,1]-Lineardepth): wie
-    // breit das Wasser pro Pixel vom Ufer einblendet. Kleiner = schärferes Ufer.
-    setWaterShoreWidth(width) {
-        // V18.17 — wieder in VIEWPORT-Lineardepth (Ufer-Alpha-Saum gegen waterThick, V18.14-Ufer).
-        const m = Math.max(0.001, Math.min(0.05, Number(width) || 0.0045));
-        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
-        this.state.atmosphere.waterShoreWidth = m;
-        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.shoreWidth) {
-            this.state.hydroSurfaceUniforms.shoreWidth.value = m;
-        }
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
-    // V18.15 — die Tiefen-Farb-Rampe (uDepthRange, jetzt in METERN gegen aDepth): wie
-    // schnell das Wasser mit der echten Tiefe ins Dunkle/Blaue kippt. Kleiner = schneller tief.
-    setWaterDepthRange(range) {
-        const m = Math.max(1.0, Math.min(15.0, Number(range) || 5.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
-        this.state.atmosphere.waterDepthRange = m;
-        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthRange) {
-            this.state.hydroSurfaceUniforms.depthRange.value = m;
         }
         if (typeof this.saveState === "function") this.saveState();
         return m;
@@ -65650,30 +65855,11 @@ class AnazhRealm {
         }
         return registered;
     }
-    // Studio-Welt-Palette → AnazhRealms Farbquellen: Hex (sRGB) EINMAL nach linear (THREE.Color), im
-    // statischen `AnazhRealm._studioGround` gecacht; `MEADOW_GREEN`/`TERRAIN_GEOLOGY` lesen sie (Fallback
-    // = Hardcode, wenn nichts kam). Kein Shader-Transfer.
+    // Studio-Welt-Parameter (der Buch-Umschlag): die Atmosphäre-Anker. Die Boden-Palette reist NICHT hier — sie
+    // liegt synchron im Terrain-Namensraum (`AnazhRealm.BODEN_FARBE`), der Voxel-Worker braucht sie vor dem ersten Chunk.
     _foundryIngestWorldParams(params) {
-        if (!params || typeof params !== "object" || typeof THREE === "undefined") return;
+        if (!params || typeof params !== "object") return;
         this.state.studioWorldParams = params;
-        const toLin = (hex) => {
-            try {
-                return new THREE.Color(hex).toArray(); // sRGB-Hex -> linear (ColorManagement default)
-            } catch (_e) {
-                return null;
-            }
-        };
-        const g = params.ground || {};
-        const ground = {};
-        for (const key of ["lit", "mead", "rock", "wet"]) {
-            if (typeof g[key] === "number") {
-                const lin = toLin(g[key]);
-                if (lin) ground[key] = lin;
-            }
-        }
-        // Der statische Cache, den die Getter lesen (globaler Prozess-Zustand, kein Instanz-State →
-        // die Klassen-Getter erreichen ihn; Single-Instanz-App, kein Leck).
-        AnazhRealm._studioGround = Object.keys(ground).length ? ground : null;
         // DIE ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe als HEX (der Tag/Nacht-Zyklus
         // rechnet in Hex, nicht linear) → `DAY_NIGHT_STOPS` bindet seinen Mittags-Stop hieran. Additiv:
         // nur der Mittag folgt dem Studio, der ganze Zyklus bleibt AnazhRealms. Fallback = 0 Regress.
@@ -70250,6 +70436,8 @@ class AnazhRealm {
                         }
                     );
                     planted++;
+                    // Die Krone streut Laub (Radius = die Kronen-Schüchternheit des Darts, `T`).
+                    this._kronenStreuNeu(`w:${d.seed}`, d.x, d.z, d.T);
                     // Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-
                     // Resolver mappt die Cell auf die reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
                     if (this._scatterRegisterCell) {
@@ -71734,19 +71922,17 @@ class AnazhRealm {
                 }
             }
         }
-        // Bewegte Chunks neu rendern (Surface liest das LIVE-Level), budgetiert über `pendingWaterIso`
-        // (4/Frame), nur bei echter Bewegung. Das cells-Sheet glättet über ±3 Spalten und liest alle 8
-        // Nachbarn → ein bewegter Chunk re-enqueued die volle 8er-Nachbarschaft. Nur SUBSTANZIELLE Bewegung
-        // (> 0.5) re-meshed live; der Schelf-Trickle bekommt beim Settle EIN finales Mesh (sonst Dauer-Churn).
+        // Bewegte Chunks neu rendern (die Entscheidung legt das Dach als Wunsch ab, `_caRoofChanged`), budgetiert
+        // über `pendingWaterIso` (4/Frame), nur bei echter Bewegung. Eingereiht wird der Chunk SELBST: sein Bau
+        // zeichnet das neue Dach und reiht dann die 8 Nachbarn ein, die es über ±3 Spalten lesen
+        // (`_buildVoxelChunkWaterCellSheet`) — nie früher (ein Nachbar vor dem Chunk gebaut zeigte ein Dach, das
+        // der Chunk noch nicht zeigt). Nur SUBSTANZIELLE Bewegung (> 0.5) re-meshed live; der Schelf-Trickle
+        // bekommt beim Settle EIN finales Mesh (sonst Dauer-Churn).
         if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
-        const enqueueWithReaders = (cx2, cz2) => {
-            for (let rz = -1; rz <= 1; rz++) {
-                for (let rx = -1; rx <= 1; rx++) {
-                    const rkey = `${cx2 + rx},${cz2 + rz}`;
-                    const re = this.state.voxelChunks.get(rkey);
-                    if (re && re.waterCells) this.state.pendingWaterIso.add(rkey);
-                }
-            }
+        const enqueueZeichnen = (cx2, cz2) => {
+            const rkey = `${cx2},${cz2}`;
+            const re = this.state.voxelChunks.get(rkey);
+            if (re && re.waterCells) this.state.pendingWaterIso.add(rkey);
         };
         // Re-Mesh nur bei sichtbarer Dach-Änderung: `moved` ist Brutto-Durchfluss (stationärer Fluss > 0.5).
         // Dach-Fingerprint (`_caRoofFingerprint`: oberste nasse Zeile + Füllgrad je Spalte, im y-Band) gegen
@@ -71762,7 +71948,7 @@ class AnazhRealm {
             if (caTick - last < REMESH_INT) continue;
             if (this._caRoofChanged(a, dim, dimY)) {
                 if (e) e._caRemeshTick = caTick;
-                enqueueWithReaders(a.cx, a.cz);
+                enqueueZeichnen(a.cx, a.cz);
             }
         }
         for (const a of active) {
@@ -71782,7 +71968,7 @@ class AnazhRealm {
                 // Stand schon gezeichnet — nichts zu tun.
                 if (this._caRoofChanged(a, dim, dimY)) {
                     if (e) e._caRemeshTick = caTick;
-                    enqueueWithReaders(a.cx, a.cz);
+                    enqueueZeichnen(a.cx, a.cz);
                 }
             }
         }
@@ -71815,6 +72001,8 @@ class AnazhRealm {
         const old = entry._caMeshFp;
         if (!old || old.length !== dimSq) {
             entry._caMeshFp = new Float32Array(fp.subarray(0, dimSq));
+            entry._caDachNeu = this._caDachAus(a.level, a.cells, dim, dimY, entry._caDachNeu);
+            entry._caDachOffen = true;
             return true;
         }
         let maxAbs = 0;
@@ -71830,9 +72018,26 @@ class AnazhRealm {
         }
         if (maxAbs > 0.25 || sumAbs > 1.0) {
             old.set(fp.subarray(0, dimSq));
+            entry._caDachNeu = this._caDachAus(a.level, a.cells, dim, dimY, entry._caDachNeu);
+            entry._caDachOffen = true;
             return true;
         }
         return false;
+    }
+
+    // DAS GEZEICHNETE DACH eines Chunks: je Spalte die oberste nicht-solide Zeile mit Pegel > 0,5 plus ihr Füllgrad
+    // (j + frac, −1 = keins) — exakt was das Zell-Sheet als Live-Dach rendert (`_caColumnScan`, derselbe Kern).
+    // Die Re-Mesh-Entscheidung (`_caRoofChanged`) legt es als WUNSCH ab (`_caDachNeu`); gezeichnet wird es erst mit
+    // dem EIGENEN Bau des Chunks (`_buildVoxelChunkWaterCellSheet` macht es zu `_caDach` und reiht die acht Nachbarn
+    // ein). So liest jeder Nachbar immer genau das Dach, das der Chunk gerade zeigt — die Kante steht auf EINER Höhe.
+    _caDachAus(level, cells, dim, dimY, out) {
+        const dimSq = dim * dim;
+        const d = out && out.length === dimSq ? out : new Float64Array(dimSq);
+        for (let c = 0; c < dimSq; c++) {
+            const sc = this._caColumnScan(cells, level, c, dimSq, dimY);
+            d[c] = sc.liveTopJ >= 0 ? sc.liveTopJ + sc.liveFrac : -1;
+        }
+        return d;
     }
 
     // Level-Austausch über die gemeinsame Chunk-Grenze (lateral über die Naht, symmetrisch = Erhaltung).
@@ -82094,24 +82299,42 @@ class AnazhRealm {
     _dayNightApplyBelichtung() {
         const st = this.state;
         const rend = st.renderer;
-        const dl = st.directionalLight;
-        if (!rend || !dl) return;
+        if (!rend || !st.directionalLight) return;
         const B = AnazhRealm.BELICHTUNG;
-        const Y = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const e = this._waagrechtIrradianz(this._belichtungE || (this._belichtungE = [0, 0, 0]));
+        const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+        const karte = (0.18 / Math.PI) * E;
+        const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
+        rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+    }
+
+    // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben
+    // (`_himmelsIrradianz`, E/π) + Hemi + Ambient — dieselben Lichter, die jedes Material liest. EINE Rechnung für
+    // die Belichtung (die 18-%-Karte) und das Wasser (sein Körper und sein Schaum leuchten im Licht des Orts).
+    _waagrechtIrradianz(out) {
+        const st = this.state;
+        const dl = st.directionalLight;
+        out[0] = out[1] = out[2] = 0;
+        if (!dl) return out;
         const dir = this._belichtungRichtung || (this._belichtungRichtung = new THREE.Vector3());
         dir.copy(dl.position);
         if (dl.target) dir.sub(dl.target.position);
         const dy = dir.lengthSq() > 0 ? Math.max(0, dir.normalize().y) : 0;
-        let E = Y(dl.color.r, dl.color.g, dl.color.b) * dl.intensity * dy;
+        const add = (c, k) => {
+            out[0] += c.r * k;
+            out[1] += c.g * k;
+            out[2] += c.b * k;
+        };
+        add(dl.color, dl.intensity * dy);
         const env = this._himmelsIrradianz(); // liefert E/π (die Antwort einer weißen Lambert-Fläche)
-        if (env) E += Math.PI * Y(env.oben[0], env.oben[1], env.oben[2]);
-        const hl = st.hemiLight;
-        if (hl) E += Y(hl.color.r, hl.color.g, hl.color.b) * hl.intensity;
-        const al = st.ambientLight;
-        if (al) E += Y(al.color.r, al.color.g, al.color.b) * al.intensity;
-        const karte = (0.18 / Math.PI) * E;
-        const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
-        rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+        if (env) {
+            out[0] += Math.PI * env.oben[0];
+            out[1] += Math.PI * env.oben[1];
+            out[2] += Math.PI * env.oben[2];
+        }
+        if (st.hemiLight) add(st.hemiLight.color, st.hemiLight.intensity);
+        if (st.ambientLight) add(st.ambientLight.color, st.ambientLight.intensity);
+        return out;
     }
 
     // Ambient-Light = NUR der Nachthimmel-Boden (EIN Himmel, V18.507): am Tag IST die Himmels-Umgebung
@@ -82329,15 +82552,16 @@ class AnazhRealm {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const lightVal = Math.max(0.22, dl.intensity);
+        // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung).
+        const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
         // Beide Wasser-Materialien sind TSL; Uniforms leben in state.waterfallUniforms /
         // state.hydroSurfaceUniforms — EINE Closure für beide.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
-            // W10 — „das Wasser spiegelt DEN Himmel" (Studio-Kopplung 1:1): die
-            // EINE Tag/Nacht-Himmelsfarbe (nebulaColor) speist die Spiegelung,
-            // die EINE Licht-Farbe (Richtlicht = Rayleigh-Sonne/Mond) den Glitzer.
+            if (uniforms.irr) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
+            // Der Wasserfall spiegelt noch die Himmels-Tönung (nebulaColor); das Wasser liest die Umgebung selbst.
             if (uniforms.skyCol && this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor)
                 uniforms.skyCol.value.copy(this.state.skyboxUniforms.nebulaColor.value);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
@@ -83162,43 +83386,11 @@ class AnazhRealm {
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
         }
-        // V18.6 U-W4 — Wasser-Render-Modus (Fläche-auf-L | Zell-Iso) + die zwei
-        // Tiefen-Ufer-Hebel (Ufer-Schärfe uShoreWidth, Wasser-Tiefe uDepthRange).
+        // V18.6 U-W4 — Wasser-Render-Modus (Fläche-auf-L | Zell-Iso).
         const wrSel = document.getElementById("select-waterrender");
         if (wrSel) {
             wrSel.value = this._waterRenderMode();
             wrSel.addEventListener("change", () => this.setWaterRenderMode(wrSel.value));
-        }
-        const wsS = document.getElementById("slider-watershore");
-        const wsVal = document.getElementById("slider-watershore-val");
-        if (wsS) {
-            // V18.17 — Ufer-Schärfe wieder VIEWPORT-Lineardepth (÷10000); self-heal eines
-            // persistierten V18.15/.16-Meter-Werts (>0.1) auf den Default 0.0045.
-            const raw =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
-                    ? this.state.atmosphere.waterShoreWidth
-                    : 0.0045;
-            const s0 = raw > 0.1 ? 0.0045 : Math.max(0.001, Math.min(0.05, raw));
-            wsS.value = String(Math.round(s0 * 10000));
-            if (wsVal) wsVal.textContent = s0.toFixed(4);
-            wsS.addEventListener("input", () => {
-                const v = this.setWaterShoreWidth(parseInt(wsS.value, 10) / 10000);
-                if (wsVal) wsVal.textContent = v.toFixed(4);
-            });
-        }
-        const wdS = document.getElementById("slider-waterdepth");
-        const wdVal = document.getElementById("slider-waterdepth-val");
-        if (wdS) {
-            const d0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
-                    ? Math.max(1.0, Math.min(15.0, this.state.atmosphere.waterDepthRange))
-                    : 5.0;
-            wdS.value = String(Math.round(d0 * 10));
-            if (wdVal) wdVal.textContent = d0.toFixed(1) + " m";
-            wdS.addEventListener("input", () => {
-                const v = this.setWaterDepthRange(parseInt(wdS.value, 10) / 10);
-                if (wdVal) wdVal.textContent = v.toFixed(1) + " m";
-            });
         }
         // V18.15 Phase 3 — See-Wellen (uLakeRipple 0..1, Slider ×100).
         const lrS = document.getElementById("slider-lakeripple");
@@ -86446,7 +86638,7 @@ class AnazhRealm {
         this._tickImpostorBake();
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
-        this._tickWegeKarte(playerPos); // die Wege-Karte folgt dem Spieler (No-op ohne Siedlungs-Wege)
+        this._tickWegeKarte(playerPos); // Wege- und Kronen-Karte folgen dem Spieler (No-op ohne Weg und Krone)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
@@ -88443,6 +88635,20 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
     ]),
     randM: 0.6,
 });
+// DIE LAUB-STREU UNTER DEN KRONEN (`_kronenStreuNeu`, Welle 5 Boden): je Wege-Stufe eine R8-Karte im selben Fenster — `texelM` je Stufe
+// (nah 1 m, fern 4 m: 512² = 256 KB je Stufe); eine Krone legt `dichte` Laubstreu bis `kern` × Kronen-Radius, weich
+// fallend bis `rand` × Radius (die Krone des Studio-Baums reicht über den Schüchternheits-Radius hinaus, das Laub weht
+// vor die Traufe), Kronen summieren sich (zwei überlappende decken den Grund); `kroneJeHoehe` = Kronen-Radius je Meter
+// Sichthöhe für Streu-Arten ohne Kronen-Eintrag im Wald-Generator; `uploadMs` = höchstens ein Upload je Stufe in diesem
+// Takt.
+AnazhRealm.LAUB_STREU = Object.freeze({
+    texelM: Object.freeze([1, 4]),
+    dichte: 0.6,
+    kern: 1.0,
+    rand: 1.7,
+    kroneJeHoehe: 0.35,
+    uploadMs: 250,
+});
 // FERN_FARBE (`_fernFarbeTeile`, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
@@ -89738,8 +89944,8 @@ AnazhRealm.SPECIES_TAG_REFERENCE = Object.freeze({
 });
 
 // LICHEN: grüne Patina auf alten/feuchten Steinen — reine Render-Schicht im
-// `_attachVoxelFieldColors`-Mix-Stack (kein Tag). Der Worker hardkodiert diese Konstanten
-// spiegelbildlich (bit-Vertrag: jede Änderung in BEIDE).
+// `_bodenFarbeAt`-Mix-Stack (kein Tag). Der Worker hardkodiert diese Schwellen
+// spiegelbildlich (bit-Vertrag: jede Änderung in BEIDE); die Farbe ist die Flechte der Boden-Palette.
 AnazhRealm.LICHEN = Object.freeze({
     // Feuchte muss ≥ feuchteLo sein für Lichen-Wachstum (trockene Steine bleiben blank).
     feuchteLo: 0.5,
@@ -89750,28 +89956,11 @@ AnazhRealm.LICHEN = Object.freeze({
     // Maximaler Mix-Anteil (sehr subtil — Lichen ist eine Tönung, kein
     // Decken-Anstrich).
     strength: 0.22,
-    // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
-    tint: Object.freeze([0.42, 0.5, 0.34]),
 });
-// DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut; der Worker `attachFieldColors` spiegelt
-// sie hartkodiert — eine Änderung hier ist eine Änderung dort). dampEarth: dunklerer, satterer Erd-Ton, im
-// Mix-Stack ZWEITER (nach earth, vor lava/snow/sed/strand) — Glut/Schnee bleiben überschreibend. lava:
-// DUNKLES Basalt (die Glut sitzt im PBR-Emissiv, nicht in der Albedo). sand: Glocken-Profil am Ufer (Peak
-// +0,6 m über Wasser, 0 bei +2 m) + Submarine-Sand. packedDirt: getrampelte Pfad-Erde (V18.230 Ω-O6).
-// Schnee auf Prominenz: Start/Voll in m über der kontinentalen Basis.
-AnazhRealm.BODEN_FARBE = Object.freeze({
-    stone: Object.freeze([0.42, 0.44, 0.49]),
-    earth: Object.freeze([0.27, 0.49, 0.19]),
-    dampEarth: Object.freeze([0.22, 0.18, 0.12]),
-    lava: Object.freeze([0.32, 0.19, 0.15]),
-    violet: Object.freeze([0.55, 0.36, 0.86]),
-    snow: Object.freeze([0.92, 0.93, 1.0]),
-    sed: Object.freeze([0.78, 0.72, 0.52]),
-    sand: Object.freeze([0.87, 0.78, 0.55]),
-    packedDirt: Object.freeze([0.32, 0.26, 0.18]),
-    schneeProminenzStart: 50,
-    schneeProminenzVoll: 115,
-});
+// Schnee auf Prominenz (`_bodenFarbeAt`): Start/Voll in m über der kontinentalen Basis. Der Worker
+// `attachFieldColors` spiegelt die zwei Zahlen hartkodiert. Die Farben selbst sind die Boden-Palette
+// (`AnazhRealm.BODEN_FARBE`, Studio PORTAL_GROUND nach dem Farb-Gesetz).
+AnazhRealm.SCHNEE_PROMINENZ = Object.freeze({ start: 50, voll: 115 });
 
 // FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520,
 // magie λ160 m) — der Welt-Charakter emergiert aus dem Überlagerungs-Muster (Ecotone an
