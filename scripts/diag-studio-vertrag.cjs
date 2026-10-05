@@ -256,6 +256,20 @@ function validateManifest(m) {
                             if (!(typeof d[art] === "number" && d[art] > 0 && d[art] <= 1))
                                 v.push(`B2c: lod.budget.${k}[${st}].dichte.${art} muss in (0, 1] liegen`);
                 }
+                // S7: die Regler der Nahkrone — rinde {ast, reisig} in trunkR (0 < reisig < ast < 1), straehne {teile
+                // ganz >= 1, breite > 0} in Blattlaengen, boden in [0, 1) Baumhoehen.
+                if ("rinde" in z) {
+                    const r = z.rinde;
+                    if (!r || !(r.reisig > 0 && r.reisig < r.ast && r.ast < 1))
+                        v.push(`B2c: lod.budget.${k}[${st}].rinde muss 0 < reisig < ast < 1 tragen`);
+                }
+                if ("straehne" in z) {
+                    const r = z.straehne;
+                    if (!r || !(Number.isInteger(r.teile) && r.teile >= 1) || !(r.breite > 0 && isFinite(r.breite)))
+                        v.push(`B2c: lod.budget.${k}[${st}].straehne muss teile (ganz >= 1) und breite (> 0) tragen`);
+                }
+                if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
+                    v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
                 if ("deckung" in z) {
                     const d = z.deckung;
                     if (!Array.isArray(d) || d.length !== 2 || !(d[0] > 0 && d[0] <= 1 && d[1] >= 1 && isFinite(d[1])))
@@ -769,7 +783,17 @@ function validateManifest(m) {
                 kindStages: { shrub: [1, 2], rock: [0, 1] },
                 budget: {
                     shrub: {
-                        1: { tris: 10, draws: 1, schatten: 1, nadelKarte: -2, klinge: 1, dichte: { laub: 1.5 } },
+                        1: {
+                            tris: 10,
+                            draws: 1,
+                            schatten: 1,
+                            nadelKarte: -2,
+                            klinge: 1,
+                            dichte: { laub: 1.5 },
+                            rinde: { ast: 0.1, reisig: 0.3 },
+                            straehne: { teile: 0, breite: 1 },
+                            boden: 1.5,
+                        },
                         2: { tris: 5, draws: 2, schatten: false },
                         fernform: "karte",
                     },
@@ -819,6 +843,9 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("nadelKarte muss")) &&
             bvB.some((s) => s.includes("klinge muss")) &&
             bvB.some((s) => s.includes("dichte.laub muss")) &&
+            bvB.some((s) => s.includes("rinde muss")) &&
+            bvB.some((s) => s.includes("straehne muss")) &&
+            bvB.some((s) => s.includes("boden muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&
             bv.some((s) => s.includes("tree.fernform muss")) &&
             bvB.some((s) => s.includes("shrub.fernform — \"karte\" genau dann")) &&

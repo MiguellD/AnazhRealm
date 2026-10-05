@@ -107,6 +107,15 @@ function pageHtml() {
       nadel: core.BLATT_ATLAS_NADEL,
     };
   };
+  // DIE ATLAS-ALPHA fuer die Bild-Deckung (S7): Stufe 0 des Atlas-Bilds (bakeLeafAtlasBild, Textur-Ordnung — Zeile 0
+  // = v 0), nur der Alpha-Kanal; die Karten der Krone lesen sie je Pixel gegen die Schwelle ihres Stoffs.
+  window.__atlasAlpha = () => {
+    const core = window.__phytoCore;
+    const b = core.bakeLeafAtlasBild(document);
+    const a = new Uint8Array(b.breite * b.hoehe);
+    for (let i = 0; i < a.length; i++) a[i] = b.daten[i * 4 + 3];
+    return { w: b.breite, h: b.hoehe, b64: b64(a) };
+  };
   // DER KARTEN-RUNDLAUF (W6): der Studio-Bäcker bäckt die Karte (Kanal bake-impostor, ohne Schale = das rohe
   // Studio-Payload), der ECHTE Karten-Codec (phyto-core, hier im Seiten-Kontext) kodiert sie zur Atlas-Schicht und
   // dekodiert sie zurück. Gemessen: Alpha-Fehler an der Schwelle, Albedo-PSNR (opake Texel, sRGB), Normalwinkel
@@ -238,8 +247,9 @@ async function runWithWorker(port, cb) {
         const build = (msg) => page.evaluate((m) => window.__build(m), msg);
         const getData = (type) => page.evaluate((t) => window.__aget(t), type);
         const atlas = () => page.evaluate(() => window.__atlas());
+        const atlasAlpha = () => page.evaluate(() => window.__atlasAlpha());
         const karte = (presetId, seed, stoer) => page.evaluate((p, sd, st) => window.__karte(p, sd, st), presetId, seed, stoer || null);
-        const out = await cb({ build, getData, atlas, karte, pageErrors });
+        const out = await cb({ build, getData, atlas, atlasAlpha, karte, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {

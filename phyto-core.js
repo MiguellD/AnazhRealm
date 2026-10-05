@@ -175,6 +175,7 @@
                             phase: rnd() * 6.28,
                             omega: clamp(0.18 + 1.7 * (tipR / trunkR), 0.18, 2.4),
                             needle: true,
+                            run: myRun,
                         });
                     }
                 } else if (P.trop > 0.6) {
@@ -215,6 +216,7 @@
                                 phase: rnd() * 6.28,
                                 omega: 0.45,
                                 needle: false,
+                                run: wRun,
                             });
                         }
                         wp = np;
@@ -236,6 +238,7 @@
                             phase: rnd() * 6.28,
                             omega: clamp(0.18 + 1.7 * (tipR / trunkR), 0.18, 2.4),
                             needle: false,
+                            run: myRun,
                         });
                     }
                 }

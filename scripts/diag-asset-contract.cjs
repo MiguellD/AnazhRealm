@@ -12,6 +12,7 @@
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
+const { bildDeckung, kroneAus, kartenSkaliert, schwebe, unterBoden } = require("./lib/kronen-linse.cjs");
 
 const PORT = Number(process.env.CONTRACT_PORT || 4542);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
@@ -104,35 +105,17 @@ function meshDiff(tag, gold, live) {
 //  (A) STECKBRIEF — der gemalte EINE Blatt-Atlas passt in die deklarierten Kerne (Alpha>0 nie jenseits `kern`)
 //      und seine Füllungen sind die deklarierten (±0,01): Breitblatt-Zellen und Nadel-Zelle.
 //  (D) DECKUNG — die gebaute L1-Krone bedeckt die L0-Krone desselben Baums im Band budget.tree[1].deckung, als
-//      Verhältnis der mittleren Projektionen (Cauchy): Laub-Karte Fläche × Kern-Füllung / 2 (Kern-Füllung =
-//      fuellung / kern²), Nadel-Karte Fläche × Füllung / 2, Klinge Fläche / 2, Nadel-Rohr Oberfläche / 4 — je Art ×
-//      Samen × Saison. Seit W5 trägt auch die L0 Karten (Laub/Nadel) bzw. Strähnen (Trauer): dasselbe Band hält
-//      beide Kronen gegeneinander (die L0 ist auf die Klingen von gestern geeicht, 0,99–1,02).
+//      Verhältnis der BILD-DECKUNG (scripts/lib/kronen-linse.cjs, S7): die Silhouette gerastert in 24 Ansichten (acht
+//      Azimute × Blick-Hebung 0°/30°/60° von unten), Karten mit der Alpha des EINEN Atlas — ein Pixel zählt einmal.
+//      Die Flächen-Summe von gestern (mittlere Projektion nach Cauchy) sah keine Überlappung: sie meldete 0,99, das
+//      Labor-Bild zeigte 0,76 (Prüfer W5, R3). Je Art × Same (Sommer; die Winter-Krone ist dieselbe Gestalt).
+//  (S) SCHWEBE + BODEN — jede Karte einer Baum-L0 hängt an ihrer Rinde (oder an einer hängenden Karte: die Strähne ist
+//      eine Kette), kein Laub liegt unter dem Boden der Vorlage (Prüfer W5, R1/R2: schwebende Nadel-Karten, Strähnen
+//      ohne Peitsche und unter dem Boden-Rand). Rot nennt den Fall, die Zahl und eine Stelle.
 const dekodiere = (b64, Typ) => {
     const b = Buffer.from(b64, "base64");
     return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
 };
-function flaeche(meshes, kind) {
-    let a = 0;
-    for (const m of meshes || []) {
-        if (m.kind !== kind || !m.attrs.position || !m.index) continue;
-        const p = dekodiere(m.attrs.position.b64, Float32Array);
-        const ix = dekodiere(m.index, Uint32Array);
-        for (let t = 0; t < ix.length; t += 3) {
-            const i0 = ix[t] * 3,
-                i1 = ix[t + 1] * 3,
-                i2 = ix[t + 2] * 3;
-            const ax = p[i1] - p[i0],
-                ay = p[i1 + 1] - p[i0 + 1],
-                az = p[i1 + 2] - p[i0 + 2];
-            const bx = p[i2] - p[i0],
-                by = p[i2 + 1] - p[i0 + 1],
-                bz = p[i2 + 2] - p[i0 + 2];
-            a += 0.5 * Math.hypot(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx);
-        }
-    }
-    return a;
-}
 // Dreiecke und Sippen einer gebauten Antwort (Beipack ohne position zählt nicht).
 function kosten(meshes) {
     const ms = (meshes || []).filter((m) => m.attrs && m.attrs.position);
@@ -184,22 +167,16 @@ function steckbriefUrteil(atlas, breit, nadel) {
         v.push(`Nadel-Füllung ${atlas.fill[nadel.zelle].toFixed(4)} ≠ Steckbrief ${nadel.fuellung}`);
     return v;
 }
-// Die mittlere Projektion (× 2) einer Krone aus ihren Flächen: karte = Kartenfläche (foliageTex), klinge =
-// Fläche der Klingen bzw. Nadel-Rohre (foliage).
-function projektion(f, conifer, at) {
-    const fuell = conifer ? at.nadel.fuellung : at.steckbrief.fuellung / (at.steckbrief.kern * at.steckbrief.kern);
-    return f.karte * fuell + (conifer ? f.klinge / 2 : f.klinge);
+// Die Bild-Deckung eines Paars: L1 gegen L0 auf demselben Raster (Pixel-Kante = L0-Höhe / 300).
+function deckungsWert(p, atlas) {
+    const px = p.H / 300;
+    return bildDeckung(p.l1, atlas, px).mittel / bildDeckung(p.l0, atlas, px).mittel;
 }
-// Deckung je Paar: p.art ∈ laub | nadel | klinge (die Kronen-Art der L1), p.l0/p.l1 = {karte, klinge} je Stufe.
-function deckungsWert(p, at) {
-    return projektion(p.l1, p.conifer, at) / projektion(p.l0, p.conifer, at);
-}
-function deckungsUrteil(paare, band, at) {
+function deckungsUrteil(paare, band, atlas) {
     const v = [];
     for (const [k, p] of Object.entries(paare)) {
-        if (!p.l0 || !p.l1 || !(projektion(p.l0, p.conifer, at) > 0) || !(projektion(p.l1, p.conifer, at) > 0))
-            continue;
-        const d = deckungsWert(p, at);
+        if (!p.l0 || !p.l1 || !p.l0.length || !p.l1.length) continue;
+        const d = deckungsWert(p, atlas);
         p.deckung = d;
         if (d < band[0] || d > band[1])
             v.push(`${k} (${p.art}): L1 deckt ${d.toFixed(2)}x L0, Band [${band.join(", ")}]`);
@@ -225,7 +202,9 @@ function deckungsUrteil(paare, band, at) {
     const messungen = [];
     let wand = null;
     let karten = null;
-    await runWithWorker(PORT, async ({ build, getData, atlas, karte }) => {
+    const schwebeMess = [];
+    let schwebeProbe = null;
+    await runWithWorker(PORT, async ({ build, getData, atlas, atlasAlpha, karte }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -249,6 +228,16 @@ function deckungsUrteil(paare, band, at) {
         const artVon = (preset) => buch[preset] && buch[preset].kind;
         const gemessen = new Set(),
             gemessenFall = new Set();
+        // SCHWEBE + BODEN je gebauter Baum-L0 (Goldens und Gestalten der Welt).
+        const kroneWand = (c, a, fall) => {
+            if (c.lod !== 0 || artVon(c.presetId) !== "tree") return;
+            const sw = schwebe(a.meshes);
+            schwebeMess.push({ fall, karten: sw.karten, schwebend: sw.schwebend });
+            if (sw.schwebend > 0)
+                fails.push(`Schwebe: ${fall}: ${sw.schwebend} von ${sw.karten} Karten ohne Träger (z. B. bei ${sw.beispiel})`);
+            const yb = unterBoden(kroneAus(a.meshes));
+            if (yb < 0) fails.push(`Boden: ${fall}: Laub reicht bis y = ${yb.toFixed(3)} unter den Boden der Vorlage`);
+        };
         const miss = (c, a, fall) => {
             const kind = artVon(c.presetId);
             if (!budget || !budget[kind]) return;
@@ -288,15 +277,29 @@ function deckungsUrteil(paare, band, at) {
                     console.log(`DIVERGENZ-BYTES ${f} Mesh${mm[1]}.${mm[2]} ${roh.b64}`);
             } else ok++;
             miss(c, a, f.replace(/\.json$/, ""));
-            if (c.lod <= 1 && artVon(c.presetId) === "tree") {
+            kroneWand(c, a, f.replace(/\.json$/, ""));
+            if (c.lod <= 1 && artVon(c.presetId) === "tree" && c.season === "summer") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
                 const fx = (buch[c.presetId] && buch[c.presetId].fx) || {};
-                const pp = paare[pk] || (paare[pk] = { l0: null, l1: null, art: null, conifer: !!fx.conifer });
-                const fl = { karte: flaeche(a.meshes, "foliageTex"), klinge: flaeche(a.meshes, "foliage") };
-                if (c.lod === 0) pp.l0 = fl;
-                else {
-                    pp.art = fl.karte > 0 ? (fx.conifer ? "nadel" : "laub") : "klinge";
-                    pp.l1 = fl;
+                const pp = paare[pk] || (paare[pk] = { l0: null, l1: null, art: null, conifer: !!fx.conifer, H: 0 });
+                const krone = kroneAus(a.meshes);
+                if (c.lod === 0) {
+                    pp.l0 = krone;
+                    let lo = Infinity,
+                        hi = -Infinity;
+                    for (const m of a.meshes) {
+                        if (!m.attrs || !m.attrs.position) continue;
+                        const b = Buffer.from(m.attrs.position.b64, "base64");
+                        const p = new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4);
+                        for (let i = 1; i < p.length; i += 3) {
+                            if (p[i] < lo) lo = p[i];
+                            if (p[i] > hi) hi = p[i];
+                        }
+                    }
+                    pp.H = hi - Math.max(0, lo);
+                } else {
+                    pp.art = krone.some((m) => m.kind === "foliageTex") ? (fx.conifer ? "nadel" : "laub") : "klinge";
+                    pp.l1 = krone;
                 }
             }
             if (fails.length >= 8) break;
@@ -327,24 +330,32 @@ function deckungsUrteil(paare, band, at) {
                     for (let v = 1; v <= V; v++) {
                         if (gemessenFall.has(preset + "|" + v + "|" + lod)) continue;
                         const c = { presetId: preset, seed: v, lod, season: "summer" };
-                        miss(c, await build(c), `${preset}-s${v}-L${lod}-summer (Gestalt)`);
+                        const a = await build(c);
+                        miss(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
+                        kroneWand(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
                     }
                 }
             }
         // DER KARTEN-RUNDLAUF (W6): echte Studio-Bakes durch den Karten-Codec (BC) und zurück, plus der Selbsttest
         // (eine gestörte BC1-Albedo).
+        {
+            const pr = await build({ presetId: "fichte", seed: 7, lod: 0, season: "summer" });
+            schwebeProbe = pr.meshes;
+        }
         karten = { faelle: {}, gestoert: null };
         for (const [p, sd] of KARTEN_FAELLE) karten.faelle[p + "|" + sd] = await karte(p, sd);
         karten.gestoert = await karte(KARTEN_FAELLE[0][0], KARTEN_FAELLE[0][1], "bc1");
         const at = await atlas();
+        const aa = await atlasAlpha();
+        const alpha = { w: aa.w, h: aa.h, alpha: new Uint8Array(Buffer.from(aa.b64, "base64")), schwelle: 0.5 };
         const band = budget && budget.tree && budget.tree[1] && budget.tree[1].deckung;
-        wand = { at, band, budget, stufen, b1: budget && budget.tree && budget.tree[1] };
+        wand = { at, alpha, band, budget, stufen, b1: budget && budget.tree && budget.tree[1] };
         if (!budget) fails.push("Budget: render-config trägt kein lod.budget");
         else if (!Array.isArray(band)) fails.push("Budget: render-config trägt kein lod.budget.tree[1].deckung");
         else {
             fails.push(...kostenUrteil(messungen, budget).map((x) => "Kosten: " + x));
             fails.push(...steckbriefUrteil(at, at.steckbrief, at.nadel).map((x) => "Steckbrief: " + x));
-            fails.push(...deckungsUrteil(paare, band, at).map((x) => "Deckung: " + x));
+            fails.push(...deckungsUrteil(paare, band, alpha).map((x) => "Deckung: " + x));
         }
     });
     if (wand && wand.budget && Array.isArray(wand.band)) {
@@ -387,7 +398,9 @@ function deckungsUrteil(paare, band, at) {
         //  (4) eine Nadel-Karte 1,5× so lang MUSS das Band sprengen;
         //  (5) ein Kern unter der gemalten Ausdehnung MUSS den Steckbrief brechen;
         //  (6) Deckung an Laub-, Nadel- und Klingen-Paaren gemessen;
-        //  (7) eine L0-Karte 1,5× so groß (Laub und Nadel) MUSS das Band sprengen (W5: die Nah-Krone hält es auch).
+        //  (7) eine L0-Karte 1,5× so groß (Laub und Nadel) MUSS das Band sprengen (W5: die Nah-Krone hält es auch);
+        //  (8) eine Baum-L0 ohne ihre Rinde MUSS schweben (jede Karte ohne Träger);
+        //  (9) eine um ihre Höhe abgesenkte Krone MUSS unter dem Boden liegen.
         const halb = [],
             leer = [];
         for (const k of Object.keys(wand.stufen))
@@ -412,19 +425,33 @@ function deckungsUrteil(paare, band, at) {
         const s2 = leer.length === 0;
         const laubP = gemesseneP.filter(([, p]) => p.art === "laub");
         const nadelP = gemesseneP.filter(([, p]) => p.art === "nadel");
-        const mitKarte = (fl, m) => ({ karte: fl.karte * m, klinge: fl.klinge });
+        // Die Selbsttests der Deckung rastern je Kronen-Art EIN Paar neu (die Wand ist dieselbe Funktion).
+        const eins = (P) => P.slice(0, 1);
         const gestern = {};
-        for (const [k, p] of laubP)
-            gestern[k] = Object.assign({}, p, { l1: mitKarte(p.l1, Math.pow(2.35 / wand.b1.blattKarte, 2)) });
-        const s3 = laubP.length > 0 && deckungsUrteil(gestern, wand.band, at).length === laubP.length;
+        for (const [k, p] of eins(laubP))
+            gestern[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 2.35 / wand.b1.blattKarte) });
+        const s3 = laubP.length > 0 && deckungsUrteil(gestern, wand.band, wand.alpha).length === 1;
         const lang = {};
-        for (const [k, p] of nadelP) lang[k] = Object.assign({}, p, { l1: mitKarte(p.l1, 2.25) });
-        const s4 = nadelP.length > 0 && deckungsUrteil(lang, wand.band, at).length === nadelP.length;
+        for (const [k, p] of eins(nadelP)) lang[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 1.5) });
+        const s4 = nadelP.length > 0 && deckungsUrteil(lang, wand.band, wand.alpha).length === 1;
         const grossL0 = {};
-        for (const [k, p] of laubP.concat(nadelP)) grossL0[k] = Object.assign({}, p, { l0: mitKarte(p.l0, 2.25) });
+        for (const [k, p] of eins(laubP).concat(eins(nadelP)))
+            grossL0[k] = Object.assign({}, p, { l0: kartenSkaliert(p.l0, 1.5) });
         const s7 =
-            laubP.length + nadelP.length > 0 &&
-            deckungsUrteil(grossL0, wand.band, at).length === laubP.length + nadelP.length;
+            laubP.length > 0 && nadelP.length > 0 && deckungsUrteil(grossL0, wand.band, wand.alpha).length === 2;
+        const ohneRinde = (schwebeProbe || []).filter((m) => m.kind === "foliage" || m.kind === "foliageTex");
+        const sw8 = schwebe(ohneRinde);
+        const s8 = sw8.karten > 0 && sw8.schwebend === sw8.karten;
+        const tief = kroneAus(schwebeProbe || []).map((m) => {
+            const p = Float32Array.from(m.pos);
+            for (let i = 1; i < p.length; i += 3) p[i] -= 100;
+            return Object.assign({}, m, { pos: p });
+        });
+        const s9 = tief.length > 0 && unterBoden(tief) < 0;
+        const sMax = schwebeMess.reduce((m, x) => Math.max(m, x.schwebend), 0);
+        console.log(
+            `Schwebe-Wand: ${schwebeMess.length} Baum-L0 gemessen, ${schwebeMess.reduce((m, x) => m + x.karten, 0)} Karten, schwebend höchstens ${sMax}`
+        );
         const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
         const s6 = arten.has("laub") && arten.has("nadel") && arten.has("klinge");
@@ -432,9 +459,11 @@ function deckungsUrteil(paare, band, at) {
             `Selbsttest Budget-Wand: jede Zeile halbiert/−1 Sippe wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
                 `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 2,35 sprengt das Band ${s3 ? "✅" : "❌"} · ` +
                 `Nadel-Karte 1,5× sprengt das Band ${s4 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s5 ? "✅" : "❌"} · ` +
-                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"} · L0-Karte 1,5× sprengt das Band ${s7 ? "✅" : "❌"}`
+                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"} · L0-Karte 1,5× sprengt das Band ${s7 ? "✅" : "❌"} · ` +
+                `L0 ohne Rinde schwebt ${s8 ? "✅" : "❌"} · abgesenkte Krone liegt unter dem Boden ${s9 ? "✅" : "❌"}`
         );
-        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7) fails.push("Selbsttest der Budget-Wand feuert nicht");
+        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9)
+            fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
 
     // DER KARTEN-RUNDLAUF (W6) — das Urteil je Fall, dann der Selbsttest (die gestörte Schicht MUSS rot werden, die

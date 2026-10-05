@@ -101,13 +101,20 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
 - DARF-Regler einer Stufe (Form geprüft): `blattKarte` / `nadelKarte` (Kartenkante in Blatt- bzw.
   Nadel-Längen, endlich > 0) · `klinge` (Kontur-Segmente der Klinge, ganze Zahl ≥ 2) · `dichte` (je
-  Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte bzw. Strähne trägt, in (0, 1]) ·
+  Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte trägt, bzw. der Peitschen, die eine Strähne
+  tragen, in (0, 1]) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen) ·
+  `rinde` ({ast, reisig} in trunkR, 0 < reisig < ast < 1) · `boden` (tiefstes Laub in Baumhöhen, [0, 1)) ·
   `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
 - **Konsum:** `gate:asset-contract` baut jede gelieferte Gitter-Stufe über die echte Brücke (Goldens +
   jedes Rezept der Art bei Samen 7 + jede Gestalt der Welt, die Samen 1..V aus `gestalten`) und hält
   Dreiecke ≤ `tris`, Sippen ≤ `draws` — Rot nennt den Täter; der Selbsttest halbiert jede Zeile (und senkt
   `draws` um eins) und MUSS rot werden. Die Deckung misst er an gebauten L0/L1-Paaren als Verhältnis der
-  mittleren Projektionen; eine 1,5-fache L0-Karte MUSS das Band sprengen.
+  BILD-Deckung (`scripts/lib/kronen-linse.cjs`, S7: die Silhouette gerastert in 24 Ansichten — acht Azimute ×
+  Blick-Hebung 0°/30°/60° von unten —, Karten mit der Alpha des EINEN Atlas, ein Pixel zählt einmal; die
+  Flächen-Summe von gestern sah keine Überlappung und meldete 0,99, wo das Bild 0,76 zeigte); eine 1,5-fache
+  L0-Karte MUSS das Band sprengen. Je Baum-L0 (Goldens und Gestalten) hängt jede Karte an ihrer Rinde oder an
+  einer hängenden Karte (SCHWEBE) und kein Laub liegt unter dem Boden der Vorlage (BODEN); eine L0 ohne Rinde MUSS
+  schweben, eine abgesenkte Krone MUSS unter dem Boden liegen.
 - **`fernform`** je Art (Pflicht, kein Stufen-Schlüssel; nie `fern` — der Name der Farn-Art): was die Art
   jenseits der Nah-Grenze des Wirts IST (`AnazhRealm.ANALOG_NAH_M`, 64 m — diesseits trägt ihr Mesh) — `"karte"` (ihre
   Karten-Stufe; genau dann, wenn die letzte Stufe `karte: true` trägt), `"gesetz"` (ihr Satz im
@@ -129,11 +136,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
     gewachsenen Blattstellen, Kante 2,52 Blattgrößen (L1: 21 % mit 3,69) — Deckung 0,99 der Klingen;
   - **Nadel (Fichte, Tanne, Mammut):** Nadel-Karten aus der Nadel-Zelle auf 12 % der Nadeln, Kante 1,65
     Nadellängen (L1: 2,65 % mit 3,5) — Deckung 1,01 der Nadel-Röhren;
-  - **Trauer (Weide):** Strähnen — jede dritte Klinge (`dichte.trauer` 0,34) 1/dichte so lang bei gleicher
-    Breite, 4 Segmente: entlang der Peitsche schließt sich die Strähne;
-  - **Rinde:** Stamm und Starkäste (≥ 0,3·trunkR) ganz; Äste darunter jeden 2. Ring in der Radial-Teilung der
-    L1, Reisig unter 0,06·trunkR jeden 3. in der der L2; ganze Stränge unter 0,05·trunkR (Nadel 0,03, Trauer
-    0,04) fallen als Strang — kein Stummel; Wurzeln: die Primärstränge mit allen Ringen;
+  - **Trauer (Weide):** Strähnen — so W5; der Prüfer sah sie ohne Peitsche in der Luft hängen und unter den
+    Boden-Rand reichen (R1), S7 baut sie neu (unten);
+  - **Rinde:** so W5 — die Stränge unter 0,03–0,05·trunkR fielen samt den Zweigen, die Karten trugen (R2: Fichte
+    656 von 1406, Mammut 541 von 905 Karten ohne Zweig); S7 (unten);
   - **Strauch:** seine Nahstufe ist `shrub[1]` (11,6k ≤ 12k, unverändert).
   Gebogene Normalen (Kronen-Normale, Vorderseite nach außen) wurden im Lab gemessen und verworfen: der
   Doppelseiten-Stoff ohne Durchlicht färbte die Unteransicht dunkel (8-m-Blick unter der Eiche L* 23,2 → 14,0)
@@ -141,12 +147,29 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   18 000 Dreiecke, 3 Sippen, wirft seine L1** — die Zeile liegt offen 1,68× über dem Haushalts-Anteil, das
   L0-Band der Mess-Wiese verschiebt sich auf ~209k (vorher bei 20 m 2,16 M, bei den alten 12 m 647k); der
   L1-Überhang (46 Bäume × ≤ 10k + Werfer) ist nicht diese Zeile.
+- **Die Nahkrone hängt an ihrem Träger (S7, 05.10.).** Jedes gewachsene Blatt kennt seinen Lauf (`run`,
+  growSkeleton); jede gehaltene Karte und Strähne macht ihren Lauf und jeden Vorfahr zum TRÄGER — er wird gebaut,
+  ein Strang unter `rinde.ast`·trunkR ohne Träger fällt ganz (kein kahler Stock, keine schwebende Karte). Die Rinde
+  unter `rinde.ast` (0,4) trägt jeden 2. Ring, unter `rinde.reisig` (0,1) jeden 3. (mindestens Erst und Letzt),
+  beide in der Radial-Teilung der L1 (die L2-Vierkant las auf Armlänge als Brett). Die Wurzel-Primärstränge laufen
+  weiter und tauchen ab (zwei Ringe, der letzte unter dem Boden) statt stumpf zu enden. Die Weide: je Peitsche EINE
+  Strähne (`pushStraehne`) — zwei Stücke entlang der gewachsenen Bahn (die Biegung je Segment zur Lotrechten ist das
+  Gravitations-Gesetz des Wuchses), je Stück zwei gekreuzte Karten aus der unteren Hälfte der Nadel-Zelle, längs
+  gestreckt (der Fächer feiner Striche hängt vom Ansatz des Stücks herab und liest als schmale hängende Weidenblätter;
+  die ganze Zelle las als Stern, die Breitblatt-Rosette als Rosette), 0,72 Blattlängen breit,
+  nie unter `boden`·Baumhöhe; jede L0-Karte, die unter y = 0 reicht, fällt. Geeicht an der BILD-Deckung: die L0
+  deckt 0,96–1,01 (Laub, `blattKarte` 3,1 auf `dichte.laub` 0,42), 1,22–1,31 (Nadel, `nadelKarte` 1,85 — die
+  Nadel-Röhren von gestern deckten unter ihrer eigenen L1, die L1 deckt die L0 jetzt im Band) und 1,04–1,17 (Weide)
+  der L0 von gestern; L1/L0 1,00–1,12. Dreiecke höchstens 17 720 (Tanne s2). Gemessen mit SCHWEBE: 0 von 41 404 Karten
+  in 34 Baum-L0 (Goldens + Gestalten).
 - **Der EINE Blatt-Atlas als Textur** (`bakeLeafAtlasBild`, phyto-core): die gemalte Leinwand blutet (nicht
   deckende Texel tragen das Zell-Mittel statt Schwarz), alle Zellen tragen dasselbe lineare Mittel `wert`,
-  die Mip-Kette ist deckungstreu (Castaño: je Stufe hält derselbe Texel-Anteil die Alpha-Schwelle 0,5); jeder
-  Leser teilt die Atlas-Farbe durch `wert` — die Karten-Albedo ist im Mittel die Vertex-Farbe (FARB-GESETZ),
-  wie die Klinge. Gemessen (Lab, Albedo-Sicht): die Nadel-Karte las vorher mit 47 % ihrer Albedo, die
-  Nadel-Deckung fiel auf Mip-Stufe 4 von 0,24 auf 0,14.
+  die Mip-Kette ist die des Karten-Gesetzes (`impostorMips`, die vier Zellen als Ansichten nebeneinander: je Stufe
+  hält derselbe Texel-Anteil die Alpha-Schwelle 0,5 — S7, ein Mip-Gesetz für jede Karte); jeder Leser teilt die
+  Atlas-Farbe durch `wert` — die Karten-Albedo ist im Mittel die Vertex-Farbe (FARB-GESETZ), wie die Klinge. Das
+  Bild malt der Foundry-Worker und reicht es mit dem Buch (Transfer); der Haupt-Thread malt nur, wer vor dem Buch
+  fragt. Gemessen (Lab, Albedo-Sicht): die Nadel-Karte las vorher mit 47 % ihrer Albedo, die Nadel-Deckung fiel
+  auf Mip-Stufe 4 von 0,24 auf 0,14.
 - v1.3 trägt es foundry-core (tree · shrub · grass · flower · rock); die Zweit-Kerne folgen mit der
   Studio-Übertragung (Transport `zusatzBudget`, offen).
 
