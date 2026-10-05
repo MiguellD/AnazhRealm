@@ -900,7 +900,6 @@
     // `leaves`: [{pos, dir, up, scale, needle, sway, phase}] (aus growSkeleton).
     // `opts`: { leafColor:[r,g,b], scale (Multiplikator, Vorlage roh=1), cup (~0.5),
     //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc},
-    //           seg (Kontur-Segmente, ohne = 14 — die schlanke L1-Klinge des Trauerwuchses trägt weniger),
     //           grund ([r,g,b] am Klingen-Grund — die Farbe läuft bis `grundBis` (Anteil der Länge) in leafColor; die
     //                 Blüte: Saftmal und Schlund, BLUETEN_BLATT),
     //           biegen (die Spitze biegt um biegen·s²·Länge gegen die Mulde zurück — das Blütenblatt rollt sich aus der
@@ -914,8 +913,7 @@
             opts.leafShape && typeof opts.leafShape === "object"
                 ? opts.leafShape
                 : LEAF_SHAPES[opts.leafShape] || LEAF_SHAPES.ovate;
-        const SEG = opts.seg != null ? opts.seg : 14; // (SEG+1)·2 = 30 Verts, SEG·2 = 28 Tris je Blatt (Vorlage pushLeaf)
-        if (!(Number.isInteger(SEG) && SEG >= 2)) throw new Error("buildLeafBlades: seg muss eine ganze Zahl ≥ 2 sein");
+        const SEG = 14; // (SEG+1)·2 = 30 Verts, SEG·2 = 28 Tris je Blatt (Vorlage pushLeaf)
         const VPL = (SEG + 1) * 2;
         const IPL = SEG * 6;
         const list = leaves || [];

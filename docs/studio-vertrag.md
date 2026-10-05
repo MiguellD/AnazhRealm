@@ -101,9 +101,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
   (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
 - DARF-Regler einer Stufe (Form geprüft): `blattKarte` / `nadelKarte` (Kartenkante in Blatt- bzw.
-  Nadel-Längen, endlich > 0) · `klinge` (Kontur-Segmente der Klinge, ganze Zahl ≥ 2) · `dichte` (je
+  Nadel-Längen, endlich > 0) · `dichte` (je
   Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte trägt, bzw. der Peitschen, die eine Strähne
-  tragen, in (0, 1]) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen) ·
+  tragen, in (0, 1]) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen —
+  die Trauer-Krone in L0 und L1) ·
   `rinde` ({ast, reisig} in trunkR, 0 < reisig < ast < 1) · `boden` (tiefstes Laub in Baumhöhen, [0, 1)) ·
   `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
 - `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die

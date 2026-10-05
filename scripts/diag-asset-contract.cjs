@@ -541,7 +541,8 @@ function deckungsUrteil(paare, band, atlas) {
         );
         const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
-        const s6 = arten.has("laub") && arten.has("nadel") && arten.has("klinge");
+        // 05.10.: keine L1-Krone mehr aus Klingen (die Trauer-Klinge las als Papier-Streifen) — jede Krone ist Karte.
+        const s6 = arten.has("laub") && arten.has("nadel") && !arten.has("klinge") && gemesseneP.length >= 16;
         const fehlt = new Set();
         for (const x of kostenUrteil(messungen, wand.budgetOhneZB))
             if (x.endsWith("keine Budget-Zeile")) fehlt.add(wand.kernVonArt[x.slice(0, x.indexOf("["))]);
@@ -570,7 +571,7 @@ function deckungsUrteil(paare, band, atlas) {
             `Selbsttest Budget-Wand: jede Zeile halbiert/−1 Draw wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
                 `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 2,35 sprengt das Band ${s3 ? "✅" : "❌"} · ` +
                 `Nadel-Karte 1,5× sprengt das Band ${s4 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s5 ? "✅" : "❌"} · ` +
-                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"} · L0-Karte 1,5× sprengt das Band ${s7 ? "✅" : "❌"} · ` +
+                `${gemesseneP.length} Paare (Laub/Nadel, keine Klinge) ${s6 ? "✅" : "❌"} · L0-Karte 1,5× sprengt das Band ${s7 ? "✅" : "❌"} · ` +
                 `L0 ohne Rinde schwebt ${s8 ? "✅" : "❌"} · abgesenkte Krone liegt unter dem Boden ${s9 ? "✅" : "❌"} · ` +
                 `ohne zusatzBudget fehlt das Budget für ${fehlt.size}/6 Zweit-Kerne ${s10 ? "✅" : "❌ " + [...zweitKerne].filter((c) => !fehlt.has(c)).join(",")} · ` +
                 `ungefaltet über draws je Zweit-Art ${s11 ? "✅" : "❌ " + ohneFaltung.join(",")} · ` +

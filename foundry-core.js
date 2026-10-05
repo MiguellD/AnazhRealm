@@ -262,12 +262,13 @@ const PORTAL_RENDER_CONFIG = {
         // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
         // Gestalt der Welt — und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
-        // Laub-Karte in Blatt-Groessen), nadelKarte (Kante der Nadel-Karte in Nadel-Laengen), klinge (tree[1]: Segmente
-        // der Trauer-Klinge), dichte (L0: Anteil der gewachsenen Blattstellen, die eine Karte tragen, bzw. der Peitschen,
-        // die eine Straehne tragen — die L1 traegt ihren Anteil im Phaenotyp), straehne (L0-Trauer: Kartenbreite in
-        // Blattlaengen, Stuecke je Peitsche), rinde (L0: ast/reisig in trunkR — darunter jeder 2./3. Ring, ohne
-        // Traeger faellt der Strang), boden (L0: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die
-        // gebaute L1-Krone die L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an
+        // Laub-Karte in Blatt-Groessen), nadelKarte (Kante der Nadel-Karte in Nadel-Laengen), dichte (L0: Anteil der
+        // gewachsenen Blattstellen, die eine Karte tragen, bzw. der Peitschen, die eine Straehne tragen — die L1 traegt
+        // ihren Anteil im Phaenotyp), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
+        // 05.10.: die schlanke Trauer-Klinge der L1 ist gefallen, sie las als Papier-Streifen), rinde (L0: ast/reisig in
+        // trunkR — darunter jeder 2./3. Ring, ohne Traeger faellt der Strang), boden (tree[0], die Trauer-L1 liest
+        // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
+        // L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an
         // gebauten L0/L1-Paaren — 24 gerasterte Ansichten, kronen-linse —, die L0 deckt 0,95–1,05 der Klingen von gestern).
         // DIE FERNFORM je Art (`fernform`, B2c 04.10.; nie `fern` — das ist der Name der Farn-Art): was die Art jenseits
         // der Nah-Grenze des Wirts IST (AnazhRealm.ANALOG_NAH_M, 64 m; diesseits traegt ihr Mesh) — "karte" = ihre Karten-Stufe
@@ -295,7 +296,7 @@ const PORTAL_RENDER_CONFIG = {
                     schatten: 1,
                     blattKarte: 1.8,
                     nadelKarte: 3.35,
-                    klinge: 4,
+                    straehne: { teile: 1, breite: 0.45 },
                     deckung: [0.8, 1.15],
                 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
@@ -868,14 +869,14 @@ function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, co
 }
 
 // `bluete` (05.10.): { grund: [r, g, b] linear, grundBis, biegen } — das Blütenblatt (phyto-core BLUETEN_BLATT); ohne byte-gleich.
-function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, seg, bluete) {
+function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, bluete) {
     // DER GETEILTE SAMEN: die 30-Vert-Superformel-Blatt-KLINGE (Kontur + Quer-Mulde) lebt in
     // phyto-core.js (buildLeafBlades) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie-
     // REZEPTUR ist geteilt (identische superR-Kontur, cup, 14 Segmente, Basis). Divergenzen: das
     // Wind-Attribut-Schema (AnazhRealm aFlex/aPhase — Vorlage aWind/aCenter/aType, HIER angehängt)
     // und eine sub-mikron Float-Noise (≤1 ULP, ~1e-6 m; buildLeafBlades' Additions-Reihenfolge +
     // Math.hypot = AnazhRealms eingefrorene Arithmetik) → pixel-identisch, kein Look-Change. Alle
-    // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op. `seg` = Kontur-Segmente (ohne = 14).
+    // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op.
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.buildLeafBlades === "function") {
         const _r = __core.buildLeafBlades(
@@ -886,12 +887,11 @@ function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, 
                       scale: 1,
                       cup: cup,
                       leafShape: lp,
-                      seg: seg,
                       grund: bluete.grund,
                       grundBis: bluete.grundBis,
                       biegen: bluete.biegen,
                   }
-                : { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp, seg: seg }
+                : { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp }
         );
         if (_r && _r.count) {
             const g = new THREE.BufferGeometry();
@@ -1359,6 +1359,20 @@ function emitTree(P) {
         )
     )
         throw new Error("[phyto] lod.budget.shrub[1].reisig/rute/blattKarte/dichte fehlt (rute > reisig > 0)");
+    // DIE TRAUER-L1 (05.10.): ihre Peitschen sind Straehnen wie in der L0 — die Bahn jeder belaubten Peitsche wird VOR
+    // dem Radius-Schnitt festgehalten (die Peitsche ist duenner als 0,08·trunkR und faellt aus der Rinde; ihre Straehne
+    // haengt an der Bahn). Befund (Blick-Tour V18.530, Bild 01; Raycast `f:weide|1|1:2`): die L1 trug schlanke Klingen
+    // (4 Segmente) — auf 12–26 m ein Haufen breiter Papier-Streifen.
+    const _trauerL1 = __lod === 1 && P.kind === "tree" && (P.trop || 0) >= 0.55;
+    const _bahnL1 = new Map();
+    if (_trauerL1) {
+        const belaubt = new Set(nodes.leaves.map((l) => l.run));
+        for (const s of nodes.segs)
+            if (belaubt.has(s.runId)) {
+                if (!_bahnL1.has(s.runId)) _bahnL1.set(s.runId, []);
+                _bahnL1.get(s.runId).push(s);
+            }
+    }
     if (__lod > 0 && !(P.kind === "shrub" && __lod === 2)) {
         const kCut =
             __lod === 2
@@ -1399,10 +1413,14 @@ function emitTree(P) {
         if (_trauer && (!(_b0.boden > 0) || !_b0.straehne || !(_b0.straehne.breite > 0) || !(_b0.straehne.teile >= 1)))
             throw new Error("[phyto] lod.budget.tree[0].boden/straehne fehlt");
     }
-    // Die Trauer-L0 baut keine Einzel-Klinge: jede Peitsche (der Lauf, an dem growSkeleton ihre Blaetter
+    // Die Straehnen-Zeile der Trauer-L1 (tree[1].straehne) und das tiefste Laub (tree[0].boden, EINE Zahl der Art).
+    const _st1 = PORTAL_RENDER_CONFIG.lod.budget.tree[1].straehne;
+    if (_trauerL1 && (!(_b0.boden > 0) || !_st1 || !(_st1.breite > 0) || !(_st1.teile >= 1)))
+        throw new Error("[phyto] lod.budget.tree[1].straehne / tree[0].boden fehlt");
+    // Die Trauer-L0 und -L1 bauen keine Einzel-Klinge: jede Peitsche (der Lauf, an dem growSkeleton ihre Blaetter
     // haengt — `run`) wird EINE Straehne entlang ihrer gewachsenen Bahn. Die Straehnen-Wahl ist die Peitschen-Wahl.
     const _peitschen = new Map();
-    if (_L0 && _trauer) {
+    if ((_L0 || _trauerL1) && _trauer) {
         for (const l of nodes.leaves) {
             if (!_peitschen.has(l.run)) _peitschen.set(l.run, []);
             _peitschen.get(l.run).push(l);
@@ -1516,7 +1534,7 @@ function emitTree(P) {
     for (const rid of runs.keys()) {
         const mm = meta[rid];
         if (mm && mm.isLead) continue;
-        if (_L0 && _peitschen.has(rid)) continue; // die Peitsche ist ihre Straehne (unten)
+        if ((_L0 || _trauerL1) && _peitschen.has(rid)) continue; // die Peitsche ist ihre Straehne (unten)
         if (_L0 && runs.get(rid)[0].r0 < nodes.trunkR * _rz.ast && !_traeger.has(rid)) continue;
         let rings = strandRings(rid);
         const baseRing = rings[0];
@@ -1594,8 +1612,8 @@ function emitTree(P) {
     const lc = vegFarbe(seasonTint),
         lc2 = vegFarbe(seasonAccent);
     // DIE L1-KRONE (FIX v31/v32, H5 04.10.): Laub UND Nadel tragen L1 als KARTEN aus dem EINEN Atlas (Laub →
-    // Breitblatt-Zellen, Nadel → die Nadel-Zelle); der Trauerwuchs (Weide, trop ≥ 0,55) bleibt Klinge — die
-    // haengenden Straehnen SIND ihr Look —, aber eine schlanke (budget.tree[1].klinge Segmente statt 14). Der
+    // Breitblatt-Zellen, Nadel → die Nadel-Zelle); der Trauerwuchs (Weide, trop ≥ 0,55) traegt seit 05.10. auch in der
+    // L1 Straehnen aus dem Atlas (tree[1].straehne, unten) — die schlanke Klinge las als Papier-Streifen. Der
     // Strauch (05.10.): seine L1 ist die nahe Stufe (L0 wird auf L1 geklemmt) — sie trug Klingen, die L1-Aggregation
     // (Blatt ×2,05, 21 % der Stellen) machte daraus breite Papier-Streifen (Blick-Tour 01). Jetzt traegt er Karten aus
     // dem EINEN Atlas wie jede Laub-Krone, Kante shrub[1].blattKarte (gemessen an der Bild-Deckung der Klingen).
@@ -1606,7 +1624,8 @@ function emitTree(P) {
     // Das Bild braucht nur, wer zeichnet — das Labor (Haupt-Thread) hier, der Foundry-Worker erst, wenn er eine Karte
     // baeckt (__replyBakeImpostor). Fehlt der Maler, wirft bakeLeafAtlas laut (kein Rueckfall auf Klingen: die L0 hatte
     // dort halbkahle Kronen aus der Karten-Ausduennung).
-    if ((useTexL || (_L0 && _trauer)) && !_leafAtlas && globalThis.__PHYTO_FOUNDRY !== true) bakeLeafAtlas();
+    if ((useTexL || ((_L0 || _trauerL1) && _trauer)) && !_leafAtlas && globalThis.__PHYTO_FOUNDRY !== true)
+        bakeLeafAtlas();
     // DIE LEISE KONSOLE (08.07.): die per-Bau-INFO-Zeile flutete den Boot (~112 Zeilen)
     // und ertraenkte echte Signale — nur noch hinter dem Debug-Flag (__phytoDebug).
     if (__lod === 1 && globalThis.__phytoDebug)
@@ -1616,8 +1635,8 @@ function emitTree(P) {
                     ? P.conifer
                         ? "Nadel-KARTEN"
                         : "Multi-Blatt-KARTEN"
-                    : (P.trop || 0) >= 0.55
-                      ? "Trauerwuchs-KLINGEN (Straehnen-Look)"
+                    : _trauerL1
+                      ? "Trauerwuchs-STRAEHNEN"
                       : "GEOMETRIE")
         );
     const folGeosTex = [];
@@ -1626,18 +1645,15 @@ function emitTree(P) {
     // Atlas-Steckbrief des Kerns — fehlt eins, ist das ein Vertragsbruch, kein stiller Rueckfall auf ein Literal.
     const _atl = self.__phytoCore;
     // Die L0 liest ihre Zeile (tree[0]) wie die L1 die ihre: Kante der Laub-Karte in Blatt-Groessen, der Nadel-Karte
-    // in Nadel-Laengen, Segmente der Trauer-Klinge. Deckung ~ dichte · Kante² (Wahrnehmung ~ n·s², FIX v29).
+    // in Nadel-Laengen. Deckung ~ dichte · Kante² (Wahrnehmung ~ n·s², FIX v29).
     const _bz = _strauchKarte ? _bS1 : _L0 ? _b0 : _b1,
         _zn = _strauchKarte ? "shrub[1]" : _L0 ? "tree[0]" : "tree[1]";
     const _blattKarte = useTexL && !P.conifer ? _bz.blattKarte : 0;
     const _nadelKarte = useTexL && P.conifer ? _bz.nadelKarte : 0;
     if (useTexL && !(P.conifer ? _nadelKarte > 0 : _blattKarte > 0))
         throw new Error("[phyto] lod.budget." + _zn + "." + (P.conifer ? "nadelKarte" : "blattKarte") + " fehlt");
-    const _klinge = __lod === 1 && P.kind === "tree" && _trauer ? _b1.klinge : undefined;
-    if (_klinge !== undefined && !(Number.isInteger(_klinge) && _klinge >= 2))
-        throw new Error("[phyto] lod.budget." + _zn + ".klinge fehlt");
-    // Die Trauer-L0 traegt keine Klinge: ihre Blaetter reisen in den Straehnen (unten).
-    for (const l of _L0 && _trauer ? [] : nodes.leaves) {
+    // Die Trauer-L0 und -L1 tragen keine Klinge: ihre Blaetter reisen in den Straehnen (unten).
+    for (const l of (_L0 || _trauerL1) && _trauer ? [] : nodes.leaves) {
         if (l.needle) {
             const col = vegFarbe(0x2e5526).lerp(lc, 0.2);
             if (useTexL) {
@@ -1692,16 +1708,18 @@ function emitTree(P) {
             } // FIX v32: ALLE Blattstellen, 2 statt 28 Dreiecke. Die Kante kommt aus dem Budget (lod.budget.tree[1].blattKarte, 04.10.: 1,8 statt 2,35 — gemessen deckte die Krone 1,7x L0, die Atlas-Fuellung ist 0,16, nicht ~0,85)
             else {
                 const lp = P.leafShape;
-                pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, lp, tint, 1, l.sway, l.phase, l.omega, 0.5, _klinge);
+                pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, lp, tint, 1, l.sway, l.phase, l.omega, 0.5);
             }
         }
     }
-    // DIE TRAUER-STRAEHNE der L0 (S7): jede gehaltene Peitsche wird EINE Karten-Kette entlang ihrer gewachsenen Bahn
-    // (pushStraehne) — Breite `straehne.breite` Blattlaengen, `straehne.teile` Stuecke, nie unter `boden`·Baumhoehe.
-    if (_L0 && _trauer) {
+    // DIE TRAUER-STRAEHNE der L0 (S7) und der L1 (05.10.): jede gehaltene Peitsche wird EINE Karten-Kette entlang ihrer
+    // gewachsenen Bahn (pushStraehne) — Breite `straehne.breite` Blattlaengen, `straehne.teile` Stuecke (die Zeile der
+    // Stufe: tree[0] bzw. tree[1]), nie unter `boden`·Baumhoehe. Die L1 liest die Bahn von vor dem Radius-Schnitt.
+    if ((_L0 || _trauerL1) && _trauer) {
         const _bodenY = nodes.height * _b0.boden;
+        const _st = _L0 ? _b0.straehne : _st1;
         for (const [w, Lw] of _peitschen) {
-            const sg = runs.get(w);
+            const sg = _L0 ? runs.get(w) : _bahnL1.get(w);
             if (!sg || !sg.length || !Lw.length) continue;
             const pts = [sg[0].p0].concat(sg.map((x) => x.p1));
             let Lm = 0;
@@ -1718,11 +1736,11 @@ function emitTree(P) {
                 folGeosTex,
                 pts,
                 Lm,
-                _b0.straehne.breite * Lm,
+                _st.breite * Lm,
                 Lw,
                 farben,
                 _bodenY,
-                _b0.straehne.teile,
+                _st.teile,
                 _lq++ % _atl.BLATT_ATLAS_BREIT.zellen,
                 _atl.BLATT_ATLAS_BREIT.kern
             );
@@ -1892,7 +1910,6 @@ function emitFlower(P) {
                 a,
                 1.3,
                 0.45,
-                undefined,
                 bl
             );
         }

@@ -339,6 +339,10 @@ const FORBIDDEN = [
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
     { token: "Ammo.destroy(", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
+    // Welle 5 (05.10.): die schlanke Trauer-Klinge der Baum-L1 (tree[1].klinge Kontur-Segmente) las auf 12–26 m als
+    // Papier-Streifen (Blick-Tour Bild 01, f:weide|1|1:2) — die Trauer-L1 trägt Strähnen aus dem Atlas (tree[1].straehne).
+    { token: "_b1.klinge", fiel: "Welle 5 — die Trauer-L1 trägt Strähnen (tree[1].straehne), keine Klinge" },
+    { token: "_klinge", fiel: "Welle 5 — die Segment-Zahl der Trauer-Klinge (pushLeaf seg) ist mit ihr gefallen" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
