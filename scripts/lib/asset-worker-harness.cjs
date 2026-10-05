@@ -106,6 +106,7 @@ function pageHtml() {
       steckbrief: core.BLATT_ATLAS_BREIT,
       nadel: core.BLATT_ATLAS_NADEL,
       gross: core.BLATT_ATLAS_GROSS,
+      weide: core.BLATT_ATLAS_WEIDE,
     };
   };
   // DIE ATLAS-ALPHA fuer die Bild-Deckung (S7): Stufe 0 des Atlas-Bilds (bakeLeafAtlasBild, Textur-Ordnung — Zeile 0

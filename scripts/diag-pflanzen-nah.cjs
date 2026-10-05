@@ -27,6 +27,8 @@
 //      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
 //  (U) UNTERSEITE — die Blatt-Unterseite (phyto-core BLATT_UNTERSEITE) hat ihre zwei Leser: den Laub-Shader des Labors
 //      (foundry-core) und den Laub-Stoff der Welt (anazhRealm).
+//  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
+//      der hängenden Rute). Vorher die Großblatt-Zelle: runde Hasel-Blätter an der Weide (Prüfer W5, Bild weide-8m).
 //  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC1 ab Stufe 0, rgba ab
 //      Stufe 1), das Labor das blutende Bild. Je Format, Zelle und Zell-Größe (≥ FRACHT_MIN_ZELLE px) wird die GPU
 //      nachgerechnet (sRGB-Dekodierung je Texel, bilinear linear, alphaTest 0,5) und der EINE Leser der Welt angewandt
@@ -266,6 +268,24 @@ function nadelMass(fall, T, skala) {
     return { v: nadel <= NADEL_MAX_M ? [] : [`${fall}: Nadel ${nadel.toFixed(3)} m > ${NADEL_MAX_M} m`], m: { nadel } };
 }
 // (K) die L1-Krone eines Baums trägt keine Klinge (kind "foliage").
+// (W) DIE WEIDE trägt Weiden-Blätter: jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE),
+// u in [zelle/4, (zelle+1)/4]. Vorher (Prüfer W5, Bild weide-8m) las sie die Großblatt-Zelle — runde Hasel-Blätter.
+function weidenZelle(fall, T) {
+    const z = PC.BLATT_ATLAS_WEIDE.zelle;
+    let n = 0,
+        aus = 0;
+    for (const t of T) {
+        if (t.kind !== "foliageTex" || !t.uv) continue;
+        for (let i = 0; i < t.uv.length; i += 2) {
+            n++;
+            if (t.uv[i] < z / 4 - 1e-6 || t.uv[i] > (z + 1) / 4 + 1e-6) aus++;
+        }
+    }
+    return {
+        v: n && !aus ? [] : [`${fall}: ${aus} von ${n} Karten-Ecken lesen nicht die Weiden-Zelle ${z}`],
+        m: { weidenEcken: n },
+    };
+}
 function klingenL1(fall, T) {
     const n = T.filter((t) => t.kind === "foliage").reduce((s, t) => s + (t.idx ? t.idx.length / 3 : 0), 0);
     return { v: n ? [`${fall}: L1-Krone aus ${n} Klingen-Dreiecken (Papier-Streifen)`] : [], m: { klingen: n } };
@@ -422,6 +442,7 @@ function leserUrteil(quelle) {
         const fx = (buch[f.presetId] && buch[f.presetId].fx) || {};
         const kind = buch[f.presetId].kind;
         let u = { v: [], m: {} };
+        const trauerArt = buch[f.presetId].s && buch[f.presetId].s.trop >= 0.55;
         if (kind === "tree" && f.lod === 1) u = klingenL1(k, f.T);
         else if (kind === "tree") {
             u = rindeUrteil(k, f.T, fx.barkType || (fx.conifer ? "conifer" : "oak"), f.presetId !== "totholz");
@@ -438,6 +459,11 @@ function leserUrteil(quelle) {
             u.v.push(...b.v);
             Object.assign(u.m, b.m);
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
+        if (kind === "tree" && trauerArt) {
+            const w = weidenZelle(k, f.T);
+            u.v.push(...w.v);
+            Object.assign(u.m, w.m);
+        }
         ergebnis[k] = u;
         fails.push(...u.v);
         zeilen.push(
@@ -538,6 +564,19 @@ function leserUrteil(quelle) {
         unterseiteUrteil({ "anazhRealm.js": quellen["anazhRealm.js"].replace(/__phytoCore\.BLATT_UNTERSEITE/g, "X") })
             .length === 1,
     ]);
+    if (weide1)
+        st.push([
+            "Weide in der Großblatt-Zelle",
+            weidenZelle(
+                "hasel",
+                weide1.T.map((t) => {
+                    if (t.kind !== "foliageTex" || !t.uv) return t;
+                    const uv = Float32Array.from(t.uv);
+                    for (let i = 0; i < uv.length; i += 2) uv[i] += 0.25;
+                    return Object.assign({}, t, { uv });
+                })
+            ).v.length > 0,
+        ]);
     st.push(["BC1 gerade gelesen (ohne ÷ alpha)", frachtUrteil(frachtReihen(bild, false)).length > 0]);
     st.push([
         "Leser teilt nicht durch alpha",

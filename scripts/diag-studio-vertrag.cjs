@@ -278,6 +278,10 @@ function validateManifest(m) {
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
+                // Welle 5 (Integration 05.10.): das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
+                // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
+                if (("schnitt" in z || "rute" in z) && !(z.schnitt > 0 && z.rute > z.schnitt && z.rute < 1))
+                    v.push(`B2c: lod.budget.${k}[${st}] muss 0 < schnitt < rute < 1 tragen`);
                 // W8 — `band` = das Profi-Band-Ziel der Stufe, solange die gebaute Huelle (`tris`) darueber liegt:
                 // ganze Zahl > 0 und < tris (erreicht die Stufe das Band, faellt das Feld und tris IST das Band).
                 if ("band" in z && !(Number.isInteger(z.band) && z.band > 0 && Number.isInteger(z.tris) && z.band < z.tris))
@@ -935,6 +939,8 @@ function validateManifest(m) {
                             dichte: { laub: 1.5 },
                             rinde: { ast: 0.1, reisig: 0.3 },
                             straehne: { teile: 0, breite: 1 },
+                            schnitt: 0.2,
+                            rute: 0.1,
                             boden: 1.5,
                             band: 10,
                         },
@@ -1007,6 +1013,7 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("dichte.laub muss")) &&
             bvB.some((s) => s.includes("rinde muss")) &&
             bvB.some((s) => s.includes("straehne muss")) &&
+            bvB.some((s) => s.includes("schnitt < rute")) &&
             bvB.some((s) => s.includes("boden muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&
             bv.some((s) => s.includes("tree.fernform muss")) &&

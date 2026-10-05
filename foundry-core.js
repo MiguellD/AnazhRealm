@@ -304,7 +304,8 @@ const PORTAL_RENDER_CONFIG = {
             },
             // Der Strauch (05.10.): seine L1 traegt Karten aus dem EINEN Atlas (blattKarte = Kante in Blatt-Groessen, an der
             // Bild-Deckung der Klingen von gestern geeicht: kronen-linse 0,95–0,98 ueber die Samen 1/7/12345) und das Reisig
-            // bis reisig·trunkR (vorher 0,15), unter rute·trunkR als Vierkant auf jedem 3. Ring — die Karten geben die
+            // bis schnitt·trunkR (der Radius-Schnitt, vorher 0,15), unter rute·trunkR als Vierkant auf jedem 3. Ring (der
+            // Name `reisig` meinte in tree[0].rinde eine Ring-Duennung — der Schnitt heisst seit der Integration `schnitt`) — die Karten geben die
             // Dreiecke der Klingen (8 820 → 630) an die Ruten zurueck (Strauch-L1 11 572 → 7 442, Samen 7). Zweiter Schnitt
             // (05.10., Blatt-Mass): das Atlas-Blatt ist halb so lang — die Karte waechst (2,1 → 3,0), nur der Anteil
             // dichte.laub der Blattstellen traegt eine (315 → 142 Karten): Hasel-Blatt 0,036 → 0,051 m, Bild-Deckung 1,10.
@@ -315,7 +316,7 @@ const PORTAL_RENDER_CONFIG = {
                     schatten: 1,
                     blattKarte: 3.0,
                     dichte: { laub: 0.45 },
-                    reisig: 0.05,
+                    schnitt: 0.05,
                     rute: 0.15,
                 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
@@ -954,8 +955,9 @@ function pushNeedle(arr, base, dir, len, color, sway, phase, omega) {
 // Zelle `zelle` (Kern `kern`) ist eine Breitblatt-Zelle (05.10.): der Blatt-Zweig HAENGT — sein Ansatz (der untere
 // Leinwand-Rand des Kerns) liegt am oberen Ende des Stuecks, seine Spitze unten; laengs gestreckt lesen seine Blaetter
 // als die schmalen haengenden Weidenblaetter an ihren Zweiglein. (Vorher die untere Haelfte der Nadel-Zelle — seit die
-// Nadel-Zelle benadelte Zweiglein traegt, hingen dort Farn-Wedel.) `zelle` ist die Grossblatt-Zelle (BLATT_ATLAS_GROSS:
-// das Weidenblatt ist laenger als das Baum-Blatt der 512er-Zelle), Kern wie die Baum-Zweige.
+// Nadel-Zelle benadelte Zweiglein traegt, hingen dort Farn-Wedel; danach die Grossblatt-Zelle — runde Hasel-Blaetter an
+// der Weide.) `zelle` ist die Weiden-Zelle (BLATT_ATLAS_WEIDE, Integration 05.10.: lanzettliche Blaetter an der
+// haengenden Rute), Kern wie die Baum-Zweige.
 // Farbe/Wind aus dem Blatt des Stuecks; aType 1 (Laub: die Saison-Praesenz zieht jede Karte auf ihre Mitte — im Winter
 // traegt die Trauer-L0 wie ihre L1 keine Peitsche).
 function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zelle, kern) {
@@ -1065,7 +1067,7 @@ function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zel
 function bakeLeafAtlas() {
     if (_leafAtlas) return;
     // DER GETEILTE SAMEN: der Blatt-Atlas lebt in phyto-core.js (bakeLeafAtlasCanvas malt, bakeLeafAtlasBild mippt) — EIN Maler, EIN Layout
-    // fuer Studio, Foundry-Worker und Host (Zellen 0..1 Baum-Zweig, 2 Grossblatt-Zweig, 3 Nadel-Zweiglein; die Karten
+    // fuer Studio, Foundry-Worker und Host (Zelle 0 Baum-Zweig, 1 Weiden-Zweig, 2 Grossblatt-Zweig, 3 Nadel-Zweiglein; die Karten
     // routen ueber BLATT_ATLAS_BREIT/BLATT_ATLAS_GROSS/BLATT_ATLAS_NADEL). Der Worker hat kein document — er malt in eine OffscreenCanvas.
     // Ohne Samen kein stiller Inline-Zwilling (der alte Inline-Maler mit vier Breitblatt-Zellen ist gefallen).
     // Die TEXTUR ist das Atlas-Bild des Kerns (W5, bakeLeafAtlasBild): blutend, Zell-Mittel gleich, deckungstreue
@@ -1342,7 +1344,7 @@ function emitTree(P) {
      sind jetzt ueber L0/L1/L2 UND das Billboard dasselbe Individuum. */
     // Der Radius-Schnitt der L1 (H2/H5, nach dem Wuchs): Laub 0,05·trunkR; Konifere und Trauerwuchs 0,08 (ihre
     // duennen Aeste liegen unter den Nadel-Karten bzw. hinter dem Blatt-Vorhang); der Strauch liest seinen Schnitt aus
-    // dem Budget (shrub[1].reisig, 05.10.: das Reisig unter der Blatt-Masse IST sein Nahbild — die Karten-Krone gibt
+    // dem Budget (shrub[1].schnitt, 05.10.: das Reisig unter der Blatt-Masse IST sein Nahbild — die Karten-Krone gibt
     // die Dreiecke der Klingen an die Ruten zurück). Die L2 bleibt, wie sie war.
     // Unter shrub[1].rute·trunkR ist der Strang Reisig: Vierkant-Roehre (die Radial-Teilung der L2) auf jedem 3. Ring.
     const _bS1 = PORTAL_RENDER_CONFIG.lod.budget.shrub[1];
@@ -1351,15 +1353,16 @@ function emitTree(P) {
         _strauchRute &&
         !(
             _bS1 &&
-            _bS1.reisig > 0 &&
-            _bS1.rute > _bS1.reisig &&
+            _bS1.schnitt > 0 &&
+            _bS1.rute > _bS1.schnitt &&
+            _bS1.rute < 1 &&
             _bS1.blattKarte > 0 &&
             _bS1.dichte &&
             _bS1.dichte.laub > 0 &&
             _bS1.dichte.laub <= 1
         )
     )
-        throw new Error("[phyto] lod.budget.shrub[1].reisig/rute/blattKarte/dichte fehlt (rute > reisig > 0)");
+        throw new Error("[phyto] lod.budget.shrub[1].schnitt/rute/blattKarte/dichte fehlt (1 > rute > schnitt > 0)");
     // DIE TRAUER-L1 (05.10.): ihre Peitschen sind Straehnen wie in der L0 — die Bahn jeder belaubten Peitsche wird VOR
     // dem Radius-Schnitt festgehalten (die Peitsche ist duenner als 0,08·trunkR und faellt aus der Rinde; ihre Straehne
     // haengt an der Bahn). Befund (Blick-Tour V18.530, Bild 01; Raycast `f:weide|1|1:2`): die L1 trug schlanke Klingen
@@ -1379,7 +1382,7 @@ function emitTree(P) {
             __lod === 2
                 ? 0.13
                 : P.kind === "shrub"
-                  ? _bS1.reisig
+                  ? _bS1.schnitt
                   : P.conifer || (P.trop || 0) >= 0.55
                     ? 0.08
                     : 0.05;
@@ -1744,7 +1747,7 @@ function emitTree(P) {
                 farben,
                 _bodenY,
                 _st.teile,
-                _atl.BLATT_ATLAS_GROSS.zelle,
+                _atl.BLATT_ATLAS_WEIDE.zelle,
                 _atl.BLATT_ATLAS_BREIT.kern
             );
         }
