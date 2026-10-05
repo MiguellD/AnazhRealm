@@ -62416,6 +62416,8 @@ class AnazhRealm {
         }
         g2.boundingSphere = srcGeom.boundingSphere;
         g2.boundingBox = srcGeom.boundingBox;
+        // Die Fassade zeichnet, was ihre Quelle zeichnet (der Wurf-Teil des Schatten-Zwillings ist ein drawRange).
+        g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);
         g2.userData._lodFacade = true;
         g2.userData._h0Tpl = h0;
         g2.userData._h0LTpl = h0L;
@@ -68697,6 +68699,9 @@ class AnazhRealm {
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
         if (m.tuer && typeof m.tuer.seite === "number") mesh.userData.__tuer = m.tuer;
+        // DER WURF-TEIL (W6, Umschlag out.wurf, additiv): die Baum-L1 nennt je Teil die Zahl ihrer werfenden Dreiecke
+        // (der Vorsatz des Index) — der Schatten-Zwilling wirft nur ihn (`_foundrySchattenGeom`).
+        if (Number.isInteger(m.wurf)) mesh.userData.__wurf = m.wurf;
         return mesh;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
@@ -69241,20 +69246,26 @@ class AnazhRealm {
     // L1→L2-Band zur Karte aus — die Karte wirft nicht). Dieselben Puffer, derselbe Stoff, kein Programm mehr; EIN
     // Zwilling je Gestalt und Teil, gleich welche Stufe ihn ruft (`_foundryFlattenFor`: die L0 und die L1 tragen
     // dieselben Zwillings-Leaves, eine Gruppe je Pass). Die Gestalt gehört dem L1-Leaf und fällt mit ihm
-    // (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1.
+    // (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1. DER WURF-TEIL (W6): nennt das Teil seinen Wurf
+    // (`lf.wurf`, die Dreiecke des Index-Vorsatzes), zeichnet der Zwilling nur diesen Vorsatz (drawRange) — derselbe
+    // Index, dieselben Puffer.
     _foundrySchattenGeom(lf) {
         const g = lf && lf.geom;
-        if (!g || !g.attributes || !g.attributes.aLodLevel) return g;
+        if (!g || !g.attributes) return g;
+        const voll = (g.index ? g.index.count : g.attributes.position.count) / 3;
+        const teil = Number.isInteger(lf.wurf) && lf.wurf < voll;
+        if (!g.attributes.aLodLevel && !teil) return g;
         if (lf._schattenGeom) return lf._schattenGeom;
         const z = new THREE.BufferGeometry();
         for (const k in g.attributes) z.setAttribute(k, g.attributes[k]);
-        z.setAttribute(
-            "aLodLevel",
-            new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(3), 1)
-        );
+        if (g.attributes.aLodLevel)
+            z.setAttribute(
+                "aLodLevel",
+                new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(3), 1)
+            );
         if (g.index) z.setIndex(g.index);
         z.drawRange.start = g.drawRange.start;
-        z.drawRange.count = g.drawRange.count;
+        z.drawRange.count = teil ? lf.wurf * 3 : g.drawRange.count;
         if (g.boundingSphere) z.boundingSphere = g.boundingSphere.clone();
         if (g.boundingBox) z.boundingBox = g.boundingBox.clone();
         lf._schattenGeom = z;
@@ -69380,6 +69391,8 @@ class AnazhRealm {
                     // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
                     tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
                     sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
+                    // der Wurf-Teil des Teils (Dreiecke des Index-Vorsatzes, die werfen), wo das Studio ihn nennt
+                    wurf: child.userData && Number.isInteger(child.userData.__wurf) ? child.userData.__wurf : undefined,
                     leafKey: "f:" + key + ":" + p,
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
@@ -69390,10 +69403,18 @@ class AnazhRealm {
             this._foundryFlatVerschmelzen(group, leaves);
             if (zwillingsQuelle) {
                 // Die Teile (schon verschmolzen) werfen als Zwilling (`_foundrySchattenGeom`, Stempel 3); die Gestalt
-                // gehört dem Teil dieses Flats und fällt mit ihm.
+                // gehört dem Teil dieses Flats und fällt mit ihm. Nennt die Stufe einen WURF-TEIL (B2c `wurf`, Baum-L1),
+                // wirft jedes Teil nur seinen Vorsatz (`lf.wurf` Dreiecke) — ein Teil ohne Wurf (die Wurzeln) wirft nicht,
+                // ein Teil ohne Wurf-Zahl ist ein Vertragsbruch (KERN-PFLICHT), nie still ganz.
+                const mitWurf = !!this._foundryBudgetZeile(preset, lod).wurf;
                 const n = leaves.length;
                 for (let i = 0; i < n; i++) {
                     const lf = leaves[i];
+                    if (mitWurf && !Number.isInteger(lf.wurf))
+                        AnazhRealm._kernPflichtBruch(
+                            "phyto:lod.budget." + preset + "[" + lod + "].wurf (Teil ohne Wurf-Zahl)"
+                        );
+                    if (lf.wurf === 0) continue;
                     leaves.push(
                         Object.assign({}, lf, {
                             leafKey: lf.leafKey + "#S",
@@ -69466,10 +69487,27 @@ class AnazhRealm {
             let n = 0;
             for (const i of idx) n += leaves[i].geom.attributes.position.count;
             if (n > globalThis.__phytoCore.BUDGET_GESETZ.verschmelzVerts) continue;
-            const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
+            // Der Wurf-Teil (W6): tragen die Teile einen Wurf-Vorsatz, stehen im verschmolzenen Index ALLE Vorsätze vorn
+            // (der Zwilling wirft deren Summe); ein Teil ohne Wurf-Zahl wirft ganz.
+            const wurfe = idx.map((i) => leaves[i].wurf);
+            const mitWurf = wurfe.some((w) => Number.isInteger(w));
+            const geo = AnazhRealm._geoVerbinden(
+                idx.map((i) => leaves[i].geom),
+                mitWurf ? wurfe : null
+            );
             if (!geo) continue;
             const erst = leaves[idx[0]];
-            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true });
+            let wurf;
+            if (mitWurf) {
+                wurf = 0;
+                for (const i of idx) {
+                    const g = leaves[i].geom;
+                    wurf += Number.isInteger(leaves[i].wurf)
+                        ? leaves[i].wurf
+                        : (g.index ? g.index.count : g.attributes.position.count) / 3;
+                }
+            }
+            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true, wurf });
             for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
             for (const k in geo.attributes) bytes += geo.attributes[k].array.byteLength;
             if (geo.index) bytes += geo.index.array.byteLength;
@@ -69485,7 +69523,9 @@ class AnazhRealm {
     }
     // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
     // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form.
-    static _geoVerbinden(geoms) {
+    // `wurfe` (W6, je Geometrie die Dreiecke ihres Wurf-Vorsatzes oder undefined = ganz): der Index legt erst alle
+    // Vorsätze, dann alle Reste — der verschmolzene Vorsatz ist die Summe (nur indiziert; sonst null).
+    static _geoVerbinden(geoms, wurfe) {
         const g0 = geoms[0];
         const namen = Object.keys(g0.attributes);
         const indiziert = !!g0.index;
@@ -69514,15 +69554,30 @@ class AnazhRealm {
             }
             out.setAttribute(k, new THREE.BufferAttribute(arr, b.itemSize, b.normalized));
         }
+        if (wurfe && !indiziert) return null;
         if (indiziert) {
             const idx = nV > 65535 ? new Uint32Array(nI) : new Uint16Array(nI);
+            const basen = [];
             let o = 0,
                 basis = 0;
             for (const g of geoms) {
-                const ia = g.index.array;
-                for (let i = 0; i < g.index.count; i++) idx[o++] = ia[i] + basis;
+                basen.push(basis);
                 basis += g.attributes.position.count;
             }
+            // Ohne Wurf ein Durchgang (der ganze Index je Geometrie), mit Wurf zwei: die Vorsätze, dann die Reste.
+            const schnitt = (j) =>
+                wurfe && Number.isInteger(wurfe[j])
+                    ? Math.min(geoms[j].index.count, wurfe[j] * 3)
+                    : geoms[j].index.count;
+            for (let j = 0; j < geoms.length; j++) {
+                const ia = geoms[j].index.array;
+                for (let i = 0, n = schnitt(j); i < n; i++) idx[o++] = ia[i] + basen[j];
+            }
+            if (wurfe)
+                for (let j = 0; j < geoms.length; j++) {
+                    const ia = geoms[j].index.array;
+                    for (let i = schnitt(j); i < geoms[j].index.count; i++) idx[o++] = ia[i] + basen[j];
+                }
             out.setIndex(new THREE.BufferAttribute(idx, 1));
         }
         out.computeBoundingBox();

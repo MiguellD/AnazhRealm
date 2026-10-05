@@ -5219,6 +5219,10 @@ init();
         // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
         // Pflanzen tragen das Feld nie — additiv, must-ignore).
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
+        // DER WURF-TEIL REIST MIT (W6, additiv, must-ignore): die Baum-L1 nennt je Teil die Zahl der Dreiecke, die werfen
+        // (der Vorsatz des Index, foundry-core tree[1].wurf) — der Wirt wirft nur diesen Vorsatz. Andere Teile tragen das
+        // Feld nie (ihre Replies bleiben byte-alt).
+        if (mesh.userData && Number.isInteger(mesh.userData.__wurf)) out.wurf = mesh.userData.__wurf;
         // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
         // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
         // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut

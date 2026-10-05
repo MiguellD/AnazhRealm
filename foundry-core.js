@@ -271,7 +271,10 @@ const PORTAL_RENDER_CONFIG = {
         // L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an
         // gebauten L0/L1-Paaren — 24 gerasterte Ansichten, kronen-linse —, die L0 deckt 0,95–1,05 der Klingen von gestern),
         // ringToleranz (tree[1], W6 05.10.: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so
-        // viele Baumhoehen von der Strecke seiner Nachbarn abweichen; 0,001 = 0,7 px an der L1-Nahkante, __ringBahn).
+        // viele Baumhoehen von der Strecke seiner Nachbarn abweichen; 0,001 = 0,7 px an der L1-Nahkante, __ringBahn),
+        // wurf (tree[1], W6 05.10.: der Wurf-Teil — Rinden-Straenge ab durchmesserM Welt-Durchmesser werfen, feinere,
+        // Totast-Stummel und Wurzeln nur im Bild; 0,17 m = der Kaskaden-Texel k0 der Welt, AnazhRealm.SCHATTEN_KASKADE.texelM[0],
+        // gate:foundry-crossfade haelt beide Zahlen gleich).
         // DIE FERNFORM je Art (`fernform`, B2c 04.10.; nie `fern` — das ist der Name der Farn-Art): was die Art jenseits
         // der Nah-Grenze des Wirts IST (AnazhRealm.ANALOG_NAH_M, 64 m; diesseits traegt ihr Mesh) — "karte" = ihre Karten-Stufe
         // (Baum, Strauch: das gebackene Billboard), "gesetz" = ihr Satz im Welt-March (Blume, Fels: die Passung der
@@ -301,6 +304,7 @@ const PORTAL_RENDER_CONFIG = {
                     straehne: { teile: 1, breite: 0.45 },
                     deckung: [0.8, 1.15],
                     ringToleranz: 0.001,
+                    wurf: { durchmesserM: 0.17 },
                 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
@@ -806,6 +810,7 @@ function addMerged(geos, mat, weld) {
     m.castShadow = true;
     m.receiveShadow = true;
     subject.add(m);
+    return m;
 }
 
 function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, col0, col1, type, barkTex) {
@@ -1300,7 +1305,7 @@ function emitRoots(P) {
         }
         buildTube(geos, ringe, P, colA, colB, P._trunkR); // Wurzel tritt aus dem Strebepfeiler-Wulst aus -> fliessender Uebergang, keine Fuge noetig
     }
-    addMerged(geos, barkMat);
+    return addMerged(geos, barkMat);
 }
 
 // U2b (V18.467) — DAS RINDEN-GESETZ WOHNT IM PFLANZEN-GESETZBUCH: vn2/fbm2
@@ -1520,6 +1525,22 @@ function emitTree(P) {
     }
     const barkGeos = [],
         folGeos = [];
+    // DER WURF-TEIL DER L1 (W6, 05.10., tree[1].wurf): die Rinde der Mittelfeld-Stufe liegt als EIN Teil vor, die
+    // werfenden Straenge zuerst — Stamm und Aeste ab wurf.durchmesserM Welt-Durchmesser (der Kaskaden-Texel k0 der Welt),
+    // dahinter die feineren Straenge, die Totast-Stummel und (eigener Teil) die Wurzeln. Das Teil traegt die Zahl seiner
+    // werfenden Dreiecke (`userData.__wurf`, der Vorsatz des Index): der Wirt wirft nur diesen Vorsatz, gezeichnet wird das
+    // ganze Teil. Ein Strang unter dem Texel faellt im Schatten unter das Raster (er flackert nur); Krone und Starkaeste
+    // werfen wie bisher. Befund (Mess-Wiese, werkbank band): Eiche und Birke warfen ihre Zweige (0,04–0,11 m) in k0 —
+    // 45–50 % ihrer L1-Dreiecke unter einem Texel von 0,17 m.
+    const _wurf1 = __lod === 1 && P.kind === "tree" ? PORTAL_RENDER_CONFIG.lod.budget.tree[1].wurf : null;
+    if (__lod === 1 && P.kind === "tree" && !(_wurf1 && _wurf1.durchmesserM > 0))
+        throw new Error("[phyto] lod.budget.tree[1].wurf.durchmesserM fehlt");
+    const _plz = PORTAL_RENDER_CONFIG.placement,
+        _skB = _wurf1 ? _plz.scale[CURRENT] : 0,
+        _skW = _skB === 1 ? 1 : _skB < 1 ? _skB : _skB * _plz.treeScaleMul; // die Welt-Skala der Art (wie der Wald pflanzt)
+    if (_wurf1 && !(_skW > 0)) throw new Error("[phyto] placement.scale." + CURRENT + " fehlt (Wurf-Teil der L1)");
+    const _wurfR = _wurf1 ? _wurf1.durchmesserM / (2 * _skW) : 0; // der Radius-Schnitt in Vorlagen-Einheiten
+    const barkFein = _wurfR > 0 ? [] : barkGeos;
     const barkBase = new THREE.Color(P.barkA),
         barkTip = new THREE.Color(P.barkB);
     const flare = P.flare || 0,
@@ -1619,14 +1640,15 @@ function emitTree(P) {
                 { c: [cx, -bd * 0.18, cz], r: R0 * 0.84, sway: 0, depth: baseRing.depth, fuss: true },
             ].concat(rings);
         }
-        buildTube(barkGeos, rings, P, barkBase, barkTip, nodes.trunkR, undefined, undefined, _roehre);
+        const _senke = _wurfR > 0 && baseRing.r < _wurfR ? barkFein : barkGeos;
+        buildTube(_senke, rings, P, barkBase, barkTip, nodes.trunkR, undefined, undefined, _roehre);
         const s0 = runs.get(rid)[0];
         const rMutter = s0.depth > 0 ? __mutterRing(s0) : 0;
         if (s0.depth > 0 && baseRing.r > nodes.trunkR * 0.035 && !(rMutter > 0 && baseRing.r < rMutter * 0.8)) {
             const cc = barkBase
                 .clone()
                 .lerp(barkTip, clamp(s0.p0[1] / nodes.height, 0, 1) * 0.5 + (s0.depth / Math.max(1, P.maxDepth)) * 0.3);
-            pushJointSphere(barkGeos, s0.p0, baseRing.r * 1.5, cc, s0.sway0);
+            pushJointSphere(_senke, s0.p0, baseRing.r * 1.5, cc, s0.sway0);
         }
     }
     {
@@ -1669,7 +1691,7 @@ function emitTree(P) {
                     depth: 1,
                 });
             }
-            buildTube(barkGeos, stubRings, P, deadA, deadB, nodes.trunkR, true, 0.85); // STAMM-Oberflaeche, keine Floete, schliesst im Punkt
+            buildTube(barkFein, stubRings, P, deadA, deadB, nodes.trunkR, true, 0.85); // STAMM-Oberflaeche, keine Floete, schliesst im Punkt
         }
     }
     const lc = vegFarbe(seasonTint),
@@ -1832,10 +1854,21 @@ function emitTree(P) {
             __holzEnde(barkGeos, b.p, b.d, b.r, P, splitter, false, vegFarbe(0x8a7a62), vegFarbe(0x9a8e7e));
         __totholzRinde(barkGeos, nodes, P);
     }
-    addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
-    emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
-    addMerged(folGeos, foliageMat);
-    if (folGeosTex.length) addMerged(folGeosTex, foliageMatTex); // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
+    // Der Wurf-Vorsatz: die werfenden Straenge stehen zuerst im Teil (mergeBufferGeometries haengt in Reihenfolge an).
+    let _wurfDreiecke = 0;
+    if (_wurfR > 0) for (const g of barkGeos) _wurfDreiecke += (g.index ? g.index.count : g.attributes.position.count) / 3;
+    const _rinde = addMerged(_wurfR > 0 ? barkGeos.concat(barkFein) : barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
+    const _wurzel = emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
+    const _laub = addMerged(folGeos, foliageMat);
+    const _karten = folGeosTex.length ? addMerged(folGeosTex, foliageMatTex) : null; // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
+    if (_wurfR > 0) {
+        // Jedes Teil der L1 nennt seinen Wurf: die Rinde ihren Vorsatz, die Wurzeln keinen (sie liegen am Boden), die
+        // Krone sich ganz.
+        if (_rinde) _rinde.userData.__wurf = _wurfDreiecke;
+        if (_wurzel) _wurzel.userData.__wurf = 0;
+        for (const m of [_laub, _karten])
+            if (m) m.userData.__wurf = (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3;
+    }
     return nodes;
 }
 
