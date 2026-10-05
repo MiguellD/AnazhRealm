@@ -2973,6 +2973,15 @@
         for (const a of BUDGET_GESETZ.formAttr) if (m[a] && m[a].array) f += "," + a;
         return f;
     }
+    // DIE SIPPE eines Teils — die EINE Verschmelz-Regel: Teile derselben Sippe (Stoff × Attribut-Form) zeichnet der
+    // Wirt als EIN Leaf; er liest sie hier (`_foundryBuildMesh` stempelt sie ans Mesh, der Flatten
+    // `_foundryFlatVerschmelzen` und die Starr-Bindung des Ofens `_ofenStarrBinden` gruppieren danach), das Gesetz
+    // zählt mit ihr (`budgetSippen`). Ein Flügel-Teil (eigenes Scharnier) und eine Haut (eigenes SkinnedMesh) sind keine
+    // Sippe (null): je Teil ein Draw. gate:sippen-wirt misst Gesetz gegen Leaves an jeder Art und Stufe.
+    function budgetSippe(m) {
+        if (!_budgetTeil(m) || m.tuer || (m.skinIndex && m.skinIndex.array)) return null;
+        return budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+    }
     // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht).
     function budgetSippen(meshes) {
         let tris = 0,
@@ -2984,11 +2993,11 @@
             const nv = m.position.array.length / 3;
             tris += _budgetTris(m);
             verts += nv;
-            if (m.tuer || (m.skinIndex && m.skinIndex.array)) {
+            const k = budgetSippe(m);
+            if (k === null) {
                 draws++;
                 continue;
             }
-            const k = budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
             let g = gr.get(k);
             if (!g) gr.set(k, (g = { n: 0, v: 0, gelenk: false }));
             g.n++;
@@ -3412,6 +3421,7 @@
         budgetLook: budgetLook,
         budgetSeite: budgetSeite,
         budgetGlut: budgetGlut,
+        budgetSippe: budgetSippe, // die EINE Verschmelz-Regel eines Teils (Wirt: Flatten + Ofen, Gesetz: Draws)
         budgetSippen: budgetSippen, // Dreiecke + Draws einer gelieferten Stufe nach der Regel des Wirts
         budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)

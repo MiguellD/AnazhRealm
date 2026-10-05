@@ -17126,7 +17126,7 @@ class AnazhRealm {
     // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
     // Kopf · Kiefer · Schwanzspitze …) hing als eigenes Mesh an seinem Gelenk — ein Draw plus ein Schatten-Draw
     // je Teil. Gemessen 02.10. (Mess-Wiese, Holz voll): 5 nahe Wölfe = 421 von 474 Draws, je Wolf 35 starre
-    // Teile. Teile mit DEMSELBEN Material (Farbe reist als Vertex-Farbe), demselben Schatten- und Attribut-Satz
+    // Teile. Teile derselben Sippe (Stoff × Attribut-Form, phyto-core `budgetSippe`; die Farbe reist als Vertex-Farbe)
     // verschmelzen zu EINEM SkinnedMesh; jeder Vertex hängt starr an sein Gelenk (skinIndex = Gelenk, Gewicht
     // 1), die GPU posiert, was vorher der Szenen-Graph je Teil trug. Die Gelenke bleiben Gelenke: Gang,
     // Lid-Skala, Iris, Halter, Fern-Fit (dominanter Bone) lesen dieselben Objekte. Geometrie im Wurzel-Raum der
@@ -17145,23 +17145,15 @@ class AnazhRealm {
             if (Array.isArray(n.material) || !n.material || n.visible === false) return;
             const g = n.geometry;
             if (!g.attributes.position || (g.morphAttributes && Object.keys(g.morphAttributes).length)) return;
-            if (n.userData && n.userData.__tuer) return; // Tür-Flügel drehen sich selbst
+            // DIE SIPPE des Budget-Gesetzes (phyto-core `budgetSippe`, am Mesh gestempelt) sagt, was bindet — dieselbe
+            // Regel, mit der es die Draws zählt; null (Tür-Flügel drehen sich selbst, eine Haut ist ihr eigenes
+            // SkinnedMesh) bindet nie. Zwei Materialien teilen nie eine Geometrie.
+            const sippe = n.userData ? n.userData.__sippe : null;
+            if (!sippe) return;
             let gelenk = n.parent;
             while (gelenk && gelenk.isMesh) gelenk = gelenk.parent;
             if (!gelenk || !gelenk.name || namen.get(gelenk.name) !== gelenk) return;
-            const sig = Object.keys(g.attributes)
-                .sort()
-                .map((k) => k + ":" + g.attributes[k].itemSize)
-                .join(",");
-            const key =
-                n.material.uuid +
-                "|" +
-                (n.castShadow ? 1 : 0) +
-                (n.receiveShadow ? 1 : 0) +
-                "|" +
-                ((n.userData && n.userData.__klasse) || "") +
-                "|" +
-                sig;
+            const key = sippe + "|" + n.material.uuid;
             let gr = gruppen.get(key);
             if (!gr) gruppen.set(key, (gr = []));
             gr.push({ mesh: n, gelenk });
@@ -68824,6 +68816,9 @@ class AnazhRealm {
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
         if (globalThis.__phytoCore.budgetLook(m.kind)) mesh.userData.__klasse = m.kind;
+        // DIE SIPPE (phyto-core `budgetSippe`, die EINE Verschmelz-Regel): Flatten und Ofen gruppieren nach ihr, das
+        // Budget-Gesetz zählt mit ihr — null (Flügel, Haut) verschmilzt nie.
+        mesh.userData.__sippe = globalThis.__phytoCore.budgetSippe(m);
         // V18.465 — das Tür-Scharnier reist ans Mesh (Umschlag out.tuer, additiv):
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
@@ -69501,6 +69496,7 @@ class AnazhRealm {
                     localMatrix: I,
                     // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
                     tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
+                    sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
                     leafKey: "f:" + key + ":" + p,
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
@@ -69561,23 +69557,15 @@ class AnazhRealm {
     // und Region. Teile gleichen Materials und gleicher Attribut-Form liegen im selben Template-Raum (localMatrix
     // je Flat geteilt) → EINE Geometrie, ein Leaf. Tür-Flügel bleiben einzeln (eigene Scharnier-Matrix), schwere
     // Teile (Baum-L0 — Konifere ~143k je Teil —, über phyto-core `BUDGET_GESETZ.verschmelzVerts` zusammen) auch —
-    // die Kopie verdoppelte ihren Speicher für einen Draw; dieselbe Zahl zählt das Budget-Gesetz (`budgetSippen`).
+    // die Kopie verdoppelte ihren Speicher für einen Draw. WAS verschmilzt, sagt das Budget-Gesetz: die Sippe des Teils
+    // (phyto-core `budgetSippe`, am Mesh gestempelt) — dieselbe Regel, mit der es die Draws zählt (`budgetSippen`);
+    // keine eigene Signatur im Wirt. Die Material-Identität steht dabei: zwei Materialien teilen nie eine Geometrie.
     // Die verschmolzene Geometrie gehört der Cache-Gruppe (`_eigen`): ihr Dispose und ihre Bytes laufen mit.
     _foundryFlatVerschmelzen(group, leaves) {
-        const sig = (lf) => {
-            const g = lf.geom;
-            if (lf.tuer || !g || !g.attributes || !g.attributes.position) return null;
-            if (g.groups && g.groups.length) return null;
-            if (g.morphAttributes && Object.keys(g.morphAttributes).length) return null;
-            const a = Object.keys(g.attributes)
-                .sort()
-                .map((k) => k + ":" + g.attributes[k].itemSize + (g.attributes[k].normalized ? "n" : ""))
-                .join(",");
-            return lf.mat.uuid + "|" + (lf.castShadow ? 1 : 0) + "|" + (g.index ? "i" : "x") + "|" + a;
-        };
         const sippen = new Map();
         for (let i = 0; i < leaves.length; i++) {
-            const k = sig(leaves[i]);
+            const lf = leaves[i];
+            const k = lf.sippe ? lf.sippe + "|" + lf.mat.uuid : null;
             if (!k) continue;
             if (!sippen.has(k)) sippen.set(k, []);
             sippen.get(k).push(i);

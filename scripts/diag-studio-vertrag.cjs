@@ -693,11 +693,29 @@ function validateManifest(m) {
         const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\(mesh\) \{[\s\S]*?\n {4}\}/);
         if (!oe || !/out\.mat\.seh = mat\.userData\.__seh/.test(oe[0]))
             f.push("Wirt: _ofenMeshEintragAusThree reicht die Seh-Klasse nicht (mat.seh)");
+        // Integration W8 (Prüfer W8 (c)) — DIE SIPPE IST EINE REGEL: die Konversion stempelt phyto-core `budgetSippe` ans
+        // Mesh, der Flatten trägt sie aufs Leaf, Flatten und Starr-Bindung gruppieren nach ihr — keine eigene
+        // Attribut-Signatur im Wirt (gate:sippen-wirt misst Gesetz gegen Leaves im Spiel).
+        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\(m\) \{[\s\S]*?\n {4}\}/);
+        if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm[0]))
+            f.push("Wirt: _foundryBuildMesh stempelt die Sippe nicht (budgetSippe)");
+        if (!/sippe: child\.userData \? child\.userData\.__sippe/.test(realmSrc))
+            f.push("Wirt: der Flatten trägt die Sippe nicht aufs Leaf");
+        const fv = realmSrc.match(/\n {4}_foundryFlatVerschmelzen\(group, leaves\) \{[\s\S]*?\n {4}\}/);
+        if (!fv || !/lf\.sippe \? lf\.sippe \+/.test(fv[0]) || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(fv[0]))
+            f.push("Wirt: _foundryFlatVerschmelzen gruppiert nicht nach der Sippe des Gesetzes");
+        const sb = realmSrc.match(/\n {4}static _ofenStarrBinden\(root\) \{[\s\S]*?\n {4}\}/);
+        if (
+            !sb ||
+            !/n\.userData \? n\.userData\.__sippe/.test(sb[0]) ||
+            /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(sb[0])
+        )
+            f.push("Wirt: _ofenStarrBinden bindet nicht nach der Sippe des Gesetzes");
         return f;
     };
     const lU = leserUrteil(realm, phytoNC);
     check(
-        "W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel · Seh-Klasse beider Extraktoren)",
+        "W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel · Seh-Klasse beider Extraktoren · Sippe in Flatten und Ofen)",
         lU.length === 0,
         lU[0] || ""
     );
@@ -707,6 +725,14 @@ function validateManifest(m) {
     check(
         "SELBST-TEST: ein Ofen-Extraktor ohne Seh-Klasse feuert die Leser-Probe",
         sehAus !== realm && leserUrteil(sehAus, phytoNC).some((s) => s.includes("Seh-Klasse"))
+    );
+    const sippeAus = realm.replace(
+        "mesh.userData.__sippe = globalThis.__phytoCore.budgetSippe(m)",
+        "mesh.userData.__sippe = null"
+    );
+    check(
+        "SELBST-TEST: eine Konversion ohne Sippen-Stempel feuert die Leser-Probe",
+        sippeAus !== realm && leserUrteil(sippeAus, phytoNC).some((s) => s.includes("stempelt die Sippe"))
     );
 
     // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen

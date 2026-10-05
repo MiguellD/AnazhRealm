@@ -241,6 +241,11 @@ const FORBIDDEN = [
     // budgetRegler · budgetFuellFarbe).
     { token: "AnazhRealm.LOOK_KLASSEN", fiel: "Integration W8 — phyto-core LOOK_KLASSEN / budgetLook ist die EINE Liste" },
     { token: "FOUNDRY_VERSCHMELZ_VERTS", fiel: "Integration W8 — phyto-core BUDGET_GESETZ.verschmelzVerts" },
+    // Integration W8 (Prüfer W8 (c)): die Verschmelz-Signaturen des Wirts (Flatten: Material · Schatten · Index · alle
+    // Attribute; Ofen: Material · Schatten · Look-Klasse · Attribute) waren Zwillinge der Sippe des Gesetzes — beide
+    // gruppieren nach phyto-core `budgetSippe` (gate:sippen-wirt misst Gesetz gegen Leaves an jeder Art und Stufe).
+    { token: "(lf.castShadow ? 1 : 0)", fiel: "Integration W8 — der Flatten verschmilzt nach budgetSippe" },
+    { token: "(n.receiveShadow ? 1 : 0)", fiel: "Integration W8 — die Starr-Bindung bindet nach budgetSippe" },
     // DER WALDBODEN INS STUDIO (04.10.) — der Host erzeugt nichts, was ein Studio kann: die Klein-Vegetation (eigene
     // Strip-/Kreuz-Geometrie je Art, das Art-Material mit eigenem Wind, die Chunk-Streu, das Deko-Fernfeld, die
     // Deck-Streu, die Host-Ökologie Nische/Bodendecker/Kronen-Lesart) ist gefallen; die Nah-Streu liest das

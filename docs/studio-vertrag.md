@@ -87,8 +87,9 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - **Vollständig:** jede Art aus den eigenen `kindStages` × jede deklarierte Stufe trägt eine Zeile;
   keine Zeile für eine nicht deklarierte Stufe oder Art.
 - `tris` (ganze Zahl > 0) = Obergrenze der Dreiecke je Instanz · `draws` (ganze Zahl ≥ 1) = Obergrenze
-  der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index = Draws je Instanz-Gruppe
-  und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1), oder `false`.
+  der Sippen je Instanz (die EINE Verschmelz-Regel phyto-core `budgetSippe`: Stoff × Attribut-Form × Index —
+  der Flatten und die Starr-Bindung des Ofens gruppieren nach ihr, das Gesetz zählt mit ihr = Draws je
+  Instanz-Gruppe und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1), oder `false`.
 - **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
   Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
   `false` wirft nicht) und für die Nah-Wiese — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
@@ -140,8 +141,9 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   über JEDEN Samen 1..V seiner Gestalten) und hält Dreiecke ≤ `tris`, Draws ≤ `draws` (phyto-core `budgetSippen`,
   die Regel des Wirts) — Rot nennt den Täter; Selbsttests: jede Zeile halbiert (und `draws` um eins gesenkt) MUSS
   rot werden, ohne `zusatzBudget` fehlt das Budget für alle sechs Zweit-Kerne, je Zweit-Art liegt ≥ 1 Fall
-  ungefaltet über `draws` (die Faltung ist der Konsument). Im Wirt: `gate:portal-gestalt` (das Tor kommt auf
-  `gate[0].draws` an, ≤ 8 Flügel-Slots) und `gate:kreatur-kosten` (Ofen-Guss). Die Deckung misst er an
+  ungefaltet über `draws` (die Faltung ist der Konsument). Im Wirt: `gate:sippen-wirt` (im Spiel: Gesetz-Draws und
+  -Dreiecke == die Leaves des Wirts für jede Art mit Budget auf jeder Geometrie-Stufe, Flatten und Ofen),
+  `gate:portal-gestalt` (das Tor kommt auf `gate[0].draws` an, ≤ 8 Flügel-Slots) und `gate:kreatur-kosten` (Ofen-Guss). Die Deckung misst er an
   gebauten L0/L1-Paaren als Verhältnis der BILD-Deckung (`scripts/lib/kronen-linse.cjs`, S7: die Silhouette gerastert in 24 Ansichten — acht Azimute ×
   Blick-Hebung 0°/30°/60° von unten —, Karten mit der Alpha des EINEN Atlas, ein Pixel zählt einmal; die
   Flächen-Summe von gestern sah keine Überlappung und meldete 0,99, wo das Bild 0,76 zeigte); eine 1,5-fache
