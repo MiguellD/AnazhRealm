@@ -392,8 +392,8 @@ async function runPartB() {
         const stageOfKey = (k) => {
             // Welle B: der platzierte Bau keyt nach Studio-Geometrie (`f:…`/`fimp:…` am Anfang), die Streu `typ#f:…`;
             // Welle A: der Koerper-Schluessel ist saisonfrei (`f:preset|v|lod:teil` oder `…|lod|ov:…`).
-            // Der Schatten-Zwilling der L0 (`…#S`, wirft die L1-Gestalt, kamera-unsichtbar) ist keine Stufe — mit den
-            // Studio-Distanzen (W5, d0 20 m) steht die L0 auch AUSSERHALB des Bandes, wo er sonst als L1 zählte.
+            // Der Schatten-Zwilling der L0 (`…#S`, wirft die L1-Gestalt, kamera-unsichtbar) ist keine Stufe — die L0
+            // steht auch AUSSERHALB des Bandes, wo er sonst als L1 zählte.
             if (/#S$/.test(k)) return null;
             if (/(^|#)fimp:/.test(k)) return 2;
             const m = /(^|#)f:[^|]+\|\d+\|(\d)[|:]/.exec(k);
@@ -593,9 +593,9 @@ async function runPartB() {
             }
         }
         // Blatt-Kappe 24 (Studio): großer Baum (bh 36) bei dr 20 → dnL = 20·min(lodRef/24, 1).
-        // Die Erwartung rechnet aus der LIVE-cfg (dasselbe Muster wie stageStudio oben) — seit W5 liest die
-        // Welt die Studio-Distanzen ohne Umweg (thresh01 = d0 = 20 → Kante 12.6, dnL 10 < 12.6 ⇒ kein
-        // Partner); der Kappen-Beweis (leafVisCap == 24, NICHT an ref gekoppelt) bleibt hart.
+        // Die Erwartung rechnet aus der LIVE-cfg (dasselbe Muster wie stageStudio oben) — die Welt liest die
+        // Studio-Distanzen ohne Umweg (thresh01 = d0 = 12 → Kante 4.6, dnL 10 > 4.6 ⇒ Partner L1); der
+        // Kappen-Beweis (leafVisCap == 24, NICHT an ref gekoppelt) bleibt hart.
         res.leafCapPartner = r._lodBandPartnerFor(20, 36, 0);
         res.leafCapValue = cfg.leafVisCap;
         {
@@ -814,7 +814,8 @@ async function main() {
                 // Der EINE Blatt-Atlas (Laub- und Nadel-Karten, Welle C) färbt mit der Saison-Laubfarbe (Welle A); W5 teilt
                 // die Atlas-Farbe durch ihren `wert` — gesucht wird die Alpha-Stelle der Karten-colorNode, zeilenumbruch-fest.
                 "Blatt-Alpha in opacityNode",
-                nc.replace(/(\.mul\(laubFarbe\),\s*)texN\.a(\s*\);)/, "$11.0$2 mat.opacityNode = texN.a;"),
+                // Ersetzer als Funktion: "$11.0$2" lebte von der Rückfall-Regel ($11 fehlt → $1 + "1"), zerbrechlich.
+                nc.replace(/(\.mul\(laubFarbe\),\s*)texN\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = texN.a;"),
             ],
             ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
             ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(1), 1)", "aLodLevel.count).fill(2), 1)")],
@@ -846,7 +847,7 @@ async function main() {
                 ),
             ],
             ["Karten-Stempel ohne Instanz-Skala", nc.replace("h = leaf.sicht * s;", "h = leaf.sicht;")],
-            ["Strauch-L1 ungemaskt", nc.replace(/(_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*)3/, "$10")],
+            ["Strauch-L1 ungemaskt", nc.replace(/(_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*)3/, (_m, a) => a + "0")],
             ["Maske ohne einzige Nah-Stufe", nc.replace("_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
             ["Sichthöhe still 0", nc.replace("if (h0 == null) return null;", "if (h0 == null) return 0;")],
             ["Höhe nur im LRU", nc.replace("if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],

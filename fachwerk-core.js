@@ -27,7 +27,7 @@
 // DIE STUFEN-WAHRHEIT (B2, die erste Mehr-Stufen-Domäne außerhalb der Bäume): das Lab trägt
 // FÜNF Detail-Ebenen (LOD-Sonde: Editor·voll [live] · Ring A·Promotion [gebakt] · Chunk
 // Stufe 1·nah · Chunk Stufe 2·Destillat · Chunk Stufe 3·Vogel). Der Host kennt drei
-// Distanz-Stufen (LOD_DISTANCES 20/40 m) — kindStages.haus = [0,1,2] deklariert die drei,
+// Distanz-Stufen (LOD_DISTANCES = die Studio-Distanzen d0/d1, 12/26 m) — kindStages.haus = [0,1,2] deklariert die drei,
 // die das Lab dafür EHRLICH baut:
 //   0 ≙ „Ring A · Promotion":    der promoteBauen-Pfad (Vollbau inkl. Innenleben,
 //       RING-A-WÜRDE) → bakeLOD(0) — mit alles=true (LÜCKENLOS: der Host kennt keine

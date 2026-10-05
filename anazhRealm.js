@@ -89612,16 +89612,16 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
 AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 AnazhRealm.LOD_DISTANCES = {
-    thresh01: 20, // Studio LOD_D0 — dist > 20 m → LOD1 (Default == Post-Ingest, headless == live)
-    thresh12: 40, // Studio LOD_D1 — dist > 40 m → LOD2/Impostor (Studio-Billboard-Grenze)
+    thresh01: 12, // Studio LOD_D0 — dist > 12 m → LOD1 (Default == Post-Ingest, headless == live)
+    thresh12: 26, // Studio LOD_D1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)
     hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
     lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
     visStretchMax: Infinity, // AUSLÖSCHUNGS-WELLE (Feld B) — VORLAGE-TREU UNGEDECKELT: das Studio deckelt die SSE-Sichthöhe NICHT (foundry-core.js Z.196 `min(uLodRef/(aH0*_isy),1)` — der grosse Baum behält Detail proportional länger). Der V18.413-S2-Deckel (1.25) demotete Riesen ~2× zu früh = der „L1/L2 nicht wie in der Vorlage"-Befund; die LAST atmet weiter über den EINEN Regler (perfMul/foliageRadius/Dichte), nicht über eine Metrik-Lüge. Nur der CPU-LOD-Chooser, NICHT die Shader-aH0-Stempel.
     // Die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0), über die das Dither-Crossfade die Laub-Karten
     // weich ausblendet, BEVOR die nächste LOD-Stufe greift.
-    fade: 8, // Studio LOD_FADE — L1→L2-Band: Crossfade in [thresh12 − fade, thresh12] = [32,40]
-    fade0: 4, // Studio LOD_FADE0 — L0→L1-Band: Crossfade in [thresh01 − fade0, thresh01] = [16,20]
+    fade: 8, // Studio LOD_FADE — L1→L2-Band: Crossfade in [thresh12 − fade, thresh12] = [18,26]
+    fade0: 4, // Studio LOD_FADE0 — L0→L1-Band: Crossfade in [thresh01 − fade0, thresh01] = [8,12]
     leafVisCap: 24, // AUSLÖSCHUNGS-WELLE (Feld B) — die ECHTE Studio-Blatt-Kappe: phytogenesis.js Z.2392/2407 `Math.min(H0arr[vi], 24/(SCALE[sp]*TREE_SCALE_MUL))` = 24 m Welt-Sichthöhe (NICHT uLodRef=12 — die alte Kopplung halbierte die Laub-Sichthöhe, das Laub demotete bei halber Studio-Distanz)
 };
 

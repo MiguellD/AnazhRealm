@@ -62,7 +62,7 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
   `_archFoundryZiegel` (Foundry-Flat; Bäume teilen Schlüssel + Fit mit der Streu), sonst
   `_archBoxFit` (≤ 24 AABB) — das ist die Gestalt JENSEITS der Mesh-Zone. Die Mesh-Zone ist der
   geregelte Cull-Radius (100–150 m): dort IST das Studio-Mesh mit seiner LOD-Kette die Gestalt
-  (L0 < 12 m · L1 < 26 m · L2 darüber; Haus seit V18.500: L1 = die Flächen-Stufe des Studios,
+  (L0 < 12 m · L1 < 26 m · L2 darüber — die Studio-Distanzen d0/d1, der Host-Umweg fiel; Haus seit V18.500: L1 = die Flächen-Stufe des Studios,
   17–33 % von L0, der Host-Umweg `lodServe` ist gefallen), bis es steht trägt das Feld. Bauten nah zuerst, das Budget zählt
   gebaute Meshes (≤ 24 Versuche je Takt), über Budget Takt-Garantie (1 je 250 ms). Fachwerk-Farben
   sRGB-dekodiert wie `THREE.Color`, bei vollem Fachwerk Silhouette vor Holz. Klein-Streu auf der

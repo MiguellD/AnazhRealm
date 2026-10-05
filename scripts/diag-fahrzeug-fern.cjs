@@ -305,8 +305,8 @@ function selbstTest() {
         ohneOvHash !== STAMM && pruefeQuelle(ohneOvHash).length > 0,
     ]);
     // 5. Die Geritten-Wand: LOD_DISTANCES pervertiert (alles ab 0 m = Stufe 2) -> MUSS feuern.
-    // Die Default-Literale sind die Studio-Distanzen 20/40 (W5: der Host-Umweg LOD_TRI_BUDGET_MUL fiel).
-    const ohneWand = STAMM.replace("thresh01: 20,", "thresh01: -1,").replace("thresh12: 40,", "thresh12: -1,");
+    // Die Default-Literale sind die Studio-Distanzen 12/26 (der Host-Umweg LOD_TRI_BUDGET_MUL fiel, S7: das Studio trägt sie).
+    const ohneWand = STAMM.replace("thresh01: 12,", "thresh01: -1,").replace("thresh12: 26,", "thresh12: -1,");
     faelle.push([
         "Distanz-Autorität pervertiert (geritten = Stufe 2) -> feuert",
         ohneWand !== STAMM && pruefeQuelle(ohneWand).length > 0,

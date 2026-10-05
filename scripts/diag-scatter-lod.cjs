@@ -191,7 +191,7 @@ function check(name, ok, detail) {
         // ── L: der Spieler springt — nahe Zelle: WEIT weg (Stufe steigt);
         //       ferne Zelle: NAH heran (Stufe sinkt). Nah-Ziel 20 m: die
         //       Wahrnehmungs-Distanz dn ≤ raw (min(12/visH,1) ≤ 1) ⇒ raw 20 <
-        //       thresh12 − hysteresis = 36.6 ⇒ der Abstieg 2→1 ist für JEDE
+        //       thresh12 − hysteresis = 22.6 ⇒ der Abstieg 2→1 ist für JEDE
         //       Sichthöhe garantiert (das alte Ziel 30 lag für visH ≤ 12-
         //       Subjekte AUSSERHALB des Abstiegs-Bandes — nie abgedeckt, weil
         //       die Nah-Richtung vor der Keying-Welle nie gewählt wurde). ──

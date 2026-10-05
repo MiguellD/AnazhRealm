@@ -230,8 +230,8 @@ const FORBIDDEN = [
     { token: "aZelle", fiel: "W6 — die Schicht ist aKarte.x" },
     { token: "aRahmen", fiel: "W6 — der Rahmen ist aKarte.yz" },
     { token: "aImpX", fiel: "W6 — die Ecke ist 2·uv.x − 1" },
-    // W5 (Wald-L0): die Welt liest die Studio-Distanzen d0/d1 — der Host-Umweg, der sie auf 12/26 m umrechnete
-    // (die Kosten der Nahstufe lebten im Host statt im Asset), ist gefallen; das Budget trägt tree[0].
+    // W5/S7 (Wald-L0): die Welt liest die Studio-Distanzen d0/d1 — der Host-Umweg, der 20/40 auf 12/26 m umrechnete
+    // (die Kosten der Nahstufe lebten im Host statt im Asset), ist gefallen; das Studio trägt 12/26, das Budget tree[0].
     { token: "LOD_TRI_BUDGET_MUL", fiel: "W5 — die Kosten wohnen im Asset (lod.budget.tree[0]), Lehre 19" },
 ];
 

@@ -128,7 +128,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   die L0 trug 77–207k Dreiecke je Baum, 70–80 % davon Einzel-Klingen (28 Dreiecke je Blatt, eine Klinge von
   ~1,4 m Welt-Länge las auf Armlänge als Riesenblatt), die Weide 68–117k Rinde in Peitschen und Reisig.
   Haushalt: Baum L0/L1+Werfer 150k über Hauptbild + k0 + k1 der Mess-Wiese; bei den Studio-Distanzen
-  (d0 = 20 m, der Host-Umweg `LOD_TRI_BUDGET_MUL` 20/40 → 12/26 ist gefallen) stehen dort 14 L0-Bäume
+  (W5 rechnete mit d0 = 20 m; S7 misst 20/40 in derselben Welt teurer und rot — das Studio trägt 12/26, der Host-Umweg
+  `LOD_TRI_BUDGET_MUL` ist gefallen) stehen dort 14 L0-Bäume
   (4 Eichen, 2 Birken, 5 Tannen, 2 Fichten, 1 Weide) → **10 714 Dreiecke je L0-Baum, trüge die L0 den Haushalt
   allein**. Das Soll-Bild je Art (SpeedTree/UE-Praxis: Laub-Cluster-Karten mit Alpha, Rinde mit wenigen Ringen
   und Vertex-Farbe/AO, Silhouette vor Einzelblatt):

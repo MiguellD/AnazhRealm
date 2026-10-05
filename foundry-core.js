@@ -214,9 +214,14 @@ const PORTAL_RENDER_CONFIG = {
     // EINSTUFIG (wenige Instanzen bzw. Kleinst-Deko — eine Distanz-Stufe waere Deko ohne
     // Wert). Der Wald waehlt nah = stages[0], fern = stages[letzte]; Empfaenger clampen
     // ihre Distanz-Wahl auf die naechste verfuegbare Stufe.
+    // Die Distanzen sind die der Welt (S7, 05.10.): der Host-Umweg LOD_TRI_BUDGET_MUL (Studio 20/40 → Welt 12/26) ist
+    // gefallen, das Studio traegt die gemessenen Werte selbst (Lehre 19). In EINER Welt (Radeon 890M, Mess-Wiese,
+    // ABAB 4x8 s) kostete 20/40 gegen 12/26 mit der neuen Nahkrone Frame p50 41,9 statt 33,5 ms, GPU p50 8,05 statt
+    // 7,72 ms, und das Band wurde ROT: Busch 163k → 763k Dreiecke (die Strauch-L1 bis 40 m), Haus-L1 +20 Befehle,
+    // Fichten-L0 bis 73 m (Wand 64 m). Labor und Welt lesen dieselben Zahlen.
     lod: {
-        d0: 20,
-        d1: 40,
+        d0: 12,
+        d1: 26,
         fade: 8,
         fade0: 4,
         ref: 12.0,
@@ -236,8 +241,8 @@ const PORTAL_RENDER_CONFIG = {
         // Fichte, 47,1k beim Strauch, mehr als die Fichte): die L1-Zeilen sind OBERGRENZEN, gegen die gebaut ist
         // (tree[1] 10k: Nadel-Karten + jeder 2. Ring + Primaer-Wurzeln + schlanke Trauer-Klinge; shrub[1] 12k:
         // Reisig-Schnitt) — die gebaute Geometrie fiel auf sie, nicht sie auf die Geometrie. tree[0] (W5/S7, das
-        // Nahbild bis d0 = 20 m): aus dem Haushalt Baum L0/L1+Werfer 150k ueber 14 L0-Baeume der Mess-Wiese = 10 714 je
-        // Baum; das Soll-Bild (Cluster-Karten an ihrem Traeger, Weiden-Straehnen entlang der Peitsche, Stamm und
+        // Nahbild bis d0): aus dem Haushalt Baum L0/L1+Werfer 150k (W5 rechnete 14 L0-Baeume bei 20 m: 10 714 je
+        // Baum); das Soll-Bild (Cluster-Karten an ihrem Traeger, Weiden-Straehnen entlang der Peitsche, Stamm und
         // Starkaeste ganz) braucht hoechstens 17,6k (Tanne s2) — die Zeile steht offen bei 18 000, der Haushalt
         // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
         // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
