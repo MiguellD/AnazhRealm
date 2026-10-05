@@ -76,6 +76,14 @@ jobs:
               # Die Messung selbst: `werkbank band` / `werkbank ratsche` (echte GPU).
               run: npm run gate:profiband
 
+            - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
+              # GPU-frei, reines Node (three r128 im vm wie im Foundry-Worker): der Kreatur-Bäcker backt Wolf · Fuchs ·
+              # Bär · Hirsch, die Linse misst an der Haut der Ruhe-Pose (normiert auf den Widerrist) Widerrist in Metern,
+              # Brusttiefe, Bauch-Aufzug, Rumpf-Länge, Unterarm, Kopf-Höhe, Ohr, Rute und das Fell-Muster am Vertex
+              # (Bauch/Rücken, Läufe/Flanke, Rutenspitze/Flanke) gegen tetrapoda ANATOMIE_SOLL, dazu die Dreiecke beider
+              # Stufen gegen das Kreatur-Budget. --selftest zuerst: gestreckter Rumpf, einfarbiges Fell, Maßstab 1 → rot.
+              run: npm run gate:tier-anatomie
+
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
               # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
