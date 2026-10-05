@@ -166,9 +166,14 @@ const server = http.createServer((req, res) => {
             o.checks.layerImRigPfad = /_applyKampfSchwungPose/.test(codeOf(r.animatePlayerSoul));
             const juiceSrc = codeOf(r._kampfHitJuice);
             o.checks.juiceKanaele = /_landImpactPending/.test(juiceSrc) && /_playKampfOneShot/.test(juiceSrc);
-            const shotSrc = codeOf(r._playKampfOneShot);
+            // Welle 5 Klang: der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
+            // Chokepoint `_substanzKlang` — er trägt Master, Symphonie-Wand und keinen zweiten Kontext.
+            const shotSrc = codeOf(r._substanzKlang);
             o.checks.klangEineMaschine =
-                /masterGain/.test(shotSrc) && /enabled/.test(shotSrc) && !/new\s+AudioContext/.test(shotSrc);
+                /_substanzKlang\(/.test(codeOf(r._playKampfOneShot)) &&
+                /masterGain/.test(shotSrc) &&
+                /enabled/.test(shotSrc) &&
+                !/new\s+AudioContext/.test(shotSrc);
             const deathSrc = codeOf(r._creatureCombatDeath);
             o.checks.todKipptStattDespawn =
                 /_fieldGradient/.test(deathSrc) && /dying/.test(deathSrc) && !/removeCreature\(/.test(deathSrc);

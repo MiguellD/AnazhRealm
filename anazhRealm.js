@@ -733,23 +733,18 @@ class AnazhRealm {
                 ctx: null,
                 enabled: false,
                 // Audio-Lautstärken 0..1 als Multiplikatoren auf den GainNode: masterVolume für alle
-                // Symphonie-Schichten, creaturePingVolume zusätzlich für Kreatur-Pings, voiceVolume für die
-                // TTS-Stimme (SpeechSynthesisUtterance.volume).
+                // Symphonie-Schichten, creaturePingVolume („Umgebungsgeräusche") für den Bus der Klang-Welt,
+                // voiceVolume für die TTS-Stimme (SpeechSynthesisUtterance.volume).
                 masterVolume: 1.0,
                 creaturePingVolume: 1.0,
                 voiceVolume: 1.0,
                 masterGain: null,
-                ambient: null, // { osc1, osc2, lfo, lfoGain, filter, gain }
-                weather: null, // { noise, filter, gain }
-                lastWeather: null,
-                creaturePingCount: 0,
+                tierRufe: 0, // Ereignis-Zähler der Tier-Rufe (headless messbar)
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
                 lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
-                // V9.43-e — die Hydrosphären-Klang-Schicht: zwei positions-
-                // modulierte White-Noise-Layer (Fluss-Rauschen + Wasserfall-
-                // Donnern), lazy in initSymphony. Runtime-only, NIE im Save.
-                hydroAudio: null, // { river:{noise,filter,gain,target}, waterfall:{…}, lastTick }
+                // Welle 5 Klang — die Klang-Welt (klang:UMWELT), lazy in initSymphony. Runtime-only, NIE im Save.
+                umwelt: null, // { kern, bus, graph, ring, glut, letzteMischung, rufSaat, lage, mix }
             },
             player: {
                 // Avatar-Name (Default "Schöpfer"), editierbar, persistiert in localStorage; der LLM-System-Prompt
@@ -9498,9 +9493,10 @@ class AnazhRealm {
     }
 
     // ### anazhSymphony ###
-    // Web Audio: ambient drone, wetter (gefiltertes Noise für Regen), creature pings — als persistenter
-    // Audio-Graph, keine periodische JS-Neu-Erzeugung. Der AudioContext braucht eine User-Geste
-    // (Autoplay-Policy); headless umgeht `--autoplay-policy=no-user-gesture-required` das.
+    // Web Audio: EIN Kontext, EIN Master (UMWELT.masterBasis × Master-Regler). Darauf: die Lofi-Musik (klang:GENRES)
+    // und die KLANG-WELT (klang:UMWELT) — Wind · Laub · Ufer · Fluss · Fall · Regen · Glut · Vögel · Grillen aus der
+    // Lage am Ohr, der Tier-Ruf aus dem Körper. Der AudioContext braucht eine User-Geste (Autoplay-Policy); headless
+    // umgeht `--autoplay-policy=no-user-gesture-required` das.
     initSymphony() {
         const s = this.state.symphony;
         if (s.enabled) return true;
@@ -9509,91 +9505,26 @@ class AnazhRealm {
             this.log("Web Audio API nicht verfügbar — Symphonie bleibt stumm", "WARNING");
             return false;
         }
+        const UM = AnazhRealm._umweltGesetz(); // Kern-Pflicht VOR dem Kontext: kein halber Graph
         const ctx = new AudioCtor();
         if (ctx.state === "suspended" && typeof ctx.resume === "function") {
             ctx.resume();
         }
-        // Master-Bus
+        // Master-Bus: UMWELT.masterBasis × masterVolume (0..1); der UI-Schieber zieht live nach (slidersInitDOM).
         const masterGain = ctx.createGain();
-        // Master-Volume state.symphony.masterVolume (0..1, default 1.0) × Base 0.35; der UI-Schieber
-        // mutiert masterGain.gain.value live (slidersInitDOM).
-        const masterVol = typeof this.state.symphony.masterVolume === "number" ? this.state.symphony.masterVolume : 1.0;
-        masterGain.gain.value = 0.35 * masterVol;
+        const masterVol = typeof s.masterVolume === "number" ? s.masterVolume : 1.0;
+        masterGain.gain.value = UM.UMWELT.masterBasis * masterVol;
         masterGain.connect(ctx.destination);
 
-        // Ambient-Drone: zwei leise, leicht verstimmte Dreieck-Oszillatoren → langsame Schwebung; ein LFO
-        // auf den Tiefpass lässt ihn atmen. LEISE Grundierung unter der Lofi-Harmonie, nicht Träger.
-        const filter = ctx.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.value = 600;
-        filter.Q.value = 0.7;
-
-        const ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.01; // V8.88 — 80% leiser (Schöpfer-Wunsch; war 0.05)
-
-        const osc1 = ctx.createOscillator();
-        osc1.type = "triangle";
-        osc1.frequency.value = 110;
-        const osc2 = ctx.createOscillator();
-        osc2.type = "triangle";
-        // V8.87 — nur 0.3 Hz verstimmt: eine sanfte, langsame Schwebung
-        // (~3 s Periode) statt des extremen 1.5-Hz-Puls (war 111.5 Hz —
-        // „einmal komplett weg, dann zu laut", die Schöpfer-Beobachtung).
-        osc2.frequency.value = 110.3;
-
-        osc1.connect(filter);
-        osc2.connect(filter);
-        filter.connect(ambientGain);
-        ambientGain.connect(masterGain);
-
-        const lfo = ctx.createOscillator();
-        lfo.frequency.value = 0.08;
-        const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 140; // V8.86 — sanfterer Filter-Atem (war 250)
-        lfo.connect(lfoGain);
-        lfoGain.connect(filter.frequency);
-
-        osc1.start();
-        osc2.start();
-        lfo.start();
-
-        s.ambient = { osc1, osc2, filter, ambientGain, lfo, lfoGain };
-
-        // Wetter: gefiltertes White-Noise. Gain bei 0, bis state.weather "rainy"
-        // wird; `symphonyTick` schaltet sanft hin und her.
-        const bufferSize = 2 * ctx.sampleRate;
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = ctx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        noise.loop = true;
-        const weatherFilter = ctx.createBiquadFilter();
-        weatherFilter.type = "bandpass";
-        weatherFilter.frequency.value = 1500;
-        weatherFilter.Q.value = 0.3;
-        const weatherGain = ctx.createGain();
-        weatherGain.gain.value = 0;
-        noise.connect(weatherFilter);
-        weatherFilter.connect(weatherGain);
-        weatherGain.connect(masterGain);
-        noise.start();
-
-        s.weather = { noise, filter: weatherFilter, gain: weatherGain };
-
-        // W4 V2 — die Lofi-Pad-Schicht: eine ruhige Minor-7th-Akkordfolge.
+        // W4 V2 — die Lofi-Pad-Schicht (klang:GENRES).
         s.lofi = this._buildLofiLayer(ctx, masterGain);
-
-        // V9.43-e — die Hydrosphären-Klang-Schicht (Vision §1.4): zwei
-        // White-Noise-Layer, deren Gain `_tickHydrosphereAudio` nach der
-        // Spieler-Nähe zu Fluss bzw. Wasserfall moduliert.
-        s.hydroAudio = this._buildHydroAudioLayer(ctx, masterGain);
+        // Welle 5 Klang — die Klang-Welt (klang:UMWELT) auf ihrem Bus.
+        s.umwelt = this._umweltKlangBauen(ctx, masterGain, UM);
 
         s.ctx = ctx;
         s.masterGain = masterGain;
         s.enabled = true;
-        s.lastWeather = this.state.weather;
-        this.log("anazhSymphony aktiviert: ambient + wetter + lofi + wasser live", "INFO");
+        this.log("anazhSymphony aktiviert: Lofi + Klang-Welt live", "INFO");
         return true;
     }
 
@@ -9601,89 +9532,329 @@ class AnazhRealm {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
         try {
-            if (s.ambient) {
-                s.ambient.osc1.stop();
-                s.ambient.osc2.stop();
-                s.ambient.lfo.stop();
-            }
-            if (s.weather) s.weather.noise.stop();
-            if (s.hydroAudio) {
-                s.hydroAudio.river.noise.stop();
-                s.hydroAudio.waterfall.noise.stop();
-            }
+            if (s.umwelt && s.umwelt.graph) s.umwelt.graph.stopAlle();
             s.ctx.close();
         } catch (err) {
             this.log(`Symphonie-Dispose-Fehler: ${err.message}`, "WARNING");
         }
         s.ctx = null;
         s.enabled = false;
-        s.ambient = null;
-        s.weather = null;
-        s.hydroAudio = null;
-        // W4 V2 — die Lofi-Akkord-Oszillatoren sind transient (auto-stop);
-        // Gain + Filter werden mit dem geschlossenen ctx vom GC geräumt.
+        // Die Lofi-Oszillatoren und die Umwelt-Quellen sind transient (auto-stop); Gain + Filter räumt der GC
+        // mit dem geschlossenen ctx.
         s.lofi = null;
+        s.umwelt = null;
         s.masterGain = null;
     }
 
-    // Die zwei Hydrosphären-Layer: je looping White-Noise → Filter → Gain (Start 0), Muster des
-    // Wetter-Layers. Fluss: heller Bandpass (Bach-Rauschen); Wasserfall: dunkler Lowpass (Donnern).
-    _buildHydroAudioLayer(ctx, masterGain) {
-        const makeLayer = (filterType, freq, q) => {
-            const bufferSize = 2 * ctx.sampleRate;
-            const buf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const d = buf.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) d[i] = Math.random() * 2 - 1;
-            const noise = ctx.createBufferSource();
-            noise.buffer = buf;
-            noise.loop = true;
-            const filter = ctx.createBiquadFilter();
-            filter.type = filterType;
-            filter.frequency.value = freq;
-            filter.Q.value = q;
-            const gain = ctx.createGain();
-            gain.gain.value = 0;
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(masterGain);
-            noise.start();
-            return { noise, filter, gain, target: 0 };
-        };
+    // ═══ DIE KLANG-WELT (Welle 5 Klang) ═══
+    // Der Wirt ist das Sinnesorgan, das klang-Gesetzbuch das Gesetz: `_umweltLage` misst am Ohr, was dort IST
+    // (Wetter-Feld + dieselbe wandernde Böe, die das Gras biegt · Kronen-Deckung aus dem Pflanz-Gesetz · Wasser im
+    // Hör-Ring · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
+    // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
+    // UMWELT.ohr.probenJeFrame Ring-Proben + ohr.bautenJeFrame Bauten-Prüfungen, die Mischung im Takt ohr.mischSek;
+    // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Linse: gate:klang-zensus.
+    _umweltKlangBauen(ctx, masterGain, UM) {
+        const K = UM.kern;
+        const O = UM.UMWELT.ohr;
+        const bus = ctx.createGain();
+        const s = this.state.symphony;
+        bus.gain.value = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
+        bus.connect(masterGain);
+        // Der Hör-Ring: Mitte + ohr.radien × ohr.richtungen, Einheits-Richtungen fest (Welt-Achsen).
+        const punkte = [{ r: 0, ux: 0, uz: 0 }];
+        for (const r of O.radien) {
+            for (let k = 0; k < O.richtungen; k++) {
+                const a = (k / O.richtungen) * Math.PI * 2;
+                punkte.push({ r, ux: Math.sin(a), uz: Math.cos(a) });
+            }
+        }
+        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":umwelt";
+        let saat = 0;
+        for (let i = 0; i < seedStr.length; i++) saat = (saat * 31 + seedStr.charCodeAt(i)) >>> 0;
         return {
-            river: makeLayer("bandpass", 2200, 0.5),
-            waterfall: makeLayer("lowpass", 520, 0.85),
-            // -Infinity, nicht 0 — sonst throttelt der erste Tick in den
-            // ersten 130 ms der AudioContext-Lebenszeit fälschlich (0 ist ein
-            // gültiger ctx-Zeitpunkt; die Sentinel-Gotcha aus CLAUDE.md).
-            lastTick: -Infinity,
+            kern: K,
+            bus,
+            graph: K.umweltGraph(ctx, bus),
+            ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
+            glut: { idx: 0, laufend: new Map(), fertig: new Map() },
+            letzteMischung: -Infinity,
+            rufSaat: saat || 1,
+            lage: null,
+            mix: null,
         };
     }
 
-    playCreaturePing(emotion = "happy") {
+    // DER EINE UMWELT-TAKT (aus symphonyTick, jeden Frame): Proben fortsetzen (konstant je Frame), im Misch-Takt
+    // Lage → Mischung → Graph, die Tier-Rufe würfeln.
+    _umweltKlangTick() {
         const s = this.state.symphony;
-        if (!s.enabled || !s.ctx) return;
-        const ctx = s.ctx;
-        // Frequenz folgt Emotion: happy hell (E5 ≈ 659 Hz), sad dunkel (A3 ≈ 220 Hz).
-        const freq = emotion === "happy" ? 659 : 220;
-        const t = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        const gain = ctx.createGain();
-        // Welle 6.X.4 D2 — Peak-Gain skaliert mit creaturePingVolume (0..1).
-        // Default 1.0 ergibt Peak 0.12 (historisches Verhalten). Spieler
-        // kann Pings dezenter machen wenn die Welt mit Kreaturen voll ist.
-        const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
-        const peak = 0.12 * pingVol;
-        // Kurzes Envelope: 5 ms Attack, 200 ms Decay.
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(peak, t + 0.005);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
-        osc.connect(gain);
-        gain.connect(s.masterGain);
-        osc.start(t);
-        osc.stop(t + 0.3);
-        s.creaturePingCount++;
+        const um = s.umwelt;
+        if (!um || !s.ctx || !this.state.playerMesh) return;
+        const p = this.state.playerMesh.position;
+        const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
+        this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame);
+        this._umweltGlutSweep(um, p.x, p.z, O.bautenJeFrame);
+        const jetzt = s.ctx.currentTime;
+        if (jetzt - um.letzteMischung < O.mischSek) return;
+        const dt = Number.isFinite(um.letzteMischung) ? jetzt - um.letzteMischung : 0;
+        um.letzteMischung = jetzt;
+        um.lage = this._umweltLage();
+        um.mix = um.kern.umweltMischung(um.lage);
+        um.graph.anwenden(um.mix, jetzt);
+        this._tierRufTakt(Math.min(1, dt));
+    }
+
+    // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (Boden unter dem Wasser-Spiegel) und
+    // Strömung (die EINE Strömungs-Quelle `_waterFlowAt`). Die Punkte wandern mit dem Ohr.
+    _umweltRingProbe(um, px, pz, n) {
+        const R = um.ring;
+        for (let k = 0; k < n; k++) {
+            const i = R.idx;
+            R.idx = (R.idx + 1) % R.punkte.length;
+            const pt = R.punkte[i];
+            const x = px + pt.ux * pt.r;
+            const z = pz + pt.uz * pt.r;
+            const boden = this._voxelSurfaceY(x, z);
+            const nass = boden !== null && Number.isFinite(boden) && boden < this._waterLevelAt(x, z) - 0.05;
+            R.nass[i] = nass ? 1 : 0;
+            const fl = nass ? this._waterFlowAt(x, z) : null;
+            R.tempo[i] = fl ? Math.hypot(fl.x, fl.z) : 0;
+        }
+    }
+
+    // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
+    // tauscht die Kandidaten (abgebaute Bauten fallen spätestens nach einem Umlauf). Die Stärke ist die Substanz: das
+    // Glut-Volumen der Teile (Material „glut"), je Bauplan gemerkt.
+    _umweltGlutSweep(um, px, pz, n) {
+        const archs = this.state.architectures;
+        const N = Array.isArray(archs) ? archs.length : 0;
+        const G = um.glut;
+        const U = AnazhRealm._umweltGesetz().UMWELT;
+        const H = U.stimmen.glut.hoerweiteM + U.ohr.glutRandM;
+        const lim = Math.min(n, N);
+        for (let k = 0; k < lim; k++) {
+            if (G.idx >= N) {
+                G.idx = 0;
+                G.fertig = G.laufend;
+                G.laufend = new Map();
+            }
+            const e = archs[G.idx++];
+            if (!e || !e.position) continue;
+            const dx = e.position.x - px;
+            const dz = e.position.z - pz;
+            if (dx * dx + dz * dz > H * H) continue;
+            const v = this._glutVolumen(e);
+            if (v > 0) G.laufend.set(e, v);
+        }
+    }
+
+    // Das Glut-Volumen eines Baus (m³): Σ der Teile mit Material „glut" (Kugel · Zylinder · Quader · sonst halber
+    // Quader) × Bau-Skala³ — je Bauplan gemerkt.
+    _glutVolumen(entry) {
+        const memo = this._glutVolumenMemo || (this._glutVolumenMemo = new Map());
+        let v = memo.get(entry.type);
+        if (v === undefined) {
+            v = 0;
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const parts = bp && Array.isArray(bp.parts) ? bp.parts : [];
+            for (const pt of parts) {
+                if (!pt || pt.material !== "glut" || !pt.size) continue;
+                const sx = +pt.size.x || 0;
+                const sy = +pt.size.y || 0;
+                const sz = +pt.size.z || 0;
+                if (pt.shape === "sphere") v += (Math.PI / 6) * sx * sy * sz;
+                else if (pt.shape === "cylinder") v += (Math.PI / 4) * sx * sy * sz;
+                else if (pt.shape === "box") v += sx * sy * sz;
+                else v += 0.5 * sx * sy * sz;
+            }
+            memo.set(entry.type, v);
+        }
+        const sk = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        return v * sk * sk * sk;
+    }
+
+    // DIE WANDERNDE BÖE am Ort (x,z) zur Wind-Zeit t — dieselben Zahlen (WIND_BOE) und dieselbe Richtung
+    // (`_windDirAt`) wie `_windSwayOffset` im Shader: was das Gras biegt, rauscht im Ohr.
+    _windBoeAt(x, z, t) {
+        const B = AnazhRealm.WIND_BOE;
+        const d = this._windDirAt(t);
+        return Math.sin(t * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
+    }
+
+    // Die Wind-Uhr (s): uWindTime, die der Loop je Frame setzt — sonst die Wand-Uhr.
+    _windZeit() {
+        const wu = this.state.windUniforms;
+        const t = wu && wu.uWindTime ? wu.uWindTime.value : NaN;
+        return Number.isFinite(t) ? t : performance.now() / 1000;
+    }
+
+    // Der RECHTS-Vektor des Ohrs (waagerecht, aus der Kamera-Blickrichtung): Panorama einer Richtung (ux, uz) =
+    // ux·x + uz·z (−1 links … +1 rechts). Ohne Kamera {0, 0} — alles mittig.
+    _umweltRechts() {
+        const cam = this.state.camera;
+        if (!cam) return { x: 0, z: 0 };
+        const v = this._umweltBlick || (this._umweltBlick = new THREE.Vector3());
+        cam.getWorldDirection(v);
+        const l = Math.hypot(v.x, v.z);
+        return l > 1e-6 ? { x: -v.z / l, z: v.x / l } : { x: 0, z: 0 };
+    }
+
+    // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: das
+    // Wetter-Feld (transition-aware) × Böen-Drift, die Böe am Ort, die Kronen-Deckung aus dem Pflanz-Gesetz
+    // (`_canopyLightAt`), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der Hör-Ring (Ufer/Fluss), der nächste
+    // Wasserfall der Region, die nächste Glut.
+    _umweltLage() {
+        const um = this.state.symphony.umwelt;
+        const pm = this.state.playerMesh;
+        if (!um || !pm) return null;
+        const px = pm.position.x;
+        const pz = pm.position.z;
+        const wf = this._weatherFieldFor(this.state.weather);
+        const tod = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const fussY = pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+        const aura = this.auraAt(px, pz);
+        const re = this._umweltRechts();
+        const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
+        // Der Ring: stilles Wasser (Ufer) und fließendes (Fluss) — Abstand, Anteil, Richtung.
+        const R = um.ring;
+        const ufer = { d: Infinity, anteil: 0, pan: 0 };
+        const fluss = { d: Infinity, tempo: 0, pan: 0 };
+        let nStill = 0;
+        let wU = 0;
+        let wF = 0;
+        let panU = 0;
+        let panF = 0;
+        for (let i = 0; i < R.punkte.length; i++) {
+            if (!R.nass[i]) continue;
+            const pt = R.punkte[i];
+            const w = 1 / Math.max(1, pt.r);
+            const p = pan(pt.ux, pt.uz);
+            if (R.tempo[i] > 0) {
+                if (pt.r < fluss.d) fluss.d = pt.r;
+                if (R.tempo[i] > fluss.tempo) fluss.tempo = R.tempo[i];
+                wF += w;
+                panF += p * w;
+            } else {
+                nStill++;
+                if (pt.r < ufer.d) ufer.d = pt.r;
+                wU += w;
+                panU += p * w;
+            }
+        }
+        ufer.anteil = nStill / R.punkte.length;
+        if (wU > 0) ufer.pan = panU / wU;
+        if (wF > 0) fluss.pan = panF / wF;
+        // Der nächste Wasserfall der Region (wenige je Kachel).
+        const fall = { d: Infinity, hoehe: 0, pan: 0 };
+        const h = this._hydroFor(px, pz);
+        const falls = h && Array.isArray(h.waterfalls) ? h.waterfalls : [];
+        for (const wfall of falls) {
+            const d = Math.hypot(wfall.x - px, wfall.z - pz);
+            if (d < fall.d) {
+                fall.d = d;
+                fall.hoehe = Math.max(0, wfall.topY - wfall.bottomY);
+                fall.pan = d > 1e-3 ? pan((wfall.x - px) / d, (wfall.z - pz) / d) : 0;
+            }
+        }
+        // Die nächste Glut (Kandidaten des Umlaufs).
+        const glut = { d: Infinity, volumen: 0, pan: 0 };
+        for (const quelle of [um.glut.fertig, um.glut.laufend]) {
+            for (const [e, v] of quelle) {
+                const d = Math.hypot(e.position.x - px, e.position.z - pz);
+                if (d < glut.d) {
+                    glut.d = d;
+                    glut.volumen = v;
+                    glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
+                }
+            }
+        }
+        return {
+            windFeld: wf.wind * (this._weatherWob || 1),
+            boe: this._windBoeAt(px, pz, this._windZeit()),
+            deckung: 1 - this._canopyLightAt(px, pz, fussY),
+            regen: wf.rain,
+            sonne: Math.sin(tod * Math.PI * 2 - Math.PI / 2),
+            saisonPhase: typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375,
+            lebendig: Math.max(0, Math.min(1, aura.lebendig)),
+            ufer,
+            fluss,
+            fall,
+            glut,
+        };
+    }
+
+    // DER TIER-RUF — die Stimme folgt dem Körper (klang:UMWELT.tier): Länge aus dem gerenderten Körper, Abstand und
+    // Richtung zum Ohr, die Stimmung aus dem Innenleben (oder vom Rufer gesetzt). Zählt jeden Ruf (headless messbar);
+    // die Quelle entsteht nur hinter der Symphonie-Wand und über der Hörschwelle.
+    _tierRuf(creature, stimmung) {
+        const s = this.state.symphony;
+        s.tierRufe = (s.tierRufe || 0) + 1;
+        if (!s.enabled || !s.ctx || !s.umwelt || !creature || !creature.position) return null;
+        const pm = this.state.playerMesh;
+        const dx = pm ? creature.position.x - pm.position.x : 0;
+        const dz = pm ? creature.position.z - pm.position.z : 0;
+        const d = Math.hypot(dx, dz);
+        const re = this._umweltRechts();
+        const ruf = {
+            laengeM: this._tierKoerperLaenge(creature),
+            stimmung: stimmung || this._tierStimmung(creature),
+            d,
+            pan: d > 1e-3 ? Math.max(-1, Math.min(1, (dx * re.x + dz * re.z) / d)) : 0,
+            saat: (s.umwelt.rufSaat = (Math.imul(s.umwelt.rufSaat, 1664525) + 1013904223) >>> 0),
+        };
+        return s.umwelt.kern.tierRuf(s.ctx, s.umwelt.bus, ruf);
+    }
+
+    // Die Körperlänge (m): die größte waagerechte Ausdehnung des gerenderten Körpers, einmal je Kreatur gemessen.
+    _tierKoerperLaenge(creature) {
+        const ud = creature.userData || (creature.userData = {});
+        if (Number.isFinite(ud._rufLaengeM)) return ud._rufLaengeM;
+        const box = new THREE.Box3().setFromObject(creature);
+        const L = box.isEmpty() ? NaN : Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
+        ud._rufLaengeM = Number.isFinite(L) && L > 0 ? L : AnazhRealm._umweltGesetz().UMWELT.tier.lRef;
+        return ud._rufLaengeM;
+    }
+
+    // Die Stimmung des Rufs aus dem Innenleben: Freude/Hoffnung/Staunen → freude, Trauer → trauer, Chaos → furcht,
+    // sonst (Frieden, schwach) → ruhe.
+    _tierStimmung(creature) {
+        const e = creature && creature.userData && creature.userData.emotions;
+        if (!e) return "ruhe";
+        let best = "peace";
+        let v = 0.15;
+        for (const k of ["joy", "hope", "awe", "sorrow", "chaos", "peace"]) {
+            if ((e[k] || 0) > v) {
+                v = e[k];
+                best = k;
+            }
+        }
+        return best === "sorrow" ? "trauer" : best === "chaos" ? "furcht" : best === "peace" ? "ruhe" : "freude";
+    }
+
+    // Die Tiere rufen von selbst: je Kreatur im Hör-Radius ein Poisson-Ruf mit der Rate ihrer Stimmung
+    // (UMWELT.tier.rufProMin). Kosten = die Kreaturen-Zahl (Populations-Deckel), nie die Weltgröße.
+    _tierRufTakt(dt) {
+        if (!(dt > 0)) return;
+        const s = this.state.symphony;
+        const um = s.umwelt;
+        const T = AnazhRealm._umweltGesetz().UMWELT.tier;
+        const pm = this.state.playerMesh;
+        const cs = this.state.creatures;
+        if (!um || !pm || !Array.isArray(cs)) return;
+        for (const c of cs) {
+            if (!c || !c.position || (c.userData && c.userData.dying)) continue;
+            if (Math.hypot(c.position.x - pm.position.x, c.position.z - pm.position.z) > T.hoerweiteM) continue;
+            const stimmung = this._tierStimmung(c);
+            um.rufSaat = (Math.imul(um.rufSaat, 1664525) + 1013904223) >>> 0;
+            if (um.rufSaat / 4294967296 < ((T.rufProMin[stimmung] || 0) / 60) * dt) this._tierRuf(c, stimmung);
+        }
+    }
+
+    // DER KLANG-ZENSUS (Linse gate:klang-zensus): je Umwelt-Stimme Gesetz · Pegel · läuft; dazu die Lage am Ohr.
+    _klangZensus() {
+        const um = this.state.symphony && this.state.symphony.umwelt;
+        if (!um) return null;
+        return { lage: um.lage, stimmen: um.graph.zensus(), tierRufe: this.state.symphony.tierRufe || 0 };
     }
 
     // === Hylomorphismus-Inventar ===
@@ -9789,28 +9960,19 @@ class AnazhRealm {
         osc.stop(t + 0.2);
     }
 
-    // Treffer-One-Shot: die SUBSTANZ des Getroffenen färbt das Timbre (härte klirrt hell · dichte
-    // wummert · lebendig weich) — dieselbe Tag→Klang-Sprache wie playInventoryHoverPing, über
-    // state.symphony.masterGain (KEIN zweiter AudioContext). Symphonie aus (s.enabled false) → stumm.
+    // Treffer-One-Shot: die SUBSTANZ des Getroffenen färbt das Timbre (härte klirrt hell · dichte wummert · lebendig
+    // weich) — das Gesetz klang:SUBSTANZ.treffer, über state.symphony.masterGain (KEIN zweiter AudioContext).
+    // Symphonie aus (s.enabled false) → stumm.
     _playKampfOneShot(tags) {
+        return this._substanzKlang("treffer", tags);
+    }
+
+    // DER EINE EREIGNIS-KLANG-CHOKEPOINT: art (treffer · singen · abschied · wasser) × Tags → die Einmal-Quelle des
+    // klang-Gesetzbuchs (substanzKlang) am Master. Stumm ohne Symphonie.
+    _substanzKlang(art, tags) {
         const s = this.state.symphony;
         if (!s || !s.enabled || !s.ctx || !s.masterGain) return false;
-        const t = s.ctx.currentTime;
-        const haerte = (tags && tags["härte"]) || 0;
-        const dichte = (tags && tags.dichte) || 0;
-        const lebendig = (tags && tags.lebendig) || 0;
-        const osc = s.ctx.createOscillator();
-        osc.type = haerte >= Math.max(dichte, lebendig) ? "sawtooth" : lebendig >= dichte ? "sine" : "triangle";
-        osc.frequency.value = Math.max(60, 160 + haerte * 480 - dichte * 70);
-        const gain = s.ctx.createGain();
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.14, t + 0.004);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-        osc.connect(gain);
-        gain.connect(s.masterGain);
-        osc.start(t);
-        osc.stop(t + 0.18);
-        return true;
+        return !!AnazhRealm._umweltGesetz().kern.substanzKlang(s.ctx, s.masterGain, art, tags || {});
     }
 
     // ═══ SCHRITT-KLANG ═══
@@ -9959,140 +10121,12 @@ class AnazhRealm {
         return true;
     }
 
-    // Ziel-Lautstärke der Wetter-Noise (Regen); hängt am selben Regler wie die Kreatur-Pings
-    // (creaturePingVolume — "Umgebungsgeräusche").
-    _symphonyWeatherTarget() {
-        const s = this.state.symphony;
-        const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
-        return this._weatherBlendedValue(0, 0.014) * pingVol; // D5a: Achsen-Lerp — stormy rauscht lauter
-    }
-
-    // [ATMOSPHERE] Symphonie-Tick: ambient-Gain atmet mit der Tageszeit (Nacht ×0.5, Mittag ×1.0,
-    // sanfte Übergänge); der Filter-Cutoff folgt (Nacht dunkler, Mittag klarer).
+    // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt) und die Klang-Welt (eigener Misch-Takt).
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
-        // W4 V2 — der Lofi-Pad-Scheduler (eigene Akkord-Dauer-Drosselung).
         this._lofiTick();
-        // V9.43-e — die positions-abhängige Wasser-Klang-Schicht.
-        this._tickHydrosphereAudio();
-        // (1) Wetter-Cross-Fade (wie V8.24)
-        if (s.lastWeather !== this.state.weather) {
-            const target = this._symphonyWeatherTarget();
-            const now = s.ctx.currentTime;
-            s.weather.gain.gain.cancelScheduledValues(now);
-            s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
-            s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
-            s.lastWeather = this.state.weather;
-            this.log(`Symphonie: wetter-Layer → ${target.toFixed(3)} (${this.state.weather})`, "DEBUG");
-        }
-        // (2) V8.25 — Tag-Nacht-Modulation des Ambient. Throttle auf 1 Hz.
-        const ctx = s.ctx;
-        const lastAtmTick = s._lastDayNightAtmTick || 0;
-        const nowMs = ctx.currentTime * 1000;
-        if (nowMs - lastAtmTick < 1000) return;
-        s._lastDayNightAtmTick = nowMs;
-        if (!s.ambient || !s.ambient.ambientGain) return;
-        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-        const angle = t * Math.PI * 2 - Math.PI / 2;
-        const sunHeight = Math.max(0, Math.sin(angle)); // 0=Nacht, 1=Mittag
-        // V8.88 — Gain: Nacht 0.005, Mittag 0.01 (Drone −80%, Schöpfer-
-        // Wunsch — eine kaum hörbare Grundierung unter Harmonie + Melodie).
-        const targetGain = 0.005 + 0.005 * sunHeight;
-        const nowCtx = ctx.currentTime;
-        const ag = s.ambient.ambientGain;
-        try {
-            ag.gain.cancelScheduledValues(nowCtx);
-            ag.gain.setValueAtTime(ag.gain.value, nowCtx);
-            ag.gain.linearRampToValueAtTime(targetGain, nowCtx + 1.0);
-        } catch (e) {
-            void e;
-        }
-        // Filter-Cutoff: Nacht 350 Hz (gedämpft), Mittag 700 Hz (offen)
-        if (s.ambient.filter && s.ambient.filter.frequency) {
-            const targetCutoff = 350 + 350 * sunHeight;
-            try {
-                s.ambient.filter.frequency.cancelScheduledValues(nowCtx);
-                s.ambient.filter.frequency.setValueAtTime(s.ambient.filter.frequency.value, nowCtx);
-                s.ambient.filter.frequency.linearRampToValueAtTime(targetCutoff, nowCtx + 1.0);
-            } catch (e) {
-                void e;
-            }
-        }
-    }
-
-    // Hydrosphären-Layer nach Spieler-Nähe: Fluss-Rauschen wächst zur Fluss-Mittellinie, Wasserfall-
-    // Donnern trägt weiter. Wenige Drainage-Punkte → linearer Scan; Throttle ~7 Hz, sanfte Rampe.
-    // Das Ziel liegt auf `layer.target` (deterministischer Mess-Punkt; der GainNode rampt hinterher).
-    _tickHydrosphereAudio() {
-        const s = this.state.symphony;
-        if (!s.enabled || !s.ctx || !s.hydroAudio) return;
-        const hydro = this.state.hydrosphere;
-        if (!hydro || !hydro.ready || !this.state.playerMesh) return;
-        const ctx = s.ctx;
-        const nowMs = ctx.currentTime * 1000;
-        if (nowMs - (s.hydroAudio.lastTick || 0) < 130) return;
-        s.hydroAudio.lastTick = nowMs;
-
-        const px = this.state.playerMesh.position.x;
-        const pz = this.state.playerMesh.position.z;
-
-        // Nächste Fluss-Mittellinie — Segment-Distanz über alle Polylinien.
-        let riverDist = Infinity;
-        const rivers = Array.isArray(hydro.rivers) ? hydro.rivers : [];
-        for (const r of rivers) {
-            const pts = r.points;
-            for (let k = 0; k + 1 < pts.length; k++) {
-                const d = this._pointSegDist2D(px, pz, pts[k].x, pts[k].z, pts[k + 1].x, pts[k + 1].z);
-                if (d < riverDist) riverDist = d;
-            }
-        }
-        // Nächster Wasserfall — Punkt-Distanz in der xz-Ebene.
-        let fallDist = Infinity;
-        const falls = Array.isArray(hydro.waterfalls) ? hydro.waterfalls : [];
-        for (const wf of falls) {
-            const d = Math.hypot(px - wf.x, pz - wf.z);
-            if (d < fallDist) fallDist = d;
-        }
-
-        // Distanz → Gain: quadratischer Falloff bis zur Hörweite, dann 0.
-        // Der Wasserfall trägt weiter (75 m) + lauter (Peak 0.22) — er
-        // donnert; der Bach rauscht leiser (0.10) + nur nah (42 m).
-        const falloff = (d, range) => {
-            if (!Number.isFinite(d) || d >= range) return 0;
-            const k = 1 - d / range;
-            return k * k;
-        };
-        s.hydroAudio.river.target = falloff(riverDist, 42) * 0.1;
-        s.hydroAudio.waterfall.target = falloff(fallDist, 75) * 0.22;
-
-        const ramp = (layer) => {
-            const g = layer.gain.gain;
-            const now = ctx.currentTime;
-            try {
-                g.cancelScheduledValues(now);
-                g.setValueAtTime(g.value, now);
-                g.linearRampToValueAtTime(layer.target, now + 0.2);
-            } catch (e) {
-                void e;
-            }
-        };
-        ramp(s.hydroAudio.river);
-        ramp(s.hydroAudio.waterfall);
-    }
-
-    // 2D-Distanz (xz) eines Punkts zum Segment — eine reine Vertex-Distanz ließe das Fluss-Rauschen
-    // zwischen weit gesetzten Fluss-Punkten pumpen.
-    _pointSegDist2D(px, pz, ax, az, bx, bz) {
-        const dx = bx - ax;
-        const dz = bz - az;
-        const len2 = dx * dx + dz * dz;
-        let t = len2 > 0 ? ((px - ax) * dx + (pz - az) * dz) / len2 : 0;
-        if (t < 0) t = 0;
-        else if (t > 1) t = 1;
-        const cx = ax + t * dx;
-        const cz = az + t * dz;
-        return Math.hypot(px - cx, pz - cz);
+        this._umweltKlangTick();
     }
 
     // ### Lofi-Pad-Schicht ###
@@ -15788,17 +15822,19 @@ class AnazhRealm {
         // Halm-Höhe); die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt sie unverfälscht.
         // `opts.hoehe` reicht eine eigene Höhe in Metern (Studio-Vorlagen tragen die Template-Skala).
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
+        // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windBoeAt`).
+        const B = AnazhRealm.WIND_BOE;
         const gust = sin(
             wu.uWindTime
-                .mul(float(0.4))
+                .mul(float(B.omega))
                 .sub(
                     dotWW
-                        ? dotWW.mul(float(0.0384))
+                        ? dotWW.mul(float(B.k))
                         : positionWorld.x.mul(float(0.03)).add(positionWorld.z.mul(float(0.024)))
                 )
         )
-            .mul(float(0.45))
-            .add(float(0.7));
+            .mul(float(B.amp))
+            .add(float(B.mitte));
         let windEff = wu.uWindStrength.mul(gust);
         if (typeof opts.windScale === "number") windEff = windEff.mul(float(opts.windScale));
         let offX = sin(phase).mul(windEff).mul(hf).mul(float(ampX));
@@ -16203,8 +16239,8 @@ class AnazhRealm {
                 : { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
         // Kein Physik-Body: Kreaturen erden feld-nativ (`_creatureGroundY` → `_voxelSurfaceY`), bewegen sich
         // kinematisch in `updateCreatures`; Knockback via `creature.userData.knockVel`.
-        // Spawn-Klang nur für DSL-Spawns; spawnCreatures mit `silent` bleibt still (sonst 10 Pings).
-        this.playCreaturePing(emotion === "sad" ? "sad" : "happy");
+        // Der erste Ruf des neuen Wesens (klang:UMWELT.tier — die Stimme folgt dem Körper).
+        this._tierRuf(group, emotion === "sad" ? "trauer" : "freude");
         return group;
     }
 
@@ -19153,6 +19189,12 @@ class AnazhRealm {
     static get WEATHER_WIND_AMP() {
         return 0.55;
     }
+    // DIE WANDERNDE BÖE — EINE Quelle für Auge und Ohr: gust = sin(omega·t − k·dot(xz, windDir))·amp + mitte
+    // (λ = 2π/k ≈ 164 m, Periode 2π/omega ≈ 15,7 s). `_windSwayOffset` (Gras/Streu/Laub im Shader) und `_windBoeAt`
+    // (der Wind am Ohr, klang:UMWELT) lesen dieselben Zahlen.
+    static get WIND_BOE() {
+        return Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 });
+    }
     static get WEATHER_TRANSITION_DURATION_MS() {
         return 45000; // 45 s — sanft, nicht zu lang
     }
@@ -20898,7 +20940,7 @@ class AnazhRealm {
                 if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
                 if (u >= 1 && !dying.sounded) {
                     dying.sounded = true;
-                    this.playCreaturePing("sad"); // der kurze Nachklang (bestehende Maschine)
+                    this._tierRuf(creature, "trauer"); // der letzte Ruf — die Stimme des fallenden Körpers
                 }
                 if (dying.t >= dying.dauer + dying.nachklang) {
                     this.removeCreature(creature);
@@ -72012,25 +72054,9 @@ class AnazhRealm {
                 `Eine Form singt: ${bp.label || blueprintName} schwingt rein im Klang.`,
                 { blueprint: blueprintName, resonance: tags.resoniert, precision: avgPrec }
             );
-            // Eine reine Sinus-Welle, frequenz folgt Resonanz-Stärke (300-700 Hz)
-            if (this.state.symphony && this.state.symphony.ctx && this.state.symphony.enabled) {
-                try {
-                    const ctx = this.state.symphony.ctx;
-                    const freq = 300 + (tags.resoniert / 3) * 400;
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = "sine";
-                    osc.frequency.value = freq;
-                    gain.gain.value = 0;
-                    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
-                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
-                    osc.connect(gain).connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 1.3);
-                } catch {
-                    // Audio-Context evtl. nicht bereit — still ignorieren.
-                }
-            }
+            // Die Form singt: eine reine Sinus-Welle, die Tonhöhe folgt der Resonanz (klang:SUBSTANZ.singen) — am
+            // Master (vorher am Ausgang vorbei: der Master-Regler erreichte sie nie).
+            this._substanzKlang("singen", tags);
         }
 
         if (magicConducts && this.state.player && this.state.player.emotions) {
@@ -72923,76 +72949,22 @@ class AnazhRealm {
         return true;
     }
 
-    // Wasser-Strömungs-Hauch, wenn eine solide Welt-Geste die Wasser-Cell-Klassifikation verschiebt:
-    // Bandpass-Noise, Cutoff 700→200 Hz, kurzer Gain-Bogen. try/catch — die Welt scheitert nie am
-    // Audio. Stumm ohne Symphonie (headless, Audio aus, keine User-Geste).
+    // Wasser strömt zurück, wenn eine solide Welt-Geste die Wasser-Cell-Klassifikation verschiebt: die Fluss-Textur des
+    // klang-Gesetzbuchs durch einen fallenden Bandpass (klang:SUBSTANZ.wasser). Stumm ohne Symphonie.
     _playWaterReactionPing() {
-        const sym = this.state.symphony;
-        if (!sym || !sym.enabled || !sym.ctx) return;
-        try {
-            const ctx = sym.ctx;
-            const now = ctx.currentTime;
-            const dur = 0.6;
-            const sampleRate = ctx.sampleRate || 44100;
-            const buf = ctx.createBuffer(1, Math.floor(sampleRate * dur), sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-            const noise = ctx.createBufferSource();
-            noise.buffer = buf;
-            const filter = ctx.createBiquadFilter();
-            filter.type = "bandpass";
-            filter.Q.value = 1.6;
-            filter.frequency.setValueAtTime(700, now);
-            filter.frequency.exponentialRampToValueAtTime(200, now + dur);
-            const gain = ctx.createGain();
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.linearRampToValueAtTime(0.06, now + 0.08);
-            gain.gain.exponentialRampToValueAtTime(0.0005, now + dur);
-            const dest = sym.masterGain || ctx.destination;
-            noise.connect(filter).connect(gain).connect(dest);
-            noise.start(now);
-            noise.stop(now + dur + 0.05);
-        } catch {
-            /* Audio-Fehler nicht hart — die Welt soll auch ohne Klang reagieren */
-        }
+        this._substanzKlang("wasser", null);
     }
 
-    // Abklang-Sinus beim Abbau einer resonierenden Architektur: Frequenz folgt der Tag-Stärke, 0.85 s
-    // exponentieller Decay (Spiegel der Spawn-„singing“-Schicht). Schwelle resonance_mild, damit auch
-    // leise singende Strukturen einen Abschied bekommen.
+    // Eine resonierende Form verklingt beim Abbau (klang:SUBSTANZ.abschied — Tonhöhe aus der Resonanz, Glissando nach
+    // unten). Schwelle resonance_mild, damit auch leise singende Strukturen einen Abschied bekommen; stumme bleiben still.
     _playArchitectureFarewellPing(entry) {
-        if (!entry || !entry.type) return;
-        const sym = this.state.symphony;
-        if (!sym || !sym.enabled || !sym.ctx) return;
+        if (!entry || !entry.type || !this.state.symphony.enabled) return;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp) return;
-        if (typeof this.computeCompoundTags !== "function") return;
         const tags = this.computeCompoundTags(bp);
         const resonance = (tags && tags.resoniert) || 0;
-        const thresholds = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
-        const minResonance = thresholds.resonance_mild || 0.7;
-        if (resonance < minResonance) return;
-        try {
-            const ctx = sym.ctx;
-            const now = ctx.currentTime;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sine";
-            // Frequenz steigt mit Resonanz-Stärke (0.7..3 → 276..516 Hz).
-            const freq = 220 + Math.min(3, resonance) * 80;
-            osc.frequency.setValueAtTime(freq, now);
-            // Abklingender Glissando nach unten — die Struktur „verklingt".
-            osc.frequency.exponentialRampToValueAtTime(Math.max(110, freq * 0.5), now + 0.8);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.linearRampToValueAtTime(0.08, now + 0.04);
-            gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.8);
-            const dest = sym.masterGain || ctx.destination;
-            osc.connect(gain).connect(dest);
-            osc.start(now);
-            osc.stop(now + 0.85);
-        } catch {
-            /* Audio-Fehler nicht hart — der Abbau soll auch ohne Klang gehen */
-        }
+        if (resonance < AnazhRealm.WORLD_EFFECT_THRESHOLDS.resonance_mild) return;
+        this._substanzKlang("abschied", tags);
     }
 
     // Pfad analog _resolvePhantomTarget, aber ohne Phantom-Logik. Liefert
@@ -81545,23 +81517,6 @@ class AnazhRealm {
         return { pick: bestPick, scoreMap };
     }
 
-    // [ATMOSPHERE] Tag → Frequenz (Klang folgt Substanz): magieleitung hebt, dichte senkt, resoniert
-    // hellt auf. Basis baseHz, Ergebnis geklemmt auf den Sinus-Bereich.
-    _tagToFrequency(tags, baseHz = 220) {
-        if (!tags || typeof tags !== "object") return baseHz;
-        const magie = Math.max(0, Math.min(1, tags.magieleitung || 0));
-        const dichte = Math.max(0, Math.min(1, tags.dichte || 0));
-        const resoniert = Math.max(0, Math.min(1, tags.resoniert || 0));
-        // Octave-Schritt nach oben mit magieleitung (×1 bis ×2.4)
-        // Octave-Schritt nach unten mit dichte (×0.4 bis ×1)
-        // Resoniert hellt etwas auf (+5..15 %)
-        const upMul = 1 + magie * 1.4;
-        const downMul = 1 - dichte * 0.6;
-        const resoMul = 1 + resoniert * 0.15;
-        const hz = baseHz * upMul * downMul * resoMul;
-        return Math.max(60, Math.min(2000, hz));
-    }
-
     // [ATMOSPHERE] Emotion-Modulator (pure): wendet die sechs Emotions-Achsen einer modSpec an
     // ({ joy: +0.1, awe: ×1.5, … }): Präfix '×' bzw. `mul` multipliziert, '+' bzw. `add` addiert
     // (Default additiv).
@@ -82574,7 +82529,8 @@ class AnazhRealm {
     }
 
     // Pro Frame: treibt weatherTransition.progress; bei ≥ 1 state.weather = to, Transition genullt.
-    // Währenddessen wirken Skybox-Mul (_applyDayNightToScene) und Symphonie-Gain (linear).
+    // Währenddessen wirken Skybox-Mul (_applyDayNightToScene) und die Klang-Welt (der Regen liest das
+    // transition-aware Wetter-Feld `_weatherFieldFor` — kein zweiter Schreiber).
     tickWeatherTransition(_currentTime) {
         const wt = this.state.weatherTransition;
         if (!wt) return;
@@ -82585,23 +82541,6 @@ class AnazhRealm {
             // Übergang abgeschlossen: state.weather steht seit dem Aufruf auf dem Ziel; der nächste
             // DayNight-Tick setzt die finale Skybox-Tönung (currentTint direkt).
             this.state.weatherTransition = null;
-            return;
-        }
-        // Symphonie-Gain während des Übergangs sanft rampen. weather-Layer
-        // hat eigenes ramping in symphonyTick — wir setzen hier nur das
-        // gerampte Ziel-Volume statt sofortig.
-        if (this.state.symphony && this.state.symphony.enabled && this.state.symphony.weather) {
-            const w = this.state.symphony.weather;
-            const targetGain = wt.to === "rainy" ? 0.045 : 0;
-            const currentGain = wt.from === "rainy" ? 0.045 : 0;
-            const interp = currentGain + (targetGain - currentGain) * wt.progress;
-            if (w.gain && w.gain.gain) {
-                try {
-                    w.gain.gain.setTargetAtTime(interp, this.state.symphony.ctx.currentTime, 0.2);
-                } catch (e) {
-                    void e;
-                }
-            }
         }
     }
 
@@ -82682,8 +82621,8 @@ class AnazhRealm {
         return oldest;
     }
 
-    // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag, Aura-Pulse, dann removeCreature.
-    // Memory stirbt bewusst mit der Kreatur. Lebewohl-Frequenz aus _tagToFrequency(soul-Tags).
+    // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag, Aura-Pulse, der letzte Ruf, dann
+    // removeCreature. Memory stirbt bewusst mit der Kreatur.
     _creatureNaturalDeath(creature) {
         if (!creature) return false;
         const name = (creature.userData && creature.userData.name) || "(unbenannt)";
@@ -82717,28 +82656,8 @@ class AnazhRealm {
                 cause: "fauna_lifecycle",
             });
         }
-        // Lebewohl-Sinus: Frequenz aus den Compound-Tags (sprite hell, wesen tief, geist mittel);
-        // Basis 220 Hz, _tagToFrequency moduliert 0.4..2.4× = 88..528 Hz.
-        if (this.state.symphony && this.state.symphony.enabled && this.state.symphony.ctx) {
-            try {
-                const ctx = this.state.symphony.ctx;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                const freq = this._tagToFrequency(tags, 220);
-                osc.type = "sine";
-                osc.frequency.setValueAtTime(freq, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(freq * 0.5, ctx.currentTime + 1.2);
-                gain.gain.setValueAtTime(0.0, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
-                osc.connect(gain);
-                gain.connect(this.state.symphony.masterGain || ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 1.3);
-            } catch (e) {
-                void e;
-            }
-        }
+        // Das Lebewohl: der letzte Ruf des Wesens (klang:UMWELT.tier — Grundton aus der Körperlänge, Trauer-Kontur).
+        this._tierRuf(creature, "trauer");
         // removeCreature: Standard-Cleanup (Scene, Body, Aura, state.creatures); Memory wird bewusst
         // verworfen, nicht ins Journal kopiert.
         if (typeof this.removeCreature === "function") {
@@ -82895,9 +82814,9 @@ class AnazhRealm {
 
     // ===== ATLAS §25 · HUD/EINSTELLUNGEN — Statusbar · Slider · Hotbar · Settings-Räume =====
     // Welle 6.X.4 D2 (Audit 17.05.2026) — Drei Schieber: Master-Volume,
-    // Kreatur-Pings-Volume, Render-Ring-Radius. Lädt persistierte Werte
-    // aus localStorage. Master + Pings wirken live auf state.symphony +
-    // playCreaturePing-Peak. Render-Ring greift im nächsten worldgen-Tick.
+    // Umgebungsgeräusche, Render-Ring-Radius. Lädt persistierte Werte
+    // aus localStorage. Master + Umgebung wirken live auf den Master-Bus und
+    // den Bus der Klang-Welt. Render-Ring greift im nächsten worldgen-Tick.
     slidersInitDOM() {
         if (typeof document === "undefined") return;
         // Persistierte Werte laden
@@ -82928,9 +82847,9 @@ class AnazhRealm {
                 const v = parseFloat(ms.value) / 100;
                 this.state.symphony.masterVolume = v;
                 if (msv) msv.textContent = `${ms.value}%`;
-                // Live-Update wenn Audio-Graph läuft
+                // Live-Update wenn Audio-Graph läuft (EIN Mischpult: UMWELT.masterBasis, Wirt und Lab)
                 if (this.state.symphony.masterGain) {
-                    this.state.symphony.masterGain.gain.value = 0.35 * v;
+                    this.state.symphony.masterGain.gain.value = AnazhRealm._umweltGesetz().UMWELT.masterBasis * v;
                 }
                 if (typeof localStorage !== "undefined") {
                     try {
@@ -82950,15 +82869,10 @@ class AnazhRealm {
             ps.addEventListener("input", () => {
                 const v = parseFloat(ps.value) / 100;
                 this.state.symphony.creaturePingVolume = v;
-                // W4 V3 — der Regler steuert auch die Wetter-Noise (Regen):
-                // die laufende Noise-Schicht live nachziehen.
+                // Der Regler IST der Bus der Klang-Welt (Wind · Wasser · Glut · Regen · Vögel · Tier-Rufe).
                 const sym = this.state.symphony;
-                if (sym.enabled && sym.ctx && sym.weather) {
-                    const t = sym.ctx.currentTime;
-                    sym.weather.gain.gain.cancelScheduledValues(t);
-                    sym.weather.gain.gain.setValueAtTime(sym.weather.gain.gain.value, t);
-                    sym.weather.gain.gain.linearRampToValueAtTime(this._symphonyWeatherTarget(), t + 0.3);
-                }
+                if (sym.enabled && sym.ctx && sym.umwelt)
+                    sym.umwelt.bus.gain.setTargetAtTime(v, sym.ctx.currentTime, 0.1);
                 if (psv) psv.textContent = `${ps.value}%`;
                 if (typeof localStorage !== "undefined") {
                     try {
@@ -88769,6 +88683,33 @@ AnazhRealm._schrittTimbre = function () {
         return t;
     }
     return AnazhRealm._kernPflichtBruch("klang:SCHRITT_TIMBRE");
+};
+// Der EINE Umwelt-Klang-Leser (Welle 5 Klang): das Klang-Gesetz der Welt (UMWELT: Stimmen · Ohr · Tier · Orte) und
+// die reinen Funktionen des Gesetzbuchs (Mischung · Graph · Tier-Ruf). Fail-closed: ein alter Kern ist ein Bruch,
+// nie eine stille Ersatz-Welt. Memo nur im Erfolgs-Fall.
+AnazhRealm._umweltGesetz = function () {
+    if (AnazhRealm._umweltGesetzMemo) return AnazhRealm._umweltGesetzMemo;
+    const U = AnazhRealm.Gesetz("klang:UMWELT", null);
+    const kern = AnazhRealm.Gesetz("klang:umweltGraph", null) ? globalThis.__klangCore : null;
+    if (
+        U &&
+        U.stimmen &&
+        U.ohr &&
+        U.tier &&
+        Number.isFinite(U.masterBasis) &&
+        Number.isFinite(U.hoerschwelleDb) &&
+        Array.isArray(U.ohr.radien) &&
+        kern &&
+        kern.umweltMischung &&
+        kern.umweltGraph &&
+        kern.tierRuf &&
+        kern.substanzKlang &&
+        kern.SUBSTANZ
+    ) {
+        AnazhRealm._umweltGesetzMemo = { UMWELT: U, kern };
+        return AnazhRealm._umweltGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("klang:UMWELT");
 };
 // Der EINE Verhaltens-Gesetz-Leser: die Verhaltens-Zahlen der Welt-Wesen (jagd = Witterung/Biss ·
 // furcht = Wariness/Flucht · temperament = Signaturen/Floor/Gegenwehr · wandern = Leine/Schlendern)

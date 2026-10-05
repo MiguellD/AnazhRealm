@@ -20369,22 +20369,14 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Wasser-Klang ###
-    // Zwei positions-modulierte White-Noise-Layer: Fluss-Rauschen (heller Bandpass) + Wasserfall-
-    // Donnern (dunkler Lowpass). `_tickHydrosphereAudio` setzt je Layer ein `target` aus der
-    // Spieler-Distanz — der deterministische Mess-Punkt (der GainNode rampt verzögert hinterher).
+    // ### Wasser-Klang (Welle 5 Klang) ###
+    // Das Ohr hört das Wasser über den Hör-Ring (klang:UMWELT.ohr): je Punkt nass (Boden unter dem Spiegel) und
+    // Strömung (`_waterFlowAt`); der Wasserfall der Region über `_hydroFor`. Die Mischung des Gesetzes macht daraus
+    // Pegel — nah hörbar, 5 km fern stumm. Der Ring wird hier einmal ganz gefegt (der Takt fegt ohr.probenJeFrame).
     const voxelV943e = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasBuild = typeof r._buildHydroAudioLayer === "function";
-        out.hasTick = typeof r._tickHydrosphereAudio === "function";
-        out.hasSegDist = typeof r._pointSegDist2D === "function";
-        if (out.hasSegDist) {
-            out.segPerp = Math.abs(r._pointSegDist2D(0, 5, -10, 0, 10, 0) - 5) < 1e-6;
-            out.segClamp = Math.abs(r._pointSegDist2D(20, 0, -10, 0, 10, 0) - 10) < 1e-6;
-            out.segZero = r._pointSegDist2D(3, 0, -10, 0, 10, 0) < 1e-6;
-        }
         if (!r.state.symphony.enabled) {
             try {
                 r.initSymphony();
@@ -20393,92 +20385,67 @@ async function checkBandHydrosphere(ctx) {
             }
         }
         const s = r.state.symphony;
-        out.symphonyOn = !!s.enabled;
-        const ha = s.hydroAudio;
-        out.hasHydroAudio = !!ha;
-        if (ha) {
-            out.riverLayer = !!(ha.river && ha.river.noise && ha.river.filter && ha.river.gain);
-            out.fallLayer = !!(ha.waterfall && ha.waterfall.noise && ha.waterfall.filter && ha.waterfall.gain);
-            out.riverBandpass = !!(ha.river && ha.river.filter.type === "bandpass");
-            out.fallLowpass = !!(ha.waterfall && ha.waterfall.filter.type === "lowpass");
-        }
+        out.symphonyOn = !!s.enabled && !!s.umwelt;
         const hydro = r.state.hydrosphere;
         out.hasHydro = !!(hydro && hydro.ready);
-        if (out.hasHydro && ha && r.state.playerMesh) {
+        if (out.symphonyOn && out.hasHydro && r.state.playerMesh) {
+            const um = s.umwelt;
+            const K = um.kern;
             const pm = r.state.playerMesh.position;
             const orig = { x: pm.x, z: pm.z };
+            const fegen = (x, z) => {
+                pm.x = x;
+                pm.z = z;
+                r._umweltRingProbe(um, x, z, um.ring.punkte.length);
+                return K.umweltMischung(r._umweltLage());
+            };
             let rp = null;
-            if (Array.isArray(hydro.rivers)) {
-                for (const rv of hydro.rivers) {
-                    if (rv.points && rv.points.length) {
-                        rp = rv.points[0];
-                        break;
-                    }
+            for (const rv of hydro.rivers || []) {
+                if (rv.points && rv.points.length > 2) {
+                    rp = rv.points[Math.floor(rv.points.length / 2)];
+                    break;
                 }
             }
             out.hasRiver = !!rp;
+            // −∞ reist über die Brücke als null (null > −64 ist wahr — Lehre 17): stumm heißt −999.
+            const db = (v) => (Number.isFinite(v) ? v : -999);
             if (rp) {
-                pm.x = rp.x;
-                pm.z = rp.z;
-                ha.lastTick = -Infinity;
-                r._tickHydrosphereAudio();
-                out.riverNear = ha.river.target;
-                pm.x = rp.x + 5000;
-                pm.z = rp.z + 5000;
-                ha.lastTick = -Infinity;
-                r._tickHydrosphereAudio();
-                out.riverFar = ha.river.target;
+                out.flussNah = db(fegen(rp.x, rp.z).fluss.db);
+                out.flussFern = db(fegen(rp.x + 5000, rp.z + 5000).fluss.db);
             }
             const wf = Array.isArray(hydro.waterfalls) && hydro.waterfalls.length ? hydro.waterfalls[0] : null;
             out.hasWaterfall = !!wf;
             if (wf) {
-                pm.x = wf.x;
-                pm.z = wf.z;
-                ha.lastTick = -Infinity;
-                r._tickHydrosphereAudio();
-                out.fallNear = ha.waterfall.target;
-                pm.x = wf.x + 5000;
-                pm.z = wf.z + 5000;
-                ha.lastTick = -Infinity;
-                r._tickHydrosphereAudio();
-                out.fallFar = ha.waterfall.target;
+                out.fallNah = db(fegen(wf.x, wf.z).fall.db);
+                out.fallFern = db(fegen(wf.x + 5000, wf.z + 5000).fall.db);
             }
-            pm.x = orig.x;
-            pm.z = orig.z;
+            out.schwelle = K.UMWELT.hoerschwelleDb;
+            fegen(orig.x, orig.z);
         }
         return out;
     });
 
     if (!voxelV943e || voxelV943e.error) {
         check(
-            "V9.43-e: Wasser-Klang-Snapshot erreichbar",
+            "Welle 5 Klang: Wasser-Klang-Snapshot erreichbar",
             false,
             (voxelV943e && voxelV943e.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
         const e = voxelV943e;
-        check("V9.43-e: _buildHydroAudioLayer existiert", e.hasBuild);
-        check("V9.43-e: _tickHydrosphereAudio existiert", e.hasTick);
-        check("V9.43-e: _pointSegDist2D existiert", e.hasSegDist);
-        check("V9.43-e: _pointSegDist2D — Lot auf das Segment (5 m)", e.segPerp);
-        check("V9.43-e: _pointSegDist2D — Klemmung auf den Endpunkt (10 m)", e.segClamp);
-        check("V9.43-e: _pointSegDist2D — Punkt auf dem Segment ist 0", e.segZero);
-        check("V9.43-e: Symphonie aktiv (initSymphony headless)", e.symphonyOn);
-        check("V9.43-e: state.symphony.hydroAudio gebaut", e.hasHydroAudio);
-        check("V9.43-e: Fluss-Layer komplett (noise + filter + gain)", e.riverLayer);
-        check("V9.43-e: Wasserfall-Layer komplett (noise + filter + gain)", e.fallLayer);
-        check("V9.43-e: Fluss-Filter ist Bandpass (helles Rauschen)", e.riverBandpass);
-        check("V9.43-e: Wasserfall-Filter ist Lowpass (dunkles Donnern)", e.fallLowpass);
+        const zahl = (v) => (v > -900 ? v.toFixed(1) : "−∞");
+        check("Welle 5 Klang: Symphonie + Klang-Welt aktiv (initSymphony headless)", e.symphonyOn);
         check(
-            "V9.43-e: Fluss-Klang reagiert auf Distanz (nah laut, fern still)",
-            e.hasRiver === true && e.riverNear > 0.05 && e.riverFar === 0,
-            `nah=${(e.riverNear || 0).toFixed(3)} fern=${(e.riverFar || 0).toFixed(3)}`
+            "Welle 5 Klang: der Hör-Ring hört den Fluss (nah über der Hörschwelle, 5 km fern stumm)",
+            e.hasRiver === true && e.flussNah >= e.schwelle && e.flussFern < e.schwelle,
+            `nah=${zahl(e.flussNah)} dB fern=${zahl(e.flussFern)} dB`
         );
-        check(
-            "V9.43-e: Wasserfall-Donnern reagiert auf Distanz (nah laut, fern still)",
-            e.hasWaterfall === true && e.fallNear > 0.05 && e.fallFar === 0,
-            `nah=${(e.fallNear || 0).toFixed(3)} fern=${(e.fallFar || 0).toFixed(3)}`
-        );
+        if (e.hasWaterfall)
+            check(
+                "Welle 5 Klang: der Wasserfall donnert nah, schweigt fern",
+                e.fallNah >= e.schwelle && e.fallFern < e.schwelle,
+                `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB`
+            );
     }
 }
 
@@ -40097,7 +40064,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- Wurzel-Helper existieren
         out.affinityPickHelper = typeof r._affinityPickFromCandidates === "function";
-        out.tagFrequencyHelper = typeof r._tagToFrequency === "function";
         out.emotionModulateHelper = typeof r._emotionModulate === "function";
         out.creatureSoulTagsHelper = typeof r._creatureSoulTags === "function";
         out.faunaTargetHelper = typeof r._currentFaunaTarget === "function";
@@ -40128,18 +40094,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         }
         out.affinityPicksDichteInDichteField = dichteWins > 20;
 
-        // --- Vision 2: _tagToFrequency korreliert mit magieleitung
-        const f1 = r._tagToFrequency({ magieleitung: 0.9, dichte: 0.1 }, 220);
-        const f2 = r._tagToFrequency({ magieleitung: 0.1, dichte: 0.9 }, 220);
-        out.tagFreqHighMagieIsHigher = f1 > f2;
-        // Soul-spezifische Frequenzen: eine magie-hohe Substanz klingt höher
-        // als das erdige wesen (ALTLASTEN-NULL: LITERAL-Tags statt sprite).
-        const magieTags = { magieleitung: 0.9, resoniert: 0.6, dichte: 0.2 };
-        const wesenTags = r._creatureSoulTags("wesen");
-        const spriteFreq = r._tagToFrequency(magieTags, 220);
-        const wesenFreq = r._tagToFrequency(wesenTags, 220);
-        out.spriteFreqHigherThanWesen = spriteFreq > wesenFreq;
-        out.bothFrequenciesInRange = spriteFreq >= 60 && spriteFreq <= 2000 && wesenFreq >= 60 && wesenFreq <= 2000;
+        // --- Vision 2 (Welle 5 Klang): die Stimme folgt dem KÖRPER — der Tier-Ruf des klang-Gesetzbuchs
+        // (Grundton ∝ Körperlänge^−0,9): das kleine Wesen ruft höher als das große.
+        const rufKern = AnazhRealm._umweltGesetz().kern;
+        const kleinF0 = rufKern.tierRufPuffer({ laengeM: 0.7, stimmung: "freude", saat: 1 }).f0;
+        const grossF0 = rufKern.tierRufPuffer({ laengeM: 2.2, stimmung: "freude", saat: 1 }).f0;
+        out.rufKleinHoeher = kleinF0 > grossF0;
+        out.bothFrequenciesInRange = kleinF0 >= 60 && kleinF0 <= 2000 && grossF0 >= 60 && grossF0 <= 2000;
 
         // --- Vision 3: _emotionModulate moduliert mit Emotion-Achsen
         const noEmo = { joy: 0, sorrow: 0 };
@@ -40316,7 +40277,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
     if (wave6g3v2Results && !wave6g3v2Results.error) {
         check("Welle 6.G3 V2: _affinityPickFromCandidates existiert", wave6g3v2Results.affinityPickHelper);
-        check("Welle 6.G3 V2: _tagToFrequency existiert", wave6g3v2Results.tagFrequencyHelper);
         check("Welle 6.G3 V2: _emotionModulate existiert", wave6g3v2Results.emotionModulateHelper);
         check("Welle 6.G3 V2: _creatureSoulTags existiert", wave6g3v2Results.creatureSoulTagsHelper);
         check("Welle 6.G3 V2: _currentFaunaTarget existiert", wave6g3v2Results.faunaTargetHelper);
@@ -40329,14 +40289,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             wave6g3v2Results.affinityPicksDichteInDichteField
         );
         check(
-            "Welle 6.G3 V2 Vision: _tagToFrequency mit hoher magieleitung > niedriger magieleitung",
-            wave6g3v2Results.tagFreqHighMagieIsHigher
+            "Welle 5 Klang: der Tier-Ruf folgt dem Körper (0,7 m ruft höher als 2,2 m)",
+            wave6g3v2Results.rufKleinHoeher
         );
-        check(
-            "Welle 6.G3 V2 Vision: sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)",
-            wave6g3v2Results.spriteFreqHigherThanWesen
-        );
-        check("Welle 6.G3 V2 Vision: beide Frequenzen im Range [60, 2000] Hz", wave6g3v2Results.bothFrequenciesInRange);
+        check("Welle 5 Klang: beide Ruf-Grundtöne im Range [60, 2000] Hz", wave6g3v2Results.bothFrequenciesInRange);
         check(
             "Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)",
             wave6g3v2Results.emotionModulateAdditiveWorks
@@ -46512,7 +46468,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             ms.dispatchEvent(new Event("input"));
         }
 
-        // --- D2: Pings-Slider beeinflusst playCreaturePing-Peak
+        // --- D2: der Umgebungs-Regler (slider-pings) schreibt creaturePingVolume (den Bus der Klang-Welt)
         const ps = document.getElementById("slider-pings");
         if (ps) {
             ps.value = "0";
@@ -46534,9 +46490,9 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             rs.dispatchEvent(new Event("input"));
         }
 
-        // --- D2: playCreaturePing-Source enthält creaturePingVolume
-        const pcpSrc = window.__codeOf(r.playCreaturePing);
-        out.pingsSourceUsesVolume = /creaturePingVolume/.test(pcpSrc);
+        // --- D2 (Welle 5 Klang): der Umgebungs-Regler IST der Bus der Klang-Welt — der Bau liest ihn
+        const ubSrc = window.__codeOf(r._umweltKlangBauen);
+        out.pingsSourceUsesVolume = /creaturePingVolume/.test(ubSrc);
 
         return out;
     });
@@ -46665,7 +46621,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
         check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
         check(
-            "Welle 6.X.4 D2: playCreaturePing-Source nutzt creaturePingVolume",
+            "Welle 6.X.4 D2: der Bus der Klang-Welt liest creaturePingVolume (Umgebungs-Regler)",
             wave6x4bResults.pingsSourceUsesVolume
         );
     } else {
@@ -52882,71 +52838,54 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r || !r.state || !r.state.symphony) return null;
         const out = {};
 
-        // (a) initSymphony erfolgreich
+        // (a) initSymphony erfolgreich — EIN Master (UMWELT.masterBasis × Regler), die Klang-Welt auf ihrem Bus
         const initOk = r.initSymphony();
         const s = r.state.symphony;
+        const UM = r.constructor._umweltGesetz().UMWELT;
         out.initOk = initOk === true && s.enabled === true && !!s.ctx;
-        out.hasAmbient = !!s.ambient && !!s.ambient.osc1 && !!s.ambient.osc2 && !!s.ambient.lfo && !!s.ambient.filter;
-        // V8.86 — der Drone ist eine leise Grundierung: weiches
-        // Dreieck (kein buzzig-intensiver Sägezahn), Gain ≤ 0.1.
-        out.droneIsSoft =
-            !!s.ambient &&
-            s.ambient.osc1.type === "triangle" &&
-            s.ambient.osc2.type === "triangle" &&
-            // V8.88 — Drone −80%: kaum hörbare Grundierung (≤ 0.02).
-            s.ambient.ambientGain.gain.value <= 0.02 &&
-            // V8.87 — sanfte Schwebung: < 1 Hz Verstimmung (kein
-            // extremer 1.5-Hz-Amplituden-Puls mehr).
-            Math.abs(s.ambient.osc2.frequency.value - s.ambient.osc1.frequency.value) < 1;
-        out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
-        // V8.88 — die Wetter-Noise (Regen) hängt am Umgebungs-
-        // Regler (creaturePingVolume) + ist ~80 % leiser (0.014).
+        out.hasUmwelt = !!s.umwelt && !!s.umwelt.bus && !!s.umwelt.graph && !!s.umwelt.ring;
+        // Welle 5 Klang — der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
+        out.keinDrohn = !("ambient" in s) && !("weather" in s) && !("hydroAudio" in s);
+        out.masterAusGesetz =
+            Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
+        out.busAmRegler = Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume == null ? 1 : s.creaturePingVolume)) < 1e-6;
+
+        // (b) Der Regen ist der rain-Kanal des Wetter-Felds (transition-aware) — die Lage am Ohr liest ihn, die
+        //     Mischung des Gesetzes macht ihn hörbar (rainy) oder stumm (sunny).
         const wReal = r.state.weather;
+        const wtReal = r.state.weatherTransition;
+        r.state.weatherTransition = null;
         r.state.weather = "rainy";
-        s.creaturePingVolume = 1;
-        const wFull = r._symphonyWeatherTarget();
-        s.creaturePingVolume = 0.5;
-        const wHalf = r._symphonyWeatherTarget();
+        const lageNass = r._umweltLage();
+        const mixNass = s.umwelt.kern.umweltMischung(lageNass);
         r.state.weather = "sunny";
-        const wDry = r._symphonyWeatherTarget();
-        s.creaturePingVolume = 1;
+        const lageTrocken = r._umweltLage();
+        const mixTrocken = s.umwelt.kern.umweltMischung(lageTrocken);
         r.state.weather = wReal;
-        out.weatherOnPingSlider = Math.abs(wFull - 0.014) < 0.001 && Math.abs(wHalf - 0.007) < 0.001 && wDry === 0;
+        r.state.weatherTransition = wtReal;
+        out.regenAusFeld =
+            Math.abs(lageNass.regen - r.constructor.WEATHER_FIELD.rainy.rain) < 1e-9 &&
+            mixNass.regen.db >= UM.hoerschwelleDb &&
+            mixTrocken.regen.db === -Infinity;
 
-        // (b) Wetter-Layer-Gain folgt state.weather
-        r.state.weather = "sunny";
+        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar)
+        s.umwelt.letzteMischung = -Infinity;
         r.symphonyTick();
-        // Der direkte Wert kann in einer Rampe stehen → das ZIEL via lastWeather prüfen + dass ein zweiter
-        // Tick mit gleichem Wetter nichts tut (idempotent).
-        const lastBefore = s.lastWeather;
-        r.symphonyTick(); // idempotent
-        out.weatherTickIdempotent = s.lastWeather === lastBefore;
+        out.taktMischt = !!s.umwelt.lage && !!s.umwelt.mix && Array.isArray(r._klangZensus().stimmen);
 
-        // Setzt rainy → Tick muss umschalten und lastWeather mit ziehen
-        r.state.weather = "rainy";
-        r.symphonyTick();
-        out.weatherSwitchedToRainy = s.lastWeather === "rainy";
+        // (d) Der Tier-Ruf zählt jeden Ruf (die Stimme folgt dem Körper)
+        const rufeVor = s.tierRufe;
+        const wesen = (r.state.creatures || [])[0] || { position: { x: 0, y: 0, z: 0 }, userData: {} };
+        r._tierRuf(wesen, "freude");
+        r._tierRuf(wesen, "trauer");
+        out.rufZaehlt = s.tierRufe === rufeVor + 2;
 
-        // (c) Creature-Ping-Zähler steigt mit jedem Spawn
-        const pingBefore = s.creaturePingCount;
-        // Direkter Aufruf des Hooks — entkoppelt von THREE-Setup,
-        // verifiziert nur die Audio-Spur
-        r.playCreaturePing("happy");
-        r.playCreaturePing("sad");
-        out.pingCounterRose = s.creaturePingCount === pingBefore + 2;
+        // (e) masterGain im Bereich
+        out.masterGainSane = !!s.masterGain && s.masterGain.gain.value > 0 && s.masterGain.gain.value <= 1;
 
-        // (d) Audio-Graph: masterGain ist mit destination verbunden
-        //     (kann nicht direkt verifiziert werden, aber wir
-        //     prüfen dass gain.value im erwarteten Bereich liegt)
-        out.masterGainSane =
-            !!s.masterGain &&
-            typeof s.masterGain.gain.value === "number" &&
-            s.masterGain.gain.value > 0 &&
-            s.masterGain.gain.value <= 1;
-
-        // (e) disposeSymphony räumt auf
+        // (f) disposeSymphony räumt auf
         r.disposeSymphony();
-        out.disposeClears = s.enabled === false && s.ctx === null && s.ambient === null;
+        out.disposeClears = s.enabled === false && s.ctx === null && s.umwelt === null;
 
         return out;
     });
@@ -52959,16 +52898,13 @@ async function checkBandEarlyRingsAndUi(ctx) {
         );
     } else {
         check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
-        check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
-        check("V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)", ring4Results.droneIsSoft);
-        check(
-            "V8.89: Regen-Noise hängt am Umgebungs-Regler + ist ~80% leiser (0.014)",
-            ring4Results.weatherOnPingSlider
-        );
-        check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
-        check("Ring 4: symphonyTick ist idempotent bei gleichem Wetter", ring4Results.weatherTickIdempotent);
-        check("Ring 4: symphonyTick schaltet Wetter-Layer um (sunny→rainy)", ring4Results.weatherSwitchedToRainy);
-        check("Ring 4: playCreaturePing erhöht Zähler", ring4Results.pingCounterRose);
+        check("Welle 5 Klang: die Klang-Welt steht (Bus + Graph + Hör-Ring)", ring4Results.hasUmwelt);
+        check("Welle 5 Klang: kein Drohn, keine Wetter-/Hydro-Schicht neben dem Gesetz", ring4Results.keinDrohn);
+        check("Welle 5 Klang: Master = UMWELT.masterBasis × Regler (EIN Mischpult)", ring4Results.masterAusGesetz);
+        check("Welle 5 Klang: der Bus der Klang-Welt hängt am Umgebungs-Regler", ring4Results.busAmRegler);
+        check("Welle 5 Klang: Regen = rain-Kanal des Wetter-Felds (rainy hörbar, sunny stumm)", ring4Results.regenAusFeld);
+        check("Welle 5 Klang: symphonyTick mischt die Lage am Ohr", ring4Results.taktMischt);
+        check("Welle 5 Klang: _tierRuf zählt jeden Ruf", ring4Results.rufZaehlt);
         check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
         check("Ring 4: disposeSymphony räumt Audio-Graph komplett auf", ring4Results.disposeClears);
     }
