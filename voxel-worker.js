@@ -198,6 +198,8 @@ function applyStateSnapshot(snap) {
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
+    // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
+    if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
     // Γ4-Vollendung V18.193 — Erbgut-Anker vom Main übernehmen + Cache
     // invalidieren (sonst klebt der alte re-computed Anker im Worker, wenn
     // der Main ihn aus dem Bündel-Import frisch eingespielt hat).
@@ -2041,13 +2043,16 @@ function attachFieldColors(positions) {
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         return t * t * (3 - 2 * t);
     };
-    const stone = [0.42, 0.44, 0.49];
-    const earth = [0.27, 0.49, 0.19];
+    // DIE BODEN-PALETTE kommt vom Main (Init-Schnappschuss `bodenPalette`, dieselben linearen Zahlen wie
+    // `AnazhRealm.BODEN_FARBE`) — ohne sie färbt der Worker nicht (laut, kein stiller Ersatz).
+    const P = state.bodenPalette;
+    if (!P) throw new Error("attachFieldColors: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    const stone = P.rock;
+    const earth = P.mead;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): Mirror von Main
-    // _attachVoxelFieldColors. dampEarth + Sichtbarkeits-Kurve hardkodiert
-    // (V17.100-Lehre — bit-Vertrag mit Main; bei Konstanten-Änderung beide
-    // mit-ziehen).
-    const dampEarth = [0.22, 0.18, 0.12];
+    // `_bodenFarbeAt`. Die Sichtbarkeits-Kurve hardkodiert (V17.100-Lehre — bit-Vertrag mit Main; bei
+    // Konstanten-Änderung beide mit-ziehen).
+    const dampEarth = P.wet;
     const F_VIS_LO = 0.3;
     const F_VIS_HI = 0.85;
     // V18.199 — Γ-M LICHEN Worker-Mirror (V17.100-Lehre: Konstanten hier
@@ -2058,13 +2063,13 @@ function attachFieldColors(positions) {
     const LICHEN_DICHTE_LO = 0.5;
     const LICHEN_DICHTE_HI = 0.85;
     const LICHEN_STRENGTH = 0.22;
-    const lichenTint = [0.42, 0.5, 0.34];
-    const lava = [0.32, 0.19, 0.15]; // Ω-OPSIS Säule I — dunkles Basalt (Main-Mirror, Determinismus)
-    const violet = [0.55, 0.36, 0.86];
-    const snow = [0.92, 0.93, 1.0];
-    const sed = [0.78, 0.72, 0.52];
-    const sand = [0.87, 0.78, 0.55];
-    const packedDirt = [0.32, 0.26, 0.18]; // V18.230 (Ω-O6) getrampelte Pfad-Erde
+    const lichenTint = P.flechte;
+    const lava = P.basalt; // Ω-OPSIS Säule I — dunkles Basalt
+    const violet = P.magie;
+    const snow = P.schnee;
+    const sed = P.sediment;
+    const sand = P.sand;
+    const packedDirt = P.dirt; // V18.230 (Ω-O6) getrampelte Pfad-Erde
     const sandNoise = state.noise; // Mirror anazhRealm._voxelNoise (selber Seed)
     const base = state.baseHeight || 0;
     // V17.105 — Schnee-Prominenz-Schwelle (Mirror von _attachVoxelFieldColors).
@@ -2106,7 +2111,9 @@ function attachFieldColors(positions) {
             LICHEN_STRENGTH;
         mix(lichenTint, lichenMix);
         mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt (Main-Mirror)
-        mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+        // Der Magie-Akzent in Flecken (Main-Spiegel `_bodenFarbeAt`).
+        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-
         // identisch zum Main (`_attachVoxelFieldColors`): cont0 = λ7100-m-
         // kontinentale Basis; Schnee-Caps nur auf genuine Erhebungen statt über
@@ -2116,9 +2123,10 @@ function attachFieldColors(positions) {
         const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
         const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
-        mix(sed, ss(-2, -14, y));
+        // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
         const waterY = waterLevelAt(x, z);
         const aboveWater = y - waterY;
+        mix(sed, ss(-0.5, -4, aboveWater));
         if (aboveWater > -1.5 && aboveWater < 2.0 && sandNoise) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;

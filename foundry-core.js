@@ -73,13 +73,29 @@ const SEASON = {
     uSeasonMul: { value: new THREE.Color(1, 1, 1) },
 };
 
+// DIE BODEN-PALETTE des Terrain-Studios — die EINE Boden-Farbe von Labor UND Welt. Jeder Wert ist eine
+// sRGB-ABSICHT (FARB-GESETZ): der Leser dekodiert linear (die Welt in `AnazhRealm.BODEN_FARBE`, das Labor
+// ueber THREE.Color). Lineare Albedo Y in Klammern, gegen die gemessene Natur:
+//   lit      Waldboden = Laubstreu/Humus unter dem Kronendach (0,11; Laubstreu 0,08-0,15) — bis 05.10. ein
+//            dunkles Moos-Gruen 0x2c3621 (0,033): der Studio-Waldkern lag schwarz, die Welt trug ihn nie
+//   mead     Wiesen-Grund (0,11) · dirt Pfad-Erde (0,07) · rock Fels, warm-grau (0,13) · wet nasser Grund (0,045)
+//   sand     Strand (0,48)
+// Die Welt-Klassen, die das Labor nicht kennt (das Labor ignoriert sie, must-ignore):
+//   schnee   Neuschnee auf der Prominenz (0,86) · basalt Glut-Gestein, die Glut traegt das Emissiv (0,04)
+//   magie    der Magie-AKZENT (Flecken in Magie-Regionen, nie Grundfarbe) (0,15)
+//   sediment der Seegrund unter Wasser, Schlick (0,15) · flechte die Flechten-Patina auf feuchtem Stein (0,19)
 const PORTAL_GROUND = {
-    lit: 0x2c3621,
+    lit: 0x735a3c,
     mead: 0x55632f,
     dirt: 0x5c4a33,
     rock: 0x6b6258,
     wet: 0x33402a,
     sand: 0xc9b791,
+    schnee: 0xebedff,
+    basalt: 0x523026,
+    magie: 0x7a58b8,
+    sediment: 0x7a6a52,
+    flechte: 0x6b8057,
 };
 
 const PORTAL_SKY = {
@@ -5473,3 +5489,7 @@ var BAKERS_BY_KIND = { kreatur: bakeTierInstance, koerper: bakeMenschInstance };
 // wie der GESEHENE (buildInstance liest dieselben PRESETS im Worker).
 // Zuweisung hier (nach der PRESETS-Definition — const ist kein Global).
 __terrainCore.PHYTO_PRESETS = PRESETS;
+// DIE BODEN-PALETTE reist im Terrain-Namensraum zum SYNCHRONEN Stamm-Leser (`AnazhRealm.BODEN_FARBE`, rein
+// additiv): der Voxel-Worker faerbt jeden Chunk-Vertex mit ihr, darum muss sie VOR dem ersten Chunk feststehen —
+// der async Buch-Umschlag (get-book) kam zu spaet und trug nur vier ihrer Werte.
+__terrainCore.PORTAL_GROUND = PORTAL_GROUND;

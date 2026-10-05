@@ -99,7 +99,7 @@ const rec = by.r,
 console.log("Rezepte:", rec && rec.book ? Object.keys(rec.book).length + " Presets ✅" : "❌");
 console.log(
     "World-Params:",
-    by.r && by.r.worldParams && by.r.worldParams.ground ? "✅" : "❌",
+    by.r && by.r.worldParams && by.r.worldParams.sky ? "✅" : "❌",
     "· Render-Config:",
     by.r && by.r.renderConfig ? "✅" : "❌"
 );

@@ -33470,14 +33470,15 @@ async function checkBandV18199GammaMLichen(ctx) {
             out.dichteLo = A.LICHEN.dichteLo;
             out.dichteHi = A.LICHEN.dichteHi;
             out.strength = A.LICHEN.strength;
-            out.tint = A.LICHEN.tint;
+            // Die Flechten-Farbe ist die der Boden-Palette (Studio PORTAL_GROUND.flechte nach dem Farb-Gesetz).
+            out.tint = A.BODEN_FARBE.flechte;
             out.constsSensible =
                 A.LICHEN.feuchteLo < A.LICHEN.feuchteHi &&
                 A.LICHEN.dichteLo < A.LICHEN.dichteHi &&
                 A.LICHEN.strength > 0 &&
                 A.LICHEN.strength < 1 &&
-                Array.isArray(A.LICHEN.tint) &&
-                A.LICHEN.tint.length === 3;
+                Array.isArray(out.tint) &&
+                out.tint.length === 3;
         }
 
         // (L2) Source-Probe Main: LICHEN-Mix lebt in der EINEN Boden-Farbe (_bodenFarbeAt)

@@ -15708,9 +15708,9 @@ class AnazhRealm {
                 // Farb-Bruch aus dem Boden; die Spitze bleibt sattes Grün, nicht gelb.
                 const _mg = AnazhRealm.MEADOW_GREEN;
                 const baseCol = vec3(_mg[0], _mg[1], _mg[2]);
-                // Spitze = Sommer-Grasakzent `seasonAccent` (0x6f9a3a) × 1.08 aus worlds/terrain/phytogenesis.js
-                // (die emitGrass-tipCol-Formel), sRGB→linear — dieselbe Konvention wie MEADOW_GREEN.
-                const tipCol = vec3(0.1874, 0.383, 0.0492);
+                // Spitze = der Sommer-Grasakzent des Studios (GRAS_SPITZE, dieselbe Spitze wie die Boden-Wiese).
+                const _sp = AnazhRealm.GRAS_SPITZE;
+                const tipCol = vec3(_sp[0], _sp[1], _sp[2]);
                 let albedo = TSL.mix(baseCol, tipCol, hfN);
                 const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
                 albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
@@ -21442,6 +21442,9 @@ class AnazhRealm {
             // Der persistierte macroAnker reist mit — sonst baut der Worker nach einer Konstanten-Änderung
             // einen anderen Anker als der Main (Naht-Drift). null bei gen < 3.
             macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
+            // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
+            // kein hartkodierter Spiegel der Farben.
+            bodenPalette: AnazhRealm.BODEN_FARBE,
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -25530,6 +25533,7 @@ class AnazhRealm {
         const oz = cz * cfg.span - cfg.step;
         const map = new Float32Array(M * M).fill(NaN);
         const gruen = new Uint8Array(M * M); // 0…255 = Wiesen-Gewicht 0…1
+        const gs = AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle;
         for (let t = 0; t + 2 < idx.length; t += 3) {
             const a = idx[t] * 3;
             const b = idx[t + 1] * 3;
@@ -25571,7 +25575,7 @@ class AnazhRealm {
                     if (map[m] >= y) continue;
                     map[m] = y;
                     // Grün-Kanal: dieselbe Wiesen-Wache wie das Boden-Fragment (`_green` in
-                    // `_terrainGeologyAlbedo`: smoothstep(0, 0,1, g − (r+b)/2)) aus der Vertex-Farbe.
+                    // `_terrainGeologyAlbedo`: smoothstep(0, gruenSchwelle, g − (r+b)/2)) aus der Vertex-Farbe.
                     if (col) {
                         let g = 0;
                         for (const [w, o] of [
@@ -25580,7 +25584,7 @@ class AnazhRealm {
                             [w3, c],
                         ])
                             g += w * (col[o + 1] - 0.5 * (col[o] + col[o + 2]));
-                        const t2 = Math.max(0, Math.min(1, g / 0.1));
+                        const t2 = Math.max(0, Math.min(1, g / gs));
                         gruen[m] = Math.round(255 * t2 * t2 * (3 - 2 * t2));
                     }
                 }
@@ -26076,11 +26080,15 @@ class AnazhRealm {
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     }
 
-    // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts (stone/earth/lava/violet/snow/
-    // sediment/Strand/Pfad) aus derselben fraktalen Sprache (worldFieldAt) → dieselben Biom-Regionen wie der
-    // Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der Fern-Ring und das Feld-Panorama lesen sie für die
-    // Ferne (kein vereinfachter Fern-Zwilling); der Worker spiegelt sie bit-identisch (`attachFieldColors`).
-    // `out` = [r, g, b] (linear, wie das Vertex-Attribut).
+    // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
+    // (worldFieldAt) → dieselben Biom-Regionen wie der Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der
+    // Fern-Ring und das Feld-Panorama lesen sie für die Ferne (kein vereinfachter Fern-Zwilling); der Worker
+    // rechnet sie bit-identisch (`attachFieldColors`) mit DERSELBEN Palette (`bodenPalette` im Schnappschuss).
+    // Die Farben sind die Studio-Palette nach dem FARB-GESETZ (`BODEN_FARBE`): bis V18.530 trug der Boden Absichts-
+    // Werte roh als linear (der Stein 0,42/0,44/0,49 mit dem Magie-Violett darüber: weiß-lavendel, Blick-Tour 05).
+    // Magie ist ein AKZENT in Flecken, der Seegrund unter jedem Wasser Schlick. Die Laubstreu liegt NICHT hier: sie
+    // folgt den echten Kronen (`_kronenStreuNeu` → `_wegeBodenFarbe`). `out` = [r, g, b] (linear, wie das Vertex-
+    // Attribut).
     _bodenFarbeAt(x, y, z, out) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
@@ -26091,13 +26099,21 @@ class AnazhRealm {
         }
         const sandNoise = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        const B = AnazhRealm.BODEN_FARBE;
-        const { stone, earth, dampEarth, lava, violet, snow, sed, sand, packedDirt } = B;
+        const P = AnazhRealm.BODEN_FARBE;
+        const stone = P.rock;
+        const earth = P.mead;
+        const dampEarth = P.wet;
+        const lava = P.basalt;
+        const violet = P.magie;
+        const snow = P.schnee;
+        const sed = P.sediment;
+        const sand = P.sand;
+        const packedDirt = P.dirt;
         // V17.105 — Schnee-Schwelle als PROMINENZ (Relief über der kontinentalen
         // Basis), nicht absolutes y. HARTKODIERT + im Worker gespiegelt (eine Runtime-Tunable würde den
         // Worker desyncen, V17.100).
-        const SNOW_PROM_START = B.schneeProminenzStart;
-        const SNOW_PROM_FULL = B.schneeProminenzVoll;
+        const SNOW_PROM_START = AnazhRealm.SCHNEE_PROMINENZ.start;
+        const SNOW_PROM_FULL = AnazhRealm.SCHNEE_PROMINENZ.voll;
         const ss = (e0, e1, x) => {
             let t = (x - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
@@ -26128,8 +26144,8 @@ class AnazhRealm {
         c[1] *= _cShade;
         c[2] *= _cShade;
         // Lichen: grüne Patina = feuchte × dichte (Stein, nicht Erde/Lava) × cluster (Flecken). Im Mix-Stack
-        // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Konstanten in
-        // AnazhRealm.LICHEN; der Worker spiegelt hardkodiert.
+        // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Schwellen in
+        // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
         const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
         const lichenMix =
@@ -26137,9 +26153,11 @@ class AnazhRealm {
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
             lichenCluster *
             LCH.strength;
-        mix(LCH.tint, lichenMix);
+        mix(P.flechte, lichenMix);
         mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
-        mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+        // Der Magie-Akzent: Flecken (λ ≈ 11 m, ein Sechstel der Fläche, höchstens 30 %) in den Magie-Regionen — nie die Grundfarbe.
+        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Schnee auf PROMINENZ `y − cont0` (Relief über der λ7100-m-Basis), nicht absolutem y — sonst
         // schmiert Schnee über ~halb den Boden (Hochkontrast-Flecken, die unter Licht driften). Robust gegen
         // regionale Höhen (Prominenz max 70 m nah, 156 m fern). Wer die Terrain-Höhe ändert, MUSS die
@@ -26149,12 +26167,14 @@ class AnazhRealm {
         const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
         const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
-        mix(sed, ss(-2, -14, y));
+        // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
+        // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
+        const waterY = this._waterLevelAt(x, z);
+        const aboveWater = y - waterY;
+        mix(sed, ss(-0.5, -4, aboveWater));
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
         // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
         // (λ~290 m), (c) karge Fels-Patches ohne Sand.
-        const waterY = this._waterLevelAt(x, z);
-        const aboveWater = y - waterY;
         if (aboveWater > -1.5 && aboveWater < 2.0) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
@@ -26420,43 +26440,76 @@ class AnazhRealm {
         return Object.freeze({ kachel: 6, stufe1: 5, radius: 14, rand: 4, kachelnJeTakt: 1 });
     }
 
+    // DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut): die Studio-Palette PORTAL_GROUND
+    // (foundry-core, synchron über den Terrain-Namensraum) nach dem FARB-GESETZ — jedes Hex ist eine sRGB-
+    // ABSICHT, die Albedo sein linearer Wert. Bis V18.530 trug die Welt ihren eigenen Zwilling (stone · earth ·
+    // dampEarth …) mit Absichts-Werten ROH als linear (Stein 0,42/0,44/0,49 statt 0,15, Sand 0,87 statt 0,58);
+    // der Chunk-Stoff multiplizierte die Vertex-Farbe ein zweites Mal (Albedo = Farbe², ein zufälliges Gamma 2
+    // für den Boden, das die Wiese MEADOW_GREEN·Farbe nur halb so hell ließ). Einmal je Sitzung dekodiert;
+    // der Voxel-Worker bekommt DIESELBEN Zahlen im Init-Schnappschuss (`bodenPalette`), kein Spiegel. Ohne die
+    // Palette bricht der Boden laut (Kern-Pflicht).
+    static get BODEN_FARBE() {
+        if (AnazhRealm._bodenFarbeMemo) return AnazhRealm._bodenFarbeMemo;
+        const PG =
+            AnazhRealm.Gesetz("terrain:PORTAL_GROUND", null) || AnazhRealm._kernPflichtBruch("terrain:PORTAL_GROUND");
+        const out = {};
+        for (const k of Object.keys(PG)) out[k] = Object.freeze(AnazhRealm._srgbHexLinear(PG[k]));
+        AnazhRealm._bodenFarbeMemo = Object.freeze(out);
+        return AnazhRealm._bodenFarbeMemo;
+    }
+
+    // Das FARB-GESETZ als EINE Rechnung: ein sRGB-Hex (die Absicht des Farbwählers) → [r, g, b] linear (die
+    // sRGB-Übertragungs-Funktion IEC 61966-2-1). Rein, ohne THREE (die Palette steht vor dem Renderer).
+    static _srgbHexLinear(hex) {
+        const dek = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        return [dek(((hex >> 16) & 255) / 255), dek(((hex >> 8) & 255) / 255), dek((hex & 255) / 255)];
+    }
+
     // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Meadow-
     // Boden-Tint (`_terrainGeologyAlbedo`) → der Halm wächst nahtlos aus dem Boden. Die Halm-Spitze
-    // bleibt heller; die lush/dry-instanceColor moduliert Halm und Boden ko-variant.
+    // bleibt heller; die lush/dry-instanceColor moduliert Halm und Boden ko-variant. Es IST der Wiesen-Grund
+    // der Boden-Palette (`mead`), dieselbe Farbe wie der Vertex der Wiese.
     static get MEADOW_GREEN() {
-        // Der Wiesen-Grund liest die Studio-Boden-Farbe `cMead` (worlds/terrain/phytogenesis.js) LIVE über
-        // `get-world-params` (`_studioGround.mead`), sRGB→linear; Fallback = der bisherige Wert (0x55632f).
-        const s = AnazhRealm._studioGround;
-        if (s && s.mead) return s.mead;
-        return [0.0908, 0.1248, 0.0284];
+        return AnazhRealm.BODEN_FARBE.mead;
+    }
+
+    // Die Gras-SPITZE: der Sommer-Grasakzent des Studios (SAISON_GESETZ, Sommer-Stütze `ac` 0x6f9a3a) nach der
+    // emitGrass-tipCol-Formel (× 1,08 in sRGB) und dem FARB-GESETZ linear (0,187/0,383/0,049). EINE Quelle für die
+    // Halm-Spitze des Nah-Grases und die Halme der Boden-Wiese (`_terrainGeologyAlbedo`) — bis 05.10. stand sie als
+    // Literal im Gras-Stoff, der Boden kannte sie nicht.
+    static get GRAS_SPITZE() {
+        if (AnazhRealm._grasSpitzeMemo) return AnazhRealm._grasSpitzeMemo;
+        const ac = AnazhRealm._saisonGesetz().stuetzen[1].ac;
+        if (!Number.isFinite(ac)) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.stuetzen[1].ac");
+        const dek = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const kanal = (s) => dek(Math.min(1, (((ac >> s) & 255) / 255) * 1.08));
+        AnazhRealm._grasSpitzeMemo = Object.freeze([kanal(16), kanal(8), kanal(0)]);
+        return AnazhRealm._grasSpitzeMemo;
     }
 
     // Per-Fragment-Multi-Klassen-Geologie: die Klassen emergieren aus der Welt-Wahrheit — steile Hänge
     // tragen keine lockere Erde (sie rutscht) → Fels bricht durch. `_steep = 1 − normalWorld.y`: 0 flach,
     // 0.29 ≈ 45°, 0.5 = 60°, 1 senkrecht. Das Profil ist konservativ (nur echte Hänge versteinern).
     static get TERRAIN_GEOLOGY() {
-        // Fels-/Moos-/Waldkern-Tints lesen LIVE die Studio-Palette (`_studioGround.rock/wet/lit` via
-        // `get-world-params`); Fallback = Portal-cRock/cWet/cLit (sRGB→linear).
-        const s = AnazhRealm._studioGround;
+        // Fels- und Moos-Tint SIND die Boden-Palette (rock · wet). Die Schwellen sind linear (der Vertex trägt
+        // seit dem Farb-Gesetz die Albedo): `gruenSchwelle` ist die EINE Wiesen-Wache (g − (r+b)/2), die das
+        // Boden-Fragment UND der Grün-Kanal der Boden-Karte lesen (Wiese 0,066, Streu und Fels < 0).
+        const P = AnazhRealm.BODEN_FARBE;
         return Object.freeze({
             rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
             screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band)
             screeHi: 0.48,
-            rockTint: (s && s.rock) || [0.147, 0.1221, 0.0976], // Portal-`cRock` (0x6b6258) live/Fallback
+            rockTint: P.rock,
             rockLumMix: 0.5, // wie stark die REGIONALE Luminanz den Stein tönt
             //                  (schneebedeckter Gipfel-Fels heller, Glut-Hang wärmer)
             rockBand: 0.14, // Sediment-Schichtungs-Bänderung (Noise in Welt-Y)
             screeMix: 0.5, // Geröll = die Mitte zwischen Boden und Fels
-            mossTint: (s && s.wet) || [0.0331, 0.0513, 0.0232], // Portal-`cWet` (0x33402a) live/Fallback
-            mossDampLo: 0.16, // unter dieser Basis-Luminanz = „feucht/Niederung"
-            mossDampHi: 0.34, //   (die Feuchte lebt schon im dampEarth-Basis-Mix)
+            mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
+            gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
+            mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
+            mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
             mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
-            // Waldboden-Kern: der schattige Unterwuchs ist dunkler (`cLit`). Wie die Vorlage `cMead.lerp(cLit,
-            // standDensity)`, nur steht hier die Feuchte-im-Schatten (`_damp`, aus dem `_feuchteAt`-Albedo) für
-            // die Standdichte → beschattete Niederungen werden waldig, trockene Lichtungen bleiben Wiese.
-            litTint: (s && s.lit) || [0.0252, 0.0369, 0.0152], // Portal-`cLit` (0x2c3621) live/Fallback
-            floorMax: 0.55, // Deckel der Wald-Kern-Übernahme (komplementär zu mossMax/meadowW)
             roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
             //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
             //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
@@ -28207,10 +28260,10 @@ class AnazhRealm {
                         // Out-Param statt neuem Rückgabe-Typ → die `_terrainGeologyAlbedo`-Tests bleiben unberührt.
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
-                        // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie
-                        // UND die Material-Multiplikation (sonst färbte der Rasen den Weg grün: r184 multipliziert
-                        // colorNode mit der Vertex-Farbe — darum trägt der Chunk sie hier selbst, abseits des Wegs
-                        // rechnerisch identisch).
+                        // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
+                        // Die Geologie TRÄGT die Vertex-Farbe schon: der Chunk-Stoff zeichnet sie EINMAL (vertexColors
+                        // aus — r184 multiplizierte colorNode sonst ein zweites Mal mit ihr: Albedo = Farbe², die
+                        // Wiese MEADOW_GREEN × Farbe; seit dem Farb-Gesetz des Bodens ist der Vertex die Albedo).
                         const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
                         const _geo = this._terrainGeologyAlbedo(
                             _Ta,
@@ -28222,7 +28275,7 @@ class AnazhRealm {
                             albedoNode = _geo;
                             if (_bodenVc && _Ta.vec4) {
                                 mat.vertexColors = false;
-                                mat.colorNode = _Ta.vec4(_geo.mul(_bodenVc), 1.0);
+                                mat.colorNode = _Ta.vec4(_geo, 1.0);
                             } else if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
@@ -28569,7 +28622,11 @@ class AnazhRealm {
                         };
                         _baseN = _baseN.add(_grad(_B.freq, _B.strength)).add(_grad(_B.freq2, _B.strength2));
                     }
-                    mat.normalNode = _Tn.normalize(_baseN);
+                    // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView): die geflattete Welt-Normale
+                    // über die Kamera-Matrix. Bis 05.10. stand sie roh als Welt-Normale darin — die Licht-Normale des
+                    // Bodens kippte mit der Kamera-Neigung, und `normalWorld` (= normalView zurück in die Welt) las aus
+                    // 45 m senkrecht von oben eine Wand: die flache Wiese wurde Fels (Linse 05.10., echte GPU).
+                    mat.normalNode = _Tn.normalize(_baseN).transformDirection(_Tn.cameraViewMatrix);
                 }
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
@@ -28730,7 +28787,9 @@ class AnazhRealm {
                 .add(f(0.5));
             const mossLow = objLocal ? f(1.0).sub(yLow) : f(1.0); // Terrain: Flachheit treibt, kein object-y
             const mossW = mossDrive.mul(mossPatch).mul(mossLow).mul(flatN).clamp(0, 1);
-            albedo = _T.mix(albedo, _T.vec3(0.26, 0.38, 0.18), mossW.mul(f(0.4)));
+            // Die Moos-Farbe reist als Parameter: der Boden trägt das Moos seiner Palette (`mossTint`, linear).
+            const moos = opts.mossTint || [0.26, 0.38, 0.18];
+            albedo = _T.mix(albedo, _T.vec3(moos[0], moos[1], moos[2]), mossW.mul(f(0.4)));
             // (5) COUNTER-SHADING (unten dunkler, oben heller) — nur object-lokal (Terrain: kein object-y).
             if (objLocal) albedo = albedo.mul(_T.mix(f(0.8), f(1.16), yLow));
             out.albedo = albedo;
@@ -28770,12 +28829,12 @@ class AnazhRealm {
     // unveränderte Albedo.
     _terrainGeologyAlbedo(_T, albedo, wp, roughOut) {
         try {
-            if (!_T || !_T.smoothstep || !_T.normalWorld || !_T.vec3 || !_T.mix || !_T.float) return albedo;
+            if (!_T || !_T.smoothstep || !_T.normalWorldGeometry || !_T.vec3 || !_T.mix || !_T.float) return albedo;
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
             // STEILE ∈ [0,1] aus der ROHEN Geometrie-Normale (NICHT der geflatteten
-            // Shading-Normale) = die echte Hangneigung.
-            const _steep = _T.float(1.0).sub(_T.normalWorld.y).clamp(0.0, 1.0);
+            // Shading-Normale, die `normalWorld` im Farb-Knoten trägt) = die echte Hangneigung.
+            const _steep = _T.float(1.0).sub(_T.normalWorldGeometry.y).clamp(0.0, 1.0);
             const _rockW = _T.smoothstep(_T.float(G.rockLo), _T.float(G.rockHi), _steep);
             const _screeW = _T
                 .smoothstep(_T.float(G.screeLo), _T.float(G.screeHi), _steep)
@@ -28802,76 +28861,51 @@ class AnazhRealm {
             const _g2 = _out.y;
             const _rb2 = _out.x.add(_out.z).mul(0.5);
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
-            const _green = _T.smoothstep(_T.float(0.0), _T.float(0.1), _g2.sub(_rb2));
+            const _green = _T.smoothstep(_T.float(0.0), _T.float(G.gruenSchwelle), _g2.sub(_rb2));
             const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
             const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
             // Feuchte-Glanz: eine nasse, KAHLE Niederung (damp hoch, nicht grün) glänzt (niedrigere Rauheit);
             // Moos bleibt matt. Aus DEMSELBEN Feld, das das Moos treibt.
             const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
-            // Trockene braun-gelbe Flecken: nicht feucht (inverse damp) UND flach UND nicht grün, moduliert von
-            // einem großen Patch-Noise → distinkte Dürre-Flecken aus demselben damp-Feld.
-            const _dryPatch = _T.mx_noise_float
-                ? _T
-                      .mx_noise_float(_T.vec3(wp.x.mul(0.085), wp.z.mul(0.085), _T.float(0.0)))
-                      .mul(0.5)
-                      .add(0.5)
-                : _T.float(0.5);
-            const _dryW = _T
-                .float(1.0)
-                .sub(_damp)
-                .mul(_T.float(1.0).sub(_green))
-                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_dryPatch)
-                .mul(_T.float(0.62))
-                .clamp(0.0, 1.0);
-            _out = _T.mix(_out, _out.mul(_T.vec3(1.32, 1.12, 0.6)), _dryW);
-            // Meadow-Grund: wo flach + grün tönt der Boden selbst zu vollem Wiesen-Grün → spärliche Halme lesen
-            // als dichte Wiese (≈0 Perf, nur Albedo). Patch-Noise (`wp·0.13`) lässt karge Stellen emergieren.
+            // (Die „trockenen braun-gelben Flecken" — Albedo × (1,32 · 1,12 · 0,6) auf jedem nicht-grünen, nicht-
+            // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
+            // Meadow-Grund: wo flach + grün tönt der Boden selbst zur Wiese → spärliche Halme lesen als dichte Wiese
+            // (≈0 Perf, nur Albedo). Patch-Noise (`wp·0.13`) lässt karge Stellen emergieren.
             const _meadowPatch = _T.mx_noise_float
                 ? _T
                       .mx_noise_float(_T.vec3(wp.x.mul(0.13), wp.z.mul(0.13), _T.float(7.0)))
                       .mul(_T.float(0.5))
                       .add(_T.float(0.5))
                 : _T.float(0.6);
+            // Die Deckung: die Halme verdecken den Grund (aus der Ferne 65–85 %, die karge Stelle zeigt mehr Erde).
             const _meadowW = _green
                 .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_T.float(1.0).sub(_dryW))
-                .mul(_meadowPatch)
-                .mul(_T.float(0.55))
+                .mul(_meadowPatch.mul(_T.float(0.5)).add(_T.float(0.5)))
                 .clamp(0.0, 1.0);
-            // V18.346 — der Meadow-Grund liest dasselbe geteilte MEADOW_GREEN wie die Gras-Halm-Wurzel
-            // (Gesetz #0) → Boden + Gras verschmelzen by construction (Schöpfer „Synergie fehlt").
+            // V18.346 — der Meadow-Grund liest dieselben Gras-Farben wie das Nah-Gras (Gesetz #0) → Boden + Gras
+            // verschmelzen by construction (Schöpfer „Synergie fehlt"): die Wurzel MEADOW_GREEN, die Spitze
+            // GRAS_SPITZE. Aus der Ferne trägt der Boden das MITTEL des Halms — das Integral der Halm-Farbe unten
+            // (h ∈ [0, 1]: mix(Wurzel, Spitze, h) · (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,18 wie das
+            // Studio-Gras der Nah-Wiese (Albedo-Linse 05.10.: 0,18–0,20) —, nicht die Erde darunter (bis 05.10. der
+            // Wiesen-Grund `mead`: aus 45 m eine oliv-gelbe Steppe).
             const _mg = AnazhRealm.MEADOW_GREEN;
-            _out = _T.mix(_out, _T.vec3(_mg[0], _mg[1], _mg[2]), _meadowW);
-            // Waldboden-Kern: der schattige Unterwuchs senkt sich zum Wald-Kern-Ton (TERRAIN_GEOLOGY.litTint),
-            // `cMead.lerp(cLit, standDensity)` mit der Feuchte-im-Schatten (`_damp`) als Standdichte — dieselbe
-            // Logik, die die Bäume in feuchte, flache Niederungen setzt. Aus denselben Feldern (`_green`, `_flat`,
-            // `_damp`, `1−_dryW`); Patch-Noise → kein uniformer Teppich.
-            const _lit = G.litTint;
-            const _forestPatch = _T.mx_noise_float
-                ? _T
-                      .mx_noise_float(_T.vec3(wp.x.mul(0.09), wp.z.mul(0.09), _T.float(19.0)))
-                      .mul(_T.float(0.5))
-                      .add(_T.float(0.5))
-                : _T.float(0.6);
-            const _floorW = _green
-                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_damp) // NUR die feuchte/beschattete Niederung — die helle Lichtung bleibt Wiese
-                .mul(_T.float(1.0).sub(_dryW)) // die trockene Dürre bleibt bräunlich
-                .mul(_forestPatch)
-                .mul(_T.float(G.floorMax))
-                .clamp(0.0, 1.0);
-            _out = _T.mix(_out, _T.vec3(_lit[0], _lit[1], _lit[2]), _floorW);
+            const _sp = AnazhRealm.GRAS_SPITZE;
+            const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
+            const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
+            const _krone = _wurzel.mul(_T.float(0.383)).add(_spitze.mul(_T.float(0.442)));
+            _out = _T.mix(_out, _krone, _meadowW);
+            // (Der Waldboden liegt unter den echten Kronen — `_wegeBodenFarbe` mischt die Laubstreu der Kronen-Karte;
+            // der Fragment-Zwilling, der grüne feuchte Niederungen zum dunklen Wald-Kern-Ton zog, ist gefallen.)
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
             // Schattierung des Bodens, NAH eingeblendet (fern trägt der Meadow-Grund). ≈0 Kosten (Noise + Mix),
-            // EINE Farbe (MEADOW_GREEN).
+            // DIESELBEN Gras-Farben wie das Nah-Gras.
             if (_T.cameraPosition && _T.mx_noise_float) {
                 // Die Wiese mit Tiefe: die Halme sind eine PARALLAX-FUNKTION — ein Halm-Noise-Höhenfeld, das der
                 // Blick in 8 Schichten durchsticht (Relief-March): hohe Halme fangen den Strahl früh (helle Spitze),
                 // Lücken lassen ihn zum dunklen Wurzelgrund. Das Höhenfeld wird per smoothstep an die ECHTE
                 // mx_noise-Verteilung (eng um 0.5) gemappt — sonst kollabiert es auf 1-2 Schichten. Halm-Frequenz
-                // 9/m (~11-cm-Büschel), Büschel-Maske 2.7/m, Kontrast Wurzelgrund↔Spitze 0.35..1.30; MEADOW_GREEN.
+                // 9/m (~11-cm-Büschel), Büschel-Maske 2.7/m; die Farben MEADOW_GREEN → GRAS_SPITZE.
                 const _camD = wp.sub(_T.cameraPosition).length();
                 const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
                 const _blick = wp.sub(_T.cameraPosition).normalize(); // Auge → Boden
@@ -28897,7 +28931,7 @@ class AnazhRealm {
                         .add(0.5)
                 );
                 let _traf = _T.float(0.0); // 0 = noch kein Halm getroffen (branchenlos)
-                let _trefH = _T.float(0.0); // Schicht-Höhe des Treffers (0 = Wurzelgrund)
+                let _trefH = _T.float(0.0); // Halm-Höhe des Treffers (0 = Wurzelgrund)
                 for (let _s = 0; _s < 8; _s++) {
                     const _li = 1.0 - _s / 8.0; // Schicht von oben (1.0) nach unten (0.125)
                     const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
@@ -28910,19 +28944,37 @@ class AnazhRealm {
                     // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
                     const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(_tuft);
                     const _erst = _T.step(_T.float(_li), _h).mul(_T.float(1.0).sub(_traf));
-                    _trefH = _trefH.add(_erst.mul(_T.float(_li)));
+                    // Die Treffer-Höhe ist die HALM-Höhe (stetig), nie die Schicht: acht Schicht-Stufen lasen sich
+                    // auf Armlänge als Höhenlinien (Linse 05.10.).
+                    _trefH = _trefH.add(_erst.mul(_h));
                     _traf = _traf.add(_erst);
                 }
-                const _mg2 = AnazhRealm.MEADOW_GREEN;
-                // Spitze hell (1.30), Wurzelgrund tief-dunkel (0.35) — die Tiefe liest
-                // sich als Eigen-Schatten zwischen den Büscheln:
-                const _halmCol = _T.vec3(_mg2[0], _mg2[1], _mg2[2]).mul(_T.float(0.35).add(_trefH.mul(_T.float(0.95))));
+                // Der getroffene Halm trägt die Farbe SEINER Höhe — derselbe Verlauf Wurzel → Spitze wie das Nah-Gras —,
+                // tiefer liegende Treffer im Eigen-Schatten der Büschel (0,65 … 1); die Lücke zeigt den Wurzelgrund im
+                // Schatten (0,5 × Wurzel). Bis 05.10. war der Halm die Wurzelfarbe × 0,35 … 1,30: ein Oliv-Tarnmuster
+                // unter grellen Nah-Halmen.
+                // Wo die Nah-Wiese steht (Radius NAH_WIESE.radius), tragen IHRE Halme das Gras; der Boden darunter ist
+                // ihr ruhigerer Wurzelgrund (das Relief zu 40 % über dem Halm-Mittel im Schatten, × 0,7) — das volle
+                // Relief erst zu ihrem Rand hin (die acht Schichten lasen sich auf Armlänge als Höhenlinien, Linse 05.10.).
+                const _nwR = AnazhRealm.NAH_WIESE.radius;
+                const _relief = _T
+                    .smoothstep(_T.float(_nwR * 0.5), _T.float(_nwR), _camD)
+                    .mul(0.6)
+                    .add(0.4);
+                const _halmCol = _T.mix(
+                    _krone.mul(_T.float(0.7)),
+                    _T.mix(
+                        _wurzel.mul(_T.float(0.5)),
+                        _T.mix(_wurzel, _spitze, _trefH).mul(_T.float(0.65).add(_trefH.mul(_T.float(0.35)))),
+                        _traf
+                    ),
+                    _relief
+                );
                 const _halmW = _green
                     .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                    .mul(_T.float(1.0).sub(_dryW))
                     .mul(_nah)
                     // Wo die Gewichte Wiese sagen, BESITZT das Gras den Pixel (0.95) — ein niedrigerer Deckel gibt
-                    // Büschel-Fleckung; der Kontrast kommt aus _halmCol 0.35..1.30, nie aus der Verdünnung.
+                    // Büschel-Fleckung; der Kontrast kommt aus _halmCol (Lücke ↔ Spitze), nie aus der Verdünnung.
                     .mul(_T.float(0.95))
                     .clamp(0.0, 1.0);
                 _out = _T.mix(_out, _halmCol, _halmW);
@@ -28938,6 +28990,7 @@ class AnazhRealm {
                 objectLocal: false,
                 flatness: _flat.mul(_T.float(1.0).sub(_rockW)),
                 mossDrive: _mossDrive,
+                mossTint: G.mossTint,
                 roughBase: G.roughBase,
                 wetDrive: _wetDrive,
                 hardDrive: _hardDrive,
@@ -63424,7 +63477,7 @@ class AnazhRealm {
     // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
     _wegeBodenFarbe(_T, vc) {
         const wk = this._wegeKarteEnsure();
-        if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorld)
+        if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorldGeometry)
             throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
         const P = AnazhRealm.BODEN_FARBE;
         const [nah, fern] = wk.stufen;
@@ -63434,9 +63487,9 @@ class AnazhRealm {
         const wFern = _T.texture(fern.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5));
         const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
         const _wm = _T.mix(wFern, wNah, innen);
-        const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorld.y);
-        const e = P.packedDirt;
-        const a = P.dampEarth;
+        const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
+        const e = P.dirt;
+        const a = P.wet;
         const mitErde = _T.mix(vc, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
         return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar));
     }
@@ -65659,30 +65712,11 @@ class AnazhRealm {
         }
         return registered;
     }
-    // Studio-Welt-Palette → AnazhRealms Farbquellen: Hex (sRGB) EINMAL nach linear (THREE.Color), im
-    // statischen `AnazhRealm._studioGround` gecacht; `MEADOW_GREEN`/`TERRAIN_GEOLOGY` lesen sie (Fallback
-    // = Hardcode, wenn nichts kam). Kein Shader-Transfer.
+    // Studio-Welt-Parameter (der Buch-Umschlag): die Atmosphäre-Anker. Die Boden-Palette reist NICHT hier — sie
+    // liegt synchron im Terrain-Namensraum (`AnazhRealm.BODEN_FARBE`), der Voxel-Worker braucht sie vor dem ersten Chunk.
     _foundryIngestWorldParams(params) {
-        if (!params || typeof params !== "object" || typeof THREE === "undefined") return;
+        if (!params || typeof params !== "object") return;
         this.state.studioWorldParams = params;
-        const toLin = (hex) => {
-            try {
-                return new THREE.Color(hex).toArray(); // sRGB-Hex -> linear (ColorManagement default)
-            } catch (_e) {
-                return null;
-            }
-        };
-        const g = params.ground || {};
-        const ground = {};
-        for (const key of ["lit", "mead", "rock", "wet"]) {
-            if (typeof g[key] === "number") {
-                const lin = toLin(g[key]);
-                if (lin) ground[key] = lin;
-            }
-        }
-        // Der statische Cache, den die Getter lesen (globaler Prozess-Zustand, kein Instanz-State →
-        // die Klassen-Getter erreichen ihn; Single-Instanz-App, kein Leck).
-        AnazhRealm._studioGround = Object.keys(ground).length ? ground : null;
         // DIE ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe als HEX (der Tag/Nacht-Zyklus
         // rechnet in Hex, nicht linear) → `DAY_NIGHT_STOPS` bindet seinen Mittags-Stop hieran. Additiv:
         // nur der Mittag folgt dem Studio, der ganze Zyklus bleibt AnazhRealms. Fallback = 0 Regress.
@@ -89725,8 +89759,8 @@ AnazhRealm.SPECIES_TAG_REFERENCE = Object.freeze({
 });
 
 // LICHEN: grüne Patina auf alten/feuchten Steinen — reine Render-Schicht im
-// `_attachVoxelFieldColors`-Mix-Stack (kein Tag). Der Worker hardkodiert diese Konstanten
-// spiegelbildlich (bit-Vertrag: jede Änderung in BEIDE).
+// `_bodenFarbeAt`-Mix-Stack (kein Tag). Der Worker hardkodiert diese Schwellen
+// spiegelbildlich (bit-Vertrag: jede Änderung in BEIDE); die Farbe ist die Flechte der Boden-Palette.
 AnazhRealm.LICHEN = Object.freeze({
     // Feuchte muss ≥ feuchteLo sein für Lichen-Wachstum (trockene Steine bleiben blank).
     feuchteLo: 0.5,
@@ -89737,28 +89771,11 @@ AnazhRealm.LICHEN = Object.freeze({
     // Maximaler Mix-Anteil (sehr subtil — Lichen ist eine Tönung, kein
     // Decken-Anstrich).
     strength: 0.22,
-    // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
-    tint: Object.freeze([0.42, 0.5, 0.34]),
 });
-// DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut; der Worker `attachFieldColors` spiegelt
-// sie hartkodiert — eine Änderung hier ist eine Änderung dort). dampEarth: dunklerer, satterer Erd-Ton, im
-// Mix-Stack ZWEITER (nach earth, vor lava/snow/sed/strand) — Glut/Schnee bleiben überschreibend. lava:
-// DUNKLES Basalt (die Glut sitzt im PBR-Emissiv, nicht in der Albedo). sand: Glocken-Profil am Ufer (Peak
-// +0,6 m über Wasser, 0 bei +2 m) + Submarine-Sand. packedDirt: getrampelte Pfad-Erde (V18.230 Ω-O6).
-// Schnee auf Prominenz: Start/Voll in m über der kontinentalen Basis.
-AnazhRealm.BODEN_FARBE = Object.freeze({
-    stone: Object.freeze([0.42, 0.44, 0.49]),
-    earth: Object.freeze([0.27, 0.49, 0.19]),
-    dampEarth: Object.freeze([0.22, 0.18, 0.12]),
-    lava: Object.freeze([0.32, 0.19, 0.15]),
-    violet: Object.freeze([0.55, 0.36, 0.86]),
-    snow: Object.freeze([0.92, 0.93, 1.0]),
-    sed: Object.freeze([0.78, 0.72, 0.52]),
-    sand: Object.freeze([0.87, 0.78, 0.55]),
-    packedDirt: Object.freeze([0.32, 0.26, 0.18]),
-    schneeProminenzStart: 50,
-    schneeProminenzVoll: 115,
-});
+// Schnee auf Prominenz (`_bodenFarbeAt`): Start/Voll in m über der kontinentalen Basis. Der Worker
+// `attachFieldColors` spiegelt die zwei Zahlen hartkodiert. Die Farben selbst sind die Boden-Palette
+// (`AnazhRealm.BODEN_FARBE`, Studio PORTAL_GROUND nach dem Farb-Gesetz).
+AnazhRealm.SCHNEE_PROMINENZ = Object.freeze({ start: 50, voll: 115 });
 
 // FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520,
 // magie λ160 m) — der Welt-Charakter emergiert aus dem Überlagerungs-Muster (Ecotone an
