@@ -508,6 +508,13 @@ jobs:
               # Selbst-Test (korruptes Golden wird rot).
               run: npm run gate:schmiede-contract
 
+            - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)
+              # DAS FARB-GESETZ der Gegenstaende (Hex = sRGB-Absicht, Albedo bzw. F0 linear): je Fahrzeug-Rezept x 8 Lacke
+              # und je Klinge/Werkzeug urteilt die Linse jeden Stoff gegen sein Band (Gummi, Kunststoff, Lack, Glas, Metall,
+              # Holz, Leder, Schnur) - Taeter beim Namen: ohne-stoff, labor-stoff, band, klarlack, lack-art, durchsicht,
+              # toenung, lack-gestalt, transport. Node-direkt (r128), inklusive Selbst-Test.
+              run: npm run gate:gegenstand-stoff
+
             - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
               # DER ε-BEWEIS DER HAUS-DOMÄNE (Katalysator-Bogen): die Haus-Domäne dockt
               # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (fachwerk-core,

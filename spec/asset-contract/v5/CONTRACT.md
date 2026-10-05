@@ -71,3 +71,11 @@ golden-gespeichert): lod-Klemme (lod 2 == lod 0) und die Split-Parität
 `buildInstance(id,7,0) == buildWeaponModel(<Gattung>)` je Gattung (der
 Waffenständer der Lab-Arena baut über buildWeaponModel — Kern und Shell-Pfad
 bleiben EIN Bau).
+
+**Re-Mint W5 (05.10.2026, das FARB-GESETZ der Klingen):** jedes Material-Hex ist eine
+sRGB-Absicht, die Albedo (bei Metallen F0) sein linearer Wert (`stoffFarbe`, einmal je
+Material); Eisen, Schwarzstahl, Bronze und Schnur stehen im Band ihrer Natur; die
+Vertex-Haut trägt die ganze Albedo (Haut × Stoff-Farbe einmal gebacken, der Haut-Stoff
+`hautStoff` ist weiß — Labor = Welt); die Bogen-Sehne ist Schnur. Geometrie unverändert:
+alle 44 Fälle tragen dieselben `objects`/`vertices`, nur die Material-Signatur und das
+`color`-Attribut wechseln. Kein cv-Bump (die Naht ist dieselbe).

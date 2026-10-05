@@ -107,6 +107,7 @@
         "gate:kampf-gefuehl": "node scripts/diag-kampf-gefuehl.cjs",
         "gate:schritt-klang": "node scripts/diag-schritt-klang.cjs",
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
+        "gate:gegenstand-stoff": "node scripts/diag-gegenstand-stoff.cjs --selftest && node scripts/diag-gegenstand-stoff.cjs",
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",
         "gate:constitution": "node scripts/diag-pipeline-constitution.cjs",
         "gate:foundry-warm": "node scripts/diag-foundry-warm.cjs",

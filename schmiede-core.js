@@ -93,20 +93,23 @@
                 metalness: 1.0,
                 envMapIntensity: 2.0,
             }),
+            // W5 — das FARB-GESETZ hebt die zu dunklen Metalle ins Band der Natur (F0 als sRGB-Absicht, `stoffFarbe`):
+            // geschmiedetes Eisen 0,05 -> 0,27, Schwarzstahl (gebläut) 0,02 -> 0,11, Bronze 0,18 -> 0,27; die Schnur 0,020
+            // -> 0,024 (darunter liegt nur noch Ruß).
             iron: new THREE.MeshStandardMaterial({
-                color: 0x3c3e44,
+                color: 0x8a8e94,
                 roughness: 0.46,
                 metalness: 0.9,
                 envMapIntensity: 1.4,
             }),
             blacksteel: new THREE.MeshStandardMaterial({
-                color: 0x23262b,
+                color: 0x5a5f68,
                 roughness: 0.4,
                 metalness: 0.92,
                 envMapIntensity: 1.5,
             }),
             bronze: new THREE.MeshStandardMaterial({
-                color: 0x9a6b3a,
+                color: 0xb8844a,
                 roughness: 0.4,
                 metalness: 1.0,
                 envMapIntensity: 1.6,
@@ -118,7 +121,7 @@
                 envMapIntensity: 0.5,
             }),
             cord: new THREE.MeshStandardMaterial({
-                color: 0x2a2620,
+                color: 0x2e2a24,
                 roughness: 0.78,
                 metalness: 0.05,
                 envMapIntensity: 0.4,
@@ -168,7 +171,72 @@
             cardEdge: "glut",
         };
         for (var k in M) if (SEH[k]) M[k].userData.__seh = SEH[k];
+        // DER STOFF je Material (W5 Gegenstände, rein additiv): was das Material PHYSISCH ist — die Stoff-Linse
+        // (gate:gegenstand-stoff) urteilt jede Albedo (bei Metallen F0) gegen das Band ihres Stoffs; Lehre = die
+        // Lab-Überlagen (Balance, Knoten, Masse, Schnitt-Karte), nie in der Welt-Gestalt.
+        var STOFF = {
+            steel: "blank",
+            steelRaw: "metall",
+            brass: "buntmetall",
+            iron: "metall",
+            blacksteel: "metall",
+            bronze: "buntmetall",
+            leather: "leder",
+            cord: "schnur",
+            wood: "holz",
+            bone: "lehre",
+            hand: "lehre",
+            bal: "lehre",
+            node: "lehre",
+            mass: "lehre",
+            cardFill: "lehre",
+            cardEdge: "lehre",
+        };
+        for (var s in M) {
+            if (STOFF[s]) M[s].userData.__stoff = STOFF[s];
+            stoffFarbe(M[s]);
+        }
         return M;
+    }
+
+    // DAS FARB-GESETZ DER KLINGEN (W5, 05.10.): ein Paletten-Hex ist eine sRGB-ABSICHT, die Albedo (bei Metallen F0)
+    // sein LINEARER Wert — dieselbe Kurve wie Kreatur-Bäcker, Vegetation und Fahrzeuge (vehicle-core). r128 schrieb das
+    // Hex roh: das Leder lag bei 0,20 statt 0,04, das Holz eines Schafts ohne Haut bei 0,31 statt 0,08. Gerechnet wird
+    // SELBST (die sRGB-Kurve),
+    // einmal je Material beim Bau: Labor, Welt und Karte tragen dieselbe Albedo.
+    function linKanal(v) {
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    function stoffFarbe(m) {
+        var cs = [m.color, m.emissive];
+        for (var i = 0; i < cs.length; i++)
+            if (cs[i]) cs[i].setRGB(linKanal(cs[i].r), linKanal(cs[i].g), linKanal(cs[i].b));
+    }
+    // DIE HAUT IST DIE ALBEDO (W5): wo eine Haut Vertex-Farben trägt (Stahl-Haut der Klinge und des Keils, Holz-Haut von
+    // Griff, Schaft und Bogen-Armen), multiplizierte das Labor sie mit der Material-Farbe — die Welt liest NUR die Vertex-
+    // Farben (Lab ≠ Welt: das Holz der Welt 0,30, im Labor 0,10). Jetzt trägt der Vertex die ganze Albedo (Haut × Stoff-
+    // Farbe, EINMAL gebacken) und der Stoff ist weiß: ein geteilter Haut-Stoff je Material (`hautStoff`), das geteilte
+    // Material selbst bleibt unberührt (bis W5 mutierte die Klinge M.steel auf vertexColors — jedes andere Stahl-Teil
+    // ohne Farb-Attribut zeichnete im Labor schwarz).
+    var HAUT_STOFFE = {};
+    function hautStoff(m) {
+        if (!m || !m.clone) return m;
+        if (HAUT_STOFFE[m.uuid]) return HAUT_STOFFE[m.uuid];
+        var h = m.clone();
+        h.color.setRGB(1, 1, 1);
+        h.vertexColors = true;
+        pbrHaut(h);
+        HAUT_STOFFE[m.uuid] = h;
+        return h;
+    }
+    function hautBacken(cols, m) {
+        if (!m || !m.color) return cols;
+        for (var i = 0; i + 2 < cols.length; i += 3) {
+            cols[i] *= m.color.r;
+            cols[i + 1] *= m.color.g;
+            cols[i + 2] *= m.color.b;
+        }
+        return cols;
     }
 
     // ── Geometrie-Helfer (byte-treu Z.204–206) ──
@@ -524,15 +592,11 @@
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
-        g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+        // W5: die Stahl-Haut trägt die ganze Albedo (× Stoff-Farbe, einmal gebacken), der Haut-Stoff ist weiß.
+        g.setAttribute("color", new THREE.Float32BufferAttribute(hautBacken(cols, bladeMat), 3));
         g.setIndex(idx);
         g.computeVertexNormals();
-        if (bladeMat.vertexColors !== true) {
-            bladeMat.vertexColors = true;
-            bladeMat.needsUpdate = true;
-            pbrHaut(bladeMat);
-        }
-        const e = new THREE.Mesh(g, bladeMat);
+        const e = new THREE.Mesh(g, hautStoff(bladeMat));
         e.castShadow = e.receiveShadow = true;
         e.userData.bladeX = bladeX;
         e.userData.baseZ = verts.filter((_, i) => i % 3 === 2).slice(); // Basis-Z je Vertex (für Welle)
@@ -744,15 +808,18 @@
         const streak =
             hnoise(Math.cos(ang) * 2.4, Math.sin(ang) * 2.4, x * 36) * 0.5 + hnoise(1.7, 0.3, x * 150) * 0.28;
         const lite = 1 + streak * 0.2;
-        let r = 0.4 * lite,
-            g = 0.285 * lite,
-            b = 0.16 * lite;
+        // W5: die Holz-Haut ist die MODULATION um die Stoff-Farbe (Maserung ±20 %, Politur) — die Albedo trägt der Stoff
+        // (M.wood, FARB-GESETZ), gebacken in `woodColors`. Bis W5 stand hier ein eigenes Braun (0,4/0,285/0,16), das das
+        // Labor noch einmal mit der Holz-Farbe multiplizierte (0,10) und die Welt roh trug (0,30).
+        let r = lite,
+            g = lite,
+            b = lite;
         if (gf > 0) {
             r *= 1 - 0.3 * gf;
             g *= 1 - 0.35 * gf;
             b *= 1 - 0.42 * gf;
         } // Handschweiß/Politur
-        return [Math.max(0, Math.min(1, r)), Math.max(0, Math.min(1, g)), Math.max(0, Math.min(1, b))];
+        return [Math.max(0, r), Math.max(0, g), Math.max(0, b)];
     }
     function woodColors(mesh, len, gC, gW) {
         const p = mesh.geometry.attributes.position,
@@ -775,13 +842,9 @@
                 c = holzHaut(ang, x, gf);
             cols.push(c[0], c[1], c[2]);
         }
-        mesh.geometry.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
-        const m = mesh.material.clone ? mesh.material.clone() : mesh.material;
-        if (m) {
-            m.vertexColors = true;
-            pbrHaut(m);
-        }
-        mesh.material = m;
+        // W5: Haut × Stoff-Farbe in den Vertex, der geteilte Haut-Stoff ist weiß (Labor = Welt).
+        mesh.geometry.setAttribute("color", new THREE.Float32BufferAttribute(hautBacken(cols, mesh.material), 3));
+        mesh.material = hautStoff(mesh.material);
         return mesh;
     }
     function buildHaft(P, S) {
@@ -874,6 +937,9 @@
             idx = [],
             cols = [];
         let c = 0;
+        // W5: der Werkstoff-Ton färbt NUR die Wange (die Haut-Patina, `tint` = die lineare Stoff-Farbe); die geschliffene
+        // Fase und das Anlass-Band sind blanker Stahl — bis W5 färbte das Labor den Keil zweimal (in der Haut UND als
+        // Material-Farbe darüber: der Schwarzstahl-Keil 0,015, seine Schneide 0,12). Der Haut-Stoff ist weiß.
         const tint = m && m.color ? [m.color.r, m.color.g, m.color.b] : [0.5, 0.51, 0.54];
         for (let i = 0; i <= NF; i++) {
             const rt = [],
@@ -912,12 +978,7 @@
         go.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
         go.setIndex(idx);
         go.computeVertexNormals();
-        const sm = m.clone ? m.clone() : m;
-        if (sm) {
-            sm.vertexColors = true;
-            pbrHaut(sm);
-        }
-        const e = new THREE.Mesh(go, sm);
+        const e = new THREE.Mesh(go, hautStoff(m));
         e.castShadow = e.receiveShadow = true;
         return e;
     }
@@ -1025,7 +1086,7 @@
                     V.push(X + cc[0], Y, cc[1]);
                     c++;
                     const back = cc[0] > 0 ? 1.06 : 0.96; // Rücken (Zug) heller als Bauch (Druck)
-                    cols.push(0.4 * lite * back, 0.285 * lite * back, 0.16 * lite * back);
+                    cols.push(lite * back, lite * back, lite * back); // W5: Modulation um die Stoff-Farbe (wie holzHaut)
                 }
                 ring.push(r);
                 if (i === NU) tips.push([X, Y, 0]);
@@ -1040,22 +1101,18 @@
             q(ring[NU][0], ring[NU][1], ring[NU][2], ring[NU][3]);
             const go = new THREE.BufferGeometry();
             go.setAttribute("position", new THREE.Float32BufferAttribute(V, 3));
-            go.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+            go.setAttribute("color", new THREE.Float32BufferAttribute(hautBacken(cols, m), 3));
             go.setIndex(idx);
             go.computeVertexNormals();
-            const am = m.clone ? m.clone() : m;
-            if (am) {
-                am.vertexColors = true;
-                pbrHaut(am);
-            }
-            const arm = new THREE.Mesh(go, am);
+            const arm = new THREE.Mesh(go, hautStoff(m));
             arm.castShadow = true;
             G.add(arm);
         }
-        // Sehne: bei Auszug ein V (Tip → Nocke → Tip), sonst gerade Tip → Tip
+        // Sehne: bei Auszug ein V (Tip → Nocke → Tip), sonst gerade Tip → Tip. W5: die Sehne ist gedrehte Schnur (Leinen,
+        // Sehnen-Faser — M.cord), kein Schwarzstahl-Draht (bis W5 trug sie Metall 0,92).
         const t1 = tips[0],
             t2 = tips[1],
-            smat = M.blacksteel || M.steel;
+            smat = M.cord;
         function strSeg(ax, ay, bx, by) {
             const len = Math.hypot(ax - bx, ay - by);
             const seg = cyl(0.0026, 0.0026, len, smat, 8);
