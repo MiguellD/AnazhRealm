@@ -1408,6 +1408,13 @@
     });
 
     // ════════════════════════════════════════════════════════════════════
+    // DER MASSSTAB (Welle 5, die EINE Welt-Größe): eine Lab-Einheit ist ein Drittel Meter — der Wolf (Größe 2,4)
+    // trägt seinen Widerrist bei ~1,0 H = 0,8 m, der Fuchs (1,5) bei ~0,47 m, der Bär (3,2) bei ~1,1 m, der Hirsch
+    // (2,8) bei ~1,07 m. Der Wirt skaliert die Gestalt mit DIESER Zahl (vorher: die Seelen-Teile-Höhe, deren Skala
+    // die Allometrie-Schleife überschrieb — die Welt zeigte Lab-Einheiten als Meter, den Wolf 2,7 m hoch).
+    var MASSSTAB = Object.freeze({ meterJeEinheit: 1 / 3 });
+
+    // ════════════════════════════════════════════════════════════════════
     // KONVERGENZ III — DER EINE TIER-BAU: bauTier(F, dials) baut den kompletten
     // Studio-Vierbeiner (verbatim aus worlds/tetrapoda/tetrapoda.js buildAnimal
     // gewandert; der Schöpfer formte ihn) über FABRIK-HAKEN — MESHFREI §8:
@@ -2292,6 +2299,7 @@
         deriveTierParams: deriveTierParams,
         cpgStep: cpgStep,
         bauTier: bauTier,
+        MASSSTAB: MASSSTAB,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,

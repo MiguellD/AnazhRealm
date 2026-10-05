@@ -17220,7 +17220,7 @@ class AnazhRealm {
     }
     // Der Beipack-Leser (GENERISCH für jede Gelenk-Gattung — Tier UND Mensch):
     // Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an ihren Gelenken.
-    // Liefert {root, teile, tailNamen, hoehe, minY} oder null.
+    // Liefert {root, teile, tailNamen, minY} oder null.
     _ofenAssembleAsset(meshes) {
         if (!Array.isArray(meshes) || !meshes.length || typeof THREE === "undefined") return null;
         let skelett = null;
@@ -17274,7 +17274,6 @@ class AnazhRealm {
             });
         }
         const bb = new THREE.Box3().setFromObject(root);
-        const hoehe = Number.isFinite(bb.max.y - bb.min.y) ? Math.max(1e-3, bb.max.y - bb.min.y) : 1;
         AnazhRealm._ofenStarrBinden(root);
         // DIE KÖRPER-KUGEL: jede geskinnte Hülle (Haut · Fell · Kleid · starre Teile) cullt gegen die Bind-Hülle
         // des GANZEN Körpers × 1,25 — jede Pose bleibt darin (Glieder drehen um Gelenke im Leib). Die Bind-BBox
@@ -17295,7 +17294,6 @@ class AnazhRealm {
             root,
             teile,
             tailNamen: Array.isArray(skelett.tailSegs) ? skelett.tailSegs.slice() : [],
-            hoehe,
             minY: Number.isFinite(bb.min.y) ? bb.min.y : 0,
         };
     }
@@ -17787,13 +17785,10 @@ class AnazhRealm {
         if (t0 && t0.teile && t0.teile.wolf) {
             const parts2 = this._tetrapodaSoulParts(soulKey, opts && opts.dialsOv) || soul.bodyParts;
             const group2 = new THREE.Group();
-            let pTop = 0;
-            for (const p of parts2 || []) {
-                // Part-Positionen sind ZENTREN — der Scheitel liegt bei y + Höhe/2.
-                const t2 = ((p.position && p.position.y) || 0) + ((p.size && p.size.y) || 0) / 2;
-                if (t2 > pTop) pTop = t2;
-            }
-            const f2 = pTop > 0 ? pTop / t0.hoehe : 1;
+            // DIE EINE WELT-GRÖSSE (Welle 5): der Maßstab des Gesetzbuchs (tetrapoda MASSSTAB, Meter je Lab-Einheit) —
+            // der Wolf steht mit 0,8 m am Widerrist. Vorher maß die Gestalt sich an der Scheitel-Höhe der Seelen-Teile,
+            // und die Allometrie-Schleife überschrieb diese Skala mit 1: die Welt zeigte Lab-Einheiten als Meter.
+            const f2 = window.__tetrapodaCore.MASSSTAB.meterJeEinheit;
             const klon = t0.root.clone(true);
             const teile = {};
             klon.traverse((n) => {
@@ -17871,6 +17866,10 @@ class AnazhRealm {
     // bleiben uniform.
     _applyCreatureAllometry(group, soulName, bodySize) {
         if (!group || !group.children || !Number.isFinite(bodySize)) return;
+        // Das Studio-Tier (bauTier) trägt keine Teil-Kinder: seine Kinder sind die Hüllen nah/fern — die Schleife unten
+        // setzte ihre Skala auf 1 (der Maßstab fiel, das Tier stand in Lab-Einheiten). Seine Allometrie ist Gesetz
+        // (deriveTierParams: Beinmuskel ∝ Größe^0,67), die Körpergröße skaliert uniform.
+        if (group.userData && group.userData._tierBaum) return;
         const soul = AnazhRealm.CREATURE_SOULS[soulName] || AnazhRealm.CREATURE_SOULS.wesen;
         // ABSCHIEDS-WELLE (A2) — die EFFEKTIVEN Parts führen (der studio-gedockte Guss
         // ändert Glied-Längen → die Glied-Klassifikation liest die gebaute Wahrheit).
