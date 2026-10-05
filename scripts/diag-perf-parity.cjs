@@ -235,7 +235,8 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
                 }
             }
             const p = r.state.player ? r.state.player.position || { x: 0, z: 0 } : { x: 0, z: 0 };
-            const fogFar = r.state.scene && r.state.scene.fog ? r.state.scene.fog.far : 200;
+            // Der Sichtradius der Welt ist die Luft (V18.530: Koschmieder-Sichtweite in Augenhöhe), nie mehr ein Nebel-Rand.
+            const fogFar = r.state.luft ? r._luftSichtM(r.state.camera.position.y) : 200;
             const out = { fogFar, chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0 };
             out.scene = census(r.state.scene, { x: p.x || 0, z: p.z || 0 }, fogFar);
             // Asset-Budget je LOD aus der EINEN Foundry (derselbe Generator wie das Studio):

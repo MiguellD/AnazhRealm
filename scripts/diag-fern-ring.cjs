@@ -15,10 +15,9 @@
 //   (4) HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht).
 //   (5) kein pageerror.
 //   (6) SICHT-BESITZ (SELBST GESPIELT 16.07.) — mit bereitem Ring weitet die
-//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); die HÖHEN-
-//       ÖFFNUNG öffnet fog.far über der Umgebung (Spieler-Hub → > 1000) und
-//       schließt am Boden wieder (Wald-Gesetz); _fernRingDispose stellt
-//       camera.far wieder her (die Klippe war Ring-Besitz).
+//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); DIE LUFT trägt
+//       (V18.530: scene.fogNode, Sichtweite am Boden ≥ 5 km, mit der Höhe weiter);
+//       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
@@ -269,44 +268,33 @@ const server = http.createServer((req, res) => {
         const dlLoop = performance.now() + 30000;
         while (typeof r._gameLoopTick !== "function" && performance.now() < dlLoop) await sleep(200);
         if (typeof r._gameLoopTick !== "function") res.loopFehler = "_gameLoopTick kam nie (Renderer-Ready)";
-        const fogVal = () => (r.state.scene.fog ? +r.state.scene.fog.far.toFixed(1) : null);
-        const pumpeBis = async (cond) => {
-            for (let i = 0; i < 24; i++) {
+        // DIE LUFT TRÄGT (V18.530): kein Wald-Nebel mehr — die Sichtweite (Koschmieder 2 %) ist am Boden ≥ 5 km
+        // und wächst mit der Höhe (Dunst-Skalenhöhe). Gelesen nach echten Loop-Takten (Tag-Nacht schreibt die Luft).
+        const sichtBei = (y) => {
+            r.state.playerMesh.position.y = y;
+            for (let i = 0; i < 3; i++) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (e) {
                     res.loopFehler = String(e && e.message);
                 }
-                if (cond(fogVal())) break;
-                await sleep(Math.ceil(F.oeffnungTaktMs * 0.7));
             }
-            return fogVal();
+            return Math.round(r._luftSichtM(r.state.camera.position.y));
         };
         const px = r.state.playerMesh.position.x;
         const pz = r.state.playerMesh.position.z;
         const hy = r.getTerrainHeightAt(px, pz);
-        r.state.playerMesh.position.y = (Number.isFinite(hy) ? hy : 0) + 1;
-        res.fogBoden = await pumpeBis((f) => Number.isFinite(f) && f < 300);
-        let umg = -Infinity;
-        for (let k = 0; k < 4; k++) {
-            const h = r.getTerrainHeightAt(
-                px + (k & 1 ? F.oeffnungProbeM : -F.oeffnungProbeM) * (k & 2 ? 0 : 1),
-                pz + (k & 1 ? F.oeffnungProbeM : -F.oeffnungProbeM) * (k & 2 ? 1 : 0)
-            );
-            if (Number.isFinite(h) && h > umg) umg = h;
-        }
-        r.state.playerMesh.position.y = umg + F.oeffnungVollM + 30;
-        res.fogGipfel = await pumpeBis((f) => Number.isFinite(f) && f > 1000);
-        r.state.playerMesh.position.y = (Number.isFinite(hy) ? hy : 0) + 1;
-        res.fogZurueck = await pumpeBis((f) => Number.isFinite(f) && f < 300);
+        const boden = Number.isFinite(hy) ? hy : 0;
+        res.sichtBoden = sichtBei(boden + 1);
+        res.sichtHoch = sichtBei(boden + 300);
+        res.sichtZurueck = sichtBei(boden + 1);
+        res.luftKnoten = !!r.state.scene.fogNode && !r.state.scene.fog;
         res.oeffnungOk =
             !res.loopFehler &&
-            Number.isFinite(res.fogBoden) &&
-            res.fogBoden < 300 &&
-            Number.isFinite(res.fogGipfel) &&
-            res.fogGipfel > 1000 &&
-            Number.isFinite(res.fogZurueck) &&
-            res.fogZurueck < 300;
+            res.luftKnoten &&
+            res.sichtBoden >= 5000 &&
+            res.sichtHoch > res.sichtBoden &&
+            Math.abs(res.sichtZurueck - res.sichtBoden) <= res.sichtBoden * 0.01; // der Spieler setzt sich neu
         // Die RÜCKNAHME: der Dispose stellt das alte far wieder her (Ring-Besitz).
         const altVorDispose = r._fernRingCamFarAlt;
         r._fernRingDispose();
@@ -500,9 +488,9 @@ const server = http.createServer((req, res) => {
         `far=${out.camFar} soll=${out.camFarWide} alt=${out.camFarAlt}`
     );
     check(
-        "6: HÖHEN-ÖFFNUNG — Boden Wald-Gesetz, über der Umgebung offen (>1000), zurück geschlossen",
+        "6: DIE LUFT TRÄGT — scene.fogNode statt Nebel, Sichtweite am Boden ≥ 5 km, aus 300 m weiter (Höhen-Dunst)",
         out.oeffnungOk === true,
-        `boden=${out.fogBoden} gipfel=${out.fogGipfel} zurueck=${out.fogZurueck}${out.loopFehler ? " loopFehler=" + out.loopFehler : ""}`
+        `boden=${out.sichtBoden} hoch=${out.sichtHoch} zurueck=${out.sichtZurueck} knoten=${out.luftKnoten}${out.loopFehler ? " loopFehler=" + out.loopFehler : ""}`
     );
     check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
     check(

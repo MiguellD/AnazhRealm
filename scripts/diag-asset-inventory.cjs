@@ -139,7 +139,7 @@ const server = http.createServer((req, res) => {
         const waterSet = new Set();
         if (st.voxelChunkWaterIso) for (const m of st.voxelChunkWaterIso.values()) if (m) waterSet.add(m);
         const skySet = new Set(
-            [st.skybox, st.sunMesh, st.moonMesh, st.starField, st.waterPlane].filter(Boolean).concat(st.planets || [])
+            [st.skybox, st.sunMesh, st.moonMesh, st.starField, st.waterPlane].filter(Boolean)
         );
         const islandSet = new Set((st.floatingIslands || []).filter(Boolean));
         // N7.4 — die Vor-Studio-Kulissen (Horizont-Mantel/Canopy-Shell) sind GESCHNITTEN:

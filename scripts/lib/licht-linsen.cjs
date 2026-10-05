@@ -66,13 +66,12 @@ function albedoSicht(opts) {
             sc.add(ambEigen);
         }
         const A = amb || ambEigen;
-        const fogAlt = sc.fog ? [sc.fog.near, sc.fog.far] : null;
+        // Die Linse misst ohne Luft (die Extinktion der Szene ruht während des Schusses).
+        const luftU = st.luft && st.luft.U;
+        const luftAlt = luftU ? luftU.beta.value : null;
         const envAlt = sc.environment;
         const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
-        if (sc.fog) {
-            sc.fog.near = 1e7;
-            sc.fog.far = 2e7;
-        }
+        if (luftU) luftU.beta.value = 0;
         sc.environment = null;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
         const cam = st.camera;
@@ -237,10 +236,7 @@ function albedoSicht(opts) {
                 l.color.copy(c);
             }
             if (ambEigen) sc.remove(ambEigen);
-            if (fogAlt) {
-                sc.fog.near = fogAlt[0];
-                sc.fog.far = fogAlt[1];
-            }
+            if (luftU) luftU.beta.value = luftAlt;
             sc.environment = envAlt;
             sc.remove(karte);
             cam.position.copy(kamAlt.p);
@@ -285,7 +281,9 @@ function lichtBilanz() {
             if (o.isLight) lichtAlt.push([o, o.intensity]);
         });
         const envAlt = sc.environment;
-        const fogAlt = sc.fog ? [sc.fog.near, sc.fog.far] : null;
+        // Die Linse misst ohne Luft (die Extinktion der Szene ruht während des Schusses).
+        const luftU = st.luft && st.luft.U;
+        const luftAlt = luftU ? luftU.beta.value : null;
         const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
         const cam = st.camera;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
@@ -345,10 +343,7 @@ function lichtBilanz() {
         try {
             for (const m of meshes) m.visible = false;
             bundles();
-            if (sc.fog) {
-                sc.fog.near = 1e7;
-                sc.fog.far = 2e7;
-            }
+            if (luftU) luftU.beta.value = 0;
             const varianten = { alle: null, umgebung: "env" };
             for (const [l] of lichtAlt) varianten[l.type] = l.type;
             for (const [vn, typ] of Object.entries(varianten)) {
@@ -368,10 +363,7 @@ function lichtBilanz() {
             bundles();
             for (const [l, i] of lichtAlt) l.intensity = i;
             sc.environment = envAlt;
-            if (fogAlt) {
-                sc.fog.near = fogAlt[0];
-                sc.fog.far = fogAlt[1];
-            }
+            if (luftU) luftU.beta.value = luftAlt;
             sc.remove(karte);
             cam.position.copy(kamAlt.p);
             cam.quaternion.copy(kamAlt.q);

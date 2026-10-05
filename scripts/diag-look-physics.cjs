@@ -82,7 +82,8 @@ function relLuminanceLinear([r, g, b]) {
                 meadow: K.MEADOW_GREEN,
                 tints: K.WEATHER_TINTS,
                 intensity: K.WEATHER_INTENSITY,
-                fogEdge: K.FOG_EDGE,
+                luft: K.LUFT,
+                luftBeta: r._luftBeta ? ["sunny", "rainy", "stormy"].map((w) => r._luftBeta(K.WEATHER_FIELD[w])) : null,
                 toneMapping: rend ? rend.toneMapping : null,
                 acesConst: T.ACESFilmicToneMapping != null ? T.ACESFilmicToneMapping : null,
                 exposure: rend ? rend.toneMappingExposure : null,
@@ -138,16 +139,24 @@ function relLuminanceLinear([r, g, b]) {
         );
     } else ok("Wetter-Intensität lesbar", false, "WEATHER_INTENSITY fehlt");
 
-    // 4) NEBEL-TRÄGHEIT (V18.350-Physik): echter Nebel weitet sanft, zieht kaum
-    //    einwärts → expandRate > contractRate, und der Schritt ist gedeckelt (>0).
-    const f = boot.fogEdge;
-    if (f) {
+    // 4) LUFTPERSPEKTIVE (V18.530, Koschmieder): die Sichtweite ist −ln(Kontrast)/β; reine Luft ist Rayleigh
+    //    bei 550 nm (1,16·10⁻⁵/m), ein klarer Sommertag trägt ≥ 5 km, der Dunst sitzt in der Grenzschicht
+    //    (Skalenhöhe 0,5–3 km), und die Trübung wächst mit dem Wetter (Sonne < Regen < Sturm).
+    const L = boot.luft;
+    const lb = boot.luftBeta;
+    if (L && lb) {
         ok(
-            "Nebel-Kante träge + asymmetrisch (expand > contract, maxStep gedeckelt)",
-            f.expandRate > f.contractRate && f.maxStep > 0 && f.contractRate > 0,
-            `expand=${f.expandRate} contract=${f.contractRate} maxStep=${f.maxStep}`
+            "Luftperspektive physikalisch (Koschmieder 2 %, Rayleigh-Basis, Sicht ≥ 5 km, Grenzschicht, Wetter monoton)",
+            Math.abs(L.kontrast - 0.02) < 1e-9 &&
+                Math.abs(L.betaRayleigh / 1.16e-5 - 1) < 0.1 &&
+                -Math.log(L.kontrast) / lb[0] >= 5000 &&
+                L.skalenHoeheM >= 500 &&
+                L.skalenHoeheM <= 3000 &&
+                lb[0] < lb[1] &&
+                lb[1] < lb[2],
+            `Sicht Sonne/Regen/Sturm = ${lb.map((b) => Math.round(-Math.log(L.kontrast) / b)).join("/")} m · H = ${L.skalenHoeheM} m`
         );
-    } else ok("FOG_EDGE lesbar", false, "FOG_EDGE fehlt");
+    } else ok("LUFT lesbar", false, "LUFT/_luftBeta fehlt");
 
     // 5) HDR-TONE-MAPPING: reale Kameras/das Auge rollen Highlights filmisch ab
     //    (kein hartes Klemmen bei 1,0). ACES-Filmic + sane Exposure.

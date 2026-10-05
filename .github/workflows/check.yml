@@ -363,12 +363,26 @@ jobs:
               # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
               run: npm run gate:foundry-deadlock
 
-            - name: Boot-Nebel-Ring (der ferne Sichtring beim Ein-Chunk-Boot)
-              # V18.411: RING_RAMP_START=0 (EIN Chunk) riss den Reveal-Spalt auf — bei revealK==ringRadius==0
-              # sprang der Nebel auf den vollen Ziel-Rand über die ungebaute Leere (der ferne Sichtring). Beweist
-              # headless, dass der Ein-Chunk-Boot den Nebel auf die gebaute Kante kappt, mit dem Ring weitet und
-              # erst am Ziel den Weitblick öffnet; der Erwachen-Kokon bleibt eng.
-              run: npm run gate:boot-fog-ring
+            - name: Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)
+              # V18.530: der Nebel war eine lineare Wand an der Wald-Kante (unter Last 60 m) und verdeckte die
+              # gebaute Fernform. Beweist headless an DENSELBEN Uniforms, die der Luft-Knoten liest: klarer
+              # Sommertag >= 5 km (Koschmieder 2 %), Regen/Sturm dichter, Hoehe weiter, Ring-Kante klar, die
+              # Nebel-Kulisse fort; der Selbsttest macht eine injizierte 80-m-Wand und einen THREE.Fog rot.
+              run: npm run gate:luft-sicht
+
+            - name: Himmel-Tag (am Mittag steht kein Punkt am Himmel)
+              # V18.530: drei Math.random-Planeten-Kugeln (3-8 Grad, Zufallsfarbe, unbeleuchtet) standen am
+              # Mittagshimmel. Die Wandelsterne sind Punkte des Sternfelds, die Daemmerung setzt die Grenzgroesse:
+              # Mittag 0 Punkte, Abendstern in der Daemmerung, nachts alle; der Mond am Tag blass. Der Selbsttest
+              # macht eine injizierte Himmelskugel und eine zu tiefe Mittags-Grenze rot.
+              run: npm run gate:himmel-tag
+
+            - name: Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)
+              # V18.530: Strassen, Feldwege, Platz und Aecker lagen als 0,14-m-Box-Streifen auf der Gesetz-Hoehe -
+              # harte Kanten, schwarze Naht-Linien, Gras durch den Weg. Jetzt malt _stlWegeBuild sie in die
+              # Wege-Karte (Boden-Shader + Wiese lesen dieselben Bytes): kein flacher Streifen im Pool, weicher Rand,
+              # Konsum belegt. Der Selbsttest macht einen injizierten Boden-Streifen und eine harte Kante rot.
+              run: npm run gate:weg-boden
 
             - name: Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)
               # V18.414: foliageRadius raste per perf-headroom auf MAX (240 m), waehrend der gebaute Ring erst
