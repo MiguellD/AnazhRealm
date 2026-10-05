@@ -377,6 +377,12 @@ const FORBIDDEN = [
     { token: "FeldCull", fiel: "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern" },
     { token: "FELD_CULL", fiel: "05.10." },
     { token: "IndirectStorageBufferAttribute", fiel: "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt" },
+    // W6 (05.10.) — der GPU-Abschied: `InstancedMesh.dispose()` gab in r184 nichts frei (kein Objekt-Ereignis), die Instanz-
+    // Puffer jeder gefallenen Senke blieben in r184s Register (Mess-Wiese nach drei Wander-Schleifen: 1 530 Instanz-Matrizen
+    // ohne Halter, dazu 55,6 MB ruhende Foundry-Gestalten und der gewachsene Boden-Satz). Eine Senke fällt über
+    // `_instanzAbschied`, was den Graphen verlässt über den Kehraus (`_gpuKehraus`); gate:freie-slots (A) prüft den Abschied.
+    { token: "g.mesh.dispose()", fiel: "W6 — _instanzAbschied (die Instanz-Gruppe)" },
+    { token: "P.mesh.dispose()", fiel: "W6 — _instanzAbschied (Fundament- und Zaun-Pool)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

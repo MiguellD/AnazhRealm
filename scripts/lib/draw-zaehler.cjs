@@ -213,6 +213,16 @@ function drawZensus(opts) {
 // Speicher, den kein Bild trägt — die Band-Linse urteilt sie als LECK (band-urteil). Der gezählte Frame setzt
 // `window.__zensusCalls` (r184 `info.render.calls` vor dem Frame); `attributeCall` (r184 Geometries) trägt je Attribut den
 // Zähler seines letzten Zeichnens.
+// DER ZENSUS-PUNKT DER RESIDENZ: der Kehraus des Spiels (`_gpuKehraus`) läuft im Takt GPU_KEHRAUS_MS — die Linse liest am
+// Kehraus-Punkt (er läuft hier einmal, gegen den gezählten Frame), sonst stünde ein Takt-Fenster gefallener Gruppen als
+// `ruhend` im Urteil. Was danach ohne Bild bleibt, kann der Kehraus nicht nehmen: ein Leck.
+function kehrausJetzt() {
+    const r = window.anazhRealm;
+    if (!r || typeof r._gpuKehraus !== "function" || !Number.isFinite(window.__zensusCalls)) return 0;
+    r.state._gpuKehrausT = 0;
+    return r._gpuKehraus(window.__zensusCalls, performance.now());
+}
+
 function pufferZensus() {
     const r = window.anazhRealm;
     const st = r.state;
@@ -240,6 +250,9 @@ function pufferZensus() {
             merke(o.instanceMatrix, name);
             merke(o.instanceColor, name);
         }
+        // Was seine Render-Objekte zeichnen (das Register des Stamms, `_renderObjektRegister`): auch die Knoten-Attribute
+        // (r184s InstanceNode zeichnet die Instanz-Farbe aus einem eigenen Attribut).
+        for (const ro of o.__renderObjekte || []) if (ro.attributes) for (const a of ro.attributes) merke(a, name);
     });
     const cache = r._foundry && r._foundry.cache;
     if (cache)
@@ -404,6 +417,7 @@ module.exports = {
     ZAEHLER_INSTALL:
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
+        `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +
         `window.__texturErzeuger = ${texturErzeuger.toString()};` +
         `window.__texturZensus = ${texturZensus.toString()};`,
 };

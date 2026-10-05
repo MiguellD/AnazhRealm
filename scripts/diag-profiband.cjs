@@ -540,11 +540,26 @@ function selbsttest() {
     const r18 = JSON.parse(JSON.stringify(rt));
     r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };
     const n18 = BAND.ratscheNachziehen(r18, u17, { datum: "selbsttest", eingeschwungen: true });
+    // … und `nur: "vram"` (ein Schnitt, der nur den Speicher bewegt) lässt die Klassen-Zeilen und ihre Serie stehen.
+    const r18b = JSON.parse(JSON.stringify(r18));
+    r18b.klassen.boden.haupt.befehle = 10;
+    r18b.gemessen = { datum: "klassen-serie", eingeschwungen: true };
+    const u18b = urteil(
+        [{ klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 7 }, jeTris: { haupt: 7000 } }],
+        r18b,
+        { mb: 100, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }
+    );
+    const n18b = BAND.ratscheNachziehen(r18b, u18b, { datum: "vram-serie", eingeschwungen: true }, "vram");
     t(
-        "Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt",
+        "Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt; nur vram: Klassen bleiben",
         n18.ratsche.vramMB["tex:depthBuffer"] === 0 &&
             n18.ratsche.vramMB["buf:szene"] === 30.7 &&
-            n18.ratsche.vramMB["buf:bild"] === 0
+            n18.ratsche.vramMB["buf:bild"] === 0 &&
+            n18b.ratsche.klassen.boden.haupt.befehle === 10 &&
+            n18b.ratsche.vramMB["buf:szene"] === 21 &&
+            n18b.ratsche.gemessen.datum === "klassen-serie" &&
+            n18b.ratsche.gemessen.vram.datum === "vram-serie" &&
+            !BAND.ratschePruefen(n18b.ratsche, haushalt).length
     );
 
     const rot = tests.filter((x) => !x.ok);

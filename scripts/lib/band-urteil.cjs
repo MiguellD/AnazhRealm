@@ -427,7 +427,9 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche }) {
 // DIE RATSCHE NACHZIEHEN (`werkbank ratsche`, die Hülle einer eingeschwungenen Serie der echten GPU, nur ohne Linsen-
 // Fehler): jedes Ist — Klasse × Pass, die Summe, der VRAM je Erzeuger — setzt ein ungemessenes Feld und senkt ein
 // gemessenes; heben tut sie nie (ein Ist darüber ist ROT, heben ist ein begründeter Akt von Hand im Commit).
-function ratscheNachziehen(ratsche, u, gemessen) {
+// `nur: "vram"` (W6): ein Schnitt, der nur den Speicher bewegt, zieht nur den VRAM nach — die Klassen-Zeilen bleiben die
+// Hülle ihrer eigenen Serie (`gemessen`), die VRAM-Serie steht in `gemessen.vram`.
+function ratscheNachziehen(ratsche, u, gemessen, nur) {
     const neu = JSON.parse(JSON.stringify(ratsche));
     const aenderungen = [];
     const setze = (obj, key, ist, name) => {
@@ -438,14 +440,16 @@ function ratscheNachziehen(ratsche, u, gemessen) {
             aenderungen.push(`${name}: ${alt == null ? "–" : alt} → ${ist}`);
         }
     };
-    for (const z of u.klassen) {
+    for (const z of nur === "vram" ? [] : u.klassen) {
         const rz = neu.klassen[z.id];
         if (!rz || freiGrund(neu, z.id)) continue;
         for (const p of Object.keys(rz))
             for (const g of ["befehle", "dreiecke"]) setze(rz[p], g, z.je[p] ? z.je[p][g] : 0, `${z.id}.${p}.${g}`);
     }
-    setze(neu.gesamt, "befehle", u.summe.gebunden.befehle, "gesamt.befehle");
-    setze(neu.gesamt, "dreiecke", u.summe.gebunden.dreiecke, "gesamt.dreiecke");
+    if (nur !== "vram") {
+        setze(neu.gesamt, "befehle", u.summe.gebunden.befehle, "gesamt.befehle");
+        setze(neu.gesamt, "dreiecke", u.summe.gebunden.dreiecke, "gesamt.dreiecke");
+    }
     if (u.vram) {
         setze(neu.gesamt, "vramMB", u.vram.mb, "gesamt.vramMB");
         neu.vramMB = neu.vramMB || {};
@@ -455,7 +459,9 @@ function ratscheNachziehen(ratsche, u, gemessen) {
         const lebt = new Set(u.vram.erzeuger.map((e) => e.erzeuger));
         for (const k of Object.keys(neu.vramMB)) if (!lebt.has(k)) setze(neu.vramMB, k, 0, "vramMB." + k);
     }
-    if (aenderungen.length) neu.gemessen = gemessen;
+    if (aenderungen.length)
+        if (nur === "vram") neu.gemessen = Object.assign({}, ratsche.gemessen || gemessen, { vram: gemessen });
+        else neu.gemessen = gemessen;
     return { ratsche: neu, aenderungen };
 }
 

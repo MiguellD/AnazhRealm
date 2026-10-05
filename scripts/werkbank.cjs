@@ -53,7 +53,7 @@
 //                                                           (spec/profiband/, scripts/lib/band-urteil.cjs) → Tabelle
 //                                                           Ist/Soll/Täter, BAND (Befehle · Dreiecke · VRAM · GPU-ms)
 //                                                           und LINSE; Exit 1, solange eins ROT ist
-//   node scripts/werkbank.cjs ratsche <band-*.json …>      DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 Läufe der echten
+//   node scripts/werkbank.cjs ratsche <band-*.json …> [--nur vram]  DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 Läufe der echten
 //                                                           GPU am Messort, eingeschwungen, Erst- und Zweit-Boot — die
 //                                                           Hülle zieht nach (setzt, senkt, hebt nie), nur bei sauberer
 //                                                           LINSE
@@ -1077,6 +1077,7 @@ async function starte() {
                         // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
                         window.__buehne();
                         await window.__drawZensus({ top: 1 });
+                        window.__kehrausJetzt();
                         window.__texturZensus();
                         const puffer = window.__pufferZensus();
                         const v = window.__vram || {};
@@ -1139,6 +1140,7 @@ async function starte() {
                         }
                         // Die Zensus-Linsen zuerst: sie buchen die über ihr three-Objekt benannten Texturen und Puffer im
                         // Abgriff um (Texturen über ihr Ziel, Puffer über ihren Halter).
+                        window.__kehrausJetzt();
                         const texturen = window.__texturZensus();
                         const puffer = window.__pufferZensus();
                         const v = window.__vram;
@@ -1370,13 +1372,18 @@ async function starte() {
             console.log("\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen");
             process.exit(1);
         }
-        const r = BAND.ratscheNachziehen(ratsche, u, {
-            datum: new Date().toISOString(),
-            geraet: haushalt.messort.geraet,
-            eingeschwungen: true,
-            laeufe: laeufe.length,
-            boots: laeufe.map((x) => x.boot.art + "/" + x.boot.ladungen),
-        });
+        const r = BAND.ratscheNachziehen(
+            ratsche,
+            u,
+            {
+                datum: new Date().toISOString(),
+                geraet: haushalt.messort.geraet,
+                eingeschwungen: true,
+                laeufe: laeufe.length,
+                boots: laeufe.map((x) => x.boot.art + "/" + x.boot.ladungen),
+            },
+            opt("--nur")
+        );
         if (r.aenderungen.length)
             fs.writeFileSync(
                 path.join(root, "spec", "profiband", "ratsche.json"),
