@@ -23,6 +23,37 @@ function parseName(f) {
     return { presetId: m[1], seed: Number(m[2]), lod: Number(m[3]), season: m[4] };
 }
 
+// DER KARTEN-RUNDLAUF (W6, Karten-Gesetz in phyto-core): je Fall (Art, Same) bäckt das Studio die Karte, der Codec
+// kodiert sie zur Atlas-Schicht (BC1-sRGB-Albedo mit deckungstreuen Mips, BC5-Normale auf 1/normalTeiler) und
+// dekodiert sie zurück. Die Wand: Alpha an der Schwelle bitgleich · Albedo-PSNR ≥ 32 dB (opake Texel) · Normalwinkel
+// im Mittel ≤ 4° · Mip-Deckung jeder Stufe = Stufe 0 ± 3 % · Schicht ≤ 0,25 MiB · die lineare Kronenfarbe der als sRGB dekodierten Schicht
+// = Studio-Eingang ± 3 % (die Blick-Tour sah die linearen Bytes als sRGB gelesen: Laub 0,12 → 0,013, die Krone schwarz).
+const KARTEN_FAELLE = [
+    ["eiche", 1],
+    ["fichte", 1],
+    ["birke", 2],
+    ["strauch", 1],
+];
+function kartenUrteil(m) {
+    const aus = [];
+    if (!m || m.fehler) return [`kein Rundlauf (${m ? m.fehler : "—"})`];
+    if (m.alphaFehl !== 0) aus.push(`Alpha an der Schwelle nicht bitgleich (${m.alphaFehl} Texel)`);
+    if (!(m.psnr >= 32)) aus.push(`Albedo-PSNR ${(m.psnr || 0).toFixed(2)} dB < 32`);
+    if (!(m.winkelMittel <= 4)) aus.push(`Normalwinkel Ø ${(m.winkelMittel || 0).toFixed(2)}° > 4°`);
+    // das Karten-Budget: eine Schicht (Albedo + Normale, alle Stufen) kostet höchstens 0,25 MiB — Karten-MB ≤ Zellen × 0,25
+    if (!(m.bytes <= 0.25 * 1048576)) aus.push(`Schicht ${((m.bytes || 0) / 1048576).toFixed(3)} MiB > 0,25 MiB`);
+    const d = m.deckung || [];
+    if (!d.length || d.some((x) => !(Math.abs(x - d[0]) <= 0.03 * d[0])))
+        aus.push(`Mip-Deckung ${d.map((x) => x.toFixed(4)).join("/")} weicht > 3 % von Stufe 0 ab`);
+    const f = m.farbe;
+    const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    if (!f || !(Math.abs(lum(f.aus) / Math.max(1e-6, lum(f.ein)) - 1) <= 0.03))
+        aus.push(
+            `Kronen-Farbe: die dekodierte Schicht trägt ${f ? lum(f.aus).toFixed(4) : "—"} statt ${f ? lum(f.ein).toFixed(4) : "—"} (linear)`
+        );
+    return aus;
+}
+
 const SCHEMA_ATTRS = ["position"]; // Pflicht-Attribut je Mesh
 function schemaError(rec) {
     if (rec.cv !== 1) return "cv != 1";
@@ -186,7 +217,8 @@ function deckungsUrteil(paare, band, at) {
     const paare = {};
     const messungen = [];
     let wand = null;
-    await runWithWorker(PORT, async ({ build, getData, atlas }) => {
+    let karten = null;
+    await runWithWorker(PORT, async ({ build, getData, atlas, karte }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -272,6 +304,11 @@ function deckungsUrteil(paare, band, at) {
                     miss(c, await build(c), `${preset}-s7-L${lod}-summer`);
                 }
             }
+        // DER KARTEN-RUNDLAUF (W6): echte Studio-Bakes durch den Karten-Codec (BC) und zurück, plus der Selbsttest
+        // (eine gestörte BC1-Albedo).
+        karten = { faelle: {}, gestoert: null };
+        for (const [p, sd] of KARTEN_FAELLE) karten.faelle[p + "|" + sd] = await karte(p, sd);
+        karten.gestoert = await karte(KARTEN_FAELLE[0][0], KARTEN_FAELLE[0][1], "bc1");
         const at = await atlas();
         const band = budget && budget.tree && budget.tree[1] && budget.tree[1].deckung;
         wand = { at, band, budget, stufen, b1: budget && budget.tree && budget.tree[1] };
@@ -365,6 +402,40 @@ function deckungsUrteil(paare, band, at) {
         );
         if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6) fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
+
+    // DER KARTEN-RUNDLAUF (W6) — das Urteil je Fall, dann der Selbsttest (die gestörte Schicht MUSS rot werden, die
+    // Box-Mip der GPU MUSS die Deckungs-Wand sprengen — sonst misst die Linse nichts).
+    if (karten) {
+        console.log("Karten-Rundlauf (BC1-sRGB + BC5, Studio-Bake → Codec → zurück):");
+        for (const [fall, m] of Object.entries(karten.faelle)) {
+            const urteil = kartenUrteil(m);
+            const d = m.deckung || [];
+            console.log(
+                `  ${fall}: Alpha-Fehler ${m.alphaFehl} · PSNR ${(m.psnr || 0).toFixed(2)} dB · Normale Ø ${(m.winkelMittel || 0).toFixed(2)}° ` +
+                    `(p95 ${(m.winkelP95 || 0).toFixed(1)}°) · Deckung ${d.map((x) => x.toFixed(4)).join("/")} ` +
+                    `(Box ${(m.box || []).map((x) => x.toFixed(4)).join("/")}) · Krone linear ` +
+                    `${(m.farbe ? m.farbe.ein : []).map((x) => x.toFixed(3)).join(",")} → ${(m.farbe ? m.farbe.aus : []).map((x) => x.toFixed(3)).join(",")} · ` +
+                    `${((m.bytes || 0) / 1048576).toFixed(3)} MiB`
+            );
+            fails.push(...urteil.map((x) => `Karte ${fall}: ${x}`));
+        }
+        const erst = Object.values(karten.faelle)[0] || {};
+        const s1 = kartenUrteil(karten.gestoert || {}).length > 0;
+        const s2 = kartenUrteil(Object.assign({}, erst, { deckung: erst.box || [] })).some((x) => x.startsWith("Mip-Deckung"));
+        const s3 =
+            kartenUrteil(
+                Object.assign({}, erst, {
+                    farbe: erst.farbe && { ein: erst.farbe.ein, aus: erst.farbe.ein.map((v) => v * 0.11) },
+                })
+            ).some((x) => x.startsWith("Kronen-Farbe"));
+        // die rgba8-Schicht (1,125 MiB: Albedo 1 MiB + rg8-Normale 0,125 MiB, ohne Mips) sprengt das BC-Budget
+        const s4 = kartenUrteil(Object.assign({}, erst, { bytes: 1.25 * 1048576 })).some((x) => x.startsWith("Schicht"));
+        console.log(
+            `Selbsttest Karten-Linse: gestörte BC1-Albedo wird rot ${s1 ? "✅" : "❌"} · Box-Mip sprengt die Deckungs-Wand ${s2 ? "✅" : "❌"} · ` +
+                `linear-als-sRGB (Blick-Tour: 0,12 → 0,013) wird rot ${s3 ? "✅" : "❌"} · 1,25-MiB-Schicht sprengt das Budget ${s4 ? "✅" : "❌"}`
+        );
+        if (!s1 || !s2 || !s3 || !s4) fails.push("Selbsttest der Karten-Linse feuert nicht");
+    } else fails.push("Karten-Rundlauf lief nicht");
 
     console.log("=== ASSET-VERTRAG v1 — Konformanz-Gate ===");
     console.log(`Goldens: ${files.length} · byte-gleich: ${ok}`);

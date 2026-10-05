@@ -3,11 +3,11 @@
 // im iframe). Bootet den Studio-Generator als Worker (dieselben WORKER_SCRIPTS wie
 // asset-worker-harness.cjs — kein zweiter Boot-Pfad) und prüft DREI Fälle:
 //   1. {type:"bake-impostor", presetId:"eiche", seed:7} — der Pflanzen-Pfad:
-//      payload != null · albedo/normal-Länge 128*256*8*4 · Atlas nicht komplett 0 ·
-//      Alpha-Deckung > 64 Pixel · Rahmen (aspect) + Weltmass (height) endlich und > 0.
+//      payload != null · albedo-Länge 128*256*8*4, Normale auf 1/nt (W6: nt = 2) · Atlas nicht komplett 0 ·
+//      Alpha-Deckung > 64 Pixel · der Bake-Rahmen (halfH, halfW) endlich und > 0.
 //   2. ZWEIT-KERN-BÄCKEREI: das ERSTE gate-Rezept aus dem Buch (get-book, kind==="gate") —
 //      derselbe Kanal, das Bake-Subjekt baut der Manifest-Kern (porta buildInstance);
-//      dieselben Prüfungen (payload nicht-null, albedo NICHT-LEER, height/aspect endlich).
+//      dieselben Prüfungen (payload nicht-null, albedo NICHT-LEER, Rahmen endlich).
 //   3. FAIL-CLOSED: ein UNBEKANNTES Preset (kein Kern kennt es) MUSS sauber scheitern —
 //      payload null, kein Worker-Wurf (die LEERE-KARTE-Klasse bleibt tot).
 // PIXEL-WAHRHEIT: albedo/normal kommen aus gl.readRenderTargetPixels (8 Blickwinkel VERTIKAL
@@ -40,6 +40,8 @@ const MIME = {
 // ── DIE SOLL-ZAHLEN (die fixe Naht: __replyBakeImpostor, cw=128 ch=256 V=8) ──────────────
 const SOLL = { cw: 128, ch: 256, V: 8 };
 const SOLL_LEN = SOLL.cw * SOLL.ch * SOLL.V * 4; // 1.048.576 Bytes je Atlas
+const SOLL_NT = 2; // W6 — das Karten-Gesetz (phyto-core KARTEN_GESETZ.normalTeiler): die Normale bäckt auf 1/2
+const SOLL_NLEN = (SOLL.cw / SOLL_NT) * ((SOLL.ch * SOLL.V) / SOLL_NT) * 4;
 const SOLL_ALPHA_PX = 64; // NICHT-LEERE-WAND: mehr als 64 gedeckte Alpha-Pixel = es wurde WIRKLICH gebacken
 
 // Reine Prüf-Funktion (auch der Selbst-Test ruft sie) → Liste roter Befunde.
@@ -56,15 +58,17 @@ function pruefe(st) {
     if (st.cw !== SOLL.cw || st.ch !== SOLL.ch || st.V !== SOLL.V)
         rot.push(`Zell-Masse divergieren: cw=${st.cw} ch=${st.ch} V=${st.V} (soll ${SOLL.cw}/${SOLL.ch}/${SOLL.V})`);
     if (st.albedoLen !== SOLL_LEN) rot.push(`albedo-Länge ${st.albedoLen} != ${SOLL_LEN} (cw*ch*V*4)`);
-    if (st.normalLen !== SOLL_LEN) rot.push(`normal-Länge ${st.normalLen} != ${SOLL_LEN} (cw*ch*V*4)`);
+    if (st.nt !== SOLL_NT || st.normalLen !== SOLL_NLEN)
+        rot.push(`Normale nicht auf 1/${SOLL_NT}: nt=${st.nt} Länge ${st.normalLen} != ${SOLL_NLEN}`);
     if (!(st.albedoNonNull > 0)) rot.push("albedo ist komplett 0 — der Atlas ist leer (nichts gebacken)");
     if (!(st.normalNonNull > 0)) rot.push("normal ist komplett 0 — der Normal-Atlas ist leer");
     if (!(st.alphaPx > SOLL_ALPHA_PX))
         rot.push(
             `Alpha-Deckung ${st.alphaPx} <= ${SOLL_ALPHA_PX} Pixel — LEERE Karte als „Erfolg" (M1-Klasse: nichts gebacken)`
         );
-    if (!(st.aspect > 0) || !isFinite(st.aspect)) rot.push(`aspect unbrauchbar: ${st.aspect}`);
-    if (!(st.height > 0) || !isFinite(st.height)) rot.push(`height unbrauchbar: ${st.height}`);
+    const fr = st.frame || {};
+    if (!(fr.halfH > 0 && isFinite(fr.halfH) && fr.halfW > 0 && isFinite(fr.halfW)))
+        rot.push(`Rahmen unbrauchbar: ${JSON.stringify(st.frame)}`);
     return rot;
 }
 
@@ -89,12 +93,12 @@ function selbstTest() {
         cw: 128,
         ch: 256,
         V: 8,
-        aspect: 0.5,
-        height: 8.2,
+        nt: SOLL_NT,
+        frame: { halfH: 4.1, halfW: 2.05 },
         albedoLen: SOLL_LEN,
-        normalLen: SOLL_LEN,
+        normalLen: SOLL_NLEN,
         albedoNonNull: 12345,
-        normalNonNull: SOLL_LEN,
+        normalNonNull: SOLL_NLEN,
         alphaPx: 4096,
     };
     const faelle = [
@@ -106,7 +110,8 @@ function selbstTest() {
             "LEERE Karte (Alpha-Deckung 0) -> feuert",
             pruefe(Object.assign({}, gruen, { alphaPx: 0 })).length > 0,
         ],
-        ["kaputter Rahmen (aspect NaN) -> feuert", pruefe(Object.assign({}, gruen, { aspect: NaN })).length > 0],
+        ["kaputter Rahmen (halfH NaN) -> feuert", pruefe(Object.assign({}, gruen, { frame: { halfH: NaN, halfW: 1 } })).length > 0],
+        ["Normale in voller Auflösung -> feuert", pruefe(Object.assign({}, gruen, { normalLen: SOLL_LEN })).length > 0],
         [
             "Unbekannt: payload null ohne Wurf -> KEIN Befund",
             pruefeUnbekannt({ got: true, payloadNull: true, workerError: null }).length === 0,
@@ -169,7 +174,7 @@ function pageHtml() {
     const a = p.albedo || new Uint8Array(0), n = p.normal || new Uint8Array(0);
     return {
       got: true, payloadNull: false, presetId: r.presetId, seed: r.seed, workerError: S.error,
-      cw: p.cw, ch: p.ch, V: p.V, aspect: p.aspect, height: p.height,
+      cw: p.cw, ch: p.ch, V: p.V, nt: p.nt, frame: p.frame,
       albedoLen: a.length, normalLen: n.length,
       albedoNonNull: nonNull(a), normalNonNull: nonNull(n), alphaPx: alphaPx(a),
     };
@@ -243,7 +248,7 @@ function pageHtml() {
 
     const zeile = (s) =>
         `cw=${s.cw} ch=${s.ch} V=${s.V} · albedo=${s.albedoLen}B (nicht-0: ${s.albedoNonNull}, Alpha-Px: ${s.alphaPx})` +
-        ` · normal=${s.normalLen}B (nicht-0: ${s.normalNonNull}) · aspect=${Number(s.aspect).toFixed(3)} · height=${Number(s.height).toFixed(2)}m`;
+        ` · normal=${s.normalLen}B (nicht-0: ${s.normalNonNull}) · nt=${s.nt} · Rahmen ${JSON.stringify(s.frame)}`;
     console.log("\n=== BÄCKER-KANAL — bake-impostor im Foundry-Worker (eiche, seed 7) ===");
     if (stats && stats.got && !stats.payloadNull) console.log("  Reply: " + zeile(stats));
     const rot = pruefe(stats);

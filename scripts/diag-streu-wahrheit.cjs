@@ -19,9 +19,10 @@
 //       MeshStandardNodeMaterial;
 //   (3) DAS FARB-GESETZ: beide Streu-Bauer (_scatterSpeciesGeometry, _scatterImpostorGeometry) backen je lit Art die
 //       Vertex-Farbe = sRGB→linear des rohen Bauplans (eigene Referenz-Formel), leuchtende Arten roh;
-//   (4) DIE KARTEN-FARBE: die Studio-Karte reist linear (Render-Target), die Welt-Karte ist sRGB markiert — der Maler
-//       (_applyStudioImpostorPayload) kodiert die Albedo über AnazhRealm._linearZuSrgb8 (die Tafel gegen die
-//       Referenz-Formel geprüft), die Normalen bleiben Daten.
+//   (4) DIE KARTEN-FARBE: die Studio-Karte reist linear (Render-Target), die Welt-Schicht ist sRGB markiert — der
+//       Karten-Codec (phyto-core impostorMips; W6: er läuft in der Transport-Schale, der Haupt-Thread kopiert nur die
+//       Schicht) kodiert jede Mip-Stufe linear → sRGB, gemessen am echten Codec gegen die Referenz-Formel (alle 256
+//       Stufen, Stufe 0 und die linear gemittelte Stufe 1); die Normalen bleiben Daten (normalMips byte-treu).
 // --selftest: der Fels im alten Uhrzeigersinn, der Lambert-Zweig, Lambert-Wege, ein Lambert-Fundament, ein Bauer
 // ohne Farb-Gesetz und ein rohes Gesetz → alle MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
@@ -32,6 +33,55 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const QUELLE = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const PHYTO = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
+
+// Der Karten-Codec aus einer phyto-core-Quelle (echt oder injiziert), in einer eigenen Sandbox geladen.
+function codecAus(phytoSrc) {
+    const sandbox = {};
+    new Function("self", phytoSrc)(sandbox);
+    return sandbox.__phytoCore || null;
+}
+// linear → sRGB nach IEC 61966-2-1 (die Referenz der Linse, unabhängig vom Codec).
+const srgbSoll = (v) => Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255);
+function kartenFarbe(phytoSrc) {
+    const fehler = [];
+    const core = codecAus(phytoSrc);
+    if (!core || typeof core.impostorMips !== "function" || typeof core.normalMips !== "function")
+        return ["der Karten-Codec (phyto-core impostorMips/normalMips) fehlt"];
+    // Stufe 0: 256 opake Texel (16 × 16, V = 1), Texel i trägt den linearen Wert i in r, g, b.
+    const w = 16,
+        h = 16;
+    const lin = new Uint8Array(w * h * 4);
+    for (let i = 0; i < 256; i++) {
+        lin[i * 4] = lin[i * 4 + 1] = lin[i * 4 + 2] = i;
+        lin[i * 4 + 3] = 255;
+    }
+    const mips = core.impostorMips(lin, w, h, 1, null, 2);
+    const d0 = mips && mips.stufen && mips.stufen[0] ? mips.stufen[0].data : null;
+    let ab0 = 0;
+    for (let i = 0; i < 256; i++) if (!d0 || d0[i * 4] !== srgbSoll(i / 255) || d0[i * 4 + 3] !== 255) ab0++;
+    if (ab0) fehler.push(`die Karten-Kodierung weicht in ${ab0} von 256 Stufen von linear → sRGB ab (Stufe 0)`);
+    // Stufe 1: das LINEARE Mittel der vier Kinder, dann kodiert (nie das Mittel der sRGB-Bytes).
+    const d1 = mips && mips.stufen && mips.stufen[1] ? mips.stufen[1].data : null;
+    let ab1 = 0;
+    for (let y = 0; y < h / 2; y++)
+        for (let x = 0; x < w / 2; x++) {
+            let m = 0;
+            for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) m += (y * 2 + dy) * w + x * 2 + dx;
+            const o = y * (w / 2) + x;
+            if (!d1 || Math.abs(d1[o * 4] - srgbSoll(m / 4 / 255)) > 1) ab1++;
+        }
+    if (ab1) fehler.push(`die gemittelte Mip-Stufe ist nicht linear gemittelt und sRGB-kodiert (${ab1} von ${(w * h) / 4} Texeln)`);
+    // Die Normale ist DATEN: ein Byte-Paar reist unverändert durch Stufe 0.
+    const nrm = new Uint8Array(4 * 4);
+    for (let i = 0; i < 4; i++) {
+        nrm[i * 4] = 200;
+        nrm[i * 4 + 1] = 50;
+    }
+    const n0 = core.normalMips(nrm, 2, 2, 4, 1)[0].data;
+    if (n0[0] !== 200 || n0[1] !== 50) fehler.push("die Normalen-Karte wird kodiert — Normalen sind Daten");
+    return fehler;
+}
 
 // Kommentare strippen, Strings bewahren (zeichenweise, string-bewusst).
 function ohneKommentare(src) {
@@ -108,7 +158,7 @@ const THREE_SCHEIN = {
     },
 };
 
-function pruefe(src) {
+function pruefe(src, phytoSrc = PHYTO) {
     const fehler = [];
     const arten = rumpf(src, /static get KLEIN_VEGETATION_SPECIES\(\)\s*\{/);
     const bau = rumpf(src, /\n {4}_scatterSpeciesGeometry\(species\)\s*\{/);
@@ -206,24 +256,12 @@ function pruefe(src) {
     if (lambert) fehler.push(`${lambert} Lambert-Stoff(e) im Stamm — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
     if (!/\(this\._archFundMat = new THREE\.MeshStandardNodeMaterial\(/.test(nc))
         fehler.push("_archFundMat (das Fundament) baut nicht MeshStandardNodeMaterial");
-    // (4) DIE KARTEN-FARBE
-    const tafelSrc = rumpf(src, /\nAnazhRealm\._linearZuSrgb8 = \(\(\) => \{/);
-    if (!tafelSrc) fehler.push("AnazhRealm._linearZuSrgb8 (die Karten-Kodierung) nicht im Stamm gefunden");
-    else {
-        const tafel = new Function(tafelSrc.slice(1, -1))();
-        let ab = 0;
-        for (let i = 0; i < 256; i++) {
-            const v = i / 255;
-            const soll = Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255);
-            if (!tafel || tafel[i] !== soll) ab++;
-        }
-        if (ab) fehler.push(`die Karten-Kodierung weicht in ${ab} von 256 Stufen von linear → sRGB ab`);
-    }
-    const karte = rumpf(nc, /\n {4}_applyStudioImpostorPayload\(rec, payload\)\s*\{/) || "";
-    if (!/this\._paintStudioAtlasCells\(colCtx, payload\.albedo, cw, ch, V, AnazhRealm\._linearZuSrgb8\)/.test(karte))
-        fehler.push("die Studio-Karte (linear) wird ohne sRGB-Kodierung in die sRGB-Welt-Karte gemalt — die GPU dekodiert sie doppelt (Albedo^2,2)");
-    if (!/this\._paintStudioAtlasCells\(nrmCtx, payload\.normal, cw, ch, V\)/.test(karte))
-        fehler.push("die Normalen-Karte wird kodiert — Normalen sind Daten");
+    // (4) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
+    for (const f of kartenFarbe(phytoSrc)) fehler.push(f);
+    const texturen = rumpf(nc, /\n {4}_impostorAtlasTexturen\(at, bedarf\)\s*\{/) || "";
+    // beide Format-Stufen (BC1 und rgba8) markieren ihre Albedo sRGB
+    if ((texturen.match(/map\.colorSpace = T\.SRGBColorSpace;/g) || []).length !== 2)
+        fehler.push("die Atlas-Albedo ist nicht in jeder Format-Stufe sRGB markiert — die GPU läse die kodierten Bytes linear");
     const stoff = rumpf(nc, /\n {4}_scatterMaterial\(species\)\s*\{/) || "";
     if (!stoff) fehler.push("_scatterMaterial nicht gefunden");
     else {
@@ -277,19 +315,24 @@ function main() {
             ["Farb-Gesetz roh", QUELLE.replace("    if (species && species.emissive) return C;\n", "    return C;\n"), /sRGB-Absicht/],
             [
                 "Karte ohne Kodierung",
-                QUELLE.replace(
-                    "this._paintStudioAtlasCells(colCtx, payload.albedo, cw, ch, V, AnazhRealm._linearZuSrgb8);",
-                    "this._paintStudioAtlasCells(colCtx, payload.albedo, cw, ch, V);"
-                ),
-                /doppelt/,
+                QUELLE,
+                /Karten-Kodierung weicht/,
+                PHYTO.replace("d0[i * 4] = SRGB_AUS_LIN8[r];", "d0[i * 4] = r;"),
             ],
-            ["Karten-Tafel falsch", QUELLE.replace("1.055 * Math.pow(v, 1 / 2.4) - 0.055", "Math.pow(v, 1 / 2.2)"), /Karten-Kodierung weicht/],
+            [
+                "Mip-Stufe roh gemittelt",
+                QUELLE,
+                /linear gemittelt/,
+                PHYTO.replace("data[o * 4] = linZuSrgb8(tr[o] / ta[o]);", "data[o * 4] = Math.round((tr[o] / ta[o]) * 255);"),
+            ],
+            ["Karten-Tafel falsch", QUELLE, /Karten-Kodierung weicht/, PHYTO.replace("1.055 * Math.pow(x, 1 / 2.4) - 0.055", "Math.pow(x, 1 / 2.2)")],
+            ["Atlas linear markiert", QUELLE.replace("map.colorSpace = T.SRGBColorSpace;", ""), /nicht in jeder Format-Stufe sRGB/],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
         console.log(`${ok ? "✅" : "❌"} SELBST-TEST: die echte Quelle ist grün${ok ? "" : " — " + echt.fehler.join(" · ")}`);
-        for (const [name, src, muster] of brueche) {
-            const r = pruefe(src);
-            const feuert = src !== QUELLE && r.fehler.some((f) => muster.test(f));
+        for (const [name, src, muster, phyto = PHYTO] of brueche) {
+            const r = pruefe(src, phyto);
+            const feuert = (src !== QUELLE || phyto !== PHYTO) && r.fehler.some((f) => muster.test(f));
             console.log(`${feuert ? "✅" : "❌"} SELBST-TEST: „${name}" → die Linse nennt ihn${r.fehler.length ? " — " + r.fehler[0] : ""}`);
             ok = ok && feuert;
         }
@@ -302,7 +345,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE STREU-WAHRHEIT steht — ${r.geprueft} einseitige Arten mit Außen-Normalen (jede Fläche zeigt vom Schwerpunkt weg), kein Lambert-Stoff im Stamm (Streu, Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), ${r.farbArten} Art×Bauer backen ihre Farbe nach dem Farb-Gesetz, die Studio-Karte wird sRGB-kodiert gemalt.`
+        `✅ DIE STREU-WAHRHEIT steht — ${r.geprueft} einseitige Arten mit Außen-Normalen (jede Fläche zeigt vom Schwerpunkt weg), kein Lambert-Stoff im Stamm (Streu, Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), ${r.farbArten} Art×Bauer backen ihre Farbe nach dem Farb-Gesetz, der Karten-Codec kodiert die Studio-Karte sRGB.`
     );
 }
 main();

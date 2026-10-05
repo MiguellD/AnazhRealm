@@ -23,7 +23,7 @@
 //       Muster): das ERSTE vehicle-Rezept aus dem LIVE-Buch (get-book) bäckt eine
 //       NICHT-LEERE Impostor-Karte (Alpha-Deckung > 64 Px — die NICHT-LEERE-WAND),
 //       und die Mess-Zahl reist in den Bericht: L0-Meshes/-Tris (build-asset lod 0)
-//       gegen die Fernstufe (1 Quad = 2 Tris, `_buildImpostorCrossGeometry`).
+//       gegen die Fernstufe (1 Quad = 2 Tris, das Einheits-Quad des Karten-Atlas `_impostorQuad`).
 //
 //   node scripts/diag-fahrzeug-fern.cjs        (exit 0 = GRÜN, 1 = ROT, 2 = Harness-Fehler)
 const fs = require("fs");
@@ -50,7 +50,7 @@ const MIME = {
 const SOLL = { cw: 128, ch: 256, V: 8 };
 const SOLL_LEN = SOLL.cw * SOLL.ch * SOLL.V * 4;
 const SOLL_ALPHA_PX = 64; // NICHT-LEERE-WAND: echte Pixel, keine Clear-Karte als „Erfolg"
-// Die Fernstufe des Wirts: EIN camera-facing Quad (`_buildImpostorCrossGeometry`, VC=6).
+// Die Fernstufe des Wirts: EIN camera-facing Quad (`_impostorQuad`, VC=6).
 const FERN_MESHES = 1;
 const FERN_TRIS = 2;
 
@@ -154,7 +154,7 @@ function pruefeQuelle(quelle) {
     if (!waechter) rot.push("Bäcker-Kind-Wächter (Positivliste in _tickImpostorBake) nicht gefunden");
     else {
         if (!waechter.test("vehicle"))
-            rot.push("Kind-Wächter blockt vehicle (" + waechter + ") — der Bake fiele terminal rttFailed");
+            rot.push("Kind-Wächter blockt vehicle (" + waechter + ") — der Bake fiele terminal gescheitert");
         if (waechter.test("weapon")) rot.push("Kind-Wächter lässt weapon durch — die Positivliste ist keine mehr");
     }
     // (P4) Die Serve-Chokepoints routen lod>=2 über GENAU diese Politik (Quell-Proben
@@ -244,8 +244,12 @@ function pruefeBaecker(st) {
         rot.push(
             `Alpha-Deckung ${st.alphaPx} <= ${SOLL_ALPHA_PX} Px — LEERE Karte als „Erfolg" (die NICHT-LEERE-WAND muss greifen)`
         );
-    if (!(st.aspect > 0) || !isFinite(st.aspect)) rot.push(`aspect unbrauchbar: ${st.aspect}`);
-    if (!(st.height > 0) || !isFinite(st.height)) rot.push(`height unbrauchbar: ${st.height}`);
+    // W6: der Rahmen reist aus DEMSELBEN Bake (Quad = Bake-Kamera), die Normale auf 1/nt (das Karten-Gesetz).
+    const fr = st.frame || {};
+    if (!(fr.halfH > 0 && isFinite(fr.halfH) && fr.halfW > 0 && isFinite(fr.halfW)))
+        rot.push(`Rahmen unbrauchbar: ${JSON.stringify(st.frame)}`);
+    if (!(st.nt >= 1) || st.normalLen !== (SOLL.cw / st.nt) * ((SOLL.ch * SOLL.V) / st.nt) * 4)
+        rot.push(`Normale nicht auf 1/nt: nt=${st.nt} Länge ${st.normalLen}`);
     return rot;
 }
 
@@ -319,8 +323,9 @@ function selbstTest() {
             V: 8,
             albedoLen: SOLL_LEN,
             alphaPx: 0,
-            aspect: 0.5,
-            height: 2,
+            frame: { halfH: 1, halfW: 0.5 },
+            nt: 2,
+            normalLen: (128 / 2) * ((256 * 8) / 2) * 4,
         }).length > 0,
     ]);
     // 7. Diät-Messung: Nah == Fern -> MUSS feuern (vakuöse Messung).
@@ -374,8 +379,8 @@ function pageHtml() {
     if (!p) return { got: true, payloadNull: true, workerError: S.error };
     const a = p.albedo || new Uint8Array(0);
     return {
-      got: true, payloadNull: false, cw: p.cw, ch: p.ch, V: p.V, aspect: p.aspect, height: p.height,
-      albedoLen: a.length, alphaPx: alphaPx(a),
+      got: true, payloadNull: false, cw: p.cw, ch: p.ch, V: p.V, nt: p.nt, frame: p.frame,
+      albedoLen: a.length, alphaPx: alphaPx(a), normalLen: p.normal ? p.normal.length : 0,
     };
   });
   // Die NAH-Messung: build-asset lod 0 -> Mesh-Zahl + Dreiecks-Zensus (index/3 bzw. pos/9;
@@ -462,7 +467,7 @@ function pageHtml() {
     else {
         if (bake && bake.got && !bake.payloadNull)
             console.log(
-                `  Impostor-Karte: cw=${bake.cw} ch=${bake.ch} V=${bake.V} · Alpha-Px=${bake.alphaPx} · aspect=${Number(bake.aspect).toFixed(3)} · height=${Number(bake.height).toFixed(2)} m`
+                `  Impostor-Karte: cw=${bake.cw} ch=${bake.ch} V=${bake.V} · Alpha-Px=${bake.alphaPx} · Rahmen ${JSON.stringify(bake.frame)} · Normale 1/${bake.nt}`
             );
         for (const x of pruefeBaecker(bake)) rot.push(`[${vId}] ${x}`);
         if (nah)

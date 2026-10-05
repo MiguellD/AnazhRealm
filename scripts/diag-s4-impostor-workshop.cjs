@@ -1,7 +1,7 @@
 // diag-s4-impostor-workshop.cjs — WELLE S4-BEWEIS (Studio-Modell, Wand 4/5): der Impostor bäckt
 // EAGER + die Werkstatt zeigt auf der L2-Stufe eines BAUMES das Billboard (nicht die schwere
-// L2-Geometrie). Zwei Teile, beide Null-Renderer (hardware-unabhängig; der LOOK des Atlas/der
-// Werkstatt-Karte bleibt das Schöpfer-Auge auf echter GPU):
+// L2-Geometrie). Zwei Teile, beide Null-Renderer (hardware-unabhängig; den LOOK des Atlas misst
+// gate:foundry-impostor C auf swiftshader-WebGPU, die Welt die Werkbank auf echter GPU):
 //   A — DER IMPOSTOR BÄCKT EAGER: `_tickImpostorBake` hat den `_frameOverBudget`-Gate NICHT mehr
 //       (Henne-Ei: der ferne Wald ist über Budget WEIL seine Bäume noch schwere Geometrie tragen;
 //       der Bake SENKT die Last, er darf nicht vom Budget blockiert werden). Der Bake bleibt streng
@@ -11,7 +11,8 @@
 //       InstancedMesh (die Karte dekodiert Rotation/Skala aus der Instanz-Matrix). Fels/Kristall
 //       behalten die L2-Geometrie. Behavioral: der Aufruf mit einem Baum-Bauplan @lod2 wirft nicht
 //       und liefert (sobald die Foundry-LOD1-Geometrie geladen ist) eine InstancedMesh-Gruppe mit
-//       der leichten Impostor-Kreuz-Geometrie (6 Verts), NICHT die schwere L2-Geometrie.
+//       dem Einheits-Quad der Karte (6 Verts, Instanz-vec4 aKarte: Schicht, Rahmen, Sichthöhe — W6), NICHT die
+//       schwere L2-Geometrie.
 //   node scripts/diag-s4-impostor-workshop.cjs
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -122,7 +123,10 @@ const server = http.createServer((req, res) => {
                     const g = child.geometry;
                     const pos = g && g.getAttribute && g.getAttribute("position");
                     res.behavior.vertCount = pos ? pos.count : -1;
-                    res.behavior.hasImpX = !!(g && g.getAttribute && g.getAttribute("aImpX")); // Impostor-Kreuz-Signatur
+                    // Die Karten-Signatur (W6): das Instanz-vec4 aKarte mit gestempelter Schicht, Rahmen und Sichthöhe.
+                    const ak = g && g.getAttribute && g.getAttribute("aKarte");
+                    res.behavior.hasKarte = !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4);
+                    res.behavior.karte = ak ? Array.from(ak.array.slice(0, 4)) : null;
                 }
             }
         } catch (e) {
@@ -147,7 +151,7 @@ const server = http.createServer((req, res) => {
     console.log("  BEHAVIORAL:");
     console.log(`    Foundry ready: ${out.behavior.foundryReady} · Baum-Bauplan: ${out.behavior.treeBp}`);
     console.log(
-        `    Vorschau-Gruppe: ${out.behavior.returnedGroup} · InstancedMesh: ${out.behavior.isInstanced} · Verts: ${out.behavior.vertCount} · Impostor-Signatur(aImpX): ${out.behavior.hasImpX}`
+        `    Vorschau-Gruppe: ${out.behavior.returnedGroup} · InstancedMesh: ${out.behavior.isInstanced} · Verts: ${out.behavior.vertCount} · Karten-Signatur(aKarte): ${out.behavior.hasKarte} ${JSON.stringify(out.behavior.karte)}`
     );
     if (out.behavior.err) console.log(`    (Behavioral-Notiz: ${out.behavior.err})`);
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
@@ -171,10 +175,13 @@ const server = http.createServer((req, res) => {
     // Behavioral: wenn die Vorschau eine Gruppe lieferte, MUSS es die leichte Impostor-Geometrie sein.
     if (out.behavior.returnedGroup) {
         if (!out.behavior.isInstanced) errs.push("Behavioral: die L2-Vorschau ist keine InstancedMesh");
-        if (!out.behavior.hasImpX)
+        if (!out.behavior.hasKarte)
             errs.push(
-                "Behavioral: die L2-Vorschau trägt nicht die Impostor-Kreuz-Signatur (aImpX) — evtl. schwere L2-Geometrie statt Billboard"
+                "Behavioral: die L2-Vorschau trägt nicht die Karten-Signatur (Instanz-vec4 aKarte) — evtl. schwere L2-Geometrie statt Karte"
             );
+        const k = out.behavior.karte;
+        if (!k || !(k[1] > 0 && k[2] > 0 && Math.abs(k[3]) > 0))
+            errs.push(`Behavioral: die Vorschau-Karte ist nicht gestempelt (Rahmen/Sichthöhe leer: ${JSON.stringify(k)})`);
         if (out.behavior.vertCount > 24)
             errs.push(
                 `Behavioral: die L2-Vorschau ist zu schwer (${out.behavior.vertCount} Verts) — kein leichtes Billboard`
@@ -187,7 +194,7 @@ const server = http.createServer((req, res) => {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf der L2-Baumstufe das 8-Winkel-Billboard (InstancedMesh, aus demselben Studio-Baum gebacken). Der Atlas-/Karten-LOOK ist das Schöpfer-Auge."
+        "\n✅ GRÜN — der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf der L2-Baumstufe die 8-Winkel-Karte (InstancedMesh, Schicht des EINEN Atlas, aus demselben Studio-Baum gebacken)."
     );
     process.exit(0);
 })().catch((e) => {

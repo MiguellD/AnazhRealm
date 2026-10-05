@@ -92,7 +92,7 @@ function check(name, ok, detail) {
     check(
         "F(Quelle): der Keying-Chokepoint mappt VOR dem Gruppen-Key (_archFernRegionKey zuerst)",
         gfHead.indexOf("this._archFernRegionKey(") >= 0 &&
-            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf("const basis = name")
+            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf("const basis = ")
     );
 
     await new Promise((r) => server.listen(PORT, r));
@@ -333,10 +333,12 @@ function check(name, ok, detail) {
                     if (!dWandel) await new Promise((r2) => setTimeout(r2, 150));
                 }
                 dblk.demotet = dz2.lod === 2;
+                // Fern-Slots: die Super-Region (Boden-Fernstufen) ODER — die Karte (W6) — die EINE globale Atlas-Gruppe.
                 dblk.slotsFern =
                     Array.isArray(dz2.slots) &&
                     dz2.slots.length > 0 &&
                     dz2.slots.every((s) => {
+                        if (s.key === r.constructor.IMPOSTOR_ATLAS_GRUPPE) return true;
                         const at = s.key.indexOf("@");
                         return at >= 0 && (s.key.startsWith("@s:", at));
                     });
@@ -367,8 +369,8 @@ function check(name, ok, detail) {
         }
         res.d = dblk;
         // ── F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): A/B durch DIESELBE Pipe ──
-        // Platzierte Impostor-Quads (strauch-Fernstufe, headless = Silhouetten-Fallback,
-        // derselbe Chokepoint) über ein 4×4-Region-Raster: S=1 reproduziert das alte
+        // Gestreute Fern-Geometrie (die Gras-Fernstufe; die Karten zeichnen seit W6 in der EINEN Atlas-Gruppe —
+        // eigene Probe) über ein 4×4-Region-Raster: S=1 reproduziert das alte
         // per-Region-Keying (VORHER), die Produktions-Konstante keyt SUPER-REGIONEN
         // (NACHHER). Zählung = region-gekeyte Fern-Wrapper (+ Batches); danach Remove →
         // die Empty-Dispose muss BEIDE Welten restlos räumen (Slot-Bilanz dicht).
@@ -386,16 +388,53 @@ function check(name, ok, detail) {
                 r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1:0" }, "7,9") === "7,9" &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, null) === null &&
                 r._archFernRegionKey("x", { leafKey: "fimp:a" }, "s:1,2") === "s:1,2";
-            // Das strauch-Impostor-Flat über die ECHTE Pipe ziehen (LOD1-Subjekt lädt async).
-            let flat = null;
+            // Die Fern-Flats über die ECHTE Pipe ziehen (die Geometrie lädt async): die Gras-Fernstufe (Geometrie — sie
+            // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).
+            let flat = null,
+                karte = null;
             const dlF = performance.now() + 30000;
             while (performance.now() < dlF) {
-                flat = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
-                if (flat && flat.instanceable) break;
+                flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
+                karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
+                if (flat && flat.instanceable && karte && karte.instanceable) break;
                 await new Promise((r2) => setTimeout(r2, 100));
             }
-            fern.flat = !!(flat && flat.instanceable && flat.lod === 2);
+            fern.flat = !!(flat && flat.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);
             if (fern.flat) {
+                // DIE KARTEN-DIÄT: 16 strauch-Karten in 16 Regionen → genau EINE Gruppe (die Atlas-Gruppe), Bilanz dicht.
+                const G = AR.IMPOSTOR_ATLAS_GRUPPE;
+                const lebend = () => {
+                    const g = r.state.archInstanceGroups.get(G);
+                    return g ? g.liveCount | 0 : 0;
+                };
+                const vorK = new Set(r.state.archInstanceGroups.keys()),
+                    lebendVor = lebend();
+                const alleK = [];
+                for (let gx = 0; gx < 4; gx++)
+                    for (let gz = 0; gz < 4; gz++) {
+                        const sl = r._scatterInstanceAdd(
+                            "fscatter:strauch:1:2",
+                            (900 + gx) * AR.ARCH_REGION_M + 8,
+                            0,
+                            (900 + gz) * AR.ARCH_REGION_M + 8,
+                            0,
+                            1,
+                            null,
+                            900 + gx + "," + (900 + gz),
+                            karte
+                        );
+                        if (sl) alleK.push(sl);
+                    }
+                const neuK = [...r.state.archInstanceGroups.keys()].filter((k) => !vorK.has(k) && /(^|#)fimp:/.test(k));
+                const slotKeys = new Set(alleK.flat().map((x) => x.key));
+                fern.karten = {
+                    instanzen: lebend() - lebendVor,
+                    gruppen: slotKeys.size,
+                    gruppe: [...slotKeys][0] || null,
+                    neueKartenGruppen: neuK.length,
+                };
+                for (const sl of alleK) r._scatterFreeSlots(sl);
+                fern.karten.leck = lebend() - lebendVor;
                 const R = AR.ARCH_REGION_M;
                 // Welle B: der platzierte Bau keyt global — die Super-Region ist ein Gesetz der STREU. Die Fixtur
                 // streut das Fern-Flat (Name `fscatter:…:2` = Fern-Stufe) über den echten Streu-Eintritt in 4×4
@@ -479,7 +518,7 @@ function check(name, ok, detail) {
                 `lod ${out.d.lodVor} → ${out.d.demotet ? 2 : "blieb"}`
             );
             check(
-                "D: die Slots wandern nach @s: (Super-Region), die private Hülle leert/reapt",
+                "D: die Slots wandern nach @s: (Super-Region) bzw. in die EINE Karten-Gruppe, die private Hülle leert/reapt",
                 out.d.slotsFern === true && out.d.huelleWeg === true,
                 `slotsFern=${out.d.slotsFern} hülleWeg=${out.d.huelleWeg} (private Slots vor: ${out.d.privateSlotsVor})`
             );
@@ -496,7 +535,13 @@ function check(name, ok, detail) {
             out.f.unit === true,
             out.f.err || ""
         );
-        check("F: strauch-Impostor-Flat über die echte Pipe (lod=2)", out.f.flat === true, out.f.err || "");
+        check("F: Gras-Fernstufe + strauch-Karte über die echte Pipe (lod=2)", out.f.flat === true, out.f.err || "");
+        const K = out.f.karten || {};
+        check(
+            `F: DIE KARTEN-DIÄT (W6) — 16 Karten in 16 Regionen zeichnen in EINER Gruppe (${K.gruppe || "—"}), Bilanz dicht`,
+            K.instanzen === 16 && K.gruppen === 1 && K.gruppe === "impostor#fimp:atlas" && K.leck === 0,
+            JSON.stringify(K)
+        );
         check(
             `F: DIE DIÄT — 4×4 Regionen: per-Region ${out.f.vorher} → Super-Region ${out.f.nachher} Fern-Gruppen (≥4× weniger)`,
             Number.isFinite(out.f.vorher) &&

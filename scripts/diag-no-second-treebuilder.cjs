@@ -6,7 +6,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4511;
+const PORT = Number(process.env.TREEBUILDER_PORT || 4511);
 const root = path.resolve(__dirname, "..");
 const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".css": "text/css", ".png": "image/png" };
 const server = http.createServer((req, res) => {
@@ -63,6 +63,15 @@ const server = http.createServer((req, res) => {
         // Foundry-Scatter-Presets (Art-Sicht): eiche/fichte… (Baum) + findling/basalt/geroell… (Fels) + kristalle.
         const presets = new Set();
         for (const k of o.foundryScatterKeys) { const m = k.match(/^fscatter:([a-z]+)/); if (m) presets.add(m[1]); }
+        // W6: die Karten (L2) zeichnen in der EINEN Atlas-Gruppe — die Art eines lebenden Slots nennt seine Schicht.
+        const ag = r.state.archInstanceGroups && r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
+        const ak = ag && ag.mesh && ag.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, verdeckt)
+        if (ak && r._kartenAtlas) {
+            const artVon = new Map();
+            for (const z of r._kartenAtlas.zellen.values()) artVon.set(z.idx, z.preset);
+            const frei = new Set(ag.free || []);
+            for (let s = 0; s < ag.mesh.count; s++) if (!frei.has(s) && artVon.has(ak.array[s * 4])) presets.add(artVon.get(ak.array[s * 4]));
+        }
         o.foundryPresets = Array.from(presets).sort();
         return o;
     });

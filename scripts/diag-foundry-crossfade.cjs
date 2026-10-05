@@ -464,12 +464,17 @@ async function runPartB() {
             const cfgM = { d0: cfg.thresh01, d1: cfg.thresh12, fade: cfg.fade, fade0: cfg.fade0 };
             // Je residentem Slot: der Fassaden-Stempel (aH0/aH0L) und die Maske, die sein Stoff fährt — aLodLevel 1 =
             // L0-Formel · 2 = L1-Formel · 3 = die einzige Nah-Stufe (nur die Fern-Ausblendung f1o) · 0 = frei; das
-            // Billboard (ohne aLodLevel) die fin-Formel mit SEINEM Stempel (seit 04.10. trägt es die Höhe der L1).
+            // Billboard (ohne aLodLevel) die fin-Formel mit SEINEM Stempel (seit 04.10. die Höhe der L1; seit dem
+            // Karten-Atlas W6 reist er als |aKarte.w| in der EINEN Atlas-Gruppe).
             // Der Schatten-Zwilling (SHADOW_TWIN_LAYER) zählt nicht: die Kamera sieht ihn nie.
             const stempelVon = (ref) => {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
                 if (!g || !g.mesh || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) return null;
                 const a = g.mesh.geometry && g.mesh.geometry.attributes;
+                if (a && a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                    const h = Math.abs(a.aKarte.array[ref.slot * 4 + 3]);
+                    return { h, hL: h, modus: "fin" };
+                }
                 if (!a || !a.aH0 || !a.aH0L) return null;
                 const al = a.aLodLevel ? a.aLodLevel.array[0] : null;
                 const modus = al == null ? "fin" : al > 2.5 ? "l1e" : al > 1.5 ? "l1" : al > 0.5 ? "l0" : "frei";
@@ -740,11 +745,15 @@ function perfWahrheit(srcNC) {
     if (!/let _vCD = _dist\.mul\(_lu\.uLodPerf\);/.test(maske)) v.push("die Billboard-Maske misst ohne uLodPerf");
     // Der Sichthöhen-Zweig des Billboards rechnet AUF der gestreckten Distanz (bis 04.10. ersetzte er sie durch die rohe).
     if (!/_vCD = _vCD\.mul\(_k\);/.test(maske)) v.push("die Billboard-Maske ersetzt die gestreckte Distanz durch die rohe (Perf-Streck verloren)");
-    // Das Billboard liest den aH0-Stempel seiner Fassade (die Höhe der L1), nie die Rahmen-Höhe des Bakes.
-    if (!/visHeightNode: _Ta\.attribute\("aH0", "float"\)/.test(srcNC))
-        v.push("das Billboard misst mit eigener Höhe statt dem aH0-Stempel der L1");
-    const kreuz = fnBody(srcNC, /_buildImpostorCrossGeometry\(skeleton, frameOverride, h0\)\s*/) || "";
-    if (!/setAttribute\("aH0",/.test(kreuz)) v.push("die Billboard-Vorlage trägt keinen aH0-Stempel");
+    // Das Billboard liest den Sichthöhen-Stempel seiner Instanz (|aKarte.w| = die Höhe der L1 × Instanz-Skala, dieselbe
+    // Zahl wie der aH0-Stempel der L1), nie die Rahmen-Höhe des Bakes.
+    if (!/visHeightNode: _karte\.w\.abs\(\),/.test(srcNC))
+        v.push("das Billboard misst mit eigener Höhe statt dem Sichthöhen-Stempel der L1 (|aKarte.w|)");
+    const flat = fnBody(srcNC, /\n {4}_foundryBuildImpostorFlat\(entry, preset\)\s*\{/) || "";
+    if (!/const hz = this\._foundryBaumHoehe\(preset, entry\);/.test(flat) || !/this\._impostorLeaf\(z, this\._foundryWorldScaleMatrix\(preset\), hz\)/.test(flat))
+        v.push("die Karte trägt nicht die Höhe der Höhen-Stufe (das Höhen-Buch) als Sichthöhe");
+    const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\(g, slot, scale, occluded, leaf\)\s*\{/) || "";
+    if (!/h = leaf\.sicht \* s;/.test(stempel)) v.push("der Slot-Stempel schreibt die Karten-Sichthöhe nicht als Vorlage × Instanz-Skala");
     // Die einzige Nah-Stufe (Strauch: keine L0) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
     if (!/_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*3/.test(srcNC))
         v.push("die L1 einer Art ohne L0 (Strauch) ist ungemaskt — sie blendet nicht zum Billboard aus");
@@ -830,7 +839,15 @@ async function main() {
             ["Maske ohne Perf", nc.replace(/const _cd = T\.length\(([\s\S]*?)\)\.mul\(\s*_lu\.uLodPerf\s*\);/, "const _cd = T.length($1);")],
             ["Billboard ohne Perf", nc.replace("let _vCD = _dist.mul(_lu.uLodPerf);", "let _vCD = _dist;")],
             ["Billboard-Höhe ersetzt den Streck", nc.replace("_vCD = _vCD.mul(_k);", "_vCD = _dist.mul(_k);")],
-            ["Billboard mit Rahmen-Höhe", nc.replace('visHeightNode: _Ta.attribute("aH0", "float"),', "visHeightNode: null,")],
+            ["Billboard mit Rahmen-Höhe", nc.replace("visHeightNode: _karte.w.abs(),", "visHeightNode: _rahmen.y.mul(_sInst),")],
+            [
+                "Karte ohne Höhen-Buch",
+                nc.replace(
+                    "this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), hz)",
+                    "this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), z.frame.halfH * 2)"
+                ),
+            ],
+            ["Karten-Stempel ohne Instanz-Skala", nc.replace("h = leaf.sicht * s;", "h = leaf.sicht;")],
             ["Strauch-L1 ungemaskt", nc.replace(/(_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*)3/, "$10")],
             ["Maske ohne einzige Nah-Stufe", nc.replace("_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
             ["Sichthöhe still 0", nc.replace("if (h0 == null) return null;", "if (h0 == null) return 0;")],

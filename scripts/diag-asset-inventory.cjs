@@ -339,16 +339,14 @@ const server = http.createServer((req, res) => {
                         const pp = lf.slice(2).split(":")[0].split("|");
                         if (pp.length === 4) attested.add(pp[0] + "|" + pp[1] + "|" + pp[2]);
                     }
-                    if (lf.startsWith("fimp:")) {
-                        const pp = lf.slice(5).split("|");
-                        if (pp.length === 3) attested.add(pp[0] + "|" + pp[1] + "|1");
-                    }
                 }
-            if (r._impostorAtlasMap)
-                for (const [k, v] of r._impostorAtlasMap) {
-                    if (v === undefined || v === "pending") continue; // Record ODER false = bewusstes Verdikt
+            // Die Karten (W6): jede Zelle des EINEN Atlas attestiert die L1 ihrer Art × Gestalt (headless ihr Rahmen,
+            // gescheitert = bewusstes Verdikt); Grammatik-Zellen (fimp:g:) tragen keine Foundry-Art.
+            if (r._kartenAtlas)
+                for (const k of r._kartenAtlas.zellen.keys()) {
+                    if (k.startsWith("fimp:g:")) continue;
                     const pp = String(k).slice(5).split("|");
-                    if (pp.length === 3) attested.add(pp[0] + "|" + pp[1] + "|1");
+                    if (pp.length >= 2) attested.add(pp[0] + "|" + pp[1] + "|1");
                 }
             if (r._grassStudioGeoByStage)
                 for (const stg of Object.keys(r._grassStudioGeoByStage)) {

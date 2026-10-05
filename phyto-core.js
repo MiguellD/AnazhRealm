@@ -2013,6 +2013,662 @@
     };
     var WX_VIS = { lab: "wx-4", host: "none" };
 
+    // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
+    // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts, im Studio-Layout (bakeImpostorAtlas,
+    // __replyBakeImpostor): die V Ansichten VERTIKAL gestapelt, Zeilen bottom-up (GL-readPixels) — ohne Umdrehen
+    // ladbar. Studio-Bäcker (Normale auf 1/normalTeiler), Transport-Schale (Mips + Kodierung im Worker) und Host
+    // (alphaTest, Schicht-Maße) lesen DIESES Gesetz:
+    //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt
+    //   normalTeiler  die Normale bäckt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern)
+    //   minSeite      die Mip-Kette endet, bevor eine Ansicht unter 4 px fällt (BC-Block, keine Ansichten-Mischung)
+    // Gespeichert wird die Karte VORMULTIPLIZIERT (transparent = 0,0,0,0; BC1 kann es nicht anders), die Welt teilt
+    // das gefilterte rgb durch alpha — kein dunkler Saum, auf keiner Mip-Stufe.
+    // DER FARBRAUM: der Studio-Bäcker (r128) rendert in ein Render-Target ohne Kodierung — seine Albedo-Bytes sind
+    // LINEAR. Die Schicht trägt sRGB (bc1-rgba-unorm-srgb / rgba8unorm-srgb, die GPU dekodiert): der Codec mittelt
+    // jede Mip-Stufe LINEAR und kodiert erst beim Schreiben. Befund Blick-Tour 04.10.: der Host las die linearen
+    // Bytes als sRGB — Eichen-Laub 0,12 → 0,013 linear, die Fernkrone stand SCHWARZ und im Dunst grau.
+    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4 };
+    // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
+    function linZuSrgb8(x) {
+        const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+        return Math.max(0, Math.min(255, Math.round(v * 255)));
+    }
+    const SRGB_AUS_LIN8 = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) SRGB_AUS_LIN8[i] = linZuSrgb8(i / 255);
+
+    // Die Mip-Stufen einer Schicht (w × hAnsicht·V): solange Breite UND Ansichts-Höhe ≥ minSeite bleiben.
+    function karteMipZahl(w, hAnsicht) {
+        let n = 0;
+        while (w >> n >= KARTEN_GESETZ.minSeite && hAnsicht >> n >= KARTEN_GESETZ.minSeite) n++;
+        return Math.max(1, n);
+    }
+
+    // Die Maße EINER Schicht je Format — Host (Array-Textur, Offsets) und Schale (Kodierung) rechnen damit:
+    //   "bc"    Albedo BC1 (8 B je 4×4) mit voller Mip-Kette · Normale BC5 (16 B je 4×4) auf 1/normalTeiler
+    //   "rgba8" Albedo rgba8 Stufe 0 · Normale rg8 Stufe 0 (die GPU zieht die Mips; ohne BC-Feature)
+    function karteMasse(cw, ch, V, nt, fmt) {
+        const w = cw | 0,
+            h = (ch | 0) * (V | 0),
+            nw = Math.max(1, (cw / nt) | 0),
+            nh = Math.max(1, ((ch * V) / nt) | 0);
+        const bc = fmt === "bc";
+        const ebene = (bw, bh, n, bytesJe) => {
+            const out = [];
+            let off = 0;
+            for (let k = 0; k < n; k++) {
+                const lw = Math.max(1, bw >> k),
+                    lh = Math.max(1, bh >> k);
+                const bytes = bc ? Math.ceil(lw / 4) * Math.ceil(lh / 4) * bytesJe : lw * lh * bytesJe;
+                out.push({ w: lw, h: lh, bytes: bytes, off: off });
+                off += bytes;
+            }
+            return { stufen: out, bytes: off };
+        };
+        const a = ebene(w, h, bc ? karteMipZahl(cw, ch) : 1, bc ? 8 : 4);
+        const n = ebene(nw, nh, bc ? karteMipZahl(nw, (ch / nt) | 0) : 1, bc ? 16 : 2);
+        return {
+            fmt: bc ? "bc" : "rgba8",
+            w: w,
+            h: h,
+            nw: nw,
+            nh: nh,
+            a: a.stufen,
+            n: n.stufen,
+            aBytes: a.bytes,
+            nBytes: n.bytes,
+        };
+    }
+
+    // DECKUNGSTREUE MIPS der Albedo: Stufe 0 binarisiert an der Schwelle (opak → rgb, 255 · sonst 0,0,0,0). Jede
+    // tiefere Stufe liest den ECHTEN Deckungsanteil ihres Stufe-0-Fußabdrucks und macht je Ansicht genau so viele
+    // Texel opak, wie Stufe 0 deckt (Rang nach Anteil, Gleichstand über eine feste Permutation) — eine Box-Mip
+    // dünnt die Krone sonst unter dem alphaTest aus. Die Farbe ist das alpha-gewichtete LINEARE Mittel des
+    // Fußabdrucks; Eingang linear (der Bäcker), jede Stufe sRGB-kodiert (DER FARBRAUM oben).
+    // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
+    function impostorMips(rgba, w, h, V, schwelle, nStufen) {
+        const thr = (schwelle == null ? KARTEN_GESETZ.schwelle : schwelle) * 255;
+        const hA = (h / V) | 0;
+        const n0 = w * h;
+        let sa = new Float32Array(n0),
+            sr = new Float32Array(n0),
+            sg = new Float32Array(n0),
+            sb = new Float32Array(n0);
+        const d0 = new Uint8Array(n0 * 4);
+        const cov0 = new Float64Array(V);
+        let opak = 0;
+        for (let i = 0; i < n0; i++) {
+            if (rgba[i * 4 + 3] >= thr) {
+                const r = rgba[i * 4],
+                    g = rgba[i * 4 + 1],
+                    b = rgba[i * 4 + 2];
+                sa[i] = 1;
+                sr[i] = r / 255;
+                sg[i] = g / 255;
+                sb[i] = b / 255;
+                d0[i * 4] = SRGB_AUS_LIN8[r];
+                d0[i * 4 + 1] = SRGB_AUS_LIN8[g];
+                d0[i * 4 + 2] = SRGB_AUS_LIN8[b];
+                d0[i * 4 + 3] = 255;
+                opak++;
+                cov0[Math.min(V - 1, ((i / w) | 0) / hA) | 0]++;
+            }
+        }
+        for (let v = 0; v < V; v++) cov0[v] /= w * hA;
+        const stufen = [{ w: w, h: h, data: d0 }];
+        const deckung = [opak / n0];
+        let lw = w,
+            lh = h,
+            lhA = hA;
+        for (let k = 1; k < nStufen; k++) {
+            const nw = lw >> 1,
+                nh = lh >> 1,
+                nhA = lhA >> 1;
+            if (nw < 1 || nhA < 1) break;
+            const n = nw * nh;
+            const ta = new Float32Array(n),
+                tr = new Float32Array(n),
+                tg = new Float32Array(n),
+                tb = new Float32Array(n);
+            for (let y = 0; y < nh; y++)
+                for (let x = 0; x < nw; x++) {
+                    const o = y * nw + x;
+                    for (let dy = 0; dy < 2; dy++)
+                        for (let dx = 0; dx < 2; dx++) {
+                            const s = (y * 2 + dy) * lw + x * 2 + dx;
+                            ta[o] += sa[s];
+                            tr[o] += sr[s];
+                            tg[o] += sg[s];
+                            tb[o] += sb[s];
+                        }
+                }
+            const data = new Uint8Array(n * 4);
+            const nA = nw * nhA;
+            const schluessel = new Float64Array(nA),
+                sortiert = new Float64Array(nA);
+            let opakK = 0;
+            for (let v = 0; v < V; v++) {
+                const basis = v * nA;
+                let positiv = 0;
+                for (let i = 0; i < nA; i++) {
+                    const s = ta[basis + i];
+                    if (s > 0) positiv++;
+                    // Rang: Deckung zuerst, Gleichstand über die Bijektion i·φ mod 2^20 (deterministisch, ortsgestreut)
+                    schluessel[i] = s * 1048576 + (Math.imul(i, 0x9e3779b1) & 0xfffff);
+                }
+                const M = Math.min(positiv, Math.round(cov0[v] * nA));
+                if (M <= 0) continue;
+                sortiert.set(schluessel);
+                sortiert.sort();
+                const grenze = sortiert[nA - M];
+                for (let i = 0; i < nA; i++) {
+                    const o = basis + i;
+                    if (schluessel[i] >= grenze && ta[o] > 0) {
+                        data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
+                        data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
+                        data[o * 4 + 2] = linZuSrgb8(tb[o] / ta[o]);
+                        data[o * 4 + 3] = 255;
+                        opakK++;
+                    }
+                }
+            }
+            stufen.push({ w: nw, h: nh, data: data });
+            deckung.push(opakK / n);
+            sa = ta;
+            sr = tr;
+            sg = tg;
+            sb = tb;
+            lw = nw;
+            lh = nh;
+            lhA = nhA;
+        }
+        return { stufen: stufen, deckung: deckung, opak: opak };
+    }
+
+    // Die Mips der Normale (rg8: n·0,5 + 0,5, z = √(1 − x² − y²)): je Stufe das Mittel der vier Kinder als
+    // Vektor, normiert (ein bloßes RG-Mittel kippte die Fernkrone zur Kamera). Eingang rgba (Studio) oder rg.
+    function normalMips(src, w, h, kanaele, nStufen) {
+        const n0 = w * h;
+        let nx = new Float32Array(n0),
+            ny = new Float32Array(n0),
+            nz = new Float32Array(n0);
+        for (let i = 0; i < n0; i++) {
+            const x = (src[i * kanaele] / 255) * 2 - 1,
+                y = (src[i * kanaele + 1] / 255) * 2 - 1;
+            nx[i] = x;
+            ny[i] = y;
+            nz[i] = Math.sqrt(Math.max(0, 1 - x * x - y * y));
+        }
+        const rg = (ax, ay, n) => {
+            const d = new Uint8Array(n * 2);
+            for (let i = 0; i < n; i++) {
+                d[i * 2] = Math.max(0, Math.min(255, Math.round((ax[i] * 0.5 + 0.5) * 255)));
+                d[i * 2 + 1] = Math.max(0, Math.min(255, Math.round((ay[i] * 0.5 + 0.5) * 255)));
+            }
+            return d;
+        };
+        const stufen = [{ w: w, h: h, data: rg(nx, ny, n0) }];
+        let lw = w,
+            lh = h;
+        for (let k = 1; k < nStufen; k++) {
+            const qw = lw >> 1,
+                qh = lh >> 1;
+            if (qw < 1 || qh < 1) break;
+            const n = qw * qh;
+            const tx = new Float32Array(n),
+                ty = new Float32Array(n),
+                tz = new Float32Array(n);
+            for (let y = 0; y < qh; y++)
+                for (let x = 0; x < qw; x++) {
+                    const o = y * qw + x;
+                    let ax = 0,
+                        ay = 0,
+                        az = 0;
+                    for (let dy = 0; dy < 2; dy++)
+                        for (let dx = 0; dx < 2; dx++) {
+                            const s = (y * 2 + dy) * lw + x * 2 + dx;
+                            ax += nx[s];
+                            ay += ny[s];
+                            az += nz[s];
+                        }
+                    const l = Math.sqrt(ax * ax + ay * ay + az * az) || 1;
+                    tx[o] = ax / l;
+                    ty[o] = ay / l;
+                    tz[o] = az / l;
+                }
+            stufen.push({ w: qw, h: qh, data: rg(tx, ty, n) });
+            nx = tx;
+            ny = ty;
+            nz = tz;
+            lw = qw;
+            lh = qh;
+        }
+        return stufen;
+    }
+
+    // BC1 (DXT1) einer vormultiplizierten, binären Karte: je 4×4-Block die Hauptachse der opaken Farben (PCA),
+    // die Endpunkte per kleinster Quadrate nachgezogen; ein Block mit Transparenz fährt den 3-Farben-Modus (c0 ≤ c1,
+    // Index 3 = transparent schwarz — dieselbe Binarisierung bitgleich zurück). Ausgabe: 8 B je Block, Zeilen-Folge.
+    function bc1Kodiere(rgba, w, h) {
+        const bw = Math.ceil(w / 4),
+            bh = Math.ceil(h / 4);
+        const out = new Uint8Array(bw * bh * 8);
+        const pr = new Float64Array(16),
+            pg = new Float64Array(16),
+            pb = new Float64Array(16),
+            tr = new Uint8Array(16);
+        const pal = new Float64Array(12);
+        const idx = new Uint8Array(16),
+            best = new Uint8Array(16);
+        const q565 = (r, g, b) => {
+            const R = Math.max(0, Math.min(31, Math.round((r * 31) / 255))),
+                G = Math.max(0, Math.min(63, Math.round((g * 63) / 255))),
+                B = Math.max(0, Math.min(31, Math.round((b * 31) / 255)));
+            return (R << 11) | (G << 5) | B;
+        };
+        const ex = (c, s) => {
+            const R = (c >> 11) & 31,
+                G = (c >> 5) & 63,
+                B = c & 31;
+            s[0] = (R << 3) | (R >> 2);
+            s[1] = (G << 2) | (G >> 4);
+            s[2] = (B << 3) | (B >> 2);
+        };
+        const e0 = [0, 0, 0],
+            e1 = [0, 0, 0];
+        // Palette + Indizes zu (c0, c1) im gewählten Modus; Rückgabe der Fehler-Quadratsumme (opake Texel).
+        const bewerte = (c0, c1, drei) => {
+            ex(c0, e0);
+            ex(c1, e1);
+            for (let k = 0; k < 3; k++) {
+                pal[k] = e0[k];
+                pal[3 + k] = e1[k];
+                if (drei) {
+                    pal[6 + k] = Math.floor((e0[k] + e1[k]) / 2);
+                    pal[9 + k] = 1e9;
+                } else {
+                    pal[6 + k] = Math.floor((2 * e0[k] + e1[k]) / 3);
+                    pal[9 + k] = Math.floor((e0[k] + 2 * e1[k]) / 3);
+                }
+            }
+            let sse = 0;
+            for (let j = 0; j < 16; j++) {
+                if (tr[j]) {
+                    idx[j] = 3;
+                    continue;
+                }
+                let bi = 0,
+                    bd = Infinity;
+                for (let p = 0; p < (drei ? 3 : 4); p++) {
+                    const dr = pr[j] - pal[p * 3],
+                        dg = pg[j] - pal[p * 3 + 1],
+                        db = pb[j] - pal[p * 3 + 2];
+                    const d = dr * dr + dg * dg + db * db;
+                    if (d < bd) {
+                        bd = d;
+                        bi = p;
+                    }
+                }
+                idx[j] = bi;
+                sse += bd;
+            }
+            return sse;
+        };
+        for (let by = 0; by < bh; by++)
+            for (let bx = 0; bx < bw; bx++) {
+                let nO = 0,
+                    nT = 0,
+                    mr = 0,
+                    mg = 0,
+                    mb = 0;
+                for (let j = 0; j < 16; j++) {
+                    const x = Math.min(w - 1, bx * 4 + (j & 3)),
+                        y = Math.min(h - 1, by * 4 + (j >> 2));
+                    const s = (y * w + x) * 4;
+                    tr[j] = rgba[s + 3] < 128 ? 1 : 0;
+                    pr[j] = rgba[s];
+                    pg[j] = rgba[s + 1];
+                    pb[j] = rgba[s + 2];
+                    if (tr[j]) nT++;
+                    else {
+                        nO++;
+                        mr += pr[j];
+                        mg += pg[j];
+                        mb += pb[j];
+                    }
+                }
+                const o = (by * bw + bx) * 8;
+                if (nO === 0) {
+                    // ganz transparent: 3-Farben-Modus, jeder Index 3
+                    out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0;
+                    out[o + 4] = out[o + 5] = out[o + 6] = out[o + 7] = 0xff;
+                    continue;
+                }
+                mr /= nO;
+                mg /= nO;
+                mb /= nO;
+                // Hauptachse (Kovarianz, Potenz-Iteration)
+                let c00 = 0,
+                    c01 = 0,
+                    c02 = 0,
+                    c11 = 0,
+                    c12 = 0,
+                    c22 = 0;
+                for (let j = 0; j < 16; j++) {
+                    if (tr[j]) continue;
+                    const dr = pr[j] - mr,
+                        dg = pg[j] - mg,
+                        db = pb[j] - mb;
+                    c00 += dr * dr;
+                    c01 += dr * dg;
+                    c02 += dr * db;
+                    c11 += dg * dg;
+                    c12 += dg * db;
+                    c22 += db * db;
+                }
+                let ax = 0.577,
+                    ay = 0.577,
+                    az = 0.577;
+                for (let it = 0; it < 8; it++) {
+                    const qx = c00 * ax + c01 * ay + c02 * az,
+                        qy = c01 * ax + c11 * ay + c12 * az,
+                        qz = c02 * ax + c12 * ay + c22 * az;
+                    const l = Math.sqrt(qx * qx + qy * qy + qz * qz);
+                    if (l < 1e-9) break;
+                    ax = qx / l;
+                    ay = qy / l;
+                    az = qz / l;
+                }
+                let tmin = Infinity,
+                    tmax = -Infinity;
+                for (let j = 0; j < 16; j++) {
+                    if (tr[j]) continue;
+                    const t = (pr[j] - mr) * ax + (pg[j] - mg) * ay + (pb[j] - mb) * az;
+                    if (t < tmin) tmin = t;
+                    if (t > tmax) tmax = t;
+                }
+                const drei = nT > 0;
+                // Modus-Ordnung: 4 Farben c0 > c1 · 3 Farben (Transparenz) c0 ≤ c1
+                let p = q565(mr + ax * tmax, mg + ay * tmax, mb + az * tmax),
+                    q = q565(mr + ax * tmin, mg + ay * tmin, mb + az * tmin);
+                let c0 = drei ? Math.min(p, q) : Math.max(p, q),
+                    c1 = drei ? Math.max(p, q) : Math.min(p, q);
+                let bestSse = bewerte(c0, c1, drei || c0 === c1);
+                best.set(idx);
+                let b0 = c0,
+                    b1 = c1;
+                // Kleinste Quadrate: Endpunkte zu den Indizes nachziehen (zwei Runden)
+                for (let it = 0; it < 2; it++) {
+                    const g2 = drei || b0 === b1 ? 0.5 : 2 / 3,
+                        g3 = drei || b0 === b1 ? 0 : 1 / 3;
+                    let aa = 0,
+                        bb = 0,
+                        ab = 0,
+                        arR = 0,
+                        arG = 0,
+                        arB = 0,
+                        brR = 0,
+                        brG = 0,
+                        brB = 0;
+                    for (let j = 0; j < 16; j++) {
+                        if (tr[j]) continue;
+                        const ix = best[j];
+                        const al = ix === 0 ? 1 : ix === 1 ? 0 : ix === 2 ? g2 : g3,
+                            be = 1 - al;
+                        aa += al * al;
+                        bb += be * be;
+                        ab += al * be;
+                        arR += al * pr[j];
+                        arG += al * pg[j];
+                        arB += al * pb[j];
+                        brR += be * pr[j];
+                        brG += be * pg[j];
+                        brB += be * pb[j];
+                    }
+                    const det = aa * bb - ab * ab;
+                    if (Math.abs(det) < 1e-9) break;
+                    p = q565((arR * bb - brR * ab) / det, (arG * bb - brG * ab) / det, (arB * bb - brB * ab) / det);
+                    q = q565((brR * aa - arR * ab) / det, (brG * aa - arG * ab) / det, (brB * aa - arB * ab) / det);
+                    c0 = drei ? Math.min(p, q) : Math.max(p, q);
+                    c1 = drei ? Math.max(p, q) : Math.min(p, q);
+                    const sse = bewerte(c0, c1, drei || c0 === c1);
+                    if (sse < bestSse) {
+                        bestSse = sse;
+                        best.set(idx);
+                        b0 = c0;
+                        b1 = c1;
+                    } else break;
+                }
+                // c0 == c1 ohne Transparenz: der 3-Farben-Modus trägt die eine Farbe (Index 0 überall)
+                out[o] = b0 & 0xff;
+                out[o + 1] = b0 >> 8;
+                out[o + 2] = b1 & 0xff;
+                out[o + 3] = b1 >> 8;
+                let bits = 0;
+                for (let j = 15; j >= 0; j--) bits = (bits << 2) | best[j];
+                out[o + 4] = bits & 0xff;
+                out[o + 5] = (bits >>> 8) & 0xff;
+                out[o + 6] = (bits >>> 16) & 0xff;
+                out[o + 7] = (bits >>> 24) & 0xff;
+            }
+        return out;
+    }
+
+    // BC4 eines Kanals (8-Werte-Modus r0 > r1: Minimum und Maximum des Blocks als Endpunkte) — zweimal = BC5.
+    function bc4Block(werte, out, o) {
+        let mn = 255,
+            mx = 0;
+        for (let j = 0; j < 16; j++) {
+            if (werte[j] < mn) mn = werte[j];
+            if (werte[j] > mx) mx = werte[j];
+        }
+        // Endpunkte: Start Maximum/Minimum, dann je Runde die Stufen zuweisen und (r0, r1) per kleinster Quadrate
+        // nachziehen — das Min/Max-Paar allein ließ die Normale im Mittel 2,2° (p95 8°) kippen.
+        let r0 = mx,
+            r1 = mn;
+        const stufe = new Uint8Array(16),
+            beste = new Uint8Array(16);
+        const weise = (a, b) => {
+            let sse = 0;
+            for (let j = 0; j < 16; j++) {
+                let s = 0;
+                if (a > b) s = Math.max(0, Math.min(7, Math.round(((a - werte[j]) * 7) / (a - b))));
+                stufe[j] = s;
+                const d = werte[j] - Math.round(((7 - s) * a + s * b) / 7);
+                sse += d * d;
+            }
+            return sse;
+        };
+        let besteSse = weise(r0, r1);
+        beste.set(stufe);
+        for (let it = 0; it < 3 && besteSse > 0 && mx > mn; it++) {
+            let aa = 0,
+                bb = 0,
+                ab = 0,
+                av = 0,
+                bv = 0;
+            for (let j = 0; j < 16; j++) {
+                const t = beste[j] / 7,
+                    al = 1 - t;
+                aa += al * al;
+                bb += t * t;
+                ab += al * t;
+                av += al * werte[j];
+                bv += t * werte[j];
+            }
+            const det = aa * bb - ab * ab;
+            if (Math.abs(det) < 1e-9) break;
+            const a = Math.max(0, Math.min(255, Math.round((av * bb - bv * ab) / det))),
+                b = Math.max(0, Math.min(255, Math.round((bv * aa - av * ab) / det)));
+            if (!(a > b)) break;
+            const sse = weise(a, b);
+            if (sse >= besteSse) break;
+            besteSse = sse;
+            beste.set(stufe);
+            r0 = a;
+            r1 = b;
+        }
+        out[o] = r0;
+        out[o + 1] = r1;
+        let lo = 0,
+            hi = 0;
+        for (let j = 0; j < 16; j++) {
+            // Stufe s ∈ 0..7 zwischen r0 (s=0) und r1 (s=7); Code-Folge 0=r0, 1=r1, 2..7 = Zwischenwerte
+            const s = r0 > r1 ? beste[j] : 0;
+            const code = s === 0 ? 0 : s === 7 ? 1 : s + 1;
+            const bit = j * 3;
+            if (bit < 24) lo |= code << bit;
+            else hi |= code << (bit - 24);
+            if (bit < 24 && bit + 3 > 24) hi |= code >> (24 - bit);
+        }
+        out[o + 2] = lo & 0xff;
+        out[o + 3] = (lo >> 8) & 0xff;
+        out[o + 4] = (lo >> 16) & 0xff;
+        out[o + 5] = hi & 0xff;
+        out[o + 6] = (hi >> 8) & 0xff;
+        out[o + 7] = (hi >> 16) & 0xff;
+    }
+    function bc5Kodiere(rg, w, h) {
+        const bw = Math.ceil(w / 4),
+            bh = Math.ceil(h / 4);
+        const out = new Uint8Array(bw * bh * 16);
+        const r = new Uint8Array(16),
+            g = new Uint8Array(16);
+        for (let by = 0; by < bh; by++)
+            for (let bx = 0; bx < bw; bx++) {
+                for (let j = 0; j < 16; j++) {
+                    const x = Math.min(w - 1, bx * 4 + (j & 3)),
+                        y = Math.min(h - 1, by * 4 + (j >> 2));
+                    r[j] = rg[(y * w + x) * 2];
+                    g[j] = rg[(y * w + x) * 2 + 1];
+                }
+                const o = (by * bw + bx) * 16;
+                bc4Block(r, out, o);
+                bc4Block(g, out, o + 8);
+            }
+        return out;
+    }
+
+    // Der Rückweg für die Linse (gate:asset-contract BC-Rundlauf): "bc1" → rgba · "bc5" → rg (2 B je Texel).
+    function bcDekodiere(buf, w, h, fmt) {
+        const bw = Math.ceil(w / 4),
+            bh = Math.ceil(h / 4);
+        if (fmt === "bc1") {
+            const out = new Uint8Array(w * h * 4);
+            const p = new Int32Array(16);
+            for (let by = 0; by < bh; by++)
+                for (let bx = 0; bx < bw; bx++) {
+                    const o = (by * bw + bx) * 8;
+                    const c0 = buf[o] | (buf[o + 1] << 8),
+                        c1 = buf[o + 2] | (buf[o + 3] << 8);
+                    const ex = (c, i) => {
+                        const R = (c >> 11) & 31,
+                            G = (c >> 5) & 63,
+                            B = c & 31;
+                        p[i] = (R << 3) | (R >> 2);
+                        p[i + 1] = (G << 2) | (G >> 4);
+                        p[i + 2] = (B << 3) | (B >> 2);
+                        p[i + 3] = 255;
+                    };
+                    ex(c0, 0);
+                    ex(c1, 4);
+                    for (let k = 0; k < 3; k++) {
+                        if (c0 > c1) {
+                            p[8 + k] = Math.floor((2 * p[k] + p[4 + k]) / 3);
+                            p[12 + k] = Math.floor((p[k] + 2 * p[4 + k]) / 3);
+                        } else {
+                            p[8 + k] = Math.floor((p[k] + p[4 + k]) / 2);
+                            p[12 + k] = 0;
+                        }
+                    }
+                    p[11] = 255;
+                    p[15] = c0 > c1 ? 255 : 0;
+                    const bits = (buf[o + 4] | (buf[o + 5] << 8) | (buf[o + 6] << 16) | (buf[o + 7] << 24)) >>> 0;
+                    for (let j = 0; j < 16; j++) {
+                        const x = bx * 4 + (j & 3),
+                            y = by * 4 + (j >> 2);
+                        if (x >= w || y >= h) continue;
+                        const c = (bits >>> (j * 2)) & 3;
+                        const d = (y * w + x) * 4;
+                        out[d] = p[c * 4];
+                        out[d + 1] = p[c * 4 + 1];
+                        out[d + 2] = p[c * 4 + 2];
+                        out[d + 3] = p[c * 4 + 3];
+                    }
+                }
+            return out;
+        }
+        const out = new Uint8Array(w * h * 2);
+        const pal = new Int32Array(8);
+        for (let by = 0; by < bh; by++)
+            for (let bx = 0; bx < bw; bx++)
+                for (let ch = 0; ch < 2; ch++) {
+                    const o = (by * bw + bx) * 16 + ch * 8;
+                    const r0 = buf[o],
+                        r1 = buf[o + 1];
+                    pal[0] = r0;
+                    pal[1] = r1;
+                    if (r0 > r1) for (let s = 1; s < 7; s++) pal[s + 1] = Math.round(((7 - s) * r0 + s * r1) / 7);
+                    else {
+                        for (let s = 1; s < 5; s++) pal[s + 1] = Math.round(((5 - s) * r0 + s * r1) / 5);
+                        pal[6] = 0;
+                        pal[7] = 255;
+                    }
+                    const lo = buf[o + 2] | (buf[o + 3] << 8) | (buf[o + 4] << 16),
+                        hi = buf[o + 5] | (buf[o + 6] << 8) | (buf[o + 7] << 16);
+                    for (let j = 0; j < 16; j++) {
+                        const x = bx * 4 + (j & 3),
+                            y = by * 4 + (j >> 2);
+                        if (x >= w || y >= h) continue;
+                        const bit = j * 3;
+                        let code;
+                        if (bit + 3 <= 24) code = (lo >> bit) & 7;
+                        else if (bit >= 24) code = (hi >> (bit - 24)) & 7;
+                        else code = ((lo >> bit) | (hi << (24 - bit))) & 7;
+                        out[(y * w + x) * 2 + ch] = pal[code];
+                    }
+                }
+        return out;
+    }
+
+    // DER KARTEN-KODIERER (läuft in der Transport-Schale, im Worker): das Studio-Payload { cw, ch, V, nt, frame,
+    // albedo (rgba cw×ch·V), normal (rgba auf 1/nt) } → die Atlas-Schicht im Format fmt. Rückgabe { cw, ch, V,
+    // nt, fmt, frame, albedo, normal, opak, deckung } mit den Stufen hintereinander (karteMasse); null bei
+    // Maß-Bruch (nie eine halbe Schicht).
+    function karteKodiere(p, fmt) {
+        if (!p || !p.albedo || !p.normal || !p.frame) return null;
+        const V = p.V | 0,
+            cw = p.cw | 0,
+            ch = p.ch | 0,
+            nt = p.nt | 0;
+        if (!(V > 0 && cw > 0 && ch > 0 && nt > 0)) return null;
+        const M = karteMasse(cw, ch, V, nt, fmt);
+        if (p.albedo.length !== M.w * M.h * 4 || p.normal.length !== M.nw * M.nh * 4) return null;
+        const alb = impostorMips(p.albedo, M.w, M.h, V, KARTEN_GESETZ.schwelle, M.a.length);
+        const nrm = normalMips(p.normal, M.nw, M.nh, 4, M.n.length);
+        const albedo = new Uint8Array(M.aBytes),
+            normal = new Uint8Array(M.nBytes);
+        for (let k = 0; k < M.a.length; k++) {
+            const s = alb.stufen[k];
+            albedo.set(M.fmt === "bc" ? bc1Kodiere(s.data, s.w, s.h) : s.data, M.a[k].off);
+        }
+        for (let k = 0; k < M.n.length; k++) {
+            const s = nrm[k];
+            normal.set(M.fmt === "bc" ? bc5Kodiere(s.data, s.w, s.h) : s.data, M.n[k].off);
+        }
+        return {
+            cw: cw,
+            ch: ch,
+            V: V,
+            nt: nt,
+            fmt: M.fmt,
+            frame: { halfH: +p.frame.halfH, halfW: +p.frame.halfW },
+            albedo: albedo,
+            normal: normal,
+            opak: alb.opak,
+            deckung: alb.deckung,
+        };
+    }
+
     root.__phytoCore = {
         vn2: vn2,
         fbm2: fbm2,
@@ -2063,5 +2719,13 @@
         buildBarkTubeArrays: buildBarkTubeArrays,
         lodDitherIGN: lodDitherIGN, // W5.3 — das foundry-core-_dh (Interleaved-Gradient-Noise), byte-genau
         lodCrossfadeMask: lodCrossfadeMask, // W5.3 — die EINE Studio-Dither-Blenden-Quelle (FIX v37)
+        KARTEN_GESETZ: KARTEN_GESETZ, // W6 — der Karten-Atlas: Schwelle · Normal-Teiler · kleinste Mip-Seite
+        karteMasse: karteMasse,
+        impostorMips: impostorMips,
+        normalMips: normalMips,
+        bc1Kodiere: bc1Kodiere,
+        bc5Kodiere: bc5Kodiere,
+        bcDekodiere: bcDekodiere,
+        karteKodiere: karteKodiere,
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

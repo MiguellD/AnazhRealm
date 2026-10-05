@@ -175,17 +175,12 @@ function flussBericht() {
         },
         ingest: { n: L.ingest.length, warteP95s: r1(pct(L.ingest, 0.95) / 1000), maxQ: r._foundryIngestMaxQ || 0 },
         cacheMB: r1((f.cacheBytes || 0) / 1e6),
-        // Die Fernstufe: Karten-Records und davon vom Studio-Bäcker gebacken (Kanal bake-impostor).
+        // Die Fernstufe: der EINE Karten-Atlas (W6) — Zellen, gebacken, davon von der Platte, Atlas-MB, Format.
         karten: (() => {
-            let n = 0,
-                gebacken = 0;
-            if (r._impostorAtlasMap)
-                for (const rec of r._impostorAtlasMap.values())
-                    if (rec && typeof rec === "object") {
-                        n++;
-                        if (rec.rttBaked) gebacken++;
-                    }
-            return { n, gebacken };
+            const z = typeof r._impostorCensus === "function" ? r._impostorCensus() : null;
+            return z
+                ? { n: z.zellen, gebacken: z.gebacken, vonPlatte: z.vonPlatte, mb: z.mb, fmt: z.fmt, schichten: z.schichten }
+                : { n: 0, gebacken: 0, vonPlatte: 0, mb: 0, fmt: null, schichten: 0 };
         })(),
         heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) : null,
         offen: f.pending.size,

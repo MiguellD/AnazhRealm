@@ -681,8 +681,8 @@ const SCHUSS_FN = async (kam) => {
                 // IMPOSTOR-ZENSUS: die L2-Stufe der Bäume IST die gebackene Studio-Karte — backt der Bäcker?
                 const z = r._impostorCensus() || {};
                 const zensus =
-                    `Bühne ${r.state._buehneStand ? "steht" : "OFFEN"} · Karten ${z.atlanten || 0}: gebacken ${z.rttGebacken || 0}` +
-                    ` · gescheitert ${z.rttGescheitert || 0} · wartend ${z.silhouetteWartend || 0} · hängend ${z.haengendeBakes || 0}` +
+                    `Bühne ${r.state._buehneStand ? "steht" : "OFFEN"} · Karten ${z.zellen || 0}: gebacken ${z.gebacken || 0} (Platte ${z.vonPlatte || 0})` +
+                    ` · gescheitert ${z.gescheitert || 0} · wartend ${z.wartend || 0} · hängend ${z.haengendeBakes || 0}` +
                     ` · Queue ${(r._impostorBakeQueue || []).length}${r._impostorBakePending ? " (Bake in Flug)" : ""}` +
                     (window.__impostorRttError ? ` · Fehler: ${String(window.__impostorRttError).slice(0, 80)}` : "");
                 return {

@@ -261,8 +261,8 @@ const server = http.createServer((req, res) => {
 
     console.log("\n=== KONFIG B — OHNE nahes LOD-Laub (alle Nah-Vegetation versteckt, Fern-Impostoren bleiben) ===");
     // „Nahes LOD-Laub" = die Nah-Vegetation (Baum-Geometrie + Blatt-Karten + Gras): jede
-    // InstancedMesh, die NICHT ein Fern-Impostor ist (der Impostor trägt das `aImpX`-Attribut = die
-    // 6-Vertex-Karte). So bleibt Terrain (kein InstancedMesh) + Wasser + Himmel + die leichten
+    // InstancedMesh, die NICHT ein Fern-Impostor ist (die Karte trägt das Instanz-vec4 `aKarte` = Schicht,
+    // Rahmen, Sichthöhe — die 6-Vertex-Karte des EINEN Atlas). So bleibt Terrain (kein InstancedMesh) + Wasser + Himmel + die leichten
     // Fern-Billboards → der tragbare Boden. Der ganze schwere Vegetations-Vertex-Berg fällt.
     const hid = await page.evaluate(() => {
         const r = window.anazhRealm;
@@ -274,8 +274,8 @@ const server = http.createServer((req, res) => {
             if (!o.visible) return;
             const g = o.geometry;
             if (!g || !g.attributes || !g.attributes.position) return;
-            // Fern-Impostor (die 6-Vertex-Karte, aImpX) = das ferne Billboard → behalten.
-            if (o.isInstancedMesh && g.attributes.aImpX) {
+            // Fern-Impostor (die 6-Vertex-Karte, aKarte) = das ferne Billboard → behalten.
+            if (o.isInstancedMesh && g.attributes.aKarte) {
                 impostorsKept += o.count;
                 return;
             }
