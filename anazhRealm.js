@@ -86265,6 +86265,13 @@ class AnazhRealm {
         }
     }
 
+    // DIE KEHRAUS-MARKE: r184s Lebenszeit-Zähler der render()-Aufrufe (`info.render.calls` — NIE eine Frame-Metrik, die
+    // liest der EINE Tap über drawCalls); `attributeCall` trägt je Attribut seinen Wert beim letzten Zeichnen, der Kehraus
+    // vergleicht dagegen. Die einzige Lesung des Zählers im Stamm (gate:pipeline-constitution · gate:render-tap).
+    _gpuKehrausMarke() {
+        const ri = this.state.renderer && this.state.renderer.info;
+        return ri && ri.render ? ri.render.calls : 0;
+    }
     // DER GPU-KEHRAUS — die Residenz folgt dem BILD, nie der Geschichte: nach dem Frame verlässt jeder Geometrie-Puffer die
     // GPU, den kein Objekt des Szenen-Graphen zeichnet und den dieser Frame nicht zeichnete (die r184-Quads der Post-Kette
     // tragen ihren Frame-Zähler in `attributeCall`). Was der Foundry-Cache nur auf der CPU behält, was ein Wachsen ersetzte,
@@ -87246,8 +87253,8 @@ class AnazhRealm {
         // Steht die Post-Pipeline, rendert sie die Szene; bei postProcessingFailed direkter
         // renderer.render() — nie ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
-        // Der r184-Zähler vor dem Frame: was dieser Frame zeichnet, trägt einen höheren (der Kehraus liest ihn).
-        const zaehlerVor = _rinfo && _rinfo.render ? _rinfo.render.calls : 0;
+        // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
+        const zaehlerVor = this._gpuKehrausMarke();
         // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: compileAsync/_bundleReifeWache
         // submitten intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
         // Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-

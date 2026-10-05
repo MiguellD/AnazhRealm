@@ -22,7 +22,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4402;
+// Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
+const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

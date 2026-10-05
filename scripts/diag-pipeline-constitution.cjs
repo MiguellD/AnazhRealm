@@ -245,12 +245,12 @@ law(
 // W1 — DIE GEHEILTE RENDER-METRIK BLEIBT GEHEILT (die V18.427-Klasse strukturell): im r184-WebGPU-Info
 // ist `render.calls` ein LEBENSZEIT-Zähler — der EINE Tap liest `drawCalls ?? calls`; KEIN Leser im
 // Monolithen darf `render.calls` nackt lesen (nur als `??`-Fallback hinter drawCalls). EINE Ausnahme liest ihn als
-// das, was er ist: der Kehraus-Zähler (W6, `zaehlerVor` in _loopRender) — r184s `attributeCall` trägt je Attribut den
+// das, was er ist: die Kehraus-Marke (W6, `_gpuKehrausMarke`) — r184s `attributeCall` trägt je Attribut den
 // Lebenszeit-Zähler seines letzten Zeichnens, der Kehraus vergleicht dagegen (nie als Frame-Metrik).
 {
     const nakedCalls = (anazhNC.match(/render\.calls/g) || []).length;
     const fallbackCalls = (anazhNC.match(/drawCalls[^;]{0,160}render\.calls/g) || []).length;
-    const kehrausZaehler = (anazhNC.match(/const zaehlerVor = [^;]{0,80}render\.calls/g) || []).length;
+    const kehrausZaehler = (anazhNC.match(/_gpuKehrausMarke\(\) \{[^}]{0,160}render\.calls/g) || []).length;
     law(
         "kein nackter `render.calls`-Read im Monolithen (nur als drawCalls-??-Fallback und als der EINE Kehraus-Zähler)",
         true,
