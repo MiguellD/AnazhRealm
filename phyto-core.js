@@ -2016,10 +2016,11 @@
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
     // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts, im Studio-Layout (bakeImpostorAtlas,
     // __replyBakeImpostor): die V Ansichten VERTIKAL gestapelt, Zeilen bottom-up (GL-readPixels) — ohne Umdrehen
-    // ladbar. Studio-Bäcker (Normale auf 1/normalTeiler), Transport-Schale (Mips + Kodierung im Worker) und Host
-    // (alphaTest, Schicht-Maße) lesen DIESES Gesetz:
+    // ladbar. Transport-Schale (Mips + Kodierung im Worker) und Host (alphaTest, Schicht-Maße) lesen DIESES Gesetz;
+    // der Studio-Bäcker liefert Albedo und Normale in voller Auflösung (sein Labor-Wald bleibt byte-gleich):
     //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt
-    //   normalTeiler  die Normale bäckt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern)
+    //   normalTeiler  die Welt-Normale liegt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern):
+    //                 der Codec mittelt die volle Studio-Normale als Vektor (normalMips) und beginnt dort
     //   minSeite      die Mip-Kette endet, bevor eine Ansicht unter 4 px fällt (BC-Block, keine Ansichten-Mischung)
     // Gespeichert wird die Karte VORMULTIPLIZIERT (transparent = 0,0,0,0; BC1 kann es nicht anders), die Welt teilt
     // das gefilterte rgb durch alpha — kein dunkler Saum, auf keiner Mip-Stufe.
@@ -2630,21 +2631,24 @@
         return out;
     }
 
-    // DER KARTEN-KODIERER (läuft in der Transport-Schale, im Worker): das Studio-Payload { cw, ch, V, nt, frame,
-    // albedo (rgba cw×ch·V), normal (rgba auf 1/nt) } → die Atlas-Schicht im Format fmt. Rückgabe { cw, ch, V,
-    // nt, fmt, frame, albedo, normal, opak, deckung } mit den Stufen hintereinander (karteMasse); null bei
-    // Maß-Bruch (nie eine halbe Schicht).
+    // DER KARTEN-KODIERER (läuft in der Transport-Schale, im Worker): das Studio-Payload { cw, ch, V, frame,
+    // albedo (rgba cw×ch·V), normal (rgba cw×ch·V) } → die Atlas-Schicht im Format fmt, die Normale ab 1/normalTeiler
+    // (die Vektor-Mittel der vollen Studio-Normale). Rückgabe { cw, ch, V, nt, fmt, frame, albedo, normal, opak,
+    // deckung } mit den Stufen hintereinander (karteMasse); null bei Maß-Bruch (nie eine halbe Schicht).
     function karteKodiere(p, fmt) {
         if (!p || !p.albedo || !p.normal || !p.frame) return null;
         const V = p.V | 0,
             cw = p.cw | 0,
             ch = p.ch | 0,
-            nt = p.nt | 0;
-        if (!(V > 0 && cw > 0 && ch > 0 && nt > 0)) return null;
+            nt = KARTEN_GESETZ.normalTeiler;
+        if (!(V > 0 && cw > 0 && ch > 0)) return null;
         const M = karteMasse(cw, ch, V, nt, fmt);
-        if (p.albedo.length !== M.w * M.h * 4 || p.normal.length !== M.nw * M.nh * 4) return null;
+        if (p.albedo.length !== M.w * M.h * 4 || p.normal.length !== M.w * M.h * 4) return null;
         const alb = impostorMips(p.albedo, M.w, M.h, V, KARTEN_GESETZ.schwelle, M.a.length);
-        const nrm = normalMips(p.normal, M.nw, M.nh, 4, M.n.length);
+        // die volle Normale, um log2(nt) Stufen gemittelt: Stufe k der Welt = Stufe k + log2(nt) der Studio-Kette
+        const ab = Math.round(Math.log2(nt));
+        const nrm = normalMips(p.normal, M.w, M.h, 4, M.n.length + ab).slice(ab);
+        if (nrm.length !== M.n.length || nrm[0].w !== M.nw || nrm[0].h !== M.nh) return null;
         const albedo = new Uint8Array(M.aBytes),
             normal = new Uint8Array(M.nBytes);
         for (let k = 0; k < M.a.length; k++) {

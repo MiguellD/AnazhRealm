@@ -224,16 +224,17 @@ function gestalten(src) {
 // Das Studio-Double: antwortet auf build-asset wie die Brücke (frische Puffer, aWind + Uint32-Index), zählt Bauten
 // und meldet, ob sein letzter Puffer nach dem Senden abgelöst ist (= übertragen statt kopiert). Es merkt sich die
 // Saison, die es sah (der Saison-Nagel), und bäckt Karten (bake-impostor → impostor: das Studio-Payload des Bäckers,
-// Albedo + Normale auf 1/nt, Rahmen; klein gehalten 16×32×8 — die Schale kodiert es mit dem ECHTEN Karten-Codec aus
+// Albedo + Normale in voller Auflösung, Rahmen; klein gehalten 16×32×8 — die Schale kodiert es mit dem ECHTEN Karten-Codec aus
 // phyto-core, den der Worker wie im Spiel lädt).
-const KARTE = { cw: 16, ch: 32, V: 8, nt: 2 };
+const KARTE = { cw: 16, ch: 32, V: 8 };
 // Die Schicht-Maße derselben Karte je Format — aus dem Karten-Gesetz (phyto-core, rein, per vm geladen).
 const MASSE = (() => {
     const ctx = { Math, Uint8Array, Float32Array, Float64Array, Int32Array };
     ctx.globalThis = ctx;
     ctx.self = ctx;
     require("vm").runInNewContext(fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"), ctx);
-    const m = (fmt) => ctx.__phytoCore.karteMasse(KARTE.cw, KARTE.ch, KARTE.V, KARTE.nt, fmt);
+    const nt = ctx.__phytoCore.KARTEN_GESETZ.normalTeiler;
+    const m = (fmt) => ctx.__phytoCore.karteMasse(KARTE.cw, KARTE.ch, KARTE.V, nt, fmt);
     return { bc: m("bc"), rgba8: m("rgba8") };
 })();
 const STUDIO = `
@@ -247,7 +248,7 @@ self.onmessage = (e) => {
         gebacken++;
         const K = ${JSON.stringify(KARTE)};
         const albedo = new Uint8Array(K.cw * K.ch * K.V * 4).fill(200),
-            normal = new Uint8Array((K.cw / K.nt) * ((K.ch * K.V) / K.nt) * 4).fill(128);
+            normal = new Uint8Array(K.cw * K.ch * K.V * 4).fill(128);
         self.postMessage({ type: "impostor", world: "terrain", reqId: m.reqId, presetId: m.presetId, seed: m.seed,
             payload: Object.assign({ frame: { halfH: 4.75, halfW: 2.4 }, albedo, normal }, K) });
     } else if (m.type === "build-asset") {

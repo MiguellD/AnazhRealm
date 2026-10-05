@@ -229,7 +229,6 @@ async function kleberProbe(page, fmtWunsch) {
             const cw = at.cw,
                 ch = at.ch,
                 V = at.V,
-                nt = at.nt,
                 H0 = 8; // die Sichthöhe der Probe-Karten (= ihr Rahmen 2 · halfH)
             const alb = new Uint8Array(cw * ch * V * 4);
             for (let y = 0; y < ch * V; y++)
@@ -243,7 +242,7 @@ async function kleberProbe(page, fmtWunsch) {
                         alb[o + 3] = 255;
                     }
                 }
-            const nrm = new Uint8Array((cw / nt) * ((ch * V) / nt) * 4);
+            const nrm = new Uint8Array(cw * ch * V * 4); // voll: der Codec mittelt sie auf 1/normalTeiler
             for (let i = 0; i < nrm.length; i += 4) {
                 nrm[i] = 128;
                 nrm[i + 1] = 128;
@@ -251,7 +250,7 @@ async function kleberProbe(page, fmtWunsch) {
                 nrm[i + 3] = 255;
             }
             const schicht = core.karteKodiere(
-                { cw, ch, V, nt, frame: { halfH: 4, halfW: 4 }, albedo: alb, normal: nrm },
+                { cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: alb, normal: nrm },
                 at.fmt
             );
             const z = r._impostorZelleNeu(at, "fimp:gateKarte|1", "eiche", 1, null);
@@ -266,7 +265,7 @@ async function kleberProbe(page, fmtWunsch) {
             const zV = r._impostorZelleNeu(at, "fimp:gateKarte|2", "eiche", 2, null);
             const vollOk = r._applyStudioImpostorPayload(
                 zV,
-                core.karteKodiere({ cw, ch, V, nt, frame: { halfH: 4, halfW: 4 }, albedo: albV, normal: nrm }, at.fmt)
+                core.karteKodiere({ cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: albV, normal: nrm }, at.fmt)
             );
             out.geschrieben = out.geschrieben && vollOk;
             const leafV = r._impostorLeaf(zV, new T.Matrix4(), H0);

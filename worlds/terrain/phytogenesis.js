@@ -1845,9 +1845,6 @@ function bakeImpostorAtlas() {
         ch = _impSpec.cellH || 256; // Spalten = (Art,Variante), Zeilen = 8 Blickwinkel um Y -> die Silhouette DREHT mit der Kamera (SpeedTree-Multi-View); Zell-Maße aus der EINEN Quelle (foundry-core)
     const sig = _impSpecs.map((s) => s.sp + s.seed).join(","); // Signatur der Baubeschreibungen: neue Seeds (Rebuild) -> Atlas MUSS neu, sonst zeigt die Ferne alte Baeume
     if (_impRT && _impK === K && _impBakedSig === sig) return; // EINMAL-BAKE: der Atlas ist SAISONINVARIANT (volle Krone gebacken; Praesenz+Tint macht der Shader) -> nach diesem Bake nie wieder, deterministischer Zyklus kostenlos
-    // W6 (Karten-Gesetz, phyto-core): die Normale bäckt auf 1/normalTeiler — ihre Licht-Modulation der Fernkrone ist
-    // weich, die Welt trägt sie als BC5 auf halber Auflösung (Lab = Welt: der Studio-Wald liest denselben Atlas).
-    const nt = __phytoCore.KARTEN_GESETZ.normalTeiler;
     if (!_impRT || _impK !== K) {
         if (_impRT) _impRT.dispose();
         if (_impNrmRT) _impNrmRT.dispose();
@@ -1858,7 +1855,7 @@ function bakeImpostorAtlas() {
             generateMipmaps: true,
         });
         _impAtlas = _impRT.texture;
-        _impNrmRT = new THREE.WebGLRenderTarget((cw * K) / nt, (ch * V) / nt, {
+        _impNrmRT = new THREE.WebGLRenderTarget(cw * K, ch * V, {
             minFilter: THREE.LinearMipmapLinearFilter,
             magFilter: THREE.LinearFilter,
             format: THREE.RGBAFormat,
@@ -1956,8 +1953,8 @@ function bakeImpostorAtlas() {
             renderer.setClearColor(0x2f4a22, 0);
             renderer.render(bs, cam);
             bs.overrideMaterial = _impNrmOv;
-            _impNrmRT.viewport.set((i * cw) / nt, (v * ch) / nt, cw / nt, ch / nt);
-            _impNrmRT.scissor.set((i * cw) / nt, (v * ch) / nt, cw / nt, ch / nt);
+            _impNrmRT.viewport.set(i * cw, v * ch, cw, ch);
+            _impNrmRT.scissor.set(i * cw, v * ch, cw, ch);
             _impNrmRT.scissorTest = true;
             renderer.setRenderTarget(_impNrmRT);
             renderer.setClearColor(0x8080ff, 1); // Hintergrund-Normale = zur Kamera (neutral)
@@ -1972,8 +1969,8 @@ function bakeImpostorAtlas() {
     _impRT.viewport.set(0, 0, cw * K, ch * V);
     _impRT.scissor.set(0, 0, cw * K, ch * V);
     _impRT.scissorTest = false; // RT-Props zurueck auf voll: naechster Bind (Re-Bake-Clear, Debug-Reads) sieht den ganzen Atlas
-    _impNrmRT.viewport.set(0, 0, (cw * K) / nt, (ch * V) / nt);
-    _impNrmRT.scissor.set(0, 0, (cw * K) / nt, (ch * V) / nt);
+    _impNrmRT.viewport.set(0, 0, cw * K, ch * V);
+    _impNrmRT.scissor.set(0, 0, cw * K, ch * V);
     _impNrmRT.scissorTest = false;
     /* DILATION (2px): Kronenfarbe in transparente Randtexel fluten, Alpha bleibt 0 -> Mips mischen Blattfarbe statt Clear-Gruen (kein dunkler Halo an fernen Karten). Zellgrenzen sicher: Rahmenraender sind leer. */
     if (!_impDilMat) {
@@ -5409,16 +5406,20 @@ init();
     // Die Fernstufe EINES Baums: der Studio-Baecker bakt SEIN 8-Winkel-Billboard (Albedo + Normal),
     // wir lesen die Atlas-Pixel + Rahmen zurueck. `bakeImpostorAtlas` liest `_impSpecs` (die Zellen),
     // also fuellen wir EINE Zelle (Art,Seed) — K=1, eine Atlas-Schicht cellW x (cellH*V) im Studio-Layout
-    // (Ansichten vertikal, Zeilen bottom-up). W6: die Karte ist Golden-Sommer (das Jahr toent der Host), die
-    // Render-Targets leben weiter (K bleibt 1, nur die Signatur erzwingt den Neu-Bake), der Rahmen kommt aus
-    // DEMSELBEN Bake (`_impFrame`) statt aus einem dritten L1-Bau, die Normale reist auf 1/normalTeiler.
+    // (Ansichten vertikal, Zeilen bottom-up). W6: die Render-Targets leben weiter (K bleibt 1, nur die Signatur
+    // erzwingt den Neu-Bake), der Rahmen kommt aus DEMSELBEN Bake (`_impFrame`) statt aus einem dritten L1-Bau;
+    // Albedo und Normale reisen in voller Aufloesung (die Welt-Schicht mittelt der Karten-Codec, phyto-core).
     function __replyBakeImpostor(msg) {
         const reqId = msg.reqId;
         const presetId = msg.presetId || "eiche";
         const seed = Number(msg.seed) || 0;
         let payload = null;
         try {
-            if (typeof setSeasonColors === "function") setSeasonColors("summer");
+            if (msg.season && typeof setSeasonColors === "function") {
+                try {
+                    setSeasonColors(msg.season);
+                } catch (_se) {}
+            }
             const gl = __foundryBakeRenderer();
             if (!gl) throw new Error("kein Offscreen-Renderer");
             // ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt, Studio-Seite): ein Preset, das NICHT im
@@ -5459,19 +5460,17 @@ init();
             const ic = PORTAL_RENDER_CONFIG.impostor,
                 cw = ic.cellW,
                 ch = ic.cellH,
-                V = _impV,
-                nt = __phytoCore.KARTEN_GESETZ.normalTeiler;
+                V = _impV;
             const fr = _impFrame[presetId + seed];
             if (!fr) throw new Error("kein Bake-Rahmen (das Bake-Subjekt baute nicht)");
             const albedo = new Uint8Array(cw * ch * V * 4);
             gl.readRenderTargetPixels(_impRT, 0, 0, cw, ch * V, albedo);
-            const normal = new Uint8Array((cw / nt) * ((ch * V) / nt) * 4);
-            gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw / nt, (ch * V) / nt, normal);
+            const normal = new Uint8Array(cw * ch * V * 4);
+            gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw, ch * V, normal);
             payload = {
                 cw: cw,
                 ch: ch,
                 V: V,
-                nt: nt,
                 frame: { halfH: fr.halfH, halfW: fr.halfW },
                 albedo: albedo,
                 normal: normal,

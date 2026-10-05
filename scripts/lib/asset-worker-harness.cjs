@@ -118,7 +118,8 @@ function pageHtml() {
     if (!p || !p.albedo) return { fehler: "kein Bake" };
     const k = core.karteKodiere(p, "bc");
     if (!k) return { fehler: "Codec lieferte keine Schicht" };
-    const M = core.karteMasse(p.cw, p.ch, p.V, p.nt, "bc");
+    const nt = core.KARTEN_GESETZ.normalTeiler, ab = Math.round(Math.log2(nt));
+    const M = core.karteMasse(p.cw, p.ch, p.V, nt, "bc");
     if (stoer === "bc1") for (let i = 64; i < M.a[0].bytes; i += 97) k.albedo[i] ^= 0x5a;
     const W = M.w, H = M.h, thr = core.KARTEN_GESETZ.schwelle * 255;
     const ref = core.impostorMips(p.albedo, W, H, p.V, core.KARTEN_GESETZ.schwelle, 1).stufen[0].data;
@@ -140,13 +141,12 @@ function pageHtml() {
       }
     }
     const psnr = n ? 10 * Math.log10((255 * 255) / Math.max(1e-9, se / n)) : 0;
-    // Normale (opake Texel des halben Rasters)
+    // Normale (opake Texel des halben Rasters): die Referenz ist das Vektor-Mittel der vollen Studio-Normale
     const nw = M.nw, nh = M.nh;
-    const nref = core.normalMips(p.normal, nw, nh, 4, 1)[0].data;
+    const nref = core.normalMips(p.normal, W, H, 4, 1 + ab)[ab].data;
     const ndec = core.bcDekodiere(k.normal.subarray(0, M.n[0].bytes), nw, nh, "bc5");
     const vz = (a, i) => { const x = a[i * 2] / 127.5 - 1, y = a[i * 2 + 1] / 127.5 - 1; return [x, y, Math.sqrt(Math.max(0, 1 - x * x - y * y))]; };
     const ws = [];
-    const nt = p.nt;
     for (let y = 0; y < nh; y++) for (let x = 0; x < nw; x++) {
       let op = false;
       for (let dy = 0; dy < nt && !op; dy++) for (let dx = 0; dx < nt; dx++) if (p.albedo[((y * nt + dy) * W + x * nt + dx) * 4 + 3] >= thr) op = true;

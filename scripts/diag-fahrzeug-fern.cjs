@@ -244,12 +244,12 @@ function pruefeBaecker(st) {
         rot.push(
             `Alpha-Deckung ${st.alphaPx} <= ${SOLL_ALPHA_PX} Px — LEERE Karte als „Erfolg" (die NICHT-LEERE-WAND muss greifen)`
         );
-    // W6: der Rahmen reist aus DEMSELBEN Bake (Quad = Bake-Kamera), die Normale auf 1/nt (das Karten-Gesetz).
+    // W6: der Rahmen reist aus DEMSELBEN Bake (Quad = Bake-Kamera); die Normale reist voll (der Karten-Codec halbiert
+    // sie, der Labor-Wald bleibt byte-gleich).
     const fr = st.frame || {};
     if (!(fr.halfH > 0 && isFinite(fr.halfH) && fr.halfW > 0 && isFinite(fr.halfW)))
         rot.push(`Rahmen unbrauchbar: ${JSON.stringify(st.frame)}`);
-    if (!(st.nt >= 1) || st.normalLen !== (SOLL.cw / st.nt) * ((SOLL.ch * SOLL.V) / st.nt) * 4)
-        rot.push(`Normale nicht auf 1/nt: nt=${st.nt} Länge ${st.normalLen}`);
+    if (st.normalLen !== SOLL_LEN) rot.push(`normal-Länge ${st.normalLen} != ${SOLL_LEN} (voll)`);
     return rot;
 }
 
@@ -324,8 +324,7 @@ function selbstTest() {
             albedoLen: SOLL_LEN,
             alphaPx: 0,
             frame: { halfH: 1, halfW: 0.5 },
-            nt: 2,
-            normalLen: (128 / 2) * ((256 * 8) / 2) * 4,
+            normalLen: SOLL_LEN,
         }).length > 0,
     ]);
     // 7. Diät-Messung: Nah == Fern -> MUSS feuern (vakuöse Messung).
@@ -379,7 +378,7 @@ function pageHtml() {
     if (!p) return { got: true, payloadNull: true, workerError: S.error };
     const a = p.albedo || new Uint8Array(0);
     return {
-      got: true, payloadNull: false, cw: p.cw, ch: p.ch, V: p.V, nt: p.nt, frame: p.frame,
+      got: true, payloadNull: false, cw: p.cw, ch: p.ch, V: p.V, frame: p.frame,
       albedoLen: a.length, alphaPx: alphaPx(a), normalLen: p.normal ? p.normal.length : 0,
     };
   });
@@ -467,7 +466,7 @@ function pageHtml() {
     else {
         if (bake && bake.got && !bake.payloadNull)
             console.log(
-                `  Impostor-Karte: cw=${bake.cw} ch=${bake.ch} V=${bake.V} · Alpha-Px=${bake.alphaPx} · Rahmen ${JSON.stringify(bake.frame)} · Normale 1/${bake.nt}`
+                `  Impostor-Karte: cw=${bake.cw} ch=${bake.ch} V=${bake.V} · Alpha-Px=${bake.alphaPx} · Rahmen ${JSON.stringify(bake.frame)} · Normale ${bake.normalLen} B`
             );
         for (const x of pruefeBaecker(bake)) rot.push(`[${vId}] ${x}`);
         if (nah)
