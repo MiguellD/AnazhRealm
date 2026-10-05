@@ -235,8 +235,9 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
                 }
             }
             const p = r.state.player ? r.state.player.position || { x: 0, z: 0 } : { x: 0, z: 0 };
-            // Der Sichtradius der Welt ist die Luft (V18.530: Koschmieder-Sichtweite in Augenhöhe), nie mehr ein Nebel-Rand.
-            const fogFar = r.state.luft ? r._luftSichtM(r.state.camera.position.y) : 200;
+            // Der Zensus-Radius ist DERSELBE wie im Studio-Wald (dessen Nebel-Rand): die Luft der Welt (V18.530) hat keinen
+            // Rand — ihre Sichtweite (~21 km) machte die VIS-Ratio zur Eins und den Vergleich blind (Prüfer fernsicht).
+            const fogFar = ${Number(studio && studio.fogFar) || 300};
             const out = { fogFar, chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0 };
             out.scene = census(r.state.scene, { x: p.x || 0, z: p.z || 0 }, fogFar);
             // Asset-Budget je LOD aus der EINEN Foundry (derselbe Generator wie das Studio):

@@ -38,7 +38,7 @@
 **Gemeinsam:** EIN Welt-March (`_tickFeldPass`, Mesh `renderOrder 9999`, Tiefe = March-Tiefe)
 über EINE Feld-Liste; **das Licht** liest `_feldLichtSync` aus denselben Quellen wie jedes
 MeshStandard (vier Richt-Lichter, Ambient, Hemi, Himmels-Irradianz aus `_skyEnvTex`, Lambert =
-albedo/π, `scene.fog`); Dedup je Vorlage im `kapselCache` (`_weltKapselHolen`/`_weltKapselSpawn`),
+albedo/π, die EINE Luft `scene.fogNode` aus `_luftEnsure`, V18.530); Dedup je Vorlage im `kapselCache` (`_weltKapselHolen`/`_weltKapselSpawn`),
 Bake-Takt `_weltBakeErlaubt` (16/s, 4/s über Budget). Die Voxel-Bricks sind verabschiedet (V18.528):
 kein 3D-Atlas, kein Brick-Zweig im WGSL, kein Region-Ziegel — der Welt-March trägt EINE Payload.
 Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
@@ -256,8 +256,8 @@ Rot-Proben (Albedo hart rot / Halm-Farbe rot): der Arm-Boden IST `_terrainGeolog
 Schleier ist die Eigenglätte der 9/m-Relief-Funktion auf 1–3 m, kein Fremd-Layer (Fern-Ring,
 Feld-Pass, Transparente ausgeblendet: Bild gleich). Verworfen nach Messung: eine Halm-Feinschicht
 (ein Halm je 1,8-cm-Zelle, 8 Schalen) — Armlänge 0,32 → 0,35, Knie dunkler (91,9 → 80,6), fern ein
-Rausch-Teppich statt Halmen. Über dem Hügel stehen je Sitzung zufällig die drei Himmels-Planeten
-(`_buildSkyPlanets`, `Math.random`) — Deko, kein Feld-Befund.
+Rausch-Teppich statt Halmen. Über dem Hügel standen damals je Sitzung zufällig drei Himmels-Planeten
+(`Math.random`-Kugeln) — Deko, kein Feld-Befund; sie fielen V18.530 (die Wandelsterne leben im Sternfeld).
 
 ## V18.504 — das Licht der Welt (Graukarten an der Wiese, Werkbank)
 

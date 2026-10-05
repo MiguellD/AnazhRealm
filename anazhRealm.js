@@ -34309,9 +34309,9 @@ class AnazhRealm {
         // Organ existiert der Pass nicht (die Schalen tragen, byte-alt).
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
-        // DIE LUFT: der Pass dunstet mit denselben Knoten wie jedes Mesh — ohne sie gibt es ihn nicht.
+        // DIE LUFT: der Pass dunstet mit denselben Knoten wie jedes Mesh (Szene und THREE stehen hier, `_luftEnsure`
+        // bricht ohne TSL-Organe laut).
         const luft = this._luftEnsure();
-        if (!luft) return null;
         const P = AnazhRealm.FELD_PASS;
         const PN = AnazhRealm.FELD_PANO;
         const daten = new Float32Array(P.az * P.rad * 4);
@@ -82088,15 +82088,16 @@ class AnazhRealm {
     }
 
     // Die Sichtweite (m) eines waagrechten Blicks in der Augenhöhe `y` (Kontrast fällt unter `LUFT.kontrast`):
-    // der CPU-Leser DERSELBEN Uniforms, die der Knoten liest (Linsen, Fern-Wasser-Reichweite).
+    // der CPU-Leser DERSELBEN Uniforms, die der Knoten liest (Linsen, Fern-Wasser-Reichweite); ohne Szene das Gesetz
+    // selbst (`_luftBeta` auf dem Bezugsniveau). Eine fehlende Augenhöhe ist ein Aufrufer-Fehler, nie 0.
     _luftSichtM(y) {
+        if (!Number.isFinite(y)) throw new Error("_luftSichtM: die Augenhöhe y fehlt (" + y + ")");
         const luft = this._luftEnsure();
         const L = AnazhRealm.LUFT;
         const K = -Math.log(L.kontrast);
         if (!luft) return K / this._luftBeta();
         const U = luft.U;
-        const yy = Number.isFinite(y) ? y : 0;
-        const beta = U.beta.value * Math.exp(-(yy - U.bezugY.value) / U.hoehe.value);
+        const beta = U.beta.value * Math.exp(-(y - U.bezugY.value) / U.hoehe.value);
         return beta > 0 ? K / beta : Infinity;
     }
 
@@ -82109,7 +82110,10 @@ class AnazhRealm {
         if (st.luft) return st.luft;
         if (typeof THREE === "undefined" || !st.scene) return null;
         const T = THREE.TSL;
-        if (!T || !T.fog || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition) return null;
+        // Die Luft ist Pflicht jeder Szene: fehlen die TSL-Organe, ist der Vendor alt — laut, nie ein stiller Klar-Himmel
+        // ohne Luft (und ohne Feld-Pass, der dieselben Knoten liest).
+        if (!T || !T.fog || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition)
+            throw new Error("Die Luft: THREE.TSL trägt fog/Fn/uniform/positionWorld/cameraPosition nicht (Vendor)");
         const L = AnazhRealm.LUFT;
         const U = this._uniformHeimatTeilen({
             beta: T.uniform(this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny)),

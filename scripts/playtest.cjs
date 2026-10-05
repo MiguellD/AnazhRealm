@@ -23599,7 +23599,7 @@ async function checkBandPhasenBF(ctx) {
 }
 
 // PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
-// A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Fog↔Ring-Kante ·
+// A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
 // A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
 async function checkBandPhaseAFundament(ctx) {
     const { page, check } = ctx;
@@ -23695,8 +23695,8 @@ async function checkBandPhaseAFundament(ctx) {
                 src: /_luftBeta\(\)/.test(window.__codeOf(r._dayNightApplyHemiUndLuft)),
             };
         }
-        // ── B2 · Horizont-Mantel geschnitten (der Nebel schließt an der Wald-Kante, jenseits zeichnet
-        // NICHTS). Das Band prüft die ABWESENHEIT (Methoden · Konstante · State · Tick-Aufruf).
+        // ── B2 · Horizont-Mantel geschnitten (die Ferne tragen Fern-Ring und Feld-Pass, die Luft dunstet sie;
+        // kein Mantel). Das Band prüft die ABWESENHEIT (Methoden · Konstante · State · Tick-Aufruf).
         out.b2 = {
             methodsGone:
                 typeof r._ensureHorizonMantle === "undefined" && typeof r._disposeHorizonMantle === "undefined",
@@ -35258,7 +35258,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
-        // Foundry-Wald + Wald-Kanten-Nebel tragen die Ferne; das Band prüft die ABWESENHEIT (Konstante ·
+        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT (Konstante ·
         // Methoden · State · Restore-Pfad).
         out.cConstGone = !A.CANOPY_SHELL;
         out.cMethodsGone =
@@ -41424,8 +41424,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.eyesFlagComputed = found;
         }
         // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
-        // mehr playerUnderwater. V9.56-i: die Hemi+Fog-Phase lebt jetzt
-        // im _dayNightApplyHemiAndFog-Helfer (Source-Pattern wandert mit).
+        // mehr playerUnderwater. V9.56-i: die Hemi+Luft-Phase lebt jetzt
+        // im _dayNightApplyHemiUndLuft-Helfer (Source-Pattern wandert mit).
         {
             const src = window.__codeOf(r._dayNightApplyHemiUndLuft);
             out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /unterwasserM/.test(src);
@@ -55481,7 +55481,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandV17117FarWater, ctx);
             // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
             await timed(checkBandV17118WorkerEngaged, ctx);
-            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Fog↔Ring · A6 Kollision.
+            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Luft↔Ring · A6 Kollision.
             await timed(checkBandPhaseAFundament, ctx);
             // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
             await timed(checkBandPhasenBF, ctx);
