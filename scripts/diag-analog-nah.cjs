@@ -173,6 +173,21 @@ function urteil(z) {
             console.log(`  [GPU-Konsole] Phase „${phase}" +${Date.now() - t0} ms: ${t.slice(0, 300)}`);
         }
     });
+    // Wer zerstört ein Gerät? (CI 05.10.: „destroyed · Device was destroyed" 3,8 s nach dem Start, nur auf Linux) — der
+    // Aufrufer-Stapel jedes GPUDevice.destroy reist ins Log.
+    await page.evaluateOnNewDocument(() => {
+        if (typeof GPUDevice === "undefined" || !GPUDevice.prototype || !GPUDevice.prototype.destroy) return;
+        const org = GPUDevice.prototype.destroy;
+        GPUDevice.prototype.destroy = function () {
+            const st = String(new Error().stack || "")
+                .split("\n")
+                .slice(2, 9)
+                .map((z) => z.trim().replace(/\(?https?:\/\/[^/]+\//, "("))
+                .join(" < ");
+            console.log("[N] GPUDevice.destroy gerufen: " + st);
+            return org.apply(this, arguments);
+        };
+    });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(
         async (k) => {
