@@ -365,105 +365,348 @@
     }
 
     // DER ATLAS-STECKBRIEF (04.10., echte GPU): was der Maler in eine Zelle setzt, als ZAHL — damit die
-    // Karte nur rastert, was der Atlas trägt. EIN Atlas, vier Zellen: 0..2 Breitblatt-Cluster (Laub-Karten
-    // routen `zelle % zellen`), 3 die Nadel-Spray (Nadel-Karten der Koniferen-L1). `kern` = halbe Ausdehnung
+    // Karte nur rastert, was der Atlas trägt. EIN Atlas, vier Zellen: 0..1 die Baum-Zweige (Laub-Karten der Bäume
+    // routen `zelle % zellen`), 2 der Großblatt-Zweig (Strauch, Weiden-Strähne; BLATT_ATLAS_GROSS), 3 die Nadel-Zweiglein
+    // (Nadel-Karten der Koniferen). `kern` = halbe Ausdehnung
     // um die Zellmitte als Anteil der halben Zelle (Breitblatt reicht Alpha>0 höchstens bis 0,7148 — die
     // Laub-Karte schneidet auf ihn zu, gemessen verwarfen die ungeschnittenen Karten 84 % ihrer Fragmente);
-    // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (Breitblatt 0,1403/0,1749/0,1693, Nadel 0,2446). Die
-    // Nadel-Spray reicht bis an den Zellrand (kern 1, gemalt 0,9961) und wird auf ihre Zelle geschnitten — vorher
-    // blutete sie in Zelle 2. gate:asset-contract malt den Atlas und hält jede Zahl gegen den Maler.
-    const BLATT_ATLAS_BREIT = { zellen: 3, kern: 0.72, fuellung: 0.1615 };
-    const BLATT_ATLAS_NADEL = { zelle: 3, kern: 1, fuellung: 0.2446 };
+    // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (512er-Ast 05.10.: 0,1796/0,1786/0,1797 bis 0,709 — davor
+    // 256er-Zweige 0,1758, Rosetten 0,1403/0,1749/0,1693; Nadel-Zweiglein 0,2537, davor die Striche 0,2446). Die
+    // Nadel-Zelle reicht bis 0,92 der halben Zelle (kern 1) und wird auf ihre Zelle geschnitten — vorher blutete die
+    // Spray in Zelle 2. gate:asset-contract malt den Atlas und hält jede Zahl gegen den Maler.
+    const BLATT_ATLAS_BREIT = { zellen: 2, kern: 0.72, fuellung: 0.1793 };
+    const BLATT_ATLAS_NADEL = { zelle: 3, kern: 1, fuellung: 0.2537 };
+    // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zellen 0..1) tragen
+    // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
+    // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
+    // doppelt so langen Blaettern (ZWEIG_GROSS); Kern wie die Baum-Zellen (dieselbe Karten-Geometrie).
+    const BLATT_ATLAS_GROSS = { zelle: 2, fuellung: 0.1864 };
+    // DIE ZELLE des Atlas in Pixeln (05.10., dritter Schnitt des Blatt-Masses): 512 statt 256 — die Karte traegt doppelt
+    // so viele Texel je Meter. Das Blatt behaelt seine Pixel (14), die Zelle traegt viermal so viele: das Blatt-Mass der
+    // Welt halbiert sich bei gleicher Schaerfe je Blatt. Die Stufe 0 reist nur als BC1 (Karten-Codec, ¼ der Bytes); ein
+    // Wirt ohne BC laedt die Kette ab Stufe 1 (256er-Zelle, das Byte-Mass von gestern) — `blattAtlasFracht`.
+    const BLATT_ATLAS_ZELLE = 512;
+    // DER BLATT-ZWEIG der Breitblatt-Zellen (05.10.), in Atlas-Pixeln (die Zelle misst BLATT_ATLAS_ZELLE): Haupt-Achse `achse`,
+    // `seiten` Seitenzweige der Länge `seite` (wechselständig), an jedem `unter` Unterzweige der Länge `unterSeite`·seite,
+    // Blatt-Abstand `abstand` je Achse, Blatt-Länge `laenge` (±18 %, die Spitze 8 % länger), Stiel `stiel`, Zahn-Höhe
+    // `zahn` px bei `zaehne` Zähnen je Seite, `adern` Seitenadern-Paare, Rippe/Ader als Deckkraft des HELLEN Nervs,
+    // `falz` = Abdunklung der geknickten Hälfte, `saum` = Abstand zum Kern-Rand, `strom` = der eigene Zufalls-Strom.
+    // DAS BLATT-MASS (05.10., zweiter Schnitt): die Karte der L0 misst 2,5–3,2 m (Kante = Blattstelle × blattKarte), ein
+    // Blatt von 27 px lag damit bei 0,37–0,49 m (Birke, Eiche, Buche; Natur 0,05–0,12 m). Die Karten-Zahl bleibt (die
+    // Dreiecke der Krone hängen an ihr), die Füllung bleibt (die Deckung hängt an ihr) — der Zweig verzweigt sich und
+    // trägt halb so lange Blätter, dreimal so viele: 0,18–0,25 m in der Welt. Dritter Schnitt (512er-Zelle): ein Ast mit
+    // 9 Seitenzweigen zu je 4 Unterzweigen, ~600 Blätter von 14 px — 0,09–0,12 m in der Welt (die Natur).
+    const ZWEIG_BLATT = {
+        achse: 312,
+        seite: 170,
+        seiten: 9,
+        unter: 5,
+        unterSeite: 0.42,
+        abstand: 5.1,
+        laenge: 14,
+        stiel: 2.5,
+        zahn: 0.6,
+        zaehne: 5,
+        adern: 3,
+        rippe: 0.45,
+        ader: 0.26,
+        falz: 0.07,
+        saum: 2,
+        linie: 1,
+        strom: 0x1eaf,
+    };
+    // DER GROSSBLATT-ZWEIG (Zelle 2, BLATT_ATLAS_GROSS): der Zweig der 256er-Zelle von gestern, doppelt gross gemalt —
+    // ~150 Blaetter von 28 px (`linie` = Faktor der Strich-Breiten).
+    const ZWEIG_GROSS = {
+        achse: 312,
+        seite: 164,
+        seiten: 6,
+        unter: 2,
+        unterSeite: 0.5,
+        abstand: 12.4,
+        laenge: 28,
+        stiel: 5,
+        zahn: 1.2,
+        zaehne: 5,
+        adern: 3,
+        rippe: 0.45,
+        ader: 0.26,
+        falz: 0.07,
+        saum: 2,
+        linie: 2,
+        strom: 0x1eb0,
+    };
+    // DER NADEL-ZWEIG der Nadel-Zelle (05.10.), in Atlas-Pixeln: `aeste` Zweiglein strahlen aus der Zellmitte (Länge
+    // `laenge` [min, max] px), jedes mit `unter` Seitenzweiglein (`unterSeite`·Länge), rundum dicht benadelt: alle
+    // `abstand` px je Seite eine Nadel der Länge `nadel` px (±20 %), Breite `breite`, `winkel` rad zur Achse nach vorn.
+    // Befund: die Zelle trug 70 Striche von 4 px Breite und 40–94 px Länge — auf der L0-Karte (Fichte 1,2 m) eine
+    // „Nadel" von 19–44 cm Länge und 2 cm Dicke (Natur 1,5–3 cm). Jetzt liegt die Nadel bei ~2 cm (Fichte, Tanne; die
+    // 512er-Zelle trägt doppelt so lange Zweiglein mit Nadeln derselben Pixel-Länge).
+    const NADEL_ZWEIG = {
+        aeste: 15,
+        laenge: [160, 232],
+        unter: 7,
+        unterSeite: 0.36,
+        abstand: 1.7,
+        nadel: 8,
+        breite: 1.3,
+        winkel: 0.95,
+        strom: 0xbeef,
+    };
 
     // DER BLATT-ATLAS — EINE Quelle für jeden Leser (Studio, Foundry-Worker, Host): er trägt NUR den WERT
     // (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-Farbe (albedo = Vertex-Blatt × Atlas-Wert).
-    // Zellen 0..2 = Breitblatt-Cluster (die Vorlage), 3 = Nadel-Spray (Koniferen). `doc` ist alles mit
+    // Zellen 0..1 = Baum-Zweig, 2 = Großblatt-Zweig, 3 = Nadel-Zweiglein (Koniferen). `doc` ist alles mit
     // createElement("canvas") — das document des Main-Threads oder die OffscreenCanvas-Hülle des Workers
     // (foundry-core); ohne → null. Der broadleaf-Modus (vier Breitblatt-Zellen) ist gefallen: Laub und Nadel
     // teilen EINEN Atlas, EIN Material, EINE Textur.
     function bakeLeafAtlasCanvas(doc) {
         if (!doc || typeof doc.createElement !== "function") return null;
         const cv = doc.createElement("canvas");
-        cv.width = 1024;
-        cv.height = 256;
+        const Z = BLATT_ATLAS_ZELLE;
+        cv.width = 4 * Z;
+        cv.height = Z;
         const x = cv.getContext("2d", { willReadFrequently: true });
         if (!x) return null;
-        const rg = _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG; == mulberry32(0xBEEF))
-        // Zellen 0..2 — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
-        for (let c = 0; c < BLATT_ATLAS_BREIT.zellen; c++) {
-            const ox = c * 256 + 128,
-                oy = 150;
-            const n = 8 + (c & 1);
-            for (let i = 0; i < n; i++) {
-                const a = (i / n) * 6.2831 + rg() * 0.9,
-                    R = i === 0 ? 0 : 22 + rg() * 38;
-                const lx = ox + Math.cos(a) * R,
-                    ly = oy + Math.sin(a) * R * 0.72 - 18;
-                const rot = a + 1.5708 + (rg() - 0.5) * 0.8,
-                    L = 76 + rg() * 30,
-                    W = L * (0.46 + rg() * 0.16);
-                const v = 0.88 + rg() * 0.34;
-                x.save();
-                x.translate(lx, ly);
-                x.rotate(rot);
-                const g = x.createLinearGradient(0, -L * 0.5, 0, L * 0.5);
-                const cs = (r, gg, bb) =>
-                    "rgba(" +
-                    Math.min(255, Math.round(r * v)) +
-                    "," +
-                    Math.min(255, Math.round(gg * v)) +
-                    "," +
-                    Math.min(255, Math.round(bb * v)) +
-                    ",1)";
-                g.addColorStop(0, cs(250, 255, 238));
-                g.addColorStop(1, cs(206, 220, 186));
-                x.fillStyle = g;
+        // Zellen 0..2 — DIE BLATT-ZWEIGE (05.10., Pflanzen-Nahbild; 0..1 Baum, 2 Großblatt). Befund (Blick-Tour V18.530, Bild 05; Kartenmaß): eine
+        // Zelle trug 8–9 Blätter von 76–106 px in einem Kern von 184 px — ein Blatt war die halbe Karte, in der Welt
+        // 1–1,7 m lang (Eiche, Skala 3,4), flach, mit einer harten dunklen Mittelrippe (Wert 0,4). Jetzt malt jede Zelle
+        // einen ZWEIG wie eine Laub-Karte der Profis: eine leicht gebogene Achse mit wechselständigen Seiten- und
+        // Unterzweigen, ~150 Blätter von `laenge` px (ZWEIG_BLATT: das Blatt-Maß der Welt 0,18–0,25 m — die Füllung
+        // bleibt im Steckbrief-Band, die Karten-Zahl bleibt), jedes mit gesägtem Rand (`zaehne` je Seite), weicher
+        // HELLER Mittelrippe und Seitenadern (der Blattnerv ist heller als die Spreite), einer Falz-Hälfte (die Spreite
+        // ist zur Rippe geknickt, die eine Seite fängt weniger Licht) und dem Verlauf Stiel → Spitze. Alles bleibt im
+        // Kern (Steckbrief).
+        let ZB = ZWEIG_BLATT; // je Zelle ihr Zweig (die Baum-Zellen ZWEIG_BLATT, die Grossblatt-Zelle ZWEIG_GROSS)
+        let rb = _atlasRnd(ZB.strom);
+        const rand = BLATT_ATLAS_BREIT.kern * (Z / 2) - ZB.saum; // halbe Kante des Kerns in px, abzüglich Saum
+        const blatt = (bx, by, rot, L, W, v) => {
+            // Ein Blatt mit Stiel: Basis (bx, by), Achse in Richtung rot (Bogenmaß, 0 = nach oben), Länge L ohne Stiel.
+            const cs = (r, gg, bb, a) =>
+                "rgba(" +
+                Math.min(255, Math.round(r * v)) +
+                "," +
+                Math.min(255, Math.round(gg * v)) +
+                "," +
+                Math.min(255, Math.round(bb * v)) +
+                "," +
+                a +
+                ")";
+            x.save();
+            x.translate(bx, by);
+            x.rotate(rot);
+            x.strokeStyle = cs(178, 186, 150, 1);
+            x.lineWidth = 0.9 * ZB.linie;
+            x.beginPath();
+            x.moveTo(0, 0);
+            x.lineTo(0, -ZB.stiel);
+            x.stroke();
+            x.translate(0, -ZB.stiel);
+            // Kontur: die Spreite ist am breitesten bei ~40 % (eiförmig), gesägt — jeder Zahn steigt zur Spitze hin an
+            // und fällt hart ab.
+            const N = 18,
+                pts = [];
+            for (let s = 1; s >= -1; s -= 2)
+                for (let k = 0; k <= N; k++) {
+                    const t = s > 0 ? k / N : 1 - k / N;
+                    const huelle = Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.9);
+                    const z = (t * ZB.zaehne) % 1;
+                    const w = huelle * W * 0.5 + ZB.zahn * z * Math.sin(Math.PI * Math.min(1, t * 1.15));
+                    pts.push([s * w, -t * L]);
+                }
+            const g = x.createLinearGradient(0, 0, 0, -L);
+            g.addColorStop(0, cs(206, 218, 182, 1));
+            g.addColorStop(0.55, cs(232, 242, 214, 1));
+            g.addColorStop(1, cs(244, 250, 230, 1));
+            x.fillStyle = g;
+            x.beginPath();
+            x.moveTo(pts[0][0], pts[0][1]);
+            for (let k = 1; k < pts.length; k++) x.lineTo(pts[k][0], pts[k][1]);
+            x.closePath();
+            x.fill();
+            // Die Falz: die linke Spreiten-Hälfte liegt flacher zum Licht (dunkler, weich).
+            x.save();
+            x.clip();
+            x.fillStyle = "rgba(0,0,0," + ZB.falz + ")";
+            x.fillRect(-W, -L, W, L);
+            // Seitenadern (paarig, zur Spitze geneigt) und die Mittelrippe — HELLER als die Spreite, weich.
+            x.strokeStyle = cs(250, 255, 238, ZB.ader);
+            x.lineWidth = 0.5 * ZB.linie;
+            for (let k = 1; k <= ZB.adern; k++) {
+                const t = k / (ZB.adern + 1),
+                    y0 = -t * L * 0.92,
+                    lw = W * 0.5 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.9);
                 x.beginPath();
-                x.moveTo(0, -L * 0.5);
-                x.quadraticCurveTo(W * 0.62, -L * 0.14, 0, L * 0.5);
-                x.quadraticCurveTo(-W * 0.62, -L * 0.14, 0, -L * 0.5);
-                x.closePath();
-                x.fill();
-                x.strokeStyle = "rgba(90,104,78,0.40)"; // Mittelrippe (Wert-Detail, entsättigt)
-                x.lineWidth = 2;
-                x.beginPath();
-                x.moveTo(0, -L * 0.42);
-                x.lineTo(0, L * 0.42);
+                x.moveTo(0, y0);
+                x.lineTo(lw * 0.92, y0 - lw * 0.7);
+                x.moveTo(0, y0);
+                x.lineTo(-lw * 0.92, y0 - lw * 0.7);
                 x.stroke();
-                x.restore();
             }
-        }
-        // Zelle 3 — Nadel-Spray (Wert-only) für die Koniferen-L1, auf IHRE Zelle geschnitten (die Striche
-        // reichen bis 176 px um die Mitte, die halbe Zelle misst 128 px).
-        {
-            const z0 = BLATT_ATLAS_NADEL.zelle * 256;
-            const ox = z0 + 128,
-                oy = 128;
+            x.strokeStyle = cs(250, 255, 238, ZB.rippe);
+            x.lineWidth = 0.7 * ZB.linie;
+            x.beginPath();
+            x.moveTo(0, 0);
+            x.lineTo(0, -L * 0.9);
+            x.stroke();
+            x.restore();
+            x.restore();
+        };
+        const zweige = [];
+        for (let c = 0; c < BLATT_ATLAS_BREIT.zellen; c++) zweige.push([c, ZWEIG_BLATT]);
+        zweige.push([BLATT_ATLAS_GROSS.zelle, ZWEIG_GROSS]);
+        for (const [c, zb] of zweige) {
+            if (zb !== ZB) rb = _atlasRnd(zb.strom); // jeder Zweig-Typ sein eigener Strom
+            ZB = zb;
+            const ox = c * Z + Z / 2,
+                oy = Z / 2;
+            // Die Achsen des Zweigs: die Haupt-Achse von unten nach oben (leicht gebogen) und je Zelle ihre
+            // Seitenzweige, wechselständig. Jede Achse: Punkte p(t), Richtung d(t).
+            const achsen = [];
+            const bx = ox + (rb() - 0.5) * (Z / 16),
+                by = oy + ZB.achse * 0.55,
+                kr = (rb() - 0.5) * Z * 0.133;
+            const haupt = (t) => [bx + kr * Math.sin(Math.PI * t), by - ZB.achse * t];
+            achsen.push({ p: haupt, rot0: 0, len: ZB.achse, dicke: 1.6 * ZB.linie });
+            const nSeit = ZB.seiten;
+            for (let k = 0; k < nSeit; k++) {
+                const t0 = 0.12 + (0.66 * k) / Math.max(1, nSeit - 1) + (rb() - 0.5) * 0.06,
+                    s = (k + c) % 2 ? 1 : -1,
+                    w = s * (0.7 + rb() * 0.35),
+                    L = ZB.seite * (0.8 + rb() * 0.3) * (1 - 0.35 * t0),
+                    p0 = haupt(t0);
+                const seite = (t) => [p0[0] + Math.sin(w) * L * t, p0[1] - Math.cos(w) * L * t];
+                achsen.push({ p: seite, rot0: w, len: L, dicke: 1.1 * ZB.linie });
+                // Die Unterzweige: wechselständig am Seitenzweig, zur Spitze geneigt.
+                for (let u = 0; u < ZB.unter; u++) {
+                    const tu = (u + 1) / (ZB.unter + 1) + (rb() - 0.5) * 0.1,
+                        su = (u + k) % 2 ? 1 : -1,
+                        wu = w + su * (0.55 + rb() * 0.3),
+                        Lu = L * ZB.unterSeite * (0.8 + rb() * 0.4) * (1 - 0.4 * tu),
+                        q0 = seite(tu);
+                    achsen.push({
+                        p: (t) => [q0[0] + Math.sin(wu) * Lu * t, q0[1] - Math.cos(wu) * Lu * t],
+                        rot0: wu,
+                        len: Lu,
+                        dicke: 0.8 * ZB.linie,
+                    });
+                }
+            }
+            // Der Zweig bleibt im Kern (Steckbrief): Holz und Blatt schneiden auf das Kern-Quadrat der Zelle.
             x.save();
             x.beginPath();
-            x.rect(z0, 0, 256, 256);
+            x.rect(ox - rand, oy - rand, 2 * rand, 2 * rand);
             x.clip();
-            const nn = 70;
-            for (let i = 0; i < nn; i++) {
-                const a = (i / nn) * 6.2831 * 3.2 + rg() * 0.5,
-                    R = 4 + Math.sqrt(rg()) * 78;
-                const lx = ox + Math.cos(a) * R,
-                    ly = oy + Math.sin(a) * R;
-                const rot = Math.atan2(ly - oy, lx - ox) + 1.5708;
-                const L = 40 + rg() * 54,
-                    v = 0.82 + rg() * 0.32;
-                x.save();
-                x.translate(lx, ly);
-                x.rotate(rot);
-                x.strokeStyle =
-                    "rgba(" + Math.round(236 * v) + "," + Math.round(244 * v) + "," + Math.round(224 * v) + ",0.96)";
-                x.lineWidth = 4;
-                x.lineCap = "round";
+            // Erst das Holz (hinten), dann die Blätter.
+            x.strokeStyle = "rgba(150,142,112,1)";
+            x.lineCap = "round";
+            for (const a of achsen) {
+                x.lineWidth = a.dicke;
                 x.beginPath();
-                x.moveTo(0, 0);
-                x.lineTo(0, -L);
+                const p0 = a.p(0);
+                x.moveTo(p0[0], p0[1]);
+                for (let k = 1; k <= 8; k++) {
+                    const q = a.p(k / 8);
+                    x.lineTo(q[0], q[1]);
+                }
                 x.stroke();
-                x.restore();
+            }
+            x.lineCap = "butt";
+            for (const a of achsen) {
+                const nB = Math.max(2, Math.round(a.len / ZB.abstand));
+                for (let k = 0; k <= nB; k++) {
+                    const t = k === nB ? 1 : (k + 0.5) / (nB + 0.5),
+                        q = a.p(t),
+                        q2 = a.p(Math.min(1, t + 0.02)),
+                        q1 = a.p(Math.max(0, t - 0.02));
+                    const dr = Math.atan2(q2[0] - q1[0], -(q2[1] - q1[1])); // Achsen-Richtung (0 = nach oben)
+                    const s = k % 2 ? 1 : -1;
+                    const rot = k === nB ? dr : dr + s * (0.7 + rb() * 0.45);
+                    let L = ZB.laenge * (0.82 + rb() * 0.36) * (k === nB ? 1.08 : 1);
+                    const W = L * (0.5 + rb() * 0.14),
+                        v = 0.86 + rb() * 0.3;
+                    // Im Kern bleiben: das Blatt kürzt sich, bis Spitze und Flanken im Rand liegen (sonst fällt es).
+                    const reicht = (Lx) => {
+                        const ex = Math.sin(rot),
+                            ey = -Math.cos(rot);
+                        for (const f of [0.4, 1]) {
+                            const r = (ZB.stiel + Lx * f) * 1,
+                                h = f < 1 ? W * 0.5 + ZB.zahn : 0;
+                            for (const sg of [-1, 1]) {
+                                const px = q[0] + ex * r + sg * -ey * h - ox,
+                                    py = q[1] + ey * r + sg * ex * h - oy;
+                                if (Math.abs(px) > rand || Math.abs(py) > rand) return false;
+                            }
+                        }
+                        return true;
+                    };
+                    while (L > ZB.laenge * 0.5 && !reicht(L)) L *= 0.9;
+                    if (!reicht(L)) continue;
+                    blatt(q[0], q[1], rot, L, Math.min(W, L * 0.64), v);
+                }
+            }
+            x.restore();
+        }
+        // Zelle 3 — DER NADEL-ZWEIG (Wert-only) für die Nadel-Karten (L0 und L1 der Koniferen), auf IHRE Zelle
+        // geschnitten: Zweiglein aus der Zellmitte, rundum benadelt (NADEL_ZWEIG) — jede Nadel ein kurzer Strich schräg
+        // nach vorn, je Zweiglein EIN Pfad (ein Wert, ein Strich-Aufruf).
+        {
+            const NZ = NADEL_ZWEIG;
+            const rg = _atlasRnd(NZ.strom); // eigener Strom (verbraucht kein Welt-RNG)
+            const z0 = BLATT_ATLAS_NADEL.zelle * Z;
+            const ox = z0 + Z / 2,
+                oy = Z / 2;
+            x.save();
+            x.beginPath();
+            x.rect(z0, 0, Z, Z);
+            x.clip();
+            x.lineCap = "round";
+            // Eine Achse (Start p0, Richtung w, Länge L, Krümmung k): das Holz und ihre Nadeln.
+            const zweig = (p0, w, L, k, dicke) => {
+                const p = (t) => {
+                    const a = w + k * t;
+                    return [p0[0] + Math.sin(a) * L * t, p0[1] - Math.cos(a) * L * t];
+                };
+                x.strokeStyle = "rgba(150,142,112,1)";
+                x.lineWidth = dicke;
+                x.beginPath();
+                x.moveTo(p0[0], p0[1]);
+                for (let i = 1; i <= 6; i++) {
+                    const q = p(i / 6);
+                    x.lineTo(q[0], q[1]);
+                }
+                x.stroke();
+                const v = 0.84 + rg() * 0.24;
+                x.strokeStyle =
+                    "rgba(" + Math.round(236 * v) + "," + Math.round(244 * v) + "," + Math.round(224 * v) + ",1)";
+                x.lineWidth = NZ.breite;
+                x.beginPath();
+                const n = Math.max(2, Math.round(L / NZ.abstand));
+                for (let i = 0; i < n; i++) {
+                    const t = (i + 0.5) / n,
+                        q = p(t),
+                        a = w + k * t;
+                    for (const sg of [-1, 1]) {
+                        const r = a + sg * (NZ.winkel + (rg() - 0.5) * 0.4),
+                            l = NZ.nadel * (0.8 + rg() * 0.4) * (1 - 0.35 * t);
+                        x.moveTo(q[0], q[1]);
+                        x.lineTo(q[0] + Math.sin(r) * l, q[1] - Math.cos(r) * l);
+                    }
+                }
+                x.stroke();
+                return p;
+            };
+            for (let i = 0; i < NZ.aeste; i++) {
+                const w = (i / NZ.aeste) * 6.2831 + (rg() - 0.5) * 0.5,
+                    L = NZ.laenge[0] + rg() * (NZ.laenge[1] - NZ.laenge[0]),
+                    k = (rg() - 0.5) * 0.5,
+                    p0 = [ox + Math.sin(w) * 5, oy - Math.cos(w) * 5];
+                const p = zweig(p0, w, L, k, 1.4);
+                for (let u = 0; u < NZ.unter; u++) {
+                    const tu = 0.28 + (0.5 * u) / Math.max(1, NZ.unter - 1) + (rg() - 0.5) * 0.08,
+                        su = (u + i) % 2 ? 1 : -1;
+                    zweig(p(tu), w + k * tu + su * (0.7 + rg() * 0.25), L * NZ.unterSeite * (1 - 0.3 * tu), 0, 0.9);
+                }
             }
             x.restore();
         }
@@ -553,6 +796,27 @@
             mips.push(t);
         }
         return { breite: W, hoehe: H, daten: mips[0].data, mips: mips, wert: wert };
+    }
+
+    // DIE FRACHT DES BLATT-ATLAS (05.10.): was der Wirt als Textur laedt, je Format EINE Stufe desselben Bilds —
+    //   bc    die Kette ab Stufe 0 (512er-Zelle) als BC1-sRGB (der Karten-Codec bc1Kodiere: 8 B je 4×4, Alpha an 128 —
+    //         der alphaTest des Laub-Stoffs schneidet an derselben Stelle), bis die Zelle KARTEN_GESETZ.minSeite misst;
+    //   rgba  die Kette ab Stufe 1 (256er-Zelle) — der Wirt ohne BC laedt die Bytes von gestern (1,3 MB statt 5,3 MB).
+    // `mitBc` false: nur rgba (wer nie BC laedt, kodiert nie). Leser: die Transport-Schale des Foundry-Workers
+    // (das Buch) und der Wirt, der vor dem Buch malt (`_ensureFoliageClusterAtlas`). Ohne Bild → null.
+    function blattAtlasFracht(bild, mitBc) {
+        if (!bild || !Array.isArray(bild.mips) || bild.mips.length < 2) return null;
+        const r = bild.mips.slice(1);
+        const out = { wert: bild.wert, rgba: { breite: r[0].width, hoehe: r[0].height, mips: r }, bc: null };
+        if (mitBc !== false) {
+            const bc = [];
+            for (const m of bild.mips) {
+                if (m.width / 4 < KARTEN_GESETZ.minSeite || m.height < KARTEN_GESETZ.minSeite) break;
+                bc.push({ data: bc1Kodiere(m.data, m.width, m.height), width: m.width, height: m.height });
+            }
+            out.bc = { breite: bild.breite, hoehe: bild.hoehe, mips: bc };
+        }
+        return out;
     }
 
     // DAS NEUE KLEID Welle 1 — DIE LAUB-GEOMETRIE aus der Vorlage (`pushLeafClusterQuad`, byte-
@@ -676,6 +940,22 @@
         needle: { m: 2, n1: 1.0, n2: 1.0, n3: 1.0, a: 1, b: 1, wsc: 0.085 },
     };
 
+    // DAS BLÜTENBLATT (05.10., Pflanzen-Nahbild). Befund (Blick-Tour V18.530, Bild 04): die Blüte nah war eine flache
+    // Scheibe — jedes Blütenblatt eine einfarbige Klinge, alle in EINER Ebene um die Achse, gleich lang. Die Natur: der
+    // Grund trägt das Saftmal (tiefer und satter: die Blütenfarbe linear hoch `potenz`, Verlauf bis `grundBis` der
+    // Länge), die Spitze biegt zurück (`biegen`), und kein Blatt liegt wie das andere — je Blatt ±`neigung` Hebung
+    // (Anteil des Achsen-Zuschlags), ±`drehung` rad um die eigene Achse und ±`laenge` Länge, gewürfelt aus dem Ort
+    // (kein rnd()-Zug: L0 und L2 bleiben dasselbe Individuum). Die Drehung rechnet als Reihe (plattformgleich, kein
+    // sin/cos auf dem Würfel).
+    const BLUETEN_BLATT = { potenz: 1.6, grundBis: 0.38, biegen: 0.35, neigung: 0.45, drehung: 0.4, laenge: 0.14 };
+
+    // DIE BLATT-UNTERSEITE (05.10.): die Spreite ist unten heller und matter als oben (Palisaden- gegen Schwamm-
+    // Gewebe, die Behaarung) — und von unten gegen den Himmel scheint sie durch. Die Krone liest das über die
+    // SICHTBARE Seite: Welt-Normale ny der gesehenen Fläche (doppelseitig: die Rückseite trägt die gespiegelte Normale)
+    // nach unten gewandt = Unterseite; Gewicht clamp(0,5 − ny·steil, 0, 1), dort Albedo × `hell`, um `grau` zur
+    // Luminanz entsättigt. Labor (Laub-Shader) und Welt (Laub-Stoff des Wirts) lesen DIESE Zahlen.
+    const BLATT_UNTERSEITE = { hell: 1.3, grau: 0.22, steil: 1.5 };
+
     // EINS W4 (P1) — DIE 30-VERT-BLATT-KLINGE (der `pushLeaf`-Port, Vorlage Z.247-275): das
     // L0-Blatt ist echte 3D-GEOMETRIE — eine Superformel-Kontur über 14 Segmente (30 Verts,
     // 28 Tris je Blatt), QUER-GEMULDET (cupZ = −cup·(s−s²)·scale, cup 0.5) → die Klinge fängt
@@ -688,7 +968,10 @@
     // `leaves`: [{pos, dir, up, scale, needle, sway, phase}] (aus growSkeleton).
     // `opts`: { leafColor:[r,g,b], scale (Multiplikator, Vorlage roh=1), cup (~0.5),
     //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc},
-    //           seg (Kontur-Segmente, ohne = 14 — die schlanke L1-Klinge des Trauerwuchses trägt weniger) }.
+    //           grund ([r,g,b] am Klingen-Grund — die Farbe läuft bis `grundBis` (Anteil der Länge) in leafColor; die
+    //                 Blüte: Saftmal und Schlund, BLUETEN_BLATT),
+    //           biegen (die Spitze biegt um biegen·s²·Länge gegen die Mulde zurück — das Blütenblatt rollt sich aus der
+    //                 Ebene, die Scheibe fällt) }. Ohne grund/biegen byte-gleich.
     function buildLeafBlades(leaves, opts) {
         opts = opts || {};
         const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
@@ -698,8 +981,7 @@
             opts.leafShape && typeof opts.leafShape === "object"
                 ? opts.leafShape
                 : LEAF_SHAPES[opts.leafShape] || LEAF_SHAPES.ovate;
-        const SEG = opts.seg != null ? opts.seg : 14; // (SEG+1)·2 = 30 Verts, SEG·2 = 28 Tris je Blatt (Vorlage pushLeaf)
-        if (!(Number.isInteger(SEG) && SEG >= 2)) throw new Error("buildLeafBlades: seg muss eine ganze Zahl ≥ 2 sein");
+        const SEG = 14; // (SEG+1)·2 = 30 Verts, SEG·2 = 28 Tris je Blatt (Vorlage pushLeaf)
         const VPL = (SEG + 1) * 2;
         const IPL = SEG * 6;
         const list = leaves || [];
@@ -740,21 +1022,33 @@
                 const phi = Math.PI * s; // halber Umlauf → Tropfen
                 const w = superR(phi, sh.m, sh.n1, sh.n2, sh.n3, sh.a, sh.b) * sh.wsc;
                 const along = s * scale;
-                const cupZ = -cup * (s - s * s) * scale; // die Quer-MULDE (Vorlage cupZ)
+                const cupZ0 = -cup * (s - s * s) * scale; // die Quer-MULDE (Vorlage cupZ)
+                const cupZ = opts.biegen ? cupZ0 - opts.biegen * s * s * s * scale : cupZ0;
                 const mx = cx + dirOut[0] * along + u2[0] * cupZ;
                 const my = cy + dirOut[1] * along + u2[1] * cupZ;
                 const mz = cz + dirOut[2] * along + u2[2] * cupZ;
                 const ox = right[0] * w * scale,
                     oy = right[1] * w * scale,
                     oz = right[2] * w * scale;
+                // Die Farbe: ohne `grund` die Blatt-Farbe, sonst der Verlauf vom Grund in sie (smoothstep bis grundBis).
+                let cr = col;
+                if (opts.grund) {
+                    const t = Math.min(1, s / (opts.grundBis || 0.4)),
+                        k = t * t * (3 - 2 * t);
+                    cr = [
+                        opts.grund[0] + (col[0] - opts.grund[0]) * k,
+                        opts.grund[1] + (col[1] - opts.grund[1]) * k,
+                        opts.grund[2] + (col[2] - opts.grund[2]) * k,
+                    ];
+                }
                 // linke + rechte Konturspalte (2 Verts je Segment-Reihe)
                 let v3 = vw * 3;
                 positions[v3] = mx - ox;
                 positions[v3 + 1] = my - oy;
                 positions[v3 + 2] = mz - oz;
-                colors[v3] = col[0];
-                colors[v3 + 1] = col[1];
-                colors[v3 + 2] = col[2];
+                colors[v3] = cr[0];
+                colors[v3 + 1] = cr[1];
+                colors[v3 + 2] = cr[2];
                 aFlex[vw] = fx;
                 aPhase[vw] = ph;
                 uvs[vw * 2] = 0;
@@ -764,9 +1058,9 @@
                 positions[v3] = mx + ox;
                 positions[v3 + 1] = my + oy;
                 positions[v3 + 2] = mz + oz;
-                colors[v3] = col[0];
-                colors[v3 + 1] = col[1];
-                colors[v3 + 2] = col[2];
+                colors[v3] = cr[0];
+                colors[v3 + 1] = cr[1];
+                colors[v3 + 2] = cr[2];
                 aFlex[vw] = fx;
                 aPhase[vw] = ph;
                 uvs[vw * 2] = 1;
@@ -1324,7 +1618,7 @@
             oak: [0x3a2c1e, 0x6a5a44],
             conifer: [0x4a2c1a, 0x6a4a30],
             sequoia: [0x6a3a26, 0x9a5e3c],
-            birch: [0xe6e6dc, 0xf2f2ea],
+            birch: [0x84837d, 0x8f8e88], // Betulin-Weiß roh 0,51/0,56 (Natur ~0,5 — 0xe6 lag bei 0,90: Gips)
             willow: [0x4a4438, 0x665e4c],
             smooth: [0x3a2c1e, 0x5a4a34],
         };
@@ -1910,20 +2204,145 @@
         return T[t] || T.oak;
     }
 
+    // DIE BIRKEN-RINDE (05.10., Pflanzen-Nahbild) — die Zahlen der papierenen Rinde. Befund (Blick-Tour V18.530, Bilder
+    // 02/06; Node-Bau der Brücke): der Birkenstamm stand gipsweiß — die Palette lag roh bei 0,90 (Betulin-Weiß der Natur
+    // ~0,5), und die Lentizellen-Striche (along·10, Wellenlänge 0,1 Vorlagen-m) lagen unter dem Ring-Gitter (Stamm-Ring
+    // alle 0,136): die Welt liest nur Vertex-Farben (Lehre 19), das Gitter trug keinen Strich. Jetzt TRÄGT das Gitter, was
+    // die Art ausmacht:
+    //   zeile        mittlerer Abstand der Lentizellen-Zeilen entlang des Strangs (Vorlagen-m; Welt ×3,1–3,4 ≈ 30 cm),
+    //                gewürfelt ×[0,55 … 1,45], am Fuß dichter (bis ×0,6 über der Borke);
+    //   hoehe        Zeilen-Höhe [min, max] (Vorlagen-m ≈ 1,3–4,7 cm Welt) — je Zeile in der L0 vier Ringe: weiß · dunkel ·
+    //                dunkel · weiß, die Kante `naht` breit (der Strich endet hart wie am echten Stamm, nie als Verlauf);
+    //                die L1 (ab 12 m) trägt nur das dunkle Paar (weiche Kante, halbe Ring-Kosten);
+    //   strich       Schwelle des Strich-Rauschens je Spalte (11 Zellen je Umlauf), je Zeile ±0,1 gewürfelt: darüber ist
+    //                die Zeile dunkel — Striche und mal ein langer Riss, keine Ringe;
+    //   dunkel       Lentizelle, Riss und Astnarben-Keil (linear);
+    //   borke        Höhe der schwarzen Fuß-Borke als Anteil der Baumhöhe, die Oberkante gezackt ±`borkeZacke`;
+    //                darin vertikale Risse (`borkeRisse` je Umlauf) zwischen grauen Platten, `fussRaster` = Ring-Abstand der
+    //                Fuß-Zone (die Kante liegt auf dem Gitter, nicht zwischen zwei 0,4 m entfernten Ringen);
+    //   zweigR       [dunkel, weiß] in trunkR: Birkenzweige sind rotbraun (`zweig`), Betulin tragen nur Stamm und
+    //                Äste — darunter läuft die Rinde ins Dunkle; Zeilen trägt ein Strang ab `zeilenAb`·trunkR (Stamm und
+    //                Starkäste: Zeilen auch auf den Ästen von 0,2·trunkR kosteten die Birken-L1 11,0–11,6k > tree[1] 10k).
+    // Die Wurzeln (barkThick) tragen die Borke ganz. Nur L0/L1 verdichten (die L2 ist die Karte).
+    const BIRKEN_RINDE = {
+        zeile: 0.09,
+        hoehe: [0.003, 0.018],
+        naht: 0.0015,
+        strich: 0.56,
+        dunkel: [0.052, 0.047, 0.045],
+        borke: 0.085,
+        borkeZacke: 0.35,
+        borkeRisse: 11,
+        borkeFarbe: [0.072, 0.066, 0.06],
+        fussRaster: 0.03,
+        zweigR: [0.05, 0.14],
+        zweig: [0.1, 0.07, 0.058],
+        zeilenAb: 0.4,
+    };
+
+    // Das Ring-Gitter einer Birken-Röhre: die Fuß-Zone im Raster `fussRaster`, darüber je Lentizellen-Zeile vier Ringe
+    // (linear auf dem gewachsenen Strang eingesetzt — die Gestalt bleibt, das Gitter verdichtet sich). Ringe tragen
+    // `zeile` (Index der Zeile, nur die dunklen) — die Farbe liest es.
+    function birkenGitter(rings, P, trunkR, seed, vlen, vsub, lod) {
+        const B = BIRKEN_RINDE;
+        const n = rings.length;
+        const sA = [0];
+        for (let i = 1; i < n; i++) sA[i] = sA[i - 1] + vlen(vsub(rings[i].c, rings[i - 1].c));
+        const L = sA[n - 1];
+        if (!(L > 1e-6)) return rings;
+        const auf = (s) => {
+            let i = 1;
+            while (i < n - 1 && sA[i] < s) i++;
+            const a = rings[i - 1],
+                b = rings[i],
+                t = Math.max(0, Math.min(1, (s - sA[i - 1]) / Math.max(1e-12, sA[i] - sA[i - 1])));
+            return {
+                c: [a.c[0] + (b.c[0] - a.c[0]) * t, a.c[1] + (b.c[1] - a.c[1]) * t, a.c[2] + (b.c[2] - a.c[2]) * t],
+                r: a.r + (b.r - a.r) * t,
+                sway: a.sway + (b.sway - a.sway) * t,
+                depth: a.depth,
+                fuss: a.fuss && b.fuss,
+            };
+        };
+        const neu = [];
+        const borkeH = B.borke * P.height;
+        // Fuß-Zone: das Raster bis über die höchste Zacke der Borke (Höhe des Ring-Zentrums).
+        const fussTop = borkeH * (1 + B.borkeZacke) + B.fussRaster;
+        for (let i = 0; i < n - 1; i++) {
+            const y0 = rings[i].c[1],
+                y1 = rings[i + 1].c[1];
+            if (Math.min(y0, y1) > fussTop || Math.max(y0, y1) < 0) continue; // nur über dem Boden
+            const k = Math.ceil((sA[i + 1] - sA[i]) / B.fussRaster);
+            for (let j = 1; j < k; j++) neu.push({ s: sA[i] + ((sA[i + 1] - sA[i]) * j) / k, zeile: -1 });
+        }
+        // Die Lentizellen-Zeilen: nur wo der Strang Betulin trägt (r ≥ zeilenAb·trunkR, nie im Stammfuß-Puffer unter
+        // dem Boden) und über der Borke.
+        let s = 0,
+            z = 0;
+        const rMin = B.zeilenAb * trunkR;
+        while (z < 400) {
+            const p = auf(s);
+            const ueber = p.c[1] - borkeH;
+            const dicht = 0.6 + 0.4 * Math.max(0, Math.min(1, ueber / (2 * borkeH)));
+            s += B.zeile * dicht * (0.55 + 0.9 * fbm2(z * 1.7 + seed * 0.13, 5.3));
+            if (s >= L) break;
+            const q = auf(s);
+            if (!q.fuss && q.r >= rMin && q.c[1] > borkeH * 0.7) {
+                const h = B.hoehe[0] + (B.hoehe[1] - B.hoehe[0]) * fbm2(z * 2.9 + seed, 1.7);
+                const a0 = s - h * 0.5,
+                    a1 = s + h * 0.5;
+                neu.push({ s: a0, zeile: z }, { s: a1, zeile: z });
+                // Die harte Kante (zwei Naht-Ringe) trägt nur die Nah-Stufe; die L1 (ab 12 m) zeichnet die Zeile weich.
+                if (lod === 0) neu.push({ s: a0 - B.naht, zeile: -1 }, { s: a1 + B.naht, zeile: -1 });
+            }
+            z++;
+        }
+        if (!neu.length) return rings;
+        neu.sort((x, y) => x.s - y.s);
+        const aus = [];
+        let j = 0;
+        for (let i = 0; i < n; i++) {
+            while (j < neu.length && neu[j].s < sA[i]) {
+                if (neu[j].s > 1e-6 && (!aus.length || neu[j].s - aus[aus.length - 1]._s > 1e-6)) {
+                    const r = auf(neu[j].s);
+                    r._s = neu[j].s;
+                    if (neu[j].zeile >= 0) r.zeile = neu[j].zeile;
+                    aus.push(r);
+                }
+                j++;
+            }
+            const o = Object.assign({}, rings[i]);
+            o._s = sA[i];
+            aus.push(o);
+        }
+        return aus;
+    }
+
+    // DAS GITTER-GESETZ DER RINDE (05.10.): das Gesetz malt entlang des Strangs nur, was das Ring-Gitter trägt. Die
+    // Plattenrisse (Periode 1/hFreq) liegen auf Ringen im Abstand Δ — unter zwei Ringen je Periode (Nyquist) faltet der
+    // Riss in Ringel-Bänder (Fichte/Tanne: 1,95 Ringe je Periode, Node-Bau 05.10.); von 3 Ringen abwärts blendet der
+    // Term in sein Mittel (∫ tri^1,3 = 1/2,3), unter 2 ist er aus. Was die Art AUSMACHT, trägt das Gitter dagegen selbst
+    // (die Birken-Zeilen verdichten es, `birkenGitter`).
+    const RINDEN_GITTER = { aus: 2, voll: 3, mittel: 1 / 2.3 };
+
     function buildTubeGesetz(vok, geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick, lodIn) {
         // Vokabular-Injektion (U2b): die Geometrie-Helfer UND THREE bleiben Leser-Sache —
         // der Wirt (foundry-core) reicht SEINE Funktionen, das GESETZ formt (phyto-core
         // selbst bleibt THREE-frei, wie buildBoulderGeometry).
         const { perp, vcross, vlen, vnorm, vsub, clamp, lerp, THREE } = vok;
         const __lod = lodIn;
-        const M = rings.length;
-        if (M < 2) return;
+        if (rings.length < 2) return;
         const prof = barkProfile(P);
         // Der Basis-Radius ist der Strang-Fuß ÜBER dem Stammfuß-Puffer (V18.501): die Buttress-Ringe
         // (fuss) laufen auf 0,1·R0 zu — aus ihnen las das Gesetz „Zweig" (Zehneck, keine Furchen, keine
         // Narben am dicksten Stamm).
         const baseR = (rings.find((x) => !x.fuss) || rings[0]).r,
             thick = clamp((baseR - trunkR * 0.12) / (trunkR * 0.88), 0, 1); // 0 Zweig .. 1 Stamm
+        // Die Birke verdichtet ihr Gitter (L0/L1, Stamm + Äste ab zweigR[0]): Fuß-Raster und Lentizellen-Zeilen. Die
+        // Wurzeln tragen die Borke ganz — ihr Gitter bleibt.
+        if (prof.papery && __lod !== 2 && barkThick === undefined && baseR >= trunkR * BIRKEN_RINDE.zweigR[0])
+            rings = birkenGitter(rings, P, trunkR, rings[0].c[0] * 7.3 + rings[0].c[2] * 3.1, vlen, vsub, __lod || 0);
+        const M = rings.length;
         const bthick = barkThick !== undefined ? barkThick : thick; // Wurzel/Totast erben die STAMM-Oberflaeche (gleiche Furchentiefe), nicht die duenn-glatte
         const ridges =
             barkThick !== undefined
@@ -1943,6 +2362,19 @@
         const sA = [0];
         for (let i = 1; i < M; i++) sA[i] = sA[i - 1] + vlen(vsub(rings[i].c, rings[i - 1].c));
         const totL = sA[M - 1] || 1;
+        // DAS GITTER-GESETZ: je Ring der örtliche Ring-Abstand Δ und die Gewichte der Terme entlang des Strangs (Ringe je
+        // Periode): Plattenrisse (hFreq) und die zwei Mikro-Oktaven (Frequenz 5 und 13 je Vorlagen-m).
+        const wPlatte = [],
+            wMikro5 = [],
+            wMikro13 = [];
+        const gw = (f, dS) =>
+            clamp((1 / (f * Math.max(1e-6, dS)) - RINDEN_GITTER.aus) / (RINDEN_GITTER.voll - RINDEN_GITTER.aus), 0, 1);
+        for (let i = 0; i < M; i++) {
+            const dS = (sA[Math.min(M - 1, i + 1)] - sA[Math.max(0, i - 1)]) / (i === 0 || i === M - 1 ? 1 : 2);
+            wPlatte.push(gw(prof.hFreq, dS));
+            wMikro5.push(gw(5, dS));
+            wMikro13.push(gw(13, dS));
+        }
         const dirs = [];
         for (let i = 0; i < M - 1; i++) {
             const d = vsub(rings[i + 1].c, rings[i].c),
@@ -2007,24 +2439,55 @@
                 let relief,
                     mB,
                     tintL = 0,
-                    tintM = 0;
+                    tintM = 0,
+                    tiefe = depth,
+                    pap = null;
                 if (prof.papery) {
-                    // Birke: glatt, helle Rinde, dunkle Lentizellen
+                    // DIE BIRKE (BIRKEN_RINDE): Betulin-Weiß aus der Palette, Lentizellen-Striche auf den Zeilen-Ringen,
+                    // die dunkle Zweig-Rinde unter zweigR, am Fuß die schwarze Borke mit gezackter Oberkante.
+                    const BR = BIRKEN_RINDE;
                     relief = 0.5 + (fbm2(a * 9, along * 0.7 + seed) - 0.5) * 0.45;
-                    const band = Math.floor(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 1.2);
-                    const stripe = tri(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 0.5);
-                    const dash = fbm2(a * 6.5 + seed, band * 4.3);
-                    const lent = stripe > 0.74 && dash > 0.5 ? clamp((dash - 0.5) / 0.3, 0, 1) : 0; // kurze horizontale Striche
                     const peel = fbm2(a * 2.2, along * 0.5 + seed * 1.3) > 0.66 ? 0.1 : 0; // papierartige Schichtkanten
-                    mB = (1.0 - lent * 0.66 - peel) * (0.9 + 0.1 * fbm2(a * 5, along * 3));
+                    mB = (1.0 - peel) * (0.9 + 0.1 * fbm2(a * 5, along * 3));
+                    const wz =
+                        barkThick !== undefined
+                            ? 0
+                            : clamp((ring.r / trunkR - BR.zweigR[0]) / (BR.zweigR[1] - BR.zweigR[0]), 0, 1);
+                    pap = [
+                        lerp(BR.zweig[0], col.r * mB, wz),
+                        lerp(BR.zweig[1], col.g * mB, wz),
+                        lerp(BR.zweig[2], col.b * mB, wz),
+                    ];
+                    if (ring.zeile !== undefined) {
+                        // Je Zeile ihre eigene Schwelle (±0,1): manche Zeile ein langer Riss, manche wenige kurze Striche.
+                        const st = fbm2(a * 11 + ring.zeile * 1.31, ring.zeile * 3.7 + seed);
+                        const sw = BR.strich + (fbm2(ring.zeile * 0.71 + seed, 9.4) - 0.5) * 0.2;
+                        const an = clamp((st - sw) / 0.05, 0, 1) * wz;
+                        for (let k = 0; k < 3; k++) pap[k] = lerp(pap[k], BR.dunkel[k], an);
+                    }
+                    const kante = BR.borke * P.height * (1 + BR.borkeZacke * (2 * fbm2(a * 4.3 + seed, 2.1) - 1));
+                    const fB = barkThick !== undefined ? 1 : clamp((kante - c[1]) / (BR.fussRaster * 1.5) + 0.5, 0, 1);
+                    if (fB > 0) {
+                        const tr = tri(a * BR.borkeRisse + fbm2(a * 1.6 + seed, c[1] * 2.2) * 1.4);
+                        const platte = clamp((tr - 0.3) / 0.4, 0, 1); // 0 = Riss, 1 = graue Platte
+                        const weiss = [col.r, col.g, col.b];
+                        for (let k = 0; k < 3; k++)
+                            pap[k] = lerp(pap[k], lerp(BR.borkeFarbe[k], weiss[k] * 0.42, platte * 0.55), fB);
+                        relief = lerp(relief, 0.2 + 0.8 * platte, fB);
+                        tiefe = lerp(depth, 0.32 * lerp(0.28, 1, bthick), fB);
+                    }
                 } else {
                     const vWarp = fbm2(a * 1.6 + seed, along * 0.35) * 1.5;
                     let vf = tri(a * ridges + vWarp);
                     vf = Math.pow(vf, prof.vSharp); // vertikale Furchen
                     const hWarp = fbm2(a * 0.6, along * 0.7 + seed) * 1.5;
-                    let hf = Math.pow(tri(along * prof.hFreq + hWarp), 1.3); // horizontale Plattenrisse
+                    const hf0 = Math.pow(tri(along * prof.hFreq + hWarp), 1.3); // horizontale Plattenrisse
+                    const hf = wPlatte[i] >= 1 ? hf0 : RINDEN_GITTER.mittel + (hf0 - RINDEN_GITTER.mittel) * wPlatte[i]; // was das Gitter trägt
                     relief = vf * (1 - prof.plate) + vf * hf * prof.plate;
-                    const micro = (fbm2(a * 5, along * 5) - 0.5) * 0.32 + (fbm2(a * 13, along * 13) - 0.5) * 0.16;
+                    // Die Mikro-Oktaven sind Rauschen um 0 — was das Gitter nicht trägt, fällt in ihr Mittel (0).
+                    const m5 = (fbm2(a * 5, along * 5) - 0.5) * 0.32,
+                        m13 = (fbm2(a * 13, along * 13) - 0.5) * 0.16;
+                    const micro = wMikro5[i] >= 1 && wMikro13[i] >= 1 ? m5 + m13 : m5 * wMikro5[i] + m13 * wMikro13[i];
                     relief = clamp(relief + micro, 0, 1);
                     mB = Math.pow(relief, 1.35) * 0.74 + 0.26; // gebackenes AO: Risse tief & dunkel
                     const lk = fbm2(a * 0.9 + 30, along * 0.55);
@@ -2053,7 +2516,7 @@
                     scarR += -0.42 * gg + 0.24 * Math.max(0, d2 - 0.9) * Math.exp(-d2 * 0.6); // konkave Delle + aufgeworfener Wulst-Kragen
                     if (gg > scarDark) scarDark = gg;
                 }
-                let disp = ring.r * (1 + (relief - 0.62) * depth + scarR) * flute;
+                let disp = ring.r * (1 + (relief - 0.62) * tiefe + scarR) * flute;
                 if (j === R) disp = _fd; // NAHT ZU: Position der Saumspalte = exakt Spalte 0
                 const vx = c[0] + (Math.cos(rad) * u[0] + Math.sin(rad) * v[0]) * disp,
                     vy = c[1] + (Math.cos(rad) * u[1] + Math.sin(rad) * v[1]) * disp,
@@ -2063,19 +2526,27 @@
                 aw.push(sv, sv * 1.5 + vx * 0.6 + vz * 0.6, clamp(2.6 - sv * 1.6, 0.5, 2.6));
                 ac.push(c[0], c[1], c[2]);
                 at.push(0);
-                let r = col.r * mB,
-                    g = col.g * mB,
-                    b = col.b * mB;
+                let r = pap ? pap[0] : col.r * mB,
+                    g = pap ? pap[1] : col.g * mB,
+                    b = pap ? pap[2] : col.b * mB;
                 r = lerp(r, lichenCol.r, tintL);
                 g = lerp(g, lichenCol.g, tintL);
                 b = lerp(b, lichenCol.b, tintL);
                 r = lerp(r, mossCol.r, tintM);
                 g = lerp(g, mossCol.g, tintM);
                 b = lerp(b, mossCol.b, tintM);
-                const wd = 0.6 * scarDark;
-                r = lerp(r, col.r * 0.26, wd);
-                g = lerp(g, col.g * 0.22, wd);
-                b = lerp(b, col.b * 0.2, wd); // dunkles Wundholz im Narbenzentrum
+                if (pap) {
+                    // Birke: die Astnarbe ist der schwarze Keil unter dem toten Ast (Lentizellen-Schwarz).
+                    const wd = 0.9 * scarDark;
+                    r = lerp(r, BIRKEN_RINDE.dunkel[0], wd);
+                    g = lerp(g, BIRKEN_RINDE.dunkel[1], wd);
+                    b = lerp(b, BIRKEN_RINDE.dunkel[2], wd);
+                } else {
+                    const wd = 0.6 * scarDark;
+                    r = lerp(r, col.r * 0.26, wd);
+                    g = lerp(g, col.g * 0.22, wd);
+                    b = lerp(b, col.b * 0.2, wd); // dunkles Wundholz im Narbenzentrum
+                }
                 if (j === R) {
                     r = _fr;
                     g = _fg;
@@ -3426,10 +3897,20 @@
         treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         bakeLeafAtlasBild: bakeLeafAtlasBild, // das Textur-Bild des EINEN Atlas: blutend, Zell-Mittel gleich, deckungstreue Mips, `wert`
+        blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC1 ab Stufe 0, rgba ab Stufe 1 (05.10.)
+        BLATT_ATLAS_ZELLE: BLATT_ATLAS_ZELLE, // die Zelle des Atlas in Pixeln (512, 05.10.)
         buildFoliageQuads: buildFoliageQuads,
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
+        ZWEIG_BLATT: ZWEIG_BLATT, // der Blatt-Zweig der Baum-Zellen (Pixel-Maße des Malers, 05.10.)
+        ZWEIG_GROSS: ZWEIG_GROSS, // der Großblatt-Zweig der Zelle 2 (Strauch, Weiden-Strähne; 05.10.)
+        BLATT_ATLAS_GROSS: BLATT_ATLAS_GROSS, // der Atlas-Steckbrief der Großblatt-Zelle (05.10.)
+        NADEL_ZWEIG: NADEL_ZWEIG, // der Nadel-Zweig der Nadel-Zelle (Pixel-Maße des Malers, 05.10.)
+        BLUETEN_BLATT: BLUETEN_BLATT, // das Blütenblatt: Saftmal-Grund, Rückbiegung, Würfel je Blatt (05.10.)
+        BLATT_UNTERSEITE: BLATT_UNTERSEITE, // die hellere, mattere Blatt-Unterseite — Labor-Shader und Welt-Stoff (05.10.)
+        BIRKEN_RINDE: BIRKEN_RINDE, // die papierene Rinde: Lentizellen-Zeilen, Fuß-Borke, Zweig-Rinde (05.10.)
+        RINDEN_GITTER: RINDEN_GITTER, // das Gitter-Gesetz der Rinde: Plattenrisse nur, was die Ringe tragen (05.10.)
         superR: superR,
         LEAF_SHAPES: LEAF_SHAPES,
         buildBoulderGeometry: buildBoulderGeometry,

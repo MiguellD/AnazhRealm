@@ -169,7 +169,7 @@ function validateManifest(m) {
     // VOLLSTÄNDIG — jede Art aus seinen kindStages × jede deklarierte Stufe hat eine Zeile {tris, draws,
     // schatten}; tris ganzzahlig > 0, draws ganzzahlig ≥ 1, schatten = eine deklarierte Stufe der Art oder
     // false; MONOTON — tris fällt je Stufe streng, draws steigt nie; die Karten-Stufe (karte: true) ist die
-    // letzte Stufe und wirft nicht. Die DARF-Regler (blattKarte/nadelKarte endlich > 0, klinge ganzzahlig ≥ 2,
+    // letzte Stufe und wirft nicht. Die DARF-Regler (blattKarte/nadelKarte endlich > 0,
     // deckung ein Band [lo<=1<=hi]) halten ihre Form. Die Konsum-Wand (gebaute Stufen) steht in gate:asset-contract.
     if (lodC && lodC.budget) {
         const ks = lodC.kindStages || {};
@@ -254,8 +254,6 @@ function validateManifest(m) {
                 for (const f of ["blattKarte", "nadelKarte"])
                     if (f in z && !(typeof z[f] === "number" && z[f] > 0 && isFinite(z[f])))
                         v.push(`B2c: lod.budget.${k}[${st}].${f} muss endlich > 0 sein`);
-                if ("klinge" in z && !(Number.isInteger(z.klinge) && z.klinge >= 2))
-                    v.push(`B2c: lod.budget.${k}[${st}].klinge muss eine ganze Zahl ≥ 2 sein`);
                 // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].
                 if ("dichte" in z) {
                     const d = z.dichte;
@@ -918,7 +916,7 @@ function validateManifest(m) {
         lehren: null,
     };
     const bv = validateManifest(broken);
-    // B2c — ein zweites Budget: Regler-Form (nadelKarte/klinge) und steigende draws.
+    // B2c — ein zweites Budget: Regler-Form (nadelKarte) und steigende draws.
     const bvB = validateManifest({
         vertrag: 1,
         zweit: true,
@@ -934,7 +932,6 @@ function validateManifest(m) {
                             draws: 1,
                             schatten: 1,
                             nadelKarte: -2,
-                            klinge: 1,
                             dichte: { laub: 1.5 },
                             rinde: { ast: 0.1, reisig: 0.3 },
                             straehne: { teile: 0, breite: 1 },
@@ -1007,7 +1004,6 @@ function validateManifest(m) {
             bv.some((s) => s.includes("placement.boden.BÖSE ID.licht muss ein Trapez")) &&
             bv.some((s) => s.includes("placement.boden.BÖSE ID.weite muss")) &&
             bvB.some((s) => s.includes("nadelKarte muss")) &&
-            bvB.some((s) => s.includes("klinge muss")) &&
             bvB.some((s) => s.includes("dichte.laub muss")) &&
             bvB.some((s) => s.includes("rinde muss")) &&
             bvB.some((s) => s.includes("straehne muss")) &&
