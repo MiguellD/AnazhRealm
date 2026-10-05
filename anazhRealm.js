@@ -67690,18 +67690,27 @@ class AnazhRealm {
         return preset;
     }
 
-    // Ist dieser gesetzte Eintrag ein KARTEN-DING — ist seine Fernstufe die Studio-Karte (Baum, Strauch, Tor, Fahrzeug:
-    // KIND_POLICY.impostor ⇔ B2c `fernform: "karte"`, gate:studio-vertrag hält beides gleich)? Dann trägt er fern seine
-    // Karte und nie einen Analog-Satz (`tickArchitectureCulling`, `_archZiegelFern`). Das Preset oder null.
-    // Der Culling-Scan fragt JEDEN Eintrag je Frame, die Preset-Auflösung baut je Ruf ihre Namens-Tafel: die Antwort
-    // steht am Eintrag, gültig solange Typ und Buch dieselben sind (das Buch wechselt einmal, kalt → geladen; der Typ
-    // nur auf dem Grammatik-Stufen-Weg) — transient, nie im Snapshot.
+    // Ist dieser gesetzte Eintrag ein KARTEN-DING — ist seine Fernform die Studio-Karte? Die EINE Quelle ist das
+    // Gesetzbuch (B2c `lod.budget[kind].fernform`, der Leser `_foundryFernForm`): "karte" tragen Baum und Strauch;
+    // Tor und Fahrzeug tragen "gesetz" (porta-core, vehicle-core: jenseits der Nah-Grenze der Box-Satz) — bis zur
+    // Integration 05.10. las diese Frage KIND_POLICY.impostor (kalt eine feste Namensliste), und Tor wie Fahrzeug
+    // verschwanden jenseits des Karten-Horizonts. Ein Karten-Ding trägt fern seine Karte und nie einen Analog-Satz
+    // (`tickArchitectureCulling`, `_archZiegelFern`). Das Preset oder null; ohne Buch kein Urteil (null).
+    // Der Culling-Scan fragt JEDEN Eintrag je Frame: die Antwort steht am Eintrag, gültig solange Typ und Buch dieselben
+    // sind (das Buch wechselt einmal, kalt → geladen; der Typ nur auf dem Grammatik-Stufen-Weg) — transient, nie im
+    // Snapshot.
     _archKartenPreset(entry) {
         if (!this._foundryEnabled()) return null;
         const buch = (this._foundry && this._foundry.recipes) || null;
+        if (!buch) return null;
         if (entry._kartenBuch === buch && entry._kartenTyp === entry.type) return entry._kartenPreset;
         const preset = this._foundryPresetForEntry(entry);
-        entry._kartenPreset = preset && this._foundryPresetIsTree(preset) ? preset : null;
+        // Eine Art ohne Budget-Zeile (Klang) trägt keine Fernform — kein Karten-Ding; jede mit Budget fragt den Leser
+        // (fail-closed: ein Budget ohne Fernform bricht laut).
+        const rec = preset ? buch[preset] : null;
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const mitBudget = !!(rec && L && L.budget && L.budget[rec.kind]);
+        entry._kartenPreset = mitBudget && this._foundryFernForm(preset) === "karte" ? preset : null;
         entry._kartenBuch = buch;
         entry._kartenTyp = entry.type;
         return entry._kartenPreset;
