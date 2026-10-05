@@ -21636,14 +21636,18 @@ class AnazhRealm {
     _waterSheetCaFree(cx, cz) {
         const active = this.state.waterCAActive;
         const stau = this.state.waterStauFields;
+        const chunks = this.state.voxelChunks;
         const hasActive = active && active.size > 0;
         const hasStau = stau && stau.size > 0;
-        if (!hasActive && !hasStau) return true;
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const k = `${cx + dx},${cz + dz}`;
                 if (hasActive && active.has(k)) return false;
                 if (hasStau && stau.has(k)) return false;
+                // Ein gezeichnetes oder gewünschtes Dach im 3×3 (der Automat lief dort) baut der Main: der Worker kennt
+                // es nicht — ein dachloses Worker-Sheet neben einem Main-Sheet mit Dach wäre die Wasser-Naht.
+                const e = chunks ? chunks.get(k) : null;
+                if (e && (e._caDach || e._caDachOffen)) return false;
             }
         }
         return true;
@@ -27294,6 +27298,22 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        // Der eigene Bau ZEICHNET das gewünschte Dach (`_caDachNeu` der Re-Mesh-Entscheidung): ab jetzt zeigt der
+        // Chunk es, also lesen die acht Nachbarn es — sie bauen neu (die Kante wandert mit, s. `_caDachAus`).
+        if (entry._caDachOffen) {
+            const alt = entry._caDach;
+            entry._caDach = entry._caDachNeu;
+            entry._caDachNeu = alt || null; // der Puffer kehrt als nächster Wunsch-Puffer zurück (alloc-frei)
+            entry._caDachOffen = false;
+            if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
+            for (let dz = -1; dz <= 1; dz++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (!dx && !dz) continue;
+                    const nk = `${cx + dx},${cz + dz}`;
+                    const nb = this.state.voxelChunks.get(nk);
+                    if (nb && nb.waterCells) this.state.pendingWaterIso.add(nk);
+                }
+        }
         const data = this._computeWaterSheetData(cx, cz, this._mainWaterSheetCtx(cx, cz, entry));
         if (!data) {
             this.state.voxelChunkWaterIso.set(key, null);
@@ -27302,11 +27322,11 @@ class AnazhRealm {
         return this._finalizeWaterSheetMesh(cx, cz, key, data);
     }
 
-    // B1 — der Main-Zell-Kontext: liest die geladenen Chunk-Zellen + den CA-Level-Spiegel.
-    // Der Worker-Pendant (im `water-sheet`-Handler) liest stattdessen den gesendeten Block.
+    // B1 — der Main-Zell-Kontext: liest die geladenen Chunk-Zellen + DAS GEZEICHNETE DACH jedes Chunks
+    // (`entry._caDach`, s. `_caDachAus`). Der Worker-Pendant (im `water-sheet`-Handler) liest stattdessen den
+    // gesendeten Block (dachlos: der Worker baut nur dachlose Nachbarschaften, `_waterSheetCaFree`).
     _mainWaterSheetCtx(cx, cz, entry) {
         const voxelChunks = this.state.voxelChunks;
-        const levelMap = this.state.waterLevelCells;
         // V18.91 — OBERFLÄCHENSPANNUNG (Schöpfer: „nicht geknäulte Alufolie"): die
         // Glätt-Pässe (browser-justierbar 0..6). PAD = Pässe + 1 (naht-symmetrisch).
         const smoothRaw =
@@ -27320,7 +27340,15 @@ class AnazhRealm {
                 const nb = voxelChunks.get(`${ncx},${ncz}`);
                 return nb && nb.waterCells ? nb.waterCells : null;
             },
-            getLevel: (ncx, ncz) => (levelMap ? levelMap.get(`${ncx},${ncz}`) : undefined),
+            // DIE WASSER-NAHT (Linse 05.10., echte GPU): ein Sheet las den LIVE-Pegel seiner Nachbarn, der Nachbar
+            // selbst zeigte den Pegel SEINES letzten Baus (das Re-Mesh folgt nur der sichtbaren Dach-Änderung, über
+            // Takte verteilt) — die gemeinsame Kante stand auf zwei Höhen (bis 5,9 cm, 68 Stufen an 22 Kanten):
+            // durch den Schlitz die dunkle Linie über dem See. Jedes Sheet liest darum das GEZEICHNETE Dach, das
+            // die Re-Mesh-Entscheidung schreibt — dieselbe Zahl, die der Nachbar zeichnet.
+            getDach: (ncx, ncz) => {
+                const e = ncx === cx && ncz === cz ? entry : voxelChunks.get(`${ncx},${ncz}`);
+                return e && e._caDach ? e._caDach : undefined;
+            },
         };
     }
 
@@ -27425,17 +27453,20 @@ class AnazhRealm {
                         dryFallback = true;
                     }
                 }
-                const level = ctx.getLevel(srcCX, srcCZ);
-                const sc = this._caColumnScan(src, level, li + lk * dim, dimSq, dimY);
+                // Flood und Boden aus den Zellen; das LIVE-Dach (oberste Zeile + Füllgrad > 0,5) aus dem gezeichneten
+                // Dach des Quell-Chunks (`ctx.getDach`, −1 = keins) — nie der Live-Pegel (die Wasser-Naht).
+                const dach = ctx.getDach(srcCX, srcCZ);
+                const sc = this._caColumnScan(src, null, li + lk * dim, dimSq, dimY);
+                const live = dach ? dach[li + lk * dim] : -1;
                 solidG[gi] = sc.solidTopJ >= 0 ? oy + sc.solidTopJ * step : oy;
                 if (dryFallback) continue; // trocken — topG bleibt NaN (symmetrisch)
                 // Live-only-Spalten (der CA trug Wasser in flood-trockene Spalten) sind NASS ab Level > 0.5:
                 // Top = Live-Dach (sub-zellig via liveFrac), kein L-Anker (jenseits der statischen Domäne).
                 if (sc.floodTopJ < 0) {
-                    if (level && sc.liveTopJ >= 0) {
+                    if (dach && live >= 0) {
                         // V18.377 — depthG (aDepth) wird GLOBAL als KONTINUIERLICHE Tiefe
                         // gesetzt (tops − geglättetes Bett, NACH dem Glätten); hier nur topG.
-                        topG[gi] = oy + (sc.liveTopJ + sc.liveFrac) * step;
+                        topG[gi] = oy + live * step;
                     }
                     continue; // sonst trocken (topG bleibt NaN)
                 }
@@ -27449,10 +27480,10 @@ class AnazhRealm {
                 // Rim-Füllung (Bett < rim per Flood); nur „unbekannt" (−Inf) verliert sie.
                 const L = this._waterRunSurfaceAt(wx, wz, solidG[gi] + step);
                 let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
-                // LIVE: der CA-Delta obendrauf (Live-Dach − Flood-Dach, geclampt).
-                if (level) {
+                // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
+                if (dach) {
                     const floodRel = (sc.floodTopJ + 1) * step;
-                    const liveRel = sc.liveTopJ < 0 ? 0 : (sc.liveTopJ + sc.liveFrac) * step;
+                    const liveRel = live < 0 ? 0 : live * step;
                     let d = liveRel - floodRel;
                     if (d > -0.05 && d < 0.05) d = 0;
                     top += Math.max(-14, Math.min(4, d));
@@ -31962,8 +31993,11 @@ class AnazhRealm {
         this.state.hydrosphereMeshes = meshes;
         // V9.75 — schon gestreamte Voxel-Chunks bekommen ihr Iso-Mesh neu
         // gebaut, damit Chunks aus der Pre-Hydrosphäre-Phase (vor dem Atlas)
-        // die Lake/Fluss-Wahrheit aus `_waterLevelAt` jetzt sehen.
+        // die Lake/Fluss-Wahrheit aus `_waterLevelAt` jetzt sehen. ZWEI PHASEN (die Wasser-Naht): erst die Zellen
+        // ALLER Chunks, dann die Sheets — ein Sheet liest die Zellen seiner Nachbarn; im Wechsel gebaut las der
+        // frühere Chunk die alten Zellen des späteren, und niemand baute ihn danach neu (Kante auf zwei Höhen).
         if (this.state.voxelChunks) {
+            const neu = [];
             for (const key of this.state.voxelChunks.keys()) {
                 const ci = key.indexOf(",");
                 const cx = Number(key.slice(0, ci));
@@ -31984,13 +32018,14 @@ class AnazhRealm {
                             null,
                             0
                         );
-                        this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                        neu.push([cx, cz]);
                     } else {
                         entry.waterCells = null;
                         this._disposeVoxelChunkWaterIso(`${cx},${cz}`);
                     }
                 }
             }
+            for (const [cx, cz] of neu) this._buildVoxelChunkWaterIsoSurface(cx, cz);
         }
         this.log(
             `V9.75: Hydrosphäre gerendert — Iso-Wasser (${hydro.waterfalls.length} Fall-Läufe im CA-Wildwasser)`,
@@ -71901,19 +71936,17 @@ class AnazhRealm {
                 }
             }
         }
-        // Bewegte Chunks neu rendern (Surface liest das LIVE-Level), budgetiert über `pendingWaterIso`
-        // (4/Frame), nur bei echter Bewegung. Das cells-Sheet glättet über ±3 Spalten und liest alle 8
-        // Nachbarn → ein bewegter Chunk re-enqueued die volle 8er-Nachbarschaft. Nur SUBSTANZIELLE Bewegung
-        // (> 0.5) re-meshed live; der Schelf-Trickle bekommt beim Settle EIN finales Mesh (sonst Dauer-Churn).
+        // Bewegte Chunks neu rendern (die Entscheidung legt das Dach als Wunsch ab, `_caRoofChanged`), budgetiert
+        // über `pendingWaterIso` (4/Frame), nur bei echter Bewegung. Eingereiht wird der Chunk SELBST: sein Bau
+        // zeichnet das neue Dach und reiht dann die 8 Nachbarn ein, die es über ±3 Spalten lesen
+        // (`_buildVoxelChunkWaterCellSheet`) — nie früher (ein Nachbar vor dem Chunk gebaut zeigte ein Dach, das
+        // der Chunk noch nicht zeigt). Nur SUBSTANZIELLE Bewegung (> 0.5) re-meshed live; der Schelf-Trickle
+        // bekommt beim Settle EIN finales Mesh (sonst Dauer-Churn).
         if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
-        const enqueueWithReaders = (cx2, cz2) => {
-            for (let rz = -1; rz <= 1; rz++) {
-                for (let rx = -1; rx <= 1; rx++) {
-                    const rkey = `${cx2 + rx},${cz2 + rz}`;
-                    const re = this.state.voxelChunks.get(rkey);
-                    if (re && re.waterCells) this.state.pendingWaterIso.add(rkey);
-                }
-            }
+        const enqueueZeichnen = (cx2, cz2) => {
+            const rkey = `${cx2},${cz2}`;
+            const re = this.state.voxelChunks.get(rkey);
+            if (re && re.waterCells) this.state.pendingWaterIso.add(rkey);
         };
         // Re-Mesh nur bei sichtbarer Dach-Änderung: `moved` ist Brutto-Durchfluss (stationärer Fluss > 0.5).
         // Dach-Fingerprint (`_caRoofFingerprint`: oberste nasse Zeile + Füllgrad je Spalte, im y-Band) gegen
@@ -71929,7 +71962,7 @@ class AnazhRealm {
             if (caTick - last < REMESH_INT) continue;
             if (this._caRoofChanged(a, dim, dimY)) {
                 if (e) e._caRemeshTick = caTick;
-                enqueueWithReaders(a.cx, a.cz);
+                enqueueZeichnen(a.cx, a.cz);
             }
         }
         for (const a of active) {
@@ -71949,7 +71982,7 @@ class AnazhRealm {
                 // Stand schon gezeichnet — nichts zu tun.
                 if (this._caRoofChanged(a, dim, dimY)) {
                     if (e) e._caRemeshTick = caTick;
-                    enqueueWithReaders(a.cx, a.cz);
+                    enqueueZeichnen(a.cx, a.cz);
                 }
             }
         }
@@ -71982,6 +72015,8 @@ class AnazhRealm {
         const old = entry._caMeshFp;
         if (!old || old.length !== dimSq) {
             entry._caMeshFp = new Float32Array(fp.subarray(0, dimSq));
+            entry._caDachNeu = this._caDachAus(a.level, a.cells, dim, dimY, entry._caDachNeu);
+            entry._caDachOffen = true;
             return true;
         }
         let maxAbs = 0;
@@ -71997,9 +72032,26 @@ class AnazhRealm {
         }
         if (maxAbs > 0.25 || sumAbs > 1.0) {
             old.set(fp.subarray(0, dimSq));
+            entry._caDachNeu = this._caDachAus(a.level, a.cells, dim, dimY, entry._caDachNeu);
+            entry._caDachOffen = true;
             return true;
         }
         return false;
+    }
+
+    // DAS GEZEICHNETE DACH eines Chunks: je Spalte die oberste nicht-solide Zeile mit Pegel > 0,5 plus ihr Füllgrad
+    // (j + frac, −1 = keins) — exakt was das Zell-Sheet als Live-Dach rendert (`_caColumnScan`, derselbe Kern).
+    // Die Re-Mesh-Entscheidung (`_caRoofChanged`) legt es als WUNSCH ab (`_caDachNeu`); gezeichnet wird es erst mit
+    // dem EIGENEN Bau des Chunks (`_buildVoxelChunkWaterCellSheet` macht es zu `_caDach` und reiht die acht Nachbarn
+    // ein). So liest jeder Nachbar immer genau das Dach, das der Chunk gerade zeigt — die Kante steht auf EINER Höhe.
+    _caDachAus(level, cells, dim, dimY, out) {
+        const dimSq = dim * dim;
+        const d = out && out.length === dimSq ? out : new Float64Array(dimSq);
+        for (let c = 0; c < dimSq; c++) {
+            const sc = this._caColumnScan(cells, level, c, dimSq, dimY);
+            d[c] = sc.liveTopJ >= 0 ? sc.liveTopJ + sc.liveFrac : -1;
+        }
+        return d;
     }
 
     // Level-Austausch über die gemeinsame Chunk-Grenze (lateral über die Naht, symmetrisch = Erhaltung).

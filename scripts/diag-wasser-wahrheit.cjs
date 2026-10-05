@@ -127,7 +127,7 @@ const server = http.createServer((req, res) => {
                 const ctx = {
                     smoothPasses: 4,
                     getCells: (ncx, ncz) => (ncx === 0 && ncz === 0 ? cells : null),
-                    getLevel: () => undefined,
+                    getDach: () => undefined,
                 };
                 const data = computeFn.call(shim, 0, 0, ctx);
                 if (!data) return { built: false };

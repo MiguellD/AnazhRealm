@@ -23300,14 +23300,27 @@ async function checkBandPhasenBF(ctx) {
                 const dimSq = dim * dim;
                 const level = new Float64Array(dimSq * dimY);
                 for (let c = 0; c < dimSq; c++) level[3 * dimSq + c] = 0.8;
-                const a = { key, level, band: { jMin: 0, jMax: dimY - 1 } };
+                // Zellen: Luft (0) — die Entscheidung legt das Dach als WUNSCH ab (`_caDachNeu`, j + Füllgrad, offen),
+                // gezeichnet wird es erst mit dem eigenen Bau (`_buildVoxelChunkWaterCellSheet`).
+                const cells = new Uint8Array(dimSq * dimY);
+                const a = { key, level, cells, band: { jMin: 0, jMax: dimY - 1 } };
+                const e = r.state.voxelChunks.get(key);
                 const first = r._caRoofChanged(a, dim, dimY);
+                const dachNachErst = e._caDachNeu ? e._caDachNeu[0] : null;
+                const offenNachErst = e._caDachOffen === true && !e._caDach;
                 const second = r._caRoofChanged(a, dim, dimY);
                 level[4 * dimSq] = 0.9;
+                const zwischen = e._caDachNeu[0]; // ohne Entscheidung: der Wunsch bleibt
                 const third = r._caRoofChanged(a, dim, dimY);
                 const fourth = r._caRoofChanged(a, dim, dimY);
+                const dachNachDritt = e._caDachNeu[0];
                 const src = r._tickWorldWaterCA ? window.__codeOf(r._tickWorldWaterCA) : "";
-                return first && !second && third && !fourth && /_caRoofChanged/.test(src);
+                const dachOk =
+                    offenNachErst &&
+                    Math.abs(dachNachErst - 3.8) < 1e-6 &&
+                    Math.abs(zwischen - 3.8) < 1e-6 &&
+                    Math.abs(dachNachDritt - 4.9) < 1e-6;
+                return first && !second && third && !fourth && dachOk && /_caRoofChanged/.test(src);
             } finally {
                 if (saved === undefined) r.state.voxelChunks.delete(key);
                 else r.state.voxelChunks.set(key, saved);
