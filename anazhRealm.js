@@ -87771,8 +87771,6 @@ class AnazhRealm {
         // Hits in den nächsten 2 Frames lesen die nun stehen-gelassenen Werte.
         this.state._groundedCache = isGrounded;
         this.state._groundedCachedAt = now;
-
-        // Entferne manuelle Korrekturen, da Ammo.btHeightfieldTerrainShape die Kollisionen übernimmt
         return isGrounded;
     }
 

@@ -335,6 +335,10 @@ const FORBIDDEN = [
     // × die Selbstbeschattung, die Saison legt uSeasonMul auf — die feste Sommer-Konstante kehrt nicht zurück.
     { token: "kronendach: Object.freeze", fiel: "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul" },
     { token: "farbeJeTakt", fiel: "Integration 05.10. — das Fern-Farb-Budget (FERN_FARBE.msJeTakt, _fernFarbTakt)" },
+    // V18.331 fiel Ammo.js (die Physik ist feld-nativ); V18.530 fiel mit ihr der CI-Schritt „Ammo-Memory-Leak-Indikator",
+    // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
+    { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
+    { token: "Ammo.destroy(", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

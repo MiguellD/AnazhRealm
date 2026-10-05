@@ -96,17 +96,6 @@ jobs:
                   fi
                   echo "✅ Keine fehlgeschlagenen Template-Strings"
 
-            - name: Ammo-Memory-Leak-Indikator
-              continue-on-error: true
-              run: |
-                  alloc=$(grep -c 'new Ammo.btVector3' anazhRealm.js || echo 0)
-                  freed=$(grep -c 'Ammo.destroy' anazhRealm.js || echo 0)
-                  echo "btVector3-Allokationen: $alloc"
-                  echo "Ammo.destroy-Aufrufe:   $freed"
-                  if [ "$alloc" -gt $((freed * 4)) ]; then
-                    echo "⚠️ Verdacht auf Memory-Leak: deutlich mehr Allokationen als Frees"
-                  fi
-
             - name: Verbotenes dynamisches Auswerten (eval / new Function)
               # Ring 2 Phase 5: die DSL ist der einzige Pfad für dynamische
               # Effekte. Wenn dieser Grep wieder fündig wird, schaltet jemand
