@@ -1466,7 +1466,7 @@
                 breit: [0.08, 0.12, 0.135, 0.12, 0.11, 0.125, 0.14, 0.145, 0.135, 0.11, 0.075] },
             bein: { dicke: 1.0, distal: 1.1, pfote: "zehe", pfoteGross: 1.55, kralle: 1.0 },
             hals: { dicke: 1.2, lang: 1.0 },
-            kopf: { gross: 1.0, ohrForm: "spitz", ohrH: 0.1, ohrB: 0.03, schnauzeL: 1.0, schnauzeB: 1.0, schnauzeH: 1.0,
+            kopf: { gross: 1.0, nase: 1.0, ohrForm: "spitz", ohrH: 0.1, ohrB: 0.03, schnauzeL: 1.0, schnauzeB: 1.0, schnauzeH: 1.0,
                 schaedelB: 1.0, schaedelH: 1.0, auge: [214, 160, 40] },
             schwanz: { segs: 8, segL: 0.042, wurzel: 0.034, mitte: 0.045, spitze: 0.024, hang: 0.55, fell: 1.6 },
             fell: { lang: 1.5 },
@@ -1482,7 +1482,7 @@
                 breit: [0.068, 0.1, 0.115, 0.1, 0.093, 0.105, 0.118, 0.123, 0.115, 0.093, 0.064] },
             bein: { dicke: 0.85, distal: 1.4, pfote: "zehe", pfoteGross: 1.4, kralle: 0.9 },
             hals: { dicke: 1.1, lang: 1.0 },
-            kopf: { gross: 1.0, ohrForm: "spitz", ohrH: 0.15, ohrB: 0.042, schnauzeL: 1.12, schnauzeB: 0.82, schnauzeH: 0.9,
+            kopf: { gross: 1.0, nase: 1.0, ohrForm: "spitz", ohrH: 0.15, ohrB: 0.042, schnauzeL: 1.12, schnauzeB: 0.82, schnauzeH: 0.9,
                 schaedelB: 0.92, schaedelH: 0.95, auge: [206, 128, 30] },
             schwanz: { segs: 10, segL: 0.058, wurzel: 0.04, mitte: 0.075, spitze: 0.045, hang: 0.3, fell: 2.4 },
             fell: { lang: 1.6 },
@@ -1498,7 +1498,7 @@
                 breit: [0.12, 0.18, 0.2, 0.2, 0.2, 0.21, 0.22, 0.22, 0.21, 0.17, 0.11] },
             bein: { dicke: 1.7, distal: 1.0, pfote: "sohle", pfoteGross: 1.9, kralle: 3.2 },
             hals: { dicke: 1.3, lang: 0.9 },
-            kopf: { gross: 1.45, ohrForm: "rund", ohrH: 0.045, ohrB: 0.03, schnauzeL: 0.78, schnauzeB: 1.35, schnauzeH: 1.3,
+            kopf: { gross: 1.45, nase: 0.72, ohrForm: "rund", ohrH: 0.045, ohrB: 0.03, schnauzeL: 0.78, schnauzeB: 1.35, schnauzeH: 1.3,
                 schaedelB: 1.25, schaedelH: 1.0, auge: [62, 38, 20] },
             schwanz: { segs: 2, segL: 0.03, wurzel: 0.035, mitte: 0.035, spitze: 0.025, hang: 0.25, fell: 1.2 },
             fell: { lang: 2.0 },
@@ -1513,7 +1513,7 @@
                 breit: [0.065, 0.1, 0.11, 0.11, 0.115, 0.12, 0.12, 0.115, 0.105, 0.085, 0.06] },
             bein: { dicke: 0.85, distal: 1.5, pfote: "huf", pfoteGross: 1.0, kralle: 1.0 },
             hals: { dicke: 1.0, lang: 1.7 },
-            kopf: { gross: 1.1, ohrForm: "blatt", ohrH: 0.16, ohrB: 0.042, schnauzeL: 1.3, schnauzeB: 0.8, schnauzeH: 1.45,
+            kopf: { gross: 1.1, nase: 0.9, ohrForm: "blatt", ohrH: 0.16, ohrB: 0.042, schnauzeL: 1.3, schnauzeB: 0.8, schnauzeH: 1.45,
                 schaedelB: 0.85, schaedelH: 0.85, auge: [40, 24, 14] },
             schwanz: { segs: 3, segL: 0.034, wurzel: 0.032, mitte: 0.034, spitze: 0.022, hang: 1.15, fell: 0.8 },
             fell: { lang: 0.9 },
@@ -2401,7 +2401,9 @@
         noseB.rotation.x = Math.PI / 2;
         noseB.position.set(0, 0.004 * H, 0.068 * H);
         maxG.add(noseB);
-        var nose = s(0.02 * H, "nase", [P.noseW, 0.86, 0.7]);
+        // die Nase der Art (kopf.nase): sie sitzt in der Schnauzen-Gruppe und wüchse sonst mit deren Breite/Höhe und der
+        // Kopf-Größe (der Bär trug eine 8 cm breite schwarze Kugel)
+        var nose = s(0.02 * H * A.kopf.nase, "nase", [P.noseW, 0.86, 0.7]);
         nose.position.set(0, -0.014 * H, 0.132 * H);
         maxG.add(nose);
         for (var sd = -1; sd <= 1; sd += 2) {
