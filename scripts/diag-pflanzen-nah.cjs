@@ -17,12 +17,18 @@
 //      Reisig trägt ≥ REISIG_MIN der Dreiecke. Vorher: 8 820 Klingen-Dreiecke, Rinde 24 %.
 //  (B) BLUME (L0, Gestalten 1/2): die Blütenblätter tragen den Saftmal-Verlauf — je Blatt Luminanz Spitze : Grund im
 //      Mittel ≥ SAFTMAL_MIN. Vorher: eine Farbe je Blatt (1,0).
-//  (M) BLATT-MASS (Laub-Bäume L0, Gestalt 1): die Länge eines Atlas-Blatts in der Welt = Karten-Kante (aus dem
-//      gelieferten Quad, ÷ kern) × ZWEIG_BLATT.laenge/256 × Welt-Skala ≤ BLATT_MAX_M. Vorher 1,4–1,7 m.
+//  (M) BLATT-MASS (Laub-Bäume L0 und der Strauch L1, Gestalt 1): die Länge eines Atlas-Blatts in der Welt =
+//      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × ZWEIG_BLATT.laenge/256 × Welt-Skala im Band
+//      BLATT_BAND. Vorher 1,4–1,7 m (Rosetten), dann 0,37–0,49 m (Zweig mit 27-px-Blättern).
+//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt = mittlere Kante der
+//      Nadel-Karte × NADEL_ZWEIG.nadel/256 × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
+//  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): die Trauer-Klinge las auf 12–26 m als Papier-Streifen
+//      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
 //  (U) UNTERSEITE — die Blatt-Unterseite (phyto-core BLATT_UNTERSEITE) hat ihre zwei Leser: den Laub-Shader des Labors
 //      (foundry-core) und den Laub-Stoff der Welt (anazhRealm).
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
-// Klingen-Strauch, einfarbige Blüte, Blatt ×3, Leser entfernt) — die Linse ist nie vakuös.
+// Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt) — die Linse
+// ist nie vakuös.
 //
 //   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
 "use strict";
@@ -41,7 +47,8 @@ const BIRKE = { strichMin: 0.04, strichMax: 0.45, fussMax: 0.16, zweigMax: 0.25 
 const RINGEL_MAX = 0.25;
 const REISIG_MIN = 0.5;
 const SAFTMAL_MIN = 1.4;
-const BLATT_MAX_M = 0.6;
+const BLATT_BAND = [0.04, 0.3]; // m in der Welt (Natur: Hasel 0,06–0,12, Eiche 0,10–0,15, Birke 0,04–0,07)
+const NADEL_MAX_M = 0.05; // m in der Welt (Natur: Fichte 0,015–0,025, Tanne 0,02–0,03)
 
 const f32 = (b64) => {
     const b = Buffer.from(b64, "base64");
@@ -216,14 +223,42 @@ function bluetenUrteil(fall, T) {
         m: { saftmal: m, blaetter: r.length },
     };
 }
+// Die mittlere Kante der Karten-Quads (je 4 Vertices, Ecke 0 → 1) eines Laub-Teils.
+function kartenKante(T) {
+    let s = 0,
+        n = 0;
+    for (const t of T) {
+        if (t.kind !== "foliageTex") continue;
+        const p = t.pos;
+        for (let i = 0; i + 11 < p.length; i += 12) {
+            s += Math.hypot(p[i + 3] - p[i], p[i + 4] - p[i + 1], p[i + 5] - p[i + 2]);
+            n++;
+        }
+    }
+    return n ? s / n : 0;
+}
 function blattMass(fall, T, skala) {
-    const t = T.find((x) => x.kind === "foliageTex");
-    if (!t) return { v: [`${fall}: keine Laub-Karte`], m: {} };
-    const p = t.pos;
-    const kante = Math.hypot(p[3] - p[0], p[4] - p[1], p[5] - p[2]); // Quad-Ecke 0 → 1
-    const zelle = kante / PC.BLATT_ATLAS_BREIT.kern;
-    const blatt = zelle * (PC.ZWEIG_BLATT.laenge / 256) * skala;
-    return { v: blatt <= BLATT_MAX_M ? [] : [`${fall}: Blatt ${blatt.toFixed(2)} m > ${BLATT_MAX_M} m`], m: { blatt } };
+    const kante = kartenKante(T);
+    if (!kante) return { v: [`${fall}: keine Laub-Karte`], m: {} };
+    const blatt = (kante / PC.BLATT_ATLAS_BREIT.kern) * (PC.ZWEIG_BLATT.laenge / 256) * skala;
+    return {
+        v:
+            blatt >= BLATT_BAND[0] && blatt <= BLATT_BAND[1]
+                ? []
+                : [`${fall}: Blatt ${blatt.toFixed(3)} m außerhalb [${BLATT_BAND.join(", ")}] m`],
+        m: { blatt },
+    };
+}
+function nadelMass(fall, T, skala) {
+    const kante = kartenKante(T);
+    if (!kante) return { v: [`${fall}: keine Nadel-Karte`], m: {} };
+    const nadel = (kante / PC.BLATT_ATLAS_NADEL.kern) * (PC.NADEL_ZWEIG.nadel / 256) * skala;
+    return { v: nadel <= NADEL_MAX_M ? [] : [`${fall}: Nadel ${nadel.toFixed(3)} m > ${NADEL_MAX_M} m`], m: { nadel } };
+}
+// (K) die L1-Krone eines Baums trägt keine Klinge (kind "foliage").
+function klingenL1(fall, T) {
+    const n = T.filter((t) => t.kind === "foliage").reduce((s, t) => s + (t.idx ? t.idx.length / 3 : 0), 0);
+    return { v: n ? [`${fall}: L1-Krone aus ${n} Klingen-Dreiecken (Papier-Streifen)`] : [], m: { klingen: n } };
 }
 function unterseiteUrteil(quellen) {
     const v = [];
@@ -248,28 +283,37 @@ function unterseiteUrteil(quellen) {
             roh[k] = { presetId, lod, seed, T: teile((await build({ presetId, lod, seed, season: "summer" })).meshes) };
         };
         for (const p of baeume) await fall(p, 0, 1);
+        for (const p of baeume) await fall(p, 1, 1);
         await fall("birke", 0, 2);
         for (const p of Object.keys(buch).filter((x) => art(x) === "shrub")) await fall(p, 1, 1);
         for (const p of Object.keys(buch).filter((x) => art(x) === "flower"))
             for (const s of [1, 2]) await fall(p, 0, s);
     });
     const pl = rc.placement || {};
-    const skala = (p) => (pl.scale && pl.scale[p]) * (pl.treeScaleMul || 1);
+    // Die Welt-Skala der Art: placement.scale, der Wald-Zusatzfaktor treeScaleMul NUR für Bäume (foundry-core).
+    const skala = (p) => (pl.scale && pl.scale[p]) * (buch[p] && buch[p].kind === "tree" ? pl.treeScaleMul || 1 : 1);
     const zeilen = [];
     const ergebnis = {};
     for (const [k, f] of Object.entries(roh)) {
         const fx = (buch[f.presetId] && buch[f.presetId].fx) || {};
         const kind = buch[f.presetId].kind;
         let u = { v: [], m: {} };
-        if (kind === "tree") {
+        if (kind === "tree" && f.lod === 1) u = klingenL1(k, f.T);
+        else if (kind === "tree") {
             u = rindeUrteil(k, f.T, fx.barkType || (fx.conifer ? "conifer" : "oak"), f.presetId !== "totholz");
-            if (!fx.conifer && f.T.some((t) => t.kind === "foliageTex")) {
-                const b = blattMass(k, f.T, skala(f.presetId));
+            // Die Trauer-L0 trägt Strähnen (gestreckte Zellen) — ihr Blatt-Maß ist kein Karten-Maß.
+            const trauer = buch[f.presetId].s && buch[f.presetId].s.trop >= 0.55;
+            if (!trauer && f.T.some((t) => t.kind === "foliageTex")) {
+                const b = fx.conifer ? nadelMass(k, f.T, skala(f.presetId)) : blattMass(k, f.T, skala(f.presetId));
                 u.v.push(...b.v);
                 Object.assign(u.m, b.m);
             }
-        } else if (kind === "shrub") u = strauchUrteil(k, f.T);
-        else if (kind === "flower") u = bluetenUrteil(k, f.T);
+        } else if (kind === "shrub") {
+            u = strauchUrteil(k, f.T);
+            const b = blattMass(k, f.T, skala(f.presetId));
+            u.v.push(...b.v);
+            Object.assign(u.m, b.m);
+        } else if (kind === "flower") u = bluetenUrteil(k, f.T);
         ergebnis[k] = u;
         fails.push(...u.v);
         zeilen.push(
@@ -296,7 +340,16 @@ function unterseiteUrteil(quellen) {
         fichte = roh["fichte-s1-L0"],
         strauch = roh["strauch-s1-L1"],
         blume = roh["blume-s1-L0"],
-        eiche = roh["eiche-s1-L0"];
+        eiche = roh["eiche-s1-L0"],
+        tanne = roh["tanne-s1-L0"],
+        weide1 = roh["weide-s1-L1"];
+    const skaliert = (T, k) =>
+        T.map((t) => {
+            if (t.kind !== "foliageTex") return t;
+            const p = Float32Array.from(t.pos);
+            for (let i = 0; i < p.length; i++) p[i] *= k;
+            return Object.assign({}, t, { pos: p });
+        });
     const st = [];
     if (birke) {
         const gips = kopie(birke.T);
@@ -324,15 +377,21 @@ function unterseiteUrteil(quellen) {
             if (t.kind === "foliage" && t.col) for (let i = 0; i < t.col.length; i += 3) t.col.set([0.6, 0.2, 0.4], i);
         st.push(["einfarbige Blüte", bluetenUrteil("scheibe", T).v.length > 0]);
     } else st.push(["Blume gebaut", false]);
-    if (eiche) {
-        const T = eiche.T.map((t) => {
-            if (t.kind !== "foliageTex") return t;
-            const p = Float32Array.from(t.pos);
-            for (let i = 0; i < p.length; i++) p[i] *= 3;
-            return Object.assign({}, t, { pos: p });
-        });
-        st.push(["Blatt ×3", blattMass("gross", T, skala("eiche")).v.length > 0]);
-    } else st.push(["Eiche gebaut", false]);
+    if (eiche) st.push(["Blatt ×3", blattMass("gross", skaliert(eiche.T, 3), skala("eiche")).v.length > 0]);
+    else st.push(["Eiche gebaut", false]);
+    if (strauch)
+        st.push(["Strauch-Blatt ×½", blattMass("klein", skaliert(strauch.T, 0.5), skala("strauch")).v.length > 0]);
+    if (tanne) st.push(["Nadel ×3", nadelMass("lang", skaliert(tanne.T, 3), skala("tanne")).v.length > 0]);
+    else st.push(["Tanne gebaut", false]);
+    if (weide1)
+        st.push([
+            "Klingen-L1",
+            klingenL1(
+                "klinge",
+                weide1.T.map((t) => (t.kind === "foliageTex" ? Object.assign({}, t, { kind: "foliage" }) : t))
+            ).v.length > 0,
+        ]);
+    else st.push(["Weide-L1 gebaut", false]);
     st.push([
         "Leser der Unterseite entfernt",
         unterseiteUrteil({ "anazhRealm.js": quellen["anazhRealm.js"].replace(/__phytoCore\.BLATT_UNTERSEITE/g, "X") })
@@ -341,7 +400,9 @@ function unterseiteUrteil(quellen) {
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
-    console.log("=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite ===");
+    console.log(
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite ==="
+    );
     if (fails.length) {
         console.error("\n❌ ROT:");
         for (const x of fails.slice(0, 12)) console.error("  • " + x);
