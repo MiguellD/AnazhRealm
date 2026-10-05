@@ -117,6 +117,12 @@ function pageHtml() {
     for (let i = 0; i < a.length; i++) a[i] = b.daten[i * 4 + 3];
     return { w: b.breite, h: b.hoehe, b64: b64(a) };
   };
+  // DAS ATLAS-BILD ganz (05.10., gate:pflanzen-nah F): jede Mip-Stufe (rgba, Textur-Ordnung) und der Wert — der
+  // Aufrufer macht daraus die Fracht des Wirts (phyto-core blattAtlasFracht) und misst Labor gegen Welt je Format.
+  window.__atlasBild = () => {
+    const b = window.__phytoCore.bakeLeafAtlasBild(document);
+    return { wert: b.wert, mips: b.mips.map((m) => ({ w: m.width, h: m.height, b64: b64(m.data) })) };
+  };
   // DER KARTEN-RUNDLAUF (W6): der Studio-Bäcker bäckt die Karte (Kanal bake-impostor, ohne Schale = das rohe
   // Studio-Payload), der ECHTE Karten-Codec (phyto-core, hier im Seiten-Kontext) kodiert sie zur Atlas-Schicht und
   // dekodiert sie zurück. Gemessen: Alpha-Fehler an der Schwelle, Albedo-PSNR (opake Texel, sRGB), Normalwinkel
@@ -287,8 +293,9 @@ async function runWithWorker(port, cb) {
         const getData = (type) => page.evaluate((t) => window.__aget(t), type);
         const atlas = () => page.evaluate(() => window.__atlas());
         const atlasAlpha = () => page.evaluate(() => window.__atlasAlpha());
+        const atlasBild = () => page.evaluate(() => window.__atlasBild());
         const karte = (presetId, seed, stoer) => page.evaluate((p, sd, st) => window.__karte(p, sd, st), presetId, seed, stoer || null);
-        const out = await cb({ build, kostenListe, getData, atlas, atlasAlpha, karte, pageErrors });
+        const out = await cb({ build, kostenListe, getData, atlas, atlasAlpha, atlasBild, karte, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {

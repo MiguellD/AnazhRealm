@@ -28430,35 +28430,17 @@ class AnazhRealm {
                             // bleibt 1. alphaTest bleibt gesetzt, damit das Dither-Crossfade die Klingen am L0→L1-Band ausblendet.
                             mat.alphaTest = 0.5;
                         } else if (opts.foliageLeaf && _Ta.attribute) {
-                            // Die Karte sampelt den gebackenen Laub-Büschel-Atlas: ALPHA = Büschel-Silhouette (liest als Laub,
-                            // nicht als Klecks), RGB = Blatt-Detail-Luminanz, die die Vertex-Dapple-Farbe tönt (Grün × Detail).
-                            let _wired = false;
-                            try {
-                                const _atlas = this._ensureFoliageClusterAtlas();
-                                if (_atlas && _Ta.texture && _Ta.attribute) {
-                                    const _samp = _Ta.texture(_atlas, _Ta.attribute("uv", "vec2"));
-                                    const _w = _atlas.userData.wert;
-                                    _alpha = _samp.a;
-                                    albedoNode = albedoNode.mul(
-                                        _samp.rgb.mul(_Ta.vec3(1 / _w[0], 1 / _w[1], 1 / _w[2]))
-                                    );
-                                    mat.alphaTest = 0.5;
-                                    _wired = true;
-                                }
-                            } catch (_e) {
-                                if (typeof window !== "undefined")
-                                    window.__foliageAtlasError = String((_e && _e.message) || _e);
+                            // Die Karte sampelt den EINEN Blatt-Atlas über den EINEN Leser (`_blattAtlasProbe`): ALPHA = die
+                            // Zweig-Silhouette, RGB = der Blatt-Wert, der die Vertex-Farbe tönt. Fehlt der Kern, bricht
+                            // `_ensureFoliageClusterAtlas` laut (KERN-PFLICHT) — die stille Ellipsen-Maske hinter einem
+                            // catch ist gefallen (05.10.: kein Stoff ohne seinen Atlas, wie der Laub-Stoff der Welt);
+                            // headless (kein document) zeichnet kein Stoff.
+                            const _atl = this._blattAtlasProbe(_Ta);
+                            if (_atl) {
+                                _alpha = _atl.a;
+                                albedoNode = albedoNode.mul(_atl.rgb);
                             }
-                            if (!_wired && _Ta.vec2 && _Ta.smoothstep) {
-                                try {
-                                    const _uv = _Ta.attribute("uv", "vec2");
-                                    const _d = _uv.sub(_Ta.vec2(0.5, 0.5)).mul(_Ta.vec2(1.22, 1.0)).length();
-                                    _alpha = _Ta.float(1.0).sub(_Ta.smoothstep(0.3, 0.5, _d));
-                                    mat.alphaTest = 0.42;
-                                } catch (_e) {
-                                    _alpha = _Ta.float(1.0);
-                                }
-                            }
+                            mat.alphaTest = 0.5;
                         }
                         // Kuppel-Normale, flip-frei: Laub trägt die analytische Kuppel-Richtung als gebackene Normale
                         // (_stampFoliageDomeNormals); der Renderer negiert Attribut-Normalen back-facender DoubleSide-
@@ -60579,6 +60561,26 @@ class AnazhRealm {
         return tex;
     }
 
+    // DER EINE LESER DES BLATT-ATLAS (05.10.): die Fracht ist in jedem Format VORMULTIPLIZIERT (phyto-core
+    // `blattAtlasFracht`, das Karten-Gesetz — BC1 kann es nicht anders, sein Index 3 ist transparent schwarz). Das
+    // gefilterte rgb geteilt durch alpha ist das alpha-gewichtete Mittel der deckenden Texel (kein dunkler Saum auf keiner
+    // Mip-Stufe), geteilt durch den Wert `wert` (FARB-GESETZ: die Artfarbe kommt aus der Vertex-Farbe). Befund (Prüfer W5):
+    // die zwei Leser lasen die BC1-Kette ohne Teilen — Welt-Laub 4–22 % dunkler als Labor und L2-Karte, die dünnen
+    // Nadeln als dunkle Fussel. Leser: der Laub-Stoff (`_foundryMaterial`, foliageTex) und der Grammatik-Pfad
+    // (`_buildPbrNodeMaterial`, foliageLeaf); `gate:pflanzen-nah` (F) misst die Fracht je Format und Stufe gegen das
+    // Labor. Headless (kein Atlas) → null.
+    _blattAtlasProbe(T) {
+        const tex = this._ensureFoliageClusterAtlas();
+        if (!tex || !T.texture || !T.attribute) return null;
+        const s = T.texture(tex, T.attribute("uv", "vec2"));
+        const w = tex.userData.wert;
+        return {
+            tex,
+            rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
+            a: s.a,
+        };
+    }
+
     // Stempelt die pro-Baum-konstanten Wahrnehmungs-Höhen (aH0/aH0L) auf eine Laub-Geometrie — EINE Quelle
     // für phyto-core-Quads + Anker-Fallback. aH0 = Skelett-Sichthöhe (SSE: große Bäume behalten Detail
     // länger); aH0L = Blatt-Sichthöhe, auf `leafVisCap` gekappt (Laub-Crossfade folgt der absoluten
@@ -68884,18 +68886,13 @@ class AnazhRealm {
                 // (phyto-core `bakeLeafAtlasBild`): Zellen 0..1 Baum-Zweig (`BLATT_ATLAS_BREIT`), 2 Großblatt-Zweig
                 // (Strauch, Weiden-Strähne, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
                 // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
-                const tex = this._ensureFoliageClusterAtlas();
-                if (tex && TSL.texture) {
-                    const uvN = TSL.attribute("uv", "vec2");
-                    const texN = TSL.texture(tex, uvN);
-                    const w = tex.userData.wert;
+                const atl = this._blattAtlasProbe(TSL);
+                if (atl) {
+                    const tex = atl.tex;
                     // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                     // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                    // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe geteilt durch ihren `wert` (FARB-GESETZ).
-                    mat.colorNode = TSL.vec4(
-                        texN.rgb.mul(TSL.vec3(1 / w[0], 1 / w[1], 1 / w[2])).mul(laubFarbe),
-                        texN.a
-                    );
+                    // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
+                    mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                     // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät

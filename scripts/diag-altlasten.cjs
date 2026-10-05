@@ -343,6 +343,9 @@ const FORBIDDEN = [
     // Papier-Streifen (Blick-Tour Bild 01, f:weide|1|1:2) — die Trauer-L1 trägt Strähnen aus dem Atlas (tree[1].straehne).
     { token: "_b1.klinge", fiel: "Welle 5 — die Trauer-L1 trägt Strähnen (tree[1].straehne), keine Klinge" },
     { token: "_klinge", fiel: "Welle 5 — die Segment-Zahl der Trauer-Klinge (pushLeaf seg) ist mit ihr gefallen" },
+    // Der Grammatik-Pfad malte bei einem Atlas-Fehler still eine Ellipsen-Maske (fail-soft) — er bricht laut wie der
+    // Laub-Stoff der Welt (KERN-PFLICHT).
+    { token: "__foliageAtlasError", fiel: "Integration Welle 5 — kein Stoff ohne seinen Atlas (_blattAtlasProbe)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

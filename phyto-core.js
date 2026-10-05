@@ -802,11 +802,25 @@
     //   bc    die Kette ab Stufe 0 (512er-Zelle) als BC1-sRGB (der Karten-Codec bc1Kodiere: 8 B je 4×4, Alpha an 128 —
     //         der alphaTest des Laub-Stoffs schneidet an derselben Stelle), bis die Zelle KARTEN_GESETZ.minSeite misst;
     //   rgba  die Kette ab Stufe 1 (256er-Zelle) — der Wirt ohne BC laedt die Bytes von gestern (1,3 MB statt 5,3 MB).
+    // DIE FRACHT IST VORMULTIPLIZIERT, in JEDEM Format (das Karten-Gesetz, KARTEN_GESETZ): BC1 kann es nicht anders —
+    // sein Index 3 ist transparent SCHWARZ —, die rgba-Kette traegt dasselbe Gesetz (rgb · alpha, linear; ein Texel
+    // ohne Deckung ist 0,0,0,0), und der EINE Leser der Welt (`_blattAtlasProbe`) teilt das gefilterte rgb durch alpha:
+    // das alpha-gewichtete Mittel der deckenden Texel, kein dunkler Saum auf keiner Stufe. Befund (Pruefer W5, 05.10.):
+    // die BC1-Kette ohne Teilen las das Laub 4–22 % dunkler als Labor und L2-Karte (Zelle 512 → 4 px: Y 0,956 → 0,78).
+    // Das Labor (foundry-core) liest das BLUTENDE Bild selbst (bakeLeafAtlasBild), nie die Fracht.
     // `mitBc` false: nur rgba (wer nie BC laedt, kodiert nie). Leser: die Transport-Schale des Foundry-Workers
     // (das Buch) und der Wirt, der vor dem Buch malt (`_ensureFoliageClusterAtlas`). Ohne Bild → null.
     function blattAtlasFracht(bild, mitBc) {
         if (!bild || !Array.isArray(bild.mips) || bild.mips.length < 2) return null;
-        const r = bild.mips.slice(1);
+        const r = bild.mips.slice(1).map((m) => {
+            const d = new Uint8Array(m.data);
+            for (let i = 0; i < d.length; i += 4) {
+                const a = d[i + 3];
+                if (a === 255) continue;
+                for (let k = 0; k < 3; k++) d[i + k] = a ? linZuSrgb8((LIN_AUS_SRGB8[d[i + k]] * a) / 255) : 0;
+            }
+            return { data: d, width: m.width, height: m.height };
+        });
         const out = { wert: bild.wert, rgba: { breite: r[0].width, hoehe: r[0].height, mips: r }, bc: null };
         if (mitBc !== false) {
             const bc = [];
@@ -2631,6 +2645,12 @@
     }
     const SRGB_AUS_LIN8 = new Uint8Array(256);
     for (let i = 0; i < 256; i++) SRGB_AUS_LIN8[i] = linZuSrgb8(i / 255);
+    // und zurück: sRGB-Byte → linear (0..1) — die Vormultiplikation der Blatt-Atlas-Fracht (`blattAtlasFracht`)
+    const LIN_AUS_SRGB8 = new Float64Array(256);
+    for (let i = 0; i < 256; i++) {
+        const v = i / 255;
+        LIN_AUS_SRGB8[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
 
     // Die Mip-Stufen einer Schicht (w × hAnsicht·V): solange Breite UND Ansichts-Höhe ≥ minSeite bleiben.
     function karteMipZahl(w, hAnsicht) {

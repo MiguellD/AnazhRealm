@@ -27,8 +27,15 @@
 //      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
 //  (U) UNTERSEITE — die Blatt-Unterseite (phyto-core BLATT_UNTERSEITE) hat ihre zwei Leser: den Laub-Shader des Labors
 //      (foundry-core) und den Laub-Stoff der Welt (anazhRealm).
+//  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC1 ab Stufe 0, rgba ab
+//      Stufe 1), das Labor das blutende Bild. Je Format, Zelle und Zell-Größe (≥ FRACHT_MIN_ZELLE px) wird die GPU
+//      nachgerechnet (sRGB-Dekodierung je Texel, bilinear linear, alphaTest 0,5) und der EINE Leser der Welt angewandt
+//      (gefiltertes rgb ÷ alpha ÷ wert): Luminanz und Deckung der Welt = Labor (± FRACHT_TOL). Dazu die Quelle: der Leser
+//      `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest sonst niemand. Vorher (BC1 ohne Teilen): Laub
+//      Y 0,96 → 0,84 je Stufe, die Nadel-Zelle 0,86 — die Welt dunkler als Labor und L2-Karte (Prüfer W5).
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
-// Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt) — die Linse
+// Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt, BC1 gerade gelesen,
+// Atlas-Leser ohne ÷ alpha) — die Linse
 // ist nie vakuös.
 //
 //   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
@@ -270,12 +277,126 @@ function unterseiteUrteil(quellen) {
     return v;
 }
 
+// (F) DIE FRACHT — die GPU nachgerechnet: sRGB-Byte → linear je Texel, bilinear (clamp), alphaTest 0,5.
+const FRACHT_MIN_ZELLE = 8;
+const FRACHT_TOL = 0.03;
+const LIN8 = new Float64Array(256);
+for (let c = 0; c < 256; c++) {
+    const x = c / 255;
+    LIN8[c] = x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+}
+// je Zelle: Deckung (Anteil der Proben über dem alphaTest) und die Luminanz des Lesers relativ zu Y(wert);
+// `teilen`: der Leser teilt das gefilterte rgb durch alpha (die Welt), sonst liest er es gerade (das Labor, blutend).
+function frachtStufe(m, wert, teilen) {
+    const W = m.width,
+        H = m.height,
+        d = m.data,
+        Z = W / 4;
+    const yw = 0.2126 * wert[0] + 0.7152 * wert[1] + 0.0722 * wert[2];
+    const n = Math.min(512, Z * 2);
+    const zellen = [];
+    for (let c = 0; c < 4; c++) {
+        let ok = 0,
+            sy = 0;
+        for (let j = 0; j < n; j++)
+            for (let i = 0; i < n; i++) {
+                const x = ((c + (i + 0.5) / n) / 4) * W - 0.5,
+                    y = ((j + 0.5) / n) * H - 0.5;
+                const x0 = Math.floor(x),
+                    y0 = Math.floor(y),
+                    fx = x - x0,
+                    fy = y - y0;
+                let r = 0,
+                    g = 0,
+                    b = 0,
+                    a = 0;
+                for (let q = 0; q < 4; q++) {
+                    const dx = q & 1,
+                        dy = q >> 1;
+                    const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
+                    const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
+                    r += w * LIN8[d[o]];
+                    g += w * LIN8[d[o + 1]];
+                    b += w * LIN8[d[o + 2]];
+                    a += (w * d[o + 3]) / 255;
+                }
+                if (a < 0.5) continue;
+                ok++;
+                const k = teilen ? 1 / Math.max(1e-3, a) : 1;
+                sy += (0.2126 * r + 0.7152 * g + 0.0722 * b) * k;
+            }
+        zellen.push({ dk: ok / (n * n), Y: ok ? sy / ok / yw : 0 });
+    }
+    return { Z, zellen };
+}
+// Die Reihen: das Labor (das Bild, gerade) und die Welt je Format (die Fracht, der EINE Leser). `bcLeser` (Selbsttest):
+// wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade (der Leser vor 05.10.).
+function frachtReihen(bild, bcLeser) {
+    const fr = PC.blattAtlasFracht(bild, true);
+    const stufen = (mips, teilen) =>
+        mips.filter((m) => m.width / 4 >= FRACHT_MIN_ZELLE).map((m) => frachtStufe(m, fr.wert, teilen));
+    const bc = fr.bc.mips.map((m) => ({
+        width: m.width,
+        height: m.height,
+        data: PC.bcDekodiere(m.data, m.width, m.height, "bc1"),
+    }));
+    return {
+        labor: stufen(bild.mips, false),
+        welt: { bc1: stufen(bc, bcLeser !== false), rgba: stufen(fr.rgba.mips, true) },
+    };
+}
+function frachtUrteil(R) {
+    const v = [];
+    const lab = new Map(R.labor.map((s) => [s.Z, s]));
+    for (const [fmt, reihe] of Object.entries(R.welt))
+        for (const s of reihe) {
+            const L = lab.get(s.Z);
+            if (!L) {
+                v.push(`Fracht ${fmt}: Zelle ${s.Z} px ohne Labor-Stufe`);
+                continue;
+            }
+            s.zellen.forEach((z, c) => {
+                const l = L.zellen[c];
+                if (Math.abs(z.Y - l.Y) > FRACHT_TOL)
+                    v.push(
+                        `Fracht ${fmt} Zelle ${c} @ ${s.Z} px: Welt Y ${z.Y.toFixed(3)} ≠ Labor ${l.Y.toFixed(3)} (± ${FRACHT_TOL})`
+                    );
+                if (Math.abs(z.dk - l.dk) > 0.01)
+                    v.push(
+                        `Fracht ${fmt} Zelle ${c} @ ${s.Z} px: Deckung ${z.dk.toFixed(3)} ≠ Labor ${l.dk.toFixed(3)}`
+                    );
+            });
+        }
+    return v;
+}
+// Die Quelle des Lesers: `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest nur er (geschrieben wird es
+// in `_ensureFoliageClusterAtlas`).
+function leserUrteil(quelle) {
+    const v = [];
+    const text = quelle.replace(/\/\/[^\n]*/g, ""); // Kommentare zitieren (Lehre 6) — gezählt wird Code
+    const i = text.indexOf("\n    _blattAtlasProbe(");
+    const rumpf = i < 0 ? "" : text.slice(i, text.indexOf("\n    }\n", i));
+    if (!rumpf) v.push("anazhRealm.js: der Leser _blattAtlasProbe fehlt");
+    else if (!/\.rgb\.div\(s\.a\.max\(/.test(rumpf))
+        v.push("anazhRealm.js: _blattAtlasProbe teilt rgb nicht durch alpha");
+    const leser =
+        (text.match(/userData\.wert\b(?!\s*=)/g) || []).length - (/userData\.wert\b(?!\s*=)/.test(rumpf) ? 1 : 0);
+    if (leser > 0) v.push(`anazhRealm.js: ${leser} Leser von userData.wert neben _blattAtlasProbe`);
+    return v;
+}
+
 (async () => {
     const fails = [];
     const roh = {};
     let buch = null,
-        rc = null;
-    await runWithWorker(PORT, async ({ build, getData }) => {
+        rc = null,
+        bild = null;
+    await runWithWorker(PORT, async ({ build, getData, atlasBild }) => {
+        const ab = await atlasBild();
+        bild = {
+            wert: ab.wert,
+            mips: ab.mips.map((m) => ({ width: m.w, height: m.h, data: new Uint8Array(Buffer.from(m.b64, "base64")) })),
+        };
         const b = await getData("get-book");
         buch = b.book || {};
         rc = b.renderConfig || {};
@@ -336,6 +457,20 @@ function unterseiteUrteil(quellen) {
     };
     fails.push(...unterseiteUrteil(quellen));
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
+    // (F) die Fracht je Format gegen das Labor, und der EINE Leser in der Quelle.
+    const fracht = frachtReihen(bild);
+    fails.push(...frachtUrteil(fracht), ...leserUrteil(quellen["anazhRealm.js"]));
+    const fz = (s) => s.zellen.map((z) => z.Y.toFixed(3)).join("/");
+    console.log(
+        "Fracht (Y je Zelle 0/1/2/3 ÷ wert, Labor | BC1 | rgba):\n" +
+            fracht.labor
+                .map((L) => {
+                    const b = fracht.welt.bc1.find((s) => s.Z === L.Z),
+                        r = fracht.welt.rgba.find((s) => s.Z === L.Z);
+                    return `  Zelle ${L.Z} px: ${fz(L)} | ${b ? fz(b) : "—"} | ${r ? fz(r) : "—"}`;
+                })
+                .join("\n")
+    );
 
     // SELBSTTEST — jede Probe an einer kranken Kopie.
     const kopie = (T) => T.map((t) => Object.assign({}, t, { col: t.col ? Float32Array.from(t.col) : null }));
@@ -403,11 +538,16 @@ function unterseiteUrteil(quellen) {
         unterseiteUrteil({ "anazhRealm.js": quellen["anazhRealm.js"].replace(/__phytoCore\.BLATT_UNTERSEITE/g, "X") })
             .length === 1,
     ]);
+    st.push(["BC1 gerade gelesen (ohne ÷ alpha)", frachtUrteil(frachtReihen(bild, false)).length > 0]);
+    st.push([
+        "Leser teilt nicht durch alpha",
+        leserUrteil(quellen["anazhRealm.js"].replace(".rgb.div(s.a.max(T.float(1e-3)))", ".rgb")).length > 0,
+    ]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
     console.log(
-        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite ==="
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht ==="
     );
     if (fails.length) {
         console.error("\n❌ ROT:");
