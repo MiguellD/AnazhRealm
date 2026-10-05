@@ -152,10 +152,26 @@ function urteil(z) {
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    // Die Linse nennt den Täter eines Seiten-Fehlers: die Phase (die letzte [N]-Zeile) und die Zeit seit dem Start;
+    // WebGPU-Meldungen der Konsole (Geräteverlust, Validierung) reisen mit ins Log (die CI-Runner fahren Dawns
+    // swiftshader auf Linux — 05.10. brach dort die Instanz mitten im Lauf weg, lokal nie).
+    const t0 = Date.now();
+    let phase = "boot";
+    let gpuMeldungen = 0;
+    page.on("pageerror", (e) => {
+        const m = (e.stack || e.message || String(e)).split("\n")[0];
+        pageErrors.push(m);
+        console.log(`  [Seiten-Fehler] Phase „${phase}" +${Date.now() - t0} ms: ${m}`);
+    });
     page.on("console", (m) => {
         const t = m.text();
-        if (t.startsWith("[N]")) console.log("  " + t);
+        if (t.startsWith("[N]")) {
+            phase = t.slice(4, 60);
+            console.log("  " + t);
+        } else if ((m.type() === "error" || m.type() === "warning") && /webgpu|gpu|dawn|device|lost/i.test(t) && gpuMeldungen < 12) {
+            gpuMeldungen++;
+            console.log(`  [GPU-Konsole] Phase „${phase}" +${Date.now() - t0} ms: ${t.slice(0, 300)}`);
+        }
     });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(
@@ -177,6 +193,10 @@ function urteil(z) {
             // diag-beweis-e): der Zensus liest die CPU-Wahrheit, welcher Satz zeichnet; der Analog-Pfad bleibt offen,
             // denn der Renderer ist echt (kein Null-Renderer), nur sein Zeichnen ruht.
             const rend = r.state.renderer;
+            // Geräteverlust laut ins Log (Grund + Meldung), nie still.
+            const dev = rend.backend && rend.backend.device;
+            if (dev && dev.lost)
+                dev.lost.then((i) => console.log("[N] WebGPU-Geraet verloren: " + i.reason + " · " + i.message));
             rend.render = function () {};
             if (typeof rend.renderAsync === "function") rend.renderAsync = () => Promise.resolve();
             r.state.postProcessingFailed = true;
