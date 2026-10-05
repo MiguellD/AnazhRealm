@@ -3,7 +3,7 @@
 //
 // Der dritte Spiegel: das Terrain-Makro-Gesetz `_terrainMacroSurfaceY` reist
 // als WGSL (feld-wgsl.js, f32) — diese Linse beweist die SEH-Parität headless
-// auf ECHTEM WebGPU (swiftshader-Vulkan, harness-Muster diag-blick):
+// auf ECHTEM WebGPU (Dawns swiftshader-Adapter, `--use-webgpu-adapter=swiftshader`):
 //   A) STATIK — index.html trägt den Script-Tag, package.json das Gate + den
 //      node --check, das WGSL ist frei von JS-Fallen ("Math."), der
 //      Selbsttest-Marker existiert genau einmal.
@@ -121,9 +121,10 @@ const server = http.createServer((req, res) => {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    // VOLLE Vulkan-Flags (wörtlich diag-blick) — das GPUDevice kommt über
-    // Weg B (eigenes navigator.gpu-Device, renderer-unabhängig); die Welt
-    // bootet mit Null-Renderer (schnell — die Linse braucht nur das GESETZ).
+    // Dawns swiftshader-ADAPTER — das GPUDevice kommt über Weg B (eigenes navigator.gpu-Device, renderer-
+    // unabhängig); die Welt bootet mit Null-Renderer (schnell — die Linse braucht nur das GESETZ). Gemessen 05.10.
+    // (Windows, Chrome for Testing): die Vulkan-Schalter liefern keinen Adapter, `--use-angle=swiftshader` daneben
+    // nimmt ihn wieder weg — die Seh-Parität (B) brach auf jeder Basis mit „kein WebGPU-Adapter" ab.
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 600000,
@@ -131,9 +132,7 @@ const server = http.createServer((req, res) => {
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-            "--use-angle=swiftshader",
+            "--use-webgpu-adapter=swiftshader",
             "--enable-unsafe-swiftshader",
         ],
     });
@@ -171,7 +170,7 @@ const server = http.createServer((req, res) => {
             // ── GPU-Device (harness §2 Weg B: eigenes Device, renderer-frei) ──
             if (!navigator.gpu) return { fatal: "kein navigator.gpu" };
             const adapter = await navigator.gpu.requestAdapter();
-            if (!adapter) return { fatal: "kein WebGPU-Adapter (Vulkan-Flags?)" };
+            if (!adapter) return { fatal: "kein WebGPU-Adapter (Start-Rezept: --use-webgpu-adapter=swiftshader, ohne ANGLE-Schalter)" };
             const device = await adapter.requestDevice();
             device.lost.then((info) => res.fehler.push("device lost: " + (info && info.message)));
 

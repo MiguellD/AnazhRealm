@@ -63,15 +63,15 @@ const server = http.createServer((req, res) => {
         headless: true,
         protocolTimeout: 240000,
         args: [
-            "--use-angle=swiftshader",
             "--enable-unsafe-swiftshader",
             "--no-sandbox",
             "--disable-setuid-sandbox",
-            // DER FELD-ZEICHNER (Band 7): echtes WebGPU trotz Null-Renderer —
-            // das dritter-spiegel-Rezept (swiftshader-Vulkan).
+            // DER FELD-ZEICHNER (Bänder 7/8): echtes WebGPU trotz Null-Renderer — Dawns swiftshader-ADAPTER. Gemessen
+            // 05.10. (Windows, Chrome for Testing): die Vulkan-Schalter (`--enable-features=Vulkan
+            // --use-vulkan=swiftshader`) liefern keinen Adapter, und `--use-angle=swiftshader` daneben nimmt ihn wieder
+            // weg (requestAdapter → null) — die Bänder 7/8 standen auf jeder Basis rot (laeufe=0), der Code fehlte nie.
             "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
+            "--use-webgpu-adapter=swiftshader",
         ],
     });
     const page = await browser.newPage();
@@ -131,6 +131,7 @@ const server = http.createServer((req, res) => {
             }
         }
         const fr = r.state.fernRing;
+        const frBau = fr;
         res.buildTicks = ticks;
         res.buildMaxDelta = maxDelta;
         res.buildBudgeted = maxDelta > 0 && maxDelta <= F.refreshVertsProTick && ticks >= 2;
@@ -161,7 +162,8 @@ const server = http.createServer((req, res) => {
         // ===== (2) HÖHEN == GESETZ: 60 deterministische Proben-Vertices =====
         // Die Erwartung UNABHÄNGIG nachgerechnet (Schalen-Layout + Snap + Klemme
         // + Saum) — das Gesetz selbst kommt aus _terrainMacroSurfaceY (EINE Quelle).
-        const probeVertex = (gIdx, fudge) => {
+        const probeVertex = (gIdx, fudge, ring) => {
+            const fr = ring || frBau;
             const s = (gIdx / per) | 0;
             const li = gIdx - s * per;
             const row = (li / F.winkel) | 0;
@@ -323,15 +325,13 @@ const server = http.createServer((req, res) => {
         let fzProben = 0;
         if (fr7 && res.fzLaeufe >= 1) {
             fzWorst = 0;
-            const wl7 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            // DIESELBE Erwartung wie Band 2 (`probeVertex`: Snap · Deck-Zone mit vollem Gesetz · Wasser-Klemme · Saum ·
+            // der Ring weicht dem Gebauten −60) — eine eigene Teil-Formel ohne Deck-Zone und Weich-Wand maß 61 m
+            // „Abweichung", wo der Ring nur dem gebauten Chunk wich.
             for (let k = 0; k < 60; k++) {
                 const g = (fr7.cursor + 1 + ((k * 47) % (fr7.totalVerts - fr7.cursor - 1))) | 0;
-                const p7 = r._fernRingPunkt(fr7, g);
-                const law7 = r._terrainMacroSurfaceY(p7.x, p7.z, false);
-                let want = law7 < wl7 ? wl7 - F.wasserDrop : law7;
-                if (p7.row === 0) want -= F.saumDrop;
-                const y7 = fr7.meshes[p7.s].geometry.attributes.position.getY(p7.li);
-                const d7 = Math.abs(y7 - want);
+                const pv = probeVertex(g, 0, fr7);
+                const d7 = pv.okXZ ? pv.dy : Infinity;
                 if (d7 > fzWorst) fzWorst = d7;
                 fzProben++;
             }
