@@ -18,10 +18,18 @@
 //       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
 //   (f) TREUE — jeder Satz-Bereich trägt byte-gleich die Arrays seines Chunks (Index um den Bereichs-
 //       Anfang verschoben), die Index-Blöcke liegen nah → fern;
-//   (g) kein Page-Error.
+//   (g) kein Page-Error;
+//   (h) BAU-SATZ (Welle 6) — die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF: jede lebende Gruppe einer
+//       Satz-Art (`AnazhRealm.BAU_SATZ` je Rezept-kind: Haus, Fels, Kristall, Säulen; ohne Tür-Flügel) hängt an keinem
+//       Eltern-Knoten (weder Bundle noch Szene) und lebt als Bereich im Satz ihres Stoffs — n × liveCount Vertices, die
+//       erste Instanz in Welt-Lage (Geometrie × Instanz-Matrix). Befund (echte GPU, Mess-Wiese): jede Gestalt zog als
+//       eigene Gruppe einen Befehl je Pass — das Dorf 33 (11 Häuser × 3 Stoffe), die Felszacken 34 (15 Gestalten);
+//   (i) WACHSEN (Welle 6) — ein wachsender Satz trägt einen FRISCHEN Mesh über der neuen Pool-Geometrie, nie eine
+//       getauschte Geometrie (r184 zerstört beim verzögerten Entsorgen der alten sonst die GPU-Puffer der neuen).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
-// direkt in der Szene, einer Gruppe `x#0@p:0,0`, einem zweiten `streuNah` derselben Senke und einer Fern-Deko MUSS rot
-// fallen und jeden Täter mit Namen und Zahl nennen — eine Wand, die hier nicht feuert, ist selbst rot.
+// direkt in der Szene, einer Gruppe `x#0@p:0,0`, einem zweiten `streuNah` derselben Senke, einer Fern-Deko, einer
+// selbst zeichnenden Satz-Gruppe (`f:zacken:L0`) und einem Haus ohne Bereich MUSS rot fallen und jeden Täter mit
+// Namen und Zahl nennen — eine Wand, die hier nicht feuert, ist selbst rot.
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -53,6 +61,16 @@ function urteil(z) {
         );
     if (z.pBundles.length > 0)
         v.push(`BAU: ${z.pBundles.length} \`p:\`-Region-Bundles — ${z.pBundles.slice(0, 4).join(", ")}`);
+    const bs = z.bauSatz || { selbst: [], ohneBereich: [] };
+    if (bs.selbst.length > 0)
+        v.push(
+            `BAU-SATZ: ${bs.selbst.length} Gruppen einer Satz-Art zeichnen selbst (Soll 0, der Satz ihres Stoffs) — ` +
+                bs.selbst.slice(0, 4).join(", ")
+        );
+    if (bs.ohneBereich.length > 0)
+        v.push(
+            `BAU-SATZ: ${bs.ohneBereich.length} Satz-Gruppen ohne treuen Bereich — ${bs.ohneBereich.slice(0, 4).join(", ")}`
+        );
     return v;
 }
 
@@ -68,6 +86,7 @@ function selbsttest() {
         fern: {},
         pGruppen: [],
         pBundles: [],
+        bauSatz: { gruppen: 3, imSatz: 3, selbst: [], ohneBereich: [] },
     };
     const fehler = [];
     if (urteil(gruen).length !== 0) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
@@ -105,6 +124,27 @@ function selbsttest() {
             name: "Deck-Zwilling lebt",
             z: { ...gruen, deck: 3 },
             muss: [/STREU: 3 Deck-Streu-InstancedMeshes/],
+        },
+        {
+            name: "eine Felszacken-Gestalt zeichnet als eigene Gruppe",
+            z: {
+                ...gruen,
+                bauSatz: { gruppen: 3, imSatz: 2, selbst: ["f:zacken:L0 (f:zacken|4|0:0)"], ohneBereich: [] },
+            },
+            muss: [/BAU-SATZ: 1 Gruppen einer Satz-Art zeichnen selbst.*f:zacken:L0/],
+        },
+        {
+            name: "ein Haus ohne Bereich im Satz",
+            z: {
+                ...gruen,
+                bauSatz: {
+                    gruppen: 3,
+                    imSatz: 2,
+                    selbst: [],
+                    ohneBereich: ["f:griechisch:L2 (f:griechisch|4|2|ov:x:0)"],
+                },
+            },
+            muss: [/BAU-SATZ: 1 Satz-Gruppen ohne treuen Bereich.*f:griechisch:L2/],
         },
     ];
     for (const f of faelle) {
@@ -295,6 +335,43 @@ function check(name, ok, detail) {
                     }
                 if (s._regionBundles)
                     for (const k of s._regionBundles.keys()) if (String(k).startsWith("p:")) z.pBundles.push(k);
+                // (h) DER BAU-SATZ: jede lebende Gruppe einer Satz-Art (Rezept-kind in BAU_SATZ, gesetzt, kein
+                // Tür-Flügel) zeichnet nie selbst und trägt ihren Bereich treu im Satz ihres Stoffs.
+                z.bauSatz = { gruppen: 0, imSatz: 0, selbst: [], ohneBereich: [] };
+                const buch = r._foundry && r._foundry.recipes ? r._foundry.recipes : {};
+                const SATZ = r.constructor.BAU_SATZ || {};
+                if (s.archInstanceGroups)
+                    for (const [k, g] of s.archInstanceGroups) {
+                        const m = /^f:([^|]+)\|/.exec(String(k));
+                        if (!m || String(k).includes("@") || g.tuer || !(g.liveCount > 0)) continue;
+                        const rec = buch[m[1]];
+                        if (!rec || !SATZ[rec.kind]) continue;
+                        z.bauSatz.gruppen++;
+                        const name = r._taeterKlasse(g.mesh) + " (" + String(k).slice(0, 40) + ")";
+                        if (!g.satz || g.mesh.parent) {
+                            z.bauSatz.selbst.push(name);
+                            continue;
+                        }
+                        const satz = s.chunkSaetze ? s.chunkSaetze.get(g.satz) : null;
+                        const b = satz ? satz.bloecke.get(k) : null;
+                        const n = g.geom.attributes.position.count;
+                        let treu = !!b && b.vAnzahl === n * g.liveCount && satz.mesh.name === SATZ[rec.kind];
+                        if (treu) {
+                            // die erste Instanz, erster Vertex: Geometrie × Instanz-Matrix, in Welt-Lage im Pool
+                            const e = g.mesh.instanceMatrix.array;
+                            const q = g.geom.attributes.position.array;
+                            const w = satz.geom.attributes.position.array;
+                            const o = b.vStart * 3;
+                            const soll = [
+                                e[0] * q[0] + e[4] * q[1] + e[8] * q[2] + e[12],
+                                e[1] * q[0] + e[5] * q[1] + e[9] * q[2] + e[13],
+                                e[2] * q[0] + e[6] * q[1] + e[10] * q[2] + e[14],
+                            ];
+                            for (let c = 0; c < 3; c++) if (Math.abs(w[o + c] - soll[c]) > 1e-3) treu = false;
+                        }
+                        if (treu) z.bauSatz.imSatz++;
+                        else z.bauSatz.ohneBereich.push(name);
+                    }
                 z.boden.tris = Math.round(z.boden.tris);
                 z.wasser.tris = Math.round(z.wasser.tris);
                 return z;
@@ -416,6 +493,26 @@ function check(name, ok, detail) {
             res.stitchDurchSatz = /_chunkSatzEin\(\s*"boden"/.test(code(r._rebuildLodStitchBand));
             res.wasserDurchSatz = /_chunkSatzEin\(\s*"wasser"/.test(code(r._finalizeWaterSheetMesh));
             res.bauOhneRegion = !/"p:"/.test(code(r._archPlacedRegionKey));
+            // (i) WACHSEN (Welle 6): ein Satz, der wächst, trägt einen FRISCHEN Mesh über der neuen Pool-Geometrie — r184
+            // hängt den Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst
+            // beim Entsorgen; eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 …
+            // was not set", das Hauptbild-Paket ungültig). Probe am Wasser-Satz: doppelte Kapazität, derselbe Inhalt.
+            res.wachsen = null;
+            const ws = s.chunkSaetze ? s.chunkSaetze.get("wasser") : null;
+            if (ws) {
+                const altMesh = ws.mesh,
+                    altIdx = ws.iVoll,
+                    altBereiche = ws.bloecke.size;
+                r._chunkSatzGeometrie(ws, ws.vKap * 2, ws.iKap);
+                r._tickChunkSatz();
+                res.wachsen = {
+                    frisch: ws.mesh !== altMesh,
+                    altFort: altMesh.parent === null,
+                    neuDa: ws.mesh.parent === s.scene && ws.mesh.geometry === ws.geom,
+                    inhalt: ws.iVoll === altIdx && ws.bloecke.size === altBereiche,
+                };
+            }
+            res.keinTausch = !/\.mesh\.geometry\s*=/.test(code(r._chunkSatzGeometrie));
             return res;
         });
     } catch (e) {
@@ -434,7 +531,8 @@ function check(name, ok, detail) {
             ` · Nah-Streu ${Object.values(z.streuNah).reduce((a, b) => a + b, 0)} Meshes (${z.streuInstanzen} Instanzen)` +
             ` · Fern ${Object.values(z.fern).reduce((a, b) => a + b, 0)} · Deck ${z.deck} · @p:-Gruppen ${z.pGruppen.length}` +
             ` · p:-Bundles ${z.pBundles.length} · Render-Bürger ${z.renderBuerger} · Szenen-Kinder ${z.szeneKinder}` +
-            `\n  Bau: ${z.bau.gruppen} Gruppen (${z.bau.werfer} werfen) · Glut ${z.bau.glut} (${z.bau.glutWerfer} werfen)\n`
+            `\n  Bau: ${z.bau.gruppen} Gruppen (${z.bau.werfer} werfen) · Glut ${z.bau.glut} (${z.bau.glutWerfer} werfen)` +
+            ` · Bau-Satz ${z.bauSatz.imSatz}/${z.bauSatz.gruppen} Gruppen im Satz ihres Stoffs\n`
     );
     for (const x of out.saetze || [])
         console.log(
@@ -449,6 +547,11 @@ function check(name, ok, detail) {
         v.join(" · ") || "sauber"
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);
+    check(
+        "(h) BAU-SATZ — der gesetzte Studio-Bau lebt (Satz-Arten im Ring), jede Gruppe als Bereich im Satz ihres Stoffs",
+        z.bauSatz.gruppen > 0 && z.bauSatz.imSatz === z.bauSatz.gruppen,
+        `${z.bauSatz.imSatz}/${z.bauSatz.gruppen}`
+    );
     check(
         "(c) STREU-SATZ — je Senke der Nah-Streu eine dichte Block-Tabelle, jeder Block einer lebenden Kachel",
         !!out.streu && out.streu.arten > 0 && out.streu.dicht === true,
@@ -485,6 +588,12 @@ function check(name, ok, detail) {
             wasser: out.wasserDurchSatz,
             bau: out.bauOhneRegion,
         })
+    );
+    const wa = out.wachsen;
+    check(
+        "(i) WACHSEN — ein wachsender Satz trägt einen frischen Mesh (nie eine getauschte Geometrie), derselbe Inhalt",
+        !!wa && wa.frisch && wa.altFort && wa.neuDa && wa.inhalt && out.keinTausch === true,
+        JSON.stringify(Object.assign({ keinTausch: out.keinTausch }, wa || {}))
     );
     check("(g) kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
     if (errs.length) {

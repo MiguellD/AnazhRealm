@@ -96,7 +96,9 @@ class AnazhRealm {
             weltMarch: null, // der EINE Welt-March (_weltMarchEnsure)
             feldPass: null, // der Feld-Pass des Fern-Rings
             deckStreu: null, // die Deck-Streu des Fernfelds
-            chunkSaetze: null, // Map Art → Boden-/Wasser-Satz (_chunkSatzEin)
+            chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
+            satzStoffe: null, // Map Bau-Satz-Art → { name, mat, wurf } (_bauSatzArt)
+            bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             archFundament: null, // der Fundament-Pool (_archFundamentAlloc)
             stlWege: null, // der Wege-Pool der Siedlungen
@@ -52277,6 +52279,7 @@ class AnazhRealm {
         // NEU in den Ofen (async Wärmung statt Sync-Compile am ersten Draw; lebt sie noch, Cache-Treffer).
         if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
         this.state.archInstanceGroups.delete(groupKey);
+        if (g.satz) this._bauSatzMarke(groupKey, g.satz); // Welle 6 — der Bereich verlässt den Satz im nächsten Takt
         if (g.mesh) {
             // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
             // Region-BundleGroup; ein leeres Bundle
@@ -61719,6 +61722,9 @@ class AnazhRealm {
     _archMeshBundleTouch(mesh) {
         const p = mesh ? mesh.parent : null;
         if (p && p.isBundleGroup) p.needsUpdate = true;
+        // Welle 6 — eine Satz-Gruppe zeichnet als Bereich im Satz ihres Stoffs: der Bereich legt sich neu.
+        else if (mesh && mesh.userData.bauSatz)
+            this._bauSatzMarke(mesh.userData.archInstanceKey, mesh.userData.bauSatz);
     }
 
     // Parent-bewusstes Entfernen (die scene.remove-Falle: remove() wirkt nur auf
@@ -61785,6 +61791,21 @@ class AnazhRealm {
                 richtung: -1, // fern → nah (transparent: der Maler-Algorithmus innerhalb des Satzes)
                 userData: { chunkSatz: "wasser", isHydrosphere: true, hydroKind: "chunk-water-satz" },
             };
+        // DER BAU-SATZ (`_bauSatzArt`): je Familie × Stoff × Wurf ein Satz — sein Stoff ist der geteilte Studio-Stoff
+        // der Instanz-Gruppen, ein Bereich ist eine Gruppe (alle ihre Instanzen in Welt-Lage, `_bauSatzBlock`).
+        const bau = this.state.satzStoffe ? this.state.satzStoffe.get(art) : null;
+        if (bau)
+            return {
+                name: bau.name,
+                attr: AnazhRealm.BAU_SATZ_ATTR,
+                mat: bau.mat,
+                schatten: bau.wurf,
+                empfang: true,
+                renderOrder: 0,
+                richtung: bau.mat.transparent === true ? -1 : 1, // ein durchscheinender Stoff fern → nah
+                userData: { bauSatz: bau.name },
+                kapazitaet: "bau",
+            };
         throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
     }
 
@@ -61796,7 +61817,7 @@ class AnazhRealm {
         if (s) return s;
         if (!st.scene) throw new Error(`_chunkSatz(${art}): keine Szene`);
         const spec = this._chunkSatzArt(art);
-        const C = AnazhRealm.CHUNK_SATZ[art];
+        const C = AnazhRealm.CHUNK_SATZ[spec.kapazitaet || art];
         if (!C) throw new Error(`_chunkSatz: keine Start-Kapazität für „${art}" (CHUNK_SATZ)`);
         s = {
             art,
@@ -61814,19 +61835,15 @@ class AnazhRealm {
             anker: null,
             verborgen: false,
             wachse: 0,
+            iVoll: 0, // die gelegte Index-Zahl (der ganze Satz)
         };
         this._chunkSatzGeometrie(s, C.v, C.i);
-        const mesh = new THREE.Mesh(s.geom, spec.mat);
-        mesh.name = spec.name;
-        mesh.frustumCulled = false;
-        mesh.castShadow = spec.schatten;
-        mesh.receiveShadow = spec.empfang;
-        mesh.renderOrder = spec.renderOrder;
-        mesh.visible = false; // bis der erste Index liegt
-        Object.assign(mesh.userData, spec.userData);
-        s.mesh = mesh;
+        const mesh = this._chunkSatzMesh(s); // unsichtbar, bis der erste Index liegt
         st.chunkSaetze.set(art, s);
         st.scene.add(mesh);
+        // Ein Bau-Satz ist eine neue Konsum-Familie (Mesh × Studio-Stoff): der Pipeline-Ofen wärmt sie async, bevor
+        // ihr erster Bereich sie sichtbar macht.
+        if (spec.userData.bauSatz) this._pipeOfenMerke("satz", spec.mat, mesh);
         return s;
     }
 
@@ -61841,7 +61858,7 @@ class AnazhRealm {
             g.setAttribute(name, new THREE.BufferAttribute(arr, is));
         }
         const idx = new Uint32Array(iKap);
-        const iN = alt ? alt.drawRange.count : 0;
+        const iN = alt ? s.iVoll : 0; // die gelegte Index-Zahl, nie der Bereich eines Schatten-Passes
         if (iN > 0) idx.set(alt.index.array.subarray(0, iN));
         g.setIndex(new THREE.BufferAttribute(idx, 1));
         g.setDrawRange(0, iN);
@@ -61852,11 +61869,36 @@ class AnazhRealm {
         s.vKap = vKap;
         s.iKap = iKap;
         for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
-        if (s.mesh) s.mesh.geometry = g;
+        // Ein Wachsen trägt einen FRISCHEN Mesh, nie eine getauschte Geometrie: r184 hängt den Entsorgungs-Hörer einer
+        // Geometrie an ihr ERSTES Render-Objekt und liest dessen Attribute erst beim Entsorgen — nach einem Tausch die der
+        // neuen Geometrie. Die verzögerte Entsorgung der alten zerstörte so die GPU-Puffer der neuen (gemessen, Welle 6,
+        // echte GPU: die Normale des werfenden Bau-Satzes ohne Puffer, „Vertex buffer slot 5 … was not set", das ganze
+        // Hauptbild-Kommando-Paket ungültig). Der alte Mesh fällt mit seinen Render-Objekten.
+        if (s.mesh) this._chunkSatzMesh(s);
         if (alt) {
             s.wachse++;
             this._queueGeometryDispose(alt);
         }
+    }
+
+    // Der Mesh eines Satzes über seiner aktuellen Pool-Geometrie; ersetzt einen alten am selben Eltern-Knoten.
+    _chunkSatzMesh(s) {
+        const spec = s.spec;
+        const mesh = new THREE.Mesh(s.geom, spec.mat);
+        mesh.name = spec.name;
+        mesh.frustumCulled = false;
+        mesh.castShadow = spec.schatten;
+        mesh.receiveShadow = spec.empfang;
+        mesh.renderOrder = spec.renderOrder;
+        mesh.visible = !s.verborgen && s.iVoll > 0;
+        Object.assign(mesh.userData, spec.userData);
+        const alt = s.mesh;
+        if (alt && alt.parent) {
+            alt.parent.add(mesh);
+            alt.parent.remove(alt);
+        }
+        s.mesh = mesh;
+        return mesh;
     }
 
     _chunkSatzViews(s, b) {
@@ -62029,12 +62071,13 @@ class AnazhRealm {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         if (!s) return;
         s.verborgen = !sichtbar;
-        s.mesh.visible = sichtbar && s.geom.drawRange.count > 0;
+        s.mesh.visible = sichtbar && s.iVoll > 0;
     }
 
     // Je Render (vor dem Zeichnen): jeder geänderte Satz legt seinen Index ab dem ersten geänderten Block neu;
     // ein Spieler-Chunk-Wechsel sortiert die Blöcke neu (Ring-Distanz).
     _tickChunkSatz() {
+        this._tickBauSatz();
         const saetze = this.state.chunkSaetze;
         if (!saetze || saetze.size === 0) return;
         const lpc = this.state.lastPlayerVoxelChunk;
@@ -62069,10 +62112,142 @@ class AnazhRealm {
             index.needsUpdate = true;
         }
         s.geom.setDrawRange(0, iPos);
+        s.iVoll = iPos; // der ganze Satz (die Werfer-Wahl je Schatten-Pass zeichnet einen Teil, `_satzWerferWahl`)
         s.mesh.visible = !s.verborgen && iPos > 0;
         s.ordnung = neu;
         s.schmutzig = false;
         s.anker = anker;
+    }
+
+    // ═══ DER BAU-SATZ (Welle 6) ═══
+    // Die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF, nie seine Gestalt. Befund (echte GPU, Mess-Wiese
+    // −900/−850, `werkbank band`): jede Instanz-Gruppe ist EINE Geometrie (`f:<preset>|<gestalt>|<lod>[|ov]:<teil>`), und
+    // WebGPU zieht jede einzeln — das griechische Dorf (jedes Haus trägt seine Parzelle als ov-Prägung: eine Gestalt je
+    // Haus, count 1) zeichnete je Haus seine drei L2-Stoffe, 11 Häuser = 33 Befehle (die Band-Klasse „karten", die
+    // Häuser sind keine Karten), die Felszacken je Gestalt eine Gruppe aus EINEM Stoff: 15 Gestalten = 15 Befehle im
+    // Hauptbild, 14 + 5 in den Kaskaden. Der Bau-Satz legt jede Gruppe einer Satz-Art (`BAU_SATZ`, je Studio-Art) als
+    // BEREICH in den Pool-Satz ihres Stoffs (die EINE Pool-Mechanik des Chunk-Satzes): ihre Instanzen in Welt-Lage,
+    // byte-gleich gerechnet aus Geometrie × Instanz-Matrix (Normale × Normalen-Matrix, Farbe × Instanz-Farbe, die
+    // Instanz-Attribute der Fassade je Vertex). Die Gruppe bleibt die Wahrheit ihrer Slots (Belegen · Freigeben ·
+    // Raycast · Gnadenfrist); sie zeichnet nie selbst — jede Mutation ihrer Draw-Wahrheit meldet der EINE Chokepoint
+    // `_archMeshBundleTouch`, der Bereich legt sich im nächsten Satz-Takt neu (Kosten an der Änderung).
+    // Nicht im Satz: was wandert (Tür-Flügel `leaf.tuer`, Fahrzeug), was die Dither-Blende je Instanz trägt und
+    // oft wiederkehrt (Baum, Strauch), die Karte (der EINE Atlas), die Streu (regional).
+    _bauSatzArt(leaf, regionKey, castShadow) {
+        if (regionKey != null || !leaf || leaf.tuer || !leaf.mat) return null;
+        const m = typeof leaf.leafKey === "string" ? /^f:([^|]+)\|/.exec(leaf.leafKey) : null;
+        if (!m) return null;
+        const buch = this._foundry && this._foundry.recipes ? this._foundry.recipes : null;
+        const rec = buch ? buch[m[1]] : null;
+        const name = rec ? AnazhRealm.BAU_SATZ[rec.kind] : null;
+        if (!name) return null;
+        const art = name + "|" + leaf.mat.uuid + (castShadow ? "|w" : "|-");
+        const st = this.state;
+        if (!st.satzStoffe) st.satzStoffe = new Map();
+        if (!st.satzStoffe.has(art)) st.satzStoffe.set(art, { name, mat: leaf.mat, wurf: !!castShadow });
+        return art;
+    }
+
+    // Die Marke einer geänderten Satz-Gruppe (der Takt legt ihren Bereich neu oder nimmt ihn heraus).
+    _bauSatzMarke(key, art) {
+        const st = this.state;
+        (st.bauSatzSchmutzig || (st.bauSatzSchmutzig = new Map())).set(key, art);
+    }
+
+    // Je Render vor dem Index-Takt des Satzes: jede markierte Gruppe legt ihren Bereich neu (lebt sie) oder verlässt
+    // den Satz (leer, entsorgt).
+    _tickBauSatz() {
+        const sm = this.state.bauSatzSchmutzig;
+        if (!sm || sm.size === 0) return;
+        const groups = this.state.archInstanceGroups;
+        const span = this._voxelChunkConfig().span;
+        for (const [key, art] of sm) {
+            const g = groups ? groups.get(key) : null;
+            if (!g || g.satz !== art || !((g.liveCount || 0) > 0)) {
+                this._chunkSatzAus(art, key);
+                continue;
+            }
+            const a = g.mesh.instanceMatrix.array;
+            this._chunkSatzEin(
+                art,
+                key,
+                this._bauSatzBlock(g),
+                Math.floor(a[12] / span) + "," + Math.floor(a[14] / span)
+            );
+        }
+        sm.clear();
+    }
+
+    // Der Bereich einer Gruppe: jede lebende Instanz [0, liveCount) in Welt-Lage — Position × Instanz-Matrix, Normale ×
+    // ihre Normalen-Matrix (normiert), Farbe × Instanz-Farbe (der InstanceNode multipliziert sie sonst in den Stoff),
+    // die Instanz-Attribute der Fassade (`LOD_INSTANZ_ATTRIBUTE`) je Vertex, alle anderen Vertex-Attribute wie sie sind.
+    // Fail-closed: ein Satz-Attribut ohne Quelle, eine Geometrie ohne Index ist ein lauter Bruch.
+    _bauSatzBlock(g) {
+        const geo = g.geom;
+        const A = geo.attributes;
+        const n = A.position.count;
+        const cnt = g.liveCount | 0;
+        const N = n * cnt;
+        if (!geo.index || !geo.index.array) throw new Error(`_bauSatzBlock(${g.key}): kein Index`);
+        const im = g.mesh.instanceMatrix.array;
+        const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
+        const M = this._bauSatzM || (this._bauSatzM = new THREE.Matrix4());
+        const NM = this._bauSatzNM || (this._bauSatzNM = new THREE.Matrix3());
+        const attributes = {};
+        for (const [name, is] of AnazhRealm.BAU_SATZ_ATTR) {
+            const q = A[name];
+            if (!q || q.itemSize !== is)
+                throw new Error(`_bauSatzBlock(${g.key}): Attribut ${name} fehlt oder passt nicht`);
+            const out = new Float32Array(N * is);
+            const src = q.array;
+            const jeInstanz = q.isInstancedBufferAttribute === true;
+            for (let i = 0; i < cnt; i++) {
+                const o0 = i * n * is;
+                if (name === "position" || name === "normal") {
+                    M.fromArray(im, i * 16);
+                    const e = name === "position" ? M.elements : NM.getNormalMatrix(M).elements;
+                    for (let v = 0, k = 0; v < n; v++, k += 3) {
+                        const x = src[k],
+                            y = src[k + 1],
+                            z = src[k + 2];
+                        if (name === "position") {
+                            out[o0 + k] = e[0] * x + e[4] * y + e[8] * z + e[12];
+                            out[o0 + k + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+                            out[o0 + k + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+                        } else {
+                            const nx = e[0] * x + e[3] * y + e[6] * z,
+                                ny = e[1] * x + e[4] * y + e[7] * z,
+                                nz = e[2] * x + e[5] * y + e[8] * z;
+                            const l = Math.hypot(nx, ny, nz) || 1;
+                            out[o0 + k] = nx / l;
+                            out[o0 + k + 1] = ny / l;
+                            out[o0 + k + 2] = nz / l;
+                        }
+                    }
+                } else if (jeInstanz) {
+                    for (let v = 0; v < n; v++) for (let c = 0; c < is; c++) out[o0 + v * is + c] = src[i * is + c];
+                } else if (name === "color" && ic) {
+                    const r = ic[i * 3],
+                        gg = ic[i * 3 + 1],
+                        b = ic[i * 3 + 2];
+                    for (let k = 0; k < n * 3; k += 3) {
+                        out[o0 + k] = src[k] * r;
+                        out[o0 + k + 1] = src[k + 1] * gg;
+                        out[o0 + k + 2] = src[k + 2] * b;
+                    }
+                } else out.set(src.subarray(0, n * is), o0);
+            }
+            attributes[name] = { array: out, itemSize: is, count: N };
+        }
+        const li = geo.index.array;
+        const iN = li.length;
+        const idx = new Uint32Array(iN * cnt);
+        for (let i = 0; i < cnt; i++) {
+            const b = i * n,
+                o = i * iN;
+            for (let k = 0; k < iN; k++) idx[o + k] = li[k] + b;
+        }
+        return { attributes, index: { array: idx } };
     }
 
     // ═══ DIE REIFE-WACHE ═══
@@ -62499,6 +62674,9 @@ class AnazhRealm {
         // V18.349 — per-Leaf-Override (der opake Kronen-Kern setzt castShadow:false): ein einzelner
         // Leaf darf den Namen-basierten Schatten-Default überstimmen; sonst der LOD-Default via Name.
         const castShadow = leaf.castShadow !== undefined ? !!leaf.castShadow : this._archGroupCastsShadow(name);
+        // DER BAU-SATZ (Welle 6): ist das Leaf ein gesetzter Studio-Bau einer Satz-Art, zeichnet die Gruppe nie selbst —
+        // ihr Bereich lebt im Satz ihres Stoffs (`_bauSatzArt`, `_tickBauSatz`).
+        const satz = this._bauSatzArt(leaf, regionKey, castShadow);
         // AUSLÖSCHUNGS-WELLE (Feld B) — trägt die Quell-Geometrie LOD-Attribute (aH0 =
         // Baum-Stufen · aKarte = die Karte), bekommt die Gruppe die INSTANZ-FASSADE
         // (per-Instanz-Metrik wie das Studio; s. _lodInstanceFacade).
@@ -62521,8 +62699,12 @@ class AnazhRealm {
         // (leaf.tuer) bleiben DRAUSSEN (per-Frame-Matrizen, _tickTorFluegel). GLOBALE Gruppen ziehen in EIN
         // "@global"-Bundle: der Key matcht das Kugel-Regex nicht → keine cullSphere → immer sichtbar,
         // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
-        const bundle = !leaf.tuer ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
-        if (bundle) {
+        // Eine Satz-Gruppe hängt nirgends: sie ist Slot-Wahrheit und Raycast-Ziel, gezeichnet wird ihr Bereich im Satz.
+        const bundle = !leaf.tuer && !satz ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
+        if (satz) {
+            mesh.frustumCulled = false;
+            mesh.userData.bauSatz = satz;
+        } else if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
             bundle.needsUpdate = true;
@@ -62545,6 +62727,7 @@ class AnazhRealm {
             regional,
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
             tuer: leaf.tuer || null, // V18.465 — Tür-Flügel-Scharnier (Template-Raum)
+            satz, // Welle 6 — die Satz-Art (null = die Gruppe zeichnet selbst)
         };
         // Nur im NEU-Gruppen-Zweig (nicht in _archInstanceGroupGrow → g-Identität
         // bleibt): der Ref-Zähler der Cache-Gruppe steigt um 1, solange eine lebende InstancedMesh-Gruppe ihre
@@ -62555,9 +62738,12 @@ class AnazhRealm {
         }
         this.state.archInstanceGroups.set(key, g);
         // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Konsum-Familie
-        // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie).
-        this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
-        g._ofenKey = (wantsFacade ? "if|" : "ip|") + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER
+        // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie); eine Satz-Gruppe zeichnet nie, ihre
+        // Familie ist der Satz (`_chunkSatz`).
+        if (!satz) {
+            this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
+            g._ofenKey = (wantsFacade ? "if|" : "ip|") + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER
+        }
         this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
         return g;
     }
@@ -62611,6 +62797,7 @@ class AnazhRealm {
         next.receiveShadow = true;
         next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
         next.userData.archInstanceKey = g.key;
+        if (g.satz) next.userData.bauSatz = g.satz; // Welle 6 — die Satz-Gruppe bleibt ohne Eltern (der Satz zeichnet)
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
         // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
@@ -62642,7 +62829,7 @@ class AnazhRealm {
             parent.remove(g.mesh);
             parent.add(next);
             if (parent.isBundleGroup) parent.needsUpdate = true;
-        } else if (this.state.scene) this.state.scene.add(next);
+        } else if (!g.satz && this.state.scene) this.state.scene.add(next);
         g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
         g.mesh = next;
         g.capacity = newCap;
@@ -63448,6 +63635,7 @@ class AnazhRealm {
     _archDisposeAllInstanceGroups() {
         if (this.state.archInstanceGroups) {
             for (const g of this.state.archInstanceGroups.values()) {
+                if (g.satz) this._bauSatzMarke(g.key, g.satz); // Welle 6 — die Bereiche verlassen den Satz
                 // SUBMIT-WAL — parent-bewusst: regionale InstancedMesh-Gruppen hängen
                 // in Region-BundleGroups (scene.remove wäre dort ein No-op = Leck).
                 if (g.mesh) this._archBundleSceneRemove(g.mesh);
@@ -86524,9 +86712,10 @@ class AnazhRealm {
         return aus;
     }
 
-    // Die WERFER-HÜLLEN der Welt: jedes Region-Bundle (null = wirft nicht) und jeder Bereich des Boden-Satzes (der
+    // Die WERFER-HÜLLEN der Welt: jedes Region-Bundle (null = wirft nicht) und jeder Bereich eines werfenden Satzes (der
     // Boden lebt außerhalb jedes Bundles — ohne ihn fiele der Boden unter dem Band aus der Box, und ein Hang zur Sonne
-    // hin läge über der nahen Ebene). Auf dem WebGL2-Rückfall (keine Bundles) trägt der Boden das Band allein.
+    // hin läge über der nahen Ebene; ebenso der werfende Bau-Satz, Welle 6). Auf dem WebGL2-Rückfall (keine Bundles)
+    // tragen die Sätze das Band allein.
     _kaskadenHuellen(S) {
         const aus = S.huellen;
         aus.length = 0;
@@ -86536,9 +86725,13 @@ class AnazhRealm {
                 const h = this._bundleWerferHuelle(bg);
                 if (h) aus.push(h);
             }
-        const boden = this.state.chunkSaetze ? this.state.chunkSaetze.get("boden") : null;
-        if (boden && boden.mesh.visible)
-            for (const b of boden.bloecke.values()) if (b.huelle && !b.huelle.isEmpty()) aus.push(b.huelle);
+        // Jeder werfende Satz (der Boden, die werfenden Bau-Sätze) trägt seine Bereichs-Hüllen bei.
+        const saetze = this.state.chunkSaetze;
+        if (saetze)
+            for (const s of saetze.values()) {
+                if (s.spec.schatten !== true || !s.mesh.visible) continue;
+                for (const b of s.bloecke.values()) if (b.huelle && !b.huelle.isEmpty()) aus.push(b.huelle);
+            }
         return aus;
     }
 
@@ -86844,9 +87037,14 @@ class AnazhRealm {
         // dieses Frames (die Karten rendern im Knoten-updateBefore seiner Objekte) — Loop, Sonde und Zähler gleich.
         const csm = this.state.csmNode;
         if (!nach && csm && csm.camera && kamera === csm.camera) this._kaskadenPassen(csm);
+        const k = nach ? -1 : this._schattenKameraIndex(kamera);
+        if (k >= 0) {
+            S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
+            S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
+        }
+        this._satzWerferWahl(k >= 0 ? S.frustum : null, S.ab);
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
-        const k = nach ? -1 : this._schattenKameraIndex(kamera);
         if (k < 0) {
             for (const bg of map.values()) {
                 const s = bg.userData._sichtHaupt;
@@ -86854,8 +87052,6 @@ class AnazhRealm {
             }
             return;
         }
-        S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
-        S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
         let n = 0;
         for (const bg of map.values()) {
             const h = this._bundleWerferHuelle(bg);
@@ -86891,6 +87087,37 @@ class AnazhRealm {
     _passSichtZurueck(S) {
         for (let i = 0; i < S.ab.length; i++) S.ab[i].visible = true;
         S.ab.length = 0;
+    }
+
+    // DIE WERFER-WAHL DER BAU-SÄTZE (Welle 6): ein werfender Bau-Satz zeichnet in einem Schatten-Pass nur den Index-
+    // Bereich, der seine Bereiche im Pass-Frustum deckt — die Bereiche liegen nah → fern (`_chunkSatzOrdnen`), die nahe
+    // Kaskade nimmt den Anfang, die ferne das Ende; liegt keiner im Frustum, ruht der Satz im Pass (`ab` merkt ihn für die
+    // Rückkehr). Ohne die Wahl zeichnete jede Kaskade den ganzen Satz (gemessen, Mess-Wiese: die L1-Häuser des Dorfs
+    // 31k Dreiecke in der fernen Kaskade, die sie als Instanz-Gruppen nie zog). Der Haupt-Pass (frustum null) und die
+    // Rückkehr zeichnen den ganzen Satz.
+    _satzWerferWahl(frustum, ab) {
+        const saetze = this.state.chunkSaetze;
+        if (!saetze) return;
+        for (const s of saetze.values()) {
+            if (!s.spec.userData.bauSatz || s.spec.schatten !== true || !s.mesh.visible) continue;
+            const voll = s.iVoll || 0;
+            if (!frustum) {
+                const dr = s.geom.drawRange;
+                if (dr.start !== 0 || dr.count !== voll) s.geom.setDrawRange(0, voll);
+                continue;
+            }
+            let a = Infinity,
+                e = -1;
+            for (const b of s.ordnung)
+                if (b.huelle && !b.huelle.isEmpty() && frustum.intersectsBox(b.huelle)) {
+                    if (b.iStart < a) a = b.iStart;
+                    if (b.iStart + b.iAnzahl > e) e = b.iStart + b.iAnzahl;
+                }
+            if (e < 0) {
+                s.mesh.visible = false;
+                ab.push(s.mesh);
+            } else s.geom.setDrawRange(a, e - a);
+        }
     }
 
     // Kaskaden-Index einer Schatten-Kamera (die EINE Map ohne CSM = 0), sonst −1.
@@ -87378,7 +87605,34 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 AnazhRealm.CHUNK_SATZ = Object.freeze({
     boden: Object.freeze({ v: 229376, i: 1 << 20 }),
     wasser: Object.freeze({ v: 1 << 16, i: 1 << 18 }),
+    // Der Bau-Satz (Welle 6) beginnt klein: je Stoff ein Satz, das Dorf der Mess-Wiese trägt in seinem größten Stoff
+    // ~40k Vertices — er wächst in wenigen Schritten, eine Formation bleibt darunter.
+    bau: Object.freeze({ v: 1 << 13, i: 1 << 14 }),
 });
+// DER BAU-SATZ (Welle 6, `_bauSatzArt`): die Studio-Arten (Rezept-`kind`), deren gesetzte Gestalt im Satz ihres Stoffs
+// zeichnet — je Art der Name des Satzes (die Täter-Klasse der Band-Linse, spec/profiband/haushalt.json: `bauSatz` →
+// bau, `formationenSatz` → formationen). Ein gesetzter Bau wandert nie (die Tür-Flügel reisen einzeln), und seine
+// Gestalt kehrt selten wieder (das Haus trägt seine Parzelle als Prägung, der Fels 16 Gestalten): die Instanz-Gruppe
+// zog je Gestalt einen Befehl je Pass. Baum und Strauch (die Dither-Blende je Instanz, viele Wiederkehrer), Tor und
+// Fahrzeug (Flügel, Fahrt) zeichnen als Instanz-Gruppe.
+AnazhRealm.BAU_SATZ = Object.freeze({
+    haus: "bauSatz",
+    rock: "formationenSatz",
+    boulder: "formationenSatz",
+    scree: "formationenSatz",
+    crystal: "formationenSatz",
+    columns: "formationenSatz",
+});
+// Die Attribute eines Bau-Satz-Bereichs: was der Studio-Stoff liest (Vertex-Farbe, die Stufen-Stempel der Dither-
+// Blende) — `_bauSatzBlock` rechnet Position und Normale in Welt-Lage, die Instanz-Stempel je Vertex.
+AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
+    Object.freeze(["position", 3]),
+    Object.freeze(["normal", 3]),
+    Object.freeze(["color", 3]),
+    Object.freeze(["aLodLevel", 1]),
+    Object.freeze(["aH0", 1]),
+    Object.freeze(["aH0L", 1]),
+]);
 // Foundry-Cache-GEWICHTS-DECKEL: `_foundryCacheSet` bilanziert die typed-array-Bytes je Eintrag
 // (`_cacheBytes`) und räumt LRU, bis Byte-Budget UND Entries-Cap stehen (ein Eintrags-Zähler ist
 // byte-blind: Haus-L0 ≈ 7–8 MB, Blume wenige KB). Die Kappe MUSS über dem Ring-Working-Set liegen
@@ -91447,6 +91701,36 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             : obj && obj.material && !Array.isArray(obj.material)
               ? obj.material
               : null;
+    // DER GEOMETRIE-WÄCHTER JE RENDER-OBJEKT (Welle 6): der Vendor merkt Attribut-Versionen je GEOMETRIE, nicht je
+    // Render-Objekt — der erste Pass, der eine Änderung sieht (die Kaskade), verbraucht sie, und ein Pass, der ein Attribut
+    // allein liest (die Normale im Hauptbild), lädt es nie hoch. Gemessen am werfenden Bau-Satz (echte GPU, Dorf der
+    // Mess-Wiese): nach dem Wachsen trug die Normale keinen GPU-Puffer, das Hauptbild-Kommando-Paket war ungültig
+    // („Vertex buffer slot 5 … was not set"). Geometrie-Id, Index und jedes Attribut (Id · Version) je Render-Objekt.
+    const geo = ro && ro.geometry;
+    if (geo && geo.attributes) {
+        const d = obs.getRenderObjectData(ro);
+        const g = d._anazhGeoV || (d._anazhGeoV = []);
+        const ix = geo.index;
+        let anders = g[0] !== geo.id || g[1] !== (ix ? ix.id : -1) || g[2] !== (ix ? ix.version : -1);
+        g[0] = geo.id;
+        g[1] = ix ? ix.id : -1;
+        g[2] = ix ? ix.version : -1;
+        let i = 3;
+        for (const k in geo.attributes) {
+            const a = geo.attributes[k];
+            if (g[i] !== a.id || g[i + 1] !== a.version) {
+                g[i] = a.id;
+                g[i + 1] = a.version;
+                anders = true;
+            }
+            i += 2;
+        }
+        if (g.length !== i) {
+            g.length = i;
+            anders = true;
+        }
+        if (anders) return true;
+    }
     const texe = mat ? mat._anazhAtlasTexe : null;
     if (texe) {
         let va = "";

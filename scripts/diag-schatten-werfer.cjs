@@ -30,8 +30,8 @@
 //   W4  eine Region mit einem nahen und einem 2 km fernen Werfer: die Region wirft, der ferne Werfer ruht
 //   W5  der Boden außerhalb der Bundles: ein Tal in der nahen Scheibe unter jeder Bundle-Hülle empfängt (liegt in der
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
-//   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, Boden-Satz oder freier Werfer (Tier · Spieler · Insel ·
-//       Bauplan-Bau als eigene Gruppe)
+//   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, werfender Satz (Boden, Bau-Satz) oder freier Werfer
+//       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
@@ -521,10 +521,14 @@ function probe(selbsttest) {
             ...(st.architectures || []).map((e) => e && e.mesh).filter(Boolean),
             st.playerMesh,
         ]);
-        const bodenMesh = boden ? boden.mesh : null;
+        // jeder WERFENDE Satz (der Boden, die werfenden Bau-Sätze, Welle 6) trägt seine Bereichs-Hüllen in die Box
+        // (`_kaskadenHuellen`)
+        const satzWerfer = new Set();
+        if (st.chunkSaetze)
+            for (const s of st.chunkSaetze.values()) if (s.spec.schatten === true) satzWerfer.add(s.mesh);
         const fremd = [];
         for (const top of st.scene.children) {
-            if (top.isBundleGroup || frei.has(top) || top === bodenMesh) continue;
+            if (top.isBundleGroup || frei.has(top) || satzWerfer.has(top)) continue;
             top.traverse((o) => {
                 if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
             });
@@ -795,7 +799,7 @@ function probe(selbsttest) {
             JSON.stringify(a.w5)
         );
         check(
-            "W6 jeder Werfer ist der Box bekannt (Bundle · Boden-Satz · Tier · Spieler · Insel · Bauplan-Bau)",
+            "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier · Spieler · Insel · Bauplan-Bau)",
             a.w6.n === 0,
             a.w6.n ? a.w6.fremd.join(" | ") : "keine fremde Werfer-Klasse"
         );

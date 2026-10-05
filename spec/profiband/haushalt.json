@@ -176,7 +176,7 @@
         },
         {
             "id": "bau",
-            "titel": "Bau (Haus · Tor · Fahrzeug · Glut · Markt · Fundament · Zaun)",
+            "titel": "Bau (Haus · Tor · Fahrzeug · Glut · Markt · Fundament · Zaun; das Haus zeichnet im Bau-Satz seines Stoffs)",
             "befehle": 40,
             "dreiecke": 60000,
             "regeln": [
@@ -203,12 +203,15 @@
                 },
                 {
                     "muster": "^(bau-fundament|siedlung-zaun)$"
+                },
+                {
+                    "muster": "^bauSatz$"
                 }
             ]
         },
         {
             "id": "formationen",
-            "titel": "Formationen (gesetzter Fels, Kristall, Säulen)",
+            "titel": "Formationen (gesetzter Fels, Kristall, Säulen; zeichnen im Formationen-Satz ihres Stoffs)",
             "befehle": 20,
             "dreiecke": 30000,
             "regeln": [
@@ -233,6 +236,9 @@
                 },
                 {
                     "muster": "^g:(stein_block|stamm_gefallen):L[01]$"
+                },
+                {
+                    "muster": "^formationenSatz$"
                 }
             ]
         },
