@@ -362,6 +362,14 @@ jobs:
               # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
               run: npm run gate:foundry-deadlock
 
+            - name: Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)
+              # Studio-Vertrag B2c fernform "karte": bis 05.10. trug jeder gesetzte Baum jenseits des Cull-Radius
+              # einen Kegel-und-Lappen-Satz im Welt-March (glatte, gestreifte, einfarbig hellgruene Ellipsoide,
+              # 895 an der Mess-Wiese). Beweist headless: jedes Karten-Ding der Karten-Zone traegt seine Karte
+              # (Stufe 2, voll), keins einen Satz, jenseits des Horizonts geraeumt, am Radius dieselben Slots.
+              # Der Selbsttest macht den alten Weg (A, D) und einen injizierten Satz (B) rot.
+              run: npm run gate:fernwald
+
             - name: Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)
               # V18.530: der Nebel war eine lineare Wand an der Wald-Kante (unter Last 60 m) und verdeckte die
               # gebaute Fernform. Beweist headless an DENSELBEN Uniforms, die der Luft-Knoten liest: klarer

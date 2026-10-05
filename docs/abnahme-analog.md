@@ -46,20 +46,23 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
 | Art | pA.w | pB.w |
 |---|---|---|
 | Kapsel | r ≥ 0 | Farbe ≥ 0 |
-| Kegel | r0 ≥ 0 | −(Farbe + (r1+1)/10) |
 | Box / Ellipsoid / Prisma | −(c+1) | 0 / 1 / 2·3 |
+
+(Der Kegel-Stumpf fiel 05.10. mit dem Baum-Satz, der ihn allein trug.)
 
 - **A Kreaturen:** bis 64 m (die EINE Nah-Grenze `ANALOG_NAH_M`, Hysterese 74 m, `KREATUR_NAH_MESH`) ist das Studio-Tier
   (tierBaum-Mesh mit Fell) die Gestalt. Fern: `_tickKreaturZiegel` → `_kreaturGliederBacken` →
   `_gliedKapselFit` (Kapsel je Glied, Dedup Gattung×Glied); je Frame reist die Knochen-Matrix in
   die Liste (`_weltFeldMatrix`).
 - **B Bäume:** die Streu-Bäume tragen die ganze Studio-LOD-Kette als Instanzen — L0/L1 Mesh, L2 das
-  gebackene Studio-Billboard (Bäcker-Queue nah zuerst, EINE Bake-Uhr 45 s). Gesetzte Bäume
-  (Architektur) fern: `_archFoundryZiegel` → `_baumKapselFit` mit Beipack `_baumGrammatikFit`
-  (Ketten-Kegel Stamm + Hauptäste, Kronen-Lappen aus den Zweig-Punkten).
+  gebackene Studio-Billboard (Bäcker-Queue nah zuerst, EINE Bake-Uhr 45 s). Gesetzte Bäume und
+  Sträucher (Architektur, die Karten-Dinge `_archKartenPreset`) sind jenseits der Mesh-Zone ihre
+  Karte bis zum Karten-Horizont `SCATTER.outerM` (B2c `fernform: "karte"`, `_archInKartenZone`,
+  gate:fernwald); ihr Analog-Satz (Ketten-Kegel + Kronen-Lappen) fiel 05.10. ganz — aus 45 m
+  standen dort glatte, gestreifte, einfarbig hellgrüne Ellipsoide.
 - **C Architektur + Streu:** `_archZiegelFern` — Häuser über `_archFachwerkFit` (Balken, Gefach,
-  Verbände, Prisma-Dach, Gaube/Flügel; ≤ 24 Primitive), gesetzte Studio-Dinge über
-  `_archFoundryZiegel` (Foundry-Flat; Bäume teilen Schlüssel + Fit mit der Streu), sonst
+  Verbände, Prisma-Dach, Gaube/Flügel; ≤ 24 Primitive), gesetzte Studio-Dinge ohne Karte (Fels,
+  Kristall) über `_archFoundryZiegel` (Foundry-Flat, Box-Satz), sonst
   `_archBoxFit` (≤ 24 AABB) — das ist die Gestalt JENSEITS der Mesh-Zone. Die Mesh-Zone ist der
   geregelte Cull-Radius (100–150 m): dort IST das Studio-Mesh mit seiner LOD-Kette die Gestalt
   (L0 < 12 m · L1 < 26 m · L2 darüber — die Studio-Distanzen d0/d1, der Host-Umweg fiel; Haus seit V18.500: L1 = die Flächen-Stufe des Studios,

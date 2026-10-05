@@ -11,15 +11,16 @@
 //      bis es steht)
 //   AM nah steht danach das Studio-Mesh (Grenze 800 Takte) — erst dann schießt die Linse: das Bild zeigt die
 //      Gestalt, nicht die Brücke
-//   A' fern (jenseits der Mesh-Zone): gesetzte Eiche UND Haus bekommen ihren Feld-Slot — der Feld-Bake-Takt geht
+//   A' fern (jenseits der Mesh-Zone): das gesetzte Haus bekommt seinen Feld-Slot — der Feld-Bake-Takt geht
 //      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte;
 //      gemessen 02.10.: Dorf mit 55 Foundry-Bauten Takt 111, mit 107 Bauten > 200 — der Takt vergab 84 Fits in
-//      200 Takten, alle in Distanz-Ordnung)
+//      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte (Karten-Zone, 05.10.)
 //   S  statisch: in der Mesh-Zone wartet ein ungebackener Bau in DERSELBEN Distanz-Schlange wie fern
 //      (Befund 02.10.: in Listen-Reihenfolge fraß das Dorf den überbuchten Bake-Takt, das frisch gesetzte
 //      Haus blieb 200 Takte ohne Feld und ohne Mesh); --selftest injiziert den Listen-Ruf → S rot
 //   B  kein Foundry-Bau ist „aufgegeben" ohne Slot (ausgebrannt)
-//   C  die Eiche hat ihren Fern-Satz auf dem Baum-Schlüssel (abaum:eiche:<v>)
+//   C  die Eiche trägt fern KEINEN Feld-Satz (ein Karten-Ding ist jenseits der Mesh-Zone seine Karte, B2c fernform,
+//      gate:fernwald) — bis 05.10. stand dort ein Kegel-und-Lappen-Satz
 //   D  das Feld liest dasselbe Licht wie das Mesh: neutrale Feld-Box vs. MeshStandard-Box am
 //      selben Ort, Luminanz-Verhältnis über die gemeinsame Maske im Band 0,8–1,25
 // plus je ein Schuss (artifacts/beweis-e/arch-feld-*.png) fürs Auge.
@@ -262,7 +263,7 @@ function schlangenGesetz(src) {
         };
         const B = setze("baum_eiche", 10);
         const Hh = setze(hausName, 26);
-        // FERN: jenseits der Mesh-Zone (Cull-Radius) ist das Feld die Gestalt.
+        // FERN: jenseits der Mesh-Zone (Cull-Radius) ist das Feld die Gestalt des Hauses, die Karte die der Eiche.
         const fernD = Math.round((r.state.architectureCullingRadius || 130) + 40);
         const BF = setze("baum_eiche", fernD);
         const HF = setze(hausName, fernD + 16);
@@ -273,17 +274,21 @@ function schlangenGesetz(src) {
         const idx = { baum: r.state.architectures.indexOf(eb), haus: r.state.architectures.indexOf(eh) };
         // Sichtbar = das Mesh steht ODER der Feld-Slot trägt (AAA nah: das Feld überbrückt nur, bis das Mesh steht).
         const sichtbar = (e) => !!(e && (r._archIsRendered(e) || e._ziegelSlot));
+        // Die ferne Eiche ist ihre Karte (die Stufe 2 steht als Instanz); ein Feld-Satz an ihr ist der Täter von C.
+        const karte = (e) => !!(e && r._archIsRendered(e) && e._lodLevel === 2);
+        let satzBF = false;
         let slotB = null,
             slotH = null,
-            slotBF = null,
+            karteBF = null,
             slotHF = null;
         for (let t = 1; t <= 200; t++) {
             await tick(1);
             if (slotB == null && sichtbar(eb)) slotB = t;
             if (slotH == null && sichtbar(eh)) slotH = t;
-            if (slotBF == null && ebF && ebF._ziegelSlot) slotBF = t;
+            if (karteBF == null && karte(ebF)) karteBF = t;
+            if (ebF && ebF._ziegelSlot) satzBF = true;
             if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
-            if (slotB != null && slotH != null && slotBF != null && slotHF != null && t >= 40) break;
+            if (slotB != null && slotH != null && karteBF != null && slotHF != null && t >= 40) break;
         }
         // NAH IST DAS MESH: die Feld-Brücke trägt nur, bis das Studio-Mesh steht — weiter takten, bis beide nahen
         // Bauten als Mesh rendern; FERN gilt nah zuerst, nie verhungert: der Takt geht in Distanz-Ordnung, der ferne
@@ -293,11 +298,12 @@ function schlangenGesetz(src) {
         let meshB = gestalt(eb) ? 0 : null,
             meshH = gestalt(eh) ? 0 : null;
         for (let t = 201; t <= 1000; t++) {
-            if (meshB != null && meshH != null && slotBF != null && slotHF != null) break;
+            if (meshB != null && meshH != null && karteBF != null && slotHF != null) break;
             await tick(1);
             if (meshB == null && gestalt(eb)) meshB = t - 200;
             if (meshH == null && gestalt(eh)) meshH = t - 200;
-            if (slotBF == null && ebF && ebF._ziegelSlot) slotBF = t;
+            if (karteBF == null && karte(ebF)) karteBF = t;
+            if (ebF && ebF._ziegelSlot) satzBF = true;
             if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
         }
         r._weltBakeErlaubt = taktRoh;
@@ -312,7 +318,6 @@ function schlangenGesetz(src) {
             else if (a._ziegelGebacken) ausgebrannt++;
         }
         const wm = r.state.weltMarch;
-        const variante = r._foundryVariantFor(eb ? eb.seed : 0, "eiche");
         // Der Zustand je gesetztem Bau (die Linse nennt den Täter, nicht nur „Takt null").
         const zustand = (e) =>
             e
@@ -331,7 +336,7 @@ function schlangenGesetz(src) {
                           const fl = r._foundryFlattenFor(e, p, e._lodLevel | 0);
                           return fl === null ? "laedt" : fl === false ? "kann-nicht" : fl.instanceable ? "bereit:L" + fl.lod : "nicht-instanzierbar";
                       })(),
-                      // Foundry-Bau: steht die L1-Flat (Quelle des Fits) und der geteilte Baum-Satz schon?
+                      // Foundry-Bau: steht die L1-Flat (Quelle des Fits) schon? Ist er ein Karten-Ding?
                       flat: r._archFoundryPreset(e)
                           ? r._foundry.cache.has(
                                 r._foundryKoerperKey(
@@ -341,14 +346,7 @@ function schlangenGesetz(src) {
                                 )
                             )
                           : null,
-                      satz: r._archFoundryPreset(e)
-                          ? !!(
-                                wm &&
-                                wm.kapselCache.has(
-                                    "abaum:" + r._archFoundryPreset(e) + ":" + r._foundryVariantFor(e.seed, r._archFoundryPreset(e))
-                                )
-                            )
-                          : null,
+                      karte: !!r._archKartenPreset(e),
                       d: Math.round(Math.hypot(e.position.x - pm.x, e.position.z - pm.z)),
                   }
                 : null;
@@ -360,7 +358,7 @@ function schlangenGesetz(src) {
             n: r.state.architectures.length,
             slotB,
             slotH,
-            slotBF,
+            karteBF,
             slotHF,
             meshB,
             meshH,
@@ -372,7 +370,11 @@ function schlangenGesetz(src) {
             foundryN,
             mitSlot,
             ausgebrannt,
-            geteilt: !!(wm && wm.kapselCache.has("abaum:eiche:" + variante)),
+            // C: keine der beiden Eichen trug je einen Feld-Satz, und kein Satz-Schlüssel eines Karten-Dings lebt
+            satzBF: satzBF || !!(eb && eb._ziegelSlot),
+            kartenSaetze: wm
+                ? [...wm.kapselCache.keys()].filter((k) => /^aarch:/.test(k) && /baum|busch|strauch/.test(k)).length
+                : 0,
             zB: zustand(eb),
             zH: zustand(eh),
             taktFehler: { n: taktFehlerN, erster: taktFehler1 },
@@ -398,10 +400,10 @@ function schlangenGesetz(src) {
             `${res.felderVoll ? " (VOLL gemeldet)" : ""} · Mesh-Zone ${res.radius} m · Foundry ${JSON.stringify(res.werk)}`
     );
     const A = res.slotB != null && res.slotH != null;
-    const AF = res.slotBF != null && res.slotHF != null;
+    const AF = res.karteBF != null && res.slotHF != null;
     const AM = res.meshB != null && res.meshH != null;
     const Bk = res.ausgebrannt === 0;
-    const C = res.geteilt;
+    const C = !res.satzBF && res.kartenSaetze === 0;
     console.log(
         `${A ? "✅" : "❌"} A  nah sichtbar (Mesh oder Feld-Brücke): Eiche ab Takt ${res.slotB} · Haus ab Takt ${res.slotH} (Grenze 200)`
     );
@@ -409,14 +411,17 @@ function schlangenGesetz(src) {
         `${AM ? "✅" : "❌"} AM nah steht das Studio-Mesh: Eiche ${res.meshB} · Haus ${res.meshH} Takte nach der Brücke (Grenze 800)`
     );
     console.log(
-        `${AF ? "✅" : "❌"} A' fern Feld-Slot (${res.fernD} m, jenseits der Mesh-Zone): Eiche ab Takt ${res.slotBF} · ` +
-            `Haus ab Takt ${res.slotHF} (Grenze 1000 — nah zuerst, nie verhungert)` +
+        `${AF ? "✅" : "❌"} A' fern (${res.fernD} m, jenseits der Mesh-Zone): Eiche als Karte ab Takt ${res.karteBF} · ` +
+            `Haus-Feld-Slot ab Takt ${res.slotHF} (Grenze 1000 — nah zuerst, nie verhungert)` +
             (AF ? "" : ` — ${JSON.stringify(res.zBF)} · ${JSON.stringify(res.zHF)} · Takt ${JSON.stringify(res.takt)}`)
     );
     console.log(
         `${Bk ? "✅" : "❌"} B  Foundry-Bauten: ${res.foundryN} · mit Slot ${res.mitSlot} · ausgebrannt ${res.ausgebrannt}`
     );
-    console.log(`${C ? "✅" : "❌"} C  die Eiche hat ihren Fern-Satz auf dem Baum-Schlüssel (abaum:eiche:<v>)`);
+    console.log(
+        `${C ? "✅" : "❌"} C  die Eiche trägt keinen Feld-Satz (Satz an einer Eiche: ${res.satzBF} · ` +
+            `Satz-Schlüssel eines Karten-Dings: ${res.kartenSaetze})`
+    );
     const kam = await page.evaluate(() => {
         const r = window.anazhRealm;
         const pm = r.state.playerMesh.position;
@@ -590,7 +595,7 @@ function schlangenGesetz(src) {
     const gruen = A && AM && AF && Bk && C && D && TF && pageErrors.length === 0;
     console.log(
         gruen
-            ? "✅ GRÜN — gesetzte Dinge erscheinen: nah als Mesh (das Feld überbrückt), fern im Feld."
+            ? "✅ GRÜN — gesetzte Dinge erscheinen: nah als Mesh (das Feld überbrückt), fern im Feld oder als Karte."
             : `❌ ROT${pageErrors.length ? " · Page-Errors: " + pageErrors.slice(0, 2).join(" | ") : ""}`
     );
     process.exit(gruen ? 0 : 1);

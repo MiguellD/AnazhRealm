@@ -114,6 +114,7 @@
         "gate:foundry-warm": "node scripts/diag-foundry-warm.cjs",
         "gate:portal-boot": "node scripts/diag-portal-boot.cjs",
         "gate:foundry-deadlock": "node scripts/diag-foundry-deadlock.cjs",
+        "gate:fernwald": "node scripts/diag-fernwald.cjs",
         "gate:luft-sicht": "node scripts/diag-luft-sicht.cjs --selftest",
         "gate:himmel-tag": "node scripts/diag-himmel-tag.cjs --selftest",
         "gate:weg-boden": "node scripts/diag-weg-boden.cjs --selftest",

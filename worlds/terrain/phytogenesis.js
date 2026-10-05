@@ -5373,8 +5373,6 @@ init();
             // Reply (kein neuer Kanal; Leser ohne position-Guard überspringen ihn,
             // IDB trägt ihn gratis mit).
             if (g.userData && g.userData.__skelett) meshes.push({ kind: "__skelett", skelett: g.userData.__skelett });
-            if (g.userData && g.userData.__baumGrammatik)
-                meshes.push({ kind: "__baumGrammatik", grammatik: g.userData.__baumGrammatik });
             // Aufraeumen (kein Leak in der Foundry): Geometrien + Materialien der Wegwerf-Instanz.
             g.traverse((o) => {
                 if (o.isMesh) {

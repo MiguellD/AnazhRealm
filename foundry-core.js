@@ -4191,31 +4191,7 @@ function buildInstance(presetId, seed, lod, ov) {
             if (P.kind === "flower") emitFlower(P);
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
-            else {
-                const nodes = emitTree(P);
-                // Analog-B Slice 2: Grammatik-Beipack (Kegelstumpf-Segmente) — Template-Raum;
-                // World-Scale über _foundryWorldScaleMatrix am Flatten. Fail-closed: ohne segs kein Beipack.
-                if (nodes && Array.isArray(nodes.segs) && nodes.segs.length) {
-                    const ba = new THREE.Color(P.barkA || 0x3a2c1e);
-                    const bb = new THREE.Color(P.barkB || 0x2a1c10);
-                    g.userData.__baumGrammatik = {
-                        segs: nodes.segs.map((sg) => ({
-                            p0: sg.p0.slice(),
-                            p1: sg.p1.slice(),
-                            r0: sg.r0,
-                            r1: sg.r1,
-                            depth: sg.depth,
-                        })),
-                        crown: {
-                            type: P.crown || (P.conifer ? "cone" : "ellipsoid"),
-                        },
-                        trunkR: nodes.trunkR,
-                        height: nodes.height,
-                        barkA: { r: ba.r, g: ba.g, b: ba.b },
-                        barkB: { r: bb.r, g: bb.g, b: bb.b },
-                    };
-                }
-            }
+            else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
         }
     } catch (e) {
         console.warn("Instanz", presetId, e);

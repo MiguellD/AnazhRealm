@@ -100,7 +100,7 @@ const fmt = (n) =>
                 verts = 0,
                 teile = 0;
             for (const m of meshes || []) {
-                if (!m || m.kind === "__baumGrammatik" || m.kind === "__skelett") continue;
+                if (!m || (typeof m.kind === "string" && m.kind.startsWith("__"))) continue; // Beipack
                 const pos = m.position || (m.attributes && m.attributes.position);
                 const pa = pos && (pos.array || pos);
                 const idx = m.index || m.indices || (m.attributes && m.attributes.index);
