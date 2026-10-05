@@ -43492,12 +43492,15 @@ class AnazhRealm {
                 ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
             if (faust) {
                 const fo = cfg.faustOffset;
-                const c = Math.cos(cfg.neigung),
-                    s = Math.sin(cfg.neigung);
+                const art = mesh.userData && mesh.userData.heldArt;
+                // Der Bogen steht rechtwinklig zum Unterarm (gestreckter Bogen-Arm: der Bogen senkrecht zum Pfeil), eine
+                // Klinge oder ein Schaft `neigung` unter der Waagrechten des hängenden Arms.
+                const ng = art === "bogen" ? 0 : cfg.neigung;
+                const c = Math.cos(ng),
+                    s = Math.sin(ng);
                 const griff = new THREE.Vector3(0, -s, c); // die Griff-Achse: vorn, `neigung` hinab
                 const oben = new THREE.Vector3(0, c, s); // quer dazu in der Schwung-Ebene, oben
                 const quer = new THREE.Vector3(1, 0, 0);
-                const art = mesh.userData && mesh.userData.heldArt;
                 const B = new THREE.Matrix4();
                 // Spalten = Bild der Template-Achsen X · Y · Z (rechtshändig).
                 if (art === "bogen")
@@ -68978,11 +68981,14 @@ class AnazhRealm {
             }
             // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
             // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); den Schatten
-            // wirft er weiter (der Schattenpass liest colorNode.a, nie die Deckkraft).
+            // wirft er weiter (der Schattenpass liest colorNode.a, nie die Deckkraft). Eine dünne Scheibe zeichnet beide
+            // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
+            // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
             if (R.op < 1) {
                 mat.transparent = true;
                 mat.opacity = R.op;
                 mat.depthWrite = false;
+                mat.forceSinglePass = true;
             }
             if (env !== 1) mat.envMapIntensity = env;
             if (emis) {
