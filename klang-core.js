@@ -401,6 +401,11 @@
         rampeSek: 0.35,        // Zeitkonstante der Pegel-/Filter-Rampen je Takt
         abklangSek: 0.12,      // Zeitkonstante des Verstummens
         masterBasis: 0.35,     // der Welt-Master (Wirt UND Lab: EIN Mischpult)
+        // DIE SPITZEN-WAND hinter dem Master (umweltSpitze): das Knistern der Glut auf Armlaenge (Scheitelfaktor
+        // 29 dB) und der Sturm im Wald trugen Spitzen ueber 0 dBFS. Eine Kennlinie ohne Gedaechtnis: bis linearBisDb
+        // exakt linear (kein Pegel aendert sich), darueber saettigt sie weich (tanh) gegen deckeDb; kopfraumDb
+        // Eingangs-Spielraum, ueberabtastung gegen Aliasing der Saettigung.
+        spitze: { linearBisDb: -6, deckeDb: -1, kopfraumDb: 12, punkte: 8193, ueberabtastung: "4x" },
         // DAS OHR des Wirts — Kosten je Frame, nie die Weltgroesse: der Hoer-Ring (Mitte + radien × richtungen,
         // Meter) wird mit probenJeFrame Punkten je Frame abgetastet, die Glut-Bauten mit bautenJeFrame Eintraegen
         // je Frame (Hoerweite + glutRandM); die Mischung laeuft im Takt mischSek (Sekunden).
@@ -457,6 +462,10 @@
             wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.7 },
             dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
                        glut: { d: 4, volumen: 0.9, pan: -0.4 } },
+            glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
+                       glut: { d: 1, volumen: 0.9, pan: -0.2 } },
+            fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.6,
+                       fall: { d: 3, hoehe: 12, pan: 0.3 } },
             sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, saisonPhase: 0.6, lebendig: 0.5 },
             nacht:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: -0.6, saisonPhase: 0.375, lebendig: 0.5 }
         }
@@ -733,10 +742,16 @@
         return x;
     }
 
-    // Die Textur je Name: {sr, daten} — nahtlos, auf texturRmsDb geeicht, memoisiert (rein).
-    var TEXTUR_MEMO = {};
+    // DER SYNTHESE-ZAEHLER dieses Threads (Samples aus Textur- und Ruf-Gesetzen): die Linse gate:klang-zensus
+    // liest ihn im Haupt-Thread des Spiels — dort rechnet die Klang-Werkstatt (ein Worker), nie der Spiel-Takt.
+    var SYNTHESE = { samples: 0, texturen: 0, rufe: 0 };
+    function umweltSynthese() {
+        return { samples: SYNTHESE.samples, texturen: SYNTHESE.texturen, rufe: SYNTHESE.rufe };
+    }
+
+    // Die Textur je Name, frisch gerechnet: {sr, daten} — nahtlos, auf texturRmsDb geeicht (rein, ohne Gedaechtnis:
+    // die Puffer gehoeren dem Empfaenger, ein Worker uebertraegt sie zero-copy).
     function umweltTextur(name) {
-        if (TEXTUR_MEMO[name]) return TEXTUR_MEMO[name];
         var gesetz = TEXTUR_GESETZ[name];
         if (!gesetz) return null;
         var st = null, idx = 0;
@@ -748,27 +763,37 @@
         var saat = Array.isArray(st.saat) ? st.saat[idx] : st.saat;
         var n = Math.floor(sek * st.sr), L = Math.floor(0.25 * st.sr);
         var roh = gesetz(n + L, st.sr, umweltRng(saat));
-        var daten = eiche(nahtlos(roh, n), UMWELT.texturRmsDb);
-        return (TEXTUR_MEMO[name] = { sr: st.sr, daten: daten });
+        SYNTHESE.samples += n + L;
+        SYNTHESE.texturen++;
+        return { sr: st.sr, daten: eiche(nahtlos(roh, n), UMWELT.texturRmsDb) };
     }
 
     // DIE EICHUNG je Stimme (dB, ≤ 0): was ihr Filter bei kalibHz von ihren Texturen uebrig laesst (Leistungs-
     // Mittel ueber die Texturen). Der Graph gleicht sie aus — der Pegel der Mischung IST der Pegel am Ausgang
-    // (die Linse misst ihn offline nach). Rein, memoisiert.
-    var KALIB_MEMO = {};
-    function umweltKalibDb(name) {
-        if (name in KALIB_MEMO) return KALIB_MEMO[name];
-        var S = UMWELT.stimmen[name];
-        if (!S) return 0;
+    // (die Linse misst ihn offline nach). Rein.
+    function kalibAus(S, texturen) {
         var vor = 0, nach = 0;
-        for (var i = 0; i < S.textur.length; i++) {
-            var tex = umweltTextur(S.textur[i]);
+        for (var i = 0; i < texturen.length; i++) {
+            var tex = texturen[i];
             var x = bq(Float32Array.from(tex.daten), tex.sr, S.filter, S.kalibHz, S.q || 0.707);
             var a = rms(tex.daten), b = rms(x);
             vor += a * a;
             nach += b * b;
         }
-        return (KALIB_MEMO[name] = vor > 0 && nach > 0 ? 10 * Math.log10(nach / vor) : 0);
+        return vor > 0 && nach > 0 ? 10 * Math.log10(nach / vor) : 0;
+    }
+
+    // DAS STIMMEN-PAKET: die Texturen einer Stimme + ihre Eichung — die Einheit, die die Klang-Werkstatt rechnet und
+    // der Graph aufnimmt (umweltGraph … aufnehmen). Rein; die Puffer sind frisch je Paket.
+    function umweltPaket(name) {
+        var S = UMWELT.stimmen[name];
+        if (!S) return null;
+        var tex = [];
+        for (var i = 0; i < S.textur.length; i++) {
+            var t = umweltTextur(S.textur[i]);
+            tex.push({ name: S.textur[i], sr: t.sr, daten: t.daten });
+        }
+        return { name: name, texturen: tex, kalibDb: kalibAus(S, tex) };
     }
 
     // ── DIE MISCHUNG: Lage am Ohr → je Stimme {db, gain, hz, q, pan, rate} ──
@@ -837,32 +862,47 @@
     }
 
     // ── DIE SCHALTUNG: der EINE Graph-Bauer (Lab · Welt · Linse) ──
-    // umweltGraph(ctx, ausgang) → { anwenden(mix, t), zensus(), stopAlle(), knoten }. Je hoerbarer
-    // Stimme: Quelle(n) (Schleife, versetzt) → Panner → Filter → Gain → ausgang; schweigende Stimmen
+    // umweltGraph(ctx, ausgang, liefern?) → { anwenden(mix, t), aufnehmen(paket), zensus(), stopAlle(), knoten }.
+    // Je hoerbarer Stimme: Quelle(n) (Schleife, versetzt) → Panner → Filter → Gain → ausgang; schweigende Stimmen
     // tragen KEINE Knoten. `knoten` (WeakSet) traegt jeden Quell-Knoten, den das Gesetz baute.
-    function umweltGraph(ctx, ausgang) {
+    // DIE LIEFERUNG: eine hoerbare Stimme ohne Puffer wird bestellt — `liefern(name)` rechnet ihr Paket (umweltPaket)
+    // und reicht es an aufnehmen(); erst dann klingt sie. Ohne `liefern` rechnet der Graph selbst, sofort (Lab,
+    // Offline-Render); der Wirt reicht seine Klang-Werkstatt (ein Worker), das Paket kommt einen Takt spaeter.
+    function umweltGraph(ctx, ausgang, liefern) {
         var U = UMWELT, W = U.stimmen;
-        var puffer = {}, stimmen = {}, knoten = typeof WeakSet === "function" ? new WeakSet() : null;
+        var puffer = {}, kalib = {}, bestellt = {}, stimmen = {}, knoten = new WeakSet();
         var versatz = umweltRng(0x51ed);
         var letzterMix = {};
-        function audioPuffer(name) {
-            if (puffer[name]) return puffer[name];
-            var tex = umweltTextur(name);
-            var b = ctx.createBuffer(1, tex.daten.length, tex.sr);
-            b.getChannelData(0).set(tex.daten);
-            return (puffer[name] = b);
+        var bestelle =
+            typeof liefern === "function"
+                ? liefern
+                : function (name) {
+                      aufnehmen(umweltPaket(name));
+                  };
+        // Ein Paket aufnehmen: je Textur EIN Puffer dieses Kontexts, dazu die Eichung der Stimme.
+        function aufnehmen(p) {
+            if (!p || !W[p.name] || !Array.isArray(p.texturen)) return false;
+            for (var i = 0; i < p.texturen.length; i++) {
+                var t = p.texturen[i];
+                var b = ctx.createBuffer(1, t.daten.length, t.sr);
+                b.getChannelData(0).set(t.daten);
+                puffer[t.name] = b;
+            }
+            kalib[p.name] = p.kalibDb;
+            return true;
         }
-        // Bereit = die Texturen sind gerechnet (TEXTUR_MEMO, je Seite einmal); der Puffer je Kontext ist eine Kopie.
+        // Bereit = jede Textur der Stimme liegt als Puffer dieses Kontexts vor, die Eichung ist bekannt.
         function bereit(name) {
+            if (!(name in kalib)) return false;
             var T = W[name].textur;
-            for (var i = 0; i < T.length; i++) if (!TEXTUR_MEMO[T[i]]) return false;
+            for (var i = 0; i < T.length; i++) if (!puffer[T[i]]) return false;
             return true;
         }
         function starte(name, m, t) {
             var S = W[name], st = { name: name, an: true, quellen: [], panner: [] };
             // Ausgleich: die Filter-Eichung zurueck und die Leistung auf die Quellen verteilt (n unkorrelierte
             // Schleifen tragen zusammen den Pegel der Mischung).
-            st.ausgleich = Math.pow(10, -umweltKalibDb(name) / 20) / Math.sqrt(S.quellen);
+            st.ausgleich = Math.pow(10, -kalib[name] / 20) / Math.sqrt(S.quellen);
             st.filter = ctx.createBiquadFilter();
             st.filter.type = S.filter;
             st.filter.frequency.value = m.hz;
@@ -872,7 +912,7 @@
             st.filter.connect(st.gain);
             st.gain.connect(ausgang);
             for (var k = 0; k < S.quellen; k++) {
-                var b = audioPuffer(S.textur[k % S.textur.length]);
+                var b = puffer[S.textur[k % S.textur.length]];
                 var src = ctx.createBufferSource();
                 src.buffer = b;
                 src.loop = true;
@@ -882,7 +922,7 @@
                 src.connect(pan);
                 pan.connect(st.filter);
                 src.start(t, versatz() * b.duration);
-                if (knoten) knoten.add(src);
+                knoten.add(src);
                 st.quellen.push(src);
                 st.panner.push(pan);
             }
@@ -903,6 +943,7 @@
         }
         return {
             knoten: knoten,
+            aufnehmen: aufnehmen,
             anwenden: function (mix, t) {
                 var zeit = typeof t === "number" ? t : ctx.currentTime, wahl = [], name;
                 letzterMix = mix || {};
@@ -920,11 +961,12 @@
                     name = wahl[i];
                     var mm = letzterMix[name], st = stimmen[name];
                     if (!st) {
-                        if (!bereit(name)) {
-                            if (neu > 0) continue; // hoechstens EINE neue Textur-Rechnung je Takt
-                            neu++;
+                        if (!bereit(name) && !bestellt[name] && neu === 0) {
+                            neu++; // hoechstens EINE Bestellung je Takt
+                            bestellt[name] = true;
+                            bestelle(name);
                         }
-                        starte(name, mm, zeit); // rechnet fehlende Texturen, kopiert sie in Puffer dieses Kontexts
+                        if (bereit(name)) starte(name, mm, zeit);
                         continue;
                     }
                     st.gain.gain.setTargetAtTime(mm.gain * st.ausgleich, zeit, U.rampeSek);
@@ -941,6 +983,7 @@
                         name: name,
                         gesetz: "klang:UMWELT.stimmen." + name,
                         an: !!st,
+                        bereit: bereit(name),
                         quellen: st ? st.quellen.length : 0,
                         db: m ? m.db : -Infinity,
                         hz: m ? m.hz : null,
@@ -955,6 +998,29 @@
                 for (var name in stimmen) stoppe(stimmen[name], zeit);
             },
         };
+    }
+
+    // ── DIE SPITZEN-WAND hinter dem Welt-Master (Wirt UND Lab), Zahlen aus UMWELT.spitze ──
+    // Die Kennlinie (rein): f(x) = x bis T, darueber T + (C − T)·tanh((|x| − T)/(C − T)) — stetig mit stetiger
+    // Steigung bei T, |f| < C fuer jedes x. Abgetastet ueber x ∈ [−H, H] (H = Kopfraum).
+    function umweltSpitzeKurve() {
+        var S = UMWELT.spitze, H = Math.pow(10, S.kopfraumDb / 20);
+        var T = Math.pow(10, S.linearBisDb / 20), C = Math.pow(10, S.deckeDb / 20), n = S.punkte, k = new Float32Array(n);
+        for (var i = 0; i < n; i++) {
+            var x = ((2 * i) / (n - 1) - 1) * H, a = Math.abs(x);
+            var y = a <= T ? a : T + (C - T) * Math.tanh((a - T) / (C - T));
+            k[i] = x < 0 ? -y : y;
+        }
+        return k;
+    }
+    // umweltSpitze(ctx) → { eingang, ausgang }: Vor-Gain 1/H (der WaveShaper liest [−1, 1]) → WaveShaper(Kennlinie).
+    function umweltSpitze(ctx) {
+        var S = UMWELT.spitze, vor = ctx.createGain(), w = ctx.createWaveShaper();
+        vor.gain.value = Math.pow(10, -S.kopfraumDb / 20);
+        w.curve = umweltSpitzeKurve();
+        w.oversample = S.ueberabtastung;
+        vor.connect(w);
+        return { eingang: vor, ausgang: w };
     }
 
     // ── DER TIER-RUF: die Stimme folgt dem Koerper ──
@@ -984,6 +1050,8 @@
         }
         var a = bq(Float32Array.from(x), sr, "bandpass", f1, 2.2), b = bq(Float32Array.from(x), sr, "bandpass", f2, 3);
         for (var i = 0; i < n; i++) x[i] = a[i] + 0.6 * b[i] + 0.15 * x[i];
+        SYNTHESE.samples += n;
+        SYNTHESE.rufe++;
         return { sr: sr, daten: eiche(x, UMWELT.texturRmsDb), f0: f0, f1: f1, f2: f2 };
     }
     // Pegel des Rufs am Ohr (Punkt-Quelle, Hoerweite): dB am Welt-Bus.
@@ -992,11 +1060,18 @@
         if (!(d < T.hoerweiteM)) return -Infinity;
         return T.refDb - 20 * Math.log10(Math.max(d, T.dMin) / T.dRef);
     }
-    // Der Ruf als Einmal-Quelle: Puffer → Panner → Gain → ausgang; null unter der Hoerschwelle.
+    // Der Ruf als Einmal-Quelle: rechnen (tierRufPuffer) und spielen (tierRufSpielen); null unter der Hoerschwelle.
+    // Der Wirt rechnet in der Klang-Werkstatt und spielt, was sie zurueckreicht — dieselben zwei Schritte.
     function tierRuf(ctx, ausgang, ruf) {
+        var r = ruf || {};
+        if (!(tierRufPegel(typeof r.d === "number" ? r.d : UMWELT.tier.dRef) >= UMWELT.hoerschwelleDb)) return null;
+        return tierRufSpielen(ctx, ausgang, r, tierRufPuffer(r));
+    }
+    // Den gerechneten Ruf spielen: Puffer → Panner → Gain (Pegel am Ohr) → ausgang; null unter der Hoerschwelle.
+    function tierRufSpielen(ctx, ausgang, ruf, tex) {
         var r = ruf || {}, pegel = tierRufPegel(typeof r.d === "number" ? r.d : UMWELT.tier.dRef);
-        if (!(pegel >= UMWELT.hoerschwelleDb)) return null;
-        var tex = tierRufPuffer(r), t = ctx.currentTime;
+        if (!(pegel >= UMWELT.hoerschwelleDb) || !tex || !tex.daten) return null;
+        var t = ctx.currentTime;
         var b = ctx.createBuffer(1, tex.daten.length, tex.sr);
         b.getChannelData(0).set(tex.daten);
         var src = ctx.createBufferSource(), pan = ctx.createStereoPanner(), g = ctx.createGain();
@@ -1013,40 +1088,48 @@
 
     // ── DER SUBSTANZ-KLANG: Ereignisse der Welt klingen aus den Tags ihrer Substanz — der Treffer (haerte klirrt
     //    hell · dichte wummert · lebendig weich), eine Form singt (Resonanz → Tonhoehe), eine resonierende Form
-    //    verklingt beim Abbau, Wasser stroemt zurueck (die Fluss-Textur des Gesetzes durch einen fallenden Bandpass).
-    //    Die Zahlen wanderten byte-gleich aus dem Stamm (Welle 5 Klang); der Wirt reicht nur Tags und Ausgang. ──
+    //    verklingt beim Abbau (diese drei: die Zahlen wanderten byte-gleich aus dem Stamm). Wasser stroemt zurueck:
+    //    ein Chor aus MINNAERT-Blasen (f0 = 3,26/r, Daempfung β = 0,043·f0 + 0,0014·f0^1,5, Zirp f0·(1 + σ·β·t)),
+    //    die Blasen wachsen ueber das Ereignis (das Gurgeln faellt wie der alte 700 → 200-Hz-Bandpass) — Oszillatoren
+    //    im Audio-Thread, kein Sample im Aufrufer. Der Wirt reicht nur Tags und Ausgang. ──
     // prettier-ignore
     var SUBSTANZ = {
         treffer:  { hzBasis: 160, hzHaerte: 480, hzDichte: -70, hzMin: 60, gain: 0.14, anSek: 0.004, abSek: 0.16, stopSek: 0.18 },
         singen:   { hzBasis: 300, hzSpanne: 400, resonanzSkala: 3, gain: 0.08, anSek: 0.05, abSek: 1.2, stopSek: 1.3 },
         abschied: { hzBasis: 220, hzResonanz: 80, resonanzMax: 3, glissEnde: 0.5, hzGlissMin: 110, gain: 0.08, anSek: 0.04, abSek: 0.8, stopSek: 0.85 },
-        wasser:   { textur: "fluss", hzVon: 700, hzBis: 200, q: 1.6, gain: 0.06, anSek: 0.08, sek: 0.6 }
+        wasser:   { blasen: 9, sek: 0.6, rVonMm: 3, rBisMm: 11, streuung: 0.15, sigma: 0.1, gain: 0.06, anSek: 0.003, maxSek: 0.4 }
     };
     // substanzKlang(ctx, ausgang, art, tags) → { quelle, hz } — die Einmal-Quelle des Ereignisses.
     function substanzKlang(ctx, ausgang, art, tags) {
         var S = SUBSTANZ[art], T = tags || {}, t = ctx.currentTime;
         if (!S) return null;
-        var g = ctx.createGain(), src, hz;
         if (art === "wasser") {
-            var tex = umweltTextur(S.textur), b = ctx.createBuffer(1, tex.daten.length, tex.sr);
-            b.getChannelData(0).set(tex.daten);
-            src = ctx.createBufferSource();
-            src.buffer = b;
-            var f = ctx.createBiquadFilter();
-            f.type = "bandpass";
-            f.Q.value = S.q;
-            f.frequency.setValueAtTime(S.hzVon, t);
-            f.frequency.exponentialRampToValueAtTime(S.hzBis, t + S.sek);
-            g.gain.setValueAtTime(0.0001, t);
-            g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
-            g.gain.exponentialRampToValueAtTime(0.0005, t + S.sek);
-            src.connect(f);
-            f.connect(g);
-            g.connect(ausgang);
-            src.start(t, ((t * 7.31) % 1) * Math.max(0, b.duration - S.sek - 0.1));
-            src.stop(t + S.sek + 0.05);
-            return { quelle: src, hz: S.hzVon };
+            var rnd = umweltRng(Math.floor(t * 1000) + 1), erste = null, hz0 = 0;
+            for (var i = 0; i < S.blasen; i++) {
+                var u = i / Math.max(1, S.blasen - 1);
+                var rMm = (S.rVonMm + (S.rBisMm - S.rVonMm) * u) * (1 + S.streuung * (2 * rnd() - 1));
+                var f0 = 3.26 / (rMm / 1000), beta = 0.043 * f0 + 0.0014 * Math.pow(f0, 1.5);
+                var dauer = Math.min(4.6 / beta, S.maxSek), ti = t + S.sek * u * (0.85 + 0.3 * rnd());
+                var amp = S.gain * (1 - 0.5 * u) * (0.6 + 0.4 * rnd());
+                var o = ctx.createOscillator(), gb = ctx.createGain();
+                o.type = "sine";
+                o.frequency.setValueAtTime(f0, ti);
+                o.frequency.linearRampToValueAtTime(f0 * (1 + S.sigma * beta * dauer), ti + dauer);
+                gb.gain.setValueAtTime(0, ti);
+                gb.gain.linearRampToValueAtTime(amp, ti + S.anSek);
+                gb.gain.exponentialRampToValueAtTime(amp * 0.01, ti + dauer);
+                o.connect(gb);
+                gb.connect(ausgang);
+                o.start(ti);
+                o.stop(ti + dauer + 0.02);
+                if (!erste) {
+                    erste = o;
+                    hz0 = f0;
+                }
+            }
+            return { quelle: erste, hz: hz0 };
         }
+        var g = ctx.createGain(), src, hz;
         src = ctx.createOscillator();
         if (art === "treffer") {
             var haerte = T["härte"] || 0, dichte = T.dichte || 0, lebendig = T.lebendig || 0;
@@ -1089,12 +1172,15 @@
         RAUM: RAUM,
         UMWELT: UMWELT,
         umweltTextur: umweltTextur,
-        umweltKalibDb: umweltKalibDb,
+        umweltPaket: umweltPaket,
+        umweltSynthese: umweltSynthese,
         umweltMischung: umweltMischung,
         umweltGraph: umweltGraph,
+        umweltSpitze: umweltSpitze,
         tierRufPuffer: tierRufPuffer,
         tierRufPegel: tierRufPegel,
         tierRuf: tierRuf,
+        tierRufSpielen: tierRufSpielen,
         SUBSTANZ: SUBSTANZ,
         substanzKlang: substanzKlang,
         STUDIO_VERTRAG: STUDIO_VERTRAG,

@@ -739,6 +739,7 @@ class AnazhRealm {
                 creaturePingVolume: 1.0,
                 voiceVolume: 1.0,
                 masterGain: null,
+                spitze: null, // die Spitzen-Wand hinter dem Master { eingang, ausgang } (klang:UMWELT.spitze)
                 tierRufe: 0, // Ereignis-Zähler der Tier-Rufe (headless messbar)
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
@@ -9514,7 +9515,12 @@ class AnazhRealm {
         const masterGain = ctx.createGain();
         const masterVol = typeof s.masterVolume === "number" ? s.masterVolume : 1.0;
         masterGain.gain.value = UM.UMWELT.masterBasis * masterVol;
-        masterGain.connect(ctx.destination);
+        // Die Spitzen-Wand hinter dem Master (klang:UMWELT.spitze, Wirt UND Lab): bis −6 dBFS exakt linear, darüber
+        // weich gegen −1 dBFS — das Knistern der Glut auf Armlänge und der Sturm im Wald clippen nicht mehr.
+        const spitze = UM.kern.umweltSpitze(ctx);
+        masterGain.connect(spitze.eingang);
+        spitze.ausgang.connect(ctx.destination);
+        s.spitze = spitze;
 
         // W4 V2 — die Lofi-Pad-Schicht (klang:GENRES).
         s.lofi = this._buildLofiLayer(ctx, masterGain);
@@ -9533,6 +9539,7 @@ class AnazhRealm {
         if (!s.enabled || !s.ctx) return;
         try {
             if (s.umwelt && s.umwelt.graph) s.umwelt.graph.stopAlle();
+            if (s.umwelt && s.umwelt.werkstatt) s.umwelt.werkstatt.terminate();
             s.ctx.close();
         } catch (err) {
             this.log(`Symphonie-Dispose-Fehler: ${err.message}`, "WARNING");
@@ -9544,6 +9551,7 @@ class AnazhRealm {
         s.lofi = null;
         s.umwelt = null;
         s.masterGain = null;
+        s.spitze = null;
     }
 
     // ═══ DIE KLANG-WELT (Welle 5 Klang) ═══
@@ -9552,7 +9560,8 @@ class AnazhRealm {
     // Hör-Ring · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
     // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
     // UMWELT.ohr.probenJeFrame Ring-Proben + ohr.bautenJeFrame Bauten-Prüfungen, die Mischung im Takt ohr.mischSek;
-    // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Linse: gate:klang-zensus.
+    // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Gerechnet wird in der KLANG-WERKSTATT
+    // (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linse: gate:klang-zensus.
     _umweltKlangBauen(ctx, masterGain, UM) {
         const K = UM.kern;
         const O = UM.UMWELT.ohr;
@@ -9560,6 +9569,8 @@ class AnazhRealm {
         const s = this.state.symphony;
         bus.gain.value = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
         bus.connect(masterGain);
+        const um = { kern: K, bus, werkstatt: null, bestellt: 0, geliefert: 0, rufeBestellt: 0, rufeGespielt: 0 };
+        um.werkstatt = this._klangWerkstattBooten(um);
         // Der Hör-Ring: Mitte + ohr.radien × ohr.richtungen, Einheits-Richtungen fest (Welt-Achsen).
         const punkte = [{ r: 0, ux: 0, uz: 0 }];
         for (const r of O.radien) {
@@ -9571,16 +9582,76 @@ class AnazhRealm {
         const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":umwelt";
         let saat = 0;
         for (let i = 0; i < seedStr.length; i++) saat = (saat * 31 + seedStr.charCodeAt(i)) >>> 0;
-        return {
-            kern: K,
-            bus,
-            graph: K.umweltGraph(ctx, bus),
+        // Eine hörbare Stimme ohne Puffer bestellt ihr Paket bei der Werkstatt; die Antwort nimmt der Graph auf.
+        const liefern = (name) => {
+            um.bestellt++;
+            if (um.werkstatt) um.werkstatt.postMessage({ typ: "stimme", name });
+        };
+        return Object.assign(um, {
+            graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
             glut: { idx: 0, laufend: new Map(), fertig: new Map() },
             letzteMischung: -Infinity,
             rufSaat: saat || 1,
             lage: null,
             mix: null,
+        });
+    }
+
+    // DIE KLANG-WERKSTATT: ein eigener Worker mit dem klang-Gesetzbuch (importScripts, ?v=) rechnet die Stimmen-Pakete
+    // (Texturen + Eichung, `umweltPaket`) und die Tier-Rufe (`tierRufPuffer`); die Puffer reisen zero-copy zurück
+    // (Lehre 24). Der Haupt-Thread nimmt auf und spielt. Fällt die Werkstatt aus, schweigt die Klang-Welt LAUT
+    // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt.
+    _klangWerkstattBooten(um) {
+        const base = typeof window !== "undefined" && window.location ? window.location.href : "";
+        const kernUrl = new URL("klang-core.js?v=" + (AnazhRealm.VERSION || ""), base).href;
+        const boot =
+            "importScripts(" +
+            JSON.stringify(kernUrl) +
+            ");(function " +
+            AnazhRealm._klangWerkstattSchale.toString() +
+            ")();";
+        let w = null;
+        try {
+            w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+        } catch (e) {
+            this.log(`Klang-Werkstatt startet nicht (${e && e.message}) — die Klang-Welt schweigt`, "WARNING");
+            return null;
+        }
+        w.onerror = (e) => {
+            this.log(
+                `Klang-Werkstatt fiel aus (${(e && e.message) || "Worker-Fehler"}) — die Klang-Welt schweigt`,
+                "WARNING"
+            );
+        };
+        w.onmessage = (ev) => {
+            const s = this.state.symphony;
+            const m = ev.data;
+            if (!m || s.umwelt !== um || !s.ctx) return; // abgebaut, während die Werkstatt rechnete
+            if (m.typ === "stimme" && m.paket) {
+                if (um.graph.aufnehmen(m.paket)) um.geliefert++;
+            } else if (m.typ === "ruf" && m.tex) {
+                if (um.kern.tierRufSpielen(s.ctx, um.bus, m.ruf, m.tex)) um.rufeGespielt++;
+            }
+        };
+        return w;
+    }
+
+    // Der Rumpf der Werkstatt — läuft als Quelltext im Worker (nach importScripts des klang-Kerns), greift auf nichts
+    // außerhalb ihres eigenen Rumpfs zu.
+    static _klangWerkstattSchale() {
+        const W = globalThis;
+        const K = W.__klangCore;
+        W.onmessage = (ev) => {
+            const m = ev.data;
+            if (!m || !K) return;
+            if (m.typ === "stimme") {
+                const p = K.umweltPaket(m.name);
+                W.postMessage({ typ: "stimme", paket: p }, p ? p.texturen.map((t) => t.daten.buffer) : []);
+            } else if (m.typ === "ruf") {
+                const tex = K.tierRufPuffer(m.ruf);
+                W.postMessage({ typ: "ruf", ruf: m.ruf, tex }, [tex.daten.buffer]);
+            }
         };
     }
 
@@ -9783,36 +9854,31 @@ class AnazhRealm {
         };
     }
 
-    // DER TIER-RUF — die Stimme folgt dem Körper (klang:UMWELT.tier): Länge aus dem gerenderten Körper, Abstand und
+    // DER TIER-RUF — die Stimme folgt dem Körper (klang:UMWELT.tier): Länge = `_creatureKoerperLaenge`, Abstand und
     // Richtung zum Ohr, die Stimmung aus dem Innenleben (oder vom Rufer gesetzt). Zählt jeden Ruf (headless messbar);
-    // die Quelle entsteht nur hinter der Symphonie-Wand und über der Hörschwelle.
+    // nur ein hörbarer Ruf (über der Hörschwelle, hinter der Symphonie-Wand) geht an die Klang-Werkstatt, die ihn
+    // rechnet — gespielt wird ihre Antwort (`_klangWerkstattBooten`).
     _tierRuf(creature, stimmung) {
         const s = this.state.symphony;
         s.tierRufe = (s.tierRufe || 0) + 1;
-        if (!s.enabled || !s.ctx || !s.umwelt || !creature || !creature.position) return null;
+        const um = s.umwelt;
+        if (!s.enabled || !s.ctx || !um || !um.werkstatt || !creature || !creature.position) return null;
         const pm = this.state.playerMesh;
         const dx = pm ? creature.position.x - pm.position.x : 0;
         const dz = pm ? creature.position.z - pm.position.z : 0;
         const d = Math.hypot(dx, dz);
+        if (!(um.kern.tierRufPegel(d) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
         const re = this._umweltRechts();
         const ruf = {
-            laengeM: this._tierKoerperLaenge(creature),
+            laengeM: this._creatureKoerperLaenge(creature),
             stimmung: stimmung || this._tierStimmung(creature),
             d,
             pan: d > 1e-3 ? Math.max(-1, Math.min(1, (dx * re.x + dz * re.z) / d)) : 0,
-            saat: (s.umwelt.rufSaat = (Math.imul(s.umwelt.rufSaat, 1664525) + 1013904223) >>> 0),
+            saat: (um.rufSaat = (Math.imul(um.rufSaat, 1664525) + 1013904223) >>> 0),
         };
-        return s.umwelt.kern.tierRuf(s.ctx, s.umwelt.bus, ruf);
-    }
-
-    // Die Körperlänge (m): die größte waagerechte Ausdehnung des gerenderten Körpers, einmal je Kreatur gemessen.
-    _tierKoerperLaenge(creature) {
-        const ud = creature.userData || (creature.userData = {});
-        if (Number.isFinite(ud._rufLaengeM)) return ud._rufLaengeM;
-        const box = new THREE.Box3().setFromObject(creature);
-        const L = box.isEmpty() ? NaN : Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
-        ud._rufLaengeM = Number.isFinite(L) && L > 0 ? L : AnazhRealm._umweltGesetz().UMWELT.tier.lRef;
-        return ud._rufLaengeM;
+        um.rufeBestellt++;
+        um.werkstatt.postMessage({ typ: "ruf", ruf });
+        return ruf;
     }
 
     // Die Stimmung des Rufs aus dem Innenleben: Freude/Hoffnung/Staunen → freude, Trauer → trauer, Chaos → furcht,
@@ -9854,7 +9920,18 @@ class AnazhRealm {
     _klangZensus() {
         const um = this.state.symphony && this.state.symphony.umwelt;
         if (!um) return null;
-        return { lage: um.lage, stimmen: um.graph.zensus(), tierRufe: this.state.symphony.tierRufe || 0 };
+        return {
+            lage: um.lage,
+            stimmen: um.graph.zensus(),
+            tierRufe: this.state.symphony.tierRufe || 0,
+            werkstatt: {
+                laeuft: !!um.werkstatt,
+                bestellt: um.bestellt,
+                geliefert: um.geliefert,
+                rufeBestellt: um.rufeBestellt,
+                rufeGespielt: um.rufeGespielt,
+            },
+        };
     }
 
     // === Hylomorphismus-Inventar ===
@@ -10130,7 +10207,7 @@ class AnazhRealm {
     }
 
     // ### Lofi-Pad-Schicht ###
-    // Ruhige Minor-7th-Akkordfolge leise unter dem Ambient-Drone, Web-Audio nativ. Emotion: hope hebt
+    // Ruhige Minor-7th-Akkordfolge, leise neben der Klang-Welt, Web-Audio nativ. Emotion: hope hebt
     // die Terz (Moll → Dur), sorrow verlangsamt das Tempo.
 
     // Die Lofi-Schicht im Audio-Graph aufbauen: ein warmer Tiefpass + ein
@@ -10142,7 +10219,7 @@ class AnazhRealm {
         filter.frequency.value = 900; // warm, gedämpft — der Lofi-Charakter
         filter.Q.value = 0.6;
         const gain = ctx.createGain();
-        gain.gain.value = 0.12; // leise — der Pad sitzt unter dem Ambient
+        gain.gain.value = 0.12; // leise — der Pad sitzt unter der Melodie
         filter.connect(gain);
         gain.connect(masterGain);
         // W4 V3 Phase 2 — die Lead-Stimme (Melodie) hat ihren eigenen Gain,
@@ -20711,28 +20788,38 @@ class AnazhRealm {
         tb._gang = null;
     }
 
+    // DIE KÖRPERLÄNGE (m) einer Kreatur: die z-Ausdehnung ihrer Seelen-Teile (`_soulParts`, die Körper-Achse) ×
+    // Uniform-Skala, einmal je Kreatur — EINE Quelle für den Hang (Halblänge) und die Stimme (der Tier-Ruf).
+    // Ohne Teile die Bezugslänge 1,2 m.
+    _creatureKoerperLaenge(creature) {
+        const ud = creature.userData || (creature.userData = {});
+        if (Number.isFinite(ud._koerperLaengeM)) return ud._koerperLaengeM;
+        let len = 1.2;
+        const parts = ud._soulParts;
+        if (Array.isArray(parts) && parts.length) {
+            let minZ = Infinity;
+            let maxZ = -Infinity;
+            for (const q of parts) {
+                const cz = (q && q.position && q.position.z) || 0;
+                const hz = ((q && q.size && q.size.z) || 0) / 2;
+                if (cz - hz < minZ) minZ = cz - hz;
+                if (cz + hz > maxZ) maxZ = cz + hz;
+            }
+            if (Number.isFinite(maxZ - minZ) && maxZ - minZ > 0.2) len = maxZ - minZ;
+        }
+        ud._koerperLaengeM = len * ((creature.scale && creature.scale.x) || 1);
+        return ud._koerperLaengeM;
+    }
+
     // ═══ TIER-BODENKONTAKT ═══
     // Zwei gecachte Bodenproben (vorn/hinten entlang der Blick-Achse) je NAHER Kreatur: Root-Pitch via
     // _slopePitch (dieselbe Hang-Formel wie der Biped), Basis = Proben-Mitte, Budget wie _creatureGroundY.
-    // Halblänge einmal aus _soulParts. Keine finite Probe → null. Linse: gate:koerper-bewegung.
+    // Halblänge einmal aus der Körperlänge. Keine finite Probe → null. Linse: gate:koerper-bewegung.
     _creatureSlopeProben(creature, centerG) {
         const ud = creature.userData;
         let hl = ud._slopeHalbLen;
         if (!Number.isFinite(hl)) {
-            let len = 1.2;
-            const parts = ud._soulParts;
-            if (Array.isArray(parts) && parts.length) {
-                let minZ = Infinity;
-                let maxZ = -Infinity;
-                for (const q of parts) {
-                    const cz = (q && q.position && q.position.z) || 0;
-                    const hz = ((q && q.size && q.size.z) || 0) / 2;
-                    if (cz - hz < minZ) minZ = cz - hz;
-                    if (cz + hz > maxZ) maxZ = cz + hz;
-                }
-                if (Number.isFinite(maxZ - minZ) && maxZ - minZ > 0.2) len = maxZ - minZ;
-            }
-            hl = ud._slopeHalbLen = Math.min(4, Math.max(0.25, len * 0.35 * (creature.scale.x || 1)));
+            hl = ud._slopeHalbLen = Math.min(4, Math.max(0.25, this._creatureKoerperLaenge(creature) * 0.35));
         }
         const yaw = creature.rotation.y || 0;
         const fx = Math.sin(yaw) * hl;
@@ -84766,7 +84853,7 @@ class AnazhRealm {
                 // No-op, wenn nichts deferiert ist (headless baut sofort in createGalaxySkybox).
                 this._tickBootFernDeko();
 
-                // ### Symphonie-Wetter-Layer (Ring 4) ###
+                // ### Symphonie (Ring 4): Lofi + Klang-Welt ###
                 this.symphonyTick();
 
                 // ### Status-Panel (UI V1) ###
@@ -88699,10 +88786,17 @@ AnazhRealm._umweltGesetz = function () {
         Number.isFinite(U.masterBasis) &&
         Number.isFinite(U.hoerschwelleDb) &&
         Array.isArray(U.ohr.radien) &&
+        U.spitze &&
+        Number.isFinite(U.spitze.linearBisDb) &&
+        Number.isFinite(U.spitze.deckeDb) &&
         kern &&
         kern.umweltMischung &&
         kern.umweltGraph &&
-        kern.tierRuf &&
+        kern.umweltSpitze &&
+        kern.umweltPaket &&
+        kern.tierRufPuffer &&
+        kern.tierRufSpielen &&
+        kern.tierRufPegel &&
         kern.substanzKlang &&
         kern.SUBSTANZ
     ) {
@@ -92020,7 +92114,7 @@ AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
     "world-request": "_p2pMsgWorldRequest",
     "world-snapshot": "_p2pMsgWorldSnapshot",
 });
-// Lofi-Pad-Schicht: Wurzel 110 Hz = A2 (deckt sich mit dem Ambient-Drone); die Akkordfolge wächst aus
+// Lofi-Pad-Schicht: Wurzel 110 Hz = A2; die Akkordfolge wächst aus
 // Tonleiter + funktionaler Markov-Kette, ein Akkord je 4 Schläge. Web-Audio nativ, kein Asset.
 AnazhRealm.LOFI_BASE_FREQ = 110; // A2
 // Die Skala wohnt im klang-Gesetzbuch (SCALES + scaleFor; _lofiActiveScale liest fail-closed via

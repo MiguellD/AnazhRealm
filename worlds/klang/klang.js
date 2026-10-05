@@ -4508,15 +4508,17 @@ applyHashSession();                                              // #s=…&p=…
     { k:'sonne', lab:'Sonne', min:-1, max:1, step:0.01, fmt: v => v.toFixed(2) },
     { k:'lebendig', lab:'Leben', min:0, max:1, step:0.01, fmt: v => v.toFixed(2) },
     { k:'saisonPhase', lab:'Jahr', min:0, max:0.995, step:0.005, fmt: v => ['Frühling','Sommer','Herbst','Winter'][Math.floor((v % 1) * 4)] },
-    { k:'ufer.d', lab:'Ufer', min:1, max:50, step:0.5, fmt: v => v >= 50 ? '—' : v.toFixed(1) + ' m' },
-    { k:'glut.d', lab:'Glut', min:1, max:30, step:0.5, fmt: v => v >= 30 ? '—' : v.toFixed(1) + ' m' },
+    // Abstands-Regler: am Anschlag (aus) schweigt die Quelle; basis = ihre übrigen Lage-Felder.
+    { k:'ufer.d', lab:'Ufer', min:1, max:50, step:0.5, aus:50, basis:{ anteil:0.3, pan:0 }, fmt: v => v >= 50 ? '—' : v.toFixed(1) + ' m' },
+    { k:'fall.d', lab:'Fall', min:1, max:90, step:0.5, aus:90, basis:{ hoehe:12, pan:0 }, fmt: v => v >= 90 ? '—' : v.toFixed(1) + ' m' },
+    { k:'glut.d', lab:'Glut', min:1, max:30, step:0.5, aus:30, basis:{ volumen:U.stimmen.glut.vRefM3, pan:0 }, fmt: v => v >= 30 ? '—' : v.toFixed(1) + ' m' },
   ];
   const lies = (k) => { const t = k.split('.'); return t.length > 1 ? (lage[t[0]] ? lage[t[0]][t[1]] : undefined) : lage[k]; };
   const schreibe = (k, v) => {
     const t = k.split('.');
     if (t.length === 1) { lage[k] = v; return; }
-    const offen = t[0] === 'ufer' ? v < 50 : v < 30;
-    lage[t[0]] = offen ? Object.assign({ anteil: 0.3, volumen: U.stimmen.glut.vRefM3, pan: 0 }, lage[t[0]] || {}, { d: v }) : undefined;
+    const r = REGLER.find(x => x.k === k);
+    lage[t[0]] = v < r.aus ? Object.assign({}, r.basis, lage[t[0]] || {}, { d: v }) : undefined;
   };
   function sichern() {
     if (graph) return;
@@ -4525,8 +4527,10 @@ applyHashSession();                                              // #s=…&p=…
     // Der Welt-Master wie im Spiel (UMWELT.masterBasis), dazu der Master-Regler des Labs (dieselbe Kurve wie die Musik).
     bus.gain.value = U.masterBasis * Math.pow(mods.volume, 1.6);
     // Hinter der Musik-Mastering-Kette in den Analyser (der führt zum Ausgang): der Visualizer sieht die Welt, sie
-    // klingt einmal, ungepresst.
-    bus.connect(analyser || AC.destination);
+    // klingt einmal, ungepresst — durch dieselbe Spitzen-Wand wie im Spiel (UMWELT.spitze: linear bis −6 dBFS).
+    const spitze = K.umweltSpitze(AC);
+    bus.connect(spitze.eingang);
+    spitze.ausgang.connect(analyser || AC.destination);
     graph = K.umweltGraph(AC, bus);
   }
   document.getElementById('sVol').addEventListener('input', () => {
@@ -4545,7 +4549,7 @@ applyHashSession();                                              // #s=…&p=…
       const el = document.getElementById('weltR_' + r.k.replace('.', '_'));
       if (!el) continue;
       const v = lies(r.k);
-      const w = r.k === 'ufer.d' ? (v == null ? 50 : v) : r.k === 'glut.d' ? (v == null ? 30 : v) : v;
+      const w = r.aus != null && v == null ? r.aus : v;
       el.value = String(w);
       document.getElementById('weltV_' + r.k.replace('.', '_')).textContent = r.fmt(Number(w));
     }
@@ -4567,7 +4571,7 @@ applyHashSession();                                              // #s=…&p=…
   }
   // Orte (UMWELT.orte) + Stille
   const orteEl = document.getElementById('weltOrte');
-  const NAMEN = { wiese:'Mess-Wiese', seeufer:'Seeufer', wald:'Waldinneres', dorf:'Dorf · Glut', sturm:'Sturm', nacht:'Sommernacht' };
+  const NAMEN = { wiese:'Mess-Wiese', seeufer:'Seeufer', wald:'Waldinneres', dorf:'Dorf · Glut', glutArm:'Glut · Armlänge', fallArm:'Wasserfall · 3 m', sturm:'Sturm', nacht:'Sommernacht' };
   for (const name of Object.keys(U.orte)) {
     const b = document.createElement('button');
     b.className = 'lawBtn';

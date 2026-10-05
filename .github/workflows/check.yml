@@ -572,7 +572,9 @@ jobs:
               # beim Namen rot) · dauernde Quellen nur fuer hoerbare Stimmen · SOLL-Klang je Ort · der
               # Offline-Render des Studio-Graphen trifft den Gesetz-Pegel (±1,5 dB) und das Band · die
               # Welt-Abfragen je Klang-Takt wachsen nicht mit 4000 Bauten + 200 Fluss-Laeufen · Lab = Welt.
-              # Inkl. Selbst-Test (Drohn-Zwilling, stumme Schleife, Ufer ohne Wasser, Voll-Umlauf).
+              # Die Klang-Werkstatt (Worker) rechnet jede Textur und jeden Ruf, der Haupt-Thread keinen Sample.
+              # Inkl. Selbst-Test (Drohn-Zwilling, stumme Schleife, Ufer ohne Wasser, Voll-Umlauf, Ereignis-
+              # Glocke, Graph ohne Werkstatt, Ruf im Spiel-Takt).
               run: npm run gate:klang-zensus
 
             - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)

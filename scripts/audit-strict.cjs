@@ -399,6 +399,7 @@ async function auditStateAndMethods() {
                 "symphony.enabled",
                 "symphony.umwelt",
                 "symphony.masterGain",
+                "symphony.spitze",
                 "symphony.masterVolume",
                 "symphony.creaturePingVolume",
                 "symphony.voiceVolume",

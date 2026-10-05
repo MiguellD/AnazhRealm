@@ -353,6 +353,9 @@ const FORBIDDEN = [
     { token: "playCreaturePing", fiel: "Welle 5 Klang — _tierRuf (die Stimme folgt dem Körper)" },
     { token: "creaturePingCount", fiel: "Welle 5 Klang — symphony.tierRufe" },
     { token: "_tagToFrequency", fiel: "Welle 5 Klang — UMWELT.tier (Grundton ∝ Körperlänge^−0,9)" },
+    // Die Körperlänge des Rufs maß eine Box3 über den GERENDERTEN Körper (skinnte jede Haut-Ecke auf der CPU) neben
+    // der Seelen-Teile-Länge des Hangs: EINE Quelle ist _creatureKoerperLaenge (Hang + Stimme).
+    { token: "_tierKoerperLaenge", fiel: "Welle 5 Klang — _creatureKoerperLaenge (EINE Körperlänge)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
