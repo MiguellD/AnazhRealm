@@ -22,6 +22,7 @@
 //      (läuft 1×, auf dem Boot-Seed).
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -122,19 +123,13 @@ const server = http.createServer((req, res) => {
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Dawns swiftshader-ADAPTER — das GPUDevice kommt über Weg B (eigenes navigator.gpu-Device, renderer-
-    // unabhängig); die Welt bootet mit Null-Renderer (schnell — die Linse braucht nur das GESETZ). Gemessen 05.10.
-    // (Windows, Chrome for Testing): die Vulkan-Schalter liefern keinen Adapter, `--use-angle=swiftshader` daneben
-    // nimmt ihn wieder weg — die Seh-Parität (B) brach auf jeder Basis mit „kein WebGPU-Adapter" ab.
+    // unabhängig); die Welt bootet mit Null-Renderer (schnell — die Linse braucht nur das GESETZ). Unter Windows nahmen
+    // die Vulkan-/ANGLE-Schalter den Adapter weg (die Seh-Parität B brach mit „kein WebGPU-Adapter" ab) — die Schalter
+    // je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 600000,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--use-webgpu-adapter=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     const pageErrors = [];
@@ -170,7 +165,7 @@ const server = http.createServer((req, res) => {
             // ── GPU-Device (harness §2 Weg B: eigenes Device, renderer-frei) ──
             if (!navigator.gpu) return { fatal: "kein navigator.gpu" };
             const adapter = await navigator.gpu.requestAdapter();
-            if (!adapter) return { fatal: "kein WebGPU-Adapter (Start-Rezept: --use-webgpu-adapter=swiftshader, ohne ANGLE-Schalter)" };
+            if (!adapter) return { fatal: "kein WebGPU-Adapter (Start-Rezept: scripts/lib/software-gpu.cjs)" };
             const device = await adapter.requestDevice();
             device.lost.then((info) => res.fehler.push("device lost: " + (info && info.message)));
 

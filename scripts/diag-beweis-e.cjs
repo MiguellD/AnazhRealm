@@ -18,6 +18,7 @@
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
@@ -232,15 +233,7 @@ const SCHUSS_FN = async (kam) => {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: PROTO_MS,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });

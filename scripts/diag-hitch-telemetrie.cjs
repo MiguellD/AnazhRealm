@@ -12,6 +12,7 @@
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -67,19 +68,11 @@ function pruefeTraceFelder(trace) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    // Launch-Flags WÖRTLICH aus diag-blick.cjs — echtes WebGPU via swiftshader-Vulkan.
+    // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 600000,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });

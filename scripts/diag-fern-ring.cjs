@@ -23,6 +23,7 @@
 //   node scripts/diag-fern-ring.cjs
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -62,17 +63,10 @@ const server = http.createServer((req, res) => {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 240000,
-        args: [
-            "--enable-unsafe-swiftshader",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            // DER FELD-ZEICHNER (Bänder 7/8): echtes WebGPU trotz Null-Renderer — Dawns swiftshader-ADAPTER. Gemessen
-            // 05.10. (Windows, Chrome for Testing): die Vulkan-Schalter (`--enable-features=Vulkan
-            // --use-vulkan=swiftshader`) liefern keinen Adapter, und `--use-angle=swiftshader` daneben nimmt ihn wieder
-            // weg (requestAdapter → null) — die Bänder 7/8 standen auf jeder Basis rot (laeufe=0), der Code fehlte nie.
-            "--enable-unsafe-webgpu",
-            "--use-webgpu-adapter=swiftshader",
-        ],
+        // DER FELD-ZEICHNER (Bänder 7/8): echtes WebGPU trotz Null-Renderer. Unter Windows nahmen die Vulkan-/ANGLE-
+        // Schalter den Adapter weg (requestAdapter → null, die Bänder standen auf jeder Basis rot, laeufe=0) — die
+        // Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {

@@ -26,6 +26,7 @@
 //   node scripts/diag-arch-feld.cjs
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -190,15 +191,7 @@ function schlangenGesetz(src) {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 900000,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });

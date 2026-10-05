@@ -7,6 +7,7 @@
 //   node scripts/diag-fell-blick.cjs [--tag name] [--abstaende 1.5,3,6,12]
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
@@ -80,15 +81,7 @@ const BILD_FN = async (kam, W, H) => {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 1800000,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });

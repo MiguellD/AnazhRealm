@@ -20,6 +20,7 @@
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -137,21 +138,11 @@ function urteil(z) {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 1800000,
-        // WebGPU über Dawns swiftshader-Adapter: nur dort zeichnet der Feld-Pass (rohes WGSL). Gemessen 05.10. (Windows):
-        // mit den Vulkan-/ANGLE-Schaltern gibt es keinen Adapter (auch nicht zusammen mit --use-webgpu-adapter), der
-        // Renderer fiel nach init() still auf WebGL2 — die Linse las die CPU-Wahrheit eines Passes, der nie lief. Nur
-        // dieselben Schalter wie gate:kamera-treue liefern ihn. Das Backend steht im Bericht.
-        // OFFENER BEFUND (CI 05.10., Linux-Runner): ~3,9 s nach dem Start meldet device.lost „destroyed · Device was
-        // destroyed", ohne einen JS-Aufruf von GPUDevice.destroy (Stapel-Haken leer) und ohne Absturz-Zeile des GPU-
-        // Prozesses im stderr; --disable-gpu-watchdog änderte nichts (0d7928a, widerlegt). Lokal (Windows, derselbe
-        // Adapter) nie. Die Linse bleibt rot, bis die Ursache benannt ist (Messname: die [N]/[Browser]-Zeilen im CI-Log).
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--use-webgpu-adapter=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        // WebGPU auf swiftshader: nur dort zeichnet der Feld-Pass (rohes WGSL); fiele der Renderer auf WebGL2, läse die
+        // Linse die CPU-Wahrheit eines Passes, der nie läuft — das Backend steht im Bericht. Die Schalter je Plattform
+        // trägt das EINE Rezept (scripts/lib/software-gpu.cjs): auf dem Linux-Runner starb das Gerät ~3,9 s nach dem Start
+        // („destroyed"), weil der GPU-Prozess ohne Vulkan keine Ablage für die Canvas-Swapchain fand.
+        args: softwareWebGpuArgs(),
         dumpio: false,
     });
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.

@@ -96,6 +96,7 @@ if (process.argv.includes("--selftest")) {
 }
 
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -352,16 +353,9 @@ function buehne() {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 600000,
-        // WebGPU über Dawns swiftshader-Adapter (die Bundle-API lebt nur im WebGPU-Backend; der WebGL2-Rückfall liest
-        // jede BundleGroup als Gruppe — dort wäre die Wand blind). Gemessen 04.10. (Windows, Chrome for Testing): nur
-        // `--use-webgpu-adapter=swiftshader` liefert einen Adapter, die Vulkan-Schalter liefern keinen.
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--use-webgpu-adapter=swiftshader",
-            "--enable-unsafe-swiftshader",
-        ],
+        // WebGPU auf swiftshader (die Bundle-API lebt nur im WebGPU-Backend; der WebGL2-Rückfall liest jede BundleGroup
+        // als Gruppe — dort wäre die Wand blind). Die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });

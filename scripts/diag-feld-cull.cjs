@@ -35,6 +35,7 @@
 //   node scripts/diag-feld-cull.cjs
 "use strict";
 const puppeteer = require("puppeteer");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -74,15 +75,7 @@ const server = http.createServer((req, res) => {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 240000,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-        ],
+        args: softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {

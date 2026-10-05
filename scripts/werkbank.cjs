@@ -706,6 +706,7 @@ function bandProben(k) {
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const puppeteer = require("puppeteer");
+    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const mime = {
         ".html": "text/html",
         ".js": "application/javascript",
@@ -747,17 +748,9 @@ async function starte() {
         userDataDir: profil,
         protocolTimeout: 3600000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
-        args: ECHT
-            ? ["--enable-unsafe-webgpu", "--ignore-gpu-blocklist", "--window-size=1940,1200"]
-            : [
-                  "--no-sandbox",
-                  "--disable-setuid-sandbox",
-                  "--enable-unsafe-webgpu",
-                  "--enable-features=Vulkan",
-                  "--use-vulkan=swiftshader",
-                  "--use-angle=swiftshader",
-                  "--enable-unsafe-swiftshader",
-              ],
+        // Echt: der Hardware-Adapter; sonst swiftshader — die Schalter je Plattform trägt das EINE Rezept (die alte
+        // Vulkan-Kopie lieferte unter Windows keinen Adapter: die Werkbank fuhr ohne --echt still WebGL2).
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : softwareWebGpuArgs(),
     });
     const page = await browser.newPage();
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
