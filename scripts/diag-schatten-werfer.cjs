@@ -179,6 +179,10 @@ function probe(selbsttest) {
         return new T.Frustum().setFromProjectionMatrix(m, c.coordinateSystem);
     };
     // DIE EMPFÄNGER (K1): Boden-Punkte im Blick, aus dem Dichte-Feld (`_voxelSurfaceY`) — unabhängig von der Box-Rechnung.
+    // Empfänger ist nur, was ein schatten-lesendes Mesh zeichnet: ein Punkt über einem Bereich des Boden-Satzes. Jenseits
+    // zeichnet der Fern-Ring (receiveShadow false) — gemessen 05.10.: ein Hügel 296 m weit (z 273, der Boden-Satz endet bei
+    // 222) lag 1 m über der nahen Ebene; bis zum Waldboden hatten die Hüllen der Klein-Streu-Bundles (Region-Kugel
+    // R·√½ + 140 m) das Band zufällig darüber gehoben.
     // Welche Kaskade ein Punkt liest, entscheidet der Addon-Shader (CSMShadowNode._setupFade, abgeschrieben): je Kaskade
     // [x, y] = `_cascades[i]` (die Uniform des Addons), Mitte = (x+y)/2, Kante = die nähere Grenze, margin = 0,25·Kante²,
     // csmX = x − margin/2, csmY = y + margin/2 (die letzte Kaskade: y); gelesen wird, wo csmX ≤ L ≤ csmY.
@@ -209,12 +213,19 @@ function probe(selbsttest) {
         let n = 0,
             schlecht = 0;
         const jeKaskade = csm.lights.map(() => 0);
+        const flaechen = boden ? [...boden.bloecke.values()].filter((b) => b.huelle && !b.huelle.isEmpty()) : null;
+        const empfaengt = (x, z) =>
+            !flaechen ||
+            flaechen.some(
+                (b) => x >= b.huelle.min.x && x <= b.huelle.max.x && z >= b.huelle.min.z && z <= b.huelle.max.z
+            );
         for (let a = -16; a <= 16; a++) {
             const w = yaw + (a / 16) * halb;
             for (let k = 0; k < 24; k++) {
                 const d = 2 + (far - 2) * ((k + 0.5) / 24) ** 1.5;
                 const x = cam.position.x + Math.sin(w) * d,
                     z = cam.position.z + Math.cos(w) * d;
+                if (!empfaengt(x, z)) continue;
                 const y = r._voxelSurfaceY(x, z);
                 if (!Number.isFinite(y)) continue;
                 p.set(x, y, z);
@@ -693,9 +704,47 @@ function probe(selbsttest) {
                 if (n > 20 && stabil > 40) break;
                 if (takte % 10 === 0) await new Promise((res) => setTimeout(res, 0));
             }
-            return { takte, chunks: last, bundles: st._regionBundles ? st._regionBundles.size : 0 };
+            // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen Atlas-Gruppe)
+            // und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles mehr (gemessen
+            // 05.10.: nur "@global"; 14 auf 386f91c, 4 auf b9bf2bc). Vier Regionen um den Spieler bekommen je eine
+            // Streu-Instanz über den Produktions-Chokepoint `_scatterInstanceAdd` (echter Region-Schlüssel, echte
+            // Region-Kugel) — W1 prüft die Werfer-Wahl je Pass an echten Region-Bundles, nie vakuös.
+            const regionen = () =>
+                st._regionBundles ? [...st._regionBundles.values()].filter((bg) => bg.userData.cullSphere).length : 0;
+            const welt0 = regionen();
+            let bauplan = null;
+            for (const n in st.blueprints) {
+                const fl = r._archFlattenBlueprint(n);
+                if (
+                    fl &&
+                    fl.instanceable &&
+                    Array.isArray(fl.leaves) &&
+                    fl.leaves.length &&
+                    fl.leaves.every((l) => !l.tuer && !l.atlasGruppe && !l.shadowTwin) &&
+                    r._archFernRegionKey(n, fl.leaves[0], "0,0") === "0,0" &&
+                    r._archGroupCastsShadow(n)
+                ) {
+                    bauplan = n;
+                    break;
+                }
+            }
+            const R = r.constructor.ARCH_REGION_M;
+            const pm = st.playerMesh.position;
+            const rx0 = Math.round(pm.x / R) - 1,
+                rz0 = Math.round(pm.z / R) - 1;
+            if (bauplan)
+                for (let i = 0; i < 2; i++)
+                    for (let j = 0; j < 2; j++) {
+                        const rx = rx0 + i,
+                            rz = rz0 + j;
+                        const x = Math.min(Math.max(pm.x + (i ? 6 : -6), rx * R + 4), (rx + 1) * R - 4);
+                        const z = Math.min(Math.max(pm.z + (j ? 6 : -6), rz * R + 4), (rz + 1) * R - 4);
+                        const y = r._voxelSurfaceY(x, z);
+                        r._scatterInstanceAdd(bauplan, x, Number.isFinite(y) ? y : 0, z, 0, 1, null, rx + "," + rz);
+                    }
+            return { takte, chunks: last, welt: welt0, bauplan, bundles: regionen() };
         });
-        if (!(welt.bundles >= 4)) throw new Error(`Welt ohne Region-Bundles (${JSON.stringify(welt)})`);
+        if (!(welt.bundles >= 4)) throw new Error(`keine vier Region-Bundles (${JSON.stringify(welt)})`);
         const a = await page.evaluate(probe, SELBSTTEST);
         if (a.fehler) throw new Error(a.fehler);
         console.log(
