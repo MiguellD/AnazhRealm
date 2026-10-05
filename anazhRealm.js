@@ -34410,7 +34410,7 @@ class AnazhRealm {
                 "}"
         );
         const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, saison: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende wie die Studio-Stufen (__phytoCore.lodDitherIGN)\n" +
                 "    let schwundIgn = fract(52.9829189 * fract(schirm.x * 0.06711056 + schirm.y * 0.00583715) + ditherT);\n" +
@@ -34590,6 +34590,7 @@ class AnazhRealm {
                 "                            let qB = kapselTexel(kapseln, poG + nkG * 2 + 1);\n" +
                 "                            var gvG = vec3<f32>(0.0);\n" +
                 "                            var ciG: u32 = 0u;\n" +
+                "                            var laubG = false;\n" +
                 "                            if (qA.w >= 0.0) {\n" +
                 "                                if (qB.w < 0.0) {\n" +
                 "                                    let tC = -qB.w;\n" +
@@ -34619,6 +34620,7 @@ class AnazhRealm {
                 "                                // ELLIPSOID-Normale (Slice3: analytischer Noise-Gradient)\n" +
                 "                                gvG = gradEllipsoidCrown(pP, qA.xyz, qB.xyz);\n" +
                 "                                ciG = u32(-qA.w - 1.0);\n" +
+                "                                laubG = true; // die Krone: Laub trägt die Saison\n" +
                 "                            } else {\n" +
                 "                                // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
                 "                                let d2 = pP - qA.xyz;\n" +
@@ -34640,7 +34642,7 @@ class AnazhRealm {
                 "                                // Platz-Raum → Welt: rotY(+yaw); uniforme Skala dreht die Richtung nicht\n" +
                 "                                bestN = normalize(vec3<f32>(cy * gvG.x + sy * gvG.z, gvG.y, cy * gvG.z - sy * gvG.x));\n" +
                 "                            }\n" +
-                "                            bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0;\n" +
+                "                            bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubG);\n" +
                 "                            break;\n" +
                 "                        }\n" +
                 "                        tG = tG + max(dmG * sk, 0.004);\n" +
@@ -34696,6 +34698,7 @@ class AnazhRealm {
                 "                    let pB = kapselTexel(kapseln, po + nk * 2 + 1);\n" +
                 "                    var gvK = vec3<f32>(0.0);\n" +
                 "                    var ci: u32 = 0u;\n" +
+                "                    var laubK = false;\n" +
                 "                    if (pA.w >= 0.0) {\n" +
                 "                        if (pB.w < 0.0) {\n" +
                 "                            let tC = -pB.w;\n" +
@@ -34726,6 +34729,7 @@ class AnazhRealm {
                 "                        // ELLIPSOID-Normale (Slice3: analytischer Noise-Gradient)\n" +
                 "                        gvK = gradEllipsoidCrown(pL, pA.xyz, pB.xyz);\n" +
                 "                        ci = u32(-pA.w - 1.0);\n" +
+                "                        laubK = true; // die Krone: Laub trägt die Saison\n" +
                 "                    } else {\n" +
                 "                        // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
                 "                        let d = pL - pA.xyz;\n" +
@@ -34749,7 +34753,7 @@ class AnazhRealm {
                 "                            r0.y * gvK.x + r1.y * gvK.y + r2.y * gvK.z,\n" +
                 "                            r0.z * gvK.x + r1.z * gvK.y + r2.z * gvK.z));\n" +
                 "                    }\n" +
-                "                    bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0;\n" +
+                "                    bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubK);\n" +
                 "                    break;\n" +
                 "                }\n" +
                 "                tK = tK + max(dm / lenDL, 0.004);\n" +
@@ -34814,6 +34818,9 @@ class AnazhRealm {
             // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
             schirm: TSL.screenCoordinate.xy,
             ditherT: this._ensureLodUniforms().uDitherT,
+            // DIE SAISON der Kronen-Lappen (Ellipsoide = Laub): dieselbe EINE Uniform wie Laub, Gras, Karte und Fern-Ring —
+            // ohne sie standen die Analog-Kronen im Herbst sommergrün zwischen gelben Bäumen (Integration 05.10.).
+            saison: this._ensureSeasonUniforms().uSeasonMul,
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
