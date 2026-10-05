@@ -111,6 +111,30 @@ const server = http.createServer((req, res) => {
                     out.schritt = Math.round(zd - 20);
                 }
             }
+            // Ist die Welt ganz konvergiert (der CI-Runner backt im Warm-up jeden Baum, gemessen 05.10.: 299
+            // platziert, 0 kalt — auch jenseits des Radius), entsteht die kalte Nähe wie im Spiel nach einer
+            // Räumung: die nächsten Foundry-Bäume verlieren Platz UND Körper über die EINE Räumungs-Naht
+            // _foundryCacheEvict — sie sind nicht gedockt und müssen unter Über-Budget neu BACKEN (der Deadlock-Pfad).
+            if (cold() === 0) {
+                const fc = r._foundry;
+                const platziert = archs()
+                    .filter((e) => isTree(e) && nah(e) && e.instFoundry && (e.instanced || e.mesh))
+                    .sort(
+                        (a, b) =>
+                            (a.position.x - pm.x) ** 2 +
+                            (a.position.z - pm.z) ** 2 -
+                            ((b.position.x - pm.x) ** 2 + (b.position.z - pm.z) ** 2)
+                    )
+                    .slice(0, 8);
+                const arten = new Set(platziert.map((e) => r._foundryPresetForEntry(e)));
+                for (const e of platziert) {
+                    if (e.instanced) r._archInstanceRemove(e);
+                    else if (e.mesh) r._cullArchitectureMesh(e);
+                    e.instFoundry = false;
+                }
+                for (const k of [...fc.cache.keys()]) if (arten.has(k.split("|")[0])) r._foundryCacheEvict(k);
+                out.gekuehlt = platziert.length;
+            }
             out.coldBefore = cold();
             out.foundryBefore = foundry();
 
@@ -142,6 +166,8 @@ const server = http.createServer((req, res) => {
         console.log(
             `  Voraussetzung: die Nähe war konvergiert, ${S.coldFern} kalte Bäume jenseits des Radius — der Spieler trat ${S.schritt} m heran`
         );
+    if (S.gekuehlt != null)
+        console.log(`  Voraussetzung: die Welt war ganz konvergiert — ${S.gekuehlt} nahe Bäume geräumt (Platz + Körper)`);
     console.log(`  Baum-Einträge kalt im Radius (vorher): ${S.coldBefore} · schon foundry-platziert: ${S.foundryBefore}`);
     console.log(
         `  nach ${S.ticks} Konvert-Ticks @ over-budget: foundry-platziert = ${S.foundryAfter} · kalt im Radius = ${S.coldAfter}`
