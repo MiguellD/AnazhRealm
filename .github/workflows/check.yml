@@ -289,6 +289,14 @@ jobs:
               # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
               run: npm run gate:asset-contract
 
+            - name: Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite)
+              # 05.10.: die gelieferten Puffer je Art der Klasse über die echte Foundry-Naht — Birke weiß mit Lentizellen,
+              # schwarzer Fuß-Borke und dunklen Zweigen, jede Rinde im Albedo-Band, kein Ringel über dem Ring-Gitter,
+              # der Strauch aus Karten mit Reisig, Saftmal-Verlauf der Blüte, Blatt-Maß der Laub-Karten, die zwei Leser
+              # der Blatt-Unterseite. Der Selbsttest macht gipsweiße Birke, Ringel-Stamm, Klingen-Strauch, einfarbige
+              # Blüte, Blatt x3 und einen fehlenden Leser rot.
+              run: npm run gate:pflanzen-nah
+
             - name: Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)
               # Integration W8 (Pruefer W8 (c)): im echten Spiel (foundry-ON, Null-Renderer) baut die Linse jede Art mit
               # Budget-Zeile auf jeder deklarierten Geometrie-Stufe - Flatten (Haus, Fahrzeug, Waffe, Tor, Baum, Strauch,
