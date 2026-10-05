@@ -85,7 +85,7 @@ const SCHLUESSEL = [
     ["fscatter:geroell:3:0#0@12,-7", "fscatter:geroell:L0"],
     ["fscatter:eiche:2:2#1@s:3,4", "fscatter:eiche:L2"],
     ["grown_busch_v3_lod1#2@4,5", "g:grown_busch:L1"],
-    ["glut_var3#0@p:1,1", "g:glut:L0"],
+    ["kristall_var3#0@p:1,1", "g:kristall:L0"],
     ["markt#5", "g:markt:L0"],
 ];
 
@@ -336,7 +336,7 @@ function selbsttest() {
     const u10 = urteil(
         [
             { klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 7 }, jeTris: { haupt: 7000 } },
-            { klasse: "g:glut:L0", stufe: 0, art: null, je: { haupt: 5 }, jeTris: { haupt: 900 } },
+            { klasse: "g:tor:L0", stufe: 0, art: null, je: { haupt: 5 }, jeTris: { haupt: 900 } },
         ],
         r10
     );
@@ -366,7 +366,7 @@ function selbsttest() {
         },
         { klasse: S.instanz("f:eiche|0|0:2"), stufe: 0, art: "tree", je: { haupt: 2 }, jeTris: {}, dMax: 20 },
         { klasse: S.instanz("fimp:fimp:eiche|3"), stufe: 2, art: "tree", je: { haupt: 1 }, jeTris: {} },
-        { klasse: S.instanz("glut_var3#0@p:1,1"), stufe: 0, art: null, je: { haupt: 1 }, jeTris: {} },
+        { klasse: S.instanz("tor#0@p:1,1"), stufe: 0, art: null, je: { haupt: 1 }, jeTris: {} },
         { klasse: "himmel", stufe: null, art: null, je: { haupt: 1 }, jeTris: {} },
         { klasse: "TRAA", stufe: null, art: null, je: { ortho: 1 }, jeTris: {} },
     ];
@@ -386,7 +386,7 @@ function selbsttest() {
             zeile("boden").ist.befehle === 12 &&
             zeile("baum").taeter[0].klasse === "f:eiche:L0" &&
             zeile("karten").taeter[0].klasse === "fimp:eiche:L2" &&
-            zeile("bau").taeter[0].klasse === "g:glut:L0" &&
+            zeile("bau").taeter[0].klasse === "g:tor:L0" &&
             zeile("einzelstuecke").taeter[0].klasse === "himmel" &&
             u8.ausserhalb.ortho === 1 &&
             u8b.urteil === "ROT" &&
