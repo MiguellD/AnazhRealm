@@ -1632,12 +1632,15 @@
         var R = M.rumpf;
         var c;
         if (gelenk === "headGroup" || gelenk === "jawGroup") {
-            var K = M.kopf;
-            // Fang (vor den Augen) und Wangen/Kinn (untere Kopf-Hälfte): die Maske; Stirn und Scheitel: der Rücken-Ton
-            var fang = ss(K.z + 0.02 * H, K.z + 0.07 * H, z);
-            var unterK = gelenk === "jawGroup" ? 1 : 1 - ss(K.y - 0.03 * H, K.y + 0.01 * H, y);
-            c = mix(mu.basis, mu.ruecken, ss(K.y + 0.02 * H, K.y + 0.07 * H, y));
-            c = mix(c, mu.maske, Math.max(unterK, fang * 0.55));
+            var K = M.kopf,
+                kH = K.g * H;
+            // Wangen, Lefzen und Kinn (untere Kopf-Hälfte): die Maske; der Nasenrücken trägt die Grund-Farbe mit einem
+            // Hauch Maske; Stirn und Scheitel dunkeln halb zum Rücken-Ton (Welle 5: vorher ganz — eine dunkle Kappe über
+            // einem weißen Fang). Die Schwellen messen in der Kopf-Größe der Art (K.g, der Bär trägt einen großen Kopf).
+            var fang = ss(K.z + 0.02 * kH, K.z + 0.07 * kH, z);
+            var unterK = gelenk === "jawGroup" ? 1 : 1 - ss(K.y - 0.03 * kH, K.y + 0.01 * kH, y);
+            c = mix(mu.basis, mu.ruecken, 0.5 * ss(K.y + 0.02 * kH, K.y + 0.07 * kH, y));
+            c = mix(c, mu.maske, Math.max(unterK, fang * 0.3));
             return c;
         }
         var n = R.oben.length - 1,
@@ -2629,7 +2632,7 @@
                         return unten(i / (NS - 1));
                     }),
                 },
-                kopf: { y: headY, z: headZ },
+                kopf: { y: headY, z: headZ, g: kG },
                 rute: nSeg,
             },
             P: P,
