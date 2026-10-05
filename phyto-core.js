@@ -1510,6 +1510,38 @@
         return { wF, wT, wE, wB, wW };
     }
 
+    // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
+    // Höhen-Trockenheit und Offenheit am Ort (x, z) auf der Oberfläche surfaceY bei Bestandsdichte sd → die Arten-
+    // Gewichte der fünf Wald-Arten (wF Kiefer · wT Tanne · wE Eiche · wB Birke · wW Erle, ohne die Auto-Arten) samt
+    // clim/patch/feu. planForestCell würfelt daraus die Art, die Fernform des Hosts mischt daraus die Kronen-Farbe.
+    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY) }.
+    function forestNische(x, z, surfaceY, sd, ctx) {
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+        const relH = surfaceY - (ctx.baseH || 0);
+        const feu = clamp01(ctx.feuchteAt(x, z, surfaceY));
+        const dry = clamp01((relH + 6) / ctx.F.dryScale);
+        const wet = feu;
+        const open = 1 - sd;
+        const clim = ctx.fbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
+        const patch = ctx.fbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
+        const NW = forestNicheWeights(clim, dry, wet, open, patch, { ss });
+        return {
+            wF: NW.wF,
+            wT: NW.wT,
+            wE: NW.wE,
+            wB: NW.wB,
+            wW: NW.wW + feu * feu * 6.0, // Host: waterProx = feu
+            clim,
+            patch,
+            feu,
+        };
+    }
+
     // reverse-J Größe + Selbstausdünnung + seltene Überhälter. RNG-REIHENFOLGE heilig
     // (Host-Determinismus): ue → Überhälter-Wurf → optional Überhälter-s → clamp.
     // Byte-same Lab plantForest + Host planForestCell.
@@ -1684,8 +1716,6 @@
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-        const baseH = ctx.baseH || 0;
         const extras = ctx.extras || [];
         const out = [];
         for (let i = 0; i < F.dartsPerCell; i++) {
@@ -1702,21 +1732,17 @@
             // SLOPE-Grundierung (die Voxelwelt hat Klippen, die die Vorlage nicht kennt).
             const slope = ctx.slopeAt(x, z);
             if (rng() > 1 - ss(F.slopeLo, F.slopeHi, slope)) continue;
-            // ARTEN-NISCHE (Vorlage wF/wT/wE/wB/wW) — Klima × Patch × Feuchte × Trockenheit × Offenheit.
-            const relH = surfaceY - baseH;
-            const feu = clamp01(ctx.feuchteAt(x, z, surfaceY));
-            const dry = clamp01((relH + 6) / F.dryScale);
-            const wet = feu;
-            const open = 1 - sd;
-            const clim = ctx.fbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
-            const patch = ctx.fbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
+            // ARTEN-NISCHE (Vorlage wF/wT/wE/wB/wW) — Klima × Patch × Feuchte × Trockenheit × Offenheit, die EINE
+            // Nische des Orts (`forestNische`, ohne rng — die Wurf-Reihenfolge des Darts bleibt heilig).
+            const NO = forestNische(x, z, surfaceY, sd, ctx);
+            const clim = NO.clim;
+            const patch = NO.patch;
             const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14); // extras-Loop (AUTO-Arten)
-            const NW = forestNicheWeights(clim, dry, wet, open, patch, { ss });
-            const wF = NW.wF;
-            const wT = NW.wT;
-            const wE = NW.wE;
-            const wB = NW.wB;
-            const wW = NW.wW + feu * feu * 6.0; // Host: waterProx = feu
+            const wF = NO.wF;
+            const wT = NO.wT;
+            const wE = NO.wE;
+            const wB = NO.wB;
+            const wW = NO.wW;
             // NERVENSYSTEM — die AUTO-Arten (ctx.extras, aus dem LIVE-Rezeptbuch) streuen mit:
             // Patch-Nische deterministisch aus dem Namens-Hash — die neue Art bildet eigene
             // Haine, ohne dass hier je eine Zeile für sie geschrieben wird.
@@ -3370,6 +3396,7 @@
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
         forestNicheWeights: forestNicheWeights,
+        forestNische: forestNische,
         forestTreeSize: forestTreeSize,
         forestMammutRoll: forestMammutRoll,
         forestSizeAndMammut: forestSizeAndMammut,

@@ -331,6 +331,10 @@ const FORBIDDEN = [
     // Formen leben je Siedlung mit Hülle (der Umzug verwirft ferne Siedlungen in O(1)).
     { token: "wk.formen", fiel: "Integration 05.10. — wk.siedlungen (Formen je Siedlung, Hülle)" },
     { token: "Math.max(f.ex, f.ez)", fiel: "Integration 05.10. — _wegeFormRadius: die Diagonale des gedrehten Kastens" },
+    // Integration 05.10.: das Kronendach der Ferne ist die Studio-Laubfarbe der Arten am Ort (phyto-core forestNische)
+    // × die Selbstbeschattung, die Saison legt uSeasonMul auf — die feste Sommer-Konstante kehrt nicht zurück.
+    { token: "kronendach: Object.freeze", fiel: "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul" },
+    { token: "farbeJeTakt", fiel: "Integration 05.10. — das Fern-Farb-Budget (FERN_FARBE.msJeTakt, _fernFarbTakt)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

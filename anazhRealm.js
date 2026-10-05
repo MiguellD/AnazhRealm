@@ -33716,19 +33716,26 @@ class AnazhRealm {
             }
         }
         // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): Standard (rau, nicht-metallisch — es liest den EINEN
-        // Himmel wie das nahe Terrain; Lambert ließ jeden sonnenabgewandten Hang schwarz) + vertexColors (die
-        // Fern-Farbe), fog default AN (die Luft dunstet die Ferne), DoubleSide (die Kamera darf unter den Saum tauchen).
-        const material = new THREE.MeshStandardMaterial({
-            vertexColors: true,
-            side: THREE.DoubleSide,
-            roughness: 1,
-            metalness: 0,
-        });
+        // Himmel wie das nahe Terrain; Lambert ließ jeden sonnenabgewandten Hang schwarz). Die Farbe: der Boden (color)
+        // unter dem Kronendach (aKrone.rgb × die EINE Saison-Uniform `uSeasonMul`, wie Laub, Gras und Karte) zur
+        // Deckung aKrone.a; fog default AN (die Luft dunstet die Ferne), DoubleSide (die Kamera darf unter den Saum
+        // tauchen). Ohne TSL oder Saison-Uniform bricht der Ring laut.
+        const TSL = THREE.TSL;
+        const su = this._ensureSeasonUniforms();
+        if (!TSL || !su || typeof THREE.MeshStandardNodeMaterial !== "function")
+            throw new Error("Fern-Ring: der Stoff braucht TSL und die Saison-Uniform (uSeasonMul)");
+        const material = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 1, metalness: 0 });
+        const krone = TSL.attribute("aKrone", "vec4");
+        material.colorNode = TSL.vec4(
+            TSL.mix(TSL.attribute("color", "vec3"), krone.rgb.mul(su.uSeasonMul), krone.a),
+            TSL.float(1.0)
+        );
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
             const geo = new THREE.BufferGeometry();
             geo.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
+            geo.setAttribute("aKrone", new THREE.Float32BufferAttribute(new Float32Array(per * 4), 4));
             geo.setAttribute("normal", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setIndex(indices);
             const mesh = new THREE.Mesh(geo, material);
@@ -33771,8 +33778,67 @@ class AnazhRealm {
     // Chunk-Vertex) unter dem Kronendach des Waldes mit der Deckung, die der Wald-Generator würfelt (phyto-core
     // `forestGeburt` aus der Bestandsdichte); Wasser liegt flach auf dem Spiegel. Befund 04.10. (Blick-Tour, Luft
     // offen): eine eigene Höhen-Rampe (Gras-Grün 0,30/0,46/0,24 roh als linear) malte die Ferne hell-gelbgrün und
-    // kahl, wo der Wald steht — der vereinfachte Fern-Zwilling ist gefallen. `out` = [r, g, b] (linear).
-    _fernFarbeAt(x, y, z, wet, out) {
+    // kahl, wo der Wald steht — der vereinfachte Fern-Zwilling ist gefallen.
+    // DIE TEILE (Integration 05.10.): `out` = [Boden r, g, b · Kronendach r, g, b · Deckung] (linear). Das Kronendach
+    // ist die Studio-Laubfarbe der Arten, die der Wald-Generator HIER würfelt (phyto-core `forestNische`: dieselben
+    // Nischen-Gewichte wie planForestCell), × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`) — die feste
+    // Sommer-Konstante neben dem Studio-Laub (ohne Art, ohne Saison) ist gefallen. Die Saison legt der Leser auf.
+    _fernFarbeTeile(x, y, z, out) {
+        const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
+        if (!core || typeof core.forestNische !== "function" || typeof core.forestGeburt !== "function")
+            throw new Error("Fern-Farbe: phyto-core forestNische/forestGeburt fehlen (KERN-PFLICHT)");
+        this._bodenFarbeAt(x, y, z, out);
+        const sd = this._forestStandDensity(x, z);
+        out[6] = core.forestGeburt(sd);
+        const ctx =
+            this._fernNischeCtx ||
+            (this._fernNischeCtx = {
+                F: AnazhRealm.FOREST,
+                baseH: 0,
+                fbm: (px, pz) => this._forestFbm(px, pz),
+                feuchteAt: (px, pz, sy) => this._feuchteAt(px, pz, sy),
+            });
+        ctx.baseH = (this.state && this.state.terrainBaseHeight) || 0;
+        const N = core.forestNische(x, z, y, sd, ctx);
+        const L = this._fernLaubLinear();
+        const w = [N.wF, N.wT, N.wE, N.wB, N.wW];
+        const S = AnazhRealm.FERN_FARBE.kronenSchatten;
+        let summe = 0;
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        for (let i = 0; i < 5; i++) {
+            summe += w[i];
+            r += w[i] * L[i][0];
+            g += w[i] * L[i][1];
+            b += w[i] * L[i][2];
+        }
+        const k = summe > 0 ? S / summe : 0;
+        out[3] = r * k;
+        out[4] = g * k;
+        out[5] = b * k;
+        return out;
+    }
+
+    // Die Studio-Laubfarbe der fünf Wald-Arten (Kiefer · Tanne · Eiche · Birke · Erle, die Folge von `forestNische`),
+    // linear nach dem FARB-GESETZ (das Paletten-Hex ist eine sRGB-Absicht; THREE.Color wandelt). Einmal je Sitzung —
+    // ohne Studio-Laub bricht die Fern-Farbe laut.
+    _fernLaubLinear() {
+        if (this._fernLaubLin) return this._fernLaubLin;
+        const c = new THREE.Color();
+        this._fernLaubLin = ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"].map((art) => {
+            const d = this._phytoStudioDials(art);
+            if (!d || !Number.isFinite(d.leafCol)) throw new Error("Fern-Farbe: Studio-Laubfarbe fehlt für " + art);
+            c.setHex(d.leafCol);
+            return [c.r, c.g, c.b];
+        });
+        return this._fernLaubLin;
+    }
+
+    // Die zusammengesetzte Fern-Farbe (CPU-Leser, der Feld-Pass): Wasser flach, sonst der Boden unter dem Kronendach ×
+    // die Saison (`saison` = `_saisonMul` der laufenden Phase — dieselbe Zahl, die `uSeasonMul` trägt) zur Deckung.
+    // `out` = [r, g, b] (linear).
+    _fernFarbeAt(x, y, z, wet, out, saison) {
         const K = AnazhRealm.FERN_FARBE;
         if (wet) {
             out[0] = K.wasser[0];
@@ -33780,15 +33846,17 @@ class AnazhRealm {
             out[2] = K.wasser[2];
             return out;
         }
-        this._bodenFarbeAt(x, y, z, out);
-        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const deckung =
-            core && typeof core.forestGeburt === "function" ? core.forestGeburt(this._forestStandDensity(x, z)) : 0;
-        const k = K.kronendach;
-        out[0] += (k[0] - out[0]) * deckung;
-        out[1] += (k[1] - out[1]) * deckung;
-        out[2] += (k[2] - out[2]) * deckung;
+        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(7)));
+        out[0] = t[0] + (t[3] * saison.r - t[0]) * t[6];
+        out[1] = t[1] + (t[4] * saison.g - t[1]) * t[6];
+        out[2] = t[2] + (t[5] * saison.b - t[2]) * t[6];
         return out;
+    }
+
+    // Die Saison der laufenden Phase als {r, g, b} (der CPU-Spiegel von `uSeasonMul`, `_saisonMul` ist die EINE Formel).
+    _fernSaison(out) {
+        const ph = typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375;
+        return this._saisonMul(ph, out || { r: 1, g: 1, b: 1 });
     }
 
     // DER EINE Punkt-Helfer (CPU-Schleife UND Feld-Zeichner): globaler Vertex-Index → Schale/Lokal-
@@ -33851,9 +33919,9 @@ class AnazhRealm {
         // Naht sofort — der Horizont erscheint nie schwarz.
         const g = p.s * AnazhRealm.FERN_RING.winkel * AnazhRealm.FERN_RING.reihen + p.li;
         fr.farbLaw[g] = law;
-        const f = this._fernRingFarbe(p.x, p.z, law, wet, !fr.ready);
+        const f = this._fernRingTeile(p.x, p.z, law, wet, !fr.ready);
         if (f) {
-            geo.attributes.color.setXYZ(p.li, f[0], f[1], f[2]);
+            AnazhRealm._fernRingSchreibe(geo, p.li, f);
             if (fr.farbOffen[g]) {
                 fr.farbOffen[g] = 0;
                 fr.farbN--;
@@ -33865,17 +33933,21 @@ class AnazhRealm {
         }
     }
 
-    // Die Farbe EINES Ring-Punkts: Wasser flach (die Konstante), trocken aus dem Gedächtnis — oder, mit `rechnen`,
-    // frisch durch die EINE Fern-Farbe (`_fernFarbeAt`) und gemerkt. null = offen (das Budget färbt ihn).
-    _fernRingFarbe(x, z, law, wet, rechnen) {
-        if (wet) return AnazhRealm.FERN_FARBE.wasser;
+    // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
+    // Deckung 0), trocken aus dem Gedächtnis — oder, mit `rechnen`, frisch und gemerkt. null = offen (das Budget färbt
+    // ihn). Die Saison legt der Ring-Stoff auf (`uSeasonMul`), das Gedächtnis bleibt über das Jahr gültig.
+    _fernRingTeile(x, z, law, wet, rechnen) {
+        if (wet) {
+            const w = AnazhRealm.FERN_FARBE.wasser;
+            return this._fernWasserTeile || (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0]));
+        }
         const key = x * 4194304 + z; // Schnapp-Punkte sind ganzzahlig, |z| < 2^21 m — eindeutig
         const m = this._fernFarbeMemo || (this._fernFarbeMemo = { neu: new Map(), alt: new Map() });
         let f = m.neu.get(key);
         if (f) return f;
         f = m.alt.get(key) || null;
         if (!f && !rechnen) return null;
-        if (!f) f = this._fernFarbeAt(x, law, z, false, [0, 0, 0]);
+        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(7));
         // ZWEI GENERATIONEN: ist `neu` voll, wird es `alt` (die jüngsten 2 × memo Punkte bleiben) — das alte clear()
         // leerte das Gedächtnis jeden zweiten Re-Anker ganz (9216 Punkte je Ring, Kappe 16384).
         if (m.neu.size >= AnazhRealm.FERN_FARBE.memo) {
@@ -33898,8 +33970,8 @@ class AnazhRealm {
             if (!fr.farbOffen[g]) continue;
             const p = this._fernRingPunkt(fr, g);
             const law = fr.farbLaw[g];
-            const f = this._fernRingFarbe(p.x, p.z, law, law < wl, true);
-            fr.meshes[p.s].geometry.attributes.color.setXYZ(p.li, f[0], f[1], f[2]);
+            const f = this._fernRingTeile(p.x, p.z, law, law < wl, true);
+            AnazhRealm._fernRingSchreibe(fr.meshes[p.s].geometry, p.li, f);
             dirty[p.s] = true;
             fr.farbOffen[g] = 0;
             fr.farbN--;
@@ -33910,9 +33982,19 @@ class AnazhRealm {
             }
         }
         fr.farbMin = fr.farbN > 0 ? g : fr.totalVerts;
-        for (let s = 0; s < dirty.length; s++) if (dirty[s]) fr.meshes[s].geometry.attributes.color.needsUpdate = true;
+        for (let s = 0; s < dirty.length; s++) if (dirty[s]) AnazhRealm._fernRingAttributeHoch(fr.meshes[s].geometry);
         fr.gefaerbt = (fr.gefaerbt || 0) + n; // Linse
         return Math.max(0, mindest - n);
+    }
+
+    // Die Teile in die zwei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung).
+    static _fernRingSchreibe(geo, li, t) {
+        geo.attributes.color.setXYZ(li, t[0], t[1], t[2]);
+        geo.attributes.aKrone.setXYZW(li, t[3], t[4], t[5], t[6]);
+    }
+    static _fernRingAttributeHoch(geo) {
+        geo.attributes.color.needsUpdate = true;
+        geo.attributes.aKrone.needsUpdate = true;
     }
 
     // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die offenen Ring-Farben, dann der
@@ -33967,8 +34049,8 @@ class AnazhRealm {
             if (!dirty[s]) continue;
             const geo = fr.meshes[s].geometry;
             geo.attributes.position.needsUpdate = true;
-            geo.attributes.color.needsUpdate = true;
-            geo.computeVertexNormals(); // 960 Vertices — billig, das Licht braucht Normalen
+            AnazhRealm._fernRingAttributeHoch(geo);
+            geo.computeVertexNormals(); // 3072 Vertices je Schale — das Licht braucht Normalen
         }
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
@@ -34006,7 +34088,7 @@ class AnazhRealm {
         }
         const geo = fr.meshes[0].geometry;
         geo.attributes.position.needsUpdate = true;
-        geo.attributes.color.needsUpdate = true;
+        AnazhRealm._fernRingAttributeHoch(geo);
         geo.computeVertexNormals();
     }
 
@@ -34190,7 +34272,7 @@ class AnazhRealm {
                 for (let g = fr.cursor; g < n; g++) this._fernRingSetzVertex(fr, pts[g], werte[g], wl);
                 for (const m of fr.meshes) {
                     m.geometry.attributes.position.needsUpdate = true;
-                    m.geometry.attributes.color.needsUpdate = true;
+                    AnazhRealm._fernRingAttributeHoch(m.geometry);
                     m.geometry.computeVertexNormals();
                 }
                 fr.gpuLaeufe = (fr.gpuLaeufe || 0) + 1;
@@ -34818,6 +34900,7 @@ class AnazhRealm {
         const gen = ++fp.gen;
         const ankerX = fr.anchorX;
         const ankerZ = fr.anchorZ;
+        const saison = this._fernSaison({ r: 1, g: 1, b: 1 });
         this._feldZeichnerHoehen(punkte, false)
             .then((werte) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
@@ -34835,11 +34918,24 @@ class AnazhRealm {
                     ankerZ,
                     hMax: -Infinity,
                     daten: new Float32Array(n * 4),
+                    saison,
                 };
             })
             .catch(() => {
                 if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
             });
+    }
+
+    // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`)? Ohne Bild nie.
+    _feldSaisonDrift(fp) {
+        if (!fp.saison || fp.farbJob || fp.flug) return false;
+        const jetzt = this._fernSaison(this._feldSaisonTmp || (this._feldSaisonTmp = { r: 1, g: 1, b: 1 }));
+        const d = AnazhRealm.FERN_FARBE.saisonDrift;
+        return (
+            Math.abs(jetzt.r - fp.saison.r) > d ||
+            Math.abs(jetzt.g - fp.saison.g) > d ||
+            Math.abs(jetzt.b - fp.saison.b) > d
+        );
     }
 
     // Der Farb-Job des Feld-Malers: Texel durch die EINE Fern-Farbe (`_fernFarbeAt`) bis zur Frist `frist` des
@@ -34856,7 +34952,7 @@ class AnazhRealm {
             const law = job.werte[k];
             const wet = law < wl;
             const y = wet ? wl : law;
-            this._fernFarbeAt(job.punkte[k * 2], y, job.punkte[k * 2 + 1], wet, f);
+            this._fernFarbeAt(job.punkte[k * 2], y, job.punkte[k * 2 + 1], wet, f, job.saison);
             job.daten[k * 4] = y;
             job.daten[k * 4 + 1] = f[0];
             job.daten[k * 4 + 2] = f[1];
@@ -34876,6 +34972,7 @@ class AnazhRealm {
         fp.U.anker.value.set(job.ankerX, job.ankerZ);
         fp.anchorX = job.ankerX;
         fp.anchorZ = job.ankerZ;
+        fp.saison = job.saison;
         fp.laeufe++;
         // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
         // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
@@ -36050,7 +36147,10 @@ class AnazhRealm {
         let fp = st.feldPass;
         if (!fp) fp = this._feldPassEnsure(fr);
         if (!fp) return;
-        if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ) this._feldPassMal(fp, fr);
+        // Neu malen bei Anker-Wechsel ODER wenn die Saison seit dem letzten Bild um mehr als `saisonDrift` (je Kanal)
+        // gewandert ist — das Feld trägt die Saison als Farbe (der Ring liest `uSeasonMul` im Stoff).
+        if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ || this._feldSaisonDrift(fp))
+            this._feldPassMal(fp, fr);
         this._weltSchwundTakt(st.weltMarch);
         const cam = st.camera;
         // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät) + Re-Bake bei
@@ -88264,15 +88364,17 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
     ]),
     randM: 0.6,
 });
-// FERN_FARBE (`_fernFarbeAt`, linear): das Kronendach des Waldes aus der Ferne = die Reflektanz geschlossener
-// Laubwald-Kronen im Sommer (Satelliten-Bänder blau ~0,02–0,03 · grün ~0,05–0,07 · rot ~0,02–0,03: das Blatt
-// trägt ~0,16 Grün, die Krone beschattet sich selbst); Wasser = das Fern-Blau als sRGB-Absicht (FARB-GESETZ:
-// 0x265273 → linear), flach auf dem Spiegel.
+// FERN_FARBE (`_fernFarbeTeile`, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
+// am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
+// Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
+// (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Wasser =
+// das Fern-Blau als sRGB-Absicht (FARB-GESETZ: 0x265273 → linear), flach auf dem Spiegel.
 // DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für offene Ring-Farben und den Feld-Farb-Job, über dem
 // Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte; `memo` = eine Generation des Fern-Farb-Gedächtnisses
 // (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
-    kronendach: Object.freeze([0.03, 0.062, 0.022]),
+    kronenSchatten: 0.32,
+    saisonDrift: 0.05,
     wasser: Object.freeze([0.0196, 0.0863, 0.1706]),
     msJeTakt: 2,
     msKnapp: 0.5,
