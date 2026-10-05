@@ -20505,9 +20505,9 @@ class AnazhRealm {
     // voxel-aware. Symphonie kurz stumm (sonst N Pings).
     _spawnOneInitialCreature(soulName = null, spawnRadius = 50) {
         const angle = Math.random() * Math.PI * 2;
-        // V18.315 — FERN spawnen (im Nebel, jenseits der klaren Sicht): das Wesen
-        // taucht aus der Distanz auf (wie in echt: man sieht sie nicht kommen),
-        // statt dir vor die Füße zu ploppen. (spawnRadius = Streu-Spanne oben drauf.)
+        // V18.315 — FERN spawnen: das Wesen taucht aus der Distanz auf, statt dir vor die Füße zu ploppen; sein Satz
+        // blendet beim ersten Erscheinen ein (`einblenden`, der Nebel verdeckte die Geburt bis V18.530).
+        // (spawnRadius = Streu-Spanne oben drauf.)
         const radius = AnazhRealm.CREATURE_SPAWN_FAR_MIN + Math.random() * Math.max(80, spawnRadius * 1.6);
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
@@ -20739,6 +20739,7 @@ class AnazhRealm {
             const u = cr.userData || (cr.userData = {});
             u._kzNah = u._kzNah === true ? d2 < aus2 : d2 < ein2;
             if (u._kzNah) {
+                u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
                 // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
                 if (u._kzGlieder)
                     for (const gl of u._kzGlieder) {
@@ -20756,7 +20757,8 @@ class AnazhRealm {
                 if (!this._weltBakeErlaubt(d2)) continue; // getaktet — bis dahin trägt der Körper
                 u._kzVersuch = true;
                 cr.updateMatrixWorld(true);
-                u._kzGlieder = this._kreaturGliederBacken(cr);
+                // Fern geboren (nie nah im Bild): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.
+                u._kzGlieder = this._kreaturGliederBacken(cr, !u._kzNahGewesen);
                 if (!u._kzGlieder) {
                     cr.visible = false;
                     continue;
@@ -35130,7 +35132,11 @@ class AnazhRealm {
     // ── DIE BILLIGE SEITE: ein FELD-EINTRAG (EIN Listen-Slot) zeigt auf ein
     // Brick. matrixWorld gegeben → platziert/animiert (Matrix der Matrix);
     // sonst Identität (statischer Welt-Raum-Satz == lokale Box, z. B. ein Gesetz-Block).
-    _weltFeldEintrag(brick, matrixWorld) {
+    // DAS EINBLENDEN (Integration 05.10.): `einblenden` = der Träger zeigte nie ein Mesh (ein fern gespawntes Tier, ein fern
+    // entstandener Bau) — die Geburt dithert über `WELT_SCHWUND_MS` ein (Texel 5.w von 1 nach 0, dieselbe IGN-Blende wie
+    // der Schwund), statt im selben Frame zu erscheinen. Der Nebel verdeckte solche Geburten bis V18.530; die Luft trägt
+    // Kilometer, ein Satz ploppte sichtbar. Ohne gezeichneten Feld-Pass erscheint er sofort.
+    _weltFeldEintrag(brick, matrixWorld, einblenden) {
         const wm = this.state.weltMarch;
         if (!wm || !brick) return null;
         if (wm.freiFelder.length === 0) {
@@ -35157,6 +35163,12 @@ class AnazhRealm {
         L[o + 26] = lg.z;
         L[o + 27] = 0; // lokale Box Größe
         const handle = { feld, brick, _anT: performance.now() };
+        const fpE = this.state.feldPass;
+        if (einblenden === true && fpE && fpE.mesh && fpE.mesh.visible) {
+            handle._einT0 = handle._anT;
+            L[o + 23] = 1; // erst ganz verworfen, der Schwund-Takt löst ihn ein
+            wm.schwund.add(handle);
+        }
         wm.handles[feld] = handle;
         wm.unordnung++;
         if (matrixWorld) {
@@ -35462,10 +35474,10 @@ class AnazhRealm {
         return k;
     }
 
-    _weltKapselSpawn(key, matrixWorld, kapselFn) {
+    _weltKapselSpawn(key, matrixWorld, kapselFn, einblenden) {
         const k = this._weltKapselHolen(key, kapselFn);
         if (!k) return null;
-        const handle = this._weltFeldEintrag(k, matrixWorld || null);
+        const handle = this._weltFeldEintrag(k, matrixWorld || null, einblenden);
         if (!handle) {
             k.refs--;
             if (k.refs <= 0) this._weltBrickFrei(k);
@@ -35705,6 +35717,7 @@ class AnazhRealm {
     // der Satz über `WELT_SCHWUND_MS` aus (Texel 5.w = Schwund-Anteil, dieselbe IGN-Blende wie die Stufen), statt im
     // selben Frame zu verschwinden: der Übergang Satz → Mesh trägt keinen Pop. Ohne gezeichneten Feld-Pass fällt er sofort,
     // ebenso mit `sofort` (ein Schalter des Spielers, kein Mesh übernimmt — der Satz verschwindet im selben Frame).
+    // Ein laufendes Einblenden (`_weltFeldEintrag`, die Geburt eines fern entstandenen Satzes) bricht beim Aus ab.
     _weltFeldAktiv(handle, an, sofort) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
@@ -35724,6 +35737,11 @@ class AnazhRealm {
                 this._weltSeiteDirty(wm, handle.feld);
             }
             return;
+        }
+        if (handle._einT0 !== undefined) {
+            handle._einT0 = undefined;
+            wm.schwund.delete(handle);
+            L[o + 23] = 0;
         }
         if (L[o + 3] === 0 || (handle._schwundT0 !== undefined && !sofort)) return;
         if (handle._schwundT0 !== undefined) {
@@ -35846,6 +35864,16 @@ class AnazhRealm {
         const jetzt = performance.now();
         for (const h of wm.schwund) {
             const o = h.feld * 32;
+            if (h._einT0 !== undefined) {
+                // DAS EINBLENDEN: der verworfene Anteil fällt von 1 nach 0, dann zeichnet der Satz ganz.
+                const e = 1 - (jetzt - h._einT0) / AnazhRealm.WELT_SCHWUND_MS;
+                if (h._frei || e <= 0) {
+                    wm.schwund.delete(h);
+                    h._einT0 = undefined;
+                    if (!h._frei) L[o + 23] = 0;
+                } else L[o + 23] = e;
+                continue;
+            }
             const s = (jetzt - h._schwundT0) / AnazhRealm.WELT_SCHWUND_MS;
             if (h._frei || s >= 1) {
                 wm.schwund.delete(h);
@@ -67613,23 +67641,29 @@ class AnazhRealm {
         if (!(wm && wm.kapselCache.has(key)) && !this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt
         const M = this._archWeltMatrix(entry);
         let fitWar = "hit";
-        const handle = this._weltKapselSpawn(key, M, () => {
-            // KONSUM / Fachwerk-Naht: haus_/studioOv → Grammatik-Boxen aus denselben
-            // Maßen wie massBau/buildInstance (kein Mesh nötig). Sonst Mesh-AABB.
-            let defs = this._archFachwerkFit(entry);
-            if (defs && defs.length) {
-                fitWar = "gepasst";
+        const einblenden = entry._ziegelNah === undefined; // fern entstanden (nie in der Mesh-Zone): die Geburt blendet ein
+        const handle = this._weltKapselSpawn(
+            key,
+            M,
+            () => {
+                // KONSUM / Fachwerk-Naht: haus_/studioOv → Grammatik-Boxen aus denselben
+                // Maßen wie massBau/buildInstance (kein Mesh nötig). Sonst Mesh-AABB.
+                let defs = this._archFachwerkFit(entry);
+                if (defs && defs.length) {
+                    fitWar = "gepasst";
+                    return defs;
+                }
+                // Cache-Miss: die Vorlage EINMAL bauen + LOKAL passen (relativ zu M⁻¹).
+                const hatte = this._archIsRendered(entry);
+                if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Erst-Fit
+                const inv = M.clone().invert();
+                defs = entry.mesh ? this._archBoxFit(entry.mesh, inv) : null;
+                if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+                fitWar = defs && defs.length ? "gepasst" : "leer";
                 return defs;
-            }
-            // Cache-Miss: die Vorlage EINMAL bauen + LOKAL passen (relativ zu M⁻¹).
-            const hatte = this._archIsRendered(entry);
-            if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Erst-Fit
-            const inv = M.clone().invert();
-            defs = entry.mesh ? this._archBoxFit(entry.mesh, inv) : null;
-            if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
-            fitWar = defs && defs.length ? "gepasst" : "leer";
-            return defs;
-        });
+            },
+            einblenden
+        );
         if (handle) {
             entry._ziegelGebacken = true; // genau EIN Eintrag je Bau
             entry._ziegelSlot = handle;
@@ -67685,18 +67719,24 @@ class AnazhRealm {
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return false; // lädt noch — der nächste Tick fragt wieder, nichts verbrannt
             if (!this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt (Treffer sind frei)
         }
-        const handle = this._weltKapselSpawn(key, this._archWeltMatrix(entry), () => {
-            if (baum) return this._baumKapselFit(bf);
-            const g = new THREE.Group();
-            for (const lf of bf.leaves) {
-                if (!lf || !lf.geom) continue;
-                const m = new THREE.Mesh(lf.geom, lf.mat);
-                m.matrixAutoUpdate = false;
-                if (lf.localMatrix) m.matrix.copy(lf.localMatrix);
-                g.add(m);
-            }
-            return this._archBoxFit(g, new THREE.Matrix4());
-        });
+        const einblenden = entry._ziegelNah === undefined; // fern entstanden (nie in der Mesh-Zone): die Geburt blendet ein
+        const handle = this._weltKapselSpawn(
+            key,
+            this._archWeltMatrix(entry),
+            () => {
+                if (baum) return this._baumKapselFit(bf);
+                const g = new THREE.Group();
+                for (const lf of bf.leaves) {
+                    if (!lf || !lf.geom) continue;
+                    const m = new THREE.Mesh(lf.geom, lf.mat);
+                    m.matrixAutoUpdate = false;
+                    if (lf.localMatrix) m.matrix.copy(lf.localMatrix);
+                    g.add(m);
+                }
+                return this._archBoxFit(g, new THREE.Matrix4());
+            },
+            einblenden
+        );
         if (handle) {
             entry._ziegelGebacken = true;
             entry._ziegelSlot = handle;
@@ -68511,7 +68551,7 @@ class AnazhRealm {
     // _animateTierBaum rotiert); Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Der
     // Fern-Standbild-Ast backt NIE (Doppel-Körper). Ganz oder gar nicht: reicht der Atlas nicht, fällt
     // das ganze Tier.
-    _kreaturGliederBacken(cr) {
+    _kreaturGliederBacken(cr, einblenden) {
         const tb = cr.userData && cr.userData._tierBaum;
         const anker = new Set();
         if (tb && tb.teile) for (const k in tb.teile) if (tb.teile[k] && tb.teile[k].isObject3D) anker.add(tb.teile[k]);
@@ -68625,10 +68665,15 @@ class AnazhRealm {
             a.updateMatrixWorld(true);
             const key = `kapsel:${gattung}:${a.name || "wurzel"}`;
             const meshes = g.meshes;
-            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => {
-                const inv = new THREE.Matrix4().copy(a.matrixWorld).invert();
-                return this._gliedKapselFit(meshes, inv);
-            });
+            const handle = this._weltKapselSpawn(
+                key,
+                a.matrixWorld,
+                () => {
+                    const inv = new THREE.Matrix4().copy(a.matrixWorld).invert();
+                    return this._gliedKapselFit(meshes, inv);
+                },
+                einblenden
+            );
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
@@ -72198,7 +72243,8 @@ class AnazhRealm {
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist
-    // gedeckelt; über dem Cap fällt das FERNSTE (unsichtbar im Nebel) — der Heap läuft nie voll. Filter +
+    // gedeckelt; über dem Cap fällt das FERNSTE (am wenigsten vermisst; ohne Nebel ist sein Fall sichtbar) — der Heap
+    // läuft nie voll. Filter +
     // Sort nur über Cap, im Culling-Tick.
     _capNexusStructures(playerPos) {
         const arches = this.state.architectures;
@@ -88399,12 +88445,12 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, maxStepsPerTick: 10, driftMax: 2.5 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
-    // Band 0 ist 5×5 (maxRing 2): die LOD0↔LOD1-Naht liegt ~100 m weg (nebel-verdeckt) statt sichtbar bei
-    // ~50 m. (Die Deko-Bänder fielen 04.10. mit dem Klein-Vegetations-Zwilling: die Nah-Streu hängt am Schirm.)
+    // Band 0 ist 5×5 (maxRing 2): die LOD0↔LOD1-Naht liegt ~100 m weg (die Luft dunstet sie, der Nebel deckte sie bis
+    // V18.530) statt bei ~50 m. (Die Deko-Bänder fielen 04.10. mit dem Klein-Vegetations-Zwilling: die Nah-Streu hängt am Schirm.)
     Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
     Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
     Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
-    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: die gröbste Stufe (~300×), so grob wie der Fern-Ring dort
 ]);
 
 // LOD-Hysterese: ein bestehender Chunk wechselt die LOD erst, wenn r die Band-Grenze um diese
@@ -91417,7 +91463,7 @@ AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
-AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): sie tauchen aus der Distanz auf (kein Pop in Sicht)
+AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern: sie tauchen aus der Distanz auf, ihr Satz blendet ein (_weltFeldEintrag, einblenden)
 AnazhRealm.RING_RAMP_START = 0; // V18.397 — Start-Ring beim Boot = EIN EINZIGER Chunk (Schöpfer „1 Chunk statt 9!").
 // JEDES-HOLZ-WELLE — DER EXISTENZ-BODEN: bis zu diesem Ring wächst die Ramp ohne
 // Kopfraum-Gate und der Schrumpf-Pfad endet hier (2 = 5×5 Chunks um den Spieler,

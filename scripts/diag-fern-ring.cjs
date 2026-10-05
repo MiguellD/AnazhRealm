@@ -465,6 +465,33 @@ const server = http.createServer((req, res) => {
         } catch (e8) {
             res.fpRenderErr = (e8 && e8.message) || String(e8);
         }
+        // ===== (8b) DAS EINBLENDEN: die Geburt eines fern entstandenen Satzes dithert ein =====
+        // Zwei Probe-Sätze (EIN Kasten) bei sichtbarem Feld-Pass: mit `einblenden` beginnt Texel 5.w bei 1 (ganz
+        // verworfen) und der Schwund-Takt löst ihn über WELT_SCHWUND_MS auf 0; ohne erscheint er sofort (0). Der Nebel
+        // verdeckte solche Geburten bis V18.530 (ein fern gespawntes Tier ploppte sichtbar).
+        try {
+            const fp8b = r.state.feldPass;
+            if (fp8b && fp8b.mesh) fp8b.mesh.visible = true;
+            const wm8 = r._weltMarchEnsure();
+            const kasten = () => [{ box: true, c: { x: 0, y: 0, z: 0 }, h: { x: 1, y: 1, z: 1 } }];
+            const hE = r._weltKapselSpawn("probe:einblenden", null, kasten, true);
+            const hS = r._weltKapselSpawn("probe:sofort", null, kasten, false);
+            const L8 = wm8.listeDaten;
+            const MS = r.constructor.WELT_SCHWUND_MS;
+            res.einStart = hE ? L8[hE.feld * 32 + 23] : -1;
+            res.sofortStart = hS ? L8[hS.feld * 32 + 23] : -1;
+            await new Promise((rs) => setTimeout(rs, MS / 2));
+            r._weltSchwundTakt(wm8);
+            res.einMitte = hE ? L8[hE.feld * 32 + 23] : -1;
+            await new Promise((rs) => setTimeout(rs, MS / 2 + 60));
+            r._weltSchwundTakt(wm8);
+            res.einEnde = hE ? L8[hE.feld * 32 + 23] : -1;
+            res.einAus = !!hE && !wm8.schwund.has(hE);
+            if (hE) r._weltFeldFrei(hE);
+            if (hS) r._weltFeldFrei(hS);
+        } catch (e8b) {
+            res.einErr = String((e8b && e8b.message) || e8b);
+        }
         r._fernRingDispose();
         res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
 
@@ -570,6 +597,16 @@ const server = http.createServer((req, res) => {
         "8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel",
         Number.isFinite(out.fpTreffer) && out.fpTreffer > 50,
         `treffer=${out.fpTreffer}${out.fpRenderErr ? " err=" + out.fpRenderErr : ""}`
+    );
+    check(
+        "8b: DAS EINBLENDEN — ein fern geborener Satz beginnt ganz verworfen und löst sich über WELT_SCHWUND_MS auf, ohne Wunsch erscheint er sofort",
+        out.einStart > 0.99 &&
+            out.sofortStart === 0 &&
+            out.einMitte > 0.2 &&
+            out.einMitte < 0.8 &&
+            out.einEnde === 0 &&
+            out.einAus === true,
+        `start=${out.einStart} mitte=${out.einMitte} ende=${out.einEnde} aus=${out.einAus} sofort=${out.sofortStart}${out.einErr ? " " + out.einErr : ""}`
     );
     check("8: der Pass fällt mit dem Ring (Dispose)", out.fpDisposed === true);
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
