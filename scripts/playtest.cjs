@@ -29134,14 +29134,16 @@ async function checkBandM3RittVollendet(ctx) {
             r.state._fieldVy = -8; // simulierter Fall
             for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
-            const bottom = entry.position.y + r._compoundBottomY(bp) * (entry.scale || 1);
+            // Die GERENDERTE Unterkante: die Basis liegt bei position.y − 0.5 (Instanz-Matrix · Gruppen-Bau) — die alte
+            // Formel ohne die −0.5 hielt den versunkenen Wagen (Reifen 0,48 m im Boden) für stehend.
+            const bottom = entry.position.y - 0.5 + r._compoundBottomY(bp) * (entry.scale || 1);
             // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante an der geglätteten
             // Lauf-Fläche − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
             const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
             const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
             const sollY = expectFloat ? runSurf - 0.25 : terr;
             out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - sollY) < 0.35;
-            out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
+            out.riderFollows = Math.abs(pm.y - (entry.position.y - 0.5 + entry._sitzHeight)) < 0.05;
             out.vyZeroed = Math.abs(r.state._fieldVy) < 1e-6;
             // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), kein gefrorenes Maß → jede
             // Fahrzeug-Gestalt verankert korrekt; der Test prüft die Ableitung, keine Magie-Zahl.
