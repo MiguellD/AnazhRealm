@@ -857,7 +857,7 @@ function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, co
     arr.push(g);
 }
 
-// `bluete` (05.10.): { grund: THREE.Color, grundBis, biegen } — das Blütenblatt (phyto-core BLUETEN_BLATT); ohne byte-gleich.
+// `bluete` (05.10.): { grund: [r, g, b] linear, grundBis, biegen } — das Blütenblatt (phyto-core BLUETEN_BLATT); ohne byte-gleich.
 function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, seg, bluete) {
     // DER GETEILTE SAMEN: die 30-Vert-Superformel-Blatt-KLINGE (Kontur + Quer-Mulde) lebt in
     // phyto-core.js (buildLeafBlades) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie-
@@ -877,7 +877,7 @@ function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, 
                       cup: cup,
                       leafShape: lp,
                       seg: seg,
-                      grund: [bluete.grund.r, bluete.grund.g, bluete.grund.b],
+                      grund: bluete.grund,
                       grundBis: bluete.grundBis,
                       biegen: bluete.biegen,
                   }
@@ -1834,8 +1834,9 @@ function emitFlower(P) {
         // DAS BLÜTENBLATT (phyto-core BLUETEN_BLATT): Saftmal-Grund, Rückbiegung, je Blatt gewürfelt aus dem Ort.
         const BB = self.__phytoCore.BLUETEN_BLATT;
         const pc = petalCol.clone().lerp(vegFarbe(seasonTint), 0.08);
+        // Der Grund ist linear aus der schon linearen Blütenfarbe gerechnet (pc kommt aus vegFarbe) — ein Tripel, keine Palette.
         const bl = {
-            grund: new THREE.Color(Math.pow(pc.r, BB.potenz), Math.pow(pc.g, BB.potenz), Math.pow(pc.b, BB.potenz)),
+            grund: [Math.pow(pc.r, BB.potenz), Math.pow(pc.g, BB.potenz), Math.pow(pc.b, BB.potenz)],
             grundBis: BB.grundBis,
             biegen: BB.biegen,
         };
