@@ -467,6 +467,132 @@
         return cv;
     }
 
+    // DAS ATLAS-BILD (04.10., W5): was jeder Leser als TEXTUR hochlädt — die gemalte Leinwand, gelesen und für die
+    // GPU vorbereitet, mit ihrer ganzen Mip-Kette. Befund (Lab, echte GPU): die Leinwand reicht ungerade Alpha-Texel
+    // mit der Farbe 0 (schwarz) weiter — die bilineare Filterung und die Mips mischten dieses Schwarz in jeden Rand
+    // (die 4-px-Nadelstriche lasen auf Armlänge mit 47 % ihrer Albedo: Nadel-Karte L* 27,8 gegen die Nadel-Röhre
+    // 40,3), und die Box-Mips mittelten die dünnen Striche unter die Alpha-Schwelle (Nadel-Deckung 0,24 → 0,14 auf
+    // Stufe 4, 0,05 auf Stufe 5: auf 20 m las die Nadel-Karte als ovaler Klecks). Darum:
+    //   (1) jede Zelle trägt dasselbe lineare Mittel `wert` ihrer deckenden Texel (Alpha ≥ 0,5) — gleichgezogen auf
+    //       das kleinste Zell-Mittel je Kanal (nur abwärts skaliert, kein Kappen);
+    //   (2) die nicht deckenden Texel tragen die Farbe `wert` (der Atlas „blutet"): Filter und Mips mischen
+    //       Blattfarbe statt Schwarz;
+    //   (3) DECKUNGSTREUE Mips (Castaño): jede Stufe ist das Box-Mittel (linear) von Stufe 0, ihr Alpha je Zelle so
+    //       skaliert, dass derselbe Anteil Texel die Schwelle 0,5 hält wie auf Stufe 0 — die Krone dünnt mit der
+    //       Entfernung nicht aus;
+    //   (4) die Zeilen liegen in Textur-Ordnung (Zeile 0 = v 0 = der untere Leinwand-Rand, wie eine Leinwand-Textur
+    //       mit flipY), damit jede Karte dieselben UV liest wie zuvor.
+    // Leser (Studio-Stoff, Host-Stoff) laden `mips` (Stufe 0 = `daten`) und teilen die Atlas-Farbe durch `wert`: der
+    // Atlas trägt NUR den Wert um 1, die Albedo der Karte ist im Mittel die Vertex-Farbe (FARB-GESETZ) — wie die
+    // Klinge. Ohne Leinwand → null.
+    function bakeLeafAtlasBild(doc) {
+        const cv = bakeLeafAtlasCanvas(doc);
+        if (!cv) return null;
+        const W = cv.width,
+            H = cv.height,
+            Z = W / 4;
+        const px = cv.getContext("2d").getImageData(0, 0, W, H).data;
+        const LIN = new Float32Array(256);
+        for (let c = 0; c < 256; c++) {
+            const v = c / 255;
+            LIN[c] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        }
+        const srgb = (l) => {
+            const v = l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(l, 1 / 2.4) - 0.055;
+            return Math.max(0, Math.min(255, Math.round(v * 255)));
+        };
+        const mittel = [];
+        for (let c = 0; c < 4; c++) {
+            let n = 0;
+            const s = [0, 0, 0];
+            for (let y = 0; y < H; y++)
+                for (let x = c * Z; x < (c + 1) * Z; x++) {
+                    const i = (y * W + x) * 4;
+                    if (px[i + 3] < 128) continue;
+                    n++;
+                    for (let k = 0; k < 3; k++) s[k] += LIN[px[i + k]];
+                }
+            mittel.push(n ? s.map((v) => v / n) : [1, 1, 1]);
+        }
+        const wert = [0, 1, 2].map((k) => Math.min(mittel[0][k], mittel[1][k], mittel[2][k], mittel[3][k]));
+        // Stufe 0 linear (Textur-Ordnung): RGB gleichgezogen bzw. geblutet, Alpha 0..1.
+        let F = new Float32Array(W * H * 4);
+        const deckung0 = [0, 0, 0, 0];
+        for (let y = 0; y < H; y++)
+            for (let x = 0; x < W; x++) {
+                const i = (y * W + x) * 4,
+                    o = ((H - 1 - y) * W + x) * 4,
+                    c = Math.min(3, Math.floor(x / Z));
+                const a = px[i + 3];
+                for (let k = 0; k < 3; k++) F[o + k] = a >= 128 ? (LIN[px[i + k]] * wert[k]) / mittel[c][k] : wert[k];
+                F[o + 3] = a / 255;
+                if (a >= 128) deckung0[c]++;
+            }
+        for (let c = 0; c < 4; c++) deckung0[c] /= Z * H;
+        const kodiere = (G, w, h, alphaMul) => {
+            const d = new Uint8Array(w * h * 4),
+                zw = w / 4;
+            for (let i = 0; i < w * h; i++) {
+                const c = zw >= 1 ? Math.min(3, Math.floor((i % w) / zw)) : 0;
+                for (let k = 0; k < 3; k++) d[i * 4 + k] = srgb(G[i * 4 + k]);
+                d[i * 4 + 3] = Math.max(0, Math.min(255, Math.round(Math.min(1, G[i * 4 + 3] * alphaMul[c]) * 255)));
+            }
+            return d;
+        };
+        const daten = new Uint8Array(W * H * 4);
+        for (let i = 0; i < W * H; i++) {
+            for (let k = 0; k < 3; k++) daten[i * 4 + k] = srgb(F[i * 4 + k]);
+            daten[i * 4 + 3] = Math.round(F[i * 4 + 3] * 255);
+        }
+        const mips = [{ data: daten, width: W, height: H }];
+        let w = W,
+            h = H,
+            mul = [1, 1, 1, 1];
+        while (w > 1 || h > 1) {
+            const w2 = Math.max(1, w >> 1),
+                h2 = Math.max(1, h >> 1),
+                G = new Float32Array(w2 * h2 * 4);
+            for (let y = 0; y < h2; y++)
+                for (let x = 0; x < w2; x++) {
+                    const x0 = Math.min(w - 1, 2 * x),
+                        x1 = Math.min(w - 1, 2 * x + 1),
+                        y0 = Math.min(h - 1, 2 * y),
+                        y1 = Math.min(h - 1, 2 * y + 1);
+                    for (let k = 0; k < 4; k++)
+                        G[(y * w2 + x) * 4 + k] =
+                            (F[(y0 * w + x0) * 4 + k] +
+                                F[(y0 * w + x1) * 4 + k] +
+                                F[(y1 * w + x0) * 4 + k] +
+                                F[(y1 * w + x1) * 4 + k]) *
+                            0.25;
+                }
+            // Je Zelle (solange sie mindestens 4×4 Texel trägt) der Alpha-Faktor, der die Deckung von Stufe 0 hält.
+            const zw = w2 / 4;
+            if (zw >= 4 && h2 >= 4) {
+                mul = [0, 1, 2, 3].map((c) => {
+                    const al = [];
+                    for (let y = 0; y < h2; y++)
+                        for (let x = c * zw; x < (c + 1) * zw; x++) al.push(G[(y * w2 + x) * 4 + 3]);
+                    let lo = 0,
+                        hi = 64;
+                    for (let it = 0; it < 24; it++) {
+                        const m = (lo + hi) / 2;
+                        let n = 0;
+                        for (const a of al) if (a * m >= 0.5) n++;
+                        if (n / al.length < deckung0[c]) lo = m;
+                        else hi = m;
+                    }
+                    return hi;
+                });
+            }
+            mips.push({ data: kodiere(G, w2, h2, mul), width: w2, height: h2 });
+            F = G;
+            w = w2;
+            h = h2;
+        }
+        return { breite: W, hoehe: H, daten: daten, mips: mips, wert: wert };
+    }
+
     // DAS NEUE KLEID Welle 1 — DIE LAUB-GEOMETRIE aus der Vorlage (`pushLeafClusterQuad`, byte-
     // treu): ein Quad je Blatt (2 Dreiecke), die Achsen aus dir/up + Roll aus phase, die UV in
     // die Atlas-Zelle geroutet. REIN (plain Arrays raus) — der Aufrufer (Main + Portal) wickelt
@@ -2715,6 +2841,7 @@
         treePhenotype: treePhenotype,
         treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
+        bakeLeafAtlasBild: bakeLeafAtlasBild, // das Textur-Bild des EINEN Atlas: blutend, Zell-Mittel gleich, deckungstreue Mips, `wert`
         buildFoliageQuads: buildFoliageQuads,
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray

@@ -95,17 +95,19 @@ function meshDiff(tag, gold, live) {
 
 /// DIE BUDGET-WAND (04.10., echte GPU an der Mess-Wiese) — der KONSUM des Budgets (render-config lod.budget,
 // Studio-Vertrag B2c), gelesen NACH dem Transport aus dem get-book-Umschlag:
-//  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle
-//      plus jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt) und gegen ihre Zeile gehalten:
+//  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle,
+//      jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt, und JEDE GESTALT DER WELT: die Samen
+//      1..V aus budget.gestalten, mit denen der Host baut — W5) und gegen ihre Zeile gehalten:
 //      Dreiecke ≤ tris, Sippen (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) ≤ draws. Rot nennt den
 //      Täter: `tree[1] weide-s12345-L1-summer: 10204 Dreiecke > 10000`. Die Karten-Stufe (karte) ist kein
 //      Gitter — ihre L2-Geometrie wird nicht geliefert (die Karten-Linse in gate:studio-vertrag hält das).
 //  (A) STECKBRIEF — der gemalte EINE Blatt-Atlas passt in die deklarierten Kerne (Alpha>0 nie jenseits `kern`)
 //      und seine Füllungen sind die deklarierten (±0,01): Breitblatt-Zellen und Nadel-Zelle.
-//  (D) DECKUNG — die gebaute L1-Krone bedeckt die L0-Krone desselben Baums im Band budget.tree[1].deckung:
-//      Laub-Karte (Fläche × Kern-Füllung / Klingen-Fläche; Kern-Füllung = fuellung / kern²), Nadel-Karte
-//      (Cauchy: die mittlere Projektion eines Nadel-Rohrs ist Oberfläche/4, die einer Karte Fläche × Füllung/2
-//      → 2 · Fläche × Füllung / Rohr-Fläche) und Trauer-Klinge (Klingen-Fläche L1 / L0), je Art × Samen × Saison.
+//  (D) DECKUNG — die gebaute L1-Krone bedeckt die L0-Krone desselben Baums im Band budget.tree[1].deckung, als
+//      Verhältnis der mittleren Projektionen (Cauchy): Laub-Karte Fläche × Kern-Füllung / 2 (Kern-Füllung =
+//      fuellung / kern²), Nadel-Karte Fläche × Füllung / 2, Klinge Fläche / 2, Nadel-Rohr Oberfläche / 4 — je Art ×
+//      Samen × Saison. Seit W5 trägt auch die L0 Karten (Laub/Nadel) bzw. Strähnen (Trauer): dasselbe Band hält
+//      beide Kronen gegeneinander (die L0 ist auf die Klingen von gestern geeicht, 0,99–1,02).
 const dekodiere = (b64, Typ) => {
     const b = Buffer.from(b64, "base64");
     return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
@@ -182,16 +184,21 @@ function steckbriefUrteil(atlas, breit, nadel) {
         v.push(`Nadel-Füllung ${atlas.fill[nadel.zelle].toFixed(4)} ≠ Steckbrief ${nadel.fuellung}`);
     return v;
 }
-// Deckung je Paar: p.art ∈ laub | nadel | klinge, p.l0 = L0-Laubfläche, p.l1 = L1-Fläche (Karte bzw. Klinge).
+// Die mittlere Projektion (× 2) einer Krone aus ihren Flächen: karte = Kartenfläche (foliageTex), klinge =
+// Fläche der Klingen bzw. Nadel-Rohre (foliage).
+function projektion(f, conifer, at) {
+    const fuell = conifer ? at.nadel.fuellung : at.steckbrief.fuellung / (at.steckbrief.kern * at.steckbrief.kern);
+    return f.karte * fuell + (conifer ? f.klinge / 2 : f.klinge);
+}
+// Deckung je Paar: p.art ∈ laub | nadel | klinge (die Kronen-Art der L1), p.l0/p.l1 = {karte, klinge} je Stufe.
 function deckungsWert(p, at) {
-    if (p.art === "laub") return (p.l1 * (at.steckbrief.fuellung / (at.steckbrief.kern * at.steckbrief.kern))) / p.l0;
-    if (p.art === "nadel") return (2 * p.l1 * at.nadel.fuellung) / p.l0;
-    return p.l1 / p.l0;
+    return projektion(p.l1, p.conifer, at) / projektion(p.l0, p.conifer, at);
 }
 function deckungsUrteil(paare, band, at) {
     const v = [];
     for (const [k, p] of Object.entries(paare)) {
-        if (!(p.l0 > 0) || !(p.l1 > 0)) continue;
+        if (!p.l0 || !p.l1 || !(projektion(p.l0, p.conifer, at) > 0) || !(projektion(p.l1, p.conifer, at) > 0))
+            continue;
         const d = deckungsWert(p, at);
         p.deckung = d;
         if (d < band[0] || d > band[1])
@@ -240,7 +247,8 @@ function deckungsUrteil(paare, band, at) {
         const budget = lodB && lodB.budget;
         const stufen = (lodB && lodB.kindStages) || {};
         const artVon = (preset) => buch[preset] && buch[preset].kind;
-        const gemessen = new Set();
+        const gemessen = new Set(),
+            gemessenFall = new Set();
         const miss = (c, a, fall) => {
             const kind = artVon(c.presetId);
             if (!budget || !budget[kind]) return;
@@ -250,6 +258,7 @@ function deckungsUrteil(paare, band, at) {
             const k = kosten(a.meshes);
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, sippen: k.sippen });
             gemessen.add(c.presetId + "|" + c.lod);
+            if (c.season === "summer") gemessenFall.add(c.presetId + "|" + c.seed + "|" + c.lod);
         };
         for (const f of files) {
             const c = parseName(f);
@@ -282,12 +291,12 @@ function deckungsUrteil(paare, band, at) {
             if (c.lod <= 1 && artVon(c.presetId) === "tree") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
                 const fx = (buch[c.presetId] && buch[c.presetId].fx) || {};
-                const pp = paare[pk] || (paare[pk] = { l0: 0, l1: 0, art: null });
-                if (c.lod === 0) pp.l0 = flaeche(a.meshes, "foliage");
+                const pp = paare[pk] || (paare[pk] = { l0: null, l1: null, art: null, conifer: !!fx.conifer });
+                const fl = { karte: flaeche(a.meshes, "foliageTex"), klinge: flaeche(a.meshes, "foliage") };
+                if (c.lod === 0) pp.l0 = fl;
                 else {
-                    const karte = flaeche(a.meshes, "foliageTex");
-                    pp.art = karte > 0 ? (fx.conifer ? "nadel" : "laub") : "klinge";
-                    pp.l1 = karte > 0 ? karte : flaeche(a.meshes, "foliage");
+                    pp.art = fl.karte > 0 ? (fx.conifer ? "nadel" : "laub") : "klinge";
+                    pp.l1 = fl;
                 }
             }
             if (fails.length >= 8) break;
@@ -302,6 +311,24 @@ function deckungsUrteil(paare, band, at) {
                     if ((z && z.karte) || gemessen.has(preset + "|" + lod)) continue;
                     const c = { presetId: preset, seed: 7, lod, season: "summer" };
                     miss(c, await build(c), `${preset}-s7-L${lod}-summer`);
+                }
+            }
+        // JEDE GESTALT DER WELT (W5): der Host baut je Art die Samen 1..V (budget.gestalten, '*' ohne eigene Zeile,
+        // _foundryVariantFor) — die Wand misst, was die Welt liefert, nicht nur die eingefrorenen Samen.
+        const G = budget && budget.gestalten;
+        if (budget && G)
+            for (const preset of Object.keys(buch)) {
+                const kind = artVon(preset);
+                if (!budget[kind] || !Array.isArray(stufen[kind])) continue;
+                const V = Number.isInteger(G[preset]) ? G[preset] : G["*"];
+                for (const lod of stufen[kind]) {
+                    const z = budget[kind][lod];
+                    if (z && z.karte) continue;
+                    for (let v = 1; v <= V; v++) {
+                        if (gemessenFall.has(preset + "|" + v + "|" + lod)) continue;
+                        const c = { presetId: preset, seed: v, lod, season: "summer" };
+                        miss(c, await build(c), `${preset}-s${v}-L${lod}-summer (Gestalt)`);
+                    }
                 }
             }
         // DER KARTEN-RUNDLAUF (W6): echte Studio-Bakes durch den Karten-Codec (BC) und zurück, plus der Selbsttest
@@ -359,7 +386,8 @@ function deckungsUrteil(paare, band, at) {
         //  (3) die Laub-Karte von gestern (Kante 2,35 statt blattKarte) MUSS das Band sprengen;
         //  (4) eine Nadel-Karte 1,5× so lang MUSS das Band sprengen;
         //  (5) ein Kern unter der gemalten Ausdehnung MUSS den Steckbrief brechen;
-        //  (6) Deckung an Laub-, Nadel- und Klingen-Paaren gemessen.
+        //  (6) Deckung an Laub-, Nadel- und Klingen-Paaren gemessen;
+        //  (7) eine L0-Karte 1,5× so groß (Laub und Nadel) MUSS das Band sprengen (W5: die Nah-Krone hält es auch).
         const halb = [],
             leer = [];
         for (const k of Object.keys(wand.stufen))
@@ -384,13 +412,19 @@ function deckungsUrteil(paare, band, at) {
         const s2 = leer.length === 0;
         const laubP = gemesseneP.filter(([, p]) => p.art === "laub");
         const nadelP = gemesseneP.filter(([, p]) => p.art === "nadel");
+        const mitKarte = (fl, m) => ({ karte: fl.karte * m, klinge: fl.klinge });
         const gestern = {};
         for (const [k, p] of laubP)
-            gestern[k] = Object.assign({}, p, { l1: p.l1 * Math.pow(2.35 / wand.b1.blattKarte, 2) });
+            gestern[k] = Object.assign({}, p, { l1: mitKarte(p.l1, Math.pow(2.35 / wand.b1.blattKarte, 2)) });
         const s3 = laubP.length > 0 && deckungsUrteil(gestern, wand.band, at).length === laubP.length;
         const lang = {};
-        for (const [k, p] of nadelP) lang[k] = Object.assign({}, p, { l1: p.l1 * 2.25 });
+        for (const [k, p] of nadelP) lang[k] = Object.assign({}, p, { l1: mitKarte(p.l1, 2.25) });
         const s4 = nadelP.length > 0 && deckungsUrteil(lang, wand.band, at).length === nadelP.length;
+        const grossL0 = {};
+        for (const [k, p] of laubP.concat(nadelP)) grossL0[k] = Object.assign({}, p, { l0: mitKarte(p.l0, 2.25) });
+        const s7 =
+            laubP.length + nadelP.length > 0 &&
+            deckungsUrteil(grossL0, wand.band, at).length === laubP.length + nadelP.length;
         const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
         const s6 = arten.has("laub") && arten.has("nadel") && arten.has("klinge");
@@ -398,9 +432,9 @@ function deckungsUrteil(paare, band, at) {
             `Selbsttest Budget-Wand: jede Zeile halbiert/−1 Sippe wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
                 `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 2,35 sprengt das Band ${s3 ? "✅" : "❌"} · ` +
                 `Nadel-Karte 1,5× sprengt das Band ${s4 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s5 ? "✅" : "❌"} · ` +
-                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"}`
+                `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"} · L0-Karte 1,5× sprengt das Band ${s7 ? "✅" : "❌"}`
         );
-        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6) fails.push("Selbsttest der Budget-Wand feuert nicht");
+        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7) fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
 
     // DER KARTEN-RUNDLAUF (W6) — das Urteil je Fall, dann der Selbsttest (die gestörte Schicht MUSS rot werden, die

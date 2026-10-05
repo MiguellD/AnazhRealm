@@ -607,7 +607,7 @@ const SCHUSS_FN = async (kam) => {
                     if (d < 1.5 && d < zielD) ((ziel = e), (zielD = d));
                 }
                 const LD = r.constructor && r.constructor.LOD_DISTANCES;
-                const L01 = LD && Number.isFinite(LD.thresh01) ? LD.thresh01 : 12;
+                const L01 = LD && Number.isFinite(LD.thresh01) ? LD.thresh01 : 20;
                 const zielOffen = () =>
                     !!ziel &&
                     Number.isFinite(ziel._lodLevel) &&

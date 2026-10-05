@@ -28823,8 +28823,11 @@ class AnazhRealm {
                                 const _atlas = this._ensureFoliageClusterAtlas();
                                 if (_atlas && _Ta.texture && _Ta.attribute) {
                                     const _samp = _Ta.texture(_atlas, _Ta.attribute("uv", "vec2"));
+                                    const _w = _atlas.userData.wert;
                                     _alpha = _samp.a;
-                                    albedoNode = albedoNode.mul(_samp.rgb);
+                                    albedoNode = albedoNode.mul(
+                                        _samp.rgb.mul(_Ta.vec3(1 / _w[0], 1 / _w[1], 1 / _w[2]))
+                                    );
                                     mat.alphaTest = 0.5;
                                     _wired = true;
                                 }
@@ -61256,21 +61259,24 @@ class AnazhRealm {
         return this._mergeAttributedGeometries(geomList, ["aFlex", "aPhase"]);
     }
 
-    // Der Blatt-Atlas kommt aus phyto-core (`bakeLeafAtlas`) — kein Parallel-Painter. Er trägt nur den
-    // WERT (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-Farbe; EINE Textur, die Card-UVs
-    // (`__phytoCore.buildFoliageQuads`) routen die Zelle. Canvas = Main-Thread-Ressource → `document`
-    // wird gereicht, der Worker malt keinen Atlas.
+    // Der Blatt-Atlas kommt aus phyto-core — kein Parallel-Painter: das Atlas-BILD (`bakeLeafAtlasBild`, W5) ist
+    // die gemalte Leinwand, geblutet, mit gleichen Zell-Mitteln und deckungstreuen Mips (die Box-Mips der Leinwand
+    // mischten Schwarz in jeden Rand und mittelten die Nadelstriche unter die Alpha-Schwelle). Er trägt nur den
+    // WERT um sein Mittel `wert` (userData.wert) — jeder Leser teilt durch ihn, die Artfarbe kommt aus der
+    // Vertex-Farbe (FARB-GESETZ); EINE Textur, die Card-UVs (`__phytoCore.buildFoliageQuads`) routen die Zelle.
+    // Canvas = Main-Thread-Ressource → `document` wird gereicht, der Worker malt keinen Atlas.
     _ensureFoliageClusterAtlas() {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const canvas =
-            core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document) : null;
-        if (!canvas) return null;
-        const tex = new THREE.CanvasTexture(canvas);
+        const bild = core && typeof core.bakeLeafAtlasBild === "function" ? core.bakeLeafAtlasBild(document) : null;
+        if (!bild) return null;
+        const tex = new THREE.DataTexture(bild.daten, bild.breite, bild.hoehe, THREE.RGBAFormat);
         tex.name = "laub-cluster-atlas";
         tex.colorSpace = THREE.SRGBColorSpace;
-        tex.generateMipmaps = true;
+        tex.mipmaps = bild.mips;
+        tex.generateMipmaps = false;
+        tex.userData.wert = bild.wert;
         tex.minFilter = THREE.LinearMipmapLinearFilter;
         tex.magFilter = THREE.LinearFilter;
         tex.wrapS = THREE.ClampToEdgeWrapping;
@@ -66240,12 +66246,10 @@ class AnazhRealm {
         const L = config.lod;
         const D = AnazhRealm.LOD_DISTANCES;
         if (L && typeof L === "object") {
-            // TRI-BUDGET (T2, 16.07.) — die Studio-Distanzen reisen durch den WELT-
-            // Straff-Faktor (LOD_TRI_BUDGET_MUL, s. Datenblock): das Studio führt,
-            // die Welt übersetzt tri-budgetiert (32M-Zensus/30M-Trace → Ziel ≤8M).
-            const _tb = AnazhRealm.LOD_TRI_BUDGET_MUL || { d0: 1, d1: 1 };
-            if (Number.isFinite(L.d0)) D.thresh01 = L.d0 * _tb.d0;
-            if (Number.isFinite(L.d1)) D.thresh12 = L.d1 * _tb.d1;
+            // Die Welt liest die Studio-Distanzen (W5, Lehre 19): die Kosten einer Stufe wohnen im Asset (Studio-
+            // Budget lod.budget, gate:asset-contract), nie in einem Host-Umweg, der d0/d1 umrechnet.
+            if (Number.isFinite(L.d0)) D.thresh01 = L.d0;
+            if (Number.isFinite(L.d1)) D.thresh12 = L.d1;
             if (Number.isFinite(L.fade)) D.fade = L.fade;
             if (Number.isFinite(L.fade0)) D.fade0 = L.fade0;
             if (Number.isFinite(L.hyst)) D.hysteresis = L.hyst;
@@ -69388,10 +69392,14 @@ class AnazhRealm {
                 if (tex && TSL.texture) {
                     const uvN = TSL.attribute("uv", "vec2");
                     const texN = TSL.texture(tex, uvN);
+                    const w = tex.userData.wert;
                     // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                     // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                    // Nadel-Karten warfen volle Rechtecke.
-                    mat.colorNode = TSL.vec4(texN.rgb.mul(laubFarbe), texN.a);
+                    // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe geteilt durch ihren `wert` (FARB-GESETZ).
+                    mat.colorNode = TSL.vec4(
+                        texN.rgb.mul(TSL.vec3(1 / w[0], 1 / w[1], 1 / w[2])).mul(laubFarbe),
+                        texN.a
+                    );
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                     // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
@@ -89586,15 +89594,12 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // mit min(lodRef/visHeight, 1) — ein großer Baum schaltet später, ein kleiner nie früher;
 // `perfDistMulMax` = max. Distanz-Multiplikator unter Last (der EINE Regler `_foliageDensityScale`);
 // beides via `_lodPerceptionDistance`.
-// LOD_TRI_BUDGET_MUL — Welt-Straff-Faktor: der Ingest übersetzt die Studio-d0/d1 durch ihn
-// (20/40 → 12/26), das Studio-L0-Gesetz bleibt unberührt; volle Geometrie nur sehr nah.
-AnazhRealm.LOD_TRI_BUDGET_MUL = Object.freeze({ d0: 0.6, d1: 0.65 });
 // Die Ziegel-Schlange ordnet nach Bedarf: ein Bau, dessen Mesh in der Mesh-Zone schon steht, reiht sich um diese
 // Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
 AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 AnazhRealm.LOD_DISTANCES = {
-    thresh01: 12, // Studio LOD_D0 20 × TRI_BUDGET_MUL.d0 — dist > 12 m → LOD1 (T2: Default == Post-Ingest, headless == live)
-    thresh12: 26, // Studio LOD_D1 40 × TRI_BUDGET_MUL.d1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)
+    thresh01: 20, // Studio LOD_D0 — dist > 20 m → LOD1 (Default == Post-Ingest, headless == live)
+    thresh12: 40, // Studio LOD_D1 — dist > 40 m → LOD2/Impostor (Studio-Billboard-Grenze)
     hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
     lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
