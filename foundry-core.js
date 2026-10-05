@@ -593,10 +593,26 @@ function injectWind(mat, foliage, isGrass) {
                 "gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
                 "gl_FragColor = vec4( outgoingLight, diffuseColor.a );\nfloat _ndv=abs(dot(normalize(vNormal),normalize(vViewPosition)));\ngl_FragColor.rgb+=diffuseColor.rgb*pow(1.0-_ndv,2.5)*0.55;\ngl_FragColor.rgb+=vec3(0.09,0.15,0.04)*pow(1.0-_ndv,4.0)*0.5;"
             );
+            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Seite nach unten gewandt (die
+            // Normale ist nach normal_fragment_begin seiten-gespiegelt) → heller und matter. Laub und Blüte, nie Gras;
+            // dieselben Zahlen liest der Laub-Stoff der Welt.
+            if (!isGrass) {
+                const BU = self.__phytoCore.BLATT_UNTERSEITE;
+                sh.fragmentShader = sh.fragmentShader.replace(
+                    "#include <normal_fragment_maps>",
+                    "#include <normal_fragment_maps>\n{ float _ny=dot(normal,normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz)); float _uw=clamp(0.5-_ny*" +
+                        BU.steil.toFixed(3) +
+                        ",0.0,1.0); float _ul=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722)); diffuseColor.rgb=mix(diffuseColor.rgb,mix(diffuseColor.rgb,vec3(_ul)," +
+                        BU.grau.toFixed(3) +
+                        ")*" +
+                        BU.hell.toFixed(3) +
+                        ",_uw); }"
+                );
+            }
         }
     };
     mat.customProgramCacheKey = function () {
-        return "wind_" + (foliage ? (isGrass ? "grass_v8tint" : "fol_v7tint") : "bark") + "_v9overlap";
+        return "wind_" + (foliage ? (isGrass ? "grass_v8tint" : "fol_v8unterseite") : "bark") + "_v9overlap";
     };
     return mat;
 }

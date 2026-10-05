@@ -68830,7 +68830,20 @@ class AnazhRealm {
             // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
             const _suF =
                 kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
-            const laubFarbe = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+            const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): ist die gesehene Seite nach unten gewandt
+            // (normalWorld ist doppelseitig gespiegelt), trägt das Laub die hellere, mattere Unterseite — dieselben Zahlen
+            // wie der Laub-Shader des Labors. Laub und Blüte, nie Gras.
+            const _BU = kind === "foliage" || kind === "foliageTex" ? globalThis.__phytoCore.BLATT_UNTERSEITE : null;
+            const laubFarbe = _BU
+                ? TSL.mix(
+                      laubFarbe0,
+                      TSL.mix(laubFarbe0, TSL.vec3(laubFarbe0.dot(TSL.vec3(0.2126, 0.7152, 0.0722))), _BU.grau).mul(
+                          _BU.hell
+                      ),
+                      TSL.float(0.5).sub(TSL.normalWorld.y.mul(_BU.steil)).clamp(0.0, 1.0)
+                  )
+                : laubFarbe0;
             if (isBark) {
                 // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
                 // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-

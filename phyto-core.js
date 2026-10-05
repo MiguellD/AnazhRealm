@@ -824,6 +824,13 @@
     // sin/cos auf dem Würfel).
     const BLUETEN_BLATT = { potenz: 1.6, grundBis: 0.38, biegen: 0.35, neigung: 0.45, drehung: 0.4, laenge: 0.14 };
 
+    // DIE BLATT-UNTERSEITE (05.10.): die Spreite ist unten heller und matter als oben (Palisaden- gegen Schwamm-
+    // Gewebe, die Behaarung) — und von unten gegen den Himmel scheint sie durch. Die Krone liest das über die
+    // SICHTBARE Seite: Welt-Normale ny der gesehenen Fläche (doppelseitig: die Rückseite trägt die gespiegelte Normale)
+    // nach unten gewandt = Unterseite; Gewicht clamp(0,5 − ny·steil, 0, 1), dort Albedo × `hell`, um `grau` zur
+    // Luminanz entsättigt. Labor (Laub-Shader) und Welt (Laub-Stoff des Wirts) lesen DIESE Zahlen.
+    const BLATT_UNTERSEITE = { hell: 1.3, grau: 0.22, steil: 1.5 };
+
     // EINS W4 (P1) — DIE 30-VERT-BLATT-KLINGE (der `pushLeaf`-Port, Vorlage Z.247-275): das
     // L0-Blatt ist echte 3D-GEOMETRIE — eine Superformel-Kontur über 14 Segmente (30 Verts,
     // 28 Tris je Blatt), QUER-GEMULDET (cupZ = −cup·(s−s²)·scale, cup 0.5) → die Klinge fängt
@@ -3773,6 +3780,7 @@
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
         ZWEIG_BLATT: ZWEIG_BLATT, // der Blatt-Zweig der Breitblatt-Zellen (Pixel-Maße des Malers, 05.10.)
         BLUETEN_BLATT: BLUETEN_BLATT, // das Blütenblatt: Saftmal-Grund, Rückbiegung, Würfel je Blatt (05.10.)
+        BLATT_UNTERSEITE: BLATT_UNTERSEITE, // die hellere, mattere Blatt-Unterseite — Labor-Shader und Welt-Stoff (05.10.)
         BIRKEN_RINDE: BIRKEN_RINDE, // die papierene Rinde: Lentizellen-Zeilen, Fuß-Borke, Zweig-Rinde (05.10.)
         RINDEN_GITTER: RINDEN_GITTER, // das Gitter-Gesetz der Rinde: Plattenrisse nur, was die Ringe tragen (05.10.)
         superR: superR,
