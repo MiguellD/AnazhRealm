@@ -1324,7 +1324,7 @@
             oak: [0x3a2c1e, 0x6a5a44],
             conifer: [0x4a2c1a, 0x6a4a30],
             sequoia: [0x6a3a26, 0x9a5e3c],
-            birch: [0xe6e6dc, 0xf2f2ea],
+            birch: [0x84837d, 0x8f8e88], // Betulin-Weiß roh 0,51/0,56 (Natur ~0,5 — 0xe6 lag bei 0,90: Gips)
             willow: [0x4a4438, 0x665e4c],
             smooth: [0x3a2c1e, 0x5a4a34],
         };
@@ -1910,20 +1910,145 @@
         return T[t] || T.oak;
     }
 
+    // DIE BIRKEN-RINDE (05.10., Pflanzen-Nahbild) — die Zahlen der papierenen Rinde. Befund (Blick-Tour V18.530, Bilder
+    // 02/06; Node-Bau der Brücke): der Birkenstamm stand gipsweiß — die Palette lag roh bei 0,90 (Betulin-Weiß der Natur
+    // ~0,5), und die Lentizellen-Striche (along·10, Wellenlänge 0,1 Vorlagen-m) lagen unter dem Ring-Gitter (Stamm-Ring
+    // alle 0,136): die Welt liest nur Vertex-Farben (Lehre 19), das Gitter trug keinen Strich. Jetzt TRÄGT das Gitter, was
+    // die Art ausmacht:
+    //   zeile        mittlerer Abstand der Lentizellen-Zeilen entlang des Strangs (Vorlagen-m; Welt ×3,1–3,4 ≈ 30 cm),
+    //                gewürfelt ×[0,55 … 1,45], am Fuß dichter (bis ×0,6 über der Borke);
+    //   hoehe        Zeilen-Höhe [min, max] (Vorlagen-m ≈ 1,3–4,7 cm Welt) — je Zeile in der L0 vier Ringe: weiß · dunkel ·
+    //                dunkel · weiß, die Kante `naht` breit (der Strich endet hart wie am echten Stamm, nie als Verlauf);
+    //                die L1 (ab 12 m) trägt nur das dunkle Paar (weiche Kante, halbe Ring-Kosten);
+    //   strich       Schwelle des Strich-Rauschens je Spalte (11 Zellen je Umlauf), je Zeile ±0,1 gewürfelt: darüber ist
+    //                die Zeile dunkel — Striche und mal ein langer Riss, keine Ringe;
+    //   dunkel       Lentizelle, Riss und Astnarben-Keil (linear);
+    //   borke        Höhe der schwarzen Fuß-Borke als Anteil der Baumhöhe, die Oberkante gezackt ±`borkeZacke`;
+    //                darin vertikale Risse (`borkeRisse` je Umlauf) zwischen grauen Platten, `fussRaster` = Ring-Abstand der
+    //                Fuß-Zone (die Kante liegt auf dem Gitter, nicht zwischen zwei 0,4 m entfernten Ringen);
+    //   zweigR       [dunkel, weiß] in trunkR: Birkenzweige sind rotbraun (`zweig`), Betulin tragen nur Stamm und
+    //                Äste — darunter läuft die Rinde ins Dunkle; Zeilen trägt ein Strang ab `zeilenAb`·trunkR (Stamm und
+    //                Starkäste: Zeilen auch auf den Ästen von 0,2·trunkR kosteten die Birken-L1 11,0–11,6k > tree[1] 10k).
+    // Die Wurzeln (barkThick) tragen die Borke ganz. Nur L0/L1 verdichten (die L2 ist die Karte).
+    const BIRKEN_RINDE = {
+        zeile: 0.09,
+        hoehe: [0.003, 0.018],
+        naht: 0.0015,
+        strich: 0.56,
+        dunkel: [0.052, 0.047, 0.045],
+        borke: 0.085,
+        borkeZacke: 0.35,
+        borkeRisse: 11,
+        borkeFarbe: [0.072, 0.066, 0.06],
+        fussRaster: 0.03,
+        zweigR: [0.05, 0.14],
+        zweig: [0.1, 0.07, 0.058],
+        zeilenAb: 0.4,
+    };
+
+    // Das Ring-Gitter einer Birken-Röhre: die Fuß-Zone im Raster `fussRaster`, darüber je Lentizellen-Zeile vier Ringe
+    // (linear auf dem gewachsenen Strang eingesetzt — die Gestalt bleibt, das Gitter verdichtet sich). Ringe tragen
+    // `zeile` (Index der Zeile, nur die dunklen) — die Farbe liest es.
+    function birkenGitter(rings, P, trunkR, seed, vlen, vsub, lod) {
+        const B = BIRKEN_RINDE;
+        const n = rings.length;
+        const sA = [0];
+        for (let i = 1; i < n; i++) sA[i] = sA[i - 1] + vlen(vsub(rings[i].c, rings[i - 1].c));
+        const L = sA[n - 1];
+        if (!(L > 1e-6)) return rings;
+        const auf = (s) => {
+            let i = 1;
+            while (i < n - 1 && sA[i] < s) i++;
+            const a = rings[i - 1],
+                b = rings[i],
+                t = Math.max(0, Math.min(1, (s - sA[i - 1]) / Math.max(1e-12, sA[i] - sA[i - 1])));
+            return {
+                c: [a.c[0] + (b.c[0] - a.c[0]) * t, a.c[1] + (b.c[1] - a.c[1]) * t, a.c[2] + (b.c[2] - a.c[2]) * t],
+                r: a.r + (b.r - a.r) * t,
+                sway: a.sway + (b.sway - a.sway) * t,
+                depth: a.depth,
+                fuss: a.fuss && b.fuss,
+            };
+        };
+        const neu = [];
+        const borkeH = B.borke * P.height;
+        // Fuß-Zone: das Raster bis über die höchste Zacke der Borke (Höhe des Ring-Zentrums).
+        const fussTop = borkeH * (1 + B.borkeZacke) + B.fussRaster;
+        for (let i = 0; i < n - 1; i++) {
+            const y0 = rings[i].c[1],
+                y1 = rings[i + 1].c[1];
+            if (Math.min(y0, y1) > fussTop || Math.max(y0, y1) < 0) continue; // nur über dem Boden
+            const k = Math.ceil((sA[i + 1] - sA[i]) / B.fussRaster);
+            for (let j = 1; j < k; j++) neu.push({ s: sA[i] + ((sA[i + 1] - sA[i]) * j) / k, zeile: -1 });
+        }
+        // Die Lentizellen-Zeilen: nur wo der Strang Betulin trägt (r ≥ zeilenAb·trunkR, nie im Stammfuß-Puffer unter
+        // dem Boden) und über der Borke.
+        let s = 0,
+            z = 0;
+        const rMin = B.zeilenAb * trunkR;
+        while (z < 400) {
+            const p = auf(s);
+            const ueber = p.c[1] - borkeH;
+            const dicht = 0.6 + 0.4 * Math.max(0, Math.min(1, ueber / (2 * borkeH)));
+            s += B.zeile * dicht * (0.55 + 0.9 * fbm2(z * 1.7 + seed * 0.13, 5.3));
+            if (s >= L) break;
+            const q = auf(s);
+            if (!q.fuss && q.r >= rMin && q.c[1] > borkeH * 0.7) {
+                const h = B.hoehe[0] + (B.hoehe[1] - B.hoehe[0]) * fbm2(z * 2.9 + seed, 1.7);
+                const a0 = s - h * 0.5,
+                    a1 = s + h * 0.5;
+                neu.push({ s: a0, zeile: z }, { s: a1, zeile: z });
+                // Die harte Kante (zwei Naht-Ringe) trägt nur die Nah-Stufe; die L1 (ab 12 m) zeichnet die Zeile weich.
+                if (lod === 0) neu.push({ s: a0 - B.naht, zeile: -1 }, { s: a1 + B.naht, zeile: -1 });
+            }
+            z++;
+        }
+        if (!neu.length) return rings;
+        neu.sort((x, y) => x.s - y.s);
+        const aus = [];
+        let j = 0;
+        for (let i = 0; i < n; i++) {
+            while (j < neu.length && neu[j].s < sA[i]) {
+                if (neu[j].s > 1e-6 && (!aus.length || neu[j].s - aus[aus.length - 1]._s > 1e-6)) {
+                    const r = auf(neu[j].s);
+                    r._s = neu[j].s;
+                    if (neu[j].zeile >= 0) r.zeile = neu[j].zeile;
+                    aus.push(r);
+                }
+                j++;
+            }
+            const o = Object.assign({}, rings[i]);
+            o._s = sA[i];
+            aus.push(o);
+        }
+        return aus;
+    }
+
+    // DAS GITTER-GESETZ DER RINDE (05.10.): das Gesetz malt entlang des Strangs nur, was das Ring-Gitter trägt. Die
+    // Plattenrisse (Periode 1/hFreq) liegen auf Ringen im Abstand Δ — unter zwei Ringen je Periode (Nyquist) faltet der
+    // Riss in Ringel-Bänder (Fichte/Tanne: 1,95 Ringe je Periode, Node-Bau 05.10.); von 3 Ringen abwärts blendet der
+    // Term in sein Mittel (∫ tri^1,3 = 1/2,3), unter 2 ist er aus. Was die Art AUSMACHT, trägt das Gitter dagegen selbst
+    // (die Birken-Zeilen verdichten es, `birkenGitter`).
+    const RINDEN_GITTER = { aus: 2, voll: 3, mittel: 1 / 2.3 };
+
     function buildTubeGesetz(vok, geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick, lodIn) {
         // Vokabular-Injektion (U2b): die Geometrie-Helfer UND THREE bleiben Leser-Sache —
         // der Wirt (foundry-core) reicht SEINE Funktionen, das GESETZ formt (phyto-core
         // selbst bleibt THREE-frei, wie buildBoulderGeometry).
         const { perp, vcross, vlen, vnorm, vsub, clamp, lerp, THREE } = vok;
         const __lod = lodIn;
-        const M = rings.length;
-        if (M < 2) return;
+        if (rings.length < 2) return;
         const prof = barkProfile(P);
         // Der Basis-Radius ist der Strang-Fuß ÜBER dem Stammfuß-Puffer (V18.501): die Buttress-Ringe
         // (fuss) laufen auf 0,1·R0 zu — aus ihnen las das Gesetz „Zweig" (Zehneck, keine Furchen, keine
         // Narben am dicksten Stamm).
         const baseR = (rings.find((x) => !x.fuss) || rings[0]).r,
             thick = clamp((baseR - trunkR * 0.12) / (trunkR * 0.88), 0, 1); // 0 Zweig .. 1 Stamm
+        // Die Birke verdichtet ihr Gitter (L0/L1, Stamm + Äste ab zweigR[0]): Fuß-Raster und Lentizellen-Zeilen. Die
+        // Wurzeln tragen die Borke ganz — ihr Gitter bleibt.
+        if (prof.papery && __lod !== 2 && barkThick === undefined && baseR >= trunkR * BIRKEN_RINDE.zweigR[0])
+            rings = birkenGitter(rings, P, trunkR, rings[0].c[0] * 7.3 + rings[0].c[2] * 3.1, vlen, vsub, __lod || 0);
+        const M = rings.length;
         const bthick = barkThick !== undefined ? barkThick : thick; // Wurzel/Totast erben die STAMM-Oberflaeche (gleiche Furchentiefe), nicht die duenn-glatte
         const ridges =
             barkThick !== undefined
@@ -1943,6 +2068,19 @@
         const sA = [0];
         for (let i = 1; i < M; i++) sA[i] = sA[i - 1] + vlen(vsub(rings[i].c, rings[i - 1].c));
         const totL = sA[M - 1] || 1;
+        // DAS GITTER-GESETZ: je Ring der örtliche Ring-Abstand Δ und die Gewichte der Terme entlang des Strangs (Ringe je
+        // Periode): Plattenrisse (hFreq) und die zwei Mikro-Oktaven (Frequenz 5 und 13 je Vorlagen-m).
+        const wPlatte = [],
+            wMikro5 = [],
+            wMikro13 = [];
+        const gw = (f, dS) =>
+            clamp((1 / (f * Math.max(1e-6, dS)) - RINDEN_GITTER.aus) / (RINDEN_GITTER.voll - RINDEN_GITTER.aus), 0, 1);
+        for (let i = 0; i < M; i++) {
+            const dS = (sA[Math.min(M - 1, i + 1)] - sA[Math.max(0, i - 1)]) / (i === 0 || i === M - 1 ? 1 : 2);
+            wPlatte.push(gw(prof.hFreq, dS));
+            wMikro5.push(gw(5, dS));
+            wMikro13.push(gw(13, dS));
+        }
         const dirs = [];
         for (let i = 0; i < M - 1; i++) {
             const d = vsub(rings[i + 1].c, rings[i].c),
@@ -2007,24 +2145,55 @@
                 let relief,
                     mB,
                     tintL = 0,
-                    tintM = 0;
+                    tintM = 0,
+                    tiefe = depth,
+                    pap = null;
                 if (prof.papery) {
-                    // Birke: glatt, helle Rinde, dunkle Lentizellen
+                    // DIE BIRKE (BIRKEN_RINDE): Betulin-Weiß aus der Palette, Lentizellen-Striche auf den Zeilen-Ringen,
+                    // die dunkle Zweig-Rinde unter zweigR, am Fuß die schwarze Borke mit gezackter Oberkante.
+                    const BR = BIRKEN_RINDE;
                     relief = 0.5 + (fbm2(a * 9, along * 0.7 + seed) - 0.5) * 0.45;
-                    const band = Math.floor(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 1.2);
-                    const stripe = tri(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 0.5);
-                    const dash = fbm2(a * 6.5 + seed, band * 4.3);
-                    const lent = stripe > 0.74 && dash > 0.5 ? clamp((dash - 0.5) / 0.3, 0, 1) : 0; // kurze horizontale Striche
                     const peel = fbm2(a * 2.2, along * 0.5 + seed * 1.3) > 0.66 ? 0.1 : 0; // papierartige Schichtkanten
-                    mB = (1.0 - lent * 0.66 - peel) * (0.9 + 0.1 * fbm2(a * 5, along * 3));
+                    mB = (1.0 - peel) * (0.9 + 0.1 * fbm2(a * 5, along * 3));
+                    const wz =
+                        barkThick !== undefined
+                            ? 0
+                            : clamp((ring.r / trunkR - BR.zweigR[0]) / (BR.zweigR[1] - BR.zweigR[0]), 0, 1);
+                    pap = [
+                        lerp(BR.zweig[0], col.r * mB, wz),
+                        lerp(BR.zweig[1], col.g * mB, wz),
+                        lerp(BR.zweig[2], col.b * mB, wz),
+                    ];
+                    if (ring.zeile !== undefined) {
+                        // Je Zeile ihre eigene Schwelle (±0,1): manche Zeile ein langer Riss, manche wenige kurze Striche.
+                        const st = fbm2(a * 11 + ring.zeile * 1.31, ring.zeile * 3.7 + seed);
+                        const sw = BR.strich + (fbm2(ring.zeile * 0.71 + seed, 9.4) - 0.5) * 0.2;
+                        const an = clamp((st - sw) / 0.05, 0, 1) * wz;
+                        for (let k = 0; k < 3; k++) pap[k] = lerp(pap[k], BR.dunkel[k], an);
+                    }
+                    const kante = BR.borke * P.height * (1 + BR.borkeZacke * (2 * fbm2(a * 4.3 + seed, 2.1) - 1));
+                    const fB = barkThick !== undefined ? 1 : clamp((kante - c[1]) / (BR.fussRaster * 1.5) + 0.5, 0, 1);
+                    if (fB > 0) {
+                        const tr = tri(a * BR.borkeRisse + fbm2(a * 1.6 + seed, c[1] * 2.2) * 1.4);
+                        const platte = clamp((tr - 0.3) / 0.4, 0, 1); // 0 = Riss, 1 = graue Platte
+                        const weiss = [col.r, col.g, col.b];
+                        for (let k = 0; k < 3; k++)
+                            pap[k] = lerp(pap[k], lerp(BR.borkeFarbe[k], weiss[k] * 0.42, platte * 0.55), fB);
+                        relief = lerp(relief, 0.2 + 0.8 * platte, fB);
+                        tiefe = lerp(depth, 0.32 * lerp(0.28, 1, bthick), fB);
+                    }
                 } else {
                     const vWarp = fbm2(a * 1.6 + seed, along * 0.35) * 1.5;
                     let vf = tri(a * ridges + vWarp);
                     vf = Math.pow(vf, prof.vSharp); // vertikale Furchen
                     const hWarp = fbm2(a * 0.6, along * 0.7 + seed) * 1.5;
-                    let hf = Math.pow(tri(along * prof.hFreq + hWarp), 1.3); // horizontale Plattenrisse
+                    const hf0 = Math.pow(tri(along * prof.hFreq + hWarp), 1.3); // horizontale Plattenrisse
+                    const hf = wPlatte[i] >= 1 ? hf0 : RINDEN_GITTER.mittel + (hf0 - RINDEN_GITTER.mittel) * wPlatte[i]; // was das Gitter trägt
                     relief = vf * (1 - prof.plate) + vf * hf * prof.plate;
-                    const micro = (fbm2(a * 5, along * 5) - 0.5) * 0.32 + (fbm2(a * 13, along * 13) - 0.5) * 0.16;
+                    // Die Mikro-Oktaven sind Rauschen um 0 — was das Gitter nicht trägt, fällt in ihr Mittel (0).
+                    const m5 = (fbm2(a * 5, along * 5) - 0.5) * 0.32,
+                        m13 = (fbm2(a * 13, along * 13) - 0.5) * 0.16;
+                    const micro = wMikro5[i] >= 1 && wMikro13[i] >= 1 ? m5 + m13 : m5 * wMikro5[i] + m13 * wMikro13[i];
                     relief = clamp(relief + micro, 0, 1);
                     mB = Math.pow(relief, 1.35) * 0.74 + 0.26; // gebackenes AO: Risse tief & dunkel
                     const lk = fbm2(a * 0.9 + 30, along * 0.55);
@@ -2053,7 +2222,7 @@
                     scarR += -0.42 * gg + 0.24 * Math.max(0, d2 - 0.9) * Math.exp(-d2 * 0.6); // konkave Delle + aufgeworfener Wulst-Kragen
                     if (gg > scarDark) scarDark = gg;
                 }
-                let disp = ring.r * (1 + (relief - 0.62) * depth + scarR) * flute;
+                let disp = ring.r * (1 + (relief - 0.62) * tiefe + scarR) * flute;
                 if (j === R) disp = _fd; // NAHT ZU: Position der Saumspalte = exakt Spalte 0
                 const vx = c[0] + (Math.cos(rad) * u[0] + Math.sin(rad) * v[0]) * disp,
                     vy = c[1] + (Math.cos(rad) * u[1] + Math.sin(rad) * v[1]) * disp,
@@ -2063,19 +2232,27 @@
                 aw.push(sv, sv * 1.5 + vx * 0.6 + vz * 0.6, clamp(2.6 - sv * 1.6, 0.5, 2.6));
                 ac.push(c[0], c[1], c[2]);
                 at.push(0);
-                let r = col.r * mB,
-                    g = col.g * mB,
-                    b = col.b * mB;
+                let r = pap ? pap[0] : col.r * mB,
+                    g = pap ? pap[1] : col.g * mB,
+                    b = pap ? pap[2] : col.b * mB;
                 r = lerp(r, lichenCol.r, tintL);
                 g = lerp(g, lichenCol.g, tintL);
                 b = lerp(b, lichenCol.b, tintL);
                 r = lerp(r, mossCol.r, tintM);
                 g = lerp(g, mossCol.g, tintM);
                 b = lerp(b, mossCol.b, tintM);
-                const wd = 0.6 * scarDark;
-                r = lerp(r, col.r * 0.26, wd);
-                g = lerp(g, col.g * 0.22, wd);
-                b = lerp(b, col.b * 0.2, wd); // dunkles Wundholz im Narbenzentrum
+                if (pap) {
+                    // Birke: die Astnarbe ist der schwarze Keil unter dem toten Ast (Lentizellen-Schwarz).
+                    const wd = 0.9 * scarDark;
+                    r = lerp(r, BIRKEN_RINDE.dunkel[0], wd);
+                    g = lerp(g, BIRKEN_RINDE.dunkel[1], wd);
+                    b = lerp(b, BIRKEN_RINDE.dunkel[2], wd);
+                } else {
+                    const wd = 0.6 * scarDark;
+                    r = lerp(r, col.r * 0.26, wd);
+                    g = lerp(g, col.g * 0.22, wd);
+                    b = lerp(b, col.b * 0.2, wd); // dunkles Wundholz im Narbenzentrum
+                }
                 if (j === R) {
                     r = _fr;
                     g = _fg;
@@ -3430,6 +3607,8 @@
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
+        BIRKEN_RINDE: BIRKEN_RINDE, // die papierene Rinde: Lentizellen-Zeilen, Fuß-Borke, Zweig-Rinde (05.10.)
+        RINDEN_GITTER: RINDEN_GITTER, // das Gitter-Gesetz der Rinde: Plattenrisse nur, was die Ringe tragen (05.10.)
         superR: superR,
         LEAF_SHAPES: LEAF_SHAPES,
         buildBoulderGeometry: buildBoulderGeometry,
