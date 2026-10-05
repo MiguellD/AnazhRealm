@@ -8,7 +8,9 @@
 // Rot nennt den Täter: `fox rute 0.62 < 0.7`. Dazu je Art die Dreiecke beider Stufen gegen die Budget-Zeile
 // (PORTAL_RENDER_CONFIG.lod.budget.kreatur) — die Gestalt hält ihr Budget.
 //   --selftest: (S1) der Rumpf 1,4× gestreckt → brustTiefe rot · (S2) das Muster einfarbig → kontrast rot ·
-//   (S3) der Maßstab 1 → widerristM rot. Die Linse feuert, sonst ist sie vakuös.
+//   (S3) der Maßstab 1 → widerristM rot · (S4) der Hals 1,8× breit → halsBreite rot · (S5) der Kopf in den Hals
+//   geschoben → kopfFrei rot. Die Linse feuert, sonst ist sie vakuös.
+// Dazu kopfFrei (Anteil der Kopf-Länge vor der Leib-Haut) und halsBreite (die Leib-Haut auf 60 % Schulter → Kopf).
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
 const fs = require("fs");
@@ -157,6 +159,38 @@ function messe(sb, g) {
     }
     const tn = sk.tailSegs || [];
     const rute = tn.length ? lage("tailRoot").distanceTo(lage(tn[tn.length - 1])) : 0;
+    // DER KOPF VOR DEM HALS: wie viel der Kopf-Länge (die starren Kopf-Häute) ragt vor die Leib-Haut in seiner
+    // Höhe? (der Bär mit dem Brustkorb-dicken Hals trug den Kopf IN sich: nur die Nase sah heraus)
+    let hz0 = Infinity,
+        hz1 = -Infinity,
+        hy0 = Infinity,
+        hy1 = -Infinity;
+    for (const t of teile)
+        if ((t.joint === "headGroup" || t.joint === "jawGroup") && t.kl === "fell")
+            for (let i = 0; i < t.P.length; i += 3) {
+                hz0 = Math.min(hz0, t.P[i + 2]);
+                hz1 = Math.max(hz1, t.P[i + 2]);
+                hy0 = Math.min(hy0, t.P[i + 1]);
+                hy1 = Math.max(hy1, t.P[i + 1]);
+            }
+    let leibVorn = -Infinity;
+    for (let i = 0; i < nV; i++) {
+        const y = P[i * 3 + 1];
+        if (y >= hy0 && y <= hy1) leibVorn = Math.max(leibVorn, P[i * 3 + 2]);
+    }
+    const kopfFrei = (hz1 - Math.max(hz0, leibVorn)) / Math.max(1e-6, hz1 - hz0);
+    // DER HALS: die Breite der Leib-Haut auf 60 % des Wegs vom Schulter-Gelenk zum Kopf (eine Scheibe ±0,04 W)
+    const pS = lage("legFL"),
+        pK = lage("headGroup");
+    pS.x = 0;
+    const pN = pS.clone().lerp(pK, 0.6);
+    let hx0 = Infinity,
+        hx1 = -Infinity;
+    for (let i = 0; i < nV; i++) {
+        if (Math.abs(P[i * 3 + 2] - pN.z) > 0.04 * W || Math.abs(P[i * 3 + 1] - pN.y) > 0.15 * W) continue;
+        hx0 = Math.min(hx0, P[i * 3]);
+        hx1 = Math.max(hx1, P[i * 3]);
+    }
     // DAS MUSTER: mittlere Farbe je Region der Haut (der Vertex trägt sie — die Welt liest nur ihn)
     const region = { ruecken: [0, 0, 0, 0], bauch: [0, 0, 0, 0], flanke: [0, 0, 0, 0], lauf: [0, 0, 0, 0], spitze: [0, 0, 0, 0] };
     const add = (r, i) => {
@@ -200,6 +234,8 @@ function messe(sb, g) {
         kopfHoehe: kopf / W,
         ohr: (o1 - o0) / W,
         rute: rute / W,
+        kopfFrei,
+        halsBreite: (hx1 - hx0) / W,
         kontrast: L.bauch / L.ruecken,
         lauf: L.lauf / L.flanke,
         spitze: L.spitze / L.flanke,
@@ -250,7 +286,7 @@ function zeige(ergebnis) {
     const r3 = (x) => (Number.isFinite(x) ? x.toFixed(3) : String(x));
     for (const [art, m] of Object.entries(ergebnis))
         console.log(
-            `  ${art.padEnd(5)} W ${m.widerristM.toFixed(2)} m · Brust ${r3(m.brustTiefe)} · Aufzug ${r3(m.aufzug)} · Rumpf ${r3(m.rumpf)} · Unterarm ${r3(m.unterarm)} · Kopf ${r3(m.kopfHoehe)} · Ohr ${r3(m.ohr)} · Rute ${r3(m.rute)} · Kontrast ${r3(m.kontrast)} · Lauf ${r3(m.lauf)} · Spitze ${r3(m.spitze)} · L0 ${m.tris} / L1 ${m.trisL1} Dreiecke`
+            `  ${art.padEnd(5)} W ${m.widerristM.toFixed(2)} m · Brust ${r3(m.brustTiefe)} · Aufzug ${r3(m.aufzug)} · Rumpf ${r3(m.rumpf)} · Unterarm ${r3(m.unterarm)} · Kopf ${r3(m.kopfHoehe)} · Ohr ${r3(m.ohr)} · Rute ${r3(m.rute)} · Kopf frei ${r3(m.kopfFrei)} · Hals ${r3(m.halsBreite)} · Kontrast ${r3(m.kontrast)} · Lauf ${r3(m.lauf)} · Spitze ${r3(m.spitze)} · L0 ${m.tris} / L1 ${m.trisL1} Dreiecke`
         );
 }
 
@@ -294,6 +330,34 @@ if (process.argv.includes("--selftest")) {
         const sb = ladeWelt();
         const r = lauf(sb, { massstab: 1 });
         pruefe("S3 der Riesen-Wolf (Maßstab 1) wird erkannt", r.fehler, /wolf widerristM/);
+    }
+    // S4: der Hals 1,8× breit (die Kapuze kehrt zurück) — die Leib-Haut vor den Schultern seitlich gedehnt
+    // S5: der Kopf um die halbe Länge in den Hals geschoben (der Bär vor dieser Welle)
+    {
+        const sb = ladeWelt();
+        const r = lauf(sb, {
+            verzerre: (sb2, g) =>
+                g.traverse((o) => {
+                    if (!o.isMesh) return;
+                    const pa = o.geometry.attributes.position;
+                    if (o.geometry.attributes.skinIndex && o.userData.__assetJoint === "wolf") {
+                        let zMax = -Infinity;
+                        for (let i = 0; i < pa.count; i++) zMax = Math.max(zMax, pa.getZ(i));
+                        for (let i = 0; i < pa.count; i++) if (pa.getZ(i) > zMax - 0.25 * 2.4) pa.setX(i, pa.getX(i) * 1.8);
+                    }
+                    if (o.userData.__assetJoint === "headGroup" || o.userData.__assetJoint === "jawGroup") {
+                        let z0 = Infinity,
+                            z1 = -Infinity;
+                        for (let i = 0; i < pa.count; i++) {
+                            z0 = Math.min(z0, pa.getZ(i));
+                            z1 = Math.max(z1, pa.getZ(i));
+                        }
+                        for (let i = 0; i < pa.count; i++) pa.setZ(i, pa.getZ(i) - 0.6 * (z1 - z0));
+                    }
+                }),
+        });
+        pruefe("S4 der Kapuzen-Hals wird erkannt", r.fehler, /wolf halsBreite/);
+        pruefe("S5 der Kopf im Hals wird erkannt", r.fehler, /wolf kopfFrei/);
     }
     if (rot) {
         console.error(`\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`);

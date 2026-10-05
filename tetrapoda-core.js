@@ -1466,7 +1466,7 @@
                 breit: [0.08, 0.12, 0.135, 0.12, 0.11, 0.125, 0.14, 0.145, 0.135, 0.11, 0.075] },
             bein: { dicke: 1.0, distal: 1.1, pfote: "zehe", pfoteGross: 1.55, kralle: 1.0 },
             hals: { dicke: 1.2, lang: 1.0 },
-            kopf: { ohrForm: "spitz", ohrH: 0.1, ohrB: 0.03, schnauzeL: 1.0, schnauzeB: 1.0, schnauzeH: 1.0,
+            kopf: { gross: 1.0, ohrForm: "spitz", ohrH: 0.1, ohrB: 0.03, schnauzeL: 1.0, schnauzeB: 1.0, schnauzeH: 1.0,
                 schaedelB: 1.0, schaedelH: 1.0, auge: [214, 160, 40] },
             schwanz: { segs: 8, segL: 0.042, wurzel: 0.034, mitte: 0.045, spitze: 0.024, hang: 0.55, fell: 1.6 },
             fell: { lang: 1.5 },
@@ -1482,7 +1482,7 @@
                 breit: [0.068, 0.1, 0.115, 0.1, 0.093, 0.105, 0.118, 0.123, 0.115, 0.093, 0.064] },
             bein: { dicke: 0.85, distal: 1.4, pfote: "zehe", pfoteGross: 1.4, kralle: 0.9 },
             hals: { dicke: 1.1, lang: 1.0 },
-            kopf: { ohrForm: "spitz", ohrH: 0.15, ohrB: 0.042, schnauzeL: 1.12, schnauzeB: 0.82, schnauzeH: 0.9,
+            kopf: { gross: 1.0, ohrForm: "spitz", ohrH: 0.15, ohrB: 0.042, schnauzeL: 1.12, schnauzeB: 0.82, schnauzeH: 0.9,
                 schaedelB: 0.92, schaedelH: 0.95, auge: [206, 128, 30] },
             schwanz: { segs: 10, segL: 0.058, wurzel: 0.04, mitte: 0.075, spitze: 0.045, hang: 0.3, fell: 2.4 },
             fell: { lang: 1.6 },
@@ -1498,7 +1498,7 @@
                 breit: [0.12, 0.18, 0.2, 0.2, 0.2, 0.21, 0.22, 0.22, 0.21, 0.17, 0.11] },
             bein: { dicke: 1.7, distal: 1.0, pfote: "sohle", pfoteGross: 1.9, kralle: 3.2 },
             hals: { dicke: 1.3, lang: 0.9 },
-            kopf: { ohrForm: "rund", ohrH: 0.045, ohrB: 0.03, schnauzeL: 0.78, schnauzeB: 1.35, schnauzeH: 1.3,
+            kopf: { gross: 1.45, ohrForm: "rund", ohrH: 0.045, ohrB: 0.03, schnauzeL: 0.78, schnauzeB: 1.35, schnauzeH: 1.3,
                 schaedelB: 1.25, schaedelH: 1.0, auge: [62, 38, 20] },
             schwanz: { segs: 2, segL: 0.03, wurzel: 0.035, mitte: 0.035, spitze: 0.025, hang: 0.25, fell: 1.2 },
             fell: { lang: 2.0 },
@@ -1513,7 +1513,7 @@
                 breit: [0.065, 0.1, 0.11, 0.11, 0.115, 0.12, 0.12, 0.115, 0.105, 0.085, 0.06] },
             bein: { dicke: 0.85, distal: 1.5, pfote: "huf", pfoteGross: 1.0, kralle: 1.0 },
             hals: { dicke: 1.0, lang: 1.7 },
-            kopf: { ohrForm: "blatt", ohrH: 0.16, ohrB: 0.042, schnauzeL: 1.3, schnauzeB: 0.8, schnauzeH: 1.45,
+            kopf: { gross: 1.1, ohrForm: "blatt", ohrH: 0.16, ohrB: 0.042, schnauzeL: 1.3, schnauzeB: 0.8, schnauzeH: 1.45,
                 schaedelB: 0.85, schaedelH: 0.85, auge: [40, 24, 14] },
             schwanz: { segs: 3, segL: 0.034, wurzel: 0.032, mitte: 0.034, spitze: 0.022, hang: 1.15, fell: 0.8 },
             fell: { lang: 0.9 },
@@ -1525,22 +1525,24 @@
     // DAS SOLL der Art in Zahlen (Welle 5, die Natur-Bänder; gemessen von gate:tier-anatomie an der gebackenen Haut
     // der Ruhe-Pose, normiert auf den Widerrist W): widerristM = W in Metern (× MASSSTAB), brustTiefe = Widerrist bis
     // Brustbein, aufzug = Höhe der Bauch-Linie an der Flanke, rumpf = Rumpf-Länge auf halber Höhe, unterarm = Tiefe des
-    // Vorderlaufs bei 0,3 W, kopfHoehe = Scheitel über dem Boden, ohr = Ohr-Höhe, rute = Ruten-Länge. Das Muster:
+    // Vorderlaufs bei 0,3 W, kopfHoehe = Scheitel über dem Boden, ohr = Ohr-Höhe, rute = Ruten-Länge, kopfFrei = Anteil
+    // der Kopf-Länge vor der Leib-Haut in Kopf-Höhe (der Kopf sitzt VOR dem Hals, nie in ihm), halsBreite = Breite der
+    // Leib-Haut auf 60 % des Wegs Schulter → Kopf (ohne Fell-Schalen). Das Muster:
     // kontrast = Helligkeit Bauch / Rücken-Sattel, lauf = Läufe / Flanke, spitze = Rutenspitze / Flanke.
     // prettier-ignore
     var ANATOMIE_SOLL = Object.freeze({
         wolf: { widerristM: [0.7, 0.9], brustTiefe: [0.42, 0.52], aufzug: [0.6, 0.75], rumpf: [1.1, 1.32],
             unterarm: [0.06, 0.1], kopfHoehe: [0.95, 1.2], ohr: [0.09, 0.16], rute: [0.4, 0.65],
-            kontrast: [1.6, 3.2], lauf: [0.9, 1.4], spitze: [0, 0.5] },
+            kontrast: [1.6, 3.2], lauf: [0.9, 1.4], spitze: [0, 0.5], kopfFrei: [0.5, 1], halsBreite: [0.13, 0.22] },
         fox: { widerristM: [0.35, 0.52], brustTiefe: [0.4, 0.52], aufzug: [0.6, 0.75], rumpf: [1.35, 1.65],
             unterarm: [0.05, 0.09], kopfHoehe: [1.0, 1.25], ohr: [0.13, 0.22], rute: [0.7, 1.0],
-            kontrast: [1.6, 3.2], lauf: [0, 0.5], spitze: [1.5, 3.0] },
+            kontrast: [1.6, 3.2], lauf: [0, 0.5], spitze: [1.5, 3.0], kopfFrei: [0.5, 1], halsBreite: [0.11, 0.2] },
         bear: { widerristM: [0.9, 1.3], brustTiefe: [0.5, 0.65], aufzug: [0.4, 0.58], rumpf: [1.35, 1.7],
-            unterarm: [0.12, 0.2], kopfHoehe: [0.8, 1.0], ohr: [0.05, 0.1], rute: [0, 0.1],
-            kontrast: [0.6, 1.1], lauf: [0, 0.8], spitze: [0.8, 1.2] },
+            unterarm: [0.12, 0.2], kopfHoehe: [0.8, 1.0], ohr: [0.06, 0.13], rute: [0, 0.1],
+            kontrast: [0.6, 1.1], lauf: [0, 0.8], spitze: [0.8, 1.2], kopfFrei: [0.5, 1], halsBreite: [0.18, 0.3] },
         deer: { widerristM: [0.9, 1.25], brustTiefe: [0.36, 0.5], aufzug: [0.55, 0.72], rumpf: [0.95, 1.2],
             unterarm: [0.05, 0.08], kopfHoehe: [1.25, 1.6], ohr: [0.09, 0.2], rute: [0.05, 0.2],
-            kontrast: [1.5, 3.0], lauf: [0.8, 1.2], spitze: [1.4, 3.0] },
+            kontrast: [1.5, 3.0], lauf: [0.8, 1.2], spitze: [1.4, 3.0], kopfFrei: [0.5, 1], halsBreite: [0.08, 0.15] },
     });
     // Die Mischung: Gewicht je Art aus dem Abstand der Dials (je Dial über seine Lab-Spanne normiert), scharf
     // (σ² = 0,01 — die vier Presets liegen ≥ 0,37 auseinander, ein Preset ist seine Art zu > 99,99 %).
@@ -2212,7 +2214,10 @@
         var neckEnd = F.v3(0, neckStart.y + nLen * Math.sin(nAng), neckStart.z + nLen * Math.cos(nAng));
         var neckDir = neckEnd.clone().sub(neckStart);
         var neckN = neckDir.clone().normalize();
-        var nBasis = (0.075 + 0.13 * P.build) * A.hals.dicke;
+        // Der Hals-Radius an der Wurzel (× H): Wolf 0,10 H (~8 cm), Fuchs 0,076 H, Bär 0,14 H (~15 cm), Hirsch 0,074 H —
+        // vorher 0,075 + 0,13·Statur: der Hals war so dick wie der Brustkorb und verschluckte den Kopf (Bär) bzw. legte
+        // ihm eine Kapuze um (Wolf).
+        var nBasis = (0.05 + 0.085 * P.build) * A.hals.dicke;
         var nR = [1, 0.92, 0.84, 0.7].map(function (t) {
             return t * nBasis * H;
         });
@@ -2315,10 +2320,14 @@
             tailParent = segG;
             tailSegs.push(segG);
         }
+        // Die Kopf-Größe der Art (ART_GESTALT.kopf.gross: der Bär trägt einen großen Kopf, die Allometrie skullR ∝ Größe^0,25
+        // verkleinert ihn sonst) — der ganze Kopf-Baum skaliert, sein Zentrum rückt um dieselbe Zahl vor den Hals.
+        var kG = A.kopf.gross;
         var headY = neckEnd.y - 0.02 * H - 0.008 * H,
-            headZ = neckEnd.z + 0.12 * H;
+            headZ = neckEnd.z + 0.12 * H * kG;
         headGroup = F.gruppe();
         headGroup.position.set(0, headY, headZ);
+        headGroup.scale.set(kG, kG, kG);
         // DER KOPF der Art (ART_GESTALT.kopf): Schädel-Breite, Schnauzen-Länge und -Breite (Bär kurz und breit, Fuchs
         // lang und schmal); die Fänge folgen der Ernährung (ein Pflanzenfresser trägt keine).
         var kB = A.kopf.schaedelB;
