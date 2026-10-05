@@ -197,8 +197,13 @@ function check(name, ok, detail) {
         }
 
         // ── D: der Übergang am Radius — ein Baum in der Mesh-Zone nahe dem Rand wandert hinaus und zurück ──
+        // Der Cull-Radius ist GEREGELT (ARCH_QUALITY_RADIUS_MIN..MAX; headless folgt er dem PID je Takt — unter Last
+        // sprang er im Lauf 05.10. über den Baum hinweg, D las „voll false" bei einem Baum, der diesseits stand): der
+        // Baum steht diesseits des kleinsten Radius und wandert jenseits des größten, der Zonen-Wechsel hängt nie am
+        // Regler-Stand.
+        const RMIN = AR.ARCH_QUALITY_RADIUS_MIN,
+            RMAX = AR.ARCH_QUALITY_RADIUS_MAX;
         const uebergang = async () => {
-            const R = st.architectureCullingRadius;
             const kand = karten()
                 .filter(
                     (e) =>
@@ -206,8 +211,8 @@ function check(name, ok, detail) {
                         e._lodLevel === 2 &&
                         !e._bruecke &&
                         !e._occluded &&
-                        dist(e) > R - 25 &&
-                        dist(e) < R - 3
+                        dist(e) > RMIN - 25 &&
+                        dist(e) < RMIN - 3
                 )
                 .sort((a, b) => dist(b) - dist(a));
             const e = kand[0];
@@ -215,10 +220,10 @@ function check(name, ok, detail) {
             const start = { x: pm.x, z: pm.z };
             const slots = JSON.stringify(e.instSlots);
             const d0 = dist(e);
-            // den Spieler radial vom Baum weg setzen, bis der Baum R + 15 m entfernt steht
+            // den Spieler radial vom Baum weg setzen, bis der Baum RMAX + 15 m entfernt steht
             const ux = (pm.x - e.position.x) / d0,
                 uz = (pm.z - e.position.z) / d0;
-            const weg = R + 15 - d0;
+            const weg = RMAX + 15 - d0;
             let luecke = 0,
                 takte = 0;
             const folge = async (n) => {
@@ -235,6 +240,7 @@ function check(name, ok, detail) {
                 gleich: JSON.stringify(e.instSlots) === slots,
                 voll: stempel(e) < 0,
                 stufe: e._lodLevel,
+                radius: Math.round(st.architectureCullingRadius),
             };
             stelle(start.x, start.z);
             await folge(40);
@@ -243,8 +249,9 @@ function check(name, ok, detail) {
                 gleich: JSON.stringify(e.instSlots) === slots,
                 voll: stempel(e) < 0,
                 stufe: e._lodLevel,
+                radius: Math.round(st.architectureCullingRadius),
             };
-            return { typ: e.type, d0: +d0.toFixed(1), radius: Math.round(R), draussen, drinnen, luecke, takte };
+            return { typ: e.type, d0: +d0.toFixed(1), radius: RMIN + "–" + RMAX, draussen, drinnen, luecke, takte };
         };
         res.D = await uebergang();
 
@@ -330,7 +337,7 @@ function check(name, ok, detail) {
         dOk(D),
         D.fehlt
             ? "kein Baum am Rand der Mesh-Zone"
-            : `${D.typ} (${D.d0} m, Radius ${D.radius} m) → ${D.draussen.d} m: Slots gleich ${D.draussen.gleich}, voll ${D.draussen.voll}` +
+            : `${D.typ} (${D.d0} m, Radius geregelt ${D.radius} m) → ${D.draussen.d} m (Radius ${D.draussen.radius}): Slots gleich ${D.draussen.gleich}, voll ${D.draussen.voll}` +
                   ` · zurück ${D.drinnen.d} m: Slots gleich ${D.drinnen.gleich}, voll ${D.drinnen.voll} · Takte ohne Gestalt ${D.luecke}/${D.takte}`
     );
     const s1 = out.S1;
