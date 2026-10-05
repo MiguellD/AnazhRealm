@@ -278,6 +278,10 @@ function validateManifest(m) {
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
+                // W6 (05.10.): die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
+                // Baumhoehen von der Strecke seiner Nachbarn abweichen (foundry-core __ringBahn): 0 < ringToleranz < 0,01.
+                if ("ringToleranz" in z && !(typeof z.ringToleranz === "number" && z.ringToleranz > 0 && z.ringToleranz < 0.01))
+                    v.push(`B2c: lod.budget.${k}[${st}].ringToleranz muss in (0, 0,01) Baumhoehen liegen`);
                 // Welle 5 (Integration 05.10.): das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
                 // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
                 if (("schnitt" in z || "rute" in z) && !(z.schnitt > 0 && z.rute > z.schnitt && z.rute < 1))
