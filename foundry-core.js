@@ -954,7 +954,8 @@ function pushNeedle(arr, base, dir, len, color, sway, phase, omega) {
 // Zelle `zelle` (Kern `kern`) ist eine Breitblatt-Zelle (05.10.): der Blatt-Zweig HAENGT — sein Ansatz (der untere
 // Leinwand-Rand des Kerns) liegt am oberen Ende des Stuecks, seine Spitze unten; laengs gestreckt lesen seine Blaetter
 // als die schmalen haengenden Weidenblaetter an ihren Zweiglein. (Vorher die untere Haelfte der Nadel-Zelle — seit die
-// Nadel-Zelle benadelte Zweiglein traegt, hingen dort Farn-Wedel.) `zelle` je Peitsche (die drei Zweige im Wechsel).
+// Nadel-Zelle benadelte Zweiglein traegt, hingen dort Farn-Wedel.) `zelle` ist die Grossblatt-Zelle (BLATT_ATLAS_GROSS:
+// das Weidenblatt ist laenger als das Baum-Blatt der 512er-Zelle), Kern wie die Baum-Zweige.
 // Farbe/Wind aus dem Blatt des Stuecks; aType 1 (Laub: die Saison-Praesenz zieht jede Karte auf ihre Mitte — im Winter
 // traegt die Trauer-L0 wie ihre L1 keine Peitsche).
 function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zelle, kern) {
@@ -1064,8 +1065,8 @@ function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zel
 function bakeLeafAtlas() {
     if (_leafAtlas) return;
     // DER GETEILTE SAMEN: der Blatt-Atlas lebt in phyto-core.js (bakeLeafAtlasCanvas malt, bakeLeafAtlasBild mippt) — EIN Maler, EIN Layout
-    // fuer Studio, Foundry-Worker und Host (Zellen 0..2 Breitblatt, 3 Nadel-Spray; die Karten routen ueber
-    // BLATT_ATLAS_BREIT/BLATT_ATLAS_NADEL). Der Worker hat kein document — er malt in eine OffscreenCanvas.
+    // fuer Studio, Foundry-Worker und Host (Zellen 0..1 Baum-Zweig, 2 Grossblatt-Zweig, 3 Nadel-Zweiglein; die Karten
+    // routen ueber BLATT_ATLAS_BREIT/BLATT_ATLAS_GROSS/BLATT_ATLAS_NADEL). Der Worker hat kein document — er malt in eine OffscreenCanvas.
     // Ohne Samen kein stiller Inline-Zwilling (der alte Inline-Maler mit vier Breitblatt-Zellen ist gefallen).
     // Die TEXTUR ist das Atlas-Bild des Kerns (W5, bakeLeafAtlasBild): blutend, Zell-Mittel gleich, deckungstreue
     // Mips, Zeilen in Textur-Ordnung — der Stoff teilt die Atlas-Farbe durch `wert` (FARB-GESETZ: die Karten-Albedo
@@ -1703,7 +1704,9 @@ function emitTree(P) {
                     l.sway,
                     l.phase,
                     l.omega,
-                    _lq++ % _atl.BLATT_ATLAS_BREIT.zellen
+                    // Das Blatt-Mass der Art: der Strauch liest die Grossblatt-Zelle (seine Karte ist klein), der Baum
+                    // seine Baum-Zweige im Wechsel (05.10.).
+                    _strauchKarte ? _atl.BLATT_ATLAS_GROSS.zelle : _lq++ % _atl.BLATT_ATLAS_BREIT.zellen
                 );
             } // FIX v32: ALLE Blattstellen, 2 statt 28 Dreiecke. Die Kante kommt aus dem Budget (lod.budget.tree[1].blattKarte, 04.10.: 1,8 statt 2,35 — gemessen deckte die Krone 1,7x L0, die Atlas-Fuellung ist 0,16, nicht ~0,85)
             else {
@@ -1741,7 +1744,7 @@ function emitTree(P) {
                 farben,
                 _bodenY,
                 _st.teile,
-                _lq++ % _atl.BLATT_ATLAS_BREIT.zellen,
+                _atl.BLATT_ATLAS_GROSS.zelle,
                 _atl.BLATT_ATLAS_BREIT.kern
             );
         }

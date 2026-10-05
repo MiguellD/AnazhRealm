@@ -60525,25 +60525,45 @@ class AnazhRealm {
     // mischten Schwarz in jeden Rand und mittelten die Nadelstriche unter die Alpha-Schwelle). Er trägt nur den
     // WERT um sein Mittel `wert` (userData.wert) — jeder Leser teilt durch ihn, die Artfarbe kommt aus der
     // Vertex-Farbe (FARB-GESETZ); EINE Textur, die Card-UVs (`__phytoCore.buildFoliageQuads`) routen die Zelle.
-    // Das Bild malt der Foundry-Worker und reicht es mit dem Buch (`_blattAtlasBild`, Transfer); nur wer vor dem Buch
-    // fragt (der Grammatik-Pfad), malt es mit derselben Kern-Funktion selbst (kalt ~125 ms). Headless (kein document)
-    // zeichnet kein Stoff → null; fehlt der Kern, bricht es laut (KERN-PFLICHT) — kein Stoff ohne seinen Atlas.
+    // Die FRACHT (`blattAtlasFracht`, 05.10.) ist das Format des Wirts: mit dem WebGPU-Feature texture-compression-bc
+    // die Kette ab Stufe 0 (512er-Zelle) als BC1-sRGB, ohne es rgba8 ab Stufe 1 (256er-Zelle) — dasselbe Bild, die
+    // Stufe des Formats (wie der Karten-Atlas, `_impostorAtlasFormat`). Die Fracht malt und kodiert der Foundry-Worker
+    // und reicht sie mit dem Buch (`_blattAtlasBild`, Transfer); nur wer vor dem Buch fragt (der Grammatik-Pfad), malt
+    // und kodiert sie mit denselben Kern-Funktionen selbst. Headless (kein document) zeichnet kein Stoff → null; fehlt
+    // der Kern, bricht es laut (KERN-PFLICHT) — kein Stoff ohne seinen Atlas.
     _ensureFoliageClusterAtlas() {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        let bild = this._blattAtlasBild || null;
-        if (!bild) {
+        const bc = this._impostorAtlasFormat() === "bc";
+        let fracht = this._blattAtlasBild || null;
+        if (!fracht) {
             const core = globalThis.__phytoCore;
-            if (!core || !core.bakeLeafAtlasBild) throw new Error("KERN-PFLICHT: phyto-core bakeLeafAtlasBild fehlt");
-            bild = core.bakeLeafAtlasBild(document);
+            if (!core || !core.bakeLeafAtlasBild || !core.blattAtlasFracht)
+                throw new Error("KERN-PFLICHT: phyto-core bakeLeafAtlasBild/blattAtlasFracht fehlt");
+            fracht = core.blattAtlasFracht(core.bakeLeafAtlasBild(document), bc);
         }
-        if (!bild) throw new Error("KERN-PFLICHT: der Blatt-Atlas lieferte kein Bild");
-        const tex = new THREE.DataTexture(bild.daten, bild.breite, bild.hoehe, THREE.RGBAFormat);
+        if (!fracht || !fracht.rgba) throw new Error("KERN-PFLICHT: der Blatt-Atlas lieferte kein Bild");
+        let tex;
+        if (bc && fracht.bc && fracht.bc.mips.length) {
+            tex = new THREE.CompressedTexture(
+                fracht.bc.mips,
+                fracht.bc.breite,
+                fracht.bc.hoehe,
+                THREE.RGBA_S3TC_DXT1_Format
+            );
+        } else {
+            tex = new THREE.DataTexture(
+                fracht.rgba.mips[0].data,
+                fracht.rgba.breite,
+                fracht.rgba.hoehe,
+                THREE.RGBAFormat
+            );
+            tex.mipmaps = fracht.rgba.mips;
+        }
         tex.name = "laub-cluster-atlas";
         tex.colorSpace = THREE.SRGBColorSpace;
-        tex.mipmaps = bild.mips;
         tex.generateMipmaps = false;
-        tex.userData.wert = bild.wert;
+        tex.userData.wert = fracht.wert;
         tex.minFilter = THREE.LinearMipmapLinearFilter;
         tex.magFilter = THREE.LinearFilter;
         tex.wrapS = THREE.ClampToEdgeWrapping;
@@ -60555,6 +60575,7 @@ class AnazhRealm {
         }
         tex.needsUpdate = true;
         this._foliageAtlasTex = tex;
+        this._blattAtlasBild = null; // die Fracht des anderen Formats hat keinen Leser mehr
         return tex;
     }
 
@@ -65533,9 +65554,9 @@ class AnazhRealm {
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
-        // Das Bild des EINEN Blatt-Atlas (S7): im Worker gemalt und gemippt, per Transfer — `_ensureFoliageClusterAtlas`
-        // lädt es, ohne im Haupt-Thread zu malen.
-        if (m.blattAtlas && Array.isArray(m.blattAtlas.mips) && m.blattAtlas.mips.length)
+        // Die Fracht des EINEN Blatt-Atlas (S7, 05.10.): im Worker gemalt, gemippt und kodiert, per Transfer —
+        // `_ensureFoliageClusterAtlas` lädt sie, ohne im Haupt-Thread zu malen.
+        if (m.blattAtlas && m.blattAtlas.rgba && Array.isArray(m.blattAtlas.rgba.mips) && m.blattAtlas.rgba.mips.length)
             this._blattAtlasBild = m.blattAtlas;
     }
     // Siedlungs-Gesetz aus dem Buch (fachwerk-core SIEDLUNG, Feld `siedlung`): wo und wie viele Dörfer.
@@ -65915,9 +65936,17 @@ class AnazhRealm {
                 return roh(Object.assign({}, msg, { payload: k }), [k.albedo.buffer, k.normal.buffer]);
             }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
-            // Das Buch trägt das Bild des EINEN Blatt-Atlas (Stufe 0 + Mips): per Transfer, nie als Klon.
-            if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips))
-                return roh(msg, Array.from(new Set(msg.blattAtlas.mips.map((st) => st.data.buffer))));
+            // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
+            // (`__phytoCore.blattAtlasFracht`, 05.10.: BC1 ab Stufe 0 für den Wirt mit BC, rgba ab Stufe 1 ohne) und reicht
+            // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
+            if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
+                const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);
+                const stufen = fr ? fr.rgba.mips.concat(fr.bc ? fr.bc.mips : []) : [];
+                return roh(
+                    Object.assign({}, msg, { blattAtlas: fr }),
+                    Array.from(new Set(stufen.map((st) => st.data.buffer)))
+                );
+            }
             return roh(msg, a, b);
         };
         // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
@@ -68852,8 +68881,8 @@ class AnazhRealm {
             } else if (kind === "foliageTex") {
                 // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
                 // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
-                // (phyto-core `bakeLeafAtlasBild`): Zellen 0..2 Breitblatt (Laub-Karten, `BLATT_ATLAS_BREIT`),
-                // Zelle 3 Nadel-Spray (Nadel-Karten der Koniferen-L1, `BLATT_ATLAS_NADEL`) — dieselbe Textur wie
+                // (phyto-core `bakeLeafAtlasBild`): Zellen 0..1 Baum-Zweig (`BLATT_ATLAS_BREIT`), 2 Großblatt-Zweig
+                // (Strauch, Weiden-Strähne, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
                 // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
                 const tex = this._ensureFoliageClusterAtlas();
                 if (tex && TSL.texture) {

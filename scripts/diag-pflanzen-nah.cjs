@@ -18,10 +18,11 @@
 //  (B) BLUME (L0, Gestalten 1/2): die Blütenblätter tragen den Saftmal-Verlauf — je Blatt Luminanz Spitze : Grund im
 //      Mittel ≥ SAFTMAL_MIN. Vorher: eine Farbe je Blatt (1,0).
 //  (M) BLATT-MASS (Laub-Bäume L0 und der Strauch L1, Gestalt 1): die Länge eines Atlas-Blatts in der Welt =
-//      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × ZWEIG_BLATT.laenge/256 × Welt-Skala im Band
+//      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × Blatt-Länge des Zweigs der Zelle (Baum ZWEIG_BLATT,
+//      Strauch ZWEIG_GROSS) / BLATT_ATLAS_ZELLE × Welt-Skala im Band
 //      BLATT_BAND. Vorher 1,4–1,7 m (Rosetten), dann 0,37–0,49 m (Zweig mit 27-px-Blättern).
 //  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt = mittlere Kante der
-//      Nadel-Karte × NADEL_ZWEIG.nadel/256 × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
+//      Nadel-Karte × NADEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
 //  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): die Trauer-Klinge las auf 12–26 m als Papier-Streifen
 //      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
 //  (U) UNTERSEITE — die Blatt-Unterseite (phyto-core BLATT_UNTERSEITE) hat ihre zwei Leser: den Laub-Shader des Labors
@@ -47,8 +48,8 @@ const BIRKE = { strichMin: 0.04, strichMax: 0.45, fussMax: 0.16, zweigMax: 0.25 
 const RINGEL_MAX = 0.25;
 const REISIG_MIN = 0.5;
 const SAFTMAL_MIN = 1.4;
-const BLATT_BAND = [0.04, 0.3]; // m in der Welt (Natur: Hasel 0,06–0,12, Eiche 0,10–0,15, Birke 0,04–0,07)
-const NADEL_MAX_M = 0.05; // m in der Welt (Natur: Fichte 0,015–0,025, Tanne 0,02–0,03)
+const BLATT_BAND = [0.04, 0.16]; // m in der Welt (Natur: Hasel 0,06–0,12, Eiche 0,10–0,15, Birke 0,04–0,07)
+const NADEL_MAX_M = 0.03; // m in der Welt (Natur: Fichte 0,015–0,025, Tanne 0,02–0,03)
 
 const f32 = (b64) => {
     const b = Buffer.from(b64, "base64");
@@ -237,10 +238,12 @@ function kartenKante(T) {
     }
     return n ? s / n : 0;
 }
-function blattMass(fall, T, skala) {
+// `zweig`: der Zweig der Zelle, die die Karte liest (Baum: ZWEIG_BLATT, Strauch: ZWEIG_GROSS — das Blatt-Mass der Art).
+function blattMass(fall, T, skala, zweig) {
     const kante = kartenKante(T);
     if (!kante) return { v: [`${fall}: keine Laub-Karte`], m: {} };
-    const blatt = (kante / PC.BLATT_ATLAS_BREIT.kern) * (PC.ZWEIG_BLATT.laenge / 256) * skala;
+    const blatt =
+        (kante / PC.BLATT_ATLAS_BREIT.kern) * ((zweig || PC.ZWEIG_BLATT).laenge / PC.BLATT_ATLAS_ZELLE) * skala;
     return {
         v:
             blatt >= BLATT_BAND[0] && blatt <= BLATT_BAND[1]
@@ -252,7 +255,7 @@ function blattMass(fall, T, skala) {
 function nadelMass(fall, T, skala) {
     const kante = kartenKante(T);
     if (!kante) return { v: [`${fall}: keine Nadel-Karte`], m: {} };
-    const nadel = (kante / PC.BLATT_ATLAS_NADEL.kern) * (PC.NADEL_ZWEIG.nadel / 256) * skala;
+    const nadel = (kante / PC.BLATT_ATLAS_NADEL.kern) * (PC.NADEL_ZWEIG.nadel / PC.BLATT_ATLAS_ZELLE) * skala;
     return { v: nadel <= NADEL_MAX_M ? [] : [`${fall}: Nadel ${nadel.toFixed(3)} m > ${NADEL_MAX_M} m`], m: { nadel } };
 }
 // (K) die L1-Krone eines Baums trägt keine Klinge (kind "foliage").
@@ -310,7 +313,7 @@ function unterseiteUrteil(quellen) {
             }
         } else if (kind === "shrub") {
             u = strauchUrteil(k, f.T);
-            const b = blattMass(k, f.T, skala(f.presetId));
+            const b = blattMass(k, f.T, skala(f.presetId), PC.ZWEIG_GROSS);
             u.v.push(...b.v);
             Object.assign(u.m, b.m);
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
@@ -380,7 +383,10 @@ function unterseiteUrteil(quellen) {
     if (eiche) st.push(["Blatt ×3", blattMass("gross", skaliert(eiche.T, 3), skala("eiche")).v.length > 0]);
     else st.push(["Eiche gebaut", false]);
     if (strauch)
-        st.push(["Strauch-Blatt ×½", blattMass("klein", skaliert(strauch.T, 0.5), skala("strauch")).v.length > 0]);
+        st.push([
+            "Strauch-Blatt ×½",
+            blattMass("klein", skaliert(strauch.T, 0.5), skala("strauch"), PC.ZWEIG_GROSS).v.length > 0,
+        ]);
     if (tanne) st.push(["Nadel ×3", nadelMass("lang", skaliert(tanne.T, 3), skala("tanne")).v.length > 0]);
     else st.push(["Tanne gebaut", false]);
     if (weide1)

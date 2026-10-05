@@ -184,7 +184,7 @@ function kostenUrteil(messungen, budget) {
     }
     return v;
 }
-function steckbriefUrteil(atlas, breit, nadel) {
+function steckbriefUrteil(atlas, breit, nadel, gross) {
     const v = [];
     if (!breit || !(breit.kern > 0) || !(breit.fuellung > 0) || !(breit.zellen >= 1))
         return ["Steckbrief BLATT_ATLAS_BREIT fehlt"];
@@ -202,6 +202,13 @@ function steckbriefUrteil(atlas, breit, nadel) {
         );
     if (Math.abs(atlas.fill[nadel.zelle] - nadel.fuellung) > 0.01)
         v.push(`Nadel-Füllung ${atlas.fill[nadel.zelle].toFixed(4)} ≠ Steckbrief ${nadel.fuellung}`);
+    // Die Großblatt-Zelle (05.10.: Strauch und Weiden-Strähne) — Kern wie die Baum-Zweige, eigene Füllung.
+    if (!gross || !Number.isInteger(gross.zelle) || !(gross.fuellung > 0))
+        return v.concat(["Steckbrief BLATT_ATLAS_GROSS fehlt"]);
+    if (atlas.ext[gross.zelle] > breit.kern)
+        v.push(`Großblatt-Zelle ${gross.zelle}: Alpha reicht bis ${atlas.ext[gross.zelle].toFixed(4)} > kern ${breit.kern}`);
+    if (Math.abs(atlas.fill[gross.zelle] - gross.fuellung) > 0.01)
+        v.push(`Großblatt-Füllung ${atlas.fill[gross.zelle].toFixed(4)} ≠ Steckbrief ${gross.fuellung}`);
     return v;
 }
 // Die Bild-Deckung eines Paars: L1 gegen L0 auf demselben Raster (Pixel-Kante = L0-Höhe / 300).
@@ -429,7 +436,7 @@ function deckungsUrteil(paare, band, atlas) {
         else if (!Array.isArray(band)) fails.push("Budget: render-config trägt kein lod.budget.tree[1].deckung");
         else {
             fails.push(...kostenUrteil(messungen, budget).map((x) => "Kosten: " + x));
-            fails.push(...steckbriefUrteil(at, at.steckbrief, at.nadel).map((x) => "Steckbrief: " + x));
+            fails.push(...steckbriefUrteil(at, at.steckbrief, at.nadel, at.gross).map((x) => "Steckbrief: " + x));
             fails.push(...deckungsUrteil(paare, band, alpha).map((x) => "Deckung: " + x));
             fails.push(...sehUrteil(sehProben).map((x) => "Seh: " + x));
         }
@@ -465,7 +472,8 @@ function deckungsUrteil(paare, band, atlas) {
         console.log(
             `Atlas: Breitblatt-Kern bis ${Math.max(...at.ext.slice(0, at.steckbrief.zellen)).toFixed(4)} (Steckbrief ${at.steckbrief.kern}) · ` +
                 `Füllung ${(at.fill.slice(0, at.steckbrief.zellen).reduce((s, x) => s + x, 0) / at.steckbrief.zellen).toFixed(4)} (${at.steckbrief.fuellung}) · ` +
-                `Nadel-Zelle bis ${at.ext[at.nadel.zelle].toFixed(4)} · Füllung ${at.fill[at.nadel.zelle].toFixed(4)} (${at.nadel.fuellung})`
+                `Nadel-Zelle bis ${at.ext[at.nadel.zelle].toFixed(4)} · Füllung ${at.fill[at.nadel.zelle].toFixed(4)} (${at.nadel.fuellung}) · ` +
+                `Großblatt-Zelle bis ${at.ext[at.gross.zelle].toFixed(4)} · Füllung ${at.fill[at.gross.zelle].toFixed(4)} (${at.gross.fuellung})`
         );
         const gemesseneP = Object.entries(paare).filter(([, p]) => p.deckung != null);
         console.log(
@@ -539,7 +547,7 @@ function deckungsUrteil(paare, band, atlas) {
         console.log(
             `Schwebe-Wand: ${schwebeMess.length} Baum-L0 gemessen, ${schwebeMess.reduce((m, x) => m + x.karten, 0)} Karten, schwebend höchstens ${sMax}`
         );
-        const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel).length > 0;
+        const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel, at.gross).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
         // 05.10.: keine L1-Krone mehr aus Klingen (die Trauer-Klinge las als Papier-Streifen) — jede Krone ist Karte.
         const s6 = arten.has("laub") && arten.has("nadel") && !arten.has("klinge") && gemesseneP.length >= 16;

@@ -365,17 +365,28 @@
     }
 
     // DER ATLAS-STECKBRIEF (04.10., echte GPU): was der Maler in eine Zelle setzt, als ZAHL — damit die
-    // Karte nur rastert, was der Atlas trägt. EIN Atlas, vier Zellen: 0..2 Breitblatt-Cluster (Laub-Karten
-    // routen `zelle % zellen`), 3 die Nadel-Spray (Nadel-Karten der Koniferen-L1). `kern` = halbe Ausdehnung
+    // Karte nur rastert, was der Atlas trägt. EIN Atlas, vier Zellen: 0..1 die Baum-Zweige (Laub-Karten der Bäume
+    // routen `zelle % zellen`), 2 der Großblatt-Zweig (Strauch, Weiden-Strähne; BLATT_ATLAS_GROSS), 3 die Nadel-Zweiglein
+    // (Nadel-Karten der Koniferen). `kern` = halbe Ausdehnung
     // um die Zellmitte als Anteil der halben Zelle (Breitblatt reicht Alpha>0 höchstens bis 0,7148 — die
     // Laub-Karte schneidet auf ihn zu, gemessen verwarfen die ungeschnittenen Karten 84 % ihrer Fragmente);
-    // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (Blatt-Zweige 05.10.: 0,1656/0,1776/0,1802 bis 0,707 —
-    // vorher Rosetten 0,1403/0,1749/0,1693; Nadel 0,2446). Die
-    // Nadel-Spray reicht bis an den Zellrand (kern 1, gemalt 0,9961) und wird auf ihre Zelle geschnitten — vorher
-    // blutete sie in Zelle 2. gate:asset-contract malt den Atlas und hält jede Zahl gegen den Maler.
-    const BLATT_ATLAS_BREIT = { zellen: 3, kern: 0.72, fuellung: 0.1758 };
-    const BLATT_ATLAS_NADEL = { zelle: 3, kern: 1, fuellung: 0.2492 };
-    // DER BLATT-ZWEIG der Breitblatt-Zellen (05.10.), in Atlas-Pixeln (die Zelle misst 256): Haupt-Achse `achse`,
+    // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (512er-Ast 05.10.: 0,1796/0,1786/0,1797 bis 0,709 — davor
+    // 256er-Zweige 0,1758, Rosetten 0,1403/0,1749/0,1693; Nadel-Zweiglein 0,2537, davor die Striche 0,2446). Die
+    // Nadel-Zelle reicht bis 0,92 der halben Zelle (kern 1) und wird auf ihre Zelle geschnitten — vorher blutete die
+    // Spray in Zelle 2. gate:asset-contract malt den Atlas und hält jede Zahl gegen den Maler.
+    const BLATT_ATLAS_BREIT = { zellen: 2, kern: 0.72, fuellung: 0.1793 };
+    const BLATT_ATLAS_NADEL = { zelle: 3, kern: 1, fuellung: 0.2537 };
+    // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zellen 0..1) tragen
+    // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
+    // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
+    // doppelt so langen Blaettern (ZWEIG_GROSS); Kern wie die Baum-Zellen (dieselbe Karten-Geometrie).
+    const BLATT_ATLAS_GROSS = { zelle: 2, fuellung: 0.1864 };
+    // DIE ZELLE des Atlas in Pixeln (05.10., dritter Schnitt des Blatt-Masses): 512 statt 256 — die Karte traegt doppelt
+    // so viele Texel je Meter. Das Blatt behaelt seine Pixel (14), die Zelle traegt viermal so viele: das Blatt-Mass der
+    // Welt halbiert sich bei gleicher Schaerfe je Blatt. Die Stufe 0 reist nur als BC1 (Karten-Codec, ¼ der Bytes); ein
+    // Wirt ohne BC laedt die Kette ab Stufe 1 (256er-Zelle, das Byte-Mass von gestern) — `blattAtlasFracht`.
+    const BLATT_ATLAS_ZELLE = 512;
+    // DER BLATT-ZWEIG der Breitblatt-Zellen (05.10.), in Atlas-Pixeln (die Zelle misst BLATT_ATLAS_ZELLE): Haupt-Achse `achse`,
     // `seiten` Seitenzweige der Länge `seite` (wechselständig), an jedem `unter` Unterzweige der Länge `unterSeite`·seite,
     // Blatt-Abstand `abstand` je Achse, Blatt-Länge `laenge` (±18 %, die Spitze 8 % länger), Stiel `stiel`, Zahn-Höhe
     // `zahn` px bei `zaehne` Zähnen je Seite, `adern` Seitenadern-Paare, Rippe/Ader als Deckkraft des HELLEN Nervs,
@@ -383,14 +394,15 @@
     // DAS BLATT-MASS (05.10., zweiter Schnitt): die Karte der L0 misst 2,5–3,2 m (Kante = Blattstelle × blattKarte), ein
     // Blatt von 27 px lag damit bei 0,37–0,49 m (Birke, Eiche, Buche; Natur 0,05–0,12 m). Die Karten-Zahl bleibt (die
     // Dreiecke der Krone hängen an ihr), die Füllung bleibt (die Deckung hängt an ihr) — der Zweig verzweigt sich und
-    // trägt halb so lange Blätter, dreimal so viele: 0,18–0,25 m in der Welt.
+    // trägt halb so lange Blätter, dreimal so viele: 0,18–0,25 m in der Welt. Dritter Schnitt (512er-Zelle): ein Ast mit
+    // 9 Seitenzweigen zu je 4 Unterzweigen, ~600 Blätter von 14 px — 0,09–0,12 m in der Welt (die Natur).
     const ZWEIG_BLATT = {
-        achse: 156,
-        seite: 82,
-        seiten: 6,
-        unter: 2,
-        unterSeite: 0.5,
-        abstand: 6.2,
+        achse: 312,
+        seite: 170,
+        seiten: 9,
+        unter: 5,
+        unterSeite: 0.42,
+        abstand: 5.1,
         laenge: 14,
         stiel: 2.5,
         zahn: 0.6,
@@ -400,17 +412,40 @@
         ader: 0.26,
         falz: 0.07,
         saum: 2,
+        linie: 1,
         strom: 0x1eaf,
+    };
+    // DER GROSSBLATT-ZWEIG (Zelle 2, BLATT_ATLAS_GROSS): der Zweig der 256er-Zelle von gestern, doppelt gross gemalt —
+    // ~150 Blaetter von 28 px (`linie` = Faktor der Strich-Breiten).
+    const ZWEIG_GROSS = {
+        achse: 312,
+        seite: 164,
+        seiten: 6,
+        unter: 2,
+        unterSeite: 0.5,
+        abstand: 12.4,
+        laenge: 28,
+        stiel: 5,
+        zahn: 1.2,
+        zaehne: 5,
+        adern: 3,
+        rippe: 0.45,
+        ader: 0.26,
+        falz: 0.07,
+        saum: 2,
+        linie: 2,
+        strom: 0x1eb0,
     };
     // DER NADEL-ZWEIG der Nadel-Zelle (05.10.), in Atlas-Pixeln: `aeste` Zweiglein strahlen aus der Zellmitte (Länge
     // `laenge` [min, max] px), jedes mit `unter` Seitenzweiglein (`unterSeite`·Länge), rundum dicht benadelt: alle
     // `abstand` px je Seite eine Nadel der Länge `nadel` px (±20 %), Breite `breite`, `winkel` rad zur Achse nach vorn.
     // Befund: die Zelle trug 70 Striche von 4 px Breite und 40–94 px Länge — auf der L0-Karte (Fichte 1,2 m) eine
-    // „Nadel" von 19–44 cm Länge und 2 cm Dicke (Natur 1,5–3 cm). Jetzt liegt die Nadel bei ~3 cm (Fichte, Tanne).
+    // „Nadel" von 19–44 cm Länge und 2 cm Dicke (Natur 1,5–3 cm). Jetzt liegt die Nadel bei ~2 cm (Fichte, Tanne; die
+    // 512er-Zelle trägt doppelt so lange Zweiglein mit Nadeln derselben Pixel-Länge).
     const NADEL_ZWEIG = {
-        aeste: 10,
-        laenge: [80, 116],
-        unter: 4,
+        aeste: 15,
+        laenge: [160, 232],
+        unter: 7,
         unterSeite: 0.36,
         abstand: 1.7,
         nadel: 8,
@@ -421,18 +456,19 @@
 
     // DER BLATT-ATLAS — EINE Quelle für jeden Leser (Studio, Foundry-Worker, Host): er trägt NUR den WERT
     // (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-Farbe (albedo = Vertex-Blatt × Atlas-Wert).
-    // Zellen 0..2 = Breitblatt-Cluster (die Vorlage), 3 = Nadel-Spray (Koniferen). `doc` ist alles mit
+    // Zellen 0..1 = Baum-Zweig, 2 = Großblatt-Zweig, 3 = Nadel-Zweiglein (Koniferen). `doc` ist alles mit
     // createElement("canvas") — das document des Main-Threads oder die OffscreenCanvas-Hülle des Workers
     // (foundry-core); ohne → null. Der broadleaf-Modus (vier Breitblatt-Zellen) ist gefallen: Laub und Nadel
     // teilen EINEN Atlas, EIN Material, EINE Textur.
     function bakeLeafAtlasCanvas(doc) {
         if (!doc || typeof doc.createElement !== "function") return null;
         const cv = doc.createElement("canvas");
-        cv.width = 1024;
-        cv.height = 256;
+        const Z = BLATT_ATLAS_ZELLE;
+        cv.width = 4 * Z;
+        cv.height = Z;
         const x = cv.getContext("2d", { willReadFrequently: true });
         if (!x) return null;
-        // Zellen 0..2 — DER BLATT-ZWEIG (05.10., Pflanzen-Nahbild). Befund (Blick-Tour V18.530, Bild 05; Kartenmaß): eine
+        // Zellen 0..2 — DIE BLATT-ZWEIGE (05.10., Pflanzen-Nahbild; 0..1 Baum, 2 Großblatt). Befund (Blick-Tour V18.530, Bild 05; Kartenmaß): eine
         // Zelle trug 8–9 Blätter von 76–106 px in einem Kern von 184 px — ein Blatt war die halbe Karte, in der Welt
         // 1–1,7 m lang (Eiche, Skala 3,4), flach, mit einer harten dunklen Mittelrippe (Wert 0,4). Jetzt malt jede Zelle
         // einen ZWEIG wie eine Laub-Karte der Profis: eine leicht gebogene Achse mit wechselständigen Seiten- und
@@ -441,9 +477,9 @@
         // HELLER Mittelrippe und Seitenadern (der Blattnerv ist heller als die Spreite), einer Falz-Hälfte (die Spreite
         // ist zur Rippe geknickt, die eine Seite fängt weniger Licht) und dem Verlauf Stiel → Spitze. Alles bleibt im
         // Kern (Steckbrief).
-        const ZB = ZWEIG_BLATT;
-        const rb = _atlasRnd(ZB.strom);
-        const rand = BLATT_ATLAS_BREIT.kern * 128 - ZB.saum; // halbe Kante des Kerns in px, abzüglich Saum
+        let ZB = ZWEIG_BLATT; // je Zelle ihr Zweig (die Baum-Zellen ZWEIG_BLATT, die Grossblatt-Zelle ZWEIG_GROSS)
+        let rb = _atlasRnd(ZB.strom);
+        const rand = BLATT_ATLAS_BREIT.kern * (Z / 2) - ZB.saum; // halbe Kante des Kerns in px, abzüglich Saum
         const blatt = (bx, by, rot, L, W, v) => {
             // Ein Blatt mit Stiel: Basis (bx, by), Achse in Richtung rot (Bogenmaß, 0 = nach oben), Länge L ohne Stiel.
             const cs = (r, gg, bb, a) =>
@@ -460,7 +496,7 @@
             x.translate(bx, by);
             x.rotate(rot);
             x.strokeStyle = cs(178, 186, 150, 1);
-            x.lineWidth = 0.9;
+            x.lineWidth = 0.9 * ZB.linie;
             x.beginPath();
             x.moveTo(0, 0);
             x.lineTo(0, -ZB.stiel);
@@ -495,7 +531,7 @@
             x.fillRect(-W, -L, W, L);
             // Seitenadern (paarig, zur Spitze geneigt) und die Mittelrippe — HELLER als die Spreite, weich.
             x.strokeStyle = cs(250, 255, 238, ZB.ader);
-            x.lineWidth = 0.5;
+            x.lineWidth = 0.5 * ZB.linie;
             for (let k = 1; k <= ZB.adern; k++) {
                 const t = k / (ZB.adern + 1),
                     y0 = -t * L * 0.92,
@@ -508,7 +544,7 @@
                 x.stroke();
             }
             x.strokeStyle = cs(250, 255, 238, ZB.rippe);
-            x.lineWidth = 0.7;
+            x.lineWidth = 0.7 * ZB.linie;
             x.beginPath();
             x.moveTo(0, 0);
             x.lineTo(0, -L * 0.9);
@@ -516,17 +552,22 @@
             x.restore();
             x.restore();
         };
-        for (let c = 0; c < BLATT_ATLAS_BREIT.zellen; c++) {
-            const ox = c * 256 + 128,
-                oy = 128;
+        const zweige = [];
+        for (let c = 0; c < BLATT_ATLAS_BREIT.zellen; c++) zweige.push([c, ZWEIG_BLATT]);
+        zweige.push([BLATT_ATLAS_GROSS.zelle, ZWEIG_GROSS]);
+        for (const [c, zb] of zweige) {
+            if (zb !== ZB) rb = _atlasRnd(zb.strom); // jeder Zweig-Typ sein eigener Strom
+            ZB = zb;
+            const ox = c * Z + Z / 2,
+                oy = Z / 2;
             // Die Achsen des Zweigs: die Haupt-Achse von unten nach oben (leicht gebogen) und je Zelle ihre
             // Seitenzweige, wechselständig. Jede Achse: Punkte p(t), Richtung d(t).
             const achsen = [];
-            const bx = ox + (rb() - 0.5) * 16,
+            const bx = ox + (rb() - 0.5) * (Z / 16),
                 by = oy + ZB.achse * 0.55,
-                kr = (rb() - 0.5) * 34;
+                kr = (rb() - 0.5) * Z * 0.133;
             const haupt = (t) => [bx + kr * Math.sin(Math.PI * t), by - ZB.achse * t];
-            achsen.push({ p: haupt, rot0: 0, len: ZB.achse, dicke: 1.6 });
+            achsen.push({ p: haupt, rot0: 0, len: ZB.achse, dicke: 1.6 * ZB.linie });
             const nSeit = ZB.seiten;
             for (let k = 0; k < nSeit; k++) {
                 const t0 = 0.12 + (0.66 * k) / Math.max(1, nSeit - 1) + (rb() - 0.5) * 0.06,
@@ -535,7 +576,7 @@
                     L = ZB.seite * (0.8 + rb() * 0.3) * (1 - 0.35 * t0),
                     p0 = haupt(t0);
                 const seite = (t) => [p0[0] + Math.sin(w) * L * t, p0[1] - Math.cos(w) * L * t];
-                achsen.push({ p: seite, rot0: w, len: L, dicke: 1.1 });
+                achsen.push({ p: seite, rot0: w, len: L, dicke: 1.1 * ZB.linie });
                 // Die Unterzweige: wechselständig am Seitenzweig, zur Spitze geneigt.
                 for (let u = 0; u < ZB.unter; u++) {
                     const tu = (u + 1) / (ZB.unter + 1) + (rb() - 0.5) * 0.1,
@@ -547,10 +588,15 @@
                         p: (t) => [q0[0] + Math.sin(wu) * Lu * t, q0[1] - Math.cos(wu) * Lu * t],
                         rot0: wu,
                         len: Lu,
-                        dicke: 0.8,
+                        dicke: 0.8 * ZB.linie,
                     });
                 }
             }
+            // Der Zweig bleibt im Kern (Steckbrief): Holz und Blatt schneiden auf das Kern-Quadrat der Zelle.
+            x.save();
+            x.beginPath();
+            x.rect(ox - rand, oy - rand, 2 * rand, 2 * rand);
+            x.clip();
             // Erst das Holz (hinten), dann die Blätter.
             x.strokeStyle = "rgba(150,142,112,1)";
             x.lineCap = "round";
@@ -599,6 +645,7 @@
                     blatt(q[0], q[1], rot, L, Math.min(W, L * 0.64), v);
                 }
             }
+            x.restore();
         }
         // Zelle 3 — DER NADEL-ZWEIG (Wert-only) für die Nadel-Karten (L0 und L1 der Koniferen), auf IHRE Zelle
         // geschnitten: Zweiglein aus der Zellmitte, rundum benadelt (NADEL_ZWEIG) — jede Nadel ein kurzer Strich schräg
@@ -606,12 +653,12 @@
         {
             const NZ = NADEL_ZWEIG;
             const rg = _atlasRnd(NZ.strom); // eigener Strom (verbraucht kein Welt-RNG)
-            const z0 = BLATT_ATLAS_NADEL.zelle * 256;
-            const ox = z0 + 128,
-                oy = 128;
+            const z0 = BLATT_ATLAS_NADEL.zelle * Z;
+            const ox = z0 + Z / 2,
+                oy = Z / 2;
             x.save();
             x.beginPath();
-            x.rect(z0, 0, 256, 256);
+            x.rect(z0, 0, Z, Z);
             x.clip();
             x.lineCap = "round";
             // Eine Achse (Start p0, Richtung w, Länge L, Krümmung k): das Holz und ihre Nadeln.
@@ -749,6 +796,27 @@
             mips.push(t);
         }
         return { breite: W, hoehe: H, daten: mips[0].data, mips: mips, wert: wert };
+    }
+
+    // DIE FRACHT DES BLATT-ATLAS (05.10.): was der Wirt als Textur laedt, je Format EINE Stufe desselben Bilds —
+    //   bc    die Kette ab Stufe 0 (512er-Zelle) als BC1-sRGB (der Karten-Codec bc1Kodiere: 8 B je 4×4, Alpha an 128 —
+    //         der alphaTest des Laub-Stoffs schneidet an derselben Stelle), bis die Zelle KARTEN_GESETZ.minSeite misst;
+    //   rgba  die Kette ab Stufe 1 (256er-Zelle) — der Wirt ohne BC laedt die Bytes von gestern (1,3 MB statt 5,3 MB).
+    // `mitBc` false: nur rgba (wer nie BC laedt, kodiert nie). Leser: die Transport-Schale des Foundry-Workers
+    // (das Buch) und der Wirt, der vor dem Buch malt (`_ensureFoliageClusterAtlas`). Ohne Bild → null.
+    function blattAtlasFracht(bild, mitBc) {
+        if (!bild || !Array.isArray(bild.mips) || bild.mips.length < 2) return null;
+        const r = bild.mips.slice(1);
+        const out = { wert: bild.wert, rgba: { breite: r[0].width, hoehe: r[0].height, mips: r }, bc: null };
+        if (mitBc !== false) {
+            const bc = [];
+            for (const m of bild.mips) {
+                if (m.width / 4 < KARTEN_GESETZ.minSeite || m.height < KARTEN_GESETZ.minSeite) break;
+                bc.push({ data: bc1Kodiere(m.data, m.width, m.height), width: m.width, height: m.height });
+            }
+            out.bc = { breite: bild.breite, hoehe: bild.hoehe, mips: bc };
+        }
+        return out;
     }
 
     // DAS NEUE KLEID Welle 1 — DIE LAUB-GEOMETRIE aus der Vorlage (`pushLeafClusterQuad`, byte-
@@ -3829,11 +3897,15 @@
         treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         bakeLeafAtlasBild: bakeLeafAtlasBild, // das Textur-Bild des EINEN Atlas: blutend, Zell-Mittel gleich, deckungstreue Mips, `wert`
+        blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC1 ab Stufe 0, rgba ab Stufe 1 (05.10.)
+        BLATT_ATLAS_ZELLE: BLATT_ATLAS_ZELLE, // die Zelle des Atlas in Pixeln (512, 05.10.)
         buildFoliageQuads: buildFoliageQuads,
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
-        ZWEIG_BLATT: ZWEIG_BLATT, // der Blatt-Zweig der Breitblatt-Zellen (Pixel-Maße des Malers, 05.10.)
+        ZWEIG_BLATT: ZWEIG_BLATT, // der Blatt-Zweig der Baum-Zellen (Pixel-Maße des Malers, 05.10.)
+        ZWEIG_GROSS: ZWEIG_GROSS, // der Großblatt-Zweig der Zelle 2 (Strauch, Weiden-Strähne; 05.10.)
+        BLATT_ATLAS_GROSS: BLATT_ATLAS_GROSS, // der Atlas-Steckbrief der Großblatt-Zelle (05.10.)
         NADEL_ZWEIG: NADEL_ZWEIG, // der Nadel-Zweig der Nadel-Zelle (Pixel-Maße des Malers, 05.10.)
         BLUETEN_BLATT: BLUETEN_BLATT, // das Blütenblatt: Saftmal-Grund, Rückbiegung, Würfel je Blatt (05.10.)
         BLATT_UNTERSEITE: BLATT_UNTERSEITE, // die hellere, mattere Blatt-Unterseite — Labor-Shader und Welt-Stoff (05.10.)
