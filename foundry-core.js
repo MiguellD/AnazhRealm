@@ -294,7 +294,7 @@ const PORTAL_RENDER_CONFIG = {
                     draws: 3,
                     schatten: 1,
                     blattKarte: 1.8,
-                    nadelKarte: 3.5,
+                    nadelKarte: 3.35,
                     klinge: 4,
                     deckung: [0.8, 1.15],
                 },
@@ -304,9 +304,19 @@ const PORTAL_RENDER_CONFIG = {
             // Der Strauch (05.10.): seine L1 traegt Karten aus dem EINEN Atlas (blattKarte = Kante in Blatt-Groessen, an der
             // Bild-Deckung der Klingen von gestern geeicht: kronen-linse 0,95–0,98 ueber die Samen 1/7/12345) und das Reisig
             // bis reisig·trunkR (vorher 0,15), unter rute·trunkR als Vierkant auf jedem 3. Ring — die Karten geben die
-            // Dreiecke der Klingen (8 820 → 630) an die Ruten zurueck (Strauch-L1 11 572 → 7 442, Samen 7).
+            // Dreiecke der Klingen (8 820 → 630) an die Ruten zurueck (Strauch-L1 11 572 → 7 442, Samen 7). Zweiter Schnitt
+            // (05.10., Blatt-Mass): das Atlas-Blatt ist halb so lang — die Karte waechst (2,1 → 3,0), nur der Anteil
+            // dichte.laub der Blattstellen traegt eine (315 → 142 Karten): Hasel-Blatt 0,036 → 0,051 m, Bild-Deckung 1,10.
             shrub: {
-                1: { tris: 12000, draws: 2, schatten: 1, blattKarte: 2.1, reisig: 0.05, rute: 0.15 },
+                1: {
+                    tris: 12000,
+                    draws: 2,
+                    schatten: 1,
+                    blattKarte: 3.0,
+                    dichte: { laub: 0.45 },
+                    reisig: 0.05,
+                    rute: 0.15,
+                },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
@@ -941,11 +951,12 @@ function pushNeedle(arr, base, dir, len, color, sway, phase, omega) {
 // halbe Kartenbreite. Die Bahn endet unter `bodenY` am Durchstosspunkt (nie unter dem Boden) und wird nach Bogenlaenge
 // in `teile` Stuecke geteilt; je Stueck zwei gekreuzte Karten (quer tangential um den Stamm und radial), entlang des
 // Stuecks gestreckt, je Ende um ein Zehntel ueberlappend: die Kette beginnt am Peitschen-Ansatz (dem Traeger-Lauf). Die
-// Zelle `zelle` (Kern `kern`) ist die Nadel-Zelle, und zwar ihre untere Haelfte: der Faecher der feinen Striche haengt
-// von der Zellmitte (oben, am Ansatz des Stuecks) herab und liest laengs gestreckt als die schmalen haengenden
-// Weidenblaetter (die ganze Zelle las als Stern, die Breitblatt-Rosette als Rosette). Farbe/Wind aus dem Blatt des
-// Stuecks; aType 1 (Laub: die Saison-Praesenz zieht jede Karte auf ihre Mitte — im Winter traegt die Trauer-L0 wie ihre
-// L1 keine Peitsche).
+// Zelle `zelle` (Kern `kern`) ist eine Breitblatt-Zelle (05.10.): der Blatt-Zweig HAENGT — sein Ansatz (der untere
+// Leinwand-Rand des Kerns) liegt am oberen Ende des Stuecks, seine Spitze unten; laengs gestreckt lesen seine Blaetter
+// als die schmalen haengenden Weidenblaetter an ihren Zweiglein. (Vorher die untere Haelfte der Nadel-Zelle — seit die
+// Nadel-Zelle benadelte Zweiglein traegt, hingen dort Farn-Wedel.) `zelle` je Peitsche (die drei Zweige im Wechsel).
+// Farbe/Wind aus dem Blatt des Stuecks; aType 1 (Laub: die Saison-Praesenz zieht jede Karte auf ihre Mitte — im Winter
+// traegt die Trauer-L0 wie ihre L1 keine Peitsche).
 function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zelle, kern) {
     const n = pts.length;
     if (n < 2) return;
@@ -1029,8 +1040,9 @@ function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zel
                 );
                 nor.push(nrm[0], nrm[1], nrm[2]);
                 col.push(fc.r, fc.g, fc.b);
-                // v laeuft entlang der Kette (oben = v1), u quer — der Kern-Ausschnitt der Zelle wie die Laub-Karte
-                uvs.push(i === 0 || i === 3 ? u0(zelle) : u0(zelle) + 0.25 * kern, i < 2 ? v0 + kern * 0.5 : v0);
+                // v laeuft entlang der Kette (oben = der Zweig-Ansatz v0, unten = die Spitze v0 + kern), u quer — der
+                // Kern-Ausschnitt der Zelle wie die Laub-Karte
+                uvs.push(i === 0 || i === 3 ? u0(zelle) : u0(zelle) + 0.25 * kern, i < 2 ? v0 : v0 + kern);
                 aw.push(bl.sway, bl.phase, bl.omega);
                 ac.push(mitte[0], mitte[1], mitte[2]);
                 at.push(1);
@@ -1334,8 +1346,19 @@ function emitTree(P) {
     // Unter shrub[1].rute·trunkR ist der Strang Reisig: Vierkant-Roehre (die Radial-Teilung der L2) auf jedem 3. Ring.
     const _bS1 = PORTAL_RENDER_CONFIG.lod.budget.shrub[1];
     const _strauchRute = P.kind === "shrub" && __lod === 1;
-    if (_strauchRute && !(_bS1 && _bS1.reisig > 0 && _bS1.rute > _bS1.reisig && _bS1.blattKarte > 0))
-        throw new Error("[phyto] lod.budget.shrub[1].reisig/rute/blattKarte fehlt (rute > reisig > 0)");
+    if (
+        _strauchRute &&
+        !(
+            _bS1 &&
+            _bS1.reisig > 0 &&
+            _bS1.rute > _bS1.reisig &&
+            _bS1.blattKarte > 0 &&
+            _bS1.dichte &&
+            _bS1.dichte.laub > 0 &&
+            _bS1.dichte.laub <= 1
+        )
+    )
+        throw new Error("[phyto] lod.budget.shrub[1].reisig/rute/blattKarte/dichte fehlt (rute > reisig > 0)");
     if (__lod > 0 && !(P.kind === "shrub" && __lod === 2)) {
         const kCut =
             __lod === 2
@@ -1386,7 +1409,11 @@ function emitTree(P) {
         }
     }
     {
-        const lfL = _L0 ? (_trauer ? 1 : _f0) : P._lf != null ? P._lf : 1;
+        // Der Strauch traegt in seiner L1 nur den Anteil shrub[1].dichte.laub der Blattstellen als Karte (05.10.: die
+        // Karte misst blattKarte Blatt-Groessen — das Blatt des Atlas ist halb so lang wie gestern, die Karte waechst,
+        // ihre Zahl faellt bei gleicher Bild-Deckung).
+        const lfP = P._lf != null ? P._lf : 1;
+        const lfL = _L0 ? (_trauer ? 1 : _f0) : _strauchRute ? lfP * _bS1.dichte.laub : lfP;
         if (lfL < 1 && nodes.leaves.length > 3) {
             const L = nodes.leaves,
                 keep = Math.max(3, Math.round(L.length * lfL)),
@@ -1696,8 +1723,8 @@ function emitTree(P) {
                 farben,
                 _bodenY,
                 _b0.straehne.teile,
-                _atl.BLATT_ATLAS_NADEL.zelle,
-                _atl.BLATT_ATLAS_NADEL.kern
+                _lq++ % _atl.BLATT_ATLAS_BREIT.zellen,
+                _atl.BLATT_ATLAS_BREIT.kern
             );
         }
     }
