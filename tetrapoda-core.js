@@ -1329,6 +1329,51 @@
         return rows;
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // DAS GANG-GESETZ (Welle 5, „Gang ohne Gleiten"): der Fuß im Stand steht still auf dem Boden. Die Schritt-Länge je
+    // Zyklus wächst mit der relativen Geschwindigkeit (Froude v̂ = v/√(g·L), L = Hüft-Höhe): Λ = L·(1,2 + 2·v̂), gedeckelt
+    // durch den größten Bein-Winkel; der Fuß fegt im Stand (Tastgrad 0,5) die halbe Schritt-Länge S, die Frequenz folgt
+    // dem Weg (ω = 2π·v/Λ) — vorher lief der Takt aus dem Gefühls-Profil (Freude 3,2 rad/s, Schritt 0,06 rad) bei jeder
+    // Geschwindigkeit: die Pfoten glitten mit dem Leib (Schlupf 1,0, gate:tier-gang). gangFuss liest je Bein das ZIEL
+    // des Fußes zur Phase: im STAND (π…2π) wandert er am Boden gleichförmig von vorn (+S/2) nach hinten (−S/2), im
+    // SCHWUNG (0…π) kehrt er auf einer Hermite-Kurve nach vorn, die an beiden Enden mit der Stand-Rate rückwärts läuft
+    // (kein Vorwärts-Rutschen beim Aufsetzen), gehoben um hub·h·sin(Phase). Hüfte und Unterglied stellt der Wirt per
+    // ebener Zwei-Knochen-IK auf dieses Ziel (die Pfote bleibt waagrecht) — der Fuß steht, wo das Gesetz ihn hinstellt.
+    var GANG_GESETZ = Object.freeze({
+        g: 9.81,
+        schrittBasis: 1.2,
+        schrittFroude: 2.0,
+        tastgrad: 0.5,
+        maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
+        hub: 0.12, // × h — die Schwung-Höhe des Fußes
+        falte: 0.6, // rad — die Pfote faltet im Schwung
+        stand: 0.05, // m/s — darunter steht das Tier
+        vMax: 15, // m/s — Sprünge der Lage (Spawn, Peer-Schnapp) sind kein Lauf
+    });
+    function gangSchritt(v, L) {
+        var G = GANG_GESETZ;
+        if (!(v > G.stand) || !(L > 0)) return { omega: 0, S: 0, schritt: 0 };
+        var vv = Math.min(v, G.vMax);
+        var vh = vv / Math.sqrt(G.g * L);
+        var lamMax = (2 * L * Math.tan(G.maxWinkel)) / G.tastgrad;
+        var lam = Math.min(L * (G.schrittBasis + G.schrittFroude * vh), lamMax);
+        return { omega: (2 * Math.PI * vv) / lam, S: G.tastgrad * lam, schritt: lam };
+    }
+    // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}.
+    function gangFuss(ph, S) {
+        var TAU = 2 * Math.PI;
+        var u = ((ph % TAU) + TAU) % TAU;
+        if (u >= Math.PI) return { dz: S / 2 - (S * (u - Math.PI)) / Math.PI, hub: 0 };
+        // Hermite von −S/2 (Abheben hinten) nach +S/2 (Aufsetzen vorn), beide Enden mit der Stand-Rate (rückwärts)
+        var t = u / Math.PI,
+            m = -S;
+        var h00 = 2 * t * t * t - 3 * t * t + 1,
+            h10 = t * t * t - 2 * t * t + t,
+            h01 = -2 * t * t * t + 3 * t * t,
+            h11 = t * t * t - t * t;
+        return { dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m, hub: Math.sin(u) };
+    }
+
     function cpgStep(phases, freq, coupling, dt) {
         var d = [0, 0, 0, 0];
         for (var i = 0; i < 4; i++) {
@@ -2598,6 +2643,9 @@
         artGestalt: artGestalt,
         fellFarbe: fellFarbe,
         ANATOMIE_SOLL: ANATOMIE_SOLL,
+        GANG_GESETZ: GANG_GESETZ,
+        gangSchritt: gangSchritt,
+        gangFuss: gangFuss,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,

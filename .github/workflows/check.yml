@@ -567,6 +567,13 @@ jobs:
               # byte-alt auf LOFI_BPM). Inkl. Selbst-Test.
               run: npm run gate:nervensystem-labs
 
+            - name: Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)
+              # Headless (Null-Renderer, Produktions-Boot): jede Gattung läuft bei 0,8 · 1,6 · 3,0 m/s geradeaus durch
+              # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
+              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,2. --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt,
+              # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
+              run: npm run gate:tier-gang
+
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
               # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/
               # koerper/tetrapoda), Node-direkt (THREE-frei) — Schema (klang: bpm/Skala==
