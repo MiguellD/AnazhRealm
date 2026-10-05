@@ -269,6 +269,9 @@ const FORBIDDEN = [
     { token: '"blume_tulpe"', fiel: "Waldboden — die Blume ist die Studio-Blume" },
     { token: '"gestruepp_stecher"', fiel: "Waldboden — das Gestrüpp ist das Studio-Gestrüpp" },
     { token: '"schilf_rohr"', fiel: "Waldboden — das Schilf ist das Studio-Schilf" },
+    // Das Farb-Gesetz der Host-Streu hatte nach dem Fall beider Host-Bauer keinen Leser mehr — die Studio-Arten backen
+    // ihre Farbe im Studio (vegFarbe, gate:streu-wahrheit).
+    { token: "_streuAlbedo", fiel: "Integration Waldboden — die Studio-Arten backen ihre Farbe im Studio (vegFarbe)" },
     // Die Alias-Arten fielen: Buche, Karst-Baum und stehendes Totholz sind eigene Studio-Arten; die Mammut-Nische des
     // Wald-Generators heißt baum_mammut (die Lab-Host-Tafel FOREST_SPECIES hält das, checkAliasArten).
     { token: 'baum_buche: "mammut"', fiel: "Waldboden — baum_buche ist die Studio-Buche" },

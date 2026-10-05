@@ -60,9 +60,10 @@ jobs:
             - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
               run: npm run gate:source-probes
 
-            - name: Streu-Wahrheit (Außen-Normalen jeder einseitigen Art, Streu-Stoffe lesen den EINEN Himmel)
-              # GPU-frei, reines Node: baut jede Klein-Streu-Art über den Stamm-Bauplan und prüft die Flächen-Normalen;
-              # _scatterMaterial baut kein Lambert (r184-Lambert liest scene.environment nie diffus — schwarz im Schatten).
+            - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
+              # GPU-frei, reines Node: liest die Boden-Zeilen des Pflanzen-Kerns (placement.boden ring nah), jeder Emitter mit
+              # weichem Gewebe backt seine Palette über vegFarbe; die Senken zeichnen mit dem Studio-Stoff (nie Lambert —
+              # r184-Lambert liest scene.environment nie diffus) und wiegen im EINEN Wind; der Karten-Codec kodiert sRGB.
               run: npm run gate:streu-wahrheit
 
             - name: Band-Wand (W0 — Haushalt des Profi-Bands, Ratsche, Textur-Namen, Täter-Klasse des Stamms)

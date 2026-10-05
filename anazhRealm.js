@@ -91528,21 +91528,6 @@ AnazhRealm._tuerOffenRad = function () {
 //      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
 //      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
-// DAS FARB-GESETZ DER HOST-STREU (das Studio-Gesetz foundry-core vegFarbe, V18.506, für die Klein-Streu des Hosts):
-// ein Paletten-Wert der Streu-Arten (KLEIN_VEGETATION_SPECIES color/color2 und die Bauplan-Literale) ist eine
-// sRGB-ABSICHT, die Albedo ist sein linearer Wert — gelesen beim BACKEN der Vertex-Farbe (_scatterSpeciesGeometry,
-// _scatterImpostorGeometry). Bis 04.10. lagen die Werte roh im Stoff: Farn bis 0,66, der Fels 0,40–0,50 — mit dem
-// Himmel (Standard statt Lambert) stand der Brocken im Schatten heller als die Wiese in der Sonne (Luma 112 gegen 33).
-// Leuchtende Arten (emissiv, unlit) bleiben roh: ihr Wert ist Leuchtkraft, keine Albedo.
-AnazhRealm._streuAlbedo = function (species, C) {
-    if (species && species.emissive) return C;
-    const out = new Array(C.length);
-    for (let i = 0; i < C.length; i++) {
-        const v = C[i];
-        out[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    }
-    return out;
-};
 AnazhRealm._diaetGeteiltSchreiben = function (rend, ro) {
     const nbs = ro.getNodeBuilderState();
     let k = nbs._anazhGeteilt;
