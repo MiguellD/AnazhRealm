@@ -36,8 +36,7 @@ Mesh {
 ```
 
 **Beipack (must-ignore):** Pseudo-Einträge `{ kind: "__…" }` OHNE `position`-Puffer — `__skelett`
-(der Gelenk-Baum der Kreatur, `docs/studio-vertrag.md` §8.4) und `__baumGrammatik` (das Ast-/Kronen-
-Skelett des Baums für den Analog-Fit) — reisen im selben `meshes`-Array, sind aber KEINE Meshes:
+(der Gelenk-Baum der Kreatur, `docs/studio-vertrag.md` §8.4) — reisen im selben `meshes`-Array, sind aber KEINE Meshes:
 Leser ohne position-Guard überspringen sie, Mint und Gate fingerabdrucken sie nicht (`istBeipack`
 in `scripts/lib/asset-worker-harness.cjs` — EINE Regel für beide).
 

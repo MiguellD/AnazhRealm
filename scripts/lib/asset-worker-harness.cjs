@@ -302,7 +302,7 @@ async function runWithWorker(port, cb) {
 // astronomisch). Für den exakten Byte-Offset einer Divergenz dient der P0-Paritäts-Harness.
 // mint + gate LESEN diese eine Funktion (kein zweiter Fingerabdruck-Pfad, der driften kann).
 // BEIPACK (studio-vertrag §8.4, must-ignore): Pseudo-Einträge `{ kind: "__…" }` ohne Puffer
-// (`__skelett` der Kreatur, `__baumGrammatik` des Baums) reisen im selben meshes-Array, SIND
+// (`__skelett` der Kreatur) reisen im selben meshes-Array, SIND
 // aber keine Meshes — der Vertrag v1 zählt sie nicht (Leser ohne position-Guard überspringen
 // sie). Hier fallen sie aus dem Fingerabdruck, damit Mint UND Gate dieselbe Regel lesen.
 function istBeipack(m) {

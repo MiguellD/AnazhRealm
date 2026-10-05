@@ -341,9 +341,14 @@ const FORBIDDEN = [
     { token: "Ammo.destroy(", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
     // DER FERNWALD (05.10.) — ein Karten-Ding (Baum, Strauch, Tor, Fahrzeug) ist jenseits der Mesh-Zone seine Karte
     // (B2c `fernform`, `_archKartenPreset`); der Baum-Satz aus Grammatik-Kegeln und Kronen-Lappen fiel ganz: sein Fit,
-    // sein Schlüssel und der Kegel-Stumpf im Welt-March.
+    // sein Beipack (Kern + Brücke), sein Schlüssel und der Kegel-Stumpf im Welt-March.
     { token: "_baumGrammatikFit", fiel: "05.10. — fern ist der Baum seine Karte (gate:fernwald)" },
     { token: "_baumKapselFit", fiel: "05.10. — _gestaltKapselFit (Fels, Blume der Gesetz-Streu)" },
+    {
+        token: "__baumGrammatik",
+        fiel: "05.10. — der Grammatik-Beipack hatte keinen Leser mehr",
+        auch: ["worlds/terrain/phytogenesis.js"], // die Brücke legte ihn in den Umschlag
+    },
     { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March (nur der Baum-Satz trug ihn)" },
     { token: "abaum:", fiel: "05.10. — die Gesetz-Streu heißt agesetz:, Bäume haben keinen Satz" },
 ];
@@ -427,19 +432,23 @@ function stripComments(src) {
     return out;
 }
 
+// `auch`: ein Name, der zusätzlich in einer Studio-Datei außerhalb der Stamm-Liste fiel (dort gilt NUR er — das Labor
+// trägt eigene Namen, die im Stamm gefallen sind).
 function scan(files) {
     const errs = [];
-    for (const f of files) {
-        const raw = fs.readFileSync(f, "utf8");
-        const code = stripComments(raw);
-        for (const { token, fiel } of FORBIDDEN) {
+    const root = path.join(__dirname, "..");
+    const pruefe = (f, liste) => {
+        const code = stripComments(fs.readFileSync(f, "utf8"));
+        for (const { token, fiel } of liste) {
             let idx = code.indexOf(token);
             if (idx >= 0) {
                 const line = code.slice(0, idx).split("\n").length;
                 errs.push(`${path.basename(f)}:${line} trägt "${token}" (fiel: ${fiel})`);
             }
         }
-    }
+    };
+    for (const f of files) pruefe(f, FORBIDDEN);
+    for (const z of FORBIDDEN) for (const a of z.auch || []) pruefe(path.join(root, a), [z]);
     return errs;
 }
 
