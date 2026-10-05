@@ -35887,7 +35887,8 @@ async function checkBandV18214SkeletonMesh(ctx) {
 }
 
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-
-// Wand), baum_totholz als Lücken-Baum, SAMPLES-Dichte (W7).
+// Wand), SAMPLES-Dichte (W7). Die Grammatik-Art baum_totholz fiel (W1 + Integration 05.10.): sie hatte keinen
+// Welt-Erzeuger mehr, gezeichnet hatte sie nur die litter-Streu als belaubte Alias-Eiche.
 async function checkBandV18215AtemberaubenderWald(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -35895,7 +35896,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // ─── (W1) SPECIES_TAG_VARIATION frozen, alle 7 Spezies ─────
+        // ─── (W1) SPECIES_TAG_VARIATION frozen, alle 6 Baum-Spezies, kein Totholz ─────
         out.variationExists = !!A.SPECIES_TAG_VARIATION;
         if (out.variationExists) {
             const v = A.SPECIES_TAG_VARIATION;
@@ -35906,29 +35907,20 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
                 !!v.baum_birke &&
                 !!v.baum_eiche &&
                 !!v.baum_erle &&
-                !!v.baum_totholz;
-            // Plan §7: Tanne/Kiefer brennbar↑ resoniert↑; Totholz lebendig↓
-            // brennbar↑↑ — die DEKLARIERTEN Achsen pro Spezies.
+                !v.baum_totholz;
+            // Plan §7: Tanne/Kiefer brennbar↑ resoniert↑ — die DEKLARIERTEN Achsen pro Spezies.
             out.tannenDeklariert =
                 Number.isFinite(v.baum_tanne.brennbar) &&
                 v.baum_tanne.brennbar > 0 &&
                 Number.isFinite(v.baum_tanne.resoniert) &&
                 v.baum_tanne.resoniert > 0;
-            out.totholzDeklariert =
-                Number.isFinite(v.baum_totholz.lebendig) &&
-                v.baum_totholz.lebendig < 0 &&
-                Number.isFinite(v.baum_totholz.brennbar) &&
-                v.baum_totholz.brennbar > 0;
         }
 
-        // ─── (W2) baum_totholz in SPECIES_GRAMMAR + SPECIES_TREE_PARAMS ─
-        out.grammarHasTotholz = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz);
-        if (out.grammarHasTotholz) {
-            const g = A.SPECIES_GRAMMAR.baum_totholz;
-            // Plan §3.3: kein foliage. foliage.kind="none" + anchorLevel=99.
-            out.totholzNoFoliage = g.foliage.kind === "none" && g.foliage.anchorLevel >= 99;
-        }
-        out.treeParamsHasTotholz = !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz);
+        // ─── (W2) baum_totholz ist aus SPECIES_GRAMMAR + SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN ─
+        out.totholzFort =
+            !(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz) &&
+            !(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz) &&
+            r._foundryPresetFor("baum_totholz") == null;
 
         // ─── (W3) V17.16-VARIATIONS-Wand in _growTreeBlueprintForSpawn ─
         const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
@@ -35960,53 +35952,10 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
                     out.tannenVariationApplied = Math.abs(dBrennbar - 0.1) < 1e-9;
                 }
             }
-            // Totholz-Parts → lebendig↓
-            if (A.SPECIES_GRAMMAR.baum_totholz && r._growTreeBlueprintRich) {
-                const parts = r._growTreeBlueprintRich(
-                    "baum_totholz",
-                    "v215-totholz-1",
-                    A.SPECIES_GRAMMAR.baum_totholz
-                );
-                if (Array.isArray(parts)) {
-                    out.totholzPartsCount = parts.length;
-                    out.totholzPartsEnough = parts.length >= 4;
-                    // Alle parts material holz oder laub (V17.16-Wand strukturell)
-                    out.totholzAllHolzOrLaub = parts.every((p) => p.material === "holz" || p.material === "laub");
-                    // Variation auf totholz: lebendig sinkt
-                    const tagsTRaw = r.computeCompoundTags({ parts });
-                    const tagsTGrown = r.computeCompoundTags({
-                        parts,
-                        _isGrown: true,
-                        _grownSpecies: "baum_totholz",
-                    });
-                    const dLebendig = (tagsTGrown.lebendig || 0) - (tagsTRaw.lebendig || 0);
-                    // Variation -0.3, aber Math.max(0,...) clamp → könnte <0.3 sein wenn tagsTRaw.lebendig klein
-                    out.totholzVariationLebendigDrop =
-                        dLebendig < 0 ||
-                        Math.abs(tagsTGrown.lebendig - Math.max(0, (tagsTRaw.lebendig || 0) - 0.3)) < 1e-9;
-                }
-            }
         } catch (_e) {
             out.behaviorError = String(_e && _e.message);
         } finally {
             r._lastTreeSkeleton = origLast;
-        }
-
-        // ─── (W6) totholz-Bauplan kann gespawnt werden (V17.16-Wand passiert) ─
-        try {
-            const totKey = r._growTreeBlueprintForSpawn("baum_totholz", "v215-totholz-spawn-1");
-            out.totholzSpawnable = !!totKey;
-            if (totKey && r.state.blueprints[totKey]) {
-                const tbp = r.state.blueprints[totKey];
-                out.totholzBpHasSkeleton = !!tbp._skeleton;
-                out.totholzBpIsGrown = tbp._isGrown === true;
-                out.totholzBpGrownSpecies = tbp._grownSpecies === "baum_totholz";
-                // computeCompoundTags(tbp) → lebendig↓
-                const ttags = r.computeCompoundTags(tbp);
-                out.totholzCompoundLebendigLow = Number.isFinite(ttags.lebendig) && ttags.lebendig < 1.0; // var=-0.3 unter Eiche-1.4 → ~0.7-1.1
-            }
-        } catch (_e) {
-            out.totholzSpawnError = String(_e && _e.message);
         }
 
         // ─── (W7) SAMPLES in _populateVoxelChunkVegetation ───
@@ -36029,8 +35978,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         }
 
         // ─── (W9) W1: baum_totholz ist aus TREE_NAMES + candidates GEFALLEN ───
-        // Totholz zeichnete nur die Streu (belaubte Alias-Eiche); es kehrt als Studio-Art (Welle Waldboden) zurück
-        // (roadmap §0.reste).
+        // Totholz zeichnete nur die Streu (belaubte Alias-Eiche); die Grammatik-Art fiel 05.10. mit.
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
         out.candidatesIncludeTotholz = /["']baum_totholz["']/.test(spawnSrc);
 
@@ -36038,12 +35986,12 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     });
 
     check("V18.215 (W1a) SPECIES_TAG_VARIATION existiert", res.variationExists === true);
-    check("V18.215 (W1b) Alle 7 Spezies (inkl baum_totholz) deklariert", res.variationAllSpecies === true);
+    check("V18.215 (W1b) Alle 6 Baum-Spezies deklariert, baum_totholz nicht", res.variationAllSpecies === true);
     check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
-    check("V18.215 (W1d) Totholz: lebendig↓ + brennbar↑↑ deklariert", res.totholzDeklariert === true);
-    check("V18.215 (W2a) baum_totholz in SPECIES_GRAMMAR", res.grammarHasTotholz === true);
-    check("V18.215 (W2b) Totholz foliage.kind=none + anchorLevel≥99 (snag, kein Laub)", res.totholzNoFoliage === true);
-    check("V18.215 (W2c) baum_totholz in SPECIES_TREE_PARAMS (Slope+Höhe)", res.treeParamsHasTotholz === true);
+    check(
+        "Integration 05.10. (W2) baum_totholz ist aus SPECIES_GRAMMAR, SPECIES_TREE_PARAMS und dem Foundry-Alias gefallen",
+        res.totholzFort === true
+    );
     check(
         "V18.215 (W3) V17.16-VARIATIONS-Wand GESCHÄRFT (Source: deklarierte Achsen freipass)",
         res.wandGeschaerft === true
@@ -36056,27 +36004,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         "V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
         res.tannenVariationApplied === true
     );
-    check(
-        `V18.215 (W5b) Totholz produziert ≥4 parts (gemessen ${res.totholzPartsCount})`,
-        res.totholzPartsEnough === true
-    );
-    check(
-        "V18.215 (W5c) Totholz parts alle holz oder laub (V17.16-Wand strukturell)",
-        res.totholzAllHolzOrLaub === true
-    );
-    check("V18.215 (W5d) Totholz _isGrown: lebendig-Drop angewandt", res.totholzVariationLebendigDrop === true);
-    check(
-        "V18.215 (W6a) baum_totholz kann gespawnt werden (V17.16-VARIATIONS-Wand passiert)",
-        res.totholzSpawnable === true
-    );
-    check(
-        "V18.215 (W6b) Totholz-Bauplan trägt _skeleton + _isGrown + _grownSpecies",
-        res.totholzBpHasSkeleton === true && res.totholzBpIsGrown === true && res.totholzBpGrownSpecies === true
-    );
-    check(
-        "V18.215 (W6c) Totholz computeCompoundTags lebendig < 1.0 (Variation wirkt)",
-        res.totholzCompoundLebendigLow === true
-    );
     check("V18.215 (W7) _populateVoxelChunkVegetation SAMPLES ≥ 4 (dev-gedrosselt; v1.0 = 10)", res.samples10 === true);
     check(
         `V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`,
@@ -36087,7 +36014,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         res.laubIsDunkel === true
     );
     check(
-        "W1 (W9) baum_totholz ist aus den _vegetationSampleSpawn-Kandidaten gefallen (Studio-Art Waldboden offen)",
+        "W1 (W9) baum_totholz ist aus den _vegetationSampleSpawn-Kandidaten gefallen",
         res.candidatesIncludeTotholz === false
     );
 }
@@ -36653,25 +36580,6 @@ async function checkBandV18218LODStufen(ctx) {
             }
         }
 
-        // ─── (E) LOD2 für Totholz (kein Foliage) ───
-        // Totholz ist ein Snag: LOD2 darf den Ω-K2-Flare am Stamm-Fuß tragen, aber KEINE Kronen-Foliage →
-        // keine laub-Sphere über y > 1 m.
-        const totGrammar = A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz;
-        if (totGrammar && r._growTreeBlueprintRich) {
-            const origLast = r._lastTreeSkeleton;
-            try {
-                const partsTot = r._growTreeBlueprintRich("baum_totholz", "v218-tot-test", totGrammar, { lod: 2 });
-                out.totLOD2Parts = Array.isArray(partsTot) ? partsTot.length : 0;
-                // Keine Krone-Laub-Sphere oberhalb des Sockels (Saum sitzt ~y=0.5m)
-                const kroneLaubCount = Array.isArray(partsTot)
-                    ? partsTot.filter((p) => p.material === "laub" && p.position && p.position.y > 1.0).length
-                    : 0;
-                out.totLOD2NoKroneLaub = kroneLaubCount === 0;
-            } finally {
-                r._lastTreeSkeleton = origLast;
-            }
-        }
-
         // ─── (F) V17.16-Tag-Wand: LOD0/1/2 share compoundTags ────────
         // N7.3 — UNIT-RICHTER (wie Block C): die Grammatik-LOD-Baupläne unter lokalem Hook.
         if (r._buildVariantLODs) {
@@ -36751,16 +36659,6 @@ async function checkBandV18218LODStufen(ctx) {
     check(
         `V18.218 (D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`,
         res.lod2UnderCap === true
-    );
-
-    // (E) Totholz im LOD2
-    check(
-        `V18.218 (E1) baum_totholz LOD2 hat ≥1 Part (Trunk-only, gemessen ${res.totLOD2Parts})`,
-        res.totLOD2Parts >= 1
-    );
-    check(
-        "V18.218 (E2) Totholz LOD2 keine Krone-Laub oberhalb des Saums (Snag bleibt Snag, Plan §3.3)",
-        res.totLOD2NoKroneLaub === true
     );
 
     // (F) V17.16-Tag-Wand

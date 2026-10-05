@@ -46,10 +46,10 @@ die Nah-Wiese auf der Boden-Karte (D gefallen); offen: das Profi-Band auf jedem 
   Rüstung/Trank-Rezepte + Geräte-Gestalten [Lab-Presets] · W-A2 Auto-Impostor [eine Worldgen-
   Massen-Domäne ohne ehrliche Stufen] · plantForest ↔
   planForestCell [nur unter Byte-Beweis] · Totholz-Saat + start_plattform [bis fachwerk sie deckt].
-- **Totholz** fehlt der Welt seit W1 [Wartebedingung: die Studio-Art Totholz der Welle Waldboden mit
-  Budget-Zeile]: die Streu-Schicht `litter` zeichnete es über den Alias `baum_totholz → eiche` als belaubte
-  21-m-Eiche (Mess-Wiese 198 Zellen) und fiel FINAL (`gate:altlasten`); der Genese-Kandidat `baum_totholz` fiel
-  mit (ein Baum-Sieg setzt dort keinen Baum, nur den Wald-Marker — Spawn-Zensus 14 400 Samples vorher = nachher).
+- **Totholz** fiel FINAL (W1 + Integration 05.10., `gate:altlasten`): die Streu-Schicht `litter` zeichnete es über
+  den Alias `baum_totholz → eiche` als belaubte 21-m-Eiche (Mess-Wiese 198 Zellen), der Genese-Kandidat fiel mit
+  (ein Baum-Sieg setzt dort keinen Baum, nur den Wald-Marker), Grammatik · Baum-Parameter · Tag-Variation ohne
+  Erzeuger fielen in der Integration. Eine Studio-Art Totholz ist neuer Scope (Schöpfer), keine Wartebedingung.
 - **Bewusst rot:** diag-genom „0 Gigant" (heilen oder begründen) · diag-atmosphere Fill-NACHT
   (Waise seit V18.464).
 - **Das Drehbuch** (`docs/abnahme-drehbuch.md`): `npm run look-golden -- --mint` auf echter GPU.

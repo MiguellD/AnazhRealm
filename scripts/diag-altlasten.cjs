@@ -203,6 +203,10 @@ const FORBIDDEN = [
     // Integration 05.10.: die Fallback-Karte der Stufen ohne Config war tot (ohne Config bricht der Wurf-Leser, Buch und
     // Config docken in EINER Nachricht).
     { token: "FOUNDRY_KIND_LOD", fiel: "Integration 05.10. — _foundryServierStufe, ohne Config KERN-PFLICHT" },
+    // Die Grammatik-Art Totholz hatte nach dem Fall der litter-Schicht keinen Erzeuger mehr; ihr Foundry-Alias zeichnete
+    // sie als belaubte Eiche.
+    { token: 'baum_totholz: "eiche"', fiel: "Integration 05.10. — Totholz als belaubte Alias-Eiche kehrt nie zurück" },
+    { token: "baum_totholz: Object.freeze", fiel: "Integration 05.10. — die Grammatik-Art Totholz fiel final" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

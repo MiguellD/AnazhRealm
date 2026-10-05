@@ -52176,7 +52176,7 @@ class AnazhRealm {
     // V18.225 — die Spezies-Wahl pro SCHICHT. Canopy nutzt den Baum-Picker; Understory verteilt
     // Strauch/Kraut/Bodenflora nach Feld (feucht → Farn, lebendig → Blume, sonst Hazel); Fels nach Hash.
     // Die Streu-Schicht „litter" (→ baum_totholz) fiel W1 final: das Studio hat keinen Totholz-Körper, sie
-    // zeichnete eine belaubte 21-m-Eiche — Totholz kommt als Studio-Art (Welle Waldboden), nie als Alias.
+    // zeichnete eine belaubte 21-m-Eiche; die Grammatik-Art Totholz fiel 05.10. mit (kein Erzeuger mehr).
     _scatterSpeciesForLayer(kind, lebendig, moisture, hash) {
         if (kind === "under") {
             if (moisture > 0.55) return "farn_busch"; // Kraut-Stratum (feuchte Senken)
@@ -67500,11 +67500,11 @@ class AnazhRealm {
             baum_weide: "weide",
             baum_mammut: "mammut",
             baum_kiefer: "fichte",
-            // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide, baum_buche → mammut,
-            // Totholz-Snag → kahle Eiche — sonst fielen erle/buche/totholz aus der Foundry-Pipe.
+            // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide, baum_buche → mammut — sonst fielen
+            // erle/buche aus der Foundry-Pipe. (Der Alias baum_totholz → eiche fiel 05.10. mit der Grammatik-Art: er
+            // zeichnete Totholz als belaubte Eiche.)
             baum_erle: "weide",
             baum_buche: "mammut",
-            baum_totholz: "eiche",
             // Restliche Wald-Nischen (`_scatterSpeciesForLayer`) auf die nächste Studio-Art: Zypresse (schlanke
             // Konifere) → tanne, Karst-Klippenbaum (knorrig) → eiche, Palme (Einzelstamm mit Krone) → weide.
             baum_zypresse: "tanne",
@@ -71097,7 +71097,7 @@ class AnazhRealm {
         // der Baum scheitert (sonst verschöbe ihre Tag-Drift die Baum-Verteilung). baum_totholz fiel W1 aus den
         // Kandidaten: ein Baum-Sieg setzt hier keinen Baum (Wald-Marker, Bäume pflanzt `_forestPlantChunk`), gezeichnet
         // hat Totholz nur die Streu-Schicht litter — als belaubte Alias-Eiche (das Studio hat keinen Totholz-Körper).
-        // Es kehrt als Studio-Art der Welle Waldboden zurück (roadmap §0.reste).
+        // Grammatik, Baum-Parameter und Tag-Variation der Art fielen 05.10. mit (gate:altlasten).
         const candidates = [
             "baum_eiche",
             "baum_kiefer",
@@ -90048,43 +90048,6 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             size: 0.58,
         }),
     }),
-    // TOTHOLZ: Snag ohne Laub — kahle, gewundene Äste. foliage.anchorLevel zeigt auf eine nie erreichte
-    // Ebene (L3) → growBranch schreibt keine Foliage-Anchors → nur Tubes, keine Cards.
-    // Tag-Variation in SPECIES_TAG_VARIATION.
-    baum_totholz: Object.freeze({
-        height: [5, 10],
-        crown: "irregular", // verzweigt, knorrig
-        trunk: Object.freeze({ segs: 6, wander: 0.09, taper: 0.6, baseR: 0.36 }),
-        L1: Object.freeze({
-            density: 1.6,
-            whorl: 0,
-            childStart: 0.3,
-            childEnd: 0.92,
-            angleBase: 1.25,
-            lenRatio: 0.38,
-            droop: 0.18, // weniger Droop — Tote Äste sind starr, nicht hängend
-            tipCurl: 0.04,
-            radRatio: 0.36,
-        }),
-        L2: Object.freeze({
-            density: 1.4,
-            whorl: 0,
-            childStart: 0.2,
-            childEnd: 0.95,
-            angleBase: 1.05,
-            lenRatio: 0.28,
-            droop: 0.15,
-            tipCurl: 0.02,
-            radRatio: 0.4,
-        }),
-        foliage: Object.freeze({
-            kind: "none", // keine Cards-Geometrie
-            anchorLevel: 99, // wird nie erreicht (L0/L1/L2 max) → leere anchors
-            clusterSize: [0, 0],
-            color: 0x6e6258, // verwittertes Grau-Braun (für den seltenen Fall, wenn fallback greift)
-            size: 0.1,
-        }),
-    }),
     // KARST: knorrig, klettert Klippen — höchster slopeMax (1.6); drei Ast-Ebenen → dichter, holziger
     // Aufbau; foliage am L3-Anker (kleine Cluster, gedämpftes Grün).
     baum_karst: Object.freeze({
@@ -90326,13 +90289,6 @@ AnazhRealm.SPECIES_TREE_PARAMS = Object.freeze({
         slopeMax: 0.9,
         heightRange: Object.freeze([-40, 100]),
     }),
-    baum_totholz: Object.freeze({
-        // Plan §3.3 TOTHOLZ: flare{amp:0.6,lobes:5}. Snags überleben ÜBERALL,
-        // wo Wald war — slopeMax breit (1.0), heightRange weit (Wald-Zone).
-        flare: Object.freeze({ amp: 0.6, lobes: 5 }),
-        slopeMax: 1.0,
-        heightRange: Object.freeze([-30, 160]),
-    }),
     // KARST: slopeMax 1.6 (höchster aller Arten), heightRange [-30, 80] bewusst eng (Klippen-Zone);
     // flare amp 0.9 × lobes 6 (knorriger Sockel).
     baum_karst: Object.freeze({
@@ -90383,7 +90339,6 @@ AnazhRealm.SPECIES_TAG_VARIATION = Object.freeze({
     baum_birke: Object.freeze({ lebendig: 0.1 }), // saftig + zart
     baum_eiche: Object.freeze({ lebendig: 0.05 }), // robust-saftig (subtil)
     baum_erle: Object.freeze({ lebendig: 0.08 }), // wasser-saftig
-    baum_totholz: Object.freeze({ lebendig: -0.5, brennbar: 0.2 }), // tot + brennbar (Δ ehrlich groß)
     // V18.216 (Plan §1 M3 + §3.5) — die neuen Substanz-Vektoren:
     baum_karst: Object.freeze({ dichte: 0.1, lebendig: -0.05 }), // hart, weniger saftig (Klippen-Geste)
     busch_hazel: Object.freeze({ lebendig: 0.08, brennbar: 0.05 }), // saftig + brennbar
