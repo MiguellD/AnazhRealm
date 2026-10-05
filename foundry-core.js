@@ -841,7 +841,8 @@ function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, co
     arr.push(g);
 }
 
-function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, seg) {
+// `bluete` (05.10.): { grund: THREE.Color, grundBis, biegen } — das Blütenblatt (phyto-core BLUETEN_BLATT); ohne byte-gleich.
+function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, seg, bluete) {
     // DER GETEILTE SAMEN: die 30-Vert-Superformel-Blatt-KLINGE (Kontur + Quer-Mulde) lebt in
     // phyto-core.js (buildLeafBlades) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie-
     // REZEPTUR ist geteilt (identische superR-Kontur, cup, 14 Segmente, Basis). Divergenzen: das
@@ -853,7 +854,18 @@ function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, 
     if (__core && typeof __core.buildLeafBlades === "function") {
         const _r = __core.buildLeafBlades(
             [{ pos: center, dir: dirOut, up: up, scale: scale, needle: false, sway: sway, phase: phase }],
-            { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp, seg: seg }
+            bluete
+                ? {
+                      leafColor: [color.r, color.g, color.b],
+                      scale: 1,
+                      cup: cup,
+                      leafShape: lp,
+                      seg: seg,
+                      grund: [bluete.grund.r, bluete.grund.g, bluete.grund.b],
+                      grundBis: bluete.grundBis,
+                      biegen: bluete.biegen,
+                  }
+                : { leafColor: [color.r, color.g, color.b], scale: 1, cup: cup, leafShape: lp, seg: seg }
         );
         if (_r && _r.count) {
             const g = new THREE.BufferGeometry();
@@ -1803,24 +1815,41 @@ function emitFlower(P) {
         }
         let np = nearestFib(lerp(8, 18, prich));
         if (__lod > 0) np = nearestFib(np * (__lod === 1 ? 0.7 : 0.42));
+        // DAS BLÜTENBLATT (phyto-core BLUETEN_BLATT): Saftmal-Grund, Rückbiegung, je Blatt gewürfelt aus dem Ort.
+        const BB = self.__phytoCore.BLUETEN_BLATT;
+        const pc = petalCol.clone().lerp(vegFarbe(seasonTint), 0.08);
+        const bl = {
+            grund: new THREE.Color(Math.pow(pc.r, BB.potenz), Math.pow(pc.g, BB.potenz), Math.pow(pc.b, BB.potenz)),
+            grundBis: BB.grundBis,
+            biegen: BB.biegen,
+        };
         for (let i = 0; i < np; i++) {
             const a = (i / np) * 6.28,
                 out = vnorm(vadd(vscl(hr, Math.cos(a)), vscl(u2, Math.sin(a))));
+            const w = (k) => 2 * fbm2(i * 3.17 + k * 1.93, a * 5.1 + pos[0] * 7.3 + pos[2] * 3.7) - 1; // ±1, ortsfest
             const base = vadd(pos, vscl(out, headR * 0.58)),
-                pdir = vnorm(vadd(out, vscl(bdir, 0.4)));
+                pdir = vnorm(vadd(out, vscl(bdir, 0.4 * (1 + BB.neigung * w(0)))));
+            // Drehung um die eigene Achse: up = bdir·cos t + (pdir × bdir)·sin t (Reihe bis t^5, |t| ≤ 0,4).
+            const t = BB.drehung * w(1),
+                t2 = t * t,
+                ct = 1 - t2 / 2 + (t2 * t2) / 24,
+                st = t * (1 - t2 / 6 + (t2 * t2) / 120);
+            const up = vnorm(vadd(vscl(bdir, ct), vscl(vnorm(vcross(pdir, bdir)), st)));
             pushLeaf(
                 folGeos,
                 base,
                 pdir,
-                bdir,
-                plen,
+                up,
+                plen * (1 + BB.laenge * w(2)),
                 P.petalShape,
-                petalCol.clone().lerp(vegFarbe(seasonTint), 0.08),
+                pc,
                 3,
                 hsw,
                 a,
                 1.3,
-                0.45
+                0.45,
+                undefined,
+                bl
             );
         }
     };

@@ -815,6 +815,15 @@
         needle: { m: 2, n1: 1.0, n2: 1.0, n3: 1.0, a: 1, b: 1, wsc: 0.085 },
     };
 
+    // DAS BLÜTENBLATT (05.10., Pflanzen-Nahbild). Befund (Blick-Tour V18.530, Bild 04): die Blüte nah war eine flache
+    // Scheibe — jedes Blütenblatt eine einfarbige Klinge, alle in EINER Ebene um die Achse, gleich lang. Die Natur: der
+    // Grund trägt das Saftmal (tiefer und satter: die Blütenfarbe linear hoch `potenz`, Verlauf bis `grundBis` der
+    // Länge), die Spitze biegt zurück (`biegen`), und kein Blatt liegt wie das andere — je Blatt ±`neigung` Hebung
+    // (Anteil des Achsen-Zuschlags), ±`drehung` rad um die eigene Achse und ±`laenge` Länge, gewürfelt aus dem Ort
+    // (kein rnd()-Zug: L0 und L2 bleiben dasselbe Individuum). Die Drehung rechnet als Reihe (plattformgleich, kein
+    // sin/cos auf dem Würfel).
+    const BLUETEN_BLATT = { potenz: 1.6, grundBis: 0.38, biegen: 0.35, neigung: 0.45, drehung: 0.4, laenge: 0.14 };
+
     // EINS W4 (P1) — DIE 30-VERT-BLATT-KLINGE (der `pushLeaf`-Port, Vorlage Z.247-275): das
     // L0-Blatt ist echte 3D-GEOMETRIE — eine Superformel-Kontur über 14 Segmente (30 Verts,
     // 28 Tris je Blatt), QUER-GEMULDET (cupZ = −cup·(s−s²)·scale, cup 0.5) → die Klinge fängt
@@ -827,7 +836,11 @@
     // `leaves`: [{pos, dir, up, scale, needle, sway, phase}] (aus growSkeleton).
     // `opts`: { leafColor:[r,g,b], scale (Multiplikator, Vorlage roh=1), cup (~0.5),
     //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc},
-    //           seg (Kontur-Segmente, ohne = 14 — die schlanke L1-Klinge des Trauerwuchses trägt weniger) }.
+    //           seg (Kontur-Segmente, ohne = 14 — die schlanke L1-Klinge des Trauerwuchses trägt weniger),
+    //           grund ([r,g,b] am Klingen-Grund — die Farbe läuft bis `grundBis` (Anteil der Länge) in leafColor; die
+    //                 Blüte: Saftmal und Schlund, BLUETEN_BLATT),
+    //           biegen (die Spitze biegt um biegen·s²·Länge gegen die Mulde zurück — das Blütenblatt rollt sich aus der
+    //                 Ebene, die Scheibe fällt) }. Ohne grund/biegen byte-gleich.
     function buildLeafBlades(leaves, opts) {
         opts = opts || {};
         const col = opts.leafColor || [0.0685, 0.1946, 0.0252]; // 0x4a7a2c als sRGB-Absicht (Farb-Gesetz)
@@ -879,21 +892,33 @@
                 const phi = Math.PI * s; // halber Umlauf → Tropfen
                 const w = superR(phi, sh.m, sh.n1, sh.n2, sh.n3, sh.a, sh.b) * sh.wsc;
                 const along = s * scale;
-                const cupZ = -cup * (s - s * s) * scale; // die Quer-MULDE (Vorlage cupZ)
+                const cupZ0 = -cup * (s - s * s) * scale; // die Quer-MULDE (Vorlage cupZ)
+                const cupZ = opts.biegen ? cupZ0 - opts.biegen * s * s * s * scale : cupZ0;
                 const mx = cx + dirOut[0] * along + u2[0] * cupZ;
                 const my = cy + dirOut[1] * along + u2[1] * cupZ;
                 const mz = cz + dirOut[2] * along + u2[2] * cupZ;
                 const ox = right[0] * w * scale,
                     oy = right[1] * w * scale,
                     oz = right[2] * w * scale;
+                // Die Farbe: ohne `grund` die Blatt-Farbe, sonst der Verlauf vom Grund in sie (smoothstep bis grundBis).
+                let cr = col;
+                if (opts.grund) {
+                    const t = Math.min(1, s / (opts.grundBis || 0.4)),
+                        k = t * t * (3 - 2 * t);
+                    cr = [
+                        opts.grund[0] + (col[0] - opts.grund[0]) * k,
+                        opts.grund[1] + (col[1] - opts.grund[1]) * k,
+                        opts.grund[2] + (col[2] - opts.grund[2]) * k,
+                    ];
+                }
                 // linke + rechte Konturspalte (2 Verts je Segment-Reihe)
                 let v3 = vw * 3;
                 positions[v3] = mx - ox;
                 positions[v3 + 1] = my - oy;
                 positions[v3 + 2] = mz - oz;
-                colors[v3] = col[0];
-                colors[v3 + 1] = col[1];
-                colors[v3 + 2] = col[2];
+                colors[v3] = cr[0];
+                colors[v3 + 1] = cr[1];
+                colors[v3 + 2] = cr[2];
                 aFlex[vw] = fx;
                 aPhase[vw] = ph;
                 uvs[vw * 2] = 0;
@@ -903,9 +928,9 @@
                 positions[v3] = mx + ox;
                 positions[v3 + 1] = my + oy;
                 positions[v3 + 2] = mz + oz;
-                colors[v3] = col[0];
-                colors[v3 + 1] = col[1];
-                colors[v3 + 2] = col[2];
+                colors[v3] = cr[0];
+                colors[v3 + 1] = cr[1];
+                colors[v3 + 2] = cr[2];
                 aFlex[vw] = fx;
                 aPhase[vw] = ph;
                 uvs[vw * 2] = 1;
@@ -3747,6 +3772,7 @@
         BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
         ZWEIG_BLATT: ZWEIG_BLATT, // der Blatt-Zweig der Breitblatt-Zellen (Pixel-Maße des Malers, 05.10.)
+        BLUETEN_BLATT: BLUETEN_BLATT, // das Blütenblatt: Saftmal-Grund, Rückbiegung, Würfel je Blatt (05.10.)
         BIRKEN_RINDE: BIRKEN_RINDE, // die papierene Rinde: Lentizellen-Zeilen, Fuß-Borke, Zweig-Rinde (05.10.)
         RINDEN_GITTER: RINDEN_GITTER, // das Gitter-Gesetz der Rinde: Plattenrisse nur, was die Ringe tragen (05.10.)
         superR: superR,
