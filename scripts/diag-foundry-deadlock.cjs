@@ -83,8 +83,34 @@ const server = http.createServer((req, res) => {
             }
 
             const archs = () => (Array.isArray(r.state.architectures) ? r.state.architectures : []);
-            const cold = () => archs().filter((e) => isTree(e) && !e.instanced && !e.mesh).length;
-            const foundry = () => archs().filter((e) => isTree(e) && e.instFoundry).length;
+            // Die Nähe ist der Cull-Radius, den `_foundryRewarmColdTrees` liest; jenseits trägt die Fernform, dort
+            // bleibt ein Baum kalt (kein Deadlock).
+            const pm = r.state.playerMesh.position;
+            const radSq = (r.state.architectureCullingRadius || 200) ** 2;
+            const nah = (e) => (e.position.x - pm.x) ** 2 + (e.position.z - pm.z) ** 2 <= radSq;
+            const kalt = (e) => isTree(e) && !e.instanced && !e.mesh;
+            const cold = () => archs().filter((e) => kalt(e) && nah(e)).length;
+            const foundry = () => archs().filter((e) => isTree(e) && e.instFoundry && (e.instanced || e.mesh)).length;
+            // DIE VORAUSSETZUNG BAUEN: seit der EINEN Nah-Grenze (121856c) ist die Nähe nach dem Warm-up schon
+            // konvergiert (gemessen 05.10.: 0 kalte Bäume im Radius 149 m, die 8 kalten stehen bei 150-168 m). Der
+            // Spieler tritt an den nächsten kalten Baum heran (20 m davor, wie im Gehen) — die Bäume, die dabei in den
+            // Radius kommen, sind die kalte Nähe, die unter Last konvergieren muss.
+            out.coldFern = archs().filter((e) => kalt(e) && !nah(e)).length;
+            if (cold() === 0) {
+                let ziel = null,
+                    zd = Infinity;
+                for (const e of archs()) {
+                    if (!kalt(e)) continue;
+                    const d = Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
+                    if (d < zd) ((zd = d), (ziel = e));
+                }
+                if (ziel) {
+                    const k = Math.max(0, zd - 20) / zd;
+                    pm.x += (ziel.position.x - pm.x) * k;
+                    pm.z += (ziel.position.z - pm.z) * k;
+                    out.schritt = Math.round(zd - 20);
+                }
+            }
             out.coldBefore = cold();
             out.foundryBefore = foundry();
 
@@ -100,6 +126,7 @@ const server = http.createServer((req, res) => {
                 out.ticks++;
             }
             out.foundryAfter = foundry();
+            out.coldAfter = cold();
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -111,16 +138,25 @@ const server = http.createServer((req, res) => {
 
     console.log("=== P4 — DEADLOCK-HEILUNG (Konvergenz der Nähe unter ÜBER-Budget) ===");
     console.log(`  Worker ready: ${S.ready}`);
-    console.log(`  Baum-Einträge kalt (vorher): ${S.coldBefore} · schon foundry: ${S.foundryBefore}`);
-    console.log(`  nach ${S.ticks} Konvert-Ticks @ over-budget: foundry-platziert = ${S.foundryAfter}`);
+    if (S.schritt != null)
+        console.log(
+            `  Voraussetzung: die Nähe war konvergiert, ${S.coldFern} kalte Bäume jenseits des Radius — der Spieler trat ${S.schritt} m heran`
+        );
+    console.log(`  Baum-Einträge kalt im Radius (vorher): ${S.coldBefore} · schon foundry-platziert: ${S.foundryBefore}`);
+    console.log(
+        `  nach ${S.ticks} Konvert-Ticks @ over-budget: foundry-platziert = ${S.foundryAfter} · kalt im Radius = ${S.coldAfter}`
+    );
     if (S.err) console.log(`  Fehler: ${S.err}`);
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
 
     const converged = S.foundryAfter - S.foundryBefore;
-    const ok = S.ready && converged > 0;
+    // Nicht vakuös: ohne kalte Nähe gibt es nichts zu beweisen (die Voraussetzung baut der Lauf oben).
+    const ok = S.ready && S.coldBefore > 0 && converged > 0;
     if (!ok) {
         console.error(
-            `\n❌ ROT — unter Über-Budget konvergierte NICHTS (Δ=${converged}) → der Deadlock lebt (oder keine Baum-Einträge).`
+            S.coldBefore > 0
+                ? `\n❌ ROT — unter Über-Budget konvergierte NICHTS (Δ=${converged}) → der Deadlock lebt.`
+                : `\n❌ ROT — keine kalte Nähe (auch nach dem Heran-Treten) → die Linse wäre vakuös.`
         );
         process.exit(1);
     }
