@@ -339,6 +339,13 @@ const FORBIDDEN = [
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
     { token: "Ammo.destroy(", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
+    // DER FERNWALD (05.10.) — ein Karten-Ding (Baum, Strauch, Tor, Fahrzeug) ist jenseits der Mesh-Zone seine Karte
+    // (B2c `fernform`, `_archKartenPreset`); der Baum-Satz aus Grammatik-Kegeln und Kronen-Lappen fiel ganz: sein Fit,
+    // sein Schlüssel und der Kegel-Stumpf im Welt-March.
+    { token: "_baumGrammatikFit", fiel: "05.10. — fern ist der Baum seine Karte (gate:fernwald)" },
+    { token: "_baumKapselFit", fiel: "05.10. — _gestaltKapselFit (Fels, Blume der Gesetz-Streu)" },
+    { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March (nur der Baum-Satz trug ihn)" },
+    { token: "abaum:", fiel: "05.10. — die Gesetz-Streu heißt agesetz:, Bäume haben keinen Satz" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

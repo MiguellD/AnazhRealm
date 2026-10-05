@@ -28313,6 +28313,11 @@ class AnazhRealm {
                                     // Baum (die Karte blendet voll). Maske + CPU-Doppel-Mitgliedschaft (`_updateFoundryLodBand`)
                                     // schalten zusammen am foundryCrossfade-Flag (default an).
                                     if (this.state && this.state.foundryCrossfade === true) {
+                                        // DER KARTEN-HORIZONT (`SCATTER.outerM`, der Rand der Streu und der Karten-Zone der
+                                        // gesetzten Bäume): über das letzte Schwund-Band dithert jede Karte aus, statt am
+                                        // Horizont zu poppen — die gesetzte Karte räumt erst ein Totband dahinter.
+                                        const _hzM = AnazhRealm.SCATTER.outerM;
+                                        const _hzB = AnazhRealm.KARTEN_HORIZONT_SCHWUND_M;
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
                                             distNode: _Ta.sqrt(_hl2),
@@ -28320,6 +28325,11 @@ class AnazhRealm {
                                             occlNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
                                                 .select(_Ta.float(1.0), _Ta.float(0.0)),
+                                            fernNode: _Ta
+                                                .float(_hzM)
+                                                .sub(_Ta.sqrt(_hl2))
+                                                .div(_Ta.float(_hzB))
+                                                .clamp(0.0, 1.0),
                                         });
                                         if (_keepFin) _alpha = _alpha.mul(_keepFin);
                                     }
@@ -29040,6 +29050,10 @@ class AnazhRealm {
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) return null;
+                // DER HORIZONT-SCHWUND (opts.fernNode, 0..1, der Karten-Horizont des Wirts): dieselbe Dither-Blende
+                // nimmt die Karte am Rand des Waldes zurück — der Studio-Wald hat keinen Horizont, die Maske des Studios
+                // bleibt diesseits unberührt (fernNode = 1).
+                const _fern = opts.fernNode || null;
                 let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Perf-Streck wie die CPU (_lodPerfMul)
                 if (opts.visHeightNode) {
                     // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
@@ -29051,7 +29065,8 @@ class AnazhRealm {
                 const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
                 const _occl = opts.occlNode || null; // die Verdeckung der Karte (aKarte.w < 0)
                 const _fin = _f1i.mul(2.0).min(T.float(1.0));
-                const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
+                const _wFin = _occl ? _fin.max(_occl) : _fin;
+                const _keepFin = T.step(_dh, _fern ? _wFin.min(_fern) : _wFin);
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
             }
             // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen, gemessen vom AUGE (`uLodAuge`):
@@ -34355,28 +34370,11 @@ class AnazhRealm {
             envMitte: TSL.uniform(new THREE.Vector3()),
             envOben: TSL.uniform(new THREE.Vector3()),
         };
-        // Analog-B Slice 2 — IQ truncated cone
-        const sdCappedConeFn = TSL.wgslFn(
-            "fn sdCappedCone(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, ra: f32, rb: f32) -> f32 {\n" +
-                "    let ba = b - a;\n" +
-                "    let baba = dot(ba, ba);\n" +
-                "    let papa = dot(p - a, p - a);\n" +
-                "    let paba = dot(p - a, ba) / max(baba, 1e-8);\n" +
-                "    let x = sqrt(max(papa - paba * paba * baba, 0.0));\n" +
-                "    let cax = max(0.0, x - select(rb, ra, paba < 0.5));\n" +
-                "    let cay = abs(paba - 0.5) - 0.5;\n" +
-                "    let k = (rb - ra) * (rb - ra) + baba;\n" +
-                "    let f = clamp(((rb - ra) * (x - ra) + paba * baba) / max(k, 1e-8), 0.0, 1.0);\n" +
-                "    let cbx = x - ra - f * (rb - ra);\n" +
-                "    let cby = paba - f;\n" +
-                "    let s = select(1.0, -1.0, cbx < 0.0 && cay < 0.0);\n" +
-                "    return s * sqrt(min(cax * cax + cay * cay * baba, cbx * cbx + cby * cby * baba));\n" +
-                "}"
-        );
-        // Kronen-Ellipsoid + Noise-Term im GRÖSSEN-normierten Raum ((p−c)/hn): Amplitude UND Frequenz
-        // skalieren mit der Krone → der Gradient ist größen-invariant (sonst ∝ hn: Streifen, Lipschitz-Bruch).
-        const sdEllipsoidCrownFn = TSL.wgslFn(
-            "fn sdEllipsoidCrown(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>) -> f32 {\n" +
+        // Das kompakte Teil der Gesetz-Streu (ein Stein, ein Blütenkopf) als rauer Ellipsoid: Noise-Term im GRÖSSEN-
+        // normierten Raum ((p−c)/hn) — Amplitude UND Frequenz skalieren mit dem Teil, der Gradient ist größen-invariant
+        // (sonst ∝ hn: Streifen, Lipschitz-Bruch). (Der Kegel-Stumpf der Baum-Sätze fiel 05.10. mit ihnen.)
+        const sdEllipsoidRauFn = TSL.wgslFn(
+            "fn sdEllipsoidRau(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>) -> f32 {\n" +
                 "    let q = (p - c) / h;\n" +
                 "    let hn = min(h.x, min(h.y, h.z));\n" +
                 "    let d0 = (length(q) - 1.0) * hn;\n" +
@@ -34385,8 +34383,8 @@ class AnazhRealm {
                 "    return d0 + hn * 0.035 * n;\n" +
                 "}"
         );
-        const gradEllipsoidCrownFn = TSL.wgslFn(
-            "fn gradEllipsoidCrown(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>) -> vec3<f32> {\n" +
+        const gradEllipsoidRauFn = TSL.wgslFn(
+            "fn gradEllipsoidRau(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>) -> vec3<f32> {\n" +
                 "    let d = p - c;\n" +
                 "    let q = d / h;\n" +
                 "    let hn = min(h.x, min(h.y, h.z));\n" +
@@ -34558,21 +34556,16 @@ class AnazhRealm {
                 "                            let qB = kapselTexel(kapseln, poG + k2 * 2 + 1);\n" +
                 "                            var dkG = 0.0;\n" +
                 "                            if (qA.w >= 0.0) {\n" +
-                "                                if (qB.w < 0.0) {\n" +
-                "                                    let tC = -qB.w;\n" +
-                "                                    dkG = sdCappedCone(pP, qA.xyz, qB.xyz, qA.w, fract(tC) * 10.0 - 1.0);\n" +
-                "                                } else {\n" +
-                "                                    let ba2 = qB.xyz - qA.xyz;\n" +
-                "                                    let pa2 = pP - qA.xyz;\n" +
-                "                                    let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
-                "                                    dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
-                "                                }\n" +
+                "                                let ba2 = qB.xyz - qA.xyz;\n" +
+                "                                let pa2 = pP - qA.xyz;\n" +
+                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                                dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
                 "                            } else if (qB.w < 0.5) {\n" +
                 "                                let q2 = abs(pP - qA.xyz) - qB.xyz;\n" +
                 "                                dkG = length(max(q2, vec3<f32>(0.0))) + min(max(q2.x, max(q2.y, q2.z)), 0.0);\n" +
                 "                            } else if (qB.w < 1.5) {\n" +
-                "                                // ELLIPSOID (pB.w≈1) + Slice3 crown noise\n" +
-                "                                dkG = sdEllipsoidCrown(pP, qA.xyz, qB.xyz);\n" +
+                "                                // ELLIPSOID (pB.w≈1), rau\n" +
+                "                                dkG = sdEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
                 "                            } else {\n" +
                 "                                // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
                 "                                let d2 = pP - qA.xyz;\n" +
@@ -34594,23 +34587,11 @@ class AnazhRealm {
                 "                            var ciG: u32 = 0u;\n" +
                 "                            var laubG = false;\n" +
                 "                            if (qA.w >= 0.0) {\n" +
-                "                                if (qB.w < 0.0) {\n" +
-                "                                    let tC = -qB.w;\n" +
-                "                                    let r1c = fract(tC) * 10.0 - 1.0;\n" +
-                "                                    let eC = 0.002;\n" +
-                "                                    gvG = vec3<f32>(\n" +
-                "                                        sdCappedCone(pP + vec3<f32>(eC, 0.0, 0.0), qA.xyz, qB.xyz, qA.w, r1c) - sdCappedCone(pP - vec3<f32>(eC, 0.0, 0.0), qA.xyz, qB.xyz, qA.w, r1c),\n" +
-                "                                        sdCappedCone(pP + vec3<f32>(0.0, eC, 0.0), qA.xyz, qB.xyz, qA.w, r1c) - sdCappedCone(pP - vec3<f32>(0.0, eC, 0.0), qA.xyz, qB.xyz, qA.w, r1c),\n" +
-                "                                        sdCappedCone(pP + vec3<f32>(0.0, 0.0, eC), qA.xyz, qB.xyz, qA.w, r1c) - sdCappedCone(pP - vec3<f32>(0.0, 0.0, eC), qA.xyz, qB.xyz, qA.w, r1c)\n" +
-                "                                    );\n" +
-                "                                    ciG = u32(floor(tC));\n" +
-                "                                } else {\n" +
-                "                                    let ba2 = qB.xyz - qA.xyz;\n" +
-                "                                    let pa2 = pP - qA.xyz;\n" +
-                "                                    let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
-                "                                    gvG = pa2 - ba2 * h2;\n" +
-                "                                    ciG = u32(qB.w);\n" +
-                "                                }\n" +
+                "                                let ba2 = qB.xyz - qA.xyz;\n" +
+                "                                let pa2 = pP - qA.xyz;\n" +
+                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                                gvG = pa2 - ba2 * h2;\n" +
+                "                                ciG = u32(qB.w);\n" +
                 "                            } else if (qB.w < 0.5) {\n" +
                 "                                let q2 = pP - qA.xyz;\n" +
                 "                                let aq2 = abs(q2) - qB.xyz;\n" +
@@ -34619,10 +34600,10 @@ class AnazhRealm {
                 "                                else { gvG = vec3<f32>(0.0, 0.0, sign(q2.z)); }\n" +
                 "                                ciG = u32(-qA.w - 1.0);\n" +
                 "                            } else if (qB.w < 1.5) {\n" +
-                "                                // ELLIPSOID-Normale (Slice3: analytischer Noise-Gradient)\n" +
-                "                                gvG = gradEllipsoidCrown(pP, qA.xyz, qB.xyz);\n" +
+                "                                // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
+                "                                gvG = gradEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
                 "                                ciG = u32(-qA.w - 1.0);\n" +
-                "                                laubG = true; // die Krone: Laub trägt die Saison\n" +
+                "                                laubG = true; // das kompakte Teil (Blütenkopf, Stein) trägt die Saison\n" +
                 "                            } else {\n" +
                 "                                // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
                 "                                let d2 = pP - qA.xyz;\n" +
@@ -34665,22 +34646,17 @@ class AnazhRealm {
                 "                    let pB = kapselTexel(kapseln, po + k * 2 + 1);\n" +
                 "                    var dk = 0.0;\n" +
                 "                    if (pA.w >= 0.0) {\n" +
-                "                        if (pB.w < 0.0) {\n" +
-                "                            let tC = -pB.w;\n" +
-                "                            dk = sdCappedCone(pL, pA.xyz, pB.xyz, pA.w, fract(tC) * 10.0 - 1.0);\n" +
-                "                        } else {\n" +
-                "                            let ba = pB.xyz - pA.xyz;\n" +
-                "                            let pa = pL - pA.xyz;\n" +
-                "                            let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
-                "                            dk = length(pa - ba * hh) - pA.w;\n" +
-                "                        }\n" +
+                "                        let ba = pB.xyz - pA.xyz;\n" +
+                "                        let pa = pL - pA.xyz;\n" +
+                "                        let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                        dk = length(pa - ba * hh) - pA.w;\n" +
                 "                    } else if (pB.w < 0.5) {\n" +
                 "                        // BOX (pA.w < 0, pB.w≈0): Zentrum|−(farbe+1) · Halbmaße\n" +
                 "                        let q = abs(pL - pA.xyz) - pB.xyz;\n" +
                 "                        dk = length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);\n" +
                 "                    } else if (pB.w < 1.5) {\n" +
-                "                        // ELLIPSOID (pB.w≈1) + Slice3 crown noise\n" +
-                "                        dk = sdEllipsoidCrown(pL, pA.xyz, pB.xyz);\n" +
+                "                        // ELLIPSOID (pB.w≈1), rau\n" +
+                "                        dk = sdEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
                 "                    } else {\n" +
                 "                        // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
                 "                        let d = pL - pA.xyz;\n" +
@@ -34702,23 +34678,11 @@ class AnazhRealm {
                 "                    var ci: u32 = 0u;\n" +
                 "                    var laubK = false;\n" +
                 "                    if (pA.w >= 0.0) {\n" +
-                "                        if (pB.w < 0.0) {\n" +
-                "                            let tC = -pB.w;\n" +
-                "                            let r1c = fract(tC) * 10.0 - 1.0;\n" +
-                "                            let eC = 0.002;\n" +
-                "                            gvK = vec3<f32>(\n" +
-                "                                sdCappedCone(pL + vec3<f32>(eC, 0.0, 0.0), pA.xyz, pB.xyz, pA.w, r1c) - sdCappedCone(pL - vec3<f32>(eC, 0.0, 0.0), pA.xyz, pB.xyz, pA.w, r1c),\n" +
-                "                                sdCappedCone(pL + vec3<f32>(0.0, eC, 0.0), pA.xyz, pB.xyz, pA.w, r1c) - sdCappedCone(pL - vec3<f32>(0.0, eC, 0.0), pA.xyz, pB.xyz, pA.w, r1c),\n" +
-                "                                sdCappedCone(pL + vec3<f32>(0.0, 0.0, eC), pA.xyz, pB.xyz, pA.w, r1c) - sdCappedCone(pL - vec3<f32>(0.0, 0.0, eC), pA.xyz, pB.xyz, pA.w, r1c)\n" +
-                "                            );\n" +
-                "                            ci = u32(floor(tC));\n" +
-                "                        } else {\n" +
-                "                            let ba = pB.xyz - pA.xyz;\n" +
-                "                            let pa = pL - pA.xyz;\n" +
-                "                            let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
-                "                            gvK = pa - ba * hh;\n" +
-                "                            ci = u32(pB.w);\n" +
-                "                        }\n" +
+                "                        let ba = pB.xyz - pA.xyz;\n" +
+                "                        let pa = pL - pA.xyz;\n" +
+                "                        let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                        gvK = pa - ba * hh;\n" +
+                "                        ci = u32(pB.w);\n" +
                 "                    } else if (pB.w < 0.5) {\n" +
                 "                        // BOX-Normale: die Achse der größten Überschreitung trägt\n" +
                 "                        let q = pL - pA.xyz;\n" +
@@ -34728,10 +34692,10 @@ class AnazhRealm {
                 "                        else { gvK = vec3<f32>(0.0, 0.0, sign(q.z)); }\n" +
                 "                        ci = u32(-pA.w - 1.0);\n" +
                 "                    } else if (pB.w < 1.5) {\n" +
-                "                        // ELLIPSOID-Normale (Slice3: analytischer Noise-Gradient)\n" +
-                "                        gvK = gradEllipsoidCrown(pL, pA.xyz, pB.xyz);\n" +
+                "                        // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
+                "                        gvK = gradEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
                 "                        ci = u32(-pA.w - 1.0);\n" +
-                "                        laubK = true; // die Krone: Laub trägt die Saison\n" +
+                "                        laubK = true; // das kompakte Teil trägt die Saison\n" +
                 "                    } else {\n" +
                 "                        // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
                 "                        let d = pL - pA.xyz;\n" +
@@ -34781,7 +34745,7 @@ class AnazhRealm {
                 "    if (panoDa) { return vec4<f32>(panoRgb, -panoT); }\n" +
                 "    return vec4<f32>(0.0, 0.0, 0.0, 0.0);\n" +
                 "}",
-            [sdCappedConeFn, sdEllipsoidCrownFn, gradEllipsoidCrownFn, kapselTexelFn] // Glättung + Cone + Ellipsoid-Noise (Analog-B Slice 2+3)
+            [sdEllipsoidRauFn, gradEllipsoidRauFn, kapselTexelFn] // der raue Ellipsoid + die 2D-Kapsel-Liste
         );
         // DER EINE WELT-MARCH schreibt ECHTE TIEFE (depthNode, das Fern-Schirm-
         // Muster): der Pass ist OPAK und komponiert per Depth-Test mit allem —
@@ -34820,8 +34784,8 @@ class AnazhRealm {
             // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
             schirm: TSL.screenCoordinate.xy,
             ditherT: this._ensureLodUniforms().uDitherT,
-            // DIE SAISON der Kronen-Lappen (Ellipsoide = Laub): dieselbe EINE Uniform wie Laub, Gras, Karte und Fern-Ring —
-            // ohne sie standen die Analog-Kronen im Herbst sommergrün zwischen gelben Bäumen (Integration 05.10.).
+            // DIE SAISON der Ellipsoide (die kompakten Teile der Gesetz-Streu): dieselbe EINE Uniform wie Laub, Gras, Karte
+            // und Fern-Ring (eingeführt 05.10. für die Kronen-Lappen der Baum-Sätze, die am selben Tag fielen).
             saison: this._ensureSeasonUniforms().uSeasonMul,
             pano: TSL.texture(panoTex),
             seiten: TSL.texture(wm.seiten),
@@ -35363,13 +35327,7 @@ class AnazhRealm {
         let defs = kapselFn();
         if (defs && !Array.isArray(defs)) defs = [defs];
         defs = (defs || []).filter(
-            (d2) =>
-                d2 &&
-                (d2.box || d2.ellipsoid || d2.prism
-                    ? d2.c && d2.h
-                    : d2.cone
-                      ? d2.a && d2.b && Number.isFinite(d2.r0) && Number.isFinite(d2.r1)
-                      : d2.a && d2.b && Number.isFinite(d2.r))
+            (d2) => d2 && (d2.box || d2.ellipsoid || d2.prism ? d2.c && d2.h : d2.a && d2.b && Number.isFinite(d2.r))
         );
         if (!defs.length) return null;
         const W = AnazhRealm.WELT_MARCH;
@@ -35420,28 +35378,7 @@ class AnazhRealm {
                 lokalMax.z = Math.max(lokalMax.z, def.c.z + def.h.z);
                 continue;
             }
-            // CONE (Analog-B Slice 2): pA=(a,r0>=0), pB=(b, -(colorPack+(r1+1)/10)).
-            // pB.w<0 trennt von Kapsel (pB.w=colorPack>=0); floor(-pB.w)=color, fract*10-1=r1 (r1<9).
-            if (def.cone) {
-                const r0 = Math.max(0.005, def.r0);
-                const r1 = Math.max(0, Math.min(8.999, def.r1));
-                K[o] = def.a.x;
-                K[o + 1] = def.a.y;
-                K[o + 2] = def.a.z;
-                K[o + 3] = r0;
-                K[o + 4] = def.b.x;
-                K[o + 5] = def.b.y;
-                K[o + 6] = def.b.z;
-                K[o + 7] = -(pack + (r1 + 1) / 10);
-                const rm = Math.max(r0, r1);
-                lokalMin.x = Math.min(lokalMin.x, Math.min(def.a.x, def.b.x) - rm);
-                lokalMin.y = Math.min(lokalMin.y, Math.min(def.a.y, def.b.y) - rm);
-                lokalMin.z = Math.min(lokalMin.z, Math.min(def.a.z, def.b.z) - rm);
-                lokalMax.x = Math.max(lokalMax.x, Math.max(def.a.x, def.b.x) + rm);
-                lokalMax.y = Math.max(lokalMax.y, Math.max(def.a.y, def.b.y) + rm);
-                lokalMax.z = Math.max(lokalMax.z, Math.max(def.a.z, def.b.z) + rm);
-                continue;
-            }
+            // KAPSEL [A|Radius][B|Farbe]
             const rr = Math.max(0.005, def.r);
             K[o] = def.a.x;
             K[o + 1] = def.a.y;
@@ -35495,7 +35432,7 @@ class AnazhRealm {
     // Streu: das Fragment ist rohes WGSL, nur das WebGPU-Backend zeichnet es; der Null-Renderer ist für den Analog-Pfad
     // blind. Auf dem WebGL2-Rückfall belegten Gesetz-Plätze Kapsel-Liste und Fit-Takt für einen Pass, der nie lief
     // (Werkbank 04.10.: „Feld-Pass ruht"). Der `__anazhFernRing`-Hook öffnet nur den Pass (Linsen-Naht gate:fern-ring).
-    // OFFEN (05.10.): Bau-/Baum-Satz (`_archZiegelFern`) und Glieder-Kapseln (`_tickKreaturZiegel`) prüfen noch nur den
+    // OFFEN (05.10.): Bau-Satz (`_archZiegelFern`) und Glieder-Kapseln (`_tickKreaturZiegel`) prüfen noch nur den
     // Null-Renderer — die Echt-Renderer-Linsen außer kamera-treue fahren mit den Vulkan-Schaltern den WebGL2-Rückfall
     // (kein Adapter) und lesen dort die CPU-Wahrheit dieser Erzeuger; sie fallen unter diese Wand, wenn die Linsen den
     // swiftshader-WebGPU-Adapter fahren (`--use-webgpu-adapter=swiftshader`).
@@ -35505,8 +35442,8 @@ class AnazhRealm {
 
     // Die PASSUNG der Fernform aus der Studio-Gestalt (die geometrische Stufe ≤ 1, die das Studio liefert): die
     // Primitive kommen aus den UNVERSCHMOLZENEN Teilen der Cache-Gruppe — der Fels-Haufen sind seine einzelnen Steine,
-    // nicht das EINE verschmolzene Leaf (dessen Hülle passte als liegende 3,6-m-Kapsel). `_baumKapselFit` nimmt die 6
-    // volumen-größten (Ellipsoid wo kompakt, sonst Kapsel; die Baum-Grammatik reist mit). null = die Stufe lädt noch.
+    // nicht das EINE verschmolzene Leaf (dessen Hülle passte als liegende 3,6-m-Kapsel). `_gestaltKapselFit` nimmt die
+    // 6 volumen-größten (Ellipsoid wo kompakt, sonst Kapsel). null = die Stufe lädt noch.
     _streuGesetzFit(preset, fseed) {
         const bf = this._foundryFlattenFor({ seed: fseed }, preset, 1);
         if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return null;
@@ -35514,7 +35451,7 @@ class AnazhRealm {
         const teile = [];
         for (const c of bf.leaves[0]._srcGroup.children)
             if (c && c.geometry && c.material) teile.push({ geom: c.geometry, mat: c.material, localMatrix: I });
-        return this._baumKapselFit({ leaves: teile, _baumGrammatik: bf._baumGrammatik });
+        return this._gestaltKapselFit(teile);
     }
 
     _streuGesetzSpawn(preset, fseed, x, surfY, z, yaw, scale) {
@@ -35522,7 +35459,7 @@ class AnazhRealm {
         if (!wm) return null;
         const gestalt = this._foundryVariantFor(fseed, preset);
         if (gestalt == null) return null; // Buch kalt — die Zelle wartet
-        const key = "abaum:" + preset + ":" + gestalt;
+        const key = "agesetz:" + preset + ":" + gestalt;
         // Fit-Takt (Treffer frei); die volle Liste verbrennt keinen (`kapselVoll`, die Zelle wartet billig).
         if (!wm.kapselCache.has(key) && (wm.kapselVoll || !this._weltBakeErlaubt(this._spielerD2(x, z)))) return null;
         const satz = this._weltKapselHolen(key, () => this._streuGesetzFit(preset, fseed));
@@ -35787,9 +35724,8 @@ class AnazhRealm {
             const lod = this._foundryLodForEntry(e);
             if (this._foundryStufeBereit(e, preset, lod))
                 return "Studio-Stufe L" + lod + " gedockt, noch nicht platziert";
-            if (!this._foundryPresetIsTree(preset)) return "Studio-Stufe L" + lod + " lädt (Foundry)";
-            if (lod >= 2) return "Studio-Karte wartet auf den Karten-Bäcker";
-            return "Studio-Stufe L" + lod + " lädt (Foundry), die Karte als Brücke ist noch nicht gebacken";
+            // (ein Karten-Ding — Baum, Strauch — trägt nie einen Satz, `_archKartenPreset`)
+            return "Studio-Stufe L" + lod + " lädt (Foundry)";
         };
         for (let f = 0; f < wm.obergrenze; f++) {
             const h = wm.handles[f];
@@ -50971,6 +50907,14 @@ class AnazhRealm {
             // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
             // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
             let newLOD = this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
+            // DIE KARTEN-ZONE (`_archInKartenZone`): jenseits der Mesh-Zone ist ein Karten-Ding seine Karte, VOLL gestempelt
+            // — ein Wechsel des Zustands zieht die Stempel der lebenden Slots nach (wie die Verdeckung unten).
+            const fernKarte = this._archInKartenZone(entry, dist);
+            if (fernKarte) newLOD = 2;
+            if ((entry._fernKarte === true) !== fernKarte) {
+                entry._fernKarte = fernKarte;
+                this._lodSlotOcclusionRefresh(entry);
+            }
             // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
             // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
             if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -51098,6 +51042,7 @@ class AnazhRealm {
     // EINEN Quelle _lodPerceptionDistance (Blatt auf leafVisCap gekappt, wie der aH0L-Stempel).
     // undefined = die Höhe ist (noch) nicht bekannt: kein Urteil, das Band bleibt.
     _foundryLodBandPartner(entry, dist) {
+        if (this._archInKartenZone(entry, dist)) return null; // die Karte allein, voll (`_archInKartenZone`)
         const visH = this._lodTreeVisHeight(entry);
         return visH === null ? undefined : this._lodBandPartnerFor(dist, visH, entry._lodLevel | 0, entry.scale);
     }
@@ -52019,7 +51964,7 @@ class AnazhRealm {
                     lod: 2,
                     form: fern,
                     wartet: fern === "gesetz" && !feld,
-                    bpName: (fern === "gesetz" ? "abaum:" : "boden:") + preset + ":" + gestalt,
+                    bpName: (fern === "gesetz" ? "agesetz:" : "boden:") + preset + ":" + gestalt,
                     slots: [],
                     feld,
                     x: tf.x,
@@ -61679,7 +61624,7 @@ class AnazhRealm {
         if (!at) return 0;
         // Die Karte wartet NICHT auf die Bühne: der Bäcker ist das Studio im Foundry-Worker (die Platte liefert gebackene
         // Karten sofort), kein RTT auf der Boden-GPU — und mit echtem Renderer trägt bis zur Karte nichts (die Zelle zeichnet
-        // erst gebacken, `_foundryBuildImpostorFlat`), nur der Kapsel-Satz des Felds. Bis 04.10. war das ein Kreis: die
+        // erst gebacken, `_foundryBuildImpostorFlat`; seit 05.10. hat ein Karten-Ding keinen Satz). Bis 04.10. war das ein Kreis: die
         // Bühne wartete auf die Streu-Regionen, die Regionen auf ihre Karten, die Karten auf die Bühne — gelöst erst vom
         // 90-s-Deckel; beim Boot an der Mess-Wiese standen so 141 Kapsel-Sätze < 64 m.
         // BAKE-WATCHDOG: ein hängender async Bake klemmte `_impostorBakePending` → die Queue verhungerte still. Nach
@@ -62919,10 +62864,11 @@ class AnazhRealm {
             }
         }
     }
-    // Zeichnet die Karte dieses Eintrags VOLL (vOcc 1, kein Distanz-Fade)? Der verdeckt-demotierte Baum (Studio-vOcc)
-    // und die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`).
+    // Zeichnet die Karte dieses Eintrags VOLL (vOcc 1, kein Distanz-Fade)? Der verdeckt-demotierte Baum (Studio-vOcc),
+    // die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`), und das Karten-Ding in
+    // der Karten-Zone (`_archInKartenZone`).
     _lodSlotVoll(entry) {
-        return entry._occluded === true || entry._bruecke === true;
+        return entry._occluded === true || entry._bruecke === true || entry._fernKarte === true;
     }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         // W6 — die Karte zeichnet in der EINEN globalen Atlas-Gruppe (leaf.atlasGruppe), gleich welche Art, Gestalt,
@@ -63709,9 +63655,10 @@ class AnazhRealm {
         } else {
             tintColor.setRGB(1, 1, 1);
         }
-        // Welle B — der platzierte Bau ist GLOBAL (kein Regions-Schlüssel): er lebt nur in der Mesh-Zone (Cull-Radius
-        // 100–150 m), jenseits trägt der Box-Satz im Welt-March; eine 256-m-Region brachte keinen Cull (ihre Kugel
-        // R·√½ + 140 m schneidet das Frustum praktisch immer), sie vervielfachte nur die Gruppen je Leaf (@p:).
+        // Welle B — der platzierte Bau ist GLOBAL (kein Regions-Schlüssel): er lebt in der Mesh-Zone (Cull-Radius
+        // 100–150 m; ein Karten-Ding als Karte bis zum Karten-Horizont), jenseits trägt der Box-Satz im Welt-March; eine
+        // 256-m-Region brachte keinen Cull (ihre Kugel R·√½ + 140 m schneidet das Frustum praktisch immer), sie
+        // vervielfachte nur die Gruppen je Leaf (@p:).
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
             // Der Leaf-Schluessel ist normal der Array-Index; ein Leaf DARF ihn ueberschreiben
@@ -63896,6 +63843,10 @@ class AnazhRealm {
             if (!entry.instanced && !entry.mesh) {
                 const dlod = this._foundryLodForEntry(entry);
                 if (Number.isFinite(dlod)) entry._lodLevel = dlod;
+                // In der Karten-Zone zeichnet die Karte VOLL (`_lodSlotVoll`) — der Stempel fällt beim Platzieren.
+                const pm = this.state.playerMesh && this.state.playerMesh.position;
+                entry._fernKarte =
+                    !!pm && this._archInKartenZone(entry, Math.hypot(entry.position.x - pm.x, entry.position.z - pm.z));
             }
             const fFlat = this._foundryFlattenFor(entry, fPreset, entry._lodLevel);
             if (fFlat && fFlat.instanceable) {
@@ -67364,7 +67315,7 @@ class AnazhRealm {
             }
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
-        // (false), nie Geometrie — jenseits der Nah-Grenze trägt der Feld-Satz, diesseits die Brücke der Wunsch-Stufe.
+        // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).
         // Headless/Null-Renderer trägt der Rahmen aus der L1-Geometrie (dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
         if (!z.gebacken && rendB && !rendB._isHeadlessNull) return false;
@@ -67622,6 +67573,11 @@ class AnazhRealm {
     _archZiegelFern(entry) {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return false;
+        // Ein Karten-Ding hat keinen Satz: fern IST es seine Karte (`_archKartenPreset`, B2c `fernform`).
+        if (this._archKartenPreset(entry)) {
+            this._archZiegelTod(entry);
+            return false;
+        }
         if (entry._ziegelSlot) {
             // Der Slot zeichnet, außer in der Mesh-Zone über dem stehenden Mesh — dieselbe Regel wie der Culling-Tick.
             // Vorher schaltete dieser Ruf jeden Takt AN und der Culling-Tick gleich wieder AUS (je Takt jede Seite der
@@ -67637,9 +67593,9 @@ class AnazhRealm {
                 ? entry.studioOv
                 : null;
         const ovH = ov ? `:ov:${this._studioOvHash(ov)}` : "";
-        // Foundry-Naht: ein gesetztes Studio-Ding (Baum · Tor · Fahrzeug · Fels) passt aus der Foundry-Flat
-        // (dieselbe Quelle wie die Streu), NIE aus einem temporär gebauten Async-Mesh (leer → nach 8
-        // Versuchen ausgebrannt → für immer unsichtbar). „Lädt noch" verbrennt weder Versuch noch Bake-Takt.
+        // Foundry-Naht: ein gesetztes Studio-Ding ohne Karte (Fels, Kristall) passt aus der Foundry-Flat, NIE aus
+        // einem temporär gebauten Async-Mesh (leer → nach 8 Versuchen ausgebrannt → für immer unsichtbar). „Lädt
+        // noch" verbrennt weder Versuch noch Bake-Takt.
         const fPreset = this._archFoundryPreset(entry);
         if (fPreset) return this._archFoundryZiegel(entry, fPreset, ovH);
         const key = `aarch:${entry.type}:${entry._lodVariantIndex || 0}${ovH}`;
@@ -67703,17 +67659,33 @@ class AnazhRealm {
         return preset;
     }
 
-    // Foundry-Fit eines gesetzten Baus: Bäume teilen Key + Fit mit der Streu (`abaum:preset:variant`,
-    // _baumKapselFit — ein Eichen-Hain dedupt auf den Wald-Satz), alles andere passt als Box-Satz
-    // (_archBoxFit) über eine transiente Gruppe aus den Flat-Leaves (nie in der Szene). Flat lädt noch →
-    // warten OHNE Versuch/Bake-Takt; `false` → aufgegeben. Gestempelt (ovH): eigener Satz.
+    // Ist dieser gesetzte Eintrag ein KARTEN-DING — ist seine Fernstufe die Studio-Karte (Baum, Strauch, Tor, Fahrzeug:
+    // KIND_POLICY.impostor ⇔ B2c `fernform: "karte"`, gate:studio-vertrag hält beides gleich)? Dann trägt er fern seine
+    // Karte und nie einen Analog-Satz (`tickArchitectureCulling`, `_archZiegelFern`). Das Preset oder null.
+    _archKartenPreset(entry) {
+        if (!this._foundryEnabled()) return null;
+        const preset = this._foundryPresetForEntry(entry);
+        return preset && this._foundryPresetIsTree(preset) ? preset : null;
+    }
+
+    // DIE KARTEN-ZONE: steht ein Karten-Ding jenseits der Mesh-Zone (des geregelten Cull-Radius), IST es seine Karte —
+    // die Stufen-Wahl klemmt auf sie (`_foundryLodForEntry`, `_tickArchitectureLOD`), sie zeichnet VOLL (`_lodSlotVoll`:
+    // die Stufen-Maske kennt den Radius nicht, ein Riese mit Sichthöhe über ~45 m stünde dort noch im Karten-Band) und
+    // trägt keinen Band-Partner. Diesseits wählt die Wahrnehmungs-Distanz wie bisher.
+    _archInKartenZone(entry, dist) {
+        const r = this.state.architectureCullingRadius;
+        return Number.isFinite(r) && dist > r && !!this._archKartenPreset(entry);
+    }
+
+    // Foundry-Fit eines gesetzten Studio-Dings ohne Karte (Fels, Kristall): der Box-Satz (_archBoxFit) über eine
+    // transiente Gruppe aus den Flat-Leaves (nie in der Szene). Karten-Dinge erreichen ihn nie (`_archZiegelFern`).
+    // Flat lädt noch → warten OHNE Versuch/Bake-Takt; `false` → aufgegeben. Gestempelt (ovH): eigener Satz.
     _archFoundryZiegel(entry, preset, ovH) {
         const wm = this._weltMarchEnsure();
         if (!wm) return false;
-        const baum = this._foundryPresetIsTree(preset);
         const variant = this._foundryVariantFor(entry.seed, preset);
         if (variant == null) return false; // Buch kalt — der nächste Tick fragt wieder, nichts verbrannt
-        const key = baum ? `abaum:${preset}:${variant}${ovH}` : `aarch:${entry.type}:f${variant}${ovH}`;
+        const key = `aarch:${entry.type}:f${variant}${ovH}`;
         let bf = null;
         if (!wm.kapselCache.has(key)) {
             bf = this._foundryFlattenFor(entry, preset, 1);
@@ -67729,7 +67701,6 @@ class AnazhRealm {
             key,
             this._archWeltMatrix(entry),
             () => {
-                if (baum) return this._baumKapselFit(bf);
                 const g = new THREE.Group();
                 for (const lf of bf.leaves) {
                     if (!lf || !lf.geom) continue;
@@ -68335,17 +68306,14 @@ class AnazhRealm {
     // (Die Oktanten-Zerlegung der Voxel-Ära fiel mit dem Schöpfer-Wort
     // „analog!" — der Bau ist sein Box-Satz, _archBoxFit ist die Naht.)
 
-    // Baum-Kapsel-Fit: je Leaf eine Kapsel im Vorlagen-Raum (größte Ausdehnung = Achse, Neben-Halbachsen
-    // = Radius, Material-/Vertex-Farbe); die 6 volumen-größten Leaves tragen die Gestalt.
-    _baumKapselFit(bf) {
-        // Analog-B Slice 2: Grammatik-Fit (Kegel+Krone) wenn Beipack da; sonst AABB (fail-closed).
-        if (bf && bf._baumGrammatik && bf._baumGrammatik.segs && bf._baumGrammatik.segs.length) {
-            const gFit = this._baumGrammatikFit(bf._baumGrammatik, bf);
-            if (gFit && gFit.length) return gFit;
-        }
+    // Gestalt-Kapsel-Fit der Gesetz-Streu (Fels, Blume): je Teil eine Kapsel im Vorlagen-Raum (größte Ausdehnung =
+    // Achse, Neben-Halbachsen = Radius, Material-/Vertex-Farbe), kompakte Teile als Ellipsoid; die 6 volumen-größten
+    // Teile tragen die Gestalt. (Der Baum-Satz aus Grammatik-Kegeln und Kronen-Lappen fiel 05.10.: ein Baum ist fern
+    // seine Karte, `_archKartenPreset`.)
+    _gestaltKapselFit(teile) {
         const v = this._bkfV || (this._bkfV = new THREE.Vector3());
         const kand = [];
-        for (const lf of bf.leaves) {
+        for (const lf of teile) {
             if (!lf || !lf.geom || !lf.geom.attributes || !lf.geom.attributes.position) continue;
             const pos = lf.geom.attributes.position;
             const col = lf.geom.attributes.color || null;
@@ -68380,7 +68348,7 @@ class AnazhRealm {
             const vol = h.x * h.y * h.z;
             const hmin = Math.min(h.x, h.y, h.z);
             const hmax = Math.max(h.x, h.y, h.z);
-            // Kronen-ähnlich (kompakt): Ellipsoid statt AABB-Kapsel (Grammatik Slice 1)
+            // Kompakt (ein Stein, ein Blütenkopf): Ellipsoid statt AABB-Kapsel
             if (hmin > 1e-6 && hmax / hmin <= 2.2) {
                 kand.push({
                     ellipsoid: true,
@@ -68412,141 +68380,6 @@ class AnazhRealm {
         if (!kand.length) return null;
         kand.sort((p, q) => q.vol - p.vol);
         return kand.slice(0, 6);
-    }
-
-    // Grammatik-Fit: die Gestalt aus der Wuchs-Grammatik GELESEN, nie geraten. Zusammenhängende Segmente
-    // gleicher Tiefe sind EINE Kette → EIN Kegel (Stamm Fuß→Spitze + die volumen-größten Hauptäste); die
-    // Krone sind LAPPEN über den Zweig-Punkten je Hauptast (+ Blatt-Saum). Nie die N größten Einzel-
-    // Segmente nehmen — das sind Stücke desselben Stamms, die Krone gerät viel zu klein.
-    // Template-Raum × Flat-Scale.
-    _baumGrammatikFit(gram, bf) {
-        if (!gram || !Array.isArray(gram.segs) || !gram.segs.length) return null;
-        let sx = 1,
-            sy = 1,
-            sz = 1;
-        if (bf && bf.leaves && bf.leaves[0] && bf.leaves[0].localMatrix) {
-            const e = bf.leaves[0].localMatrix.elements;
-            sx = Math.abs(e[0]) || 1;
-            sy = Math.abs(e[5]) || 1;
-            sz = Math.abs(e[10]) || 1;
-        }
-        const ba = gram.barkA || { r: 0.32, g: 0.22, b: 0.13 };
-        const bb = gram.barkB || { r: 0.22, g: 0.14, b: 0.08 };
-        const segs = gram.segs.filter((sg) => sg && Array.isArray(sg.p0) && Array.isArray(sg.p1));
-        if (!segs.length) return null;
-        // KETTEN: ein Segment setzt das vorige fort, wenn es an dessen Ende beginnt
-        // (gleiche Tiefe). Schlüssel auf 1e-4 gerundet (die Grammatik schreibt p1 → p0 exakt).
-        const k3 = (p) => Math.round(p[0] * 1e4) + "," + Math.round(p[1] * 1e4) + "," + Math.round(p[2] * 1e4);
-        const nachStart = new Map();
-        const hatVorgaenger = new Set();
-        for (let i = 0; i < segs.length; i++) nachStart.set((segs[i].depth || 0) + "|" + k3(segs[i].p0), i);
-        for (let i = 0; i < segs.length; i++) {
-            const j = nachStart.get((segs[i].depth || 0) + "|" + k3(segs[i].p1));
-            if (j !== undefined && j !== i) hatVorgaenger.add(j);
-        }
-        const ketten = [];
-        for (let i = 0; i < segs.length; i++) {
-            if (hatVorgaenger.has(i)) continue;
-            const erst = segs[i];
-            let letzt = erst,
-                vol = 0,
-                n = 0;
-            for (let c = i, guard = 0; c !== undefined && guard < segs.length; guard++) {
-                const sg = segs[c];
-                const len = Math.hypot(sg.p1[0] - sg.p0[0], sg.p1[1] - sg.p0[1], sg.p1[2] - sg.p0[2]);
-                const rm = 0.5 * ((sg.r0 || 0) + (sg.r1 || 0));
-                vol += len * rm * rm;
-                letzt = sg;
-                n++;
-                c = nachStart.get((sg.depth || 0) + "|" + k3(sg.p1));
-            }
-            ketten.push({ erst, letzt, vol, n, depth: erst.depth || 0 });
-        }
-        const rS = Math.max(sx, sz);
-        const kegel = (kt) => {
-            const t = Math.min(1, kt.depth / 2);
-            return {
-                cone: true,
-                a: new THREE.Vector3(kt.erst.p0[0] * sx, kt.erst.p0[1] * sy, kt.erst.p0[2] * sz),
-                b: new THREE.Vector3(kt.letzt.p1[0] * sx, kt.letzt.p1[1] * sy, kt.letzt.p1[2] * sz),
-                r0: Math.max(0.005, (kt.erst.r0 || 0) * rS),
-                r1: Math.max(0.0, (kt.letzt.r1 || 0) * rS),
-                farbe: { r: ba.r + (bb.r - ba.r) * t, g: ba.g + (bb.g - ba.g) * t, b: ba.b + (bb.b - ba.b) * t },
-                vol: kt.vol * rS * rS * sy,
-            };
-        };
-        const stamm = ketten.filter((k) => k.depth === 0).sort((p, q) => q.vol - p.vol)[0];
-        const aeste = ketten.filter((k) => k.depth === 1).sort((p, q) => q.vol - p.vol);
-        const out = [];
-        if (stamm) out.push(kegel(stamm));
-        // Krone als LAPPEN: eine maßgetreue Hülle um eine luftige Krone liest aus der Ferne als massives Ei.
-        // Zweig-Punkte (Tiefe ≥ 2, sonst 1) gehen an das nächste Hauptast-Ende, je Cluster EIN Ellipsoid →
-        // gegliederte Silhouette. Budget 6: Stamm + 2 Hauptäste + bis zu 3 Lappen (ohne Äste: eine Hülle).
-        const LAPPEN = Math.min(3, aeste.length);
-        for (let i = 0; i < aeste.length && out.length < 6 - Math.max(1, LAPPEN); i++) out.push(kegel(aeste[i]));
-        if (!out.length) return null;
-        const huelleTiefe = segs.some((sg) => (sg.depth || 0) >= 2) ? 2 : 1;
-        const punkte = [];
-        for (const sg of segs)
-            if ((sg.depth || 0) >= huelleTiefe) {
-                punkte.push([sg.p0[0] * sx, sg.p0[1] * sy, sg.p0[2] * sz]);
-                punkte.push([sg.p1[0] * sx, sg.p1[1] * sy, sg.p1[2] * sz]);
-            }
-        if (!punkte.length && stamm) {
-            const t = stamm.letzt.p1;
-            punkte.push([t[0] * sx, t[1] * sy * 0.5, t[2] * sz], [t[0] * sx, t[1] * sy, t[2] * sz]);
-        }
-        if (!punkte.length) return out;
-        const anker = aeste.slice(0, LAPPEN).map((k) => [k.letzt.p1[0] * sx, k.letzt.p1[1] * sy, k.letzt.p1[2] * sz]);
-        const cluster = anker.length >= 2 ? anker.map(() => []) : [punkte];
-        if (anker.length >= 2)
-            for (const q of punkte) {
-                let best = 0,
-                    bd = Infinity;
-                for (let j = 0; j < anker.length; j++) {
-                    const d = (q[0] - anker[j][0]) ** 2 + (q[1] - anker[j][1]) ** 2 + (q[2] - anker[j][2]) ** 2;
-                    if (d < bd) {
-                        bd = d;
-                        best = j;
-                    }
-                }
-                cluster[best].push(q);
-            }
-        const ctype = (gram.crown && gram.crown.type) || "ellipsoid";
-        const leaf = ctype === "cone" ? { r: 0.18, g: 0.32, b: 0.14 } : { r: 0.22, g: 0.38, b: 0.16 };
-        for (const cl of cluster) {
-            if (cl.length < 4 || out.length >= 6) continue;
-            let x0 = Infinity,
-                y0 = Infinity,
-                z0 = Infinity,
-                x1 = -Infinity,
-                y1 = -Infinity,
-                z1 = -Infinity;
-            for (const q of cl) {
-                if (q[0] < x0) x0 = q[0];
-                if (q[1] < y0) y0 = q[1];
-                if (q[2] < z0) z0 = q[2];
-                if (q[0] > x1) x1 = q[0];
-                if (q[1] > y1) y1 = q[1];
-                if (q[2] > z1) z1 = q[2];
-            }
-            // Der Blatt-Saum ist ASYMMETRISCH (gemessen an der Mesh-Hülle): die Karten
-            // ragen seitlich + oben über die Zweig-Enden, nach unten kaum.
-            const saum = Math.max(0.3, 0.1 * Math.max(x1 - x0, z1 - z0));
-            const unten = y0 - 0.2,
-                oben = y1 + saum * 0.8;
-            const hx = Math.max(0.05, (x1 - x0) / 2 + saum),
-                hy = Math.max(0.05, (oben - unten) / 2),
-                hz = Math.max(0.05, (z1 - z0) / 2 + saum);
-            out.push({
-                ellipsoid: true,
-                c: new THREE.Vector3((x0 + x1) / 2, (unten + oben) / 2, (z0 + z1) / 2),
-                h: new THREE.Vector3(hx, hy, hz),
-                farbe: leaf,
-                vol: hx * hy * hz,
-            });
-        }
-        return out.slice(0, 6);
     }
 
     // (Der GLIED-BÄCKER der Voxel-Ära fiel mit dem Schöpfer-Wort „analog!" —
@@ -69190,11 +69023,8 @@ class AnazhRealm {
         try {
             group = new T.Group();
             for (const m of meshes) {
-                if (m && m.kind === "__baumGrammatik" && m.grammatik) {
-                    group.userData.__baumGrammatik = m.grammatik;
-                    continue;
-                }
-                if (m && m.kind === "__skelett") continue;
+                // Beipack (`{ kind: "__…" }`, das Skelett der Kreatur) ist kein Mesh — der Ofen liest es vor dem Bau.
+                if (m && typeof m.kind === "string" && m.kind.startsWith("__")) continue;
                 const mesh = this._foundryBuildMesh(m);
                 if (mesh) group.add(mesh);
             }
@@ -69868,16 +69698,6 @@ class AnazhRealm {
             group._foundryFlat = leaves.length
                 ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves }
                 : false;
-            // Analog-B Slice 2: Grammatik-Nebenkanal (Spiegel __skelett)
-            if (group._foundryFlat && group.userData && group.userData.__baumGrammatik)
-                group._foundryFlat._baumGrammatik = group.userData.__baumGrammatik;
-        } else if (
-            group._foundryFlat &&
-            !group._foundryFlat._baumGrammatik &&
-            group.userData &&
-            group.userData.__baumGrammatik
-        ) {
-            group._foundryFlat._baumGrammatik = group.userData.__baumGrammatik;
         }
         return group._foundryFlat;
     }
@@ -70015,6 +69835,8 @@ class AnazhRealm {
         // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe
         // Distanz: die Rampe setzte einen großen Baum in 40 m auf die Karte (dithernd, grau), und der LOD-Tick holte
         // ihn erst Takte später auf L1 (5 Wechsel je Takt, 04.10. an der Mess-Wiese 191 Plätze im ersten Takt).
+        // In der Karten-Zone ist die Stufe die Karte (`_archInKartenZone`).
+        if (this._archInKartenZone(entry, d)) return 2;
         return this._chooseLODForDistance(d, undefined, this._lodTreeVisHeight(entry));
     }
     // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
@@ -72130,14 +71952,35 @@ class AnazhRealm {
         const ziegelOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
         const nahOffen = this._archNahOffen || (this._archNahOffen = []);
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
+        // DER KARTEN-HORIZONT: die Karte eines gesetzten Karten-Dings trägt bis zum Rand der Deko-Streu (`SCATTER.outerM`,
+        // derselbe Horizont wie die gestreuten Bäume); geräumt wird erst ein Totband dahinter (kein Flattern am Rand).
+        const horizontSq = AnazhRealm.SCATTER.outerM * AnazhRealm.SCATTER.outerM;
+        const raeumSq = (AnazhRealm.SCATTER.outerM + AnazhRealm.KARTEN_HORIZONT_TOTBAND_M) ** 2;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
+            // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum, Strauch,
+            // Tor und Fahrzeug tragen nah ihre Studio-Kette und SIND jenseits der Mesh-Zone ihre Karte (die Stufen-Wahl
+            // klemmt dort auf sie, `_archInKartenZone`) — bis zum Karten-Horizont, nie ein Analog-Satz. Bis 05.10. trug
+            // jeder gesetzte Baum jenseits des Cull-Radius einen Kegel-und-Lappen-Satz im Welt-March: aus 45 m standen
+            // glatte, gestreifte, einfarbig hellgrüne Ellipsoide vor dem Wald (Blick-Tour 10-panorama-45m, 895 Sätze an
+            // der Mess-Wiese), am Radius sprang die Karte in den Satz. Eine Brücke braucht die Karten-Art nicht: steht
+            // ihre Wunsch-Stufe noch nicht, trägt die gedockte Karte (`_rebuildArchitectureMesh`).
+            if (this._archKartenPreset(entry)) {
+                if (entry._ziegelSlot) this._archZiegelTod(entry);
+                if (distSq <= horizontSq) {
+                    if (!this._archIsRendered(entry)) {
+                        entry._nahD2 = distSq;
+                        nahOffen.push(entry);
+                    }
+                } else if (distSq > raeumSq && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+                continue;
+            }
             // DIE MESH-ZONE (der geregelte Cull-Radius, 100–150 m): hier IST das Studio-Mesh die Gestalt, der
-            // LOD-Tick schaltet L0/L1/L2 (Billboard) nach Distanz. Bis das Mesh steht, trägt das Feld (kein
-            // Loch beim Streamen); steht es, schweigt das Feld — sonst läge der konservative Box-/Kapsel-Satz
-            // VOR dem Mesh. Jenseits des Radius ist der Box-/Kapsel-Satz die Gestalt (klein im Bild, billig).
+            // LOD-Tick schaltet die Stufen nach Distanz. Bis das Mesh steht, trägt das Feld (kein Loch beim
+            // Streamen); steht es, schweigt das Feld — sonst läge der konservative Box-Satz VOR dem Mesh. Jenseits
+            // des Radius ist der Box-Satz die Gestalt der Bauten und Steine (klein im Bild, billig).
             if (distSq <= radiusSq) {
                 // Der Ziegel-Ruf hängt NICHT am Mesh-Budget — er taktet sich selbst (Bake-Garantie, memoisiert).
                 // Lebende Slots aktivieren sofort; ungebackene Bauten warten in DERSELBEN Distanz-Schlange wie die
@@ -72171,8 +72014,9 @@ class AnazhRealm {
                 }
             }
         }
-        // Mesh-Bauten NAH ZUERST: budgetiert; über Budget mit Takt-Garantie (ein Bau je 250 ms, wie die
-        // Bake-Garantie des Felds) — sonst bliebe auf langsamem Holz die Mesh-Zone für immer Feld.
+        // Mesh-Bauten NAH ZUERST (die Mesh-Zone, dahinter die Karten-Zone der Karten-Dinge): budgetiert; über Budget
+        // mit Takt-Garantie (ein Bau je 250 ms, wie die Bake-Garantie des Felds) — sonst bliebe auf langsamem Holz die
+        // Mesh-Zone für immer Feld.
         // Das Budget zählt GEBAUTE Meshes, nicht Versuche: ein Eintrag, dessen Studio-Asset noch lädt (Flat null/
         // false — z. B. die L2-Karte im Bäcker), kehrt billig zurück und darf den fertigen dahinter nicht aushungern
         // (Befund 30.09.: die nächsten Karten-Wartenden fraßen jeden Takt das Budget, 7 bereite Eichen standen).
@@ -91705,16 +91549,24 @@ AnazhRealm.ARCH_NAH_VERSUCHE = 24;
 // Die Platzier-Uhr der Mesh-Zone (ms je Takt): so lange setzt der Culling-Tick kalte Einträge, deren Studio-Stufe
 // gedockt bereitliegt — ohne Bau-Budget, nah zuerst. 197 Plätze kosteten 2,5 ms (04.10., echte GPU, Mess-Wiese).
 AnazhRealm.ARCH_PLATZ_MS = 4;
+// Das Totband am Karten-Horizont (m, `tickArchitectureCulling`): ein Karten-Ding platziert seine Karte bis
+// `SCATTER.outerM` und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt keine Karte
+// flattern.
+AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
+// Der Horizont-Schwund (m): über so viele Meter vor `SCATTER.outerM` dithert jede Karte aus (die Karten-Maske,
+// `fernNode`) — der Wald endet weich, keine Karte poppt am Horizont, und vor dem Räumen ist sie schon fort.
+AnazhRealm.KARTEN_HORIZONT_SCHWUND_M = 32;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
 // schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
-// DER EINE WELT-MARCH: alles Ferne (Baum-Kegel + Kronen-Lappen · Box-Sätze der Bauten · Glieder-Kapseln ·
-// Streu-Gesetz) lebt als ANALOG-Satz in EINER Feld-Listen-Textur + EINER Kapsel-Liste; der Feld-Pass marcht sie
-// in EINEM Draw mit echter Tiefe. Fern ist das Feld die Gestalt (nah trägt das Studio-Mesh); eine Erschöpfung
-// schreit EINMAL laut. Kapseln/Boxen haben keine Import-Auflösung — der Strahl digitalisiert am Schirm. Der
+// DER EINE WELT-MARCH: alles Ferne ohne Karte (Box-Sätze der Bauten und Steine · Glieder-Kapseln · Streu-Gesetz;
+// Bäume und Sträucher sind fern ihre Karte) lebt als ANALOG-Satz in EINER Feld-Listen-Textur + EINER Kapsel-Liste;
+// der Feld-Pass marcht sie in EINEM Draw mit echter Tiefe. Fern ist das Feld die Gestalt (nah trägt das Studio-
+// Mesh); eine Erschöpfung schreit EINMAL laut. Kapseln/Boxen haben keine Import-Auflösung — der Strahl digitalisiert
+// am Schirm. Der
 // Voxel-Brick-Atlas (512×512×128, 128 MB VRAM + 128 MB Heap-Spiegel) ist verabschiedet (V18.528): er wurde im
 // Spiel nie mehr belegt (gemessen 0 Zuteilungen), sein einziger Nutzer, der Region-Ziegel, hing an der toten
 // Fern-Schicht.
