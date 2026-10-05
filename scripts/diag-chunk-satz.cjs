@@ -17,7 +17,8 @@
 //   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (Bereiche, Index-Zahl), nie die Zahl
 //       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
 //   (f) TREUE — jeder Satz-Bereich trägt byte-gleich die Arrays seines Chunks (Index um den Bereichs-
-//       Anfang verschoben), die Index-Blöcke liegen nah → fern;
+//       Anfang verschoben, genau seine Dreiecke als lückenlose Viertel-Läufe); der Abschnitt des Hauptbilds
+//       (der Haken des Renders legt ihn) trägt seine Viertel byte-gleich hintereinander, nah → fern;
 //   (g) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
 // direkt in der Szene, einer Gruppe `x#0@p:0,0`, einem zweiten `streuNah` derselben Senke und einer Fern-Deko MUSS rot
@@ -299,6 +300,9 @@ function check(name, ok, detail) {
                 z.wasser.tris = Math.round(z.wasser.tris);
                 return z;
             };
+            // der Haken des Renders (Hauptbild): der Satz legt seinen Abschnitt — der Zensus zählt, was das Hauptbild zeichnet
+            r._passSicht(s.camera, false);
+            r._passSicht(s.camera, true);
             res.zensus = zensus();
             let chunks = 0;
             for (const e of s.voxelChunks.values()) if (e && !e.empty && e.mesh) chunks++;
@@ -329,10 +333,27 @@ function check(name, ok, detail) {
                     }
                 }
 
-            // ── (f) TREUE je Satz: jeder Bereich trägt die Arrays seines Chunks byte-gleich (Views), der Index ist um
-            // den Bereichs-Anfang verschoben, die Blöcke liegen in der Richtung der Art (Boden nah → fern, Wasser
-            // fern → nah). Vorher (kein Satz) ist das unmessbar und fällt benannt rot.
+            // ── (f) TREUE je Satz: jeder Bereich trägt die Arrays seines Chunks byte-gleich (Views); sein Index (um den
+            // Bereichs-Anfang verschoben) trägt genau die Dreiecke des Chunks, als Viertel-Läufe hintereinander (die
+            // Viertel decken ihn lückenlos); jeder Abschnitt eines Passes (hier: das Hauptbild, wie der Haken des Renders
+            // ihn legt) trägt seine Viertel byte-gleich hintereinander und in der Richtung der Art (Boden nah → fern,
+            // Wasser fern → nah). Vorher (kein Satz) ist das unmessbar und fällt benannt rot.
             const lpc = s.lastPlayerVoxelChunk;
+            // die Dreiecke als Multimenge (ordnungsfrei): Summe und XOR eines Hashes je Dreieck
+            const mengeVon = (arr, plus) => {
+                let summe = 0,
+                    xor = 0;
+                for (let i = 0; i + 2 < arr.length; i += 3) {
+                    const h =
+                        (Math.imul(arr[i] + plus, 73856093) ^
+                            Math.imul(arr[i + 1] + plus, 19349663) ^
+                            Math.imul(arr[i + 2] + plus, 83492791)) >>>
+                        0;
+                    summe = (summe + h) >>> 0;
+                    xor = (xor ^ h) >>> 0;
+                }
+                return summe + ":" + xor;
+            };
             res.saetze = [];
             if (s.chunkSaetze)
                 for (const [art, satz] of s.chunkSaetze) {
@@ -341,6 +362,7 @@ function check(name, ok, detail) {
                     let treu = true,
                         geprueft = 0,
                         ordnung = true,
+                        abschnittTreu = true,
                         letzte = null;
                     for (const b of satz.ordnung) {
                         if (satz.bloecke.get(b.key) !== b) {
@@ -357,26 +379,53 @@ function check(name, ok, detail) {
                                 if (src[i] !== dst[b.vStart * is + i]) treu = false;
                         }
                         const li = g.index.array;
-                        if (li.length !== b.iAnzahl) treu = false;
-                        for (let i = 0; i < li.length && treu; i += 31)
-                            if (idx[b.iStart + i] !== li[i] + b.vStart) treu = false;
-                        geprueft++;
-                        if (lpc) {
-                            const d = Math.max(Math.abs(b.cx - lpc.cx), Math.abs(b.cz - lpc.cz));
-                            if (letzte !== null && (d - letzte) * satz.spec.richtung < 0) ordnung = false;
-                            letzte = d;
+                        if (li.length !== b.iAnzahl || b.idx.length !== b.iAnzahl) treu = false;
+                        if (treu && mengeVon(li, b.vStart) !== mengeVon(b.idx, 0)) treu = false;
+                        // die Viertel: Läufe hintereinander, lückenlos über den Bereichs-Index
+                        let o = 0;
+                        for (const z of b.zellen) {
+                            if (z.bereich !== b || z.idx.buffer !== b.idx.buffer || z.idx.byteOffset !== o * 4)
+                                treu = false;
+                            o += z.idx.length;
                         }
+                        if (o !== b.iAnzahl) treu = false;
+                        geprueft++;
                         if (!treu) break;
+                    }
+                    // die Abschnitte: Viertel byte-gleich hintereinander, in der Richtung der Art
+                    let hauptN = null;
+                    for (const [key, a] of satz.abschnitte) {
+                        let pos = a.start,
+                            n = 0;
+                        letzte = null;
+                        for (const z of a.liste) {
+                            for (let i = 0; i < z.idx.length && abschnittTreu; i += 7)
+                                if (idx[pos + i] !== z.idx[i]) abschnittTreu = false;
+                            pos += z.idx.length;
+                            n += z.idx.length;
+                            if (lpc) {
+                                const b = z.bereich;
+                                const d = Math.max(Math.abs(b.cx - lpc.cx), Math.abs(b.cz - lpc.cz));
+                                if (letzte !== null && (d - letzte) * satz.spec.richtung < 0) ordnung = false;
+                                letzte = d;
+                            }
+                        }
+                        if (n !== a.n || a.n > a.kap || a.start + a.kap > satz.iEnde || satz.iEnde > satz.iKap)
+                            abschnittTreu = false;
+                        if (key === "haupt") hauptN = a.n;
                     }
                     res.saetze.push({
                         art,
                         treu,
                         geprueft,
                         ordnung,
+                        abschnittTreu,
                         bereiche: satz.bloecke.size,
                         vEnde: satz.vEnde,
                         vKap: satz.vKap,
-                        index: geo.drawRange.count,
+                        index: satz.iSumme,
+                        haupt: hauptN,
+                        iEnde: satz.iEnde,
                         iKap: satz.iKap,
                         wachse: satz.wachse,
                     });
@@ -397,7 +446,7 @@ function check(name, ok, detail) {
                     const stand = () => ({
                         kinder: s.scene.children.length,
                         bereiche: satz.bloecke.size,
-                        index: satz.mesh.geometry.drawRange.count,
+                        index: satz.iSumme,
                     });
                     const vor = stand();
                     r._disposeVoxelChunk(opfer.key);
@@ -438,8 +487,8 @@ function check(name, ok, detail) {
     );
     for (const x of out.saetze || [])
         console.log(
-            `  Satz ${x.art}: ${x.bereiche} Bereiche · ${x.vEnde}/${x.vKap} Vertices · ${x.index}/${x.iKap} Indizes · ` +
-                `${x.wachse}× gewachsen`
+            `  Satz ${x.art}: ${x.bereiche} Bereiche · ${x.vEnde}/${x.vKap} Vertices · ${x.index} Indizes im Ring, ` +
+                `Hauptbild-Abschnitt ${x.haupt} · Abschnitte bis ${x.iEnde}/${x.iKap} · ${x.wachse}× gewachsen`
         );
     console.log("");
     const v = urteil(z);
@@ -458,12 +507,17 @@ function check(name, ok, detail) {
     );
     const saetze = out.saetze || [];
     check(
-        "(f) TREUE — jeder Satz-Bereich trägt byte-gleich seinen Chunk (Views, Index verschoben)",
+        "(f) TREUE — jeder Satz-Bereich trägt byte-gleich seinen Chunk (Views, Index verschoben, lückenlose Viertel)",
         saetze.length > 0 && saetze.every((x) => x.treu),
         saetze.map((x) => `${x.art} ${x.geprueft}`).join(" · ") || "kein Satz"
     );
     check(
-        "(f) die Index-Blöcke liegen in der Richtung der Art (Boden nah → fern, Wasser fern → nah)",
+        "(f) TREUE — jeder Abschnitt trägt seine Viertel byte-gleich hintereinander, in seiner Kapazität",
+        saetze.length > 0 && saetze.every((x) => x.abschnittTreu) && saetze.some((x) => x.haupt > 0),
+        saetze.map((x) => `${x.art} Hauptbild ${x.haupt}/${x.index}`).join(" · ")
+    );
+    check(
+        "(f) die Viertel eines Abschnitts liegen in der Richtung der Art (Boden nah → fern, Wasser fern → nah)",
         saetze.length > 0 && saetze.every((x) => x.ordnung)
     );
     const k = out.konsum;

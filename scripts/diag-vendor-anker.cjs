@@ -161,6 +161,25 @@ const ANKER = [
         sub: "const o=t.updateRanges;if(0===o.length)s.queue.writeBuffer(n,0,a,0);else{",
         organ: "_chunkSatzEin/_chunkSatzMarke (Teil-Upload je Chunk-Bereich)",
     },
+    // Der Satz je Pass (Welle 6 Boden-Schatten): jeder Pass setzt im Szenen-Haken seinen Abschnitt als drawRange — der
+    // Draw liest die Geometrie-drawRange beim ZEICHNEN (Referenz am Render-Objekt), nie einmal je Objekt; und jeder Pass
+    // gibt seinen Befehl am Pass-Ende ab (ein Schatten-Pass mitten im Haupt-Pass ist abgegeben, ehe der nächste Haken einen
+    // verdrängten Abschnitt überschreibt).
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "if(u.drawRange=e.geometry.drawRange,u.group=n,null!==this._currentRenderBundle)",
+        organ: "_chunkSatzPass/_chunkSatzZeige (der Abschnitt je Pass als drawRange)",
+    },
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "getDrawParameters(){const{object:e,material:t,geometry:r,group:s,drawRange:i}=this",
+        organ: "_chunkSatzZeige (der Draw liest die drawRange beim Zeichnen)",
+    },
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "if(this.device.queue.submit([t.encoder.finish()]),null!==e.textures)",
+        organ: "_chunkSatzVerdraengen (jeder Pass ist am Ende abgegeben — ein späterer Schreiber trifft ihn nie)",
+    },
 ];
 
 // DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm schneiden (vom ersten

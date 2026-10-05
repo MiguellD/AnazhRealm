@@ -32,6 +32,10 @@
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
 //   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, Boden-Satz oder freier Werfer (Tier · Spieler · Insel ·
 //       Bauplan-Bau als eigene Gruppe)
+//   W7  der Boden-Satz je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
+//       245 696 Dreiecke): jeder Pass zeichnet genau die Viertel, deren Hülle sein Frustum schneidet, byte-gleich
+//       hintereinander, nach dem Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im
+//       Rücken) trägt die nahe Kaskade Boden hinter dem Blick (der Hang wirft)
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
@@ -45,6 +49,7 @@
 //   S5  Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera (der Zweit-Schreiber ist echt)
 //   S6  Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden
 //   S7  Selbsttest: ein zweiter compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
+//   S8  Selbsttest: die alte Regel (der Satz zeichnet den ganzen Ring in jedem Pass) macht W7 rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
 const puppeteer = require("puppeteer");
@@ -511,6 +516,80 @@ function probe(selbsttest) {
         }
     }
 
+    // ── W7: der Boden-Satz je Pass — jeder Pass (Hauptbild · jede Kaskade) zeichnet genau die Viertel, deren Hülle sein
+    // Frustum schneidet, byte-gleich hintereinander; ohne Viertel im Frustum zeichnet er nicht; nach jedem Pass zeigt der
+    // Satz den Abschnitt des Hauptbilds. Nicht vakuös: ein Pass lässt Viertel des Rings weg, und die nahe Kaskade trägt
+    // Viertel, die das Hauptbild nicht sieht (ein Hang hinter dem Blick wirft) — mittags und am Abend. ──
+    const w7 = (pass, t, yaw) => {
+        tag(t);
+        blick(yaw);
+        alleNeu();
+        const g = () => boden.mesh.geometry;
+        const res = { paesse: [], falsch: 0, zurueck: true, weg: false, hinterWirft: false, voll: boden.iSumme / 3 };
+        const satz = (fr) => {
+            const liste = [];
+            for (const b of boden.ordnung) {
+                if (!b.huelle || b.huelle.isEmpty() || !fr.intersectsBox(b.huelle)) continue;
+                for (const z of b.zellen) if (!z.huelle.isEmpty() && fr.intersectsBox(z.huelle)) liste.push(z);
+            }
+            return liste;
+        };
+        const pruefPass = (kam, fr, name) => {
+            pass(kam, false);
+            const dr = g().drawRange;
+            const idx = g().index.array;
+            const soll = satz(fr);
+            let n = 0;
+            for (const z of soll) n += z.idx.length;
+            let inhalt = dr.count === n;
+            let pos = dr.start;
+            for (const z of soll) {
+                if (!inhalt) break;
+                for (let i = 0; i < z.idx.length; i += 5)
+                    if (idx[pos + i] !== z.idx[i]) {
+                        inhalt = false;
+                        break;
+                    }
+                pos += z.idx.length;
+            }
+            const sichtbar = boden.mesh.visible === n > 0;
+            res.paesse.push({ name, tris: dr.count / 3, soll: n / 3 });
+            if (!inhalt || !sichtbar) res.falsch++;
+            if (n / 3 < res.voll) res.weg = true;
+            pass(kam, true);
+            return new Set(soll);
+        };
+        const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        const imHaupt = pruefPass(cam, new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem), "haupt");
+        const hauptDr = [g().drawRange.start, g().drawRange.count];
+        for (let i = 0; i < csm.lights.length; i++) {
+            const kam = csm.lights[i].shadow.camera;
+            const fr = frustumVon(i);
+            const imPass = pruefPass(kam, fr, "k" + i);
+            if (i === 0) for (const z of imPass) if (!imHaupt.has(z)) res.hinterWirft = true;
+            if (g().drawRange.start !== hauptDr[0] || g().drawRange.count !== hauptDr[1]) res.zurueck = false;
+        }
+        return res;
+    };
+    if (boden) {
+        const passeVoll = (kamera, nach) => {
+            // DIE ALTE REGEL (bis 05.10.): der Satz zeichnet den ganzen Ring in jedem Pass
+            void kamera;
+            void nach;
+            boden.mesh.geometry.setDrawRange(0, boden.iSumme);
+            boden.mesh.visible = true;
+        };
+        aus.w7 = [
+            w7((k, nach) => r._passSicht(k, nach), 0.5, 0),
+            w7((k, nach) => r._passSicht(k, nach), 0.72, Math.PI / 2),
+        ];
+        if (selbsttest) aus.s8 = w7(passeVoll, 0.5, 0);
+        tag(0.5);
+        blick(0);
+        alleNeu();
+        r._kaskadenPassen(csm);
+    }
+
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Boden-Bereich, ein freier Werfer
     // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
     // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. ──
@@ -799,6 +878,18 @@ function probe(selbsttest) {
             a.w6.n === 0,
             a.w6.n ? a.w6.fremd.join(" | ") : "keine fremde Werfer-Klasse"
         );
+        const w7t = (w) => w.paesse.map((p) => `${p.name} ${Math.round(p.tris)}/${Math.round(w.voll)}`).join(" · ");
+        check(
+            "W7 der Boden-Satz je Pass: jeder Pass zeichnet genau seine Viertel im Frustum, danach das Hauptbild (Mittag · Abend)",
+            !!a.w7 && a.w7.every((w) => w.falsch === 0 && w.zurueck && w.weg),
+            a.w7
+                ? a.w7.map((w) => w7t(w) + (w.zurueck ? "" : " — kein Hauptbild danach")).join(" | ")
+                : "kein Boden-Satz"
+        );
+        check(
+            "W7 … die nahe Kaskade trägt Boden hinter dem Blick (Abend, Sonne im Rücken: der Hang wirft)",
+            !!a.w7 && a.w7[1].hinterWirft === true
+        );
         check(
             "Z1 Karten-Ziele: Farbe r8 · Tiefe 16 bit · benannt",
             a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt,
@@ -834,6 +925,11 @@ function probe(selbsttest) {
                 "S3 Selbsttest: die alte Hüllen-Regel (nur Bundles) macht W5 rot",
                 !!a.s3 && a.s3.talDrin === false && a.s3.hangWirft === false,
                 JSON.stringify(a.s3)
+            );
+            check(
+                "S8 Selbsttest: die alte Regel (der ganze Ring in jedem Pass) macht W7 rot",
+                !!a.s8 && a.s8.falsch > 0,
+                a.s8 ? w7t(a.s8) : "kein Boden-Satz"
             );
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);

@@ -158,6 +158,9 @@ const FORBIDDEN = [
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
     { token: "_chunkBundleAnker", fiel: "Welle B — der Satz ist der EINE Eintritt (_chunkSatzEin / _streuNahEin)" },
+    // Der Satz zeichnete den ganzen Ring in JEDEM Pass (ein Bereich lag an EINER Index-Stelle, `b.iStart`): seit Welle 6
+    // trägt der Index je Pass einen Abschnitt — die Viertel im Frustum der Pass-Kamera (_chunkSatzAbschnitt).
+    { token: ".iStart", fiel: "Welle 6 Boden-Schatten — je Pass ein Abschnitt (_chunkSatzPass), kein Ring-Index" },
     { token: "_chunkBundleRegionKey", fiel: "Welle B" },
     { token: "_bundleKugelWeite", fiel: "Welle B — kein Chunk-Bürger wächst eine Region-Kugel mehr" },
     { token: "_acquireScatterMesh", fiel: "Welle B — der Streu-Satz je Art (_streuNahArt)" },
