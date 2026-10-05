@@ -13,8 +13,10 @@ const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness
 const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
 
-// Die kuratierte Fall-Liste (Playbook P1): 6 Baum-Presets über die Matrix + je 1 Nicht-Baum.
-const TREES = ["eiche", "fichte", "birke", "weide", "mammut", "tanne"];
+// Die kuratierte Fall-Liste (Playbook P1): die Baum-Presets über die Matrix + je 1 Nicht-Baum. Buche · Karst ·
+// stehendes Totholz (Waldboden 04.10.) tragen seit der Integration (05.10.) dieselbe Matrix wie jeder Baum — zwei
+// Samen × L0/L1/L2 × Sommer/Winter: der Laubfall, das kahle Totholz und das Bake-Subjekt der Karte sind eingefroren.
+const TREES = ["eiche", "fichte", "birke", "weide", "mammut", "tanne", "buche", "karst", "totholz"];
 const T_SEEDS = [7, 12345];
 // L1 ist eine GELIEFERTE Stufe (die Mittelfeld-Krone, Blattkarten bei Eiche/Birke) — seit 04.10. eingefroren wie
 // L0/L2; gate:asset-contract misst an den L0/L1-Paaren die Budget-Deckung.
@@ -25,9 +27,9 @@ const OTHERS = ["findling", "kristalle", "blume", "strauch"]; // je 1 Fall, seed
 // Baum-L1 (der Reisig-Schnitt der Budget-Welle trifft sie, gate:asset-contract hält sie byte-genau).
 const EXTRA = [{ presetId: "strauch", seed: 7, lod: 1, season: "summer" }];
 // DER WALDBODEN (04.10., additiv gemünzt — die 77 Fälle davor blieben byte-gleich): je Boden-Art ihre gelieferten
-// Stufen L0/L1, die neuen Baum-Arten (Buche · Karst · stehendes Totholz) L0/L1, die neue Blumen-Stufe L2.
+// Stufen L0/L1 und die neue Blumen-Stufe L2.
 const WALDBODEN = [];
-for (const presetId of ["farn", "schilf", "gestruepp", "totstamm", "stumpf", "buche", "karst", "totholz"])
+for (const presetId of ["farn", "schilf", "gestruepp", "totstamm", "stumpf"])
     for (const lod of [0, 1]) WALDBODEN.push({ presetId, seed: 7, lod, season: "summer" });
 WALDBODEN.push({ presetId: "blume", seed: 7, lod: 2, season: "summer" });
 
