@@ -4489,6 +4489,159 @@ syncDnaUI();
 document.querySelector('.presetBtn').classList.add('active');   // Blues als Default markieren
 applyHashSession();                                              // #s=…&p=…&b=… aus geteiltem Link
 
+/* ==================== WELT-KLANG (Welle 5 Klang · Lab = Welt) ==================== */
+/* Der Welt-Modus spielt die Klang-Welt des Spiels: DERSELBE Graph (__klangCore.umweltGraph), dieselbe Mischung
+   (umweltMischung), dasselbe Mischpult (UMWELT.masterBasis, am Ausgang vorbei an der Musik-Mastering-Kette —
+   die Welt hat keinen Kompressor). Die Orte sind UMWELT.orte, die Regler die Lage am Ohr, der Tier-Ruf spielt
+   tierRuf. Rein additiv: die Musik-Maschine bleibt Byte für Byte, wie sie war. */
+(function () {
+  const K = window.__klangCore;
+  if (!K || !K.UMWELT || !K.umweltGraph) return;
+  const U = K.UMWELT;
+  let bus = null, graph = null, timer = null, aktivOrt = null;
+  let lage = JSON.parse(JSON.stringify(U.orte.wiese));
+  const REGLER = [
+    { k:'windFeld', lab:'Wind', min:0, max:1.2, step:0.01, fmt: v => (U.stimmen.wind.vMin + (U.stimmen.wind.vMax - U.stimmen.wind.vMin) * v).toFixed(1) + ' m/s' },
+    { k:'boe', lab:'Böe', min:0.25, max:1.15, step:0.01, fmt: v => '× ' + v.toFixed(2) },
+    { k:'deckung', lab:'Kronen', min:0, max:1, step:0.01, fmt: v => Math.round(v * 100) + ' %' },
+    { k:'regen', lab:'Regen', min:0, max:1, step:0.01, fmt: v => Math.round(v * 100) + ' %' },
+    { k:'sonne', lab:'Sonne', min:-1, max:1, step:0.01, fmt: v => v.toFixed(2) },
+    { k:'lebendig', lab:'Leben', min:0, max:1, step:0.01, fmt: v => v.toFixed(2) },
+    { k:'saisonPhase', lab:'Jahr', min:0, max:0.995, step:0.005, fmt: v => ['Frühling','Sommer','Herbst','Winter'][Math.floor((v % 1) * 4)] },
+    { k:'ufer.d', lab:'Ufer', min:1, max:50, step:0.5, fmt: v => v >= 50 ? '—' : v.toFixed(1) + ' m' },
+    { k:'glut.d', lab:'Glut', min:1, max:30, step:0.5, fmt: v => v >= 30 ? '—' : v.toFixed(1) + ' m' },
+  ];
+  const lies = (k) => { const t = k.split('.'); return t.length > 1 ? (lage[t[0]] ? lage[t[0]][t[1]] : undefined) : lage[k]; };
+  const schreibe = (k, v) => {
+    const t = k.split('.');
+    if (t.length === 1) { lage[k] = v; return; }
+    const offen = t[0] === 'ufer' ? v < 50 : v < 30;
+    lage[t[0]] = offen ? Object.assign({ anteil: 0.3, volumen: U.stimmen.glut.vRefM3, pan: 0 }, lage[t[0]] || {}, { d: v }) : undefined;
+  };
+  function sichern() {
+    if (graph) return;
+    ensureAudio();
+    bus = AC.createGain();
+    // Der Welt-Master wie im Spiel (UMWELT.masterBasis), dazu der Master-Regler des Labs (dieselbe Kurve wie die Musik).
+    bus.gain.value = U.masterBasis * Math.pow(mods.volume, 1.6);
+    // Hinter der Musik-Mastering-Kette in den Analyser (der führt zum Ausgang): der Visualizer sieht die Welt, sie
+    // klingt einmal, ungepresst.
+    bus.connect(analyser || AC.destination);
+    graph = K.umweltGraph(AC, bus);
+  }
+  document.getElementById('sVol').addEventListener('input', () => {
+    if (bus) bus.gain.setTargetAtTime(U.masterBasis * Math.pow(mods.volume, 1.6), AC.currentTime, 0.03);
+  });
+  function anwenden() {
+    if (!graph) return;
+    graph.anwenden(K.umweltMischung(lage), AC.currentTime);
+    const z = graph.zensus().filter(v => v.an || v.db > -80);
+    document.getElementById('weltZensus').innerHTML = z.length
+      ? z.map(v => (v.an ? '▶ <b>' : '· ') + v.name + (v.an ? '</b>' : '') + ' ' + (isFinite(v.db) ? v.db.toFixed(1) : '−∞') + ' dB').join('<br>')
+      : 'Stille — keine Stimme über der Hörschwelle (' + U.hoerschwelleDb + ' dB).';
+  }
+  function zeigeRegler() {
+    for (const r of REGLER) {
+      const el = document.getElementById('weltR_' + r.k.replace('.', '_'));
+      if (!el) continue;
+      const v = lies(r.k);
+      const w = r.k === 'ufer.d' ? (v == null ? 50 : v) : r.k === 'glut.d' ? (v == null ? 30 : v) : v;
+      el.value = String(w);
+      document.getElementById('weltV_' + r.k.replace('.', '_')).textContent = r.fmt(Number(w));
+    }
+  }
+  function ort(name) {
+    sichern();
+    aktivOrt = name;
+    lage = JSON.parse(JSON.stringify(U.orte[name]));
+    document.querySelectorAll('#weltOrte .lawBtn').forEach(b => b.classList.toggle('active', b.dataset.weltOrt === name));
+    zeigeRegler();
+    anwenden();
+    if (!timer) timer = setInterval(anwenden, U.ohr.mischSek * 1000);
+  }
+  function stille() {
+    if (timer) { clearInterval(timer); timer = null; }
+    if (graph) graph.stopAlle();
+    aktivOrt = null;
+    document.querySelectorAll('#weltOrte .lawBtn').forEach(b => b.classList.remove('active'));
+  }
+  // Orte (UMWELT.orte) + Stille
+  const orteEl = document.getElementById('weltOrte');
+  const NAMEN = { wiese:'Mess-Wiese', seeufer:'Seeufer', wald:'Waldinneres', dorf:'Dorf · Glut', sturm:'Sturm', nacht:'Sommernacht' };
+  for (const name of Object.keys(U.orte)) {
+    const b = document.createElement('button');
+    b.className = 'lawBtn';
+    b.dataset.weltOrt = name;
+    b.textContent = NAMEN[name] || name;
+    b.onclick = () => ort(name);
+    orteEl.appendChild(b);
+  }
+  const still = document.createElement('button');
+  still.className = 'lawBtn';
+  still.textContent = 'Stille';
+  still.onclick = stille;
+  orteEl.appendChild(still);
+  // Lage-Regler
+  const lageEl = document.getElementById('weltLage');
+  for (const r of REGLER) {
+    const id = r.k.replace('.', '_');
+    const row = document.createElement('div');
+    row.className = 'sliderRow';
+    row.innerHTML = '<label>' + r.lab + '</label><input type="range" id="weltR_' + id + '" min="' + r.min + '" max="' + r.max + '" step="' + r.step + '"><span class="val" id="weltV_' + id + '"></span>';
+    lageEl.appendChild(row);
+    row.querySelector('input').addEventListener('input', e => {
+      const v = parseFloat(e.target.value);
+      schreibe(r.k, v);
+      document.getElementById('weltV_' + id).textContent = r.fmt(v);
+      if (aktivOrt) anwenden();
+    });
+  }
+  zeigeRegler();
+  // Tier-Ruf: Körperlänge × Stimmung → tierRuf (derselbe Ruf wie im Spiel)
+  const tierEl = document.getElementById('weltTier');
+  const tRow = document.createElement('div');
+  tRow.className = 'sliderRow';
+  tRow.innerHTML = '<label>Länge</label><input type="range" id="weltTierL" min="0.3" max="3" step="0.05" value="1.2"><span class="val" id="weltTierV"></span>';
+  tierEl.appendChild(tRow);
+  const tierL = tRow.querySelector('input');
+  const tierV = document.getElementById('weltTierV');
+  const zeigeTier = () => {
+    const L = parseFloat(tierL.value);
+    tierV.textContent = L.toFixed(2) + ' m · ' + Math.round(U.tier.fRef * Math.pow(L / U.tier.lRef, -U.tier.exponent)) + ' Hz';
+  };
+  tierL.addEventListener('input', zeigeTier);
+  zeigeTier();
+  const tBtns = document.createElement('div');
+  tBtns.className = 'lawButtons';
+  tBtns.style.setProperty('--cols', '4');
+  tBtns.style.marginTop = '6px';
+  for (const s of Object.keys(U.tier.konturen)) {
+    const b = document.createElement('button');
+    b.className = 'lawBtn';
+    b.textContent = s;
+    b.onclick = () => {
+      sichern();
+      K.tierRuf(AC, bus, { laengeM: parseFloat(tierL.value), stimmung: s, d: U.tier.dRef, pan: 0, saat: (Date.now() >>> 0) });
+    };
+    tBtns.appendChild(b);
+  }
+  tierEl.appendChild(tBtns);
+  // Modus: Welt neben Generator/Simulator (eigene Hörer; die Musik-Modi blenden die Welt-Tafel aus).
+  const weltBtn = document.getElementById('weltModeBtn');
+  weltBtn.addEventListener('click', () => {
+    ['genModeBtn', 'simModeBtn'].forEach(id => document.getElementById(id).classList.remove('active'));
+    weltBtn.classList.add('active');
+    document.getElementById('generatorUI').style.display = 'none';
+    document.getElementById('simulatorUI').style.display = 'none';
+    document.getElementById('weltUI').style.display = 'block';
+  });
+  ['genModeBtn', 'simModeBtn'].forEach(id => document.getElementById(id).addEventListener('click', () => {
+    weltBtn.classList.remove('active');
+    document.getElementById('weltUI').style.display = 'none';
+  }));
+  window.__klangWelt = { zensus: () => (graph ? graph.zensus() : []), lage: () => lage, ort, stille };
+})();
+
 /* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
 /* Das fachwerk.js-Muster: enter/ready-Handshake, die DSL spricht die ECHTEN
    UI-Pfade — die 22 Genesis-Genres leben als .presetBtn-Buttons in #presets

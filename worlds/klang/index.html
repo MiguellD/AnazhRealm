@@ -168,6 +168,7 @@ section h2::after{content:'';flex:1;height:1px;background:var(--line)}
     <div id="modeToggle">
       <button id="genModeBtn" class="modeBtn active">Generator</button>
       <button id="simModeBtn" class="modeBtn">Simulator</button>
+      <button id="weltModeBtn" class="modeBtn" title="Die Klang-Welt des Spiels: dieselben Gesetze, derselbe Graph">Welt</button>
     </div>
     <div id="transport">
       <button id="playBtn" class="tBtn play">▶ Start</button>
@@ -216,6 +217,15 @@ section h2::after{content:'';flex:1;height:1px;background:var(--line)}
         MIDI-Keyboards werden automatisch erkannt.<br>
         <b>Jam-Modus:</b> Spielst du bei laufendem Generator 4+ Töne, übernimmt die Engine dein Motiv.</p>
       </section>
+    </div>
+
+    <!-- WELT-KLANG (Welle 5 Klang, Lab = Welt): die Orte und die Lage am Ohr spielen über
+         __klangCore.umweltGraph — DERSELBE Graph, den das Spiel baut. -->
+    <div id="weltUI" style="display:none">
+      <section><h2>Orte der Welt</h2><div class="lawButtons" style="--cols:3" id="weltOrte"></div></section>
+      <section><h2>Lage am Ohr</h2><div id="weltLage"></div></section>
+      <section><h2>Stimmen · klang:UMWELT</h2><div class="infoBox" id="weltZensus">Ort wählen.</div></section>
+      <section><h2>Tier-Ruf · die Stimme folgt dem Körper</h2><div id="weltTier"></div></section>
     </div>
   </div>
 </div>
