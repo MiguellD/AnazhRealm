@@ -99,6 +99,7 @@ class AnazhRealm {
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
             satzStoffe: null, // Map Bau-Satz-Art → { name, mat, wurf } (_bauSatzArt)
             bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
+            dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             archFundament: null, // der Fundament-Pool (_archFundamentAlloc)
             stlWege: null, // der Wege-Pool der Siedlungen
@@ -48575,81 +48576,94 @@ class AnazhRealm {
                 /* flight recorder optional */
             }
         }
-        const THREE_REF = typeof THREE !== "undefined" ? THREE : null;
         const scene = st.scene;
-        if (!THREE_REF || !scene || !quellen.length) {
+        if (typeof THREE === "undefined" || !scene) {
             // Residual renderer: Quellen stehen; kein Mesh-Pfad (headless / no THREE).
-            // Aufräumen falls Teilchen aus früherem Live-Pass übrig.
-            if (dr.teilchen.length && (!THREE_REF || !scene)) {
-                for (let k = dr.teilchen.length - 1; k >= 0; k--) {
-                    const T2 = dr.teilchen[k];
-                    if (T2 && T2.m) {
-                        try {
-                            if (T2.m.parent) T2.m.parent.remove(T2.m);
-                            if (T2.m.geometry) T2.m.geometry.dispose();
-                            if (T2.m.material) T2.m.material.dispose();
-                        } catch (_e3) {
-                            /* dispose best-effort */
-                        }
-                    }
-                }
-                dr.teilchen.length = 0;
-            }
+            dr.teilchen.length = 0;
             return;
         }
         // Das Rauch-Gesetz wohnt im fachwerk-Gesetzbuch (EINE Quelle für Lab
         // und Welt) — fail-closed wie jeder Kern-Leser, kein Literal-Zwilling.
         const G =
             AnazhRealm.Gesetz("fachwerk:RAUCH_GESETZ", null) || AnazhRealm._kernPflichtBruch("fachwerk:RAUCH_GESETZ");
-        const maxT = G.maxTeilchen;
-        const chance = G.spawnChance;
-        const vyBase = G.vyBase;
-        const vyRange = G.vyRange;
-        const dxSpread = G.dxSpread;
-        const fade = G.fade;
-        const a0 = G.a0;
-        const aKill = G.aKill;
-        const size = G.size;
-        const color = G.color;
-        const scaleMul = G.scaleMul;
-        // Lab-Feel: pro Frame, nicht dt-skaliert (Parity worlds/fachwerk frame).
-        if (dr.teilchen.length < maxT && Math.random() < chance) {
+        // Lab-Feel: pro Frame, nicht dt-skaliert (Parity worlds/fachwerk frame). Ein Teilchen ist Daten (Lage, Größe,
+        // Deckkraft); ohne Quelle entsteht keins, die lebenden steigen und vergehen weiter.
+        if (quellen.length && dr.teilchen.length < G.maxTeilchen && Math.random() < G.spawnChance) {
             const qq = quellen[(Math.random() * quellen.length) | 0];
-            const pm = new THREE_REF.Mesh(
-                new THREE_REF.BoxGeometry(size, size, size),
-                // RAUCH_VIS "box-lambert" ist die matte Kiste des Labors; in der Welt liest Matt den EINEN Himmel
-                // nur als Standard (rau) — r184-Lambert liest scene.environment nie diffus.
-                new THREE_REF.MeshStandardMaterial({
-                    color: color,
-                    transparent: true,
-                    opacity: a0,
-                    roughness: 1,
-                    metalness: 0,
-                })
-            );
-            pm.position.set(qq.x, qq.y, qq.z);
-            pm.name = "dorf-rauch";
-            scene.add(pm);
             dr.teilchen.push({
-                m: pm,
-                vy: vyBase + Math.random() * vyRange,
-                dx: (Math.random() - 0.5) * dxSpread,
-                a: a0,
+                x: qq.x,
+                y: qq.y,
+                z: qq.z,
+                s: 1,
+                vy: G.vyBase + Math.random() * G.vyRange,
+                dx: (Math.random() - 0.5) * G.dxSpread,
+                a: G.a0,
             });
         }
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
-            T2.m.position.y += T2.vy;
-            T2.m.position.x += T2.dx;
-            T2.a -= fade;
-            T2.m.material.opacity = T2.a;
-            T2.m.scale.multiplyScalar(scaleMul);
-            if (T2.a <= aKill) {
-                scene.remove(T2.m);
-                T2.m.geometry.dispose();
-                T2.m.material.dispose();
-                dr.teilchen.splice(k, 1);
+            T2.y += T2.vy;
+            T2.x += T2.dx;
+            T2.a -= G.fade;
+            T2.s *= G.scaleMul;
+            if (T2.a <= G.aKill) dr.teilchen.splice(k, 1);
+        }
+        this._dorfRauchZeichnen(G, dr.teilchen);
+    }
+
+    // DER RAUCH IST EIN SATZ (Welle 6): jedes Teilchen war ein eigenes Mesh mit eigenem Stoff (die Deckkraft je Kiste) —
+    // ein GPU-Befehl je Teilchen (Mess-Wiese: dorf-rauch 5 Befehle, das Gesetz trägt bis maxTeilchen 26), dazu je Teilchen
+    // Geometrie und Stoff neu und wieder entsorgt. Jetzt: EINE InstancedMesh (die matte Kiste des Labors, RAUCH_VIS
+    // "box-lambert", in der Welt rau-Standard — r184-Lambert liest scene.environment nie diffus), die Deckkraft je
+    // Instanz als Attribut. Gleichfarbige Teilchen mischen ohne Tiefen-Schreiben unabhängig von der Reihenfolge (über
+    // a₁, a₂ symmetrisch): das Bild der von fern nach nah sortierten Einzel-Kisten, ohne Sortierung.
+    _dorfRauchZeichnen(G, teilchen) {
+        const st = this.state;
+        let R = st.dorfRauchSatz;
+        if (!R && !teilchen.length) return; // kein Rauch, kein Mesh
+        if (!R || R.cap < G.maxTeilchen || R.size !== G.size) {
+            if (R) {
+                if (R.mesh.parent) R.mesh.parent.remove(R.mesh);
+                R.mesh.dispose();
+                R.geo.dispose();
+                R.mat.dispose();
             }
+            const cap = G.maxTeilchen;
+            const geo = new THREE.BoxGeometry(G.size, G.size, G.size);
+            const alpha = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1);
+            geo.setAttribute("aRauchDeck", alpha);
+            const mat = new THREE.MeshStandardNodeMaterial({
+                color: G.color,
+                transparent: true,
+                depthWrite: false,
+                roughness: 1,
+                metalness: 0,
+            });
+            mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
+            const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
+            mesh.name = "dorf-rauch";
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            AnazhRealm._instanzZahl(mesh, 0);
+            st.scene.add(mesh);
+            R = st.dorfRauchSatz = { mesh, geo, mat, alpha, cap, size: G.size, m: new THREE.Matrix4() };
+        }
+        const n = Math.min(teilchen.length, R.cap);
+        const e = R.m.elements;
+        for (let k = 0; k < n; k++) {
+            const t = teilchen[k];
+            R.m.makeScale(t.s, t.s, t.s);
+            e[12] = t.x;
+            e[13] = t.y;
+            e[14] = t.z;
+            R.mesh.setMatrixAt(k, R.m);
+            R.alpha.array[k] = t.a;
+        }
+        AnazhRealm._instanzZahl(R.mesh, n);
+        if (n > 0) {
+            R.mesh.instanceMatrix.needsUpdate = true;
+            R.alpha.needsUpdate = true;
+            R.mesh.boundingSphere = null; // die Teilchen steigen: die Hülle folgt (three cullt die Wolke als Ganzes)
         }
     }
 
