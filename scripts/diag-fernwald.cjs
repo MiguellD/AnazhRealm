@@ -1,26 +1,32 @@
 // diag-fernwald.cjs — DER FERNWALD IST KARTE (npm run gate:fernwald).
 //
 // Studio-Vertrag B2c: Baum und Strauch tragen `lod.budget[kind].fernform: "karte"` — jenseits der Nah-Grenze des Wirts
-// IST die Art ihre Karte (KIND_POLICY.impostor, auch Tor und Fahrzeug). Die Streu las das seit 04.10.; der GESETZTE Wald
-// (Architektur-Einträge aus `_forestPlantChunk`) trug jenseits der Mesh-Zone (des geregelten Cull-Radius, 100–150 m)
-// bis 05.10. einen Kegel-und-Lappen-Satz im Welt-March: aus 45 m glatte, gestreifte, einfarbig hellgrüne Ellipsoide
-// vor dem Wald (Blick-Tour 10-panorama-45m; an der Mess-Wiese 895 Sätze), am Radius sprang die Karte in den Satz.
-// Der EINE Chokepoint `tickArchitectureCulling` liest jetzt `_archKartenPreset`: ein Karten-Ding ist jenseits der
-// Mesh-Zone seine Karte (`_archInKartenZone`: Stufe 2, VOLL gestempelt, kein Band-Partner) bis zum Karten-Horizont
-// `SCATTER.outerM` (derselbe wie die gestreuten Bäume), geräumt erst `KARTEN_HORIZONT_TOTBAND_M` dahinter.
+// IST die Art ihre Karte (der Leser `_foundryFernForm`; Tor und Fahrzeug tragen "gesetz", ihren Box-Satz). Die Streu
+// las das seit 04.10.; der GESETZTE Wald (Architektur-Einträge aus `_forestPlantChunk`) trug jenseits der Mesh-Zone (des
+// geregelten Cull-Radius, 100–150 m) bis 05.10. einen Kegel-und-Lappen-Satz im Welt-March: aus 45 m glatte, gestreifte,
+// einfarbig hellgrüne Ellipsoide vor dem Wald (Blick-Tour 10-panorama-45m; an der Mess-Wiese 895 Sätze), am Radius
+// sprang die Karte in den Satz. Der EINE Chokepoint `tickArchitectureCulling` liest jetzt `_archKartenPreset`: ein
+// Karten-Ding trägt seine Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits
+// seines L1↔Karte-Bands auf die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu
+// SEINEM Rand im Saum vor `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst
+// `KARTEN_HORIZONT_TOTBAND_M` dahinter. Keine Karte dithert am Horizont (die Maske trägt keinen Schwund).
 //
 // Boot mit Foundry-ON und Null-Renderer (die Form-Entscheidung fällt CPU-seitig; headless trägt der Rahmen aus der
 // L1-Geometrie, die Karte steht ohne Bake). Die Linse nennt jeden Täter beim Namen (Art, Distanz, Grund).
-//   A FORM      an der Mess-Wiese trägt JEDES Karten-Ding zwischen Mesh-Zone und Karten-Horizont seine Karte: platziert,
-//               Stufe 2, VOLL gestempelt (aKarte.w < 0) — nicht vakuös: mindestens 100 solche Bäume.
+//   A FORM      an der Mess-Wiese trägt JEDES Karten-Ding zwischen Mesh-Zone und seinem Rand seine Gestalt: platziert,
+//               jenseits seines Bands (d·min(lodRef/Sichthöhe, 1) ≥ D1 + M) die Karte allein, Stufe 2 ohne Partner —
+//               nicht vakuös: mindestens 100 solche Bäume.
 //   B ABSENZ    kein Karten-Ding trägt einen Feld-Satz; der Satz-Weg (`_archZiegelFern`, mit echtem Renderer) legt für
 //               ein Karten-Ding keinen an.
-//   C HORIZONT  der Spieler zieht 320 m weiter: kein Karten-Ding jenseits Horizont + Totband ist platziert, jedes in der
-//               Karten-Zone trägt seine Karte.
+//   C HORIZONT  der Spieler zieht 320 m weiter: kein Karten-Ding jenseits seines Rands + Totband ist platziert, jedes in
+//               der Karten-Zone trägt seine Gestalt; die Ränder liegen im Saum und streuen über mindestens seine Hälfte.
 //   D ÜBERGANG  ein Baum am Rand der Mesh-Zone (Karte, diesseits) wandert hinüber und zurück: dieselben Instanz-Slots
-//               (kein Abbau, kein Neubau, kein Takt ohne Gestalt), der Voll-Stempel folgt der Zone — kein Pop am Radius.
+//               (kein Abbau, kein Neubau, kein Takt ohne Gestalt), draußen die Karte allein — kein Pop am Radius.
+//   D2 RIESE    eine Eiche mit Sichthöhe 110 m (Band 134–270 m, jenseits jedes Radius): im Band trägt sie ihren Partner
+//               (nicht voll gestempelt), jenseits die Karte allein, zurück wieder das Band — kein Takt ohne Gestalt.
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
-//               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen.
+//               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
+//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot.
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
@@ -129,27 +135,40 @@ function check(name, ok, detail) {
             }
             return null;
         };
+        // Jenseits seines L1↔Karte-Bands IST ein Karten-Ding die Karte allein (dieselbe Wahrnehmung wie die Stufen-Wahl);
+        // sein Rand liegt im Saum vor dem Horizont (Prototyp — die Selbsttests ersetzen nur Methoden der Welt).
+        const LD = AR.LOD_DISTANCES;
+        const jenseitsBand = (e, d) => {
+            const h = r._lodTreeVisHeight(e);
+            return h !== null && r._lodPerceptionDistance(d, h) >= LD.thresh12 + (LD.hysteresis || 0);
+        };
+        const partner = (e) => (Number.isFinite(e._lodBandLevel) ? e._lodBandLevel : null);
+        const RAND = AR.prototype._archKartenHorizont;
+        const rand = (e) => RAND.call(r, e);
         // A: der Zustand jedes Karten-Dings der Karten-Zone, Täter beim Namen.
         const formZensus = () => {
             const R = st.architectureCullingRadius;
             const t = [];
             let n = 0,
-                ok = 0;
+                ok = 0,
+                riesen = 0;
             for (const e of karten()) {
                 const d = dist(e);
-                if (!(d > R && d <= H)) continue;
+                if (!(d > R && d <= rand(e))) continue;
                 n++;
                 const p = kartenPreset(e);
+                const karte = jenseitsBand(e, d);
+                if (!karte) riesen++; // sein Band liegt jenseits des Radius: er folgt seiner Kette (D2)
                 let grund = null;
                 if (!r._archIsRendered(e)) grund = r._foundryPlatzBereit(e, p) ? "kalt (Karte bereit)" : "kalt (Karte lädt)";
-                else if (e._lodLevel !== 2) grund = "Stufe L" + e._lodLevel;
-                else if (!(stempel(e) < 0)) grund = "Karte nicht voll gestempelt";
+                else if (karte && e._lodLevel !== 2) grund = "Stufe L" + e._lodLevel;
+                else if (karte && partner(e) !== null) grund = "Band-Partner L" + partner(e) + " jenseits des Bands";
                 else if (e._ziegelSlot) grund = "Feld-Satz";
                 if (grund) {
                     if (t.length < 6) t.push(`${e.type} @ ${d.toFixed(0)} m: ${grund}`);
                 } else ok++;
             }
-            return { radius: Math.round(R), n, ok, taeter: t };
+            return { radius: Math.round(R), n, ok, riesen, taeter: t };
         };
         const einschwingen = async (msMax) => {
             const dl = performance.now() + msMax;
@@ -239,6 +258,7 @@ function check(name, ok, detail) {
                 d: +dist(e).toFixed(1),
                 gleich: JSON.stringify(e.instSlots) === slots,
                 voll: stempel(e) < 0,
+                partner: partner(e),
                 stufe: e._lodLevel,
                 radius: Math.round(st.architectureCullingRadius),
             };
@@ -248,6 +268,7 @@ function check(name, ok, detail) {
                 d: +dist(e).toFixed(1),
                 gleich: JSON.stringify(e.instSlots) === slots,
                 voll: stempel(e) < 0,
+                partner: partner(e),
                 stufe: e._lodLevel,
                 radius: Math.round(st.architectureCullingRadius),
             };
@@ -255,19 +276,100 @@ function check(name, ok, detail) {
         };
         res.D = await uebergang();
 
+        // ── D2: der Riese — sein L1↔Karte-Band liegt jenseits des Radius: er trägt dort seinen Band-Partner (kein harter
+        // Sprung am Radius) und ist erst jenseits des Bands die Karte allein. Die Sichthöhe 110 m legt das Band auf
+        // 134–270 m, jenseits jedes geregelten Radius; die Distanzen folgen der Wahrnehmung (dn 18 im Band, auch unter
+        // Perf ×1,3 unter D1 + M; dn 36 jenseits), beide diesseits des Saums. ──
+        const lodRef = st.lodRef > 0 ? st.lodRef : AR.LOD_DISTANCES.lodRef;
+        const ZIEL_H = 110;
+        const dBand = (18 * ZIEL_H) / lodRef,
+            dKarte = (36 * ZIEL_H) / lodRef;
+        let riesenEintrag = null;
+        const rieseZustand = (e) => ({
+            d: +dist(e).toFixed(1),
+            stufe: e._lodLevel,
+            partner: Number.isFinite(e._lodBandLevel) ? e._lodBandLevel : null,
+            voll: stempel(e) < 0,
+            da: r._archIsRendered(e),
+        });
+        const riese = async () => {
+            const vorbild = karten().find((e) => kartenPreset(e) === "eiche" && r._foundrySichtHoehe("eiche", e, 1) > 0);
+            if (!vorbild) return { fehlt: "keine Eiche mit bekannter Höhe" };
+            const h0 = r._foundrySichtHoehe("eiche", vorbild, 1);
+            const x = pm.x + dBand,
+                z = pm.z;
+            const e = r.spawnArchitecture("baum_eiche", { x, y: r._voxelSurfaceY(x, z), z }, {
+                rotationY: 0,
+                scale: ZIEL_H / h0,
+                seed: vorbild.seed,
+            });
+            if (!e) return { fehlt: "Spawn verweigert" };
+            riesenEintrag = e;
+            const start = { x: pm.x, z: pm.z };
+            let luecke = 0,
+                takte = 0;
+            const bis = async (n, fertig) => {
+                for (let i = 0; i < n; i++) {
+                    await tick(1);
+                    if (takte++ > 0 && !r._archIsRendered(e)) luecke++;
+                    if (fertig && fertig()) break;
+                }
+            };
+            // das Band einschwingen: platziert, Höhe bekannt, Partner gedockt
+            await bis(600, () => r._archIsRendered(e) && Number.isFinite(e._lodBandLevel));
+            const sichtH = r._foundrySichtHoehe("eiche", e, e.scale);
+            luecke = 0;
+            await bis(20);
+            const imBand = rieseZustand(e);
+            // jenseits des Bands: der Spieler rückt vom Riesen weg, bis er dKarte entfernt steht
+            stelle(e.position.x - dKarte, e.position.z);
+            await bis(60);
+            const jenseitsBand = rieseZustand(e);
+            stelle(e.position.x - dBand, e.position.z);
+            await bis(60, () => Number.isFinite(e._lodBandLevel));
+            const zurueck = rieseZustand(e);
+            stelle(start.x, start.z);
+            return { sichtH: sichtH && +sichtH.toFixed(1), imBand, jenseitsBand, zurueck, luecke, takte };
+        };
+        res.D2 = await riese();
+        // ── SELBSTTEST (3): kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.: jenseits des Radius trug ein
+        // Karten-Ding keinen Band-Partner) — D2 muss rot werden ──
+        if (riesenEintrag) {
+            const e = riesenEintrag;
+            stelle(e.position.x - dBand, e.position.z);
+            const BP = AR.prototype._foundryLodBandPartner;
+            r._foundryLodBandPartner = function (en, d) {
+                const R = this.state.architectureCullingRadius;
+                return Number.isFinite(R) && d > R && this._archKartenPreset(en) ? null : BP.call(this, en, d);
+            };
+            await tick(60);
+            res.S3 = rieseZustand(e);
+            delete r._foundryLodBandPartner;
+            await tick(60);
+            res.S3.zurueck = rieseZustand(e);
+            stelle(-900, -850);
+            await tick(10);
+        }
+
         // ── C: der Horizont — der Spieler zieht weiter, die Ferne räumt, die Karten-Zone trägt ──
         stelle(-900 + 320, -850);
         const zC = await einschwingen(240000);
         const jenseits = [];
-        let nJ = 0;
+        let nJ = 0,
+            randMin = Infinity,
+            randMax = -Infinity;
         for (const e of karten()) {
             const d = dist(e);
-            if (d > H + TOT) {
+            const h = rand(e);
+            randMin = Math.min(randMin, h);
+            randMax = Math.max(randMax, h);
+            if (d > h + TOT) {
                 nJ++;
-                if (r._archIsRendered(e) && jenseits.length < 6) jenseits.push(`${e.type} @ ${d.toFixed(0)} m platziert`);
+                if (r._archIsRendered(e) && jenseits.length < 6)
+                    jenseits.push(`${e.type} @ ${d.toFixed(0)} m (Rand ${h.toFixed(0)} m) platziert`);
             }
         }
-        res.C = { zone: zC, jenseitsN: nJ, jenseits };
+        res.C = { zone: zC, jenseitsN: nJ, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
 
         // ── SELBSTTEST (1): der alte Weg — kein Karten-Ding: jenseits der Mesh-Zone geräumt ──
         stelle(-900, -850);
@@ -302,7 +404,7 @@ function check(name, ok, detail) {
     check(
         "A FORM",
         A.n >= 100 && A.ok === A.n,
-        `Karten-Zone ${A.radius}–${out.horizont} m: ${A.ok}/${A.n} Karten-Dinge tragen ihre Karte (Stufe 2, voll)` +
+        `Karten-Zone ${A.radius} m bis zum Rand: ${A.ok}/${A.n} Karten-Dinge tragen ihre Gestalt (jenseits des Bands die Karte allein; ${A.riesen} Riesen im Band)` +
             (A.taeter.length ? ` · Täter: ${A.taeter.join(" | ")}` : "")
     );
     const w = out.B.wand;
@@ -314,11 +416,14 @@ function check(name, ok, detail) {
             ` · Satz-Weg für ${w ? w.typ : "?"}: ${w ? `ret ${w.ret}, Slot ${w.slot}, aufgegeben ${w.gebacken}` : "keine Probe"}`
     );
     const C = out.C;
+    // Die Ränder liegen im Saum und streuen über ihn (mindestens die halbe Breite): der Wald dünnt aus, kein Ring.
+    const saumOk = C.randMin >= out.horizont - C.saum && C.randMax <= out.horizont && C.randMax - C.randMin >= C.saum / 2;
     check(
         "C HORIZONT",
-        C.jenseitsN > 0 && C.jenseits.length === 0 && C.zone.n > 0 && C.zone.ok === C.zone.n,
-        `nach dem Umzug: ${C.jenseitsN} Karten-Dinge jenseits ${out.horizont}+${out.totband} m, platziert: ${C.jenseits.length}` +
+        C.jenseitsN > 0 && C.jenseits.length === 0 && C.zone.n > 0 && C.zone.ok === C.zone.n && saumOk,
+        `nach dem Umzug: ${C.jenseitsN} Karten-Dinge jenseits ihres Rands + ${out.totband} m, platziert: ${C.jenseits.length}` +
             (C.jenseits.length ? ` (${C.jenseits.join(" | ")})` : "") +
+            ` · Ränder ${C.randMin.toFixed(1)}–${C.randMax.toFixed(1)} m (Saum ${out.horizont - C.saum}–${out.horizont})` +
             ` · Karten-Zone ${C.zone.ok}/${C.zone.n}` +
             (C.zone.taeter.length ? ` · Täter: ${C.zone.taeter.join(" | ")}` : "")
     );
@@ -327,7 +432,7 @@ function check(name, ok, detail) {
         !x.fehlt &&
         x.luecke === 0 &&
         x.draussen.gleich &&
-        x.draussen.voll &&
+        x.draussen.partner === null &&
         x.draussen.stufe === 2 &&
         x.drinnen.gleich &&
         !x.drinnen.voll &&
@@ -337,8 +442,27 @@ function check(name, ok, detail) {
         dOk(D),
         D.fehlt
             ? "kein Baum am Rand der Mesh-Zone"
-            : `${D.typ} (${D.d0} m, Radius geregelt ${D.radius} m) → ${D.draussen.d} m (Radius ${D.draussen.radius}): Slots gleich ${D.draussen.gleich}, voll ${D.draussen.voll}` +
+            : `${D.typ} (${D.d0} m, Radius geregelt ${D.radius} m) → ${D.draussen.d} m (Radius ${D.draussen.radius}): Slots gleich ${D.draussen.gleich}, L${D.draussen.stufe}${D.draussen.partner !== null ? "+L" + D.draussen.partner : " allein"}` +
                   ` · zurück ${D.drinnen.d} m: Slots gleich ${D.drinnen.gleich}, voll ${D.drinnen.voll} · Takte ohne Gestalt ${D.luecke}/${D.takte}`
+    );
+    // D2: im Band der Partner (kein Voll-Stempel), jenseits die Karte allein, zurück wieder das Band — lückenlos.
+    const R2 = out.D2 || { fehlt: "nicht gelaufen" };
+    const mitBand = (z) => z && z.da && !z.voll && z.partner !== null && z.partner !== z.stufe;
+    const kartAllein = (z) => z && z.da && z.stufe === 2 && z.partner === null;
+    const zs = (z) => (z ? `${z.d} m L${z.stufe}${z.partner !== null ? "+L" + z.partner : ""}${z.voll ? " voll" : ""}` : "—");
+    check(
+        "D2 RIESE",
+        !R2.fehlt && mitBand(R2.imBand) && kartAllein(R2.jenseitsBand) && mitBand(R2.zurueck) && R2.luecke === 0,
+        R2.fehlt
+            ? R2.fehlt
+            : `Sichthöhe ${R2.sichtH} m · im Band ${zs(R2.imBand)} · jenseits ${zs(R2.jenseitsBand)} · zurück ${zs(R2.zurueck)}` +
+                  ` · Takte ohne Gestalt ${R2.luecke}/${R2.takte}`
+    );
+    const s3 = out.S3;
+    check(
+        "SELBSTTEST 3 (kein Band jenseits des Radius — D2 rot)",
+        !!s3 && !mitBand(s3) && mitBand(s3.zurueck),
+        s3 ? `alt: ${zs(s3)} · wieder: ${zs(s3.zurueck)}` : "kein Riese"
     );
     const s1 = out.S1;
     const s1Rot = s1.vorher && s1.zurueck && !(s1.A.n >= 100 && s1.A.ok === s1.A.n) && !s1.D.fehlt && !dOk(s1.D);

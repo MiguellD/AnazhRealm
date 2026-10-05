@@ -349,7 +349,7 @@ const FORBIDDEN = [
     // Der Grammatik-Pfad malte bei einem Atlas-Fehler still eine Ellipsen-Maske (fail-soft) — er bricht laut wie der
     // Laub-Stoff der Welt (KERN-PFLICHT).
     { token: "__foliageAtlasError", fiel: "Integration Welle 5 — kein Stoff ohne seinen Atlas (_blattAtlasProbe)" },
-    // DER FERNWALD (05.10.) — ein Karten-Ding (Baum, Strauch, Tor, Fahrzeug) ist jenseits der Mesh-Zone seine Karte
+    // DER FERNWALD (05.10.) — ein Karten-Ding (Baum, Strauch: B2c fernform karte) ist jenseits der Mesh-Zone seine Karte
     // (B2c `fernform`, `_archKartenPreset`); der Baum-Satz aus Grammatik-Kegeln und Kronen-Lappen fiel ganz: sein Fit,
     // sein Beipack (Kern + Brücke), sein Schlüssel und der Kegel-Stumpf im Welt-March.
     { token: "_baumGrammatikFit", fiel: "05.10. — fern ist der Baum seine Karte (gate:fernwald)" },
@@ -361,6 +361,13 @@ const FORBIDDEN = [
     },
     { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March (nur der Baum-Satz trug ihn)" },
     { token: "abaum:", fiel: "05.10. — die Gesetz-Streu heißt agesetz:, Bäume haben keinen Satz" },
+    // Integration 05.10.: der Horizont-Schwund der Karten-Maske (jede Karte, die im Band STAND, blieb ein Geist — am Grat
+    // die ganze Streu) und die Zonen-Klemme am Radius (ein Riese sprang dort ohne Band; jenseits des Bands wählt die EINE
+    // Stufen-Wahl die Karte selbst) fielen: der Rand des gesetzten Waldes ist je Eintrag ein CPU-Rand im Saum.
+    { token: "opts.fernNode", fiel: "Integration 05.10. — kein Distanz-Schwund in der Karten-Maske (_archKartenHorizont)" },
+    { token: "KARTEN_HORIZONT_SCHWUND_M", fiel: "Integration 05.10. — KARTEN_HORIZONT_SAUM_M (Rand je Eintrag)" },
+    { token: "_archInKartenZone", fiel: "Integration 05.10. — die EINE Stufen-Wahl (_chooseLODForDistance) trägt fern" },
+    { token: "entry._fernKarte", fiel: "Integration 05.10. — kein Zonen-Voll-Stempel (_lodSlotVoll)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

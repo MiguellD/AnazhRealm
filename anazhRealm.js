@@ -28313,11 +28313,9 @@ class AnazhRealm {
                                     // Baum (die Karte blendet voll). Maske + CPU-Doppel-Mitgliedschaft (`_updateFoundryLodBand`)
                                     // schalten zusammen am foundryCrossfade-Flag (default an).
                                     if (this.state && this.state.foundryCrossfade === true) {
-                                        // DER KARTEN-HORIZONT (`SCATTER.outerM`, der Rand der Streu und der Karten-Zone der
-                                        // gesetzten Bäume): über das letzte Schwund-Band dithert jede Karte aus, statt am
-                                        // Horizont zu poppen — die gesetzte Karte räumt erst ein Totband dahinter.
-                                        const _hzM = AnazhRealm.SCATTER.outerM;
-                                        const _hzB = AnazhRealm.KARTEN_HORIZONT_SCHWUND_M;
+                                        // Kein Horizont in der Maske: eine Distanz-Blende ins Nichts lässt jede Karte, die IM
+                                        // Band steht, dauerhaft halb durchsichtig (unter TRAA ein Geist am Grat) — der Rand
+                                        // des gesetzten Waldes lebt auf der CPU (`_archKartenHorizont`).
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
                                             distNode: _Ta.sqrt(_hl2),
@@ -28325,11 +28323,6 @@ class AnazhRealm {
                                             occlNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
                                                 .select(_Ta.float(1.0), _Ta.float(0.0)),
-                                            fernNode: _Ta
-                                                .float(_hzM)
-                                                .sub(_Ta.sqrt(_hl2))
-                                                .div(_Ta.float(_hzB))
-                                                .clamp(0.0, 1.0),
                                         });
                                         if (_keepFin) _alpha = _alpha.mul(_keepFin);
                                     }
@@ -29032,10 +29025,6 @@ class AnazhRealm {
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) return null;
-                // DER HORIZONT-SCHWUND (opts.fernNode, 0..1, der Karten-Horizont des Wirts): dieselbe Dither-Blende
-                // nimmt die Karte am Rand des Waldes zurück — der Studio-Wald hat keinen Horizont, die Maske des Studios
-                // bleibt diesseits unberührt (fernNode = 1).
-                const _fern = opts.fernNode || null;
                 let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Perf-Streck wie die CPU (_lodPerfMul)
                 if (opts.visHeightNode) {
                     // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
@@ -29047,8 +29036,7 @@ class AnazhRealm {
                 const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
                 const _occl = opts.occlNode || null; // die Verdeckung der Karte (aKarte.w < 0)
                 const _fin = _f1i.mul(2.0).min(T.float(1.0));
-                const _wFin = _occl ? _fin.max(_occl) : _fin;
-                const _keepFin = T.step(_dh, _fern ? _wFin.min(_fern) : _wFin);
+                const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
             }
             // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen, gemessen vom AUGE (`uLodAuge`):
@@ -50889,14 +50877,6 @@ class AnazhRealm {
             // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
             // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
             let newLOD = this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
-            // DIE KARTEN-ZONE (`_archInKartenZone`): jenseits der Mesh-Zone ist ein Karten-Ding seine Karte, VOLL gestempelt
-            // — ein Wechsel des Zustands zieht die Stempel der lebenden Slots nach (wie die Verdeckung unten).
-            const fernKarte = this._archInKartenZone(entry, dist);
-            if (fernKarte) newLOD = 2;
-            if ((entry._fernKarte === true) !== fernKarte) {
-                entry._fernKarte = fernKarte;
-                this._lodSlotOcclusionRefresh(entry);
-            }
             // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
             // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
             if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -51024,7 +51004,6 @@ class AnazhRealm {
     // EINEN Quelle _lodPerceptionDistance (Blatt auf leafVisCap gekappt, wie der aH0L-Stempel).
     // undefined = die Höhe ist (noch) nicht bekannt: kein Urteil, das Band bleibt.
     _foundryLodBandPartner(entry, dist) {
-        if (this._archInKartenZone(entry, dist)) return null; // die Karte allein, voll (`_archInKartenZone`)
         const visH = this._lodTreeVisHeight(entry);
         return visH === null ? undefined : this._lodBandPartnerFor(dist, visH, entry._lodLevel | 0, entry.scale);
     }
@@ -62887,11 +62866,10 @@ class AnazhRealm {
             }
         }
     }
-    // Zeichnet die Karte dieses Eintrags VOLL (vOcc 1, kein Distanz-Fade)? Der verdeckt-demotierte Baum (Studio-vOcc),
-    // die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`), und das Karten-Ding in
-    // der Karten-Zone (`_archInKartenZone`).
+    // Zeichnet die Karte dieses Eintrags VOLL (vOcc 1, kein Distanz-Fade)? Der verdeckt-demotierte Baum (Studio-vOcc)
+    // und die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`).
     _lodSlotVoll(entry) {
-        return entry._occluded === true || entry._bruecke === true || entry._fernKarte === true;
+        return entry._occluded === true || entry._bruecke === true;
     }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         // W6 — die Karte zeichnet in der EINEN globalen Atlas-Gruppe (leaf.atlasGruppe), gleich welche Art, Gestalt,
@@ -63866,10 +63844,6 @@ class AnazhRealm {
             if (!entry.instanced && !entry.mesh) {
                 const dlod = this._foundryLodForEntry(entry);
                 if (Number.isFinite(dlod)) entry._lodLevel = dlod;
-                // In der Karten-Zone zeichnet die Karte VOLL (`_lodSlotVoll`) — der Stempel fällt beim Platzieren.
-                const pm = this.state.playerMesh && this.state.playerMesh.position;
-                entry._fernKarte =
-                    !!pm && this._archInKartenZone(entry, Math.hypot(entry.position.x - pm.x, entry.position.z - pm.z));
             }
             const fFlat = this._foundryFlattenFor(entry, fPreset, entry._lodLevel);
             if (fFlat && fFlat.instanceable) {
@@ -67716,13 +67690,14 @@ class AnazhRealm {
         return entry._kartenPreset;
     }
 
-    // DIE KARTEN-ZONE: steht ein Karten-Ding jenseits der Mesh-Zone (des geregelten Cull-Radius), IST es seine Karte —
-    // die Stufen-Wahl klemmt auf sie (`_foundryLodForEntry`, `_tickArchitectureLOD`), sie zeichnet VOLL (`_lodSlotVoll`:
-    // die Stufen-Maske kennt den Radius nicht, ein Riese mit Sichthöhe über ~45 m stünde dort noch im Karten-Band) und
-    // trägt keinen Band-Partner. Diesseits wählt die Wahrnehmungs-Distanz wie bisher.
-    _archInKartenZone(entry, dist) {
-        const r = this.state.architectureCullingRadius;
-        return Number.isFinite(r) && dist > r && !!this._archKartenPreset(entry);
+    // DER KARTEN-HORIZONT eines Karten-Dings (m): jedes zieht seinen eigenen Rand in [outerM − Saum, outerM] aus seinem
+    // Samen — der gesetzte Wald dünnt über den Saum aus, kein Ring poppt, und keine Karte dithert. Befund Integration
+    // 05.10.: der Horizont-Schwund der Welle (eine Distanz-Blende 352–384 m in der Karten-Maske, für JEDE Karte des
+    // Atlas) ließ jeden Baum, der im Band STAND, dauerhaft halb durchsichtig — am Grat der Mess-Wiese Geister, und die
+    // ganze Streu dort mit. Die Streu hat ihren eigenen Rand (`_scatterRegion`, outerM ab dem Erzeugungs-Ort).
+    _archKartenHorizont(entry) {
+        const u = this._pcg2d(entry.seed >>> 0, AnazhRealm.KARTEN_HORIZONT_SALZ) / 4294967296;
+        return AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M * u;
     }
 
     // Foundry-Fit eines gesetzten Studio-Dings ohne Karte (Fels, Kristall): der Box-Satz (_archBoxFit) über eine
@@ -69895,8 +69870,6 @@ class AnazhRealm {
         // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe
         // Distanz: die Rampe setzte einen großen Baum in 40 m auf die Karte (dithernd, grau), und der LOD-Tick holte
         // ihn erst Takte später auf L1 (5 Wechsel je Takt, 04.10. an der Mess-Wiese 191 Plätze im ersten Takt).
-        // In der Karten-Zone ist die Stufe die Karte (`_archInKartenZone`).
-        if (this._archInKartenZone(entry, d)) return 2;
         return this._chooseLODForDistance(d, undefined, this._lodTreeVisHeight(entry));
     }
     // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
@@ -72012,29 +71985,34 @@ class AnazhRealm {
         const ziegelOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
         const nahOffen = this._archNahOffen || (this._archNahOffen = []);
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
-        // DER KARTEN-HORIZONT: die Karte eines gesetzten Karten-Dings trägt bis zum Rand der Deko-Streu (`SCATTER.outerM`,
-        // derselbe Horizont wie die gestreuten Bäume); geräumt wird erst ein Totband dahinter (kein Flattern am Rand).
-        const horizontSq = AnazhRealm.SCATTER.outerM * AnazhRealm.SCATTER.outerM;
-        const raeumSq = (AnazhRealm.SCATTER.outerM + AnazhRealm.KARTEN_HORIZONT_TOTBAND_M) ** 2;
+        // DER KARTEN-HORIZONT: die Karte eines gesetzten Karten-Dings trägt bis zu SEINEM Rand (`_archKartenHorizont`, im
+        // Saum vor `SCATTER.outerM`, dem Rand der Deko-Streu); geräumt wird erst ein Totband dahinter (kein Flattern).
+        const totband = AnazhRealm.KARTEN_HORIZONT_TOTBAND_M;
+        const saumSq = (AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M) ** 2;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
-            // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum, Strauch,
-            // Tor und Fahrzeug tragen nah ihre Studio-Kette und SIND jenseits der Mesh-Zone ihre Karte (die Stufen-Wahl
-            // klemmt dort auf sie, `_archInKartenZone`) — bis zum Karten-Horizont, nie ein Analog-Satz. Bis 05.10. trug
-            // jeder gesetzte Baum jenseits des Cull-Radius einen Kegel-und-Lappen-Satz im Welt-March: aus 45 m standen
-            // glatte, gestreifte, einfarbig hellgrüne Ellipsoide vor dem Wald (Blick-Tour 10-panorama-45m, 895 Sätze an
-            // der Mess-Wiese), am Radius sprang die Karte in den Satz. Eine Brücke braucht die Karten-Art nicht: steht
-            // ihre Wunsch-Stufe noch nicht, trägt die gedockte Karte (`_rebuildArchitectureMesh`).
+            // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum und Strauch
+            // tragen ihre Studio-Kette über die Mesh-Zone hinaus und SIND dort ihre Karte — dieselbe EINE Stufen-Wahl wie
+            // nah (die Wahrnehmung legt jeden Baum jenseits seines L1↔Karte-Bands auf die Karte, einen Riesen erst dort;
+            // eine eigene Zonen-Klemme am Radius sprang ihn bis zur Integration 05.10. ohne Band) — bis zu ihrem
+            // Karten-Horizont, nie ein Analog-Satz. Bis 05.10. trug jeder gesetzte Baum
+            // jenseits des Cull-Radius einen Kegel-und-Lappen-Satz im Welt-March: aus 45 m standen glatte, gestreifte,
+            // einfarbig hellgrüne Ellipsoide vor dem Wald (Blick-Tour 10-panorama-45m, 895 Sätze an der Mess-Wiese), am
+            // Radius sprang die Karte in den Satz. Eine Brücke braucht die Karten-Art nicht: steht ihre Wunsch-Stufe noch
+            // nicht, trägt die gedockte Karte (`_rebuildArchitectureMesh`).
             if (this._archKartenPreset(entry)) {
                 if (entry._ziegelSlot) this._archZiegelTod(entry);
-                if (distSq <= horizontSq) {
+                // diesseits des Saums trägt jedes; im Saum und dahinter fragt der Eintrag SEINEN Rand
+                const h = distSq <= saumSq ? Infinity : this._archKartenHorizont(entry);
+                if (distSq <= h * h) {
                     if (!this._archIsRendered(entry)) {
                         entry._nahD2 = distSq;
                         nahOffen.push(entry);
                     }
-                } else if (distSq > raeumSq && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+                } else if (distSq > (h + totband) ** 2 && this._archIsRendered(entry))
+                    this._cullArchitectureMesh(entry);
                 continue;
             }
             // DIE MESH-ZONE (der geregelte Cull-Radius, 100–150 m): hier IST das Studio-Mesh die Gestalt, der
@@ -91609,13 +91587,14 @@ AnazhRealm.ARCH_NAH_VERSUCHE = 24;
 // Die Platzier-Uhr der Mesh-Zone (ms je Takt): so lange setzt der Culling-Tick kalte Einträge, deren Studio-Stufe
 // gedockt bereitliegt — ohne Bau-Budget, nah zuerst. 197 Plätze kosteten 2,5 ms (04.10., echte GPU, Mess-Wiese).
 AnazhRealm.ARCH_PLATZ_MS = 4;
-// Das Totband am Karten-Horizont (m, `tickArchitectureCulling`): ein Karten-Ding platziert seine Karte bis
-// `SCATTER.outerM` und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt keine Karte
-// flattern.
+// Das Totband am Karten-Horizont (m, `tickArchitectureCulling`): ein Karten-Ding platziert seine Karte bis zu seinem
+// Rand (`_archKartenHorizont`) und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt
+// keine Karte flattern.
 AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
-// Der Horizont-Schwund (m): über so viele Meter vor `SCATTER.outerM` dithert jede Karte aus (die Karten-Maske,
-// `fernNode`) — der Wald endet weich, keine Karte poppt am Horizont, und vor dem Räumen ist sie schon fort.
-AnazhRealm.KARTEN_HORIZONT_SCHWUND_M = 32;
+// Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
+// seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
+AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
+AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
 // schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:

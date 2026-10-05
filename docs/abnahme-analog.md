@@ -57,7 +57,7 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
 - **B Bäume:** die Streu-Bäume tragen die ganze Studio-LOD-Kette als Instanzen — L0/L1 Mesh, L2 das
   gebackene Studio-Billboard (Bäcker-Queue nah zuerst, EINE Bake-Uhr 45 s). Gesetzte Bäume und
   Sträucher (Architektur, die Karten-Dinge `_archKartenPreset`) sind jenseits der Mesh-Zone ihre
-  Karte bis zum Karten-Horizont `SCATTER.outerM` (B2c `fernform: "karte"`, `_archInKartenZone`,
+  Karte bis zu ihrem Rand im Saum vor `SCATTER.outerM` (B2c `fernform: "karte"`, `_archInKartenZone`, `_archKartenHorizont`,
   gate:fernwald); ihr Analog-Satz (Ketten-Kegel + Kronen-Lappen) fiel 05.10. ganz — aus 45 m
   standen dort glatte, gestreifte, einfarbig hellgrüne Ellipsoide.
 - **C Architektur + Streu:** `_archZiegelFern` — Häuser über `_archFachwerkFit` (Balken, Gefach,
