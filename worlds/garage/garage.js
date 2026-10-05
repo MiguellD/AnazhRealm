@@ -197,7 +197,7 @@ const PAINTS=(Array.isArray(_LG)&&_LG.length===9)?_LG.map(t=>[t[0],t[1],t[2]]):P
 const prow=document.getElementById('paintrow');
 PAINTS.forEach(pt=>{const sw=document.createElement('button');sw.className='sw';sw.title=pt[0];
   sw.style.cssText='width:21px;height:21px;border-radius:50%;border:2px solid rgba(120,150,175,.32);background:#'+pt[1].toString(16).padStart(6,'0')+';cursor:pointer;padding:0;flex:none';
-  sw.onclick=()=>{if(pt[2]){bodyMat=M.clay;}else{M.paint.color.setHex(pt[1]);bodyMat=M.paint;}
+  sw.onclick=()=>{if(pt[2]){bodyMat=M.clay;}else{VC.farbeLinear(M.paint.color,pt[1]);bodyMat=M.paint;}   // W5: das Farbfeld IST der Lack (FARB-GESETZ — sRGB-Absicht → linear, dieselbe Kurve wie die Welt)
     document.querySelectorAll('#paintrow .sw').forEach(b=>b.style.boxShadow='');sw.style.boxShadow='0 0 0 2px var(--steel-bright)';clayB.classList.toggle('on',!pt[2]);rebuild();};
   prow.appendChild(sw);});
 // Ergebnis: nur das fertige Fahrzeug (Haut + Räder + Zelle/Sitze), ohne Hilfsgeometrie & Notizen

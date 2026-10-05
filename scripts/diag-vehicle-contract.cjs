@@ -37,8 +37,8 @@ function check(name, ok, detail) {
     if (!ok) errs.push(name);
 }
 
-// ── Der kanonische Fingerabdruck einer gebauten Gruppe ──
-function fingerprint(group) {
+// ── Der kanonische Fingerabdruck einer gebauten Gruppe (`nurGeometrie`: ohne die Material-Signatur — die Seed-Probe) ──
+function fingerprint(group, nurGeometrie) {
     const h = crypto.createHash("sha256");
     let objects = 0;
     let vertices = 0;
@@ -50,7 +50,7 @@ function fingerprint(group) {
         vertices += geo.attributes.position.count;
         h.update(String(o.type));
         h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
-        const m = o.material;
+        const m = nurGeometrie ? null : o.material;
         if (m) {
             h.update(
                 JSON.stringify({
@@ -129,10 +129,28 @@ function compare(golden, actual) {
     }
     check(`Determinismus: jeder der ${CASES.length} Fälle baut doppelt byte-gleich`, determin);
 
-    // 2) Seed-Invarianz (cv:3-Semantik — s. Kopf).
+    // 2) Seed-Semantik (cv:3, Re-Mint W5 05.10. — s. Kopf): die GEOMETRIE ist seed-invariant, der Same wählt den Lack.
     let seedInv = true;
-    for (const g of GATTUNGEN) if (actual[`${g}-s7-L0`].sha256 !== actual[`${g}-s12345-L0`].sha256) seedInv = false;
-    check("Seed-Invarianz: seed 7 == seed 12345 je Gattung (kein stochastischer Term)", seedInv);
+    for (const g of GATTUNGEN)
+        if (
+            fingerprint(VC.buildInstance(g, 7, 0), true).sha256 !==
+            fingerprint(VC.buildInstance(g, 12345, 0), true).sha256
+        )
+            seedInv = false;
+    check("Seed-Invarianz der Geometrie: seed 7 == seed 12345 je Gattung (kein stochastischer Term)", seedInv);
+    const lackJeSame = [1, 2, 3, 4, 5, 6, 7, 8].map((s) => {
+        let farbe = null;
+        VC.buildInstance("gt", s, 0).traverse((o) => {
+            const m = o.material;
+            if (m && m.userData && m.userData.__stoff === "lack" && m.metalness >= 0.5 && !farbe) farbe = m.color.getHex();
+        });
+        return farbe;
+    });
+    check(
+        "Lack-Gesetz: die Same 1..8 tragen acht verschiedene Karosserie-Lacke (LACK_GESETZ ohne Clay)",
+        new Set(lackJeSame).size === 8 && lackJeSame.every((c) => c !== null),
+        lackJeSame.map((c) => (c === null ? "—" : c.toString(16))).join(" ")
+    );
 
     // 3) ov-Kanal wirkt (Kultur-Override ändert die Geometrie wirklich — kein Passagier).
     check(
@@ -189,7 +207,7 @@ function compare(golden, actual) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:3), der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
+        "\n✅ GRÜN — der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der Same wählt den Lack (cv:3), der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
     );
     process.exit(0);
 })();

@@ -14,10 +14,9 @@
 //
 // DETERMINISMUS (G2.3): der Bau ist eine reine Funktion der Parameter — das
 // Garage-Studio trägt KEINEN stochastischen Term (Math.random lebt nur in der
-// Shell-Deko: Reifenrauch/Pylonen). Das seed-Argument reist mit (Vertrags-
-// Signatur) und ist RESERVIERT: buildInstance(id, 7, …) == buildInstance(id,
-// 12345, …) byte-gleich — eingefroren in spec/asset-contract/v3 (cv:3). Eine
-// künftige Seed-Variation ist ein bewusster Golden-Re-Mint, kein Drift.
+// Shell-Deko: Reifenrauch/Pylonen). Die GEOMETRIE ist seed-invariant; seit W5
+// (05.10.) wählt der Same den Lack der Gestalt aus dem LACK_GESETZ (`lackIndex`) —
+// der bewusste Golden-Re-Mint von spec/asset-contract/v3 (cv:3), kein Drift.
 //
 // THREE ist zur Laufzeit global (Browser: worlds/terrain/lib/three-r128.min.js
 // VOR diesem Skript; Node-Gate: global.THREE vor require). Der Manifest-Teil
@@ -80,8 +79,10 @@
                 envMapIntensity: 3.0,
                 side: THREE.DoubleSide,
             }),
+            // Die Paletten-Hex sind sRGB-Absichten (DAS FARB-GESETZ unten); die dunklen Stoffe liegen im Band der Natur
+            // (Gummi, schwarzer Kunststoff, Polster ≥ 0,02 linear — darunter ist nur noch Ruß), die Metalle tragen F0 ≥ 0,1.
             tire: new THREE.MeshStandardMaterial({
-                color: 0x131519,
+                color: 0x2a2c2f,
                 roughness: 0.85,
                 metalness: 0,
                 side: THREE.DoubleSide,
@@ -99,7 +100,7 @@
                 envMapIntensity: 1.2,
             }),
             cal: new THREE.MeshStandardMaterial({ color: 0x962e22, roughness: 0.5, metalness: 0.3 }),
-            pillar: new THREE.MeshStandardMaterial({ color: 0x101418, roughness: 0.4, metalness: 0.4 }),
+            pillar: new THREE.MeshStandardMaterial({ color: 0x26292d, roughness: 0.4, metalness: 0.4 }),
             steel: new THREE.MeshStandardMaterial({
                 color: 0x55677a,
                 roughness: 0.45,
@@ -107,25 +108,25 @@
                 envMapIntensity: 1.2,
             }),
             batt: new THREE.MeshStandardMaterial({
-                color: 0x1c2c44,
+                color: 0x4a6080,
                 roughness: 0.5,
                 metalness: 0.6,
                 envMapIntensity: 0.8,
             }),
             motor: new THREE.MeshStandardMaterial({
-                color: 0x3a536a,
+                color: 0x4d6a85,
                 roughness: 0.35,
                 metalness: 0.9,
                 envMapIntensity: 1.4,
             }),
             seat: new THREE.MeshStandardMaterial({
-                color: 0x241f2e,
+                color: 0x302a3a,
                 roughness: 0.7,
                 metalness: 0.05,
                 envMapIntensity: 0.5,
             }),
-            trim: new THREE.MeshStandardMaterial({ color: 0x14161e, roughness: 0.6, metalness: 0.2 }),
-            brake: new THREE.MeshStandardMaterial({ color: 0x6a4636, roughness: 0.4, metalness: 0.6 }),
+            trim: new THREE.MeshStandardMaterial({ color: 0x26282e, roughness: 0.6, metalness: 0.2 }),
+            brake: new THREE.MeshStandardMaterial({ color: 0x9a948f, roughness: 0.4, metalness: 0.6 }),
             door: new THREE.MeshStandardMaterial({
                 color: 0x969da3,
                 roughness: 0.85,
@@ -170,13 +171,13 @@
                 metalness: 0.0,
             }),
             housing: new THREE.MeshStandardMaterial({
-                color: 0x07090d,
+                color: 0x272a2e,
                 roughness: 0.42,
                 metalness: 0.4,
                 envMapIntensity: 1.3,
             }),
             grille: new THREE.MeshStandardMaterial({
-                color: 0x0a0c11,
+                color: 0x25272c,
                 roughness: 0.55,
                 metalness: 0.45,
                 envMapIntensity: 1.1,
@@ -214,7 +215,75 @@
             grille: "stoff",
         };
         for (const k in M) if (SEH[k]) M[k].userData.__seh = SEH[k];
+        // DER STOFF je Material (W5 Gegenstände, rein additiv): was das Material PHYSISCH ist — die Linse
+        // (gate:gegenstand-stoff) urteilt jede Albedo gegen das Band ihres Stoffs; Lehre = Lab-Überlage (nie in der Welt).
+        const STOFF = {
+            hard: "lehre",
+            joint: "lehre",
+            neg: "lehre",
+            clay: "ton",
+            door: "ton",
+            paint: "lack",
+            glass: "glas",
+            tire: "gummi",
+            rimM: "blank",
+            rimD: "metall",
+            steel: "metall",
+            batt: "metall",
+            motor: "metall",
+            brake: "metall",
+            cal: "lack",
+            pillar: "kunststoff",
+            trim: "kunststoff",
+            liner: "kunststoff",
+            housing: "kunststoff",
+            grille: "kunststoff",
+            seat: "polster",
+            drl: "licht",
+            lensW: "licht",
+            lensR: "licht",
+            lensA: "licht",
+        };
+        for (const k in M) {
+            if (STOFF[k]) M[k].userData.__stoff = STOFF[k];
+            stoffFarbe(M[k]);
+        }
         return M;
+    }
+
+    // DAS FARB-GESETZ DER GEGENSTÄNDE (W5, 05.10.): ein Paletten-Hex ist eine sRGB-ABSICHT (Farbwähler — wie im Kreatur-
+    // Bäcker und in der Vegetation, foundry-core `vegFarbe`), die Albedo ist sein LINEARER Wert. r128 schrieb das Hex
+    // roh, die Welt (r184, sRGB-Ausgabe) nahm die Komponenten als linear: der Reifen lag bei 0,08 (Natur 0,02–0,04),
+    // der Lack „Azurblau" 0x1c5190 leuchtete himmelblau neben seinem eigenen dunkelblauen Farbfeld in der Lack-Leiste.
+    // Gerechnet wird SELBST (die sRGB-Kurve, gesetzt per setRGB), einmal je Material beim Bau unter r128 (Labor, Worker,
+    // Gate): Labor, Welt und Karte tragen dieselbe Albedo, die Paletten bleiben die Absicht.
+    function linKanal(v) {
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    function farbeLinear(c, hex) {
+        c.setRGB(linKanal(((hex >> 16) & 255) / 255), linKanal(((hex >> 8) & 255) / 255), linKanal((hex & 255) / 255));
+        return c;
+    }
+    // r128 legte das Hex roh ab (Komponente = Byte / 255): das Gesetz liest die Komponente selbst, kein Hex-Umweg.
+    function stoffFarbe(m) {
+        for (const c of [m.color, m.emissive]) if (c) c.setRGB(linKanal(c.r), linKanal(c.g), linKanal(c.b));
+    }
+    // DER LACK DER WELT (W5): das Labor zeigt das Ton-Modell (Clay, die Anatomie-Ansicht) und den Lack der Leiste; die
+    // Welt fuhr bisher das Ton-Modell — jeder Wagen weiß-grau (Albedo 0,55 am Mittag). Jede Gestalt trägt ihren Lack aus
+    // dem LACK_GESETZ: der Same (die Gestalt 1..16 des Wirts) wählt reihum einen der acht Lacke (Clay ausgenommen), je
+    // Lack EIN geteiltes Material (der Lack-Stoff des Labors mit seiner Farbe — Klarlack, Metallic, Seh-Klasse metall).
+    const LACK_STOFFE = {};
+    function lackIndex(seed) {
+        const n = LACK_GESETZ.length - 1;
+        const s = Math.floor(Number(seed) || 0);
+        return 1 + (((s % n) + n) % n);
+    }
+    function lackStoff(i) {
+        if (LACK_STOFFE[i]) return LACK_STOFFE[i];
+        const m = materials().paint.clone();
+        farbeLinear(m.color, LACK_GESETZ[i][1]);
+        LACK_STOFFE[i] = m;
+        return m;
     }
 
     // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
@@ -1832,7 +1901,9 @@
                     dz = sd * cwK - sd * bw;
                 const pv = new THREE.Group();
                 pv.position.set(xHinge, pvY, sd * bw);
-                const skin = box(doorLen, yBelt - ySillTop, 0.016, M.door);
+                // Das Türblatt ist Außenhaut: im Ton-Modell sein eigener Ton (die Tür liest sich als Bauteil), im
+                // Lack der Lack — vorher blieb es Ton, ein lackierter Wagen trug weiße Türen.
+                const skin = box(doorLen, yBelt - ySillTop, 0.016, bodyMat === M.clay ? M.door : bodyMat);
                 skin.position.set(-doorLen / 2, 0, 0);
                 pv.add(skin); // Türblatt
                 const fb = [feFn(gB) - xHinge, gB - pvY, dz],
@@ -2189,8 +2260,8 @@
     };
 
     // ── LACK / PAINT SWATCHES (.230) — Lab Garage Lack-Swatches als DATEN.
-    // V18.491.230 Lab Garage Lack-Swatches; Host none (LACK_VIS).
-    // Do NOT Fake-merge Host paint / foundry materials. LY/PARAMS stay Lab UI-local.
+    // V18.491.230 Lab Garage Lack-Swatches; seit W5 trägt die Welt sie je Gestalt (`lackIndex`/`lackStoff`, LACK_VIS.host).
+    // Die Hex sind sRGB-Absichten (das Farbfeld der Leiste IST der Lack — `farbeLinear`).
     const LACK_GESETZ = [
         ["Clay", 0x8d9499, 1],
         ["Signalrot", 0xc4181b, 0],
@@ -2203,9 +2274,10 @@
         ["Perlweiss", 0xe8eaee, 0],
     ];
 
-    // LACK_VIS — intentional Lab paint swatches (Feel-Entscheid .230). Host none.
-    // lab:"swatches-9" = LACK_GESETZ 9 [name, hex, clayFlag] triples.
-    const LACK_VIS = { lab: "swatches-9", host: "none" };
+    // LACK_VIS — intentional Lab paint swatches (Feel-Entscheid .230).
+    // lab:"swatches-9" = LACK_GESETZ 9 [name, hex, clayFlag] triples; host:"gestalt-8" = der Same der Gestalt wählt reihum
+    // einen der 8 Lacke (Clay bleibt die Anatomie-Ansicht des Labors).
+    const LACK_VIS = { lab: "swatches-9", host: "gestalt-8" };
 
     // V18.491.265 Lab Garage caliper status colors; Host none (PRUEF_VIS).
     // ≠ LACK_GESETZ — do not Fake-merge.
@@ -2729,8 +2801,8 @@
     }
 
     // ── B2: buildInstance(rezeptId, seed, lod, ov?) — die EINE Bau-Funktion ──
-    // Deterministisch (rein aus den Parametern, s. Kopf: seed reserviert, Goldens
-    // cv:3 frieren die Seed-Invarianz ein); lod wird auf die einzige getragene
+    // Deterministisch (rein aus den Parametern); die GEOMETRIE ist seed-invariant, der Same wählt den LACK der Gestalt
+    // (`lackIndex`, W5 — Goldens cv:3 neu gemintet); lod wird auf die einzige getragene
     // Stufe 0 geklemmt (kindStages.vehicle=[0] — L1/L2 gradet der Wirt). ov reist
     // als Parameter-Override (z. B. CULTURES[x].fx). Ausgang: EINE THREE.Group
     // (Baukörper + Haut + Räder, Querschnitt-verjüngt + plan-konvex), Welt-Matrizen
@@ -2740,7 +2812,7 @@
         if (!pre) return null;
         const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
         const mats = materials();
-        const ctx = { M: mats, bodyMat: mats.clay, doors: [], corners: [] };
+        const ctx = { M: mats, bodyMat: lackStoff(lackIndex(seed)), doors: [], corners: [] };
         const H = hardpoints(P);
         const g = new THREE.Group();
         const pkg = buildPackage(H, P, ctx);
@@ -2796,6 +2868,10 @@
         A_LAT_MAX: A_LAT_MAX,
         // Bau-Fläche (die Shell baut ihre Ebenen aus DIESER Quelle)
         materials: materials,
+        // W5 — das Farb-Gesetz und der Lack der Gestalt (die Lack-Leiste der Shell liest dieselbe Kurve)
+        farbeLinear: farbeLinear,
+        lackIndex: lackIndex,
+        lackStoff: lackStoff,
         buildFrame: buildFrame,
         buildWheels: buildWheels,
         buildSkin: buildSkin,
