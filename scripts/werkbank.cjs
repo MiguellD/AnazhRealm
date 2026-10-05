@@ -17,6 +17,8 @@
 //   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse
 //                                                           (scripts/lib/licht-linsen.cjs; Karte = 0,180)
 //   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
+//   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
+//                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
 //                                                           DER DRAW-ZÄHLER: GPU-Befehle + Dreiecke je Pass
 //                                                           (Hauptbild · jede Kaskade) und Täter-Klasse, ein Frame
@@ -76,6 +78,7 @@ const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
+const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
 const root = path.resolve(__dirname, "..");
@@ -794,6 +797,7 @@ async function starte() {
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
+        await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
             while (
@@ -1191,6 +1195,17 @@ async function starte() {
                     return send(
                         Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 })
                     );
+                if (req.url === "/fernwald")
+                    return send(
+                        Object.assign(
+                            await page.evaluate((o) => window.__fernwaldLinse(o), {
+                                blicke: b.blicke ? String(b.blicke).split(",") : null,
+                                w: Number(b.w) || 1280,
+                                h: Number(b.h) || 720,
+                            }),
+                            { ms: Date.now() - t0 }
+                        )
+                    );
                 if (req.url === "/reload") {
                     await lade();
                     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
@@ -1246,6 +1261,7 @@ async function starte() {
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo") o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner") });
     else if (cmd === "licht") o = await rufe("/licht");
+    else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
     else if (cmd === "zaehlen")
