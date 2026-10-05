@@ -559,7 +559,34 @@ function selbsttest() {
             n18b.ratsche.vramMB["buf:szene"] === 21 &&
             n18b.ratsche.gemessen.datum === "klassen-serie" &&
             n18b.ratsche.gemessen.vram.datum === "vram-serie" &&
-            !BAND.ratschePruefen(n18b.ratsche, haushalt).length
+            !BAND.ratschePruefen(n18b.ratsche, haushalt).length &&
+            BAND.vramBefunde(u17b).length === 2 &&
+            BAND.vramBefunde(u5).length === 0 &&
+            BAND.vramBefunde(u7).length === 1
+    );
+    // S19 — die Geometrie der Tiere ist der freie Erzeuger `buf:tier` (Weltzustand): keine Ratsche, nicht in der gebundenen
+    // Summe, der Nachzug setzt ihn nie; die übrige Szene bleibt `buf:szene`.
+    const r19 = JSON.parse(JSON.stringify(rt));
+    r19.frei = { tier: "Weltzustand — Kosten je Tier hält gate:kreatur-kosten" };
+    r19.vramMB = { "buf:tier": 1, "buf:szene": 30 };
+    r19.gesamt.vramMB = 31;
+    const u19 = urteil([], r19, {
+        mb: 40,
+        liste: [
+            { k: "buf:szene:bodenSatz", mb: 30, n: 6 },
+            { k: "buf:szene:tier:baer", mb: 6, n: 60 },
+            { k: "buf:szene:tier:fuchs", mb: 4, n: 50 },
+        ],
+    });
+    const n19 = BAND.ratscheNachziehen(r19, u19, { datum: "s19", eingeschwungen: true }, "vram");
+    t(
+        "buf:szene:tier:* → freier Erzeuger buf:tier (10 MB über seiner Ratsche 1 nie rot), gebunden 30 MB, der Nachzug lässt ihn",
+        BAND.erzeugerOf("buf:szene:tier:baer").erzeuger === "tier" &&
+            BAND.erzeugerOf("buf:szene:f:eiche:L0").erzeuger === "szene" &&
+            !hatRot(u19, "ratsche") &&
+            u19.vram.gebunden === 30 &&
+            n19.ratsche.vramMB["buf:tier"] === 1 &&
+            n19.ratsche.gesamt.vramMB === 30
     );
 
     const rot = tests.filter((x) => !x.ok);

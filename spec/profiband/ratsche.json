@@ -13,7 +13,19 @@
             "zweit/2",
             "erst/1",
             "zweit/2"
-        ]
+        ],
+        "vram": {
+            "datum": "2026-10-05T22:49:03.392Z",
+            "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+            "eingeschwungen": true,
+            "laeufe": 4,
+            "boots": [
+                "erst/1",
+                "zweit/2",
+                "zweit/3",
+                "erst/1"
+            ]
+        }
     },
     "toleranzPct": 1,
     "toleranzAbs": {
@@ -27,7 +39,7 @@
     "gesamt": {
         "befehle": 296,
         "dreiecke": 4095487,
-        "vramMB": 232.6
+        "vramMB": 148.7
     },
     "klassen": {
         "boden": {
@@ -200,7 +212,7 @@
         }
     },
     "vramMB": {
-        "buf:?": 94.4,
+        "buf:?": 0,
         "tex:TRAANode.history": 23.7,
         "tex:output": 15.8,
         "tex:TRAANode.resolve": 15.8,
@@ -208,7 +220,7 @@
         "tex:karte-normal": 14.7,
         "tex:kaskade0": 12,
         "tex:kaskade1": 12,
-        "tex:depthBuffer": 7.9,
+        "tex:depthBuffer": 0,
         "tex:depth": 7.9,
         "tex:szene": 7.9,
         "tex:feld-pass-panorama": 1.9,
@@ -224,6 +236,11 @@
         "tex:welt-march-seiten": 0,
         "tex:welt-march-folge": 0,
         "tex:DFG_LUT": 0,
-        "tex:TRAANode.vortiefe": 0
+        "tex:TRAANode.vortiefe": 0,
+        "buf:szene": 40.6,
+        "tex:wege-karte": 4,
+        "buf:bild": 0,
+        "buf:verwaist": 0,
+        "buf:ruhend": 0
     }
 }

@@ -72,12 +72,20 @@ function zuordnen(haushalt, e) {
 // Der Erzeuger eines VRAM-Schlüssels (`tex:<label> <format> <größe>` · `buf:<label>`): das gefaltete Label
 // (`vramFalte`, dieselbe Regel wie der Abgriff — idempotent) bis zum ersten `:`/`#` (die Karten tragen
 // `karte-albedo:<preset>|…`, r184 `bindingBuffer<id>_…`); `?` = ohne Namen.
+// Die Geometrie der Tiere (`buf:szene:tier:<seele>`) ist ihr eigener Erzeuger `buf:tier`: sie misst den Weltzustand (die
+// Tiere wandern an der Mess-Wiese um den Spieler, 0 bis 10 MB) — die freie Klasse `tier` trägt auch im Speicher keine Ratsche.
 function erzeugerOf(k) {
     const m = /^(tex|buf):(\S*)/.exec(String(k));
     if (!m) return { art: "?", erzeuger: "?" };
     const label = m[2] ? vramFalte(m[2]) : "?";
+    if (m[1] === "buf" && /^szene:tier:/.test(label)) return { art: "buf", erzeuger: "tier" };
     return { art: m[1], erzeuger: label === "?" ? "?" : label.split(/[:#]/)[0] || "?" };
 }
+// Ein VRAM-Erzeuger einer FREIEN Klasse (`buf:<id>` mit `ratsche.frei[id]`): Weltzustand, keine Ratsche.
+const vramFrei = (ratsche, erzeuger) => {
+    const m = /^buf:(.+)$/.exec(erzeuger);
+    return !!(m && freiGrund(ratsche, m[1]));
+};
 
 // DIE PROBEN EINER MESSUNG: je Klasse × Pass das MAXIMUM über die Zähl-Frames (der teuerste Frame, den der Spieler an
 // diesem Ort sieht — die Tiere wandern, der Takt rechnet zwischen den Proben weiter), dMax ebenso.
@@ -370,10 +378,17 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche }) {
                     text: `VRAM-Leck ${e.erzeuger}: ${e.mb} MB in ${e.n} Puffern, die kein Bild trägt (${e.form.join(" · ")})`,
                 });
         const rv = (ratsche && ratsche.vramMB) || {};
-        for (const e of liste)
+        let frei = 0;
+        for (const e of liste) {
+            if (vramFrei(ratsche, e.erzeuger)) {
+                frei += e.mb;
+                continue;
+            }
             if (ueberRatsche(e.mb, rv[e.erzeuger], ratsche, "vramMB"))
                 rot.push({ art: "ratsche", text: `VRAM ${e.erzeuger}: ${e.mb} MB über der Ratsche ${rv[e.erzeuger]}` });
-        speicher = { mb: vram.mb, band: haushalt.band.vramMB, erzeuger: liste };
+        }
+        // gebunden = ohne die freien Erzeuger (wie die Summen-Ratsche der Befehle): die Ratsche hält, was Kosten sind
+        speicher = { mb: vram.mb, gebunden: +(vram.mb - frei).toFixed(1), band: haushalt.band.vramMB, erzeuger: liste };
     }
     // DIE TEXTUR-OBJEKTE (Backend-unabhängig): jedes trägt seinen Erzeuger — selbst oder über sein Render-Ziel.
     if (texturen)
@@ -389,8 +404,8 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche }) {
         rot.push({ art: "ratsche", text: `Summe (gebunden) ${gebunden.befehle} Befehle über der Ratsche ${rg.befehle}` });
     if (ueberRatsche(gebunden.dreiecke, rg.dreiecke, ratsche, "dreiecke"))
         rot.push({ art: "ratsche", text: `Summe (gebunden) ${gebunden.dreiecke} Dreiecke über der Ratsche ${rg.dreiecke}` });
-    if (speicher && ueberRatsche(speicher.mb, rg.vramMB, ratsche, "vramMB"))
-        rot.push({ art: "ratsche", text: `VRAM ${speicher.mb} MB über der Ratsche ${rg.vramMB}` });
+    if (speicher && ueberRatsche(speicher.gebunden, rg.vramMB, ratsche, "vramMB"))
+        rot.push({ art: "ratsche", text: `VRAM ${speicher.gebunden} MB (gebunden) über der Ratsche ${rg.vramMB}` });
     // DAS BAND: jede Größe gegen ihr Soll — ROT, solange ein Ist darüber liegt.
     const B = haushalt.band;
     const gpuMs = gpu && Number.isFinite(gpu.gpuJeFrameMs) ? gpu.gpuJeFrameMs : null;
@@ -451,18 +466,32 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
         setze(neu.gesamt, "dreiecke", u.summe.gebunden.dreiecke, "gesamt.dreiecke");
     }
     if (u.vram) {
-        setze(neu.gesamt, "vramMB", u.vram.mb, "gesamt.vramMB");
+        setze(neu.gesamt, "vramMB", u.vram.gebunden != null ? u.vram.gebunden : u.vram.mb, "gesamt.vramMB");
         neu.vramMB = neu.vramMB || {};
-        for (const e of u.vram.erzeuger) setze(neu.vramMB, e.erzeuger, e.mb, "vramMB." + e.erzeuger);
+        for (const e of u.vram.erzeuger)
+            if (!vramFrei(neu, e.erzeuger)) setze(neu.vramMB, e.erzeuger, e.mb, "vramMB." + e.erzeuger);
         // Ein Erzeuger, den der Abgriff nicht mehr sieht, ist GEFALLEN (W6: die Leinwand-Tiefe `tex:depthBuffer`, die
         // namenlosen `buf:?`) — seine Ratsche zieht auf 0, sonst kehrte er still bis zur alten Hülle zurück.
         const lebt = new Set(u.vram.erzeuger.map((e) => e.erzeuger));
-        for (const k of Object.keys(neu.vramMB)) if (!lebt.has(k)) setze(neu.vramMB, k, 0, "vramMB." + k);
+        for (const k of Object.keys(neu.vramMB))
+            if (!lebt.has(k) && !vramFrei(neu, k)) setze(neu.vramMB, k, 0, "vramMB." + k);
     }
     if (aenderungen.length)
         if (nur === "vram") neu.gemessen = Object.assign({}, ratsche.gemessen || gemessen, { vram: gemessen });
         else neu.gemessen = gemessen;
     return { ratsche: neu, aenderungen };
+}
+
+// Die Befunde der LINSE, die den Speicher betreffen (`ratsche --nur vram`): ein Leck, eine Textur ohne Erzeuger, ein
+// VRAM-Erzeuger oder die VRAM-Summe über der Ratsche. Ein Klassen-Befund (Befehle/Dreiecke eines Passes) gehört der
+// Serie seiner Klasse, nie dem Speicher-Nachzug.
+function vramBefunde(u) {
+    return (u.rot || []).filter(
+        (r) =>
+            r.art === "leck" ||
+            (r.art === "unbenannt" && /^(tex:|Textur-Objekt)/.test(r.text)) ||
+            (r.art === "ratsche" && /^VRAM /.test(r.text))
+    );
 }
 
 // Die Tabelle für das Auge: Ist/Soll/Täter je Klasse, die Summe gegen das Band, der VRAM je Erzeuger, die Urteile.
@@ -579,6 +608,7 @@ module.exports = {
     zensusMax,
     bandHuelle,
     ratscheNachziehen,
+    vramBefunde,
     bandTabelle,
     zuordnen,
     erzeugerOf,

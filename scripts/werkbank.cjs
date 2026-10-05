@@ -1368,7 +1368,9 @@ async function starte() {
         const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche }, h));
         Object.assign(u, { messung: null, boot: null });
         console.log(BAND.bandTabelle(u));
-        if (u.linse !== "SAUBER") {
+        // `--nur vram` zieht nur den Speicher nach: dann zählen nur die Speicher-Befunde der LINSE.
+        const nurVram = opt("--nur") === "vram";
+        if (nurVram ? BAND.vramBefunde(u).length > 0 : u.linse !== "SAUBER") {
             console.log("\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen");
             process.exit(1);
         }
