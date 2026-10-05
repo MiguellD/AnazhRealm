@@ -607,7 +607,9 @@ const SCHUSS_FN = async (kam) => {
                     if (d < 1.5 && d < zielD) ((ziel = e), (zielD = d));
                 }
                 const LD = r.constructor && r.constructor.LOD_DISTANCES;
-                const L01 = LD && Number.isFinite(LD.thresh01) ? LD.thresh01 : 20;
+                // Die Schwelle liest die Welt (Studio-d0 nach dem Ingest) — ohne sie misst die Linse nichts (kein Literal).
+                if (!LD || !Number.isFinite(LD.thresh01)) throw new Error("LOD_DISTANCES.thresh01 fehlt — die Stufen-Linse misst nichts");
+                const L01 = LD.thresh01;
                 const zielOffen = () =>
                     !!ziel &&
                     Number.isFinite(ziel._lodLevel) &&

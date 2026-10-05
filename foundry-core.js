@@ -558,7 +558,7 @@ function buildMaterials() {
             alphaTest: 0.5,
         }),
         true
-    ); // FIX v31: MULTI-BLATT-KARTEN — ein Quad traegt ~6 GEMALTE Blaetter aus _leafAtlas (map wird nach dem Malen gesetzt). map haelt WERT (0.6-1.0 grau-warm), die Artfarbe kommt wie ueberall aus vertexColors -> Saison/Tint-Pipeline unveraendert. 28 Dreiecke je Blatt werden 2 je ~6 Blaetter (Faktor ~14 im Mittelfeld).
+    ); // FIX v31: MULTI-BLATT-KARTEN — ein Quad traegt ~6 GEMALTE Blaetter aus _leafAtlas (map wird nach dem Malen gesetzt). map haelt den WERT um sein Mittel `wert` (bakeLeafAtlasBild; color = 1/wert teilt ihn heraus), die Artfarbe kommt wie ueberall aus vertexColors -> Saison/Tint-Pipeline unveraendert. 28 Dreiecke je Blatt werden 2 je ~6 Blaetter (Faktor ~14 im Mittelfeld).
     grassMat = injectWind(
         new THREE.MeshStandardMaterial({
             vertexColors: true,
@@ -866,7 +866,7 @@ function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zel
 
 function bakeLeafAtlas() {
     if (_leafAtlas) return;
-    // DER GETEILTE SAMEN: der Blatt-Atlas lebt in phyto-core.js (bakeLeafAtlasCanvas) — EIN Maler, EIN Layout
+    // DER GETEILTE SAMEN: der Blatt-Atlas lebt in phyto-core.js (bakeLeafAtlasCanvas malt, bakeLeafAtlasBild mippt) — EIN Maler, EIN Layout
     // fuer Studio, Foundry-Worker und Host (Zellen 0..2 Breitblatt, 3 Nadel-Spray; die Karten routen ueber
     // BLATT_ATLAS_BREIT/BLATT_ATLAS_NADEL). Der Worker hat kein document — er malt in eine OffscreenCanvas.
     // Ohne Samen kein stiller Inline-Zwilling (der alte Inline-Maler mit vier Breitblatt-Zellen ist gefallen).

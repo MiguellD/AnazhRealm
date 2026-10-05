@@ -69398,7 +69398,7 @@ class AnazhRealm {
             } else if (kind === "foliageTex") {
                 // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
                 // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
-                // (phyto-core `bakeLeafAtlasCanvas`): Zellen 0..2 Breitblatt (Laub-Karten, `BLATT_ATLAS_BREIT`),
+                // (phyto-core `bakeLeafAtlasBild`): Zellen 0..2 Breitblatt (Laub-Karten, `BLATT_ATLAS_BREIT`),
                 // Zelle 3 Nadel-Spray (Nadel-Karten der Koniferen-L1, `BLATT_ATLAS_NADEL`) — dieselbe Textur wie
                 // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
                 const tex = this._ensureFoliageClusterAtlas();
