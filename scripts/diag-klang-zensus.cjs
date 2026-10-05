@@ -35,8 +35,9 @@
 //  (W) DIE WERKSTATT: der Haupt-Thread des Spiels rechnet keinen Sample (Texturen, Rufe —
 //      klang:umweltSynthese zählt je Thread), weder an einem Ort noch für ein Ereignis;
 //      gerechnet wird in der Klang-Werkstatt (Worker), der Haupt-Thread nimmt auf und spielt.
-//  (A) ARMLÄNGE: zwei Orte aus nächster Nähe — 1 m vor dem Glut-Bau, 3 m neben dem nächsten
-//      Wasserfall der Region — mit eigenem SOLL (die nahe Quelle trägt den Ort).
+//  (A) ARMLÄNGE: zwei Orte aus nächster Nähe — 1 m vor dem Glut-Bau, der nächste trockene
+//      Punkt 3–12 m neben dem Fuß des nächsten Wasserfalls der Region (der Fuß liegt im
+//      Becken; Mess-Saat: 8 m vor einem 17-m-Fall) — mit eigenem SOLL (die nahe Quelle trägt den Ort).
 //  (P) DIE SPITZEN-PROBE: die ganze Mischung jedes Welt- und jedes Lab-Ortes offline durch
 //      Welt-Master und Spitzen-Wand (klang:umweltSpitze) — keine Spitze erreicht 0 dBFS.
 //  SELBST-TEST (--selftest, die Linse feuert): ein eingeschmuggelter Drohn-Oszillator
@@ -258,23 +259,26 @@ function werkzeug() {
             // ARMLÄNGE an der Glut: 1 m vor dem Bau (das Knistern aus nächster Nähe — die Spitzen-Probe).
             orte.glutArm = { x: ex + (wx - ex) / d, z: ez + (wz - ez) / d, glut: { x: ex, z: ez, typ: glut.e.type } };
         }
-        // ARMLÄNGE am Wasserfall: der nächste Fall der Region, 3 m neben seinem Fuß auf trockenem Land.
+        // ARMLÄNGE am Wasserfall: der nächste Fall der Region, der nächste trockene Punkt 3–12 m neben seinem Fuß (der
+        // Fuß liegt im Becken).
         const h = r._hydroFor(wx, wz);
         let wfN = null;
         for (const f of (h && h.waterfalls) || []) {
             const d = Math.hypot(f.x - wx, f.z - wz);
             if (!wfN || d < wfN.d) wfN = { f, d };
         }
-        if (wfN) {
-            for (let a = 0; a < 16; a++) {
+        for (const rad of wfN ? [3, 4, 5, 6, 8, 10, 12] : []) {
+            for (let a = 0; a < 16 && !orte.fallArm; a++) {
                 const ang = (a / 16) * Math.PI * 2;
-                const x = wfN.f.x + Math.sin(ang) * 3;
-                const z = wfN.f.z + Math.cos(ang) * 3;
+                const x = wfN.f.x + Math.sin(ang) * rad;
+                const z = wfN.f.z + Math.cos(ang) * rad;
                 if (W.nass(x, z)) continue;
-                orte.fallArm = { x, z, fall: { x: wfN.f.x, z: wfN.f.z, hoehe: +(wfN.f.topY - wfN.f.bottomY).toFixed(1) } };
-                break;
+                orte.fallArm = { x, z, fall: { x: wfN.f.x, z: wfN.f.z, d: rad, hoehe: +(wfN.f.topY - wfN.f.bottomY).toFixed(1) } };
             }
+            if (orte.fallArm) break;
         }
+        // Kein trockener Punkt / kein Fall: die Spur reist mit (der Befund O nennt den Ort).
+        if (!orte.fallArm) orte.fallSuche = wfN ? { x: wfN.f.x, z: wfN.f.z, d: Math.round(wfN.d) } : "kein Wasserfall der Region";
         return orte;
     };
     // Der Abgriff ist, was der Spieler hört: hinter der Spitzen-Wand (ohne Wand — ein alter Stand — der Master).
@@ -459,8 +463,9 @@ const SOLL = {
         ["glut ≥ −20", m.glut.db >= -20],
         ["glut ≥ wind + 6", m.glut.db >= m.wind.db + 6],
     ],
+    // Der Fall am nächsten trockenen Punkt (≤ 12 m): ein 17-m-Fall trägt dort nach dem Gesetz ≥ −17 dB.
     fallArm: (m) => [
-        ["fall ≥ −12", m.fall.db >= -12],
+        ["fall ≥ −18", m.fall.db >= -18],
         ["fall ≥ wind + 10", m.fall.db >= m.wind.db + 10],
     ],
 };
@@ -1385,7 +1390,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
             // S8: die Glut auf Armlänge (Lab-Ort des Gesetzes) OHNE Spitzen-Wand clippt — und die Probe nennt es.
             const s8 = await offlineSpitze(page, "glutArm", false);
             const u8 = urteile({}, null, null, [], {}, { "lab:glutArm": s8 }).rot;
-            if (!u8.some((t) => /^P lab:glutArm: Spitze .* ohne Spitzen-Wand/.test(t)))
+            if (!u8.some((t) => /^P lab:glutArm: Spitze .*ohne Spitzen-Wand/.test(t)))
                 fehl.push(`S8: die Glut auf Armlänge ohne Spitzen-Wand bleibt unbemerkt (${s8 && s8.spitzeDbfs} dBFS)`);
             for (const t of fehl) console.log("   ❌ " + t);
             if (!fehl.length)
