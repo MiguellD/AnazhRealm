@@ -252,6 +252,44 @@ const server = http.createServer((req, res) => {
         res.reanchorTicks = ticks2;
         res.reanchorBudgeted = maxDelta2 > 0 && maxDelta2 <= F.refreshVertsProTick && ticks2 >= 2;
 
+        // ===== (3b) DAS FERN-FARB-BUDGET: der GPU-Rückruf färbt nicht synchron =====
+        // Nach dem ersten Bild rechnet die Setz-Naht keine Fern-Farbe mehr: der Rückruf eines Re-Ankers setzt die
+        // Höhen, neue Punkte warten in der Farb-Schlange, die Takte (`_fernFarbTakt`) färben sie leer. Gezählt wird
+        // jede Fern-Farbe außerhalb des Budgets (der alte Rückruf rechnete ~8 000 in einem Frame, 10–29 ms).
+        {
+            const sleep3 = (ms) => new Promise((rs) => setTimeout(rs, ms));
+            let ausser = 0;
+            let imBudget = false;
+            const ffa = r._fernFarbeAt;
+            const fft = r._fernFarbTakt;
+            r._fernFarbeAt = function (...a) {
+                if (!imBudget) ausser++;
+                return ffa.apply(this, a);
+            };
+            r._fernFarbTakt = function (...a) {
+                imBudget = true;
+                try {
+                    return fft.apply(this, a);
+                } finally {
+                    imBudget = false;
+                }
+            };
+            const pos3 = { x: p2.x + 400, z: p2.z };
+            r.state.playerMesh.position.x = pos3.x;
+            const laeufe0 = fr.gpuLaeufe || 0;
+            r._tickFernRing(pos3); // Re-Anker: der GPU-Flug startet, die erste CPU-Scheibe läuft
+            const dl3 = performance.now() + 90000;
+            while ((fr.gpuLaeufe || 0) === laeufe0 && performance.now() < dl3) await sleep3(50);
+            res.budgetGpu = (fr.gpuLaeufe || 0) > laeufe0;
+            res.budgetOffen = fr.farbN; // nach dem Rückruf, vor dem nächsten Takt
+            for (let t = 0; t < 600 && (fr.farbN > 0 || fr.cursor < fr.totalVerts); t++) r._tickFernRing(pos3);
+            res.budgetLeer = fr.farbN === 0;
+            res.budgetAusser = ausser;
+            delete r._fernFarbeAt;
+            delete r._fernFarbTakt;
+            r.state.playerMesh.position.x = p2.x;
+        }
+
         // ===== (6) SICHT-BESITZ: Kamera-Weitung + Höhen-Öffnung + Rücknahme =====
         // Die Weitung geschah beim Pump (Ring wurde ready): far = Schale-3 + 500.
         const camFarWide = F.schalen[F.schalen.length - 1].aussen + 500;
@@ -476,6 +514,11 @@ const server = http.createServer((req, res) => {
         "3: der Höhen-Refresh läuft budgetiert durch (Budget-Zähler == totalVerts)",
         out.refreshRan === true && out.reanchorBudgeted === true,
         `ticks=${out.reanchorTicks}`
+    );
+    check(
+        "3b: DAS FERN-FARB-BUDGET — der GPU-Rückruf eines Re-Ankers stellt neue Punkte in die Farb-Schlange, die Takte färben sie leer, keine Fern-Farbe außerhalb des Budgets",
+        out.budgetGpu === true && out.budgetOffen > 0 && out.budgetLeer === true && out.budgetAusser === 0,
+        `gpu=${out.budgetGpu} offen=${out.budgetOffen} leer=${out.budgetLeer} außerhalb=${out.budgetAusser}`
     );
     check(
         "3: die Proben stimmen am NEUEN Ort (Höhen schwimmen nicht)",

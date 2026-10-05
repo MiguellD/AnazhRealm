@@ -33755,6 +33755,12 @@ class AnazhRealm {
             deckZoneRad: (targetRing + 0.5) * cfg.span,
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: per * schalen.length,
+            // DIE FARB-SCHLANGE (`_fernRingFaerben`): je Vertex ein offenes Flag + seine Höhe; `farbMin` = der kleinste
+            // offene Index (nah zuerst: Schale 0 innen → außen, dann die äußeren Schalen).
+            farbOffen: new Uint8Array(per * schalen.length),
+            farbLaw: new Float32Array(per * schalen.length),
+            farbN: 0,
+            farbMin: per * schalen.length,
             refreshed: 0, // Budget-Zähler (Linse)
             ready: false,
         };
@@ -33839,17 +33845,84 @@ class AnazhRealm {
         if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60; // der Ring weicht
         const geo = fr.meshes[p.s].geometry;
         geo.attributes.position.setXYZ(p.li, p.x, y, p.z);
-        // Die Fern-Farbe je Schnapp-Punkt gemerkt: die Schalen-Gitter sind welt-fest, ein Re-Anker rechnet nur die
-        // neuen Punkte (die Farbe kostet ~15 µs, ein voller Ring 9216 Punkte).
-        const memo = this._fernFarbeMemo || (this._fernFarbeMemo = new Map());
-        const key = p.x + "," + p.z;
-        let f = memo.get(key);
-        if (!f) {
-            if (memo.size > 16384) memo.clear();
-            f = this._fernFarbeAt(p.x, law, p.z, wet, [0, 0, 0]);
-            memo.set(key, f);
+        // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
+        // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
+        // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
+        // Naht sofort — der Horizont erscheint nie schwarz.
+        const g = p.s * AnazhRealm.FERN_RING.winkel * AnazhRealm.FERN_RING.reihen + p.li;
+        fr.farbLaw[g] = law;
+        const f = this._fernRingFarbe(p.x, p.z, law, wet, !fr.ready);
+        if (f) {
+            geo.attributes.color.setXYZ(p.li, f[0], f[1], f[2]);
+            if (fr.farbOffen[g]) {
+                fr.farbOffen[g] = 0;
+                fr.farbN--;
+            }
+        } else if (!fr.farbOffen[g]) {
+            fr.farbOffen[g] = 1;
+            fr.farbN++;
+            if (g < fr.farbMin) fr.farbMin = g;
         }
-        geo.attributes.color.setXYZ(p.li, f[0], f[1], f[2]);
+    }
+
+    // Die Farbe EINES Ring-Punkts: Wasser flach (die Konstante), trocken aus dem Gedächtnis — oder, mit `rechnen`,
+    // frisch durch die EINE Fern-Farbe (`_fernFarbeAt`) und gemerkt. null = offen (das Budget färbt ihn).
+    _fernRingFarbe(x, z, law, wet, rechnen) {
+        if (wet) return AnazhRealm.FERN_FARBE.wasser;
+        const key = x * 4194304 + z; // Schnapp-Punkte sind ganzzahlig, |z| < 2^21 m — eindeutig
+        const m = this._fernFarbeMemo || (this._fernFarbeMemo = { neu: new Map(), alt: new Map() });
+        let f = m.neu.get(key);
+        if (f) return f;
+        f = m.alt.get(key) || null;
+        if (!f && !rechnen) return null;
+        if (!f) f = this._fernFarbeAt(x, law, z, false, [0, 0, 0]);
+        // ZWEI GENERATIONEN: ist `neu` voll, wird es `alt` (die jüngsten 2 × memo Punkte bleiben) — das alte clear()
+        // leerte das Gedächtnis jeden zweiten Re-Anker ganz (9216 Punkte je Ring, Kappe 16384).
+        if (m.neu.size >= AnazhRealm.FERN_FARBE.memo) {
+            m.alt = m.neu;
+            m.neu = new Map();
+        }
+        m.neu.set(key, f);
+        return f;
+    }
+
+    // Die offenen Ring-Farben im Budget färben: Index-Folge ab `farbMin` (nah zuerst), bis die Frist `ende` steht —
+    // mindestens `mindest` Punkte (nie verhungert). Liefert den Rest des Mindest-Kontingents.
+    _fernRingFaerben(fr, ende, mindest) {
+        if (!fr.farbN) return mindest;
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        const dirty = [false, false, false];
+        let n = 0;
+        let g = fr.farbMin;
+        for (; g < fr.totalVerts && fr.farbN > 0; g++) {
+            if (!fr.farbOffen[g]) continue;
+            const p = this._fernRingPunkt(fr, g);
+            const law = fr.farbLaw[g];
+            const f = this._fernRingFarbe(p.x, p.z, law, law < wl, true);
+            fr.meshes[p.s].geometry.attributes.color.setXYZ(p.li, f[0], f[1], f[2]);
+            dirty[p.s] = true;
+            fr.farbOffen[g] = 0;
+            fr.farbN--;
+            n++;
+            if ((n & 15) === 0 && n >= mindest && performance.now() > ende) {
+                g++;
+                break;
+            }
+        }
+        fr.farbMin = fr.farbN > 0 ? g : fr.totalVerts;
+        for (let s = 0; s < dirty.length; s++) if (dirty[s]) fr.meshes[s].geometry.attributes.color.needsUpdate = true;
+        fr.gefaerbt = (fr.gefaerbt || 0) + n; // Linse
+        return Math.max(0, mindest - n);
+    }
+
+    // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die offenen Ring-Farben, dann der
+    // Farb-Job des Feld-Passes. Über dem Frame-Budget das knappe Maß; nie null — mindestens `mindestJeTakt` Punkte.
+    _fernFarbTakt(fr) {
+        const K = AnazhRealm.FERN_FARBE;
+        const ende = performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt);
+        const rest = this._fernRingFaerben(fr, ende, K.mindestJeTakt);
+        const fp = this.state.feldPass;
+        if (fp && fp.farbJob) this._feldPassFaerben(fp, ende, rest);
     }
 
     // DIE EINE DECK-FORMEL (CPU-Refresh UND GPU-Maler mischen durch sie — kein
@@ -34769,15 +34842,16 @@ class AnazhRealm {
             });
     }
 
-    // Der Farb-Job des Feld-Malers: `budget` Texel je Takt durch die EINE Fern-Farbe (`_fernFarbeAt`), dann steht
-    // das neue Feld (Textur, Uniforms, Anker) und das Panorama backt. Liefert die gemalten Texel.
-    _feldPassFaerben(fp, budget) {
+    // Der Farb-Job des Feld-Malers: Texel durch die EINE Fern-Farbe (`_fernFarbeAt`) bis zur Frist `frist` des
+    // Fern-Farb-Budgets (mindestens `mindest`), dann steht das neue Feld (Textur, Uniforms, Anker) und das Panorama
+    // backt. Liefert die gemalten Texel. Die feste Zahl (768 je Takt) kostete auf jedem Holz dieselben Texel.
+    _feldPassFaerben(fp, frist, mindest) {
         const job = fp.farbJob;
         if (!job) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const f = [0, 0, 0];
-        const ende = Math.min(job.n, job.k + budget);
         const k0 = job.k;
+        let ende = job.n;
         for (let k = job.k; k < ende; k++) {
             const law = job.werte[k];
             const wet = law < wl;
@@ -34788,6 +34862,8 @@ class AnazhRealm {
             job.daten[k * 4 + 2] = f[1];
             job.daten[k * 4 + 3] = f[2];
             if (y > job.hMax) job.hMax = y;
+            const n = k + 1 - k0;
+            if ((n & 15) === 0 && n >= mindest && performance.now() > frist) ende = k + 1;
         }
         job.k = ende;
         if (job.k < job.n) return ende - k0;
@@ -35976,7 +36052,6 @@ class AnazhRealm {
         if (!fp) return;
         if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ) this._feldPassMal(fp, fr);
         this._weltSchwundTakt(st.weltMarch);
-        if (fp.farbJob) this._feldPassFaerben(fp, AnazhRealm.FELD_PASS.farbeJeTakt);
         const cam = st.camera;
         // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät) + Re-Bake bei
         // Kamera-Drift (Parallaxe/Horizont) — amortisiert, gen-gestempelt.
@@ -36173,6 +36248,8 @@ class AnazhRealm {
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
+        // DAS FERN-FARB-BUDGET: offene Ring-Farben (nah zuerst), dann der Farb-Job des Feld-Passes.
+        this._fernFarbTakt(fr);
         // Kamera-Klippe: camera.far muss Schalen-Rand + Marge umfassen, sonst clippt der Horizont. Der Ring
         // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar); der Dispose stellt das
         // alte far wieder her.
@@ -88137,9 +88214,9 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // innersten Reihe; `wasserDrop` = Wasser-Klemme; `reanchorDist`/`anchorQuant` = Anker-Hysterese/
 // -Quantisierung; `refreshVertsProTick` = Höhen-Refresh-Budget je Frame.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
-// vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt
-// `farbeJeTakt` Texel je Takt (≈ 11 ms bei 15 µs je Texel).
-AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000, farbeJeTakt: 768 });
+// vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt im
+// Fern-Farb-Budget (`FERN_FARBE.msJeTakt`, nach den offenen Ring-Farben).
+AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
 // FELD_PANO — Schattierungs-Persistenz: statt 96 Raymarch-Schritten je Himmel-Pixel je Frame marcht
 // EIN Compute ins Polar-Panorama (Farbe + Treffer-DISTANZ; der Nebel bleibt live im Fragment →
 // Tag/Nacht braucht keinen Re-Bake), das Fragment schlägt nur nach. Re-Bake nur bei Kamera-Drift;
@@ -88191,9 +88268,16 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
 // Laubwald-Kronen im Sommer (Satelliten-Bänder blau ~0,02–0,03 · grün ~0,05–0,07 · rot ~0,02–0,03: das Blatt
 // trägt ~0,16 Grün, die Krone beschattet sich selbst); Wasser = das Fern-Blau als sRGB-Absicht (FARB-GESETZ:
 // 0x265273 → linear), flach auf dem Spiegel.
+// DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für offene Ring-Farben und den Feld-Farb-Job, über dem
+// Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte; `memo` = eine Generation des Fern-Farb-Gedächtnisses
+// (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronendach: Object.freeze([0.03, 0.062, 0.022]),
     wasser: Object.freeze([0.0196, 0.0863, 0.1706]),
+    msJeTakt: 2,
+    msKnapp: 0.5,
+    mindestJeTakt: 64,
+    memo: 12288,
 });
 
 // Lockstep-MP (nur Inputs übers Netz): `jitterReserve` = Frame-Reserve gegen Netz-Jitter (2 Frames
