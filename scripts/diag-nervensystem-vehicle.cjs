@@ -89,7 +89,7 @@ function countOcc(src, needle) {
 }
 
 // ===== TEIL A: die statischen Gesetze =====
-function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
+function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     const anazhNC = stripComments(anazhSrc);
     const phytoNC = stripComments(phytoSrc);
     const out = [];
@@ -112,21 +112,33 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
             /stempelUrls\.push\(/.test(anazhNC) &&
             /cfg\.manifestText, \.\.\.cfg\.stempelUrls/.test(anazhNC),
     ]);
-    // A3 — Chokepoint-Gesetz: der N7.5-Merge (zusatzKindStages-Leser) lebt NUR in
-    // _foundryIngestRenderConfig; ein zweiter Ingest-Pfad wird rot.
+    // A3 — Chokepoint-Gesetz (N7.5, W8 erweitert): die Zweit-Kern-Blöcke (zusatzKindStages · zusatzBudget mit den
+    // Gestalten je Rezept) mergt NUR phyto-core `kerneVereinen`, gerufen EINMAL im Stamm — in
+    // _foundryIngestRenderConfig; der Stamm nennt keines der Zusatz-Felder selbst (ein zweiter Ingest-Pfad wird rot).
     const ingest = fnBody(anazhNC, /_foundryIngestRenderConfig\(config\)\s*/);
-    const totalZk = countOcc(anazhNC, "zusatzKindStages");
-    const inIngest = ingest ? countOcc(ingest, "zusatzKindStages") : 0;
+    const zusatz = ["zusatzKindStages", "zusatzBudget"];
+    const imStamm = zusatz.reduce((s, z) => s + countOcc(anazhNC, z), 0);
+    const rufe = countOcc(anazhNC, "kerneVereinen(");
+    const imIngest = ingest ? countOcc(ingest, "kerneVereinen(config)") : 0;
+    const vereinen = fnBody(stripComments(pcSrc), /function kerneVereinen\(cfg\)\s*/) || "";
     out.push([
-        "A3: der N7.5-Merge lebt NUR in _foundryIngestRenderConfig (kein zweiter Ingest-Pfad)",
-        ingest !== null && inIngest >= 1 && totalZk === inIngest,
-        `gesamt=${totalZk} im Chokepoint=${inIngest}`,
+        "A3: der Zweit-Kern-Merge lebt NUR in _foundryIngestRenderConfig (phyto-core kerneVereinen, kein zweiter Ingest-Pfad)",
+        ingest !== null &&
+            imIngest === 1 &&
+            rufe === 1 &&
+            imStamm === 0 &&
+            zusatz.every((z) => vereinen.includes(z)) &&
+            vereinen.includes('kind === "gestalten"'),
+        `Zusatz-Felder im Stamm=${imStamm} · kerneVereinen-Rufe=${rufe} (im Chokepoint ${imIngest})`,
     ]);
     out.push([
         "A4: der kindStages-Clamp traegt das Fail-Closed-[0] (bekanntes Rezept ohne Eintrag)",
-        // V18.512: die EINE Stufen-Klammer (`_foundryDeclaredStage`) liest kindStages; ohne Eintrag trägt der
-        // Flatten die einstufige Kind-Karte und ein BEKANNTES Rezept fällt fail-closed auf [0].
-        /if \(Number\.isFinite\(_kl\)\) lod = _kl;\s*else if \(_rec\) lod = 0;/.test(anazhNC),
+        // V18.512: die EINE Stufen-Klammer (`_foundryDeclaredStage`) liest kindStages; seit der gedockten Stufe
+        // (0df5344) serviert `_foundryServierStufe` sie, und ein BEKANNTES Rezept ohne Eintrag fällt dort fail-closed
+        // auf [0] (die Probe wandert mit dem Chokepoint).
+        /_foundryServierStufe\(preset, lod\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);[\s\S]{0,200}?if \(f && f\.recipes && f\.recipes\[preset\]\) lod = 0;/.test(
+            anazhNC
+        ),
     ]);
     // A5–A7 (N2-migriert): die drei Bruecken-Sites sind EINE generische Schleife ueber
     // self.__anazhCores (ns-Kerne aus dem Manifest) — KEIN self.__vehicleCore-Literal mehr
@@ -139,8 +151,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
             !/self\.__vehicleCore/.test(phytoNC),
     ]);
     out.push([
-        "A6: die Bruecke exportiert zusatzKindStages je Kern generisch (zusatzKindStages[zk.id])",
-        /zusatzKindStages\[zk\.id\]/.test(phytoNC),
+        "A6: die Bruecke exportiert Stufen, Budget und Gestalten je Kern generisch (zusatz…[zk.id])",
+        /zusatzKindStages\[zk\.id\]/.test(phytoNC) && /zusatzBudget\[zk\.id\]/.test(phytoNC),
     ]);
     out.push([
         "A7: build-asset dispatcht an den ERSTEN Kern, dessen PRESETS das Preset traegt",
@@ -173,19 +185,28 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
+    const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: das Fail-Closed-[0] entfernt -> A4 muss rot werden.
-        const broken1 = anazhSrc.replace("else if (_rec) lod = 0;", "else if (_rec) lod = lod;");
-        const a4 = staticLaws(broken1, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A4"));
-        check("Selbst-Test 1: Fail-Closed entfernt -> A4 feuert", a4 && a4[1] === false);
+        const broken1 = anazhSrc.replace(
+            "if (f && f.recipes && f.recipes[preset]) lod = 0;",
+            "if (f && f.recipes && f.recipes[preset]) lod = lod;"
+        );
+        const a4 = staticLaws(broken1, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A4"));
+        const a4Echt = staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A4"));
+        // Die Injektion MUSS den Quelltext ändern (sonst prüfte der Selbsttest nichts) und A4 kippen.
+        check(
+            "Selbst-Test 1: Fail-Closed entfernt -> A4 feuert",
+            broken1 !== anazhSrc && a4Echt && a4Echt[1] === true && a4 && a4[1] === false
+        );
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const broken2 = anazhSrc.replace(
             "_foundryRequestSettlement(dp) {",
             "_foundryRequestSettlement(dp) {\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
         );
-        const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A3"));
+        const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
@@ -196,7 +217,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     }
 
     console.log("=== ZWEIT-KERN — TEIL A: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -335,12 +356,25 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
             if (!f.requested) f.requested = new Set();
             const before = new Set(f.requested);
             r._foundryFlattenFor({ seed: 7 }, "gt", 2);
-            // Unbekannter kind OHNE jeden kindStages-/Kind-Karten-Eintrag (N7.5-[0]):
-            f.recipes.probetor = { kind: "tor", s: {}, fx: {} };
-            r._foundryFlattenFor({ seed: 1 }, "probetor", 2);
             const fresh = Array.from(f.requested).filter((k) => !before.has(k));
             res.f.gtKey = fresh.find((k) => k.startsWith("gt|")) || null;
-            res.f.torKey = fresh.find((k) => k.startsWith("probetor|")) || null;
+        } catch (e) {
+            res.f.err = (e && e.message) || String(e);
+        }
+        // Unbekannter kind OHNE jeden kindStages-/Budget-Eintrag (N7.5-[0]): die Stufen-Klammer klemmt fail-closed
+        // auf [0]; den Wurf trägt kein Wirts-Literal mehr (W8-Integration: `_WIRT_WURF` fiel) — der Flatten bricht
+        // laut (KERN-PFLICHT phyto:lod.budget.tor), bevor eine Anfrage an den Worker geht.
+        try {
+            const before = new Set(f.requested);
+            f.recipes.probetor = { kind: "tor", s: {}, fx: {} };
+            res.f.torStufe = r._foundryServierStufe("probetor", 2);
+            try {
+                r._foundryFlattenFor({ seed: 1 }, "probetor", 2);
+            } catch (e) {
+                res.f.torBruch = (e && e.message) || String(e);
+            }
+            const fresh = Array.from(f.requested).filter((k) => !before.has(k));
+            res.f.torKeys = fresh.filter((k) => k.startsWith("probetor|")).length;
             // Aufraeumen: Probe-Rezept + Probe-Requests entfernen (kein Muell im lebenden f).
             delete f.recipes.probetor;
             for (const k of fresh) if (k.startsWith("probetor|")) f.requested.delete(k);
@@ -411,13 +445,14 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
-        !/^[^|]*\|[^|]*\|2(\||$)/.test(out.f.gtKey || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
+        // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527); die Anfrage MUSS entstehen (sonst prüfte F nichts)
+        !!out.f.gtKey && !/^[^|]*\|[^|]*\|2(\||$)/.test(out.f.gtKey),
         out.f.err || String(out.f.gtKey)
     );
     check(
-        "F: unbekannter kind OHNE Eintrag klemmt fail-closed auf [0]",
-        /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.torKey || ""),
-        String(out.f.torKey)
+        "F: unbekannter kind OHNE Eintrag klemmt fail-closed auf [0] und bricht ohne Budget laut (kein Wirts-Wurf)",
+        out.f.torStufe === 0 && /KERN-PFLICHT[\s\S]*phyto:lod\.budget\.tor/.test(out.f.torBruch || ""),
+        `Stufe ${out.f.torStufe} · ${out.f.torBruch || "kein Bruch"} · Anfragen ${out.f.torKeys}`
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 

@@ -1000,9 +1000,12 @@ async function main() {
 
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
     const { out, pageErrors, attrWand, gnade } = await runPartB();
+    // Die Untergrenze ist die Nicht-Vakuität, nicht die Weltgröße: seit dem Budget-Gesetz (W8) faltet der Ofen die
+    // Tier- und Mensch-Gestalt auf ihre Zeile (Tier 13 → 8, Mensch 16 → 8 Meshes) — dieselbe Probe-Welt trägt 69
+    // statt 175 Masken-Meshes.
     check(
         "ATTRIBUT-WAND: kein Masken-Material auf ungestempelter Geometrie",
-        attrWand && attrWand.verstoesse === 0 && attrWand.geprueft > 100,
+        attrWand && attrWand.verstoesse === 0 && attrWand.geprueft > 50,
         attrWand ? `geprüft=${attrWand.geprueft} · Verstöße=${attrWand.verstoesse}` : "Probe lief nicht"
     );
     check(

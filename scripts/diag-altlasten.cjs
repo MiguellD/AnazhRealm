@@ -233,6 +233,9 @@ const FORBIDDEN = [
     // W5/S7 (Wald-L0): die Welt liest die Studio-Distanzen d0/d1 — der Host-Umweg, der 20/40 auf 12/26 m umrechnete
     // (die Kosten der Nahstufe lebten im Host statt im Asset), ist gefallen; das Studio trägt 12/26, das Budget tree[0].
     { token: "LOD_TRI_BUDGET_MUL", fiel: "W5 — die Kosten wohnen im Asset (lod.budget.tree[0]), Lehre 19" },
+    // W8 (Integration): jede Art mit Gestalt trägt ihr Budget — die Wirt-Stufen-Tafel für Arten ohne Zeile hat keinen
+    // Leser mehr; `_foundryBudgetZeile` bricht fail-closed, wo eine Art keine Zeile trägt.
+    { token: "_WIRT_WURF", fiel: "Integration W8 — das Budget aller Kerne trägt den Wurf (lod.budget[kind][stufe].schatten)" },
     // DER WALDBODEN INS STUDIO (04.10.) — der Host erzeugt nichts, was ein Studio kann: die Klein-Vegetation (eigene
     // Strip-/Kreuz-Geometrie je Art, das Art-Material mit eigenem Wind, die Chunk-Streu, das Deko-Fernfeld, die
     // Deck-Streu, die Host-Ökologie Nische/Bodendecker/Kronen-Lesart) ist gefallen; die Nah-Streu liest das

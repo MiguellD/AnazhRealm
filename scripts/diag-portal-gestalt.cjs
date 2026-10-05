@@ -16,7 +16,7 @@
 //   B: der Resolver loest welt_terrain -> verkalkt; Blueprints OHNE studioGestalt loesen
 //     unveraendert (baum_eiche -> eiche · esse -> null · fahrzeug_wagen -> null = Regression 0).
 //   C: ein gespawntes welt_-Portal materialisiert END-TO-END als Studio-Asset
-//     (entry.instFoundry · instSlots > 100 Tor-Meshes · alle Slots im f:-Namensraum ·
+//     (entry.instFoundry · instSlots auf der Budget-Zeile gate[0].draws, Flügel-Slots ≤ 8 (W8) · alle Slots im f:-Namensraum ·
 //     KEIN sichtbares Part-Doppel-Bild: keine lebende welt_terrain-Gruppe ohne f:).
 //   D: FUNKTION intakt — portalMeta byte-unveraendert · affordances.isPortal · blockerAABBs
 //     vorhanden (Substanz-Wahrheit lebt) · der E-Trigger (PORTAL_REACH_M) ist von einem
@@ -273,6 +273,15 @@ function deriveGestalt(srcNC) {
         res.c.instanced = entry.instanced === true;
         res.c.instFoundry = entry.instFoundry === true;
         res.c.slotCount = Array.isArray(entry.instSlots) ? entry.instSlots.length : 0;
+        // W8 — die Budget-Zeile des Tors (LIVE-Buch nach dem Zweit-Kern-Merge) und die Flügel-Slots, die
+        // `_tickTorFluegel` dreht (Slots, deren Instanz-Gruppe ein Scharnier trägt).
+        const _rc = r.constructor._studioRenderConfig;
+        const _gz = _rc && _rc.lod && _rc.lod.budget && _rc.lod.budget.gate ? _rc.lod.budget.gate[0] : null;
+        res.c.drawBudget = _gz ? _gz.draws : null;
+        res.c.fluegelSlots = (entry.instSlots || []).filter((s) => {
+            const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(s.key);
+            return !!(g && g.tuer);
+        }).length;
         res.c.allSlotsFoundry =
             Array.isArray(entry.instSlots) && entry.instSlots.every((s) => /(^|#)f:verkalkt\|/.test(String(s.key)));
         res.c.meshNull = entry.mesh === null || entry.mesh === undefined;
@@ -339,10 +348,18 @@ function deriveGestalt(srcNC) {
         outCD.c.instanced === true && outCD.c.instFoundry === true,
         outCD.c.err || `instanced=${outCD.c.instanced} foundry=${outCD.c.instFoundry}`
     );
+    // W8 — DAS BUDGET IST IM BILD: das Tor kommt auf seiner Budget-Zeile an (gate[0].draws aus dem LIVE-Buch, der
+    // Merge der Zweit-Kerne) — vorher 124–315 Leaves je Tor, jedes Flügel-Teil eines; jetzt je Flügel × Stoff ein
+    // Leaf, der Flügel-Takt (`_tickTorFluegel`) setzt höchstens 8 Matrizen statt bis zu 244.
     check(
-        `C: Tor-Geometrie angekommen (instSlots ${outCD.c.slotCount} > 100 Meshes)`,
-        outCD.c.slotCount > 100,
-        String(outCD.c.slotCount)
+        `C: Tor-Geometrie angekommen auf der Budget-Zeile (instSlots ${outCD.c.slotCount}, 1..${outCD.c.drawBudget} = gate[0].draws)`,
+        outCD.c.slotCount >= 1 && Number.isInteger(outCD.c.drawBudget) && outCD.c.slotCount <= outCD.c.drawBudget,
+        `slots=${outCD.c.slotCount} budget=${outCD.c.drawBudget}`
+    );
+    check(
+        `C: der Flügel-Takt dreht je Flügel × Stoff (${outCD.c.fluegelSlots} Flügel-Slots, 1..8)`,
+        outCD.c.fluegelSlots >= 1 && outCD.c.fluegelSlots <= 8,
+        String(outCD.c.fluegelSlots)
     );
     check("C: alle Slots leben im f:verkalkt-Namensraum", outCD.c.allSlotsFoundry === true);
     console.log(

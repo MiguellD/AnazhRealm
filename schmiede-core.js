@@ -48,8 +48,21 @@
     // ── B2-Daten: die Stufen-Wahrheit der Domäne (kindStages-Vertrag) ──
     // Waffen/Werkzeuge tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind
     // Sache des Wirts (docs/studio-vertrag.md B2 / N7.5-Merge am EINEN Ingest).
+    // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
+    // Hülle über alle Klingen/Werkzeuge × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das
+    // Profi-Band-Ziel (Haushalt, offen solange tris darüber liegt), draws = Draws je Stück und Pass nach der Wirts-
+    // Regel (das Budget-Gesetz am Studio-Ausgang, phyto-core budgetErzwingen, faltet die Stoffe darauf).
+    // gestalten = Individuen je Rezept (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
+    var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
-        lod: { kindStages: { weapon: [0] } },
+        lod: {
+            kindStages: { weapon: [0] },
+            budget: {
+                // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
+                weapon: { 0: { tris: 22000, band: 8000, draws: 4, schatten: 0 }, fernform: "gesetz" },
+                gestalten: {},
+            },
+        },
     };
 
     // ── Materialien (geteilt, nie disposen; byte-treu Lab Z.182–200) — LAZY (der
@@ -3083,6 +3096,9 @@
         var f = ARENA.guete.faktorLeer + (ARENA.guete.faktorVoll - ARENA.guete.faktorLeer) * score;
         return isFinite(f) && f > 0 ? f : ARENA.guete.faktorVoll;
     }
+
+    // W8 — die Gestalten je Rezept (B2c): JEDES Stück trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
+    for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
     root.__schmiedeCore = {
         VERSION: VERSION,

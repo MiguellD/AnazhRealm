@@ -46,8 +46,22 @@
     // ── B2-Daten: die Stufen-Wahrheit der Domäne (kindStages-Vertrag) ──
     // Tore tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind Sache
     // des Wirts (docs/studio-vertrag.md B2 / N7.5-Merge am EINEN Ingest).
+    // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
+    // Hülle über alle Tore × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel
+    // (Haushalt, offen solange tris darüber liegt), draws = Draws je Tor und Pass nach der Wirts-Regel: das
+    // Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen) faltet die Flügel-Teile je Flügel × Stoff (das
+    // Scharnier reist mit, `_tickTorFluegel` dreht je Flügel und Stoff EINE Matrix); Glut faltet nie. gestalten =
+    // Individuen je Tor (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
+    var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
-        lod: { kindStages: { gate: [0] } },
+        lod: {
+            kindStages: { gate: [0] },
+            budget: {
+                // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
+                gate: { 0: { tris: 184000, band: 60000, draws: 16, schatten: 0 }, fernform: "gesetz" },
+                gestalten: {},
+            },
+        },
     };
 
     // ── B4-Quelle: die Regler des Schöpfer-Labs (byte-treu aus worlds/portale/porta.js;
@@ -575,6 +589,9 @@
         lab: "law-ui",
         host: "chat-metrologie",
     };
+
+    // W8 — die Gestalten je Rezept (B2c): JEDES Tor trägt GESTALTEN_JE_REZEPT Individuen (ein neues Tor zählt mit).
+    for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
     root.__portaCore = {
         VERSION: VERSION,

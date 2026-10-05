@@ -193,7 +193,9 @@ function gestalten(src) {
     const arten = {};
     let ok = true;
     for (const zeile of Object.keys(G)) {
-        const sp = zeile === "*" ? "haus" : zeile; // '*' trägt jede Art ohne eigene Zeile (Haus, Fahrzeug, Tor …)
+        // '*' trägt jede Pflanzen-/Fels-Art ohne eigene Zeile (Findling, Blume …); die Rezepte der Zweit-Kerne (Haus,
+        // Fahrzeug, Tor …) zählen seit W8 ihre Gestalten im EIGENEN Gesetzbuch (zusatzBudget, gate:studio-vertrag).
+        const sp = zeile === "*" ? "findling" : zeile;
         const V = G[zeile];
         const H = new Array(V + 1).fill(0);
         let n = 0,
@@ -216,7 +218,7 @@ function gestalten(src) {
                 (anteil.every((a) => Math.abs(a - 1 / V) <= 0.03) &&
                     nb / n <= 1 / V + 0.03 &&
                     o16 / n <= 1 / V + 0.03));
-        arten[zeile === "*" ? "*(haus)" : sp] = { V, nachbar: +(nb / n).toFixed(3), versatz16: +(o16 / n).toFixed(3), raus, ok: artOk };
+        arten[zeile === "*" ? "*(findling)" : sp] = { V, nachbar: +(nb / n).toFixed(3), versatz16: +(o16 / n).toFixed(3), raus, ok: artOk };
         if (!artOk) ok = false;
     }
     return { ok, arten };

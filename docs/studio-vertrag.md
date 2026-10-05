@@ -92,9 +92,9 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
   Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
   `false` wirft nicht) und für die Nah-Wiese — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
-  fehlender Zeile. Ein Zwilling wirft selbst (der Validator hält es: kein Zwillings-Kreis). Eine Art eines
-  Kerns ohne Budget trägt bis zu ihrer Zeile die Wirt-Stufen-Regel (B2: jede Stufe wirft sich, die
-  Fernstufe nie; `AnazhRealm._WIRT_WURF`, fällt mit dem Budget aller Kerne).
+  fehlender Zeile — auch bei einer Art ohne Budget: seit W8 trägt jede Art mit Gestalt ihre Zeilen (die
+  Wirt-Stufen-Tafel `_WIRT_WURF` ist gefallen, `gate:altlasten`). Ein Zwilling wirft selbst (der Validator hält
+  es: kein Zwillings-Kreis).
 - **Monoton:** `tris` fällt je Stufe streng, `draws` steigt nie.
 - `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Studio-Karte (bakeImpostorAtlas),
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
@@ -105,11 +105,33 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   tragen, in (0, 1]) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen) ·
   `rinde` ({ast, reisig} in trunkR, 0 < reisig < ast < 1) · `boden` (tiefstes Laub in Baumhöhen, [0, 1)) ·
   `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
+- `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die
+  gebaute Hülle `tris` darüber liegt — offen und benannt, die Wand druckt den Faktor; erreicht die Stufe
+  das Band, fällt das Feld und `tris` IST das Band. `tris` bleibt die Ratsche (darf nur fallen).
+- `gestalten` (je Rezept, ganze Zahl ≥ 1): wie viele Individuen (Samen 1..V) die Welt von einem Rezept
+  trägt (`_foundryVariantFor`). Der Haupt-Kern trägt dazu die `'*'`-Zeile (jede Pflanzen-/Fels-Art ohne
+  eigene Zeile); ein Zweit-Kern zählt JEDES eigene Rezept selbst, kein fremdes, keine `'*'`-Zeile (W8:
+  das Wirts-16 gehört dem Gesetzbuch).
+- **Das Budget-Gesetz (W8, phyto-core `budgetErzwingen`):** der EINE Ausgang jeder Zweit-Kern-Gestalt —
+  die Brücke (`__replyBuildAsset`) UND der Sync-Guss des Wirts-Ofens (`_ofenBudget`, Tier + Mensch)
+  falten eine Stufe über `draws` auf ihre Zeile: Stoffe (der Wirts-Material-Schlüssel `budgetStoff`; die
+  Farbe reist als Vertex-Farbe) fallen innerhalb ihrer Bindungs-Klasse (starr · Haut · je Tür-Flügel ·
+  Schalen-Fell) zusammen, der kleinere in den nächsten (Rauheit · Metall · Art · Seite …), Glut faltet nie;
+  Flügel-Teile werden je Flügel × Stoff EIN Teil (das Scharnier reist mit). Innerhalb der Zeile ist es ein
+  No-op (byte-gleich). Dreiecke faltet es nicht: über `tris` oder bleibend über `draws` reist ein
+  `budgetBruch` mit, der Wirt loggt ERROR, die Wand wird rot — nie still.
+- **Transport:** jeder Zweit-Kern reist sein `lod.budget` unter `cfg.lod.zusatzBudget[<id>]` (neben
+  `zusatzKindStages`, N7.5); der EINE Merge `kerneVereinen` (phyto-core, gerufen NUR in
+  `_foundryIngestRenderConfig`) legt die Zeilen je Art und die Gestalten je Rezept disjunkt first-wins in
+  `lod.budget`.
 - **Konsum:** `gate:asset-contract` baut jede gelieferte Gitter-Stufe über die echte Brücke (Goldens +
-  jedes Rezept der Art bei Samen 7 + jede Gestalt der Welt, die Samen 1..V aus `gestalten`) und hält
-  Dreiecke ≤ `tris`, Sippen ≤ `draws` — Rot nennt den Täter; der Selbsttest halbiert jede Zeile (und senkt
-  `draws` um eins) und MUSS rot werden. Die Deckung misst er an gebauten L0/L1-Paaren als Verhältnis der
-  BILD-Deckung (`scripts/lib/kronen-linse.cjs`, S7: die Silhouette gerastert in 24 Ansichten — acht Azimute ×
+  jedes Rezept der Art bei Samen 7 + jede Gestalt der Welt, die Samen 1..V aus `gestalten`; jedes Zweit-Kern-Rezept
+  über JEDEN Samen 1..V seiner Gestalten) und hält Dreiecke ≤ `tris`, Draws ≤ `draws` (phyto-core `budgetSippen`,
+  die Regel des Wirts) — Rot nennt den Täter; Selbsttests: jede Zeile halbiert (und `draws` um eins gesenkt) MUSS
+  rot werden, ohne `zusatzBudget` fehlt das Budget für alle sechs Zweit-Kerne, je Zweit-Art liegt ≥ 1 Fall
+  ungefaltet über `draws` (die Faltung ist der Konsument). Im Wirt: `gate:portal-gestalt` (das Tor kommt auf
+  `gate[0].draws` an, ≤ 8 Flügel-Slots) und `gate:kreatur-kosten` (Ofen-Guss). Die Deckung misst er an
+  gebauten L0/L1-Paaren als Verhältnis der BILD-Deckung (`scripts/lib/kronen-linse.cjs`, S7: die Silhouette gerastert in 24 Ansichten — acht Azimute ×
   Blick-Hebung 0°/30°/60° von unten —, Karten mit der Alpha des EINEN Atlas, ein Pixel zählt einmal; die
   Flächen-Summe von gestern sah keine Überlappung und meldete 0,99, wo das Bild 0,76 zeigte); eine 1,5-fache
   L0-Karte MUSS das Band sprengen. Je Baum-L0 (Goldens und Gestalten) hängt jede Karte an ihrer Rinde oder an
@@ -171,8 +193,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Bild malt der Foundry-Worker und reicht es mit dem Buch (Transfer); der Haupt-Thread malt nur, wer vor dem Buch
   fragt. Gemessen (Lab, Albedo-Sicht): die Nadel-Karte las vorher mit 47 % ihrer Albedo, die Nadel-Deckung fiel
   auf Mip-Stufe 4 von 0,24 auf 0,14.
-- v1.3 trägt es foundry-core (tree · shrub · grass · flower · rock); die Zweit-Kerne folgen mit der
-  Studio-Übertragung (Transport `zusatzBudget`, offen).
+- Es tragen: foundry-core (tree · shrub · grass · flower · rock · gestalten) und alle sechs Zweit-Kerne
+  (vehicle · gate · weapon · haus · koerper · kreatur); klang trägt keine Gestalt und kein Budget.
 
 ### B3 — PLACEMENT (SOLL)
 
@@ -361,6 +383,7 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 | ----- | ----------------------- | ------------------- | -------------- |
 | B1 REZEPTE | ✅ 15 Rezepte, 5 kinds | vehicle-core: PRESETS+CULTURES | ✅ porta-core: 7 Ordnungen `kind:"gate"` |
 | B2 BUILD | ✅ buildInstance, LOD 0/1/2, Goldens v1 | buildVehicle → v3-Goldens | ✅ buildInstance → v4-Goldens (`gate:porta-contract`) |
+| B2c BUDGET | ✅ tree · shrub · grass · flower · rock + gestalten | ✅ vehicle[0] (12 Draws, W8) | ✅ gate[0] (16 Draws, Flügel × Stoff, W8) |
 | B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | ✅ als Rezept-Daten: `fx.place {mode:"site", siteTag:"tor"}` (N5.6 — streut heute nicht) |
 | B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | ✅ PARAMS aus SLIDERS abgeleitet (eine Quelle) |
 | B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | ⏳ `messen` (Stich→Schub→Dicke) ✅, pass/warn-Bänder trägt das Lab nicht |
