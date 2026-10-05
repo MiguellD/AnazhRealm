@@ -381,12 +381,26 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
         true,
         /_foundryTreeMaterial\(m\.kind \|\| "bark", m\.mat \|\| null\)/.test(anazhNC)
     );
+    // Die Linse wandert mit dem Code (Integration W8, Seh-Klasse): die Material-Regler leben EINMAL in phyto-core
+    // `budgetRegler` — der Stoff-Schlüssel (`budgetStoff`) und der Wirt (`_foundryTreeMaterial`) lesen sie dort. Der
+    // Wirt liest die EINE Quelle und trägt keinen eigenen mp-Leser (kein Zwilling); mp führt im Körper von budgetRegler.
+    const reglerKoerper = (() => {
+        const i = phytoNC.indexOf("function budgetRegler(kind, mp) {");
+        const j = i < 0 ? -1 : phytoNC.indexOf("\n    }\n", i);
+        return i < 0 || j < 0 ? "" : phytoNC.slice(i, j);
+    })();
     law(
-        "N4.2: mp FÜHRT — rough/metal/env lesen das Reply-Material zuerst, kind-Literale nur ohne mp",
+        "N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp",
         true,
-        /mp && typeof mp\.roughness === "number" \? mp\.roughness :/.test(anazhNC) &&
-            /mp && typeof mp\.metalness === "number" \? mp\.metalness :/.test(anazhNC) &&
-            /mp && typeof mp\.envMapIntensity === "number" \? mp\.envMapIntensity :/.test(anazhNC)
+        /_foundryTreeMaterial\(kind, mp, wiegen\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(
+            anazhNC
+        ) &&
+            /rough = R\.r,\s*metal = R\.mt,[\s\S]{0,40}?env = R\.env\b/.test(anazhNC) &&
+            !/typeof mp\.(roughness|metalness|envMapIntensity)\b/.test(anazhNC) &&
+            /r: mp && typeof mp\.roughness === "number" \? mp\.roughness :/.test(reglerKoerper) &&
+            /mt: mp && typeof mp\.metalness === "number" \? mp\.metalness :/.test(reglerKoerper) &&
+            /env: mp && typeof mp\.envMapIntensity === "number" \? mp\.envMapIntensity :/.test(reglerKoerper),
+        "der Wirt liest die Regler nicht aus budgetRegler, trägt einen eigenen mp-Leser, oder mp führt dort nicht"
     );
     // N4.3/N7.4 → GRAS ALS OBERFLÄCHEN-FUNKTION (V18.491.48, das Gesetz wandert mit dem
     // Code): der Studio-Halm-KONSUM im Bauer fiel mit der Halm-Geometrie (das
