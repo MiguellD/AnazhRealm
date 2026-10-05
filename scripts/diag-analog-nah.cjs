@@ -141,14 +141,33 @@ function urteil(z) {
         // mit den Vulkan-/ANGLE-Schaltern gibt es keinen Adapter (auch nicht zusammen mit --use-webgpu-adapter), der
         // Renderer fiel nach init() still auf WebGL2 — die Linse las die CPU-Wahrheit eines Passes, der nie lief. Nur
         // dieselben Schalter wie gate:kamera-treue liefern ihn. Das Backend steht im Bericht.
+        // --disable-gpu-watchdog: swiftshader rastert in Software; auf dem langsamen CI-Runner (Linux) rechnete der erste
+        // Boot-Frame mit allen Pipelines länger als die Watchdog-Frist — Chrome beendete den GPU-Prozess, die Seite sah
+        // „Device was destroyed" ohne einen JS-Aufruf von destroy() (CI 05.10., a29f732). Eine Einstellung der
+        // Software-Umgebung dieser Linse, nicht des Spiels (dort meldet der Geräteverlust-Wächter laut).
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--enable-unsafe-webgpu",
             "--use-webgpu-adapter=swiftshader",
             "--enable-unsafe-swiftshader",
+            "--disable-gpu-watchdog",
         ],
+        dumpio: false,
     });
+    // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
+    {
+        const proc = browser.process();
+        let gpuZeilen = 0;
+        if (proc && proc.stderr)
+            proc.stderr.on("data", (d) => {
+                for (const z of String(d).split("\n"))
+                    if (/gpu process|watchdog|crash|lost|dawn|swiftshader|vulkan/i.test(z) && gpuZeilen < 15) {
+                        gpuZeilen++;
+                        console.log("  [Browser] " + z.slice(0, 300));
+                    }
+            });
+    }
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];
