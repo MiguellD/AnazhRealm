@@ -34,6 +34,64 @@
             ]
         },
         {
+            "id": "streu",
+            "titel": "Nah-Streu (die Studio-Arten des Waldbodens je Senke, die Klein-Streu der Streu-Regionen)",
+            "befehle": 9,
+            "dreiecke": 40000,
+            "regeln": [
+                {
+                    "muster": "^streuNah:"
+                },
+                {
+                    "familie": [
+                        "fscatter"
+                    ],
+                    "art": [
+                        "flower",
+                        "grass",
+                        "rock",
+                        "boulder",
+                        "scree",
+                        "crystal",
+                        "columns",
+                        "fern",
+                        "reed",
+                        "brush",
+                        "deadwood"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "familie": [
+                        "f"
+                    ],
+                    "art": [
+                        "flower",
+                        "grass"
+                    ],
+                    "stufe": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "familie": [
+                        "fscatter",
+                        "f"
+                    ],
+                    "art": [
+                        "flower"
+                    ],
+                    "stufe": [
+                        2
+                    ]
+                }
+            ]
+        },
+        {
             "id": "karten",
             "titel": "Karten (jede Fernstufe L2)",
             "befehle": 1,
@@ -102,51 +160,6 @@
             "regeln": [
                 {
                     "muster": "^nahWiese$"
-                }
-            ]
-        },
-        {
-            "id": "streu",
-            "titel": "Nah-Streu (Streu-Satz je Art, Fernfeld-Deko, Streu-Arten des Studios)",
-            "befehle": 9,
-            "dreiecke": 40000,
-            "regeln": [
-                {
-                    "muster": "^streuNah:"
-                },
-                {
-                    "muster": "^(streu-klein|deko-fernfeld)$"
-                },
-                {
-                    "familie": [
-                        "fscatter"
-                    ],
-                    "art": [
-                        "flower",
-                        "grass",
-                        "rock",
-                        "boulder",
-                        "scree",
-                        "crystal",
-                        "columns"
-                    ],
-                    "stufe": [
-                        0,
-                        1
-                    ]
-                },
-                {
-                    "familie": [
-                        "f"
-                    ],
-                    "art": [
-                        "flower",
-                        "grass"
-                    ],
-                    "stufe": [
-                        0,
-                        1
-                    ]
                 }
             ]
         },

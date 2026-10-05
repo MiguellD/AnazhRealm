@@ -266,9 +266,14 @@ const FORBIDDEN = [
     { token: "AnazhRealm.KRONEN", fiel: "Waldboden" },
     { token: "blumeFloor", fiel: "Waldboden" },
     { token: "farnFloor", fiel: "Waldboden" },
-    { token: '"blume_tulpe"', fiel: "Waldboden — die Blume ist die Studio-Blume" },
-    { token: '"gestruepp_stecher"', fiel: "Waldboden — das Gestrüpp ist das Studio-Gestrüpp" },
-    { token: '"schilf_rohr"', fiel: "Waldboden — das Schilf ist das Studio-Schilf" },
+    // Die Arten-Namen des Zwillings als nackte Namen (ein Tafel-Schlüssel `blume_tulpe: "blume"` trägt keine Anführung —
+    // die gequotete Form traf ihn nicht, Integration 05.10.).
+    { token: "blume_tulpe", fiel: "Waldboden — die Blume ist die Studio-Blume" },
+    { token: "blume_klee", fiel: "Waldboden — die Blume ist die Studio-Blume" },
+    { token: "blume_mohn", fiel: "Waldboden — die Blume ist die Studio-Blume" },
+    { token: "gestruepp_stecher", fiel: "Waldboden — das Gestrüpp ist das Studio-Gestrüpp" },
+    { token: "schilf_rohr", fiel: "Waldboden — das Schilf ist das Studio-Schilf" },
+    { token: 'farn_busch: "strauch"', fiel: "Integration Waldboden — das Kraut-Stratum ist der Studio-Farn" },
     // Das Farb-Gesetz der Host-Streu hatte nach dem Fall beider Host-Bauer keinen Leser mehr — die Studio-Arten backen
     // ihre Farbe im Studio (vegFarbe, gate:streu-wahrheit).
     { token: "_streuAlbedo", fiel: "Integration Waldboden — die Studio-Arten backen ihre Farbe im Studio (vegFarbe)" },

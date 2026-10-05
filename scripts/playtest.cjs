@@ -35762,10 +35762,13 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         }
 
         // ─── (W2) baum_totholz ist aus SPECIES_GRAMMAR + SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN ─
+        // Seit dem Waldboden (integriert 05.10.) ist Totholz eine Studio-Art: die generische Regel (`baum_<preset>` im
+        // LIVE-Buch) löst baum_totholz auf das stehende Studio-Totholz auf — nie auf die belaubte Eiche (der Alias).
+        const totholzPreset = r._foundryPresetFor("baum_totholz");
         out.totholzFort =
             !(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz) &&
             !(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz) &&
-            r._foundryPresetFor("baum_totholz") == null;
+            (totholzPreset == null || totholzPreset === "totholz");
 
         // ─── (W3) V17.16-VARIATIONS-Wand in _growTreeBlueprintForSpawn ─
         const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
@@ -35834,7 +35837,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     check("V18.215 (W1b) Alle 6 Baum-Spezies deklariert, baum_totholz nicht", res.variationAllSpecies === true);
     check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
     check(
-        "Integration 05.10. (W2) baum_totholz ist aus SPECIES_GRAMMAR, SPECIES_TREE_PARAMS und dem Foundry-Alias gefallen",
+        "Integration 05.10. (W2) baum_totholz ist aus SPECIES_GRAMMAR, SPECIES_TREE_PARAMS und dem Eichen-Alias gefallen (Studio-Totholz)",
         res.totholzFort === true
     );
     check(

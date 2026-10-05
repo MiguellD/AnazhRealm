@@ -428,8 +428,9 @@ const PORTAL_RENDER_CONFIG = {
         rarity: { kristalle: 0.05, basalt: 0.3, sediment: 0.35, findling: 0.6, zacken: 0.6 },
         // DAS BODEN-GESETZ (Waldboden 04.10.): wo jede Boden-Art wächst — EINE Zeile je Art, der EINE Auswerter
         // `__phytoCore.bodenGewicht` (Labor-Wald und Nah-Streu der Welt). ring = nah (die Nah-Streu der Welt und
-        // der Boden des Labor-Walds) · wald (der Baum-Weg: die Welt setzt die Art über die Genese, das Labor pflanzt
-        // sie mit dieser Zeile); dichte = Pflanzen je 100 m² bei vollem Gewicht; skala = [min, max]; hang = höchste
+        // der Boden des Labor-Walds) · wald (der Baum-Weg: das Labor pflanzt die Art mit dieser Zeile; die Welt setzt
+        // stehendes Totholz nicht — Integration 05.10., die Genese-Zeile blieb gefallen); dichte = Pflanzen je 100 m²
+        // bei vollem Gewicht; skala = [min, max]; hang = höchste
         // Neigung |∇h|; die Bänder [a, b, c, d] (Trapez): licht = Kronen-Licht 0..1 (Farn im Schatten, Blume im
         // Saum), feucht = Boden-Feuchte 0..1 (0 = gewöhnlicher Boden, 1 = Ufer/Niederung), ufer = m über dem Wasser
         // (negativ = Flachwasser — der Schilfgürtel steht im Wasser), fels = Steinigkeit 0..1. feuchtLicht = wie weit
@@ -3639,8 +3640,9 @@ const PRESETS = {
         fx: { form: "stumpf", barkA: 0x3a2c1e, barkB: 0x5a4a38 },
     },
     // Die Buche: glatte graue Rinde, ganzrandiges Blatt, breite Kuppel (die Mammut-Nische des Wald-Generators heißt
-    // seit 04.10. baum_mammut — baum_buche ist die Buche). Buche · Karst · Totholz tragen place none: die Welt
-    // setzt sie über ihre bestehenden Nischen (Genese · Streu-Krone), kein zusätzlicher Auto-Hain.
+    // seit 04.10. baum_mammut — baum_buche ist die Buche). Buche · Karst · Totholz tragen place none: Buche und Karst
+    // setzt die Welt über ihre bestehenden Nischen (Genese · Streu-Krone), das stehende Totholz nur der Labor-Wald
+    // (Boden-Zeile ring "wald"), kein zusätzlicher Auto-Hain.
     buche: {
         kind: "tree",
         panel: "plant",

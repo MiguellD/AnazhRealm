@@ -52023,7 +52023,7 @@ class AnazhRealm {
             promotable: layer.promotable === true,
             species,
             variantIndex,
-            // Der WUNSCH (die Distanz-Stufe) ist der Hysterese-Zustand — eine Stufen-Klammer (Blume/Fels [0], Strauch
+            // Der WUNSCH (die Distanz-Stufe) ist der Hysterese-Zustand — eine Stufen-Klammer (Fels [0], Strauch
             // [1,2]) friert die Zelle sonst auf ihrer gelieferten Stufe ein, und der Fern-Wunsch käme nie an. Einzig
             // das Boot-Billboard (Karte für einen Nah-Wunsch, solange die Gestalt lädt) trägt lod=2: der LOD-Tick heilt
             // die Zelle, sobald die echte Stufe gecacht ist.
@@ -52038,7 +52038,7 @@ class AnazhRealm {
 
     // Trägt eine Mesh-Zelle auf der neuen Wunsch-Stufe DIESELBE Gestalt? Foundry: die EINE Stufen-Klammer des Flattens
     // (`_foundryServierStufe`) bildet beide Wünsche auf dieselbe gelieferte Stufe ab — auch den Fern-Wunsch 2 diesseits
-    // der Nah-Grenze (Blume/Fels [0] bleiben ihr L0); jenseits entscheidet die Fernform (`_streuFernBahn`). Die Karte
+    // der Nah-Grenze (Fels [0] bleibt sein L0, die Blume [0, 2] trägt ihre L2); jenseits entscheidet die Fernform (`_streuFernBahn`). Die Karte
     // (Baum/Strauch-Stufe 2) ist nie dieselbe Gestalt wie ein Körper. Grammatik: derselbe Bauplan-Schlüssel.
     // Fernform-Datensätze (slots []) nie.
     _scatterGleicheGestalt(cell, newLod, dist) {
@@ -52140,7 +52140,7 @@ class AnazhRealm {
             // solange ihr Fern-Wunsch jenseits der Grenze gilt — slot-frei, nur wo ein echter Renderer den Welt-March zeichnet.
             const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._weltMarchGezeichnet();
             if (newLod === cell.lod && !warten && !bahnWechsel) continue;
-            // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Blume/Fels [0], Strauch [1,2]; Grammatik
+            // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Fels [0], Blume [0,2], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
             // Materialisieren, kein Duplikat-Slot.
             if (!warten && !bahnWechsel && this._scatterGleicheGestalt(cell, newLod, dist)) {
@@ -57093,9 +57093,10 @@ class AnazhRealm {
                 wärmeleitung: 0.1,
                 lebendig: 0.55,
             }),
-            // ALCHEMIE-MATERIALIEN der erntbaren Klein-Vegetation: `kraut` (pflanzlich; tag-nah an laub → die
-            // Trank-Rolle bleibt consumable), `essenz` (Sporen/Pollen, stark magieleitend). Trank-Baupläne tragen
-            // sie als Part-Material → `brewConsumable` zieht gesammelte Zutaten: pflücken → brauen → trinken.
+            // ALCHEMIE-MATERIALIEN: `kraut` (pflanzlich, die Ernte der Nah-Streu — Farn · Schilf · Gestrüpp · Blume;
+            // tag-nah an laub → die Trank-Rolle bleibt consumable), `essenz` (stark magieleitend; ihre Ernte — Sporen und
+            // Pollen der Klein-Streu — fiel mit dem Waldboden 04.10., die Welt trägt keine Quelle mehr). Trank-Baupläne
+            // tragen sie als Part-Material → `brewConsumable` zieht gesammelte Zutaten: pflücken → brauen → trinken.
             make("kraut", "Kraut", 0x4e9a3c, {
                 härte: 0.05,
                 dichte: 0.08,
@@ -66717,20 +66718,17 @@ class AnazhRealm {
             kristall: "kristalle",
             kristalle: "kristalle",
             kristall_var: "kristalle",
-            // Blume (emitFlower) + Strauch
-            blume_tulpe: "blume",
-            blume_klee: "blume",
-            blume_mohn: "blume",
+            // Blume (emitFlower) + Strauch — die Bodenflora der Streu-Regionen (blume_gross); die Arten-Namen des gefallenen
+            // Klein-Vegetations-Zwillings (Tulpe · Klee · Mohn) fielen mit ihm (Waldboden 04.10.).
             blume_gross: "blume",
             blume: "blume",
             // Straeucher -> Vorlagen-strauch (LOD haelt die Perf: lod2 ~16k Verts; die Distanz-
             // LOD-Wahl gibt dem fernen Busch die leichte Stufe, instanziert).
             busch_hazel: "strauch",
             busch: "strauch",
-            // W6 (Paritäts-Vollendung) — die LETZTE ungemappte Understory-Art: das Kraut-
-            // Stratum feuchter Senken (`_scatterSpeciesForLayer` moisture>0.55) fiel als
-            // einzige noch auf die Grammatik-Silhouette zurück (Fremd-Silhouetten-Inventur).
-            farn_busch: "strauch",
+            // Das Kraut-Stratum feuchter Senken (`_scatterSpeciesForLayer` moisture>0.55) ist der Studio-Farn (Waldboden
+            // 04.10., integriert 05.10.): der Alias auf den Strauch fiel wie Buche, Karst-Baum und Totholz.
+            farn_busch: "farn",
         };
         if (map[species]) return map[species];
         // Generische Regel hinter der Tabelle: `baum_<preset>`/`<preset>` mit Preset im LIVE-Rezeptbuch
@@ -66948,7 +66946,7 @@ class AnazhRealm {
     }
     // DIE EINE NAH-GRENZE der Streu-Fernform (Schöpfer-Wort 30.09.: „AAA nah, nicht Kapseln"): die Fernform einer Art
     // (gesetz · boden) gilt mit Fern-Wunsch erst ab `ANALOG_NAH_M` — diesseits trägt ihr Studio-Mesh (die Stufen-Klammer
-    // serviert die Art, Blume/Fels ihr L0, Gras seine Stufe). null = die Mesh-Bahn, auch für "karte" (Baum, Strauch).
+    // serviert die Art, Fels sein L0, die Blume ihre L2, Gras seine Stufe). null = die Mesh-Bahn, auch für "karte" (Baum, Strauch).
     // Leser: der Zellen-Chokepoint (`_scatterMaterializeCell`), der Bahnwechsel des LOD-Ticks und die Gestalt-Gleichheit
     // — EINE Grenze für Tier, Bau und Streu, kein zweites Maß (W1 las bis 05.10. Welt-d1 + Hysterese, 29,4 m).
     _streuFernBahn(preset, lod, dist) {
@@ -69043,7 +69041,7 @@ class AnazhRealm {
             // (`_foundryFlattenFor` lenkt lod ≥ 2 auf sie), L0/L1 lädt nah auf Abruf. Bis V18.526 bestellte der Vorrat
             // je Art L2-Geometrie, die kein Leser las (headless 56 Aufträge, ~38 MB je Boot).
             if (this._foundryPresetIsTree(sp)) continue;
-            // Boden-Arten wärmen EXAKT ihre deklarierten Stufen (kindStages — Gras [1,2], Blume/Fels [0]; ohne Daten
+            // Boden-Arten wärmen EXAKT ihre deklarierten Stufen (kindStages — Gras [1,2], Blume [0,2], Fels [0]; ohne Daten
             // [2,0]) → der nahe Streu-Pass findet seine Stufe warm.
             const _lods = this._foundryKindStages(sp) || [2, 0];
             const _V = this._foundryGestalten(sp);
