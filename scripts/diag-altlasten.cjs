@@ -384,14 +384,20 @@ const FORBIDDEN = [
     { token: "uDepthRange", fiel: "Welle 5" },
     { token: "waterThick", fiel: "Welle 5 — wegM (optischer Weg in Metern)" },
     { token: "lakeBaseFoam", fiel: "Welle 5 — ruhiges Wasser schäumt nicht" },
-    { token: "uSkyCol", fiel: "Welle 5 — das Wasser spiegelt die Himmels-Umgebung (_himmelUmgebungTex)" },
+    // Präzise Tokens (Integration 06.10.): die nackten Namen getLevel/floorMax/uSkyCol/_dryW wären Teilstrings
+    // künftiger fremder Namen (getLevelOfDetail, uSkyColor, _dryWind) — die Wand nennt die gefallene Gestalt.
+    { token: "const uSkyCol ", fiel: "Welle 5 — das Wasser spiegelt die Himmels-Umgebung (_himmelUmgebungTex)" },
+    { token: "skyCol: uSkyCol", fiel: "Welle 5 — der Spiegel liest die Himmels-Umgebung" },
     { token: "WG.tief", fiel: "Welle 5 — der Wasser-Körper ist R∞ = 0,33·b_b/(wK+b_b) (WASSER_GESETZ.koerperStreu)" },
-    { token: "getLevel", fiel: "Welle 5 — das Sheet liest das gezeichnete Dach (getDach, _caDach)" },
+    { token: "ctx.getLevel(", fiel: "Welle 5 — das Sheet liest das gezeichnete Dach (getDach, _caDach)" },
+    { token: "getLevel: (", fiel: "Welle 5 — der Sheet-Kontext trägt getDach, keinen Live-Pegel" },
     { token: "_studioGround", fiel: "Welle 5 — die Boden-Palette liegt synchron im Terrain-Namensraum (BODEN_FARBE)" },
     { token: "0.42, 0.44, 0.49", fiel: "Welle 5 — der Stein-Zwilling; die Palette ist Studio PORTAL_GROUND linear" },
     { token: "litTint", fiel: "Welle 5 — der Fragment-Waldkern; die Laubstreu folgt den Kronen (_kronenStreuNeu)" },
-    { token: "floorMax", fiel: "Welle 5 — der Fragment-Waldkern" },
-    { token: "_dryW", fiel: "Welle 5 — die Dürre-Flecken (Albedo × 1,32/1,12/0,6) färbten die Streu orange" },
+    { token: "G.floorMax", fiel: "Welle 5 — der Fragment-Waldkern" },
+    { token: "floorMax: 0.55", fiel: "Welle 5 — der Deckel des Fragment-Waldkerns" },
+    { token: "const _dryW ", fiel: "Welle 5 — die Dürre-Flecken (Albedo × 1,32/1,12/0,6) färbten die Streu orange" },
+    { token: ".sub(_dryW)", fiel: "Welle 5 — die Dürre-Flecken" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
