@@ -343,9 +343,9 @@ class AnazhRealm {
                 // Wasser-Form: "cells" (Default, das Zell-Oberkanten-Sheet) | "iso" (alte Zell-Iso, Debug-A/B).
                 // Persistierte "surface"-Werte (L-Film, entfernt) heilen auf "cells".
                 waterRenderMode: "cells",
-                // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.).
-                waterShoreWidth: 0.0305, // Ufer-Alpha-Saum in VIEWPORT-Lineardepth (gegen waterThick, V18.14-Ufer); kleiner = schärfer
-                waterDepthRange: 10.9, // Meter bis volle Tiefen-Farbe (gegen aDepth); kleiner = schneller tief
+                // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.). Ufer-Saum
+                // und Tiefen-Farbe sind seit dem Durchlass-Gesetz keine Regler mehr (Beer-Lambert über den
+                // optischen Weg in Metern, `_ensureHydroSurfaceMaterial`).
                 waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
                 waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
                 // (waterfallSteep V18.111 gefallen — die A4-Plane ist geschnitten)
@@ -32164,7 +32164,6 @@ class AnazhRealm {
             modelNormalMatrix,
             cameraPosition,
             sin,
-            cos,
             dot,
             length,
             mix,
@@ -32182,44 +32181,43 @@ class AnazhRealm {
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
             linearDepth,
             depth,
+            cameraNear,
+            cameraFar,
+            exp,
+            texture,
+            equirectUV,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
-        // Zehn Live-Uniforms (uniform-Knoten mit .value-Setter)
+        // Die Live-Uniforms (uniform-Knoten mit .value-Setter)
         const uTime = uniform(0.0);
         const uFlowSpeed = uniform(0.5);
-        // Wasser-Farben = Studio-Gesetz WASSER_GESETZ (lebt NUR in foundry-core/__terrainCore; dieselben
-        // Zahlen injiziert das Studio-GLSL): Beer-Lambert shallowC=exp(-wK*flach) · deepC=exp(-wK*tief) ·
-        // Schaum verbatim, raw als linear (r128-Farb-Gesetz). Der Leser ist fail-closed, keine Kopie hier.
+        // Das Studio-Gesetz WASSER_GESETZ (lebt NUR in foundry-core/__terrainCore; dieselben Zahlen injiziert das
+        // Studio-GLSL): Beer-Lambert-Absorption wK (1/m) · Schlick-Fresnel · Sonnen-Glanz · Schaum. Der Leser ist
+        // fail-closed, keine Kopie hier.
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-        const _wgBeer = (d) =>
-            new THREE.Color().setRGB(Math.exp(-WG.wK[0] * d), Math.exp(-WG.wK[1] * d), Math.exp(-WG.wK[2] * d));
-        const uDeep = uniform(_wgBeer(WG.tief));
-        const uShallow = uniform(_wgBeer(WG.flach));
+        // DER WASSER-KÖRPER: was die optisch tiefe Wassersäule zurückstreut — R∞ = 0,33 · b_b / (a + b_b) je Kanal
+        // (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m): 0,005/0,016/
+        // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
+        // Anzeige-Blau des Studios (exp(−wK·tief), als sRGB-Absicht dekodiert 0,0003/0,027/0,107): aus 45 m ein
+        // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
+        const koerperAlbedo = vec3(...WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu)));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
-        // W10 — das Wasser spiegelt DEN Himmel (uSkyCol = die eine Tag/Nacht-
-        // Quelle) und glitzert in der Rayleigh-Sonnenfarbe (uSunCol) — Schreiber:
-        // _dayNightApplyWaterMaterials.
-        const uSkyCol = uniform(new THREE.Color(0.8, 0.87, 0.91));
+        // Das Licht des Orts (Schreiber `_dayNightApplyWaterMaterials`): uIrr = E/π einer waagrechten Fläche (Sonne
+        // + Himmels-Umgebung + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
+        // Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die Sonne selbst).
+        const uIrr = uniform(new THREE.Color(1, 1, 1));
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
-        // Tiefenpuffer-getriebene Uferlinie + Tiefen-Farbe: uShoreWidth/uDepthRange (Einheiten s. unten);
-        // uEmotion ist der Kopplungs-Haken (0 = neutral). Initialisiert aus dem persistierten
-        // Atmosphäre-Wert (Settings-Slider, überlebt Reload), sonst Default.
+        // uEmotion ist der Kopplungs-Haken (0 = neutral). Die Regler initialisiert der persistierte Atmosphäre-
+        // Wert (Settings-Slider, überlebt Reload), sonst Default.
         const atmoW = this.state.atmosphere || {};
-        // uShoreWidth in VIEWPORT-Lineardepth (edgeFade ← waterThick), uDepthRange in METER (deepen ←
-        // aDepth). Self-heal: ein persistierter Meter-uShoreWidth (> 0.1) → Default 0.0045; ein alter
-        // Viewport-uDepthRange (< 0.5) → 5.0.
-        const persShore = atmoW.waterShoreWidth;
-        const uShoreWidth = uniform(Number.isFinite(persShore) && persShore <= 0.1 ? persShore : 0.0045);
-        const persRange = atmoW.waterDepthRange;
-        const uDepthRange = uniform(Number.isFinite(persRange) && persRange >= 0.5 ? persRange : 5.0);
         const uEmotion = uniform(0.0);
-        // Mindest-Wasser-Dicke: Fragmente mit waterThick < uMinDepth fallen per alphaTest (der 16-m-Atlas-
-        // Spiegel blutet minimal über Voxel-Grate → flaches Blatt); tiefes Wasser bleibt. Default 0.0025,
-        // live über setWaterCull, aus dem persistierten Wert initialisiert.
+        // Mindest-Wasser-Dicke (Meter optischer Weg): Fragmente darunter fallen per alphaTest (der 16-m-Atlas-
+        // Spiegel blutet minimal über Voxel-Grate → flaches Blatt); tiefes Wasser bleibt. Default 0 (der
+        // Durchlass macht dünnes Wasser schon durchsichtig), live über setWaterCull.
         const initMinDepth =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                 ? this.state.atmosphere.waterCull
@@ -32341,26 +32339,26 @@ class AnazhRealm {
         const nUpRaw = normalize(vNormalWorld);
         const n = cond(nUpRaw.y.lessThan(0.0), nUpRaw.mul(-1.0), nUpRaw);
 
-        // === SCHICHT 3: Tiefenpuffer-Uferlinie ===
-        // waterThick = linearDepth(_szeneTiefe) (Terrain dahinter) − linearDepth(depth) (dieses Fragment): ~0 an
-        // der Uferlinie, pro Pixel → die weiche Kante folgt dem Terrain, egal wie grob das Mesh. Ufer-Alpha
-        // (`edgeFade`) liest `waterThick` (Viewport-Einheiten); die Tiefen-FARBE (`deepen`) liest die glatte
-        // Meter-Tiefe `aDepth` — `waterThick` sähe die facettierte Sohle (Kontur-Bänder).
+        // === DER OPTISCHE WEG (Meter, pro Pixel) ===
+        // Der Tiefenpuffer (Terrain dahinter, `_szeneTiefe`) minus dieses Fragment als Sicht-Tiefe in METERN
+        // (`linearDepth` ist [0,1] über cameraNear…cameraFar), auf den Sicht-Strahl gestreckt (Strahl-Länge ÷
+        // Sicht-Tiefe des Fragments): der Weg des Lichts vom Grund durchs Wasser ins Auge — ~0 an der Uferlinie, die
+        // weiche Kante folgt dem Terrain, egal wie grob das Mesh. Bis V18.530 las das Ufer die [0,1]-Tiefe roh gegen
+        // Viewport-Regler (Saum 0,0305, Schaum ×12): die Luft hob cameraFar auf 8500 m → der Saum war 259 m breit (die
+        // Seen standen bei Alpha 0,4 statt durchscheinend), der Ufer-Schaum 3 km (Blick-Tour 07: weiß wie Eis).
         const sceneLin = linearDepth(this._szeneTiefe());
         const fragLin = linearDepth(depth);
-        const waterThick = max(sceneLin.sub(fragLin), float(0.0));
-        const edgeFade = smoothstep(float(0.0), uShoreWidth, waterThick); // 0 an der geom. Uferlinie → 1 dahinter (V18.14-Form)
-        const shoreLine = float(1.0).sub(edgeFade); // 1 genau an der Uferlinie (fürs Ufer-Schaum-Band)
-        const deepen = smoothstep(float(0.0), uDepthRange, aDepthV); // Tiefen-FARBE: glatte Meter-Tiefe (kaleidoskop-frei)
-
-        // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise, am Ozean
-        // nach Gerstner-Wellenhöhe — über aWave gemischt, weicher Übergang.
-        const baseN = vnoise(xz.mul(0.05).add(uTime.mul(0.03)));
+        const _tiefeM = cameraFar.sub(cameraNear);
+        const _fragTiefeM = fragLin.mul(_tiefeM).add(cameraNear).max(float(1e-3));
+        const wegM = max(sceneLin.sub(fragLin), float(0.0))
+            .mul(_tiefeM)
+            .mul(length(cameraPosition.sub(vWorldPos)).div(_fragTiefeM));
         const waveT = clamp(vWave.mul(0.5).add(0.5), 0.0, 1.0);
-        const mixT = mix(float(0.32).add(baseN.mul(0.42)), waveT, aWaveV);
-        // Tiefen-Farbe (Schicht 3): tieferes Wasser zieht zur deep-Farbe → echte
-        // Tiefenwahrnehmung statt flachem Einheits-Blau, dem Terrain folgend.
-        const baseCol = mix(mix(uDeep, uShallow, mixT), uDeep, deepen.mul(0.55));
+        // DER DURCHLASS (Beer-Lambert, WASSER_GESETZ.wK je Kanal): der Weg vom Grund zum Auge plus der Weg des
+        // Lichts vom Spiegel zum Grund (die Säulen-Tiefe aDepth) — am Ufer scheint der Grund durch (T → 1), im
+        // Tiefen deckt der Wasser-Körper (T → 0; 1 m grün 0,14).
+        const durchlass = exp(vec3(WG.wK[0], WG.wK[1], WG.wK[2]).mul(wegM.add(aDepthV)).negate());
+        const T = dot(durchlass, vec3(0.2126, 0.7152, 0.0722));
 
         // FOAM: Fluss-vs-See-Trennung (vorher GLSL if/else, jetzt cond-Blend).
         // fmag > 0.01 → Fluss-Strähnen scrollen stromab.
@@ -32382,9 +32380,8 @@ class AnazhRealm {
         const riverS2 = vnoise(adv.mul(0.2));
         const riverFoam = clamp(riverS1.add(riverS2.mul(0.4)).div(1.4).sub(0.44).mul(2.0), 0.0, 1.0);
 
-        // LAKE/OCEAN-PFAD
-        const rip = vnoise(xz.mul(0.13).add(uTime.mul(0.05)));
-        const lakeBaseFoam = clamp(rip.sub(0.74).mul(2.6), 0.0, 1.0).mul(0.5);
+        // LAKE/OCEAN-PFAD — ruhiges Wasser trägt keinen Schaum: der „See-Schimmer" (Noise-Flecken bis 0,5 Schaum)
+        // fiel mit dem Durchlass-Gesetz — im weißen Spiegel unsichtbar, auf dunklem Wasser weiße Kacheln (Linse 05.10.).
         // V9.48 — Ufer-Schaum-Band (vShore: 1 an Wasserlinie, 0 im offenen See)
         const band = smoothstep(0.04, 0.9, aShoreV);
         const sn1 = vnoise(xz.mul(0.34).add(uTime.mul(0.15)));
@@ -32394,7 +32391,7 @@ class AnazhRealm {
         const shoreFoam = clamp(band.mul(float(0.4).add(sn.mul(0.9))).mul(lap), 0.0, 1.0);
         // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated)
         const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
-        const lakeFoam = max(max(lakeBaseFoam, shoreFoam), crest.mul(0.6));
+        const lakeFoam = max(shoreFoam, crest.mul(0.6));
 
         // Foam-Zweige MISCHEN statt hart schalten: `riverness` (0 See … 1 Fluss) blendet die Strähnen in den
         // Schimmer → keine Naht am Übergang. Breite fmag-Rampe 0.04→0.5, weil `aFlow` eine taperende
@@ -32408,13 +32405,12 @@ class AnazhRealm {
         // (ersetzt das für Chunk-Wasser tote aShore-Band). Glitzer glatt (0.8 + 0.2·noise) — stärkere
         // Speckel-Varianz machte das Band als distinkte Textur lesbar.
         const shoreSparkle = float(0.8).add(vnoise(xz.mul(0.5).add(uTime.mul(0.2))).mul(0.2));
-        // Der Schaum-Saum sitzt an `shoreLine` UND ist auf echte flache Tiefe gegated (`realShallow`:
+        // Der Schaum-Saum sitzt an der Uferlinie UND ist auf echte flache Tiefe gegated (`realShallow`:
         // aDepth < uDepthFoam m) → nur die echte Kante schäumt, nicht der ganze flache Fluss.
         const realShallow = float(1.0).sub(smoothstep(float(0.0), uDepthFoam, aDepthV));
-        // Die Schaum-FARBE liest ein 12× weiteres, tiefenbasiertes Ufer-Band (`foamShore`, weiche Rampe,
-        // Peak 0.3) statt der haarscharfen `shoreLine` (sonst ein harter weißer Strich); der ALPHA-Rand
-        // bleibt am scharfen `shoreLine` → die Kante bleibt crisp, nur der Schaum verschmilzt. Shader-only.
-        const foamShore = float(1.0).sub(smoothstep(float(0.0), uShoreWidth.mul(12.0), waterThick));
+        // Das Ufer-Band des Schaums: der optische Weg unter dem Ufer-Maß des Gesetzes (WASSER_GESETZ.schaum.ufer,
+        // 0,26 m), weiche Rampe, Spitze 0,3.
+        const foamShore = float(1.0).sub(smoothstep(float(0.0), float(WG.schaum.ufer), wegM));
         const depthFoam = foamShore.mul(realShallow).mul(shoreSparkle).mul(0.3);
         // Detail-Fade mit der Kamera-Distanz (70 → 200 m): die hochfrequenten Schaum-Strähnen + Schimmer-
         // Noise aliasen ab ~100 m zu Moiré. Basis-/Tiefen-Farbe und Sonnen-Glitzern bleiben. Render-only.
@@ -32432,8 +32428,6 @@ class AnazhRealm {
         // im Wasser); default 0 = exakt das alte Bild.
         const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
 
-        const colWithFoam = mix(baseCol, uFoam, foamD.mul(0.7));
-
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
         // Advektiertes Mehr-Oktav-Noise statt `sin(dot(xz,fdir))` (parallele Glitzer-Linien); Amplitude
@@ -32450,48 +32444,51 @@ class AnazhRealm {
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        // Schlick-Fresnel + Himmel-Spiegelung (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2; der Fallback-
-        // Zenit-Abfall (upY des reflektierten Strahls → sky·dim) verbatim wie die Vorlage. EIN Fresnel für
-        // Spiegel UND Alpha; die Planar-Spiegel-Textur bleibt Studio-Sache (Perf).
+        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
         const ndvW = clamp(dot(nFlow, viewDir), 0.0, 1.0);
         const fres = float(WG.fresnel[0]).add(
             float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
         );
-        const upYW = clamp(reflect(viewDir.negate(), nFlow).y.mul(0.5).add(0.5), 0.0, 1.0);
-        const skyMirror = mix(uSkyCol, uSkyCol.mul(WG.spiegel.dim), upYW);
-        const mirrored = mix(colWithFoam, skyMirror, fres);
-        // W10 — die LICHT-SCHATTIERUNG der Vorlage: ×(l0 + l1·diff + l2·Wellenhöhe),
-        // uLight trägt Tag/Nacht weiter (die Welt-Gain-Quelle bleibt EINE).
-        const diffW = max(dot(nFlow, normalize(uSunDir)), 0.0);
-        const lit = mirrored
-            .mul(float(WG.licht[0]).add(diffW.mul(WG.licht[1])).add(vWave.mul(WG.licht[2])))
-            .mul(uLight);
-        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn
-        // aus dem Gesetz, Farbe = die Rayleigh-Sonne (uSunCol) statt Fix-Warmweiß.
+        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
+        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
+        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
+        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
+        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
+        const _R = reflect(viewDir.negate(), nFlow);
+        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
+        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
+        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
+        // (Rayleigh-Farbe uSunCol × ihre Stärke uLight).
         const spec = pow(max(dot(reflect(normalize(uSunDir).negate(), nFlow), viewDir), 0.0), float(WG.spec[0]));
-        const withSpec = lit.add(uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight));
+        const glanz = uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight);
+        // Was das Wasser selbst zurückwirft: der Körper im Licht des Orts (Volumen-Albedo × E/π), soweit er den
+        // Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Der Schaum ist eine
+        // diffuse weiße Fläche im selben Licht, er deckt (fw).
+        const eigen = koerperAlbedo
+            .mul(uIrr)
+            .mul(float(1.0).sub(T))
+            .mul(float(1.0).sub(fres))
+            .add(himmel.mul(fres))
+            .add(glanz);
+        const fw = foamD.mul(0.7);
+        // DIE DECKUNG (Standard-Blending: Bild = C·α + Grund·(1−α)): der Grund kommt mit T·(1−F)·(1−fw) durch, also
+        // α = 1 − T·(1−F)·(1−fw) und C = (fw·Schaum + (1−fw)·eigen) / α — am Ufer scheint der Grund (α → F),
+        // im Tiefen deckt der dunkle Körper, unter flachem Winkel der Himmel (F → 1). α ≥ F ≥ 0,02: kein Pol.
+        const alpha = float(1.0).sub(T.mul(float(1.0).sub(fres)).mul(float(1.0).sub(fw)));
+        const farbe = mix(eigen, uFoam.mul(uIrr), fw).div(max(alpha, float(1e-3)));
 
         // Die Luft legt der EINE Luft-Knoten auf (`scene.fogNode`, mat.fog) — kein eigener Wasser-Nebel.
 
-        // Fresnel-Opazität: am Horizont fast opak, von oben klarer — liest den EINEN Schlick-Fresnel, die
-        // Alpha-Anker 0.8/0.97 bleiben. Das Kern-Moiré steiler Läufe sitzt in der Mesh-Tessellation am
-        // Grazing-Blick, nicht in der Normale.
-        const alpha0 = mix(float(0.8), float(0.97), fres);
-        // An der Uferlinie auf den 0.4-Boden ausfaden (`edgeFade` aus `waterThick`, pro Pixel terrain-
-        // folgend): weicher Saum statt harter Mesh-Kante, heilt auch streifendes Z-Fighting. Nie auf null
-        // aus `aDepth` faden (das Ufer würde ein vertikaler Tiefen-Fade). aShore (Pool = 1) hält den Saum.
-        const alpha = alpha0.mul(mix(float(0.4), float(1.0), max(edgeFade, aShoreV)));
-        // Dünnes Wand-Bluten pro Pixel cullen: waterThick < uMinDepth → Alpha 0, das Fragment fällt per
+        // Dünnes Wand-Bluten pro Pixel cullen: optischer Weg < uMinDepth (m) → Alpha 0, das Fragment fällt per
         // mat.alphaTest weg. Bei uMinDepth = 0 unverändert; tiefes Wasser bleibt.
-        const alphaCulled = cond(waterThick.lessThan(uMinDepth), float(0.0), alpha);
+        const alphaCulled = cond(wegM.lessThan(uMinDepth), float(0.0), alpha);
 
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.positionNode = pd;
-        mat.colorNode = vec4(withSpec, alphaCulled);
+        mat.colorNode = vec4(farbe, alphaCulled);
         mat.transparent = true;
-        // V13.9 — Cull-Schwelle: Fragmente mit Alpha≈0 (oben gecullt) werden
-        // verworfen. 0.0001 liegt weit unter dem minimalen echten Wasser-Alpha
-        // (~0.32), discardet also NUR die gecullten — default-Bild unberührt.
+        // V13.9 — Cull-Schwelle: Fragmente mit Alpha≈0 (oben gecullt) werden verworfen. 0.0001 liegt weit unter
+        // dem minimalen echten Wasser-Alpha (F ≥ 0,02), discardet also NUR die gecullten.
         mat.alphaTest = 0.0001;
         // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
         // also kann nichts mehr durch eine andere Wasserfläche scheinen.
@@ -32510,16 +32507,12 @@ class AnazhRealm {
         this.state.hydroSurfaceUniforms = {
             time: uTime,
             flowSpeed: uFlowSpeed,
-            deep: uDeep,
-            shallow: uShallow,
             foam: uFoam,
             sunDir: uSunDir,
-            skyCol: uSkyCol,
+            irr: uIrr,
             sunCol: uSunCol,
             light: uLight,
-            // V13.5 (Schicht 3) — im Browser-Audit justierbar; emotion ist der V14-Haken.
-            shoreWidth: uShoreWidth,
-            depthRange: uDepthRange,
+            // emotion ist der V14-Haken.
             emotion: uEmotion,
             minDepth: uMinDepth,
             depthFoam: uDepthFoam,
@@ -37222,16 +37215,8 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
-                // V18.6 U-W4 — Wasser-Render-Modus + Tiefen-Ufer-Hebel persistieren.
+                // V18.6 U-W4 — Wasser-Render-Modus persistieren.
                 waterRenderMode: this._waterRenderMode(),
-                waterShoreWidth:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
-                        ? this.state.atmosphere.waterShoreWidth
-                        : 1.0,
-                waterDepthRange:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
-                        ? this.state.atmosphere.waterDepthRange
-                        : 5.0,
                 // V18.14/.15 — Makro-Kontext-Regler persistieren.
                 waterDepthFoam:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
@@ -41274,13 +41259,6 @@ class AnazhRealm {
             if (typeof state.atmosphere.waterRenderMode === "string") {
                 this.setWaterRenderMode(state.atmosphere.waterRenderMode);
             }
-            // uShoreWidth auf VIEWPORT-Skala (edgeFade←waterThick), uDepthRange in METER (deepen←aDepth).
-            // Self-heal: ein alter Meter-Uferwert (>0.1) → 0.0045, ein alter Viewport-DepthRange (<0.5) → 5.0;
-            // der Setter clampt nochmal.
-            const sw = Number(state.atmosphere.waterShoreWidth);
-            if (Number.isFinite(sw)) this.setWaterShoreWidth(sw > 0.1 ? 0.0045 : sw);
-            const dr = Number(state.atmosphere.waterDepthRange);
-            if (Number.isFinite(dr)) this.setWaterDepthRange(dr < 0.5 ? 5.0 : dr);
             const lr = Number(state.atmosphere.waterLakeRipple);
             if (Number.isFinite(lr)) this.setLakeRipple(Math.max(0.0, Math.min(1.0, lr)));
             // V18.14 M1/M3 — die Makro-Kontext-Regler (vor dem Hydrosphäre-Mesh-Bau setzen,
@@ -64993,8 +64971,8 @@ class AnazhRealm {
     }
 
     // ===== ATLAS §19 · LICHT/WASSER-REGLER — alle Render-Setter (EINE Quelle je Regler) =====
-    // Wasser-Cull (uMinDepth): dünnes Wasser pro Pixel verwerfen (waterThick < uMinDepth → Alpha 0
-    // via mat.alphaTest). Wert in [0,1]-Lineardepth über camera near..far; 0 = aus.
+    // Wasser-Cull (uMinDepth): dünnes Wasser pro Pixel verwerfen (optischer Weg < uMinDepth → Alpha 0
+    // via mat.alphaTest). Wert in METERN optischen Wegs (0 … 0,05 m, seit dem Durchlass-Gesetz); 0 = aus.
     setWaterCull(minDepth) {
         const m = Math.max(0.0, Math.min(0.05, Number(minDepth) || 0.0));
         if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
@@ -65023,33 +65001,6 @@ class AnazhRealm {
                 const comma = key.indexOf(",");
                 this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
             }
-        }
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
-    // V18.6 U-W4 — die Tiefen-Uferlinie (uShoreWidth, [0,1]-Lineardepth): wie
-    // breit das Wasser pro Pixel vom Ufer einblendet. Kleiner = schärferes Ufer.
-    setWaterShoreWidth(width) {
-        // V18.17 — wieder in VIEWPORT-Lineardepth (Ufer-Alpha-Saum gegen waterThick, V18.14-Ufer).
-        const m = Math.max(0.001, Math.min(0.05, Number(width) || 0.0045));
-        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
-        this.state.atmosphere.waterShoreWidth = m;
-        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.shoreWidth) {
-            this.state.hydroSurfaceUniforms.shoreWidth.value = m;
-        }
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
-    // V18.15 — die Tiefen-Farb-Rampe (uDepthRange, jetzt in METERN gegen aDepth): wie
-    // schnell das Wasser mit der echten Tiefe ins Dunkle/Blaue kippt. Kleiner = schneller tief.
-    setWaterDepthRange(range) {
-        const m = Math.max(1.0, Math.min(15.0, Number(range) || 5.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
-        this.state.atmosphere.waterDepthRange = m;
-        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthRange) {
-            this.state.hydroSurfaceUniforms.depthRange.value = m;
         }
         if (typeof this.saveState === "function") this.saveState();
         return m;
@@ -82283,24 +82234,42 @@ class AnazhRealm {
     _dayNightApplyBelichtung() {
         const st = this.state;
         const rend = st.renderer;
-        const dl = st.directionalLight;
-        if (!rend || !dl) return;
+        if (!rend || !st.directionalLight) return;
         const B = AnazhRealm.BELICHTUNG;
-        const Y = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const e = this._waagrechtIrradianz(this._belichtungE || (this._belichtungE = [0, 0, 0]));
+        const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+        const karte = (0.18 / Math.PI) * E;
+        const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
+        rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+    }
+
+    // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben
+    // (`_himmelsIrradianz`, E/π) + Hemi + Ambient — dieselben Lichter, die jedes Material liest. EINE Rechnung für
+    // die Belichtung (die 18-%-Karte) und das Wasser (sein Körper und sein Schaum leuchten im Licht des Orts).
+    _waagrechtIrradianz(out) {
+        const st = this.state;
+        const dl = st.directionalLight;
+        out[0] = out[1] = out[2] = 0;
+        if (!dl) return out;
         const dir = this._belichtungRichtung || (this._belichtungRichtung = new THREE.Vector3());
         dir.copy(dl.position);
         if (dl.target) dir.sub(dl.target.position);
         const dy = dir.lengthSq() > 0 ? Math.max(0, dir.normalize().y) : 0;
-        let E = Y(dl.color.r, dl.color.g, dl.color.b) * dl.intensity * dy;
+        const add = (c, k) => {
+            out[0] += c.r * k;
+            out[1] += c.g * k;
+            out[2] += c.b * k;
+        };
+        add(dl.color, dl.intensity * dy);
         const env = this._himmelsIrradianz(); // liefert E/π (die Antwort einer weißen Lambert-Fläche)
-        if (env) E += Math.PI * Y(env.oben[0], env.oben[1], env.oben[2]);
-        const hl = st.hemiLight;
-        if (hl) E += Y(hl.color.r, hl.color.g, hl.color.b) * hl.intensity;
-        const al = st.ambientLight;
-        if (al) E += Y(al.color.r, al.color.g, al.color.b) * al.intensity;
-        const karte = (0.18 / Math.PI) * E;
-        const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
-        rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+        if (env) {
+            out[0] += Math.PI * env.oben[0];
+            out[1] += Math.PI * env.oben[1];
+            out[2] += Math.PI * env.oben[2];
+        }
+        if (st.hemiLight) add(st.hemiLight.color, st.hemiLight.intensity);
+        if (st.ambientLight) add(st.ambientLight.color, st.ambientLight.intensity);
+        return out;
     }
 
     // Ambient-Light = NUR der Nachthimmel-Boden (EIN Himmel, V18.507): am Tag IST die Himmels-Umgebung
@@ -82518,15 +82487,16 @@ class AnazhRealm {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const lightVal = Math.max(0.22, dl.intensity);
+        // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung).
+        const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
         // Beide Wasser-Materialien sind TSL; Uniforms leben in state.waterfallUniforms /
         // state.hydroSurfaceUniforms — EINE Closure für beide.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
-            // W10 — „das Wasser spiegelt DEN Himmel" (Studio-Kopplung 1:1): die
-            // EINE Tag/Nacht-Himmelsfarbe (nebulaColor) speist die Spiegelung,
-            // die EINE Licht-Farbe (Richtlicht = Rayleigh-Sonne/Mond) den Glitzer.
+            if (uniforms.irr) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
+            // Der Wasserfall spiegelt noch die Himmels-Tönung (nebulaColor); das Wasser liest die Umgebung selbst.
             if (uniforms.skyCol && this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor)
                 uniforms.skyCol.value.copy(this.state.skyboxUniforms.nebulaColor.value);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
@@ -83351,43 +83321,11 @@ class AnazhRealm {
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
         }
-        // V18.6 U-W4 — Wasser-Render-Modus (Fläche-auf-L | Zell-Iso) + die zwei
-        // Tiefen-Ufer-Hebel (Ufer-Schärfe uShoreWidth, Wasser-Tiefe uDepthRange).
+        // V18.6 U-W4 — Wasser-Render-Modus (Fläche-auf-L | Zell-Iso).
         const wrSel = document.getElementById("select-waterrender");
         if (wrSel) {
             wrSel.value = this._waterRenderMode();
             wrSel.addEventListener("change", () => this.setWaterRenderMode(wrSel.value));
-        }
-        const wsS = document.getElementById("slider-watershore");
-        const wsVal = document.getElementById("slider-watershore-val");
-        if (wsS) {
-            // V18.17 — Ufer-Schärfe wieder VIEWPORT-Lineardepth (÷10000); self-heal eines
-            // persistierten V18.15/.16-Meter-Werts (>0.1) auf den Default 0.0045.
-            const raw =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
-                    ? this.state.atmosphere.waterShoreWidth
-                    : 0.0045;
-            const s0 = raw > 0.1 ? 0.0045 : Math.max(0.001, Math.min(0.05, raw));
-            wsS.value = String(Math.round(s0 * 10000));
-            if (wsVal) wsVal.textContent = s0.toFixed(4);
-            wsS.addEventListener("input", () => {
-                const v = this.setWaterShoreWidth(parseInt(wsS.value, 10) / 10000);
-                if (wsVal) wsVal.textContent = v.toFixed(4);
-            });
-        }
-        const wdS = document.getElementById("slider-waterdepth");
-        const wdVal = document.getElementById("slider-waterdepth-val");
-        if (wdS) {
-            const d0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
-                    ? Math.max(1.0, Math.min(15.0, this.state.atmosphere.waterDepthRange))
-                    : 5.0;
-            wdS.value = String(Math.round(d0 * 10));
-            if (wdVal) wdVal.textContent = d0.toFixed(1) + " m";
-            wdS.addEventListener("input", () => {
-                const v = this.setWaterDepthRange(parseInt(wdS.value, 10) / 10);
-                if (wdVal) wdVal.textContent = v.toFixed(1) + " m";
-            });
         }
         // V18.15 Phase 3 — See-Wellen (uLakeRipple 0..1, Slider ×100).
         const lrS = document.getElementById("slider-lakeripple");

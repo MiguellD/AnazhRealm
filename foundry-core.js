@@ -147,6 +147,7 @@ var WASSER_GESETZ = {
     spec: [120.0, 1.35],                // Sonnen-Glitzer pow(...,s0)*s1
     alpha: [0.55, 0.95, 0.32, 0.06],    // mix(a0,a1,depth)+fres*a2; Auslauf smoothstep(0,a3,depth)
     schaum: { ufer: 0.26, kammA: 1.8, kammB: 2.7, sinF: 4.0, sinT: 2.8, kamm: 0.6, max: 0.85, farbe: [0.93, 0.96, 0.98], deck: 0.95 },
+    koerperStreu: 0.1,                  // Rueckstreuung b_b (1/m) des Wasser-Koerpers (Binnensee 0,01-0,2): R = 0,33*b_b/(wK+b_b) (Welt-Leser; das Studio-GLSL liest sie nicht)
 };
 
 // ZWILLINGS-ABSCHIED (18.07., rein additiv) — DER TERRAIN-GESETZ-NAMENSRAUM:
