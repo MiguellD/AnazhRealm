@@ -300,6 +300,14 @@ jobs:
               # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
               run: npm run gate:asset-contract
 
+            - name: Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)
+              # Integration W8 (Pruefer W8 (c)): im echten Spiel (foundry-ON, Null-Renderer) baut die Linse jede Art mit
+              # Budget-Zeile auf jeder deklarierten Geometrie-Stufe - Flatten (Haus, Fahrzeug, Waffe, Tor, Baum, Strauch,
+              # Fels, Boden-Streu) und Ofen (jede Gattung, der Mensch) - und verlangt phyto-core budgetSippen == die
+              # Leaves des Wirts (Draws und Dreiecke). Im selben Lauf der Selbst-Test: ohne Verschmelzen bzw.
+              # Starr-Bindung muss sie die Abweichung nennen.
+              run: npm run gate:sippen-wirt
+
             - name: Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)
               # N3 (Nervensystem Phase γ): (a) spec/pack/v0/CONTRACT.md trägt die Pflicht-Abschnitte
               # (v0-Ist-Kanon · v1-Schema · Ü1/Ü2-Chokepoint); (b) der Platten-Stempel der Transport-Schale

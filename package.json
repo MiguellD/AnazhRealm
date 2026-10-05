@@ -71,6 +71,7 @@
         "diag:foundry-parity": "node scripts/diag-foundry-parity.cjs",
         "mint:asset-goldens": "node scripts/mint-asset-goldens.cjs",
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
+        "gate:sippen-wirt": "node scripts/diag-sippen-wirt.cjs",
         "mint:asset-packs": "node scripts/mint-asset-packs.cjs",
         "gate:pack-contract": "node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs",
         "gate:fluss": "node scripts/diag-fluss.cjs --selftest && node scripts/diag-fluss.cjs",
