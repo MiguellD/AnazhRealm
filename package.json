@@ -85,6 +85,7 @@
         "gate:portal-membran": "node scripts/diag-portal-membran.cjs",
         "gate:scatter-lod": "node scripts/diag-scatter-lod.cjs",
         "gate:streu-fern": "node scripts/diag-streu-fern.cjs",
+        "gate:freie-slots": "node scripts/diag-freie-slots.cjs --selftest",
         "gate:render-diaet": "node scripts/diag-render-diaet.cjs",
         "gate:erstarren": "node scripts/diag-erstarren.cjs",
         "gate:konsum-matrix": "node scripts/diag-konsum-matrix.cjs",
