@@ -82337,7 +82337,7 @@ class AnazhRealm {
     // Abstand 380 m (vor der Skybox bei 500 m), sichtbar bei Höhe ≥ 0, Mond gegenüber;
     // emissive-Material leuchtet ohne Licht.
     _updateCelestialBodies(angle, lightMul) {
-        const sunDist = 380;
+        const sunDist = AnazhRealm.HIMMEL.koerperAbstandM;
         const sun = this.state.sunMesh;
         const moon = this.state.moonMesh;
         // Himmelskörper folgen der KAMERA, nicht dem Welt-Ursprung: hier nur die RICHTUNG (skyOffset)
@@ -82350,12 +82350,11 @@ class AnazhRealm {
             if (!sun.userData.skyOffset) sun.userData.skyOffset = new THREE.Vector3();
             sun.userData.skyOffset.set(sx, sy, sz);
             sun.visible = sy > -10; // unter Horizont ausblenden
-            // Sonne dimmt mit Wetter (rainy = trüber Schein)
+            // Sonne dimmt mit Wetter (rainy = trüber Schein); die Scheibe leuchtet HDR (`HIMMEL.sonneLeucht`) über ihrem
+            // Hof — die Ausgabe-Kette tont sie zum hellsten Punkt des Himmels.
             if (sun.material && sun.material.color) {
-                const baseR = 1.0,
-                    baseG = 0.92,
-                    baseB = 0.7;
-                sun.material.color.setRGB(baseR * lightMul, baseG * lightMul, baseB * lightMul);
+                const L = AnazhRealm.HIMMEL.sonneLeucht * lightMul;
+                sun.material.color.setRGB(1.0 * L, 0.92 * L, 0.7 * L);
             }
         }
         if (moon) {
@@ -84224,8 +84223,14 @@ class AnazhRealm {
         this.createGalaxySkybox();
 
         // Sonne + Mond als emissive Sphere-Meshes; die Position setzt _updateCelestialBodies(angle)
-        // (Mond gegenüber). Größe 12 m, gut sichtbar aus 380 m.
-        const sunGeo = new THREE.SphereGeometry(12, 16, 16);
+        // (Mond gegenüber). Die Sonne trägt den echten Winkel (`HIMMEL.sonneWinkelGrad`, aus 380 m 1,76 m Radius) —
+        // 12 m waren 3,6° (sieben Sonnen breit) und deckten den HDR-Hof der Skybox als graue Scheibe.
+        const _H = AnazhRealm.HIMMEL;
+        const sunGeo = new THREE.SphereGeometry(
+            _H.koerperAbstandM * Math.tan(((_H.sonneWinkelGrad / 2) * Math.PI) / 180),
+            16,
+            16
+        );
         const sunMat = new THREE.MeshBasicMaterial({
             color: 0xffe8b0,
             fog: false,
@@ -91527,6 +91532,12 @@ AnazhRealm.HIMMEL = Object.freeze({
         Object.freeze({ mag: -1.0, farbe: Object.freeze([1.0, 0.66, 0.46]), groesse: 6.8 }),
     ]),
     mondGegenHimmel: 0.5,
+    // DIE SONNE (Integration 05.10.): der Körper steht `koerperAbstandM` vor der Kamera (Sonne und Mond, vor der Skybox
+    // bei 500 m); die Scheibe trägt den echten Winkel `sonneWinkelGrad` (0,53°) und die Leuchtdichte `sonneLeucht` ×
+    // ihre Farbe — über dem HDR-Hof der Skybox (Scheibe + Halo ≈ 2,6 linear), sonst deckte das Mesh die Mitte grau.
+    koerperAbstandM: 380,
+    sonneWinkelGrad: 0.53,
+    sonneLeucht: 4,
 });
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
