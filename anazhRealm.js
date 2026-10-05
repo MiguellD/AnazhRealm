@@ -61264,13 +61264,19 @@ class AnazhRealm {
     // mischten Schwarz in jeden Rand und mittelten die Nadelstriche unter die Alpha-Schwelle). Er trägt nur den
     // WERT um sein Mittel `wert` (userData.wert) — jeder Leser teilt durch ihn, die Artfarbe kommt aus der
     // Vertex-Farbe (FARB-GESETZ); EINE Textur, die Card-UVs (`__phytoCore.buildFoliageQuads`) routen die Zelle.
-    // Canvas = Main-Thread-Ressource → `document` wird gereicht, der Worker malt keinen Atlas.
+    // Das Bild malt der Foundry-Worker und reicht es mit dem Buch (`_blattAtlasBild`, Transfer); nur wer vor dem Buch
+    // fragt (der Grammatik-Pfad), malt es mit derselben Kern-Funktion selbst (kalt ~125 ms). Headless (kein document)
+    // zeichnet kein Stoff → null; fehlt der Kern, bricht es laut (KERN-PFLICHT) — kein Stoff ohne seinen Atlas.
     _ensureFoliageClusterAtlas() {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const bild = core && typeof core.bakeLeafAtlasBild === "function" ? core.bakeLeafAtlasBild(document) : null;
-        if (!bild) return null;
+        let bild = this._blattAtlasBild || null;
+        if (!bild) {
+            const core = globalThis.__phytoCore;
+            if (!core || !core.bakeLeafAtlasBild) throw new Error("KERN-PFLICHT: phyto-core bakeLeafAtlasBild fehlt");
+            bild = core.bakeLeafAtlasBild(document);
+        }
+        if (!bild) throw new Error("KERN-PFLICHT: der Blatt-Atlas lieferte kein Bild");
         const tex = new THREE.DataTexture(bild.daten, bild.breite, bild.hoehe, THREE.RGBAFormat);
         tex.name = "laub-cluster-atlas";
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -66079,6 +66085,10 @@ class AnazhRealm {
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
+        // Das Bild des EINEN Blatt-Atlas (S7): im Worker gemalt und gemippt, per Transfer — `_ensureFoliageClusterAtlas`
+        // lädt es, ohne im Haupt-Thread zu malen.
+        if (m.blattAtlas && Array.isArray(m.blattAtlas.mips) && m.blattAtlas.mips.length)
+            this._blattAtlasBild = m.blattAtlas;
     }
     // Siedlungs-Gesetz aus dem Buch (fachwerk-core SIEDLUNG, Feld `siedlung`): wo und wie viele Dörfer.
     // Ganz oder gar nicht: EIN nicht-finites Feld → ganz byte-alt (`_siedlungGesetz` → AUTO_SETTLEMENT).
@@ -66466,6 +66476,9 @@ class AnazhRealm {
                 return roh(Object.assign({}, msg, { payload: k }), [k.albedo.buffer, k.normal.buffer]);
             }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
+            // Das Buch trägt das Bild des EINEN Blatt-Atlas (Stufe 0 + Mips): per Transfer, nie als Klon.
+            if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips))
+                return roh(msg, Array.from(new Set(msg.blattAtlas.mips.map((st) => st.data.buffer))));
             return roh(msg, a, b);
         };
         // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
@@ -69407,6 +69420,7 @@ class AnazhRealm {
                     // bleibt fail-closed sichtbar statt still eingefroren).
                     mat._anazhAtlasTexe = [tex];
                 } else {
+                    // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
                     mat.colorNode = TSL.vec4(laubFarbe, 1.0);
                 }
             } else if (klasseLook) {

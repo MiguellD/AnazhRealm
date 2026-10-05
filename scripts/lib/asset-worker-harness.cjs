@@ -180,7 +180,11 @@ function pageHtml() {
       bytes: k.albedo.length + k.normal.length, opak: k.opak,
     };
   });
-  window.__aget = (type) => ask({ type });                 // get-recipes / -world-params / -render-config
+  // Das Buch trägt das Bild des Blatt-Atlas (S7, Mips als Uint8Array): über die page.evaluate-Grenze reist nur sein Steckbrief.
+  window.__aget = (type) => ask({ type }).then((r) => {
+    if (r && r.blattAtlas) r.blattAtlas = { breite: r.blattAtlas.breite, hoehe: r.blattAtlas.hoehe, stufen: r.blattAtlas.mips.length, wert: r.blattAtlas.wert };
+    return r;
+  });
   window.__build = (msg) => ask(Object.assign({ type: "build-asset" }, msg)).then((r) => ({
     presetId: r.presetId, seed: r.seed, lod: r.lod, cv: r.cv,
     meshes: (r.meshes || []).map((m) => {

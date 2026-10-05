@@ -5089,6 +5089,13 @@ init();
                     // (fachwerk SIEDLUNG) reist additiv mit; ein Alt-Empfaenger
                     // ohne den Steckplatz ignoriert das Feld (must-ignore).
                     siedlung: __zweitKernSiedlung(),
+                    // DER EINE BLATT-ATLAS reist als Bild (S7): der Worker malt ihn (OffscreenCanvas) samt Mip-Kette,
+                    // die Transport-Schale gibt die Puffer per Transfer weiter — der Haupt-Thread malt und mippt nie
+                    // (kalt ~125 ms im Haupt-Thread, mit GPU-Leinwand ~450 ms).
+                    blattAtlas:
+                        typeof window === "undefined"
+                            ? self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) })
+                            : undefined,
                 },
                 "*"
             );
@@ -5422,6 +5429,8 @@ init();
             }
             const gl = __foundryBakeRenderer();
             if (!gl) throw new Error("kein Offscreen-Renderer");
+            // Die Karte zeichnet den Laub-Stoff: sein Atlas-Bild malt der Worker erst hier (die Geometrie braucht es nie).
+            bakeLeafAtlas();
             // ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt, Studio-Seite): ein Preset, das NICHT im
             // Pflanzen-Buch steht, baut sein Bake-Subjekt durch den ERSTEN Manifest-Kern,
             // dessen PRESETS es trägt — exakt der __replyBuildAsset-Dispatch (__zweitKerne()-
