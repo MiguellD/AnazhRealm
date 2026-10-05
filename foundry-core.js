@@ -4471,6 +4471,12 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
             m.emissiveIntensity = emI;
         }
         m.userData.__klasse = k;
+        // DIE SEH-KLASSE (Integration W8): Fell · Strähne · Schale sind haar, jede andere Klasse trägt ihr Feld aus dem
+        // Gesetzbuch (tetrapoda TIER_MATERIAL_KLASSEN[k].seh); fehlt es, reist der Stoff ohne Klasse (das Budget-Gesetz
+        // meldet den Bruch).
+        const sehK =
+            k === "fell" || k === "fellSchale" || k.indexOf("straehne") === 0 ? "haar" : TK[k] ? TK[k].seh : null;
+        if (sehK) m.userData.__seh = sehK;
         matCache[k] = m;
         return m;
     };
@@ -5157,9 +5163,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         throw new Error("koerper-Kern ohne Paletten (SKIN_TONES/HAIR_COLORS) — kein Guss-Ton ohne Gesetz");
     const MK = kern.MATERIAL_KLASSEN || {};
     const KL = Object.assign({}, MK, {
-        skin: { c: skinCol, r: 0.62 },
-        haut: { c: skinCol, r: 0.58 }, // die glatte Hüllen-HAUT (V18.463)
-        hair: { c: hairCol, r: 0.85 },
+        skin: { c: skinCol, r: 0.62, seh: "haut" },
+        haut: { c: skinCol, r: 0.58, seh: "haut" }, // die glatte Hüllen-HAUT (V18.463)
+        hair: { c: hairCol, r: 0.85, seh: "haar" },
     });
     const fein = (lod | 0) >= 1;
     const segW = fein ? 8 : 20,
@@ -5180,6 +5186,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         m.color.setRGB(lc[0], lc[1], lc[2]);
         if (k === "hair") m.side = THREE.DoubleSide; // Strähnen-Kreuzquads (wie straehne)
         if (kl.webe) m.userData.__webe = kl.webe; // Stoff-Webung (Welt-Leser moduliert Mikro-Struktur)
+        // DIE SEH-KLASSE (Integration W8): das Feld der Klasse (koerper MATERIAL_KLASSEN · Haut/Haar · Kleid-Zone);
+        // fehlt es, reist der Stoff ohne Klasse (das Budget-Gesetz meldet den Bruch).
+        if (kl.seh) m.userData.__seh = kl.seh;
         if (kl.emissiv != null && m.emissive) {
             const le = lin(kl.emissiv);
             m.emissive.setRGB(le[0], le[1], le[2]);
@@ -5354,7 +5363,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const km = "stoff_" + (z.hex >>> 0).toString(16);
             // STOFF-CHARAKTER (V18.464): rough je Schnitt aus der Gesetz-Zeile
             // (Lab getCloth verbatim) + Webungs-Art als must-ignore-Marker.
-            KL[km] = { c: z.hex, r: typeof z.rough === "number" ? z.rough : 0.82, webe: z.webe || null };
+            KL[km] = { c: z.hex, r: typeof z.rough === "number" ? z.rough : 0.82, webe: z.webe || null, seh: "stoff" };
             const pts = [],
                 zen = [];
             for (const tn of z.teile || []) {

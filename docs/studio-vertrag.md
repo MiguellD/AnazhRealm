@@ -116,10 +116,21 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   die Brücke (`__replyBuildAsset`) UND der Sync-Guss des Wirts-Ofens (`_ofenBudget`, Tier + Mensch)
   falten eine Stufe über `draws` auf ihre Zeile: Stoffe (der Wirts-Material-Schlüssel `budgetStoff`; die
   Farbe reist als Vertex-Farbe) fallen innerhalb ihrer Bindungs-Klasse (starr · Haut · je Tür-Flügel ·
-  Schalen-Fell) zusammen, der kleinere in den nächsten (Rauheit · Metall · Art · Seite …), Glut faltet nie;
-  Flügel-Teile werden je Flügel × Stoff EIN Teil (das Scharnier reist mit). Innerhalb der Zeile ist es ein
-  No-op (byte-gleich). Dreiecke faltet es nicht: über `tris` oder bleibend über `draws` reist ein
-  `budgetBruch` mit, der Wirt loggt ERROR, die Wand wird rot — nie still.
+  Schalen-Fell) UND ihrer Seh-Klasse zusammen, der kleinere in den nächsten (Rauheit · Metall · Art · Seite …);
+  Glut faltet nie, ein glimmender Stoff nie in einen ohne Glimmen; Flügel-Teile werden je Flügel × Stoff EIN
+  Teil (das Scharnier reist mit). Innerhalb der Zeile ist es ein No-op (byte-gleich). Dreiecke faltet es nicht:
+  über `tris` oder bleibend über `draws` reist ein `budgetBruch` mit, der Wirt loggt ERROR, die Wand wird rot —
+  nie still.
+- **Die Seh-Klasse (Integration W8, 05.10.):** was ein Stoff dem AUGE ist — `stoff` (Holz · Putz · Stein ·
+  Textil · Gummi) · `haut` (Haut, Lippe, Nase, Ballen) · `haar` (Haar · Fell · Strähne) · `auge` (Augapfel ·
+  Iris · Pupille · Hornhaut) · `glas` (Glas, Durchscheinendes) · `metall` (Metallizität ≥ 0,5: Chrom, Stahl,
+  Metall-Lack) · `glut` (Lichtquelle, faltet nie); die Liste ist `BUDGET_GESETZ.seh` (phyto-core). Das
+  GESETZBUCH stempelt sie an seinen Stoff (`material.userData.__seh`: vehicle/schmiede je Material-Zeile,
+  fachwerk je Rolle `SEH_DER_ROLLE`, porta im Tor-Bau, tetrapoda/koerper je Material-Klasse `seh`, der
+  Ofen-Bäcker in foundry-core für Fell/Haut/Haar/Kleid), beide Extraktoren reichen sie als `mat.seh`; sie gehört
+  zur Stoff-Identität (`budgetStoff` …`|v:<seh>`). Ein Stoff ohne Seh-Klasse ist ein `budgetBruch`. Die
+  Zeilen sind das gemessene Minimum über alle Gestalten: haus 11/4/3 · koerper 8/6 · kreatur 8/5 · gate 13 ·
+  vehicle 12 · weapon 4 (`gate:asset-contract`, Seh-Wand an Mensch · Wolf · SUV · Haus · Tor).
 - **Transport:** jeder Zweit-Kern reist sein `lod.budget` unter `cfg.lod.zusatzBudget[<id>]` (neben
   `zusatzKindStages`, N7.5); der EINE Merge `kerneVereinen` (phyto-core, gerufen NUR in
   `_foundryIngestRenderConfig`) legt die Zeilen je Art und die Gestalten je Rezept disjunkt first-wins in
@@ -383,7 +394,7 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 | ----- | ----------------------- | ------------------- | -------------- |
 | B1 REZEPTE | ✅ 15 Rezepte, 5 kinds | vehicle-core: PRESETS+CULTURES | ✅ porta-core: 7 Ordnungen `kind:"gate"` |
 | B2 BUILD | ✅ buildInstance, LOD 0/1/2, Goldens v1 | buildVehicle → v3-Goldens | ✅ buildInstance → v4-Goldens (`gate:porta-contract`) |
-| B2c BUDGET | ✅ tree · shrub · grass · flower · rock + gestalten | ✅ vehicle[0] (12 Draws, W8) | ✅ gate[0] (16 Draws, Flügel × Stoff, W8) |
+| B2c BUDGET | ✅ tree · shrub · grass · flower · rock + gestalten | ✅ vehicle[0] (12 Draws, Seh-Klassen) | ✅ gate[0] (13 Draws, Flügel × Stoff × Seh-Klasse) |
 | B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | ✅ als Rezept-Daten: `fx.place {mode:"site", siteTag:"tor"}` (N5.6 — streut heute nicht) |
 | B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | ✅ PARAMS aus SLIDERS abgeleitet (eine Quelle) |
 | B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | ⏳ `messen` (Stich→Schub→Dicke) ✅, pass/warn-Bänder trägt das Lab nicht |

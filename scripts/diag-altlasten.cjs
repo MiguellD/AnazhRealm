@@ -236,6 +236,11 @@ const FORBIDDEN = [
     // W8 (Integration): jede Art mit Gestalt trägt ihr Budget — die Wirt-Stufen-Tafel für Arten ohne Zeile hat keinen
     // Leser mehr; `_foundryBudgetZeile` bricht fail-closed, wo eine Art keine Zeile trägt.
     { token: "_WIRT_WURF", fiel: "Integration W8 — das Budget aller Kerne trägt den Wurf (lod.budget[kind][stufe].schatten)" },
+    // Integration W8 (Seh-Klasse): die Zwillinge des Budget-Gesetzes im Wirt fallen — die Look-Liste, die Verschmelz-
+    // Zahl, die Material-Defaults und die Füll-Farbe liest der Wirt aus phyto-core (LOOK_KLASSEN · BUDGET_GESETZ ·
+    // budgetRegler · budgetFuellFarbe).
+    { token: "AnazhRealm.LOOK_KLASSEN", fiel: "Integration W8 — phyto-core LOOK_KLASSEN / budgetLook ist die EINE Liste" },
+    { token: "FOUNDRY_VERSCHMELZ_VERTS", fiel: "Integration W8 — phyto-core BUDGET_GESETZ.verschmelzVerts" },
     // DER WALDBODEN INS STUDIO (04.10.) — der Host erzeugt nichts, was ein Studio kann: die Klein-Vegetation (eigene
     // Strip-/Kreuz-Geometrie je Art, das Art-Material mit eigenem Wind, die Chunk-Streu, das Deko-Fernfeld, die
     // Deck-Streu, die Host-Ökologie Nische/Bodendecker/Kronen-Lesart) ist gefallen; die Nah-Streu liest das

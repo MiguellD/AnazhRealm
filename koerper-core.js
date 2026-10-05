@@ -29,7 +29,8 @@
     // Hülle (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel (Haushalt, offen solange tris
     // darüber liegt), draws = Draws je Körper und Pass nach der Wirts-Regel: das Budget-Gesetz am Ausgang (Brücke
     // UND Sync-Guss des Wirts-Ofens, phyto-core budgetErzwingen) faltet die starren Stoffe und die Stoff-Hüllen
-    // je Bindungs-Klasse (Haut bleibt Haut); schatten = die werfende Stufe. gestalten = Individuen je Rezept (das
+    // je Bindungs-Klasse (Haut bleibt Haut) und Seh-Klasse (MATERIAL_KLASSEN.seh: Auge · Haut · Haar · Stoff bleiben
+    // getrennt — L1 6 ist das gemessene Minimum); schatten = die werfende Stufe. gestalten = Individuen je Rezept (das
     // bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
@@ -38,7 +39,7 @@
             budget: {
                 koerper: {
                     0: { tris: 166000, band: 40000, draws: 8, schatten: 0 },
-                    1: { tris: 40000, band: 8000, draws: 4, schatten: 1 },
+                    1: { tris: 40000, band: 8000, draws: 6, schatten: 1 },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",
                 },
@@ -604,16 +605,19 @@
     // MATERIAL_KLASSEN — die flachen Klassen-Farben der Lab-Materialien (Z.77,
     // verbatim: lips/eye/iris/cornea/socket/dark/joint/shadow); skin/hair reisen
     // als Genom/Wahl, shorts ist das Stamm-Würde-Band.
+    // `seh` (Integration W8, additiv): die Seh-Klasse des Stoffs (phyto-core BUDGET_GESETZ.seh) — das Budget-Gesetz
+    // faltet nur innerhalb EINER: das Auge (Augapfel · Iris · Pupille) nie in die Haut, die Haut-Akzente (Lippe ·
+    // Augenhöhle · Furche · Gelenk · Schatten) nur in die Haut, die Hose nur in Stoff.
     var MATERIAL_KLASSEN = Object.freeze({
-        lips: Object.freeze({ c: 0xaa5544, r: 0.4 }),
-        eye: Object.freeze({ c: 0xf5f5f0, r: 0.08 }),
-        iris: Object.freeze({ c: 0x2a4a6a, r: 0.15 }),
-        pupil: Object.freeze({ c: 0x000000, r: 0.2 }),
-        socket: Object.freeze({ c: 0x5a3320, r: 0.6 }),
-        dark: Object.freeze({ c: 0x050000, r: 0.9 }),
-        joint: Object.freeze({ c: 0x806060, r: 0.6 }),
-        shadow: Object.freeze({ c: 0x8a5840, r: 0.7 }),
-        shorts: Object.freeze({ c: 0x4a5058, r: 0.8 }),
+        lips: Object.freeze({ c: 0xaa5544, r: 0.4, seh: "haut" }),
+        eye: Object.freeze({ c: 0xf5f5f0, r: 0.08, seh: "auge" }),
+        iris: Object.freeze({ c: 0x2a4a6a, r: 0.15, seh: "auge" }),
+        pupil: Object.freeze({ c: 0x000000, r: 0.2, seh: "auge" }),
+        socket: Object.freeze({ c: 0x5a3320, r: 0.6, seh: "haut" }),
+        dark: Object.freeze({ c: 0x050000, r: 0.9, seh: "haut" }),
+        joint: Object.freeze({ c: 0x806060, r: 0.6, seh: "haut" }),
+        shadow: Object.freeze({ c: 0x8a5840, r: 0.7, seh: "haut" }),
+        shorts: Object.freeze({ c: 0x4a5058, r: 0.8, seh: "stoff" }),
     });
     // SKIN_TONES / HAIR_COLORS — die Lab-Paletten (Z.63/Z.79, verbatim):
     // prettier-ignore

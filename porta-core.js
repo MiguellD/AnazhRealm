@@ -50,7 +50,8 @@
     // Hülle über alle Tore × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel
     // (Haushalt, offen solange tris darüber liegt), draws = Draws je Tor und Pass nach der Wirts-Regel: das
     // Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen) faltet die Flügel-Teile je Flügel × Stoff (das
-    // Scharnier reist mit, `_tickTorFluegel` dreht je Flügel und Stoff EINE Matrix); Glut faltet nie. gestalten =
+    // Scharnier reist mit, `_tickTorFluegel` dreht je Flügel und Stoff EINE Matrix), nur innerhalb EINER Seh-Klasse;
+    // Glut faltet nie — 13 ist das gemessene Minimum über alle 112 Fälle (Flügel × Stoff × Seh-Klasse). gestalten =
     // Individuen je Tor (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
@@ -58,7 +59,7 @@
             kindStages: { gate: [0] },
             budget: {
                 // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
-                gate: { 0: { tris: 184000, band: 60000, draws: 16, schatten: 0 }, fernform: "gesetz" },
+                gate: { 0: { tris: 184000, band: 60000, draws: 13, schatten: 0 }, fernform: "gesetz" },
                 gestalten: {},
             },
         },
@@ -250,6 +251,10 @@
       var bmatB=new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(0.6,0.7,0.5),roughness:0.28,metalness:0.92,emissive:new THREE.Color().setHSL(0.62,0.8,0.35),emissiveIntensity:0.4+0.5*p.glow});
       var laceMat=new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.7,0.6).multiplyScalar(0.55+1.05*Math.max(p.glow,0.25))});
       rimMat=new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.6,0.55).multiplyScalar(0.55+1.5*Math.max(p.glow,0.25))});
+      // DIE SEH-KLASSE je Stoff (Integration W8, rein additiv — docs/studio-vertrag.md B2c): was der Stoff dem AUGE ist (phyto-core
+      // BUDGET_GESETZ.seh); das Budget-Gesetz faltet nur innerhalb EINER. Der Rahmen ist Metall, sobald seine Metallizität ≥ 0,5,
+      // sonst Stein (stoff); Bogen und Bänder sind Metall; die ungelitten Leucht-Linien (Spitze, Saum) und die Licht-Scheibe glühen.
+      fmat.userData.__seh=fmat.metalness>=0.5?"metall":"stoff";amat.userData.__seh="metall";bmatG.userData.__seh="metall";bmatB.userData.__seh="metall";laceMat.userData.__seh="glut";rimMat.userData.__seh="glut";
 
       // ---- symmetrische Halbkante (Basis->Scheitel) + Normalen, einmal ----
       var nJ=7,j,half=[];
@@ -354,7 +359,7 @@
         var pl=new THREE.Mesh(new THREE.BoxGeometry(pw,ph,baseDepth+0.3),fmat);pl.position.set(0,baseY-ph/2,baseZ);pl.castShadow=pl.receiveShadow=true;gate.add(pl);
         var seam=new THREE.Mesh(new THREE.BoxGeometry(pw*0.9,0.03,baseDepth*0.25),rimMat);seam.position.set(0,baseY-ph+0.05,baseZ+baseDepth*0.25);gate.add(seam);}
       if(p.glow>0.3||(p.wLace>0.4&&p.mass<0.4)){var rg=new THREE.Mesh(new THREE.TorusGeometry(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48),rimMat);rg.rotation.x=Math.PI/2;rg.position.set(0,baseY+0.02,baseZ);gate.add(rg);  // 4) Leuchtende Dais
-        var disc=new THREE.Mesh(new THREE.CircleGeometry(M+jambW*0.5,40),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.5,0.5).multiplyScalar(0.3+p.glow),transparent:true,opacity:0.2+0.4*p.glow,side:THREE.DoubleSide}));disc.rotation.x=-Math.PI/2;disc.position.set(0,baseY+0.012,baseZ);gate.add(disc);}
+        var disc=new THREE.Mesh(new THREE.CircleGeometry(M+jambW*0.5,40),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.5,0.5).multiplyScalar(0.3+p.glow),transparent:true,opacity:0.2+0.4*p.glow,side:THREE.DoubleSide}));disc.material.userData.__seh="glut";disc.rotation.x=-Math.PI/2;disc.position.set(0,baseY+0.012,baseZ);gate.add(disc);}
       if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);}}  // 5) Schutt
 
       // --- gluehende Apertur-Kante (Trichter) ---

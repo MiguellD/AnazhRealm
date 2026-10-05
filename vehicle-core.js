@@ -182,6 +182,38 @@
                 envMapIntensity: 1.1,
             }),
         };
+        // DIE SEH-KLASSE je Stoff (Integration W8, rein additiv — docs/studio-vertrag.md B2c): was der Stoff dem AUGE
+        // ist (phyto-core BUDGET_GESETZ.seh); das Budget-Gesetz am Studio-Ausgang faltet nur innerhalb EINER Klasse.
+        // Metallizität ≥ 0,5 ist metall (Lack, Felge, Stahl, Motor), die Lichter glühen, Scheibe und Negativ-Raum sind Glas.
+        // Ein Stoff ohne Zeile reist ohne Klasse — das Gesetz meldet den BRUCH (die Wand wird rot), nie still.
+        const SEH = {
+            hard: "stoff",
+            joint: "stoff",
+            clay: "stoff",
+            paint: "metall",
+            glass: "glas",
+            tire: "stoff",
+            rimM: "metall",
+            rimD: "metall",
+            cal: "stoff",
+            pillar: "stoff",
+            steel: "metall",
+            batt: "metall",
+            motor: "metall",
+            seat: "stoff",
+            trim: "stoff",
+            brake: "metall",
+            door: "stoff",
+            liner: "stoff",
+            neg: "glas",
+            drl: "glut",
+            lensW: "glut",
+            lensR: "glut",
+            lensA: "glut",
+            housing: "stoff",
+            grille: "stoff",
+        };
+        for (const k in M) if (SEH[k]) M[k].userData.__seh = SEH[k];
         return M;
     }
 

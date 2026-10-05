@@ -2849,53 +2849,109 @@
     //            `verschmelzVerts` zusammen), der Ofen bindet starre Teile eines Stoffs über alle Gelenke (`_ofen-
     //            StarrBinden`); jedes Flügel-Teil (eigenes Scharnier) und jede Haut (eigenes SkinnedMesh) ist ein Draw.
     // FALTEN, wenn die Stufe über `draws` liegt: die Teile gehen in Bindungs-Klassen (starr · Haut · je Tür-Flügel ·
-    // Schalen-Fell) — über eine Klasse hinweg faltet nichts (sonst bricht das Gelenk, die Haut oder das Scharnier);
-    // Glut (lum(emissive)·Intensität ≥ `glut`) faltet nie. Innerhalb einer Klasse fällt je Schritt das Stoff-Paar
-    // mit dem kleinsten Seh-Fehler = sichtbare Fläche × Seh-Abstand (Rauheit · 2×Metall · Art · flach · Umgebung ·
-    // Gewebe · Seite · Rest-Glimmen) — die kleinere Fläche in die größere, deterministisch, ohne Zufall. Die Farbe des gefalteten Teils wird
-    // Vertex-Farbe (wie der Wirt sie füllt); ein beidseitiges Teil in einem einseitigen Stoff bekommt seine Rück-
-    // seite als Dreiecke (gleiches Bild). Danach wird je Klasse × Stoff × Gelenk EIN Teil (bis `teilVertsMax`).
+    // Schalen-Fell) — über eine Klasse hinweg faltet nichts (sonst bricht das Gelenk, die Haut oder das Scharnier) —
+    // und jeder Stoff trägt seine SEH-KLASSE aus dem Gesetzbuch (`mat.seh`, `BUDGET_GESETZ.seh`: stoff · haut · haar ·
+    // auge · glas · metall · glut): was dem Auge eine andere Funktion ist, faltet nie ineinander (das Auge nie in die
+    // Haut, das Glas nie in den Putz, das Chrom nie in den Gummi, das Haar nie in den Stoff), auch wenn es dieselbe
+    // Bindung trägt. Die Glut-Klasse (Lichtquelle) und jeder Stoff, der sichtbar leuchtet (lum(emissive)·Intensität ≥
+    // `glut`), falten nie. Innerhalb von Bindung × Seh-Klasse fällt je Schritt das Stoff-Paar mit dem kleinsten
+    // Seh-Fehler = sichtbare Fläche × Seh-Abstand (Rauheit · 2×Metall · Art · flach · Umgebung · Gewebe · Seite ·
+    // Rest-Glimmen) — die kleinere Fläche in die größere, deterministisch, ohne Zufall. Die Seh-Klasse gehört zur
+    // Identität des Stoffs (`budgetStoff`); ein Stoff ohne Seh-Klasse ist ein BRUCH. Die Farbe des gefalteten Teils wird Vertex-Farbe (wie der
+    // Wirt sie füllt, `budgetFuellFarbe`); ein beidseitiges Teil in einem einseitigen Stoff bekommt seine Rückseite
+    // als Dreiecke (gleiches Bild). Danach wird je Klasse × Stoff × Gelenk EIN Teil (bis `teilVertsMax`).
     // Innerhalb der Zeile ist das Gesetz ein No-op (die Teile reisen byte-gleich). Dreiecke faltet es nicht: liegt
     // die Stufe über `tris` oder bleibt sie über `draws`, steht ein BRUCH im Bericht — der Aufrufer schreit, die
     // Wand (gate:asset-contract) wird rot. Nie still.
     var BUDGET_GESETZ = Object.freeze({
         glut: 0.05, // lum(emissive) × Intensität, ab der ein Stoff leuchtet (Tor-Rahmen 0,09–0,48 · Fenster 1,1)
-        teilVertsMax: 196608, // höchstens so viele Vertices je gefaltetem Teil (der Wirt verwirft Teile > 200 000)
-        verschmelzVerts: 65536, // der Flatten verschmilzt Teile EINES Stoffs nur bis zu dieser Summe (sonst je Teil)
+        // höchstens so viele Vertices je gefaltetem Teil — unter der Wand des Wirts (`_foundryBuildMesh` verwirft ein
+        // Teil über 200 000 Vertices = 600 000 Floats als Transfer-Glitch)
+        teilVertsMax: 196608,
+        // der Flatten verschmilzt Teile EINES Stoffs nur bis zu dieser Summe (sonst je Teil) — die EINE Zahl, der Wirt
+        // liest sie (`_foundryFlatVerschmelzen`)
+        verschmelzVerts: 65536,
         formAttr: ["uv", "aWurzel", "aSchale", "skinIndex"], // die Attribute, die der Wirt nur trägt, wo sie reisen
+        // DIE SEH-KLASSEN (Integration W8, 05.10.): was ein Stoff dem AUGE ist. Jedes Gesetzbuch stempelt sie an seinen
+        // Stoff (`material.userData.__seh`), der Extraktor reicht sie als `mat.seh`; gefaltet wird nur innerhalb EINER.
+        //   stoff  Holz · Putz · Stein · Textil · Gummi · Kunststoff — das Matte, Dielektrische
+        //   haut   Haut, Lippe, Ballen, Zahnfleisch, Nase — der lebende Leib
+        //   haar   Haar · Fell · Strähne
+        //   auge   Augapfel · Iris · Pupille · Hornhaut
+        //   glas   Glas und alles Durchscheinende
+        //   metall Metall · Chrom · Metall-Lack (Metallizität ≥ 0,5)
+        //   glut   Lichtquelle (Lampe, Feuer, ungelitte Leucht-Linie) — faltet nie
+        seh: Object.freeze(["stoff", "haut", "haar", "auge", "glas", "metall", "glut"]),
     });
-    function _budgetLook(kind) {
-        return (
-            kind === "fell" ||
-            kind === "fellSchale" ||
-            kind === "skin" ||
-            kind === "haut" ||
-            kind === "hair" ||
-            (typeof kind === "string" && kind.indexOf("straehne") === 0)
-        );
+    // DIE LOOK-KLASSEN (Kreatur-/Mensch-Stoffe, deren Lab-Shader-Gesetz FELL_LOOK/HAUT_LOOK/HAAR_LOOK der Wirt webt):
+    // die EINE Liste — der Bäcker stempelt sie (`material.userData.__klasse`), beide Extraktoren (Brücke + Ofen) und
+    // der Wirts-Material-Bau lesen sie hier.
+    var LOOK_KLASSEN = Object.freeze([
+        "fell",
+        "fellSchale",
+        "straehne",
+        "straehneD",
+        "straehneL",
+        "skin",
+        "haut",
+        "hair",
+    ]);
+    function budgetLook(kind) {
+        return LOOK_KLASSEN.indexOf(kind) >= 0;
     }
     function _budgetDoppelt(kind) {
         return kind === "foliage" || kind === "foliageTex" || kind === "grass";
     }
-    // Der Stoff-Schlüssel — DIE EINE Material-Identität (der Wirt keyt seinen Material-Cache damit).
-    function budgetStoff(kind, mp) {
+    // DIE REGLER EINES STOFFS — die EINE Quelle der Material-Zahlen: der Schlüssel (`budgetStoff`) und der Wirt, der
+    // das Material baut (`_foundryTreeMaterial`), lesen dieselben Defaults (ohne `mp` die Baum-Defaults: Rinde 0,93 ·
+    // Laub 0,62 · Gras 0,7 · Gras-Umgebung 0,18). Laub und Gras sind immer beidseitig.
+    function budgetRegler(kind, mp) {
         const k = kind || "bark";
         const rinde = k === "bark" || k === "stem";
-        const r = mp && typeof mp.roughness === "number" ? mp.roughness : rinde ? 0.93 : k === "grass" ? 0.7 : 0.62;
-        const mt = mp && typeof mp.metalness === "number" ? mp.metalness : 0;
-        const fl = mp ? !!mp.flatShading : false;
-        const env = mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : k === "grass" ? 0.18 : 1;
         const em = mp && Array.isArray(mp.emissive) && mp.emissive.length === 3 ? mp.emissive : null;
-        const emI = em && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : em ? 1 : 0;
+        return {
+            k: k,
+            rinde: rinde,
+            r: mp && typeof mp.roughness === "number" ? mp.roughness : rinde ? 0.93 : k === "grass" ? 0.7 : 0.62,
+            mt: mp && typeof mp.metalness === "number" ? mp.metalness : 0,
+            fl: mp ? !!mp.flatShading : false,
+            env: mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : k === "grass" ? 0.18 : 1,
+            doppelt: _budgetDoppelt(k) || !!(mp && mp.side === 2),
+            em: em,
+            emI: em && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : em ? 1 : 0,
+            look: budgetLook(k),
+        };
+    }
+    // Der Stoff-Schlüssel — DIE EINE Material-Identität (der Wirt keyt seinen Material-Cache damit).
+    function budgetStoff(kind, mp) {
+        const R = budgetRegler(kind, mp);
+        const k = R.k;
         return (
-            (mp ? k + "|" + r.toFixed(2) + "|" + mt.toFixed(2) + "|" + (fl ? 1 : 0) + "|" + env.toFixed(2) : k) +
+            (mp
+                ? k + "|" + R.r.toFixed(2) + "|" + R.mt.toFixed(2) + "|" + (R.fl ? 1 : 0) + "|" + R.env.toFixed(2)
+                : k) +
             (!_budgetDoppelt(k) && mp && mp.side === 2 ? "|s2" : "") +
             (mp && mp.webe ? "|w:" + mp.webe : "") +
-            (em ? "|e:" + em.map((v) => v.toFixed(2)).join(",") + "@" + emI.toFixed(2) : "") +
-            (_budgetLook(k) && mp && Array.isArray(mp.color) && mp.color.length === 3
+            (R.em ? "|e:" + R.em.map((v) => v.toFixed(2)).join(",") + "@" + R.emI.toFixed(2) : "") +
+            (R.look && mp && Array.isArray(mp.color) && mp.color.length === 3
                 ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
-                : "")
+                : "") +
+            // die Seh-Klasse gehört zur Identität: zwei Stoffe gleicher Regler und verschiedener Funktion (Klaue und
+            // Pupille, beide 0,2 matt-schwarz) sind zwei Materialien — sonst trüge die Pupille die Klaue in den Stoff
+            (budgetSeh(mp) ? "|v:" + mp.seh : "")
         );
+    }
+    // Die Seh-Klasse eines Stoffs (`mat.seh` aus dem Gesetzbuch) — null, wenn er keine gültige trägt (ein Bruch).
+    function budgetSeh(mp) {
+        return mp && typeof mp.seh === "string" && BUDGET_GESETZ.seh.indexOf(mp.seh) >= 0 ? mp.seh : null;
+    }
+    // Die Füll-Farbe eines Teils ohne Vertex-Farbe — EINE Regel für den Wirt (`_foundryBuildMesh`) und die Faltung:
+    // Rinde braun, ein Zweit-Kern-/Look-Stoff seine Material-Farbe (linear), sonst Laub-Grün.
+    function budgetFuellFarbe(kind, mp) {
+        if (kind === "bark" || kind === "stem") return [0.32, 0.22, 0.13];
+        if ((kind === "unknown" || budgetLook(kind)) && mp && Array.isArray(mp.color) && mp.color.length === 3)
+            return mp.color;
+        return [0.2, 0.34, 0.13];
     }
     function budgetSeite(kind, mp) {
         return _budgetDoppelt(kind) || (mp && mp.side === 2) ? 2 : 0;
@@ -2989,7 +3045,12 @@
         return cfg;
     }
     function _budgetAbstand(S, T) {
+        // Die Seh-Klasse ist die Grenze: verschiedene (oder fehlende) Funktion faltet nie; Licht faltet nie.
+        if (!S.seh || S.seh !== T.seh || S.seh === "glut") return Infinity;
         if (S.glut >= BUDGET_GESETZ.glut || T.glut >= BUDGET_GESETZ.glut) return Infinity; // Glut faltet nie
+        // Emission ist eine Seh-Funktion: ein glimmender Stoff faltet nie in einen ohne Glimmen und umgekehrt (das
+        // Augen-Glimmen des Wolfs verschwand sonst in der Hornhaut, Prüfer W8 (f)).
+        if (S.glut > 0 !== T.glut > 0) return Infinity;
         const a = S.mat || {},
             b = T.mat || {};
         const n = (v, d) => (typeof v === "number" ? v : d);
@@ -3087,8 +3148,7 @@
                         const N = _budgetNormalen(P, I);
                         for (let q = 0; q < v * 3; q++) dst[ov * 3 + q] = N[q] * vz;
                     } else if (a.name === "color" && !(m.color && m.color.array)) {
-                        const c =
-                            m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3 ? m.mat.color : [1, 1, 1];
+                        const c = budgetFuellFarbe(m.kind, m.mat);
                         for (let q = 0; q < v; q++) {
                             dst[(ov + q) * 3] = c[0];
                             dst[(ov + q) * 3 + 1] = c[1];
@@ -3145,6 +3205,7 @@
                 };
                 g.seite = budgetSeite(m.kind, m.mat);
                 g.glut = budgetGlut(m.mat);
+                g.seh = budgetSeh(m.mat); // Teil der Identität (budgetStoff): jede Gruppe trägt genau EINE
                 nachSchluessel.set(key, g);
                 gruppen.push(g);
             }
@@ -3268,6 +3329,11 @@
             bericht.bruch.push({ feld: "zeile" });
             return { meshes: meshes, bericht: bericht };
         }
+        // Jeder Stoff trägt seine Seh-Klasse aus dem Gesetzbuch — ohne sie weiß die Faltung nicht, was dem Auge
+        // eins ist (ein Bruch, auch wenn nichts zu falten ist).
+        const ohne = new Set();
+        for (const m of meshes || []) if (_budgetTeil(m) && !budgetSeh(m.mat)) ohne.add(budgetStoff(m.kind, m.mat));
+        for (const st of ohne) bericht.bruch.push({ feld: "seh", stoff: st });
         const out = vor.draws > zeile.draws ? _budgetFalten(meshes || [], zeile.draws, bericht) : meshes;
         const nach = budgetSippen(out);
         bericht.nachher = { tris: nach.tris, draws: nach.draws };
@@ -3339,6 +3405,11 @@
         bodenGewicht: bodenGewicht, // Waldboden 04.10. — das Gewicht einer Boden-Art (Labor-Wald + Nah-Streu der Welt)
         BUDGET_GESETZ: BUDGET_GESETZ, // W8 — das Budget-Gesetz: Glut-Schwelle, Teil-Deckel, Verschmelz-Deckel, Form
         budgetStoff: budgetStoff, // die EINE Material-Identität (Wirts-Material-Cache, Faltung, Wand)
+        budgetRegler: budgetRegler, // die EINEN Material-Zahlen eines Stoffs (Schlüssel + Wirts-Material)
+        budgetSeh: budgetSeh, // die Seh-Klasse eines Stoffs aus dem Gesetzbuch (null = Bruch)
+        budgetFuellFarbe: budgetFuellFarbe, // die Füll-Farbe eines Teils ohne Vertex-Farbe (Wirt + Faltung)
+        LOOK_KLASSEN: LOOK_KLASSEN, // die EINE Liste der Look-Stoffe (FELL_LOOK/HAUT_LOOK/HAAR_LOOK)
+        budgetLook: budgetLook,
         budgetSeite: budgetSeite,
         budgetGlut: budgetGlut,
         budgetSippen: budgetSippen, // Dreiecke + Draws einer gelieferten Stufe nach der Regel des Wirts

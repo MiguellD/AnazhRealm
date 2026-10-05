@@ -145,6 +145,29 @@
             }),
             cardEdge: new THREE.MeshBasicMaterial({ color: 0xe7c887 }),
         };
+        // DIE SEH-KLASSE je Stoff (Integration W8, rein additiv — docs/studio-vertrag.md B2c): was der Stoff dem AUGE
+        // ist (phyto-core BUDGET_GESETZ.seh); das Budget-Gesetz am Studio-Ausgang faltet nur innerhalb EINER Klasse.
+        // Die Metalle sind metall, Leder · Schnur · Holz stoff, die ungelitten Overlays glut, das Durchscheinende glas.
+        // Ein Stoff ohne Zeile reist ohne Klasse — das Gesetz meldet den BRUCH (die Wand wird rot), nie still.
+        var SEH = {
+            steel: "metall",
+            steelRaw: "metall",
+            brass: "metall",
+            iron: "metall",
+            blacksteel: "metall",
+            bronze: "metall",
+            leather: "stoff",
+            cord: "stoff",
+            wood: "stoff",
+            bone: "glut",
+            hand: "glut",
+            bal: "glut",
+            node: "glut",
+            mass: "glas",
+            cardFill: "glas",
+            cardEdge: "glut",
+        };
+        for (var k in M) if (SEH[k]) M[k].userData.__seh = SEH[k];
         return M;
     }
 

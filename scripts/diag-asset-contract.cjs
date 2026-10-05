@@ -101,7 +101,7 @@ function meshDiff(tag, gold, live) {
 //  (K) KOSTEN — jede gelieferte Gitter-Stufe jeder Art wird über die echte Brücke gebaut (alle Golden-Fälle,
 //      jedes Rezept der Art bei Samen 7, wo kein Golden die Stufe trägt, und JEDE GESTALT DER WELT: die Samen
 //      1..V aus budget.gestalten, mit denen der Host baut — W5) und gegen ihre Zeile gehalten:
-//      Dreiecke ≤ tris, Sippen (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) ≤ draws. Rot nennt den
+//      Dreiecke ≤ tris, Draws (phyto-core budgetSippen = die Regel des Wirts, Stoff mit Seh-Klasse) ≤ draws. Rot nennt den
 //      Täter: `tree[1] weide-s12345-L1-summer: 10204 Dreiecke > 10000`. Die Karten-Stufe (karte) ist kein
 //      Gitter — ihre L2-Geometrie wird nicht geliefert (die Karten-Linse in gate:studio-vertrag hält das).
 //  (A) STECKBRIEF — der gemalte EINE Blatt-Atlas passt in die deklarierten Kerne (Alpha>0 nie jenseits `kern`)
@@ -120,8 +120,8 @@ const dekodiere = (b64, Typ) => {
 };
 // Dreiecke und Draws einer gebauten Antwort — DIESELBE Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen:
 // je Stoff × Attribut-Form ein Draw, jedes Flügel-Teil und jede Haut eines; Beipack ohne position zählt nicht).
-function kosten(meshes) {
-    const teile = (meshes || [])
+function teileAus(meshes) {
+    return (meshes || [])
         .filter((m) => m.attrs && m.attrs.position)
         .map((m) => {
             const t = { kind: m.kind, mat: m.mat };
@@ -132,8 +132,43 @@ function kosten(meshes) {
             if (m.index) t.index = dekodiere(m.index, Uint32Array);
             return t;
         });
-    const k = PC.budgetSippen(teile);
+}
+function kosten(meshes) {
+    const k = PC.budgetSippen(teileAus(meshes));
     return { tris: k.tris, draws: k.draws };
+}
+// DAS SEH-GESETZ an gelieferten Stufen (Integration W8): jeder Stoff trägt seine Seh-Klasse aus dem Gesetzbuch, und
+// auch auf EINEN Draw gezwungen faltet nichts über die Grenze von Bindung × Seh-Klasse × Glimmen — der Ausgang bleibt
+// über der Zeile und meldet den Bruch, statt das Auge in die Haut zu falten. Rot nennt Fall und Stoff.
+const SEH_FAELLE = [
+    ["mensch", 0], // Auge · Haut · Haar · Stoff
+    ["wolf", 0], // das glimmende Auge · Hornhaut · Nase · Fell
+    ["suv", 0], // Glas · Chrom · Lack · Gummi · Lichter
+    ["alemannisch", 1], // Glas · Putz · Holz
+    ["verkalkt", 0], // Metall · Stein · Leucht-Linien, je Flügel
+];
+const sehVon = (stoff) => {
+    const m = /\|v:([a-z]+)/.exec(stoff || "");
+    return m ? m[1] : null;
+};
+const glimmt = (stoff) => /\|e:/.test(stoff || "");
+function sehKreuz(faltungen) {
+    return faltungen
+        .filter((f) => sehVon(f.von) !== sehVon(f.nach) || glimmt(f.von) !== glimmt(f.nach))
+        .map((f) => `faltet über die Seh-Grenze ${f.von} → ${f.nach}`);
+}
+function sehUrteil(proben) {
+    const v = [];
+    for (const p of proben) {
+        const ohne = p.teile.filter((t) => !PC.budgetSeh(t.mat));
+        if (ohne.length) v.push(`${p.fall}: ${ohne.length} Stoffe ohne Seh-Klasse (${PC.budgetStoff(ohne[0].kind, ohne[0].mat)})`);
+        const res = PC.budgetErzwingen(p.teile, { tris: 1e12, draws: 1 });
+        v.push(...sehKreuz(res.bericht.faltungen).map((x) => `${p.fall}: ${x}`));
+        const klassen = new Set(p.teile.map((t) => PC.budgetSeh(t.mat)));
+        if (res.bericht.nachher.draws < klassen.size)
+            v.push(`${p.fall}: auf ${res.bericht.nachher.draws} Draws gefaltet, trägt aber ${klassen.size} Seh-Klassen`);
+    }
+    return v;
 }
 function kostenUrteil(messungen, budget) {
     const v = [];
@@ -206,6 +241,7 @@ function deckungsUrteil(paare, band, atlas) {
     let karten = null;
     const schwebeMess = [];
     let schwebeProbe = null;
+    const sehProben = [];
     await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas, atlasAlpha, karte }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
@@ -370,6 +406,12 @@ function deckungsUrteil(paare, band, atlas) {
             const pr = await build({ presetId: "fichte", seed: 7, lod: 0, season: "summer" });
             schwebeProbe = pr.meshes;
         }
+        // DIE SEH-PROBEN (Integration W8): gelieferte Zweit-Kern-Stufen mit Auge, Glas, Metall, Haar und Glimmen — die
+        // Wand prüft an ihnen das Seh-Gesetz in Node (dieselbe phyto-core-Funktion wie Brücke und Ofen).
+        for (const [p, l] of SEH_FAELLE) {
+            const a = await build({ presetId: p, seed: 1, lod: l, season: "summer" });
+            sehProben.push({ fall: `${p}-s1-L${l}`, teile: teileAus(a.meshes) });
+        }
         karten = { faelle: {}, gestoert: null };
         for (const [p, sd] of KARTEN_FAELLE) karten.faelle[p + "|" + sd] = await karte(p, sd);
         karten.gestoert = await karte(KARTEN_FAELLE[0][0], KARTEN_FAELLE[0][1], "bc1");
@@ -389,6 +431,7 @@ function deckungsUrteil(paare, band, atlas) {
             fails.push(...kostenUrteil(messungen, budget).map((x) => "Kosten: " + x));
             fails.push(...steckbriefUrteil(at, at.steckbrief, at.nadel).map((x) => "Steckbrief: " + x));
             fails.push(...deckungsUrteil(paare, band, alpha).map((x) => "Deckung: " + x));
+            fails.push(...sehUrteil(sehProben).map((x) => "Seh: " + x));
         }
     });
     if (wand && wand.budget && Array.isArray(wand.band)) {
@@ -430,7 +473,8 @@ function deckungsUrteil(paare, band, atlas) {
                 gemesseneP.map(([k, p]) => `${k} ${p.art} ${p.deckung.toFixed(2)}`).join(" · ")
         );
         // SELBST-TESTS — die Wand ist nicht vakuös:
-        //  (1) JEDE Gitter-Zeile halbiert (tris/2, draws/2) MUSS rot werden;
+        //  (1) JEDE Gitter-Zeile MUSS rot werden: tris halbiert, draws um EINS gesenkt (die Zeile ist dicht: ihr
+        //      Maximum ist gemessen — ein Puffer über dem Gemessenen fiele hier auf);
         //  (2) jede Gitter-Zeile hat ≥ 1 gebauten Fall;
         //  (3) die Laub-Karte von gestern (Kante 2,35 statt blattKarte) MUSS das Band sprengen;
         //  (4) eine Nadel-Karte 1,5× so lang MUSS das Band sprengen;
@@ -441,7 +485,9 @@ function deckungsUrteil(paare, band, atlas) {
         //  (9) eine um ihre Höhe abgesenkte Krone MUSS unter dem Boden liegen.
         //  (10, W8) der Umschlag OHNE zusatzBudget: „Budget fehlt" für JEDEN der sechs Zweit-Kerne mit Gestalt;
         //  (11, W8) die Faltung ist der Konsument: je Zweit-Kern-Art liegt ≥ 1 Fall UNGEFALTET über draws (die
-        //      Brücke meldet vorher > Zeile) und GEFALTET darin (die Kosten oben).
+        //      Brücke meldet vorher > Zeile) und GEFALTET darin (die Kosten oben);
+        //  (12, Seh) ein Stoff ohne Seh-Klasse MUSS brechen (die erste Seh-Probe, ein Stoff entkleidet);
+        //  (13, Seh) eine Faltung Auge → Haut und eine Glimmen → ohne Glimmen MUSS die Kreuz-Linse fangen.
         const halb = [],
             leer = [];
         for (const k of Object.keys(wand.stufen))
@@ -454,7 +500,7 @@ function deckungsUrteil(paare, band, atlas) {
                 }
                 for (const [feld, wert] of [
                     ["tris", Math.floor(z.tris / 2)],
-                    ["draws", Math.floor(z.draws / 2)],
+                    ["draws", z.draws - 1],
                 ]) {
                     const B2 = JSON.parse(JSON.stringify(B));
                     B2[k][st][feld] = wert;
@@ -508,16 +554,29 @@ function deckungsUrteil(paare, band, atlas) {
             (k) => !messungen.some((x) => x.kind === k && x.budget.vorher.draws > B[k][x.lod].draws)
         );
         const s11 = zweitArten.length === 6 && ohneFaltung.length === 0;
+        const p0 = sehProben[0];
+        const entkleidet = p0
+            ? [{ fall: p0.fall, teile: p0.teile.map((t, i) => (i ? t : Object.assign({}, t, { mat: Object.assign({}, t.mat, { seh: undefined }) }))) }]
+            : [];
+        const s12 = !!p0 && sehUrteil(entkleidet).some((x) => x.includes("ohne Seh-Klasse"));
+        const s13 =
+            sehKreuz([{ von: "unknown|0.08|0.00|0|1.00|v:auge", nach: "skin|0.62|0.00|0|1.00|v:haut" }]).length === 1 &&
+            sehKreuz([{ von: "unknown|0.06|e:0.06,0.02,0.00@0.30|v:auge", nach: "unknown|0.00|v:auge" }]).length === 1 &&
+            sehKreuz([{ von: "unknown|0.20|v:auge", nach: "unknown|0.15|v:auge" }]).length === 0;
         console.log(
-            `Selbsttest Budget-Wand: jede Zeile halbiert wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
+            `Seh-Wand: ${sehProben.length} Proben (${sehProben.map((p) => p.fall).join(", ")}) · Seh-Klassen ${sehProben.map((p) => new Set(p.teile.map((t) => t.mat && t.mat.seh)).size).join("/")}`
+        );
+        console.log(
+            `Selbsttest Budget-Wand: jede Zeile halbiert/−1 Draw wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
                 `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 2,35 sprengt das Band ${s3 ? "✅" : "❌"} · ` +
                 `Nadel-Karte 1,5× sprengt das Band ${s4 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s5 ? "✅" : "❌"} · ` +
                 `${gemesseneP.length} Paare (Laub/Nadel/Klinge) ${s6 ? "✅" : "❌"} · L0-Karte 1,5× sprengt das Band ${s7 ? "✅" : "❌"} · ` +
                 `L0 ohne Rinde schwebt ${s8 ? "✅" : "❌"} · abgesenkte Krone liegt unter dem Boden ${s9 ? "✅" : "❌"} · ` +
                 `ohne zusatzBudget fehlt das Budget für ${fehlt.size}/6 Zweit-Kerne ${s10 ? "✅" : "❌ " + [...zweitKerne].filter((c) => !fehlt.has(c)).join(",")} · ` +
-                `ungefaltet über draws je Zweit-Art ${s11 ? "✅" : "❌ " + ohneFaltung.join(",")}`
+                `ungefaltet über draws je Zweit-Art ${s11 ? "✅" : "❌ " + ohneFaltung.join(",")} · ` +
+                `Stoff ohne Seh-Klasse bricht ${s12 ? "✅" : "❌"} · Auge→Haut und Glimmen→matt fängt die Kreuz-Linse ${s13 ? "✅" : "❌"}`
         );
-        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9 || !s10 || !s11)
+        if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9 || !s10 || !s11 || !s12 || !s13)
             fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
 

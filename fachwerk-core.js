@@ -75,8 +75,10 @@
     //    contract baut jede, die Zeile ist die Ratsche: sie darf nur fallen); band = das Profi-Band-Ziel der
     //    Stufe (Haushalt, artifacts/profiband/wellen-plan.md W1) — offen, solange tris darüber liegt; draws =
     //    Draws je Instanz und Pass nach der Wirts-Regel: das Budget-Gesetz am Studio-Ausgang (phyto-core
-    //    budgetErzwingen) faltet die Stoffe darauf (L1/L2-Stoffe unterscheiden sich nur in der Rauheit, die
-    //    Farbe reist als Vertex-Farbe); schatten = die werfende Stufe (L2 wirft nicht). gestalten = wie viele
+    //    budgetErzwingen) faltet die Stoffe darauf, nur innerhalb EINER Seh-Klasse (SEH_DER_ROLLE unten: Glas,
+    //    Beschlag-Metall und Herdfeuer bleiben je eigene Stoffe — die Zeile ist das gemessene Minimum über alle 512
+    //    Fälle je Stufe: L0 11 (gotisch), L2 3 (volle_moderne: Putz · Glas · Metall); die Farbe reist als
+    //    Vertex-Farbe); schatten = die werfende Stufe (L2 wirft nicht). gestalten = wie viele
     //    Individuen (Samen 1..V) die Welt je Stil trägt — das bisherige Wirts-16 gehört dem Gesetzbuch
     //    (gefüllt je Rezept unten bei PRESETS, `GESTALTEN_JE_REZEPT`).
     var GESTALTEN_JE_REZEPT = 16;
@@ -85,9 +87,9 @@
             kindStages: { haus: [0, 1, 2] },
             budget: {
                 haus: {
-                    0: { tris: 132000, band: 40000, draws: 10, schatten: 0 },
+                    0: { tris: 132000, band: 40000, draws: 11, schatten: 0 },
                     1: { tris: 44000, band: 10000, draws: 4, schatten: 1 },
-                    2: { tris: 7000, band: 2000, draws: 1, schatten: false },
+                    2: { tris: 7000, band: 2000, draws: 3, schatten: false },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
                     fernform: "gesetz",
                 },
@@ -1593,6 +1595,38 @@
     var _texSt = null;
     var M = null;
     var _roleByMat = new Map();
+    // DIE SEH-KLASSE je Rolle (Integration W8, rein additiv — docs/studio-vertrag.md B2c): was der Stoff dem AUGE ist
+    // (phyto-core BUDGET_GESETZ.seh); das Budget-Gesetz am Studio-Ausgang faltet nur innerhalb EINER Klasse — das Glas
+    // nie in den Putz, das Metall nie ins Holz, das Herdfeuer nie. Metallizität ≥ 0,5 ist metall (Beschläge); jedes Glas
+    // (auch das ferne Spiegel-Glas) ist glas. Eine Rolle ohne Zeile reist ohne Klasse — das Gesetz meldet den BRUCH.
+    var SEH_DER_ROLLE = {
+        holz: "stoff",
+        blockholz: "stoff",
+        gefach: "stoff",
+        stein: "stoff",
+        ziegel: "stoff",
+        boden: "stoff",
+        glas: "glas",
+        dunkel: "stoff",
+        feuer: "glut",
+        moebel: "stoff",
+        metall: "metall",
+        nagel: "stoff",
+        lattung: "stoff",
+        ziegel2: "stoff",
+        backstein: "stoff",
+        lehm: "stoff",
+        putz: "stoff",
+        dachmod: "stoff",
+        gras: "stoff",
+        weg: "stoff",
+        laub: "stoff",
+        stamm: "stoff",
+        stroh: "stoff",
+        kupfer: "stoff",
+        glasdunkel: "glas",
+        glasfern: "glas",
+    };
     // prettier-ignore
     function materials(){ if(M) return M;
       _texBk=texZiegelwand(0x964e3e,7); _texZi=texDach(0x9c4a35,11); _texZi2=texDach(0x803a28,13); _texPu=texPutz(17); _texSt=texStein(23);
@@ -1625,6 +1659,7 @@
   glasfern: new THREE.MeshStandardMaterial({color:0x46687e,roughness:.22,metalness:.45}),   // FERN-GLAS-GESETZ: Glas trägt fern als OPAKER Spiegelkörper — Transparenz ohne Innenleben liest sich als Geist
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
+      for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
       return M; }
     // mat — die Rollen-Auflösung (byte-treu Lab Z.2996 `const mat=r=>M[r]||M.holz;` + Lazy-Guard).
     // prettier-ignore

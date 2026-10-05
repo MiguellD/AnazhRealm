@@ -684,12 +684,30 @@ function validateManifest(m) {
         if (ofenRufe !== 2) f.push(`Wirt: der Sync-Guss läuft ${ofenRufe}/2 mal durch _ofenBudget (Tier + Mensch)`);
         if (!/const key =\s*globalThis\.__phytoCore\.budgetStoff\(kind, mp\)/.test(realmSrc))
             f.push("Wirt: _foundryTreeMaterial keyt nicht mit budgetStoff");
+        // Integration W8 — DIE SEH-KLASSE REIST: beide Extraktoren (Brücke + Ofen) reichen den Gesetzbuch-Stempel
+        // `material.userData.__seh` als `mat.seh` weiter — ohne ihn kennt das Gesetz keine Klasse und jede
+        // Zweit-Kern-Stufe bräche (gate:asset-contract misst das an jedem Fall).
+        const ex = phytoSrc.match(/function __extractAssetMesh\(mesh, zweitKern\) \{[\s\S]*?\n {4}\}\n/);
+        if (!ex || !/out\.mat\.seh = mat\.userData\.__seh/.test(ex[0]))
+            f.push("Brücke: __extractAssetMesh reicht die Seh-Klasse nicht (mat.seh)");
+        const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\(mesh\) \{[\s\S]*?\n {4}\}/);
+        if (!oe || !/out\.mat\.seh = mat\.userData\.__seh/.test(oe[0]))
+            f.push("Wirt: _ofenMeshEintragAusThree reicht die Seh-Klasse nicht (mat.seh)");
         return f;
     };
     const lU = leserUrteil(realm, phytoNC);
-    check("W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel)", lU.length === 0, lU[0] || "");
+    check(
+        "W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel · Seh-Klasse beider Extraktoren)",
+        lU.length === 0,
+        lU[0] || ""
+    );
     const lSelbst = leserUrteil(realm.replace("budgetErzwingen(eintraege", "budgetSippen(eintraege"), phytoNC);
     check("SELBST-TEST: ein Ofen ohne Faltung feuert die Leser-Probe", lSelbst.some((s) => s.includes("_ofenBudget")));
+    const sehAus = realm.replace("out.mat.seh = mat.userData.__seh", "out.mat.sehX = mat.userData.__seh");
+    check(
+        "SELBST-TEST: ein Ofen-Extraktor ohne Seh-Klasse feuert die Leser-Probe",
+        sehAus !== realm && leserUrteil(sehAus, phytoNC).some((s) => s.includes("Seh-Klasse"))
+    );
 
     // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
     // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war

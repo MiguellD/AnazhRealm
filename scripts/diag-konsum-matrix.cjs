@@ -47,7 +47,9 @@ const P = {
         lods: ["kindStages", "_chooseLODForDistance", "_foundryPresetIsTree"],
         rahmen: ["_growTreeBlueprintRich"],
         bewegung: ["_windSwayOffset"],
-        material: ["_foundryTreeMaterial", "mp\\.emissive"],
+        // die Regler (Rauheit · Metall · Glut …) liest der Stoff-Bau aus der EINEN Quelle des Budget-Gesetzes
+        // (phyto-core budgetRegler, Integration W8 — vorher las der Stamm mp.emissive selbst)
+        material: ["_foundryTreeMaterial", "budgetRegler\\(kind, mp\\)"],
         koerper: ["_populateBlockerAABBs"],
         platz: ["_forestExtraSpecies"],
         verb: null, // ehrlich: kein Baum-Verb (pflanzen läuft über place/Werkstatt)

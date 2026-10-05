@@ -5213,7 +5213,8 @@ init();
         // GENAU diese Namen FELL_LOOK/HAUT_LOOK/HAAR_LOOK. Pflanzen-Materialien tragen das Feld nie
         // (ihre Replies bleiben byte-alt, gate:asset-contract).
         const __kl = mesh.material && mesh.material.userData && mesh.material.userData.__klasse;
-        if (out.kind === "unknown" && typeof __kl === "string" && /^(fell|fellSchale|straehne|straehneD|straehneL|skin|haut|hair)$/.test(__kl))
+        // Die EINE Look-Liste lebt im Budget-Gesetz (phyto-core LOOK_KLASSEN) — Ofen und Wirt lesen dieselbe.
+        if (out.kind === "unknown" && typeof __kl === "string" && (typeof self !== "undefined" ? self : globalThis).__phytoCore.budgetLook(__kl))
             out.kind = __kl;
         // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
         // Pflanzen tragen das Feld nie — additiv, must-ignore).
@@ -5262,6 +5263,10 @@ init();
             // DIE EINE PIPE: Emissiv reist NUR wenn nicht-schwarz (additiv, must-ignore;
             // Pflanzen/Fahrzeuge tragen schwarz → Feld fehlt → Replies byte-gleich).
             if (zweitKern && mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
+            // DIE SEH-KLASSE reist mit (Integration W8, must-ignore): was der Stoff dem AUGE ist (auge · glas · metall ·
+            // haar · haut · glut · stoff), gestempelt vom Gesetzbuch (material.userData.__seh) — das Budget-Gesetz faltet
+            // nur innerhalb EINER. Pflanzen tragen das Feld nie (ihre Replies bleiben byte-alt, gate:asset-contract).
+            if (zweitKern && mat.userData && typeof mat.userData.__seh === "string") out.mat.seh = mat.userData.__seh;
             if (zweitKern && mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
                 out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
                 out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;

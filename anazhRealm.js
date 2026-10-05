@@ -17380,7 +17380,7 @@ class AnazhRealm {
         // HAAR_LOOK). Befund 30.09.: hier stand `kind: "unknown"` fest — 0 von 11 Wolf-Materialien trugen das
         // Fell-Gesetz, der Weber war ein toter Leser. Andere Klassen (Auge, Klaue …) bleiben "unknown".
         const kl = mat.userData && mat.userData.__klasse;
-        const out = { kind: typeof kl === "string" && AnazhRealm.LOOK_KLASSEN.has(kl) ? kl : "unknown" };
+        const out = { kind: typeof kl === "string" && globalThis.__phytoCore.budgetLook(kl) ? kl : "unknown" };
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
         out.mat = {
             roughness: typeof mat.roughness === "number" ? mat.roughness : 0.7,
@@ -17393,6 +17393,8 @@ class AnazhRealm {
         };
         if (mat.color && typeof mat.color.r === "number") out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
         if (mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
+        // Die Seh-Klasse des Gesetzbuchs reist mit (das Budget-Gesetz faltet nur innerhalb EINER, `_ofenBudget`).
+        if (mat.userData && mat.userData.__seh) out.mat.seh = mat.userData.__seh;
         if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
             out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
             out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
@@ -68431,35 +68433,24 @@ class AnazhRealm {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
-        const double = kind === "foliage" || kind === "foliageTex" || kind === "grass";
-        const isBark = kind === "bark" || kind === "stem";
-        // Material-Regler: reist `mp` mit (roughness/metalness/flatShading/env/side), baut AnazhRealm EXAKT
-        // dieses Material; ohne `mp` die Baum-Defaults (Rinde 0.93 · Laub 0.62 · Gras 0.7), kein Raten.
-        const rough =
-            mp && typeof mp.roughness === "number" ? mp.roughness : isBark ? 0.93 : kind === "grass" ? 0.7 : 0.62;
-        const metal = mp && typeof mp.metalness === "number" ? mp.metalness : 0;
-        const flat = mp ? !!mp.flatShading : false;
-        const env = mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : kind === "grass" ? 0.18 : 1;
-        // Seite: Studio 0 Front · 2 Double; Laub/Gras immer Double (Alt-Verhalten).
-        const sideDouble = double || (mp && mp.side === 2);
+        // Material-Regler: reist `mp` mit (roughness/metalness/flatShading/env/side/Glut), baut AnazhRealm EXAKT
+        // dieses Material; ohne `mp` die Baum-Defaults — die Zahlen und die Look-Familie (FELL_LOOK/HAUT_LOOK/HAAR_LOOK,
+        // der Ton-Anker mp.color steht im Key) liest der Wirt aus DERSELBEN Quelle wie der Schlüssel (phyto-core
+        // `budgetRegler`); Laub/Gras sind immer beidseitig.
+        const R = globalThis.__phytoCore.budgetRegler(kind, mp);
+        const isBark = R.rinde;
+        const rough = R.r,
+            metal = R.mt,
+            flat = R.fl,
+            env = R.env,
+            sideDouble = R.doppelt,
+            emis = R.em,
+            emisI = R.emI,
+            klasseLook = R.look;
         // Build-Zeit-Gate der Studio-Dither-Blende (Default an; Maske + CPU-Doppel-Mitgliedschaft schalten
         // zusammen am foundryCrossfade-Flag). Das Flag steht im Key: ein Live-Toggle trifft nur NEU gebaute
         // Gruppen; Material und Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Pass → konsistent.
         const xfade = !!(this.state && this.state.foundryCrossfade === true);
-        // Cache-Key: kind + gerundete Regler (bounded — je Preset-Charakter ein Material). Die Glut reist mit:
-        // mp.emissive [r,g,b] + mp.emissiveIntensity (Tor-Rahmen, Glut-Kanten).
-        const emis = mp && Array.isArray(mp.emissive) && mp.emissive.length === 3 ? mp.emissive : null;
-        const emisI = emis && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : emis ? 1 : 0;
-        // Klassen-Look-Familie: Kreatur-/Mensch-Klassen, deren Lab-Shader-Gesetz (FELL_LOOK/HAUT_LOOK/
-        // HAAR_LOOK) hier gewoben wird. Der Ton-Anker (mp.color, linear) steht im Key — die Strähnen-Achse ist
-        // die Luminanz-Ratio zum Ton; je Gattungs-Ton EIN Material (bounded: Gattungen × 4 Klassen).
-        const klasseLook =
-            kind === "fell" ||
-            kind === "fellSchale" ||
-            kind === "skin" ||
-            kind === "haut" ||
-            kind === "hair" ||
-            kind.indexOf("straehne") === 0;
         // DER SCHLÜSSEL IST DIE EINE MATERIAL-IDENTITÄT (phyto-core `budgetStoff`, W8): Art · Regler · SEITE · Gewebe ·
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
@@ -68790,15 +68781,8 @@ class AnazhRealm {
             // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER (sonst schwarz/Crash) →
             // fehlt die Vorlagen-Farbe, ein kind-Default (bark braun, laub grün). Zweit-Kern-Meshes (kind
             // "unknown") füllen mit ihrer Material-Farbe (m.mat.color, r128-linear); Pflanzen-kinds unberührt.
-            const def =
-                m.kind === "bark" || m.kind === "stem"
-                    ? [0.32, 0.22, 0.13]
-                    : (m.kind === "unknown" || AnazhRealm.LOOK_KLASSEN.has(m.kind)) &&
-                        m.mat &&
-                        Array.isArray(m.mat.color) &&
-                        m.mat.color.length === 3
-                      ? m.mat.color
-                      : [0.2, 0.34, 0.13];
+            // DIESELBE Regel füllt die Faltung des Budget-Gesetzes (phyto-core `budgetFuellFarbe`).
+            const def = globalThis.__phytoCore.budgetFuellFarbe(m.kind, m.mat);
             const carr = new Float32Array(vcount * 3);
             for (let v = 0; v < vcount; v++) {
                 carr[v * 3] = def[0];
@@ -68839,7 +68823,7 @@ class AnazhRealm {
         mesh.castShadow = m.kind !== "fellSchale";
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
-        if (AnazhRealm.LOOK_KLASSEN.has(m.kind)) mesh.userData.__klasse = m.kind;
+        if (globalThis.__phytoCore.budgetLook(m.kind)) mesh.userData.__klasse = m.kind;
         // V18.465 — das Tür-Scharnier reist ans Mesh (Umschlag out.tuer, additiv):
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
@@ -69576,8 +69560,9 @@ class AnazhRealm {
     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass
     // und Region. Teile gleichen Materials und gleicher Attribut-Form liegen im selben Template-Raum (localMatrix
     // je Flat geteilt) → EINE Geometrie, ein Leaf. Tür-Flügel bleiben einzeln (eigene Scharnier-Matrix), schwere
-    // Teile (Baum-L0, > FOUNDRY_VERSCHMELZ_VERTS zusammen) auch — die Kopie verdoppelte ihren Speicher für einen
-    // Draw. Die verschmolzene Geometrie gehört der Cache-Gruppe (`_eigen`): ihr Dispose und ihre Bytes laufen mit.
+    // Teile (Baum-L0 — Konifere ~143k je Teil —, über phyto-core `BUDGET_GESETZ.verschmelzVerts` zusammen) auch —
+    // die Kopie verdoppelte ihren Speicher für einen Draw; dieselbe Zahl zählt das Budget-Gesetz (`budgetSippen`).
+    // Die verschmolzene Geometrie gehört der Cache-Gruppe (`_eigen`): ihr Dispose und ihre Bytes laufen mit.
     _foundryFlatVerschmelzen(group, leaves) {
         const sig = (lf) => {
             const g = lf.geom;
@@ -69603,7 +69588,7 @@ class AnazhRealm {
             if (idx.length < 2) continue;
             let n = 0;
             for (const i of idx) n += leaves[i].geom.attributes.position.count;
-            if (n > AnazhRealm.FOUNDRY_VERSCHMELZ_VERTS) continue;
+            if (n > globalThis.__phytoCore.BUDGET_GESETZ.verschmelzVerts) continue;
             const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
             if (!geo) continue;
             const erst = leaves[idx[0]];
@@ -91253,10 +91238,6 @@ AnazhRealm.SCATTER_FERN_SUPERREGION = 4;
 // Einziger Konsument: _archLeafMaterial; false = das alte Je-Farbe-Muster, nur als A/B-Hebel der Linse
 // (gate:render-diaet).
 AnazhRealm.ARCH_LEAF_MAT_SHARED = true;
-// Das Verschmelzen der Foundry-Teile (_foundryFlatVerschmelzen): Teile EINES Materials werden EIN Leaf, solange
-// sie zusammen höchstens so viele Vertices tragen — Geröll (16 × 57), Blume, Fahrzeug-Teile ja; Baum-L0
-// (Konifere ~143k je Teil) nein: dort kostete die Kopie Speicher für einen einzigen gesparten Draw.
-AnazhRealm.FOUNDRY_VERSCHMELZ_VERTS = 65536;
 // V18.354 — PHASE B (Frame-Budget-Scheduler): der Boden des Deferrable-Budgets (ms). Selbst wenn
 // die Pflicht-Kosten (Physik/Render) das Frame-Ziel fast füllen, bleibt diese Kür-Zeit — das
 // Streaming ist eh heilig (prio 0, ungedrosselt), dieser Floor hält die niedrigeren Jobs am Leben.
@@ -91341,9 +91322,6 @@ AnazhRealm.ANALOG_NAH_M = 64;
 // Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
 // ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
-// Die Studio-Material-Klassen, für die der Material-Weber ein Lab-Shader-Gesetz trägt (FELL_LOOK · HAUT_LOOK ·
-// HAAR_LOOK) — die Extraktion reicht genau sie als `kind` durch.
-AnazhRealm.LOOK_KLASSEN = new Set(["fell", "fellSchale", "straehne", "straehneD", "straehneL", "skin", "haut", "hair"]);
 // Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
 // Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
 // in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse `diag-fell-blick`, 720p, fov 75°): die Strähnen ändern

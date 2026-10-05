@@ -30,7 +30,9 @@
     // Hülle über alle Gattungen × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-
     // Ziel (Haushalt, offen solange tris darüber liegt), draws = Draws je Tier und Pass nach der Wirts-Regel: das
     // Budget-Gesetz am Ausgang (Brücke UND Sync-Guss des Wirts-Ofens, phyto-core budgetErzwingen) faltet die
-    // starren Stoffe je Bindungs-Klasse (Haut und Fell-Schale bleiben); schatten = die werfende Stufe.
+    // starren Stoffe je Bindungs-Klasse (Haut und Fell-Schale bleiben) und Seh-Klasse (TIER_MATERIAL_KLASSEN.seh:
+    // das glimmende Auge · Hornhaut/Pupille · Nase/Ballen · Fell · Klaue/Zahn bleiben getrennt — L1 5 ist das
+    // gemessene Minimum); schatten = die werfende Stufe.
     // gestalten = Individuen je Gattung (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
@@ -39,7 +41,7 @@
             budget: {
                 kreatur: {
                     0: { tris: 62000, band: 20000, draws: 8, schatten: 0 },
-                    1: { tris: 7000, band: 3000, draws: 1, schatten: 1 },
+                    1: { tris: 7000, band: 3000, draws: 5, schatten: 1 },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",
                 },
@@ -1351,16 +1353,18 @@
     }
 
     // KONVERGENZ III — die Tier-Materialfarben (verbatim aus buildAnimal Z.137):
+    // `seh` (Integration W8, additiv): die Seh-Klasse des Stoffs (phyto-core BUDGET_GESETZ.seh) — das Budget-Gesetz
+    // faltet nur innerhalb EINER (das Auge nie in die Nase, die Nase nie ins Fell); Fell · Strähne · Schale sind haar.
     var TIER_MATERIAL_KLASSEN = Object.freeze({
-        nase: Object.freeze({ c: 0x060606, r: 0.1 }),
-        tierauge: Object.freeze({ c: 0xeec040, r: 0.06, emissiv: 0x442200, ei: 0.3 }),
-        pupille: Object.freeze({ c: 0x000000, r: 0.2 }),
-        hornhaut: Object.freeze({ c: 0xffffff, r: 0 }),
-        klaue: Object.freeze({ c: 0x181818, r: 0.2 }),
-        ballen: Object.freeze({ c: 0x161616, r: 0.45 }),
-        zahn: Object.freeze({ c: 0xeeeeee, r: 0.18 }),
-        zahnfleisch: Object.freeze({ c: 0x060606, r: 0.5 }),
-        dunkel: Object.freeze({ c: 0x040000, r: 0.9 }),
+        nase: Object.freeze({ c: 0x060606, r: 0.1, seh: "haut" }),
+        tierauge: Object.freeze({ c: 0xeec040, r: 0.06, emissiv: 0x442200, ei: 0.3, seh: "auge" }),
+        pupille: Object.freeze({ c: 0x000000, r: 0.2, seh: "auge" }),
+        hornhaut: Object.freeze({ c: 0xffffff, r: 0, seh: "auge" }),
+        klaue: Object.freeze({ c: 0x181818, r: 0.2, seh: "stoff" }),
+        ballen: Object.freeze({ c: 0x161616, r: 0.45, seh: "haut" }),
+        zahn: Object.freeze({ c: 0xeeeeee, r: 0.18, seh: "stoff" }),
+        zahnfleisch: Object.freeze({ c: 0x060606, r: 0.5, seh: "haut" }),
+        dunkel: Object.freeze({ c: 0x040000, r: 0.9, seh: "stoff" }),
     });
 
     // ════════════════════════════════════════════════════════════════════
