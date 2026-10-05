@@ -15405,10 +15405,19 @@ class AnazhRealm {
         // Rotation in _loopRender (V8.28 sidereal) sie kippt, bleibt das
         // Quad sichtbar.
         starMat.side = THREE.DoubleSide;
+        // EIN Befehl (Welle 6): ein durchscheinender DoubleSide-Stoff zeichnet in r184 zwei Durchgänge (Rück-, dann
+        // Vorderseite) — jedes Quad zeigt der Kamera genau eine Seite, die additive Mischung vertauscht: ein Durchgang
+        // ist dasselbe Bild.
+        starMat.forceSinglePass = true;
 
+        // Der hellste Punkt des Himmels (kleinste Größenklasse): liegt die Grenzgröße mehr als ½ Klasse darüber, ist
+        // kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
+        let hellste = Infinity;
+        for (let i = 0; i < STAR_COUNT; i++) if (mags[i] < hellste) hellste = mags[i];
         this.state.starFieldUniforms = {
             opacity: uOpacity,
             grenze: uGrenze,
+            hellste,
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
@@ -81656,6 +81665,11 @@ class AnazhRealm {
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         u.opacity.value = skyMul;
         if (u.grenze) u.grenze.value = this._himmelGrenzgroesse(sunHeight);
+        // Kein Punkt sichtbar (mittags liegt die Grenzgröße über jedem Stern, unter Wolken ist die Deckkraft 0): das Feld
+        // zeichnet nicht — es zog am Tag zwei Befehle für ein schwarzes Bild (Band-Linse, Mess-Wiese, Welle 6).
+        const sf = this.state.starField;
+        if (sf && u.grenze && Number.isFinite(u.hellste))
+            sf.visible = skyMul > 0 && u.grenze.value - u.hellste + 0.5 > 0;
     }
 
     // DIE GRENZGRÖSSE des Himmels (scheinbare Helligkeit, ab der ein Punkt sichtbar ist) aus der Sonnenhöhe: die
