@@ -369,11 +369,33 @@
     // routen `zelle % zellen`), 3 die Nadel-Spray (Nadel-Karten der Koniferen-L1). `kern` = halbe Ausdehnung
     // um die Zellmitte als Anteil der halben Zelle (Breitblatt reicht Alpha>0 höchstens bis 0,7148 — die
     // Laub-Karte schneidet auf ihn zu, gemessen verwarfen die ungeschnittenen Karten 84 % ihrer Fragmente);
-    // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (Breitblatt 0,1403/0,1749/0,1693, Nadel 0,2446). Die
+    // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (Blatt-Zweige 05.10.: 0,1656/0,1776/0,1802 bis 0,707 —
+    // vorher Rosetten 0,1403/0,1749/0,1693; Nadel 0,2446). Die
     // Nadel-Spray reicht bis an den Zellrand (kern 1, gemalt 0,9961) und wird auf ihre Zelle geschnitten — vorher
     // blutete sie in Zelle 2. gate:asset-contract malt den Atlas und hält jede Zahl gegen den Maler.
-    const BLATT_ATLAS_BREIT = { zellen: 3, kern: 0.72, fuellung: 0.1615 };
+    const BLATT_ATLAS_BREIT = { zellen: 3, kern: 0.72, fuellung: 0.1745 };
     const BLATT_ATLAS_NADEL = { zelle: 3, kern: 1, fuellung: 0.2446 };
+    // DER BLATT-ZWEIG der Breitblatt-Zellen (05.10.), in Atlas-Pixeln (die Zelle misst 256): Haupt-Achse `achse`,
+    // `seiten` Seitenzweige der Länge `seite` (wechselständig), Blatt-Abstand `abstand` je Achse, Blatt-Länge `laenge` (±18 %, die Spitze 8 % länger), Stiel
+    // `stiel`, Zahn-Höhe `zahn` px bei `zaehne` Zähnen je Seite, `adern` Seitenadern-Paare, Rippe/Ader als Deckkraft des
+    // HELLEN Nervs, `falz` = Abdunklung der geknickten Hälfte, `saum` = Abstand zum Kern-Rand, `strom` = der eigene
+    // Zufalls-Strom der Zweige (die Nadel-Zelle behält ihren).
+    const ZWEIG_BLATT = {
+        achse: 156,
+        seite: 74,
+        seiten: 4,
+        abstand: 12,
+        laenge: 27,
+        stiel: 4,
+        zahn: 1.3,
+        zaehne: 9,
+        adern: 6,
+        rippe: 0.5,
+        ader: 0.32,
+        falz: 0.07,
+        saum: 2,
+        strom: 0x1eaf,
+    };
 
     // DER BLATT-ATLAS — EINE Quelle für jeden Leser (Studio, Foundry-Worker, Host): er trägt NUR den WERT
     // (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-Farbe (albedo = Vertex-Blatt × Atlas-Wert).
@@ -389,50 +411,167 @@
         const x = cv.getContext("2d", { willReadFrequently: true });
         if (!x) return null;
         const rg = _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG; == mulberry32(0xBEEF))
-        // Zellen 0..2 — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
+        // Zellen 0..2 — DER BLATT-ZWEIG (05.10., Pflanzen-Nahbild). Befund (Blick-Tour V18.530, Bild 05; Kartenmaß): eine
+        // Zelle trug 8–9 Blätter von 76–106 px in einem Kern von 184 px — ein Blatt war die halbe Karte, in der Welt
+        // 1–1,7 m lang (Eiche, Skala 3,4), flach, mit einer harten dunklen Mittelrippe (Wert 0,4). Jetzt malt jede Zelle
+        // einen ZWEIG wie eine Laub-Karte der Profis: eine leicht gebogene Achse mit Seitenzweigen, wechselständig ~40
+        // Blätter von `laenge` px (ein Blatt 0,30 der alten Länge: Eiche-L0 1,7 → 0,5 m, Birke 1,4 → 0,43 m — die
+        // Füllung bleibt im Steckbrief-Band, die Karten-Zahl bleibt), jedes mit gesägtem Rand (`zaehne` je Seite),
+        // weicher HELLER Mittelrippe und Seitenadern (der
+        // Blattnerv ist heller als die Spreite, ±5 % Wert), einer Falz-Hälfte (die Spreite ist zur Rippe geknickt, die
+        // eine Seite fängt weniger Licht) und dem Verlauf Stiel → Spitze. Alles bleibt im Kern (Steckbrief).
+        const ZB = ZWEIG_BLATT;
+        const rb = _atlasRnd(ZB.strom);
+        const rand = BLATT_ATLAS_BREIT.kern * 128 - ZB.saum; // halbe Kante des Kerns in px, abzüglich Saum
+        const blatt = (bx, by, rot, L, W, v) => {
+            // Ein Blatt mit Stiel: Basis (bx, by), Achse in Richtung rot (Bogenmaß, 0 = nach oben), Länge L ohne Stiel.
+            const cs = (r, gg, bb, a) =>
+                "rgba(" +
+                Math.min(255, Math.round(r * v)) +
+                "," +
+                Math.min(255, Math.round(gg * v)) +
+                "," +
+                Math.min(255, Math.round(bb * v)) +
+                "," +
+                a +
+                ")";
+            x.save();
+            x.translate(bx, by);
+            x.rotate(rot);
+            x.strokeStyle = cs(178, 186, 150, 1);
+            x.lineWidth = 1.2;
+            x.beginPath();
+            x.moveTo(0, 0);
+            x.lineTo(0, -ZB.stiel);
+            x.stroke();
+            x.translate(0, -ZB.stiel);
+            // Kontur: die Spreite ist am breitesten bei ~40 % (eiförmig), gesägt — jeder Zahn steigt zur Spitze hin an
+            // und fällt hart ab.
+            const N = 30,
+                pts = [];
+            for (let s = 1; s >= -1; s -= 2)
+                for (let k = 0; k <= N; k++) {
+                    const t = s > 0 ? k / N : 1 - k / N;
+                    const huelle = Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.9);
+                    const z = (t * ZB.zaehne) % 1;
+                    const w = huelle * W * 0.5 + ZB.zahn * z * Math.sin(Math.PI * Math.min(1, t * 1.15));
+                    pts.push([s * w, -t * L]);
+                }
+            const g = x.createLinearGradient(0, 0, 0, -L);
+            g.addColorStop(0, cs(206, 218, 182, 1));
+            g.addColorStop(0.55, cs(232, 242, 214, 1));
+            g.addColorStop(1, cs(244, 250, 230, 1));
+            x.fillStyle = g;
+            x.beginPath();
+            x.moveTo(pts[0][0], pts[0][1]);
+            for (let k = 1; k < pts.length; k++) x.lineTo(pts[k][0], pts[k][1]);
+            x.closePath();
+            x.fill();
+            // Die Falz: die linke Spreiten-Hälfte liegt flacher zum Licht (dunkler, weich).
+            x.save();
+            x.clip();
+            x.fillStyle = "rgba(0,0,0," + ZB.falz + ")";
+            x.fillRect(-W, -L, W, L);
+            // Seitenadern (paarig, zur Spitze geneigt) und die Mittelrippe — HELLER als die Spreite, weich.
+            x.strokeStyle = cs(250, 255, 238, ZB.ader);
+            x.lineWidth = 0.8;
+            for (let k = 1; k <= ZB.adern; k++) {
+                const t = k / (ZB.adern + 1),
+                    y0 = -t * L * 0.92,
+                    lw = W * 0.5 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.9);
+                x.beginPath();
+                x.moveTo(0, y0);
+                x.lineTo(lw * 0.92, y0 - lw * 0.7);
+                x.moveTo(0, y0);
+                x.lineTo(-lw * 0.92, y0 - lw * 0.7);
+                x.stroke();
+            }
+            x.strokeStyle = cs(250, 255, 238, ZB.rippe);
+            x.lineWidth = 1.1;
+            x.beginPath();
+            x.moveTo(0, 0);
+            x.lineTo(0, -L * 0.9);
+            x.stroke();
+            x.restore();
+            x.restore();
+        };
         for (let c = 0; c < BLATT_ATLAS_BREIT.zellen; c++) {
             const ox = c * 256 + 128,
-                oy = 150;
-            const n = 8 + (c & 1);
-            for (let i = 0; i < n; i++) {
-                const a = (i / n) * 6.2831 + rg() * 0.9,
-                    R = i === 0 ? 0 : 22 + rg() * 38;
-                const lx = ox + Math.cos(a) * R,
-                    ly = oy + Math.sin(a) * R * 0.72 - 18;
-                const rot = a + 1.5708 + (rg() - 0.5) * 0.8,
-                    L = 76 + rg() * 30,
-                    W = L * (0.46 + rg() * 0.16);
-                const v = 0.88 + rg() * 0.34;
-                x.save();
-                x.translate(lx, ly);
-                x.rotate(rot);
-                const g = x.createLinearGradient(0, -L * 0.5, 0, L * 0.5);
-                const cs = (r, gg, bb) =>
-                    "rgba(" +
-                    Math.min(255, Math.round(r * v)) +
-                    "," +
-                    Math.min(255, Math.round(gg * v)) +
-                    "," +
-                    Math.min(255, Math.round(bb * v)) +
-                    ",1)";
-                g.addColorStop(0, cs(250, 255, 238));
-                g.addColorStop(1, cs(206, 220, 186));
-                x.fillStyle = g;
+                oy = 128;
+            // Die Achsen des Zweigs: die Haupt-Achse von unten nach oben (leicht gebogen) und je Zelle ihre
+            // Seitenzweige, wechselständig. Jede Achse: Punkte p(t), Richtung d(t).
+            const achsen = [];
+            const bx = ox + (rb() - 0.5) * 16,
+                by = oy + ZB.achse * 0.55,
+                kr = (rb() - 0.5) * 34;
+            const haupt = (t) => [bx + kr * Math.sin(Math.PI * t), by - ZB.achse * t];
+            achsen.push({ p: haupt, rot0: 0, len: ZB.achse, dicke: 2.0 });
+            const nSeit = ZB.seiten;
+            for (let k = 0; k < nSeit; k++) {
+                const t0 = 0.16 + (0.56 * k) / Math.max(1, nSeit - 1) + (rb() - 0.5) * 0.08,
+                    s = (k + c) % 2 ? 1 : -1,
+                    w = s * (0.75 + rb() * 0.35),
+                    L = ZB.seite * (0.8 + rb() * 0.3),
+                    p0 = haupt(t0);
+                achsen.push({
+                    p: (t) => [p0[0] + Math.sin(w) * L * t, p0[1] - Math.cos(w) * L * t],
+                    rot0: w,
+                    len: L,
+                    dicke: 1.5,
+                });
+            }
+            // Erst das Holz (hinten), dann die Blätter.
+            x.strokeStyle = "rgba(150,142,112,1)";
+            x.lineCap = "round";
+            for (const a of achsen) {
+                x.lineWidth = a.dicke;
                 x.beginPath();
-                x.moveTo(0, -L * 0.5);
-                x.quadraticCurveTo(W * 0.62, -L * 0.14, 0, L * 0.5);
-                x.quadraticCurveTo(-W * 0.62, -L * 0.14, 0, -L * 0.5);
-                x.closePath();
-                x.fill();
-                x.strokeStyle = "rgba(90,104,78,0.40)"; // Mittelrippe (Wert-Detail, entsättigt)
-                x.lineWidth = 2;
-                x.beginPath();
-                x.moveTo(0, -L * 0.42);
-                x.lineTo(0, L * 0.42);
+                const p0 = a.p(0);
+                x.moveTo(p0[0], p0[1]);
+                for (let k = 1; k <= 8; k++) {
+                    const q = a.p(k / 8);
+                    x.lineTo(q[0], q[1]);
+                }
                 x.stroke();
-                x.restore();
+            }
+            x.lineCap = "butt";
+            for (const a of achsen) {
+                const nB = Math.max(2, Math.round(a.len / ZB.abstand));
+                for (let k = 0; k <= nB; k++) {
+                    const t = k === nB ? 1 : (k + 0.5) / (nB + 0.5),
+                        q = a.p(t),
+                        q2 = a.p(Math.min(1, t + 0.02)),
+                        q1 = a.p(Math.max(0, t - 0.02));
+                    const dr = Math.atan2(q2[0] - q1[0], -(q2[1] - q1[1])); // Achsen-Richtung (0 = nach oben)
+                    const s = k % 2 ? 1 : -1;
+                    const rot = k === nB ? dr : dr + s * (0.7 + rb() * 0.45);
+                    let L = ZB.laenge * (0.82 + rb() * 0.36) * (k === nB ? 1.08 : 1);
+                    const W = L * (0.5 + rb() * 0.14),
+                        v = 0.86 + rb() * 0.3;
+                    // Im Kern bleiben: das Blatt kürzt sich, bis Spitze und Flanken im Rand liegen (sonst fällt es).
+                    const reicht = (Lx) => {
+                        const ex = Math.sin(rot),
+                            ey = -Math.cos(rot);
+                        for (const f of [0.4, 1]) {
+                            const r = (ZB.stiel + Lx * f) * 1,
+                                h = f < 1 ? W * 0.5 + ZB.zahn : 0;
+                            for (const sg of [-1, 1]) {
+                                const px = q[0] + ex * r + sg * -ey * h - ox,
+                                    py = q[1] + ey * r + sg * ex * h - oy;
+                                if (Math.abs(px) > rand || Math.abs(py) > rand) return false;
+                            }
+                        }
+                        return true;
+                    };
+                    while (L > ZB.laenge * 0.5 && !reicht(L)) L *= 0.9;
+                    if (!reicht(L)) continue;
+                    blatt(q[0], q[1], rot, L, Math.min(W, L * 0.64), v);
+                }
             }
         }
+        // Die Nadel-Zelle zieht ihren Strom ab dem Stand nach den Breitblatt-Zellen von gestern (147 Züge): die
+        // Nadel-Spray bleibt Pixel für Pixel dieselbe.
+        for (let i = 0; i < 147; i++) rg();
         // Zelle 3 — Nadel-Spray (Wert-only) für die Koniferen-L1, auf IHRE Zelle geschnitten (die Striche
         // reichen bis 176 px um die Mitte, die halbe Zelle misst 128 px).
         {
@@ -3607,6 +3746,7 @@
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
+        ZWEIG_BLATT: ZWEIG_BLATT, // der Blatt-Zweig der Breitblatt-Zellen (Pixel-Maße des Malers, 05.10.)
         BIRKEN_RINDE: BIRKEN_RINDE, // die papierene Rinde: Lentizellen-Zeilen, Fuß-Borke, Zweig-Rinde (05.10.)
         RINDEN_GITTER: RINDEN_GITTER, // das Gitter-Gesetz der Rinde: Plattenrisse nur, was die Ringe tragen (05.10.)
         superR: superR,

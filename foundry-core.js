@@ -301,8 +301,12 @@ const PORTAL_RENDER_CONFIG = {
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
+            // Der Strauch (05.10.): seine L1 traegt Karten aus dem EINEN Atlas (blattKarte = Kante in Blatt-Groessen, an der
+            // Bild-Deckung der Klingen von gestern geeicht: kronen-linse 0,95–0,98 ueber die Samen 1/7/12345) und das Reisig
+            // bis reisig·trunkR (vorher 0,15), unter rute·trunkR als Vierkant auf jedem 3. Ring — die Karten geben die
+            // Dreiecke der Klingen (8 820 → 630) an die Ruten zurueck (Strauch-L1 11 572 → 7 442, Samen 7).
             shrub: {
-                1: { tris: 12000, draws: 2, schatten: 1 },
+                1: { tris: 12000, draws: 2, schatten: 1, blattKarte: 2.1, reisig: 0.05, rute: 0.15 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
@@ -1296,11 +1300,23 @@ function emitTree(P) {
      Index-Stride ausgeduennt (rng-frei, dieselbe Technik wie das Budget). Stamm, Winkel, Windphasen und Farben
      sind jetzt ueber L0/L1/L2 UND das Billboard dasselbe Individuum. */
     // Der Radius-Schnitt der L1 (H2/H5, nach dem Wuchs): Laub 0,05·trunkR; Konifere und Trauerwuchs 0,08 (ihre
-    // duennen Aeste liegen unter den Nadel-Karten bzw. hinter dem Blatt-Vorhang); der Strauch 0,15 — seine L1
-    // ist die nahe Stufe, geschnitten wird nur das Reisig unter der Blatt-Masse. Die L2 bleibt, wie sie war.
+    // duennen Aeste liegen unter den Nadel-Karten bzw. hinter dem Blatt-Vorhang); der Strauch liest seinen Schnitt aus
+    // dem Budget (shrub[1].reisig, 05.10.: das Reisig unter der Blatt-Masse IST sein Nahbild — die Karten-Krone gibt
+    // die Dreiecke der Klingen an die Ruten zurück). Die L2 bleibt, wie sie war.
+    // Unter shrub[1].rute·trunkR ist der Strang Reisig: Vierkant-Roehre (die Radial-Teilung der L2) auf jedem 3. Ring.
+    const _bS1 = PORTAL_RENDER_CONFIG.lod.budget.shrub[1];
+    const _strauchRute = P.kind === "shrub" && __lod === 1;
+    if (_strauchRute && !(_bS1 && _bS1.reisig > 0 && _bS1.rute > _bS1.reisig && _bS1.blattKarte > 0))
+        throw new Error("[phyto] lod.budget.shrub[1].reisig/rute/blattKarte fehlt (rute > reisig > 0)");
     if (__lod > 0 && !(P.kind === "shrub" && __lod === 2)) {
         const kCut =
-            __lod === 2 ? 0.13 : P.kind === "shrub" ? 0.15 : P.conifer || (P.trop || 0) >= 0.55 ? 0.08 : 0.05;
+            __lod === 2
+                ? 0.13
+                : P.kind === "shrub"
+                  ? _bS1.reisig
+                  : P.conifer || (P.trop || 0) >= 0.55
+                    ? 0.08
+                    : 0.05;
         const rCut = (P._trunkR || 0.1) * kCut;
         nodes.segs = nodes.segs.filter((s) => Math.max(s.r0, s.r1) >= rCut);
     }
@@ -1431,7 +1447,12 @@ function emitTree(P) {
         // L1 traegt jeden ZWEITEN Ring (H1, nach dem Wuchs — das Skelett und der rnd()-Strom bleiben die von L0,
         // FIX v35): Erst- und Letzt-Ring bleiben, der Stammfuss wird danach vorangestellt und bleibt ganz.
         // Die L0 duennt nur die Aeste (tree[0].rinde): unter `reisig`·trunkR jeden 3. Ring, unter `ast`·trunkR jeden 2.
-        if (_L0 && rings[0].r < nodes.trunkR * _rz.reisig && rings.length > 2)
+        // Das Strauch-Reisig (L1 unter shrub[1].rute·trunkR) duennt wie das Reisig der Baum-L0: jeder 3. Ring.
+        if (
+            ((_L0 && rings[0].r < nodes.trunkR * _rz.reisig) ||
+                (_strauchRute && rings[0].r < nodes.trunkR * _bS1.rute)) &&
+            rings.length > 2
+        )
             rings = rings.filter((_, i) => i % 3 === 0 || i === rings.length - 1);
         else if ((__lod === 1 || (_L0 && rings[0].r < nodes.trunkR * _rz.ast)) && rings.length > 3)
             rings = rings.filter((_, i) => i % 2 === 0 || i === rings.length - 1);
@@ -1444,7 +1465,12 @@ function emitTree(P) {
         if (_L0 && runs.get(rid)[0].r0 < nodes.trunkR * _rz.ast && !_traeger.has(rid)) continue;
         let rings = strandRings(rid);
         const baseRing = rings[0];
-        const _roehre = _L0 && baseRing.r < nodes.trunkR * _rz.ast ? 1 : undefined;
+        const _roehre =
+            _L0 && baseRing.r < nodes.trunkR * _rz.ast
+                ? 1
+                : _strauchRute && baseRing.r < nodes.trunkR * _bS1.rute
+                  ? 2
+                  : undefined;
         if (rings.length > 1 && baseRing.c[1] < nodes.height * 0.04 && baseRing.r > nodes.trunkR * 0.6) {
             // Stammfuss: Buttress in den Boden fuehren (absenken, verjuengen, schliessen) — die Ringe tragen `fuss`, das Rinden-Gesetz liest den Strang-Radius darueber
             const R0 = baseRing.r,
@@ -1514,10 +1540,13 @@ function emitTree(P) {
         lc2 = vegFarbe(seasonAccent);
     // DIE L1-KRONE (FIX v31/v32, H5 04.10.): Laub UND Nadel tragen L1 als KARTEN aus dem EINEN Atlas (Laub →
     // Breitblatt-Zellen, Nadel → die Nadel-Zelle); der Trauerwuchs (Weide, trop ≥ 0,55) bleibt Klinge — die
-    // haengenden Straehnen SIND ihr Look —, aber eine schlanke (budget.tree[1].klinge Segmente statt 14); der
-    // Strauch ist die nahe Stufe (L0 wird auf L1 geklemmt) und bleibt Klinge.
+    // haengenden Straehnen SIND ihr Look —, aber eine schlanke (budget.tree[1].klinge Segmente statt 14). Der
+    // Strauch (05.10.): seine L1 ist die nahe Stufe (L0 wird auf L1 geklemmt) — sie trug Klingen, die L1-Aggregation
+    // (Blatt ×2,05, 21 % der Stellen) machte daraus breite Papier-Streifen (Blick-Tour 01). Jetzt traegt er Karten aus
+    // dem EINEN Atlas wie jede Laub-Krone, Kante shrub[1].blattKarte (gemessen an der Bild-Deckung der Klingen).
     const _b1 = PORTAL_RENDER_CONFIG.lod.budget.tree[1];
-    const useTexL = (__lod === 1 || _L0) && P.kind === "tree" && !_trauer;
+    const _strauchKarte = __lod === 1 && P.kind === "shrub";
+    const useTexL = ((__lod === 1 || _L0) && P.kind === "tree" && !_trauer) || _strauchKarte;
     // Die Karten-GEOMETRIE liest nur den Steckbrief des Kerns (Zellen, Kern), nie das Atlas-BILD: sie wird immer gebaut.
     // Das Bild braucht nur, wer zeichnet — das Labor (Haupt-Thread) hier, der Foundry-Worker erst, wenn er eine Karte
     // baeckt (__replyBakeImpostor). Fehlt der Maler, wirft bakeLeafAtlas laut (kein Rueckfall auf Klingen: die L0 hatte
@@ -1543,8 +1572,8 @@ function emitTree(P) {
     const _atl = self.__phytoCore;
     // Die L0 liest ihre Zeile (tree[0]) wie die L1 die ihre: Kante der Laub-Karte in Blatt-Groessen, der Nadel-Karte
     // in Nadel-Laengen, Segmente der Trauer-Klinge. Deckung ~ dichte · Kante² (Wahrnehmung ~ n·s², FIX v29).
-    const _bz = _L0 ? _b0 : _b1,
-        _zn = _L0 ? "tree[0]" : "tree[1]";
+    const _bz = _strauchKarte ? _bS1 : _L0 ? _b0 : _b1,
+        _zn = _strauchKarte ? "shrub[1]" : _L0 ? "tree[0]" : "tree[1]";
     const _blattKarte = useTexL && !P.conifer ? _bz.blattKarte : 0;
     const _nadelKarte = useTexL && P.conifer ? _bz.nadelKarte : 0;
     if (useTexL && !(P.conifer ? _nadelKarte > 0 : _blattKarte > 0))

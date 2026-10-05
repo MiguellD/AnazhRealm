@@ -4,7 +4,7 @@
   "files": {
     "recipes.json": "f14d472ecfc10c0e81dba83c9e491371cffe45a0eca04d4edb1f4e83cc06ecd3",
     "world-params.json": "a2fa75ab8ce5f2c6496b9b108b4bc4f2df7cf7560870c9f9972d3ce944193969",
-    "render-config.json": "0b6760f6469f576f245bd3da93d4a677de02813852cf5b93664974a81ccfa6f3",
+    "render-config.json": "7773a35f6f9758622e6c6043a27c26da2bdac43dabbea737bc189236303c0439",
     "eiche-s7-L0-summer.json": "47fcc2e256b513361d7d540cf1d94a82078be34905fa9bce21ec370e07e20e37",
     "eiche-s7-L1-summer.json": "1e53b0e11ad7e4024515313f1f9219bd374ceac83433a5a69ca705fd53161ee8",
     "eiche-s7-L2-summer.json": "a77960bac1b7c4bff2a3dda36f52ec6fdd532db673f37b6f4c2f6883ff104f65",
@@ -117,7 +117,7 @@
     "kristalle-s7-L0-summer.json": "11692c2f84a0fad5380e540905c648e929039d173b393525a07986a258f00d22",
     "blume-s7-L0-summer.json": "94365825d1a94e54d84e98b4b7894d4408ba32175e280a9f98d67ae77baef3f5",
     "strauch-s7-L0-summer.json": "03cc3f9cbc7473881215b55430b3f069b4e79f029fb9f5f76b975438da8e4bb4",
-    "strauch-s7-L1-summer.json": "84b5a29200dab5aeafaff318814eba1b003b919d2330af2265b865ad2892ccdf",
+    "strauch-s7-L1-summer.json": "892a479e778170cb438395cdfedef3609a45dc183fb3f93659407c115fdec5b6",
     "farn-s7-L0-summer.json": "6dd1e743ad69458187b746b15094e548944af7f8b5fb7907b4bac3bfd84fda8a",
     "farn-s7-L1-summer.json": "573c8463bcfd6d75db65f757351f6e5d8ed21f0576b5e7861ca21a1a2ba8134a",
     "schilf-s7-L0-summer.json": "68f984e323a16e81ed0a201314264e38fa8bd8d6adf24e3aece480bb92e0a08a",
