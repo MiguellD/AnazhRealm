@@ -84,6 +84,13 @@ jobs:
               # Stufen gegen das Kreatur-Budget. --selftest zuerst: gestreckter Rumpf, einfarbiges Fell, Maßstab 1 → rot.
               run: npm run gate:tier-anatomie
 
+            - name: Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)
+              # GPU-frei, reines Node (three r128 im vm): das Gesetz bauMensch + morphAuf mit den Start-Dials, die Arme
+              # gerade, normiert auf die Körperhöhe — Hand-Länge/-Breite, Handgelenk, Unterarm/Oberarm, Kopf-Höhe/-Breite,
+              # Pupillen-Abstand, Augapfel, Iris, Mund, Fuß gegen koerper-core MENSCH_SOLL. --selftest zuerst: 1,5-fache
+              # Hand, doppelte Augäpfel, doppelter Pupillen-Abstand → rot.
+              run: npm run gate:mensch-anatomie
+
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
               # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry

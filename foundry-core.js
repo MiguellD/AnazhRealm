@@ -5501,7 +5501,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                         if (n2.isMesh && n2.geometry && !n2.userData.__skinned) punkteVon(n2, pts, zen, animAhnH(n2));
                     });
             }
-            backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, 0.12);
+            backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
         }
         // ZURÜCK IN DIE DEFAULT-POSE: Gelenke restaurieren, je Gelenk das
         // Delta default×inv(spreiz) (Charakter-lokal), jeden Hüllen-Vertex

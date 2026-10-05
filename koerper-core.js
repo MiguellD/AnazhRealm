@@ -169,7 +169,9 @@
                 "ribcage", "chest", "waist", "upperBack",
                 "pec1", "pec-1", "abs", "oblique1", "oblique-1",
                 "lat1", "lat-1", "trap1", "trap-1", "breast1", "breast-1",
-                "neckBase", "neckMain", "scm1", "scm-1",
+                // Welle 5: der Hals (neckMain, scm) gehört der Haut — die Welt-Hülle kann keinen Ausschnitt schneiden
+                // und zog den Stoff bis unters Kinn (Rollkragen); der Kragen sitzt an der Hals-Wurzel.
+                "neckBase",
                 "pelvis", "glute1", "glute-1",
             ];
             // Ärmel = die GANZE Oberarm-Muskelgruppe (deltoid+bicep+tricep+uarm
@@ -187,6 +189,7 @@
                 teile: topTeile,
                 hex: farbe(d.topColor, "navy"),
                 inflate: 1.07,
+                abstand: 0.12, // der Hüllen-Abstand aus der Haut (Körper-Einheiten, ~3,5 cm — der Bäcker liest ihn je Zone)
                 rough: top === "pullover" ? 0.92 : top === "tank" ? 0.82 : top === "poncho" ? 0.88 : 0.85,
                 webe: top === "pullover" ? "knit" : top === "poncho" ? "wool" : "cotton",
             });
@@ -204,6 +207,7 @@
                 teile: botTeile,
                 hex: farbe(d.bottomColor, "charcoal"),
                 inflate: 1.06,
+                abstand: 0.12,
                 rough: bottom === "pants" ? 0.82 : 0.85,
                 webe: bottom === "pants" ? "denim" : "cotton",
             });
@@ -218,6 +222,9 @@
                 teile: ["ankle1", "ankle-1"],
                 hex: farbe(d.shoeColor, "white"),
                 inflate: 1.12,
+                // Welle 5: der Hüllen-Abstand des Schuhs (Körper-Einheiten, ~1,5 cm) — mit dem Stoff-Abstand 0,12 (3,5 cm
+                // rundum) stand der Turnschuh als weißer Ballon am Fuß.
+                abstand: 0.05,
                 rough: shoes === "boot" ? 0.45 : 0.55,
                 webe: shoes === "boot" ? "leather" : "rubber",
             });
@@ -610,7 +617,7 @@
     // Augenhöhle · Furche · Gelenk · Schatten) nur in die Haut, die Hose nur in Stoff.
     var MATERIAL_KLASSEN = Object.freeze({
         lips: Object.freeze({ c: 0xaa5544, r: 0.4, seh: "haut" }),
-        eye: Object.freeze({ c: 0xf5f5f0, r: 0.08, seh: "auge" }),
+        eye: Object.freeze({ c: 0xdcd5ca, r: 0.08, seh: "auge" }), // Welle 5: die Sklera (vorher 0xf5f5f0, linear 0,91 — Papier)
         iris: Object.freeze({ c: 0x2a4a6a, r: 0.15, seh: "auge" }),
         pupil: Object.freeze({ c: 0x000000, r: 0.2, seh: "auge" }),
         socket: Object.freeze({ c: 0x5a3320, r: 0.6, seh: "haut" }),
@@ -656,6 +663,50 @@
         specAmt: 0.3,
         specFarbe: Object.freeze([0.3, 0.15, 0.04]),
         wurzelAnker: 0.12,
+    });
+
+    // ════════════════════════════════════════════════════════════════════
+    // DIE GESTALT DES MENSCHEN NAH (Welle 5, „der Mensch nah: Hände, Gesicht, Augen"): die Maße, mit denen bauMensch
+    // Hand, Arm, Kopf, Gesicht und Hals-Rahmen baut — als DATEN (MESHFREI §8), gemessen an der Anthropometrie
+    // (erwachsener Mann 1,80 m). labProportionen,
+    // labMorph und labLandmarks bleiben eingefroren (gate:koerper-kern); die Faktoren wirken im Bau.
+    //   hand: mass skaliert jede Länge der Hand, breite zusätzlich Mittelhand, Finger-Abstand und -Dicke (vorher 1,45×
+    //     zu lang und 1,8× zu breit — die Rechen-Hand der Tour) · unterarm: Querschnitt der Unterarm-Ellipse und die
+    //     Lage ihres Bauchs (vorher 1,44× breiter als der Oberarm — die Popeye-Arme) · handgelenk: Querschnitt · fuss:
+    //     Längen-Faktor (die Ferse-bis-Zeh-Kette war 0,167 Hk statt ~0,15).
+    //   kopf: mass = die Kopf-Skala (vorher 0,92: ein Sechs-Kopf-Comic-Mensch, kopfH 0,16 Hk statt 0,13), breite = die
+    //     Quer-Skala (der Schädel war 1,5× zu breit) · auge: mass = Augapfel-Skala in der Kopf-Gruppe (vorher 2,3× der
+    //     natürliche — die Kulleraugen), abstand = Faktor auf eyeDist = headSeg/1,618 (vorher 1,8× der Pupillen-Abstand),
+    //     pupille = Pupillen-Radius-Faktor (die Pupille war 0,7 der Iris statt ~0,35), hoehle = Augenhöhle über dem Ball.
+    //   gesicht: lippe = Fülle der Lippen (vorher zwei Würste), lippeZurueck = Lippen, Philtrum, Mundwinkel hinter ihrer
+    //     alten Lage (sie lagen fast in der Ebene der Nasenspitze), oberkiefer = Vorstand unter der Nase, wange = die
+    //     Wangen-Polster, naseTiefer/brauHoch = die Gesichts-Drittel (die Nasen-Basis lag 0,18 headSeg zu hoch, die
+    //     Braue zu tief), kiefer/kieferBreite/kieferTiefe = der Kiefer-Körper (er hing als Doppelkinn unter dem Kinn),
+    //     kinnZurueck = das Kinn hinter die Unterlippe.
+    //   rumpf: brustkorb/nacken = Höhen-Faktoren der Brustkorb-Ellipse und des oberen Rückens (beide reichten bis ans
+    //     Kinn — jede Hülle über ihnen verschluckte den Hals).
+    // prettier-ignore
+    var MENSCH_GESTALT = Object.freeze({
+        hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
+        unterarm: Object.freeze({ breite: 0.66, tiefe: 0.8, bauch: 0.42 }),
+        handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
+        fuss: Object.freeze({ laenge: 0.9 }),
+        kopf: Object.freeze({ mass: 0.72, breite: 0.86 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.7, pupille: 0.55, hoehle: 1.15 }),
+        gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
+            brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04 }),
+        rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
+    });
+    // DAS SOLL in Zahlen (gate:mensch-anatomie, normiert auf die Körperhöhe Hk; Bänder um den erwachsenen Mann):
+    // handL = Hand-Länge (Handgelenk bis Fingerspitze, 0,108 Hk) · handB = Mittelhand-Breite ohne Daumen (0,047) ·
+    // handgelenk = Breite am Handgelenk (0,033) · unterarm = Unterarm-Breite / Oberarm-Breite (0,8–1,0) · kopfH = Kinn bis
+    // Scheitel (0,13) · kopfB = Kopf-Breite ohne Ohren (0,086) · augenAbstand = Pupillen-Abstand (0,035) · augapfel
+    // (0,0135) · iris (0,0066) · mund = Mund-Breite (0,028) · fuss = Fuß, Ferse bis Zeh (0,15).
+    // prettier-ignore
+    var MENSCH_SOLL = Object.freeze({
+        handL: [0.1, 0.116], handB: [0.042, 0.053], handgelenk: [0.028, 0.04], unterarm: [0.78, 1.0],
+        kopfH: [0.12, 0.138], kopfB: [0.078, 0.096], augenAbstand: [0.031, 0.039], augapfel: [0.012, 0.016],
+        iris: [0.0058, 0.0076], mund: [0.025, 0.033], fuss: [0.135, 0.165],
     });
 
     // Dial→Genom-Achsen des Menschen (die Lab-Slider-Semantik als DATEN —
@@ -965,11 +1016,11 @@
         const torsoG=F.gruppe();torsoG.position.set(0,trochanterY,0);character.add(torsoG);reg('torso',torsoG);
         const pelvis=reg('pelvis',s(0.7,matSkin,[1.15,1.0,0.7]));pelvis.position.set(0,trochanterY,0);character.add(pelvis);
         [-1,1].forEach(sd=>{const g=reg('glute'+(sd===1?'1':'-1'),s(0.40,matSkin,[0.82,0.8,0.82]));g.position.set(sd*0.26,trochanterY-0.1,-0.12);character.add(g);});
-        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*0.8,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);const qR=0.32;const quad=reg('quad'+(sd===1?'1':'-1'),s(qR,matSkin,[0.9,thighLen/(qR*2),0.9]));quad.position.set(0,-thighLen/2,0.1);hipG.add(quad);const vL=reg('vlat'+(sd===1?'1':'-1'),s(0.16,matSkin,[0.85,thighLen/0.41,0.9]));vL.position.set(sd*0.17,-thighLen/2,0.06);hipG.add(vL);const ad2=reg('adduct'+(sd===1?'1':'-1'),s(0.17,matSkin,[0.9,thighLen/0.6,0.85]));ad2.position.set(sd*-0.2,-thighLen/2,-0.02);hipG.add(ad2);const ham=reg('hamstring'+(sd===1?'1':'-1'),s(0.20,matSkin,[1,thighLen/0.40,0.9]));ham.position.set(0,-thighLen/2,-0.2);hipG.add(ham);const knee=reg('kneecap'+(sd===1?'1':'-1'),s(0.24,matJoint,[1.05,0.75,1.05]));knee.position.set(0,-thighLen,0.05);hipG.add(knee);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);const cR=0.27;const calf=reg('calf'+(sd===1?'1':'-1'),s(cR,matSkin,[1,calfLen/(cR*2),0.8]));calf.position.set(0,-calfLen/2,-0.12);kneeG.add(calf);const shin=reg('shin'+(sd===1?'1':'-1'),s(0.16,matSkin,[1,calfLen/0.36,1]));shin.position.set(0,-calfLen/2,0.1);kneeG.add(shin);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
-        const ribcage=reg('ribcage',s(1.0,matSkin,[shoulderHW,1.2,0.6]));ribcage.position.set(0,nippleY-trochanterY,0);torsoG.add(ribcage);
+        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*0.8,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);const qR=0.32;const quad=reg('quad'+(sd===1?'1':'-1'),s(qR,matSkin,[0.9,thighLen/(qR*2),0.9]));quad.position.set(0,-thighLen/2,0.1);hipG.add(quad);const vL=reg('vlat'+(sd===1?'1':'-1'),s(0.16,matSkin,[0.85,thighLen/0.41,0.9]));vL.position.set(sd*0.17,-thighLen/2,0.06);hipG.add(vL);const ad2=reg('adduct'+(sd===1?'1':'-1'),s(0.17,matSkin,[0.9,thighLen/0.6,0.85]));ad2.position.set(sd*-0.2,-thighLen/2,-0.02);hipG.add(ad2);const ham=reg('hamstring'+(sd===1?'1':'-1'),s(0.20,matSkin,[1,thighLen/0.40,0.9]));ham.position.set(0,-thighLen/2,-0.2);hipG.add(ham);const knee=reg('kneecap'+(sd===1?'1':'-1'),s(0.24,matJoint,[1.05,0.75,1.05]));knee.position.set(0,-thighLen,0.05);hipG.add(knee);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);const cR=0.27;const calf=reg('calf'+(sd===1?'1':'-1'),s(cR,matSkin,[1,calfLen/(cR*2),0.8]));calf.position.set(0,-calfLen/2,-0.12);kneeG.add(calf);const shin=reg('shin'+(sd===1?'1':'-1'),s(0.16,matSkin,[1,calfLen/0.36,1]));shin.position.set(0,-calfLen/2,0.1);kneeG.add(shin);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);foot.scale.z=MENSCH_GESTALT.fuss.laenge;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
+        const ribcage=reg('ribcage',s(1.0,matSkin,[shoulderHW,1.2*MENSCH_GESTALT.rumpf.brustkorb,0.6]));ribcage.position.set(0,nippleY-trochanterY,0);torsoG.add(ribcage);
         const waist=reg('waist',s(0.5,matSkin,[1.14,1.0,0.5]));waist.position.set(0,(nippleY+trochanterY)/2-trochanterY,0);torsoG.add(waist);
         [-1,1].forEach(sd=>{const g=F.gruppe();const t1=s(0.5,matSkin,[0.8,0.6,0.3]);t1.position.set(sd*0.7,acromionY-0.5-trochanterY,-0.1);g.add(t1);const t2=s(0.4,matSkin,[0.6,0.6,0.3]);t2.position.set(sd*0.4,acromionY-1.0-trochanterY,-0.1);g.add(t2);const t3=s(0.3,matSkin,[0.4,0.6,0.3]);t3.position.set(sd*0.1,0.5,-0.1);g.add(t3);reg('lat'+(sd===1?'1':'-1'),g);torsoG.add(g);});
-        const upperBack=reg('upperBack',s(0.8,matSkin,[1.15,0.8,0.5]));upperBack.position.set(0,acromionY-0.2-trochanterY,-0.2);torsoG.add(upperBack);
+        const upperBack=reg('upperBack',s(0.8,matSkin,[1.15,0.8*MENSCH_GESTALT.rumpf.nacken,0.5]));upperBack.position.set(0,acromionY-0.2-trochanterY,-0.2);torsoG.add(upperBack);
         [-1,1].forEach(sd=>{const o=reg('oblique'+(sd===1?'1':'-1'),s(0.24,matSkin,[0.48,1.4,0.4]));o.position.set(sd*0.46,(nippleY+trochanterY)/2-trochanterY,0.08);torsoG.add(o);});
         const chestCore=reg('chest',s(0.5,matSkin,[1.8,1.0,0.8]));chestCore.position.set(0,nippleY+0.2-trochanterY,0.3);torsoG.add(chestCore);
         [-1,1].forEach(sd=>{const g=F.gruppe();const l=s(0.4,matSkin,[1.4,0.6,0.8]);l.position.set(sd*0.22,nippleY+0.2-trochanterY,0.35);l.rotation.z=sd*-0.2;g.add(l);const u=s(0.3,matSkin,[1.2,0.4,0.6]);u.position.set(sd*0.55,nippleY+0.6-trochanterY,0.32);u.rotation.set(0,sd*0.2,sd*0.4);g.add(u);reg('pec'+(sd===1?'1':'-1'),g);torsoG.add(g);});
@@ -984,41 +1035,41 @@
         const nf1=reg('napeFill1',s(0.10,matSkin,[0.9,1.3,1.0]));nf1.position.set(0,5.10-trochanterY,-0.14);torsoG.add(nf1);   // HINTERHAUPT-NACKEN-FUELLER: harness-befund -- schaedelbasis hing 0.39-0.43 HINTER dem hals,
         const nf2=reg('napeFill2',s(0.08,matSkin,[0.85,1.1,0.95]));nf2.position.set(0,5.24-trochanterY,-0.15);torsoG.add(nf2);   // man sah von hinten unter den offenen schaedel ins leere. koerperfeld waechst jetzt hoch dagegen.
         [-1,1].forEach(sd=>{const cl=c(0.07,0.05,0.55,matSkin);cl.position.set(sd*0.38,acromionY+0.08-trochanterY,0.08);cl.rotation.set(0,sd*0.2,sd*-0.5);torsoG.add(cl);});
-        [-1,1].forEach(sd=>{const armG=F.gruppe();armG.position.set(sd*baseArmX,acromionY-trochanterY,0);reg('arm'+(sd===1?'1':'-1'),armG);const delt=reg('deltoid'+(sd===1?'1':'-1'),s(0.30,matSkin,[1,1.1,1]));armG.add(delt);const bic=reg('bicep'+(sd===1?'1':'-1'),s(0.26,matSkin,[0.9,upperArmLen/0.52,1]));bic.position.set(0,-upperArmLen/2,0.1);armG.add(bic);const tri=reg('tricep'+(sd===1?'1':'-1'),s(0.27,matSkin,[0.9,upperArmLen/0.54,0.9]));tri.position.set(0,-upperArmLen/2,-0.15);armG.add(tri);const uarm=reg('uarm'+(sd===1?'1':'-1'),s(0.23,matSkin,[1.0,upperArmLen/0.46,0.96]));uarm.position.set(0,-upperArmLen/2,-0.02);armG.add(uarm);const el=s(0.165,matJoint,[1,0.75,1]);el.position.set(0,-upperArmLen,0);armG.add(el);const elbowG=F.gruppe();elbowG.position.set(0,-upperArmLen,0);armG.add(elbowG);reg('elbow'+(sd===1?'1':'-1'),elbowG);const fa=reg('forearm'+(sd===1?'1':'-1'),s(0.24,matSkin,[1.2,forearmLen/0.48,1]));fa.position.set(sd*0.05,-forearmLen/2,0);elbowG.add(fa);const wY=-forearmLen;const wr=s(0.14,matSkin,[1,0.5,0.9]);wr.position.set(sd*0.05,wY,0);elbowG.add(wr);
-        const hand=F.gruppe();hand.userData.sd=sd;hand.userData.fingers=[];hand.userData.thumbs=[];
+        [-1,1].forEach(sd=>{const armG=F.gruppe();armG.position.set(sd*baseArmX,acromionY-trochanterY,0);reg('arm'+(sd===1?'1':'-1'),armG);const delt=reg('deltoid'+(sd===1?'1':'-1'),s(0.30,matSkin,[1,1.1,1]));armG.add(delt);const bic=reg('bicep'+(sd===1?'1':'-1'),s(0.26,matSkin,[0.9,upperArmLen/0.52,1]));bic.position.set(0,-upperArmLen/2,0.1);armG.add(bic);const tri=reg('tricep'+(sd===1?'1':'-1'),s(0.27,matSkin,[0.9,upperArmLen/0.54,0.9]));tri.position.set(0,-upperArmLen/2,-0.15);armG.add(tri);const uarm=reg('uarm'+(sd===1?'1':'-1'),s(0.23,matSkin,[1.0,upperArmLen/0.46,0.96]));uarm.position.set(0,-upperArmLen/2,-0.02);armG.add(uarm);const el=s(0.165,matJoint,[1,0.75,1]);el.position.set(0,-upperArmLen,0);armG.add(el);const elbowG=F.gruppe();elbowG.position.set(0,-upperArmLen,0);armG.add(elbowG);reg('elbow'+(sd===1?'1':'-1'),elbowG);const UA=MENSCH_GESTALT.unterarm,HG=MENSCH_GESTALT.handgelenk;const fa=reg('forearm'+(sd===1?'1':'-1'),s(0.24,matSkin,[1.2*UA.breite,forearmLen/0.48,UA.tiefe]));fa.position.set(sd*0.05,-forearmLen*UA.bauch,0);elbowG.add(fa);const wY=-forearmLen;const wr=s(0.14,matSkin,[HG.breite,0.5,HG.tiefe]);wr.position.set(sd*0.05,wY,0);elbowG.add(wr);
+        const hk=MENSCH_GESTALT.hand.mass,hb=MENSCH_GESTALT.hand.breite;const hand=F.gruppe();hand.userData.sd=sd;hand.userData.fingers=[];hand.userData.thumbs=[];
         const palmG=F.gruppe();hand.add(palmG);hand.userData.palmG=palmG;reg('palm'+(sd===1?'1':'-1'),palmG);
-        const palm=s(0.25,matSkin,[1,1.2,0.5]);palmG.add(palm);
-        for(let i=0;i<4;i++){const fX=(i-1.5)*0.12,fZ=0.1-Math.abs(i-1.5)*0.05;const fG=F.gruppe();fG.position.set(fX,-0.28,fZ);fG.rotation.z=(i-1.5)*0.13;reg('fA'+i+'_'+(sd===1?'1':'-1'),fG);fG.add(s(0.08,matSkin,[0.9,0.8,0.9]));const f1=c(0.06,0.05,0.18,matSkin);f1.position.y=-0.09;fG.add(f1);const jG1=F.gruppe();jG1.position.set(0,-0.18,0);reg('fB'+i+'_'+(sd===1?'1':'-1'),jG1);jG1.add(s(0.05,matSkin,[1.0,0.8,1.0]));const f2=c(0.05,0.04,0.14,matSkin);f2.position.set(0,-0.07,-0.01);jG1.add(f2);const jG2=F.gruppe();jG2.position.set(0,-0.14,-0.02);reg('fC'+i+'_'+(sd===1?'1':'-1'),jG2);jG2.add(s(0.04,matSkin,[1.0,0.8,1.0]));const f3=c(0.04,0.03,0.1,matSkin);f3.position.set(0,-0.05,-0.04);jG2.add(f3);jG1.add(jG2);fG.add(jG1);palmG.add(fG);hand.userData.fingers.push({mcp:fG,pip:jG1,dip:jG2});}
-        const thumbG=F.gruppe();thumbG.position.set(-sd*0.3,-0.15,0.1);thumbG.rotation.set(0,sd*0.5,sd*-1.2);reg('tA_'+(sd===1?'1':'-1'),thumbG);thumbG.add(s(0.1,matSkin,[0.8,1.5,0.8]));const thumbF1=c(0.06,0.05,0.12,matSkin);thumbF1.position.y=-0.06;thumbG.add(thumbF1);const thumbJG=F.gruppe();thumbJG.position.set(0,-0.12,0);reg('tB_'+(sd===1?'1':'-1'),thumbJG);thumbJG.add(s(0.06,matSkin,[0.8,0.8,0.8]));const thumbTip=c(0.05,0.04,0.08,matSkin);thumbTip.position.y=-0.04;thumbJG.add(thumbTip);thumbG.add(thumbJG);palmG.add(thumbG);hand.userData.thumbs.push({mcp:thumbG,ip:thumbJG});
-        hand.position.set(sd*0.05,wY-0.3,0);elbowG.add(hand);reg('hand'+(sd===1?'1':'-1'),hand);
+        const palm=s(0.25*hk,matSkin,[hb,1.2,0.5]);palmG.add(palm);
+        for(let i=0;i<4;i++){const fX=(i-1.5)*0.12*hk*hb,fZ=(0.1-Math.abs(i-1.5)*0.05)*hk;const fG=F.gruppe();fG.position.set(fX,-0.28*hk,fZ);fG.rotation.z=(i-1.5)*0.13;reg('fA'+i+'_'+(sd===1?'1':'-1'),fG);fG.add(s(0.08*hk,matSkin,[0.9*hb,0.8,0.9]));const f1=c(0.06*hk*hb,0.05*hk*hb,0.18*hk,matSkin);f1.position.y=-0.09*hk;fG.add(f1);const jG1=F.gruppe();jG1.position.set(0,-0.18*hk,0);reg('fB'+i+'_'+(sd===1?'1':'-1'),jG1);jG1.add(s(0.05*hk*hb,matSkin,[1.0,0.8,1.0]));const f2=c(0.05*hk*hb,0.04*hk*hb,0.14*hk,matSkin);f2.position.set(0,-0.07*hk,-0.01*hk);jG1.add(f2);const jG2=F.gruppe();jG2.position.set(0,-0.14*hk,-0.02*hk);reg('fC'+i+'_'+(sd===1?'1':'-1'),jG2);jG2.add(s(0.04*hk*hb,matSkin,[1.0,0.8,1.0]));const f3=c(0.04*hk*hb,0.03*hk*hb,0.1*hk,matSkin);f3.position.set(0,-0.05*hk,-0.04*hk);jG2.add(f3);jG1.add(jG2);fG.add(jG1);palmG.add(fG);hand.userData.fingers.push({mcp:fG,pip:jG1,dip:jG2});}
+        const thumbG=F.gruppe();thumbG.position.set(-sd*0.3*hk*hb,-0.15*hk,0.1*hk);thumbG.rotation.set(0,sd*0.5,sd*-1.2);reg('tA_'+(sd===1?'1':'-1'),thumbG);thumbG.add(s(0.1*hk,matSkin,[0.8,1.5,0.8]));const thumbF1=c(0.06*hk,0.05*hk,0.12*hk,matSkin);thumbF1.position.y=-0.06*hk;thumbG.add(thumbF1);const thumbJG=F.gruppe();thumbJG.position.set(0,-0.12*hk,0);reg('tB_'+(sd===1?'1':'-1'),thumbJG);thumbJG.add(s(0.06*hk,matSkin,[0.8,0.8,0.8]));const thumbTip=c(0.05*hk,0.04*hk,0.08*hk,matSkin);thumbTip.position.y=-0.04*hk;thumbJG.add(thumbTip);thumbG.add(thumbJG);palmG.add(thumbG);hand.userData.thumbs.push({mcp:thumbG,ip:thumbJG});
+        hand.position.set(sd*0.05,wY-0.3*hk,0);elbowG.add(hand);reg('hand'+(sd===1?'1':'-1'),hand);
         armG.rotation.z=sd*0.2;armG.rotation.x=0.05;armG.userData.baseRotZ=sd*0.2;armG.userData.baseRotX=0.05;torsoG.add(armG);});
-        const headGroup=F.gruppe();headGroup.position.y=H-headSeg/2-trochanterY;reg('head',headGroup);var HEAD_S=0.92;headGroup.scale.setScalar(HEAD_S);base.headPosY=H-headSeg/2-headSeg*0.20*(1-HEAD_S);   // loomis-pass: 5.7->6.6 koepfe; pivot-korrektur haelt das KINN auf hoehe (halsroehre!)
+        const headGroup=F.gruppe();headGroup.position.y=H-headSeg/2-trochanterY;reg('head',headGroup);var HEAD_S=MENSCH_GESTALT.kopf.mass,HEAD_B=MENSCH_GESTALT.kopf.breite;headGroup.scale.set(HEAD_S*HEAD_B,HEAD_S,HEAD_S);base.headPosY=H-headSeg/2-headSeg*0.20*(1-HEAD_S);const nY=noseY-MENSCH_GESTALT.gesicht.naseTiefer,bY=browY+MENSCH_GESTALT.gesicht.brauHoch;   // loomis-pass: 5.7->6.6 koepfe; pivot-korrektur haelt das KINN auf hoehe (halsroehre!)
         const skull=s(skullBaseR*1.03,matSkin,[1.0,1.12,1.0]);skull.position.y=skullCY;headGroup.add(skull);
         [-1,1].forEach(sd=>{const t=s(0.2,matSkin,[0.62,1.05,0.85]);t.position.set(sd*0.36,headSeg*0.48,0);headGroup.add(t);});
         const forehead=s(0.13,matSkin,[1.35,0.95,0.72]);forehead.position.set(0,(browY+hairlineY)/2,0.26);forehead.rotation.x=0.2;headGroup.add(forehead);
-        const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,browY+0.06,0.38);headGroup.add(glabella);
-        const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,browY,0.36);headGroup.add(browRidge);
-        [-1,1].forEach(sd=>{const sock=s(0.145,matSocket,[1.0,0.88,0.50]);sock.position.set(sd*eyeDist/2,eyeY,0.3);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04,matPupil);pupil.position.z=0.11;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.position.set(sd*eyeDist/2,eyeY,0.32);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
+        const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
+        const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS));headGroup.add(sock);});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=0.14-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
-        [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75,0.65,0.5]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
-        const maxilla=s(0.15,matSkin,[0.75,0.88,0.85]);maxilla.position.set(0,(lipY+noseY)/2,0.325);headGroup.add(maxilla);
-        [-1,1].forEach(sd=>{const nl=c(0.008,0.005,0.12,matShadow);nl.position.set(sd*0.09,(lipY+noseY)/2,0.38);nl.rotation.z=sd*-0.6;headGroup.add(nl);});
-        const jawBody=reg('jaw',s(0.31,matSkin,[0.85,0.7,0.8]));jawBody.position.set(0,jawY,0.15);headGroup.add(jawBody);
+        [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
+        const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
+        [-1,1].forEach(sd=>{const nl=c(0.008,0.005,0.12,matShadow);nl.position.set(sd*0.09,(lipY+nY)/2,0.38);nl.rotation.z=sd*-0.6;headGroup.add(nl);});
+        const jawBody=reg('jaw',s(0.31,matSkin,[0.85*MENSCH_GESTALT.gesicht.kieferBreite,0.7*MENSCH_GESTALT.gesicht.kiefer,0.8*MENSCH_GESTALT.gesicht.kieferTiefe]));jawBody.position.set(0,jawY,0.15);headGroup.add(jawBody);
         [-1,1].forEach(sd=>{const g=reg('gonion'+(sd===1?'1':'-1'),s(0.1,matSkin,[0.7,0.85,0.8]));g.position.set(sd*jawW/2,jawY+0.02,0.03);headGroup.add(g);});
         [-1,1].forEach(sd=>{const r=c(0.05,0.06,0.2,matSkin);r.position.set(sd*jawW/2+0.03,cheekY+0.04,0.0);r.rotation.z=sd*0.08;headGroup.add(r);});
         [-1,1].forEach(sd=>{const m=reg('masseter'+(sd===1?'1':'-1'),s(0.08,matSkin,[0.4,1.1,0.6]));m.position.set(sd*0.2,(cheekY+jawY)/2,0.16);headGroup.add(m);});
-        const chin=reg('chin',s(chinW/2,matSkin,[1.3,0.9,1.1]));chin.position.set(0,chinY,0.35);headGroup.add(chin);
-        const chinLine=s(0.03,matSkin,[0.6,2.0,0.8]);chinLine.position.set(0,chinY+0.04,0.38);headGroup.add(chinLine);
-        const noseBridge=reg('noseBr',c(0.04,0.06,(browY-noseY)*1.1,matSkin));noseBridge.position.set(0,(browY+noseY)/2,0.4);headGroup.add(noseBridge);
-        const noseTip=reg('noseTip',s(0.055,matSkin,[1.2,1,1.2]));noseTip.position.set(0,noseY,0.45);headGroup.add(noseTip);
-        [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035,matSkin,[1,0.5,1]));n2.position.set(sd*0.05,noseY-0.04,0.43);headGroup.add(n2);});
-        const upperLip=s(0.12,matLips,[1.22,0.42,0.62]);upperLip.position.set(0,lipY+0.02,0.415);headGroup.add(upperLip);upperLipRef=upperLip;
-        const lowerLip=s(0.14,matLips,[1.12,0.48,0.64]);lowerLip.position.set(0,lipY-0.052,0.405);headGroup.add(lowerLip);lowerLipRef=lowerLip;
-        const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41);headGroup.add(philtrum);
-        [-1,1].forEach(sd=>{const mc=s(0.025,matSkin,[0.8,0.8,1.0]);mc.position.set(sd*0.095,lipY-0.01,0.39);headGroup.add(mc);});
+        const chin=reg('chin',s(chinW/2,matSkin,[1.3,0.9,1.1]));chin.position.set(0,chinY,0.35-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chin);
+        const chinLine=s(0.03,matSkin,[0.6,2.0,0.8]);chinLine.position.set(0,chinY+0.04,0.38-MENSCH_GESTALT.gesicht.kinnZurueck);headGroup.add(chinLine);
+        const noseBridge=reg('noseBr',c(0.04,0.06,(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.4);headGroup.add(noseBridge);
+        const noseTip=reg('noseTip',s(0.055,matSkin,[1.2,1,1.2]));noseTip.position.set(0,nY,0.45);headGroup.add(noseTip);
+        [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035,matSkin,[1,0.5,1]));n2.position.set(sd*0.05,nY-0.04,0.43);headGroup.add(n2);});
+        const upperLip=s(0.12,matLips,[1.22,0.42*GS.lippe,0.62*GS.lippe]);upperLip.position.set(0,lipY+0.02,0.415-GS.lippeZurueck);headGroup.add(upperLip);upperLipRef=upperLip;
+        const lowerLip=s(0.14,matLips,[1.12,0.48*GS.lippe,0.64*GS.lippe]);lowerLip.position.set(0,lipY-0.052*GS.lippe,0.405-GS.lippeZurueck);headGroup.add(lowerLip);lowerLipRef=lowerLip;
+        const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41-GS.lippeZurueck);headGroup.add(philtrum);
+        [-1,1].forEach(sd=>{const mc=s(0.025,matSkin,[0.8,0.8,1.0]);mc.position.set(sd*0.095,lipY-0.01,0.39-GS.lippeZurueck);headGroup.add(mc);});
         [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04,-0.03);e.rotation.y=sd*-0.45;headGroup.add(e);});
-        [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*eyeDist/2,browY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
+        [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*aD/2,bY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
         torsoG.add(headGroup);
 
         return {
@@ -1088,6 +1139,8 @@
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
         HAUT_LOOK: HAUT_LOOK,
         HAAR_LOOK: HAAR_LOOK,
+        MENSCH_GESTALT: MENSCH_GESTALT,
+        MENSCH_SOLL: MENSCH_SOLL,
         SKIN_TONES: SKIN_TONES,
         CLOTH_COLORS: CLOTH_COLORS,
         // V18.463 — die Hüllen-Maschine (verbatim, THREE-frei):
