@@ -68886,10 +68886,25 @@ class AnazhRealm {
             (kind === "skin" || kind === "haut") && typeof globalThis !== "undefined" && globalThis.__koerperCore
                 ? globalThis.__koerperCore.HAUT_LOOK
                 : null;
+        // DER KLARLACK (W5 Gegenstände): die Haut des Körperstudios (HAUT_LOOK) ODER der Stoff selbst (Fahrzeug-Lack,
+        // Klingen-Stahl — `budgetRegler` cc/ccr aus dem Gesetzbuch); ohne Klarlack der Standard.
+        const ccSoll =
+            _hautL && Number.isFinite(_hautL.clearcoat)
+                ? {
+                      cc: _hautL.clearcoat,
+                      ccr: Number.isFinite(_hautL.clearcoatRoughness) ? _hautL.clearcoatRoughness : 0.5,
+                  }
+                : R.cc > 0
+                  ? { cc: R.cc, ccr: R.ccr }
+                  : null;
+        // Die Physical-Klasse lebt in der Node-Bibliothek des Renderers (r184 — die Bootstrap-Brücke reicht sie nicht als
+        // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
+        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek.
+        const rendM = this.state && this.state.renderer;
         try {
             const MatK =
-                _hautL && Number.isFinite(_hautL.clearcoat) && typeof T.MeshPhysicalNodeMaterial === "function"
-                    ? T.MeshPhysicalNodeMaterial
+                ccSoll && rendM && !rendM._isHeadlessNull
+                    ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
                     : T.MeshStandardNodeMaterial;
             mat = new MatK({
                 roughness: rough,
@@ -68897,9 +68912,17 @@ class AnazhRealm {
                 flatShading: flat,
                 side: sideDouble ? T.DoubleSide : T.FrontSide,
             });
-            if (MatK === T.MeshPhysicalNodeMaterial) {
-                mat.clearcoat = _hautL.clearcoat;
-                mat.clearcoatRoughness = Number.isFinite(_hautL.clearcoatRoughness) ? _hautL.clearcoatRoughness : 0.5;
+            if (MatK !== T.MeshStandardNodeMaterial) {
+                mat.clearcoat = ccSoll.cc;
+                mat.clearcoatRoughness = ccSoll.ccr;
+            }
+            // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
+            // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); den Schatten
+            // wirft er weiter (der Schattenpass liest colorNode.a, nie die Deckkraft).
+            if (R.op < 1) {
+                mat.transparent = true;
+                mat.opacity = R.op;
+                mat.depthWrite = false;
             }
             if (env !== 1) mat.envMapIntensity = env;
             if (emis) {

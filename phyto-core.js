@@ -2953,6 +2953,11 @@
             em: em,
             emI: em && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : em ? 1 : 0,
             look: budgetLook(k),
+            // W5 Gegenstände: der Klarlack (Lack, Klingen-Stahl) und die Durchsicht (Scheibe) eines Zweit-Kern-Stoffs —
+            // 0 bzw. 1, wo das Gesetzbuch sie nicht trägt (jeder Pflanzen-, Fels- und Kreatur-Stoff bleibt byte-alt).
+            cc: mp && typeof mp.clearcoat === "number" && mp.clearcoat > 0 ? mp.clearcoat : 0,
+            ccr: mp && typeof mp.clearcoatRoughness === "number" ? mp.clearcoatRoughness : 0,
+            op: mp && typeof mp.opacity === "number" && mp.opacity < 1 ? mp.opacity : 1,
         };
     }
     // Der Stoff-Schlüssel — DIE EINE Material-Identität (der Wirt keyt seinen Material-Cache damit).
@@ -2969,6 +2974,9 @@
             (R.look && mp && Array.isArray(mp.color) && mp.color.length === 3
                 ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
                 : "") +
+            // Klarlack und Durchsicht sind Teil der Identität (nur wo das Gesetzbuch sie trägt — sonst byte-alt)
+            (R.cc > 0 ? "|cc:" + R.cc.toFixed(2) + "@" + R.ccr.toFixed(2) : "") +
+            (R.op < 1 ? "|op:" + R.op.toFixed(2) : "") +
             // die Seh-Klasse gehört zur Identität: zwei Stoffe gleicher Regler und verschiedener Funktion (Klaue und
             // Pupille, beide 0,2 matt-schwarz) sind zwei Materialien — sonst trüge die Pupille die Klaue in den Stoff
             (budgetSeh(mp) ? "|v:" + mp.seh : "")
@@ -3103,6 +3111,8 @@
         d += Math.abs(n(a.envMapIntensity, 1) - n(b.envMapIntensity, 1));
         if ((a.webe || "") !== (b.webe || "")) d += 0.4;
         if (S.seite !== T.seite) d += 0.1;
+        // W5: eine Lackschicht und die Durchsicht sind sichtbare Funktion (der gefaltete Stoff erbt sie)
+        d += Math.abs(n(a.clearcoat, 0) - n(b.clearcoat, 0)) + 2 * Math.abs(n(a.opacity, 1) - n(b.opacity, 1));
         return d + 4 * (S.glut + T.glut); // ein Rest-Glimmen (unter der Glut-Schwelle) geht verloren
     }
     // Normalen eines Teils ohne Normalen (flächengewichtet, wie computeVertexNormals).

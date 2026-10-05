@@ -5271,6 +5271,17 @@ init();
                 out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
                 out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
             }
+            // DER KLARLACK UND DIE DURCHSICHT REISEN MIT (W5 Gegenstände, additiv, must-ignore): ein Zweit-Kern-Stoff
+            // mit Klarlack (Fahrzeug-Lack, Klingen-Stahl) oder Durchsicht (Scheibe, Fenster, Glimm-Scheibe) trägt sie als
+            // Daten — der Wirt baut dasselbe Material (phyto-core `budgetRegler`: cc · ccr · op). Ohne sie war der Lack
+            // in der Welt ein Metall ohne Lackschicht (Tiefschwarz spiegelte nichts) und jede Scheibe eine Wand.
+            // Pflanzen tragen die Felder nie (ihre Replies bleiben byte-alt).
+            if (zweitKern && typeof mat.clearcoat === "number" && mat.clearcoat > 0) {
+                out.mat.clearcoat = mat.clearcoat;
+                out.mat.clearcoatRoughness = typeof mat.clearcoatRoughness === "number" ? mat.clearcoatRoughness : 0;
+            }
+            if (zweitKern && mat.transparent && typeof mat.opacity === "number" && mat.opacity < 1)
+                out.mat.opacity = mat.opacity;
         }
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
