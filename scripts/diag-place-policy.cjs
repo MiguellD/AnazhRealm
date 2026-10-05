@@ -4,7 +4,9 @@
 // und dass HEUTE kein Verhalten kippt (byte-gleiche Wald-Nischen):
 //   (a) Rezept OHNE place + kind tree  → mode "forest"; die testahorn-Nische entsteht wie heute —
 //       die Extras-Liste ist IDENTISCH zur alten direkten placeExtra-Regel (vorher/nachher-Identität,
-//       im Test als Referenz nachgerechnet) + der Wald-Generator streut die Art (Dart geboren).
+//       im Test als Referenz nachgerechnet, über die Rezepte ohne place-Block) + der Wald-Generator streut
+//       die Art (Dart geboren); (a2) die Live-Buch-Bäume mit place none (Buche · Karst · Totholz) nie in
+//       der Nische.
 //   (b) Rezept OHNE place + kind vehicle → mode "none" (kein Worldgen-Eintrag, keine fahrzeug_-Nische).
 //   (c) synthetisches fx.place {mode:"none"} auf einem tree-Preset → Katalog JA (Auto-Blueprint
 //       entsteht), Wald-Nische NEIN — der H8-Kern: none vs forest DISJUNKT.
@@ -90,13 +92,16 @@ function check(name, ok, detail) {
         if (!f || !f.recipes || !f.recipes.eiche) return { fatal: "kein Rezeptbuch (Worker nicht ready?)" };
         const BASE = { eiche: 1, fichte: 1, tanne: 1, birke: 1, weide: 1, mammut: 1 };
         // Die ALTE Regel (direkter placeExtra-Griff, Stand N1) als REFERENZ im Test nachgerechnet —
-        // die Identität beweist: die neue Auflösung ändert die heutige Nischen-Liste byte-nicht.
+        // die Identität beweist: für jedes Rezept OHNE place-Block ändert die neue Auflösung die Nischen-
+        // Liste byte-nicht. Ein Rezept MIT place-Block führt selbst (H8) — seit dem Waldboden tragen Buche,
+        // Karst und Totholz im Live-Buch place none (keine Auto-Haine); sie prüft (a2) am Live-Buch.
         const oldRule = () => {
             const out2 = [];
             for (const id of Object.keys(f.recipes).sort()) {
                 const rec = f.recipes[id];
                 const pol = rec && A.KIND_POLICY[rec.kind];
                 if (!pol || pol.placeExtra !== "forest" || BASE[id]) continue;
+                if (rec.fx && rec.fx.place) continue;
                 let h = 2166136261 >>> 0;
                 for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619) >>> 0;
                 out2.push({ species: pol.prefix + id, w0: 0.18, center: 0.05 + (h % 1000) / 1110 });
@@ -122,6 +127,14 @@ function check(name, ok, detail) {
             const extrasA = freshExtras();
             res.a.identical = JSON.stringify(extrasA) === JSON.stringify(oldRule());
             res.a.inExtras = extrasA.some((e) => e.species === "baum_testahorn");
+            // (a2) die Live-Buch-Arten mit place none (Bäume des Waldbodens): im Buch, aber nie in der Nische.
+            res.a.liveNone = Object.keys(f.recipes)
+                .filter((id) => {
+                    const rec = f.recipes[id];
+                    return rec && rec.kind === "tree" && rec.fx && rec.fx.place && rec.fx.place.mode === "none";
+                })
+                .sort();
+            res.a.liveNoneInExtras = res.a.liveNone.filter((id) => extrasA.some((e) => e.species === "baum_" + id));
             // ===== (b) Rezept OHNE place + kind vehicle → none =====
             const vid = Object.keys(f.recipes).find((id) => f.recipes[id] && f.recipes[id].kind === "vehicle");
             res.b.vid = vid || null;
@@ -240,7 +253,15 @@ function check(name, ok, detail) {
     if (out.err) check("Auswertung ohne Wurf", false, out.err.split("\n")[0]);
     check('a: tree ohne place → mode "forest"', out.a.mode === "forest", String(out.a.mode));
     check('a: Dispatch weicht in den Wald-Kanal ("forest")', out.a.dispatch === "forest", String(out.a.dispatch));
-    check("a: Nischen-Liste IDENTISCH zur alten placeExtra-Regel (vorher/nachher)", out.a.identical === true);
+    check(
+        "a: Nischen-Liste IDENTISCH zur alten placeExtra-Regel (vorher/nachher, Rezepte ohne place-Block)",
+        out.a.identical === true
+    );
+    check(
+        "a2: die Live-Buch-Bäume mit place none stehen im Buch, nie in der Wald-Nische",
+        Array.isArray(out.a.liveNone) && out.a.liveNone.length > 0 && out.a.liveNoneInExtras.length === 0,
+        `${(out.a.liveNone || []).join(" · ")}${out.a.liveNoneInExtras && out.a.liveNoneInExtras.length ? " — in der Nische: " + out.a.liveNoneInExtras.join(" · ") : ""}`
+    );
     check("a: die testahorn-Nische entsteht wie heute", out.a.inExtras === true);
     check("a: der Wald-Generator streut testahorn (Dart geboren)", out.a.planted === true);
     check(
