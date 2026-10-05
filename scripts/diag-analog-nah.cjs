@@ -141,17 +141,16 @@ function urteil(z) {
         // mit den Vulkan-/ANGLE-Schaltern gibt es keinen Adapter (auch nicht zusammen mit --use-webgpu-adapter), der
         // Renderer fiel nach init() still auf WebGL2 — die Linse las die CPU-Wahrheit eines Passes, der nie lief. Nur
         // dieselben Schalter wie gate:kamera-treue liefern ihn. Das Backend steht im Bericht.
-        // --disable-gpu-watchdog: swiftshader rastert in Software; auf dem langsamen CI-Runner (Linux) rechnete der erste
-        // Boot-Frame mit allen Pipelines länger als die Watchdog-Frist — Chrome beendete den GPU-Prozess, die Seite sah
-        // „Device was destroyed" ohne einen JS-Aufruf von destroy() (CI 05.10., a29f732). Eine Einstellung der
-        // Software-Umgebung dieser Linse, nicht des Spiels (dort meldet der Geräteverlust-Wächter laut).
+        // OFFENER BEFUND (CI 05.10., Linux-Runner): ~3,9 s nach dem Start meldet device.lost „destroyed · Device was
+        // destroyed", ohne einen JS-Aufruf von GPUDevice.destroy (Stapel-Haken leer) und ohne Absturz-Zeile des GPU-
+        // Prozesses im stderr; --disable-gpu-watchdog änderte nichts (0d7928a, widerlegt). Lokal (Windows, derselbe
+        // Adapter) nie. Die Linse bleibt rot, bis die Ursache benannt ist (Messname: die [N]/[Browser]-Zeilen im CI-Log).
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--enable-unsafe-webgpu",
             "--use-webgpu-adapter=swiftshader",
             "--enable-unsafe-swiftshader",
-            "--disable-gpu-watchdog",
         ],
         dumpio: false,
     });
