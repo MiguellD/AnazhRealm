@@ -35106,7 +35106,7 @@ class AnazhRealm {
         // Rückfall existiert, aber nie kompiliert — eine Existenz-Prüfung ist blind. Ohne WebGPU kein Pass
         // (die Schalen tragen den Blick, der Boot-Log nennt es einmal). Der __anazhFernRing-Hook ist der
         // Linsen-Seam (gate:fern-ring Band 8).
-        if (!this._gpuComputeFaehig() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
+        if (!this._weltMarchGezeichnet() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
             return null;
         const TSL = THREE.TSL;
         if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.Fn || !TSL.Discard || !TSL.uniform || !TSL.positionGeometry)
@@ -35852,6 +35852,7 @@ class AnazhRealm {
             kapselDaten,
             kapselCursor: 0, // Bump-Allokator (Mehr-Kapsel-Sätze brauchen ZUSAMMENHÄNGENDE Slots)
             freiKapselSeg: new Map(), // anzahl → [offsets] (freigewordene Segmente je Länge)
+            kapselVoll: false, // eine Allokation scheiterte an der Kapazität — bis ein Segment frei wird, fittet niemand
             kapselCache: new Map(), // DEDUP: key → geteilter Kapsel-Satz (Pseudo-Brick, refs)
             gesetzKacheln: new Map(), // DAS VERTEILUNGS-GESETZ: kachelKey → [Gesetz-Blöcke der Klein-Streu]
             gesetzBloecke: 0, // lebende Gesetz-Blöcke (die Kapazitäts-Linse zählt mit)
@@ -36081,6 +36082,10 @@ class AnazhRealm {
             k.refs++;
             return k;
         }
+        // DIE VOLLE LISTE FITTET NICHT: scheiterte eine Allokation an der Kapazität, rechnet bis zum nächsten freien
+        // Segment (`_weltBrickFrei`) niemand einen Fit, der nie landet — vorher passte jede wartende Gesetz-Zelle je
+        // Tick-Durchlauf ihre Steine neu (bis 16 Teile) und gab den Platz wieder auf.
+        if (wm.kapselVoll) return null;
         let defs = kapselFn();
         if (defs && !Array.isArray(defs)) defs = [defs];
         defs = (defs || []).filter(
@@ -36098,6 +36103,7 @@ class AnazhRealm {
         let slot = seg && seg.length ? seg.pop() : -1;
         if (slot < 0) {
             if (wm.kapselCursor + defs.length > W.kapseln) {
+                wm.kapselVoll = true;
                 if (!this._weltKapselnVollWarn) {
                     this._weltKapselnVollWarn = true;
                     this.log(
@@ -36211,11 +36217,15 @@ class AnazhRealm {
     // (je 2 Texel [Pos|Hüllradius][yaw|scale|po|anzahl]); March: Kugel-Vortest → Sphere-Tracing des
     // geteilten Vorlagen-Satzes im Platz-Raum. Plätze = die Γ5-deterministischen Raster-Plätze des
     // Zellen-Chokepoints (kein Shader-Hash-Zwilling). Band 0 bleibt Mesh (_scatterInstanceAdd).
-    // Die Gesetz-Bahn der Fern-Streu ist offen, wo der Welt-March GEZEICHNET wird — dieselbe Backend-Wand wie der
-    // Feld-Pass (`_feldPassEnsure`: rohes WGSL, nur das WebGPU-Backend; der Null-Renderer ist für den Analog-Pfad
-    // blind) — die EINE Bedingung für Materialisierung und LOD-Tick. Auf dem WebGL2-Rückfall belegten Gesetz-Plätze
-    // Kapsel-Liste und Fit-Takt für einen Pass, der nie lief (Werkbank 04.10.: „Feld-Pass ruht").
-    _streuGesetzBahnOffen() {
+    // WIRD DER WELT-MARCH GEZEICHNET? Die Backend-Wand des Feld-Passes (`_feldPassEnsure`) und der Gesetz-Bahn der
+    // Streu: das Fragment ist rohes WGSL, nur das WebGPU-Backend zeichnet es; der Null-Renderer ist für den Analog-Pfad
+    // blind. Auf dem WebGL2-Rückfall belegten Gesetz-Plätze Kapsel-Liste und Fit-Takt für einen Pass, der nie lief
+    // (Werkbank 04.10.: „Feld-Pass ruht"). Der `__anazhFernRing`-Hook öffnet nur den Pass (Linsen-Naht gate:fern-ring).
+    // OFFEN (05.10.): Bau-/Baum-Satz (`_archZiegelFern`) und Glieder-Kapseln (`_tickKreaturZiegel`) prüfen noch nur den
+    // Null-Renderer — die Echt-Renderer-Linsen außer kamera-treue fahren mit den Vulkan-Schaltern den WebGL2-Rückfall
+    // (kein Adapter) und lesen dort die CPU-Wahrheit dieser Erzeuger; sie fallen unter diese Wand, wenn die Linsen den
+    // swiftshader-WebGPU-Adapter fahren (`--use-webgpu-adapter=swiftshader`).
+    _weltMarchGezeichnet() {
         return this._gpuComputeFaehig();
     }
 
@@ -36239,7 +36249,8 @@ class AnazhRealm {
         const gestalt = this._foundryVariantFor(fseed, preset);
         if (gestalt == null) return null; // Buch kalt — die Zelle wartet
         const key = "abaum:" + preset + ":" + gestalt;
-        if (!wm.kapselCache.has(key) && !this._weltBakeErlaubt(this._spielerD2(x, z))) return null; // Fit-Takt (Treffer frei)
+        // Fit-Takt (Treffer frei); die volle Liste verbrennt keinen (`kapselVoll`, die Zelle wartet billig).
+        if (!wm.kapselCache.has(key) && (wm.kapselVoll || !this._weltBakeErlaubt(this._spielerD2(x, z)))) return null;
         const satz = this._weltKapselHolen(key, () => this._streuGesetzFit(preset, fseed));
         if (!satz) return null;
         const W = AnazhRealm.WELT_MARCH;
@@ -36298,6 +36309,7 @@ class AnazhRealm {
         let slot = seg && seg.length ? seg.pop() : -1;
         if (slot < 0) {
             if (wm.kapselCursor + n > W.kapseln) {
+                wm.kapselVoll = true;
                 if (!this._weltKapselnVollWarn) {
                     this._weltKapselnVollWarn = true;
                     this.log(
@@ -36633,6 +36645,7 @@ class AnazhRealm {
         let seg = wm.freiKapselSeg.get(brick.anzahl || 1);
         if (!seg) wm.freiKapselSeg.set(brick.anzahl || 1, (seg = []));
         seg.push(brick.slot);
+        wm.kapselVoll = false; // ein Segment ist frei: die nächste Allokation versucht es wieder
     }
 
     // Ein FELD-EINTRAG stirbt: der Listen-Slot fällt frei, das Brick nur, wenn
@@ -52659,7 +52672,7 @@ class AnazhRealm {
         }
         if (foundryPreset) {
             const preset = foundryPreset;
-            // DIE FERNFORM VOR JEDEM MESH-ZUG (Studio-Vertrag B2c `lod.budget[kind].fern`, `_foundryFernForm`): mit
+            // DIE FERNFORM VOR JEDEM MESH-ZUG (Studio-Vertrag B2c `lod.budget[kind].fernform`, `_foundryFernForm`): mit
             // Fern-Wunsch IST die Art, was ihr Budget sagt — "karte" geht den Mesh-Pfad unten (die Karten-Stufe),
             // "gesetz" ist ihr PLATZ im Gesetz-Block ihrer Kachel (die Passung der Studio-Gestalt, kein Feld-Listen-
             // Slot je Instanz), "boden" ist keine Geometrie (die Boden-Funktion trägt). Steht der Satz nicht (Fit-
@@ -52671,7 +52684,7 @@ class AnazhRealm {
             const fern = this._streuFernBahn(preset, lod, dist);
             if (fern) {
                 const feld =
-                    fern === "gesetz" && this._streuGesetzBahnOffen()
+                    fern === "gesetz" && this._weltMarchGezeichnet()
                         ? this._streuGesetzSpawn(
                               preset,
                               fseed,
@@ -52924,7 +52937,7 @@ class AnazhRealm {
                 !!fernArt && istFern !== !!this._streuFernBahn(fernArt, newLod, istFern ? dist : dist - 8);
             // Eine WARTENDE Gesetz-Zelle (ihr Satz stand beim Bau nicht: Fit-Takt, Kapsel-Liste) wiederholt den Spawn,
             // solange ihr Fern-Wunsch jenseits der Grenze gilt — slot-frei, nur wo ein echter Renderer den Welt-March zeichnet.
-            const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._streuGesetzBahnOffen();
+            const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._weltMarchGezeichnet();
             if (newLod === cell.lod && !warten && !bahnWechsel) continue;
             // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Blume/Fels [0], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
@@ -67746,17 +67759,17 @@ class AnazhRealm {
             return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
         return z;
     }
-    // DIE FERNFORM einer Art (B2c `lod.budget[kind].fern`): "karte" · "gesetz" · "boden" — was die Art jenseits
-    // Welt-d1 IST. Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem Mesh-Zug. Fail-closed: eine
-    // gestreute Art ohne gültige Fernform ist ein KERN-PFLICHT-Bruch, nie ein stilles L0.
+    // DIE FERNFORM einer Art (B2c `lod.budget[kind].fernform`): "karte" · "gesetz" · "boden" — was die Art jenseits
+    // der Nah-Grenze IST (`_streuFernBahn`). Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem
+    // Mesh-Zug. Fail-closed: eine gestreute Art ohne gültige Fernform ist ein KERN-PFLICHT-Bruch, nie ein stilles L0.
     _foundryFernForm(preset) {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[preset] : null;
         const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
         const art = rec && L && L.budget ? L.budget[rec.kind] : null;
-        const fern = art ? art.fern : null;
+        const fern = art ? art.fernform : null;
         if (fern === "gesetz" || fern === "boden" || fern === "karte") return fern;
-        return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + (rec ? rec.kind : preset) + ".fern");
+        return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + (rec ? rec.kind : preset) + ".fernform");
     }
     // DIE EINE NAH-GRENZE der Streu-Fernform (Schöpfer-Wort 30.09.: „AAA nah, nicht Kapseln"): die Fernform einer Art
     // (gesetz · boden) gilt mit Fern-Wunsch erst ab `ANALOG_NAH_M` — diesseits trägt ihr Studio-Mesh (die Stufen-Klammer

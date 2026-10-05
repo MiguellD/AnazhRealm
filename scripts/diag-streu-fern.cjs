@@ -1,29 +1,36 @@
 // diag-streu-fern.cjs — DIE FERNFORM DER KLEIN-STREU KOMMT AUS DEM BUDGET (npm run gate:streu-fern).
 //
-// Studio-Vertrag B2c: jede Art trägt `PORTAL_RENDER_CONFIG.lod.budget[kind].fern` ("gesetz" | "boden" | "karte") —
-// was sie jenseits Welt-d1 ist. Der EINE Zellen-Chokepoint `_scatterMaterializeCell` liest sie VOR jedem Mesh-Zug:
-// eine Nicht-Baum-Zelle mit Fern-Wunsch fragt nie ein geklemmtes L0 an. "gesetz" = Platz im Welt-March (oder
-// `wartet`: slots [], keine Instanz-Bahn), "boden" = Datensatz ohne Geometrie (die Boden-Funktion trägt), "karte" =
-// die Studio-Karte. Der stille Rückfall (Blume-L0 84 / Geröll-L0 18 Befehle an der Mess-Wiese, V18.526) stirbt.
+// Studio-Vertrag B2c: jede Art trägt `PORTAL_RENDER_CONFIG.lod.budget[kind].fernform` ("gesetz" | "boden" | "karte") —
+// was sie jenseits der EINEN Nah-Grenze des Wirts ist (`AnazhRealm.ANALOG_NAH_M`, 64 m; Schöpfer-Wort 30.09. „AAA nah,
+// nicht Kapseln": diesseits trägt das Studio-Mesh, auch auf dem Fern-Wunsch). Der EINE Zellen-Chokepoint
+// `_scatterMaterializeCell` liest sie über `_streuFernBahn` VOR jedem Mesh-Zug: eine Nicht-Baum-Zelle jenseits der
+// Grenze fragt nie ein geklemmtes L0 an. "gesetz" = Platz im Welt-March (oder `wartet`: slots [], keine Instanz-Bahn),
+// "boden" = Datensatz ohne Geometrie (die Boden-Funktion trägt), "karte" = die Studio-Karte.
 //
-// Boot mit Foundry-ON und Null-Renderer (die Form-Entscheidung fällt CPU-seitig; die Gesetz-Bahn ist headless zu —
-// Lehre 16 —, Gesetz-Zellen stehen dort `wartet`). Die Echt-GPU-Zahl kommt aus `werkbank zaehlen`.
+// Boot mit Foundry-ON und Null-Renderer (die Form-Entscheidung fällt CPU-seitig). Die Gesetz-Bahn ist headless zu
+// (Lehre 16) — die Linse öffnet die Backend-Wand `_weltMarchGezeichnet` (die Kapsel-Liste ist CPU-Daten), damit die
+// Plätze WIRKLICH belegt werden und D die echte Füllung misst. Die Echt-GPU-Zahl kommt aus `werkbank zaehlen`.
 //
-//   A KONSUM   die fern-Zeilen liegen live auf dem Host (tree/shrub karte · flower/rock gesetz · grass boden); der
-//              Flip `rock.fern = "boden"` baut eine Region neu und ihre Fels-Zellen tragen form "boden" — zurück auf
-//              "gesetz" tragen sie "gesetz". Das Datum ändert die Welt, kein Zwilling fährt.
-//   B ABSENZ   keine lebende Instanz einer Nicht-Baum-Streu-Gruppe `fscatter:<art>:<g>:<stufe>` steht jenseits
-//              Welt-d1 + Hysterese; ein Treffer nennt Gruppe und Distanz.
-//   C FORM     jede Nicht-Baum-Zelle mit Fern-Wunsch trägt ihre Budget-Form; "gesetz"/"boden" ohne Slots; keine
+//   A KONSUM   die fernform-Zeilen liegen live auf dem Host (tree/shrub karte · flower/rock gesetz · grass boden); der
+//              Flip `rock.fernform = "boden"` baut eine Region neu und ihre Fels-Zellen jenseits der Grenze tragen
+//              form "boden" — zurück auf "gesetz" tragen sie "gesetz". Das Datum ändert die Welt, kein Zwilling fährt.
+//   B ABSENZ   keine lebende Instanz einer Gesetz-/Boden-Art (`fscatter:<art>:<g>:<stufe>`) steht jenseits der
+//              Nah-Grenze + 8 m Totband; ein Treffer nennt Gruppe und Distanz.
+//   C FORM     jenseits Grenze + Totband trägt jede Nicht-Baum-Zelle mit Fern-Wunsch ihre Budget-Form ("gesetz"/"boden"
+//              ohne Slots); DIESSEITS der Grenze trägt keine Zelle eine Fernform (das Studio-Mesh trägt); keine
 //              litter-Zelle (die Schicht fiel final).
-//   D WAND     die Kapsel-Liste ist nicht erschöpft (`_weltKapselnVollWarn`) — erschöpft wird sie ROT, nie L0.
+//   D WAND     im eingeschwungenen Ring (Gesetz-Bahn offen) ist die Kapsel-Liste nicht erschöpft und keine Gesetz-Zelle
+//              wartet — Füllstand beim Namen (Cursor / Kapazität).
 //   E TICK     die Wiederholung einer wartenden Zelle legt keine Instanz-Slots an (kein Duplikat-Zug je Durchlauf).
 //   F PASSUNG  die Geröll-Fernform passt aus den UNVERSCHMOLZENEN Steinen der Studio-Gestalt: 6 Fuß-Steine statt
 //              einer liegenden Haufen-Kapsel.
+//   G BAHNWECHSEL  der Spieler tritt an einen fernen Gesetz-Fels: der EINE Bahnwechsel des LOD-Ticks tauscht jede
+//              Fernform-Zelle diesseits der Grenze auf ihr Studio-Mesh (mit Instanzen); zurück an der Mess-Wiese zieht
+//              sie jenseits des Totbands wieder ins Gesetz.
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) eine injizierte `fscatter:geroell:3:0`-Instanz bei 200 m macht B rot
-//   mit Namen; (2) eine erschöpfte Kapsel-Liste (Gesetz-Bahn offen, Spawn scheitert, Warn-Flagge) lässt die Zellen
-//   `wartet` stehen — 0 L0-Instanzen — und D wird rot; (3) ohne `budget.flower.fern` bricht der Host-Leser
-//   fail-closed (KERN-PFLICHT).
+//   mit Namen; (2) die ECHTE Erschöpfung (Bump-Cursor an der Kapazität, keine freien Segmente — der echte Spawn läuft)
+//   lässt die Zellen `wartet` stehen — 0 L0-Instanzen, die Warn-Flagge fällt im Allokator, kein Fit läuft im Tick —
+//   und D wird rot; (3) ohne `budget.flower.fernform` bricht der Host-Leser fail-closed (KERN-PFLICHT).
 //
 //   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
 "use strict";
@@ -99,9 +106,16 @@ function check(name, ok, detail) {
         const B = cfg && cfg.lod && cfg.lod.budget;
         res.buch = !!B;
         if (!B) return res;
-        // ── A1: die fern-Zeilen live auf dem Host ──
+        // ── A1: die fernform-Zeilen live auf dem Host ──
         res.fern = {};
-        for (const k of ["tree", "shrub", "grass", "flower", "rock"]) res.fern[k] = B[k] ? B[k].fern : undefined;
+        for (const k of ["tree", "shrub", "grass", "flower", "rock"]) res.fern[k] = B[k] ? B[k].fernform : undefined;
+
+        // Die Gesetz-Bahn öffnen (Linsen-Naht: der Null-Renderer zeichnet den Welt-March nie, seine Kapsel-Liste ist
+        // CPU-Daten) — die Plätze werden wirklich belegt, D misst die echte Füllung.
+        r._weltMarchGezeichnet = () => true;
+        const N = AR.ANALOG_NAH_M;
+        const TOT = 8; // das Totband des LOD-Ticks (Mesh → Fernform erst 8 m hinter der Grenze)
+        res.grenze = N;
 
         // Die Mess-Wiese (−900/−850, dieselbe Stelle wie werkbank zaehlen).
         const pm = r.state.playerMesh.position;
@@ -130,13 +144,39 @@ function check(name, ok, detail) {
         };
         await bauRing(120000);
         res.zellen = zellen();
-        const LD = AR.LOD_DISTANCES;
-        const dGrenze = LD.thresh12 + (LD.hysteresis || 0);
-        res.dGrenze = dGrenze;
         const NICHT_BAUM = new Set(["under", "litter", "rock"]);
-        const istBaumArt = (p) => r._foundryPresetIsTree(p);
+        const istKarte = (p) => {
+            try {
+                return r._foundryFernForm(p) === "karte";
+            } catch (_e) {
+                return false;
+            }
+        };
+        const dZ = (c) => Math.hypot(c.x - pm.x, c.z - pm.z);
+        const wartend = () => {
+            let n = 0;
+            for (const reg of map.values()) for (const c of reg.cells || []) if (c.wartet) n++;
+            return n;
+        };
+        // Einschwingen der Gesetz-Bahn: der LOD-Tick wiederholt wartende Zellen (Fit-Takt 16/s), bis keine mehr wartet.
+        {
+            const dl = performance.now() + 60000;
+            let vor = -1,
+                gleich = 0;
+            while (performance.now() < dl) {
+                r._tickScatterLod(pm, 64, 4000);
+                const w = wartend();
+                if (w === 0) break;
+                gleich = w === vor ? gleich + 1 : 0;
+                vor = w;
+                if (gleich >= 60) break;
+                await sleep(50);
+            }
+        }
 
         // ── B: Absenz-Zensus über die lebenden Instanz-Gruppen ──
+        const dGrenze = N + TOT;
+        res.dGrenze = dGrenze;
         const absenz = () => {
             const treffer = [];
             let n = 0;
@@ -144,7 +184,7 @@ function check(name, ok, detail) {
             if (!groups) return { n, treffer };
             for (const [key, g] of groups) {
                 const m = /^fscatter:([^:#]+):(\d+):(\d)#/.exec(key);
-                if (!m || istBaumArt(m[1])) continue;
+                if (!m || r._foundryPresetIsTree(m[1]) || istKarte(m[1])) continue;
                 if (!g.mesh || !g.mesh.instanceMatrix) continue;
                 const frei = new Set(g.free || []);
                 const a = g.mesh.instanceMatrix.array;
@@ -163,46 +203,144 @@ function check(name, ok, detail) {
         };
         res.b = absenz();
 
-        // ── C: die Form je Nicht-Baum-Zelle mit Fern-Wunsch ──
+        // ── C: die Form je Nicht-Baum-Zelle — jenseits Grenze + Totband die Budget-Form, diesseits nie eine Fernform ──
         const formZensus = () => {
-            const z = { gesetz: 0, boden: 0, karte: 0, wartet: 0, ohneForm: 0, slotsBeiForm: 0, litter: 0, falsch: [] };
+            const z = {
+                gesetz: 0,
+                boden: 0,
+                wartet: 0,
+                ohneForm: 0,
+                slotsBeiForm: 0,
+                litter: 0,
+                nahMesh: 0,
+                nahFern: 0,
+                falsch: [],
+            };
             for (const reg of map.values()) {
                 for (const c of reg.cells || []) {
                     if (c.layer === "litter") z.litter++;
-                    if (!NICHT_BAUM.has(c.layer) || !(c.lod >= 2)) continue;
+                    if (!NICHT_BAUM.has(c.layer)) continue;
                     const preset = r._foundryPresetFor(c.species);
                     if (!preset) continue;
+                    const d = dZ(c);
+                    const fernForm = c.form === "gesetz" || c.form === "boden";
+                    if (d < N) {
+                        if (fernForm) {
+                            z.nahFern++;
+                            if (z.falsch.length < 3) z.falsch.push(`${c.species} ${c.form} in ${d.toFixed(0)} m`);
+                        } else if (c.lod >= 2) z.nahMesh++;
+                        continue;
+                    }
+                    if (!(c.lod >= 2) || d < dGrenze) continue;
                     let soll;
                     try {
                         soll = r._foundryFernForm(preset);
                     } catch (e) {
                         soll = "BRUCH";
                     }
+                    if (soll === "karte") continue;
                     if (!c.form) {
                         z.ohneForm++;
                         if (z.falsch.length < 3) z.falsch.push(`${c.species} ohne form`);
                         continue;
                     }
-                    if (c.form !== soll && z.falsch.length < 3) z.falsch.push(`${c.species}: ${c.form} ≠ ${soll}`);
-                    if (c.form !== soll) continue;
+                    if (c.form !== soll) {
+                        if (z.falsch.length < 3)
+                            z.falsch.push(`${c.species}: ${c.form} ≠ ${soll} in ${d.toFixed(0)} m`);
+                        continue;
+                    }
                     z[c.form]++;
                     if (c.wartet) z.wartet++;
-                    if ((c.form === "gesetz" || c.form === "boden") && Array.isArray(c.slots) && c.slots.length)
-                        z.slotsBeiForm++;
+                    if (Array.isArray(c.slots) && c.slots.length) z.slotsBeiForm++;
                 }
             }
             return z;
         };
         res.c = formZensus();
-        res.d = { voll: r._weltKapselnVollWarn === true };
+        {
+            const wm = r.state.weltMarch;
+            res.d = {
+                voll: r._weltKapselnVollWarn === true || !!(wm && wm.kapselVoll),
+                cursor: wm ? wm.kapselCursor : -1,
+                kapazitaet: AR.WELT_MARCH.kapseln,
+                plaetze: wm ? wm.gesetzPlaetze : -1,
+                bloecke: wm ? wm.gesetzBloecke : -1,
+                wartet: wartend(),
+            };
+        }
 
-        // Eine Region mit Fels-Zellen auf der Fernstufe (Flip-Ziel).
-        let flipKey = null;
-        for (const [k, reg] of map) {
-            if ((reg.cells || []).some((c) => c.layer === "rock" && c.lod >= 2)) {
-                flipKey = k;
-                break;
+        // ── G: DER EINE BAHNWECHSEL — der Spieler tritt an einen fernen Gesetz-Fels: der LOD-Tick tauscht jede Gesetz-/
+        //    Boden-Zelle diesseits der Grenze auf ihr Studio-Mesh (mit Instanzen, kein Loch); zurück an der Mess-Wiese
+        //    zieht sie jenseits des Totbands wieder ins Gesetz — dieselbe Grenze wie der Zellen-Chokepoint ──
+        const g = {};
+        {
+            const heim = { x: pm.x, y: pm.y, z: pm.z };
+            let ziel = null;
+            for (const reg of map.values())
+                for (const c of reg.cells || [])
+                    if (!ziel && c.layer === "rock" && c.form === "gesetz" && dZ(c) > 120 && dZ(c) < 220) ziel = c;
+            if (ziel) {
+                g.zielD = +dZ(ziel).toFixed(0);
+                const nahe = () => {
+                    const o = { fern: 0, mesh: 0, ohneSlots: 0 };
+                    for (const reg of map.values())
+                        for (const c of reg.cells || []) {
+                            if (!NICHT_BAUM.has(c.layer) || dZ(c) >= N) continue;
+                            const p = r._foundryPresetFor(c.species);
+                            if (!p || istKarte(p)) continue;
+                            if (c.form === "gesetz" || c.form === "boden") o.fern++;
+                            else {
+                                o.mesh++;
+                                if (!Array.isArray(c.slots) || !c.slots.length) o.ohneSlots++;
+                            }
+                        }
+                    return o;
+                };
+                pm.set(ziel.x + 3, r._voxelSurfaceY(ziel.x + 3, ziel.z) + 1.8, ziel.z);
+                const dlH = performance.now() + 90000;
+                while (performance.now() < dlH) {
+                    r._tickScatterLod(pm, 64, 4000);
+                    const n = nahe();
+                    if (n.fern === 0 && n.mesh > 0 && n.ohneSlots === 0) break;
+                    await sleep(100);
+                }
+                g.hin = nahe();
+                const umZiel = () => {
+                    const o = { gesetz: 0, mesh: 0 };
+                    for (const reg of map.values())
+                        for (const c of reg.cells || []) {
+                            if (!NICHT_BAUM.has(c.layer)) continue;
+                            if (Math.hypot(c.x - ziel.x, c.z - ziel.z) > 30) continue;
+                            const p = r._foundryPresetFor(c.species);
+                            if (!p || istKarte(p)) continue;
+                            if (c.form === "gesetz" || c.form === "boden") o.gesetz++;
+                            else o.mesh++;
+                        }
+                    return o;
+                };
+                pm.set(heim.x, heim.y, heim.z);
+                const dlZ = performance.now() + 90000;
+                while (performance.now() < dlZ) {
+                    r._tickScatterLod(pm, 64, 4000);
+                    if (umZiel().mesh === 0) break;
+                    await sleep(100);
+                }
+                g.zurueck = umZiel();
+                g.bNachZurueck = absenz().n;
             }
+        }
+        res.g = g;
+
+        // Eine Region mit Fels-Zellen auf der Fernstufe jenseits der Grenze (Flip-Ziel).
+        const felsFern = (reg) =>
+            (reg && Array.isArray(reg.cells) ? reg.cells : []).filter(
+                (c) => c.layer === "rock" && c.lod >= 2 && dZ(c) >= N
+            );
+        let flipKey = null,
+            flipBest = 0;
+        for (const [k, reg] of map) {
+            const n = felsFern(reg).length;
+            if (n > flipBest) [flipBest, flipKey] = [n, k];
         }
         res.flipKey = flipKey;
         const neuBau = (k) => {
@@ -214,8 +352,7 @@ function check(name, ok, detail) {
         };
         const felsFormen = (reg) => {
             const s = { n: 0, formen: {}, slots: 0 };
-            for (const c of reg.cells || []) {
-                if (c.layer !== "rock" || !(c.lod >= 2)) continue;
+            for (const c of felsFern(reg)) {
                 s.n++;
                 s.formen[c.form] = (s.formen[c.form] || 0) + 1;
                 if (Array.isArray(c.slots)) s.slots += c.slots.length;
@@ -224,14 +361,14 @@ function check(name, ok, detail) {
         };
         // ── A2: der Flip (Konsum, nicht Existenz) ──
         if (flipKey && B.rock) {
-            const alt = B.rock.fern;
+            const alt = B.rock.fernform;
             try {
-                B.rock.fern = "boden";
+                B.rock.fernform = "boden";
                 res.flipBoden = felsFormen(neuBau(flipKey) || {});
             } catch (e) {
                 res.flipErr = String((e && e.message) || e);
             } finally {
-                B.rock.fern = alt;
+                B.rock.fernform = alt;
             }
             try {
                 res.flipZurueck = felsFormen(neuBau(flipKey) || {});
@@ -305,21 +442,39 @@ function check(name, ok, detail) {
         }
         res.st1 = st1;
 
-        // ── SELBSTTEST 2 + E: die erschöpfte Kapsel-Liste — Gesetz-Bahn offen, jeder Spawn scheitert ──
+        // ── SELBSTTEST 2 + E: die ECHTE Erschöpfung — der Bump-Cursor steht an der Kapazität, keine freien Segmente,
+        //    der echte Spawn läuft (kein Stub): die Warn-Flagge fällt im Allokator, die Zellen warten ohne Geometrie,
+        //    und die Wiederholung im Tick rechnet keinen Fit und legt keine Instanz an ──
         const st2 = {};
-        if (flipKey) {
+        const wm = r.state.weltMarch;
+        if (flipKey && wm) {
             const add0 = r._scatterInstanceAdd;
-            let zuege = 0;
+            const fit0 = r._streuGesetzFit;
+            let zuege = 0,
+                fits = 0;
+            const cursor0 = wm.kapselCursor;
+            const segs0 = wm.freiKapselSeg;
             try {
-                r._streuGesetzBahnOffen = () => true;
-                r._streuGesetzSpawn = () => null;
-                r._weltKapselnVollWarn = true;
+                const reg0 = map.get(flipKey);
+                const rx = reg0.regX,
+                    rz = reg0.regZ;
+                r._disposeScatterRegion(flipKey); // ihre Plätze fallen frei (Segmente in die alte Freiliste)
+                wm.freiKapselSeg = new Map();
+                wm.kapselCursor = AR.WELT_MARCH.kapseln;
+                wm.kapselVoll = false;
+                r._weltKapselnVollWarn = false;
+                r._weltBakeHunger = Infinity;
+                r._weltBakeFenster = undefined; // ein frisches Fit-Takt-Fenster: der echte Allokator wird erreicht
                 r._scatterInstanceAdd = function (name) {
                     const m = /^fscatter:([^:]+):/.exec(String(name));
-                    if (m && !r._foundryPresetIsTree(m[1])) zuege++;
+                    if (m && !r._foundryPresetIsTree(m[1]) && !istKarte(m[1])) zuege++;
                     return add0.apply(this, arguments);
                 };
-                const reg = neuBau(flipKey) || {};
+                r._streuGesetzFit = function () {
+                    fits++;
+                    return fit0.apply(this, arguments);
+                };
+                const reg = r._scatterRegion(rx, rz, pm) || {};
                 let wartet = 0,
                     gesetzZellen = 0;
                 for (const c of reg.cells || [])
@@ -330,19 +485,26 @@ function check(name, ok, detail) {
                 st2.gesetzZellen = gesetzZellen;
                 st2.wartet = wartet;
                 st2.l0 = absenz().n;
-                st2.wandRot = r._weltKapselnVollWarn === true;
-                // E: die Wiederholung im Tick — 40 Durchläufe, kein Instanz-Zug für Nicht-Baum-Arten
-                const zVor = zuege;
+                st2.wandRot = r._weltKapselnVollWarn === true && wm.kapselVoll === true;
+                st2.bauZuege = zuege;
+                // E: die Wiederholung im Tick — 40 Durchläufe, kein Instanz-Zug für Gesetz-/Boden-Arten, kein Fit
+                const zVor = zuege,
+                    fVor = fits;
                 for (let i = 0; i < 40; i++) r._tickScatterLod(pm, 8, 800);
                 st2.tickZuege = zuege - zVor;
-                st2.bauZuege = zVor;
+                st2.tickFits = fits - fVor;
             } catch (e) {
                 st2.err = String((e && e.message) || e);
             } finally {
-                delete r._streuGesetzBahnOffen;
-                delete r._streuGesetzSpawn;
-                r._scatterInstanceAdd = add0;
                 delete r._scatterInstanceAdd;
+                delete r._streuGesetzFit;
+                for (const [n, l] of wm.freiKapselSeg) {
+                    const alt = segs0.get(n) || [];
+                    segs0.set(n, alt.concat(l));
+                }
+                wm.freiKapselSeg = segs0;
+                wm.kapselCursor = cursor0;
+                wm.kapselVoll = false;
                 r._weltKapselnVollWarn = false;
             }
             try {
@@ -351,12 +513,12 @@ function check(name, ok, detail) {
         }
         res.st2 = st2;
 
-        // ── SELBSTTEST 3: ohne budget.flower.fern bricht der Leser fail-closed ──
+        // ── SELBSTTEST 3: ohne budget.flower.fernform bricht der Leser fail-closed ──
         const st3 = {};
         if (B.flower) {
-            const alt = B.flower.fern;
+            const alt = B.flower.fernform;
             try {
-                delete B.flower.fern;
+                delete B.flower.fernform;
                 try {
                     r._foundryFernForm("blume");
                     st3.bruch = false;
@@ -365,19 +527,26 @@ function check(name, ok, detail) {
                     st3.meldung = String(e && e.message).slice(0, 120);
                 }
             } finally {
-                B.flower.fern = alt;
+                B.flower.fernform = alt;
             }
         }
         res.st3 = st3;
         res.bNachher = absenz();
+        delete r._weltMarchGezeichnet;
         return res;
     });
 
-    console.log("=== STREU-FERN — die Fernform der Klein-Streu kommt aus dem Budget (B2c `fern`) ===");
-    check("Boot + Studio-Buch (lod.budget) auf dem Host", out.boot && out.buch, `zellen=${out.zellen}`);
+    console.log(
+        "=== STREU-FERN — die Fernform der Klein-Streu kommt aus dem Budget (B2c `fernform`), jenseits der EINEN Nah-Grenze ==="
+    );
+    check(
+        "Boot + Studio-Buch (lod.budget) auf dem Host",
+        out.boot && out.buch,
+        `zellen=${out.zellen} · Nah-Grenze ${out.grenze} m`
+    );
     const F = out.fern || {};
     check(
-        "A KONSUM: fern je Art live (tree/shrub karte · flower/rock gesetz · grass boden)",
+        "A KONSUM: fernform je Art live (tree/shrub karte · flower/rock gesetz · grass boden)",
         F.tree === "karte" &&
             F.shrub === "karte" &&
             F.flower === "gesetz" &&
@@ -388,28 +557,52 @@ function check(name, ok, detail) {
     const fb = out.flipBoden || {},
         fz = out.flipZurueck || {};
     check(
-        'A KONSUM: Flip rock.fern="boden" → die neu gebaute Region trägt form boden (ohne Slots), zurück → gesetz',
+        'A KONSUM: Flip rock.fernform="boden" → die neu gebaute Region trägt jenseits der Grenze form boden (ohne Slots), zurück → gesetz',
         fb.n > 0 && fb.formen && fb.formen.boden === fb.n && fb.slots === 0 && fz.formen && fz.formen.gesetz === fz.n,
         out.flipErr || `Region ${out.flipKey}: boden ${JSON.stringify(fb.formen)} · zurück ${JSON.stringify(fz.formen)}`
     );
     const b = out.b || { n: -1, treffer: [] };
     check(
-        `B ABSENZ: keine Nicht-Baum-Streu-Instanz jenseits Welt-d1+Hyst (${out.dGrenze} m)`,
+        `B ABSENZ: keine Gesetz-/Boden-Art als Instanz jenseits Nah-Grenze + Totband (${out.dGrenze} m)`,
         b.n === 0,
         `${b.n} Instanzen${b.treffer.length ? ": " + b.treffer.join(" · ") : ""}`
     );
     const c = out.c || {};
     check(
-        "C FORM: jede Nicht-Baum-Fern-Zelle trägt ihre Budget-Form, gesetz/boden ohne Slots, keine litter-Zelle",
-        c.ohneForm === 0 && c.slotsBeiForm === 0 && c.litter === 0 && (c.falsch || []).length === 0 && c.gesetz > 0,
-        `gesetz ${c.gesetz} (wartet ${c.wartet}) · boden ${c.boden} · karte ${c.karte} · ohne Form ${c.ohneForm} · litter ${c.litter}${c.falsch && c.falsch.length ? " · " + c.falsch.join(" · ") : ""}`
+        "C FORM: jenseits der Grenze trägt jede Nicht-Baum-Fern-Zelle ihre Budget-Form (ohne Slots), diesseits keine eine Fernform, keine litter-Zelle",
+        c.ohneForm === 0 &&
+            c.slotsBeiForm === 0 &&
+            c.litter === 0 &&
+            c.nahFern === 0 &&
+            (c.falsch || []).length === 0 &&
+            c.gesetz > 0,
+        `gesetz ${c.gesetz} (wartet ${c.wartet}) · boden ${c.boden} · diesseits Mesh auf Fern-Wunsch ${c.nahMesh} · diesseits Fernform ${c.nahFern} · ohne Form ${c.ohneForm} · litter ${c.litter}${c.falsch && c.falsch.length ? " · " + c.falsch.join(" · ") : ""}`
     );
-    check("D WAND: die Kapsel-Liste ist nicht erschöpft", out.d && out.d.voll === false);
+    const gg = out.g || {};
+    const gh = gg.hin || {},
+        gz = gg.zurueck || {};
+    check(
+        "G BAHNWECHSEL: am fernen Gesetz-Fels trägt jede Zelle < 64 m ihr Studio-Mesh (mit Instanzen), zurück an der Mess-Wiese wieder das Gesetz",
+        gg.zielD > 0 &&
+            gh.fern === 0 &&
+            gh.mesh > 0 &&
+            gh.ohneSlots === 0 &&
+            gz.mesh === 0 &&
+            gz.gesetz > 0 &&
+            gg.bNachZurueck === 0,
+        `Ziel ${gg.zielD} m · hin: Mesh ${gh.mesh} (ohne Instanz ${gh.ohneSlots}) · Fernform ${gh.fern} · zurück um das Ziel: Gesetz ${gz.gesetz} · Mesh ${gz.mesh} · B danach ${gg.bNachZurueck}`
+    );
+    const d = out.d || {};
+    check(
+        "D WAND: im eingeschwungenen Ring ist die Kapsel-Liste nicht erschöpft und keine Gesetz-Zelle wartet",
+        d.voll === false && d.wartet === 0 && d.plaetze > 0,
+        `Kapseln ${d.cursor}/${d.kapazitaet} · Gesetz-Plätze ${d.plaetze} in ${d.bloecke} Blöcken · wartend ${d.wartet}`
+    );
     const st2 = out.st2 || {};
     check(
-        "E TICK: die Wiederholung wartender Zellen legt keine Instanz-Slots an (40 Durchläufe)",
-        st2.tickZuege === 0,
-        st2.err || `Züge im Tick ${st2.tickZuege}`
+        "E TICK: die Wiederholung wartender Zellen legt keine Instanz-Slots an und rechnet keinen Fit (40 Durchläufe, Liste voll)",
+        st2.tickZuege === 0 && st2.tickFits === 0,
+        st2.err || `Züge im Tick ${st2.tickZuege} · Fits im Tick ${st2.tickFits}`
     );
     const ft = out.f || {};
     check(
@@ -425,17 +618,18 @@ function check(name, ok, detail) {
         st1.err || st1.treffer
     );
     check(
-        "SELBSTTEST 2: erschöpfte Kapsel-Liste → die Zellen warten (0 L0-Instanzen) und die Wand D wird rot",
+        "SELBSTTEST 2: die ECHTE Erschöpfung (Cursor an der Kapazität, echter Spawn) → die Zellen warten (0 L0), der Allokator setzt die Wand",
         st2.gesetzZellen > 0 &&
             st2.wartet === st2.gesetzZellen &&
             st2.l0 === 0 &&
             st2.bauZuege === 0 &&
             st2.wandRot === true,
-        st2.err || `wartet ${st2.wartet}/${st2.gesetzZellen} · L0 ${st2.l0} · Bau-Züge ${st2.bauZuege}`
+        st2.err ||
+            `wartet ${st2.wartet}/${st2.gesetzZellen} · L0 ${st2.l0} · Bau-Züge ${st2.bauZuege} · Wand ${st2.wandRot}`
     );
     const st3 = out.st3 || {};
     check(
-        "SELBSTTEST 3: ohne budget.flower.fern bricht der Host-Leser fail-closed",
+        "SELBSTTEST 3: ohne budget.flower.fernform bricht der Host-Leser fail-closed",
         st3.bruch === true,
         st3.meldung || ""
     );
@@ -453,7 +647,7 @@ function check(name, ok, detail) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Klein-Streu liest ihre Fernform aus dem Studio-Budget: jenseits Welt-d1 kein L0-Mesh, wartende Zellen ohne Instanz-Zug, die erschöpfte Kapsel-Liste wird rot statt still L0."
+        "\n✅ GRÜN — die Klein-Streu liest ihre Fernform aus dem Studio-Budget jenseits der EINEN Nah-Grenze: dort kein L0-Mesh, diesseits kein Kapsel-Satz, wartende Zellen ohne Instanz-Zug und ohne Fit, die echte Erschöpfung wird rot statt still L0."
     );
 })().catch((e) => {
     console.error("DIAG-FEHLER:", e);
