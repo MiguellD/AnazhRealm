@@ -61617,7 +61617,7 @@ class AnazhRealm {
     }
 
     // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte Bake-Tick (EIN Bake in
-    // Flug; der Bäcker ist das STUDIO im Foundry-Worker, Kanal "bake-impostor").
+    // Flug; der Bäcker ist das STUDIO in seinem eigenen Faden, `_foundryBaecker`, Kanal "bake-impostor").
     // Headless/Null-Renderer/vor rendererReady → No-op (dort bäckt nie jemand).
     _tickImpostorBake() {
         const st = this.state;
@@ -63856,9 +63856,17 @@ class AnazhRealm {
             // Stufen-Maske sie aus. Der LOD-Tick wechselt auf die Wunsch-Stufe, sobald sie gedockt ist (er hält die
             // Karte bis dahin). Vorher stand hier nichts: der Kapsel-Satz des Felds war nah und mittel die Gestalt.
             // Eine 3D-Stufe kann keine Brücke sein — die Maske blendet L0/L1 außerhalb ihres Bands aus.
-            if (!entry.instanced && entry._lodLevel < 2 && this._foundryPresetIsTree(fPreset)) {
-                // Der Ruf stellt die Karte auch an (Record + Bedarf-Stempel, nah zuerst in die Worker-Schlange) und
-                // liefert sie, sobald sie gebacken ist — die Platte trägt sie meist schon.
+            // DIE BRÜCKE IST NUR BRÜCKE, WENN SIE DA IST (gedockt, `_foundryStufeBereit`): sie bestellt nichts und hebt keinen
+            // Rang. Ihr Bedarf-Stempel hob bis 05.10. den kalten Karten-Bake des nahen Baums vor dessen eigene Geometrie,
+            // die um Größen schneller ist (gemessen, gate:arch-feld Erst-Boot: die Karte einer Birke in 5 m ging vor elf
+            // nahen Körpern in den Worker und hielt ihn 387 Takte; die Eichen-L0 brauchte 5). Den Rang einer Karte setzt,
+            // wer sie als GESTALT braucht (die Fernstufe, `_foundryBuildImpostorFlat`).
+            if (
+                !entry.instanced &&
+                entry._lodLevel < 2 &&
+                this._foundryPresetIsTree(fPreset) &&
+                this._foundryStufeBereit(entry, fPreset, 2)
+            ) {
                 const karte = this._foundryFlattenFor(entry, fPreset, 2);
                 if (karte && karte.instanceable) {
                     entry._bruecke = true;
@@ -65321,8 +65329,11 @@ class AnazhRealm {
         const f = {
             worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
             // P5→BÄCKER-VEREINIGUNG: das GL-Bake-iframe UND der Welt-RTT-Nachbau sind
-            // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker dieses Workers
-            // (Kanal "bake-impostor" → Reply "impostor"). EIN Bäcker, ein Bake-Pfad.
+            // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker (Kanal "bake-impostor" → Reply "impostor"). EIN
+            // Bäcker, ein Bake-Pfad — in SEINEM Faden (`_foundryBaecker`: derselbe Boot-Blob, erst beim ersten Bake geboren).
+            baecker: null,
+            baeckerBereit: false,
+            bootUrl: null,
             ready: false,
             platte: false, // die Transport-Schale führt die Platte (gesetzt beim Worker-Boot)
             pending: new Map(),
@@ -65413,7 +65424,8 @@ class AnazhRealm {
                         ";importScripts(" +
                         abs.map((u) => JSON.stringify(u)).join(",") +
                         ");init();";
-                    const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+                    f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
+                    const worker = new Worker(f.bootUrl);
                     f.worker = worker;
                     worker.onerror = () => {
                         /* Boot-/Laufzeit-Fehler des Workers: f.ready bleibt false -> alles fällt auf den Alt-Pfad */
@@ -65434,37 +65446,7 @@ class AnazhRealm {
                             this._ofenPrefetchKreaturen();
                         } else if (m.type === "book") {
                             this._foundryIngestBook(m);
-                        } else if (m.type === "asset") {
-                            // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
-                            if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
-                                this.log(
-                                    "BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch),
-                                    "ERROR"
-                                );
-                            const p = f.pending.get(m.reqId);
-                            if (p) {
-                                f.pending.delete(m.reqId);
-                                p(m.meshes || []);
-                            }
-                        } else if (m.type === "settlement") {
-                            // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung
-                            // (fachwerk exportSettlement, generisch über die Zweit-Kern-Schleife
-                            // der Brücke). Dieselbe pending-Map wie die Assets (reqIds disjunkt).
-                            const ps = f.pending.get(m.reqId);
-                            if (ps) {
-                                f.pending.delete(m.reqId);
-                                ps(m.plan || null);
-                            }
-                        } else if (m.type === "impostor") {
-                            // Studio-Bäcker-Antwort (Kanal "bake-impostor" → Reply "impostor": die Atlas-Schicht + Rahmen) —
-                            // dasselbe pending-Routing wie build-asset/settlement; Konsum: `_applyStudioImpostorPayload`.
-                            const pi = f.pending.get(m.reqId);
-                            if (pi) {
-                                f.pending.delete(m.reqId);
-                                if (m.payload && m.platte === true) m.payload.vonPlatte = true; // Zensus: von der Platte
-                                pi(m.payload || null);
-                            }
-                        }
+                        } else this._foundryAntwort(f, m);
                         this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
                     };
                 })
@@ -65475,6 +65457,62 @@ class AnazhRealm {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
         return f;
+    }
+    // Die Antwort eines Studio-Fadens (Werk wie Bäcker) löst ihren Auftrag ein: Körper (asset), Siedlung (settlement),
+    // Karte (impostor) — EINE pending-Map, die reqIds sind disjunkt.
+    _foundryAntwort(f, m) {
+        if (m.type === "asset") {
+            // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
+            if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
+                this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
+            const p = f.pending.get(m.reqId);
+            if (p) {
+                f.pending.delete(m.reqId);
+                p(m.meshes || []);
+            }
+        } else if (m.type === "settlement") {
+            // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung (fachwerk exportSettlement, generisch
+            // über die Zweit-Kern-Schleife der Brücke).
+            const ps = f.pending.get(m.reqId);
+            if (ps) {
+                f.pending.delete(m.reqId);
+                ps(m.plan || null);
+            }
+        } else if (m.type === "impostor") {
+            // Studio-Bäcker-Antwort (Kanal "bake-impostor" → Reply "impostor": die Atlas-Schicht + Rahmen); Konsum:
+            // `_applyStudioImpostorPayload`.
+            const pi = f.pending.get(m.reqId);
+            if (pi) {
+                f.pending.delete(m.reqId);
+                if (m.payload && m.platte === true) m.payload.vonPlatte = true; // Zensus: von der Platte
+                pi(m.payload || null);
+            }
+        }
+    }
+    // DER BÄCKER HAT SEINEN FADEN. Die Karte rendert das Studio offscreen mit WebGL (`bakeImpostorAtlas`: Kontext,
+    // Programme, 8 Winkel, Rücklesen) und hält dabei den Faden fest, der sie trägt. Bis 05.10. war das der EINE
+    // Werk-Worker: hinter einem Bake wartete jede Geometrie — gemessen (gate:arch-feld, Erst-Boot an der Mess-Wiese,
+    // swiftshader): der erste, kalte Bake hielt den Worker 387 Takte ohne eine einzige Antwort, die nahe Eichen-L0 kam
+    // danach in 5 Takten, die gepflanzte Eiche in 10 m stand über 400 Takte ohne Gestalt (die Satz-Brücke fiel mit dem
+    // Fernwald; in Stufe 1 hielt derselbe Bake 233 Takte und die Brücke verdeckte es). Jetzt bäckt DASSELBE Studio
+    // (derselbe Boot-Blob, dieselbe Schale, dieselbe Platte) in einem zweiten Faden, geboren beim ersten Bake-Auftrag
+    // (headless bäckt nie einer). Die EINE Schlange (`_foundryAuftrag`) bleibt — sie speist zwei Bahnen
+    // (`_foundryPumpe`), und eine Karte nimmt der Geometrie keinen Platz mehr.
+    _foundryBaecker(f) {
+        if (f.baecker || !f.bootUrl) return f.baecker;
+        const w = new Worker(f.bootUrl);
+        f.baecker = w;
+        w.onerror = () => {
+            /* Boot-Fehler: der Bäcker bleibt unbereit, die Karten warten in der Schlange (der Zensus nennt sie wartend) */
+        };
+        w.onmessage = (ev) => {
+            const m = ev.data;
+            if (!m || typeof m !== "object") return;
+            if (m.type === "ready" && m.world === "terrain") f.baeckerBereit = true;
+            else this._foundryAntwort(f, m);
+            this._foundryPumpe(f);
+        };
+        return w;
     }
     // DER EINE INGEST-CHOKEPOINT für das Studio-Buch (Kanal "get-book" → Reply "book"): das Rezeptbuch
     // (PRESETS: Regler s + fx) wird die EINE Quelle, der Blueprint liest daraus statt Hardcodes. Feste
@@ -65708,6 +65746,44 @@ class AnazhRealm {
         const LESEN = new Set(cfg.lesen);
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId → Platten-Schlüssel des Studio-Baus, der gerade läuft
+        // DIE PLATTE HÄLT KEINEN FADEN. Zwei Studio-Fäden (Werk und Bäcker, `_foundryBaecker`) teilen EINE IndexedDB. Ein
+        // synchroner Studio-Lauf, gerufen aus dem Lese-Erfolg, hält dessen Transaktion bis zu seinem Ende offen — und jede
+        // Transaktion des anderen Fadens wartet dahinter (gemessen 05.10., gate:arch-feld Erst-Boot: fünf L1-Körper des
+        // Werks, in Takt 3 gesendet, kamen in Takt 746–753, einen Takt nach dem kalten Karten-Bake des Bäckers, der seine
+        // Karten-Lese-Transaktion 742 Takte offen hielt). Darum läuft ein Studio-Auftrag erst, wenn DIESER Faden keine
+        // Transaktion offen hat (`offen`), in Ankunfts-Reihenfolge — die Arbeits-Uhr des Hosts bleibt FIFO je Faden.
+        let offen = 0,
+            laeuft = false;
+        const bauten = [];
+        const los = () => {
+            while (!laeuft && offen === 0 && bauten.length) {
+                laeuft = true;
+                try {
+                    bauten.shift()();
+                } catch (e) {
+                    // laut wie vorher (das Fehler-Ereignis des Workers), und die Schlange dahinter läuft weiter
+                    setTimeout(() => {
+                        throw e;
+                    });
+                } finally {
+                    laeuft = false;
+                }
+            }
+        };
+        const tx = (d, art) => {
+            const t = d.transaction("assets", art);
+            offen++;
+            let zu = false;
+            const ende = () => {
+                if (zu) return;
+                zu = true;
+                offen--;
+                los();
+            };
+            t.addEventListener("complete", ende);
+            t.addEventListener("abort", ende);
+            return t;
+        };
         let db = null;
         let dbTot = !cfg.platte || typeof indexedDB === "undefined";
         const platte = dbTot
@@ -65727,8 +65803,8 @@ class AnazhRealm {
                           req.onerror = () => resolve(null);
                           req.onsuccess = () => {
                               const d = req.result;
-                              const tx = d.transaction("assets", "readwrite");
-                              const st = tx.objectStore("assets");
+                              const t = tx(d, "readwrite");
+                              const st = t.objectStore("assets");
                               const g = st.get("__stamp");
                               g.onsuccess = () => {
                                   // Generator oder Transport-Format geändert → der GANZE Cache ist Drift → leeren.
@@ -65737,8 +65813,8 @@ class AnazhRealm {
                                       st.put(stempel, "__stamp");
                                   }
                               };
-                              tx.oncomplete = () => resolve(d);
-                              tx.onerror = () => resolve(null);
+                              t.oncomplete = () => resolve(d);
+                              t.onerror = () => resolve(null);
                           };
                       });
                   })
@@ -65754,7 +65830,7 @@ class AnazhRealm {
                 d
                     ? new Promise((resolve) => {
                           try {
-                              const g = d.transaction("assets", "readonly").objectStore("assets").get(key);
+                              const g = tx(d, "readonly").objectStore("assets").get(key);
                               g.onsuccess = () => resolve(g.result && typeof g.result === "object" ? g.result : null);
                               g.onerror = () => resolve(null);
                           } catch (_e) {
@@ -65766,9 +65842,13 @@ class AnazhRealm {
         const schreib = (key, wert) => {
             if (!db || dbTot) return;
             try {
-                db.transaction("assets", "readwrite").objectStore("assets").put(wert, key).onerror = () => {
+                const t = tx(db, "readwrite");
+                t.objectStore("assets").put(wert, key).onerror = () => {
                     dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
                 };
+                // Der Put schließt, ohne dass dieser Faden seinen Erfolg erst abholt (er fällt mitten in einen Studio-
+                // Lauf): der nächste Lauf wartet nur einen Ereignis-Umlauf, nie die Schreib-Zeit.
+                if (typeof t.commit === "function") t.commit();
             } catch (_e) {
                 dbTot = true;
             }
@@ -65793,7 +65873,7 @@ class AnazhRealm {
                 d
                     ? new Promise((resolve) => {
                           try {
-                              const c = d.transaction("assets", "readonly").objectStore("assets").count(key);
+                              const c = tx(d, "readonly").objectStore("assets").count(key);
                               c.onsuccess = () => resolve(c.result > 0);
                               c.onerror = () => resolve(false);
                           } catch (_e) {
@@ -65893,7 +65973,10 @@ class AnazhRealm {
             delete weiter.platte;
             delete weiter.nurPlatte;
             const studio = () => {
-                if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
+                bauten.push(() => {
+                    if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
+                });
+                los();
             };
             if (m.type === "bake-impostor") {
                 // DIE KARTE: jeder Bake wird hier zur Atlas-Schicht im Format des Hosts (`fmt`, postMessage oben).
@@ -66765,16 +66848,23 @@ class AnazhRealm {
     // wenn kein FRÜHER gesendeter mehr offen ist (vorher wartet er in der Schlange, nicht im Bau). Befund
     // 01.10.: die Uhr ab Senden ließ Impostor-Karten in der belebten Welt ablaufen, bevor der Worker sie
     // anfasste (strauch|16: 45 s Ablauf im Betrieb, 0,6 s bei freiem Worker) — drei Abläufe, und die Art
-    // stand terminal ohne Fernstufe. Nie verklemmt: der älteste offene Auftrag hat immer eine laufende Uhr.
+    // stand terminal ohne Fernstufe. Nie verklemmt: der älteste offene Auftrag hat immer eine laufende Uhr. FIFO gilt
+    // je FADEN (`_foundryBahn`): eine Karte im Bäcker hält die Uhr eines Körpers im Werk nie an, und umgekehrt.
+    // DER ABGELAUFENE BLEIBT IM FADEN: der Besteller bekommt null (seine Wiederhol-Disziplin läuft), aber der Worker baut
+    // ihn weiter — als GEIST hält er seinen Platz und die Uhr der Späteren seines Fadens an, bis seine späte Antwort kommt
+    // (höchstens GEIST_FACHE × die Frist, dann fällt er: nie verklemmt). Bis 05.10. startete die Uhr des Wiederholers,
+    // während der Bäcker den Abgelaufenen noch buk (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
+    // Versuche, die Karte der fernen Eiche kam in Takt 3281; der dritte Ablauf macht eine Zelle für immer gescheitert).
     _foundryFrist(f, reqId, dauerMs, beiAblauf) {
         const nr = (id) => Number(String(id).replace(/^\D+/, ""));
         const meine = nr(reqId);
+        const bahn = this._foundryBahn(reqId);
         let start = null;
         const pruefe = () => {
             if (!f.pending.has(reqId)) return; // beantwortet
             let vorMir = false;
             for (const k of f.pending.keys()) {
-                if (nr(k) < meine) {
+                if (nr(k) < meine && this._foundryBahn(k) === bahn) {
                     vorMir = true;
                     break;
                 }
@@ -66783,7 +66873,14 @@ class AnazhRealm {
             if (vorMir) start = null;
             else if (start === null) start = jetzt;
             if (start !== null && jetzt - start > dauerMs) {
-                f.pending.delete(reqId);
+                const geist = () => {};
+                f.pending.set(reqId, geist); // die späte Antwort löst den Geist ein (`_foundryAntwort`)
+                setTimeout(() => {
+                    if (f.pending.get(reqId) === geist) {
+                        f.pending.delete(reqId);
+                        this._foundryPumpe(f);
+                    }
+                }, dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
                 beiAblauf();
                 return;
             }
@@ -66841,7 +66938,8 @@ class AnazhRealm {
     // sofort per postMessage hinein — eine nahe Eiche-L0 wartete hinter JEDEM früher gestellten Vorrats- und
     // Fernauftrag (gemessen 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9,0 s, die Tanne nach
     // 9,4 s; gate:arch-feld: 17 offene Aufträge, Eiche in 10 m und Haus in 27 m 800 Takte ohne Mesh). Jetzt hält der
-    // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge im Worker (so viele, dass er ohne Rundlauf-Lücke arbeitet:
+    // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge je Studio-Faden (Werk · Bäcker, `_foundryPumpe`; so viele,
+    // dass er ohne Rundlauf-Lücke arbeitet:
     // der Vorrat läuft so schnell leer wie FIFO), der nächste geht NAH zuerst (d² zum Spieler,
     // beim Senden frisch gemessen; Vorrat = ∞, unter Gleichen FIFO) — und nie verhungert: ist der älteste Wartende
     // älter als FOUNDRY_ALTER_MS, wechselt die Wahl ab (der Älteste, dann der Nächste). Die Request-Nummer entsteht
@@ -66861,15 +66959,42 @@ class AnazhRealm {
             dz = wo.z - pm.z;
         return dx * dx + dz * dz;
     }
+    // Die BAHN eines Auftrags (Präfix der Request-Nummer bzw. Nachrichten-Art): die Karte geht in den Bäcker-Faden
+    // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk.
+    _foundryBahn(reqIdOderMsg) {
+        if (typeof reqIdOderMsg === "string") return reqIdOderMsg.startsWith("imp") ? "baecker" : "werk";
+        return reqIdOderMsg && reqIdOderMsg.type === "bake-impostor" ? "baecker" : "werk";
+    }
+    // Die Pumpe speist ZWEI Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
+    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Der Bäcker wird beim
+    // ersten Karten-Auftrag geboren; bis er bereit ist, wartet die Karte, die Geometrie fließt.
     _foundryPumpe(f) {
         const q = f && f.warte;
-        while (q && q.length && f.worker && f.pending.size < AnazhRealm.FOUNDRY_IM_FLUG) {
-            let i = 0;
+        if (!q || !f.worker) return;
+        let werkFrei = 0,
+            baeckerFrei = 0;
+        const plaetze = () => {
+            let b = 0;
+            for (const k of f.pending.keys()) if (this._foundryBahn(k) === "baecker") b++;
+            werkFrei = AnazhRealm.FOUNDRY_IM_FLUG - (f.pending.size - b);
+            baeckerFrei = f.baecker && f.baeckerBereit ? AnazhRealm.FOUNDRY_IM_FLUG - b : 0;
+        };
+        const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
+        for (plaetze(); q.length; plaetze()) {
+            if (!f.baecker && q.some((a) => this._foundryBahn(a.msg) === "baecker")) this._foundryBaecker(f);
+            let i = -1;
+            for (let k = 0; k < q.length; k++)
+                if (frei(q[k])) {
+                    i = k;
+                    break;
+                }
+            if (i < 0) return; // kein Wartender, dessen Faden Platz hat
             let aeltester = false;
-            if (performance.now() - q[0].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
+            if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS) aeltester = f.warteZug = !f.warteZug;
             if (!aeltester) {
-                let best = this._foundryAuftragD2(q[0].wo);
-                for (let k = 1; k < q.length; k++) {
+                let best = this._foundryAuftragD2(q[i].wo);
+                for (let k = i + 1; k < q.length; k++) {
+                    if (!frei(q[k])) continue;
                     const d2 = this._foundryAuftragD2(q[k].wo);
                     if (d2 < best) {
                         best = d2;
@@ -66879,9 +67004,10 @@ class AnazhRealm {
             }
             const a = q.splice(i, 1)[0];
             const reqId = a.praefix + f.reqSeq++;
+            const ziel = this._foundryBahn(a.msg) === "baecker" ? f.baecker : f.worker;
             f.pending.set(reqId, a.resolve);
             try {
-                f.worker.postMessage(Object.assign({ reqId }, a.msg));
+                ziel.postMessage(Object.assign({ reqId }, a.msg));
             } catch (_e) {
                 f.pending.delete(reqId);
                 a.resolve(null);
@@ -91601,6 +91727,10 @@ AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
+// Wie lange ein abgelaufener Auftrag als Geist seinen Faden hält (× seine Frist, `_foundryFrist`): auf CPU-Raster unter
+// Fremdlast lief ein Karten-Bake über zwei Fristen (gate:arch-feld 05.10.: die Weide dreimal gesendet in ~1000 Takten) —
+// vier tragen ihn, ein toter Auftrag fällt.
+AnazhRealm.FOUNDRY_GEIST_FACH = 4;
 // DER EINE WELT-MARCH: alles Ferne ohne Karte (Box-Sätze der Bauten und Steine · Glieder-Kapseln · Streu-Gesetz;
 // Bäume und Sträucher sind fern ihre Karte) lebt als ANALOG-Satz in EINER Feld-Listen-Textur + EINER Kapsel-Liste;
 // der Feld-Pass marcht sie in EINEM Draw mit echter Tiefe. Fern ist das Feld die Gestalt (nah trägt das Studio-

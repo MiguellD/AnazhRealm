@@ -26,41 +26,56 @@ function flussLinse() {
         for (const k in x) s += bytesOf(x[k], seen);
         return s;
     };
-    const w = f.worker;
-    const pm = w.postMessage.bind(w);
-    w.postMessage = function (msg, tr) {
-        if (msg && msg.reqId)
-            L.send.set(msg.reqId, {
-                type: msg.type,
-                p: msg.presetId,
-                s: msg.seed,
-                lod: msg.lod,
-                ov: !!msg.ov,
-                t: performance.now(),
+    // Beide Studio-Fäden (das Werk und der Bäcker, `_foundryBaecker` — geboren beim ersten Karten-Auftrag): je Antwort
+    // die Bahn, die Worker-Auslastung (FIFO) rechnet je Faden.
+    const haken = (w, bahn) => {
+        const pm = w.postMessage.bind(w);
+        w.postMessage = function (msg, tr) {
+            if (msg && msg.reqId)
+                L.send.set(msg.reqId, {
+                    type: msg.type,
+                    p: msg.presetId,
+                    s: msg.seed,
+                    lod: msg.lod,
+                    ov: !!msg.ov,
+                    t: performance.now(),
+                });
+            return pm(msg, tr);
+        };
+        const om = w.onmessage;
+        w.onmessage = function (ev) {
+            const t0 = performance.now();
+            const m = ev.data;
+            const des = performance.now() - t0;
+            const bytes = bytesOf(m, new Set());
+            const t1 = performance.now();
+            om.call(this, ev);
+            const s = m && m.reqId ? L.send.get(m.reqId) : null;
+            L.done.push({
+                type: m && m.type,
+                bahn,
+                p: s && s.p,
+                lod: s && s.lod,
+                tSend: s ? s.t : null,
+                tRep: t0,
+                des,
+                h: performance.now() - t1,
+                bytes,
+                platte: !!(m && m.platte),
             });
-        return pm(msg, tr);
+        };
     };
-    const om = w.onmessage;
-    w.onmessage = function (ev) {
-        const t0 = performance.now();
-        const m = ev.data;
-        const des = performance.now() - t0;
-        const bytes = bytesOf(m, new Set());
-        const t1 = performance.now();
-        om.call(this, ev);
-        const s = m && m.reqId ? L.send.get(m.reqId) : null;
-        L.done.push({
-            type: m && m.type,
-            p: s && s.p,
-            lod: s && s.lod,
-            tSend: s ? s.t : null,
-            tRep: t0,
-            des,
-            h: performance.now() - t1,
-            bytes,
-            platte: !!(m && m.platte),
-        });
-    };
+    haken(f.worker, "werk");
+    if (f.baecker) haken(f.baecker, "baecker");
+    else if (typeof r._foundryBaecker === "function") {
+        const gb = r._foundryBaecker.bind(r);
+        r._foundryBaecker = (ff) => {
+            const neu = !ff.baecker;
+            const w = gb(ff);
+            if (neu && w) haken(w, "baecker");
+            return w;
+        };
+    }
     if (typeof r._foundryIdbGet === "function") {
         const ig = r._foundryIdbGet.bind(r);
         r._foundryIdbGet = (p, s, lod, sea) => {
@@ -130,20 +145,30 @@ function flussBericht() {
         k.desMs = Math.round(k.desMs);
         k.desMax = r1(k.desMax);
     }
-    // Worker-Auslastung (FIFO): Arbeit = Antwort − max(Senden, vorige Antwort) — nur Aufträge mit Sende-Stempel.
-    const mitStempel = L.done.filter((d) => d.tSend != null).sort((a, b) => a.tRep - b.tRep);
-    let prev = -Infinity,
-        arbeit = 0;
-    const warte = [];
-    for (const d of mitStempel) {
-        const start = Math.max(d.tSend, prev);
-        arbeit += d.tRep - start;
-        warte.push(Math.max(0, start - d.tSend));
-        prev = d.tRep;
-    }
-    const span = mitStempel.length
-        ? mitStempel[mitStempel.length - 1].tRep - Math.min(...mitStempel.map((d) => d.tSend))
-        : 0;
+    // Worker-Auslastung (FIFO je Faden): Arbeit = Antwort − max(Senden, vorige Antwort) — nur Aufträge mit Sende-
+    // Stempel; `worker` ist das Werk, `baecker` der Karten-Faden.
+    const fifo = (bahn) => {
+        const mitStempel = L.done.filter((d) => d.tSend != null && d.bahn === bahn).sort((a, b) => a.tRep - b.tRep);
+        let prev = -Infinity,
+            arbeit = 0;
+        const warte = [];
+        for (const d of mitStempel) {
+            const start = Math.max(d.tSend, prev);
+            arbeit += d.tRep - start;
+            warte.push(Math.max(0, start - d.tSend));
+            prev = d.tRep;
+        }
+        const span = mitStempel.length
+            ? mitStempel[mitStempel.length - 1].tRep - Math.min(...mitStempel.map((d) => d.tSend))
+            : 0;
+        return {
+            n: mitStempel.length,
+            auslastung: span ? Math.round((arbeit / span) * 100) / 100 : 0,
+            arbeitS: r1(arbeit / 1000),
+            warteP50s: r1(pct(warte, 0.5) / 1000),
+            warteP95s: r1(pct(warte, 0.95) / 1000),
+        };
+    };
     const f = r._foundry;
     const des = L.done.map((d) => d.des);
     const ankunft = L.done.map((d) => d.tRep / 1000);
@@ -168,11 +193,8 @@ function flussBericht() {
             bauMax: r1(Math.max(0, ...L.bau.map((x) => x.ms))),
             bauN: L.bau.length,
         },
-        worker: {
-            auslastung: span ? Math.round((arbeit / span) * 100) / 100 : 0,
-            warteP50s: r1(pct(warte, 0.5) / 1000),
-            warteP95s: r1(pct(warte, 0.95) / 1000),
-        },
+        worker: fifo("werk"),
+        baecker: fifo("baecker"),
         ingest: { n: L.ingest.length, warteP95s: r1(pct(L.ingest, 0.95) / 1000), maxQ: r._foundryIngestMaxQ || 0 },
         cacheMB: r1((f.cacheBytes || 0) / 1e6),
         // Die Fernstufe: der EINE Karten-Atlas (W6) — Zellen, gebacken, davon von der Platte, Atlas-MB, Format.

@@ -22,7 +22,8 @@
 //   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V9 Karten auf der Platte (V18.527), als Atlas-Schicht
 //       kodiert (W6: Karten-Codec im Worker, Format im Schlüssel) · V10 das Format trennt die Platte · V11 nurPlatte
 //       bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes · V13 die Nicht-Leere-Wand: eine leere
-//       Karte reist als payload null und nie auf die Platte
+//       Karte reist als payload null und nie auf die Platte · V14 die Platte hält keinen Faden: ein langer Bake im
+//       Bäcker-Faden lässt die Platten-Transaktionen des Werks laufen (kein Studio-Lauf bei offener Transaktion)
 // STATISCH (V18.527): S5 keine Saison in Schlüssel/Auftrag, Flip-Maschine fort · S6 keine tote Fracht · S7 der
 //   Stempel hasht die Shells, jeder Welt-Körper schickt seinen Schlüssel, Karten tragen `karte|…`
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
@@ -249,6 +250,11 @@ self.onmessage = (e) => {
     if (m.type === "build-asset" || m.type === "bake-impostor") saisons.push(m.season === undefined ? "-" : m.season);
     if (m.type === "bake-impostor") {
         gebacken++;
+        // "lang" bäckt wie der kalte Bäcker: 1,5 s synchron (Kontext, Programme, Rücklesen — V14)
+        if (m.presetId === "lang") {
+            const bis = Date.now() + 1500;
+            while (Date.now() < bis) {}
+        }
         const K = ${JSON.stringify(KARTE)};
         // "leer" bäckt wie ein gebrochener Bäcker: maßtreue Clear-Pixel (die NICHT-LEERE-WAND, V13)
         const albedo = new Uint8Array(K.cw * K.ch * K.V * 4).fill(m.presetId === "leer" ? 0 : 200),
@@ -513,6 +519,28 @@ async function verhalten(schaleSrc) {
                     q10.gebacken === 0
                 );
                 G.w.terminate();
+                // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (Bäcker und Werk, `_foundryBaecker`). Der
+                // Bäcker bäckt lang (1,5 s synchron); das Werk baut währenddessen zwei Körper — der zweite liest erst nach
+                // dem Platten-Put des ersten. Hielte der Bäcker seine Lese-Transaktion durch den Bake offen, wartete der Put
+                // und mit ihm der zweite Körper bis nach der Karte (gemessen 05.10., gate:arch-feld: fünf L1-Körper des
+                // Werks kamen 742 Takte spät, einen Takt nach dem kalten Karten-Bake).
+                const H = neu(3, true);
+                const Wk = neu(3, true);
+                const tH0 = performance.now();
+                let tLang = null;
+                const lang = karte(H, "kh1", "lang", 1, "bc").then((k) => {
+                    tLang = performance.now() - tH0;
+                    return k;
+                });
+                await ruhe(300);
+                const wf1 = await Wk.frag({ type: "build-asset", reqId: "wf1", presetId: "f1", seed: 1, lod: 0, platte: "f1|1|0" });
+                const wf2 = await Wk.frag({ type: "build-asset", reqId: "wf2", presetId: "f2", seed: 1, lod: 0, platte: "f2|1|0" });
+                const tWerk = performance.now() - tH0;
+                const kLang = await lang;
+                aus.faden = !!(wf1 && wf2 && schicht(kLang, "bc") && tLang != null && tWerk < tLang);
+                aus.fadenMs = { werk: Math.round(tWerk), baecker: tLang == null ? null : Math.round(tLang) };
+                H.w.terminate();
+                Wk.w.terminate();
                 return aus;
             },
             schaleSrc.replace(/^ {4}static /, ""),
@@ -823,6 +851,7 @@ const VERHALTEN = [
     ["V11 nurPlatte bäckt keine Karte (Miss = payload null)", "karteNurPlatte"],
     ["V12 Zweit-Boot: 3 Karten von der Platte, 0 Bakes", "zweitBoot"],
     ["V13 Nicht-Leere-Wand: eine leere Karte reist als payload null und nie auf die Platte", "karteLeer"],
+    ["V14 die Platte hält keinen Faden: das Werk baut zwei Körper, während der Bäcker 1,5 s bäckt", "faden"],
 ];
 
 (async () => {
@@ -967,6 +996,17 @@ const VERHALTEN = [
             "Selbst-Test 18: Schale ohne Nicht-Leere-Wand (die leere Karte reist auf die Platte) → V13 rot",
             ohneWand !== schale && v7.karteLeer === false
         );
+        // Der Studio-Lauf direkt aus dem Lese-Erfolg (die alte Schale): die Lese-Transaktion bleibt durch den Bake offen.
+        const ohneFaden = schale.replace(
+            /bauten\.push\(\(\) => \{\s*(if \(typeof W\.onmessage === "function"\) W\.onmessage\(\{ data: weiter \}\);)\s*\}\);\s*los\(\);/,
+            "$1"
+        );
+        const v8 = await verhalten(ohneFaden);
+        check(
+            `Selbst-Test 19: Studio-Lauf bei offener Transaktion → V14 rot (Werk ${v8.fadenMs && v8.fadenMs.werk} ms · ` +
+                `Bäcker ${v8.fadenMs && v8.fadenMs.baecker} ms)`,
+            ohneFaden !== schale && v8.faden === false
+        );
         const t16 = statisch(stamm.replace('+ "|" + fmt;', ";")).gesetze.find((g) => g[0].startsWith("S7c"));
         check("Selbst-Test 16: Karten-Schlüssel ohne Format → S7c rot", t16 && !t16[1]);
         const t17 = statisch(stamm.replace("karteOk(p) && p.fmt === fmt", "karteOk(p)")).gesetze.find((g) =>
@@ -1004,7 +1044,8 @@ const VERHALTEN = [
     }
     console.log("=== FLUSS-WAND — Verhalten (echter Worker + IndexedDB) ===");
     const v = await verhalten(schale);
-    for (const [n, k] of VERHALTEN) check(n, v[k] === true);
+    for (const [n, k] of VERHALTEN)
+        check(n, v[k] === true, k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · Bäcker ${v.fadenMs.baecker} ms` : "");
     console.log("=== FLUSS-WAND — Welt-Sonde (Null-Renderer, echter Studio-Worker, Boot + Saison-Wechsel) ===");
     const w = await welt();
     console.log(

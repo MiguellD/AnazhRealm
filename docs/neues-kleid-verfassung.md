@@ -65,7 +65,7 @@ Schicht, Bake-Rahmen und Sichthöhe — die Höhe der L1, negativ = verdeckt —
 der Canvas-Atlas je Karte, das Umdrehen im Haupt-Thread, die Silhouette, der Re-Frame
 (`gate:altlasten`). Der frühere Welt-RTT-Nachbau (`_bakeImpostorAtlasRTT` ·
 `_impostorBlitPixels` · `_impostorDilate` · `_foundryBakeLeaves`) ist GESCHNITTEN — ein Bäcker,
-eine Quelle; die Bake-DISZIPLIN blieb (ein Bake in Flug · Watchdog `IMPOSTOR_BAKE_TIMEOUT_MS` ·
+eine Quelle; die Bake-DISZIPLIN blieb (ein Bake in Flug, im eigenen Bäcker-Faden `_foundryBaecker` · Watchdog `IMPOSTOR_BAKE_TIMEOUT_MS` ·
 3× Retry, dann gescheitert · Zensus). KEIN GL-Bake-iframe: die drei iframe-Impostor-Methoden
 (`_foundryRequestImpostor` · `_foundryEnsureBakeIframe` · `_foundryBuildImpostorRecord`) bleiben
 geschnitten. Headless/Null-Renderer → nichts wird gebacken, der L1-Rahmen trägt die Mechanik;

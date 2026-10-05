@@ -7,14 +7,17 @@
 // Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für
 // den ganzen Analog-Pfad blind) auf der Mess-Wiese −900/−850 und prüft:
 //   A  nah (10 m · 26 m): gesetzte Eiche UND Haus sind binnen 200 Takten sichtbar — das Studio-Mesh steht
-//      ODER der Feld-Slot überbrückt (AAA nah, V18.496: nah ist das Mesh die Gestalt, das Feld trägt nur,
-//      bis es steht)
+//      ODER eine Brücke trägt (das Haus sein Feld-Slot, die Eiche ihre gedockte Karte; AAA nah, V18.496: nah ist das
+//      Mesh die Gestalt). Die Eiche hat seit dem Fernwald (05.10.) keinen Satz: beim Erst-Boot trägt nur ihr Mesh,
+//      und das wartet nie hinter einem Karten-Bake (der Bäcker hat seinen Faden, gate:takt T7)
 //   AM nah steht danach das Studio-Mesh (Grenze 800 Takte) — erst dann schießt die Linse: das Bild zeigt die
 //      Gestalt, nicht die Brücke
 //   A' fern (jenseits der Mesh-Zone): das gesetzte Haus bekommt seinen Feld-Slot — der Feld-Bake-Takt geht
 //      nah zuerst über alle Verbraucher, der ferne Bau wartet auf die Näheren und verhungert nie (Grenze 1000 Takte;
 //      gemessen 02.10.: Dorf mit 55 Foundry-Bauten Takt 111, mit 107 Bauten > 200 — der Takt vergab 84 Fits in
-//      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte (Karten-Zone, 05.10.)
+//      200 Takten, alle in Distanz-Ordnung); die gesetzte Eiche steht dort als ihre Karte (Karten-Zone, 05.10.),
+//      sobald der Bäcker ihre Zelle erreicht: das Karten-Buch prüft das Gesetz (keine fernere Zelle überholt die ihre,
+//      sie kommt an — Grenze 4000 Takte), die Dauer ist der Durchsatz des Bäckers und steht daneben
 //   S  statisch: in der Mesh-Zone wartet ein ungebackener Bau in DERSELBEN Distanz-Schlange wie fern
 //      (Befund 02.10.: in Listen-Reihenfolge fraß das Dorf den überbuchten Bake-Takt, das frisch gesetzte
 //      Haus blieb 200 Takte ohne Feld und ohne Mesh); --selftest injiziert den Listen-Ruf → S rot
@@ -131,6 +134,15 @@ const SCHUSS_FN = async (kam) => {
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };
 
+// A' — das Gesetz des Bäckers über das Karten-Buch (je begonnenem Bake: Zelle, ihr Rang d, der Rang dF der Zelle der
+// fernen Eiche im Moment der Wahl): bis die Zelle der Eiche dran ist, überholt sie keine fernere (Rang −1 = ohne Bedarf).
+function kartenGesetz(buch, zelleF) {
+    const fern = (x) => (x < 0 ? Infinity : x);
+    const iF = buch.findIndex((b) => b.key === zelleF);
+    const vorF = iF < 0 ? buch : buch.slice(0, iF);
+    return { iF, ueberholt: vorF.filter((b) => fern(b.d) > fern(b.dF)) };
+}
+
 // S — die Ziegel-Schlange: im Mesh-Zonen-Zweig von tickArchitectureCulling ruft ein Bau ohne Slot den
 // Ziegel NIE direkt (Listen-Reihenfolge), er reiht sich in die Distanz-Schlange.
 function schlangenGesetz(src) {
@@ -174,7 +186,31 @@ function schlangenGesetz(src) {
         // der zweite Bruch: Wartende verbrauchen wieder Versuche (der Sprung fällt)
         const kaputt2 = stamm.replace("if (w && w.a === fA && jetztN - w.t < 1000) continue;", "");
         const bruch2 = schlangenGesetz(kaputt2);
-        const ok = heil.ok && kaputt !== stamm && !bruch.ok && kaputt2 !== stamm && !bruch2.ok;
+        // Das Karten-Gesetz feuert: eine fernere Zelle (40 m, ohne Bedarf) vor der Eichen-Zelle (Rang 15 m) ist überholt,
+        // nähere (9 m, 15 m) sind es nicht.
+        const F = "fimp:eiche|2";
+        const gut = kartenGesetz(
+            [
+                { key: "fimp:strauch|1", d: 9, dF: 15 },
+                { key: "fimp:weide|1", d: 15, dF: 15 },
+                { key: F, d: 15, dF: 15 },
+            ],
+            F
+        );
+        const schlecht = kartenGesetz(
+            [
+                { key: "fimp:birke|1", d: 40, dF: 15 },
+                { key: "fimp:buche|1", d: -1, dF: 15 },
+                { key: F, d: 15, dF: 15 },
+            ],
+            F
+        );
+        const gesetzOk = gut.ueberholt.length === 0 && gut.iF === 2 && schlecht.ueberholt.length === 2;
+        console.log(
+            `${gesetzOk ? "✅" : "❌"} SELBST-TEST A': nähere Zellen vor der Eiche überholt ${gut.ueberholt.length} · ` +
+                `fernere (40 m, ohne Bedarf) überholt ${schlecht.ueberholt.length}`
+        );
+        const ok = heil.ok && kaputt !== stamm && !bruch.ok && kaputt2 !== stamm && !bruch2.ok && gesetzOk;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST S: heil ${heil.grund} · Listen-Ruf injiziert ${bruch.grund} · ` +
                 `Warte-Sprung entfernt ${bruch2.grund}`
@@ -276,6 +312,23 @@ function schlangenGesetz(src) {
         const sichtbar = (e) => !!(e && (r._archIsRendered(e) || e._ziegelSlot));
         // Die ferne Eiche ist ihre Karte (die Stufe 2 steht als Instanz); ein Feld-Satz an ihr ist der Täter von C.
         const karte = (e) => !!(e && r._archIsRendered(e) && e._lodLevel === 2);
+        // DAS KARTEN-BUCH: jeder Bake, den der Bäcker nach dem Pflanzen beginnt, mit dem Rang seiner Zelle (dem nächsten
+        // Gestalt-Bedarf, m; −1 = ohne Bedarf) und dem Rang der Zelle der fernen Eiche im Moment der WAHL — die Linse prüft
+        // das GESETZ des Bäckers (nah zuerst, nie verhungert), nicht seinen Durchsatz.
+        const presetF = r._foundryPresetForEntry(ebF);
+        const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryVariantFor(ebF.seed, presetF), null);
+        const backBuch = [];
+        const rang = (z) => (z && Number.isFinite(z._bedarfD2) ? Math.round(Math.sqrt(z._bedarfD2)) : -1);
+        let zuletzt = r._impostorBakePending ? r._impostorBakePendingKey : null;
+        const buche = (t) => {
+            const at = r._kartenAtlas;
+            const k = r._impostorBakePending ? r._impostorBakePendingKey : null;
+            if (at && k && k !== zuletzt) {
+                const zF = at.zellen.get(zelleF);
+                if (!(zF && zF.gebacken)) backBuch.push({ key: k, d: rang(at.zellen.get(k)), dF: rang(zF), t });
+            }
+            zuletzt = k;
+        };
         let satzBF = false;
         let slotB = null,
             slotH = null,
@@ -283,6 +336,7 @@ function schlangenGesetz(src) {
             slotHF = null;
         for (let t = 1; t <= 200; t++) {
             await tick(1);
+            buche(t);
             if (slotB == null && sichtbar(eb)) slotB = t;
             if (slotH == null && sichtbar(eh)) slotH = t;
             if (karteBF == null && karte(ebF)) karteBF = t;
@@ -300,11 +354,23 @@ function schlangenGesetz(src) {
         for (let t = 201; t <= 1000; t++) {
             if (meshB != null && meshH != null && karteBF != null && slotHF != null) break;
             await tick(1);
+            buche(t);
             if (meshB == null && gestalt(eb)) meshB = t - 200;
             if (meshH == null && gestalt(eh)) meshH = t - 200;
             if (karteBF == null && karte(ebF)) karteBF = t;
             if (ebF && ebF._ziegelSlot) satzBF = true;
             if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
+        }
+        // DIE FERNE KARTE kommt an, sobald der Bäcker ihre Zelle erreicht: nah zuerst (der Rang einer Zelle ist ihr nächster
+        // Gestalt-Bedarf), nie verhungert. Wie lange das dauert, ist der DURCHSATZ des Bäckers, nicht sein Gesetz — auf
+        // CPU-Raster unter Fremdlast 65–745 Takte je Karte (gemessen 05.10.; die Grenze 1000 maß bis dahin ihn: in 3 von 6
+        // Läufen kam die Karte erst danach, in der Reihe ihrer Zelle). Die Linse wartet bis 4000 Takte und prüft, dass
+        // keine fernere Zelle die ihre überholt.
+        for (let t = 1001; t <= 4000 && karteBF == null; t++) {
+            await tick(1);
+            buche(t);
+            if (karte(ebF)) karteBF = t;
+            if (ebF && ebF._ziegelSlot) satzBF = true;
         }
         r._weltBakeErlaubt = taktRoh;
         // B — ausgebrannte Foundry-Bauten (aufgegeben ohne Slot):
@@ -360,6 +426,8 @@ function schlangenGesetz(src) {
             slotH,
             karteBF,
             slotHF,
+            backBuch,
+            zelleF,
             meshB,
             meshH,
             fernD,
@@ -378,8 +446,15 @@ function schlangenGesetz(src) {
             zB: zustand(eb),
             zH: zustand(eh),
             taktFehler: { n: taktFehlerN, erster: taktFehler1 },
+            // Die Fäden: was im Werk und was im Bäcker offen ist (ein Karten-Bake im Werk hielt bis 05.10. jede nahe
+            // Geometrie hinter sich — der Täter, wenn A rot wird).
             werk: {
                 offen: r._foundry && r._foundry.pending ? r._foundry.pending.size : null,
+                imBaecker:
+                    r._foundry && r._foundry.pending
+                        ? [...r._foundry.pending.keys()].filter((k) => r._foundryBahn(k) === "baecker").length
+                        : null,
+                baeckerBereit: !!(r._foundry && r._foundry.baeckerBereit),
                 angefragt: r._foundry && r._foundry.requested ? r._foundry.requested.size : null,
                 stau: r._foundryIngestQueue ? r._foundryIngestQueue.length : 0,
             },
@@ -400,7 +475,10 @@ function schlangenGesetz(src) {
             `${res.felderVoll ? " (VOLL gemeldet)" : ""} · Mesh-Zone ${res.radius} m · Foundry ${JSON.stringify(res.werk)}`
     );
     const A = res.slotB != null && res.slotH != null;
-    const AF = res.karteBF != null && res.slotHF != null;
+    // A' die ferne Eiche: ihre Karte kam an, und bis ihre Zelle gebacken war, buk der Bäcker keine fernere (Rang −1 =
+    // ohne Bedarf zählt als unendlich fern). Das Haus: sein Feld-Slot binnen 1000 Takten.
+    const { iF, ueberholt } = kartenGesetz(res.backBuch, res.zelleF);
+    const AF = res.karteBF != null && res.slotHF != null && res.slotHF <= 1000 && ueberholt.length === 0;
     const AM = res.meshB != null && res.meshH != null;
     const Bk = res.ausgebrannt === 0;
     const C = !res.satzBF && res.kartenSaetze === 0;
@@ -411,8 +489,15 @@ function schlangenGesetz(src) {
         `${AM ? "✅" : "❌"} AM nah steht das Studio-Mesh: Eiche ${res.meshB} · Haus ${res.meshH} Takte nach der Brücke (Grenze 800)`
     );
     console.log(
-        `${AF ? "✅" : "❌"} A' fern (${res.fernD} m, jenseits der Mesh-Zone): Eiche als Karte ab Takt ${res.karteBF} · ` +
-            `Haus-Feld-Slot ab Takt ${res.slotHF} (Grenze 1000 — nah zuerst, nie verhungert)` +
+        `${AF ? "✅" : "❌"} A' fern (${res.fernD} m, jenseits der Mesh-Zone): Eiche als Karte ab Takt ${res.karteBF} ` +
+            `(ihre Zelle ${res.zelleF.replace("fimp:", "")} ` +
+            (iF < 0
+                ? `schon vor dem Pflanzen gebacken oder im Bäcker, ${res.backBuch.length} Bakes danach`
+                : `als ${iF + 1}. von ${res.backBuch.length} begonnenen Bakes, Rang ${res.backBuch[iF].dF} m`) +
+            ` · überholt von ferneren ${ueberholt.length}` +
+            `${ueberholt.length ? " " + JSON.stringify(ueberholt.slice(0, 3)) : ""}; Grenze 4000 Takte) · ` +
+            `Haus-Feld-Slot ab Takt ${res.slotHF} (Grenze 1000 — nah zuerst, nie verhungert) · begonnen ` +
+            `${res.backBuch.map((b) => b.key.replace("fimp:", "") + "@" + b.t + "/" + b.d + "m").join(" ")}` +
             (AF ? "" : ` — ${JSON.stringify(res.zBF)} · ${JSON.stringify(res.zHF)} · Takt ${JSON.stringify(res.takt)}`)
     );
     console.log(
