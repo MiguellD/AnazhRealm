@@ -15972,21 +15972,9 @@ class AnazhRealm {
             return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
         }
         try {
-            // Env 128×64 (feinere IBL-Mip-Kette); dasselbe DataTexture-Objekt + PMREM-RT werden
-            // wiederverwendet → kein Texture-Identitäts-Wechsel, 0 Recompiles.
-            const W = 128,
-                H = 64;
-            if (!st._skyEnvTex) {
-                st._skyEnvData = new Uint8Array(W * H * 4);
-                const tex = new THREE.DataTexture(st._skyEnvData, W, H);
-                tex.name = "himmel-umgebung";
-                tex.mapping = THREE.EquirectangularReflectionMapping;
-                tex.colorSpace = THREE.SRGBColorSpace;
-                tex.generateMipmaps = true; // Mip-Kette → raue Metalle blenden die Reflexion weich
-                tex.minFilter = THREE.LinearMipmapLinearFilter;
-                tex.magFilter = THREE.LinearFilter;
-                st._skyEnvTex = tex;
-            }
+            const tex = this._himmelUmgebungTex();
+            const W = tex.image.width,
+                H = tex.image.height;
             const d = st._skyEnvData;
             // Die Farben sind LINEAR (THREE.Color), die Textur ist sRGB: kodieren statt roh schreiben — roh
             // geschrieben dekodierte die Textur sie ein zweites Mal (tiefer, gesättigter).
@@ -15994,8 +15982,12 @@ class AnazhRealm {
                 const x = Math.max(0, Math.min(1, c));
                 return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055));
             };
+            // DIE ZEILEN-RICHTUNG: Zeile 0 liegt bei uv.v = 0, und three legt v = 0 nach UNTEN (equirectUV: v =
+            // asin(dir.y)/π + 0,5; eine DataTexture ohne flipY). Bis V18.530 stand der Zenit in Zeile 0 — der Himmel
+            // stand KOPF: eine weiße Karte nach oben las die Boden-Hälfte (0,43/0,59/0,62, grün), nach unten den
+            // Himmel (0,52/0,70/0,85), ein Spiegel nach oben spiegelte den Boden (Linse 05.10., echte GPU).
             for (let y = 0; y < H; y++) {
-                const v = 1 - y / (H - 1); // v=1 oben (Zenit) … 0 unten (Boden/Nadir)
+                const v = y / (H - 1); // v=0 unten (Boden/Nadir) … 1 oben (Zenit) — die Zeile, die three sampelt
                 // Himmel: Horizont = Nebel-Farbe, zum Zenit halb in die Skybox-Tönung (klarer Himmel: oben
                 // tiefer blau, gleich hell); Boden 0.35× (erd-dunkel) → Horizont 1.0×.
                 const t = v >= 0.5 ? 0.5 * ((v - 0.5) / 0.5) : 0;
@@ -16043,6 +16035,26 @@ class AnazhRealm {
             st._skyEnvFailed = true;
             return false;
         }
+    }
+
+    // DIE HIMMELS-UMGEBUNG als Textur (128×64 Equirekt, sRGB): EIN Objekt, gemalt von `_ensureSkyEnvironment`, gelesen
+    // von PMREM (die IBL jedes PBR-Stoffs) UND vom Wasser (der Spiegel des Himmels, roh — es ist glatt). Dasselbe
+    // DataTexture-Objekt bleibt über jede Regeneration → kein Texture-Identitäts-Wechsel, 0 Recompiles.
+    _himmelUmgebungTex() {
+        const st = this.state;
+        if (st._skyEnvTex) return st._skyEnvTex;
+        const W = 128,
+            H = 64;
+        st._skyEnvData = new Uint8Array(W * H * 4);
+        const tex = new THREE.DataTexture(st._skyEnvData, W, H);
+        tex.name = "himmel-umgebung";
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.generateMipmaps = true; // Mip-Kette → raue Metalle blenden die Reflexion weich
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        st._skyEnvTex = tex;
+        return tex;
     }
 
     // ===== ATLAS §06 · KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd =====
@@ -36350,10 +36362,11 @@ class AnazhRealm {
         const W = tex.image.width;
         const H = tex.image.height;
         const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-        // Zeile y → Elevation (v=1 Zenit … 0 Nadir), Farbe der Zeile (Spalte 0: azimut-konstant)
+        // Zeile y → Elevation (v = y/(H−1): 0 Nadir … 1 Zenit, dieselbe Zeilen-Richtung wie das GPU-Sampling,
+        // `_ensureSkyEnvironment`), Farbe der Zeile (Spalte 0: azimut-konstant)
         const zeilen = [];
         for (let y = 0; y < H; y++) {
-            const v = 1 - y / (H - 1);
+            const v = y / (H - 1);
             const el = (v - 0.5) * Math.PI; // −π/2 … π/2
             const i = y * W * 4;
             zeilen.push({ el, r: lin(d[i] / 255), g: lin(d[i + 1] / 255), b: lin(d[i + 2] / 255) });
