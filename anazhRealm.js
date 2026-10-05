@@ -67662,10 +67662,18 @@ class AnazhRealm {
     // Ist dieser gesetzte Eintrag ein KARTEN-DING — ist seine Fernstufe die Studio-Karte (Baum, Strauch, Tor, Fahrzeug:
     // KIND_POLICY.impostor ⇔ B2c `fernform: "karte"`, gate:studio-vertrag hält beides gleich)? Dann trägt er fern seine
     // Karte und nie einen Analog-Satz (`tickArchitectureCulling`, `_archZiegelFern`). Das Preset oder null.
+    // Der Culling-Scan fragt JEDEN Eintrag je Frame, die Preset-Auflösung baut je Ruf ihre Namens-Tafel: die Antwort
+    // steht am Eintrag, gültig solange Typ und Buch dieselben sind (das Buch wechselt einmal, kalt → geladen; der Typ
+    // nur auf dem Grammatik-Stufen-Weg) — transient, nie im Snapshot.
     _archKartenPreset(entry) {
         if (!this._foundryEnabled()) return null;
+        const buch = (this._foundry && this._foundry.recipes) || null;
+        if (entry._kartenBuch === buch && entry._kartenTyp === entry.type) return entry._kartenPreset;
         const preset = this._foundryPresetForEntry(entry);
-        return preset && this._foundryPresetIsTree(preset) ? preset : null;
+        entry._kartenPreset = preset && this._foundryPresetIsTree(preset) ? preset : null;
+        entry._kartenBuch = buch;
+        entry._kartenTyp = entry.type;
+        return entry._kartenPreset;
     }
 
     // DIE KARTEN-ZONE: steht ein Karten-Ding jenseits der Mesh-Zone (des geregelten Cull-Radius), IST es seine Karte —
@@ -69362,11 +69370,13 @@ class AnazhRealm {
         // Altbauten (Befund 30.09.: die Mesh-Zone konvergierte vom Listenanfang her, der Baum vor der Kamera wartete).
         const kand = this._rewarmKand || (this._rewarmKand = []);
         kand.length = 0;
+        // Die billigen Filter zuerst (Lehre 25: der Scan läuft je Frame über JEDEN Eintrag): schon foundry-platziert,
+        // dann die Distanz, erst dann die Preset-Auflösung (sie baut je Ruf ihre Namens-Tafel) — eingeschwungen fragt
+        // der Scan nur noch die Ungeplatzten der Mesh-Zone (gemessen 05.10., echte GPU, Mess-Wiese, 1563 Einträge:
+        // 1563 → 87 Auflösungen je Scan).
         for (const entry of archs) {
             if (!entry) continue;
-            // Die Eignung liest die BASIS-Art (`_foundryPresetForEntry` — `entry._lodSpecies`), NICHT
-            // `entry.type` (das bei Wald-Varianten `grown_..._v` ist, im Preset-Map NICHT steht).
-            if (!this._foundryPresetForEntry(entry)) continue;
+            if (!(!entry.instanced && !entry.mesh) && entry.instFoundry) continue; // schon foundry-platziert
             let d2 = 0;
             if (pm) {
                 const dx = entry.position.x - pm.x;
@@ -69374,7 +69384,9 @@ class AnazhRealm {
                 d2 = dx * dx + dz * dz;
                 if (d2 > radiusSq) continue;
             }
-            if (!(!entry.instanced && !entry.mesh) && entry.instFoundry) continue; // schon foundry-platziert
+            // Die Eignung liest die BASIS-Art (`_foundryPresetForEntry` — `entry._lodSpecies`), NICHT
+            // `entry.type` (das bei Wald-Varianten `grown_..._v` ist, im Preset-Map NICHT steht).
+            if (!this._foundryPresetForEntry(entry)) continue;
             entry._rewarmD2 = d2;
             kand.push(entry);
         }
