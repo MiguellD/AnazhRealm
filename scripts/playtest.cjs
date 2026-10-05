@@ -6571,8 +6571,14 @@ async function checkBandV1773HeldMesh(ctx) {
         // Der Mensch hat einen Arm → daran (schwingt mit); Custom-Seele → an die Wurzel
         out.onAnchor = !!m1 && (armAnchor ? m1.parent === armAnchor : m1.parent === pm);
 
-        // (2) auf greifbare Hand-Größe skaliert (nicht roh)
-        out.scaled = !!m1 && m1.scale.x > 0 && m1.scale.x <= r.constructor.HELD_MESH.maxScale;
+        // (2) auf greifbare Hand-Größe skaliert (nicht roh) — in WELT-Metern (W5: die Hand teilt die Anker-Skala des
+        //     Handgelenks heraus, lokal steht dort 1/0,27)
+        let m1Welt = 0;
+        if (m1) {
+            m1.updateMatrixWorld(true);
+            m1Welt = m1.getWorldScale(new THREE.Vector3()).x;
+        }
+        out.scaled = !!m1 && m1Welt > 0 && m1Welt <= r.constructor.HELD_MESH.maxScale;
 
         // (3) Equip-Wechsel: anderer Bauplan → das Mesh wechselt (neues Objekt) + das alte ist
         //     aus dem Graph (kein Leak). `waterfall` (große Struktur) testet zugleich die Skalierung.

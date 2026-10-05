@@ -43437,32 +43437,89 @@ class AnazhRealm {
             // Gruppe warm kompilieren (Null-Renderer/headless: No-op; disposeAfter false —
             // die Geometrie ist GETEILT und bleibt im Spiel).
             if (isStudio) this._warmCompilePipeline(mesh, false);
-            // auf greifbare Hand-Größe skalieren — die ECHTE Geometrie-Spanne (positions + sizes +
-            // rotation), robust auch bei Ein-Part-Geräten (anders als _compoundBBox, positions-only).
+            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
+            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
+            const anchor =
+                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
+                pm;
+            // DIE WAHRE GRÖSSE (W5 Gegenstände): das Gerät erbt die Welt-Skala seines Ankers — der Studio-Mensch steht
+            // als Baum in Studio-Einheiten unter einer 0,283-Gruppe, sein Handgelenk misst 0,26–0,28 Welt je Einheit.
+            // Bis W5 skalierte die Hand im Anker-Raum: das Langschwert (Gesetzbuch 1,228 m) schrumpfte auf 0,62 Einheiten
+            // × 0,27 = 0,17 m, ein Spielzeug im Faustinneren. Jetzt rechnet die Hand in WELT-Metern: die Studio-Gestalt
+            // trägt ihre Gesetzbuch-Länge (die Schmiede baut in Metern — Masse, Balance und Reichweite rechnen damit),
+            // ein Part-Bau seine Werkzeug-Spanne `targetSpanM`; der Anker-Faktor wird herausgeteilt.
+            let ankerSkala = 1;
+            try {
+                anchor.updateWorldMatrix(true, false);
+                const ws = anchor.getWorldScale(new THREE.Vector3());
+                const m = (Math.abs(ws.x) + Math.abs(ws.y) + Math.abs(ws.z)) / 3;
+                if (Number.isFinite(m) && m > 1e-4) ankerSkala = m;
+            } catch (_e) {
+                /* Anker ohne Welt-Matrix — Welt = Anker-Raum */
+            }
+            // die ECHTE Geometrie-Spanne (positions + sizes + rotation), robust auch bei Ein-Part-Geräten
+            // (anders als _compoundBBox, positions-only).
             try {
                 mesh.updateMatrixWorld(true);
                 const box = new THREE.Box3().setFromObject(mesh);
                 if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
                     const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
                     if (span > 1e-4) {
-                        const s = Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
-                        mesh.scale.setScalar(s);
+                        const welt = isStudio
+                            ? 1
+                            : Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
+                        mesh.scale.setScalar(welt / ankerSkala);
                     }
                 }
             } catch (_e) {
                 /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
             }
-            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
-            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
-            const anchor =
-                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
-                pm;
-            const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
             const sx = side === "left" ? -1 : 1;
             // V18.110 — C7: der GRIFF-Punkt liegt in der Hand — das Mesh wird so
             // verschoben, dass der griffigste Part (bzw. der explizite griff-
             // Punkt) am Hand-Anker sitzt, nicht der Bauplan-Ursprung.
             const ms = mesh.scale && Number.isFinite(mesh.scale.x) ? mesh.scale.x : 1;
+            // DIE FAUST (W5): ein Studio-Gerät im Handgelenk des Studio-Menschen (die Rig-Gelenke, `_buildHumanGroup`)
+            // liegt, wie eine Hand greift — der Griff quer zum Unterarm durch die Faust, das Blatt zur Daumenseite und
+            // `neigung` unter die Waagrechte (der entspannte Arm), die Schneide (Klinge) bzw. der Kopf (Axt, Hammer,
+            // Spaten) in der Schwung-Ebene nach unten; der Bogen liegt mit seiner Länge im Griff. Die Gelenk-Achsen des
+            // Handgelenks: −y zu den Fingern, +z nach vorn (Daumenseite), x quer. Vorher stand die Klinge mit 0,5 rad
+            // Kipp den Unterarm hinauf (ein Handgelenk, um 160° überstreckt) — Messname: Haltung, Hand-Griff-Versatz.
+            const rig = pm.userData && pm.userData.rig;
+            const faust =
+                isStudio &&
+                !!rig &&
+                ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+            if (faust) {
+                const fo = cfg.faustOffset;
+                const c = Math.cos(cfg.neigung),
+                    s = Math.sin(cfg.neigung);
+                const griff = new THREE.Vector3(0, -s, c); // die Griff-Achse: vorn, `neigung` hinab
+                const oben = new THREE.Vector3(0, c, s); // quer dazu in der Schwung-Ebene, oben
+                const quer = new THREE.Vector3(1, 0, 0);
+                const art = mesh.userData && mesh.userData.heldArt;
+                const B = new THREE.Matrix4();
+                // Spalten = Bild der Template-Achsen X · Y · Z (rechtshändig).
+                if (art === "bogen")
+                    B.makeBasis(oben, griff, quer); // Länge Y im Griff, Sehne nach oben
+                else if (art === "klinge")
+                    B.makeBasis(griff, oben, quer.clone().negate()); // Klinge X, Schneiden-Ebene XY
+                else B.makeBasis(griff, quer.clone().negate(), oben.clone().negate()); // Kopf +Z nach unten
+                mesh.quaternion.setFromRotationMatrix(B);
+                const gpT =
+                    art === "bogen"
+                        ? new THREE.Vector3(0, 0, 0)
+                        : new THREE.Vector3((mesh.userData && mesh.userData.heldGripX) || 0, 0, 0);
+                gpT.multiplyScalar(ms).applyQuaternion(mesh.quaternion);
+                mesh.position.set(
+                    (fo.x * sx) / ankerSkala - gpT.x,
+                    fo.y / ankerSkala - gpT.y,
+                    fo.z / ankerSkala - gpT.z
+                );
+                anchor.add(mesh);
+                return mesh;
+            }
+            const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
             // Der Griff der Studio-Gestalt kommt als DATEN (heldGripX aus dem LIVE-Buch). Template-Achse ist X
             // (Griff bei 0, Klinge nach +X) → rotation.z += π/2 (Euler XYZ: Z wirkt zuerst) stellt sie in die
             // Hand-Konvention (lange Achse +Y, Griff unten); (gripX,0,0) liegt danach bei (0,gripX,0) — dieselbe
@@ -43578,6 +43635,9 @@ class AnazhRealm {
         const pol = rec && rec.kind ? AnazhRealm.KIND_POLICY[rec.kind] : null;
         const ax = !!(pol && pol.handAxis === "x");
         wrap.userData.heldAxis = ax ? "x" : "y";
+        // Die Werk-Art als DATEN (fx.task.art aus dem LIVE-Buch: klinge · keil · graben · pick · bogen): die Faust legt
+        // danach die Schneide bzw. den Kopf in die Schwung-Ebene und den Bogen längs in den Griff (`_refreshHeldMesh`).
+        wrap.userData.heldArt = (rec && rec.fx && rec.fx.task && rec.fx.task.art) || null;
         const held = rec && rec.fx && rec.fx.held;
         const s = rec && rec.s;
         wrap.userData.heldGripX =
@@ -89025,6 +89085,12 @@ AnazhRealm.HELD_MESH = Object.freeze({
     handOffset: Object.freeze({ x: 0, y: -0.5, z: 0.12 }), // im Arm-Anker-Lokalraum (Handfläche/-spitze)
     rootOffset: Object.freeze({ x: 0.42, y: 0.9, z: 0.32 }), // Fallback: vorn-rechts an der Körper-Wurzel
     tilt: Object.freeze({ x: 0.5, y: 0, z: 0 }), // ein leichter Vorwärts-Neigung (ein langes Werkzeug zeigt nach vorn/unten)
+    // DIE FAUST (W5) — das Studio-Gerät im Handgelenk des Studio-Menschen, in WELT-Metern im Gelenk-Raum (−y zu den
+    // Fingern, +z Daumenseite): die Griff-Mitte sitzt in der Hand-Mitte (gemessen: der Schwerpunkt der Haut-Vertices am
+    // Handgelenk-Gelenk liegt 0,107 m fingerwärts, 0,013 m quer, 0,014 m vorn); die Griff-Achse zeigt nach vorn und
+    // `neigung` unter die Waagrechte (der entspannte Arm: das Langschwert-Ende 0,4 m über dem Boden statt im Boden).
+    faustOffset: Object.freeze({ x: 0.013, y: -0.105, z: 0.014 }),
+    neigung: 0.44,
 });
 // ═══ KAMPF-GEFÜHL — DIE GESETZE DES SCHWUNGS ═══
 // Die EINE Schwung-Dauer-Quelle ist die gerechnete Trägheit (_swingDynamics: I = Σ m·r² um den
