@@ -323,7 +323,9 @@ function main() {
                 "Mip-Stufe roh gemittelt",
                 QUELLE,
                 /linear gemittelt/,
-                PHYTO.replace("data[o * 4] = linZuSrgb8(tr[o] / ta[o]);", "data[o * 4] = Math.round((tr[o] / ta[o]) * 255);"),
+                // jede Stelle (S7: impostorMips schreibt die Mittel-Farbe auch für den blutenden Atlas — die erste Stelle
+                // allein träfe nur diesen Zweig, die Karte der Welt bliebe kodiert und die Linse sähe nichts)
+                PHYTO.split("data[o * 4] = linZuSrgb8(tr[o] / ta[o]);").join("data[o * 4] = Math.round((tr[o] / ta[o]) * 255);"),
             ],
             ["Karten-Tafel falsch", QUELLE, /Karten-Kodierung weicht/, PHYTO.replace("1.055 * Math.pow(x, 1 / 2.4) - 0.055", "Math.pow(x, 1 / 2.2)")],
             ["Atlas linear markiert", QUELLE.replace("map.colorSpace = T.SRGBColorSpace;", ""), /nicht in jeder Format-Stufe sRGB/],
