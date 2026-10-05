@@ -62096,8 +62096,11 @@ class AnazhRealm {
     // die Schichten und tauscht den Wert der Basis-Knoten — das EINE Material bleibt, die Bundles zeichnen neu.
     _impostorAtlasTexturen(at, bedarf) {
         if (!at) return null;
+        // Der Karten-Codec ist KERN-PFLICHT: fehlt er (ein altes phyto-core im Cache), bricht es laut — nie eine Welt,
+        // die still für immer ohne Karte zeichnet.
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
-        if (!core || typeof core.karteMasse !== "function") return null;
+        if (!core || typeof core.karteMasse !== "function" || !core.KARTEN_GESETZ)
+            return AnazhRealm._kernPflichtBruch("phyto:karteMasse/KARTEN_GESETZ");
         const soll = Math.max(bedarf || 0, at.n, 1);
         if (at.map && at.cap >= soll) return at;
         if (!at.masse) {
@@ -62495,8 +62498,9 @@ class AnazhRealm {
 
     // DIE SCHICHT (Transport-Schale, Karten-Codec): { cw, ch, V, nt, fmt, frame:{halfH, halfW}, albedo, normal, opak,
     // deckung, vonPlatte } — Maße und Format gegen den Atlas (beide lesen PORTAL_RENDER_CONFIG.impostor und das
-    // Karten-Gesetz), die NICHT-LEERE-WAND (ein Bäcker-Fehler liefert maßtreue Clear-Pixel: die Karte muss ≥ 64 opake
-    // Texel tragen, sonst verschwände das ferne Objekt), dann die Schicht schreiben. false → die Retry-Disziplin.
+    // Karten-Gesetz), die NICHT-LEERE-WAND (ein Bäcker-Fehler liefert maßtreue Clear-Pixel: die Karte muss
+    // ≥ KARTEN_GESETZ.minOpak opake Texel tragen, sonst verschwände das ferne Objekt — dieselbe Wand steht in der Schale
+    // vor der Platte), dann die Schicht schreiben. false → die Retry-Disziplin.
     _applyStudioImpostorPayload(z, payload) {
         const at = this._impostorAtlas();
         if (!z || !payload || !at || !this._impostorAtlasTexturen(at, z.idx + 1)) return false;
@@ -62513,7 +62517,7 @@ class AnazhRealm {
             payload.normal.length !== M.nBytes
         )
             return false;
-        if (!(payload.opak >= 64)) return false;
+        if (!(payload.opak >= globalThis.__phytoCore.KARTEN_GESETZ.minOpak)) return false;
         const fr = payload.frame;
         if (!fr || !(Number.isFinite(fr.halfH) && fr.halfH > 0 && Number.isFinite(fr.halfW) && fr.halfW > 0))
             return false;
@@ -66360,14 +66364,20 @@ class AnazhRealm {
                 dbTot = true;
             }
         };
-        // Eine Karte ist brauchbar, wenn beide Atlanten als eigene Puffer reisen (die Nicht-Leere prüft der Host).
-        const karteOk = (p) =>
-            !!(
+        // Eine Karte ist brauchbar, wenn beide Atlanten als eigene Puffer reisen UND sie die NICHT-LEERE-WAND des
+        // Karten-Gesetzes hält (ein Bäcker-Fehler liefert maßtreue Clear-Pixel): eine leere Karte reist nie auf die
+        // Platte und nie von ihr — sie kommt als payload null (die Retry-Disziplin des Hosts).
+        const karteOk = (p) => {
+            const G = W.__phytoCore && W.__phytoCore.KARTEN_GESETZ;
+            return !!(
+                G &&
                 p &&
                 ArrayBuffer.isView(p.albedo) &&
                 ArrayBuffer.isView(p.normal) &&
-                p.albedo.buffer !== p.normal.buffer
+                p.albedo.buffer !== p.normal.buffer &&
+                p.opak >= G.minOpak
             );
+        };
         // Liegt der Schlüssel auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
         const hat = (key) =>
             platte.then((d) =>

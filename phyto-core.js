@@ -2016,19 +2016,22 @@
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
     // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts, im Studio-Layout (bakeImpostorAtlas,
     // __replyBakeImpostor): die V Ansichten VERTIKAL gestapelt, Zeilen bottom-up (GL-readPixels) — ohne Umdrehen
-    // ladbar. Transport-Schale (Mips + Kodierung im Worker) und Host (alphaTest, Schicht-Maße) lesen DIESES Gesetz;
-    // der Studio-Bäcker liefert Albedo und Normale in voller Auflösung (sein Labor-Wald bleibt byte-gleich):
+    // ladbar. Transport-Schale (Mips + Kodierung im Worker, NICHT-LEERE-WAND vor der Platte) und Host (alphaTest,
+    // Schicht-Maße, NICHT-LEERE-WAND) lesen DIESES Gesetz; der Studio-Bäcker liefert Albedo und Normale in voller
+    // Auflösung (sein Labor-Wald bleibt byte-gleich):
     //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt
     //   normalTeiler  die Welt-Normale liegt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern):
     //                 der Codec mittelt die volle Studio-Normale als Vektor (normalMips) und beginnt dort
     //   minSeite      die Mip-Kette endet, bevor eine Ansicht unter 4 px fällt (BC-Block, keine Ansichten-Mischung)
+    //   minOpak       die NICHT-LEERE-WAND: eine Karte mit weniger opaken Stufe-0-Texeln ist ein Bäcker-Fehler (Clear-
+    //                 Pixel) — sie reist nie auf die Platte und wird nie Schicht
     // Gespeichert wird die Karte VORMULTIPLIZIERT (transparent = 0,0,0,0; BC1 kann es nicht anders), die Welt teilt
     // das gefilterte rgb durch alpha — kein dunkler Saum, auf keiner Mip-Stufe.
     // DER FARBRAUM: der Studio-Bäcker (r128) rendert in ein Render-Target ohne Kodierung — seine Albedo-Bytes sind
     // LINEAR. Die Schicht trägt sRGB (bc1-rgba-unorm-srgb / rgba8unorm-srgb, die GPU dekodiert): der Codec mittelt
     // jede Mip-Stufe LINEAR und kodiert erst beim Schreiben. Befund Blick-Tour 04.10.: der Host las die linearen
     // Bytes als sRGB — Eichen-Laub 0,12 → 0,013 linear, die Fernkrone stand SCHWARZ und im Dunst grau.
-    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4 };
+    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4, minOpak: 64 };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
         const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;

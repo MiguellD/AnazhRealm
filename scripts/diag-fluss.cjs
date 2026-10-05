@@ -21,7 +21,8 @@
 //   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 Format-Wechsel leert die Platte
 //   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V9 Karten auf der Platte (V18.527), als Atlas-Schicht
 //       kodiert (W6: Karten-Codec im Worker, Format im Schlüssel) · V10 das Format trennt die Platte · V11 nurPlatte
-//       bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes
+//       bäckt keine Karte · V12 der Zweit-Boot: n Karten von der Platte, 0 Bakes · V13 die Nicht-Leere-Wand: eine leere
+//       Karte reist als payload null und nie auf die Platte
 // STATISCH (V18.527): S5 keine Saison in Schlüssel/Auftrag, Flip-Maschine fort · S6 keine tote Fracht · S7 der
 //   Stempel hasht die Shells, jeder Welt-Körper schickt seinen Schlüssel, Karten tragen `karte|…`
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
@@ -247,7 +248,8 @@ self.onmessage = (e) => {
     if (m.type === "bake-impostor") {
         gebacken++;
         const K = ${JSON.stringify(KARTE)};
-        const albedo = new Uint8Array(K.cw * K.ch * K.V * 4).fill(200),
+        // "leer" bäckt wie ein gebrochener Bäcker: maßtreue Clear-Pixel (die NICHT-LEERE-WAND, V13)
+        const albedo = new Uint8Array(K.cw * K.ch * K.V * 4).fill(m.presetId === "leer" ? 0 : 200),
             normal = new Uint8Array(K.cw * K.ch * K.V * 4).fill(128);
         self.postMessage({ type: "impostor", world: "terrain", reqId: m.reqId, presetId: m.presetId, seed: m.seed,
             payload: Object.assign({ frame: { halfH: 4.75, halfW: 2.4 }, albedo, normal }, K) });
@@ -473,6 +475,21 @@ async function verhalten(schaleSrc) {
                 const kn = await karte(F, "kn1", "tanne", 1, "bc", { nurPlatte: true });
                 const q9 = await F.frag({ type: "frage" }, "antwort");
                 aus.karteNurPlatte = !!(kn && kn.payload === null && q9 && q9.gebacken === 2);
+                // V13 DIE NICHT-LEERE-WAND: eine leere Karte (Bäcker-Fehler, alle Texel klar) reist als payload null und nie
+                // auf die Platte — der zweite Ruf geht wieder ans Studio (bis V18.529 lag sie dort und vergiftete jeden Boot).
+                const kl1 = await karte(F, "kl1", "leer", 1, "bc");
+                await ruhe(400);
+                const kl2 = await karte(F, "kl2", "leer", 1, "bc");
+                const q11 = await F.frag({ type: "frage" }, "antwort");
+                aus.karteLeer = !!(
+                    kl1 &&
+                    kl1.payload === null &&
+                    kl2 &&
+                    kl2.payload === null &&
+                    !kl2.platte &&
+                    q11 &&
+                    q11.gebacken === 4
+                );
                 // V12 DER ZWEIT-BOOT: n Karten im Erst-Boot gebacken, ein frischer Worker (gleiche Platte, gleicher
                 // Stempel) liefert alle n von der Platte und bäckt 0.
                 await karte(F, "kz1", "fichte", 1, "bc");
@@ -803,6 +820,7 @@ const VERHALTEN = [
     ["V10 das Schicht-Format trennt die Platte (rgba8 trifft die BC-Schicht nie)", "kartenFormat"],
     ["V11 nurPlatte bäckt keine Karte (Miss = payload null)", "karteNurPlatte"],
     ["V12 Zweit-Boot: 3 Karten von der Platte, 0 Bakes", "zweitBoot"],
+    ["V13 Nicht-Leere-Wand: eine leere Karte reist als payload null und nie auf die Platte", "karteLeer"],
 ];
 
 (async () => {
@@ -940,6 +958,12 @@ const VERHALTEN = [
         check(
             "Selbst-Test 15: Schale ohne Karten-Codec (rohe Studio-Pixel) → V9 rot",
             ohneKodierung !== schale && v6.karte === false
+        );
+        const ohneWand = schale.replace(/ &&\s*p\.opak >= G\.minOpak/, "");
+        const v7 = await verhalten(ohneWand);
+        check(
+            "Selbst-Test 18: Schale ohne Nicht-Leere-Wand (die leere Karte reist auf die Platte) → V13 rot",
+            ohneWand !== schale && v7.karteLeer === false
         );
         const t16 = statisch(stamm.replace('+ "|" + fmt;', ";")).gesetze.find((g) => g[0].startsWith("S7c"));
         check("Selbst-Test 16: Karten-Schlüssel ohne Format → S7c rot", t16 && !t16[1]);

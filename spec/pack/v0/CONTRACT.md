@@ -37,7 +37,8 @@ karte|<preset>|<gestalt>[|ov:<hash>]|<fmt>  →  { payload: { cw, ch, V, nt, fmt
 (`_foundryKartenKey` + Schicht-Format `fmt` = `bc` | `rgba8`; die Schale kodiert die Studio-Karte mit dem Karten-Codec
 aus phyto-core (`karteKodiere`): `albedo` = BC1-sRGB mit deckungstreuen Mips (`bc`) bzw. rgba8-sRGB Stufe 0, `normal`
 = BC5 bzw. rg8 auf 1/`nt`, die Stufen hintereinander nach `karteMasse` — eine Schicht 0,25 MiB in `bc`. Geschrieben
-vor dem Transfer; ein leerer/fehlerhafter Bake wird nie persistiert. Der Host lädt die Schicht ohne Umdrehen in den
+vor dem Transfer; ein leerer/fehlerhafter Bake wird nie persistiert (die NICHT-LEERE-WAND `KARTEN_GESETZ.minOpak`
+steht in der Schale vor der Platte und beim Lesen von ihr). Der Host lädt die Schicht ohne Umdrehen in den
 EINEN Karten-Atlas, `_impostorAtlas`.)
 
 - `preset` — ein Schlüssel aus dem Studio-Rezeptbuch (`get-recipes`; Bäume `eiche fichte tanne
