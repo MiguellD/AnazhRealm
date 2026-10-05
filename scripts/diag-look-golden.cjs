@@ -163,7 +163,7 @@ async function renderLuma() {
             res.end(data);
         });
     });
-    const PORT = 4320;
+    const PORT = Number(process.env.DIAG_PORT) || 4320;
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: "new",

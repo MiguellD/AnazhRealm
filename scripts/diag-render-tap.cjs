@@ -22,7 +22,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4402;
+const PORT = Number(process.env.DIAG_PORT) || 4402;
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

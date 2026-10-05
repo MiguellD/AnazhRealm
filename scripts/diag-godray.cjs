@@ -16,7 +16,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4419;
+const PORT = Number(process.env.DIAG_PORT) || 4419;
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",
