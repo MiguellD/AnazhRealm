@@ -342,7 +342,10 @@ const FORBIDDEN = [
     // Welle 5 (05.10.): die schlanke Trauer-Klinge der Baum-L1 (tree[1].klinge Kontur-Segmente) las auf 12–26 m als
     // Papier-Streifen (Blick-Tour Bild 01, f:weide|1|1:2) — die Trauer-L1 trägt Strähnen aus dem Atlas (tree[1].straehne).
     { token: "_b1.klinge", fiel: "Welle 5 — die Trauer-L1 trägt Strähnen (tree[1].straehne), keine Klinge" },
-    { token: "_klinge", fiel: "Welle 5 — die Segment-Zahl der Trauer-Klinge (pushLeaf seg) ist mit ihr gefallen" },
+    // Präzise Tokens (Integration 05.10.): `_klinge` als Teilstring hätte jeden künftigen Klingen-Bezeichner der
+    // Schmiede getroffen — gefallen sind die Budget-Wand des Felds und der Kontur-Parameter von pushLeaf.
+    { token: '".klinge fehlt"', fiel: "Welle 5 — die Budget-Wand von tree[1].klinge ist mit der Trauer-Klinge gefallen" },
+    { token: "cup, seg)", fiel: "Welle 5 — die Segment-Zahl der Trauer-Klinge (pushLeaf seg) ist mit ihr gefallen" },
     // Der Grammatik-Pfad malte bei einem Atlas-Fehler still eine Ellipsen-Maske (fail-soft) — er bricht laut wie der
     // Laub-Stoff der Welt (KERN-PFLICHT).
     { token: "__foliageAtlasError", fiel: "Integration Welle 5 — kein Stoff ohne seinen Atlas (_blattAtlasProbe)" },
