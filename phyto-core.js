@@ -383,7 +383,7 @@
         const cv = doc.createElement("canvas");
         cv.width = 1024;
         cv.height = 256;
-        const x = cv.getContext("2d");
+        const x = cv.getContext("2d", { willReadFrequently: true });
         if (!x) return null;
         const rg = _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG; == mulberry32(0xBEEF))
         // Zellen 0..2 — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
@@ -467,20 +467,18 @@
         return cv;
     }
 
-    // DAS ATLAS-BILD (04.10., W5): was jeder Leser als TEXTUR hochlädt — die gemalte Leinwand, gelesen und für die
-    // GPU vorbereitet, mit ihrer ganzen Mip-Kette. Befund (Lab, echte GPU): die Leinwand reicht ungerade Alpha-Texel
-    // mit der Farbe 0 (schwarz) weiter — die bilineare Filterung und die Mips mischten dieses Schwarz in jeden Rand
-    // (die 4-px-Nadelstriche lasen auf Armlänge mit 47 % ihrer Albedo: Nadel-Karte L* 27,8 gegen die Nadel-Röhre
-    // 40,3), und die Box-Mips mittelten die dünnen Striche unter die Alpha-Schwelle (Nadel-Deckung 0,24 → 0,14 auf
-    // Stufe 4, 0,05 auf Stufe 5: auf 20 m las die Nadel-Karte als ovaler Klecks). Darum:
+    // DAS ATLAS-BILD (04.10., W5; S7: EIN Mip-Gesetz): was jeder Leser als TEXTUR hochlädt — die gemalte Leinwand,
+    // gelesen und für die GPU vorbereitet, mit ihrer ganzen Mip-Kette. Befund (Lab, echte GPU): die Leinwand reicht
+    // ungerade Alpha-Texel mit der Farbe 0 (schwarz) weiter — die bilineare Filterung und die Mips mischten dieses Schwarz
+    // in jeden Rand (die 4-px-Nadelstriche lasen auf Armlänge mit 47 % ihrer Albedo), und die Box-Mips mittelten die
+    // dünnen Striche unter die Alpha-Schwelle (Nadel-Deckung 0,24 → 0,14 auf Stufe 4). Darum:
     //   (1) jede Zelle trägt dasselbe lineare Mittel `wert` ihrer deckenden Texel (Alpha ≥ 0,5) — gleichgezogen auf
     //       das kleinste Zell-Mittel je Kanal (nur abwärts skaliert, kein Kappen);
-    //   (2) die nicht deckenden Texel tragen die Farbe `wert` (der Atlas „blutet"): Filter und Mips mischen
-    //       Blattfarbe statt Schwarz;
-    //   (3) DECKUNGSTREUE Mips (Castaño): jede Stufe ist das Box-Mittel (linear) von Stufe 0, ihr Alpha je Zelle so
-    //       skaliert, dass derselbe Anteil Texel die Schwelle 0,5 hält wie auf Stufe 0 — die Krone dünnt mit der
-    //       Entfernung nicht aus;
-    //   (4) die Zeilen liegen in Textur-Ordnung (Zeile 0 = v 0 = der untere Leinwand-Rand, wie eine Leinwand-Textur
+    //   (2) die Mips sind die des Karten-Gesetzes (impostorMips, die vier Zellen als Ansichten NEBENEINANDER): je Zelle
+    //       und Stufe deckt derselbe Texel-Anteil wie auf Stufe 0, die nicht deckenden Texel tragen `wert` (der Atlas
+    //       „blutet"), Stufe 0 behält die Kantenglättung des Malers; unter einem Texel je Zelle mitteln die letzten
+    //       Stufen die Box (die Kette reicht bis 1×1, sonst ist die Textur unvollständig);
+    //   (3) die Zeilen liegen in Textur-Ordnung (Zeile 0 = v 0 = der untere Leinwand-Rand, wie eine Leinwand-Textur
     //       mit flipY), damit jede Karte dieselben UV liest wie zuvor.
     // Leser (Studio-Stoff, Host-Stoff) laden `mips` (Stufe 0 = `daten`) und teilen die Atlas-Farbe durch `wert`: der
     // Atlas trägt NUR den Wert um 1, die Albedo der Karte ist im Mittel die Vertex-Farbe (FARB-GESETZ) — wie die
@@ -497,100 +495,61 @@
             const v = c / 255;
             LIN[c] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
         }
-        const srgb = (l) => {
-            const v = l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(l, 1 / 2.4) - 0.055;
-            return Math.max(0, Math.min(255, Math.round(v * 255)));
-        };
         const mittel = [];
         for (let c = 0; c < 4; c++) {
             let n = 0;
-            const s = [0, 0, 0];
+            const sm = [0, 0, 0];
             for (let y = 0; y < H; y++)
                 for (let x = c * Z; x < (c + 1) * Z; x++) {
                     const i = (y * W + x) * 4;
                     if (px[i + 3] < 128) continue;
                     n++;
-                    for (let k = 0; k < 3; k++) s[k] += LIN[px[i + k]];
+                    for (let k = 0; k < 3; k++) sm[k] += LIN[px[i + k]];
                 }
-            mittel.push(n ? s.map((v) => v / n) : [1, 1, 1]);
+            mittel.push(n ? sm.map((v) => v / n) : [1, 1, 1]);
         }
         const wert = [0, 1, 2].map((k) => Math.min(mittel[0][k], mittel[1][k], mittel[2][k], mittel[3][k]));
-        // Stufe 0 linear (Textur-Ordnung): RGB gleichgezogen bzw. geblutet, Alpha 0..1.
-        let F = new Float32Array(W * H * 4);
-        const deckung0 = [0, 0, 0, 0];
+        // Stufe 0 linear in Textur-Ordnung: deckend gleichgezogen, sonst `wert`; Alpha roh.
+        const lin = new Uint8Array(W * H * 4);
         for (let y = 0; y < H; y++)
             for (let x = 0; x < W; x++) {
                 const i = (y * W + x) * 4,
                     o = ((H - 1 - y) * W + x) * 4,
                     c = Math.min(3, Math.floor(x / Z));
                 const a = px[i + 3];
-                for (let k = 0; k < 3; k++) F[o + k] = a >= 128 ? (LIN[px[i + k]] * wert[k]) / mittel[c][k] : wert[k];
-                F[o + 3] = a / 255;
-                if (a >= 128) deckung0[c]++;
+                for (let k = 0; k < 3; k++)
+                    lin[o + k] = Math.round(
+                        Math.min(1, a >= 128 ? (LIN[px[i + k]] * wert[k]) / mittel[c][k] : wert[k]) * 255
+                    );
+                lin[o + 3] = a;
             }
-        for (let c = 0; c < 4; c++) deckung0[c] /= Z * H;
-        const kodiere = (G, w, h, alphaMul) => {
-            const d = new Uint8Array(w * h * 4),
-                zw = w / 4;
-            for (let i = 0; i < w * h; i++) {
-                const c = zw >= 1 ? Math.min(3, Math.floor((i % w) / zw)) : 0;
-                for (let k = 0; k < 3; k++) d[i * 4 + k] = srgb(G[i * 4 + k]);
-                d[i * 4 + 3] = Math.max(0, Math.min(255, Math.round(Math.min(1, G[i * 4 + 3] * alphaMul[c]) * 255)));
-            }
-            return d;
-        };
-        const daten = new Uint8Array(W * H * 4);
-        for (let i = 0; i < W * H; i++) {
-            for (let k = 0; k < 3; k++) daten[i * 4 + k] = srgb(F[i * 4 + k]);
-            daten[i * 4 + 3] = Math.round(F[i * 4 + 3] * 255);
-        }
-        const mips = [{ data: daten, width: W, height: H }];
-        let w = W,
-            h = H,
-            mul = [1, 1, 1, 1];
-        while (w > 1 || h > 1) {
-            const w2 = Math.max(1, w >> 1),
-                h2 = Math.max(1, h >> 1),
-                G = new Float32Array(w2 * h2 * 4);
+        const ms = impostorMips(lin, W, H, 4, 0.5, 64, { quer: true, blut: wert, alphaRoh: true });
+        const mips = ms.stufen.map((st) => ({ data: st.data, width: st.w, height: st.h }));
+        // Unter einem Texel je Zelle: die Box (gerade Alpha), bis 1×1.
+        let t = mips[mips.length - 1];
+        while (t.width > 1 || t.height > 1) {
+            const w2 = Math.max(1, t.width >> 1),
+                h2 = Math.max(1, t.height >> 1),
+                d = new Uint8Array(w2 * h2 * 4);
             for (let y = 0; y < h2; y++)
-                for (let x = 0; x < w2; x++) {
-                    const x0 = Math.min(w - 1, 2 * x),
-                        x1 = Math.min(w - 1, 2 * x + 1),
-                        y0 = Math.min(h - 1, 2 * y),
-                        y1 = Math.min(h - 1, 2 * y + 1);
-                    for (let k = 0; k < 4; k++)
-                        G[(y * w2 + x) * 4 + k] =
-                            (F[(y0 * w + x0) * 4 + k] +
-                                F[(y0 * w + x1) * 4 + k] +
-                                F[(y1 * w + x0) * 4 + k] +
-                                F[(y1 * w + x1) * 4 + k]) *
-                            0.25;
-                }
-            // Je Zelle (solange sie mindestens 4×4 Texel trägt) der Alpha-Faktor, der die Deckung von Stufe 0 hält.
-            const zw = w2 / 4;
-            if (zw >= 4 && h2 >= 4) {
-                mul = [0, 1, 2, 3].map((c) => {
-                    const al = [];
-                    for (let y = 0; y < h2; y++)
-                        for (let x = c * zw; x < (c + 1) * zw; x++) al.push(G[(y * w2 + x) * 4 + 3]);
-                    let lo = 0,
-                        hi = 64;
-                    for (let it = 0; it < 24; it++) {
-                        const m = (lo + hi) / 2;
-                        let n = 0;
-                        for (const a of al) if (a * m >= 0.5) n++;
-                        if (n / al.length < deckung0[c]) lo = m;
-                        else hi = m;
+                for (let x = 0; x < w2; x++)
+                    for (let k = 0; k < 4; k++) {
+                        let sm = 0;
+                        for (let dy = 0; dy < 2; dy++)
+                            for (let dx = 0; dx < 2; dx++)
+                                sm +=
+                                    t.data[
+                                        (Math.min(t.height - 1, 2 * y + dy) * t.width +
+                                            Math.min(t.width - 1, 2 * x + dx)) *
+                                            4 +
+                                            k
+                                    ];
+                        d[(y * w2 + x) * 4 + k] = Math.round(sm / 4);
                     }
-                    return hi;
-                });
-            }
-            mips.push({ data: kodiere(G, w2, h2, mul), width: w2, height: h2 });
-            F = G;
-            w = w2;
-            h = h2;
+            t = { data: d, width: w2, height: h2 };
+            mips.push(t);
         }
-        return { breite: W, hoehe: H, daten: daten, mips: mips, wert: wert };
+        return { breite: W, hoehe: H, daten: mips[0].data, mips: mips, wert: wert };
     }
 
     // DAS NEUE KLEID Welle 1 — DIE LAUB-GEOMETRIE aus der Vorlage (`pushLeafClusterQuad`, byte-
@@ -2214,10 +2173,21 @@
     // Texel opak, wie Stufe 0 deckt (Rang nach Anteil, Gleichstand über eine feste Permutation) — eine Box-Mip
     // dünnt die Krone sonst unter dem alphaTest aus. Die Farbe ist das alpha-gewichtete LINEARE Mittel des
     // Fußabdrucks; Eingang linear (der Bäcker), jede Stufe sRGB-kodiert (DER FARBRAUM oben).
+    // EIN Mip-Gesetz für jede Karte (S7: auch der EINE Blatt-Atlas, bakeLeafAtlasBild — sein eigener Mip-Weg mit
+    // Alpha-Skalierung je Zelle war ein Zwilling): `opt` (ohne = die Schicht des Karten-Atlas, unverändert)
+    //   quer     die V Ansichten (Zellen) liegen NEBENEINANDER (Breite w/V), nicht übereinander;
+    //   blut     lineares rgb der nicht deckenden Texel — der Atlas BLUTET (Filter und Mips mischen Blattfarbe statt
+    //            Schwarz), ein nicht gewählter Texel trägt das Mittel seiner deckenden Kinder bzw. `blut`, Alpha 0;
+    //   alphaRoh Stufe 0 behält ihr Eingangs-Alpha (die Kantenglättung des Malers, nah vergrößert), gezählt wird
+    //            die Deckung an der Schwelle wie immer.
     // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
-    function impostorMips(rgba, w, h, V, schwelle, nStufen) {
+    function impostorMips(rgba, w, h, V, schwelle, nStufen, opt) {
         const thr = (schwelle == null ? KARTEN_GESETZ.schwelle : schwelle) * 255;
-        const hA = (h / V) | 0;
+        const quer = !!(opt && opt.quer),
+            blut = opt && opt.blut ? opt.blut.map((x) => linZuSrgb8(x)) : null,
+            roh0 = !!(opt && opt.alphaRoh);
+        const hA = quer ? h : (h / V) | 0,
+            wA = quer ? (w / V) | 0 : w;
         const n0 = w * h;
         let sa = new Float32Array(n0),
             sr = new Float32Array(n0),
@@ -2238,22 +2208,29 @@
                 d0[i * 4] = SRGB_AUS_LIN8[r];
                 d0[i * 4 + 1] = SRGB_AUS_LIN8[g];
                 d0[i * 4 + 2] = SRGB_AUS_LIN8[b];
-                d0[i * 4 + 3] = 255;
+                d0[i * 4 + 3] = roh0 ? rgba[i * 4 + 3] : 255;
                 opak++;
-                cov0[Math.min(V - 1, ((i / w) | 0) / hA) | 0]++;
+                cov0[quer ? Math.min(V - 1, ((i % w) / wA) | 0) : Math.min(V - 1, ((i / w) | 0) / hA) | 0]++;
+            } else if (blut) {
+                d0[i * 4] = blut[0];
+                d0[i * 4 + 1] = blut[1];
+                d0[i * 4 + 2] = blut[2];
+                d0[i * 4 + 3] = roh0 ? rgba[i * 4 + 3] : 0;
             }
         }
-        for (let v = 0; v < V; v++) cov0[v] /= w * hA;
+        for (let v = 0; v < V; v++) cov0[v] /= wA * hA;
         const stufen = [{ w: w, h: h, data: d0 }];
         const deckung = [opak / n0];
         let lw = w,
             lh = h,
-            lhA = hA;
+            lhA = hA,
+            lwA = wA;
         for (let k = 1; k < nStufen; k++) {
             const nw = lw >> 1,
                 nh = lh >> 1,
-                nhA = lhA >> 1;
-            if (nw < 1 || nhA < 1) break;
+                nhA = lhA >> 1,
+                nwA = lwA >> 1;
+            if (nw < 1 || nhA < 1 || nwA < 1) break;
             const n = nw * nh;
             const ta = new Float32Array(n),
                 tr = new Float32Array(n),
@@ -2272,26 +2249,40 @@
                         }
                 }
             const data = new Uint8Array(n * 4);
-            const nA = nw * nhA;
+            const nA = nwA * nhA;
+            // Texel i der Ansicht v: übereinander zusammenhängend, nebeneinander zeilenweise je Zelle
+            const tex = quer ? (v, i) => ((i / nwA) | 0) * nw + v * nwA + (i % nwA) : (v, i) => v * nA + i;
             const schluessel = new Float64Array(nA),
                 sortiert = new Float64Array(nA);
             let opakK = 0;
             for (let v = 0; v < V; v++) {
-                const basis = v * nA;
                 let positiv = 0;
                 for (let i = 0; i < nA; i++) {
-                    const s = ta[basis + i];
+                    const s = ta[tex(v, i)];
                     if (s > 0) positiv++;
                     // Rang: Deckung zuerst, Gleichstand über die Bijektion i·φ mod 2^20 (deterministisch, ortsgestreut)
                     schluessel[i] = s * 1048576 + (Math.imul(i, 0x9e3779b1) & 0xfffff);
                 }
                 const M = Math.min(positiv, Math.round(cov0[v] * nA));
+                if (blut)
+                    for (let i = 0; i < nA; i++) {
+                        const o = tex(v, i);
+                        if (ta[o] > 0) {
+                            data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
+                            data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
+                            data[o * 4 + 2] = linZuSrgb8(tb[o] / ta[o]);
+                        } else {
+                            data[o * 4] = blut[0];
+                            data[o * 4 + 1] = blut[1];
+                            data[o * 4 + 2] = blut[2];
+                        }
+                    }
                 if (M <= 0) continue;
                 sortiert.set(schluessel);
                 sortiert.sort();
                 const grenze = sortiert[nA - M];
                 for (let i = 0; i < nA; i++) {
-                    const o = basis + i;
+                    const o = tex(v, i);
                     if (schluessel[i] >= grenze && ta[o] > 0) {
                         data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
                         data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
@@ -2310,6 +2301,7 @@
             lw = nw;
             lh = nh;
             lhA = nhA;
+            lwA = nwA;
         }
         return { stufen: stufen, deckung: deckung, opak: opak };
     }
