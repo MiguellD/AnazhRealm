@@ -16,6 +16,8 @@
 //       `tex:?`) — auch eine Neu-Zuweisung (`map = new T.DataArrayTexture(…)`), der Name mit Wortgrenze
 //   H4  die Täter-Klasse des Stamms: die drei Methoden stehen im Quelltext und klassifizieren die Schlüssel-Formen,
 //       die der Stamm heute baut (Studio-Leaf als Schlüssel, Schatten-Zwilling `#S`, ov-Hash, Karte, Streu, Bauplan)
+//   H5  jeder Name, den ein Haushalt-Muster wörtlich nennt, vergibt der Stamm noch (ein umbenannter Erzeuger fiele sonst
+//       still aus jeder Klasse — sichtbar erst auf der echten GPU als LINSE rot `haushalt`)
 //
 // Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks, V18.528) prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -129,6 +131,30 @@ function namensWand(src) {
         if (!zugewiesen.has(m.index)) {
             const zeile = code.slice(0, m.index).split("\n").length;
             errs.push(`Zeile ~${zeile} (bereinigt): ${m[0]} ohne Ziel-Variable — kein Name möglich`);
+        }
+    return { errs, n };
+}
+
+// H5 — jeder Name, den ein Haushalt-Muster wörtlich nennt (`^name$`, `^(a|b)$`), vergibt der Stamm noch: als String-Literal
+// im kommentar-freien Code, ganz oder mit Namens-Schwanz (`"voxelChunk:" + key` faltet `_taeterName` zu `voxelChunk`).
+// Befund 05.10. (echte GPU, Integration): welle-fernsicht benannte den Zaun-Pool `siedlung-zaun`, die Regel nannte weiter
+// `siedlung-wege` — der Täter fiel aus jeder Klasse (Band-LINSE rot `haushalt`), kein Gate ohne GPU sah es.
+function namenLeben(haushalt, src) {
+    const code = PK.stripComments(src);
+    const errs = [];
+    let n = 0;
+    for (const k of haushalt.klassen)
+        for (const r of k.regeln || []) {
+            if (!r.muster || !r.muster.startsWith("^") || !r.muster.endsWith("$")) continue;
+            const rumpf = r.muster.slice(1, -1);
+            const innen = /^\([^()]*\)$/.test(rumpf) ? rumpf.slice(1, -1) : rumpf;
+            if (/[()]/.test(innen)) continue; // verschachtelte Gruppen sind Muster über Schlüssel-Formen (H4)
+            for (const a of innen.split("|")) {
+                if (!/^[A-Za-z0-9_:.-]+$/.test(a)) continue; // ein Regex-Teil (chunk-water-[a-z]+) nennt keinen Namen
+                n++;
+                const lebt = ['"', "'", "`"].some((q) => code.includes(q + a + q) || code.includes(q + a + ":"));
+                if (!lebt) errs.push(`Klasse ${k.id}: das Muster ${r.muster} nennt "${a}" — kein Erzeuger im Stamm`);
+            }
         }
     return { errs, n };
 }
@@ -463,6 +489,19 @@ function selbsttest() {
             hl.vram.liste.length === 2
     );
 
+    // S16 — H5: ein Muster mit einem Namen, den der Stamm nicht mehr vergibt, wird rot; der echte Haushalt nicht, ein Name
+    // mit Namens-Schwanz (`"voxelChunk:" + key`) lebt.
+    const h16 = JSON.parse(JSON.stringify(haushalt));
+    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(bau-fundament|siedlung-wege)$" });
+    const n16 = namenLeben(h16, stamm);
+    t(
+        "H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt",
+        n16.errs.length === 1 &&
+            /siedlung-wege/.test(n16.errs[0]) &&
+            namenLeben(haushalt, stamm).errs.length === 0 &&
+            namenLeben({ klassen: [{ id: "boden", regeln: [{ muster: "^voxelChunk$" }] }] }, stamm).errs.length === 0
+    );
+
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
     if (rot.length) {
@@ -484,6 +523,8 @@ function main() {
     for (const f of nw.errs) errs.push("H3 " + f);
     const tw = taeterWand(stamm);
     for (const f of tw.errs) errs.push("H4 " + f);
+    const nl = namenLeben(haushalt, stamm);
+    for (const f of nl.errs) errs.push("H5 " + f);
     if (errs.length) {
         console.log("⛔ DIE BAND-WAND:");
         for (const e of errs) console.log("   ❌ " + e);
@@ -504,7 +545,7 @@ function main() {
             `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe (gemessen ${gemessen} von ${felder}` +
             `${ratsche.gemessen ? ", " + ratsche.gemessen.datum.slice(0, 10) : ""}, Toleranz ${ratsche.toleranzPct} % / ` +
             `+${ratsche.toleranzAbs.befehle} Befehle) · H3 ${nw.n} Textur-Erzeuger benannt · ` +
-            `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen.`
+            `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm.`
     );
 }
 

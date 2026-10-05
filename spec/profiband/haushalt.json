@@ -176,7 +176,7 @@
         },
         {
             "id": "bau",
-            "titel": "Bau (Haus · Tor · Fahrzeug · Glut · Markt · Fundament · Wege)",
+            "titel": "Bau (Haus · Tor · Fahrzeug · Glut · Markt · Fundament · Zaun)",
             "befehle": 40,
             "dreiecke": 60000,
             "regeln": [
@@ -202,7 +202,7 @@
                     "muster": "^bau:"
                 },
                 {
-                    "muster": "^(bau-fundament|siedlung-wege)$"
+                    "muster": "^(bau-fundament|siedlung-zaun)$"
                 }
             ]
         },
