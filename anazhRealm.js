@@ -77324,7 +77324,7 @@ class AnazhRealm {
                 for (const lf of flat.leaves) {
                     if (!lf.geom || !lf.mat) continue;
                     // Die Karte liest Schicht und Rahmen je Instanz: dieselbe Fassade + derselbe Stempel wie die Welt.
-                    const inst = new Ti.InstancedMesh(this._lodInstanceFacade(lf.geom, 1), lf.mat, 1);
+                    const inst = AnazhRealm._instanzMesh(this._lodInstanceFacade(lf.geom, 1), lf.mat, 1);
                     this._lodSlotStamp({ mesh: inst }, 0, 1, false, lf);
                     // PARITÄT: die Template→Welt-Scale reist in der leaf.localMatrix — die Vorschau
                     // zeigt das Billboard in WELT-Größe (Vorschau == Welt), nicht template-lokal.

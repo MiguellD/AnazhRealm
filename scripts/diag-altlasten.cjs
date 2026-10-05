@@ -652,12 +652,19 @@ function scanLabBuster() {
 // `AnazhRealm._instanzMesh` (Instanz-Matrix als Storage). Ein Bau daran vorbei trägt die Kapazität
 // wieder als Uniform-Array-Länge in den Vertex-Shader — ein Programm + eine Pipeline je Kapazität
 // (gemessen 02.10.: 756 Vertex- auf 60 Fragment-Programme). Erlaubt: genau EIN `new THREE.InstancedMesh(`
-// (der Chokepoint selbst).
+// (der Chokepoint selbst). Gezählt wird JEDER Bau, auch über einen Alias (`const T = THREE; new T.InstancedMesh(`):
+// bis 05.10. sah die Wand nur die THREE-Schreibweise — der Feld-Cull-Konsument und die Werkstatt-Vorschau bauten an
+// ihr vorbei.
+const INSTANZ_BAU = /new\s+(?:[A-Za-z_$][\w$]*\.)?InstancedMesh\(/g;
 function scanInstanzWand(srcRoh) {
     const code = stripComments(srcRoh);
-    const n = (code.match(/new THREE\.InstancedMesh\(/g) || []).length;
+    const treffer = [];
+    for (const m of code.matchAll(INSTANZ_BAU)) treffer.push(code.slice(0, m.index).split("\n").length);
     const errs = [];
-    if (n !== 1) errs.push(`Instanz-Wand: \`new THREE.InstancedMesh(\` steht ${n}× im Stamm (erlaubt: 1, der Chokepoint _instanzMesh)`);
+    if (treffer.length !== 1)
+        errs.push(
+            `Instanz-Wand: eine InstancedMesh entsteht ${treffer.length}× im Stamm (erlaubt: 1, der Chokepoint _instanzMesh) — Zeilen ${treffer.join(", ")}`
+        );
     const kopf = code.indexOf("static _instanzMesh(geom, mat, cap) {");
     if (kopf < 0 || code.indexOf("new THREE.InstancedMesh(", kopf) - kopf > 200)
         errs.push("Instanz-Wand: der Chokepoint `static _instanzMesh(geom, mat, cap)` trägt den Bau nicht");
@@ -720,7 +727,8 @@ function main() {
         const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
         const instanzFeuert =
             scanInstanzWand(stamm).length === 0 &&
-            scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1;
+            scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1 &&
+            scanInstanzWand(stamm + "\nconst T = THREE;\nconst x = new T.InstancedMesh(g, m, 1);\n").length === 1;
         if (!instanzFeuert) {
             console.log("❌ SELBST-TEST: die Instanz-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
