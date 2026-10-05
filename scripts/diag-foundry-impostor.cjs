@@ -362,6 +362,33 @@ async function kleberProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
+// ===== TEIL D — DIE STRICH-WAND (Integration W6, Echt-GPU 05.10.) =====
+// Die Karte liest die Peilung des ANKERS (für das ganze Quad dieselbe); steht sie genau auf einer Ansichts-Grenze, kippt
+// ihr Rundungs-Rauschen einzelne Pixel auf die Nachbar-Ansicht — die Atlas-Koordinate springt dort um 1/8 bis 7/8 der
+// Textur. Nahm die Hardware die Ableitung aus der springenden Koordinate, griff sie im 2×2-Block die gröbste Stufe, deren
+// Filter den Fuß der Nachbar-Ansicht als senkrechten Strich über die Krone zog (Höhen-Sonde, echte GPU: 30–40 px über der
+// L1-Spitze, Peilung auf einer Ansicht). swiftshader rechnet die Peilung ohne Rauschen und sieht den Strich nie — die Wand
+// liest darum die QUELLE: jede Atlas-Stichprobe (Albedo und Normale) läuft über `_probeA` mit den Gradienten der STETIGEN
+// Koordinate (die Ansichts-Höhe ohne Sprung). Den Strich am Bild misst die Höhen-Sonde der Werkbank (artifacts/profiband/
+// integ-stufe6, `hoehe-sonde.js`).
+function strichWand(src) {
+    const v = [];
+    const zahl = (t) => src.split(t).length - 1;
+    if (!src.includes("const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));"))
+        v.push("die stetige Koordinate (uv.x, uv.y / V) fehlt");
+    if (!src.includes("const _gX = _uvStetig.dFdx();") || !src.includes("const _gY = _uvStetig.dFdy();"))
+        v.push("die Gradienten kommen nicht aus der stetigen Koordinate");
+    if (!src.includes("const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);"))
+        v.push("die Atlas-Stichprobe trägt keine expliziten Gradienten");
+    const direkt = zahl("_at.mapNode.sample(") + zahl("_at.nmapNode.sample(");
+    if (direkt) v.push(direkt + " Atlas-Stichprobe(n) an _probeA vorbei (Ableitung aus der springenden Koordinate)");
+    const albedo = zahl("_probeA(_at.mapNode, _uvA)") + zahl("_probeA(_at.mapNode, _uvB)");
+    const normale = zahl("_probeA(_at.nmapNode, _uvA)") + zahl("_probeA(_at.nmapNode, _uvB)");
+    if (albedo !== 2 || normale !== 2)
+        v.push(`Albedo (${albedo}) und Normale (${normale}) laufen nicht je zweimal (Ansicht A und B) über _probeA`);
+    return v;
+}
+
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const errs = [];
@@ -474,6 +501,31 @@ async function kleberProbe(page, fmtWunsch) {
             errs.push(`${F}: der TOTE Slot zeichnet noch ${C.totPx} px (> 8) — die Kamera-Kleber-Wand hält NICHT`);
     }
 
+    console.log("\n=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ===");
+    {
+        const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const echt = strichWand(quelle);
+        console.log(`  echte Quelle: ${echt.length ? echt.join(" · ") : "hält"}`);
+        for (const f of echt) errs.push("D: " + f);
+        const ANKER = "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);";
+        for (const [name, src] of [
+            ["Stichprobe ohne Gradienten", quelle.replace(ANKER, "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht);")],
+            [
+                "Gradienten aus der springenden Koordinate",
+                quelle.replace("const _gX = _uvStetig.dFdx();", "const _gX = _uvA.dFdx();"),
+            ],
+            [
+                "Normale direkt gesampelt",
+                quelle.replace("_probeA(_at.nmapNode, _uvA).xy", "_at.nmapNode.sample(_uvA).depth(_schicht).xy"),
+            ],
+        ]) {
+            const f = strichWand(src);
+            const feuert = src !== quelle && f.length > 0;
+            console.log(`  Selbsttest „${name}“ → ${feuert ? "feuert" : "BLIND"}${src === quelle ? " (ANKER FEHLT)" : ""}`);
+            if (!feuert) errs.push(`D-SELBSTTEST: „${name}“ → die Wand feuert nicht${src === quelle ? " (ANKER FEHLT)" : ""}`);
+        }
+    }
+
     // ===== TEIL B — DER RTT-BAKE LÄUFT (echter swiftshader-Renderer, OPT-IN) =====
     // NUR mit P5_REAL_RENDERER=1: zwei swiftshader-Seiten verhungern den Container-Event-Loop
     // (dokumentiert) → per Default aus, damit der Gate deterministisch bleibt. Den RTT-LOOK
@@ -517,7 +569,7 @@ async function kleberProbe(page, fmtWunsch) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, tote Slots zeichnen nichts; RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
+        "\n✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, tote Slots zeichnen nichts, jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
     );
     process.exit(0);
 })().catch((e) => {

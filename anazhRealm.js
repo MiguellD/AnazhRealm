@@ -28670,18 +28670,25 @@ class AnazhRealm {
                                     const _fb = _Ta.fract(_fV);
                                     const _v1 = _Ta.mod(_v0.add(_Ta.float(1.0)), _V);
                                     // Die Ansichten liegen Kante an Kante: die Unterkante (Stammfuß) der Ansicht v+1 grenzt an die
-                                    // Oberkante der Ansicht v. Ohne Klemme las der bilineare Filter am Quad-Rand einen halben Mip-Texel
-                                    // der Nachbar-Ansicht (Echt-GPU 04.10.: ein Stamm-Strich über jeder Krone). Die Klemme hält einen
-                                    // halben Texel der gröberen der zwei gemischten Stufen Abstand (≈ 1 fwidth der Ansichts-Höhe).
-                                    const _halb = _Ta.fwidth(_uv.y).clamp(0.0, 0.25);
+                                    // Oberkante der Ansicht v. Die Klemme hält den Filter in SEINER Ansicht: einen halben Texel der
+                                    // gröberen gemischten Stufe Abstand (≈ 1 fwidth der Ansichts-Höhe), vergrößert mindestens einen
+                                    // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
+                                    const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
                                     const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
                                     const _uvA = _Ta.vec2(_uv.x, _vIn.add(_v0).div(_V));
                                     const _uvB = _Ta.vec2(_uv.x, _vIn.add(_v1).div(_V));
-                                    const _samp = _Ta.mix(
-                                        _at.mapNode.sample(_uvA).depth(_schicht),
-                                        _at.mapNode.sample(_uvB).depth(_schicht),
-                                        _fb
-                                    );
+                                    // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
+                                    // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
+                                    // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
+                                    // Sprung als Gradienten über die halbe Textur, griff die gröbste Stufe, und deren Filter zog den
+                                    // Stammfuß der Nachbar-Ansicht als senkrechten Strich über die Krone (30–40 px über der L1-Spitze,
+                                    // jede Peilung auf einer Ansicht). Die Gradienten kommen aus der STETIGEN Koordinate (die
+                                    // Ansichts-Höhe ohne Sprung) — alle vier Stichproben, Albedo und Normale (gate:foundry-impostor D).
+                                    const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));
+                                    const _gX = _uvStetig.dFdx();
+                                    const _gY = _uvStetig.dFdy();
+                                    const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
+                                    const _samp = _Ta.mix(_probeA(_at.mapNode, _uvA), _probeA(_at.mapNode, _uvB), _fb);
                                     // KAMERA-KLEBER-WAND (2. Riegel): toter Slot ⇒ alpha 0 — der alphaTest verwirft jedes
                                     // Fragment, selbst wenn Sway-Offsets dem kollabierten Quad noch Sliver-Fläche geben.
                                     _alpha = _lebt.select(_samp.a, _Ta.float(0.0));
@@ -28728,11 +28735,7 @@ class AnazhRealm {
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nxy = _Ta
-                                        .mix(
-                                            _at.nmapNode.sample(_uvA).depth(_schicht).xy,
-                                            _at.nmapNode.sample(_uvB).depth(_schicht).xy,
-                                            _fb
-                                        )
+                                        .mix(_probeA(_at.nmapNode, _uvA).xy, _probeA(_at.nmapNode, _uvB).xy, _fb)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
                                     const _nz = _Ta.sqrt(_Ta.float(1.0).sub(_nxy.dot(_nxy)).max(_Ta.float(0.0)));
