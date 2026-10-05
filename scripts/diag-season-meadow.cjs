@@ -126,7 +126,7 @@ function pruefe(stamm, kern, shell) {
         tick && /this\._saisonMul\(st\.seasonPhase, su\.uSeasonMul\.value\)/.test(strip(tick)) && !/_foundry/.test(strip(tick))
     );
     const gras = methode(stamm, "_grassInstanceMat() {");
-    const baum = methode(stamm, "_foundryTreeMaterial(kind, mp) {");
+    const baum = methode(stamm, "_foundryTreeMaterial(kind, mp, wiegen) {");
     pruef(
         "F3b die Nah-Wiese und das Foundry-Laub/-Gras lesen uSeasonMul",
         gras && /uSeasonMul/.test(strip(gras)) && baum && /vcol\.mul\(_suF\.uSeasonMul\)/.test(strip(baum)) && /texN\.rgb(?:\.mul\(TSL\.vec3\([^;]*?\)\))?\.mul\(laubFarbe\)/.test(strip(baum))

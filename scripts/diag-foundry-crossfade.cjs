@@ -709,8 +709,8 @@ function schattenWahrheit(srcNC) {
     if (!/const _cam = _lu\.uLodAuge;/.test(srcNC)) v.push("die Grammatik-Blattmaske misst nicht vom Auge");
     if (!/uLodAuge: _T\.uniform\(/.test(srcNC) || !/camera\.getWorldPosition\(_lu\.uLodAuge\.value\)/.test(srcNC))
         v.push("uLodAuge fehlt im Uniform-Satz oder im Frame-Spiegel aus der Haupt-Kamera");
-    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp\)\s*/) || "";
-    if (!stoff) v.push("_foundryTreeMaterial(kind, mp) fehlt");
+    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen\)\s*/) || "";
+    if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen) fehlt");
     else {
         const erlaubt = new Set(["TSL.max(haar, wolle)", "mat.opacityNode.mul(_keepX)"]); // Fell-Schale wirft nicht
         for (const m of stoff.matchAll(/mat\.opacityNode = ([^;]+);/g))

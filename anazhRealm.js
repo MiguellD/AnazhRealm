@@ -32981,18 +32981,22 @@ class AnazhRealm {
 
     // Die Senke einer (Art, Gestalt, Stufe, Teil): EINE InstancedMesh für den ganzen Ring. Sie hält die Studio-
     // Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine LRU-Räumung zerstört sie nie.
-    _streuNahSenke(art, v, stufe, p, lf) {
+    // `wiegt`: die Art trägt weiches Gewebe — jeder ihrer Teile zeichnet mit dem wiegenden Studio-Stoff (derselbe Bauer
+    // `_foundryTreeMaterial`, Höhe = Vorlage × Studio-Skala des Teils).
+    _streuNahSenke(art, v, stufe, p, lf, wiegt) {
         const ns = this.state.nahStreu;
         const key = `${art.id}:${v}:L${stufe}:${p}`;
         let a = ns.senken.get(key);
         if (a) return a;
+        const u = lf.mat.userData || {};
+        const skala = wiegt ? new THREE.Vector3().setFromMatrixColumn(lf.localMatrix, 0).length() : 0;
         a = {
             key,
             name: "streuNah:" + key,
             preset: art.id,
             ernte: art.ernte,
             geo: lf.geom,
-            mat: lf.mat,
+            mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, skala) : lf.mat,
             lokal: lf.localMatrix,
             leafKey: lf.leafKey,
             tint: !!(lf.mat && lf.mat.userData && lf.mat.userData.useInstanceTint),
@@ -33249,12 +33253,19 @@ class AnazhRealm {
             h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
             return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
         };
+        // Weiches Gewebe (Laub · Blatt-Karte · Stiel — die Studio-Stoffe, die im Labor wiegen) macht die ganze Art
+        // wiegend; Holz und Stein (Totstamm · Stumpf · Geröll) stehen.
+        const weich = (lf) => {
+            const k = lf && lf.mat && lf.mat.userData ? lf.mat.userData.foundryKind : null;
+            return k === "foliage" || k === "foliageTex" || k === "stem";
+        };
         for (const g of gruppen.values()) {
             const n = g.liste.length;
+            const wiegt = g.flat.leaves.some(weich);
             for (let p = 0; p < g.flat.leaves.length; p++) {
                 const lf = g.flat.leaves[p];
                 if (!lf || !lf.geom || !lf.mat || lf.shadowTwin) continue;
-                const a = this._streuNahSenke(g.art, g.v, g.stufe, p, lf);
+                const a = this._streuNahSenke(g.art, g.v, g.stufe, p, lf, wiegt);
                 const matrizen = new Float32Array(n * 16);
                 const farben = a.tint ? new Float32Array(n * 3) : null;
                 const ids = new Array(n);
@@ -68371,7 +68382,8 @@ class AnazhRealm {
     // Feld-Pass marcht ALLE Felder aus Atlas+Liste in EINEM Draw — ein
     // Material je Ziegel wäre der Zwilling, den wir abgeschafft haben.
 
-    _foundryTreeMaterial(kind, mp) {
+    // `wiegen` (m, optional): die Studio-Skala einer weichen Boden-Art der Nah-Streu — der Stoff wiegt im EINEN Wind.
+    _foundryTreeMaterial(kind, mp, wiegen) {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -68413,7 +68425,8 @@ class AnazhRealm {
             (emis ? "|e:" + emis.map((v) => v.toFixed(2)).join(",") + "@" + emisI.toFixed(2) : "") +
             (klasseLook && mp && Array.isArray(mp.color) && mp.color.length === 3
                 ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
-                : "");
+                : "") +
+            (wiegen > 0 ? "|wiegt:" + wiegen.toFixed(3) : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -68690,9 +68703,19 @@ class AnazhRealm {
                 const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
                 const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
                 if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+            } else if (wiegen > 0) {
+                // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
+                // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
+                // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Studio-Skala `wiegen`).
+                // Jeder Teil einer Pflanze trägt denselben Versatz — Rute und Laub, Stiel und Blüte bleiben verbunden;
+                // der Charakter (ampX 1,2) ist der des gefallenen Klein-Vegetations-Zwillings.
+                if (!this.state.windUniforms) this._grassInstanceMat();
+                const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.positionGeometry.y.mul(wiegen) });
+                if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
             }
             mat.userData = mat.userData || {};
             mat.userData.foundryKind = kind;
+            mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
         } catch (_e) {
             mat = new T.MeshStandardMaterial({ vertexColors: true, side: sideDouble ? T.DoubleSide : T.FrontSide });
         }

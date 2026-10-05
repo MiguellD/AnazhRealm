@@ -24355,20 +24355,42 @@ async function checkBandNahStreu(ctx) {
         const camVor = cam.position.clone();
         cam.position.set(pp.x, pp.y + 1.6, pp.z);
         let senken = null;
-        for (let i = 0; i < 600; i++) {
+        for (let i = 0; i < 900; i++) {
             r._tickNahStreu();
             const ns = r.state.nahStreu;
-            if (ns && [...ns.senken.values()].some((a) => a.anzahl > 0) && (ns.offen === 0 || i > 150)) {
+            if (ns && [...ns.senken.values()].some((a) => a.anzahl > 0) && ns.offen === 0) {
                 senken = ns.senken;
                 break;
             }
             await sleep(100);
         }
         out.ringGebaut = !!senken;
+        out.offen = r.state.nahStreu ? r.state.nahStreu.offen : null;
         if (!senken) {
             cam.position.copy(camVor);
             return out;
         }
+        // (5b) DER WIND (Integration 05.10.): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
+        // zeichnet mit dem wiegenden Studio-Stoff (positionNode aus `_windSwayOffset`, Schlüssel-Teil |wiegt:),
+        // eine Art aus Holz und Stein steht — Konsum am gebauten Ring, keine Art-Liste.
+        const weichK = new Set(["foliage", "foliageTex", "stem"]);
+        const jeArt = new Map();
+        for (const a of senken.values()) {
+            const u = a.mat.userData || {};
+            if (!jeArt.has(a.preset)) jeArt.set(a.preset, { weich: false, senken: [] });
+            const e = jeArt.get(a.preset);
+            if (weichK.has(u.foundryKind)) e.weich = true;
+            e.senken.push(a);
+        }
+        out.wind = { wiegend: [], stehend: [], verstoss: [] };
+        for (const [preset, e] of jeArt) {
+            (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
+            for (const a of e.senken)
+                if (!!a.mat.positionNode !== e.weich || a.mesh.material !== a.mat) out.wind.verstoss.push(a.key);
+        }
+        out.windQuelle =
+            /wiegen > 0/.test(window.__codeOf(r._foundryTreeMaterial)) &&
+            /_windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe/.test(window.__codeOf(r._foundryTreeMaterial));
         const ns = r.state.nahStreu;
         // (6) Jede Senke ist ein Studio-Teil (leafKey f:…), eine InstancedMesh, wirft nicht; die Block-Tabelle ist
         // dicht (Starts lückenlos, Σ n = Anzahl = mesh.count, je Block die Ernte-Identitäten).
@@ -24396,6 +24418,7 @@ async function checkBandNahStreu(ctx) {
         });
         // (7) Satz-Disziplin: eine gebaute Kachel entsorgen → ihre Blöcke treten aus; neu bauen → dieselben Zahlen.
         const [kKey, kz] = [...ns.kacheln].find(([, k]) => k.senken.size > 0) || [];
+        out.kachelMitBloecken = !!kz;
         if (kz) {
             const vor = new Map([...ns.senken].map(([k, a]) => [k, a.anzahl]));
             const blockN = new Map([...kz.senken].map((sk) => [sk, ns.senken.get(sk).bloecke.get(kKey).n]));
@@ -24432,15 +24455,24 @@ async function checkBandNahStreu(ctx) {
     if (!res.kachelGefunden) return;
     check("Nah-Streu: dieselbe Kachel = dieselbe Streu (Γ5, Würfe je Zelle)", res.deterministisch === true);
     check("Nah-Streu: die Ernte-Identität je Pflanze ist eindeutig", res.idsEindeutig === true);
-    check("Nah-Streu: der Takt baut den Ring (Studio-Teile kommen an, nichts offen)", res.ringGebaut === true);
+    check(
+        "Nah-Streu: der Takt baut den Ring (Studio-Teile kommen an, nichts offen)",
+        res.ringGebaut === true,
+        `offen ${res.offen}`
+    );
     if (!res.ringGebaut) return;
+    check(
+        "Nah-Streu: weiches Gewebe wiegt im EINEN Wind (_windSwayOffset), Holz und Stein stehen",
+        res.windQuelle === true && res.wind.wiegend.length > 0 && res.wind.verstoss.length === 0,
+        JSON.stringify(res.wind)
+    );
     check("Nah-Streu: je Senke genau EINE InstancedMesh in der Szene", res.jeSenkeEineMesh === true);
     check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), wirft nicht", res.studioTeile === true);
     check("Nah-Streu: die Block-Tabelle ist dicht (Σ n = Anzahl = count, Identitäten je Block)", res.tabelleDicht === true);
-    if (res.entsorgt !== undefined) {
-        check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken", res.entsorgt === true);
-        check("Nah-Streu: der Neubau stellt dieselben Zahlen her", res.neuGleich === true);
-    }
+    check("Nah-Streu: eine gebaute Kachel trägt Blöcke (Voraussetzung der Satz-Disziplin)", res.kachelMitBloecken === true);
+    if (!res.kachelMitBloecken) return;
+    check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken", res.entsorgt === true);
+    check("Nah-Streu: der Neubau stellt dieselben Zahlen her", res.neuGleich === true);
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
