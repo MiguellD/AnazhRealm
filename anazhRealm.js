@@ -69447,6 +69447,14 @@ class AnazhRealm {
                         if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
                         rend.backend.deleteBindGroupData(bg);
                         rend._bindings.delete(bg);
+                        // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
+                        // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
+                        // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
+                        for (const b of bg.bindings || [])
+                            if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
+                                const td = rend._textures.get(b.texture);
+                                if (td.bindGroups) td.bindGroups.delete(bg);
+                            }
                     }
             }
         }
@@ -69480,6 +69488,31 @@ class AnazhRealm {
             };
             return ro;
         };
+        // DER GEOMETRIE-HALTER FÄLLT: r184 hängt an jede gezeichnete Geometrie EINEN dispose-Hörer, der das ERSTE Render-
+        // Objekt einfängt (`initGeometry`, gehalten in der Map `_geometryDisposeListeners`) — eine Fassade, die nie entsorgt
+        // wird, hielt so ihre erste Senke samt Render-Objekt, Knoten-Zustand und Uniform-Puffern für immer (Heap-Halter-
+        // Suche 06.10.: zehn abgeschiedene Gruppen, alle zehn über diesen Hörer am Leben). Und sein Entsorgen löschte die
+        // Attribute DIESES Render-Objekts — auch Basis-Attribute, die eine Fassade mit lebenden Gruppen teilt. Die Residenz
+        // trägt der Kehraus (`_gpuKehraus`: was kein Objekt des Graphen zeichnet, verlässt die GPU); der Hörer fällt, nur
+        // die Geometrie-Zählung des Infos bleibt ehrlich.
+        const geos = renderer._geometries;
+        if (geos && typeof geos.initGeometry === "function" && geos._geometryDisposeListeners) {
+            const init = geos.initGeometry;
+            geos.initGeometry = function (ro) {
+                init.call(this, ro);
+                const g = ro.geometry;
+                const hoerer = this._geometryDisposeListeners.get(g);
+                if (!hoerer) return;
+                g.removeEventListener("dispose", hoerer);
+                this._geometryDisposeListeners.delete(g);
+                const info = this.info;
+                const zaehlung = () => {
+                    info.memory.geometries--;
+                    g.removeEventListener("dispose", zaehlung);
+                };
+                g.addEventListener("dispose", zaehlung);
+            };
+        }
     }
     // DIE INSTANZ-ZAHL — der EINE Schreiber von `count` jeder Instanz-Senke (Instanz-Gruppen · Fundament · Zaun ·
     // Nah-Wiese · Nah-Streu): jede Senke ist DICHT ([0, n) lebt, ein freier Slot existiert nicht), und eine leere ist
