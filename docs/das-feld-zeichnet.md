@@ -25,9 +25,11 @@ die kein klassisches System hat:
 
 **STUFE 1 — DAS FELD URTEILT, was gezeichnet wird.** Sichtbarkeit ist eine
 Feld-Frage, keine Objekt-Pflicht: ferne/verdeckte Instanzen werden NICHT
-gezeichnet (Instanz-Cull am bestehenden Chokepoint; später GPU-Cull per
-Compute + indirekte Draws). Erst-Konsument: der Dither-Wal — Foliage-Batches,
-deren Shader fern Pixel verwirft, aber Vertex-Arbeit weiter bezahlt.
+gezeichnet (Instanz-Cull am bestehenden Chokepoint). Erst-Konsument: der
+Dither-Wal — Foliage-Batches, deren Shader fern Pixel verwirft, aber
+Vertex-Arbeit weiter bezahlt; er fiel mit dem EINEN Karten-Atlas (die Fernstufe
+ist eine Karte), und mit ihm der GPU-Cull per Compute + indirekte Draws
+(V18.488 → 05.10.: ohne Ziel griff er nur an freien Slots, im Hauptbild allein).
 DONE: Tri-Zensus steady ≤ 8M in der Standard-Szene (roadmap §0.0 T2-Maß).
 
 **STUFE 2 — DIE FERNE IST FELD, keine Geometrie.** Jenseits des Voxel-Rings

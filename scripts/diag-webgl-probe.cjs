@@ -4,7 +4,7 @@
 //
 // Der r184-WebGPURenderer fällt ohne Adapter (oder via forceWebGL) STILL auf
 // den WebGL2-Backend zurück. Bis heute war diese Geschichte UNBEWIESEN: die
-// WGSL-Konsumenten (Feld-Cull-Compute · Fullscreen-Feld-Pass) und die Render-
+// WGSL-Konsument (der Fullscreen-Feld-Pass) und die Render-
 // Bundles existieren als KLASSEN auch dort weiter — Existenz-Prüfungen sind
 // blind (die V18.267-Falle in GPU-Form). Diese Probe erzwingt den Rückfall
 // (window.__anazhForceWebGL → der EINE Hook, alle 5 Renderer-Münzstellen)
@@ -12,7 +12,7 @@
 //   W1 der Backend IST WebGL (der Hook wirkt; isWebGPURenderer bliebe true)
 //   W2 der Rückfall wird EINMAL LAUT benannt (WARN „WebGL2-Rückfall") —
 //      fail-soft wäre der Bruch (Schöpfer-Wort 17.07.)
-//   W3 die Wände halten: Feld-Cull adoptiert NIE · kein Feld-Pass ·
+//   W3 die Wände halten: kein Feld-Pass ·
 //      keine Region-RenderBundles (deren API lebt nur im WebGPU-Backend)
 //   W4 der Fern-Ring verfeinert auf CPU (cursor wandert — das Gesetz trägt)
 //   W5 die Welt LEBT: Loop-Ticks laufen, der Spieler steht auf endlicher
@@ -85,7 +85,6 @@ const server = http.createServer((req, res) => {
             o.backendWebGL = !!(be && be.isWebGPUBackend !== true && be.isWebGLBackend === true);
             o.rendererType = r._flightRecorderDevice().rendererType;
             // W3 — die Wände:
-            o.feldCullRuht = !r._feldCull || (r._feldCull.adoptiert === 0 && r._feldCull.gewaender.size === 0);
             o.feldPassRuht = !st.feldPass;
             o.bundlesRuhen = !st._regionBundles || st._regionBundles.size === 0;
             o.computeFaehig = r._gpuComputeFaehig(); // MUSS false sein (die Wand-Quelle selbst)
@@ -161,7 +160,7 @@ const server = http.createServer((req, res) => {
     console.log(`  W1 Backend WebGL: ${out.backendWebGL} · rendererType: ${out.rendererType}`);
     console.log(`  W2 LAUT benannt (WARN WebGL2-Rückfall): ${lautEcht}`);
     console.log(
-        `  W3 Wände: feldCullRuht=${out.feldCullRuht} feldPassRuht=${out.feldPassRuht} bundlesRuhen=${out.bundlesRuhen} computeFaehig=${out.computeFaehig}`
+        `  W3 Wände: feldPassRuht=${out.feldPassRuht} bundlesRuhen=${out.bundlesRuhen} computeFaehig=${out.computeFaehig}`
     );
     console.log(`  W4 Fern-Ring: da=${out.fernRingDa} cursor=${out.fernRingCursor} (CPU-Gesetz wandert)`);
     console.log(
@@ -177,7 +176,6 @@ const server = http.createServer((req, res) => {
     if (out.rendererType !== "webgl-fallback")
         errs.push(`W1: rendererType meldet "${out.rendererType}" statt "webgl-fallback" (Telemetrie lügt)`);
     if (!lautEcht) errs.push("W2: der Rückfall wurde NICHT laut benannt (kein WebGL2-Rückfall-WARN)");
-    if (!out.feldCullRuht) errs.push("W3: der Feld-Cull adoptierte auf WebGL (die Wand hält nicht)");
     if (!out.feldPassRuht) errs.push("W3: der Feld-Pass entstand auf WebGL (die Wand hält nicht)");
     if (!out.bundlesRuhen) errs.push("W3: Region-RenderBundles entstanden auf WebGL (Crash-Klasse)");
     if (out.computeFaehig) errs.push("W3: _gpuComputeFaehig meldet true auf WebGL (die Quelle lügt)");

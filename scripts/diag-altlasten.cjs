@@ -339,6 +339,15 @@ const FORBIDDEN = [
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
     { token: "Ammo.destroy(", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
+    // DER FELD-CULL FÄLLT (05.10.) — sein Ziel, die @s:-Fernstufen der Streu, gibt es nicht mehr (die Streu beginnt
+    // erst jenseits ANALOG_NAH_M, ihre Fernstufe ist die Karte im EINEN Atlas oder ein Gesetz-Platz). Gemessen an der
+    // Mess-Wiese (echte GPU): im Stand 0 Adoptionen in 2600 Takten; beim Wandern griff er nur an Geröll-L0-Familien und
+    // verwarf dort vor allem freie Slots (57 Instanzen, 12 lebend) — im Hauptbild allein, die Kaskaden zeichneten weiter
+    // alle. Der Konsument zeichnete indirekt, die Band-Linse zählte ihn mit der Kapazität. Name kommt nicht zurück.
+    { token: "feldCull", fiel: "05.10. — der Feld-Cull (Compute-Kompaktierung + indirekte Draws) fiel ganz" },
+    { token: "FeldCull", fiel: "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern" },
+    { token: "FELD_CULL", fiel: "05.10." },
+    { token: "IndirectStorageBufferAttribute", fiel: "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -643,7 +652,7 @@ function scanLabBuster() {
 // `AnazhRealm._instanzMesh` (Instanz-Matrix als Storage). Ein Bau daran vorbei trägt die Kapazität
 // wieder als Uniform-Array-Länge in den Vertex-Shader — ein Programm + eine Pipeline je Kapazität
 // (gemessen 02.10.: 756 Vertex- auf 60 Fragment-Programme). Erlaubt: genau EIN `new THREE.InstancedMesh(`
-// (der Chokepoint selbst) + der Feld-Cull-Konsument (Kapazität fest 1, eigene Storage-Matrix).
+// (der Chokepoint selbst).
 function scanInstanzWand(srcRoh) {
     const code = stripComments(srcRoh);
     const n = (code.match(/new THREE\.InstancedMesh\(/g) || []).length;

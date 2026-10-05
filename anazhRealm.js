@@ -14381,7 +14381,7 @@ class AnazhRealm {
     // Objekt bucht — Draw- und Puffer-Zensus der Werkbank (scripts/lib/draw-zaehler.cjs), der Flugschreiber
     // (Dreiecks-Wale · Heap · Bundle-Deckung), die Albedo-Sicht und der Szenen-Zensus des Playtests. Drei Klassifizierer
     // (Flugschreiber, Albedo-Sicht, Draw-Zähler) nannten dieselben Objekte verschieden.
-    //   - eine Instanz-Gruppe (`archInstanceKey`; der Feld-Cull-Spiegel `feldCull` zeichnet für dieselbe) →
+    //   - eine Instanz-Gruppe (`archInstanceKey`) →
     //     `AnazhRealm._instanzKlasse`, gleich ob sie in einem Region-Bundle hängt oder direkt in der Szene; eine Gruppe
     //     ohne lebende Instanz heißt `leer:<klasse>` — die leere Hülle in der Gnadenfrist des Leer-Chokepoints
     //     (`_archGroupLeerDispose`) zeichnet weiter ihren High-Water-count aus Null-Matrizen, ein toter Draw;
@@ -14391,7 +14391,7 @@ class AnazhRealm {
     //   - ohne jeden Namen `UNBENANNT:<type>` — ein Linsen-Fehler, den der Erzeuger heilt, indem er sein Objekt benennt.
     _taeterKlasse(obj) {
         const u0 = obj.userData || {};
-        if (u0.archInstanceKey || u0.feldCull) return this._taeterGruppe(u0.archInstanceKey || u0.feldCull);
+        if (u0.archInstanceKey) return this._taeterGruppe(u0.archInstanceKey);
         const scene = this.state.scene;
         let top = obj;
         while (top.parent && top.parent !== scene) top = top.parent;
@@ -14402,7 +14402,7 @@ class AnazhRealm {
         if (top.isBundleGroup === true || u.regionKey !== undefined) {
             traeger = obj;
             while (traeger.parent && traeger.parent !== top) traeger = traeger.parent;
-            const k = traeger.userData && (traeger.userData.archInstanceKey || traeger.userData.feldCull);
+            const k = traeger.userData && traeger.userData.archInstanceKey;
             if (k) return this._taeterGruppe(k);
         }
         return AnazhRealm._taeterName(traeger) || AnazhRealm._taeterName(obj) || "UNBENANNT:" + obj.type;
@@ -52373,9 +52373,6 @@ class AnazhRealm {
         // Familie stirbt. Der Dispose entlässt die Familie aus _pipeOfenDone → der nächste Mint reiht sie
         // NEU in den Ofen (async Wärmung statt Sync-Compile am ersten Draw; lebt sie noch, Cache-Treffer).
         if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
-        // DER FELD-CULL — der Dispose-Chokepoint legt ein getragenes GPU-Gewand
-        // mit ab (der Konsument fällt MIT seiner Familie, nie ein Geister-Draw).
-        if (this._feldCull && this._feldCull.gewaender.has(groupKey)) this._feldCullVerlasse(groupKey);
         this.state.archInstanceGroups.delete(groupKey);
         if (g.mesh) {
             // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
@@ -59912,404 +59909,11 @@ class AnazhRealm {
         }
     }
 
-    // ═══ DER FELD-CULL ═══
-    // GPU-Cull je INSTANZ: ein Compute-Pass je Familie testet die Hüllkugel gegen das EINE Frustum
-    // (_frustumCache), kompaktiert Sichtbare via atomicAdd, drawIndexedIndirect liest den Zähler (kein
-    // Readback). Konsument = InstancedMesh mit DEMSELBEN Material; die CPU-Gruppe bleibt WAHRHEIT +
-    // Schatten-Werfer (SHADOW_TWIN_LAYER). _gpuComputeFaehig urteilt am BACKEND: ohne Adapter fällt der
-    // Renderer STILL auf WebGL2, wo TSL-Klassen weiter existieren (Existenz-Prüfung wäre blind).
+    // DIE BACKEND-WAND der WGSL-Konsumenten (Welt-March · Feld-Pass): sie urteilt am BACKEND — ohne Adapter fällt der
+    // r184-Renderer STILL auf WebGL2, wo die TSL-Klassen weiter existieren (eine Existenz-Prüfung wäre blind).
     _gpuComputeFaehig() {
         const r = this.state.renderer;
         return !!(r && !r._isHeadlessNull && r.backend && r.backend.isWebGPUBackend === true);
-    }
-    _feldCullEnsure() {
-        if (this._feldCull) return this._feldCull;
-        this._feldCull = {
-            lib: null, // three/webgpu-Modul (IndirectStorageBufferAttribute) — dynamisch, gecacht
-            ladeLauf: false,
-            gewaender: new Map(), // Gruppen-Key → GPU-Gewand
-            planeU: null, // 6 × uniform(vec4) — die EINEN Frustum-Ebenen (geteilt über Familien)
-            frame: 0,
-            laeufe: 0, // Compute-Fahrten (Linse)
-            adoptiert: 0,
-            verlassen: 0,
-            // PUFFER-BILANZ des Gewand-Churns (Linse): abgelegt = eigene Storage-/Indirect-Attribute, deren
-            // Referenz fiel · geloest = davon am Backend zerstört (ohne Backend-Eintrag nichts zu zerstören).
-            pufferAbgelegt: 0,
-            pufferGeloest: 0,
-            letzterFehler: null, // Diagnose der Linse (Adoption fail-soft)
-        };
-        return this._feldCull;
-    }
-    // Storage-/Indirect-Klassen leben NUR im three/webgpu-Bundle; der dynamische Import zieht DASSELBE
-    // geladene Modul über die Import-Map (kein Zweit-THREE). Ohne Import-Map → nie adoptiert.
-    _feldCullLibLade() {
-        const fc = this._feldCullEnsure();
-        if (fc.lib || fc.ladeLauf) return;
-        fc.ladeLauf = true;
-        try {
-            import("three/webgpu").then(
-                (m) => {
-                    if (m && typeof m.IndirectStorageBufferAttribute === "function") fc.lib = m;
-                    else fc.ladeLauf = false;
-                },
-                () => {
-                    fc.ladeLauf = false;
-                }
-            );
-        } catch (_e) {
-            fc.ladeLauf = false;
-        }
-    }
-    // Kandidaten-Wand: REGIONALE Streu-InstancedMesh-Familien (fscatter-Name +
-    // Region-/Super-Region-Key) ohne Tür/Zwilling ab der Instanz-Schwelle — die
-    // Dither-Wal-Klasse, deren Cull heute an der GANZEN Region endet. Das deckt
-    // die @s:-Fernstufen UND den region-privaten geroell-Teppich (der Wander-
-    // Zensus V18.485 nannte ihn als schwersten Nicht-Baum-Rest: einstufig, sein
-    // Name endet nie :2 → er erreicht die Super-Region nie). Bäume bleiben
-    // draußen (global gekeyt bzw. das Impostor-Billboard — sein Material trägt die
-    // Kamera-Kleber-Wand im Shader, die Kompaktierung kennt sie nicht).
-    _feldCullKandidat(g) {
-        if (!g || !g.mesh || !g.mesh.isInstancedMesh) return false;
-        if (g.shadowTwin || g.tuer) return false;
-        const _mud = g.mesh.material && g.mesh.material.userData;
-        if (_mud && _mud.impostorBillboard) return false;
-        if (typeof g.key !== "string" || !g.key.startsWith("fscatter:")) return false;
-        if (g.key.indexOf("@") < 0) return false; // regional/super-regional — der Bundle-Cull bleibt das äußere Tor
-        if ((g.mesh.count | 0) < AnazhRealm.FELD_CULL.minInstanzen) return false;
-        const geom = g.mesh.geometry;
-        if (!geom || !geom.attributes || !geom.attributes.position) return false;
-        // Per-Instanz-Attribute (LOD-Fassade aH0/aH0L/aKarte) reisen in der
-        // Kompaktierung mit — nur die bekannte float-Form (itemSize 1) ist gedeckt.
-        for (const an in geom.attributes) {
-            const a = geom.attributes[an];
-            if (a && a.isInstancedBufferAttribute && a.itemSize !== 1) return false;
-        }
-        return true;
-    }
-    // GPU-Gewand EINER Familie: Quell-Spiegel (mat4/vec3-Storage), Ziel-Kompakt, Indirect-Draw-Puffer,
-    // zwei Compute-Pässe, Konsument-InstancedMesh. Wirft die Adoption (TSL-Drift nach Vendor-Wechsel),
-    // bleibt der CPU-Pfad ganz und die Linse zeigt den Fehler.
-    _feldCullAdoptiere(g) {
-        const fc = this._feldCull;
-        const T = THREE;
-        const TSL = T.TSL;
-        if (!fc || !fc.lib || !TSL || fc.gewaender.has(g.key)) return null;
-        const F = AnazhRealm.FELD_CULL;
-        try {
-            const quelle = g.mesh;
-            const cap = quelle.instanceMatrix ? quelle.instanceMatrix.count | 0 : 0;
-            if (cap < 1) return null;
-            const geomQ = quelle.geometry;
-            // (1) die EINE Hüllkugel der Familie (Geometrie-Kugel; die Instanz-Skala
-            // skaliert im Shader — Streu-Slots sind uniform skaliert, _scatterInstanceAdd).
-            if (!geomQ.boundingSphere) geomQ.computeBoundingSphere();
-            const bs = geomQ.boundingSphere;
-            if (!bs || !Number.isFinite(bs.radius) || bs.radius <= 0) return null;
-            // (2) Storage-Puffer: Quell-Spiegel (CPU→GPU bei version-Sprung) + kompaktes Ziel (GPU-only)
-            const srcM = TSL.instancedArray(cap, "mat4");
-            const dstM = TSL.instancedArray(cap, "mat4");
-            const hatTint = !!quelle.instanceColor;
-            const srcC = hatTint ? TSL.instancedArray(cap, "vec3") : null;
-            const dstC = hatTint ? TSL.instancedArray(cap, "vec3") : null;
-            // Per-Instanz-Attribute der LOD-Fassade (aH0/aH0L — float, Kandidaten-
-            // Wand geprüft): die Kompaktierung ORDNET UM, also reisen sie MIT (Quell-
-            // Spiegel → kompaktes Ziel; der Konsument liest die Ziel-Attribute).
-            const instAttrs = [];
-            for (const an in geomQ.attributes) {
-                const a = geomQ.attributes[an];
-                if (!a || !a.isInstancedBufferAttribute) continue;
-                instAttrs.push({
-                    name: an,
-                    quellAttr: a,
-                    srcA: TSL.instancedArray(cap, "float"),
-                    dstA: TSL.instancedArray(cap, "float"),
-                    version: -1,
-                });
-            }
-            // (3) der Indirect-Draw-Puffer (indexed-Layout: indexCount · instanceCount ·
-            // firstIndex · baseVertex · firstInstance; ohne Index liest drawIndirect
-            // dieselben ersten 4 u32 als vertexCount · instanceCount · firstVertex · firstInstance).
-            const idxZahl = geomQ.index ? geomQ.index.count : geomQ.attributes.position.count;
-            const drawAttr = new fc.lib.IndirectStorageBufferAttribute(new Uint32Array([idxZahl, 0, 0, 0, 0]), 5);
-            const drawStruct = TSL.struct(
-                {
-                    indexCount: "uint",
-                    instanceCount: { type: "uint", atomic: true },
-                    firstIndex: "uint",
-                    baseVertex: "uint",
-                    firstInstance: "uint",
-                },
-                "AnazhFeldCullDraw"
-            );
-            const drawStorage = TSL.storage(drawAttr, drawStruct, drawAttr.count);
-            // (4) Uniforms: die geteilten Frustum-Ebenen + Lebend-Zahl + Kugel + Selbsttest-Seam
-            if (!fc.planeU) {
-                fc.planeU = [];
-                for (let i = 0; i < 6; i++) fc.planeU.push(TSL.uniform(new T.Vector4(0, 0, 0, 1)));
-            }
-            const uAktiv = TSL.uniform(0, "uint");
-            const uZentrum = TSL.uniform(new T.Vector3().copy(bs.center));
-            const uRadius = TSL.uniform(bs.radius + F.rand);
-            const uImmer = TSL.uniform(0, "float"); // Linsen-Seam: 1 → Immer-sichtbar (der Selbsttest MUSS rot fallen)
-            const pl = fc.planeU;
-            // (5) die zwei Pässe: Zähler-Reset (1 Thread) + Kugel-gegen-Frustum-Kompaktierung.
-            const passInit = TSL.Fn(() => {
-                drawStorage.get("indexCount").assign(TSL.uint(idxZahl));
-                TSL.atomicStore(drawStorage.get("instanceCount"), TSL.uint(0));
-                drawStorage.get("firstIndex").assign(TSL.uint(0));
-                drawStorage.get("baseVertex").assign(TSL.uint(0));
-                drawStorage.get("firstInstance").assign(TSL.uint(0));
-            })().compute(1);
-            const passCull = TSL.Fn(() => {
-                TSL.If(TSL.instanceIndex.lessThan(uAktiv), () => {
-                    const m = srcM.element(TSL.instanceIndex).toVar();
-                    // Instanz-Skala über den Basis-Vektor (kein Matrix-Spalten-Indexing nötig):
-                    const skala = TSL.length(m.mul(TSL.vec4(1, 0, 0, 0)).xyz).toVar();
-                    // freie Slots (Null-Skala, _archGroupFree) kompaktieren nie:
-                    TSL.If(skala.greaterThan(1e-6), () => {
-                        const z = m.mul(TSL.vec4(uZentrum, 1.0)).xyz.toVar();
-                        const negR = uRadius.mul(skala).negate().toVar();
-                        const drin = pl[0].xyz
-                            .dot(z)
-                            .add(pl[0].w)
-                            .greaterThan(negR)
-                            .and(pl[1].xyz.dot(z).add(pl[1].w).greaterThan(negR))
-                            .and(pl[2].xyz.dot(z).add(pl[2].w).greaterThan(negR))
-                            .and(pl[3].xyz.dot(z).add(pl[3].w).greaterThan(negR))
-                            .and(pl[4].xyz.dot(z).add(pl[4].w).greaterThan(negR))
-                            .and(pl[5].xyz.dot(z).add(pl[5].w).greaterThan(negR));
-                        TSL.If(drin.or(uImmer.greaterThan(0.5)), () => {
-                            const ziel = TSL.atomicAdd(drawStorage.get("instanceCount"), TSL.uint(1)).toVar();
-                            dstM.element(ziel).assign(m);
-                            if (dstC) dstC.element(ziel).assign(srcC.element(TSL.instanceIndex));
-                            for (const ia of instAttrs)
-                                ia.dstA.element(ziel).assign(ia.srcA.element(TSL.instanceIndex));
-                        });
-                    });
-                });
-            })().compute(cap);
-            // (6) der KONSUMENT: geteilte Geometrie-Attribute (EIGENER Container für
-            // setIndirect — die Quell-Geometrie ist über Familien geteilt), DASSELBE
-            // Material, Storage-Instanz-Matrix/-Farbe (r184-InstanceNode-nativ).
-            const geomK = new T.BufferGeometry();
-            for (const an in geomQ.attributes) {
-                const a = geomQ.attributes[an];
-                if (a && a.isInstancedBufferAttribute) continue; // Fassade → kompaktiertes Ziel (unten)
-                geomK.setAttribute(an, a);
-            }
-            for (const ia of instAttrs) geomK.setAttribute(ia.name, ia.dstA.value);
-            if (geomQ.index) geomK.setIndex(geomQ.index);
-            geomK.boundingSphere = bs;
-            geomK.setIndirect(drawAttr);
-            const origMask = quelle.layers.mask;
-            const kons = new T.InstancedMesh(geomK, g.mat, 1);
-            kons.instanceMatrix = dstM.value;
-            if (hatTint) kons.instanceColor = dstC.value;
-            kons.count = cap;
-            kons.frustumCulled = false; // der Cull IST der Compute — nichts friert im Bundle-Replay ein
-            kons.castShadow = false; // der Schatten-Wurf bleibt an der CPU-Quelle (Twin-Layer, s.u.)
-            kons.receiveShadow = quelle.receiveShadow === true;
-            kons.layers.mask = origMask;
-            kons.raycast = function () {}; // Picking bleibt am CPU-Original (slotEntry-Wahrheit)
-            kons.userData.feldCull = g.key; // Linsen-Marker
-            const parent = quelle.parent;
-            if (parent) {
-                parent.add(kons);
-                if (parent.isBundleGroup) {
-                    parent.needsUpdate = true;
-                    this._bundleReifeWache(kons); // Record droppt unfertige Pipelines (s. _bundleReifeWache)
-                }
-            } else if (this.state.scene) this.state.scene.add(kons);
-            // Die Quelle bleibt WAHRHEIT (Slots/Matrizen/Raycast) und Schatten-Werfer, verlässt aber die Kamera
-            // (SHADOW_TWIN_LAYER: nur der Schatten-Pass zählt Layer 2) — Schatten bleiben CPU-frustum-wahr.
-            quelle.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-            this._archMeshBundleTouch(quelle);
-            // (7) der Pipeline-Warm-Ofen sieht die NEUE Familie (Material × Storage-InstancedMesh × Indirect)
-            this._pipeOfenMerke("fc", g.mat, kons);
-            const gew = {
-                key: g.key,
-                gruppe: g,
-                quelleMesh: quelle, // Grow-Detektor: g.mesh wechselt beim Kapazitäts-Wachstum
-                kons,
-                geomK,
-                drawAttr,
-                srcM,
-                dstM,
-                srcC,
-                dstC,
-                instAttrs,
-                passInit,
-                passCull,
-                uAktiv,
-                uZentrum,
-                uRadius,
-                uImmer,
-                cap,
-                idxZahl,
-                origMask,
-                srcVersion: -1,
-                tintVersion: -1,
-                laeufe: 0,
-            };
-            fc.gewaender.set(g.key, gew);
-            fc.adoptiert++;
-            return gew;
-        } catch (e) {
-            fc.letzterFehler = (e && e.message) || String(e);
-            return null; // Adoption scheitert → CPU-Pfad bleibt GANZ (nie halb adoptieren)
-        }
-    }
-    // PUFFER-TOD: die EIGENEN Storage-/Indirect-Attribute am Backend ZERSTÖREN statt auf den GC zu warten
-    // (jede Adoption münzt frische GPU-Puffer): renderer._attributes.delete(attr) →
-    // backend.destroyAttribute → buffer.destroy(). GETEILTE Geometrie-Attribute (position/index) NIE
-    // anfassen, geomK nie disposen. renOverride: die Linse zerstört auf ihrem Renderer (gate:feld-cull).
-    _feldCullPufferFrei(gew, renOverride) {
-        const fc = this._feldCullEnsure();
-        const eigene = [
-            gew.drawAttr,
-            gew.srcM && gew.srcM.value,
-            gew.dstM && gew.dstM.value,
-            gew.srcC && gew.srcC.value,
-            gew.dstC && gew.dstC.value,
-        ];
-        for (const ia of gew.instAttrs || []) eigene.push(ia.srcA && ia.srcA.value, ia.dstA && ia.dstA.value);
-        const ren = renOverride || this.state.renderer;
-        const karte = ren && ren._attributes;
-        for (const a of eigene) {
-            if (!a) continue;
-            fc.pufferAbgelegt++;
-            try {
-                if (karte && typeof karte.delete === "function" && karte.has && karte.has(a)) {
-                    karte.delete(a); // → backend.destroyAttribute → GPUBuffer.destroy + Info-Zensus
-                    fc.pufferGeloest++;
-                }
-            } catch (e) {
-                fc.letzterFehler = "pufferFrei: " + ((e && e.message) || String(e));
-            }
-        }
-    }
-    // Gewand ablegen (Dispose · Kapazitäts-Wachstum · Hook aus): der Konsument fällt, die CPU-Quelle wird
-    // wieder sichtbar, sofern sie lebt. renOverride s. _feldCullPufferFrei.
-    _feldCullVerlasse(schluessel, renOverride) {
-        const fc = this._feldCull;
-        if (!fc) return;
-        const gew = fc.gewaender.get(schluessel);
-        if (!gew) return;
-        fc.gewaender.delete(schluessel);
-        fc.verlassen++;
-        const kons = gew.kons;
-        const parent = kons ? kons.parent : null;
-        if (parent) {
-            parent.remove(kons);
-            if (parent.isBundleGroup) parent.needsUpdate = true;
-        }
-        // OFEN-WIEDERANKER (Review-Notiz H): auch die fc-Familie verlässt den
-        // Dedup — ein Re-Mint wärmt asynchron statt für immer zu schweigen.
-        if (this._pipeOfenDone && gew.gruppe && gew.gruppe.mat) this._pipeOfenDone.delete("fc|" + gew.gruppe.mat.uuid);
-        if (kons && typeof kons.dispose === "function") kons.dispose();
-        // SCHLUSS-WELLE — die GPU-Puffer des Gewands sterben EXPLIZIT (s.o.).
-        this._feldCullPufferFrei(gew, renOverride);
-        const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(schluessel);
-        if (g && g.mesh) {
-            g.mesh.visible = true;
-            if (gew.origMask !== undefined) g.mesh.layers.mask = gew.origMask; // zurück von der Twin-Layer
-            this._archMeshBundleTouch(g.mesh);
-        }
-    }
-    // Die EINEN Frustum-Ebenen in die geteilten Uniforms (der Tick speist sie
-    // aus _frustumCache — derselben Quelle wie der CPU-Region-Cull; die Linse
-    // speist ihre eigene Kamera durch DENSELBEN Chokepoint).
-    _feldCullPlanesAus(frustum) {
-        const fc = this._feldCull;
-        if (!fc || !fc.planeU || !frustum || !frustum.planes) return;
-        for (let i = 0; i < 6; i++) {
-            const p = frustum.planes[i];
-            fc.planeU[i].value.set(p.normal.x, p.normal.y, p.normal.z, p.constant);
-        }
-    }
-    // Der Frame-Tick (EIN Aufruf aus dem Loop, vor dem Render): Hook-Gate,
-    // Lib-Lade, Adoption-Scan (langsamer Takt, die GRÖSSTEN Familien zuerst),
-    // Quell-Spiegel-Sync (nur bei version-Sprung) + die zwei Compute-Pässe.
-    _feldCullTick() {
-        const st = this.state;
-        const hook = typeof window !== "undefined" ? window.__anazhFeldCull : undefined;
-        if (hook === false) {
-            if (this._feldCull && this._feldCull.gewaender.size) {
-                for (const k of Array.from(this._feldCull.gewaender.keys())) this._feldCullVerlasse(k);
-            }
-            return;
-        }
-        // KEIN-WEBGPU-WAND: headless ruht (Fern-Ring-Disziplin) UND der WebGL2-
-        // Rückfall-Backend adoptiert NIE (renderer.compute existiert dort nur als
-        // Name — die Fähigkeits-Wand urteilt am Backend, der Hook bleibt Linsen-Seam).
-        if (hook !== true && !this._gpuComputeFaehig()) return;
-        if (!st.renderer || !st.scene || typeof THREE === "undefined" || !THREE.TSL) return;
-        const fc = this._feldCullEnsure();
-        this._feldCullLibLade();
-        fc.frame++;
-        const F = AnazhRealm.FELD_CULL;
-        // Adoption-Scan (langsamer Takt): Gewänder validieren (Dispose/Grow/Tint-
-        // Wechsel → ablegen), dann die GRÖSSTEN lebenden Kandidaten adoptieren.
-        if (fc.lib && fc.frame % F.scanTakt === 1 && st.archInstanceGroups) {
-            for (const [k, gew] of Array.from(fc.gewaender)) {
-                const g = st.archInstanceGroups.get(k);
-                if (
-                    !g ||
-                    g.mesh !== gew.quelleMesh ||
-                    (g.mesh.instanceMatrix.count | 0) !== gew.cap ||
-                    !!g.mesh.instanceColor !== !!gew.srcC
-                )
-                    this._feldCullVerlasse(k);
-            }
-            if (fc.gewaender.size < F.maxFamilien) {
-                const kand = [];
-                for (const g of st.archInstanceGroups.values())
-                    if (!fc.gewaender.has(g.key) && this._feldCullKandidat(g)) kand.push(g);
-                kand.sort((a, b) => (b.mesh.count | 0) - (a.mesh.count | 0));
-                for (let i = 0; i < kand.length && fc.gewaender.size < F.maxFamilien; i++)
-                    this._feldCullAdoptiere(kand[i]);
-            }
-        }
-        if (!fc.gewaender.size) return;
-        // Linsen-Seam: die Linse fährt die Pässe mit EIGENEM Renderer + eigener
-        // Kamera — der Tick hält Uniform-Sync + Compute still (kein Ebenen-Race).
-        if (typeof window !== "undefined" && window.__anazhFeldCullExtern === true) return;
-        if (!this._frustumCache || !fc.planeU) return;
-        this._feldCullPlanesAus(this._frustumCache);
-        for (const gew of Array.from(fc.gewaender.values())) {
-            const q = gew.quelleMesh;
-            // Super-Region unsichtbar (CPU-Bundle-Cull) → kein Compute nötig:
-            const p = gew.kons.parent;
-            if (p && p.visible === false) continue;
-            if (q.instanceMatrix.version !== gew.srcVersion) {
-                gew.srcM.value.array.set(q.instanceMatrix.array);
-                gew.srcM.value.needsUpdate = true;
-                gew.srcVersion = q.instanceMatrix.version;
-            }
-            if (gew.srcC && q.instanceColor && q.instanceColor.version !== gew.tintVersion) {
-                gew.srcC.value.array.set(q.instanceColor.array);
-                gew.srcC.value.needsUpdate = true;
-                gew.tintVersion = q.instanceColor.version;
-            }
-            for (const ia of gew.instAttrs) {
-                if (ia.quellAttr.version !== ia.version) {
-                    ia.srcA.value.array.set(ia.quellAttr.array);
-                    ia.srcA.value.needsUpdate = true;
-                    ia.version = ia.quellAttr.version;
-                }
-            }
-            gew.uAktiv.value = q.count | 0;
-            try {
-                st.renderer.compute(gew.passInit);
-                st.renderer.compute(gew.passCull);
-                gew.laeufe++;
-                fc.laeufe++;
-            } catch (e) {
-                fc.letzterFehler = (e && e.message) || String(e);
-                this._feldCullVerlasse(gew.key); // ein Compute-Fehler legt das Gewand ab — der CPU-Pfad übernimmt GANZ
-            }
-        }
     }
 
     // EINE bark-BufferGeometry aus dem Skeleton (Polylinien): Ring von 6 Vertices je Punkt, zu Quads
@@ -63088,10 +62692,6 @@ class AnazhRealm {
         g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
         g.mesh = next;
         g.capacity = newCap;
-        // DER FELD-CULL — der Grow-Chokepoint legt ein getragenes GPU-Gewand ab
-        // (die Kapazität/Puffer-Größen stimmen nicht mehr; der nächste Scan
-        // adoptiert die gewachsene Familie frisch — nie ein Doppel-Draw).
-        if (this._feldCull && this._feldCull.gewaender.has(g.key)) this._feldCullVerlasse(g.key);
     }
 
     // Einen Slot in der Gruppe belegen (Free-List zuerst, dann frischer Slot,
@@ -69792,7 +69392,7 @@ class AnazhRealm {
             // L1-Stufe — die L0-Teile casten nicht, die L1-Teile reisen als Schatten-Zwilling (`shadowTwin`,
             // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Stufe L0 gestempelt
             // (`_foundrySchattenGeom`: blendet wie L0, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
-            // Wechsel, Bundles und der Feld-Cull-Ausschluss tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
+            // Wechsel und Bundles tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
             // Dreiecke in JEDE der zwei Kaskaden, ihre L1 trägt 11k. Ein Flat ist erst fertig, wenn seine Teile
             // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1). WER wirft, sagt das Studio-Budget (B2c
             // `schatten` je Art × Stufe, `_foundryBudgetZeile`): die eigene Stufe wirft selbst, eine andere reist als
@@ -84132,12 +83732,12 @@ class AnazhRealm {
                     /* fail-soft — die Quelle-Wahrheit lebt in _perfGpuSample */
                 }
                 // Backend-Rückfall EINMAL laut benennen: der r184-WebGPURenderer fällt ohne Adapter (oder via
-                // forceWebGL-Hook) still auf WebGL2 — dann ruhen die WGSL-Konsumenten (Feld-Cull, Fullscreen-
-                // Feld-Pass; _gpuComputeFaehig-Wand) und die CPU-Gesetze tragen ganz.
+                // forceWebGL-Hook) still auf WebGL2 — dann ruht der WGSL-Konsument (der Fullscreen-Feld-Pass;
+                // _gpuComputeFaehig-Wand) und die CPU-Gesetze tragen ganz.
                 try {
                     if (!(renderer.backend && renderer.backend.isWebGPUBackend === true)) {
                         this.log(
-                            "WebGL2-Rückfall aktiv (kein WebGPU-Backend): Feld-Cull + Fullscreen-Feld-Pass ruhen — " +
+                            "WebGL2-Rückfall aktiv (kein WebGPU-Backend): der Fullscreen-Feld-Pass ruht — " +
                                 "die CPU-Gesetze tragen die Welt GANZ; der Fern-Ring verfeinert auf CPU (+ eigenem WebGPU-Device, falls vorhanden).",
                             "WARN"
                         );
@@ -84979,12 +84579,9 @@ class AnazhRealm {
                 // budgetiert vorwärmen (1 Posten/Frame), bevor ihr erster Draw stallt.
                 this._pipeOfenTick();
                 this._kernPflichtWand();
-                // Feld-Cull: pro-Instanz-GPU-Urteil der schwersten Scatter-Familien — die Compute-Pässe laufen VOR
-                // dem Render (Kompaktierung + instanceCount in den Indirect-Puffer), der Draw liest GPU-seitig.
                 // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
                 // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (_gpuLeineFrei).
                 if (this._gpuLeineFrei()) {
-                    this._feldCullTick();
                     _pt = performance.now();
                     this._loopShadowUpdate();
                     this._loopRender(currentTime);
@@ -88394,15 +87991,6 @@ AnazhRealm.FELD_PANO = Object.freeze({
     rebakeDist: 60, // m XZ-Drift bis zum Re-Bake (Parallaxe auf 8 km ≈ 0.4° — unter der Wahrnehmung)
     rebakeHoehe: 12, // m Y-Drift bis zum Re-Bake (Horizont-Verschiebung)
 });
-// FELD_CULL — pro-Instanz-GPU-Cull der schwersten @s:-Scatter-Familien (Compute + indirekte Draws).
-// Bewusst NICHT gefroren: die Linse (gate:feld-cull) senkt minInstanzen/scanTakt, um die Adoption
-// deterministisch zu treiben (Linsen-Seam, kein Spielwert).
-AnazhRealm.FELD_CULL = {
-    maxFamilien: 3, // GPU-Gewänder gleichzeitig (die 1-3 größten steady-Familien)
-    minInstanzen: 48, // erst ab dieser Instanzzahl lohnt der Compute-Pass
-    scanTakt: 90, // Frames zwischen Adoption-Scans (Adoption ist selten, der Scan billig)
-    rand: 4, // konservative Hüllkugel-Marge in m (1-Frame-Latenz der Ebenen — nie ein Kanten-Pop)
-};
 AnazhRealm.FERN_RING = Object.freeze({
     winkel: 192,
     reihen: 16,
