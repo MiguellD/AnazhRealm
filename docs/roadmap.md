@@ -45,11 +45,16 @@ die Nah-Wiese auf der Boden-Karte (D gefallen); offen: das Profi-Band auf jedem 
 - N5.4 scatter-Verdrahtung [erstes scatter-Rezept] · N6.5 spring/pitch [M4-Entscheid] ·
   Rüstung/Trank-Rezepte + Geräte-Gestalten [Lab-Presets] · W-A2 Auto-Impostor [eine Worldgen-
   Massen-Domäne ohne ehrliche Stufen] · plantForest ↔
-  planForestCell [nur unter Byte-Beweis] · Totholz-Saat + start_plattform [bis fachwerk sie deckt].
-- **Totholz** fiel FINAL (W1 + Integration 05.10., `gate:altlasten`): die Streu-Schicht `litter` zeichnete es über
-  den Alias `baum_totholz → eiche` als belaubte 21-m-Eiche (Mess-Wiese 198 Zellen), der Genese-Kandidat fiel mit
-  (ein Baum-Sieg setzt dort keinen Baum, nur den Wald-Marker), Grammatik · Baum-Parameter · Tag-Variation ohne
-  Erzeuger fielen in der Integration. Eine Studio-Art Totholz ist neuer Scope (Schöpfer), keine Wartebedingung.
+  planForestCell [nur unter Byte-Beweis] · start_plattform [bis fachwerk sie deckt].
+- **Totholz** — die Streu-Schicht `litter` (der Alias `baum_totholz → eiche`, eine belaubte 21-m-Eiche) fiel FINAL
+  (W1 + Integration 05.10., `gate:altlasten`), mit ihr der Genese-Kandidat, Grammatik · Baum-Parameter · Tag-Variation.
+  Seit dem Waldboden (04.10., integriert 05.10.) ist Totholz Studio: liegend (Totstamm, Stumpf) trägt es die Nah-Streu
+  der Welt, stehend (`totholz`, Boden-Zeile ring "wald") pflanzt es der Labor-Wald; die Welt hat keinen Erzeuger für
+  stehendes Totholz (die Genese-Zeile bleibt gefallen — Integrations-Entscheid, kein Alias kehrt zurück).
+- **Benannt gestrichen (Waldboden 04.10.):** mit dem Klein-Vegetations-Zwilling fielen final die Leucht-Sporen
+  und der Pollen (die einzige Essenz-Ernte — das Studio trägt keine Schwebe-Teilchen), das Kreuz-Fernfeld und
+  die Deck-Streu (jenseits der Nah-Streu trägt der Boden) und das minGen-Tor des Schilfs (es wächst am
+  gemessenen Ufer jeder Welt).
 - **Bewusst rot:** diag-genom „0 Gigant" (heilen oder begründen) · diag-atmosphere Fill-NACHT
   (Waise seit V18.464).
 - **Das Drehbuch** (`docs/abnahme-drehbuch.md`): `npm run look-golden -- --mint` auf echter GPU.
@@ -103,7 +108,8 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
   Frequenzband (`_applySubstanceResponse`) · Schatten (2 CSM-Kaskaden; jede LOD-Maske misst vom Auge
   `uLodAuge`, ein L0-Baum wirft seine L1 — `gate:foundry-crossfade`) · LOD-Kaskade (`DETAIL_CASCADE`) ·
-  Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei).
+  Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei + die Nah-Streu: die Studio-Bodenarten im Kachel-Ring
+  um die Kamera, gesetzt nach dem Boden-Gesetz `placement.boden` / `bodenGewicht`).
 - **Welt/Sozial:** Portal/Sub-Welten · Vibe-Pass (ed25519) · Bibliothek/Feed · Mesh (signaling +
   WebRTC + Compute-Sharing) · Fremd-Engine-Tor (Sandbox + Auto-Vendor).
 - **Spieler/UI:** `computePlayerStats` (equip-Fold) · Inventar/Hotbar/Equip · die 6 Räume +

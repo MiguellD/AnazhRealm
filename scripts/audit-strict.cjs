@@ -550,8 +550,7 @@ async function auditStateAndMethods() {
                 "lastExploreFelt", // Map lazy-init im Explore-Tick
                 "voxelChunkGrassLod", // Map lazy-init im LOD-Build
                 "scatterHarvested", // Map lazy-init beim ersten Scatter-Harvest
-                "_scatterImpostorGeoms", // Map lazy-init im Scatter-Impostor-Build
-                "dekoFernfeld", // Map lazy-init in der Fernfeld-Deko
+                "nahStreu", // lazy-init im ersten Nah-Streu-Takt (Waldboden 04.10.)
                 "grantedCapabilities", // Set lazy-init bei Capability-Grant
                 // Library/Feed-State (alle: `state.X || fallback` / `if (X)`-Gates)
                 "feedSort",

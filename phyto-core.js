@@ -1600,7 +1600,7 @@
             eiche: "baum_eiche",
             birke: "baum_birke",
             weide: "baum_erle",
-            mammut: "baum_buche",
+            mammut: "baum_mammut",
         },
         hostToLab: {
             baum_kiefer: "fichte",
@@ -1608,7 +1608,7 @@
             baum_eiche: "eiche",
             baum_birke: "birke",
             baum_erle: "weide",
-            baum_buche: "mammut",
+            baum_mammut: "mammut",
         },
         labNames: ["fichte", "tanne", "eiche", "birke", "weide", "mammut"],
         verjPool: ["birke", "eiche", "fichte", "tanne"],
@@ -1743,13 +1743,13 @@
             // sp !== baum_erle (Species-Gate Caller-lokal — sonst Drift an prio/keep/…).
             let s = forestTreeSize(rng, sd);
             let T = (F.crown[sp] || 4.0) * s; // Auto-Arten ohne Kronen-Eintrag → generischer 4-m-Radius
-            // MAMMUT-Nische (baum_buche, selten + riesig) an dichten, trockenen Kernen.
+            // MAMMUT-Nische (baum_mammut, selten + riesig) an dichten, trockenen Kernen.
             if (sp !== "baum_erle") {
                 const m = forestMammutRoll(rng, sd, clim);
                 if (m.promote) {
-                    sp = "baum_buche";
+                    sp = "baum_mammut";
                     s = m.s;
-                    T = F.crown.baum_buche * s;
+                    T = F.crown.baum_mammut * s;
                 }
             }
             const prio = rng(); // Kronen-Schüchternheit: das prio-Maximum im Konflikt-Radius gewinnt
@@ -2797,6 +2797,45 @@
         };
     }
 
+    // DAS BODEN-GESETZ (Waldboden 04.10.): das Gewicht einer Boden-Art an einem Ort aus den Bändern ihrer Zeile
+    // (foundry-core PORTAL_RENDER_CONFIG.placement.boden) — EIN Auswerter für das Labor (buildForest) und die Welt
+    // (die Nah-Streu). Ein Band ist ein Trapez [a, b, c, d]: 0 bis a, weich steigend bis b, voll bis c, weich
+    // fallend bis d. Umwelt u = { licht, feucht, ufer, fels, hang }: licht (Kronen-Licht 0..1) und feucht (0..1)
+    // wirken neutral, wo der Leser sie nicht misst (null); ufer (m über dem Wasser, negativ = Flachwasser) und fels
+    // (Steinigkeit 0..1) sind Pflicht-Bänder — wer eines trägt, wächst nur, wo es gemessen ist. Eine Art ohne
+    // Ufer-Band steht nie im Wasser (ufer < 0,1 m), hang ist die höchste Neigung |∇h|. feuchtLicht hebt die
+    // Licht-Grenze mit der Feuchte (das Licht wirkt um feuchtLicht·feucht dunkler).
+    function bodenBand(x, b) {
+        const ss = (e0, e1, v) => {
+            const t = Math.max(0, Math.min(1, (v - e0) / Math.max(1e-6, e1 - e0)));
+            return t * t * (3 - 2 * t);
+        };
+        if (x <= b[0] || x >= b[3]) return 0;
+        if (x < b[1]) return ss(b[0], b[1], x);
+        if (x <= b[2]) return 1;
+        return 1 - ss(b[2], b[3], x);
+    }
+    function bodenGewicht(zeile, u) {
+        if (!zeile || !u) return 0;
+        const da = (v) => v !== null && v !== undefined && isFinite(v);
+        if (zeile.hang != null && da(u.hang) && u.hang > zeile.hang) return 0;
+        let w = 1;
+        if (zeile.ufer) {
+            if (!da(u.ufer)) return 0;
+            w *= bodenBand(u.ufer, zeile.ufer);
+        } else if (da(u.ufer) && u.ufer < 0.1) return 0;
+        if (zeile.fels) {
+            if (!da(u.fels)) return 0;
+            w *= bodenBand(u.fels, zeile.fels);
+        }
+        if (zeile.licht && da(u.licht)) {
+            const fl = zeile.feuchtLicht && da(u.feucht) ? zeile.feuchtLicht * u.feucht : 0;
+            w *= bodenBand(u.licht - fl, zeile.licht);
+        }
+        if (zeile.feucht && da(u.feucht)) w *= bodenBand(u.feucht, zeile.feucht);
+        return w;
+    }
+
     root.__phytoCore = {
         vn2: vn2,
         fbm2: fbm2,
@@ -2856,5 +2895,7 @@
         bc5Kodiere: bc5Kodiere,
         bcDekodiere: bcDekodiere,
         karteKodiere: karteKodiere,
+        bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes
+        bodenGewicht: bodenGewicht, // Waldboden 04.10. — das Gewicht einer Boden-Art (Labor-Wald + Nah-Streu der Welt)
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

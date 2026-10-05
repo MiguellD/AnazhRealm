@@ -233,7 +233,61 @@ const FORBIDDEN = [
     // W5/S7 (Wald-L0): die Welt liest die Studio-Distanzen d0/d1 — der Host-Umweg, der 20/40 auf 12/26 m umrechnete
     // (die Kosten der Nahstufe lebten im Host statt im Asset), ist gefallen; das Studio trägt 12/26, das Budget tree[0].
     { token: "LOD_TRI_BUDGET_MUL", fiel: "W5 — die Kosten wohnen im Asset (lod.budget.tree[0]), Lehre 19" },
+    // DER WALDBODEN INS STUDIO (04.10.) — der Host erzeugt nichts, was ein Studio kann: die Klein-Vegetation (eigene
+    // Strip-/Kreuz-Geometrie je Art, das Art-Material mit eigenem Wind, die Chunk-Streu, das Deko-Fernfeld, die
+    // Deck-Streu, die Host-Ökologie Nische/Bodendecker/Kronen-Lesart) ist gefallen; die Nah-Streu liest das
+    // Boden-Gesetz des Studios und baut über die Foundry (`_tickNahStreu`).
+    { token: "KLEIN_VEGETATION_SPECIES", fiel: "Waldboden — die Arten sind Studio-Zeilen (placement.boden)" },
+    { token: "_scatterSpeciesGeometry", fiel: "Waldboden — die Gestalt baut das Studio (Foundry)" },
+    { token: "_scatterImpostorGeometry", fiel: "Waldboden — das Kreuz-Fernfeld fiel" },
+    { token: "_scatterMaterial(", fiel: "Waldboden — der Studio-Stoff (`_foundryTreeMaterial`)" },
+    { token: "_applyScatterMotion", fiel: "Waldboden" },
+    { token: "_buildVoxelChunkScatter", fiel: "Waldboden — die Nah-Streu hängt am Schirm (`_nahStreuKachel`)" },
+    { token: "_disposeVoxelChunkScatter", fiel: "Waldboden" },
+    { token: "_enqueueScatter", fiel: "Waldboden" },
+    { token: "_tickPendingScatter", fiel: "Waldboden" },
+    { token: "pendingScatter", fiel: "Waldboden" },
+    { token: "voxelChunkScatter", fiel: "Waldboden — die Kachel trägt ihre Pflanzen (nahStreu.kacheln)" },
+    { token: "_streuNahArt", fiel: "Waldboden — die Senke je Art × Gestalt × Stufe × Teil (_streuNahSenke)" },
+    { token: "DEKO_FERNFELD", fiel: "Waldboden — jenseits der Nah-Streu trägt der Boden" },
+    { token: "_tickDekoFernfeld", fiel: "Waldboden" },
+    { token: "_buildDekoFernfeldSpecies", fiel: "Waldboden" },
+    { token: "_dekoFernfeldZustand", fiel: "Waldboden" },
+    { token: "_dekoFernSetzen", fiel: "Waldboden" },
+    { token: '"deko-fernfeld"', fiel: "Waldboden" },
+    { token: "_tickDeckStreu", fiel: "Waldboden" },
+    { token: "_buildDeckStreuSpecies", fiel: "Waldboden" },
+    { token: "_scatterChunkRng", fiel: "Waldboden — der Wurf-Strom je (Zelle, Art) lebt in _nahStreuKachel" },
+    { token: "dekoDensity", fiel: "Waldboden — die Last-Dichte ist _effectiveFoliageDensity" },
+    { token: "dekoDichte", fiel: "Waldboden — die Kaskade trägt keine Deko-Bänder" },
+    { token: "_understoryNiche", fiel: "Waldboden — das Boden-Gesetz ist die EINE Platzierung (bodenGewicht)" },
+    { token: "_undergrowthGroundFactor", fiel: "Waldboden" },
+    { token: "_kronenMult", fiel: "Waldboden" },
+    { token: "AnazhRealm.KRONEN", fiel: "Waldboden" },
+    { token: "blumeFloor", fiel: "Waldboden" },
+    { token: "farnFloor", fiel: "Waldboden" },
+    { token: '"blume_tulpe"', fiel: "Waldboden — die Blume ist die Studio-Blume" },
+    { token: '"gestruepp_stecher"', fiel: "Waldboden — das Gestrüpp ist das Studio-Gestrüpp" },
+    { token: '"schilf_rohr"', fiel: "Waldboden — das Schilf ist das Studio-Schilf" },
+    // Die Alias-Arten fielen: Buche, Karst-Baum und stehendes Totholz sind eigene Studio-Arten; die Mammut-Nische des
+    // Wald-Generators heißt baum_mammut (die Lab-Host-Tafel FOREST_SPECIES hält das, checkAliasArten).
+    { token: 'baum_buche: "mammut"', fiel: "Waldboden — baum_buche ist die Studio-Buche" },
+    { token: 'baum_karst: "eiche"', fiel: "Waldboden — baum_karst ist der Studio-Karst-Baum" },
 ];
+
+// Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
+// baum_mammut — nie mehr die Buche (die Buche ist eine eigene Studio-Art, Waldboden 04.10.).
+function checkAliasArten(core) {
+    if (!core) require("../phyto-core.js");
+    const pc = core || globalThis.__phytoCore;
+    if (!pc || typeof pc.forestLabToHost !== "function") return ["phyto-core forestLabToHost fehlt"];
+    const e = [];
+    if (pc.forestLabToHost("mammut") !== "baum_mammut")
+        e.push(`FOREST_SPECIES: mammut → ${pc.forestLabToHost("mammut")} (Soll baum_mammut)`);
+    if (pc.forestHostToLab("baum_buche") !== "baum_buche")
+        e.push(`FOREST_SPECIES: baum_buche → ${pc.forestHostToLab("baum_buche")} (die Buche ist keine Lab-Wald-Nische)`);
+    return e;
+}
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
 const SOUL_KEYS_EXPECTED = ["wesen", "wolf", "fuchs", "baer"];
@@ -620,7 +674,18 @@ function main() {
                 ? "✅ SELBST-TEST: die Wand feuert (1 Injektion erkannt, Kommentar ignoriert)"
                 : `❌ SELBST-TEST: ${JSON.stringify(hits)}`
         );
-        process.exit(fired ? 0 : 1);
+        // Die Alias-Wand muss feuern: eine Tafel, die den Mammut wieder als Buche führt.
+        const aliasFeuert =
+            checkAliasArten({
+                forestLabToHost: (id) => (id === "mammut" ? "baum_buche" : id),
+                forestHostToLab: (id) => (id === "baum_buche" ? "mammut" : id),
+            }).length === 2;
+        console.log(
+            aliasFeuert
+                ? "✅ SELBST-TEST: die Alias-Wand feuert (der Mammut als Buche erkannt)"
+                : "❌ SELBST-TEST: die Alias-Wand feuert nicht"
+        );
+        process.exit(fired && aliasFeuert ? 0 : 1);
     }
 
     const errs = scan(files)
@@ -628,7 +693,8 @@ function main() {
         .concat(scanZwillinge())
         .concat(scanLabBuster())
         .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")));
+        .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
         for (const e of errs) console.log("   ❌ " + e);

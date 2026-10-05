@@ -210,9 +210,9 @@ const PORTAL_RENDER_CONFIG = {
     // Studio-Wald UND jeden Empfaenger): welche buildInstance-Stufen eine Art TRAEGT und
     // NUTZT. Baeume die volle Kaskade (0/1 + Billboard-Atlas jenseits d1); Gras + Strauch
     // ZWEISTUFIG (nah = reiche Stufe, fern = die breiten-/formkompensierte billige — die
-    // Rezepte tragen die Kompensation: Gras K=5/3 Halme mit wMul 1.7/4.6); Blume + Fels
-    // EINSTUFIG (wenige Instanzen bzw. Kleinst-Deko — eine Distanz-Stufe waere Deko ohne
-    // Wert). Der Wald waehlt nah = stages[0], fern = stages[letzte]; Empfaenger clampen
+    // Rezepte tragen die Kompensation: Gras K=5/3 Halme mit wMul 1.7/4.6); Fels EINSTUFIG
+    // (Kleinst-Deko — eine Distanz-Stufe waere Deko ohne Wert), die Blume seit 04.10. [0, 2]
+    // (die Nah-Streu traegt sie zu Hunderten). Der Wald waehlt nah = stages[0], fern = stages[letzte]; Empfaenger clampen
     // ihre Distanz-Wahl auf die naechste verfuegbare Stufe.
     // Die Distanzen sind die der Welt (S7, 05.10.): der Host-Umweg LOD_TRI_BUDGET_MUL (Studio 20/40 → Welt 12/26) ist
     // gefallen, das Studio traegt die gemessenen Werte selbst (Lehre 19). In EINER Welt (Radeon 890M, Mess-Wiese,
@@ -226,7 +226,21 @@ const PORTAL_RENDER_CONFIG = {
         fade0: 4,
         ref: 12.0,
         hyst: 3.4,
-        kindStages: { tree: [0, 1, 2], shrub: [1, 2], grass: [1, 2], flower: [0], rock: [0] },
+        // Der Waldboden (04.10.): Farn · Schilf · Gestrüpp · Totholz sind ZWEISTUFIG — L0 die Armlänge (die Nah-Streu
+        // dient sie im Armlängen-Kreis), L1 der Rest des Nah-Rings; eine Karte tragen sie nicht (jenseits trägt die
+        // Boden-Farbe). Die Blume wird zweistufig [0, 2]: ihre L2 (Blütenkopf als Kugel, ~270 Dreiecke) war seit
+        // jeher gebaut, nur nie deklariert — die Nah-Streu dient sie jenseits der Armlänge statt der L0 (~2 500).
+        kindStages: {
+            tree: [0, 1, 2],
+            shrub: [1, 2],
+            grass: [1, 2],
+            flower: [0, 2],
+            rock: [0],
+            fern: [0, 1],
+            reed: [0, 1],
+            brush: [0, 1],
+            deadwood: [0, 1],
+        },
         // DAS BUDGET je Art × Stufe (Studio-Vertrag B2c, 04.10.): was eine GELIEFERTE Stufe kosten darf, als
         // DATEN neben ihrer Stufen-Wahrheit — fuer JEDE deklarierte Stufe JEDER Art eine Zeile:
         //   tris     = Obergrenze der Dreiecke je Instanz (gebaut ueber die echte Bruecke, ueber alle Samen);
@@ -297,14 +311,68 @@ const PORTAL_RENDER_CONFIG = {
                 2: { tris: 320, draws: 1, schatten: false },
                 fernform: "boden",
             },
-            flower: { 0: { tris: 3600, draws: 2, schatten: 0 }, fernform: "gesetz" },
+            flower: {
+                0: { tris: 3600, draws: 2, schatten: 0 },
+                2: { tris: 380, draws: 2, schatten: false },
+                fernform: "gesetz",
+            },
             rock: { 0: { tris: 1300, draws: 1, schatten: 0 }, fernform: "gesetz" },
+            // DER WALDBODEN (04.10.) — gegen den Haushalt gebaut (Nah-Streu 9 Befehle / 40k Dreiecke an der Mess-Wiese,
+            // wellen-plan W0): L0 dient die Nah-Streu der Welt nur im Armlängen-Kreis (wenige Instanzen, das Nahbild),
+            // die leichte Stufe im Rest des Rings; sie aggregiert (Wedel als EIN gezacktes Band, Schilf-Rispe als EIN
+            // Band, Gestrüpp-Büschel als Raute, n·s²) und trägt EINEN Stoff (ein Befehl je Gestalt), die Nah-Streu wirft
+            // nicht (schatten false). Die Zeilen sind die gemessene Hülle über 17 Samen (echte Brücke).
+            // Jenseits des Nah-Rings trägt der Boden ihre Farbe: fernform "boden" (keine Geometrie, keine Karte).
+            fern: {
+                0: { tris: 3800, draws: 1, schatten: false },
+                1: { tris: 150, draws: 1, schatten: false },
+                fernform: "boden",
+            },
+            reed: {
+                0: { tris: 2200, draws: 1, schatten: false },
+                1: { tris: 300, draws: 1, schatten: false },
+                fernform: "boden",
+            },
+            brush: {
+                0: { tris: 3700, draws: 2, schatten: false },
+                1: { tris: 300, draws: 1, schatten: false },
+                fernform: "boden",
+            },
+            deadwood: {
+                0: { tris: 5400, draws: 1, schatten: false },
+                1: { tris: 640, draws: 1, schatten: false },
+                fernform: "boden",
+            },
             // DIE GESTALTEN je Art (04.10.): wie viele verschiedene Individuen (Samen) eine Art in der Welt traegt —
             // die Zahlen, mit denen der Studio-Wald pflanzt (buildForest liest sie, Welt-Varianten-Wahl ebenso);
             // jede Gestalt ist ein Satz Koerper L0/L1 + EINE Karte. '*' = jede Art ohne eigene Zeile. Eine
             // Aenderung hier ist ein Wald-Re-Roll (der Studio-Wald zieht je Gestalt einen RNG()-Wurf). gras 2 = die zwei
             // Halm-Vorlagen des Studio-Walds (grassT) = die zwei Studio-Vorlagen der Nah-Wiese.
-            gestalten: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, gras: 2, "*": 16 },
+            // Der Waldboden (04.10.): die Nah-Streu zeichnet je Gestalt × Stufe × Stoff EINEN Befehl — zwei Gestalten
+            // tragen die Massen-Arten (Farn · Schilf · Blume, der Klon fiele im Teppich auf), eine die amorphen und
+            // seltenen (Gestrüpp · Totholz · Stumpf · Geröll · Karst); '*' = 16 hätte jede Art 16-fach gezeichnet.
+            // buche 2 wie die Laubbäume, die sie ersetzt.
+            gestalten: {
+                eiche: 2,
+                fichte: 2,
+                birke: 2,
+                tanne: 2,
+                weide: 1,
+                mammut: 1,
+                strauch: 1,
+                gras: 2,
+                buche: 2,
+                karst: 1,
+                totholz: 1,
+                farn: 2,
+                schilf: 2,
+                gestruepp: 1,
+                totstamm: 1,
+                stumpf: 1,
+                blume: 2,
+                geroell: 1,
+                "*": 16,
+            },
         },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
@@ -347,8 +415,92 @@ const PORTAL_RENDER_CONFIG = {
             tanne: 4.26,
             fichte: 4.85,
             mammut: 4.31,
+            buche: 4.0,
+            karst: 2.4,
+            totholz: 3.4,
+            // Der Waldboden wird in Welt-Metern gebaut (Skala 1).
+            farn: 1,
+            schilf: 1,
+            gestruepp: 1,
+            totstamm: 1,
+            stumpf: 1,
         },
         rarity: { kristalle: 0.05, basalt: 0.3, sediment: 0.35, findling: 0.6, zacken: 0.6 },
+        // DAS BODEN-GESETZ (Waldboden 04.10.): wo jede Boden-Art wächst — EINE Zeile je Art, der EINE Auswerter
+        // `__phytoCore.bodenGewicht` (Labor-Wald und Nah-Streu der Welt). ring = nah (die Nah-Streu der Welt und
+        // der Boden des Labor-Walds) · wald (der Baum-Weg: die Welt setzt die Art über die Genese, das Labor pflanzt
+        // sie mit dieser Zeile); dichte = Pflanzen je 100 m² bei vollem Gewicht; skala = [min, max]; hang = höchste
+        // Neigung |∇h|; die Bänder [a, b, c, d] (Trapez): licht = Kronen-Licht 0..1 (Farn im Schatten, Blume im
+        // Saum), feucht = Boden-Feuchte 0..1 (0 = gewöhnlicher Boden, 1 = Ufer/Niederung), ufer = m über dem Wasser
+        // (negativ = Flachwasser — der Schilfgürtel steht im Wasser), fels = Steinigkeit 0..1. feuchtLicht = wie weit
+        // Feuchte die Licht-Grenze einer Schatten-Art hebt (der Farn steht im feuchten Saum auch heller); weite = wie
+        // weit die Nah-Streu der Welt die Art trägt (m, kleine Arten enden früher; ohne Zeile der ganze Nah-Ring).
+        // labor: false = das Labor trägt die Art mit seinen eigenen Boden-Schichten (Blumen · Kies).
+        boden: {
+            farn: {
+                ring: "nah",
+                dichte: 14,
+                skala: [0.75, 1.25],
+                hang: 0.95,
+                licht: [0.04, 0.16, 0.42, 0.72],
+                feuchtLicht: 0.3,
+            },
+            gestruepp: {
+                ring: "nah",
+                dichte: 2.5,
+                skala: [0.7, 1.3],
+                hang: 1.0,
+                licht: [0.22, 0.42, 0.82, 1.02],
+                feucht: [-1, -0.5, 0.55, 0.88],
+            },
+            blume: {
+                ring: "nah",
+                dichte: 6,
+                skala: [0.7, 1.3],
+                hang: 0.8,
+                weite: 18,
+                licht: [0.4, 0.7, 1.5, 2],
+                labor: false,
+            },
+            schilf: {
+                ring: "nah",
+                dichte: 40,
+                skala: [0.8, 1.2],
+                hang: 0.5,
+                ufer: [-0.6, -0.3, 0.3, 0.9],
+                licht: [0.25, 0.55, 1.5, 2],
+            },
+            totstamm: {
+                ring: "nah",
+                dichte: 0.5,
+                skala: [0.7, 1.3],
+                hang: 0.55,
+                licht: [-1, -0.5, 0.45, 0.8],
+            },
+            stumpf: {
+                ring: "nah",
+                dichte: 0.4,
+                skala: [0.75, 1.25],
+                hang: 0.8,
+                licht: [-1, -0.5, 0.6, 0.9],
+            },
+            totholz: {
+                ring: "wald",
+                dichte: 0.06,
+                skala: [0.85, 1.15],
+                hang: 0.7,
+                licht: [-1, -0.5, 0.5, 0.85],
+            },
+            geroell: {
+                ring: "nah",
+                dichte: 1,
+                skala: [0.18, 0.4],
+                hang: 1.4,
+                weite: 12,
+                fels: [0.46, 0.62, 1.5, 2],
+                labor: false,
+            },
+        },
     },
     // DER BÄCKER-SPEC („Drähte statt Kopien" 08.07., Studio-Vertrag B2): das Atlas-Rezept des
     // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Studio-Bäcker (bakeImpostorAtlas)
@@ -1136,6 +1288,7 @@ function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick
 }
 function emitTree(P) {
     const nodes = growTreeNodes(P);
+    if (P.tot) __totholzSchnitt(nodes, P); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
     /* FIX v35: LOD = ABLEITUNG AUS L0. Ein Same -> EIN Individuum: das Skelett waechst bei JEDER Stufe identisch
      (gleicher RNG-Strom), niedrigere Stufen entstehen deterministisch daraus — Zweige unter der Radius-Schwelle
      fallen aus der Geometrie (das ist Pipe-Modell-treu: duenn = jung = fern unsichtbar), Blaetter werden per
@@ -1502,6 +1655,15 @@ function emitTree(P) {
                     break;
                 }
         }
+    if (P.tot) {
+        // Die Bruch-Stellen schließen mit einem Splitterkranz, die Borke vergraut und blättert (eigener Hash-Strom).
+        const hz = mulberry32(((Math.floor(SEED) ^ 0x5b1d) + 1) >>> 0),
+            splitter = [];
+        for (let i = 0; i < 12; i++) splitter.push(hz());
+        for (const b of nodes.brueche || [])
+            __holzEnde(barkGeos, b.p, b.d, b.r, P, splitter, false, vegFarbe(0x8a7a62), vegFarbe(0x9a8e7e));
+        __totholzRinde(barkGeos, nodes, P);
+    }
     addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
     emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
     addMerged(folGeos, foliageMat);
@@ -1835,6 +1997,805 @@ function emitGrass(P) {
     }
     addMerged(geos, grassMat);
     return { height: P.bladeLen * 1.2 };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DER WALDBODEN (04.10.) — Farn · Schilf · Gestrüpp · Totholz als Studio-Gesetze. Ein Wald liest sich real an
+// seinem Boden: gefiederte Farne im feuchten Schatten, ein Schilfgürtel am Ufer, bogiges Gestrüpp am Saum,
+// liegende Stämme und Stümpfe. Jede Art wächst aus den fünf Reglern wie jede Pflanze (deriveParamsWaldboden),
+// ihre Gestalt ist EIN Skelett je Same (alle rnd()-Würfe VOR der Tessellierung — L0 und L1 sind dasselbe
+// Individuum, FIX-v35-Gesetz), die Stufen unterscheiden nur die Auflösung. Die Bänder (Wedel, Fiedern, Halme,
+// Blätter) sammelt EIN Puffer je Stoff statt tausender Einzel-Geometrien — dasselbe Attribut-Vokabular wie
+// pushSegment (aWind · aCenter · aType · color), damit Labor-Wind und Saison wirken wie bei jeder Pflanze.
+// ════════════════════════════════════════════════════════════════════════════
+function __bandSammler() {
+    return { p: [], c: [], uv: [], w: [], ct: [], t: [], i: [], n: 0 };
+}
+function __bandVert(S, p, col, u, v, sway, ctr, typ) {
+    S.p.push(p[0], p[1], p[2]);
+    S.c.push(col.r, col.g, col.b);
+    S.uv.push(u, v);
+    S.w.push(sway, sway * 1.5 + p[0] * 0.6 + p[2] * 0.6, clamp(2.6 - sway * 1.6, 0.5, 2.6));
+    S.ct.push(ctr[0], ctr[1], ctr[2]);
+    S.t.push(typ);
+    return S.n++;
+}
+// Ein Band aus Reihen gleicher Punktzahl (2 = Klinge, 3 = Klinge mit Mittelrippe); eine Reihe mit EINEM Punkt
+// ist die Spitze (Fächer). reihen[k] = { pts, col, v, sway }.
+function __band(S, reihen, ctr, typ) {
+    let vor = null;
+    for (let k = 0; k < reihen.length; k++) {
+        const R = reihen[k],
+            idx = [];
+        for (let q = 0; q < R.pts.length; q++)
+            idx.push(__bandVert(S, R.pts[q], R.col, R.pts.length > 1 ? q / (R.pts.length - 1) : 0.5, R.v, R.sway, ctr, typ));
+        if (vor) {
+            if (idx.length === 1) for (let q = 0; q + 1 < vor.length; q++) S.i.push(vor[q], vor[q + 1], idx[0]);
+            else for (let q = 0; q + 1 < idx.length; q++) S.i.push(vor[q], vor[q + 1], idx[q + 1], vor[q], idx[q + 1], idx[q]);
+        }
+        vor = idx;
+    }
+}
+// Ein dünnes Rohr (Stiel, Halm, Rute) entlang einer Polylinie: `rad` Seiten, Radius r(f), Farbe col(f).
+function __rohr(S, pts, rad, rf, colf, swayf, typ) {
+    const n = pts.length;
+    if (n < 2) return;
+    let u = null,
+        vor = null;
+    for (let i = 0; i < n; i++) {
+        const d = vnorm(vsub(pts[Math.min(n - 1, i + 1)], pts[Math.max(0, i - 1)]));
+        if (!u) u = perp(d);
+        else {
+            const du = vdot(u, d);
+            u = vnorm(vsub(u, vscl(d, du)));
+        }
+        const v = vnorm(vcross(d, u)),
+            f = i / (n - 1),
+            r = rf(f),
+            col = colf(f),
+            sw = swayf(f),
+            idx = [];
+        for (let j = 0; j < rad; j++) {
+            const a = (j / rad) * 6.2831853;
+            const p = vadd(pts[i], vadd(vscl(u, Math.cos(a) * r), vscl(v, Math.sin(a) * r)));
+            idx.push(__bandVert(S, p, col, j / rad, f, sw, pts[i], typ));
+        }
+        if (vor)
+            for (let j = 0; j < rad; j++) {
+                const j1 = (j + 1) % rad;
+                S.i.push(vor[j], vor[j1], idx[j1], vor[j], idx[j1], idx[j]);
+            }
+        vor = idx;
+    }
+}
+function __bandAdd(S, mat) {
+    if (!S.n) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(S.p, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(S.uv, 2));
+    g.setIndex(S.i);
+    g.computeVertexNormals();
+    g.setAttribute("aWind", new THREE.Float32BufferAttribute(S.w, 3));
+    g.setAttribute("aCenter", new THREE.Float32BufferAttribute(S.ct, 3));
+    g.setAttribute("aType", new THREE.Float32BufferAttribute(S.t, 1));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(S.c, 3));
+    const m = new THREE.Mesh(g, mat);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    subject.add(m);
+}
+// Punkt auf einer Polylinie bei Bogen-Anteil t ∈ [0,1] → { p, d } (Ort + Tangente).
+function __polyBei(pts, t) {
+    const n = pts.length - 1,
+        x = clamp(t, 0, 1) * n,
+        i = Math.min(n - 1, Math.floor(x)),
+        f = x - i;
+    return { p: vlerp(pts[i], pts[i + 1], f), d: vnorm(vsub(pts[i + 1], pts[i])) };
+}
+
+// DER FARN (Dryopteris-Gesetz): ein Trichter aus gefiederten Wedeln. Der Stiel steigt aus dem Wurzelstock,
+// biegt sich bogig nach außen und nickt zur Spitze (Gravitropismus `nicken`); die Fiedern stehen wechselständig,
+// ihre Länge folgt der lanzettlichen Spreite (kurz am Grund, am längsten im unteren Drittel, spitz zur Spitze),
+// jede Fieder ist eine gesägte Klinge. In der Mitte stehen junge Wedel als eingerollte Bischofsstäbe. L1: der
+// Wedel ist EIN gezacktes Band (die Silhouette der Spreite), die Bischofsstäbe fallen unter den Pixel.
+function emitFern(P) {
+    const S = __bandSammler();
+    const W = [];
+    // SKELETT (alle Würfe, jede Stufe gleich)
+    for (let k = 0; k < P.wedel; k++) {
+        const az = k * GOLDEN + P._ph + rrange(-0.3, 0.3),
+            L = P.wedelLen * rrange(0.72, 1.12),
+            tilt = clamp(P.neigung + rrange(-0.12, 0.18) + (k % 3) * 0.05, 0.1, 1.35),
+            alt = rnd(),
+            schief = rrange(-0.12, 0.12);
+        const out = [Math.cos(az), 0, Math.sin(az)];
+        let d = vnorm([out[0] * Math.sin(tilt), Math.cos(tilt), out[2] * Math.sin(tilt)]);
+        let p = [out[0] * 0.025, 0, out[2] * 0.025];
+        const NS = 10,
+            pts = [p.slice()];
+        for (let i = 1; i <= NS; i++) {
+            const f = i / NS;
+            d = vnorm(vadd(d, [out[0] * 0.05, -P.nicken * 0.2 * f, out[2] * 0.05]));
+            p = vadd(p, vscl(d, L / NS));
+            pts.push(p.slice());
+        }
+        const fj = [];
+        for (let j = 0; j < P.fiedern * 2; j++) fj.push([rrange(0.85, 1.12), rrange(-0.08, 0.08)]);
+        W.push({ pts, L, alt, schief, fj });
+    }
+    const K = [];
+    for (let k = 0; k < P.krummstab; k++)
+        K.push({ az: rnd() * 6.2831853, h: rrange(0.12, 0.26) * P.wedelLen, r: rrange(0.025, 0.04) * P.wedelLen });
+    // TESSELLIERUNG
+    const c0 = vegFarbe(P.farbe).multiplyScalar(0.62),
+        c1 = vegFarbe(P.farbe),
+        c2 = vegFarbe(P.spitze),
+        welk = vegFarbe(0x8a8040),
+        stielA = vegFarbe(0x3a2e1c),
+        stielB = vegFarbe(0x56692c);
+    const up = [0, 1, 0];
+    for (const w of W) {
+        const sh = 0.86 + 0.2 * w.alt,
+            welkT = w.alt > 0.82 ? (w.alt - 0.82) * 2.2 : 0;
+        const sideAt = (t) => {
+            const e = __polyBei(w.pts, t);
+            let s = vnorm(vcross(e.d, up));
+            s = vnorm(vadd(s, vscl(up, w.schief)));
+            return { p: e.p, d: e.d, s, n: vnorm(vcross(s, e.d)) };
+        };
+        // Stiel (Rhachis): L0 Rohr mit 3 Seiten, L1 ein dünnes Band
+        if (__lod === 0)
+            __rohr(
+                S,
+                w.pts,
+                3,
+                (f) => w.L * lerp(0.009, 0.002, f),
+                (f) => stielA.clone().lerp(stielB, Math.min(1, f * 2.2)),
+                (f) => Math.pow(f, 1.4) * P.windGain,
+                1
+            );
+        const t0 = P.stiel,
+            nP = P.fiedern;
+        if (__lod === 0) {
+            // jede Fieder eine gesägte Klinge: 5 Reihen (Grund · 3 Zähne · Spitze)
+            for (let j = 0; j < nP * 2; j++) {
+                const sgn = j % 2 ? -1 : 1,
+                    t = t0 + (1 - t0) * ((Math.floor(j / 2) + (j % 2) * 0.45 + 0.3) / nP),
+                    tp = (t - t0) / (1 - t0),
+                    prof = Math.pow(Math.sin(Math.PI * Math.pow(tp, 0.62)), 0.85),
+                    lp = P.fiederLen * w.L * (0.16 + 0.84 * prof) * w.fj[j][0];
+                if (lp < 0.004) continue;
+                const e = sideAt(t);
+                const dir = vnorm(
+                    vadd(vadd(vscl(e.s, sgn * 0.82), vscl(e.d, 0.5)), vscl(e.n, -0.12 + w.fj[j][1]))
+                );
+                const wv = vnorm(vcross(e.n, dir)),
+                    wb = lp * P.fiederBreit;
+                const reihen = [];
+                const B = [0.55, 1.0, 0.72, 0.62, 0];
+                for (let q = 0; q < 5; q++) {
+                    const s = q / 4,
+                        hw = 0.5 * wb * B[q] * (1 - s * 0.55),
+                        c = vadd(vadd(e.p, vscl(dir, lp * s)), vscl(e.n, -lp * 0.18 * s * s)),
+                        col = c0.clone().lerp(c1, 0.35 + 0.65 * s).lerp(c2, s * s * 0.55).multiplyScalar(sh);
+                    if (welkT > 0) col.lerp(welk, welkT * s);
+                    const sw = Math.pow(t, 1.4) * P.windGain + s * 0.25;
+                    reihen.push({
+                        pts: q === 4 ? [c] : [vsub(c, vscl(wv, hw)), vadd(c, vscl(wv, hw))],
+                        col,
+                        v: s,
+                        sway: sw,
+                    });
+                }
+                __band(S, reihen, e.p, 1);
+            }
+        } else {
+            // L1: der Wedel als EIN Band — die Silhouette der Spreite in K1 Reihen (je Reihe drei Fieder-Paare
+            // aggregiert, abwechselnd Spitze und Bucht): ~13 Dreiecke je Wedel statt einer Klinge je Fieder.
+            const reihen = [];
+            const e0 = sideAt(t0 * 0.35);
+            reihen.push({ pts: [vsub(e0.p, vscl(e0.s, 0.004)), vadd(e0.p, vscl(e0.s, 0.004))], col: stielA, v: 0, sway: 0 });
+            const K1 = Math.max(4, Math.round(nP / 3));
+            for (let j = 0; j <= K1; j++) {
+                const t = t0 + (1 - t0) * (j / K1),
+                    tp = j / K1,
+                    prof = Math.pow(Math.sin(Math.PI * Math.pow(tp, 0.62)), 0.85),
+                    lp = P.fiederLen * w.L * (0.16 + 0.84 * prof) * (j % 2 ? 0.22 : 1.0); // tiefe Buchten bis nahe der Rhachis: die Silhouette liest gefiedert, nicht gelappt
+                const e = sideAt(t);
+                const fw = vnorm(vadd(vscl(e.d, 0.32), vscl(e.n, -0.08)));
+                const col = c0.clone().lerp(c1, 0.5 + 0.5 * tp).lerp(c2, tp * 0.4).multiplyScalar(sh);
+                if (welkT > 0) col.lerp(welk, welkT * tp);
+                if (j === K1) {
+                    reihen.push({ pts: [e.p], col, v: 1, sway: P.windGain });
+                    break;
+                }
+                reihen.push({
+                    pts: [
+                        vadd(vsub(e.p, vscl(e.s, lp * 0.82)), vscl(fw, lp)),
+                        vadd(vadd(e.p, vscl(e.s, lp * 0.82)), vscl(fw, lp)),
+                    ],
+                    col,
+                    v: tp,
+                    sway: Math.pow(t, 1.4) * P.windGain,
+                });
+            }
+            __band(S, reihen, w.pts[0], 1);
+        }
+    }
+    // Die jungen Wedel: ein steiler Stiel, der in eine Spirale mündet (L0)
+    if (__lod === 0) {
+        const fuzz = vegFarbe(0x6a5a32);
+        for (const kr of K) {
+            const out = [Math.cos(kr.az), 0, Math.sin(kr.az)],
+                pts = [];
+            for (let i = 0; i <= 5; i++) pts.push([out[0] * 0.02 * i, (kr.h * i) / 5, out[2] * 0.02 * i]);
+            const top = pts[5],
+                side = vnorm(vcross(out, [0, 1, 0]));
+            for (let i = 1; i <= 9; i++) {
+                const a = (i / 9) * 5.2,
+                    rr = kr.r * (1 - i / 11);
+                pts.push(vadd(top, vadd(vscl(out, Math.sin(a) * rr), [0, (Math.cos(a) - 1) * -rr * 0.2 + Math.sin(a * 0.5) * rr, 0])));
+            }
+            __rohr(
+                S,
+                pts,
+                4,
+                (f) => P.wedelLen * lerp(0.009, 0.006, f) * (f > 0.4 ? 1.6 : 1),
+                (f) => stielB.clone().lerp(fuzz, f),
+                () => 0.1,
+                1
+            );
+        }
+    }
+    __bandAdd(S, foliageMat);
+    return { height: P.wedelLen };
+}
+
+// DAS SCHILF (Phragmites-Gesetz): ein Horst aus Halmen, jeder Halm ein schlankes Rohr mit wechselständigen,
+// bogig überhängenden Blättern und einer nickenden Rispe; alle Rispen wehen zur selben Seite (die Wind-Fahne
+// des Standorts). Vorjährige Halme stehen braun und blattlos dazwischen. L1 aggregiert: der Halm 3-seitig in zwei
+// Gliedern, zwei breite Blätter, die Rispe als EIN breites Band (Wahrnehmung ~ n·s²) — ~21 Dreiecke je Halm.
+function emitSchilf(P) {
+    const S = __bandSammler();
+    const fahne = [Math.cos(P.fahne), 0, Math.sin(P.fahne)];
+    const H = [];
+    for (let k = 0; k < P.halme + P.alt; k++) {
+        const a = rnd() * 6.2831853,
+            rr = Math.sqrt(rnd()) * P.horst,
+            alt = k >= P.halme,
+            h = P.hoehe * rrange(0.72, 1.08) * (alt ? 0.8 : 1),
+            lean = [rrange(-1, 1) * P.neigung + Math.cos(a) * 0.06, 1, rrange(-1, 1) * P.neigung + Math.sin(a) * 0.06],
+            bl = [];
+        for (let b = 0; b < P.blaetter; b++) bl.push([rrange(0.85, 1.15), rrange(-0.5, 0.5), rnd()]);
+        const ri = [];
+        for (let b = 0; b < 12; b++) ri.push([rrange(0.7, 1.15), rrange(-0.35, 0.35)]);
+        H.push({ base: [Math.cos(a) * rr, 0, Math.sin(a) * rr], h, lean: vnorm(lean), alt, bl, ri, ph: rnd() * 6.28 });
+    }
+    const gA = vegFarbe(0x46602a),
+        gB = vegFarbe(P.farbe),
+        braun = vegFarbe(0x8a7650),
+        braunD = vegFarbe(0x6a5a3e),
+        rA = vegFarbe(P.rispe),
+        rB = vegFarbe(0x9a8a70);
+    const L0 = __lod === 0;
+    for (const hm of H) {
+        const NS = L0 ? 7 : 2,
+            pts = [];
+        let p = hm.base.slice(),
+            d = hm.lean.slice();
+        for (let i = 0; i <= NS; i++) {
+            pts.push(p.slice());
+            const f = i / NS;
+            d = vnorm(vadd(d, vscl(fahne, 0.06 * f * f)));
+            p = vadd(p, vscl(d, hm.h / NS));
+        }
+        const colH = (f) => (hm.alt ? braunD.clone().lerp(braun, f) : gA.clone().lerp(gB, f));
+        __rohr(S, pts, 3, (f) => lerp(0.0075, 0.0035, f), colH, (f) => Math.pow(f, 1.5) * P.windGain, 4);
+        // Blätter (vorjährige Halme: keine)
+        if (!hm.alt) {
+            const nb = L0 ? hm.bl.length : Math.min(2, hm.bl.length);
+            for (let b = 0; b < nb; b++) {
+                const bi = L0 ? b : Math.floor(((b + 0.5) / nb) * hm.bl.length),
+                    j = hm.bl[bi],
+                    t = 0.14 + 0.62 * (bi / Math.max(1, hm.bl.length - 1)),
+                    e = __polyBei(pts, t),
+                    az = hm.ph + bi * 3.0 + j[1],
+                    out = [Math.cos(az), 0, Math.sin(az)],
+                    len = P.hoehe * 0.2 * j[0],
+                    K = L0 ? 5 : 2,
+                    reihen = [];
+                let q = e.p.slice(),
+                    dd = vnorm(vadd(vscl(e.d, 0.82), vscl(out, 0.58)));
+                for (let s = 0; s <= K; s++) {
+                    const f = s / K,
+                        tw = 0.6 * f * (j[2] - 0.5),
+                        wv0 = vnorm(vcross(dd, [0, 1, 0])),
+                        wv = vnorm(vadd(vscl(wv0, Math.cos(tw)), vscl(vcross(dd, wv0), Math.sin(tw)))),
+                        hw = (L0 ? 0.012 : 0.022) * (1 - f * 0.85),
+                        col = gA.clone().lerp(gB, 0.4 + 0.6 * f).lerp(braun, f * f * 0.25),
+                        sw = Math.pow(t, 1.5) * P.windGain + f * 0.4;
+                    reihen.push({ pts: s === K ? [q] : [vsub(q, vscl(wv, hw)), vadd(q, vscl(wv, hw))], col, v: f, sway: sw });
+                    dd = vnorm(vadd(dd, [out[0] * 0.18, -0.34 * f, out[2] * 0.18]));
+                    q = vadd(q, vscl(dd, len / K));
+                }
+                __band(S, reihen, e.p, 1);
+            }
+        }
+        // Die Rispe: Haupt-Achse nickt zur Fahne, Seiten-Äste hängen federig
+        const top = pts[pts.length - 1],
+            rl = P.rispeLen * hm.h * (hm.alt ? 0.75 : 1),
+            nR = L0 ? hm.ri.length : 1;
+        for (let b = 0; b < nR; b++) {
+            const bi = L0 ? b : 4,
+                j = hm.ri[bi],
+                t = b / nR,
+                start = vadd(top, vscl(hm.lean, -rl * 0.55 * t)),
+                az = hm.ph + bi * 2.4,
+                dd0 = vnorm(vadd(vadd(vscl(fahne, 0.7), [Math.cos(az) * 0.4, 0.5, Math.sin(az) * 0.4]), [0, j[1], 0])),
+                len = rl * j[0] * (1 - t * 0.5),
+                K = L0 ? 3 : 2,
+                reihen = [];
+            let q = start.slice(),
+                dd = dd0;
+            for (let s = 0; s <= K; s++) {
+                const f = s / K,
+                    wv = vnorm(vcross(dd, [0, 1, 0])),
+                    hw = (L0 ? 0.016 : 0.08) * (1 - f * 0.6),
+                    col = (hm.alt ? rB.clone() : rA.clone().lerp(rB, f * 0.5)).multiplyScalar(0.9 + 0.2 * j[0]);
+                reihen.push({
+                    pts: s === K ? [q] : [vsub(q, vscl(wv, hw)), vadd(q, vscl(wv, hw))],
+                    col,
+                    v: f,
+                    sway: P.windGain * 1.2,
+                });
+                dd = vnorm(vadd(dd, [0, -0.45, 0]));
+                q = vadd(q, vscl(dd, len / K));
+            }
+            __band(S, reihen, top, 4);
+        }
+    }
+    __bandAdd(S, foliageMat);
+    return { height: P.hoehe };
+}
+
+// DAS GESTRÜPP (Brombeer-/Schlehen-Gesetz): bogige Ruten aus dem Wurzelstock, die sich überneigen und mit der
+// Spitze zum Boden streben; an ihnen kurze Seitenzweige mit kleinen Blättern, dicht wie Reisig. L0: Ruten als
+// Rohre, jedes Blatt eine gesägte Klinge (Rinde + Laub); L1 trägt EINEN Stoff (das Laub, ein Befehl): die Ruten
+// grob in zwei Gliedern, je zwei Seitenzweige EIN Blatt-Büschel als Raute (Fläche ≈ die L0-Blätter, n·s²).
+function emitGestruepp(P) {
+    const SR = __bandSammler(),
+        SL = __bandSammler();
+    const R = [];
+    for (let k = 0; k < P.ruten; k++) {
+        const az = k * GOLDEN + rrange(-0.4, 0.4),
+            el = rrange(0.95, 1.35),
+            len = P.hoehe * rrange(1.0, 1.5),
+            base = [rrange(-0.08, 0.08), 0, rrange(-0.08, 0.08)],
+            z = [];
+        for (let j = 0; j < P.zweige; j++) {
+            const bl = [];
+            for (let b = 0; b < 4; b++) bl.push([rrange(0.8, 1.2), rrange(-0.6, 0.6), rnd()]);
+            z.push({ t: rrange(0.25, 0.95), az: rnd() * 6.2831853, len: P.hoehe * rrange(0.1, 0.24), bl });
+        }
+        R.push({ az, el, len, base, z });
+    }
+    const bA = vegFarbe(P.barkA),
+        bB = vegFarbe(P.barkB),
+        lA = vegFarbe(P.leafCol),
+        lB = vegFarbe(0x5a7a32),
+        rot = vegFarbe(0x7a3a22);
+    const L0 = __lod === 0;
+    const blatt = (pos, dir, len, j) => {
+        const n0 = vnorm(vcross(dir, [0, 1, 0])),
+            nrm = vnorm(vcross(n0, dir)),
+            wv = vnorm(vcross(nrm, dir)),
+            col = lA.clone().lerp(lB, j[2] * 0.6);
+        if (j[2] > 0.9) col.lerp(rot, 0.6);
+        const B = [0.3, 0.92, 1.0, 0.7, 0];
+        const reihen = [];
+        for (let q = 0; q < 5; q++) {
+            const s = q / 4,
+                c = vadd(vadd(pos, vscl(dir, len * s)), vscl(nrm, -len * 0.15 * s * s)),
+                hw = len * 0.3 * B[q];
+            reihen.push({
+                pts: q === 4 ? [c] : [vsub(c, vscl(wv, hw)), vadd(c, vscl(wv, hw))],
+                col: col.clone().multiplyScalar(0.85 + 0.25 * s),
+                v: s,
+                sway: P.windGain * 0.8,
+            });
+        }
+        __band(SL, reihen, pos, 1);
+    };
+    for (const r of R) {
+        const out = [Math.cos(r.az), 0, Math.sin(r.az)],
+            NS = L0 ? 8 : 2,
+            pts = [];
+        let p = r.base.slice(),
+            d = vnorm([out[0] * Math.cos(r.el), Math.sin(r.el), out[2] * Math.cos(r.el)]);
+        for (let i = 0; i <= NS; i++) {
+            pts.push(p.slice());
+            const f = i / NS;
+            d = vnorm(vadd(d, [out[0] * 0.05, -P.bogen * 0.7 * f, out[2] * 0.05]));
+            p = vadd(p, vscl(d, r.len / NS));
+            if (p[1] < 0.02) p[1] = 0.02;
+        }
+        __rohr(
+            L0 ? SR : SL,
+            pts,
+            L0 ? 4 : 3,
+            (f) => lerp(0.011, 0.0035, f),
+            (f) => bA.clone().lerp(bB, f),
+            (f) => Math.pow(f, 1.3) * P.windGain,
+            0
+        );
+        for (let zi = 0; zi < r.z.length; zi++) {
+            const z = r.z[zi];
+            if (!L0 && zi % 2) continue; // L1: je zwei Seitenzweige EIN Büschel
+            const e = __polyBei(pts, z.t),
+                zo = [Math.cos(z.az), 0.55, Math.sin(z.az)],
+                zd = vnorm(vadd(vscl(e.d, 0.55), vscl(vnorm(zo), 0.7))),
+                zEnd = vadd(e.p, vscl(zd, z.len));
+            if (L0) {
+                __rohr(
+                    SR,
+                    [e.p, vadd(e.p, vscl(zd, z.len * 0.5)), zEnd],
+                    3,
+                    (f) => lerp(0.004, 0.0018, f),
+                    (f) => bB.clone().lerp(bA, f * 0.3),
+                    () => P.windGain * 0.6,
+                    0
+                );
+                const nb = Math.max(3, Math.round(z.bl.length * P.blattDichte + 0.6));
+                for (let b = 0; b < nb && b < z.bl.length; b++) {
+                    const j = z.bl[b],
+                        pos = vlerp(e.p, zEnd, 0.35 + 0.65 * (b / Math.max(1, nb - 1))),
+                        dd = vnorm(vadd(vadd(zd, [Math.cos(z.az + j[1] * 3) * 0.8, 0.2, Math.sin(z.az + j[1] * 3) * 0.8]), [0, j[1] * 0.3, 0]));
+                    blatt(pos, dd, P.blatt * j[0], j);
+                }
+            } else {
+                // L1: das Büschel als Raute im Laub-Stoff — Grund schmal, Bauch breit, Spitze; die Fläche der acht L0-Blätter zweier Zweige (Kante 2·Zweig)
+                const cc = lA.clone().lerp(lB, z.bl[0][2] * 0.6),
+                    wv = vnorm(vcross(zd, [0, 1, 0])),
+                    lz = z.len * 2.0,
+                    b0 = vlerp(e.p, zEnd, 0.15),
+                    m = vadd(e.p, vscl(zd, lz * 0.55)),
+                    tip = vadd(e.p, vscl(zd, lz * 1.05)),
+                    hw = lz * 0.32,
+                    sw = P.windGain * 0.7;
+                __band(
+                    SL,
+                    [
+                        { pts: [vsub(b0, vscl(wv, hw * 0.12)), vadd(b0, vscl(wv, hw * 0.12))], col: cc.clone().multiplyScalar(0.8), v: 0, sway: sw },
+                        { pts: [vsub(m, vscl(wv, hw)), vadd(m, vscl(wv, hw))], col: cc, v: 0.5, sway: sw },
+                        { pts: [tip], col: cc.clone().multiplyScalar(1.1), v: 1, sway: sw },
+                    ],
+                    e.p,
+                    1
+                );
+            }
+        }
+    }
+    __bandAdd(SR, barkMat);
+    __bandAdd(SL, foliageMat);
+    return { height: P.hoehe };
+}
+
+// DAS TOTHOLZ (liegender Stamm · Stumpf): das Rinden-Gesetz (buildTube) trägt die Borke, die Zersetzung
+// schreibt sich in die Farbe — vergraute Borke, abgeplatzte Flecken mit blankem Holz, Moos auf der Oberseite —,
+// die Enden sind gebrochen (Splitter) oder gesägt (Jahresringe), Aststummel ragen aus dem Stamm, Baumschwämme
+// sitzen an der Flanke. L1: dasselbe Holz grob (das Rinden-Gesetz auf Fernstufen-Auflösung), Splitter flach.
+function __holzEnde(geos, c, d, r, P, rnd12, gesaegt, colInnen, colRand) {
+    // Ein Stamm-Ende: gesägt = flache Scheibe mit Jahresringen, sonst ein Splitterkranz (rnd12: 12 vorab gewürfelte
+    // Splitter-Längen ∈ [0,1], dieselben auf jeder Stufe).
+    const S = __bandSammler(),
+        u = perp(d),
+        v = vnorm(vcross(d, u)),
+        L0 = __lod === 0;
+    const N = L0 ? 12 : 6,
+        mitte = __bandVert(S, vadd(c, vscl(d, gesaegt ? 0 : r * 0.25 * rnd12[0])), colInnen, 0.5, 0.5, 0, c, 0);
+    const ringe = gesaegt && L0 ? 4 : 1;
+    let vor = null;
+    for (let k = 1; k <= ringe; k++) {
+        const fr = k / ringe,
+            idx = [];
+        for (let j = 0; j < N; j++) {
+            const a = (j / N) * 6.2831853,
+                sp = gesaegt ? 0 : r * 0.55 * rnd12[(j * 12) / N] * (1 - (j % 2) * 0.6),
+                rr = r * fr * 0.97,
+                p = vadd(vadd(c, vadd(vscl(u, Math.cos(a) * rr), vscl(v, Math.sin(a) * rr))), vscl(d, sp));
+            const col = gesaegt
+                ? colInnen.clone().lerp(colRand, fr * 0.6).multiplyScalar(k % 2 ? 1.0 : 0.7)
+                : colRand.clone().lerp(colInnen, 0.4 + 0.6 * rnd12[(j * 7) % 12]);
+            idx.push(__bandVert(S, p, col, j / N, fr, 0, c, 0));
+        }
+        for (let j = 0; j < N; j++) {
+            const j1 = (j + 1) % N;
+            if (!vor) S.i.push(mitte, idx[j], idx[j1]);
+            else S.i.push(vor[j], idx[j], idx[j1], vor[j], idx[j1], vor[j1]);
+        }
+        vor = idx;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(S.p, 3));
+    g.setIndex(S.i);
+    g.computeVertexNormals();
+    g.setAttribute("aWind", new THREE.Float32BufferAttribute(S.w, 3));
+    g.setAttribute("aCenter", new THREE.Float32BufferAttribute(S.ct, 3));
+    g.setAttribute("aType", new THREE.Float32BufferAttribute(S.t, 1));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(S.c, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(S.uv, 2));
+    geos.push(g);
+}
+// Die Zersetzung als Farbe: vergraut, blankes Holz in Flecken, Moos dort, wo die Fläche nach oben schaut.
+function __holzZerfall(g, P, seed) {
+    const pos = g.attributes.position,
+        col = g.attributes.color;
+    if (!pos || !col) return;
+    g.computeVertexNormals();
+    const nor = g.attributes.normal,
+        grau = new THREE.Color(0x4e4a42),
+        lGrau = 0.3 * grau.r + 0.59 * grau.g + 0.11 * grau.b,
+        blank = vegFarbe(0x9a8a72),
+        moos = vegFarbe(0x5a7a30);
+    for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i),
+            y = pos.getY(i),
+            z = pos.getZ(i);
+        const c = new THREE.Color(col.getX(i), col.getY(i), col.getZ(i));
+        const l = 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
+        c.lerp(grau.clone().multiplyScalar(l / lGrau), 0.35 * P.zerfall);
+        const fleck = simplex3(x * 3.1 + seed, y * 3.1, z * 3.1);
+        if (fleck > 0.42 - 0.25 * P.zerfall) c.lerp(blank, clamp((fleck - 0.3) * 2.2, 0, 0.6));
+        const ny = nor.getY(i);
+        if (ny > 0.25) {
+            const mf = simplex3(x * 1.7 + 11, y * 1.7 + seed, z * 1.7) * 0.5 + 0.5;
+            c.lerp(moos, clamp((ny - 0.25) * 1.6, 0, 1) * clamp(mf * 1.4 - 0.2, 0, 1) * (0.35 + 0.55 * P.zerfall));
+        }
+        col.setXYZ(i, c.r, c.g, c.b);
+    }
+    col.needsUpdate = true;
+}
+// Ein Baumschwamm: ein halbrunder Konsolen-Fächer an der Flanke (Ober- und Unterseite).
+function __schwamm(geos, c, out, r) {
+    const S = __bandSammler(),
+        up = [0, 1, 0],
+        s = vnorm(vcross(up, out)),
+        top = vegFarbe(0x9a8060),
+        rand = vegFarbe(0xc8b896),
+        unten = vegFarbe(0xb8a88a);
+    const m0 = __bandVert(S, vadd(c, [0, r * 0.12, 0]), top, 0.5, 0, 0, c, 0),
+        m1 = __bandVert(S, vsub(c, [0, r * 0.05, 0]), unten, 0.5, 0, 0, c, 0),
+        o = [],
+        uu = [];
+    for (let j = 0; j <= 6; j++) {
+        const a = (j / 6) * Math.PI,
+            p = vadd(c, vadd(vscl(s, Math.cos(a) * r), vscl(out, Math.sin(a) * r * 0.75)));
+        o.push(__bandVert(S, vadd(p, [0, -r * 0.04, 0]), rand, j / 6, 1, 0, c, 0));
+        uu.push(__bandVert(S, vadd(p, [0, -r * 0.1, 0]), unten, j / 6, 1, 0, c, 0));
+    }
+    for (let j = 0; j < 6; j++) {
+        S.i.push(m0, o[j + 1], o[j]);
+        S.i.push(m1, uu[j], uu[j + 1]);
+        S.i.push(o[j], o[j + 1], uu[j + 1], o[j], uu[j + 1], uu[j]);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(S.p, 3));
+    g.setIndex(S.i);
+    g.computeVertexNormals();
+    g.setAttribute("aWind", new THREE.Float32BufferAttribute(S.w, 3));
+    g.setAttribute("aCenter", new THREE.Float32BufferAttribute(S.ct, 3));
+    g.setAttribute("aType", new THREE.Float32BufferAttribute(S.t, 1));
+    g.setAttribute("color", new THREE.Float32BufferAttribute(S.c, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(S.uv, 2));
+    geos.push(g);
+}
+function emitTotholz(P) {
+    const geos = [];
+    const bA = new THREE.Color(P.barkA),
+        bB = new THREE.Color(P.barkB),
+        innen = vegFarbe(0x6e604c),
+        rand = vegFarbe(0x9a8a70);
+    const L0 = __lod === 0,
+        tubeLod = L0 ? 0 : 2;
+    const vok = { perp, vcross, vlen, vnorm, vsub, clamp, lerp, THREE };
+    const rnd12 = (n) => {
+        const a = [];
+        for (let i = 0; i < n; i++) a.push(rnd());
+        return a;
+    };
+    if (P.form === "stumpf") {
+        // Der Stumpf: Wurzelanlauf mit Brettwurzel-Furchen (das Rinden-Gesetz, `_bphase`), Kappe gesägt oder gebrochen
+        const h = P.hoehe,
+            r = P.radius,
+            Pt = Object.assign({}, P, { height: Math.max(h, 0.6), maxDepth: 1 });
+        const kopf = rnd12(12),
+            schwamm = [];
+        for (let i = 0; i < P.pilze; i++) schwamm.push([rnd() * 6.2831853, rrange(0.25, 0.8), rrange(0.6, 1.1)]);
+        const M = L0 ? 7 : 3,
+            rings = [];
+        rings.push({ c: [0, -r * 0.5, 0], r: r * 0.55, sway: 0, depth: 0, fuss: true });
+        for (let i = 0; i <= M; i++) {
+            const f = i / M,
+                y = h * f;
+            rings.push({ c: [0, y, 0], r: r * (1 + P.flare * 0.85 * Math.exp(-y / (h * 0.45 + 0.05))), sway: 0, depth: 0 });
+        }
+        __rindenGesetz().buildTubeGesetz(vok, geos, rings, Pt, bA, bB, r, false, undefined, tubeLod);
+        __holzEnde(geos, [0, h, 0], [0, 1, 0], r * 0.98, P, kopf, P.saege, innen, rand);
+        if (L0) for (const s of schwamm) __schwamm(geos, [Math.cos(s[0]) * r * 1.02, h * s[1], Math.sin(s[0]) * r * 1.02], [Math.cos(s[0]), 0, Math.sin(s[0])], r * 0.45 * s[2]);
+        for (const g of geos) __holzZerfall(g, P, P._bphase);
+        addMerged(geos, barkMat);
+        // Die Wurzeln laufen aus dem Fuß in den Boden — das Wurzel-Gesetz des Baums (emitRoots), gemessen an der
+        // Höhe des Baums, der hier stand.
+        const Pw = Object.assign({}, P, { height: r * 10, _trunkR: r, roots: P.roots, barkA: P.barkA, barkB: P.barkB });
+        emitRoots(Pw);
+        return { height: h };
+    }
+    // Der liegende Stamm: leicht gebogen, zur Hälfte eingesunken, verjüngt; Wurzelende mit Anlauf
+    const Lg = P.laenge,
+        r = P.radius,
+        Pt = Object.assign({}, P, { height: Lg, maxDepth: 1 });
+    const bogen = rrange(-0.35, 0.35),
+        senke = rrange(0.15, 0.32),
+        kopfA = rnd12(12),
+        kopfB = rnd12(12),
+        st = [],
+        schwamm = [];
+    for (let i = 0; i < P.stummel; i++) st.push([rrange(0.2, 0.85), rrange(-1.2, 1.2), rrange(0.25, 0.7), rrange(0.18, 0.32)]);
+    for (let i = 0; i < P.pilze; i++) schwamm.push([rrange(0.15, 0.85), rnd() < 0.5 ? -1 : 1, rrange(0.6, 1.1)]);
+    const M = L0 ? 10 : 4,
+        rings = [];
+    const axis = (f) => [(f - 0.5) * Lg, r * (1 - senke) - Math.sin(Math.PI * f) * r * 0.12, Math.sin(Math.PI * f) * bogen * Lg * 0.08];
+    for (let i = 0; i <= M; i++) {
+        const f = i / M;
+        rings.push({ c: axis(f), r: r * lerp(1.18, 0.74, f) * (f < 0.08 ? 1.12 : 1), sway: 0, depth: 0 });
+    }
+    __rindenGesetz().buildTubeGesetz(vok, geos, rings, Pt, bA, bB, r, true, 1, tubeLod);
+    const dA = vnorm(vsub(axis(0), axis(0.05))),
+        dB = vnorm(vsub(axis(1), axis(0.95)));
+    __holzEnde(geos, axis(0), dA, r * 1.3, P, kopfA, false, innen, rand);
+    __holzEnde(geos, axis(1), dB, r * 0.73, P, kopfB, false, innen, rand);
+    // Aststummel (L1: nur der kräftigste)
+    for (let k = 0; k < st.length; k++) {
+        if (!L0 && k > 0) break;
+        const s = st[k],
+            c = axis(s[0]),
+            rr = r * lerp(1.18, 0.74, s[0]),
+            out = vnorm([0, Math.cos(s[1]), Math.sin(s[1])]),
+            len = r * 2.2 * s[2] + 0.1,
+            sr = rr * s[3];
+        const sRings = [];
+        for (let i = 0; i <= 3; i++) {
+            const f = i / 3;
+            sRings.push({ c: vadd(c, vscl(out, rr * 0.7 + len * f)), r: sr * (1 - f * 0.55), sway: 0, depth: 1 });
+        }
+        __rindenGesetz().buildTubeGesetz(vok, geos, sRings, Pt, bA, bB, r, true, 0.85, tubeLod);
+        __holzEnde(geos, sRings[3].c, out, sr * 0.45, P, kopfA, false, innen, rand);
+    }
+    if (L0)
+        for (const s of schwamm) {
+            const c = axis(s[0]),
+                rr = r * lerp(1.18, 0.74, s[0]);
+            __schwamm(geos, vadd(c, [0, -rr * 0.15, s[1] * rr * 0.98]), [0, 0, s[1]], rr * 0.5 * s[2]);
+        }
+    for (const g of geos) __holzZerfall(g, P, P._bphase);
+    addMerged(geos, barkMat);
+    return { height: r * 2 };
+}
+
+// DIE GESTALT-TAFEL DES WALDBODENS: kind → Emitter. buildInstance UND das Labor (`build`) lesen dieselbe Tafel.
+const WALDBODEN_EMIT = { fern: emitFern, reed: emitSchilf, brush: emitGestruepp, deadwood: emitTotholz };
+
+// Das Totholz eines stehenden Baums (P.tot): die Krone ist gebrochen (der Stamm endet in der Bruch-Höhe in einem
+// Splitterkranz), das Feinreisig ist abgefallen, kein Laub. Läuft NACH dem Wuchs — das Skelett und der rnd()-Strom
+// sind die eines lebenden Baums derselben Art (FIX v35), die Stufen schneiden dasselbe Individuum.
+function __totholzSchnitt(nodes, P) {
+    const hB = nodes.height * P.totBruch,
+        rMin = (nodes.trunkR || 0.1) * 0.16,
+        hsh = (k, n) => {
+            let h = Math.imul((k + 1) ^ 0x2c1b3c6d, 0x297a2d39) ^ Math.imul(n + 7, 0x5bd1e995) ^ Math.floor(SEED);
+            h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+            return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
+        };
+    const laeufe = new Map();
+    for (const sg of nodes.segs) {
+        if (Math.max(sg.r0, sg.r1) < rMin) continue;
+        const k = sg.runId != null ? sg.runId : -1;
+        if (!laeufe.has(k)) laeufe.set(k, []);
+        laeufe.get(k).push(sg);
+    }
+    const reihe = [...laeufe.entries()].sort((x, y) => x[1][0].depth - y[1][0].depth);
+    const out = [],
+        brueche = [];
+    const haengt = (p) => {
+        for (const q of out) {
+            const d = vsub(q.p1, q.p0),
+                L2 = Math.max(1e-9, vdot(d, d)),
+                t = clamp(vdot(vsub(p, q.p0), d) / L2, 0, 1),
+                c = vadd(q.p0, vscl(d, t));
+            if (vlen(vsub(p, c)) <= Math.max(q.r0, q.r1) * 1.6 + 0.03) return true;
+        }
+        return false;
+    };
+    for (const [k, lauf] of reihe) {
+        const tief = lauf[0].depth;
+        if (tief > 0 && !haengt(lauf[0].p0)) continue;
+        let gesamt = 0;
+        for (const sg of lauf) gesamt += vlen(vsub(sg.p1, sg.p0));
+        const h = tief === 0 ? hB : hB * (0.72 + 0.6 * hsh(k, 1));
+        const lMax = tief === 0 ? Infinity : gesamt * (tief >= 2 ? 0.25 + 0.55 * hsh(k, 2) : 0.55 + 0.45 * hsh(k, 2));
+        let weg = 0;
+        for (const sg of lauf) {
+            if (sg.p0[1] >= h) break;
+            const len = vlen(vsub(sg.p1, sg.p0));
+            const tH = sg.p1[1] > h ? (h - sg.p0[1]) / Math.max(1e-6, sg.p1[1] - sg.p0[1]) : 1;
+            const tL = weg + len > lMax ? (lMax - weg) / Math.max(1e-6, len) : 1;
+            const t = Math.min(tH, tL);
+            if (t < 1) {
+                if (t <= 0.02) break;
+                const c = Object.assign({}, sg, { p1: vlerp(sg.p0, sg.p1, t), r1: lerp(sg.r0, sg.r1, t) });
+                out.push(c);
+                brueche.push({ p: c.p1, d: vnorm(vsub(sg.p1, sg.p0)), r: c.r1 });
+                break;
+            }
+            out.push(sg);
+            weg += len;
+        }
+    }
+    nodes.segs = out;
+    nodes.leaves = [];
+    nodes.brueche = brueche;
+}
+// Die Borke des Totholzes: vergraut, in Platten abgeblättert (blankes Holz darunter), dazu einzelne lose
+// Rinden-Schuppen, die vom Stamm abstehen (eigener Hash-Strom — der rnd()-Strom bleibt der des Baums).
+function __totholzRinde(barkGeos, nodes, P) {
+    const PZ = Object.assign({}, P, { zerfall: 0.75 });
+    for (const g of barkGeos) __holzZerfall(g, PZ, P._bphase || 0);
+    if (__lod !== 0) return;
+    const hr = mulberry32(((Math.floor(SEED) ^ 0x7a11) + 3) >>> 0),
+        stamm = nodes.segs.filter((s) => s.depth === 0);
+    if (!stamm.length) return;
+    const S = __bandSammler(),
+        aussen = vegFarbe(P.barkA),
+        innen = vegFarbe(0x9a8a72);
+    for (let k = 0; k < 14; k++) {
+        const s = stamm[Math.floor(hr() * stamm.length)],
+            f = hr(),
+            c = vlerp(s.p0, s.p1, f),
+            r = lerp(s.r0, s.r1, f),
+            d = vnorm(vsub(s.p1, s.p0)),
+            a = hr() * 6.2831853,
+            u = perp(d),
+            v = vnorm(vcross(d, u)),
+            out = vnorm(vadd(vscl(u, Math.cos(a)), vscl(v, Math.sin(a)))),
+            side = vnorm(vcross(d, out)),
+            w = r * (0.5 + hr() * 0.6),
+            hgt = r * (1.2 + hr() * 1.6),
+            reihen = [];
+        for (let q = 0; q <= 3; q++) {
+            const t = q / 3,
+                lift = r * 0.06 + t * t * r * 0.35,
+                m = vadd(vadd(c, vscl(out, r * 1.02 + lift)), vscl(d, hgt * (t - 0.5)));
+            reihen.push({
+                pts: [vsub(m, vscl(side, w * 0.5)), m, vadd(m, vscl(side, w * 0.5))],
+                col: aussen.clone().lerp(innen, t * 0.4),
+                v: t,
+                sway: 0,
+            });
+        }
+        __band(S, reihen, c, 0);
+    }
+    if (S.n) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(S.p, 3));
+        g.setIndex(S.i);
+        g.computeVertexNormals();
+        g.setAttribute("aWind", new THREE.Float32BufferAttribute(S.w, 3));
+        g.setAttribute("aCenter", new THREE.Float32BufferAttribute(S.ct, 3));
+        g.setAttribute("aType", new THREE.Float32BufferAttribute(S.t, 1));
+        g.setAttribute("color", new THREE.Float32BufferAttribute(S.c, 3));
+        g.setAttribute("uv", new THREE.Float32BufferAttribute(S.uv, 2));
+        barkGeos.push(g);
+    }
 }
 
 function ridged(p, oct, off) {
@@ -2646,6 +3607,87 @@ const PRESETS = {
             matRough: 0.16,
         },
     },
+    // ═══ DER WALDBODEN (04.10.) — die Arten unter und zwischen den Bäumen (Gestalt: WALDBODEN_EMIT) ═══
+    farn: {
+        kind: "fern",
+        panel: "plant",
+        s: { api: 0.55, delta: 2.3, slim: 0.5, trop: 0.4, leaf: 0.62 },
+        fx: { leafCol: 0x3f6f2a, tipCol: 0x7aa244 },
+    },
+    schilf: {
+        kind: "reed",
+        panel: "plant",
+        s: { api: 0.75, delta: 2.3, slim: 0.55, trop: 0.25, leaf: 0.6 },
+        fx: { leafCol: 0x5e7e36, rispeCol: 0x6a4a40 },
+    },
+    gestruepp: {
+        kind: "brush",
+        panel: "plant",
+        s: { api: 0.3, delta: 2.4, slim: 0.45, trop: 0.55, leaf: 0.6 },
+        fx: { barkA: 0x5a3a30, barkB: 0x6e4e3e, leafCol: 0x355626 },
+    },
+    totstamm: {
+        kind: "deadwood",
+        panel: "plant",
+        s: { api: 0.5, delta: 2.3, slim: 0.5, trop: 0.3, leaf: 0.5 },
+        fx: { form: "liegend", barkA: 0x3c3226, barkB: 0x5c5244 },
+    },
+    stumpf: {
+        kind: "deadwood",
+        panel: "plant",
+        s: { api: 0.5, delta: 2.3, slim: 0.4, trop: 0.2, leaf: 0.55 },
+        fx: { form: "stumpf", barkA: 0x3a2c1e, barkB: 0x5a4a38 },
+    },
+    // Die Buche: glatte graue Rinde, ganzrandiges Blatt, breite Kuppel (die Mammut-Nische des Wald-Generators heißt
+    // seit 04.10. baum_mammut — baum_buche ist die Buche). Buche · Karst · Totholz tragen place none: die Welt
+    // setzt sie über ihre bestehenden Nischen (Genese · Streu-Krone), kein zusätzlicher Auto-Hain.
+    buche: {
+        kind: "tree",
+        panel: "plant",
+        s: { api: 0.4, delta: 2.25, slim: 0.6, trop: 0.05, leaf: 0.75 },
+        fx: {
+            barkType: "smooth",
+            conifer: false,
+            leafShape: "ovate",
+            barkA: 0x6c6a62,
+            barkB: 0x8e8a80,
+            leafCol: 0x4c7d2a,
+            place: { mode: "none" },
+        },
+        ph: {
+            barkType: "smooth",
+            barkA: 0x6c6a62,
+            barkB: 0x8e8a80,
+            leafCol: 0x4c7d2a,
+            leafShape: { m: 4.1, n1: 0.91, n2: 0.865, n3: 0.865, a: 1, b: 1, wsc: 0.36 }, // das ganzrandig-wellige Ovalblatt (Eichen-Gesetz bei Lappung 0,3)
+            roots: 6,
+            flare: 0.24,
+        },
+    },
+    // Der Karst-Baum: knorrig, gedrungen, mit mächtigem Wurzelanlauf an der Klippe.
+    karst: {
+        kind: "tree",
+        panel: "plant",
+        s: { api: 0.28, delta: 2.4, slim: 0.14, trop: -0.4, leaf: 0.36 },
+        fx: {
+            barkType: "oak",
+            conifer: false,
+            leafShape: "oak",
+            barkA: 0x3b3128,
+            barkB: 0x5f5444,
+            leafCol: 0x3e6626,
+            place: { mode: "none" },
+        },
+        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444 },
+    },
+    // Das stehende Totholz: ein abgestorbener Laubbaum — gebrochene Krone, kein Reisig, kein Laub, vergraute Borke.
+    totholz: {
+        kind: "tree",
+        panel: "plant",
+        s: { api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6 },
+        fx: { barkType: "oak", conifer: false, barkA: 0x46423a, barkB: 0x6e685c, place: { mode: "none" } },
+        ph: { tot: 1, barkA: 0x46423a, barkB: 0x6e685c },
+    },
 };
 
 // ULTRAGUSS U2 — DER PHÄNOTYP-ZWILLING IST TOT: das Gesetz wohnt EINMAL in
@@ -2709,12 +3751,16 @@ function deriveParamsPlant(pre) {
             windGain: 1.3,
         }; // Belaubung -> Aehren/Rispen, Gravitropismus -> Fontaene
     }
+    if (WALDBODEN_EMIT[pre.kind]) return deriveParamsWaldboden(pre, { api, delta, slim, trop, leaf }, IR, J, O);
     // tree / shrub — phaenotypische Variation um den Genotyp (Slider) + LOD
-    const ph = phenotype(api, slim, trop, delta, leaf);
+    // Die Phänotyp-Zeilen einer Art (`pre.ph`, 04.10.): was das Gesetz aus den Reglern ableitet, kann die Art
+    // benennen — die Buche ihre glatte graue Rinde und das ganzrandige Blatt, der Karst-Baum seinen Wurzelanlauf,
+    // das Totholz seine vergraute Borke. Ohne Zeile byte-gleich.
+    const ph = pre.ph ? Object.assign(phenotype(api, slim, trop, delta, leaf), pre.ph) : phenotype(api, slim, trop, delta, leaf);
     const lc0 = new THREE.Color(ph.leafCol);
     lc0.offsetHSL((IR() - 0.5) * 0.05, (IR() - 0.5) * 0.1, (IR() - 0.5) * 0.08);
     const lcol = lc0.getHex();
-    return {
+    const P = {
         kind: ph.kind,
         apical: clamp(api + O(0.1), 0, 1),
         delta: delta + O(0.1),
@@ -2738,6 +3784,86 @@ function deriveParamsPlant(pre) {
         windGain: ph.windGain,
         barkType: ph.barkType,
         _bphase: IR() * 6.2831,
+    };
+    // Totholz (stehend): die Bruch-Höhe ist ein Wurf des Individuums (nach allen anderen — jeder lebende Baum
+    // zieht byte-gleich), die Krone der Fernform ist kahl.
+    if (ph.tot) {
+        P.tot = 1;
+        P.totBruch = 0.42 + IR() * 0.26;
+        P.crown = "kahl";
+    }
+    return P;
+}
+
+// Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).
+function deriveParamsWaldboden(pre, d, IR, J, O) {
+    const fx = pre.fx || {};
+    if (pre.kind === "fern")
+        return {
+            kind: "fern",
+            wedel: Math.max(4, Math.round(lerp(6, 12, d.leaf) * J(0.15))), // ausgewachsene Wedel
+            krummstab: 1 + Math.floor(IR() * 3), // junge, eingerollte Wedel in der Mitte
+            wedelLen: lerp(0.55, 1.15, d.slim) * J(0.14), // Wedel-Länge (m)
+            stiel: lerp(0.16, 0.3, 1 - d.leaf), // Stiel-Anteil ohne Fiedern
+            neigung: lerp(0.8, 0.28, d.api) + O(0.06), // Stiel gegen die Senkrechte (rad): hoher Apikal = Trichter
+            nicken: clamp(0.3 + d.trop * 0.9, 0.08, 1.2), // Gravitropismus: wie stark der Wedel überhängt
+            fiedern: Math.round(lerp(13, 21, d.leaf)), // Fieder-Paare je Wedel
+            fiederLen: lerp(0.17, 0.25, d.leaf) * J(0.1), // längste Fieder relativ zur Wedel-Länge
+            fiederBreit: lerp(0.22, 0.32, 1 - d.slim), // Fieder-Breite relativ zur Fieder-Länge
+            farbe: fx.leafCol,
+            spitze: fx.tipCol,
+            windGain: 0.7,
+            _ph: IR() * 6.2831,
+        };
+    if (pre.kind === "reed")
+        return {
+            kind: "reed",
+            halme: Math.max(5, Math.round(lerp(7, 15, d.leaf) * J(0.15))),
+            alt: Math.floor(IR() * 3), // vorjährige, braune Halme
+            hoehe: lerp(1.5, 2.7, d.slim) * J(0.12),
+            horst: lerp(0.12, 0.34, 1 - d.api), // Horst-Radius (m)
+            blaetter: Math.round(lerp(4, 7, d.leaf)),
+            rispeLen: lerp(0.14, 0.24, d.leaf), // Rispen-Länge relativ zur Halmhöhe
+            neigung: lerp(0.16, 0.04, d.api), // Streuung der Halm-Neigung
+            fahne: IR() * 6.2831, // die Wind-Seite des Standorts: alle Rispen nicken dorthin
+            farbe: fx.leafCol,
+            rispe: fx.rispeCol,
+            windGain: 1.2,
+        };
+    if (pre.kind === "brush")
+        return {
+            kind: "brush",
+            ruten: Math.max(6, Math.round(lerp(8, 12, d.leaf) * J(0.15))), // bogige Ruten aus dem Wurzelstock
+            hoehe: lerp(0.55, 1.0, d.slim) * J(0.12),
+            bogen: clamp(0.6 + d.trop * 0.9, 0.3, 1.4), // wie stark die Ruten überhängen
+            zweige: Math.round(lerp(5, 8, d.leaf)), // Seitenzweige je Rute
+            blatt: lerp(0.05, 0.085, d.leaf) * J(0.1), // Blattlänge (m)
+            blattDichte: d.leaf,
+            barkA: fx.barkA,
+            barkB: fx.barkB,
+            leafCol: fx.leafCol,
+            windGain: 0.6,
+        };
+    // deadwood: liegender Stamm oder Stumpf (fx.form), Zersetzung aus trop (Feuchte-Zeiger) + Individuum
+    return {
+        kind: "deadwood",
+        form: fx.form === "stumpf" ? "stumpf" : "liegend",
+        laenge: lerp(2.4, 6.0, d.slim) * J(0.15),
+        hoehe: lerp(0.28, 0.85, d.slim) * J(0.15),
+        radius: lerp(0.12, 0.34, d.leaf) * J(0.15),
+        zerfall: clamp(0.35 + d.trop * 0.5 + O(0.25), 0, 1),
+        saege: IR() < 0.5, // Stumpf: gesägt (Jahresringe) oder gebrochen (Splitter)
+        stummel: 2 + Math.floor(IR() * 3),
+        pilze: Math.floor(IR() * 4),
+        barkA: fx.barkA,
+        barkB: fx.barkB,
+        barkType: "oak",
+        flare: 0.55,
+        roots: 5,
+        delta: d.delta,
+        maxDepth: 1,
+        _bphase: IR() * 6.2831,
+        windGain: 0,
     };
 }
 
@@ -2937,6 +4063,7 @@ function buildInstance(presetId, seed, lod, ov) {
             if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase/trunkMul)
             if (P.kind === "flower") emitFlower(P);
             else if (P.kind === "grass") emitGrass(P);
+            else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
             else {
                 const nodes = emitTree(P);
                 // Analog-B Slice 2: Grammatik-Beipack (Kegelstumpf-Segmente) — Template-Raum;

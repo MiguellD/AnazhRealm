@@ -392,8 +392,8 @@ jobs:
             - name: Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)
               # DIE EINE INVENTUR-LINSE (aus dem Silhouetten-Zensus gewachsen, Gesetz #0), zwei Hälften:
               # (1) ZENSUS — jeder sichtbare Emitter der Szene wird über IDENTITÄT klassifiziert
-              # (Studio · Substanz [inkl. der gestempelten Bau-Quellen streu-klein/deko-fernfeld/
-              # terrain-stitch/wetter-regen] · Entscheid · VERLETZUNG fail-closed) → 0 Fremd-Silhouetten.
+              # (Studio [inkl. der Nah-Streu-Senken über ihren Leaf-Key] · Substanz [inkl. der gestempelten Bau-Quellen
+              # boden-satz/wetter-regen] · Entscheid · VERLETZUNG fail-closed) → 0 Fremd-Silhouetten.
               # (2) INVENTUR — jeder on-demand angefragte Foundry-Key (f.requested) ist am Ende resident
               # (f.cache) oder sichtbar attestiert (fscatter/f:/fimp:/Gras-Memo); LRU-Räumungen (f.lruEvicted)
               # sind bewusst, kein Verlust → 0 verlorene Keys = das stille Verhungern (V18.309-Klasse) ist

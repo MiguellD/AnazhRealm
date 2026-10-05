@@ -24,6 +24,12 @@ const OTHERS = ["findling", "kristalle", "blume", "strauch"]; // je 1 Fall, seed
 // Die GELIEFERTE Strauch-Stufe (kindStages shrub [1,2], L0 wird auf L1 geklemmt) — seit 04.10. eingefroren wie die
 // Baum-L1 (der Reisig-Schnitt der Budget-Welle trifft sie, gate:asset-contract hält sie byte-genau).
 const EXTRA = [{ presetId: "strauch", seed: 7, lod: 1, season: "summer" }];
+// DER WALDBODEN (04.10., additiv gemünzt — die 77 Fälle davor blieben byte-gleich): je Boden-Art ihre gelieferten
+// Stufen L0/L1, die neuen Baum-Arten (Buche · Karst · stehendes Totholz) L0/L1, die neue Blumen-Stufe L2.
+const WALDBODEN = [];
+for (const presetId of ["farn", "schilf", "gestruepp", "totstamm", "stumpf", "buche", "karst", "totholz"])
+    for (const lod of [0, 1]) WALDBODEN.push({ presetId, seed: 7, lod, season: "summer" });
+WALDBODEN.push({ presetId: "blume", seed: 7, lod: 2, season: "summer" });
 
 function cases() {
     const out = [];
@@ -32,6 +38,7 @@ function cases() {
             for (const seed of T_SEEDS) for (const lod of T_LODS) out.push({ presetId, seed, lod, season });
     for (const presetId of OTHERS) out.push({ presetId, seed: 7, lod: 0, season: "summer" });
     for (const c of EXTRA) out.push(Object.assign({}, c));
+    for (const c of WALDBODEN) out.push(Object.assign({}, c));
     return out;
 }
 const fileFor = (c) => `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}.json`;

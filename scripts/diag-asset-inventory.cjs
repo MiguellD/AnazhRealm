@@ -6,12 +6,13 @@
 // JEDEN zeichnenden Emitter GENAU EINEM Regal zu:
 //
 //   STUDIO     — aus der Studio-Pipeline (fscatter:* Scatter-Gruppen · f:/fimp:-Leaves der
-//                platzierten Architektur · das Studio-Gras-Asset [geo.userData.foundryGras]).
+//                platzierten Architektur · das Studio-Gras-Asset [geo.userData.foundryGras] · die Senken der
+//                Nah-Streu und die Kacheln der Nah-Wiese über ihren Foundry-Leaf-Key).
 //   SUBSTANZ   — Welt-Substanz ohne Studio-Gegenstück, bewusst KEINE Silhouetten-Frage
 //                (Terrain-Chunks · Wasser [isHydrosphere] · Himmel/Gestirne · Kreaturen ·
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
-//                GESTEMPELTEN Bau-Quellen: streu-klein · deko-fernfeld · boden-satz ·
-//                wetter-regen — die einst 222 „unbekannten" Emitter, an der QUELLE geklärt).
+//                GESTEMPELTEN Bau-Quellen: boden-satz · wetter-regen — die einst 222 „unbekannten"
+//                Emitter, an der QUELLE geklärt; die Klein-Streu ist seit 04.10. Studio, das Fernfeld fiel).
 //   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (glut* [E-E] · start_plattform +
 //                fliegende Inseln [E-F]); im Parity-Shot seit W2 versteckt, in der Welt daheim.
 //   VERLETZUNG — alles andere: eine Vegetations-/Deko-Silhouette OHNE Studio-Herkunft
@@ -160,6 +161,11 @@ const server = http.createServer((req, res) => {
             for (const k of st.nahWiese.kacheln.values())
                 for (const im of k.meshes || [])
                     if (im.userData && im.userData.leafKey) meshKeys.set(im, ["nahWiese#" + im.userData.leafKey]);
+        // Waldboden 04.10. — die Nah-Streu (Kamera-Ring aus den Studio-Bodenarten): je Senke ihr Foundry-Leaf-Key;
+        // eine Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
+        if (st.nahStreu)
+            for (const a of st.nahStreu.senken.values())
+                if (a.mesh && a.leafKey) meshKeys.set(a.mesh, ["nahStreu#" + a.leafKey]);
 
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
         const VEG =
@@ -188,16 +194,13 @@ const server = http.createServer((req, res) => {
         // H3 — DAS INVENTAR-WÖRTERBUCH der gestempelten Bau-Quellen (userData.inventar am
         // Bau-Chokepoint; die einst 222 unbekannten Emitter, per Instrumentierung an der
         // QUELLE geklärt statt geraten):
-        //   streu-klein    — _streuNahMesh (KLEIN_VEGETATION, EINE InstancedMesh je Art, kein Studio-Zwilling)
-        //   deko-fernfeld  — _dekoFernSetzen (Fern-Impostor-Ring derselben Familie; seit Welle B trägt dieselbe
-        //                    Art-Mesh hinter dem Fern-Block die Deck-Streu — der Zwilling `deck-streu` fiel)
+        //   (streu-klein   — die Senken der Nah-Streu sind seit 04.10. STUDIO, über ihren Leaf-Key oben geklärt;
+        //                    ein streu-klein-Stempel OHNE Key ist unbekannt → Verletzung. deko-fernfeld fiel.)
         //   boden-satz     — _chunkSatz("boden") (Welle B: der Terrain-Ring als EIN Satz, Stitch-Bänder
         //                    eingeschlossen — die Chunk-Meshes sind CPU-Körper ausserhalb der Szene)
         //   wetter-regen   — _ensureRainSystem (Niederschlags-Punkte, nur bei rainy/stormy sichtbar)
         // FAIL-CLOSED: ein Stempel, den das Wörterbuch nicht kennt, ist eine VERLETZUNG.
         const INVENTAR = {
-            "streu-klein": { b: "substanz", why: "streu-klein (KLEIN_VEGETATION, kein Studio-Zwilling)" },
-            "deko-fernfeld": { b: "substanz", why: "deko-fernfeld (Fern-Impostor der kleinen Streu)" },
             "boden-satz": { b: "substanz", why: "boden-satz (Terrain-Ring + Stitch als EIN Satz)" },
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
         };
@@ -316,7 +319,7 @@ const server = http.createServer((req, res) => {
         // ── Positiv-Beweis der Stempel: mindestens EINE gestempelte Klasse lebt in der
         // Szene (sonst wäre das Inventar-Wörterbuch toter Code — KONSUM, nicht Existenz).
         o.stampedClasses = Object.keys(o.zensus.detail.substanz).filter((k) =>
-            /^(streu-klein|deko-fernfeld|boden-satz|wetter-regen)/.test(k)
+            /^(boden-satz|wetter-regen)/.test(k)
         ).length;
 
         // ── HÄLFTE 2 — DIE INVENTUR (H3: requested ⊆ visible|cached).
@@ -339,6 +342,14 @@ const server = http.createServer((req, res) => {
                         const pp = lf.slice(2).split(":")[0].split("|");
                         if (pp.length === 4) attested.add(pp[0] + "|" + pp[1] + "|" + pp[2]);
                     }
+                }
+            // Waldboden 04.10. — jede Senke der Nah-Streu attestiert ihr Studio-Tripel (preset|gestalt|stufe).
+            if (st.nahStreu)
+                for (const a of st.nahStreu.senken.values()) {
+                    const lf = String(a.leafKey || "");
+                    if (!lf.startsWith("f:")) continue;
+                    const pp = lf.slice(2).split(":")[0].split("|");
+                    if (pp.length >= 3 && a.anzahl > 0) attested.add(pp[0] + "|" + pp[1] + "|" + pp[2]);
                 }
             // Die Karten (W6): jede Zelle des EINEN Atlas attestiert die L1 ihrer Art × Gestalt (headless ihr Rahmen,
             // gescheitert = bewusstes Verdikt); Grammatik-Zellen (fimp:g:) tragen keine Foundry-Art.

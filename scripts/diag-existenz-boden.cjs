@@ -3,7 +3,7 @@
 // diag-existenz-boden.cjs — DER EXISTENZ-BODEN DES DISPATCHERS (V18.473).
 // Schöpfer-Trace vom echten Holz (14.07.): render-gebundene Maschine →
 // deferrable-Budget dauerhaft ≤ 0 → `break` ließ die Substanz-Queues
-// (pendingWaterIso · pendingScatter · pendingGrass) monoton wachsen
+// (pendingWaterIso · pendingScatter [fiel 04.10.] · pendingGrass) monoton wachsen
 // (Heap +1,6 MB/s) — Wasser trug Schwimm-Physik ohne sichtbare Oberfläche.
 // Diese Linse hält die Lehre-13-Erweiterung: Existenz vor Framerate —
 //   (a) bei LEEREM Budget läuft Welt-SUBSTANZ (prio 1: waterIso) trotzdem
