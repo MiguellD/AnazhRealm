@@ -129,7 +129,7 @@ function pruefe(stamm, kern, shell) {
     const baum = methode(stamm, "_foundryTreeMaterial(kind, mp, wiegen) {");
     pruef(
         "F3b die Nah-Wiese und das Foundry-Laub/-Gras lesen uSeasonMul",
-        gras && /uSeasonMul/.test(strip(gras)) && baum && /vcol\.mul\(_suF\.uSeasonMul\)/.test(strip(baum)) && /texN\.rgb(?:\.mul\(TSL\.vec3\([^;]*?\)\))?\.mul\(laubFarbe\)/.test(strip(baum))
+        gras && /uSeasonMul/.test(strip(gras)) && baum && /vcol\.mul\(_suF\.uSeasonMul\)/.test(strip(baum)) && /atl\.rgb\.mul\(laubFarbe\)/.test(strip(baum))
     );
     pruef(
         "F3c der Karten-Stoff färbt mit mix(1, uSeasonMul, kartenGewicht)",

@@ -289,12 +289,14 @@ jobs:
               # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
               run: npm run gate:asset-contract
 
-            - name: Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite)
+            - name: Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)
               # 05.10.: die gelieferten Puffer je Art der Klasse über die echte Foundry-Naht — Birke weiß mit Lentizellen,
               # schwarzer Fuß-Borke und dunklen Zweigen, jede Rinde im Albedo-Band, kein Ringel über dem Ring-Gitter,
               # der Strauch aus Karten mit Reisig, Saftmal-Verlauf der Blüte, Blatt-Maß der Laub-Karten, die zwei Leser
               # der Blatt-Unterseite. Der Selbsttest macht gipsweiße Birke, Ringel-Stamm, Klingen-Strauch, einfarbige
-              # Blüte, Blatt x3 und einen fehlenden Leser rot.
+              # Blüte, Blatt x3 und einen fehlenden Leser rot. Integration 05.10.: jede Karte der Weide liest die Weiden-Zelle,
+              # und die Fracht des Blatt-Atlas (BC1 / rgba, vormultipliziert) liest durch den EINEN Leser je Stufe wie das
+              # Labor (± 3 %) — BC1 gerade gelesen (ohne Teilen durch alpha) macht der Selbsttest rot.
               run: npm run gate:pflanzen-nah
 
             - name: Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)

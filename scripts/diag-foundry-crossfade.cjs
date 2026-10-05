@@ -813,9 +813,10 @@ async function main() {
             [
                 // Der EINE Blatt-Atlas (Laub- und Nadel-Karten, Welle C) färbt mit der Saison-Laubfarbe (Welle A); W5 teilt
                 // die Atlas-Farbe durch ihren `wert` — gesucht wird die Alpha-Stelle der Karten-colorNode, zeilenumbruch-fest.
+                // Seit der Integration 05.10. liest der Stoff den EINEN Atlas-Leser (`_blattAtlasProbe`: atl.rgb / atl.a).
                 "Blatt-Alpha in opacityNode",
                 // Ersetzer als Funktion: "$11.0$2" lebte von der Rückfall-Regel ($11 fehlt → $1 + "1"), zerbrechlich.
-                nc.replace(/(\.mul\(laubFarbe\),\s*)texN\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = texN.a;"),
+                nc.replace(/(\.mul\(laubFarbe\),\s*)atl\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = atl.a;"),
             ],
             ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
             ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(1), 1)", "aLodLevel.count).fill(2), 1)")],
