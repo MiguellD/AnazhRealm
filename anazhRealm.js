@@ -63051,43 +63051,65 @@ class AnazhRealm {
     // Abstand, gelesen vom Boden-Shader (`_terrainGeologyAlbedo`: die Pfad-Erde der Boden-Palette, nur auf
     // Begehbarem) und von der Wiese (`_pfadFeldAt`: kein Halm auf dem Weg) — DIESELBEN Bytes sind GPU-Textur
     // und CPU-Leser. Die Formen (Segmente, Plätze, Äcker) bleiben je Siedlung gemerkt; ein Fenster-Umzug malt neu.
+    // DIE CLIPMAP (Integration 05.10.): EIN Fenster von 512 m sicherte mit dem Umzug ab 128 m nur ~120 m — zwischen
+    // 120 m und der Ring-Kante (194 m) fielen Wege weg und poppten beim Umzug (der alte Pool zeichnete jede Siedlung).
+    // Zwei Stufen (`WEGE_KARTE.stufen`): NAH 0,5-m-Texel bis 208 m, FERN 2-m-Texel bis 768 m (der größte Chunk-Ring
+    // reicht 540 m); Boden-Shader und CPU-Leser wählen dieselbe Stufe nach derselben Grenze (`_wegeStufeNah`).
     _wegeKarteEnsure() {
         const st = this.state;
         if (st.wegeKarte) return st.wegeKarte;
         if (typeof THREE === "undefined") return null;
         const W = AnazhRealm.WEGE_KARTE;
-        const N = Math.round(W.fensterM / W.texelM);
-        const daten = new Uint8Array(N * N * 2);
-        const tex = new THREE.DataTexture(daten, N, N, THREE.RGFormat, THREE.UnsignedByteType);
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.wrapS = THREE.ClampToEdgeWrapping;
-        tex.wrapT = THREE.ClampToEdgeWrapping;
-        tex.generateMipmaps = false;
-        tex.name = "wege-karte";
-        tex.needsUpdate = true;
         const TSL = THREE.TSL;
-        const U =
-            TSL && TSL.uniform
-                ? this._uniformHeimatTeilen({
-                      mitte: TSL.uniform(new THREE.Vector2(0, 0)),
-                      groesse: TSL.uniform(W.fensterM),
-                  })
-                : null;
-        st.wegeKarte = { N, daten, tex, U, mitteX: 0, mitteZ: 0, formen: [], zentriert: false };
+        const stufen = W.stufen.map((S) => {
+            const N = Math.round(S.fensterM / S.texelM);
+            const daten = new Uint8Array(N * N * 2);
+            const tex = new THREE.DataTexture(daten, N, N, THREE.RGFormat, THREE.UnsignedByteType);
+            tex.name = "wege-karte:" + S.name;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.wrapS = THREE.ClampToEdgeWrapping;
+            tex.wrapT = THREE.ClampToEdgeWrapping;
+            tex.generateMipmaps = false;
+            tex.needsUpdate = true;
+            const U =
+                TSL && TSL.uniform
+                    ? this._uniformHeimatTeilen({
+                          mitte: TSL.uniform(new THREE.Vector2(0, 0)),
+                          groesse: TSL.uniform(S.fensterM),
+                      })
+                    : null;
+            return { S, N, daten, tex, U, mitteX: 0, mitteZ: 0, zentriert: false };
+        });
+        st.wegeKarte = { stufen, siedlungen: [] };
         return st.wegeKarte;
     }
 
-    // Eine Form in die Karte malen (nur innerhalb des Fensters, der Rand-Texel bleibt 0 — Clamp-to-Edge liest
+    // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
+    // Diagonale — max(ex, ez) beschnitt die Ecken (ein um 45° gedrehtes Quadrat wurde zum Achteck).
+    static _wegeFormRadius(f) {
+        return f.halb + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
+    }
+
+    // Die Grenze der NAH-Stufe als Bruchteil ihres Fensters (relativ zur Mitte, je Achse): zwei Texel vor dem Rand,
+    // damit die bilineare Probe nie den leeren Rand-Texel liest. CPU-Leser und Boden-Shader lesen dieselbe Zahl.
+    static _wegeStufeNah(N) {
+        return 0.5 - 2 / N;
+    }
+
+    // Eine Form in EINE Stufe malen (nur innerhalb des Fensters, der Rand-Texel bleibt 0 — Clamp-to-Edge liest
     // außerhalb nichts). Segment: Kapsel-Abstand zur Mittellinie; Rechteck: gedrehter Kasten-Abstand. Der Rand
-    // fällt über ±`randM` weich (smoothstep), Kanal 0 = Erde, 1 = Acker; überlappende Formen nehmen das Maximum.
-    _wegeKarteMale(wk, f) {
-        const W = AnazhRealm.WEGE_KARTE;
-        const N = wk.N;
-        const t = W.texelM;
-        const x0w = wk.mitteX - W.fensterM / 2;
-        const z0w = wk.mitteZ - W.fensterM / 2;
-        const ausdehnung = f.halb + W.randM + (f.typ === "kasten" ? Math.max(f.ex, f.ez) : 0);
+    // fällt über ±rand weich (smoothstep; rand = max(randM, randMinM der Stufe) — die ferne Stufe trägt 2-m-Texel,
+    // ein schmaler Feldweg zerfiele dort sonst in Punkte), Kanal 0 = Erde, 1 = Acker; überlappende Formen nehmen
+    // das Maximum.
+    _wegeKarteMale(stufe, f) {
+        const S = stufe.S;
+        const N = stufe.N;
+        const t = S.texelM;
+        const rand = Math.max(AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        const x0w = stufe.mitteX - S.fensterM / 2;
+        const z0w = stufe.mitteZ - S.fensterM / 2;
+        const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
         const minX = Math.min(f.ax, f.bx) - ausdehnung;
         const maxX = Math.max(f.ax, f.bx) + ausdehnung;
         const minZ = Math.min(f.az, f.bz) - ausdehnung;
@@ -63102,6 +63124,7 @@ class AnazhRealm {
         const ll = dx * dx + dz * dz;
         const co = Math.cos(f.phi || 0);
         const si = Math.sin(f.phi || 0);
+        const daten = stufe.daten;
         for (let j = j0; j <= j1; j++) {
             const pz = z0w + (j + 0.5) * t;
             for (let i = i0; i <= i1; i++) {
@@ -63119,47 +63142,64 @@ class AnazhRealm {
                     h = h < 0 ? 0 : h > 1 ? 1 : h;
                     d = Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
                 }
-                let q = (W.randM - d) / (2 * W.randM);
+                let q = (rand - d) / (2 * rand);
                 if (q <= 0) continue;
                 q = q >= 1 ? 1 : q * q * (3 - 2 * q);
                 const k = (j * N + i) * 2 + f.kanal;
                 const v = Math.round(q * 255);
-                if (v > wk.daten[k]) wk.daten[k] = v;
+                if (v > daten[k]) daten[k] = v;
             }
         }
     }
 
-    // Das Fenster folgt dem Spieler (Umzug ab `umzugM`, Mitte auf das Texel-Raster gerastet): leeren, alle
-    // gemerkten Formen neu malen, EIN Upload. Billig (eine Siedlung ≈ einige hundert Formen à ~100 Texel).
+    // Jede Stufe folgt dem Spieler (Umzug ab ihrem `umzugM`, Mitte auf ihr Texel-Raster gerastet): leeren, die
+    // Formen der Siedlungen im Fenster neu malen (die Hülle je Siedlung verwirft ferne in O(1) — die Kosten binden an
+    // die Nähe, nie an die Zahl besuchter Siedlungen), EIN Upload je umgezogener Stufe.
     _tickWegeKarte(playerPos) {
         const wk = this.state.wegeKarte;
-        if (!wk || !playerPos || wk.formen.length === 0) return;
-        const W = AnazhRealm.WEGE_KARTE;
-        if (wk.zentriert && Math.hypot(playerPos.x - wk.mitteX, playerPos.z - wk.mitteZ) < W.umzugM) return;
-        const raster = W.texelM * 16;
-        wk.mitteX = Math.round(playerPos.x / raster) * raster;
-        wk.mitteZ = Math.round(playerPos.z / raster) * raster;
-        wk.zentriert = true;
-        wk.daten.fill(0);
-        for (const f of wk.formen) this._wegeKarteMale(wk, f);
-        if (wk.U) wk.U.mitte.value.set(wk.mitteX, wk.mitteZ);
-        wk.tex.needsUpdate = true;
+        if (!wk || !playerPos || wk.siedlungen.length === 0) return;
+        for (const stufe of wk.stufen) {
+            const S = stufe.S;
+            if (stufe.zentriert && Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) < S.umzugM)
+                continue;
+            const raster = S.texelM * 16;
+            stufe.mitteX = Math.round(playerPos.x / raster) * raster;
+            stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
+            stufe.zentriert = true;
+            stufe.daten.fill(0);
+            const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
+            for (const sd of wk.siedlungen) {
+                if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
+                if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
+                for (const f of sd.formen) this._wegeKarteMale(stufe, f);
+            }
+            if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
+            stufe.tex.needsUpdate = true;
+        }
     }
 
-    // Die getretene Erde an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest.
+    // Die getretene Erde an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest: die
+    // NAH-Stufe innerhalb ihrer Grenze (`_wegeStufeNah`), sonst die FERN-Stufe.
     _wegeFeldAt(x, z) {
         const wk = this.state.wegeKarte;
-        if (!wk || !wk.zentriert) return 0;
-        const W = AnazhRealm.WEGE_KARTE;
-        const fx = (x - (wk.mitteX - W.fensterM / 2)) / W.texelM - 0.5;
-        const fz = (z - (wk.mitteZ - W.fensterM / 2)) / W.texelM - 0.5;
+        if (!wk) return 0;
+        const [nah, fern] = wk.stufen;
+        const g = AnazhRealm._wegeStufeNah(nah.N);
+        const innen =
+            Math.abs((x - nah.mitteX) / nah.S.fensterM) < g && Math.abs((z - nah.mitteZ) / nah.S.fensterM) < g;
+        const stufe = innen ? nah : fern;
+        if (!stufe.zentriert) return 0;
+        const S = stufe.S;
+        const fx = (x - (stufe.mitteX - S.fensterM / 2)) / S.texelM - 0.5;
+        const fz = (z - (stufe.mitteZ - S.fensterM / 2)) / S.texelM - 0.5;
         const i = Math.floor(fx);
         const j = Math.floor(fz);
-        if (i < 0 || j < 0 || i >= wk.N - 1 || j >= wk.N - 1) return 0;
+        if (i < 0 || j < 0 || i >= stufe.N - 1 || j >= stufe.N - 1) return 0;
         const tx = fx - i;
         const tz = fz - j;
-        const d = wk.daten;
-        const at = (a, b) => d[(b * wk.N + a) * 2] / 255;
+        const d = stufe.daten;
+        const N = stufe.N;
+        const at = (a, b) => d[(b * N + a) * 2] / 255;
         return (
             (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
             (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
@@ -63168,12 +63208,20 @@ class AnazhRealm {
 
     // Die Boden-Farbe unter den Wegen (TSL): die Vertex-Farbe mischt zur getretenen Erde (R) und zum Acker (G) der
     // Wege-Karte, in den Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), nur auf
-    // Begehbarem — ein Hang unter dem Weg bleibt Hang.
+    // Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
+    // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
     _wegeBodenFarbe(_T, vc) {
         const wk = this._wegeKarteEnsure();
-        if (!wk || !wk.U || !_T.texture || !_T.positionWorld || !_T.normalWorld) return vc;
+        if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorld)
+            throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
         const P = AnazhRealm.BODEN_FARBE;
-        const _wm = _T.texture(wk.tex, _T.positionWorld.xz.sub(wk.U.mitte).div(wk.U.groesse).add(0.5));
+        const [nah, fern] = wk.stufen;
+        const xz = _T.positionWorld.xz;
+        const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
+        const wNah = _T.texture(nah.tex, relNah.add(0.5));
+        const wFern = _T.texture(fern.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5));
+        const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
+        const _wm = _T.mix(wFern, wNah, innen);
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorld.y);
         const e = P.packedDirt;
         const a = P.dampEarth;
@@ -63280,11 +63328,12 @@ class AnazhRealm {
         const wk = this._wegeKarteEnsure();
         let n = 0;
         const MAX = 900; // Kappe je Siedlung
-        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity };
+        // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
+        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [] };
         const form = (f) => {
-            wk.formen.push(f);
-            if (wk.zentriert) this._wegeKarteMale(wk, f);
-            const r = f.halb + (f.typ === "kasten" ? Math.max(f.ex, f.ez) : 0);
+            box.formen.push(f);
+            for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeKarteMale(stufe, f);
+            const r = AnazhRealm._wegeFormRadius(f);
             box.x0 = Math.min(box.x0, f.ax - r, f.bx - r);
             box.x1 = Math.max(box.x1, f.ax + r, f.bx + r);
             box.z0 = Math.min(box.z0, f.az - r, f.bz - r);
@@ -63345,7 +63394,12 @@ class AnazhRealm {
                 halb: 0,
             });
         }
-        if (wk.zentriert) wk.tex.needsUpdate = true;
+        if (box.formen.length) wk.siedlungen.push(box);
+        for (const stufe of wk.stufen) if (stufe.zentriert) stufe.tex.needsUpdate = true;
+        // DIE ERSTE SIEDLUNG zentriert die Karte SOFORT: die Wiese über ihr wächst im selben Takt neu
+        // (`_nahWieseNeuIn` → `_tickNahWiese` vor `_tickWegeKarte`) und läse vor dem Zentrieren 0 — Halme im Weg.
+        const pm = this.state.playerMesh;
+        if (pm && wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
         if (box.x0 < box.x1) this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
         // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
@@ -63399,10 +63453,12 @@ class AnazhRealm {
         // Die Wege-Karte leert sich (die Formen gehören der alten Welt); die Textur bleibt (kein Re-Compile).
         const wk = this.state.wegeKarte;
         if (wk) {
-            wk.formen.length = 0;
-            wk.daten.fill(0);
-            wk.zentriert = false;
-            wk.tex.needsUpdate = true;
+            wk.siedlungen.length = 0;
+            for (const stufe of wk.stufen) {
+                stufe.daten.fill(0);
+                stufe.zentriert = false;
+                stufe.tex.needsUpdate = true;
+            }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
     }
@@ -88119,10 +88175,18 @@ AnazhRealm.FERN_RING = Object.freeze({
     anchorQuant: 24,
     refreshVertsProTick: 600,
 });
-// WEGE_KARTE (`_wegeKarteEnsure`): das welt-verankerte Fenster der Siedlungs-Wege um den Spieler — 512 m Kante
-// (eine Siedlung samt Feldwegen), 0,5 m je Texel (ein 2,5-m-Weg = 5 Texel, die Kante bilinear weich), Umzug ab
-// 128 m Abstand zur Mitte, der Rand fällt über ±0,6 m (getretene Erde läuft in die Wiese aus).
-AnazhRealm.WEGE_KARTE = Object.freeze({ fensterM: 512, texelM: 0.5, umzugM: 128, randM: 0.6 });
+// WEGE_KARTE (`_wegeKarteEnsure`): die welt-verankerte Clipmap der Siedlungs-Wege um den Spieler, je Stufe ein
+// Fenster (Kante `fensterM`, Texel `texelM`), Umzug ab `umzugM` Abstand zur Mitte — gesichert ist fensterM/2 −
+// umzugM: NAH 512 m zu 0,5 m (ein 2,5-m-Weg = 5 Texel, die Kante bilinear weich), gesichert 208 m ≥ die Ring-Kante
+// 194 m des Standard-Rings; FERN 2048 m zu 2 m, gesichert 768 m ≥ der größte Chunk-Ring (12,5 × 43,2 = 540 m).
+// Der Rand fällt über ±max(randM, randMinM) weich (getretene Erde läuft in die Wiese aus; fern ≥ 1 Texel).
+AnazhRealm.WEGE_KARTE = Object.freeze({
+    stufen: Object.freeze([
+        Object.freeze({ name: "nah", fensterM: 512, texelM: 0.5, umzugM: 48, randMinM: 0 }),
+        Object.freeze({ name: "fern", fensterM: 2048, texelM: 2, umzugM: 256, randMinM: 2 }),
+    ]),
+    randM: 0.6,
+});
 // FERN_FARBE (`_fernFarbeAt`, linear): das Kronendach des Waldes aus der Ferne = die Reflektanz geschlossener
 // Laubwald-Kronen im Sommer (Satelliten-Bänder blau ~0,02–0,03 · grün ~0,05–0,07 · rot ~0,02–0,03: das Blatt
 // trägt ~0,16 Grün, die Krone beschattet sich selbst); Wasser = das Fern-Blau als sRGB-Absicht (FARB-GESETZ:

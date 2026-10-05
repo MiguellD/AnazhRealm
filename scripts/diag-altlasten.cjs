@@ -327,6 +327,10 @@ const FORBIDDEN = [
     { token: "_stlWegeEnsurePool", fiel: "V18.530 — _stlZaunEnsurePool" },
     { token: "_stlWegeDisposePool", fiel: "V18.530 — _stlWegeDispose (Zaun-Pool + Wege-Karte)" },
     { token: "state.stlWege", fiel: "V18.530 — state.stlZaun / state.wegeKarte" },
+    // Integration 05.10.: EIN Fenster sicherte nur ~120 m — die Wege-Karte ist eine Clipmap aus zwei Stufen, die
+    // Formen leben je Siedlung mit Hülle (der Umzug verwirft ferne Siedlungen in O(1)).
+    { token: "wk.formen", fiel: "Integration 05.10. — wk.siedlungen (Formen je Siedlung, Hülle)" },
+    { token: "Math.max(f.ex, f.ez)", fiel: "Integration 05.10. — _wegeFormRadius: die Diagonale des gedrehten Kastens" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
