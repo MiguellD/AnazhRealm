@@ -32598,7 +32598,10 @@ class AnazhRealm {
                 });
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
-                const p = cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * gruen;
+                // Unter einer echten Krone liegt Laub, kaum ein Halm (15 %) — dieselbe Kronen-Karte wie der Boden.
+                const streu = this._kronenStreuAt(x, z);
+                const p =
+                    cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * (1 - streu * 0.85) * gruen;
                 if (wurf >= p) continue;
                 out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung });
             }
@@ -51964,8 +51967,18 @@ class AnazhRealm {
                 );
                 if (!rec) continue;
                 region.cells.push(rec);
-                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn
-                if (layer.promotable) this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
+                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
+                if (layer.promotable) {
+                    this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
+                    // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
+                    const kc = AnazhRealm.FOREST.crown[species];
+                    const kr = kc
+                        ? kc * tf.scale
+                        : Number.isFinite(visH)
+                          ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe
+                          : 0;
+                    this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr);
+                }
                 emitted++;
             }
         }
@@ -63326,17 +63339,31 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         const W = AnazhRealm.WEGE_KARTE;
         const TSL = THREE.TSL;
-        const stufen = W.stufen.map((S) => {
-            const N = Math.round(S.fensterM / S.texelM);
-            const daten = new Uint8Array(N * N * 2);
-            const tex = new THREE.DataTexture(daten, N, N, THREE.RGFormat, THREE.UnsignedByteType);
-            tex.name = "wege-karte:" + S.name;
+        const karte = (N, daten, format, name) => {
+            const tex = new THREE.DataTexture(daten, N, N, format, THREE.UnsignedByteType);
+            tex.name = name;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
             tex.wrapS = THREE.ClampToEdgeWrapping;
             tex.wrapT = THREE.ClampToEdgeWrapping;
             tex.generateMipmaps = false;
             tex.needsUpdate = true;
+            return tex;
+        };
+        const stufen = W.stufen.map((S, si) => {
+            const N = Math.round(S.fensterM / S.texelM);
+            const daten = new Uint8Array(N * N * 2);
+            const tex = karte(N, daten, THREE.RGFormat, "wege-karte:" + S.name);
+            // DIE KRONEN-STREU dieser Stufe: dasselbe Fenster, dieselbe Mitte (also dasselbe UV), eigenes Raster.
+            const kN = Math.round(S.fensterM / AnazhRealm.LAUB_STREU.texelM[si]);
+            const kDaten = new Uint8Array(kN * kN);
+            const kronen = {
+                N: kN,
+                daten: kDaten,
+                tex: karte(kN, kDaten, THREE.RedFormat, "kronen-streu:" + S.name),
+                schmutz: false,
+                upload: 0,
+            };
             const U =
                 TSL && TSL.uniform
                     ? this._uniformHeimatTeilen({
@@ -63344,10 +63371,89 @@ class AnazhRealm {
                           groesse: TSL.uniform(S.fensterM),
                       })
                     : null;
-            return { S, N, daten, tex, U, mitteX: 0, mitteZ: 0, zentriert: false };
+            return { S, N, daten, tex, kronen, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
-        st.wegeKarte = { stufen, siedlungen: [] };
+        st.wegeKarte = { stufen, siedlungen: [], kronen: new Map() };
         return st.wegeKarte;
+    }
+
+    // ═══ DIE KRONEN-STREU (Welle 5 Boden): der Waldboden liegt unter den ECHTEN Kronen ═══
+    // Befund 05.10. (echte GPU, Mess-Wiese, 207 Bäume gegen das Feld): die Laubstreu folgte dem Kronenlicht-Feld
+    // (`_canopyLightAt`, der Platzierungs-Bestand) — die Bäume stehen aber nach `lebendig` (Baum-Streu) und dem
+    // Wald-Generator (Bestandsdichte, Kronen-Schüchternheit, Kappen): wo das Feld „geschlossen" sagte (Licht 0,2–0,4)
+    // stand im 10-m-Kreis 0,01 Baum, und die Streu lag als braune Steppe in der offenen Wiese. Jetzt malt JEDE
+    // gepflanzte Krone (Wald-Generator `_forestPlantChunk`, Baum-Streu `_scatterPass`; Radius `FOREST.crown[art] ×
+    // Skala`, dieselbe Zahl wie die Kronen-Schüchternheit) eine weiche Scheibe in die Kronen-Karte jeder Wege-Stufe; der
+    // Boden-Stoff mischt dort die Laubstreu der Palette (`_wegeBodenFarbe`), die Nah-Wiese lichtet dort ihre Halme. Das
+    // Register hält die Kronen im fernen Fenster (ein Umzug malt neu und vergisst, was dahinter liegt).
+    _kronenStreuNeu(schluessel, x, z, radius) {
+        const wk = this._wegeKarteEnsure();
+        if (!wk || !(radius > 0)) return;
+        // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt — die Karte summiert.
+        const alt = wk.kronen.get(schluessel);
+        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
+        wk.kronen.set(schluessel, [x, z, radius]);
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._kronenStreuMale(stufe, x, z, radius);
+    }
+
+    // Eine Krone in EINE Stufe malen: `dichte` bis `kern` × Radius, weich (smoothstep) bis `rand` × Radius; die Kronen
+    // SUMMIEREN sich (gekappt) — unter einer einzelnen Krone dringt noch Gras durch, wo Kronen sich schließen, deckt
+    // die Streu den ganzen Grund.
+    _kronenStreuMale(stufe, x, z, radius) {
+        const K = AnazhRealm.LAUB_STREU;
+        const kr = stufe.kronen;
+        const N = kr.N;
+        const t = stufe.S.fensterM / N;
+        const x0w = stufe.mitteX - stufe.S.fensterM / 2;
+        const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
+        const aussen = radius * K.rand;
+        const innen = radius * K.kern;
+        const i0 = Math.max(0, Math.floor((x - aussen - x0w) / t));
+        const i1 = Math.min(N - 1, Math.ceil((x + aussen - x0w) / t));
+        const j0 = Math.max(0, Math.floor((z - aussen - z0w) / t));
+        const j1 = Math.min(N - 1, Math.ceil((z + aussen - z0w) / t));
+        if (i1 < i0 || j1 < j0) return;
+        const d = kr.daten;
+        for (let j = j0; j <= j1; j++) {
+            const pz = z0w + (j + 0.5) * t - z;
+            for (let i = i0; i <= i1; i++) {
+                const px = x0w + (i + 0.5) * t - x;
+                let q = (aussen - Math.hypot(px, pz)) / (aussen - innen);
+                if (q <= 0) continue;
+                q = q >= 1 ? 1 : q * q * (3 - 2 * q);
+                const k = j * N + i;
+                d[k] = Math.min(255, d[k] + Math.round(q * K.dichte * 255));
+            }
+        }
+        kr.schmutz = true;
+    }
+
+    // Die Kronen-Streu an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest (dieselbe
+    // Stufen-Wahl wie `_wegeFeldAt`).
+    _kronenStreuAt(x, z) {
+        const wk = this.state.wegeKarte;
+        if (!wk) return 0;
+        const [nah, fern] = wk.stufen;
+        const g = AnazhRealm._wegeStufeNah(nah.N);
+        const innen =
+            Math.abs((x - nah.mitteX) / nah.S.fensterM) < g && Math.abs((z - nah.mitteZ) / nah.S.fensterM) < g;
+        const stufe = innen ? nah : fern;
+        if (!stufe.zentriert) return 0;
+        const kr = stufe.kronen;
+        const N = kr.N;
+        const t = stufe.S.fensterM / N;
+        const fx = (x - (stufe.mitteX - stufe.S.fensterM / 2)) / t - 0.5;
+        const fz = (z - (stufe.mitteZ - stufe.S.fensterM / 2)) / t - 0.5;
+        const i = Math.floor(fx);
+        const j = Math.floor(fz);
+        if (i < 0 || j < 0 || i >= N - 1 || j >= N - 1) return 0;
+        const tx = fx - i;
+        const tz = fz - j;
+        const at = (a, b) => kr.daten[b * N + a] / 255;
+        return (
+            (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
+            (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
+        );
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
@@ -63422,24 +63528,51 @@ class AnazhRealm {
     // die Nähe, nie an die Zahl besuchter Siedlungen), EIN Upload je umgezogener Stufe.
     _tickWegeKarte(playerPos) {
         const wk = this.state.wegeKarte;
-        if (!wk || !playerPos || wk.siedlungen.length === 0) return;
+        if (!wk || !playerPos || (wk.siedlungen.length === 0 && wk.kronen.size === 0)) return;
+        const jetzt = performance.now();
+        const fernS = wk.stufen[wk.stufen.length - 1].S;
         for (const stufe of wk.stufen) {
             const S = stufe.S;
-            if (stufe.zentriert && Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) < S.umzugM)
-                continue;
-            const raster = S.texelM * 16;
-            stufe.mitteX = Math.round(playerPos.x / raster) * raster;
-            stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
-            stufe.zentriert = true;
-            stufe.daten.fill(0);
-            const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
-            for (const sd of wk.siedlungen) {
-                if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
-                if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
-                for (const f of sd.formen) this._wegeKarteMale(stufe, f);
+            if (!stufe.zentriert || Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) >= S.umzugM) {
+                const raster = S.texelM * 16;
+                stufe.mitteX = Math.round(playerPos.x / raster) * raster;
+                stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
+                stufe.zentriert = true;
+                stufe.daten.fill(0);
+                const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
+                let wege = 0;
+                for (const sd of wk.siedlungen) {
+                    if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
+                    if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
+                    for (const f of sd.formen) this._wegeKarteMale(stufe, f);
+                    wege++;
+                }
+                if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
+                // Eine leere Karte bleibt leer — kein Upload ohne Weg (der Umzug kommt auch für die Kronen).
+                if (wege > 0 || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
+                stufe.wegeLeer = wege === 0;
+                // Die Kronen der Stufe neu malen; der Umzug der FERNEN Stufe vergisst die Kronen jenseits ihres Fensters.
+                stufe.kronen.daten.fill(0);
+                const hk = S.fensterM / 2;
+                for (const [k, c] of wk.kronen) {
+                    const ax = Math.abs(c[0] - stufe.mitteX) - c[2];
+                    const az = Math.abs(c[1] - stufe.mitteZ) - c[2];
+                    if (ax > hk || az > hk) {
+                        if (S === fernS) wk.kronen.delete(k);
+                        continue;
+                    }
+                    this._kronenStreuMale(stufe, c[0], c[1], c[2]);
+                }
+                stufe.kronen.schmutz = true;
+                stufe.kronen.upload = -Infinity; // nach dem Umzug sofort hochladen
             }
-            if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
-            stufe.tex.needsUpdate = true;
+            // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`).
+            const kr = stufe.kronen;
+            if (kr.schmutz && jetzt - kr.upload >= AnazhRealm.LAUB_STREU.uploadMs) {
+                kr.tex.needsUpdate = true;
+                kr.schmutz = false;
+                kr.upload = jetzt;
+            }
         }
     }
 
@@ -63471,7 +63604,8 @@ class AnazhRealm {
         );
     }
 
-    // Die Boden-Farbe unter den Wegen (TSL): die Vertex-Farbe mischt zur getretenen Erde (R) und zum Acker (G) der
+    // Die Boden-Farbe unter Kronen und Wegen (TSL): die Vertex-Farbe mischt zur Laubstreu der Kronen-Karte, zur
+    // getretenen Erde (R) und zum Acker (G) der
     // Wege-Karte, in den Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), nur auf
     // Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
     // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
@@ -63488,9 +63622,24 @@ class AnazhRealm {
         const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
         const _wm = _T.mix(wFern, wNah, innen);
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
+        // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
+        // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster).
+        const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).r;
+        const kFern = _T.texture(fern.kronen.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5)).r;
+        // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
+        const _laubRausch = _T.mx_noise_float
+            ? _T.mx_noise_float(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3))).mul(0.3)
+            : _T.float(0.0);
+        const _k = _T
+            .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
+            .mul(_begehbar);
+        const l = P.lit;
+        // Unter der Krone liegt die Streu, und das Kronendach dunkelt den Grund (das Studio-Gesetz: × 0,58 im
+        // Bestandeskern, `c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain).
+        const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k).mul(_T.float(1.0).sub(_k.mul(_T.float(0.42))));
         const e = P.dirt;
         const a = P.wet;
-        const mitErde = _T.mix(vc, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
+        const mitErde = _T.mix(mitStreu, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
         return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar));
     }
 
@@ -63715,14 +63864,18 @@ class AnazhRealm {
             P.mesh.dispose();
         }
         this.state.stlZaun = null;
-        // Die Wege-Karte leert sich (die Formen gehören der alten Welt); die Textur bleibt (kein Re-Compile).
+        // Die Wege-Karte leert sich (die Formen und die Kronen gehören der alten Welt; die neue pflanzt neu); die
+        // Texturen bleiben (kein Re-Compile).
         const wk = this.state.wegeKarte;
         if (wk) {
             wk.siedlungen.length = 0;
+            wk.kronen.clear();
             for (const stufe of wk.stufen) {
                 stufe.daten.fill(0);
                 stufe.zentriert = false;
                 stufe.tex.needsUpdate = true;
+                stufe.kronen.daten.fill(0);
+                stufe.kronen.tex.needsUpdate = true;
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
@@ -70298,6 +70451,8 @@ class AnazhRealm {
                         }
                     );
                     planted++;
+                    // Die Krone streut Laub (Radius = die Kronen-Schüchternheit des Darts, `T`).
+                    this._kronenStreuNeu(`w:${d.seed}`, d.x, d.z, d.T);
                     // Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-
                     // Resolver mappt die Cell auf die reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
                     if (this._scatterRegisterCell) {
@@ -86467,7 +86622,7 @@ class AnazhRealm {
         this._tickImpostorBake();
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
-        this._tickWegeKarte(playerPos); // die Wege-Karte folgt dem Spieler (No-op ohne Siedlungs-Wege)
+        this._tickWegeKarte(playerPos); // Wege- und Kronen-Karte folgen dem Spieler (No-op ohne Weg und Krone)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
@@ -88463,6 +88618,20 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
         Object.freeze({ name: "fern", fensterM: 2048, texelM: 2, umzugM: 256, randMinM: 2 }),
     ]),
     randM: 0.6,
+});
+// DIE LAUB-STREU UNTER DEN KRONEN (`_kronenStreuNeu`, Welle 5 Boden): je Wege-Stufe eine R8-Karte im selben Fenster — `texelM` je Stufe
+// (nah 1 m, fern 4 m: 512² = 256 KB je Stufe); eine Krone legt `dichte` Laubstreu bis `kern` × Kronen-Radius, weich
+// fallend bis `rand` × Radius (die Krone des Studio-Baums reicht über den Schüchternheits-Radius hinaus, das Laub weht
+// vor die Traufe), Kronen summieren sich (zwei überlappende decken den Grund); `kroneJeHoehe` = Kronen-Radius je Meter
+// Sichthöhe für Streu-Arten ohne Kronen-Eintrag im Wald-Generator; `uploadMs` = höchstens ein Upload je Stufe in diesem
+// Takt.
+AnazhRealm.LAUB_STREU = Object.freeze({
+    texelM: Object.freeze([1, 4]),
+    dichte: 0.6,
+    kern: 1.0,
+    rand: 1.7,
+    kroneJeHoehe: 0.35,
+    uploadMs: 250,
 });
 // FERN_FARBE (`_fernFarbeTeile`, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
