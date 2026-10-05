@@ -8,11 +8,13 @@
 // Mess-Wiese −900/−850 (der Takt selbst zeichnet nicht — die Linse liest die CPU-Wahrheit, welcher Satz zeichnet)
 // und liest `_analogZensus` (jeder zeichnende Analog-Satz diesseits der Nah-Grenze beim NAMEN:
 // Klasse · Träger · Abstand · seit wann · warum dort kein Mesh steht). Ein Satz, dessen Mesh schon übernimmt und der
-// ausdithert (der Schwund, 500 ms), ist kein Befund.
+// ausdithert (der Schwund, 500 ms), ist kein Befund — ein Schwund über zwei Schwund-Zeiten hängt und IST einer.
+// Dazu die BRÜCKEN: ein kalter Baum < 64 m, der seine Karte voll trägt, weil seine Wunsch-Stufe lädt — eingeschwungen
+// steht keine (sonst wäre ein Nah-Wald aus Karten grün).
 //   S  statisch: die drei Wurzeln der Klumpen-Rampe stehen als Struktur (Bäcker frei · Karten-Rang · Nah-Gang ganz)
 //   E  Einschwingen: binnen GRENZE_E Takten steht die Welt (Bauten in der Mesh-Zone, Chunks gleich, Foundry-Schlange und
 //      Karten-Bäcker leer) und 30 Takte am Stück ohne Satz — Spitze, Dauer und die Längsten beim Namen
-//   R  Ruhe: RUHE Takte eingeschwungen, in keinem ein Satz < 64 m
+//   R  Ruhe: RUHE Takte eingeschwungen, in keinem ein Satz < 64 m und am Ende keine Brücke < 64 m
 //   T  Rampe: 400 m fort (bis der Ring dort steht), zurück — binnen GRENZE_T Takten 0 Sätze < 64 m
 //   --selftest: ein erzwungener Kapsel-Satz in 20 m (ohne Träger) — die Linse wird rot und nennt ihn
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
@@ -119,10 +121,10 @@ function klassenWand(src) {
     }
 }
 
-// Das Urteil über EINEN Zensus: hart = zeichnet und schwindet nicht. Die Täter beim Namen.
+// Das Urteil über EINEN Zensus: hart = zeichnet und schwindet nicht (oder sein Schwund hängt). Die Täter beim Namen.
 function urteil(z) {
     if (!z) return { hart: [], text: "kein Zensus (Welt-March fehlt)" };
-    const hart = z.nah.filter((a) => !a.schwindet);
+    const hart = z.nah.filter((a) => !a.schwindet || a.haengt);
     const text = hart
         .slice(0, 8)
         .map((a) => `${a.klasse}:${a.name} ${a.d} m seit ${a.seitMs} ms (${a.grund})`)
@@ -135,13 +137,15 @@ function urteil(z) {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 1800000,
+        // WebGPU über Dawns swiftshader-Adapter: nur dort zeichnet der Feld-Pass (rohes WGSL). Gemessen 05.10. (Windows):
+        // mit den Vulkan-/ANGLE-Schaltern gibt es keinen Adapter (auch nicht zusammen mit --use-webgpu-adapter), der
+        // Renderer fiel nach init() still auf WebGL2 — die Linse las die CPU-Wahrheit eines Passes, der nie lief. Nur
+        // dieselben Schalter wie gate:kamera-treue liefern ihn. Das Backend steht im Bericht.
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--enable-unsafe-webgpu",
-            "--enable-features=Vulkan",
-            "--use-vulkan=swiftshader",
-            "--use-angle=swiftshader",
+            "--use-webgpu-adapter=swiftshader",
             "--enable-unsafe-swiftshader",
         ],
     });
@@ -178,6 +182,8 @@ function urteil(z) {
             r.state.postProcessingFailed = true;
             const dlB = performance.now() + 120000;
             while (r._foundry && !(r._foundry.ready && r._foundry.recipes) && performance.now() < dlB) await sleep(500);
+            // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
+            const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
             let taktFehlerN = 0,
                 taktFehler1 = null;
             const tick = async () => {
@@ -197,7 +203,7 @@ function urteil(z) {
             const setze = (x, z) => r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
             const hart = () => {
                 const z = r._analogZensus();
-                return z ? z.nah.filter((a) => !a.schwindet) : null;
+                return z ? z.nah.filter((a) => !a.schwindet || a.haengt) : null;
             };
             const X = -900,
                 Z = -850;
@@ -217,7 +223,14 @@ function urteil(z) {
                 const z = r._analogZensus();
                 if (h) r._weltFeldFrei(h);
                 const ohne = r._analogZensus();
-                return { selbst: true, gesetzt: !!h, z, ohne, taktFehler: { n: taktFehlerN, erster: taktFehler1 } };
+                return {
+                    selbst: true,
+                    backend,
+                    gesetzt: !!h,
+                    z,
+                    ohne,
+                    taktFehler: { n: taktFehlerN, erster: taktFehler1 },
+                };
             }
             // E — Einschwingen: Spitze, erster satzfreier Takt, Dauer je Täter. Eingeschwungen heißt die WELT steht, nicht nur
             // „gerade kein Satz" (in den ersten Takten ist noch kein Bau gestreamt — ein satzfreier Anfang ist vakuös):
@@ -280,9 +293,10 @@ function urteil(z) {
                 }))
                 .sort((a, b) => b.takte - a.takte)
                 .slice(0, 6);
-            // R — Ruhe
+            // R — Ruhe (und am Ende keine Brücke: eingeschwungen trägt jeder nahe Baum seine Wunsch-Stufe)
             let ruheMax = 0,
-                ruheZ = null;
+                ruheZ = null,
+                brueckenMax = 0;
             for (let t = 0; t < k.ruhe; t++) {
                 await tick();
                 const h = hart();
@@ -290,7 +304,11 @@ function urteil(z) {
                     ruheMax = h.length;
                     ruheZ = r._analogZensus();
                 }
+                const zb = r._analogZensus();
+                if (zb && zb.bruecken) brueckenMax = Math.max(brueckenMax, zb.bruecken.length);
             }
+            const ruheEnde = r._analogZensus();
+            const brueckenEnde = ruheEnde && ruheEnde.bruecken ? ruheEnde.bruecken : [];
             // T — die Rampe: fort, bis der Ring dort steht, und zurück
             setze(X + 400, Z);
             let stabil = 0,
@@ -322,10 +340,13 @@ function urteil(z) {
                 laengste,
                 ruheMax,
                 ruheZ,
+                brueckenMax,
+                brueckenEnde,
                 rampeSpitze,
                 rampeNull,
                 rampeZ,
                 ende: r._analogZensus(),
+                backend,
                 taktFehler: { n: taktFehlerN, erster: taktFehler1 },
             };
         },
@@ -337,6 +358,7 @@ function urteil(z) {
         console.log("❌ FEHLER:", res ? res.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
         process.exit(1);
     }
+    console.log(`   Backend: ${res.backend}`);
     if (res.selbst) {
         const mit = urteil(res.z);
         const ohne = urteil(res.ohne);
@@ -349,7 +371,7 @@ function urteil(z) {
         process.exit(ok ? 0 : 1);
     }
     const E = res.frei !== null;
-    const R = res.ruheMax === 0;
+    const R = res.ruheMax === 0 && res.brueckenEnde.length === 0;
     const T = res.rampeNull !== null;
     const TF = !(res.taktFehler && res.taktFehler.n > 0);
     console.log(
@@ -357,7 +379,15 @@ function urteil(z) {
             `längste: ${res.laengste.map((a) => `${a.n} ${a.takte} Takte ${a.d} m (${a.grund})`).join(" | ") || "-"}`
     );
     console.log(
-        `${R ? "✅" : "❌"} R  Ruhe ${RUHE} Takte: höchstens ${res.ruheMax} Sätze < 64 m${R ? "" : " — " + urteil(res.ruheZ).text}`
+        `${R ? "✅" : "❌"} R  Ruhe ${RUHE} Takte: höchstens ${res.ruheMax} Sätze < 64 m${res.ruheMax ? " — " + urteil(res.ruheZ).text : ""} · ` +
+            `Brücken < 64 m höchstens ${res.brueckenMax}, am Ende ${res.brueckenEnde.length}` +
+            (res.brueckenEnde.length
+                ? " — " +
+                  res.brueckenEnde
+                      .slice(0, 6)
+                      .map((b) => `${b.name} ${b.d} m seit ${b.seitMs} ms`)
+                      .join(" | ")
+                : "")
     );
     console.log(
         `${T ? "✅" : "❌"} T  Rampe (400 m fort und zurück): satzfrei ab Takt ${res.rampeNull} (Grenze ${GRENZE_T}) · Spitze ${res.rampeSpitze}` +

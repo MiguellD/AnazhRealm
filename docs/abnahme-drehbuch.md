@@ -18,7 +18,7 @@
 | 5 | Einen Bau anvisieren und abbauen | Interaktion lebt trotz Feld-Gestalt (der unsichtbare Interaktions-Träger) — der Bau fällt sichtbar | |
 | 6 | `fahrzeug_gt` spawnen, aufsitzen | Sitz IM Cockpit; Chase-Cam fährt hinter dem Wagen; in geschlossener Kabine ist der Fahrer unsichtbar | |
 | 7 | Fahren (auch mit Pfeiltasten), Handbremse in der Kurve | Zweispur-Gefühl: Karosserie legt sich, Heck bricht kontrolliert aus (Drift emergent); Pfeile == WASD | |
-| 8 | Tiere im Gang beobachten (nah, dann > 60 m zurück) | nah ist das Tier das Studio-Tier (Fell, Gang-Animation); ab ~55 m trägt der Glieder-Kapsel-Satz (Matrix der Matrix) — der Wechsel ohne Sprung | |
+| 8 | Tiere im Gang beobachten (nah, dann > 60 m zurück) | nah ist das Tier das Studio-Tier (Fell, Gang-Animation); ab 64 m (`ANALOG_NAH_M`) trägt der Glieder-Kapsel-Satz, er dithert aus, wenn das Studio-Tier übernimmt (Matrix der Matrix) — der Wechsel ohne Sprung | |
 | 9 | 5 Wölfe fern (> 60 m) dazu spawnen, HUD `weltMarch` lesen | Einträge steigen (~+60), Kapsel-Sätze kaum — EIN geteilter Glieder-Satz für alle (die Dedup sichtbar) | |
 | 10 | Sprint + Parkour: Wandsprung, C-Rutsch bei Tempo, Klettern | Gesetze fühlbar: Sprint deutlich schneller (×4.5), Rutsch feuert, Klettern zehrt Ausdauer | |
 | 11 | Dolch → Grossschwert → Keule wechseln, zuschlagen | Schwung flink→träge, Reichweite kurz→lang, Schaden matt→wuchtig; Hit-Stop energie-skaliert | |

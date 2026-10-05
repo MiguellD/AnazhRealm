@@ -597,8 +597,9 @@ jobs:
             - name: Nah-Linse (echter Renderer — kein Analog-Satz diesseits der Nah-Grenze 64 m)
               # Nah und mittel ist das Studio-Mesh die Gestalt, das Analog-Feld trägt erst jenseits ANALOG_NAH_M. Fährt
               # den ECHTEN Renderer (swiftshader) an der Mess-Wiese und liest `_analogZensus` (jeder zeichnende Satz
-              # < 64 m beim Namen: Klasse · Träger · Abstand · seit wann · warum kein Mesh): eingeschwungen satzfrei,
-              # Ruhe ohne Satz, nach 400 m fort und zurück satzfrei binnen 120 Takten. --selftest zuerst: ein
+              # < 64 m beim Namen: Klasse · Träger · Abstand · seit wann · warum kein Mesh; ein hängender Schwund zählt):
+              # eingeschwungen satzfrei, Ruhe ohne Satz und ohne Karten-Brücke < 64 m, nach 400 m fort und zurück
+              # satzfrei binnen 120 Takten. --selftest zuerst: ein
               # erzwungener Kapsel-Satz in 20 m wird rot und genannt.
               run: npm run gate:analog-nah
 

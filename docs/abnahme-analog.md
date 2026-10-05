@@ -49,7 +49,7 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
 | Kegel | r0 ≥ 0 | −(Farbe + (r1+1)/10) |
 | Box / Ellipsoid / Prisma | −(c+1) | 0 / 1 / 2·3 |
 
-- **A Kreaturen:** bis 55 m (Hysterese 65 m, `KREATUR_NAH_MESH`) ist das Studio-Tier
+- **A Kreaturen:** bis 64 m (die EINE Nah-Grenze `ANALOG_NAH_M`, Hysterese 74 m, `KREATUR_NAH_MESH`) ist das Studio-Tier
   (tierBaum-Mesh mit Fell) die Gestalt. Fern: `_tickKreaturZiegel` → `_kreaturGliederBacken` →
   `_gliedKapselFit` (Kapsel je Glied, Dedup Gattung×Glied); je Frame reist die Knochen-Matrix in
   die Liste (`_weltFeldMatrix`).

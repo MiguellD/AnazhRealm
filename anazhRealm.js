@@ -736,7 +736,7 @@ class AnazhRealm {
             _ringBootWindowUntil: 0, // W4.4 — Ring-Boot-Fenster: 0=frisch · Timestamp=offen bis · 1=geschlossen
             // Bühnen-Latch: einmal true, bleibt true (Session-Lebenszeit, NICHT persistiert — buildStateSnapshot
             // kopiert einen festen Feld-Satz). Gesetzt von _buehneSteht() (dem EINEN Prädikat), gelesen von allen
-            // spielfremden Tick-Quellen (Nexus, Grok-Chatter, Wetter, Saison, Impostor-Bake, Fern-Deko …).
+            // spielfremden Tick-Quellen (Nexus, Grok-Chatter, Wetter, Saison, Fern-Deko …); der Karten-Bäcker liest sie nie.
             _buehneStand: false,
             symphony: {
                 ctx: null,
@@ -20864,8 +20864,9 @@ class AnazhRealm {
 
     // DIE EINE BÜHNEN-WAHRHEIT (das W2-Prädikat aus `diag-boot-stage.cjs`, live): alle spielfremden
     // Tick-Quellen (Nexus, Wetter, Brennglas …) LESEN sie statt eigener Boot-Heuristik. „Bühne steht“ =
-    // Ring am Ziel + Gras/Wasser aufgeholt + keine deferierte Streu-Region — bewusst OHNE Impostor-Term
-    // (die Bake-Queue wartet auf die Bühne → Deadlock). Latch `state._buehneStand`; headless sofort.
+    // Ring am Ziel + Gras/Wasser aufgeholt + keine deferierte Streu-Region — bewusst OHNE Impostor-Term (die Streu
+    // wartet auf ihre Karten; der Karten-Bäcker läuft seit 04.10. frei im festen Takt, nie hinter der Bühne — der Kreis
+    // Bühne → Streu → Karte → Bühne ist gelöst). Latch `state._buehneStand`; headless sofort.
     // Deckel: nach BUEHNE_SETTLE_CAP_MS öffnet sie bedingungslos (Dauer-über-Budget erreicht nie das Ziel)
     _buehneSteht() {
         const st = this.state;
@@ -21034,7 +21035,12 @@ class AnazhRealm {
             const u = cr.userData || (cr.userData = {});
             u._kzNah = u._kzNah === true ? d2 < aus2 : d2 < ein2;
             if (u._kzNah) {
-                if (u._kzGlieder) for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, false);
+                // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
+                if (u._kzGlieder)
+                    for (const gl of u._kzGlieder) {
+                        if (gl.handle._schwundT0 !== undefined) this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+                        this._weltFeldAktiv(gl.handle, false);
+                    }
                 continue; // das Studio-Tier trägt (gecullt je Pass an seiner Körper-Kugel)
             }
             if (!u._kzGlieder) {
@@ -22667,7 +22673,7 @@ class AnazhRealm {
         this.state.creatures.forEach((creature) => {
             const u = creature.userData;
             if (u && u._kzGlieder) {
-                for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, visible);
+                for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, visible, true); // Schalter: kein Schwund
                 creature.visible = false; // der Körper bleibt unsichtbarer Träger
             } else if (u && u._kzVersuch) {
                 creature.visible = false; // Bake gescheitert: KEIN Rückweg zum Mesh
@@ -36441,8 +36447,9 @@ class AnazhRealm {
 
     // An: sofort (und ein laufender Schwund bricht ab). Aus: DER SCHWUND — übernimmt ein Mesh (Studio-Stufe, Tier), dithert
     // der Satz über `WELT_SCHWUND_MS` aus (Texel 5.w = Schwund-Anteil, dieselbe IGN-Blende wie die Stufen), statt im
-    // selben Frame zu verschwinden: der Übergang Satz → Mesh trägt keinen Pop. Ohne gezeichneten Feld-Pass fällt er sofort.
-    _weltFeldAktiv(handle, an) {
+    // selben Frame zu verschwinden: der Übergang Satz → Mesh trägt keinen Pop. Ohne gezeichneten Feld-Pass fällt er sofort,
+    // ebenso mit `sofort` (ein Schalter des Spielers, kein Mesh übernimmt — der Satz verschwindet im selben Frame).
+    _weltFeldAktiv(handle, an, sofort) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
         const L = wm.listeDaten;
@@ -36462,9 +36469,14 @@ class AnazhRealm {
             }
             return;
         }
-        if (L[o + 3] === 0 || handle._schwundT0 !== undefined) return;
+        if (L[o + 3] === 0 || (handle._schwundT0 !== undefined && !sofort)) return;
+        if (handle._schwundT0 !== undefined) {
+            handle._schwundT0 = undefined;
+            wm.schwund.delete(handle);
+            L[o + 23] = 0;
+        }
         const fp = this.state.feldPass;
-        if (fp && fp.mesh && fp.mesh.visible) {
+        if (!sofort && fp && fp.mesh && fp.mesh.visible) {
             handle._schwundT0 = performance.now();
             wm.schwund.add(handle);
             return;
@@ -36532,6 +36544,8 @@ class AnazhRealm {
                 d: Math.round(d * 10) / 10,
                 seitMs: Number.isFinite(h._anT) ? Math.round(jetzt - h._anT) : null,
                 schwindet: h._schwundT0 !== undefined,
+                // ein Schwund, der länger als zwei Schwund-Zeiten läuft, endet nie — er ist ein Befund wie ein Satz
+                haengt: h._schwundT0 !== undefined && jetzt - h._schwundT0 > 2 * AnazhRealm.WELT_SCHWUND_MS,
                 satz: (h.brick && h.brick.key) || null,
             };
             if (t && t.bau) {
@@ -36552,7 +36566,20 @@ class AnazhRealm {
             nah.push(z);
         }
         nah.sort((a, b) => a.d - b.d);
-        return { nah, zaehl, grenzeM: N };
+        // DIE BRÜCKEN diesseits der Grenze: ein kalter Baum, dessen Wunsch-Stufe noch lädt, trägt seine Karte VOLL — kein
+        // Analog-Satz, aber auch nicht das Studio-Mesh. Eingeschwungen steht keine (die Linse nennt jede mit Dauer).
+        const bruecken = [];
+        for (const e of st.architectures || []) {
+            if (!e || e._bruecke !== true || !e.position) continue;
+            const d = Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
+            if (!(d < N)) continue;
+            bruecken.push({
+                name: e.type + "@" + Math.round(e.position.x) + "," + Math.round(e.position.z),
+                d: Math.round(d * 10) / 10,
+                seitMs: Number.isFinite(e._brueckeT) ? Math.round(jetzt - e._brueckeT) : null,
+            });
+        }
+        return { nah, zaehl, grenzeM: N, bruecken };
     }
 
     // Der Schwund-Takt (je Feld-Pass-Takt): Anteil = Zeit / WELT_SCHWUND_MS in Texel 5.w; am Ende fällt der Satz aus der
@@ -51657,7 +51684,10 @@ class AnazhRealm {
             // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
             const visH = this._lodTreeVisHeight(entry);
             if (visH === null) continue; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
-            let newLOD = this._chooseLODForDistance(dist, entry._lodLevel, visH);
+            // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
+            // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
+            // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
+            let newLOD = this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
             // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
             // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
             if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -64386,6 +64416,7 @@ class AnazhRealm {
                 const karte = this._foundryFlattenFor(entry, fPreset, 2);
                 if (karte && karte.instanceable) {
                     entry._bruecke = true;
+                    entry._brueckeT = performance.now(); // seit wann die Karte nah trägt (die Nah-Linse nennt die Dauer)
                     entry._lodLevel = 2;
                     this._archInstanceAdd(entry, karte);
                     return null;
@@ -67958,8 +67989,9 @@ class AnazhRealm {
             }
         }
         // Mit echtem Renderer erreicht der Canvas-Platzhalter nie das Auge: bis die Studio-Karte gebacken ist
-        // (rttBaked), serviert der Aufrufer GEOMETRIE (false → Stufen-Klammer). Headless/Null-Renderer bleibt
-        // der Fallback die einzige Wahrheit (dort bäckt nie einer).
+        // (rttBaked), liefert der Flatten für die Baum-Fernstufe NICHTS (false) — nie Geometrie; der Baum bleibt kalt
+        // (jenseits der Nah-Grenze trägt sein Feld-Satz, diesseits die Brücke seiner Wunsch-Stufe, sobald eine Karte da
+        // ist). Headless/Null-Renderer bleibt der Fallback die einzige Wahrheit (dort bäckt nie einer).
         {
             const rendB = this.state && this.state.renderer;
             if (!rec.rttBaked && rendB && !rendB._isHeadlessNull) return false;
