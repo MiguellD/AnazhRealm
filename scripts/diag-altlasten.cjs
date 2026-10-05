@@ -339,6 +339,30 @@ const FORBIDDEN = [
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
     { token: "Ammo.destroy(", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
+    // WELLE 5 BODEN + WASSER (05.10.): das Wasser deckt nach dem Durchlass-Gesetz (Beer-Lambert über den optischen Weg in
+    // Metern, R∞ aus Absorption und Rückstreuung) — die Viewport-Regler des Ufers und der Tiefen-Farbe sind gefallen,
+    // der Spiegel liest die Himmels-Umgebung statt der Zenit-Tönung, ruhiges Wasser trägt keinen Schimmer-Schaum, ein
+    // Sheet liest das GEZEICHNETE Dach seiner Nachbarn (nie den Live-Pegel); der Boden trägt die Studio-Palette nach dem
+    // Farb-Gesetz (kein Zwilling im Stamm/Worker, kein Buch-Umschlag-Cache), die Dürre-Flecken und der Fragment-
+    // Waldkern sind gefallen, das tiefe Anzeige-Blau des Studios ist nicht der Wasser-Körper.
+    { token: "setWaterShoreWidth", fiel: "Welle 5 — der optische Weg in Metern trägt das Ufer" },
+    { token: "setWaterDepthRange", fiel: "Welle 5 — der Durchlass trägt die Tiefen-Farbe" },
+    { token: '"slider-watershore"', fiel: "Welle 5 — kein Ufer-Regler" },
+    { token: '"slider-waterdepth"', fiel: "Welle 5 — kein Tiefen-Regler" },
+    { token: "waterShoreWidth", fiel: "Welle 5" },
+    { token: "waterDepthRange", fiel: "Welle 5" },
+    { token: "uShoreWidth", fiel: "Welle 5" },
+    { token: "uDepthRange", fiel: "Welle 5" },
+    { token: "waterThick", fiel: "Welle 5 — wegM (optischer Weg in Metern)" },
+    { token: "lakeBaseFoam", fiel: "Welle 5 — ruhiges Wasser schäumt nicht" },
+    { token: "uSkyCol", fiel: "Welle 5 — das Wasser spiegelt die Himmels-Umgebung (_himmelUmgebungTex)" },
+    { token: "WG.tief", fiel: "Welle 5 — der Wasser-Körper ist R∞ = 0,33·b_b/(wK+b_b) (WASSER_GESETZ.koerperStreu)" },
+    { token: "getLevel", fiel: "Welle 5 — das Sheet liest das gezeichnete Dach (getDach, _caDach)" },
+    { token: "_studioGround", fiel: "Welle 5 — die Boden-Palette liegt synchron im Terrain-Namensraum (BODEN_FARBE)" },
+    { token: "0.42, 0.44, 0.49", fiel: "Welle 5 — der Stein-Zwilling; die Palette ist Studio PORTAL_GROUND linear" },
+    { token: "litTint", fiel: "Welle 5 — der Fragment-Waldkern; die Laubstreu folgt den Kronen (_kronenStreuNeu)" },
+    { token: "floorMax", fiel: "Welle 5 — der Fragment-Waldkern" },
+    { token: "_dryW", fiel: "Welle 5 — die Dürre-Flecken (Albedo × 1,32/1,12/0,6) färbten die Streu orange" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
