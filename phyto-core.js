@@ -2966,6 +2966,7 @@
             (!_budgetDoppelt(k) && mp && mp.side === 2 ? "|s2" : "") +
             (mp && mp.webe ? "|w:" + mp.webe : "") +
             (R.em ? "|e:" + R.em.map((v) => v.toFixed(2)).join(",") + "@" + R.emI.toFixed(2) : "") +
+            (mp && typeof mp.leucht === "number" ? "|l:" + mp.leucht.toFixed(2) : "") +
             (R.look && mp && Array.isArray(mp.color) && mp.color.length === 3
                 ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
                 : "") +
