@@ -22325,6 +22325,31 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         out.queueShrankAfterTick = r.state.pendingWaterIso.size < out.enqueuedCount;
         r._drainPendingWaterIso();
         out.drainEmptiesQueue = r.state.pendingWaterIso.size === 0;
+        // ERST DIE LÜCKE (Integration 05.10.): ein Chunk ohne aufgelöstes Sheet baut vor der Auffrischung eines NÄHEREN
+        // Chunks mit Sheet — sein leeres Seebett wäre sichtbar (kein Lade-Nebel deckt es), die Auffrischung behält ihr
+        // altes Sheet. tick(1) baut genau den ersten der Ordnung.
+        const wi = r.state.voxelChunkWaterIso || (r.state.voxelChunkWaterIso = new Map());
+        const pm = r.state.playerMesh.position;
+        const span = r._voxelChunkConfig(0).span;
+        const pcx = Math.floor((pm.x + span / 2) / span);
+        const pcz = Math.floor((pm.z + span / 2) / span);
+        const ringW = (r.state.chunkRingRadius || 4) + 2;
+        const distW = (k) => {
+            const [kx, kz] = k.split(",").map(Number);
+            return Math.max(Math.abs(kx - pcx), Math.abs(kz - pcz));
+        };
+        const alleW = [...r.state.voxelChunks.keys()].filter((k) => distW(k) <= ringW).sort((a, b) => distW(a) - distW(b));
+        const ka = alleW.find((k) => wi.has(k));
+        const kb = ka ? alleW.reverse().find((k) => k !== ka && distW(k) > distW(ka) && !wi.get(k)) : null;
+        if (ka && kb) {
+            wi.delete(kb);
+            const q = r.state.pendingWaterIso;
+            q.clear();
+            for (const k of [ka, kb]) r._enqueueWaterIso(...k.split(",").map(Number));
+            r._tickPendingWaterIso(1);
+            out.lueckeZuerst = !q.has(kb) && q.has(ka);
+            r._drainPendingWaterIso();
+        } else out.lueckeZuerst = "keine Proben-Chunks (" + ka + "/" + kb + ")";
         return out;
     });
     if (res.error) {
@@ -22340,6 +22365,11 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         res.finalizeEnqueues && res.finalizeGatedOnSyncWater
     );
     check("V12.0-perf.h: Game-Loop ruft _tickPendingWaterIso (per-Frame-Bau)", res.loopTicksQueue);
+    check(
+        "V18.530-Integration: die Wasser-Schlange baut erst die LÜCKE (ein fernerer Chunk ohne Sheet vor der Auffrischung eines näheren)",
+        res.lueckeZuerst === true,
+        String(res.lueckeZuerst)
+    );
     check(
         "V18.0: Finalize re-enqueued ALLE 8 Nachbarn inkl. DIAGONALEN (der 50-Versionen-Blob-Fix)",
         res.finalizeReEnqueuesDiagonals

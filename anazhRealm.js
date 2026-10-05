@@ -70835,9 +70835,15 @@ class AnazhRealm {
                 const kz = parseInt(k.slice(ci + 1), 10);
                 return Math.max(Math.abs(kx - pcx), Math.abs(kz - pcz));
             };
-            // ferne (jenseits Sicht-Ring) verwerfen, Rest nach Distanz sortieren.
+            // ferne (jenseits Sicht-Ring) verwerfen, Rest sortieren: ERST DIE LÜCKE — ein Chunk ohne aufgelöstes Sheet
+            // zeigt sein leeres Seebett (seit V18.530 deckt kein Lade-Nebel die Wasser-Front), eine Auffrischung (der
+            // Wasser-Automat, die Nachbarn) behält ihr altes Sheet bis zum Neubau; je Gruppe nah zuerst. Gemessen 05.10.
+            // (echte GPU, Gang nach Norden, 5 m/s): bis 10 gebaute Chunks gleichzeitig ohne Wasser, der längste 210
+            // Takte — die Auffrischungen fließenden Wassers belegten die Plätze.
             for (const k of keys) if (distOf(k) > ring) queue.delete(k);
-            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
+            const wi = this.state.voxelChunkWaterIso;
+            const luecke = (k) => (wi && wi.has(k) ? 1 : 0);
+            keys = [...queue].sort((a, b) => luecke(a) - luecke(b) || distOf(a) - distOf(b));
         }
         // Anti-Starvation: (maxPerFrame−1) Slots nah-zuerst, der LETZTE Slot baut den ÄLTESTEN Eintrag (Set-
         // Insertion-Order = FIFO; ein Re-Add ändert sie nicht) → bounded Wartezeit für jeden Key. Reine
