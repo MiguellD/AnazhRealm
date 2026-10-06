@@ -12,9 +12,11 @@
 //   huepfer   (Q1/Q2) Luft-Anteil < 3 %, jeder Sprung aus einer Aktion über das EINE Sprung-Gesetz (creatureJump), der
 //             Scheitel ist das Freude-Gesetz (froh hopHochM, sonst hopBasisM), Flugzeit gleich bei 30 und 144 Hz
 //   wachsen   (Q2) die Skala nach 3600 Wachstums-Takten = 1,000
-//   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz
+//   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz,
+//             Folgen ohne Gas ↔ Bremse (≤ 30 Wechsel je Minute, R-D17)
 //   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
-//   herde     (Q11) Kohäsion je Gattung, Bewegung gleich mit und ohne Blick (Frustum + Zufall)
+//   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Hirsch nicht),
+//             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand
 //   nacht     (Q11) die Ruhe-Aktion hält den Leib an (Kritik §2.3: 81 % bewegt während ruhen)
 //   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
@@ -458,6 +460,18 @@ async function kreaturProben(r, T, opts) {
                         for (const c of this.state.creatures) c.rotation.y = 0;
                     }
             );
+        // R-D17 Folgen als Gas oder Bremse: jenseits des Halts das volle Tempo, davor 0 (am Ankunfts-Gesetz vorbei).
+        if (taeter === "gier-folgen")
+            decke(
+                restore,
+                "_kreaturZiel",
+                () =>
+                    function (out, dx, dz, rest, vMax) {
+                        const d = Math.hypot(dx, dz);
+                        if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) return out.set(0, 0, 0);
+                        return out.set((dx / d) * vMax, 0, (dz / d) * vMax);
+                    }
+            );
         // Pfoten: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum (die Linse von gate:tier-gang, frei gegiert).
         const pfoten = tiere.map((cr) => {
             const tb = cr.userData._tierBaum;
@@ -484,7 +498,18 @@ async function kreaturProben(r, T, opts) {
             [0, -1],
             [-1, 0],
         ];
-        const zeilen = tiere.map(() => ({ abw: [], rueck: 0, seit: 0, lauf: 0, vs: [], beschl: [], kontakt: 0 }));
+        const zeilen = tiere.map(() => ({
+            abw: [],
+            rueck: 0,
+            seit: 0,
+            lauf: 0,
+            vs: [],
+            beschl: [],
+            kontakt: 0,
+            phase: 0, // +1 Gas, −1 Bremse (im freien Lauf, |a| > 1,5 m/s²)
+            wechsel: 0, // Gas ↔ Bremse
+            freiT: 0,
+        }));
         const vorher = tiere.map((c) => ({ x: c.position.x, z: c.position.z, v: 0, anprall: false }));
         const geschoben = kontaktZaehler(restore);
         let k = 0;
@@ -503,7 +528,16 @@ async function kreaturProben(r, T, opts) {
                     if (k > 60) {
                         z.vs.push(sp);
                         // der Tempo-Sprung im FREIEN Lauf (der Anprall-Takt und der danach zählen nicht)
-                        if (!anprall && !vorher[i].anprall) z.beschl.push(Math.abs(sp - vorher[i].v) / dt);
+                        if (!anprall && !vorher[i].anprall) {
+                            const a = (sp - vorher[i].v) / dt;
+                            z.beschl.push(Math.abs(a));
+                            z.freiT += dt;
+                            // GAS ODER BREMSE (R-D17): wie oft der Folger zwischen Anfahren und Bremsen umschlägt — das
+                            // Ankunfts-Gesetz lässt ihn im Tempo des Spielers einlaufen, ein 4-oder-0-Wunsch pumpt.
+                            const ph = a > 1.5 ? 1 : a < -1.5 ? -1 : 0;
+                            if (ph && z.phase && ph !== z.phase) z.wechsel++;
+                            if (ph) z.phase = ph;
+                        }
                     }
                     // Lauf ↔ Blick im FREIEN Lauf (schiebt die Wand den Leib zurück, ist das kein Rückwärtsgang)
                     if (sp > 0.3 && k > 60 && !anprall) {
@@ -575,6 +609,7 @@ async function kreaturProben(r, T, opts) {
                 tempoP50: +quantil(z.vs, 0.5).toFixed(2),
                 tempoP90: +quantil(z.vs, 0.9).toFixed(2),
                 beschlMax: +Math.max(...z.beschl).toFixed(1),
+                gasBremseJeMin: z.freiT > 0 ? +((z.wechsel / z.freiT) * 60).toFixed(1) : null,
                 schlupf: schlupf[i] ? schlupf[i].s : null,
                 schlupfQuer: schlupf[i] ? schlupf[i].q : null,
                 schlupfLaengs: schlupf[i] ? schlupf[i].l : null,
@@ -613,6 +648,18 @@ async function kreaturProben(r, T, opts) {
                             else d.set(0, 0, Math.sign(d.z));
                         }
                         return d;
+                    }
+            );
+        // R-D4/K-D11: die Beute wittert nur den Spieler — der jagende Jäger ist keine Bedrohung.
+        if (taeter === "jagd-flucht")
+            decke(
+                restore,
+                "_creatureWariness",
+                () =>
+                    function (c) {
+                        const ud = c.userData || {};
+                        const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
+                        return this._creatureWarinessSpieler(c, A._verhaltenGesetz().furcht, von);
                     }
             );
         const dt = 1 / 60;
@@ -686,6 +733,23 @@ async function kreaturProben(r, T, opts) {
                         for (const c of this.state.creatures) if (this.isInFrustum(c)) c.position.x += 0.01;
                     }
             );
+        // Die Herden-Form des Kerns (herdeZug), instrumentiert und durchgereicht: zählt sie gleichartige Nachbarn (n > 0)?
+        // Ohne diesen Nachweis wäre „kein artfremder Zug" vakuös (eine Herde, die niemanden zählt, zieht auch niemanden).
+        const K = A._steuerGesetz();
+        const zugAlt = K.herdeZug;
+        let gleichartigN = 0,
+            zugRufe = 0;
+        K.herdeZug = function (x, z, gattung, nachbarn, H, out) {
+            // R-D5 artfremd: die Herde zählt jeden Nachbarn, gleich welcher Gattung (der Fuchs zieht den Hirsch)
+            if (taeter === "herde-artfremd") for (const e of nachbarn) e.gattung = gattung;
+            const o = zugAlt.call(this, x, z, gattung, nachbarn, H, out);
+            zugRufe++;
+            if (o && o.n > gleichartigN) gleichartigN = o.n;
+            return o;
+        };
+        restore.push(() => {
+            K.herdeZug = zugAlt;
+        });
         const seq0 = s._creatureNetSeq || 0;
         const altUhr = s.creatureAnimationTime;
         const altAi = r._creatureAiFrame;
@@ -721,7 +785,7 @@ async function kreaturProben(r, T, opts) {
         let blickDiff = 0;
         for (let i = 0; i < blick.length; i++)
             blickDiff = Math.max(blickDiff, Math.hypot(blick[i].x - weg[i].x, blick[i].z - weg[i].z));
-        return { artFremdZugM: +artDiff.toFixed(4), blickDiffM: +blickDiff.toFixed(4) };
+        return { artFremdZugM: +artDiff.toFixed(4), blickDiffM: +blickDiff.toFixed(4), gleichartigN, zugRufe };
     });
 
     // ── hindernis (Q11 + Lehre 25): kein Feld-Strahl je Tier und Takt, die Wand wird umgangen ──
@@ -1061,7 +1125,11 @@ function urteil(name, z) {
                 a.schlupfQuer !== null && a.schlupfQuer <= 0.2,
                 `${art}: Stand-Schlupf quer ${a.schlupfQuer} (Soll ≤ 0,2; längs ${a.schlupfLaengs})`
             );
-            soll(a.beschlMax <= 12, `${art}: Tempo-Sprung ${a.beschlMax} m/s² (Gas/Bremse, Soll ≤ 12)`);
+            soll(a.beschlMax <= 12, `${art}: Tempo-Sprung ${a.beschlMax} m/s² (Soll ≤ 12)`);
+            soll(
+                a.gasBremseJeMin !== null && a.gasBremseJeMin <= 30,
+                `${art}: Folgen als Gas ↔ Bremse ${a.gasBremseJeMin} Wechsel je Minute (Soll ≤ 30, das Ankunfts-Gesetz)`
+            );
         }
     }
     if (name === "jagd") {
@@ -1075,6 +1143,10 @@ function urteil(name, z) {
     }
     if (name === "herde") {
         soll(z.artFremdZugM < 0.01, `der Fuchs zieht den Hirsch ${z.artFremdZugM} m (Kohäsion artfremd)`);
+        soll(
+            z.gleichartigN > 0,
+            `herdeZug zählt keinen gleichartigen Nachbarn (n = ${z.gleichartigN} in ${z.zugRufe} Rufen — Probe vakuös)`
+        );
         soll(z.blickDiffM < 1e-6, `Bewegung hängt am Blick: ${z.blickDiffM} m Unterschied`);
     }
     if (name === "hindernis") {
@@ -1113,9 +1185,18 @@ const TAETER = {
         ["huepfer-zwilling", /neben dem Sprung-Gesetz/],
     ],
     wachsen: [["wachsen", /Skala/]],
-    gier: [["gier", /Lauf ↔ Blick|rückwärts/]],
-    jagd: [["jagd", /Achsen/]],
-    herde: [["herde", /am Blick/]],
+    gier: [
+        ["gier", /Lauf ↔ Blick|rückwärts/],
+        ["gier-folgen", /Gas ↔ Bremse/],
+    ],
+    jagd: [
+        ["jagd", /Achsen/],
+        ["jagd-flucht", /Beute fort/],
+    ],
+    herde: [
+        ["herde", /am Blick/],
+        ["herde-artfremd", /Kohäsion artfremd/],
+    ],
     hindernis: [["hindernis", /Feld-Strahlen/]],
     nacht: [["nacht", /bewegt während ruhen/]],
     peer: [["peer", /Sicht-Kopie/]],
