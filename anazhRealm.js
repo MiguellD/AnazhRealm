@@ -28300,10 +28300,6 @@ class AnazhRealm {
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
-                        // Die Geologie TRÄGT die Vertex-Farbe schon: jeder Geologie-Stoff (Chunk-Boden, Insel, Voxel-
-                        // Test, Bauplan-Verschmelzung) zeichnet sie EINMAL (vertexColors aus — r184 multipliziert
-                        // colorNode sonst ein zweites Mal mit ihr: Albedo = Farbe²; seit dem Farb-Gesetz des Bodens ist
-                        // der Vertex die Albedo).
                         const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
                         const _geo = this._terrainGeologyAlbedo(
                             _Ta,
@@ -28313,10 +28309,7 @@ class AnazhRealm {
                         );
                         if (_geo) {
                             albedoNode = _geo;
-                            if (_Ta.vec4) {
-                                mat.vertexColors = false;
-                                mat.colorNode = _Ta.vec4(_geo, 1.0);
-                            }
+                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
                     } else if (opts.useFlexAttr && _Ta.vec4) {
@@ -28575,6 +28568,13 @@ class AnazhRealm {
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _alpha);
                     }
+                    // DIE VERTEX-FARBE EINMAL (der EINE Ort der Klasse „Albedo = Farbe²"): r184 setupDiffuseColor
+                    // multipliziert den colorNode mit der Vertex-Farbe, solange vertexColors an ist und die Geometrie ein
+                    // color-Attribut trägt. Jeder colorNode dieses Zweigs TRÄGT sie schon — Fels (`vertexColorAlbedo`),
+                    // Boden (Chunk, Insel, Voxel-Test, Bauplan-Verschmelzung), Rinde, Laub, Klinge, Kronen-Kern; die
+                    // Karte ersetzt sie durch den Atlas und hat kein color-Attribut. Bis 06.10. schaltete nur der Boden ab:
+                    // Grammatik-Rinde/-Laub und der Fels zeichneten Farbe², die Werkstatt-Vorschau desselben Baums Farbe¹.
+                    if (mat.colorNode) mat.vertexColors = false;
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
                     // Flach-Farb-Werke (Tempel · Schwert · Rüstung · Esse · …) fließen durch den EINEN Substanz-
                     // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness · Bump),
@@ -28679,7 +28679,7 @@ class AnazhRealm {
             }
         }
         // Die geteilte Vegetations-Antwort (Wind-Sway + Instance-Tint + Subsurface-Backlit) wie in Toon.
-        // Laub (useFlexAttr) bekommt KEINEN colorNode → die Pipeline rechnet vertexColors × instanceColor.
+        // Laub (useFlexAttr) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts, responseProfile);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};

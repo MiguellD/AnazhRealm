@@ -35433,9 +35433,11 @@ async function checkBandV18213MeshMerge(ctx) {
                 out.mergedHasColors =
                     displayLeaves.length > 0 &&
                     displayLeaves.every((l) => l.geom && l.geom.attributes && l.geom.attributes.color);
-                // M-Material: das Material hat vertexColors=true (NodeMaterial-Pfad).
+                // M-Material: das Material liest die Vertex-Farbe EINMAL — im colorNode (dann vertexColors aus) oder
+                // über vertexColors ohne colorNode, nie beides (r184 multipliziert sonst: Albedo = Farbe²).
                 out.mergedMatVertexColors =
-                    displayLeaves.length > 0 && displayLeaves.every((l) => l.mat && l.mat.vertexColors === true);
+                    displayLeaves.length > 0 &&
+                    displayLeaves.every((l) => l.mat && !!l.mat.colorNode !== (l.mat.vertexColors === true));
             }
 
             // ─── (M7) Tag-Neutralität: bp.parts unverändert ───
@@ -35525,7 +35527,10 @@ async function checkBandV18213MeshMerge(ctx) {
         res.mergedHasIdentityMatrix === true
     );
     check("V18.213 (M6c) Merged geom trägt vertexColors-Attribut", res.mergedHasColors === true);
-    check("V18.213 (M6d) Merged Material hat vertexColors=true", res.mergedMatVertexColors === true);
+    check(
+        "V18.213 (M6d) Merged Material liest die Vertex-Farbe einmal (colorNode XOR vertexColors)",
+        res.mergedMatVertexColors === true
+    );
     check(
         "V18.213 (M7) Tag-Neutralität: computeCompoundTags(merged) == (non-merged) (V17.16-Wand)",
         res.tagsNeutral === true
@@ -37306,6 +37311,49 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
             if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
         }
 
+        // (G) DIE VERTEX-FARBE EINMAL (Klasse „Albedo = Farbe²", r184 setupDiffuseColor: colorNode × Vertex-Farbe,
+        // solange vertexColors an ist): jeder Stoff des Vertex-Farb-Zweigs, dessen colorNode die Vertex-Farbe trägt,
+        // schaltet vertexColors ab — je Signatur des Spiels gebaut (die Mess-Wiese trägt Fels und Grammatik-Baum nicht),
+        // dazu der Zensus der laufenden Szene (Stoff mit colorNode + vertexColors an + color-Attribut).
+        const sigs = {
+            boden: { vertexColors: true, side: THREE.DoubleSide },
+            fels: { vertexColors: true, vertexColorAlbedo: true, color: 0x8a8a8a },
+            rinde: { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide },
+            laub: {
+                vertexColors: true,
+                useInstanceTint: true,
+                useFlexAttr: true,
+                foliageLeaf: true,
+                side: THREE.DoubleSide,
+            },
+            klinge: {
+                vertexColors: true,
+                useInstanceTint: true,
+                useFlexAttr: true,
+                foliageLeaf: true,
+                foliageBlade: true,
+                side: THREE.DoubleSide,
+            },
+            kern: { vertexColors: true, useInstanceTint: true, useFlexAttr: true },
+        };
+        out.farbeQuadrat = [];
+        out.farbeOhneNode = [];
+        for (const [name, o] of Object.entries(sigs)) {
+            const m = r._buildToonNodeMaterial(o);
+            if (!m || !m.colorNode) out.farbeOhneNode.push(name);
+            else if (m.vertexColors === true) out.farbeQuadrat.push(name);
+            if (m) m.dispose();
+        }
+        const chunkMat = r._getVoxelChunkMaterial();
+        if (chunkMat && chunkMat.colorNode && chunkMat.vertexColors === true) out.farbeQuadrat.push("chunk-boden");
+        out.szeneQuadrat = [];
+        r.state.scene.traverse((o) => {
+            const m = o.isMesh && o.material;
+            if (!m || Array.isArray(m) || !m.colorNode || m.vertexColors !== true) return;
+            if (o.geometry && o.geometry.getAttribute && o.geometry.getAttribute("color"))
+                out.szeneQuadrat.push(r._taeterKlasse(o));
+        });
+
         // (G) Version
         out.versionStr = A.VERSION;
         const partsV = String(A.VERSION || "0.0.0")
@@ -37341,6 +37389,14 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check("Ω-OPSIS S1 (F1) PBR-Terrain ist PBR-Material", res.pbrTerrainIsPbr === true);
     check("Ω-OPSIS S1 (F2) PBR-Terrain trägt Geologie-colorNode (geheilte Lücke)", res.pbrTerrainColorNode === true);
     check("Ω-OPSIS S1 (F3) PBR-Terrain: kein Geologie-Fehler", res.pbrTerrainNoGeoError === true);
+    check(
+        `Farbe einmal (G1): jeder Vertex-Farb-Stoff (Boden · Chunk · Fels · Rinde · Laub · Klinge · Kern) trägt die Farbe im colorNode und schaltet vertexColors ab (Farbe² bei: ${res.farbeQuadrat.join(", ") || "keinem"}; ohne colorNode: ${res.farbeOhneNode.join(", ") || "keiner"})`,
+        res.farbeQuadrat.length === 0 && res.farbeOhneNode.length === 0
+    );
+    check(
+        `Farbe einmal (G2): kein Mesh der Szene zeichnet colorNode × Vertex-Farbe (gemessen ${res.szeneQuadrat.length}: ${[...new Set(res.szeneQuadrat)].slice(0, 6).join(", ") || "-"})`,
+        res.szeneQuadrat.length === 0
+    );
 
     check(`Ω-OPSIS S1 (V1) VERSION floor ≥ 18.226.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
