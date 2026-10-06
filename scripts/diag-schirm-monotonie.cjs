@@ -191,6 +191,10 @@ async function welt() {
             try {
                 r._gameLoopTick(performance.now());
             } catch (_e) {}
+            // Der Probe-Wolf behält sein Maß: zwei Schreiber lassen Tiere im Takt wachsen (`updateGrowth` ×1,01, die
+            // Nexus-Geste `creatures_size_mul` bis ×3 je Ruf) — ein Lauf traf den Wolf 13,8-fach, nachdem d* stand.
+            const wolf = window.__schirmWolf;
+            if (wolf && window.__schirmWolfMass) wolf.scale.setScalar(window.__schirmWolfMass);
         };
         const takt = window.__schirmTakt;
         // DER SZENEN-ZENSUS je Täter-Klasse und Pass: haupt = Kamera-Layer, schatten = castShadow; ein unsichtbarer Ahne
@@ -269,28 +273,13 @@ async function welt() {
         w.userData.task = { name: "wait", args: {}, since: performance.now() / 1000 };
         w.userData.emotions = null;
         window.__schirmWolf = w;
+        window.__schirmWolfMass = w.scale.x;
         for (let i = 0; i < 400 && !(w.userData._tierBaum && w.userData._tierBaum.wrap); i++) {
             takt();
             await sleep(15);
         }
         const tB = w.userData._tierBaum;
         if (!tB) return { fatal: "der Wolf trägt keine Studio-Gestalt" };
-        const F = r.constructor.FELL_BILDSCHIRM;
-        const breite = F.breiteM * (tB.f || 1) * (w.scale.x || 1);
-        const pxJeM = (h) => h / (2 * Math.tan((cam.fov * Math.PI) / 360));
-        const gross = groessen[0][1],
-            klein = groessen[groessen.length - 1][1];
-        const dStern = (breite * Math.sqrt(pxJeM(gross) * pxJeM(klein))) / F.pxMin;
-        // horizontal so weit, dass der 3D-Abstand d* ist (die Kamera steht über dem Boden)
-        for (let k = 0; k < 3; k++) {
-            const dy = cam.position.y - w.position.y;
-            const hz = Math.sqrt(Math.max(0.25, dStern * dStern - dy * dy));
-            const px = cam.position.x + vor.x * hz,
-                pz = cam.position.z + vor.z * hz;
-            w.position.set(px, r._voxelSurfaceY(px, pz) + 0.5, pz);
-            takt();
-            await sleep(15);
-        }
         // DIE STILLE: gemessen wird erst, wenn die Welt nicht mehr WÄCHST — dreimal in Folge (je 30 Takte) übersteigt keine
         // Klasse ihr bisheriges Maximum (Zufälliges wie der Rauch atmet innerhalb seiner Spanne und hält die Stille nicht auf).
         const hoch = {};
@@ -315,6 +304,23 @@ async function welt() {
                 await sleep(10);
             }
             still = waechst() ? 0 : still + 1;
+        }
+        // erst nach der Stille: der Wolf steht im Abstand d* seines jetzigen Maßes
+        const F = r.constructor.FELL_BILDSCHIRM;
+        const breite = F.breiteM * (tB.f || 1) * (w.scale.x || 1);
+        const pxJeM = (h) => h / (2 * Math.tan((cam.fov * Math.PI) / 360));
+        const gross = groessen[0][1],
+            klein = groessen[groessen.length - 1][1];
+        const dStern = (breite * Math.sqrt(pxJeM(gross) * pxJeM(klein))) / F.pxMin;
+        // horizontal so weit, dass der 3D-Abstand d* ist (die Kamera steht über dem Boden)
+        for (let k = 0; k < 3; k++) {
+            const dy = cam.position.y - w.position.y;
+            const hz = Math.sqrt(Math.max(0.25, dStern * dStern - dy * dy));
+            const px = cam.position.x + vor.x * hz,
+                pz = cam.position.z + vor.z * hz;
+            w.position.set(px, r._voxelSurfaceY(px, pz) + 0.5, pz);
+            takt();
+            await sleep(15);
         }
         return {
             takte,
