@@ -16,7 +16,8 @@
 //   K4  TIER AM HANG: an der Stelle mit dem größten Abstand Gesetz ↔ Karte im Hang (≥ 12°) stehen die vier Sohlen auf der
 //       Boden-Karte (Median |Sohle − Karte| ≤ 6 cm); entlang eines Wegs über den Hang springt die Lage je Takt nie mehr als
 //       8 cm über die Neigung hinaus (die Cache-Treppe)
-//   K5  TOD-LAGE: nach dem Kippen liegt die tiefste Stelle des Körpers nicht unter dem Boden (≥ −5 cm)
+//   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
+//       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
@@ -54,7 +55,7 @@ const BASIS = {
         ],
         ["baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);", "baseY = terrainHeight;"],
     ],
-    tod: [["creature.position.y = dying.baseY + dying.flanke * Math.sin(ang);", "void 0;"]],
+    tod: [["creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);", "void 0;"]],
 };
 let patch = null;
 let patchFehler = [];
@@ -325,13 +326,50 @@ async function proben() {
                 c.position.x = ort.x;
                 c.position.z = ort.z;
             });
+            // die PRÄZISE tiefste Stelle: jeder Vertex der sichtbaren Haut (Skin angewandt, `getVertexPosition`) gegen die
+            // Boden-Karte unter IHM — nie die Welt-AABB (eine Obermenge: sie verbarg 11,9 cm Spalt als „liegt auf")
+            const tiefste = () => {
+                c.updateMatrixWorld(true);
+                const v = new T.Vector3();
+                let min = Infinity;
+                c.traverseVisible((q) => {
+                    const pa = q.isMesh && !q.isInstancedMesh && q.geometry && q.geometry.attributes.position;
+                    if (!pa) return;
+                    for (let i = 0; i < pa.count; i++) {
+                        q.getVertexPosition(i, v);
+                        v.applyMatrix4(q.matrixWorld);
+                        const m = karte(v.x, v.z);
+                        if (m !== null && v.y - m < min) min = v.y - m;
+                    }
+                });
+                return Number.isFinite(min) ? Math.round(min * 1000) / 10 : null;
+            };
+            const stehtCm = tiefste();
             r.damageCreature(c, 1e6, {});
             const dy = c.userData.dying;
             if (dy) {
-                for (let k = 0; k < Math.ceil((dy.dauer + 0.05) / 0.02); k++) r.updateCreatures(0.02);
-                const box = new T.Box3().setFromObject(c);
-                const m = karte((box.min.x + box.max.x) / 2, (box.min.z + box.max.z) / 2);
-                o.k5 = { untenCm: m !== null ? Math.round((box.min.y - m) * 1000) / 10 : null, flankeM: dy.flanke };
+                const nKipp = Math.ceil((dy.dauer + 0.05) / 0.02);
+                let wegMin = Infinity;
+                let wegMax = -Infinity;
+                for (let k = 0; k < nKipp; k++) {
+                    r.updateCreatures(0.02);
+                    if (k % 5 === 4) {
+                        const t = tiefste();
+                        if (t !== null) {
+                            wegMin = Math.min(wegMin, t - stehtCm);
+                            wegMax = Math.max(wegMax, t - stehtCm);
+                        }
+                    }
+                }
+                const liegt = tiefste();
+                o.k5 = {
+                    stehtCm,
+                    untenCm: liegt,
+                    // gegen den Stand: der Kontakt des stehenden Tiers ist die Null (die Pose steht, wie sie steht)
+                    gegenStandCm: liegt !== null && stehtCm !== null ? Math.round((liegt - stehtCm) * 10) / 10 : null,
+                    wegMinCm: Number.isFinite(wegMin) ? Math.round(wegMin * 10) / 10 : null,
+                    wegMaxCm: Number.isFinite(wegMax) ? Math.round(wegMax * 10) / 10 : null,
+                };
             } else o.k5 = { fehler: "kein Sterben" };
             if (s.creatures.includes(c)) r.removeCreature(c);
         }
@@ -361,8 +399,10 @@ function urteil(o) {
             f.push(`K4 Sohlen gegen die Karte: Median ${o.k4 ? o.k4.medianCm : "?"} cm, p90 ${o.k4 ? o.k4.p90Cm : "?"} cm (die Sicht steht auf dem Gesetz)`);
         if (!o.k4b || !(o.k4b.treppeCm <= 8)) f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
-        else if (!o.k5 || !(o.k5.untenCm >= -5) || !(o.k5.untenCm <= 15))
-            f.push(`K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.untenCm : "?"} cm über dem Boden (Soll −5 … +15)`);
+        else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
+            f.push(
+                `K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.gegenStandCm : "?"} cm über ihrem Stand-Kontakt, auf dem Weg ${o.k5 ? o.k5.wegMinCm + " … " + o.k5.wegMaxCm : "?"} cm (Soll ± 3, Weg ≥ −5)`
+            );
     }
     return f;
 }
@@ -374,7 +414,7 @@ function zeile(o) {
         `K1 Becken ${v(o.k1.beckenCm)} cm · Sprung ${v(o.k1.sprungBeckenCm)} cm` +
         ` · K2 Höhlen-Probe ${o.k2 ? v(o.k2.abstandCm) : "?"} cm · K3 Tier ${o.k3 ? v(o.k3.abstandM) : "?"} m` +
         ` · K4 Sohle−Karte Median ${o.k4 ? v(o.k4.medianCm) : "?"} cm (p90 ${o.k4 ? v(o.k4.p90Cm) : "?"}) · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
-        ` · K5 Tod ${o.k5 ? v(o.k5.untenCm) : "?"} cm` +
+        ` · K5 Tod ${o.k5 ? v(o.k5.gegenStandCm) : "?"} cm gegen den Stand (Weg ${o.k5 ? v(o.k5.wegMinCm) + "…" + v(o.k5.wegMaxCm) : "?"})` +
         (o.hang ? ` · Hang ${o.hang.neig.toFixed(0)}° Gesetz↔Karte ${(o.hang.abstand * 100).toFixed(0)} cm` : "") +
         (o.hoehle ? ` · Höhle ${(o.hoehle.top - o.hoehle.boden).toFixed(1)} m tief` : "")
     );

@@ -18996,22 +18996,6 @@ class AnazhRealm {
             hx = Math.cos(ry);
             hz = -Math.sin(ry);
         }
-        // DIE TOD-LAGE (Q4, K-D19): der Körper kippt um den Fußpunkt — seine Flanke auf der Kipp-Seite reicht `flanke` weit
-        // über die Achse und sänke um flanke·sin(Winkel) ins Gelände; die Wurzel steigt um genau das (die tiefste Stelle
-        // liegt auf dem Boden). Vorher lag das Tier bei 83° halb unter dem Gelände. flanke = die Stütz-Weite des Körpers
-        // in Kipp-Richtung (Welt-Hülle beim Tod).
-        const kb = this._todHuelle || (this._todHuelle = new THREE.Box3());
-        kb.setFromObject(creature);
-        const flanke =
-            kb.isEmpty() || !Number.isFinite(kb.min.x)
-                ? 0
-                : Math.max(
-                      0,
-                      ((kb.min.x + kb.max.x) / 2 - creature.position.x) * hx +
-                          ((kb.min.z + kb.max.z) / 2 - creature.position.z) * hz +
-                          (Math.abs(hx) * (kb.max.x - kb.min.x)) / 2 +
-                          (Math.abs(hz) * (kb.max.z - kb.min.z)) / 2
-                  );
         creature.userData.dying = {
             t: 0,
             dauer: K.kippDauerSec,
@@ -19020,9 +19004,78 @@ class AnazhRealm {
             dirZ: hz,
             baseQuat: creature.quaternion.clone(),
             baseY: creature.position.y,
-            flanke,
+            hebe: this._todHebeTafel(creature, hx, hz),
             sounded: false,
         };
+    }
+
+    // DIE TOD-LAGE (Q4, K-D19): der Körper kippt um seine Wurzel auf die Kipp-Richtung h = (hx, hz) zu. Ein Punkt der Haut
+    // mit Abstand d längs h, Höhe y über der Wurzel und e längs der Kipp-Achse liegt beim Winkel θ bei d·cosθ + y·sinθ längs
+    // h, auf der Höhe y·cosθ − d·sinθ. Die Wurzel steigt je Winkel so weit, dass der kleinste Abstand Haut − Boden (der
+    // gezeichnete Boden unter JEDEM Punkt, `_standSicht`) bleibt, was er im Stand war — die Flanke legt sich auf den Hang,
+    // nie in ihn, nie darüber. Punkte: die sichtbare Haut der Todes-Pose (Skin angewandt), höchstens TOD_KIPP_PUNKTE; die
+    // Tafel trägt TOD_KIPP_STUETZ + 1 Winkel bis TOD_KIPP_RAD, der Kipp-Takt liest sie linear. Vorher hob eine Welt-AABB-
+    // Flanke (flanke·sinθ) den Körper: präzise gemessen lag er am Ende 10,4 cm über seinem Stand-Kontakt und schwebte im
+    // Kippen bis 54,2 cm; ohne Hebung lag er 84 cm im Gelände (gate:koerper-stand K5). Einmal je Tod, nie je Frame.
+    _todHebeTafel(creature, hx, hz) {
+        const n = AnazhRealm.TOD_KIPP_STUETZ;
+        const wMax = AnazhRealm.TOD_KIPP_RAD;
+        const px = creature.position.x;
+        const py = creature.position.y;
+        const pz = creature.position.z;
+        const ax = hz; // die Kipp-Achse (horizontal, ⊥ h)
+        const az = -hx;
+        const v = this._todV || (this._todV = new THREE.Vector3());
+        creature.updateMatrixWorld(true);
+        let gesamt = 0;
+        const istHaut = (o) => o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position;
+        creature.traverseVisible((o) => {
+            if (istHaut(o)) gesamt += o.geometry.attributes.position.count;
+        });
+        if (!gesamt) return null;
+        const schritt = Math.max(1, Math.ceil(gesamt / AnazhRealm.TOD_KIPP_PUNKTE));
+        const pD = [];
+        const pY = [];
+        const pE = [];
+        creature.traverseVisible((o) => {
+            if (!istHaut(o)) return;
+            const pa = o.geometry.attributes.position;
+            for (let i = 0; i < pa.count; i += schritt) {
+                o.getVertexPosition(i, v);
+                v.applyMatrix4(o.matrixWorld);
+                const dx = v.x - px;
+                const dz = v.z - pz;
+                pD.push(dx * hx + dz * hz);
+                pY.push(v.y - py);
+                pE.push(dx * ax + dz * az);
+            }
+        });
+        // der gezeichnete Boden unter einem Punkt (die Karte im Band um das Gesetz der Wurzel)
+        const g0 = this.getTerrainHeightAt(px, pz);
+        const boden = (x, z) => this._standSicht(x, z, g0, false);
+        // je Winkel: der kleinste Abstand Haut − Boden bei Wurzel-Hebung 0
+        const spalt = (k) => {
+            const t = (wMax * k) / n;
+            const c = Math.cos(t);
+            const s = Math.sin(t);
+            let min = Infinity;
+            for (let i = 0; i < pD.length; i++) {
+                const l = pD[i] * c + pY[i] * s;
+                const g = boden(px + hx * l + ax * pE[i], pz + hz * l + az * pE[i]);
+                if (!Number.isFinite(g)) continue;
+                const a = py + pY[i] * c - pD[i] * s - g;
+                if (a < min) min = a;
+            }
+            return min;
+        };
+        const stand = spalt(0);
+        if (!Number.isFinite(stand)) return null;
+        const hebe = new Float32Array(n + 1);
+        for (let k = 1; k <= n; k++) {
+            const sp = spalt(k);
+            hebe[k] = Number.isFinite(sp) ? stand - sp : hebe[k - 1];
+        }
+        return hebe;
     }
 
     // === Helper: kontext-abhängiges Args-Mapping für creature_task(paramArg) ===
@@ -21105,15 +21158,19 @@ class AnazhRealm {
             if (dying) {
                 dying.t += delta;
                 const u = Math.min(1, dying.t / Math.max(1e-6, dying.dauer));
-                const ang = 1.45 * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
+                const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
                 const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
                 axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu
                 const q = this._kampfTipQ || (this._kampfTipQ = new THREE.Quaternion());
                 q.setFromAxisAngle(axis, ang);
                 creature.quaternion.copy(q);
                 if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
-                if (Number.isFinite(dying.baseY) && Number.isFinite(dying.flanke))
-                    creature.position.y = dying.baseY + dying.flanke * Math.sin(ang);
+                const hebe = dying.hebe;
+                if (hebe && Number.isFinite(dying.baseY)) {
+                    const f = (ang / AnazhRealm.TOD_KIPP_RAD) * (hebe.length - 1);
+                    const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
+                    creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
+                }
                 if (u >= 1 && !dying.sounded) {
                     dying.sounded = true;
                     this._tierRuf(creature, "trauer"); // der letzte Ruf — die Stimme des fallenden Körpers
@@ -96051,6 +96108,11 @@ AnazhRealm.PLAYER_STEP_UP = 0.6;
 // Höhle liegt die Karte um Höhlen-Höhe (≥ 2,4 m) plus Decke darüber, sie trägt dort die Oberkante der Säule, nie den Boden
 // unter dem Körper.
 AnazhRealm.STAND_SICHT_BAND = 2.0;
+// DIE TOD-LAGE (`_todHebeTafel`): der Kipp-Winkel des sterbenden Körpers (~83° — gekippt, nicht vergraben), die Zahl der
+// Winkel-Abschnitte der Hebe-Tafel (der Kipp-Takt liest sie linear) und die höchste Zahl der Haut-Punkte je Tod.
+AnazhRealm.TOD_KIPP_RAD = 1.45;
+AnazhRealm.TOD_KIPP_STUETZ = 16;
+AnazhRealm.TOD_KIPP_PUNKTE = 1500;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden — nur wenn er
 // vorher geerdet war, NIE im Fall (sonst Magnet-Sog). Kleiner als STEP_UP: am Kamm löst die
 // Haftung → natürlicher Sprung-Bogen.
