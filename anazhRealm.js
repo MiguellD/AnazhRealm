@@ -20099,24 +20099,54 @@ class AnazhRealm {
             nah = ud._huellenNah = { x: p.x, z: p.z, t, liste };
         }
         if (!nah.liste.length) return;
-        // der Leib als Achse: Radius aus der Körperlänge (die Schnauze ragt nicht in die Wand), Höhe aus der Hüfte
-        const radius = 0.3 * this._creatureKoerperLaenge(creature);
+        // DER LEIB als drei Achsen längs seiner Gier — Rumpf-Mitte, Brust und Becken bei ±0,8·L (der Vierbeiner ist rund
+        // 1,6 Hüft-Höhen lang: die Schnauze ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe
+        // Rumpf als Radius (0,3·L), Höhe aus der Hüfte. Eine Achse, die der Löser schiebt, schiebt den ganzen Leib.
+        const radius = Math.max(0.12, 0.3 * L);
+        const halb = 0.8 * L;
         const feetY = p.y;
         const headY = feetY + Math.max(0.5, 1.8 * L);
         const k = this._kreaturKontakt || (this._kreaturKontakt = { nx: 0, nz: 0 });
+        const q = this._kreaturAchse || (this._kreaturAchse = { x: 0, z: 0 });
+        const fx = Math.sin(creature.rotation.y),
+            fz = Math.cos(creature.rotation.y);
         // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
         // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
         // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
         const rInnen2 = 0.81 * radius * radius;
+        // Kosten an Betroffene: eine Box, die der Leib weder erreicht (horizontal jenseits halb + radius) noch in der Höhe
+        // schneidet (unter der Stufe des Fußes oder über dem Kopf — der Löser würde sie als Wand übergehen), fällt vor
+        // jeder Achse heraus.
+        const reich = halb + radius;
+        const stufe = feetY + AnazhRealm.PLAYER_STEP_UP;
         for (const e of nah.liste) {
             const boxes = e.blockerAABBs;
             if (!boxes) continue;
             for (let b = 0; b < boxes.length; b++) {
                 const box = boxes[b];
-                const qx = px0 - Math.max(box.minX, Math.min(px0, box.maxX));
-                const qz = pz0 - Math.max(box.minZ, Math.min(pz0, box.maxZ));
-                if (qx * qx + qz * qz < rInnen2) continue;
-                this._resolveCapsuleVsAABB(box, p, feetY, headY, radius, -Infinity, k);
+                if (box.topY <= stufe || box.botY >= headY) continue;
+                if (
+                    box.minX - p.x > reich ||
+                    p.x - box.maxX > reich ||
+                    box.minZ - p.z > reich ||
+                    p.z - box.maxZ > reich
+                )
+                    continue;
+                for (let o = -1; o <= 1; o++) {
+                    const off = o * halb;
+                    const qx0 = px0 + fx * off,
+                        qz0 = pz0 + fz * off;
+                    const ix = qx0 - Math.max(box.minX, Math.min(qx0, box.maxX));
+                    const iz = qz0 - Math.max(box.minZ, Math.min(qz0, box.maxZ));
+                    if (ix * ix + iz * iz < rInnen2) continue;
+                    q.x = p.x + fx * off;
+                    q.z = p.z + fz * off;
+                    const ax = q.x,
+                        az = q.z;
+                    this._resolveCapsuleVsAABB(box, q, feetY, headY, radius, -Infinity, k);
+                    p.x += q.x - ax;
+                    p.z += q.z - az;
+                }
             }
         }
     }
@@ -21112,12 +21142,9 @@ class AnazhRealm {
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
         // (im Kreatur-Tick), nicht im Emotion-Tick → die Emotion-Kern-Ticks bleiben isoliert.
         this._tickEmotionContagion(delta);
-        // V8.49 — Scratch-Vektoren EINMAL angelegt + pro Kreatur pro Frame
-        // wiederverwendet, statt mehrere THREE.Vector3 je Kreatur zu allokieren
-        // (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
+        // V8.49 — der Wunsch-Vektor EINMAL angelegt + pro Kreatur pro Frame wiederverwendet, statt je Kreatur zu
+        // allokieren (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
         const scratchDir = this._creatureScratchDir || (this._creatureScratchDir = new THREE.Vector3());
-        const scratchA = this._creatureScratchA || (this._creatureScratchA = new THREE.Vector3());
-        const scratchB = this._creatureScratchB || (this._creatureScratchB = new THREE.Vector3());
         const playerPos = this.state.playerMesh.position;
         // DER KREATUR-ZIEGEL (Analog A): Tiere sind Kapsel-Feld — das Feld
         // WANDERT mit dem Tier (lebende Knochen-Matrix, Matrix der Matrix).
@@ -21386,10 +21413,14 @@ class AnazhRealm {
                 // Verhaltens-Tick (nahe Wesen, dieselbe 50-m-Wand): tempo bremst/stoppt die Bewegung unten, hop
                 // zündet beim Start den feld-nativen Hüpfer. Die Uhr der Aktion ist die Kreatur-Uhr (Q1: was den
                 // Körper bewegt, läuft im Takt — die Wand-Uhr ließ eine Aktion je nach Bildrate verschieden lang wirken).
-                const nowK = this.state.creatureAnimationTime;
-                this._tickKreaturVerhalten(creature, i, nowK);
-                const VA = udZ._verhaltenAktion;
-                if (VA && VA.def && Number.isFinite(VA.def.tempo) && nowK < VA.bis) {
+                this._tickKreaturVerhalten(creature, i, this.state.creatureAnimationTime);
+            }
+            // DER BEWEGUNGS-ANSPRUCH DER AKTION (Q11, Kritik §2.3): tempo bremst oder stoppt den Wunsch für JEDES Tier, das
+            // die Aktion trägt — die 50-m-Wand endet nur das Wählen neuer Aktionen. Vorher galt er nur in ihr: ein Tier, das
+            // hinaus wanderte, lag in der Ruhe-Pose und lief (95 % der Ruhe-Takte bewegt).
+            {
+                const VA = creature.userData._verhaltenAktion;
+                if (VA && VA.def && Number.isFinite(VA.def.tempo) && this.state.creatureAnimationTime < VA.bis) {
                     direction.multiplyScalar(Math.max(0, VA.def.tempo));
                 }
             }

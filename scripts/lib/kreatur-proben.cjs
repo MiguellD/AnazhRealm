@@ -148,20 +148,22 @@ async function kreaturProben(r, T, opts) {
         });
     };
     const takt = (dt) => r.updateCreatures(dt);
-    // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: der EINE Kontakt-Löser läuft unverändert, die Linse merkt
-    // nur, wessen Lage er schob. Freier Lauf und Anprall werden getrennt gezählt (an einer Box-Kante gleitet ein Leib
-    // achsparallel, der Anprall an der Wand ist kein Gas-oder-Bremse).
+    // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: der Hüllen-Kontakt des Tiers läuft unverändert, die Linse
+    // merkt nur, wessen Lage er schob. Freier Lauf und Anprall werden getrennt gezählt (an einer Box-Kante gleitet ein Leib
+    // achsparallel, der Anprall an der Wand ist kein Gas-oder-Bremse). Die Basis kennt den Kontakt nicht: dort bleibt die
+    // Menge leer und jeder Takt zählt als freier Lauf.
     const kontaktZaehler = (restore) => {
         const geschoben = new Set();
+        if (typeof r._kreaturHuellenKontakt !== "function") return geschoben;
         decke(
             restore,
-            "_resolveCapsuleVsAABB",
+            "_kreaturHuellenKontakt",
             (alt) =>
-                function (box, pos, ...rest) {
-                    const x = pos.x,
-                        z = pos.z;
-                    const o = alt.call(this, box, pos, ...rest);
-                    if (pos.x !== x || pos.z !== z) geschoben.add(pos);
+                function (c, ...rest) {
+                    const x = c.position.x,
+                        z = c.position.z;
+                    const o = alt.call(this, c, ...rest);
+                    if (c.position.x !== x || c.position.z !== z) geschoben.add(c.position);
                     return o;
                 }
         );
@@ -447,7 +449,8 @@ async function kreaturProben(r, T, opts) {
                         // der Tempo-Sprung im FREIEN Lauf (der Anprall-Takt und der danach zählen nicht)
                         if (!anprall && !vorher[i].anprall) z.beschl.push(Math.abs(sp - vorher[i].v) / dt);
                     }
-                    if (sp > 0.3 && k > 60) {
+                    // Lauf ↔ Blick im FREIEN Lauf (schiebt die Wand den Leib zurück, ist das kein Rückwärtsgang)
+                    if (sp > 0.3 && k > 60 && !anprall) {
                         const a = Math.abs(grad(wrap(Math.atan2(dx, dz) - c.rotation.y)));
                         z.abw.push(a);
                         z.lauf++;
@@ -784,6 +787,9 @@ async function kreaturProben(r, T, opts) {
         });
         const dt = 1 / 60;
         const vor = tiere.map((c) => ({ x: c.position.x, z: c.position.z }));
+        // die Ruhe einer Aktion zählt in Takten seit ihrem Stempel (dieselbe Uhr wie der Spieler sie sieht — die Aktion
+        // trug vor Welle L die Wand-Uhr, die Linse misst unabhängig davon)
+        const gesehen = tiere.map(() => ({ va: null, k0: 0 }));
         let ruhFrames = 0,
             ruhBewegt = 0;
         for (let k = 0; k < 3600; k++) {
@@ -793,7 +799,9 @@ async function kreaturProben(r, T, opts) {
                 const sp = Math.hypot(c.position.x - vor[i].x, c.position.z - vor[i].z) / dt;
                 vor[i] = { x: c.position.x, z: c.position.z };
                 // die Ruhe ab ihrer zweiten Sekunde (der Leib bremst mit der Brems-Grenze in den Stand)
-                if (VA && VA.name === "ruhen" && s.creatureAnimationTime - VA.start > 1) {
+                if (VA !== gesehen[i].va) gesehen[i] = { va: VA, k0: k };
+                const alter = (k - gesehen[i].k0) * dt;
+                if (VA && VA.name === "ruhen" && alter > 1 && alter < VA.def.dauer) {
                     ruhFrames++;
                     if (sp > 0.1) ruhBewegt++;
                 }
