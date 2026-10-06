@@ -64141,11 +64141,15 @@ class AnazhRealm {
     // `HOEHLEN_LICHT_KACHEL_M` quer zum Licht tragen je Kachel die tiefste Empfänger-Tiefe; eine Zelle liest die Kacheln
     // unter ihrer Box. Die Kosten folgen der Karte (Welle C — vorher je Kaskaden-Pass jede Mündung des Rings und jede
     // Höhlen-Zelle der Box, acht Ecken je Box, auch an der Oberfläche ohne jede Höhle im Bild): ein Empfänger zählt nur, wenn
-    // das EINE Gesetz der Pass-Wahl ihn in diesem Pass trifft (Box der Kaskade und Licht-Kapsel gegen ihre Scheibe — die
-    // Empfänger einer Mündung liegen auf ihrem Weg vom Licht fort, ein Empfänger des Hauptbilds liest die Karte nur in
-    // seiner Scheibe), die Mündungen eines Bereichs prüft der Pass nur, wenn er die Hülle ihrer Boxen trifft; OHNE Empfänger
+    // das EINE Gesetz der Pass-Wahl seinen BEREICH in diesem Pass trifft (Box der Kaskade und Licht-Kapsel gegen ihre
+    // Scheibe — die Empfänger einer Mündung liegen auf ihrem Weg vom Licht fort, ein Empfänger des Hauptbilds liest die Karte
+    // nur in seiner Scheibe): die Zellen des Hauptbilds über die Hülle ihres Bereichs, die Mündungen über die Hülle der
+    // Mündungs-Boxen ihres Bereichs — je Bereich EINE Prüfung, nie je Empfänger; OHNE Empfänger
     // wirft keine Höhlen-Zelle (Frühausstieg), und ein Bereich, dessen Licht-Rechteck keine Kachel eines Empfängers schneidet
-    // oder der dem Licht nicht so nah kommt wie der tiefste, prüft keine seiner Zellen.
+    // oder der dem Licht nicht so nah kommt wie der tiefste, prüft keine seiner Zellen. Die Lage einer Box im Licht-Raum
+    // hängt nur an der DREHUNG des Lichts: jede Box (Mündung, Zelle, Bereich) trägt ihr Licht-Rechteck, bis das Licht sich
+    // dreht (`H.lichtGen`) oder der Satz einen neuen Stand hat (Hülle, Ordnung, Rand) — dreht die Kamera, wandert die Kaskade
+    // nur quer zum Licht, und keine Ecke wird neu gerechnet (OMEN-Urteil 06.10., Drehen: ~1 800 Boxen je Frame).
     _hoehlenSichtLicht(s, S, kamera) {
         const H = s.hoehle;
         const st = ++H.stempel;
@@ -64154,9 +64158,27 @@ class AnazhRealm {
             throw new Error("_hoehlenSichtLicht: eine Kaskade ohne Kamera — die Licht-Kacheln brauchen ihre Drehung");
         // die Lage einer Box im Licht-Raum: nur die DREHUNG der Licht-Kamera (u, v quer zum Licht, d entlang) — die Kacheln
         // stehen ortsfest, während die Kaskaden-Box mit dem atmenden Auge wandert (sonst kippte die Wahl am Rand je Frame)
-        const e = kamera.matrixWorldInverse.elements;
-        const L = H.lichtBox || (H.lichtBox = new Float64Array(6));
-        const lage = (box) => this._hoehlenLichtLage(box, e, L);
+        // die Drehung des Lichts, gegen die gemerkte bis auf die Rundung (eine neu gelegte Kaskaden-Box legt ihre Kamera aus
+        // Ort + Richtung neu an — dieselbe Richtung trägt dann Rundungs-Reste); gerechnet wird mit der gemerkten
+        const ek = kamera.matrixWorldInverse.elements;
+        const e = H.lichtE || (H.lichtE = new Float64Array(16));
+        let gedreht = !H.lichtGen;
+        for (let i = 0; i < 11; i++) if (i % 4 !== 3 && !(Math.abs(e[i] - ek[i]) <= 1e-7)) gedreht = true;
+        if (gedreht) {
+            e.set(ek);
+            H.lichtGen = (H.lichtGen || 0) + 1;
+        }
+        const lg = H.lichtGen,
+            stand = s.stand;
+        // das Licht-Rechteck einer Box, gemerkt an ihrem Halter (Mündung, Zelle, Bereich)
+        const lage = (h, box) => {
+            if (h.lrGen === lg && h.lrStand === stand) return h.lr;
+            const L = h.lr || (h.lr = new Float64Array(6));
+            this._hoehlenLichtLage(box, e, L);
+            h.lrGen = lg;
+            h.lrStand = stand;
+            return L;
+        };
         const T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
         const K = H.kacheln || (H.kacheln = new Map());
         K.clear();
@@ -64165,10 +64187,10 @@ class AnazhRealm {
         const E = H.empfSpanne || (H.empfSpanne = new Float64Array(5));
         E[0] = E[1] = Infinity;
         E[2] = E[3] = E[4] = -Infinity;
-        const empfang = (kn, box) => {
-            if (!box || !this._passTrifftBox(P, box, 0)) return;
+        const empfang = (kn, h, box) => {
+            if (!box) return;
             kn.sicht = st;
-            lage(box);
+            const L = lage(h, box);
             const tief = L[5];
             const i0 = Math.floor(L[0] / T),
                 i1 = Math.floor(L[3] / T),
@@ -64186,18 +64208,28 @@ class AnazhRealm {
             if (j1 > E[3]) E[3] = j1;
             if (tief > E[4]) E[4] = tief;
         };
-        if (H.sichtHaupt) for (const kn of H.sichtHaupt) if (kn.bereich.hoehle) empfang(kn, kn.zelle.huelle);
+        // die Zellen des Hauptbilds: je Bereich EINE Prüfung seiner Hülle (gemerkt an diesem Stempel)
+        if (H.sichtHaupt)
+            for (const kn of H.sichtHaupt) {
+                const b = kn.bereich;
+                if (!b.hoehle || !b.huelle) continue;
+                if (b._empfSt !== st) {
+                    b._empfSt = st;
+                    b._empfJa = this._passTrifftBox(P, b.huelle, 0);
+                }
+                if (b._empfJa) empfang(kn, kn.zelle, kn.zelle.huelle);
+            }
         for (const b of s.ordnung) {
             const bh = b.hoehle;
             if (!bh || !bh.startHuelle || !this._passTrifftBox(P, bh.startHuelle, 0)) continue;
-            for (const kn of bh.starts) for (const tor of kn.tore) empfang(kn, tor.box);
+            for (const kn of bh.starts) for (const tor of kn.tore) empfang(kn, tor, tor.box);
         }
         if (K.size === 0) return;
         // die Werfer-Kandidaten: die Zellen, die das EINE Gesetz der Pass-Wahl in diesem Pass trifft (Box der Kaskade und
         // Licht-Kapsel gegen ihre Scheibe — `_chunkSatzAbschnitt` wählt dieselben)
         for (const b of s.ordnung) {
             if (!b.hoehle || !b.huelle || b.huelle.isEmpty() || !this._passTrifftBox(P, b.huelle, 0)) continue;
-            lage(b.huelle);
+            const L = lage(b, b.huelle);
             if (
                 L[2] > E[4] ||
                 Math.floor(L[3] / T) < E[0] ||
@@ -64209,11 +64241,11 @@ class AnazhRealm {
             for (const kn of b.hoehle.knoten) {
                 const z = kn.zelle;
                 if (!z || kn.sicht === st || z.huelle.isEmpty() || !this._passTrifftBox(P, z.huelle, 0)) continue;
-                lage(z.huelle);
-                const nah = L[2];
+                const Z = lage(z, z.huelle);
+                const nah = Z[2];
                 let wirft = false;
-                for (let j = Math.floor(L[1] / T); j <= Math.floor(L[4] / T) && !wirft; j++)
-                    for (let i = Math.floor(L[0] / T); i <= Math.floor(L[3] / T); i++) {
+                for (let j = Math.floor(Z[1] / T); j <= Math.floor(Z[4] / T) && !wirft; j++)
+                    for (let i = Math.floor(Z[0] / T); i <= Math.floor(Z[3] / T); i++) {
                         const w = K.get((i + 32768) * 65536 + (j + 32768));
                         if (w !== undefined && w >= nah) {
                             wirft = true;
@@ -89698,11 +89730,14 @@ class AnazhRealm {
             const n = this._kaskadenScheibe(csm, i, huellen, S);
             const alt = csm._anazhFit[i];
             let rendert = sh.needsUpdate === true || sh.autoUpdate === true;
-            if (!rendert && !(alt && this._kaskadeDeckt(alt, S, n))) {
+            const deckt = !!alt && this._kaskadeDeckt(alt, S, n);
+            if (!rendert && !deckt) {
                 sh.needsUpdate = true; // die Scheibe lief aus der Box — diese Kaskade rendert jetzt
                 rendert = true;
             }
-            if (rendert) csm._anazhFit[i] = this._kaskadeFit(csm, i, huellen, S, n, alt);
+            // auf ihrem Takt rendert die Kaskade mit derselben Box, solange sie hält (`_kaskadeHaelt`)
+            if (rendert && !(deckt && this._kaskadeHaelt(alt, S, huellen)))
+                csm._anazhFit[i] = this._kaskadeFit(csm, i, huellen, S, n, alt);
         }
     }
 
@@ -89816,6 +89851,19 @@ class AnazhRealm {
         }
         if (n === 0) for (const e of S.ecken) S.punkte[n++].copy(e);
         return n;
+    }
+
+    // HÄLT DIE BOX IHREN TAKT (Welle C)? Sie deckt die Scheibe samt Wahl-Scheibe (`_kaskadeDeckt`), das Licht steht (dieselbe
+    // Basis bis auf die Rundung) und kein Werfer der Box steigt über ihre nahe Ebene (`_kaskadenWerferOben` ≤ zt) — dann
+    // rendert die Kaskade auf ihrem Takt mit DERSELBEN Kamera: die Karte fängt die bewegten Werfer, die Lage des Passes steht
+    // (`_passLageGen`) und keine Wahl rechnet neu. Bis hier legte jeder Takt-Render die Box neu an die Scheibe — beim Drehen
+    // trug jeder Render eine neue Lage (OMEN-Urteil 06.10.: Drehen 360 × 1° teurer als vorher). Die Box bleibt so groß wie
+    // gerastet; dreht die Scheibe aus ihr heraus oder hebt sich ein Werfer, legt sie sich neu (`_kaskadeFit`).
+    _kaskadeHaelt(alt, S, huellen) {
+        const a = alt.basisInv.elements,
+            b = S.basisInv.elements;
+        for (let i = 0; i < 16; i++) if (!(Math.abs(a[i] - b[i]) <= 1e-9)) return false;
+        return this._kaskadenWerferOben(huellen, S, alt.x0, alt.x1, alt.y0, alt.y1) <= alt.zt;
     }
 
     // Deckt die gerenderte Box (in IHRER Licht-Basis) die Empfänger-Punkte noch — und liegen sie in der Wahl-Scheibe, gegen
