@@ -274,6 +274,13 @@ async function kreaturProben(r, T, opts) {
     // hängt nie am Takt ──
     await buehne("huepfer", async (restore) => {
         r.setGameMode("frieden");
+        // Die Kreatur-Uhr fest (die Aktions-Wahl hasht Index × Zeit): jeder Lauf wählt dieselben Aktionen — sonst hing die
+        // Zahl der Sprünge (3–5) an der Boot-Dauer der Welt.
+        const altUhr = s.creatureAnimationTime;
+        restore.push(() => {
+            s.creatureAnimationTime = altUhr;
+        });
+        s.creatureAnimationTime = 100;
         const F = A._verhaltenGesetz().freude;
         const hoehe = (c) => (s.creatureEmotions[s.creatures.indexOf(c)] === "happy" ? F.hopHochM : F.hopBasisM);
         const tiere = [];
