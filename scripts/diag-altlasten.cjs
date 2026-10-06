@@ -424,7 +424,11 @@ const FORBIDDEN = [
     // auf dem Takt (v0 = √(2·g·h)), er startet nur aus einer Aktion, die Größe ist die Achse bodySize.
     { token: '(emotion === "happy" ? 0.02 : 0.01)', fiel: "Welle L kreatur — der Hüpfer startet nur aus bound/pounce" },
     { token: "_hopV * 0.05", fiel: "Welle L kreatur — der Hüpfer integriert auf delta (updateCreatures)" },
-    { token: "VG.sprung.impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (_hopSchwere)" },
+    // DAS SPRUNG-GESETZ (Nachbesserung 07.10., Vertrags-Akt): die Huepf-Hoehe der Freude ist die EINE Quelle eines
+    // Sprungs (creatureJump, v0 = √(2·g·h)) — der lineare Faktor Hoehe → m/s und der Abflug in m/s der Aktionen (bound
+    // 3,2, pounce 4,5: der frohe Sprung stieg 0,52 statt 1,2 m) kehren weder im Stamm noch im Gesetzbuch zurueck.
+    { token: "impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)", auch: ["tetrapoda-core.js"] },
+    { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
     { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
     { token: "lastGrowthUpdate", fiel: "Welle L kreatur — das Wachsen-Relikt fiel" },
     // WELLE L KREATUR (Q3): die Witterungs-Jagd auf vier Himmelsachsen (R-D12) und die Sicht-Kopie, die die Gier des

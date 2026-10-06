@@ -81,8 +81,10 @@
     // Pflanzenfresser) und nacht (Ruhen). Jede Aktion ist ein kurzer Profil-
     // Overlay des Baum-Gangs (profil-Felder ueberlagern das MOTION-Preset)
     // plus Sonder-Kanaele: dreh rad (Ganzkoerper-Drehung ueber die Dauer),
-    // kopfSweep rad (Kopf-Pendel), rollAmp/rollRate (Schuettel-Rolle), hop m/s
-    // (der feld-native Huepf-Impuls des Wirts), tempo (Bewegungs-Faktor
+    // kopfSweep rad (Kopf-Pendel), rollAmp/rollRate (Schuettel-Rolle), hop true
+    // (die Aktion springt: die Hoehe ist das Freude-Gesetz freude.hopHochM/
+    // hopBasisM, der Abflug v0 = sqrt(2*g*h) mit GANG_GESETZ.g — VERTRAGS-AKT
+    // Welle L 07.10.: der Abflug in m/s fiel, er war der Zwilling der Hoehe), tempo (Bewegungs-Faktor
     // waehrend der Aktion; 0 = innehalten). stimmung waehlt je Gemuetslage
     // die Aktions-Liste + den Takt alle=[min,max] Sekunden (der Wirt jittert
     // deterministisch aus der Kreatur-Identitaet — kein Zufall). Der Wirt
@@ -91,11 +93,11 @@
     var VERHALTEN = {
         aktionen: {
             playbow: { dauer: 1.2, profil: { freq: 0.3, stride: 0, bodyX: 0.35, headX: 0.3, tailAmp: 0.5, tailRate: 6 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: Verbeugung senkt die FRONT (bodyX war -0.35 = Heck im Boden)
-            bound: { dauer: 0.9, profil: { freq: 5.5, stride: 0.14, bob: 0.05 }, hop: 3.2, tempo: 1.3 },
+            bound: { dauer: 0.9, profil: { freq: 5.5, stride: 0.14, bob: 0.05 }, hop: true, tempo: 1.3 },
             spin: { dauer: 1.1, profil: { freq: 4.0, stride: 0.06 }, dreh: 6.283, tempo: 0.2 },
             stalk: { dauer: 2.6, profil: { freq: 0.7, stride: 0.014, bodyX: 0.12, headX: -0.14 }, tempo: 0.45 },
             freeze: { dauer: 1.4, profil: { freq: 0.02, stride: 0, tension: 1.8 }, tempo: 0 },
-            pounce: { dauer: 0.7, profil: { freq: 6.0, stride: 0.16, bodyX: 0.2, bob: 0.06 }, hop: 4.5, tempo: 1.6 },
+            pounce: { dauer: 0.7, profil: { freq: 6.0, stride: 0.16, bodyX: 0.2, bob: 0.06 }, hop: true, tempo: 1.6 },
             scan: { dauer: 1.8, profil: { freq: 0.06, stride: 0, headX: -0.08 }, kopfSweep: 0.5, tempo: 0 },
             snap: { dauer: 0.5, profil: { headX: 0.22, freq: 1.5 } },
             shake: { dauer: 0.8, profil: { freq: 0.2, stride: 0 }, rollAmp: 0.35, rollRate: 14, tempo: 0 },
@@ -190,7 +192,7 @@
         // ── DIE SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-
         // Zeilen): die letzten neun Stamm-Literale mit tetrapoda-Heimat kehren
         // ins Evolutions-Gesetzbuch heim — freude (Joy-Tempo + Huepf-Hoehen) ·
-        // sprung (Hoehe→Impuls) · groessen (die Koerpergroessen-Baender,
+        // groessen (die Koerpergroessen-Baender,
         // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
         // Kohaesion) · wasser (Ufer-Scheu) — plus jagd.pirschStoppM,
@@ -198,13 +200,13 @@
         // fail-closed via AnazhRealm._verhaltenGesetz (Kern-Pflicht); die
         // Werte sind byte-gleich den historischen Stamm-Literalen.
         // must-ignore: fremde Leser ueberlesen die Bloecke. ──
+        // DAS SPRUNG-GESETZ (Welle L 07.10.): die Huepf-Hoehe ist die EINE Quelle eines Sprungs — der Wirt
+        // (creatureJump) springt froh hopHochM, sonst hopBasisM, mit dem Abflug v0 = sqrt(2*g*h). Der lineare
+        // Faktor sprung.impulsProM (Hoehe -> m/s) fiel mit dem Abflug in m/s der Aktionen (VERTRAGS-AKT).
         freude: {
             tempoMul: 2, // ein frohes Wesen bewegt sich doppelt so lebhaft
             hopHochM: 1.2, // m — der frohe Huepfer
-            hopBasisM: 0.8, // m — der Grund-Huepfer (auch der creatureJump-Default)
-        },
-        sprung: {
-            impulsProM: 2.2, // Huepf-Hoehe (m) → Feld-Impuls (m/s) — die EINE Sprungmechanik (_hopV)
+            hopBasisM: 0.8, // m — der Grund-Huepfer (ein Wesen, das nicht froh ist)
         },
         groessen: [
             // Wurf-Baender der Koerpergroesse (roll ∈ [0,1) aus der Identitaet):

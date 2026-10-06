@@ -38386,7 +38386,9 @@ async function checkBandHuepfer(ctx) {
         const sprung = () => {
             takt();
             const y0 = c.position.y;
-            r.creatureJump(c, 1);
+            c.userData._hopV = 0;
+            c.userData._hopH = 0;
+            r.creatureJump(c); // das Sprung-Gesetz: Höhe aus der Freude (hopHochM / hopBasisM)
             let scheitel = 0;
             let takte = 0;
             for (; takte < 600; takte++) {

@@ -18527,9 +18527,9 @@ class AnazhRealm {
         if (!def) return;
         const dauer = Number.isFinite(def.dauer) ? def.dauer : 1;
         ud._verhaltenAktion = { name, def, start: nowS, bis: nowS + dauer };
-        // hop zündet den Hüpfer: der Abflug-Impuls der Aktion (m/s), dieselbe Parabel wie creatureJump — der EINE Start
-        // eines Sprungs außer creatureJump (der Würfel je Frame ist gefallen).
-        if (Number.isFinite(def.hop) && def.hop > 0 && !(ud._hopV > 0) && !(ud._hopH > 0)) ud._hopV = def.hop;
+        // hop: die Aktion springt — über das EINE Sprung-Gesetz (creatureJump: Höhe aus der Freude, Abflug √(2·g·h)); der
+        // Würfel je Frame ist gefallen, ein Sprung startet nur hier.
+        if (def.hop === true) this.creatureJump(creature);
         ud._verhaltenNext = nowS + dauer + alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]);
     }
     // DER EINE BRÜCKEN-RESOLVER (MOTION_EMOTION_PROFILES, Vorrang-Zeilen; keine Achse über der Schwelle
@@ -21548,8 +21548,8 @@ class AnazhRealm {
             }
             // DER HÜPFER (Q1): ein Versatz ON TOP der geerdeten baseY (die Erdung bleibt Wahrheit), EIN Integrator auf
             // dem Takt `delta` — die Parabel des Gesetzes (g des Gang-Gesetzes), je Schritt exakt (h += v·dt − g·dt²/2),
-            // darum dieselbe Flugzeit bei jeder Bildrate; er startet nur aus einer Aktion (bound/pounce, ihr `hop` ist
-            // der Abflug-Impuls in m/s) oder über creatureJump. Vorher rechnete er je Frame feste 0,05 s (bei 144 Hz
+            // darum dieselbe Flugzeit bei jeder Bildrate; er startet nur aus einer Aktion (bound/pounce) über das EINE
+            // Sprung-Gesetz creatureJump (Höhe aus der Freude). Vorher rechnete er je Frame feste 0,05 s (bei 144 Hz
             // ein Sechstel der Flugzeit) und ein Würfel je Frame zündete ihn (Leben-Prüfung R-D3: 21–26 % Luft-Frames).
             let hopOffset = 0;
             const udH = creature.userData;
@@ -22639,14 +22639,19 @@ class AnazhRealm {
         };
     }
 
-    creatureJump(creature, jumpHeight) {
-        // Ein Sprung auf die Höhe `jumpHeight` (m; ohne Angabe der Grund-Hüpfer des Gesetzes, VERHALTEN.freude.hopBasisM):
-        // der Abflug-Impuls ist die Parabel v0 = √(2·g·h) — derselbe Integrator in updateCreatures trägt ihn ON TOP der
-        // geerdeten Lage (die Erdung bleibt die Wahrheit, der Hüpfer reitet darauf).
-        if (!creature || !creature.userData) return;
-        const VG = AnazhRealm._verhaltenGesetz();
-        const h = Number.isFinite(jumpHeight) && jumpHeight > 0 ? jumpHeight : VG.freude.hopBasisM;
-        creature.userData._hopV = Math.max(creature.userData._hopV || 0, Math.sqrt(2 * AnazhRealm._hopSchwere() * h));
+    // DAS SPRUNG-GESETZ (Q1, Welle L): der EINE Start eines Hüpfers. Die Höhe ist das Freude-Gesetz (VERHALTEN.freude): ein
+    // frohes Wesen springt hopHochM, jedes andere den Grund-Hüpfer hopBasisM — dasselbe Etikett, das sein Tempo hebt
+    // (freude.tempoMul). Der Abflug ist die Parabel v0 = √(2·g·h) mit dem g des Gang-Gesetzes; der Takt in updateCreatures
+    // trägt sie ON TOP der geerdeten Lage (die Erdung bleibt die Wahrheit). Eine Aktion mit `hop` (bound, pounce) zündet
+    // ihn (_tickKreaturVerhalten) — kein Abflug in m/s daneben (der alte `def.hop` war ein Zwilling: der frohe Sprung stieg
+    // 0,52 statt 1,2 m). Ein Wesen in der Luft springt nicht neu.
+    creatureJump(creature) {
+        const ud = creature && creature.userData;
+        if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;
+        const F = AnazhRealm._verhaltenGesetz().freude;
+        const froh = this.state.creatureEmotions[this.state.creatures.indexOf(creature)] === "happy";
+        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * (froh ? F.hopHochM : F.hopBasisM));
+        return true;
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -92149,6 +92154,8 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.stimmung.schwellen.weideDiet) &&
             v.freude &&
             Number.isFinite(v.freude.tempoMul) &&
+            Number.isFinite(v.freude.hopHochM) &&
+            Number.isFinite(v.freude.hopBasisM) &&
             Array.isArray(v.groessen) &&
             v.groessen.length >= 2 &&
             v.separation &&

@@ -24,3 +24,11 @@ der Host bleibt der OFEN, die Labs liefern Parameter):
 Konsumenten: `fx.klang` → `_klangStudioPreset`/`_lofiChordDurationMs`
 (anazhRealm.js, EIN Audio-System); `fx.motion` → benannter Andock-Punkt
 `_animateCompoundMotion`/Rig (Konsum = Folge-Schritt, s. Vertrag §8.2).
+
+**Vertrags-Akt 07.10.2026 (Welle L kreatur — das SPRUNG-GESETZ):** `tetrapoda-core.js` neu gemintet
+(`1689e8e50ed5…` → `508ac6c14735…`). Geändert sind genau 12 Felder in `PRESETS.<tier>.fx.verhalten` (wolf · fox ·
+bear · deer): `aktionen.bound.hop` 3,2 → `true`, `aktionen.pounce.hop` 4,5 → `true`, `sprung { impulsProM }` fiel.
+Ohne diese drei Felder ist das kanonische JSON byte-gleich (geprüft). Die Höhe eines Sprungs ist die EINE Quelle
+`freude.hopHochM`/`hopBasisM`, der Abflug v0 = √(2·g·h) (Wirt `creatureJump`); der m/s-Abflug der Aktionen war ihr
+Zwilling (der frohe Sprung stieg 0,52 statt 1,2 m). Wächter: gate:studio-vertrag (hop nur `true`, kein `sprung`),
+gate:altlasten (`impulsProM` auch im Gesetzbuch), gate:kreatur-takt huepfer (Scheitel = Freude-Gesetz).

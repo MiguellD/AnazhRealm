@@ -9,7 +9,8 @@
 //   geister   (Q12) clearCreatures lässt kein Tier als Geist in der Szene
 //   geburt    (Q12) die natürliche Geburt liegt fern (≥ CREATURE_SPAWN_FAR_MIN) und außerhalb des Blicks
 //   sattel    (Q12) der Tod im Sattel steigt ab (mountedArch = null)
-//   huepfer   (Q1/Q2) Luft-Anteil < 3 %, jeder Sprung aus einer Aktion, Flugzeit gleich bei 30 und 144 Hz
+//   huepfer   (Q1/Q2) Luft-Anteil < 3 %, jeder Sprung aus einer Aktion über das EINE Sprung-Gesetz (creatureJump), der
+//             Scheitel ist das Freude-Gesetz (froh hopHochM, sonst hopBasisM), Flugzeit gleich bei 30 und 144 Hz
 //   wachsen   (Q2) die Skala nach 3600 Wachstums-Takten = 1,000
 //   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz
 //   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
@@ -265,15 +266,33 @@ async function kreaturProben(r, T, opts) {
         return { aufgestiegen: auf, nachTod: s.player.mountedArch == null ? null : s.player.mountedArch };
     });
 
-    // ── huepfer (Q1/Q2): jeder Sprung aus einer Aktion, die Flugzeit hängt nie am Takt ──
+    // ── huepfer (Q1/Q2 + das Sprung-Gesetz): jeder Sprung aus einer Aktion, über das EINE Sprung-Gesetz (creatureJump),
+    // auf die Höhe des Freude-Gesetzes (VERHALTEN.freude: ein frohes Wesen hopHochM, sonst hopBasisM), und die Flugzeit
+    // hängt nie am Takt ──
     await buehne("huepfer", async (restore) => {
         r.setGameMode("frieden");
+        const F = A._verhaltenGesetz().freude;
+        const hoehe = (c) => (s.creatureEmotions[s.creatures.indexOf(c)] === "happy" ? F.hopHochM : F.hopBasisM);
         const tiere = [];
         for (let i = 0; i < 6; i++) {
             const c = tier(land(18 + i * 3, 22), "wesen");
             r.assignCreatureTask(c, "wait", {}, { silent: true });
             tiere.push(c);
         }
+        // Der Konsum des Sprung-Gesetzes: wie oft creatureJump einen Sprung STARTET (instrumentiert, durchgereicht).
+        let rufe = 0;
+        decke(
+            restore,
+            "creatureJump",
+            (alt) =>
+                function (c, ...rest) {
+                    const ud = c && c.userData;
+                    const flog = !!ud && (ud._hopV > 0 || ud._hopH > 0);
+                    const o = alt.call(this, c, ...rest);
+                    if (ud && !flog && ud._hopV > 0) rufe++;
+                    return o;
+                }
+        );
         if (taeter === "huepfer")
             decke(
                 restore,
@@ -289,8 +308,24 @@ async function kreaturProben(r, T, opts) {
                                     i) %
                                     997) /
                                 997;
-                            if (h < 0.02 && !(c.userData._hopH > 0)) this.creatureJump(c, 3);
+                            if (h < 0.02 && !(c.userData._hopH > 0)) this.creatureJump(c);
                         }
+                    }
+            );
+        // Der Zwilling: die Aktion zündet den Hüpfer mit ihrem eigenen Abflug in m/s (der alte `def.hop`, 3,2 m/s),
+        // am Sprung-Gesetz vorbei.
+        if (taeter === "huepfer-zwilling")
+            decke(
+                restore,
+                "_tickKreaturVerhalten",
+                (alt) =>
+                    function (c, ...rest) {
+                        const ud = c.userData;
+                        const vor = ud && ud._verhaltenAktion;
+                        const o = alt.call(this, c, ...rest);
+                        const VA = ud && ud._verhaltenAktion;
+                        if (VA && VA !== vor && VA.def && VA.def.hop && ud._hopV > 0) ud._hopV = 3.2;
+                        return o;
                     }
             );
         const dt = 1 / 60;
@@ -300,6 +335,8 @@ async function kreaturProben(r, T, opts) {
             ausAktion = 0,
             scheitel = 0;
         const warLuft = tiere.map(() => false);
+        const flugNun = tiere.map(() => null); // je Tier der laufende Sprung: {soll, top}
+        const fehler = [];
         for (let k = 0; k < 2400; k++) {
             for (let i = 0; i < tiere.length; i++) if (i < 3) tiere[i].userData.emotions.joy = 0.9;
             takt(dt);
@@ -312,14 +349,21 @@ async function kreaturProben(r, T, opts) {
                 if (istLuft && !warLuft[i]) {
                     starts++;
                     const VA = ud._verhaltenAktion;
-                    if (VA && VA.def && VA.def.hop > 0) ausAktion++;
+                    if (VA && VA.def && VA.def.hop) ausAktion++;
+                    flugNun[i] = { soll: hoehe(tiere[i]), top: 0 };
+                }
+                if (flugNun[i]) flugNun[i].top = Math.max(flugNun[i].top, h);
+                if (!istLuft && warLuft[i] && flugNun[i]) {
+                    fehler.push(Math.abs(flugNun[i].top / flugNun[i].soll - 1));
+                    flugNun[i] = null;
                 }
                 if (h > scheitel) scheitel = h;
                 warLuft[i] = istLuft;
             }
         }
-        // Der Takt-Beweis: derselbe Sprung bei 30 und 144 Hz (Scheitel und Flugzeit in Sim-Sekunden).
-        const flug = (hz) => {
+        // Der Takt-Beweis: derselbe Sprung bei 30 und 144 Hz (Scheitel und Flugzeit in Sim-Sekunden), und der Scheitel ist
+        // das Freude-Gesetz — froh hopHochM, sonst hopBasisM.
+        const flug = (hz, etikett) => {
             const c = tiere[0];
             r.assignCreatureTask(c, "wait", {}, { silent: true });
             c.userData._hopH = 0;
@@ -327,7 +371,9 @@ async function kreaturProben(r, T, opts) {
             c.userData._verhaltenAktion = null;
             c.userData.emotions.joy = 0;
             takt(1 / hz);
-            r.creatureJump(c, 3);
+            s.creatureEmotions[s.creatures.indexOf(c)] = etikett;
+            const soll = hoehe(c);
+            r.creatureJump(c);
             let t = 0,
                 top = 0,
                 n = 0;
@@ -337,18 +383,27 @@ async function kreaturProben(r, T, opts) {
                 top = Math.max(top, c.userData._hopH || 0);
                 if (!((c.userData._hopH || 0) > 0)) break;
             }
-            return { t, top };
+            return { t, top, soll };
         };
-        const f30 = flug(30),
-            f144 = flug(144);
+        const rufeImLauf = rufe; // die Flug-Proben unten rufen creatureJump selbst
+        const f30 = flug(30, "happy"),
+            f144 = flug(144, "happy"),
+            fSad = flug(60, "sad");
         return {
             luftAnteil: +(luft / frames).toFixed(4),
             starts,
             ausAktion,
+            rufe: rufeImLauf,
             scheitelM: +scheitel.toFixed(3),
+            gesetzFehler: fehler.length ? +Math.max(...fehler).toFixed(3) : null,
+            hopHochM: F.hopHochM,
+            hopBasisM: F.hopBasisM,
             flug30: { t: +f30.t.toFixed(3), top: +f30.top.toFixed(3) },
             flug144: { t: +f144.t.toFixed(3), top: +f144.top.toFixed(3) },
             flugVerhaeltnis: f30.t > 0 ? +(f144.t / f30.t).toFixed(3) : null,
+            frohFehler: +Math.abs(f30.top / f30.soll - 1).toFixed(3),
+            basisTop: +fSad.top.toFixed(3),
+            basisFehler: +Math.abs(fSad.top / fSad.soll - 1).toFixed(3),
         };
     });
 
@@ -975,8 +1030,24 @@ function urteil(name, z) {
         soll(z.starts > 0, "kein Sprung (die Aktionen hüpfen nicht — Probe vakuös)");
         soll(z.ausAktion === z.starts, `${z.starts - z.ausAktion} von ${z.starts} Sprüngen ohne Aktion`);
         soll(
+            z.rufe === z.starts,
+            `${z.starts - z.rufe} von ${z.starts} Sprüngen am Sprung-Gesetz vorbei (creatureJump startete ${z.rufe})`
+        );
+        soll(
+            z.gesetzFehler !== null && z.gesetzFehler < 0.03,
+            `Scheitel ${((z.gesetzFehler || 0) * 100).toFixed(1)} % neben dem Sprung-Gesetz (freude.hopHochM ${z.hopHochM} / hopBasisM ${z.hopBasisM} m)`
+        );
+        soll(
             z.flugVerhaeltnis !== null && Math.abs(z.flugVerhaeltnis - 1) < 0.05,
             `Flugzeit 144 Hz / 30 Hz = ${z.flugVerhaeltnis} (Soll 1)`
+        );
+        soll(
+            z.frohFehler < 0.03,
+            `der frohe Sprung steigt ${z.flug30.top} m (Sprung-Gesetz freude.hopHochM ${z.hopHochM} m)`
+        );
+        soll(
+            z.basisFehler < 0.03,
+            `der Grund-Sprung steigt ${z.basisTop} m (Sprung-Gesetz freude.hopBasisM ${z.hopBasisM} m)`
         );
     }
     if (name === "wachsen") soll(Math.abs(z.skala - 1) < 0.001, `Skala nach 3600 Takten ×${z.skala}`);
@@ -1037,7 +1108,10 @@ const TAETER = {
     geburt: [["geburt", /Geburt/]],
     sattel: [["sattel", /mountedArch/]],
     reload: [["reload", /geheilt|Gier/]],
-    huepfer: [["huepfer", /ohne Aktion|Luft-Anteil/]],
+    huepfer: [
+        ["huepfer", /ohne Aktion|Luft-Anteil/],
+        ["huepfer-zwilling", /neben dem Sprung-Gesetz/],
+    ],
     wachsen: [["wachsen", /Skala/]],
     gier: [["gier", /Lauf ↔ Blick|rückwärts/]],
     jagd: [["jagd", /Achsen/]],

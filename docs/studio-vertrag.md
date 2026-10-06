@@ -315,7 +315,11 @@ Komponenten-SÄTZE, keine Klassen):
   ZWILLINGS-ABSENZ-WAND im Validator hält sie draußen).
   Schluss-Welle 17.07. (V18.489, rein additiv): die letzten neun
   tetrapoda-Heimat-Literale des Stamms sind heimgekehrt — `freude { tempoMul
-  hopHochM hopBasisM }` · `sprung { impulsProM }` · `groessen[]`
+  hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
+  07.10.: gefallen — DAS SPRUNG-GESETZ: die Huepf-Hoehe der Freude ist die
+  EINE Quelle eines Sprungs, froh `hopHochM`, sonst `hopBasisM`, der Abflug
+  v0 = √(2·g·h) mit `GANG_GESETZ.g` im Wirt `creatureJump`; eine Aktion
+  trägt nur `hop: true`, der Abflug in m/s fiel mit) · `groessen[]`
   (Körpergrößen-Bänder) · `separation { radiusBaseM strength }` (der
   Stamm-Zwilling `CREATURE_SEPARATION` fiel, Absenz-Wand) · `aufgaben`
   (Gefährten-Tempi/Halt-Distanzen — die Stamm-Getter wurden Leser) ·
