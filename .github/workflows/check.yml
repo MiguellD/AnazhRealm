@@ -519,11 +519,17 @@ jobs:
               # Fail-Closed-Clamp auf Stufe 0). Inklusive Selbst-Test (injizierte Verletzungen).
               run: npm run gate:nervensystem-schmiede
 
+            - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
+              # cv:3 (spec/asset-contract/v3): 12 frozen sha256-Goldens (5 Gattungen × 2 Seeds + 2 ov-Kulturen),
+              # Node-direkt (r128) — Determinismus · Geometrie seed-invariant, der Same waehlt den Lack · ov-Kanal ·
+              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte) · Selbst-Test. Bis zur Integration W5 lief er nur lokal.
+              run: npm run gate:vehicle-contract
+
             - name: Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)
               # cv:5 (spec/asset-contract/v5): 44 frozen sha256-Goldens (21 Gattungen × 2 Seeds +
               # 2 ov-Fälle), Node-direkt (r128, kein Browser) — Determinismus · Seed-Invarianz ·
               # ov-Kanal · lod-Klemme · Split-Parität buildInstance==buildWeaponModel je Gattung ·
-              # Selbst-Test (korruptes Golden wird rot).
+              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte, Täter Datei:Zeile) · Selbst-Test.
               run: npm run gate:schmiede-contract
 
             - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)

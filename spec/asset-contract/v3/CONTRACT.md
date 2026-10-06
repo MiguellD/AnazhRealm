@@ -29,7 +29,7 @@ __vehicleCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
   = 1 + seed mod 8`, Clay bleibt die Anatomie-Ansicht des Labors) — bewusster
   Re-Mint W5 (05.10.): bis dahin fuhr die Welt das Ton-Modell (Albedo 0,58), und
   jede Farbe folgt dem FARB-GESETZ (Hex = sRGB-Absicht, Material = linear); die
-  Geometrie aller 22 Probe-Fälle blieb byte-gleich. Kein cv-Bump: die Naht
+  Geometrie aller 12 Probe-Fälle blieb byte-gleich. Kein cv-Bump: die Naht
   (Float32-Attribute + Material-Daten) ist dieselbe.
 - `lod`: Fahrzeuge tragen NUR Stufe 0 (`PORTAL_RENDER_CONFIG.lod.kindStages =
 { vehicle: [0] }`); jede andere Stufe wird auf 0 geklemmt — L1=L0-Grade und

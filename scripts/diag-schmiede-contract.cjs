@@ -23,17 +23,24 @@
 // Goldens: spec/asset-contract/v5/golden/klingen.json — EINGEFROREN
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
+//
+// PLATTFORM-PROBE (Integration W5, 06.10., scripts/lib/plattform-probe.cjs): die Goldens tragen auf jedem V8
+// dieselben Bytes — jeder Fall baut noch einmal mit Math.pow um ±1 ULP verschoben (gebrochene Exponenten) und muss
+// byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Befund: unter Node 24 geprägt, unter Node 22
+// (CI) rot — die Säbel-Klinge hing an pow(e, 0,7) im Querschnitt.
 //   node scripts/diag-schmiede-contract.cjs
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { plattformProbe } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v5/golden");
 const goldenFile = path.join(goldenDir, "klingen.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "schmiede-core.js"));
+const KERN = path.join(root, "schmiede-core.js");
+require(KERN);
 const SC = globalThis.__schmiedeCore;
 
 const errs = [];
@@ -225,6 +232,29 @@ function compare(golden, actual) {
     const diffs = compare(golden, actual);
     check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
     for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
+
+    // 6b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow (je Lauf ein frisch geladener Kern —
+    //     die Stoffe rechnen ihre Farbe beim ersten Bau). Die Fälle ohne Seed-Dopplung (seed-invariant, s. Kopf).
+    const PP = plattformProbe({
+        laden: () => {
+            delete require.cache[require.resolve(KERN)];
+            require(KERN);
+            return globalThis.__schmiedeCore;
+        },
+        bauen: (K) => {
+            const r = {};
+            for (const c of CASES)
+                if (c.seed === 7) r[caseKey(c)] = fingerprint(K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov)).sha256;
+            return r;
+        },
+    });
+    globalThis.__schmiedeCore = SC;
+    check(
+        `PLATTFORM-PROBE: Math.pow ±1 ULP kippt kein Byte (${PP.faelle} Fälle) — jedes V8 prägt dieselben Goldens`,
+        PP.kippt.length === 0,
+        PP.kippt.map((k) => k + " ← " + (PP.stellen[k] || ["?"]).join(", ")).join(" · ")
+    );
+    check("SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau", PP.selbst);
 
     // 7) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
     const tampered = JSON.parse(JSON.stringify(golden));

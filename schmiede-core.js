@@ -284,7 +284,12 @@
                 const u = i / n;
                 W = -hw + u * w;
                 const eFromEdge = (W + hw) / w;
-                H = ht * 2 * Math.pow(eFromEdge, 0.7);
+                // PLATTFORMGLEICH (Integration W5, 06.10.): eine Potenz mit gebrochenem Exponenten rundet V8 je Version im
+                // letzten Bit verschieden (Node 22/V8 12.4 gegen Node 24/V8 13.6: 487 Rücken-Potenzen eines Säbels). Über
+                // die Dicke Z und hnoise(Z·140) kippte das zwei Float32-Farben der Säbel-Klinge — die Goldens hingen an der
+                // Node-Version. Auf 1e-9 gerastert trägt jedes V8 dieselben Bytes (Linse: die Plattform-Probe im
+                // Klingen-Vertrag, scripts/lib/plattform-probe.cjs).
+                H = ht * 2 * (Math.round(Math.pow(eFromEdge, 0.7) * 1e9) / 1e9);
                 if (eFromEdge > 0.86) H = Math.max(H, ht * 1.0);
                 H = Math.min(H, th);
             } else {

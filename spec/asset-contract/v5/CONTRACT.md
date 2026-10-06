@@ -79,3 +79,16 @@ Vertex-Haut trägt die ganze Albedo (Haut × Stoff-Farbe einmal gebacken, der Ha
 `hautStoff` ist weiß — Labor = Welt); die Bogen-Sehne ist Schnur. Geometrie unverändert:
 alle 44 Fälle tragen dieselben `objects`/`vertices`, nur die Material-Signatur und das
 `color`-Attribut wechseln. Kein cv-Bump (die Naht ist dieselbe).
+
+**Re-Mint Integration W5 (06.10.2026, plattformgleich):** der Re-Mint vom 05.10. war unter
+Node 24 (V8 13.6) geprägt, die CI rechnet unter Node 22 (V8 12.4) — `Math.pow` mit
+gebrochenem Exponenten rundet dort im letzten Bit anders, und der Säbel trug es in seine
+Bytes: der einschneidige Querschnitt (`sectionAt`, `pow(e, 0.7)`) setzt die Dicke Z, und
+`hnoise(Z·140)` der Stahl-Haut macht aus einem ULP eine andere Rausch-Probe (zwei
+Float32-Farben kippten, CI rot). Die Potenz rechnet jetzt auf 1e-9 gerastert. Byte-Akt
+nur `saebel` (beide Seeds): `position` 44/20592 Werte (≤ 4,7e-10 m), `normal` 498
+(≤ 2,7e-7), `color` 18938 (dieselbe Verteilung: Mittel 0,3458, Streuung 0,1817 vorher
+wie nachher — andere Proben desselben Rauschens); alle übrigen 42 Fälle byte-gleich.
+Die Plattform-Probe des Gates (`scripts/lib/plattform-probe.cjs`) baut jeden Fall mit
+`Math.pow` ±1 ULP noch einmal und nennt die Aufrufstelle, deren Drift die Bytes erreicht
+— gegen den alten Kern: `saebel-s7-L0 ← schmiede-core.js:287`.
