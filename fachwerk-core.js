@@ -3878,9 +3878,9 @@
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen };
     // Die Palette der Gestalt: verwittertes Holz, Feldstein, Plane — gewürfelt aus dem Samen (eigener Strom), die
     // Plane in den Färber-Farben des Markts (Krapp · Ocker · Salbei · Waid · Malve) und Naturleinen. Jedes Hex ist eine
-    // sRGB-ABSICHT (das FARB-GESETZ, `_colFor` legt es linear in den Vertex); die linearen Werte liegen im Band der Natur
-    // (diag-albedo-zensus), NACH Kontakt-AO und Erdsaum gemessen: Feldstein und Quader 0,22–0,33 · verwittertes Holz
-    // 0,12–0,20 · Plane 0,10–0,25 · Naturleinen 0,41 · Asche 0,18 (gate:fachwerk-contract misst sie je Rolle).
+    // sRGB-ABSICHT (das FARB-GESETZ, `_colFor` legt es linear in den Vertex); NACH Kontakt-AO und Erdsaum liegt jede
+    // Gestalt × Seh-Klasse im Band der Natur 0,08–0,45, die Glut ≤ 0,30 (gate:fachwerk-contract, die Albedo-Linse misst
+    // je Gestalt × Seh-Klasse den Höchstwert über die Fälle, nicht je Rolle).
     var AUS_PLANE = [0xa8483a, 0xb08a3e, 0x5e7d4c, 0x3f5f86, 0x7a5f8a];
     var AUS_NATURTUCH = 0xb8ae96;
     function ausFarben(rezeptId, seed) {
