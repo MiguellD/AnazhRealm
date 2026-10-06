@@ -63424,20 +63424,21 @@ class AnazhRealm {
     // DER TAUSCH: nur die Änderung der Wahl — jede Zelle, die geht, wird eine entartete Lücke (ihr erster Index für jede
     // Ecke: ein Dreieck ohne Fläche zeichnet nichts) oder fällt am Hochwasser ab; jede, die kommt, nimmt First-Fit eine
     // Lücke (dieselbe Freiliste wie die Vertex-Bereiche) oder hängt an. Findet sie keinen Platz oder übersteigen die Lücken
-    // `verschnitt` des Laufs, legt der Pass dicht neu.
+    // `verschnitt` des Laufs, rafft der Pass (`_chunkSatzRaffen`). Die Plätze, die gehen, werden erst NACH dem Einzug entartet,
+    // und nur, wo keine kommende Zelle sie belegt (Welle C — beim Drehen geht auf der einen Seite, was auf der anderen kommt:
+    // vorher schrieb der Pass jeden frei gewordenen Platz zweimal, entartet und neu belegt).
     _chunkSatzTausch(s, a, liste, n, wer) {
         const index = s.geom.index.array;
         const neu = new Set(liste);
+        const offen = []; // die frei gewordenen Plätze: Anfang, Länge, der Index ihrer Entartung
         for (const [z, off] of a.platz)
             if (!neu.has(z)) {
                 const len = z.idx.length;
                 a.platz.delete(z);
                 a.ende = this._satzFreiGib(a.frei, off, len, a.ende);
-                if (off < a.ende) {
-                    index.fill(z.idx[0], a.start + off, a.start + off + len);
-                    this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
-                }
+                offen.push(off, len, z.idx[0]);
             }
+        const belegt = []; // die Plätze der kommenden Zellen: Anfang, Ende
         for (const z of liste)
             if (!a.platz.has(z)) {
                 const len = z.idx.length;
@@ -63450,12 +63451,78 @@ class AnazhRealm {
                 index.set(z.idx, a.start + off);
                 this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
                 a.platz.set(z, off);
+                belegt.push([off, off + len]);
             }
+        // die frei gewordenen Plätze unter dem Hochwasser, die keine kommende Zelle belegt: entartet
+        belegt.sort((x, y) => x[0] - y[0]);
+        for (let k = 0; k < offen.length; k += 3) {
+            const o = offen[k],
+                e = Math.min(offen[k] + offen[k + 1], a.ende),
+                w = offen[k + 2];
+            let lo = 0,
+                hi = belegt.length;
+            while (lo < hi) {
+                const m = (lo + hi) >> 1;
+                if (belegt[m][1] <= o) lo = m + 1;
+                else hi = m;
+            }
+            let cur = o;
+            for (let i = lo; i < belegt.length && belegt[i][0] < e && cur < e; i++) {
+                if (belegt[i][0] > cur) {
+                    index.fill(w, a.start + cur, a.start + belegt[i][0]);
+                    this._chunkSatzSchreib(s, wer, a.key, a.start + cur, belegt[i][0] - cur);
+                }
+                if (belegt[i][1] > cur) cur = belegt[i][1];
+            }
+            if (cur < e) {
+                index.fill(w, a.start + cur, a.start + e);
+                this._chunkSatzSchreib(s, wer, a.key, a.start + cur, e - cur);
+            }
+        }
         a.n = n;
         a.liste = liste;
         a.dicht = false;
         if (a.ende - n > a.ende * AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt)
-            this._chunkSatzDicht(s, a, liste, n, wer, false);
+            this._chunkSatzRaffen(s, a, liste, n, wer);
+    }
+
+    // DAS RAFFEN (Welle C): übersteigen die Lücken eines getauschten Abschnitts `verschnitt` seines Laufs, rücken seine
+    // HINTERSTEN Zellen in die vordersten Lücken, die sie fassen (First-Fit vor ihrem Platz), bis die Lücken unter die halbe
+    // Schwelle fallen — geschrieben wird nur, was umzieht; eine Zelle am Hochwasser senkt es. Bis hier legte der Pass den
+    // ganzen Abschnitt dicht neu (beim Drehen 360 × 1° an der Mess-Wiese: die Kaskaden je Neulegung 0,5–0,9 MB, gut ein
+    // Drittel aller Index-Bytes). Fasst keine Lücke eine Zelle und bleibt der Verschnitt, legt der Pass dicht neu.
+    _chunkSatzRaffen(s, a, liste, n, wer) {
+        const V = AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt;
+        const index = s.geom.index.array;
+        const hinten = Array.from(a.platz).sort((x, y) => y[1] - x[1]);
+        for (let k = 0; k < hinten.length && a.ende - n > a.ende * V * 0.5; k++) {
+            const [z, off] = hinten[k];
+            const len = z.idx.length;
+            // die vorderste Lücke, die die Zelle ganz vor ihrem Platz fasst
+            const frei = a.frei;
+            let neu = -1;
+            for (let i = 0; i < frei.length && frei[i][0] + len <= off; i++) {
+                const f = frei[i];
+                if (f[1] < len) continue;
+                neu = f[0];
+                if (f[1] === len) frei.splice(i, 1);
+                else {
+                    f[0] += len;
+                    f[1] -= len;
+                }
+                break;
+            }
+            if (neu < 0) continue;
+            index.set(z.idx, a.start + neu);
+            this._chunkSatzSchreib(s, wer, a.key, a.start + neu, len);
+            a.platz.set(z, neu);
+            a.ende = this._satzFreiGib(a.frei, off, len, a.ende);
+            if (off < a.ende) {
+                index.fill(z.idx[0], a.start + off, a.start + off + len);
+                this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
+            }
+        }
+        if (a.ende - n > a.ende * V) this._chunkSatzDicht(s, a, liste, n, wer, false);
     }
 
     // Die Kapazität eines Abschnitts: das Hochwasser seiner Länge (`hoch`, die größte Wahl seines Passes) mit Luft — er
