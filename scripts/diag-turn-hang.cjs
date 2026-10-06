@@ -12,7 +12,8 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = Number(process.env.DIAG_PORT) || 4396;
+// Port über TURN_HANG_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4396.
+const PORT = Number(process.env.TURN_HANG_PORT || 4396);
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",

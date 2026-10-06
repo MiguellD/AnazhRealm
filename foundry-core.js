@@ -225,7 +225,8 @@ const PORTAL_RENDER_CONFIG = {
     // = die Membership-Hysterese (M); `ref` = die Referenz-Sichthoehe (uLodRef).
     // kindStages (08.07.) — DIE STUFEN-WAHRHEIT JE ART ALS DATEN (die eine Quelle fuer den
     // Studio-Wald UND jeden Empfaenger): welche buildInstance-Stufen eine Art TRAEGT und
-    // NUTZT. Baeume die volle Kaskade (0/1 + Billboard-Atlas jenseits d1); Gras + Strauch
+    // NUTZT. Baeume und seit Welle 6 der Strauch die volle Kaskade (0/1 + Billboard-Atlas jenseits d1; die zwei
+    // Strauch-Gitter fahren das Rezept 1 — `stufenRezept`, im Labor wie in der Welt —, budget.shrub); Gras
     // ZWEISTUFIG (nah = reiche Stufe, fern = die breiten-/formkompensierte billige — die
     // Rezepte tragen die Kompensation: Gras K=5/3 Halme mit wMul 1.7/4.6); Fels EINSTUFIG
     // (Kleinst-Deko — eine Distanz-Stufe waere Deko ohne Wert), die Blume seit 04.10. [0, 2]
@@ -249,7 +250,7 @@ const PORTAL_RENDER_CONFIG = {
         // jeher gebaut, nur nie deklariert — die Nah-Streu dient sie jenseits der Armlänge statt der L0 (~2 500).
         kindStages: {
             tree: [0, 1, 2],
-            shrub: [1, 2],
+            shrub: [0, 1, 2],
             grass: [1, 2],
             flower: [0, 2],
             rock: [0],
@@ -270,7 +271,7 @@ const PORTAL_RENDER_CONFIG = {
         // Herleitung aus dem Profi-Band (680k Dreiecke je Frame ueber alle Paesse, docs/analyse/perf-paritaet-
         // baseline-v18432.md; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
         // Fichte, 47,1k beim Strauch, mehr als die Fichte): die L1-Zeilen sind OBERGRENZEN, gegen die gebaut ist
-        // (tree[1] 10k: Nadel-Karten + jeder 2. Ring + Primaer-Wurzeln + schlanke Trauer-Klinge; shrub[1] 12k:
+        // (tree[1] 10k: Nadel-Karten + jeder 2. Ring + Primaer-Wurzeln + schlanke Trauer-Klinge; shrub[0] 12k:
         // Reisig-Schnitt) — die gebaute Geometrie fiel auf sie, nicht sie auf die Geometrie. tree[0] (W5/S7, das
         // Nahbild bis d0): aus dem Haushalt Baum L0/L1+Werfer 150k (W5 rechnete 14 L0-Baeume bei 20 m: 10 714 je
         // Baum); das Soll-Bild (Cluster-Karten an ihrem Traeger, Weiden-Straehnen entlang der Peitsche, Stamm und
@@ -286,7 +287,12 @@ const PORTAL_RENDER_CONFIG = {
         // trunkR — darunter jeder 2./3. Ring, ohne Traeger faellt der Strang), boden (tree[0], die Trauer-L1 liest
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
         // L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an
-        // gebauten L0/L1-Paaren — 24 gerasterte Ansichten, kronen-linse —, die L0 deckt 0,95–1,05 der Klingen von gestern).
+        // gebauten L0/L1-Paaren — 24 gerasterte Ansichten, kronen-linse —, die L0 deckt 0,95–1,05 der Klingen von gestern),
+        // ringToleranz (tree[1], W6 05.10.: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so
+        // viele Baumhoehen von der Strecke seiner Nachbarn abweichen; 0,001 = 0,7 px an der L1-Nahkante, __ringBahn),
+        // wurf (tree[1], W6 05.10.: der Wurf-Teil — Rinden-Straenge ab durchmesserM Welt-Durchmesser werfen, feinere,
+        // Totast-Stummel und Wurzeln nur im Bild; 0,17 m = der Kaskaden-Texel k0 der Welt, AnazhRealm.SCHATTEN_KASKADE.texelM[0],
+        // gate:foundry-crossfade haelt beide Zahlen gleich).
         // DIE FERNFORM je Art (`fernform`, B2c 04.10.; nie `fern` — das ist der Name der Farn-Art): was die Art jenseits
         // der Nah-Grenze des Wirts IST (AnazhRealm.ANALOG_NAH_M, 64 m; diesseits traegt ihr Mesh) — "karte" = ihre Karten-Stufe
         // (Baum, Strauch: das gebackene Billboard), "gesetz" = ihr Satz im Welt-March (Blume, Fels: die Passung der
@@ -315,6 +321,8 @@ const PORTAL_RENDER_CONFIG = {
                     nadelKarte: 3.35,
                     straehne: { teile: 1, breite: 0.45 },
                     deckung: [0.8, 1.15],
+                    ringToleranz: 0.001,
+                    wurf: { durchmesserM: 0.17 },
                 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
@@ -326,8 +334,17 @@ const PORTAL_RENDER_CONFIG = {
             // Dreiecke der Klingen (8 820 → 630) an die Ruten zurueck (Strauch-L1 11 572 → 7 442, Samen 7). Zweiter Schnitt
             // (05.10., Blatt-Mass): das Atlas-Blatt ist halb so lang — die Karte waechst (2,1 → 3,0), nur der Anteil
             // dichte.laub der Blattstellen traegt eine (315 → 142 Karten): Hasel-Blatt 0,036 → 0,051 m, Bild-Deckung 1,10.
+            // DIE STRAUCH-KETTE (Welle 6, 05.10., Lehre 19): die eine Gitter-Stufe trug das Reisig von 0 bis 26 m — 93 % ihrer
+            // Dreiecke (Samen 1: 8 328 Rinde + 284 Karten), an der Mess-Wiese 7 Straeucher auf 9–29 m, je 8 612 Dreiecke im
+            // Hauptbild UND in der Kaskade (121k gegen das Band 40k). Jetzt zwei Gitter-Stufen nach dem Rezept der Stufe 1:
+            // shrub[0] die Nah-Stufe (bis d0 12 m) — die alte Stufe Byte fuer Byte, ihre Zeile traegt die KRONE (Kante und
+            // Dichte der Karten) fuer beide; shrub[1] die Mittel-Stufe (12–26 m) — dieselben Karten, das Holz erst ab
+            // schnitt 0,35·trunkR (Welt ~1,9 cm: auf 12 m misst ein Pixel 1,7 cm, das duennere Reisig liegt darunter und
+            // hinter der Blatt-Masse), jeder Strang ausser dem Stamm-Kern (rute 0,99) Vierkant auf jedem 3. Ring: Samen 1
+            // 8 612 → 1 020 Dreiecke, Samen 7 7 096 → 1 040. Beide werfen die Mittel-Stufe (schatten 1: die Nah-Stufe wirft
+            // ihren Zwilling wie der L0-Baum); das Dither-Band zwischen ihnen tauscht nur das Holz.
             shrub: {
-                1: {
+                0: {
                     tris: 12000,
                     draws: 2,
                     schatten: 1,
@@ -336,6 +353,7 @@ const PORTAL_RENDER_CONFIG = {
                     schnitt: 0.05,
                     rute: 0.15,
                 },
+                1: { tris: 1100, draws: 2, schatten: 1, schnitt: 0.35, rute: 0.99 },
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
@@ -820,6 +838,7 @@ function addMerged(geos, mat, weld) {
     m.castShadow = true;
     m.receiveShadow = true;
     subject.add(m);
+    return m;
 }
 
 function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, col0, col1, type, barkTex) {
@@ -1174,9 +1193,12 @@ function growTreeNodes(P) {
         // Baum-L1 traegt das Blatt-Budget der L0 (20000 statt 9000): die L1-Krone ist eine Teilmenge der L0-Blaetter
         // (Stride _lf), so haengt ihre Deckung nie davon ab, ob eine Art die Kappe erreicht (Fichte/Tanne taten es).
         const __gsLBl = typeof __lod === "undefined" ? 0 : __lod;
+        // Der Strauch hat kein Rezept 0 (`stufenRezept`): seine Zeile nennt nur die Rezepte 1 und 2 — fehlt das Budget
+        // des Rezepts, bricht der Bau laut (kein stiller Rueckfall auf das Kern-Budget 20 000).
         const __gsLB =
             (globalThis.PHYTO_LEAFBUDGET && globalThis.PHYTO_LEAFBUDGET[__gsLBl]) ||
-            (P.kind === "shrub" ? [4000, 1500, 1400] : [20000, 20000, 7000])[__gsLBl];
+            (P.kind === "shrub" ? { 1: 1500, 2: 1400 } : [20000, 20000, 7000])[__gsLBl];
+        if (!(__gsLB > 0)) throw new Error("[phyto] Blatt-Budget fehlt: " + P.kind + " Rezept " + __gsLBl);
         const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), rnd);
         if (__gsR && __gsR.segs && __gsR.segs.length) {
             P._trunkR = __gsR.trunkR;
@@ -1314,7 +1336,7 @@ function emitRoots(P) {
         }
         buildTube(geos, ringe, P, colA, colB, P._trunkR); // Wurzel tritt aus dem Strebepfeiler-Wulst aus -> fliessender Uebergang, keine Fuge noetig
     }
-    addMerged(geos, barkMat);
+    return addMerged(geos, barkMat);
 }
 
 // U2b (V18.467) — DAS RINDEN-GESETZ WOHNT IM PFLANZEN-GESETZBUCH: vn2/fbm2
@@ -1351,7 +1373,75 @@ function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick
         lodRoehre !== undefined ? lodRoehre : typeof __lod !== "undefined" ? __lod : undefined
     );
 }
+// DIE BAHN DER L1 (W6, 05.10.): ein Ast der Mittelfeld-Stufe traegt nur die Ringe, die seine Bahn im Bild zeigen. Ein
+// Ring faellt, wenn Mitte UND Radius hoechstens `tol` (Vorlagen-Einheiten) von der Strecke zwischen seinen bleibenden
+// Nachbarn abweichen (Douglas-Peucker auf Mitte und Radius; Erst- und Letzt-Ring, Fuss- und Zeilen-Ringe bleiben).
+// Die Toleranz liest das Budget (tree[1].ringToleranz, in Baumhoehen): 0,001 H = 0,7 px an der L1-Nahkante (ein Baum ab
+// lodRef Hoehe betritt die L1 bei Distanz = Hoehe, 1080 Zeilen bei 75 Grad Sichtfeld = 704 px je Baumhoehe). Befund
+// (Mess-Wiese, werkbank band 05.10.): die Nadel-Aeste der Tanne trugen 42 x 100 Dreiecke auf geraden Bahnen — 59 % der
+// L1. Kein rnd()-Zug: der Wuchs und jeder Strom bleiben die von L0 (FIX v35).
+function __ringBahn(R, tol) {
+    const n = R.length;
+    if (!(tol > 0) || n <= 2) return R;
+    const keep = new Uint8Array(n);
+    keep[0] = keep[n - 1] = 1;
+    for (let i = 0; i < n; i++) if (R[i].fuss || R[i].zeile !== undefined) keep[i] = 1;
+    const stapel = [0, n - 1];
+    while (stapel.length) {
+        const b = stapel.pop(),
+            a = stapel.pop();
+        if (b - a < 2) continue;
+        const A = R[a].c,
+            B = R[b].c;
+        const dx = B[0] - A[0],
+            dy = B[1] - A[1],
+            dz = B[2] - A[2];
+        const L2 = dx * dx + dy * dy + dz * dz;
+        let best = -1,
+            be = -1;
+        for (let k = a + 1; k < b; k++) {
+            const C = R[k].c;
+            let t = L2 > 0 ? ((C[0] - A[0]) * dx + (C[1] - A[1]) * dy + (C[2] - A[2]) * dz) / L2 : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const qx = A[0] + dx * t - C[0],
+                qy = A[1] + dy * t - C[1],
+                qz = A[2] + dz * t - C[2];
+            const e = Math.max(Math.sqrt(qx * qx + qy * qy + qz * qz), Math.abs(R[a].r + (R[b].r - R[a].r) * t - R[k].r));
+            const ek = keep[k] ? Infinity : e;
+            if (ek > be) {
+                be = ek;
+                best = k;
+            }
+        }
+        if (best >= 0 && be > tol) {
+            keep[best] = 1;
+            stapel.push(a, best, best, b);
+        }
+    }
+    const aus = [];
+    for (let i = 0; i < n; i++) if (keep[i]) aus.push(R[i]);
+    return aus;
+}
+// DIE STUFEN-ABBILDUNG (Welle 6): EINE Bedeutung je Bau-Stufe, fuer das Labor (`build()`, Knopf L0/L1/L2) wie fuer die
+// Welt (`buildInstance`) — welches REZEPT die Stufe faehrt. Der Strauch: Nah- (0) und Mittel-Stufe (1) fahren beide das
+// Rezept 1 (Karten-Krone, Blatt-Aggregation, Ring-Duennung), was sie trennt, ist ihre Holz-Zeile budget.shrub[Stufe];
+// einen Strauch nach Rezept 0 (die Klingen-Krone, ~175k Dreiecke) gibt es nicht. Jede andere Art: Rezept = Stufe.
+// Leser: deriveParamsPlant (Blatt-Stride, Blatt-Mass, Wurzeln) und emitTree (Wuchs, Wurzeln, Rinde, Krone).
+function stufenRezept(kind, stufe) {
+    return kind === "shrub" && stufe === 0 ? 1 : stufe;
+}
+// Der Baum- und Strauch-Bau: die Bau-Stufe `__lod` wird fuer den ganzen Bau zum Rezept (Wuchs, Wurzeln und Rinde lesen
+// `__lod`), die Stufe selbst reist als Zeile mit; danach steht `__lod` wieder auf der Stufe (der Labor-Knopf bleibt).
 function emitTree(P) {
+    const stufe = __lod;
+    __lod = stufenRezept(P.kind, stufe);
+    try {
+        return emitTreeRezept(P, stufe);
+    } finally {
+        __lod = stufe;
+    }
+}
+function emitTreeRezept(P, stufe) {
     const nodes = growTreeNodes(P);
     if (P.tot) __totholzSchnitt(nodes, P); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
     /* FIX v35: LOD = ABLEITUNG AUS L0. Ein Same -> EIN Individuum: das Skelett waechst bei JEDER Stufe identisch
@@ -1361,25 +1451,32 @@ function emitTree(P) {
      sind jetzt ueber L0/L1/L2 UND das Billboard dasselbe Individuum. */
     // Der Radius-Schnitt der L1 (H2/H5, nach dem Wuchs): Laub 0,05·trunkR; Konifere und Trauerwuchs 0,08 (ihre
     // duennen Aeste liegen unter den Nadel-Karten bzw. hinter dem Blatt-Vorhang); der Strauch liest seinen Schnitt aus
-    // dem Budget (shrub[1].schnitt, 05.10.: das Reisig unter der Blatt-Masse IST sein Nahbild — die Karten-Krone gibt
-    // die Dreiecke der Klingen an die Ruten zurück). Die L2 bleibt, wie sie war.
-    // Unter shrub[1].rute·trunkR ist der Strang Reisig: Vierkant-Roehre (die Radial-Teilung der L2) auf jedem 3. Ring.
-    const _bS1 = PORTAL_RENDER_CONFIG.lod.budget.shrub[1];
+    // dem Budget (shrub[<Stufe>].schnitt, 05.10.: das Reisig unter der Blatt-Masse IST sein Nahbild — die Karten-Krone
+    // gibt die Dreiecke der Klingen an die Ruten zurück). Die L2 bleibt, wie sie war.
+    // Unter shrub[<Stufe>].rute·trunkR ist der Strang Reisig: Vierkant-Roehre (die Radial-Teilung der L2) auf jedem 3. Ring.
+    // DIE STRAUCH-KETTE (Welle 6): beide Gitter-Stufen fahren das Rezept 1 (`stufenRezept`), die Holz-Zeile ist die Stufe
+    // (0 = die Nah-Stufe, 1 = die Mittel-Stufe — im Labor wie in der Welt); die Krone (Kante und Dichte der Karten) liest
+    // jede aus shrub[0]: dieselben Karten in beiden.
     const _strauchRute = P.kind === "shrub" && __lod === 1;
+    const _bS = _strauchRute ? PORTAL_RENDER_CONFIG.lod.budget.shrub[stufe] : null,
+        _bSK = _strauchRute ? PORTAL_RENDER_CONFIG.lod.budget.shrub[0] : null;
     if (
         _strauchRute &&
         !(
-            _bS1 &&
-            _bS1.schnitt > 0 &&
-            _bS1.rute > _bS1.schnitt &&
-            _bS1.rute < 1 &&
-            _bS1.blattKarte > 0 &&
-            _bS1.dichte &&
-            _bS1.dichte.laub > 0 &&
-            _bS1.dichte.laub <= 1
+            _bS &&
+            _bS.schnitt > 0 &&
+            _bS.rute > _bS.schnitt &&
+            _bS.rute < 1 &&
+            _bSK &&
+            _bSK.blattKarte > 0 &&
+            _bSK.dichte &&
+            _bSK.dichte.laub > 0 &&
+            _bSK.dichte.laub <= 1
         )
     )
-        throw new Error("[phyto] lod.budget.shrub[1].schnitt/rute/blattKarte/dichte fehlt (1 > rute > schnitt > 0)");
+        throw new Error(
+            "[phyto] lod.budget.shrub[" + stufe + "].schnitt/rute oder shrub[0].blattKarte/dichte fehlt (1 > rute > schnitt > 0)"
+        );
     // DIE TRAUER-L1 (05.10.): ihre Peitschen sind Straehnen wie in der L0 — die Bahn jeder belaubten Peitsche wird VOR
     // dem Radius-Schnitt festgehalten (die Peitsche ist duenner als 0,08·trunkR und faellt aus der Rinde; ihre Straehne
     // haengt an der Bahn). Befund (Blick-Tour V18.530, Bild 01; Raycast `f:weide|1|1:2`): die L1 trug schlanke Klingen
@@ -1399,7 +1496,7 @@ function emitTree(P) {
             __lod === 2
                 ? 0.13
                 : P.kind === "shrub"
-                  ? _bS1.schnitt
+                  ? _bS.schnitt
                   : P.conifer || (P.trop || 0) >= 0.55
                     ? 0.08
                     : 0.05;
@@ -1407,7 +1504,8 @@ function emitTree(P) {
         nodes.segs = nodes.segs.filter((s) => Math.max(s.r0, s.r1) >= rCut);
     }
     // DIE NAHKRONE L0 (W5 04.10., S7 05.10. — Studio-Budget tree[0], NACH dem Wuchs: kein rnd()-Zug, FIX v35). Nur Baeume
-    // (P.kind === "tree"; der Strauch traegt nah seine L1, jede neue Art erbt die Nahkrone nicht still):
+    // (P.kind === "tree"; der Strauch faehrt nah das Rezept 1 — `stufenRezept` —, jede neue Art erbt die Nahkrone nicht
+    // still):
     //  - Laub und Nadel: Cluster-Karten aus dem EINEN Blatt-Atlas (Laub → Breitblatt-Zellen, Nadel → Nadel-Zelle) auf
     //    dem Anteil `dichte` der gewachsenen Blattstellen (Index-Stride wie die L1), Kante `blattKarte`/`nadelKarte` —
     //    geeicht an der BILD-Deckung (kronen-linse, 24 Ansichten): die L0 deckt 0,95–1,05 der Klingen und Nadel-Roehren
@@ -1448,11 +1546,11 @@ function emitTree(P) {
         }
     }
     {
-        // Der Strauch traegt in seiner L1 nur den Anteil shrub[1].dichte.laub der Blattstellen als Karte (05.10.: die
-        // Karte misst blattKarte Blatt-Groessen — das Blatt des Atlas ist halb so lang wie gestern, die Karte waechst,
-        // ihre Zahl faellt bei gleicher Bild-Deckung).
+        // Der Strauch traegt in seinen Gitter-Stufen nur den Anteil shrub[0].dichte.laub der Blattstellen als Karte
+        // (05.10.: die Karte misst blattKarte Blatt-Groessen — das Blatt des Atlas ist halb so lang wie gestern, die Karte
+        // waechst, ihre Zahl faellt bei gleicher Bild-Deckung; Welle 6: die Kronen-Zeile shrub[0] fuer Nah- und Mittel-Stufe).
         const lfP = P._lf != null ? P._lf : 1;
-        const lfL = _L0 ? (_trauer ? 1 : _f0) : _strauchRute ? lfP * _bS1.dichte.laub : lfP;
+        const lfL = _L0 ? (_trauer ? 1 : _f0) : _strauchRute ? lfP * _bSK.dichte.laub : lfP;
         if (lfL < 1 && nodes.leaves.length > 3) {
             const L = nodes.leaves,
                 keep = Math.max(3, Math.round(L.length * lfL)),
@@ -1485,6 +1583,22 @@ function emitTree(P) {
     }
     const barkGeos = [],
         folGeos = [];
+    // DER WURF-TEIL DER L1 (W6, 05.10., tree[1].wurf): die Rinde der Mittelfeld-Stufe liegt als EIN Teil vor, die
+    // werfenden Straenge zuerst — Stamm und Aeste ab wurf.durchmesserM Welt-Durchmesser (der Kaskaden-Texel k0 der Welt),
+    // dahinter die feineren Straenge, die Totast-Stummel und (eigener Teil) die Wurzeln. Das Teil traegt die Zahl seiner
+    // werfenden Dreiecke (`userData.__wurf`, der Vorsatz des Index): der Wirt wirft nur diesen Vorsatz, gezeichnet wird das
+    // ganze Teil. Ein Strang unter dem Texel faellt im Schatten unter das Raster (er flackert nur); Krone und Starkaeste
+    // werfen wie bisher. Befund (Mess-Wiese, werkbank band): Eiche und Birke warfen ihre Zweige (0,04–0,11 m) in k0 —
+    // 45–50 % ihrer L1-Dreiecke unter einem Texel von 0,17 m.
+    const _wurf1 = __lod === 1 && P.kind === "tree" ? PORTAL_RENDER_CONFIG.lod.budget.tree[1].wurf : null;
+    if (__lod === 1 && P.kind === "tree" && !(_wurf1 && _wurf1.durchmesserM > 0))
+        throw new Error("[phyto] lod.budget.tree[1].wurf.durchmesserM fehlt");
+    const _plz = PORTAL_RENDER_CONFIG.placement,
+        _skB = _wurf1 ? _plz.scale[CURRENT] : 0,
+        _skW = _skB === 1 ? 1 : _skB < 1 ? _skB : _skB * _plz.treeScaleMul; // die Welt-Skala der Art (wie der Wald pflanzt)
+    if (_wurf1 && !(_skW > 0)) throw new Error("[phyto] placement.scale." + CURRENT + " fehlt (Wurf-Teil der L1)");
+    const _wurfR = _wurf1 ? _wurf1.durchmesserM / (2 * _skW) : 0; // der Radius-Schnitt in Vorlagen-Einheiten
+    const barkFein = _wurfR > 0 ? [] : barkGeos;
     const barkBase = new THREE.Color(P.barkA),
         barkTip = new THREE.Color(P.barkB);
     const flare = P.flare || 0,
@@ -1541,10 +1655,10 @@ function emitTree(P) {
         // L1 traegt jeden ZWEITEN Ring (H1, nach dem Wuchs — das Skelett und der rnd()-Strom bleiben die von L0,
         // FIX v35): Erst- und Letzt-Ring bleiben, der Stammfuss wird danach vorangestellt und bleibt ganz.
         // Die L0 duennt nur die Aeste (tree[0].rinde): unter `reisig`·trunkR jeden 3. Ring, unter `ast`·trunkR jeden 2.
-        // Das Strauch-Reisig (L1 unter shrub[1].rute·trunkR) duennt wie das Reisig der Baum-L0: jeder 3. Ring.
+        // Das Strauch-Reisig (Rezept 1 unter shrub[Stufe].rute·trunkR) duennt wie das Reisig der Baum-L0: jeder 3. Ring.
         if (
             ((_L0 && rings[0].r < nodes.trunkR * _rz.reisig) ||
-                (_strauchRute && rings[0].r < nodes.trunkR * _bS1.rute)) &&
+                (_strauchRute && rings[0].r < nodes.trunkR * _bS.rute)) &&
             rings.length > 2
         )
             rings = rings.filter((_, i) => i % 3 === 0 || i === rings.length - 1);
@@ -1552,17 +1666,24 @@ function emitTree(P) {
             rings = rings.filter((_, i) => i % 2 === 0 || i === rings.length - 1);
         return rings;
     }
+    // Die Bahn-Toleranz der Baum-L1 (tree[1].ringToleranz in Baumhoehen, __ringBahn): sie gilt den Aesten — der Stamm
+    // (thick > 0,6 im Rinden-Gesetz) bleibt SCHARF, seine Ringe tragen das Rinden-Bild (Platten, Moos am Fuss, Narben).
+    const _ringTol1 = __lod === 1 && P.kind === "tree" ? PORTAL_RENDER_CONFIG.lod.budget.tree[1].ringToleranz : 0;
+    if (__lod === 1 && P.kind === "tree" && !(_ringTol1 > 0 && _ringTol1 < 0.01))
+        throw new Error("[phyto] lod.budget.tree[1].ringToleranz fehlt (0 < ringToleranz < 0,01 Baumhoehen)");
     for (const rid of runs.keys()) {
         const mm = meta[rid];
         if (mm && mm.isLead) continue;
         if ((_L0 || _trauerL1) && _peitschen.has(rid)) continue; // die Peitsche ist ihre Straehne (unten)
         if (_L0 && runs.get(rid)[0].r0 < nodes.trunkR * _rz.ast && !_traeger.has(rid)) continue;
         let rings = strandRings(rid);
+        if (_ringTol1 > 0 && rings[0].r - nodes.trunkR * 0.12 <= nodes.trunkR * 0.88 * 0.6)
+            rings = __ringBahn(rings, _ringTol1 * nodes.height);
         const baseRing = rings[0];
         const _roehre =
             _L0 && baseRing.r < nodes.trunkR * _rz.ast
                 ? 1
-                : _strauchRute && baseRing.r < nodes.trunkR * _bS1.rute
+                : _strauchRute && baseRing.r < nodes.trunkR * _bS.rute
                   ? 2
                   : undefined;
         if (rings.length > 1 && baseRing.c[1] < nodes.height * 0.04 && baseRing.r > nodes.trunkR * 0.6) {
@@ -1577,14 +1698,15 @@ function emitTree(P) {
                 { c: [cx, -bd * 0.18, cz], r: R0 * 0.84, sway: 0, depth: baseRing.depth, fuss: true },
             ].concat(rings);
         }
-        buildTube(barkGeos, rings, P, barkBase, barkTip, nodes.trunkR, undefined, undefined, _roehre);
+        const _senke = _wurfR > 0 && baseRing.r < _wurfR ? barkFein : barkGeos;
+        buildTube(_senke, rings, P, barkBase, barkTip, nodes.trunkR, undefined, undefined, _roehre);
         const s0 = runs.get(rid)[0];
         const rMutter = s0.depth > 0 ? __mutterRing(s0) : 0;
         if (s0.depth > 0 && baseRing.r > nodes.trunkR * 0.035 && !(rMutter > 0 && baseRing.r < rMutter * 0.8)) {
             const cc = barkBase
                 .clone()
                 .lerp(barkTip, clamp(s0.p0[1] / nodes.height, 0, 1) * 0.5 + (s0.depth / Math.max(1, P.maxDepth)) * 0.3);
-            pushJointSphere(barkGeos, s0.p0, baseRing.r * 1.5, cc, s0.sway0);
+            pushJointSphere(_senke, s0.p0, baseRing.r * 1.5, cc, s0.sway0);
         }
     }
     {
@@ -1627,7 +1749,7 @@ function emitTree(P) {
                     depth: 1,
                 });
             }
-            buildTube(barkGeos, stubRings, P, deadA, deadB, nodes.trunkR, true, 0.85); // STAMM-Oberflaeche, keine Floete, schliesst im Punkt
+            buildTube(barkFein, stubRings, P, deadA, deadB, nodes.trunkR, true, 0.85); // STAMM-Oberflaeche, keine Floete, schliesst im Punkt
         }
     }
     const lc = vegFarbe(seasonTint),
@@ -1635,9 +1757,9 @@ function emitTree(P) {
     // DIE L1-KRONE (FIX v31/v32, H5 04.10.): Laub UND Nadel tragen L1 als KARTEN aus dem EINEN Atlas (Laub →
     // Breitblatt-Zellen, Nadel → die Nadel-Zelle); der Trauerwuchs (Weide, trop ≥ 0,55) traegt seit 05.10. auch in der
     // L1 Straehnen aus dem Atlas (tree[1].straehne, unten) — die schlanke Klinge las als Papier-Streifen. Der
-    // Strauch (05.10.): seine L1 ist die nahe Stufe (L0 wird auf L1 geklemmt) — sie trug Klingen, die L1-Aggregation
+    // Strauch (05.10.): sein Rezept 1 traegt Nah- und Mittel-Stufe (`stufenRezept`) — es trug Klingen, die L1-Aggregation
     // (Blatt ×2,05, 21 % der Stellen) machte daraus breite Papier-Streifen (Blick-Tour 01). Jetzt traegt er Karten aus
-    // dem EINEN Atlas wie jede Laub-Krone, Kante shrub[1].blattKarte (gemessen an der Bild-Deckung der Klingen).
+    // dem EINEN Atlas wie jede Laub-Krone, Kante shrub[0].blattKarte (gemessen an der Bild-Deckung der Klingen).
     const _b1 = PORTAL_RENDER_CONFIG.lod.budget.tree[1];
     const _strauchKarte = __lod === 1 && P.kind === "shrub";
     const useTexL = ((__lod === 1 || _L0) && P.kind === "tree" && !_trauer) || _strauchKarte;
@@ -1667,8 +1789,8 @@ function emitTree(P) {
     const _atl = self.__phytoCore;
     // Die L0 liest ihre Zeile (tree[0]) wie die L1 die ihre: Kante der Laub-Karte in Blatt-Groessen, der Nadel-Karte
     // in Nadel-Laengen. Deckung ~ dichte · Kante² (Wahrnehmung ~ n·s², FIX v29).
-    const _bz = _strauchKarte ? _bS1 : _L0 ? _b0 : _b1,
-        _zn = _strauchKarte ? "shrub[1]" : _L0 ? "tree[0]" : "tree[1]";
+    const _bz = _strauchKarte ? _bSK : _L0 ? _b0 : _b1,
+        _zn = _strauchKarte ? "shrub[0]" : _L0 ? "tree[0]" : "tree[1]";
     const _blattKarte = useTexL && !P.conifer ? _bz.blattKarte : 0;
     const _nadelKarte = useTexL && P.conifer ? _bz.nadelKarte : 0;
     if (useTexL && !(P.conifer ? _nadelKarte > 0 : _blattKarte > 0))
@@ -1790,10 +1912,21 @@ function emitTree(P) {
             __holzEnde(barkGeos, b.p, b.d, b.r, P, splitter, false, vegFarbe(0x8a7a62), vegFarbe(0x9a8e7e));
         __totholzRinde(barkGeos, nodes, P);
     }
-    addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
-    emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
-    addMerged(folGeos, foliageMat);
-    if (folGeosTex.length) addMerged(folGeosTex, foliageMatTex); // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
+    // Der Wurf-Vorsatz: die werfenden Straenge stehen zuerst im Teil (mergeBufferGeometries haengt in Reihenfolge an).
+    let _wurfDreiecke = 0;
+    if (_wurfR > 0) for (const g of barkGeos) _wurfDreiecke += (g.index ? g.index.count : g.attributes.position.count) / 3;
+    const _rinde = addMerged(_wurfR > 0 ? barkGeos.concat(barkFein) : barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
+    const _wurzel = emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
+    const _laub = addMerged(folGeos, foliageMat);
+    const _karten = folGeosTex.length ? addMerged(folGeosTex, foliageMatTex) : null; // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
+    if (_wurfR > 0) {
+        // Jedes Teil der L1 nennt seinen Wurf: die Rinde ihren Vorsatz, die Wurzeln keinen (sie liegen am Boden), die
+        // Krone sich ganz.
+        if (_rinde) _rinde.userData.__wurf = _wurfDreiecke;
+        if (_wurzel) _wurzel.userData.__wurf = 0;
+        for (const m of [_laub, _karten])
+            if (m) m.userData.__wurf = (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3;
+    }
     return nodes;
 }
 
@@ -3858,15 +3991,6 @@ function deriveParamsPlant(pre) {
     const IR = mulberry32(((Math.floor(SEED) + 1) * 2246822519) >>> 0);
     const J = (a) => 1 + (IR() - 0.5) * 2 * a,
         O = (a) => (IR() - 0.5) * 2 * a; // Individuum pro Saat
-    const lf = __lod === 0 ? 1 : __lod === 1 ? (fx && fx.conifer ? 0.0265 : 0.21) : 0.16,
-        ls =
-            __lod === 0
-                ? 1
-                : __lod === 1
-                  ? fx && fx.conifer
-                      ? 1.62
-                      : 2.05
-                  : 4.0; /* FIX v29: AGGREGATION statt Ausduennung (SpeedTree/FarCry-Prinzip): Wahrnehmung ~ n*s^2. Vorher L1: 0.34*1.35^2=0.62 -> Mittelfeld-Kronen 38% LOECHRIGER als L0 (und trotzdem teuer). Jetzt Laub: 0.21*2.05^2=0.88, Nadel: 0.36*1.62^2=0.94 -> VOLLERE Kronen bei ~35% weniger Blatt-Dreiecken. Nahfeld (L0) bleibt unangetastet — dort sitzt die Wahrnehmung. */
     if (pre.kind === "flower") {
         const FP = [0xf2efe6, 0xf2c62a, 0xd83a2e, 0xe87ab0, 0x9a5ac8, 0xee8a30, 0x6a8ad8, 0xf0e24a];
         const fc = FP[Math.floor(IR() * FP.length)]; // Bluetenfarbe pro Saat
@@ -3904,6 +4028,17 @@ function deriveParamsPlant(pre) {
     // benennen — die Buche ihre glatte graue Rinde und das ganzrandige Blatt, der Karst-Baum seinen Wurzelanlauf,
     // das Totholz seine vergraute Borke. Ohne Zeile byte-gleich.
     const ph = pre.ph ? Object.assign(phenotype(api, slim, trop, delta, leaf), pre.ph) : phenotype(api, slim, trop, delta, leaf);
+    // Das Rezept der Bau-Stufe (`stufenRezept`, dieselbe Abbildung wie emitTree): Blatt-Stride, Blatt-Mass und Wurzeln.
+    const rezept = stufenRezept(ph.kind, __lod);
+    const lf = rezept === 0 ? 1 : rezept === 1 ? (fx && fx.conifer ? 0.0265 : 0.21) : 0.16,
+        ls =
+            rezept === 0
+                ? 1
+                : rezept === 1
+                  ? fx && fx.conifer
+                      ? 1.62
+                      : 2.05
+                  : 4.0; /* FIX v29: AGGREGATION statt Ausduennung (SpeedTree/FarCry-Prinzip): Wahrnehmung ~ n*s^2. Vorher L1: 0.34*1.35^2=0.62 -> Mittelfeld-Kronen 38% LOECHRIGER als L0 (und trotzdem teuer). Jetzt Laub: 0.21*2.05^2=0.88, Nadel: 0.36*1.62^2=0.94 -> VOLLERE Kronen bei ~35% weniger Blatt-Dreiecken. Nahfeld (L0) bleibt unangetastet — dort sitzt die Wahrnehmung. */
     const lc0 = new THREE.Color(ph.leafCol);
     lc0.offsetHSL((IR() - 0.5) * 0.05, (IR() - 0.5) * 0.1, (IR() - 0.5) * 0.08);
     const lcol = lc0.getHex();
@@ -3920,9 +4055,9 @@ function deriveParamsPlant(pre) {
         coniferDroop: ph.coniferDroop,
         crownBase: ph.crownBase,
         flare: ph.flare,
-        roots: ph.roots * (__lod === 0 ? 1 : __lod === 1 ? 0.8 : 0.6),
+        roots: ph.roots * (rezept === 0 ? 1 : rezept === 1 ? 0.8 : 0.6),
         basalStems: ph.basalStems,
-        maxDepth: ph.kind === "shrub" && __lod === 2 ? 3 : Math.max(4, ph.maxDepth),
+        maxDepth: ph.kind === "shrub" && rezept === 2 ? 3 : Math.max(4, ph.maxDepth),
         /* FIX v35: KEINE Tiefenreduktion je LOD mehr — die kappte den Rekursionsbaum frueher und verschob damit den Zufallsstrom: gleicher Same, ANDERER Stamm. Skelett waechst immer voll; Detail nimmt die Dezimierung (Radius-Prune + Stride), nie der Zufall. */ barkA: ph.barkA,
         barkB: ph.barkB,
         leafCol: lcol,
@@ -4189,7 +4324,7 @@ function buildInstance(presetId, seed, lod, ov) {
         sRock = __rockKind,
         sRNG = RNG,
         sDials = __dials;
-    __lod = lod;
+    __lod = lod; // die Bau-Stufe, wie der Labor-Knopf sie setzt — ihr Rezept waehlt `stufenRezept` (EINE Bedeutung)
     SEED = seed;
     CURRENT = presetId;
     RNG = mulberry32(Math.floor(seed) >>> 0);

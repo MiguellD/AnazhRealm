@@ -21,7 +21,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4326;
+// Port über PERSISTENCE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4326.
+const PORT = Number(process.env.PERSISTENCE_PORT || 4326);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

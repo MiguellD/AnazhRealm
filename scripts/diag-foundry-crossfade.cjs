@@ -23,8 +23,16 @@
 //       „weit", die Maske verwarf ALLE ihre Schatten-Fragmente) und liest nur colorNode.a · map.a ·
 //       maskShadowNode, nie opacityNode (die Nadel-Karten warfen Rechtecke). Statisch: jede LOD-Maske misst
 //       vom Auge (`uLodAuge`, je Frame aus der Haupt-Kamera), kein werfender Foundry-Stoff schneidet über
-//       opacityNode aus, der Schatten-Zwilling wirft mit der L0-gestempelten L1-Gestalt (`_foundrySchattenGeom`,
-//       derselbe Stoff) und besitzt sie nicht. --selftest bricht jede Klasse einzeln.
+//       opacityNode aus, der Schatten-Zwilling wirft mit der als Nah-Stufe gestempelten L1-Gestalt (Stempel 3,
+//       `_foundrySchattenGeom`, derselbe Stoff) und besitzt sie nicht. EIN WERFER JE GESTALT (W6): die L1 wirft über
+//       DIESELBEN Zwillings-Leaves wie die L0 (nie über ihre Teile), der Band-Partner trägt keinen Zwilling, den die
+//       Primär-Stufe schon wirft. --selftest bricht jede Klasse einzeln.
+//   (6) DAS FENSTER DER INSTANZ-WAHL (W7-Vereinigung): die Wahl je Pass verwirft eine Instanz, deren Stufen-Maske vom Auge
+//       nichts behält — ihr Fenster (`AnazhRealm._blendeBehaelt` an den Kanten `_blendeKanten`, die per Bisektion AM
+//       Gesetz `lodCrossfadeMask` stehen) darf nie verwerfen, was das Gesetz zeigt. Node-pur: beide Methoden aus dem Stamm
+//       gegen das Gesetz, je Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz ×
+//       Distanz-Intervall, Dither-Raster 256 — kein Loch; der Überschuss (das Fenster behält, das Gesetz nicht) steht als
+//       Zahl. --selftest: verschobene Kanten (je Stufe 1 m nach innen) reißen Löcher und werden genannt.
 // Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
 // CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
 // thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
@@ -274,6 +282,74 @@ function loadCore(src, label) {
     return sandbox.self.__phytoCore;
 }
 
+// ===== (6) DAS FENSTER DER INSTANZ-WAHL — die Kanten aus dem Gesetz, kein Loch je Stufe =====
+// Die zwei reinen Methoden des Stamms (`static _blendeKanten`, `static _blendeBehaelt`) als Funktionen; `verschiebe`
+// fälscht die Kanten (Selbsttest).
+function fensterLinse(core, cfgs, verschiebe) {
+    const body = (re) => {
+        const b = fnBody(anazhSrc, re);
+        if (!b) throw new Error("Fenster-Methode nicht gefunden: " + re);
+        return b.slice(1, -1);
+    };
+    const kanten = new Function("gesetz", "d0", "d1", "fade", "fade0", body(/static _blendeKanten\(gesetz, d0, d1, fade, fade0\)\s*/));
+    const behaelt = new Function(
+        "K",
+        "stufe",
+        "dSmin",
+        "dSmax",
+        "dLmin",
+        "dLmax",
+        "verdeckt",
+        body(/static _blendeBehaelt\(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt\)\s*/)
+    );
+    const gesetz = core.lodCrossfadeMask;
+    const out = { proben: 0, loecher: 0, ueberschuss: 0, jeStufe: {}, beispiel: null };
+    // die Wahrheit an EINER Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
+    const zeigt = (stufe, dS, dL, cfg, laub) => {
+        for (let k = 0; k < 256; k++) {
+            const dh = (k + 0.5) / 256;
+            if (stufe === 3) {
+                if (gesetz(dS, dh, cfg, 1, laub, dL).f1o < dh) return true;
+            } else if (gesetz(dS, dh, cfg, stufe === "karte" ? 2 : stufe - 1, laub, dL).keep) return true;
+        }
+        return false;
+    };
+    for (const cfg of cfgs) {
+        const K = kanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
+        if (verschiebe) verschiebe(K);
+        const dMax = 1.6 * cfg.d1 + cfg.fade;
+        for (const stufe of [1, 2, 3, "karte"])
+            for (const laub of [true, false])
+                for (const q of [1, 0.7, 1.4])
+                    for (let a = 0; a <= dMax; a += cfg.d1 / 60)
+                        for (const w of [0, 0.4, 2, 6]) {
+                            const dSmin = a,
+                                dSmax = a + w;
+                            let wahr = false;
+                            for (let j = 0; j <= 16 && !wahr; j++) {
+                                const d = dSmin + ((dSmax - dSmin) * j) / 16;
+                                wahr = zeigt(stufe, d, q * d, cfg, laub);
+                            }
+                            const fenster = behaelt(K, stufe, dSmin, dSmax, q * dSmin, q * dSmax, false);
+                            out.proben++;
+                            const js = out.jeStufe[stufe] || (out.jeStufe[stufe] = { proben: 0, loecher: 0, ueberschuss: 0 });
+                            js.proben++;
+                            if (wahr && !fenster) {
+                                out.loecher++;
+                                js.loecher++;
+                                if (!out.beispiel) out.beispiel = { stufe, laub, q, dSmin, dSmax, cfg };
+                            }
+                            if (!wahr && fenster) {
+                                out.ueberschuss++;
+                                js.ueberschuss++;
+                            }
+                        }
+        // die verdeckte Karte blendet voll: ihr Fenster behält sie überall
+        if (!behaelt(K, "karte", 0, 0, 0, 0, true)) out.loecher++;
+    }
+    return out;
+}
+
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = http.createServer((req, res) => {
@@ -348,31 +424,32 @@ async function runPartB() {
         }
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
-        // DER STRAUCH (Art ohne L0, kindStages [1, 2]): seine L1 ist die einzige Nah-Stufe (aLodLevel 3) — sie blendet
-        // nie ein, aber im L1/L2-Band zum Billboard aus. Eigener Ort, eigener Sweep.
+        // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
+        // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
+        // eigener Sweep.
         const sx = px + 400,
             sz = pz;
         const sy = r._voxelSurfaceY(sx, sz) || 1;
         const sKey = r._growTreeBlueprintForSpawn("busch_hazel", "w54-strauch-sweep");
         const sEntry = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
         res.strauchPreset = sEntry ? r._foundryPresetForEntry(sEntry) : null;
-        const sWarm = { 1: false, 2: false };
+        const sWarm = { 0: false, 1: false, 2: false };
         const dlS = performance.now() + 120000;
-        while (sEntry && performance.now() < dlS && !(sWarm[1] && sWarm[2])) {
-            for (const lod of [1, 2]) {
+        while (sEntry && performance.now() < dlS && !(sWarm[0] && sWarm[1] && sWarm[2])) {
+            for (const lod of [0, 1, 2]) {
                 if (!sWarm[lod]) {
                     const fl = r._foundryFlattenFor(sEntry, res.strauchPreset, lod);
                     if (fl && fl.instanceable) sWarm[lod] = true;
                 }
             }
-            if (!(sWarm[1] && sWarm[2])) {
+            if (!(sWarm[0] && sWarm[1] && sWarm[2])) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
                 await sleep(120);
             }
         }
-        res.strauchWarm = { l1: sWarm[1], l2: sWarm[2] };
+        res.strauchWarm = { l0: sWarm[0], l1: sWarm[1], l2: sWarm[2] };
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
@@ -703,7 +780,7 @@ async function runPartB() {
 }
 
 // DIE SCHATTEN-WAHRHEIT (statisch, auf der kommentar-gestrippten Quelle) → Liste der Verstöße mit Namen.
-function schattenWahrheit(srcNC) {
+function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     const v = [];
     const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
     if (!maske) v.push("_lodCrossfadeMaskNode fehlt");
@@ -725,8 +802,38 @@ function schattenWahrheit(srcNC) {
     if (!/geom: this\._foundrySchattenGeom\(lf\)/.test(flat))
         v.push("der Schatten-Zwilling wirft mit der L1-Gestalt (L1-Stempel: blendet nah aus)");
     const gestalt = fnBody(srcNC, /_foundrySchattenGeom\(lf\)\s*/) || "";
-    if (!/setAttribute\(\s*"aLodLevel",\s*new THREE\.BufferAttribute\(new Float32Array\([^)]*\)\.fill\(1\), 1\)\s*\)/.test(gestalt))
-        v.push("die Zwillings-Gestalt trägt nicht den L0-Stempel (aLodLevel 1)");
+    if (!/setAttribute\(\s*"aLodLevel",\s*new THREE\.BufferAttribute\(new Float32Array\([^)]*\)\.fill\(3\), 1\)\s*\)/.test(gestalt))
+        v.push("die Zwillings-Gestalt trägt nicht den Nah-Stempel (aLodLevel 3: wirft für L0 und L1, blendet zur Karte aus)");
+    // EIN WERFER JE GESTALT (W6): die Wurf-Quelle wirft über die Zwillings-Leaves, die L0 übernimmt DIESELBEN Objekte.
+    if (!/const castsShadow = wurf === lod && !zwillingsQuelle;/.test(flat))
+        v.push("die Wurf-Quelle (L1) wirft über ihre Teile UND als Zwilling der L0 — zwei Gruppen je Gestalt in jeder Kaskade");
+    if (!/for \(const lf of schatten\.leaves\) if \(lf\.shadowTwin\) leaves\.push\(lf\);/.test(flat))
+        v.push("die L0 baut einen eigenen Zwilling statt die Zwillings-Leaves der Wurf-Stufe zu tragen");
+    const band = fnBody(srcNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
+    if (!/this\._archInstanceAdd\(entry, this\._bandOhneZwilling\(flat, primFlat\), \{ band: true/.test(band))
+        v.push("der Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
+    if (!/const pf = pf0 && pf0\.instanceable \? this\._bandOhneZwilling\(pf0, foundryFlat\) : pf0;/.test(srcNC))
+        v.push("der gestreute Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
+    // DER WURF-TEIL (W6): der Zwilling wirft nur den Vorsatz seines Teils (drawRange), die Fassade der Gruppe behält
+    // ihn, ein Teil ohne Wurf (die Wurzeln) wirft nicht, das Verschmelzen legt alle Vorsätze nach vorn — und die Wurf-
+    // Grenze des Studios IST der Kaskaden-Texel k0 der Welt.
+    if (!/z\.drawRange\.count = teil \? lf\.wurf \* 3 : g\.drawRange\.count;/.test(gestalt))
+        v.push("der Schatten-Zwilling wirft das ganze Teil statt seines Wurf-Vorsatzes");
+    const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\(srcGeom, capacity\)\s*\{/) || "";
+    if (!/g2\.setDrawRange\(srcGeom\.drawRange\.start, srcGeom\.drawRange\.count\);/.test(fassade))
+        v.push("die Instanz-Fassade verliert den drawRange ihrer Quelle (der Zwilling würfe ganz)");
+    if (!/if \(lf\.wurf === 0\) continue;/.test(flat)) v.push("ein Teil ohne Wurf (die Wurzeln) wirft als Zwilling");
+    if (!/if \(mitWurf && !Number\.isInteger\(lf\.wurf\)\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
+        v.push("ein Teil ohne Wurf-Zahl wirft still ganz (fail-soft) statt KERN-PFLICHT");
+    const verb = fnBody(srcNC, /\n {4}static _geoVerbinden\(geoms, wurfe\)\s*\{/) || "";
+    if (!/wurfe && Number\.isInteger\(wurfe\[j\]\)\s*\?\s*Math\.min\(geoms\[j\]\.index\.count, wurfe\[j\] \* 3\)/.test(verb))
+        v.push("das Verschmelzen legt die Wurf-Vorsätze nicht nach vorn (der Zwilling würfe fremde Dreiecke)");
+    const tex = /texelM: Object\.freeze\(\[([\d.]+),/.exec(srcNC);
+    const dm = /wurf: \{ durchmesserM: ([\d.]+) \}/.exec(fcSrc);
+    if (!tex || !dm || Number(tex[1]) !== Number(dm[1]))
+        v.push(
+            `die Wurf-Grenze des Studios (${dm ? dm[1] : "—"} m) ist nicht der Kaskaden-Texel k0 der Welt (${tex ? tex[1] : "—"} m)`
+        );
     const weg = fnBody(srcNC, /_disposeFoundryGroupGeom\(g\)\s*/) || "";
     if (!/lf\._schattenGeom\.dispose\(\)/.test(weg)) v.push("die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)");
     if (!/shadowTwin: true,\s*_eigen: false/.test(flat))
@@ -759,9 +866,9 @@ function perfWahrheit(srcNC) {
         v.push("die Karte trägt nicht die Höhe der Höhen-Stufe (das Höhen-Buch) als Sichthöhe");
     const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\(g, slot, scale, occluded, leaf\)\s*\{/) || "";
     if (!/h = leaf\.sicht \* s;/.test(stempel)) v.push("der Slot-Stempel schreibt die Karten-Sichthöhe nicht als Vorlage × Instanz-Skala");
-    // Die einzige Nah-Stufe (Strauch: keine L0) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
+    // Die einzige Nah-Stufe einer Art ohne L0 (bis Welle 6 der Strauch) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
     if (!/_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*3/.test(srcNC))
-        v.push("die L1 einer Art ohne L0 (Strauch) ist ungemaskt — sie blendet nicht zum Billboard aus");
+        v.push("die L1 einer Art ohne L0 ist ungemaskt — sie blendet nicht zum Billboard aus");
     if (!/_fadeIn\.max\(T\.step\(T\.float\(2\.5\), _aLod\)\)\.mul\(T\.step\(_f1o, _dh\)\)/.test(maske))
         v.push("die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)");
     const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry\)\s*\{/) || "";
@@ -824,7 +931,16 @@ async function main() {
                 nc.replace(/(\.mul\(laubFarbe\),\s*)atl\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = atl.a;"),
             ],
             ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
-            ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(1), 1)", "aLodLevel.count).fill(2), 1)")],
+            ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(3), 1)", "aLodLevel.count).fill(2), 1)")],
+            ["zwei Werfer je Gestalt", nc.replace("const castsShadow = wurf === lod && !zwillingsQuelle;", "const castsShadow = wurf === lod;")],
+            ["L0 baut eigenen Zwilling", nc.replace("for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
+            ["Band wirft doppelt", nc.replace("this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
+            ["Streu-Band wirft doppelt", nc.replace("const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
+            ["Zwilling wirft ganz", nc.replace("z.drawRange.count = teil ? lf.wurf * 3 : g.drawRange.count;", "z.drawRange.count = g.drawRange.count;")],
+            ["Fassade verliert den Wurf", nc.replace("g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
+            ["Wurzel wirft", nc.replace("if (lf.wurf === 0) continue;", "")],
+            ["Wurf still ganz", nc.replace("if (mitWurf && !Number.isInteger(lf.wurf))", "if (false)")],
+            ["Verschmelzen mischt den Vorsatz", nc.replace("? Math.min(geoms[j].index.count, wurfe[j] * 3)", "? geoms[j].index.count")],
             ["Zwillings-Gestalt leckt", nc.replace("lf._schattenGeom.dispose();", "")],
             ["Zwilling besitzt L1-Geometrie", nc.replace("_eigen: false,", "")],
         ];
@@ -835,6 +951,16 @@ async function main() {
                 `Selbst-Test Schatten: „${name}" → das Gesetz nennt ihn`,
                 src !== nc && v.length > 0,
                 src === nc ? "ANKER FEHLT — die Injektion trifft die Quelle nicht (Probe nachziehen)" : v.join(" · ")
+            );
+        }
+        {
+            // Die Studio-Seite des Wurf-Teils: eine Wurf-Grenze, die nicht der Kaskaden-Texel ist, nennt das Gesetz.
+            const fc = foundrySrc.replace("wurf: { durchmesserM: 0.17 }", "wurf: { durchmesserM: 0.12 }");
+            const v = schattenWahrheit(nc, fc);
+            check(
+                'Selbst-Test Schatten: „Wurf-Grenze neben dem Texel" → das Gesetz nennt ihn',
+                fc !== foundrySrc && v.length > 0,
+                fc === foundrySrc ? "ANKER FEHLT — die Injektion trifft foundry-core nicht" : v.join(" · ")
             );
         }
         check("Selbst-Test Perf: die echte Quelle hält die Perf-Wahrheit", perfWahrheit(nc).length === 0, perfWahrheit(nc).join(" · "));
@@ -867,6 +993,19 @@ async function main() {
         ]) {
             const v = perfWahrheit(src);
             check(`Selbst-Test Perf: „${name}" → die Wahrheit nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
+        }
+        // V(6): verschobene Kanten des Fensters (je Stufe 1 m nach innen) — die Fenster-Linse MUSS Löcher nennen.
+        {
+            const core0 = loadCore(coreSrcRaw, "phyto-core");
+            for (const [name, fn] of [
+                ["L0 aus", (K) => (K.l0Aus -= 1)],
+                ["L1 ein", (K) => (K.l1Ein += 1)],
+                ["L1 aus", (K) => (K.l1Aus -= 1)],
+                ["Karte ein", (K) => (K.karteEin += 1)],
+            ]) {
+                const v = fensterLinse(core0, [P.cfg], fn);
+                check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
+            }
         }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
@@ -993,6 +1132,30 @@ async function main() {
     check("LAUB: Band-Anfang ~100 % L0", agg.covL0Start >= 0.999, (agg.covL0Start * 100).toFixed(2) + " %");
     check("LAUB: Band-Ende ~100 % Impostor", agg.covL2End >= 0.999, (agg.covL2End * 100).toFixed(2) + " %");
     check("LAUB: monotoner Übergang (L0 fällt, Impostor steigt)", agg.folMonotonic === true);
+    // (6) — DAS FENSTER DER INSTANZ-WAHL: die Kanten stehen am Gesetz, kein Loch je Stufe
+    {
+        const core6 = loadCore(coreSrcRaw, "phyto-core");
+        const cfgs = [
+            P.cfg,
+            { d0: 8, d1: 30, fade: 6, fade0: 3 },
+            { d0: P.cfg.d0 * 1.5, d1: P.cfg.d1 * 1.5, fade: P.cfg.fade * 1.5, fade0: P.cfg.fade0 * 1.5 },
+        ];
+        const F6 = fensterLinse(core6, cfgs, null);
+        const t = Object.entries(F6.jeStufe)
+            .map(([k, v]) => `${k}: ${v.loecher} Löcher · Überschuss ${v.ueberschuss}/${v.proben}`)
+            .join(" · ");
+        check(
+            "FENSTER (W7): die Instanz-Wahl verwirft nie, was das Blend-Gesetz zeigt — je Stufe kein Loch",
+            F6.proben > 1000 && F6.loecher === 0,
+            `${F6.proben} Intervalle · ${t}${F6.beispiel ? " · z. B. " + JSON.stringify(F6.beispiel) : ""}`
+        );
+        check(
+            "FENSTER (W7): der Stamm liest die Kanten aus dem EINEN Gesetz (_blendeKanten(pc.lodCrossfadeMask, …) in _passWahlLage)",
+            /_blendeKanten\(pc\.lodCrossfadeMask, d0, d1, fade, fade0\)/.test(
+                fnBody(stripComments(anazhSrc), /^ {4}_passWahlLage\(S, kamera, k\) \{/m) || ""
+            )
+        );
+    }
     // Statische Scope-Wand der CPU-Hälfte: Band nur für Foundry-BAUM-Einträge (dieselbe
     // Wand wie der aLodLevel-Stempel), Add/Remove nur durch die Slot-Chokepoints.
     const bandBody = fnBody(anazhNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
@@ -1113,14 +1276,22 @@ async function main() {
         );
         const ST = SW.strauch;
         check(
-            "STRAUCH: Preset strauch, L1 und Billboard warm",
-            out.strauchPreset === "strauch" && out.strauchWarm && out.strauchWarm.l1 && out.strauchWarm.l2,
+            "STRAUCH: Preset strauch, L0, L1 und Billboard warm",
+            out.strauchPreset === "strauch" &&
+                out.strauchWarm &&
+                out.strauchWarm.l0 &&
+                out.strauchWarm.l1 &&
+                out.strauchWarm.l2,
             JSON.stringify({ preset: out.strauchPreset, warm: out.strauchWarm })
         );
         if (ST) {
             check(
-                "STRAUCH: die L1 ist die einzige Nah-Stufe (aLodLevel 3) und trifft das Billboard im Band",
-                (ST.voll.modi.l1e || 0) > 0 && (ST.voll.modi.fin || 0) > 0 && !ST.voll.modi.frei,
+                "STRAUCH: die Kette wie der Baum — L0 (aLodLevel 1) und L1 (aLodLevel 2) im Sweep, das Billboard im Band",
+                (ST.voll.modi.l0 || 0) > 0 &&
+                    (ST.voll.modi.l1 || 0) > 0 &&
+                    (ST.voll.modi.fin || 0) > 0 &&
+                    !ST.voll.modi.l1e &&
+                    !ST.voll.modi.frei,
                 JSON.stringify(ST.voll.modi)
             );
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));

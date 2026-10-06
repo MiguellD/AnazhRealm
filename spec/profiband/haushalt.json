@@ -35,12 +35,12 @@
         },
         {
             "id": "streu",
-            "titel": "Nah-Streu (die Studio-Arten des Waldbodens je Senke, die Klein-Streu der Streu-Regionen)",
+            "titel": "Nah-Streu (die Studio-Arten des Waldbodens je Stoff im Streu-Satz, die Klein-Streu der Streu-Regionen)",
             "befehle": 9,
             "dreiecke": 40000,
             "regeln": [
                 {
-                    "muster": "^streuNah:"
+                    "muster": "^streuSatz$"
                 },
                 {
                     "familie": [
@@ -176,7 +176,7 @@
         },
         {
             "id": "bau",
-            "titel": "Bau (Haus · Tor · Fahrzeug · Ausstattung: Feuerstelle, Marktstand, Brunnen · Fundament · Zaun)",
+            "titel": "Bau (Haus · Tor · Fahrzeug · Ausstattung: Feuerstelle, Marktstand, Brunnen · Fundament · Zaun; das Haus zeichnet im Bau-Satz seines Stoffs)",
             "befehle": 40,
             "dreiecke": 60000,
             "regeln": [
@@ -204,12 +204,15 @@
                 },
                 {
                     "muster": "^(bau-fundament|siedlung-zaun)$"
+                },
+                {
+                    "muster": "^bauSatz$"
                 }
             ]
         },
         {
             "id": "formationen",
-            "titel": "Formationen (gesetzter Fels, Kristall, Säulen)",
+            "titel": "Formationen (gesetzter Fels, Kristall, Säulen; zeichnen im Formationen-Satz ihres Stoffs)",
             "befehle": 20,
             "dreiecke": 30000,
             "regeln": [
@@ -234,6 +237,9 @@
                 },
                 {
                     "muster": "^g:(stein_block|stamm_gefallen):L[01]$"
+                },
+                {
+                    "muster": "^formationenSatz$"
                 }
             ]
         },

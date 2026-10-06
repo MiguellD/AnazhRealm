@@ -15,7 +15,7 @@
 //   - `art` = die Studio-Art des Presets (Rezept-`kind` der lebenden Foundry), wo die Klasse ein Foundry-Preset trägt.
 //
 //   Seite:     window.__drawZensus({ top: 16, alle: false }) → { passe, klassen, unbenannt, programme, frameMs }
-//              window.__pufferZensus() → { mb, klassen: [{klasse, mb}] }  (Geometrie-Puffer je Täter-Klasse)
+//              window.__pufferZensus() → { mb, halter, klassen }  (die GPU-Puffer je Halter: szene · bild · ruhend · verwaist)
 //              window.__texturZensus() → { mb, erzeuger: [{erzeuger, mb, n}], unbenannt }  (Textur-Objekte je Erzeuger)
 //   Werkbank:  node scripts/werkbank.cjs zaehlen [px py pz lx ly lz]   (Höhen mit `+` relativ zum Boden)
 //              node scripts/werkbank.cjs band                          (Klasse × Stufe × Pass gegen den Haushalt)
@@ -118,6 +118,8 @@ function drawZensus(opts) {
             r._schattenAlleNeu();
             if (q) await q.onSubmittedWorkDone();
             const t0 = performance.now();
+            // Der Zähler vor dem gezählten Frame: was danach gezeichnet wird, trägt einen höheren (`__pufferZensus`).
+            window.__zensusCalls = rend.info.render.calls;
             r._loopRender(performance.now() / 1000);
             if (q) await q.onSubmittedWorkDone();
             frameMs = Math.round(performance.now() - t0);
@@ -198,37 +200,119 @@ function drawZensus(opts) {
     })();
 }
 
-// DIE SZENEN-PUFFER je Täter-Klasse: die Geometrie-Puffer tragen in r184 kein Label (`buf:?` im VRAM-Abgriff) —
-// gezählt wird hier ihr CPU-Spiegel (jede Attribut-/Index-/Instanz-Matrix einmal, nach Klasse), dieselbe Klasse wie
-// der Draw-Zähler. Die Differenz zu `buf:?` ist, was außerhalb der Szene auf der GPU liegt.
+// DIE GPU-PUFFER BEIM NAMEN (W6): die Geometrie-Puffer tragen in r184 kein Label (`buf:?` im VRAM-Abgriff — nach drei
+// Wander-Schleifen à 1,2 km 6 334 Puffer · 103 MB ohne Namen). r184 trägt jedes hochgeladene Attribut in
+// `renderer.info.memoryMap` (Schlüssel = das Attribut, STARK gehalten, bis `_attributes.delete` es austrägt) — das EINE
+// Register dessen, was als Geometrie-Puffer auf der GPU liegt. Hier bekommt jeder Puffer seinen HALTER und wird im
+// Abgriff umgebucht (`__vramUmbuchen`):
+//   szene:<Täter-Klasse>        ein Objekt des Szenen-Graphen zeichnet ihn (Attribut, Index, Instanz-Daten)
+//   bild:<Rolle>                kein Szenen-Objekt, aber der gezählte Frame zeichnete ihn (r184-Quads der Post-Kette)
+//   ruhend:<Foundry-Schlüssel>  nur der Foundry-Cache hält ihn — keine Gruppe im Graphen zeichnet ihn
+//   verwaist:<Rolle>            nur r184s Register hält ihn: sein Objekt fiel ohne GPU-Abschied — ein LECK
+// Rolle = instanzMatrix (Speicher-Puffer je Instanz) · instanz · index · vertex · speicher. `ruhend` und `verwaist` sind
+// Speicher, den kein Bild trägt — die Band-Linse urteilt sie als LECK (band-urteil). Der gezählte Frame setzt
+// `window.__zensusCalls` (r184 `info.render.calls` vor dem Frame); `attributeCall` (r184 Geometries) trägt je Attribut den
+// Zähler seines letzten Zeichnens.
+// DER ZENSUS-PUNKT DER RESIDENZ: der Kehraus des Spiels (`_gpuKehraus`) läuft im Takt GPU_KEHRAUS_MS — die Linse liest am
+// Kehraus-Punkt (er läuft hier einmal, gegen den gezählten Frame), sonst stünde ein Takt-Fenster gefallener Gruppen als
+// `ruhend` im Urteil. Was danach ohne Bild bleibt, kann der Kehraus nicht nehmen: ein Leck.
+function kehrausJetzt() {
+    const r = window.anazhRealm;
+    if (!r || typeof r._gpuKehraus !== "function" || !Number.isFinite(window.__zensusCalls)) return 0;
+    r.state._gpuKehrausT = 0;
+    return r._gpuKehraus(window.__zensusCalls, performance.now());
+}
+
 function pufferZensus() {
     const r = window.anazhRealm;
     const st = r.state;
-    const gesehen = new Set();
-    const je = new Map();
-    let gesamt = 0;
-    const zaehle = (a, kl) => {
-        if (!a || !a.array || gesehen.has(a.array)) return;
-        gesehen.add(a.array);
-        const b = a.array.byteLength || 0;
-        gesamt += b;
-        je.set(kl, (je.get(kl) || 0) + b);
+    const rend = st.renderer;
+    const be = rend && rend.backend;
+    const reg = rend && rend.info && rend.info.memoryMap;
+    if (!be || !reg || typeof be.get !== "function") return null;
+    const halter = new Map();
+    const merke = (a, name) => {
+        if (!a || halter.has(a)) return;
+        halter.set(a, name);
+        if (a.isInterleavedBufferAttribute && !halter.has(a.data)) halter.set(a.data, name);
+    };
+    const geo = (g, name) => {
+        if (!g || !g.attributes) return;
+        for (const k in g.attributes) merke(g.attributes[k], name);
+        if (g.index) merke(g.index, name);
+        if (g.indirect) merke(g.indirect, name);
     };
     st.scene.traverse((o) => {
-        const g = o.geometry;
-        if (!g || !g.attributes) return;
-        const kl = r._taeterKlasse(o);
-        for (const k in g.attributes) zaehle(g.attributes[k], kl);
-        zaehle(g.index, kl);
+        if (!o.geometry && !o.isInstancedMesh) return;
+        const name = "szene:" + r._taeterKlasse(o);
+        geo(o.geometry, name);
         if (o.isInstancedMesh) {
-            zaehle(o.instanceMatrix, kl);
-            zaehle(o.instanceColor, kl);
+            merke(o.instanceMatrix, name);
+            merke(o.instanceColor, name);
         }
+        // Was seine Render-Objekte zeichnen (das Register des Stamms, `_renderObjektRegister`): auch die Knoten-Attribute
+        // (r184s InstanceNode zeichnet die Instanz-Farbe aus einem eigenen Attribut).
+        for (const ro of o.__renderObjekte || []) if (ro.attributes) for (const a of ro.attributes) merke(a, name);
     });
+    const cache = r._foundry && r._foundry.cache;
+    if (cache)
+        for (const [key, g] of cache) {
+            if (!g || typeof g !== "object") continue;
+            const name = "ruhend:" + key;
+            for (const ch of g.children || []) geo(ch.geometry, name);
+            const fl = g._foundryFlat;
+            if (fl && Array.isArray(fl.leaves))
+                for (const lf of fl.leaves) {
+                    geo(lf.geom, name);
+                    geo(lf._schattenGeom, name);
+                }
+        }
+    const aufruf = rend._geometries && rend._geometries.attributeCall;
+    const bildAb = Number.isFinite(window.__zensusCalls) ? window.__zensusCalls : Infinity;
+    const rolle = (a, typ) =>
+        typ === "indexAttributes"
+            ? "index"
+            : a.isInstancedBufferAttribute || a.isStorageInstancedBufferAttribute
+              ? a.itemSize === 16 && typ === "storageAttributes"
+                  ? "instanzMatrix"
+                  : "instanz"
+              : typ === "storageAttributes" || typ === "indirectStorageAttributes"
+                ? "speicher"
+                : "vertex";
+    const je = new Map();
+    const klassen = new Map();
+    let gesamt = 0;
+    for (const [a, v] of reg) {
+        if (!a || a.isTexture || !v || typeof v !== "object" || !/ttributes$/.test(v.type || "")) continue;
+        const d = be.get(a.isInterleavedBufferAttribute ? a.data : a);
+        const buf = d && d.buffer;
+        if (!buf) continue;
+        let name = halter.get(a);
+        if (!name || name.startsWith("ruhend:")) {
+            const zuletzt = aufruf ? aufruf.get(a) : undefined;
+            if (zuletzt >= bildAb) name = "bild:" + rolle(a, v.type);
+            else if (!name) name = "verwaist:" + rolle(a, v.type);
+        }
+        const k = "buf:" + window.__vramFalte(name);
+        if (window.__vramUmbuchen) window.__vramUmbuchen(buf, k);
+        const b = (buf.__vramH && buf.__vramH.b) || buf.size || 0;
+        gesamt += b;
+        const h = name.split(":")[0];
+        je.set(h, (je.get(h) || 0) + b);
+        const kl = h + ":" + name.slice(h.length + 1).split("|")[0];
+        const e = klassen.get(kl) || { klasse: kl, bytes: 0, n: 0 };
+        e.bytes += b;
+        e.n++;
+        klassen.set(kl, e);
+    }
     const mb = (b) => +(b / 1048576).toFixed(2);
     return {
         mb: mb(gesamt),
-        klassen: [...je.entries()].sort((a, b) => b[1] - a[1]).map(([klasse, b]) => ({ klasse, mb: mb(b) })),
+        halter: Object.fromEntries([...je.entries()].map(([h, b]) => [h, mb(b)])),
+        klassen: [...klassen.values()]
+            .sort((x, y) => y.bytes - x.bytes)
+            .slice(0, 40)
+            .map((e) => ({ klasse: e.klasse, mb: mb(e.bytes), n: e.n })),
     };
 }
 
@@ -333,6 +417,7 @@ module.exports = {
     ZAEHLER_INSTALL:
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
+        `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +
         `window.__texturErzeuger = ${texturErzeuger.toString()};` +
         `window.__texturZensus = ${texturZensus.toString()};`,
 };

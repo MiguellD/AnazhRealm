@@ -13,7 +13,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const PORT = 4391;
+const PORT = Number(process.env.WORKER_WATERSHEET_PORT) || 4391;
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",

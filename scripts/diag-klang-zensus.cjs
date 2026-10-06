@@ -69,7 +69,7 @@ const root = path.resolve(__dirname, "..");
 // KLANG_WURZEL: eine Überlagerung — liegt eine Datei dort, gewinnt sie (z. B. die Stände eines älteren Commits);
 // vorher↔nachher unter derselben Linse, denselben Bedingungen.
 const UEBER = process.env.KLANG_WURZEL ? path.resolve(process.env.KLANG_WURZEL) : null;
-const PORT = Number(process.env.DIAG_PORT) || 7452;
+const PORT = Number(process.env.KLANG_ZENSUS_PORT) || 7452;
 const argv = process.argv.slice(2);
 const SELBST = argv.includes("--selftest");
 const opt = (k) => {

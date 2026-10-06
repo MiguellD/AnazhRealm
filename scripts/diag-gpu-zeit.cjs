@@ -40,7 +40,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT) || 4431;
+// Port über GPU_ZEIT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4431.
+const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

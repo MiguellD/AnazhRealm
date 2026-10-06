@@ -27,7 +27,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4331;
+// Port über GRASS_THIN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4331.
+const PORT = Number(process.env.GRASS_THIN_PORT || 4331);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

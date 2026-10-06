@@ -43,7 +43,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT) || 4421;
+// Port über MOVE_UNDER_LOAD_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4421.
+const PORT = Number(process.env.MOVE_UNDER_LOAD_PORT || 4421);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

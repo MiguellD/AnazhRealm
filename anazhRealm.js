@@ -96,7 +96,10 @@ class AnazhRealm {
             weltMarch: null, // der EINE Welt-March (_weltMarchEnsure)
             feldPass: null, // der Feld-Pass des Fern-Rings
             deckStreu: null, // die Deck-Streu des Fernfelds
-            chunkSaetze: null, // Map Art → Boden-/Wasser-Satz (_chunkSatzEin)
+            chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
+            satzStoffe: null, // Map Bau-Satz-Art → { name, mat, wurf } (_bauSatzArt)
+            bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
+            dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             archFundament: null, // der Fundament-Pool (_archFundamentAlloc)
             stlWege: null, // der Wege-Pool der Siedlungen
@@ -14846,18 +14849,30 @@ class AnazhRealm {
                 top,
                 halter: (() => {
                     const f = this._foundry;
-                    // DER SATZ (Welle B) — die Linse NENNT die Pool-Puffer: Bereiche, Kapazität, Wachstum je Art.
+                    // DER SATZ (Welle B) — die Linse NENNT die Pool-Puffer: Bereiche, Kapazität, Wachstum je Art, je Pass
+                    // die Indizes seines Abschnitts und die Index-Bytes je „Verursacher>Abschnitt" (kumulativ).
                     const saetze = {};
                     if (this.state.chunkSaetze)
-                        for (const [art, s] of this.state.chunkSaetze)
+                        for (const [art, s] of this.state.chunkSaetze) {
+                            const abschnitte = {};
+                            const luecken = {};
+                            for (const [k, a] of s.abschnitte) {
+                                abschnitte[k] = a.n;
+                                luecken[k] = a.ende - a.n;
+                            }
                             saetze[art] = {
                                 bereiche: s.bloecke.size,
                                 vEnde: s.vEnde,
                                 vKap: s.vKap,
-                                index: s.geom.drawRange.count,
+                                index: s.iSumme,
+                                abschnitte,
+                                luecken,
+                                iEnde: s.iEnde,
                                 iKap: s.iKap,
                                 wachse: s.wachse,
+                                schreiben: { ...s.schreiben },
                             };
+                        }
                     return {
                         foundryCacheN: f && f.cache ? f.cache.size : 0,
                         foundryCacheMB:
@@ -15488,10 +15503,19 @@ class AnazhRealm {
         // Rotation in _loopRender (V8.28 sidereal) sie kippt, bleibt das
         // Quad sichtbar.
         starMat.side = THREE.DoubleSide;
+        // EIN Befehl (Welle 6): ein durchscheinender DoubleSide-Stoff zeichnet in r184 zwei Durchgänge (Rück-, dann
+        // Vorderseite) — jedes Quad zeigt der Kamera genau eine Seite, die additive Mischung vertauscht: ein Durchgang
+        // ist dasselbe Bild.
+        starMat.forceSinglePass = true;
 
+        // Der hellste Punkt des Himmels (kleinste Größenklasse): liegt die Grenzgröße mehr als ½ Klasse darüber, ist
+        // kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
+        let hellste = Infinity;
+        for (let i = 0; i < STAR_COUNT; i++) if (mags[i] < hellste) hellste = mags[i];
         this.state.starFieldUniforms = {
             opacity: uOpacity,
             grenze: uGrenze,
+            hellste,
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
@@ -15871,10 +15895,12 @@ class AnazhRealm {
             .add(
                 dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
             );
-        // Höhen-Gewicht = Höhe über der Wurzel. `positionLocal` ist im positionNode schon instanz-transformiert
-        // (r184: Instanzierung VOR positionNode) — bei einer InstancedMesh also Welt-Höhe (20+ m statt der
-        // Halm-Höhe); die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt sie unverfälscht.
-        // `opts.hoehe` reicht eine eigene Höhe in Metern (Studio-Vorlagen tragen die Template-Skala).
+        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung (gelesen im WGSL der
+        // Nah-Wiesen-Senke, W7 06.10.: erst `positionLocal += Versatz`, dann `positionLocal = instanzMatrix ×
+        // positionLocal`): in einer InstancedMesh lesen `positionLocal` und `positionWorld` hier den VORLAGEN-Raum — Phase
+        // und Biegung sehen die Vorlage, der Versatz dreht und skaliert mit der Instanz. Ein Satz (Welt-Lage, keine
+        // Instanz — die Nah-Streu) liest die Welt. Die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt die
+        // Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windBoeAt`).
         const B = AnazhRealm.WIND_BOE;
@@ -17304,7 +17330,7 @@ class AnazhRealm {
             }
             geo.setIndex(new THREE.BufferAttribute(index, 1));
             geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
-            geo.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
+            geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(skinWeight, 4));
             const t0 = teile[0].mesh;
             const starr = new THREE.SkinnedMesh(geo, t0.material);
             starr.castShadow = t0.castShadow;
@@ -21506,6 +21532,18 @@ class AnazhRealm {
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
                                 waterCells: new Uint8Array(msg.waterCells),
+                                // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
+                                hoehle: msg.hTri
+                                    ? {
+                                          tri: new Int32Array(msg.hTri),
+                                          n: msg.hN | 0,
+                                          knoten: new Float32Array(msg.hKnoten),
+                                          muend: new Float32Array(msg.hMuend),
+                                          seiten: new Float32Array(msg.hSeiten),
+                                          kanten: new Float32Array(msg.hKanten),
+                                          rand: new Int32Array(msg.hRand),
+                                      }
+                                    : null,
                             });
                         }
                     }
@@ -21845,11 +21883,19 @@ class AnazhRealm {
             return c._idbReady;
         }
         // Stempel = AnazhRealm.VERSION (jeder Release bustet — bewusst statt SHA über den Stamm) + genVersion
-        // + macroAnker-Hash (ein fremder Anker darf nie alte Bytes lesen); Mismatch → clear. Der SEED lebt im
+        // + macroAnker-Hash (ein fremder Anker darf nie alte Bytes lesen) + die Form des Replys (CHUNK_IDB_FORM);
+        // Mismatch → clear. Der SEED lebt im
         // KEY (`_chunkIdbKey`); Welt-Wechsel ohne Reload behält den Boot-Stempel (Keys sind seed-scoped).
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const anker = typeof this._macroAnker === "function" ? this._macroAnker() : null;
-        const stamp = AnazhRealm.VERSION + "|" + genV + "|" + this._fastHash(JSON.stringify(anker || null));
+        const stamp =
+            AnazhRealm.VERSION +
+            "|" +
+            genV +
+            "|" +
+            this._fastHash(JSON.stringify(anker || null)) +
+            "|" +
+            AnazhRealm.CHUNK_IDB_FORM;
         c._stamp = stamp;
         c._idbReady = new Promise((resolve) => {
             try {
@@ -22055,6 +22101,14 @@ class AnazhRealm {
             "aMorphWeight",
             new THREE.Float32BufferAttribute(new Float32Array(meshData.positions.length / 3), 1)
         );
+        // Der Höhlen-Graph (Welle 7, `_voxelHoehlenGraph` ↔ Worker `hoehlenGraph`): fail-closed — ein Boden ohne ihn
+        // wüsste nicht, welche Fläche aus dem Himmel zu sehen ist.
+        const H = meshData.hoehle;
+        if (!H || !H.tri || H.tri.length * 3 !== meshData.indices.length)
+            throw new Error(
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen passenden Höhlen-Graph`
+            );
+        geom.hoehle = Object.assign({}, H, { step: this._voxelChunkConfig(lod).step });
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -25613,7 +25667,8 @@ class AnazhRealm {
         densityFn,
         cropMargin = 0,
         preDensity = null,
-        smoothIters = 1
+        smoothIters = 1,
+        hoehle = null
     ) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         // `preDensity`: hat der Aufrufer das Grid schon (Cell-Klassifikation), läuft die teure Sample-
@@ -25630,9 +25685,19 @@ class AnazhRealm {
             step
         );
         if (positions.length === 0) return null;
-        const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
+        // `hoehle` (der Höhlen-Graph des Boden-Chunks, `_voxelHoehlenGraph`): je Dreieck die Zelle seiner Luft
+        const triZelle = hoehle ? [] : null;
+        const indices = this._voxelEmitQuadIndices(
+            density,
+            cellVert,
+            dimX,
+            dimY,
+            dimZ,
+            hoehle ? hoehle.lab : null,
+            triZelle
+        );
         this._voxelLaplacianSmoothPositions(positions, indices, smoothIters, sharp);
-        this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
+        this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle);
         if (positions.length === 0) return null;
         // Gradient-Normals nutzen das geteilte preDensity-Grid (statt ~18k Dichte-Calls);
         // _voxelGradientNormals interpoliert trilinear, Out-of-Bounds → sample().
@@ -25651,6 +25716,17 @@ class AnazhRealm {
         // grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), main-only, Physik-Position unberührt.
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        if (hoehle)
+            geom.hoehle = {
+                tri: Int32Array.from(triZelle),
+                n: hoehle.n,
+                knoten: hoehle.knoten,
+                muend: hoehle.muend,
+                seiten: hoehle.seiten,
+                kanten: hoehle.kanten,
+                rand: hoehle.rand,
+                step,
+            };
         return geom;
     }
 
@@ -25976,7 +26052,9 @@ class AnazhRealm {
     // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad; die Diagonale alterniert mit der
     // Zell-Parität `(i+j+k) & 1` (sonst Streifen-Muster auf flachen Hügeln). cv() ist die Out-of-Range-
     // Wand: ohne sie aliast `ci(dim, j, k)` in einen fremden Zell-Slot → Streck-Dreieck an jeder Naht.
-    _voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
+    // Mit `lab` (je Gitter-Punkt die Höhlen-Zelle, `_voxelHoehlenGraph`) trägt `triZelle` je Dreieck die Zelle des
+    // LUFT-Endes seiner Kante (−1: Himmels-Luft) — die Fläche gehört der Luft, aus der man sie sieht.
+    _voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ, lab = null, triZelle = null) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
@@ -25987,35 +26065,312 @@ class AnazhRealm {
             return cellVert[ci(i, j, k)];
         };
         const indices = [];
-        const quad = (a, b, c, d, parity) => {
+        const quad = (a, b, c, d, parity, zelle) => {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
             if (parity & 1) {
                 indices.push(a, b, d, b, c, d);
             } else {
                 indices.push(a, b, c, a, c, d);
             }
+            if (triZelle) triZelle.push(zelle, zelle);
         };
+        // die Zelle des Luft-Endes der Kante p0–p1 (s0: p0 fest)
+        const luft = (p0, p1, s0) => (lab ? lab[s0 ? p1 : p0] : -1);
         for (let k = 0; k <= dimZ; k++) {
             for (let j = 0; j <= dimY; j++) {
                 for (let i = 0; i <= dimX; i++) {
-                    const s0 = solid(density[gi(i, j, k)]);
+                    const p0 = gi(i, j, k);
+                    const s0 = solid(density[p0]);
                     const parity = (i + j + k) & 1;
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
                     if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
-                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k), parity);
+                        quad(
+                            cv(i, j - 1, k - 1),
+                            cv(i, j, k - 1),
+                            cv(i, j, k),
+                            cv(i, j - 1, k),
+                            parity,
+                            luft(p0, gi(i + 1, j, k), s0)
+                        );
                     }
                     // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
                     if (j < dimY && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
-                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k), parity);
+                        quad(
+                            cv(i - 1, j, k - 1),
+                            cv(i, j, k - 1),
+                            cv(i, j, k),
+                            cv(i - 1, j, k),
+                            parity,
+                            luft(p0, gi(i, j + 1, k), s0)
+                        );
                     }
                     // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
                     if (k < dimZ && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
-                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k), parity);
+                        quad(
+                            cv(i - 1, j - 1, k),
+                            cv(i, j - 1, k),
+                            cv(i, j, k),
+                            cv(i - 1, j, k),
+                            parity,
+                            luft(p0, gi(i, j, k + 1), s0)
+                        );
                     }
                 }
             }
         }
         return indices;
+    }
+
+    // DIE HÖHLEN-SCHICHT (Welle 7) — der Sicht-Graph der Höhlen-Luft aus dem Dichte-Gitter des Chunks (MUSS bit-identisch
+    // im Worker, `hoehlenGraph`). Befund (echte GPU, Mess-Wiese −900/−850, Gitter-Probe): 68 % der Boden-Kanten trennen Fels
+    // von HÖHLEN-Luft, und der Boden-Satz zeichnete sie in jedem Pass; eine Tiefen-Grenze unter der Oberfläche risse an
+    // Mündungen, Überhängen und Klippen Löcher. Die Wahrheit liegt in der Luft: HIMMELS-Luft ist ein Luft-Punkt über der
+    // obersten festen Ecke seiner Spalte, HÖHLEN-Luft einer darunter. Senkrecht unter Himmels-Luft liegt nur Himmels-Luft
+    // oder Fels — ein Strahl aus dem Himmel betritt Höhlen-Luft nur WAAGERECHT, durch eine MÜNDUNG (Höhlen-Luft neben
+    // Himmels-Luft). Eine ZELLE ist eine Höhlen-Luft-Komponente (6-Nachbarschaft, wie Surface-Nets die Luft trennt) je
+    // Chunk-Teil (Kachel × Lage); ein PORTAL sind zwei 6-benachbarte Punkte verschiedener Zellen (über eine Teil-Grenze); das RAND-BAND
+    // trägt die Punkte bis einen Schritt jenseits jeder Chunk-Kante (dort verknüpft der Haupt-Thread die Nachbar-Chunks,
+    // `_hoehlenVerknuepfe`). Zelle 0 sammelt die versiegelten Komponenten (keine Mündung, kein Portal, kein Rand-Band — von
+    // außen nie zu sehen). Rückgabe: `lab` (je Gitter-Punkt die Zelle, −1 = keine Höhlen-Luft), `n` Zellen, `knoten` (je
+    // Zelle ihre Luft-Box, min xyz · max xyz, leer = +∞/−∞), `muend` (je Zelle und Fach von 4³ Punkten eine Mündungs-Box:
+    // Zelle · Box), `seiten` (je Zelle und Seite −x · +x ·
+    // −z · +z die Box ihrer Rand-Band-Punkte), `kanten` (je Portal Zelle a · Zelle b · Box), `rand` (die Höhlen-Punkte auf
+    // den Chunk-Kanten, `_hoehlenVerknuepfe`).
+    _voxelHoehlenGraph(density, ox, oy, oz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const NxNy = Nx * Ny;
+        const N = NxNy * Nz;
+        // die oberste feste Ecke je Spalte (−1: keine)
+        const top = new Int32Array(Nx * Nz).fill(-1);
+        for (let k = 0; k < Nz; k++)
+            for (let i = 0; i < Nx; i++)
+                for (let j = Ny - 1; j >= 0; j--)
+                    if (density[i + j * Nx + k * NxNy] > 0) {
+                        top[i + k * Nx] = j;
+                        break;
+                    }
+        const hoehle = (p, i, j, k) => density[p] <= 0 && j < top[i + k * Nx];
+        // DIE TEILUNG der Zellen (MUSS gleich in Main und Worker): je Chunk-Seite TEIL Kacheln, je SCHICHT Gitter-Ebenen eine
+        // Lage — eine kleine Zelle hält das Rechteck der Portal-Sicht eng (Werkbank 06.10., Mess-Wiese: Viertel ohne Lagen
+        // 13,8k, 4 × 4 Kacheln mit Lagen 7,5k Höhlen-Dreiecke im Hauptbild bei derselben Mündungs-Wahl).
+        const TEIL = 4,
+            SCHICHT = 8;
+        const kachel = (i, dim) => {
+            const t = Math.floor(((i - 1) * TEIL) / dim);
+            return t < 0 ? 0 : t >= TEIL ? TEIL - 1 : t;
+        };
+        const teil = (i, j, k) =>
+            kachel(i, dimX - 3) + TEIL * kachel(k, dimZ - 3) + TEIL * TEIL * Math.floor(j / SCHICHT);
+        // (1) die Komponenten je Teil (Breitensuche über einen Stapel, Punkte in Index-Folge — deterministisch)
+        const lab = new Int32Array(N).fill(-1);
+        const stapel = new Int32Array(N);
+        let nRoh = 0;
+        for (let p = 0; p < N; p++) {
+            if (lab[p] >= 0) continue;
+            const i = p % Nx;
+            const j = ((p / Nx) | 0) % Ny;
+            const k = (p / NxNy) | 0;
+            if (!hoehle(p, i, j, k)) continue;
+            const v = teil(i, j, k);
+            lab[p] = nRoh;
+            let sp = 0;
+            stapel[sp++] = p;
+            const tritt = (q, qi, qj, qk) => {
+                if (lab[q] >= 0 || !hoehle(q, qi, qj, qk) || teil(qi, qj, qk) !== v) return;
+                lab[q] = nRoh;
+                stapel[sp++] = q;
+            };
+            while (sp > 0) {
+                const q = stapel[--sp];
+                const qi = q % Nx;
+                const qj = ((q / Nx) | 0) % Ny;
+                const qk = (q / NxNy) | 0;
+                if (qi + 1 < Nx) tritt(q + 1, qi + 1, qj, qk);
+                if (qi > 0) tritt(q - 1, qi - 1, qj, qk);
+                if (qj + 1 < Ny) tritt(q + Nx, qi, qj + 1, qk);
+                if (qj > 0) tritt(q - Nx, qi, qj - 1, qk);
+                if (qk + 1 < Nz) tritt(q + NxNy, qi, qj, qk + 1);
+                if (qk > 0) tritt(q - NxNy, qi, qj, qk - 1);
+            }
+            nRoh++;
+        }
+        // (2) je Komponente: Luft-Box, Mündungs-Boxen je Fach, Rand-Bänder (Gitter-Indizes) und die Portale zu den Nachbar-Teilen
+        const LEER = [2147483647, -2147483648];
+        const luftB = new Int32Array(nRoh * 6);
+        // die Mündungen je Komponente und Fach (4 × 4 × 4 Gitter-Punkte): eine kleine Box hält die Horizont-Probe und das Licht-
+        // Rechteck eng (eine Komponente trägt oft Mündungen über die ganze Höhe einer Schlucht-Wand)
+        const mundM = new Map();
+        const mund = (c, i, j, k, i2, k2) => {
+            const key = c * 4096 + (i >> 2) + 8 * ((k >> 2) + 8 * (j >> 2));
+            let B = mundM.get(key);
+            if (!B) mundM.set(key, (B = [c, LEER[0], LEER[0], LEER[0], LEER[1], LEER[1], LEER[1]]));
+            dehne(B, 1, i, j, k);
+            dehne(B, 1, i2, j, k2);
+        };
+        const seitB = new Int32Array(nRoh * 24);
+        for (let c = 0; c < nRoh; c++) {
+            for (let a = 0; a < 3; a++) {
+                luftB[c * 6 + a] = LEER[0];
+                luftB[c * 6 + 3 + a] = LEER[1];
+            }
+            for (let sd = 0; sd < 4; sd++)
+                for (let a = 0; a < 3; a++) {
+                    seitB[c * 24 + sd * 6 + a] = LEER[0];
+                    seitB[c * 24 + sd * 6 + 3 + a] = LEER[1];
+                }
+        }
+        const dehne = (B, o, i, j, k) => {
+            if (i < B[o]) B[o] = i;
+            if (j < B[o + 1]) B[o + 1] = j;
+            if (k < B[o + 2]) B[o + 2] = k;
+            if (i > B[o + 3]) B[o + 3] = i;
+            if (j > B[o + 4]) B[o + 4] = j;
+            if (k > B[o + 5]) B[o + 5] = k;
+        };
+        const offen = new Uint8Array(nRoh); // Mündung, Portal oder Rand-Band → nicht versiegelt
+        const paare = []; // je Portal-Fund [a, b, i, j, k, i2, k2]
+        const himmel = (q, qi, qj, qk) => density[q] <= 0 && qj > top[qi + qk * Nx];
+        for (let p = 0; p < N; p++) {
+            const c = lab[p];
+            if (c < 0) continue;
+            const i = p % Nx;
+            const j = ((p / Nx) | 0) % Ny;
+            const k = (p / NxNy) | 0;
+            dehne(luftB, c * 6, i, j, k);
+            if (i <= 2) dehne(seitB, c * 24, i, j, k);
+            if (i >= dimX - 3) dehne(seitB, c * 24 + 6, i, j, k);
+            if (k <= 2) dehne(seitB, c * 24 + 12, i, j, k);
+            if (k >= dimZ - 3) dehne(seitB, c * 24 + 18, i, j, k);
+            if (i <= 2 || i >= dimX - 3 || k <= 2 || k >= dimZ - 3) offen[c] = 1;
+            // die Mündung: ein waagerechter Nachbar in Himmels-Luft
+            if (i + 1 < Nx && himmel(p + 1, i + 1, j, k)) {
+                mund(c, i, j, k, i + 1, k);
+                offen[c] = 1;
+            }
+            if (i > 0 && himmel(p - 1, i - 1, j, k)) {
+                mund(c, i, j, k, i - 1, k);
+                offen[c] = 1;
+            }
+            if (k + 1 < Nz && himmel(p + NxNy, i, j, k + 1)) {
+                mund(c, i, j, k, i, k + 1);
+                offen[c] = 1;
+            }
+            if (k > 0 && himmel(p - NxNy, i, j, k - 1)) {
+                mund(c, i, j, k, i, k - 1);
+                offen[c] = 1;
+            }
+            // das Portal: der +x-, +y- bzw. +z-Nachbar in einer anderen Zelle (nur über eine Teil-Grenze möglich)
+            if (i + 1 < Nx && lab[p + 1] >= 0 && lab[p + 1] !== c) {
+                paare.push(c, lab[p + 1], i, j, k, i + 1, j, k);
+                offen[c] = offen[lab[p + 1]] = 1;
+            }
+            if (j + 1 < Ny && lab[p + Nx] >= 0 && lab[p + Nx] !== c) {
+                paare.push(c, lab[p + Nx], i, j, k, i, j + 1, k);
+                offen[c] = offen[lab[p + Nx]] = 1;
+            }
+            if (k + 1 < Nz && lab[p + NxNy] >= 0 && lab[p + NxNy] !== c) {
+                paare.push(c, lab[p + NxNy], i, j, k, i, j, k + 1);
+                offen[c] = offen[lab[p + NxNy]] = 1;
+            }
+        }
+        // (3) Zellen: die versiegelten → 0, jede offene Komponente ihre Zelle 1…n−1 (in Fund-Folge)
+        const zelleVon = new Int32Array(nRoh);
+        let n = 1;
+        for (let c = 0; c < nRoh; c++) zelleVon[c] = offen[c] ? n++ : 0;
+        for (let p = 0; p < N; p++) if (lab[p] >= 0) lab[p] = zelleVon[lab[p]];
+        const wx = (i) => ox + i * step;
+        const wy = (j) => oy + j * step;
+        const wz = (k) => oz + k * step;
+        const knoten = new Float32Array(n * 6);
+        const seiten = new Float32Array(n * 24);
+        for (let z = 0; z < n; z++) {
+            for (let a = 0; a < 3; a++) {
+                knoten[z * 6 + a] = Infinity;
+                knoten[z * 6 + 3 + a] = -Infinity;
+            }
+            for (let sd = 0; sd < 4; sd++)
+                for (let a = 0; a < 3; a++) {
+                    seiten[z * 24 + sd * 6 + a] = Infinity;
+                    seiten[z * 24 + sd * 6 + 3 + a] = -Infinity;
+                }
+        }
+        // eine Gitter-Box (Int32, leer: min > max) in eine Welt-Box (Float32) vereinen
+        const vereine = (Z, zo, B, bo) => {
+            if (B[bo] > B[bo + 3]) return;
+            const v = [wx(B[bo]), wy(B[bo + 1]), wz(B[bo + 2]), wx(B[bo + 3]), wy(B[bo + 4]), wz(B[bo + 5])];
+            for (let a = 0; a < 3; a++) {
+                if (v[a] < Z[zo + a]) Z[zo + a] = v[a];
+                if (v[3 + a] > Z[zo + 3 + a]) Z[zo + 3 + a] = v[3 + a];
+            }
+        };
+        for (let c = 0; c < nRoh; c++) {
+            const z = zelleVon[c];
+            vereine(knoten, z * 6, luftB, c * 6);
+            for (let sd = 0; sd < 4; sd++) vereine(seiten, z * 24 + sd * 6, seitB, c * 24 + sd * 6);
+        }
+        // (4) die Portale je Zellen-Paar (a < b) als EINE Box beider Punkte, in Fund-Folge
+        const portal = new Map();
+        for (let q = 0; q < paare.length; q += 8) {
+            const a = zelleVon[paare[q]];
+            const b = zelleVon[paare[q + 1]];
+            const lo = a < b ? a : b;
+            const hi = a < b ? b : a;
+            const key = lo * n + hi;
+            let B = portal.get(key);
+            if (!B) portal.set(key, (B = [lo, hi, Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]));
+            const pts = [
+                [paare[q + 2], paare[q + 3], paare[q + 4]],
+                [paare[q + 5], paare[q + 6], paare[q + 7]],
+            ];
+            for (const [i, j, k] of pts) {
+                const x = wx(i),
+                    y = wy(j),
+                    zz = wz(k);
+                if (x < B[2]) B[2] = x;
+                if (y < B[3]) B[3] = y;
+                if (zz < B[4]) B[4] = zz;
+                if (x > B[5]) B[5] = x;
+                if (y > B[6]) B[6] = y;
+                if (zz > B[7]) B[7] = zz;
+            }
+        }
+        // die Mündungs-Boxen [Zelle, Box] in Fund-Folge (eine versiegelte Komponente trägt keine)
+        const muend = new Float32Array(mundM.size * 7);
+        let om = 0;
+        for (const B of mundM.values()) {
+            muend[om++] = zelleVon[B[0]];
+            muend[om++] = wx(B[1]);
+            muend[om++] = wy(B[2]);
+            muend[om++] = wz(B[3]);
+            muend[om++] = wx(B[4]);
+            muend[om++] = wy(B[5]);
+            muend[om++] = wz(B[6]);
+        }
+        const kanten = new Float32Array(portal.size * 8);
+        let o = 0;
+        for (const B of portal.values()) for (let a = 0; a < 8; a++) kanten[o++] = B[a];
+        // (5) die RAND-EBENEN: je Höhlen-Punkt auf einer Chunk-Kante (−x: i = 1 · +x: i = dimX − 2 · −z: k = 1 · +z: k = dimZ − 2)
+        // [Seite, j, u (k bzw. i), Zelle] — derselbe Welt-Punkt liegt im Gitter des Nachbarn auf seiner Gegen-Kante (gleiche
+        // Stufe: dieselben Indizes), dort verknüpft der Haupt-Thread die Zellen exakt (`_hoehlenVerknuepfe`).
+        const randL = [];
+        for (let k = 0; k < Nz; k++)
+            for (let j = 0; j < Ny; j++) {
+                const a = lab[1 + j * Nx + k * NxNy];
+                if (a > 0) randL.push(0, j, k, a);
+                const b = lab[dimX - 2 + j * Nx + k * NxNy];
+                if (b > 0) randL.push(1, j, k, b);
+            }
+        for (let i = 0; i < Nx; i++)
+            for (let j = 0; j < Ny; j++) {
+                const a = lab[i + j * Nx + NxNy];
+                if (a > 0) randL.push(2, j, i, a);
+                const b = lab[i + j * Nx + (dimZ - 2) * NxNy];
+                if (b > 0) randL.push(3, j, i, b);
+            }
+        const rand = Int32Array.from(randL);
+        return { lab, n, knoten, muend, seiten, kanten, rand };
     }
 
     // Laplacian-Smooth MUTIERT positions in place (Surface-Nets-Treppen → sanfte Schrägen).
@@ -26073,7 +26428,8 @@ class AnazhRealm {
 
     // Crop-Pass: die äußersten `cropMargin` Zell-Ebenen in X/Z (nur Smooth-Stützen) verwerfen. MUTIERT
     // positions + indices in place (.length=0 + push — der Aufrufer hält Referenzen).
-    _voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
+    // `triZelle` (die Höhlen-Zelle je Dreieck, `_voxelEmitQuadIndices`) fällt mit seinen Dreiecken.
+    _voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle = null) {
         if (cropMargin <= 0 || positions.length === 0) return;
         const vc = positions.length / 3;
         const remap = new Int32Array(vc).fill(-1);
@@ -26089,16 +26445,24 @@ class AnazhRealm {
             keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
         }
         const keptIdx = [];
+        const keptZelle = [];
         for (let t = 0; t + 2 < indices.length; t += 3) {
             const a = remap[indices[t]];
             const b = remap[indices[t + 1]];
             const c = remap[indices[t + 2]];
-            if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+            if (a >= 0 && b >= 0 && c >= 0) {
+                keptIdx.push(a, b, c);
+                if (triZelle) keptZelle.push(triZelle[t / 3]);
+            }
         }
         positions.length = 0;
         for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
         indices.length = 0;
         for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+        if (triZelle) {
+            triZelle.length = 0;
+            for (let i = 0; i < keptZelle.length; i++) triZelle.push(keptZelle[i]);
+        }
     }
 
     // Normalen = −∇d des Dichtefelds (die wahre Iso-Normale, facettierungs-unabhängig) statt
@@ -26569,12 +26933,14 @@ class AnazhRealm {
 
     // DIE NAH-WIESE (V18.508): nah am Auge wächst die Wiese aus dem Studio-Gras (Foundry „gras", Stufen
     // aus `kindStages.grass`), jenseits trägt die Boden-Funktion. Kosten an den SCHIRM gebunden (Gebot 7):
-    // ein Kachel-Ring um die Kamera, nie je Chunk. `stufe1` = Radius der feinen Stufe (L1), `radius` =
-    // Ende der Büschel, `rand` = Ausdünnungs-Band davor (die Kachel zeigt nur einen Anteil ihrer zufällig
-    // geordneten Büschel), `kachel` = Kachel-Kante (Frustum-Cull-Einheit). Raster, Dichte-Gesetz und
-    // Skala kommen aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras).
+    // ein Kachel-Ring um die Kamera, nie je Chunk; gezeichnet wird je Büschel, was das Auge sieht (der Sicht-Satz
+    // `_nahWieseSicht`, EINE Senke je Vorlage × Stufe × Teil). `stufe1` = Radius der feinen Stufe (L1) um das Auge, je
+    // Büschel, `stufe1Rand` = ihr Austritt dahinter (Hysterese), `radius` = Ende der Büschel, `rand` = Ausdünnungs-Band
+    // davor (ein Büschel zeigt sich, solange seine Würfel-Ordnung unter dem Anteil seiner Distanz liegt), `kachel` =
+    // Kachel-Kante (Bau- und Grob-Cull-Einheit). Raster, Dichte-Gesetz und Skala kommen aus dem Studio
+    // (understory.grassStep · groundCover.grass · placement.scale.gras).
     static get NAH_WIESE() {
-        return Object.freeze({ kachel: 6, stufe1: 5, radius: 14, rand: 4, kachelnJeTakt: 1 });
+        return Object.freeze({ kachel: 6, stufe1: 5, stufe1Rand: 0.5, radius: 14, rand: 4, kachelnJeTakt: 1 });
     }
 
     // DIE BODEN-PALETTE (`_bodenFarbeAt`, linear wie das Vertex-Attribut): die Studio-Palette PORTAL_GROUND
@@ -28531,7 +28897,12 @@ class AnazhRealm {
                                                 .lessThan(_Ta.float(0.0))
                                                 .select(_Ta.float(1.0), _Ta.float(0.0)),
                                         });
-                                        if (_keepFin) _alpha = _alpha.mul(_keepFin);
+                                        if (_keepFin) {
+                                            _alpha = _alpha.mul(_keepFin);
+                                            // der Stoff trägt die Maske: die Instanz-Wahl darf ihr Fenster lesen
+                                            // (`_instanzFensterGilt`)
+                                            mat.userData.kartenMaske = true;
+                                        }
                                     }
                                     // Die Schicht ist VORMULTIPLIZIERT (transparent = 0, Karten-Gesetz): rgb / alpha — kein dunkler
                                     // Saum auf keiner Mip-Stufe. Der Atlas trägt die volle Baumfarbe, vertex-color = weiß.
@@ -29284,7 +29655,7 @@ class AnazhRealm {
             // keep Stufe L0 (lod=0): Laub keep = clamp(2f0−1) < dh · Rinde keep = f0 < dh.
             const _keep0 = _foliage ? T.step(_f0.mul(2.0).sub(1.0).clamp(0.0, 1.0), _dh) : T.step(_f0, _dh);
             // keep Stufe L1 (lod=1): (Laub min(2f0,1) ≥ dh · Rinde f0 ≥ dh) UND f1o < dh. Die einzige Nah-Stufe einer
-            // Art ohne L0 (aLodLevel 3, der Strauch) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
+            // Art ohne L0 (aLodLevel 3) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
             const _fadeIn = _foliage ? T.step(_dh, _f0.mul(2.0).min(T.float(1.0))) : T.step(_dh, _f0);
             const _keep1 = _fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh));
             // Stufen-Wahl per aLodLevel (1 → keep0 · 2 → keep1) + das vLod>0.5-Gate (0 → ungemaskt).
@@ -29571,6 +29942,8 @@ class AnazhRealm {
         // Pad-Aufruf: Origin um einen `step` versetzt, dimX/Z = `dim + 3` (dim + 1 Skirt + 2·1 Pad),
         // `cropMargin = 1`, smoothIters=1. Mehr Glätt-Iterationen bräuchten 2 Zellen Pad im GETEILTEN
         // Density-Grid (die Wasser-Cells indizieren es bei dim+4) — nie nur hier ändern, sonst Seam-Riss.
+        // Die Höhlen-Schicht (Welle 7): der Sicht-Graph der Höhlen-Luft aus demselben Gitter (der Worker baut ihn gleich).
+        const hoehle = this._voxelHoehlenGraph(terrainDensity, ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step);
         const geom = this._voxelChunkGeometry(
             ox - step,
             oy,
@@ -29581,7 +29954,9 @@ class AnazhRealm {
             step,
             undefined,
             1,
-            terrainDensity
+            terrainDensity,
+            1,
+            hoehle
         );
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
@@ -29700,6 +30075,9 @@ class AnazhRealm {
         // der Chunk-Mesh bleibt der CPU-Körper (Boden-Karte, Geomorph, Stitch-Quelle) und betritt die Szene nie.
         // Worker- und Sync-Bau speisen denselben Eintritt.
         if (fresh.mesh && !fresh.mesh.name) fresh.mesh.name = "voxelChunk:" + key + ":lod" + lod;
+        // Fail-closed: jeder Boden-Chunk trägt seinen Höhlen-Graph (Welle 7, `_voxelHoehlenGraph`) — ohne ihn wüsste der
+        // Satz nicht, welche Fläche aus dem Himmel zu sehen ist.
+        if (!fresh.mesh.geometry.hoehle) throw new Error(`_finalizeVoxelChunkBuild(${key}): Boden ohne Höhlen-Graph`);
         this._chunkSatzEin("boden", key, fresh.mesh.geometry, key);
         // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
         // Mesh-Pfad). Sync-Build baut immer BVH → default true.
@@ -32401,7 +32779,8 @@ class AnazhRealm {
             const w1 = vnoise(xz.mul(0.05).add(vec2(t.mul(0.06), t.mul(0.04)))).sub(0.5);
             const w2 = vnoise(xz.mul(0.12).add(vec2(t.mul(-0.05), t.mul(0.07)))).sub(0.5);
             const w3 = vnoise(xz.mul(0.23).add(vec2(t.mul(0.08), t.mul(-0.06)))).sub(0.5);
-            const h = w1.mul(1.4).add(w2.mul(0.7)).add(w3.mul(0.34));
+            const D = AnazhRealm.WASSER_WELLE.duenung;
+            const h = w1.mul(D[0]).add(w2.mul(D[1])).add(w3.mul(D[2]));
             return vec3(float(0.0), h, float(0.0));
         });
 
@@ -32447,10 +32826,11 @@ class AnazhRealm {
                 .mul(float(0.07))
                 .add(uTime.mul(float(0.02)));
             const a2 = xz.sub(drift.mul(float(1.8))).mul(float(0.12));
+            const K = AnazhRealm.WASSER_WELLE;
             const rippleH = vnoise(a1)
-                .add(vnoise(a2).mul(float(0.4)))
-                .sub(float(0.7))
-                .mul(float(2.2));
+                .add(vnoise(a2).mul(float(K.oktave)))
+                .sub(float(K.mitte))
+                .mul(float(K.kraeusel));
             const ripple = vec3(float(0.0), rippleH.mul(rippleAmt), float(0.0));
             return ocean.add(ripple);
         });
@@ -32761,22 +33141,19 @@ class AnazhRealm {
         return out;
     }
 
-    // Entsorgen gibt die Foundry-Referenz zurück (V4(B)-Ref-Zähler `_liveRefs` der Cache-Gruppe): solange
-    // eine Kachel die Studio-Geometrie zeichnet, räumt der LRU sie nicht; war sie geräumt, fällt sie jetzt.
-    _nahWieseKachelEntsorgen(k) {
-        if (k.meshes) for (const im of k.meshes) if (im.parent) im.parent.remove(im);
-        k.meshes = null;
-        for (const src of k.quellen || []) {
-            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
-            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
-        }
-        k.quellen = null;
+    // Eine Kachel fällt aus dem Ring (oder baut neu): sie trägt nur Daten, der Sicht-Satz legt sich neu.
+    _nahWieseKachelFaellt(key) {
+        const nw = this.state.nahWiese;
+        if (!nw || !nw.kacheln.delete(key)) return false;
+        nw.neu = true;
+        return true;
     }
 
-    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt
-    // Neubauten), Stufe L1/L2 nach Kachel-Distanz, das Rand-Band dünnt über `count`, ausserhalb fällt die
-    // Kachel. Ein Chunk-Neubau (Edit) oder ein neues Studio-Asset (Saison) baut die betroffenen Kacheln neu.
-    // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
+    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
+    // außerhalb fällt die Kachel; die Senken folgen den Studio-Vorlagen (`_nahWieseSenken`). Ein Chunk-Neubau (Edit)
+    // baut die betroffenen Kacheln neu. Stufe, Rand-Band und Sicht wählt der Sicht-Satz je Büschel und Frame
+    // (`_nahWieseSicht`) — eine Kachel baut nur, wenn sie den Ring betritt. Rückgabe: Zahl der Neubauten (0 = der Ring
+    // steht).
     _tickNahWiese(deadline) {
         const st = this.state;
         if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
@@ -32785,7 +33162,7 @@ class AnazhRealm {
             const gruppe = new THREE.Group();
             gruppe.name = "nahWiese";
             st.scene.add(gruppe);
-            st.nahWiese = { gruppe, kacheln: new Map(), chunkStand: new Map() };
+            st.nahWiese = { gruppe, kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         }
         const nw = st.nahWiese;
         const cam = st.camera.position;
@@ -32794,12 +33171,10 @@ class AnazhRealm {
         const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
         // Chunk-Neubau → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden).
         for (const [key, k] of nw.kacheln) {
-            if (!k.chunks) continue;
             for (const ck of k.chunks) {
                 const e = st.voxelChunks && st.voxelChunks.get(ck);
                 if (!e || e.surfMap !== k.chunkKarten.get(ck)) {
-                    this._nahWieseKachelEntsorgen(k);
-                    nw.kacheln.delete(key);
+                    this._nahWieseKachelFaellt(key);
                     break;
                 }
             }
@@ -32815,115 +33190,242 @@ class AnazhRealm {
             }
         }
         const gewollt = new Set(wunsch.map((w) => w.key));
-        for (const [key, k] of nw.kacheln) {
-            if (gewollt.has(key)) continue;
-            this._nahWieseKachelEntsorgen(k);
-            nw.kacheln.delete(key);
-        }
+        for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key)) this._nahWieseKachelFaellt(key);
         wunsch.sort((a, b) => a.d - b.d);
+        nw.offen = 0;
+        // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt. Der Wurf
+        // ist das Studio-Budget (B2c grass[stufe].schatten): die Nah-Wiese legt ihren Satz am AUGE — ein Werfer bräuchte
+        // den Satz der Kaskade, das Budget nennt für das Gras keinen (laut, falls doch).
+        for (const stufe of [1, 2]) {
+            if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
+                throw new Error(`Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`);
+            for (let v = 0; v < 2; v++) {
+                const fl = this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe);
+                if (fl && Array.isArray(fl.leaves) && fl.leaves.length) this._nahWieseSenken(v, stufe, fl);
+                else nw.offen++; // das Studio-Asset kommt noch (die Foundry-Anfrage läuft)
+            }
+        }
         const cfg = this._voxelChunkConfig(0);
         let gebaut = 0;
-        nw.offen = 0;
-        // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt.
-        const flatsJe = {};
-        for (const stufe of [1, 2])
-            flatsJe[stufe] = [0, 1].map((v) => this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe));
         for (const w of wunsch) {
-            const stufe = w.d <= NW.stufe1 ? 1 : 2;
-            const anteil = Math.max(0, Math.min(1, (NW.radius - w.d) / NW.rand + 0.5));
-            let k = nw.kacheln.get(w.key);
-            const flats = flatsJe[stufe];
-            const bereit = flats.every((f) => f && f.leaves);
-            if (k && k.stufe === stufe && k.flats && k.flats[0] === flats[0] && k.flats[1] === flats[1]) {
-                for (const im of k.meshes || []) AnazhRealm._instanzZahl(im, Math.round(im.userData.nGesamt * anteil));
+            if (nw.kacheln.has(w.key)) continue;
+            if (gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+                nw.offen++; // das Takt-Budget ist leer
                 continue;
             }
-            if (!bereit || gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
-                nw.offen++; // Studio-Asset kommt noch (Foundry-Anfrage läuft) oder das Takt-Budget ist leer
+            const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
+            if (!bueschel) {
+                nw.offen++;
                 continue;
             }
-            if (!k) {
-                const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
-                if (!bueschel) {
-                    nw.offen++;
-                    continue;
-                }
-                const chunks = new Set();
-                for (const [ex, ez] of [
-                    [0, 0],
-                    [1, 0],
-                    [0, 1],
-                    [1, 1],
-                ]) {
-                    const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
-                    const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
-                    chunks.add(`${cx},${cz}`);
-                }
-                const chunkKarten = new Map();
-                for (const ck of chunks) {
-                    const e = st.voxelChunks.get(ck);
-                    chunkKarten.set(ck, e ? e.surfMap : undefined);
-                }
-                k = { bueschel, chunks, chunkKarten, stufe: 0, flats: null, meshes: null };
-                nw.kacheln.set(w.key, k);
+            const chunks = new Set();
+            for (const [ex, ez] of [
+                [0, 0],
+                [1, 0],
+                [0, 1],
+                [1, 1],
+            ]) {
+                const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
+                const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
+                chunks.add(`${cx},${cz}`);
             }
-            this._nahWieseKachelEntsorgen(k);
-            // Der Wurf der Wiese ist das Studio-Budget (B2c grass[stufe].schatten: die Stufe wirft selbst oder nicht).
-            const wirft = this._foundryBudgetZeile("gras", stufe).schatten === stufe;
-            k.meshes = this._nahWieseKachelMeshes(k.bueschel, flats, w.key, wirft);
-            k.quellen = [];
-            for (const fl of flats)
-                for (const lf of fl.leaves)
-                    if (lf._srcGroup && !k.quellen.includes(lf._srcGroup)) {
-                        lf._srcGroup._liveRefs = (lf._srcGroup._liveRefs || 0) + 1;
-                        k.quellen.push(lf._srcGroup);
-                    }
-            for (const im of k.meshes) {
-                AnazhRealm._instanzZahl(im, Math.round(im.userData.nGesamt * anteil));
-                nw.gruppe.add(im);
+            const chunkKarten = new Map();
+            for (const ck of chunks) {
+                const e = st.voxelChunks.get(ck);
+                chunkKarten.set(ck, e ? e.surfMap : undefined);
             }
-            k.stufe = stufe;
-            k.flats = flats;
+            nw.kacheln.set(
+                w.key,
+                Object.assign({ chunks, chunkKarten }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+            );
+            nw.neu = true;
             gebaut++;
         }
         return gebaut;
     }
 
-    // Je Vorlage × Teil-Mesh EIN InstancedMesh (Matrix = Ort · Drehung · Studio-Streuung · Welt-Skala der
-    // Vorlage); Instanzen in Büschel-Ordnung, damit `count` die Ausdünnung trägt. `wirft` = der Budget-Wurf der Stufe;
-    // ein Schatten-Zwilling des Flats (Budget nennt eine andere Stufe) wirft auf der Zwillings-Ebene, unsichtbar.
-    _nahWieseKachelMeshes(bueschel, flats, key, wirft) {
-        const out = [];
-        const m4 = new THREE.Matrix4();
-        const q = new THREE.Quaternion();
-        const pv = new THREE.Vector3();
-        const sv = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
-        for (let v = 0; v < 2; v++) {
-            const liste = bueschel.filter((b) => b.vorlage === v);
-            if (!liste.length) continue;
-            for (const lf of flats[v].leaves) {
-                const im = AnazhRealm._instanzMesh(lf.geom, lf.mat, liste.length);
-                for (let i = 0; i < liste.length; i++) {
-                    const b = liste[i];
-                    pv.set(b.x, b.y, b.z);
-                    q.setFromAxisAngle(up, b.rot);
-                    sv.set(b.s, b.s, b.s);
-                    m4.compose(pv, q, sv).multiply(lf.localMatrix);
-                    im.setMatrixAt(i, m4);
+    // Die Daten einer Kachel: je Büschel die Basis-Matrix (Ort · Drehung · Skala — die Welt-Skala des Studio-Teils hängt
+    // der Sicht-Satz an), die Hysterese der Stufe (`l1`) und die Kachel-Kugel ohne Büschel-Radius (grober Cull vor
+    // dem Büschel-Test).
+    _nahWieseKachelDaten(tx, tz, bueschel) {
+        const K = AnazhRealm.NAH_WIESE.kachel;
+        const n = bueschel.length;
+        const basis = new Float32Array(n * 16);
+        const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
+        const q = this._tmpWieseQ || (this._tmpWieseQ = new THREE.Quaternion());
+        const pv = this._tmpWieseP || (this._tmpWieseP = new THREE.Vector3());
+        const sv = this._tmpWieseS || (this._tmpWieseS = new THREE.Vector3());
+        const up = this._tmpWieseUp || (this._tmpWieseUp = new THREE.Vector3(0, 1, 0));
+        let y0 = Infinity,
+            y1 = -Infinity,
+            sMax = 0;
+        for (let i = 0; i < n; i++) {
+            const b = bueschel[i];
+            pv.set(b.x, b.y, b.z);
+            q.setFromAxisAngle(up, b.rot);
+            sv.set(b.s, b.s, b.s);
+            m4.compose(pv, q, sv).toArray(basis, i * 16);
+            if (b.y < y0) y0 = b.y;
+            if (b.y > y1) y1 = b.y;
+            if (b.s > sMax) sMax = b.s;
+        }
+        return {
+            bueschel,
+            basis,
+            l1: new Uint8Array(n),
+            mx: (tx + 0.5) * K,
+            mz: (tz + 0.5) * K,
+            y0: n ? y0 : 0,
+            y1: n ? y1 : 0,
+            sMax,
+        };
+    }
+
+    // Die Senken einer Vorlage × Stufe: je Studio-Teil EINE InstancedMesh für den ganzen Ring (`nahWiese:<v>:L<stufe>:<p>`).
+    // Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
+    // (Saison) ersetzt die Senken der Vorlage. Die Sicht-Kugel der Vorlage: Höhe der Mitte und Radius in Büschel-Skala 1
+    // (die waagrechte Lage der Mitte geht in den Radius — der Büschel dreht um die Hochachse).
+    _nahWieseSenken(v, stufe, fl) {
+        const nw = this.state.nahWiese;
+        const kopf = `${v}:L${stufe}`;
+        const alt = nw.vorlagen.get(kopf);
+        if (alt && alt.flat === fl) return;
+        if (alt) for (const a of alt.senken) this._nahWieseSenkeFaellt(a);
+        const kugel = this._tmpWieseKugel || (this._tmpWieseKugel = new THREE.Sphere());
+        const senken = [];
+        let cy = null,
+            r = 0;
+        for (let p = 0; p < fl.leaves.length; p++) {
+            const lf = fl.leaves[p];
+            if (!lf || !lf.geom || !lf.mat)
+                throw new Error(
+                    `Nah-Wiese: Vorlage ${kopf} Teil ${p} ohne Geometrie oder Stoff — kein stiller Ausfall`
+                );
+            const a = {
+                key: `${kopf}:${p}`,
+                name: `nahWiese:${v}:L${stufe}:${p}`,
+                geo: lf.geom,
+                mat: lf.mat,
+                lokal: lf.localMatrix,
+                leafKey: lf.leafKey,
+                quelle: lf._srcGroup || null,
+                mesh: null,
+                kap: 0,
+                anzahl: 0,
+                wachse: 0,
+            };
+            if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
+            this._senkeMesh(a, 256, nw.gruppe);
+            nw.senken.set(a.key, a);
+            senken.push(a);
+            if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
+            kugel.copy(lf.geom.boundingSphere).applyMatrix4(lf.localMatrix);
+            if (cy === null) cy = kugel.center.y;
+            r = Math.max(r, kugel.radius + Math.hypot(kugel.center.x, kugel.center.z) + Math.abs(kugel.center.y - cy));
+        }
+        nw.vorlagen.set(kopf, { flat: fl, senken, cy: cy || 0, r });
+        nw.neu = true;
+    }
+
+    // Eine Senke fällt (ihre Vorlage wurde ersetzt): die Mesh verlässt die Szene, die Studio-Referenz geht zurück — war
+    // die Cache-Gruppe geräumt (LRU), fällt ihre Geometrie jetzt.
+    _nahWieseSenkeFaellt(a) {
+        const nw = this.state.nahWiese;
+        if (a.mesh) {
+            if (a.mesh.parent) a.mesh.parent.remove(a.mesh);
+            this._instanzAbschied(a.mesh);
+            a.mesh = null;
+        }
+        nw.senken.delete(a.key);
+        const src = a.quelle;
+        if (src) {
+            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
+            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+        }
+    }
+
+    // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
+    // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
+    // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (die Kachel
+    // als Box, das Büschel als Kugel nach dem EINEN Gesetz der Pass-Wahl `_passTrifft` in der Lage dieses Passes `L`); jede
+    // Senke trägt dicht genau ihre sichtbaren Büschel. Die Büschel sind Daten der Kacheln, keine Instanzen einer Gruppe: der
+    // Satz schreibt ihre Matrizen, und er rechnet nur, wenn sich Ring oder Blick ändern (`_sichtSteht`), nie wegen des
+    // Versatzes der zeitlichen Auflösung — den Rand dafür trägt das Gesetz (`sichtRand`).
+    _nahWieseSicht(kamera, L) {
+        const nw = this.state.nahWiese;
+        if (!nw || !kamera || !nw.senken.size) return;
+        if (!L || !L.fr || !L.fr.planes)
+            throw new Error("_nahWieseSicht: ohne die Lage der Pass-Wahl (`_passWahlLage` in `_passSicht`)");
+        if (this._sichtSteht(nw.sig || (nw.sig = new Float64Array(33)), kamera, nw.neu)) return;
+        nw.neu = false;
+        const NW = AnazhRealm.NAH_WIESE;
+        const we = kamera.matrixWorld.elements;
+        // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch).
+        const ziel = [null, [null, null], [null, null]];
+        let rMax = 0;
+        for (const stufe of [1, 2])
+            for (let v = 0; v < 2; v++) {
+                const vl = nw.vorlagen.get(`${v}:L${stufe}`) || null;
+                ziel[stufe][v] = vl;
+                if (vl && vl.r + Math.abs(vl.cy) > rMax) rMax = vl.r + Math.abs(vl.cy);
+            }
+        for (const a of nw.senken.values()) a.anzahl = 0;
+        const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
+        const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
+        const ax = we[12];
+        const az = we[14];
+        const H = NW.kachel * 0.5;
+        for (const k of nw.kacheln.values()) {
+            const n = k.bueschel.length;
+            if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax))
+                continue;
+            for (let i = 0; i < n; i++) {
+                const b = k.bueschel[i];
+                const d = Math.hypot(b.x - ax, b.z - az);
+                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
+                const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
+                k.l1[i] = l1 ? 1 : 0;
+                const vl = ziel[l1 ? 1 : 2][b.vorlage];
+                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
+                m4.fromArray(k.basis, i * 16);
+                for (const a of vl.senken) {
+                    if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.kap * 1.5), nw.gruppe);
+                    mw.multiplyMatrices(m4, a.lokal).toArray(a.mesh.instanceMatrix.array, a.anzahl * 16);
+                    a.anzahl++;
                 }
-                im.instanceMatrix.needsUpdate = true;
-                im.castShadow = lf.shadowTwin === true || wirft === true;
-                if (lf.shadowTwin) im.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-                im.receiveShadow = true;
-                im.computeBoundingSphere();
-                im.name = "nahWiese:" + key;
-                im.userData.nGesamt = liste.length;
-                im.userData.leafKey = lf.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
-                out.push(im);
             }
         }
-        return out;
+        for (const a of nw.senken.values()) {
+            const im = a.mesh.instanceMatrix;
+            im.clearUpdateRanges();
+            if (a.anzahl) im.addUpdateRange(0, a.anzahl * 16);
+            im.needsUpdate = true;
+            AnazhRealm._instanzZahl(a.mesh, a.anzahl);
+        }
+    }
+
+    // DIE SIGNATUR DES SICHT-SATZES (die Nah-Wiese, W7): der Satz legt seine Senken neu, wenn seine Daten (`neu`) oder die
+    // Kamera seines Passes sich ändern. Die Signatur ist die Welt-Matrix der Kamera und ihre Projektion OHNE den Versatz
+    // der zeitlichen Auflösung: TRAA verschiebt die Projektion je Frame um einen Bruchteil eines Pixels (die Elemente 8 und
+    // 9 einer Perspektive) — bis W7 rechnete und lud die Nah-Wiese darum jeden Frame. Den Rand dafür trägt das Gesetz der
+    // Pass-Wahl (`sichtRand`). Rückgabe true: die Sicht steht, der Satz bleibt, wie er ist.
+    _sichtSteht(sig, kamera, neu) {
+        const we = kamera.matrixWorld.elements;
+        const pe = kamera.projectionMatrix.elements;
+        let gleich = !neu && sig[32] === kamera.id;
+        for (let i = 0; i < 16; i++) {
+            if (sig[i] !== we[i]) {
+                sig[i] = we[i];
+                gleich = false;
+            }
+            if (i === 8 || i === 9) continue;
+            if (sig[16 + i] !== pe[i]) {
+                sig[16 + i] = pe[i];
+                gleich = false;
+            }
+        }
+        sig[32] = kamera.id;
+        return gleich;
     }
 
     // ═══ DIE NAH-STREU (Waldboden 04.10.) ═══
@@ -32933,10 +33435,10 @@ class AnazhRealm {
     // (`_foundryFlattenFor`: kindStages · budget.gestalten). Der Host erzeugt keine Gestalt — der Klein-Vegetations-
     // Zwilling (eigene Strip-/Kreuz-Geometrie je Art, Deko-Fernfeld, Deck-Streu) ist gefallen. Kosten an den SCHIRM
     // gebunden: ein Kachel-Ring um die Kamera (NAH_STREU), L0 im Armlängen-Kreis (`stufe0`), jenseits die leichte
-    // Stufe der Art, das Rand-Band dünnt. Je Art × Gestalt × Stufe × Teil EINE InstancedMesh `streuNah:…` (die
-    // Senke) für den ganzen Ring, eine Kachel ist ein BLOCK darin (Block-Tabelle; Eintritt hinten, Austritt rückt
-    // nach — Teil-Uploads). Jenseits des Rings trägt der Boden (Boden-Farbe) und die Strauch-/Blumen-Schicht der
-    // Streu-Regionen.
+    // Stufe der Art, das Rand-Band dünnt. Je Art × Gestalt × Stufe × Teil EINE Senke `streuNah:…` (die Daten des
+    // Rings), eine Kachel ist ein BLOCK darin; gezeichnet wird je STOFF (W7): jeder Block ist ein Bereich im Streu-Satz
+    // seines Stoffs, das Frustum jedes Passes wählt je Pflanze (`_streuSatzArt`). Jenseits des Rings trägt der Boden
+    // (Boden-Farbe) und die Strauch-/Blumen-Schicht der Streu-Regionen.
     static get NAH_STREU() {
         return Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, radius: 24, rand: 5, kachelnJeTakt: 3 });
     }
@@ -33076,133 +33578,167 @@ class AnazhRealm {
         return { items, chunks };
     }
 
-    // Die Senke einer (Art, Gestalt, Stufe, Teil): EINE InstancedMesh für den ganzen Ring. Sie hält die Studio-
-    // Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine LRU-Räumung zerstört sie nie.
-    // `wiegt`: die Art trägt weiches Gewebe — jeder ihrer Teile zeichnet mit dem wiegenden Studio-Stoff (derselbe Bauer
-    // `_foundryTreeMaterial`, Höhe = Vorlage × Studio-Skala des Teils).
+    // Die Senke einer (Art, Gestalt, Stufe, Teil): die DATEN des ganzen Rings — je Kachel ein Block (Matrizen = Ort ·
+    // Drehung · Skala · Welt-Skala des Teils, die Tint-Farben, die Ernte-Identitäten). Sie zeichnet nie selbst: jeder Block
+    // ist ein BEREICH im Satz ihres Stoffs (`_streuSatzArt`) — die Draw-Einheit der Nah-Streu ist ihr Stoff, nie ihre
+    // Gestalt. Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine
+    // LRU-Räumung zerstört sie nie (ein eintretender Block rechnet sich aus ihr). `wiegt`: die Art trägt weiches Gewebe —
+    // jeder ihrer Teile zeichnet mit dem wiegenden Studio-Stoff (derselbe Bauer `_foundryTreeMaterial`; die Höhe über der
+    // Wurzel in Metern reist im Satz als `aWiege`, `_satzBlock`).
     _streuNahSenke(art, v, stufe, p, lf, wiegt) {
         const ns = this.state.nahStreu;
         const key = `${art.id}:${v}:L${stufe}:${p}`;
         let a = ns.senken.get(key);
         if (a) return a;
         const u = lf.mat.userData || {};
-        const skala = wiegt ? new THREE.Vector3().setFromMatrixColumn(lf.localMatrix, 0).length() : 0;
         a = {
             key,
             name: "streuNah:" + key,
             preset: art.id,
             ernte: art.ernte,
             geo: lf.geom,
-            mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, skala) : lf.mat,
+            mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true) : lf.mat,
             lokal: lf.localMatrix,
+            wiegt: !!wiegt,
             leafKey: lf.leafKey,
-            tint: !!(lf.mat && lf.mat.userData && lf.mat.userData.useInstanceTint),
+            tint: u.useInstanceTint === true,
             quelle: lf._srcGroup || null,
-            mesh: null,
-            kap: 0,
             anzahl: 0,
             bloecke: new Map(),
-            ordnung: [],
-            wachse: 0,
+            satz: null,
         };
+        a.satz = this._streuSatzArt(a);
         if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
-        this._streuNahMesh(a, 64);
         ns.senken.set(key, a);
         return a;
     }
 
-    // Die Senken-InstancedMesh (neu oder gewachsen ×1,5): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
-    _streuNahMesh(a, kap) {
+    // DER STREU-SATZ (W7): je Stoff der Nah-Streu EIN Satz (`streuSatz|<Stoff>`, die Pool-Mechanik des Chunk-Satzes), sein
+    // Bereich ist der Block einer Kachel in einer Senke (`_streuNahSatz`), je Pflanze eine Zelle. Befund (echte GPU,
+    // Mess-Wiese −900/−850, `werkbank band`): je Art × Gestalt × Stufe × Teil zeichnete eine InstancedMesh den ganzen Ring —
+    // 15 Befehle und 46k Dreiecke im Hauptbild, auch hinter dem Blick (Haushalt 9 / 40k); der wiegende Stoff war je
+    // Studio-Skala ein eigener (Blüte 0,27 und Farn-Wedel 1,0: zwei Stoffe gleicher Regler). Jetzt zeichnet je Stoff EIN
+    // Befehl, und das Frustum jedes Passes wählt je Pflanze (`_chunkSatzPass`, der EINE Haken). Der wiegende Stoff trägt
+    // keine Dither-Stempel (die Nah-Streu blendet nie, ihr Stufen-Wechsel ist die Armlänge): Position · Normale · Farbe ·
+    // `aWiege`; ein stehender Stoff ist der Studio-Stoff (`lf.mat`) mit den Stempeln des Bau-Satzes. Fail-closed: ein Stoff,
+    // der eine Karte liest (uv — der Blatt-Atlas), hat im Satz keine Quelle.
+    _streuSatzArt(a) {
+        const mat = a.mat;
+        const u = mat.userData || {};
+        if (mat.map || u.foundryKind === "foliageTex" || mat._anazhAtlasTexe)
+            throw new Error(
+                `_streuSatzArt(${a.name}): der Stoff liest eine Karte (uv) — der Streu-Satz trägt sie nicht`
+            );
+        const art = "streuSatz|" + mat.uuid;
+        const st = this.state;
+        if (!st.satzStoffe) st.satzStoffe = new Map();
+        if (!st.satzStoffe.has(art))
+            st.satzStoffe.set(art, {
+                name: "streuSatz",
+                mat,
+                wurf: false,
+                attr: a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.BAU_SATZ_ATTR,
+                kapazitaet: "streu",
+                userData: { streuSatz: "streuSatz" },
+            });
+        return art;
+    }
+
+    // DIE SENKE der Nah-Wiese (neu oder gewachsen): je Vorlage × Stufe × Teil EINE InstancedMesh über der geteilten
+    // Studio-Geometrie für den ganzen Ring. Sie wirft nicht (Budget schatten false) und cullt selbst (der Sicht-Satz legt je
+    // Büschel und Pass ihre Instanzen, `_nahWieseSicht`); der Inhalt bis zur Anzahl reist mit, die alte verlässt Graph und
+    // GPU (`_instanzAbschied`). `eltern` = der Knoten der Senke.
+    _senkeMesh(a, kap, eltern) {
+        if (!eltern) throw new Error(`_senkeMesh(${a.name}): kein Eltern-Knoten`);
         const alt = a.mesh;
         const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
         m.name = a.name;
-        m.castShadow = false; // die Nah-Streu wirft nicht (budget schatten false)
+        m.castShadow = false;
         m.receiveShadow = true;
-        m.frustumCulled = false; // der Ring umspannt die Kamera
-        m.userData.inventar = "streu-klein";
+        m.frustumCulled = false;
         m.userData.leafKey = a.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
-        if (a.tint) m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(kap * 3).fill(1), 3);
         if (alt) {
             m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
-            if (a.tint) m.instanceColor.array.set(alt.instanceColor.array.subarray(0, a.anzahl * 3));
             if (alt.parent) alt.parent.remove(alt);
-            alt.dispose();
+            this._instanzAbschied(alt);
             a.wachse++;
         }
         AnazhRealm._instanzZahl(m, a.anzahl);
         a.mesh = m;
         a.kap = kap;
-        if (!this.state.scene) throw new Error(`_streuNahMesh(${a.name}): keine Szene`);
-        this.state.scene.add(m);
+        eltern.add(m);
     }
 
-    // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Instanz).
+    // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze): die Senke
+    // merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich.
     _streuNahEin(a, kachelKey, matrizen, farben, ids) {
         if (a.bloecke.has(kachelKey)) this._streuNahAus(a, kachelKey);
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): die Tint-Senke braucht n×3 Farben`);
-        if (a.anzahl + n > a.kap) this._streuNahMesh(a, Math.max(a.anzahl + n, Math.ceil(a.kap * 1.5)));
-        const m = a.mesh;
-        const start = a.anzahl;
-        m.instanceMatrix.array.set(matrizen, start * 16);
-        m.instanceMatrix.addUpdateRange(start * 16, n * 16);
-        m.instanceMatrix.needsUpdate = true;
-        if (a.tint) {
-            m.instanceColor.array.set(farben, start * 3);
-            m.instanceColor.addUpdateRange(start * 3, n * 3);
-            m.instanceColor.needsUpdate = true;
-        }
+        if (!ids || ids.length !== n)
+            throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze eine Ernte-Identität`);
+        const b = { n, ids, matrizen, farben: a.tint ? farben : null };
+        a.bloecke.set(kachelKey, b);
         a.anzahl += n;
-        a.bloecke.set(kachelKey, { start, n, ids });
-        a.ordnung.push(kachelKey);
-        AnazhRealm._instanzZahl(m, a.anzahl);
-        m.boundingSphere = null; // der Pick-Raycast cullt gegen die Hülle
+        this._streuNahSatz(a, kachelKey, b);
     }
 
-    // Ein Kachel-Block tritt aus: die folgenden Blöcke rücken nach, ihre Starts sinken um n.
+    // Ein Kachel-Block tritt aus: die Senke vergisst ihn, sein Bereich verlässt den Satz.
     _streuNahAus(a, kachelKey) {
         const b = a ? a.bloecke.get(kachelKey) : null;
         if (!b) return false;
-        this._streuNahLuecke(a, kachelKey, 0, b.n);
         a.bloecke.delete(kachelKey);
-        a.ordnung.splice(a.ordnung.indexOf(kachelKey), 1);
+        a.anzahl -= b.n;
+        this._streuNahSatz(a, kachelKey, null);
         return true;
     }
 
-    // Die Senke bleibt DICHT: n Instanzen ab Block-Index i treten aus dem Block der Kachel aus, alles Folgende rückt
-    // nach, die Starts der folgenden Blöcke sinken um n — eine leere Stelle zeichnet nie. Der Kachel-Austritt (der
-    // ganze Block) und die Ernte (eine Pflanze) gehen hier durch.
-    _streuNahLuecke(a, kachelKey, i, n) {
-        const b = a.bloecke.get(kachelKey);
-        const m = a.mesh;
-        const von = b.start + i;
-        const ende = von + n;
-        if (ende < a.anzahl) {
-            m.instanceMatrix.array.copyWithin(von * 16, ende * 16, a.anzahl * 16);
-            m.instanceMatrix.addUpdateRange(von * 16, (a.anzahl - ende) * 16);
-            m.instanceMatrix.needsUpdate = true;
-            if (a.tint) {
-                m.instanceColor.array.copyWithin(von * 3, ende * 3, a.anzahl * 3);
-                m.instanceColor.addUpdateRange(von * 3, (a.anzahl - ende) * 3);
-                m.instanceColor.needsUpdate = true;
-            }
+    // Der Bereich eines Blocks im Satz seines Stoffs (Schlüssel `<Senke>@<Kachel>`): seine Pflanzen in Welt-Lage
+    // (`_satzBlock`), je Pflanze eine Zelle; ein leerer Block verlässt den Satz.
+    _streuNahSatz(a, kachelKey, b) {
+        const key = a.key + "@" + kachelKey;
+        if (!b || b.n === 0) {
+            this._chunkSatzAus(a.satz, key);
+            return;
         }
-        a.anzahl -= n;
-        b.n -= n;
-        b.ids.splice(i, n);
-        for (let k = a.ordnung.indexOf(kachelKey) + 1; k < a.ordnung.length; k++)
-            a.bloecke.get(a.ordnung[k]).start -= n;
-        AnazhRealm._instanzZahl(m, a.anzahl);
-        m.boundingSphere = null;
+        const span = this._voxelChunkConfig().span;
+        const attr = this.state.satzStoffe.get(a.satz).attr;
+        this._chunkSatzEin(
+            a.satz,
+            key,
+            this._satzBlock(a.geo, b.matrizen, b.farben, b.n, attr, a.name + "@" + kachelKey),
+            Math.floor(b.matrizen[12] / span) + "," + Math.floor(b.matrizen[14] / span)
+        );
     }
 
-    // Der Bereich einer Kachel in einer Senke (Ernte, Sonden): {mesh, start, n, ids} oder null.
+    // Die Ernte: n Pflanzen ab Block-Index i treten aus dem Block der Kachel aus — der Block schrumpft, sein Bereich legt
+    // sich neu (eine geerntete Pflanze zeichnet nie). Der Kachel-Austritt (der ganze Block) geht über `_streuNahAus`.
+    _streuNahLuecke(a, kachelKey, i, n) {
+        const b = a.bloecke.get(kachelKey);
+        const rest = b.n - n;
+        const m = new Float32Array(rest * 16);
+        m.set(b.matrizen.subarray(0, i * 16));
+        m.set(b.matrizen.subarray((i + n) * 16), i * 16);
+        b.matrizen = m;
+        if (b.farben) {
+            const f = new Float32Array(rest * 3);
+            f.set(b.farben.subarray(0, i * 3));
+            f.set(b.farben.subarray((i + n) * 3), i * 3);
+            b.farben = f;
+        }
+        b.ids.splice(i, n);
+        b.n = rest;
+        a.anzahl -= n;
+        this._streuNahSatz(a, kachelKey, b);
+    }
+
+    // Der Block einer Kachel in einer Senke (Ernte, Sonden): {satz, bereich, n, ids} oder null.
     _streuNahBereich(senkeKey, kachelKey) {
         const ns = this.state.nahStreu;
         const a = ns ? ns.senken.get(senkeKey) : null;
         const b = a ? a.bloecke.get(kachelKey) : null;
-        return b ? { mesh: a.mesh, start: b.start, n: b.n, ids: b.ids } : null;
+        return b ? { satz: a.satz, bereich: a.key + "@" + kachelKey, n: b.n, ids: b.ids } : null;
     }
 
     // Eine Kachel verlässt den Ring (oder baut neu): ihre Blöcke treten aus allen Senken aus.
@@ -33472,38 +34008,45 @@ class AnazhRealm {
     }
 
     // ===== FORAGING: die Nah-Streu ist pflückbar =====
-    // Kein Parallel-System: der PICK raycastet die Senken der Nah-Streu (instanceId → Kachel-Block → die Ernte-
-    // Identität `gi|gj|art|i` der Pflanze), die ERNTE nimmt die Pflanze in allen Teilen aus der Senke und merkt sie
-    // in `state.scatterHarvested` (Kachel → Identität → Zeit; der Kachel-Bau lässt sie weg), der REGROW-Tick lässt sie
+    // Kein Parallel-System: der PICK prüft die Pflanzen der Senken (die Daten, die der Satz zeichnet: je Block die
+    // Matrizen — die Sonde trägt Geometrie und Stoff der Senke, die Pflanze ihre Matrix) und nennt die Ernte-Identität
+    // `gi|gj|art|i` der nächsten getroffenen Pflanze, die ERNTE nimmt die Pflanze in allen Teilen aus ihren Blöcken und merkt
+    // sie in `state.scatterHarvested` (Kachel → Identität → Zeit; der Kachel-Bau lässt sie weg), der REGROW-Tick lässt sie
     // nach FORAGE.regrowMs nachwachsen (die Kachel baut neu).
     _pickScatterAtCrosshair() {
         const ns = this.state.nahStreu;
-        if (!ns || ns.senken.size === 0 || !this.state.camera) return null;
+        const cam = this.state.camera;
+        if (!ns || ns.senken.size === 0 || !cam) return null;
         if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
-        this.state.camera.getWorldDirection(this._tmpCamDir);
-        const meshes = [];
-        const senkeVon = new Map();
+        cam.getWorldDirection(this._tmpCamDir);
+        if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
+        const rc = this._tmpRaycaster;
+        rc.set(cam.position, this._tmpCamDir);
+        rc.far = AnazhRealm.FORAGE.reach;
+        const P =
+            this._streuPick || (this._streuPick = { mesh: new THREE.Mesh(), kugel: new THREE.Sphere(), hits: [] });
+        let best = null;
         for (const a of ns.senken.values()) {
             if (a.anzahl === 0 || !a.ernte) continue;
-            meshes.push(a.mesh);
-            senkeVon.set(a.mesh, a);
+            if (!a.geo.boundingSphere) a.geo.computeBoundingSphere();
+            P.mesh.geometry = a.geo;
+            P.mesh.material = a.mat;
+            for (const [key, b] of a.bloecke)
+                for (let i = 0; i < b.n; i++) {
+                    P.mesh.matrixWorld.fromArray(b.matrizen, i * 16);
+                    P.kugel.copy(a.geo.boundingSphere).applyMatrix4(P.mesh.matrixWorld);
+                    if (!rc.ray.intersectsSphere(P.kugel)) continue;
+                    P.hits.length = 0;
+                    P.mesh.raycast(rc, P.hits);
+                    for (const h of P.hits)
+                        if (!best || h.distance < best.d)
+                            best = { d: h.distance, key, senke: a.key, name: a.preset, id: b.ids[i], point: h.point };
+                }
         }
-        if (!meshes.length) return null;
-        if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
-        this._tmpRaycaster.set(this.state.camera.position, this._tmpCamDir);
-        this._tmpRaycaster.far = AnazhRealm.FORAGE.reach;
-        const hits = this._tmpRaycaster.intersectObjects(meshes, false);
-        for (const hit of hits) {
-            if (!hit.object || typeof hit.instanceId !== "number") continue;
-            const a = senkeVon.get(hit.object);
-            if (!a) continue;
-            for (const key of a.ordnung) {
-                const b = a.bloecke.get(key);
-                if (hit.instanceId >= b.start && hit.instanceId < b.start + b.n)
-                    return { key, senke: a.key, name: a.preset, id: b.ids[hit.instanceId - b.start], point: hit.point };
-            }
-        }
-        return null;
+        P.mesh.geometry = null;
+        P.mesh.material = null;
+        if (!best) return null;
+        return { key: best.key, senke: best.senke, name: best.name, id: best.id, point: best.point };
     }
 
     _harvestScatterPick(pick) {
@@ -33524,7 +34067,7 @@ class AnazhRealm {
         if (jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
         jeKachel.set(pick.id, performance.now());
         // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
-        // ihrer Kachel in jeder Senke aus (die Senke bleibt dicht, `_streuNahLuecke`).
+        // ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`).
         for (const sk of kachel.senken) {
             const s = ns.senken.get(sk);
             const b = s ? s.bloecke.get(pick.key) : null;
@@ -48854,81 +49397,95 @@ class AnazhRealm {
                 /* flight recorder optional */
             }
         }
-        const THREE_REF = typeof THREE !== "undefined" ? THREE : null;
         const scene = st.scene;
-        if (!THREE_REF || !scene || !quellen.length) {
+        if (typeof THREE === "undefined" || !scene) {
             // Residual renderer: Quellen stehen; kein Mesh-Pfad (headless / no THREE).
-            // Aufräumen falls Teilchen aus früherem Live-Pass übrig.
-            if (dr.teilchen.length && (!THREE_REF || !scene)) {
-                for (let k = dr.teilchen.length - 1; k >= 0; k--) {
-                    const T2 = dr.teilchen[k];
-                    if (T2 && T2.m) {
-                        try {
-                            if (T2.m.parent) T2.m.parent.remove(T2.m);
-                            if (T2.m.geometry) T2.m.geometry.dispose();
-                            if (T2.m.material) T2.m.material.dispose();
-                        } catch (_e3) {
-                            /* dispose best-effort */
-                        }
-                    }
-                }
-                dr.teilchen.length = 0;
-            }
+            dr.teilchen.length = 0;
             return;
         }
         // Das Rauch-Gesetz wohnt im fachwerk-Gesetzbuch (EINE Quelle für Lab
         // und Welt) — fail-closed wie jeder Kern-Leser, kein Literal-Zwilling.
         const G =
             AnazhRealm.Gesetz("fachwerk:RAUCH_GESETZ", null) || AnazhRealm._kernPflichtBruch("fachwerk:RAUCH_GESETZ");
-        const maxT = G.maxTeilchen;
-        const chance = G.spawnChance;
-        const vyBase = G.vyBase;
-        const vyRange = G.vyRange;
-        const dxSpread = G.dxSpread;
-        const fade = G.fade;
-        const a0 = G.a0;
-        const aKill = G.aKill;
-        const size = G.size;
-        const color = G.color;
-        const scaleMul = G.scaleMul;
-        // Lab-Feel: pro Frame, nicht dt-skaliert (Parity worlds/fachwerk frame).
-        if (dr.teilchen.length < maxT && Math.random() < chance) {
+        // Lab-Feel: pro Frame, nicht dt-skaliert (Parity worlds/fachwerk frame). Ein Teilchen ist Daten (Lage, Größe,
+        // Deckkraft); ohne Quelle entsteht keins, die lebenden steigen und vergehen weiter.
+        if (quellen.length && dr.teilchen.length < G.maxTeilchen && Math.random() < G.spawnChance) {
             const qq = quellen[(Math.random() * quellen.length) | 0];
-            const pm = new THREE_REF.Mesh(
-                new THREE_REF.BoxGeometry(size, size, size),
-                // RAUCH_VIS "box-lambert" ist die matte Kiste des Labors; in der Welt liest Matt den EINEN Himmel
-                // nur als Standard (rau) — r184-Lambert liest scene.environment nie diffus.
-                new THREE_REF.MeshStandardMaterial({
-                    color: color,
-                    transparent: true,
-                    opacity: a0,
-                    roughness: 1,
-                    metalness: 0,
-                })
-            );
-            pm.position.set(qq.x, qq.y, qq.z);
-            pm.name = "dorf-rauch";
-            scene.add(pm);
             dr.teilchen.push({
-                m: pm,
-                vy: vyBase + Math.random() * vyRange,
-                dx: (Math.random() - 0.5) * dxSpread,
-                a: a0,
+                x: qq.x,
+                y: qq.y,
+                z: qq.z,
+                s: 1,
+                vy: G.vyBase + Math.random() * G.vyRange,
+                dx: (Math.random() - 0.5) * G.dxSpread,
+                a: G.a0,
             });
         }
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
-            T2.m.position.y += T2.vy;
-            T2.m.position.x += T2.dx;
-            T2.a -= fade;
-            T2.m.material.opacity = T2.a;
-            T2.m.scale.multiplyScalar(scaleMul);
-            if (T2.a <= aKill) {
-                scene.remove(T2.m);
-                T2.m.geometry.dispose();
-                T2.m.material.dispose();
-                dr.teilchen.splice(k, 1);
+            T2.y += T2.vy;
+            T2.x += T2.dx;
+            T2.a -= G.fade;
+            T2.s *= G.scaleMul;
+            if (T2.a <= G.aKill) dr.teilchen.splice(k, 1);
+        }
+        this._dorfRauchZeichnen(G, dr.teilchen);
+    }
+
+    // DER RAUCH IST EIN SATZ (Welle 6): jedes Teilchen war ein eigenes Mesh mit eigenem Stoff (die Deckkraft je Kiste) —
+    // ein GPU-Befehl je Teilchen (Mess-Wiese: dorf-rauch 5 Befehle, das Gesetz trägt bis maxTeilchen 26), dazu je Teilchen
+    // Geometrie und Stoff neu und wieder entsorgt. Jetzt: EINE InstancedMesh (die matte Kiste des Labors, RAUCH_VIS
+    // "box-lambert", in der Welt rau-Standard — r184-Lambert liest scene.environment nie diffus), die Deckkraft je
+    // Instanz als Attribut. Gleichfarbige Teilchen mischen ohne Tiefen-Schreiben unabhängig von der Reihenfolge (über
+    // a₁, a₂ symmetrisch): das Bild der von fern nach nah sortierten Einzel-Kisten, ohne Sortierung.
+    _dorfRauchZeichnen(G, teilchen) {
+        const st = this.state;
+        let R = st.dorfRauchSatz;
+        if (!R && !teilchen.length) return; // kein Rauch, kein Mesh
+        if (!R || R.cap < G.maxTeilchen || R.size !== G.size) {
+            if (R) {
+                if (R.mesh.parent) R.mesh.parent.remove(R.mesh);
+                this._instanzAbschied(R.mesh); // die Instanz-Puffer verlassen die GPU (W6, r184s Register)
+                R.geo.dispose();
+                R.mat.dispose();
             }
+            const cap = G.maxTeilchen;
+            const geo = new THREE.BoxGeometry(G.size, G.size, G.size);
+            const alpha = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1);
+            geo.setAttribute("aRauchDeck", alpha);
+            const mat = new THREE.MeshStandardNodeMaterial({
+                color: G.color,
+                transparent: true,
+                depthWrite: false,
+                roughness: 1,
+                metalness: 0,
+            });
+            mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
+            const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
+            mesh.name = "dorf-rauch";
+            mesh.userData.inventar = "dorf-rauch"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            AnazhRealm._instanzZahl(mesh, 0);
+            st.scene.add(mesh);
+            R = st.dorfRauchSatz = { mesh, geo, mat, alpha, cap, size: G.size, m: new THREE.Matrix4() };
+        }
+        const n = Math.min(teilchen.length, R.cap);
+        const e = R.m.elements;
+        for (let k = 0; k < n; k++) {
+            const t = teilchen[k];
+            R.m.makeScale(t.s, t.s, t.s);
+            e[12] = t.x;
+            e[13] = t.y;
+            e[14] = t.z;
+            R.mesh.setMatrixAt(k, R.m);
+            R.alpha.array[k] = t.a;
+        }
+        AnazhRealm._instanzZahl(R.mesh, n);
+        if (n > 0) {
+            R.mesh.instanceMatrix.needsUpdate = true;
+            R.alpha.needsUpdate = true;
+            R.mesh.boundingSphere = null; // die Teilchen steigen: die Hülle folgt (three cullt die Wolke als Ganzes)
         }
     }
 
@@ -51442,8 +51999,19 @@ class AnazhRealm {
             entry._lodBandLevel = null;
             return cur !== null;
         }
-        this._archInstanceAdd(entry, flat, { band: true, bandLod: desired });
+        this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true, bandLod: desired });
         return true;
+    }
+    // Der Band-Partner trägt keinen Zwilling, den die Primär-Stufe schon wirft (EIN Werfer je Gestalt: L0 und L1 eines
+    // Baums tragen DIESELBEN Zwillings-Leaves) — der Baum im L0↔L1-Band wirft einmal, nicht zweimal.
+    _bandOhneZwilling(flat, primFlat) {
+        if (!primFlat || !Array.isArray(primFlat.leaves) || !flat || !Array.isArray(flat.leaves)) return flat;
+        const prim = new Set();
+        for (const lf of primFlat.leaves) if (lf.shadowTwin) prim.add(lf.leafKey);
+        if (!prim.size || !flat.leaves.some((lf) => lf.shadowTwin && prim.has(lf.leafKey))) return flat;
+        return Object.assign({}, flat, {
+            leaves: flat.leaves.filter((lf) => !(lf.shadowTwin && prim.has(lf.leafKey))),
+        });
     }
 
     // ═══ GPU-FELD-BAKE ═══
@@ -51821,6 +52389,9 @@ class AnazhRealm {
         const slots = [];
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
+            // Auch der Schatten-Zwilling der gestreuten Gestalt wirft in der Gruppe der Streu-Stufe, nie in der des gesetzten
+            // Walds: die Kaskade wählt Werfer je GRUPPE (ihre Hülle), eine geteilte Gruppe zeichnete die nahen gesetzten
+            // Bäume auch in k1 (gemessen 05.10.: f:fichte k1 29k → 73k Dreiecke für 4 Befehle weniger).
             const g = this._archInstanceGroupFor(blueprintName, i, leaf, regionKey);
             // Kein Eintrag (slotEntry null = DEKO) → der Crosshair-Raycast ignoriert den Slot, bis er promoted wird.
             const ref = this._archGroupAlloc(g, null);
@@ -52387,7 +52958,8 @@ class AnazhRealm {
             const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
             if (_partner != null && _partner !== _curLod) {
-                const pf = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
+                const pf0 = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
+                const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;
                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
                     const pSlots = this._scatterInstanceAdd(
                         "fscatter:" + foundryPreset + ":" + gestalt + ":" + pf.lod,
@@ -52647,8 +53219,8 @@ class AnazhRealm {
     }
 
     // V18.300 — eine REGIONALE Streu-Gruppe vollständig entsorgen (region-privat →
-    // kein anderer Konsument). Der Mesh verlässt die Szene + gibt seinen
-    // instanceMatrix-Buffer frei; geom/mat sind geteilt (archFlattenCache) → bleiben.
+    // kein anderer Konsument). Der Mesh verlässt die Szene, seine Instanz-Puffer die GPU
+    // (_instanzAbschied); geom/mat sind geteilt (archFlattenCache) → bleiben.
     _disposeArchInstanceGroup(groupKey) {
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(groupKey);
         if (!g) return;
@@ -52658,12 +53230,14 @@ class AnazhRealm {
         // NEU in den Ofen (async Wärmung statt Sync-Compile am ersten Draw; lebt sie noch, Cache-Treffer).
         if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
         this.state.archInstanceGroups.delete(groupKey);
+        if (g.wahl) this._instanzWahlGruppen().delete(g);
+        if (g.satz) this._bauSatzMarke(groupKey, g.satz); // Welle 6 — der Bereich verlässt den Satz im nächsten Takt
         if (g.mesh) {
             // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
             // Region-BundleGroup; ein leeres Bundle
             // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
             this._archBundleSceneRemove(g.mesh);
-            if (typeof g.mesh.dispose === "function") g.mesh.dispose();
+            this._instanzAbschied(g.mesh);
             // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
             // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
             // (`_evicted`), gibt jetzt der letzte Halter ihre geteilte Geometrie frei (deferred).
@@ -62033,6 +62607,9 @@ class AnazhRealm {
     _archMeshBundleTouch(mesh) {
         const p = mesh ? mesh.parent : null;
         if (p && p.isBundleGroup) p.needsUpdate = true;
+        // Welle 6 — eine Satz-Gruppe zeichnet als Bereich im Satz ihres Stoffs: der Bereich legt sich neu.
+        else if (mesh && mesh.userData.bauSatz)
+            this._bauSatzMarke(mesh.userData.archInstanceKey, mesh.userData.bauSatz);
     }
 
     // Parent-bewusstes Entfernen (die scene.remove-Falle: remove() wirkt nur auf
@@ -62055,14 +62632,18 @@ class AnazhRealm {
     // ═══ DER SATZ (Welle B) ═══
     // Die Draw-Einheit ist Material × Geometrie über den ganzen Ring, nie Chunk × Material. Befund (Inventur der
     // echten GPU, Mess-Wiese): 78 Chunk-Böden zeichneten in JEDEM Pass einzeln — 234 GPU-Befehle, weil der Vendor
-    // den Bundle-Replay je (Bundle, Kamera) zieht und seine Mitglieder nie cullt. Je Satz-Art (Boden · Wasser)
-    // lebt EIN Szenen-Mesh mit Pool-Puffern; ein Chunk (bzw. sein Stitch-Band) ist ein BEREICH darin. Die Vertex-
-    // Bereiche vergibt First-Fit aus einer Freiliste, lebende Bereiche wandern nie: die Chunk-Geometrie trägt
-    // subarray-Views auf den Satz (jeder CPU-Leser bleibt byte-gleich, der Geomorph schreibt hinein und markiert
-    // seinen Bereich). Der Index (Uint32 — writeBuffer verlangt 4-Byte-Ausrichtung) wird je Render ab dem ersten
-    // geänderten Block neu gelegt, Boden nah → fern (Early-Z, wie three's Objekt-Sortierung), Wasser fern → nah
-    // (transparent). Jeder Schreibvorgang ist ein Teil-Upload (addUpdateRange → queue.writeBuffer(offset));
-    // ein Wachsen (×1,5) baut eine frische Geometrie und zeigt die Views neu.
+    // den Bundle-Replay je (Bundle, Kamera) zieht und seine Mitglieder nie cullt. Je Satz-Art (Boden · Wasser · je Stoff
+    // des gesetzten Baus) lebt EIN Szenen-Mesh mit Pool-Puffern; ein Chunk (bzw. sein Stitch-Band, eine Bau-Gruppe) ist ein
+    // BEREICH darin. Die Vertex-Bereiche vergibt First-Fit aus einer Freiliste, lebende Bereiche wandern nie: die
+    // Chunk-Geometrie trägt subarray-Views auf den Satz (jeder CPU-Leser bleibt byte-gleich, der Geomorph schreibt hinein und
+    // markiert seinen Bereich). Ein Bereich zerfällt in ZELLEN (Boden/Wasser: Viertel um die Mitte seiner Lage; Bau: je
+    // Instanz), je Zelle ein Index-Lauf und eine Hülle; der Index (Uint32 — writeBuffer verlangt 4-Byte-Ausrichtung) trägt je
+    // PASS einen ABSCHNITT: die Zellen, deren Hülle das Frustum der Pass-Kamera schneidet (`_chunkSatzPass` im Haken jedes
+    // Passes), Boden nah → fern (Early-Z, wie three's Objekt-Sortierung), Wasser fern → nah (transparent). Befund 05.10.
+    // (echte GPU, Mess-Wiese): der Satz zeichnete den ganzen Ring in JEDEM Pass — Hauptbild, Kaskade 0 und Kaskade 1 je
+    // 245 696 Dreiecke, auch hinter dem Blick und jenseits jeder Kaskaden-Box. Jeder Schreibvorgang ist ein Teil-Upload
+    // (`_chunkSatzSchreib` → addUpdateRange → queue.writeBuffer(offset)); ein Wachsen (Vertices ×1,5, Indizes ×1,25 oder
+    // auf die Summe der Abschnitte) baut eine frische Geometrie und zeigt die Views neu.
     _chunkSatzArt(art) {
         if (art === "boden")
             return {
@@ -62075,7 +62656,7 @@ class AnazhRealm {
                     ["aMorphWeight", 1],
                 ],
                 mat: this._getVoxelChunkMaterial(),
-                schatten: true, // der Boden wirft in beiden Kaskaden (Hang auf Tal) — 1 Befehl je Kaskade
+                schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt
                 empfang: true,
                 renderOrder: 0,
                 richtung: 1, // nah → fern
@@ -62097,12 +62678,30 @@ class AnazhRealm {
                 empfang: false,
                 renderOrder: 1, // transparent — nach den opaken Objekten
                 richtung: -1, // fern → nah (transparent: der Maler-Algorithmus innerhalb des Satzes)
+                hub: AnazhRealm._wasserHubM(), // der Shader hebt und senkt die Fläche (die Zellen-Hülle trägt es)
                 userData: { chunkSatz: "wasser", isHydrosphere: true, hydroKind: "chunk-water-satz" },
+            };
+        // DER STOFF-SATZ: je Familie × Stoff × Wurf ein Satz — sein Stoff ist der geteilte Studio-Stoff. Der Bau-Satz
+        // (`_bauSatzArt`): ein Bereich ist eine Instanz-Gruppe (alle ihre Instanzen in Welt-Lage, `_bauSatzBlock`). Der
+        // Streu-Satz (`_streuSatzArt`, W7): ein Bereich ist der Block einer Kachel in einer Senke der Nah-Streu, seine Attribute
+        // trägt der Eintrag (der wiegende Stoff dazu `aWiege`), seine Kapazität ist die der Streu.
+        const bau = this.state.satzStoffe ? this.state.satzStoffe.get(art) : null;
+        if (bau)
+            return {
+                name: bau.name,
+                attr: bau.attr || AnazhRealm.BAU_SATZ_ATTR,
+                mat: bau.mat,
+                schatten: bau.wurf,
+                empfang: true,
+                renderOrder: 0,
+                richtung: bau.mat.transparent === true ? -1 : 1, // ein durchscheinender Stoff fern → nah
+                userData: bau.userData || { bauSatz: bau.name },
+                kapazitaet: bau.kapazitaet || "bau",
             };
         throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
     }
 
-    // Der Satz einer Art (lazy): EIN Szenen-Kind, frustumCulled=false (der Ring umspannt den Spieler).
+    // Der Satz einer Art (lazy): EIN Szenen-Kind, frustumCulled=false (die Wahl je Pass trifft der Abschnitt).
     _chunkSatz(art) {
         const st = this.state;
         if (!st.chunkSaetze) st.chunkSaetze = new Map();
@@ -62110,7 +62709,7 @@ class AnazhRealm {
         if (s) return s;
         if (!st.scene) throw new Error(`_chunkSatz(${art}): keine Szene`);
         const spec = this._chunkSatzArt(art);
-        const C = AnazhRealm.CHUNK_SATZ[art];
+        const C = AnazhRealm.CHUNK_SATZ[spec.kapazitaet || art];
         if (!C) throw new Error(`_chunkSatz: keine Start-Kapazität für „${art}" (CHUNK_SATZ)`);
         s = {
             art,
@@ -62124,30 +62723,42 @@ class AnazhRealm {
             vFrei: [],
             bloecke: new Map(),
             ordnung: [],
+            // je Pass-Schlüssel (haupt · k<i> · anders) sein Abschnitt im Index: { start, kap, n, liste, takt }
+            abschnitte: new Map(),
+            iEnde: 0, // Hochwasser der Abschnitte im Index
+            iSumme: 0, // Indizes aller Bereiche (der ganze Ring)
+            takt: 0, // Render-Takt (_tickChunkSatz) — ein Abschnitt, den kein Pass mehr fragt, fällt beim Umlegen
+            vInhalt: 0, // die Vertices aller Bereiche (der Inhalt, den `_chunkSatzVerdichten` misst)
+            ueberSeit: -1, // der Takt, seit dem die Kapazität über `schwelle` × Ziel liegt (-1 = sie liegt darunter)
+            ueberHoch: 0, // das Hochwasser des Inhalts seit `ueberSeit`
+            ueberStart: 0, // der Inhalt zu Beginn der Frist (wächst er um mehr als `stetig`, beginnt sie neu)
             schmutzig: false,
             anker: null,
             verborgen: false,
+            grundAlt: false,
             wachse: 0,
+            // DIE NEUSCHREIB-LINSE: Index-Bytes je „Verursacher>Abschnitt" (ein Pass, der den Abschnitt eines anderen
+            // schreibt, steht beim Namen) — kumulativ, die Linsen lesen die Differenz je Frame
+            schreiben: {},
         };
         this._chunkSatzGeometrie(s, C.v, C.i);
-        const mesh = new THREE.Mesh(s.geom, spec.mat);
-        mesh.name = spec.name;
-        mesh.frustumCulled = false;
-        mesh.castShadow = spec.schatten;
-        mesh.receiveShadow = spec.empfang;
-        mesh.renderOrder = spec.renderOrder;
-        mesh.visible = false; // bis der erste Index liegt
-        Object.assign(mesh.userData, spec.userData);
-        s.mesh = mesh;
+        const mesh = this._chunkSatzMesh(s); // unsichtbar, bis der erste Bereich liegt
         st.chunkSaetze.set(art, s);
         st.scene.add(mesh);
+        // Ein Stoff-Satz (Bau, Streu) ist eine neue Konsum-Familie (Mesh × Studio-Stoff): der Pipeline-Ofen wärmt sie
+        // async, bevor ihr erster Bereich sie sichtbar macht.
+        if (spec.userData.bauSatz || spec.userData.streuSatz) this._pipeOfenMerke("satz", spec.mat, mesh);
         return s;
     }
 
-    // Die Pool-Geometrie (neu oder gewachsen): Inhalt bis zum Hochwasser bzw. zur gelegten Index-Zahl kopiert,
-    // die Views aller Bereiche neu gezeigt, die alte Geometrie geht in die verzögerte Entsorgung.
+    // Die Pool-Geometrie (neu oder gewachsen): die Vertex-Attribute bis zum Hochwasser, der Index bis zum Hochwasser der
+    // Abschnitte kopiert, die Views aller Bereiche neu gezeigt, die alte Geometrie geht in die verzögerte Entsorgung. Ein
+    // Wachsen mitten im Frame (ein Schatten-Pass, dessen Abschnitt keinen Platz findet) ist richtig: der Mesh trägt ab
+    // sofort die neue Geometrie, die den Abschnitt des Hauptbilds an seiner Stelle trägt (`_chunkSatzUmlegen` lässt ihn
+    // liegen); was der Haupt-Pass schon aufzeichnete, liest die alte, die bis zur Abgabe lebt.
     _chunkSatzGeometrie(s, vKap, iKap) {
         const alt = s.geom;
+        const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie das Schrumpfen (`_chunkSatzVerdichten`)
         const g = new THREE.BufferGeometry();
         for (const [name, is] of s.spec.attr) {
             const arr = new Float32Array(vKap * is);
@@ -62155,10 +62766,11 @@ class AnazhRealm {
             g.setAttribute(name, new THREE.BufferAttribute(arr, is));
         }
         const idx = new Uint32Array(iKap);
-        const iN = alt ? alt.drawRange.count : 0;
+        const iN = alt ? Math.min(s.iEnde, alt.index.array.length, iKap) : 0;
         if (iN > 0) idx.set(alt.index.array.subarray(0, iN));
         g.setIndex(new THREE.BufferAttribute(idx, 1));
-        g.setDrawRange(0, iN);
+        if (alt) g.setDrawRange(alt.drawRange.start, alt.drawRange.count);
+        else g.setDrawRange(0, 0);
         // frustumCulled=false: die Hülle wird nie gelesen — eine ehrliche „überall"-Kugel statt eines Laufs über
         // die ganze Kapazität
         g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
@@ -62166,11 +62778,98 @@ class AnazhRealm {
         s.vKap = vKap;
         s.iKap = iKap;
         for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
+        // Ein Wachsen tauscht die Geometrie am SELBEN Mesh: seine Render-Objekte sehen den Tausch beim nächsten Zeichnen
+        // (r184 `needsGeometryUpdate` → `setGeometry`). Die Falle des Tauschs — r184 hängt den Entsorgungs-Hörer einer
+        // Geometrie an ihr ERSTES Render-Objekt und liest dessen Attribute erst beim Entsorgen, nach dem Tausch die der neuen
+        // (Welle 6, echte GPU: die Normale des werfenden Bau-Satzes ohne Puffer, „Vertex buffer slot 5 … was not set") —
+        // fällt an der Wurzel, für jede Geometrie: `_renderObjektRegister` nimmt den Hörer heraus, die alten Puffer verlassen
+        // die GPU über den Kehraus (`_gpuKehraus`). Ein frischer Mesh je Wachsen ließe seine alten Render-Objekte am geteilten
+        // Stoff hängen (sein dispose-Hörer hält sie).
         if (s.mesh) s.mesh.geometry = g;
         if (alt) {
-            s.wachse++;
+            if (waechst) s.wachse++;
             this._queueGeometryDispose(alt);
         }
+    }
+
+    // DER SATZ FOLGT SEINEM INHALT (W7): die Kapazität eines Satzes folgte seiner Geschichte — er wuchs (×1,5) und schrumpfte
+    // nie, ein leerer kehrte nur auf die Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, Puffer-Linse): in Ruhe hielt
+    // der Wasser-Satz 3,25 MB für 0,33 MB Inhalt (9 745 von 65 536 Vertices), drei Bau-Sätze je 0,44 MB für 48 bis 1 464
+    // Vertices; nach drei Wander-Schleifen à 1,2 km hielt der Boden-Satz 24,9 statt 16,4 MB und die Bau-Sätze 12,0 statt
+    // 1,3 MB. Je Render-Takt misst der Satz sein Ziel: das Hochwasser seines Inhalts (die Vertices seiner Bereiche) über die
+    // Frist × `luft`, die Indizes aus dem Hochwasser der Abschnitte, die ein Pass noch fragt, mindestens vMin/iMin. Liegt die
+    // Kapazität `ruheTakte` Takte lang über `schwelle` × Ziel (die Schwelle über dem Wachs-Schritt hält ihn ruhig), schrumpft
+    // er auf das Ziel — ohne auf eine Ruhe seiner Bereiche zu warten (die Wasser-Bereiche treten fast je Takt neu ein), aber
+    // nie, solange er füllt: wächst sein Inhalt um mehr als `stetig` über den Stand zu Beginn der Frist (der Ring im Boot,
+    // ein Dorf, das einströmt), beginnt die Frist neu. Dann ziehen die Bereiche dicht nach vorn (jeder Index-Lauf um die
+    // Verschiebung seines Bereichs, Zellen und Hüllen bleiben), die Abschnitte fallen und jeder Pass legt seinen im nächsten
+    // Frame neu, die Geometrie tauscht am SELBEN Mesh, die Views der Chunks zeigen auf die neuen Arrays (jeder CPU-Leser
+    // bleibt byte-gleich). Ein leerer Satz ist der Fall „Inhalt 0". Die alten Puffer verlassen die GPU hier, vor dem Zeichnen
+    // des Frames (`_loopRender`): ein Render-Objekt, das die alte Geometrie las, tauscht beim nächsten Zeichnen, und der
+    // Kehraus hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
+    _chunkSatzVerdichten(s) {
+        const V = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
+        const R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+        let iBedarf = 0;
+        for (const a of s.abschnitte.values()) if (s.takt - a.takt <= R) iBedarf += this._chunkSatzKap(a.hoch);
+        const hoch = s.ueberSeit < 0 ? s.vInhalt : Math.max(s.ueberHoch, s.vInhalt);
+        const vZiel = Math.max(V.vMin, Math.ceil(hoch * V.luft));
+        const iZiel = Math.max(V.iMin, Math.ceil(iBedarf * V.luft));
+        const vNeu = s.vKap > vZiel * V.schwelle ? vZiel : s.vKap;
+        const iNeu = s.iKap > iZiel * V.schwelle ? iZiel : s.iKap;
+        if (vNeu === s.vKap && iNeu === s.iKap) {
+            s.ueberSeit = -1;
+            return false;
+        }
+        if (s.ueberSeit < 0 || s.vInhalt > s.ueberStart * V.stetig) {
+            s.ueberSeit = s.takt;
+            s.ueberStart = s.vInhalt;
+        }
+        s.ueberHoch = hoch;
+        if (s.takt - s.ueberSeit <= R) return false;
+        s.ueberSeit = -1;
+        if (vNeu < s.vKap) {
+            // dicht nach vorn, in Lage-Folge: jedes Ziel liegt vor seiner Quelle, kein Bereich überschreibt einen ungezogenen
+            const folge = Array.from(s.bloecke.values()).sort((x, y) => x.vStart - y.vStart);
+            let pos = 0;
+            for (const b of folge) {
+                const d = pos - b.vStart;
+                if (d !== 0) {
+                    for (const [name, is] of s.spec.attr)
+                        s.geom.attributes[name].array.copyWithin(pos * is, b.vStart * is, (b.vStart + b.vAnzahl) * is);
+                    const idx = b.idx;
+                    for (let i = 0; i < idx.length; i++) idx[i] += d;
+                    b.vStart = pos;
+                }
+                pos += b.vAnzahl;
+            }
+            s.vEnde = pos;
+            s.vFrei.length = 0;
+        }
+        s.abschnitte.clear();
+        s.iEnde = 0;
+        const alt = s.geom;
+        this._chunkSatzGeometrie(s, vNeu, iNeu);
+        s.geom.setDrawRange(0, 0); // der Index ist leer, bis jeder Pass seinen Abschnitt legt
+        s.verdichtet = (s.verdichtet || 0) + 1;
+        for (const k in alt.attributes) this._gpuAbschied(alt.attributes[k]);
+        if (alt.index) this._gpuAbschied(alt.index);
+        return true;
+    }
+
+    // Der EINE Mesh eines Satzes über seiner Pool-Geometrie (ein Wachsen tauscht nur die Geometrie).
+    _chunkSatzMesh(s) {
+        const spec = s.spec;
+        const mesh = new THREE.Mesh(s.geom, spec.mat);
+        mesh.name = spec.name;
+        mesh.frustumCulled = false;
+        mesh.castShadow = spec.schatten;
+        mesh.receiveShadow = spec.empfang;
+        mesh.renderOrder = spec.renderOrder;
+        mesh.visible = s.grundAlt = this._chunkSatzGrund(s);
+        Object.assign(mesh.userData, spec.userData);
+        s.mesh = mesh;
+        return mesh;
     }
 
     _chunkSatzViews(s, b) {
@@ -62181,9 +62880,11 @@ class AnazhRealm {
             );
     }
 
-    // First-Fit aus der Freiliste, sonst am Hochwasser; reicht die Kapazität nicht, wächst der Satz.
-    _chunkSatzVAlloc(s, n) {
-        const frei = s.vFrei;
+    // DIE FREILISTE des Satzes — EINE Mechanik für seine Vertex-Bereiche und die Zellen-Plätze seiner Abschnitte: Läufe
+    // [start, länge], nach Start sortiert, Nachbarn verschmolzen. `_satzFreiNimm` nimmt First-Fit den ersten Lauf, der
+    // reicht (−1: keiner); `_satzFreiGib` legt einen Lauf zurück und gibt das neue Hochwasser zurück (ein Lauf, der das
+    // Hochwasser `ende` berührt, senkt es).
+    _satzFreiNimm(frei, n) {
         for (let i = 0; i < frei.length; i++) {
             const f = frei[i];
             if (f[1] < n) continue;
@@ -62195,16 +62896,10 @@ class AnazhRealm {
             }
             return start;
         }
-        if (s.vEnde + n > s.vKap) this._chunkSatzGeometrie(s, Math.max(s.vEnde + n, Math.ceil(s.vKap * 1.5)), s.iKap);
-        const start = s.vEnde;
-        s.vEnde += n;
-        return start;
+        return -1;
     }
 
-    // Bereich zurück in die (nach Start sortierte) Freiliste, Nachbarn verschmelzen; berührt er das Hochwasser,
-    // sinkt es.
-    _chunkSatzVFrei(s, start, n) {
-        const frei = s.vFrei;
+    _satzFreiGib(frei, start, n, ende) {
         let i = 0;
         while (i < frei.length && frei[i][0] < start) i++;
         frei.splice(i, 0, [start, n]);
@@ -62217,10 +62912,26 @@ class AnazhRealm {
             frei.splice(i, 1);
         }
         const letzt = frei[frei.length - 1];
-        if (letzt && letzt[0] + letzt[1] === s.vEnde) {
-            s.vEnde = letzt[0];
+        if (letzt && letzt[0] + letzt[1] === ende) {
             frei.pop();
+            return letzt[0];
         }
+        return ende;
+    }
+
+    // Ein Vertex-Bereich: First-Fit aus der Freiliste, sonst am Hochwasser; reicht die Kapazität nicht, wächst der Satz.
+    _chunkSatzVAlloc(s, n) {
+        const frei = this._satzFreiNimm(s.vFrei, n);
+        if (frei >= 0) return frei;
+        if (s.vEnde + n > s.vKap) this._chunkSatzGeometrie(s, Math.max(s.vEnde + n, Math.ceil(s.vKap * 1.5)), s.iKap);
+        const start = s.vEnde;
+        s.vEnde += n;
+        return start;
+    }
+
+    // Ein Vertex-Bereich zurück in die Freiliste.
+    _chunkSatzVFrei(s, start, n) {
+        s.vEnde = this._satzFreiGib(s.vFrei, start, n, s.vEnde);
     }
 
     // DER EINE EINTRITT eines Chunk-Bürgers in die Szene: `key` ist der Bereichs-Name (Chunk-Key oder
@@ -62247,8 +62958,6 @@ class AnazhRealm {
             ga.needsUpdate = true;
         }
         const li = geom.index.array;
-        const idx = new Uint32Array(li.length);
-        for (let i = 0; i < li.length; i++) idx[i] = li[i] + vStart;
         const ck = String(chunkKey);
         const komma = ck.indexOf(",");
         const b = {
@@ -62259,59 +62968,171 @@ class AnazhRealm {
             geom,
             vStart,
             vAnzahl: n,
-            idx,
-            iAnzahl: idx.length,
-            iStart: -1,
+            idx: null,
+            iAnzahl: li.length,
+            zellen: null,
+            huelle: null,
         };
         s.bloecke.set(key, b);
+        s.vInhalt += n;
         this._chunkSatzViews(s, b);
+        // Ein Boden-Chunk bringt seinen Höhlen-Graph (Welle 7): seine Zellen werden Knoten, verknüpft mit den Nachbarn
+        if (geom.hoehle) this._hoehlenKnoten(s, b, geom.hoehle);
+        this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null);
         this._chunkSatzHuelle(s, b);
+        if (b.hoehle) this._hoehlenVerknuepfe(s, b);
+        s.iSumme += b.iAnzahl;
         s.schmutzig = true;
         return b;
     }
 
-    // DIE HÜLLE eines Boden-Bereichs (Welt-AABB + `randM`): der Boden lebt außerhalb jedes Bundles (EIN Szenen-Mesh),
-    // die Kaskaden-Box liest ihn trotzdem — als Empfänger-Band (der Boden unter der Scheibe empfängt) und als Werfer
-    // (ein Hang zur Sonne hin wirft über die nahe Ebene). Der Shader zeichnet zwischen Position und Morph-Ziel; das
-    // Ziel zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Nur Sätze, die werfen.
+    // DIE ZELLEN eines Bereichs — die Einheit, die ein Pass wählt: der Bereichs-Index (um den Bereichs-Anfang verschoben)
+    // legt sie als zusammenhängende Läufe hintereinander, je Zelle eine Hülle. Ein Bau-Bereich bringt seine Läufe mit
+    // (`grenzen`: Index-Offsets, je Instanz einer — `_bauSatzBlock`; vorher zog die Kaskade den Lauf vom ersten bis zum letzten
+    // Bereich im Frustum, k1 fast den ganzen Fels-Satz); ein Boden-/Wasser-Bereich zerfällt in VIERTEL (`_chunkSatzViertel`).
+    // Fail-closed: Grenzen, die den Index nicht lückenlos in ganzen Dreiecken teilen, sind ein lauter Bruch.
+    _chunkSatzZellen(b, li, vStart, grenzen, hoehle) {
+        if (!grenzen) return this._chunkSatzViertel(b, li, vStart, hoehle);
+        const ende = grenzen.length - 1;
+        if (ende < 1 || grenzen[0] !== 0 || grenzen[ende] !== li.length)
+            throw new Error(`_chunkSatzZellen(${b.key}): die Grenzen teilen den Index nicht (${li.length} Indizes)`);
+        const idx = new Uint32Array(li.length);
+        for (let i = 0; i < li.length; i++) idx[i] = li[i] + vStart;
+        b.idx = idx;
+        b.iAnzahl = idx.length;
+        b.zellen = [];
+        for (let z = 0; z < ende; z++) {
+            const a = grenzen[z],
+                e = grenzen[z + 1];
+            if (e < a || a % 3 !== 0 || e % 3 !== 0)
+                throw new Error(`_chunkSatzZellen(${b.key}): Grenze ${z} [${a}, ${e}) teilt kein ganzes Dreieck`);
+            if (e > a) b.zellen.push({ bereich: b, idx: idx.subarray(a, e), huelle: new THREE.Box3() });
+        }
+    }
+
+    // DIE VIERTEL eines Boden-/Wasser-Bereichs: jedes Dreieck nach seinem Schwerpunkt (xz) in eine von 2×2 Zellen um die
+    // Mitte der Lage des Bereichs (Werkbank 05.10., Mess-Wiese, Mittag, ein Blick: ganze Chunks 337k Dreiecke über drei
+    // Pässe, Viertel 282k, Sechzehntel 263k). Ein Boden-Chunk mit Höhlen-Graph (Welle 7) legt die Dreiecke der HIMMELS-Luft
+    // in die Viertel und jedes Dreieck der Höhlen-Luft in die Zelle seines Knotens (`knoten`: nur sie wählt die Höhlen-Sicht).
+    _chunkSatzViertel(b, li, vStart, hoehle) {
+        const P = b.geom.attributes.position.array;
+        let x0 = Infinity,
+            x1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity;
+        for (let k = 0; k < P.length; k += 3) {
+            if (P[k] < x0) x0 = P[k];
+            if (P[k] > x1) x1 = P[k];
+            if (P[k + 2] < z0) z0 = P[k + 2];
+            if (P[k + 2] > z1) z1 = P[k + 2];
+        }
+        // gegen die Schwerpunkt-SUMME (drei Ecken) verglichen: die Mitte × 3
+        const mx3 = 1.5 * (x0 + x1),
+            mz3 = 1.5 * (z0 + z1);
+        const nT = (li.length / 3) | 0;
+        // Zellen 0…3 die Viertel der Himmels-Luft, 4 + k der Höhlen-Knoten k
+        const H = hoehle ? hoehle.tri : null;
+        if (H && H.length !== nT)
+            throw new Error(`_chunkSatzViertel(${b.key}): ${H.length} Höhlen-Zellen für ${nT} Dreiecke`);
+        const nZ = 4 + (hoehle ? hoehle.n : 0);
+        const zelle = new Int32Array(nT);
+        const zahl = new Int32Array(nZ);
+        for (let t = 0, i = 0; t < nT; t++, i += 3) {
+            let z;
+            if (H && H[t] >= 0) z = 4 + H[t];
+            else {
+                const a = li[i] * 3,
+                    c = li[i + 1] * 3,
+                    d = li[i + 2] * 3;
+                z = (P[a] + P[c] + P[d] > mx3 ? 1 : 0) + (P[a + 2] + P[c + 2] + P[d + 2] > mz3 ? 2 : 0);
+            }
+            zelle[t] = z;
+            zahl[z]++;
+        }
+        const start = new Int32Array(nZ);
+        for (let z = 1; z < nZ; z++) start[z] = start[z - 1] + zahl[z - 1] * 3;
+        const idx = new Uint32Array(nT * 3);
+        const pos = start.slice();
+        for (let t = 0, i = 0; t < nT; t++, i += 3) {
+            const p = pos[zelle[t]];
+            idx[p] = li[i] + vStart;
+            idx[p + 1] = li[i + 1] + vStart;
+            idx[p + 2] = li[i + 2] + vStart;
+            pos[zelle[t]] = p + 3;
+        }
+        b.idx = idx;
+        b.iAnzahl = idx.length;
+        b.zellen = [];
+        for (let z = 0; z < nZ; z++)
+            if (zahl[z] > 0) {
+                const zl = {
+                    bereich: b,
+                    idx: idx.subarray(start[z], start[z] + zahl[z] * 3),
+                    huelle: new THREE.Box3(),
+                };
+                if (z >= 4) {
+                    zl.knoten = b.hoehle.knoten[z - 4];
+                    zl.knoten.zelle = zl;
+                }
+                b.zellen.push(zl);
+            }
+    }
+
+    // DIE HÜLLE eines Bereichs und seiner Zellen (Welt-AABB + `randM`): der Satz lebt außerhalb jedes Bundles (EIN
+    // Szenen-Mesh), jeder Pass wählt seine Zellen über ihre Hülle (`_chunkSatzAbschnitt`); die Kaskaden-Box liest die
+    // Bereichs-Hülle jedes werfenden Satzes als Empfänger-Band (der Boden unter der Scheibe empfängt) und als Werfer (ein
+    // Hang zur Sonne hin wirft über die nahe Ebene). Der Boden-Shader zeichnet zwischen Position und Morph-Ziel; das Ziel
+    // zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Ein Satz, dessen Stoff die Fläche senkrecht
+    // hebt (das Wasser, `spec.hub` = `_wasserHubM`), trägt den Hub oben und unten.
     _chunkSatzHuelle(s, b) {
-        if (s.spec.schatten !== true) return;
         const h = b.huelle || (b.huelle = new THREE.Box3());
         h.makeEmpty();
         const A = b.geom.attributes;
         const P = A.position.array,
             Z = A.aMorphTarget ? A.aMorphTarget.array : null,
             W = A.aMorphWeight ? A.aMorphWeight.array : null;
-        let x0 = Infinity,
-            y0 = Infinity,
-            z0 = Infinity,
-            x1 = -Infinity,
-            y1 = -Infinity,
-            z1 = -Infinity;
-        const dazu = (q, k) => {
-            const x = q[k],
-                y = q[k + 1],
-                z = q[k + 2];
-            if (x < x0) x0 = x;
-            if (x > x1) x1 = x;
-            if (y < y0) y0 = y;
-            if (y > y1) y1 = y;
-            if (z < z0) z0 = z;
-            if (z > z1) z1 = z;
-        };
-        for (let v = 0, k = 0; v < b.vAnzahl; v++, k += 3) {
-            dazu(P, k);
-            if (Z && W && W[v] > 0) dazu(Z, k);
-        }
-        if (x1 >= x0) {
-            h.min.set(x0, y0, z0);
-            h.max.set(x1, y1, z1);
-            h.expandByScalar(AnazhRealm.SCHATTEN_KASKADE.randM);
+        const vs = b.vStart;
+        const rand = AnazhRealm.SCHATTEN_KASKADE.randM;
+        const hub = s.spec.hub || 0;
+        for (const zelle of b.zellen) {
+            const I = zelle.idx;
+            let x0 = Infinity,
+                y0 = Infinity,
+                z0 = Infinity,
+                x1 = -Infinity,
+                y1 = -Infinity,
+                z1 = -Infinity;
+            const dazu = (q, k) => {
+                const x = q[k],
+                    y = q[k + 1],
+                    z = q[k + 2];
+                if (x < x0) x0 = x;
+                if (x > x1) x1 = x;
+                if (y < y0) y0 = y;
+                if (y > y1) y1 = y;
+                if (z < z0) z0 = z;
+                if (z > z1) z1 = z;
+            };
+            for (let i = 0; i < I.length; i++) {
+                const v = I[i] - vs;
+                dazu(P, v * 3);
+                if (Z && W && W[v] > 0) dazu(Z, v * 3);
+            }
+            const zh = zelle.huelle;
+            zh.makeEmpty();
+            if (x1 >= x0) {
+                zh.min.set(x0, y0, z0);
+                zh.max.set(x1, y1, z1);
+                zh.expandByScalar(rand);
+                zh.min.y -= hub;
+                zh.max.y += hub;
+                h.union(zh);
+            }
         }
     }
 
     // Der Austritt: die Chunk-Geometrie behält ihre Daten als EIGENE Kopie (ihr Bereich wird frei und neu
-    // vergeben), der Index legt sich im nächsten Takt neu.
+    // vergeben), jeder Abschnitt legt sich in seinem nächsten Pass neu.
     _chunkSatzAus(art, key) {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
@@ -62320,8 +63141,11 @@ class AnazhRealm {
             const a = b.geom.attributes[name];
             if (a) a.array = a.array.slice();
         }
+        if (b.hoehle) this._hoehlenLoese(s, b);
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
         s.bloecke.delete(key);
+        s.vInhalt -= b.vAnzahl;
+        s.iSumme -= b.iAnzahl;
         s.schmutzig = true;
         return true;
     }
@@ -62337,23 +63161,43 @@ class AnazhRealm {
             ga.needsUpdate = true;
         }
         this._chunkSatzHuelle(s, b); // der Geomorph legt neue Ziele — die Hülle folgt
+        // und der Horizont (`_hoehlenHorizont`) liest sie neu — jede gemerkte Sperre misst ihn neu (`H.boden`)
+        if (b.hoehle) {
+            b.hoehle.horizont = null;
+            s.hoehle.boden++;
+        }
+    }
+
+    // Die Grund-Sicht des Satzes (außerhalb jedes Passes): nicht verborgen und ein Bereich da.
+    _chunkSatzGrund(s) {
+        return !s.verborgen && s.iSumme > 0;
     }
 
     _chunkSatzSichtbar(art, sichtbar) {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         if (!s) return;
         s.verborgen = !sichtbar;
-        s.mesh.visible = sichtbar && s.geom.drawRange.count > 0;
+        s.grundAlt = this._chunkSatzGrund(s);
+        s.mesh.visible = s.grundAlt;
     }
 
-    // Je Render (vor dem Zeichnen): jeder geänderte Satz legt seinen Index ab dem ersten geänderten Block neu;
-    // ein Spieler-Chunk-Wechsel sortiert die Blöcke neu (Ring-Distanz).
+    // Je Render (vor dem Zeichnen): jeder geänderte Satz ordnet seine Bereiche neu (ein Spieler-Chunk-Wechsel: Ring-
+    // Distanz); die Abschnitte legt jeder Pass in seinem Haken.
     _tickChunkSatz() {
+        this._tickBauSatz();
         const saetze = this.state.chunkSaetze;
         if (!saetze || saetze.size === 0) return;
+        for (const s of saetze.values()) {
+            s.takt++;
+            this._chunkSatzBereit(s);
+            this._chunkSatzVerdichten(s);
+        }
+    }
+
+    _chunkSatzBereit(s) {
         const lpc = this.state.lastPlayerVoxelChunk;
         const anker = lpc ? lpc.cx + "," + lpc.cz : "";
-        for (const s of saetze.values()) if (s.schmutzig || s.anker !== anker) this._chunkSatzOrdnen(s, lpc, anker);
+        if (s.schmutzig || s.anker !== anker) this._chunkSatzOrdnen(s, lpc, anker);
     }
 
     _chunkSatzOrdnen(s, lpc, anker) {
@@ -62363,30 +63207,1136 @@ class AnazhRealm {
         const neu = Array.from(s.bloecke.values());
         for (const b of neu) b._d = lpc ? Math.max(Math.abs(b.cx - pcx), Math.abs(b.cz - pcz)) : 0;
         neu.sort((a, b) => (a._d - b._d) * r || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
-        const alt = s.ordnung;
-        let p = 0;
-        while (p < alt.length && p < neu.length && alt[p] === neu[p]) p++;
-        const ab = p > 0 ? neu[p - 1].iStart + neu[p - 1].iAnzahl : 0;
-        let summe = ab;
-        for (let k = p; k < neu.length; k++) summe += neu[k].iAnzahl;
-        if (summe > s.iKap) this._chunkSatzGeometrie(s, s.vKap, Math.max(summe, Math.ceil(s.iKap * 1.5)));
-        const index = s.geom.index;
-        let iPos = ab;
-        for (let k = p; k < neu.length; k++) {
-            const b = neu[k];
-            b.iStart = iPos;
-            index.array.set(b.idx, iPos);
-            iPos += b.iAnzahl;
-        }
-        if (iPos > ab) {
-            index.addUpdateRange(ab, iPos - ab);
-            index.needsUpdate = true;
-        }
-        s.geom.setDrawRange(0, iPos);
-        s.mesh.visible = !s.verborgen && iPos > 0;
         s.ordnung = neu;
+        // die Grund-Sicht schreibt der Satz nur, wenn sie kippt (erster Bereich, letzter fort) — ein Werkzeug, das ihn
+        // verbirgt, bleibt Herr seiner Sicht
+        const grund = this._chunkSatzGrund(s);
+        if (grund !== s.grundAlt) {
+            s.mesh.visible = grund;
+            s.grundAlt = grund;
+        }
         s.schmutzig = false;
         s.anker = anker;
+    }
+
+    // DER SATZ JE PASS (aus `_passSicht`, dem Haken jedes Renders, mit der Lage des Passes in `S.lage`): jeder Satz zeichnet
+    // in diesem Pass seinen Abschnitt — die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (`_passTrifftBox`). Das
+    // Hauptbild wählt mit dem Frustum der Haupt-Kamera, jede Kaskade (`k` ≥ 0) mit ihrer Box (die Kaskaden-Kamera samt
+    // Werfer-Raum zum Licht: ein Hang hinter dem Blick, der in die nahe Scheibe wirft, wirft) UND der Licht-Kapsel gegen ihre
+    // Scheibe (eine Zelle, deren Schatten keinen Empfänger der Scheibe trifft, wirft dort nicht), jede andere Kamera mit ihrem
+    // Frustum; ein Satz, der nicht wirft, ruht im Schatten-Pass (three zieht ihn dort nie). Nach jedem Pass zeigt der Satz
+    // wieder den Abschnitt des Hauptbilds — ein Schatten-Pass läuft mitten im Haupt-Pass.
+    _chunkSatzPass(kamera, nach, k, S) {
+        const saetze = this.state.chunkSaetze;
+        if (!saetze || saetze.size === 0) return;
+        const haupt = !nach && kamera === this.state.camera;
+        const key = nach || haupt ? "haupt" : k >= 0 ? "k" + k : "anders";
+        for (const s of saetze.values()) {
+            if (nach) {
+                this._chunkSatzZeige(s, s.abschnitte.get("haupt"), null);
+                continue;
+            }
+            if (k >= 0 && s.spec.schatten !== true) continue;
+            this._chunkSatzBereit(s);
+            // Die Höhlen-Schicht (Welle 7): welche Höhlen-Zelle die Pass-Kamera durch Luft erreicht
+            if (s.hoehle) this._hoehlenSicht(s, kamera, S, haupt);
+            // Das Hauptbild läuft vor jedem Zeichnen des Frames: hier legt der Satz seine Abschnitte dicht neu, sobald der
+            // Verschnitt (die verlassenen Läufe umgezogener Abschnitte) wächst.
+            if (haupt) {
+                let belegt = 0;
+                for (const a of s.abschnitte.values()) belegt += a.kap;
+                if (s.iEnde - belegt > s.iKap * AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt)
+                    this._chunkSatzUmlegen(s, null, 0, key);
+            }
+            this._chunkSatzZeige(s, this._chunkSatzAbschnitt(s, key, S.lage, haupt), S.ab);
+        }
+    }
+
+    // Der Abschnitt wird der Zeichen-Bereich [start, start + ende) — seine Zellen und die entarteten Lücken zwischen ihnen;
+    // ein Abschnitt ohne Zelle ruht diesen Pass (`ab` merkt den Satz für die Rückkehr am Anfang des nächsten Hakens, wie die
+    // abgewählten Werfer) — sonst bleibt die Sicht, wie sie ist (Grund-Sicht, Werkzeug).
+    _chunkSatzZeige(s, a, ab) {
+        const n = a ? a.n : 0;
+        s.geom.setDrawRange(a ? a.start : 0, n > 0 ? a.ende : 0);
+        if (ab && n === 0 && s.mesh.visible) {
+            s.mesh.visible = false;
+            ab.push(s.mesh);
+        }
+    }
+
+    // DER ABSCHNITT eines Passes: die Zellen in Satz-Ordnung, deren Hülle das Gesetz der Pass-Wahl in der Lage L trifft
+    // (erst der Bereich, dann seine Zellen — jede Zelle liegt in der Hülle ihres Bereichs), in EINEM Lauf des Index
+    // (`start`, Kapazität `kap`, Hochwasser `ende`); jede Zelle hat dort ihren PLATZ. Dieselben Zellen wie im letzten Pass
+    // schreiben nichts. Ändert sich die Wahl, schreibt der Pass nur die Änderung (`_chunkSatzTausch`): eine Zelle, die geht,
+    // hinterlässt eine entartete Lücke (drei gleiche Ecken zeichnen nichts), eine, die kommt, nimmt First-Fit eine Lücke
+    // oder hängt an — Befund 06.10. (echte GPU, Mess-Wiese, Drehen 1°/Frame): der Pass schrieb ab dem ersten Unterschied
+    // neu, 0,5–0,7 MB je Pass und Frame. Ein Satz, der seine Ordnung braucht (das durchscheinende Wasser, fern → nah),
+    // schreibt dicht ab dem ersten Unterschied. Dicht in Satz-Ordnung (das Early-Z der Nah-fern-Folge, exakt) legt der Pass
+    // neu, wenn die Wahl ruht, die Lücken `verschnitt` des Laufs übersteigen oder eine Zelle keinen Platz findet. Passt die
+    // Zahl der Indizes nicht in die Kapazität, zieht der Abschnitt um: hinten an, wo Platz ist, sonst legt
+    // `_chunkSatzUmlegen` alle Abschnitte dicht neu (`umlegen`: das Hauptbild, vor jedem Zeichnen des Frames). Kein Pass
+    // nimmt einem anderen seinen Lauf (vorher verdrängten die Kaskaden einander: 32 Verdrängungen in 36 Frames, 2,2 MB je
+    // Frame für k0 + k1); reicht der Index nicht, wächst er.
+    _chunkSatzAbschnitt(s, key, L, umlegen) {
+        const liste = [];
+        let n = 0;
+        // eine Höhlen-Zelle (Welle 7) zeichnet nur, wenn die Höhlen-Sicht dieses Passes sie erreicht hat
+        const stempel = s.hoehle ? s.hoehle.stempel : 0;
+        for (const b of s.ordnung) {
+            if (!b.huelle || b.huelle.isEmpty() || !this._passTrifftBox(L, b.huelle, 0)) continue;
+            for (const z of b.zellen)
+                if (
+                    (z.knoten === undefined || z.knoten.sicht === stempel) &&
+                    !z.huelle.isEmpty() &&
+                    this._passTrifftBox(L, z.huelle, 0)
+                ) {
+                    liste.push(z);
+                    n += z.idx.length;
+                }
+        }
+        let a = s.abschnitte.get(key);
+        if (a) {
+            a.takt = s.takt;
+            if (this._satzListeGleich(a.liste, liste)) {
+                // die Wahl ruht: nach `dichtNach` ruhigen Pässen legt sich ein Lauf mit Lücken oder fremder Folge einmal
+                // dicht in Satz-Ordnung (ein Pass, der beim Drehen nur einen Frame stillsteht, verdichtet nicht)
+                if (!a.dicht && ++a.ruhe >= AnazhRealm.CHUNK_SATZ_ABSCHNITT.dichtNach)
+                    this._chunkSatzDicht(s, a, liste, n, key, false);
+                return a;
+            }
+            a.ruhe = 0;
+            if (n > a.hoch) a.hoch = n;
+        } else {
+            a = {
+                key,
+                start: 0,
+                kap: 0,
+                n: 0,
+                ende: 0,
+                liste: [],
+                platz: new Map(),
+                frei: [],
+                dicht: true,
+                ruhe: 0,
+                hoch: n,
+                takt: s.takt,
+            };
+            s.abschnitte.set(key, a);
+        }
+        if (n > a.kap) {
+            const kap = this._chunkSatzKap(a.hoch);
+            this._chunkSatzLeer(a);
+            if (umlegen || s.iEnde + kap > s.iKap) this._chunkSatzUmlegen(s, a, kap, key);
+            else {
+                a.start = s.iEnde;
+                a.kap = kap;
+                s.iEnde += kap;
+            }
+            this._chunkSatzDicht(s, a, liste, n, key, false);
+        } else if (s.spec.richtung < 0 || a.liste.length === 0) this._chunkSatzDicht(s, a, liste, n, key, true);
+        else this._chunkSatzTausch(s, a, liste, n, key);
+        return a;
+    }
+
+    _satzListeGleich(x, y) {
+        if (x.length !== y.length) return false;
+        for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+        return true;
+    }
+
+    // Ein Abschnitt ohne Inhalt (vor einem Umzug, ohne Zelle).
+    _chunkSatzLeer(a) {
+        a.liste = [];
+        a.n = 0;
+        a.ende = 0;
+        a.platz.clear();
+        a.frei.length = 0;
+        a.dicht = true;
+    }
+
+    // DICHT: die Zellen der Wahl in Satz-Ordnung hintereinander ab `start`; `abUnterschied` (der Lauf liegt schon dicht in
+    // Satz-Ordnung) schreibt erst ab der ersten Zelle, die sich unterscheidet.
+    _chunkSatzDicht(s, a, liste, n, wer, abUnterschied) {
+        const index = s.geom.index.array;
+        let p = 0,
+            off = 0;
+        if (abUnterschied && a.dicht) {
+            const alt = a.liste;
+            while (p < alt.length && p < liste.length && alt[p] === liste[p]) {
+                off += liste[p].idx.length;
+                p++;
+            }
+        }
+        a.platz.clear();
+        a.frei.length = 0;
+        let o = 0;
+        for (let i = 0; i < liste.length; i++) {
+            const z = liste[i];
+            a.platz.set(z, o);
+            if (i >= p) index.set(z.idx, a.start + o);
+            o += z.idx.length;
+        }
+        if (o > off) this._chunkSatzSchreib(s, wer, a.key, a.start + off, o - off);
+        a.ende = o;
+        a.n = n;
+        a.liste = liste;
+        a.dicht = true;
+    }
+
+    // DER TAUSCH: nur die Änderung der Wahl — jede Zelle, die geht, wird eine entartete Lücke (ihr erster Index für jede
+    // Ecke: ein Dreieck ohne Fläche zeichnet nichts) oder fällt am Hochwasser ab; jede, die kommt, nimmt First-Fit eine
+    // Lücke (dieselbe Freiliste wie die Vertex-Bereiche) oder hängt an. Findet sie keinen Platz oder übersteigen die Lücken
+    // `verschnitt` des Laufs, legt der Pass dicht neu.
+    _chunkSatzTausch(s, a, liste, n, wer) {
+        const index = s.geom.index.array;
+        const neu = new Set(liste);
+        for (const [z, off] of a.platz)
+            if (!neu.has(z)) {
+                const len = z.idx.length;
+                a.platz.delete(z);
+                a.ende = this._satzFreiGib(a.frei, off, len, a.ende);
+                if (off < a.ende) {
+                    index.fill(z.idx[0], a.start + off, a.start + off + len);
+                    this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
+                }
+            }
+        for (const z of liste)
+            if (!a.platz.has(z)) {
+                const len = z.idx.length;
+                let off = this._satzFreiNimm(a.frei, len);
+                if (off < 0) {
+                    if (a.ende + len > a.kap) return this._chunkSatzDicht(s, a, liste, n, wer, false);
+                    off = a.ende;
+                    a.ende += len;
+                }
+                index.set(z.idx, a.start + off);
+                this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
+                a.platz.set(z, off);
+            }
+        a.n = n;
+        a.liste = liste;
+        a.dicht = false;
+        if (a.ende - n > a.ende * AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt)
+            this._chunkSatzDicht(s, a, liste, n, wer, false);
+    }
+
+    // Die Kapazität eines Abschnitts: das Hochwasser seiner Länge (`hoch`, die größte Wahl seines Passes) mit Luft — er
+    // wächst, ohne umzuziehen; ein Umzug zieht die anderen Abschnitte mit (Befund 06.10., echte GPU, Mess-Wiese, Drehen
+    // 1°/Frame: mit der Kapazität aus der LETZTEN Länge zogen die Kaskaden beim Drehen je Frame im Mittel 0,18 MB fremd um).
+    // Auf 3072 Indizes gerundet.
+    _chunkSatzKap(n) {
+        return n > 0 ? Math.ceil((n * AnazhRealm.CHUNK_SATZ_ABSCHNITT.luft) / 3072) * 3072 : 0;
+    }
+
+    // DAS UMLEGEN: alle Abschnitte dicht ab 0, das Hauptbild zuerst (ein Abschnitt, den seit `ruheTakte` Takten kein Pass
+    // fragte, fällt), jeder mit frischer Luft; `neu` (der Abschnitt, der nicht passte) bekommt `kapNeu` und schreibt der
+    // Aufrufer, jeder andere zieht MIT seinem Inhalt um; reicht der Index nicht, wächst er (×1,25 oder auf die Summe). Das
+    // Hauptbild liegt immer bei 0 — ein Umlegen mitten im Frame (ein anderer Pass, `wer`) lässt seinen Lauf unberührt, den
+    // der schon aufgezeichnete Befehl des Haupt-Passes liest; ein dichter Abschnitt, der an seiner Stelle bleibt, schreibt
+    // nichts.
+    _chunkSatzUmlegen(s, neu, kapNeu, wer) {
+        const R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+        for (const [k, a] of s.abschnitte) if (a !== neu && s.takt - a.takt > R) s.abschnitte.delete(k);
+        const h = s.abschnitte.get("haupt");
+        const hauptFest = !!h && h !== neu && wer !== "haupt";
+        const folge = h ? [h] : [];
+        for (const a of s.abschnitte.values()) if (a !== h) folge.push(a);
+        let summe = 0;
+        for (const a of folge) {
+            if (a === neu) a.kap = kapNeu;
+            else if (!(a === h && hauptFest)) a.kap = this._chunkSatzKap(a.hoch);
+            summe += a.kap;
+        }
+        if (summe > s.iKap) this._chunkSatzGeometrie(s, s.vKap, Math.max(summe, Math.ceil(s.iKap * 1.25)));
+        let pos = 0;
+        for (const a of folge) {
+            const vorher = a.start;
+            a.start = pos;
+            pos += a.kap;
+            if (a === neu || (a === h && hauptFest)) continue;
+            if (a.n === 0) this._chunkSatzLeer(a);
+            else if (a.start !== vorher || !a.dicht) this._chunkSatzDicht(s, a, a.liste, a.n, wer, false);
+        }
+        s.iEnde = pos;
+    }
+
+    // Der EINE Index-Schreiber (Teil-Upload ab `ab`, `n` Indizes); die Neuschreib-Linse bucht die Bytes auf
+    // „Verursacher>Abschnitt" — `wer` ≠ `wen` heißt: ein Pass schrieb den Abschnitt eines anderen.
+    _chunkSatzSchreib(s, wer, wen, ab, n) {
+        const index = s.geom.index;
+        index.addUpdateRange(ab, n);
+        index.needsUpdate = true;
+        const k = wer + ">" + wen;
+        s.schreiben[k] = (s.schreiben[k] || 0) + 4 * n;
+    }
+
+    // ═══ DIE HÖHLEN-SICHT (Welle 7) ═══
+    // Befund (echte GPU, Mess-Wiese −900/−850, Gitter-Probe): 68 % der Boden-Kanten trennen Fels von HÖHLEN-Luft (Luft unter
+    // der obersten festen Ecke ihrer Spalte, `_voxelHoehlenGraph`), 16–52 m tief, und der Boden-Satz zeichnete sie in JEDEM
+    // Pass mit — von der Wiese aus sieht man sie nie, eine Tiefen-Grenze risse an Mündungen, Überhängen und Klippen Löcher.
+    // Die Sicht folgt der Luft: ein Strahl aus der Himmels-Luft betritt die Höhlen-Luft nur durch eine MÜNDUNG und wandert
+    // von Zelle zu Zelle nur durch ein PORTAL (im Chunk über eine Teil-Grenze, über die Chunk-Kante durch die Rand-Bänder).
+    // Je Pass läuft das Schirm-Rechteck jeder Mündung durch die Portale (Schnitt je Portal, Vereinigung je Zelle — die
+    // klassische Portal-Sicht); eine Zelle, die ein Rechteck erreicht, zeichnet. Steht das Auge in einer Zelle (perspektivisch,
+    // in ihrer Luft-Box), läuft ihr ganzes Bild. Die Kaskade (orthogonal, das Licht) läuft dieselbe Rechnung im Licht-Raum:
+    // die Schatten-Karte trägt je Strahl die ERSTE Fläche vom Licht, und die liegt in Himmels-Luft oder hinter einer Mündung —
+    // jede andere Höhlen-Fläche ändert die Karte nie. Die Kosten folgen dem Bild: je Pass die Mündungen und die erreichten
+    // Zellen, nie die Weltgröße.
+
+    // Die Knoten eines Boden-Bereichs aus dem Höhlen-Graph seines Chunks (Boxen in Welt-Lage, um den Saum geweitet); sein
+    // Horizont entsteht beim ersten Lesen (`_hoehlenHorizont`).
+    _hoehlenKnoten(s, b, H) {
+        if (!s.hoehle)
+            s.hoehle = {
+                stempel: 0,
+                muendungen: new Set(),
+                stapel: [],
+                rect: new Float64Array(6),
+                besucht: null,
+                kacheln: null, // die Licht-Kacheln der Kaskade (`_hoehlenSichtLicht`)
+                sichtHaupt: null, // die Zellen, die das letzte Hauptbild erreichte (die Empfänger der Kaskaden)
+                // die Generation des Bodens: jeder Ein- und Austritt eines Boden-Bereichs und jeder Geomorph-Schreiber legt den
+                // Horizont neu — eine gemerkte Sperre gilt nur dem Boden, den sie gemessen hat (`_hoehlenSperre`)
+                boden: 0,
+            };
+        s.hoehle.boden++;
+        const saum = AnazhRealm.HOEHLEN_SAUM.schritte * H.step + AnazhRealm.HOEHLEN_SAUM.m;
+        const box = (A, o, weit) => {
+            if (!(A[o] <= A[o + 3])) return null;
+            const bx = new THREE.Box3(
+                new THREE.Vector3(A[o], A[o + 1], A[o + 2]),
+                new THREE.Vector3(A[o + 3], A[o + 4], A[o + 5])
+            );
+            return weit ? bx.expandByScalar(saum) : bx;
+        };
+        const knoten = [];
+        for (let z = 0; z < H.n; z++)
+            knoten.push({
+                bereich: b,
+                id: z,
+                luft: box(H.knoten, z * 6, true),
+                // die Mündungen der Zelle (je Fach eine Box, um den Saum geweitet) mit ihrer Horizont-Sperre je Auge
+                tore: [],
+                seiten: [0, 1, 2, 3].map((sd) => box(H.seiten, z * 24 + sd * 6, false)),
+                // je Seite die offene Rand-Box (der Nachbar-Chunk fehlt, `_hoehlenRand`), sonst null
+                raender: [null, null, null, null],
+                nb: [],
+                zelle: null,
+                sicht: 0,
+                rect: new Float64Array(4),
+                z: 0,
+            });
+        for (let o = 0; o < H.muend.length; o += 7)
+            knoten[H.muend[o]].tore.push({
+                box: box(H.muend, o + 1, true),
+                sperre: -Infinity,
+                auge: [NaN, NaN, NaN],
+                boden: -1,
+            });
+        for (let o = 0; o < H.kanten.length; o += 8) {
+            const a = knoten[H.kanten[o]];
+            const c = knoten[H.kanten[o + 1]];
+            const p = this._hoehlenPortal(box(H.kanten, o + 2, true));
+            a.nb.push({ zu: c, p });
+            c.nb.push({ zu: a, p });
+        }
+        b.hoehle = { knoten, step: H.step, rand: H.rand, horizont: null };
+    }
+
+    _hoehlenPortal(box) {
+        return { box, rect: new Float64Array(6), st: 0, auf: false };
+    }
+
+    // DER HORIZONT eines Boden-Bereichs (lazy, `_hoehlenHorizontProbe`): je Zelle eines Rasters von `HOEHLEN_HORIZONT_M`
+    // über seiner Fläche eine UNTERE Schranke des gezeichneten Himmels-Bodens. Die Quelle ist die Boden-Karte des Chunks
+    // (`_bodenKarteAusMesh`: die oberste nicht-steile Fläche des fertigen Meshs, Punkte im Abstand step/Teilung) — das
+    // Minimum ihrer Punkte in der Zelle und einen Punkt-Abstand darum, minus die Hang-Schranke (eine nicht-steile Fläche,
+    // |n_y| ≥ 0,3, fällt zwischen zwei Punkten um höchstens tan(acos 0,3) · Abstand · √½) und den größten Abstieg, den der
+    // Geomorph einem Vertex dieser Zelle gibt (der Vertex-Shader zeichnet zwischen Position und Morph-Ziel). Ein Punkt ohne
+    // Boden (Wand, Höhle, außerhalb) macht die Zelle offen (−∞). Ein Geomorph-Schreiber legt den Horizont neu
+    // (`_chunkSatzMarke`).
+    _hoehlenHorizont(s, b) {
+        const span = this._voxelChunkConfig(0).span;
+        const R = AnazhRealm.HOEHLEN_HORIZONT_M;
+        const n = Math.round(span / R);
+        const h = new Float32Array(n * n).fill(-Infinity);
+        const ent = this.state.voxelChunks ? this.state.voxelChunks.get(b.chunkKey) : null;
+        const map = ent && ent.surfMap;
+        if (!map) return h;
+        const cfg = this._voxelChunkConfig(ent.lod || 0);
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const a = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const ox = b.cx * span - cfg.step,
+            oz = b.cz * span - cfg.step;
+        // der Geomorph-Abstieg je Raster-Zelle (und ihre Nachbarn)
+        const morph = new Float32Array(n * n);
+        const A = s.geom.attributes;
+        const P = A.position.array,
+            Z = A.aMorphTarget.array,
+            W = A.aMorphWeight.array;
+        for (let v = b.vStart; v < b.vStart + b.vAnzahl; v++) {
+            const w = W[v];
+            if (!(w > 0)) continue;
+            const ab = (P[v * 3 + 1] - Z[v * 3 + 1]) * w;
+            if (!(ab > 0)) continue;
+            const I = Math.floor((P[v * 3] - b.cx * span) / R),
+                K = Math.floor((P[v * 3 + 2] - b.cz * span) / R);
+            for (let k = K - 1; k <= K + 1; k++)
+                for (let i = I - 1; i <= I + 1; i++)
+                    if (i >= 0 && k >= 0 && i < n && k < n && ab > morph[i + k * n]) morph[i + k * n] = ab;
+        }
+        const hang = Math.tan(Math.acos(0.3)) * a * Math.SQRT1_2;
+        for (let K = 0; K < n; K++)
+            for (let I = 0; I < n; I++) {
+                const xa = b.cx * span + I * R,
+                    za = b.cz * span + K * R;
+                const i0 = Math.floor((xa - ox) / a) - 1,
+                    i1 = Math.ceil((xa + R - ox) / a) + 1,
+                    k0 = Math.floor((za - oz) / a) - 1,
+                    k1 = Math.ceil((za + R - oz) / a) + 1;
+                let mn = Infinity;
+                for (let k = k0; k <= k1 && mn > -Infinity; k++)
+                    for (let i = i0; i <= i1; i++) {
+                        const v = i >= 0 && k >= 0 && i < M && k < M ? map[i + k * M] : NaN;
+                        if (!(v >= -Infinity)) {
+                            mn = -Infinity;
+                            break;
+                        }
+                        if (v < mn) mn = v;
+                    }
+                h[I + K * n] = mn - hang - morph[I + K * n];
+            }
+        return h;
+    }
+
+    // Die Rand-Portale zu den Nachbar-Chunks im Satz. Gleiche Stufe: derselbe Welt-Punkt auf der gemeinsamen Kante liegt in
+    // beiden Gittern (`rand` des Graphs, gleiche Indizes) — jedes Paar Höhlen-Punkt ↔ Höhlen-Punkt verknüpft seine zwei Zellen,
+    // das Portal ist die Box dieser Punkte (um den Saum geweitet). Eine Höhlen-Komponente, die die Kante kreuzt, trägt dort
+    // einen Gitter-Punkt (ein 6-Pfad wechselt die Ebene nur über einen Punkt auf ihr). An einer LOD-Naht (verschiedene
+    // Schritte) teilen die Gitter nicht jeden Punkt: dort schneidet die Rand-Band-Box einer Zelle die der Nachbar-Zelle,
+    // beide um den gröberen Saum geweitet. Danach legen der Bereich und seine Nachbarn ihre offenen Ränder neu.
+    _hoehlenVerknuepfe(s, b) {
+        const R = AnazhRealm.HOEHLEN_SAUM;
+        const x = new THREE.Box3(),
+            y = new THREE.Box3();
+        const span = this._voxelChunkConfig(0).span;
+        const oy = (this.state.terrainBaseHeight || 0) - this._voxelChunkConfig(0).floorDrop;
+        for (let seite = 0; seite < 4; seite++) {
+            const n = this._hoehlenNachbar(s, b, seite);
+            if (!n) continue;
+            const gegen = seite ^ 1;
+            const knA = b.hoehle.knoten,
+                knB = n.hoehle.knoten;
+            const verbinde = (a, c, box) => {
+                const p = this._hoehlenPortal(box);
+                a.nb.push({ zu: c, p });
+                c.nb.push({ zu: a, p });
+            };
+            if (b.hoehle.step === n.hoehle.step) {
+                const step = b.hoehle.step;
+                const saum = R.schritte * step + R.m;
+                // die Gegen-Kante des Nachbarn: (j, u) → Zelle
+                const gegenueber = new Map();
+                const rn = n.hoehle.rand;
+                for (let o = 0; o < rn.length; o += 4)
+                    if (rn[o] === gegen) gegenueber.set(rn[o + 1] * 65536 + rn[o + 2], rn[o + 3]);
+                const paare = new Map();
+                const ra = b.hoehle.rand;
+                // die Welt-Lage der Kante und der Gitter-Ursprung (Pad: ein Schritt vor der Chunk-Kante)
+                const ox = b.cx * span - step,
+                    oz = b.cz * span - step;
+                const kante =
+                    seite === 0
+                        ? b.cx * span
+                        : seite === 1
+                          ? (b.cx + 1) * span
+                          : seite === 2
+                            ? b.cz * span
+                            : (b.cz + 1) * span;
+                for (let o = 0; o < ra.length; o += 4) {
+                    if (ra[o] !== seite) continue;
+                    const zc = gegenueber.get(ra[o + 1] * 65536 + ra[o + 2]);
+                    if (zc === undefined) continue;
+                    const za = ra[o + 3];
+                    const key = za * 65536 + zc;
+                    let bx = paare.get(key);
+                    if (!bx) paare.set(key, (bx = new THREE.Box3()));
+                    const wy = oy + ra[o + 1] * step;
+                    if (seite < 2) bx.expandByPoint(x.min.set(kante, wy, oz + ra[o + 2] * step));
+                    else bx.expandByPoint(x.min.set(ox + ra[o + 2] * step, wy, kante));
+                }
+                for (const [key, bx] of paare) {
+                    const a = knA[Math.floor(key / 65536)],
+                        c = knB[key % 65536];
+                    if (a && c) verbinde(a, c, bx.expandByScalar(saum));
+                }
+                continue;
+            }
+            const saum = R.schritte * Math.max(b.hoehle.step, n.hoehle.step) + R.m;
+            for (const a of knA) {
+                const sa = a.seiten[seite];
+                if (!sa) continue;
+                x.copy(sa).expandByScalar(saum);
+                for (const c of knB) {
+                    const sc = c.seiten[gegen];
+                    if (!sc) continue;
+                    y.copy(sc).expandByScalar(saum);
+                    if (x.intersectsBox(y)) verbinde(a, c, x.clone().intersect(y));
+                }
+            }
+        }
+        this._hoehlenRandUm(s, b);
+    }
+
+    // Der Nachbar-Bereich eines Boden-Bereichs an einer Seite (0 −x · 1 +x · 2 −z · 3 +z), sofern er einen Höhlen-Graph trägt.
+    _hoehlenNachbar(s, b, seite) {
+        const n = s.bloecke.get(
+            b.cx + (seite === 0 ? -1 : seite === 1 ? 1 : 0) + "," + (b.cz + (seite === 2 ? -1 : seite === 3 ? 1 : 0))
+        );
+        return n && n.hoehle ? n : null;
+    }
+
+    // Der Bereich und seine vier Nachbarn legen ihre offenen Ränder neu.
+    _hoehlenRandUm(s, b) {
+        this._hoehlenRand(s, b);
+        for (let seite = 0; seite < 4; seite++) {
+            const n = this._hoehlenNachbar(s, b, seite);
+            if (n) this._hoehlenRand(s, n);
+        }
+    }
+
+    // DER OFFENE RAND: fehlt der Nachbar-Chunk einer Seite (der Ring endet dort), liegt die Höhlen-Luft im Rand-Band offen —
+    // der Ring schneidet die Höhle auf, und ein Strahl von draußen (das Licht, eine Kamera jenseits des Rings) tritt dort ein.
+    // Die Rand-Box (um den Saum geweitet) wirkt wie eine Mündung; ein Knoten mit Mündung oder offenem Rand ist ein Start.
+    _hoehlenRand(s, b) {
+        if (!b || !b.hoehle) return;
+        const R = AnazhRealm.HOEHLEN_SAUM;
+        const saum = R.schritte * b.hoehle.step + R.m;
+        const fehlt = [0, 1, 2, 3].map((seite) => !this._hoehlenNachbar(s, b, seite));
+        for (const kn of b.hoehle.knoten) {
+            let offen = kn.tore.length > 0;
+            for (let seite = 0; seite < 4; seite++) {
+                const sb = fehlt[seite] ? kn.seiten[seite] : null;
+                kn.raender[seite] = sb ? sb.clone().expandByScalar(saum) : null;
+                if (sb) offen = true;
+            }
+            if (offen) s.hoehle.muendungen.add(kn);
+            else s.hoehle.muendungen.delete(kn);
+        }
+    }
+
+    // Der Austritt eines Boden-Bereichs: seine Starts fallen, die Nachbar-Zellen vergessen ihre Rand-Portale zu ihm, und seine
+    // Nachbarn liegen an dieser Seite nun offen.
+    _hoehlenLoese(s, b) {
+        s.hoehle.boden++;
+        for (const kn of b.hoehle.knoten) {
+            s.hoehle.muendungen.delete(kn);
+            for (const e of kn.nb) if (e.zu.bereich !== b) e.zu.nb = e.zu.nb.filter((f) => f.zu.bereich !== b);
+        }
+        b.hoehle = null;
+        for (let seite = 0; seite < 4; seite++) {
+            const n = this._hoehlenNachbar(s, b, seite);
+            if (n) this._hoehlenRand(s, n);
+        }
+    }
+
+    // DIE HORIZONT-SPERRE einer Mündung (perspektivisch): der größte waagerechte Abstand d vom Auge, an dem JEDER Strahl zur
+    // Box unter dem gezeichneten Boden läuft — ein Bogen um das Auge (Abstand d, über den Winkel-Keil ihrer Grundfläche)
+    // trägt überall Boden, der höher liegt als jeder Strahl zur Box dort sein kann (die Gerade vom Auge zum höchsten Punkt
+    // der Box, über den kürzesten bzw. längsten Weg); −∞, wenn kein Bogen sperrt. Unter dem Boden liegt Fels oder Höhlen-Luft:
+    // ein Strahl aus Himmels-Luft kommt an einer Sperre nur durch eine Höhle vorbei, und hinter der fernsten Sperre läuft er
+    // aus einer Höhle, deren Ausgang weiter weg liegt (`_hoehlenHinaus`). Der Boden ist die untere Schranke
+    // `_hoehlenHorizont`; ein ungeladener Ort hat keinen Boden (−∞). Der Bogen wird je Raster-Zelle abgetastet, jeder Punkt
+    // liest das Minimum seiner 3 × 3 Zellen (ein Bogen-Stück zwischen zwei Punkten liegt in ihnen). Gemerkt je Auge — für
+    // jedes Auge im Würfel ±`HOEHLEN_AUGE_M` um das geprüfte (die Probe hebt das Auge und weitet die Box um ihn; die 3 × 3
+    // Zellen tragen die Verschiebung): das Auge der Spiel-Kamera atmet im Stand um Millimeter, und jede Probe neu wäre
+    // Arbeit ohne Änderung. Und je BODEN (`H.boden`): ein neuer Horizont — ein Chunk tritt ein oder aus (der Spieler gräbt,
+    // der Ring wandert), ein Geomorph senkt den Rand — erreicht jede gemerkte Sperre; ohne das sperrte im Stand ein
+    // gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ginge.
+    _hoehlenSperre(s, tor, ex, ey, ez) {
+        if (this._hoehlenAugeGleich(s.hoehle, tor, ex, ey, ez)) return tor.sperre;
+        const t = AnazhRealm.HOEHLEN_AUGE_M;
+        tor.boden = s.hoehle.boden;
+        tor.auge[0] = ex;
+        tor.auge[1] = ey;
+        tor.auge[2] = ez;
+        const box = this._hoehlenProbenBox || (this._hoehlenProbenBox = new THREE.Box3());
+        tor.sperre = this._hoehlenHorizontProbe(s, box.copy(tor.box).expandByScalar(t), ex, ey + t, ez);
+        return tor.sperre;
+    }
+
+    _hoehlenAugeGleich(H, tor, ex, ey, ez) {
+        const t = AnazhRealm.HOEHLEN_AUGE_M;
+        return (
+            tor.boden === H.boden &&
+            Math.abs(tor.auge[0] - ex) <= t &&
+            Math.abs(tor.auge[1] - ey) <= t &&
+            Math.abs(tor.auge[2] - ez) <= t
+        );
+    }
+
+    // Der Boden an der Raster-Zelle (I, K) der Welt (`HOEHLEN_HORIZONT_M`): die untere Schranke ihres Bereichs, −∞ ohne.
+    _hoehlenBodenZelle(s, I, K, c) {
+        const n = c.n;
+        const kx = Math.floor(I / n),
+            kz = Math.floor(K / n);
+        if (kx !== c.kx || kz !== c.kz) {
+            c.kx = kx;
+            c.kz = kz;
+            const b = s.bloecke.get(kx + "," + kz);
+            c.h = b && b.hoehle ? b.hoehle.horizont || (b.hoehle.horizont = this._hoehlenHorizont(s, b)) : null;
+        }
+        return c.h ? c.h[I - kx * n + (K - kz * n) * n] : -Infinity;
+    }
+
+    _hoehlenHorizontProbe(s, box, ex, ey, ez) {
+        // der nächste und der fernste Punkt der Grundfläche
+        const nx = Math.max(box.min.x - ex, 0, ex - box.max.x),
+            nz = Math.max(box.min.z - ez, 0, ez - box.max.z);
+        const dMin = Math.hypot(nx, nz);
+        if (dMin < 2) return -Infinity;
+        const dMax = this._hoehlenWeit(box, ex, ez);
+        // der Winkel-Keil der Grundfläche um die Richtung zu ihrer Mitte
+        const mitte = Math.atan2((box.min.z + box.max.z) / 2 - ez, (box.min.x + box.max.x) / 2 - ex);
+        let w0 = Infinity,
+            w1 = -Infinity;
+        for (let c = 0; c < 4; c++) {
+            let w = Math.atan2((c & 2 ? box.max.z : box.min.z) - ez, (c & 1 ? box.max.x : box.min.x) - ex) - mitte;
+            if (w > Math.PI) w -= 2 * Math.PI;
+            if (w < -Math.PI) w += 2 * Math.PI;
+            if (w < w0) w0 = w;
+            if (w > w1) w1 = w;
+        }
+        const hoch = box.max.y - ey;
+        const dRef = hoch >= 0 ? dMin : dMax;
+        const R = AnazhRealm.HOEHLEN_HORIZONT_M;
+        const c = this._hoehlenBodenCache || (this._hoehlenBodenCache = { n: 0, kx: NaN, kz: NaN, h: null });
+        c.n = Math.round(this._voxelChunkConfig(0).span / R);
+        c.kx = NaN;
+        // die Bögen von der Box zum Auge: der erste, der sperrt, ist die fernste Sperre
+        const bogen = this._hoehlenBoegen || (this._hoehlenBoegen = []);
+        bogen.length = 0;
+        for (let d = 2; d < dMin; d += Math.max(R, 0.04 * d)) bogen.push(d);
+        for (let j = bogen.length - 1; j >= 0; j--) {
+            const d = bogen[j];
+            const grenze = ey + (hoch * d) / dRef; // kein Strahl liegt dort höher
+            const schritte = Math.max(1, Math.ceil(((w1 - w0) * d) / R));
+            let frei = false;
+            for (let q = 0; q <= schritte && !frei; q++) {
+                const w = mitte + w0 + ((w1 - w0) * q) / schritte;
+                const I = Math.floor((ex + d * Math.cos(w)) / R),
+                    K = Math.floor((ez + d * Math.sin(w)) / R);
+                for (let k = K - 1; k <= K + 1 && !frei; k++)
+                    for (let i = I - 1; i <= I + 1; i++)
+                        if (!(this._hoehlenBodenZelle(s, i, k, c) >= grenze)) {
+                            frei = true;
+                            break;
+                        }
+            }
+            if (!frei) return d;
+        }
+        return -Infinity;
+    }
+
+    // Der fernste waagerechte Abstand vom Auge zur Grundfläche einer Box.
+    _hoehlenWeit(box, ex, ez) {
+        return Math.hypot(
+            Math.max(Math.abs(box.min.x - ex), Math.abs(box.max.x - ex)),
+            Math.max(Math.abs(box.min.z - ez), Math.abs(box.max.z - ez))
+        );
+    }
+
+    // DIE HÖHLEN-SICHT eines Passes (aus `_chunkSatzPass`, mit der Matrix der Pass-Kamera in `S.m`): jede Zelle, die zeichnen
+    // muss, trägt den Stempel dieses Passes (`_chunkSatzAbschnitt` liest ihn). Die Kaskade (orthogonal, das Licht) wählt
+    // anders (`_hoehlenSichtLicht`). PERSPEKTIVISCH läuft ein Strahl vom Auge fort: je Zelle trägt der Lauf neben dem
+    // Schirm-Rechteck die Tiefe, die der Strahl dort mindestens hat (NDC-z, monoton in der Blick-Tiefe) — ein Portal ganz davor
+    // ist zu. Starts sind (1) die Zellen um das Auge (in ihrer Luft-Box) mit dem ganzen Bild, (2) jede Mündung im Bild, die der
+    // Horizont nicht sperrt (`_hoehlenSperre`), (3) jeder offene Rand — tritt das Auge von draußen ein, läuft er durch die
+    // Portale, sonst zeichnet nur seine Zelle (der Rand-Saum des Netzes ragt über die Kante). Der Lauf geht (4) durch die
+    // Portale und (5) aus jeder erreichten Zelle hinaus zu den gesperrten Mündungen dahinter (`_hoehlenHinaus`) — die Sperre
+    // gilt nur Strahlen, die bis zu ihr in Himmels-Luft laufen; einer, der in einer Höhle beginnt oder durch sie hindurch
+    // läuft, kommt an ihr vorbei. Das Hauptbild merkt seine erreichten Zellen (`sichtHaupt`, die Empfänger der Kaskaden).
+    _hoehlenSicht(s, kamera, S, haupt) {
+        if (!kamera || kamera.isPerspectiveCamera !== true) return this._hoehlenSichtLicht(s, S, kamera);
+        const H = s.hoehle;
+        const st = ++H.stempel;
+        const m = S.m.elements;
+        H.stapel.length = 0;
+        const besucht = (H.besucht = haupt ? [] : null);
+        const rc = H.rect;
+        const span = this._voxelChunkConfig(0).span;
+        const e = kamera.matrixWorld.elements;
+        const ex = e[12],
+            ey = e[13],
+            ez = e[14];
+        // (1) das Auge in einer Zelle
+        const v = this._hoehlenAuge || (this._hoehlenAuge = new THREE.Vector3());
+        v.set(ex, ey, ez);
+        const cx = Math.floor(ex / span),
+            cz = Math.floor(ez / span);
+        for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++) {
+                const b = s.bloecke.get(cx + dx + "," + (cz + dz));
+                if (!b || !b.hoehle) continue;
+                for (const kn of b.hoehle.knoten)
+                    if (kn.luft && kn.luft.containsPoint(v)) this._hoehlenBesuch(H, kn, -1, -1, 1, 1, -Infinity);
+            }
+        // (2) die Mündungen im Bild: eine frische Horizont-Probe kostet — je Pass höchstens `HOEHLEN_HORIZONT_PROBEN`, die
+        // nächsten zuerst; eine Mündung ohne frische Probe gilt als offen (mehr zeichnen, nie ein Loch). Eine gesperrte
+        // wartet auf einen Ausgang (`hinter`, (5)).
+        const offen = H.offen || (H.offen = []);
+        const hinter = H.hinter || (H.hinter = []);
+        offen.length = 0;
+        hinter.length = 0;
+        for (const kn of H.muendungen)
+            for (const tor of kn.tore) {
+                if (!this._hoehlenRect(tor.box, m, rc)) continue;
+                tor.st = st;
+                tor.r0 = rc[0];
+                tor.r1 = rc[1];
+                tor.r2 = rc[2];
+                tor.r3 = rc[3];
+                tor.r4 = rc[4];
+                tor.r5 = rc[5];
+                tor.kn = kn;
+                tor.weit = this._hoehlenWeit(tor.box, ex, ez);
+                if (this._hoehlenAugeGleich(H, tor, ex, ey, ez)) {
+                    if (tor.sperre === -Infinity) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                    else hinter.push(tor);
+                    continue;
+                }
+                const bx = tor.box;
+                tor.d = Math.hypot((bx.min.x + bx.max.x) / 2 - ex, (bx.min.z + bx.max.z) / 2 - ez);
+                offen.push(tor);
+            }
+        offen.sort((p, q) => p.d - q.d);
+        for (let i = 0; i < offen.length; i++) {
+            const tor = offen[i];
+            if (i < AnazhRealm.HOEHLEN_HORIZONT_PROBEN && this._hoehlenSperre(s, tor, ex, ey, ez) > -Infinity)
+                hinter.push(tor);
+            else this._hoehlenBesuch(H, tor.kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4);
+        }
+        for (const kn of H.muendungen) {
+            // (3) der offene Rand: von draußen durch die Portale, von drinnen nur seine Zelle
+            const b = kn.bereich;
+            for (let seite = 0; seite < 4; seite++) {
+                const rb = kn.raender[seite];
+                if (!rb || !this._hoehlenRect(rb, m, rc)) continue;
+                const draussen =
+                    seite === 0
+                        ? ex < b.cx * span
+                        : seite === 1
+                          ? ex > (b.cx + 1) * span
+                          : seite === 2
+                            ? ez < b.cz * span
+                            : ez > (b.cz + 1) * span;
+                if (draussen) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                else this._hoehlenMarke(H, kn);
+            }
+        }
+        // (4) durch die Portale: das Rechteck schrumpft je Portal, die Tiefe wächst; (5) hinaus durch die Ausgänge der Zelle
+        while (H.stapel.length > 0) {
+            const kn = H.stapel.pop();
+            const r = kn.rect;
+            const z = kn.z;
+            for (const ed of kn.nb) {
+                const p = ed.p;
+                if (p.st !== st) {
+                    p.st = st;
+                    p.auf = this._hoehlenRect(p.box, m, p.rect);
+                }
+                if (!p.auf) continue;
+                const q = p.rect;
+                if (q[5] < z) continue;
+                const x0 = r[0] > q[0] ? r[0] : q[0],
+                    y0 = r[1] > q[1] ? r[1] : q[1],
+                    x1 = r[2] < q[2] ? r[2] : q[2],
+                    y1 = r[3] < q[3] ? r[3] : q[3];
+                if (x0 <= x1 && y0 <= y1) this._hoehlenBesuch(H, ed.zu, x0, y0, x1, y1, q[4] > z ? q[4] : z);
+            }
+            if (hinter.length > 0) this._hoehlenHinaus(H, kn, m, st, ex, ez);
+        }
+        // die Empfänger der Kaskaden: die erreichten Zellen, deren Dreiecke das Hauptbild zeichnet (das EINE Gesetz der
+        // Pass-Wahl in der Lage dieses Passes, wie `_chunkSatzAbschnitt` sie wählt)
+        if (besucht)
+            H.sichtHaupt = besucht.filter(
+                (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && this._passTrifftBox(S.lage, kn.zelle.huelle, 0)
+            );
+    }
+
+    // HINAUS (5): ein Strahl, der eine erreichte Zelle durch ihre Luft quert, tritt durch eine ihrer Mündungen (oder einen
+    // offenen Rand) wieder in Himmels-Luft — das Auge stand in der Höhle, an ihrer Mündung, oder der Strahl lief unter einem
+    // Überhang, durch einen Tunnel. Jeder Ausgang im Bild ist ein Fenster (sein Rechteck ∩ das der Zelle, nicht näher als
+    // beide), und hinter ihm erreicht der Strahl jede gesperrte Mündung, deren fernste Sperre vor dem Ausgang liegt
+    // (`_hoehlenSperre`, gemessen vom geprüften Auge: der Würfel `HOEHLEN_AUGE_M` verschiebt sie um höchstens 2 × seine Kante).
+    _hoehlenHinaus(H, kn, m, st, ex, ez) {
+        for (const tor of kn.tore)
+            if (tor.st === st) this._hoehlenAusgang(H, kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4, tor.weit);
+        const q = H.rect;
+        for (let seite = 0; seite < 4; seite++) {
+            const rb = kn.raender[seite];
+            if (rb && this._hoehlenRect(rb, m, q))
+                this._hoehlenAusgang(H, kn, q[0], q[1], q[2], q[3], q[4], this._hoehlenWeit(rb, ex, ez));
+        }
+    }
+
+    _hoehlenAusgang(H, kn, x0, y0, x1, y1, z0, weit) {
+        const r = kn.rect;
+        if (r[0] > x0) x0 = r[0];
+        if (r[1] > y0) y0 = r[1];
+        if (r[2] < x1) x1 = r[2];
+        if (r[3] < y1) y1 = r[3];
+        if (x0 > x1 || y0 > y1) return;
+        if (kn.z > z0) z0 = kn.z;
+        const bis = weit + 2 * AnazhRealm.HOEHLEN_AUGE_M;
+        for (const tor of H.hinter) {
+            if (tor.sperre > bis || tor.r5 < z0) continue;
+            const a0 = x0 > tor.r0 ? x0 : tor.r0,
+                b0 = y0 > tor.r1 ? y0 : tor.r1,
+                a1 = x1 < tor.r2 ? x1 : tor.r2,
+                b1 = y1 < tor.r3 ? y1 : tor.r3;
+            if (a0 <= a1 && b0 <= b1) this._hoehlenBesuch(H, tor.kn, a0, b0, a1, b1, tor.r4 > z0 ? tor.r4 : z0);
+        }
+    }
+
+    // Eine Zelle erreicht ein Rechteck mit einer Tiefe: neu (Stempel) oder mehr als bisher (größeres Rechteck oder eine
+    // kleinere Tiefe, die weiter trägt) → vereinigen und weiterlaufen.
+    _hoehlenBesuch(H, kn, x0, y0, x1, y1, z) {
+        const r = kn.rect;
+        if (kn.sicht === H.stempel) {
+            const naeher = z < kn.z;
+            if (!naeher && r[0] <= x0 && r[1] <= y0 && r[2] >= x1 && r[3] >= y1) return;
+            if (x0 < r[0]) r[0] = x0;
+            if (y0 < r[1]) r[1] = y0;
+            if (x1 > r[2]) r[2] = x1;
+            if (y1 > r[3]) r[3] = y1;
+            if (naeher) kn.z = z;
+        } else {
+            kn.sicht = H.stempel;
+            r[0] = x0;
+            r[1] = y0;
+            r[2] = x1;
+            r[3] = y1;
+            kn.z = z;
+            if (H.besucht) H.besucht.push(kn);
+        }
+        H.stapel.push(kn);
+    }
+
+    // Eine Zelle zeichnet in diesem Pass, ohne dass ein Strahl durch sie weiterläuft (ein leeres Rechteck und eine Tiefe, die
+    // nichts trägt: jeder echte Besuch danach ist mehr).
+    _hoehlenMarke(H, kn) {
+        if (kn.sicht === H.stempel) return;
+        kn.sicht = H.stempel;
+        kn.rect[0] = 1;
+        kn.rect[1] = 1;
+        kn.rect[2] = -1;
+        kn.rect[3] = -1;
+        kn.z = Infinity;
+        if (H.besucht) H.besucht.push(kn);
+    }
+
+    // DIE HÖHLEN-SICHT DER KASKADE (orthogonal, das Licht): die Karte muss nur für die EMPFÄNGER stimmen, die das Bild zeigt —
+    // für jeden muss die erste Fläche auf seinem Weg zum Licht in der Karte stehen. Dieser Weg kann durch Fels laufen, ohne
+    // eine Fläche zu kreuzen: der Ring schneidet das Gelände auf, eine LOD-Naht im Höhlen-Netz klafft, die Nah-Ebene der
+    // Kaskade kappt — dann wirft jede Höhlen-Fläche auf dem Weg (gemessen 06.10., Abend, Kamera in der Halle 38 m tief: ein
+    // versiegelter Hohlraum warf durch die Naht −23/−24 einen Schatten-Strich, den ein Lauf durch Luft-Portale verlor). Darum
+    // ohne Luft-Annahme: eine Höhlen-Zelle zeichnet, wenn ihr Licht-Rechteck das eines Empfängers schneidet und sie dem Licht
+    // so nah kommt wie dessen tiefster Punkt. Empfänger sind die Zellen des Hauptbilds (`sichtHaupt`, ihre Hülle) und — für
+    // die Empfänger in Himmels-Luft, deren Weg zum Licht Höhlen-Luft nur durch eine Mündung betritt (darüber liegt nur
+    // Himmels-Luft oder Fels unter einer Himmels-Fläche, die immer zeichnet) — jede Mündung. Ortsfeste Kacheln von
+    // `HOEHLEN_LICHT_KACHEL_M` quer zum Licht tragen je Kachel die tiefste Empfänger-Tiefe; eine Zelle liest die Kacheln
+    // unter ihrer Box.
+    _hoehlenSichtLicht(s, S, kamera) {
+        const H = s.hoehle;
+        const st = ++H.stempel;
+        H.besucht = null;
+        if (!kamera || !kamera.matrixWorldInverse)
+            throw new Error("_hoehlenSichtLicht: eine Kaskade ohne Kamera — die Licht-Kacheln brauchen ihre Drehung");
+        // die Lage einer Box im Licht-Raum: nur die DREHUNG der Licht-Kamera (u, v quer zum Licht, d entlang) — die Kacheln
+        // stehen ortsfest, während die Kaskaden-Box mit dem atmenden Auge wandert (sonst kippte die Wahl am Rand je Frame)
+        const e = kamera.matrixWorldInverse.elements;
+        const L = H.lichtBox || (H.lichtBox = new Float64Array(6));
+        const lage = (box) => {
+            L[0] = L[1] = L[2] = Infinity;
+            L[3] = L[4] = L[5] = -Infinity;
+            for (let c = 0; c < 8; c++) {
+                const x = c & 1 ? box.max.x : box.min.x,
+                    y = c & 2 ? box.max.y : box.min.y,
+                    z = c & 4 ? box.max.z : box.min.z;
+                const u = e[0] * x + e[4] * y + e[8] * z,
+                    v = e[1] * x + e[5] * y + e[9] * z,
+                    d = -(e[2] * x + e[6] * y + e[10] * z);
+                if (u < L[0]) L[0] = u;
+                if (u > L[3]) L[3] = u;
+                if (v < L[1]) L[1] = v;
+                if (v > L[4]) L[4] = v;
+                if (d < L[2]) L[2] = d;
+                if (d > L[5]) L[5] = d;
+            }
+        };
+        const T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
+        const K = H.kacheln || (H.kacheln = new Map());
+        K.clear();
+        const empfang = (kn, box) => {
+            if (!box) return;
+            kn.sicht = st;
+            lage(box);
+            const tief = L[5];
+            for (let j = Math.floor(L[1] / T); j <= Math.floor(L[4] / T); j++)
+                for (let i = Math.floor(L[0] / T); i <= Math.floor(L[3] / T); i++) {
+                    const key = (i + 32768) * 65536 + (j + 32768);
+                    const w = K.get(key);
+                    if (w === undefined || tief > w) K.set(key, tief);
+                }
+        };
+        if (H.sichtHaupt) for (const kn of H.sichtHaupt) if (kn.bereich.hoehle) empfang(kn, kn.zelle.huelle);
+        for (const kn of H.muendungen) for (const tor of kn.tore) empfang(kn, tor.box);
+        // die Werfer-Kandidaten: die Zellen, die das EINE Gesetz der Pass-Wahl in diesem Pass trifft (Box der Kaskade und
+        // Licht-Kapsel gegen ihre Scheibe — `_chunkSatzAbschnitt` wählt dieselben)
+        const P = S.lage;
+        for (const b of s.ordnung) {
+            if (!b.hoehle || !b.huelle || b.huelle.isEmpty() || !this._passTrifftBox(P, b.huelle, 0)) continue;
+            for (const kn of b.hoehle.knoten) {
+                const z = kn.zelle;
+                if (!z || kn.sicht === st || z.huelle.isEmpty() || !this._passTrifftBox(P, z.huelle, 0)) continue;
+                lage(z.huelle);
+                const nah = L[2];
+                let wirft = false;
+                for (let j = Math.floor(L[1] / T); j <= Math.floor(L[4] / T) && !wirft; j++)
+                    for (let i = Math.floor(L[0] / T); i <= Math.floor(L[3] / T); i++) {
+                        const w = K.get((i + 32768) * 65536 + (j + 32768));
+                        if (w !== undefined && w >= nah) {
+                            wirft = true;
+                            break;
+                        }
+                    }
+                if (wirft) kn.sicht = st;
+            }
+        }
+    }
+
+    // Das Schirm-Rechteck einer Box unter der Pass-Matrix `m` (NDC, auf [−1, 1] geklemmt) in `out[0…3]`, ihre nahe und ferne
+    // Tiefe (NDC-z) in `out[4]`, `out[5]`; false, wenn die Box hinter dem Auge oder neben dem Bild liegt. Eine Box, die die
+    // Augen-Ebene kreuzt, zählt mit ihrem Teil VOR dem Auge (an der Ebene w = ε geschnitten — ihre Schnitt-Punkte liegen
+    // weit draußen, das Klemmen trägt sie; ihre nahe Tiefe ist −∞): der Strahl durch ein Portal trifft es vor dem Auge, sein
+    // Schirm-Punkt ist die Projektion dieses Treffers.
+    _hoehlenRect(box, m, out) {
+        const E = 1e-4;
+        const C = this._hoehlenEcken || (this._hoehlenEcken = new Float64Array(24));
+        let x0 = Infinity,
+            y0 = Infinity,
+            x1 = -Infinity,
+            y1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity,
+            vorn = 0;
+        const nimm = (cx, cy, w) => {
+            const px = cx / w,
+                py = cy / w;
+            if (px < x0) x0 = px;
+            if (px > x1) x1 = px;
+            if (py < y0) y0 = py;
+            if (py > y1) y1 = py;
+        };
+        for (let c = 0; c < 8; c++) {
+            const x = c & 1 ? box.max.x : box.min.x,
+                y = c & 2 ? box.max.y : box.min.y,
+                z = c & 4 ? box.max.z : box.min.z;
+            const cx = m[0] * x + m[4] * y + m[8] * z + m[12],
+                cy = m[1] * x + m[5] * y + m[9] * z + m[13],
+                cz = m[2] * x + m[6] * y + m[10] * z + m[14],
+                w = m[3] * x + m[7] * y + m[11] * z + m[15];
+            C[c * 3] = cx;
+            C[c * 3 + 1] = cy;
+            C[c * 3 + 2] = w;
+            if (w > E) {
+                vorn++;
+                nimm(cx, cy, w);
+                const pz = cz / w;
+                if (pz < z0) z0 = pz;
+                if (pz > z1) z1 = pz;
+            }
+        }
+        if (vorn === 0) return false;
+        if (vorn < 8) {
+            z0 = -Infinity;
+            // die zwölf Kanten (Ecken, die sich in einem Bit unterscheiden), die die Ebene w = ε kreuzen
+            for (let a = 0; a < 8; a++)
+                for (let bit = 1; bit < 8; bit <<= 1) {
+                    if (a & bit) continue;
+                    const b = a | bit;
+                    const wa = C[a * 3 + 2],
+                        wb = C[b * 3 + 2];
+                    if (wa > E === wb > E) continue;
+                    const t = (E - wa) / (wb - wa);
+                    nimm(C[a * 3] + t * (C[b * 3] - C[a * 3]), C[a * 3 + 1] + t * (C[b * 3 + 1] - C[a * 3 + 1]), E);
+                }
+        }
+        if (x0 < -1) x0 = -1;
+        if (y0 < -1) y0 = -1;
+        if (x1 > 1) x1 = 1;
+        if (y1 > 1) y1 = 1;
+        if (x0 > x1 || y0 > y1) return false;
+        out[0] = x0;
+        out[1] = y0;
+        out[2] = x1;
+        out[3] = y1;
+        out[4] = z0;
+        out[5] = z1;
+        return true;
+    }
+
+    // ═══ DER BAU-SATZ (Welle 6) ═══
+    // Die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF, nie seine Gestalt. Befund (echte GPU, Mess-Wiese
+    // −900/−850, `werkbank band`): jede Instanz-Gruppe ist EINE Geometrie (`f:<preset>|<gestalt>|<lod>[|ov]:<teil>`), und
+    // WebGPU zieht jede einzeln — das griechische Dorf (jedes Haus trägt seine Parzelle als ov-Prägung: eine Gestalt je
+    // Haus, count 1) zeichnete je Haus seine drei L2-Stoffe, 11 Häuser = 33 Befehle (die Band-Klasse „karten", die
+    // Häuser sind keine Karten), die Felszacken je Gestalt eine Gruppe aus EINEM Stoff: 15 Gestalten = 15 Befehle im
+    // Hauptbild, 14 + 5 in den Kaskaden. Der Bau-Satz legt jede Gruppe einer Satz-Art (`BAU_SATZ`, je Studio-Art) als
+    // BEREICH in den Pool-Satz ihres Stoffs (die EINE Pool-Mechanik des Chunk-Satzes): ihre Instanzen in Welt-Lage,
+    // byte-gleich gerechnet aus Geometrie × Instanz-Matrix (Normale × Normalen-Matrix, Farbe × Instanz-Farbe, die
+    // Instanz-Attribute der Fassade je Vertex). Die Gruppe bleibt die Wahrheit ihrer Slots (Belegen · Freigeben ·
+    // Raycast · Gnadenfrist); sie zeichnet nie selbst — jede Mutation ihrer Draw-Wahrheit meldet der EINE Chokepoint
+    // `_archMeshBundleTouch`, der Bereich legt sich im nächsten Satz-Takt neu (Kosten an der Änderung).
+    // Nicht im Satz: was wandert (Tür-Flügel `leaf.tuer`, Fahrzeug), was die Dither-Blende je Instanz trägt und
+    // oft wiederkehrt (Baum, Strauch), die Karte (der EINE Atlas), die Streu (regional), ein Schatten-Zwilling (er lebt
+    // auf seiner eigenen Ebene — im Satz stünde er im Hauptbild).
+    _bauSatzArt(leaf, regionKey, castShadow) {
+        if (regionKey != null || !leaf || leaf.tuer || leaf.shadowTwin || !leaf.mat) return null;
+        const m = typeof leaf.leafKey === "string" ? /^f:([^|]+)\|/.exec(leaf.leafKey) : null;
+        if (!m) return null;
+        const buch = this._foundry && this._foundry.recipes ? this._foundry.recipes : null;
+        const rec = buch ? buch[m[1]] : null;
+        const name = rec ? AnazhRealm.BAU_SATZ[rec.kind] : null;
+        if (!name) return null;
+        const art = name + "|" + leaf.mat.uuid + (castShadow ? "|w" : "|-");
+        const st = this.state;
+        if (!st.satzStoffe) st.satzStoffe = new Map();
+        if (!st.satzStoffe.has(art)) st.satzStoffe.set(art, { name, mat: leaf.mat, wurf: !!castShadow });
+        return art;
+    }
+
+    // Die Marke einer geänderten Satz-Gruppe (der Takt legt ihren Bereich neu oder nimmt ihn heraus).
+    _bauSatzMarke(key, art) {
+        const st = this.state;
+        (st.bauSatzSchmutzig || (st.bauSatzSchmutzig = new Map())).set(key, art);
+    }
+
+    // Je Render vor dem Index-Takt des Satzes: jede markierte Gruppe legt ihren Bereich neu (lebt sie) oder verlässt
+    // den Satz (leer, entsorgt).
+    _tickBauSatz() {
+        const sm = this.state.bauSatzSchmutzig;
+        if (!sm || sm.size === 0) return;
+        const groups = this.state.archInstanceGroups;
+        const span = this._voxelChunkConfig().span;
+        for (const [key, art] of sm) {
+            const g = groups ? groups.get(key) : null;
+            if (!g || g.satz !== art || !((g.liveCount || 0) > 0)) {
+                this._chunkSatzAus(art, key);
+                continue;
+            }
+            const a = g.mesh.instanceMatrix.array;
+            this._chunkSatzEin(
+                art,
+                key,
+                this._bauSatzBlock(g),
+                Math.floor(a[12] / span) + "," + Math.floor(a[14] / span)
+            );
+        }
+        sm.clear();
+    }
+
+    // Der Bereich einer Gruppe: jede lebende Instanz [0, liveCount) in Welt-Lage (`_satzBlock`, die Attribute des Bau-Satzes).
+    _bauSatzBlock(g) {
+        return this._satzBlock(
+            g.geom,
+            g.mesh.instanceMatrix.array,
+            g.mesh.instanceColor ? g.mesh.instanceColor.array : null,
+            g.liveCount | 0,
+            AnazhRealm.BAU_SATZ_ATTR,
+            g.key
+        );
+    }
+
+    // DER EINE BLOCK-BAUER der Stoff-Sätze (Bau · Streu): `cnt` Instanzen einer Geometrie in Welt-Lage — Position ×
+    // Instanz-Matrix, Normale × ihre Normalen-Matrix (normiert), Farbe × Instanz-Farbe (der InstanceNode multipliziert sie
+    // sonst in den Stoff), die Instanz-Attribute der Fassade (`LOD_INSTANZ_ATTRIBUTE`) je Vertex, `aWiege` = die Höhe über der
+    // Wurzel in Metern (Höhe der Vorlage × Welt-Skala der Instanz — die Länge ihrer ersten Matrix-Spalte: Studio-Skala des
+    // Teils × Skala der Pflanze), alle anderen Vertex-Attribute wie sie sind; je Instanz eine Zelle (ihr Lauf im Index).
+    // `im` = cnt × 16 Matrix-Werte, `ic` = cnt × 3 Farben oder null. Fail-closed: ein Satz-Attribut ohne Quelle, eine
+    // Geometrie ohne Index ist ein lauter Bruch (`wer` nennt den Bereich).
+    _satzBlock(geo, im, ic, cnt, attr, wer) {
+        const A = geo.attributes;
+        const n = A.position.count;
+        const N = n * cnt;
+        if (!geo.index || !geo.index.array) throw new Error(`_satzBlock(${wer}): kein Index`);
+        const M = this._bauSatzM || (this._bauSatzM = new THREE.Matrix4());
+        const NM = this._bauSatzNM || (this._bauSatzNM = new THREE.Matrix3());
+        const attributes = {};
+        for (const [name, is] of attr) {
+            const wiegeAttr = name === "aWiege";
+            const q = wiegeAttr ? A.position : A[name];
+            if (!q || (!wiegeAttr && q.itemSize !== is))
+                throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
+            const out = new Float32Array(N * is);
+            const src = q.array;
+            const jeInstanz = q.isInstancedBufferAttribute === true;
+            for (let i = 0; i < cnt; i++) {
+                const o0 = i * n * is;
+                if (name === "position" || name === "normal") {
+                    M.fromArray(im, i * 16);
+                    const e = name === "position" ? M.elements : NM.getNormalMatrix(M).elements;
+                    for (let v = 0, k = 0; v < n; v++, k += 3) {
+                        const x = src[k],
+                            y = src[k + 1],
+                            z = src[k + 2];
+                        if (name === "position") {
+                            out[o0 + k] = e[0] * x + e[4] * y + e[8] * z + e[12];
+                            out[o0 + k + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+                            out[o0 + k + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+                        } else {
+                            const nx = e[0] * x + e[3] * y + e[6] * z,
+                                ny = e[1] * x + e[4] * y + e[7] * z,
+                                nz = e[2] * x + e[5] * y + e[8] * z;
+                            const l = Math.hypot(nx, ny, nz) || 1;
+                            out[o0 + k] = nx / l;
+                            out[o0 + k + 1] = ny / l;
+                            out[o0 + k + 2] = nz / l;
+                        }
+                    }
+                } else if (wiegeAttr) {
+                    const e = M.fromArray(im, i * 16).elements;
+                    const skala = Math.hypot(e[0], e[1], e[2]);
+                    for (let v = 0; v < n; v++) out[o0 + v] = src[v * 3 + 1] * skala;
+                } else if (jeInstanz) {
+                    for (let v = 0; v < n; v++) for (let c = 0; c < is; c++) out[o0 + v * is + c] = src[i * is + c];
+                } else if (name === "color" && ic) {
+                    const r = ic[i * 3],
+                        gg = ic[i * 3 + 1],
+                        b = ic[i * 3 + 2];
+                    for (let k = 0; k < n * 3; k += 3) {
+                        out[o0 + k] = src[k] * r;
+                        out[o0 + k + 1] = src[k + 1] * gg;
+                        out[o0 + k + 2] = src[k + 2] * b;
+                    }
+                } else out.set(src.subarray(0, n * is), o0);
+            }
+            attributes[name] = { array: out, itemSize: is, count: N };
+        }
+        const li = geo.index.array;
+        const iN = li.length;
+        const idx = new Uint32Array(iN * cnt);
+        // je Instanz eine Zelle (ihr Lauf im Index): jeder Pass wählt die Instanzen, deren Hülle sein Frustum schneidet
+        const zellen = new Uint32Array(cnt + 1);
+        for (let i = 0; i < cnt; i++) {
+            const b = i * n,
+                o = i * iN;
+            for (let k = 0; k < iN; k++) idx[o + k] = li[k] + b;
+            zellen[i + 1] = o + iN;
+        }
+        return { attributes, index: { array: idx }, zellen };
     }
 
     // ═══ DIE REIFE-WACHE ═══
@@ -62715,6 +64665,8 @@ class AnazhRealm {
         }
         g2.boundingSphere = srcGeom.boundingSphere;
         g2.boundingBox = srcGeom.boundingBox;
+        // Die Fassade zeichnet, was ihre Quelle zeichnet (der Wurf-Teil des Schatten-Zwillings ist ein drawRange).
+        g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);
         g2.userData._lodFacade = true;
         g2.userData._h0Tpl = h0;
         g2.userData._h0LTpl = h0L;
@@ -62813,6 +64765,9 @@ class AnazhRealm {
         // V18.349 — per-Leaf-Override (der opake Kronen-Kern setzt castShadow:false): ein einzelner
         // Leaf darf den Namen-basierten Schatten-Default überstimmen; sonst der LOD-Default via Name.
         const castShadow = leaf.castShadow !== undefined ? !!leaf.castShadow : this._archGroupCastsShadow(name);
+        // DER BAU-SATZ (Welle 6): ist das Leaf ein gesetzter Studio-Bau einer Satz-Art, zeichnet die Gruppe nie selbst —
+        // ihr Bereich lebt im Satz ihres Stoffs (`_bauSatzArt`, `_tickBauSatz`).
+        const satz = this._bauSatzArt(leaf, regionKey, castShadow);
         // AUSLÖSCHUNGS-WELLE (Feld B) — trägt die Quell-Geometrie LOD-Attribute (aH0 =
         // Baum-Stufen · aKarte = die Karte), bekommt die Gruppe die INSTANZ-FASSADE
         // (per-Instanz-Metrik wie das Studio; s. _lodInstanceFacade).
@@ -62822,9 +64777,11 @@ class AnazhRealm {
         const mesh = AnazhRealm._instanzMesh(groupGeom, leaf.mat, capacity);
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
-        // regional → lokale BBox → die Engine cullt beim Umsehen; global → nutzlos (verteilt).
+        // regional → lokale BBox → die Engine cullt beim Umsehen; global → die Instanz-Wahl je Pass (`_instanzWahlPass`).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
+        const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
+        if (wahl) mesh.userData.instanzWahl = wahl;
         // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
         // → unsichtbar für die Kamera; einzig der Schatten-Pass zählt ihn, s. Licht-Setup). Kein
         // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
@@ -62835,8 +64792,15 @@ class AnazhRealm {
         // (leaf.tuer) bleiben DRAUSSEN (per-Frame-Matrizen, _tickTorFluegel). GLOBALE Gruppen ziehen in EIN
         // "@global"-Bundle: der Key matcht das Kugel-Regex nicht → keine cullSphere → immer sichtbar,
         // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
-        const bundle = !leaf.tuer ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
-        if (bundle) {
+        // Eine Satz-Gruppe hängt nirgends: sie ist Slot-Wahrheit und Raycast-Ziel, gezeichnet wird ihr Bereich im Satz.
+        // Die Wahl-Gruppen (Welle 7: die Pflanzen-Stufen und die EINE Atlas-Gruppe der Karten) ziehen in EIN eigenes
+        // "@wahl"-Bundle: ändert der Blick die Wahl, nimmt das Hauptbild nur sie neu auf, nie die übrigen globalen Gruppen.
+        const bundle =
+            !leaf.tuer && !satz ? this._archRegionBundleFor(regional ? regionKey : wahl ? "@wahl" : "@global") : null;
+        if (satz) {
+            mesh.frustumCulled = false;
+            mesh.userData.bauSatz = satz;
+        } else if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
             bundle.needsUpdate = true;
@@ -62859,7 +64823,12 @@ class AnazhRealm {
             regional,
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
             tuer: leaf.tuer || null, // V18.465 — Tür-Flügel-Scharnier (Template-Raum)
+            satz, // Welle 6 — die Satz-Art (null = die Gruppe zeichnet selbst)
+            wahl, // Welle 7 — "haupt" | "schatten": die Instanz-Wahl je Pass (null = die Gruppe zeichnet jede Instanz)
+            // das Fenster der Blende: der Stufen-Stempel (1 · 2 · 3) oder "karte" (die Einblendung des Billboards)
+            wahlStufe: wahl ? (atlasGruppe ? "karte" : leaf.geom.attributes.aLodLevel.array[0]) : 0,
         };
+        if (wahl) this._instanzWahlGruppen().add(g);
         // Nur im NEU-Gruppen-Zweig (nicht in _archInstanceGroupGrow → g-Identität
         // bleibt): der Ref-Zähler der Cache-Gruppe steigt um 1, solange eine lebende InstancedMesh-Gruppe ihre
         // geteilte Geometrie hält; _disposeArchInstanceGroup dekrementiert 1:1.
@@ -62869,9 +64838,12 @@ class AnazhRealm {
         }
         this.state.archInstanceGroups.set(key, g);
         // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Konsum-Familie
-        // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie).
-        this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
-        g._ofenKey = (wantsFacade ? "if|" : "ip|") + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER
+        // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie); eine Satz-Gruppe zeichnet nie, ihre
+        // Familie ist der Satz (`_chunkSatz`).
+        if (!satz) {
+            this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
+            g._ofenKey = (wantsFacade ? "if|" : "ip|") + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER
+        }
         this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
         return g;
     }
@@ -62925,6 +64897,8 @@ class AnazhRealm {
         next.receiveShadow = true;
         next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
         next.userData.archInstanceKey = g.key;
+        if (g.satz) next.userData.bauSatz = g.satz; // Welle 6 — die Satz-Gruppe bleibt ohne Eltern (der Satz zeichnet)
+        if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
         // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
@@ -62956,8 +64930,8 @@ class AnazhRealm {
             parent.remove(g.mesh);
             parent.add(next);
             if (parent.isBundleGroup) parent.needsUpdate = true;
-        } else if (this.state.scene) this.state.scene.add(next);
-        g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
+        } else if (!g.satz && this.state.scene) this.state.scene.add(next);
+        this._instanzAbschied(g.mesh); // die eigenen Instanz-Puffer verlassen die GPU (geom/mat geteilt → bleiben)
         g.mesh = next;
         g.capacity = newCap;
     }
@@ -63013,6 +64987,20 @@ class AnazhRealm {
         return true;
     }
 
+    // Zwei lebende Slots tauschen ihre Bewohner — Instanz-Größen, Marken (die Halter lesen `slot` frisch) und Einträge.
+    _archGroupTausch(g, a, b) {
+        AnazhRealm._instanzTausch(g.mesh, a, b);
+        const ra = g.slotRef[a],
+            rb = g.slotRef[b];
+        ra.slot = b;
+        rb.slot = a;
+        g.slotRef[a] = rb;
+        g.slotRef[b] = ra;
+        const e = g.slotEntry[a];
+        g.slotEntry[a] = g.slotEntry[b];
+        g.slotEntry[b] = e;
+    }
+
     // DER UMZUG EINER INSTANZ (Verdichten): alles, was je Slot reist, rückt von `von` nach `nach` — die Matrix, die
     // Farbe und die Instanz-Attribute der LOD-Fassade (`LOD_INSTANZ_ATTRIBUTE`, nur wo die Geometrie die Fassade der
     // Gruppe ist; eine geteilte Quell-Geometrie trägt keine Instanz-Werte). Die EINE Liste der Instanz-Größen für jede
@@ -63035,6 +65023,28 @@ class AnazhRealm {
                 const s = a.itemSize;
                 a.array.copyWithin(nach * s, von * s, von * s + s);
                 a.needsUpdate = true;
+            }
+    }
+    // DER TAUSCH ZWEIER INSTANZEN (die Instanz-Wahl je Pass ordnet ihre Gruppe): dieselbe Liste der Instanz-Größen wie
+    // der Umzug, in beide Richtungen.
+    static _instanzTausch(mesh, a, b) {
+        const tausch = (attr, n) => {
+            if (!attr) return;
+            const x = attr.array;
+            for (let j = 0, ia = a * n, ib = b * n; j < n; j++, ia++, ib++) {
+                const t = x[ia];
+                x[ia] = x[ib];
+                x[ib] = t;
+            }
+            attr.needsUpdate = true;
+        };
+        tausch(mesh.instanceMatrix, 16);
+        tausch(mesh.instanceColor, 3);
+        const geo = mesh.geometry;
+        if (geo && geo.userData && geo.userData._lodFacade)
+            for (const k in AnazhRealm.LOD_INSTANZ_ATTRIBUTE) {
+                const at = geo.attributes[k];
+                if (at && at.isInstancedBufferAttribute) tausch(at, at.itemSize);
             }
     }
 
@@ -63122,7 +65132,7 @@ class AnazhRealm {
             bigger.receiveShadow = true;
             st.scene.add(bigger);
             st.scene.remove(P.mesh);
-            P.mesh.dispose();
+            this._instanzAbschied(P.mesh);
             P.mesh = bigger;
             P.cap *= 2;
         }
@@ -63162,7 +65172,7 @@ class AnazhRealm {
         if (!P) return;
         if (P.mesh) {
             if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-            P.mesh.dispose(); // instanceMatrix-Buffer; Geo/Mat sind geteilt (this._archFund*)
+            this._instanzAbschied(P.mesh); // die Instanz-Puffer; Geo/Mat sind geteilt (this._archFund*)
         }
         this.state.archFundament = null;
     }
@@ -63733,18 +65743,25 @@ class AnazhRealm {
     // die Blume des Waldbodens blieb auf dem neuen Weg stehen).
     _nahWieseNeuIn(x0, z0, x1, z1) {
         let n = 0;
+        // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus.
+        const ns = this.state.nahStreu;
         const ringe = [
-            [this.state.nahWiese, AnazhRealm.NAH_WIESE.kachel, (k) => this._nahWieseKachelEntsorgen(k)],
-            [this.state.nahStreu, AnazhRealm.NAH_STREU.kachel, (k) => this._nahStreuKachelEntsorgen(k)],
+            [this.state.nahWiese, AnazhRealm.NAH_WIESE.kachel, (key) => this._nahWieseKachelFaellt(key)],
+            [
+                ns,
+                AnazhRealm.NAH_STREU.kachel,
+                (key, k) => {
+                    this._nahStreuKachelEntsorgen(k);
+                    return ns.kacheln.delete(key);
+                },
+            ],
         ];
         for (const [ring, K, weg] of ringe) {
             if (!ring) continue;
-            for (const [key, k] of ring.kacheln) {
+            for (const [key, k] of [...ring.kacheln]) {
                 const [tx, tz] = key.split(",").map(Number);
                 if ((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1) continue;
-                weg(k);
-                ring.kacheln.delete(key);
-                n++;
+                if (weg(key, k)) n++;
             }
         }
         return n;
@@ -63793,7 +65810,7 @@ class AnazhRealm {
             bigger.receiveShadow = true;
             this.state.scene.add(bigger);
             this.state.scene.remove(P.mesh);
-            P.mesh.dispose();
+            this._instanzAbschied(P.mesh);
             P.mesh = bigger;
             P.cap *= 2;
         }
@@ -63943,7 +65960,7 @@ class AnazhRealm {
         const P = this.state.stlZaun;
         if (P && P.mesh) {
             if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-            P.mesh.dispose();
+            this._instanzAbschied(P.mesh);
         }
         this.state.stlZaun = null;
         // Die Wege-Karte leert sich (die Formen und die Kronen gehören der alten Welt; die neue pflanzt neu); die
@@ -64139,16 +66156,18 @@ class AnazhRealm {
 
     // Alle Instancing-Gruppen abbauen (Welt-Wechsel/Restore). Geometrie +
     // Material leben im archFlattenCache (geteilt) → NICHT disposen; nur die
-    // InstancedMesh-Wrapper (instanceMatrix-Buffer) freigeben + Map leeren.
+    // Instanz-Puffer der Senken verlassen die GPU (_instanzAbschied) + Map leeren.
     _archDisposeAllInstanceGroups() {
         if (this.state.archInstanceGroups) {
             for (const g of this.state.archInstanceGroups.values()) {
+                if (g.satz) this._bauSatzMarke(g.key, g.satz); // Welle 6 — die Bereiche verlassen den Satz
                 // SUBMIT-WAL — parent-bewusst: regionale InstancedMesh-Gruppen hängen
                 // in Region-BundleGroups (scene.remove wäre dort ein No-op = Leck).
                 if (g.mesh) this._archBundleSceneRemove(g.mesh);
-                if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
+                if (g.mesh) this._instanzAbschied(g.mesh);
             }
             this.state.archInstanceGroups.clear();
+            this._instanzWahlGruppen().clear();
         }
         // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore);
         // NACH den Gruppen (die Instanzen-Räumung oben kann Bundles schon leeren+löschen).
@@ -67670,6 +69689,14 @@ class AnazhRealm {
             return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
         return z;
     }
+    // Ist die Stufe der Zwilling einer anderen Stufe ihrer Art (B2c `schatten`: Baum L0 → L1)? Dann wirft sie über die
+    // Zwillings-Leaves (`_foundryFlattenFor`: EIN Werfer je Gestalt), nie über ihre Teile.
+    _foundryWurfQuelle(preset, lod) {
+        const st = this._foundryKindStages(preset);
+        if (!st) return false;
+        for (const s of st) if (s !== lod && this._foundryBudgetZeile(preset, s).schatten === lod) return true;
+        return false;
+    }
     // DIE FERNFORM einer Art (B2c `lod.budget[kind].fernform`): "karte" · "gesetz" · "boden" — was die Art jenseits
     // der Nah-Grenze IST (`_streuFernBahn`). Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem
     // Mesh-Zug. Fail-closed: eine gestreute Art ohne gültige Fernform ist ein KERN-PFLICHT-Bruch, nie ein stilles L0.
@@ -69074,7 +71101,8 @@ class AnazhRealm {
     // Feld-Pass marcht ALLE Felder aus Atlas+Liste in EINEM Draw — ein
     // Material je Ziegel wäre der Zwilling, den wir abgeschafft haben.
 
-    // `wiegen` (m, optional): die Studio-Skala einer weichen Boden-Art der Nah-Streu — der Stoff wiegt im EINEN Wind.
+    // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
+    // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
     _foundryTreeMaterial(kind, mp, wiegen) {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
@@ -69095,16 +71123,16 @@ class AnazhRealm {
             klasseLook = R.look;
         // Build-Zeit-Gate der Studio-Dither-Blende (Default an; Maske + CPU-Doppel-Mitgliedschaft schalten
         // zusammen am foundryCrossfade-Flag). Das Flag steht im Key: ein Live-Toggle trifft nur NEU gebaute
-        // Gruppen; Material und Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Pass → konsistent.
-        const xfade = !!(this.state && this.state.foundryCrossfade === true);
+        // Gruppen; Material und Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Pass → konsistent. Der wiegende
+        // Stoff der Nah-Streu blendet nie (ihr Stufen-Wechsel ist die Armlänge, ihre Stempel tragen 0): sein Satz trägt
+        // keine Stempel (`STREU_SATZ_ATTR`).
+        const xfade = !!(this.state && this.state.foundryCrossfade === true) && wiegen !== true;
         // DER SCHLÜSSEL IST DIE EINE MATERIAL-IDENTITÄT (phyto-core `budgetStoff`, W8): Art · Regler · SEITE · Gewebe ·
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
         // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
         const key =
-            globalThis.__phytoCore.budgetStoff(kind, mp) +
-            (xfade ? "|xf" : "") +
-            (wiegen > 0 ? "|wiegt:" + wiegen.toFixed(3) : "");
+            globalThis.__phytoCore.budgetStoff(kind, mp) + (xfade ? "|xf" : "") + (wiegen === true ? "|wiegt" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -69405,30 +71433,44 @@ class AnazhRealm {
                     foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
                 });
                 if (_keepX) {
-                    if (mat.opacityNode) mat.opacityNode = mat.opacityNode.mul(_keepX);
-                    else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined)
+                    // DER KANAL der Maske: der r184-Schattenpass liest colorNode.a, nie opacityNode — nur eine Maske in der
+                    // Farbe gilt auch dort. Die Instanz-Wahl liest Marke und Kanal (`_instanzFensterGilt`): ein Fenster
+                    // ohne die Maske des Passes schnitte ein Loch.
+                    let kanal = null;
+                    if (mat.opacityNode) {
+                        mat.opacityNode = mat.opacityNode.mul(_keepX);
+                        kanal = "deckung";
+                    } else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined) {
                         mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
+                        kanal = "farbe";
+                    }
                     if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5;
                     mat.userData = mat.userData || {};
-                    mat.userData.foundryCrossfade = true; // Linsen-Marker (kein Verhalten)
+                    if (kanal) {
+                        mat.userData.foundryCrossfade = true;
+                        mat.userData.foundryCrossfadeKanal = kanal;
+                    }
                 }
             }
             // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
             // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
-            // der Spieler biegt die Halme (uBend). Der Versatz liegt nach der Instanzierung → Welt-Richtung.
+            // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
+            // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
             if (kind === "grass") {
                 if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
                 const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
                 const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
                 if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
-            } else if (wiegen > 0) {
+            } else if (wiegen === true) {
                 // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
                 // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
-                // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Studio-Skala `wiegen`).
-                // Jeder Teil einer Pflanze trägt denselben Versatz — Rute und Laub, Stiel und Blüte bleiben verbunden;
-                // der Charakter (ampX 1,2) ist der des gefallenen Klein-Vegetations-Zwillings.
+                // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Welt-Skala der Pflanze — der
+                // Satz trägt sie je Vertex als `aWiege`, seine Positionen liegen in Welt-Lage: Phase und Biegung lesen die
+                // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
+                // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
+                // Klein-Vegetations-Zwillings.
                 if (!this.state.windUniforms) this._grassInstanceMat();
-                const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.positionGeometry.y.mul(wiegen) });
+                const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
                 if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
             }
             mat.userData = mat.userData || {};
@@ -69481,7 +71523,7 @@ class AnazhRealm {
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
-        if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
+        if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
         // jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
@@ -69500,7 +71542,7 @@ class AnazhRealm {
             const si = new Uint16Array(m.skinIndex.array.length);
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
-            geo.setAttribute("skinWeight", new T.BufferAttribute(m.skinWeight.array, m.skinWeight.itemSize || 4));
+            geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
@@ -69525,6 +71567,9 @@ class AnazhRealm {
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
         if (m.tuer && typeof m.tuer.seite === "number") mesh.userData.__tuer = m.tuer;
+        // DER WURF-TEIL (W6, Umschlag out.wurf, additiv): die Baum-L1 nennt je Teil die Zahl ihrer werfenden Dreiecke
+        // (der Vorsatz des Index) — der Schatten-Zwilling wirft nur ihn (`_foundrySchattenGeom`).
+        if (Number.isInteger(m.wurf)) mesh.userData.__wurf = m.wurf;
         return mesh;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
@@ -69577,11 +71622,11 @@ class AnazhRealm {
                     typeof this._foundryPresetIsTree === "function" &&
                     this._foundryPresetIsTree(stage.preset)
                 );
-                // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Der Strauch
-                // ([1, 2]) hat keine: seine L1 ist nah die volle Gestalt (Studio: nah stages[0], fern stages[letzte]),
-                // sie blendet nie ein (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 %
-                // durchsichtig, die L0-Hälfte der Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) —
-                // ungemaskt stand sie dort doppelt mit dem Billboard und sprang am Bandende weg.
+                // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Eine Art ohne
+                // L0 (bis Welle 6 der Strauch, [1, 2]) trägt nah die volle Gestalt in der L1, sie blendet nie ein
+                // (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 % durchsichtig, die L0-Hälfte der
+                // Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) — ungemaskt stand sie dort doppelt mit
+                // dem Billboard und sprang am Bandende weg. Seit Welle 6 trägt der Strauch die Kette wie der Baum.
                 const _aLodVal =
                     _isTree && _lodS === 0
                         ? 1
@@ -70064,23 +72109,31 @@ class AnazhRealm {
             if (q._evicted && !(q._liveRefs > 0)) this._disposeFoundryGroupGeom(q);
         }
     }
-    // Die Gestalt, mit der ein Schatten-Zwilling wirft: die L1-Geometrie, als Stufe L0 gestempelt (aLodLevel 1).
-    // Dieselben Puffer, derselbe Stoff — die Dither-Blende liest die Stufe aus dem Stempel: der Zwilling wirft, wo
-    // die L0 gezeichnet wird, und weicht im L0→L1-Band, wo der L1-Partner einblendet. Kostet kein Programm; die
-    // Gestalt gehört dem L1-Leaf und fällt mit ihm (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1.
+    // Die Gestalt, mit der ein Schatten-Zwilling wirft: die Geometrie der Wurf-Stufe (Baum: die L1), gestempelt als
+    // Nah-Stufe ohne Einblende (aLodLevel 3: wirft voll, wo die L0 ODER die L1 gezeichnet wird, und blendet nur im
+    // L1→L2-Band zur Karte aus — die Karte wirft nicht). Dieselben Puffer, derselbe Stoff, kein Programm mehr; EIN
+    // Zwilling je Gestalt und Teil, gleich welche Stufe ihn ruft (`_foundryFlattenFor`: die L0 und die L1 tragen
+    // dieselben Zwillings-Leaves, eine Gruppe je Pass). Die Gestalt gehört dem L1-Leaf und fällt mit ihm
+    // (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1. DER WURF-TEIL (W6): nennt das Teil seinen Wurf
+    // (`lf.wurf`, die Dreiecke des Index-Vorsatzes), zeichnet der Zwilling nur diesen Vorsatz (drawRange) — derselbe
+    // Index, dieselben Puffer.
     _foundrySchattenGeom(lf) {
         const g = lf && lf.geom;
-        if (!g || !g.attributes || !g.attributes.aLodLevel) return g;
+        if (!g || !g.attributes) return g;
+        const voll = (g.index ? g.index.count : g.attributes.position.count) / 3;
+        const teil = Number.isInteger(lf.wurf) && lf.wurf < voll;
+        if (!g.attributes.aLodLevel && !teil) return g;
         if (lf._schattenGeom) return lf._schattenGeom;
         const z = new THREE.BufferGeometry();
         for (const k in g.attributes) z.setAttribute(k, g.attributes[k]);
-        z.setAttribute(
-            "aLodLevel",
-            new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(1), 1)
-        );
+        if (g.attributes.aLodLevel)
+            z.setAttribute(
+                "aLodLevel",
+                new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(3), 1)
+            );
         if (g.index) z.setIndex(g.index);
         z.drawRange.start = g.drawRange.start;
-        z.drawRange.count = g.drawRange.count;
+        z.drawRange.count = teil ? lf.wurf * 3 : g.drawRange.count;
         if (g.boundingSphere) z.boundingSphere = g.boundingSphere.clone();
         if (g.boundingBox) z.boundingBox = g.boundingBox.clone();
         lf._schattenGeom = z;
@@ -70157,14 +72210,20 @@ class AnazhRealm {
         if (!group._foundryFlat) {
             // DER SCHATTEN-STELLVERTRETER: ein Baum zeichnet nah seine L0-Gestalt und wirft den Schatten seiner
             // L1-Stufe — die L0-Teile casten nicht, die L1-Teile reisen als Schatten-Zwilling (`shadowTwin`,
-            // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Stufe L0 gestempelt
-            // (`_foundrySchattenGeom`: blendet wie L0, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
+            // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Nah-Stufe gestempelt
+            // (`_foundrySchattenGeom`: Stempel 3, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
             // Wechsel und Bundles tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
             // Dreiecke in JEDE der zwei Kaskaden, ihre L1 trägt 11k. Ein Flat ist erst fertig, wenn seine Teile
             // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1). WER wirft, sagt das Studio-Budget (B2c
             // `schatten` je Art × Stufe, `_foundryBudgetZeile`): die eigene Stufe wirft selbst, eine andere reist als
             // Zwilling, false wirft nicht — nie ein Stufen-Literal im Host.
+            // DER EINE WERFER JE GESTALT (W6, 05.10.): wirft eine Stufe selbst UND ist sie der Zwilling einer anderen
+            // (Baum: die L0 wirft die L1), wirft sie über DIESELBEN Zwillings-Leaves wie die andere — EINE Instanz-Gruppe
+            // je Gestalt und Teil in jeder Kaskade, gleich ob der Baum nah (L0) oder mittel (L1) steht. Befund (Mess-
+            // Wiese, werkbank zaehlen 05.10.): k0 zeichnete je Baum-Gestalt zwei Gruppen derselben L1-Geometrie (die
+            // L1 selbst und den Zwilling ihrer L0) — f:tanne:L1 8 Befehle in k0 bei 4 im Hauptbild.
             const wurf = this._foundryBudgetZeile(preset, lod).schatten;
+            const zwillingsQuelle = wurf === lod && this._foundryWurfQuelle(preset, lod);
             let schatten = null;
             if (wurf !== false && wurf !== lod) {
                 const fw = this._foundryFlattenFor(entry, preset, wurf);
@@ -70189,7 +72248,7 @@ class AnazhRealm {
             // Zwilling, L1 selbst, Karte nie; Strauch/Blume/Fels selbst; Gras nie). Der `leaf.castShadow`-Override
             // gewinnt gegen `_archGroupCastsShadow` (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im
             // leafKey). Deckungsgleiche Werfer verdunkeln nicht doppelt (Tiefen-Test).
-            const castsShadow = wurf === lod;
+            const castsShadow = wurf === lod && !zwillingsQuelle;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -70200,6 +72259,8 @@ class AnazhRealm {
                     // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
                     tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
                     sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
+                    // der Wurf-Teil des Teils (Dreiecke des Index-Vorsatzes, die werfen), wo das Studio ihn nennt
+                    wurf: child.userData && Number.isInteger(child.userData.__wurf) ? child.userData.__wurf : undefined,
                     leafKey: "f:" + key + ":" + p,
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
@@ -70209,19 +72270,36 @@ class AnazhRealm {
                 });
             }
             this._foundryFlatVerschmelzen(group, leaves);
-            if (schatten && leaves.length) {
-                // Die L1-Teile (schon verschmolzen) als Zwilling; die L1-Cache-Gruppe bleibt gepinnt, solange
-                // dieser Flat lebt (`_disposeFoundryGroupGeom` gibt sie zurück).
-                for (const lf of schatten.leaves)
+            if (zwillingsQuelle) {
+                // Die Teile (schon verschmolzen) werfen als Zwilling (`_foundrySchattenGeom`, Stempel 3); die Gestalt
+                // gehört dem Teil dieses Flats und fällt mit ihm. Nennt die Stufe einen WURF-TEIL (B2c `wurf`, Baum-L1),
+                // wirft jedes Teil nur seinen Vorsatz (`lf.wurf` Dreiecke) — ein Teil ohne Wurf (die Wurzeln) wirft nicht,
+                // ein Teil ohne Wurf-Zahl ist ein Vertragsbruch (KERN-PFLICHT), nie still ganz.
+                const mitWurf = !!this._foundryBudgetZeile(preset, lod).wurf;
+                const n = leaves.length;
+                for (let i = 0; i < n; i++) {
+                    const lf = leaves[i];
+                    if (mitWurf && !Number.isInteger(lf.wurf))
+                        AnazhRealm._kernPflichtBruch(
+                            "phyto:lod.budget." + preset + "[" + lod + "].wurf (Teil ohne Wurf-Zahl)"
+                        );
+                    if (lf.wurf === 0) continue;
                     leaves.push(
                         Object.assign({}, lf, {
                             leafKey: lf.leafKey + "#S",
                             geom: this._foundrySchattenGeom(lf),
                             castShadow: lf.castShadow !== false, // die Zwillings-Stufe wirft selbst — ihre Lichtquellen nie
                             shadowTwin: true,
-                            _eigen: false, // die verschmolzene L1-Geometrie gehört der L1-Gruppe, nie diesem Flat
+                            _eigen: false, // die Geometrie gehört dem Teil, nie dem Zwilling
+                            _schattenGeom: null,
                         })
                     );
+                }
+            }
+            if (schatten && leaves.length) {
+                // Die Zwillings-Leaves der Wurf-Stufe, DIESELBEN Objekte (EIN Werfer je Gestalt); die Cache-Gruppe der
+                // Wurf-Stufe bleibt gepinnt, solange dieser Flat lebt (`_disposeFoundryGroupGeom` gibt sie zurück).
+                for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);
                 const quelle = schatten.leaves[0]._srcGroup;
                 if (quelle) {
                     quelle._liveRefs = (quelle._liveRefs || 0) + 1;
@@ -70245,6 +72323,157 @@ class AnazhRealm {
         if (typeof THREE.StorageInstancedBufferAttribute === "function")
             m.instanceMatrix = new THREE.StorageInstancedBufferAttribute(m.instanceMatrix.array, 16);
         return m;
+    }
+    // DER GPU-ABSCHIED — der EINE Weg, auf dem eine Geometrie-Kopie die GPU verlässt. r184 trägt jedes hochgeladene
+    // Attribut STARK in sein Register (`renderer.info.memoryMap`) und gibt es nur auf zwei Wegen frei: `_attributes.delete`
+    // oder das `dispose`-Ereignis einer Geometrie — dieses nur für die Attribute des ERSTEN Render-Objekts, das sie zeichnete.
+    // `InstancedMesh.dispose()` gibt nichts frei (r184 hört auf kein Objekt-Ereignis), die Basis-Attribute einer Foundry-
+    // Gestalt, die eine Instanz-Fassade zeichnet, kennt r184 nur über die Fassade. Befund 05.10. (Radeon 890M, Mess-Wiese,
+    // drei Schleifen à 1,2 km, Puffer-Linse `werkbank puffer`): 131 MB Geometrie-Puffer auf der GPU, davon 60,7 MB im Bild —
+    // 55,6 MB hielt nur der Foundry-Cache (Gestalten ohne lebende Gruppe), 14,7 MB nur r184s Register (der alte Boden-Satz nach
+    // dem Wachsen 11,4 MB, 1 530 Instanz-Matrizen gefallener Nah-Wiesen-Kacheln und Gruppen). Das Attribut selbst bleibt
+    // (die CPU-Kopie im Cache); zeichnet es wieder ein Objekt, lädt r184 es neu hoch (die Version steigt). Verschränkte fallen nie
+    // einzeln (r184 zerstört den geteilten Puffer und vergisst ihn nicht — das nächste Zeichnen läse einen toten Puffer).
+    _gpuAbschied(attr) {
+        const rend = this.state.renderer;
+        if (!attr || attr.isInterleavedBufferAttribute || !rend || !rend._attributes || !rend.info) return false;
+        if (!rend.info.memoryMap.has(attr)) return false;
+        rend._attributes.delete(attr);
+        // Die Version steigt: zeichnet ein altes Render-Objekt das Attribut wieder, sieht der Beobachter (r184 equals,
+        // die Observer-Diät) die Änderung und lädt es hoch — ohne sie fände sein Draw keinen Puffer.
+        attr.needsUpdate = true;
+        return true;
+    }
+    // DER ABSCHIED EINER INSTANZ-SENKE — das Gegenstück zu `_instanzMesh`: ihre EIGENEN Instanz-Puffer (die Matrizen als
+    // Speicher-Puffer, die Farben) verlassen die GPU. Der Speicher-Puffer fällt NUR hier: seine Bindegruppe hält ihn, und
+    // r184 baut sie nur bei einem neuen Attribut-OBJEKT neu (`Bindings._update`), nie bei einem neu hochgeladenen Puffer —
+    // eine Senke, die weiterlebt, darf ihn nie verlieren. Der Aufrufer hat sie aus Graph und Bündel genommen; Geometrie und
+    // Stoff gehören ihm (geteilt).
+    _instanzAbschied(mesh) {
+        if (!mesh) return;
+        this._gpuAbschied(mesh.instanceMatrix);
+        this._gpuAbschied(mesh.instanceColor);
+        // Die Render-Objekte der Senke (`_renderObjektRegister`) lösen sich: von Stoff und Geometrie (ihr dispose-Ereignis
+        // hielt sie), ihr Knoten-Zustand aus r184s `nodeBuilderCache` (je Instanz-Senke unter ihrer uuid gecacht — er hält
+        // über den InstancedMeshNode die Senke selbst; nach drei Wander-Schleifen 3 713 Zustände für 226 lebende Senken),
+        // ihre eigenen Bindegruppen aus der Layout-Zählung. Dann nimmt der Collector sie samt Uniform-Puffern. Die Pipeline
+        // bleibt im Cache, wie bisher (r184s eigenes `dispose` gäbe mit dem letzten Render-Objekt einer Familie auch sie frei —
+        // die nächste Senke derselben Familie kompilierte neu); geteilte Gruppen gehören allen.
+        const ros = mesh.__renderObjekte;
+        const rend = this.state.renderer;
+        if (ros) {
+            mesh.__renderObjekte = null;
+            for (const ro of ros) {
+                if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
+                if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
+                if (rend && rend._nodes) rend._nodes.delete(ro);
+                if (rend && rend._bindings && ro._bindings)
+                    for (const bg of ro._bindings) {
+                        const b0 = bg.bindings && bg.bindings[0];
+                        if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+                        rend.backend.deleteBindGroupData(bg);
+                        rend._bindings.delete(bg);
+                        // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
+                        // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
+                        // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
+                        for (const b of bg.bindings || [])
+                            if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
+                                const td = rend._textures.get(b.texture);
+                                if (td.bindGroups) td.bindGroups.delete(bg);
+                            }
+                    }
+            }
+        }
+        mesh.dispose();
+    }
+    // DAS RENDER-OBJEKT-REGISTER: r184 baut je (Objekt × Stoff × Pass-Kontext) ein Render-Objekt mit eigenen Uniform-Puffern
+    // (`bindingBuffer…_object` · `_render`) und hängt es an das `dispose`-Ereignis seines STOFFS und seiner GEOMETRIE — ein
+    // geteilter Stoff hielt so jedes Render-Objekt jeder je gezeichneten Senke für immer, der Collector nahm keins (Mess-Wiese
+    // nach drei Wander-Schleifen: 7 481 Uniform-Puffer, 2,6 MB, keiner vom GC frei). Das Register merkt je Objekt seine
+    // Render-Objekte: der Abschied einer Senke (`_instanzAbschied`) löst sie, der Kehraus liest aus ihnen, was das Objekt
+    // WIRKLICH zeichnet — auch Attribute, die kein `geometry.attributes` trägt (r184s InstanceNode zeichnet die Instanz-
+    // Farbe aus einem EIGENEN Attribut über `instanceColor.array`).
+    _renderObjektRegister(renderer) {
+        const objs = renderer && renderer._objects;
+        if (!objs || objs.__anazhRegister || typeof objs.createRenderObject !== "function") return;
+        objs.__anazhRegister = true;
+        const roh = objs.createRenderObject;
+        objs.createRenderObject = function (...a) {
+            const ro = roh.apply(this, a);
+            const o = ro && ro.object;
+            if (!o) return ro;
+            const liste = o.__renderObjekte || (o.__renderObjekte = []);
+            liste.push(ro);
+            // r184 löst ein Render-Objekt selbst (ein neuer Schlüssel, ein entsorgter Stoff): es verlässt das Register.
+            const roDispose = ro.onDispose;
+            ro.onDispose = () => {
+                const l = o.__renderObjekte;
+                const i = l ? l.indexOf(ro) : -1;
+                if (i >= 0) l.splice(i, 1);
+                roDispose();
+            };
+            return ro;
+        };
+        // DER GEOMETRIE-HALTER FÄLLT: r184 hängt an jede gezeichnete Geometrie EINEN dispose-Hörer, der das ERSTE Render-
+        // Objekt einfängt (`initGeometry`, gehalten in der Map `_geometryDisposeListeners`) — eine Fassade, die nie entsorgt
+        // wird, hielt so ihre erste Senke samt Render-Objekt, Knoten-Zustand und Uniform-Puffern für immer (Heap-Halter-
+        // Suche 06.10.: zehn abgeschiedene Gruppen, alle zehn über diesen Hörer am Leben). Und sein Entsorgen löschte die
+        // Attribute DIESES Render-Objekts — auch Basis-Attribute, die eine Fassade mit lebenden Gruppen teilt. Die Residenz
+        // trägt der Kehraus (`_gpuKehraus`: was kein Objekt des Graphen zeichnet, verlässt die GPU); der Hörer fällt, nur
+        // die Geometrie-Zählung des Infos bleibt ehrlich.
+        const geos = renderer._geometries;
+        if (geos && typeof geos.initGeometry === "function" && geos._geometryDisposeListeners) {
+            const init = geos.initGeometry;
+            geos.initGeometry = function (ro) {
+                init.call(this, ro);
+                const g = ro.geometry;
+                const hoerer = this._geometryDisposeListeners.get(g);
+                if (!hoerer) return;
+                g.removeEventListener("dispose", hoerer);
+                this._geometryDisposeListeners.delete(g);
+                const info = this.info;
+                const zaehlung = () => {
+                    info.memory.geometries--;
+                    g.removeEventListener("dispose", zaehlung);
+                };
+                g.addEventListener("dispose", zaehlung);
+            };
+        }
+    }
+    // DER SCHMALE INDEX (W7): r184 weitet beim Anlegen JEDES nicht-normierte 8-/16-bit-Attribut auf 32 bit (die Vertex-
+    // Formate ohne x1/x3-Form) — auch den Index, den der Draw selbst als uint16 binden könnte (`setIndexBuffer` wählt das
+    // Format nach dem Array-Typ): jeder 16-bit-Index lag doppelt auf der GPU, und die Foundry lieferte ihn ohnehin als
+    // Uint32. Befund (echte GPU, Mess-Wiese, Puffer-Linse): 113 von 114 Index-Puffern hätten 16 bit gereicht, 2,8 MB zu viel
+    // — der Spieler allein 0,9 MB. Der EINE Weg jedes Index auf die GPU (`createIndexAttribute`) legt einen Uint16-Index
+    // ungeweitet an: das Weiten fragt `normalized` (für einen Index bedeutungslos), die Hülle setzt es nur für das Anlegen.
+    // Ein 16-bit-Index, der danach teilweise neu schreibt, bräche an der 4-Byte-Ausrichtung von writeBuffer — die Sätze
+    // (die einzigen Index-Schreiber) tragen Uint32 (gate:vendor-anker pinnt beide Vendor-Stellen).
+    _index16(renderer) {
+        const be = renderer && renderer.backend;
+        if (!be || be.isWebGPUBackend !== true || be.__anazhIndex16 || typeof be.createIndexAttribute !== "function")
+            return;
+        be.__anazhIndex16 = true;
+        const roh = be.createIndexAttribute;
+        be.createIndexAttribute = function (attr) {
+            if (!(attr && attr.array instanceof Uint16Array) || attr.normalized !== false) return roh.call(this, attr);
+            attr.normalized = true;
+            try {
+                return roh.call(this, attr);
+            } finally {
+                attr.normalized = false;
+            }
+        };
+    }
+    // Die schmalen Formen eines Assets (W7, Kosten ins Asset): ein Index über ≤ 65 535 Vertices trägt 16 bit (`_index16`
+    // hält ihn so auf der GPU), ein Haut-Gewicht 16 bit normiert (unorm16x4 statt float32x4 — 2 statt 4 B je Komponente;
+    // der Shader liest dasselbe vec4, die Abweichung ≤ 1/131 070 je Gewicht).
+    static _indexSchmal(arr, nVertices) {
+        return nVertices <= 65535 && !(arr instanceof Uint16Array) ? Uint16Array.from(arr) : arr;
+    }
+    static _hautGewicht(arr, itemSize) {
+        const w = new Uint16Array(arr.length);
+        for (let i = 0; i < arr.length; i++) w[i] = Math.round(Math.min(1, Math.max(0, arr[i])) * 65535);
+        return new THREE.BufferAttribute(w, itemSize || 4, true);
     }
     // DIE INSTANZ-ZAHL — der EINE Schreiber von `count` jeder Instanz-Senke (Instanz-Gruppen · Fundament · Zaun ·
     // Nah-Wiese · Nah-Streu): jede Senke ist DICHT ([0, n) lebt, ein freier Slot existiert nicht), und eine leere ist
@@ -70278,10 +72507,27 @@ class AnazhRealm {
             let n = 0;
             for (const i of idx) n += leaves[i].geom.attributes.position.count;
             if (n > globalThis.__phytoCore.BUDGET_GESETZ.verschmelzVerts) continue;
-            const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
+            // Der Wurf-Teil (W6): tragen die Teile einen Wurf-Vorsatz, stehen im verschmolzenen Index ALLE Vorsätze vorn
+            // (der Zwilling wirft deren Summe); ein Teil ohne Wurf-Zahl wirft ganz.
+            const wurfe = idx.map((i) => leaves[i].wurf);
+            const mitWurf = wurfe.some((w) => Number.isInteger(w));
+            const geo = AnazhRealm._geoVerbinden(
+                idx.map((i) => leaves[i].geom),
+                mitWurf ? wurfe : null
+            );
             if (!geo) continue;
             const erst = leaves[idx[0]];
-            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true });
+            let wurf;
+            if (mitWurf) {
+                wurf = 0;
+                for (const i of idx) {
+                    const g = leaves[i].geom;
+                    wurf += Number.isInteger(leaves[i].wurf)
+                        ? leaves[i].wurf
+                        : (g.index ? g.index.count : g.attributes.position.count) / 3;
+                }
+            }
+            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true, wurf });
             for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
             for (const k in geo.attributes) bytes += geo.attributes[k].array.byteLength;
             if (geo.index) bytes += geo.index.array.byteLength;
@@ -70297,7 +72543,9 @@ class AnazhRealm {
     }
     // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
     // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form.
-    static _geoVerbinden(geoms) {
+    // `wurfe` (W6, je Geometrie die Dreiecke ihres Wurf-Vorsatzes oder undefined = ganz): der Index legt erst alle
+    // Vorsätze, dann alle Reste — der verschmolzene Vorsatz ist die Summe (nur indiziert; sonst null).
+    static _geoVerbinden(geoms, wurfe) {
         const g0 = geoms[0];
         const namen = Object.keys(g0.attributes);
         const indiziert = !!g0.index;
@@ -70326,15 +72574,30 @@ class AnazhRealm {
             }
             out.setAttribute(k, new THREE.BufferAttribute(arr, b.itemSize, b.normalized));
         }
+        if (wurfe && !indiziert) return null;
         if (indiziert) {
             const idx = nV > 65535 ? new Uint32Array(nI) : new Uint16Array(nI);
+            const basen = [];
             let o = 0,
                 basis = 0;
             for (const g of geoms) {
-                const ia = g.index.array;
-                for (let i = 0; i < g.index.count; i++) idx[o++] = ia[i] + basis;
+                basen.push(basis);
                 basis += g.attributes.position.count;
             }
+            // Ohne Wurf ein Durchgang (der ganze Index je Geometrie), mit Wurf zwei: die Vorsätze, dann die Reste.
+            const schnitt = (j) =>
+                wurfe && Number.isInteger(wurfe[j])
+                    ? Math.min(geoms[j].index.count, wurfe[j] * 3)
+                    : geoms[j].index.count;
+            for (let j = 0; j < geoms.length; j++) {
+                const ia = geoms[j].index.array;
+                for (let i = 0, n = schnitt(j); i < n; i++) idx[o++] = ia[i] + basen[j];
+            }
+            if (wurfe)
+                for (let j = 0; j < geoms.length; j++) {
+                    const ia = geoms[j].index.array;
+                    for (let i = schnitt(j); i < geoms[j].index.count; i++) idx[o++] = ia[i] + basen[j];
+                }
             out.setIndex(new THREE.BufferAttribute(idx, 1));
         }
         out.computeBoundingBox();
@@ -82252,6 +84515,11 @@ class AnazhRealm {
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         u.opacity.value = skyMul;
         if (u.grenze) u.grenze.value = this._himmelGrenzgroesse(sunHeight);
+        // Kein Punkt sichtbar (mittags liegt die Grenzgröße über jedem Stern, unter Wolken ist die Deckkraft 0): das Feld
+        // zeichnet nicht — es zog am Tag zwei Befehle für ein schwarzes Bild (Band-Linse, Mess-Wiese, Welle 6).
+        const sf = this.state.starField;
+        if (sf && u.grenze && Number.isFinite(u.hellste))
+            sf.visible = skyMul > 0 && u.grenze.value - u.hellste + 0.5 > 0;
     }
 
     // DIE GRENZGRÖSSE des Himmels (scheinbare Helligkeit, ab der ein Punkt sichtbar ist) aus der Sonnenhöhe: die
@@ -84429,6 +86697,8 @@ class AnazhRealm {
                 } catch (_e) {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
+                this._renderObjektRegister(renderer);
+                this._index16(renderer);
                 // Hitch-Telemetrie (d) Upload-Bytes: JEDER Upload läuft durch device.queue.writeBuffer — ein
                 // Laufzeit-Wrap hier zählt alles, die vendor-Datei bleibt byte-alt. Idempotent über __anazhTap;
                 // Konsum je Frame in _perfSenseFoldFrame.
@@ -86927,6 +89197,56 @@ class AnazhRealm {
         }
     }
 
+    // DIE KEHRAUS-MARKE: r184s Lebenszeit-Zähler der render()-Aufrufe (`info.render.calls` — NIE eine Frame-Metrik, die
+    // liest der EINE Tap über drawCalls); `attributeCall` trägt je Attribut seinen Wert beim letzten Zeichnen, der Kehraus
+    // vergleicht dagegen. Die einzige Lesung des Zählers im Stamm (gate:pipeline-constitution · gate:render-tap).
+    _gpuKehrausMarke() {
+        const ri = this.state.renderer && this.state.renderer.info;
+        return ri && ri.render ? ri.render.calls : 0;
+    }
+    // DER GPU-KEHRAUS — die Residenz folgt dem BILD, nie der Geschichte: nach dem Frame verlässt jeder Geometrie-Puffer die
+    // GPU, den kein Objekt des Szenen-Graphen zeichnet und den dieser Frame nicht zeichnete (die r184-Quads der Post-Kette
+    // tragen ihren Frame-Zähler in `attributeCall`). Was der Foundry-Cache nur auf der CPU behält, was ein Wachsen ersetzte,
+    // was eine Gruppe beim Fallen zurückließ — gleich welcher Erzeuger, EIN Chokepoint. Die Instanz-Matrizen (Speicher-
+    // Puffer) fallen nur über `_instanzAbschied` (ihre Bindegruppe hält sie). Kosten: ein Gang durch Graph und Register je
+    // GPU_KEHRAUS_MS — beide tragen nach dem Kehraus nur, was das Bild trägt. `zaehlerVor` = r184 `info.render.calls` vor
+    // dem Frame.
+    _gpuKehraus(zaehlerVor, jetzt) {
+        const st = this.state;
+        const rend = st.renderer;
+        if (!rend || !rend._attributes || !rend._geometries || !rend.info || !st.scene) return 0;
+        if (st._gpuKehrausT && jetzt - st._gpuKehrausT < AnazhRealm.GPU_KEHRAUS_MS) return 0;
+        st._gpuKehrausT = jetzt;
+        const lebt = new Set();
+        st.scene.traverse((o) => {
+            const g = o.geometry;
+            if (g && g.attributes) {
+                for (const k in g.attributes) lebt.add(g.attributes[k]);
+                if (g.index) lebt.add(g.index);
+            }
+            if (o.isInstancedMesh) {
+                lebt.add(o.instanceMatrix);
+                if (o.instanceColor) lebt.add(o.instanceColor);
+            }
+            // Was seine Render-Objekte zeichnen (r184 `getAttributes`, gecacht): auch die Knoten-Attribute. Ein Objekt unter
+            // der Observer-Diät lädt NICHTS neu hoch, solange sich keine Version ändert — ein Attribut, das es zeichnet,
+            // darf nie fallen.
+            const ros = o.__renderObjekte;
+            if (ros) for (const ro of ros) if (ro.attributes) for (const a of ro.attributes) lebt.add(a);
+        });
+        const gezeichnet = rend._geometries.attributeCall;
+        const weg = [];
+        for (const [a, v] of rend.info.memoryMap) {
+            if (!v || (v.type !== "attributes" && v.type !== "indexAttributes")) continue;
+            if (lebt.has(a) || gezeichnet.get(a) >= zaehlerVor) continue;
+            weg.push(a);
+        }
+        let n = 0;
+        for (const a of weg) if (this._gpuAbschied(a)) n++;
+        st._gpuKehrausN = (st._gpuKehrausN || 0) + n;
+        return n;
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -86973,7 +89293,11 @@ class AnazhRealm {
             // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
             // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity. Kosten (04.10., echte GPU
             // Radeon 890M, 1080p, ruhig, gpu-bank 200 Frames × 12 Paare gegen FXAA): +1,1 ms je Frame (die Pass-
-            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB.
+            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Szene,
+            // Auflösung und Geschichte bleiben rgba16float (die Geschichts-Kopien verlangen EIN Format für alle drei):
+            // rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierte die Wolken zu Höhenlinien, die Radeon rundet beim
+            // Schreiben gegen null (Sonde 1,0117 → 1,0; das Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame
+            // 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5 Mantissen-Bit tragen die zeitliche Auflösung nicht.
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
             if (this.state._traa && typeof THREE.TRAANode !== "function") {
@@ -87131,6 +89455,12 @@ class AnazhRealm {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
+            // DIE LEINWAND OHNE TIEFE: in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene lebt im Ziel
+            // des Szene-Passes, mit eigener Tiefe) — r184 legte für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-Größe
+            // an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die kein Pixel las. Der direkte Pfad (die Kette scheitert
+            // im Render, _loopRender) holt sie zurück. Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an.
+            const rend = this.state.renderer;
+            if (rend.backend && rend.backend.isWebGPUBackend === true) rend.depth = false;
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
@@ -87256,6 +89586,8 @@ class AnazhRealm {
             huellen: [],
             ab: [],
             saum: [0, 1],
+            wahlHaupt: [], // die Gruppen, die der Haupt-Pass gewählt hat (sein Nachher-Haken gibt sie zurück)
+            wahlSchatten: [], // dasselbe für den laufenden Kaskaden-Pass
         };
         return this._kaskadenS;
     }
@@ -87274,9 +89606,10 @@ class AnazhRealm {
         return aus;
     }
 
-    // Die WERFER-HÜLLEN der Welt: jedes Region-Bundle (null = wirft nicht) und jeder Bereich des Boden-Satzes (der
+    // Die WERFER-HÜLLEN der Welt: jedes Region-Bundle (null = wirft nicht) und jeder Bereich eines werfenden Satzes (der
     // Boden lebt außerhalb jedes Bundles — ohne ihn fiele der Boden unter dem Band aus der Box, und ein Hang zur Sonne
-    // hin läge über der nahen Ebene). Auf dem WebGL2-Rückfall (keine Bundles) trägt der Boden das Band allein.
+    // hin läge über der nahen Ebene; ebenso der werfende Bau-Satz, Welle 6). Auf dem WebGL2-Rückfall (keine Bundles)
+    // tragen die Sätze das Band allein.
     _kaskadenHuellen(S) {
         const aus = S.huellen;
         aus.length = 0;
@@ -87286,9 +89619,14 @@ class AnazhRealm {
                 const h = this._bundleWerferHuelle(bg);
                 if (h) aus.push(h);
             }
-        const boden = this.state.chunkSaetze ? this.state.chunkSaetze.get("boden") : null;
-        if (boden && boden.mesh.visible)
-            for (const b of boden.bloecke.values()) if (b.huelle && !b.huelle.isEmpty()) aus.push(b.huelle);
+        // Jeder werfende Satz (der Boden, die werfenden Bau-Sätze) trägt seine Bereichs-Hüllen bei — nach seiner Grund-Sicht,
+        // nie nach seiner Sicht im letzten Pass (ein Blick in den Himmel zeigt keinen Abschnitt).
+        const saetze = this.state.chunkSaetze;
+        if (saetze)
+            for (const s of saetze.values()) {
+                if (s.spec.schatten !== true || !this._chunkSatzGrund(s)) continue;
+                for (const b of s.bloecke.values()) if (b.huelle && !b.huelle.isEmpty()) aus.push(b.huelle);
+            }
         return aus;
     }
 
@@ -87344,14 +89682,30 @@ class AnazhRealm {
         return n;
     }
 
-    // Deckt die gerenderte Box (in IHRER Licht-Basis) die Empfänger-Punkte noch?
+    // Deckt die gerenderte Box (in IHRER Licht-Basis) die Empfänger-Punkte noch — und liegen sie in der Wahl-Scheibe, gegen
+    // die der Pass seine Werfer gewählt hat (die Scheibe beim Rendern, um `saum` geweitet)?
     _kaskadeDeckt(fit, S, n) {
         for (let k = 0; k < n; k++) {
             const p = S.v.copy(S.punkte[k]).applyMatrix4(fit.basisInv);
             if (p.x < fit.x0 || p.x > fit.x1 || p.y < fit.y0 || p.y > fit.y1 || p.z < fit.zb || p.z > fit.zt)
                 return false;
+            if (fit.ebenen)
+                for (let j = 0; j < fit.ebenen.length; j++)
+                    if (fit.ebenen[j].distanceToPoint(S.punkte[k]) < -fit.saum) return false;
         }
         return true;
+    }
+
+    // Die sechs Ebenen einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, zyklisch — CSMFrustum), die Normalen nach innen.
+    _scheibenEbenen(E, aus, mitte) {
+        mitte.set(0, 0, 0);
+        for (let j = 0; j < 8; j++) mitte.add(E[j]);
+        mitte.multiplyScalar(1 / 8);
+        aus[0].setFromCoplanarPoints(E[0], E[1], E[2]);
+        aus[1].setFromCoplanarPoints(E[4], E[5], E[6]);
+        for (let j = 0; j < 4; j++) aus[2 + j].setFromCoplanarPoints(E[j], E[(j + 1) % 4], E[((j + 1) % 4) + 4]);
+        for (let j = 0; j < 6; j++) if (aus[j].distanceToPoint(mitte) < 0) aus[j].negate();
+        return aus;
     }
 
     // Die Box der Kaskade i aus den Empfänger-Punkten: Licht-Raum-AABB → gerastete Größe → Zentrum auf dem Texel-Raster
@@ -87427,6 +89781,12 @@ class AnazhRealm {
         f.H = H;
         f.texel = tx;
         f.bild = (f.bild || 0) + 1;
+        // DIE WAHL-SCHEIBE (`_passTrifft`): die Scheibe dieses Renders (S.ecken, eben von `_kaskadenScheibe` gelegt) — gegen
+        // sie wählt der Kaskaden-Pass jeden Werfer (Zelle, Bündel-Werfer, Instanz) nach der Licht-Kapsel, `_kaskadeDeckt` hält sie.
+        if (!f.ebenen) f.ebenen = Array.from({ length: 6 }, () => new THREE.Plane());
+        this._scheibenEbenen(S.ecken, f.ebenen, S.v);
+        const saum = AnazhRealm.PASS_WAHL.saumM;
+        f.saum = saum[Math.min(i, saum.length - 1)];
         return f;
     }
 
@@ -87549,9 +89909,11 @@ class AnazhRealm {
     // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted`
     // (aus); fallen kann sie nicht — der r184-Pipeline-Bau liest Format und Farbraum aus `textures[0]`
     // (getCurrentColorFormat · getCurrentColorSpace), ein Ziel ohne Farbe bräche jede Schatten-Pipeline. Darum r8
-    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). Der Knoten baut
-    // sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus nennt die
-    // Kaskade beim Namen.
+    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). EINE Farbe für
+    // beide Kaskaden trägt r184 nicht: das zweite Ziel legt die geteilte Textur bei seiner ersten Belegung neu an, der Pass
+    // des ersten liest die zerstörte („Destroyed texture used in a submit", die Schatten fallen — gemessen W7, echte GPU).
+    // Der Knoten baut sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus
+    // nennt die Kaskade beim Namen.
     _kaskadenZiele(csm) {
         const knoten = csm._shadowNodes || [];
         for (let i = 0; i < knoten.length; i++) {
@@ -87579,13 +89941,12 @@ class AnazhRealm {
     // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn
     // sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · Berg ·
     // Query), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
-    // seine Box gegen das Frustum der Pass-Kamera (die Kaskaden-Box samt Werfer-Raum zum Licht). Was in keiner Kaskade
-    // liegt, wirft nicht; was nur im Schatten liegt, wirft. Im Schatten-Pass ist ein Region-Bundle eine Gruppe: ein
-    // Render unter dem Override-Stoff sammelt keine Bundles (die Bundle-Wahrheit am Chokepoint `_renderScene`), three
-    // projiziert seine Kinder frisch — die Wahl hier wirkt je Pass. Jeder Haken beginnt mit der Rückkehr (abgewählte
-    // Werfer sichtbar, Haupt-Urteil) — auch nach einem Abbruch, und VOR der Kaskaden-Box (sie misst den ganzen
-    // Bestand). Ein Kompilat (`_kompiliere`: r184-compileAsync ruft den Vorher-Haken, nie den Nachher-Haken) stellt
-    // nichts.
+    // sein Urteil nach dem EINEN Gesetz der Pass-Wahl (`_passTrifft`). Was in keiner Kaskade wirft, wirft nicht; was nur
+    // im Schatten liegt, wirft. Im Schatten-Pass ist ein Region-Bundle eine Gruppe: ein Render unter dem Override-Stoff
+    // sammelt keine Bundles (die Bundle-Wahrheit am Chokepoint `_renderScene`), three projiziert seine Kinder frisch — die
+    // Wahl hier wirkt je Pass. Jeder Haken beginnt mit der Rückkehr (abgewählte Werfer sichtbar, Haupt-Urteil) — auch nach
+    // einem Abbruch, und VOR der Kaskaden-Box (sie misst den ganzen Bestand). Ein Kompilat (`_kompiliere`: r184-compileAsync
+    // ruft den Vorher-Haken, nie den Nachher-Haken) stellt nichts.
     _passSicht(kamera, nach) {
         if (this._imKompilat === true) return;
         const S = this._kaskadenSchmier();
@@ -87594,9 +89955,28 @@ class AnazhRealm {
         // dieses Frames (die Karten rendern im Knoten-updateBefore seiner Objekte) — Loop, Sonde und Zähler gleich.
         const csm = this.state.csmNode;
         if (!nach && csm && csm.camera && kamera === csm.camera) this._kaskadenPassen(csm);
+        const k = nach ? -1 : this._schattenKameraIndex(kamera);
+        // Die Lage des Passes: EINE Rechnung je Pass (Frustum der Pass-Kamera, Auge, Kaskaden-Scheibe, Blende), jeder Leser
+        // urteilt mit ihr nach dem EINEN Gesetz.
+        if (!nach) {
+            S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
+            S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
+            this._passWahlLage(S, kamera, k);
+        }
+        const L = S.lage;
+        // Die Instanz-Wahl: die Gruppen der Wahl (Baum- und Strauch-Stufen, die Karten) zeichnen in diesem Pass nur ihre
+        // gewählten Instanzen, danach wieder alle.
+        if (nach) {
+            if (kamera === this.state.camera) this._instanzWahlZurueck(S.wahlHaupt);
+            else if (this._schattenKameraIndex(kamera) >= 0) this._instanzWahlZurueck(S.wahlSchatten);
+        } else if (k >= 0) this._instanzWahlPass("schatten", S);
+        else if (kamera === this.state.camera) this._instanzWahlPass("haupt", S);
+        // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
+        this._chunkSatzPass(kamera, nach, k, S);
+        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
+        if (!nach && k < 0) this._nahWieseSicht(kamera, L);
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
-        const k = nach ? -1 : this._schattenKameraIndex(kamera);
         if (k < 0) {
             for (const bg of map.values()) {
                 const s = bg.userData._sichtHaupt;
@@ -87604,43 +89984,405 @@ class AnazhRealm {
             }
             return;
         }
-        S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
-        S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
-        let n = 0;
-        for (const bg of map.values()) {
-            const h = this._bundleWerferHuelle(bg);
-            const vis = h !== null && S.frustum.intersectsBox(h);
-            bg.visible = vis;
-            if (!vis) continue;
-            n++;
-            this._werferWahl(bg, S.frustum, S.ab);
-        }
+        const n = this._werferWahlPass(map, L, S.ab);
         const z = this._werferZensus || (this._werferZensus = []);
         z[k] = { werfer: n, bundles: map.size, abgewaehlt: S.ab.length };
     }
 
-    // Die Werfer-Wahl im Teilbaum: ein werfendes Blatt-Mesh, dessen Box (`_werferKind`, frisch aus der Hülle dieses
-    // Takts) das Pass-Frustum verfehlt, ruht für diesen Pass (`ab` merkt es für die Rückkehr).
-    _werferWahl(o, frustum, ab) {
+    // Die Werfer-Wahl eines Schatten-Passes: je Region-Bundle die Werfer-Hülle, darin je werfendes Blatt-Mesh (`_werferKind`,
+    // frisch aus der Hülle dieses Takts) — beide nach dem EINEN Gesetz (`_passTrifftBox`); was nicht trifft, ruht für diesen
+    // Pass (`ab` merkt es für die Rückkehr). Rückgabe: die Zahl der werfenden Bundles.
+    _werferWahlPass(map, L, ab) {
+        let n = 0;
+        for (const bg of map.values()) {
+            const h = this._bundleWerferHuelle(bg);
+            const vis = h !== null && this._passTrifftBox(L, h, 0);
+            bg.visible = vis;
+            if (!vis) continue;
+            n++;
+            this._werferWahl(bg, L, ab);
+        }
+        return n;
+    }
+
+    _werferWahl(o, L, ab) {
         const kinder = o.children;
         for (let i = 0; i < kinder.length; i++) {
             const c = kinder[i];
             if (c.visible === false) continue;
             if (c.isMesh === true && c.castShadow === true && c.children.length === 0) {
                 const b = c.userData._werferKind;
-                if (!b || b.isEmpty() || !frustum.intersectsBox(b)) {
+                if (!b || b.isEmpty() || !this._passTrifftBox(L, b, 0)) {
                     c.visible = false;
                     ab.push(c);
                 }
                 continue;
             }
-            if (c.children.length > 0) this._werferWahl(c, frustum, ab);
+            if (c.children.length > 0) this._werferWahl(c, L, ab);
         }
     }
 
     _passSichtZurueck(S) {
         for (let i = 0; i < S.ab.length; i++) S.ab[i].visible = true;
         S.ab.length = 0;
+    }
+
+    // DAS GESETZ DER PASS-WAHL (W7-Vereinigung). Bis hier wählten im selben Haken drei Wege: die Sätze und die Werfer der
+    // Region-Bündel nach ihrer Box gegen das Frustum der Pass-Kamera, die Pflanzen-Stufen nach Kugel, Licht-Kapsel und
+    // Fenster (`_instanzWahlPass`), die Karten als Senken-Kopie ihrer Sicht. Befund (echte GPU, Mess-Wiese, Band in Ruhe,
+    // Blick yaw −0,88): die Box der fernen Kaskade — ein Licht-Raum-Quader — umschließt bei schrägem Blick den nahen Boden,
+    // boden k1 173 784 Dreiecke über der Ratsche 90 845: dieselbe Klasse, die die Kapsel für die Bäume schon schnitt, im
+    // Nachbar-Leser offen. Jetzt urteilt EIN Gesetz über jeden Körper jedes Passes — die Zelle eines Satzes, den Werfer eines
+    // Bündels, die Instanz einer Gruppe der Wahl (Baum, Strauch, Karte), das Büschel der Nah-Wiese. Der Körper ist eine
+    // BOX MIT SAUM (Mitte c, Halb-Ausdehnung h je Achse, Saum-Radius r: h = 0 ist die Kugel, r = 0 die Box). Er zeichnet, wenn
+    // (1) er das Frustum der Pass-Kamera schneidet — je Ebene der Stütz-Abstand n·c + d + |n|·h + r, dazu der Rand
+    // `sichtRand` je Meter Abstand zum Auge (ein Satz, der seine Wahl über Frames hält, sieht den Versatz der zeitlichen
+    // Auflösung nicht) — und (2) im Kaskaden-Pass seine LICHT-KAPSEL, der Körper entlang des Lichts bis ganz unter die Box
+    // der Kaskade, die Scheibe dieser Kaskade trifft (`fit.ebenen`, um `saum` geweitet): ein Werfer, dessen Schatten auf
+    // keinen Empfänger der Scheibe fällt, wirft dort nicht. Für eine Ebene ist der gefegte Körper die Hülle seiner beiden
+    // Enden — liegen beide jenseits, liegt der ganze Weg jenseits.
+    _passWahlLage(S, kamera, k) {
+        const L =
+            S.lage ||
+            (S.lage = {
+                fr: null,
+                ax: 0,
+                ay: 0,
+                az: 0,
+                rand: 0,
+                fit: null,
+                dir: null,
+                v: new THREE.Vector3(),
+                an: false,
+                ex: 0,
+                ez: 0,
+                perf: 1,
+                ref: 1,
+                kanten: null,
+            });
+        const we = kamera.matrixWorld.elements;
+        L.fr = S.frustum;
+        L.ax = we[12];
+        L.ay = we[13];
+        L.az = we[14];
+        L.rand = AnazhRealm.PASS_WAHL.sichtRand;
+        // Die Scheibe gilt nur dem Pass ihrer Kaskaden-Kamera (die Box beim letzten Rendern dieser Kaskade, `_kaskadeFit`).
+        const csm = this.state.csmNode;
+        const lw = k >= 0 && csm && csm.lights ? csm.lights[k] : null;
+        const fit = lw && lw.shadow && lw.shadow.camera === kamera && csm._anazhFit ? csm._anazhFit[k] : null;
+        L.fit = fit && fit.ebenen ? fit : null;
+        L.dir = S.dir;
+        // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge, derselbe Perf-Streck), und die Kanten des
+        // Fensters aus dem EINEN Blend-Gesetz (`_blendeKanten`, je Band-Satz einmal).
+        const lu = this.state.lodUniforms;
+        L.an = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && lu.uLodAuge && lu.uLodPerf);
+        if (L.an) {
+            L.ex = lu.uLodAuge.value.x;
+            L.ez = lu.uLodAuge.value.z;
+            L.perf = lu.uLodPerf.value;
+            L.ref = lu.uLodRef.value;
+            const d0 = lu.uLodD0.value,
+                d1 = lu.uLodD1.value,
+                fade = lu.uLodFade.value,
+                fade0 = lu.uLodFade0.value;
+            let K = this._blendeK;
+            if (!K || K.d0 !== d0 || K.d1 !== d1 || K.fade !== fade || K.fade0 !== fade0) {
+                const pc = globalThis.__phytoCore;
+                if (!pc || typeof pc.lodCrossfadeMask !== "function")
+                    throw new Error(
+                        "_passWahlLage: __phytoCore.lodCrossfadeMask fehlt — ohne das Blend-Gesetz kein Fenster"
+                    );
+                K = this._blendeK = AnazhRealm._blendeKanten(pc.lodCrossfadeMask, d0, d1, fade, fade0);
+            }
+            L.kanten = K;
+        }
+        return L;
+    }
+
+    // Das Urteil über einen Körper (Box mit Saum: Mitte cx/cy/cz, Halb-Ausdehnung hx/hy/hz, Saum-Radius r) in der Lage L.
+    _passTrifft(L, cx, cy, cz, hx, hy, hz, r) {
+        const ax = cx - L.ax,
+            ay = cy - L.ay,
+            az = cz - L.az;
+        const rr = r + L.rand * Math.sqrt(ax * ax + ay * ay + az * az);
+        const E = L.fr.planes;
+        for (let p = 0; p < 6; p++) {
+            const n = E[p].normal;
+            const nx = n.x,
+                ny = n.y,
+                nz = n.z;
+            const st = (nx < 0 ? -nx : nx) * hx + (ny < 0 ? -ny : ny) * hy + (nz < 0 ? -nz : nz) * hz + rr;
+            if (nx * cx + ny * cy + nz * cz + E[p].constant < -st) return false;
+        }
+        const f = L.fit;
+        if (!f) return true;
+        // Die Licht-Kapsel: der Körper wandert entlang des Lichts (`dir`), bis er ganz unter der Box liegt (Licht-z < zb).
+        const d = L.dir;
+        const sl = (d.x < 0 ? -d.x : d.x) * hx + (d.y < 0 ? -d.y : d.y) * hy + (d.z < 0 ? -d.z : d.z) * hz + r;
+        const v = L.v.set(cx, cy, cz).applyMatrix4(f.basisInv);
+        const t = Math.max(0, v.z - f.zb + sl);
+        const ex = cx + d.x * t,
+            ey = cy + d.y * t,
+            ez = cz + d.z * t;
+        for (let j = 0; j < f.ebenen.length; j++) {
+            const P = f.ebenen[j];
+            const n = P.normal;
+            const nx = n.x,
+                ny = n.y,
+                nz = n.z;
+            const st = (nx < 0 ? -nx : nx) * hx + (ny < 0 ? -ny : ny) * hy + (nz < 0 ? -nz : nz) * hz + r + f.saum;
+            if (nx * cx + ny * cy + nz * cz + P.constant < -st && nx * ex + ny * ey + nz * ez + P.constant < -st)
+                return false;
+        }
+        return true;
+    }
+
+    // Eine Box (Box3) als Körper des Gesetzes, `r` = ihr Rand.
+    _passTrifftBox(L, b, r) {
+        const mn = b.min,
+            mx = b.max;
+        return this._passTrifft(
+            L,
+            (mn.x + mx.x) * 0.5,
+            (mn.y + mx.y) * 0.5,
+            (mn.z + mx.z) * 0.5,
+            (mx.x - mn.x) * 0.5,
+            (mx.y - mn.y) * 0.5,
+            (mx.z - mn.z) * 0.5,
+            r
+        );
+    }
+
+    // DIE INSTANZ-WAHL JE PASS (Welle 7). Befund 06.10. (echte GPU, Mess-Wiese, Band in Ruhe, fester Blick): die Baum-
+    // Gruppen sind global (eine Instanz-Gruppe je Art × Gestalt × Stufe × Teil, ein Befehl je Pass), und jeder Pass zog JEDE
+    // Instanz — das Hauptbild 380k Baum-Dreiecke, davon im Blick 251k (yaw 0) bzw. 164k (yaw −0,88); jede Kaskade jeden
+    // Zwilling (k0 182k, k1 blickabhängig 14k oder 182k); und die Stufen-Bänder der CPU (Hysterese ±3,4 m AUSSERHALB der
+    // Dither-Fenster) hielten Stufen, deren Maske vom Auge alles verwirft (eine L0 jenseits d0 kostet 17k Dreiecke je Tanne
+    // und zeigt nichts). Ebenso die EINE Atlas-Gruppe der Karten: im @global-Bündel zeichnete sie jede Karte des Rings (1 889
+    // Karten bis 385 m, ein Drittel im Blick) — sie ist eine Gruppe der Wahl wie jede Pflanzen-Stufe (W7-Vereinigung: ihre
+    // Senken-Kopie je Sicht fiel). Jeder Pass wählt: die Gruppe ordnet ihre Slots (`_archGroupTausch`), die gewählten vorn,
+    // und zeichnet nur sie (`count` über `_instanzZahl`); nach dem Pass zählt sie wieder alle (die Slot-Wahrheit: count =
+    // liveCount außerhalb jedes Passes). Gewählt ist, was (1) das EINE Gesetz der Pass-Wahl trifft (`_passTrifft`: Kugel der
+    // Instanz gegen das Frustum, im Schatten-Pass ihre Licht-Kapsel gegen die Scheibe) und (2) dessen Stufen-Maske vom Auge
+    // etwas behält (`_instanzFenster` — nur, wenn der Stoff die Maske trägt). Eine Gruppe zeichnet in genau EINER Pass-Art
+    // (`_instanzWahlArt`): so schreibt kein Pass die Puffer eines anderen, auch nicht der Kaskaden-Pass mitten im
+    // Hauptbild. Das Hauptbild nimmt sein Bündel neu auf, wenn die Wahl sich ändert (Zahl oder Ordnung); die Kaskaden
+    // zeichnen Bündel-Kinder direkt.
+    _instanzWahlPass(art, S) {
+        const set = this._instanzWahlGruppen();
+        const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
+        if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
+        if (set.size === 0) return;
+        const L = S.lage;
+        for (const g of set) {
+            if (g.wahl !== art) continue;
+            const m = g.mesh;
+            const n = g.liveCount | 0;
+            if (!m || n === 0 || m.visible === false) continue;
+            const fenster = L.an && this._instanzFensterGilt(g);
+            let kk = 0,
+                tausch = 0;
+            for (let i = 0; i < n; i++) {
+                if (!this._instanzBehalten(g, i, L, fenster)) continue;
+                if (i !== kk) {
+                    this._archGroupTausch(g, i, kk);
+                    tausch++;
+                }
+                kk++;
+            }
+            AnazhRealm._instanzZahl(m, kk);
+            liste.push(g);
+            if (art === "haupt" && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
+            if (art === "haupt") g._wahlZahl = kk;
+        }
+    }
+
+    _instanzWahlZurueck(liste) {
+        for (let i = 0; i < liste.length; i++) {
+            const g = liste[i];
+            if (g.mesh) AnazhRealm._instanzZahl(g.mesh, g.liveCount | 0);
+        }
+        liste.length = 0;
+    }
+
+    _instanzWahlGruppen() {
+        return this._wahlGruppen || (this._wahlGruppen = new Set());
+    }
+
+    // Welche Gruppe je Pass wählt: eine GLOBALE Gruppe, die in genau EINER Pass-Art zeichnet — die Pflanzen-Stufe (ihre
+    // Geometrie trägt den Stufen-Stempel der Studio-Blende, aLodLevel 1 L0 · 2 L1 · 3 Zwilling/einzige Nah-Stufe, und die
+    // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
+    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) wirft nie und zeichnet im Hauptbild. Eine Gruppe, die in
+    // beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
+    _instanzWahlArt(leaf, castShadow, regional) {
+        if (regional || !leaf || leaf.tuer) return null;
+        const at = leaf.geom && leaf.geom.attributes;
+        if (!at) return null;
+        if (leaf.atlasGruppe) return at.aKarte && !castShadow ? "haupt" : null;
+        if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
+        if (leaf.shadowTwin) return "schatten";
+        return castShadow ? null : "haupt";
+    }
+
+    // Trägt der Stoff der Gruppe die Maske, deren Fenster die Wahl liest — in dem Kanal, den ihr Pass liest? Die Stufen-
+    // Stoffe der Foundry markieren sie am Bau (`userData.foundryCrossfade` samt Kanal: der Schattenpass liest nur die Farbe,
+    // nie die Deckung), der Karten-Stoff ebenso (`userData.kartenMaske`, er zeichnet nur im Hauptbild). Ohne Maske zeichnet
+    // die GPU jede Instanz voll — ein Fenster schnitte dort ein Loch: die Wahl liest dann nur das Gesetz der Pass-Wahl.
+    _instanzFensterGilt(g) {
+        const ud = g.mat && g.mat.userData;
+        if (!ud) return false;
+        if (g.wahlStufe === "karte") return ud.kartenMaske === true;
+        return ud.foundryCrossfade === true && (g.wahl === "haupt" || ud.foundryCrossfadeKanal === "farbe");
+    }
+
+    // Behält der Pass die Instanz im Slot i? Ihr Körper (die Kugel der Geometrie × Instanz-Matrix + `pflanzeRandM` für den
+    // Wind; die Karte: ihr Quad auf der Stammachse, Höhe aKarte.z und Halbbreite aKarte.y × Instanz-Skala, das sich um die
+    // Hochachse zum Auge dreht) trifft nach dem EINEN Gesetz; trägt der Stoff die Maske, behält ihr Fenster etwas.
+    _instanzBehalten(g, i, L, fenster) {
+        const m = g.mesh;
+        const a = m.instanceMatrix.array;
+        const o = i * 16;
+        const mw = m.matrixWorld.elements;
+        let cx, cy, cz, r;
+        if (g.wahlStufe === "karte") {
+            const ak = m.geometry.attributes.aKarte.array;
+            const h = ak[i * 4 + 2] * 0.5;
+            const hw = ak[i * 4 + 1];
+            const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
+            cx = a[o + 12] + a[o + 4] * h;
+            cy = a[o + 13] + a[o + 5] * h;
+            cz = a[o + 14] + a[o + 6] * h;
+            r = s * Math.sqrt(h * h + hw * hw);
+        } else {
+            const geo = m.geometry;
+            if (!geo.boundingSphere) geo.computeBoundingSphere();
+            const bs = geo.boundingSphere;
+            const c = bs.center;
+            const s2 = Math.max(
+                a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2],
+                a[o + 4] * a[o + 4] + a[o + 5] * a[o + 5] + a[o + 6] * a[o + 6],
+                a[o + 8] * a[o + 8] + a[o + 9] * a[o + 9] + a[o + 10] * a[o + 10]
+            );
+            cx = a[o] * c.x + a[o + 4] * c.y + a[o + 8] * c.z + a[o + 12];
+            cy = a[o + 1] * c.x + a[o + 5] * c.y + a[o + 9] * c.z + a[o + 13];
+            cz = a[o + 2] * c.x + a[o + 6] * c.y + a[o + 10] * c.z + a[o + 14];
+            r = bs.radius * Math.sqrt(s2) + AnazhRealm.PASS_WAHL.pflanzeRandM;
+        }
+        // in die Welt (die Gruppe hängt an der Szene oder in ihrem Bündel, beide ohne Lage — die Matrix bleibt exakt)
+        const wx = mw[0] * cx + mw[4] * cy + mw[8] * cz + mw[12],
+            wy = mw[1] * cx + mw[5] * cy + mw[9] * cz + mw[13],
+            wz = mw[2] * cx + mw[6] * cy + mw[10] * cz + mw[14];
+        if (!this._passTrifft(L, wx, wy, wz, 0, 0, 0, r)) return false;
+        return !fenster || this._instanzFenster(g, i, L);
+    }
+
+    // DAS FENSTER DER STUFE: behält ihre Maske vom Auge irgendwo auf der Instanz etwas? Die Maske misst je Fragment die
+    // Distanz vom Auge in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (Stufen: je Vertex, Skelett-Metrik aH0, Blatt-Metrik aH0L;
+    // die Karte: vom Kamera-Ort zum Fragment ihres Quads, Sichthöhe |aKarte.w|, ein negativer Stempel = verdeckt, sie
+    // blendet voll). Die Vertices einer Instanz liegen in XZ höchstens `w` um ihre Achse (die Weite der Gestalt × die Norm
+    // des XZ-Blocks der Matrix + was eine Schräglage aus der Höhe trägt + der Wind-Saum; die Karte: ihre Halbbreite ×
+    // Skala); das Urteil über das Distanz-Intervall fällt `_blendeBehaelt` an den Kanten des Blend-Gesetzes.
+    _instanzFenster(g, i, L) {
+        const m = g.mesh;
+        const geo = m.geometry;
+        const a = m.instanceMatrix.array;
+        const o = i * 16;
+        const mw = m.matrixWorld.elements;
+        const dx = a[o + 12] + mw[12] - L.ex,
+            dz = a[o + 14] + mw[14] - L.ez;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        if (g.wahlStufe === "karte") {
+            const ak = geo.attributes.aKarte.array;
+            const sicht = ak[i * 4 + 3];
+            const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
+            const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
+            const dS = (d + s * ak[i * 4 + 1]) * L.perf * k;
+            return AnazhRealm._blendeBehaelt(L.kanten, "karte", dS, dS, dS, dS, sicht < 0);
+        }
+        const weite = this._instanzWeite(geo);
+        const p = a[o],
+            q = a[o + 8],
+            r = a[o + 2],
+            s = a[o + 10];
+        const F = p * p + q * q + r * r + s * s;
+        const det = p * s - q * r;
+        const norm = Math.sqrt(0.5 * (F + Math.sqrt(Math.max(0, F * F - 4 * det * det))));
+        const w =
+            weite.r * norm +
+            weite.y * Math.sqrt(a[o + 4] * a[o + 4] + a[o + 6] * a[o + 6]) +
+            AnazhRealm.PASS_WAHL.pflanzeRandM;
+        const dMin = Math.max(0, d - w) * L.perf,
+            dMax = (d + w) * L.perf;
+        const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
+        const kL = Math.min(L.ref / Math.max(geo.attributes.aH0L.array[i], 1e-3), 1);
+        return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, false);
+    }
+
+    // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
+    // Blende und jeder Maske): je Rampe die Distanz, an der sie 0 verlässt bzw. 1 erreicht — per Bisektion AM GESETZ (seine
+    // f0 · f1 · f1o steigen monoton mit der Distanz), auf 1 mm, je Kante die äußere Grenze: das Fenster behält eher zu viel
+    // als zu wenig. Rein (kein Zustand): gate:foundry-crossfade fährt es in Node gegen das Gesetz.
+    static _blendeKanten(gesetz, d0, d1, fade, fade0) {
+        const cfg = { d0, d1, fade, fade0 };
+        const hoch = 4 * Math.max(d0, d1, 1) + Math.abs(fade) + Math.abs(fade0);
+        // [a, b]: `bed` gilt bei b, nicht bei a (bed steigt monoton von falsch nach wahr)
+        const kante = (lod, bed) => {
+            let a = 0,
+                b = hoch;
+            if (bed(gesetz(a, 0, cfg, lod, true, a))) return [0, 0];
+            if (!bed(gesetz(b, 0, cfg, lod, true, b))) return [hoch, Infinity];
+            while (b - a > 1e-3) {
+                const mitte = 0.5 * (a + b);
+                if (bed(gesetz(mitte, 0, cfg, lod, true, mitte))) b = mitte;
+                else a = mitte;
+            }
+            return [a, b];
+        };
+        return {
+            d0,
+            d1,
+            fade,
+            fade0,
+            l0Aus: kante(0, (x) => x.f0 >= 1)[1], // die L0 behält, solange f0 < 1 (Blatt-Metrik)
+            l1Ein: kante(1, (x) => x.f0 > 0)[0], // die L1 blendet ein, sobald f0 > 0 (Blatt-Metrik)
+            l1Aus: kante(1, (x) => x.f1o >= 1)[1], // die L1 behält, solange f1o < 1 (Skelett-Metrik)
+            karteEin: kante(2, (x) => x.f1 > 0)[0], // die Karte blendet ein, sobald f1 > 0
+        };
+    }
+
+    // Behält die Stufe über das Distanz-Intervall [dSmin, dSmax] (Skelett) bzw. [dLmin, dLmax] (Blatt) ein Fragment mit
+    // positivem Maß der Dither-Werte? Das Gesetz behält die L0 bei ramp(f0) < dh, die L1 bei f1o < dh ≤ ramp(f0) (die
+    // einzige Nah-Stufe, Stempel 3, blendet nie ein: f1o < dh), die Karte bei dh ≤ min(2·f1, 1) oder verdeckt — je Rampe
+    // die Kante aus `_blendeKanten`. Rein (gate:foundry-crossfade prüft es je Stufe gegen das Gesetz, kein Loch).
+    static _blendeBehaelt(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt) {
+        if (stufe === 1) return dLmin < K.l0Aus;
+        if (stufe === 2) return dLmax > K.l1Ein && dSmin < K.l1Aus;
+        if (stufe === 3) return dSmin < K.l1Aus;
+        if (stufe === "karte") return verdeckt === true || dSmax > K.karteEin;
+        return true;
+    }
+
+    // Die Weite einer Gestalt um ihre Achse (größter XZ-Abstand eines Vertex) und ihre größte Höhe |y|, je Positions-Puffer
+    // einmal gerechnet (die Fassaden einer Gestalt teilen ihn).
+    _instanzWeite(geo) {
+        const pos = geo.attributes.position;
+        const W = this._wahlWeiten || (this._wahlWeiten = new WeakMap());
+        let w = W.get(pos);
+        if (!w) {
+            let r2 = 0,
+                y = 0;
+            for (let j = 0; j < pos.count; j++) {
+                const px = pos.getX(j),
+                    pz = pos.getZ(j);
+                const v = px * px + pz * pz;
+                if (v > r2) r2 = v;
+                const ay = Math.abs(pos.getY(j));
+                if (ay > y) y = ay;
+            }
+            w = { r: Math.sqrt(r2), y };
+            W.set(pos, w);
+        }
+        return w;
     }
 
     // Kaskaden-Index einer Schatten-Kamera (die EINE Map ohne CSM = 0), sonst −1.
@@ -87859,6 +90601,8 @@ class AnazhRealm {
         // Steht die Post-Pipeline, rendert sie die Szene; bei postProcessingFailed direkter
         // renderer.render() — nie ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
+        // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
+        const zaehlerVor = this._gpuKehrausMarke();
         // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: compileAsync/_bundleReifeWache
         // submitten intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
         // Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
@@ -87873,7 +90617,14 @@ class AnazhRealm {
             } catch (err) {
                 this.state.postProcessingFailed = true;
                 this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
-                this.state.renderer.render(this.state.scene, this.state.camera);
+                // Der direkte Pfad zeichnet die Szene in die Leinwand: sie braucht ihre Tiefe wieder (die Post-Kette nahm
+                // sie, _ensurePostProcessing) — r184 baut den Leinwand-Pass neu (updateSize verwirft seinen Deskriptor).
+                const rend = this.state.renderer;
+                if (rend.depth === false) {
+                    rend.depth = true;
+                    if (rend.backend && typeof rend.backend.updateSize === "function") rend.backend.updateSize();
+                }
+                rend.render(this.state.scene, this.state.camera);
             }
         } else {
             this.state.renderer.render(this.state.scene, this.state.camera);
@@ -87887,6 +90638,8 @@ class AnazhRealm {
             f.renderCalls = _rinfo.render.drawCalls != null ? _rinfo.render.drawCalls : _rinfo.render.calls || 0;
             f.renderTris = _rinfo.render.triangles || 0;
         }
+        // Nach dem Frame: was weder der Graph noch dieser Frame zeichnet, verlässt die GPU (der EINE Kehraus).
+        this._gpuKehraus(zaehlerVor, performance.now());
         // pendingDisposals über `device.queue.onSubmittedWorkDone()` leeren — die EINZIGE deterministische
         // API (resolved, wenn die GPU alle bisherigen Submits durch hat); ein Frame-Zähler rät nur.
         if (this.state.pendingDisposals.size > 0) {
@@ -88121,14 +90874,86 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
-// DER SATZ (Welle B, `_chunkSatz`) — die Start-Kapazität je Satz-Art (Vertices · Indizes): gemessen am
-// vollen Ring 4 am Spawn (81 Chunks + 16 Stitch-Bänder = 179 046 Vertices · 858 234 Indizes) plus Luft für
-// Fragmentierung und Gebirge, damit eine typische Sitzung nie wächst; ein Wachsen (×1,5) kostet eine
-// frische Geometrie mit vollem Upload.
+// Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
+// liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`).
+AnazhRealm.CHUNK_IDB_FORM = "hoehle";
+// DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
+// Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
+// Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
+AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
+// DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
+// des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
+AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
+// Frische Horizont-Proben je Hauptbild (`_hoehlenSicht`, die nächsten Mündungen zuerst): die Kosten folgen dem bewegten Auge,
+// nie der Zahl der Mündungen — eine Mündung ohne frische Probe zeichnet.
+AnazhRealm.HOEHLEN_HORIZONT_PROBEN = 8;
+// Der Würfel um das geprüfte Auge, in dem eine Horizont-Probe gilt (m, `_hoehlenSperre`): weit unter der Raster-Zelle
+// (die 3 × 3 Zellen der Probe tragen die waagerechte Verschiebung), weit über dem Atmen der stehenden Kamera.
+AnazhRealm.HOEHLEN_AUGE_M = 0.25;
+// DIE KASKADE der Höhlen-Sicht (`_hoehlenSichtLicht`): die Kante einer ortsfesten Licht-Kachel quer zum Licht (m), die je
+// Kachel die tiefste Empfänger-Tiefe trägt.
+AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
+// DER SATZ (Welle B, `_chunkSatz`) — die Start-Kapazität je Satz-Art (Vertices · Indizes): die Vertices gemessen am
+// vollen Ring 4 am Spawn (81 Chunks + 16 Stitch-Bänder = 179 046 Vertices) plus Luft für Fragmentierung und Gebirge,
+// damit eine typische Sitzung nie wächst; die Indizes tragen die Abschnitte der Pässe (Hauptbild · k0 · k1, gemessen
+// 05.10. an der Mess-Wiese mittags 333 774 + 439 746 + 272 535 = 1 046 055 bei 737 088 im ganzen Ring, mit Luft 1 259 520)
+// — 1,25 · 2^20 statt 2^20 (+1 MB). Wo die Pässe mehr tragen (die Gate-Welt mittags ~1,57 M, nach dem Wandern ~1,6 M, am
+// Abend mit der Sonne im Rücken bis ~2,2 M), wächst der Index auf ihre Summe — kein Abschnitt verdrängt einen anderen.
+// Ein Wachsen (Vertices ×1,5, Indizes ×1,25 oder auf die Summe) kostet eine frische Geometrie mit vollem Upload.
 AnazhRealm.CHUNK_SATZ = Object.freeze({
-    boden: Object.freeze({ v: 229376, i: 1 << 20 }),
+    boden: Object.freeze({ v: 229376, i: 1310720 }),
     wasser: Object.freeze({ v: 1 << 16, i: 1 << 18 }),
+    // Der Bau-Satz (Welle 6) beginnt klein: je Stoff ein Satz, das Dorf der Mess-Wiese trägt in seinem größten Stoff
+    // ~40k Vertices — er wächst in wenigen Schritten, eine Formation bleibt darunter.
+    bau: Object.freeze({ v: 1 << 13, i: 1 << 14 }),
+    // Der Streu-Satz (W7) je Stoff der Nah-Streu: der größte Stoff (das wiegende Laub) trägt an der Mess-Wiese ~38k
+    // Vertices im Ring, ein seltener (Totholz) eine Pflanze mit 101 — er beginnt klein und wächst.
+    streu: Object.freeze({ v: 1 << 10, i: 1 << 11 }),
 });
+// DIE ABSCHNITTE des Satzes (`_chunkSatzAbschnitt`): je Pass ein Lauf im Index mit `luft` über seiner Länge (er wächst,
+// ohne umzuziehen); einer, den `ruheTakte` Render-Takte kein Pass fragte, fällt beim Umlegen; das Hauptbild legt dicht
+// neu, sobald der Verschnitt (verlassene Läufe hinter umgezogenen Abschnitten) `verschnitt` × Index-Kapazität übersteigt;
+// ein Abschnitt verdichtet seine Lücken (`verschnitt` seines Laufs) und, nach `dichtNach` Pässen mit ruhender Wahl, seine
+// Folge (dicht in Satz-Ordnung, exakt).
+AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, verschnitt: 0.25, dichtNach: 30 });
+// DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
+// `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
+// Abschnitte), mindestens vMin/iMin. Die Schwelle 1,5 liegt auf dem Wachs-Schritt der Vertices: nach einem Schrumpfen wächst
+// der Satz erst, wenn sein Inhalt um ein Viertel zunimmt, und schrumpft erst wieder, wenn er ein Drittel verliert. Wächst der
+// Inhalt während der Frist um mehr als `stetig` (10 %), beginnt sie neu — ein Satz, der füllt, schrumpft nie.
+AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, stetig: 1.1, vMin: 1024, iMin: 3072 });
+// DER BAU-SATZ (Welle 6, `_bauSatzArt`): die Studio-Arten (Rezept-`kind`), deren gesetzte Gestalt im Satz ihres Stoffs
+// zeichnet — je Art der Name des Satzes (die Täter-Klasse der Band-Linse, spec/profiband/haushalt.json: `bauSatz` →
+// bau, `formationenSatz` → formationen). Ein gesetzter Bau wandert nie (die Tür-Flügel reisen einzeln), und seine
+// Gestalt kehrt selten wieder (das Haus trägt seine Parzelle als Prägung, der Fels 16 Gestalten): die Instanz-Gruppe
+// zog je Gestalt einen Befehl je Pass. Baum und Strauch (die Dither-Blende je Instanz, viele Wiederkehrer), Tor und
+// Fahrzeug (Flügel, Fahrt) zeichnen als Instanz-Gruppe.
+AnazhRealm.BAU_SATZ = Object.freeze({
+    haus: "bauSatz",
+    rock: "formationenSatz",
+    boulder: "formationenSatz",
+    scree: "formationenSatz",
+    crystal: "formationenSatz",
+    columns: "formationenSatz",
+});
+// Die Attribute eines Bau-Satz-Bereichs: was der Studio-Stoff liest (Vertex-Farbe, die Stufen-Stempel der Dither-
+// Blende) — `_bauSatzBlock` rechnet Position und Normale in Welt-Lage, die Instanz-Stempel je Vertex.
+AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
+    Object.freeze(["position", 3]),
+    Object.freeze(["normal", 3]),
+    Object.freeze(["color", 3]),
+    Object.freeze(["aLodLevel", 1]),
+    Object.freeze(["aH0", 1]),
+    Object.freeze(["aH0L", 1]),
+]);
+// Die Attribute eines wiegenden Streu-Satz-Bereichs (`_streuSatzArt`, W7): was der wiegende Stoff liest — Welt-Lage,
+// Normale, Farbe × Tint und die Höhe über der Wurzel (`aWiege`, m); er blendet nie, Dither-Stempel trägt er keine.
+AnazhRealm.STREU_SATZ_ATTR = Object.freeze([
+    Object.freeze(["position", 3]),
+    Object.freeze(["normal", 3]),
+    Object.freeze(["color", 3]),
+    Object.freeze(["aWiege", 1]),
+]);
 // Foundry-Cache-GEWICHTS-DECKEL: `_foundryCacheSet` bilanziert die typed-array-Bytes je Eintrag
 // (`_cacheBytes`) und räumt LRU, bis Byte-Budget UND Entries-Cap stehen (ein Eintrags-Zähler ist
 // byte-blind: Haus-L0 ≈ 7–8 MB, Blume wenige KB). Die Kappe MUSS über dem Ring-Working-Set liegen
@@ -92099,6 +94924,9 @@ AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND = 8;
 // oszillieren beim Wandern/LOD-Wechsel um liveCount 0 — ein Sofort-Reap machte jede Oszillation zu
 // Voll-Dispose + Re-Mint (Pipeline-Cache, Matrix-Upload, Heap-Müll). 10 s deckt jede Oszillation.
 AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
+// Der Takt des GPU-Kehraus (`_gpuKehraus`): je Gang Graph + r184-Register (nach dem Kehraus beide nur das Bild); was zwischen
+// zwei Gängen den Graphen verlässt, hält die GPU höchstens so lange.
+AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // Der EINE forceWebGL-Hook: die Boot-Probe (gate:webgl-probe) erzwingt den r184-WebGL2-Rückfall;
 // alle fünf Renderer-Münzstellen (Welt · Feed-/Hof-/Ich-Bühne · Workshop-Preview) lesen diesen
 // Chokepoint → die erzwungene Welt fährt EIN Backend.
@@ -92142,6 +94970,31 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     luftM: 4,
     biasM: Object.freeze([-0.25, -0.5]),
 });
+// DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
+// Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:
+// die zeitliche Auflösung versetzt die Projektion um höchstens einen halben Pixel (1080p, 75°: 0,0007 je m), der Rand trägt
+// ~2 Pixel — ein Satz, der seine Wahl über Frames hält, verliert am Bildrand nichts. `saumM` je Kaskade: so weit liegt die
+// Wahl-Scheibe außerhalb der Scheibe beim Rendern; läuft die Scheibe zwischen zwei Karten darüber hinaus, rendert die
+// Kaskade neu (`_kaskadeDeckt`). `pflanzeRandM`: der Wind-Saum um die Kugel einer Pflanzen-Instanz (Krone und Halm wiegen).
+AnazhRealm.PASS_WAHL = Object.freeze({ sichtRand: 0.003, saumM: Object.freeze([8, 24]), pflanzeRandM: 2 });
+// DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
+// (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
+// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`). Der Hub
+// hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()` (2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt
+// ihn (vorher nur der Saum 2 m: am Bildrand fehlte ein gehobenes Viertel).
+AnazhRealm.WASSER_WELLE = Object.freeze({
+    duenung: Object.freeze([1.4, 0.7, 0.34]),
+    oktave: 0.4,
+    mitte: 0.7,
+    kraeusel: 2.2,
+    kraeuselDecke: 1,
+});
+AnazhRealm._wasserHubM = function () {
+    const W = AnazhRealm.WASSER_WELLE;
+    const duenung = 0.5 * (W.duenung[0] + W.duenung[1] + W.duenung[2]);
+    const kraeusel = W.kraeusel * Math.max(1 + W.oktave - W.mitte, W.mitte) * W.kraeuselDecke;
+    return duenung + kraeusel;
+};
 // Die zwölf Kanten einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, CSMFrustum-Reihenfolge) als Index-Paare.
 AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
@@ -92247,6 +95100,36 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             : obj && obj.material && !Array.isArray(obj.material)
               ? obj.material
               : null;
+    // DER GEOMETRIE-WÄCHTER JE RENDER-OBJEKT (Welle 6): der Vendor merkt Attribut-Versionen je GEOMETRIE, nicht je
+    // Render-Objekt — der erste Pass, der eine Änderung sieht (die Kaskade), verbraucht sie, und ein Pass, der ein Attribut
+    // allein liest (die Normale im Hauptbild), lädt es nie hoch. Gemessen am werfenden Bau-Satz (echte GPU, Dorf der
+    // Mess-Wiese): nach dem Wachsen trug die Normale keinen GPU-Puffer, das Hauptbild-Kommando-Paket war ungültig
+    // („Vertex buffer slot 5 … was not set"). Geometrie-Id, Index und jedes Attribut (Id · Version) je Render-Objekt.
+    const geo = ro && ro.geometry;
+    if (geo && geo.attributes) {
+        const d = obs.getRenderObjectData(ro);
+        const g = d._anazhGeoV || (d._anazhGeoV = []);
+        const ix = geo.index;
+        let anders = g[0] !== geo.id || g[1] !== (ix ? ix.id : -1) || g[2] !== (ix ? ix.version : -1);
+        g[0] = geo.id;
+        g[1] = ix ? ix.id : -1;
+        g[2] = ix ? ix.version : -1;
+        let i = 3;
+        for (const k in geo.attributes) {
+            const a = geo.attributes[k];
+            if (g[i] !== a.id || g[i + 1] !== a.version) {
+                g[i] = a.id;
+                g[i + 1] = a.version;
+                anders = true;
+            }
+            i += 2;
+        }
+        if (g.length !== i) {
+            g.length = i;
+            anders = true;
+        }
+        if (anders) return true;
+    }
     const texe = mat ? mat._anazhAtlasTexe : null;
     if (texe) {
         let va = "";

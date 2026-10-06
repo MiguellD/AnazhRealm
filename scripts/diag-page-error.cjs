@@ -4,7 +4,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const PORT = 4313;
+// Port über PAGE_ERROR_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4313.
+const PORT = Number(process.env.PAGE_ERROR_PORT || 4313);
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",

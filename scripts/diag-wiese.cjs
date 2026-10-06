@@ -69,13 +69,13 @@ const RENDER_FN = async (kam, W, H, png) => {
         info = auf.info;
     }
     // Die Nah-Wiese (V18.508): Kacheln · Büschel · Dreiecke im Ring um diese Kamera
+    // (Welle 6: die Kacheln tragen Daten, gezeichnet wird der Sicht-Satz — je Senke Teil 0 = je Büschel eine Instanz.)
     let buesch = 0;
     let kach = 0;
-    if (r.state.nahWiese)
-        for (const kk of r.state.nahWiese.kacheln.values()) {
-            kach++;
-            for (const im of kk.meshes || []) buesch += im.count;
-        }
+    if (r.state.nahWiese) {
+        kach = r.state.nahWiese.kacheln.size;
+        for (const a of r.state.nahWiese.senken.values()) if (/:0$/.test(a.key)) buesch += a.anzahl;
+    }
     rend.setAnimationLoop(r._gameLoopTick);
     // Kennzahlen der unteren Bildhälfte (Boden): Helligkeit + Nachbar-Kontrast
     const lum = (i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
@@ -158,7 +158,10 @@ const RENDER_FN = async (kam, W, H, png) => {
                         stabil = 0;
                         last = sz;
                     }
-                    if (takte >= 40 && stabil >= 15) break;
+                    // die Nah-Wiese liest das Studio-Buch (Budget, Gras-Vorlagen): ohne Buch fiele die Aufnahme in die
+                    // KERN-PFLICHT — die Linse wartet darauf (W7: unter Last kam das Buch nach den 40 Takten)
+                    const buch = !!(r._foundry && r._foundry.recipes && r.constructor._studioRenderConfig);
+                    if (takte >= 40 && stabil >= 15 && buch) break;
                     await sleep(50);
                 }
                 return { takte, chunks: last };

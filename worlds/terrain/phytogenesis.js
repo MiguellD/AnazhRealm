@@ -2350,9 +2350,10 @@ function buildForest() {
         });
     }
     // LOD-WURZEL (08.07.) — DIE STUFEN-WAHRHEIT JE ART AUS DEN VERTRAGS-DATEN
-    // (PORTAL_RENDER_CONFIG.lod.kindStages): Gras + Strauch sind ZWEISTUFIG —
-    // nah die reiche Stufe (stages[0]), fern die kompensierte billige
-    // (stages[letzte]; die Rezepte tragen die Breiten-/Form-Kompensation).
+    // (PORTAL_RENDER_CONFIG.lod.kindStages): der Studio-Wald setzt Gras und Strauch
+    // ZWEISTUFIG — nah die reiche Stufe (stages[0]; der Strauch seit Welle 6 seine
+    // Nah-Stufe), fern die kompensierte billige (stages[letzte]; die Rezepte tragen
+    // die Breiten-/Form-Kompensation).
     // FORM-IDENTITAET: nah/fern eines Templates teilen DENSELBEN Seed (kein
     // Gestalt-Sprung am Stufenwechsel); die RNG()-Aufrufzahl bleibt EXAKT die
     // alte (ein Wurf je Template-Variante) — der ganze Wald wuerfelt unveraendert.
@@ -4990,8 +4991,8 @@ init();
             fogNearMul: c.fogNearMul,
             camFarPad: c.camFarPad,
             // kindStages (LOD-WURZEL 08.07.): die Stufen-Wahrheit je Art als DATEN — welche
-            // buildInstance-Stufen eine Art traegt+nutzt (Baum [0,1,2] · Gras/Strauch [1,2]
-            // zweistufig · Blume/Fels einstufig). Der Empfaenger clampt seine Distanz-Wahl
+            // buildInstance-Stufen eine Art traegt+nutzt (Baum/Strauch [0,1,2] · Gras [1,2]
+            // zweistufig · Blume [0,2] · Fels einstufig). Der Empfaenger clampt seine Distanz-Wahl
             // auf die naechste verfuegbare Stufe (tiefe Kopie, JSON-klonbar).
             lod: {
                 d0: c.lod.d0,
@@ -5212,6 +5213,10 @@ init();
         // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
         // Pflanzen tragen das Feld nie — additiv, must-ignore).
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
+        // DER WURF-TEIL REIST MIT (W6, additiv, must-ignore): die Baum-L1 nennt je Teil die Zahl der Dreiecke, die werfen
+        // (der Vorsatz des Index, foundry-core tree[1].wurf) — der Wirt wirft nur diesen Vorsatz. Andere Teile tragen das
+        // Feld nie (ihre Replies bleiben byte-alt).
+        if (mesh.userData && Number.isInteger(mesh.userData.__wurf)) out.wurf = mesh.userData.__wurf;
         // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
         // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
         // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut

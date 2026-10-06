@@ -158,6 +158,15 @@ const FORBIDDEN = [
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
     { token: "_chunkBundleAnker", fiel: "Welle B — der Satz ist der EINE Eintritt (_chunkSatzEin / _streuNahEin)" },
+    // Der Satz zeichnete den ganzen Ring in JEDEM Pass (ein Bereich lag an EINER Index-Stelle, `b.iStart`, der ganze Satz
+    // bis `s.iVoll`): seit Welle 6 trägt der Index je Pass einen Abschnitt — die Zellen im Frustum der Pass-Kamera
+    // (_chunkSatzAbschnitt), für Boden, Wasser UND Bau-Sätze. Die zweite Werfer-Wahl des Bau-Satzes (der Lauf vom ersten bis
+    // zum letzten Bereich im Frustum) fiel in dieselbe Mechanik; die Verdrängung der Kaskaden-Abschnitte (sie schrieben
+    // einander je Frame neu, 06.10. Mess-Wiese beim Drehen 2,2 MB je Frame) fiel ins Wachsen.
+    { token: ".iStart", fiel: "Welle 6 Boden-Schatten — je Pass ein Abschnitt (_chunkSatzPass), kein Ring-Index" },
+    { token: ".iVoll", fiel: "Welle 6 — der ganze Satz zeichnet nie; je Pass ein Abschnitt (_chunkSatzAbschnitt)" },
+    { token: "_satzWerferWahl", fiel: "Welle 6 — die Werfer-Wahl der Bau-Sätze ist der Abschnitt je Pass (_chunkSatzPass)" },
+    { token: "_chunkSatzVerdraeng", fiel: "Welle 6 — kein Abschnitt verdrängt einen anderen; der Index wächst (_chunkSatzUmlegen)" },
     { token: "_chunkBundleRegionKey", fiel: "Welle B" },
     { token: "_bundleKugelWeite", fiel: "Welle B — kein Chunk-Bürger wächst eine Region-Kugel mehr" },
     { token: "_acquireScatterMesh", fiel: "Welle B — der Streu-Satz je Art (_streuNahArt)" },
@@ -500,6 +509,67 @@ const FORBIDDEN = [
     { token: "FeldCull", fiel: "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern" },
     { token: "FELD_CULL", fiel: "05.10." },
     { token: "IndirectStorageBufferAttribute", fiel: "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt" },
+    // W6 (05.10.) — der GPU-Abschied: `InstancedMesh.dispose()` gab in r184 nichts frei (kein Objekt-Ereignis), die Instanz-
+    // Puffer jeder gefallenen Senke blieben in r184s Register (Mess-Wiese nach drei Wander-Schleifen: 1 530 Instanz-Matrizen
+    // ohne Halter, dazu 55,6 MB ruhende Foundry-Gestalten und der gewachsene Boden-Satz). Eine Senke fällt über
+    // `_instanzAbschied`, was den Graphen verlässt über den Kehraus (`_gpuKehraus`); gate:freie-slots (A) prüft den Abschied.
+    { token: "g.mesh.dispose()", fiel: "W6 — _instanzAbschied (die Instanz-Gruppe)" },
+    { token: "P.mesh.dispose()", fiel: "W6 — _instanzAbschied (Fundament- und Zaun-Pool)" },
+    { token: "R.mesh.dispose()", fiel: "W6 — _instanzAbschied (der Rauch-Satz des Dorfs)" },
+    { token: "a.mesh.dispose()", fiel: "W6 — _instanzAbschied (die Senken der Nah-Wiese und der Nah-Streu)" },
+    // Integration W6 (06.10.): die Senke der Nah-Wiese war eine Kopie der Senke der Nah-Streu — beide wachsen über EINEN
+    // Bauer (`_senkeMesh`, Eltern-Knoten als Argument).
+    { token: "_streuNahMesh", fiel: "Integration W6 — EINE Senke (_senkeMesh)" },
+    { token: "_nahWieseMesh", fiel: "Integration W6 — EINE Senke (_senkeMesh)" },
+    // DIE NAH-WIESE IST EIN SATZ (Welle 6, 05.10.): je Kachel × Vorlage eine InstancedMesh (56 Meshes, 20 Befehle, die
+    // Kachel cullte nur als Ganzes, die Stufe hing an der Kachel-Mitte) — jetzt EINE Senke je Vorlage × Stufe × Teil,
+    // gefüllt vom Sicht-Satz je Büschel (`_nahWieseSicht`). Der Kachel-Mesh-Bau und sein Entsorgen kehren nie zurück.
+    { token: "_nahWieseKachelMeshes", fiel: "Welle 6 — die Senken der Nah-Wiese (_nahWieseSenken, _nahWieseSicht)" },
+    { token: "_nahWieseKachelEntsorgen", fiel: "Welle 6 — die Kachel trägt nur Daten (_nahWieseKachelFaellt)" },
+    { token: '"nahWiese:" + key', fiel: "Welle 6 — kein Mesh je Kachel (nahWiese:<v>:L<stufe>:<teil>)" },
+    // DIE STUFE 0 HAT EINE BEDEUTUNG (Welle 6, 06.10.): buildInstance baute den Strauch über die Steuer-Globale
+    // `__strauchZeile` als Nah-Stufe, das Labor (build() → emitTree, Knopf L0) als Klingen-Krone (~175k Dreiecke, kein
+    // Golden, kein Empfänger). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (die Stufen-Wand unten); die Globale
+    // und das Blatt-Budget des Strauch-Rezepts 0 kehren nie zurück.
+    {
+        token: "__strauchZeile",
+        fiel: "Welle 6 — die Holz-Zeile ist die Stufe selbst (stufenRezept, emitTree)",
+        auch: ["worlds/terrain/phytogenesis.js"],
+    },
+    { token: "[4000, 1500, 1400]", fiel: "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)" },
+    // DER SATZ FOLGT SEINEM INHALT (W7): der leere Satz war ein Sonderfall, der nur auf die Start-Kapazität zurückkehrte —
+    // ein belegter Satz hielt sein Hochwasser (Boden 24,9 statt 16,4 MB, Bau 12,0 statt 1,3 MB nach dem Wandern).
+    // `_chunkSatzVerdichten` schrumpft jeden Satz auf seinen Inhalt; der Leer-Takt und sein Feld kehren nie zurück.
+    { token: "_chunkSatzLeert", fiel: "W7 — _chunkSatzVerdichten (der leere Satz ist der Fall Inhalt 0)" },
+    { token: "s.leerSeit", fiel: "W7 — s.ueberSeit (die Frist zählt ab dem Überschreiten der Schwelle, für jeden Satz)" },
+    // W7 (06.10.) — DIE NAH-STREU ZEICHNET JE STOFF: je Art × Gestalt × Stufe × Teil zeichnete eine InstancedMesh den ganzen
+    // Ring (echte GPU, Mess-Wiese: 15 Befehle, 46k Dreiecke, auch hinter dem Blick); der wiegende Stoff war je Studio-Skala
+    // ein eigener und las die Höhe aus der Vorlage (r184 rechnet den positionNode VOR der Instanzierung). Die Senke ist
+    // Daten, ihr Block ein Bereich im Streu-Satz ihres Stoffs (`_streuSatzArt`), die Höhe reist als `aWiege` (m).
+    {
+        token: "this._senkeMesh(a, 64, this.state.scene)",
+        fiel: "W7 — die Nah-Streu-Senke zeichnet nie selbst (_streuSatzArt)",
+    },
+    { token: "positionGeometry.y.mul(wiegen)", fiel: "W7 — die Höhe der wiegenden Nah-Streu ist aWiege (_satzBlock)" },
+    { token: '"|wiegt:"', fiel: "W7 — EIN wiegender Stoff je Regler, nie je Studio-Skala (|wiegt)" },
+    // W7-VEREINIGUNG — DAS EINE GESETZ DER PASS-WAHL: im selben Haken wählten drei Wege (Sätze und Bündel-Werfer nach der
+    // Box, die Pflanzen-Stufen nach Kugel · Kapsel · Fenster, die Karten als Senken-Kopie ihrer Sicht); die Box der fernen
+    // Kaskade zog den nahen Boden (boden k1 173 784 über der Ratsche 90 845). Jetzt urteilt `_passTrifft` über jeden Körper
+    // jedes Passes, die Karten sind eine Gruppe der Instanz-Wahl, die Kanten des Fensters kommen aus dem Blend-Gesetz.
+    { token: "kartenSicht", fiel: "W7-Vereinigung — die Karten sind eine Gruppe der Instanz-Wahl (_instanzWahlPass)" },
+    { token: "_sichtKugel", fiel: "W7-Vereinigung — das EINE Gesetz der Pass-Wahl (_passTrifft)" },
+    { token: "_instanzKapselTrifft", fiel: "W7-Vereinigung — die Licht-Kapsel gilt jedem Leser (_passTrifft)" },
+    { token: "_instanzWahlLage", fiel: "W7-Vereinigung — EINE Lage je Pass für jeden Leser (_passWahlLage)" },
+    { token: "INSTANZ_WAHL", fiel: "W7-Vereinigung — die Konstanten des Gesetzes (PASS_WAHL)" },
+    { token: "SICHT_RAND", fiel: "W7-Vereinigung — der Rand ist ein Teil des Gesetzes (PASS_WAHL.sichtRand)" },
+    // DIE SPERRE STATT DES URTEILS (Welle 7, 06.10.): die Horizont-Probe sagte nur „verdeckt" und nahm an, der Strahl laufe
+    // bis zur Mündung in Himmels-Luft — aus der Höhle hinaus fehlten 3 Zellen (2,8 % des Bilds). Sie misst die fernste
+    // Sperre (`_hoehlenSperre`), und der Lauf geht aus jeder erreichten Zelle hinaus (`_hoehlenHinaus`).
+    { token: "_hoehlenVerdeckt", fiel: "Welle 7 — die Horizont-Sperre (_hoehlenSperre) und der Weg hinaus" },
+    { token: "tor.verdeckt", fiel: "Welle 7 — die Mündung trägt ihre Sperre (tor.sperre)" },
+    // DIE SPERRE GILT JE BODEN (W7-Vereinigung): das Gedächtnis der Sperre galt je Auge allein — ein neuer Boden im Stand
+    // (Graben, Ring, Geomorph) erreichte es nicht. `_hoehlenAugeGleich` liest die Generation des Bodens (`H.boden`).
+    { token: "_hoehlenAugeGleich(tor,", fiel: "W7-Vereinigung — die Sperre gilt je Auge UND je Boden (H.boden)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -880,6 +950,53 @@ function scanNormalWand(srcRoh) {
     return errs;
 }
 
+// DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
+// die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
+// buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
+// deriveParamsPlant liest dieselbe Abbildung. Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot
+// mit Zeile; fehlt ein Anker, ist die Abbildung aus emitTree oder deriveParamsPlant gewandert.
+const STUFEN_ANKER = [
+    "__lod = lod;",
+    "__lod = sLod;",
+    "__lod = stufenRezept(P.kind, stufe);",
+    "__lod = stufe;",
+    "const rezept = stufenRezept(ph.kind, __lod);",
+];
+function scanStufenWand(srcRoh) {
+    const code = stripComments(srcRoh);
+    const errs = [];
+    for (const a of STUFEN_ANKER) {
+        const n = code.split(a).length - 1;
+        if (n !== 1) errs.push(`Stufen-Wand: \`${a}\` steht ${n}× in foundry-core (Soll 1)`);
+    }
+    for (const m of code.matchAll(/__lod\s*=(?!=)[^;\n]*;?/g)) {
+        if (STUFEN_ANKER.includes(m[0])) continue;
+        const zeile = code.slice(0, m.index).split("\n").length;
+        errs.push(
+            `Stufen-Wand: foundry-core.js:${zeile} \`${m[0]}\` gibt der Bau-Stufe eine zweite Bedeutung (stufenRezept)`
+        );
+    }
+    return errs;
+}
+
+// DIE PORT-WAND (Integration W6, 06.10.): jedes Gate liest seinen Port aus EINER eigenen Variable (`<GATE>_PORT`,
+// Standard sein fester Port) — zwei Formen nebeneinander (die geteilte `DIAG_PORT` in 21 Gates, je-Gate-Variablen in den
+// übrigen) waren ein Zwilling: eine Serie, die DIAG_PORT setzt, gab allen 21 denselben Port. Rot mit Datei.
+function scanPortWand(dateien) {
+    const errs = [];
+    for (const [name, src] of dateien)
+        if (/process\.env\.DIAG_PORT\b/.test(stripComments(src)))
+            errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
+    return errs;
+}
+function gateDateien(root) {
+    const aus = [];
+    for (const d of ["scripts", "scripts/lib"])
+        for (const f of fs.readdirSync(path.join(root, d)))
+            if (/\.cjs$/.test(f)) aus.push([d + "/" + f, fs.readFileSync(path.join(root, d, f), "utf8")]);
+    return aus;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
@@ -930,6 +1047,39 @@ function main() {
             console.log("❌ SELBST-TEST: die Normal-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
+        // Die Stufen-Wand muss feuern: buildInstance bildet die Stufe selbst ab (der Fall vom 05.10.), und emitTree
+        // verliert die Abbildung (das Labor bekäme wieder ein anderes Rezept als die Welt).
+        const kern = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
+        const zweite = scanStufenWand(kern.replace("__lod = lod;", "__lod = lod <= 1 ? 1 : lod;"));
+        const ohne = scanStufenWand(
+            kern
+                .replace("__lod = stufenRezept(P.kind, stufe);", "")
+                .replace("const rezept = stufenRezept(ph.kind, __lod);", "const rezept = __lod;")
+        );
+        const stufenFeuert =
+            scanStufenWand(kern).length === 0 &&
+            zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
+            ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
+            ohne.some((e) => /stufenRezept\(ph\.kind, __lod\);` steht 0×/.test(e));
+        if (!stufenFeuert) {
+            console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Stufen-Wand feuert (${zweite.find((e) => /zweite Bedeutung/.test(e))} · ${ohne.length} fehlende Anker)`
+        );
+        // Die Port-Wand muss feuern: ein Gate, das wieder die geteilte Variable liest (ein Kommentar darf sie nennen).
+        const gates = gateDateien(root);
+        const geteilt = "process.env." + "DIAG_PORT"; // zusammengesetzt: diese Datei ist selbst ein Gate der Wand
+        const portFeuert =
+            scanPortWand(gates).length === 0 &&
+            scanPortWand([["scripts/diag-x.cjs", `const PORT = Number(${geteilt} || 4400);\n`]]).length === 1 &&
+            scanPortWand([["scripts/diag-y.cjs", `// früher: ${geteilt}\nconst PORT = 1;\n`]]).length === 0;
+        if (!portFeuert) {
+            console.log("❌ SELBST-TEST: die Port-Wand feuert nicht (oder steht heute rot)", scanPortWand(gates));
+            process.exit(1);
+        }
+        console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, DIAG_PORT erkannt)`);
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
         const tmp = path.join(require("os").tmpdir(), "altlasten-selftest.js");
         fs.writeFileSync(tmp, 'const x = 1;\nfunction tickPhoenixDeath() {}\n// Kommentar darf "glutwesen" sagen\n');
@@ -962,6 +1112,8 @@ function main() {
         .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
+        .concat(scanPortWand(gateDateien(root)))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
@@ -969,7 +1121,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix.`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable.`
     );
 }
 

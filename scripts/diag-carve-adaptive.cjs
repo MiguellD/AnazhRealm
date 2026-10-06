@@ -15,7 +15,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4330;
+// Port über CARVE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4330.
+const PORT = Number(process.env.CARVE_PORT || 4330);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

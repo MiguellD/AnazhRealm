@@ -24373,9 +24373,9 @@ async function checkBandNahStreu(ctx) {
             cam.position.copy(camVor);
             return out;
         }
-        // (5b) DER WIND (Integration 05.10.): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
-        // zeichnet mit dem wiegenden Studio-Stoff (positionNode aus `_windSwayOffset`, Schlüssel-Teil |wiegt:),
-        // eine Art aus Holz und Stein steht — Konsum am gebauten Ring, keine Art-Liste.
+        // (5b) DER WIND (Integration 05.10., W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
+        // zeichnet mit dem wiegenden Studio-Stoff (positionNode aus `_windSwayOffset`, Schlüssel-Teil |wiegt, die Höhe aus
+        // dem Satz-Attribut aWiege), eine Art aus Holz und Stein steht — Konsum am gebauten Ring, keine Art-Liste.
         const weichK = new Set(["foliage", "foliageTex", "stem"]);
         const jeArt = new Map();
         for (const a of senken.values()) {
@@ -24388,36 +24388,50 @@ async function checkBandNahStreu(ctx) {
         out.wind = { wiegend: [], stehend: [], verstoss: [] };
         for (const [preset, e] of jeArt) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
-            for (const a of e.senken)
-                if (!!a.mat.positionNode !== e.weich || a.mesh.material !== a.mat) out.wind.verstoss.push(a.key);
+            for (const a of e.senken) {
+                const satz = r.state.chunkSaetze ? r.state.chunkSaetze.get(a.satz) : null;
+                const wiege = !!(satz && satz.geom.attributes.aWiege);
+                if (!!a.mat.positionNode !== e.weich || !satz || satz.mesh.material !== a.mat || wiege !== e.weich)
+                    out.wind.verstoss.push(a.key);
+            }
         }
         out.windQuelle =
-            /wiegen > 0/.test(window.__codeOf(r._foundryTreeMaterial)) &&
-            /_windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe/.test(window.__codeOf(r._foundryTreeMaterial));
+            /wiegen === true/.test(window.__codeOf(r._foundryTreeMaterial)) &&
+            /_windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe: TSL\.attribute\("aWiege"/.test(
+                window.__codeOf(r._foundryTreeMaterial)
+            );
         const ns = r.state.nahStreu;
-        // (6) Jede Senke ist ein Studio-Teil (leafKey f:…), eine InstancedMesh, wirft nicht; die Block-Tabelle ist
-        // dicht (Starts lückenlos, Σ n = Anzahl = mesh.count, je Block die Ernte-Identitäten).
-        let streuMeshes = 0;
+        // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
+        // Satz in der Szene (wirft nicht), jede Senke ist ein Studio-Teil (leafKey f:…) ohne Mesh, ihre Blöcke treu
+        // (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im Satz ihres Stoffs.
+        let selbst = 0;
         r.state.scene.traverse((o) => {
-            if (o.isInstancedMesh && o.userData && o.userData.inventar === "streu-klein") streuMeshes++;
+            if (o.isMesh && ((o.userData && o.userData.inventar === "streu-klein") || /^streuNah:/.test(o.name || "")))
+                selbst++;
         });
-        out.jeSenkeEineMesh = streuMeshes === ns.senken.size;
+        const stoffSaetze = new Map();
+        for (const [art, satz] of r.state.chunkSaetze || [])
+            if (satz.spec.userData.streuSatz) stoffSaetze.set(art, satz);
+        const stoffe = new Set([...ns.senken.values()].map((a) => a.mat.uuid));
+        out.jeStoffEinSatz =
+            selbst === 0 &&
+            [...ns.senken.values()].every((a) => stoffSaetze.has(a.satz)) &&
+            new Set([...stoffSaetze.values()].map((x) => x.spec.mat.uuid)).size === stoffSaetze.size &&
+            stoffSaetze.size <= stoffe.size &&
+            [...stoffSaetze.values()].every((x) => x.mesh.parent === r.state.scene && x.mesh.castShadow === false);
         out.studioTeile = [...ns.senken.values()].every(
-            (a) =>
-                a.mesh.isInstancedMesh === true &&
-                a.mesh.name === "streuNah:" + a.key &&
-                typeof a.leafKey === "string" &&
-                a.leafKey.startsWith("f:") &&
-                a.mesh.castShadow === false
+            (a) => a.mesh === undefined && typeof a.leafKey === "string" && a.leafKey.startsWith("f:")
         );
         out.tabelleDicht = [...ns.senken.values()].every((a) => {
-            let start = 0;
-            for (const k of a.ordnung) {
-                const b = a.bloecke.get(k);
-                if (!b || b.start !== start || b.ids.length !== b.n) return false;
-                start += b.n;
+            let summe = 0;
+            for (const [kk, b] of a.bloecke) {
+                if (b.ids.length !== b.n || b.matrizen.length !== b.n * 16) return false;
+                const bereich = stoffSaetze.get(a.satz).bloecke.get(a.key + "@" + kk);
+                if (b.n > 0 ? !bereich || bereich.vAnzahl !== b.n * a.geo.attributes.position.count : !!bereich)
+                    return false;
+                summe += b.n;
             }
-            return start === a.anzahl && a.mesh.count === a.anzahl;
+            return summe === a.anzahl;
         });
         // (7) Satz-Disziplin: eine gebaute Kachel entsorgen → ihre Blöcke treten aus; neu bauen → dieselben Zahlen.
         const [kKey, kz] = [...ns.kacheln].find(([, k]) => k.senken.size > 0) || [];
@@ -24469,9 +24483,15 @@ async function checkBandNahStreu(ctx) {
         res.windQuelle === true && res.wind.wiegend.length > 0 && res.wind.verstoss.length === 0,
         JSON.stringify(res.wind)
     );
-    check("Nah-Streu: je Senke genau EINE InstancedMesh in der Szene", res.jeSenkeEineMesh === true);
-    check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), wirft nicht", res.studioTeile === true);
-    check("Nah-Streu: die Block-Tabelle ist dicht (Σ n = Anzahl = count, Identitäten je Block)", res.tabelleDicht === true);
+    check(
+        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, keiner wirft",
+        res.jeStoffEinSatz === true
+    );
+    check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), Daten ohne Mesh", res.studioTeile === true);
+    check(
+        "Nah-Streu: die Blöcke sind treu (Σ n = Anzahl, Identitäten und Matrizen je Block, je Block ein Bereich im Streu-Satz)",
+        res.tabelleDicht === true
+    );
     check("Nah-Streu: eine gebaute Kachel trägt Blöcke (Voraussetzung der Satz-Disziplin)", res.kachelMitBloecken === true);
     if (!res.kachelMitBloecken) return;
     check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken", res.entsorgt === true);
@@ -27784,12 +27804,12 @@ async function checkBandV18133Forage(ctx) {
         if (ns)
             for (const a of ns.senken.values()) {
                 if (!a.ernte || a.anzahl === 0) continue;
-                const key = a.ordnung[0];
-                const b = a.bloecke.get(key);
-                if (b && b.n > 0) {
-                    pick = { key, senke: a.key, name: a.preset, id: b.ids[0] };
-                    break;
-                }
+                for (const [key, b] of a.bloecke)
+                    if (b.n > 0) {
+                        pick = { key, senke: a.key, name: a.preset, id: b.ids[0] };
+                        break;
+                    }
+                if (pick) break;
             }
         if (pick) {
             const a = ns.senken.get(pick.senke);
@@ -27801,15 +27821,22 @@ async function checkBandV18133Forage(ctx) {
             const before = countMat();
             const vorher = r._streuNahBereich(pick.senke, pick.key); // der Block der Kachel in der Senke
             const nVor = vorher.n;
-            const zahlVor = a.mesh.count;
+            const zahlVor = a.anzahl;
+            const satz = r.state.chunkSaetze.get(vorher.satz);
+            const vertsVor = satz.bloecke.has(vorher.bereich) ? satz.bloecke.get(vorher.bereich).vAnzahl : 0;
             const ok1 = r._harvestScatterPick(pick);
             out.harvested = ok1 && countMat() - before === 1;
             out.doubleRejected = r._harvestScatterPick(pick) === false;
-            // Die Pflanze tritt aus dem Block aus (die Senke bleibt dicht, kein Null-Slot): ihre Identität fehlt, der
-            // Block und die Instanz-Zahl der Senke sinken um eins.
+            // Die Pflanze tritt aus dem Block aus: ihre Identität fehlt, der Block und die Anzahl der Senke sinken um eins,
+            // der Bereich im Streu-Satz ihres Stoffs trägt eine Pflanze weniger (sie zeichnet nie mehr).
             const bereich = r._streuNahBereich(pick.senke, pick.key);
+            const vertsNach = satz.bloecke.has(vorher.bereich) ? satz.bloecke.get(vorher.bereich).vAnzahl : 0;
             out.ausgetreten =
-                !!bereich && !bereich.ids.includes(pick.id) && bereich.n === nVor - 1 && a.mesh.count === zahlVor - 1;
+                !!bereich &&
+                !bereich.ids.includes(pick.id) &&
+                bereich.n === nVor - 1 &&
+                a.anzahl === zahlVor - 1 &&
+                vertsVor - vertsNach === a.geo.attributes.position.count;
             // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) + die Kachel neu (die Pflanze kehrt
             // mit dem nächsten Nah-Streu-Takt zurück).
             const jeKachel = r.state.scatterHarvested.get(pick.key);
@@ -30459,13 +30486,14 @@ async function checkBandLambda4Streu(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // Waldboden 04.10. — die Vielfalt der Nah-Streu kommt aus dem STUDIO: die Gestalten je Art (budget.
-        // gestalten, je Same eine Gestalt über `_foundryVariantFor`) + ein neutral-naher Tint je Instanz über den
-        // nativen InstanceNode-Pfad (die Senke setzt instanceColor; der Studio-Stoff setzt useInstanceTint, liest
-        // nie manuell `attribute("instanceColor")`). Die zwölf Host-Gestalten (Tulpe/Klee/Mohn …) fielen.
+        // gestalten, je Same eine Gestalt über `_foundryVariantFor`) + ein neutral-naher Tint je Pflanze (der Block trägt
+        // ihn, der Streu-Satz backt ihn in die Vertex-Farbe — `_satzBlock`: Farbe × Instanz-Farbe, wie der InstanceNode sie
+        // in den Stoff multiplizierte; der Studio-Stoff setzt useInstanceTint, liest nie manuell `attribute("instanceColor")`).
+        // Die zwölf Host-Gestalten (Tulpe/Klee/Mohn …) fielen.
         const bSrc = window.__codeOf(r._nahStreuBloecke);
-        const mSrc = window.__codeOf(r._streuNahMesh);
+        const sSrc = window.__codeOf(r._satzBlock);
         const fSrc = window.__codeOf(r._foundryTreeMaterial);
-        out.tintJeInstanz = /farben/.test(bSrc) && /instanceColor = new THREE\.InstancedBufferAttribute/.test(mSrc);
+        out.tintJeInstanz = /farben/.test(bSrc) && /name === "color" && ic/.test(sSrc);
         out.stoffNativ = /useInstanceTint/.test(fSrc) && !/attribute\("instanceColor"/.test(fSrc);
         const arten = r._nahStreuArten() || [];
         const G = {};
@@ -30475,7 +30503,10 @@ async function checkBandLambda4Streu(ctx) {
         out.alleGestalten = arten.length > 0 && arten.every((a) => Number.isInteger(G[a.id]) && G[a.id] >= 1);
         return out;
     });
-    check("Λ.4 Streu (Waldboden): ein Tint je Instanz über instanceColor der Senke", res.tintJeInstanz === true);
+    check(
+        "Λ.4 Streu (Waldboden, W7): ein Tint je Pflanze — der Block trägt ihn, der Streu-Satz backt ihn in die Vertex-Farbe",
+        res.tintJeInstanz === true
+    );
     check(
         "Λ.4 Streu (V18.267): der Studio-Stoff trägt useInstanceTint OHNE manuelles attribute(instanceColor)",
         res.stoffNativ === true

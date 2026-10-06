@@ -23,8 +23,8 @@ const T_SEEDS = [7, 12345];
 const T_LODS = [0, 1, 2];
 const T_SEASONS = ["summer", "winter"];
 const OTHERS = ["findling", "kristalle", "blume", "strauch"]; // je 1 Fall, seed 7 / L0 / summer
-// Die GELIEFERTE Strauch-Stufe (kindStages shrub [1,2], L0 wird auf L1 geklemmt) — seit 04.10. eingefroren wie die
-// Baum-L1 (der Reisig-Schnitt der Budget-Welle trifft sie, gate:asset-contract hält sie byte-genau).
+// Die GELIEFERTEN Strauch-Stufen (Welle 6: kindStages shrub [0, 1, 2]) — die Nah-Stufe L0 (OTHERS, die alte L1 Byte für
+// Byte) und die Mittel-Stufe L1 (hier), eingefroren wie die Baum-Stufen (gate:asset-contract hält sie byte-genau).
 const EXTRA = [{ presetId: "strauch", seed: 7, lod: 1, season: "summer" }];
 // DER WALDBODEN (04.10., additiv gemünzt — die 77 Fälle davor blieben byte-gleich): je Boden-Art ihre gelieferten
 // Stufen L0/L1 und die neue Blumen-Stufe L2.
