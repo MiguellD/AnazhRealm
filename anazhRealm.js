@@ -62017,7 +62017,9 @@ class AnazhRealm {
             iEnde: 0, // Hochwasser der Abschnitte im Index
             iSumme: 0, // Indizes aller Bereiche (der ganze Ring)
             takt: 0, // Render-Takt (_tickChunkSatz) — ein Abschnitt, den kein Pass mehr fragt, fällt beim Umlegen
-            leerSeit: -1, // der Takt, seit dem der Satz keinen Bereich trägt (`_chunkSatzLeert`), -1 = er trägt einen
+            vInhalt: 0, // die Vertices aller Bereiche (der Inhalt, den `_chunkSatzVerdichten` misst)
+            ueberSeit: -1, // der Takt, seit dem die Kapazität über `schwelle` × Ziel liegt (-1 = sie liegt darunter)
+            ueberHoch: 0, // das Hochwasser des Inhalts seit `ueberSeit` (ein Satz, der noch füllt, trägt sein Ziel mit)
             schmutzig: false,
             anker: null,
             verborgen: false,
@@ -62044,7 +62046,7 @@ class AnazhRealm {
     // liegen); was der Haupt-Pass schon aufzeichnete, liest die alte, die bis zur Abgabe lebt.
     _chunkSatzGeometrie(s, vKap, iKap) {
         const alt = s.geom;
-        const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie die Rückkehr (`_chunkSatzLeert`)
+        const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie das Schrumpfen (`_chunkSatzVerdichten`)
         const g = new THREE.BufferGeometry();
         for (const [name, is] of s.spec.attr) {
             const arr = new Float32Array(vKap * is);
@@ -62078,33 +62080,65 @@ class AnazhRealm {
         }
     }
 
-    // DER LEERE SATZ (Integration W6, 06.10.): ein Satz ohne Bereich hält seine Pool-Kapazität nicht. Nach der Ruhe-Frist
-    // der Abschnitte (`ruheTakte` Render-Takte ohne Bereich — die Gnadenfrist der Gruppen liegt davor) kehrt er auf seine
-    // Start-Kapazität (CHUNK_SATZ) zurück: seine Abschnitte fallen, die Geometrie tauscht am SELBEN Mesh, die alten Puffer
-    // verlassen die GPU über den Kehraus. Befund (echte GPU, Mess-Wiese, drei Wander-Schleifen à 1,2 km, Puffer-Linse): die
-    // Bau-Sätze verlassener Dörfer hielten 38,3 MB in 147 Puffern, die größten ohne einen Bereich (buf:szene 90,5 MB gegen
-    // die Ratsche 40,6) — die Residenz folgte der Geschichte, nicht dem Bild.
-    _chunkSatzLeert(s) {
-        if (s.bloecke.size > 0) {
-            s.leerSeit = -1;
-            return;
+    // DER SATZ FOLGT SEINEM INHALT (W7): die Kapazität eines Satzes folgte seiner Geschichte — er wuchs (×1,5) und schrumpfte
+    // nie, ein leerer kehrte nur auf die Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, Puffer-Linse): in Ruhe hielt
+    // der Wasser-Satz 3,25 MB für 0,33 MB Inhalt (9 745 von 65 536 Vertices), drei Bau-Sätze je 0,44 MB für 48 bis 1 464
+    // Vertices; nach drei Wander-Schleifen à 1,2 km hielt der Boden-Satz 24,9 statt 16,4 MB und die Bau-Sätze 12,0 statt
+    // 1,3 MB. Je Render-Takt misst der Satz seinen Inhalt — die Vertices seiner Bereiche, das Hochwasser der Abschnitte, die
+    // ein Pass noch fragt; trägt die Kapazität `ruheTakte` Takte lang mehr als `schwelle` × Ziel (die Wasser-Bereiche treten
+    // fast je Takt neu ein, eine Ruhe des Satzes käme nie), schrumpft er auf das Ziel (das Hochwasser des Inhalts über diese
+    // Frist × `luft`, mindestens vMin/iMin — ein Satz, der noch füllt wie der Ring im Boot, hebt sein Ziel über die Schwelle
+    // und schrumpft nie; die Schwelle über dem Wachs-Schritt hält ihn ruhig): die Bereiche ziehen dicht nach vorn (jeder Index-Lauf um die Verschiebung seines
+    // Bereichs, Zellen und Hüllen bleiben), die Abschnitte fallen und jeder Pass legt seinen im nächsten Frame neu, die
+    // Geometrie tauscht am SELBEN Mesh, die Views der Chunks zeigen auf die neuen Arrays (jeder CPU-Leser bleibt
+    // byte-gleich). Ein leerer Satz ist der Fall „Inhalt 0". Die alten Puffer verlassen die GPU hier, vor dem Zeichnen des
+    // Frames (`_loopRender`): ein Render-Objekt, das die alte Geometrie las, tauscht beim nächsten Zeichnen, und der Kehraus
+    // hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
+    _chunkSatzVerdichten(s) {
+        const V = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
+        const R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+        let iBedarf = 0;
+        for (const a of s.abschnitte.values()) if (s.takt - a.takt <= R) iBedarf += this._chunkSatzKap(a.hoch);
+        const hoch = s.ueberSeit < 0 ? s.vInhalt : Math.max(s.ueberHoch, s.vInhalt);
+        const vZiel = Math.max(V.vMin, Math.ceil(hoch * V.luft));
+        const iZiel = Math.max(V.iMin, Math.ceil(iBedarf * V.luft));
+        const vNeu = s.vKap > vZiel * V.schwelle ? vZiel : s.vKap;
+        const iNeu = s.iKap > iZiel * V.schwelle ? iZiel : s.iKap;
+        if (vNeu === s.vKap && iNeu === s.iKap) {
+            s.ueberSeit = -1;
+            return false;
         }
-        if (s.leerSeit == null || s.leerSeit < 0) s.leerSeit = s.takt;
-        if (s.takt - s.leerSeit <= AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte) return;
-        const C = AnazhRealm.CHUNK_SATZ[s.spec.kapazitaet || s.art];
-        if (s.vKap <= C.v && s.iKap <= C.i) return;
+        if (s.ueberSeit < 0) s.ueberSeit = s.takt;
+        s.ueberHoch = hoch;
+        if (s.takt - s.ueberSeit <= R) return false;
+        s.ueberSeit = -1;
+        if (vNeu < s.vKap) {
+            // dicht nach vorn, in Lage-Folge: jedes Ziel liegt vor seiner Quelle, kein Bereich überschreibt einen ungezogenen
+            const folge = Array.from(s.bloecke.values()).sort((x, y) => x.vStart - y.vStart);
+            let pos = 0;
+            for (const b of folge) {
+                const d = pos - b.vStart;
+                if (d !== 0) {
+                    for (const [name, is] of s.spec.attr)
+                        s.geom.attributes[name].array.copyWithin(pos * is, b.vStart * is, (b.vStart + b.vAnzahl) * is);
+                    const idx = b.idx;
+                    for (let i = 0; i < idx.length; i++) idx[i] += d;
+                    b.vStart = pos;
+                }
+                pos += b.vAnzahl;
+            }
+            s.vEnde = pos;
+            s.vFrei.length = 0;
+        }
         s.abschnitte.clear();
         s.iEnde = 0;
-        s.vFrei.length = 0;
-        s.vEnde = 0;
         const alt = s.geom;
-        this._chunkSatzGeometrie(s, C.v, C.i);
-        // Der leere Satz zeichnet nicht (unsichtbar): seine Render-Objekte lesen die alte Geometrie bis zum nächsten
-        // Zeichnen, und der Kehraus hielte ihre Puffer für gezeichnet (gemessen in derselben Welt: die Kapazität der Sätze
-        // fiel 69,1 → 45,2 MB, der GPU-Speicher der Bau-Sätze nur 38,3 → 31,4 MB). Ihre Puffer verlassen die GPU hier — vor
-        // dem Zeichnen des Frames (`_loopRender`), die letzte Aufzeichnung, die sie las, ist abgegeben.
+        this._chunkSatzGeometrie(s, vNeu, iNeu);
+        s.geom.setDrawRange(0, 0); // der Index ist leer, bis jeder Pass seinen Abschnitt legt
+        s.verdichtet = (s.verdichtet || 0) + 1;
         for (const k in alt.attributes) this._gpuAbschied(alt.attributes[k]);
         if (alt.index) this._gpuAbschied(alt.index);
+        return true;
     }
 
     // Der EINE Mesh eines Satzes über seiner Pool-Geometrie (ein Wachsen tauscht nur die Geometrie).
@@ -62224,6 +62258,7 @@ class AnazhRealm {
             huelle: null,
         };
         s.bloecke.set(key, b);
+        s.vInhalt += n;
         this._chunkSatzViews(s, b);
         this._chunkSatzZellen(b, li, vStart, geom.zellen || null);
         this._chunkSatzHuelle(s, b);
@@ -62373,6 +62408,7 @@ class AnazhRealm {
         }
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
         s.bloecke.delete(key);
+        s.vInhalt -= b.vAnzahl;
         s.iSumme -= b.iAnzahl;
         s.schmutzig = true;
         return true;
@@ -62413,7 +62449,7 @@ class AnazhRealm {
         for (const s of saetze.values()) {
             s.takt++;
             this._chunkSatzBereit(s);
-            this._chunkSatzLeert(s);
+            this._chunkSatzVerdichten(s);
         }
     }
 
@@ -88428,6 +88464,11 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
 // ein Abschnitt verdichtet seine Lücken (`verschnitt` seines Laufs) und, nach `dichtNach` Pässen mit ruhender Wahl, seine
 // Folge (dicht in Satz-Ordnung, exakt).
 AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, verschnitt: 0.25, dichtNach: 30 });
+// DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
+// `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
+// Abschnitte), mindestens vMin/iMin. Die Schwelle 1,5 liegt auf dem Wachs-Schritt der Vertices: nach einem Schrumpfen wächst
+// der Satz erst, wenn sein Inhalt um ein Viertel zunimmt, und schrumpft erst wieder, wenn er ein Drittel verliert.
+AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, vMin: 1024, iMin: 3072 });
 // DER BAU-SATZ (Welle 6, `_bauSatzArt`): die Studio-Arten (Rezept-`kind`), deren gesetzte Gestalt im Satz ihres Stoffs
 // zeichnet — je Art der Name des Satzes (die Täter-Klasse der Band-Linse, spec/profiband/haushalt.json: `bauSatz` →
 // bau, `formationenSatz` → formationen). Ein gesetzter Bau wandert nie (die Tür-Flügel reisen einzeln), und seine

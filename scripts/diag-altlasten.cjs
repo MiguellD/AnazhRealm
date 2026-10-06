@@ -414,6 +414,11 @@ const FORBIDDEN = [
         auch: ["worlds/terrain/phytogenesis.js"],
     },
     { token: "[4000, 1500, 1400]", fiel: "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)" },
+    // DER SATZ FOLGT SEINEM INHALT (W7): der leere Satz war ein Sonderfall, der nur auf die Start-Kapazität zurückkehrte —
+    // ein belegter Satz hielt sein Hochwasser (Boden 24,9 statt 16,4 MB, Bau 12,0 statt 1,3 MB nach dem Wandern).
+    // `_chunkSatzVerdichten` schrumpft jeden Satz auf seinen Inhalt; der Leer-Takt und sein Feld kehren nie zurück.
+    { token: "_chunkSatzLeert", fiel: "W7 — _chunkSatzVerdichten (der leere Satz ist der Fall Inhalt 0)" },
+    { token: "s.leerSeit", fiel: "W7 — s.ueberSeit (die Frist zählt ab dem Überschreiten der Schwelle, für jeden Satz)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

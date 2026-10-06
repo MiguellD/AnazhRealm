@@ -33,9 +33,11 @@
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
 //       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen. Befund (echte GPU,
 //       Mess-Wiese, Drehen 1°/Frame): 32 Verdrängungen in 36 Frames, k0 + k1 schrieben einander 2,2 MB je Frame neu.
-//   (k) DER LEERE SATZ (Integration W6) — ein Satz ohne Bereich hält seine Kapazität nur bis zur Ruhe-Frist
-//       (`ruheTakte`), dann kehrt er am selben Mesh auf seine Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, drei
-//       Wander-Schleifen à 1,2 km): die Bau-Sätze verlassener Dörfer hielten 38,3 MB, die größten ohne einen Bereich.
+//   (k) DER SATZ FOLGT SEINEM INHALT (W7) — trägt die Kapazität eines Satzes `ruheTakte` Takte lang mehr als
+//       `schwelle` × Ziel, schrumpft er am selben Mesh auf Inhalt × `luft`: leer auf vMin/iMin, belegt dicht nach vorn
+//       (jeder Bereich treu, jeder Abschnitt neu gelegt). Befund (echte GPU, Mess-Wiese): der Wasser-Satz hielt in Ruhe
+//       3,25 MB für 0,33 MB Inhalt, nach drei Wander-Schleifen à 1,2 km der Boden-Satz 24,9 statt 16,4 MB, die Bau-Sätze 12,0
+//       statt 1,3 MB. Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
 // direkt in der Szene, einer Gruppe `x#0@p:0,0`, einem zweiten `streuNah` derselben Senke, einer Fern-Deko, einer
 // selbst zeichnenden Satz-Gruppe (`f:zacken:L0`) und einem Haus ohne Bereich MUSS rot fallen und jeden Täter mit
@@ -548,37 +550,37 @@ function check(name, ok, detail) {
                 for (let i = 1; i < laeufe.length; i++) if (laeufe[i][0] < laeufe[i - 1][1]) o.ueberlapp = true;
                 return o;
             };
+            // EIN BEREICH TREU im Satz: seine Views zeigen byte-gleich in die Satz-Arrays an seiner Lage, sein Index ist der
+            // Chunk-Index um den Bereichs-Anfang verschoben (als Multimenge), die Viertel liegen als Läufe hintereinander und
+            // decken ihn lückenlos — (f) für jeden Bereich jedes Satzes, (k) nach dem Verdichten.
+            const bereichTreu = (satz, b) => {
+                const geo = satz.mesh.geometry;
+                if (satz.bloecke.get(b.key) !== b) return false;
+                const g = b.geom;
+                for (const a of satz.attrNamen) {
+                    const src = g.attributes[a].array;
+                    const dst = geo.attributes[a].array;
+                    const is = geo.attributes[a].itemSize;
+                    if (src.length !== b.vAnzahl * is || src.buffer !== dst.buffer) return false;
+                    for (let i = 0; i < src.length; i += 97) if (src[i] !== dst[b.vStart * is + i]) return false;
+                }
+                const li = g.index.array;
+                if (li.length !== b.iAnzahl || b.idx.length !== b.iAnzahl) return false;
+                if (mengeVon(li, b.vStart) !== mengeVon(b.idx, 0)) return false;
+                let o = 0;
+                for (const z of b.zellen) {
+                    if (z.bereich !== b || z.idx.buffer !== b.idx.buffer || z.idx.byteOffset !== o * 4) return false;
+                    o += z.idx.length;
+                }
+                return o === b.iAnzahl;
+            };
             res.saetze = [];
             if (s.chunkSaetze)
                 for (const [art, satz] of s.chunkSaetze) {
-                    const geo = satz.mesh.geometry;
-                    let treu = satz.geom === geo,
+                    let treu = satz.geom === satz.mesh.geometry,
                         geprueft = 0;
                     for (const b of satz.ordnung) {
-                        if (satz.bloecke.get(b.key) !== b) {
-                            treu = false;
-                            break;
-                        }
-                        const g = b.geom;
-                        for (const a of satz.attrNamen) {
-                            const src = g.attributes[a].array;
-                            const dst = geo.attributes[a].array;
-                            const is = geo.attributes[a].itemSize;
-                            if (src.length !== b.vAnzahl * is || src.buffer !== dst.buffer) treu = false;
-                            for (let i = 0; i < src.length && treu; i += 97)
-                                if (src[i] !== dst[b.vStart * is + i]) treu = false;
-                        }
-                        const li = g.index.array;
-                        if (li.length !== b.iAnzahl || b.idx.length !== b.iAnzahl) treu = false;
-                        if (treu && mengeVon(li, b.vStart) !== mengeVon(b.idx, 0)) treu = false;
-                        // die Viertel: Läufe hintereinander, lückenlos über den Bereichs-Index
-                        let o = 0;
-                        for (const z of b.zellen) {
-                            if (z.bereich !== b || z.idx.buffer !== b.idx.buffer || z.idx.byteOffset !== o * 4)
-                                treu = false;
-                            o += z.idx.length;
-                        }
-                        if (o !== b.iAnzahl) treu = false;
+                        treu = treu && bereichTreu(satz, b);
                         geprueft++;
                         if (!treu) break;
                     }
@@ -816,9 +818,18 @@ function check(name, ok, detail) {
                 delete r._chunkSatzUmlegen;
             }
             phase(eng, 2);
-            // (k) DER LEERE SATZ (Integration W6): ein Satz ohne Bereich kehrt nach der Ruhe-Frist (`ruheTakte`) auf seine
-            // Start-Kapazität zurück, am SELBEN Mesh — die Bau-Sätze verlassener Dörfer hielten nach drei Wander-Schleifen
-            // 38,3 MB (echte GPU, Mess-Wiese). Probe an einem eigenen Bau-Satz des Gates: gewachsen, ohne Bereich.
+            // (k) DER SATZ FOLGT SEINEM INHALT (W7; der leere Satz der W6-Integration ist sein Fall „Inhalt 0"): trägt die
+            // Kapazität eines Satzes `ruheTakte` Takte lang mehr als `schwelle` × Ziel, schrumpft er auf Inhalt × `luft` — am SELBEN Mesh, die Bereiche dicht nach vorn, jeder treu, jeder Abschnitt im
+            // nächsten Pass neu gelegt und treu. Befund (echte GPU, Mess-Wiese): in Ruhe hielt der Wasser-Satz 3,25 MB für 0,33 MB
+            // Inhalt, nach drei Wander-Schleifen der Boden-Satz 24,9 statt 16,4 MB und die Bau-Sätze 12,0 statt 1,3 MB. Zwei
+            // Proben: LEER (ein eigener Bau-Satz des Gates, gewachsen, ohne Bereich → vMin/iMin) und BELEGT (der Boden-Satz:
+            // die drei vordersten Bereiche treten aus — Löcher —, der Satz wächst ×3, nach der Frist dicht auf Inhalt × luft).
+            // Der Selbsttest fährt BELEGT mit der alten Regel (nur ein leerer Satz kehrt zurück): er hält sein Hochwasser.
+            const VD = r.constructor.CHUNK_SATZ_VERDICHTEN;
+            const RT = r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+            const ruhe = (n) => {
+                for (let i = 0; i < n; i++) r._tickChunkSatz();
+            };
             res.leer = null;
             {
                 const art = "gate:leer|probe|-";
@@ -832,21 +843,70 @@ function check(name, ok, detail) {
                 r._chunkSatzGeometrie(ls, C.v * 4, C.i * 4);
                 const mesh0 = ls.mesh,
                     gross = [ls.vKap, ls.iKap];
-                for (let i = 0; i <= r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte; i++) r._tickChunkSatz();
+                ruhe(RT);
                 const vorFrist = [ls.vKap, ls.iKap];
-                r._tickChunkSatz();
-                r._tickChunkSatz();
+                ruhe(2);
                 res.leer = {
                     gross,
                     vorFrist,
                     nach: [ls.vKap, ls.iKap],
-                    start: [C.v, C.i],
+                    ziel: [VD.vMin, VD.iMin],
                     derselbe: ls.mesh === mesh0 && ls.mesh.geometry === ls.geom,
                 };
                 s.scene.remove(ls.mesh);
                 s.chunkSaetze.delete(art);
                 s.satzStoffe.delete(art);
             }
+            const belegt = (alteRegel) => {
+                const bs = s.chunkSaetze.get("boden");
+                if (!bs) return null;
+                ruhe(RT + 2); // was frühere Phasen anstießen, liegt
+                const raus = [...bs.bloecke.values()]
+                    .sort((x, y) => x.vStart - y.vStart)
+                    .slice(0, 3)
+                    .map((b) => ({ key: b.key, geom: b.geom, chunkKey: b.chunkKey }));
+                for (const x of raus) r._chunkSatzAus("boden", x.key);
+                r._chunkSatzGeometrie(bs, bs.vKap * 3, bs.iKap * 2);
+                const mesh0 = bs.mesh;
+                let inhalt = 0;
+                for (const b of bs.bloecke.values()) inhalt += b.vAnzahl;
+                const gross = [bs.vKap, bs.iKap, bs.vEnde];
+                if (alteRegel)
+                    r._chunkSatzVerdichten = function (satz) {
+                        return satz.bloecke.size === 0 ? P._chunkSatzVerdichten.call(this, satz) : false;
+                    };
+                let vorFrist;
+                try {
+                    ruhe(RT);
+                    vorFrist = [bs.vKap, bs.iKap];
+                    ruhe(2);
+                } finally {
+                    if (alteRegel) delete r._chunkSatzVerdichten;
+                }
+                const nach = [bs.vKap, bs.iKap, bs.vEnde];
+                // der Haken des Renders legt das Hauptbild neu
+                r._passSicht(s.camera, false);
+                r._passSicht(s.camera, true);
+                const ab = abschnitteVon(bs);
+                let treu = bs.geom === bs.mesh.geometry;
+                for (const b of bs.bloecke.values()) treu = treu && bereichTreu(bs, b);
+                const o = {
+                    gross,
+                    vorFrist,
+                    nach,
+                    inhalt,
+                    ziel: Math.max(VD.vMin, Math.ceil(inhalt * VD.luft)),
+                    frei: bs.vFrei.length,
+                    derselbe: bs.mesh === mesh0 && bs.mesh.geometry === bs.geom,
+                    treu,
+                    abschnittTreu: ab.treu && ab.hauptBei0 && !ab.ueberlapp,
+                    haupt: ab.hauptN,
+                };
+                for (const x of raus) r._chunkSatzEin("boden", x.key, x.geom, x.chunkKey);
+                return o;
+            };
+            res.belegt = belegt(false);
+            res.belegtAlt = belegt(true);
             return res;
         });
     } catch (e) {
@@ -972,15 +1032,36 @@ function check(name, ok, detail) {
     } else check("(j) NEUSCHREIBEN gemessen", false, "keine Messung");
     const le = out.leer;
     check(
-        "(k) DER LEERE SATZ — ohne Bereich hält er seine Kapazität bis zur Ruhe-Frist, danach kehrt er auf die Start-Kapazität zurück (derselbe Mesh)",
+        "(k) DER SATZ FOLGT SEINEM INHALT — leer: bis zur Ruhe-Frist hält er, danach schrumpft er auf vMin/iMin (derselbe Mesh)",
         !!le &&
             le.vorFrist[0] === le.gross[0] &&
             le.vorFrist[1] === le.gross[1] &&
-            le.nach[0] === le.start[0] &&
-            le.nach[1] === le.start[1] &&
-            le.gross[0] > le.start[0] &&
+            le.nach[0] === le.ziel[0] &&
+            le.nach[1] === le.ziel[1] &&
+            le.gross[0] > le.ziel[0] &&
             le.derselbe === true,
         JSON.stringify(le)
+    );
+    const be = out.belegt;
+    check(
+        "(k) … belegt: nach der Frist dicht auf Inhalt × luft — Bereiche treu, Hauptbild-Abschnitt neu und treu, derselbe Mesh",
+        !!be &&
+            be.vorFrist[0] === be.gross[0] &&
+            be.nach[0] === be.ziel &&
+            be.nach[2] === be.inhalt &&
+            be.frei === 0 &&
+            be.nach[1] < be.gross[1] &&
+            be.treu === true &&
+            be.abschnittTreu === true &&
+            be.haupt > 0 &&
+            be.derselbe === true,
+        JSON.stringify(be)
+    );
+    const ba = out.belegtAlt;
+    check(
+        "(k) Selbsttest: die alte Regel (nur ein leerer Satz kehrt zurück) hält das Hochwasser des Boden-Satzes — die Wand nennt es",
+        !!ba && ba.nach[0] === ba.gross[0] && ba.nach[0] > ba.ziel * 1.5,
+        ba ? `Boden-Satz hält ${ba.nach[0]} Vertices für ${ba.inhalt} Inhalt (Ziel ${ba.ziel})` : "keine Messung"
     );
     check("(g) kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
     if (errs.length) {
