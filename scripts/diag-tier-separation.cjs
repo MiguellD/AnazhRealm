@@ -205,8 +205,14 @@ const server = http.createServer((req, res) => {
             }
             o.b1PathSmall = pathSmall;
             o.b1PathBig = pathBig;
+            // Das Tempo ist m/s aus dem Gang-Gesetz (Welle L, Q3): die Tempo-Einheit tempo·√(g·L) wächst mit der Hüft-
+            // Höhe — ein Gigant läuft in m/s schneller als ein Kitz. Die Stat-Achse zeigt sich im Weg JE EINHEIT seiner Größe
+            // (Froude-gleich): das Kitz flink, der Gigant träge relativ zu seinem Leib.
+            const ST = window.__tetrapodaCore;
+            o.b1EinheitSmall = ST.tempoEinheit(r._kreaturHueftL(bSmall));
+            o.b1EinheitBig = ST.tempoEinheit(r._kreaturHueftL(bBig));
             o.checks.b1MulDiff = o.b1MulSmall > o.b1MulBig * 1.1; // die Stat-Achse trägt ≥ 10 %
-            o.checks.b1PathDiff = pathSmall > pathBig * 1.1; // und sie IST Bewegung geworden
+            o.checks.b1PathDiff = pathSmall / o.b1EinheitSmall > (pathBig / o.b1EinheitBig) * 1.1; // und sie IST Bewegung
             cleanup([bSmall, bBig]);
 
             // ── (B2) RADIUS-ACHSEN: die Leine liest Mut (fleeMul) × GRÖSSE (bodySize).
@@ -301,7 +307,10 @@ const server = http.createServer((req, res) => {
             c.b1MulDiff,
             `(B1) STAT-KONSUM: verschiedene Stats → verschiedene Charakter-Geschwindigkeit (${out.b1MulSmall.toFixed(3)} > ${out.b1MulBig.toFixed(3)} × 1.1)`
         );
-        check(c.b1PathDiff, `(B1) und messbar verschiedene Weg-Länge (${out.b1PathSmall.toFixed(1)} m > ${out.b1PathBig.toFixed(1)} m × 1.1)`);
+        check(
+            c.b1PathDiff,
+            `(B1) und messbar verschiedene Weg-Länge je Tempo-Einheit (${(out.b1PathSmall / out.b1EinheitSmall).toFixed(1)} > ${(out.b1PathBig / out.b1EinheitBig).toFixed(1)} × 1.1; ${out.b1PathSmall.toFixed(1)} m bei ${out.b1EinheitSmall.toFixed(2)} m/s, ${out.b1PathBig.toFixed(1)} m bei ${out.b1EinheitBig.toFixed(2)} m/s)`
+        );
         check(
             c.b2LeashDiff,
             `(B2) GRÖSSEN-ACHSE: die Leinen differieren ≥ 25 m (${out.b2LeashShy.toFixed(1)} vs. ${out.b2LeashBold.toFixed(1)})`

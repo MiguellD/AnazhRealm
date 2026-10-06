@@ -1307,6 +1307,81 @@
         return { dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m, hub: Math.sin(u) };
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // DAS STEUER-GESETZ (Welle L, additiv): EIN Steuer-Schritt je Tier und Takt. Befund der Leben-Prüfung 06.10.: die
+    // Tiere liefen im Krebsgang (Lauf ↔ Blick p50 63–108°, rückwärts 30–59 % der Frames, Stand-Schlupf 1,3–2,6), weil
+    // niemand die Gier schrieb, und Folgen war Gas oder Bremse (4 m/s oder 0, Tempo-Sprünge ~290 m/s²). Der Wunsch
+    // (Welt-XZ, m/s) dreht die Gier mit der Wendegrenze auf sich zu; der Leib läuft nur VORWÄRTS längs seiner Gier, mit
+    // dem Anteil des Wunschs, der vor ihm liegt (dreht er um, bremst er erst); das Tempo folgt mit Anfahr- und Brems-
+    // Grenze. Jede Größe ist Froude-dimensionslos über die Hüft-Höhe L (dieselbe L, an der das Gang-Gesetz die Schritt-
+    // Länge misst): Wende ω = wende·√(g/L), Anfahren beschl·g, Bremsen brems·g, die Tempo-Einheit des Verhaltens
+    // tempo·√(g·L) m/s (VERHALTEN zählt in ihr: Schlendern 0,45, Jagd 1,45, Flucht 1,6) — ein großes Tier läuft schneller
+    // und wendet träger, die Art unterscheidet die Gestalt, nie ein Tag (Lehre 8). Rein, THREE-frei; der Welt-Wirt ruft
+    // ihn je Tier, die Gier reist im Positions-Strom zum Mitspieler.
+    var STEUER_GESETZ = Object.freeze({
+        tempo: 0.34, // v̂ — die Tempo-Einheit des Verhaltens als Froude-Zahl (ein Schritt; Hirsch L 0,9 m ≈ 1 m/s)
+        wende: 1.1, // × √(g/L) rad/s — die Wendegrenze (Hirsch: ~3,6 rad/s)
+        beschl: 0.5, // × g — Anfahren (m/s²)
+        brems: 0.8, // × g — Bremsen (m/s²); der Ankunfts-Weg liest dieselbe Zahl
+    });
+    // Die Tempo-Einheit in m/s für die Hüft-Höhe L (m).
+    function tempoEinheit(L) {
+        return STEUER_GESETZ.tempo * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
+    }
+    // z = {gier (rad, three: Blick längs (sin, cos)), v (m/s, vorwärts)} wird fortgeschrieben; (wx, wz) der Wunsch in m/s.
+    function steuerSchritt(z, wx, wz, dt, L) {
+        var S = STEUER_GESETZ,
+            g = GANG_GESETZ.g,
+            TAU = 2 * Math.PI;
+        var w = Math.sqrt(wx * wx + wz * wz);
+        var rest = 0;
+        if (w > 1e-4) {
+            var d = Math.atan2(wx, wz) - z.gier;
+            d -= TAU * Math.round(d / TAU);
+            var maxD = S.wende * Math.sqrt(g / Math.max(0.05, L)) * dt;
+            var dd = d > maxD ? maxD : d < -maxD ? -maxD : d;
+            z.gier += dd;
+            z.gier -= TAU * Math.round(z.gier / TAU);
+            rest = d - dd;
+        }
+        var ziel = w * Math.max(0, Math.cos(rest));
+        var dv = ziel - z.v,
+            auf = S.beschl * g * dt,
+            ab = S.brems * g * dt;
+        z.v += dv > auf ? auf : dv < -ab ? -ab : dv;
+        if (!(z.v > 0)) z.v = 0;
+        return z;
+    }
+    // DAS ANKUNFTS-GESETZ: wer `rest` Meter vor seinem Halt steht, wünscht nur das Tempo, aus dem er mit der Brems-Grenze
+    // dort steht (√(2·brems·g·rest)), höchstens vMax — kein 4-oder-0.
+    function ankunftTempo(rest, vMax) {
+        return Math.min(vMax, Math.sqrt(2 * STEUER_GESETZ.brems * GANG_GESETZ.g * Math.max(0, rest)));
+    }
+    // DIE HERDEN-FORM (Welle L, additiv): der Zug der Kohaesion auf ein Tier an (x, z) — er zaehlt nur Nachbarn DERSELBEN
+    // Gattung (die Art unterscheidet die Gestalt, nie ein Tag; Lehre 8) und haengt nie am Blick des Spielers (der Wirt
+    // ruft ihn fuer jedes Tier). Die Leben-Pruefung 06.10. sah artfremde Nachbarn (Fuchs zieht Hirsch) und eine Kohaesion
+    // nur im Frustum. Das Herden-VERHALTEN (Verband, Anker, Ausrichtung) ist nach v1.0 — dies ist die Form, die es traegt.
+    // nachbarn: [{x, z, gattung}] (Kandidaten im Gitter des Wirts), H = VERHALTEN.herde. Liefert {x, z, n} (n Mitglieder).
+    function herdeZug(x, z, gattung, nachbarn, H, out) {
+        var o = out || { x: 0, z: 0, n: 0 };
+        o.x = 0;
+        o.z = 0;
+        o.n = 0;
+        for (var i = 0; i < nachbarn.length && o.n < H.maxNachbarn; i++) {
+            var nb = nachbarn[i];
+            if (!nb || nb.gattung !== gattung) continue;
+            var dx = nb.x - x,
+                dz = nb.z - z;
+            var dsq = dx * dx + dz * dz;
+            if (!(dsq > H.minAbstSq && dsq < H.fensterSq)) continue;
+            var d = Math.sqrt(dsq);
+            o.x += (dx / d) * H.gewicht;
+            o.z += (dz / d) * H.gewicht;
+            o.n++;
+        }
+        return o;
+    }
+
     function cpgStep(phases, freq, coupling, dt) {
         var d = [0, 0, 0, 0];
         for (var i = 0; i < 4; i++) {
@@ -2628,6 +2703,11 @@
         GANG_GESETZ: GANG_GESETZ,
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
+        STEUER_GESETZ: STEUER_GESETZ,
+        tempoEinheit: tempoEinheit,
+        steuerSchritt: steuerSchritt,
+        ankunftTempo: ankunftTempo,
+        herdeZug: herdeZug,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,

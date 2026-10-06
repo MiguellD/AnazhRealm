@@ -11,7 +11,7 @@
 //   sattel    (Q12) der Tod im Sattel steigt ab (mountedArch = null)
 //   huepfer   (Q1/Q2) Luft-Anteil < 3 %, jeder Sprung aus einer Aktion, Flugzeit gleich bei 30 und 144 Hz
 //   wachsen   (Q2) die Skala nach 3600 Wachstums-Takten = 1,000
-//   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf ≤ 0,2, Beschleunigung im Gesetz
+//   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz
 //   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames, die Beute läuft vom Jäger fort (> 80 %)
 //   herde     (Q11) Kohäsion je Gattung, Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand
@@ -367,7 +367,7 @@ async function kreaturProben(r, T, opts) {
                 return p.worldToLocal(w.clone());
             });
             const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
-            return { ps, lokal, hueft, spur: ps.map(() => []), leib: [] };
+            return { ps, lokal, hueft, spur: ps.map(() => []), leib: [], ph: [] };
         });
         const dt = 1 / 60;
         const v = 1.4; // m/s — der Spieler geht
@@ -405,30 +405,49 @@ async function kreaturProben(r, T, opts) {
                     const pf = pfoten[i];
                     if (pf) {
                         c.updateMatrixWorld(true);
-                        pf.leib.push({ x: c.position.x, z: c.position.z, y: c.position.y, sp });
+                        const g = c.userData._tierBaum && c.userData._tierBaum._gang;
+                        pf.leib.push({ x: c.position.x, z: c.position.z, y: c.position.y, sp, gier: c.rotation.y });
+                        pf.ph.push(g && g.ph ? g.ph.slice() : null);
                         pf.ps.forEach((p, j2) => pf.spur[j2].push(p.localToWorld(pf.lokal[j2].clone())));
                     }
                 });
             }
         }
+        // DER STAND-SCHLUPF: im STAND einer Pfote (ihre Gang-Phase in [π, 2π), gangFuss: der Fuß wandert dort am Boden)
+        // darf ihr Aufsetz-Punkt nicht mit dem Leib wandern — Weg des Stand-Fußes / Weg des Leibs. Zerlegt nach der Gier des
+        // Leibs: QUER (seitlich zur Laufrichtung — die Signatur des Krebsgangs, Q3) und LÄNGS (längs der Laufrichtung — am
+        // Hang die Schrittlänge des Gangs in XZ gegen den geneigten Leib, Q4 R-D10/R-D11: das Gang-Gesetz misst die Lage nur
+        // in XZ). Geurteilt wird QUER; LÄNGS und die Summe stehen als Zahl.
+        const TAU2 = Math.PI * 2;
+        const imStand = (ph, j) => {
+            if (!ph) return false;
+            const u = ((ph[j] % TAU2) + TAU2) % TAU2;
+            return u >= Math.PI;
+        };
         const schlupf = pfoten.map((pf) => {
             if (!pf) return null;
             let wegF = 0,
-                wegL = 0;
+                wegL = 0,
+                wegQ = 0,
+                wegH = 0;
             for (let j = 0; j < 4; j++) {
-                let ymin = Infinity;
-                for (let n = 60; n < pf.spur[j].length; n++) ymin = Math.min(ymin, pf.spur[j][n].y - pf.leib[n].y);
                 for (let n = 61; n < pf.spur[j].length; n++) {
                     const a = pf.spur[j][n - 1],
                         b = pf.spur[j][n];
                     if (pf.leib[n].sp < 0.3) continue;
-                    const lim = ymin + 0.05 * pf.hueft;
-                    if (a.y - pf.leib[n - 1].y > lim || b.y - pf.leib[n].y > lim) continue;
-                    wegF += Math.hypot(b.x - a.x, b.z - a.z);
+                    if (!imStand(pf.ph[n - 1], j) || !imStand(pf.ph[n], j)) continue;
+                    const dx = b.x - a.x,
+                        dz = b.z - a.z;
+                    const g = pf.leib[n].gier;
+                    wegF += Math.hypot(dx, dz);
+                    wegQ += Math.abs(dx * Math.cos(g) - dz * Math.sin(g));
+                    wegH += Math.abs(dx * Math.sin(g) + dz * Math.cos(g));
                     wegL += Math.hypot(pf.leib[n].x - pf.leib[n - 1].x, pf.leib[n].z - pf.leib[n - 1].z);
                 }
             }
-            return wegL > 0 ? +(wegF / wegL).toFixed(3) : null;
+            return wegL > 0
+                ? { s: +(wegF / wegL).toFixed(3), q: +(wegQ / wegL).toFixed(3), l: +(wegH / wegL).toFixed(3) }
+                : null;
         });
         const o = {};
         arten.forEach((a, i) => {
@@ -442,7 +461,9 @@ async function kreaturProben(r, T, opts) {
                 tempoP50: +quantil(z.vs, 0.5).toFixed(2),
                 tempoP90: +quantil(z.vs, 0.9).toFixed(2),
                 beschlMax: +Math.max(...z.beschl).toFixed(1),
-                schlupf: schlupf[i],
+                schlupf: schlupf[i] ? schlupf[i].s : null,
+                schlupfQuer: schlupf[i] ? schlupf[i].q : null,
+                schlupfLaengs: schlupf[i] ? schlupf[i].l : null,
             };
         });
         return o;
@@ -683,7 +704,8 @@ async function kreaturProben(r, T, opts) {
                         }
                     }
             );
-        const o = land(25, -30);
+        // innerhalb der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST 35 m): dort geht auch ein Welt-Tier
+        const o = land(14, -16);
         const dt = 1 / 30;
         let x = o.x;
         restore.push(() => {
@@ -743,7 +765,10 @@ function urteil(name, z) {
             soll(a.laufFrames > 300, `${art}: nur ${a.laufFrames} Lauf-Frames`);
             soll(a.abwP90 !== null && a.abwP90 <= 20, `${art}: Lauf ↔ Blick p90 ${a.abwP90}° (Soll ≤ 20°)`);
             soll(a.rueckwaerts === 0, `${art}: ${(a.rueckwaerts * 100).toFixed(1)} % rückwärts`);
-            soll(a.schlupf !== null && a.schlupf <= 0.2, `${art}: Stand-Schlupf ${a.schlupf} (Soll ≤ 0,2)`);
+            soll(
+                a.schlupfQuer !== null && a.schlupfQuer <= 0.2,
+                `${art}: Stand-Schlupf quer ${a.schlupfQuer} (Soll ≤ 0,2; längs ${a.schlupfLaengs})`
+            );
             soll(a.beschlMax <= 12, `${art}: Tempo-Sprung ${a.beschlMax} m/s² (Gas/Bremse, Soll ≤ 12)`);
         }
     }

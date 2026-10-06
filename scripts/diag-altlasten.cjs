@@ -427,6 +427,11 @@ const FORBIDDEN = [
     { token: "VG.sprung.impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (_hopSchwere)" },
     { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
     { token: "lastGrowthUpdate", fiel: "Welle L kreatur — das Wachsen-Relikt fiel" },
+    // WELLE L KREATUR (Q3): die Witterungs-Jagd auf vier Himmelsachsen (R-D12) und die Sicht-Kopie, die die Gier des
+    // Senders hart setzt und nicht geht, kehren nicht zurück — der Gradient ist die zentrale Differenz, die Kopie zieht
+    // auf dem kurzen Bogen nach und läuft durch den Baum-Gang.
+    { token: "out.set(bestDx, 0, bestDz)", fiel: "Welle L kreatur — der Geruchs-Gradient (zentrale Differenz)" },
+    { token: "m.rotation.y = rc.tyaw || 0", fiel: "Welle L kreatur — _p2pTickRemoteCreatures zieht die Gier nach" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-
     // Kronen (a:), die nur beim Entstehen eintragen; der Raum-Index `kronenZellen` bindet die Kosten an den Streifen.
     { token: "this._kronenStreuUmzug(stufe, war, S === fernS)", fiel: "Nachbesserung 06.10. — kein Umzug vergisst eine Krone" },
