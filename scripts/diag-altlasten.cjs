@@ -472,6 +472,12 @@ const FORBIDDEN = [
     // Die Körperlänge des Rufs maß eine Box3 über den GERENDERTEN Körper (skinnte jede Haut-Ecke auf der CPU) neben
     // der Seelen-Teile-Länge des Hangs: EINE Quelle ist _creatureKoerperLaenge (Hang + Stimme).
     { token: "_tierKoerperLaenge", fiel: "Welle 5 Klang — _creatureKoerperLaenge (EINE Körperlänge)" },
+    // Integration 06.10. (W5-Klang) — DIE KLASSE „Sinus-Ping statt Tier-Stimme" fällt ganz: die Antwort eines Tiers auf
+    // einen Auftrag, sein Trink-Beginn und sein Aufstieg sind seine Stimme (`_tierRuf`, klang:UMWELT.tier), das Inventar
+    // klingt aus klang:SUBSTANZ.inventar (gate:klang-zensus nennt jede Quell-Stelle des Stamms ohne Wirt-Leser).
+    { token: "_playCreatureTaskPing", fiel: "Integration W5-Klang — das Tier antwortet mit seiner Stimme (_tierRuf)" },
+    { token: "CREATURE_TASK_PING_FREQ", fiel: "Integration W5-Klang — keine Ping-Tonhöhe je Auftrag" },
+    { token: "CREATURE_SPECIALIZATION_PING_FREQ", fiel: "Integration W5-Klang — der Aufstieg ist ein Freuden-Ruf" },
     // Die Glut klingt mit ihrer BRENN-Fläche (Bezug: das Glutbett der Studio-Feuerstelle, Ø 0,76 m), nie mit dem
     // Volumen einer Glut-Hülle.
     { token: "_glutVolumen", fiel: "Integration W5-Klang — _glutFlaeche (die Brenn-Fläche)" },

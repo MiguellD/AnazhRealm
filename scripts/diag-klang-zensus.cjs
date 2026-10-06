@@ -15,7 +15,9 @@
 //      AUSGANG (Abgriff am Master: Pegel je Oktavband).
 //  (G) GESETZ-HERKUNFT: jede laufende Quelle ist im Gesetzbuch gebaut (klang-core.js im
 //      Stapel) oder ein Wirt-Leser eines benannten klang-Gesetzes (Musik ← klang:GENRES ·
-//      Schritt ← klang:SCHRITT_TIMBRE). Alles andere ist ein STAMM-LITERAL — beim Namen.
+//      Schritt ← klang:SCHRITT_TIMBRE). Alles andere ist ein STAMM-LITERAL — beim Namen. Dazu STATISCH, unabhängig
+//      von jeder Tour: jede Stelle im Stamm, die eine Quelle baut (Oszillator · Puffer · Konstante), liegt in einem
+//      Wirt-Leser — sonst beim Namen mit Zeile (bis 06.10. klangen drei Sinus-Pings, die keine Tour auslöste).
 //  (H) HÖRBAR-KOSTEN: jede dauernd laufende Quelle (Schleife, Oszillator ohne Stop) gehört
 //      einer Gesetz-Stimme über der Hörschwelle; Quellen-Zahl = Σ der hörbaren Stimmen.
 //  (S) SOLL-KLANG je Ort (Pegel am Welt-Bus, die Lage am Ohr bei mittlerer Böe):
@@ -27,7 +29,8 @@
 //      Fluss-Segmente · Bauten-Lesungen) bleiben gleich, wenn 4000 ferne Bauten und 200
 //      ferne Fluss-Läufe dazukommen — Kosten an Hörbares, nie an die Weltgröße.
 //  (E) EREIGNISSE: Treffer · Wasser strömt · eine Form singt · eine Form verklingt · ein
-//      Tier ruft — je einmal über den echten Weg ausgelöst: jede Quelle aus dem Gesetzbuch,
+//      Tier ruft · ein Ding im Inventar klingt · ein Tier antwortet auf einen Auftrag · ein Tier
+//      steigt eine Stufe — je einmal über den echten Weg ausgelöst: jede Quelle aus dem Gesetzbuch,
 //      keine Verbindung am Master vorbei direkt an den Ausgang.
 //  (L) LAB = WELT: das Klang-Studio (worlds/klang) spielt seine Orte über
 //      __klangCore.umweltGraph, sein Seeufer trägt das Ufer, und jeder Lab-Ort hält
@@ -45,7 +48,7 @@
 //  Wasser am Seeufer weg → S · ein Glut-Umlauf über ALLE Bauten → K · eine Ereignis-Glocke
 //  aus dem Stamm am Master vorbei (zwillingGlocke) → E · ein Graph ohne Werkstatt am
 //  Seeufer → W · ein Ruf, der im Spiel-Takt rechnet (zwillingRuf) → W · die Glut auf Armlänge
-//  ohne Spitzen-Wand → P. Stubs restauriert.
+//  ohne Spitzen-Wand → P · ein Ping-Zwilling im Stamm-Text (zwillingPing) → G Stamm beim Namen. Stubs restauriert.
 //
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--aufnahme <ordner>] [--json <datei>]
 //   (--aufnahme: je Ort 6 s Ausgang als WAV + Spektrogramm-PNG, dazu der Lab-Ort offline;
@@ -399,6 +402,37 @@ function werkzeug() {
             },
             4000
         );
+        // Ein Ding im Inventar (resonierend) unter der Maus.
+        await fang("inventar", () => {
+            st.inventoryHoverLast = 0;
+            r.playInventoryHoverPing({ resoniert: 1 });
+        });
+        // Ein echtes Tier, 3 m neben dem Ohr: es antwortet auf den Auftrag „folge mir" und steigt eine Stufe auf (danach
+        // stehen Ort und Auftrag wie vorher). Antwortet der Weg mit einer Tier-Stimme, kommt sie aus der Werkstatt.
+        const tier = (st.creatures || []).find((c) => c && c.position && c.userData && !c.userData.dying);
+        if (!tier) {
+            out.push({ art: "auftrag", fehler: "kein Tier in der Welt" });
+            out.push({ art: "stufe", fehler: "kein Tier in der Welt" });
+            return out;
+        }
+        const pos0 = tier.position.clone();
+        const task0 = tier.userData.task ? { name: tier.userData.task.name, args: tier.userData.task.args } : null;
+        const pm = st.playerMesh.position;
+        tier.position.set(pm.x + 3, pm.y, pm.z);
+        try {
+            await fang(
+                "auftrag",
+                () => {
+                    r.assignCreatureTask(tier, "wander", {}, { silent: true });
+                    r.assignCreatureTask(tier, "follow_player");
+                },
+                4000
+            );
+            await fang("stufe", () => r._onCreatureLevelUp(tier, "gather", "holz", 3), 4000);
+        } finally {
+            tier.position.copy(pos0);
+            r.assignCreatureTask(tier, task0 ? task0.name : "wander", task0 ? task0.args : {}, { silent: true });
+        }
         return out;
     };
     // Die laufenden Quellen jetzt (gestartet, nicht beendet, Stop noch nicht erreicht).
@@ -441,6 +475,34 @@ const WIRT_LESER = {
     _lofiHihat: "klang:GENRES",
     _playSchrittOneShot: "klang:SCHRITT_TIMBRE",
 };
+
+// (G) DIE STAMM-KLASSE, statisch: jede Stelle im Stamm, die eine Quelle baut (createOscillator · createBufferSource ·
+// createConstantSource), liegt in einer Methode, die ein benannter Wirt-Leser ist — sonst ist sie ein STAMM-LITERAL,
+// beim Namen und mit Zeile, auch wenn keine Tour sie je auslöst. Kommentare zählen nicht. Die Methode einer Zeile ist
+// der letzte Klassen-Kopf darüber (4 Leerzeichen eingerückt).
+const STAMM_DATEI =
+    UEBER && fs.existsSync(path.join(UEBER, "anazhRealm.js")) ? path.join(UEBER, "anazhRealm.js") : path.join(root, "anazhRealm.js");
+function stammQuellen(src) {
+    const rot = [];
+    let stellen = 0;
+    let methode = null;
+    const zeilen = src.split("\n");
+    for (let i = 0; i < zeilen.length; i++) {
+        const z = zeilen[i];
+        const kopf = /^    (?:static |async |get |set )*([A-Za-z_$][\w$]*)\s*\(/.exec(z);
+        if (kopf) methode = kopf[1];
+        const t = z.trimStart();
+        if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) continue;
+        const m = /\.create(Oscillator|BufferSource|ConstantSource)\(/.exec(z);
+        if (!m) continue;
+        const kommentar = /(^|\s)\/\//.exec(z);
+        if (kommentar && kommentar.index < m.index) continue;
+        stellen++;
+        if (!WIRT_LESER[methode])
+            rot.push(`G Stamm: ${methode || "(außerhalb einer Methode)"} baut ${m[1]} ohne Gesetz (anazhRealm.js:${i + 1})`);
+    }
+    return { rot, stellen };
+}
 // SOLL je Ort (dB am Welt-Bus, Lage bei mittlerer Böe; der Master legt −9 dB darauf, die Musik liegt bei
 // −27 dBFS — die Welt trägt 10–18 dB darunter).
 const SOLL = {
@@ -1250,6 +1312,13 @@ function drucke(zeilen, offline, kostenErg, lab) {
         for (const o of labOrte) spitzen["lab:" + o] = await offlineSpitze(page, o, true);
         const { rot, zeilen } = urteile(daten, offline, lab, ereig, phasen, spitzen);
         for (const w of kostenErg.wachsen) rot.push(`K: ${w} wächst mit der Welt`);
+        // (G) die Stamm-Klasse, statisch: jede Quell-Stelle des Stamms in einem Wirt-Leser.
+        const stamm = stammQuellen(fs.readFileSync(STAMM_DATEI, "utf8"));
+        for (const t of stamm.rot) rot.push(t);
+        ergebnis.stamm = stamm;
+        console.log(
+            `\n── STAMM-KLASSE (statisch): ${stamm.stellen} Quell-Stellen im Stamm, ${stamm.rot.length} ohne Gesetz (Wirt-Leser: ${Object.keys(WIRT_LESER).join(" · ")})`
+        );
         drucke(zeilen, offline, kostenErg, lab);
         // Die Summe der Welt über die Tour (Anreise + Orte + Kosten-Takte + Ereignisse).
         const teile = [phasen.anreise, phasen.kosten]
@@ -1393,10 +1462,18 @@ function drucke(zeilen, offline, kostenErg, lab) {
             const u8 = urteile({}, null, null, [], {}, { "lab:glutArm": s8 }).rot;
             if (!u8.some((t) => /^P lab:glutArm: Spitze .*ohne Spitzen-Wand/.test(t)))
                 fehl.push(`S8: die Glut auf Armlänge ohne Spitzen-Wand bleibt unbemerkt (${s8 && s8.spitzeDbfs} dBFS)`);
+            // S9: ein Ping-Zwilling im Stamm-Text — eine Methode, die einen Oszillator baut, ohne Wirt-Leser zu sein (keine
+            // Tour löst sie aus; die statische Linse nennt sie trotzdem beim Namen).
+            const s9 = stammQuellen(
+                fs.readFileSync(STAMM_DATEI, "utf8") +
+                    "\n    zwillingPing(tags) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }\n"
+            );
+            if (!s9.rot.some((t) => /^G Stamm: zwillingPing baut Oscillator ohne Gesetz/.test(t)))
+                fehl.push("S9: der Ping-Zwilling im Stamm bleibt unbenannt");
             for (const t of fehl) console.log("   ❌ " + t);
             if (!fehl.length)
                 console.log(
-                    "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot"
+                    "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen"
                 );
             selbstOk = fehl.length === 0;
             ergebnis.selbsttest = fehl;

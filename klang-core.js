@@ -1096,13 +1096,19 @@
     //    verklingt beim Abbau (diese drei: die Zahlen wanderten byte-gleich aus dem Stamm). Wasser stroemt zurueck:
     //    ein Chor aus MINNAERT-Blasen (f0 = 3,26/r, Daempfung β = 0,043·f0 + 0,0014·f0^1,5, Zirp f0·(1 + σ·β·t)),
     //    die Blasen wachsen ueber das Ereignis (das Gurgeln faellt wie der alte 700 → 200-Hz-Bandpass) — Oszillatoren
-    //    im Audio-Thread, kein Sample im Aufrufer. Der Wirt reicht nur Tags und Ausgang. ──
+    //    im Audio-Thread, kein Sample im Aufrufer. Der Wirt reicht nur Tags und Ausgang.
+    //    Das INVENTAR (Integration W5-Klang): ein Ding in der Hand klingt nach seiner staerksten Substanz-Achse — ab
+    //    der Schwelle, die Tonhoehe je Achse (resoniert C5 klar · magieleitung F5 · brennbar E4 warm, Saegezahn ·
+    //    lebendig A4), die Reihenfolge der Achsen entscheidet Gleichstand; abstandSek drosselt das Wischen ueber die
+    //    Slots (sonst ein Akkord-Schwall). Die Zahlen wanderten byte-gleich aus dem Stamm. ──
     // prettier-ignore
     var SUBSTANZ = {
         treffer:  { hzBasis: 160, hzHaerte: 480, hzDichte: -70, hzMin: 60, gain: 0.14, anSek: 0.004, abSek: 0.16, stopSek: 0.18 },
         singen:   { hzBasis: 300, hzSpanne: 400, resonanzSkala: 3, gain: 0.08, anSek: 0.05, abSek: 1.2, stopSek: 1.3 },
         abschied: { hzBasis: 220, hzResonanz: 80, resonanzMax: 3, glissEnde: 0.5, hzGlissMin: 110, gain: 0.08, anSek: 0.04, abSek: 0.8, stopSek: 0.85 },
-        wasser:   { blasen: 9, sek: 0.6, rVonMm: 3, rBisMm: 11, streuung: 0.15, sigma: 0.1, gain: 0.06, anSek: 0.003, maxSek: 0.4 }
+        wasser:   { blasen: 9, sek: 0.6, rVonMm: 3, rBisMm: 11, streuung: 0.15, sigma: 0.1, gain: 0.06, anSek: 0.003, maxSek: 0.4 },
+        inventar: { achsenHz: { resoniert: 523, magieleitung: 698, brennbar: 330, lebendig: 440 }, welle: { brennbar: "sawtooth" },
+                    schwelle: 0.5, abstandSek: 0.05, gain: 0.07, anSek: 0.005, abSek: 0.18, stopSek: 0.2 }
     };
     // substanzKlang(ctx, ausgang, art, tags) → { quelle, hz } — die Einmal-Quelle des Ereignisses.
     function substanzKlang(ctx, ausgang, art, tags) {
@@ -1134,9 +1140,23 @@
             }
             return { quelle: erste, hz: hz0 };
         }
+        // Das Inventar: die staerkste Achse (die erste in der Tafel gewinnt Gleichstand); unter der Schwelle schweigt es.
+        var achse = null;
+        if (art === "inventar") {
+            var max = -Infinity;
+            for (var ak in S.achsenHz) if ((T[ak] || 0) > max) { max = T[ak] || 0; achse = ak; }
+            if (!(max >= S.schwelle)) return null;
+        }
         var g = ctx.createGain(), src, hz;
         src = ctx.createOscillator();
-        if (art === "treffer") {
+        if (art === "inventar") {
+            src.type = S.welle[achse] || "sine";
+            hz = S.achsenHz[achse];
+            src.frequency.value = hz;
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + S.abSek);
+        } else if (art === "treffer") {
             var haerte = T["härte"] || 0, dichte = T.dichte || 0, lebendig = T.lebendig || 0;
             src.type = haerte >= Math.max(dichte, lebendig) ? "sawtooth" : lebendig >= dichte ? "sine" : "triangle";
             hz = Math.max(S.hzMin, S.hzBasis + haerte * S.hzHaerte + dichte * S.hzDichte);

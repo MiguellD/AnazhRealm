@@ -9992,47 +9992,17 @@ class AnazhRealm {
         return true;
     }
 
-    // Sinus-Ping beim Hover über einen tag-resonanten Slot; Frequenz folgt dem dominanten Tag
-    // (resoniert hell, magieleitung mittel, brennend tief). Throttle über state.inventoryHoverLast
-    // (≥ 50 ms), sonst wird Maus-Wischen ein Akkord-Schwall.
+    // Das Ding im Slot klingt nach seiner stärksten Substanz-Achse — das Gesetz klang:SUBSTANZ.inventar (Schwelle,
+    // Tonhöhe je Achse, Drossel gegen das Wischen) über den EINEN Ereignis-Chokepoint `_substanzKlang`.
     playInventoryHoverPing(tags) {
         if (!tags) return;
         const s = this.state.symphony;
         if (!s || !s.enabled || !s.ctx) return;
         const now = performance.now() / 1000;
-        const last = this.state.inventoryHoverLast || 0;
-        if (now - last < 0.05) return;
+        const abstand = AnazhRealm._umweltGesetz().kern.SUBSTANZ.inventar.abstandSek;
+        if (now - (this.state.inventoryHoverLast || 0) < abstand) return;
         this.state.inventoryHoverLast = now;
-        const resoniert = tags.resoniert || 0;
-        const magie = tags.magieleitung || 0;
-        const brennend = tags.brennbar || 0;
-        const lebendig = tags.lebendig || 0;
-        // Welcher Tag dominiert? Höchster Wert.
-        const max = Math.max(resoniert, magie, brennend, lebendig);
-        if (max < 0.5) return; // unter Schwelle: kein Ping
-        let freq;
-        if (max === resoniert)
-            freq = 523; // C5 — klar, perkussiv
-        else if (max === magie)
-            freq = 698; // F5 — mystisch
-        else if (max === brennend)
-            freq = 330; // E4 — warm, tief
-        else freq = 440; // A4 — lebendig, neutral
-        const ctx = s.ctx;
-        const t = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        osc.type = max === brennend ? "sawtooth" : "sine";
-        osc.frequency.value = freq;
-        const gain = ctx.createGain();
-        // Sanft: nur 60% der Creature-Ping-Lautstärke, damit Hover-
-        // Streichen die Symphonie nicht übertönt.
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.07, t + 0.005);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-        osc.connect(gain);
-        gain.connect(s.masterGain);
-        osc.start(t);
-        osc.stop(t + 0.2);
+        this._substanzKlang("inventar", tags);
     }
 
     // Treffer-One-Shot: die SUBSTANZ des Getroffenen färbt das Timbre (härte klirrt hell · dichte wummert · lebendig
@@ -10042,8 +10012,9 @@ class AnazhRealm {
         return this._substanzKlang("treffer", tags);
     }
 
-    // DER EINE EREIGNIS-KLANG-CHOKEPOINT: art (treffer · singen · abschied · wasser) × Tags → die Einmal-Quelle des
-    // klang-Gesetzbuchs (substanzKlang) am Master. Stumm ohne Symphonie.
+    // DER EINE EREIGNIS-KLANG-CHOKEPOINT: art (treffer · singen · abschied · wasser · inventar) × Tags → die Einmal-
+    // Quelle des klang-Gesetzbuchs (substanzKlang) am Master. Stumm ohne Symphonie. Was ein TIER tut (Auftrag, Stufe,
+    // Spawn, Tod), klingt nicht hier, sondern mit seiner Stimme (`_tierRuf`).
     _substanzKlang(art, tags) {
         const s = this.state.symphony;
         if (!s || !s.enabled || !s.ctx || !s.masterGain) return false;
@@ -19120,34 +19091,11 @@ class AnazhRealm {
         return stats.speed / base;
     }
 
-    // Level-Up-Antwort: Audio-Ping (höher als alle Task-Pings, bedeutet
-    // Wachstum) + Welt-Journal-Eintrag (growth) + List-UI-Refresh + optional
-    // Chat-Hinweis. Vision §1.2 multisensorisch + §1.1 Welt erinnert.
+    // Level-Up-Antwort: das Tier ruft vor Freude (seine Stimme, klang:UMWELT.tier — Grundton aus seinem Körper, am
+    // Ort, über der Hörschwelle) + Welt-Journal-Eintrag (growth) + List-UI-Refresh + optional Chat-Hinweis. Vision
+    // §1.2 multisensorisch + §1.1 Welt erinnert.
     _onCreatureLevelUp(creature, kind, key, newLevel) {
-        // Audio
-        const sym = this.state.symphony;
-        if (sym && sym.enabled && sym.ctx) {
-            try {
-                const ctx = sym.ctx;
-                const now = ctx.currentTime;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = "triangle"; // weicher als sine, festlicher
-                const baseFreq = AnazhRealm.CREATURE_SPECIALIZATION_PING_FREQ;
-                osc.frequency.setValueAtTime(baseFreq, now);
-                // Aufwärts-Glissando: Wachstum klingt aufsteigend
-                osc.frequency.linearRampToValueAtTime(baseFreq * 1.5, now + 0.5);
-                gain.gain.setValueAtTime(0.0001, now);
-                gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.6);
-                const dest = sym.masterGain || ctx.destination;
-                osc.connect(gain).connect(dest);
-                osc.start(now);
-                osc.stop(now + 0.65);
-            } catch {
-                /* Audio darf nie hart blockieren */
-            }
-        }
+        this._tierRuf(creature, "freude");
         // Journal
         if (typeof this.journalAppend === "function") {
             const labels = {
@@ -19521,18 +19469,6 @@ class AnazhRealm {
             drink: 210, // azur, "ich nähre mich am Wasser" (V11.0-d.3)
         });
     }
-    // Audio-Antwort auf die Beziehungs-Geste, Frequenz je Task: follow_player hell, wait tief, gather
-    // mittig, build hoch, wander null (still), drink sehr hell (A5).
-    static get CREATURE_TASK_PING_FREQ() {
-        return Object.freeze({
-            wander: null,
-            follow_player: 494, // ~B4, helle Antwort
-            wait: 294, // ~D4, ruhige Antwort
-            gather: 392, // ~G4, neutral-aktive Antwort
-            build: 587, // ~D5, aufschwingende Schöpfungs-Antwort
-            drink: 880, // ~A5, helle Erfrischungs-Antwort (V11.0-d.3)
-        });
-    }
     // drink-Konstanten: die Getter bleiben die Chokepoints, die ZAHLEN wohnen im tetrapoda-Gesetzbuch
     // (VERHALTEN.aufgaben, fail-closed via _verhaltenGesetz).
     static get CREATURE_DRINK_HALT_DIST() {
@@ -19676,9 +19612,6 @@ class AnazhRealm {
     static get CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL() {
         return 0.15; // L5 = +75 % Geschwindigkeit (3.0 → 5.25 m/s)
     }
-    static get CREATURE_SPECIALIZATION_PING_FREQ() {
-        return 880; // ~A5, hell-aufschwingend für Wachstum (höher als alle Task-Pings)
-    }
 
     _getCreatureTask(creature) {
         if (!creature) return null;
@@ -19705,12 +19638,10 @@ class AnazhRealm {
         };
         this._refreshCreatureTaskAura(creature);
         // Welle 6.H V2 — Vision-Antwort bei echtem Task-Wechsel. `silent` ist
-        // für Spawn-Defaults + Test-Reset, damit das Init nicht 10 Pings
+        // für Spawn-Defaults + Test-Reset, damit das Init nicht 10 Rufe
         // hagelt und das Journal nicht mit Default-Wechseln flutet.
-        if (!options.silent && prevName && prevName !== taskName) {
-            this._playCreatureTaskPing(taskName);
-            this._journalCreatureTask(creature, taskName, prevName);
-        }
+        const antwortet = !options.silent && prevName && prevName !== taskName;
+        if (antwortet) this._journalCreatureTask(creature, taskName, prevName);
         // V17.30 — eine Kreatur bindet sich (folgt dem Spieler) → peace + joy
         // (Beziehung, Pfeiler 1). Nur die echte Spieler-Geste (nicht silent =
         // Spawn-Default/Test-Reset).
@@ -19725,36 +19656,12 @@ class AnazhRealm {
                 );
             }
         }
+        // Die Antwort auf die Geste ist die STIMME des Tiers (klang:UMWELT.tier: Grundton aus seinem Körper, Kontur aus
+        // seiner Stimmung — nach der Bindung —, am Ort über der Hörschwelle); das Lösen der Bindung (wander) bleibt still.
+        if (antwortet && taskName !== "wander") this._tierRuf(creature);
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
         return true;
-    }
-
-    // Vision §1.2 — kurzer Sinus-Ping bei Beziehungs-Geste. Stumm für
-    // wander (das Lösen der Bindung tönt nicht). Symphony deaktiviert →
-    // kein Ping, kein Fehler. Audio-Graph analog Spawn-Singing.
-    _playCreatureTaskPing(taskName) {
-        const sym = this.state.symphony;
-        if (!sym || !sym.enabled || !sym.ctx) return;
-        const freq = AnazhRealm.CREATURE_TASK_PING_FREQ[taskName];
-        if (!freq) return;
-        try {
-            const ctx = sym.ctx;
-            const now = ctx.currentTime;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(freq, now);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.linearRampToValueAtTime(0.08, now + 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.4);
-            const dest = sym.masterGain || ctx.destination;
-            osc.connect(gain).connect(dest);
-            osc.start(now);
-            osc.stop(now + 0.45);
-        } catch {
-            /* Audio darf nie hart blockieren */
-        }
     }
 
     // Vision §1.1 — Welt erinnert sich an die Beziehungs-Geste. Pro echtem
@@ -20198,10 +20105,8 @@ class AnazhRealm {
             const now = performance.now() / 1000;
             if (!task.args._drinkStart) {
                 task.args._drinkStart = now;
-                // Ping zum Drink-Start (multisensorisch — Vision §1.2).
-                if (typeof this._playCreatureTaskPing === "function") {
-                    this._playCreatureTaskPing("drink");
-                }
+                // Das Tier ruft zum Trink-Beginn (seine Stimme, multisensorisch — Vision §1.2).
+                this._tierRuf(creature);
             }
             if (now - task.args._drinkStart >= DURATION_S) {
                 // Trinken vollendet → Sättigung fühlt sich als Fülle (harvest:

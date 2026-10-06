@@ -24160,12 +24160,11 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
-        // Sprache: drink ist 6. Task + hat Aura-Hue + Ping-Freq.
+        // Sprache: drink ist 6. Task + hat Aura-Hue (die Antwort ist die Stimme des Tiers, kein Ping-Ton).
         const tasks = r.constructor.CREATURE_TASKS;
         out.tasksInclude = tasks.includes("drink");
         out.tasksLength = tasks.length;
         out.auraHue = r.constructor.CREATURE_TASK_AURA_HUE.drink;
-        out.pingFreq = r.constructor.CREATURE_TASK_PING_FREQ.drink;
 
         // Konstanten existieren.
         out.haltDist = r.constructor.CREATURE_DRINK_HALT_DIST;
@@ -24186,6 +24185,8 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         // jetzt über das EINE Substrat (_feelCreatureAction → harvest: joy+hope;
         // die "happy"-Projektion fällt aus der Valenz) statt eines Direkt-Stempels.
         out.drinkSetsHappy = /_feelCreatureAction\(creature,\s*"harvest"/.test(drinkSrc);
+        // Welle 5 Klang (Integration): der Trink-Beginn klingt mit der Stimme des Tiers (klang:UMWELT.tier).
+        out.drinkRuft = /this\._tierRuf\(creature\)/.test(drinkSrc) && !/PING_FREQ/.test(drinkSrc);
 
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
@@ -24254,7 +24255,7 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     check("Welle V11.0-d.3: 'drink' in CREATURE_TASKS (6. Task)", res.tasksInclude === true);
     check("Welle V11.0-d.3: CREATURE_TASKS jetzt 6 Einträge", res.tasksLength === 6);
     check("Welle V11.0-d.3: AURA_HUE.drink = 210 (azur)", res.auraHue === 210);
-    check("Welle V11.0-d.3: PING_FREQ.drink = 880 (A5)", res.pingFreq === 880);
+    check("Welle 5 Klang: der Trink-Beginn ist die Stimme des Tiers (_tierRuf, kein Ping-Ton)", res.drinkRuft === true);
     check("Welle V11.0-d.3: CREATURE_DRINK_HALT_DIST = 1.5m", res.haltDist === 1.5);
     check("Welle V11.0-d.3: CREATURE_DRINK_DURATION_S = 2.5s", res.duration === 2.5);
     check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
@@ -26526,39 +26527,28 @@ async function checkBandWelle6HCreatures(ctx) {
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
         const out = {};
 
-        // === Audio-Antwort bei Task-Wechsel (Vision §1.2) ===
-        out.hasTaskPingMethod = typeof r._playCreatureTaskPing === "function";
-        out.hasPingFreq =
-            r.constructor.CREATURE_TASK_PING_FREQ &&
-            r.constructor.CREATURE_TASK_PING_FREQ.follow_player === 494 &&
-            r.constructor.CREATURE_TASK_PING_FREQ.wait === 294 &&
-            r.constructor.CREATURE_TASK_PING_FREQ.wander === null;
-
+        // === Audio-Antwort bei Task-Wechsel (Vision §1.2) — Welle 5 Klang: die Antwort ist die STIMME des Tiers
+        // (`_tierRuf`, klang:UMWELT.tier); jeder Ruf zählt in state.symphony.tierRufe (auch ohne Audiogerät messbar).
         if (typeof r.initSymphony === "function") r.initSymphony();
-        const symReady = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+        const sym = r.state.symphony;
+        const symReady = sym && sym.enabled && sym.ctx;
         out.symphonyReady = !!symReady;
 
         if (symReady) {
-            const ctx = r.state.symphony.ctx;
-            const orig = ctx.createOscillator.bind(ctx);
             const c = r.state.creatures[0];
-            // Wechsel wander → follow_player → Ping
+            const rufe = () => sym.tierRufe || 0;
+            // Wechsel wander → follow_player → das Tier ruft (genau einmal)
             r.assignCreatureTask(c, "wander", {}, { silent: true });
-            let n = 0;
-            ctx.createOscillator = function () {
-                n++;
-                return orig();
-            };
+            let n0 = rufe();
             r.assignCreatureTask(c, "follow_player");
-            out.followPings = n >= 1;
-            n = 0;
+            out.followPings = rufe() - n0 === 1;
+            n0 = rufe();
             r.assignCreatureTask(c, "wait");
-            out.waitPings = n >= 1;
-            // Wechsel zu wander → KEIN Ping (Lösen der Bindung ist still)
-            n = 0;
+            out.waitPings = rufe() - n0 === 1;
+            // Wechsel zu wander → KEIN Ruf (Lösen der Bindung ist still)
+            n0 = rufe();
             r.assignCreatureTask(c, "wander");
-            out.wanderIsSilent = n === 0;
-            ctx.createOscillator = orig;
+            out.wanderIsSilent = rufe() === n0;
         }
 
         // === Journal-Eintrag bei Beziehungs-Geste (Vision §1.1) ===
@@ -26577,9 +26567,10 @@ async function checkBandWelle6HCreatures(ctx) {
         const c2 = r.state.creatures[2];
         r.assignCreatureTask(c2, "wander", {}, { silent: true });
         const jPre = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+        const rufPre = (sym && sym.tierRufe) || 0;
         r.assignCreatureTask(c2, "wait", {}, { silent: true });
         const jPost = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
-        out.silentSuppressesJournal = jPost === jPre;
+        out.silentSuppressesJournal = jPost === jPre && ((sym && sym.tierRufe) || 0) === rufPre;
 
         // === Leerschlag-Feedback (UX + Vision §1.1) ===
         // Alle Kreaturen weit weg, dann Auftrag mit maxDist=60
@@ -26643,18 +26634,16 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hV2Results && !wave6hV2Results.error) {
-        check("Welle 6.H V2: _playCreatureTaskPing existiert", wave6hV2Results.hasTaskPingMethod);
-        check(
-            "Welle 6.H V2: CREATURE_TASK_PING_FREQ map (follow=494/wait=294/wander=null)",
-            wave6hV2Results.hasPingFreq
-        );
         check("Welle 6.H V2: Symphony initialisierbar im Headless", wave6hV2Results.symphonyReady);
         if (wave6hV2Results.symphonyReady) {
             check(
-                "Welle 6.H V2: Wechsel zu follow_player erzeugt Audio-Ping (Vision §1.2)",
+                "Welle 6.H V2: Wechsel zu follow_player — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
                 wave6hV2Results.followPings
             );
-            check("Welle 6.H V2: Wechsel zu wait erzeugt Audio-Ping (Vision §1.2)", wave6hV2Results.waitPings);
+            check(
+                "Welle 6.H V2: Wechsel zu wait — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
+                wave6hV2Results.waitPings
+            );
             check(
                 "Welle 6.H V2: Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
                 wave6hV2Results.wanderIsSilent
@@ -27018,7 +27007,6 @@ async function checkBandWelle6HCreatures(ctx) {
         const out = {};
         out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
         out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
-        out.pingFreqGather = r.constructor.CREATURE_TASK_PING_FREQ.gather === 392;
         out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
         out.speed = r.constructor.CREATURE_GATHER_SPEED;
         out.memCap = r.constructor.CREATURE_MEMORY_CAP === 200;
@@ -27178,7 +27166,6 @@ async function checkBandWelle6HCreatures(ctx) {
     if (wave6hP2bResults && !wave6hP2bResults.error) {
         check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
         check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
-        check("Welle 6.H P2B.1: PING_FREQ.gather === 392 (G4)", wave6hP2bResults.pingFreqGather);
         check(
             "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=200 als Konstanten (P2D.1: Cap 30 → 200)",
             Number.isFinite(wave6hP2bResults.haltDist) &&
@@ -46773,10 +46760,8 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // 1. Konstanten
         const Tasks = r.constructor.CREATURE_TASKS;
         const Hues = r.constructor.CREATURE_TASK_AURA_HUE;
-        const Freqs = r.constructor.CREATURE_TASK_PING_FREQ;
         out.tasksHasBuild = Tasks.includes("build");
         out.auraHueBuild = Hues.build === 280;
-        out.pingFreqBuild = Freqs.build === 587;
         out.buildPlacementDist = r.constructor.CREATURE_BUILD_PLACEMENT_DIST === 4.0;
         out.buildSpeed = r.constructor.CREATURE_BUILD_SPEED === 3.0;
 
@@ -46992,7 +46977,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     if (wave6hP2b2Results && !wave6hP2b2Results.error) {
         check("Welle 6.H P2B.2: CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
         check("Welle 6.H P2B.2: AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
-        check("Welle 6.H P2B.2: PING_FREQ.build === 587 (D5)", wave6hP2b2Results.pingFreqBuild);
         check(
             "Welle 6.H P2B.2: CREATURE_BUILD_PLACEMENT_DIST=4.0 + CREATURE_BUILD_SPEED=3.0",
             wave6hP2b2Results.buildPlacementDist && wave6hP2b2Results.buildSpeed
@@ -47112,7 +47096,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.threshold3 = Class.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD === 3;
         out.maxLevel5 = Class.CREATURE_SPECIALIZATION_MAX_LEVEL === 5;
         out.speedBonus15 = Class.CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL === 0.15;
-        out.pingFreq880 = Class.CREATURE_SPECIALIZATION_PING_FREQ === 880;
 
         // 2. Methoden existieren
         out.hasComputeSpecs = typeof r._computeCreatureSpecializations === "function";
@@ -47214,10 +47197,12 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // Die EINTRAGS-IDENTITÄT messen, nicht entries.length: worldJournal.entries ist FIFO-gedeckelt (200),
         // am Cap bleibt die Länge gleich und journalAppends id (`entries.length + 1`) ist nicht eindeutig.
         const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
-        // 3 gathered → L1, sollte LevelUp triggern
+        // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (Welle 5 Klang: seine Stimme, genau einmal)
+        const rufVor = r.state.symphony.tierRufe || 0;
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
         r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
+        out.levelUpRuft = (r.state.symphony.tierRufe || 0) - rufVor === 1;
         const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
         out.rememberTriggersLevel = lvlAfter === 1;
         // Ein NEUER growth-Eintrag (nicht im Vorher-Set) mit Sammler / "quarz" / "Stufe 1" beweist, dass
@@ -47293,7 +47278,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         check("Welle 6.H P2D: LEVEL_THRESHOLD === 3", wave6hP2dResults.threshold3);
         check("Welle 6.H P2D: MAX_LEVEL === 5", wave6hP2dResults.maxLevel5);
         check("Welle 6.H P2D: SPEED_BONUS_PER_LEVEL === 0.15", wave6hP2dResults.speedBonus15);
-        check("Welle 6.H P2D: PING_FREQ === 880 (A5)", wave6hP2dResults.pingFreq880);
         check(
             "Welle 6.H P2D: alle 6 Methoden existieren (compute/level/top/speedMul/levelUp/skillKey)",
             wave6hP2dResults.hasComputeSpecs &&
@@ -47304,6 +47288,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
                 wave6hP2dResults.hasSkillKey
         );
         check("Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
+        check("Welle 5 Klang: der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)", wave6hP2dResults.levelUpRuft);
         check("Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
         check(
             "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",

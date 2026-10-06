@@ -97,8 +97,9 @@ function countToString(src) {
 // Probe liest den Anker-Katalog (window.__anker) oder beweist KONSUM
 // (window.__consumes); wandert eine Probe, sinkt die Zahl hier mit.
 // Welle 5 Klang: 878 → 874 (die Proben auf _buildHydroAudioLayer · _tickHydrosphereAudio · _pointSegDist2D ·
-// _tagToFrequency fielen mit ihren Methoden).
-const FROZEN_TYPEOF = 874;
+// _tagToFrequency fielen mit ihren Methoden); Integration W5-Klang: 874 → 873 (_playCreatureTaskPing fiel — das Tier
+// antwortet mit seiner Stimme).
+const FROZEN_TYPEOF = 873;
 
 function countTypeof(src) {
     return (stripComments(src).match(/typeof [^=\n]{1,80}=== "function"/g) || []).length;
