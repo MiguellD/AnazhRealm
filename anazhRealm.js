@@ -26151,14 +26151,9 @@ class AnazhRealm {
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
-        // Kronendach auf dem Boden: wo dicht gepflanzt wird (`_canopyLightAt` liest dieselben Treiber wie die
-        // Wald-Platzierung), ist der Boden dunkler, Lichtungen hell. Skalar-Multiplikator (feuchte als
-        // wetHint, kein Zweitaufruf); BIT-IDENTISCH im Worker `attachFieldColors` (Konstanten hardkodiert).
-        const cL = typeof this._canopyLightAt === "function" ? this._canopyLightAt(x, z, y, feuchte) : 1;
-        const _cShade = 0.58 + 0.46 * cL;
-        c[0] *= _cShade;
-        c[1] *= _cShade;
-        c[2] *= _cShade;
+        // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
+        // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
+        // zusätzlich zu seinem echten Schatten. Die Laubstreu unter den echten Kronen legt `_wegeBodenFarbe` auf.
         // Lichen: grüne Patina = feuchte × dichte (Stein, nicht Erde/Lava) × cluster (Flecken). Im Mix-Stack
         // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Schwellen in
         // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
@@ -63750,9 +63745,10 @@ class AnazhRealm {
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
             .mul(_begehbar);
         const l = P.lit;
-        // Unter der Krone liegt die Streu, und das Kronendach dunkelt den Grund (das Studio-Gesetz: × 0,58 im
-        // Bestandeskern, `c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain).
-        const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k).mul(_T.float(1.0).sub(_k.mul(_T.float(0.42))));
+        // Unter der Krone liegt die Streu — ihre Albedo, nie ein Schatten: das Labor dunkelt seinen Bestandeskern
+        // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen
+        // (Lehre 21: nie doppelt; bis 06.10. lag die Streu so bei Y 0,065 unter dem Soll 0,08–0,15).
+        const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k);
         const e = P.dirt;
         const a = P.wet;
         const mitErde = _T.mix(mitStreu, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));

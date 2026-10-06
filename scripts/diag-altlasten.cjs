@@ -409,6 +409,13 @@ const FORBIDDEN = [
     // nie beim Wurf (der Zweit-Boot pflanzt nicht neu); die Summe nimmt eine Krone exakt heraus, kein Voll-Neumalen.
     { token: "_kronenStreuNeu(`w:", fiel: "Integration 06.10. — spawnArchitecture trägt die Krone ein (a:<id>)" },
     { token: "kronen.neuMalen", fiel: "Integration 06.10. — _kronenStreuWeg nimmt eine Krone exakt aus der Summe" },
+    // Integration 06.10.: kein Kronendach in der Boden-Albedo (Lehre 21: nie doppelt) — weder das Platzierungs-Feld im
+    // Vertex (Main + Worker-Spiegel samt seinem Kronenlicht-Zwilling) noch die Labor-Abdunklung der Streu.
+    { token: "const _cShade =", fiel: "Integration 06.10. — der Schatten der echten Krone dunkelt, nie das Feld" },
+    { token: "function canopyLightAt(", fiel: "Integration 06.10. — der Worker färbt ohne Kronenlicht-Feld" },
+    { token: "function placementStandForest(", fiel: "Integration 06.10. — der Worker-Spiegel des Wald-Stands fiel" },
+    { token: "UNDERGROWTH_CANOPY_K", fiel: "Integration 06.10. — der Worker-Spiegel des Kronenlicht-Felds fiel" },
+    { token: "_k.mul(_T.float(0.42))", fiel: "Integration 06.10. — die Streu trägt ihre Albedo, die Krone ihren Schatten" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
