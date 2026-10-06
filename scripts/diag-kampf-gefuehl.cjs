@@ -48,7 +48,11 @@
 //      2 von 17 Rezepten auf dem Maximal-Faktor) · Gegenwehr > 0 bei 20 Treffern in 1,6 m (pfad) · die Hand ist
 //      kein Panzer (defense/hpMax gleich) · Kampf verschleißt, ein verbrauchtes Gerät schlägt nicht · der Pfeil:
 //      Schaden ∝ Energie (25 %-Auszug ≤ 0,5 × voll) und eine Wand hält ihn (0 Treffer dahinter) · die fünf
-//      Phantom-Leser sind aus dem Stamm verschwunden · EINE Güte je Gerät (Schaden, Werkstoff-Kraft, Fold).
+//      Phantom-Leser sind aus dem Stamm verschwunden · EINE Güte je Gerät (Schaden, Werkstoff-Kraft, Fold) · der Bogen
+//      verschleißt wie die Klinge (wear 0,5 → 0,65 des Schadens, jeder Schuss zehrt, verbraucht löst er nicht) und
+//      JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden · fehlt
+//      tetrapoda trefferZone, bricht der Treffer-Test laut · der erste Treffer auf eine Gattung zerlegt keine Haut
+//      (im Idle vorgebacken) · der Sweep liest _blickVorn · keine typeof-Probe auf eine eigene Methode.
 //  (Q9 MAUS) 3rd-Person 10 Klicks auf ein Tier in 2 m → 10 Schwünge, 0 Krater · 1st-Person Halten nach dem Stoß →
 //      0 Krater · RMB mit Schwert → 0 Aufschüttungen (Spaten und leere Hand schütten weiter) · offene Werkstatt →
 //      4 Canvas-Klicks, 0 Griffe in die Welt · FERTIGEN eines Bauwerks → Bau-Modus, die Hand bleibt leer.
@@ -56,7 +60,8 @@
 //      Blick (cos > 0,9) · der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung).
 //  SELBST-TESTS (nur wo die Naht existiert): (S3) _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir" kippt
 //      hinter dich · (S4) _geraetGraebt ≡ true → das Schwert schüttet auf · (S5) _kreaturGliedTreffer ≡ null → kein
-//      Treffer. Jede Naht restauriert.
+//      Treffer · (S6) der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist
+//      rot · (S8) ohne Idle-Vorbacken → der erste Hieb zerlegt die Haut. Jede Naht restauriert.
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
@@ -442,6 +447,82 @@ async function WELLE_L() {
             const frei = schuss(1, hirsch);
             w.z.pfeilFrei = frei.treffer ? 1 : 0;
             w.c.pfeilWand = !!wand && w.z.pfeilHinterWand === 0 && w.z.pfeilFrei === 1;
+            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge (K-D6 ganz): sein Verschleiß wirkt im Schaden
+            // (wear 0,5 → _wearStatFactor 0,65 des vollen), jeder Schuss zehrt ihn, ein verbrauchter Bogen (wear 0,02,
+            // unter WEAR_KAPUTT_SCHWELLE) löst nicht — dieselbe Wand wie Hieb und Abbau.
+            const bpB = s.blueprints.klinge_langbogen;
+            const bogenBei = (wear) => {
+                r._setBlueprintWear(bpB, wear);
+                stelle(hirsch, 2.5);
+                zielen(punkt(hirsch, null));
+                const sh = schuss(1, hirsch);
+                return { flog: sh.flog, amount: sh.treffer ? sh.treffer.amount : null, nach: r._blueprintWear(bpB) };
+            };
+            const bogenProbe = () => {
+                const b1 = bogenBei(1),
+                    b5 = bogenBei(0.5),
+                    b02 = bogenBei(0.02);
+                r._setBlueprintWear(bpB, 1);
+                const F = A.WEAR_STAT_FLOOR;
+                const soll = F + (1 - F) * 0.5;
+                const verh = b1.amount && b5.amount !== null ? b5.amount / b1.amount : null;
+                return {
+                    voll: b1.amount,
+                    halb: b5.amount,
+                    verh,
+                    soll,
+                    zehrtVoll: 1 - b1.nach,
+                    zehrtHalb: 0.5 - b5.nach,
+                    verbrauchtFlog: b02.flog ? 1 : 0,
+                    verbrauchtTraf: b02.amount !== null ? 1 : 0,
+                    ok:
+                        verh !== null &&
+                        Math.abs(verh - soll) < 0.01 &&
+                        b1.nach < 1 &&
+                        b5.nach < 0.5 &&
+                        !b02.flog &&
+                        b02.amount === null,
+                };
+            };
+            w.z.bogen = bogenProbe();
+            w.c.bogenVerschleiss = w.z.bogen.ok;
+            // (S6) SELBST-TEST mit dem Täter: der Pfeil ohne Verschleiß (Faktor ≡ 1, kein Zehren — der alte Zwilling)
+            {
+                const svF = r._wearStatFactor,
+                    svV = r._kampfVerschleiss;
+                r._wearStatFactor = () => 1;
+                r._kampfVerschleiss = () => {};
+                try {
+                    w.z.s6 = bogenProbe();
+                } finally {
+                    r._wearStatFactor = svF;
+                    r._kampfVerschleiss = svV;
+                    delete r._wearStatFactor;
+                    delete r._kampfVerschleiss;
+                    r._setBlueprintWear(bpB, 1);
+                }
+                w.c.s6 = w.z.s6.ok === false;
+            }
+        }
+        // (T7c) die KLASSE der Waffen-Schadens-Pfade: jede Methode, die ein Wesen im Namen des Spielers schädigt
+        // (damageCreature mit source "player"), rechnet ihren Schaden im EINEN Roh-Schaden-Gesetz _kampfRohSchaden —
+        // kein Pfad setzt Kraft × Wirkung × Zone selbst zusammen (der Pfeil tat es, ohne Verschleiß).
+        {
+            const tat = [];
+            const pfade = [];
+            for (const k of Object.getOwnPropertyNames(A.prototype)) {
+                const d = Object.getOwnPropertyDescriptor(A.prototype, k);
+                if (k === "constructor" || !d || typeof d.value !== "function") continue; // constructor = die ganze Klasse
+                const code = String(d.value)
+                    .replace(/\/\/.*$/gm, "")
+                    .replace(/\/\*[\s\S]*?\*\//g, "");
+                if (!/damageCreature\(/.test(code) || !/source:\s*"player"/.test(code)) continue;
+                pfade.push(k);
+                if (!/_kampfRohSchaden\(/.test(code)) tat.push(k);
+            }
+            w.z.schadensPfade = pfade.join(",");
+            w.z.schadensZwillinge = tat.join(",") || "–";
+            w.c.einRohSchaden = pfade.length >= 2 && tat.length === 0;
         }
         // (T9) EINE Güte je Gerät: der Schadens-Faktor (_heldGueteFaktor) und die Güte des Werks (computeBlueprintQuality —
         // Werkstoff-Kraft, Equip-Fold) lesen dasselbe Lehren-Urteil des Kerns (schmiede gueteFaktor → Anteil)
@@ -484,6 +565,146 @@ async function WELLE_L() {
             .join("\n");
         w.z.phantome = (stamm.match(/\b(zoneMulAt|zoneKindAt|zoneJuiceAt|handlingMul|handlingWindF)\b/g) || []).length;
         w.c.keinePhantome = w.z.phantome === 0;
+        const codeVon = (name) =>
+            fn(name)
+                ? String(A.prototype[name])
+                      .replace(/\/\/.*$/gm, "")
+                      .replace(/\/\*[\s\S]*?\*\//g, "")
+                : "";
+        // (T10) KERN-PFLICHT des Treffer-Volumens: fehlt tetrapoda trefferZone, bricht der erste Treffer-Test LAUT
+        // (_kernPflichtBruch, benannt) — nie still null, das je Tier gespeichert jedes Wesen unverwundbar machte.
+        // Gegenprobe: mit dem Kern trägt dasselbe Tier seine Glieder, jedes mit Zone.
+        {
+            const frisch = setze("wesen");
+            const tcEcht = globalThis.__tetrapodaCore;
+            let bruch = null,
+                rueck;
+            globalThis.__tetrapodaCore = Object.assign({}, tcEcht, { trefferZone: undefined });
+            try {
+                rueck = r._kreaturTrefferGlieder(frisch);
+            } catch (e) {
+                bruch = String((e && e.message) || e);
+            } finally {
+                globalThis.__tetrapodaCore = tcEcht;
+            }
+            w.z.kernOhneZone = bruch
+                ? /tetrapoda:trefferZone/.test(bruch)
+                    ? "Bruch benannt"
+                    : "Bruch ohne Namen"
+                : rueck === null
+                  ? "still null" + (frisch.userData._trefferGlieder === null ? ", je Tier gespeichert" : "")
+                  : "Liste";
+            delete frisch.userData._trefferGlieder;
+            const gl = r._kreaturTrefferGlieder(frisch);
+            w.z.kernMitZone = Array.isArray(gl) ? gl.length : 0;
+            w.c.kernPflichtZone =
+                w.z.kernOhneZone === "Bruch benannt" && Array.isArray(gl) && gl.length > 0 && gl.every((g) => !!g.zone);
+            r.removeCreature(frisch);
+            tiere.splice(tiere.indexOf(frisch), 1);
+        }
+        // (T11) der KALTE ERSTE TREFFER je Gattung (Lehre 14): ein Tier einer Gattung, deren Treffer-Glieder noch niemand
+        // kennt, steht in der Welt, die Welt läuft 60 Spiel-Takte, dann der erste Hieb — gezählt werden die Haut-Vertices,
+        // die der Hieb SELBST zerlegt (_kreaturGliederGruppen im Treffer-Pfad). Vorgebacken im Idle: 0.
+        const gattungVon = (c) => {
+            const ud = c.userData || {};
+            return (
+                ud.gattung ||
+                ud.recipe ||
+                ud.preset ||
+                (A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP[ud.soul || "wesen"]) ||
+                ud.soul ||
+                "wesen"
+            );
+        };
+        const kalterTreffer = (seele) => {
+            ausruesten("klinge_langschwert");
+            const c = setze(seele);
+            if (!c) return { traf: false, zerlegt: null };
+            if (r._trefferGliedNamen) r._trefferGliedNamen.delete(gattungVon(c));
+            stelle(c, 9, 4);
+            for (let k = 0; k < 60; k++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+            }
+            p._swing = null;
+            p._hitStopUntil = 0;
+            let zerlegt = 0;
+            const svG = r._kreaturGliederGruppen;
+            r._kreaturGliederGruppen = function (cr) {
+                const G = svG.call(this, cr);
+                if (G) for (const [, g] of G.gruppen) zerlegt += g.verts;
+                return G;
+            };
+            let t = null;
+            try {
+                stelle(c, 1.6);
+                zielen(punkt(c, null));
+                t = traf(schwung(), c);
+            } finally {
+                r._kreaturGliederGruppen = svG;
+                delete r._kreaturGliederGruppen;
+            }
+            parke(c);
+            return { traf: !!t, zerlegt, gattung: gattungVon(c) };
+        };
+        w.z.kalt = kalterTreffer("baer");
+        w.c.kaltVorgebacken = w.z.kalt.traf && w.z.kalt.zerlegt === 0;
+        // (S8) SELBST-TEST mit dem Täter: ohne das Idle-Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)
+        if (fn("_tickTrefferGliederVorbacken")) {
+            r._tickTrefferGliederVorbacken = () => {};
+            try {
+                w.z.s8 = kalterTreffer("wolf");
+            } finally {
+                delete r._tickTrefferGliederVorbacken;
+            }
+            w.c.s8 = w.z.s8.traf && w.z.s8.zerlegt > 0;
+        }
+        // (G1) der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) — keine Inline-Kopie der Formel
+        {
+            const sw = codeVon("_kampfSweepTick");
+            w.z.sweepFormel = (sw.match(/Math\.(sin|cos)\(/g) || []).length;
+            w.c.sweepBlickVorn = /this\._blickVorn\(/.test(sw) && w.z.sweepFormel === 0;
+        }
+        // (G2) keine typeof-Probe auf eine EIGENE Methode in den Methoden, die die Welle L (Kampf und Maus) schrieb —
+        // die Methode existiert immer; die Probe wäre ein stiller Rückfall, nie ein Vertrag
+        {
+            const welleL = [
+                "fertigeBlueprint",
+                "_ruestungDaempft",
+                "_kreaturGliederGruppen",
+                "_gliedKapselMemo",
+                "_kreaturTrefferGlieder",
+                "_kreaturGliedTreffer",
+                "_kreaturGattung",
+                "_tickTrefferGliederVorbacken",
+                "_bauModusFuer",
+                "_kampfKlingenAchse",
+                "_kampfUrteil",
+                "_kampfKraft",
+                "_kampfRohSchaden",
+                "_trefferWirkung",
+                "_kampfStats",
+                "_kampfVerschleiss",
+                "_geraetVerbraucht",
+                "_eigenwerkSchwungKE",
+                "_schmiedeGueteAnteil",
+                "_schmiedeGestalt",
+                "_geraetGraebt",
+                "_blickVorn",
+                "_blickGierZu",
+                "_blickZiel",
+                "_uiSchubladeOffen",
+                "_uiZeigerFrei",
+            ];
+            const selbst = [];
+            for (const m of welleL) {
+                for (const x of codeVon(m).matchAll(/typeof this\.([\w$]+) === "function"/g))
+                    if (typeof A.prototype[x[1]] === "function") selbst.push(m + "→" + x[1]);
+            }
+            w.z.typeofSelbst = selbst.join(",") || "–";
+            w.c.keinTypeofSelbst = selbst.length === 0;
+        }
 
         // ═══ Q9 — MAUS-ABSICHT ═══
         ausruesten("klinge_langschwert");
@@ -1327,6 +1548,16 @@ async function WELLE_L() {
         console.log(
             `       Pfeil voll ${f1(z.pfeilVoll)} · 25 % ${f1(z.pfeilViertel)} · hinter der Wand ${z.pfeilHinterWand} · frei ${z.pfeilFrei}`
         );
+        const bg = z.bogen || {};
+        console.log(
+            `       Bogen-Verschleiß: wear 1 ${f1(bg.voll)} · wear 0,5 ${f1(bg.halb)} (÷ ${f1(bg.verh)}, Soll ${f1(bg.soll)}) · zehrt je Schuss ${bg.zehrtVoll === undefined ? "–" : bg.zehrtVoll.toFixed(4)}/${bg.zehrtHalb === undefined ? "–" : bg.zehrtHalb.toFixed(4)} · verbraucht (0,02) flog ${bg.verbrauchtFlog}, traf ${bg.verbrauchtTraf} · Täter S6 ok=${z.s6 ? z.s6.ok : "–"}`
+        );
+        console.log(
+            `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
+        );
+        console.log(
+            `       kalter erster Treffer ${z.kalt ? z.kalt.gattung + ": traf " + z.kalt.traf + ", zerlegt " + z.kalt.zerlegt + " Vertices" : "–"} · Täter S8 ${z.s8 ? z.s8.gattung + ": zerlegt " + z.s8.zerlegt : "–"} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
+        );
         console.log(
             `  (Q9) 3rd: Fadenkreuz ${z.dritte && z.dritte.fadenkreuz}/10, frei ${z.dritte && z.dritte.frei}, Schwünge ${z.dritte && z.dritte.schwuenge}, Krater ${z.dritte && z.dritte.krater}, Treffer ${z.dritte && z.dritte.treffer} · Halten nach dem Stoß ${z.haltenKrater} Krater · RMB Schwert ${z.rmbSchwert}/3, Spaten ${z.rmbSpaten}, Hand ${z.rmbHand} · Werkstatt: der Canvas greift ${z.werkstattGriffe}/4 (ohne Schublade ${z.ohneWerkstattGriffe}/1) · FERTIGEN ${JSON.stringify(z.fertigen)}`
         );
@@ -1344,6 +1575,12 @@ async function WELLE_L() {
         check(c.eineGuete, "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns");
         check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)");
         check(c.pfeilWand, "Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)");
+        check(c.bogenVerschleiss, "Q8 K-D6: der Bogen verschleißt wie die Klinge — wear 0,5 trifft mit 0,65, jeder Schuss zehrt, verbraucht (0,02) löst er nicht");
+        check(c.einRohSchaden, "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden");
+        check(c.kernPflichtZone, "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)");
+        check(c.kaltVorgebacken, "Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind im Idle vorgebacken");
+        check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
+        check(c.keinTypeofSelbst, "Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle");
         check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)");
         check(c.gegenwehr, "Q8 K-D16: Gegenwehr > 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)");
         check(c.dritteSchwingt, "Q9 K-D1: 3rd-Person — jeder freie Klick auf das Tier im Fadenkreuz schwingt (≥ 8 von 10 frei), 0 Krater");
@@ -1357,6 +1594,8 @@ async function WELLE_L() {
         check(c.s3 === true, "SELBST-TEST (S3): _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir“ kippt hinter dich");
         check(c.s4 === true, "SELBST-TEST (S4): _geraetGraebt ≡ wahr → das Schwert schüttet auf (die Linse sieht den Rückfall)");
         check(c.s5 === true, "SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)");
+        check(c.s6 === true, "SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot");
+        check(c.s8 === true, "SELBST-TEST (S8): ohne Idle-Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)");
     }
     console.log(
         `\n  ${ok ? "✅ GRÜN — die gerechnete Schwungphysik erreicht den Kampf: √I führt · die Klinge trifft · die Sim steht nie" : "❌ ROT — das Kampf-Gefühl trägt nicht"}\n`
