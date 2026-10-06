@@ -50625,10 +50625,10 @@ class AnazhRealm {
         // Welle L (Q13): die Ebene ist die des Kerns (vehicle-core fahrEbene — dieselbe, die der Fahr-Schritt fährt und
         // die Probefahrt liest): kein Bauch im Boden (über einer Kuppe trägt der Bauch, W5 — am Kamm (66, 60) lag er
         // 1,05 m im Boden), und an einer KANTE (Spalt, Klippe) trägt keine Ebene mehr (sie mittelte Rand und Grund).
-        // Rahmen des Kerns: Bug-Gier = Fahrt − π/2; Nick hier Bug ab = +, Wank die Flanke (cos, −sin) oben = +.
-        const VC = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
-        if (!VC || typeof VC.fahrEbene !== "function") return null;
-        const eb = VC.fahrEbene(
+        // Rahmen des Kerns: Bug-Gier = Fahrt − π/2; Nick hier Bug ab = +, Wank die Flanke (cos, −sin) oben = +. Ein Kern
+        // ohne fahrEbene bricht laut (`_fahrSchrittGesetz`), nie still null.
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const eb = vc.fahrEbene(
             { auf: this._rittAufstand(entry) },
             this._fahrTerrainBoden || (this._fahrTerrainBoden = (a, b) => this.getTerrainHeightAt(a, b)),
             x,
@@ -50640,19 +50640,20 @@ class AnazhRealm {
 
     // DER FAHR-SATZ eines gerittenen Werks (Welle L, Q13): der EINE Fahr-Schritt des Kerns (vehicle-core fahrGesetz) aus
     // seinem Profil — Studio-Rezept (das fahrprofil des Buchs) oder Teile-Werk (exportDrive aus der Hülle, das Tempo
-    // emergent: vmax = Geh-Tempo × topSpeedMul, kAcc aus der Masse) — und den Aufstandspunkten des Werks. null ohne
-    // Lenk- und Zweispur-Gesetz: dann reitet der richtungs-folgende Ritt (Kreatur, Bein-Werk).
+    // emergent: vmax = Geh-Tempo × topSpeedMul, kAcc aus der Masse) — und den Aufstandspunkten des Werks. null NUR ohne
+    // Lenk- und Zweispur-Gesetz: dann reitet der richtungs-folgende Ritt (Kreatur, Bein-Werk). Ein Gesetz-Werk ohne
+    // Fahr-Schritt im Kern (alter Kern) oder ohne Fahr-Satz (fahrGesetz verwirft das Profil) bricht LAUT — vorher ritt es
+    // still richtungs-folgend (Gegenprüfung 07.10.).
     _fahrSatz(entry, prof) {
-        const VC = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
-        if (!entry || !prof || !prof.lenkung || !prof.zweispur || !VC || typeof VC.fahrGesetz !== "function")
-            return null;
+        if (!entry || !prof || !prof.lenkung || !prof.zweispur) return null;
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
         const vmax =
             Number.isFinite(prof.vmax) && prof.vmax > 0
                 ? prof.vmax
                 : this.state.speed * (Number.isFinite(prof.topSpeedMul) ? prof.topSpeedMul : 1);
         const k = entry._fahrSatzKey;
         if (entry._fahrSatz && k && k.prof === prof && k.vmax === vmax) return entry._fahrSatz;
-        entry._fahrSatz = VC.fahrGesetz(
+        entry._fahrSatz = vc.fahrGesetz(
             {
                 zweispur: prof.zweispur,
                 lenkung: prof.lenkung,
@@ -50665,6 +50666,7 @@ class AnazhRealm {
             },
             this._rittAufstand(entry)
         );
+        if (!entry._fahrSatz) return AnazhRealm._kernPflichtBruch("vehicle:fahrGesetz (" + entry.type + ")");
         entry._fahrSatzKey = { prof, vmax };
         return entry._fahrSatz;
     }
@@ -50796,13 +50798,13 @@ class AnazhRealm {
             // Ohne Bewegungs-Schritt (frisch aufgesessen) stellt der Kern den Wagen an der Lage auf (Stand ohne Zeit).
             let fz = entry._fahr;
             if (!fz) {
-                const VC = globalThis.__vehicleCore;
-                fz = entry._fahr = VC.fahrZustand(
+                const { vc } = AnazhRealm._fahrSchrittGesetz();
+                fz = entry._fahr = vc.fahrZustand(
                     pm.x,
                     pm.z,
                     (Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0) - Math.PI / 2
                 );
-                VC.fahrStand(fz, fahrG, this._fahrBoden(entry), 0);
+                vc.fahrStand(fz, fahrG, this._fahrBoden(entry), 0);
             }
             if (!Number.isFinite(fz.y)) {
                 // Ungebauter Chunk: der Reiter führt, das Werk hängt am Sitz.
@@ -66091,9 +66093,8 @@ class AnazhRealm {
         P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
         const boden = this._fahrBoden(entry)(P.x, P.z);
         if (Number.isFinite(boden)) {
-            const VC = globalThis.__vehicleCore;
-            const radR = entry._fahrSatz && Number.isFinite(entry._fahrSatz.radR) ? entry._fahrSatz.radR : 0.34;
-            const hub = (VC && VC.FAHR && VC.FAHR.schritt ? VC.FAHR.schritt.radHub : 0.6) * radR;
+            // der Federweg aus dem Kern (FAHR.schritt.radHub × radR des Fahr-Satzes — `_fahr` lebt nur mit ihm)
+            const hub = AnazhRealm._fahrSchrittGesetz().S.radHub * entry._fahrSatz.radR;
             out.elements[13] += Math.max(-hub, Math.min(hub, boden - P.y));
         }
         return out;
@@ -87990,9 +87991,8 @@ class AnazhRealm {
             hw = ext ? Math.max(0.3, (Math.min(ext.dx, ext.dz) * sc) / 2) : 0.6;
             dach = ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5;
         }
-        const VC = globalThis.__vehicleCore;
-        const radR = Number.isFinite(entry._fahrSatz.radR) ? entry._fahrSatz.radR : 0.34;
-        const stufe = VC && VC.FAHR && VC.FAHR.schritt ? VC.FAHR.schritt.stufeRad * radR : 0.5 * radR;
+        // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
+        const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * entry._fahrSatz.radR;
         // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
         // Flanke drei Punkte — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
         const umriss = [];
@@ -88084,8 +88084,7 @@ class AnazhRealm {
             return fz.y + tS * (dx * fX + dz * fZ) + tW * (dx * qX + dz * qZ);
         };
         const brust = Math.min(k.dach, 1.2);
-        const VC = globalThis.__vehicleCore;
-        const steilY = Math.cos(VC && VC.FAHR && VC.FAHR.schritt ? VC.FAHR.schritt.ebeneMax : 0.7);
+        const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
         const nrmW = this._fahrHuelleN || (this._fahrHuelleN = {});
         // (1) GELÄNDE: die führenden Umriss-Punkte gegen das Feld. Eine WAND ist Feld über Ebene + Stufe, dessen Fläche
         // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht), oder
@@ -88752,13 +88751,13 @@ class AnazhRealm {
                 // Fahrt nahm (eine Wand, das Wasser), kehrt in den Körperrahmen zurück. Dann: Stand (Ebene der Räder,
                 // ballistische Vertikale, Federn) an DIESER Lage, Kräfte → die Geschwindigkeit, die der Kontakt-Löser im
                 // nächsten Schritt fährt — dieselbe Folge wie die Probefahrt (Kräfte, Lage, Stand).
-                const VC = globalThis.__vehicleCore;
+                const { vc } = AnazhRealm._fahrSchrittGesetz();
                 const ent = this._mountedEntry;
                 const pmF = this.state.playerMesh.position;
                 const v = this.state.playerVel;
                 const z =
                     ent._fahr ||
-                    (ent._fahr = VC.fahrZustand(
+                    (ent._fahr = vc.fahrZustand(
                         pmF.x,
                         pmF.z,
                         (Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw) - Math.PI / 2
@@ -88769,9 +88768,9 @@ class AnazhRealm {
                 const syF = Math.sin(z.yaw);
                 z.vlong = v.x() * cyF - v.z() * syF;
                 z.vlat = -v.x() * syF - v.z() * cyF;
-                VC.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
+                vc.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
                 const keys = this.state.keys;
-                VC.fahrKraefte(
+                vc.fahrKraefte(
                     z,
                     {
                         throttle: keys["w"] ? 1 : 0,
@@ -92004,6 +92003,28 @@ AnazhRealm._fahrGesetz = function () {
         return AnazhRealm._fahrGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent");
+};
+// DER EINE FAHR-SCHRITT-LESER (Welle L, Nachbesserung 07.10.), fail-closed: die Funktionen des Fahr-Schritts (vehicle-core
+// fahrGesetz · fahrZustand · fahrEbene · fahrStand · fahrKraefte) und die Wände des Welt-Ritts (FAHR.schritt: Stufe,
+// Rad-Hub, Ebenen-Klammer, Luft-Abstand) in EINER Gültigkeits-Wand. Ein alter Kern bricht LAUT — vorher prüften `_fahrSatz`
+// und `_rittEbene` typeof und gaben still null (der Gesetz-Wagen ritt richtungs-folgend), und Hülle, Kontakt und Rad trugen
+// Literal-Zwillinge der Kern-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6). Memo je Kern-Objekt.
+AnazhRealm._fahrSchrittGesetz = function () {
+    const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+    const memo = AnazhRealm._fahrSchrittMemo;
+    if (memo && memo.vc === vc) return memo;
+    const S = vc && vc.FAHR && vc.FAHR.schritt;
+    if (
+        S &&
+        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte"].every(
+            (f) => typeof vc[f] === "function"
+        ) &&
+        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps"].every((k) => Number.isFinite(S[k]))
+    ) {
+        AnazhRealm._fahrSchrittMemo = { vc, S };
+        return AnazhRealm._fahrSchrittMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.schritt/fahrSchritt");
 };
 // Der EINE Kampf-Koeffizienten-Leser: hpMax/damage/knockback/defense aus PRESETS.mensch.fx.kampf,
 // Formel base + dichte-Tag·dichte + härte-Tag·haerte. Fail-closed.

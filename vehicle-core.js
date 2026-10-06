@@ -2526,7 +2526,9 @@
     function fahrGesetz(d, auf) {
         const zs = d && d.zweispur;
         const lk = d && d.lenkung;
-        if (!zs || !lk || !(d.vmax > 0) || !(d.kAcc > 0) || !(zs.mass > 0) || !(zs.Izz > 0)) return null;
+        // radR traegt die Rolle (Weg/radR) und die Stufe — ohne ihn kein Fahr-Satz (kein stiller Ersatz-Radius).
+        if (!zs || !lk || !(d.vmax > 0) || !(d.kAcc > 0) || !(zs.mass > 0) || !(zs.Izz > 0) || !(d.radR > 0))
+            return null;
         const h = d.huelle;
         const a = auf || (h ? { vorn: h.fAx, hinten: h.rAx, quer: h.spur / 2, bauch: h.yFloor } : null);
         if (!a || !(a.vorn > a.hinten) || !(a.quer > 0)) return null;
@@ -2672,7 +2674,7 @@
             // Was ein Rad in einem Schritt hinaufsteigt (die Stufe + die Steig-Rate des Bodens); hoeher ist eine WAND — die
             // Vertikale hebt den Wagen nie hinein (der Kontakt-Loeser des Wirts schiebt ihn heraus). Vorher nahm der Wagen
             // Stufen bis 1,075 m in einem Takt.
-            const stufe = S.stufeRad * (G.radR > 0 ? G.radR : 0.34) + Math.abs(z.vy) * dt;
+            const stufe = S.stufeRad * G.radR + Math.abs(z.vy) * dt; // radR ist Pflicht des Fahr-Satzes (fahrGesetz)
             const warLuft = z.luft === true;
             if (yBall >= eb.y) {
                 // DER BODEN FAELLT UNTER DIE FALLKURVE (Kuppe mit v²/R > g, Klippe, Spalt): der Wagen fliegt; die Reifen
@@ -2816,7 +2818,7 @@
         z.x += (z.vlong * cy - z.vlat * sy) * dt;
         z.z += (-z.vlong * sy - z.vlat * cy) * dt;
         z.speed = Math.hypot(z.vlong, z.vlat);
-        z.wheelAng += (z.vlong / Math.max(0.1, G.radR)) * dt; // Abrollen ω = v/r
+        z.wheelAng += (z.vlong / G.radR) * dt; // Abrollen ω = v/r (radR > 0: Pflicht des Fahr-Satzes)
         return z;
     }
     function fahrSchritt(z, e, G, boden, dt) {

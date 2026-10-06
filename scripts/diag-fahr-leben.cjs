@@ -164,6 +164,41 @@ function fahrWand(stamm, garage, kern) {
     ];
 }
 
+// ── P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei; Gegenprüfung 07.10.): `_fahrSatz`/`_rittEbene` gaben bei
+// einem Kern ohne fahrGesetz/fahrEbene still null (der Gesetz-Wagen ritt richtungs-folgend), Hülle, Kontakt und Rad trugen
+// Literal-Zwillinge der FAHR.schritt-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6). Soll: EIN fail-closed Leser
+// (`AnazhRealm._fahrSchrittGesetz` → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn. ──
+const FAHR_LESER = ["_fahrSatz", "_rittEbene", "_rittSchritt", "_fahrHuelle", "_fahrHuelleKontakt", "_archRadMatrix", "_loopPlayerMovement"];
+function pflichtWand(stamm) {
+    const st = ohneKommentare(stamm);
+    const leser = fnBody(st, /\nAnazhRealm\._fahrSchrittGesetz = function \(\) \{/) || "";
+    const koerper = {};
+    for (const n of FAHR_LESER) koerper[n] = fnBody(st, new RegExp("\\n {4}" + n + "\\([^)]*\\) \\{")) || "";
+    const fehlt = FAHR_LESER.filter((n) => !koerper[n]);
+    const still = ["_fahrSatz", "_rittEbene"].filter(
+        (n) => /typeof\s+VC\b|typeof\s+\w+\.fahr\w+\s*!==/.test(koerper[n]) || !/_fahrSchrittGesetz\(\)/.test(koerper[n])
+    );
+    const zwillinge = [];
+    for (const n of FAHR_LESER) {
+        const b = koerper[n];
+        const treffer = (b.match(/__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR/g) || []).length;
+        if (treffer) zwillinge.push(`${n} ${treffer}×`);
+    }
+    return [
+        [
+            "P1 der EINE Fahr-Schritt-Leser bricht laut (`_fahrSchrittGesetz` → `_kernPflichtBruch`)",
+            /_kernPflichtBruch\(/.test(leser) && /typeof vc\[f\] === "function"/.test(leser) && fehlt.length === 0,
+            fehlt.length ? `ohne Körper: ${fehlt.join(", ")}` : "",
+        ],
+        [
+            "P2 kein stiller Ausweg: `_fahrSatz` und `_rittEbene` lesen den Kern durch ihn (kein typeof → null)",
+            still.length === 0 && /_kernPflichtBruch\(/.test(koerper._fahrSatz),
+            still.join(", "),
+        ],
+        ["P3 keine Literal-Zwillinge der FAHR.schritt-Zeilen in den Fahr-Lesern", zwillinge.length === 0, zwillinge.join(" · ")],
+    ];
+}
+
 // ── K2–K5 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
 function kernProbe(VC) {
     if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function")
@@ -270,6 +305,9 @@ function stationVerdict(s) {
         if (!(rd.tauchBremse <= STATION.spaltM)) out.push(`raeder tauchen beim Bremsen ${rd.tauchBremse.toFixed(3)} m`);
         if (!(rd.spaltP75 <= STATION.spaltM)) out.push(`raeder Spalt p75 ${rd.spaltP75.toFixed(3)} m`);
     }
+    const pf = s.pflicht;
+    if (!pf) out.push("pflicht keine Probe");
+    else if (pf.satz !== "bruch" || pf.ebene !== "bruch") out.push(`pflicht still (fahrSatz ${pf.satz} · rittEbene ${pf.ebene})`);
     if (!s.huelleSchub) out.push("huelle-schub keine Probe");
     else if (!(s.huelleSchub.weg <= STATION.schubM)) out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
     for (const [k, name] of [
@@ -642,6 +680,37 @@ async function probeLeben(expected) {
             };
             weg(gR);
         }
+        // P — DIE KERN-PFLICHT IM SPIEL (Gegenprüfung 07.10.): ein alter Kern ohne fahrGesetz/fahrEbene muss LAUT brechen
+        // (`_kernPflichtBruch`), nie still null liefern (dann ritt der Gesetz-Wagen richtungs-folgend). Die Probe tauscht das
+        // Kern-Objekt gegen eine Kopie ohne die beiden Funktionen (wie ein Boot mit altem Kern) und ruft die zwei Leser.
+        const gP = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
+        if (gP) {
+            const echt = window.__vehicleCore;
+            const alt = Object.assign({}, echt);
+            delete alt.fahrGesetz;
+            delete alt.fahrEbene;
+            const fang = (fn) => {
+                try {
+                    const v = fn();
+                    return v === null || v === undefined ? "null" : "wert";
+                } catch (e) {
+                    const msg = String((e && e.message) || e);
+                    return /KERN-PFLICHT/.test(msg) ? "bruch" : "fehler " + msg.slice(0, 80);
+                }
+            };
+            window.__vehicleCore = alt;
+            try {
+                gP._fahrSatz = null;
+                gP._fahrSatzKey = null;
+                S.pflicht = {
+                    satz: fang(() => r._fahrSatz(gP, r._vehicleProfile(gP))),
+                    ebene: fang(() => r._rittEbene(gP, gP.position.x, gP.position.z, gP._rideYaw)),
+                };
+            } finally {
+                window.__vehicleCore = echt;
+            }
+            weg(gP);
+        }
         // S1 WELT == LABOR: dieselbe Gerade, W, dann W + A; die Spur je Sim-Schritt gegen den Labor-Aufruf.
         const g1 = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
         if (g1 && g1._fahr && S.kern) {
@@ -1004,6 +1073,7 @@ async function probeLeben(expected) {
             huelleBlock: { tief: 0.0, abstand: 0.02 },
             huelleSchub: { weg: 0 },
             huelleBaer: { tief: 0.01, abstand: 0.0 },
+            pflicht: { satz: "bruch", ebene: "bruch" },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
@@ -1020,6 +1090,7 @@ async function probeLeben(expected) {
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
             ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
+            ["ein alter Kern: fahrSatz und rittEbene still null (Gegenprüfung 07.10.)", { pflicht: { satz: "null", ebene: "null" } }, "pflicht still"],
         ]) {
             const v = stationVerdict(Object.assign({}, gutS, bruch));
             check(`Selbst-Test S: ‚${name}' → die Linse nennt ${soll}`, v.length >= 1 && v[0].startsWith(soll), v.join(" · "));
@@ -1054,6 +1125,25 @@ async function probeLeben(expected) {
             kRot.filter((w) => !w[1]).length === 3,
             kRot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 3)}`).join(" ")
         );
+        const pGruen = pflichtWand(quelle);
+        check(
+            "Selbst-Test P: der Arbeitsbaum ist grün",
+            pGruen.every((w) => w[1]),
+            pGruen.filter((w) => !w[1]).map((w) => w[0] + " " + w[2]).join(" | ")
+        );
+        const pRot = pflichtWand(
+            quelle
+                .replace(
+                    /(\n {4}_fahrSatz\(entry, prof\) \{)/,
+                    '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'
+                )
+                .replace(/(\n {4}_fahrHuelle\(entry\) \{)/, "$1\n        const radR = 0.34;")
+        );
+        check(
+            "Selbst-Test P: der Vor-Stand (typeof → null im Fahr-Satz, Literal-Zwilling in der Hülle) → P2 P3 feuern",
+            !pRot[1][1] && !pRot[2][1],
+            pRot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
+        );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1065,6 +1155,8 @@ async function probeLeben(expected) {
     const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     console.log("=== W — DIE STATISCHE WAND DES RITT-TAKTS (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of taktWand(quelle)) check(name, ok, detail);
+    console.log("=== P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei) ===");
+    for (const [name, ok, detail] of pflichtWand(quelle)) check(name, ok, detail);
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): Wand + der Kern selbst (Node) ===");
     for (const [name, ok, detail] of fahrWand(
         quelle,
@@ -1161,6 +1253,11 @@ async function probeLeben(expected) {
         "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",
         !hat("kern") && !hat("raeder tauchen") && !hat("raeder Spalt") && !hat("raeder keine"),
         R ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)})` : "keine Probe"
+    );
+    check(
+        "P4 ein alter Kern ohne fahrGesetz/fahrEbene bricht im Spiel laut (KERN-PFLICHT), nie still der richtungs-folgende Ritt",
+        !hat("kern") && !hat("pflicht"),
+        S.pflicht ? `_fahrSatz → ${S.pflicht.satz} · _rittEbene → ${S.pflicht.ebene}` : "keine Probe"
     );
     console.log("=== H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5), echter Sim-Schritt ===");
     const hz = (h, was) =>
