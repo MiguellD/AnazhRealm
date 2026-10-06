@@ -85,12 +85,58 @@ const server = http.createServer((req, res) => {
                 } catch (_e) {}
                 if (i % 15 === 0) await sleep(15);
             }
+            // DIE WARTENDEN REGIONEN (06.10., V18.531): eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
+            // `_deferredFoundry`, und JEDE Foundry-Lieferung baut sie ganz neu (`_tickScatterStreaming` Refill) — im Spiel
+            // nur im Boot (echte GPU, Mess-Wiese, Erst-Boot: 14 Lieferungs-Anstöße, 11 Region-Neubauten in 149 s, danach 0
+            // wartende Regionen und 0 Mints in 60 s Stand). Das Boot-Settle läuft headless, bis keine Region mehr wartet —
+            // das Stand-Fenster misst Churn, nicht den Boot.
+            {
+                const dlW = performance.now() + 150000;
+                // ... und bis der Vorrat steht (`_foundryPrefetchLibrary`): solange er saugt, baut der gelüftete Ring
+                // jede neue Region leer und aufgeschoben (der Prefetch-Zweig von `_scatterRegion`).
+                const vorrat = () => !!(r._foundry && r._foundry._prefetching);
+                const wartend = () => {
+                    let n = 0;
+                    if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg && reg._deferredFoundry) n++;
+                    return n;
+                };
+                while ((wartend() > 0 || vorrat()) && performance.now() < dlW) {
+                    for (let i = 0; i < 30; i++) {
+                        try {
+                            r._gameLoopTick(performance.now());
+                        } catch (_e) {}
+                    }
+                    await sleep(30);
+                }
+                o.wartendNachBoot = wartend() + (vorrat() ? 1 : 0);
+                o.vorratSaugt = vorrat();
+            }
             const _oH0 = st.renderer._isHeadlessNull;
             const _oRS = r._applyRenderScale,
                 _oSR = r._applyEffectiveShadowRange;
             st.renderer._isHeadlessNull = false;
             r._applyRenderScale = () => {};
             r._applyEffectiveShadowRange = () => {};
+            // DIE KARTE IST EIN GPU-ANWENDER wie Render-Skala und Schatten-Weite: mit echtem Renderer trägt eine Baum-Karte
+            // erst gebacken (`_foundryBuildImpostorFlat`), der Null-Renderer bäckt nie — er legt ihre Zelle aus der
+            // L1-Geometrie an. Gelüftet nahm er den Bäcker-Zweig und wartete für immer: 2–4 Regionen blieben aufgeschoben
+            // (Erle und Tanne auf 289–377 m), jede Lieferung baute sie ganz neu, 6–8 Mints im Fenster (3 von 3 Läufen).
+            // Die Karten-Leser laufen darum mit der Null-Semantik, wie die anderen GPU-Anwender gestubbt sind.
+            const _oKF = r._foundryBuildImpostorFlat,
+                _oKR = r._foundryEnsureImpostorRecord;
+            const nullKarte =
+                (f) =>
+                (...a) => {
+                    const h = st.renderer._isHeadlessNull;
+                    st.renderer._isHeadlessNull = true;
+                    try {
+                        return f.apply(r, a);
+                    } finally {
+                        st.renderer._isHeadlessNull = h;
+                    }
+                };
+            r._foundryBuildImpostorFlat = nullKarte(_oKF);
+            r._foundryEnsureImpostorRecord = nullKarte(_oKR);
             const feed = (ms) => {
                 st._perfFrame = {
                     render: 90,
@@ -107,12 +153,27 @@ const server = http.createServer((req, res) => {
             };
             for (let i = 0; i < 200; i++) feed(150); // Regler auf den Boden (Radius → 70)
             // Settle bis QUIESZENZ in DIESEM Regime (Batches à 100 Ticks, 2 ruhige in
-            // Folge; 180 s Deadline — erreicht der Boot sie nie, ist DAS der Befund):
+            // Folge; 180 s Deadline — erreicht der Boot sie nie, ist DAS der Befund).
+            // Ruhig heißt: kein Mint UND der Streu-Ring steht — dieselben Regionen, keine offene Scheiben-Fortsetzung
+            // (`_cont`), keine wartende Region. Gezählt wurden nur Mints: ein Ring, der nach dem Regime-Wechsel
+            // Regionen in Scheiben neu baute (Zellen 0 → 53), lief durch zwei Batches ohne neuen Schlüssel und münzte
+            // seine Konifere-L1 erst im Fenster (2 Mints, 3 von 3 Läufen) — das Fenster maß den Boot, nicht den Stand.
             {
+                const ringStand = () => {
+                    const keys = [];
+                    let offen = 0;
+                    if (st.scatterRegions)
+                        for (const [k, reg] of st.scatterRegions) {
+                            keys.push(k);
+                            if (reg && (reg._cont || reg._deferredFoundry)) offen++;
+                        }
+                    return keys.sort().join(";") + "|" + offen;
+                };
                 const dlQ = performance.now() + 180000;
                 let ruhigeBatches = 0;
                 while (ruhigeBatches < 2 && performance.now() < dlQ) {
                     const mv = r._archGruppenMints || 0;
+                    const ring0 = ringStand();
                     for (let i = 0; i < 100; i++) {
                         try {
                             r._gameLoopTick(performance.now());
@@ -120,9 +181,16 @@ const server = http.createServer((req, res) => {
                         feed(150);
                         if (i % 20 === 0) await sleep(15);
                     }
-                    ruhigeBatches = (r._archGruppenMints || 0) === mv ? ruhigeBatches + 1 : 0;
+                    const ring1 = ringStand();
+                    const ruhig = (r._archGruppenMints || 0) === mv && ring0 === ring1 && ring1.endsWith("|0");
+                    ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
                 }
                 o.quieszent = ruhigeBatches >= 2;
+                o.ringOffen = [];
+                if (st.scatterRegions)
+                    for (const [k, reg] of st.scatterRegions)
+                        if (reg && (reg._cont || reg._deferredFoundry))
+                            o.ringOffen.push(k + (reg._cont ? " Scheibe offen" : "") + (reg._deferredFoundry ? " wartet" : ""));
             }
             // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
             // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
@@ -155,6 +223,8 @@ const server = http.createServer((req, res) => {
             st.renderer._isHeadlessNull = _oH0;
             r._applyRenderScale = _oRS;
             r._applyEffectiveShadowRange = _oSR;
+            r._foundryBuildImpostorFlat = _oKF;
+            r._foundryEnsureImpostorRecord = _oKR;
             st._perfFrame = {};
             st._perfMarks = {};
             st.perfSense = null;
@@ -239,6 +309,7 @@ const server = http.createServer((req, res) => {
     server.close();
 
     console.log("=== DER LEISTUNGS-VERTRAG — die Laufzeit-Ökonomie als Gate ===");
+    console.log(`  BOOT-SETTLE: wartende Regionen + saugender Vorrat = ${out.wartendNachBoot} (erwartet 0)`);
     console.log(`  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent}`);
     console.log(`  V1 STAND-CHURN: Mints im Stand-Fenster = ${out.standMints} (erwartet 0)`);
     console.log(`  V3 GRUPPEN-STABILITÄT: ${out.groups0} → max ${out.groupsMax} → ${out.groupsEnde}`);
@@ -253,8 +324,14 @@ const server = http.createServer((req, res) => {
 
     const errs = [];
     if (out.err) errs.push("Vertrag brach ab: " + out.err);
+    if (out.wartendNachBoot !== 0)
+        errs.push(
+            `BOOT: nach 150 s headless warten ${out.wartendNachBoot - (out.vorratSaugt ? 1 : 0)} Streu-Regionen auf ein Studio-Asset (_deferredFoundry)${out.vorratSaugt ? ", der Vorrat saugt noch" : ""}`
+        );
     if (!out.quieszent)
-        errs.push("QUIESZENZ: der Boot wurde in 180 s nie still — das Stand-Fenster maß Boot-Streaming, nicht Churn");
+        errs.push(
+            `QUIESZENZ: der Boot wurde in 180 s nie still — das Stand-Fenster maß Boot-Streaming, nicht Churn (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"})`
+        );
     if (!out.v1ChurnNull) errs.push(`V1: ${out.standMints} Gruppen-Mints im Stand (Vertrag: 0)`);
     if (!out.v3Stabil) errs.push(`V3: archInstanceGroups kletterte im Stand (${out.groups0} → ${out.groupsMax})`);
     if (!out.v2KeineSofort) errs.push("V2: ein Takt-Ergebnis resolvte SYNCHRON (der Burst-Schutz ist tot)");
