@@ -11,7 +11,11 @@
 //                   Eintauchen aus 6 m ist stumm (0 Landungen).
 //   B (Q7-Bild)     das Wasser-Material auf einem Fluss-Bogen: Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s =
 //                   5,5 × der bei 60 s, der ruhige Fluss 59,9 gegen 10,5 (der Phasen-Zerfall, das weiße Zebra); 46 % des
-//                   ruhigen Flusses schaumbedeckt (Strähnen-Schaum ohne Gesetz).
+//                   ruhigen Flusses schaumbedeckt (Strähnen-Schaum ohne Gesetz). Der Sturm-Regen allein auf Schwarz:
+//                   0 Schlieren (eine Punktwolke, WebGPU zeichnet Punkte 1 Pixel groß), lit 0,2 % der Pixel.
+//   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss: 34 Sprünge (Luma bis 0,223 je 2 cm) — der Bezug der Ufer-Bänder
+//                   sprang am Ende des Fluss-Spiegels auf den Meeresspiegel; der Worker färbte 2137 von 7578 Ufer-
+//                   Vertices anders als der Main (die Feuchte las eine Halbbreite, die kein Segment trägt).
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -32,6 +36,8 @@ const SCHWELLE = {
     kantenRuhig: 5, // Kanten-Dichte des ruhigen Flusses bei 3600 s (mittlere Luma-Stufe je Pixel)
     hellRuhig: 0.05, // Schaum-Deckung des ruhigen Flusses (kein Ufer, kein Steil-Lauf: das Gesetz schäumt dort nicht)
     sturm: 1.3, // Kanten-Dichte des ruhigen Flusses im Sturm gegen die bei Sonne (das Gesetz: Amplitude × (w0 + w1·Wind))
+    schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
+    neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
 };
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
@@ -66,6 +72,35 @@ function urteil(b) {
             v.push(
                 `F5 ZWEI KANÄLE: ${k.abweichend} von ${k.zellen} Dichte-Zellen weichen Main ↔ Worker ab (max ${k.maxDelta})`
             );
+    }
+    if (b.uferFarbe) {
+        const u = b.uferFarbe;
+        if (u.fehler) v.push(`U: ${u.fehler}`);
+        else {
+            if (!(u.schritte > 5000)) v.push(`U LEER: nur ${u.schritte} Ufer-Schritte gemessen`);
+            if (u.spruenge > 0)
+                v.push(
+                    `U1 UFER-SPRUNG: die Boden-Farbe springt quer zum Fluss ${u.spruenge}-mal (Luma-Stufe bis ${u.maxSprung} ` +
+                        `je 2 cm, z. B. ${JSON.stringify(u.beispiele[0] || null)})`
+                );
+            const p = u.paritaet;
+            if (!p || !(p.vertices > 1000)) v.push("U2 LEER: die Farb-Parität verglich keinen Ufer-Chunk");
+            else if (p.abweichend > 0)
+                v.push(
+                    `U2 ZWEI FARBEN: ${p.abweichend} von ${p.vertices} Ufer-Vertices färbt der Worker anders als der Main ` +
+                        `(max ${p.maxDiff})`
+                );
+        }
+    }
+    if (b.regen) {
+        const g = b.regen;
+        if (g.fehler) v.push(`B4: ${g.fehler}`);
+        else {
+            if (!(g.schlieren >= S.schlieren))
+                v.push(`B4 REGEN: der Sturm zeigt ${g.schlieren} Schlieren (lit ${g.litAnteil} der Pixel)`);
+            else if (!(Math.abs(g.neigung) >= S.neigung))
+                v.push(`B5 SENKRECHT: quer zum Sturm fallen die Schlieren senkrecht (Neigung ${g.neigung})`);
+        }
     }
     if (b.ufer) {
         const u = b.ufer;
@@ -204,6 +239,15 @@ function selbsttest() {
         },
         kanal: { punkte: 6, zellen: 18000, abweichend: 0, maxDelta: 0 },
         ufer: { trocken: 180, geflutet: 0, maxFlutM: 0 },
+        uferFarbe: {
+            proben: 24,
+            schritte: 48000,
+            spruenge: 0,
+            maxSprung: 0.01,
+            beispiele: [],
+            paritaet: { vertices: 6500, abweichend: 0, maxDiff: 0 },
+        },
+        regen: { litAnteil: 0.13, schlieren: 800, neigung: 0.56 },
         koerper: {
             hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
@@ -262,6 +306,15 @@ function selbsttest() {
         ["K9 LEER", (b) => delete b.koerper.licht],
         ["K8 UFER-FLUT", (b) => Object.assign(b.ufer, { geflutet: 37, maxFlutM: 3.15 })],
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
+        [
+            "U1 UFER-SPRUNG",
+            (b) => Object.assign(b.uferFarbe, { spruenge: 34, maxSprung: 0.223, beispiele: [[607.8, -840, 8.24]] }),
+        ],
+        ["U LEER", (b) => (b.uferFarbe.schritte = 0)],
+        ["U2 ZWEI FARBEN", (b) => Object.assign(b.uferFarbe.paritaet, { abweichend: 2137, maxDiff: 0.056 })],
+        ["U2 LEER", (b) => (b.uferFarbe.paritaet = null)],
+        ["B4 REGEN", (b) => Object.assign(b.regen, { schlieren: 0, litAnteil: 0.002 })],
+        ["B5 SENKRECHT", (b) => (b.regen.neigung = 0.02)],
         ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],
         ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
         ["B3 STURM", (b) => (b.bild.sturmVerhaeltnis = 1)],
@@ -359,6 +412,7 @@ async function lauf() {
                 return i >= 0 ? process.argv[i + 1] : null;
             })();
             befund.bild = await page.evaluate((png) => window.__wasserBild({ png }), !!ordner);
+            befund.regen = await page.evaluate(() => window.__wasserRegen({}));
             for (const k of ["png60", "png3600"]) {
                 if (ordner && befund.bild[k]) {
                     fs.mkdirSync(ordner, { recursive: true });
@@ -405,6 +459,7 @@ async function lauf() {
             befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
             befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
             befund.ufer = await page.evaluate(() => window.__wasserUfer({}));
+            befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));

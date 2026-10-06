@@ -13,6 +13,8 @@
 //   window.__wasserBild(o)           Q7-Bild: das ECHTE Wasser-Material auf einem synthetischen Fluss-Bogen, gerendert
 //                                    bei Wasser-Uhr 60 s und 3600 s — Kanten-Dichte (mittlere Luma-Variation je Pixel)
 //                                    und Weiß-Anteil; ein Phasen-Zerfall macht die 3600-s-Kanten-Dichte zum Vielfachen
+//   window.__wasserUferFarbe(o)      Q7-Gestalt: Sprünge der Boden-Farbe quer zum Fluss + Worker↔Main-Farbe am Ufer
+//   window.__wasserRegen(o)          Q7-Regen: der Sturm-Regen der Welt allein auf Schwarz — Schlieren und Neigung
 //
 // Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL; Gate: scripts/diag-wasser-leben.cjs.
 "use strict";
@@ -584,6 +586,109 @@ function wasserUfer(opts) {
     })();
 }
 
+// ── Q7-Gestalt: die Ufer-Farbe (Blick 06.10. nach dem Kanal-Schnitt: die Bank trug ein Rauten-Schachbrett) ──
+// Quer zum Fluss, vom Kanal bis 3 m jenseits der Krone in 2-cm-Schritten auf dem Boden (`_voxelSurfaceY`): die EINE
+// Boden-Farbe (`_bodenFarbeAt`) darf dort keinen Sprung tragen — Strand, Schlick, Pfad und Höhen-Feuchte lesen die Höhe
+// über dem Wasser, und wo der Fluss-Spiegel an der Krone endet, sprang der Bezug auf den Meeresspiegel. Ein Sprung =
+// Luma-Stufe > 0,02 zwischen zwei Nachbar-Proben (stetig ändert sich die Farbe dort < 0,008 je 2 cm), Boden-Stufen über
+// 0,15 m (Überhang, Kante) zählen nicht. Dazu die Parität: die Worker-Farbe eines Ufer-Chunks gegen den Main.
+function wasserUferFarbe(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        const h = st.hydrosphere;
+        if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
+        const HC = r.constructor.HYDROSPHERE;
+        const L = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const proben = [];
+        for (const rv of h.rivers)
+            for (let k = 3; k + 1 < rv.points.length && proben.length < (o.n || 24); k += 9) {
+                const a = rv.points[k],
+                    b = rv.points[k + 1];
+                if (!a.inLake && !b.inLake) proben.push([a, b]);
+            }
+        let schritte = 0,
+            spruenge = 0,
+            maxSprung = 0;
+        const beispiele = [];
+        const c = [0, 0, 0];
+        for (const [a, b] of proben) {
+            const fx = b.x - a.x,
+                fz = b.z - a.z,
+                fl = Math.hypot(fx, fz) || 1;
+            const nx = -fz / fl,
+                nz = fx / fl;
+            const hw = Math.max(1, (a.width || HC.widthMin) * 0.5);
+            const D = HC.carveBedMin + HC.carveBedK * (a.width || HC.widthMin);
+            const weit = hw + Math.max(2, D * HC.carveBankSlope) + 3;
+            for (const sg of [-1, 1]) {
+                let vorL = null,
+                    vorY = null;
+                for (let d = 0; d <= weit; d += 0.02) {
+                    const x = a.x + nx * d * sg,
+                        z = a.z + nz * d * sg;
+                    const y = r._voxelSurfaceY(x, z);
+                    if (!Number.isFinite(y)) {
+                        vorL = null;
+                        continue;
+                    }
+                    r._bodenFarbeAt(x, y, z, c);
+                    const l = L(c);
+                    if (vorL !== null && Math.abs(y - vorY) < 0.15) {
+                        schritte++;
+                        const s = Math.abs(l - vorL);
+                        if (s > maxSprung) maxSprung = s;
+                        if (s > 0.02) {
+                            spruenge++;
+                            if (beispiele.length < 5)
+                                beispiele.push([
+                                    Math.round(x * 10) / 10,
+                                    Math.round(z * 10) / 10,
+                                    Math.round(d * 100) / 100,
+                                ]);
+                        }
+                    }
+                    vorL = l;
+                    vorY = y;
+                }
+            }
+        }
+        // Die Parität: ein Ufer-Chunk aus dem Worker (Farbe je Vertex im Worker gerechnet) gegen `_bodenFarbeAt` im Main.
+        let paritaet = null;
+        if (typeof r._voxelWorkerComputeChunkMesh === "function" && r._getVoxelWorker() && proben.length) {
+            await r._voxelWorkerSyncState({ op: "init" });
+            const span = r._voxelChunkConfig(0).span;
+            let vertices = 0,
+                abweichend = 0,
+                maxDiff = 0;
+            for (const [a] of proben.slice(0, o.chunks || 3)) {
+                const m = await r._voxelWorkerComputeChunkMesh(Math.floor(a.x / span), Math.floor(a.z / span), 0);
+                if (!m || m.empty) continue;
+                const pos = new Float32Array(m.positions),
+                    col = new Float32Array(m.colors);
+                for (let i = 0; i < pos.length; i += 3) {
+                    r._bodenFarbeAt(pos[i], pos[i + 1], pos[i + 2], c);
+                    vertices++;
+                    let dmax = 0;
+                    for (let k = 0; k < 3; k++) dmax = Math.max(dmax, Math.abs(Math.fround(c[k]) - col[i + k]));
+                    if (dmax > 0) abweichend++;
+                    if (dmax > maxDiff) maxDiff = dmax;
+                }
+            }
+            paritaet = { vertices, abweichend, maxDiff };
+        }
+        return {
+            proben: proben.length,
+            schritte,
+            spruenge,
+            maxSprung: Math.round(maxSprung * 1000) / 1000,
+            beispiele,
+            paritaet,
+        };
+    })();
+}
+
 // ── Q7-Bild ──
 function wasserBild(opts) {
     return (async () => {
@@ -776,11 +881,101 @@ function wasserBild(opts) {
     })();
 }
 
+// ── Q7-Regen (Befund 06.10.: im Sturm lag kein Tropfen im Bild) ──
+// Der ECHTE Regen der Welt (`_tickRain` im Sturm, dasselbe Objekt, dasselbe Material) allein auf Schwarz, mit einer
+// Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein senkrechter Lauf ≥ 4 lit Pixel; die Neigung
+// = (rechts − links) / (rechts + links) der diagonalen Nachbarn im Lauf (der Wind treibt die Schlieren schräg).
+function wasserRegen(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        const T = window.THREE;
+        const renderer = st.renderer;
+        if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
+        const W = o.w || 640,
+            H = o.h || 360;
+        renderer.setAnimationLoop(null);
+        const wetterAlt = st.weather;
+        const camAlt = st.camera;
+        const cam = new T.PerspectiveCamera(camAlt.fov, W / H, camAlt.near, camAlt.far);
+        cam.position.copy(camAlt.position);
+        const t = 61.3;
+        const wd = r._windDirAt(t);
+        // quer zum Wind blicken (der Drift liegt ganz in der Bild-Ebene)
+        cam.lookAt(cam.position.x - wd.z, cam.position.y, cam.position.z + wd.x);
+        cam.updateMatrixWorld(true);
+        cam.updateProjectionMatrix();
+        const rt = new T.RenderTarget(W, H);
+        let px = null,
+            mesh = null,
+            eltern = null;
+        try {
+            r._setWeather("stormy");
+            st.weatherTransition = null;
+            st.camera = cam;
+            r._tickRain(t * 1000);
+            const sys = r._rainSystem;
+            mesh = sys && sys.mesh;
+            if (!mesh) return { fehler: "kein Regen-Objekt" };
+            eltern = mesh.parent;
+            const szene = new T.Scene();
+            szene.background = new T.Color(0, 0, 0);
+            szene.add(mesh);
+            renderer.setRenderTarget(rt);
+            renderer.render(szene, cam);
+            renderer.setRenderTarget(null);
+            px = await renderer.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+        } finally {
+            if (mesh && eltern) eltern.add(mesh);
+            st.camera = camAlt;
+            r._setWeather(wetterAlt);
+            st.weatherTransition = null;
+            rt.dispose();
+        }
+        const lit = new Uint8Array(W * H);
+        let n = 0;
+        for (let p = 0; p < W * H; p++)
+            if (0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2] > 4) {
+                lit[p] = 1;
+                n++;
+            }
+        let schlieren = 0,
+            rechts = 0,
+            links = 0;
+        for (let x = 0; x < W; x++) {
+            let lauf = 0;
+            for (let y = 0; y <= H; y++) {
+                const an = y < H && lit[x + y * W];
+                if (an) lauf++;
+                else {
+                    if (lauf >= 4) schlieren++;
+                    lauf = 0;
+                }
+            }
+        }
+        for (let y = 0; y + 1 < H; y++)
+            for (let x = 1; x + 1 < W; x++) {
+                const p = x + y * W;
+                if (!lit[p] || lit[p + W]) continue;
+                if (lit[p + W + 1]) rechts++;
+                if (lit[p + W - 1]) links++;
+            }
+        return {
+            litAnteil: Math.round((n / (W * H)) * 1e5) / 1e5,
+            schlieren,
+            neigung: rechts + links > 0 ? Math.round(((rechts - links) / (rechts + links)) * 1000) / 1000 : 0,
+        };
+    })();
+}
+
 module.exports = {
     WASSER_INSTALL:
         `window.__wasserFluss = ${wasserFluss.toString()};` +
         `window.__wasserKanalParitaet = ${wasserKanalParitaet.toString()};` +
         `window.__wasserUfer = ${wasserUfer.toString()};` +
+        `window.__wasserUferFarbe = ${wasserUferFarbe.toString()};` +
         `window.__wasserKoerper = ${wasserKoerper.toString()};` +
-        `window.__wasserBild = ${wasserBild.toString()};`,
+        `window.__wasserBild = ${wasserBild.toString()};` +
+        `window.__wasserRegen = ${wasserRegen.toString()};`,
 };
