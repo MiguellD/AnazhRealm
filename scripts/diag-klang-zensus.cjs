@@ -181,12 +181,13 @@ function werkzeug() {
         return b !== null && Number.isFinite(b) && b < r._waterLevelAt(x, z) - 0.05;
     };
     W.fliesst = (x, z) => !!r._waterFlowAt(x, z);
-    W.glutVolumen = (e) => {
+    // Die Brenn-Fläche eines Baus (Grundfläche seiner Glut-Teile) — wie das Ohr sie misst (`_glutFlaeche`).
+    W.glutFlaeche = (e) => {
         const bp = st.blueprints && st.blueprints[e.type];
         if (!bp || !Array.isArray(bp.parts)) return 0;
-        let v = 0;
-        for (const p of bp.parts) if (p && p.material === "glut" && p.size) v += p.size.x * p.size.y * p.size.z;
-        return v;
+        let a = 0;
+        for (const p of bp.parts) if (p && p.material === "glut" && p.size) a += p.size.x * p.size.z;
+        return a;
     };
     // DIE ORTE aus dem Gesetz.
     W.orte = async (wx, wz) => {
@@ -236,7 +237,7 @@ function werkzeug() {
         const sucheGlut = () => {
             let g = null;
             for (const e of st.architectures || []) {
-                if (!e || !e.position || !(W.glutVolumen(e) > 0)) continue;
+                if (!e || !e.position || !(W.glutFlaeche(e) > 0)) continue;
                 const d = Math.hypot(e.position.x - wx, e.position.z - wz);
                 if (!g || d < g.d) g = { e, d };
             }

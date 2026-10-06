@@ -9691,8 +9691,8 @@ class AnazhRealm {
     }
 
     // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
-    // tauscht die Kandidaten (abgebaute Bauten fallen spätestens nach einem Umlauf). Die Stärke ist die Substanz: das
-    // Glut-Volumen der Teile (Material „glut"), je Bauplan gemerkt.
+    // tauscht die Kandidaten (abgebaute Bauten fallen spätestens nach einem Umlauf). Die Stärke ist die Substanz: die
+    // Brenn-Fläche der Teile (Material „glut"), je Bauplan gemerkt.
     _umweltGlutSweep(um, px, pz, n) {
         const archs = this.state.architectures;
         const N = Array.isArray(archs) ? archs.length : 0;
@@ -9711,34 +9711,35 @@ class AnazhRealm {
             const dx = e.position.x - px;
             const dz = e.position.z - pz;
             if (dx * dx + dz * dz > H * H) continue;
-            const v = this._glutVolumen(e);
-            if (v > 0) G.laufend.set(e, v);
+            const a = this._glutFlaeche(e);
+            if (a > 0) G.laufend.set(e, a);
         }
     }
 
-    // Das Glut-Volumen eines Baus (m³): Σ der Teile mit Material „glut" (Kugel · Zylinder · Quader · sonst halber
-    // Quader) × Bau-Skala³ — je Bauplan gemerkt.
-    _glutVolumen(entry) {
-        const memo = this._glutVolumenMemo || (this._glutVolumenMemo = new Map());
-        let v = memo.get(entry.type);
-        if (v === undefined) {
-            v = 0;
+    // Die Brenn-Fläche eines Baus (m²): Σ der Grundflächen seiner Teile mit Material „glut" (Kugel und Zylinder als
+    // Ellipse · Quader als Rechteck · sonst die halbe Box) × Bau-Skala² — je Bauplan gemerkt. Ein Bett-Feuer knistert
+    // mit seiner BRENNENDEN Fläche (klang:UMWELT.stimmen.glut, Bezug das Glutbett der Studio-Feuerstelle); die Höhe
+    // einer Glut-Hülle ist Flammen-Luft, kein Brennstoff — bis 06.10. las das Ohr ihr Volumen (die Feuerstelle der
+    // Architektur-Welle, 0,7 × 0,36 × 0,7 m, fiel damit −9,9 dB unter das Lagerfeuer, Dorf −36,4 dB).
+    _glutFlaeche(entry) {
+        const memo = this._glutFlaecheMemo || (this._glutFlaecheMemo = new Map());
+        let a = memo.get(entry.type);
+        if (a === undefined) {
+            a = 0;
             const bp = this.state.blueprints && this.state.blueprints[entry.type];
             const parts = bp && Array.isArray(bp.parts) ? bp.parts : [];
             for (const pt of parts) {
                 if (!pt || pt.material !== "glut" || !pt.size) continue;
                 const sx = +pt.size.x || 0;
-                const sy = +pt.size.y || 0;
                 const sz = +pt.size.z || 0;
-                if (pt.shape === "sphere") v += (Math.PI / 6) * sx * sy * sz;
-                else if (pt.shape === "cylinder") v += (Math.PI / 4) * sx * sy * sz;
-                else if (pt.shape === "box") v += sx * sy * sz;
-                else v += 0.5 * sx * sy * sz;
+                if (pt.shape === "sphere" || pt.shape === "cylinder") a += (Math.PI / 4) * sx * sz;
+                else if (pt.shape === "box") a += sx * sz;
+                else a += 0.5 * sx * sz;
             }
-            memo.set(entry.type, v);
+            memo.set(entry.type, a);
         }
         const sk = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
-        return v * sk * sk * sk;
+        return a * sk * sk;
     }
 
     // DIE WANDERNDE BÖE am Ort (x,z) zur Wind-Zeit t — dieselben Zahlen (WIND_BOE) und dieselbe Richtung
@@ -9825,13 +9826,13 @@ class AnazhRealm {
             }
         }
         // Die nächste Glut (Kandidaten des Umlaufs).
-        const glut = { d: Infinity, volumen: 0, pan: 0 };
+        const glut = { d: Infinity, flaeche: 0, pan: 0 };
         for (const quelle of [um.glut.fertig, um.glut.laufend]) {
-            for (const [e, v] of quelle) {
+            for (const [e, a] of quelle) {
                 const d = Math.hypot(e.position.x - px, e.position.z - pz);
                 if (d < glut.d) {
                     glut.d = d;
-                    glut.volumen = v;
+                    glut.flaeche = a;
                     glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
                 }
             }

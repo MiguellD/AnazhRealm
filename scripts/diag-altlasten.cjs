@@ -472,6 +472,14 @@ const FORBIDDEN = [
     // Die Körperlänge des Rufs maß eine Box3 über den GERENDERTEN Körper (skinnte jede Haut-Ecke auf der CPU) neben
     // der Seelen-Teile-Länge des Hangs: EINE Quelle ist _creatureKoerperLaenge (Hang + Stimme).
     { token: "_tierKoerperLaenge", fiel: "Welle 5 Klang — _creatureKoerperLaenge (EINE Körperlänge)" },
+    // Die Glut klingt mit ihrer BRENN-Fläche (Bezug: das Glutbett der Studio-Feuerstelle, Ø 0,76 m), nie mit dem
+    // Volumen einer Glut-Hülle.
+    { token: "_glutVolumen", fiel: "Integration W5-Klang — _glutFlaeche (die Brenn-Fläche)" },
+    {
+        token: "vRefM3",
+        fiel: "Integration W5-Klang — UMWELT.stimmen.glut.bettRefM (das Glutbett der Studio-Feuerstelle)",
+        auch: ["klang-core.js", "worlds/klang/klang.js"],
+    },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

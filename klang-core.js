@@ -429,10 +429,14 @@
             // Regen: der rain-Kanal des Wetter-Felds; unter Kronen heller (Tropfen auf Laub).
             regen:  { textur: ["regen"], sr: 32000, sek: 5.9, saat: 61, quellen: 2, spreizung: 0.8, filter: "lowpass",
                       refDb: -26, deckungDb: 3, hzBasis: 5000, hzDeckung: 4000, kalibHz: 7000 },
-            // Glut: Punkt-Quelle (Poisson-Knistern + Glut-Rauschen); Staerke = √(Glut-Volumen / vRefM3), ≤ 1
-            // (die glimmende Oberflaeche waechst mit dem Volumen^⅔, der Pegel mit ihr — hier die Wurzel als Mass).
+            // Glut: Punkt-Quelle (Poisson-Knistern + Glut-Rauschen); Staerke = √(Brenn-Flaeche / Flaeche des Bezugs-
+            // Glutbetts), ≤ 1. Ein Bett-Feuer setzt Waerme — und mit ihr das Knistern der platzenden Harz- und Wasser-
+            // Taschen — proportional zu seiner BRENNENDEN Flaeche frei (Q = q''·A): Schall-Leistung ∝ A. Bezug ist das
+            // Glutbett der Studio-Feuerstelle (fachwerk DIE MASSE: Glutbett Ø 0,76 m) — refDb gilt fuer genau dieses
+            // Feuer. Die Kugel-Huelle eines Bauplans traegt Flammen-Luft ueber dem Bett, keinen Brennstoff: der Wirt
+            // misst die Grundflaeche seiner Glut-Teile, nie ihr Volumen.
             glut:   { textur: ["glut"], sr: 32000, sek: 7.9, saat: 71, quellen: 1, filter: "lowpass", gerichtet: true,
-                      refDb: -18, dRef: 1.5, dMin: 0.6, vRefM3: 0.9, hoerweiteM: 26, hzFern: 4500, hzNah: 12000, hzHalbM: 8, kalibHz: 12000 },
+                      refDb: -18, dRef: 1.5, dMin: 0.6, bettRefM: 0.76, hoerweiteM: 26, hzFern: 4500, hzNah: 12000, hzHalbM: 8, kalibHz: 12000 },
             // Voegel: Morgenchor(Sonne) × √lebendig × Lebensraum(Deckung) × (1 − Regen)² × Windruhe.
             vogel:  { textur: ["vogelA", "vogelB"], sr: 24000, sek: [23.3, 17.9], saat: [83, 89], quellen: 2, spreizung: 0.55,
                       filter: "lowpass", refDb: -30, habitatBasis: 0.35, windStill: 0.8, hz: 9000, kalibHz: 9000,
@@ -461,9 +465,9 @@
                        ufer: { d: 3, anteil: 0.4, pan: 0.3 } },
             wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.7 },
             dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
-                       glut: { d: 4, volumen: 0.9, pan: -0.4 } },
+                       glut: { d: 4, flaeche: 0.4536, pan: -0.4 } },
             glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
-                       glut: { d: 1, volumen: 0.9, pan: -0.2 } },
+                       glut: { d: 1, flaeche: 0.4536, pan: -0.2 } },
             fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.6,
                        fall: { d: 3, hoehe: 12, pan: 0.3 } },
             sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, saisonPhase: 0.6, lebendig: 0.5 },
@@ -798,7 +802,7 @@
 
     // ── DIE MISCHUNG: Lage am Ohr → je Stimme {db, gain, hz, q, pan, rate} ──
     // lage = { windFeld, boe, deckung, regen, sonne, saisonPhase, lebendig,
-    //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, volumen, pan} }
+    //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan} }
     function umweltMischung(lage) {
         var U = UMWELT, W = U.stimmen, L = lage || {};
         var zahl = function (v, d) { return typeof v === "number" && isFinite(v) ? v : d; };
@@ -842,7 +846,8 @@
         var Sr = W.regen;
         setze("regen", regen > 0 ? Sr.refDb + db(regen) + Sr.deckungDb * deck : -Infinity, Sr.hzBasis + Sr.hzDeckung * deck, 0.707);
         // Glut (Punkt)
-        var Sg = W.glut, gl = L.glut || {}, dg = zahl(gl.d, Infinity), staerke = c01(Math.sqrt(Math.max(0, zahl(gl.volumen, 0)) / Sg.vRefM3));
+        var Sg = W.glut, gl = L.glut || {}, dg = zahl(gl.d, Infinity);
+        var staerke = c01(Math.sqrt(Math.max(0, zahl(gl.flaeche, 0)) / ((Math.PI / 4) * Sg.bettRefM * Sg.bettRefM)));
         setze("glut", staerke > 0 ? Sg.refDb + abstand(Sg, dg, false) + db(staerke) : -Infinity, hell(Sg, dg), 0.707, zahl(gl.pan, 0));
         // Voegel: Morgenchor × √Leben × Lebensraum × Regen-Ruhe × Wind-Ruhe
         var Sv = W.vogel, chor = 0, C = Sv.chor;

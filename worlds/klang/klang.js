@@ -4511,7 +4511,7 @@ applyHashSession();                                              // #s=…&p=…
     // Abstands-Regler: am Anschlag (aus) schweigt die Quelle; basis = ihre übrigen Lage-Felder.
     { k:'ufer.d', lab:'Ufer', min:1, max:50, step:0.5, aus:50, basis:{ anteil:0.3, pan:0 }, fmt: v => v >= 50 ? '—' : v.toFixed(1) + ' m' },
     { k:'fall.d', lab:'Fall', min:1, max:90, step:0.5, aus:90, basis:{ hoehe:12, pan:0 }, fmt: v => v >= 90 ? '—' : v.toFixed(1) + ' m' },
-    { k:'glut.d', lab:'Glut', min:1, max:30, step:0.5, aus:30, basis:{ volumen:U.stimmen.glut.vRefM3, pan:0 }, fmt: v => v >= 30 ? '—' : v.toFixed(1) + ' m' },
+    { k:'glut.d', lab:'Glut', min:1, max:30, step:0.5, aus:30, basis:{ flaeche:(Math.PI / 4) * U.stimmen.glut.bettRefM * U.stimmen.glut.bettRefM, pan:0 }, fmt: v => v >= 30 ? '—' : v.toFixed(1) + ' m' },
   ];
   const lies = (k) => { const t = k.split('.'); return t.length > 1 ? (lage[t[0]] ? lage[t[0]][t[1]] : undefined) : lage[k]; };
   const schreibe = (k, v) => {
