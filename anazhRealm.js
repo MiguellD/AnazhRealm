@@ -29245,7 +29245,7 @@ class AnazhRealm {
     // DER RAUSCH-ATLAS (Welle G, der Boden-Stoff): das RAUSCH-GESETZ als EINE Textur, gelesen von zwei Knoten-Bauern, die
     // jeder Boden- und Substanz-Stoff ruft. Befund 06.10. (Zerlege-Linse, GTX 1060, Mess-Wiese): der Boden-Satz kostete
     // 6,90 ms GPU für 6 Befehle und die Hälfte des Bildes; je Boden-Fragment liefen 26 `mx_noise_float` (je Aufruf 8
-    // Gitter-Hashes — die Stoff-Linse zählt 548 Ops je Aufruf, 15 722 je Fragment). Hier liest ein 3D-Wert (`raum`) 6 Texel,
+    // Gitter-Hashes — die Shader-Kosten-Linse zählt 548 Ops je Aufruf, 15 722 je Fragment). Ein 3D-Wert (`raum`) liest 6 Texel,
     // eine Ebene (`ebene`: die dritte Achse ganzzahlig, z. B. `vec3(x, z, 11)` oder der Schnitt y = 0) 2 Texel — dieselbe
     // Blende, dieselbe Gradienten-Verteilung, dieselbe Skala. `ebene(p, k, achse)`: p = die zwei Achsen der Ebene, k = die
     // ganzzahlige dritte, achse = welche Gradienten-Komponente die zweite Achse trägt ("y": der Schnitt z = k mit p = (x, y);

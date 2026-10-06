@@ -71,20 +71,19 @@
 //       node scripts/werkbank.cjs zerlegen --runden 6 --json artifacts/werkbank/zerlegen-omen.json
 //       node scripts/werkbank.cjs zerlegen --nur haupt,tiefenkopie,traa,nachbild,bloom,godrays,kontrast,feldPass,leer --runden 8
 //       node scripts/werkbank.cjs stop
-//   node scripts/werkbank.cjs stoff [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe] | stoff --selbsttest
-//                                                           DIE STOFF-LINSE (scripts/lib/stoff-linse.cjs): das erzeugte
-//                                                           Fragment-Programm des Boden-Stoffs (r184 getShaderAsync) je
-//                                                           Fragment gezählt — Abtastungen · Schatten-Vergleiche · Ladungen
-//                                                           · Ableitungen · Schleifen · Verzweigungen · Hash-Rauschen · Ops-
-//                                                           Schätzung — gegen das Boden-Budget (Exit 1 bei Bruch); `--gegen`
-//                                                           stellt ein gesichertes Programm daneben, `--rauschprobe` misst
-//                                                           das Atlas-Rauschen der GPU gegen MaterialX/das Rausch-Gesetz
-//                                                           auf der CPU; `--selbsttest` (ohne Welt) prüft die Zählung
 //   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
+//                                    [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]] | shader --selbsttest
 //                                                           DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter
-//                                                           Frame, je gezeichnetem Programm die statischen Kosten seines
-//                                                           erzeugten Fragments — Abtastungen unbedingt · im Zweig · in
-//                                                           Schleifen, Schleifen, Rausch-Aufrufe; --ordner legt das WGSL ab
+//                                                           Frame (Bühne), je gezeichnetem Programm die statischen Kosten
+//                                                           seines erzeugten Fragments je Fragment — Abtastungen unbedingt ·
+//                                                           im Zweig · in Schleifen, Ladungen, Schleifen, Rausch-Aufrufe,
+//                                                           Ops-Schätzung; `--ordner` legt das WGSL ab. `--stoff` hält einen
+//                                                           Stoff (STOFFE: boden) gegen sein Budget, `--gegen` stellt ein
+//                                                           gesichertes Programm daneben, `--datei` sichert das jetzige,
+//                                                           `--rauschprobe` misst das Atlas-Rauschen der GPU gegen MaterialX/
+//                                                           das Rausch-Gesetz auf der CPU; `--selbsttest` (ohne Welt) prüft
+//                                                           die Zählung. Exit 1: ein Fehler, kein Programm im Frame, der
+//                                                           Stoff nicht im Frame, ein Budget gebrochen, die Probe ROT
 //   node scripts/werkbank.cjs band [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE (W0): einschwingen (volle Welt, bis der Bau
 //                                                           ruht), n Proben (Maximum je Klasse × Stufe × Pass) + VRAM
@@ -123,7 +122,6 @@ const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
-const STOFF = require("./lib/stoff-linse.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 
 const root = path.resolve(__dirname, "..");
@@ -825,7 +823,6 @@ async function starte() {
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
-        await page.evaluate(STOFF.STOFF_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
@@ -1062,18 +1059,33 @@ async function starte() {
                     return send({ klassen: liste, ordner, ms: Date.now() - t0 });
                 }
                 // DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter Frame (Bühne), je gezeichnetem Programm
-                // die statischen Kosten seines erzeugten Fragments — Abtastungen unbedingt · im Zweig · in Schleifen,
-                // Schleifen, Rausch-Aufrufe; `--ordner` legt je Programm das WGSL ab.
+                // die statischen Kosten seines erzeugten Fragments; `--ordner` legt je Programm das WGSL ab. `--stoff` hält die
+                // Programme eines Stoffs (SK.STOFFE) gegen sein Budget (`--gegen` daneben, `--datei` sichert), `--rauschprobe`
+                // fährt die Rausch-Probe. `rot` sammelt jeden Bruch beim Namen — der Befehl endet dann mit Exit 1.
                 if (req.url === "/shader") {
-                    const liste = await page.evaluate(async () => {
+                    const stoff = b.stoff ? SK.STOFFE[b.stoff] : null;
+                    if (b.stoff && !stoff)
+                        return send({ fehler: `unbekannter Stoff „${b.stoff}" (STOFFE: ${Object.keys(SK.STOFFE).join(", ")})` });
+                    if ((b.gegen || b.datei) && !stoff)
+                        return send({ fehler: "--gegen und --datei gelten den Programmen eines Stoffs (--stoff <name>)" });
+                    const rot = [];
+                    const zustand = {};
+                    for (const [n, s] of Object.entries(SK.STOFFE)) zustand[n] = s.zustand;
+                    const liste = await page.evaluate(async (stoffe) => {
                         window.__buehne();
-                        return window.__shaderKosten({ frames: 1 });
-                    });
+                        return window.__shaderKosten({ frames: 1, stoffe });
+                    }, zustand);
+                    if (!liste.length) rot.push("kein Programm im Frame (die Linse ist blind)");
+                    const alle = liste
+                        .map((p) =>
+                            Object.assign(
+                                { programm: p.programm, objekte: p.objekte, klassen: p.klassen, stoffe: p.stoffe, wgsl: p.fragment },
+                                SK.wgslKosten(p.fragment)
+                            )
+                        )
+                        .sort((x, y) => y.abtastungen.unbedingt - x.abtastungen.unbedingt || y.ops - x.ops);
                     const nur = b.nur ? new RegExp(b.nur) : null;
-                    const zeilen = liste
-                        .filter((p) => !nur || nur.test(p.programm) || p.klassen.some(([k]) => nur.test(k)))
-                        .map((p) => Object.assign({ programm: p.programm, objekte: p.objekte, klassen: p.klassen, wgsl: p.fragment }, SK.wgslKosten(p.fragment)))
-                        .sort((x, y) => y.abtastungen.unbedingt - x.abtastungen.unbedingt || y.abtastungen.gesamt - x.abtastungen.gesamt);
+                    const zeilen = alle.filter((p) => !nur || nur.test(p.programm) || p.klassen.some(([k]) => nur.test(k)));
                     if (b.ordner) {
                         const ordner = path.resolve(b.ordner);
                         fs.mkdirSync(ordner, { recursive: true });
@@ -1084,17 +1096,50 @@ async function starte() {
                     const top = Math.max(1, Number(b.top) || 30);
                     const pad = (x, n) => String(x).padStart(n);
                     const tabelle = [
-                        `DIE SHADER-KOSTEN je Programm (statisch, erzeugtes Fragment-WGSL) · ${zeilen.length} Programme${nur ? " (" + b.nur + ")" : ""}`,
-                        "Abtastungen: gesamt · unbedingt · im Zweig · in Schleife | Schleifen | Rauschen | Objekte | Programm (Klassen)",
+                        `DIE SHADER-KOSTEN je Programm (statisch, erzeugtes Fragment-WGSL, je Fragment) · ${zeilen.length} Programme${nur ? " (" + b.nur + ")" : ""}`,
+                        "Abtastungen: gesamt · unbedingt · im Zweig · in Schleife | Ladungen | Schleifen | Rauschen |   Ops | Objekte | Programm [Stoff] (Klassen)",
                         ...zeilen
                             .slice(0, top)
                             .map(
                                 (z) =>
-                                    `${pad(z.abtastungen.gesamt, 4)} ${pad(z.abtastungen.unbedingt, 4)} ${pad(z.abtastungen.zweig, 4)} ${pad(z.abtastungen.schleife, 4)} | ${pad(z.schleifen, 3)} | ${pad(z.rauschen, 3)} | ${pad(z.objekte, 4)} | ${z.programm}` +
+                                    `${pad(z.abtastungen.gesamt, 4)} ${pad(z.abtastungen.unbedingt, 4)} ${pad(z.abtastungen.zweig, 4)} ${pad(z.abtastungen.schleife, 4)} | ${pad(z.ladungen, 4)} | ${pad(z.schleifen, 3)} | ${pad(z.rauschen, 3)} | ${pad(z.ops, 5)} | ${pad(z.objekte, 4)} | ${z.programm}` +
+                                    (z.stoffe.length ? " [" + z.stoffe.join(", ") + "]" : "") +
                                     (z.klassen.length > 1 ? " (" + z.klassen.map(([k, n]) => k + " ×" + n).join(", ") + ")" : "")
                             ),
                     ].join("\n");
-                    return send({ programme: zeilen.length, tabelle, ordner: b.ordner || null, ms: Date.now() - t0 });
+                    let stoffBericht = null;
+                    if (stoff) {
+                        const progs = alle.filter((z) => z.stoffe.includes(b.stoff));
+                        if (!progs.length)
+                            rot.push(`der Stoff ${b.stoff} (state.${stoff.zustand}) zeichnet in diesem Frame kein Programm (die Linse ist blind)`);
+                        const vor = b.gegen ? SK.wgslKosten(fs.readFileSync(path.resolve(b.gegen), "utf8")) : null;
+                        if (vor && !vor.einstieg) rot.push(`--gegen ${b.gegen}: kein Fragment-Einstieg (die Linse ist blind)`);
+                        if (b.datei)
+                            progs.forEach((z, i) => {
+                                const d = path.resolve(i ? b.datei.replace(/(\.wgsl)?$/, `-${i + 1}.wgsl`) : b.datei);
+                                fs.mkdirSync(path.dirname(d), { recursive: true });
+                                fs.writeFileSync(d, z.wgsl);
+                            });
+                        for (const z of progs) rot.push(...SK.kostenUrteil(z, stoff.budget, `${b.stoff} (${z.programm})`));
+                        const namen = (z) =>
+                            Object.keys(z.rauschNamen).length
+                                ? "\nRausch-Aufrufe: " + Object.entries(z.rauschNamen).map(([f, c]) => f + " ×" + c).join(" · ")
+                                : "";
+                        stoffBericht = {
+                            name: b.stoff,
+                            budget: stoff.budget,
+                            programme: progs.length,
+                            tabelle: progs
+                                .map((z, i) => `STOFF ${b.stoff} — Programm ${i + 1}/${progs.length}: ${z.programm} (${z.objekte} Objekte)\n` + SK.kostenTabelle(z, vor) + namen(z))
+                                .join("\n\n"),
+                        };
+                    }
+                    let probe = null;
+                    if (b.rauschprobe) {
+                        probe = await page.evaluate(() => window.__rauschProbe());
+                        rot.push(...SK.probeUrteil(probe));
+                    }
+                    return send({ programme: zeilen.length, tabelle, stoff: stoffBericht, probe, rot, ordner: b.ordner || null, ms: Date.now() - t0 });
                 }
                 if (req.url === "/takt") {
                     const o = await page.evaluate((k) => window.__taktZerlegung(k), {
@@ -1265,19 +1310,6 @@ async function starte() {
                 }
                 // DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): Inventur (ein Zähl-Frame + Pass-Baum + Frame-Anatomie) →
                 // Schalter aus dem echten Weg → ABBA je Schalter mit der Bank-Runde → Beleg je Schalter → Tabelle.
-                if (req.url === "/stoff") {
-                    const p = await page.evaluate(() => window.__stoffProgramm());
-                    if (!p || p.fehler) return send({ fehler: (p && p.fehler) || "kein Programm" });
-                    const nach = STOFF.stoffKosten(p.wgsl);
-                    const vor = b.gegen ? STOFF.stoffKosten(fs.readFileSync(path.resolve(b.gegen), "utf8")) : null;
-                    if (b.datei) {
-                        fs.mkdirSync(path.dirname(path.resolve(b.datei)), { recursive: true });
-                        fs.writeFileSync(path.resolve(b.datei), p.wgsl);
-                    }
-                    const urteil = STOFF.stoffUrteil(nach, STOFF.BODEN_BUDGET);
-                    const probe = b.rauschprobe ? await page.evaluate(() => window.__rauschProbe()) : null;
-                    return send({ tabelle: STOFF.stoffTabelle(nach, vor), urteil, budget: STOFF.BODEN_BUDGET, probe });
-                }
                 if (req.url === "/zerlegen") {
                     const n = Number(b.n) || 12;
                     const runden = Math.max(4, Number(b.runden) || 4);
@@ -1619,27 +1651,35 @@ async function starte() {
             process.exit(1);
         }
     }
-    else if (cmd === "stoff") {
-        if (argv.includes("--selbsttest")) {
-            const t = STOFF.selbsttest();
-            console.log(JSON.stringify(t, null, 1));
-            process.exit(t.ok ? 0 : 1);
-        }
-        o = await rufe("/stoff", { gegen: opt("--gegen"), datei: opt("--datei"), rauschprobe: argv.includes("--rauschprobe") });
-        if (o && o.tabelle) {
-            console.log(o.tabelle + "\n\nBudget " + JSON.stringify(o.budget) + " → " + (o.urteil.ok ? "GRÜN" : "ROT: " + o.urteil.befunde.join(" · ")));
-            // die Rausch-Probe: max |GPU − CPU| je Probe — über 1e-4 ist das WGSL nicht das Gesetz
-            const probeRot = o.probe ? Object.entries(o.probe).filter(([, v]) => !(v.maxFehler < 1e-4)) : [];
-            if (o.probe) console.log("Rausch-Probe " + JSON.stringify(o.probe) + (probeRot.length ? " → ROT" : " → GRÜN"));
-            process.exit(o.urteil.ok && probeRot.length === 0 ? 0 : 1);
-        }
-    }
     else if (cmd === "shader") {
-        o = await rufe("/shader", { nur: opt("--nur"), top: opt("--top", 30), ordner: opt("--ordner") });
-        if (o && o.tabelle) {
-            console.log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
-            process.exit(0);
+        if (argv.includes("--selbsttest")) {
+            const f = SK.selbsttest();
+            console.log(
+                f.length
+                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
+                    : "SELBSTTEST GRÜN: die Shader-Kosten-Linse zählt Orte, Arten, Arbeit, Rauschen und den Stoff-Graph, das Urteil nennt jeden Bruch"
+            );
+            process.exit(f.length ? 1 : 0);
         }
+        o = await rufe("/shader", {
+            nur: opt("--nur"),
+            top: opt("--top", 30),
+            ordner: opt("--ordner"),
+            stoff: opt("--stoff"),
+            gegen: opt("--gegen"),
+            datei: opt("--datei"),
+            rauschprobe: argv.includes("--rauschprobe"),
+        });
+        // Ein Fehler ist nie grün: ohne Tabelle und Urteil endet der Befehl mit Exit 1.
+        if (!o || o.fehler || !o.tabelle || !Array.isArray(o.rot)) {
+            console.log(JSON.stringify(o, null, 1));
+            process.exit(1);
+        }
+        console.log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
+        if (o.stoff) console.log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + JSON.stringify(o.stoff.budget));
+        if (o.probe) console.log("\nRausch-Probe (max |GPU − CPU| je Probe, Grenze 1e-4) " + JSON.stringify(o.probe));
+        console.log(o.rot.length ? "\nROT:\n  " + o.rot.join("\n  ") : "\nGRÜN");
+        process.exit(o.rot.length ? 1 : 0);
     }
     else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");

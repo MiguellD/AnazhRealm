@@ -570,6 +570,22 @@ const FORBIDDEN = [
     // DIE SPERRE GILT JE BODEN (W7-Vereinigung): das Gedächtnis der Sperre galt je Auge allein — ein neuer Boden im Stand
     // (Graben, Ring, Geomorph) erreichte es nicht. `_hoehlenAugeGleich` liest die Generation des Bodens (`H.boden`).
     { token: "_hoehlenAugeGleich(tor,", fiel: "W7-Vereinigung — die Sperre gilt je Auge UND je Boden (H.boden)" },
+    // DIE EINE SHADER-KOSTEN-LINSE (Welle G, 06.10.): zwei Zweige brachten je einen WGSL-Zähler — `werkbank shader`
+    // (scripts/lib/shader-kosten.cjs, Frame-Zensus je Programm) und `werkbank stoff` (scripts/lib/stoff-linse.cjs, Budget
+    // des Boden-Stoffs, eigener Funktions-Parser, eigene Rausch-Regel). Es zählt EINE Bibliothek mit EINEM Befehl: das
+    // Budget je Stoff (`shader --stoff`) und die Rausch-Probe (`--rauschprobe`) sind Teile der Shader-Kosten-Linse.
+    {
+        token: "lib/stoff-linse",
+        fiel: "Welle G — EINE Shader-Kosten-Linse (scripts/lib/shader-kosten.cjs)",
+        auch: ["scripts/werkbank.cjs", "scripts/playtest.cjs", "scripts/diag-post-kette.cjs"],
+    },
+    {
+        token: "__stoffProgramm",
+        fiel: "Welle G — das Programm eines Stoffs liest der Frame-Zensus (__shaderKosten, stoffe)",
+        auch: ["scripts/werkbank.cjs", "scripts/playtest.cjs"],
+    },
+    { token: 'cmd === "stoff"', fiel: "Welle G — `werkbank shader --stoff`", auch: ["scripts/werkbank.cjs"] },
+    { token: 'req.url === "/stoff"', fiel: "Welle G — der Weg /shader", auch: ["scripts/werkbank.cjs"] },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
