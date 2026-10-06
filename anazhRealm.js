@@ -27045,6 +27045,64 @@ class AnazhRealm {
         });
     }
 
+    // DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): das EINE Gradienten-Rauschen der Boden- und Substanz-Stoffe. Es ist
+    // das Perlin-Rauschen von MaterialX (three r184 `mx_noise_float`: die Gradienten-Menge nach `h & 15` aus dem Jenkins-
+    // lookup3-Hash, die Fünftgrad-Blende, die Skala 0,982) — nur der Hash wird nicht mehr je Fragment und Ecke gerechnet
+    // (8 Ecken × ~40 Ganzzahl-Operationen je Aufruf), er liegt EINMAL im Rausch-Atlas (`_rauschAtlas`). `P` Gitter-Zellen
+    // je Kante (die Ebene wiederholt sich nach P Zellen); die dritte Achse liegt im selben Atlas, je Schicht um `schraeg`
+    // versetzt — das Maximum des kürzesten 3D-Periodenvektors für P = 256 (43 Zellen).
+    static get RAUSCH_GESETZ() {
+        return Object.freeze({ P: 256, schraeg: [12, 42], skala: 0.982 });
+    }
+
+    // Die Bytes des Rausch-Atlas (rein, ohne THREE): je Gitter-Punkt (i, j) der Gradient von MaterialX — der Hash
+    // `mx_hash_int(i, j, 0)` (Jenkins lookup3, bit-genau wie das vendored WGSL) und die Achsen-Regel `mx_gradient_float`
+    // (u = h < 8 ? x : y; v = h < 4 ? y : h ∈ {12, 14} ? x : z; Vorzeichen aus Bit 0 und 1) —, GEPACKT je Komponente: das
+    // Texel (3i + c, j) trägt die Komponente c der vier Ecken (i, j) · (i+1, j) · (i, j+1) · (i+1, j+1) als RGBA8 snorm
+    // (±1 = ±127). So liest eine Gitter-Zelle EINE Komponente ihrer vier Ecken mit einem Texel.
+    static _rauschAtlasDaten() {
+        const P = AnazhRealm.RAUSCH_GESETZ.P;
+        const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
+        const hash = (x, y, z) => {
+            let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
+            let b = a;
+            let c = a;
+            a = (a + x) >>> 0;
+            b = (b + y) >>> 0;
+            c = (c + z) >>> 0;
+            c = ((c ^ b) - rot(b, 14)) >>> 0;
+            a = ((a ^ c) - rot(c, 11)) >>> 0;
+            b = ((b ^ a) - rot(a, 25)) >>> 0;
+            c = ((c ^ b) - rot(b, 16)) >>> 0;
+            a = ((a ^ c) - rot(c, 4)) >>> 0;
+            b = ((b ^ a) - rot(a, 14)) >>> 0;
+            c = ((c ^ b) - rot(b, 24)) >>> 0;
+            return c;
+        };
+        const g = new Int8Array(P * P * 3);
+        for (let j = 0; j < P; j++)
+            for (let i = 0; i < P; i++) {
+                const h = hash(i, j, 0) & 15;
+                const o = (j * P + i) * 3;
+                const u = h < 8 ? 0 : 1;
+                const v = h < 4 ? 1 : h === 12 || h === 14 ? 0 : 2;
+                g[o + u] += h & 1 ? -1 : 1;
+                g[o + v] += h & 2 ? -1 : 1;
+            }
+        const out = new Int8Array(3 * P * P * 4);
+        for (let j = 0; j < P; j++)
+            for (let i = 0; i < P; i++) {
+                const i1 = (i + 1) % P;
+                const j1 = (j + 1) % P;
+                const ecken = [j * P + i, j * P + i1, j1 * P + i, j1 * P + i1];
+                for (let c = 0; c < 3; c++) {
+                    const o = (j * 3 * P + 3 * i + c) * 4;
+                    for (let e = 0; e < 4; e++) out[o + e] = 127 * g[ecken[e] * 3 + c];
+                }
+            }
+        return out;
+    }
+
     // Die geteilte Aerial-Perspektive (`_applySubstanceResponse`) rufen ALLE opaken Ebenen post-lighting;
     // ihre EINE Quelle ist das Top-Level-Assignment `AnazhRealm.AERIAL = ...` am Dateiende. NIE einen
     // `static get AERIAL()` daneben — ein Getter ohne Setter schluckt das Assignment lautlos.
@@ -28630,9 +28688,10 @@ class AnazhRealm {
             const _wp = _T.positionWorld;
             // (J2) Mikro-Tiefe/Kavitäts-AO — die tiefe-Antenne (das Terrain trägt
             // seine eigene reichere triplanar-Schicht im colorNode → Gewicht 0).
-            if (_p("micro") > 0 && _T.mx_noise_float && _T.fwidth && _T.normalWorld && _T.float) {
-                const _n1 = _T.mx_noise_float(_wp.mul(0.33));
-                const _n2 = _T.mx_noise_float(_wp.mul(1.6));
+            if (_p("micro") > 0 && _T.fwidth && _T.normalWorld && _T.float) {
+                const _ra = this._rauschAtlas();
+                const _n1 = _ra.raum(_wp.mul(0.33));
+                const _n2 = _ra.raum(_wp.mul(1.6));
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // microStrength ist ein UNIFORM (der Settings-Regler lebt), profil-gewichtet. `_au.r5StructureBoost`
                 // ist in `_ensureAtmoUniforms` GARANTIERT vorhanden → kein Fallback-Branch.
@@ -29106,8 +29165,9 @@ class AnazhRealm {
                     let _baseN = _Tn.mix(_Tn.normalWorld, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
-                    if (_Tn.mx_noise_float && _Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
+                    if (_Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
                         const _B = AnazhRealm.TERRAIN_BUMP;
+                        const _ra = this._rauschAtlas();
                         const _wp = _Tn.positionWorld;
                         // Bump NUR auf flachem Boden (auf steilen Wänden ist xz-Höhen-Noise sinnlos). Schwellen (0.55, 0.85)
                         // sind gemessen (`diag-bump-flatdist`, top-surface-gefiltert): flache Wiese liegt bei ny 0.90–0.98 →
@@ -29126,15 +29186,14 @@ class AnazhRealm {
                             )
                             .clamp(0.0, 1.0)
                             .mul(_flatGate);
+                        // Der Höhen-Schnitt y = 0 des Rausch-Gesetzes (die Ebene (x, z), Achse "z").
                         const _grad = (freq, strength) => {
                             const _f = _Tn.float(freq);
                             const _h = (dx, dz) =>
-                                _Tn.mx_noise_float(
-                                    _Tn.vec3(
-                                        _wp.x.add(_Tn.float(dx)).mul(_f),
-                                        _Tn.float(0.0),
-                                        _wp.z.add(_Tn.float(dz)).mul(_f)
-                                    )
+                                _ra.ebene(
+                                    _Tn.vec2(_wp.x.add(_Tn.float(dx)).mul(_f), _wp.z.add(_Tn.float(dz)).mul(_f)),
+                                    0,
+                                    "z"
                                 );
                             const _hX = _h(_B.eps, 0).sub(_h(-_B.eps, 0));
                             const _hZ = _h(0, _B.eps).sub(_h(0, -_B.eps));
@@ -29181,6 +29240,76 @@ class AnazhRealm {
         return mat;
     }
 
+    // DER RAUSCH-ATLAS (Welle G, der Boden-Stoff): das RAUSCH-GESETZ als EINE Textur, gelesen von zwei Knoten-Bauern, die
+    // jeder Boden- und Substanz-Stoff ruft. Befund 06.10. (Zerlege-Linse, GTX 1060, Mess-Wiese): der Boden-Satz kostete
+    // 6,90 ms GPU für 6 Befehle und die Hälfte des Bildes; je Boden-Fragment liefen 26 `mx_noise_float` (je Aufruf 8
+    // Gitter-Hashes — die Stoff-Linse zählt 548 Ops je Aufruf, 15 722 je Fragment). Hier liest ein 3D-Wert (`raum`) 6 Texel,
+    // eine Ebene (`ebene`: die dritte Achse ganzzahlig, z. B. `vec3(x, z, 11)` oder der Schnitt y = 0) 2 Texel — dieselbe
+    // Blende, dieselbe Gradienten-Verteilung, dieselbe Skala. `ebene(p, k, achse)`: p = die zwei Achsen der Ebene, k = die
+    // ganzzahlige dritte, achse = welche Gradienten-Komponente die zweite Achse trägt ("y": der Schnitt z = k mit p = (x, y);
+    // "z": der Schnitt y = k mit p = (x, z)) — so trägt jeder Schnitt die Verteilung, die mx_noise in genau diesem Schnitt hat.
+    // Die Bauer legen die Knoten IN den Graph des Stoffs (keine WGSL-Funktion mit Layout): r184 baut den Code einer
+    // Layout-Funktion EINMAL je Builder-Klasse und hält ihn für jeden weiteren Stoff — eine Textur darin bekäme nur der
+    // erste Stoff gebunden, jeder weitere Shader liefe ungültig („unresolved value", Rausch-Probe 06.10.).
+    _rauschAtlas() {
+        if (this._rauschAtlasCache) return this._rauschAtlasCache;
+        const T = THREE.TSL;
+        const R = AnazhRealm.RAUSCH_GESETZ;
+        const P = R.P;
+        const tex = new THREE.DataTexture(AnazhRealm._rauschAtlasDaten(), 3 * P, P, THREE.RGBAFormat, THREE.ByteType);
+        tex.name = "rausch-atlas";
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        tex.generateMipmaps = false;
+        tex.needsUpdate = true;
+        const [A, B] = R.schraeg;
+        const m = T.int(P - 1);
+        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel
+        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
+        const blende = (t) =>
+            t
+                .mul(t)
+                .mul(t)
+                .mul(t.mul(t.mul(6.0).sub(15.0)).add(10.0));
+        // bilinear über die vier Ecken (00 · 10 · 01 · 11) mit der Fünftgrad-Blende
+        const zelle = (d, u) => T.mix(T.mix(d.x, d.y, u.x), T.mix(d.z, d.w, u.x), u.y);
+        const ebene = (p, k, achse) => {
+            const c = T.floor(p);
+            const f = p.sub(c);
+            const ci = T.ivec2(c);
+            const i0 = ci.x.add(A * k).bitAnd(m);
+            const j0 = ci.y.add(B * k).bitAnd(m);
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const d = ecken(i0, j0, 0)
+                .mul(T.vec4(f.x, fx1, f.x, fx1))
+                .add(ecken(i0, j0, achse === "z" ? 2 : 1).mul(T.vec4(f.y, f.y, fy1, fy1)));
+            return zelle(d, blende(f)).mul(R.skala);
+        };
+        const raum = (p) => {
+            const c = T.floor(p);
+            const f = p.sub(c);
+            const ci = T.ivec3(c);
+            const i0 = ci.x.add(ci.z.mul(A)).bitAnd(m);
+            const j0 = ci.y.add(ci.z.mul(B)).bitAnd(m);
+            const i1 = i0.add(A).bitAnd(m);
+            const j1 = j0.add(B).bitAnd(m);
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const fx4 = T.vec4(f.x, fx1, f.x, fx1);
+            const fy4 = T.vec4(f.y, f.y, fy1, fy1);
+            const schicht = (i, j, fz) =>
+                ecken(i, j, 0)
+                    .mul(fx4)
+                    .add(ecken(i, j, 1).mul(fy4))
+                    .add(ecken(i, j, 2).mul(fz));
+            const u = blende(f);
+            return zelle(T.mix(schicht(i0, j0, f.z), schicht(i1, j1, f.z.sub(1.0)), u.z), u).mul(R.skala);
+        };
+        this._rauschAtlasCache = { tex, raum, ebene };
+        return this._rauschAtlasCache;
+    }
+
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
     // Terrain · Vegetation · Flach-Werke lesen alle diese Quelle (Korn · Kavität · Ton · Verwitterung ·
     // Moos · Counter-Shading · Roughness · Bump, LOD-gegated); der Domänen-Unterschied reist als Parameter
@@ -29189,7 +29318,8 @@ class AnazhRealm {
     _substanceCharacter(_T, baseAlbedo, opts = {}) {
         const out = { albedo: baseAlbedo, roughNode: null, normalNode: null };
         try {
-            if (!_T || !_T.mx_noise_float || !_T.float || !_T.vec3 || !_T.mix) return out;
+            if (!_T || !_T.float || !_T.vec3 || !_T.mix) return out;
+            const _ra = this._rauschAtlas();
             const f = (v) => _T.float(v);
             const asNode = (v, d) => (v == null ? f(d) : v && v.mul ? v : f(v));
             const pos = opts.pos || _T.positionLocal;
@@ -29228,14 +29358,13 @@ class AnazhRealm {
             else if (metal > 0.5)
                 gPos = _T.vec3(pos.x.mul(grainF * 2.6), pos.y.mul(grainF * 0.4), pos.z.mul(grainF * 2.6));
             else gPos = pos.mul(f(grainF));
-            const mottle = _T.mx_noise_float(gPos);
-            const broad = _T.mx_noise_float(pos.mul(f(0.85)));
+            const mottle = _ra.raum(gPos);
+            const broad = _ra.raum(pos.mul(f(0.85)));
             // RINDE — die Risse FOLGEN der Faser (vertikale Furchen/Platten), kein isotroper Krater.
             const crN = opts.bark
-                ? _T.mx_noise_float(_T.vec3(pos.x.mul(19 + ht * 12), pos.y.mul(0.7), pos.z.mul(19 + ht * 12)))
-                : _T.mx_noise_float(pos.mul(f(6.5 + ht * 9)));
+                ? _ra.raum(_T.vec3(pos.x.mul(19 + ht * 12), pos.y.mul(0.7), pos.z.mul(19 + ht * 12)))
+                : _ra.raum(pos.mul(f(6.5 + ht * 9)));
             const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
-            const strata = _T.mx_noise_float(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)));
             // Härte → kantiger Bruch: harte, nicht-hölzerne, nicht-metallene Materialien (Fels · Stein · Kristall)
             // brechen per ridged noise (Grate + Bruch-Linien) + stärkere Schichtung; weich bleibt weich, Metall
             // behält den Schliff (1−metal). `hardF` ist ein NODE: Basis aus den Tags, per-Fragment moduliert von
@@ -29247,8 +29376,15 @@ class AnazhRealm {
                 hardF = f(hardBase)
                     .add(asNode(opts.hardDrive, 0).mul(f(hardDriveOk)))
                     .clamp(0.0, 1.0);
-            const frN = _T.mx_noise_float(pos.mul(f(3.0 + ht * 6.0)));
-            const ridge = f(1.0).sub(frN.abs()).sub(f(0.5)).mul(f(2.0)); // [-1..1] scharfe Grate/Täler
+            // Ein Term mit dem Gewicht 0 rechnet kein Rauschen: der Bruch nur, wo Härte ihn trägt (die Rinde nie), die
+            // Schichtung nur object-lokal oder für den Bump (das Terrain las sie × 0 — 1 von 26 Boden-Rauschen).
+            const bruch = hardBase > 0 || (opts.hardDrive != null && hardDriveOk > 0);
+            const ridge = bruch
+                ? f(1.0)
+                      .sub(_ra.raum(pos.mul(f(3.0 + ht * 6.0))).abs())
+                      .sub(f(0.5))
+                      .mul(f(2.0)) // [-1..1] scharfe Grate/Täler
+                : null;
             // V18.337 — die RINDE bekommt stärkeren Kontrast: die Längs-Faser (mottle, vertikale
             // Streifen) + die Risse (cavity) sind das definierende Rinden-Detail (§0 „kaum Rinde-
             // Kontrast") → für bark verstärkt; Terrain/Werke unberührt (Faktor 1.0).
@@ -29256,22 +29392,25 @@ class AnazhRealm {
             const broadAmp = 0.12 + di * 0.12;
             const cavityAmpJs = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0);
             const strataAmpJs = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
-            const mod = f(1.0)
-                .add(
-                    mottle
-                        .mul(fineFade)
-                        .mul(f(mottleAmp))
-                        .mul(f(1.0).sub(hardF.mul(f(0.5))))
-                ) // weiches Korn weicht dem Bruch
-                .add(ridge.mul(fineFade).mul(hardF.mul(f(0.3)))) // angulärer Bruch — skaliert mit hardF
-                .add(broad.mul(f(broadAmp)))
-                .add(strata.mul(f(strataAmpJs)).mul(f(1.0).add(hardF.mul(f(1.8))))) // Schichtung ∝ Härte
-                .sub(
-                    cavity
-                        .mul(fineFade)
-                        .mul(f(cavityAmpJs))
-                        .mul(f(1.0).add(hardF.mul(f(1.3))))
-                ); // Risse ∝ Härte
+            const strata =
+                strataAmpJs > 0 || (opts.bump && _T.bumpMap)
+                    ? _ra.raum(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)))
+                    : null;
+            let mod = f(1.0).add(
+                mottle
+                    .mul(fineFade)
+                    .mul(f(mottleAmp))
+                    .mul(f(1.0).sub(hardF.mul(f(0.5))))
+            ); // weiches Korn weicht dem Bruch
+            if (ridge) mod = mod.add(ridge.mul(fineFade).mul(hardF.mul(f(0.3)))); // angulärer Bruch — skaliert mit hardF
+            mod = mod.add(broad.mul(f(broadAmp)));
+            if (strataAmpJs > 0) mod = mod.add(strata.mul(f(strataAmpJs)).mul(f(1.0).add(hardF.mul(f(1.8))))); // Schichtung ∝ Härte
+            mod = mod.sub(
+                cavity
+                    .mul(fineFade)
+                    .mul(f(cavityAmpJs))
+                    .mul(f(1.0).add(hardF.mul(f(1.3))))
+            ); // Risse ∝ Härte
             albedo = albedo.mul(mod.clamp(0.5, 1.5));
             // Höhen-Gradient [0..1] (EINE Quelle für Verwitterung + Moos + Counter-Shading).
             const yLow = pos.y.mul(f(0.7)).add(f(0.5)).clamp(0, 1);
@@ -29304,8 +29443,8 @@ class AnazhRealm {
             const lebTag = Math.max(0, Math.min(1, (Number(t.lebendig) || 0) / 3));
             const mossDrive = asNode(opts.mossDrive, opts.bark ? 0.12 : lebTag);
             const flatN = asNode(opts.flatness, 1.0);
-            const mossPatch = _T
-                .mx_noise_float(wp.mul(f(0.55)))
+            const mossPatch = _ra
+                .raum(wp.mul(f(0.55)))
                 .mul(f(0.5))
                 .add(f(0.5));
             const mossLow = objLocal ? f(1.0).sub(yLow) : f(1.0); // Terrain: Flachheit treibt, kein object-y
@@ -29357,6 +29496,7 @@ class AnazhRealm {
             if (!_T || !_T.smoothstep || !_T.normalWorldGeometry || !_T.vec3 || !_T.mix || !_T.float) return albedo;
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
+            const _ra = this._rauschAtlas();
             // STEILE ∈ [0,1] aus der ROHEN Geometrie-Normale (NICHT der geflatteten
             // Shading-Normale, die `normalWorld` im Farb-Knoten trägt) = die echte Hangneigung.
             const _steep = _T.float(1.0).sub(_T.normalWorldGeometry.y).clamp(0.0, 1.0);
@@ -29370,9 +29510,7 @@ class AnazhRealm {
             // Schichtungs-Noise (Sediment-Strata in Welt-Y).
             const _lum = albedo.x.mul(0.3).add(albedo.y.mul(0.59)).add(albedo.z.mul(0.11));
             const _stone = _T.vec3(G.rockTint[0], G.rockTint[1], G.rockTint[2]);
-            const _bandN = _T.mx_noise_float
-                ? _T.mx_noise_float(_T.vec3(wp.x.mul(0.05), wp.y.mul(0.6), wp.z.mul(0.05)))
-                : _T.float(0.0);
+            const _bandN = _ra.raum(_T.vec3(wp.x.mul(0.05), wp.y.mul(0.6), wp.z.mul(0.05)));
             let _rockCol = _T.mix(_stone, _T.vec3(_lum, _lum, _lum), _T.float(G.rockLumMix));
             _rockCol = _rockCol.mul(_T.float(1.0).add(_bandN.mul(_T.float(G.rockBand))));
             const _screeCol = _T.mix(albedo, _rockCol, _T.float(G.screeMix));
@@ -29397,12 +29535,10 @@ class AnazhRealm {
             // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
             // Meadow-Grund: wo flach + grün tönt der Boden selbst zur Wiese → spärliche Halme lesen als dichte Wiese
             // (≈0 Perf, nur Albedo). Patch-Noise (`wp·0.13`) lässt karge Stellen emergieren.
-            const _meadowPatch = _T.mx_noise_float
-                ? _T
-                      .mx_noise_float(_T.vec3(wp.x.mul(0.13), wp.z.mul(0.13), _T.float(7.0)))
-                      .mul(_T.float(0.5))
-                      .add(_T.float(0.5))
-                : _T.float(0.6);
+            const _meadowPatch = _ra
+                .ebene(_T.vec2(wp.x.mul(0.13), wp.z.mul(0.13)), 7, "y")
+                .mul(_T.float(0.5))
+                .add(_T.float(0.5));
             // Die Deckung: die Halme verdecken den Grund (aus der Ferne 65–85 %, die karge Stelle zeigt mehr Erde).
             const _meadowW = _green
                 .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
@@ -29425,7 +29561,7 @@ class AnazhRealm {
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
             // Schattierung des Bodens, NAH eingeblendet (fern trägt der Meadow-Grund). ≈0 Kosten (Noise + Mix),
             // DIESELBEN Gras-Farben wie das Nah-Gras.
-            if (_T.cameraPosition && _T.mx_noise_float) {
+            if (_T.cameraPosition) {
                 // Die Wiese mit Tiefe: die Halme sind eine PARALLAX-FUNKTION — ein Halm-Noise-Höhenfeld, das der
                 // Blick in 8 Schichten durchsticht (Relief-March): hohe Halme fangen den Strahl früh (helle Spitze),
                 // Lücken lassen ihn zum dunklen Wurzelgrund. Das Höhenfeld wird per smoothstep an die ECHTE
@@ -29450,8 +29586,8 @@ class AnazhRealm {
                 const _tuft = _T.smoothstep(
                     _T.float(0.3),
                     _T.float(0.62),
-                    _T
-                        .mx_noise_float(_T.vec3(_bX.mul(_T.float(2.7)), _bZ.mul(_T.float(2.7)), _T.float(11.0)))
+                    _ra
+                        .ebene(_T.vec2(_bX.mul(_T.float(2.7)), _bZ.mul(_T.float(2.7))), 11, "y")
                         .mul(0.5)
                         .add(0.5)
                 );
@@ -29461,8 +29597,8 @@ class AnazhRealm {
                     const _li = 1.0 - _s / 8.0; // Schicht von oben (1.0) nach unten (0.125)
                     const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
                     const _pz = wp.z.add(_wanderZ.mul(_T.float(_s / 8.0)));
-                    const _hN = _T
-                        .mx_noise_float(_T.vec3(_px.mul(_f), _pz.mul(_f), _T.float(11.0)))
+                    const _hN = _ra
+                        .ebene(_T.vec2(_px.mul(_f), _pz.mul(_f)), 11, "y")
                         .mul(0.5)
                         .add(0.5);
                     // Remap an die echte Noise-Verteilung: unter 0.36 = Lücke (0), über
@@ -65646,9 +65782,9 @@ class AnazhRealm {
         const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).r;
         const kFern = _T.texture(fern.kronen.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5)).r;
         // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
-        const _laubRausch = _T.mx_noise_float
-            ? _T.mx_noise_float(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3))).mul(0.3)
-            : _T.float(0.0);
+        const _laubRausch = this._rauschAtlas()
+            .raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)))
+            .mul(0.3);
         const _k = _T
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
             .mul(_begehbar);
