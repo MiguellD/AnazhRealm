@@ -6,6 +6,7 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
+const SK = require("./lib/shader-kosten.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -37613,109 +37614,105 @@ async function checkBandWahrerAnblickGras(ctx) {
 
 // DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
-// Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM beim Bau des Boden-Stoffs (die Bauer des Atlas rufen, mx nie) · die
-// Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit
-// (WGSL gegen CPU) misst die Rausch-Probe der Stoff-Linse am echten Renderer (`werkbank stoff --rauschprobe`).
+// Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
+// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 78 Ladungen des Atlas — 7 Raum-
+// Werte × 6 + 18 Ebenen × 2 —, kein verborgener Fn-Rumpf; die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · die
+// Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
+// gegen CPU) und das Budget des erzeugten WGSL misst dieselbe Linse am echten Renderer (`werkbank shader --stoff boden
+// --rauschprobe`).
 async function checkBandRauschGesetz(ctx) {
     const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const A = r.constructor;
-        const out = {};
-        const stoffe = [
-            "_terrainGeologyAlbedo",
-            "_substanceCharacter",
-            "_wegeBodenFarbe",
-            "_applySubstanceResponse",
-            "_buildPbrNodeMaterial",
-        ];
-        out.absenz = stoffe.filter((n) => /mx_noise_float/.test(window.__codeOf(r[n])));
-        // KONSUM: der Boden-Stoff baut (Toon → PBR → Geologie · Substanz · Wege · Bump) und ruft die Atlas-Bauer
-        const T = THREE.TSL;
-        const ra = r._rauschAtlas();
-        const zahl = { raum: 0, ebene: 0, mx: 0 };
-        const alt = { raum: ra.raum, ebene: ra.ebene, mx: T.mx_noise_float };
-        ra.raum = (...a) => (zahl.raum++, alt.raum(...a));
-        ra.ebene = (...a) => (zahl.ebene++, alt.ebene(...a));
-        T.mx_noise_float = (...a) => (zahl.mx++, alt.mx(...a));
-        try {
-            r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide, geomorph: true, wegeKarte: true });
-        } catch (e) {
-            out.bauFehler = String((e && e.message) || e);
-        } finally {
-            ra.raum = alt.raum;
-            ra.ebene = alt.ebene;
-            T.mx_noise_float = alt.mx;
-        }
-        out.zahl = zahl;
-        // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
-        const P = A.RAUSCH_GESETZ.P;
-        const d = A._rauschAtlasDaten();
-        const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
-        const mxHash = (x, y, z) => {
-            let a = (0xdeadbeef + 12 + 13) >>> 0;
-            let b = a;
-            let c = a;
-            a = (a + x) >>> 0;
-            b = (b + y) >>> 0;
-            c = (c + z) >>> 0;
-            c = ((c ^ b) - rot(b, 14)) >>> 0;
-            a = ((a ^ c) - rot(c, 11)) >>> 0;
-            b = ((b ^ a) - rot(a, 25)) >>> 0;
-            c = ((c ^ b) - rot(b, 16)) >>> 0;
-            a = ((a ^ c) - rot(c, 4)) >>> 0;
-            b = ((b ^ a) - rot(a, 14)) >>> 0;
-            c = ((c ^ b) - rot(b, 24)) >>> 0;
-            return c;
-        };
-        // der Gradient als Wert der mx-Regel an den Einheits-Achsen: g = (grad(h,1,0,0), grad(h,0,1,0), grad(h,0,0,1))
-        const mxGrad = (h, x, y, z) => {
-            const u = h < 8 ? x : y;
-            const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
-            return (h & 1 ? -u : u) + (h & 2 ? -v : v);
-        };
-        const texel = (i, j, c, e) => d[(j * 3 * P + 3 * i + c) * 4 + e];
-        let falsch = 0;
-        let packung = 0;
-        const ebenen = { xy: 0, xz: 0, yz: 0 };
-        for (let j = 0; j < P; j++)
-            for (let i = 0; i < P; i++) {
-                const h = mxHash(i, j, 0) & 15;
-                const g = [mxGrad(h, 1, 0, 0), mxGrad(h, 0, 1, 0), mxGrad(h, 0, 0, 1)];
-                // unorm: −1 · 0 · +1 = 0 · 127 · 254 (nie snorm — nicht überall Render-Ziel)
-                for (let c = 0; c < 3; c++) if (texel(i, j, c, 0) !== 127 * (g[c] + 1)) falsch++;
-                if (g[2] === 0) ebenen.xy++;
-                else if (g[1] === 0) ebenen.xz++;
-                else ebenen.yz++;
-                // die Ecke (i+1, j) der Zelle i ist die Ecke (i, j) der Zelle i+1; (i, j+1) die (i, j) der Zeile j+1
-                const i1 = (i + 1) % P;
-                const j1 = (j + 1) % P;
-                for (let c = 0; c < 3; c++)
-                    if (
-                        texel(i, j, c, 1) !== texel(i1, j, c, 0) ||
-                        texel(i, j, c, 2) !== texel(i, j1, c, 0) ||
-                        texel(i, j, c, 3) !== texel(i1, j1, c, 0)
-                    )
-                        packung++;
+    await page.evaluate(SK.SHADER_INSTALL);
+    const res =
+        (await safeEvaluate(page, () => {
+            const r = window.anazhRealm;
+            const A = r.constructor;
+            const out = {};
+            const stoffe = [
+                "_terrainGeologyAlbedo",
+                "_substanceCharacter",
+                "_wegeBodenFarbe",
+                "_applySubstanceResponse",
+                "_buildPbrNodeMaterial",
+            ];
+            out.absenz = stoffe.filter((n) => /mx_noise_float/.test(window.__codeOf(r[n])));
+            // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
+            out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
+            // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
+            if (typeof A._rauschAtlasDaten !== "function") {
+                out.falsch = out.packung = "kein Rausch-Atlas";
+                return out;
             }
-        out.falsch = falsch;
-        out.packung = packung;
-        // die mx-Verteilung der Gradienten-Ebenen: (x,y) 6/16 · (x,z) 4/16 · (y,z) 6/16
-        const n = P * P;
-        out.ebenen = [ebenen.xy / n, ebenen.xz / n, ebenen.yz / n].map((v) => +v.toFixed(3));
-        out.verteilung =
-            Math.abs(ebenen.xy / n - 6 / 16) < 0.02 &&
-            Math.abs(ebenen.xz / n - 4 / 16) < 0.02 &&
-            Math.abs(ebenen.yz / n - 6 / 16) < 0.02;
-        return out;
-    });
+            const P = A.RAUSCH_GESETZ.P;
+            const d = A._rauschAtlasDaten();
+            const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
+            const mxHash = (x, y, z) => {
+                let a = (0xdeadbeef + 12 + 13) >>> 0;
+                let b = a;
+                let c = a;
+                a = (a + x) >>> 0;
+                b = (b + y) >>> 0;
+                c = (c + z) >>> 0;
+                c = ((c ^ b) - rot(b, 14)) >>> 0;
+                a = ((a ^ c) - rot(c, 11)) >>> 0;
+                b = ((b ^ a) - rot(a, 25)) >>> 0;
+                c = ((c ^ b) - rot(b, 16)) >>> 0;
+                a = ((a ^ c) - rot(c, 4)) >>> 0;
+                b = ((b ^ a) - rot(a, 14)) >>> 0;
+                c = ((c ^ b) - rot(b, 24)) >>> 0;
+                return c;
+            };
+            // der Gradient als Wert der mx-Regel an den Einheits-Achsen: g = (grad(h,1,0,0), grad(h,0,1,0), grad(h,0,0,1))
+            const mxGrad = (h, x, y, z) => {
+                const u = h < 8 ? x : y;
+                const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
+                return (h & 1 ? -u : u) + (h & 2 ? -v : v);
+            };
+            const texel = (i, j, c, e) => d[(j * 3 * P + 3 * i + c) * 4 + e];
+            let falsch = 0;
+            let packung = 0;
+            const ebenen = { xy: 0, xz: 0, yz: 0 };
+            for (let j = 0; j < P; j++)
+                for (let i = 0; i < P; i++) {
+                    const h = mxHash(i, j, 0) & 15;
+                    const g = [mxGrad(h, 1, 0, 0), mxGrad(h, 0, 1, 0), mxGrad(h, 0, 0, 1)];
+                    // unorm: −1 · 0 · +1 = 0 · 127 · 254 (nie snorm — nicht überall Render-Ziel)
+                    for (let c = 0; c < 3; c++) if (texel(i, j, c, 0) !== 127 * (g[c] + 1)) falsch++;
+                    if (g[2] === 0) ebenen.xy++;
+                    else if (g[1] === 0) ebenen.xz++;
+                    else ebenen.yz++;
+                    // die Ecke (i+1, j) der Zelle i ist die Ecke (i, j) der Zelle i+1; (i, j+1) die (i, j) der Zeile j+1
+                    const i1 = (i + 1) % P;
+                    const j1 = (j + 1) % P;
+                    for (let c = 0; c < 3; c++)
+                        if (
+                            texel(i, j, c, 1) !== texel(i1, j, c, 0) ||
+                            texel(i, j, c, 2) !== texel(i, j1, c, 0) ||
+                            texel(i, j, c, 3) !== texel(i1, j1, c, 0)
+                        )
+                            packung++;
+                }
+            out.falsch = falsch;
+            out.packung = packung;
+            // die mx-Verteilung der Gradienten-Ebenen: (x,y) 6/16 · (x,z) 4/16 · (y,z) 6/16
+            const n = P * P;
+            out.ebenen = [ebenen.xy / n, ebenen.xz / n, ebenen.yz / n].map((v) => +v.toFixed(3));
+            out.verteilung =
+                Math.abs(ebenen.xy / n - 6 / 16) < 0.02 &&
+                Math.abs(ebenen.xz / n - 4 / 16) < 0.02 &&
+                Math.abs(ebenen.yz / n - 6 / 16) < 0.02;
+            return out;
+        })) || {};
     check(
         `RAUSCH-GESETZ (A) Absenz: kein mx_noise_float in den Boden- und Substanz-Stoffen (${(res.absenz || []).join(", ") || "keiner"})`,
         Array.isArray(res.absenz) && res.absenz.length === 0
     );
+    const g = res.graph || {};
+    const atlas = (g.texturen && g.texturen["rausch-atlas"]) || 0;
+    const namen = Object.entries(g.rauschNamen || {}).map(([f, c]) => f + " ×" + c).join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der Boden-Stoff baut aus dem Atlas (raum ${res.zahl && res.zahl.raum} · ebene ${res.zahl && res.zahl.ebene} · mx ${res.zahl && res.zahl.mx})${res.bauFehler ? " — " + res.bauFehler : ""}`,
-        !res.bauFehler && res.zahl && res.zahl.raum === 7 && res.zahl.ebene === 18 && res.zahl.mx === 0
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 78
     );
     check(
         `RAUSCH-GESETZ (C) die Atlas-Bytes sind die MaterialX-Gradienten (${res.falsch} falsch) und richtig gepackt (${res.packung} Brüche)`,
