@@ -88179,8 +88179,18 @@ class AnazhRealm {
                 } else {
                     sq = -(q >= 0 ? 1 : -1) * (k.hw - Math.abs(q) + rc);
                 }
-                const sx = sl * fX + sq * qX;
-                const sz = sl * fZ + sq * qZ;
+                let sx = sl * fX + sq * qX;
+                let sz = sl * fZ + sq * qZ;
+                // Ein Wesen schiebt keinen Wagen: der Schub nimmt höchstens zurück, was der Wagen in DIESEM Schritt auf das
+                // Wesen zu fuhr (läuft es selbst in den stehenden Wagen, bleibt der Wagen stehen — das Ausweichen ist
+                // Sache des Wesens).
+                const sd = Math.hypot(sx, sz);
+                if (sd > 1e-9) {
+                    const hin = -((pos.x - x0) * sx + (pos.z - z0) * sz) / sd;
+                    const kappe = Math.max(0, Math.min(sd, hin));
+                    sx *= kappe / sd;
+                    sz *= kappe / sd;
+                }
                 pos.x += sx;
                 pos.z += sz;
                 k.schub.push(sx, sz);

@@ -241,7 +241,7 @@ function kernProbe(VC) {
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
-const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03 };
+const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03, schubM: 0.01 };
 function stationVerdict(s) {
     const out = [];
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
@@ -267,6 +267,8 @@ function stationVerdict(s) {
         if (!(rd.tauchBremse <= STATION.spaltM)) out.push(`raeder tauchen beim Bremsen ${rd.tauchBremse.toFixed(3)} m`);
         if (!(rd.spaltP75 <= STATION.spaltM)) out.push(`raeder Spalt p75 ${rd.spaltP75.toFixed(3)} m`);
     }
+    if (!s.huelleSchub) out.push("huelle-schub keine Probe");
+    else if (!(s.huelleSchub.weg <= STATION.schubM)) out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
     for (const [k, name] of [
         ["huelleBlock", "fels"],
         ["huelleBaer", "baer"],
@@ -882,6 +884,7 @@ async function probeLeben(expected) {
         const SEPW = Object.getPrototypeOf(r).constructor._verhaltenGesetz().separation;
         S.huelleBaer = await huelleProbe({
             setzen: (x, zz) => {
+                st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1); // die Probe braucht ihren Bären
                 const c = r.spawnCreatureAt(x, hh(x, zz) + 0.5, zz, "calm", "baer", { precise: true });
                 if (!c) return null;
                 return { c, x, z: zz, y: c.position.y, rc: 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1) };
@@ -892,6 +895,43 @@ async function probeLeben(expected) {
             halten: (b) => b.c.position.set(b.x, b.y, b.z),
             weg: (b) => r.removeCreature(b.c),
         });
+        // H3 — EIN WESEN SCHIEBT KEINEN WAGEN: der GT steht (keine Taste), ein Bär steht 0,5 m tief in seinem Bug (er lief
+        // hinein); 60 Frames später darf der Wagen sich nicht bewegt haben (das Ausweichen ist Sache des Wesens).
+        if (gasse) {
+            const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
+            if (gS) {
+                const h = r._fahrzeugGesetzFor(gS).drive.huelle;
+                const ux = Math.sin(gasse.fahrt);
+                const uz = Math.cos(gasse.fahrt);
+                const x0 = gS.position.x;
+                const z0 = gS.position.z;
+                const ab = h.noseX + 0.5 * SEPW.radiusBaseM * 1.0 - 0.5;
+                st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
+                const c = r.spawnCreatureAt(x0 + ux * ab, hh(x0 + ux * ab, z0 + uz * ab) + 0.5, z0 + uz * ab, "calm", "baer", {
+                    precise: true,
+                });
+                if (c) {
+                    // derselbe Abstand mit der echten Größe des Bären (bodySize), 0,5 m im Bug
+                    const rc = 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1);
+                    const d = h.noseX + rc - 0.5;
+                    const cx = x0 + ux * d;
+                    const cz = z0 + uz * d;
+                    const cy = c.position.y;
+                    const P6 = r._stepFixedSim;
+                    r._stepFixedSim = function (simTime, dt) {
+                        c.position.set(cx, cy, cz);
+                        P6.call(this, simTime, dt);
+                        c.position.set(cx, cy, cz);
+                    };
+                    tasten(false);
+                    for (let i = 0; i < 60; i++) frame(i);
+                    r._stepFixedSim = P6;
+                    S.huelleSchub = { weg: Math.hypot(gS.position.x - x0, gS.position.z - z0) };
+                    r.removeCreature(c);
+                }
+                weg(gS);
+            }
+        }
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
@@ -940,6 +980,7 @@ async function probeLeben(expected) {
             quer: { drift: 1.2 },
             raeder: { leaves: 4, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01, spaltMax: 0.05 },
             huelleBlock: { tief: 0.0, abstand: 0.02 },
+            huelleSchub: { weg: 0 },
             huelleBaer: { tief: 0.01, abstand: 0.0 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
@@ -954,6 +995,7 @@ async function probeLeben(expected) {
             ["die Räder lenken nicht (F-D8)", { raeder: { leaves: 4, rolle: 12, lenk: 0, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder lenken nicht"],
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
             ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
+            ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
         ]) {
             const v = stationVerdict(Object.assign({}, gutS, bruch));
             check(`Selbst-Test S: ‚${name}' → die Linse nennt ${soll}`, v.length >= 1 && v[0].startsWith(soll), v.join(" · "));
@@ -1102,6 +1144,11 @@ async function probeLeben(expected) {
         "H2 der GT fährt mit W gegen einen Bären: die Hülle hält am Raum des Wesens (Eindringen ≤ 0,05 m)",
         !hat("kern") && !hat("huelle-baer"),
         hz(S.huelleBaer, "baer")
+    );
+    check(
+        "H3 ein Bär steht 0,5 m im Bug des stehenden Wagens: der Wagen bleibt stehen (ein Wesen schiebt keinen Wagen)",
+        !hat("kern") && !hat("huelle-schub"),
+        S.huelleSchub ? `Weg des Wagens in 60 Frames ${S.huelleSchub.weg.toFixed(3)} m` : "keine Probe"
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
