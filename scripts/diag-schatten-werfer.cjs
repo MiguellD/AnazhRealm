@@ -37,6 +37,13 @@
 //       zeichnet in jedem Satz genau die Zellen, deren Hülle sein Frustum schneidet, byte-gleich hintereinander, nach dem
 //       Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe
 //       Kaskade Boden hinter dem Blick (der Hang wirft)
+//   W8  die Instanz-Wahl je Pass (Befund 06.10., echte GPU, Mess-Wiese: jede globale Baum-Gruppe zog in jedem Pass JEDE
+//       Instanz — das Hauptbild auch die Bäume hinter dem Blick, k1 bei schrägem Blick jeden Zwilling, jeder Pass die Stufen,
+//       deren Maske vom Auge alles verwirft): gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
+//       Instanzen im Frustum und in ihrem Fenster (nicht hinter dem Blick, nicht jenseits d1), die L0 nicht jenseits d0; der
+//       Zwilling wirft mittags in die nahe Scheibe, nicht in die ferne, ein hoher Zwilling mitten in der fernen Scheibe nur
+//       dort, und am Abend wirft ein Zwilling HINTER dem Blick in die nahe Scheibe (sein Schatten läuft nach vorn); nach jedem
+//       Pass zählt jede Gruppe wieder alle, jede Marke trägt ihren Slot
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
@@ -51,6 +58,7 @@
 //   S6  Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden
 //   S7  Selbsttest: ein zweiter compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
 //   S8  Selbsttest: die alte Regel (der Satz zeichnet den ganzen Ring in jedem Pass) macht W7 rot
+//   S9  Selbsttest: die alte Regel (eine globale Gruppe zeichnet jede Instanz in jedem Pass) macht W8 rot, beim Namen
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
 const puppeteer = require("puppeteer");
@@ -626,6 +634,174 @@ function probe(selbsttest) {
         r._kaskadenPassen(csm);
     }
 
+    // ── W8: DIE INSTANZ-WAHL JE PASS (Welle 7) — eine globale Pflanzen-Stufe zeichnet je Pass nur die Instanzen, die sein
+    // Frustum schneiden (Schatten-Pass: die Licht-Kapsel gegen die Scheibe der Kaskade) und deren Stufen-Maske vom Auge etwas
+    // behält; nach dem Pass zählt sie wieder alle. Gebaute Bäume an bekannten Orten (eine L1, eine L0, ein Zwilling, je über
+    // den Produktions-Chokepoint `_archInstanceGroupFor`/`_archGroupAlloc`/`_lodSlotStamp`): je Pass die gezeichnete Menge
+    // gegen das Soll, beim Namen. `alt` = die alte Regel (jede Instanz in jedem Pass). ──
+    const w8 = (alt) => {
+        const lu = r._ensureLodUniforms();
+        const D = r.constructor.LOD_DISTANCES;
+        const set = r._instanzWahlGruppen();
+        const res = {
+            falsch: [],
+            zurueck: true,
+            marken: true,
+            gruppen: 0,
+            haupt: null,
+            k0: null,
+            k1: null,
+            abend: null,
+        };
+        const stamm = (stufe) => {
+            const g = new T.CylinderGeometry(2, 2, 10, 8, 1);
+            g.translate(0, 5, 0);
+            const n = g.attributes.position.count;
+            g.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(n).fill(stufe), 1));
+            g.setAttribute("aH0", new T.BufferAttribute(new Float32Array(n).fill(10), 1));
+            g.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(n).fill(10), 1));
+            return g;
+        };
+        const stoff = new T.MeshBasicMaterial();
+        const G = {
+            L1: r._archInstanceGroupFor("__w8:baum", 0, { geom: stamm(2), mat: stoff, castShadow: false }, null),
+            L0: r._archInstanceGroupFor("__w8:baum", 1, { geom: stamm(1), mat: stoff, castShadow: false }, null),
+            Z: r._archInstanceGroupFor(
+                "__w8:baum",
+                2,
+                { geom: stamm(3), mat: stoff, castShadow: true, shadowTwin: true },
+                null
+            ),
+        };
+        res.gruppen = Object.values(G).filter((g) => g.wahl).length;
+        const M = new T.Matrix4();
+        const setze = (g, name, x, z, s) => {
+            const ref = r._archGroupAlloc(g, null);
+            const y = r._voxelSurfaceY(x, z);
+            M.makeScale(s, s, s).setPosition(x, Number.isFinite(y) ? y : pm.y, z);
+            g.mesh.setMatrixAt(ref.slot, M);
+            r._lodSlotStamp(g, ref.slot, s, false, null);
+            (g._w8 || (g._w8 = new Map())).set(ref, name);
+            return ref;
+        };
+        const gezeichnet = (g) => {
+            const out = [];
+            for (let s = 0; s < g.mesh.count; s++) out.push(g._w8.get(g.slotRef[s]));
+            return out.sort().join(",");
+        };
+        const pruefe = (name, g, soll) => {
+            const ist = g.mesh.visible ? gezeichnet(g) : "";
+            const s = soll.slice().sort().join(",");
+            if (ist !== s)
+                res.falsch.push(`${name}: ${r.constructor._instanzKlasse(g.key)} zeichnet [${ist}] statt [${s}]`);
+            return ist;
+        };
+        const danach = () => {
+            for (const g of Object.values(G)) {
+                if (g.mesh.count !== g.liveCount || g.mesh.visible !== g.liveCount > 0) res.zurueck = false;
+                for (let s = 0; s < g.liveCount; s++) if (g.slotRef[s].slot !== s) res.marken = false;
+            }
+        };
+        try {
+            if (alt) set.clear();
+            // ein neuer Schatten-Takt (die Werfer-Hüllen rechnen je Takt einmal — der Loop zählt ihn, die Linse hier)
+            const takt = () => {
+                r._shadowFrame = (r._shadowFrame || 0) + 1;
+                alleNeu();
+                r._kaskadenPassen(csm);
+            };
+            const uniformen = (auge) => {
+                lu.uLodAuge.value.copy(auge);
+                lu.uLodPerf.value = 1;
+                lu.uLodMaskOn.value = 1;
+                lu.uLodRef.value = D.lodRef;
+                lu.uLodD0.value = D.thresh01;
+                lu.uLodD1.value = D.thresh12;
+                lu.uLodFade.value = D.fade;
+                lu.uLodFade0.value = D.fade0;
+            };
+            const kaskade = (i, soll) => {
+                const kam = csm.lights[i].shadow.camera;
+                frustumVon(i);
+                r._passSicht(kam, false);
+                const ist = pruefe("k" + i, G.Z, soll);
+                r._passSicht(kam, true);
+                danach();
+                return ist;
+            };
+            const leere = (g) => {
+                for (const ref of [...g._w8.keys()]) {
+                    r._archGroupFree(g, ref);
+                    g._w8.delete(ref);
+                }
+            };
+            // (1) Mittag, Blick +z: A 20 m voraus (L1, wahrgenommen 20 m — im Fenster), B 20 m hinter dem Blick, C 40 m
+            // voraus (jenseits d1: die Maske verwirft alles), D 10 m voraus (das Einblend-Band der L1); E 6 m voraus (L0
+            // diesseits d0), F 22 m voraus (L0 jenseits d0); die Zwillinge G 15 m voraus und I 25 m hinter dem Blick — die
+            // Mittagssonne wirft G in die nahe Scheibe, keinen in die ferne.
+            tag(0.5);
+            blick(0);
+            const c = cam.position.clone();
+            setze(G.L1, "A", c.x, c.z + 20, 1);
+            setze(G.L1, "B", c.x, c.z - 20, 1);
+            setze(G.L1, "C", c.x, c.z + 40, 1);
+            setze(G.L1, "D", c.x + 3, c.z + 10, 1);
+            setze(G.L0, "E", c.x, c.z + 6, 1);
+            setze(G.L0, "F", c.x, c.z + 22, 1);
+            setze(G.Z, "G", c.x, c.z + 15, 1);
+            setze(G.Z, "I", c.x, c.z - 25, 1);
+            takt();
+            uniformen(c);
+            r._passSicht(cam, false);
+            res.haupt = [pruefe("haupt", G.L1, ["A", "D"]), pruefe("haupt", G.L0, ["E"])].join(" · ");
+            r._passSicht(cam, true);
+            danach();
+            res.k0 = kaskade(0, ["G"]);
+            res.k1 = kaskade(1, []);
+            // (2) Mittag, Blick in Licht-Richtung (der Schatten läuft vom Auge weg): der Zwilling H mitten in der fernen
+            // Scheibe, so hoch, dass seine Maske vom Auge etwas behält — er wirft in k1, nicht in k0.
+            leere(G.Z);
+            const L = new T.Vector3().subVectors(csm.light.target.position, csm.light.position).setY(0).normalize();
+            blick(Math.atan2(L.x, L.z));
+            const c1 = cam.position.clone();
+            const far = Math.min(cam.far, csm.maxFar);
+            const b0 = csm.breaks[0] * (far - cam.near);
+            const dH = b0 + 0.45 * (far - b0);
+            const sH = Math.ceil((12 * dH - 24) / 264) + 1;
+            setze(G.Z, "H", c1.x + L.x * dH, c1.z + L.z * dH, sH);
+            takt();
+            uniformen(c1);
+            res.fernH = { tiefe: Math.round(dH), skala: sH, nahGrenze: Math.round(b0) };
+            res.k1H = kaskade(1, ["H"]);
+            res.k0H = kaskade(0, []);
+            // (3) Abend, die Sonne im Rücken: ein 30 m hoher Zwilling 15 m HINTER dem Blick wirft seinen Schatten nach vorn in
+            // die nahe Scheibe — er wirft in k0, obwohl das Hauptbild ihn nie sieht.
+            leere(G.Z);
+            tag(0.72);
+            L.subVectors(csm.light.target.position, csm.light.position).setY(0).normalize();
+            blick(Math.atan2(L.x, L.z));
+            const c2 = cam.position.clone();
+            setze(G.Z, "J", c2.x - L.x * 15, c2.z - L.z * 15, 3);
+            takt();
+            uniformen(c2);
+            res.abend = kaskade(0, ["J"]);
+        } finally {
+            for (const g of Object.values(G)) {
+                set.add(g);
+                for (const ref of [...(g._w8 || new Map()).keys()]) r._archGroupFree(g, ref);
+                r._disposeArchInstanceGroup(g.key);
+            }
+            if (alt) for (const g of st.archInstanceGroups.values()) if (g.wahl) set.add(g);
+            tag(0.5);
+            blick(0);
+            alleNeu();
+            r._kaskadenPassen(csm);
+        }
+        return res;
+    };
+    aus.w8 = w8(false);
+    if (selbsttest) aus.s9 = w8(true);
+
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Boden-Bereich, ein freier Werfer
     // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
     // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. ──
@@ -933,6 +1109,14 @@ function probe(selbsttest) {
             "W7 … die nahe Kaskade trägt Boden hinter dem Blick (Abend, Sonne im Rücken: der Hang wirft)",
             !!a.w7 && a.w7[1].hinterWirft === true
         );
+        const w8t = (w) =>
+            `${w.gruppen} Wahl-Gruppen · haupt [${w.haupt}] · k0 [${w.k0}] · k1 [${w.k1}] · fern ${JSON.stringify(w.fernH)} k1 [${w.k1H}] k0 [${w.k0H}] · Abend k0 [${w.abend}]` +
+            (w.falsch.length ? " — falsch: " + w.falsch.join(" | ") : "");
+        check(
+            "W8 die Instanz-Wahl je Pass: jede Pflanzen-Stufe zeichnet nur, was ihr Pass sieht (Frustum · Licht-Kapsel gegen die Scheibe · Stufen-Maske vom Auge), danach wieder alle",
+            !!a.w8 && a.w8.gruppen === 3 && a.w8.falsch.length === 0 && a.w8.zurueck && a.w8.marken,
+            a.w8 ? w8t(a.w8) + (a.w8.zurueck ? "" : " — count ≠ liveCount nach dem Pass") : "keine W8-Messung"
+        );
         check(
             "Z1 Karten-Ziele: Farbe r8 · Tiefe 16 bit · benannt",
             a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt,
@@ -973,6 +1157,11 @@ function probe(selbsttest) {
                 "S8 Selbsttest: die alte Regel (der ganze Ring in jedem Pass) macht W7 rot",
                 !!a.s8 && a.s8.falsch > 0,
                 a.s8 ? w7t(a.s8) : "kein Boden-Satz"
+            );
+            check(
+                "S9 Selbsttest: die alte Regel (jede Instanz in jedem Pass) macht W8 rot und nennt die Klasse",
+                !!a.s9 && a.s9.falsch.length >= 4 && a.s9.falsch.some((x) => /__w8:baum/.test(x) || /g:__w8/.test(x)),
+                a.s9 ? w8t(a.s9) : "keine Messung"
             );
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);

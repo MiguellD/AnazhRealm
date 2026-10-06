@@ -52620,6 +52620,7 @@ class AnazhRealm {
         // NEU in den Ofen (async Wärmung statt Sync-Compile am ersten Draw; lebt sie noch, Cache-Treffer).
         if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
         this.state.archInstanceGroups.delete(groupKey);
+        if (g.wahl) this._instanzWahlGruppen().delete(g);
         if (g.satz) this._bauSatzMarke(groupKey, g.satz); // Welle 6 — der Bereich verlässt den Satz im nächsten Takt
         if (g.mesh) {
             // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
@@ -63482,9 +63483,11 @@ class AnazhRealm {
         const mesh = AnazhRealm._instanzMesh(groupGeom, leaf.mat, capacity);
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
-        // regional → lokale BBox → die Engine cullt beim Umsehen; global → nutzlos (verteilt).
+        // regional → lokale BBox → die Engine cullt beim Umsehen; global → die Instanz-Wahl je Pass (`_instanzWahlPass`).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
+        const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
+        if (wahl) mesh.userData.instanzWahl = wahl;
         // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
         // → unsichtbar für die Kamera; einzig der Schatten-Pass zählt ihn, s. Licht-Setup). Kein
         // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
@@ -63497,8 +63500,12 @@ class AnazhRealm {
         // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
         // Eine Satz-Gruppe hängt nirgends: sie ist Slot-Wahrheit und Raycast-Ziel, gezeichnet wird ihr Bereich im Satz.
         // Ebenso die EINE Atlas-Gruppe (W7): gezeichnet wird ihre Sicht je Pass (`_kartenSicht`).
+        // Die Wahl-Gruppen (Welle 7) ziehen in EIN eigenes "@wahl"-Bundle: ändert der Blick die Wahl, nimmt das Hauptbild
+        // nur die Pflanzen-Stufen neu auf, nie die übrigen globalen Gruppen.
         const bundle =
-            !leaf.tuer && !satz && !atlasGruppe ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
+            !leaf.tuer && !satz && !atlasGruppe
+                ? this._archRegionBundleFor(regional ? regionKey : wahl ? "@wahl" : "@global")
+                : null;
         if (satz) {
             mesh.frustumCulled = false;
             mesh.userData.bauSatz = satz;
@@ -63529,7 +63536,10 @@ class AnazhRealm {
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
             tuer: leaf.tuer || null, // V18.465 — Tür-Flügel-Scharnier (Template-Raum)
             satz, // Welle 6 — die Satz-Art (null = die Gruppe zeichnet selbst)
+            wahl, // Welle 7 — "haupt" | "schatten": die Instanz-Wahl je Pass (null = die Gruppe zeichnet jede Instanz)
+            wahlStufe: wahl ? leaf.geom.attributes.aLodLevel.array[0] : 0, // der Stufen-Stempel der Blende (1 · 2 · 3)
         };
+        if (wahl) this._instanzWahlGruppen().add(g);
         // Nur im NEU-Gruppen-Zweig (nicht in _archInstanceGroupGrow → g-Identität
         // bleibt): der Ref-Zähler der Cache-Gruppe steigt um 1, solange eine lebende InstancedMesh-Gruppe ihre
         // geteilte Geometrie hält; _disposeArchInstanceGroup dekrementiert 1:1.
@@ -63600,6 +63610,7 @@ class AnazhRealm {
         next.userData.archInstanceKey = g.key;
         if (g.satz) next.userData.bauSatz = g.satz; // Welle 6 — die Satz-Gruppe bleibt ohne Eltern (der Satz zeichnet)
         if (g.mesh.userData.kartenSicht) next.userData.kartenSicht = true; // W7 — die Atlas-Gruppe ebenso (die Sicht zeichnet)
+        if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
         // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
@@ -63688,6 +63699,20 @@ class AnazhRealm {
         return true;
     }
 
+    // Zwei lebende Slots tauschen ihre Bewohner — Instanz-Größen, Marken (die Halter lesen `slot` frisch) und Einträge.
+    _archGroupTausch(g, a, b) {
+        AnazhRealm._instanzTausch(g.mesh, a, b);
+        const ra = g.slotRef[a],
+            rb = g.slotRef[b];
+        ra.slot = b;
+        rb.slot = a;
+        g.slotRef[a] = rb;
+        g.slotRef[b] = ra;
+        const e = g.slotEntry[a];
+        g.slotEntry[a] = g.slotEntry[b];
+        g.slotEntry[b] = e;
+    }
+
     // DER UMZUG EINER INSTANZ (Verdichten): alles, was je Slot reist, rückt von `von` nach `nach` — die Matrix, die
     // Farbe und die Instanz-Attribute der LOD-Fassade (`LOD_INSTANZ_ATTRIBUTE`, nur wo die Geometrie die Fassade der
     // Gruppe ist; eine geteilte Quell-Geometrie trägt keine Instanz-Werte). Die EINE Liste der Instanz-Größen für jede
@@ -63710,6 +63735,28 @@ class AnazhRealm {
                 const s = a.itemSize;
                 a.array.copyWithin(nach * s, von * s, von * s + s);
                 a.needsUpdate = true;
+            }
+    }
+    // DER TAUSCH ZWEIER INSTANZEN (die Instanz-Wahl je Pass ordnet ihre Gruppe): dieselbe Liste der Instanz-Größen wie
+    // der Umzug, in beide Richtungen.
+    static _instanzTausch(mesh, a, b) {
+        const tausch = (attr, n) => {
+            if (!attr) return;
+            const x = attr.array;
+            for (let j = 0, ia = a * n, ib = b * n; j < n; j++, ia++, ib++) {
+                const t = x[ia];
+                x[ia] = x[ib];
+                x[ib] = t;
+            }
+            attr.needsUpdate = true;
+        };
+        tausch(mesh.instanceMatrix, 16);
+        tausch(mesh.instanceColor, 3);
+        const geo = mesh.geometry;
+        if (geo && geo.userData && geo.userData._lodFacade)
+            for (const k in AnazhRealm.LOD_INSTANZ_ATTRIBUTE) {
+                const at = geo.attributes[k];
+                if (at && at.isInstancedBufferAttribute) tausch(at, at.itemSize);
             }
     }
 
@@ -64442,6 +64489,7 @@ class AnazhRealm {
                 if (g.mesh) this._instanzAbschied(g.mesh);
             }
             this.state.archInstanceGroups.clear();
+            this._instanzWahlGruppen().clear();
         }
         // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore);
         // NACH den Gruppen (die Instanzen-Räumung oben kann Bundles schon leeren+löschen).
@@ -87794,6 +87842,8 @@ class AnazhRealm {
             huellen: [],
             ab: [],
             saum: [0, 1],
+            wahlHaupt: [], // die Gruppen, die der Haupt-Pass gewählt hat (sein Nachher-Haken gibt sie zurück)
+            wahlSchatten: [], // dasselbe für den laufenden Kaskaden-Pass
         };
         return this._kaskadenS;
     }
@@ -87888,14 +87938,30 @@ class AnazhRealm {
         return n;
     }
 
-    // Deckt die gerenderte Box (in IHRER Licht-Basis) die Empfänger-Punkte noch?
+    // Deckt die gerenderte Box (in IHRER Licht-Basis) die Empfänger-Punkte noch — und liegen sie in der Wahl-Scheibe, gegen
+    // die der Pass seine Werfer gewählt hat (die Scheibe beim Rendern, um `saum` geweitet)?
     _kaskadeDeckt(fit, S, n) {
         for (let k = 0; k < n; k++) {
             const p = S.v.copy(S.punkte[k]).applyMatrix4(fit.basisInv);
             if (p.x < fit.x0 || p.x > fit.x1 || p.y < fit.y0 || p.y > fit.y1 || p.z < fit.zb || p.z > fit.zt)
                 return false;
+            if (fit.ebenen)
+                for (let j = 0; j < fit.ebenen.length; j++)
+                    if (fit.ebenen[j].distanceToPoint(S.punkte[k]) < -fit.saum) return false;
         }
         return true;
+    }
+
+    // Die sechs Ebenen einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, zyklisch — CSMFrustum), die Normalen nach innen.
+    _scheibenEbenen(E, aus, mitte) {
+        mitte.set(0, 0, 0);
+        for (let j = 0; j < 8; j++) mitte.add(E[j]);
+        mitte.multiplyScalar(1 / 8);
+        aus[0].setFromCoplanarPoints(E[0], E[1], E[2]);
+        aus[1].setFromCoplanarPoints(E[4], E[5], E[6]);
+        for (let j = 0; j < 4; j++) aus[2 + j].setFromCoplanarPoints(E[j], E[(j + 1) % 4], E[((j + 1) % 4) + 4]);
+        for (let j = 0; j < 6; j++) if (aus[j].distanceToPoint(mitte) < 0) aus[j].negate();
+        return aus;
     }
 
     // Die Box der Kaskade i aus den Empfänger-Punkten: Licht-Raum-AABB → gerastete Größe → Zentrum auf dem Texel-Raster
@@ -87971,6 +88037,12 @@ class AnazhRealm {
         f.H = H;
         f.texel = tx;
         f.bild = (f.bild || 0) + 1;
+        // DIE WAHL-SCHEIBE (`_instanzWahlPass`): die Scheibe dieses Renders (S.ecken, eben von `_kaskadenScheibe` gelegt) —
+        // gegen sie wählt der Kaskaden-Pass die Instanzen der Pflanzen-Stufen, `_kaskadeDeckt` hält sie.
+        if (!f.ebenen) f.ebenen = Array.from({ length: 6 }, () => new THREE.Plane());
+        this._scheibenEbenen(S.ecken, f.ebenen, S.v);
+        const saum = AnazhRealm.INSTANZ_WAHL.saumM;
+        f.saum = saum[Math.min(i, saum.length - 1)];
         return f;
     }
 
@@ -88146,6 +88218,12 @@ class AnazhRealm {
             S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
             S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
         }
+        // Die Instanz-Wahl: die Pflanzen-Stufen zeichnen in diesem Pass nur ihre gewählten Instanzen, danach wieder alle.
+        if (nach) {
+            if (kamera === this.state.camera) this._instanzWahlZurueck(S.wahlHaupt);
+            else if (this._schattenKameraIndex(kamera) >= 0) this._instanzWahlZurueck(S.wahlSchatten);
+        } else if (k >= 0) this._instanzWahlPass("schatten", S, k);
+        else if (kamera === this.state.camera) this._instanzWahlPass("haupt", S, -1);
         // Die Sätze (Boden · Wasser · Bau) wählen ihren Abschnitt mit demselben Gesetz: was das Pass-Frustum nicht
         // schneidet, zeichnet in diesem Pass nicht.
         this._chunkSatzPass(kamera, nach, k, S);
@@ -88199,6 +88277,199 @@ class AnazhRealm {
     _passSichtZurueck(S) {
         for (let i = 0; i < S.ab.length; i++) S.ab[i].visible = true;
         S.ab.length = 0;
+    }
+
+    // DIE INSTANZ-WAHL JE PASS (Welle 7). Befund 06.10. (echte GPU, Mess-Wiese, Band in Ruhe, fester Blick): die Baum-
+    // Gruppen sind global (eine Instanz-Gruppe je Art × Gestalt × Stufe × Teil, ein Befehl je Pass), und jeder Pass zog JEDE
+    // Instanz — das Hauptbild 380k Baum-Dreiecke, davon im Blick 251k (yaw 0) bzw. 164k (yaw −0,88); jede Kaskade jeden
+    // Zwilling (k0 182k, k1 blickabhängig 14k oder 182k: die Box der fernen Scheibe, ein Licht-Raum-Quader, umschließt bei
+    // schrägem Blick die nahen Bäume); und die Stufen-Bänder der CPU (Hysterese ±3,4 m AUSSERHALB der Dither-Fenster) hielten
+    // Stufen, deren Maske vom Auge alles verwirft (eine L0 jenseits d0 kostet 17k Dreiecke je Tanne und zeigt nichts).
+    // Jeder Pass wählt: die Gruppe ordnet ihre Slots (`_archGroupTausch`), die gewählten vorn, und zeichnet nur sie (`count`
+    // über `_instanzZahl`); nach dem Pass zählt sie wieder alle (die Slot-Wahrheit: count = liveCount außerhalb jedes Passes).
+    // Gewählt ist, was (1) mit seiner Kugel das Frustum des Passes schneidet — im Schatten-Pass die Box der Kaskade UND die
+    // Kapsel der Kugel entlang des Lichts bis unter die Box gegen die Scheibe der Kaskade (`fit.ebenen`, um `saumM` geweitet:
+    // ein Werfer, dessen Schatten keinen Empfänger der Scheibe trifft, wirft dort nicht) —, und (2) dessen Stufen-Maske vom
+    // Auge etwas behält (`_instanzFenster`). Eine Gruppe zeichnet in genau EINER Pass-Art (`_instanzWahlArt`): so schreibt
+    // kein Pass die Puffer eines anderen, auch nicht der Kaskaden-Pass mitten im Hauptbild. Das Hauptbild nimmt sein Bündel
+    // neu auf, wenn die Wahl sich ändert (Zahl oder Ordnung); die Kaskaden zeichnen Bündel-Kinder direkt.
+    _instanzWahlPass(art, S, k) {
+        const set = this._instanzWahlGruppen();
+        const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
+        if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
+        if (set.size === 0) return;
+        const csm = this.state.csmNode;
+        const fit = k >= 0 && csm && csm._anazhFit ? csm._anazhFit[k] || null : null;
+        const L = this._instanzWahlLage(S, fit);
+        for (const g of set) {
+            if (g.wahl !== art) continue;
+            const m = g.mesh;
+            const n = g.liveCount | 0;
+            if (!m || n === 0 || m.visible === false) continue;
+            let kk = 0,
+                tausch = 0;
+            for (let i = 0; i < n; i++) {
+                if (!this._instanzBehalten(g, i, L)) continue;
+                if (i !== kk) {
+                    this._archGroupTausch(g, i, kk);
+                    tausch++;
+                }
+                kk++;
+            }
+            AnazhRealm._instanzZahl(m, kk);
+            liste.push(g);
+            if (art === "haupt" && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
+            if (art === "haupt") g._wahlZahl = kk;
+        }
+    }
+
+    _instanzWahlZurueck(liste) {
+        for (let i = 0; i < liste.length; i++) {
+            const g = liste[i];
+            if (g.mesh) AnazhRealm._instanzZahl(g.mesh, g.liveCount | 0);
+        }
+        liste.length = 0;
+    }
+
+    _instanzWahlGruppen() {
+        return this._wahlGruppen || (this._wahlGruppen = new Set());
+    }
+
+    // Welche Gruppe je Pass wählt: eine GLOBALE Pflanzen-Stufe — ihre Geometrie trägt den Stufen-Stempel der Studio-Blende
+    // (aLodLevel 1 L0 · 2 L1 · 3 Zwilling/einzige Nah-Stufe) und die Instanz-Fassade (aH0) — die in genau EINER Pass-Art
+    // zeichnet: der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild. Eine Gruppe,
+    // die in beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
+    _instanzWahlArt(leaf, castShadow, regional) {
+        if (regional || !leaf || leaf.tuer || leaf.atlasGruppe) return null;
+        const at = leaf.geom && leaf.geom.attributes;
+        if (!at || !at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
+        if (leaf.shadowTwin) return "schatten";
+        return castShadow ? null : "haupt";
+    }
+
+    // Die Lage eines Passes für die Wahl: sein Frustum, die Wahl-Scheibe der Kaskade und die Fenster der Blende (die LIVE-
+    // Uniforms, die jede Maske liest — dasselbe Auge, derselbe Perf-Streck, dieselben Kanten).
+    _instanzWahlLage(S, fit) {
+        const L =
+            S.wahlLage ||
+            (S.wahlLage = { v: new THREE.Vector3(), e: new THREE.Vector3(), kugel: new THREE.Sphere(), weiten: null });
+        L.fr = S.frustum;
+        L.fit = fit && fit.ebenen ? fit : null;
+        L.dir = S.dir;
+        L.rand = AnazhRealm.INSTANZ_WAHL.randM;
+        const lu = this.state.lodUniforms;
+        L.an = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && lu.uLodAuge && lu.uLodPerf);
+        if (L.an) {
+            L.ex = lu.uLodAuge.value.x;
+            L.ez = lu.uLodAuge.value.z;
+            L.perf = lu.uLodPerf.value;
+            L.ref = lu.uLodRef.value;
+            L.d0 = lu.uLodD0.value;
+            L.d1 = lu.uLodD1.value;
+            L.f0 = lu.uLodFade0.value;
+        }
+        return L;
+    }
+
+    // Behält der Pass die Instanz im Slot i? Ihre Welt-Kugel (Geometrie-Kugel × Instanz-Matrix + Wind-Saum) schneidet das
+    // Frustum des Passes; im Schatten-Pass trifft ihre Licht-Kapsel die Wahl-Scheibe; ihre Stufen-Maske behält etwas.
+    _instanzBehalten(g, i, L) {
+        const m = g.mesh;
+        const geo = m.geometry;
+        if (!geo.boundingSphere) geo.computeBoundingSphere();
+        const bs = geo.boundingSphere;
+        const c = bs.center;
+        const a = m.instanceMatrix.array;
+        const o = i * 16;
+        const s2 = Math.max(
+            a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2],
+            a[o + 4] * a[o + 4] + a[o + 5] * a[o + 5] + a[o + 6] * a[o + 6],
+            a[o + 8] * a[o + 8] + a[o + 9] * a[o + 9] + a[o + 10] * a[o + 10]
+        );
+        const K = L.kugel;
+        K.center.set(
+            a[o] * c.x + a[o + 4] * c.y + a[o + 8] * c.z + a[o + 12],
+            a[o + 1] * c.x + a[o + 5] * c.y + a[o + 9] * c.z + a[o + 13],
+            a[o + 2] * c.x + a[o + 6] * c.y + a[o + 10] * c.z + a[o + 14]
+        );
+        K.center.applyMatrix4(m.matrixWorld);
+        K.radius = bs.radius * Math.sqrt(s2) + L.rand;
+        if (!L.fr.intersectsSphere(K)) return false;
+        if (L.fit && !this._instanzKapselTrifft(K, L)) return false;
+        return !L.an || this._instanzFenster(g, i, L);
+    }
+
+    // Die Licht-Kapsel der Kugel (von ihr entlang des Lichts bis unter die Box der Kaskade) gegen die Wahl-Scheibe: liegt sie
+    // für EINE Ebene der Scheibe ganz außerhalb (beide End-Kugeln jenseits der um `saum` geweiteten Ebene), fällt ihr
+    // Schatten auf keinen Empfänger dieser Kaskade.
+    _instanzKapselTrifft(K, L) {
+        const f = L.fit;
+        const v = L.v.copy(K.center).applyMatrix4(f.basisInv);
+        const t = Math.max(0, v.z - f.zb + K.radius);
+        const e = L.e.copy(K.center).addScaledVector(L.dir, t);
+        const rr = K.radius + f.saum;
+        for (let j = 0; j < f.ebenen.length; j++) {
+            const P = f.ebenen[j];
+            if (P.distanceToPoint(K.center) < -rr && P.distanceToPoint(e) < -rr) return false;
+        }
+        return true;
+    }
+
+    // DAS FENSTER DER STUFE (die Studio-Blende `_lodCrossfadeMaskNode`, je Vertex vom Auge in XZ × uLodPerf × min(uLodRef/
+    // Sichthöhe, 1)): die L0 (Stufe 1) behält nur diesseits d0 etwas (Blatt-Metrik aH0L), die L1 (2) jenseits d0 − fade0
+    // (Blatt-Metrik) und diesseits d1 (Baum-Metrik aH0), der Zwilling und die einzige Nah-Stufe (3) diesseits d1. Die
+    // Vertices einer Instanz liegen in XZ höchstens `w` um ihre Achse (die Weite der Gestalt × die Norm des XZ-Blocks der
+    // Matrix + was eine Schräglage aus der Höhe trägt + der Wind-Saum).
+    _instanzFenster(g, i, L) {
+        const m = g.mesh;
+        const geo = m.geometry;
+        const weite = this._instanzWeite(geo);
+        const a = m.instanceMatrix.array;
+        const o = i * 16;
+        const p = a[o],
+            q = a[o + 8],
+            r = a[o + 2],
+            s = a[o + 10];
+        const F = p * p + q * q + r * r + s * s;
+        const det = p * s - q * r;
+        const norm = Math.sqrt(0.5 * (F + Math.sqrt(Math.max(0, F * F - 4 * det * det))));
+        const w = weite.r * norm + weite.y * Math.sqrt(a[o + 4] * a[o + 4] + a[o + 6] * a[o + 6]) + L.rand;
+        const mw = m.matrixWorld.elements;
+        const dx = a[o + 12] + mw[12] - L.ex,
+            dz = a[o + 14] + mw[14] - L.ez;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        const dMin = Math.max(0, d - w) * L.perf,
+            dMax = (d + w) * L.perf;
+        const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
+        const kL = Math.min(L.ref / Math.max(geo.attributes.aH0L.array[i], 1e-3), 1);
+        const stufe = g.wahlStufe;
+        if (stufe === 1) return dMin * kL < L.d0;
+        if (stufe === 2) return dMax * kL > L.d0 - L.f0 && dMin * kS < L.d1;
+        if (stufe === 3) return dMin * kS < L.d1;
+        return true;
+    }
+
+    // Die Weite einer Gestalt um ihre Achse (größter XZ-Abstand eines Vertex) und ihre größte Höhe |y|, je Positions-Puffer
+    // einmal gerechnet (die Fassaden einer Gestalt teilen ihn).
+    _instanzWeite(geo) {
+        const pos = geo.attributes.position;
+        const W = this._wahlWeiten || (this._wahlWeiten = new WeakMap());
+        let w = W.get(pos);
+        if (!w) {
+            let r2 = 0,
+                y = 0;
+            for (let j = 0; j < pos.count; j++) {
+                const px = pos.getX(j),
+                    pz = pos.getZ(j);
+                const v = px * px + pz * pz;
+                if (v > r2) r2 = v;
+                const ay = Math.abs(pos.getY(j));
+                if (ay > y) y = ay;
+            }
+            w = { r: Math.sqrt(r2), y };
+            W.set(pos, w);
+        }
+        return w;
     }
 
     // Kaskaden-Index einer Schatten-Kamera (die EINE Map ohne CSM = 0), sonst −1.
@@ -92720,6 +92991,12 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     luftM: 4,
     biasM: Object.freeze([-0.25, -0.5]),
 });
+// DIE INSTANZ-WAHL JE PASS (`_instanzWahlPass`, Welle 7): eine globale Pflanzen-Stufe (Baum · Strauch, L0 · L1 · Zwilling)
+// zeichnet je Pass nur ihre Instanzen, deren Kugel (Geometrie-Kugel × Instanz + `randM` für Wind) das Frustum des Passes
+// schneidet — im Schatten-Pass die Kapsel der Kugel entlang des Lichts bis unter die Box gegen die Scheibe der Kaskade —
+// und deren Stufen-Maske vom Auge etwas behält. `saumM` je Kaskade: so weit liegt die Wahl-Scheibe außerhalb der Scheibe
+// beim Rendern; läuft die Scheibe zwischen zwei Karten darüber hinaus, rendert die Kaskade neu (`_kaskadeDeckt`).
+AnazhRealm.INSTANZ_WAHL = Object.freeze({ randM: 2, saumM: Object.freeze([8, 24]) });
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
 // Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`). Der Hub
