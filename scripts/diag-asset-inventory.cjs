@@ -223,10 +223,13 @@ const server = http.createServer((req, res) => {
         //   boden-satz     — _chunkSatz("boden") (Welle B: der Terrain-Ring als EIN Satz, Stitch-Bänder
         //                    eingeschlossen — die Chunk-Meshes sind CPU-Körper ausserhalb der Szene)
         //   wetter-regen   — _ensureRainSystem (Niederschlags-Punkte, nur bei rainy/stormy sichtbar)
+        //   dorf-rauch     — _dorfRauchZeichnen (der Rauch der Siedlungs-Kamine, EIN Satz; nur, wo ein Dorf raucht — ohne
+        //                    Stempel fiel er je nach Weltzustand als Emitter ohne Identität rot)
         // FAIL-CLOSED: ein Stempel, den das Wörterbuch nicht kennt, ist eine VERLETZUNG.
         const INVENTAR = {
             "boden-satz": { b: "substanz", why: "boden-satz (Terrain-Ring + Stitch als EIN Satz)" },
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
+            "dorf-rauch": { b: "substanz", why: "dorf-rauch (Rauch der Siedlungs-Kamine, ein Satz)" },
         };
         const chainOf = (node) => {
             const c = [];

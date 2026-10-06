@@ -48837,6 +48837,7 @@ class AnazhRealm {
             mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
             mesh.name = "dorf-rauch";
+            mesh.userData.inventar = "dorf-rauch"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             AnazhRealm._instanzZahl(mesh, 0);
