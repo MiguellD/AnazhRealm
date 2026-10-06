@@ -570,6 +570,9 @@ const FORBIDDEN = [
     // DIE SPERRE GILT JE BODEN (W7-Vereinigung): das Gedächtnis der Sperre galt je Auge allein — ein neuer Boden im Stand
     // (Graben, Ring, Geomorph) erreichte es nicht. `_hoehlenAugeGleich` liest die Generation des Bodens (`H.boden`).
     { token: "_hoehlenAugeGleich(tor,", fiel: "W7-Vereinigung — die Sperre gilt je Auge UND je Boden (H.boden)" },
+    // WELLE L (koerper-haus, 06.10.) — die gefallenen Namen je Klasse (Q4 Stand der Sicht · Q5 Haus-Hülle · Q15 Siedlung).
+    { token: "_slopeProbeV", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
+    { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

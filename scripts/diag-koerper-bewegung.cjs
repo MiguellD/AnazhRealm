@@ -16,7 +16,7 @@
 //  (C) POSEN-BLEND stetig: Δw ≤ 0.2 je Tick beim Schwellen-Sprung 0→6 m/s
 //      und zurück — am Konsumenten gemessen (p._gaitW über echte Ticks).
 //  (D) TIER-BODENKONTAKT: auf einem 30°-Hang (gestubbter Boden-Chokepoint
-//      _voxelSurfaceY) folgt der Kreatur-Root-Pitch dem Hang (30° ± 5°,
+//      Gesetz-Leser _kreaturBodenUnter) folgt der Kreatur-Root-Pitch dem Hang (30° ± 5°,
 //      Vorzeichen: vorn höher → Nase hebt) und die Kreatur steht GEERDET
 //      (Sohlen an der Proben-Mitte — der +0.5-m-Schwebe-Anker ist tot).
 //  (E) FUSS-IK-KONSUM: gesenkter Boden (gestubbter _gaitBodenY-Chokepoint)
@@ -284,6 +284,8 @@ const server = http.createServer((req, res) => {
                     r.animatePlayerSoul(t0);
                     for (let k = 1; k <= 8; k++) r.animatePlayerSoul(t0 + k / 60);
                 };
+                const savedAir = s.isInAir;
+                s.isInAir = false; // der stehende Körper (die Luft-Sperre prüft E2)
                 r._gaitBodenY = () => soleY; // ebener Boden = Sohlen-Ebene
                 probenFrisch();
                 tickeIdle(500);
@@ -300,8 +302,18 @@ const server = http.createServer((req, res) => {
                     for (const kk of ["hip", "knee", "ankle"])
                         if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
                 if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
+                // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
+                // das Becken NICHT (vorher sank es im Sprung 0,25 m, während die Kapsel 0,24–0,31 m stieg)
+                r._gaitBodenY = () => soleY - 0.25;
+                s.isInAir = true;
+                probenFrisch();
+                tickeIdle(530);
+                const hLuft = rig.hips.position.y;
+                s.isInAir = savedAir;
                 r._gaitBodenY = savedBoden; // restaurieren
                 probenFrisch();
+                o.beckenLuft = hLuft;
+                o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
                 o.beckenFlach = h0;
                 o.beckenGesenkt = h1;
                 o.checks.eBeckenSenkt = Number.isFinite(h0) && Number.isFinite(h1) && h1 < h0 - 0.1;
@@ -323,14 +335,15 @@ const server = http.createServer((req, res) => {
                 const saveMax = s.maxCreatures;
                 s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 2);
                 const steig = Math.tan(Math.PI / 6); // 30°
-                const ebene = (x, z) => 10 + (z - pm.z) * steig;
+                // 200 m über jeder Boden-Karte: der Stand-Leser der Sicht (_standSicht) trägt dort das Gesetz der Ebene
+                const ebene = (x, z) => 210 + (z - pm.z) * steig;
                 const dist = Math.sqrt(A.TIER_FERN_DIST_SQ) * 0.3; // sicher in der Voll-Zone
                 const cx = pm.x + dist,
                     cz = pm.z;
                 const c = r.spawnCreatureAt(cx, 30, cz, "happy", "wesen", { precise: true, bodySize: 1 });
                 if (!c) return { error: "Tier-Spawn fehlgeschlagen" };
-                const savedSurf = r._voxelSurfaceY;
-                r._voxelSurfaceY = (x, z) => ebene(x, z);
+                const savedSurf = r._kreaturBodenUnter;
+                r._kreaturBodenUnter = (x, _y, z) => ebene(x, z);
                 const tiere = (n) => {
                     for (let k = 0; k < n; k++) {
                         r.updateCreatures(0.02);
@@ -353,7 +366,7 @@ const server = http.createServer((req, res) => {
                 r._slopePitch = savedPitch; // restaurieren (Gate-Hook-Lehre)
                 o.s2PitchDeg = (c.rotation.x * 180) / Math.PI;
                 o.checks.s2LensFires = Math.abs(o.s2PitchDeg) < 3; // ohne Formel kein Hang-Folgen
-                r._voxelSurfaceY = savedSurf; // restaurieren
+                r._kreaturBodenUnter = savedSurf; // restaurieren
                 // Boden-Caches der Welt-Kreaturen entstubben (kein stale Hang-Boden)
                 for (const cr of s.creatures) {
                     const ud = cr.userData || {};
@@ -416,6 +429,10 @@ const server = http.createServer((req, res) => {
         check(c.pitchNaNWand, "Hang-Formel: NaN-/Null-Spann-Wand ⇒ 0");
         check(c.eBeckenSenkt, "(E) FUSS-IK-KONSUM: gesenkter Boden ⇒ das Becken senkt sich aufs tiefere Bein");
         check(c.eAbgrundOhneNaN, "(E) Abgrund unter den Füßen ⇒ gestreckt, alle Gelenke finite (NaN-Wand)");
+        check(
+            c.eLuftSperre,
+            `(E2) LUFT-SPERRE: in der Luft senkt kein gesenkter Boden das Becken (${out.beckenFlach.toFixed(3)} → ${out.beckenLuft.toFixed(3)})`
+        );
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(

@@ -19404,9 +19404,16 @@ async function checkBandVoxelTerrainCore(ctx) {
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
-                // Tier-Bodenkontakt: die Sohlen stehen AUF _voxelSurfaceY (kein Schwebe-Anker, kein Sinus-Bob;
-                // ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser).
-                const expected = voxelY;
+                // Tier-Bodenkontakt: die Sohlen stehen auf dem SICHTBAREN Boden um das Gesetz (Welle L, Q4: die
+                // Boden-Karte des Chunks im STAND_SICHT_BAND um _voxelSurfaceY, sonst das Gesetz) — kein Schwebe-Anker,
+                // kein Sinus-Bob; ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser.
+                const span = r._voxelChunkConfig(0).span;
+                const kcx = Math.floor(testX / span);
+                const kcz = Math.floor(testZ / span);
+                const ke = r.state.voxelChunks ? r.state.voxelChunks.get(`${kcx},${kcz}`) : null;
+                const karte = ke && ke.surfMap ? r._chunkSurfaceAt(ke, kcx, kcz, testX, testZ) : null;
+                const expected =
+                    Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND ? karte : voxelY;
                 const actual = creature.position.y;
                 out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
                 // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
@@ -19452,7 +19459,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
         check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
         check(
-            "Voxel V9.28: updateCreatures positioniert Kreaturen auf _voxelSurfaceY (V9.25 Phase 5b ehrlich abgeschlossen)",
+            "Voxel V9.28: updateCreatures stellt Kreaturen auf den sichtbaren Boden um _voxelSurfaceY (Stand-Leser der Sicht, Welle L)",
             voxelP5c1Results.creatureOnVoxelSurface
         );
         check(
@@ -23939,10 +23946,14 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` ist der EINZIGE `_voxelSurfaceY`-Leser;
+        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_kreaturBodenUnter`:
+        // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle);
         // der Helper selbst liest `_waterLevelAt` + `_isAboveWaterAt`.
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
-        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(window.__codeOf(r._creatureGroundY));
+        out.usesVoxelSurfaceY =
+            /_kreaturBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
+            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._kreaturBodenUnter)) &&
+            /_voxelSurfaceY\(/.test(window.__codeOf(r._kreaturBodenUnter));
         out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
         out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
 
@@ -23964,9 +23975,16 @@ async function checkBandWelleV11D1WaterContext(ctx) {
             r._creatureGroundY(m);
             out.gRefreshOnMove = r._creatureGroundBudget === 3;
             r._creatureGroundBudget = 0; // Budget erschöpft
+            m.position.x += 1.0; // eine bekannte Kreatur, > 0.5 m gewandert: ohne Budget trägt ihr Cache
+            const gm = r._creatureGroundY(m);
             const fresh = mk(800, 800);
-            const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → Makro-Schätzwert, KEIN Scan
-            out.gBudgetBound = r._creatureGroundBudget === 0 && typeof gf === "number" && Number.isFinite(gf);
+            const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → EIN Scan ohne Budget (Welle L, Höhle)
+            out.gBudgetBound =
+                r._creatureGroundBudget === 0 &&
+                gm === m.userData.cachedGroundY &&
+                typeof gf === "number" &&
+                Number.isFinite(gf) &&
+                fresh.userData.cachedGroundY === gf;
         }
 
         return out;
@@ -24013,7 +24031,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
     check(
-        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25, via _creatureGroundY)",
+        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_kreaturBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
         res.usesVoxelSurfaceY === true
     );
     check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
@@ -24024,7 +24042,10 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
         check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
         check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
-        check("V17.113: Budget erschöpft → kein Scan mehr, Makro-Fallback (FPS-Bound)", res.gBudgetBound === true);
+        check(
+            "V17.113: Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
+            res.gBudgetBound === true
+        );
     }
 }
 

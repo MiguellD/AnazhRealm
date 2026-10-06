@@ -16878,19 +16878,38 @@ class AnazhRealm {
         );
         g.amp = Math.max(0.7, Math.min(1.3, 0.55 + 0.45 * (v / vRef)));
         g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw) : null;
+        // ohne Boden-IK (Luft, Peer) löst jeder Fuß-Lock — die Landung friert die Stand-Füße frisch ein
+        const ikC = !g.ik && mesh.userData && mesh.userData._gaitIK;
+        if (ikC) ikC.lockL.on = ikC.lockR.on = false;
         return g;
     }
-    // Der Boden unterm Fuß — der EINE Proben-Chokepoint des Biped-IK (die
-    // Linse stubbt IHN; die Kreatur probt über _creatureSlopeProbe).
-    _gaitBodenY(x, z) {
-        return this.getTerrainHeightAt(x, z);
+    // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
+    // dem, was das Auge sieht. Steht der Körper auf einem Bauwerk (`struktur`), trägt dessen Oberkante (eben per
+    // Definition); sonst die Boden-Karte des Chunks (`_chunkSurfaceAt`, bilinear, das gezeichnete Mesh) — solange sie im
+    // STAND_SICHT_BAND um den Träger liegt; außerhalb (Höhle, Überhang: die Karte trägt die Oberkante der Säule) und ohne
+    // Karte der Träger selbst. Leser: Fuß-IK des Menschen (`_gaitBodenY`), Tier-Lage (`_creatureSlopeProben`).
+    _standSicht(x, z, traegerY, struktur) {
+        if (struktur === true) return traegerY;
+        const span = this._voxelChunkConfig(0).span;
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const e = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
+        const k = e && e.surfMap ? this._chunkSurfaceAt(e, cx, cz, x, z) : null;
+        if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
+        return Number.isFinite(k) && Math.abs(k - traegerY) <= AnazhRealm.STAND_SICHT_BAND ? k : traegerY;
     }
-    // gecachte Bodenprobe (das _creatureGroundY-Muster): re-probt nur, wenn
-    // der Fuß > 0.3 m gewandert ist — kein Scan pro Frame.
+    // Der Boden unterm Fuß — der EINE Proben-Chokepoint des Biped-IK: der Stand-Leser der Sicht um den TRÄGER desselben
+    // Kapsel-Schritts (`_stepCharacter` stempelt `_kapselTraegerY`/`_kapselStruktur`). Vorher las die Probe das Gelände
+    // (`getTerrainHeightAt`): auf dem Haus-Podest zog die Fuß-IK Becken und Sohlen 0,25 m ins Podest, in jeder Höhle
+    // stand die Probe auf der Wiese darüber und die IK schwieg (Leben-Prüfung N-D1, Kritik §2.1). Ohne Träger (in der Luft)
+    // NaN — keine IK.
+    _gaitBodenY(x, z) {
+        const s = this.state;
+        return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);
+    }
+    // Die Bodenprobe je Frame: der Stand-Leser ist eine Karten-Lesung (bilinear), kein Feld-Scan — der Fuß, der auf ein
+    // Podest tritt, liest es im selben Frame (der frühere 0,3-m-Cache hielt den alten Boden).
     _gaitProbe(p, x, z) {
-        const dx = x - p.x;
-        const dz = z - p.z;
-        if (Number.isFinite(p.g) && Number.isFinite(dx) && Number.isFinite(dz) && dx * dx + dz * dz < 0.09) return;
         const g = this._gaitBodenY(x, z);
         p.x = x;
         p.z = z;
@@ -18971,6 +18990,22 @@ class AnazhRealm {
             hx = Math.cos(ry);
             hz = -Math.sin(ry);
         }
+        // DIE TOD-LAGE (Q4, K-D19): der Körper kippt um den Fußpunkt — seine Flanke auf der Kipp-Seite reicht `flanke` weit
+        // über die Achse und sänke um flanke·sin(Winkel) ins Gelände; die Wurzel steigt um genau das (die tiefste Stelle
+        // liegt auf dem Boden). Vorher lag das Tier bei 83° halb unter dem Gelände. flanke = die Stütz-Weite des Körpers
+        // in Kipp-Richtung (Welt-Hülle beim Tod).
+        const kb = this._todHuelle || (this._todHuelle = new THREE.Box3());
+        kb.setFromObject(creature);
+        const flanke =
+            kb.isEmpty() || !Number.isFinite(kb.min.x)
+                ? 0
+                : Math.max(
+                      0,
+                      ((kb.min.x + kb.max.x) / 2 - creature.position.x) * hx +
+                          ((kb.min.z + kb.max.z) / 2 - creature.position.z) * hz +
+                          (Math.abs(hx) * (kb.max.x - kb.min.x)) / 2 +
+                          (Math.abs(hz) * (kb.max.z - kb.min.z)) / 2
+                  );
         creature.userData.dying = {
             t: 0,
             dauer: K.kippDauerSec,
@@ -18978,6 +19013,8 @@ class AnazhRealm {
             dirX: hx,
             dirZ: hz,
             baseQuat: creature.quaternion.clone(),
+            baseY: creature.position.y,
+            flanke,
             sounded: false,
         };
     }
@@ -20843,37 +20880,50 @@ class AnazhRealm {
     }
 
     // ═══ TIER-BODENKONTAKT ═══
-    // Zwei gecachte Bodenproben (vorn/hinten entlang der Blick-Achse) je NAHER Kreatur: Root-Pitch via
-    // _slopePitch (dieselbe Hang-Formel wie der Biped), Basis = Proben-Mitte, Budget wie _creatureGroundY.
-    // Halblänge einmal aus der Körperlänge. Keine finite Probe → null. Linse: gate:koerper-bewegung.
+    // Vier Bodenproben je NAHER Kreatur im Leib-Rahmen (vorn/hinten längs der Gier, links/rechts quer): Pitch und Roll
+    // über _slopePitch (dieselbe Hang-Formel wie der Biped), Basis = Proben-Mitte. Jede Probe liest die SICHT
+    // (`_standSicht`: die Boden-Karte des gezeichneten Meshs, bilinear, je Frame) um ihre Gesetz-Probe (gecacht,
+    // Budget wie _creatureGroundY). Vorher standen zwei Gesetz-Proben längs der festen Welt-z: die Sohlen lagen am
+    // Hang-Fuß bis 0,63 m im sichtbaren Boden, der 0,5-m-Cache war die Y-Quelle (Treppen bis 0,64 m je Frame), Roll 0
+    // bei 27° Querhang (Leben-Prüfung R-D15, R-D10, R-D11). Keine finite Probe → null. Linse: gate:tier-stand.
     _creatureSlopeProben(creature, centerG) {
         const ud = creature.userData;
         let hl = ud._slopeHalbLen;
         if (!Number.isFinite(hl)) {
             hl = ud._slopeHalbLen = Math.min(4, Math.max(0.25, this._creatureKoerperLaenge(creature) * 0.35));
         }
+        const hw = hl * 0.45; // die halbe Spur der Pfoten quer zum Leib
         const yaw = creature.rotation.y || 0;
-        const fx = Math.sin(yaw) * hl;
-        const fz = Math.cos(yaw) * hl;
-        const pv = ud._slopeProbeV || (ud._slopeProbeV = { x: NaN, z: NaN, g: NaN });
-        const ph = ud._slopeProbeH || (ud._slopeProbeH = { x: NaN, z: NaN, g: NaN });
-        this._creatureSlopeProbe(pv, creature.position.x + fx, creature.position.z + fz);
-        this._creatureSlopeProbe(ph, creature.position.x - fx, creature.position.z - fz);
-        const gv = Number.isFinite(pv.g) ? pv.g : centerG;
-        const gh = Number.isFinite(ph.g) ? ph.g : centerG;
-        if (!Number.isFinite(gv) || !Number.isFinite(gh)) return null;
-        return { mitte: (gv + gh) / 2, pitch: this._slopePitch(gv, gh, 2 * hl) };
+        const fX = Math.sin(yaw);
+        const fZ = Math.cos(yaw);
+        const P = ud._slopeProben || (ud._slopeProben = [0, 1, 2, 3].map(() => ({ x: NaN, z: NaN, g: NaN })));
+        const ox = [fX * hl, -fX * hl, fZ * hw, -fZ * hw];
+        const oz = [fZ * hl, -fZ * hl, -fX * hw, fX * hw];
+        const y = [0, 0, 0, 0];
+        for (let k = 0; k < 4; k++) {
+            const px = creature.position.x + ox[k];
+            const pz = creature.position.z + oz[k];
+            this._creatureSlopeProbe(P[k], px, pz, centerG);
+            const v = this._standSicht(px, pz, Number.isFinite(P[k].g) ? P[k].g : centerG, false);
+            y[k] = Number.isFinite(v) ? v : centerG;
+        }
+        if (!y.every(Number.isFinite)) return null;
+        return {
+            mitte: (y[0] + y[1] + y[2] + y[3]) / 4,
+            pitch: this._slopePitch(y[0], y[1], 2 * hl),
+            roll: Math.max(-0.6, Math.min(0.6, Math.atan2(y[2] - y[3], 2 * hw))),
+        };
     }
-    // EINE Probe (gecacht): re-scannt nur nach > 0.5 m Wanderung UND mit
-    // freiem Frame-Budget (der Kreatur-FPS-Dirigent V17.113 — dieselbe Kasse
-    // wie _creatureGroundY; Budget leer → der stale Cache trägt den Frame).
-    _creatureSlopeProbe(p, x, z) {
+    // EINE Gesetz-Probe (gecacht): re-scannt nur nach > 0.5 m Wanderung UND mit freiem Frame-Budget (der
+    // Kreatur-FPS-Dirigent V17.113 — dieselbe Kasse wie _creatureGroundY; Budget leer → der stale Cache trägt den Frame).
+    // Der Boden UNTER dem Körper (`_kreaturBodenUnter` ab der Gesetz-Höhe der Mitte), nie die Oberkante der Säule.
+    _creatureSlopeProbe(p, x, z, yRef) {
         const dx = x - p.x;
         const dz = z - p.z;
         if (Number.isFinite(p.g) && Number.isFinite(dx) && Number.isFinite(dz) && dx * dx + dz * dz < 0.25) return;
         if (!(this._creatureGroundBudget > 0)) return;
         this._creatureGroundBudget--;
-        const g = this._voxelSurfaceY(x, z);
+        const g = this._kreaturBodenUnter(x, yRef, z);
         p.x = x;
         p.z = z;
         p.g = typeof g === "number" && Number.isFinite(g) ? g : NaN;
@@ -21056,6 +21106,8 @@ class AnazhRealm {
                 q.setFromAxisAngle(axis, ang);
                 creature.quaternion.copy(q);
                 if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
+                if (Number.isFinite(dying.baseY) && Number.isFinite(dying.flanke))
+                    creature.position.y = dying.baseY + dying.flanke * Math.sin(ang);
                 if (u >= 1 && !dying.sounded) {
                     dying.sounded = true;
                     this._tierRuf(creature, "trauer"); // der letzte Ruf — die Stimme des fallenden Körpers
@@ -21355,29 +21407,40 @@ class AnazhRealm {
             // aus). Render-only — kein Sim-/Task-Pfad liest rotation.x.
             let baseY;
             let pitchZiel = 0;
+            let rollZiel = 0;
             let floatOffset = 0;
             if (waterSurface !== null) {
                 baseY = waterSurface - 0.3;
                 floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
             } else {
-                baseY = terrainHeight;
+                // DIE SICHT STEHT AUF DEM MESH (Q4): jedes Tier steht auf dem Stand-Leser um sein Gesetz — nahe Wesen auf
+                // ihren vier Proben, ferne auf der Mitte (je Frame bilinear, kein Cache-Sprung).
+                baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);
+                if (!Number.isFinite(baseY)) baseY = terrainHeight;
                 const fLB = creature.scale.x || 1;
                 if (distToPlayer < tierFernDist * fLB * 0.5) {
                     const sp = this._creatureSlopeProben(creature, terrainHeight);
                     if (sp) {
                         baseY = sp.mitte;
                         pitchZiel = sp.pitch;
+                        rollZiel = sp.roll;
                     }
                 }
             }
             {
-                // Root-Pitch exp-geglättet (NaN-Wand vor dem Gedächtnis, Lehre 13).
+                // Root-Lage exp-geglättet (NaN-Wand vor dem Gedächtnis, Lehre 13): Nick längs der Gier, Wank quer —
+                // Euler YXZ, erst die Gier, dann Nick und Wank im Leib-Rahmen (in XYZ kippte der Nick um die Welt-x).
                 const udP = creature.userData;
                 const pk = 1 - Math.exp(-8 * Math.min(0.1, delta || 0.016));
                 let hp = (udP._hangPitch || 0) + (pitchZiel - (udP._hangPitch || 0)) * pk;
                 if (!Number.isFinite(hp)) hp = 0;
+                let hr = (udP._hangRoll || 0) + (rollZiel - (udP._hangRoll || 0)) * pk;
+                if (!Number.isFinite(hr)) hr = 0;
                 udP._hangPitch = hp;
+                udP._hangRoll = hr;
+                if (creature.rotation.order !== "YXZ") creature.rotation.order = "YXZ";
                 creature.rotation.x = hp;
+                creature.rotation.z = hr;
             }
             // P3 — der feld-native Hüpfer (`creatureJump` setzt `_hopV`): ein decayender
             // Versatz ON TOP der geerdeten baseY (kein Ammo-Body, die Erdung bleibt Wahrheit).
@@ -31263,11 +31326,26 @@ class AnazhRealm {
         return surfaceY > waterY + marge;
     }
 
-    // Boden-Cache je Kreatur: `_voxelSurfaceY` (Zahl|null) nur neu scannen, wenn sie sich > 0.5 m bewegt
-    // hat UND Frame-Budget frei ist — sonst Cache bzw. Makro-Schätzwert; der Scan-Aufwand pro Frame ist
-    // unabhängig von der Kreatur-Zahl. EINE Quelle für Settle + `_creatureWaterContextAt` (kein
-    // Doppel-Scan); der liefert { inWater, depthBelow, submerged, distToShore (Cap 12 m),
-    // shoreDir (XZ-Einheit Richtung Ufer | null) }.
+    // DER BODEN UNTER DEM KÖRPER (Q4, Kritik §2.1): die erste Fels-Grenze UNTER dem Körper — derselbe Feld-Scan wie der
+    // Kapsel-Schritt (`_fieldSurfaceBelow`), ab der Körper-Höhe abwärts statt ab der Chunk-Decke. `_voxelSurfaceY` nahm
+    // die erste Luft→Fels-Grenze von OBEN: ein Wolf, gerufen auf dem Höhlen-Boden, stand im ersten Frame auf dem Dach
+    // (+32,6 m). Ohne Fels im Band (Sturz, Spawn hoch über dem Grund) trägt die Oberkante der Säule.
+    _kreaturBodenUnter(x, yRef, z) {
+        if (Number.isFinite(yRef)) {
+            // eingegraben (der Hang stieg unter dem Schritt): nur eine Stufe aufwärts suchen — tiefer im Fels ist kein
+            // Gang (ein Spawn im Gestein), dort trägt die Säule
+            const y0 = yRef + AnazhRealm.PLAYER_STEP_UP;
+            const g = this._fieldSurfaceBelow(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);
+            if (g !== null) return g;
+        }
+        return this._voxelSurfaceY(x, z);
+    }
+
+    // Boden-Cache je Kreatur: der Boden unter dem Körper (`_kreaturBodenUnter`) nur neu scannen, wenn sie sich > 0.5 m
+    // bewegt hat UND Frame-Budget frei ist — sonst Cache; eine frische Kreatur scannt einmal ohne Budget (ein
+    // Makro-Schätzwert hob sie in der Höhle aufs Dach, und von dort fand der Scan nur noch das Dach). Der Scan-Aufwand pro
+    // Frame ist unabhängig von der Kreatur-Zahl. EINE Quelle für Settle + `_creatureWaterContextAt` (kein Doppel-Scan); der
+    // liefert { inWater, depthBelow, submerged, distToShore (Cap 12 m), shoreDir (XZ-Einheit Richtung Ufer | null) }.
     _creatureGroundY(creature) {
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -31277,9 +31355,9 @@ class AnazhRealm {
             const dz = cz - ud.cachedGroundZ;
             if (dx * dx + dz * dz < 0.25) return ud.cachedGroundY; // < 0.5 m bewegt → Cache
         }
-        if (this._creatureGroundBudget > 0) {
-            this._creatureGroundBudget--;
-            const gY = this._voxelSurfaceY(cx, cz);
+        if (this._creatureGroundBudget > 0 || ud.cachedGroundY === undefined) {
+            if (this._creatureGroundBudget > 0) this._creatureGroundBudget--;
+            const gY = this._kreaturBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
             ud.cachedGroundY = gY;
             ud.cachedGroundX = cx;
             ud.cachedGroundZ = cz;
@@ -50619,7 +50697,13 @@ class AnazhRealm {
         const fZ = Math.cos(fahrtYaw);
         const qX = Math.cos(fahrtYaw);
         const qZ = -Math.sin(fahrtYaw);
-        const h = (l, q) => this.getTerrainHeightAt(x + fX * l + qX * q, z + fZ * l + qZ * q);
+        // jedes Rad liest den Stand-Leser der Sicht um sein Gesetz (Q4): die Räder stehen auf dem gezeichneten Boden, nicht
+        // auf der Funktion darunter (Mesh gegen Gesetz ±0,3 m — Räder lagen bis 16 cm im bzw. über dem Boden, F-D8)
+        const h = (l, q) => {
+            const px = x + fX * l + qX * q;
+            const pz = z + fZ * l + qZ * q;
+            return this._standSicht(px, pz, this.getTerrainHeightAt(px, pz), false);
+        };
         const vRe = h(st.vorn, st.quer);
         const vLi = h(st.vorn, -st.quer);
         const hRe = h(st.hinten, st.quer);
@@ -50635,7 +50719,7 @@ class AnazhRealm {
         // über einer Kuppe trägt der Bauch, am gleichmäßigen Hang und über einer Mulde tragen die Räder (W5). Die
         // Verwindung (zwei Räder je ±v) bleibt der Ebene: sie zu heben öffnete am Hang Rad-Spalten bis 0,195 m (B-f).
         // Befund voller Playtest (M3 Ritt, Integration W5): am Kamm (66, 60) lag der Bauch 1,05 m im Boden.
-        const mitte = this.getTerrainHeightAt(x, z);
+        const mitte = h(0, 0);
         const heben = Number.isFinite(mitte) ? Math.max(0, mitte - (st.bauch || 0) - y0) : 0;
         return {
             y: y0 + heben,
@@ -54677,7 +54761,9 @@ class AnazhRealm {
             if (mpv && mpr && Number.isFinite(mpv.freq) && mpr.freq > 0) emoF = mpv.freq / mpr.freq;
             gait = this._gaitTick(mesh, p, speedNow, dt, {
                 emoFaktor: emoF,
-                ik: true,
+                // LUFT-SPERRE: nur der stehende Körper erdet die Füße — im Sprung blieb die IK an, das Becken sank 0,25 m,
+                // während die Kapsel 0,24–0,31 m stieg (der sichtbare Sprung fast null, Leben-Prüfung N-D1).
+                ik: this.state.isInAir !== true,
                 soleY: mesh.position.y - AnazhRealm.PLAYER_FOOT_OFFSET,
                 yaw: mesh.rotation.y,
             });
@@ -88134,6 +88220,7 @@ class AnazhRealm {
         // 8. BODEN (vertikal). Die Probe startet bei feetY+STEP_UP. ZWEI Pfade:
         let grounded = false;
         let groundNormalY = 1.0;
+        let traegerStruktur = false; // trägt ein Bauwerk/eine Insel (supTop) statt des Geländes?
         const probeStart = feetY + AnazhRealm.PLAYER_STEP_UP;
         const buriedDeep = this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
         if (buriedDeep) {
@@ -88179,6 +88266,7 @@ class AnazhRealm {
                         grounded = true;
                         if (supTop >= (terrSurf === null ? -Infinity : terrSurf)) {
                             groundNormalY = 1.0; // Struktur-/Insel-Auflage: eben per Definition
+                            traegerStruktur = true;
                         } else {
                             const gN = this._kopplungSlideN || (this._kopplungSlideN = {});
                             this._fieldGradient(nx, terrSurf, nz, gN);
@@ -88223,6 +88311,10 @@ class AnazhRealm {
         s._groundedCache = grounded;
         s._groundedCachedAt = performance.now();
         s._fieldWasGrounded = grounded; // für die Boden-Haftung im nächsten Frame (kein Magnet im Fall)
+        // DER TRÄGER dieses Schritts — die Sicht-Schicht liest ihn (`_gaitBodenY` → `_standSicht`): die Fläche unter den
+        // Füßen (Gelände, in der Höhle ihr Boden) bzw. das Bauwerk; in der Luft keiner (die Fuß-IK ruht).
+        s._kapselTraegerY = grounded ? ny - footDrop : NaN;
+        s._kapselStruktur = grounded && traegerStruktur;
         if (grounded) {
             s.lastGroundedTime = currentTime;
             s.isInAir = false;
@@ -95736,6 +95828,11 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
+// DER STAND-LESER DER SICHT (`_standSicht`): die Boden-Karte (das gezeichnete Mesh) zählt nur, solange sie in diesem Band um
+// den Träger des Körpers liegt — Mesh gegen Gesetz misst ±0,3 m (Hang-Fuß bis 0,63 m, an Kanten bis 1 m); über einer
+// Höhle liegt die Karte um Höhlen-Höhe (≥ 2,4 m) plus Decke darüber, sie trägt dort die Oberkante der Säule, nie den Boden
+// unter dem Körper.
+AnazhRealm.STAND_SICHT_BAND = 2.0;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden — nur wenn er
 // vorher geerdet war, NIE im Fall (sonst Magnet-Sog). Kleiner als STEP_UP: am Kamm löst die
 // Haftung → natürlicher Sprung-Bogen.

@@ -610,6 +610,13 @@ jobs:
               # --selftest: je Defekt serviert der Server die Basis-Zeile (Lab-Shell bzw. fachwerk-core) → genau seine Probe rot.
               run: npm run gate:studio-begehen
 
+            - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage, Rad-Ebene)
+              # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
+              # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
+              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem Boden · K6 die
+              # Rad-Ebene steht auf der Karte. --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              run: npm run gate:koerper-stand
+
             - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
               # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt
               # in der EINEN LOD-Geschichte (_tickArchitectureLOD via instFoundry) — nah
