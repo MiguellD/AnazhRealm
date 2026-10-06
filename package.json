@@ -28,7 +28,7 @@
         "blick": "node scripts/diag-blick.cjs",
         "gate:page-error": "node scripts/diag-page-error.cjs",
         "gate:fenster-wechsel": "node scripts/diag-fenster-wechsel.cjs",
-        "gate:seiten-ordnung": "node scripts/diag-seiten-ordnung.cjs",
+        "gate:feld-stellvertreter": "node scripts/diag-feld-stellvertreter.cjs",
         "gate:schatten-takt": "node scripts/diag-schatten-takt.cjs",
         "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
         "gate:persistence": "node scripts/diag-persistence.cjs",

@@ -570,6 +570,17 @@ const FORBIDDEN = [
     // DIE SPERRE GILT JE BODEN (W7-Vereinigung): das Gedächtnis der Sperre galt je Auge allein — ein neuer Boden im Stand
     // (Graben, Ring, Geomorph) erreichte es nicht. `_hoehlenAugeGleich` liest die Generation des Bodens (`H.boden`).
     { token: "_hoehlenAugeGleich(tor,", fiel: "W7-Vereinigung — die Sperre gilt je Auge UND je Boden (H.boden)" },
+    // WELLE G (06.10.): der Feld-Pass war EIN Vollbild-Draw mit Fragment-Tiefe — kein früher Tiefentest, jedes Pixel lief
+    // die Seiten-Schleife (OMEN: 2,40 ms für 1,3 % des Bildes). Der March rasterisiert je Satz einen Stellvertreter, das
+    // Panorama zeichnet ohne Fragment-Tiefe; die SEITEN-EBENE (Hüllen je 32 Einträge, Hilbert-Ordnung, Folge nah→fern)
+    // fiel ganz (gate:feld-stellvertreter).
+    { token: "feldPassBlick", fiel: "Welle G — feldMarch (EIN Satz je Stellvertreter) und feldPanorama (früher Tiefentest)" },
+    { token: "_weltSeitenOrdnen", fiel: "Welle G — die Stellvertreter brauchen keine räumliche Ordnung" },
+    { token: "_weltSeitenPflegen", fiel: "Welle G — die Hülle trägt jeder Eintrag selbst (Texel 0/1)" },
+    { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
+    { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel" },
+    { token: "welt-march-seiten", fiel: "Welle G — die Seiten-Textur fiel" },
+    { token: "welt-march-folge", fiel: "Welle G — die Folge-Textur fiel" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

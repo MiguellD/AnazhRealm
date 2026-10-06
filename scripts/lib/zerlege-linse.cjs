@@ -1105,7 +1105,7 @@ const SPEZIAL = [
         titel: "Wasser (Wasser-Satz · Fern-Wasser · Chunk-Wasser)",
         muster: /^(wasserSatz|farWater|chunk-water-[a-z]+)$/,
     },
-    { id: "feldPass", titel: "Feld-Pass / Welt-March (Vollbild-Dreieck, letzter Draw)", muster: /^feld-pass$/ },
+    { id: "feldPass", titel: "Feld-Pass / Welt-March (Stellvertreter-March + Panorama-Dreieck, die letzten Draws)", muster: /^feld-pass$/ },
 ];
 
 // Die Stufen der Post-Kette, je ihre Stärke-Uniform (`state.postProcessingUniforms`, _ensurePostProcessing).

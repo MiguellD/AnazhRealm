@@ -14744,7 +14744,8 @@ class AnazhRealm {
                       weltMarch: this.state.weltMarch
                           ? {
                                 belegt: this.state.weltMarch.belegt, // Feld-EINTRÄGE (Instanzen)
-                                seiten: Math.ceil(this.state.weltMarch.obergrenze / AnazhRealm.WELT_MARCH.seite), // March-Loop-Grenze in SEITEN
+                                // die Stellvertreter des March-Draws (Obergrenze × Plätze je Gesetz-Block)
+                                stellvertreter: this.state.weltMarch.obergrenze * AnazhRealm.WELT_MARCH.gesetzBlock,
                                 // ANALOG E — Kapsel-Dedup in den Flugschreiber (nicht nur Live-Konsole)
                                 kapseln: this.state.weltMarch.kapselCache ? this.state.weltMarch.kapselCache.size : 0,
                                 felderFrei: this.state.weltMarch.freiFelder.length,
@@ -35042,10 +35043,18 @@ class AnazhRealm {
     }
 
     // ===== DER FELD-PASS: die Ferne ohne Schalen-Geometrie =====
-    // Jenseits der letzten Schale ein FULLSCREEN-Raymarch bis FELD_PASS.rMaxM (null Vertices, Kosten am
-    // Schirm). Höhen aus _feldZeichnerHoehen als polares Höhen+Farb-Feld (RGBA-Textur); das Fragment
-    // marcht nur die TEXTUR (kein Gesetz im Fragment → keine Drift). LETZTER Draw mit Depth-Test (nur
-    // Himmel-Pixel zahlen); ohne Device/TSL kein Pass, die Schalen tragen den Blick.
+    // Jenseits der letzten Schale das PANORAMA (null Vertices, Kosten am Schirm) und davor der Analog-March — zwei
+    // Draws mit EINER Aufgabe je Draw, die Kosten an den Pixeln, die etwas zeigen (Welle G, 06.10.): ein Vollbild-Draw,
+    // der seine Tiefe im Fragment schreibt, verliert den frühen Tiefentest der GPU — der March lief für jedes der
+    // 2,07 Mio. Pixel bei 1080p, auch hinter naher Geometrie (OMEN, GTX 1060: 2,40 ms für 1,3 % des Bildes).
+    //   DER MARCH: je Analog-Satz EIN Stellvertreter (seine Welt-Hülle, ein Gesetz-Block je PLATZ die Hülle der Platz-
+    //     Kugel) rasterisiert als Rückseite — nur Pixel, deren Strahl die Hülle trifft, marchen, und jedes nur den EINEN
+    //     Satz (bzw. Platz) seines Stellvertreters; die Tiefe des Treffers schreibt das Fragment, der Tiefentest der
+    //     Hardware wählt den nächsten Treffer über alle Stellvertreter.
+    //   DAS PANORAMA: Vollbild-Dreieck auf der festen Tiefe 0,999999 OHNE Fragment-Tiefe — der frühe Tiefentest verwirft
+    //     jedes Pixel, vor dem Szene oder Satz stehen; nur Himmels-Pixel schlagen das Panorama nach.
+    // Höhen aus _feldZeichnerHoehen als polares Höhen+Farb-Feld (RGBA-Textur); das Fragment liest nur Texturen (kein
+    // Gesetz im Fragment → keine Drift). Ohne Device/TSL kein Pass, die Schalen tragen den Blick.
     _feldPassEnsure(fr) {
         const st = this.state;
         if (st.feldPass) return st.feldPass;
@@ -35057,9 +35066,18 @@ class AnazhRealm {
         if (!this._weltMarchGezeichnet() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
             return null;
         const TSL = THREE.TSL;
-        if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.Fn || !TSL.Discard || !TSL.uniform || !TSL.positionGeometry)
+        if (
+            !TSL ||
+            !TSL.wgslFn ||
+            !TSL.texture ||
+            !TSL.Fn ||
+            !TSL.Discard ||
+            !TSL.uniform ||
+            !TSL.positionGeometry ||
+            !TSL.instanceIndex
+        )
             return null;
-        // DER EINE WELT-MARCH: Atlas + Feld-Liste sind Pass-Bindings — ohne das
+        // DER EINE WELT-MARCH: Feld-Liste + Kapsel-Liste sind Pass-Bindings — ohne das
         // Organ existiert der Pass nicht (die Schalen tragen, byte-alt).
         const wm = this._weltMarchEnsure();
         if (!wm) return null;
@@ -35068,6 +35086,7 @@ class AnazhRealm {
         const luft = this._luftEnsure();
         const P = AnazhRealm.FELD_PASS;
         const PN = AnazhRealm.FELD_PANO;
+        const W = AnazhRealm.WELT_MARCH;
         const daten = new Float32Array(P.az * P.rad * 4);
         const tex = new THREE.DataTexture(daten, P.az, P.rad, THREE.RGBAFormat, THREE.FloatType);
         tex.name = "feld-pass-ring";
@@ -35085,17 +35104,18 @@ class AnazhRealm {
         panoTex.needsUpdate = true;
         const U = {
             camPos: TSL.uniform(new THREE.Vector3()),
+            // Blick-Projektion (ohne TRAA-Versatz, je Takt aus der Kamera) und ihre Inverse: die Stellvertreter
+            // rasterisieren mit DERSELBEN Matrix, aus der das Fragment seinen Strahl zieht — jedes Pixel, dessen
+            // Strahl den Satz trifft, liegt in der Hülle seines Stellvertreters.
+            vp: TSL.uniform(new THREE.Matrix4()),
             invVP: TSL.uniform(new THREE.Matrix4()),
-            anker: TSL.uniform(new THREE.Vector2()),
+            // Innenrand und Höhen-Deckel des gemalten Felds (der Panorama-Bake liest sie, _feldPanoramaRechnen)
             rMin: TSL.uniform(8000),
-            rMax: TSL.uniform(P.rMaxM),
-            wl: TSL.uniform(0),
             hMax: TSL.uniform(500),
             elevMax: TSL.uniform(PN.elevMax),
             nah: TSL.uniform(0.1),
             fern: TSL.uniform(9000),
             fwd: TSL.uniform(new THREE.Vector3(0, 0, -1)),
-            seitenN: TSL.uniform(0),
             // DAS LICHT DER WELT (_feldLichtSync): das Richt-Licht (Sonne/Mond), Ambient, Hemi und die
             // Himmels-Umgebung — dieselben Quellen und dieselbe BRDF wie jedes Mesh.
             l0d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
@@ -35135,9 +35155,6 @@ class AnazhRealm {
                 "    return g0 + gn;\n" +
                 "}"
         );
-        // Der Blick (rohes WGSL): Richtung aus invVP → Azimut/Elevation → Panorama-Texel (quadratische
-        // Elevation-Umkehr) → Farbe + LIVE-Nebel aus der gespeicherten Distanz. textureDimensions braucht
-        // f32/i32-Casts (WGSL-Spec).
         // Die Kapsel-Liste liegt 2D (Zeilen à textureDimensions.x Texel): eine 1D-Zeile stieß ans garantierte WebGPU-
         // Limit (8192 Texel = 4096 Kapseln, 04.10. zu 59 % belegt, als die Fern-Streu ins Gesetz zog).
         const kapselTexelFn = TSL.wgslFn(
@@ -35146,48 +35163,58 @@ class AnazhRealm {
                 "    return textureLoad(k, vec2<i32>(i % b, i / b), 0);\n" +
                 "}"
         );
-        const blick = TSL.wgslFn(
-            "fn feldPassBlick(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, rMin: f32, rMax: f32, elevMax: f32, nah: f32, fern: f32, fwd: vec3<f32>, seitenN: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, saison: vec3<f32>, pano: texture_2d<f32>, seiten: texture_2d<f32>, folge: texture_2d<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+        // DER STELLVERTRETER (Vertex): Instanz i = Feld-Eintrag i / gesetzBlock, Platz i % gesetzBlock. Ein Analog-Satz
+        // trägt seine Welt-Hülle (Platz 0), ein Gesetz-Block je belegtem Platz die Hülle der Platz-Kugel; alles andere
+        // (leerer Slot, ungenutzter Platz) fällt außerhalb des Clip-Raums und erzeugt kein Fragment. Der Saum (2 mrad +
+        // 2 cm) hält Silhouetten, die ihre Hülle berühren, gegen Rundung im Raster. Die Clip-Tiefe hinter der fernen Ebene
+        // klemmt auf die Ebene: das Fragment schreibt seine Tiefe selbst, die Raster-Tiefe entscheidet nur die Deckung.
+        const sv = `${W.gesetzBlock}u`;
+        const stellvertreter = TSL.wgslFn(
+            "fn feldStellvertreter(i: u32, ecke: vec3<f32>, vp: mat4x4<f32>, camPos: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+                "    let aus = vec4<f32>(2.0, 2.0, 2.0, 1.0);\n" +
+                `    let j = i32(i / ${sv});\n` +
+                `    let platz = i32(i % ${sv});\n` +
+                `    let ty = j / ${W.spalten};\n` +
+                `    let bx = (j % ${W.spalten}) * 8;\n` +
+                "    let t0 = textureLoad(liste, vec2<i32>(bx, ty), 0);\n" +
+                "    if (t0.w > -0.5) { return aus; }\n" +
+                "    let t1 = textureLoad(liste, vec2<i32>(bx + 1, ty), 0);\n" +
+                "    var lo = t0.xyz;\n" +
+                "    var hi = t1.xyz;\n" +
+                "    if (t1.w < -0.5) {\n" +
+                "        if (platz >= i32(-t0.w + 0.5)) { return aus; }\n" +
+                "        let gA = kapselTexel(kapseln, i32(-t1.w - 0.5) + platz * 2);\n" +
+                "        if (gA.w < 0.001) { return aus; }\n" +
+                "        lo = gA.xyz - vec3<f32>(gA.w);\n" +
+                "        hi = gA.xyz + vec3<f32>(gA.w);\n" +
+                "    } else if (platz > 0) {\n" +
+                "        return aus;\n" +
+                "    }\n" +
+                "    let saum = 0.002 * length((lo + hi) * 0.5 - camPos) + 0.02;\n" +
+                "    let p = mix(lo - vec3<f32>(saum), hi + vec3<f32>(saum), ecke);\n" +
+                "    let c = vp * vec4<f32>(p, 1.0);\n" +
+                "    return vec4<f32>(c.xy, min(c.z, c.w * 0.9999999), c.w);\n" +
+                "}",
+            [kapselTexelFn]
+        );
+        // DER MARCH (Fragment): der EINE Satz bzw. Platz des Stellvertreters. Liste je Feld (8 Texel):
+        // [wAABB.min|d] [wAABB.max|einheit] [inv r0] [inv r1] [inv r2] [lokalMin|Schwund] [lokalGroesse|·] [·] — der
+        // Strahl zieht in den GLIED-Raum (Knochen-Matrix = Animation), die Normale kommt aus dem SDF-Gradienten und die
+        // Sonne beleuchtet (kein Nacht-Glühen). Rückgabe: rgb + Strahl-Länge (0 = kein Treffer → verworfen).
+        const march = TSL.wgslFn(
+            "fn feldMarch(ndc: vec2<f32>, i: u32, camPos: vec3<f32>, invVP: mat4x4<f32>, nah: f32, fern: f32, fwd: vec3<f32>, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, hemiUnten: vec3<f32>, envUnten: vec3<f32>, envMitte: vec3<f32>, envOben: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, saison: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+                "    let kein = vec4<f32>(0.0);\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende wie die Studio-Stufen (__phytoCore.lodDitherIGN)\n" +
                 "    let schwundIgn = fract(52.9829189 * fract(schirm.x * 0.06711056 + schirm.y * 0.00583715) + ditherT);\n" +
                 "    let fernP = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fernP - camPos);\n" +
                 "    let PI = 3.14159265358979;\n" +
-                "    // ── DAS PANORAMA (die Ferne jenseits der Schalen) ──\n" +
-                "    var panoRgb = vec3<f32>(0.0);\n" +
-                "    var panoDa = false;\n" +
-                "    var panoT = 0.0;\n" +
-                "    let e = asin(clamp(dir.y, -1.0, 1.0));\n" +
-                "    if (abs(e) <= elevMax) {\n" +
-                "        let dim = textureDimensions(pano, 0);\n" +
-                "        let a = atan2(dir.z, dir.x);\n" +
-                "        let u = clamp(a / (2.0 * PI) + 0.5, 0.0, 0.9999);\n" +
-                "        var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
-                "        if (e < 0.0) { sV = -sV; }\n" +
-                "        let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
-                "        let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
-                "        if (pT.a > 0.0) {\n" +
-                "            // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
-                "            // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer unten; die Luft legt der\n" +
-                "            // Pass-Knoten auf (EINE Luft für Mesh, Feld und Panorama).\n" +
-                "            panoRgb = pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe + hemiOben) * (1.0 / PI) + envOben);\n" +
-                "            panoT = pT.a;\n" +
-                "            panoDa = true;\n" +
-                "        }\n" +
-                "    }\n" +
-                "    // ── DER EINE WELT-MARCH v2 (MATRIX DER MATRIX): alle Felder ──\n" +
-                "    // Liste je Feld (8 Texel): [wAABB.min|d] [wAABB.max|einheit]\n" +
-                "    // [inv r0] [inv r1] [inv r2] [lokalMin|·] [lokalGroesse|·] [·] —\n" +
-                "    // der Strahl zieht in den GLIED-Raum (Knochen-Matrix = Animation),\n" +
-                "    // d IST das Schrittmaß (voxel-wahr), die Normale kommt aus dem\n" +
-                "    // Dichte-Gradienten und die Sonne beleuchtet (kein Nacht-Glühen).\n" +
                 "    var bestT = 1e30;\n" +
                 "    var getroffen = false;\n" +
                 "    // DIE TIEFEN-GRENZE: steht vor diesem Pixel schon Geometrie (die Szenen-Tiefe vor dem Feld-Pass),\n" +
-                "    // traced der March nur bis dorthin — dahinter verwürfe ihn der Depth-Test ohnehin. Der Pass schreibt\n" +
-                "    // seine Tiefe selbst (depthNode), darum gibt es keinen frühen Tiefentest: ohne die Grenze lief der\n" +
-                "    // ganze Sphere-Trace für JEDES Pixel (gemessen 04.10., echte GPU: 40–50 ms je Frame).\n" +
+                "    // traced der March nur bis dorthin — dahinter verwürfe ihn der Tiefentest ohnehin (der Pass schreibt\n" +
+                "    // seine Tiefe selbst, der Test fällt erst nach dem Fragment).\n" +
                 "    if (szeneTiefe < 0.9999999) {\n" +
                 "        let vzS = fern * nah / max(fern - szeneTiefe * (fern - nah), 1e-6);\n" +
                 "        bestT = vzS / max(dot(dir, fwd), 1e-4);\n" +
@@ -35195,318 +35222,322 @@ class AnazhRealm {
                 "    var bestRgb = vec3<f32>(0.0);\n" +
                 "    var bestN = vec3<f32>(0.0, 1.0, 0.0);\n" +
                 "    let inv = 1.0 / dir;\n" +
-                "    // SEITEN-VORTEST (2 Loads je Seite à 32 Einträge): die Per-Pixel-\n" +
-                "    // Kosten binden an GETROFFENE Seiten, nie an die Welt-Größe.\n" +
-                "    // DIE SEITEN-FOLGE (_weltSeitenFolge): nur belegte Seiten, sortiert nach dem Box-Abstand zur\n" +
-                "    // Kamera (.x = Seite, .y = Abstand) — eine untere Schranke jedes Strahl-Eintritts: liegt sie\n" +
-                "    // hinter dem besten Treffer (oder der Szenen-Tiefe), trifft KEINE weitere Seite mehr.\n" +
-                "    let nP = i32(seitenN + 0.5);\n" +
-                "    for (var pi: i32 = 0; pi < nP; pi = pi + 1) {\n" +
-                "        let fo = textureLoad(folge, vec2<i32>(pi, 0), 0);\n" +
-                "        if (fo.y >= bestT) { break; }\n" +
-                "        let p = i32(fo.x + 0.5);\n" +
-                "        let s0 = textureLoad(seiten, vec2<i32>(p * 2, 0), 0);\n" +
-                "        if (s0.w < 1.0) { continue; }\n" +
-                "        let s1 = textureLoad(seiten, vec2<i32>(p * 2 + 1, 0), 0);\n" +
-                "        let sA = (s0.xyz - camPos) * inv;\n" +
-                "        let sB = (s1.xyz - camPos) * inv;\n" +
-                "        let sMin = min(sA, sB);\n" +
-                "        let sMax = max(sA, sB);\n" +
-                "        let sN = max(max(sMin.x, sMin.y), max(sMin.z, 0.5));\n" +
-                "        let sF = min(sMax.x, min(sMax.y, sMax.z));\n" +
-                "        if (sF <= sN || sN >= bestT) { continue; }\n" +
-                "    for (var q: i32 = 0; q < 32; q = q + 1) {\n" +
-                "        let j = p * 32 + q;\n" +
-                "        let ty = j / 512;\n" +
-                "        let bx = (j % 512) * 8;\n" +
-                "        let t0 = textureLoad(liste, vec2<i32>(bx, ty), 0);\n" +
-                "        let d = t0.w;\n" +
-                "        if (d > -0.5) { continue; }\n" + // 0 = leer; negativ = ANALOG-Kapsel
-                "        let t1 = textureLoad(liste, vec2<i32>(bx + 1, ty), 0);\n" +
-                "        let tA = (t0.xyz - camPos) * inv;\n" +
-                "        let tB = (t1.xyz - camPos) * inv;\n" +
-                "        let tMin3 = min(tA, tB);\n" +
-                "        let tMax3 = max(tA, tB);\n" +
-                "        let tN = max(max(tMin3.x, tMin3.y), max(tMin3.z, 0.5));\n" +
-                "        let tF = min(tMax3.x, min(tMax3.y, tMax3.z));\n" +
-                "        if (tF <= tN || tN >= bestT) { continue; }\n" +
-                "        let lm4 = textureLoad(liste, vec2<i32>(bx + 5, ty), 0);\n" +
-                "        if (lm4.w > 0.0 && schwundIgn < lm4.w) { continue; }\n" + // der Satz dithert aus, sein Mesh übernimmt
-                "        let r0 = textureLoad(liste, vec2<i32>(bx + 2, ty), 0);\n" +
-                "        let r1 = textureLoad(liste, vec2<i32>(bx + 3, ty), 0);\n" +
-                "        let r2 = textureLoad(liste, vec2<i32>(bx + 4, ty), 0);\n" +
-                "        let lm = lm4.xyz;\n" +
-                "        let lg = textureLoad(liste, vec2<i32>(bx + 6, ty), 0).xyz;\n" +
-                "        let c4 = vec4<f32>(camPos, 1.0);\n" +
-                "        let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
-                "        let dL = vec3<f32>(dot(r0.xyz, dir), dot(r1.xyz, dir), dot(r2.xyz, dir));\n" +
-                "        let invL = 1.0 / dL;\n" +
-                "        let lA = (lm - oL) * invL;\n" +
-                "        let lB = (lm + lg - oL) * invL;\n" +
-                "        let lMin3 = min(lA, lB);\n" +
-                "        let lMax3 = max(lA, lB);\n" +
-                "        let tN2 = max(tN, max(lMin3.x, max(lMin3.y, lMin3.z)));\n" +
-                "        let tF2 = min(tF, min(lMax3.x, min(lMax3.y, lMax3.z)));\n" +
-                "        if (tF2 <= tN2) { continue; }\n" +
-                "        if (d < -0.5) {\n" +
-                "            // ═══ DER ANALOG-MARCH (Schöpfer-Wort „analog!“) ═══\n" +
-                "            // Sphere-Tracing der Kapsel-GESETZE im Glied-Raum: der Schritt\n" +
-                "            // IST die Distanz (adaptiv), die Normale ist der EXAKTE SDF-\n" +
-                "            // Gradient — digitalisiert wird nur hier, am Schirm-Pixel.\n" +
-                "            let anzahl = i32(-d + 0.5);\n" +
-                "            if (t1.w < -0.5) {\n" +
-                "                // ═══ DAS VERTEILUNGS-GESETZ (Klein-Streu je Kachel) ═══\n" +
-                "                // EIN Eintrag trägt bis zu anzahl PLÄTZE (2 Texel je Platz:\n" +
-                "                // [Pos|Hüllradius][yaw|scale|po|anzahl]): Kugel-Vortest je\n" +
-                "                // Platz, dann Sphere-Tracing des GETEILTEN Vorlagen-Satzes im\n" +
-                "                // Platz-Raum (rotY(−yaw), /scale) — die Matrix bleibt Identität,\n" +
-                "                // die Kosten binden an getroffene Kugeln, nie an die Streu-Zahl.\n" +
-                "                let basis = i32(-t1.w - 0.5);\n" +
-                "                for (var pk: i32 = 0; pk < anzahl; pk = pk + 1) {\n" +
-                "                    let gA = kapselTexel(kapseln, basis + pk * 2);\n" +
-                "                    if (gA.w < 0.001) { continue; }\n" +
-                "                    let oc = gA.xyz - camPos;\n" +
-                "                    let bq = dot(oc, dir);\n" +
-                "                    let disc = bq * bq - dot(oc, oc) + gA.w * gA.w;\n" +
-                "                    if (disc <= 0.0) { continue; }\n" +
-                "                    let sq = sqrt(disc);\n" +
-                "                    let tGa = max(bq - sq, tN2);\n" +
-                "                    let tGe = min(min(bq + sq, tF2), bestT);\n" +
-                "                    if (tGe <= tGa) { continue; }\n" +
-                "                    let gB = kapselTexel(kapseln, basis + pk * 2 + 1);\n" +
-                "                    let cy = cos(gB.x);\n" +
-                "                    let sy = sin(gB.x);\n" +
-                "                    let sk = max(gB.y, 1e-4);\n" +
-                "                    let ow = camPos - gA.xyz;\n" +
-                "                    let oP = vec3<f32>(cy * ow.x - sy * ow.z, ow.y, sy * ow.x + cy * ow.z) / sk;\n" +
-                "                    let dP = vec3<f32>(cy * dir.x - sy * dir.z, dir.y, sy * dir.x + cy * dir.z) / sk;\n" +
-                "                    let poG = i32(gB.z + 0.5);\n" +
-                "                    let anzG = i32(gB.w + 0.5);\n" +
-                "                    var tG = tGa;\n" +
-                "                    for (var s2: i32 = 0; s2 < 32; s2 = s2 + 1) {\n" +
-                "                        if (tG >= tGe) { break; }\n" +
-                "                        let pP = oP + dP * tG;\n" +
-                "                        var dmG = 1e30;\n" +
-                "                        var nkG = 0;\n" +
-                "                        for (var k2: i32 = 0; k2 < anzG; k2 = k2 + 1) {\n" +
-                "                            let qA = kapselTexel(kapseln, poG + k2 * 2);\n" +
-                "                            let qB = kapselTexel(kapseln, poG + k2 * 2 + 1);\n" +
-                "                            var dkG = 0.0;\n" +
-                "                            if (qA.w >= 0.0) {\n" +
-                "                                let ba2 = qB.xyz - qA.xyz;\n" +
-                "                                let pa2 = pP - qA.xyz;\n" +
-                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
-                "                                dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
-                "                            } else if (qB.w < 0.5) {\n" +
-                "                                let q2 = abs(pP - qA.xyz) - qB.xyz;\n" +
-                "                                dkG = length(max(q2, vec3<f32>(0.0))) + min(max(q2.x, max(q2.y, q2.z)), 0.0);\n" +
-                "                            } else if (qB.w < 1.5) {\n" +
-                "                                // ELLIPSOID (pB.w≈1), rau\n" +
-                "                                dkG = sdEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
-                "                            } else {\n" +
-                "                                // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
-                "                                let d2 = pP - qA.xyz;\n" +
-                "                                let h2 = qB.xyz;\n" +
-                "                                let qb2 = abs(d2) - h2;\n" +
-                "                                let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
-                "                                let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
-                "                                let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
-                "                                dkG = max(db2, plane2);\n" +
-                "                            }\n" +
-                "                            if (dkG < dmG) { dmG = dkG; nkG = k2; }\n" +
+                `    let j = i32(i / ${sv});\n` +
+                `    let platz = i32(i % ${sv});\n` +
+                `    let ty = j / ${W.spalten};\n` +
+                `    let bx = (j % ${W.spalten}) * 8;\n` +
+                "    let t0 = textureLoad(liste, vec2<i32>(bx, ty), 0);\n" +
+                "    let d = t0.w;\n" +
+                "    if (d > -0.5) { return kein; }\n" + // 0 = leer; negativ = ANALOG-Satz (−Anzahl der Primitive)
+                "    let t1 = textureLoad(liste, vec2<i32>(bx + 1, ty), 0);\n" +
+                "    let tA = (t0.xyz - camPos) * inv;\n" +
+                "    let tB = (t1.xyz - camPos) * inv;\n" +
+                "    let tMin3 = min(tA, tB);\n" +
+                "    let tMax3 = max(tA, tB);\n" +
+                "    let tN = max(max(tMin3.x, tMin3.y), max(tMin3.z, 0.5));\n" +
+                "    let tF = min(tMax3.x, min(tMax3.y, tMax3.z));\n" +
+                "    if (tF <= tN || tN >= bestT) { return kein; }\n" +
+                "    let lm4 = textureLoad(liste, vec2<i32>(bx + 5, ty), 0);\n" +
+                "    if (lm4.w > 0.0 && schwundIgn < lm4.w) { return kein; }\n" + // der Satz dithert aus, sein Mesh übernimmt
+                "    let r0 = textureLoad(liste, vec2<i32>(bx + 2, ty), 0);\n" +
+                "    let r1 = textureLoad(liste, vec2<i32>(bx + 3, ty), 0);\n" +
+                "    let r2 = textureLoad(liste, vec2<i32>(bx + 4, ty), 0);\n" +
+                "    let lm = lm4.xyz;\n" +
+                "    let lg = textureLoad(liste, vec2<i32>(bx + 6, ty), 0).xyz;\n" +
+                "    let c4 = vec4<f32>(camPos, 1.0);\n" +
+                "    let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
+                "    let dL = vec3<f32>(dot(r0.xyz, dir), dot(r1.xyz, dir), dot(r2.xyz, dir));\n" +
+                "    let invL = 1.0 / dL;\n" +
+                "    let lA = (lm - oL) * invL;\n" +
+                "    let lB = (lm + lg - oL) * invL;\n" +
+                "    let lMin3 = min(lA, lB);\n" +
+                "    let lMax3 = max(lA, lB);\n" +
+                "    let tN2 = max(tN, max(lMin3.x, max(lMin3.y, lMin3.z)));\n" +
+                "    let tF2 = min(tF, min(lMax3.x, min(lMax3.y, lMax3.z)));\n" +
+                "    if (tF2 <= tN2) { return kein; }\n" +
+                "    // ═══ DER ANALOG-MARCH (Schöpfer-Wort „analog!“) ═══\n" +
+                "    // Sphere-Tracing der Kapsel-GESETZE im Glied-Raum: der Schritt\n" +
+                "    // IST die Distanz (adaptiv), die Normale ist der EXAKTE SDF-\n" +
+                "    // Gradient — digitalisiert wird nur hier, am Schirm-Pixel.\n" +
+                "    let anzahl = i32(-d + 0.5);\n" +
+                "    if (t1.w < -0.5) {\n" +
+                "        // ═══ DAS VERTEILUNGS-GESETZ (Klein-Streu je Kachel): der EINE Platz des Stellvertreters ═══\n" +
+                "        // [Pos|Hüllradius][yaw|scale|po|anzahl]: Kugel-Vortest, dann Sphere-Tracing des GETEILTEN\n" +
+                "        // Vorlagen-Satzes im Platz-Raum (rotY(−yaw), /scale) — die Matrix bleibt Identität.\n" +
+                "        let basis = i32(-t1.w - 0.5);\n" +
+                "        let gA = kapselTexel(kapseln, basis + platz * 2);\n" +
+                "        let oc = gA.xyz - camPos;\n" +
+                "        let bq = dot(oc, dir);\n" +
+                "        let disc = bq * bq - dot(oc, oc) + gA.w * gA.w;\n" +
+                "        if (platz < anzahl && gA.w >= 0.001 && disc > 0.0) {\n" +
+                "            let sq = sqrt(disc);\n" +
+                "            let tGa = max(bq - sq, tN2);\n" +
+                "            let tGe = min(min(bq + sq, tF2), bestT);\n" +
+                "            if (tGe > tGa) {\n" +
+                "                let gB = kapselTexel(kapseln, basis + platz * 2 + 1);\n" +
+                "                let cy = cos(gB.x);\n" +
+                "                let sy = sin(gB.x);\n" +
+                "                let sk = max(gB.y, 1e-4);\n" +
+                "                let ow = camPos - gA.xyz;\n" +
+                "                let oP = vec3<f32>(cy * ow.x - sy * ow.z, ow.y, sy * ow.x + cy * ow.z) / sk;\n" +
+                "                let dP = vec3<f32>(cy * dir.x - sy * dir.z, dir.y, sy * dir.x + cy * dir.z) / sk;\n" +
+                "                let poG = i32(gB.z + 0.5);\n" +
+                "                let anzG = i32(gB.w + 0.5);\n" +
+                "                var tG = tGa;\n" +
+                "                for (var s2: i32 = 0; s2 < 32; s2 = s2 + 1) {\n" +
+                "                    if (tG >= tGe) { break; }\n" +
+                "                    let pP = oP + dP * tG;\n" +
+                "                    var dmG = 1e30;\n" +
+                "                    var nkG = 0;\n" +
+                "                    for (var k2: i32 = 0; k2 < anzG; k2 = k2 + 1) {\n" +
+                "                        let qA = kapselTexel(kapseln, poG + k2 * 2);\n" +
+                "                        let qB = kapselTexel(kapseln, poG + k2 * 2 + 1);\n" +
+                "                        var dkG = 0.0;\n" +
+                "                        if (qA.w >= 0.0) {\n" +
+                "                            let ba2 = qB.xyz - qA.xyz;\n" +
+                "                            let pa2 = pP - qA.xyz;\n" +
+                "                            let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                            dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
+                "                        } else if (qB.w < 0.5) {\n" +
+                "                            let q2 = abs(pP - qA.xyz) - qB.xyz;\n" +
+                "                            dkG = length(max(q2, vec3<f32>(0.0))) + min(max(q2.x, max(q2.y, q2.z)), 0.0);\n" +
+                "                        } else if (qB.w < 1.5) {\n" +
+                "                            // ELLIPSOID (pB.w≈1), rau\n" +
+                "                            dkG = sdEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
+                "                        } else {\n" +
+                "                            // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
+                "                            let d2 = pP - qA.xyz;\n" +
+                "                            let h2 = qB.xyz;\n" +
+                "                            let qb2 = abs(d2) - h2;\n" +
+                "                            let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
+                "                            let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
+                "                            let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
+                "                            dkG = max(db2, plane2);\n" +
                 "                        }\n" +
-                "                        if (dmG * sk < 0.008) {\n" +
-                "                            bestT = tG;\n" +
-                "                            getroffen = true;\n" +
-                "                            let qA = kapselTexel(kapseln, poG + nkG * 2);\n" +
-                "                            let qB = kapselTexel(kapseln, poG + nkG * 2 + 1);\n" +
-                "                            var gvG = vec3<f32>(0.0);\n" +
-                "                            var ciG: u32 = 0u;\n" +
-                "                            var laubG = false;\n" +
-                "                            if (qA.w >= 0.0) {\n" +
-                "                                let ba2 = qB.xyz - qA.xyz;\n" +
-                "                                let pa2 = pP - qA.xyz;\n" +
-                "                                let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
-                "                                gvG = pa2 - ba2 * h2;\n" +
-                "                                ciG = u32(qB.w);\n" +
-                "                            } else if (qB.w < 0.5) {\n" +
-                "                                let q2 = pP - qA.xyz;\n" +
-                "                                let aq2 = abs(q2) - qB.xyz;\n" +
-                "                                if (aq2.x >= aq2.y && aq2.x >= aq2.z) { gvG = vec3<f32>(sign(q2.x), 0.0, 0.0); }\n" +
-                "                                else if (aq2.y >= aq2.z) { gvG = vec3<f32>(0.0, sign(q2.y), 0.0); }\n" +
-                "                                else { gvG = vec3<f32>(0.0, 0.0, sign(q2.z)); }\n" +
-                "                                ciG = u32(-qA.w - 1.0);\n" +
-                "                            } else if (qB.w < 1.5) {\n" +
-                "                                // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
-                "                                gvG = gradEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
-                "                                ciG = u32(-qA.w - 1.0);\n" +
-                "                                laubG = true; // das kompakte Teil (Blütenkopf, Stein) trägt die Saison\n" +
-                "                            } else {\n" +
-                "                                // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
-                "                                let d2 = pP - qA.xyz;\n" +
-                "                                let h2 = qB.xyz;\n" +
-                "                                let qb2 = abs(d2) - h2;\n" +
-                "                                let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
-                "                                let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
-                "                                let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
-                "                                if (plane2 > db2) {\n" +
-                "                                    gvG = select(vec3<f32>(0.0, h2.z, h2.y), vec3<f32>(0.0, h2.z, -h2.y), qB.w < 2.5);\n" +
-                "                                } else if (qb2.x >= qb2.y && qb2.x >= qb2.z) { gvG = vec3<f32>(sign(d2.x), 0.0, 0.0); }\n" +
-                "                                else if (qb2.y >= qb2.z) { gvG = vec3<f32>(0.0, sign(d2.y), 0.0); }\n" +
-                "                                else { gvG = vec3<f32>(0.0, 0.0, sign(d2.z)); }\n" +
-                "                                ciG = u32(-qA.w - 1.0);\n" +
-                "                            }\n" +
-                "                            if (dot(gvG, gvG) < 1e-10) {\n" +
-                "                                bestN = -dir;\n" +
-                "                            } else {\n" +
-                "                                // Platz-Raum → Welt: rotY(+yaw); uniforme Skala dreht die Richtung nicht\n" +
-                "                                bestN = normalize(vec3<f32>(cy * gvG.x + sy * gvG.z, gvG.y, cy * gvG.z - sy * gvG.x));\n" +
-                "                            }\n" +
-                "                            bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubG);\n" +
-                "                            break;\n" +
+                "                        if (dkG < dmG) { dmG = dkG; nkG = k2; }\n" +
+                "                    }\n" +
+                "                    if (dmG * sk < 0.008) {\n" +
+                "                        bestT = tG;\n" +
+                "                        getroffen = true;\n" +
+                "                        let qA = kapselTexel(kapseln, poG + nkG * 2);\n" +
+                "                        let qB = kapselTexel(kapseln, poG + nkG * 2 + 1);\n" +
+                "                        var gvG = vec3<f32>(0.0);\n" +
+                "                        var ciG: u32 = 0u;\n" +
+                "                        var laubG = false;\n" +
+                "                        if (qA.w >= 0.0) {\n" +
+                "                            let ba2 = qB.xyz - qA.xyz;\n" +
+                "                            let pa2 = pP - qA.xyz;\n" +
+                "                            let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
+                "                            gvG = pa2 - ba2 * h2;\n" +
+                "                            ciG = u32(qB.w);\n" +
+                "                        } else if (qB.w < 0.5) {\n" +
+                "                            let q2 = pP - qA.xyz;\n" +
+                "                            let aq2 = abs(q2) - qB.xyz;\n" +
+                "                            if (aq2.x >= aq2.y && aq2.x >= aq2.z) { gvG = vec3<f32>(sign(q2.x), 0.0, 0.0); }\n" +
+                "                            else if (aq2.y >= aq2.z) { gvG = vec3<f32>(0.0, sign(q2.y), 0.0); }\n" +
+                "                            else { gvG = vec3<f32>(0.0, 0.0, sign(q2.z)); }\n" +
+                "                            ciG = u32(-qA.w - 1.0);\n" +
+                "                        } else if (qB.w < 1.5) {\n" +
+                "                            // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
+                "                            gvG = gradEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
+                "                            ciG = u32(-qA.w - 1.0);\n" +
+                "                            laubG = true; // das kompakte Teil (Blütenkopf, Stein) trägt die Saison\n" +
+                "                        } else {\n" +
+                "                            // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
+                "                            let d2 = pP - qA.xyz;\n" +
+                "                            let h2 = qB.xyz;\n" +
+                "                            let qb2 = abs(d2) - h2;\n" +
+                "                            let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
+                "                            let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
+                "                            let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
+                "                            if (plane2 > db2) {\n" +
+                "                                gvG = select(vec3<f32>(0.0, h2.z, h2.y), vec3<f32>(0.0, h2.z, -h2.y), qB.w < 2.5);\n" +
+                "                            } else if (qb2.x >= qb2.y && qb2.x >= qb2.z) { gvG = vec3<f32>(sign(d2.x), 0.0, 0.0); }\n" +
+                "                            else if (qb2.y >= qb2.z) { gvG = vec3<f32>(0.0, sign(d2.y), 0.0); }\n" +
+                "                            else { gvG = vec3<f32>(0.0, 0.0, sign(d2.z)); }\n" +
+                "                            ciG = u32(-qA.w - 1.0);\n" +
                 "                        }\n" +
-                "                        tG = tG + max(dmG * sk, 0.004);\n" +
+                "                        if (dot(gvG, gvG) < 1e-10) {\n" +
+                "                            bestN = -dir;\n" +
+                "                        } else {\n" +
+                "                            // Platz-Raum → Welt: rotY(+yaw); uniforme Skala dreht die Richtung nicht\n" +
+                "                            bestN = normalize(vec3<f32>(cy * gvG.x + sy * gvG.z, gvG.y, cy * gvG.z - sy * gvG.x));\n" +
+                "                        }\n" +
+                "                        bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubG);\n" +
+                "                        break;\n" +
                 "                    }\n" +
+                "                    tG = tG + max(dmG * sk, 0.004);\n" +
                 "                }\n" +
-                "                continue;\n" + // Gesetz-Eintrag abgeschlossen — kein Kapsel-/Brick-March
                 "            }\n" +
-                "            let po = i32(t1.w + 0.5);\n" +
-                "            let lenDL = max(length(dL), 1e-6);\n" +
-                "            var tK = tN2;\n" +
-                "            for (var s: i32 = 0; s < 40; s = s + 1) {\n" +
-                "                if (tK >= tF2 || tK >= bestT) { break; }\n" +
-                "                let pL = oL + dL * tK;\n" +
-                "                var dm = 1e30;\n" +
-                "                var nk = 0;\n" +
-                "                for (var k: i32 = 0; k < anzahl; k = k + 1) {\n" +
-                "                    let pA = kapselTexel(kapseln, po + k * 2);\n" +
-                "                    let pB = kapselTexel(kapseln, po + k * 2 + 1);\n" +
-                "                    var dk = 0.0;\n" +
-                "                    if (pA.w >= 0.0) {\n" +
-                "                        let ba = pB.xyz - pA.xyz;\n" +
-                "                        let pa = pL - pA.xyz;\n" +
-                "                        let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
-                "                        dk = length(pa - ba * hh) - pA.w;\n" +
-                "                    } else if (pB.w < 0.5) {\n" +
-                "                        // BOX (pA.w < 0, pB.w≈0): Zentrum|−(farbe+1) · Halbmaße\n" +
-                "                        let q = abs(pL - pA.xyz) - pB.xyz;\n" +
-                "                        dk = length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);\n" +
-                "                    } else if (pB.w < 1.5) {\n" +
-                "                        // ELLIPSOID (pB.w≈1), rau\n" +
-                "                        dk = sdEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
-                "                    } else {\n" +
-                "                        // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
-                "                        let d = pL - pA.xyz;\n" +
-                "                        let h = pB.xyz;\n" +
-                "                        let qb = abs(d) - h;\n" +
-                "                        let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
-                "                        let invL = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
-                "                        let plane = select((d.y * h.z + d.z * h.y) * invL, (d.y * h.z - d.z * h.y) * invL, pB.w < 2.5);\n" +
-                "                        dk = max(db, plane);\n" +
-                "                    }\n" +
-                "                    if (dk < dm) { dm = dk; nk = k; }\n" +
+                "        }\n" +
+                "    } else {\n" +
+                "        let po = i32(t1.w + 0.5);\n" +
+                "        let lenDL = max(length(dL), 1e-6);\n" +
+                "        var tK = tN2;\n" +
+                "        for (var s: i32 = 0; s < 40; s = s + 1) {\n" +
+                "            if (tK >= tF2 || tK >= bestT) { break; }\n" +
+                "            let pL = oL + dL * tK;\n" +
+                "            var dm = 1e30;\n" +
+                "            var nk = 0;\n" +
+                "            for (var k: i32 = 0; k < anzahl; k = k + 1) {\n" +
+                "                let pA = kapselTexel(kapseln, po + k * 2);\n" +
+                "                let pB = kapselTexel(kapseln, po + k * 2 + 1);\n" +
+                "                var dk = 0.0;\n" +
+                "                if (pA.w >= 0.0) {\n" +
+                "                    let ba = pB.xyz - pA.xyz;\n" +
+                "                    let pa = pL - pA.xyz;\n" +
+                "                    let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                    dk = length(pa - ba * hh) - pA.w;\n" +
+                "                } else if (pB.w < 0.5) {\n" +
+                "                    // BOX (pA.w < 0, pB.w≈0): Zentrum|−(farbe+1) · Halbmaße\n" +
+                "                    let q = abs(pL - pA.xyz) - pB.xyz;\n" +
+                "                    dk = length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);\n" +
+                "                } else if (pB.w < 1.5) {\n" +
+                "                    // ELLIPSOID (pB.w≈1), rau\n" +
+                "                    dk = sdEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
+                "                } else {\n" +
+                "                    // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
+                "                    let dd = pL - pA.xyz;\n" +
+                "                    let h = pB.xyz;\n" +
+                "                    let qb = abs(dd) - h;\n" +
+                "                    let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
+                "                    let invLp = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
+                "                    let plane = select((dd.y * h.z + dd.z * h.y) * invLp, (dd.y * h.z - dd.z * h.y) * invLp, pB.w < 2.5);\n" +
+                "                    dk = max(db, plane);\n" +
                 "                }\n" +
-                "                if (dm < 0.008) {\n" +
-                "                    bestT = tK;\n" +
-                "                    getroffen = true;\n" +
-                "                    let pA = kapselTexel(kapseln, po + nk * 2);\n" +
-                "                    let pB = kapselTexel(kapseln, po + nk * 2 + 1);\n" +
-                "                    var gvK = vec3<f32>(0.0);\n" +
-                "                    var ci: u32 = 0u;\n" +
-                "                    var laubK = false;\n" +
-                "                    if (pA.w >= 0.0) {\n" +
-                "                        let ba = pB.xyz - pA.xyz;\n" +
-                "                        let pa = pL - pA.xyz;\n" +
-                "                        let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
-                "                        gvK = pa - ba * hh;\n" +
-                "                        ci = u32(pB.w);\n" +
-                "                    } else if (pB.w < 0.5) {\n" +
-                "                        // BOX-Normale: die Achse der größten Überschreitung trägt\n" +
-                "                        let q = pL - pA.xyz;\n" +
-                "                        let aq = abs(q) - pB.xyz;\n" +
-                "                        if (aq.x >= aq.y && aq.x >= aq.z) { gvK = vec3<f32>(sign(q.x), 0.0, 0.0); }\n" +
-                "                        else if (aq.y >= aq.z) { gvK = vec3<f32>(0.0, sign(q.y), 0.0); }\n" +
-                "                        else { gvK = vec3<f32>(0.0, 0.0, sign(q.z)); }\n" +
-                "                        ci = u32(-pA.w - 1.0);\n" +
-                "                    } else if (pB.w < 1.5) {\n" +
-                "                        // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
-                "                        gvK = gradEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
-                "                        ci = u32(-pA.w - 1.0);\n" +
-                "                        laubK = true; // das kompakte Teil trägt die Saison\n" +
-                "                    } else {\n" +
-                "                        // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
-                "                        let d = pL - pA.xyz;\n" +
-                "                        let h = pB.xyz;\n" +
-                "                        let qb = abs(d) - h;\n" +
-                "                        let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
-                "                        let invL = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
-                "                        let plane = select((d.y * h.z + d.z * h.y) * invL, (d.y * h.z - d.z * h.y) * invL, pB.w < 2.5);\n" +
-                "                        if (plane > db) {\n" +
-                "                            gvK = select(vec3<f32>(0.0, h.z, h.y), vec3<f32>(0.0, h.z, -h.y), pB.w < 2.5);\n" +
-                "                        } else if (qb.x >= qb.y && qb.x >= qb.z) { gvK = vec3<f32>(sign(d.x), 0.0, 0.0); }\n" +
-                "                        else if (qb.y >= qb.z) { gvK = vec3<f32>(0.0, sign(d.y), 0.0); }\n" +
-                "                        else { gvK = vec3<f32>(0.0, 0.0, sign(d.z)); }\n" +
-                "                        ci = u32(-pA.w - 1.0);\n" +
-                "                    }\n" +
-                "                    if (dot(gvK, gvK) < 1e-10) {\n" +
-                "                        bestN = -dir;\n" +
-                "                    } else {\n" +
-                "                        bestN = normalize(vec3<f32>(\n" +
-                "                            r0.x * gvK.x + r1.x * gvK.y + r2.x * gvK.z,\n" +
-                "                            r0.y * gvK.x + r1.y * gvK.y + r2.y * gvK.z,\n" +
-                "                            r0.z * gvK.x + r1.z * gvK.y + r2.z * gvK.z));\n" +
-                "                    }\n" +
-                "                    bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubK);\n" +
-                "                    break;\n" +
-                "                }\n" +
-                "                tK = tK + max(dm / lenDL, 0.004);\n" +
+                "                if (dk < dm) { dm = dk; nk = k; }\n" +
                 "            }\n" +
-                "            continue;\n" + // Kapsel-Eintrag abgeschlossen — kein Brick-March
+                "            if (dm < 0.008) {\n" +
+                "                bestT = tK;\n" +
+                "                getroffen = true;\n" +
+                "                let pA = kapselTexel(kapseln, po + nk * 2);\n" +
+                "                let pB = kapselTexel(kapseln, po + nk * 2 + 1);\n" +
+                "                var gvK = vec3<f32>(0.0);\n" +
+                "                var ci: u32 = 0u;\n" +
+                "                var laubK = false;\n" +
+                "                if (pA.w >= 0.0) {\n" +
+                "                    let ba = pB.xyz - pA.xyz;\n" +
+                "                    let pa = pL - pA.xyz;\n" +
+                "                    let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
+                "                    gvK = pa - ba * hh;\n" +
+                "                    ci = u32(pB.w);\n" +
+                "                } else if (pB.w < 0.5) {\n" +
+                "                    // BOX-Normale: die Achse der größten Überschreitung trägt\n" +
+                "                    let q = pL - pA.xyz;\n" +
+                "                    let aq = abs(q) - pB.xyz;\n" +
+                "                    if (aq.x >= aq.y && aq.x >= aq.z) { gvK = vec3<f32>(sign(q.x), 0.0, 0.0); }\n" +
+                "                    else if (aq.y >= aq.z) { gvK = vec3<f32>(0.0, sign(q.y), 0.0); }\n" +
+                "                    else { gvK = vec3<f32>(0.0, 0.0, sign(q.z)); }\n" +
+                "                    ci = u32(-pA.w - 1.0);\n" +
+                "                } else if (pB.w < 1.5) {\n" +
+                "                    // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
+                "                    gvK = gradEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
+                "                    ci = u32(-pA.w - 1.0);\n" +
+                "                    laubK = true; // das kompakte Teil trägt die Saison\n" +
+                "                } else {\n" +
+                "                    // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
+                "                    let dd = pL - pA.xyz;\n" +
+                "                    let h = pB.xyz;\n" +
+                "                    let qb = abs(dd) - h;\n" +
+                "                    let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
+                "                    let invLp = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
+                "                    let plane = select((dd.y * h.z + dd.z * h.y) * invLp, (dd.y * h.z - dd.z * h.y) * invLp, pB.w < 2.5);\n" +
+                "                    if (plane > db) {\n" +
+                "                        gvK = select(vec3<f32>(0.0, h.z, h.y), vec3<f32>(0.0, h.z, -h.y), pB.w < 2.5);\n" +
+                "                    } else if (qb.x >= qb.y && qb.x >= qb.z) { gvK = vec3<f32>(sign(dd.x), 0.0, 0.0); }\n" +
+                "                    else if (qb.y >= qb.z) { gvK = vec3<f32>(0.0, sign(dd.y), 0.0); }\n" +
+                "                    else { gvK = vec3<f32>(0.0, 0.0, sign(dd.z)); }\n" +
+                "                    ci = u32(-pA.w - 1.0);\n" +
+                "                }\n" +
+                "                if (dot(gvK, gvK) < 1e-10) {\n" +
+                "                    bestN = -dir;\n" +
+                "                } else {\n" +
+                "                    bestN = normalize(vec3<f32>(\n" +
+                "                        r0.x * gvK.x + r1.x * gvK.y + r2.x * gvK.z,\n" +
+                "                        r0.y * gvK.x + r1.y * gvK.y + r2.y * gvK.z,\n" +
+                "                        r0.z * gvK.x + r1.z * gvK.y + r2.z * gvK.z));\n" +
+                "                }\n" +
+                "                bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubK);\n" +
+                "                break;\n" +
+                "            }\n" +
+                "            tK = tK + max(dm / lenDL, 0.004);\n" +
                 "        }\n" +
                 "    }\n" +
-                "    }\n" + // Seiten-Loop zu
-                "    // ── KOMPOSIT: nächstes Feld schlägt Panorama; Tiefe im Alpha ──\n" +
-                "    if (getroffen) {\n" +
-                "        // DAS LICHT DER WELT: Richt-Licht + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
-                "        // Himmels-Irradianz (albedo·env) — die Formel des MeshStandard-Diffus, ohne Ton-Klemme:\n" +
-                "        // die Belichtung macht die Ausgabe-Kette für Feld und Mesh gemeinsam.\n" +
-                "        let nY = bestN.y;\n" +
-                "        let direkt = l0c * max(dot(bestN, l0d), 0.0);\n" +
-                "        let hemi = mix(hemiUnten, hemiOben, nY * 0.5 + 0.5);\n" +
-                "        let env = select(mix(envMitte, envOben, nY), mix(envMitte, envUnten, -nY), nY < 0.0);\n" +
-                "        let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
-                "        // Die Strahl-Länge reist im Alpha (> 0 Feld-Treffer, < 0 Panorama, 0 Himmel): der Pass-Knoten\n" +
-                "        // rechnet daraus die Tiefe und legt die EINE Luft auf.\n" +
-                "        return vec4<f32>(bestRgb * licht, bestT);\n" +
-                "    }\n" +
-                "    if (panoDa) { return vec4<f32>(panoRgb, -panoT); }\n" +
-                "    return vec4<f32>(0.0, 0.0, 0.0, 0.0);\n" +
+                "    if (!getroffen) { return kein; }\n" +
+                "    // DAS LICHT DER WELT: Richt-Licht + Ambient + Hemi über Lambert (albedo/π) plus die\n" +
+                "    // Himmels-Irradianz (albedo·env) — die Formel des MeshStandard-Diffus, ohne Ton-Klemme:\n" +
+                "    // die Belichtung macht die Ausgabe-Kette für Feld und Mesh gemeinsam.\n" +
+                "    let nY = bestN.y;\n" +
+                "    let direkt = l0c * max(dot(bestN, l0d), 0.0);\n" +
+                "    let hemi = mix(hemiUnten, hemiOben, nY * 0.5 + 0.5);\n" +
+                "    let env = select(mix(envMitte, envOben, nY), mix(envMitte, envUnten, -nY), nY < 0.0);\n" +
+                "    let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
+                "    return vec4<f32>(bestRgb * licht, bestT);\n" +
                 "}",
             [sdEllipsoidRauFn, gradEllipsoidRauFn, kapselTexelFn] // der raue Ellipsoid + die 2D-Kapsel-Liste
         );
-        // DER EINE WELT-MARCH schreibt ECHTE TIEFE (depthNode, das Fern-Schirm-
-        // Muster): der Pass ist OPAK und komponiert per Depth-Test mit allem —
-        // Wasser/Transparentes zeichnet DANACH und testet gegen die Feld-Tiefe.
-        const mat = new THREE.MeshBasicNodeMaterial({ depthWrite: true, depthTest: true });
-        mat.fog = false;
-        // Fullscreen-Dreieck in NDC: der Vertex-Knoten setzt CLIP-Koordinaten
-        // direkt (z nahe far), die Kamera-Matrizen werden umgangen.
-        mat.vertexNode = TSL.vec4(TSL.positionGeometry.x, TSL.positionGeometry.y, 0.999999, 1.0);
+        // DAS PANORAMA (Fragment): Richtung aus invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-Umkehr)
+        // → Farbe unter dem Licht der Welt; die Luft legt der Pass-Knoten auf. Rückgabe: rgb + Treffer-Distanz (0 =
+        // Himmel → verworfen). textureDimensions braucht f32/i32-Casts (WGSL-Spec).
+        const panorama = TSL.wgslFn(
+            "fn feldPanorama(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, elevMax: f32, l0d: vec3<f32>, l0c: vec3<f32>, ambientFarbe: vec3<f32>, hemiOben: vec3<f32>, envOben: vec3<f32>, pano: texture_2d<f32>) -> vec4<f32> {\n" +
+                "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
+                "    let fernP = fern4.xyz / fern4.w;\n" +
+                "    let dir = normalize(fernP - camPos);\n" +
+                "    let PI = 3.14159265358979;\n" +
+                "    let e = asin(clamp(dir.y, -1.0, 1.0));\n" +
+                "    if (abs(e) > elevMax) { return vec4<f32>(0.0); }\n" +
+                "    let dim = textureDimensions(pano, 0);\n" +
+                "    let a = atan2(dir.z, dir.x);\n" +
+                "    let u = clamp(a / (2.0 * PI) + 0.5, 0.0, 0.9999);\n" +
+                "    var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
+                "    if (e < 0.0) { sV = -sV; }\n" +
+                "    let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
+                "    let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
+                "    if (pT.a <= 0.0) { return vec4<f32>(0.0); }\n" +
+                "    // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
+                "    // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer; die Luft legt der Pass-Knoten auf\n" +
+                "    // (EINE Luft für Mesh, Feld und Panorama).\n" +
+                "    return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe + hemiOben) * (1.0 / PI) + envOben), pT.a);\n" +
+                "}"
+        );
+        // Der Schirm-Strahl beider Fragmente: NDC aus dem Pixel, derselbe Strahl (invVP · NDC) wie im WGSL — die Luft
+        // dunstet Feld und Panorama mit denselben Knoten wie jedes Mesh (`_luftEnsure`), kein Pass-eigener Nebel.
         const ndcNode = TSL.vec2(
             TSL.screenUV.x.mul(2.0).sub(1.0),
             TSL.float(1.0).sub(TSL.screenUV.y).mul(2.0).sub(1.0)
         );
-        const ruf = blick({
+        const fern4 = U.invVP.mul(TSL.vec4(ndcNode, 1.0, 1.0));
+        const dirN = fern4.xyz.div(fern4.w).sub(U.camPos).normalize();
+        const imDunst = (ruf) => {
+            const t = ruf.a;
+            const punkt = U.camPos.add(dirN.mul(t));
+            return TSL.Fn(() => {
+                TSL.Discard(t.lessThan(0.25)); // 0-Sentinel: kein Treffer bzw. Himmel
+                return TSL.vec4(TSL.mix(ruf.rgb, luft.farbe(U.camPos, punkt), luft.faktor(U.camPos, punkt)), 1.0);
+            })();
+        };
+        // DER MARCH-DRAW: Stellvertreter-Boxen (Rückseiten — eine Hülle um die Kamera deckt den ganzen Blick), EIN Draw
+        // mit `instanceCount` = Obergrenze × Plätze je Block (der Pass-Takt). Er schreibt ECHTE TIEFE (depthNode): opak,
+        // komponiert per Tiefentest mit allem — Wasser/Transparentes zeichnet DANACH und testet gegen die Feld-Tiefe.
+        const matMarch = new THREE.MeshBasicNodeMaterial({ depthWrite: true, depthTest: true, side: THREE.BackSide });
+        matMarch.fog = false;
+        matMarch.vertexNode = stellvertreter({
+            i: TSL.instanceIndex,
+            ecke: TSL.positionGeometry,
+            vp: U.vp,
+            camPos: U.camPos,
+            liste: TSL.texture(wm.liste),
+            kapseln: TSL.texture(wm.kapseln),
+        });
+        const rufMarch = march({
             ndc: ndcNode,
+            i: TSL.instanceIndex,
             camPos: U.camPos,
             invVP: U.invVP,
-            rMin: U.rMin,
-            rMax: U.rMax,
-            elevMax: U.elevMax,
             nah: U.nah,
             fern: U.fern,
             fwd: U.fwd,
-            seitenN: U.seitenN,
             l0d: U.l0d,
             l0c: U.l0c,
             ambientFarbe: U.ambientFarbe,
@@ -35524,32 +35555,48 @@ class AnazhRealm {
             // DIE SAISON der Ellipsoide (die kompakten Teile der Gesetz-Streu): dieselbe EINE Uniform wie Laub, Gras, Karte
             // und Fern-Ring (eingeführt 05.10. für die Kronen-Lappen der Baum-Sätze, die am selben Tag fielen).
             saison: this._ensureSeasonUniforms().uSeasonMul,
-            pano: TSL.texture(panoTex),
-            seiten: TSL.texture(wm.seiten),
             liste: TSL.texture(wm.liste),
-            folge: TSL.texture(wm.folge),
             kapseln: TSL.texture(wm.kapseln),
         });
-        // DIE LUFT auf Feld und Panorama: derselbe Strahl (invVP · NDC) wie im WGSL, dieselben Luft-Knoten wie jedes
-        // Mesh (`_luftEnsure`) — die Ferne dunstet nach demselben Gesetz wie das Nahe, kein Pass-eigener Nebel.
-        const strahl = ruf.a;
-        const tStrahl = strahl.abs();
-        const fern4 = U.invVP.mul(TSL.vec4(ndcNode, 1.0, 1.0));
-        const dirN = fern4.xyz.div(fern4.w).sub(U.camPos).normalize();
-        const punkt = U.camPos.add(dirN.mul(tStrahl));
-        mat.outputNode = TSL.Fn(() => {
-            TSL.Discard(tStrahl.lessThan(0.25)); // 0-Sentinel: kein Feld, kein Panorama → Himmel
-            return TSL.vec4(TSL.mix(ruf.rgb, luft.farbe(U.camPos, punkt), luft.faktor(U.camPos, punkt)), 1.0);
-        })();
-        // Die March-Tiefe IST die Fragment-Tiefe (Feld ↔ Mesh komponieren): View-Z aus der Strahl-Länge, das
-        // Panorama liegt hinter allem.
-        const vzStrahl = tStrahl.mul(TSL.max(TSL.dot(dirN, U.fwd), 1e-4));
-        const tiefeFeld = TSL.clamp(
+        matMarch.outputNode = imDunst(rufMarch);
+        // Die March-Tiefe IST die Fragment-Tiefe (Feld ↔ Mesh komponieren): View-Z aus der Strahl-Länge.
+        const vzStrahl = rufMarch.a.mul(TSL.max(TSL.dot(dirN, U.fwd), 1e-4));
+        matMarch.depthNode = TSL.clamp(
             U.fern.mul(vzStrahl.sub(U.nah)).div(vzStrahl.mul(U.fern.sub(U.nah))),
             0.0,
             0.9999995
         );
-        mat.depthNode = TSL.select(strahl.lessThan(0.0), TSL.float(0.999999), tiefeFeld);
+        const kiste = new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0.5, 0.5);
+        const geoMarch = new THREE.InstancedBufferGeometry();
+        geoMarch.setIndex(kiste.getIndex());
+        geoMarch.setAttribute("position", kiste.getAttribute("position"));
+        geoMarch.instanceCount = 0; // der Pass-Takt setzt Obergrenze × Plätze je Block
+        const marchMesh = new THREE.Mesh(geoMarch, matMarch);
+        marchMesh.frustumCulled = false;
+        marchMesh.renderOrder = 9998; // nach aller Szene (die Tiefen-Grenze liest sie), vor dem Panorama
+        marchMesh.matrixAutoUpdate = false;
+        marchMesh.visible = false; // erst sichtbar, wenn das Feld die Textur gemalt hat
+        marchMesh.userData.inventar = "feld-pass";
+        st.scene.add(marchMesh);
+        // DER PANORAMA-DRAW: Vollbild-Dreieck in NDC (der Vertex-Knoten setzt CLIP-Koordinaten direkt, z = 0,999999 —
+        // die Tiefe des Panoramas, hinter allem). OHNE Fragment-Tiefe: der frühe Tiefentest verwirft Szene und Sätze.
+        const mat = new THREE.MeshBasicNodeMaterial({ depthWrite: true, depthTest: true });
+        mat.fog = false;
+        mat.vertexNode = TSL.vec4(TSL.positionGeometry.x, TSL.positionGeometry.y, 0.999999, 1.0);
+        mat.outputNode = imDunst(
+            panorama({
+                ndc: ndcNode,
+                camPos: U.camPos,
+                invVP: U.invVP,
+                elevMax: U.elevMax,
+                l0d: U.l0d,
+                l0c: U.l0c,
+                ambientFarbe: U.ambientFarbe,
+                hemiOben: U.hemiOben,
+                envOben: U.envOben,
+                pano: TSL.texture(panoTex),
+            })
+        );
         const geo = new THREE.BufferGeometry();
         geo.setAttribute(
             "position",
@@ -35557,7 +35604,7 @@ class AnazhRealm {
         );
         const mesh = new THREE.Mesh(geo, mat);
         mesh.frustumCulled = false;
-        mesh.renderOrder = 9999; // LETZTER Draw: nur Himmel-Pixel überleben den Depth-Test
+        mesh.renderOrder = 9999; // LETZTER Draw: nur Himmel-Pixel überleben den Tiefentest
         mesh.matrixAutoUpdate = false;
         mesh.visible = false; // erst sichtbar, wenn das Feld die Textur gemalt hat
         mesh.userData.inventar = "feld-pass";
@@ -35565,6 +35612,11 @@ class AnazhRealm {
         st.feldPass = {
             mesh,
             mat,
+            march: marchMesh,
+            matMarch,
+            // die WGSL-Quellen der Draws (`.functionNode.code` samt Includes) — die Budget-Linse liest sie
+            // (gate:feld-stellvertreter K2)
+            wgsl: { stellvertreter, march, panorama },
             tex,
             daten,
             panoTex,
@@ -35677,9 +35729,7 @@ class AnazhRealm {
         fp.daten.set(job.daten);
         fp.tex.needsUpdate = true;
         fp.U.rMin.value = job.rMin;
-        fp.U.wl.value = wl;
         fp.U.hMax.value = job.hMax + 5;
-        fp.U.anker.value.set(job.ankerX, job.ankerZ);
         fp.anchorX = job.ankerX;
         fp.anchorZ = job.ankerZ;
         fp.saison = job.saison;
@@ -35771,22 +35821,6 @@ class AnazhRealm {
         liste.minFilter = THREE.NearestFilter;
         liste.magFilter = THREE.NearestFilter;
         liste.needsUpdate = true;
-        // DIE SEITEN (2 Texel je Seite: [aabbMin|aktivZahl][aabbMax|frei]):
-        const seitenZahl = W.felder / W.seite;
-        const seitenDaten = new Float32Array(seitenZahl * 2 * 4);
-        const seiten = new THREE.DataTexture(seitenDaten, seitenZahl * 2, 1, THREE.RGBAFormat, THREE.FloatType);
-        seiten.name = "welt-march-seiten";
-        seiten.minFilter = THREE.NearestFilter;
-        seiten.magFilter = THREE.NearestFilter;
-        seiten.needsUpdate = true;
-        // DIE SEITEN-FOLGE (1 Texel je belegter Seite: [Seite|Box-Abstand zur Kamera]), je Takt nach dem Abstand
-        // sortiert — der March testet nah zuerst und bricht ab, sobald der Abstand hinter dem Treffer liegt.
-        const folgeDaten = new Float32Array(seitenZahl * 4);
-        const folge = new THREE.DataTexture(folgeDaten, seitenZahl, 1, THREE.RGBAFormat, THREE.FloatType);
-        folge.name = "welt-march-folge";
-        folge.minFilter = THREE.NearestFilter;
-        folge.magFilter = THREE.NearestFilter;
-        folge.needsUpdate = true;
         // Kapsel-Liste (analytische Primitive): 2 Texel je Kapsel [A.xyz|radius][B.xyz|farbePacked], im
         // Glied-Raum sphere-getract, digitalisiert nur am Schirm. Ein Eintrag markiert sich mit
         // d = −anzahl (texel0.w), texel1.w = Kapsel-Texel-Offset. ~1 KB je Gattung statt MB-Bricks.
@@ -35805,14 +35839,7 @@ class AnazhRealm {
         st.weltMarch = {
             liste,
             listeDaten,
-            seiten,
-            seitenDaten,
-            seitenDirty: new Set(), // Seiten mit veralteter Hüll-AABB (der Pass-Tick pflegt)
-            folge,
-            folgeDaten,
-            handles: new Array(W.felder).fill(null), // Slot → Handle (die Seiten-Ordnung zieht handle.feld mit)
-            unordnung: 0, // Einträge + Freigaben seit der letzten Seiten-Ordnung
-            geordnetT: 0, // performance.now() der letzten Seiten-Ordnung
+            handles: new Array(W.felder).fill(null), // Slot → Handle
             kapseln,
             kapselDaten,
             kapselCursor: 0, // Bump-Allokator (Mehr-Kapsel-Sätze brauchen ZUSAMMENHÄNGENDE Slots)
@@ -35825,7 +35852,7 @@ class AnazhRealm {
             schwund: new Set(), // Handles, deren Satz gerade ausdithert (_weltFeldAktiv aus → _weltSchwundTakt)
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             belegt: 0, // Feld-EINTRÄGE (Instanzen)
-            obergrenze: 0, // höchster je vergebener Feld-Index + 1 (der Shader-Loop endet dort)
+            obergrenze: 0, // höchster belegter Feld-Index + 1 (× gesetzBlock = die Stellvertreter des March-Draws)
         };
         return st.weltMarch;
     }
@@ -35871,7 +35898,6 @@ class AnazhRealm {
             wm.schwund.add(handle);
         }
         wm.handles[feld] = handle;
-        wm.unordnung++;
         if (matrixWorld) {
             this._weltFeldMatrix(handle, matrixWorld); // inv + Welt-AABB aus der Matrix
         } else {
@@ -35897,150 +35923,7 @@ class AnazhRealm {
         }
         wm.liste.needsUpdate = true;
         wm.belegt++;
-        this._weltSeiteDirty(wm, feld);
         return handle;
-    }
-
-    // SEITEN-EBENE: eine Feld-Mutation veraltet die Hüll-AABB ihrer Seite —
-    // der Pass-Tick pflegt alle schmutzigen Seiten in EINEM Gang (billig:
-    // 32 Einträge × 8 Floats je Seite; bewegte Kreaturen schmutzen je Frame).
-    _weltSeiteDirty(wm, feld) {
-        if (wm && wm.seitenDirty) wm.seitenDirty.add(feld >> 5);
-    }
-
-    _weltSeitenPflegen(wm) {
-        if (!wm || !wm.seitenDirty || wm.seitenDirty.size === 0) return;
-        const L = wm.listeDaten;
-        const S = wm.seitenDaten;
-        for (const p of wm.seitenDirty) {
-            let minX = Infinity,
-                minY = Infinity,
-                minZ = Infinity,
-                maxX = -Infinity,
-                maxY = -Infinity,
-                maxZ = -Infinity,
-                n = 0;
-            const basis = p * 32;
-            for (let q = 0; q < 32; q++) {
-                const o = (basis + q) * 32;
-                if (L[o + 3] === 0) continue; // 0 = inaktiv/frei (negativ = ANALOG-Kapsel, aktiv!)
-                n++;
-                if (L[o] < minX) minX = L[o];
-                if (L[o + 1] < minY) minY = L[o + 1];
-                if (L[o + 2] < minZ) minZ = L[o + 2];
-                if (L[o + 4] > maxX) maxX = L[o + 4];
-                if (L[o + 5] > maxY) maxY = L[o + 5];
-                if (L[o + 6] > maxZ) maxZ = L[o + 6];
-            }
-            const so = p * 8;
-            S[so + 3] = n;
-            if (n > 0) {
-                S[so] = minX;
-                S[so + 1] = minY;
-                S[so + 2] = minZ;
-                S[so + 4] = maxX;
-                S[so + 5] = maxY;
-                S[so + 6] = maxZ;
-                S[so + 7] = 0;
-            }
-        }
-        wm.seitenDirty.clear();
-        wm.seiten.needsUpdate = true;
-    }
-
-    // DIE SEITEN-ORDNUNG (04.10., echte GPU an der Mess-Wiese): die Slots fielen in Erzeugungs-Reihenfolge
-    // (`freiFelder.pop()`), die Seiten-Hüllen spannten 200–900 m — fast jeder Strahl traf ~22 Seiten und
-    // testete Hunderte Einträge, der Welt-March kostete 13–17 ms je Frame. Hier wandern die Einträge in
-    // Hilbert-Reihenfolge ihrer Mittelpunkte (Zelle `ordnungZelleM`), große Hüllen (> `ordnungGrossM`) in eigene
-    // Seiten am Ende — die Seiten werden ENG. Die Handles ziehen mit (jeder Leser liest `handle.feld` frisch).
-    _weltSeitenOrdnen(wm) {
-        const W = AnazhRealm.WELT_MARCH;
-        const L = wm.listeDaten;
-        const Z = W.ordnungZelleM;
-        const zelle = (v) => Math.max(0, Math.min(65535, Math.floor(v / Z) + 32768));
-        // Hilbert-Index (16 Bit je Achse): die Kurve springt nie — Morton-Läufe überquerten Quadranten-Grenzen
-        // und machten einzelne Seiten so breit wie die Welt (Linse: 255 m statt der idealen 122 m).
-        const hilbert = (x, y) => {
-            let d = 0;
-            for (let s = 32768; s > 0; s >>= 1) {
-                const rx = x & s ? 1 : 0;
-                const ry = y & s ? 1 : 0;
-                d += s * s * ((3 * rx) ^ ry);
-                if (ry === 0) {
-                    if (rx === 1) {
-                        x = 65535 - x;
-                        y = 65535 - y;
-                    }
-                    const t = x;
-                    x = y;
-                    y = t;
-                }
-            }
-            return d;
-        };
-        const alteGrenze = wm.obergrenze;
-        const aktiv = [];
-        for (let f = 0; f < alteGrenze; f++) {
-            const h = wm.handles[f];
-            if (!h) continue;
-            const o = f * 32;
-            const gross = Math.max(L[o + 4] - L[o], L[o + 6] - L[o + 2]) > W.ordnungGrossM ? 1 : 0;
-            const m = hilbert(zelle((L[o] + L[o + 4]) * 0.5), zelle((L[o + 2] + L[o + 6]) * 0.5));
-            aktiv.push({ h, f, gross, m });
-        }
-        aktiv.sort((a, b) => a.gross - b.gross || a.m - b.m);
-        const alt = L.slice(0, alteGrenze * 32);
-        L.fill(0, 0, alteGrenze * 32);
-        const handles = new Array(W.felder).fill(null);
-        let slot = 0;
-        let grossAb = -1;
-        for (const e of aktiv) {
-            if (e.gross && grossAb < 0) {
-                slot = Math.ceil(slot / W.seite) * W.seite; // die Großen beginnen eine eigene Seite
-                grossAb = slot;
-            }
-            L.set(alt.subarray(e.f * 32, e.f * 32 + 32), slot * 32);
-            e.h.feld = slot;
-            handles[slot] = e.h;
-            slot++;
-        }
-        wm.handles = handles;
-        wm.obergrenze = slot;
-        wm.freiFelder = [];
-        for (let f = W.felder - 1; f >= 0; f--) if (!handles[f]) wm.freiFelder.push(f); // pop() = kleinster Slot
-        const seitenBis = Math.ceil(Math.max(alteGrenze, slot) / W.seite);
-        for (let p = 0; p < seitenBis; p++) wm.seitenDirty.add(p);
-        wm.liste.needsUpdate = true;
-        wm.unordnung = 0;
-        wm.geordnetT = performance.now();
-    }
-
-    // DIE SEITEN-FOLGE je Takt: die belegten Seiten nach dem Abstand Kamera → Seiten-Hülle (0 innen), nah
-    // zuerst. Der Abstand ist eine untere Schranke jedes Strahl-Eintritts in die Seite — der Shader bricht ab,
-    // sobald er hinter dem besten Treffer liegt. Liefert die Zahl der belegten Seiten (die Loop-Grenze).
-    _weltSeitenFolge(wm, cam) {
-        const S = wm.seitenDaten;
-        const O = wm.folgeDaten;
-        const nS = Math.ceil(wm.obergrenze / AnazhRealm.WELT_MARCH.seite);
-        const f = wm._folge || (wm._folge = []);
-        f.length = 0;
-        for (let p = 0; p < nS; p++) {
-            const so = p * 8;
-            if (!(S[so + 3] > 0)) continue;
-            const dx = Math.max(S[so] - cam.x, 0, cam.x - S[so + 4]);
-            const dy = Math.max(S[so + 1] - cam.y, 0, cam.y - S[so + 5]);
-            const dz = Math.max(S[so + 2] - cam.z, 0, cam.z - S[so + 6]);
-            // Abstand (abgerundet auf 1/16 m — bleibt untere Schranke) und Seite in EINER ganzen, sortierbaren Zahl
-            f.push(Math.floor(Math.hypot(dx, dy, dz) * 16) * 4096 + p);
-        }
-        f.sort((a, b) => a - b);
-        for (let i = 0; i < f.length; i++) {
-            const p = f[i] % 4096;
-            O[i * 4] = p;
-            O[i * 4 + 1] = (f[i] - p) / 65536;
-        }
-        wm.folge.needsUpdate = true;
-        return f.length;
     }
 
     // ═══ DIE KAPSEL-BAHN ═══
@@ -36302,7 +36185,7 @@ class AnazhRealm {
 
     // Die Block-HÜLLE folgt ihren Plätzen (Union der Hüllkugeln): Welt-AABB
     // und lokale Box in EINEM Schritt (Identitäts-Matrix bleibt stehen) —
-    // der Seiten-Vortest des March bleibt eng, auch wenn Plätze sterben.
+    // der Hüllen-Vortest des March bleibt eng, auch wenn Plätze sterben.
     _streuGesetzAabb(wm, block) {
         const K = wm.kapselDaten;
         const n = AnazhRealm.WELT_MARCH.gesetzBlock;
@@ -36343,7 +36226,6 @@ class AnazhRealm {
         L[o + 25] = maxY - minY;
         L[o + 26] = maxZ - minZ;
         wm.liste.needsUpdate = true;
-        this._weltSeiteDirty(wm, block.handle.feld);
     }
 
     // Ein PLATZ stirbt (LOD-0-Rückkehr/Region-Dispose): sein Texel wird
@@ -36408,7 +36290,6 @@ class AnazhRealm {
                 L[o + 3] = handle.brick.d;
                 handle._anT = performance.now(); // seit wann der Satz zeichnet (die Nah-Linse nennt die Dauer)
                 wm.liste.needsUpdate = true;
-                this._weltSeiteDirty(wm, handle.feld);
             }
             return;
         }
@@ -36431,7 +36312,6 @@ class AnazhRealm {
         }
         L[o + 3] = 0;
         wm.liste.needsUpdate = true;
-        this._weltSeiteDirty(wm, handle.feld);
     }
 
     // DIE NAH-LINSE (gate:analog-nah, Werkbank): jeder zeichnende Analog-Satz diesseits der Nah-Grenze (`ANALOG_NAH_M`,
@@ -36530,7 +36410,7 @@ class AnazhRealm {
     }
 
     // Der Schwund-Takt (je Feld-Pass-Takt): Anteil = Zeit / WELT_SCHWUND_MS in Texel 5.w; am Ende fällt der Satz aus der
-    // Zeichnung (d = 0). Die Handles tragen ihren Slot frisch (die Seiten-Ordnung verschiebt ihn).
+    // Zeichnung (d = 0).
     _weltSchwundTakt(wm) {
         if (!wm || !wm.schwund.size) return;
         const L = wm.listeDaten;
@@ -36554,7 +36434,6 @@ class AnazhRealm {
                 if (h._frei) continue;
                 L[o + 3] = 0;
                 L[o + 23] = 0;
-                this._weltSeiteDirty(wm, h.feld);
             } else L[o + 23] = Math.max(1e-3, s);
         }
         wm.liste.needsUpdate = true;
@@ -36611,7 +36490,6 @@ class AnazhRealm {
         L[o + 5] = maxY;
         L[o + 6] = maxZ;
         wm.liste.needsUpdate = true;
-        this._weltSeiteDirty(wm, handle.feld);
     }
 
     // Ein BRICK freigeben (Atlas-Einheit/Block zurück): NUR wenn kein Feld mehr
@@ -36642,10 +36520,20 @@ class AnazhRealm {
         const o = handle.feld * 32;
         wm.listeDaten[o + 3] = 0;
         wm.liste.needsUpdate = true;
-        this._weltSeiteDirty(wm, handle.feld);
-        wm.freiFelder.push(handle.feld);
+        // Die Frei-Liste bleibt absteigend sortiert: pop() vergibt immer den KLEINSTEN freien Slot, und die Obergrenze
+        // folgt dem höchsten belegten (die Stellvertreter-Zahl des March-Draws ist Obergrenze × Plätze je Block) — die
+        // Lücken füllen sich von unten, die Obergrenze bleibt eng.
+        const F = wm.freiFelder;
+        let lo = 0,
+            hi = F.length;
+        while (lo < hi) {
+            const mitte = (lo + hi) >> 1;
+            if (F[mitte] > handle.feld) lo = mitte + 1;
+            else hi = mitte;
+        }
+        F.splice(lo, 0, handle.feld);
         wm.handles[handle.feld] = null;
-        wm.unordnung++;
+        while (wm.obergrenze > 0 && !wm.handles[wm.obergrenze - 1]) wm.obergrenze--;
         wm.belegt--;
         const brick = handle.brick;
         if (brick) {
@@ -36841,7 +36729,8 @@ class AnazhRealm {
                 fp.panoCamY = cy;
                 fp.panoCamZ = cz;
                 fp.panoLaeufe = (fp.panoLaeufe || 0) + 1;
-                fp.mesh.visible = true; // erst mit gebackenem Panorama sichtbar
+                fp.mesh.visible = true; // erst mit gebackenem Panorama sichtbar (Panorama und March gemeinsam)
+                fp.march.visible = true;
             })
             .catch(() => {
                 if (this.state.feldPass === fp && fp.panoGen === gen) fp.panoFlug = false;
@@ -36877,28 +36766,20 @@ class AnazhRealm {
         }
         if (cam && fp.mesh.visible) {
             fp.U.camPos.value.copy(cam.position);
-            fp.U.invVP.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).invert();
+            // Stellvertreter und Strahl aus DERSELBEN Matrix (Raster-Deckung == Strahl-Treffer).
+            fp.U.vp.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+            fp.U.invVP.value.copy(fp.U.vp.value).invert();
             // DER EINE WELT-MARCH: echte Tiefe braucht die Projektions-Wahrheit —
             // near/far + Blick-Achse (Tiefe = View-Z, nie Strahl-Länge).
             fp.U.nah.value = cam.near;
             fp.U.fern.value = cam.far;
             const e = cam.matrixWorld.elements;
             fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
-            // Loop-Grenze (nur vergebene Felder marchen) + Licht der Welt: das Feld gehorcht den Szene-Lichtern
-            // — lichtFarbe = Sonnen-Farbe × Intensität, ambientFarbe = Ambient + Hemi-Mittel. Sonst leuchtet
-            // das Albedo nachts aus sich selbst.
+            // Die Stellvertreter: je vergebenem Feld-Slot ein Block von Plätzen (ein Satz nutzt Platz 0, ein Gesetz-
+            // Block jeden belegten) — der Vertex verwirft leere, die Kosten binden an die Hüllen im Bild. Licht der Welt:
+            // das Feld gehorcht den Szene-Lichtern, sonst leuchtet das Albedo nachts aus sich selbst.
             const wm = st.weltMarch;
-            // SEITEN-PFLEGE: schmutzige Hüll-AABBs in EINEM Gang, dann die
-            // Loop-Grenze in SEITEN (der Shader testet Seiten, nie rohe Felder).
-            // SEITEN-ORDNUNG: nach `ordnenAb` Zu-/Abgängen (höchstens alle `ordnenMs`) wandern die Einträge
-            // räumlich zusammen; dann die Hüllen, dann die Folge nah→fern (die Loop-Grenze = belegte Seiten).
-            if (wm) {
-                const WM = AnazhRealm.WELT_MARCH;
-                if (wm.unordnung >= WM.ordnenAb && performance.now() - wm.geordnetT >= WM.ordnenMs)
-                    this._weltSeitenOrdnen(wm);
-                this._weltSeitenPflegen(wm);
-            }
-            fp.U.seitenN.value = wm ? this._weltSeitenFolge(wm, cam.position) : 0;
+            fp.march.geometry.instanceCount = wm ? wm.obergrenze * AnazhRealm.WELT_MARCH.gesetzBlock : 0;
             this._feldLichtSync(fp.U);
         }
     }
@@ -37008,9 +36889,11 @@ class AnazhRealm {
     _feldPassDispose() {
         const fp = this.state.feldPass;
         if (!fp) return;
-        if (this.state.scene) this.state.scene.remove(fp.mesh);
-        this._queueGeometryDispose(fp.mesh.geometry);
-        if (fp.mat && typeof fp.mat.dispose === "function") fp.mat.dispose();
+        for (const m of [fp.mesh, fp.march]) {
+            if (this.state.scene) this.state.scene.remove(m);
+            this._queueGeometryDispose(m.geometry);
+            m.material.dispose();
+        }
         if (fp.tex && typeof fp.tex.dispose === "function") fp.tex.dispose();
         if (fp.panoTex && typeof fp.panoTex.dispose === "function") fp.panoTex.dispose();
         this.state.feldPass = null;
@@ -94878,23 +94761,19 @@ AnazhRealm.FOUNDRY_ALTER_MS = 6000;
 AnazhRealm.FOUNDRY_GEIST_FACH = 4;
 // DER EINE WELT-MARCH: alles Ferne ohne Karte (Box-Sätze der Bauten und Steine · Glieder-Kapseln · Streu-Gesetz;
 // Bäume und Sträucher sind fern ihre Karte) lebt als ANALOG-Satz in EINER Feld-Listen-Textur + EINER Kapsel-Liste;
-// der Feld-Pass marcht sie in EINEM Draw mit echter Tiefe. Fern ist das Feld die Gestalt (nah trägt das Studio-
+// der Feld-Pass marcht sie in EINEM Draw mit echter Tiefe (je Satz bzw. Gesetz-Platz ein Stellvertreter, `_feldPassEnsure`).
+// Fern ist das Feld die Gestalt (nah trägt das Studio-
 // Mesh); eine Erschöpfung schreit EINMAL laut. Kapseln/Boxen haben keine Import-Auflösung — der Strahl digitalisiert
 // am Schirm. Der
 // Voxel-Brick-Atlas (512×512×128, 128 MB VRAM + 128 MB Heap-Spiegel) ist verabschiedet (V18.528): er wurde im
 // Spiel nie mehr belegt (gemessen 0 Zuteilungen), sein einziger Nutzer, der Region-Ziegel, hing an der toten
 // Fern-Schicht.
 AnazhRealm.WELT_MARCH = Object.freeze({
-    // SEITEN-EBENE: die Feld-Liste hat SEITEN à 32 Einträge mit CPU-gepflegter Hüll-AABB — der March
-    // testet erst die Seite (2 Loads), dann ihre Mitglieder: Per-Pixel-Kosten binden an getroffene
-    // Seiten statt an die Welt-Größe. Zeitliche Allokations-Nähe ist KEINE räumliche Nähe (gemessen 04.10.:
-    // Seiten-Hüllen 200–900 m) — die Seiten-Ordnung (_weltSeitenOrdnen) sortiert die Einträge räumlich.
+    // Die Kosten binden an die Hüllen im Bild, nie an die Welt-Größe: der Rasterizer wählt je Satz die Pixel (seine
+    // Stellvertreter-Box), kein Pixel testet fremde Einträge. (Die SEITEN-EBENE — 32er-Seiten mit Hüll-AABB, Hilbert-
+    // Ordnung und Folge nah→fern — fiel mit den Stellvertretern, Welle G 06.10.: jedes Pixel des Vollbilds lief ihre
+    // Schleife, an der Mess-Wiese spannte EINE Seite über die Kamera und schickte alle 2,07 Mio. Pixel in 32 Einträge.)
     felder: 4096, // Feld-Listen-Plätze (8 RGBA-Float-Texel je Feld; Textur 4096×8)
-    seite: 32, // Einträge je Seite (128 Seiten × 2 AABB-Texel = 256×1-Textur)
-    ordnungZelleM: 16, // Hilbert-Zelle der Seiten-Ordnung (m)
-    ordnungGrossM: 96, // Hüllen breiter als das wohnen in eigenen Seiten am Ende (sie blähten jede Seite)
-    ordnenAb: 48, // Zu-/Abgänge, nach denen die Seiten neu geordnet werden
-    ordnenMs: 1000, // höchstens so oft (ms) — die Ordnung kopiert die Liste (≤ 512 KB) einmal
     spalten: 512, // Felder je Listen-Textur-Zeile (Breite = 512×8 = 4096 Texel, WebGPU-sicher)
     kapseln: 8192, // ANALOG-Primitive (2 Texel je Kapsel/Box — das Gesetz statt des Rasters; Textur kapselZeile × 4)
     kapselZeile: 4096, // Texel je Zeile der Kapsel-Liste (der Shader liest die Breite aus der Textur: kapselTexel)
