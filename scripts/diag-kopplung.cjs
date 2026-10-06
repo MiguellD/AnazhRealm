@@ -32,7 +32,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4407;
+const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

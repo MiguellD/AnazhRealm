@@ -31,7 +31,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4406;
+const PORT = Number(process.env.WASSER_WAHRHEIT_PORT || 4406);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
