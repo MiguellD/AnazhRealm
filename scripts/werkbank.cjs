@@ -59,7 +59,8 @@
 //                                                           LINSE
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE: jede WebGPU-Validierung (Device-Meldung mit
 //                                                           Pass) und jeder Draw ohne gesetzten Vertex-Slot, mit Pipeline,
-//                                                           Pass und three-Objekt (scripts/lib/gpu-fehler.cjs)
+//                                                           Pass und three-Objekt (scripts/lib/gpu-fehler.cjs); nur nach
+//                                                           `start --gpu-fehler` (sie hüllt jeden Draw — nie mit Zeit-Läufen)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // DIE MESS-SERIE: jeder `start` fährt ein eigenes Browser-Profil (Scratch, beim `stop` gelöscht) — der erste Boot ist
@@ -100,6 +101,9 @@ const SEITEN_PORT = PORT - 1;
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 const ECHT = argv.includes("--echt");
+// DIE GPU-FEHLER-LINSE nur auf Zuruf (`start --gpu-fehler`): sie hüllt jeden Draw in eine JS-Probe — eine Zeit-Messung
+// (lauf, gpu-bank, band) liefe sonst mit ihrer Last.
+const GPU_FEHLER = argv.includes("--gpu-fehler");
 // DIE SEITE der echten Welt: `--seite` (oder WERKBANK_SEITE) hat EINE Bedeutung — die URL des save-servers
 // (Ursprung, z. B. http://localhost:4312), nie eine Portnummer. Alles andere bricht laut ab, statt still eine
 // falsche Adresse („5312/") zu bauen.
@@ -791,7 +795,7 @@ async function starte() {
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
-    await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
+    if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     const fehler = [];
     const zerstoert = { n: 0 };
     page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
@@ -840,7 +844,7 @@ async function starte() {
             )
                 await new Promise((r) => setTimeout(r, 200));
         });
-        await page.evaluate(GPU_FEHLER_OBJEKT);
+        if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
     await lade();
     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
