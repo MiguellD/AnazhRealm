@@ -19675,8 +19675,8 @@ async function checkBandHydrosphere(ctx) {
     // ### Wasserfälle aus dem Hydrosphären-Netz ###
     // Wasserfälle entstehen, wo ein Fluss eine echte Voxel-Klippe kreuzt (`_hydroExtractWaterfalls`);
     // der per-Chunk-Zufalls-Spawner `_buildVoxelChunkWaterfalls` + seine State-Map sind gelöscht und
-    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. `_ensureWaterfallMaterial` +
-    // die vertikale Plane-Geometrie bleiben (`_buildHydroWaterfall` nutzt sie).
+    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. Das Wasserfall-Material ohne Leser
+    // (`_ensureWaterfallMaterial`, nur Tests riefen es) ist mit der Welle L gefallen (W-kD11).
     const voxelV943cAblation = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -19688,7 +19688,7 @@ async function checkBandHydrosphere(ctx) {
             ensureNoHook: !/_buildVoxelChunkWaterfalls/.test(ensureSrc),
             disposeNoHook: !/_disposeVoxelChunkWaterfalls/.test(disposeSrc),
             stateMapGone: !("voxelChunkWaterfalls" in r.state),
-            materialKept: typeof r._ensureWaterfallMaterial === "function",
+            materialKept: typeof r._ensureWaterfallMaterial === "undefined" && !("waterfallUniforms" in r.state),
         };
     });
 
@@ -19708,71 +19708,8 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.43-c: state.voxelChunkWaterfalls-Map ist entfernt", voxelV943cAblation.stateMapGone);
         check(
-            "Voxel V9.43-c: _ensureWaterfallMaterial lebt weiter (von _buildHydroWaterfall reuset)",
+            "Voxel V9.43-c → Welle L: das Wasserfall-Material ohne Leser ist gefallen (kein _ensureWaterfallMaterial, keine waterfallUniforms)",
             voxelV943cAblation.materialKept
-        );
-    }
-
-    // ### Das Wasserfall-Material ###
-    // Ein geteiltes Material mit Abwärts-Flow (`_ensureWaterfallMaterial`) teilt die Wasser-Substanz-Uniforms
-    // (Farbe/Sonne/Licht) mit dem Meer; `_buildHydroWaterfall` nutzt es für die netz-verankerten Planes. Die Luft
-    // trägt es nicht selbst: der EINE Luft-Knoten (`scene.fogNode`, V18.530) dunstet es wie jedes Mesh.
-    const voxelV943Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        const out = {};
-        out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
-        let mat = null;
-        if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
-        // V10.0-f-3 Doku-Sync: Wasserfall ist jetzt MeshBasicNodeMaterial
-        // (TSL). Die alte ShaderMaterial-Identitäts-Probe (mat.type ===
-        // "ShaderMaterial") wandert auf isMeshBasicNodeMaterial=true.
-        out.matIsShader = !!mat && mat.isMeshBasicNodeMaterial === true;
-        // V10.0-f-3 Doku-Sync: Uniforms leben in state.waterfallUniforms
-        // (uniform-Knoten mit .value, kein material.uniforms mehr).
-        const u = r.state.waterfallUniforms || {};
-        out.hasFlowUniforms =
-            !!u.flowDir &&
-            !!u.flowDir.value &&
-            u.flowDir.value.y < 0 &&
-            typeof (u.flowSpeed && u.flowSpeed.value) === "number" &&
-            !!u.time;
-        // Kein eigener Wasser-Nebel: fogColor/fogNear/fogFar sind fort, die Luft legt scene.fogNode auf.
-        out.sharesWaterUniforms =
-            !!u.deep && !!u.shallow && !!u.sunDir && !!u.light && !u.fogColor && !u.fogNear && !u.fogFar;
-        // Day-Night synct das Wasserfall-Material: das Licht (uLight) folgt dem Richtlicht, und die EINE Luft
-        // (state.luft = scene.fogNode) liegt auf dem Material (mat.fog an).
-        out.dayNightSyncsWaterfall = false;
-        if (mat && typeof r._applyDayNightToScene === "function") {
-            try {
-                u.light.value = -1;
-                r._applyDayNightToScene();
-                const sc = r.state.scene;
-                out.dayNightSyncsWaterfall =
-                    u.light.value > 0 && mat.fog !== false && !!r.state.luft && !!sc && sc.fogNode != null;
-            } catch {
-                out.dayNightSyncsWaterfall = false;
-            }
-        }
-        return out;
-    });
-
-    if (voxelV943Results && !voxelV943Results.error) {
-        check(
-            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein MeshBasicNodeMaterial (V10.0-f-3 TSL)",
-            voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
-        );
-        check(
-            "Voxel V9.43-a: state.waterfallUniforms trägt flowDir (abwärts) + flowSpeed + time",
-            voxelV943Results.hasFlowUniforms
-        );
-        check(
-            "Voxel V9.43-a: state.waterfallUniforms teilt die Wasser-Substanz-Uniforms mit dem Meer (kein eigener Nebel)",
-            voxelV943Results.sharesWaterUniforms
-        );
-        check(
-            "Voxel V9.43-a: _applyDayNightToScene synct das Wasserfall-Material (Licht gesetzt, die EINE Luft liegt auf)",
-            voxelV943Results.dayNightSyncsWaterfall
         );
     }
 
@@ -23115,13 +23052,13 @@ async function checkBandPhasenBF(ctx) {
             /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
             /_sitzHeight/.test(window.__codeOf(r._tickMountedMovement));
         out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
-        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg, das Abwärts-Material lebt als markierte
-        // Saat); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
+        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg; die Abwärts-Material-Saat ohne Leser fiel mit der
+        // Welle L); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
         out.a4PlaneCut =
             typeof r._buildHydroWaterfall === "undefined" &&
             typeof r._buildHydroWaterfallPool === "undefined" &&
             typeof r._waterfallIsRealWall === "undefined" &&
-            typeof r._ensureWaterfallMaterial === "function" &&
+            typeof r._ensureWaterfallMaterial === "undefined" &&
             typeof r.setWaterfallSteep === "undefined";
         // B1 (V18.345) — die Sheet-Mathe lebt jetzt in `_computeWaterSheetData` (geteilt mit
         // dem Worker-Mirror); der `_buildVoxelChunkWaterCellSheet`-Wrapper ist nur noch Gate+ctx.
@@ -23547,7 +23484,7 @@ async function checkBandPhasenBF(ctx) {
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
     check("C7: der Mount liest die Sitz-Höhe des Bauplans (Source, beide Leser)", res.c7MountSitz);
     check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
-    check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
+    check("A4 → Welle L: die Wasserfall-Plane und die Saat ohne Leser sind gefallen", res.a4PlaneCut);
     check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(

@@ -160,10 +160,6 @@ class AnazhRealm {
             // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
             // _buildStarField(); mutiert von _dayNightApplyStarField.
             starFieldUniforms: null,
-            // Live-Uniforms des TSL-Wasserfall-Materials (time, flowDir, flowSpeed, deep/shallow/foam, sunDir,
-            // light); init in _ensureWaterfallMaterial(), geschrieben von _loopSkyboxZeit (time) +
-            // _dayNightApplyWaterMaterials (sunDir, light).
-            waterfallUniforms: null,
             // Live-Uniforms des TSL-Hydrosphären-Materials (time, flowSpeed, deep/shallow/foam, sunDir, light);
             // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopSkyboxZeit (time) +
             // _dayNightApplyWaterMaterials (sunDir, light).
@@ -187,9 +183,6 @@ class AnazhRealm {
             creatureEmotions: [],
             creatureAnimationTime: 0,
             ufos: [],
-            // Geteiltes Wasserfall-Material (lazy, _ensureWaterfallMaterial); Wasserfälle kommen aus dem
-            // Hydrosphären-Netz (_buildHydrosphereMeshes), Material + Plane-Geometrie werden wiederverwendet.
-            waterfallMaterial: null,
             // Geteiltes horizontales Wasser-Material für Fluss-Ribbons + See-Planes (lazy,
             // _ensureHydroSurfaceMaterial); teilt Farbe/Sonne/Fog mit Meer + Wasserfall.
             hydroSurfaceMaterial: null,
@@ -15566,33 +15559,9 @@ class AnazhRealm {
     // Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        if (typeof this.state.waterLevel !== "number") {
-            // Die 13×13-Stichprobe (±170 m) wird nur sortiert — der Pegel hängt nicht an ihr (s. unten).
-            try {
-                // Höhenquelle ist `_voxelSurfaceY` (die wahre Voxel-Topographie); terrainSteepness/baseHeight
-                // modulieren sie in `_voxelDensityAt`.
-                const heights = [];
-                for (let i = 0; i < 13; i++) {
-                    for (let j = 0; j < 13; j++) {
-                        const sx = -170 + (340 / 12) * i;
-                        const sz = -170 + (340 / 12) * j;
-                        const h = this._voxelSurfaceY(sx, sz);
-                        if (typeof h === "number" && Number.isFinite(h)) heights.push(h);
-                    }
-                }
-                if (heights.length > 0) {
-                    // waterLevel ist ABSOLUT (`terrainBaseHeight − 3`), nie ein lokales Perzentil: die Sample-Region
-                    // (340 m) ist viel kleiner als die längste Oktave (cont0, λ~7100 m) — ein Perzentil landete am
-                    // lokalen Median, knapp unter der Oberfläche.
-                    heights.sort((a, b) => a - b); // sortiert für Diagnose-Logs
-                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
-                } else {
-                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
-                }
-            } catch {
-                this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
-            }
-        }
+        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − 3`): bis zur Welle L lief davor eine 13×13-Stichprobe
+        // `_voxelSurfaceY` (169 Dichte-Säulen beim Boot), die nur sortiert und dann verworfen wurde (W-kD11).
+        if (typeof this.state.waterLevel !== "number") this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
         // Das Wasser ist ein Cell-Zustand im Voxel-Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus
         // den Cells (`_buildVoxelChunkWaterIsoSurface`) — EIN Wasser-Mesh, eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
@@ -32362,8 +32331,8 @@ class AnazhRealm {
         if (!hydro || !hydro.ready) return;
         this._disposeHydrosphereMeshes(); // idempotenter Rebuild
         const meshes = [];
-        // Keine Wasserfall-Plane: steile Läufe trägt das CA-Wildwasser (aSlope-Schaum) + die Steilkanten-
-        // Form im Zell-Sheet. Vertikales Wasser bräuchte eigene Geometrie (`_ensureWaterfallMaterial`).
+        // Keine Wasserfall-Plane: steile Läufe trägt das Wildwasser (aSlope-Schaum) + die Steilkanten-Form im
+        // Zell-Sheet (das Wasserfall-Material ohne Leser fiel mit der Welle L).
         this.state.hydrosphereMeshes = meshes;
         // V9.75 — schon gestreamte Voxel-Chunks bekommen ihr Iso-Mesh neu
         // gebaut, damit Chunks aus der Pre-Hydrosphäre-Phase (vor dem Atlas)
@@ -33975,142 +33944,6 @@ class AnazhRealm {
             const k = nach && ns ? ns.kacheln.get(key) : null;
             if (k) k.zustand = null;
         }
-    }
-
-    // Wasserfall-Material (ruht: die Plane ist geschnitten, es bleibt für eine eigene Vertikal-Form; der
-    // Test „materialKept" bewacht es). Abwärts-Flow `uFlowDir` (0,−1) + `uFlowSpeed` scrollen Schaum +
-    // Turbulenz; dieselben Farben/Sonne/Fog-Uniforms wie das Meer (`_buildWaterPlane`), gespeist von
-    // `_applyDayNightToScene`.
-    _ensureWaterfallMaterial() {
-        if (this.state.waterfallMaterial) return this.state.waterfallMaterial;
-        if (typeof THREE === "undefined") return null;
-        // MeshBasicNodeMaterial (TSL): vertikales Wasser-Tuch mit billow-Displacement entlang der Normale
-        // (positionNode), Schaum-Strähnen (vnoise) + Blinn-Phong-Glitzern + Fog (colorNode); transparent +
-        // depthWrite + DoubleSide. Uniforms in state.waterfallUniforms: time (_loopSkyboxZeit),
-        // flowDir/flowSpeed (statisch), deep/shallow/foam, sunDir/light/fog* (_dayNightApplyWaterMaterials).
-        const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            this.log("Wasserfall-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
-            return null;
-        }
-        const {
-            uniform,
-            uv,
-            vec2,
-            vec3,
-            vec4,
-            float,
-            positionLocal,
-            normalWorld,
-            modelWorldMatrix,
-            cameraPosition,
-            sin,
-            dot,
-            mix,
-            smoothstep,
-            clamp,
-            fract,
-            floor,
-            max,
-            pow,
-            normalize,
-            Fn,
-        } = TSL;
-
-        // Elf Live-Uniforms (uniform-Knoten mit .value-Setter)
-        const uTime = uniform(0.0);
-        const uFlowDir = uniform(new THREE.Vector2(0, -1));
-        const uFlowSpeed = uniform(0.62);
-        const uDeep = uniform(new THREE.Color(0x0d2e4f)); // Vorlage: Beer-Lambert deepC (exp(-wK*0.85))
-        const uShallow = uniform(new THREE.Color(0x5aacc6)); // Vorlage: Beer-Lambert shallowC, heller/cyaner
-        const uFoam = uniform(new THREE.Color(0xdff1ff));
-        const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
-        const uLight = uniform(1.0);
-
-        // 2D-Hash + Value-Noise — Vendor-Spiegel der GLSL-`hash`/`vnoise`-
-        // Closures. Identische Magic-Konstanten (41.3, 289.1, 43758.5453).
-        const hash2 = Fn(([p]) => {
-            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
-        });
-        const vnoise = Fn(([p]) => {
-            const i = floor(p);
-            const f = fract(p);
-            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
-            return mix(
-                mix(hash2(i), hash2(i.add(vec2(1.0, 0.0))), u.x),
-                mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
-                u.y
-            );
-        });
-
-        const vUv = uv();
-        const flowTime = uTime.mul(uFlowSpeed);
-
-        // === VERTEX-STAGE: billow-Displacement entlang lokaler Z-Normale.
-        // GLSL: p.z += billow * edgeY. Hier auf positionLocal angewandt.
-        const fp = dot(vUv, uFlowDir).mul(9.0).add(flowTime.mul(3.2));
-        const billow = sin(fp)
-            .mul(0.2)
-            .add(sin(fp.mul(2.4).add(vUv.x.mul(15.0))).mul(0.1));
-        const edgeY = smoothstep(0.0, 0.18, vUv.y).mul(smoothstep(1.0, 0.8, vUv.y));
-        const displacedLocal = positionLocal.add(vec3(0.0, 0.0, billow.mul(edgeY)));
-
-        // World-Position des displaced Vertex (für Blinn-Phong-viewDir + Fog).
-        // mat4×vec4-Multiplikation in TSL via .mul().
-        const wp = modelWorldMatrix.mul(vec4(displacedLocal, 1.0));
-        const vWorldPos = wp.xyz;
-
-        // === FRAGMENT-STAGE: Schaum + Wasserfarbe + Sonnen-Spec (die Luft: scene.fogNode).
-        const flow = uFlowDir.mul(flowTime);
-        const sc = vUv.add(flow);
-        // Vertikale Strähnen (hochfrequent quer, scrollend Flow hinab).
-        const streak1 = vnoise(vec2(vUv.x.mul(26.0), sc.y.mul(7.0)));
-        const streak2 = vnoise(vec2(vUv.x.mul(55.0), sc.y.mul(15.0).add(3.0)));
-        const streak = streak1.add(streak2.mul(0.5)).div(1.5);
-        // Turbulente Schaum-Ballen.
-        const turb = vnoise(vUv.mul(vec2(9.0, 5.0)).add(flow.mul(1.7)));
-        // Aufprall + Spritzer (uv.y-Position-Maskierung).
-        const impact = smoothstep(0.86, 1.0, vUv.y);
-        const splash = smoothstep(0.22, 0.0, vUv.y);
-        const foam = clamp(streak.mul(0.8).add(turb.mul(0.35)).add(impact.mul(0.7)).add(splash.mul(0.6)), 0.0, 1.0);
-
-        // Basis-Wasserfarbe → Foam-Mix → Light-Skalierung.
-        const baseCol = mix(uDeep, uShallow, float(0.4).add(streak.mul(0.6)));
-        const withFoam = mix(baseCol, uFoam, foam.mul(0.85));
-        const lit = withFoam.mul(uLight);
-
-        // Blinn-Phong Sonnen-Glitzern (V8.44-Welt-Raum-Normale).
-        const n = normalize(normalWorld);
-        const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        const halfV = normalize(normalize(uSunDir).add(viewDir));
-        const spec = pow(max(dot(n, halfV), 0.0), 40.0);
-        const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.5).mul(uLight));
-
-        // Die Luft legt der EINE Luft-Knoten auf (`scene.fogNode`, mat.fog) — kein eigener Wasser-Nebel.
-
-        // Alpha: dichter Körper, weiche Seiten-Ränder.
-        const edgeX = smoothstep(0.0, 0.1, vUv.x).mul(smoothstep(1.0, 0.9, vUv.x));
-        const alpha = clamp(float(0.62).add(foam.mul(0.33)).mul(edgeX), 0.0, 1.0);
-
-        const mat = new THREE.MeshBasicNodeMaterial();
-        mat.positionNode = displacedLocal;
-        mat.colorNode = vec4(withSpec, alpha);
-        mat.transparent = true;
-        mat.depthWrite = false;
-        mat.side = THREE.DoubleSide;
-
-        this.state.waterfallUniforms = {
-            time: uTime,
-            flowDir: uFlowDir,
-            flowSpeed: uFlowSpeed,
-            deep: uDeep,
-            shallow: uShallow,
-            foam: uFoam,
-            sunDir: uSunDir,
-            light: uLight,
-        };
-        this.state.waterfallMaterial = mat;
-        return mat;
     }
 
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-
@@ -84754,7 +84587,7 @@ class AnazhRealm {
         }
     }
 
-    // Wasser-Materialien (hydroSurfaceMaterial für Meer/Fluss/See + waterfallMaterial) teilen DIESELBE
+    // Das Wasser-Material (hydroSurfaceMaterial für Meer/Fluss/See) folgt der
     // Tag-Nacht-Sprache: uSunDir + uLight (die Luft legt `scene.fogNode` auf). `lightDir` ist der AKTIVE
     // Himmelskörper (vom Aufrufer _applyDayNightToScene) → der Glitzer folgt tags der Sonne, nachts dem Mond.
     _dayNightApplyWaterMaterials(lightDir) {
@@ -84763,20 +84596,15 @@ class AnazhRealm {
         const lightVal = Math.max(0.22, dl.intensity);
         // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung).
         const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
-        // Beide Wasser-Materialien sind TSL; Uniforms leben in state.waterfallUniforms /
-        // state.hydroSurfaceUniforms — EINE Closure für beide.
+        // Die Uniforms leben in state.hydroSurfaceUniforms.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
             if (uniforms.irr) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
-            // Der Wasserfall spiegelt noch die Himmels-Tönung (nebulaColor); das Wasser liest die Umgebung selbst.
-            if (uniforms.skyCol && this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor)
-                uniforms.skyCol.value.copy(this.state.skyboxUniforms.nebulaColor.value);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
-        applyToTSL(this.state.waterfallUniforms);
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes, gespeist aus _applyDayNightToScene (EINE Quelle).
@@ -90316,11 +90144,6 @@ class AnazhRealm {
         // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu
         // orbiten + neben dem fernen Spieler durchs Terrain zu rasen.
         this._followCelestialBodies();
-        // Das geteilte Wasserfall-Material wird hier zentral animiert (time-Uniform in
-        // state.waterfallUniforms); der Flow-Shader trägt die Bewegung.
-        if (this.state.waterfallUniforms && this.state.waterfallUniforms.time) {
-            this.state.waterfallUniforms.time.value = currentTime;
-        }
         // Das geteilte Hydrosphären-Material (Fluss-Ribbons + See-Planes) zentral animieren; der
         // Flow-Shader scrollt den Schaum stromab nach per-Vertex-`aFlow`.
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {

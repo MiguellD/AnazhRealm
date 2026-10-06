@@ -181,6 +181,10 @@ const FORBIDDEN = [
     { token: "_cullWaterUndersides", fiel: "Welle L Q7 — die Unterseiten-Schere der Zell-Iso" },
     { token: '"chunk-water-iso"', fiel: "Welle L Q7 — der Kind-Stempel der Zell-Iso" },
     { token: "select-waterrender", fiel: "Welle L Q7 — die Auswahl im Einstellungs-Band" },
+    // Das Wasserfall-Material ohne Leser (nur Tests riefen es) fiel ganz (W-kD11).
+    { token: "_ensureWaterfallMaterial", fiel: "Welle L Q7 — die Saat ohne Leser" },
+    { token: "waterfallUniforms", fiel: "Welle L Q7" },
+    { token: "waterfallMaterial", fiel: "Welle L Q7" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
