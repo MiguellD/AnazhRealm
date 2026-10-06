@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.530.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.531.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,28 +80,30 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.530 — DIE KETTE (zehn Wellen in EINER Integration):** Bundle-Wahrheit am Chokepoint `_renderScene` · TRAA statt
-FXAA (+1,1 ms) · Schatten je Pass (Kaskaden-Box an der Frustum-Scheibe, Werfer je Pass, k1 2048) · EINE Täter-Klasse
-im Stamm + Band-Linse und Ratsche (`werkbank band`, `gate:profiband`) · EINE Nah-Grenze `ANALOG_NAH_M` 64 m · EIN
-Karten-Atlas (Karten-Befehle 22 → 1) · die Baum-L0 aus dem Blatt-Atlas, Studio-Distanzen 12/26 im Studio · die
-Nah-Streu aus dem Studio · das Budget-Gesetz am Studio-Ausgang (Bindungs- + Seh-Klasse) · Koschmieder-Luft statt
-Nebel-Wand (Sichtweite 59 m → 20,6 km). Mess-Wiese, echte GPU, Band-Linse gegen die Hülle der Stufe 4: 296 → 214–255
-Befehle, 4,10 → 2,13–2,21 M Dreiecke, 232,6 → 158–161 MB; GPU 32–47 ms/Frame, Frame p50 42 ms (`werkbank lauf`).
+**V18.531 — WELLE 5, DER AAA-LOOK IN SIEBEN FAMILIEN (seriell integriert):** Pflanzen nah (Rinden-Gesetz, EIN Blatt-Atlas
+512 px BC1 vormultipliziert, Strauch aus Karten + Reisig, `gate:pflanzen-nah`) · der gesetzte Wald ist jenseits der
+Mesh-Zone seine Karte bis 384 m (Kegel + Lappen fielen, `gate:fernwald`), der Bäcker hat seinen Faden · Waldboden nach
+dem Farb-Gesetz, die Kronen-Karte (`_kronenStreuAt`) ist die EINE Wald-Quelle (Streu · Nah-Wiese · Laub-Stimme) · Glut
+und Ausstattung aus dem Studio, die Trittfläche malt die Wege-Karte · Stoffe der Gegenstände, Durchsicht, Haut-Klarlack ·
+das Fell folgt der Haut, der Gang dem Weg des Leibs · jede klingende Quelle trägt ein Gesetz (`gate:klang-zensus`) ·
+freie Slots und leere Hüllen zeichnen nie (der Feld-Cull fiel, `gate:freie-slots`) · EIN Start-Rezept der WebGPU-Linsen
+(`scripts/lib/software-gpu.cjs`) · Studio-Häuser überstehen den Reload mit kaltem Buch, der Hüpfer landet. Mess-Wiese,
+echte GPU, ruhig: 193–261/208 Befehle, 2,14–2,63 M Dreiecke, 158–160 MB; GPU 22–26 ms/Frame, Frame p50/p95 25,5/34,2 ms.
 
-**V18.496–529 — AAA NAH · KÖRPER · FARBE · TAKT · SATZ:** nah/mittel das Studio-Mesh mit LOD-Kette (Bäcker nah zuerst,
-EINE Bake-Uhr); der Tier-Leib EINE geskinnte Haut, starre Teile je Material am Ofen (`_ofenAssembleAsset`); das
-FARB-GESETZ; EIN Himmel, die Belichtung aus dem Licht; die NAH-WIESE; jedes Leaf eine InstancedMesh (r184 zieht einen
-Batch je Instanz); die Transport-Schale `_foundrySchale` (IDB-Put im Haupt-Thread 1,8 s → 0); der Takt rechnet nur
-Betroffene, Budgets nah zuerst; Boden · Wasser · Klein-Streu EIN Satz je Material; die Voxel-Bricks fielen (V18.528).
-Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht` · `zaehlen` · `fluss` · `takt` · `lauf` · `band`).
+**V18.496–530 — AAA NAH · DIE KETTE:** nah/mittel das Studio-Mesh mit LOD-Kette (Bäcker nah zuerst, EINE Bake-Uhr), der
+Tier-Leib EINE geskinnte Haut; das FARB-GESETZ; EIN Himmel, die Belichtung aus dem Licht; die NAH-WIESE; die
+Transport-Schale `_foundrySchale`; Bundle-Wahrheit am Chokepoint `_renderScene`; TRAA; Schatten je Pass; EINE Täter-Klasse
++ Band-Linse und Ratsche; EINE Nah-Grenze `ANALOG_NAH_M` 64 m; EIN Karten-Atlas; Koschmieder-Luft (Sichtweite 20,6 km);
+die Voxel-Bricks fielen. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht` · `zaehlen` · `fluss` · `takt` ·
+`lauf` · `band` · `gpu-bank`).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, EINE
 Payload (Analog-Primitive Kapsel+Box + Gesetz-Plätze) · NAH/MITTEL (< 64 m, Bau und Baum im Cull-Radius) = Studio-Mesh
-+ LOD-Kette, jede Karte eine Schicht des EINEN Atlas (EINE Gruppe) · FERN = Analog-Sätze (Glieder-Kapseln · Baum-
-Kegel + Kronen-Lappen · Box-Satz · Streu-Gesetz) · GRAS = nah Nah-Wiese, fern Boden-Funktion · STREU = nah die
-Studio-Arten, fern die Boden-Farbe · LUFT = EINE Koschmieder-Luft (`scene.fogNode`, jedes Material liest sie) · POST =
-TRAA · SCHATTEN = 2 Kaskaden, Box je Scheibe · BUNDLES = `@global` + Region-Bundles (Mess-Wiese: 3, 93 von 155
-Instanz-Gruppen).
++ LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-Kapseln · Baum = seine Studio-Karte (der gesetzte
+bis 384 m) · Box-Satz · Streu-Gesetz · WALD-ORT = die Kronen-Karte · GRAS = nah Nah-Wiese, fern Boden-Funktion ·
+STREU = nah die Studio-Arten, fern die Boden-Farbe · AUSSTATTUNG (Glut, Markt, Brunnen) = Studio-Gestalt · KLANG = jede
+Stimme aus dem Klang-Gesetz (`klang:UMWELT` · `SUBSTANZ`) · LUFT = EINE Koschmieder-Luft (`scene.fogNode`) · POST = TRAA ·
+SCHATTEN = 2 Kaskaden, Box je Scheibe · INSTANZ-SENKEN dicht (`_instanzZahl`) · LINSEN-START = `software-gpu.cjs`.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
@@ -179,8 +181,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     die Beweis-Sonden bleiben der Richter je Commit. Vergleiche nur bei eingefrorener Welt (Tiere
     wandern ins Bild).
 21. **Die Licht-Kette ist EINE Eichung, Farbe eine sRGB-Absicht:** ein Paletten-Hex ist sRGB, die
-    Albedo sein linearer Wert (das FARB-GESETZ in foundry-core: Kreatur-Bäcker + Vegetation; r128
-    las roh, Laub lag 3–5× über der Natur). Die Welt fügt nur hinzu, was das Labor nicht hat (den
+    Albedo sein linearer Wert (das FARB-GESETZ: foundry-core Kreatur-Bäcker + Vegetation, seit V18.531
+    auch fachwerk · porta · vehicle · schmiede; r128 las roh, Laub lag 3–5× über der Natur). Die Welt fügt nur hinzu, was das Labor nicht hat (den
     echten Himmel als EINE Umgebung), nie doppelt — Fill · Rim · Back leben nur im Labor; die
     Belichtung kommt aus dem Licht (Karte Mittelgrau +1 EV, Nacht-Deckel 1,0). Albedo misst `werkbank
     albedo` / `diag-albedo-zensus` (Karte 0,180), Licht-Verhältnisse `werkbank licht` — nie das Auge.
