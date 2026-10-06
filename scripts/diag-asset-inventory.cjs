@@ -13,8 +13,10 @@
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
 //                GESTEMPELTEN Bau-Quellen: boden-satz · wetter-regen — die einst 222 „unbekannten"
 //                Emitter, an der QUELLE geklärt; die Klein-Streu ist seit 04.10. Studio, das Fernfeld fiel).
-//   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (glut* [E-E] · start_plattform +
-//                fliegende Inseln [E-F]); im Parity-Shot seit W2 versteckt, in der Welt daheim.
+//   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (start_plattform + fliegende Inseln [E-F]); im Parity-Shot seit
+//                W2 versteckt, in der Welt daheim. (E-E „glut = Nicht-Studio-Silhouette" fiel 06.10.: die Feuerstelle
+//                trägt die Gestalt des Gesetzbuchs — ein Bauplan mit studioGestalt-Zeile, dessen Wirts-Teile zeichnen,
+//                ist eine VERLETZUNG.)
 //   VERLETZUNG — alles andere: eine Vegetations-/Deko-Silhouette OHNE Studio-Herkunft
 //                (Grammatik-Baum/-Strauch/-Fels · Alt-Tuft-Gras · Totholz; die Vor-Studio-
 //                Kulissen Mantle/Shell sind N7.4 GESCHNITTEN — per Konstruktion unmöglich)
@@ -176,17 +178,28 @@ const server = http.createServer((req, res) => {
             if (i >= 0) return k.slice(i + 1);
             return /^(f:|fimp:)/.test(k) ? k : "";
         };
+        // DIE STUDIO-GESTALT: trägt der Bauplan eine studioGestalt-Zeile (Feuerstelle · Marktstand · Ziehbrunnen · die
+        // Tore), baut das Gesetzbuch die Gestalt und seine Teile sind unsichtbare Substanz — zeichnen sie, ist es der
+        // Wirt, der nachbaut, was ein Studio kann.
+        const studioGestaltWirt = (name) => {
+            const bp = st.blueprints && st.blueprints[String(name).replace(/_lod\d$/, "")];
+            return bp && typeof bp.studioGestalt === "string"
+                ? { b: "verletzung", why: `Wirts-Teile der Studio-Gestalt ${bp.studioGestalt}: ${name}` }
+                : null;
+        };
         const classifyKey = (k) => {
             if (k.startsWith("fscatter:")) return { b: "studio", why: "fscatter" };
             if (/^(f:|fimp:)/.test(leafOf(k))) return { b: "studio", why: "foundry-leaf" };
             const base = k.split("#")[0];
-            if (/glut/i.test(base)) return { b: "entscheid", why: "glut (E-E)" };
+            const gw = studioGestaltWirt(base);
+            if (gw) return gw;
             if (/start_plattform/i.test(base)) return { b: "entscheid", why: "start_plattform (E-F)" };
             if (VEG.test(base)) return { b: "verletzung", why: "Grammatik-Vegetation: " + base };
             return { b: "substanz", why: "arch: " + base };
         };
         const classifyName = (nm) => {
-            if (/glut/i.test(nm)) return { b: "entscheid", why: "glut (E-E)" };
+            const gw = studioGestaltWirt(nm);
+            if (gw) return gw;
             if (/start_plattform/i.test(nm)) return { b: "entscheid", why: "start_plattform (E-F)" };
             if (VEG.test(nm)) return { b: "verletzung", why: "Grammatik-Vegetation (merged): " + nm };
             return { b: "substanz", why: "arch-merged: " + nm };
@@ -422,10 +435,12 @@ const server = http.createServer((req, res) => {
                 const c1 = classifyKey("baum_eiche#0@3,3");
                 const c2 = classifyKey("fscatter:eiche:2:0#0@1,1");
                 const c3 = classifyKey("tempel#2");
+                const c4 = classifyKey("glutbrunnen#0@1,1"); // die Feuerstelle aus Wirts-Teilen (bis 05.10. E-E)
                 o.selftestRules = {
                     grammarTreeCaught: c1.b === "verletzung",
                     fscatterStudio: c2.b === "studio",
                     archSubstanz: c3.b === "substanz",
+                    studioGestaltWirt: c4.b === "verletzung",
                 };
                 const z2 = census();
                 o.selftest = {
@@ -513,7 +528,8 @@ const server = http.createServer((req, res) => {
             !out.selftestRules ||
             !out.selftestRules.grammarTreeCaught ||
             !out.selftestRules.fscatterStudio ||
-            !out.selftestRules.archSubstanz
+            !out.selftestRules.archSubstanz ||
+            !out.selftestRules.studioGestaltWirt
         )
             fails.push("Selbst-Test: Klassifikations-Regeln fehlerhaft");
         if (!out.selftestLost || !out.selftestLost.fired)

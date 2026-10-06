@@ -427,6 +427,12 @@ const FORBIDDEN = [
     { token: "WG.spiegel.dim", fiel: "Welle 5 — der Spiegel ist die Himmels-Umgebung × Schlick-Fresnel" },
     { token: "const mixT = mix(", fiel: "Welle 5 — Tief und Flach trennt der Durchlass, kein Noise-Mix" },
     { token: "vnoise(xz.mul(0.05).add(uTime.mul(0.03)))", fiel: "Welle 5 — die Noise-Tönung baseN des Wassers" },
+    // Integration 06.10. — DIE GLUT GEHÖRT INS STUDIO (der Default E-E „glut = Nicht-Studio-Silhouette" fiel): das
+    // Glut-Genom des Wirts (sechs Formationen glut_var0..5, eigener Streu-Pool) ist gefallen, die Feuerstelle baut das
+    // Gesetzbuch (fachwerk `feuerstelle`); gespeicherte glut_var-Einträge führt BAUPLAN_UMZUG zur Feuerstelle.
+    { token: "_glutVariant(", fiel: "Welle 5 architektur — die Feuerstelle trägt ihre Gestalten im Gesetzbuch" },
+    { token: "GLUT_VARIANTS", fiel: "Welle 5 architektur — glutbrunnen streut ohne Formations-Pool" },
+    { token: 'prefix: "glut"', fiel: "Welle 5 architektur — kein Glut-Pool im SCATTER_VARIANT_POOL" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

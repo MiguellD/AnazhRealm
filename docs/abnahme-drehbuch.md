@@ -31,8 +31,9 @@
 | 15 | Schnell umsehen, dann ~2 min stehen; HUD + Konsole | Auflösung fällt bei Bewegung imperzeptibel und kehrt flicker-frei zurück; Konsole bleibt still; der Flugschreiber-Trace POSTet — Tris/dc/weltMarch gegen den letzten Trace lesen | |
 
 **Stehende Ein-Wort-Defaults** (bestätigt, nur bei Widerspruch melden): Materialisierungs-Pop
-der Mesh-Zone = Streaming, kein eigener Fall · glutbrunnen/glut_var = bewusste
-Nicht-Studio-Silhouette (Welt-Substanz) · fliegende Inseln + start_plattform = Welt-Substanz.
+der Mesh-Zone = Streaming, kein eigener Fall · Feuerstelle (glutbrunnen) · Marktstand · Ziehbrunnen =
+Studio-Gestalt (fachwerk-Ausstattung; die Wirts-Teile sind unsichtbare Substanz, ein gezeichnetes Wirts-Teil ist
+eine Fremd-Silhouette) · fliegende Inseln + start_plattform = Welt-Substanz.
 
 **Abschluss:** 18 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Optional danach:
 `npm run look-golden -- --mint` auf dem Schöpfer-Holz — das Golden bewacht ab dann jeden Push.
