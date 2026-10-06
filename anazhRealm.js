@@ -16340,8 +16340,8 @@ class AnazhRealm {
         // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
         // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
         group.userData.bond = 0;
-        // Kreatur-HP: init = hpMax aus DERSELBEN Stat-Pipeline wie der Spieler. Reaktiv, NICHT persistiert
-        // (Reload heilt auf voll); damageCreature lazy-init't ebenfalls.
+        // Kreatur-HP: init = hpMax aus DERSELBEN Stat-Pipeline wie der Spieler; der Snapshot trägt die Wunde
+        // (_serializeCreature → _restoreCreatureFromSnapshot, Q12); damageCreature lazy-init't ebenfalls.
         const _cStats = this.computeCreatureStats(group).stats;
         group.userData.hpMax = _cStats.hpMax;
         group.userData.hp = _cStats.hpMax;
@@ -16385,6 +16385,12 @@ class AnazhRealm {
             // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
             // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
+            // Q12 (Kritik 06.10. §2.5): die Wunde und die Blickrichtung reisen mit — ein verwundeter Hirsch kehrte geheilt
+            // zurück (hp 97,3 → 115,4), jeder Leib blickte nach dem Reload nach +z.
+            hp: Number.isFinite(ud.hp) ? +ud.hp.toFixed(2) : undefined,
+            gier: Number.isFinite(creature.rotation && creature.rotation.y)
+                ? +creature.rotation.y.toFixed(4)
+                : undefined,
             // Eingefrorene Guss-Dials reisen mit — nur wenn unter einer Studio-Übergabe gegossen (Default-
             // Kreaturen tragen das Feld nicht); der Restore pinnt sie als dialsOv.
             gussDials:
@@ -16433,6 +16439,13 @@ class AnazhRealm {
         }
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
+        }
+        if (Number.isFinite(snap.hp) && snap.hp > 0) {
+            c.userData.hp = Math.min(Number.isFinite(c.userData.hpMax) ? c.userData.hpMax : snap.hp, snap.hp);
+        }
+        if (Number.isFinite(snap.gier)) {
+            c.rotation.y = snap.gier;
+            c.userData._steuer = { gier: snap.gier, v: 0 };
         }
         // Equipped-Slots defensiv restoren: tool muss in state.tools existieren, armor role:"armor" tragen —
         // sonst null (die Welt kann sich zwischen Save und Load geändert haben).
