@@ -78,6 +78,9 @@ function meshDiff(tag, gold, live) {
         const a = gold[i],
             b = live[i];
         if (a.kind !== b.kind) return `${tag} Mesh${i}: kind ${a.kind} vs ${b.kind}`;
+        // Der Wurf-Teil der Baum-L1 (W6): die Zahl der werfenden Dreiecke ist Teil des Vertrags.
+        if ((a.wurf === undefined ? null : a.wurf) !== (b.wurf === undefined ? null : b.wurf))
+            return `${tag} Mesh${i}: wurf ${a.wurf} vs ${b.wurf}`;
         if (JSON.stringify(a.mat || null) !== JSON.stringify(b.mat || null)) return `${tag} Mesh${i}: mat divergiert`;
         const keys = new Set([...Object.keys(a.attrs || {}), ...Object.keys(b.attrs || {})]);
         for (const k of keys) {
@@ -341,6 +344,22 @@ function deckungsUrteil(paare, band, atlas) {
             } else ok++;
             miss(c, a, f.replace(/\.json$/, ""));
             kroneWand(c, a, f.replace(/\.json$/, ""));
+            // (W) DER WURF-TEIL (W6, Konsum von tree[1].wurf): jedes Teil der Baum-L1 nennt die Zahl seiner werfenden
+            // Dreiecke (der Index-Vorsatz) — ganzzahlig in [0, Dreiecke des Teils], und der Baum wirft überhaupt. Der Wirt
+            // bricht ohne die Zahl (KERN-PFLICHT); hier fällt der Bruch am Studio-Ausgang auf, Teil für Teil benannt.
+            if (c.lod === 1 && artVon(c.presetId) === "tree") {
+                let wirft = 0;
+                a.meshes.forEach((m, i) => {
+                    if (!m.attrs || !m.attrs.position) return;
+                    const nv = Buffer.from(m.attrs.position.b64, "base64").length / 12;
+                    const ni = m.index ? Buffer.from(m.index, "base64").length / 4 : nv; // der Studio-Index reist als Uint32
+                    const tris = m.index ? ni / 3 : nv / 3;
+                    if (!Number.isInteger(m.wurf) || m.wurf < 0 || m.wurf > tris)
+                        fails.push(`Wurf-Teil ${f} Mesh${i} (${m.kind}): wurf ${m.wurf} nicht in [0, ${tris}]`);
+                    else wirft += m.wurf;
+                });
+                if (!(wirft > 0)) fails.push(`Wurf-Teil ${f}: kein Teil wirft`);
+            }
             if (c.lod <= 1 && artVon(c.presetId) === "tree" && c.season === "summer") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
                 const fx = (buch[c.presetId] && buch[c.presetId].fx) || {};

@@ -58,12 +58,12 @@
         },
         "baum": {
             "haupt": {
-                "befehle": 36,
-                "dreiecke": 1888682
+                "befehle": 34,
+                "dreiecke": 385630
             },
             "k0": {
-                "befehle": 36,
-                "dreiecke": 577972
+                "befehle": 20,
+                "dreiecke": 186900
             },
             "k1": {
                 "befehle": 8,

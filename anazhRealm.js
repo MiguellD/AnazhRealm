@@ -51112,8 +51112,19 @@ class AnazhRealm {
             entry._lodBandLevel = null;
             return cur !== null;
         }
-        this._archInstanceAdd(entry, flat, { band: true, bandLod: desired });
+        this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true, bandLod: desired });
         return true;
+    }
+    // Der Band-Partner trägt keinen Zwilling, den die Primär-Stufe schon wirft (EIN Werfer je Gestalt: L0 und L1 eines
+    // Baums tragen DIESELBEN Zwillings-Leaves) — der Baum im L0↔L1-Band wirft einmal, nicht zweimal.
+    _bandOhneZwilling(flat, primFlat) {
+        if (!primFlat || !Array.isArray(primFlat.leaves) || !flat || !Array.isArray(flat.leaves)) return flat;
+        const prim = new Set();
+        for (const lf of primFlat.leaves) if (lf.shadowTwin) prim.add(lf.leafKey);
+        if (!prim.size || !flat.leaves.some((lf) => lf.shadowTwin && prim.has(lf.leafKey))) return flat;
+        return Object.assign({}, flat, {
+            leaves: flat.leaves.filter((lf) => !(lf.shadowTwin && prim.has(lf.leafKey))),
+        });
     }
 
     // ═══ GPU-FELD-BAKE ═══
@@ -51491,6 +51502,9 @@ class AnazhRealm {
         const slots = [];
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
+            // Auch der Schatten-Zwilling der gestreuten Gestalt wirft in der Gruppe der Streu-Stufe, nie in der des gesetzten
+            // Walds: die Kaskade wählt Werfer je GRUPPE (ihre Hülle), eine geteilte Gruppe zeichnete die nahen gesetzten
+            // Bäume auch in k1 (gemessen 05.10.: f:fichte k1 29k → 73k Dreiecke für 4 Befehle weniger).
             const g = this._archInstanceGroupFor(blueprintName, i, leaf, regionKey);
             // Kein Eintrag (slotEntry null = DEKO) → der Crosshair-Raycast ignoriert den Slot, bis er promoted wird.
             const ref = this._archGroupAlloc(g, null);
@@ -52047,7 +52061,8 @@ class AnazhRealm {
             const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
             if (_partner != null && _partner !== _curLod) {
-                const pf = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
+                const pf0 = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
+                const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;
                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
                     const pSlots = this._scatterInstanceAdd(
                         "fscatter:" + foundryPreset + ":" + gestalt + ":" + pf.lod,
@@ -62976,6 +62991,8 @@ class AnazhRealm {
         }
         g2.boundingSphere = srcGeom.boundingSphere;
         g2.boundingBox = srcGeom.boundingBox;
+        // Die Fassade zeichnet, was ihre Quelle zeichnet (der Wurf-Teil des Schatten-Zwillings ist ein drawRange).
+        g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);
         g2.userData._lodFacade = true;
         g2.userData._h0Tpl = h0;
         g2.userData._h0LTpl = h0L;
@@ -67447,6 +67464,14 @@ class AnazhRealm {
             return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
         return z;
     }
+    // Ist die Stufe der Zwilling einer anderen Stufe ihrer Art (B2c `schatten`: Baum L0 → L1)? Dann wirft sie über die
+    // Zwillings-Leaves (`_foundryFlattenFor`: EIN Werfer je Gestalt), nie über ihre Teile.
+    _foundryWurfQuelle(preset, lod) {
+        const st = this._foundryKindStages(preset);
+        if (!st) return false;
+        for (const s of st) if (s !== lod && this._foundryBudgetZeile(preset, s).schatten === lod) return true;
+        return false;
+    }
     // DIE FERNFORM einer Art (B2c `lod.budget[kind].fernform`): "karte" · "gesetz" · "boden" — was die Art jenseits
     // der Nah-Grenze IST (`_streuFernBahn`). Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem
     // Mesh-Zug. Fail-closed: eine gestreute Art ohne gültige Fernform ist ein KERN-PFLICHT-Bruch, nie ein stilles L0.
@@ -69262,6 +69287,9 @@ class AnazhRealm {
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
         if (m.tuer && typeof m.tuer.seite === "number") mesh.userData.__tuer = m.tuer;
+        // DER WURF-TEIL (W6, Umschlag out.wurf, additiv): die Baum-L1 nennt je Teil die Zahl ihrer werfenden Dreiecke
+        // (der Vorsatz des Index) — der Schatten-Zwilling wirft nur ihn (`_foundrySchattenGeom`).
+        if (Number.isInteger(m.wurf)) mesh.userData.__wurf = m.wurf;
         return mesh;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
@@ -69801,23 +69829,31 @@ class AnazhRealm {
             if (q._evicted && !(q._liveRefs > 0)) this._disposeFoundryGroupGeom(q);
         }
     }
-    // Die Gestalt, mit der ein Schatten-Zwilling wirft: die L1-Geometrie, als Stufe L0 gestempelt (aLodLevel 1).
-    // Dieselben Puffer, derselbe Stoff — die Dither-Blende liest die Stufe aus dem Stempel: der Zwilling wirft, wo
-    // die L0 gezeichnet wird, und weicht im L0→L1-Band, wo der L1-Partner einblendet. Kostet kein Programm; die
-    // Gestalt gehört dem L1-Leaf und fällt mit ihm (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1.
+    // Die Gestalt, mit der ein Schatten-Zwilling wirft: die Geometrie der Wurf-Stufe (Baum: die L1), gestempelt als
+    // Nah-Stufe ohne Einblende (aLodLevel 3: wirft voll, wo die L0 ODER die L1 gezeichnet wird, und blendet nur im
+    // L1→L2-Band zur Karte aus — die Karte wirft nicht). Dieselben Puffer, derselbe Stoff, kein Programm mehr; EIN
+    // Zwilling je Gestalt und Teil, gleich welche Stufe ihn ruft (`_foundryFlattenFor`: die L0 und die L1 tragen
+    // dieselben Zwillings-Leaves, eine Gruppe je Pass). Die Gestalt gehört dem L1-Leaf und fällt mit ihm
+    // (`_disposeFoundryGroupGeom`). Ohne Stempel (Blende aus) die L1. DER WURF-TEIL (W6): nennt das Teil seinen Wurf
+    // (`lf.wurf`, die Dreiecke des Index-Vorsatzes), zeichnet der Zwilling nur diesen Vorsatz (drawRange) — derselbe
+    // Index, dieselben Puffer.
     _foundrySchattenGeom(lf) {
         const g = lf && lf.geom;
-        if (!g || !g.attributes || !g.attributes.aLodLevel) return g;
+        if (!g || !g.attributes) return g;
+        const voll = (g.index ? g.index.count : g.attributes.position.count) / 3;
+        const teil = Number.isInteger(lf.wurf) && lf.wurf < voll;
+        if (!g.attributes.aLodLevel && !teil) return g;
         if (lf._schattenGeom) return lf._schattenGeom;
         const z = new THREE.BufferGeometry();
         for (const k in g.attributes) z.setAttribute(k, g.attributes[k]);
-        z.setAttribute(
-            "aLodLevel",
-            new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(1), 1)
-        );
+        if (g.attributes.aLodLevel)
+            z.setAttribute(
+                "aLodLevel",
+                new THREE.BufferAttribute(new Float32Array(g.attributes.aLodLevel.count).fill(3), 1)
+            );
         if (g.index) z.setIndex(g.index);
         z.drawRange.start = g.drawRange.start;
-        z.drawRange.count = g.drawRange.count;
+        z.drawRange.count = teil ? lf.wurf * 3 : g.drawRange.count;
         if (g.boundingSphere) z.boundingSphere = g.boundingSphere.clone();
         if (g.boundingBox) z.boundingBox = g.boundingBox.clone();
         lf._schattenGeom = z;
@@ -69894,14 +69930,20 @@ class AnazhRealm {
         if (!group._foundryFlat) {
             // DER SCHATTEN-STELLVERTRETER: ein Baum zeichnet nah seine L0-Gestalt und wirft den Schatten seiner
             // L1-Stufe — die L0-Teile casten nicht, die L1-Teile reisen als Schatten-Zwilling (`shadowTwin`,
-            // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Stufe L0 gestempelt
-            // (`_foundrySchattenGeom`: blendet wie L0, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
+            // SHADOW_TWIN_LAYER: nur die Kaskaden-Kameras sehen sie) im SELBEN Flat, als Nah-Stufe gestempelt
+            // (`_foundrySchattenGeom`: Stempel 3, derselbe Stoff, kein Programm mehr); Entfernen, Stufen-
             // Wechsel und Bundles tragen ihn wie jedes Leaf. Befund 02.10. (Werkbank, Mess-Wiese): eine L0-Eiche warf 155k
             // Dreiecke in JEDE der zwei Kaskaden, ihre L1 trägt 11k. Ein Flat ist erst fertig, wenn seine Teile
             // stehen: lädt L1 noch, wartet L0 (die Bibliothek wärmt L1). WER wirft, sagt das Studio-Budget (B2c
             // `schatten` je Art × Stufe, `_foundryBudgetZeile`): die eigene Stufe wirft selbst, eine andere reist als
             // Zwilling, false wirft nicht — nie ein Stufen-Literal im Host.
+            // DER EINE WERFER JE GESTALT (W6, 05.10.): wirft eine Stufe selbst UND ist sie der Zwilling einer anderen
+            // (Baum: die L0 wirft die L1), wirft sie über DIESELBEN Zwillings-Leaves wie die andere — EINE Instanz-Gruppe
+            // je Gestalt und Teil in jeder Kaskade, gleich ob der Baum nah (L0) oder mittel (L1) steht. Befund (Mess-
+            // Wiese, werkbank zaehlen 05.10.): k0 zeichnete je Baum-Gestalt zwei Gruppen derselben L1-Geometrie (die
+            // L1 selbst und den Zwilling ihrer L0) — f:tanne:L1 8 Befehle in k0 bei 4 im Hauptbild.
             const wurf = this._foundryBudgetZeile(preset, lod).schatten;
+            const zwillingsQuelle = wurf === lod && this._foundryWurfQuelle(preset, lod);
             let schatten = null;
             if (wurf !== false && wurf !== lod) {
                 const fw = this._foundryFlattenFor(entry, preset, wurf);
@@ -69926,7 +69968,7 @@ class AnazhRealm {
             // Zwilling, L1 selbst, Karte nie; Strauch/Blume/Fels selbst; Gras nie). Der `leaf.castShadow`-Override
             // gewinnt gegen `_archGroupCastsShadow` (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im
             // leafKey). Deckungsgleiche Werfer verdunkeln nicht doppelt (Tiefen-Test).
-            const castsShadow = wurf === lod;
+            const castsShadow = wurf === lod && !zwillingsQuelle;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -69937,6 +69979,8 @@ class AnazhRealm {
                     // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
                     tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
                     sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
+                    // der Wurf-Teil des Teils (Dreiecke des Index-Vorsatzes, die werfen), wo das Studio ihn nennt
+                    wurf: child.userData && Number.isInteger(child.userData.__wurf) ? child.userData.__wurf : undefined,
                     leafKey: "f:" + key + ":" + p,
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
@@ -69945,19 +69989,36 @@ class AnazhRealm {
                 });
             }
             this._foundryFlatVerschmelzen(group, leaves);
-            if (schatten && leaves.length) {
-                // Die L1-Teile (schon verschmolzen) als Zwilling; die L1-Cache-Gruppe bleibt gepinnt, solange
-                // dieser Flat lebt (`_disposeFoundryGroupGeom` gibt sie zurück).
-                for (const lf of schatten.leaves)
+            if (zwillingsQuelle) {
+                // Die Teile (schon verschmolzen) werfen als Zwilling (`_foundrySchattenGeom`, Stempel 3); die Gestalt
+                // gehört dem Teil dieses Flats und fällt mit ihm. Nennt die Stufe einen WURF-TEIL (B2c `wurf`, Baum-L1),
+                // wirft jedes Teil nur seinen Vorsatz (`lf.wurf` Dreiecke) — ein Teil ohne Wurf (die Wurzeln) wirft nicht,
+                // ein Teil ohne Wurf-Zahl ist ein Vertragsbruch (KERN-PFLICHT), nie still ganz.
+                const mitWurf = !!this._foundryBudgetZeile(preset, lod).wurf;
+                const n = leaves.length;
+                for (let i = 0; i < n; i++) {
+                    const lf = leaves[i];
+                    if (mitWurf && !Number.isInteger(lf.wurf))
+                        AnazhRealm._kernPflichtBruch(
+                            "phyto:lod.budget." + preset + "[" + lod + "].wurf (Teil ohne Wurf-Zahl)"
+                        );
+                    if (lf.wurf === 0) continue;
                     leaves.push(
                         Object.assign({}, lf, {
                             leafKey: lf.leafKey + "#S",
                             geom: this._foundrySchattenGeom(lf),
                             castShadow: true,
                             shadowTwin: true,
-                            _eigen: false, // die verschmolzene L1-Geometrie gehört der L1-Gruppe, nie diesem Flat
+                            _eigen: false, // die Geometrie gehört dem Teil, nie dem Zwilling
+                            _schattenGeom: null,
                         })
                     );
+                }
+            }
+            if (schatten && leaves.length) {
+                // Die Zwillings-Leaves der Wurf-Stufe, DIESELBEN Objekte (EIN Werfer je Gestalt); die Cache-Gruppe der
+                // Wurf-Stufe bleibt gepinnt, solange dieser Flat lebt (`_disposeFoundryGroupGeom` gibt sie zurück).
+                for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);
                 const quelle = schatten.leaves[0]._srcGroup;
                 if (quelle) {
                     quelle._liveRefs = (quelle._liveRefs || 0) + 1;
@@ -70014,10 +70075,27 @@ class AnazhRealm {
             let n = 0;
             for (const i of idx) n += leaves[i].geom.attributes.position.count;
             if (n > globalThis.__phytoCore.BUDGET_GESETZ.verschmelzVerts) continue;
-            const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
+            // Der Wurf-Teil (W6): tragen die Teile einen Wurf-Vorsatz, stehen im verschmolzenen Index ALLE Vorsätze vorn
+            // (der Zwilling wirft deren Summe); ein Teil ohne Wurf-Zahl wirft ganz.
+            const wurfe = idx.map((i) => leaves[i].wurf);
+            const mitWurf = wurfe.some((w) => Number.isInteger(w));
+            const geo = AnazhRealm._geoVerbinden(
+                idx.map((i) => leaves[i].geom),
+                mitWurf ? wurfe : null
+            );
             if (!geo) continue;
             const erst = leaves[idx[0]];
-            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true });
+            let wurf;
+            if (mitWurf) {
+                wurf = 0;
+                for (const i of idx) {
+                    const g = leaves[i].geom;
+                    wurf += Number.isInteger(leaves[i].wurf)
+                        ? leaves[i].wurf
+                        : (g.index ? g.index.count : g.attributes.position.count) / 3;
+                }
+            }
+            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true, wurf });
             for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
             for (const k in geo.attributes) bytes += geo.attributes[k].array.byteLength;
             if (geo.index) bytes += geo.index.array.byteLength;
@@ -70033,7 +70111,9 @@ class AnazhRealm {
     }
     // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
     // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form.
-    static _geoVerbinden(geoms) {
+    // `wurfe` (W6, je Geometrie die Dreiecke ihres Wurf-Vorsatzes oder undefined = ganz): der Index legt erst alle
+    // Vorsätze, dann alle Reste — der verschmolzene Vorsatz ist die Summe (nur indiziert; sonst null).
+    static _geoVerbinden(geoms, wurfe) {
         const g0 = geoms[0];
         const namen = Object.keys(g0.attributes);
         const indiziert = !!g0.index;
@@ -70062,15 +70142,30 @@ class AnazhRealm {
             }
             out.setAttribute(k, new THREE.BufferAttribute(arr, b.itemSize, b.normalized));
         }
+        if (wurfe && !indiziert) return null;
         if (indiziert) {
             const idx = nV > 65535 ? new Uint32Array(nI) : new Uint16Array(nI);
+            const basen = [];
             let o = 0,
                 basis = 0;
             for (const g of geoms) {
-                const ia = g.index.array;
-                for (let i = 0; i < g.index.count; i++) idx[o++] = ia[i] + basis;
+                basen.push(basis);
                 basis += g.attributes.position.count;
             }
+            // Ohne Wurf ein Durchgang (der ganze Index je Geometrie), mit Wurf zwei: die Vorsätze, dann die Reste.
+            const schnitt = (j) =>
+                wurfe && Number.isInteger(wurfe[j])
+                    ? Math.min(geoms[j].index.count, wurfe[j] * 3)
+                    : geoms[j].index.count;
+            for (let j = 0; j < geoms.length; j++) {
+                const ia = geoms[j].index.array;
+                for (let i = 0, n = schnitt(j); i < n; i++) idx[o++] = ia[i] + basen[j];
+            }
+            if (wurfe)
+                for (let j = 0; j < geoms.length; j++) {
+                    const ia = geoms[j].index.array;
+                    for (let i = schnitt(j); i < geoms[j].index.count; i++) idx[o++] = ia[i] + basen[j];
+                }
             out.setIndex(new THREE.BufferAttribute(idx, 1));
         }
         out.computeBoundingBox();

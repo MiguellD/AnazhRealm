@@ -23,8 +23,10 @@
 //       „weit", die Maske verwarf ALLE ihre Schatten-Fragmente) und liest nur colorNode.a · map.a ·
 //       maskShadowNode, nie opacityNode (die Nadel-Karten warfen Rechtecke). Statisch: jede LOD-Maske misst
 //       vom Auge (`uLodAuge`, je Frame aus der Haupt-Kamera), kein werfender Foundry-Stoff schneidet über
-//       opacityNode aus, der Schatten-Zwilling wirft mit der L0-gestempelten L1-Gestalt (`_foundrySchattenGeom`,
-//       derselbe Stoff) und besitzt sie nicht. --selftest bricht jede Klasse einzeln.
+//       opacityNode aus, der Schatten-Zwilling wirft mit der als Nah-Stufe gestempelten L1-Gestalt (Stempel 3,
+//       `_foundrySchattenGeom`, derselbe Stoff) und besitzt sie nicht. EIN WERFER JE GESTALT (W6): die L1 wirft über
+//       DIESELBEN Zwillings-Leaves wie die L0 (nie über ihre Teile), der Band-Partner trägt keinen Zwilling, den die
+//       Primär-Stufe schon wirft. --selftest bricht jede Klasse einzeln.
 // Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
 // CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
 // thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
@@ -703,7 +705,7 @@ async function runPartB() {
 }
 
 // DIE SCHATTEN-WAHRHEIT (statisch, auf der kommentar-gestrippten Quelle) → Liste der Verstöße mit Namen.
-function schattenWahrheit(srcNC) {
+function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     const v = [];
     const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
     if (!maske) v.push("_lodCrossfadeMaskNode fehlt");
@@ -725,8 +727,38 @@ function schattenWahrheit(srcNC) {
     if (!/geom: this\._foundrySchattenGeom\(lf\)/.test(flat))
         v.push("der Schatten-Zwilling wirft mit der L1-Gestalt (L1-Stempel: blendet nah aus)");
     const gestalt = fnBody(srcNC, /_foundrySchattenGeom\(lf\)\s*/) || "";
-    if (!/setAttribute\(\s*"aLodLevel",\s*new THREE\.BufferAttribute\(new Float32Array\([^)]*\)\.fill\(1\), 1\)\s*\)/.test(gestalt))
-        v.push("die Zwillings-Gestalt trägt nicht den L0-Stempel (aLodLevel 1)");
+    if (!/setAttribute\(\s*"aLodLevel",\s*new THREE\.BufferAttribute\(new Float32Array\([^)]*\)\.fill\(3\), 1\)\s*\)/.test(gestalt))
+        v.push("die Zwillings-Gestalt trägt nicht den Nah-Stempel (aLodLevel 3: wirft für L0 und L1, blendet zur Karte aus)");
+    // EIN WERFER JE GESTALT (W6): die Wurf-Quelle wirft über die Zwillings-Leaves, die L0 übernimmt DIESELBEN Objekte.
+    if (!/const castsShadow = wurf === lod && !zwillingsQuelle;/.test(flat))
+        v.push("die Wurf-Quelle (L1) wirft über ihre Teile UND als Zwilling der L0 — zwei Gruppen je Gestalt in jeder Kaskade");
+    if (!/for \(const lf of schatten\.leaves\) if \(lf\.shadowTwin\) leaves\.push\(lf\);/.test(flat))
+        v.push("die L0 baut einen eigenen Zwilling statt die Zwillings-Leaves der Wurf-Stufe zu tragen");
+    const band = fnBody(srcNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
+    if (!/this\._archInstanceAdd\(entry, this\._bandOhneZwilling\(flat, primFlat\), \{ band: true/.test(band))
+        v.push("der Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
+    if (!/const pf = pf0 && pf0\.instanceable \? this\._bandOhneZwilling\(pf0, foundryFlat\) : pf0;/.test(srcNC))
+        v.push("der gestreute Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
+    // DER WURF-TEIL (W6): der Zwilling wirft nur den Vorsatz seines Teils (drawRange), die Fassade der Gruppe behält
+    // ihn, ein Teil ohne Wurf (die Wurzeln) wirft nicht, das Verschmelzen legt alle Vorsätze nach vorn — und die Wurf-
+    // Grenze des Studios IST der Kaskaden-Texel k0 der Welt.
+    if (!/z\.drawRange\.count = teil \? lf\.wurf \* 3 : g\.drawRange\.count;/.test(gestalt))
+        v.push("der Schatten-Zwilling wirft das ganze Teil statt seines Wurf-Vorsatzes");
+    const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\(srcGeom, capacity\)\s*\{/) || "";
+    if (!/g2\.setDrawRange\(srcGeom\.drawRange\.start, srcGeom\.drawRange\.count\);/.test(fassade))
+        v.push("die Instanz-Fassade verliert den drawRange ihrer Quelle (der Zwilling würfe ganz)");
+    if (!/if \(lf\.wurf === 0\) continue;/.test(flat)) v.push("ein Teil ohne Wurf (die Wurzeln) wirft als Zwilling");
+    if (!/if \(mitWurf && !Number\.isInteger\(lf\.wurf\)\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
+        v.push("ein Teil ohne Wurf-Zahl wirft still ganz (fail-soft) statt KERN-PFLICHT");
+    const verb = fnBody(srcNC, /\n {4}static _geoVerbinden\(geoms, wurfe\)\s*\{/) || "";
+    if (!/wurfe && Number\.isInteger\(wurfe\[j\]\)\s*\?\s*Math\.min\(geoms\[j\]\.index\.count, wurfe\[j\] \* 3\)/.test(verb))
+        v.push("das Verschmelzen legt die Wurf-Vorsätze nicht nach vorn (der Zwilling würfe fremde Dreiecke)");
+    const tex = /texelM: Object\.freeze\(\[([\d.]+),/.exec(srcNC);
+    const dm = /wurf: \{ durchmesserM: ([\d.]+) \}/.exec(fcSrc);
+    if (!tex || !dm || Number(tex[1]) !== Number(dm[1]))
+        v.push(
+            `die Wurf-Grenze des Studios (${dm ? dm[1] : "—"} m) ist nicht der Kaskaden-Texel k0 der Welt (${tex ? tex[1] : "—"} m)`
+        );
     const weg = fnBody(srcNC, /_disposeFoundryGroupGeom\(g\)\s*/) || "";
     if (!/lf\._schattenGeom\.dispose\(\)/.test(weg)) v.push("die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)");
     if (!/shadowTwin: true,\s*_eigen: false/.test(flat))
@@ -824,7 +856,16 @@ async function main() {
                 nc.replace(/(\.mul\(laubFarbe\),\s*)atl\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = atl.a;"),
             ],
             ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
-            ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(1), 1)", "aLodLevel.count).fill(2), 1)")],
+            ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(3), 1)", "aLodLevel.count).fill(2), 1)")],
+            ["zwei Werfer je Gestalt", nc.replace("const castsShadow = wurf === lod && !zwillingsQuelle;", "const castsShadow = wurf === lod;")],
+            ["L0 baut eigenen Zwilling", nc.replace("for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
+            ["Band wirft doppelt", nc.replace("this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
+            ["Streu-Band wirft doppelt", nc.replace("const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
+            ["Zwilling wirft ganz", nc.replace("z.drawRange.count = teil ? lf.wurf * 3 : g.drawRange.count;", "z.drawRange.count = g.drawRange.count;")],
+            ["Fassade verliert den Wurf", nc.replace("g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
+            ["Wurzel wirft", nc.replace("if (lf.wurf === 0) continue;", "")],
+            ["Wurf still ganz", nc.replace("if (mitWurf && !Number.isInteger(lf.wurf))", "if (false)")],
+            ["Verschmelzen mischt den Vorsatz", nc.replace("? Math.min(geoms[j].index.count, wurfe[j] * 3)", "? geoms[j].index.count")],
             ["Zwillings-Gestalt leckt", nc.replace("lf._schattenGeom.dispose();", "")],
             ["Zwilling besitzt L1-Geometrie", nc.replace("_eigen: false,", "")],
         ];
@@ -835,6 +876,16 @@ async function main() {
                 `Selbst-Test Schatten: „${name}" → das Gesetz nennt ihn`,
                 src !== nc && v.length > 0,
                 src === nc ? "ANKER FEHLT — die Injektion trifft die Quelle nicht (Probe nachziehen)" : v.join(" · ")
+            );
+        }
+        {
+            // Die Studio-Seite des Wurf-Teils: eine Wurf-Grenze, die nicht der Kaskaden-Texel ist, nennt das Gesetz.
+            const fc = foundrySrc.replace("wurf: { durchmesserM: 0.17 }", "wurf: { durchmesserM: 0.12 }");
+            const v = schattenWahrheit(nc, fc);
+            check(
+                'Selbst-Test Schatten: „Wurf-Grenze neben dem Texel" → das Gesetz nennt ihn',
+                fc !== foundrySrc && v.length > 0,
+                fc === foundrySrc ? "ANKER FEHLT — die Injektion trifft foundry-core nicht" : v.join(" · ")
             );
         }
         check("Selbst-Test Perf: die echte Quelle hält die Perf-Wahrheit", perfWahrheit(nc).length === 0, perfWahrheit(nc).join(" · "));
