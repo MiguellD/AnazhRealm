@@ -45622,7 +45622,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = s.renderer.render(s.scene, s.camera);
+                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
                 if (rr && typeof rr.catch === "function")
                     rr.catch((e) => this.log(`Feed-Vorschau-Render: ${e && e.message}`, "INFO"));
             }
@@ -78121,7 +78121,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = s.renderer.render(s.scene, s.camera);
+                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
                 if (rr && typeof rr.catch === "function")
                     rr.catch((e) => this.log(`Hof-Bühne-Render: ${e && e.message}`, "INFO"));
             }
@@ -78788,7 +78788,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = s.renderer.render(s.scene, s.camera);
+                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
                 if (rr && typeof rr.catch === "function")
                     rr.catch((e) => this.log(`Ich-Bühne-Render: ${e && e.message}`, "INFO"));
             }
@@ -80899,9 +80899,26 @@ class AnazhRealm {
         // Erst nach WebGPURenderer.init() rendern (rendererReady, wie das Haupt-Loop-Gate). render() ist
         // auf der GPU async — ein Pipeline-Compile-Reject wird geloggt statt unhandled.
         if (!p.rendererReady) return;
-        const renderResult = p.renderer.render(p.scene, p.camera);
+        const renderResult = this._buehneRender(p.renderer, p.scene, p.camera);
         if (renderResult && typeof renderResult.catch === "function") {
             renderResult.catch((err) => this.log(`Workshop-Preview-Render: ${err && err.message}`, "INFO"));
+        }
+    }
+
+    // DIE BÜHNE ZEIGT IHR WERK GANZ (Welle L, Befund V-D3): ein Neben-Renderer (Werkstatt-Vorschau, Feed-, Hof-,
+    // Ich-Bühne) zeichnet EIN Werk in EINER Stufe aus seiner eigenen Kamera. Die LOD-Maske misst vom Welt-Auge
+    // (`uLodAuge`, je Frame aus der Haupt-Kamera) und gehört der Welt: die Vorschau-Eiche im Ursprung lag vom Auge
+    // auf der Plattform 36 m weit, jenseits ihrer L0-Kante — 29 Meshes mit 21 108 Dreiecken in der Szene, 0 im Bild.
+    // Um den Bühnen-Render steht die Maske aus (uLodMaskOn 0; der geteilte renderGroup-Satz lädt je render() neu),
+    // danach zurück auf den Welt-Stand. Jeder Neben-Renderer zeichnet NUR hier.
+    _buehneRender(renderer, scene, camera) {
+        const lu = this.state.lodUniforms;
+        const an = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+        if (an !== null) lu.uLodMaskOn.value = 0;
+        try {
+            return renderer.render(scene, camera);
+        } finally {
+            if (an !== null) lu.uLodMaskOn.value = an;
         }
     }
 
