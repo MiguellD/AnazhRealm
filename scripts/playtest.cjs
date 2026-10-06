@@ -30448,7 +30448,7 @@ async function checkBandLambda4Streu(ctx) {
         // nativen InstanceNode-Pfad (die Senke setzt instanceColor; der Studio-Stoff setzt useInstanceTint, liest
         // nie manuell `attribute("instanceColor")`). Die zwölf Host-Gestalten (Tulpe/Klee/Mohn …) fielen.
         const bSrc = window.__codeOf(r._nahStreuBloecke);
-        const mSrc = window.__codeOf(r._streuNahMesh);
+        const mSrc = window.__codeOf(r._senkeMesh);
         const fSrc = window.__codeOf(r._foundryTreeMaterial);
         out.tintJeInstanz = /farben/.test(bSrc) && /instanceColor = new THREE\.InstancedBufferAttribute/.test(mSrc);
         out.stoffNativ = /useInstanceTint/.test(fSrc) && !/attribute\("instanceColor"/.test(fSrc);

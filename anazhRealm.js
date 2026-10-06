@@ -32735,9 +32735,10 @@ class AnazhRealm {
                 mesh: null,
                 kap: 0,
                 anzahl: 0,
+                wachse: 0,
             };
             if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
-            this._nahWieseMesh(a, 256);
+            this._senkeMesh(a, 256, nw.gruppe);
             nw.senken.set(a.key, a);
             senken.push(a);
             if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
@@ -32747,26 +32748,6 @@ class AnazhRealm {
         }
         nw.vorlagen.set(kopf, { flat: fl, senken, cy: cy || 0, r });
         nw.neu = true;
-    }
-
-    // Die Senken-InstancedMesh (neu oder gewachsen): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
-    _nahWieseMesh(a, kap) {
-        const alt = a.mesh;
-        const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
-        m.name = a.name;
-        m.castShadow = false; // die Wiese wirft nicht (Budget grass schatten false, `_tickNahWiese`)
-        m.receiveShadow = true;
-        m.frustumCulled = false; // der Sicht-Satz cullt je Büschel
-        m.userData.leafKey = a.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
-        if (alt) {
-            m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
-            if (alt.parent) alt.parent.remove(alt);
-            this._instanzAbschied(alt);
-        }
-        AnazhRealm._instanzZahl(m, a.anzahl);
-        a.mesh = m;
-        a.kap = kap;
-        this.state.nahWiese.gruppe.add(m);
     }
 
     // Eine Senke fällt (ihre Vorlage wurde ersetzt): die Mesh verlässt die Szene, die Studio-Referenz geht zurück — war
@@ -32851,7 +32832,7 @@ class AnazhRealm {
                 if (!vl || !drin(b.x, b.y + vl.cy * b.s, b.z, vl.r * b.s)) continue;
                 m4.fromArray(k.basis, i * 16);
                 for (const a of vl.senken) {
-                    if (a.anzahl >= a.kap) this._nahWieseMesh(a, Math.ceil(a.kap * 1.5));
+                    if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.kap * 1.5), nw.gruppe);
                     mw.multiplyMatrices(m4, a.lokal).toArray(a.mesh.instanceMatrix.array, a.anzahl * 16);
                     a.anzahl++;
                 }
@@ -33044,22 +33025,27 @@ class AnazhRealm {
             bloecke: new Map(),
             ordnung: [],
             wachse: 0,
+            inventar: "streu-klein",
         };
         if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
-        this._streuNahMesh(a, 64);
+        this._senkeMesh(a, 64, this.state.scene);
         ns.senken.set(key, a);
         return a;
     }
 
-    // Die Senken-InstancedMesh (neu oder gewachsen ×1,5): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
-    _streuNahMesh(a, kap) {
+    // DIE SENKE (Nah-Streu · Nah-Wiese, neu oder gewachsen): je Art × Stufe × Teil EINE InstancedMesh über der geteilten
+    // Studio-Geometrie für den ganzen Ring. Sie wirft nicht (Budget schatten false) und cullt selbst (der Streu-Ring umspannt
+    // die Kamera, die Nah-Wiese legt je Büschel ihren Sicht-Satz); der Inhalt bis zur Anzahl reist mit (Matrizen, bei
+    // Tint-Senken die Farben), die alte verlässt Graph und GPU (`_instanzAbschied`). `eltern` = der Knoten der Senke.
+    _senkeMesh(a, kap, eltern) {
+        if (!eltern) throw new Error(`_senkeMesh(${a.name}): kein Eltern-Knoten`);
         const alt = a.mesh;
         const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
         m.name = a.name;
-        m.castShadow = false; // die Nah-Streu wirft nicht (budget schatten false)
+        m.castShadow = false;
         m.receiveShadow = true;
-        m.frustumCulled = false; // der Ring umspannt die Kamera
-        m.userData.inventar = "streu-klein";
+        m.frustumCulled = false;
+        if (a.inventar) m.userData.inventar = a.inventar;
         m.userData.leafKey = a.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
         if (a.tint) m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(kap * 3).fill(1), 3);
         if (alt) {
@@ -33072,8 +33058,7 @@ class AnazhRealm {
         AnazhRealm._instanzZahl(m, a.anzahl);
         a.mesh = m;
         a.kap = kap;
-        if (!this.state.scene) throw new Error(`_streuNahMesh(${a.name}): keine Szene`);
-        this.state.scene.add(m);
+        eltern.add(m);
     }
 
     // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Instanz).
@@ -33082,7 +33067,7 @@ class AnazhRealm {
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): die Tint-Senke braucht n×3 Farben`);
-        if (a.anzahl + n > a.kap) this._streuNahMesh(a, Math.max(a.anzahl + n, Math.ceil(a.kap * 1.5)));
+        if (a.anzahl + n > a.kap) this._senkeMesh(a, Math.max(a.anzahl + n, Math.ceil(a.kap * 1.5)), this.state.scene);
         const m = a.mesh;
         const start = a.anzahl;
         m.instanceMatrix.array.set(matrizen, start * 16);

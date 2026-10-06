@@ -394,6 +394,10 @@ const FORBIDDEN = [
     { token: "P.mesh.dispose()", fiel: "W6 — _instanzAbschied (Fundament- und Zaun-Pool)" },
     { token: "R.mesh.dispose()", fiel: "W6 — _instanzAbschied (der Rauch-Satz des Dorfs)" },
     { token: "a.mesh.dispose()", fiel: "W6 — _instanzAbschied (die Senken der Nah-Wiese und der Nah-Streu)" },
+    // Integration W6 (06.10.): die Senke der Nah-Wiese war eine Kopie der Senke der Nah-Streu — beide wachsen über EINEN
+    // Bauer (`_senkeMesh`, Eltern-Knoten als Argument).
+    { token: "_streuNahMesh", fiel: "Integration W6 — EINE Senke (_senkeMesh)" },
+    { token: "_nahWieseMesh", fiel: "Integration W6 — EINE Senke (_senkeMesh)" },
     // DIE NAH-WIESE IST EIN SATZ (Welle 6, 05.10.): je Kachel × Vorlage eine InstancedMesh (56 Meshes, 20 Befehle, die
     // Kachel cullte nur als Ganzes, die Stufe hing an der Kachel-Mitte) — jetzt EINE Senke je Vorlage × Stufe × Teil,
     // gefüllt vom Sicht-Satz je Büschel (`_nahWieseSicht`). Der Kachel-Mesh-Bau und sein Entsorgen kehren nie zurück.
