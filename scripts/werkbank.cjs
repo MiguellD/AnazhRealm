@@ -71,6 +71,15 @@
 //       node scripts/werkbank.cjs zerlegen --runden 6 --json artifacts/werkbank/zerlegen-omen.json
 //       node scripts/werkbank.cjs zerlegen --nur haupt,tiefenkopie,traa,nachbild,bloom,godrays,kontrast,feldPass,leer --runden 8
 //       node scripts/werkbank.cjs stop
+//   node scripts/werkbank.cjs stoff [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe] | stoff --selbsttest
+//                                                           DIE STOFF-LINSE (scripts/lib/stoff-linse.cjs): das erzeugte
+//                                                           Fragment-Programm des Boden-Stoffs (r184 getShaderAsync) je
+//                                                           Fragment gezählt — Abtastungen · Schatten-Vergleiche · Ladungen
+//                                                           · Ableitungen · Schleifen · Verzweigungen · Hash-Rauschen · Ops-
+//                                                           Schätzung — gegen das Boden-Budget (Exit 1 bei Bruch); `--gegen`
+//                                                           stellt ein gesichertes Programm daneben, `--rauschprobe` misst
+//                                                           das Atlas-Rauschen der GPU gegen MaterialX/das Rausch-Gesetz
+//                                                           auf der CPU; `--selbsttest` (ohne Welt) prüft die Zählung
 //   node scripts/werkbank.cjs band [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE (W0): einschwingen (volle Welt, bis der Bau
 //                                                           ruht), n Proben (Maximum je Klasse × Stufe × Pass) + VRAM
@@ -109,6 +118,7 @@ const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
+const STOFF = require("./lib/stoff-linse.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -809,6 +819,7 @@ async function starte() {
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
+        await page.evaluate(STOFF.STOFF_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
             while (
@@ -1212,6 +1223,19 @@ async function starte() {
                 }
                 // DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): Inventur (ein Zähl-Frame + Pass-Baum + Frame-Anatomie) →
                 // Schalter aus dem echten Weg → ABBA je Schalter mit der Bank-Runde → Beleg je Schalter → Tabelle.
+                if (req.url === "/stoff") {
+                    const p = await page.evaluate(() => window.__stoffProgramm());
+                    if (!p || p.fehler) return send({ fehler: (p && p.fehler) || "kein Programm" });
+                    const nach = STOFF.stoffKosten(p.wgsl);
+                    const vor = b.gegen ? STOFF.stoffKosten(fs.readFileSync(path.resolve(b.gegen), "utf8")) : null;
+                    if (b.datei) {
+                        fs.mkdirSync(path.dirname(path.resolve(b.datei)), { recursive: true });
+                        fs.writeFileSync(path.resolve(b.datei), p.wgsl);
+                    }
+                    const urteil = STOFF.stoffUrteil(nach, STOFF.BODEN_BUDGET);
+                    const probe = b.rauschprobe ? await page.evaluate(() => window.__rauschProbe()) : null;
+                    return send({ tabelle: STOFF.stoffTabelle(nach, vor), urteil, budget: STOFF.BODEN_BUDGET, probe });
+                }
                 if (req.url === "/zerlegen") {
                     const n = Number(b.n) || 12;
                     const runden = Math.max(4, Number(b.runden) || 4);
@@ -1551,6 +1575,21 @@ async function starte() {
         if (!o || o.fehler) {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
+        }
+    }
+    else if (cmd === "stoff") {
+        if (argv.includes("--selbsttest")) {
+            const t = STOFF.selbsttest();
+            console.log(JSON.stringify(t, null, 1));
+            process.exit(t.ok ? 0 : 1);
+        }
+        o = await rufe("/stoff", { gegen: opt("--gegen"), datei: opt("--datei"), rauschprobe: argv.includes("--rauschprobe") });
+        if (o && o.tabelle) {
+            console.log(o.tabelle + "\n\nBudget " + JSON.stringify(o.budget) + " → " + (o.urteil.ok ? "GRÜN" : "ROT: " + o.urteil.befunde.join(" · ")));
+            // die Rausch-Probe: max |GPU − CPU| je Probe — über 1e-4 ist das WGSL nicht das Gesetz
+            const probeRot = o.probe ? Object.entries(o.probe).filter(([, v]) => !(v.maxFehler < 1e-4)) : [];
+            if (o.probe) console.log("Rausch-Probe " + JSON.stringify(o.probe) + (probeRot.length ? " → ROT" : " → GRÜN"));
+            process.exit(o.urteil.ok && probeRot.length === 0 ? 0 : 1);
         }
     }
     else if (cmd === "reload") o = await rufe("/reload");
