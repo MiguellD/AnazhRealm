@@ -74,6 +74,11 @@ function haken(o, key, fn) {
 // erkennt so Neustarts), je Pass der Zeitstempel-Schlüssel (r184 `r:<Aufruf>:<Kontext>:f<Frame>`), die Zahl der Renders
 // je Pass und — für die Zerlegung — die ausgeschalteten Pässe. `lesen()` löst den Pool auf (setzt ihn zurück: 2048
 // Abfragen reichen sonst nur wenige Bank-Runden) und gibt je Pass je Frame die ms.
+// DIE ZAHL JE PASS (`lauf`): steht `frameZ` (ein Objekt je gerendertem Frame), bucht jeder Render seine Befehle und
+// Dreiecke aus renderer.info (die Quelle von HUD und Flugschreiber) unter seinem Pass — exklusiv: ein Schatten-Pass
+// mitten im Hauptbild zählt nur sich, das Hauptbild ohne ihn. renderer.info trägt die Summe aller Pässe eines Frames,
+// und die Pässe wechseln (die nahe Kaskade rendert jeden zweiten Frame, die ferne seltener) — ein Perzentil über die
+// Takte sprang zwischen den Moden (06.10., echte GPU, Mess-Wiese: 540p 273 und im nächsten Lauf 176 Befehle).
 function passUhr() {
     const r = window.anazhRealm;
     const rend = r.state.renderer;
@@ -87,6 +92,8 @@ function passUhr() {
         baum: null,
         zaehl: {},
         uidPass: new Map(),
+        frameZ: null,
+        zStapel: [],
     };
     const rohSzene = rend._renderScene;
     const rohUid = be.updateTimeStampUID;
@@ -104,11 +111,28 @@ function passUhr() {
             z.an++;
             uhr.stapel.push(name);
             uhr.idStapel.push(++uhr.lauf);
+            const fz = uhr.frameZ;
+            const ri = this.info.render;
+            const zz = fz ? { dc: ri.drawCalls, tri: ri.triangles, kDc: 0, kTri: 0 } : null;
+            if (zz) uhr.zStapel.push(zz);
             try {
                 return rohSzene.call(this, scene, camera, ...rest);
             } finally {
                 uhr.stapel.pop();
                 uhr.idStapel.pop();
+                if (zz) {
+                    uhr.zStapel.pop();
+                    const dc = ri.drawCalls - zz.dc,
+                        tri = ri.triangles - zz.tri;
+                    const eltern = uhr.zStapel[uhr.zStapel.length - 1];
+                    if (eltern) {
+                        eltern.kDc += dc;
+                        eltern.kTri += tri;
+                    }
+                    const e = fz[name] || (fz[name] = { dc: 0, tri: 0 });
+                    e.dc += dc - zz.kDc;
+                    e.tri += tri - zz.kTri;
+                }
             }
         })
     );

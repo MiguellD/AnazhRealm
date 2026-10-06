@@ -136,7 +136,7 @@ const BILD_FN = async (kam, W, H) => {
             z: w.position.z,
             f: tB ? tB.f : null,
             straehnen: tB && tB.straehnen ? tB.straehnen.length : null,
-            hPx: r.state.renderer.domElement ? r.state.renderer.domElement.height : null,
+            hPx: r._schirm().hoehe,
             fov: r.state.camera.fov,
         };
     });
