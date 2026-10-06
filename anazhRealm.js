@@ -69090,6 +69090,25 @@ class AnazhRealm {
     }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
     // `_tickScatterStreaming` (feuert nur, wenn das Chunk-Streaming nichts baut).
+    // DER GENESIS-ORT VOR JEDEM BUDGET (Existenz vor Framerate, Lehre 13): der Ring der Kern-Portale (einmalig je Welt,
+    // Schöpfer 17.07.) und die Portal-Vorschauen (GT, Haus, Esse, Tor; nur bei Tor-Nähe, frühes Await-Book) stehen in
+    // ihrem eigenen Takt (1×/s), nie hinter den Dorf-Akten. Bis 06.10. lagen sie im Siedlungs-Takt hinter
+    // `_frameOverBudget` (und der Siedlungs-Takt im Deko-Job, der bei leerem Budget wartet): auf der echten GPU (Radeon
+    // 890M, frische Welt) war das Budget in 160 von 160 Proben über 40 s überschritten — kein Ring, kein GT am Ring, der
+    // v1-Schritt 6 ohne Wagen. Headless ruht er wie der Siedlungs-Takt (der Hook führt, Gate-Treue).
+    _tickGenesisOrt(currentTime) {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm) return;
+        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
+        if (hook === false) return;
+        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        if (this._genesisOrtT && currentTime - this._genesisOrtT < 1000) return;
+        this._genesisOrtT = currentTime; // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert)
+        this._genesisPortalRing(pm.position);
+        this._portalApproachPrefetch(pm.position);
+    }
+
     _tickAutoSettlement(playerPos) {
         const st = this.state;
         if (!playerPos) return;
@@ -69123,12 +69142,6 @@ class AnazhRealm {
         if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
-        // DER GENESIS-PORTAL-RING zuerst (einmalig je Welt, Schöpfer 17.07.) —
-        // dieselbe Tick-Heimat wie das Start-Dorf (Kanal lebt, Spieler am Genesis-Ort).
-        this._genesisPortalRing(playerPos);
-        // V18.491.81 — Portal-approach Prefetch: Preview-Typen nur bei Tor-Nähe
-        // (+ frühes Await-Book), nicht Boot-breit. Helper `_ensurePortalPreview` bleibt.
-        this._portalApproachPrefetch(playerPos);
         // Wege-Rebuild: Zellen mit Gedächtnis {seed,nH,x,z} bauen ihre Wege je Session lazy aus DEMSELBEN
         // Export am gemerkten Anker neu (nurWege — Häuser/Brunnen sind persistiert). Alt-Saves mit Wert 1 →
         // keine Wege. EIN Roundtrip zur Zeit, nur nahe Zellen.
@@ -87643,6 +87656,9 @@ class AnazhRealm {
 
                 // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
                 this._tickHausTueren(currentTime);
+
+                // ### Der Genesis-Ort ### (Ring der Kern-Portale + Portal-Vorschauen, vor jedem Budget)
+                this._tickGenesisOrt(currentTime);
 
                 // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                 this._updateDorfRauch(delta);

@@ -14,8 +14,9 @@
 //     Spieler (Chunk-Strom + Pflanz-Schlange). Gemessen an den GEPFLANZTEN Bäumen: Stamm-Abstand zur Plattform-Mitte und
 //     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
 //     der gezeichneten Instanz geprüft). Befund: eine Tanne 2,0 m vom Mittelpunkt, der erste Blick eine Nadelwand.
-//     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring (`_genesisPortalRing`): er steht um die Plattform
-//     (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.                                     Soll Ring-Mitte ≤ 1 m
+//     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring im echten Spiel-Takt auf einem Gerät über dem
+//     Frame-Budget (`_frameOverBudget` fest wahr — die Werkbank-GPU: 160 von 160 Proben): er steht (Existenz vor
+//     Framerate) und um die Plattform (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.     Soll Ring-Mitte ≤ 1 m
 //
 //   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
 //     V-D5 — `renderRecipeBook` in frieden, dann in schöpfer: der Mach-Knopf der Eiche wird frei (Befund: gesperrt).
@@ -93,7 +94,7 @@ function ankunftVerdict(m) {
     const out = [];
     if (!(m.baeume > 0)) out.push("kein Wald um die Plattform gewachsen");
     if (m.kronen > 0) out.push(`${m.kronen} Krone(n) über der Scheibe (nächster Stamm ${m.naechsterStamm} m, ${m.naechsteArt})`);
-    if (!(m.ringPortale > 0)) out.push("kein Genesis-Ring");
+    if (!(m.ringPortale > 0)) out.push("kein Genesis-Ring (über dem Frame-Budget)");
     else if (!(m.ringMitteAbstand <= 1)) out.push(`ring-mitte ${m.ringMitteAbstand} m neben der Plattform`);
     if (m.trocken !== true) out.push("plattform im wasser");
     return out;
@@ -242,9 +243,20 @@ async function probe(arg) {
         m.kronen = kronen;
         m.naechsterStamm = Number.isFinite(naechster) ? +naechster.toFixed(2) : null;
         m.naechsteArt = art;
-        // Der Genesis-Ring: der Kreis der Kern-Portale um den Genesis-Ort (headless ruht der Auto-Zug — die Probe ruft ihn).
-        for (let i = 0; i < 30 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++)
-            r._genesisPortalRing(st.playerMesh.position);
+        // Der Genesis-Ring: der Kreis der Kern-Portale um den Genesis-Ort — im ECHTEN Spiel-Takt auf einem Gerät, dessen
+        // Frame-Budget immer überschritten ist (die Radeon 890M der Werkbank: 160 von 160 Proben über 40 s). Headless ruht
+        // der Auto-Zug; der Hook öffnet ihn wie im Spiel, `_frameOverBudget` steht fest auf wahr (das langsame Gerät).
+        const hookAlt = window.__anazhAutoSettlement;
+        window.__anazhAutoSettlement = true;
+        Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
+        try {
+            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await tick(1, 60);
+        } finally {
+            delete st._frameOverBudget;
+            st._frameOverBudget = false;
+            if (hookAlt === undefined) delete window.__anazhAutoSettlement;
+            else window.__anazhAutoSettlement = hookAlt;
+        }
         const ring = st.architectures.filter(
             (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 80
         );
@@ -528,6 +540,7 @@ async function probe(arg) {
         for (const [name, bruch, soll] of [
             ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
             ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
+            ["kein Ring über dem Frame-Budget", { ringPortale: 0 }, "kein Genesis-Ring"],
             ["Plattform im See", { trocken: false }, "plattform im wasser"],
             ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
         ]) {
