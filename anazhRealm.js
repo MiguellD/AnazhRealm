@@ -50770,13 +50770,7 @@ class AnazhRealm {
         const fZ = Math.cos(fahrtYaw);
         const qX = Math.cos(fahrtYaw);
         const qZ = -Math.sin(fahrtYaw);
-        // jedes Rad liest den Stand-Leser der Sicht um sein Gesetz (Q4): die Räder stehen auf dem gezeichneten Boden, nicht
-        // auf der Funktion darunter (Mesh gegen Gesetz ±0,3 m — Räder lagen bis 16 cm im bzw. über dem Boden, F-D8)
-        const h = (l, q) => {
-            const px = x + fX * l + qX * q;
-            const pz = z + fZ * l + qZ * q;
-            return this._standSicht(px, pz, this.getTerrainHeightAt(px, pz), false);
-        };
+        const h = (l, q) => this.getTerrainHeightAt(x + fX * l + qX * q, z + fZ * l + qZ * q);
         const vRe = h(st.vorn, st.quer);
         const vLi = h(st.vorn, -st.quer);
         const hRe = h(st.hinten, st.quer);
@@ -50792,7 +50786,7 @@ class AnazhRealm {
         // über einer Kuppe trägt der Bauch, am gleichmäßigen Hang und über einer Mulde tragen die Räder (W5). Die
         // Verwindung (zwei Räder je ±v) bleibt der Ebene: sie zu heben öffnete am Hang Rad-Spalten bis 0,195 m (B-f).
         // Befund voller Playtest (M3 Ritt, Integration W5): am Kamm (66, 60) lag der Bauch 1,05 m im Boden.
-        const mitte = h(0, 0);
+        const mitte = this.getTerrainHeightAt(x, z);
         const heben = Number.isFinite(mitte) ? Math.max(0, mitte - (st.bauch || 0) - y0) : 0;
         return {
             y: y0 + heben,

@@ -4,8 +4,9 @@
 // dem Träger), im Sprung sank das Becken 0,25 m, während die Kapsel stieg (N-D1); in jeder Höhle las die Probe die Wiese
 // darüber und die IK schwieg; ein Tier auf dem Höhlen-Boden stand im ersten Frame auf dem Dach (+32,6 m); die Sohlen der
 // Tiere lagen am Hang-Fuß bis 0,63 m im sichtbaren Boden (R-D15), der 0,5-m-Cache war ihre Y-Quelle (Treppen bis 0,64 m je
-// Frame, R-D10), Pitch längs der festen Welt-z, Roll 0 (R-D11); das sterbende Tier kippte halb unter das Gelände (K-D19);
-// die Rad-Ebene des Wagens stand auf der Funktion statt auf dem gezeichneten Boden (F-D8, Teil).
+// Frame, R-D10), Pitch längs der festen Welt-z, Roll 0 (R-D11); das sterbende Tier kippte halb unter das Gelände (K-D19).
+// Die Rad-Ebene des Wagens misst diese Linse nicht: Fahrzeug, Reiter und Parkposition stehen auf dem Gesetz (Entscheid D1
+// der Welle L — `_rittEbene` gehört der Familie fahren, der Rad-Spalt gegen das Mesh ist dort eine Sicht-Frage).
 // Die Linse ruft die ECHTEN Pfade der Welt (headless, Null-Renderer — die Boden-Karte ist das Mesh des Workers):
 //   K1  MENSCH AUF DEM TRÄGER: der Spieler auf der Start-Plattform (der Kapsel-Schritt trägt ihn auf dem Bauwerk), Fuß-IK
 //       im Stand → das Becken sinkt nicht (≤ 1 cm); im Sprung (Kapsel in der Luft) senkt kein Boden das Becken
@@ -16,7 +17,6 @@
 //       Boden-Karte (Median |Sohle − Karte| ≤ 6 cm); entlang eines Wegs über den Hang springt die Lage je Takt nie mehr als
 //       8 cm über die Neigung hinaus (die Cache-Treppe)
 //   K5  TOD-LAGE: nach dem Kippen liegt die tiefste Stelle des Körpers nicht unter dem Boden (≥ −5 cm)
-//   K6  RAD-EBENE: die Rad-Ebene (`_rittEbene`) steht an derselben Hang-Stelle auf der Karte (mittlerer Abstand ≤ 3 cm)
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
@@ -55,7 +55,6 @@ const BASIS = {
         ["baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);", "baseY = terrainHeight;"],
     ],
     tod: [["creature.position.y = dying.baseY + dying.flanke * Math.sin(ang);", "void 0;"]],
-    rad: [["return this._standSicht(px, pz, this.getTerrainHeightAt(px, pz), false);", "return this.getTerrainHeightAt(px, pz);"]],
 };
 let patch = null;
 let patchFehler = [];
@@ -337,33 +336,6 @@ async function proben() {
             if (s.creatures.includes(c)) r.removeCreature(c);
         }
         s.maxCreatures = saveMax;
-        // ── K6 RAD-EBENE an derselben Hang-Stelle (vier Aufstandspunkte im Standard-Stand) ──
-        const ent = { scale: 1, _rideHalfLen: 1.6 };
-        const fehl = [];
-        for (let a = 0; a < 8; a++) {
-            const yaw = (a / 8) * Math.PI * 2;
-            const eb = r._rittEbene(ent, hang.x, hang.z, yaw);
-            const st = r._rittAufstand(ent);
-            if (!eb) continue;
-            const fX = Math.sin(yaw);
-            const fZ = Math.cos(yaw);
-            const qX = Math.cos(yaw);
-            const qZ = -Math.sin(yaw);
-            // die Ebene an jedem Rad: Höhe + Nick längs + Wank quer (dieselben Vorzeichen wie _rittEbene)
-            for (const [l, q] of [
-                [st.vorn, st.quer],
-                [st.vorn, -st.quer],
-                [st.hinten, st.quer],
-                [st.hinten, -st.quer],
-            ]) {
-                const m = karte(hang.x + fX * l + qX * q, hang.z + fZ * l + qZ * q);
-                if (m === null) continue;
-                const yRad = eb.y - Math.tan(eb.nick) * l + Math.tan(eb.wank) * q;
-                fehl.push(yRad - m);
-            }
-        }
-        const mitte = fehl.length ? fehl.reduce((a, b) => a + b, 0) / fehl.length : null;
-        o.k6 = { raeder: fehl.length, mittelCm: mitte === null ? null : Math.round(Math.abs(mitte) * 1000) / 10 };
     }
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
@@ -391,7 +363,6 @@ function urteil(o) {
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
         else if (!o.k5 || !(o.k5.untenCm >= -5) || !(o.k5.untenCm <= 15))
             f.push(`K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.untenCm : "?"} cm über dem Boden (Soll −5 … +15)`);
-        if (!o.k6 || !(o.k6.raeder >= 16) || !(o.k6.mittelCm <= 3)) f.push(`K6 Rad-Ebene: ${o.k6 ? o.k6.mittelCm : "?"} cm im Mittel neben der Karte`);
     }
     return f;
 }
@@ -403,7 +374,7 @@ function zeile(o) {
         `K1 Becken ${v(o.k1.beckenCm)} cm · Sprung ${v(o.k1.sprungBeckenCm)} cm` +
         ` · K2 Höhlen-Probe ${o.k2 ? v(o.k2.abstandCm) : "?"} cm · K3 Tier ${o.k3 ? v(o.k3.abstandM) : "?"} m` +
         ` · K4 Sohle−Karte Median ${o.k4 ? v(o.k4.medianCm) : "?"} cm (p90 ${o.k4 ? v(o.k4.p90Cm) : "?"}) · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
-        ` · K5 Tod ${o.k5 ? v(o.k5.untenCm) : "?"} cm · K6 Rad ${o.k6 ? v(o.k6.mittelCm) : "?"} cm` +
+        ` · K5 Tod ${o.k5 ? v(o.k5.untenCm) : "?"} cm` +
         (o.hang ? ` · Hang ${o.hang.neig.toFixed(0)}° Gesetz↔Karte ${(o.hang.abstand * 100).toFixed(0)} cm` : "") +
         (o.hoehle ? ` · Höhle ${(o.hoehle.top - o.hoehle.boden).toFixed(1)} m tief` : "")
     );
@@ -462,7 +433,6 @@ function zeile(o) {
                 hoehle: ["K3 Tier in der Höhle"],
                 sicht: ["K4 Sohlen gegen die Karte", "K4 Treppe"],
                 tod: ["K5 Tod-Lage"],
-                rad: ["K6 Rad-Ebene"],
             };
             for (const inj of Object.keys(soll)) {
                 const { o, pf } = await lauf(inj);
