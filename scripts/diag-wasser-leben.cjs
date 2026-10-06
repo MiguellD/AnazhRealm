@@ -119,6 +119,24 @@ function urteil(b) {
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
+            const li = k.licht;
+            if (!li || !li.himmelVor || !li.himmelGetaucht)
+                v.push("K9 LEER: die Licht-Probe lief nicht (Luft oder Himmels-Umgebung fehlt)");
+            else {
+                if (!(li.nachtUnten < li.nachtOben))
+                    v.push(
+                        `K9 NACHT: unter Wasser ist die Mitternacht heller (${li.nachtUnten}) als die Luft darüber (${li.nachtOben})`
+                    );
+                if (!(li.mittagUnten > li.nachtUnten * 2))
+                    v.push(
+                        `K9 LITERAL: das Wasser kennt Tag und Nacht nicht (Mittag ${li.mittagUnten}, Mitternacht ${li.nachtUnten})`
+                    );
+                const dh = Math.max(...li.himmelVor.map((x, i) => Math.abs(x - li.himmelGetaucht[i])));
+                if (dh > 2)
+                    v.push(
+                        `K9 HIMMEL: der Tauchgang färbt die Himmels-Umgebung (${li.himmelVor.join("/")} → ${li.himmelGetaucht.join("/")})`
+                    );
+            }
             const m = k.medium;
             if (!m) v.push("K5 MEDIUM: die Luft-Probe lief nicht (keine Kamera oder Luft)");
             else {
@@ -197,6 +215,14 @@ function selbsttest() {
                 }))
             ),
             peer: { lehne: 0.4, meshKind: "soul" },
+            licht: {
+                nachtOben: 0.03,
+                nachtUnten: 0.004,
+                mittagOben: 0.9,
+                mittagUnten: 0.5,
+                himmelVor: [191, 218, 237],
+                himmelGetaucht: [191, 218, 237],
+            },
         },
         bild: {
             uhr60: {
@@ -224,6 +250,10 @@ function selbsttest() {
         ["K6 LAGE", (b) => Object.assign(b.koerper.tier[0], { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 })],
         ["K6 LEER", (b) => (b.koerper.tier = [])],
         ["K7 MITSPIELER", (b) => (b.koerper.peer.lehne = 0)],
+        ["K9 NACHT", (b) => Object.assign(b.koerper.licht, { nachtUnten: 0.17 })],
+        ["K9 LITERAL", (b) => Object.assign(b.koerper.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
+        ["K9 HIMMEL", (b) => (b.koerper.licht.himmelGetaucht = [81, 132, 170])],
+        ["K9 LEER", (b) => delete b.koerper.licht],
         ["K8 UFER-FLUT", (b) => Object.assign(b.ufer, { geflutet: 37, maxFlutM: 3.15 })],
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
         ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],

@@ -16076,7 +16076,9 @@ class AnazhRealm {
         // in den Horizont, das IST der Himmel, den der Spieler sieht (die EINE tag/nacht/wetter-kohärente
         // Horizont-Quelle); die Skybox-Tönung (nebulaColor) vertieft nur den Zenit. Gemessen 01.10.: aus
         // nebulaColor allein lag der Schatten einer 50-%-Fläche bei sRGB 0/25/102 (Licht wie unter Blaufolie).
-        const fc = st.luft && st.luft.U.farbe.value;
+        // Die Luft ÜBER dem Wasser (`himmelFarbe`), nie das Medium der Kamera: bis V18.531 malte ein Tauchgang die
+        // Unterwasser-Farbe in die Umgebung der ganzen Welt (191/218/237 → 81/132/170, blieb nach dem Auftauchen, W-L-b).
+        const fc = st.luft && st.luft.himmelFarbe;
         const hor = fc ? { r: fc.r, g: fc.g, b: fc.b } : tief;
         const sky = { r: hor.r + tief.r, g: hor.g + tief.g, b: hor.b + tief.b }; // Drift-Schlüssel beider Quellen
         const last = st._skyEnvLastColor;
@@ -84889,13 +84891,15 @@ class AnazhRealm {
             return T.mix(U.farbe, U.sonneFarbe, keule);
         });
         st.scene.fogNode = T.fog(farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld));
-        st.luft = { U, faktor, farbe };
+        // `himmelFarbe`: die Farbe der LUFT ÜBER DEM WASSER (die In-Streu des Himmels), auch wenn die Kamera taucht — die
+        // Himmels-Umgebung malt sich aus ihr (`_ensureSkyEnvironment`), nie aus dem Medium der Kamera.
+        st.luft = { U, faktor, farbe, himmelFarbe: new THREE.Color(0.651, 0.824, 0.925) };
         return st.luft;
     }
 
     // HemisphereLight + die Luft synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler × Wetter × Sonne; die
     // In-Streu-Farbe = Himmel mit kleinem Erd-Anteil (gMix, unten) — Luft ist Luft, keine Dreck-Schicht.
-    // Unterwasser trägt dieselbe Formel mit Wasser-Trübung (playerEyesUnderwater).
+    // Unterwasser (die KAMERA unter dem Spiegel) trägt dieselbe Formel mit Wasser-Trübung im Licht des Orts.
     _dayNightApplyHemiUndLuft(angle, tint, sunDir) {
         const hl = this.state.hemiLight;
         const pm = this.state.playerMesh;
@@ -84965,9 +84969,23 @@ class AnazhRealm {
             const L = AnazhRealm.LUFT;
             const U = luft.U;
             U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+            luft.himmelFarbe.setRGB(fogR, fogG, fogB);
             if (kameraUnterWasser) {
-                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), keine Sonnen-Keule.
-                U.farbe.value.setRGB(0.06, 0.19, 0.32);
+                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), keine Sonnen-Keule. Die
+                // Farbe ist das Unterwasser-Gesetz des Terrain-Studios: der Durchlass der ersten 0,3 m (WASSER_GESETZ.wK,
+                // Beer-Lambert) × das Tageslicht — in der Welt die Helligkeit der Luft über dem Wasser (die EINE
+                // tag-, nacht- und wetter-kohärente Himmels-Quelle): mittags türkis, halb so hell wie die Luft, nachts
+                // dunkler als die Nacht darüber, im Sturm trüb. Bis V18.531 ein Literal 0,06/0,19/0,32 zu jeder Stunde —
+                // Mitternacht unter Wasser war heller als Mittag unter Wasser und 2,5× heller als die Nacht darüber (W-L-a).
+                const WGu =
+                    AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
+                    AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+                const tagesLicht = 0.2126 * fogR + 0.7152 * fogG + 0.0722 * fogB;
+                U.farbe.value.setRGB(
+                    Math.exp(-WGu.wK[0] * 0.3) * tagesLicht,
+                    Math.exp(-WGu.wK[1] * 0.3) * tagesLicht,
+                    Math.exp(-WGu.wK[2] * 0.3) * tagesLicht
+                );
                 U.sonneFarbe.value.copy(U.farbe.value);
                 U.beta.value = -Math.log(L.kontrast) / L.unterwasserM;
                 U.hoehe.value = 1e9;

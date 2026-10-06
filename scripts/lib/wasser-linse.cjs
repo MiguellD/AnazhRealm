@@ -417,6 +417,63 @@ function wasserKoerper(opts) {
                 st.scene.remove(peer.mesh);
                 r._p2pDisposeMesh(peer.mesh);
             }
+            // (8) DAS LICHT AM WASSER (W-L-a, W-L-b): die Farbe der Luft (das Medium, das die Unterwasser-Sicht trägt) zur
+            // Mitternacht und zu Mittag, über und unter dem Spiegel; und die Himmels-Umgebung (die IBL jedes Stoffs und
+            // der Spiegel des Wassers) am Horizont vor dem Tauchen und danach — der Tauchgang darf sie nicht färben.
+            const camL = st.camera;
+            const luftL = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
+            if (camL && luftL && luftL.U && luftL.U.farbe) {
+                const camAltL = camL.position.clone();
+                const zeitAlt = st.timeOfDay;
+                const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
+                const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+                const augenAltL = st.playerEyesUnderwater;
+                const luft = (zeit, camY) => {
+                    // Kamera UND Augen im selben Medium (vor der Welle L folgte die Luft den Augen, nachher der Kamera).
+                    st.playerEyesUnderwater = camY < spiegel;
+                    st.timeOfDay = zeit;
+                    if (st.world) st.world.timeOfDay = zeit;
+                    camL.position.set(mx, camY, mz);
+                    camL.updateMatrixWorld(true);
+                    r._applyDayNightToScene();
+                    return lum(luftL.U.farbe.value);
+                };
+                const himmel = () => {
+                    if (typeof r._ensureSkyEnvironment !== "function" || !r._ensureSkyEnvironment(true)) return null;
+                    const tx = r._himmelUmgebungTex();
+                    const W = tx.image.width,
+                        H = tx.image.height,
+                        d = st._skyEnvData;
+                    if (!d) return null;
+                    const i = ((H >> 1) * W + (W >> 1)) * 4;
+                    return [d[i], d[i + 1], d[i + 2]];
+                };
+                try {
+                    const nachtOben = luft(0.0, spiegel + 10);
+                    const nachtUnten = luft(0.0, spiegel - 3);
+                    const mittagUnten = luft(0.5, spiegel - 3);
+                    const mittagOben = luft(0.5, spiegel + 10);
+                    const vorTauchen = himmel();
+                    luft(0.5, spiegel - 3);
+                    const getaucht = himmel();
+                    luft(0.5, spiegel + 10);
+                    aus.licht = {
+                        nachtOben: R(nachtOben, 4),
+                        nachtUnten: R(nachtUnten, 4),
+                        mittagOben: R(mittagOben, 4),
+                        mittagUnten: R(mittagUnten, 4),
+                        himmelVor: vorTauchen,
+                        himmelGetaucht: getaucht,
+                    };
+                } finally {
+                    st.playerEyesUnderwater = augenAltL;
+                    st.timeOfDay = zeitAlt;
+                    if (st.world && weltZeitAlt !== undefined) st.world.timeOfDay = weltZeitAlt;
+                    camL.position.copy(camAltL);
+                    camL.updateMatrixWorld(true);
+                    r._applyDayNightToScene();
+                }
+            }
         } finally {
             st.keys = keysAlt || {};
             st.yaw = yawAlt;
