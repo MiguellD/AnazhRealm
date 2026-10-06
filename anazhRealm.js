@@ -28463,8 +28463,9 @@ class AnazhRealm {
                                             .add(_look3.mul(_nz))
                                     );
                                     // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView):
-                                    // die Welt-Normale über die Kamera-Matrix transformieren.
-                                    mat.normalNode = _Ta.normalize(_nW.transformDirection(_Ta.cameraViewMatrix));
+                                    // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist
+                                    // MATRIX.transformDirection(n) (V·n), nie n.transformDirection(MATRIX) (Vᵀ·n).
+                                    mat.normalNode = _Ta.cameraViewMatrix.transformDirection(_nW);
                                     // ── CAMERA-FACING (Vertex): Anker = instanz-transformierte Achsen-Position. Das Einheits-
                                     //    Quad steht von y=0 bis y=1 (Instanz: Anker + s·y·oben); die Rahmen-Höhe streckt die
                                     //    Achse auf s·y·H (positionLocal ist im positionNode schon instanziert, r184) ──
@@ -28545,7 +28546,9 @@ class AnazhRealm {
                         // (_stampFoliageDomeNormals); der Renderer negiert Attribut-Normalen back-facender DoubleSide-
                         // Fragmente → die Innenseite läse die Kuppel invertiert (fast schwarz). normalNode umgeht den Flip;
                         // normalLocal trägt die Batch-/Instanz-Rotation, modelViewMatrix hebt in View — wie der Impostor
-                        // (transformDirection, NIE transformNormalToView).
+                        // (transformDirection, NIE transformNormalToView). Lokal → Sicht ist MATRIX.transformDirection(n)
+                        // (MV·n); n.transformDirection(MATRIX) rechnete MVᵀ·n und drehte das Sonnen-Licht der Krone mit
+                        // der Blick-Richtung (Normal-Sonde 06.10.: 19–35 Grauwerte neben three's eigener Normale).
                         if (
                             opts.foliageLeaf === true &&
                             !opts.impostorAtlas &&
@@ -28553,7 +28556,7 @@ class AnazhRealm {
                             _Ta.modelViewMatrix &&
                             _Ta.normalize
                         ) {
-                            mat.normalNode = _Ta.normalize(_Ta.normalLocal.transformDirection(_Ta.modelViewMatrix));
+                            mat.normalNode = _Ta.modelViewMatrix.transformDirection(_Ta.normalLocal);
                         }
                         // Rinden-Maserung prozedural aus dem holz-Tag (keine Bitmap): Längs-Faser (hohe Frequenz quer x/z,
                         // niedrige längs y) + Risse aus härte (ridged-Noise); moduliert die per-Vertex-Rinden-Albedo.
@@ -28654,7 +28657,10 @@ class AnazhRealm {
                     // über die Kamera-Matrix. Bis 05.10. stand sie roh als Welt-Normale darin — die Licht-Normale des
                     // Bodens kippte mit der Kamera-Neigung, und `normalWorld` (= normalView zurück in die Welt) las aus
                     // 45 m senkrecht von oben eine Wand: die flache Wiese wurde Fels (Linse 05.10., echte GPU).
-                    mat.normalNode = _Tn.normalize(_baseN).transformDirection(_Tn.cameraViewMatrix);
+                    // Welt → Sicht ist MATRIX.transformDirection(n) (= V·n, three's transformNormalToView);
+                    // n.transformDirection(MATRIX) rechnet Vᵀ·n (Sicht → Welt, three's normalWorld) und verdoppelte den
+                    // Fehler (Normal-Sonde 06.10.: Kugel-Pixel 24 Grauwerte neben three's eigener Normale).
+                    mat.normalNode = _Tn.cameraViewMatrix.transformDirection(_Tn.normalize(_baseN));
                 }
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
