@@ -57,7 +57,7 @@
         "karten": {
             "haupt": {
                 "befehle": 1,
-                "dreiecke": 8104
+                "dreiecke": 1088
             },
             "k0": {
                 "befehle": 0,
@@ -112,8 +112,8 @@
         },
         "streu": {
             "haupt": {
-                "befehle": 27,
-                "dreiecke": 43400
+                "befehle": 5,
+                "dreiecke": 28540
             },
             "k0": {
                 "befehle": 0,
