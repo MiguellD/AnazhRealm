@@ -25592,10 +25592,15 @@ class AnazhRealm {
         let hoehe = 0;
         const sy = Number.isFinite(surfY) ? surfY : this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
         if (Number.isFinite(sy)) {
-            const wl = this._waterLevelAt(x, z);
-            const above = sy - wl;
-            const t = Math.max(0, Math.min(1, (F.hoeheFern - above) / (F.hoeheFern - F.hoeheNah)));
-            hoehe = t * t * (3 - 2 * t) * F.hoeheGewicht;
+            // die Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende
+            const uf = { see: 0, fluss: null, ufer: 0 };
+            this._waterLevelAt(x, z, uf);
+            const band = (above) => {
+                const t = Math.max(0, Math.min(1, (F.hoeheFern - above) / (F.hoeheFern - F.hoeheNah)));
+                return t * t * (3 - 2 * t) * F.hoeheGewicht;
+            };
+            hoehe = band(sy - uf.see);
+            if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
         }
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
@@ -25611,12 +25616,16 @@ class AnazhRealm {
         const bankW = 4.5;
         const d = r.dist - inner;
         if (d < 0 || d > bankW) return 0;
-        if (Number.isFinite(surfY)) {
-            const above = surfY - this._waterLevelAt(x, z);
-            if (above < 0 || above > 5) return 0;
-        }
         const band = 1 - d / bankW;
-        return band * band;
+        if (!Number.isFinite(surfY)) return band * band;
+        // niedrige Bank (0..5 m) über einem der beiden Bezüge (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
+        // Kronen-Blende
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        this._waterLevelAt(x, z, uf);
+        const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
+        let w = niedrig(surfY - uf.see);
+        if (uf.fluss !== null) w = Math.max(w, uf.ufer * niedrig(surfY - uf.fluss));
+        return band * band * w;
     }
 
     // See-Becken an xz → `{bedY, w}` oder null: `bedY` = flache, wasserdichte Bett-Höhe, `w` ∈ [0,1] die
@@ -26674,19 +26683,29 @@ class AnazhRealm {
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
-        const waterY = this._waterLevelAt(x, z);
-        const aboveWater = y - waterY;
-        mix(sed, ss(-0.5, -4, aboveWater));
+        // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
+        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet.
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        this._waterLevelAt(x, z, uf);
+        const aboveWater = y - uf.see;
+        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
+        let schlick = ss(-0.5, -4, aboveWater);
+        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        mix(sed, schlick);
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
         // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
-        // (λ~290 m), (c) karge Fels-Patches ohne Sand.
-        if (aboveWater > -1.5 && aboveWater < 2.0) {
+        // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
+        // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
+        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
+        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
             if (widthNoise > 0.18) {
                 const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
                 const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
-                const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
+                const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
+                let shoreBlend = glocke(aboveWater);
+                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
                 mix(sand, shoreBlend * intensity);
             }
             // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
@@ -30858,8 +30877,12 @@ class AnazhRealm {
 
     // Wasser-Oberflächen-Höhe an (x,z) = MAX aus Ozean (`waterLevel`, Default überall), See-Becken
     // (`lake.level`) und Fluss-Bett-Profil. Nass ist, wo `_voxelSurfaceY < _waterLevelAt` — die
-    // Uferlinie ist der exakte Schnitt mit dem echten Voxel-Terrain.
-    _waterLevelAt(x, z) {
+    // Uferlinie ist der exakte Schnitt mit dem echten Voxel-Terrain. `aus` (optional) bekommt die beiden Bezüge der
+    // Ufer-Bänder getrennt: `see` (Meer/See), `fluss` (der Fluss-Spiegel oder null) und `ufer` (seine Kronen-Blende). Ein
+    // Ufer-Band (Strand, Schlick, Pfad, Höhen-Feuchte) ist das Maximum aus dem Band über `see` und dem Band über `fluss`
+    // × `ufer` — stetig über die Krone, wo der Fluss-Spiegel endet (bis Welle L lasen die Bänder das Maximum der Spiegel:
+    // an der Krone sprang der Bezug auf den Meeresspiegel, die Bank trug ein Rauten-Schachbrett).
+    _waterLevelAt(x, z, aus) {
         let level = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (h && h.ready && h.water && h.water.waterKind) {
@@ -30882,6 +30905,11 @@ class AnazhRealm {
             }
         }
         const river = this._hydroRiverAt(x, z);
+        if (aus) {
+            aus.see = level;
+            aus.fluss = river ? river.surfaceY : null;
+            aus.ufer = river ? river.ufer : 0;
+        }
         if (river && river.surfaceY > level) level = river.surfaceY;
         return level;
     }
@@ -31543,6 +31571,7 @@ class AnazhRealm {
         let bestHalfW = 1;
         let gSumme = 0;
         let sSumme = 0;
+        let ufer = 0;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -31561,6 +31590,10 @@ class AnazhRealm {
             const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
             gSumme += g;
             sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+            // Die Kronen-Blende: 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone (das Maximum der Segmente).
+            const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
+            const uS = 1 - u * u * (3 - 2 * u);
+            if (uS > ufer) ufer = uS;
             if (dist < bestD) {
                 bestD = dist;
                 const len = Math.sqrt(len2);
@@ -31578,6 +31611,9 @@ class AnazhRealm {
             surfaceY: sSumme / gSumme,
             // Zentrums-Nähe [0..1] (1 Mittellinie, 0 Kanal-Kante): die Strömung trägt nur im Kanal.
             centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
+            // Die Kronen-Blende [0..1]: die Ufer-Bänder (Strand, Schlick, Pfad, Höhen-Feuchte) über diesem Spiegel
+            // laufen mit ihr zur Krone aus — dort endet der Spiegel, der Bezug springt auf den Meeresspiegel.
+            ufer,
         };
     }
 
@@ -90542,8 +90578,9 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 AnazhRealm.CHUNK_IDB_MAX = 600;
 // Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
 // liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`); seit
-// Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal.
-AnazhRealm.CHUNK_IDB_FORM = "fluss-spiegel";
+// Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal; und die
+// Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett.
+AnazhRealm.CHUNK_IDB_FORM = "ufer-blende";
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).

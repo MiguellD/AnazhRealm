@@ -953,6 +953,7 @@ function hydroRiverAt(x, z) {
     let bestHalfW = 1;
     let gSumme = 0;
     let sSumme = 0;
+    let ufer = 0;
     for (let s = 0; s < list.length; s++) {
         const seg = list[s];
         const ex = seg.bx - seg.ax;
@@ -971,6 +972,10 @@ function hydroRiverAt(x, z) {
         const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
         gSumme += g;
         sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+        // die Kronen-Blende (Mirror): 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone
+        const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
+        const uS = 1 - u * u * (3 - 2 * u);
+        if (uS > ufer) ufer = uS;
         if (dist < bestD) {
             bestD = dist;
             const len = Math.sqrt(len2);
@@ -990,6 +995,7 @@ function hydroRiverAt(x, z) {
         depth,
         surfaceY: sSumme / gSumme,
         centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
+        ufer,
     };
 }
 
@@ -1038,7 +1044,9 @@ function hydroDistAt(x, z) {
                 const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
                 if (dist < best) {
                     best = dist;
-                    bestHw = seg.halfW || 0;
+                    // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
+                    // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
+                    bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
                 }
             }
         }
@@ -1058,10 +1066,14 @@ function feuchteAt(x, z, surfY) {
     }
     let hoehe = 0;
     if (Number.isFinite(surfY)) {
-        const wl = waterLevelAt(x, z);
-        const above = surfY - wl;
-        const t = Math.max(0, Math.min(1, (FEUCHTE_HOEHE_FERN - above) / (FEUCHTE_HOEHE_FERN - FEUCHTE_HOEHE_NAH)));
-        hoehe = t * t * (3 - 2 * t) * FEUCHTE_HOEHE_GEWICHT;
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        waterLevelAt(x, z, uf);
+        const band = (above) => {
+            const t = Math.max(0, Math.min(1, (FEUCHTE_HOEHE_FERN - above) / (FEUCHTE_HOEHE_FERN - FEUCHTE_HOEHE_NAH)));
+            return t * t * (3 - 2 * t) * FEUCHTE_HOEHE_GEWICHT;
+        };
+        hoehe = band(surfY - uf.see);
+        if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(surfY - uf.fluss));
     }
     return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
 }
@@ -1076,15 +1088,17 @@ function pathFieldAt(x, z, surfY) {
     const bankW = 4.5;
     const d = r.dist - inner;
     if (d < 0 || d > bankW) return 0;
-    if (Number.isFinite(surfY)) {
-        const above = surfY - waterLevelAt(x, z);
-        if (above < 0 || above > 5) return 0;
-    }
     const band = 1 - d / bankW;
-    return band * band;
+    if (!Number.isFinite(surfY)) return band * band;
+    const uf = { see: 0, fluss: null, ufer: 0 };
+    waterLevelAt(x, z, uf);
+    const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
+    let w = niedrig(surfY - uf.see);
+    if (uf.fluss !== null) w = Math.max(w, uf.ufer * niedrig(surfY - uf.fluss));
+    return band * band * w;
 }
 
-function waterLevelAt(x, z) {
+function waterLevelAt(x, z, aus) {
     let level = typeof state.waterLevel === "number" ? state.waterLevel : 0;
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (h && h.ready && h.water && h.water.waterKind) {
@@ -1105,6 +1119,12 @@ function waterLevelAt(x, z) {
         }
     }
     const river = hydroRiverAt(x, z);
+    // die beiden Bezüge der Ufer-Bänder getrennt (Mirror `_waterLevelAt`): See/Meer, Fluss-Spiegel, Kronen-Blende
+    if (aus) {
+        aus.see = level;
+        aus.fluss = river ? river.surfaceY : null;
+        aus.ufer = river ? river.ufer : 0;
+    }
     if (river && river.surfaceY > level) level = river.surfaceY;
     return level;
 }
@@ -2339,16 +2359,24 @@ function attachFieldColors(positions) {
         const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
-        const waterY = waterLevelAt(x, z);
-        const aboveWater = y - waterY;
-        mix(sed, ss(-0.5, -4, aboveWater));
-        if (aboveWater > -1.5 && aboveWater < 2.0 && sandNoise) {
+        // Schlick und Strand über beiden Bezügen (Mirror `_bodenFarbeAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende.
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        waterLevelAt(x, z, uf);
+        const aboveWater = y - uf.see;
+        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
+        let schlick = ss(-0.5, -4, aboveWater);
+        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        mix(sed, schlick);
+        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
+        if ((imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) && sandNoise) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
             if (widthNoise > 0.18) {
                 const width = 0.5 + 1.4 * widthNoise;
                 const intensity = 0.25 + 0.55 * intenseNoise;
-                const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
+                const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
+                let shoreBlend = glocke(aboveWater);
+                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
                 mix(sand, shoreBlend * intensity);
             }
         }
