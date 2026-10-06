@@ -38227,18 +38227,38 @@ async function checkBandKonvergenzTierBaum(ctx) {
         }
         // (3) CONSUM — der Chokepoint geht den CPG-Gang: das KNIE faltet (die
         // Lab-Mathe legt das Leben in die Unter-Gelenke, die Wurzel schwingt
-        // subtil), das diagonale Gegenbein zieht negativ.
-        const g2 = r._buildCreatureGroup("wolf");
-        out.trab = false;
-        if (g2 && g2.userData._tierBaum) {
+        // subtil), das diagonale Gegenbein zieht negativ. Das Gang-Gesetz (Welle 5)
+        // misst die Geschwindigkeit aus dem WEG des Leibs: der Leib läuft wie im
+        // Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s), gewertet wird die zweite
+        // Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet nicht.
+        const trabLauf = (v) => {
+            const g2 = r._buildCreatureGroup("wolf");
+            if (!g2 || !g2.userData._tierBaum) return null;
             const T = g2.userData._tierBaum.teile;
-            const knieVorher = T.flL ? T.flL.rotation.x : null;
-            r._animateCompoundMotion(g2, null, 0.5, Math.PI / 2, true);
-            const knieNachher = T.flL ? T.flL.rotation.x : null;
-            out.trab =
-                knieVorher != null && knieNachher != null && knieNachher - knieVorher > 0.3 && T.legFR.rotation.x < 0;
+            if (!T.flL || !T.legFR) return (r._disposeSoulGroup(g2), null);
+            let t = 0.5,
+                knieMin = Infinity,
+                knieMax = -Infinity,
+                gegenBeiKnieMax = 0;
+            for (let i = 0; i < 60; i++) {
+                g2.position.x += v / 60;
+                t += 1 / 60;
+                r._animateCompoundMotion(g2, null, t, Math.PI / 2, true);
+                if (i < 30) continue;
+                const k = T.flL.rotation.x;
+                knieMin = Math.min(knieMin, k);
+                if (k > knieMax) {
+                    knieMax = k;
+                    gegenBeiKnieMax = T.legFR.rotation.x;
+                }
+            }
             r._disposeSoulGroup(g2);
-        }
+            return { falte: knieMax - knieMin, gegen: gegenBeiKnieMax };
+        };
+        const lauf = trabLauf(1.6);
+        const stand = trabLauf(0);
+        out.trabZahlen = { lauf, stand };
+        out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen < 0 && stand.falte < 0.05);
         // (5) DER FERN-GUSS + sein CONSUM: die Kreatur trägt das gemergte
         // Standbild (wenige Meshes); updateCreatures toggelt es jenseits
         // TIER_FERN_DIST (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
@@ -38293,7 +38313,12 @@ async function checkBandKonvergenzTierBaum(ctx) {
             a.meshN > 0 && a.meshN <= 120 && a.klonTeilt === true
         );
     }
-    check("KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (diagonal)", res && res.trab === true);
+    const tz = res && res.trabZahlen;
+    const f3 = (x) => (x && Number.isFinite(x.falte) ? x.falte.toFixed(2) : "?");
+    check(
+        `KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (diagonal; Knie-Falte Lauf ${f3(tz && tz.lauf)} > 0,3, Stand ${f3(tz && tz.stand)} < 0,05)`,
+        res && res.trab === true
+    );
     check(
         `KONVERGENZ III (5) DER FERN-GUSS existiert (≤16 Meshes, gemessen ${res && res.fernMeshN})`,
         !!res && res.fernExists === true && res.fernMeshN > 0 && res.fernMeshN <= 16
