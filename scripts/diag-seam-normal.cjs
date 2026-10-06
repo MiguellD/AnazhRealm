@@ -10,7 +10,8 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = Number(process.env.DIAG_PORT) || 4375;
+// Port über SEAM_NORMAL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4375.
+const PORT = Number(process.env.SEAM_NORMAL_PORT || 4375);
 const root = path.resolve(__dirname, "..");
 const mime = { ".html": "text/html", ".js": "application/javascript", ".json": "application/json", ".wasm": "application/wasm" };
 const server = http.createServer((req, res) => {

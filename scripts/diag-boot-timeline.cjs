@@ -9,7 +9,8 @@ const puppeteer = require("puppeteer"),
     http = require("http"),
     fs = require("fs"),
     path = require("path");
-const PORT = Number(process.env.DIAG_PORT) || 4364,
+// Port über BOOT_TIMELINE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4364.
+const PORT = Number(process.env.BOOT_TIMELINE_PORT || 4364),
     root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",

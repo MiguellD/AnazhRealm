@@ -29,7 +29,8 @@ const path = require("path");
 const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT || 4553);
+// Port über KONSUM_MATRIX_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4553.
+const PORT = Number(process.env.KONSUM_MATRIX_PORT || 4553);
 const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
 
 const errs = [];

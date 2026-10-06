@@ -8,7 +8,8 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = Number(process.env.DIAG_PORT) || 4378;
+// Port über SHADOW_PIXEL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4378.
+const PORT = Number(process.env.SHADOW_PIXEL_PORT || 4378);
 const root = path.resolve(__dirname, "..");
 const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".woff2": "font/woff2", ".css": "text/css", ".png": "image/png" };
 const server = http.createServer((req, res) => {

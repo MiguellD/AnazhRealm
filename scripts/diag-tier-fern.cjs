@@ -43,7 +43,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT) || 4453;
+// Port über TIER_FERN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4453.
+const PORT = Number(process.env.TIER_FERN_PORT || 4453);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

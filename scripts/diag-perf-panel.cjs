@@ -21,7 +21,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT) || 4429;
+// Port über PERF_PANEL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4429.
+const PORT = Number(process.env.PERF_PANEL_PORT || 4429);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

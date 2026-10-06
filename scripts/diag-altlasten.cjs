@@ -806,6 +806,24 @@ function scanStufenWand(srcRoh) {
     return errs;
 }
 
+// DIE PORT-WAND (Integration W6, 06.10.): jedes Gate liest seinen Port aus EINER eigenen Variable (`<GATE>_PORT`,
+// Standard sein fester Port) — zwei Formen nebeneinander (die geteilte `DIAG_PORT` in 21 Gates, je-Gate-Variablen in den
+// übrigen) waren ein Zwilling: eine Serie, die DIAG_PORT setzt, gab allen 21 denselben Port. Rot mit Datei.
+function scanPortWand(dateien) {
+    const errs = [];
+    for (const [name, src] of dateien)
+        if (/process\.env\.DIAG_PORT\b/.test(stripComments(src)))
+            errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
+    return errs;
+}
+function gateDateien(root) {
+    const aus = [];
+    for (const d of ["scripts", "scripts/lib"])
+        for (const f of fs.readdirSync(path.join(root, d)))
+            if (/\.cjs$/.test(f)) aus.push([d + "/" + f, fs.readFileSync(path.join(root, d, f), "utf8")]);
+    return aus;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
@@ -866,6 +884,18 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Stufen-Wand feuert (${zweite.find((e) => /zweite Bedeutung/.test(e))} · ${ohne.length} fehlende Anker)`
         );
+        // Die Port-Wand muss feuern: ein Gate, das wieder die geteilte Variable liest (ein Kommentar darf sie nennen).
+        const gates = gateDateien(root);
+        const geteilt = "process.env." + "DIAG_PORT"; // zusammengesetzt: diese Datei ist selbst ein Gate der Wand
+        const portFeuert =
+            scanPortWand(gates).length === 0 &&
+            scanPortWand([["scripts/diag-x.cjs", `const PORT = Number(${geteilt} || 4400);\n`]]).length === 1 &&
+            scanPortWand([["scripts/diag-y.cjs", `// früher: ${geteilt}\nconst PORT = 1;\n`]]).length === 0;
+        if (!portFeuert) {
+            console.log("❌ SELBST-TEST: die Port-Wand feuert nicht (oder steht heute rot)", scanPortWand(gates));
+            process.exit(1);
+        }
+        console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, DIAG_PORT erkannt)`);
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
         const tmp = path.join(require("os").tmpdir(), "altlasten-selftest.js");
         fs.writeFileSync(tmp, 'const x = 1;\nfunction tickPhoenixDeath() {}\n// Kommentar darf "glutwesen" sagen\n');
@@ -898,6 +928,7 @@ function main() {
         .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
+        .concat(scanPortWand(gateDateien(root)))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
@@ -905,7 +936,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, die Bau-Stufe hat EINE Bedeutung (stufenRezept).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable.`
     );
 }
 

@@ -41,7 +41,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT) || 4452;
+// Port über SCHRITT_KLANG_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4452.
+const PORT = Number(process.env.SCHRITT_KLANG_PORT || 4452);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

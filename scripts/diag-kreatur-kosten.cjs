@@ -48,7 +48,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT) || 4447;
+// Port über KREATUR_KOSTEN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4447.
+const PORT = Number(process.env.KREATUR_KOSTEN_PORT || 4447);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

@@ -44,7 +44,8 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT) || 4451;
+// Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
+const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

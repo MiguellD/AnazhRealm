@@ -47,7 +47,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
-const PORT = Number(process.env.DIAG_PORT || 4517);
+// Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
+const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",

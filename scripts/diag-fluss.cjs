@@ -35,7 +35,8 @@ const path = require("path");
 const http = require("http");
 
 const root = path.resolve(__dirname, "..");
-const PORT = Number(process.env.DIAG_PORT || 4561);
+// Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
+const PORT = Number(process.env.FLUSS_PORT || 4561);
 const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
 
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");

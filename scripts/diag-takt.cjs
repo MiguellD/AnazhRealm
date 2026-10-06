@@ -28,7 +28,9 @@
 "use strict";
 const PK = require("./lib/pack-kanon.cjs");
 
-const PORT = Number(process.env.DIAG_PORT || 4563);
+// Port über TAKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
+
+const PORT = Number(process.env.TAKT_PORT || 4563);
 const SELBST = process.argv.includes("--selftest");
 
 (async () => {
