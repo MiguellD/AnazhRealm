@@ -1500,7 +1500,10 @@ class AnazhRealm {
         try {
             fn.call(this, args, ctx);
         } catch (err) {
-            ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
+            // Ein verlangter Ort fehlt (`dslEvalPos`): sein Eintrag `invalid_position` steht schon im Log — er nennt jetzt
+            // auch die Op, die er abbrach. Alles andere ist ein Fehler der Op.
+            if (err && err.dslKeinOrt && err.dslKeinOrt.eintrag) err.dslKeinOrt.eintrag.effekt = String(op);
+            else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
         ctx.budget.depthLeft++;
     }
@@ -1512,26 +1515,35 @@ class AnazhRealm {
         return { x: 0, y: 50, z: 0 };
     }
 
-    // Ein Positions-Knoten → {x, y, z}. Ein Auflöser, der keinen Ort hat (near_water ohne Wasser), liefert null: der
-    // Knoten meldet `invalid_position` und gibt null weiter — die Op pflanzt nichts, der Satz sagt es (V-k5). Jeder
-    // aufgelöste Knoten merkt sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6,
-    // `_dslMitOrten`).
+    // Ein Positions-Knoten → {x, y, z} — oder die Op scheitert LAUT und benannt. DIE ENGSTELLE des Orts-Vertrags (Welle L,
+    // V-k5-Klasse): ein verlangter Ort, den es nicht gibt (der Auflöser kennt keinen — near_water ohne Wasser —, er ist
+    // unbekannt, er wirft), wird nie still ein anderer (bis 06.10. der Spieler-Ort bzw. der Ursprung; danach null, das
+    // neun Ops als TypeError trafen und `spawn_village` über `spawnSettlement` doch auf den Spieler-Ort setzte). Der
+    // Knoten schreibt EINEN Log-Eintrag `invalid_position` mit dem Grund („kein Wasser im Umkreis von 60 m") und wirft
+    // `_dslKeinOrt`: `dslEval` bricht genau diese Op ab (die chain läuft weiter und meldet ehrlich), eine Bedingung ist
+    // falsch. Keine Op sieht je null. Ohne Knoten (nicht verlangt) gilt der Default-Spawn. Jeder aufgelöste Knoten merkt
+    // sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6, `_dslMitOrten`).
     dslEvalPos(node, ctx) {
         if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();
+        const op = String(node[0]);
         const fn = this.dslPositions[node[0]];
-        if (!fn) {
-            ctx.log.push({ event: "unknown_position_op", op: String(node[0]) });
-            return this._defaultSpawnPos();
+        let pos = null;
+        let grund = null;
+        if (!fn) grund = `unbekannter Ort „${op}“`;
+        else {
+            try {
+                pos = fn.call(this, node.slice(1), ctx);
+            } catch (err) {
+                grund = err && err.dslKeinOrt ? err.dslKeinOrt.grund : `${op} warf: ${(err && err.message) || err}`;
+            }
+            if (!grund && !(pos && Number.isFinite(pos.x) && Number.isFinite(pos.z))) grund = `${op} fand keinen Ort`;
         }
-        let pos;
-        try {
-            pos = fn.call(this, node.slice(1), ctx);
-        } catch {
-            return this._defaultSpawnPos();
-        }
-        if (!pos) {
-            ctx.log.push({ event: "invalid_position", op: String(node[0]), program_id: ctx.programId });
-            return null;
+        if (grund) {
+            const eintrag = { event: "invalid_position", op, grund, program_id: ctx.programId };
+            ctx.log.push(eintrag);
+            const fehler = this._dslKeinOrt(op, grund);
+            fehler.dslKeinOrt.eintrag = eintrag;
+            throw fehler;
         }
         if (ctx.orte) {
             const liste = ctx.orte.get(node);
@@ -1539,6 +1551,14 @@ class AnazhRealm {
             else ctx.orte.set(node, [pos]);
         }
         return pos;
+    }
+
+    // Der EINE Fehler „verlangter Ort fehlt": ein Positions-Auflöser wirft ihn mit seinem Grund, `dslEvalPos` reicht ihn
+    // benannt weiter, `dslEval` bricht daran die Op ab.
+    _dslKeinOrt(op, grund) {
+        const fehler = new Error(grund);
+        fehler.dslKeinOrt = { op, grund };
+        return fehler;
     }
 
     // DER ABSENDER LÖST DIE ORTE AUF (Welle L, Befund V-k6): ein Programm mit spieler-relativen Orten
@@ -1800,6 +1820,10 @@ class AnazhRealm {
             // dslEval — sonst verschmutzt der Effekt seine eigene Baseline.
             this._measureRuleReward(r, currentTime);
             const rp = this._ruleRewardPos(r.effect, ctx);
+            if (!rp) {
+                r.errors = (r.errors || 0) + 1; // der verlangte Ort fehlt (benannt im Log) — kein Effekt, keine Messung
+                continue;
+            }
             r._vBase = this._observeFieldWohl(rp.x, rp.z, currentTime);
             r._vPos = rp;
             r._vPending = true;
@@ -1914,8 +1938,16 @@ class AnazhRealm {
         };
         scan(effectNode);
         if (found) {
-            const p = this.dslEvalPos(found, ctx);
-            if (p && typeof p.x === "number") return { x: p.x, z: p.z };
+            // Den Ort gibt es nicht (`dslEvalPos` hat ihn benannt ins Log geschrieben): kein Mess-Ort — der Effekt fände ihn
+            // ebenso wenig, das Feuern ist ein Fehler der Regel, nie eine Messung am Spieler.
+            let p;
+            try {
+                p = this.dslEvalPos(found, ctx);
+            } catch (err) {
+                if (err && err.dslKeinOrt) return null;
+                throw err;
+            }
+            return { x: p.x, z: p.z };
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         return pm ? { x: pm.x, z: pm.z } : { x: 0, z: 0 };
@@ -2102,8 +2134,7 @@ class AnazhRealm {
                     return;
                 }
                 const n = c(count, 1, 24);
-                const pos = this.dslEvalPos(positionNode, ctx);
-                if (!pos) return; // kein Ort (near_water ohne Wasser): `invalid_position` steht im Log, nichts wächst
+                const pos = this.dslEvalPos(positionNode, ctx); // kein Ort → `dslEvalPos` bricht die Op benannt ab
                 const abstand = this._studioSpawnAbstand(name);
                 const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
                 const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter);
@@ -3027,15 +3058,15 @@ class AnazhRealm {
                 return { x, y, z };
             },
             // V18.492 — „am Wasser": das nächste Wasser im Umkreis, von dort zurück zum
-            // Spieler bis zum ersten trockenen Ufer-Fleck (+2 m landeinwärts). Kein Wasser in Reichweite → null:
-            // KEIN Ort (`dslEvalPos` meldet `invalid_position`, der Satz sagt es laut). Bis 06.10. fiel es still auf den
-            // Spieler-Ort — Befund V-k5: 6 Eichen 3,3–7,4 m um den Spieler, der Fluss 85 m fort, der Chat „am Wasser".
+            // Spieler bis zum ersten trockenen Ufer-Fleck (+2 m landeinwärts). Kein Wasser in Reichweite oder kein
+            // trockenes Ufer zwischen Wasser und Spieler → KEIN Ort (`_dslKeinOrt` mit dem Grund, `dslEvalPos` bricht die
+            // Op benannt ab, der Satz sagt es laut). Bis 06.10. fiel es still auf den Spieler-Ort — Befund V-k5: 6 Eichen
+            // 3,3–7,4 m um den Spieler, der Fluss 85 m fort, der Chat „am Wasser".
             near_water: ([radius], ctx) => {
                 const r = c(radius, 8, 200) || 60;
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
-                const w =
-                    typeof this._findNearestWaterPoint === "function" ? this._findNearestWaterPoint(p.x, p.z, r) : null;
-                if (!w) return null;
+                const w = this._findNearestWaterPoint(p.x, p.z, r);
+                if (!w) throw this._dslKeinOrt("near_water", `kein Wasser im Umkreis von ${Math.round(r)} m`);
                 const dx = p.x - w.x,
                     dz = p.z - w.z;
                 const L = Math.hypot(dx, dz) || 1;
@@ -3044,7 +3075,7 @@ class AnazhRealm {
                         z = w.z + (dz / L) * s;
                     if (this._isAboveWaterAt(x, z, 0.4)) return { x: x + (dx / L) * 2, y: p.y, z: z + (dz / L) * 2 };
                 }
-                return { x: p.x, y: p.y, z: p.z };
+                throw this._dslKeinOrt("near_water", "kein trockenes Ufer zwischen dem Wasser und dir");
             },
             at: ([x, y, z]) => ({
                 x: Number.isFinite(Number(x)) ? Number(x) : 0,
@@ -4696,7 +4727,7 @@ class AnazhRealm {
                 });
             } else {
                 const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
-                appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.event : "Sandbox"})`);
+                appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.grund || reason.event : "Sandbox"})`);
             }
         }
         this.llmUpdateStatus();
@@ -23448,15 +23479,18 @@ class AnazhRealm {
         this.state.dsl.lastUserProgram = parsed.program;
         this.state.dsl.lastUserOutcome = result.outcome;
         this.state.dsl.lastUserAt = performance.now() / 1000;
-        // Ein Ort, den es nicht gibt, wird laut gesagt (V-k5): kein Wasser in Reichweite heißt, am Wasser wächst nichts.
+        // Ein Ort, den es nicht gibt, wird laut gesagt, mit seinem Grund (V-k5, `dslEvalPos`): „Kein Wasser im Umkreis von
+        // 80 m — am Wasser wächst hier nichts."
         const ohneOrt = result.log.find((e) => e.event === "invalid_position");
         if (result.ok) {
             appendChatOutput(parsed.describe);
         } else if (ohneOrt) {
+            const grund = String(ohneOrt.grund || "kein Ort");
+            const satz = grund.charAt(0).toUpperCase() + grund.slice(1);
             appendChatOutput(
                 ohneOrt.op === "near_water"
-                    ? "Kein Wasser in Reichweite — am Wasser wächst hier nichts. Geh näher an ein Ufer."
-                    : `Kein Ort für „${ohneOrt.op}" — nichts gewachsen.`
+                    ? `${satz} — am Wasser wächst hier nichts. Geh näher an ein Ufer.`
+                    : `${satz} — nichts geschah.`
             );
         } else {
             const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
@@ -68703,6 +68737,14 @@ class AnazhRealm {
         // o.nH führt der Kern-Default (fachwerk DORF: DP.nH — die EINE
         // Wahrheit; der divergente Stamm-Zwilling 18 vs Kern 24 ist gefallen).
         const nH = Number.isFinite(o.nH) ? Math.max(4, Math.min(120, Number(o.nH))) : undefined;
+        // Ein VERLANGTER Ort, den es nicht gibt, wird nie der Spieler-Ort (V-k5-Klasse): ohne `position` gründet der
+        // Akt beim Spieler (Chat „dorf"), mit `position` nur dort — eine leere oder unendliche ist eine laute Absage.
+        if ("position" in o && !(o.position && Number.isFinite(o.position.x) && Number.isFinite(o.position.z))) {
+            const msg = "Siedlung ohne Ort: der verlangte Ort fehlt — keine Gründung (nie still beim Spieler).";
+            this.log(msg, "ERROR");
+            this._chatEcho?.(msg);
+            return null;
+        }
         const pm = this.state.playerMesh;
         const base =
             o.position || (pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 0, z: 0 });

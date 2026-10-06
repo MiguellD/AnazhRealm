@@ -28,6 +28,12 @@
 //       Empfänger 200 m weiter pflanzt beim Absender (Befund: 203/206 m vom Absender). Der Sende-Punkt `p2pSend` ist
 //       der Beobachtungs-Punkt (das Netz), der Chokepoint `dslRun` → `_dslMitOrten` läuft echt.
 //     V-D8 — das Label der Art im Chat („Birke", nie „baum_birke"), die Dorf-Zählung nur im Log.
+//     V-k5-KLASSE — an demselben trockenen Ort läuft JEDE Op mit ["near_water", 60] (spawn_creature · tree · studio ·
+//       island · ufo · village · temple · waterfall · blueprint · fractal · deposit_life · deposit_emotion) und eine chain
+//       durch `dslRun`: jede scheitert benannt an der Engstelle `dslEvalPos` („kein Wasser im Umkreis von 60 m", die Op im
+//       Eintrag), keine wirft, keine ändert die Welt (die Welt-Akte sind Beobachtungs-Punkte), die chain bricht nur die Op
+//       ohne Ort ab; `spawnSettlement({ position: null })` gründet nie beim Spieler. Befund 6b988a07: neun Ops warfen
+//       TypeError, spawn_village rief spawnSettlement ohne Ort (→ Spieler-Ort); cf9a07ba: jede Op am Spieler-Ort.
 //
 //   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -142,6 +148,56 @@ function satzVerdict(m) {
     return out;
 }
 
+// Die V-k5-KLASSE: jede Op mit einem verlangten Ort, den es nicht gibt (near_water in trockener Welt), scheitert benannt
+// („kein Wasser im Umkreis von 60 m", die Op im Eintrag), wirft nie, ändert die Welt nirgends; die chain meldet ehrlich; das
+// Dorf ohne Ort gründet nie beim Spieler.
+const ORT_OPS = [
+    "spawn_creature",
+    "spawn_tree",
+    "spawn_studio",
+    "spawn_island",
+    "spawn_ufo",
+    "spawn_village",
+    "spawn_temple",
+    "spawn_waterfall",
+    "spawn_blueprint",
+    "spawn_fractal",
+    "deposit_life",
+    "deposit_emotion",
+];
+function ortVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    const soll = new RegExp(`kein Wasser im Umkreis von ${m.radius} m`);
+    for (const op of ORT_OPS) {
+        const e = m.ops && m.ops[op];
+        if (!e) {
+            out.push(`${op}: nicht gelaufen`);
+            continue;
+        }
+        if (e.kalt) out.push(`${op}: Buch kalt (Vorbedingung)`);
+        else if (e.fehler) out.push(`${op}: wirft (${e.fehler.slice(0, 80)})`);
+        if (e.akte && e.akte.length)
+            out.push(`${op}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`);
+        if (!e.kalt && !(soll.test(e.grund || "") && e.effekt === op)) out.push(`${op}: scheitert nicht benannt`);
+        if (e.ok) out.push(`${op}: meldet Erfolg`);
+    }
+    const c = m.chain;
+    if (!c) out.push("chain: nicht gelaufen");
+    else {
+        if (c.ok) out.push("chain: meldet Erfolg ohne Ort");
+        if (c.fehler) out.push(`chain: wirft (${c.fehler.slice(0, 80)})`);
+        if (!(soll.test(c.grund || "") && c.effekt === "spawn_tree")) out.push("chain: nennt den Grund nicht");
+        const spawns = (c.akte || []).filter((a) => a.nm !== "_depositLife");
+        if (spawns.length) out.push(`chain: wirkt ohne Ort (${spawns.map((a) => a.nm).join(", ")})`);
+        if (!(c.akte || []).some((a) => a.nm === "_depositLife")) out.push("chain: bricht ganz ab (der Feld-Akt beim Spieler fehlt)");
+    }
+    if (!m.buchWarm) out.push("dorf: Buch kalt (Vorbedingung)");
+    if (m.dorfAuftraege > 0) out.push(`dorf ohne Ort gründet beim Spieler (${m.dorfAuftraege} Worker-Auftrag)`);
+    if (m.dorfOhneOrt != null) out.push("dorf ohne Ort liefert ein Dorf");
+    return out;
+}
+
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
@@ -149,6 +205,9 @@ function wand(src) {
     // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne.
     const direkt = (nc.match(/\b[ps]\.renderer\.render\(/g) || []).length;
     const ueber = (nc.match(/this\._buehneRender\([ps]\.renderer, [ps]\.scene, [ps]\.camera\)/g) || []).length;
+    const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
+    const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
+    const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
     return [
         [
             "W1 die Bühne zeichnet ungemaskt (`_buehneRender`: uLodMaskOn 0 um den Render, im finally zurück)",
@@ -159,6 +218,11 @@ function wand(src) {
             direkt === 0 && ueber === 4,
             `${direkt} direkt · ${ueber} über die Bühne`,
         ],
+        [
+            "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` wirft `_dslKeinOrt`, liefert nie null/den Default für einen verlangten Ort)",
+            /throw fehler;/.test(evalPos) && /this\._dslKeinOrt\(/.test(evalPos) && !/return null/.test(evalPos) && (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1,
+        ],
+        ["W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)", wachen === 0, `${wachen} Wache(n)`],
     ];
 }
 
@@ -431,6 +495,93 @@ async function probe(arg) {
     } catch (e) {
         out.satz = Object.assign(out.satz || {}, { err: (e && e.stack) || String(e) });
     }
+    // ── V-k5-KLASSE: jede Op, deren verlangter Ort fehlt, scheitert benannt — an dem trockenen Ort der Satz-Probe ──
+    try {
+        const m = { gestartet: false, ops: {} };
+        out.ort = m;
+        const ort = out.satz && out.satz.trockenOrt;
+        if (!ort) throw new Error("kein Ort ohne Wasser im 84-m-Kreis (Vorbedingung)");
+        const pm = st.playerMesh.position;
+        pm.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
+        st.yaw = 0;
+        // Beobachtungs-Punkte: jeder Welt-Akt einer Op (er wird aufgezeichnet und läuft weiter); das Dorf wird nur
+        // aufgezeichnet (sein Bau ist ein Worker-Rundlauf — gezählt wird, ob eine Op es ohne Ort gründen will).
+        const akte = [];
+        const ortVon = {
+            spawnCreatureAt: (a) => ({ x: a[0], z: a[2] }),
+            spawnArchitecture: (a) => a[1] || null,
+            spawnIslandAt: (a) => ({ x: a[0], z: a[2] }),
+            spawnUfoAt: (a) => ({ x: a[0], z: a[2] }),
+            spawnSettlement: (a) => (a[0] && a[0].position) || null,
+            _depositLife: (a) => ({ x: a[0], z: a[1] }),
+            _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
+        };
+        const alt = {};
+        for (const nm of Object.keys(ortVon)) {
+            alt[nm] = r[nm];
+            r[nm] = function (...a) {
+                const p = ortVon[nm](a);
+                akte.push({ nm, abstand: p && Number.isFinite(p.x) ? +Math.hypot(p.x - pm.x, p.z - pm.z).toFixed(1) : null });
+                return nm === "spawnSettlement" ? Promise.resolve(null) : alt[nm].apply(this, a);
+            };
+        }
+        const NW = ["near_water", 60];
+        const baum = Object.keys(st.blueprints).find((k) => k.startsWith("baum_")) || "baum_eiche";
+        const OPS = [
+            ["spawn_creature", NW, 2, "happy"],
+            ["spawn_tree", NW, 2, "eiche", 5],
+            ["spawn_studio", "eiche", NW, 3, 5],
+            ["spawn_island", NW, 10, 5, 12],
+            ["spawn_ufo", NW],
+            ["spawn_village", NW, 7],
+            ["spawn_temple", NW, 7],
+            ["spawn_waterfall", NW, 7],
+            ["spawn_blueprint", baum, NW, 7],
+            ["spawn_fractal", NW, "temple", 0, 0.5, 7],
+            ["deposit_life", NW, 0.5],
+            ["deposit_emotion", "joy", 0.5, NW],
+        ];
+        const lauf = (prog) => {
+            const a0 = akte.length;
+            const res = r.dslRun(prog, { source: "test" });
+            const ohne = res.log.find((e) => e.event === "invalid_position");
+            const wurf = res.log.find((e) => /exception/.test(e.event));
+            return {
+                ok: res.ok,
+                grund: ohne ? ohne.grund || null : null,
+                effekt: ohne ? ohne.effekt || null : null,
+                fehler: wurf ? `${wurf.event}: ${wurf.message}` : null,
+                kalt: res.log.some((e) => e.event === "skipped"),
+                akte: akte.slice(a0),
+            };
+        };
+        try {
+            for (const prog of OPS) m.ops[prog[0]] = lauf(prog);
+            // Die chain bricht genau die Op ohne Ort ab, läuft weiter (der Feld-Akt beim Spieler) und meldet ehrlich.
+            m.chain = lauf(["chain", ["spawn_tree", NW, 1, "eiche", 5], ["deposit_life", ["at_player"], 0.1]]);
+        } finally {
+            for (const nm of Object.keys(alt)) r[nm] = alt[nm];
+        }
+        // Das Dorf selbst: ein verlangter, fehlender Ort gründet nie beim Spieler (der Worker-Auftrag ist der
+        // Beobachtungs-Punkt; die Absage kommt vor ihm).
+        const anfrage = r._foundryRequestSettlement;
+        let auftraege = 0;
+        r._foundryRequestSettlement = function () {
+            auftraege++;
+            return Promise.resolve(null);
+        };
+        m.buchWarm = !!(r._foundry && r._foundry.ready && r._foundry.recipes);
+        try {
+            m.dorfOhneOrt = await r.spawnSettlement({ position: null, seed: 7, nH: 9 });
+        } finally {
+            r._foundryRequestSettlement = anfrage;
+        }
+        m.dorfAuftraege = auftraege;
+        m.radius = NW[1];
+        m.gestartet = true;
+    } catch (e) {
+        out.ort = Object.assign(out.ort || {}, { err: (e && e.stack) || String(e) });
+    }
     // ── V-D3: die Werkstatt-Vorschau ──
     try {
         const m = { gestartet: false };
@@ -594,13 +745,44 @@ async function probe(arg) {
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const vorStand = quelle
             .replace("const renderResult = this._buehneRender(p.renderer, p.scene, p.camera);", "const renderResult = p.renderer.render(p.scene, p.camera);")
-            .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "");
+            .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "")
+            // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
+            .replace("            throw fehler;\n", "            return null;\n")
+            .replace(
+                "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
+                "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"
+            );
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert) → W1 W2 feuern",
-            rot.filter((w) => !w[1]).length === 2,
+            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache) → W1 W2 W3 W4 feuern",
+            rot.filter((w) => !w[1]).length === 4,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
+        // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
+        const opGesund = (op) => ({ ok: false, grund: "kein Wasser im Umkreis von 60 m", effekt: op, fehler: null, kalt: false, akte: [] });
+        const gesundO = {
+            gestartet: true,
+            radius: 60,
+            ops: Object.fromEntries(ORT_OPS.map((op) => [op, opGesund(op)])),
+            chain: { ok: false, grund: "kein Wasser im Umkreis von 60 m", effekt: "spawn_tree", fehler: null, akte: [{ nm: "_depositLife", abstand: 0 }] },
+            buchWarm: true,
+            dorfAuftraege: 0,
+            dorfOhneOrt: null,
+        };
+        check("Selbst-Test V-k5-Klasse: gesund == 0 Täter", ortVerdict(gesundO).length === 0, ortVerdict(gesundO).join(" · "));
+        const mitOp = (op, e) => Object.assign({}, gesundO, { ops: Object.assign({}, gesundO.ops, { [op]: Object.assign(opGesund(op), e) }) });
+        for (const [name, bruch, soll] of [
+            ["TypeError (6b988a07)", mitOp("spawn_creature", { fehler: "op_exception: Cannot read properties of null (reading 'x')", grund: null, effekt: null }), "spawn_creature: wirft"],
+            ["Dorf am Spieler-Ort über die Op (6b988a07)", mitOp("spawn_village", { akte: [{ nm: "spawnSettlement", abstand: null }] }), "spawn_village: wirkt ohne Ort"],
+            ["still am Spieler-Ort (cf9a07ba)", mitOp("spawn_studio", { ok: true, grund: null, effekt: null, akte: [{ nm: "spawnArchitecture", abstand: 4.1 }] }), "spawn_studio: wirkt ohne Ort"],
+            ["Absage ohne Grund", mitOp("deposit_life", { grund: null }), "deposit_life: scheitert nicht benannt"],
+            ["chain meldet Erfolg", Object.assign({}, gesundO, { chain: Object.assign({}, gesundO.chain, { ok: true }) }), "chain: meldet Erfolg"],
+            ["chain bricht ganz ab", Object.assign({}, gesundO, { chain: Object.assign({}, gesundO.chain, { akte: [] }) }), "chain: bricht ganz ab"],
+            ["spawnSettlement ohne Ort gründet beim Spieler", Object.assign({}, gesundO, { dorfAuftraege: 1 }), "dorf ohne Ort gründet"],
+        ]) {
+            const v = ortVerdict(bruch);
+            check(`Selbst-Test V-k5-Klasse: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -674,6 +856,19 @@ async function probe(arg) {
         const v = urteil(mm);
         check(`${kurz} ${name}`, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
     }
+    console.log("=== V-k5-KLASSE (Q15) — DER VERLANGTE ORT, DEN ES NICHT GIBT ===");
+    const om = out.ort || {};
+    if (om.err) check("V-k5-Klasse Probe ohne Ausnahme", false, om.err.split("\n")[0]);
+    const vO = ortVerdict(om);
+    const opZeile = (op) => {
+        const e = (om.ops || {})[op] || {};
+        return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
+    };
+    check(
+        `V-k5-Klasse jede Op mit near_water ${om.radius || "?"} m in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)`,
+        vO.length === 0,
+        `${om.gestartet ? ORT_OPS.map(opZeile).join(" · ") + ` · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}` : "nicht gestartet"}${vO.length ? " — Täter: " + vO.join(", ") : ""}`
+    );
     console.log("=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===");
     const vm = out.vorschau || {};
     if (vm.err) check("V-D3 Probe ohne Ausnahme", false, vm.err.split("\n")[0]);
