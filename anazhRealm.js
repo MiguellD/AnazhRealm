@@ -93416,8 +93416,11 @@ AnazhRealm.TIER_FERN_DIST_SQ = 35 * 35;
 // wrap↔fern-Chokepoint in updateCreatures (gate:tier-fern).
 AnazhRealm.TIER_FERN_HYST = 0.1;
 // Mensch-Fern-Guss (Peers): jenseits trägt die Menschen-Gestalt den gemergten lod1-Guss (wenige
-// Draws, kein Rig-Tick). 40 m: die Schritt-Amplitude ist dort < 2.6 px, näher wäre sie sichtbar
-// eingefroren. Als Quadrat (distSq XZ); EIN Leser: _menschFernToggle.
+// Draws, kein Rig-Tick). 40 m ist eine KOSTEN-Grenze, keine Pixel-Grenze: gemessen 06.10. (Leben-Prüfung N-D7, echte
+// GPU) spreizen die Beine in 38 m noch 10,4–10,6 px bei 720 p (15,6 px bei 1080 p) — die „< 2,6 px" dieser Zeile
+// stimmten nie, unter 2,6 px fällt der Schwung erst jenseits ~150 m (720 p). Jenseits 44 m (Hysterese) gleitet ein
+// Peer als Standbild, bis die Grobstufe die Gang-Phase trägt (Mensch-L1, synthese W3c/W3g). Als Quadrat (distSq XZ);
+// EIN Leser: _menschFernToggle.
 AnazhRealm.MENSCH_FERN_DIST_SQ = 40 * 40;
 
 // HARVEST_VOLUME_TO_UNITS — Volumen→Material-Einheiten für harvestArchitecture: k=4 →
