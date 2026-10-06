@@ -20074,6 +20074,24 @@ class AnazhRealm {
         return out.set((dx / d) * v, 0, (dz / d) * v);
     }
 
+    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der
+    // Hüllen-Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib, nie einen zweiten Kreis). Drei Achsen längs
+    // der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust: der Vierbeiner ist ~1,6 Hüft-Höhen lang — die Schnauze
+    // ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe Rumpf als Radius (0,3·L), die Höhe vom Fuß
+    // bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt (dieselbe L, an der das Gang- und das Steuer-Gesetz messen; die
+    // Art unterscheidet die Gestalt, nie ein Tag). `out` wird überschrieben (allokationsfrei im Takt).
+    _kreaturLeib(creature, L, out) {
+        const l = L > 0 ? L : this._kreaturHueftL(creature);
+        const o = out || {};
+        o.L = l;
+        o.radius = Math.max(0.12, 0.3 * l);
+        o.halb = 0.8 * l;
+        o.hoehe = Math.max(0.5, 1.8 * l);
+        o.fx = Math.sin(creature.rotation.y);
+        o.fz = Math.cos(creature.rotation.y);
+        return o;
+    }
+
     // DER KÖRPER DES TIERS GEGEN DIE HÜLLEN (Q11 + Lehre 25): jedes Tier — im Blick oder nicht — löst seine Achse gegen die
     // soliden Part-Boxen naher Bauwerke über den EINEN Kontakt-Löser des Spielers (_resolveCapsuleVsAABB; die Hülle selbst
     // ist das Gesetz von _populateBlockerAABBs). Die Nähe-Liste je Tier ist gecacht — neu nach 4 m Weg oder einer Sekunde
@@ -20100,17 +20118,17 @@ class AnazhRealm {
             nah = ud._huellenNah = { x: p.x, z: p.z, t, liste };
         }
         if (!nah.liste.length) return;
-        // DER LEIB als drei Achsen längs seiner Gier — Rumpf-Mitte, Brust und Becken bei ±0,8·L (der Vierbeiner ist rund
-        // 1,6 Hüft-Höhen lang: die Schnauze ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe
-        // Rumpf als Radius (0,3·L), Höhe aus der Hüfte. Eine Achse, die der Löser schiebt, schiebt den ganzen Leib.
-        const radius = Math.max(0.12, 0.3 * L);
-        const halb = 0.8 * L;
+        // DER LEIB (_kreaturLeib, die EINE benannte Größe): drei Achsen längs der Gier, je Achse sein Radius, die Höhe vom
+        // Fuß bis zum Kopf. Eine Achse, die der Löser schiebt, schiebt den ganzen Leib.
+        const leib = this._kreaturLeib(creature, L, this._kreaturLeibHuelle || (this._kreaturLeibHuelle = {}));
+        const radius = leib.radius;
+        const halb = leib.halb;
         const feetY = p.y;
-        const headY = feetY + Math.max(0.5, 1.8 * L);
+        const headY = feetY + leib.hoehe;
         const k = this._kreaturKontakt || (this._kreaturKontakt = { nx: 0, nz: 0 });
         const q = this._kreaturAchse || (this._kreaturAchse = { x: 0, z: 0 });
-        const fx = Math.sin(creature.rotation.y),
-            fz = Math.cos(creature.rotation.y);
+        const fx = leib.fx,
+            fz = leib.fz;
         // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
         // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
         // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).

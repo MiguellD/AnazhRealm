@@ -17,7 +17,8 @@
 //   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
 //   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Hirsch nicht),
 //             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
-//   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand
+//   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand; der Kontakt liest den EINEN Leib des Tiers
+//             (_kreaturLeib, D2), seine vordere Achse bleibt vor dem Stein
 //   nacht     (Q11) die Ruhe-Aktion hält den Leib an (Kritik §2.3: 81 % bewegt während ruhen)
 //   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
@@ -865,16 +866,75 @@ async function kreaturProben(r, T, opts) {
         const c = tier({ x: mx + 0.3, y: wo.y, z: mz - 8 }, "wesen");
         ruhig(c);
         r.assignCreatureTask(c, "follow_player", {}, { silent: true });
+        // DER LEIB DES TIERS (D2): EINE benannte Größe (_kreaturLeib), die der Hüllen-Kontakt liest — gezählt, durchgereicht.
+        // Die Probe selbst liest den Leib am Prototyp (zählt nicht mit) und misst, wie weit die vordere Leib-Achse (die
+        // Schnauze) vor dem Stein bleibt.
+        let leibRufe = 0;
+        const leibVon = typeof A.prototype._kreaturLeib === "function" ? A.prototype._kreaturLeib : null;
+        if (typeof r._kreaturLeib === "function")
+            decke(
+                restore,
+                "_kreaturLeib",
+                (alt) =>
+                    function (...a) {
+                        leibRufe++;
+                        return alt.apply(this, a);
+                    }
+            );
+        // Der Zwilling: der Kontakt rechnet einen eigenen Leib (dieselben Zahlen, aber nicht die benannte Größe).
+        if (taeter === "hindernis-leib")
+            decke(
+                restore,
+                "_kreaturHuellenKontakt",
+                (alt) =>
+                    function (...a) {
+                        const spion = this._kreaturLeib;
+                        this._kreaturLeib = (cr, l, o) => {
+                            const q = o || {};
+                            q.L = l;
+                            q.radius = Math.max(0.12, 0.3 * l);
+                            q.halb = 0.8 * l;
+                            q.hoehe = Math.max(0.5, 1.8 * l);
+                            q.fx = Math.sin(cr.rotation.y);
+                            q.fz = Math.cos(cr.rotation.y);
+                            return q;
+                        };
+                        try {
+                            return alt.apply(this, a);
+                        } finally {
+                            this._kreaturLeib = spion;
+                        }
+                    }
+            );
         let drin = 0,
-            durch = false;
+            durch = false,
+            vornMin = null;
         const N2 = 900;
         for (let k = 0; k < N2; k++) {
             takt(1 / 60);
             const p = c.position;
             if (p.x > box.minX && p.x < box.maxX && p.z > box.minZ && p.z < box.maxZ) drin++;
             if (p.z > box.maxZ + 1) durch = true;
+            if (leibVon) {
+                const lb = leibVon.call(r, c);
+                const qx = p.x + lb.fx * lb.halb,
+                    qz = p.z + lb.fz * lb.halb;
+                const ax = Math.max(box.minX - qx, 0, qx - box.maxX),
+                    az = Math.max(box.minZ - qz, 0, qz - box.maxZ);
+                const ab =
+                    ax > 0 || az > 0
+                        ? Math.hypot(ax, az)
+                        : -Math.min(qx - box.minX, box.maxX - qx, qz - box.minZ, box.maxZ - qz);
+                if (vornMin === null || ab < vornMin) vornMin = ab;
+            }
         }
-        return Object.assign(kosten, { wandFrames: drin, wandAnteil: +(drin / N2).toFixed(3), angekommen: durch });
+        return Object.assign(kosten, {
+            wandFrames: drin,
+            wandAnteil: +(drin / N2).toFixed(3),
+            angekommen: durch,
+            leibRufe,
+            vornMinM: vornMin === null ? null : +vornMin.toFixed(3),
+        });
     });
 
     // ── nacht (Q11, Kritik §2.3): die Ruhe-Aktion hält den Leib an ──
@@ -1152,6 +1212,11 @@ function urteil(name, z) {
     if (name === "hindernis") {
         soll(z.strahlenJeTakt === 0, `${z.strahlenJeTakt} Feld-Strahlen je Takt (${z.dichteJeTakt} Dichte-Proben)`);
         soll(z.wandFrames === 0, `${z.wandFrames} Frames in der Wand (der Folger läuft durch den Stein)`);
+        soll(z.leibRufe > 0, `der Hüllen-Kontakt liest keinen benannten Leib (_kreaturLeib: ${z.leibRufe} Rufe)`);
+        soll(
+            z.vornMinM !== null && z.vornMinM > 0,
+            `die vordere Leib-Achse (Schnauze) ${z.vornMinM === null ? "ohne Leib" : -z.vornMinM + " m im Stein"}`
+        );
     }
     if (name === "nacht") {
         soll(z.ruhFrames >= 300, `nur ${z.ruhFrames} Ruhe-Frames (Probe vakuös)`);
@@ -1197,7 +1262,10 @@ const TAETER = {
         ["herde", /am Blick/],
         ["herde-artfremd", /Kohäsion artfremd/],
     ],
-    hindernis: [["hindernis", /Feld-Strahlen/]],
+    hindernis: [
+        ["hindernis", /Feld-Strahlen/],
+        ["hindernis-leib", /benannten Leib/],
+    ],
     nacht: [["nacht", /bewegt während ruhen/]],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
