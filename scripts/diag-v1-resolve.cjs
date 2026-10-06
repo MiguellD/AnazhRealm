@@ -44,6 +44,21 @@ const server = http.createServer((req, res) => {
             res[t] = { exists: !!bp[t], formClass: bp[t] && bp[t]._formClass, preset: resolve(t) };
         }
         res._umzug = r.constructor.BAUPLAN_UMZUG ? r.constructor.BAUPLAN_UMZUG.glut_var3 : null;
+        // DAS WORT (Werkstatt · Chat · KI): die Ausstattung löst über ihren Gestalt-Träger auf; ein Tor-Wort löst nur über
+        // sein Präfix — fehlt der tor_-Klon, fällt es nie auf das welt_-Portal derselben Gestalt (ein echtes Tor mit Trigger).
+        const wort = (w) => (r._studioBlueprintForWord ? r._studioBlueprintForWord(w) : "nomethod");
+        res._wort = { feuerstelle: wort("feuerstelle"), marktstand: wort("marktstand"), brunnen: wort("brunnen") };
+        const portal = Object.keys(bp).find((n) => bp[n] && bp[n].role === "portal" && typeof bp[n].studioGestalt === "string");
+        if (portal) {
+            const g = bp[portal].studioGestalt;
+            const klon = bp["tor_" + g];
+            delete bp["tor_" + g];
+            try {
+                res._torWort = { gestalt: g, portal, ziel: wort(g) };
+            } finally {
+                if (klon) bp["tor_" + g] = klon;
+            }
+        }
         // V2 — WERKSTATT: der Rezept-Regler klassifiziert die Repräsentanten (Karte je Art) korrekt +
         // der `_var0`-Suffix löst über `_foundryPresetForEntry` auf → die Vorschau zeigt das Studio-Asset.
         res._workshop = {
@@ -79,6 +94,16 @@ const server = http.createServer((req, res) => {
         const ok = out._umzug === "glutbrunnen";
         console.log(`  ${ok ? "✅" : "❌"} Umzug glut_var3 -> ${out._umzug}`);
         if (!ok) fails.push("umzug");
+    }
+    {
+        const w = out._wort || {};
+        const ok = w.feuerstelle === "glutbrunnen" && w.marktstand === "marktstand_dorf" && w.brunnen === "brunnen_dorf";
+        console.log(`  ${ok ? "✅" : "❌"} Wort feuerstelle/marktstand/brunnen -> ${w.feuerstelle}/${w.marktstand}/${w.brunnen}`);
+        if (!ok) fails.push("wort-ausstattung");
+        const t = out._torWort;
+        const tok = !!t && t.ziel !== t.portal && !/^welt_/.test(String(t.ziel));
+        console.log(`  ${tok ? "✅" : "❌"} Tor-Wort ${t ? t.gestalt : "?"} ohne tor_-Klon -> ${t ? t.ziel : "kein Portal mit Gestalt"} (nie ${t ? t.portal : "?"})`);
+        if (!tok) fails.push("tor-wort");
     }
     // Kontroll-Referenz: die benannten Arten bleiben UNVERÄNDERT.
     check("kristall_geode", (r) => r.preset === "kristalle", "Regression");

@@ -67560,8 +67560,10 @@ class AnazhRealm {
             const pol = rec && KP[rec.kind];
             if (pol && pol.prefix && bps[pol.prefix + t]) return pol.prefix + t;
             // Ein Rezept ohne eigene Domänen-Zeile, dessen Gestalt ein Bauplan trägt (studioGestalt — die Ausstattung:
-            // feuerstelle → glutbrunnen, marktstand → marktstand_dorf, brunnen → brunnen_dorf): der Bauplan.
-            if (rec) {
+            // feuerstelle → glutbrunnen, marktstand → marktstand_dorf, brunnen → brunnen_dorf): der Bauplan. Eine Art MIT
+            // Domänen-Zeile (Tor, Fahrzeug) löst nur über ihr Präfix — ein Tor-Wort fällt nie auf das welt_-Portal, das
+            // dieselbe Gestalt trägt (es wäre ein echtes Tor mit Trigger, kein Bauwerk).
+            if (rec && !(pol && pol.prefix)) {
                 const traeger = Object.keys(bps)
                     .filter((n) => bps[n] && bps[n].studioGestalt === t && !bps[n]._foundryAutoSpecies)
                     .sort();
