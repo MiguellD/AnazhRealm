@@ -159,6 +159,11 @@ const FORBIDDEN = [
     // ohne Gesetz-Grund (Welle L, W-B1/W-kD11).
     { token: "aShore", fiel: "Welle L Q7 — die tote Ufer-Spalte; der Saum ist der optische Weg" },
     { token: "riverFoam", fiel: "Welle L Q7 — der Strähnen-Schaum ohne Gesetz-Grund (W-B1)" },
+    // Der Körper im Wasser liest EINE Wahrheit (`_koerperWasser`: die Lauf-Fläche des Gesetzes über seinem Grund + die
+    // Abweichung des Live-Automaten), nie das 1,8-m-Zell-Dach; die Strömung ist das Gesetz (wellen.adv) und koppelt additiv.
+    { token: "_playerWaterContext", fiel: "Welle L Q6 — das Zell-Dach als Körper-Spiegel (W-K2)" },
+    { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Host-Strömung 3,2 m/s neben dem Gesetz 1,2 (W-kD4)" },
+    { token: "FLOW_ADVECT_K", fiel: "Welle L Q6 — die Schlupf-Kopplung des Spielers neben der additiven des Tiers" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.

@@ -20756,19 +20756,18 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             // front-gecullt) + keine Unterseiten-Dreiecke (ny>0.2 am Build verworfen) — sonst „Wasser auf
             // der falschen Seite des Bodens“. Über ALLE Iso-Meshes gezählt.
             const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
-            // Der Tauch-Pass macht das GETEILTE Material DoubleSide, solange playerEyesUnderwater — korrekt,
-            // aber nicht der Oberflächen-Vertrag. Darum deterministisch den OBERFLÄCHEN-Zustand prüfen
-            // (ruhende Fläche = BackSide), zustands-neutral mit Restore — sonst kippt es mit der
-            // Spieler-Position.
+            // Der Tauch-Pass macht das GETEILTE Material DoubleSide, solange die KAMERA unter Wasser liegt
+            // (`_applyDayNightToScene` fragt `_koerperWasser` an der Kamera) — korrekt, aber nicht der
+            // Oberflächen-Vertrag. Darum deterministisch den OBERFLÄCHEN-Zustand prüfen (überall trocken = BackSide),
+            // zustands-neutral mit Restore — sonst kippt es mit der Kamera-Position.
             out.waterMatBackSide = (() => {
                 if (!r.state.hydroSurfaceMaterial) return false;
-                const savedDive = r.state.playerEyesUnderwater;
                 try {
-                    r.state.playerEyesUnderwater = false;
+                    r._koerperWasser = () => -Infinity;
                     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
                     return r.state.hydroSurfaceMaterial.side === BACK;
                 } finally {
-                    r.state.playerEyesUnderwater = savedDive;
+                    delete r._koerperWasser;
                     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
                 }
             })();
@@ -23240,24 +23239,24 @@ async function checkBandPhasenBF(ctx) {
             const src = r._specRenderBody ? window.__codeOf(r._specRenderBody) : "";
             return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
         })();
-        // B5-UNTERWASSER-PASS: dritter Konsument des playerEyesUnderwater-Flags (neben Tauch-Fog + Tint) —
-        // getaucht ist das geteilte Wasser-Material DoubleSide (Decke von unten sichtbar), aufgetaucht
-        // BackSide. Behavioral mit Restore (zustands-neutral).
+        // B5-UNTERWASSER-PASS: Konsument des Kamera-Mediums (neben der Unterwasser-Luft) — liegt die KAMERA unter
+        // dem Spiegel (`_koerperWasser` an der Kamera, Welle L Q6), ist das geteilte Wasser-Material DoubleSide (Decke von
+        // unten sichtbar), darüber BackSide. Behavioral mit Restore (zustands-neutral): der Spiegel wird einmal über,
+        // einmal unter die Kamera gelegt.
         out.b5Underwater = (() => {
             if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
             const mat = r._ensureHydroSurfaceMaterial();
             if (!mat) return false;
-            const savedFlag = r.state.playerEyesUnderwater;
             try {
-                r.state.playerEyesUnderwater = true;
+                r._koerperWasser = () => Infinity;
                 r._applyDayNightToScene();
                 const diveSide = mat.side;
-                r.state.playerEyesUnderwater = false;
+                r._koerperWasser = () => -Infinity;
                 r._applyDayNightToScene();
                 const surfSide = mat.side;
                 return diveSide === THREE.DoubleSide && surfSide === THREE.BackSide;
             } finally {
-                r.state.playerEyesUnderwater = savedFlag;
+                delete r._koerperWasser;
                 r._applyDayNightToScene();
             }
         })();
@@ -38572,10 +38571,13 @@ async function checkBandWFFluss(ctx) {
         const dryX = 99999,
             dryZ = 99999;
         out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
-        // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe): die Sheet-Mathe in
-        // `_computeWaterSheetData` (Main + Worker geteilt), der Tauch-Trigger in `_stepCharacter`.
+        // (2) die Konsumenten lesen die geglättete Fläche (Source-Probe): die Sheet-Mathe in
+        // `_computeWaterSheetData` (Main + Worker geteilt) und der Körper über die EINE Wasser-Wahrheit am Körper
+        // (`_stepCharacter` → `_koerperWasser` → `_waterRunSurfaceAt`, Welle L Q6).
         out.sheetReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._computeWaterSheetData));
-        out.diveReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._stepCharacter));
+        out.diveReadsRun =
+            /_koerperWasser/.test(window.__codeOf(r._stepCharacter)) &&
+            /_waterRunSurfaceAt/.test(window.__codeOf(r._koerperWasser));
         // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
         // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
         out.centernessField = /centerness/.test(window.__codeOf(r._hydroRiverAt));
@@ -41516,10 +41518,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
                     const src = window.__codeOf(fn);
-                    if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
-                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, Fallback 0.55) statt eines Literals:
-                    // if-Block `playerUnderwater) { … currentSpeed *= … speedMul … }`.
-                    if (/playerUnderwater\)\s*\{[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
+                    // Welle L Q6: der Schwimm-Zustand heißt `schwimmt` (die Säule über dem Grund übersteigt die Brustkorb-Linie).
+                    if (/playerUnderwater\s*=\s*(?:submerged|schwimmt)/.test(src)) buoy = true;
+                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, fail-closed, kein Literal-Rückfall):
+                    // `playerUnderwater) … currentSpeed *= … speedMul`.
+                    if (/playerUnderwater\)\s*\{?[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
                         speedCut = true;
                 } catch {
                     /* skip */
@@ -41628,7 +41631,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
                     if (
-                        /playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
+                        /playerEyesUnderwater\s*=\s*(?:(?:submerged|schwimmt)\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
                             window.__codeOf(fn)
                         )
                     )
@@ -41639,12 +41642,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             }
             out.eyesFlagComputed = found;
         }
-        // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
-        // mehr playerUnderwater. V9.56-i: die Hemi+Luft-Phase lebt jetzt
-        // im _dayNightApplyHemiUndLuft-Helfer (Source-Pattern wandert mit).
+        // Die Unterwasser-Luft folgt dem Medium der KAMERA (Welle L Q6, W-L-d): `_koerperWasser` an der Kamera, nie
+        // die Augen des Körpers. V9.56-i: die Hemi+Luft-Phase lebt im _dayNightApplyHemiUndLuft-Helfer.
         {
             const src = window.__codeOf(r._dayNightApplyHemiUndLuft);
-            out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /unterwasserM/.test(src);
+            out.tintUsesEyesFlag =
+                /kameraUnterWasser/.test(src) &&
+                /_koerperWasser\(cam\.position\.x/.test(src) &&
+                /unterwasserM/.test(src) &&
+                !/playerEyesUnderwater/.test(src);
         }
 
         // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
@@ -41672,7 +41678,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v832Results && !v832Results.error) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
-        check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
+        check("V8.32 → Welle L: die Unterwasser-Luft folgt dem Kamera-Medium (nie den Augen des Körpers)", v832Results.tintUsesEyesFlag);
         check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung", v832Results.waterFresnel);
         check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
         check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
@@ -42224,7 +42230,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         //    Terrain) und die KILLPLANE fängt einen echten Durchfall — beide Stücke müssen da sein.
         {
             const src = srcOf("_stepCharacter");
-            out.waterGate = /submerged/.test(src) && /killPlaneY/.test(src);
+            out.waterGate = /(?:submerged|schwimmt)/.test(src) && /killPlaneY/.test(src);
         }
 
         // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.

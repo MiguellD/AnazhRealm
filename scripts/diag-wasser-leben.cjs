@@ -81,6 +81,18 @@ function urteil(b) {
             if (!e.landung) v.push(`K4 STUMM: das Eintauchen mit ${e.eintauchVy} m/s löst keine Landung aus`);
             else if (e.landung.material !== "wasser")
                 v.push(`K4 STUMM: die Landung klingt „${e.landung.material}" statt „wasser"`);
+            const m = k.medium;
+            if (!m) v.push("K5 MEDIUM: die Luft-Probe lief nicht (keine Kamera oder Luft)");
+            else {
+                if (m.kameraUnten !== true)
+                    v.push(
+                        "K5 MEDIUM: die Kamera 3 m unter dem Spiegel sieht klare Luft (die Luft folgt den Augen des Körpers)"
+                    );
+                if (m.kameraOben !== false)
+                    v.push(
+                        "K5 MEDIUM: die Kamera 10 m über dem Spiegel sieht Unterwasser (die Augen des Körpers sind getaucht)"
+                    );
+            }
         }
     }
     if (b.bild) {
@@ -132,6 +144,7 @@ function selbsttest() {
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
             kraulen: { mps: 0.97, soll: 0.977, anteil: 0.99 },
             eintauchen: { landung: { material: "wasser" }, eintauchVy: -10.6 },
+            medium: { kameraUnten: true, kameraOben: false },
         },
         bild: {
             uhr60: {
@@ -153,6 +166,7 @@ function selbsttest() {
         ["K3 KRIECHEN", (b) => Object.assign(b.koerper.kraulen, { mps: 0.141, anteil: 0.144 })],
         ["K4 STUMM", (b) => (b.koerper.eintauchen.landung = null)],
         ["K LEER", (b) => (b.koerper.hinein.schwimmFrames = 0)],
+        ["K5 MEDIUM", (b) => (b.koerper.medium = { kameraUnten: false, kameraOben: true })],
         ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],
         ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],

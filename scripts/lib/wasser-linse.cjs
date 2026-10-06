@@ -260,6 +260,30 @@ function wasserKoerper(opts) {
                 eintauchVy: R(vEin, 2),
                 tiefsterFussUnterSpiegel: R(spiegel - tiefsterFuss, 2),
             };
+            // (5) DAS MEDIUM DER KAMERA (W-L-d): die Luft geht in den Wasser-Modus (Höhen-Abnahme aus, H = 1e9), wenn die
+            // KAMERA unter dem Spiegel liegt — nie nach den Augen des Körpers. Zwei Fälle über der See-Mitte: (a) Kamera
+            // 3 m unter dem Spiegel, die Augen des Körpers in der Luft; (b) Kamera 10 m darüber, die Augen getaucht.
+            const cam = st.camera;
+            const luft = typeof r._luftEnsure === "function" ? r._luftEnsure() : null;
+            if (cam && luft && luft.U && luft.U.hoehe) {
+                const camAlt = cam.position.clone();
+                const augenAlt = st.playerEyesUnderwater;
+                const modus = (camY, augen) => {
+                    cam.position.set(mx, camY, mz);
+                    cam.updateMatrixWorld(true);
+                    st.playerEyesUnderwater = augen;
+                    r._applyDayNightToScene();
+                    return luft.U.hoehe.value >= 1e8;
+                };
+                try {
+                    aus.medium = { kameraUnten: modus(spiegel - 3, false), kameraOben: modus(spiegel + 10, true) };
+                } finally {
+                    cam.position.copy(camAlt);
+                    cam.updateMatrixWorld(true);
+                    st.playerEyesUnderwater = augenAlt;
+                    r._applyDayNightToScene();
+                }
+            }
         } finally {
             st.keys = keysAlt || {};
             st.yaw = yawAlt;

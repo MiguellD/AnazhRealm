@@ -5,7 +5,8 @@
 // KOPPLUNG: die Welt fasst den Körper an — vier Fäden, eine Linse:
 //   F1 STRÖMUNG WIRKT: der Fluss-Flow (EINE Quelle `_waterFlowAt` aus
 //      `_hydroRiverAt`) advektiert SCHWIMMENDE Körper am EINEN Bewegungs-
-//      Chokepoint (`_stepCharacter` 4b, v += (flow−v)·k — TotK-Förderband).
+//      Chokepoint (`_stepCharacter` 4b, v_Welt = v_eigen + Strömung — der Körper
+//      bewegt sich relativ zum Wasser, EINE Kopplung für Spieler, Boot und Tier).
 //      Ruhender Schwimmer driftet > 0,5 m in 90 Ticks; Land-Läufer 0 m —
 //      auch wenn die Bank-Rampe Flow trägt; das geritten-schwimmende Boot
 //      (`_afloat`-Stempel) driftet mit.
@@ -115,7 +116,7 @@ const server = http.createServer((req, res) => {
                     this._z = c;
                 },
             });
-            const mkShim = (densityAt, waterCtxAt, riverAt) => {
+            const mkShim = (densityAt, spiegelAt, riverAt) => {
                 const shim = Object.create(r);
                 shim.state = {
                     playerMesh: { position: new THREE.Vector3(0, 0.5, 0) },
@@ -142,7 +143,8 @@ const server = http.createServer((req, res) => {
                 shim._mountedEntry = null;
                 shim._fieldDensityAt = (x, y, z) => densityAt(x, y, z);
                 shim._terrainColumnContext = () => null;
-                shim._playerWaterContext = (x, y, z) => waterCtxAt(x, y, z);
+                // die EINE Wasser-Wahrheit am Körper (der Spiegel oder −Infinity), synthetisch
+                shim._koerperWasser = (x, z, g) => spiegelAt(x, z, g);
                 shim._waterRunSurfaceAt = () => -Infinity;
                 shim._hydroRiverAt = (x, z) => riverAt(x, z);
                 return shim;
@@ -167,7 +169,7 @@ const server = http.createServer((req, res) => {
                 // (a) ruhender Schwimmer driftet stromab.
                 const sw = mkShim(
                     (x, y) => deepFloor(x, y),
-                    (x, y) => ({ submerged: y < 3, surfaceY: 3 }),
+                    () => 3,
                     riverX
                 );
                 runTicks(sw, 90, {}, 0);
@@ -179,7 +181,7 @@ const server = http.createServer((req, res) => {
                 //     (Bank-Fall) — er wird NIE geschoben.
                 const land = mkShim(
                     (x, y) => 0 - y,
-                    () => ({ submerged: false, surfaceY: null }),
+                    () => -Infinity,
                     riverX
                 );
                 runTicks(land, 90, {}, 0);
@@ -191,7 +193,7 @@ const server = http.createServer((req, res) => {
                 //     `_afloat`-Gate aus `_tickMountedMovement` trägt die Advektion).
                 const boat = mkShim(
                     (x, y) => deepFloor(x, y),
-                    () => ({ submerged: false, surfaceY: null }),
+                    () => -Infinity,
                     riverX
                 );
                 boat.state.player.mountedArch = 7;
@@ -215,12 +217,12 @@ const server = http.createServer((req, res) => {
                 o.zahlen.bootDrift = { x: bp.x, z: bp.z };
                 if (!(bp.x > 0.5)) fail(`F1c: schwimmendes Boot driftete nur ${bp.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
                 // Selbst-Test F1: Advektion deaktiviert (k → 0) → der Schwimmer MUSS stehen.
-                const deadStep = patchFn(r._stepCharacter, "_stepCharacter", "* AnazhRealm.FLOW_ADVECT_K", "* 0");
-                if (!deadStep) fail("F1-Selbsttest: FLOW_ADVECT_K-Marker nicht in `_stepCharacter` (Fix fehlt?)");
+                const deadStep = patchFn(r._stepCharacter, "_stepCharacter", "= fl.", "= 0 * fl.");
+                if (!deadStep) fail("F1-Selbsttest: Strömungs-Marker (stromX = fl.x) nicht in `_stepCharacter` (Fix fehlt?)");
                 else {
                     const sw2 = mkShim(
                         (x, y) => deepFloor(x, y),
-                        (x, y) => ({ submerged: y < 3, surfaceY: 3 }),
+                        () => 3,
                         riverX
                     );
                     runTicks(sw2, 90, {}, 0, deadStep);
@@ -239,7 +241,7 @@ const server = http.createServer((req, res) => {
             //     Wandfuß steil (Gradient mischt Boden+Wand über e=0.6) und der
             //     PRE-EXISTENTE Slope-Penalty (Input × 0.2) verdünnte die Klip-Messung.
             const wallDens = (x, y) => Math.max(0 - y, Math.min((x - 8) * 2, (y - 0.25) * 4));
-            const dryCtx = () => ({ submerged: false, surfaceY: null });
+            const dryCtx = () => -Infinity;
             const noRiver = () => null;
             const mkWallShim = () => {
                 const s = mkShim(wallDens, dryCtx, noRiver);
@@ -335,6 +337,7 @@ const server = http.createServer((req, res) => {
                 vec3: (a, b, c) => ({ x: N(val(a)), y: N(val(b)), z: N(val(c)) }),
                 positionWorld: null,
                 positionLocal: null,
+                positionGeometry: null,
             };
             const bendOff = () => ({ x: N(0), y: N(-1e6), z: N(0), w: N(0) });
             const mkWindShim = (dirX, dirZ, bend0) => {
@@ -352,6 +355,8 @@ const server = http.createServer((req, res) => {
             const evalSway = (shim, wx, wz, localY, fn) => {
                 mockTSL.positionWorld = { x: N(wx), y: N(0.5), z: N(wz) };
                 mockTSL.positionLocal = { x: N(0), y: N(localY), z: N(0) };
+                // Die Halm-Höhe liest die Geometrie-Position (Wurzel bei y = 0, W7 06.10.).
+                mockTSL.positionGeometry = { x: N(0), y: N(localY), z: N(0) };
                 const res = (fn || r._windSwayOffset).call(shim, mockTSL, {});
                 return { x: res.x.v, z: res.z.v };
             };

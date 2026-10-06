@@ -326,12 +326,14 @@ class AnazhRealm {
             // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
             // starField folgt der Kamera + dreht sidereal mit timeOfDay.
             starField: null,
-            // V8.29.1 — true wenn der Spieler unter waterLevel ist. Treibt
-            // Auftrieb (Physik-Loop), langsamere Bewegung + Unterwasser-Tint.
+            // true, solange der Spieler SCHWIMMT (die Säule über dem Grund übersteigt seine Brustkorb-Linie,
+            // `_stepCharacter`): Auftrieb, Kraul-Tempo, Schwimm-Pose; wer flacher watet, geht.
             playerUnderwater: false,
-            // true, wenn die AUGEN unter Wasser sind; treibt den Unterwasser-Tint — getrennt von
-            // playerUnderwater (Körper), damit der Tint nicht schon beim Waten/Schwimmen erscheint.
+            // true, wenn die AUGEN des Körpers unter Wasser sind (getaucht).
             playerEyesUnderwater: false,
+            // true, wenn die KAMERA unter dem Spiegel liegt — das Medium der Luft (Unterwasser-Trübung, Wasser-Decke
+            // von unten); geschrieben von `_applyDayNightToScene`.
+            kameraUnterWasser: false,
             // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert). Der Fog-Distanz-Regler fiel mit dem
             // Nebel (V18.530 — die Luft ist Physik, `LUFT`). (Cel-Stufen sind seit V18.236 gestrichen — PBR ist die EINE Wahrheit.)
             atmosphere: {
@@ -10108,10 +10110,10 @@ class AnazhRealm {
     }
 
     // Material am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er.
-    // `_waterLevelAt` = die EINE Wasser-Wahrheit (Ozean ∨ See ∨ Fluss), `_terrainMaterialAt` die EINE
-    // Boden-Wahrheit.
+    // `_koerperWasser` = die EINE Wasser-Wahrheit am Körper (der Fuß ist sein Grund), `_terrainMaterialAt` die
+    // EINE Boden-Wahrheit.
     _schrittMaterialAt(x, z, y) {
-        const w = this._waterLevelAt(x, z);
+        const w = this._koerperWasser(x, z, y);
         if (Number.isFinite(w) && y < w + 0.02) return "wasser";
         return this._terrainMaterialAt(x, z, y);
     }
@@ -16655,8 +16657,8 @@ class AnazhRealm {
         for (const row of MAP) {
             if (!row || !Number.isFinite(row.base) || !Number.isFinite(row.mul) || row.mul === 0) continue;
             if (row.axis === "khMul") {
-                const kh = Number.isFinite(g.kh) ? g.kh : 0.2125;
-                d[row.dial] = (kh / 0.2125 - row.base) / row.mul;
+                const kh = Number.isFinite(g.kh) ? g.kh : AnazhRealm.PLAYER_KH;
+                d[row.dial] = (kh / AnazhRealm.PLAYER_KH - row.base) / row.mul;
             } else if (Number.isFinite(g[row.axis])) {
                 d[row.dial] = (g[row.axis] - row.base) / row.mul;
             }
@@ -16673,7 +16675,7 @@ class AnazhRealm {
         // Animator/Equip/Werkstatt/Peers.
         if (typeof THREE === "undefined") return null;
         g = g || {};
-        const kh = g.kh || 0.2125;
+        const kh = g.kh || AnazhRealm.PLAYER_KH;
         const oy = g.oy || 0;
         const core = typeof window !== "undefined" && window.__koerperCore;
         if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function") {
@@ -16705,7 +16707,7 @@ class AnazhRealm {
             if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
         });
         AnazhRealm._ofenKlonRebind(klon, teile);
-        const f = (8 * 0.2125) / 6.0;
+        const f = (8 * AnazhRealm.PLAYER_KH) / 6.0;
         const wrap = new THREE.Group();
         wrap.scale.setScalar(f);
         wrap.position.y = oy;
@@ -31232,11 +31234,13 @@ class AnazhRealm {
         return L + (smoothed - L) * center;
     }
 
-    // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE FÜR BEWEGUNG ═══
-    // Strömungs-Geschwindigkeit (m/s) aus dem kanonischen Fluss-Flow von `_hydroRiverAt` für alle
-    // Bewegungs-Konsumenten (`_stepCharacter` · Kreaturen in `updateCreatures` · Boot via `_afloat`).
-    // Betrag = FLOW_ADVECT_SPEED × centerness (die Bank-Rampe schiebt nie). Reine Funktion der
-    // Welt-Position (Lockstep bit-treu); degenerierte Richtung (See) → null.
+    // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══
+    // Strömungs-Geschwindigkeit (m/s) aus dem kanonischen Fluss-Flow von `_hydroRiverAt` für jeden Leser: Körper
+    // (`_stepCharacter` · Kreaturen in `updateCreatures` · Boot via `_afloat`) und Klang (Hör-Ring). Betrag = die
+    // Strömung des Gesetzes (WASSER_GESETZ.wellen.adv, dieselbe Zeile, die das Wasser-Bild und der Studio-Bach tragen
+    // und an der die Fluss-Stimme geeicht ist) × centerness (die Bank-Rampe schiebt nie). Bis V18.531 schob der Körper
+    // mit 3,2 m/s (Host-Literal), das Bild floss mit 1,5/0,5/0,9 m/s. Reine Funktion der Welt-Position (Lockstep
+    // bit-treu); degenerierte Richtung (See) → null.
     _waterFlowAt(x, z) {
         const rv = this._hydroRiverAt(x, z);
         if (!rv) return null;
@@ -31244,7 +31248,9 @@ class AnazhRealm {
         if (!(m > 1e-6) || !Number.isFinite(m)) return null;
         const center = Number.isFinite(rv.centerness) ? Math.max(0, Math.min(1, rv.centerness)) : 0;
         if (center <= 0) return null;
-        const speed = AnazhRealm.FLOW_ADVECT_SPEED * center;
+        const WG =
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        const speed = WG.wellen.adv * center;
         return { x: (rv.flowX / m) * speed, z: (rv.flowZ / m) * speed };
     }
 
@@ -32552,49 +32558,39 @@ class AnazhRealm {
         return entry.waterCells[i + k * dim + j * dim * dim];
     }
 
-    // Wasser-Kontext am Spieler aus den 3D-Cells (für den Auftrieb): liegt eine Wasserzelle in der
-    // Körper-Höhe (yFeet .. yFeet+1.8), scannt er aufwärts bis zur ersten Nicht-Wasser-Zelle → der ECHTE
-    // Spiegel dieses Körpers (Bergsee statt Meeresspiegel). `{ submerged, surfaceY }` oder null (kein
-    // Chunk → Fallback `_waterLevelAt`, die EINE Wahrheit).
-    _playerWaterContext(x, yFeet, z) {
-        if (!this.state.voxelChunks) return null;
+    // DIE EINE WASSER-WAHRHEIT AM KÖRPER (Welle L, Q6): der Spiegel an (x, z), den das Auge sieht — die Lauf-Fläche des
+    // Gesetzes (`_waterRunSurfaceAt`) über dem Grund des Körpers (`grundY`: das Bett trägt die Rand-Füllung, wie im
+    // Zell-Sheet; unbekannt → nur der Kanal-Kern), dazu die Abweichung des Live-Automaten nach derselben Regel, die das
+    // Sheet zeichnet (oberste Zeile mit Pegel > 0,5 und ihr Füllgrad gegen das Flut-Dach). Spieler, Kreatur, Mitspieler
+    // und Schritt-Klang lesen nur sie. Bis V18.531 trug der Spieler das Dach der obersten Wasser-ZELLE (1,8-m-Raster: in
+    // Ruhe 0,47 m über dem See, im Fluss 0,17 m über der Lauf-Fläche), das Tier den rohen Spiegel, der Mitspieler den
+    // Meeresspiegel. Rückgabe: Spiegel (m) oder −Infinity (kein Wasser).
+    _koerperWasser(x, z, grundY) {
+        let spiegel = this._waterRunSurfaceAt(x, z, Number.isFinite(grundY) ? grundY : -Infinity);
+        const lvlMap = this.state.waterLevelCells;
+        if (!lvlMap || lvlMap.size === 0 || !this.state.voxelChunks) return spiegel;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
         const cx = Math.floor(x / span);
         const cz = Math.floor(z / span);
-        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || !entry.waterCells) return null;
-        const cells = entry.waterCells;
-        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const key = `${cx},${cz}`;
+        const lvl = lvlMap.get(key);
+        const entry = lvl ? this.state.voxelChunks.get(key) : null;
+        if (!entry || !entry.waterCells) return spiegel;
         const i = Math.floor((x - cx * span) / step);
         const k = Math.floor((z - cz * span) / step);
-        if (i < 0 || k < 0 || i >= dim || k >= dim) return null;
-        const WATER = AnazhRealm.CELL_STATE.WATER;
-        const SOLID = AnazhRealm.CELL_STATE.SOLID;
-        const colBase = i + k * dim;
-        const dimSq = dim * dim;
-        // Existiert ein LIVE-CA-Level, führt ES (Zelle trägt ab Level > 0.5): der Auftrieb folgt dem
-        // nachfließenden Wasser, nicht der instant re-gefluteten Zelle (Render + Physik lesen dieselbe
-        // Live-Schicht). Ohne Level-Eintrag: die statische Zell-Wahrheit.
-        const lvl = this.state.waterLevelCells ? this.state.waterLevelCells.get(`${cx},${cz}`) : null;
-        const isWaterJ = lvl
-            ? (j) => cells[colBase + j * dimSq] !== SOLID && lvl[colBase + j * dimSq] > 0.5
-            : (j) => cells[colBase + j * dimSq] === WATER;
-        // Körper-Spanne Füße..Kopf: eine Wasserzelle darin → im Wasser.
-        const jFeet = Math.max(0, Math.floor((yFeet - oy) / step));
-        const jHead = Math.min(dimY - 1, Math.floor((yFeet + 1.8 - oy) / step));
-        let bodyWaterJ = -1;
-        for (let j = jFeet; j <= jHead; j++) {
-            if (isWaterJ(j)) {
-                bodyWaterJ = j;
-                break;
-            }
+        if (i < 0 || k < 0 || i >= dim || k >= dim) return spiegel;
+        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const sc = this._caColumnScan(entry.waterCells, lvl, i + k * dim, dim * dim, dimY);
+        const liveRel = sc.liveTopJ >= 0 ? (sc.liveTopJ + sc.liveFrac) * step : -1;
+        if (sc.floodTopJ < 0) {
+            // Live-Wasser jenseits der Flut (ein gegrabener Kanal, ein Stau): sein Dach.
+            if (liveRel >= 0 && oy + liveRel > spiegel) spiegel = oy + liveRel;
+            return spiegel;
         }
-        if (bodyWaterJ < 0) return { submerged: false, surfaceY: null };
-        // Aufwärts bis zum Spiegel DIESES Wasserkörpers (erste Nicht-Wasser-Zelle).
-        let topJ = bodyWaterJ;
-        while (topJ + 1 < dimY && isWaterJ(topJ + 1)) topJ++;
-        const surfaceY = oy + (topJ + 1) * step; // Oberkante der obersten Wasserzelle
-        return { submerged: true, surfaceY };
+        if (!Number.isFinite(spiegel)) return spiegel;
+        let d = Math.max(0, liveRel) - (sc.floodTopJ + 1) * step;
+        if (d > -0.05 && d < 0.05) d = 0;
+        return spiegel + Math.max(-14, Math.min(4, d));
     }
 
     // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert
@@ -49588,7 +49584,7 @@ class AnazhRealm {
         group.rotation.order = "YXZ";
         // Der getragene Avatar IST der Studio-Baum (bauMensch + Gelenk-Gruppen-Rig). parts.{leftArm,
         // rightArm,…} → WRIST-/HÜFT-Bones (equipHeld hängt das Gerät an die Hand; Kinder folgen dem Bone).
-        const PLAYER_KH = 0.2125, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
+        const PLAYER_KH = AnazhRealm.PLAYER_KH, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
             FOOT_Y = -0.5; // Sohle ~0.5 unter dem Mesh-Ursprung
         // Gestalt-Dials aus dem Da-Vinci-Studio (LIVE über _koerperStudioDials); Dial→Genom über die
         // DATEN-Tabelle KOERPER_DIAL_MAP (khMul skaliert die EINE Kopfhöhen-Einheit). Hautton aus der
@@ -84873,12 +84869,20 @@ class AnazhRealm {
         const fogR = fogRn * (1 - dayAmt) + fdR * wDim * dayAmt;
         const fogG = fogGn * (1 - dayAmt) + fdG * wDim * dayAmt;
         const fogB = fogBn * (1 - dayAmt) + fdB * wDim * dayAmt;
+        // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
+        // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des
+        // Körpers in der Ufer-Flut lagen; die Verfolger-Kamera am Seegrund sah klare Luft). Die Kamera-Höhe ist ihr
+        // eigener Grund-Bezug: liegt sie unter dem Spiegel, der ihre Spalte füllt, ist sie im Wasser.
+        const cam = this.state.camera;
+        const kameraUnterWasser =
+            !!cam && cam.position.y < this._koerperWasser(cam.position.x, cam.position.z, cam.position.y);
+        this.state.kameraUnterWasser = kameraUnterWasser;
         const luft = this._luftEnsure();
         if (luft) {
             const L = AnazhRealm.LUFT;
             const U = luft.U;
             U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-            if (this.state.playerEyesUnderwater) {
+            if (kameraUnterWasser) {
                 // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), keine Sonnen-Keule.
                 U.farbe.value.setRGB(0.06, 0.19, 0.32);
                 U.sonneFarbe.value.copy(U.farbe.value);
@@ -84914,11 +84918,11 @@ class AnazhRealm {
             au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
         }
         // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
-        // fehlte die Decke. Beim Tauchen (playerEyesUnderwater) wird das EINE geteilte Wasser-Material
+        // fehlte die Decke. Liegt die Kamera unter Wasser, wird das EINE geteilte Wasser-Material
         // DoubleSide, beim Auftauchen zurück BackSide (von oben unverändert).
         const hsm = this.state.hydroSurfaceMaterial;
         if (hsm) {
-            const wantSide = this.state.playerEyesUnderwater ? THREE.DoubleSide : THREE.BackSide;
+            const wantSide = kameraUnterWasser ? THREE.DoubleSide : THREE.BackSide;
             if (hsm.side !== wantSide) hsm.side = wantSide;
         }
     }
@@ -87270,13 +87274,14 @@ class AnazhRealm {
     }
 
     // Vertikale Schwimm-Geschwindigkeit, reine Funktion (testbar): Shift taucht ab, Space hebt, ohne
-    // Eingabe treibt der Auftrieb sanft zur Oberfläche. currentVy (m/s), depth = Tiefe unter dem
-    // Wasser-Niveau (m), dive/rise = Tasten-Flags → Ziel-vy.
+    // Eingabe trägt der Auftrieb den Körper sanft an seine Wasserlinie. currentVy (m/s), depth = Tiefe unter
+    // der Wasserlinie des Körpers (m; negativ = darüber — der Körper sinkt zurück), dive/rise = Tasten-Flags
+    // → Ziel-vy.
     _swimVerticalVelocity(currentVy, depth, dive, rise) {
         // SCHWIMM-HEIMAT — die Zahlen wohnen im koerperstudio-Gesetzbuch
-        // (fx.bewegung.schwimmen, _schwimmGesetz fail-soft byte-gleich).
+        // (fx.bewegung.schwimmen, _schwimmGesetz fail-closed).
         const S = AnazhRealm._schwimmGesetz();
-        const d = Math.max(0, Math.min(S.tiefeCap, depth));
+        const d = Math.max(-S.tiefeCap, Math.min(S.tiefeCap, depth));
         if (dive) {
             // Abtauchen: Ziel-Sinkgeschwindigkeit −tauchV m/s, lerp-geglättet —
             // überwindet den Auftrieb, der Spieler sinkt kontrolliert.
@@ -87948,31 +87953,27 @@ class AnazhRealm {
         if (bvy > s._fieldVy + 0.5) s._fieldVy = bvy; // frischer Sprung-Impuls
         let vy = s._fieldVy;
 
-        // 3. Wasser-Kontext (dieselbe EINE Quelle wie der Ammo-Pfad) → Auftrieb/Schwimmen.
-        const wctx = this._playerWaterContext(mesh.position.x, mesh.position.y, mesh.position.z);
-        let submerged = false;
-        let waterY = -Infinity;
-        if (wctx !== null) {
-            submerged = wctx.submerged;
-            waterY = submerged ? wctx.surfaceY : -Infinity;
-        } else if (typeof s.waterLevel === "number") {
-            const eff = this._waterLevelAt(mesh.position.x, mesh.position.z);
-            waterY = typeof eff === "number" ? eff : s.waterLevel;
-            submerged = mesh.position.y < waterY;
-        }
-        s.playerUnderwater = submerged;
-        if (submerged) {
-            let eyeWaterY = waterY;
-            const runSurf = this._waterRunSurfaceAt(mesh.position.x, mesh.position.z);
-            if (runSurf > -Infinity && Math.abs(runSurf - waterY) <= 1.8) eyeWaterY = runSurf;
-            s.playerEyesUnderwater = mesh.position.y + 1.6 < eyeWaterY;
-        } else {
-            s.playerEyesUnderwater = false;
-        }
+        // 3. WASSER — die EINE Wasser-Wahrheit am Körper (`_koerperWasser`: der Spiegel, den das Auge sieht, über dem
+        //    Grund unter dem Körper). Der Körper liegt nach seiner GESTALT im Wasser: er SCHWIMMT, sobald die Säule über
+        //    dem Grund seine Brustkorb-Linie übersteigt (`_schwimmBrustM`, koerper-core) — der Auftrieb hält dann die
+        //    Wasserlinie am Brustkorb; flacher WATET er (geerdet, der Fuß im Wasser, der Schritt platscht). Schwimmen ist
+        //    ein eigener Zustand: nicht Luft (Beschleunigung, Landung) und nie vom Boden-Snap gegriffen.
+        const feet0 = mesh.position.y - footDrop;
+        const brustM = AnazhRealm._schwimmBrustM();
+        const grund0 = this._fieldSurfaceBelow(
+            mesh.position.x,
+            feet0 + AnazhRealm.PLAYER_STEP_UP,
+            mesh.position.z,
+            AnazhRealm.PLAYER_STEP_UP + AnazhRealm.HYDROSPHERE.carveLakeBedDepth + brustM
+        );
+        const waterY = this._koerperWasser(mesh.position.x, mesh.position.z, grund0);
+        const schwimmt = waterY > feet0 && (waterY - feet0 > brustM || grund0 === null || waterY - grund0 > brustM);
+        s.playerUnderwater = schwimmt;
+        s.playerEyesUnderwater = schwimmt && mesh.position.y + 1.6 < waterY;
 
-        // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion);
+        // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion) zur Brustkorb-Linie;
         //    an Land: Schwerkraft, gecappt (Anti-Tunneling, wie der Ammo-Fall-Cap −25).
-        if (submerged) {
+        if (schwimmt) {
             // SCHWIMM-HEIMAT — Drag + Ausdauer aus dem koerperstudio-Gesetzbuch:
             // aktive Züge (Shift-Tauchen / Space-Auftauchen) zehren ausdauerProS;
             // erschöpft (stamina 0) trägt NUR der Auftrieb den Körper zur
@@ -87988,9 +87989,10 @@ class AnazhRealm {
                     rise = false;
                 }
             }
-            vy = this._swimVerticalVelocity(vy, waterY - mesh.position.y, dive, rise);
-            vx *= SG.drag;
-            vz *= SG.drag;
+            // Die Tiefe unter der Wasserlinie des Körpers: Füße am Spiegel − Brustkorb-Linie. Das Wasser bremst die
+            // Horizontale nur ohne Zug (`_loopPlayerMovement`, schwimmen.drag) — bis V18.531 bremste es JEDEN Schritt
+            // auch den Zug (Kraulen 0,141 m/s = 14 % des Gesetzes).
+            vy = this._swimVerticalVelocity(vy, waterY - brustM - feet0, dive, rise);
         } else if (s._parkourKletter > 0) {
             // PARKOUR — der Griff hält: KLETTERN ersetzt die Schwerkraft (Input-
             // seitig gegated: W + frische Wand + Ausdauer; der Steig-Wert reist
@@ -88001,11 +88003,14 @@ class AnazhRealm {
             if (vy < -25) vy = -25;
         }
 
-        // 4b. STRÖMUNG: der Fluss-Flow (`_waterFlowAt`, EINE Quelle) advektiert SCHWIMMENDE Körper am EINEN
-        // Bewegungs-Chokepoint — Gate `submerged` oder das gerittene schwimmende Gefährt (`_afloat`, von
-        // `_tickMountedMovement` gestempelt); Land-Läufer nie. v += (flow − v)·k wirkt auf den Slip:
-        // selbstlimitierend bis Strömungstempo, kein Overshoot. k = FLOW_ADVECT_K = 0.3 ≈ Verlustrate des
-        // Wasser-Damps (1 − 0.7) → ruhender Schwimmer ~0.56·FLOW_ADVECT_SPEED, Boot ~0.95× (gate:kopplung).
+        // 4b. STRÖMUNG — die EINE Kopplung jedes Körpers im Wasser (Spieler, Boot, Tier): er bewegt sich RELATIV zum
+        // Wasser, das Wasser trägt ihn mit (`_waterFlowAt`, EINE Quelle): v_Welt = v_eigen + Strömung. Gate: der
+        // Schwimmer oder das gerittene schwimmende Gefährt (`_afloat`, von `_tickMountedMovement` gestempelt); Land-Läufer
+        // und Watende nie. Der Körper integriert v_Welt (Wand-Klip und Kollision inbegriffen), `playerVel` behält das
+        // Eigene. Bis V18.531 zwei Gesetze: der Spieler mit Schlupf (v += (Strom − v)·0,3 je Schritt, ruhend ~0,56 ×
+        // Strömung), das Tier additiv.
+        let stromX = 0;
+        let stromZ = 0;
         {
             const rideEntry = this._mountedEntry;
             const afloat = !!(
@@ -88014,11 +88019,13 @@ class AnazhRealm {
                 rideEntry.id === s.player.mountedArch &&
                 rideEntry._afloat === true
             );
-            if (submerged || afloat) {
+            if (schwimmt || afloat) {
                 const fl = this._waterFlowAt(mesh.position.x, mesh.position.z);
                 if (fl) {
-                    vx += (fl.x - vx) * AnazhRealm.FLOW_ADVECT_K;
-                    vz += (fl.z - vz) * AnazhRealm.FLOW_ADVECT_K;
+                    stromX = fl.x;
+                    stromZ = fl.z;
+                    vx += stromX;
+                    vz += stromZ;
                 }
             }
         }
@@ -88153,8 +88160,10 @@ class AnazhRealm {
                     //  (b) knapp UNTER den Füßen (0 .. GROUND_SNAP] → Boden-Haftung bergab, NUR wenn
                     //      vorher geerdet (sanft bergab); im Fall NICHT → kein Magnet. Größerer gap
                     //      (Kamm/Klippe) → kein Snap → natürlicher Sprung-Bogen.
+                    // Der Schwimmer haftet nie bergab (das Wasser trägt ihn — bis V18.531 zog die Haftung jeden, der
+                    // vom Ufer hineinging, Schritt für Schritt am Grund entlang, bis 4,68 m unter den Spiegel).
                     const catchOrStep = gap <= 0 && gap >= -AnazhRealm.PLAYER_STEP_UP;
-                    const gentleDownhill = gap > 0 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && wasGrounded;
+                    const gentleDownhill = gap > 0 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && wasGrounded && !schwimmt;
                     if (catchOrStep || gentleDownhill) {
                         if (s.isInAir && vy < -AnazhRealm.LAND_DIP_MIN_SPEED) {
                             s._landImpactPending = Math.max(s._landImpactPending || 0, -vy);
@@ -88200,7 +88209,8 @@ class AnazhRealm {
         //    isPlayerGrounded-Cache, Slope-Penalty, handleJump-Coyote). Kein Ammo-Body.
         mesh.position.set(nx, ny, nz);
         s._fieldVy = vy;
-        s.playerVel.setValue(vx, vy, vz);
+        // Das Eigene bleibt (die Strömung trug den Rest, 4b).
+        s.playerVel.setValue(vx - stromX, vy, vz - stromZ);
 
         s.groundNormalY = grounded ? groundNormalY : 1.0;
         s.onSteepSlope =
@@ -88215,7 +88225,10 @@ class AnazhRealm {
             if (s._airJumps) s._airJumps = 0;
             s.isJumping = false;
         } else {
-            s.isInAir = true;
+            // Der Schwimmer ist nicht in der Luft: er beschleunigt wie zu Fuß (bis V18.531 mit dem Luft-Wert 4,5 statt
+            // 14), und der Übergang Luft → Wasser ist eine Landung (der Eintauch-Klang „wasser", der Schritt-Takt liest
+            // isInAir).
+            s.isInAir = !schwimmt;
         }
     }
 
@@ -88338,11 +88351,9 @@ class AnazhRealm {
         // `_stepCharacter` integriert. Unter Wasser ist Shift die Tauch-Geste, an Land Sprint.
         let currentSpeed =
             this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
-        // Wasser bremst: das Tempo kommt aus dem Schwimm-Gesetz (speedMul, Kraul relativ zum Gehen).
-        if (this.state.playerUnderwater) {
-            const SGm = AnazhRealm._schwimmGesetz();
-            currentSpeed *= SGm && Number.isFinite(SGm.speedMul) ? SGm.speedMul : 0.55;
-        }
+        // Wasser bremst: das Tempo kommt aus dem Schwimm-Gesetz (speedMul, Kraul relativ zum Gehen; der Leser ist
+        // fail-closed — das Literal 0,55 neben dem Gesetz 0,85 fiel, W-K3).
+        if (this.state.playerUnderwater) currentSpeed *= AnazhRealm._schwimmGesetz().speedMul;
 
         this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
         this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
@@ -88585,7 +88596,15 @@ class AnazhRealm {
                 // kBrake). kBrake/kBrakeLuft wohnen im Gesetzbuch (fx.bewegung.luft).
                 const v = this.state.playerVel;
                 const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
-                const kBrake = rideKBrake !== null ? rideKBrake : this.state.isInAir ? LG.kBrakeLuft : LG.kBrake;
+                // Ohne Zug bremst das WASSER (schwimmen.drag: was je Sim-Schritt bleibt) — der Zug selbst läuft frei.
+                const kBrake =
+                    rideKBrake !== null
+                        ? rideKBrake
+                        : this.state.playerUnderwater
+                          ? -Math.log(AnazhRealm._schwimmGesetz().drag) / AnazhRealm.FIXED_DT
+                          : this.state.isInAir
+                            ? LG.kBrakeLuft
+                            : LG.kBrake;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 this.state.playerVel.setValue(v.x() * (1 - fb), v.y(), v.z() * (1 - fb));
             }
@@ -91807,6 +91826,20 @@ AnazhRealm._schwimmGesetz = function () {
         return s;
     }
     return AnazhRealm._kernPflichtBruch("koerper:bewegung.schwimmen");
+};
+// Die WASSERLINIE des Menschen-Körpers: die Brustkorb-Linie über der Sohle (Meter) aus seiner Gestalt — die
+// Brustwarzen-Höhe der Proportionen (koerper-core labProportionen, nippleY/H) × die Welt-Körperhöhe des Avatars
+// (8 Kopf-Einheiten PLAYER_KH). Der Schwimmer liegt mit dieser Linie am Spiegel; flacheres Wasser watet er.
+// Fail-closed (Kern-Pflicht); Memo nur im Erfolgs-Fall.
+AnazhRealm._schwimmBrustM = function () {
+    if (AnazhRealm._schwimmBrustMemo) return AnazhRealm._schwimmBrustMemo;
+    const lp = AnazhRealm.Gesetz("koerper:labProportionen", null);
+    const P = typeof lp === "function" ? lp() : null;
+    if (P && Number.isFinite(P.nippleY) && P.H > 0) {
+        AnazhRealm._schwimmBrustMemo = (P.nippleY / P.H) * 8 * AnazhRealm.PLAYER_KH;
+        return AnazhRealm._schwimmBrustMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("koerper:labProportionen");
 };
 // Der EINE Parkour-Leser (Doppel-/Wandsprung · Klettern · Rutsch aus fx.bewegung.parkour). Bewusst
 // ohne Zahlen-Fallback: Kern kalt → null → KEIN Parkour — die Verben existieren nur als
@@ -95724,6 +95757,8 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
+// Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
+AnazhRealm.PLAYER_KH = 0.2125;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden — nur wenn er
 // vorher geerdet war, NIE im Fall (sonst Magnet-Sog). Kleiner als STEP_UP: am Kamm löst die
 // Haftung → natürlicher Sprung-Bogen.
@@ -95734,13 +95769,7 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
 // ═══ KOPPLUNG — Strömung · Gleiten · Wind · Gras (gate:kopplung) ═══
-// FLOW_ADVECT_SPEED: Strömung im Fluss-KERN (m/s, zur Kanal-Kante getapert) — trägt den ruhenden
-// Schwimmer sichtbar (~1.8 m/s effektiv), aktives Schwimmen (3.3 m/s) gewinnt stromauf.
-AnazhRealm.FLOW_ADVECT_SPEED = 3.2;
-// FLOW_ADVECT_K: die pro-Schritt-Slip-Kopplung v += (flow − v)·k am Bewegungs-
-// Chokepoint. 0.3 = die pro-Schritt-Verlustrate des Wasser-Damps (1 − 0.7) →
-// selbstlimitierend AUF Strömungstempo (Herleitung: `_stepCharacter` 4b).
-AnazhRealm.FLOW_ADVECT_K = 0.3;
+// Die Strömung ist das Gesetz (`_waterFlowAt` liest WASSER_GESETZ.wellen.adv), die Kopplung additiv (`_stepCharacter` 4b).
 // SLIDE_CLIP_PLANES: max. Kontaktebenen im PM_ClipVelocity-Wand-Klip (Quake
 // PM_SlideMove: Wand = 1, Ecke = 2, Kerbe = 3 — mehr Ebenen sind degeneriert,
 // dann greift der fail-closed Voll-Stopp).
