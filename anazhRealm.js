@@ -63474,6 +63474,9 @@ class AnazhRealm {
         const j0 = Math.max(1, Math.floor((minZ - z0w) / t));
         const j1 = Math.min(N - 2, Math.ceil((maxZ - z0w) / t));
         if (i1 < i0 || j1 < j0) return;
+        // Der EINE Maler hält die Leer-Marke: jede gemalte Form (Siedlung, Trittfläche, Fenster-Umzug) macht die Stufe
+        // nicht-leer, der nächste Umzug lädt sie leer hoch — kein Maler kann die Marke vergessen.
+        stufe.wegeLeer = false;
         const dx = f.bx - f.ax;
         const dz = f.bz - f.az;
         const ll = dx * dx + dz * dz;
@@ -63522,19 +63525,19 @@ class AnazhRealm {
                 stufe.mitteX = Math.round(playerPos.x / raster) * raster;
                 stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
                 stufe.zentriert = true;
+                // Eine leere Karte bleibt leer — kein Upload ohne Weg (der Umzug kommt auch für die Kronen). Die Marke
+                // setzt allein der Maler (`_wegeKarteMale`): was er seit dem letzten Upload malte, geht leer hoch.
+                const warLeer = stufe.wegeLeer === true;
                 stufe.daten.fill(0);
+                stufe.wegeLeer = true;
                 const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
-                let wege = 0;
                 for (const sd of wk.siedlungen) {
                     if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
                     if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
                     for (const f of sd.formen) this._wegeKarteMale(stufe, f);
-                    wege++;
                 }
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
-                // Eine leere Karte bleibt leer — kein Upload ohne Weg (der Umzug kommt auch für die Kronen).
-                if (wege > 0 || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
-                stufe.wegeLeer = wege === 0;
+                if (!warLeer || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
                 // Die Kronen der Stufe neu malen; der Umzug der FERNEN Stufe vergisst die Kronen jenseits ihres Fensters.
                 stufe.kronen.daten.fill(0);
                 const hk = S.fensterM / 2;
