@@ -416,6 +416,14 @@ const FORBIDDEN = [
     { token: "function placementStandForest(", fiel: "Integration 06.10. — der Worker-Spiegel des Wald-Stands fiel" },
     { token: "UNDERGROWTH_CANOPY_K", fiel: "Integration 06.10. — der Worker-Spiegel des Kronenlicht-Felds fiel" },
     { token: "_k.mul(_T.float(0.42))", fiel: "Integration 06.10. — die Streu trägt ihre Albedo, die Krone ihren Schatten" },
+    // Integration 06.10. — was die Welle 5 im Wasser-Stoff des Hosts ohne Namen strich (Prüfer-Urteil): die empirische
+    // Schattierung l0 + l1·diff + l2·Welle (WASSER_GESETZ.licht), die Zenit-Dimmung des Spiegels (spiegel.dim) und die
+    // Noise-Tönung zwischen Tief und Flach (baseN/mixT). Der Host trägt dafür das physikalische Modell (R∞-Körper,
+    // Beer-Lambert-Durchlass, Schlick-Fresnel, Himmels-Umgebung); das Studio-GLSL liest die alten Felder weiter.
+    { token: "WG.licht[0]", fiel: "Welle 5 — der Wasser-Körper ist R∞ im Licht des Orts (koerperAlbedo × uIrr)" },
+    { token: "WG.spiegel.dim", fiel: "Welle 5 — der Spiegel ist die Himmels-Umgebung × Schlick-Fresnel" },
+    { token: "const mixT = mix(", fiel: "Welle 5 — Tief und Flach trennt der Durchlass, kein Noise-Mix" },
+    { token: "vnoise(xz.mul(0.05).add(uTime.mul(0.03)))", fiel: "Welle 5 — die Noise-Tönung baseN des Wassers" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
