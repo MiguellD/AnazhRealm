@@ -20163,33 +20163,41 @@ async function checkBandHydrosphere(ctx) {
             // benachbarter See-Blend die Mess-Punkte verfälscht; am Blockende wiederhergestellt.
             const savedLN = hydro.lakeNear;
             hydro.lakeNear = new Uint8Array(savedLN.length);
-            // (3) der Kanal formt den Fluss-Mittelpunkt (Welle L: `_hydrosphereCarveAt` liefert die Gestalt { T, w } —
-            // Flachboden unter dem Spiegel, volles Gewicht), und das Bett liegt unter der Wasser-Fläche.
+            // (3) der Kanal formt den Fluss-Mittelpunkt (`_hydrosphereCarveAt` liefert { P, L, k } — P der Kanal: Flachboden
+            // unter dem Spiegel), und das Bett liegt unter der Wasser-Fläche.
             const kanal = r._hydrosphereCarveAt(rx, rz);
             const rvM = r._hydroRiverAt(rx, rz);
-            out.riverCenterCarved = !!(kanal && kanal.w === 1 && rvM && kanal.T < rvM.surfaceY - 0.5);
-            // (4) das Bett liegt unter den Ufern: die Gestalt steigt von der Fluss-Mitte zur Bank hin an.
-            const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
-            const bankW = Math.max(2, D * HC.carveBankSlope);
-            const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
+            out.riverCenterCarved = !!(kanal && rvM && kanal.P < rvM.surfaceY - 0.5 && kanal.L >= kanal.P);
+            // (4) das Bett liegt unter den Ufern: die Bank steigt von der Fluss-Mitte mit ihrer Neigung zur Krone (halbe
+            // Breite + Tiefe / bankNeigung, die Tiefe aus `_flussTiefe`).
+            const D = r.constructor._flussTiefe(rp);
+            const halfW = (rp.width || HC.widthMin) * 0.5;
             const pX = -rp.flowZ;
             const pZ = rp.flowX;
-            const midOff = halfW + bankW * HC.kroneAnteil * 0.75;
+            const midOff = halfW + (D / HC.bankNeigung) * 0.75;
             const kMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
-            out.bedBelowBanks = !!(kanal && kMid && kanal.T < kMid.T);
+            out.bedBelowBanks = !!(kanal && kMid && kanal.P < kMid.P);
             // (5) die Voxel-Fläche liegt AUF der Gestalt: die Fluss-Mitte trägt den Flachboden (auf die Scan-Körnung
             // von `_voxelSurfaceY`, 1,2 m).
             const sKanal = r._voxelSurfaceY(rx, rz);
-            out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.T) < 1.3;
-            // (8) der Kanal MISCHT das Gelände zu seiner Gestalt: die _terrainDensityAt-Dichte mit Kanal ===
-            // d·(1 − w) + (T − y)·w aus der Dichte ohne Kanal (das Suppress-Flag).
+            out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.P) < 1.3;
+            // (8) der Kanal formt das Gelände: die _terrainDensityAt-Dichte mit Kanal === das weiche Minimum aus Kanal und
+            // dem weichen Maximum aus Gelände (die Dichte ohne Kanal, das Suppress-Flag) und Damm.
             const y = (r.state.terrainBaseHeight || 0) + 10;
             const dCarve = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = true;
             const dSuppressed = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = false;
-            out.carveIsSubtractive =
-                !!kanal && Math.abs(dSuppressed * (1 - kanal.w) + (kanal.T - y) * kanal.w - dCarve) < 0.001;
+            let carveSoll = null;
+            if (kanal) {
+                const dL = kanal.L - y;
+                let hk = Math.max(kanal.k - Math.abs(dSuppressed - dL), 0) / kanal.k;
+                const damm = Math.max(dSuppressed, dL) + hk * hk * kanal.k * 0.25;
+                const dP = kanal.P - y;
+                hk = Math.max(kanal.k - Math.abs(damm - dP), 0) / kanal.k;
+                carveSoll = Math.min(damm, dP) - hk * hk * kanal.k * 0.25;
+            }
+            out.carveIsSubtractive = carveSoll !== null && Math.abs(carveSoll - dCarve) < 0.001;
             // (9) ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)
             const savedHydro = r.state.hydrosphere;
             r.state.hydrosphere = null;
@@ -20262,7 +20270,7 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (die Gestalt steigt zur Bank an)", d.bedBelowBanks);
         check("Voxel V9.43-d → Welle L: die Voxel-Fläche liegt auf dem Flachboden des Kanals", d.surfaceLowered);
         check(
-            "Voxel V9.43-d → Welle L: der Kanal mischt das Gelände zu seiner Gestalt (d·(1 − w) + (T − y)·w)",
+            "Voxel V9.43-d → Welle L: der Kanal formt das Gelände (weiches Minimum aus Kanal und dem weichen Maximum aus Gelände und Damm — die Bank läuft ins Gelände aus)",
             d.carveIsSubtractive
         );
         check(

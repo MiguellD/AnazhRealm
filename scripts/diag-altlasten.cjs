@@ -196,6 +196,11 @@ const FORBIDDEN = [
     // Segment trägt (2137 von 7578 Ufer-Vertices anders gefärbt als im Main).
     { token: "aboveWater < 2.0", fiel: "Welle L Q7 — die Strand-Glocke trägt bis 0,6 + 1,9 m (imStrand)" },
     { token: "seg.halfW || 0", fiel: "Welle L Q7 — die Halbbreite am Fußpunkt wie im Main (hwA/hwB)" },
+    // DIE BANK läuft mit ihrer Neigung ins Gelände (Kanal und Damm, `_hydrosphereCarveAt` → { P, L, k }); die Krone nach
+    // 0,6 der Bank-Rampe und die Gleit-Zone dahinter (eine Wand bis ≈ 73° mit Fels-Rauten) sind gefallen (Main und Worker).
+    { token: "kroneAnteil", fiel: "Gegenprüfung 07.10. — die Krone nach 0,6 der Bank-Rampe (die Steilwand)" },
+    { token: "carveBankSlope", fiel: "Gegenprüfung 07.10. — die Bank-Rampe Tiefe × 1,4; die Bank ist bankNeigung" },
+    { token: "kn.T - y", fiel: "Gegenprüfung 07.10. — das Gewicht der Gleit-Zone; die Dichte nimmt Kanal und Damm" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.

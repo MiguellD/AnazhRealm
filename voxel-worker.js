@@ -64,9 +64,11 @@ const state = {
     tarns: null, // Array of { x, z, d, reach2, twoSig2 }
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
-    carveBankSlope: 1.4, // Mirror AnazhRealm.HYDROSPHERE.carveBankSlope
     spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
-    kroneAnteil: 0.6, // Mirror AnazhRealm.HYDROSPHERE.kroneAnteil
+    bankNeigung: 0.7, // Mirror AnazhRealm.HYDROSPHERE.bankNeigung (die Bank, Gegenprüfung 07.10.)
+    bankKruemmung: 0.04, // Mirror AnazhRealm.HYDROSPHERE.bankKruemmung
+    bankWeite: 24, // Mirror AnazhRealm.HYDROSPHERE.bankWeite
+    bankRundung: 0.6, // Mirror AnazhRealm.HYDROSPHERE.bankRundung
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die Genese-
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
@@ -212,9 +214,11 @@ function applyStateSnapshot(snap) {
     if (snap.tarns !== undefined) state.tarns = snap.tarns;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
-    if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
     if (typeof snap.spiegelFreibord === "number") state.spiegelFreibord = snap.spiegelFreibord;
-    if (typeof snap.kroneAnteil === "number") state.kroneAnteil = snap.kroneAnteil;
+    if (typeof snap.bankNeigung === "number") state.bankNeigung = snap.bankNeigung;
+    if (typeof snap.bankKruemmung === "number") state.bankKruemmung = snap.bankKruemmung;
+    if (typeof snap.bankWeite === "number") state.bankWeite = snap.bankWeite;
+    if (typeof snap.bankRundung === "number") state.bankRundung = snap.bankRundung;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
@@ -310,7 +314,7 @@ function terrainColumnContext(x, z) {
     const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
-    let hydroCarve = null; // der Fluss-Kanal { T, w } (Mirror `_hydrosphereCarveAt`) oder null
+    let hydroCarve = null; // der Fluss-Kanal { P, L, k } (Mirror `_hydrosphereCarveAt`) oder null
     let lake = null;
     if (hydroActive) {
         hydroCarve = hydrosphereCarveAt(x, z);
@@ -341,9 +345,17 @@ function terrainBaseDensityCol(x, y, z, ctx) {
         d -= hallCarve * caveEnv * 72;
     }
     if (ctx.hydroActive) {
-        // Der Fluss-Kanal mischt das Gelände zu seiner Gestalt (Flachboden · Bank · Krone), das See-Becken danach.
+        // Der Fluss-Kanal (Mirror): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal; das
+        // See-Becken danach.
         const kn = ctx.hydroCarve;
-        if (kn) d = d * (1 - kn.w) + (kn.T - y) * kn.w;
+        if (kn) {
+            const dL = kn.L - y;
+            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+            const dP = kn.P - y;
+            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+        }
         const lk = ctx.lake;
         if (lk) {
             const flatD = lk.bedY - y;
@@ -761,9 +773,9 @@ function tarnDeltaAt(x, z) {
     return delta;
 }
 
-// Mirror von `_hydrosphereCarveAt` (Welle L): der Fluss-Kanal { T, w } — Flachboden auf Spiegel − (1 − Freibord)·Tiefe,
-// Bank bis zur Krone auf Spiegel + Freibord·Tiefe, danach gleitet das Gewicht ins Gelände; mehrere Segmente: w = max,
-// T = w-gewichtetes Mittel. MUSS bit-identisch zum Main sein.
+// Mirror von `_hydrosphereCarveAt` (Gegenprüfung 07.10.): der Fluss-Kanal { P, L, k } — P der Kanal (Flachboden, Bank mit
+// bankNeigung bis zur Krone, dahinter die steiler werdende Böschung), L der Damm (die Krone, dahinter fallend), k die
+// Rundung; mehrere Segmente: der tiefste Kanal, der höchste Damm. MUSS bit-identisch zum Main sein.
 function hydrosphereCarveAt(x, z) {
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!h || !h.ready) return null;
@@ -776,9 +788,11 @@ function hydrosphereCarveAt(x, z) {
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
     const list = rb[bj * bd + bi];
     if (!list) return null;
-    let wMax = 0;
-    let wSumme = 0;
-    let tSumme = 0;
+    const sN = state.bankNeigung;
+    const sK = state.bankKruemmung;
+    const fuss = state.bankRundung;
+    let P = Infinity;
+    let L = -Infinity;
     for (let s = 0; s < list.length; s++) {
         const seg = list[s];
         const ex = seg.bx - seg.ax;
@@ -792,27 +806,21 @@ function hydrosphereCarveAt(x, z) {
         const dist = Math.hypot(x - px, z - pz);
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
-        const bankW = Math.max(2, D * state.carveBankSlope);
-        if (dist >= halfW + bankW) continue;
-        const spiegel = seg.sA + (seg.sB - seg.sA) * t;
-        const krone = halfW + bankW * state.kroneAnteil;
-        const boden = spiegel - (1 - state.spiegelFreibord) * D;
-        let T;
-        let w = 1;
-        if (dist <= halfW) T = boden;
-        else if (dist < krone) {
-            const u = (dist - halfW) / (krone - halfW);
-            T = boden + D * u * u * (3 - 2 * u);
-        } else {
-            T = boden + D;
-            const u = (dist - krone) / (halfW + bankW - krone);
-            w = 1 - u * u * (3 - 2 * u);
+        const dK = halfW + D / sN;
+        if (dist >= dK + state.bankWeite) continue;
+        const B = seg.sA + (seg.sB - seg.sA) * t - (1 - state.spiegelFreibord) * D;
+        const u0 = dist - halfW;
+        let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
+        const u = dist - dK;
+        let l = B + D;
+        if (u > 0) {
+            p += sK * u * u;
+            l -= sN * u + sK * u * u;
         }
-        if (w > wMax) wMax = w;
-        wSumme += w;
-        tSumme += T * w;
+        if (p < P) P = p;
+        if (l > L) L = l;
     }
-    return wMax > 0 ? { T: tSumme / wSumme, w: wMax } : null;
+    return P < Infinity ? { P, L, k: fuss } : null;
 }
 
 function hydrosphereLakeAt(x, z) {
@@ -945,7 +953,6 @@ function hydroRiverAt(x, z) {
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
     const list = h.riverBuckets[bj * bd + bi];
     if (!list) return null;
-    const bankSlope = state.carveBankSlope;
     let bestD = Infinity;
     let dirX = 0;
     let dirZ = 0;
@@ -967,7 +974,7 @@ function hydroRiverAt(x, z) {
         const dist = Math.hypot(x - px, z - pz);
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
-        const krone = halfW + Math.max(2, D * bankSlope) * state.kroneAnteil;
+        const krone = halfW + D / state.bankNeigung;
         if (dist > krone) continue;
         const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
         gSumme += g;

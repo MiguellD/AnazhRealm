@@ -21,7 +21,8 @@
 //                   Spieler schwamm, Kamera tauchte, Tier schwamm.
 //   K11 (D10)       der Straßenwagen trieb im See mit der Dichte des Holzkarren-Spenders; treibend nickte das Boot mit dem
 //                   Seegrund (Wank-Ziel 29,5°). W2: der Rand-Streifen des Sees war für das Gefährt blind (0 von 13).
-//   F5              die Quelle bricht breiter als ein Fluss aus dem Boden (Basis 13 von 16, nass p50 14,5 m).
+//   F5              die Quelle bricht in voller Breite oder Tiefe aus dem Boden (gegen den kleinsten vollen Fluss des
+//                   Gesetzes).
 //   F7              die Bank des Kanals ist eine Steilwand (8f09227d: 18 von 42 Profilen steiler als der Fels, p90 68,9°).
 //   FP              die Kanal-Parität Main ↔ Worker (NaN = Probe kaputt, nie Befund).
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
@@ -91,11 +92,12 @@ function urteil(b) {
     if (b.quelle) {
         const q = b.quelle;
         if (q.fehler) v.push(`F5: ${q.fehler}`);
-        else if (!(q.quellen >= 5)) v.push(`F5 LEER: nur ${q.quellen} Quellen gemessen`);
-        else if (q.breiter > 0)
+        else if (!(q.quellen >= 4)) v.push(`F5 LEER: nur ${q.quellen} Quellen gemessen`);
+        else if (q.breiter > 0 || q.tiefer > 0)
             v.push(
-                `F5 QUELLE: ${q.breiter} von ${q.quellen} Quellen brechen breiter als die Mindest-Breite eines Flusses ` +
-                    `(${q.soll} m) aus dem Boden (nass p50 ${q.breiteP50} m, max ${q.breiteMax} m, bis ${q.tiefeMax} m tief)`
+                `F5 QUELLE: von ${q.quellen} Quellen brechen ${q.breiter} breiter als das Bett des kleinsten vollen Flusses ` +
+                    `(${q.sollBreite} m) und ${q.tiefer} tiefer als die Hälfte seines Wassers (${q.sollTiefe} m) aus dem Boden ` +
+                    `(nass p50 ${q.breiteP50} m, max ${q.breiteMax} m; tief p50 ${q.tiefeP50} m, max ${q.tiefeMax} m)`
             );
     }
     if (b.bank) {
@@ -333,7 +335,17 @@ function selbsttest() {
             wasserfallOrte: 9,
         },
         kanal: { punkte: 6, zellen: 18000, abweichend: 0, maxDelta: 0, nanMain: 0, nanWorker: 0 },
-        quelle: { quellen: 16, soll: 3, breiteP50: 2.2, breiteMax: 2.8, breiter: 0, tiefeMax: 0.5 },
+        quelle: {
+            quellen: 11,
+            sollBreite: 5.48,
+            sollTiefe: 0.86,
+            breiter: 0,
+            tiefer: 0,
+            breiteP50: 3.75,
+            breiteMax: 4.5,
+            tiefeP50: 0.52,
+            tiefeMax: 0.6,
+        },
         bank: { profile: 60, felsGrad: 54.5, winkelP50: 30, winkelP90: 45, winkelMax: 60, fels: 2, felsAnteil: 0.033 },
         hoehle: {
             proben: 3500,
@@ -407,7 +419,7 @@ function selbsttest() {
         ["FP ZWEI KANÄLE", (b) => Object.assign(b.kanal, { abweichend: 412, maxDelta: 3.1 })],
         ["FP PROBE KAPUTT", (b) => Object.assign(b.kanal, { abweichend: 0, maxDelta: null, nanMain: 19074 })],
         ["FP LEER", (b) => (b.kanal.zellen = 0)],
-        ["F5 QUELLE", (b) => Object.assign(b.quelle, { breiter: 13, breiteP50: 14.5, breiteMax: 16.75 })],
+        ["F5 QUELLE", (b) => Object.assign(b.quelle, { breiter: 11, tiefer: 12, breiteP50: 14.5, tiefeP50: 3.38 })],
         ["F5 LEER", (b) => (b.quelle.quellen = 0)],
         ["F7 STEILWAND", (b) => Object.assign(b.bank, { fels: 18, felsAnteil: 0.429, winkelP90: 68.9 })],
         ["F7 LEER", (b) => (b.bank.profile = 0)],

@@ -494,6 +494,18 @@ function wasserKoerper(opts) {
     })();
 }
 
+// Die Krone der Bank eines Fluss-Punkts nach dem Gesetz des Stands (seit der Gegenprüfung 07.10.: halbe Breite + Tiefe /
+// bankNeigung, die Tiefe aus `_flussTiefe`; davor halbe Breite + Bank-Rampe) — dieselbe Probe misst Vorher und Nachher.
+function __wasserKroneVon(r, p) {
+    const A = r.constructor;
+    const HC = A.HYDROSPHERE;
+    const w = p.width || HC.widthMin;
+    const D = typeof A._flussTiefe === "function" ? A._flussTiefe(p) : HC.carveBedMin + HC.carveBedK * w;
+    return Number.isFinite(HC.bankNeigung)
+        ? w * 0.5 + D / HC.bankNeigung
+        : Math.max(1, w * 0.5) + Math.max(2, D * HC.carveBankSlope);
+}
+
 // ── Q6: die Ufer-Flut (W-W1) ──
 // Der Spieler steht am Fluss der Mess-Wiese (Befund: −872/−1127), die Welt streamt um ihn, der Wasser-Automat wird geweckt
 // und läuft 600 Takte; dann je Fluss-Punkt im Nah-Ring beide Ufer jenseits der Krone (+0,5 … +6 m): wo das Gesetz das
@@ -571,8 +583,7 @@ function wasserUfer(opts) {
                     fl = Math.hypot(fx, fz) || 1;
                 const nx = -fz / fl,
                     nz = fx / fl;
-                const D = HC.carveBedMin + HC.carveBedK * (a.width || HC.widthMin);
-                const krone = Math.max(1, (a.width || HC.widthMin) * 0.5) + Math.max(2, D * HC.carveBankSlope);
+                const krone = __wasserKroneVon(r, a);
                 for (const sg of [-1, 1])
                     for (let d = krone + 0.5; d <= krone + 6; d += 1.1) {
                         const x = a.x + nx * d * sg,
@@ -628,9 +639,7 @@ function wasserUferFarbe(opts) {
                 fl = Math.hypot(fx, fz) || 1;
             const nx = -fz / fl,
                 nz = fx / fl;
-            const hw = Math.max(1, (a.width || HC.widthMin) * 0.5);
-            const D = HC.carveBedMin + HC.carveBedK * (a.width || HC.widthMin);
-            const weit = hw + Math.max(2, D * HC.carveBankSlope) + 3;
+            const weit = __wasserKroneVon(r, a) + 3;
             for (const sg of [-1, 1]) {
                 let vorL = null,
                     vorY = null;
@@ -1263,10 +1272,13 @@ function wasserWagen(opts) {
 }
 
 // ── Q7-Gestalt: die Quelle (W-F5, Befund 06.10.: „8,5 m nass, 2,36 m tief aus dem Nichts; alle 16 Quellen 8,2–11,9 m") ──
-// Je Fluss der Heimat-Region der erste Punkt außerhalb eines Sees (die Quelle): quer zum Lauf in 0,25-m-Schritten bis
-// ±15 m die nasse Breite (der Spiegel des Gesetzes `_atlasWaterLevelAt` über dem Boden `_voxelSurfaceY` + 5 cm, die
-// zusammenhängende Strecke um die Mitte) und die Wasser-Tiefe in der Mitte. Ein Fluss bricht nie in voller Breite aus dem
-// Boden: die Quelle ist schmaler als die Mindest-Breite eines Flusses (HYDROSPHERE.widthMin).
+// Je Fluss der Heimat-Region, der als QUELLE beginnt (nicht am Rand eines Sees — ein Abfluss ist keine Quelle; trägt der
+// Stand den Quell-Anteil `quelle`, nur die Quellen auf dem kleinsten Anteil — ein Lauf, der aus zusammenfließenden
+// Rinnsalen schon breit beginnt, ist keine Quelle): sein Querschnitt an der Quelle (nur der FLUSS — `_hydroRiverAt`, sein
+// Spiegel über dem Boden `_voxelSurfaceY` + 5 cm, 0,25-m-Schritte bis ±15 m, die zusammenhängende nasse Strecke um die Mitte)
+// gegen den KLEINSTEN VOLLEN FLUSS des Gesetzes (an der Schwelle riverThresholdMin: Bett-Breite widthMin + widthK · √Schwelle,
+// Wasser-Tiefe (1 − Freibord) · Bett-Tiefe): eine Quelle bricht nie in voller Breite oder Tiefe aus dem Boden — nass höchstens
+// so breit wie sein Bett, in der Mitte höchstens halb so tief.
 function wasserQuelle(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
@@ -1275,54 +1287,78 @@ function wasserQuelle(opts) {
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
     const HC = r.constructor.HYDROSPHERE;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const bettVoll = HC.widthMin + HC.widthK * Math.sqrt(HC.riverThresholdMin);
+    const tiefeVoll =
+        (1 - (Number.isFinite(HC.spiegelFreibord) ? HC.spiegelFreibord : 0.25)) *
+        (HC.carveBedMin + HC.carveBedK * bettVoll);
+    const sollBreite = bettVoll,
+        sollTiefe = tiefeVoll * 0.5;
+    const schnitt = (a, b) => {
+        const fl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        const nx = -(b.z - a.z) / fl,
+            nz = (b.x - a.x) / fl;
+        const tiefeAt = (d) => {
+            const x = a.x + nx * d,
+                z = a.z + nz * d;
+            const y = r._voxelSurfaceY(x, z);
+            const rv = r._hydroRiverAt(x, z);
+            return Number.isFinite(y) && rv && rv.surfaceY > y + 0.05 ? rv.surfaceY - y : 0;
+        };
+        const t0 = tiefeAt(0);
+        if (!(t0 > 0)) return { breite: 0, tiefe: 0 };
+        let breite = 0.25;
+        for (const sg of [-1, 1]) for (let d = 0.25; d <= 15 && tiefeAt(d * sg) > 0; d += 0.25) breite += 0.25;
+        return { breite, tiefe: t0 };
+    };
+    // am Rand eines Sees (seine Zelle oder eine der acht Nachbarn trägt See-Wasser)
+    const amSee = (x, z) => {
+        const ci = Math.floor((x - h.originX) / h.cell),
+            cj = Math.floor((z - h.originZ) / h.cell);
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) {
+                const ni = ci + di,
+                    nj = cj + dj;
+                if (ni >= 0 && nj >= 0 && ni < h.dim && nj < h.dim && h.water.waterKind[ni + nj * h.dim] === 2)
+                    return true;
+            }
+        return false;
+    };
+    let quellen = 0,
+        breiter = 0,
+        tiefer = 0;
     const breiten = [],
         tiefen = [];
     const beispiele = [];
     const gesehen = new Set();
     for (const rv of h.rivers) {
         const P = rv.points;
-        let k = 0;
-        while (k + 1 < P.length && P[k].inLake) k++;
-        if (k > 0 || k + 1 >= P.length) continue; // ein Abfluss aus einem See ist keine Quelle
-        const a = P[0],
-            b = P[1];
-        const schl = Math.round(a.x) + "," + Math.round(a.z);
+        if (P.length < 2 || P[0].inLake || amSee(P[0].x, P[0].z)) continue;
+        if (Number.isFinite(P[0].quelle) && P[0].quelle > HC.quellBreite + 1e-9) continue;
+        const schl = Math.round(P[0].x) + "," + Math.round(P[0].z);
         if (gesehen.has(schl)) continue;
         gesehen.add(schl);
-        const fl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
-        const nx = -(b.z - a.z) / fl,
-            nz = (b.x - a.x) / fl;
-        // nass = der FLUSS trägt hier Wasser (sein Spiegel über dem Boden) — ein See daneben zählt nie zur Quelle
-        const nassAt = (d) => {
-            const x = a.x + nx * d,
-                z = a.z + nz * d;
-            const y = r._voxelSurfaceY(x, z);
-            const rv = r._hydroRiverAt(x, z);
-            return Number.isFinite(y) && !!rv && rv.surfaceY > y + 0.05;
-        };
-        let links = 0,
-            rechts = 0;
-        if (nassAt(0)) {
-            for (let d = 0.25; d <= 15 && nassAt(-d); d += 0.25) links = d;
-            for (let d = 0.25; d <= 15 && nassAt(d); d += 0.25) rechts = d;
-        }
-        const breite = nassAt(0) ? links + rechts + 0.25 : 0;
-        const y0 = r._voxelSurfaceY(a.x, a.z);
-        const rv0 = r._hydroRiverAt(a.x, a.z);
-        const tiefe = Number.isFinite(y0) && rv0 ? Math.max(0, rv0.surfaceY - y0) : 0;
-        breiten.push(breite);
-        tiefen.push(tiefe);
-        if (beispiele.length < (o.beispiele || 4)) beispiele.push([R(a.x, 0), R(a.z, 0), R(breite), R(tiefe)]);
+        const q = schnitt(P[0], P[1]);
+        quellen++;
+        breiten.push(q.breite);
+        tiefen.push(q.tiefe);
+        const zuBreit = q.breite > sollBreite,
+            zuTief = q.tiefe > sollTiefe;
+        if (zuBreit) breiter++;
+        if (zuTief) tiefer++;
+        if ((zuBreit || zuTief) && beispiele.length < (o.beispiele || 4))
+            beispiele.push([R(P[0].x, 0), R(P[0].z, 0), R(q.breite), R(q.tiefe)]);
     }
-    const max = (A) => (A.length ? Math.max(...A) : 0);
-    const s = breiten.slice().sort((x, y) => x - y);
+    const p50 = (A) => (A.length ? A.slice().sort((x, y) => x - y)[A.length >> 1] : 0);
     return {
-        quellen: breiten.length,
-        soll: HC.widthMin,
-        breiteP50: R(s.length ? s[s.length >> 1] : 0),
-        breiteMax: R(max(breiten)),
-        breiter: breiten.filter((x) => x > HC.widthMin).length,
-        tiefeMax: R(max(tiefen)),
+        quellen,
+        sollBreite: R(sollBreite),
+        sollTiefe: R(sollTiefe),
+        breiter,
+        tiefer,
+        breiteP50: R(p50(breiten)),
+        breiteMax: R(breiten.length ? Math.max(...breiten) : 0),
+        tiefeP50: R(p50(tiefen)),
+        tiefeMax: R(tiefen.length ? Math.max(...tiefen) : 0),
         beispiele,
     };
 }
@@ -1494,6 +1530,7 @@ module.exports = {
         `window.__wasserQuelle = ${wasserQuelle.toString()};` +
         `window.__wasserBank = ${wasserBank.toString()};` +
         `window.__wasserFluss = ${wasserFluss.toString()};` +
+        `window.__wasserKroneVon = ${__wasserKroneVon.toString()};` +
         `window.__wasserKanalParitaet = ${wasserKanalParitaet.toString()};` +
         `window.__wasserUfer = ${wasserUfer.toString()};` +
         `window.__wasserUferFarbe = ${wasserUferFarbe.toString()};` +

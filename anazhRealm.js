@@ -19398,12 +19398,22 @@ class AnazhRealm {
             // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
             carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
             carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
-            carveBankSlope: 1.4, // Bank-Rampe = Bett-Tiefe × dieser Faktor
             // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
             // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
             spiegelFreibord: 0.25,
-            kroneAnteil: 0.6, // die Krone beginnt nach diesem Anteil der Bank-Rampe; danach gleitet sie ins Gelände
-            quellBreite: 0.25, // Anteil der vollen Breite an der Quelle (die Breite wächst bis zur doppelten Schwelle)
+            // DIE BANK (Gegenprüfung 07.10.): vom Flachboden steigt die Bank mit dieser Neigung (tan 35°, unter dem Geröll
+            // des Boden-Gesetzes ab ≈ 37°) bis zur KRONE auf Spiegel + Freibord · Tiefe; jenseits der Krone schneidet der
+            // Kanal höheres Gelände mit einer Böschung und hält tieferes mit einem Damm, beide mit derselben Neigung, die mit
+            // dem Abstand von der Krone um bankKruemmung je m zunimmt (ein Tal: flach am Wasser, steiler den Hang hinauf),
+            // bis bankWeite hinter der Krone; die Kanten (Fuß, Krone, Saum ins Gelände) runden über bankRundung (weiches
+            // Minimum der Dichten). Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe (≈ 61°), und dahinter glitt eine
+            // Wand ins Gelände (bis ≈ 73°: Fels-Rauten an 19 von 46 Bank-Profilen der Mess-Wiese).
+            bankNeigung: 0.7,
+            bankKruemmung: 0.04, // je m hinter der Krone
+            bankWeite: 24, // m hinter der Krone
+            bankRundung: 0.6, // m
+            // DIE QUELLE (W-F5): Anteil der vollen Breite UND Tiefe an der Quelle (beide wachsen bis zur doppelten Schwelle)
+            quellBreite: 0.25,
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
         });
@@ -21597,10 +21607,12 @@ class AnazhRealm {
             terrainSteepness: typeof this.state.terrainSteepness === "number" ? this.state.terrainSteepness : 1, // V14.7: ridgeAmp-Skala (Worker-Mirror)
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
-            carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
-            // der Fluss-Kanal (Welle L): Freibord und Kronen-Anteil reisen mit — der Worker baut dasselbe Bett
+            // der Fluss-Kanal (Welle L): Freibord und das Gesetz der Bank reisen mit — der Worker baut dasselbe Bett
             spiegelFreibord: AnazhRealm.HYDROSPHERE.spiegelFreibord,
-            kroneAnteil: AnazhRealm.HYDROSPHERE.kroneAnteil,
+            bankNeigung: AnazhRealm.HYDROSPHERE.bankNeigung,
+            bankKruemmung: AnazhRealm.HYDROSPHERE.bankKruemmung,
+            bankWeite: AnazhRealm.HYDROSPHERE.bankWeite,
+            bankRundung: AnazhRealm.HYDROSPHERE.bankRundung,
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
             // (Legacy-Welten gen < 2 → feuchte = 0).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
@@ -25307,7 +25319,7 @@ class AnazhRealm {
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
         const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
-        let hydroCarve = null; // der Fluss-Kanal { T, w } (`_hydrosphereCarveAt`) oder null
+        let hydroCarve = null; // der Fluss-Kanal { P, L, k } (`_hydrosphereCarveAt`) oder null
         let lake = null;
         if (hydroActive) {
             hydroCarve = this._hydrosphereCarveAt(x, z);
@@ -25349,9 +25361,17 @@ class AnazhRealm {
             d -= hallCarve * caveEnv * 72;
         }
         if (ctx.hydroActive) {
-            // Der Fluss-Kanal mischt das Gelände zu seiner Gestalt (Flachboden · Bank · Krone), das See-Becken danach.
+            // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
+            // dem Kanal (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken danach.
             const kn = ctx.hydroCarve;
-            if (kn) d = d * (1 - kn.w) + (kn.T - y) * kn.w;
+            if (kn) {
+                const dL = kn.L - y;
+                let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+                const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+                const dP = kn.P - y;
+                hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+                d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+            }
             const lk = ctx.lake;
             if (lk) {
                 const flatD = lk.bedY - y;
@@ -25468,13 +25488,16 @@ class AnazhRealm {
         return out;
     }
 
-    // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ T, w }` (Ziel-Höhe und ihr
-    // Gewicht; die Dichte mischt d·(1 − w) + (T − y)·w, wie das See-Becken) oder null. Je Segment: Flachboden auf dem
-    // Spiegel − (1 − Freibord)·Tiefe bis zur halben Breite, die Bank steigt (smoothstep) bis zur KRONE auf Spiegel +
-    // Freibord·Tiefe (nach dem Kronen-Anteil der Bank-Rampe), danach gleitet das Gewicht ins Gelände. So schneidet der
-    // Kanal Buckel und überbrückt Senken, und die Krone hält das Wasser — der Spiegel steht nie über dem Ufer (bis
-    // V18.531 eine Senkung um die Bett-Tiefe unter das Gelände: der Spiegel folgte dem Gelände bergauf, und wo das Ufer
-    // tiefer lag, lief der Fluss über). Mehrere Segmente (Biegung, Mündung): w = max, T = w-gewichtetes Mittel (stetig).
+    // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ P, L, k }` oder null. P ist die
+    // Höhe des KANALS (Flachboden auf Spiegel − (1 − Freibord) · Tiefe bis zur halben Breite, die Bank steigt mit
+    // bankNeigung bis zur Krone auf Spiegel + Freibord · Tiefe, dahinter die Böschung, die mit dem Abstand steiler wird), L die
+    // Höhe des DAMMS (die Krone bis zu ihrem Abstand, dahinter fällt er wie die Böschung steigt), k die Rundung. Die Dichte
+    // nimmt das weiche Maximum aus Gelände und Damm (tieferes Gelände wird zur Krone gefüllt) und davon das weiche Minimum
+    // mit dem Kanal (höheres Gelände wird zur Böschung geschnitten): wo das Gelände zwischen beiden liegt, bleibt es, wie es
+    // ist — die Bank läuft mit ihrer eigenen Neigung ins Gelände aus, nie als Wand. Mehrere Segmente (Biegung, Mündung):
+    // der tiefste Kanal und der höchste Damm (die Vereinigung). So schneidet der Kanal Buckel und überbrückt Senken, und die
+    // Krone hält das Wasser. Bis 8f09227d mischte ein Gewicht das Gelände zur Gestalt: die Krone nach 0,6 der Bank-Rampe,
+    // dahinter eine Gleit-Zone von 0,4 der Rampe — eine Wand von bis zu ≈ 73° mit Fels-Rauten (Gegenprüfung 07.10.).
     // Leere-Bucket-Early-Out → wasserlose Welt ~5 Ops (millionenfach beim Meshing). See-Becken: `_hydrosphereLakeAt`.
     _hydrosphereCarveAt(x, z) {
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -25489,9 +25512,11 @@ class AnazhRealm {
         const list = rb[bj * bd + bi];
         if (!list) return null;
         const HC = AnazhRealm.HYDROSPHERE;
-        let wMax = 0;
-        let wSumme = 0;
-        let tSumme = 0;
+        const sN = HC.bankNeigung;
+        const sK = HC.bankKruemmung;
+        const fuss = HC.bankRundung;
+        let P = Infinity;
+        let L = -Infinity;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -25505,27 +25530,21 @@ class AnazhRealm {
             const dist = Math.hypot(x - px, z - pz);
             const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
             const D = seg.dA + (seg.dB - seg.dA) * t;
-            const bankW = Math.max(2, D * HC.carveBankSlope);
-            if (dist >= halfW + bankW) continue;
-            const spiegel = seg.sA + (seg.sB - seg.sA) * t;
-            const krone = halfW + bankW * HC.kroneAnteil;
-            const boden = spiegel - (1 - HC.spiegelFreibord) * D;
-            let T;
-            let w = 1;
-            if (dist <= halfW) T = boden;
-            else if (dist < krone) {
-                const u = (dist - halfW) / (krone - halfW);
-                T = boden + D * u * u * (3 - 2 * u);
-            } else {
-                T = boden + D;
-                const u = (dist - krone) / (halfW + bankW - krone);
-                w = 1 - u * u * (3 - 2 * u);
+            const dK = halfW + D / sN;
+            if (dist >= dK + HC.bankWeite) continue;
+            const B = seg.sA + (seg.sB - seg.sA) * t - (1 - HC.spiegelFreibord) * D;
+            const u0 = dist - halfW;
+            let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
+            const u = dist - dK;
+            let l = B + D;
+            if (u > 0) {
+                p += sK * u * u;
+                l -= sN * u + sK * u * u;
             }
-            if (w > wMax) wMax = w;
-            wSumme += w;
-            tSumme += T * w;
+            if (p < P) P = p;
+            if (l > L) L = l;
         }
-        return wMax > 0 ? { T: tSumme / wSumme, w: wMax } : null;
+        return P < Infinity ? { P, L, k: fuss } : null;
     }
 
     // Fluss-Distanz an (x,z): derselbe riverBuckets-Walk wie _hydrosphereCarveAt (EINE Quelle), liefert
@@ -31554,8 +31573,8 @@ class AnazhRealm {
         return boxes;
     }
 
-    // Nächstes Fluss-Segment an (x,z), wenn der Punkt im Kanal liegt (dist ≤ halbe Breite + Kronen-Anteil der
-    // Bank-Rampe — jenseits der Krone trägt der Fluss kein Wasser). Liefert Flow-Richtung (normiert), Bett-Tiefe
+    // Nächstes Fluss-Segment an (x,z), wenn der Punkt im Kanal liegt (dist ≤ halbe Breite + Tiefe / bankNeigung, die
+    // Krone der Bank — jenseits der Krone trägt der Fluss kein Wasser). Liefert Flow-Richtung (normiert), Bett-Tiefe
     // `depth` und centerness des nächsten Segments, dazu die Wasser-Oberfläche `surfaceY`: der Spiegel der Segmente
     // (`_hydroRiverSpiegel`, linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt mit einem
     // Gewicht, das zur Krone stetig auf 0 fällt — ein breiter Fluss überdeckt in der Biegung mehrere Segmente, das
@@ -31592,7 +31611,7 @@ class AnazhRealm {
             const dist = Math.hypot(x - px, z - pz);
             const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
             const D = seg.dA + (seg.dB - seg.dA) * t;
-            const krone = halfW + Math.max(2, D * HC.carveBankSlope) * HC.kroneAnteil;
+            const krone = halfW + D / HC.bankNeigung;
             if (dist > krone) continue;
             const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
             gSumme += g;
@@ -32047,9 +32066,10 @@ class AnazhRealm {
                     fx /= L;
                     fz /= L;
                 }
-                // DIE QUELLE wächst (W-F5): an der Schwelle trägt der Lauf ein Viertel seiner Breite, ab der doppelten
-                // Schwelle die volle — je Zelle aus ihrer Akkumulation (geteilte Unterläufe sind breiten-gleich). Bis
-                // V18.531 sprang jede Quelle in voller Breite aus dem Boden (8,2–11,9 m, 2,36 m tief).
+                // DIE QUELLE wächst (W-F5): an der Schwelle trägt der Lauf ein Viertel seiner Breite und seiner Tiefe
+                // (`quelle`, `AnazhRealm._flussTiefe`), ab der doppelten Schwelle die volle — je Zelle aus ihrer
+                // Akkumulation (geteilte Unterläufe sind breiten-gleich). Bis V18.531 sprang jede Quelle in voller Breite aus
+                // dem Boden (8,2–11,9 m, 2,36 m tief); bis 8f09227d mit einem Viertel der Breite, aber dem 1,4-m-Bett.
                 const quelle = Math.min(1, Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold));
                 points.push({
                     x: wx(cur),
@@ -32058,6 +32078,7 @@ class AnazhRealm {
                     // die See-Strecke ist nahezu flach).
                     y: filled[cur],
                     width: (HC.widthMin + HC.widthK * Math.sqrt(accum[cur])) * quelle,
+                    quelle,
                     flowX: fx,
                     flowZ: fz,
                     inLake: lakeOf[cur] >= 0,
@@ -32109,12 +32130,11 @@ class AnazhRealm {
     // der Querschnitt wölbte sich 1,55 m). Läuft im Bau (`_hydroComputing`: die Ufer sind ungecarvt).
     _hydroRiverSpiegel(ctx, rivers) {
         const HC = AnazhRealm.HYDROSPHERE;
-        const depthFor = (width) => HC.carveBedMin + HC.carveBedK * (width || HC.widthMin);
         const schluessel = (p) => p.x + "," + p.z;
         const S = new Map();
         const ziel = (p) => {
-            const D = depthFor(p.width);
-            const rand = Math.max(1, (p.width || HC.widthMin) * 0.5) + Math.max(2, D * HC.carveBankSlope);
+            const D = AnazhRealm._flussTiefe(p);
+            const rand = (p.width || HC.widthMin) * 0.5 + D / HC.bankNeigung;
             let tief = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
             for (let sg = -1; sg <= 1; sg += 2) {
                 const v = this._voxelSurfaceY(p.x - p.flowZ * rand * sg, p.z + p.flowX * rand * sg);
@@ -32162,7 +32182,7 @@ class AnazhRealm {
                     t.push(ziel(p));
                     // Die HEBUNG ist gedeckelt: der Kanal überbrückt eine Senke höchstens um eine Bett-Tiefe über ihrem
                     // Grund — tiefer (eine Schlucht) fällt der Fluss hinein und schneidet stromab.
-                    const D = depthFor(p.width);
+                    const D = AnazhRealm._flussTiefe(p);
                     const mitte = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
                     deckel.set(schluessel(p), mitte + (1 - HC.spiegelFreibord) * D);
                 }
@@ -32274,13 +32294,13 @@ class AnazhRealm {
     _hydroBuildCarveIndex(ctx, rivers, lakes) {
         const HC = AnazhRealm.HYDROSPHERE;
         const { dim, originX, originZ, size, waterLevel } = ctx;
-        const depthFor = (width) => HC.carveBedMin + HC.carveBedK * (width || HC.widthMin);
         // --- Fluss-Bucket-Grid ---
         const bucketSize = HC.carveBucketSize;
         const bucketsDim = Math.max(1, Math.ceil(size / bucketSize));
         const riverBuckets = new Array(bucketsDim * bucketsDim);
         const addSeg = (seg) => {
-            const reach = Math.max(seg.hwA, seg.hwB) + Math.max(2, Math.max(seg.dA, seg.dB) * HC.carveBankSlope);
+            // die Reichweite des Kanals: Krone (halbe Breite + Tiefe / Neigung) + die Böschung dahinter
+            const reach = Math.max(seg.hwA, seg.hwB) + Math.max(seg.dA, seg.dB) / HC.bankNeigung + HC.bankWeite;
             let bi0 = Math.floor((Math.min(seg.ax, seg.bx) - reach - originX) / bucketSize);
             let bi1 = Math.floor((Math.max(seg.ax, seg.bx) + reach - originX) / bucketSize);
             let bj0 = Math.floor((Math.min(seg.az, seg.bz) - reach - originZ) / bucketSize);
@@ -32316,10 +32336,10 @@ class AnazhRealm {
                     az: a.z,
                     bx: b.x,
                     bz: b.z,
-                    hwA: Math.max(1, (a.width || HC.widthMin) * 0.5),
-                    hwB: Math.max(1, (b.width || HC.widthMin) * 0.5),
-                    dA: depthFor(a.width),
-                    dB: depthFor(b.width),
+                    hwA: (a.width || HC.widthMin) * 0.5,
+                    hwB: (b.width || HC.widthMin) * 0.5,
+                    dA: AnazhRealm._flussTiefe(a),
+                    dB: AnazhRealm._flussTiefe(b),
                     // der Spiegel an beiden Enden (`_hydroRiverSpiegel`): Fluss-Fläche und Bett lesen ihn linear
                     sA: a.S,
                     sB: b.S,
@@ -90712,8 +90732,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
 // liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`); seit
 // Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal; und die
-// Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett.
-AnazhRealm.CHUNK_IDB_FORM = "ufer-blende";
+// Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett; seit
+// der Gegenprüfung läuft die Bank mit ihrer Neigung ins Gelände (Kanal und Damm): ein alter Chunk trüge die Gleit-Wand.
+AnazhRealm.CHUNK_IDB_FORM = "bank-boeschung";
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
@@ -91543,6 +91564,15 @@ AnazhRealm.Gesetz = function (pfad, fallback) {
 // Die Kerne sind PFLICHT (index.html lädt alle Gesetzbücher, _kernPflichtWand meldet den Ausfall):
 // ein unlesbares Gesetz ist ein lauter BRUCH, nie eine stille Ersatz-Welt. Keine Zahlen-Zwillinge im
 // Stamm — die Zwillings-Absenz-Wand (gate:studio-vertrag) hält sie draußen.
+// DIE BETT-TIEFE eines Fluss-Punkts (der EINE Leser): carveBedMin + carveBedK · volle Breite, an der Quelle mit ihrem
+// Anteil (W-F5: eine Quelle ist ein Rinnsal, nie ein 1,4-m-Graben aus dem Nichts). Leser: `_hydroRiverSpiegel`,
+// `_hydroBuildCarveIndex` (seg.dA/dB → der Kanal, `_hydroRiverAt`, der Worker).
+AnazhRealm._flussTiefe = function (p) {
+    const HC = AnazhRealm.HYDROSPHERE;
+    const q = Number.isFinite(p.quelle) && p.quelle > 0 ? p.quelle : 1;
+    return (HC.carveBedMin + (HC.carveBedK * (p.width || HC.widthMin)) / q) * q;
+};
+
 // Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
 // Schwimmens und der Bezug der Wasserlinie (`_vehicleProfile`, `_fahrzeugGestalt`).
 AnazhRealm.WASSER_DICHTE_TAG = 0.55;
