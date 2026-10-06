@@ -34,6 +34,10 @@
 //       Eintrag), keine wirft, keine ändert die Welt (die Welt-Akte sind Beobachtungs-Punkte), die chain bricht nur die Op
 //       ohne Ort ab; `spawnSettlement({ position: null })` gründet nie beim Spieler. Befund 6b988a07: neun Ops warfen
 //       TypeError, spawn_village rief spawnSettlement ohne Ort (→ Spieler-Ort); cf9a07ba: jede Op am Spieler-Ort.
+//     R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` (mit dem Fels-Beweis `_felsUeber`) gegen den vollen Spalten-Scan,
+//       3 600 Urteile um den trockenen Ort, die Plattform und das nächste Wasser — 0 Abweichungen; dann
+//       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
+//       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring (die Strahlen-Suche von cf9a07ba). Befund 6b988a07: 351/1330/8037.
 //
 //   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -195,6 +199,30 @@ function ortVerdict(m) {
     if (!m.buchWarm) out.push("dorf: Buch kalt (Vorbedingung)");
     if (m.dorfAuftraege > 0) out.push(`dorf ohne Ort gründet beim Spieler (${m.dorfAuftraege} Worker-Auftrag)`);
     if (m.dorfOhneOrt != null) out.push("dorf ohne Ort liefert ein Dorf");
+    return out;
+}
+
+// R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
+// scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die 8-Strahlen-Suche von
+// cf9a07ba (8 je 4-m-Ring). Befund 6b988a07: 351/1330/8037 Spalten für 40/80/200 m.
+const ALT8 = (R) => 8 * Math.floor(R / 4);
+function sucheVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    const ex = m.exakt || {};
+    if (!(ex.n >= 1000)) out.push(`zu wenig Urteile (${ex.n}, Vorbedingung)`);
+    if (!(ex.nass > 0)) out.push("kein nasser Punkt in der Stichprobe (Vorbedingung)");
+    if (ex.falsch > 0) out.push(`das Urteil weicht vom vollen Scan ab: ${ex.falsch} von ${ex.n} (${(ex.beispiele || []).join(" ")})`);
+    for (const pfad of ["trinken", "chat", "ki", "ki@trocken-voll"]) {
+        const z = (m.zaehlung || {})[pfad.includes("@") ? pfad : `${pfad}@trocken`];
+        if (!z) {
+            out.push(`${pfad}: nicht gezählt`);
+            continue;
+        }
+        const s = z.hoch != null ? z.hoch : z.scans;
+        if (!(s <= ALT8(z.R)))
+            out.push(`${pfad} ${z.R} m: ${s} Spalten-Scans bei ${z.proben} Proben${z.hoch != null ? " (hochgerechnet)" : ""} (Soll ≤ ${ALT8(z.R)})`);
+    }
     return out;
 }
 
@@ -590,6 +618,141 @@ async function probe(arg) {
     } catch (e) {
         out.ort = Object.assign(out.ort || {}, { err: (e && e.stack) || String(e) });
     }
+    // ── R2: DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN — gezählt werden Spalten-Scans (`_voxelSurfaceY`) ──
+    try {
+        const m = { gestartet: false, zaehlung: {} };
+        out.suche = m;
+        const ort = out.satz && out.satz.trockenOrt;
+        if (!ort) throw new Error("kein Ort ohne Wasser im 84-m-Kreis (Vorbedingung)");
+        const plat = st.architectures.find((a) => a && a.type === "start_plattform");
+        const P = plat ? { x: plat.position.x, z: plat.position.z } : { x: 0, z: 0 };
+        const scan = r._voxelSurfaceY;
+        const urteil = r._isAboveWaterAt;
+        // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz, wie bis 06.10. gerechnet): 3 Margen, je 400 Punkte
+        //     um den trockenen Ort, die Plattform und das nächste Wasser (deterministischer Zufall).
+        const ref = (x, z, mg) => {
+            const s = scan.call(r, x, z);
+            return s !== null && Number.isFinite(s) && s > r._waterLevelAt(x, z) + mg;
+        };
+        const w0 = r._findNearestWaterPoint(P.x, P.z, 200);
+        const zentren = [ort, P].concat(w0 ? [w0] : []);
+        let seed = 12345;
+        const rnd = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
+        let n = 0,
+            falsch = 0,
+            nass = 0;
+        const beispiele = [];
+        for (const c of zentren)
+            for (let i = 0; i < 400; i++) {
+                const a = rnd() * Math.PI * 2,
+                    d = Math.sqrt(rnd()) * 220;
+                const x = c.x + Math.cos(a) * d,
+                    z = c.z + Math.sin(a) * d;
+                for (const mg of [0.2, 0.4, 1.5]) {
+                    const soll = ref(x, z, mg);
+                    n++;
+                    if (!soll) nass++;
+                    if (urteil.call(r, x, z, mg) !== soll) {
+                        falsch++;
+                        if (beispiele.length < 3) beispiele.push(`(${x.toFixed(1)}, ${z.toFixed(1)}, ${mg})`);
+                    }
+                }
+            }
+        // Der Spieler-Wille: ein Graben und eine Aufschüttung (voxelEdits) am Ufer — das Urteil liest dieselbe Dichte samt
+        // Edits. Die Edits leben nur für diese Urteile (kein Remesh), danach ist die Liste wie vorher.
+        const wm = st.worldMeta;
+        const editsAlt = wm.voxelEdits;
+        const ufer = w0 || P;
+        const sy = scan.call(r, ufer.x + 6, ufer.z) ?? 0;
+        wm.voxelEdits = (editsAlt || []).concat([
+            { x: ufer.x + 6, y: sy, z: ufer.z, r: 7, strength: 48, mode: "carve" },
+            { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, strength: 48, mode: "fill" },
+        ]);
+        try {
+            for (let i = 0; i < 300; i++) {
+                const a = rnd() * Math.PI * 2,
+                    d = Math.sqrt(rnd()) * 16;
+                const x = ufer.x + Math.cos(a) * d,
+                    z = ufer.z + Math.sin(a) * d;
+                for (const mg of [0.2, 0.4, 1.5]) {
+                    const soll = ref(x, z, mg);
+                    n++;
+                    if (!soll) nass++;
+                    if (urteil.call(r, x, z, mg) !== soll) {
+                        falsch++;
+                        if (beispiele.length < 3) beispiele.push(`Edit (${x.toFixed(1)}, ${z.toFixed(1)}, ${mg})`);
+                    }
+                }
+            }
+        } finally {
+            wm.voxelEdits = editsAlt;
+        }
+        m.exakt = { n, falsch, nass, beispiele, wasserGefunden: !!w0 };
+        // (b) Spalten-Scans und Proben je Such-Pfad: die Suche selbst gerufen; Scan und Urteil sind Beobachtungs-Punkte
+        //     (sie zählen und reichen durch). Trocken = kein Wasser im Kreis, der teuerste Fall.
+        let scans = 0,
+            proben = 0;
+        const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
+        const hatte = { scan: eigen("_voxelSurfaceY"), urteil: eigen("_isAboveWaterAt") };
+        r._voxelSurfaceY = function (...a) {
+            scans++;
+            return scan.apply(this, a);
+        };
+        r._isAboveWaterAt = function (...a) {
+            proben++;
+            return urteil.apply(this, a);
+        };
+        try {
+            for (const [pfad, R] of [
+                ["trinken", r.constructor.CREATURE_DRINK_SEARCH_RADIUS],
+                ["chat", 80],
+                ["ki", 200],
+            ])
+                for (const [wo, c] of [
+                    ["trocken", ort],
+                    ["plattform", P],
+                ]) {
+                    scans = proben = 0;
+                    const w = r._findNearestWaterPoint(c.x, c.z, R);
+                    m.zaehlung[`${pfad}@${wo}`] = { R, proben, scans, gefunden: !!w };
+                }
+            // Der teuerste Fall ganz: kein Wasser im 200-m-Kreis heißt, die Suche fragt ALLE Proben ihrer Ringe (4-m-Ringe,
+            // Bogen ≤ 4 m), und jede ist trocken. Am trockenen Ort jede dieser Proben gefragt; gezählt die Spalten, die die
+            // TROCKENEN zahlen (eine nasse beendet die Suche) — so viele zahlt die KI-Suche in einer Welt ohne Wasser.
+            let trockenScans = 0,
+                trockenProben = 0,
+                nassProben = 0;
+            for (let rr = 4; rr <= 200; rr += 4) {
+                const D = Math.max(8, Math.ceil((2 * Math.PI * rr) / 4));
+                for (let d = 0; d < D; d++) {
+                    const s0 = scans;
+                    const ja = r._isAboveWaterAt(ort.x + Math.cos((d / D) * Math.PI * 2) * rr, ort.z + Math.sin((d / D) * Math.PI * 2) * rr, 0.2);
+                    if (ja) {
+                        trockenProben++;
+                        trockenScans += scans - s0;
+                    } else nassProben++;
+                }
+            }
+            const alle = trockenProben + nassProben;
+            m.zaehlung["ki@trocken-voll"] = {
+                R: 200,
+                proben: trockenProben,
+                scans: trockenScans,
+                nass: nassProben,
+                // hochgerechnet auf alle Proben der Ringe (eine Welt, in der jede trocken ist)
+                hoch: trockenProben ? Math.round((trockenScans * alle) / trockenProben) : null,
+                gefunden: false,
+            };
+        } finally {
+            if (hatte.scan) r._voxelSurfaceY = scan;
+            else delete r._voxelSurfaceY;
+            if (hatte.urteil) r._isAboveWaterAt = urteil;
+            else delete r._isAboveWaterAt;
+        }
+        m.gestartet = true;
+    } catch (e) {
+        out.suche = Object.assign(out.suche || {}, { err: (e && e.stack) || String(e) });
+    }
     // ── V-D3: die Werkstatt-Vorschau ──
     try {
         const m = { gestartet: false };
@@ -796,6 +959,29 @@ async function probe(arg) {
             const v = ortVerdict(bruch);
             check(`Selbst-Test V-k5-Klasse: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
+        // R2: gesund (Urteil exakt, trocken wenige Scans), je Befund-Zustand der Täter beim Namen.
+        const gesundW = {
+            gestartet: true,
+            exakt: { n: 3600, falsch: 0, nass: 400, beispiele: [] },
+            zaehlung: {
+                "trinken@trocken": { R: 40, proben: 351, scans: 0 },
+                "chat@trocken": { R: 80, proben: 1330, scans: 12 },
+                "ki@trocken": { R: 200, proben: 1954, scans: 90 },
+                "ki@trocken-voll": { R: 200, proben: 8037, scans: 300 },
+            },
+        };
+        check("Selbst-Test R2: gesund == 0 Täter", sucheVerdict(gesundW).length === 0, sucheVerdict(gesundW).join(" · "));
+        const mitZ = (k, z) => Object.assign({}, gesundW, { zaehlung: Object.assign({}, gesundW.zaehlung, { [k]: z }) });
+        for (const [name, bruch, soll] of [
+            ["Spalten-Scan je Probe (6b988a07)", mitZ("ki@trocken", { R: 200, proben: 1954, scans: 1954 }), "ki 200 m: 1954 Spalten-Scans"],
+            ["ohne Wasser alle 8037 Proben gescannt", mitZ("ki@trocken-voll", { R: 200, proben: 8037, scans: 8037 }), "ki@trocken-voll 200 m: 8037"],
+            ["Trinken scannt je Probe", mitZ("trinken@trocken", { R: 40, proben: 351, scans: 351 }), "trinken 40 m"],
+            ["der Fels-Beweis lügt", Object.assign({}, gesundW, { exakt: { n: 3600, falsch: 3, nass: 400, beispiele: ["(1, 2, 0.2)"] } }), "das Urteil weicht"],
+            ["kein nasser Punkt (vakuös)", Object.assign({}, gesundW, { exakt: { n: 3600, falsch: 0, nass: 0 } }), "kein nasser Punkt"],
+        ]) {
+            const v = sucheVerdict(bruch);
+            check(`Selbst-Test R2: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -881,6 +1067,23 @@ async function probe(arg) {
         `V-k5-Klasse jede Op mit near_water ${om.radius || "?"} m in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)`,
         vO.length === 0,
         `${om.gestartet ? ORT_OPS.map(opZeile).join(" · ") + ` · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}` : "nicht gestartet"}${vO.length ? " — Täter: " + vO.join(", ") : ""}`
+    );
+    console.log("=== R2 — DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN ===");
+    const sm = out.suche || {};
+    if (sm.err) check("R2 Probe ohne Ausnahme", false, sm.err.split("\n")[0]);
+    const vS = sucheVerdict(sm);
+    const zz = sm.zaehlung || {};
+    const zZeile = (k) =>
+        zz[k]
+            ? `${k} ${zz[k].R} m: ${zz[k].proben} ${zz[k].nass != null ? "trockene " : ""}Proben/${zz[k].scans} Scans${zz[k].gefunden ? " (Wasser)" : ""}${zz[k].nass != null ? ` (${zz[k].nass} nasse ohne Zählung; ganz trocken hochgerechnet ${zz[k].hoch})` : ""}`
+            : `${k} —`;
+    check(
+        "R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche",
+        vS.length === 0,
+        `${sm.exakt ? `${sm.exakt.falsch} von ${sm.exakt.n} Urteilen abweichend (${sm.exakt.nass} nass)` : "—"} · ${["trinken", "chat", "ki"]
+            .flatMap((p) => [zZeile(`${p}@trocken`), zZeile(`${p}@plattform`)])
+            .concat([zZeile("ki@trocken-voll")])
+            .join(" · ")}${vS.length ? " — Täter: " + vS.join(", ") : ""}`
     );
     console.log("=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===");
     const vm = out.vorschau || {};

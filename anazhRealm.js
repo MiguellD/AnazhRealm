@@ -20266,7 +20266,8 @@ class AnazhRealm {
     // Ring-Scan: konzentrische Ringe in 4-m-Schritten bis radius, je Ring so viele Richtungen, dass der Bogen
     // zwischen zwei Proben ≤ 4 m bleibt (bis 06.10. 8 Strahlen: bei 80 m lagen 63 m zwischen zwei Proben, ein Bach
     // fiel durch); der erste Treffer (`_isAboveWaterAt` false — die Hydrosphäre: See, Fluss, Tarn, Meer) gewinnt —
-    // innen nach außen = kürzeste Distanz. → {x, z} | null.
+    // innen nach außen = kürzeste Distanz. Eine trockene Probe kostet den Fels-Beweis (1–3 Dichte-Proben), den Spalten-Scan
+    // zahlt nur das Ufer (R2: ohne Wasser im 200-m-Kreis 8037 → 4 Scans). → {x, z} | null.
     _findNearestWaterPoint(cx, cz, radius) {
         const STEP = 4;
         for (let r = STEP; r <= radius; r += STEP) {
@@ -31356,13 +31357,57 @@ class AnazhRealm {
     }
 
     // Ist (x,z) trockenes Land? true, wenn die Voxel-Surface ≥ `marge` m über dem Wasser-Spiegel liegt.
-    // EINE Quelle für alle Schichten, die Wasser kennen müssen (Vegetation, Bauwerke, Küste, Kreaturen);
-    // `surfaceY = null` (Höhle/Loch) zählt nicht als Land. Kosten = `_waterLevelAt`.
+    // EINE Quelle für alle Schichten, die Wasser kennen müssen (Vegetation, Bauwerke, Küste, Kreaturen, die Wasser-Suche);
+    // `surfaceY = null` (Höhle/Loch) zählt nicht als Land. Der billige Beweis zuerst (Lehre 25): ist ein Gitterpunkt des
+    // Scans über Spiegel + Marge Fels (`_felsUeber`, EINE Dichte-Probe), ist die Spalte trocken — dasselbe Urteil, ohne den
+    // Scan. Nur Spalten am Wasser (und was der Beweis nicht trägt) zahlen `_voxelSurfaceY`.
     _isAboveWaterAt(x, z, marge = 0) {
+        const waterY = this._waterLevelAt(x, z);
+        if (this._felsUeber(x, z, waterY + marge)) return true;
         const surfaceY = this._voxelSurfaceY(x, z);
         if (surfaceY === null || !Number.isFinite(surfaceY)) return false;
-        const waterY = this._waterLevelAt(x, z);
         return surfaceY > waterY + marge;
+    }
+
+    // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
+    // Gitter und nimmt den ERSTEN Fels — ist ein Gitterpunkt über `hoehe` Fels, liegt die Oberfläche dort oder höher.
+    // Dichte-Proben an genau diesen Gitterpunkten (dieselbe Subtraktions-Kette, derselbe Spalten-Kontext, dieselbe Dichte
+    // `_fieldDensityAt` samt Edits) statt des Scans: (1) der höchste Punkt unter dem Rauheits-Band (surf − 12·roughScale —
+    // dort ist Fels, wo keine Höhle ist), sonst der tiefste über `hoehe`; (2) ist der tiefste über `hoehe` Luft und der
+    // darunter Fels, liegt die Oberfläche auf der Kante dazwischen (die Interpolation des Scans, bitgleich) — oder höher,
+    // falls darüber noch Fels hängt. false = unbewiesen, der Scan entscheidet. Die Wasser-Suche (`_findNearestWaterPoint`)
+    // fragte je Probe den vollen Scan: trocken 351/1330/8037 Spalten für 40/80/200 m. `gate:v1-pfad` (R2) misst das Urteil
+    // gegen den vollen Scan.
+    _felsUeber(x, z, hoehe) {
+        if (!Number.isFinite(hoehe)) return false;
+        const ctx = this._terrainColumnContextIn(x, z, this._felsScratch || (this._felsScratch = {}));
+        if (!Number.isFinite(ctx.surf)) return false;
+        const cfg = this._voxelChunkConfig();
+        const floorY = ctx.base - cfg.floorDrop;
+        const top = floorY + cfg.dimY * cfg.step - 8;
+        const bottom = floorY + 12;
+        const skipAbove = Math.max(ctx.surf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2);
+        const band = ctx.surf - 12 * ctx.roughScale;
+        let unterBand = null,
+            tiefster = null;
+        for (let y = top; y >= bottom && y > hoehe; y -= 1.2) {
+            tiefster = y;
+            if (unterBand === null && y <= band) unterBand = y;
+        }
+        if (tiefster === null) return false;
+        // (1) ein Gitterpunkt über `hoehe` ist Fels (über `skipAbove` sieht der Scan nur Luft)
+        if (unterBand !== null && unterBand <= skipAbove && this._fieldDensityAt(x, unterBand, z, ctx) > 0) return true;
+        if (unterBand === tiefster) return false; // dieselbe Probe — Luft, der Scan entscheidet
+        if (tiefster > skipAbove) return false;
+        const dOben = this._fieldDensityAt(x, tiefster, z, ctx);
+        if (dOben > 0) return true;
+        // (2) die Kante unter dem tiefsten Punkt über `hoehe`
+        const unten = tiefster - 1.2;
+        if (unten < bottom) return false;
+        const dUnten = this._fieldDensityAt(x, unten, z, ctx);
+        if (!(dUnten > 0)) return false;
+        const t = dUnten - dOben > 1e-9 ? dUnten / (dUnten - dOben) : 0;
+        return unten + 1.2 * Math.min(1, Math.max(0, t)) > hoehe;
     }
 
     // Boden-Cache je Kreatur: `_voxelSurfaceY` (Zahl|null) nur neu scannen, wenn sie sich > 0.5 m bewegt
