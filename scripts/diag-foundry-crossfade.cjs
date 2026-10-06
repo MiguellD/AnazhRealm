@@ -828,7 +828,8 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     const verb = fnBody(srcNC, /\n {4}static _geoVerbinden\(geoms, wurfe\)\s*\{/) || "";
     if (!/wurfe && Number\.isInteger\(wurfe\[j\]\)\s*\?\s*Math\.min\(geoms\[j\]\.index\.count, wurfe\[j\] \* 3\)/.test(verb))
         v.push("das Verschmelzen legt die Wurf-Vorsätze nicht nach vorn (der Zwilling würfe fremde Dreiecke)");
-    const tex = /texelM: Object\.freeze\(\[([\d.]+),/.exec(srcNC);
+    // der Texel der KASKADE (SCHATTEN_KASKADE.texelM[0]) — nie das erste texelM des Stamms (die Laub-Streu trägt eines)
+    const tex = /SCHATTEN_KASKADE = Object\.freeze\(\{\s*texelM: Object\.freeze\(\[([\d.]+),/.exec(srcNC);
     const dm = /wurf: \{ durchmesserM: ([\d.]+) \}/.exec(fcSrc);
     if (!tex || !dm || Number(tex[1]) !== Number(dm[1]))
         v.push(
@@ -836,6 +837,10 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         );
     const weg = fnBody(srcNC, /_disposeFoundryGroupGeom\(g\)\s*/) || "";
     if (!/lf\._schattenGeom\.dispose\(\)/.test(weg)) v.push("die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)");
+    // DAS WURF-RECHT DES TEILS (Integration W5 × W6): der Zwilling wirft nach `teilWirft` (Lichtquelle, Durchsicht,
+    // Fell-Schale nie) — `lf.castShadow` ist bei einer Zwillings-Quelle false, Bäume und Sträucher würfen still keinen.
+    if (!/teilWirft: child\.castShadow !== false,/.test(flat) || !/castShadow: lf\.teilWirft,\s*shadowTwin: true/.test(flat))
+        v.push("der Schatten-Zwilling wirft nach lf.castShadow statt nach dem Wurf-Recht seines Teils (teilWirft) — Bäume und Sträucher werfen still nicht");
     if (!/shadowTwin: true,\s*_eigen: false/.test(flat))
         v.push("der Schatten-Zwilling erbt das Eigentum der L1-Geometrie (der L0-Dispose zerstört sie)");
     return v;
@@ -943,6 +948,7 @@ async function main() {
             ["Verschmelzen mischt den Vorsatz", nc.replace("? Math.min(geoms[j].index.count, wurfe[j] * 3)", "? geoms[j].index.count")],
             ["Zwillings-Gestalt leckt", nc.replace("lf._schattenGeom.dispose();", "")],
             ["Zwilling besitzt L1-Geometrie", nc.replace("_eigen: false,", "")],
+            ["Zwilling liest das Stufen-Flag", nc.replace("castShadow: lf.teilWirft,", "castShadow: lf.castShadow !== false,")],
         ];
         check("Selbst-Test 3: die echte Quelle hält das Schatten-Gesetz", schattenWahrheit(nc).length === 0, schattenWahrheit(nc).join(" · "));
         for (const [name, src] of brueche) {

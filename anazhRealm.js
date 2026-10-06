@@ -72265,7 +72265,10 @@ class AnazhRealm {
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
                     _srcGroup: group,
-                    // die Stufe wirft (Budget) — eine Lichtquelle nie (`_foundryBuildMesh` stempelt sie ans Mesh)
+                    // DAS WURF-RECHT DES TEILS: eine Lichtquelle, ein durchsichtiger Stoff, die Fell-Schale werfen nie
+                    // (`_foundryBuildMesh` stempelt es ans Mesh) — es gilt der Stufe selbst UND ihrem Zwilling.
+                    teilWirft: child.castShadow !== false,
+                    // die Stufe wirft (Budget), wenn sie nicht über ihren Zwilling wirft
                     castShadow: castsShadow && child.castShadow !== false,
                 });
             }
@@ -72288,7 +72291,9 @@ class AnazhRealm {
                         Object.assign({}, lf, {
                             leafKey: lf.leafKey + "#S",
                             geom: this._foundrySchattenGeom(lf),
-                            castShadow: lf.castShadow !== false, // die Zwillings-Stufe wirft selbst — ihre Lichtquellen nie
+                            // der Zwilling wirft nach dem Wurf-Recht des Teils, nie nach `lf.castShadow` (das ist bei
+                            // einer Zwillings-Quelle false: Bäume und Sträucher würfen still keinen Schatten)
+                            castShadow: lf.teilWirft,
                             shadowTwin: true,
                             _eigen: false, // die Geometrie gehört dem Teil, nie dem Zwilling
                             _schattenGeom: null,
