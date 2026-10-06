@@ -62592,9 +62592,10 @@ class AnazhRealm {
     // DAS VERDICHTEN (W7): ein Satz MIT Bereichen hält seine Kapazität nicht über sein Hochwasser hinaus. Nach der Ruhe-Frist
     // (`ruheTakte` Render-Takte ohne Ein- oder Austritt) rücken seine Bereiche dicht ab 0 (in Lage-Ordnung, jeder Index um
     // seinen Umzug verschoben — die Zellen sind Sichten darauf), und die Pool-Geometrie tauscht am SELBEN Mesh auf das Soll
-    // (Vertices 1,25 × die lebenden, Indizes 1,25 × die Kapazität der Abschnitte, nie unter der Start-Kapazität); die
-    // Abschnitte legen sich im nächsten Pass dicht neu. Es verdichtet erst ab dem Doppelten des Solls (das Wachsen ×1,5 und
-    // das Verdichten pendeln nie). Befund (echte GPU, Mess-Wiese, drei Wander-Schleifen à 1,2 km, Puffer-Linse): der Streu-
+    // (Vertices 1,1 × die lebenden, Indizes 1,1 × die Kapazität der Abschnitte, nie unter der Start-Kapazität); die
+    // Abschnitte legen sich im nächsten Pass dicht neu. Es verdichtet erst über 1,25 × dem Soll (ein Verdichten kostet, was ein
+    // Wachsen kostet: ein frischer Pool und seine Abschnitte; in einer Ruhe höchstens einmal). Befund (echte GPU, Mess-Wiese,
+    // drei Wander-Schleifen à 1,2 km, Puffer-Linse): der Streu-
     // Satz des Laubs hielt 107 568 Vertices für 33 490 lebende (4,1 MB für 1,3 MB), seine Abschnitte 207 360 Indizes; die
     // Bau-Sätze hielten ihr Hochwasser (bauSatz 11,5 MB) — nur der LEERE Satz kehrte zurück (`_chunkSatzLeert`).
     _chunkSatzVerdichten(s) {
@@ -62604,9 +62605,9 @@ class AnazhRealm {
         for (const b of s.bloecke.values()) leben += b.vAnzahl;
         let iBedarf = 0;
         for (const a of s.abschnitte.values()) iBedarf += this._chunkSatzKap(a.n);
-        const vSoll = Math.max(C.v, Math.ceil(leben * 1.25));
-        const iSoll = Math.max(C.i, Math.ceil(iBedarf * 1.25));
-        if (s.vKap < 2 * vSoll && s.iKap < 2 * iSoll) return;
+        const vSoll = Math.max(C.v, Math.ceil(leben * 1.1));
+        const iSoll = Math.max(C.i, Math.ceil(iBedarf * 1.1));
+        if (s.vKap <= 1.25 * vSoll && s.iKap <= 1.25 * iSoll) return;
         // die Bereiche rücken in Lage-Ordnung nach unten (ein Umzug liest nie, was ein früherer schrieb)
         const A = s.geom.attributes;
         let pos = 0;

@@ -40,7 +40,7 @@
 //       (`ruheTakte`), dann kehrt er am selben Mesh auf seine Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, drei
 //       Wander-Schleifen à 1,2 km): die Bau-Sätze verlassener Dörfer hielten 38,3 MB, die größten ohne einen Bereich.
 //   (l) DAS VERDICHTEN (W7) — ein Satz MIT Bereichen hält sein Hochwasser nur bis zur Ruhe-Frist: danach rücken seine Bereiche
-//       dicht ab 0 und die Pool-Geometrie tauscht am SELBEN Mesh auf das Soll (1,25 × die lebenden Vertices, nie unter der
+//       dicht ab 0 und die Pool-Geometrie tauscht am SELBEN Mesh auf das Soll (1,1 × die lebenden Vertices, nie unter der
 //       Start-Kapazität); jeder Bereich trägt danach byte-gleich seinen Inhalt, sein Index ist um den Umzug verschoben, ein
 //       Abschnitt legt sich treu neu. Befund (echte GPU, Mess-Wiese, drei Wander-Schleifen): der Streu-Satz des Laubs hielt
 //       107 568 Vertices für 33 490 lebende (4,1 MB für 1,3 MB), die Bau-Sätze ihr Hochwasser (bauSatz 11,5 MB).
@@ -964,7 +964,7 @@ function check(name, ok, detail) {
                     gross,
                     vorFrist,
                     nach: [ds.vKap, ds.iKap],
-                    soll: Math.max(C.v, Math.ceil(500 * 3 * 1.25)),
+                    soll: Math.max(C.v, Math.ceil(500 * 3 * 1.1)),
                     start: [C.v, C.i],
                     derselbe: ds.mesh === mesh0 && ds.mesh.geometry === ds.geom,
                     vEnde: ds.vEnde,
