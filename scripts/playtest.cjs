@@ -4286,8 +4286,19 @@ async function checkBandV1754PlayerAttack(ctx) {
         // Der Klick LÖST nur den 3-Phasen-Schwung aus, das Treffen macht der Klingen-Sweep der Strike-Phase
         // → Ziel VOR den Spieler (Sweep-Reichweite), Schwung synthetisch über die Anzeige-Uhr treiben.
         const savedYaw = r.state.yaw;
+        const savedPitch = r.state.pitch;
+        const savedCam = r.state.cameraMode;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
+        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte richten.
+        if (typeof r.setCameraMode === "function") r.setCameraMode("first");
+        r._loopCamera(performance.now() / 1000);
+        {
+            const b = new THREE.Box3().setFromObject(c1);
+            const cp = r.state.camera.position;
+            r.state.pitch = Math.atan2((b.min.y + b.max.y) / 2 - cp.y, Math.max(0.5, c1.position.z - cp.z));
+            r._loopCamera(performance.now() / 1000);
+        }
         p._swing = null;
         p.lastAttackAt = -Infinity;
         setEmo({});
@@ -4310,6 +4321,8 @@ async function checkBandV1754PlayerAttack(ctx) {
         out.cooldownGates = atkA === true && atkB === false && c1.userData.hp === hp1Mid;
         p._swing = null;
         r.state.yaw = savedYaw;
+        r.state.pitch = savedPitch;
+        if (typeof r.setCameraMode === "function") r.setCameraMode(savedCam);
 
         // (4) die SCHULD ist lebendig-gegated: ein Spieler-Kill eines lebendig-Wesens → sorrow
         // (der W4-Kontext-Appraisal: derselbe lebendig-Tag, im Tötungs-Kontext zu Schmerz)
