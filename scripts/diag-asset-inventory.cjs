@@ -7,8 +7,8 @@
 //
 //   STUDIO     — aus der Studio-Pipeline (fscatter:* Scatter-Gruppen · f:/fimp:-Leaves der
 //                platzierten Architektur · das Studio-Gras-Asset [geo.userData.foundryGras] · der Streu-Satz der
-//                Nah-Streu über die Leaf-Keys seiner Senken, die Senken der Nah-Wiese über ihren Foundry-Leaf-Key, die
-//                Karten-Sicht über den Schlüssel der Atlas-Gruppe). Die Senken der Nah-Wiese füllt
+//                Nah-Streu über die Leaf-Keys seiner Senken, die Senken der Nah-Wiese über ihren Foundry-Leaf-Key).
+//                Die Senken der Nah-Wiese füllt
 //                ihr Sicht-Satz im Haupt-Pass — headless legt ihn die Linse selbst (scripts/lib/wiese-sicht.cjs) und
 //                verlangt: der Ring am Start trägt Büschel, jede Senke belegt und als Studio-Emitter gezählt (W).
 //   SUBSTANZ   — Welt-Substanz ohne Studio-Gegenstück, bewusst KEINE Silhouetten-Frage
@@ -184,9 +184,6 @@ const server = http.createServer((req, res) => {
             for (const [art, s] of st.chunkSaetze)
                 if (s.spec && s.spec.userData && s.spec.userData.streuSatz && streuKeys.has(art))
                     meshKeys.set(s.mesh, streuKeys.get(art));
-        // W7 — die Karten zeichnen als Sicht der EINEN Atlas-Gruppe: die Sicht trägt deren Schlüssel.
-        if (st.kartenSicht && st.kartenSicht.mesh)
-            meshKeys.set(st.kartenSicht.mesh, [String(st.kartenSicht.mesh.userData.archInstanceKey)]);
         // Welle 6 — der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)

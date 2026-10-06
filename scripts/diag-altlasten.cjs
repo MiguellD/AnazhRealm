@@ -429,6 +429,16 @@ const FORBIDDEN = [
     },
     { token: "positionGeometry.y.mul(wiegen)", fiel: "W7 — die Höhe der wiegenden Nah-Streu ist aWiege (_satzBlock)" },
     { token: '"|wiegt:"', fiel: "W7 — EIN wiegender Stoff je Regler, nie je Studio-Skala (|wiegt)" },
+    // W7-VEREINIGUNG — DAS EINE GESETZ DER PASS-WAHL: im selben Haken wählten drei Wege (Sätze und Bündel-Werfer nach der
+    // Box, die Pflanzen-Stufen nach Kugel · Kapsel · Fenster, die Karten als Senken-Kopie ihrer Sicht); die Box der fernen
+    // Kaskade zog den nahen Boden (boden k1 173 784 über der Ratsche 90 845). Jetzt urteilt `_passTrifft` über jeden Körper
+    // jedes Passes, die Karten sind eine Gruppe der Instanz-Wahl, die Kanten des Fensters kommen aus dem Blend-Gesetz.
+    { token: "kartenSicht", fiel: "W7-Vereinigung — die Karten sind eine Gruppe der Instanz-Wahl (_instanzWahlPass)" },
+    { token: "_sichtKugel", fiel: "W7-Vereinigung — das EINE Gesetz der Pass-Wahl (_passTrifft)" },
+    { token: "_instanzKapselTrifft", fiel: "W7-Vereinigung — die Licht-Kapsel gilt jedem Leser (_passTrifft)" },
+    { token: "_instanzWahlLage", fiel: "W7-Vereinigung — EINE Lage je Pass für jeden Leser (_passWahlLage)" },
+    { token: "INSTANZ_WAHL", fiel: "W7-Vereinigung — die Konstanten des Gesetzes (PASS_WAHL)" },
+    { token: "SICHT_RAND", fiel: "W7-Vereinigung — der Rand ist ein Teil des Gesetzes (PASS_WAHL.sichtRand)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

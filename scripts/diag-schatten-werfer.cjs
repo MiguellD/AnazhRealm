@@ -23,8 +23,9 @@
 //   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (kleinste Zweierpotenz)
 //   K6  Drehen (360 × 1°, Mittag): die längste Kante je Texel bleibt ≤ 1,05 · texelM; die Rast-Wechsel der Box-Größe
 //       (jeder ist ein Neu-Abtasten aller Schatten-Kanten) werden gezählt
-//   W1  je Kaskaden-Pass liegt JEDES sichtbare Bundle mit seiner Werfer-Hülle und JEDER sichtbare Werfer mit seiner
-//       Box im Frustum der Pass-Kamera; nach dem Pass: Haupt-Urteil, jeder Werfer zurück; ein Bundle bleibt Bundle
+//   W1  je Kaskaden-Pass wirft JEDES Bundle genau dann, wenn seine Werfer-Hülle das EINE Gesetz der Pass-Wahl trifft
+//       (`_passTrifftBox` in der Lage des Passes: Frustum der Pass-Kamera, Licht-Kapsel gegen die Scheibe), und JEDER
+//       Werfer darin ebenso mit seiner Box; nach dem Pass: Haupt-Urteil, jeder Werfer zurück; ein Bundle bleibt Bundle
 //   W2  ein Werfer 2 km vor der Kamera (im Haupt-Urteil sichtbar) wirft in keine Kaskade
 //   W3  ein Werfer hinter dem Blick (Haupt-Urteil unsichtbar), der in die nahe Kaskade wirft, wirft
 //   W4  eine Region mit einem nahen und einem 2 km fernen Werfer: die Region wirft, der ferne Werfer ruht
@@ -34,16 +35,22 @@
 //       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
 //   W7  die Sätze je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
 //       245 696 Dreiecke; der Bau-Satz zog in k1 den Lauf vom ersten bis zum letzten Bereich im Frustum): jeder Pass
-//       zeichnet in jedem Satz genau die Zellen, deren Hülle sein Frustum schneidet, byte-gleich hintereinander, nach dem
-//       Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe
-//       Kaskade Boden hinter dem Blick (der Hang wirft)
+//       zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft, byte-gleich
+//       hintereinander, nach dem Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im
+//       Rücken) trägt die nahe Kaskade Boden hinter dem Blick (der Hang wirft)
 //   W8  die Instanz-Wahl je Pass (Befund 06.10., echte GPU, Mess-Wiese: jede globale Baum-Gruppe zog in jedem Pass JEDE
 //       Instanz — das Hauptbild auch die Bäume hinter dem Blick, k1 bei schrägem Blick jeden Zwilling, jeder Pass die Stufen,
 //       deren Maske vom Auge alles verwirft): gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
 //       Instanzen im Frustum und in ihrem Fenster (nicht hinter dem Blick, nicht jenseits d1), die L0 nicht jenseits d0; der
 //       Zwilling wirft mittags in die nahe Scheibe, nicht in die ferne, ein hoher Zwilling mitten in der fernen Scheibe nur
 //       dort, und am Abend wirft ein Zwilling HINTER dem Blick in die nahe Scheibe (sein Schatten läuft nach vorn); nach jedem
-//       Pass zählt jede Gruppe wieder alle, jede Marke trägt ihren Slot
+//       Pass zählt jede Gruppe wieder alle, jede Marke trägt ihren Slot; ein Stoff OHNE Maske (die GPU zeichnet jede Instanz
+//       voll) bekommt kein Fenster — seine L1 jenseits d1 zeichnet; die Gruppen der Welt ohne Masken-Stoff stehen beim Namen
+//   W9  DAS EINE GESETZ, DREI LESER (W7-Vereinigung — Befund echte GPU, Mess-Wiese, yaw −0,88: boden k1 173 784 Dreiecke
+//       über der Ratsche 90 845, die Box der fernen Kaskade umschloss den nahen Boden, die Kapsel galt nur den Bäumen):
+//       ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
+//       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
+//       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
@@ -59,6 +66,8 @@
 //   S7  Selbsttest: ein zweiter compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
 //   S8  Selbsttest: die alte Regel (der Satz zeichnet den ganzen Ring in jedem Pass) macht W7 rot
 //   S9  Selbsttest: die alte Regel (eine globale Gruppe zeichnet jede Instanz in jedem Pass) macht W8 rot, beim Namen
+//   S10 Selbsttest: urteilt EIN Leser nach der alten Box (das Frustum allein, ohne Licht-Kapsel) — die Zellen, die Werfer
+//       der Bündel oder die Instanzen —, wird W9 rot und nennt ihn
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
 const puppeteer = require("puppeteer");
@@ -191,6 +200,18 @@ function probe(selbsttest) {
         const c = lw.shadow.camera;
         const m = new T.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
         return new T.Frustum().setFromProjectionMatrix(m, c.coordinateSystem);
+    };
+    // DIE LAGE eines Passes, wie sie der echte Haken legt (`_passWahlLage`: Frustum, Auge, Scheibe der Kaskade, Blende) —
+    // das Soll jedes Lesers ist das EINE Gesetz in dieser Lage. i ≥ 0: die Kaskade i, sonst das Hauptbild.
+    const lageVon = (i) => {
+        const kam = i >= 0 ? csm.lights[i].shadow.camera : cam;
+        if (i >= 0) S.frustum.copy(frustumVon(i));
+        else {
+            cam.updateMatrixWorld(true);
+            S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+            S.frustum.setFromProjectionMatrix(S.m, cam.coordinateSystem);
+        }
+        return r._passWahlLage(S, kam, i);
     };
     // DIE EMPFÄNGER (K1): Boden-Punkte im Blick, aus dem Dichte-Feld (`_voxelSurfaceY`) — unabhängig von der Box-Rechnung.
     // Empfänger ist nur, was ein schatten-lesendes Mesh zeichnet: ein Punkt über einem Bereich des Boden-Satzes. Jenseits
@@ -473,27 +494,32 @@ function probe(selbsttest) {
             zurueck: true,
         };
         for (let i = 0; i < csm.lights.length; i++) {
-            const fr = frustumVon(i);
+            const L = lageVon(i);
             const kam = csm.lights[i].shadow.camera;
             pass(kam, false);
             let n = 0;
             for (const bg of map.values()) {
                 if (bg.isBundleGroup !== true) w.bundleBleibt = false;
-                if (!bg.visible) continue;
-                n++;
                 const h = r._bundleWerferHuelle(bg);
-                if (!h || !fr.intersectsBox(h)) w.falsch++;
+                const soll = h !== null && r._passTrifftBox(L, h, 0);
+                if (bg.visible !== soll) w.falsch++;
+                if (bg.visible) n++;
             }
             w.sichtbar.push(n);
-            // je Werfer: jedes sichtbare werfende Blatt-Mesh einer sichtbaren Region liegt mit seiner Box im Frustum
-            for (const bg of map.values()) {
-                if (!bg.visible) continue;
-                bg.traverseVisible((o) => {
-                    if (o === bg || !o.isMesh || !o.castShadow || o.children.length > 0) return;
-                    const b = o.userData._werferKind;
-                    if (!b || !fr.intersectsBox(b)) w.kindFalsch++;
-                });
-            }
+            // je Werfer: ein werfendes Blatt-Mesh einer werfenden Region zeichnet genau dann, wenn seine Box trifft (ein
+            // abgewähltes steht in der Rückkehr-Liste S.ab; ein Mesh, das aus anderer Ursache ruht, wählt der Pass nie)
+            const abgewaehlt = new Set(S.ab);
+            const kinder = (o) => {
+                for (const c of o.children) {
+                    if (c.visible === false && !abgewaehlt.has(c)) continue;
+                    if (c.isMesh && c.castShadow && c.children.length === 0) {
+                        const b = c.userData._werferKind;
+                        const soll = !!b && !b.isEmpty() && r._passTrifftBox(L, b, 0);
+                        if (c.visible !== soll) w.kindFalsch++;
+                    } else if (c.children.length > 0) kinder(c);
+                }
+            };
+            for (const bg of map.values()) if (bg.visible) kinder(bg);
             if (fern.visible) w.fernWirft = true;
             if (i === 0 && hinter.visible) w.hinterWirft = true;
             if (i === 0) {
@@ -545,11 +571,12 @@ function probe(selbsttest) {
             voll: boden.iSumme / 3,
             bauGeprueft: 0,
         };
-        const wahl = (s, fr) => {
+        // das Soll: die Zellen, deren Hülle das EINE Gesetz in der Lage des Passes trifft (erst der Bereich, dann seine Zellen)
+        const wahl = (s, L) => {
             const liste = [];
             for (const b of s.ordnung) {
-                if (!b.huelle || b.huelle.isEmpty() || !fr.intersectsBox(b.huelle)) continue;
-                for (const z of b.zellen) if (!z.huelle.isEmpty() && fr.intersectsBox(z.huelle)) liste.push(z);
+                if (!b.huelle || b.huelle.isEmpty() || !r._passTrifftBox(L, b.huelle, 0)) continue;
+                for (const z of b.zellen) if (!z.huelle.isEmpty() && r._passTrifftBox(L, z.huelle, 0)) liste.push(z);
             }
             return liste;
         };
@@ -570,14 +597,15 @@ function probe(selbsttest) {
             }
             return aus;
         };
-        const pruefPass = (kam, fr, name, schatten) => {
+        const pruefPass = (kam, i, name, schatten) => {
+            const L = lageVon(i);
             pass(kam, false);
             let imBoden = null;
             for (const s of saetze) {
                 if (schatten && s.spec.schatten !== true) continue;
                 const dr = s.geom.drawRange;
                 const idx = s.geom.index.array;
-                const soll = wahl(s, fr);
+                const soll = wahl(s, L);
                 let n = 0;
                 const sollM = { s: 0, x: 0, n: 0 };
                 for (const z of soll) {
@@ -600,13 +628,11 @@ function probe(selbsttest) {
             pass(kam, true);
             return imBoden;
         };
-        const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        const imHaupt = pruefPass(cam, new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem), "haupt", false);
+        const imHaupt = pruefPass(cam, -1, "haupt", false);
         for (const s of saetze) hauptDr.set(s, [s.geom.drawRange.start, s.geom.drawRange.count]);
         for (let i = 0; i < csm.lights.length; i++) {
             const kam = csm.lights[i].shadow.camera;
-            const fr = frustumVon(i);
-            const imPass = pruefPass(kam, fr, "k" + i, true);
+            const imPass = pruefPass(kam, i, "k" + i, true);
             if (i === 0) for (const z of imPass) if (!imHaupt.has(z)) res.hinterWirft = true;
             for (const s of saetze) {
                 const h = hauptDr.get(s);
@@ -662,7 +688,14 @@ function probe(selbsttest) {
             g.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(n).fill(10), 1));
             return g;
         };
+        // der Stoff der Probe trägt die Maske (wie jeder Stufen-Stoff der Foundry, Kanal Farbe: auch der Schattenpass liest
+        // sie); die Gruppe U trägt einen Stoff OHNE Maske — die GPU zeichnet jede ihrer Instanzen voll, ein Fenster schnitte
+        // dort ein Loch
         const stoff = new T.MeshBasicMaterial();
+        stoff.userData.foundryCrossfade = true;
+        stoff.userData.foundryCrossfadeKanal = "farbe";
+        // die Gruppen der Welt, deren Stoff die Maske nicht trägt (die Wahl liest dort nur das Gesetz, kein Fenster)
+        res.ohneMaske = [...set].filter((g) => !r._instanzFensterGilt(g)).map((g) => String(g.key));
         const G = {
             L1: r._archInstanceGroupFor("__w8:baum", 0, { geom: stamm(2), mat: stoff, castShadow: false }, null),
             L0: r._archInstanceGroupFor("__w8:baum", 1, { geom: stamm(1), mat: stoff, castShadow: false }, null),
@@ -670,6 +703,12 @@ function probe(selbsttest) {
                 "__w8:baum",
                 2,
                 { geom: stamm(3), mat: stoff, castShadow: true, shadowTwin: true },
+                null
+            ),
+            U: r._archInstanceGroupFor(
+                "__w8:baum",
+                3,
+                { geom: stamm(2), mat: new T.MeshBasicMaterial(), castShadow: false },
                 null
             ),
         };
@@ -750,10 +789,15 @@ function probe(selbsttest) {
             setze(G.L0, "F", c.x, c.z + 22, 1);
             setze(G.Z, "G", c.x, c.z + 15, 1);
             setze(G.Z, "I", c.x, c.z - 25, 1);
+            setze(G.U, "U", c.x - 3, c.z + 40, 1); // wie C jenseits d1 — ohne Maske kein Fenster: U zeichnet
             takt();
             uniformen(c);
             r._passSicht(cam, false);
-            res.haupt = [pruefe("haupt", G.L1, ["A", "D"]), pruefe("haupt", G.L0, ["E"])].join(" · ");
+            res.haupt = [
+                pruefe("haupt", G.L1, ["A", "D"]),
+                pruefe("haupt", G.L0, ["E"]),
+                pruefe("haupt", G.U, ["U"]),
+            ].join(" · ");
             r._passSicht(cam, true);
             danach();
             res.k0 = kaskade(0, ["G"]);
@@ -801,6 +845,150 @@ function probe(selbsttest) {
     };
     aus.w8 = w8(false);
     if (selbsttest) aus.s9 = w8(true);
+
+    // ── W9: DAS EINE GESETZ, DREI LESER (W7-Vereinigung) — ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre
+    // Scheibe verfehlt (aus der Welt gesucht: das Frustum allein trifft ihn, das Gesetz nicht — für eine Kugel 4,5 m, die
+    // jede Probe umschließt). Dort wirft kein Werfer eines Bündels (eine Box 1 m) und keine Instanz der Wahl (ein Zwilling
+    // ohne Masken-Stoff: nur das Gesetz urteilt) in diese Kaskade, und in jeder Kaskade zeichnet der Boden-Satz genau die
+    // Zellen des Gesetzes; `kapselSchnitt` zählt die Zellen, die das Frustum allein zöge (nicht vakuös). `abweichung` lässt
+    // EINEN Leser nach der alten Box urteilen (die Lage ohne Scheibe) — der Selbsttest S10. ──
+    const w9 = (abweichung) => {
+        const res = { punkt: null, kaskade: -1, werfer: null, instanz: null, zellenFalsch: 0, kapselSchnitt: 0 };
+        const P = Object.getPrototypeOf(r);
+        const ohneKapsel = (L, fn) => {
+            const fit = L ? L.fit : null;
+            if (L) L.fit = null;
+            try {
+                return fn();
+            } finally {
+                if (L) L.fit = fit;
+            }
+        };
+        if (abweichung === "zellen")
+            r._chunkSatzPass = function (kamera, nach, k, S2) {
+                return ohneKapsel(S2.lage, () => P._chunkSatzPass.call(this, kamera, nach, k, S2));
+            };
+        if (abweichung === "werfer")
+            r._werferWahlPass = function (m, L, ab) {
+                return ohneKapsel(L, () => P._werferWahlPass.call(this, m, L, ab));
+            };
+        if (abweichung === "instanzen")
+            r._instanzWahlPass = function (art, S2) {
+                return ohneKapsel(S2.lage, () => P._instanzWahlPass.call(this, art, S2));
+            };
+        const geo = new T.BoxGeometry(1, 2, 1);
+        geo.translate(0, 1, 0);
+        const nv = geo.attributes.position.count;
+        geo.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(nv).fill(3), 1));
+        geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(nv).fill(2), 1));
+        geo.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(nv).fill(2), 1));
+        const Z = r._archInstanceGroupFor(
+            "__w9:zwilling",
+            0,
+            { geom: geo, mat: new T.MeshBasicMaterial(), castShadow: true, shadowTwin: true },
+            null
+        );
+        const map9 = st._regionBundles;
+        let bg = null;
+        try {
+            tag(0.5);
+            blick(0);
+            alleNeu();
+            r._kaskadenPassen(csm);
+            // der Punkt: die ferne Kaskade zuerst (ihre Box umschließt den nahen Boden), dann die nahe
+            for (let i = csm.lights.length - 1; i >= 0 && !res.punkt; i--) {
+                const L = lageVon(i);
+                if (!L.fit) continue;
+                let best = null;
+                for (let gx = -60; gx <= 60; gx++)
+                    for (let gz = -60; gz <= 60; gz++) {
+                        const x = cam.position.x + gx * 4,
+                            z = cam.position.z + gz * 4;
+                        const y0 = r._voxelSurfaceY(x, z);
+                        if (!Number.isFinite(y0)) continue;
+                        const y = y0 + 1;
+                        if (!ohneKapsel(L, () => r._passTrifft(L, x, y, z, 0, 0, 0, 0))) continue;
+                        if (r._passTrifft(L, x, y, z, 0, 0, 0, 4.5)) continue;
+                        const d = Math.hypot(x - cam.position.x, z - cam.position.z);
+                        if (!best || d < best.d) best = { x, y, z, d };
+                    }
+                if (best) {
+                    res.punkt = [best.x, best.y, best.z].map((v) => Math.round(v * 10) / 10);
+                    res.kaskade = i;
+                }
+            }
+            if (!res.punkt) return res;
+            const [px, py, pz] = res.punkt;
+            // der Werfer eines Bündels (eine Box 1 m) und die Instanz der Wahl am Punkt
+            bg = new T.BundleGroup();
+            const kiste = new T.Mesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicMaterial());
+            kiste.position.set(px, py + 0.5, pz);
+            kiste.castShadow = true;
+            bg.add(kiste);
+            st.scene.add(bg);
+            bg.updateMatrixWorld(true);
+            map9.set("__w9:kapsel", bg);
+            const ref = r._archGroupAlloc(Z, null);
+            Z.mesh.setMatrixAt(ref.slot, new T.Matrix4().makeTranslation(px, py, pz));
+            r._lodSlotStamp(Z, ref.slot, 1, false, null);
+            r._shadowFrame = (r._shadowFrame || 0) + 1;
+            alleNeu();
+            r._kaskadenPassen(csm);
+            const saetze = [...(st.chunkSaetze ? st.chunkSaetze.values() : [])].filter((x) => x.spec.schatten === true);
+            for (let i = 0; i < csm.lights.length; i++) {
+                const kam = csm.lights[i].shadow.camera;
+                const L = lageVon(i);
+                // das Soll der Zellen (das Gesetz) und der Schnitt der Kapsel (das Frustum allein zöge mehr)
+                const soll = new Map();
+                for (const sz of saetze) {
+                    const menge = new Set();
+                    for (const b of sz.ordnung) {
+                        if (!b.huelle || b.huelle.isEmpty()) continue;
+                        const bGesetz = r._passTrifftBox(L, b.huelle, 0);
+                        const bBox = ohneKapsel(L, () => r._passTrifftBox(L, b.huelle, 0));
+                        for (const zl of b.zellen) {
+                            if (zl.huelle.isEmpty()) continue;
+                            const g = bGesetz && r._passTrifftBox(L, zl.huelle, 0);
+                            if (g) menge.add(zl);
+                            else if (bBox && ohneKapsel(L, () => r._passTrifftBox(L, zl.huelle, 0))) res.kapselSchnitt++;
+                        }
+                    }
+                    soll.set(sz, menge);
+                }
+                r._passSicht(kam, false);
+                if (i === res.kaskade) {
+                    res.werfer = bg.visible === true && kiste.visible === true;
+                    res.instanz = Z.mesh.count > 0;
+                }
+                for (const sz of saetze) {
+                    const menge = soll.get(sz);
+                    const a = sz.abschnitte.get("k" + i);
+                    const ist = new Set(a && sz.mesh.visible ? a.liste : []);
+                    let gleich = ist.size === menge.size;
+                    if (gleich) for (const zl of menge) if (!ist.has(zl)) gleich = false;
+                    if (!gleich) res.zellenFalsch++;
+                }
+                r._passSicht(kam, true);
+            }
+            return res;
+        } finally {
+            delete r._chunkSatzPass;
+            delete r._werferWahlPass;
+            delete r._instanzWahlPass;
+            if (bg) {
+                map9.delete("__w9:kapsel");
+                st.scene.remove(bg);
+            }
+            for (const rf of [...Z.slotRef].filter(Boolean)) r._archGroupFree(Z, rf);
+            r._disposeArchInstanceGroup(Z.key);
+            tag(0.5);
+            blick(0);
+            alleNeu();
+            r._kaskadenPassen(csm);
+        }
+    };
+    aus.w9 = w9(null);
+    if (selbsttest) aus.s10 = ["zellen", "werfer", "instanzen"].map((x) => Object.assign({ leser: x }, w9(x)));
 
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Boden-Bereich, ein freier Werfer
     // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
@@ -1073,8 +1261,8 @@ function probe(selbsttest) {
             a.k6.every((k) => k.maxTexel <= 1.05 * k.soll),
             a.k6.map((k, i) => `k${i} max ${k.maxTexel} m (Soll ${k.soll}) · ${k.wechsel} Rast-Wechsel`).join(" · ")
         );
-        check("W1 jeder Kaskaden-Pass wirft nur Bundles in seiner Box", a.w.falsch === 0, `${a.w.falsch} falsch`);
-        check("W1 … und darin nur Werfer in seiner Box", a.w.kindFalsch === 0, `${a.w.kindFalsch} falsch`);
+        check("W1 jeder Kaskaden-Pass wirft genau die Bundles, deren Werfer-Hülle das Gesetz trifft", a.w.falsch === 0, `${a.w.falsch} falsch`);
+        check("W1 … und darin genau die Werfer, deren Box das Gesetz trifft", a.w.kindFalsch === 0, `${a.w.kindFalsch} falsch`);
         check("W1 nach dem Schatten-Pass: Haupt-Urteil, jeder Werfer zurück", a.w.zurueck);
         check("W1 ein Bundle bleibt Bundle (die Sicht je Pass schaltet nur visible)", a.w.bundleBleibt);
         check("W2 der Werfer 2 km vor der Kamera wirft in keine Kaskade", a.w.fernWirft === false);
@@ -1099,7 +1287,7 @@ function probe(selbsttest) {
             ` · Bau-Satz-Pässe ${w.bauGeprueft}` +
             (w.taeter.length ? " — falsch: " + w.taeter.join(", ") : "");
         check(
-            "W7 die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau seine Zellen im Frustum, danach das Hauptbild (Mittag · Abend)",
+            "W7 die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau die Zellen des Gesetzes, danach das Hauptbild (Mittag · Abend)",
             !!a.w7 && a.w7.every((w) => w.falsch === 0 && w.zurueck && w.weg),
             a.w7
                 ? a.w7.map((w) => w7t(w) + (w.zurueck ? "" : " — kein Hauptbild danach")).join(" | ")
@@ -1113,9 +1301,26 @@ function probe(selbsttest) {
             `${w.gruppen} Wahl-Gruppen · haupt [${w.haupt}] · k0 [${w.k0}] · k1 [${w.k1}] · fern ${JSON.stringify(w.fernH)} k1 [${w.k1H}] k0 [${w.k0H}] · Abend k0 [${w.abend}]` +
             (w.falsch.length ? " — falsch: " + w.falsch.join(" | ") : "");
         check(
-            "W8 die Instanz-Wahl je Pass: jede Pflanzen-Stufe zeichnet nur, was ihr Pass sieht (Frustum · Licht-Kapsel gegen die Scheibe · Stufen-Maske vom Auge), danach wieder alle",
-            !!a.w8 && a.w8.gruppen === 3 && a.w8.falsch.length === 0 && a.w8.zurueck && a.w8.marken,
+            "W8 die Instanz-Wahl je Pass: jede Pflanzen-Stufe zeichnet nur, was ihr Pass sieht (Frustum · Licht-Kapsel gegen die Scheibe · Stufen-Maske vom Auge, nur mit Masken-Stoff), danach wieder alle",
+            !!a.w8 && a.w8.gruppen === 4 && a.w8.falsch.length === 0 && a.w8.zurueck && a.w8.marken,
             a.w8 ? w8t(a.w8) + (a.w8.zurueck ? "" : " — count ≠ liveCount nach dem Pass") : "keine W8-Messung"
+        );
+        console.log(
+            `  ℹ W8 Gruppen der Wahl ohne Masken-Stoff (kein Fenster, nur das Gesetz): ${
+                a.w8 && a.w8.ohneMaske ? a.w8.ohneMaske.length + (a.w8.ohneMaske.length ? " — " + a.w8.ohneMaske.slice(0, 8).join(" · ") : "") : "?"
+            }`
+        );
+        const w9t = (w) =>
+            `P ${JSON.stringify(w.punkt)} in k${w.kaskade} · Werfer ${w.werfer} · Instanz ${w.instanz} · Zellen falsch ${w.zellenFalsch} · Kapsel-Schnitt ${w.kapselSchnitt} Zellen`;
+        check(
+            "W9 das EINE Gesetz, drei Leser: am Punkt in der Box, dessen Licht-Kapsel die Scheibe verfehlt, wirft weder ein Bündel-Werfer noch eine Instanz, der Boden-Satz zeichnet in jeder Kaskade genau die Zellen des Gesetzes (es schneidet Zellen)",
+            !!a.w9 &&
+                !!a.w9.punkt &&
+                a.w9.werfer === false &&
+                a.w9.instanz === false &&
+                a.w9.zellenFalsch === 0 &&
+                a.w9.kapselSchnitt > 0,
+            a.w9 ? w9t(a.w9) : "keine W9-Messung"
         );
         check(
             "Z1 Karten-Ziele: Farbe r8 · Tiefe 16 bit · benannt",
@@ -1160,9 +1365,27 @@ function probe(selbsttest) {
             );
             check(
                 "S9 Selbsttest: die alte Regel (jede Instanz in jedem Pass) macht W8 rot und nennt die Klasse",
-                !!a.s9 && a.s9.falsch.length >= 4 && a.s9.falsch.some((x) => /__w8:baum/.test(x) || /g:__w8/.test(x)),
+                // (den fernen Zwilling H allein hält schon die Werfer-Wahl aus k0 — dasselbe Gesetz über die Gruppe als Ganzes)
+                !!a.s9 &&
+                    a.s9.falsch.some((x) => /^haupt: /.test(x)) &&
+                    a.s9.falsch.some((x) => /^k0: /.test(x)) &&
+                    a.s9.falsch.some((x) => /__w8:baum/.test(x) || /g:__w8/.test(x)),
                 a.s9 ? w8t(a.s9) : "keine Messung"
             );
+            for (const s10 of a.s10 || []) {
+                const rot =
+                    s10.leser === "zellen"
+                        ? s10.zellenFalsch > 0
+                        : s10.leser === "werfer"
+                          ? s10.werfer === true
+                          : s10.instanz === true;
+                check(
+                    `S10 Selbsttest: urteilen die ${s10.leser} nach der alten Box (das Frustum allein), wird W9 rot und nennt sie`,
+                    rot,
+                    w9t(s10)
+                );
+            }
+            check("S10 Selbsttest lief für alle drei Leser", (a.s10 || []).length === 3);
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
             check("S6 Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden", a.s6 === true);

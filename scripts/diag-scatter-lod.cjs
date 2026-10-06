@@ -18,12 +18,13 @@
 //     SUPERREGION (Super-Region). Erwartung ≥4× weniger lod2-Gruppen, Slot-
 //     Bilanz dicht (Empty-Dispose räumt beide Welten restlos), und die EINE
 //     Key-Funktion (_archFernRegionKey) ist der einzige Konstanten-Leser.
-//   K (W7 — DIE SICHT DER KARTEN): die EINE Atlas-Gruppe hängt an keinem Eltern-Knoten (sie zeichnet nie selbst); ihre Sicht
-//     (`_kartenSicht`, der Haken jedes Passes) legt genau die Karten, deren Kugel das Frustum der Pass-Kamera schneidet —
-//     eine Linsen-Kamera über den 16 Karten sieht alle 16, eine in den Himmel keine, eine über der Westhälfte die 8 der
-//     Westhälfte; jede Instanz der Sicht ist eine Karte der Gruppe (Matrix · aKarte). Befund (echte GPU, Mess-Wiese): die
-//     Gruppe im @global-Bündel zeichnete jede Karte des Rings — 1 889 Karten, 3 778 Dreiecke, ein Drittel im Blick.
-//     Selbsttest: eine Sicht ohne Kugel-Test (jede Karte im Satz) fällt rot und wird genannt.
+//   K (W7 — DIE KARTEN IN DER WAHL): die EINE Atlas-Gruppe ist eine Gruppe der Instanz-Wahl (Hauptbild, Fenster „karte")
+//     und zeichnet selbst; je Pass ordnet die Wahl (`_instanzWahlPass`, das EINE Gesetz der Pass-Wahl) genau die Karten nach
+//     vorn, die das Frustum der Pass-Kamera treffen — eine Linsen-Kamera über den 16 Karten sieht alle 16, eine in den Himmel
+//     keine, eine über der Westhälfte die 8 der Westhälfte; jede gezeichnete Instanz ist eine Karte der Fixtur, jede Marke
+//     trägt ihren Slot, nach dem Pass zählt die Gruppe wieder alle. Befund (echte GPU, Mess-Wiese): die Gruppe im
+//     @global-Bündel zeichnete jede Karte des Rings — 1 889 Karten, 3 778 Dreiecke, ein Drittel im Blick.
+//     Selbsttest: eine Wahl ohne Gesetz (jede Karte trifft) fällt rot und wird genannt.
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
@@ -437,65 +438,59 @@ function check(name, ok, detail) {
                     gruppe: [...slotKeys][0] || null,
                     neueKartenGruppen: neuK.length,
                 };
-                // ── K: die Sicht der Karten (W7) — Linsen-Kameras über den 16 Karten (die Fixtur liegt fern jeder Welt-Karte).
+                // ── K: die Karten in der Wahl (W7) — Linsen-Kameras über den 16 Karten (die Fixtur liegt fern jeder Welt-Karte).
                 {
                     const T = window.THREE;
                     const g = r.state.archInstanceGroups.get(G);
+                    const S = r._kaskadenSchmier();
+                    const fixtur = new Set(alleK.flat());
                     const blick = (x, y, z, lx, ly, lz, fov = 30, aspekt = 1) => {
                         const cam = new T.PerspectiveCamera(fov, aspekt, 1, 6000);
                         cam.position.set(x, y, z);
                         cam.lookAt(lx, ly, lz);
                         cam.updateMatrixWorld(true);
                         cam.updateProjectionMatrix();
-                        const fr = new T.Frustum().setFromProjectionMatrix(
+                        S.frustum.setFromProjectionMatrix(
                             new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
                             cam.coordinateSystem
                         );
-                        r._kartenSicht(cam, fr);
-                        const K = r.state.kartenSicht;
-                        return K && K.mesh ? K.mesh.count : -1;
+                        r._passWahlLage(S, cam, -1);
+                        r._instanzWahlPass("haupt", S);
+                        const n = g.mesh.count;
+                        // die Treue: jede gezeichnete Instanz ist eine Karte der Fixtur, jede Marke trägt ihren Slot
+                        let treu = true;
+                        for (let i = 0; i < g.liveCount; i++) {
+                            const ref = g.slotRef[i];
+                            if (!ref || ref.slot !== i || (i < n && !fixtur.has(ref))) treu = false;
+                        }
+                        r._instanzWahlZurueck(S.wahlHaupt);
+                        return { n, treu, zurueck: g.mesh.count === g.liveCount };
                     };
                     const mx = (900 + 2) * AR.ARCH_REGION_M,
                         mz = (900 + 2) * AR.ARCH_REGION_M;
-                    const kuss = { haengtNirgends: !!g && !g.mesh.parent };
-                    kuss.alle = blick(mx, 2400, mz, mx, 0, mz + 1e-3);
-                    // die Treue: jede Instanz der Sicht ist eine lebende Karte der Gruppe (Matrix und aKarte)
-                    const K = r.state.kartenSicht;
-                    let treu = !!K && K.mesh.count > 0;
-                    if (treu) {
-                        const gm = g.mesh.instanceMatrix.array,
-                            ga = g.geom.attributes.aKarte.array,
-                            sm = K.mesh.instanceMatrix.array,
-                            sa = K.geom.attributes.aKarte.array;
-                        for (let j = 0; j < K.mesh.count && treu; j++) {
-                            let gefunden = false;
-                            for (let i = 0; i < g.liveCount && !gefunden; i++) {
-                                let gleich = true;
-                                for (let c = 0; c < 16 && gleich; c++) if (gm[i * 16 + c] !== sm[j * 16 + c]) gleich = false;
-                                for (let c = 0; c < 4 && gleich; c++) if (ga[i * 4 + c] !== sa[j * 4 + c]) gleich = false;
-                                gefunden = gleich;
-                            }
-                            if (!gefunden) treu = false;
-                        }
-                    }
-                    kuss.treu = treu;
-                    kuss.himmel = blick(mx, 2400, mz, mx, 9000, mz + 1e-3);
+                    const kuss = {
+                        wahl: !!g && g.wahl === "haupt" && g.wahlStufe === "karte" && !!g.mesh.parent,
+                    };
+                    const a = blick(mx, 2400, mz, mx, 0, mz + 1e-3);
+                    kuss.alle = a.n;
+                    kuss.treu = a.treu && a.zurueck;
+                    kuss.himmel = blick(mx, 2400, mz, mx, 9000, mz + 1e-3).n;
                     // die Westhälfte (gx 0, 1 — x 230 408 und 230 664): eine schmale Kamera hoch über ihrer Mitte; der Blick nach
                     // unten trägt Welt-z in der Höhe des Bilds (60°: ±520 m deckt alle vier Reihen), Welt-x in der Breite
                     // (Aspekt 0,5: ±260 m deckt ±128 m, nicht die Ostspalte +384 m)
                     const wx = (900 + 0.5) * AR.ARCH_REGION_M + 8,
                         wz = (900 + 1.5) * AR.ARCH_REGION_M + 8;
-                    kuss.westBreite = blick(wx, 900, wz, wx, 0, wz + 1e-3, 60, 0.5);
-                    // der Selbsttest: ohne Kugel-Test legt die Sicht jede Karte — der Himmels-Blick fällt rot
-                    r._sichtKugel = () => () => true;
+                    const w = blick(wx, 900, wz, wx, 0, wz + 1e-3, 60, 0.5);
+                    kuss.westBreite = w.n;
+                    kuss.treu = kuss.treu && w.treu && w.zurueck;
+                    // der Selbsttest: ohne das Gesetz trifft jede Karte — der Himmels-Blick fällt rot
+                    r._passTrifft = () => true;
                     try {
-                        r.state.kartenSicht.neu = true;
-                        kuss.selbsttestHimmel = blick(mx, 2400, mz, mx, 9000, mz + 2e-3);
+                        kuss.selbsttestHimmel = blick(mx, 2400, mz, mx, 9000, mz + 2e-3).n;
                     } finally {
-                        delete r._sichtKugel;
+                        delete r._passTrifft;
                     }
-                    r.state.kartenSicht.neu = true;
-                    fern.kartenSicht = kuss;
+                    fern.kartenWahl = kuss;
                 }
                 for (const sl of alleK) r._scatterFreeSlots(sl);
                 fern.karten.leck = lebend() - lebendVor;
@@ -606,10 +601,10 @@ function check(name, ok, detail) {
             K.instanzen === 16 && K.gruppen === 1 && K.gruppe === "impostor#fimp:atlas" && K.leck === 0,
             JSON.stringify(K)
         );
-        const KS = out.f.kartenSicht || {};
+        const KS = out.f.kartenWahl || {};
         check(
-            "K: DIE SICHT DER KARTEN (W7) — die Atlas-Gruppe hängt nirgends, ihre Sicht legt die Karten im Frustum (über den 16: alle, Himmel: keine), jede Instanz eine Karte der Gruppe",
-            KS.haengtNirgends === true && KS.alle === 16 && KS.himmel === 0 && KS.treu === true,
+            "K: DIE KARTEN IN DER WAHL (W7) — die Atlas-Gruppe ist eine Gruppe der Instanz-Wahl und zeichnet die Karten, die das Gesetz trifft (über den 16: alle, Himmel: keine), jede gezeichnete Instanz eine Karte der Fixtur",
+            KS.wahl === true && KS.alle === 16 && KS.himmel === 0 && KS.treu === true,
             JSON.stringify(KS)
         );
         check(
@@ -618,9 +613,9 @@ function check(name, ok, detail) {
             `${KS.westBreite}`
         );
         check(
-            "K: Selbsttest — eine Sicht ohne Kugel-Test legt jede Karte in den Himmels-Blick, die Linse nennt es",
+            "K: Selbsttest — eine Wahl ohne das Gesetz legt jede Karte in den Himmels-Blick, die Linse nennt es",
             KS.selbsttestHimmel >= 16,
-            `ohne Kugel-Test ${KS.selbsttestHimmel} Karten im Himmels-Blick (Soll mit Test 0)`
+            `ohne Gesetz ${KS.selbsttestHimmel} Karten im Himmels-Blick (Soll mit Gesetz 0)`
         );
         check(
             `F: DIE DIÄT — 4×4 Regionen: per-Region ${out.f.vorher} → Super-Region ${out.f.nachher} Fern-Gruppen (≥4× weniger)`,

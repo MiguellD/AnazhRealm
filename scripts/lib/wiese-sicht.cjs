@@ -1,7 +1,7 @@
 // wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN (Welle 6, 06.10.).
 //
 // Die Nah-Wiese legt ihre Senken (`nahWiese:<v>:L<stufe>:<teil>`) je Frame im Haupt-Pass neu: `_passSicht` →
-// `_nahWieseSicht(kamera, frustum)`. Der Null-Renderer zeichnet nie — headless läuft der Sicht-Satz nicht, jede Senke steht mit
+// `_nahWieseSicht(kamera, lage)`. Der Null-Renderer zeichnet nie — headless läuft der Sicht-Satz nicht, jede Senke steht mit
 // anzahl 0, und eine Prüfung „dicht nach 7 Umzügen" wäre leer bewiesen (Gegenprüfung W6, ROT 2). Die Linse stellt die
 // Voraussetzung HER, statt auf den Weltzustand zu hoffen: eine Linsen-Kamera am Ring-Mittelpunkt (die Spiel-Kamera,
 // um die `_tickNahWiese` die Kacheln legt), 1,7 m über dem Boden, 90° Blick auf den nächsten Büschel jenseits 2 m —
@@ -59,13 +59,16 @@ function installWieseSicht() {
         else if (ziel) kam.lookAt(ziel.x, ziel.y, ziel.z);
         else kam.lookAt(auge.x + 1, y0, auge.z);
         kam.updateMatrixWorld(true);
-        // Das Frustum der Linsen-Kamera wie im Haken (`_passSicht`: EINE Rechnung je Pass, der Satz bekommt sie gereicht).
+        // Die Lage der Linsen-Kamera wie im Haken (`_passSicht`: EINE Rechnung je Pass — Frustum, Auge — nach dem EINEN
+        // Gesetz der Pass-Wahl, der Satz bekommt sie gereicht).
         const T = window.THREE;
-        const fr = new T.Frustum().setFromProjectionMatrix(
-            new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse),
-            kam.coordinateSystem
-        );
-        r._nahWieseSicht(kam, fr);
+        const S = {
+            frustum: new T.Frustum().setFromProjectionMatrix(
+                new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse),
+                kam.coordinateSystem
+            ),
+        };
+        r._nahWieseSicht(kam, r._passWahlLage(S, kam, -1));
         const o = window.__wieseZaehle(r, { x: kam.position.x, z: kam.position.z });
         o.auge = { x: kam.position.x, z: kam.position.z };
         o.ziel = ziel ? Math.round(dBest * 10) / 10 : null;

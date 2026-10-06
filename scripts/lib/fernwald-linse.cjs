@@ -80,8 +80,8 @@ function fernwaldLinse(opts) {
                     delete s.__fw;
                 }
                 g.mesh.instanceMatrix.needsUpdate = true;
-                // der EINE Chokepoint jeder Mutation der Draw-Wahrheit: ein Bündel nimmt neu auf, die Karten-Sicht (W7) legt
-                // sich neu — die Atlas-Gruppe zeichnet nie selbst
+                // der EINE Chokepoint jeder Mutation der Draw-Wahrheit: das Bündel der Atlas-Gruppe (die Karten in der Wahl)
+                // nimmt neu auf
                 r._archMeshBundleTouch(g.mesh);
             }
             for (const h of nurSlots ? [] : saetze) {

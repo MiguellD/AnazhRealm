@@ -713,23 +713,27 @@ function check(name, ok, detail) {
             // drei Ring-Kaskaden — sie muss je Frame neu schreiben.
             const T = window.THREE;
             const ppos = s.playerMesh.position;
+            // Die Stellvertreter sind Ortho-Kameras (keine Kaskaden-Kameras: ihre Lage trägt keine Scheibe — das Gesetz der
+            // Pass-Wahl urteilt nach ihrem Frustum allein).
             const ortho = (halb) => {
                 const c = new T.OrthographicCamera(-halb, halb, halb, -halb, 0, 1600);
                 c.position.set(ppos.x, ppos.y + 800, ppos.z + 1);
                 c.lookAt(ppos.x, ppos.y, ppos.z);
                 c.updateMatrixWorld(true);
-                const m = new T.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
-                return new T.Frustum().setFromProjectionMatrix(m, c.coordinateSystem);
+                return c;
             };
             const S = r._kaskadenSchmier();
-            const stellvertreter = [{ name: "k0" }, { name: "k1" }, { name: "k2" }];
-            const frame = (frusta) => {
+            const frame = (kameras) => {
                 r._tickChunkSatz();
                 r._passSicht(s.camera, false);
-                frusta.forEach((F, i) => {
-                    S.frustum.copy(F);
-                    r._chunkSatzPass(stellvertreter[i], false, i, S);
-                    r._chunkSatzPass(stellvertreter[i], true, -1, S);
+                kameras.forEach((c, i) => {
+                    S.frustum.setFromProjectionMatrix(
+                        new T.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse),
+                        c.coordinateSystem
+                    );
+                    r._passWahlLage(S, c, i);
+                    r._chunkSatzPass(c, false, i, S);
+                    r._chunkSatzPass(c, true, -1, S);
                 });
                 r._passSicht(s.camera, true);
             };
@@ -784,8 +788,7 @@ function check(name, ok, detail) {
                 c.position.set(cx, ppos.y + 800, cz + 1);
                 c.lookAt(cx, ppos.y, cz);
                 c.updateMatrixWorld(true);
-                const m = new T.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
-                return new T.Frustum().setFromProjectionMatrix(m, c.coordinateSystem);
+                return c;
             };
             const wahlStand = () => {
                 const m = new Map();
