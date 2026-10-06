@@ -31,8 +31,9 @@
 //   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s]
 //                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach
 //                                                           `--ein` Sekunden Einschwingen misst er `sek` Sekunden
-//                                                           Frame-Zeit · GPU-Zeit (timestamp-query) · Draws ·
-//                                                           Dreiecke · VRAM · Regler-Stand; „voll" hebt die
+//                                                           Frame-Zeit · GPU-Zeit (timestamp-query) · Befehle und
+//                                                           Dreiecke je Frame und Pass (Anteil der Frames je
+//                                                           Pass) · VRAM · Regler-Stand; „voll" hebt die
 //                                                           Regler-Decke (loadScale → 1, die volle Welt)
 //   node scripts/werkbank.cjs profil [sek] [--regler frei|voll] [--top n]
 //                                                           DAS CPU-PROFIL des echten Laufs (Chrome-Profiler,
@@ -257,8 +258,8 @@ function methodeAusQuelle(quelle, name) {
 
 // DER ECHTE LAUF (Seiten-Kontext): der Spiel-Loop läuft über rAF wie im Spiel; nach dem Einschwingen
 // zählt jeder Frame — Intervall (rAF-Zeitstempel = was der Spieler sieht), CPU-Takt, GPU-Zeit des Frames
-// (r184-Pool löst den LETZTEN Frame auf, Summe aller Pässe), Draws/Dreiecke aus `_perfFrame` (die Quelle
-// von HUD und Flugschreiber). Die Bühne (Mittag · Sonne · Sommer) und stille Tiere halten den Vergleich
+// (r184-Pool löst den LETZTEN Frame auf, Summe aller Pässe), Befehle/Dreiecke je gerendertem Frame und je Pass
+// (renderer.info, die Quelle von HUD und Flugschreiber). Die Bühne (Mittag · Sonne · Sommer) und stille Tiere halten den Vergleich
 // gleich; „voll" hebt die Regler-Decke, der PID wächst loadScale → 1 (die volle Welt, wie die Cloud maß).
 function lauf(k) {
     return (async () => {
@@ -288,12 +289,37 @@ function lauf(k) {
         const uidPass = new Map();
         const rohSzene = rend._renderScene;
         const rohUid = be.updateTimeStampUID;
+        // DIE ZAHL JE FRAME UND PASS: renderer.info trägt die Summe aller Pässe eines Frames, und die Pässe wechseln (die
+        // nahe Kaskade rendert im Takt jeden zweiten Frame, die ferne seltener, ein Sonnen-Sprung beide). Bis 06.10. stand
+        // hier ein Perzentil über die TAKTE — es sprang zwischen den zwei Moden (gemessen 06.10., echte GPU, Mess-Wiese,
+        // gleiche Stellgrößen: 540p 273 und im nächsten Lauf 176 Befehle; der OMEN las daraus „1080p 124, 720p 270").
+        // Gezählt wird je GERENDERTEM Frame je Pass, exklusiv (ein Schatten-Pass mitten im Hauptbild zählt nur sich),
+        // dazu der Anteil der Frames, in denen der Pass lief.
+        const zStapel = [];
+        let frameZ = null;
         rend._renderScene = function (szene, kamera, ...rest) {
-            stapel.push(passOf(kamera, szene));
+            const pass = passOf(kamera, szene);
+            stapel.push(pass);
+            const ri = this.info.render;
+            const z = { dc: ri.drawCalls, tri: ri.triangles, kDc: 0, kTri: 0 };
+            zStapel.push(z);
             try {
                 return rohSzene.call(this, szene, kamera, ...rest);
             } finally {
                 stapel.pop();
+                zStapel.pop();
+                const dc = ri.drawCalls - z.dc,
+                    tri = ri.triangles - z.tri;
+                const eltern = zStapel[zStapel.length - 1];
+                if (eltern) {
+                    eltern.kDc += dc;
+                    eltern.kTri += tri;
+                }
+                if (frameZ) {
+                    const e = frameZ[pass] || (frameZ[pass] = { dc: 0, tri: 0 });
+                    e.dc += dc - z.kDc;
+                    e.tri += tri - z.kTri;
+                }
             }
         };
         be.updateTimeStampUID = function (ctx) {
@@ -311,24 +337,24 @@ function lauf(k) {
             st.weatherEffectTime = Math.min(st.weatherEffectTime || 0, 100);
             const c0 = performance.now();
             const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
-            r._gameLoopTick(t);
+            const z = (frameZ = {});
+            try {
+                r._gameLoopTick(t);
+            } finally {
+                frameZ = null;
+            }
             // Unter der GPU-Leine rendert nicht jeder Takt — gezählt werden GERENDERTE Frames (der Takt läuft weiter).
             const gerendert = !r._gpuLeine || r._gpuLeine.gerendert > g0;
             if (!messen) {
                 if (gerendert) tRenderVor = t;
                 return void (tVor = t);
             }
-            // `_perfFrame` ist am Takt-Ende schon gefaltet und geleert; renderer.info trägt die Summe aller Pässe
-            // des Frames (der Loop setzt es je Frame zurück) — die HUD-Zahl. Bundle-Replays bucht r184 dort NICHT
-            // (Lehre 23): die Wahrheit je Pass und Klasse zählt `zaehlen`.
-            const ri = (rend.info && rend.info.render) || {};
             const p = { dt: tVor == null ? null : t - tVor, cpu: performance.now() - c0, gerendert };
             if (gerendert) {
                 p.dtRender = tRenderVor == null ? null : t - tRenderVor;
                 tRenderVor = t;
+                p.jePass = z;
             }
-            p.dc = ri.drawCalls;
-            p.tri = ri.triangles;
             if (r._gpuTsAtMs !== gpuAm) {
                 p.gpu = r._gpuTsLast;
                 gpuAm = r._gpuTsAtMs;
@@ -430,10 +456,32 @@ function lauf(k) {
             const dt = spalte("dtRender"),
                 takt = spalte("dt"),
                 cpu = proben.filter((p) => p.gerendert).map((p) => p.cpu),
-                gpu = spalte("gpu"),
-                dc = spalte("dc"),
-                tri = spalte("tri");
+                gpu = spalte("gpu");
             const zahl = (a) => ({ p50: quant(a, 0.5), p95: quant(a, 0.95), p99: quant(a, 0.99), max: quant(a, 1) });
+            // Je gerendertem Frame: die Summe (Mittel · p95 · max — ihr p50 springt zwischen den Pass-Moden) und je Pass
+            // der Anteil der Frames, in denen er lief, und seine Zahl, WENN er lief.
+            const jeFrame = proben.filter((p) => p.jePass);
+            const passZahl = (feld) => {
+                const n = jeFrame.length;
+                const summe = jeFrame.map((p) => Object.values(p.jePass).reduce((a, e) => a + e[feld], 0));
+                const passe = [...new Set(jeFrame.flatMap((p) => Object.keys(p.jePass)))];
+                const jePass = {};
+                for (const ps of passe) {
+                    const w = jeFrame.filter((p) => p.jePass[ps]).map((p) => p.jePass[ps][feld]);
+                    jePass[ps] = {
+                        anteil: n ? +(w.length / n).toFixed(2) : null,
+                        p50: quant(w, 0.5),
+                        max: quant(w, 1),
+                    };
+                }
+                return {
+                    frames: n,
+                    mittel: n ? Math.round(summe.reduce((a, b) => a + b, 0) / n) : null,
+                    p95: quant(summe, 0.95),
+                    max: quant(summe, 1),
+                    jePass,
+                };
+            };
             const s = st.perfSense || {};
             const v = window.__vram || {};
             const mb = (b) => (Number.isFinite(b) ? +(b / 1048576).toFixed(1) : null);
@@ -469,8 +517,8 @@ function lauf(k) {
                         return [p, { p50: quant(w, 0.5), p95: quant(w, 0.95), frames: w.length }];
                     })
                 ),
-                draws: zahl(dc),
-                dreiecke: zahl(tri),
+                befehle: passZahl("dc"),
+                dreiecke: passZahl("tri"),
                 ueber17: dt.length ? +((100 * dt.filter((x) => x > 17).length) / dt.length).toFixed(1) : null,
                 ueber33: dt.length ? +((100 * dt.filter((x) => x > 33.4).length) / dt.length).toFixed(1) : null,
                 vramMB: {
