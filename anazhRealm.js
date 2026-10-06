@@ -89323,6 +89323,13 @@ class AnazhRealm {
             // Die Platzhalter-Tiefe des Knotens (1×1, bis die Geschichte ihre Tiefe trägt) hat weder Namen noch Ziel —
             // die Band-Linse nennt jedes Textur-Objekt beim Erzeuger (gate:vendor-anker pinnt die Vendor-Zeile).
             if (traa) traa._previousDepthNode.value.name = "TRAANode.vortiefe";
+            // DIE VORTIEFE DER GESCHICHTE: je Frame kopiert der Knoten die Szenen-Tiefe in die Tiefe seines Geschichts-Ziels
+            // (r184 `copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`, 7,9 MB bei 1080p), der Resolve
+            // des nächsten Frames liest sie als Vortiefe (`samplePreviousDepth` → Disokklusion: wo die reprojizierte Vortiefe
+            // vor der jetzigen liegt, fällt die Geschichte — sonst zieht jede freigelegte Kante einen Geist). Die Kopie bleibt;
+            // die Frame-Anatomie sah sie namenlos („post: depth → ?"), der Name ist der, den die Band-Linse ihr über das Ziel
+            // gibt (`<ziel>:tiefe`) — der VRAM-Schlüssel bleibt derselbe.
+            if (traa) traa._historyRenderTarget.depthTexture.name = "TRAANode.history:tiefe";
             if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
@@ -89373,12 +89380,32 @@ class AnazhRealm {
                 threshold: u.godrayThreshold,
             };
 
+            // DIE STUFE KOSTET NUR, WENN SIE ZEIGT: eine Nachbild-Stufe mit Stärke-Regler (Godrays: Sonne im Bild ×
+            // Wetter × Höhe × Regler; lokaler Kontrast: der Kanten-Schärfe-Regler, 0 = aus) rechnet ihre Abtastungen in
+            // einem Zweig, den der Regler wählt — eine Uniform, also einheitlich für jedes Pixel (keine Divergenz, WGSL-
+            // Gleichförmigkeit erlaubt die Abtastung darin). Bei Stärke 0 liefert sie 0 wie zuvor das Produkt mit 0, nur
+            // ohne die Abtastungen: die Godrays tasteten 20× je Pixel auch ohne Sonne im Bild (06.10., GTX 1060, Mess-
+            // Wiese: 0,69 ms je Frame). Die Stufe reist als Argument (der Ketten-Graph bleibt lesbar: die Zerleg-Linse
+            // findet sie über ihre Stärke-Uniform, `ketteKante`); TSL erzeugt ihren Code dort, wo sie zuerst gebraucht
+            // wird — im Zweig. Was davor UND im Zweig gebraucht wird (das gemischte Bild), steht vor dem Aufruf.
+            // Die Wand: gate:post-kette (die Abtastungen der Stufen im erzeugten WGSL stehen im Zweig, das Budget der
+            // unbedingten Abtastungen hält).
+            const nurBeiStaerke = TSL.Fn(([stufe, staerke]) => {
+                const aus = vec3(0, 0, 0).toVar();
+                TSL.If(staerke.notEqual(float(0)), () => {
+                    aus.assign(stufe);
+                });
+                return aus;
+            });
+
             // --- Bloom: helle Stellen (luminance > Schwelle) isolieren, weich
             // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
             // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
-            // Szene-Textur-Node an versetzter UV.
+            // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
+            // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
+            const mitte = sceneColor.sample(screenUV);
             const bright = (uv) => {
-                const c = sceneColor.sample(uv).rgb;
+                const c = (uv === screenUV ? mitte : sceneColor.sample(uv)).rgb;
                 const l = luminance(c);
                 const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
                 return c.mul(m);
@@ -89406,7 +89433,7 @@ class AnazhRealm {
             // --- GODRAYS: radialer Light-Shaft-March (GPU-Gems-3). Je Pixel N feste Schritte Richtung
             // Sonnen-Screen-Position; nur sehr helle Himmels-Lücken tragen bei → Occlusion durch Blatt/Berg
             // gratis, ohne Depth-Buffer. UNROLLT (der JS-Loop akkumuliert TSL-Nodes, kein Shader-Loop); der
-            // Beitrag klingt mit 0.96^i ab. `godrayStrength`=0 → No-op.
+            // Beitrag klingt mit 0.96^i ab. Stärke 0 → der Zweig fällt, keine Abtastung (`nurBeiStaerke`).
             const GN = 20;
             const gDelta = u.godraySun.sub(screenUV); // Vektor Pixel → Sonne (Screen-UV)
             let gacc = null;
@@ -89418,10 +89445,10 @@ class AnazhRealm {
                 const srcI = cI.mul(mI).mul(float(wI));
                 gacc = gacc ? gacc.add(srcI) : srcI;
             }
-            const godray = gacc.mul(u.godrayStrength);
+            const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
 
             // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
-            const base = sceneColor.rgb;
+            const base = mitte.rgb;
             const bloomed = base.add(bloom).add(godray);
             // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
             // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
@@ -89429,6 +89456,7 @@ class AnazhRealm {
             // (Strukturen/Bauten plastisch statt pappig). Wirkt global pro Pixel,
             // kein Material angefasst → dynamische Farben unberuehrt. Der Offset
             // ist etwas weiter als das Bloom-px (groebere Umgebung = Mikro-Detail).
+            // Kanten-Schärfe 0 (der Regler „aus") → der Zweig fällt mit seinen 4 Abtastungen (`nurBeiStaerke`).
             const lcPx = float(0.0026);
             const lumAt = (uv) => luminance(sceneColor.sample(uv).rgb);
             const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
@@ -89438,7 +89466,7 @@ class AnazhRealm {
                 .mul(float(0.25));
             const selfLum = luminance(bloomed);
             const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
-            const combined = bloomed.add(bloomed.mul(detail.mul(u.localContrast)));
+            const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             const lum = luminance(combined);
             const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
             const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
