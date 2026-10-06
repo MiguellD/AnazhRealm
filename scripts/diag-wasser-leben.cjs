@@ -12,7 +12,7 @@
 //   B (Q7-Bild)     das Wasser-Material auf einem Fluss-Bogen: Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s =
 //                   5,5 × der bei 60 s, der ruhige Fluss 59,9 gegen 10,5 (der Phasen-Zerfall, das weiße Zebra); 46 % des
 //                   ruhigen Flusses schaumbedeckt (Strähnen-Schaum ohne Gesetz).
-// Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): die Lauf-Fläche `_waterRunSurfaceAt`, den
+// Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
 //   node scripts/diag-wasser-leben.cjs              F + K (Null-Renderer, Mess-Wiese)      npm run gate:wasser-leben
@@ -24,9 +24,10 @@
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
-    querP90: 0.05, // m — Spanne der Lauf-Fläche quer über die Kanal-Breite (p90 der Fluss-Punkte)
+    buckelP90: 0.05, // m — Wölbung des Querschnitts: Mitte gegen das Mittel der Ränder (p90 der Fluss-Punkte)
     lageToleranz: 0.15, // m — Füße unter dem Spiegel in Ruhe gegen die Brustkorb-Linie des Gesetzes
     kraulAnteil: 0.9, // Kraul-Tempo gegen speed × schwimmen.speedMul
+    tierLinie: 0.1, // m — Sohle unter dem Spiegel gegen die Wasserlinie der Gestalt (Schultergelenk)
     kantenVerhaeltnis: 1.3, // Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s gegen 60 s
     kantenRuhig: 5, // Kanten-Dichte des ruhigen Flusses bei 3600 s (mittlere Luma-Stufe je Pixel)
     hellRuhig: 0.05, // Schaum-Deckung des ruhigen Flusses (kein Ufer, kein Steil-Lauf: das Gesetz schäumt dort nicht)
@@ -47,11 +48,32 @@ function urteil(b) {
                     `F1 BERGAUF: ${(f.anteilSteigend * 100).toFixed(1)} % der 2-m-Schritte steigen (${f.steigend} von ${f.schritte}, ` +
                         `${f.anstiegM} m Anstieg, Spitze ${f.maxAnstiegM} m)`
                 );
-            if (!(f.querP90M <= S.querP90))
-                v.push(`F2 BUCKEL: der Querschnitt spannt p90 ${f.querP90M} m (max ${f.querMaxM} m) statt waagrecht`);
+            if (!(f.buckelP90M <= S.buckelP90))
+                v.push(
+                    `F2 BUCKEL: der Querschnitt wölbt sich p90 ${f.buckelP90M} m (max ${f.buckelMaxM} m; Spanne p90 ${f.querP90M} m) ` +
+                        "statt waagrecht"
+                );
             if (f.wasserfaelle !== f.wasserfallOrte)
                 v.push(`F4 DOPPEL: ${f.wasserfaelle} Wasserfall-Einträge an ${f.wasserfallOrte} Orten`);
         }
+    }
+    if (b.kanal) {
+        const k = b.kanal;
+        if (k.fehler) v.push(`F5 SPIEGEL: ${k.fehler}`);
+        else if (!(k.zellen > 1000)) v.push(`F5 LEER: nur ${k.zellen} Kanal-Zellen verglichen`);
+        else if (k.abweichend > 0)
+            v.push(
+                `F5 ZWEI KANÄLE: ${k.abweichend} von ${k.zellen} Dichte-Zellen weichen Main ↔ Worker ab (max ${k.maxDelta})`
+            );
+    }
+    if (b.ufer) {
+        const u = b.ufer;
+        if (u.fehler) v.push(`K8: ${u.fehler}`);
+        else if (!(u.trocken > 20)) v.push(`K8 LEER: nur ${u.trocken} trockene Ufer-Proben`);
+        else if (u.geflutet > 0)
+            v.push(
+                `K8 UFER-FLUT: ${u.geflutet} von ${u.trocken} trockenen Ufer-Proben tragen Körper-Wasser (bis ${u.maxFlutM} m über dem Gras)`
+            );
     }
     if (b.koerper) {
         const k = b.koerper;
@@ -81,6 +103,22 @@ function urteil(b) {
             if (!e.landung) v.push(`K4 STUMM: das Eintauchen mit ${e.eintauchVy} m/s löst keine Landung aus`);
             else if (e.landung.material !== "wasser")
                 v.push(`K4 STUMM: die Landung klingt „${e.landung.material}" statt „wasser"`);
+            const tiere = Array.isArray(k.tier) ? k.tier : [];
+            if (tiere.length < 8) v.push(`K6 LEER: nur ${tiere.length} Tier-Proben (4 Arten × nah/fern verlangt)`);
+            for (const t of tiere) {
+                if (t.amGrund)
+                    v.push(
+                        `K6 AM GRUND: ${t.seele} in ${t.abstand} m steht am Seegrund (Sohle ${t.sohleUnterSpiegel} m unter dem Spiegel)`
+                    );
+                else if (!(Math.abs(t.sohleUnterSpiegel - t.wasserlinie) <= S.tierLinie))
+                    v.push(
+                        `K6 LAGE: ${t.seele} in ${t.abstand} m treibt mit der Sohle ${t.sohleUnterSpiegel} m unter dem Spiegel, ` +
+                            `ihre Wasserlinie (Schultergelenk) liegt bei ${t.wasserlinie} m`
+                    );
+            }
+            if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
+            else if (!(Math.abs(k.peer.lehne) > 0.05))
+                v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
             const m = k.medium;
             if (!m) v.push("K5 MEDIUM: die Luft-Probe lief nicht (keine Kamera oder Luft)");
             else {
@@ -136,15 +174,29 @@ function selbsttest() {
             maxAnstiegM: 0,
             querP90M: 0.01,
             querMaxM: 0.04,
+            buckelP90M: 0.01,
+            buckelMaxM: 0.03,
             wasserfaelle: 9,
             wasserfallOrte: 9,
         },
+        kanal: { punkte: 6, zellen: 18000, abweichend: 0, maxDelta: 0 },
+        ufer: { trocken: 180, geflutet: 0, maxFlutM: 0 },
         koerper: {
             hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
             kraulen: { mps: 0.97, soll: 0.977, anteil: 0.99 },
             eintauchen: { landung: { material: "wasser" }, eintauchVy: -10.6 },
             medium: { kameraUnten: true, kameraOben: false },
+            tier: ["wesen", "wolf", "fuchs", "baer"].flatMap((seele) =>
+                [8, 120].map((abstand) => ({
+                    seele,
+                    abstand,
+                    sohleUnterSpiegel: 0.6,
+                    wasserlinie: 0.6,
+                    amGrund: false,
+                }))
+            ),
+            peer: { lehne: 0.4, meshKind: "soul" },
         },
         bild: {
             uhr60: {
@@ -158,15 +210,22 @@ function selbsttest() {
     const kopie = () => JSON.parse(JSON.stringify(gut));
     const taeter = [
         ["F1 BERGAUF", (b) => Object.assign(b.fluss, { steigend: 551, anteilSteigend: 0.142, anstiegM: 133.2 })],
-        ["F2 BUCKEL", (b) => (b.fluss.querP90M = 9.65)],
+        ["F2 BUCKEL", (b) => Object.assign(b.fluss, { buckelP90M: 1.2, querP90M: 9.65 })],
         ["F4 DOPPEL", (b) => (b.fluss.wasserfaelle = 19)],
         ["F LEER", (b) => (b.fluss.schritte = 0)],
+        ["F5 ZWEI KANÄLE", (b) => Object.assign(b.kanal, { abweichend: 412, maxDelta: 3.1 })],
         ["K1 AM GRUND", (b) => Object.assign(b.koerper.hinein, { tiefGeerdet: 966, maxTiefeGeerdetM: 4.68 })],
         ["K2 ZELL-DACH", (b) => (b.koerper.lage.fussUnterSpiegelP50 = 0.352)],
         ["K3 KRIECHEN", (b) => Object.assign(b.koerper.kraulen, { mps: 0.141, anteil: 0.144 })],
         ["K4 STUMM", (b) => (b.koerper.eintauchen.landung = null)],
         ["K LEER", (b) => (b.koerper.hinein.schwimmFrames = 0)],
         ["K5 MEDIUM", (b) => (b.koerper.medium = { kameraUnten: false, kameraOben: true })],
+        ["K6 AM GRUND", (b) => Object.assign(b.koerper.tier[1], { amGrund: true, sohleUnterSpiegel: 8 })],
+        ["K6 LAGE", (b) => Object.assign(b.koerper.tier[0], { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 })],
+        ["K6 LEER", (b) => (b.koerper.tier = [])],
+        ["K7 MITSPIELER", (b) => (b.koerper.peer.lehne = 0)],
+        ["K8 UFER-FLUT", (b) => Object.assign(b.ufer, { geflutet: 37, maxFlutM: 3.15 })],
+        ["K8 LEER", (b) => (b.ufer.trocken = 0)],
         ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],
         ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
@@ -306,7 +365,9 @@ async function lauf() {
                 st.voxelWorker = worker;
             });
             befund.fluss = await page.evaluate(() => window.__wasserFluss());
+            befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
             befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
+            befund.ufer = await page.evaluate(() => window.__wasserUfer({}));
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));

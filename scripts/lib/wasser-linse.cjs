@@ -23,14 +23,18 @@ function wasserFluss() {
     const st = r.state;
     const h = st.hydrosphere;
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
-    // Die Lauf-Fläche: was Körper und Augen lesen (`_waterRunSurfaceAt`, Boden unbekannt → der Kanal-KERN).
-    const lauf = (x, z) => r._waterRunSurfaceAt(x, z);
+    // Der Spiegel des Gesetzes, den Sheet, Körper und Augen lesen (`_atlasWaterLevelAt`, Boden unbekannt → der Kanal-KERN;
+    // bis V18.531 las die Probe die geglättete Lauf-Fläche `_waterRunSurfaceAt`, die mit dem monotonen Spiegel fiel).
+    const lauf = (x, z) =>
+        typeof r._waterRunSurfaceAt === "function" ? r._waterRunSurfaceAt(x, z) : r._atlasWaterLevelAt(x, z, -Infinity);
     let schritte = 0,
         steigend = 0,
         anstieg = 0,
         abstieg = 0,
         maxAnstieg = 0;
     const quer = [];
+    const buckel = [];
+    const stufen = [];
     for (const rv of h.rivers) {
         const P = rv.points;
         let prev = null;
@@ -68,19 +72,40 @@ function wasserFluss() {
             const nx = -fz / fl,
                 nz = fx / fl;
             const halbe = Math.max(1, (a.width || 3) * 0.5) * 0.9;
+            const W = (d) => lauf(a.x + nx * d, a.z + nz * d);
             let lo = Infinity,
-                hi = -Infinity;
+                hi = -Infinity,
+                vor = null;
+            let stufe = 0;
             for (let d = -halbe; d <= halbe + 1e-6; d += 0.5) {
-                const w = lauf(a.x + nx * d, a.z + nz * d);
-                if (!Number.isFinite(w)) continue;
+                const w = W(d);
+                if (!Number.isFinite(w)) {
+                    vor = null;
+                    continue;
+                }
                 if (w < lo) lo = w;
                 if (w > hi) hi = w;
+                if (vor !== null && Math.abs(w - vor) > stufe) stufe = Math.abs(w - vor);
+                vor = w;
             }
-            if (hi > lo) quer.push(hi - lo);
+            // Jeder Querschnitt mit Wasser zählt — auch der waagrechte (Spanne 0). Der BUCKEL ist die Wölbung: die Mitte
+            // gegen das Mittel der beiden Ränder (ein Gefälle quer — in der Biegung eines breiten Flusses das Gefälle
+            // längs — wölbt nicht); die STUFE der größte Sprung zwischen zwei Proben 0,5 m auseinander.
+            if (hi >= lo) {
+                quer.push(hi - lo);
+                stufen.push(stufe);
+                const wl = W(-halbe),
+                    wr = W(halbe),
+                    wm = W(0);
+                if (Number.isFinite(wl) && Number.isFinite(wr) && Number.isFinite(wm))
+                    buckel.push(Math.abs(wm - (wl + wr) / 2));
+            }
         }
     }
     quer.sort((x, y) => x - y);
-    const q = (p) => (quer.length ? quer[Math.min(quer.length - 1, Math.floor(p * quer.length))] : 0);
+    buckel.sort((x, y) => x - y);
+    stufen.sort((x, y) => x - y);
+    const q = (p, A = quer) => (A.length ? A[Math.min(A.length - 1, Math.floor(p * A.length))] : 0);
     const R = (x, n = 3) => Math.round(x * 10 ** n) / 10 ** n;
     // Wasserfall-Doppel: ein Sturz je Ort (der geteilte Unterlauf zieht ihn sonst je Quelle).
     const wf = Array.isArray(h.waterfalls) ? h.waterfalls : [];
@@ -97,9 +122,58 @@ function wasserFluss() {
         querP50M: R(q(0.5)),
         querP90M: R(q(0.9)),
         querMaxM: R(quer.length ? quer[quer.length - 1] : 0),
+        buckelP90M: R(q(0.9, buckel)),
+        buckelMaxM: R(buckel.length ? buckel[buckel.length - 1] : 0),
+        stufeP99M: R(q(0.99, stufen)),
+        stufeMaxM: R(stufen.length ? stufen[stufen.length - 1] : 0),
         wasserfaelle: wf.length,
         wasserfallOrte: orte.size,
     };
+}
+
+// ── Q7-Gestalt: der Kanal ist EINE Dichte (Lehre 7, Worker-Spiegel) ──
+// Main und Worker rechnen das Dichte-Gitter an Fluss-Punkten (der Kanal formt dort das Gelände) — bit-gleich verlangt.
+function wasserKanalParitaet(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        const h = st.hydrosphere;
+        if (!h || !h.ready || typeof r._voxelWorkerComputeDensity !== "function") return { fehler: "kein Worker-Pfad" };
+        if (!r._getVoxelWorker()) return { fehler: "kein Worker" };
+        await r._voxelWorkerSyncState({ op: "init" });
+        const cfg = r._voxelChunkConfig(0);
+        const punkte = [];
+        for (const rv of h.rivers)
+            for (let k = 0; k + 1 < rv.points.length && punkte.length < (o.n || 6); k += 7) {
+                const p = rv.points[k];
+                if (!p.inLake && !rv.points[k + 1].inLake) punkte.push(p);
+            }
+        let zellen = 0,
+            abweichend = 0,
+            maxDelta = 0;
+        for (const p of punkte) {
+            const ox = Math.floor(p.x / cfg.step) * cfg.step - 8 * cfg.step;
+            const oz = Math.floor(p.z / cfg.step) * cfg.step - 8 * cfg.step;
+            // die Höhe des Spiegels (vor der Welle L trugen die Punkte keinen: die Füllhöhe)
+            const sy = Number.isFinite(p.S) ? p.S : Number.isFinite(p.voxelY) ? p.voxelY : p.y;
+            const oy = Math.floor((sy - 8) / cfg.step) * cfg.step;
+            const n = 16,
+                ny = 10;
+            const main = r._voxelSampleDensityGrid(ox, oy, oz, n, ny, n, cfg.step, (x, y, z) =>
+                r._terrainDensityAt(x, y, z)
+            );
+            const wrk = await r._voxelWorkerComputeDensity(ox, oy, oz, n, ny, n, cfg.step);
+            for (let i = 0; i < main.length; i++) {
+                zellen++;
+                if (main[i] !== wrk[i]) {
+                    abweichend++;
+                    maxDelta = Math.max(maxDelta, Math.abs(main[i] - wrk[i]));
+                }
+            }
+        }
+        return { punkte: punkte.length, zellen, abweichend, maxDelta };
+    })();
 }
 
 // ── Q6-Körper ──
@@ -284,12 +358,172 @@ function wasserKoerper(opts) {
                     r._applyDayNightToScene();
                 }
             }
+            // (6) DAS TIER IM WASSER (W-T, R-D8/R-D9): je Art eine Kreatur in der See-Mitte, einmal nah (der Spieler 8 m
+            // daneben), einmal fern (120 m) — nach 60 Kreatur-Takten (x/z gehalten) die Sohle unter dem Spiegel gegen
+            // ihre Wasserlinie (das Schultergelenk, Gelenk-Höhe des Vorderlaufs × Größe) und „am Grund" (Sohle < Grund +
+            // 0,5 m). Median der letzten 30 Takte (der Hüpfer wirft einzelne Takte).
+            const tierProbe = [];
+            const playerAlt = pm.position.clone();
+            try {
+                for (const abstand of [8, 120]) {
+                    pm.position.set(mx + abstand, spiegel + 1, mz);
+                    for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
+                        const c = r.spawnCreatureAt(mx, spiegel, mz, "happy", seele, { precise: true, bodySize: 1 });
+                        if (!c) continue;
+                        const tb = c.userData._tierBaum;
+                        const linie = tb && tb.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
+                        const tiefen = [];
+                        for (let k = 0; k < 90; k++) {
+                            // nur Takte ohne Hüpfer (der Hüpf-Würfel ist eine eigene Klasse, Q1/Q2 — hier zählt die Lage)
+                            const ohneHopf = !(c.userData._hopV > 0) && !(c.userData._hopH > 0);
+                            r.updateCreatures(0.05);
+                            c.position.x = mx;
+                            c.position.z = mz;
+                            if (k >= 30 && ohneHopf && !(c.userData._hopH > 0)) tiefen.push(spiegel - c.position.y);
+                        }
+                        tiefen.sort((a, b) => a - b);
+                        if (!tiefen.length) continue;
+                        const sohle = tiefen[tiefen.length >> 1];
+                        tierProbe.push({
+                            seele,
+                            abstand,
+                            sohleUnterSpiegel: R(sohle, 3),
+                            wasserlinie: R(linie, 3),
+                            amGrund: spiegel - sohle < gm + 0.5,
+                        });
+                        r.removeCreature(c);
+                    }
+                }
+            } finally {
+                pm.position.copy(playerAlt);
+            }
+            aus.tier = tierProbe;
+            // (7) DER MITSPIELER (W-kD3b): ein Peer-Körper des Menschen treibt mit der Brustkorb-Linie am See-Spiegel —
+            // die EINE Wasser-Wahrheit macht ihn zum Schwimmer (die Schwimm-Lehne neigt den Leib), wie den eigenen.
+            const peer = {
+                peerId: "wasser-linse",
+                soulName: st.player && st.player.soul,
+                x: mx,
+                y: spiegel - brust + FUSS,
+                z: mz,
+                yaw: 0,
+            };
+            r._p2pApplyPeerSoul(peer);
+            if (peer.mesh) {
+                peer.lastMovedAt = 0;
+                peer.walkPhase = 0;
+                for (let k = 0; k < 4; k++) r._p2pUpdatePeer(peer, 10 + k * 0.05, 0.05);
+                aus.peer = { lehne: R(peer.mesh.rotation.x, 3), meshKind: peer.meshKind };
+                st.scene.remove(peer.mesh);
+                r._p2pDisposeMesh(peer.mesh);
+            }
         } finally {
             st.keys = keysAlt || {};
             st.yaw = yawAlt;
             r._loopFixedStep = vorher.loop;
         }
         return aus;
+    })();
+}
+
+// ── Q6: die Ufer-Flut (W-W1) ──
+// Der Spieler steht am Fluss der Mess-Wiese (Befund: −872/−1127), die Welt streamt um ihn, der Wasser-Automat wird geweckt
+// und läuft 600 Takte; dann je Fluss-Punkt im Nah-Ring beide Ufer jenseits der Krone (+0,5 … +6 m): wo das Gesetz das
+// Ufer TROCKEN nennt (sein Spiegel unter dem Boden), darf auch der Körper kein Wasser lesen (`_koerperWasser` > Boden +
+// 0,1 m = geflutet). Bis V18.531: 3,15 m „Wasser" über trockenem Gras, Voll-Bild-Tauch-Nebel.
+function wasserUfer(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        const h = st.hydrosphere;
+        if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
+        const HC = r.constructor.HYDROSPHERE;
+        const ziel = o.ort || [-872, -1127];
+        let best = null,
+            bd = Infinity;
+        // Die Heimat-Region und die fernen Kacheln (der Fluss des Befunds liegt jenseits ±1024 m).
+        const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t && t.ready) : []);
+        const fluesse = [];
+        for (const g of regionen) for (const rv of g.rivers || []) fluesse.push(rv);
+        for (const rv of fluesse)
+            for (const p of rv.points) {
+                if (p.inLake) continue;
+                const d = Math.hypot(p.x - ziel[0], p.z - ziel[1]);
+                if (d < bd) {
+                    bd = d;
+                    best = p;
+                }
+            }
+        if (!best) return { fehler: "kein Fluss" };
+        const pm = st.playerMesh;
+        pm.position.set(best.x, r._voxelSurfaceY(best.x, best.z) + 3, best.z);
+        if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+        const worker = st.voxelWorker;
+        st.voxelWorker = null;
+        const t0 = performance.now();
+        let last = -1,
+            still = performance.now();
+        for (;;) {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+            const n = st.voxelChunks ? st.voxelChunks.size : 0;
+            if (n !== last) {
+                last = n;
+                still = performance.now();
+            }
+            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            await new Promise((res) => setTimeout(res, 0));
+        }
+        st.voxelWorker = worker;
+        for (let k = 0; k < (o.takte || 600); k++) r._tickWorldWaterCA();
+        // Der Körper-Leser: die EINE Wasser-Wahrheit am Körper; vor der Welle L das Zell-Dach (`_playerWaterContext`).
+        const koerper = (x, z, boden) => {
+            if (typeof r._koerperWasser === "function") return r._koerperWasser(x, z, boden);
+            const c = r._playerWaterContext(x, boden + 0.5, z);
+            return c && c.submerged ? c.surfaceY : -Infinity;
+        };
+        const span = r._voxelChunkConfig(0).span;
+        const pcx = Math.floor(pm.position.x / span),
+            pcz = Math.floor(pm.position.z / span);
+        let trocken = 0,
+            geflutet = 0,
+            maxFlut = 0;
+        const beispiele = [];
+        for (const rv of fluesse) {
+            const P = rv.points;
+            for (let k = 0; k + 1 < P.length; k++) {
+                const a = P[k],
+                    b = P[k + 1];
+                if (a.inLake || b.inLake) continue;
+                if (Math.abs(Math.floor(a.x / span) - pcx) > 2 || Math.abs(Math.floor(a.z / span) - pcz) > 2) continue;
+                const fx = b.x - a.x,
+                    fz = b.z - a.z,
+                    fl = Math.hypot(fx, fz) || 1;
+                const nx = -fz / fl,
+                    nz = fx / fl;
+                const D = HC.carveBedMin + HC.carveBedK * (a.width || HC.widthMin);
+                const krone = Math.max(1, (a.width || HC.widthMin) * 0.5) + Math.max(2, D * HC.carveBankSlope);
+                for (const sg of [-1, 1])
+                    for (let d = krone + 0.5; d <= krone + 6; d += 1.1) {
+                        const x = a.x + nx * d * sg,
+                            z = a.z + nz * d * sg;
+                        const boden = r._voxelSurfaceY(x, z);
+                        if (!Number.isFinite(boden)) continue;
+                        if (r._atlasWaterLevelAt(x, z, boden) > boden) continue; // das Gesetz nennt es nass
+                        trocken++;
+                        const w = koerper(x, z, boden);
+                        if (w > boden + 0.1) {
+                            geflutet++;
+                            if (w - boden > maxFlut) maxFlut = w - boden;
+                            if (beispiele.length < 4)
+                                beispiele.push([Math.round(x), Math.round(z), Math.round((w - boden) * 100) / 100]);
+                        }
+                    }
+            }
+        }
+        return { ort: [best.x, best.z], trocken, geflutet, maxFlutM: Math.round(maxFlut * 100) / 100, beispiele };
     })();
 }
 
@@ -479,6 +713,8 @@ function wasserBild(opts) {
 module.exports = {
     WASSER_INSTALL:
         `window.__wasserFluss = ${wasserFluss.toString()};` +
+        `window.__wasserKanalParitaet = ${wasserKanalParitaet.toString()};` +
+        `window.__wasserUfer = ${wasserUfer.toString()};` +
         `window.__wasserKoerper = ${wasserKoerper.toString()};` +
         `window.__wasserBild = ${wasserBild.toString()};`,
 };
