@@ -10,7 +10,10 @@
 //   4 KONSUM      der Boden-Shader liest die Karte (Chunk-Material), die Wiese liest das Pfad-Feld
 //   5 ECKE        ein um 45° gedrehter Acker trägt seine Ecke (die Ausdehnung ist die Diagonale, kein Achteck)
 //   6 FERNE       ein Weg 300 m vom Spieler steht in der Karte (die ferne Stufe der Clipmap, kein Loch hinter 120 m)
-// --selftest: ein injizierter Boden-Streifen im Pool und eine harte Kante müssen beim Namen rot werden.
+//   7 BESTAND     die Kronen-Karte derselben Fenster: eine Eintrags-Krone übersteht 1,6 km Ausflug (Register, Streu,
+//                 verschoben = voll neu gemalt) — bis 06.10. vergaß der ferne Umzug jede Eintrags-Krone
+// --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante und der vergessliche ferne Umzug müssen beim
+// Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -133,6 +136,45 @@ function probe(stoerung) {
         /_wegeBodenFarbe\(_Ta, albedoNode\)/.test(code(r._buildPbrNodeMaterial)) &&
         /_wegeKarteEnsure\(\)/.test(code(r._wegeBodenFarbe));
     out.wieseLiest = /_pfadFeldAt\(/.test(code(r._nahWieseKachelBueschel)) && r._pfadFeldAt(o.x - 12, o.z, null) > 0.9;
+    // 7 BESTAND: eine Eintrags-Krone (a:, trägt sich nur beim Entstehen ein) übersteht einen Ausflug über das ferne
+    // Fenster — 1,6 km hin und zurück: sie steht im Register, die Laubstreu liegt unter ihr, und jede verschobene
+    // Stufe gleicht dem vollen Neumalen aus dem Register (der Raum-Index verliert keine Krone am Streifen-Rand).
+    const wk = st.wegeKarte;
+    const kx = o.x + 30;
+    const kz = o.z + 30;
+    r._kronenStreuNeu("a:probe-bestand", kx, kz, 5);
+    if (stoerung === "vergessen") {
+        // die Lücke bis 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters
+        const fernStufe = wk.stufen[wk.stufen.length - 1];
+        const umzug = r._kronenStreuUmzug;
+        r._kronenStreuUmzug = function (stufe, war) {
+            const hk = stufe.S.fensterM / 2;
+            if (stufe === fernStufe)
+                for (const [k, c] of [...wk.kronen])
+                    if (Math.abs(c[0] - stufe.mitteX) - c[2] > hk || Math.abs(c[1] - stufe.mitteZ) - c[2] > hk) {
+                        wk.kronen.delete(k);
+                        wk.kronenZellen.get(A._kronenZelle(c[0], c[1])).delete(k);
+                    }
+            return umzug.call(this, stufe, war);
+        };
+    }
+    try {
+        r._tickWegeKarte({ x: o.x + 1600, z: o.z });
+        r._tickWegeKarte({ x: o.x, z: o.z });
+    } finally {
+        delete r._kronenStreuUmzug; // die Störung lebte als eigene Eigenschaft, der Prototyp trägt wieder
+    }
+    out.bestandRegister = wk.kronen.has("a:probe-bestand");
+    out.bestandStreu = +r._kronenStreuAt(kx, kz).toFixed(3);
+    let ungleich = 0;
+    for (const stufe of wk.stufen) {
+        const verschoben = stufe.kronen.summe.slice();
+        r._kronenStreuUmzug(stufe, null);
+        const voll = stufe.kronen.summe;
+        for (let i = 0; i < voll.length; i++) if (voll[i] !== verschoben[i]) ungleich++;
+    }
+    out.bestandUngleich = ungleich;
+    r._kronenStreuWeg("a:probe-bestand");
     A.WEGE_KARTE = randAlt;
     r._stlWegeDispose();
     return out;
@@ -152,6 +194,11 @@ function urteil(S) {
     if (!(S.ecke > 0.3)) rot.push(`5 ECKE: die Ecke des 45°-Ackers trägt ${S.ecke} (soll > 0,3 — die Ausdehnung ist die Diagonale)`);
     if (!(S.fernWeg > 0.5)) rot.push(`6 FERNE: der Weg in 300 m liest ${S.fernWeg} (soll > 0,5 — die ferne Stufe trägt)`);
     if (!S.wieseLiest) rot.push("4 KONSUM: die Wiese liest das Pfad-Feld nicht");
+    if (!(S.bestandRegister && S.bestandStreu > 0.5 && S.bestandUngleich === 0))
+        rot.push(
+            `7 BESTAND: nach 1,6 km Ausflug steht die Eintrags-Krone ${S.bestandRegister ? "im" : "NICHT im"} Register, ` +
+                `Streu unter ihr ${S.bestandStreu} (soll > 0,5), ${S.bestandUngleich} Texel ungleich dem vollen Neumalen (soll 0)`
+        );
     return rot;
 }
 
@@ -190,13 +237,16 @@ function urteil(S) {
     if (SELFTEST) {
         const streifen = urteil(await page.evaluate(probe, "streifen"));
         const hart = urteil(await page.evaluate(probe, "hart"));
+        const vergessen = urteil(await page.evaluate(probe, "vergessen"));
         const heil = urteil(await page.evaluate(probe, null));
         selbst = {
             streifenRot: streifen.some((e) => e.startsWith("1 KEIN QUAD")),
             hartRot: hart.some((e) => e.startsWith("3 KANTE")),
+            vergessenRot: vergessen.some((e) => e.startsWith("7 BESTAND")),
             heilGruen: heil.length === 0,
             streifen: streifen[0] || "-",
             hart: hart.find((e) => e.startsWith("3 KANTE")) || hart[0] || "-",
+            vergessen: vergessen.find((e) => e.startsWith("7 BESTAND")) || vergessen[0] || "-",
         };
     }
     await browser.close();
@@ -210,14 +260,20 @@ function urteil(S) {
         console.log(`  Platz ${S.platz} · Acker ${S.acker} · Feldweg ${S.feldweg}`);
         console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${S.wieseLiest}`);
         console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg}`);
+        console.log(
+            `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +
+                `${S.bestandUngleich} Texel ungleich dem vollen Neumalen`
+        );
     }
     const rot = urteil(S);
     if (pageErrors.length) rot.push("Seiten-Fehler: " + pageErrors[0]);
     if (selbst) {
         console.log(`  Selbsttest: Boden-Streifen im Pool → ${selbst.streifen}`);
         console.log(`  Selbsttest: harte Kante → ${selbst.hart}`);
+        console.log(`  Selbsttest: der ferne Umzug vergisst → ${selbst.vergessen}`);
         if (!selbst.streifenRot) rot.push("SELBSTTEST: der injizierte Boden-Streifen blieb grün");
         if (!selbst.hartRot) rot.push("SELBSTTEST: die harte Kante blieb grün");
+        if (!selbst.vergessenRot) rot.push("SELBSTTEST: der vergessene Kronen-Bestand blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
     if (rot.length) {
