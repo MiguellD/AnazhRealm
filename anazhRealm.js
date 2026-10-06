@@ -89399,6 +89399,33 @@ class AnazhRealm {
         return n;
     }
 
+    // DER EINE TIEFEN-WEG DER LEINWAND (06.10.): in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene
+    // lebt im Ziel des Szene-Passes, mit eigener Tiefe) — r184 legt für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-
+    // Größe an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die dort kein Pixel liest. Der Direktpfad dagegen zeichnet
+    // die Szene in das Rahmen-Ziel des Renderers (`_getFrameBufferTarget`, das Tonemapping zur Leinwand), dessen Tiefe
+    // `renderer.depth` folgt: ohne sie zeichnete er ohne Tiefentest, und der erste Leser der Szenen-Tiefe (`_szeneTiefe`:
+    // Wasser, Feld-Pass) warf in r184 `copyFramebufferToTexture` („Invalid value used as weak map key" — das Rahmen-Ziel
+    // trägt keine Tiefen-Textur). Bis V18.532 stellten ZWEI Stellen die Tiefe (der Ketten-Bau nahm sie, nur der Fang eines
+    // Render-Fehlers gab sie zurück) — jeder andere Weg in den Direktpfad (die Weiche der Zerleg-Linse `post`/`leer`) fuhr
+    // ohne und stürzte. Jetzt stellt sie die Weiche in `_loopRender` je Frame hier: Direktpfad → mit Tiefe, Post-Kette →
+    // ohne, und die GPU-Textur der Leinwand-Tiefe fällt dabei mit (sonst hielte ein Ausflug in den Direktpfad die 7,9 MB
+    // für immer). Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an. Die Wand: gate:post-kette.
+    _leinwandTiefe(direkt) {
+        const rend = this.state.renderer;
+        const be = rend && rend.backend;
+        if (!be || be.isWebGPUBackend !== true) return;
+        const soll = direkt === true;
+        if (rend.depth === soll) return;
+        rend.depth = soll;
+        // r184 hält den Deskriptor des Leinwand-Passes im Backend-Datensatz der Leinwand — updateSize verwirft ihn, der
+        // nächste Leinwand-Pass baut ihn mit bzw. ohne Tiefe neu (gate:vendor-anker pinnt beides).
+        be.updateSize();
+        if (!soll) {
+            const t = rend.getCanvasTarget().depthTexture;
+            if (t && be.has(t)) be.destroyTexture(t);
+        }
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -89470,6 +89497,13 @@ class AnazhRealm {
             // Die Platzhalter-Tiefe des Knotens (1×1, bis die Geschichte ihre Tiefe trägt) hat weder Namen noch Ziel —
             // die Band-Linse nennt jedes Textur-Objekt beim Erzeuger (gate:vendor-anker pinnt die Vendor-Zeile).
             if (traa) traa._previousDepthNode.value.name = "TRAANode.vortiefe";
+            // DIE VORTIEFE DER GESCHICHTE: je Frame kopiert der Knoten die Szenen-Tiefe in die Tiefe seines Geschichts-Ziels
+            // (r184 `copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`, 7,9 MB bei 1080p), der Resolve
+            // des nächsten Frames liest sie als Vortiefe (`samplePreviousDepth` → Disokklusion: wo die reprojizierte Vortiefe
+            // vor der jetzigen liegt, fällt die Geschichte — sonst zieht jede freigelegte Kante einen Geist). Die Kopie bleibt;
+            // die Frame-Anatomie sah sie namenlos („post: depth → ?"), der Name ist der, den die Band-Linse ihr über das Ziel
+            // gibt (`<ziel>:tiefe`) — der VRAM-Schlüssel bleibt derselbe.
+            if (traa) traa._historyRenderTarget.depthTexture.name = "TRAANode.history:tiefe";
             if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
@@ -89520,12 +89554,32 @@ class AnazhRealm {
                 threshold: u.godrayThreshold,
             };
 
+            // DIE STUFE KOSTET NUR, WENN SIE ZEIGT: eine Nachbild-Stufe mit Stärke-Regler (Godrays: Sonne im Bild ×
+            // Wetter × Höhe × Regler; lokaler Kontrast: der Kanten-Schärfe-Regler, 0 = aus) rechnet ihre Abtastungen in
+            // einem Zweig, den der Regler wählt — eine Uniform, also einheitlich für jedes Pixel (keine Divergenz, WGSL-
+            // Gleichförmigkeit erlaubt die Abtastung darin). Bei Stärke 0 liefert sie 0 wie zuvor das Produkt mit 0, nur
+            // ohne die Abtastungen: die Godrays tasteten 20× je Pixel auch ohne Sonne im Bild (06.10., GTX 1060, Mess-
+            // Wiese: 0,69 ms je Frame). Die Stufe reist als Argument (der Ketten-Graph bleibt lesbar: die Zerleg-Linse
+            // findet sie über ihre Stärke-Uniform, `ketteKante`); TSL erzeugt ihren Code dort, wo sie zuerst gebraucht
+            // wird — im Zweig. Was davor UND im Zweig gebraucht wird (das gemischte Bild), steht vor dem Aufruf.
+            // Die Wand: gate:post-kette (die Abtastungen der Stufen im erzeugten WGSL stehen im Zweig, das Budget der
+            // unbedingten Abtastungen hält).
+            const nurBeiStaerke = TSL.Fn(([stufe, staerke]) => {
+                const aus = vec3(0, 0, 0).toVar();
+                TSL.If(staerke.notEqual(float(0)), () => {
+                    aus.assign(stufe);
+                });
+                return aus;
+            });
+
             // --- Bloom: helle Stellen (luminance > Schwelle) isolieren, weich
             // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
             // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
-            // Szene-Textur-Node an versetzter UV.
+            // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
+            // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
+            const mitte = sceneColor.sample(screenUV);
             const bright = (uv) => {
-                const c = sceneColor.sample(uv).rgb;
+                const c = (uv === screenUV ? mitte : sceneColor.sample(uv)).rgb;
                 const l = luminance(c);
                 const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
                 return c.mul(m);
@@ -89553,7 +89607,7 @@ class AnazhRealm {
             // --- GODRAYS: radialer Light-Shaft-March (GPU-Gems-3). Je Pixel N feste Schritte Richtung
             // Sonnen-Screen-Position; nur sehr helle Himmels-Lücken tragen bei → Occlusion durch Blatt/Berg
             // gratis, ohne Depth-Buffer. UNROLLT (der JS-Loop akkumuliert TSL-Nodes, kein Shader-Loop); der
-            // Beitrag klingt mit 0.96^i ab. `godrayStrength`=0 → No-op.
+            // Beitrag klingt mit 0.96^i ab. Stärke 0 → der Zweig fällt, keine Abtastung (`nurBeiStaerke`).
             const GN = 20;
             const gDelta = u.godraySun.sub(screenUV); // Vektor Pixel → Sonne (Screen-UV)
             let gacc = null;
@@ -89565,10 +89619,10 @@ class AnazhRealm {
                 const srcI = cI.mul(mI).mul(float(wI));
                 gacc = gacc ? gacc.add(srcI) : srcI;
             }
-            const godray = gacc.mul(u.godrayStrength);
+            const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
 
             // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
-            const base = sceneColor.rgb;
+            const base = mitte.rgb;
             const bloomed = base.add(bloom).add(godray);
             // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
             // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
@@ -89576,6 +89630,7 @@ class AnazhRealm {
             // (Strukturen/Bauten plastisch statt pappig). Wirkt global pro Pixel,
             // kein Material angefasst → dynamische Farben unberuehrt. Der Offset
             // ist etwas weiter als das Bloom-px (groebere Umgebung = Mikro-Detail).
+            // Kanten-Schärfe 0 (der Regler „aus") → der Zweig fällt mit seinen 4 Abtastungen (`nurBeiStaerke`).
             const lcPx = float(0.0026);
             const lumAt = (uv) => luminance(sceneColor.sample(uv).rgb);
             const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
@@ -89585,7 +89640,7 @@ class AnazhRealm {
                 .mul(float(0.25));
             const selfLum = luminance(bloomed);
             const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
-            const combined = bloomed.add(bloomed.mul(detail.mul(u.localContrast)));
+            const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             const lum = luminance(combined);
             const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
             const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
@@ -89607,12 +89662,7 @@ class AnazhRealm {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
-            // DIE LEINWAND OHNE TIEFE: in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene lebt im Ziel
-            // des Szene-Passes, mit eigener Tiefe) — r184 legte für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-Größe
-            // an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die kein Pixel las. Der direkte Pfad (die Kette scheitert
-            // im Render, _loopRender) holt sie zurück. Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an.
-            const rend = this.state.renderer;
-            if (rend.backend && rend.backend.isWebGPUBackend === true) rend.depth = false;
+            // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandTiefe`) je Pfad — nie der Bau.
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
@@ -90759,7 +90809,10 @@ class AnazhRealm {
         // submitten intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
         // Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
         // Ökonomie; eine Wahrnehmungs-Auflösung nur realloc-frei (Viewport-Scaling).
-        if (pp && !this.state.postProcessingFailed) {
+        // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr die Leinwand-Tiefe (`_leinwandTiefe`, der EINE Tiefen-Weg).
+        let direkt = !pp || this.state.postProcessingFailed === true;
+        if (!direkt) {
+            this._leinwandTiefe(false);
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
@@ -90769,16 +90822,11 @@ class AnazhRealm {
             } catch (err) {
                 this.state.postProcessingFailed = true;
                 this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
-                // Der direkte Pfad zeichnet die Szene in die Leinwand: sie braucht ihre Tiefe wieder (die Post-Kette nahm
-                // sie, _ensurePostProcessing) — r184 baut den Leinwand-Pass neu (updateSize verwirft seinen Deskriptor).
-                const rend = this.state.renderer;
-                if (rend.depth === false) {
-                    rend.depth = true;
-                    if (rend.backend && typeof rend.backend.updateSize === "function") rend.backend.updateSize();
-                }
-                rend.render(this.state.scene, this.state.camera);
+                direkt = true;
             }
-        } else {
+        }
+        if (direkt) {
+            this._leinwandTiefe(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
