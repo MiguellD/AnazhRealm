@@ -43,6 +43,29 @@
 //   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: n Frames ohne rAF/VSync hintereinander, die
 //                                                           reine GPU-Zeit je Frame (wenn GPU-gebunden)
+//   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
+//                                      [--selbsttest [--last iter]]
+//                                                           DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): schaltet
+//                                                           jeden benannten Verbraucher des echten Wegs ab (Pässe, Post-
+//                                                           Stufen, Klassen, leerer Frame) und misst je Schalter die gpu-
+//                                                           bank-Differenz ABBA (r ≥ 4 Runden à n Frames, Median ± halbe
+//                                                           Spannweite, dazu Δ CPU und Δ Pass-Stempel) → Tabelle mit Σ,
+//                                                           Rest, Frame-Anatomie (jeder GPU-Befehl je Frame mit Bytes) und
+//                                                           Beleg je Schalter; `--nur` nimmt Schalter-ids (Tabelle zeigt
+//                                                           sie), `--bilder` legt je Schalter das AUS-Bild aus dem Ausgabe-
+//                                                           Pfad ab, `--selbsttest` schmuggelt einen Vollbild-Pass fester
+//                                                           Last ein und prüft, dass er als Posten erscheint und wieder
+//                                                           verschwindet. Exit 1: ein Schalter schaltet nicht, der Zustand
+//                                                           ist nicht zurück, oder der Selbsttest ist ROT.
+//     MESSFOLGE am ruhigen Messplatz (keine fremde Last, Port 3000 frei; Zeiten nur ruhig, ~3 min je Lauf):
+//       npm start                                           (save-server :4312, eigenes Fenster)
+//       node scripts/werkbank.cjs start --echt              (eigenes Fenster; wartet auf „WERKBANK bereit")
+//       node scripts/werkbank.cjs umstellen -900 -850
+//       node scripts/werkbank.cjs lauf 10 --ein 30 --ruhe 300 --tiere frei   (einschwingen: der Bau ruht)
+//       node scripts/werkbank.cjs zerlegen --selbsttest     (die Linse prüft sich: Posten gefunden, plausibel, weg)
+//       node scripts/werkbank.cjs zerlegen --runden 6 --json artifacts/werkbank/zerlegen-omen.json
+//       node scripts/werkbank.cjs zerlegen --nur haupt,tiefenkopie,traa,nachbild,bloom,godrays,kontrast,feldPass,leer --runden 8
+//       node scripts/werkbank.cjs stop
 //   node scripts/werkbank.cjs band [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE (W0): einschwingen (volle Welt, bis der Bau
 //                                                           ruht), n Proben (Maximum je Klasse × Stufe × Pass) + VRAM
@@ -80,6 +103,7 @@ const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
+const ZL = require("./lib/zerlege-linse.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -121,6 +145,16 @@ function vramAbgriff() {
         if (k) return { r: 1, rg: 2, rgba: 4, bgra: 4 }[k[1]] * (Number(k[2]) / 8);
         if (/^(rgb10a2|rg11b10|rgb9e5)/.test(f)) return 4;
         return 4;
+    };
+    // Dieselbe Bytes-je-Texel-Tabelle liest die Frame-Anatomie der GPU-Zerlegung (scripts/lib/zerlege-linse.cjs), und
+    // jede Ansicht kennt ihre Textur (ein Render-Pass nennt nur Ansichten — Format, Größe und Proben trägt die Textur).
+    window.__vramBpt = bpt;
+    const ansichtTextur = (window.__viewTex = new WeakMap());
+    const cv = GPUTexture.prototype.createView;
+    GPUTexture.prototype.createView = function (d) {
+        const v = cv.call(this, d);
+        ansichtTextur.set(v, this);
+        return v;
     };
     const spitze = () => (V.spitze = Math.max(V.spitze, V.puffer + V.texturen));
     // Je Label die lebenden Bytes — `__vramBericht()` nennt die Großen beim Namen; das Label faltet die EINE Regel
@@ -273,34 +307,11 @@ function lauf(k) {
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         if (st.playerMesh) st.playerMesh.visible = true;
-        // DIE PASS-UHR: r184 stempelt jeden Render-Pass mit `r:<Aufruf>:<Kontext>:f<Frame>`; der Stapel der
-        // gerade rendernden Kamera beim Stempeln nennt den Pass (haupt · k0/k1 · post), der Pool trägt die ms.
-        const csm = st.csmNode;
-        const passOf = (cam, sz) => {
-            if (cam === st.camera) return "haupt";
-            if (csm && csm.lights)
-                for (let i = 0; i < csm.lights.length; i++)
-                    if (csm.lights[i].shadow && csm.lights[i].shadow.camera === cam) return "k" + i;
-            return sz && sz.name === "Render Pipeline" ? "post" : (cam && (cam.name || cam.type)) || "?";
-        };
-        const be = rend.backend;
-        const stapel = [];
-        const uidPass = new Map();
-        const rohSzene = rend._renderScene;
-        const rohUid = be.updateTimeStampUID;
-        rend._renderScene = function (szene, kamera, ...rest) {
-            stapel.push(passOf(kamera, szene));
-            try {
-                return rohSzene.call(this, szene, kamera, ...rest);
-            } finally {
-                stapel.pop();
-            }
-        };
-        be.updateTimeStampUID = function (ctx) {
-            rohUid.call(this, ctx);
-            const uid = this.get(ctx).timestampUID;
-            if (messen && uid && uid[0] === "r") uidPass.set(uid, stapel[stapel.length - 1] || "?");
-        };
+        // DIE PASS-UHR (scripts/lib/zerlege-linse.cjs, dieselbe wie `zerlegen`): r184 stempelt jeden Render-Pass mit
+        // `r:<Aufruf>:<Kontext>:f<Frame>`; der Stapel der gerade rendernden Pässe beim Stempeln nennt den Pass (die EINE
+        // Benennung `__passName`: haupt · k0/k1 · post · TRAA …), der Pool trägt die ms. Ein Pass, der mitten im Render neu
+        // beginnt (r184 `copyFramebufferToTexture`), überschreibt seinen Anfangs-Stempel — `zerlegen` nennt ihn.
+        const uhr = window.__passUhr();
         const proben = [];
         let messen = false,
             tVor = null,
@@ -405,23 +416,15 @@ function lauf(k) {
             }
             const v0 = Object.assign({}, window.__vram || {});
             messen = true;
+            uhr.messen = true;
             await sleep(k.sek * 1000);
             messen = false;
+            uhr.messen = false;
             rend.setAnimationLoop(null);
             // Die GPU-Fertig-Meldungen laufen der CPU hinterher — warten, bis die Schlange leer ist.
             if (rend.backend && rend.backend.device) await rend.backend.device.queue.onSubmittedWorkDone();
             await sleep(50);
-            const pool = be.timestampQueryPool && be.timestampQueryPool.render;
-            if (pool) await rend.resolveTimestampsAsync("render");
-            const jePassFrame = {};
-            if (pool && pool.timestamps)
-                for (const [uid, pass] of uidPass) {
-                    const ms = pool.timestamps.get(uid);
-                    if (!Number.isFinite(ms)) continue;
-                    const f = uid.slice(uid.lastIndexOf(":f") + 2);
-                    const e = jePassFrame[pass] || (jePassFrame[pass] = {});
-                    e[f] = (e[f] || 0) + ms;
-                }
+            const jePassFrame = (await uhr.lesen()) || {};
             const quant = (arr, q) => {
                 const a = arr.filter(Number.isFinite).sort((x, y) => x - y);
                 return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
@@ -509,8 +512,7 @@ function lauf(k) {
         } finally {
             messen = false;
             rend.setAnimationLoop(null);
-            rend._renderScene = rohSzene;
-            be.updateTimeStampUID = rohUid;
+            uhr.ab();
             st.perfTargetMs = decke;
         }
     })();
@@ -566,22 +568,8 @@ function gpuBank(k) {
         if (!q) return { fehler: "kein GPU-Device" };
         rend.setAnimationLoop(null);
         window.__buehne();
-        const runde = async (n) => {
-            await q.onSubmittedWorkDone();
-            const t0 = performance.now();
-            let cpu = 0;
-            for (let i = 0; i < n; i++) {
-                const c0 = performance.now();
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopShadowUpdate(); // der Schatten-Takt wie im Loop (je Kaskade am echten Leser)
-                r._loopRender(performance.now() / 1000);
-                cpu += performance.now() - c0;
-            }
-            const tAb = performance.now();
-            await q.onSubmittedWorkDone();
-            const t1 = performance.now();
-            return { jeFrame: (t1 - t0) / n, cpuJeFrame: cpu / n, nachlauf: t1 - tAb };
-        };
+        // DIE EINE BANK-RUNDE (scripts/lib/zerlege-linse.cjs) — dieselbe Messung, die `zerlegen` je Schalter fährt.
+        const runde = (n) => window.__bankRunde(n);
         await runde(3); // warm
         const n = k.n || 12;
         const rr = [];
@@ -791,6 +779,7 @@ async function starte() {
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
+        await page.evaluate(ZL.ZERLEGE_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
             while (
@@ -1154,6 +1143,137 @@ async function starte() {
                         ms: Date.now() - t0,
                     });
                 }
+                // DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): Inventur (ein Zähl-Frame + Pass-Baum + Frame-Anatomie) →
+                // Schalter aus dem echten Weg → ABBA je Schalter mit der Bank-Runde → Beleg je Schalter → Tabelle.
+                if (req.url === "/zerlegen") {
+                    const n = Number(b.n) || 12;
+                    const runden = Math.max(4, Number(b.runden) || 4);
+                    const kette = ZL.KETTE.map((x) => x.uniform);
+                    let last = null;
+                    if (b.selbsttest) {
+                        await page.evaluate(() => {
+                            window.__zerlegeVorSelbst = window.__zerlegeZustand();
+                        });
+                        last = await page.evaluate((k) => window.__zerlegeLast(k), {
+                            an: true,
+                            iter: Number(b.last) || 96,
+                        });
+                        if (!last || last.fehler) return send(Object.assign({ fehler: "Selbsttest-Last" }, last || {}));
+                    }
+                    try {
+                        const inv = await page.evaluate((k) => window.__zerlegeInventur(k), { n, kette });
+                        if (inv.fehler) return send(inv);
+                        const { haushalt } = BAND.ladeSpec();
+                        const sch = ZL.zerlegeSchalter(inv, haushalt, {
+                            nur: b.nur ? String(b.nur).split(",") : null,
+                            unbekannteImmer: !!b.selbsttest,
+                        });
+                        const roh = await page.evaluate((k) => window.__zerlegeMessen(k), {
+                            schalter: sch.schalter,
+                            n,
+                            runden,
+                            bilder: !!b.bilder,
+                        });
+                        if (roh.fehler) return send(roh);
+                        // Die Bilder des Belegs (Ausgabe-Pfad, AN einmal, AUS je Schalter) in den Ordner, nie ins JSON.
+                        let ordner = null;
+                        if (b.bilder) {
+                            ordner = path.resolve(
+                                typeof b.bilder === "string"
+                                    ? b.bilder
+                                    : path.join(root, "artifacts", "werkbank", `zerlegen-${Date.now()}`)
+                            );
+                            fs.mkdirSync(ordner, { recursive: true });
+                            const schreibe = (name, png) =>
+                                fs.writeFileSync(path.join(ordner, name), Buffer.from(png.split(",")[1], "base64"));
+                            if (roh.bildAn) schreibe("00-an.png", roh.bildAn);
+                            delete roh.bildAn;
+                            roh.schalter.forEach((e, i) => {
+                                if (e.beleg && e.beleg.bild) {
+                                    schreibe(
+                                        `${String(i + 1).padStart(2, "0")}-${e.id.replace(/[^a-z0-9_-]+/gi, "_")}-aus.png`,
+                                        e.beleg.bild
+                                    );
+                                    delete e.beleg.bild;
+                                }
+                            });
+                        }
+                        const a = ZL.zerlegeAuswerten(roh, sch.schalter);
+                        let selbst = null;
+                        if (last) {
+                            await page.evaluate((k) => window.__zerlegeLast(k), { an: false });
+                            last.weg = true;
+                            const inv2 = await page.evaluate((k) => window.__zerlegeInventur(k), { n: 3, kette });
+                            const zurueck = await page.evaluate(() =>
+                                window.__zerlegeVergleich(window.__zerlegeVorSelbst, window.__zerlegeZustand())
+                            );
+                            const z = a.zeilen.find((x) => x.id === "pass:zerlege-selbsttest");
+                            const toleranzMs = +Math.max(1, 0.35 * last.alleinMs).toFixed(2);
+                            selbst = {
+                                iter: last.iter,
+                                ziel: last.ziel,
+                                alleinMs: last.alleinMs,
+                                alleinWerte: last.alleinWerte,
+                                deltaMs: z ? z.deltaMs : null,
+                                streuungMs: z ? z.streuungMs : null,
+                                // die Stempel-Probe: was der r184-Pass-Stempel von dieser bekannten Last sieht
+                                stempelMs: a.stempelJePass ? a.stempelJePass["zerlege-selbsttest"] : null,
+                                toleranzMs,
+                                gefunden: !!z,
+                                plausibel:
+                                    !!z &&
+                                    Math.abs(z.deltaMs - last.alleinMs) <= toleranzMs &&
+                                    z.deltaMs > 2 * z.streuungMs,
+                                verschwunden: !inv2.passe.some((p) => p.name === "zerlege-selbsttest"),
+                                zurueck,
+                            };
+                            selbst.urteil =
+                                selbst.gefunden && selbst.plausibel && selbst.verschwunden && !zurueck.length
+                                    ? "GRUEN"
+                                    : "ROT";
+                        }
+                        const datei = path.resolve(
+                            b.json || path.join(root, "artifacts", "werkbank", `zerlegen-${Date.now()}.json`)
+                        );
+                        fs.mkdirSync(path.dirname(datei), { recursive: true });
+                        fs.writeFileSync(
+                            datei,
+                            JSON.stringify(
+                                {
+                                    echt: ECHT,
+                                    boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
+                                    inventur: inv,
+                                    schalter: sch,
+                                    auswertung: a,
+                                    roh,
+                                    selbsttest: selbst,
+                                },
+                                null,
+                                1
+                            )
+                        );
+                        let tabelle = ZL.zerlegeTabelle(a, inv, sch);
+                        if (selbst)
+                            tabelle +=
+                                `\n\nSELBSTTEST ${selbst.urteil}: eingeschmuggelter Vollbild-Pass (${selbst.iter} Runden sin/cos, ` +
+                                `${selbst.ziel.join("×")}) allein ${selbst.alleinMs} ms, als Posten pass:zerlege-selbsttest ` +
+                                `${selbst.gefunden ? selbst.deltaMs + " ± " + selbst.streuungMs + " ms" : "NICHT GEFUNDEN"} ` +
+                                `(Toleranz ± ${selbst.toleranzMs} ms: ${selbst.plausibel ? "plausibel" : "NICHT plausibel"}); ` +
+                                `ohne ihn: Posten ${selbst.verschwunden ? "verschwunden" : "NOCH DA"}, Zustand ` +
+                                `${selbst.zurueck.length ? "NICHT zurück (" + selbst.zurueck.join(" · ") + ")" : "zurück"}` +
+                                `\nSTEMPEL-PROBE: der r184-Pass-Stempel derselben Last zeigt ${selbst.stempelMs} ms ` +
+                                `(${selbst.stempelMs != null && selbst.alleinMs ? Math.round((100 * selbst.stempelMs) / selbst.alleinMs) : "–"} % ` +
+                                "ihrer Kosten allein) — so viel Fragment-Arbeit sehen die Stempel dieses Geräts";
+                        const ok =
+                            !a.zurueck.length &&
+                            !a.fenster.some((e) => !e.geschluckt) &&
+                            a.zeilen.every((z) => z.geschaltet !== false) &&
+                            (!selbst || selbst.urteil === "GRUEN");
+                        return send({ tabelle, ok, datei, ordner, selbsttest: selbst, ms: Date.now() - t0 });
+                    } finally {
+                        if (last && !last.weg) await page.evaluate((k) => window.__zerlegeLast(k), { an: false });
+                    }
+                }
                 if (req.url === "/lauf") {
                     const o = await page.evaluate(lauf, {
                         sek: Number(b.sek) || 20,
@@ -1338,6 +1458,26 @@ async function starte() {
     else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
+    else if (cmd === "zerlegen") {
+        const bi = argv.indexOf("--bilder");
+        o = await rufe("/zerlegen", {
+            runden: opt("--runden"),
+            n: opt("--n"),
+            nur: opt("--nur"),
+            json: opt("--json"),
+            bilder: bi < 0 ? false : argv[bi + 1] && !argv[bi + 1].startsWith("--") ? argv[bi + 1] : true,
+            selbsttest: argv.includes("--selbsttest"),
+            last: opt("--last"),
+        });
+        if (o && o.tabelle) {
+            console.log(o.tabelle + "\n\n" + o.datei + (o.ordner ? "\n" + o.ordner : ""));
+            process.exit(o.ok ? 0 : 1);
+        }
+        if (!o || o.fehler) {
+            console.log(JSON.stringify(o, null, 1));
+            process.exit(1);
+        }
+    }
     else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {

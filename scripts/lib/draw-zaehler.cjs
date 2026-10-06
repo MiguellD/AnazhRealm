@@ -15,11 +15,29 @@
 //   - `art` = die Studio-Art des Presets (Rezept-`kind` der lebenden Foundry), wo die Klasse ein Foundry-Preset trägt.
 //
 //   Seite:     window.__drawZensus({ top: 16, alle: false }) → { passe, klassen, unbenannt, programme, frameMs }
+//              window.__passName(scene, camera) → haupt · k<i> · post · TRAA · …  (die EINE Pass-Benennung)
 //              window.__pufferZensus() → { mb, klassen: [{klasse, mb}] }  (Geometrie-Puffer je Täter-Klasse)
 //              window.__texturZensus() → { mb, erzeuger: [{erzeuger, mb, n}], unbenannt }  (Textur-Objekte je Erzeuger)
 //   Werkbank:  node scripts/werkbank.cjs zaehlen [px py pz lx ly lz]   (Höhen mit `+` relativ zum Boden)
 //              node scripts/werkbank.cjs band                          (Klasse × Stufe × Pass gegen den Haushalt)
 //   Node:      require("./draw-zaehler.cjs").texturErzeuger — dieselbe Funktion (die Band-Wand prüft sie headless).
+
+// DER NAME EINES PASSES — die EINE Benennung jedes Renders am Chokepoint `_renderScene` (Szene + Kamera): der Draw-Zähler
+// (je Befehl), die Pass-Uhr (`lauf`, `zerlegen`) und die Frame-Anatomie lesen sie. Das Hauptbild (die Spiel-Kamera),
+// jede Schatten-Kaskade `k<i>` (ohne CSM die EINE Karte des Haupt-Lichts `k0`), die Ausgabe der Post-Kette `post`
+// (r184-RenderPipeline-Quad), sonst der Name der Szene (r184 benennt seine Quads: `TRAA`), der Kamera, ihr Typ.
+function passName(scene, camera) {
+    const st = window.anazhRealm.state;
+    if (camera === st.camera) return "haupt";
+    const csm = st.csmNode;
+    if (csm && csm.lights)
+        for (let i = 0; i < csm.lights.length; i++)
+            if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
+    const dl = st.directionalLight;
+    if (dl && dl.shadow && dl.shadow.camera === camera) return "k0";
+    if (scene && scene.name === "Render Pipeline") return "post";
+    return (scene && scene.name) || (camera && (camera.name || camera.type)) || "?";
+}
 
 function drawZensus(opts) {
     return (async () => {
@@ -28,13 +46,7 @@ function drawZensus(opts) {
         const st = r.state;
         const rend = st.renderer;
         const csm = st.csmNode;
-        const passOf = (camera) => {
-            if (camera === st.camera) return "haupt";
-            if (csm && csm.lights)
-                for (let i = 0; i < csm.lights.length; i++)
-                    if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
-            return camera && camera.isOrthographicCamera ? "ortho" : "anders";
-        };
+        const passOf = (scene, camera) => window.__passName(scene, camera);
         // DIE TÄTER-KLASSE ist die des Stamms (`_taeterKlasse`): der Flugschreiber, die Albedo-Sicht und der Szenen-Zensus
         // des Playtests buchen unter denselben Namen.
         const klasse = (obj) => r._taeterKlasse(obj);
@@ -45,7 +57,7 @@ function drawZensus(opts) {
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
             const kl = klasse(object);
-            const pass = passOf(camera);
+            const pass = passOf(scene, camera);
             const k = kl + "|" + pass;
             const g = object.geometry;
             let cmd = 1,
@@ -331,6 +343,7 @@ module.exports = {
     // Die Faltung lebt ab Dokument-Start (der Abgriff bucht schon beim ersten Anlegen): `page.evaluateOnNewDocument`.
     FALTE_INSTALL: `window.__vramFalte = ${vramFalte.toString()};`,
     ZAEHLER_INSTALL:
+        `window.__passName = ${passName.toString()};` +
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
         `window.__texturErzeuger = ${texturErzeuger.toString()};` +
