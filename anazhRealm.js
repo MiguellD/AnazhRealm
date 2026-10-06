@@ -21355,8 +21355,11 @@ class AnazhRealm {
             }
             // P3 — der feld-native Hüpfer (`creatureJump` setzt `_hopV`): ein decayender
             // Versatz ON TOP der geerdeten baseY (kein Ammo-Body, die Erdung bleibt Wahrheit).
+            // Steigen UND Fallen integrieren: lief der Takt nur bei steigendem Impuls, fror die Höhe am Scheitel ein
+            // (der Körper sprang auf den Boden zurück), und der nächste Sprung begann dort — an der Mess-Wiese stand ein
+            // Bär 7,6 m über dem Boden (Blick-Tour 3, playtest „DER HÜPFER landet").
             let hopOffset = 0;
-            if (creature.userData._hopV > 0) {
+            if (creature.userData._hopV > 0 || creature.userData._hopH > 0) {
                 hopOffset = creature.userData._hopH || 0;
                 creature.userData._hopH = hopOffset + creature.userData._hopV * 0.05;
                 creature.userData._hopV -= 9.0 * 0.05; // Schwerkraft-Decay auf den Hüpf-Impuls

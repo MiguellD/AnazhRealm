@@ -38329,6 +38329,68 @@ async function checkBandKonvergenzTierBaum(ctx) {
     );
 }
 
+// DER HÜPFER LANDET (06.10., V18.531, Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
+// `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
+// auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
+// Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf
+// der Höhe vor dem Sprung (der alte Takt hielt den Scheitel: 600 Takte ohne Landung).
+async function checkBandHuepfer(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const pm = st.playerMesh.position;
+        const c = r.spawnCreatureAt(pm.x + 30, pm.y, pm.z + 30, "happy", "fuchs", { precise: true });
+        if (!c) return { fehler: "Spawn" };
+        const saved = st.creatures;
+        st.creatures = [c];
+        const takt = () => {
+            const x = c.position.x,
+                z = c.position.z;
+            r.updateCreatures(1 / 60);
+            c.position.x = x;
+            c.position.z = z;
+        };
+        const sprung = () => {
+            takt();
+            const y0 = c.position.y;
+            r.creatureJump(c, 1);
+            let scheitel = 0;
+            let takte = 0;
+            for (; takte < 600; takte++) {
+                takt();
+                scheitel = Math.max(scheitel, c.userData._hopH || 0);
+                if (!(c.userData._hopV > 0) && !(c.userData._hopH > 0)) break;
+            }
+            takt();
+            return { scheitel, rest: c.userData._hopH || 0, takte, zurueck: c.position.y - y0 };
+        };
+        let a, b;
+        try {
+            a = sprung();
+            b = sprung();
+        } finally {
+            st.creatures = saved;
+            r.removeCreature(c);
+        }
+        return { a, b };
+    });
+    const a = res && res.a,
+        b = res && res.b;
+    const z = (x) => (x && Number.isFinite(x.scheitel) ? x.scheitel.toFixed(2) : "?");
+    check(
+        `DER HÜPFER landet: zwei Sprünge (Scheitel ${z(a)} / ${z(b)} m) enden mit Versatz 0 auf der Höhe vor dem Sprung`,
+        !!a &&
+            !!b &&
+            a.scheitel > 0.05 &&
+            b.scheitel > 0.05 &&
+            a.rest === 0 &&
+            b.rest === 0 &&
+            Math.abs(a.zurueck) < 0.05 &&
+            Math.abs(b.zurueck) < 0.05
+    );
+}
+
 // W-G Werkstatt-Gelenke begreifbar: macht computeMotionRoles · CONNECTION_TYPES sichtbar (Achsen-
 // Geister im Viewer · Progressive Disclosure · Lehr-Satz · Gelenk-Probe). Headless prüft die LOGIK.
 async function checkBandWGGelenke(ctx) {
@@ -55725,6 +55787,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWahrerAnblickPfade, ctx);
             await timed(checkBandWahrerAnblickAtmoBusch, ctx);
             await timed(checkBandKonvergenzTierBaum, ctx);
+            await timed(checkBandHuepfer, ctx);
             await timed(checkBandV18264ShadowCache, ctx);
             await timed(checkBandV18265ShadowDistance, ctx);
             await timed(checkBandV18266RockDetail, ctx);
