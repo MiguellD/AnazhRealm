@@ -405,6 +405,10 @@ const FORBIDDEN = [
     { token: "[0.4, 0.3, 0.18]", fiel: "Integration 06.10. — der Insel-Hang ist BODEN_FARBE.dirt" },
     { token: "[0.34, 0.32, 0.3]", fiel: "Integration 06.10. — der Insel-Fels ist BODEN_FARBE.rock" },
     { token: "[0.26, 0.38, 0.18]", fiel: "Integration 06.10. — das EINE Moos ist TERRAIN_GEOLOGY.mossTint" },
+    // Integration 06.10.: die Kronen-Karte ist der Bestand — der Wald-Baum trägt sich in spawnArchitecture ein (a:<id>),
+    // nie beim Wurf (der Zweit-Boot pflanzt nicht neu); die Summe nimmt eine Krone exakt heraus, kein Voll-Neumalen.
+    { token: "_kronenStreuNeu(`w:", fiel: "Integration 06.10. — spawnArchitecture trägt die Krone ein (a:<id>)" },
+    { token: "kronen.neuMalen", fiel: "Integration 06.10. — _kronenStreuWeg nimmt eine Krone exakt aus der Summe" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

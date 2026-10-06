@@ -41447,6 +41447,7 @@ class AnazhRealm {
             if (old.mesh || old.instanced) {
                 this._cullArchitectureMesh(old);
             }
+            this._kronenStreuWeg("a:" + old.id); // der Respawn trägt die Krone neu ein (neue id)
         }
         // Saubere Tafel: alle Instancing-Gruppen abbauen (instanceMatrix-
         // Buffer frei; geteilte Geom/Mat im Flatten-Cache bleiben). Die
@@ -52335,6 +52336,8 @@ class AnazhRealm {
         const regionGroupKeys = region.regional ? new Set() : null;
         const sharedSlots = regionGroupKeys ? [] : null;
         for (const cell of region.cells) {
+            // Die Krone eines Streu-Baums fällt mit seiner Region aus der Kronen-Karte (die Region zeichnet ihn neu).
+            if (cell.promotable) this._kronenStreuWeg(`s:${cell.layer}:${cell.cellX},${cell.cellZ}`);
             // DIE BAUM-/GESETZ-BAHN: das Feld eines Baum-Zells bzw. der
             // Gesetz-Platz einer Klein-Streu-Zelle stirbt mit seiner Region
             // (Dedup-Refcount — das geteilte Brick fällt erst mit dem letzten).
@@ -52440,9 +52443,11 @@ class AnazhRealm {
             promLayer ? promLayer.scaleVar : cellEntry.scaleVar
         );
         const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : cellEntry.y || 0;
-        // Deko-Slots freigeben BEVOR der echte Baum spawnt (kein Doppel-Mesh)
+        // Deko-Slots freigeben BEVOR der echte Baum spawnt (kein Doppel-Mesh) — und die Krone der Zelle mit ihnen: der
+        // Eintrag trägt seine eigene ein (`spawnArchitecture`), sonst summierte die Karte sie doppelt.
         this._scatterFreeSlots(cellEntry.slots);
         cellEntry.slots = null;
+        this._kronenStreuWeg(`s:${layerName}:${cellEntry.cellX},${cellEntry.cellZ}`);
         // Promoted-Bitmask setzen (vor dem Spawn — spawnArchitecture markiert
         // ebenfalls, doppelt ist idempotent)
         this._scatterMarkCellPromoted(tf.x, tf.z, layerName);
@@ -63343,11 +63348,14 @@ class AnazhRealm {
             // DIE KRONEN-STREU dieser Stufe: dasselbe Fenster, dieselbe Mitte (also dasselbe UV), eigenes Raster.
             const kN = Math.round(S.fensterM / AnazhRealm.LAUB_STREU.texelM[si]);
             const kDaten = new Uint8Array(kN * kN);
+            // `summe` ist die Wahrheit (die ungekappte Summe aller Kronen-Beiträge je Texel — eine Krone fällt exakt
+            // heraus), `daten` ihr gekapptes Abbild für die Karte, nachgezogen im Schmutz-Rechteck beim Upload.
             const kronen = {
                 N: kN,
+                summe: new Uint16Array(kN * kN),
                 daten: kDaten,
                 tex: karte(kN, kDaten, THREE.RedFormat, "kronen-streu:" + S.name),
-                schmutz: false,
+                schmutz: null,
                 upload: 0,
             };
             const U =
@@ -63368,42 +63376,65 @@ class AnazhRealm {
     // (`_canopyLightAt`, der Platzierungs-Bestand) — die Bäume stehen aber nach `lebendig` (Baum-Streu) und dem
     // Wald-Generator (Bestandsdichte, Kronen-Schüchternheit, Kappen): wo das Feld „geschlossen" sagte (Licht 0,2–0,4)
     // stand im 10-m-Kreis 0,01 Baum, und die Streu lag als braune Steppe in der offenen Wiese. Jetzt malt JEDE
-    // gepflanzte Krone (Wald-Generator `_forestPlantChunk`, Baum-Streu `_scatterPass`; Radius `FOREST.crown[art] ×
-    // Skala`, dieselbe Zahl wie die Kronen-Schüchternheit) eine weiche Scheibe in die Kronen-Karte jeder Wege-Stufe; der
-    // Boden-Stoff mischt dort die Laubstreu der Palette (`_wegeBodenFarbe`), die Nah-Wiese lichtet dort ihre Halme. Das
-    // Register hält die Kronen im fernen Fenster (ein Umzug malt neu und vergisst, was dahinter liegt).
+    // stehende Krone (Radius `_kronenRadiusFuer`: `FOREST.crown[art] × Skala`, dieselbe Zahl wie die Kronen-
+    // Schüchternheit) eine weiche Scheibe in die Kronen-Karte jeder Wege-Stufe; der Boden-Stoff mischt dort die
+    // Laubstreu der Palette (`_wegeBodenFarbe`), die Nah-Wiese lichtet dort ihre Halme. Das Register ist der Bestand:
+    // ein Wald-Baum trägt sich ein, wo er als Eintrag entsteht und fällt (`spawnArchitecture` · `removeArchitecture`,
+    // `a:<id>` — Pflanzung, Promotion UND der Reload des Zweit-Boots), eine Streu-Baum-Zelle, wo ihre Region sie zeichnet
+    // und entsorgt (`s:<schicht>:<zelle>`). Die ferne Stufe vergisst beim Umzug, was jenseits ihres Fensters liegt.
     _kronenStreuNeu(schluessel, x, z, radius) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !(radius > 0)) return;
-        // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt — die Karte summiert. Eine GEÄNDERTE Krone
-        // malt jede Stufe neu (ihr alter Beitrag steckt in der Summe).
+        // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt; eine GEÄNDERTE fällt erst heraus.
         const alt = wk.kronen.get(schluessel);
         if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
+        if (alt) this._kronenStreuWeg(schluessel);
         wk.kronen.set(schluessel, [x, z, radius]);
-        const fernS = wk.stufen[wk.stufen.length - 1];
-        for (const stufe of wk.stufen) {
-            if (!stufe.zentriert) continue;
-            if (alt) {
-                stufe.kronen.neuMalen = true;
-                this._kronenStreuUmzug(stufe, null, stufe === fernS);
-            } else this._kronenStreuMale(stufe, x, z, radius);
-        }
-        // Die Nah-Wiese liest dieselbe Karte (`_kronenStreuAt`): ihre Kacheln unter der Krone wachsen neu (die erste
-        // Krone zentriert die Karte sofort — wie die erste Siedlung —, sonst läse der Neubau noch 0).
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._kronenStreuMale(stufe, x, z, radius, null, 1);
+        // Die erste Krone zentriert die Karte sofort (wie die erste Siedlung), sonst läse der Neubau der Wiese noch 0.
+        const pm = this.state.playerMesh;
+        if (pm && wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
+        this._kronenStreuWiese(x, z, radius);
+    }
+
+    // Eine Krone fällt (der Baum ist gefällt, abgebaut oder seine Streu-Region entsorgt): ihr Beitrag fällt EXAKT aus
+    // jeder zentrierten Stufe (die Summe kennt ihn), die Wiese darunter wächst neu.
+    _kronenStreuWeg(schluessel) {
+        const wk = this.state.wegeKarte;
+        const c = wk && wk.kronen.get(schluessel);
+        if (!c) return;
+        wk.kronen.delete(schluessel);
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._kronenStreuMale(stufe, c[0], c[1], c[2], null, -1);
+        this._kronenStreuWiese(c[0], c[1], c[2]);
+    }
+
+    // Die Nah-Wiese liest dieselbe Karte (`_kronenStreuAt`): ihre Kacheln unter einer geänderten Krone fallen und wachsen
+    // neu (nur in Reichweite der Wiese — weiter weg steht keine Kachel).
+    _kronenStreuWiese(x, z, radius) {
         const pm = this.state.playerMesh;
         if (!pm) return;
-        if (wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
         const a = radius * AnazhRealm.LAUB_STREU.rand;
         const NW = AnazhRealm.NAH_WIESE;
         if (Math.hypot(x - pm.position.x, z - pm.position.z) - a < NW.radius + NW.rand + NW.kachel * 1.5)
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a);
     }
 
+    // Der EINE Kronen-Radius eines Wald-Baums: wie der Wald-Generator (phyto-core planForestCell) `FOREST.crown[art] ×
+    // Skala`, eine Auto-Art des Buchs ohne Kronen-Eintrag 4 m × Skala; null für alles, was kein Wald-Baum ist.
+    _kronenRadiusFuer(type, scale) {
+        const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
+        const kc = AnazhRealm.FOREST.crown[type];
+        if (kc) return kc * s;
+        for (const e of this._forestExtraSpecies()) if (e.species === type) return 4.0 * s;
+        return null;
+    }
+
     // Eine Krone in EINE Stufe malen: `dichte` bis `kern` × Radius, weich (smoothstep) bis `rand` × Radius; die Kronen
     // SUMMIEREN sich (gekappt) — unter einer einzelnen Krone dringt noch Gras durch, wo Kronen sich schließen, deckt
-    // die Streu den ganzen Grund. `ausschnitt` [i0, i1, j0, j1] (Texel, inklusive) begrenzt das Malen auf den Streifen,
-    // den ein Umzug frisch freilegt.
-    _kronenStreuMale(stufe, x, z, radius, ausschnitt) {
+    // die Streu den ganzen Grund (die Karte kappt bei 1, die Summe darunter nicht). `ausschnitt` [i0, i1, j0, j1] (Texel,
+    // inklusive) begrenzt das Malen auf den Streifen, den ein Umzug frisch freilegt; `vorzeichen` −1 nimmt die Krone
+    // wieder heraus (dieselben gerundeten Beiträge, also exakt).
+    _kronenStreuMale(stufe, x, z, radius, ausschnitt, vorzeichen) {
         const K = AnazhRealm.LAUB_STREU;
         const kr = stufe.kronen;
         const N = kr.N;
@@ -63418,7 +63449,9 @@ class AnazhRealm {
         const j0 = Math.max(a[2], Math.floor((z - aussen - z0w) / t));
         const j1 = Math.min(a[3], Math.ceil((z + aussen - z0w) / t));
         if (i1 < i0 || j1 < j0) return;
-        const d = kr.daten;
+        const s = kr.summe;
+        const D = K.dichte * 255;
+        const sg = vorzeichen < 0 ? -1 : 1;
         for (let j = j0; j <= j1; j++) {
             const pz = z0w + (j + 0.5) * t - z;
             for (let i = i0; i <= i1; i++) {
@@ -63426,19 +63459,26 @@ class AnazhRealm {
                 let q = (aussen - Math.hypot(px, pz)) / (aussen - innen);
                 if (q <= 0) continue;
                 q = q >= 1 ? 1 : q * q * (3 - 2 * q);
-                const k = j * N + i;
-                d[k] = Math.min(255, d[k] + Math.round(q * K.dichte * 255));
+                s[j * N + i] += sg * Math.round(q * D);
             }
         }
-        kr.schmutz = true;
+        AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
+    }
+
+    // Das Schmutz-Rechteck der Kronen-Karte wächst um [i0, i1] × [j0, j1]; der Upload zieht dort `daten` aus `summe` nach.
+    static _kronenSchmutz(kr, i0, i1, j0, j1) {
+        const r = kr.schmutz;
+        kr.schmutz = r
+            ? [Math.min(r[0], i0), Math.max(r[1], i1), Math.min(r[2], j0), Math.max(r[3], j1)]
+            : [i0, i1, j0, j1];
     }
 
     // Der Umzug der Kronen-Karte einer Stufe (Lehre 25: die Kosten tragen, was sich ändert, nie das Register): das
     // Raster VERSCHIEBT sich um den Umzug (die Mitte rastet auf ganze Texel), gemalt wird nur der Streifen, den der
     // Umzug freilegt, aus den Kronen, die ihn berühren. Bis 06.10. leerte jeder Umzug die Karte und malte das ganze
-    // Register neu (Mess-Wiese: 1078 Kronen, 213k Texel je Nah-Umzug alle 48 m Weg, synchron im Takt). Voll gemalt wird
-    // nur ohne alte Mitte, bei einem Sprung über das Fenster oder nach einer geänderten Krone (`neuMalen`). Der Umzug der
-    // FERNEN Stufe vergisst die Kronen jenseits ihres Fensters (das Register bleibt so groß wie das ferne Fenster).
+    // Register neu (Mess-Wiese: 1078 Kronen, 230k Texel je Nah-Umzug alle 48 m Weg, synchron im Takt). Voll gemalt wird
+    // nur ohne alte Mitte oder bei einem Sprung über das Fenster. Der Umzug der FERNEN Stufe vergisst die Kronen jenseits
+    // ihres Fensters (das Register bleibt so groß wie das ferne Fenster).
     _kronenStreuUmzug(stufe, war, fern) {
         const wk = this.state.wegeKarte;
         const kr = stufe.kronen;
@@ -63451,10 +63491,9 @@ class AnazhRealm {
                     wk.kronen.delete(k);
         const di = war ? Math.round((stufe.mitteX - war[0]) / t) : N;
         const dj = war ? Math.round((stufe.mitteZ - war[1]) / t) : N;
-        const d = kr.daten;
+        const d = kr.summe;
         let streifen;
-        if (kr.neuMalen || Math.abs(di) >= N || Math.abs(dj) >= N) {
-            kr.neuMalen = false;
+        if (Math.abs(di) >= N || Math.abs(dj) >= N) {
             d.fill(0);
             streifen = [[0, N - 1, 0, N - 1]];
         } else if (di === 0 && dj === 0) {
@@ -63496,10 +63535,10 @@ class AnazhRealm {
                 const cj1 = (c[1] + aussen - z0w) / t;
                 for (const s of streifen)
                     if (ci1 >= s[0] && ci0 <= s[1] + 1 && cj1 >= s[2] && cj0 <= s[3] + 1)
-                        this._kronenStreuMale(stufe, c[0], c[1], c[2], s);
+                        this._kronenStreuMale(stufe, c[0], c[1], c[2], s, 1);
             }
         }
-        kr.schmutz = true;
+        kr.schmutz = [0, N - 1, 0, N - 1]; // das ganze Abbild zog um
         kr.upload = -Infinity; // nach dem Umzug sofort hochladen
     }
 
@@ -63526,7 +63565,8 @@ class AnazhRealm {
         if (i < 0 || j < 0 || i >= N - 1 || j >= N - 1) return 0;
         const tx = fx - i;
         const tz = fz - j;
-        const at = (a, b) => kr.daten[b * N + a] / 255;
+        // aus der Summe, gekappt wie die Karte (die `daten` ziehen erst beim gebündelten Upload nach)
+        const at = (a, b) => Math.min(255, kr.summe[b * N + a]) / 255;
         return (
             (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
             (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
@@ -63634,11 +63674,19 @@ class AnazhRealm {
                 if (!warLeer || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
                 this._kronenStreuUmzug(stufe, war, S === fernS);
             }
-            // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`).
+            // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
+            // nur im Schmutz-Rechteck aus der Summe nach (gekappt bei 255).
             const kr = stufe.kronen;
             if (kr.schmutz && jetzt - kr.upload >= AnazhRealm.LAUB_STREU.uploadMs) {
+                const [i0, i1, j0, j1] = kr.schmutz;
+                const N = kr.N;
+                for (let j = j0; j <= j1; j++)
+                    for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
+                        const v = kr.summe[k];
+                        kr.daten[k] = v > 255 ? 255 : v;
+                    }
                 kr.tex.needsUpdate = true;
-                kr.schmutz = false;
+                kr.schmutz = null;
                 kr.upload = jetzt;
             }
         }
@@ -63942,7 +63990,9 @@ class AnazhRealm {
                 stufe.daten.fill(0);
                 stufe.zentriert = false;
                 stufe.tex.needsUpdate = true;
+                stufe.kronen.summe.fill(0);
                 stufe.kronen.daten.fill(0);
+                stufe.kronen.schmutz = null;
                 stufe.kronen.tex.needsUpdate = true;
             }
         }
@@ -64622,6 +64672,10 @@ class AnazhRealm {
             }
         }
         this.state.architectures.push(entry);
+        // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
+        // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
+        const _krone = this._kronenRadiusFuer(type, entry.scale);
+        if (_krone) this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone);
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);
@@ -70528,8 +70582,8 @@ class AnazhRealm {
                         }
                     );
                     planted++;
-                    // Die Krone streut Laub (Radius = die Kronen-Schüchternheit des Darts, `T`).
-                    this._kronenStreuNeu(`w:${d.seed}`, d.x, d.z, d.T);
+                    // Die Krone streut Laub, sobald der Baum als Eintrag steht (`spawnArchitecture`, Radius = die
+                    // Kronen-Schüchternheit `_kronenRadiusFuer`) — nie schon beim Wurf.
                     // Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-
                     // Resolver mappt die Cell auf die reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
                     if (this._scatterRegisterCell) {
@@ -73223,6 +73277,7 @@ class AnazhRealm {
         this._playArchitectureFarewellPing(entry);
         this._cullArchitectureMesh(entry);
         this.state.architectures.splice(idx, 1);
+        this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", `Eine ${entry.type}-Struktur wurde abgebaut.`, {
                 type: entry.type,
