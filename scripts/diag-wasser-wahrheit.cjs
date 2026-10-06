@@ -121,7 +121,7 @@ const server = http.createServer((req, res) => {
                 }
                 const shim = Object.create(r);
                 shim.state = { terrainBaseHeight: 0, waterLevel: 0 };
-                shim._waterRunSurfaceAt = () => -Infinity; // top = faceY exakt (pur)
+                shim._atlasWaterLevelAt = () => -Infinity; // top = faceY exakt (pur)
                 shim._hydroRiverAt = () => null;
                 shim._hydrosphereLakeAt = () => false;
                 const ctx = {

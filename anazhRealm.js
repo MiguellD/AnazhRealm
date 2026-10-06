@@ -19427,6 +19427,11 @@ class AnazhRealm {
             carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
             carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
             carveBankSlope: 1.4, // Bank-Rampe = Bett-Tiefe × dieser Faktor
+            // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
+            // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
+            spiegelFreibord: 0.25,
+            kroneAnteil: 0.6, // die Krone beginnt nach diesem Anteil der Bank-Rampe; danach gleitet sie ins Gelände
+            quellBreite: 0.25, // Anteil der vollen Breite an der Quelle (die Breite wächst bis zur doppelten Schwelle)
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
         });
@@ -21272,7 +21277,7 @@ class AnazhRealm {
                 direction.z += (Math.random() - 0.5) * 2;
             }
 
-            // STRÖMUNG wirkt auf SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ nasse Spalte, Tiefe > 0.5 —
+            // STRÖMUNG wirkt auf SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie —
             // Land-Läufer nie). Quelle = DIESELBE `_waterFlowAt` wie beim Spieler. `direction` ist hier die
             // Frame-Velocity, jeden Tick neu gebaut → Flow addiert 1:1 als Advektion; nach dem aiDir-Cache-Write,
             // also nie stale in die KI-Richtung gebacken.
@@ -21614,6 +21619,9 @@ class AnazhRealm {
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
             carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
+            // der Fluss-Kanal (Welle L): Freibord und Kronen-Anteil reisen mit — der Worker baut dasselbe Bett
+            spiegelFreibord: AnazhRealm.HYDROSPHERE.spiegelFreibord,
+            kroneAnteil: AnazhRealm.HYDROSPHERE.kroneAnteil,
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
             // (Legacy-Welten gen < 2 → feuchte = 0).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
@@ -25320,7 +25328,7 @@ class AnazhRealm {
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
         const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
-        let hydroCarve = 0;
+        let hydroCarve = null; // der Fluss-Kanal { T, w } (`_hydrosphereCarveAt`) oder null
         let lake = null;
         if (hydroActive) {
             hydroCarve = this._hydrosphereCarveAt(x, z);
@@ -25362,7 +25370,9 @@ class AnazhRealm {
             d -= hallCarve * caveEnv * 72;
         }
         if (ctx.hydroActive) {
-            d -= ctx.hydroCarve;
+            // Der Fluss-Kanal mischt das Gelände zu seiner Gestalt (Flachboden · Bank · Krone), das See-Becken danach.
+            const kn = ctx.hydroCarve;
+            if (kn) d = d * (1 - kn.w) + (kn.T - y) * kn.w;
             const lk = ctx.lake;
             if (lk) {
                 const flatD = lk.bedY - y;
@@ -25479,51 +25489,64 @@ class AnazhRealm {
         return out;
     }
 
-    // Fluss-Bett-Senkung an xz (≥ 0, wird von der Dichte subtrahiert): über den Bucket-Index je Segment
-    // der nächste Punkt + Flachboden-Profil (volle Tiefe bis halbe Breite, dann smoothstep-Bank), MAX
-    // über die Segmente. Leere-Bucket-Early-Out → wasserlose Welt ~5 Ops (millionenfach beim Meshing).
-    // See-Becken leben in `_hydrosphereLakeAt`.
+    // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ T, w }` (Ziel-Höhe und ihr
+    // Gewicht; die Dichte mischt d·(1 − w) + (T − y)·w, wie das See-Becken) oder null. Je Segment: Flachboden auf dem
+    // Spiegel − (1 − Freibord)·Tiefe bis zur halben Breite, die Bank steigt (smoothstep) bis zur KRONE auf Spiegel +
+    // Freibord·Tiefe (nach dem Kronen-Anteil der Bank-Rampe), danach gleitet das Gewicht ins Gelände. So schneidet der
+    // Kanal Buckel und überbrückt Senken, und die Krone hält das Wasser — der Spiegel steht nie über dem Ufer (bis
+    // V18.531 eine Senkung um die Bett-Tiefe unter das Gelände: der Spiegel folgte dem Gelände bergauf, und wo das Ufer
+    // tiefer lag, lief der Fluss über). Mehrere Segmente (Biegung, Mündung): w = max, T = w-gewichtetes Mittel (stetig).
+    // Leere-Bucket-Early-Out → wasserlose Welt ~5 Ops (millionenfach beim Meshing). See-Becken: `_hydrosphereLakeAt`.
     _hydrosphereCarveAt(x, z) {
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (!h || !h.ready) return 0;
-        let cut = 0;
-        // --- Fluss-Kanal: nächstes Segment im Bucket ---
+        if (!h || !h.ready) return null;
         const rb = h.riverBuckets;
-        if (rb) {
-            const bs = h.bucketSize;
-            const bd = h.bucketsDim;
-            const bi = Math.floor((x - h.originX) / bs);
-            const bj = Math.floor((z - h.originZ) / bs);
-            if (bi >= 0 && bj >= 0 && bi < bd && bj < bd) {
-                const list = rb[bj * bd + bi];
-                if (list) {
-                    for (let s = 0; s < list.length; s++) {
-                        const seg = list[s];
-                        const ex = seg.bx - seg.ax;
-                        const ez = seg.bz - seg.az;
-                        const len2 = ex * ex + ez * ez || 1;
-                        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-                        if (t < 0) t = 0;
-                        else if (t > 1) t = 1;
-                        const px = seg.ax + ex * t;
-                        const pz = seg.az + ez * t;
-                        const dist = Math.hypot(x - px, z - pz);
-                        const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-                        const D = seg.dA + (seg.dB - seg.dA) * t;
-                        const bankW = Math.max(2, D * AnazhRealm.HYDROSPHERE.carveBankSlope);
-                        let rc = 0;
-                        if (dist <= halfW) {
-                            rc = D; // Flachboden — so breit wie das Fluss-Ribbon
-                        } else if (dist < halfW + bankW) {
-                            const u = (dist - halfW) / bankW;
-                            rc = D * (1 - u * u * (3 - 2 * u)); // smoothstep-Bank
-                        }
-                        if (rc > cut) cut = rc;
-                    }
-                }
+        if (!rb) return null;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi = Math.floor((x - h.originX) / bs);
+        const bj = Math.floor((z - h.originZ) / bs);
+        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
+        const list = rb[bj * bd + bi];
+        if (!list) return null;
+        const HC = AnazhRealm.HYDROSPHERE;
+        let wMax = 0;
+        let wSumme = 0;
+        let tSumme = 0;
+        for (let s = 0; s < list.length; s++) {
+            const seg = list[s];
+            const ex = seg.bx - seg.ax;
+            const ez = seg.bz - seg.az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const px = seg.ax + ex * t;
+            const pz = seg.az + ez * t;
+            const dist = Math.hypot(x - px, z - pz);
+            const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
+            const D = seg.dA + (seg.dB - seg.dA) * t;
+            const bankW = Math.max(2, D * HC.carveBankSlope);
+            if (dist >= halfW + bankW) continue;
+            const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+            const krone = halfW + bankW * HC.kroneAnteil;
+            const boden = spiegel - (1 - HC.spiegelFreibord) * D;
+            let T;
+            let w = 1;
+            if (dist <= halfW) T = boden;
+            else if (dist < krone) {
+                const u = (dist - halfW) / (krone - halfW);
+                T = boden + D * u * u * (3 - 2 * u);
+            } else {
+                T = boden + D;
+                const u = (dist - krone) / (halfW + bankW - krone);
+                w = 1 - u * u * (3 - 2 * u);
             }
+            if (w > wMax) wMax = w;
+            wSumme += w;
+            tSumme += T * w;
         }
-        return cut;
+        return wMax > 0 ? { T: tSumme / wSumme, w: wMax } : null;
     }
 
     // Fluss-Distanz an (x,z): derselbe riverBuckets-Walk wie _hydrosphereCarveAt (EINE Quelle), liefert
@@ -27956,14 +27979,13 @@ class AnazhRealm {
                     continue; // sonst trocken (topG bleibt NaN)
                 }
                 const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
-                // RUHE: sub-zellig der Body-Spiegel `L`, clamp ±1 Zelle ums Dach (gegen Atlas/Zell-Drift). Der
-                // Fluss-LAUF liest die geglättete Fläche (_waterRunSurfaceAt: Along-Flow-Tiefpass, nie der
-                // Querschnitt) statt des rohen L; Seen/Ozean unverändert.
+                // RUHE: sub-zellig der Body-Spiegel `L` (das Gesetz `_atlasWaterLevelAt`: Ozean, See, der Fluss-Spiegel
+                // — stromab nie steigend, quer waagrecht), clamp ±1 Zelle ums Dach (gegen Atlas/Zell-Drift).
                 const wx = ox + (ci + 0.5) * step;
                 const wz = oz + (ck + 0.5) * step;
                 // Das Bett reist mit (solidG + step = Bett-OBERFLÄCHE): nasse Flood-Spalten behalten ihre
                 // Rim-Füllung (Bett < rim per Flood); nur „unbekannt" (−Inf) verliert sie.
-                const L = this._waterRunSurfaceAt(wx, wz, solidG[gi] + step);
+                const L = this._atlasWaterLevelAt(wx, wz, solidG[gi] + step);
                 let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
                 // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
                 if (dach) {
@@ -30978,6 +31000,8 @@ class AnazhRealm {
             // Jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe (`voxelY`): geroutet wird auf der glatten
             // Makro-Surface, Wasserfälle leben aber an den echten Klippen — das Ribbon hängt am Voxel-Relief.
             this._hydroSampleRiverSurfaces(rivers);
+            // Der Spiegel jedes Fluss-Punkts (stromab nie steigend, quer waagrecht) — das Bett folgt ihm (Carve).
+            this._hydroRiverSpiegel(ctx, rivers);
             const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
             // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
             // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
@@ -31196,42 +31220,6 @@ class AnazhRealm {
             if (terrainTopY !== -Infinity || river.centerness > 0) level = river.surfaceY;
         }
         return level;
-    }
-
-    // Geglättete Lauf-Fläche: die EINE Render-/Feel-Wahrheit der Wasser-Oberfläche (Sheet-Höhe · Tauch-
-    // Trigger · Boot); die Welt-Wahrheit (Atlas, Flood, Carve, Worker) bleibt. Along-Flow-Tiefpass
-    // gegen die geerbten Terrain-Beulen: 7 Samples ±18 m entlang der Tangente, gauss-gewichtet — NIE
-    // quer (der konvexe Breiten-Bulge bleibt). Pure Funktion der Welt-Position (seam-frei).
-    // `terrainTopY` = Bett der Zentrums-Spalte (Rim-Füllung); die Along-Samples fragen mit −Infinity.
-    _waterRunSurfaceAt(x, z, terrainTopY = -Infinity) {
-        const L = this._atlasWaterLevelAt(x, z, terrainTopY);
-        if (!(L > -Infinity)) return L;
-        const river = this._hydroRiverAt(x, z);
-        if (!river) return L;
-        // Nur der KERN wird geglättet: zur Kanal-Kante (centerness → 0) blendet es auf den ROHEN Spiegel —
-        // der konvexe Querschnitt bleibt dort exakt.
-        const center = Number.isFinite(river.centerness) ? river.centerness : 1;
-        if (center <= 0.001) return L;
-        const fx = river.flowX;
-        const fz = river.flowZ;
-        let acc = L * 4;
-        let wsum = 4;
-        for (let k = 1; k <= 3; k++) {
-            const w = 4 - k;
-            const d = 6 * k;
-            const la = this._atlasWaterLevelAt(x + fx * d, z + fz * d, -Infinity);
-            const lb = this._atlasWaterLevelAt(x - fx * d, z - fz * d, -Infinity);
-            if (la > -Infinity) {
-                acc += la * w;
-                wsum += w;
-            }
-            if (lb > -Infinity) {
-                acc += lb * w;
-                wsum += w;
-            }
-        }
-        const smoothed = acc / wsum;
-        return L + (smoothed - L) * center;
     }
 
     // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══
@@ -31798,9 +31786,12 @@ class AnazhRealm {
         return boxes;
     }
 
-    // Nächstes Fluss-Segment an (x,z), wenn der Punkt im gecarvten Kanal liegt (dist ≤ halbe Breite +
-    // Bank-Rampe). Liefert Flow-Richtung (normiert), Carve-Tiefe `depth`, Wasser-Oberfläche `surfaceY`
-    // (Makro − 0.25·depth + konvexer Bulge) und centerness — oder null. O(1) über `riverBuckets`.
+    // Nächstes Fluss-Segment an (x,z), wenn der Punkt im Kanal liegt (dist ≤ halbe Breite + Kronen-Anteil der
+    // Bank-Rampe — jenseits der Krone trägt der Fluss kein Wasser). Liefert Flow-Richtung (normiert), Bett-Tiefe
+    // `depth` und centerness des nächsten Segments, dazu die Wasser-Oberfläche `surfaceY`: der Spiegel der Segmente
+    // (`_hydroRiverSpiegel`, linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt mit einem
+    // Gewicht, das zur Krone stetig auf 0 fällt — ein breiter Fluss überdeckt in der Biegung mehrere Segmente, das
+    // nächste allein gäbe dort eine Stufe. O(1) über `riverBuckets`. Worker bit-identisch (speist die Zellen).
     _hydroRiverAt(x, z) {
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready || !h.riverBuckets) return null;
@@ -31811,12 +31802,14 @@ class AnazhRealm {
         if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
         const list = h.riverBuckets[bj * bd + bi];
         if (!list) return null;
-        const bankSlope = AnazhRealm.HYDROSPHERE.carveBankSlope;
+        const HC = AnazhRealm.HYDROSPHERE;
         let bestD = Infinity;
         let dirX = 0;
         let dirZ = 0;
         let depth = 0;
         let bestHalfW = 1;
+        let gSumme = 0;
+        let sSumme = 0;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -31830,8 +31823,12 @@ class AnazhRealm {
             const dist = Math.hypot(x - px, z - pz);
             const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
             const D = seg.dA + (seg.dB - seg.dA) * t;
-            const bankW = Math.max(2, D * bankSlope);
-            if (dist <= halfW + bankW && dist < bestD) {
+            const krone = halfW + Math.max(2, D * HC.carveBankSlope) * HC.kroneAnteil;
+            if (dist > krone) continue;
+            const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
+            gSumme += g;
+            sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+            if (dist < bestD) {
                 bestD = dist;
                 const len = Math.sqrt(len2);
                 dirX = ex / len;
@@ -31841,17 +31838,12 @@ class AnazhRealm {
             }
         }
         if (bestD === Infinity) return null;
-        // Konvexer Querschnitt: ein fließender Fluss wölbt sich in der Mitte. bulge = 0.45·D·(1 −
-        // (dist/halfW)²) (Parabel, 0 am Ufer) auf die laterale Makro-Höhe → terrain-folgend UND konvex,
-        // unter den Bänken (kein Überlauf). Worker bit-identisch (speist die Zellen).
-        const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
         return {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25 + convexBulge,
-            // Zentrums-Nähe [0..1] (1 Mittellinie, 0 Kanal-Kante): `_waterRunSurfaceAt` glättet damit NUR den
-            // Kern, der konvexe Querschnitt am Ufer bleibt roh.
+            surfaceY: sSumme / gSumme,
+            // Zentrums-Nähe [0..1] (1 Mittellinie, 0 Kanal-Kante): die Strömung trägt nur im Kanal.
             centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
         };
     }
@@ -32279,13 +32271,17 @@ class AnazhRealm {
                     fx /= L;
                     fz /= L;
                 }
+                // DIE QUELLE wächst (W-F5): an der Schwelle trägt der Lauf ein Viertel seiner Breite, ab der doppelten
+                // Schwelle die volle — je Zelle aus ihrer Akkumulation (geteilte Unterläufe sind breiten-gleich). Bis
+                // V18.531 sprang jede Quelle in voller Breite aus dem Boden (8,2–11,9 m, 2,36 m tief).
+                const quelle = Math.min(1, Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold));
                 points.push({
                     x: wx(cur),
                     z: wz(cur),
                     // y = hydrologische Füllhöhe: fällt entlang flowTo STRIKT monoton, auch durch einen See (ε≈0.01 →
                     // die See-Strecke ist nahezu flach).
                     y: filled[cur],
-                    width: HC.widthMin + HC.widthK * Math.sqrt(accum[cur]),
+                    width: (HC.widthMin + HC.widthK * Math.sqrt(accum[cur])) * quelle,
                     flowX: fx,
                     flowZ: fz,
                     inLake: lakeOf[cur] >= 0,
@@ -32326,12 +32322,126 @@ class AnazhRealm {
         }
     }
 
-    // Phase 5c — Wasserfälle: Fluss-Läufe mit steilem Drop in der ECHTEN Voxel-Surface (`voxelY`) = ein
-    // Abschnitt über einer echten Klippe. Aufeinanderfolgende steile Segmente verschmelzen zu EINEM Sturz.
+    // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt, W-F1/F2/F3): je Fluss-Punkt der Spiegel `S` — stromab nie steigend,
+    // quer waagrecht; das Bett folgt ihm (`_hydrosphereCarveAt`). Ziel je Punkt: das tiefste Ufer seines Querschnitts
+    // (die ungecarvte Voxel-Fläche in der Mitte und an beiden Kanal-Kanten, halbe Breite + Bank-Rampe) minus dem
+    // Freibord-Anteil der Bett-Tiefe; die Folge ist die monotone Ausgleichs-Kurve (PAVA, kleinste Quadrate) je Reach
+    // zwischen zwei Seen — der Kanal schneidet Buckel und überbrückt Senken, beides so wenig wie möglich. Ein Reach endet
+    // nie unter dem See, in den er mündet (oder dem Meer), und beginnt nie über dem See, aus dem er kommt. Geteilte
+    // Unterläufe (zwei Quellen, ein Fluss) tragen EIN S: die längsten Flüsse zuerst, ein Zufluss endet am Spiegel seiner
+    // Mündung. Bis V18.531 war der Spiegel die Makro-Höhe des Orts plus ein Buckel (14,3 % der Lauf-Schritte stiegen,
+    // der Querschnitt wölbte sich 1,55 m). Läuft im Bau (`_hydroComputing`: die Ufer sind ungecarvt).
+    _hydroRiverSpiegel(ctx, rivers) {
+        const HC = AnazhRealm.HYDROSPHERE;
+        const depthFor = (width) => HC.carveBedMin + HC.carveBedK * (width || HC.widthMin);
+        const schluessel = (p) => p.x + "," + p.z;
+        const S = new Map();
+        const ziel = (p) => {
+            const D = depthFor(p.width);
+            const rand = Math.max(1, (p.width || HC.widthMin) * 0.5) + Math.max(2, D * HC.carveBankSlope);
+            let tief = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
+            for (let sg = -1; sg <= 1; sg += 2) {
+                const v = this._voxelSurfaceY(p.x - p.flowZ * rand * sg, p.z + p.flowX * rand * sg);
+                if (Number.isFinite(v) && v < tief) tief = v;
+            }
+            return tief - HC.spiegelFreibord * D;
+        };
+        // PAVA (pool adjacent violators): benachbarte Verletzer verschmelzen zu ihrem Mittel, bis die Folge nicht steigt.
+        const pava = (t) => {
+            const summe = [];
+            const zahl = [];
+            for (let i = 0; i < t.length; i++) {
+                summe.push(t[i]);
+                zahl.push(1);
+                let n = summe.length;
+                while (n > 1 && summe[n - 2] / zahl[n - 2] < summe[n - 1] / zahl[n - 1]) {
+                    summe[n - 2] += summe[n - 1];
+                    zahl[n - 2] += zahl[n - 1];
+                    summe.pop();
+                    zahl.pop();
+                    n--;
+                }
+            }
+            const aus = [];
+            for (let b = 0; b < summe.length; b++) for (let i = 0; i < zahl[b]; i++) aus.push(summe[b] / zahl[b]);
+            return aus;
+        };
+        const reihe = rivers.slice().sort((a, b) => b.points.length - a.points.length);
+        // (1) die Ausgleichs-Kurve je Reach, mit den Schranken der Seen und der Mündung.
+        const reaches = [];
+        const deckel = new Map();
+        for (const rv of reihe) {
+            const P = rv.points;
+            let k = 0;
+            while (k < P.length) {
+                if (P[k].inLake || S.has(schluessel(P[k]))) {
+                    k++;
+                    continue;
+                }
+                let e = k;
+                while (e < P.length && !P[e].inLake && !S.has(schluessel(P[e]))) e++;
+                const t = [];
+                for (let i = k; i < e; i++) {
+                    const p = P[i];
+                    t.push(ziel(p));
+                    // Die HEBUNG ist gedeckelt: der Kanal überbrückt eine Senke höchstens um eine Bett-Tiefe über ihrem
+                    // Grund — tiefer (eine Schlucht) fällt der Fluss hinein und schneidet stromab.
+                    const D = depthFor(p.width);
+                    const mitte = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
+                    deckel.set(schluessel(p), mitte + (1 - HC.spiegelFreibord) * D);
+                }
+                const f = pava(t);
+                for (let i = k; i < e; i++) S.set(schluessel(P[i]), f[i - k]);
+                reaches.push({ rv, k, e });
+                k = e;
+            }
+        }
+        // (2) der Deckel, dann stromab nie steigend: in Fluss-Reihenfolge (die Füllhöhe y fällt entlang des Flusses
+        // strikt) gibt jeder Punkt sein Minimum an den nächsten weiter — über Zusammenflüsse, nie in einen See.
+        const naechster = new Map();
+        const punkte = new Map();
+        for (const rv of rivers) {
+            const P = rv.points;
+            for (let i = 0; i < P.length; i++) {
+                if (P[i].inLake) continue;
+                punkte.set(schluessel(P[i]), P[i]);
+                if (i + 1 < P.length && !P[i + 1].inLake) naechster.set(schluessel(P[i]), schluessel(P[i + 1]));
+            }
+        }
+        for (const [key, d] of deckel) if (S.get(key) > d) S.set(key, d);
+        const nachHoehe = [...punkte.keys()].sort((a, b) => punkte.get(b).y - punkte.get(a).y);
+        for (const key of nachHoehe) {
+            const n = naechster.get(key);
+            if (n !== undefined && S.get(n) > S.get(key)) S.set(n, S.get(key));
+        }
+        // (3) die Schranken: nie unter dem See, in den der Reach mündet (oder dem Meer), nie über dem See, aus dem er
+        // kommt (eine Konstante wahrt die Monotonie).
+        for (const { rv, k, e } of reaches) {
+            const P = rv.points;
+            const oben = k > 0 && P[k - 1].inLake ? P[k - 1].y : Infinity;
+            let unten = -Infinity;
+            if (e < P.length) unten = P[e].inLake ? P[e].y : S.get(schluessel(P[e]));
+            else if (rv.mouth === "sea") unten = ctx.waterLevel;
+            for (let i = k; i < e; i++) {
+                const key = schluessel(P[i]);
+                S.set(key, Math.min(oben, Math.max(unten, S.get(key))));
+            }
+            // Der Abfluss beginnt bündig mit seinem See (sonst schnitte der Kanal den Becken-Rand auf den tieferen Lauf
+            // und das See-Wasser stünde als Wand darüber); die Stufe liegt im ersten Segment.
+            if (Number.isFinite(oben)) S.set(schluessel(P[k]), oben);
+        }
+        for (const rv of rivers) for (const p of rv.points) p.S = p.inLake ? p.y : S.get(schluessel(p));
+    }
+
+    // Phase 5c — Wasserfälle: Fluss-Läufe, deren SPIEGEL (`S`) steil fällt (Steigung > waterfallSlope, in Summe ≥
+    // waterfallMinDrop) = ein Sturz; aufeinanderfolgende steile Segmente verschmelzen zu EINEM. Jedes Segment zählt
+    // EINMAL: zwei Quellen teilen ihren Unterlauf, und der Sturz darin gehört beiden (bis V18.531 19 Einträge an 13 Orten,
+    // W-F4).
     _hydroExtractWaterfalls(ctx, rivers) {
         const HC = AnazhRealm.HYDROSPHERE;
         const waterfalls = [];
-        const yOf = (p) => (typeof p.voxelY === "number" ? p.voxelY : p.y);
+        const yOf = (p) => (Number.isFinite(p.S) ? p.S : p.y);
+        const gesehen = new Set();
         for (let ri = 0; ri < rivers.length; ri++) {
             const pts = rivers[ri].points;
             let runStart = -1; // Index des oberen Punkts des steilen Laufs
@@ -32359,11 +32469,14 @@ class AnazhRealm {
                 const a = pts[k];
                 const b = pts[k + 1];
                 // V9.46 — eine See-Durchquerung ist flach (Wasser-Oberfläche),
-                // kein Wasserfall; ein laufender steiler Lauf endet an ihr.
-                if (a.inLake || b.inLake) {
+                // kein Wasserfall; ein laufender steiler Lauf endet an ihr. Ein schon gezähltes Segment (geteilter
+                // Unterlauf) beendet den Lauf ebenso.
+                const seg = a.x + "," + a.z;
+                if (a.inLake || b.inLake || gesehen.has(seg)) {
                     flush(k);
                     continue;
                 }
+                gesehen.add(seg);
                 const drop = yOf(a) - yOf(b);
                 const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
                 const steep = drop > 0 && drop / horiz > HC.waterfallSlope;
@@ -32408,6 +32521,8 @@ class AnazhRealm {
                 }
             }
         };
+        // Ein geteilter Unterlauf ist EIN Segment (zwei Quellen, ein Fluss — die Buckets trugen ihn je Quelle).
+        const segGesehen = new Set();
         for (let ri = 0; ri < rivers.length; ri++) {
             const pts = rivers[ri].points;
             for (let k = 0; k + 1 < pts.length; k++) {
@@ -32417,6 +32532,9 @@ class AnazhRealm {
                 // ist schon von `_hydrosphereLakeAt` flach gesculptet; ein
                 // Fluss-Carve grübe sonst eine Rinne in den flachen See-Boden.
                 if (a.inLake || b.inLake) continue;
+                const segKey = a.x + "," + a.z;
+                if (segGesehen.has(segKey)) continue;
+                segGesehen.add(segKey);
                 addSeg({
                     ax: a.x,
                     az: a.z,
@@ -32426,6 +32544,9 @@ class AnazhRealm {
                     hwB: Math.max(1, (b.width || HC.widthMin) * 0.5),
                     dA: depthFor(a.width),
                     dB: depthFor(b.width),
+                    // der Spiegel an beiden Enden (`_hydroRiverSpiegel`): Fluss-Fläche und Bett lesen ihn linear
+                    sA: a.S,
+                    sB: b.S,
                 });
             }
         }
@@ -32558,15 +32679,15 @@ class AnazhRealm {
         return entry.waterCells[i + k * dim + j * dim * dim];
     }
 
-    // DIE EINE WASSER-WAHRHEIT AM KÖRPER (Welle L, Q6): der Spiegel an (x, z), den das Auge sieht — die Lauf-Fläche des
-    // Gesetzes (`_waterRunSurfaceAt`) über dem Grund des Körpers (`grundY`: das Bett trägt die Rand-Füllung, wie im
+    // DIE EINE WASSER-WAHRHEIT AM KÖRPER (Welle L, Q6): der Spiegel an (x, z), den das Auge sieht — der Spiegel des
+    // Gesetzes (`_atlasWaterLevelAt`) über dem Grund des Körpers (`grundY`: das Bett trägt die Rand-Füllung, wie im
     // Zell-Sheet; unbekannt → nur der Kanal-Kern), dazu die Abweichung des Live-Automaten nach derselben Regel, die das
     // Sheet zeichnet (oberste Zeile mit Pegel > 0,5 und ihr Füllgrad gegen das Flut-Dach). Spieler, Kreatur, Mitspieler
     // und Schritt-Klang lesen nur sie. Bis V18.531 trug der Spieler das Dach der obersten Wasser-ZELLE (1,8-m-Raster: in
     // Ruhe 0,47 m über dem See, im Fluss 0,17 m über der Lauf-Fläche), das Tier den rohen Spiegel, der Mitspieler den
     // Meeresspiegel. Rückgabe: Spiegel (m) oder −Infinity (kein Wasser).
     _koerperWasser(x, z, grundY) {
-        let spiegel = this._waterRunSurfaceAt(x, z, Number.isFinite(grundY) ? grundY : -Infinity);
+        let spiegel = this._atlasWaterLevelAt(x, z, Number.isFinite(grundY) ? grundY : -Infinity);
         const lvlMap = this.state.waterLevelCells;
         if (!lvlMap || lvlMap.size === 0 || !this.state.voxelChunks) return spiegel;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
@@ -50719,14 +50840,16 @@ class AnazhRealm {
                 entry._terrainRollZiel = eb.wank;
             }
         }
-        // Boot-Schwimmen: ein floats-Gefährt reitet die geglättete Lauf-Fläche, wo sie über dem Terrain
+        // Boot-Schwimmen: ein floats-Gefährt reitet den Wasser-Spiegel, wo er über dem Terrain
         // liegt; ragt das Terrain über die Wasserlinie, führt es (Auflaufen per max(), kein Sonder-Pfad).
         const rideProf = this._vehicleProfile(entry);
-        // `_afloat` = reitet das Gefährt in DIESEM Tick auf der Lauf-Fläche. _stepCharacter (4b) liest es
-        // als Boots-Gate für die Strömungs-Advektion — der Reiter ist nie `submerged`, das Boot folgt ihm.
+        // `_afloat` = reitet das Gefährt in DIESEM Tick auf dem Spiegel. _stepCharacter (4b) liest es
+        // als Boots-Gate für die Strömung — der Reiter schwimmt nie selbst, das Boot folgt ihm.
         entry._afloat = false;
         if (rideProf && rideProf.floats && Number.isFinite(groundY)) {
-            const runSurf = this._waterRunSurfaceAt(pm.x, pm.z);
+            // Die EINE Wasser-Wahrheit am Körper über dem Grund des Gefährts (W-W2: ohne Grund war der Rand-Streifen
+            // eines Sees blind — 36 m mit 1–7 m Wasser, das Gefährt fuhr am Seegrund).
+            const runSurf = this._koerperWasser(pm.x, pm.z, groundY);
             // Wasserlinie nach Archimedes: eingetauchter Rumpf-Anteil = prof.dichte / 0.55 (dieselbe Schwelle
             // wie das floats-Gate) × Rumpf-Höhe aus der Bauplan-BBox (am Entry gecacht; Klemmen halten den
             // Rumpf sichtbar).
@@ -90884,8 +91007,9 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
 // Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
-// liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`).
-AnazhRealm.CHUNK_IDB_FORM = "hoehle";
+// liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`); seit
+// Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal.
+AnazhRealm.CHUNK_IDB_FORM = "fluss-spiegel";
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).

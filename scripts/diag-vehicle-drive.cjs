@@ -623,7 +623,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                         let vor = null;
                         for (let s = 0; s <= 36 && trocken; s++) {
                             const hx = r.getTerrainHeightAt(cx + s * 2, cz + dz);
-                            const ws = r._waterRunSurfaceAt(cx + s * 2, cz + dz);
+                            const ws = r._atlasWaterLevelAt(cx + s * 2, cz + dz, hx);
                             if (!Number.isFinite(hx) || (Number.isFinite(ws) && ws > hx - 0.3)) trocken = false;
                             if (vor !== null) stufe = Math.max(stufe, Math.abs(hx - vor));
                             vor = hx;
@@ -751,7 +751,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                     const z = mo[1] + dz;
                     const hh = (a, b) => r.getTerrainHeightAt(a, b);
                     const g = Math.hypot((hh(x + 2, z) - hh(x - 2, z)) / 4, (hh(x, z + 2) - hh(x, z - 2)) / 4);
-                    const ws = r._waterRunSurfaceAt(x, z);
+                    const ws = r._atlasWaterLevelAt(x, z, hh(x, z));
                     if (!(g >= 0.12 && g <= 0.35) || (Number.isFinite(ws) && ws > hh(x, z) - 0.3)) continue;
                     hang.push({ x, z, g, rot: hang.length % 2 ? Math.PI / 2 : 0 });
                 }

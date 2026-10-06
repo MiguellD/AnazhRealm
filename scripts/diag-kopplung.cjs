@@ -145,7 +145,6 @@ const server = http.createServer((req, res) => {
                 shim._terrainColumnContext = () => null;
                 // die EINE Wasser-Wahrheit am Körper (der Spiegel oder −Infinity), synthetisch
                 shim._koerperWasser = (x, z, g) => spiegelAt(x, z, g);
-                shim._waterRunSurfaceAt = () => -Infinity;
                 shim._hydroRiverAt = (x, z) => riverAt(x, z);
                 return shim;
             };

@@ -164,6 +164,10 @@ const FORBIDDEN = [
     { token: "_playerWaterContext", fiel: "Welle L Q6 — das Zell-Dach als Körper-Spiegel (W-K2)" },
     { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Host-Strömung 3,2 m/s neben dem Gesetz 1,2 (W-kD4)" },
     { token: "FLOW_ADVECT_K", fiel: "Welle L Q6 — die Schlupf-Kopplung des Spielers neben der additiven des Tiers" },
+    // Der Fluss-Spiegel ist das Gesetz (`_hydroRiverSpiegel`: stromab nie steigend, quer waagrecht; das Bett folgt ihm) —
+    // die Makro-Höhe des Orts mit Buckel und die geglättete Lauf-Fläche darüber sind gefallen (Main und Worker).
+    { token: "convexBulge", fiel: "Welle L Q7 — der 1,55-m-Buckel des Querschnitts (W-F2)" },
+    { token: "waterRunSurfaceAt", fiel: "Welle L Q7 — die geglättete Lauf-Fläche; der Spiegel selbst ist monoton" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.

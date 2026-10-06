@@ -20226,58 +20226,37 @@ async function checkBandHydrosphere(ctx) {
             // benachbarter See-Blend die Mess-Punkte verfälscht; am Blockende wiederhergestellt.
             const savedLN = hydro.lakeNear;
             hydro.lakeNear = new Uint8Array(savedLN.length);
-            // (3) der Fluss-Mittelpunkt wird gecarvt
-            const carveCenter = r._hydrosphereCarveAt(rx, rz);
-            out.riverCenterCarved = carveCenter > 0.5;
-            // (4) das Bett liegt unter den Ufern: das Carve-Profil
-            // fällt von der Fluss-Mitte zur Bank-Rampe hin ab.
+            // (3) der Kanal formt den Fluss-Mittelpunkt (Welle L: `_hydrosphereCarveAt` liefert die Gestalt { T, w } —
+            // Flachboden unter dem Spiegel, volles Gewicht), und das Bett liegt unter der Wasser-Fläche.
+            const kanal = r._hydrosphereCarveAt(rx, rz);
+            const rvM = r._hydroRiverAt(rx, rz);
+            out.riverCenterCarved = !!(kanal && kanal.w === 1 && rvM && kanal.T < rvM.surfaceY - 0.5);
+            // (4) das Bett liegt unter den Ufern: die Gestalt steigt von der Fluss-Mitte zur Bank hin an.
             const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
             const bankW = Math.max(2, D * HC.carveBankSlope);
             const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
             const pX = -rp.flowZ;
             const pZ = rp.flowX;
-            const rcCenter = r._hydrosphereCarveAt(rx, rz);
-            const midOff = halfW + bankW * 0.45;
-            const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
-            out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
-            // (5) Der Carve senkt die Voxel-Surface am Fluss. Flache Rinnen (<1.2 m = unter der
-            // `_voxelSurfaceY`-Scan-Granularität) sind nicht messbar → den TIEFSTEN Carve-Punkt über alle
-            // Flüsse suchen; kein tiefer Carve = unmessbar = bestanden (carveIsSubtractive beweist exakt).
-            let bestCarve = 0;
-            let bcx = rx;
-            let bcz = rz;
-            for (let ri = 0; ri < hydro.rivers.length; ri++) {
-                const pts = hydro.rivers[ri].points;
-                for (let k = 0; k < pts.length; k++) {
-                    if (pts[k].inLake) continue;
-                    const c = r._hydrosphereCarveAt(pts[k].x, pts[k].z);
-                    if (c > bestCarve) {
-                        bestCarve = c;
-                        bcx = pts[k].x;
-                        bcz = pts[k].z;
-                    }
-                }
-            }
-            const sCarve = r._voxelSurfaceY(bcx, bcz);
-            r._hydroComputing = true;
-            const sNoCarve = r._voxelSurfaceY(bcx, bcz);
-            r._hydroComputing = false;
-            out.surfaceLowered =
-                bestCarve < 1.5
-                    ? true
-                    : Number.isFinite(sCarve) && Number.isFinite(sNoCarve) && sCarve < sNoCarve - 0.3;
-            // (8) der Carve ist rein subtraktiv: die _terrainDensityAt-
-            // Differenz (Carve aktiv vs. suppressed) === der Carve-Betrag
+            const midOff = halfW + bankW * HC.kroneAnteil * 0.75;
+            const kMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
+            out.bedBelowBanks = !!(kanal && kMid && kanal.T < kMid.T);
+            // (5) die Voxel-Fläche liegt AUF der Gestalt: die Fluss-Mitte trägt den Flachboden (auf die Scan-Körnung
+            // von `_voxelSurfaceY`, 1,2 m).
+            const sKanal = r._voxelSurfaceY(rx, rz);
+            out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.T) < 1.3;
+            // (8) der Kanal MISCHT das Gelände zu seiner Gestalt: die _terrainDensityAt-Dichte mit Kanal ===
+            // d·(1 − w) + (T − y)·w aus der Dichte ohne Kanal (das Suppress-Flag).
             const y = (r.state.terrainBaseHeight || 0) + 10;
             const dCarve = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = true;
             const dSuppressed = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = false;
-            out.carveIsSubtractive = Math.abs(dSuppressed - dCarve - carveCenter) < 0.001;
-            // (9) ohne Hydrosphäre bit-identisch — _hydrosphereCarveAt → 0
+            out.carveIsSubtractive =
+                !!kanal && Math.abs(dSuppressed * (1 - kanal.w) + (kanal.T - y) * kanal.w - dCarve) < 0.001;
+            // (9) ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)
             const savedHydro = r.state.hydrosphere;
             r.state.hydrosphere = null;
-            out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === 0;
+            out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === null;
             r.state.hydrosphere = savedHydro;
             // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
             const base = r.state.terrainBaseHeight || 0;
@@ -20342,15 +20321,15 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
             d.indexWired
         );
-        check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
-        check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (Carve-Profil fällt zur Bank ab)", d.bedBelowBanks);
-        check("Voxel V9.43-d: der Carve senkt die Voxel-Surface am Fluss", d.surfaceLowered);
+        check("Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)", d.riverCenterCarved);
+        check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (die Gestalt steigt zur Bank an)", d.bedBelowBanks);
+        check("Voxel V9.43-d → Welle L: die Voxel-Fläche liegt auf dem Flachboden des Kanals", d.surfaceLowered);
         check(
-            "Voxel V9.43-d: der Carve ist rein subtraktiv (_terrainDensityAt-Differenz === Carve-Betrag)",
+            "Voxel V9.43-d → Welle L: der Kanal mischt das Gelände zu seiner Gestalt (d·(1 − w) + (T − y)·w)",
             d.carveIsSubtractive
         );
         check(
-            "Voxel V9.43-d: ohne Hydrosphäre ist der Carve 0 (bit-identisch zu vor V9.43-d)",
+            "Voxel V9.43-d: ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)",
             d.carveZeroWithoutHydro
         );
         check("Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)", d.floorSolid);
@@ -29141,9 +29120,9 @@ async function checkBandM3RittVollendet(ctx) {
             // Die GERENDERTE Unterkante: die Basis liegt bei position.y − 0.5 (Instanz-Matrix · Gruppen-Bau) — die alte
             // Formel ohne die −0.5 hielt den versunkenen Wagen (Reifen 0,48 m im Boden) für stehend.
             const bottom = entry.position.y - 0.5 + r._compoundBottomY(bp) * (entry.scale || 1);
-            // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante an der geglätteten
-            // Lauf-Fläche − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
-            const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
+            // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante am Spiegel (die EINE
+            // Wasser-Wahrheit am Körper über seinem Grund) − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
+            const runSurf = r._koerperWasser(entry.position.x, entry.position.z, terr);
             const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
             // An Land steht das Gefährt auf seinen Rädern und versinkt nirgends (W5 + Integration): die Probe liest das
             // Boden-Gesetz selbst an den vier Aufstandspunkten (`_rittAufstand`) und unter dem Ursprung (der Bauch), legt
@@ -38554,9 +38533,10 @@ async function checkBandW3UiPuls(ctx) {
     );
 }
 
-// W-F Fluss: die EINE geglättete Lauf-Fläche (_waterRunSurfaceAt) mit drei Konsumenten (Zell-Sheet ·
-// Tauch-Trigger · Boot-Schwimmen), Narben-Wand (Zentrums-Blende lässt die Querschnitt-Kante roh),
-// Flow-Kräuselung im Shader, Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
+// W-F Fluss (Welle L, Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
+// steigend, quer waagrecht, `_hydroRiverSpiegel`) mit seinen Konsumenten (Zell-Sheet · Körper · Boot-Schwimmen); die
+// geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
+// Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
 // (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
 // via _substanceResponseProfile, FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.)
 async function checkBandWFFluss(ctx) {
@@ -38564,26 +38544,23 @@ async function checkBandWFFluss(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der EINE Leser existiert + Seen/Ozean kommen unverändert durch
-        // (kein Fluss → _waterRunSurfaceAt === _atlasWaterLevelAt; pure-Funktion).
-        out.runExists = typeof r._waterRunSurfaceAt === "function";
-        // ein trockener Punkt gibt -Infinity durch (kein Wasser erfunden).
+        // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
+        // (kein Wasser erfunden).
+        out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
         const dryX = 99999,
             dryZ = 99999;
-        out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
-        // (2) die Konsumenten lesen die geglättete Fläche (Source-Probe): die Sheet-Mathe in
-        // `_computeWaterSheetData` (Main + Worker geteilt) und der Körper über die EINE Wasser-Wahrheit am Körper
-        // (`_stepCharacter` → `_koerperWasser` → `_waterRunSurfaceAt`, Welle L Q6).
-        out.sheetReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._computeWaterSheetData));
+        out.dryPassthrough = r._atlasWaterLevelAt(dryX, dryZ, -Infinity) === -Infinity;
+        // (2) die Konsumenten lesen den Spiegel (Source-Probe): die Sheet-Mathe in `_computeWaterSheetData` (Main +
+        // Worker geteilt) und der Körper über die EINE Wasser-Wahrheit am Körper (`_stepCharacter` → `_koerperWasser`).
+        out.sheetReadsRun = /_atlasWaterLevelAt/.test(window.__codeOf(r._computeWaterSheetData));
         out.diveReadsRun =
             /_koerperWasser/.test(window.__codeOf(r._stepCharacter)) &&
-            /_waterRunSurfaceAt/.test(window.__codeOf(r._koerperWasser));
-        // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
-        // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
-        out.centernessField = /centerness/.test(window.__codeOf(r._hydroRiverAt));
-        out.centernessBlend =
-            /centerness/.test(window.__codeOf(r._waterRunSurfaceAt)) &&
-            /\* center/.test(window.__codeOf(r._waterRunSurfaceAt));
+            /_atlasWaterLevelAt/.test(window.__codeOf(r._koerperWasser));
+        // (3) DER SPIEGEL IST DAS SEGMENT: `_hydroRiverAt` liest den Spiegel seiner Enden (sA/sB), nie die Makro-Höhe des
+        // Orts (bis V18.531: Makro − 0,25·D + Buckel — der Fluss stieg bergauf und wölbte sich).
+        const rvSrc = window.__codeOf(r._hydroRiverAt);
+        out.centernessField = /centerness/.test(rvSrc);
+        out.centernessBlend = /seg\.sA/.test(rvSrc) && /seg\.sB/.test(rvSrc) && !/_terrainMacroSurfaceY/.test(rvSrc);
         // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
         out.flowRipple = /flowRipple/.test(window.__codeOf(r._ensureHydroSurfaceMaterial));
         // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
@@ -38611,15 +38588,15 @@ async function checkBandWFFluss(ctx) {
         return out;
     });
     check(
-        "W-F Fluss: der EINE Lauf-Leser _waterRunSurfaceAt existiert + reicht Nicht-Fluss-Wasser unverändert durch",
+        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt (die geglättete Lauf-Fläche fiel) + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
     );
     check(
-        "W-F Fluss: die DREI Konsumenten lesen die geglättete Fläche (Zell-Sheet + Tauch-Trigger; Source-Probe)",
+        "W-F Fluss: die Konsumenten lesen den Spiegel des Gesetzes (Zell-Sheet + Körper über _koerperWasser; Source-Probe)",
         res.sheetReadsRun && res.diveReadsRun
     );
     check(
-        "W-F Fluss NARBEN-WAND: die Zentrums-Blende lebt (_hydroRiverAt gibt centerness, _waterRunSurfaceAt blendet roh↔glatt — die Querschnitt-Kante bleibt roh)",
+        "W-F Fluss SPIEGEL: _hydroRiverAt liest den Segment-Spiegel (sA/sB — stromab nie steigend, quer waagrecht), nie die Makro-Höhe des Orts",
         res.centernessField && res.centernessBlend
     );
     check(

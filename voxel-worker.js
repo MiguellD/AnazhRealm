@@ -65,6 +65,8 @@ const state = {
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
     carveBankSlope: 1.4, // Mirror AnazhRealm.HYDROSPHERE.carveBankSlope
+    spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
+    kroneAnteil: 0.6, // Mirror AnazhRealm.HYDROSPHERE.kroneAnteil
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die Genese-
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
@@ -211,6 +213,8 @@ function applyStateSnapshot(snap) {
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
+    if (typeof snap.spiegelFreibord === "number") state.spiegelFreibord = snap.spiegelFreibord;
+    if (typeof snap.kroneAnteil === "number") state.kroneAnteil = snap.kroneAnteil;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
@@ -306,7 +310,7 @@ function terrainColumnContext(x, z) {
     const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
-    let hydroCarve = 0;
+    let hydroCarve = null; // der Fluss-Kanal { T, w } (Mirror `_hydrosphereCarveAt`) oder null
     let lake = null;
     if (hydroActive) {
         hydroCarve = hydrosphereCarveAt(x, z);
@@ -337,7 +341,9 @@ function terrainBaseDensityCol(x, y, z, ctx) {
         d -= hallCarve * caveEnv * 72;
     }
     if (ctx.hydroActive) {
-        d -= ctx.hydroCarve;
+        // Der Fluss-Kanal mischt das Gelände zu seiner Gestalt (Flachboden · Bank · Krone), das See-Becken danach.
+        const kn = ctx.hydroCarve;
+        if (kn) d = d * (1 - kn.w) + (kn.T - y) * kn.w;
         const lk = ctx.lake;
         if (lk) {
             const flatD = lk.bedY - y;
@@ -755,47 +761,58 @@ function tarnDeltaAt(x, z) {
     return delta;
 }
 
+// Mirror von `_hydrosphereCarveAt` (Welle L): der Fluss-Kanal { T, w } — Flachboden auf Spiegel − (1 − Freibord)·Tiefe,
+// Bank bis zur Krone auf Spiegel + Freibord·Tiefe, danach gleitet das Gewicht ins Gelände; mehrere Segmente: w = max,
+// T = w-gewichtetes Mittel. MUSS bit-identisch zum Main sein.
 function hydrosphereCarveAt(x, z) {
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (!h || !h.ready) return 0;
-    let cut = 0;
+    if (!h || !h.ready) return null;
     const rb = h.riverBuckets;
-    if (rb) {
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi = Math.floor((x - h.originX) / bs);
-        const bj = Math.floor((z - h.originZ) / bs);
-        if (bi >= 0 && bj >= 0 && bi < bd && bj < bd) {
-            const list = rb[bj * bd + bi];
-            if (list) {
-                const bankSlope = state.carveBankSlope;
-                for (let s = 0; s < list.length; s++) {
-                    const seg = list[s];
-                    const ex = seg.bx - seg.ax;
-                    const ez = seg.bz - seg.az;
-                    const len2 = ex * ex + ez * ez || 1;
-                    let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-                    if (t < 0) t = 0;
-                    else if (t > 1) t = 1;
-                    const px = seg.ax + ex * t;
-                    const pz = seg.az + ez * t;
-                    const dist = Math.hypot(x - px, z - pz);
-                    const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-                    const D = seg.dA + (seg.dB - seg.dA) * t;
-                    const bankW = Math.max(2, D * bankSlope);
-                    let rc = 0;
-                    if (dist <= halfW) {
-                        rc = D;
-                    } else if (dist < halfW + bankW) {
-                        const u = (dist - halfW) / bankW;
-                        rc = D * (1 - u * u * (3 - 2 * u));
-                    }
-                    if (rc > cut) cut = rc;
-                }
-            }
+    if (!rb) return null;
+    const bs = h.bucketSize;
+    const bd = h.bucketsDim;
+    const bi = Math.floor((x - h.originX) / bs);
+    const bj = Math.floor((z - h.originZ) / bs);
+    if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
+    const list = rb[bj * bd + bi];
+    if (!list) return null;
+    let wMax = 0;
+    let wSumme = 0;
+    let tSumme = 0;
+    for (let s = 0; s < list.length; s++) {
+        const seg = list[s];
+        const ex = seg.bx - seg.ax;
+        const ez = seg.bz - seg.az;
+        const len2 = ex * ex + ez * ez || 1;
+        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const px = seg.ax + ex * t;
+        const pz = seg.az + ez * t;
+        const dist = Math.hypot(x - px, z - pz);
+        const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
+        const D = seg.dA + (seg.dB - seg.dA) * t;
+        const bankW = Math.max(2, D * state.carveBankSlope);
+        if (dist >= halfW + bankW) continue;
+        const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+        const krone = halfW + bankW * state.kroneAnteil;
+        const boden = spiegel - (1 - state.spiegelFreibord) * D;
+        let T;
+        let w = 1;
+        if (dist <= halfW) T = boden;
+        else if (dist < krone) {
+            const u = (dist - halfW) / (krone - halfW);
+            T = boden + D * u * u * (3 - 2 * u);
+        } else {
+            T = boden + D;
+            const u = (dist - krone) / (halfW + bankW - krone);
+            w = 1 - u * u * (3 - 2 * u);
         }
+        if (w > wMax) wMax = w;
+        wSumme += w;
+        tSumme += T * w;
     }
-    return cut;
+    return wMax > 0 ? { T: tSumme / wSumme, w: wMax } : null;
 }
 
 function hydrosphereLakeAt(x, z) {
@@ -934,6 +951,8 @@ function hydroRiverAt(x, z) {
     let dirZ = 0;
     let depth = 0;
     let bestHalfW = 1;
+    let gSumme = 0;
+    let sSumme = 0;
     for (let s = 0; s < list.length; s++) {
         const seg = list[s];
         const ex = seg.bx - seg.ax;
@@ -947,8 +966,12 @@ function hydroRiverAt(x, z) {
         const dist = Math.hypot(x - px, z - pz);
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
-        const bankW = Math.max(2, D * bankSlope);
-        if (dist <= halfW + bankW && dist < bestD) {
+        const krone = halfW + Math.max(2, D * bankSlope) * state.kroneAnteil;
+        if (dist > krone) continue;
+        const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
+        gSumme += g;
+        sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+        if (dist < bestD) {
             bestD = dist;
             const len = Math.sqrt(len2);
             dirX = ex / len;
@@ -958,17 +981,14 @@ function hydroRiverAt(x, z) {
         }
     }
     if (bestD === Infinity) return null;
-    // V18.27 — laterale Makro (Leben) + KONVEXE Mitten-Aufwölbung (0.45·D·(1−(dist/halfW)²)) →
-    // konvexer Querschnitt (Mitte höher, fällt zu den Ufern). MUSS bit-identisch zum Main sein.
-    // B1 (V18.345) — flowX/flowZ/centerness ergänzt (Mirror von Main `_hydroRiverAt`): der
-    // Wasser-Sheet-Worker-Mirror liest sie (aFlow + centerness via `waterRunSurfaceAt`). Bestehende
-    // Leser (waterLevelAt/atlasWaterLevelAt/feuchte) lesen nur depth/surfaceY → unverändert.
-    const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
+    // Welle L (Mirror): der Spiegel der Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht),
+    // gemittelt zur Krone stetig auslaufend; flowX/flowZ/centerness des nächsten Segments liest der Wasser-Sheet-Worker-
+    // Mirror (aFlow). MUSS bit-identisch zum Main sein.
     return {
         flowX: dirX,
         flowZ: dirZ,
         depth,
-        surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 + convexBulge,
+        surfaceY: sSumme / gSumme,
         centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
     };
 }
@@ -1151,41 +1171,6 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
     return level;
 }
 
-// B1 (V18.345) — Mirror von `_waterRunSurfaceAt`: die GEGLÄTTETE Fluss-Lauf-Fläche
-// (Along-Flow-Tiefpass NUR auf den Kanal-KERN via centerness; NARBEN-WAND am Ufer bleibt
-// roh). Deps `atlasWaterLevelAt` + `hydroRiverAt` (mit flowX/flowZ/centerness) sind
-// gespiegelt. MUSS bit-identisch zum Main bleiben (diag-worker-watersheet).
-// V18.475 (F2, Mirror) — `terrainTopY` reist zur Zentrums-Frage durch (der Sheet-Bau
-// reicht sein Bett); die Along-Flow-Samples bleiben ehrlich −Infinity (Doku im Main).
-function waterRunSurfaceAt(x, z, terrainTopY = -Infinity) {
-    const L = atlasWaterLevelAt(x, z, terrainTopY);
-    if (!(L > -Infinity)) return L;
-    const river = hydroRiverAt(x, z);
-    if (!river) return L;
-    const center = Number.isFinite(river.centerness) ? river.centerness : 1;
-    if (center <= 0.001) return L;
-    const fx = river.flowX;
-    const fz = river.flowZ;
-    let acc = L * 4;
-    let wsum = 4;
-    for (let k = 1; k <= 3; k++) {
-        const w = 4 - k;
-        const d = 6 * k;
-        const la = atlasWaterLevelAt(x + fx * d, z + fz * d, -Infinity);
-        const lb = atlasWaterLevelAt(x - fx * d, z - fz * d, -Infinity);
-        if (la > -Infinity) {
-            acc += la * w;
-            wsum += w;
-        }
-        if (lb > -Infinity) {
-            acc += lb * w;
-            wsum += w;
-        }
-    }
-    const smoothed = acc / wsum;
-    return L + (smoothed - L) * center;
-}
-
 // B1 (V18.345) — Mirror von `_caColumnScan`: scannt eine Zell-Spalte top-down nach
 // Flood-/Live-/Solid-Dach. `level` ist im Worker-Streaming-Pfad immer null (CA-frei =
 // nur Flood + Solid) — der wantLive-Zweig läuft nie, bleibt aber 1:1 für die bit-Parität.
@@ -1218,7 +1203,7 @@ function caColumnScan(cells, level, colBase, dimSq, dimY) {
 // plain Arrays {positions, indices, aFlow, aWave, aDepth, aSlope} oder null. MUSS Zeile
 // für Zeile mit dem Main wandern (diag-worker-watersheet, maxDiff 0). Substitutionen vs
 // Main: this._voxelChunkConfig→voxelChunkConfig, this.state.terrainBaseHeight→state.baseHeight,
-// this._caColumnScan→caColumnScan, this._waterRunSurfaceAt→waterRunSurfaceAt,
+// this._caColumnScan→caColumnScan, this._atlasWaterLevelAt→atlasWaterLevelAt,
 // this._hydroRiverAt→hydroRiverAt, this._hydrosphereLakeAt→hydrosphereLakeAt,
 // AnazhRealm.CELL_STATE→CELL_STATE. Die Mathe ist character-identisch.
 function buildWaterSheetGeometry(cx, cz, ctx) {
@@ -1295,7 +1280,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             const wx = ox + (ci + 0.5) * step;
             const wz = oz + (ck + 0.5) * step;
             // V18.475 (F2, Mirror) — das Bett reist mit (solidG + step, Doku im Main).
-            const L = waterRunSurfaceAt(wx, wz, solidG[gi] + step);
+            const L = atlasWaterLevelAt(wx, wz, solidG[gi] + step);
             let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
             if (dach) {
                 const floodRel = (sc.floodTopJ + 1) * step;
