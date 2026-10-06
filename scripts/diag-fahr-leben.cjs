@@ -33,6 +33,10 @@
 //       S2 Klippe: kein Höhen-Sprung je Sim-Schritt > 0,5 m (Befund 6,94/7,95 m), der Wagen fliegt (Luft-Schritte > 0)
 //       S3 Querhang: Fahrt längs eines 25–40°-Querhangs ohne Lenkung driftet quer talwärts (Befund 0,00 m) Soll ≥ 0,3 m
 //
+//   R (Q13 · F-D8) — DIE RÄDER IN DER INSTANZ: der GT fährt (W), bremst voll (S) und lenkt (W + A); je Sim-Schritt die
+//       Rad-Leaves relativ zum Aufbau (Rolle > 1 rad, Einschlag vorn > 0,1 rad, hinten 0) und der Aufstand (Eintauchen
+//       beim Bremsen ≤ 0,03 m, Rad-Spalt p75 ≤ 0,03 m). Befund: 12 Blätter mit unveränderter relativer Matrix, beim
+//       Bremsen die Vorderräder 7,4–11,1 cm im Boden.
 //   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER: der GT fährt mit W gegen einen Felsblock und gegen einen Bären; das
 //       Eindringen der Wagen-Hülle (exportDrive.huelle) in die Blocker-Boxen bzw. den Raum des Wesens (Befund: Bug
 //       1,97–2,32 m im Stamm, der Bär ganz im Wagen)                                                Soll ≤ 0,05 m
@@ -237,7 +241,7 @@ function kernProbe(VC) {
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
-const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3 };
+const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03 };
 function stationVerdict(s) {
     const out = [];
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
@@ -251,6 +255,18 @@ function stationVerdict(s) {
     }
     if (!s.quer) out.push("querhang nicht gefunden");
     else if (!(s.quer.drift >= STATION.querM)) out.push(`querhang ohne Abtrieb (Quer-Abdrift ${s.quer.drift.toFixed(2)} m)`);
+    const rd = s.raeder;
+    if (!rd) out.push("raeder keine Probe");
+    else {
+        if (!(rd.leaves > 0)) out.push("raeder starr (keine Rad-Instanz)");
+        else {
+            if (!(rd.rolle >= STATION.rolleRad)) out.push(`raeder rollen nicht (${rd.rolle.toFixed(2)} rad)`);
+            if (!(rd.lenk >= STATION.lenkRad && rd.lenkHinten <= 0.01))
+                out.push(`raeder lenken nicht (vorn ${rd.lenk.toFixed(3)} · hinten ${rd.lenkHinten.toFixed(3)} rad)`);
+        }
+        if (!(rd.tauchBremse <= STATION.spaltM)) out.push(`raeder tauchen beim Bremsen ${rd.tauchBremse.toFixed(3)} m`);
+        if (!(rd.spaltP75 <= STATION.spaltM)) out.push(`raeder Spalt p75 ${rd.spaltP75.toFixed(3)} m`);
+    }
     for (const [k, name] of [
         ["huelleBlock", "fels"],
         ["huelleBaer", "baer"],
@@ -502,6 +518,106 @@ async function probeLeben(expected) {
 
         // ═══ S — DIE STATIONEN (Q13) ═══
         const S = (res.stationen = { kern: !!(VC && typeof VC.fahrSchritt === "function") });
+        // R — DIE RÄDER IN DER INSTANZ (Q13 F-D8): dieselbe Gerade; W (1,5 s), dann S (Vollbremsung, 1 s), dann W + A.
+        // Je Sim-Schritt die Rad-Leaves (`lf.rad`): ihre Matrix RELATIV zum Aufbau (dreht das Rad? lenkt es?) und der
+        // Aufstand (Naben-Mitte − radR gegen den Boden). Ohne Rad-Leaves (die starre Instanz) misst die Linse die Rad-
+        // Punkte der Aufbau-Matrix (fAx/rAx × ±Spur/2) — der Befund: kein Rad rollt oder lenkt, beim Bremsen tauchen die
+        // Vorderräder 7,4–11,1 cm in den Boden.
+        const gR = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
+        if (gR) {
+            const preset = r._foundryPresetForEntry(gR);
+            const flat = r._foundryFlattenFor(gR, preset, Number.isFinite(gR._servedLod) ? gR._servedLod : gR._lodLevel);
+            const hu = r._fahrzeugGesetzFor(gR).drive.huelle;
+            const radR = hu.radR * (Number.isFinite(gR.scale) ? gR.scale : 1);
+            const rad = [];
+            if (flat && Array.isArray(flat.leaves) && gR.instSlots)
+                for (let i = 0; i < flat.leaves.length && i < gR.instSlots.length; i++)
+                    if (flat.leaves[i].rad && flat.leaves[i].rad.dreht) rad.push({ i, rd: flat.leaves[i].rad });
+            const M = new THREE.Matrix4();
+            const B = new THREE.Matrix4();
+            const Rel = new THREE.Matrix4();
+            const v3 = new THREE.Vector3();
+            const relStart = new Map();
+            let rolle = 0;
+            let lenk = 0;
+            let lenkHinten = 0;
+            let tauchBremse = 0;
+            const spalte = [];
+            let phase = "w";
+            const P5 = r._stepFixedSim;
+            r._stepFixedSim = function (simTime, dt) {
+                P5.call(this, simTime, dt);
+                r._tickMountedMovement(dt);
+                r._archEntryWorldMatrix(gR, B);
+                const Binv = B.clone().invert();
+                // die Rad-Punkte: Naben-Mitte je Ecke (Rad-Leaf) oder der Rad-Punkt der Aufbau-Matrix (starr)
+                const punkte = [];
+                if (rad.length) {
+                    for (const { i, rd } of rad) {
+                        const s = gR.instSlots[i];
+                        const g = st.archInstanceGroups.get(s.key);
+                        if (!g) continue;
+                        g.mesh.getMatrixAt(s.slot, M);
+                        v3.setFromMatrixPosition(M);
+                        punkte.push({ front: rd.front, x: v3.x, y: v3.y - radR, z: v3.z });
+                        // relativ zum Aufbau: die Achse z (Rolle um sie) und die Gier der Nabe (Lenkung)
+                        Rel.multiplyMatrices(Binv, M);
+                        const key = rd.ecke;
+                        const e = Rel.elements;
+                        const yAchse = [e[4], e[5], e[6]];
+                        const xAchse = [e[0], e[1], e[2]];
+                        if (!relStart.has(key)) relStart.set(key, yAchse);
+                        const y0 = relStart.get(key);
+                        const c = (y0[0] * yAchse[0] + y0[1] * yAchse[1] + y0[2] * yAchse[2]) / (Math.hypot(...y0) * Math.hypot(...yAchse));
+                        rolle = Math.max(rolle, Math.acos(Math.max(-1, Math.min(1, c))));
+                        if (phase === "a") {
+                            // Gier der Nabe im Aufbau: die Achse z des Rades (die Drehachse) gegen die Quer-Achse z des Aufbaus
+                            const zA = [e[8], e[9], e[10]];
+                            const gier = Math.abs(Math.atan2(zA[0], Math.abs(zA[2]))) * (rd.dreh ? 1 : 1);
+                            if (rd.front) lenk = Math.max(lenk, gier);
+                            else lenkHinten = Math.max(lenkHinten, gier);
+                        }
+                        void xAchse;
+                    }
+                } else {
+                    for (const ax of [hu.fAx, hu.rAx])
+                        for (const sz of [-1, 1]) {
+                            v3.set(ax, 0, (sz * hu.spur) / 2).applyMatrix4(B);
+                            punkte.push({ front: ax === hu.fAx, x: v3.x, y: v3.y, z: v3.z });
+                        }
+                }
+                let spalt = 0;
+                for (const p of punkte) {
+                    const d = p.y - hh(p.x, p.z);
+                    spalt = Math.max(spalt, Math.abs(d));
+                    if (phase === "s" && p.front) tauchBremse = Math.max(tauchBremse, -d);
+                }
+                spalte.push(spalt);
+            };
+            tasten(true, false);
+            for (let i = 0; i < 90; i++) frame(i);
+            phase = "s";
+            for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
+            st.keys.s = true;
+            for (let i = 0; i < 40; i++) frame(i);
+            st.keys.s = false;
+            phase = "a";
+            tasten(true, true);
+            for (let i = 0; i < 60; i++) frame(i);
+            tasten(false);
+            r._stepFixedSim = P5;
+            spalte.sort((a, b) => a - b);
+            S.raeder = {
+                leaves: rad.length,
+                rolle,
+                lenk,
+                lenkHinten,
+                tauchBremse,
+                spaltP75: spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity,
+                spaltMax: spalte.length ? spalte[spalte.length - 1] : Infinity,
+            };
+            weg(gR);
+        }
         // S1 WELT == LABOR: dieselbe Gerade, W, dann W + A; die Spur je Sim-Schritt gegen den Labor-Aufruf.
         const g1 = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
         if (g1 && g1._fahr && S.kern) {
@@ -822,6 +938,7 @@ async function probeLeben(expected) {
             labor: { schritte: 180, maxM: 0.0001, bei: 3 },
             klippe: { sprung: 0.2, luft: 40 },
             quer: { drift: 1.2 },
+            raeder: { leaves: 4, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01, spaltMax: 0.05 },
             huelleBlock: { tief: 0.0, abstand: 0.02 },
             huelleBaer: { tief: 0.01, abstand: 0.0 },
         };
@@ -832,6 +949,9 @@ async function probeLeben(expected) {
             ["7,95 m Höhen-Sprung in einem Schritt (F-D6)", { klippe: { sprung: 7.95, luft: 40 } }, "klippe-sprung"],
             ["Querhang ohne Abtrieb: 0,00 m (F-D7)", { quer: { drift: 0.0 } }, "querhang"],
             ["Bug 1,85 m im Fels (F-D4)", { huelleBlock: { tief: 1.85, abstand: 0 } }, "huelle-fels Eindringen"],
+            ["die starre Instanz: kein Rad-Leaf (F-D8)", { raeder: { leaves: 0, rolle: 0, lenk: 0, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01 } }, "raeder starr"],
+            ["Vorderräder 0,09 m im Boden beim Bremsen (F-D8)", { raeder: { leaves: 4, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.09, spaltP75: 0.01 } }, "raeder tauchen"],
+            ["die Räder lenken nicht (F-D8)", { raeder: { leaves: 4, rolle: 12, lenk: 0, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder lenken nicht"],
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
             ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
         ]) {
@@ -955,6 +1075,18 @@ async function probeLeben(expected) {
         S.quer
             ? `${S.querOrt.grad.toFixed(1)}° bei (${S.querOrt.x.toFixed(0)}, ${S.querOrt.z.toFixed(0)}) · ${S.quer.weg.toFixed(1)} m gefahren · Quer-Abdrift talwärts ${S.quer.drift.toFixed(2)} m`
             : vS.join(" · ")
+    );
+    console.log("=== R — DIE RÄDER IN DER INSTANZ (Q13 · F-D8), echter Sim-Schritt ===");
+    const R = S.raeder;
+    check(
+        "R1 die Räder rollen und lenken: Rad-Leaves je Ecke, Rolle relativ zum Aufbau > 1 rad, vorn Einschlag > 0,1 rad, hinten 0",
+        !hat("kern") && !hat("raeder starr") && !hat("raeder rollen") && !hat("raeder lenken") && !hat("raeder keine"),
+        R ? `${R.leaves} drehende Rad-Leaves · Rolle ${R.rolle.toFixed(2)} rad · Einschlag vorn ${R.lenk.toFixed(3)} / hinten ${R.lenkHinten.toFixed(3)} rad` : "keine Probe"
+    );
+    check(
+        "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",
+        !hat("kern") && !hat("raeder tauchen") && !hat("raeder Spalt") && !hat("raeder keine"),
+        R ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)})` : "keine Probe"
     );
     console.log("=== H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5), echter Sim-Schritt ===");
     const hz = (h, was) =>

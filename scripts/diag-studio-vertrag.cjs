@@ -702,7 +702,7 @@ function validateManifest(m) {
         // Integration W8 — DIE SEH-KLASSE REIST: beide Extraktoren (Brücke + Ofen) reichen den Gesetzbuch-Stempel
         // `material.userData.__seh` als `mat.seh` weiter — ohne ihn kennt das Gesetz keine Klasse und jede
         // Zweit-Kern-Stufe bräche (gate:asset-contract misst das an jedem Fall).
-        const ex = phytoSrc.match(/function __extractAssetMesh\(mesh, zweitKern\) \{[\s\S]*?\n {4}\}\n/);
+        const ex = phytoSrc.match(/function __extractAssetMesh\(mesh, zweitKern(?:, basisInv)?\) \{[\s\S]*?\n {4}\}\n/);
         if (!ex || !/out\.mat\.seh = mat\.userData\.__seh/.test(ex[0]))
             f.push("Brücke: __extractAssetMesh reicht die Seh-Klasse nicht (mat.seh)");
         const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\(mesh\) \{[\s\S]*?\n {4}\}/);

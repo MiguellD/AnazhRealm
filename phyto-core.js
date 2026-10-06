@@ -3556,9 +3556,15 @@
     // `_foundryFlatVerschmelzen` und die Starr-Bindung des Ofens `_ofenStarrBinden` gruppieren danach), das Gesetz
     // zählt mit ihr (`budgetSippen`). Ein Flügel-Teil (eigenes Scharnier) und eine Haut (eigenes SkinnedMesh) sind keine
     // Sippe (null): je Teil ein Draw. gate:sippen-wirt misst Gesetz gegen Leaves an jeder Art und Stufe.
+    // Ein RAD-Teil (Welle L, Q13 F-D8: `m.rad`, die Gestalt der Ecke 0, je Ecke eine Instanz) ist seine eigene Sippe je
+    // Dreh-Klasse (drehend · stehend): es verschmilzt mit seinesgleichen, nie mit dem Aufbau.
     function budgetSippe(m) {
         if (!_budgetTeil(m) || m.tuer || (m.skinIndex && m.skinIndex.array)) return null;
-        return budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+        return (m.rad ? (m.rad.dreht ? "R:d|" : "R:s|") : "") + budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+    }
+    // Wie oft ein Teil gezeichnet wird: ein Rad je Ecke (`m.rad.raeder`), jedes andere Teil einmal.
+    function _budgetMal(m) {
+        return m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length ? m.rad.raeder.length : 1;
     }
     // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht).
     function budgetSippen(meshes) {
@@ -3569,7 +3575,7 @@
         for (const m of meshes || []) {
             if (!_budgetTeil(m)) continue;
             const nv = m.position.array.length / 3;
-            tris += _budgetTris(m);
+            tris += _budgetTris(m) * _budgetMal(m);
             verts += nv;
             const k = budgetSippe(m);
             if (k === null) {
@@ -3775,7 +3781,8 @@
         for (const m of teile) {
             const haut = !!(m.skinIndex && m.skinIndex.array);
             const klasse =
-                (m.tuer ? "T:" + JSON.stringify(m.tuer) : haut ? "H" : "S") + (m.aWurzel || m.aSchale ? "|schale" : "");
+                (m.tuer ? "T:" + JSON.stringify(m.tuer) : m.rad ? (m.rad.dreht ? "R:d" : "R:s") : haut ? "H" : "S") +
+                (m.aWurzel || m.aSchale ? "|schale" : "");
             const stoff = budgetStoff(m.kind, m.mat);
             const key = klasse + "#" + stoff;
             let g = nachSchluessel.get(key);
@@ -3798,8 +3805,8 @@
                 nachSchluessel.set(key, g);
                 gruppen.push(g);
             }
-            const t = _budgetTris(m);
-            const fl = _budgetFlaeche(m);
+            const t = _budgetTris(m) * _budgetMal(m);
+            const fl = _budgetFlaeche(m) * _budgetMal(m);
             g.teile.push({ m, seite: budgetSeite(m.kind, m.mat), quelle: g });
             g.tris += t;
             g.flaeche += fl;
@@ -3893,6 +3900,7 @@
                     const e = _budgetVerbinden(stueck, g, attrs);
                     if (j) e.joint = j;
                     if (stueck[0].m.tuer) e.tuer = stueck[0].m.tuer;
+                    if (stueck[0].m.rad) e.rad = stueck[0].m.rad;
                     out.push(e);
                     stueck = [];
                     v = 0;

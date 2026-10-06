@@ -716,7 +716,12 @@
             const p = H[k];
             const hub = new THREE.Group();
             hub.position.set(p[0], p[1], p[2]);
+            // WELLE L (06.10., rein additive DATEN am Knoten — Geometrie byte-gleich, gate:vehicle-contract): das Rad
+            // trägt seine Ecke, ob es lenkt, und seine Seite (os = Vorzeichen von z) — die Welt-Instanz liest daraus die
+            // Rad-Blätter (Rolle, Lenk-Einschlag, ungefedert), wie die Probefahrt corners[] liest.
+            hub.userData.rad = { ecke: corners.length, front: front, os: Math.sign(p[2]) || 1 };
             const spin = new THREE.Group();
+            spin.userData.radDreht = true;
             hub.add(spin);
             spin.add(makeWheel(P, Math.sign(p[2]), ctx));
             const cal = box(0.05, P.radR * 0.24, 0.085, M.cal);
@@ -2264,6 +2269,7 @@
             ebeneMax: 0.7, // rad: steiler traegt die Vier-Punkt-Ebene nur, wo der Grund unter dem Ursprung auf ihr liegt
             ebeneTol: 0.5, // m: so nah muss der Grund unter dem Ursprung an einer steilen Ebene liegen (sonst: Kante)
             stufeRad: 0.5, // Anteil radR: die Stufe, die ein Rad in einem Schritt hinaufsteigt (hoeher ist eine Wand)
+            radHub: 0.6, // Anteil radR: so weit federt ein Rad einzeln zu seinem Boden (die Ebene der vier ist eine Ebene)
             luftEps: 0.02, // m: so weit unter der Fallkurve verliert das Rad den Griff (darunter haftet es)
             nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)

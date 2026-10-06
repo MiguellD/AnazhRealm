@@ -60020,14 +60020,16 @@ class AnazhRealm {
     // Matrix): T(pos.x, pos.y-0.5, pos.z) × S(scale). Spiegelt exakt, was
     // `_rebuildArchitectureMesh` der klassischen Group gibt (group.position
     // = baseY = pos.y-0.5, group.scale = scalar(scale), keine Rotation).
-    _archEntryWorldMatrix(entry, out) {
+    // `ungefedert` (Welle L, Q13 F-D8): die Lage der RÄDER — Gelände-Nick und -Wank ja, die Aufbau-Federn (Nick, Kurven-
+    // Wank, Hub) nein: beim Bremsen taucht der Aufbau, die Räder bleiben am Boden.
+    _archEntryWorldMatrix(entry, out, ungefedert) {
         const m = out || new THREE.Matrix4();
         // HEAVE (N7-Rest, 19.07.) — der Squat des gerittenen Studio-Gefaehrts
         // reist in die Instanz-Matrix (0/undefined fuer alles Nicht-Gerittene =
         // byte-alte Matrix; dasselbe Muster wie rp/rr unten).
         const baseY =
             (Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0) +
-            (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
+            (!ungefedert && Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         // PRO-INSTANZ-ROTATION: `entry.rotationY` (seed-gesetzt für Bäume/Felsen, default 0 = Bauwerke
         // unberührt) dreht die Instanz um die Hoch-Achse — sonst liest sich ein Wald als Klon-Feld. Reine
@@ -60037,13 +60039,13 @@ class AnazhRealm {
         // entry._ridePitch setzt nur _tickMountedMovement (Feder-Rezept), sonst unveränderte Matrix. Gelände-
         // Nick addiert, Wank als R_z danach. NUR Optik — Kollisions-AABB/Blocker lesen rotationY allein.
         const rp =
-            (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
+            (!ungefedert && Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
             (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
         // ZENSUS-REST V18.488 — der Kurven-Wank addiert auf den Gelände-Wank
         // (derselbe R_z wie der Group-Pfad; 0 für Nicht-Gerittenes).
         const rr =
             (Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0) +
-            (Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
+            (!ungefedert && Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
         if (ry !== 0) {
             const c = Math.cos(ry);
             const sn = Math.sin(ry);
@@ -66036,11 +66038,21 @@ class AnazhRealm {
             this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        let ewU = null; // die ungefederte Lage der Räder (erst beim ersten Rad-Leaf)
         for (let i = 0; i < entry.instSlots.length && i < flat.leaves.length; i++) {
             const { key, slot } = entry.instSlots[i];
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             if (!g) continue;
-            m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
+            const lf = flat.leaves[i];
+            if (lf.rad && entry._fahr) {
+                if (!ewU)
+                    ewU = this._archEntryWorldMatrix(
+                        entry,
+                        this._archTmpRadU || (this._archTmpRadU = new THREE.Matrix4()),
+                        true
+                    );
+                this._archRadMatrix(entry, lf, ewU, m);
+            } else m.multiplyMatrices(ew, lf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
             g.mesh.instanceMatrix.needsUpdate = true;
             // SUBMIT-WAL — Matrix-Mutation einer ggf. gebündelten Gruppe (Fahrzeug-
@@ -66050,6 +66062,37 @@ class AnazhRealm {
             // THREE cacht sie sonst stale).
             g.mesh.boundingSphere = null;
         }
+    }
+
+    // DAS RAD IM RITT (Welle L, Q13 F-D8 — Befund 06.10.: die Studio-Instanz war starr, 12 Blätter mit unveränderter
+    // relativer Matrix — kein Rad rollte oder lenkte, beim Bremsen tauchten die Vorderräder 7,4–11,1 cm in den Boden).
+    // Die Matrix eines Rad-Leafs je Schritt: ungefedert (`ewU`: Gelände-Lage ohne Aufbau-Federn) · Welt-Skala · Nabe ·
+    // Lenk-Einschlag (vorn, `_rideSteerYaw` = Lenksäule des Kerns) · Drehung π der Gegenseite · Rolle um die Achse
+    // (`_fahr.wheelAng` = Weg/radR des Kerns, die Gegenseite dreht im Rad-Raum gegenläufig, rollt also gleich), und das Rad
+    // federt einzeln auf seinen Boden (der Aufstandspunkt der Ruhe-Lage gegen `_fahrBoden`, gedeckelt bei ±Rad-Hub
+    // vehicle-core FAHR.schritt.radHub × radR) — die Ebene der vier Räder ist eine Ebene, der Boden nicht.
+    _archRadMatrix(entry, lf, ewU, out) {
+        const rd = lf.rad;
+        const fz = entry._fahr;
+        const R = this._archTmpRadR || (this._archTmpRadR = new THREE.Matrix4());
+        const Q = this._archTmpRadQ || (this._archTmpRadQ = new THREE.Matrix4());
+        const lenk = rd.front && Number.isFinite(entry._rideSteerYaw) ? entry._rideSteerYaw : 0;
+        const ang = Number.isFinite(fz.wheelAng) ? fz.wheelAng : 0;
+        R.makeRotationY(lenk + rd.dreh);
+        R.multiply(Q.makeRotationZ(rd.dreh ? ang : -ang));
+        R.setPosition(rd.hx, rd.hy, rd.hz);
+        out.multiplyMatrices(ewU, rd.welt).multiply(R);
+        // das Rad federt einzeln auf seinen Boden: der Aufstandspunkt (unter der Nabe, y 0 im Vorlagen-Raum) gegen den Boden
+        const P = this._archTmpRadP || (this._archTmpRadP = new THREE.Vector3());
+        P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
+        const boden = this._fahrBoden(entry)(P.x, P.z);
+        if (Number.isFinite(boden)) {
+            const VC = globalThis.__vehicleCore;
+            const radR = entry._fahrSatz && Number.isFinite(entry._fahrSatz.radR) ? entry._fahrSatz.radR : 0.34;
+            const hub = (VC && VC.FAHR && VC.FAHR.schritt ? VC.FAHR.schritt.radHub : 0.6) * radR;
+            out.elements[13] += Math.max(-hub, Math.min(hub, boden - P.y));
+        }
+        return out;
     }
 
     // Eintrag aus der Registry entfernen (Slots freigeben). Default räumt IMMER BEIDE Slot-Sätze (Primär +
@@ -71508,6 +71551,9 @@ class AnazhRealm {
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
         if (m.tuer && typeof m.tuer.seite === "number") mesh.userData.__tuer = m.tuer;
+        // WELLE L (Q13 F-D8) — das RAD reist ans Mesh (Umschlag out.rad, additiv): die Gestalt der Ecke 0 nabenrelativ,
+        // `raeder` nennt jede Ecke — der Flatten setzt es je Ecke als Instanz, der Ritt dreht und lenkt sie.
+        if (m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length) mesh.userData.__rad = m.rad;
         // DER WURF-TEIL (W6, Umschlag out.wurf, additiv): die Baum-L1 nennt je Teil die Zahl ihrer werfenden Dreiecke
         // (der Vorsatz des Index) — der Schatten-Zwilling wirft nur ihn (`_foundrySchattenGeom`).
         if (Number.isInteger(m.wurf)) mesh.userData.__wurf = m.wurf;
@@ -72199,6 +72245,8 @@ class AnazhRealm {
                     localMatrix: I,
                     // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
                     tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
+                    // Welle L (Q13 F-D8) — das Rad der Ecke 0 (nabenrelativ); unten je Ecke als Instanz gesetzt
+                    rad: child.userData && child.userData.__rad ? child.userData.__rad : undefined,
                     sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
                     // der Wurf-Teil des Teils (Dreiecke des Index-Vorsatzes, die werfen), wo das Studio ihn nennt
                     wurf: child.userData && Number.isInteger(child.userData.__wurf) ? child.userData.__wurf : undefined,
@@ -72214,6 +72262,33 @@ class AnazhRealm {
                 });
             }
             this._foundryFlatVerschmelzen(group, leaves);
+            // DIE RÄDER (Welle L, Q13 F-D8): ein Rad-Leaf (die Teile der Ecke 0, nabenrelativ, je Dreh-Klasse
+            // verschmolzen) steht je Ecke als EIGENE Instanz derselben Gruppe (derselbe leafKey): Ruhe-Lage =
+            // Welt-Skala · Nabe(Ecke) · Drehung π für die Gegenseite. Der Ritt schreibt ihre Matrix je Schritt neu
+            // (`_archInstanceUpdate`: Rolle, Lenk-Einschlag, ungefedert) — die geteilte Geometrie bleibt unberührt.
+            for (let i = leaves.length - 1; i >= 0; i--) {
+                const lf = leaves[i];
+                if (!lf.rad) continue;
+                const ecken = lf.rad.raeder.map((rd, ecke) => {
+                    const m4 = new THREE.Matrix4().makeRotationY(rd.dreh || 0);
+                    m4.setPosition(rd.hx, rd.hy, rd.hz);
+                    return Object.assign({}, lf, {
+                        localMatrix: new THREE.Matrix4().multiplyMatrices(I, m4),
+                        rad: {
+                            ecke,
+                            dreht: !!lf.rad.dreht,
+                            front: !!rd.front,
+                            hx: rd.hx,
+                            hy: rd.hy,
+                            hz: rd.hz,
+                            dreh: rd.dreh || 0,
+                            welt: I, // die Welt-Skala der Vorlage (geteilt)
+                        },
+                        _eigen: ecke === 0 ? lf._eigen : false, // die verschmolzene Geometrie gehört EINER Ecke
+                    });
+                });
+                leaves.splice(i, 1, ...ecken);
+            }
             if (zwillingsQuelle) {
                 // Die Teile (schon verschmolzen) werfen als Zwilling (`_foundrySchattenGeom`, Stempel 3); die Gestalt
                 // gehört dem Teil dieses Flats und fällt mit ihm. Nennt die Stufe einen WURF-TEIL (B2c `wurf`, Baum-L1),
