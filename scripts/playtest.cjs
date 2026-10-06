@@ -37682,7 +37682,8 @@ async function checkBandRauschGesetz(ctx) {
             for (let i = 0; i < P; i++) {
                 const h = mxHash(i, j, 0) & 15;
                 const g = [mxGrad(h, 1, 0, 0), mxGrad(h, 0, 1, 0), mxGrad(h, 0, 0, 1)];
-                for (let c = 0; c < 3; c++) if (texel(i, j, c, 0) !== 127 * g[c]) falsch++;
+                // unorm: −1 · 0 · +1 = 0 · 127 · 254 (nie snorm — nicht überall Render-Ziel)
+                for (let c = 0; c < 3; c++) if (texel(i, j, c, 0) !== 127 * (g[c] + 1)) falsch++;
                 if (g[2] === 0) ebenen.xy++;
                 else if (g[1] === 0) ebenen.xz++;
                 else ebenen.yz++;

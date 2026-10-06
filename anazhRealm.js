@@ -27058,8 +27058,10 @@ class AnazhRealm {
     // Die Bytes des Rausch-Atlas (rein, ohne THREE): je Gitter-Punkt (i, j) der Gradient von MaterialX — der Hash
     // `mx_hash_int(i, j, 0)` (Jenkins lookup3, bit-genau wie das vendored WGSL) und die Achsen-Regel `mx_gradient_float`
     // (u = h < 8 ? x : y; v = h < 4 ? y : h ∈ {12, 14} ? x : z; Vorzeichen aus Bit 0 und 1) —, GEPACKT je Komponente: das
-    // Texel (3i + c, j) trägt die Komponente c der vier Ecken (i, j) · (i+1, j) · (i, j+1) · (i+1, j+1) als RGBA8 snorm
-    // (±1 = ±127). So liest eine Gitter-Zelle EINE Komponente ihrer vier Ecken mit einem Texel.
+    // Texel (3i + c, j) trägt die Komponente c der vier Ecken (i, j) · (i+1, j) · (i, j+1) · (i+1, j+1) als RGBA8 unorm
+    // (−1 · 0 · +1 = 0 · 127 · 254, der Leser rechnet v · 255/127 − 1). So liest eine Gitter-Zelle EINE Komponente ihrer vier
+    // Ecken mit einem Texel. Nie snorm: r184 legt jede Daten-Textur auch als Render-Ziel an, rgba8snorm ist das nur mit dem
+    // Feature texture-formats-tier1 — swiftshader fehlt es (Invalid TextureView im Boot, gate:analog-nah).
     static _rauschAtlasDaten() {
         const P = AnazhRealm.RAUSCH_GESETZ.P;
         const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
@@ -27089,7 +27091,7 @@ class AnazhRealm {
                 g[o + u] += h & 1 ? -1 : 1;
                 g[o + v] += h & 2 ? -1 : 1;
             }
-        const out = new Int8Array(3 * P * P * 4);
+        const out = new Uint8Array(3 * P * P * 4);
         for (let j = 0; j < P; j++)
             for (let i = 0; i < P; i++) {
                 const i1 = (i + 1) % P;
@@ -27097,7 +27099,7 @@ class AnazhRealm {
                 const ecken = [j * P + i, j * P + i1, j1 * P + i, j1 * P + i1];
                 for (let c = 0; c < 3; c++) {
                     const o = (j * 3 * P + 3 * i + c) * 4;
-                    for (let e = 0; e < 4; e++) out[o + e] = 127 * g[ecken[e] * 3 + c];
+                    for (let e = 0; e < 4; e++) out[o + e] = 127 * (g[ecken[e] * 3 + c] + 1);
                 }
             }
         return out;
@@ -29256,7 +29258,13 @@ class AnazhRealm {
         const T = THREE.TSL;
         const R = AnazhRealm.RAUSCH_GESETZ;
         const P = R.P;
-        const tex = new THREE.DataTexture(AnazhRealm._rauschAtlasDaten(), 3 * P, P, THREE.RGBAFormat, THREE.ByteType);
+        const tex = new THREE.DataTexture(
+            AnazhRealm._rauschAtlasDaten(),
+            3 * P,
+            P,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType
+        );
         tex.name = "rausch-atlas";
         tex.magFilter = THREE.NearestFilter;
         tex.minFilter = THREE.NearestFilter;
@@ -29264,8 +29272,11 @@ class AnazhRealm {
         tex.needsUpdate = true;
         const [A, B] = R.schraeg;
         const m = T.int(P - 1);
-        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel
-        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
+        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, 0 · 127 · 254 → −1 · 0 · +1
+        const ecken = (i, j, c) =>
+            T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j))
+                .mul(255 / 127)
+                .sub(1.0);
         const blende = (t) =>
             t
                 .mul(t)
