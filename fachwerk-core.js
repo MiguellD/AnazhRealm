@@ -197,7 +197,7 @@
   const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
   const stW = NORM.treppe;                                    // Haupttreppe-Breite = Norm
   const mainW = ((levels.length>=2)||(levels.length===1&&hasAttic)) ? stW : 0;   // LINKE Spur: Haupt-/Estrichtreppe — nur wenn nach oben gegangen wird
-  const loftW = ((levels.length>=2&&hasAttic)||P.keller) ? 0.90 : 0;             // FIX Issue5: RECHTE Spur trägt Speicher- ODER Kellertreppe — Keller koppelt nicht mehr parasitär an den Speicher
+  const loftW = ((levels.length>=2&&hasAttic)||P.keller||levels.length>=3) ? 0.90 : 0;   // FIX Issue5: RECHTE Spur trägt Speicher- ODER Kellertreppe — Keller koppelt nicht mehr parasitär an den Speicher · SPUR-GESETZ (Welle L): ab drei Geschossen läuft der zweite Lauf (OG→2.OG) auf der RECHTEN Spur — sie hat Breite, auch ohne Speicher und Keller (vorher 0 m: die Treppe ins 2. OG war ein Null-Lauf, 44 von 270 Siedlungs-Häusern)
   const shaftHalf = (mainW+loftW)/2;                          // GESETZ: Schacht hält beide (ggf. nur eine) Spur nebeneinander, Breite daraus abgeleitet
   const fw  = Math.max(W*0.15, NORM.flur + shaftHalf + 0.06); // Flur-Halbbreite ABGELEITET: Lane = fw−Schacht/2 ≥ NORM.flur
 
@@ -308,7 +308,9 @@
   if(levels.length===1 && hasAttic){                                                        // GESETZ: kein Zwischengeschoss, aber ein NUTZBARER Estrich → es MUSS eine Treppe dorthin geben; bei flachem Dach KEINE Treppe (sonst sticht sie raus)
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
-  if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R', dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
+  if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
+    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+0.3));                            // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach)
+    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
     LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});

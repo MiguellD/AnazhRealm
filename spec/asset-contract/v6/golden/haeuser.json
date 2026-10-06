@@ -424,33 +424,33 @@
     },
     "hanseatisch-s7-L0": {
       "objects": 16,
-      "vertices": 239178,
-      "sha256": "a4f847c643d290c9804250e2794c2bff7b1bd579e47249437c93465a76700453"
+      "vertices": 239034,
+      "sha256": "7e940373f8e9e0dfc31da5d1c193030740399ee1e90b2b751104cb070d5037df"
     },
     "hanseatisch-s7-L1": {
       "objects": 11,
       "vertices": 54618,
-      "sha256": "ec78892654741bbf496a97f4af6e1db9b26cdd9737afce4007c32323f49b35f2"
+      "sha256": "9b2a5317a62e4cb60c91b581a3428a086b9d09aca9f5b4fe4fcdefd8fd29da39"
     },
     "hanseatisch-s7-L2": {
       "objects": 3,
       "vertices": 8442,
-      "sha256": "d3468b67993c9b1b574ad0e1c5aa4166becaed54801de2f85902fb30581f18cf"
+      "sha256": "4dc7af710dfffe839b614ba9640adf06e52c2665a426d91cc65638f67771ec74"
     },
     "hanseatisch-s12345-L0": {
       "objects": 16,
-      "vertices": 185442,
-      "sha256": "148637f713fe8040902345ae4849e2a73594b6dc76b4e5223582c1a5c29a03b9"
+      "vertices": 185298,
+      "sha256": "fa9d666759b9ff57015c518fc3b599b37e5e8e6d3ba45738f985c7bb8b8cffc4"
     },
     "hanseatisch-s12345-L1": {
       "objects": 11,
       "vertices": 64650,
-      "sha256": "c0a07dfaa5f99469751a8ef3b7944f33b03d4985a21175b28e6cf02ce2deeaf3"
+      "sha256": "ae155b78e7bef8f05b1f45552a4f7274e0ab34d0c86c1b8d6093aa21321d414f"
     },
     "hanseatisch-s12345-L2": {
       "objects": 3,
       "vertices": 8298,
-      "sha256": "246e168694f9333b70275bb36e0376a1c1d61bea7e7cb8f4164a1dbb6d7c5f1f"
+      "sha256": "da7445f9e8d4f011c1c789e3ff37ee090757749733663f39312aa57352841f41"
     },
     "georgian-s7-L0": {
       "objects": 17,
