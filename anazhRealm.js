@@ -88117,10 +88117,54 @@ class AnazhRealm {
         h.schub.push(ax * best, az * best);
     }
 
+    // DAS GLEITEN AN DER WAND (PM_ClipVelocity, Quake/Source) — DIE Schleife des EINEN Kontakt-Lösers für beide Körper: die
+    // Kapsel (`_stepCharacter` 5b) und die Hülle des Wagens (`_fahrHuelleKontakt`; vorher eine Kopie, Gegenprüfung 07.10.).
+    // `wand(nx, nz, vx, vz)` meldet am Kandidaten den Kontakt-Punkt {x, y, z} oder null; je Kontaktebene fällt die
+    // Normal-Komponente der Geschwindigkeit (n = horizontale Spur der `_fieldGradient`-Außennormale am Kontakt-Punkt), bis
+    // SLIDE_CLIP_PLANES Ebenen, jede Iteration am NEUEN Kandidaten; |∇| ≈ 0 oder rein vertikale Normale → fail-closed
+    // Voll-Stopp (nie eindringen). Schreibt {x, z, vx, vz} in `aus`.
+    _wandGleiten(x0, z0, vx, vz, dt, wand, aus) {
+        let nx = x0 + vx * dt;
+        let nz = z0 + vz * dt;
+        let w = vx !== 0 || vz !== 0 ? wand(nx, nz, vx, vz) : null;
+        if (w) {
+            const nrm = this._kopplungClipN || (this._kopplungClipN = {});
+            let frei = false;
+            for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) {
+                this._fieldGradient(w.x, w.y, w.z, nrm);
+                const nh = Math.hypot(nrm.x, nrm.z);
+                if (!(nrm.mag > 1e-6) || !(nh > 1e-4) || !Number.isFinite(nh)) break; // NaN-Wand
+                const nhx = nrm.x / nh;
+                const nhz = nrm.z / nh;
+                const into = vx * nhx + vz * nhz;
+                if (into >= -1e-9) break; // keine Bewegung mehr IN die Ebene → festgefahren
+                vx -= nhx * into; // PM_ClipVelocity: die Ebenen-Normal-Komponente fällt
+                vz -= nhz * into;
+                nx = x0 + vx * dt;
+                nz = z0 + vz * dt;
+                w = wand(nx, nz, vx, vz);
+                if (!w) {
+                    frei = true;
+                    break;
+                }
+            }
+            if (!frei) {
+                nx = x0; // fail-closed: der Voll-Stopp vor der Wand (nie eindringen)
+                nz = z0;
+                vx = 0;
+                vz = 0;
+            }
+        }
+        aus.x = nx;
+        aus.z = nz;
+        aus.vx = vx;
+        aus.vz = vz;
+        return aus;
+    }
+
     // DER KONTAKT DER HÜLLE im EINEN Kontakt-Löser (`_stepCharacter` ruft ihn für den gerittenen Gesetz-Wagen statt der
     // Kapsel-Schritte 5b · 6 · 7): (1) GELÄNDE — ragt das Feld an einem Umriss-Punkt steil über Ebene + Stufe (oder auf
-    // Brust-Höhe), gleitet der Wagen an der Wand (PM_ClipVelocity an der Feld-Normale, bis SLIDE_CLIP_PLANES Ebenen; sonst
-    // steht er); (2) BAUWERKE + INSELN — das Rechteck gegen die Blocker-AABBs im EINEN Struktur-Löser
+    // Brust-Höhe), gleitet der Wagen an der Wand (`_wandGleiten`, dieselbe Schleife wie die Kapsel; sonst steht er); (2) BAUWERKE + INSELN — das Rechteck gegen die Blocker-AABBs im EINEN Struktur-Löser
     // (`_stepCharacterStructures`/`_stepCharacterIslands` mit der Hülle als Körper; ein Stamm dünner als die Rad-Stufe
     // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
     // den Raum eines Wesens (tetrapoda VERHALTEN.separation: halber Paar-Radius × bodySize). Was die Hülle schiebt, nimmt
@@ -88164,37 +88208,12 @@ class AnazhRealm {
             }
             return null;
         };
-        let nx = x0 + vx * dt;
-        let nz = z0 + vz * dt;
-        if (vx !== 0 || vz !== 0) {
-            let w = wandAm(nx, nz, vx, vz);
-            if (w) {
-                const nrm = this._kopplungClipN || (this._kopplungClipN = {});
-                let frei = false;
-                for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) {
-                    this._fieldGradient(w.x, w.y, w.z, nrm);
-                    const nh = Math.hypot(nrm.x, nrm.z);
-                    if (!(nrm.mag > 1e-6) || !(nh > 1e-4) || !Number.isFinite(nh)) break; // NaN-Wand
-                    const into = (vx * nrm.x + vz * nrm.z) / nh;
-                    if (into >= -1e-9) break;
-                    vx -= (nrm.x / nh) * into;
-                    vz -= (nrm.z / nh) * into;
-                    nx = x0 + vx * dt;
-                    nz = z0 + vz * dt;
-                    w = wandAm(nx, nz, vx, vz);
-                    if (!w) {
-                        frei = true;
-                        break;
-                    }
-                }
-                if (!frei) {
-                    nx = x0; // fail-closed: der Wagen steht vor der Wand (nie eindringen)
-                    nz = z0;
-                    vx = 0;
-                    vz = 0;
-                }
-            }
-        }
+        // das Gleiten an der Wand ist DIE Schleife des Kontakt-Lösers (`_wandGleiten`, wie die Kapsel in Schritt 5b)
+        const gl = this._wandGleiten(x0, z0, vx, vz, dt, wandAm, this._fahrHuelleGl || (this._fahrHuelleGl = {}));
+        const nx = gl.x;
+        const nz = gl.z;
+        vx = gl.vx;
+        vz = gl.vz;
         // (2) BAUWERKE + INSELN — der Rahmen dieses Schritts an die Hülle; zwei Durchgänge (eine Ecke zwischen zwei Boxen).
         k.fX = fX;
         k.fZ = fZ;
@@ -88211,7 +88230,9 @@ class AnazhRealm {
             this._stepCharacterIslands(pos, 0, 0, 0, k);
         }
         // (3) KREATUREN — das Rechteck gegen den Kreis eines Wesens (nächster Punkt; liegt die Mitte im Rechteck, der
-        // kürzeste Weg hinaus).
+        // kürzeste Weg hinaus). INTEGRATIONS-NAHT (Entscheid D2 der Welle L): dieser Kreis (VERHALTEN.separation ×
+        // bodySize) ist ein ZWEITER Tier-Leib neben dem EINEN Leib je Tier der Familie kreatur — die Integration lässt diesen
+        // Kontakt den kreatur-Leib lesen (kein dritter Leib hier).
         const wesen = this.state.creatures;
         if (wesen && wesen.length) {
             const SEP = AnazhRealm._verhaltenGesetz().separation;
@@ -88255,6 +88276,16 @@ class AnazhRealm {
                 pos.z += sz;
                 k.schub.push(sx, sz);
             }
+        }
+        // KEIN SCHUB INS GELÄNDE (Befund 07.10., Fahr-Linse S4: ein beim Remesh auf den Wagen gestreuter Felsbogen schob ihn
+        // 3,3 m in den Hang — 2,43 m unter dem Boden, und die Wand-Regel der Vertikale hielt ihn dort für immer): trifft die
+        // geschobene Lage eine Wand in Schub-Richtung, bleibt die Hülle am Kandidaten (fail-closed, nie eindringen); der
+        // Schub nimmt der Fahrt trotzdem die Komponente in die Berührung.
+        const schubX = pos.x - nx;
+        const schubZ = pos.z - nz;
+        if ((schubX !== 0 || schubZ !== 0) && wandAm(pos.x, pos.z, schubX, schubZ)) {
+            pos.x = nx;
+            pos.z = nz;
         }
         // Was die Hülle schob, nimmt der Fahrt die Komponente in die Berührung.
         for (let i = 0; i < k.schub.length; i += 2) {
@@ -88401,49 +88432,40 @@ class AnazhRealm {
         // (Terrain im Körperband feetY+STEP_UP..feetY+1.5, unter Augenhöhe → Tunnel-Decken zählen nicht)
         // wird v je Kontaktebene geclippt, v −= n·(v·n), bis SLIDE_CLIP_PLANES Ebenen (jede Iteration am NEUEN
         // Kandidaten); n = horizontale Spur der `_fieldGradient`-Außennormale. |∇| ≈ 0 oder rein vertikale
-        // Normale → fail-closed Voll-Stopp (nie Eindringen). Läuft VOR der Struktur-/Kugel-Auflösung.
+        // Normale → fail-closed Voll-Stopp (nie Eindringen). Läuft VOR der Struktur-/Kugel-Auflösung. Die Schleife ist
+        // DIE des Kontakt-Lösers (`_wandGleiten`, dieselbe für die Hülle des Wagens).
         if (!fahrHuelle && (vx !== 0 || vz !== 0)) {
             const wallLine = feetY + AnazhRealm.PLAYER_STEP_UP + 0.05;
             // Wand-Probe am Kandidaten: (a) Band-Probe feetY+STEP_UP..feetY+1.5 (findet
             // Ledges/Wand-Köpfe im Körperband), (b) Solid-Probe auf Rumpf-Höhe feetY+1.1
             // (fängt die HOHE Wand, deren Kopf über dem Band liegt — dort startet die
             // Band-Probe im Soliden und sieht innerhalb des Bandes keine Kante). Liefert
-            // die Probe-Höhe für den Gradienten oder null (frei).
+            // den Kontakt-Punkt (Probe-Höhe für den Gradienten) oder null (frei).
+            const pt = this._kopplungWandP || (this._kopplungWandP = { x: 0, y: 0, z: 0 });
             const wallAt = (px, pz) => {
+                let y = null;
                 const sB = this._fieldSurfaceBelow(px, feetY + 1.5, pz, 1.5 - AnazhRealm.PLAYER_STEP_UP);
-                if (sB !== null && sB > wallLine) return Math.min(sB, feetY + 1.1);
-                if (this._fieldSolid(px, feetY + 1.1, pz)) return feetY + 1.1;
-                return null;
+                if (sB !== null && sB > wallLine) y = Math.min(sB, feetY + 1.1);
+                else if (this._fieldSolid(px, feetY + 1.1, pz)) y = feetY + 1.1;
+                if (y === null) return null;
+                pt.x = px;
+                pt.y = y;
+                pt.z = pz;
+                return pt;
             };
-            let wallY = wallAt(nx, nz);
-            if (wallY !== null) {
-                const nrm = this._kopplungClipN || (this._kopplungClipN = {});
-                let cleared = false;
-                for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) {
-                    this._fieldGradient(nx, wallY, nz, nrm);
-                    const nh = Math.hypot(nrm.x, nrm.z);
-                    if (!(nrm.mag > 1e-6) || !(nh > 1e-4) || !Number.isFinite(nh)) break; // NaN-Wand
-                    const nhx = nrm.x / nh;
-                    const nhz = nrm.z / nh;
-                    const into = vx * nhx + vz * nhz;
-                    if (into >= -1e-9) break; // keine Bewegung mehr IN die Ebene → festgefahren
-                    vx -= nhx * into; // PM_ClipVelocity: die Ebenen-Normal-Komponente fällt
-                    vz -= nhz * into;
-                    nx = mesh.position.x + vx * dt;
-                    nz = mesh.position.z + vz * dt;
-                    wallY = wallAt(nx, nz);
-                    if (wallY === null) {
-                        cleared = true;
-                        break;
-                    }
-                }
-                if (!cleared) {
-                    nx = mesh.position.x; // fail-closed: der alte Voll-Stopp (nie eindringen)
-                    nz = mesh.position.z;
-                    vx = 0;
-                    vz = 0;
-                }
-            }
+            const gl = this._wandGleiten(
+                mesh.position.x,
+                mesh.position.z,
+                vx,
+                vz,
+                dt,
+                wallAt,
+                this._kopplungGl || (this._kopplungGl = {})
+            );
+            nx = gl.x;
+            nz = gl.z;
+            vx = gl.vx;
+            vz = gl.vz;
         }
 
         // 6. STRUKTUR-KOLLISION (feld-native, kein Ammo): die Kapsel gegen die soliden

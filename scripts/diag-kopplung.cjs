@@ -268,16 +268,15 @@ const server = http.createServer((req, res) => {
                     );
                 if (!(wRes.x < 8.01)) fail(`F2a: der Klip ließ die Wand durch (x=${wRes.x.toFixed(2)} ≥ 8)`);
                 // Selbst-Test F2a: Klip-Schleife tot (SLIDE_CLIP_PLANES → 0 Ebenen) →
-                // fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren.
-                const noClip = patchFn(
-                    r._stepCharacter,
-                    "_stepCharacter",
-                    "pl < AnazhRealm.SLIDE_CLIP_PLANES",
-                    "pl < 0"
-                );
-                if (!noClip) fail("F2a-Selbsttest: SLIDE_CLIP_PLANES-Marker nicht in `_stepCharacter` (Fix fehlt?)");
+                // fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren. Die Schleife ist DIE des
+                // Kontakt-Lösers (`_wandGleiten`, Welle L: Kapsel 5b und Wagen-Hülle teilen sie) — der Shim
+                // trägt die tote Schleife, der echte `_stepCharacter` ruft sie.
+                const noClip = patchFn(r._wandGleiten, "_wandGleiten", "pl < AnazhRealm.SLIDE_CLIP_PLANES", "pl < 0");
+                if (!noClip) fail("F2a-Selbsttest: SLIDE_CLIP_PLANES-Marker nicht in `_wandGleiten` (Fix fehlt?)");
                 else {
-                    const stopped = runWallWindow(mkWallShim(), noClip);
+                    const totShim = mkWallShim();
+                    totShim._wandGleiten = noClip;
+                    const stopped = runWallWindow(totShim);
                     const deadRatio = fRes.proj > 0 ? stopped.proj / fRes.proj : NaN;
                     o.zahlen.klipTot = { wand: stopped.proj, ratio: deadRatio };
                     if (!(deadRatio < 0.1))

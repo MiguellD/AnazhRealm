@@ -211,6 +211,25 @@ function pflichtWand(stamm) {
     ];
 }
 
+// ── H5 — DIE EINE GLEIT-SCHLEIFE (Node, kommentarfrei; Gegenprüfung 07.10.): die Gelände-Gleitschleife der Hülle war eine
+// Kopie der PM_ClipVelocity-Schleife aus Schritt 5b. Soll: die Schleife lebt EINMAL (`_wandGleiten`), Kapsel und Hülle
+// rufen sie. ──
+function huelleWand(stamm) {
+    const st = ohneKommentare(stamm);
+    const schleifen = (st.match(/pl < AnazhRealm\.SLIDE_CLIP_PLANES/g) || []).length;
+    const kapsel = fnBody(st, /\n {4}_stepCharacter\(delta, currentTime\) \{/) || "";
+    const huelle = fnBody(st, /\n {4}_fahrHuelleKontakt\([^)]*\) \{/) || "";
+    const ruftK = /this\._wandGleiten\(/.test(kapsel);
+    const ruftH = /this\._wandGleiten\(/.test(huelle);
+    return [
+        [
+            "H5 EINE Gleit-Schleife: die Kapsel (5b) und die Hülle rufen `_wandGleiten`, keine Kopie",
+            schleifen === 1 && ruftK && ruftH,
+            `Schleifen ${schleifen}× · Kapsel ruft ${ruftK} · Hülle ruft ${ruftH}`,
+        ],
+    ];
+}
+
 // ── K2–K5 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
 function kernProbe(VC) {
     if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function")
@@ -362,6 +381,10 @@ function stationVerdict(s) {
     const pf = s.pflicht;
     if (!pf) out.push("pflicht keine Probe");
     else if (pf.satz !== "bruch" || pf.ebene !== "bruch") out.push(`pflicht still (fahrSatz ${pf.satz} · rittEbene ${pf.ebene})`);
+    const hg = s.huelleHang;
+    if (!hg) out.push("huelle-hang keine Probe");
+    else if (!(hg.schub >= 0.5)) out.push(`huelle-hang vakuös (Schub ${(hg.schub || 0).toFixed(2)} m)`);
+    else if (!(hg.eindringen <= 0.01)) out.push(`huelle-hang Schub ins Gelände ${hg.eindringen.toFixed(2)} m`);
     if (!s.huelleSchub) out.push("huelle-schub keine Probe");
     else if (!(s.huelleSchub.weg <= STATION.schubM)) out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
     for (const [k, name] of [
@@ -1131,6 +1154,52 @@ async function probeLeben(expected) {
                 weg(gS);
             }
         }
+        // H4 — KEIN SCHUB INS GELÄNDE (Befund 07.10.: ein beim Remesh auf den Wagen gestreuter Felsbogen schob ihn 3,3 m in
+        // den Hang, 2,43 m unter den Boden; die Wand-Regel der Vertikale hielt ihn dort). Die ECHTE Methode
+        // `_fahrHuelleKontakt` mit der echten Hülle des GT auf einer synthetischen Welt (ein Objekt mit der Welt als Prototyp):
+        // eine senkrechte Gelände-Wand 0,3 m neben der rechten Flanke, ein Kasten überlappt die linke Flanke 0,8 m und schiebt
+        // zur Wand hin. Die Hülle darf nicht in die Wand.
+        {
+            const gT = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
+            if (gT) {
+                tasten(false);
+                for (let i = 0; i < 4; i++) frame(i);
+                const kEcht = r._fahrHuelle(gT);
+                if (kEcht) {
+                    const k = Object.assign({}, kEcht, { schub: [] });
+                    const WX = k.hw + 0.3;
+                    const w = Object.create(r);
+                    w.state = {
+                        architectures: [
+                            {
+                                id: -7,
+                                position: { x: -k.hw - 0.1, y: 0, z: 0 },
+                                blockerAABBs: [{ minX: -k.hw - 1.0, maxX: -k.hw + 0.8, minZ: -1, maxZ: 1, botY: -1, topY: 3, dick: 5 }],
+                            },
+                        ],
+                        creatures: [],
+                        floatingIslands: [],
+                        player: { mountedArch: -1 },
+                    };
+                    w._terrainColumnContext = () => null;
+                    w._fieldSolid = (px) => px > WX;
+                    w._fieldGradient = (px, py, pz, o) => {
+                        const out = o || {};
+                        out.x = -1;
+                        out.y = 0;
+                        out.z = 0;
+                        out.mag = 1;
+                        return out;
+                    };
+                    const ent = { _fahr: { y: 0, steig: 0, wank: 0 }, _rideYaw: 0 };
+                    const o = w._fahrHuelleKontakt(ent, k, 0, 0, 0, 0, 1 / 60);
+                    let schub = 0;
+                    for (let i = 0; i < k.schub.length; i += 2) schub += Math.hypot(k.schub[i], k.schub[i + 1]);
+                    S.huelleHang = { schub, eindringen: Math.max(0, o.x + k.hw - WX), x: o.x };
+                }
+                weg(gT);
+            }
+        }
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
@@ -1181,6 +1250,7 @@ async function probeLeben(expected) {
             raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01, spaltMax: 0.05 },
             huelleBlock: { tief: 0.0, abstand: 0.02 },
             huelleSchub: { weg: 0 },
+            huelleHang: { schub: 0.8, eindringen: 0 },
             huelleBaer: { tief: 0.01, abstand: 0.0 },
             pflicht: { satz: "bruch", ebene: "bruch" },
         };
@@ -1202,6 +1272,8 @@ async function probeLeben(expected) {
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
             ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
+            ["ein Kasten schiebt die Hülle 0,5 m in den Hang (Befund 07.10.)", { huelleHang: { schub: 0.8, eindringen: 0.5 } }, "huelle-hang Schub"],
+            ["der Kasten schiebt nicht (vakuös)", { huelleHang: { schub: 0, eindringen: 0 } }, "huelle-hang vakuös"],
             ["ein alter Kern: fahrSatz und rittEbene still null (Gegenprüfung 07.10.)", { pflicht: { satz: "null", ebene: "null" } }, "pflicht still"],
         ]) {
             const v = stationVerdict(Object.assign({}, gutS, bruch));
@@ -1243,6 +1315,15 @@ async function probeLeben(expected) {
             pGruen.every((w) => w[1]),
             pGruen.filter((w) => !w[1]).map((w) => w[0] + " " + w[2]).join(" | ")
         );
+        const hGruen = huelleWand(quelle);
+        check("Selbst-Test H5: der Arbeitsbaum ist grün", hGruen.every((w) => w[1]), hGruen.map((w) => w[2]).join(" | "));
+        const hRot = huelleWand(
+            quelle.replace(
+                /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
+                "$1\n        for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) break;"
+            )
+        );
+        check("Selbst-Test H5: der Vor-Stand (eine zweite Schleife in der Hülle) → H5 feuert", !hRot[0][1], hRot[0][2]);
         const pRot = pflichtWand(
             quelle
                 .replace(
@@ -1398,6 +1479,14 @@ async function probeLeben(expected) {
         !hat("kern") && !hat("huelle-schub"),
         S.huelleSchub ? `Weg des Wagens in 60 Frames ${S.huelleSchub.weg.toFixed(3)} m` : "keine Probe"
     );
+    check(
+        "H4 ein Kasten schiebt die Hülle zur Gelände-Wand: sie dringt nie ins Gelände (die echte Methode, synthetische Welt)",
+        !hat("kern") && !hat("huelle-hang"),
+        S.huelleHang
+            ? `Schub des Kastens ${S.huelleHang.schub.toFixed(2)} m · Eindringen in die Wand ${S.huelleHang.eindringen.toFixed(3)} m`
+            : "keine Probe"
+    );
+    for (const [name, ok, detail] of huelleWand(quelle)) check(name, ok, detail);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
