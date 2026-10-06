@@ -383,6 +383,16 @@ const FORBIDDEN = [
     { token: "_nahWieseKachelMeshes", fiel: "Welle 6 — die Senken der Nah-Wiese (_nahWieseSenken, _nahWieseSicht)" },
     { token: "_nahWieseKachelEntsorgen", fiel: "Welle 6 — die Kachel trägt nur Daten (_nahWieseKachelFaellt)" },
     { token: '"nahWiese:" + key', fiel: "Welle 6 — kein Mesh je Kachel (nahWiese:<v>:L<stufe>:<teil>)" },
+    // DIE STUFE 0 HAT EINE BEDEUTUNG (Welle 6, 06.10.): buildInstance baute den Strauch über die Steuer-Globale
+    // `__strauchZeile` als Nah-Stufe, das Labor (build() → emitTree, Knopf L0) als Klingen-Krone (~175k Dreiecke, kein
+    // Golden, kein Empfänger). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (die Stufen-Wand unten); die Globale
+    // und das Blatt-Budget des Strauch-Rezepts 0 kehren nie zurück.
+    {
+        token: "__strauchZeile",
+        fiel: "Welle 6 — die Holz-Zeile ist die Stufe selbst (stufenRezept, emitTree)",
+        auch: ["worlds/terrain/phytogenesis.js"],
+    },
+    { token: "[4000, 1500, 1400]", fiel: "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -746,6 +756,35 @@ function scanKartenWand(srcRoh) {
     return errs;
 }
 
+// DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
+// die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
+// buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
+// deriveParamsPlant liest dieselbe Abbildung. Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot
+// mit Zeile; fehlt ein Anker, ist die Abbildung aus emitTree oder deriveParamsPlant gewandert.
+const STUFEN_ANKER = [
+    "__lod = lod;",
+    "__lod = sLod;",
+    "__lod = stufenRezept(P.kind, stufe);",
+    "__lod = stufe;",
+    "const rezept = stufenRezept(ph.kind, __lod);",
+];
+function scanStufenWand(srcRoh) {
+    const code = stripComments(srcRoh);
+    const errs = [];
+    for (const a of STUFEN_ANKER) {
+        const n = code.split(a).length - 1;
+        if (n !== 1) errs.push(`Stufen-Wand: \`${a}\` steht ${n}× in foundry-core (Soll 1)`);
+    }
+    for (const m of code.matchAll(/__lod\s*=(?!=)[^;\n]*;?/g)) {
+        if (STUFEN_ANKER.includes(m[0])) continue;
+        const zeile = code.slice(0, m.index).split("\n").length;
+        errs.push(
+            `Stufen-Wand: foundry-core.js:${zeile} \`${m[0]}\` gibt der Bau-Stufe eine zweite Bedeutung (stufenRezept)`
+        );
+    }
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
@@ -785,6 +824,27 @@ function main() {
             console.log("❌ SELBST-TEST: die Karten-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
+        // Die Stufen-Wand muss feuern: buildInstance bildet die Stufe selbst ab (der Fall vom 05.10.), und emitTree
+        // verliert die Abbildung (das Labor bekäme wieder ein anderes Rezept als die Welt).
+        const kern = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
+        const zweite = scanStufenWand(kern.replace("__lod = lod;", "__lod = lod <= 1 ? 1 : lod;"));
+        const ohne = scanStufenWand(
+            kern
+                .replace("__lod = stufenRezept(P.kind, stufe);", "")
+                .replace("const rezept = stufenRezept(ph.kind, __lod);", "const rezept = __lod;")
+        );
+        const stufenFeuert =
+            scanStufenWand(kern).length === 0 &&
+            zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
+            ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
+            ohne.some((e) => /stufenRezept\(ph\.kind, __lod\);` steht 0×/.test(e));
+        if (!stufenFeuert) {
+            console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Stufen-Wand feuert (${zweite.find((e) => /zweite Bedeutung/.test(e))} · ${ohne.length} fehlende Anker)`
+        );
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
         const tmp = path.join(require("os").tmpdir(), "altlasten-selftest.js");
         fs.writeFileSync(tmp, 'const x = 1;\nfunction tickPhoenixDeath() {}\n// Kommentar darf "glutwesen" sagen\n');
@@ -816,6 +876,7 @@ function main() {
         .concat(scanLabBuster())
         .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
@@ -823,7 +884,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread.`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, die Bau-Stufe hat EINE Bedeutung (stufenRezept).`
     );
 }
 

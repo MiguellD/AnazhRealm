@@ -184,6 +184,9 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
     `strauch-s7-L0` trägt die Fingerabdrücke des alten `strauch-s7-L1`) und trägt die Kronen-Zeile beider Stufen;
     die Mittelstufe `shrub[1]` (12–26 m) dieselben Karten, das Holz ab 0,35·trunkR als Vierkant auf jedem 3. Ring
     (1 020 / 1 040 ≤ 1 100); beide werfen die Mittelstufe. Mess-Wiese (Band-Klasse busch): 121k → 34k Dreiecke.
+    Die Stufe hat EINE Bedeutung: `stufenRezept` (foundry-core, gelesen von deriveParamsPlant und emitTree) bildet
+    Stufe 0 und 1 auf das Rezept 1 ab, die Holz-Zeile ist die Stufe — der Labor-Knopf L0 baut byte-gleich die
+    Welt-L0 (vorher die Klingen-Krone, 175 016 Dreiecke); die Stufen-Wand in `gate:altlasten` hält es.
   Gebogene Normalen (Kronen-Normale, Vorderseite nach außen) wurden im Lab gemessen und verworfen: der
   Doppelseiten-Stoff ohne Durchlicht färbte die Unteransicht dunkel (8-m-Blick unter der Eiche L* 23,2 → 14,0)
   und setzte Glanzspitzen. Das Soll-Bild braucht höchstens 17,3k (Tanne s2, Eiche s2 17,2k): **`tree[0]` =
