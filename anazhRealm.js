@@ -44457,7 +44457,7 @@ class AnazhRealm {
     }
 
     // wear-Faktor auf den Treffer-Schaden des gehaltenen Geräts, linear: wear=0 → WEAR_STAT_FLOOR (0.3, nie 0 —
-    // ein abgenutztes Werkzeug wirkt noch), wear=1 → 1.0. Leser: _kampfRohSchaden (Welle L, K-D6).
+    // ein abgenutztes Werkzeug wirkt noch), wear=1 → 1.0. Der EINE Leser: _kampfKraft (Welle L, K-D6 — Klinge und Pfeil).
     _wearStatFactor(bp) {
         const w = this._blueprintWear(bp);
         const floor = AnazhRealm.WEAR_STAT_FLOOR;
@@ -75859,15 +75859,8 @@ class AnazhRealm {
         const p = this.state.player;
         if (!p) return false;
         if (p._swing && p._swing.t < p._swing.dauer) return false; // noch im Schwung
-        // WERKZEUG-WAND (Welle L, K-D6): ein verbrauchtes Gerät schlägt nicht — dieselbe Wand wie beim Abbau.
-        const bpW = this._heldImplementBlueprint();
-        if (bpW && this._blueprintWear(bpW) < AnazhRealm.WEAR_KAPUTT_SCHWELLE) {
-            this.log(
-                `Hieb: „${bpW.label || bpW.name}" ist verbraucht — repariere es (eine Material-Geste am Werkzeug).`,
-                "INFO"
-            );
-            return false;
-        }
+        // WERKZEUG-WAND (Welle L, K-D6): ein verbrauchtes Gerät schlägt nicht — dieselbe Wand wie Schuss und Abbau.
+        if (this._geraetVerbraucht(this._heldImplementBlueprint(), "Hieb")) return false;
         const now = performance.now() / 1000;
         p.lastAttackAt = now; // Alt-Leser bleiben versorgt (reine Chronik, kein Gate mehr)
         this._consumeMouseStamina();
@@ -75989,7 +75982,7 @@ class AnazhRealm {
             const hebel = 0.25 + tr.s * (reach - 0.25);
             const urteil = this._kampfUrteil(omega * hebel, 0, tr.zone);
             const bp = this._heldImplementBlueprint();
-            const roh = this._kampfRohSchaden(urteil, tr.zone, bp);
+            const roh = this._kampfRohSchaden(urteil, tr.zone, this._kampfKraft());
             this._kampfVerschleiss(bp);
             const res = this.damageCreature(c, roh, {
                 source: "player",
@@ -76042,21 +76035,37 @@ class AnazhRealm {
         return sc.trefferUrteil(km.mess, { vLat, vAx, edgeQ: 1, zone });
     }
 
-    // DER ROH-SCHADEN EINES TREFFERS (Welle L, K-D5): Körper-Kraft (stats.damage) × Güte × Wirkung × Zone × Verschleiß.
-    // Wirkung = die Energie des Urteils gegen die Arena-Eichung keRefJ (_trefferWirkung) — keine Klemme: die alte
-    // mEff-Klemme [0,6; 2,2] setzte 10 von 17 Rezepten auf 2,2. Ohne Urteil (Faust, Eigenwerk) Wirkung 1; die Zone
-    // liest dieselbe Tafel (schmiede ARENA.zonen).
-    _kampfRohSchaden(urteil, zone, bp) {
+    // DER ROH-SCHADEN EINES TREFFERS (Welle L, K-D5 + K-D6) — das EINE Gesetz für JEDE geführte Waffe, Klinge wie Pfeil:
+    // Kraft der Führung (_kampfKraft: Körper × Güte × Verschleiß) × Wirkung × Zone. Wirkung = die Energie des Urteils
+    // gegen die Arena-Eichung keRefJ (_trefferWirkung) — keine Klemme: die alte mEff-Klemme [0,6; 2,2] setzte 10 von 17
+    // Rezepten auf 2,2. Ohne Urteil (Faust, Eigenwerk) Wirkung 1; die Zone liest dieselbe Tafel (schmiede ARENA.zonen).
+    _kampfRohSchaden(urteil, zone, kraft) {
         const A = AnazhRealm._arenaGesetz();
         const zoneMul = urteil ? urteil.zoneMul : A.zonen[zone] ? A.zonen[zone].mul : 1;
-        const verschleiss = bp ? this._wearStatFactor(bp) : 1;
-        return (
-            (this._kampfStats().damage || 5) *
-            this._heldGueteFaktor() *
-            this._trefferWirkung(urteil) *
-            zoneMul *
-            verschleiss
+        return kraft * this._trefferWirkung(urteil) * zoneMul;
+    }
+
+    // DIE KRAFT DER FÜHRUNG (Welle L, K-D6): Körper (stats.damage) × Güte × Verschleiß des gehaltenen Geräts, gelesen im
+    // Augenblick des Hiebs oder des Lösens — der Pfeil trägt sie durch den Flug (ein Griff zur anderen Waffe ändert keinen
+    // Pfeil in der Luft). Der einzige Leser von _wearStatFactor: vorher setzte der Pfeil seine Kraft selbst zusammen,
+    // ohne Verschleiß (ein Bogen bei wear 0,5 traf voll). Die Faust: Güte 1, Verschleiß 1.
+    _kampfKraft() {
+        const bp = this._heldImplementBlueprint();
+        return this._kampfStats().damage * this._heldGueteFaktor() * (bp ? this._wearStatFactor(bp) : 1);
+    }
+
+    // DIE WERKZEUG-WAND (Welle L, K-D6): ein verbrauchtes Gerät (wear unter WEAR_KAPUTT_SCHWELLE) führt nichts — kein
+    // Hieb, kein Schuss, kein Abbau — und kostet nichts; der Spieler bekommt den Reparatur-Aufruf. Die Hand (bp null)
+    // verbraucht nie. EINE Wand für jede Führung: vorher trugen Hieb und Abbau je ihre Kopie, der Bogen keine.
+    _geraetVerbraucht(bp, verb) {
+        if (!bp) return false;
+        const wear = this._blueprintWear(bp);
+        if (wear >= AnazhRealm.WEAR_KAPUTT_SCHWELLE) return false;
+        this.log(
+            `${verb}: „${bp.label || bp.name}" ist verbraucht (${Math.round(wear * 100)} %) — repariere es (eine Material-Geste am Werkzeug) oder lege ein neues an.`,
+            "INFO"
         );
+        return true;
     }
 
     // DIE WIRKUNG EINES TREFFERS: die Energie des Urteils (KE am Kontakt — Schnitt · Stich · Schlag) gegen die
@@ -76074,9 +76083,9 @@ class AnazhRealm {
         return p && p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
     }
 
-    // DER VERSCHLEISS DES HIEBS (Welle L, K-D6): jeder Treffer zehrt das gehaltene Gerät wie ein Abbau-Hieb
-    // (_wearPerStrike) — bis hierher zehrte nur der Abbau, Kampf ließ die Klinge ewig neu (wear 0,9968 nach 16
-    // Treffern), und den Faktor _wearStatFactor las niemand.
+    // DER VERSCHLEISS DER FÜHRUNG (Welle L, K-D6): jeder Klingen-Treffer und jeder Schuss zehrt das gehaltene Gerät wie
+    // ein Abbau-Hieb (_wearPerStrike) — bis hierher zehrte nur der Abbau, Kampf ließ die Klinge ewig neu (wear 0,9968
+    // nach 16 Treffern) und den Bogen ebenso, und den Faktor _wearStatFactor las niemand.
     _kampfVerschleiss(bp) {
         if (!bp) return;
         this._setBlueprintWear(bp, this._blueprintWear(bp) - this._wearPerStrike(bp));
@@ -76344,13 +76353,17 @@ class AnazhRealm {
     // K-D8): E = ableitenBogen(task).energie — die Pfeil-Energie des Studios (SI, gegen Stretton 114 J geeicht),
     // v0 = √(2·E/mArrow) × Auszug; die Welt-Eichung zugJouleRef (28,9 J·zug·aus, 25–41 % der Studio-Energie) ist
     // GEFALLEN. Richtung = vom Mündungs-Punkt auf den Fadenkreuz-Punkt (_blickZiel — 1st und 3rd zielen durch
-    // dieselbe Kamera). Deterministisch; Stamina + Affekt wie der Hieb.
+    // dieselbe Kamera). Deterministisch; Stamina + Affekt wie der Hieb. Der Bogen ist eine geführte Waffe wie die Klinge
+    // (Welle L, K-D6): dieselbe Werkzeug-Wand, der Pfeil trägt die Kraft der Führung (_kampfKraft, mit Verschleiß) in
+    // das EINE Roh-Schaden-Gesetz, und jeder Schuss zehrt den Bogen (_kampfVerschleiss).
     _beginPlayerShot(rec, drawFrac) {
         const p = this.state.player;
         const pm = this.state.playerMesh;
         if (!p || !pm) return false;
         const now = performance.now() / 1000;
         if (Number.isFinite(p._shotCooldownUntil) && now < p._shotCooldownUntil) return false;
+        const bp = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(bp, "Schuss")) return false;
         const dauer = this._playerSwingDauer();
         p._shotCooldownUntil = now + dauer;
         p.lastAttackAt = now;
@@ -76407,12 +76420,13 @@ class AnazhRealm {
             vz: dz * v0,
             born: now,
             lastT: now,
-            // die Kraft des Schützen beim Lösen (Körper × Güte; der Bogen misst Güte faktorVoll) — die Wirkung urteilt
-            // der Treffer aus der Energie des Pfeils (trefferUrteil, Stich).
-            kraft: (this._kampfStats().damage || AnazhRealm._kampfKoeff("damage").base) * this._heldGueteFaktor(),
+            // die Kraft der Führung beim Lösen (Körper × Güte × Verschleiß, _kampfKraft) — die Wirkung urteilt der
+            // Treffer aus der Energie des Pfeils (trefferUrteil, Stich), der Schaden ist _kampfRohSchaden.
+            kraft: this._kampfKraft(),
             kb: this._kampfStats().knockback || 0,
             mesh: null,
         };
+        this._kampfVerschleiss(bp); // der Schuss zehrt den Bogen — NACH dem Lesen der Kraft, wie der Klingen-Treffer
         this._pfeilMeshAttach(pf);
         list.push(pf);
         return true;
@@ -76478,7 +76492,7 @@ class AnazhRealm {
                 const vv = Math.sqrt(pf.vx * pf.vx + pf.vy * pf.vy + pf.vz * pf.vz);
                 const sc = globalThis.__schmiedeCore;
                 const urteil = sc.trefferUrteil({ M: B.mArrow, mEffFrac: 1 }, { vLat: 0, vAx: vv, zone: hitTr.zone });
-                const res = this.damageCreature(hit, pf.kraft * this._trefferWirkung(urteil) * urteil.zoneMul, {
+                const res = this.damageCreature(hit, this._kampfRohSchaden(urteil, hitTr.zone, pf.kraft), {
                     source: "player",
                     fromPos: { x: ox, y: oy, z: oz },
                     knockback: pf.kb,
@@ -76801,21 +76815,10 @@ class AnazhRealm {
     // true, solange der Hieb zählt; false bei Erschöpfung.
     _strikeArchitecture(entry) {
         if (!entry) return false;
-        // WERKZEUG-WAND: ein verbrauchtes Gerät schlägt nicht — VOR der Stamina-Wand (kaputt kostet nichts).
-        // Modus-unabhängig (schöpfer darf reparieren, nicht mit Kaputtem arbeiten).
-        // Hände/leerer Slot → keine wear, durchlassen.
-        const heldName = this.state.player && this.state.player.equipped ? this.state.player.equipped.held : null;
-        const heldBp = heldName && this.state.blueprints ? this.state.blueprints[heldName] : null;
-        if (heldBp) {
-            const wear = this._blueprintWear(heldBp);
-            if (wear < AnazhRealm.WEAR_KAPUTT_SCHWELLE) {
-                this.log(
-                    `Abbauen: „${heldBp.label || heldName}" ist verbraucht (${Math.round(wear * 100)} %) — repariere es (eine Material-Geste am Werkzeug) oder lege ein neues an.`,
-                    "INFO"
-                );
-                return false;
-            }
-        }
+        // WERKZEUG-WAND (_geraetVerbraucht): ein verbrauchtes Gerät schlägt nicht — VOR der Stamina-Wand (kaputt kostet
+        // nichts), modus-unabhängig (schöpfer darf reparieren, nicht mit Kaputtem arbeiten); die Hand verbraucht nie.
+        const heldBp = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(heldBp, "Abbauen")) return false;
         const fit = this._harvestFitness(entry);
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode === "pfad") {
