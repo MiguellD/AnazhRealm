@@ -28710,7 +28710,32 @@ async function checkBandV18150Ride(ctx) {
                 parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
                 connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
             };
-            entry = r.spawnArchitecture("_t_ride_wagen", { x: pm.x + 60, y: pm.y, z: pm.z + 60 }, { silent: true });
+            // Welle L (Q5): die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
+            // erste Stelle um Spieler + 60 m, deren Gelände auf 12 m Fahrt × ±2 m Breite eine Ebene ist (Rest ≤ 0,2 m,
+            // Steigung ≤ 20 %). An (96, 60) stand der Wagen in einer Mulde (der Rand 2 m hoch auf 3 m) — ein Hindernis ist
+            // ein anderes Band (gate:fahr-leben H).
+            const pmAlt = { x: pm.x + 60, z: pm.z + 60 }; // wo die Bänder danach den Spieler erwarten (der alte Ort)
+            let ort = { x: pmAlt.x, z: pmAlt.z };
+            for (let i = 0; i < 12 * 16; i++) {
+                const ring = 2 + Math.floor(i / 12);
+                const cx = pm.x + Math.cos(((i % 12) * Math.PI) / 6) * ring * 24;
+                const cz = pm.z + Math.sin(((i % 12) * Math.PI) / 6) * ring * 24;
+                const h0 = r.getTerrainHeightAt(cx, cz);
+                const gx = (r.getTerrainHeightAt(cx + 2, cz) - r.getTerrainHeightAt(cx - 2, cz)) / 4;
+                const gz = (r.getTerrainHeightAt(cx, cz + 6) - r.getTerrainHeightAt(cx, cz - 3)) / 9;
+                if (!Number.isFinite(h0) || !(Math.hypot(gx, gz) <= 0.2)) continue;
+                let eben = true;
+                for (let dz = -3; dz <= 9 && eben; dz += 1.5)
+                    for (let dx = -2; dx <= 2 && eben; dx += 1) {
+                        const h = r.getTerrainHeightAt(cx + dx, cz + dz);
+                        if (!Number.isFinite(h) || Math.abs(h - (h0 + gx * dx + gz * dz)) > 0.2) eben = false;
+                    }
+                if (eben) {
+                    ort = { x: cx, z: cz };
+                    break;
+                }
+            }
+            entry = r.spawnArchitecture("_t_ride_wagen", { x: ort.x, y: pm.y, z: ort.z }, { silent: true });
             out.spawned = !!entry;
             if (!entry) return out;
             // (1) das Profil emergiert aus den Gelenken + der Masse.
@@ -28748,9 +28773,13 @@ async function checkBandV18150Ride(ctx) {
                 Number.isFinite(entry._rideYaw) &&
                 Math.hypot(vFahrt.x(), vFahrt.z()) > 0.5 &&
                 Math.abs(entry._rideYaw - yawTarget) < 0.2 &&
-                entry.mesh &&
-                Math.abs(entry.mesh.rotation.y - entry._rideYaw) < 1e-6;
+                // das Bild folgt der Gier: die Gruppe (mesh.rotation) oder die Instanz (rotationY = Template-Gier)
+                Math.abs((entry.mesh ? entry.mesh.rotation.y : entry.rotationY) - entry._rideYaw) < 1e-6;
             out.wheelsRoll = (entry._ridePhase || 0) > 0.3;
+            out.fahrZahlen =
+                `v ${Math.hypot(vFahrt.x(), vFahrt.z()).toFixed(2)} m/s · Bug ${(+entry._rideYaw).toFixed(3)} · Fahrt ` +
+                `${yawTarget.toFixed(3)} · Bild ${entry.mesh ? (+entry.mesh.rotation.y).toFixed(3) : "-"} · Rad-Phase ` +
+                `${(+(entry._ridePhase || 0)).toFixed(2)}`;
             r.state.playerVel.setValue(0, 0, 0);
             r.state._fieldVy = 0;
             // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
@@ -28762,6 +28791,8 @@ async function checkBandV18150Ride(ctx) {
             // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
             r.dismountArchitecture();
             out.dismounts = r.state.player.mountedArch === null;
+            // der Spieler steht danach, wo ihn die folgenden Bänder erwarten (der Aufstieg setzte ihn an den alten Ort)
+            pm.set(pmAlt.x, r.getTerrainHeightAt(pmAlt.x, pmAlt.z) + 1, pmAlt.z);
         } finally {
             if (entry) r.removeArchitecture(entry);
             delete r.state.blueprints._t_ride_wagen;
@@ -28780,7 +28811,8 @@ async function checkBandV18150Ride(ctx) {
     );
     check(
         "V18.150 Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
-        res.orients && res.wheelsRoll
+        res.orients && res.wheelsRoll,
+        res.orients && res.wheelsRoll ? "" : res.fahrZahlen
     );
     check("V18.150 Fahr-Tiefe: die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle)", res.movementConsumes);
     check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);

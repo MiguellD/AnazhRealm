@@ -33,6 +33,10 @@
 //       S2 Klippe: kein Höhen-Sprung je Sim-Schritt > 0,5 m (Befund 6,94/7,95 m), der Wagen fliegt (Luft-Schritte > 0)
 //       S3 Querhang: Fahrt längs eines 25–40°-Querhangs ohne Lenkung driftet quer talwärts (Befund 0,00 m) Soll ≥ 0,3 m
 //
+//   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER: der GT fährt mit W gegen einen Felsblock und gegen einen Bären; das
+//       Eindringen der Wagen-Hülle (exportDrive.huelle) in die Blocker-Boxen bzw. den Raum des Wesens (Befund: Bug
+//       1,97–2,32 m im Stamm, der Bär ganz im Wagen)                                                Soll ≤ 0,05 m
+//
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const puppeteer = require("puppeteer");
@@ -233,7 +237,7 @@ function kernProbe(VC) {
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
-const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3 };
+const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3 };
 function stationVerdict(s) {
     const out = [];
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
@@ -247,6 +251,15 @@ function stationVerdict(s) {
     }
     if (!s.quer) out.push("querhang nicht gefunden");
     else if (!(s.quer.drift >= STATION.querM)) out.push(`querhang ohne Abtrieb (Quer-Abdrift ${s.quer.drift.toFixed(2)} m)`);
+    for (const [k, name] of [
+        ["huelleBlock", "fels"],
+        ["huelleBaer", "baer"],
+    ]) {
+        const h = s[k];
+        if (!h) out.push(`huelle-${name} keine Probe`);
+        else if (!(h.abstand <= STATION.beruehrtM)) out.push(`huelle-${name} keine Berührung (Abstand ${h.abstand.toFixed(2)} m)`);
+        else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
+    }
     return out;
 }
 
@@ -632,6 +645,137 @@ async function probeLeben(expected) {
                 weg(g3);
             }
         }
+
+        // ═══ H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5) ═══
+        // Auf einer freien, trockenen, flachen Gasse (kein fremder Blocker in ±2,5 m auf 16 m) steht 9 m vor dem Wagen ein
+        // Hindernis; der GT fährt mit W hinein. Gemessen wird das EINDRINGEN der Wagen-Hülle (exportDrive.huelle: Bug bis
+        // Heck × ±bw, ein 0,1-m-Raster) in das Hindernis — in die Blocker-Boxen eines Felsblocks (`stein_block`) und in den
+        // Raum eines Bären (tetrapoda VERHALTEN.separation: halber Paar-Radius × bodySize) — und als Beweis der Berührung
+        // der kleinste Abstand am Ende (sonst wäre 0 Eindringen vakuös). Befund: Bug 1,97–2,32 m im Stamm, 2,17 m in der
+        // Wand, der Bär ganz im Wagen.
+        const gasse = (() => {
+            const frei = (x, zz, ux, uz) => {
+                for (let s = 0; s <= 16; s += 1) {
+                    const px = x + ux * s;
+                    const pz = zz + uz * s;
+                    const h0 = hh(px, pz);
+                    if (!Number.isFinite(h0) || nass(px, pz)) return false;
+                    if (s > 0 && Math.abs(h0 - hh(px - ux, pz - uz)) > 0.25) return false;
+                }
+                for (const e of st.architectures) {
+                    if (!e || !e.position || !e.blockerAABBs) continue;
+                    if (Math.hypot(e.position.x - x, e.position.z - zz) > 40) continue;
+                    for (const b of e.blockerAABBs) {
+                        const cx = (b.minX + b.maxX) / 2 - x;
+                        const cz = (b.minZ + b.maxZ) / 2 - zz;
+                        const l = cx * ux + cz * uz;
+                        const q = Math.abs(cx * uz - cz * ux);
+                        if (l > -4 && l < 18 && q < 2.5 + Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / 2) return false;
+                    }
+                }
+                return true;
+            };
+            for (let ring = 0; ring <= 6; ring++)
+                for (let k = 0; k < (ring ? 12 : 1); k++) {
+                    const x = mo[0] + Math.cos((k * Math.PI) / 6) * ring * 24;
+                    const zz = mo[1] + Math.sin((k * Math.PI) / 6) * ring * 24;
+                    for (let d = 0; d < 8; d++) {
+                        const a = (d * Math.PI) / 4;
+                        if (frei(x, zz, Math.sin(a), Math.cos(a))) return { x, z: zz, fahrt: a };
+                    }
+                }
+            return null;
+        })();
+        S.gasse = gasse;
+        const huelleProbe = async (hindernis) => {
+            if (!gasse) return null;
+            const gH = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
+            if (!gH) return null;
+            const h = r._fahrzeugGesetzFor(gH).drive.huelle;
+            const sc = Number.isFinite(gH.scale) ? gH.scale : 1;
+            const ux = Math.sin(gasse.fahrt);
+            const uz = Math.cos(gasse.fahrt);
+            const ziel = hindernis.setzen(gH.position.x + ux * 9, gH.position.z + uz * 9);
+            if (!ziel) {
+                weg(gH);
+                return null;
+            }
+            let tief = 0;
+            let abstand = Infinity;
+            let schritte = 0;
+            const messen = () => {
+                const ry = Number.isFinite(gH._rideYaw) ? gH._rideYaw : 0;
+                const fX = Math.sin(ry);
+                const fZ = Math.cos(ry);
+                abstand = Infinity;
+                for (let l = h.tailX * sc; l <= h.noseX * sc + 1e-6; l += 0.1)
+                    for (let q = -h.bw * sc; q <= h.bw * sc + 1e-6; q += 0.1) {
+                        const px = gH.position.x + l * fX + q * fZ;
+                        const pz = gH.position.z + l * fZ - q * fX;
+                        const t = hindernis.tiefe(ziel, px, pz);
+                        tief = Math.max(tief, t);
+                        abstand = Math.min(abstand, t > 0 ? 0 : hindernis.abstand(ziel, px, pz));
+                    }
+            };
+            const P4 = r._stepFixedSim;
+            r._stepFixedSim = function (simTime, dt) {
+                // das Hindernis steht VOR dem Kontakt und bei der Messung am selben Ort (das Hirn des Bären läuft im Frame)
+                hindernis.halten(ziel);
+                P4.call(this, simTime, dt);
+                hindernis.halten(ziel);
+                messen();
+                schritte++;
+            };
+            tasten(true, false);
+            for (let i = 0; i < 150; i++) frame(i);
+            tasten(false);
+            r._stepFixedSim = P4;
+            const vorn = (gH.position.x - gasse.x) * ux + (gH.position.z - gasse.z) * uz;
+            weg(gH);
+            hindernis.weg(ziel);
+            return { tief, abstand, schritte, vorn };
+        };
+        const boxTiefe = (boxes, px, pz) => {
+            let t = 0;
+            for (const b of boxes || []) {
+                if (px < b.minX || px > b.maxX || pz < b.minZ || pz > b.maxZ) continue;
+                t = Math.max(t, Math.min(px - b.minX, b.maxX - px, pz - b.minZ, b.maxZ - pz));
+            }
+            return t;
+        };
+        const boxAbstand = (boxes, px, pz) => {
+            let a = Infinity;
+            for (const b of boxes || []) {
+                const dx = Math.max(b.minX - px, 0, px - b.maxX);
+                const dz = Math.max(b.minZ - pz, 0, pz - b.maxZ);
+                a = Math.min(a, Math.hypot(dx, dz));
+            }
+            return a;
+        };
+        S.huelleBlock = await huelleProbe({
+            setzen: (x, zz) => {
+                const b = r.spawnArchitecture("stein_block", { x, y: hh(x, zz) + 0.5, z: zz }, { silent: true, precise: true });
+                if (b) r._populateBlockerAABBs(b);
+                return b && b.blockerAABBs && b.blockerAABBs.length ? b : null;
+            },
+            tiefe: (b, px, pz) => boxTiefe(b.blockerAABBs, px, pz),
+            abstand: (b, px, pz) => boxAbstand(b.blockerAABBs, px, pz),
+            halten: () => {},
+            weg: (b) => r.removeArchitecture(b),
+        });
+        const SEPW = Object.getPrototypeOf(r).constructor._verhaltenGesetz().separation;
+        S.huelleBaer = await huelleProbe({
+            setzen: (x, zz) => {
+                const c = r.spawnCreatureAt(x, hh(x, zz) + 0.5, zz, "calm", "baer", { precise: true });
+                if (!c) return null;
+                return { c, x, z: zz, y: c.position.y, rc: 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1) };
+            },
+            tiefe: (b, px, pz) => Math.max(0, b.rc - Math.hypot(px - b.c.position.x, pz - b.c.position.z)),
+            abstand: (b, px, pz) => Math.max(0, Math.hypot(px - b.c.position.x, pz - b.c.position.z) - b.rc),
+            // der Bär steht (sein Hirn läuft im Frame-Takt; die Probe hält ihn am Ort)
+            halten: (b) => b.c.position.set(b.x, b.y, b.z),
+            weg: (b) => r.removeCreature(b.c),
+        });
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
@@ -678,6 +822,8 @@ async function probeLeben(expected) {
             labor: { schritte: 180, maxM: 0.0001, bei: 3 },
             klippe: { sprung: 0.2, luft: 40 },
             quer: { drift: 1.2 },
+            huelleBlock: { tief: 0.0, abstand: 0.02 },
+            huelleBaer: { tief: 0.01, abstand: 0.0 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
@@ -685,6 +831,9 @@ async function probeLeben(expected) {
             ["Welt weicht 0,4 m vom Labor ab", { labor: { schritte: 180, maxM: 0.4, bei: 50 } }, "labor≠welt"],
             ["7,95 m Höhen-Sprung in einem Schritt (F-D6)", { klippe: { sprung: 7.95, luft: 40 } }, "klippe-sprung"],
             ["Querhang ohne Abtrieb: 0,00 m (F-D7)", { quer: { drift: 0.0 } }, "querhang"],
+            ["Bug 1,85 m im Fels (F-D4)", { huelleBlock: { tief: 1.85, abstand: 0 } }, "huelle-fels Eindringen"],
+            ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
+            ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
         ]) {
             const v = stationVerdict(Object.assign({}, gutS, bruch));
             check(`Selbst-Test S: ‚${name}' → die Linse nennt ${soll}`, v.length >= 1 && v[0].startsWith(soll), v.join(" · "));
@@ -806,6 +955,21 @@ async function probeLeben(expected) {
         S.quer
             ? `${S.querOrt.grad.toFixed(1)}° bei (${S.querOrt.x.toFixed(0)}, ${S.querOrt.z.toFixed(0)}) · ${S.quer.weg.toFixed(1)} m gefahren · Quer-Abdrift talwärts ${S.quer.drift.toFixed(2)} m`
             : vS.join(" · ")
+    );
+    console.log("=== H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5), echter Sim-Schritt ===");
+    const hz = (h, was) =>
+        h
+            ? `Eindringen der Hülle ${h.tief.toFixed(3)} m · Abstand am Ende ${h.abstand.toFixed(3)} m · ${h.vorn.toFixed(1)} m gefahren · ${h.schritte} Schritte`
+            : `keine Probe (${was})`;
+    check(
+        "H1 der GT fährt mit W gegen einen Felsblock: die Hülle hält an den Blocker-Boxen (Eindringen ≤ 0,05 m)",
+        !hat("kern") && !hat("huelle-fels"),
+        hz(S.huelleBlock, "stein_block")
+    );
+    check(
+        "H2 der GT fährt mit W gegen einen Bären: die Hülle hält am Raum des Wesens (Eindringen ≤ 0,05 m)",
+        !hat("kern") && !hat("huelle-baer"),
+        hz(S.huelleBaer, "baer")
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {

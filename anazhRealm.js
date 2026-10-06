@@ -31495,10 +31495,16 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
+        const scD = Number.isFinite(entry.scale) ? entry.scale : 1;
         for (const part of bp.parts) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part);
-            if (aabb) solidAABBs.push(aabb);
+            if (!aabb) continue;
+            // Welle L (Q5): ein STAMM (Zylinder-Teil) trägt seine Dicke — was dünner ist als die Stufe eines Rades (der
+            // Hasel-Trieb, der Ast), überrollt die Hülle des Wagens (`_fahrHuelleKontakt`); die Kapsel liest das Feld nie.
+            if (part.shape === "cylinder" && part.size)
+                aabb.dick = Math.min(Math.abs(part.size.x) || 0, Math.abs(part.size.z) || 0) * scD;
+            solidAABBs.push(aabb);
         }
         // Das FUNDAMENT ist Blocker-Wahrheit: der Sockel vom tiefsten Footprint-Punkt bis zur Haus-Basis
         // ist SOLID (Kapsel, Cell-Stempel, Wasser urteilen gleich — nicht unters Haus am Hang). Rotation
@@ -50470,6 +50476,7 @@ class AnazhRealm {
         entry._fahrSatz = null;
         entry._fahrSatzKey = null;
         entry._fahrBodenFn = null;
+        entry._fahrHuelleKette = null; // die Hülle als Körper (Q5) — je Aufstieg frisch aus dem Gesetz
         entry._rideHeave = 0; // frischer Squat-Zustand je Aufstieg
         entry._kamYaw = null; // N8 — die Chase-Cam snappt beim Aufstieg hinter den Wagen
         entry._kamT = 0;
@@ -50515,9 +50522,9 @@ class AnazhRealm {
             pm.z = entry.position.z;
             pm.y = entry.position.y - 0.5 + entry._sitzHeight; // der Sitz misst von der Basis (position.y − 0.5)
         }
-        // Kollision ruht im Sattel (Reiter + Gefährt = EIN Körper, die Spieler-Kapsel kollidiert): der
-        // statische Wagen-Körper blockierte sonst die Fahrt wie ein Bordstein. Beim Aufsteigen fällt er, der
-        // Lazy-Builder überspringt das gerittene Gefährt, Absteigen baut lazy neu. Profil wird dabei lesbar.
+        // Reiter + Gefährt = EIN Körper: die eigenen Blocker des gerittenen Werks blocken es nie (der Struktur-Löser
+        // überspringt riddenId); was kollidiert, ist die HÜLLE des Gesetz-Wagens (`_fahrHuelle`, Welle L Q5) bzw. ohne
+        // Fahr-Gesetz die Reiter-Kapsel. Absteigen baut die Blocker lazy neu. Profil wird dabei lesbar.
         const prof = this._vehicleProfile(entry);
         // Aufstieg in ein gesetz-gelenktes Werk schaltet in die Studio-Sicht (die Kern-Chase-Cam lebt im
         // third-Ast von _loopCamera); der vorige Modus kehrt beim Abstieg zurück.
@@ -87877,6 +87884,248 @@ class AnazhRealm {
         else st._fixedRenderPos.copy(mesh.position);
     }
 
+    // ===== DIE HÜLLE DES GERITTENEN WAGENS (Welle L, Q5 — Befund 06.10.: im Sattel kollidierte die Reiter-Kapsel r 0,35
+    // am Ursprung — der Bug stak 1,97–2,32 m im Fichtenstamm, 2,17 m in der Hauswand, 1,83 m in der Plattform, ein Bär
+    // ganz im Wagen). Der Körper des Gesetz-Fahrzeugs ist seine Hülle: ein Rechteck längs der Fahrt (Bug bis Heck, ±halbe
+    // Karosserie-Breite), das Band von der Rad-Ebene + Stufe (radR/2, vehicle-core FAHR.schritt.stufeRad) bis zum Dach.
+    // Studio-Fahrzeug: exportDrive.huelle; Teile-Werk: seine Hülle (die halbe Spanne längs, die halbe Breite quer). null:
+    // kein Fahr-Gesetz (dann trägt die Reiter-Kapsel).
+    _fahrHuelle(entry) {
+        if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
+        if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
+        const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+        let bug, heck, hw, dach;
+        if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX) {
+            bug = h.noseX * sc;
+            heck = h.tailX * sc;
+            hw = h.bw * sc;
+            dach = (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) * sc;
+        } else {
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const ext = bp ? this._compoundVisualExtent(bp) : null;
+            const halb = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
+            bug = halb;
+            heck = -halb;
+            hw = ext ? Math.max(0.3, (Math.min(ext.dx, ext.dz) * sc) / 2) : 0.6;
+            dach = ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5;
+        }
+        const VC = globalThis.__vehicleCore;
+        const radR = Number.isFinite(entry._fahrSatz.radR) ? entry._fahrSatz.radR : 0.34;
+        const stufe = VC && VC.FAHR && VC.FAHR.schritt ? VC.FAHR.schritt.stufeRad * radR : 0.5 * radR;
+        // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
+        // Flanke drei Punkte — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
+        const umriss = [];
+        const s2 = Math.SQRT1_2;
+        for (const [l, nl] of [
+            [bug, 1],
+            [heck, -1],
+        ]) {
+            umriss.push({ l, q: 0, nl, nq: 0 });
+            umriss.push({ l, q: hw, nl: nl * s2, nq: s2 });
+            umriss.push({ l, q: -hw, nl: nl * s2, nq: -s2 });
+        }
+        for (const t of [0.25, 0.5, 0.75])
+            for (const sq of [-1, 1]) umriss.push({ l: heck + (bug - heck) * t, q: sq * hw, nl: 0, nq: sq });
+        entry._fahrHuelleKette = {
+            bug,
+            heck,
+            mitte: (bug + heck) / 2,
+            hl: (bug - heck) / 2,
+            hw,
+            dach,
+            stufe,
+            umriss,
+            // der Rahmen dieses Schritts (`_fahrHuelleKontakt` setzt ihn): Bug-Achse, Quer-Achse, Band, Schübe
+            fX: 0,
+            fZ: 1,
+            qX: 1,
+            qZ: 0,
+            unten: 0,
+            oben: 0,
+            schub: [],
+        };
+        return entry._fahrHuelleKette;
+    }
+
+    // DIE HÜLLE GEGEN EINE AABB (der Körper-Fall des EINEN Struktur-Lösers `_stepCharacterStructures`, wie die Kapsel
+    // `_resolveCapsuleVsAABB`): das Rechteck der Hülle (Mitte an pos + Bug-Achse · mitte) gegen die Box, getrennt auf
+    // den vier Achsen (x, z, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den Wagen heraus
+    // (pos mutiert, der Schub reist in h.schub für die Fahrt).
+    _resolveHuelleVsAABB(box, pos, h) {
+        if (!(box.topY > h.unten && box.botY < h.oben)) return;
+        const cx = pos.x + h.fX * h.mitte - (box.minX + box.maxX) * 0.5;
+        const cz = pos.z + h.fZ * h.mitte - (box.minZ + box.maxZ) * 0.5;
+        const ex = (box.maxX - box.minX) * 0.5;
+        const ez = (box.maxZ - box.minZ) * 0.5;
+        let best = Infinity;
+        let ax = 0;
+        let az = 0;
+        for (let i = 0; i < 4; i++) {
+            const ux = i === 0 ? 1 : i === 1 ? 0 : i === 2 ? h.fX : h.qX;
+            const uz = i === 0 ? 0 : i === 1 ? 1 : i === 2 ? h.fZ : h.qZ;
+            const rO = h.hl * Math.abs(h.fX * ux + h.fZ * uz) + h.hw * Math.abs(h.qX * ux + h.qZ * uz);
+            const rA = ex * Math.abs(ux) + ez * Math.abs(uz);
+            const d = cx * ux + cz * uz;
+            const ov = rO + rA - Math.abs(d);
+            if (ov <= 0) return; // getrennt
+            if (ov < best) {
+                best = ov;
+                ax = d >= 0 ? ux : -ux;
+                az = d >= 0 ? uz : -uz;
+            }
+        }
+        pos.x += ax * best;
+        pos.z += az * best;
+        h.schub.push(ax * best, az * best);
+    }
+
+    // DER KONTAKT DER HÜLLE im EINEN Kontakt-Löser (`_stepCharacter` ruft ihn für den gerittenen Gesetz-Wagen statt der
+    // Kapsel-Schritte 5b · 6 · 7): (1) GELÄNDE — ragt das Feld an einem Umriss-Punkt steil über Ebene + Stufe (oder auf
+    // Brust-Höhe), gleitet der Wagen an der Wand (PM_ClipVelocity an der Feld-Normale, bis SLIDE_CLIP_PLANES Ebenen; sonst
+    // steht er); (2) BAUWERKE + INSELN — das Rechteck gegen die Blocker-AABBs im EINEN Struktur-Löser
+    // (`_stepCharacterStructures`/`_stepCharacterIslands` mit der Hülle als Körper; ein Stamm dünner als die Rad-Stufe
+    // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
+    // den Raum eines Wesens (tetrapoda VERHALTEN.separation: halber Paar-Radius × bodySize). Was die Hülle schiebt, nimmt
+    // der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
+    _fahrHuelleKontakt(entry, k, x0, z0, vx, vz, dt) {
+        const fz = entry._fahr;
+        const ry = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
+        const fX = Math.sin(ry);
+        const fZ = Math.cos(ry);
+        const qX = Math.cos(ry);
+        const qZ = -Math.sin(ry);
+        const tS = Math.tan(fz.steig || 0);
+        const tW = Math.tan(fz.wank || 0);
+        // die Ebene der Räder um die Lage, an der der Fahr-Schritt sie stellte (die Lage vor diesem Schritt: x0/z0)
+        const ebene = (px, pz) => {
+            const dx = px - x0;
+            const dz = pz - z0;
+            return fz.y + tS * (dx * fX + dz * fZ) + tW * (dx * qX + dz * qZ);
+        };
+        const brust = Math.min(k.dach, 1.2);
+        const VC = globalThis.__vehicleCore;
+        const steilY = Math.cos(VC && VC.FAHR && VC.FAHR.schritt ? VC.FAHR.schritt.ebeneMax : 0.7);
+        const nrmW = this._fahrHuelleN || (this._fahrHuelleN = {});
+        // (1) GELÄNDE: die führenden Umriss-Punkte gegen das Feld. Eine WAND ist Feld über Ebene + Stufe, dessen Fläche
+        // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht), oder
+        // Feld auf Brust-Höhe.
+        const wandAm = (ox, oz, wx, wz) => {
+            for (const p of k.umriss) {
+                const nx = p.nl * fX + p.nq * qX;
+                const nz = p.nl * fZ + p.nq * qZ;
+                if (nx * wx + nz * wz <= 0) continue; // nur, wohin die Hülle fährt
+                const px = ox + p.l * fX + p.q * qX;
+                const pz = oz + p.l * fZ + p.q * qZ;
+                const e = ebene(px, pz);
+                const ctx = this._terrainColumnContext(px, pz);
+                const yS = e + k.stufe + 0.02;
+                if (this._fieldSolid(px, yS, pz, ctx)) {
+                    this._fieldGradient(px, yS, pz, nrmW);
+                    if (!(nrmW.mag > 1e-6) || nrmW.y < steilY) return { x: px, z: pz, y: yS };
+                }
+                if (this._fieldSolid(px, e + brust, pz, ctx)) return { x: px, z: pz, y: e + brust };
+            }
+            return null;
+        };
+        let nx = x0 + vx * dt;
+        let nz = z0 + vz * dt;
+        if (vx !== 0 || vz !== 0) {
+            let w = wandAm(nx, nz, vx, vz);
+            if (w) {
+                const nrm = this._kopplungClipN || (this._kopplungClipN = {});
+                let frei = false;
+                for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) {
+                    this._fieldGradient(w.x, w.y, w.z, nrm);
+                    const nh = Math.hypot(nrm.x, nrm.z);
+                    if (!(nrm.mag > 1e-6) || !(nh > 1e-4) || !Number.isFinite(nh)) break; // NaN-Wand
+                    const into = (vx * nrm.x + vz * nrm.z) / nh;
+                    if (into >= -1e-9) break;
+                    vx -= (nrm.x / nh) * into;
+                    vz -= (nrm.z / nh) * into;
+                    nx = x0 + vx * dt;
+                    nz = z0 + vz * dt;
+                    w = wandAm(nx, nz, vx, vz);
+                    if (!w) {
+                        frei = true;
+                        break;
+                    }
+                }
+                if (!frei) {
+                    nx = x0; // fail-closed: der Wagen steht vor der Wand (nie eindringen)
+                    nz = z0;
+                    vx = 0;
+                    vz = 0;
+                }
+            }
+        }
+        // (2) BAUWERKE + INSELN — der Rahmen dieses Schritts an die Hülle; zwei Durchgänge (eine Ecke zwischen zwei Boxen).
+        k.fX = fX;
+        k.fZ = fZ;
+        k.qX = qX;
+        k.qZ = qZ;
+        k.unten = fz.y + k.stufe;
+        k.oben = fz.y + k.dach;
+        k.schub.length = 0;
+        const pos = this._fahrHuellePos || (this._fahrHuellePos = { x: 0, z: 0 });
+        pos.x = nx;
+        pos.z = nz;
+        for (let pass = 0; pass < 2; pass++) {
+            this._stepCharacterStructures(pos, 0, 0, 0, k);
+            this._stepCharacterIslands(pos, 0, 0, 0, k);
+        }
+        // (3) KREATUREN — das Rechteck gegen den Kreis eines Wesens (nächster Punkt; liegt die Mitte im Rechteck, der
+        // kürzeste Weg hinaus).
+        const wesen = this.state.creatures;
+        if (wesen && wesen.length) {
+            const SEP = AnazhRealm._verhaltenGesetz().separation;
+            for (const cr of wesen) {
+                if (!cr || !cr.position) continue;
+                if (Math.abs(cr.position.x - pos.x) > 12 || Math.abs(cr.position.z - pos.z) > 12) continue;
+                if (cr.position.y > k.oben || cr.position.y < fz.y - 2) continue;
+                const ud = cr.userData || {};
+                const rc = 0.5 * SEP.radiusBaseM * (Number.isFinite(ud.bodySize) ? ud.bodySize : 1);
+                const dx = cr.position.x - (pos.x + fX * k.mitte);
+                const dz = cr.position.z - (pos.z + fZ * k.mitte);
+                const l = dx * fX + dz * fZ;
+                const q = dx * qX + dz * qZ;
+                const cl = Math.max(-k.hl, Math.min(k.hl, l));
+                const cq = Math.max(-k.hw, Math.min(k.hw, q));
+                const d = Math.hypot(l - cl, q - cq);
+                let sl = 0;
+                let sq = 0;
+                if (d > 1e-6) {
+                    if (d >= rc) continue;
+                    sl = (-(l - cl) / d) * (rc - d);
+                    sq = (-(q - cq) / d) * (rc - d);
+                } else if (k.hl - Math.abs(l) < k.hw - Math.abs(q)) {
+                    sl = -(l >= 0 ? 1 : -1) * (k.hl - Math.abs(l) + rc);
+                } else {
+                    sq = -(q >= 0 ? 1 : -1) * (k.hw - Math.abs(q) + rc);
+                }
+                const sx = sl * fX + sq * qX;
+                const sz = sl * fZ + sq * qZ;
+                pos.x += sx;
+                pos.z += sz;
+                k.schub.push(sx, sz);
+            }
+        }
+        // Was die Hülle schob, nimmt der Fahrt die Komponente in die Berührung.
+        for (let i = 0; i < k.schub.length; i += 2) {
+            const sx = k.schub[i];
+            const sz = k.schub[i + 1];
+            const d = Math.hypot(sx, sz);
+            if (!(d > 1e-9)) continue;
+            const into = (vx * sx + vz * sz) / d;
+            if (into < 0) {
+                vx -= (sx / d) * into;
+                vz -= (sz / d) * into;
+            }
+        }
+        return { x: pos.x, z: pos.z, vx, vz };
+    }
+
     // ===== DER FELD-NATIVE KAPSEL-CHARACTER-CONTROLLER =====
     // Treibt den Spieler aus dem Dichtefeld (`_field*`-Helfer) — deterministisch, kein BVH-Build, ein
     // gecarvter Tunnel ist sofort begehbar. Die Bewegungs-LOGIK bleibt EINE Quelle:
@@ -87987,12 +88236,28 @@ class AnazhRealm {
         const feetY = ny - footDrop;
         const headY = ny + footDrop;
 
+        // 5a. IM SATTEL EINES GESETZ-WAGENS ist seine HÜLLE der Körper (Welle L, Q5): ihr Kontakt (Gelände · Bauwerke ·
+        // Inseln · Kreaturen) ersetzt die Kapsel-Schritte 5b · 6 · 7 — vorher hielt die Reiter-Kapsel r 0,35 am Ursprung,
+        // und der Bug fuhr 1,97–2,32 m in den Stamm.
+        const fahrE =
+            geritten && this._mountedEntry && this._mountedEntry.id === s.player.mountedArch
+                ? this._mountedEntry
+                : null;
+        const fahrHuelle = fahrE ? this._fahrHuelle(fahrE) : null;
+        if (fahrHuelle) {
+            const hk = this._fahrHuelleKontakt(fahrE, fahrHuelle, mesh.position.x, mesh.position.z, vx, vz, dt);
+            nx = hk.x;
+            nz = hk.z;
+            vx = hk.vx;
+            vz = hk.vz;
+        }
+
         // 5b. GLEITEN STATT VOLLSTOPP (PM_ClipVelocity, Quake/Source): vor einer nicht erklimmbaren Wand
         // (Terrain im Körperband feetY+STEP_UP..feetY+1.5, unter Augenhöhe → Tunnel-Decken zählen nicht)
         // wird v je Kontaktebene geclippt, v −= n·(v·n), bis SLIDE_CLIP_PLANES Ebenen (jede Iteration am NEUEN
         // Kandidaten); n = horizontale Spur der `_fieldGradient`-Außennormale. |∇| ≈ 0 oder rein vertikale
         // Normale → fail-closed Voll-Stopp (nie Eindringen). Läuft VOR der Struktur-/Kugel-Auflösung.
-        if (vx !== 0 || vz !== 0) {
+        if (!fahrHuelle && (vx !== 0 || vz !== 0)) {
             const wallLine = feetY + AnazhRealm.PLAYER_STEP_UP + 0.05;
             // Wand-Probe am Kandidaten: (a) Band-Probe feetY+STEP_UP..feetY+1.5 (findet
             // Ledges/Wand-Köpfe im Körperband), (b) Solid-Probe auf Rumpf-Höhe feetY+1.1
@@ -88042,10 +88307,14 @@ class AnazhRealm {
         //    Plattformen (die Start-Plattform!) TRAGEN → der Spieler steht drauf statt durch
         //    sie zu fallen. Liefert die höchste begehbare Auflage-Oberkante im Snap-Band.
         const structPos = { x: nx, z: nz };
-        const structTop = this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        const structTop = fahrHuelle
+            ? -Infinity
+            : this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         // Fliegende Inseln teilen die EINE Kapsel-vs-AABB-Quelle (Entscheid #2 — die AABB-Hülle):
         // der Spieler steht auf der Insel-Oberkante + wird an ihren Flanken geschoben.
-        const islandTop = this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        const islandTop = fahrHuelle
+            ? -Infinity
+            : this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         nx = structPos.x;
         nz = structPos.z;
         // Die höhere der beiden begehbaren Auflagen (Bauwerk ODER Insel) trägt den Spieler.
@@ -88059,7 +88328,7 @@ class AnazhRealm {
         const wR = AnazhRealm.PLAYER_WALL_RADIUS;
         const baseWallY = feetY + AnazhRealm.PLAYER_STEP_UP + wR;
         const p = { x: 0, y: 0, z: 0 };
-        const wallYs = [baseWallY, baseWallY + 0.6]; // Rumpf · Schulter/Kopf
+        const wallYs = fahrHuelle ? [] : [baseWallY, baseWallY + 0.6]; // Rumpf · Schulter/Kopf (die Hülle trug 5a)
         for (let k = 0; k < wallYs.length; k++) {
             p.x = nx;
             p.y = wallYs[k];
@@ -88191,7 +88460,10 @@ class AnazhRealm {
     // soliden Part-AABBs naher Bauwerke (`entry.blockerAABBs`, dichte ≥ 0.3 — DIESELBE Quelle wie der
     // Wasser-Blocker, Tür-Lücke/Glas begehbar). AUFLAGE trägt (liefert die höchste), WAND schiebt
     // horizontal heraus. Mutiert pos.x/z; O(nahe Bauwerke × Parts).
-    _stepCharacterStructures(pos, feetY, headY, radius) {
+    // `huelle` (Welle L, Q5): der Körper ist die Hülle eines gerittenen Gesetz-Wagens (`_fahrHuelle`) statt der Kapsel —
+    // dieselbe Bauwerks-Schleife, die Box gegen das Rechteck (`_resolveHuelleVsAABB`); ein Stamm dünner als die Rad-Stufe
+    // (`box.dick`) wird überrollt. Die Hülle trägt keine Auflage (−Infinity).
+    _stepCharacterStructures(pos, feetY, headY, radius, huelle) {
         const arches = this.state.architectures;
         if (!arches || !arches.length) return -Infinity;
         let supportTop = -Infinity;
@@ -88209,7 +88481,9 @@ class AnazhRealm {
             if (Math.abs(e.position.x - pos.x) > cullR || Math.abs(e.position.z - pos.z) > cullR) continue;
             const boxes = e.blockerAABBs;
             for (let b = 0; b < boxes.length; b++) {
-                supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
+                if (huelle) {
+                    if (!(boxes[b].dick < huelle.stufe)) this._resolveHuelleVsAABB(boxes[b], pos, huelle);
+                } else supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
             }
         }
         return supportTop;
@@ -88218,7 +88492,7 @@ class AnazhRealm {
     // Feld-native Insel-Kollision: eine AABB-Hülle pro Insel (`island.userData.fieldAABB`, aus der
     // Geometrie) — Stehen auf der Oberkante + Blocken an den Flanken, dieselbe Quelle wie Bauwerke
     // (`_resolveCapsuleVsAABB`).
-    _stepCharacterIslands(pos, feetY, headY, radius) {
+    _stepCharacterIslands(pos, feetY, headY, radius, huelle) {
         const isls = this.state.floatingIslands;
         if (!isls || !isls.length) return -Infinity;
         let supportTop = -Infinity;
@@ -88228,7 +88502,8 @@ class AnazhRealm {
             const mx = (box.minX + box.maxX) * 0.5,
                 mz = (box.minZ + box.maxZ) * 0.5;
             if (Math.abs(mx - pos.x) > 80 || Math.abs(mz - pos.z) > 80) continue; // grobes XZ-Cull
-            supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
+            if (huelle) this._resolveHuelleVsAABB(box, pos, huelle);
+            else supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
         }
         return supportTop;
     }
