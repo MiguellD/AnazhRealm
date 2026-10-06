@@ -58,9 +58,17 @@ function sichtLinse(cfg) {
         treffer: {},
         verfehlt: {},
         neu: {},
+        jePass: {},
         paesse: 0,
         nach: 0,
     });
+    // der Pass, in dem gerade geprüft wird (haupt · k<i> · anders) — die Prüfungen je Pass
+    let pass = "?";
+    const passName = (kam) => {
+        if (kam === r.state.camera) return "haupt";
+        const k = typeof r._schattenKameraIndex === "function" ? r._schattenKameraIndex(kam) : -1;
+        return k >= 0 ? "k" + k : "anders";
+    };
     z = neu();
     const orig = {};
     const leser = new Set(cfg.kette);
@@ -71,16 +79,22 @@ function sichtLinse(cfg) {
             if (art === "kette") {
                 z.aufrufe[name] = (z.aufrufe[name] || 0) + 1;
                 if (name === "_passSicht") a[1] ? z.nach++ : z.paesse++;
+                const vorher = pass;
+                if (name === "_passSicht") pass = a[1] ? "nach" : passName(a[0]);
                 stapel.push(name);
                 try {
                     return f.apply(this, a);
                 } finally {
                     stapel.pop();
+                    pass = vorher;
                 }
             }
             const o = f.apply(this, a);
             if (art === "pruefung") {
                 z.pruefung[name] = (z.pruefung[name] || 0) + 1;
+                const jp = z.jePass[pass] || (z.jePass[pass] = { pruefung: 0, ecken: 0 });
+                jp.pruefung++;
+                if (name === "_hoehlenRect" || name === "_hoehlenLichtLage") jp.ecken += 8;
                 if (name === "_passTrifft") {
                     // der nächste Leser im Stapel, der kein Körper-Helfer ist
                     let wer = "?";
@@ -105,13 +119,20 @@ function sichtLinse(cfg) {
             return o;
         };
     };
-    const bytes = () => {
-        let n = 0;
+    // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · streuSatz · formationenSatz), kumulativ
+    const bytesJe = () => {
+        const o = {};
         const ss = r.state.chunkSaetze;
-        if (ss) for (const s of ss.values()) for (const k in s.schreiben) n += s.schreiben[k];
-        return n;
+        if (ss)
+            for (const s of ss.values()) {
+                const fam = String(s.art).split("|")[0];
+                for (const k in s.schreiben) o[fam + " " + k] = (o[fam + " " + k] || 0) + s.schreiben[k];
+            }
+        return o;
     };
-    let b0 = 0;
+    const bytes = () => Object.values(bytesJe()).reduce((a, x) => a + x, 0);
+    let b0 = 0,
+        bj0 = {};
     const L = {
         P,
         an() {
@@ -121,6 +142,7 @@ function sichtLinse(cfg) {
             for (const n of cfg.neu) huelle(n, "neu");
             z = neu();
             b0 = bytes();
+            bj0 = bytesJe();
             return { gehuellt: Object.keys(orig) };
         },
         // Die Zähler seit dem letzten frame() — und frisch weiter.
@@ -129,6 +151,10 @@ function sichtLinse(cfg) {
             const b = bytes();
             o.bytes = b - b0;
             b0 = b;
+            const bj = bytesJe();
+            o.bytesJe = {};
+            for (const k in bj) if (bj[k] !== (bj0[k] || 0)) o.bytesJe[k] = bj[k] - (bj0[k] || 0);
+            bj0 = bj;
             const p = o.pruefung;
             o.ecken = 8 * ((p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0));
             let ruhe = (p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0);
@@ -171,7 +197,21 @@ function sichtPhase(frames, ab) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 6)
         .map(([k, n]) => k + " ×" + +(n / Math.max(1, fs.length)).toFixed(2));
+    // je Pass die Prüfungen und Ecken, je Satz-Familie die Bytes — im Mittel je Frame
+    const jePass = {};
+    for (const f of fs)
+        for (const k in f.jePass || {}) {
+            const x = jePass[k] || (jePass[k] = { pruefung: 0, ecken: 0 });
+            x.pruefung += f.jePass[k].pruefung / fs.length;
+            x.ecken += f.jePass[k].ecken / fs.length;
+        }
+    for (const k in jePass) for (const g in jePass[k]) jePass[k][g] = +jePass[k][g].toFixed(1);
+    const bytesJe = {};
+    for (const f of fs) for (const k in f.bytesJe || {}) bytesJe[k] = (bytesJe[k] || 0) + f.bytesJe[k] / fs.length;
+    for (const k in bytesJe) bytesJe[k] = Math.round(bytesJe[k]);
     return {
+        jePass,
+        bytesJe,
         taeter,
         frames: fs.length,
         paesse: st((f) => f.paesse),
