@@ -7472,7 +7472,11 @@ class AnazhRealm {
         // Nicht-Lockstep-Snaps, s. _p2pSampleSnapBuf), dann zeichnen.
         this._p2pSampleSnapBuf(entry, nowSec * 1000);
         const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
-        const underwater = typeof this.state.waterLevel === "number" && entry.y < this.state.waterLevel;
+        // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (die EINE
+        // Wasser-Wahrheit am Körper) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem
+        // Meeresspiegel — in jedem See und Fluss ging er, W-kD3b).
+        const fussP = entry.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+        const underwater = this._koerperWasser(entry.x, entry.z, fussP) - fussP > AnazhRealm._schwimmBrustM() * 0.9;
         // Der Cone+Sphere-Platzhalter sitzt mit -1-Offset; das Seelen-Mesh am
         // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;
@@ -20169,8 +20173,7 @@ class AnazhRealm {
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
             }
-            // Pausen-Phase — stehen + leichte Bobbing-Animation läuft eh
-            // weiter via floatOffset im updateCreatures-Pfad.
+            // Pausen-Phase — stehen (der Gang trägt die Ruhe-Animation).
             return out.set(0, 0, 0);
         }
         // Phase 2: walk Richtung Ziel.
@@ -21233,14 +21236,30 @@ class AnazhRealm {
             // ~2·Körperradius stoßen ab, deterministisch aus Positionen + Index.
             this._applyCreatureSeparation(creature, i, direction, speed);
 
-            // Wasser-Kontext für nahe Kreaturen (<50 m — wer's nicht sieht, braucht keinen Lookup), zwei
-            // Schichten: (a) Ufer-Bias NUR bei freiem Wandern (Aufträge sind Welt-Wille, nie überschreiben);
-            // (b) Y-Override für ALLE Tasks: nasse + tiefe Spalte → knapp unter dem Spiegel schwimmen statt
-            // am See-Boden ertrinken.
+            // DER KÖRPER IM WASSER (Welle L, Q6 — JEDE Kreatur, nie nur im 50-m-Kreis um den Spieler): die EINE
+            // Wasser-Wahrheit am Körper (`_koerperWasser` über ihrem Grund) und ihre GESTALT — die Wasserlinie liegt am
+            // Schultergelenk (die Gelenk-Höhe des Vorderlaufs × Körpergröße, `_tierBaum.bein`). Sie schwimmt, sobald die
+            // Säule über dem Grund tiefer ist als diese Linie (mindestens wasser.schwimmTiefeM); flacher watet sie.
+            // Bis V18.531: jenseits 50 m stand jedes Tier am Seegrund (8 m tief, 4,27-m-Sprung beim Näherkommen), und
+            // die Sohle lag bei jeder Größe 0,3 ± 0,2 m unter dem rohen Spiegel (der Hirsch stand AUF dem See).
             let waterSurface = null;
+            const udW = creature.userData;
+            {
+                const grundW = this._creatureGroundY(creature);
+                const tbW = udW._tierBaum;
+                udW._wasserlinie = tbW && tbW.bein ? tbW.bein[0].h * (creature.scale.x || 1) : 0;
+                const spiegelW = Number.isFinite(grundW)
+                    ? this._koerperWasser(creature.position.x, creature.position.z, grundW)
+                    : -Infinity;
+                if (spiegelW - grundW > Math.max(VGL.wasser.schwimmTiefeM, udW._wasserlinie)) waterSurface = spiegelW;
+            }
+            // Körper-Zustand für die EINE Motion-Brücke: schwimmt die Kreatur (dieselbe Wahrheit wie ihre Lage), paddelt
+            // der Baum-Gang (MOTION.schwimmen); an Land fällt NUR der Schwimm-Stempel.
+            if (waterSurface !== null) udW._motionZustand = "schwimmen";
+            else if (udW._motionZustand === "schwimmen") udW._motionZustand = null;
             // XZ-Distanz, nicht 3D: bei großer Y-Variation (Spieler auf dem Berg, Kreatur am See-Boden) risse
             // Δy² allein die 2500-Schwelle — das Gate meint horizontale Sichtnähe. distSqToPlayer (XZ) kommt
-            // schon von oben; hier nur das <50-m-Wasser-Gate.
+            // schon von oben; hier nur das <50-m-Verhaltens-Gate.
             if (distSqToPlayer < 2500) {
                 // SCHLUSS-WELLE — die Ufer-Scheu ist Wasser-Gesetz (tetrapoda
                 // VERHALTEN.wasser: Tiefen-Schwellen + Ufer-Bias, byte-gleich).
@@ -21254,19 +21273,11 @@ class AnazhRealm {
                         direction.x += wctx.shoreDir.x * speed * WAS.uferBias;
                         direction.z += wctx.shoreDir.z * speed * WAS.uferBias;
                     }
-                    if (wctx.depthBelow > WAS.schwimmTiefeM) {
-                        waterSurface = this._waterLevelAt(creature.position.x, creature.position.z);
-                    }
                 }
-                // Körper-Zustand für die EINE Motion-Brücke: schwimmt die Kreatur (dieselbe Wahrheit wie ihr
-                // Y-Override), paddelt der Baum-Gang (MOTION.schwimmen); an Land fällt NUR der Schwimm-Stempel.
-                const udZ = creature.userData;
-                if (waterSurface !== null) udZ._motionZustand = "schwimmen";
-                else if (udZ._motionZustand === "schwimmen") udZ._motionZustand = null;
                 // Verhaltens-Tick (nahe Wesen, dieselbe 50-m-Wand): tempo bremst/stoppt die Bewegung unten, hop
                 // zündet beim Start den feld-nativen Hüpfer.
                 this._tickKreaturVerhalten(creature, i, performance.now() / 1000);
-                const VA = udZ._verhaltenAktion;
+                const VA = udW._verhaltenAktion;
                 if (VA && VA.def && Number.isFinite(VA.def.tempo) && performance.now() / 1000 < VA.bis) {
                     direction.multiplyScalar(Math.max(0, VA.def.tempo));
                 }
@@ -21362,10 +21373,10 @@ class AnazhRealm {
             // aus). Render-only — kein Sim-/Task-Pfad liest rotation.x.
             let baseY;
             let pitchZiel = 0;
-            let floatOffset = 0;
             if (waterSurface !== null) {
-                baseY = waterSurface - 0.3;
-                floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
+                // Die Wasserlinie am Schultergelenk: die Sohle hängt so tief unter dem Spiegel (das Paddeln trägt der
+                // Gang selbst, MOTION.schwimmen; das Literal −0,3 ± 0,2 m fiel).
+                baseY = waterSurface - udW._wasserlinie;
             } else {
                 baseY = terrainHeight;
                 const fLB = creature.scale.x || 1;
@@ -21404,7 +21415,7 @@ class AnazhRealm {
                     creature.userData._hopV = 0;
                 }
             }
-            creature.position.y = baseY + floatOffset + hopOffset;
+            creature.position.y = baseY + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
@@ -30149,23 +30160,15 @@ class AnazhRealm {
         // Wasser-Iso sonst deferred (~78 ms Surface-Nets, ≤budget/Frame → kein Streaming-Spike). Beim
         // Edit-Rebuild (`syncWater`) SYNCHRON — sonst fehlt der Iso 1–2 Frames am Edit-Punkt (Flackern).
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
-        // Erst-Paint off-thread: HIER (vor `_wakeWaterCAOnce`) ist der Chunk garantiert CA-frei → der
-        // Worker baut das Sheet byte-identisch. Nicht eligible (kein Worker · aktiv fließende Nachbarn ·
-        // kein Wasser) → deferred Queue (Sync-Fallback im Tick).
+        // Erst-Paint off-thread: ein einstreamender Chunk ist CA-frei → der Worker baut das Sheet byte-identisch.
+        // Nicht eligible (kein Worker · aktiv fließende Nachbarn · kein Wasser) → deferred Queue (Sync-Fallback im
+        // Tick). DER WASSER-AUTOMAT WACHT NUR, WO DIE WELT ABWEICHT (Welle L, W-W1): Graben, Füllen, ein Damm wecken
+        // ihn (`_wakeWaterCA` aus Edit/Stau); ungestörtes Wasser IST das Gesetz. Bis V18.531 weckte jeder einstreamende
+        // Wasser-Chunk im Nah-Ring den Automaten — er rechnete den ruhenden Fluss in ganzen 1,8-m-Zellen nach, der
+        // Quellen-Pin füllte sie bis 0,9 m über den Spiegel, das Wasser lief in jedes Ufer darunter: am Fluss der
+        // Mess-Wiese trugen 81 von 233 trockenen Ufer-Proben Körper-Wasser bis 4,6 m über dem Gras (Tauch-Nebel),
+        // und jeder geweckte Chunk zog seine Nachbarn aus dem Worker-Sheet in den Sync-Bau.
         else if (!this._tryWorkerWaterSheet(cx, cz)) this._enqueueWaterIso(cx, cz);
-        // Wake-on-stream: ein einstreamender Wasser-Chunk weckt den CA EINMAL, damit die Wasser-Substanz
-        // von allein lebt. Gebändigt durch Distanz-Decay (CA_FLOW_KEEP) + Spiegel-Kappe (waterCapJ: Wasser
-        // steigt nie über seinen Spiegel). Nur im Nah-Ring (`WAKE_CA_RADIUS`); die Ferne streamt CA-frei
-        // und wird bei Annäherung über `_tickWaterCANearWake` geweckt.
-        if (
-            (Number.isFinite(lod) ? lod === 0 : true) &&
-            this._voxelChunkNearPlayer(cx, cz, AnazhRealm.WAKE_CA_RADIUS) &&
-            this.state.voxelChunks.get(`${cx},${cz}`) &&
-            this.state.voxelChunks.get(`${cx},${cz}`).waterCells &&
-            this._voxelChunkHasAnyWater(cx, cz)
-        ) {
-            this._wakeWaterCAOnce(cx, cz);
-        }
         // Der neue Chunk ist Flood-Wahrheit für seine Nachbarn, deren Iso evtl. gegen ihn als ABWESEND
         // gebaut wurde. Der Iso-Mesher liest alle 8 Nachbarn (inkl. DIAGONALEN) → alle 8 re-enqueuen, nicht
         // nur die Achsen (sonst klebt Wasser an Gebäude-Ecken). Nur wassertragende; idempotent über das Set.
@@ -37268,9 +37271,6 @@ class AnazhRealm {
             }
         }
         this._pruneDistantVoxelChunks(playerPos);
-        // B1 (V18.373) — die ferne (off-thread, CA-frei gestreamte) See zum Leben wecken, sobald
-        // der Spieler sie in den Nah-Ring zieht (einmal je Chunk, churn-frei via `entry._caWoken`).
-        this._tickWaterCANearWake(pcx, pcz);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
@@ -74240,46 +74240,6 @@ class AnazhRealm {
         this.state.waterCAActive.add(`${cx},${cz}`);
     }
 
-    // B1 (V18.373) — der Spieler-Chunk-Nah-Test (Chebyshev in CHUNK-Einheiten, span-frei). Ohne
-    // bekannte Spieler-Position (Boot/Test vor dem ersten Streaming-Tick) → konservativ true
-    // (das alte Verhalten: wecken), damit kein Warmup-Pfad still die CA verliert.
-    _voxelChunkNearPlayer(cx, cz, r) {
-        const p = this.state.lastPlayerVoxelChunk;
-        if (!p) return true;
-        return Math.abs(cx - p.cx) <= r && Math.abs(cz - p.cz) <= r;
-    }
-
-    // Einmal-Wake: weckt den CA eines Wasser-Chunks genau einmal je Load (`entry._caWoken` auf dem
-    // Chunk-Eintrag, lifecycle-gebunden, kein state-Feld) — sonst würde ein settled Chunk jeden Tick neu
-    // geweckt. Echte Ereignisse (Carve/Strömung) wecken direkt über `_wakeWaterCA`.
-    _wakeWaterCAOnce(cx, cz) {
-        const entry = this.state.voxelChunks && this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || entry._caWoken) return;
-        if (Number.isFinite(entry.lod) && entry.lod !== 0) return;
-        entry._caWoken = true;
-        this._wakeWaterCA(cx, cz);
-    }
-
-    // Annäherungs-Wake: ferne See streamt CA-frei; tritt sie in den Nah-Ring, wird sie EINMAL lebendig
-    // (füllen, strömen, settlen). (2R+1)² Map-Gets/Tick, meist `_caWoken`-Skip; nur frische Nah-Wasser-
-    // Chunks zahlen den `_voxelChunkHasAnyWater`-Scan. Aufruf aus dem Streaming-Tick.
-    _tickWaterCANearWake(pcx, pcz) {
-        const chunks = this.state.voxelChunks;
-        if (!chunks) return;
-        const R = AnazhRealm.WAKE_CA_RADIUS;
-        for (let dz = -R; dz <= R; dz++) {
-            for (let dx = -R; dx <= R; dx++) {
-                const cx = pcx + dx,
-                    cz = pcz + dz;
-                const entry = chunks.get(`${cx},${cz}`);
-                if (!entry || entry._caWoken || !entry.waterCells) continue;
-                if (Number.isFinite(entry.lod) && entry.lod !== 0) continue;
-                entry._caWoken = true; // einmal behandeln (Wasser → wecken, sonst still markiert)
-                if (this._voxelChunkHasAnyWater(cx, cz)) this._wakeWaterCA(cx, cz);
-            }
-        }
-    }
-
     // T4a-2/3 — EIN Welt-Tick des Wasser-Automaten über die AKTIVEN LOD0-Chunks. Lokal-reaktiv,
     // budgetiert (settled → inaktiv). Der cross-chunk-wake ist möglich, WEIL T1/T2 die Grenze
     // kohärent machten (eine konsistente Nachbar-Zell-Wahrheit — die These des ganzen Bogens).
@@ -94782,12 +94742,6 @@ AnazhRealm.RING_EXIST_FLOOR = 2;
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
 // Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
-// Wasser-CA-Wake nur im Nah-Ring (Chebyshev ≤ WAKE_CA_RADIUS um den Spieler-Chunk): sonst fiel jeder
-// einstreamende Wasser-Chunk samt Nachbarn aus `_waterSheetCaFree` und die ferne See baute SYNC auf
-// dem Main-Thread. So streamt sie CA-frei, der Worker baut ihr Sheet off-thread (byte-identisch zum
-// settled Flood-Spiegel). Annäherung weckt ferne Chunks über `_tickWaterCANearWake` (einmal je
-// Chunk, `entry._caWoken`); Strömung propagiert per `_exchangeWaterBoundary`.
-AnazhRealm.WAKE_CA_RADIUS = 3;
 // DIE LUFT (V18.530, `_luftEnsure`): Koschmieder-Extinktion mit Höhen-Abnahme. Die Anker sind BEOBACHTBARE
 // Sichtweiten (Kontrast eines Gelände-Pixels fällt unter `kontrast`): ein klarer Sommertag trägt Gelände-
 // Silhouetten 20 km weit (Mitteleuropa, Sommer-Dunst 15–30 km), Starkregen im Sturm 1,5 km. Die reine Luft ist

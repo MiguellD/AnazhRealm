@@ -168,6 +168,13 @@ const FORBIDDEN = [
     // die Makro-Höhe des Orts mit Buckel und die geglättete Lauf-Fläche darüber sind gefallen (Main und Worker).
     { token: "convexBulge", fiel: "Welle L Q7 — der 1,55-m-Buckel des Querschnitts (W-F2)" },
     { token: "waterRunSurfaceAt", fiel: "Welle L Q7 — die geglättete Lauf-Fläche; der Spiegel selbst ist monoton" },
+    // Der Wasser-Automat wacht nur, wo die Welt abweicht (Graben · Füllen · Damm) — das Wecken beim Einstreamen und bei
+    // Annäherung rechnete den ruhenden Fluss in ganzen Zellen nach und flutete die Ufer (W-W1).
+    { token: "_tickWaterCANearWake", fiel: "Welle L Q6 — die Annäherungs-Weckung (Ufer-Flut W-W1)" },
+    { token: "_wakeWaterCAOnce", fiel: "Welle L Q6 — die Einstream-Weckung" },
+    { token: "WAKE_CA_RADIUS", fiel: "Welle L Q6" },
+    { token: "_voxelChunkNearPlayer", fiel: "Welle L Q6 — der Nah-Test der Weckung" },
+    { token: "_caWoken", fiel: "Welle L Q6" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
