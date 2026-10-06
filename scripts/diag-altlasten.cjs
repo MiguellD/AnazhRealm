@@ -398,6 +398,13 @@ const FORBIDDEN = [
     { token: "floorMax: 0.55", fiel: "Welle 5 — der Deckel des Fragment-Waldkerns" },
     { token: "const _dryW ", fiel: "Welle 5 — die Dürre-Flecken (Albedo × 1,32/1,12/0,6) färbten die Streu orange" },
     { token: ".sub(_dryW)", fiel: "Welle 5 — die Dürre-Flecken" },
+    // Integration 06.10.: die Insel trug eine eigene Literal-Palette (Absichts-Farben roh als linear, im Stoff ein
+    // zweites Mal mit der Vertex-Farbe multipliziert), der Substanz-Kern ein eigenes Moos — die EINE Boden-Palette
+    // (BODEN_FARBE: mead · dirt · rock, Moos = TERRAIN_GEOLOGY.mossTint) trägt beide.
+    { token: "[0.3, 0.52, 0.22]", fiel: "Integration 06.10. — die Insel-Wiese ist BODEN_FARBE.mead" },
+    { token: "[0.4, 0.3, 0.18]", fiel: "Integration 06.10. — der Insel-Hang ist BODEN_FARBE.dirt" },
+    { token: "[0.34, 0.32, 0.3]", fiel: "Integration 06.10. — der Insel-Fels ist BODEN_FARBE.rock" },
+    { token: "[0.26, 0.38, 0.18]", fiel: "Integration 06.10. — das EINE Moos ist TERRAIN_GEOLOGY.mossTint" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

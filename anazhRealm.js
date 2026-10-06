@@ -28304,9 +28304,10 @@ class AnazhRealm {
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
-                        // Die Geologie TRÄGT die Vertex-Farbe schon: der Chunk-Stoff zeichnet sie EINMAL (vertexColors
-                        // aus — r184 multiplizierte colorNode sonst ein zweites Mal mit ihr: Albedo = Farbe², die
-                        // Wiese MEADOW_GREEN × Farbe; seit dem Farb-Gesetz des Bodens ist der Vertex die Albedo).
+                        // Die Geologie TRÄGT die Vertex-Farbe schon: jeder Geologie-Stoff (Chunk-Boden, Insel, Voxel-
+                        // Test, Bauplan-Verschmelzung) zeichnet sie EINMAL (vertexColors aus — r184 multipliziert
+                        // colorNode sonst ein zweites Mal mit ihr: Albedo = Farbe²; seit dem Farb-Gesetz des Bodens ist
+                        // der Vertex die Albedo).
                         const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
                         const _geo = this._terrainGeologyAlbedo(
                             _Ta,
@@ -28316,10 +28317,10 @@ class AnazhRealm {
                         );
                         if (_geo) {
                             albedoNode = _geo;
-                            if (_bodenVc && _Ta.vec4) {
+                            if (_Ta.vec4) {
                                 mat.vertexColors = false;
                                 mat.colorNode = _Ta.vec4(_geo, 1.0);
-                            } else if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
+                            }
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
                     } else if (opts.useFlexAttr && _Ta.vec4) {
@@ -28821,8 +28822,10 @@ class AnazhRealm {
                 .add(f(0.5));
             const mossLow = objLocal ? f(1.0).sub(yLow) : f(1.0); // Terrain: Flachheit treibt, kein object-y
             const mossW = mossDrive.mul(mossPatch).mul(mossLow).mul(flatN).clamp(0, 1);
-            // Die Moos-Farbe reist als Parameter: der Boden trägt das Moos seiner Palette (`mossTint`, linear).
-            const moos = opts.mossTint || [0.26, 0.38, 0.18];
+            // Die EINE Moos-Farbe: das Moos des Bodens (TERRAIN_GEOLOGY.mossTint = der nasse Grund der Palette, linear)
+            // für jeden Leser — Boden, Fels, Rinde, Werke. Bis 06.10. trug der Kern daneben ein Literal (0,26/0,38/0,18,
+            // eine Absichts-Farbe roh als linear).
+            const moos = AnazhRealm.TERRAIN_GEOLOGY.mossTint;
             albedo = _T.mix(albedo, _T.vec3(moos[0], moos[1], moos[2]), mossW.mul(f(0.4)));
             // (5) COUNTER-SHADING (unten dunkler, oben heller) — nur object-lokal (Terrain: kein object-y).
             if (objLocal) albedo = albedo.mul(_T.mix(f(0.8), f(1.16), yLow));
@@ -29024,7 +29027,6 @@ class AnazhRealm {
                 objectLocal: false,
                 flatness: _flat.mul(_T.float(1.0).sub(_rockW)),
                 mossDrive: _mossDrive,
-                mossTint: G.mossTint,
                 roughBase: G.roughBase,
                 wetDrive: _wetDrive,
                 hardDrive: _hardDrive,
@@ -64943,16 +64945,18 @@ class AnazhRealm {
 
     // Per-Vertex-Farbe für eine fliegende Insel: Surface-Nets-Geometrie hat nur position+normal (kein
     // aField/uv) — der Terrain-ShaderMaterial-Pfad rendert damit kaputt, darum PBR + vertexColors.
-    // Farbe folgt der Normale: oben Gras-Grün, seitlich Erd-Hang, unten Fels.
+    // Farbe folgt der Normale: oben Wiese, seitlich Erd-Hang, unten Fels — die EINE Boden-Palette (`BODEN_FARBE`,
+    // Studio PORTAL_GROUND nach dem Farb-Gesetz), wie der Boden darunter; bis 06.10. trug die Insel eigene Literale.
     _attachIslandColors(geom) {
         const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
         const norm = geom && geom.getAttribute ? geom.getAttribute("normal") : null;
         if (!pos || !norm) return;
         const n = pos.count;
         const colors = new Float32Array(n * 3);
-        const grass = [0.3, 0.52, 0.22];
-        const earth = [0.4, 0.3, 0.18];
-        const rock = [0.34, 0.32, 0.3];
+        const P = AnazhRealm.BODEN_FARBE;
+        const grass = P.mead;
+        const earth = P.dirt;
+        const rock = P.rock;
         for (let i = 0; i < n; i++) {
             const ny = norm.getY(i);
             let c;
