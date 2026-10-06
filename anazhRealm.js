@@ -44609,7 +44609,7 @@ class AnazhRealm {
         // Setzen); die Schublade schließt, damit das Phantom in der Welt steht.
         if (bp && this._isPlaceableBlueprint(bp)) {
             const res = this._bauModusFuer(name);
-            if (res.ok && typeof this.closeAllDrawers === "function") this.closeAllDrawers();
+            if (res.ok) this.closeAllDrawers();
             return res.ok ? { ok: true, bauModus: true, slot: res.slot } : res;
         }
         return this.forgeBlueprint(name);
@@ -76210,7 +76210,7 @@ class AnazhRealm {
         if (!gestalt) return null;
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
         if (!sc || typeof sc.gueteAnteil !== "function") AnazhRealm._kernPflichtBruch("schmiede:gueteAnteil");
-        const ov = typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
+        const ov = this._artifactStudioOv(bp);
         const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
         const memo = this._gueteAnteilMemo || (this._gueteAnteilMemo = new Map());
         let v = memo.get(key);
