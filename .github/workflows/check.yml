@@ -549,6 +549,17 @@ jobs:
               # Fail-Closed-Clamp auf Stufe 0). Inklusive Selbst-Test (injizierte Verletzungen).
               run: npm run gate:nervensystem-schmiede
 
+            - name: Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)
+              # Headless (Null-Renderer, Produktions-Boot), gespielt wie ein Mensch: das Fadenkreuz geht über Gier und
+              # Neigung durch die ECHTE Kamera aufs Ziel (1st und 3rd), geklickt wird über den EINEN Dispatcher.
+              # Q8: Zone je Glied, hangab und klein je ≥ 8/10, Hit-Stop-Energie Keule ≠ Grossschwert, keine
+              # Schadens-Kappe, Gegenwehr > 0, die Hand ist kein Panzer, Verschleiß, der Pfeil trägt seine Energie und
+              # eine Wand hält ihn · Q9: 3rd-Person-Klick schwingt (0 Krater), Halten gräbt nicht, RMB mit Schwert
+              # schüttet nie auf, offene Werkstatt = tauber Canvas, ein Bauwerk geht in den Bau-Modus · Q10:
+              # Ego-Neigung −90° = Blick −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz.
+              # Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S5.
+              run: npm run gate:kampf-gefuehl
+
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
               # cv:3 (spec/asset-contract/v3): 12 frozen sha256-Goldens (5 Gattungen × 2 Seeds + 2 ov-Kulturen),
               # Node-direkt (r128) — Determinismus · Geometrie seed-invariant, der Same waehlt den Lack · ov-Kanal ·
