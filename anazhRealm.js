@@ -50350,9 +50350,10 @@ class AnazhRealm {
                 ) {
                     prof.lenkung = _lk;
                 }
-                // Das volle Zweispur-Gesetz reist ins Profil: der Ritt fährt DASSELBE Schlupfwinkel-Modell wie die
-                // Probefahrt (Reibkreis, Lastverlagerung, Gier aus Reifenmoment). NaN-Wand: nur mit den tragenden
-                // Größen, sonst gripK-Pfad. Dazu die Probefahrt-Kamera (Chase-Cam, Kern-Elevation/-Distanz/-Eases).
+                // Das volle Zweispur-Gesetz reist ins Profil: der Ritt fährt DENSELBEN Fahr-Schritt wie die Probefahrt
+                // (vehicle-core fahrSchritt, `_fahrSatz`). NaN-Wand: nur mit den tragenden Größen — ohne sie trägt das
+                // Werk kein Fahr-Gesetz und reitet richtungs-folgend. Dazu die Probefahrt-Kamera (Chase-Cam, Kern-
+                // Elevation/-Distanz/-Eases).
                 const _km = _fp.kamera;
                 if (_km && Number.isFinite(_km.el) && Number.isFinite(_km.dist) && _km.dist > 0) prof.kamera = _km;
                 const _zs = _fp.zweispur;
@@ -50618,7 +50619,8 @@ class AnazhRealm {
     // (`_rittAufstand`) auf dem Boden-Gesetz → Höhe der Ebene unter dem Ursprung, Nick (Bug ab = +) und Wank (die
     // Flanke (cos, −sin) oben = +), alle aus DENSELBEN Proben. Das alte max() über Bug/Heck hob den Ursprung auf den
     // höchsten Punkt, und der Gelände-Nick kippte ihn dann noch einmal: am Hang schwebte der Wagen um halbe Länge ×
-    // Steigung. null, wenn eine Probe fehlt. Leser: der Ritt (`_tickMountedMovement`) und der Stand (`_fahrzeugStand`).
+    // Steigung. null, wenn eine Probe fehlt. Leser: der Ritt ohne Fahr-Gesetz (`_rittSchritt`) und der Stand
+    // (`_fahrzeugStand`); das Gesetz-Fahrzeug liest dieselbe Ebene im Kern (`fahrStand`).
     _rittEbene(entry, x, z, fahrtYaw) {
         // Welle L (Q13): die Ebene ist die des Kerns (vehicle-core fahrEbene — dieselbe, die der Fahr-Schritt fährt und
         // die Probefahrt liest): kein Bauch im Boden (über einer Kuppe trägt der Bauch, W5 — am Kamm (66, 60) lag er
