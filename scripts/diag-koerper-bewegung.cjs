@@ -19,8 +19,9 @@
 //      Gesetz-Leser _kreaturBodenUnter) folgt der Kreatur-Root-Pitch dem Hang (30° ± 5°,
 //      Vorzeichen: vorn höher → Nase hebt) und die Kreatur steht GEERDET
 //      (Sohlen an der Proben-Mitte — der +0.5-m-Schwebe-Anker ist tot).
-//  (E) FUSS-IK-KONSUM: gesenkter Boden (gestubbter _gaitBodenY-Chokepoint)
-//      ⇒ das Becken senkt sich; Abgrund ⇒ gestreckt ohne NaN.
+//  (E) FUSS-IK-KONSUM über den ECHTEN Pfad (_gaitBodenY → _standSicht, kein Stub): der Träger des
+//      Kapsel-Schritts (_kapselTraegerY/_kapselStruktur — was _stepCharacter stempelt) liegt 25 cm unter
+//      den Sohlen ⇒ das Becken senkt sich; Abgrund ⇒ gestreckt ohne NaN; (E2) in der Luft senkt er nichts.
 //  (S) SELBST-TESTS (die Linse feuert): (S1) mit gestubbtem HARTEM Blend
 //      (w springt 0↔1) sieht die Δw-Messung den Sprung — sie misst die
 //      echte Glättung, nicht sich selbst. (S2) mit gestubbtem _slopePitch≡0
@@ -269,7 +270,13 @@ const server = http.createServer((req, res) => {
             {
                 const rig = pmesh.userData.rig;
                 const soleY = pmesh.position.y - A.PLAYER_FOOT_OFFSET;
-                const savedBoden = r._gaitBodenY;
+                const savedTraeger = s._kapselTraegerY;
+                const savedStruktur = s._kapselStruktur;
+                // der Träger, wie ihn der Kapsel-Schritt stempelt (ein Bauwerk: eben per Definition)
+                const traeger = (y) => {
+                    s._kapselTraegerY = y;
+                    s._kapselStruktur = true;
+                };
                 const probenFrisch = () => {
                     const ik = pmesh.userData._gaitIK;
                     if (ik) {
@@ -286,15 +293,15 @@ const server = http.createServer((req, res) => {
                 };
                 const savedAir = s.isInAir;
                 s.isInAir = false; // der stehende Körper (die Luft-Sperre prüft E2)
-                r._gaitBodenY = () => soleY; // ebener Boden = Sohlen-Ebene
+                traeger(soleY); // der Träger auf der Sohlen-Ebene
                 probenFrisch();
                 tickeIdle(500);
                 const h0 = rig.hips.position.y;
-                r._gaitBodenY = () => soleY - 0.25; // Boden 25 cm gesenkt
+                traeger(soleY - 0.25); // der Träger 25 cm gesenkt
                 probenFrisch();
                 tickeIdle(510);
                 const h1 = rig.hips.position.y;
-                r._gaitBodenY = () => soleY - 50; // Abgrund
+                traeger(soleY - 50); // Abgrund
                 probenFrisch();
                 tickeIdle(520);
                 let alleFinite = true;
@@ -304,13 +311,14 @@ const server = http.createServer((req, res) => {
                 if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
                 // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
                 // das Becken NICHT (vorher sank es im Sprung 0,25 m, während die Kapsel 0,24–0,31 m stieg)
-                r._gaitBodenY = () => soleY - 0.25;
+                traeger(soleY - 0.25);
                 s.isInAir = true;
                 probenFrisch();
                 tickeIdle(530);
                 const hLuft = rig.hips.position.y;
                 s.isInAir = savedAir;
-                r._gaitBodenY = savedBoden; // restaurieren
+                s._kapselTraegerY = savedTraeger; // restaurieren
+                s._kapselStruktur = savedStruktur;
                 probenFrisch();
                 o.beckenLuft = hLuft;
                 o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
@@ -371,8 +379,8 @@ const server = http.createServer((req, res) => {
                 for (const cr of s.creatures) {
                     const ud = cr.userData || {};
                     delete ud.cachedGroundY;
-                    if (ud._slopeProbeV) ud._slopeProbeV.g = NaN;
-                    if (ud._slopeProbeH) ud._slopeProbeH.g = NaN;
+                    // die vier Gesetz-Proben je Tier (_slopeProben) tragen sonst den 210-m-Hang des Stubs weiter
+                    if (Array.isArray(ud._slopeProben)) for (const pr of ud._slopeProben) pr.g = NaN;
                 }
                 r.removeCreature(c);
                 s.maxCreatures = saveMax;

@@ -497,6 +497,29 @@ const FIXTURES = [
             window.__codeOf ? window.__codeOf(r._spawnSettlementSlot) : r._spawnSettlementSlot.toString()
         );
         res.anchorChokepoint = /_structureSpawnPos/.test(src);
+        // 6) DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
+        //    des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan (vorher bei kaltem Buch still der
+        //    Kern-Default). Gemessen am Rebuild-Gedächtnis des Dorfs (settlementCells: Same, nH, Ort).
+        try {
+            const SG = r.constructor._siedlungGesetz();
+            const same = 0x5a5a1234;
+            const pv = { x: o1.x + 600, y: 0, z: o1.z - 600 };
+            pv.y = r.getTerrainHeightAt(pv.x, pv.z);
+            const ctxV = { budget: { spawnsLeft: 4 }, log: [], rng: () => 0.5, source: "human" };
+            r.dslEffects.spawn_village([["at", pv.x, pv.y, pv.z], same], ctxV);
+            let cell = null;
+            for (let k = 0; k < 600 && !cell; k++) {
+                await new Promise((rs) => setTimeout(rs, 100));
+                const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
+                // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort> (Welle L), auf älteren Ständen d:<Same>
+                for (const key of Object.keys(sc))
+                    if (key === "d:" + (same >>> 0) || key.indexOf("d:" + (same >>> 0) + "@") === 0) cell = sc[key];
+            }
+            res.villageNH = cell ? cell.nH : null;
+            res.villageNHSoll = SG ? SG.nHMin + ((same >>> 24) % SG.nHSpan) : null;
+        } catch (e) {
+            res.villageNHErr = (e && e.message) || String(e);
+        }
         // ===== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) =====
         res.c = {};
         try {
@@ -554,15 +577,53 @@ const FIXTURES = [
             // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
             // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
             // drosselTakte-ten Takt. Vorher (die V18.282-Wand) entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
+            // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
+            // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) und einem ausgeschöpften Budget — die Deko (prio 2,
+            // `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) läuft dort nur jeden 4. Frame und nie in
+            // einem Frame mit Chunk-Bau. Gezählt wird in Frames, bis zwei Slots bearbeitet sind (höchstens 3000 Frames ≈ 50 s
+            // bei 60 Bildern/s): die Siedlung wächst über dem Budget — je Deko-Lauf ohne Chunk-Bau höchstens 1/drosselTakte Slot.
             const fob = r.state._frameOverBudget;
             const drossel = A.drosselTakte || 8;
-            r.state._frameOverBudget = true;
+            const B = r._makeFrameBudget(0);
+            const pmP = r.state.playerMesh.position;
             const qIdx0 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : null;
-            for (let t0 = 0; t0 < 2 * drossel; t0++) r._tickAutoSettlement({ x: cand ? cand.x : 0, z: cand ? cand.z : 0 });
+            const qJetzt = () => (r._autoSettlementQueue ? r._autoSettlementQueue.idx : null);
+            // erst steht der Ring (der Boden zuerst — ein Frame mit Chunk-Bau trägt keine Deko): normale Frames, bis 60 in
+            // Folge ohne Chunk-Bau laufen; der Auto-Zug ruht dabei (Hook aus), die Schlange wartet auf die Messung
+            let ruhig = 0;
+            let vorlauf = 0;
+            r.state._frameOverBudget = false;
+            window.__anazhAutoSettlement = false;
+            while (ruhig < 60 && vorlauf < 3000) {
+                B.totalMs = Infinity;
+                B.startFrame();
+                r.state._frameChunksBuilt = false;
+                r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
+                ruhig = r.state._frameChunksBuilt ? 0 : ruhig + 1;
+                vorlauf++;
+                await new Promise((rs) => setTimeout(rs, 0));
+            }
+            res.c.vorlaufFrames = vorlauf;
+            window.__anazhAutoSettlement = true;
+            const qStart = qJetzt();
+            let dekoLaeufe = 0;
+            let FRAMES = 0;
+            while (FRAMES < 3000 && r._autoSettlementQueue && qJetzt() - qStart < 2) {
+                B.totalMs = 0;
+                B.startFrame();
+                r.state._frameChunksBuilt = false;
+                r.state._frameOverBudget = true;
+                const ran = r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
+                if (ran.includes("scatterDeco") && !r.state._frameChunksBuilt) dekoLaeufe++;
+                FRAMES++;
+                await new Promise((rs) => setTimeout(rs, 0));
+            }
             // gezählt werden die bearbeiteten Slots (ein Slot an Wasser/Klippe fällt geschlossen, er zählt als Schritt)
             const qIdx1 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : qIdx0;
-            res.c.ueberBudget = Number.isFinite(qIdx0) && Number.isFinite(qIdx1) ? qIdx1 - qIdx0 : null;
-            res.c.budgetWall = res.c.ueberBudget >= 1 && res.c.ueberBudget <= 2;
+            res.c.ueberBudget = Number.isFinite(qStart) && Number.isFinite(qIdx1) ? qIdx1 - qStart : null;
+            res.c.ueberBudgetFrames = FRAMES;
+            res.c.dekoLaeufe = dekoLaeufe;
+            res.c.budgetWall = res.c.ueberBudget >= 1 && res.c.ueberBudget <= Math.floor(dekoLaeufe / drossel) + 1;
             r.state._frameOverBudget = false;
             // Materialisierung: je Tick hoechstens perTick Slots (gezaehlt).
             let ticks = 0;
@@ -704,6 +765,11 @@ const FIXTURES = [
     check("B: Γ5 — der Siedlungs-Same zieht aus dem :stadt-Stream (kein Math.random)", out.gammaStream === true);
     check("B: Γ5 — „baue dorf hier“ zieht denselben Bau-Strom (_bauSame, kein Math.random)", out.gammaHier === true);
     check(
+        "B: der DSL-Akt spawn_village trägt die Größe des Siedlungs-Gesetzes (nach der Buch-Ankunft, nie der Kern-Default)",
+        Number.isFinite(out.villageNH) && out.villageNH === out.villageNHSoll,
+        `nH ${out.villageNH} (Soll ${out.villageNHSoll})${out.villageNHErr ? " err=" + out.villageNHErr : ""}`
+    );
+    check(
         "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _isAboveWaterAt je Slot)",
         out.waterWall === true
     );
@@ -728,9 +794,9 @@ const FIXTURES = [
         `placed=${c.placed} ticks=${c.ticks}`
     );
     check(
-        "C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt (16 Takte → 1–2 Slots, nie 0)",
+        "C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt (echter Job-Pfad scatterDeco: Slots in Frames, nie 0, je Deko-Lauf ≤ 1/drosselTakte)",
         c.budgetWall === true,
-        `über dem Budget: ${c.ueberBudget} Slots in 16 Takten`
+        `über dem Budget: ${c.ueberBudget} Slots in ${c.ueberBudgetFrames} Frames (${c.dekoLaeufe} Deko-Läufe; der Ring stand nach ${c.vorlaufFrames} Frames)`
     );
     check(
         "C6: der Wege-Schlüssel trägt den Ort — zwei Siedlungen mit demselben Samen bauen je ihre Wege",

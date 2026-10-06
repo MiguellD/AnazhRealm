@@ -2129,11 +2129,10 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                // die Größe aus dem Siedlungs-Gesetz (fachwerk SIEDLUNG, derselbe Wurf wie die Auto-Dörfer) — das Stamm-
-                // Literal 9 fiel (Karte Dorf/Stadt DEFEKT 4: zwei Chat-Wege mit zwei Größen-Wahrheiten)
-                const SG = AnazhRealm._siedlungGesetz();
-                const nH = SG ? SG.nHMin + ((s >>> 24) % SG.nHSpan) : undefined;
-                this.spawnSettlement({ position: pos, seed: s, nH, autonomous: ctx.source === "nexus" });
+                // die Größe aus dem Siedlungs-Gesetz (fachwerk SIEDLUNG) — das Stamm-Literal 9 fiel (Karte Dorf/Stadt
+                // DEFEKT 4: zwei Chat-Wege mit zwei Größen-Wahrheiten); `spawnSettlement` liest das Gesetz NACH der
+                // Buch-Ankunft (bei kaltem Buch fiel die Größe sonst still auf den Kern-Default)
+                this.spawnSettlement({ position: pos, seed: s, nHAusGesetz: true, autonomous: ctx.source === "nexus" });
                 ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
             },
             // AUSLÖSCHUNGS-WELLE — der TEMPEL ist die klassische PORTIKUS-Kultur des
@@ -68899,7 +68898,7 @@ class AnazhRealm {
         // ZENSUS-REST V18.488 — der Stamm KLEMMT nur, er defaultet nie: ohne
         // o.nH führt der Kern-Default (fachwerk DORF: DP.nH — die EINE
         // Wahrheit; der divergente Stamm-Zwilling 18 vs Kern 24 ist gefallen).
-        const nH = Number.isFinite(o.nH) ? Math.max(4, Math.min(120, Number(o.nH))) : undefined;
+        let nH = Number.isFinite(o.nH) ? Math.max(4, Math.min(120, Number(o.nH))) : undefined;
         const pm = this.state.playerMesh;
         const base =
             o.position || (pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 0, z: 0 });
@@ -68908,7 +68907,9 @@ class AnazhRealm {
         const anchor = o.position ? base : this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);
         // FOUNDRY-WARM — Dorf braucht export-settlement. Kaltes Buch → LAUT blockieren
         // (kein WARN-Nichts). Autonome Worldgen-Zellen warten schon auf Channel-Live.
-        if (!o.autonomous) {
+        // Die Größe aus dem Siedlungs-Gesetz (`nHAusGesetz`, der DSL-Akt `spawn_village`) wartet auf das Buch — auch der
+        // autonome Akt (das Gesetz kommt im Buch, `_foundryIngestSiedlung`).
+        if (!o.autonomous || o.nHAusGesetz) {
             const warm = await this._foundryAwaitBook(45000);
             if (!warm.ok) {
                 const msg = `FOUNDRY KALT: Siedlung/Dorf-Spawn BLOCKIERT (${warm.reason}; ready=${warm.ready} recipes=${warm.recipes}) — kein stilles Nichts.`;
@@ -68916,6 +68917,16 @@ class AnazhRealm {
                 this._chatEcho?.(msg);
                 return null;
             }
+        }
+        if (o.nHAusGesetz && nH === undefined) {
+            const SG = AnazhRealm._siedlungGesetz();
+            if (!SG) {
+                const msg = "SIEDLUNGS-GESETZ FEHLT im Buch: Dorf-Spawn BLOCKIERT (keine Größe ohne Gesetz).";
+                this.log(msg, "ERROR");
+                this._chatEcho?.(msg);
+                return null;
+            }
+            nH = SG.nHMin + ((seed >>> 24) % SG.nHSpan);
         }
         return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then((plan) => {
             if (!plan) {
@@ -91886,13 +91897,10 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
 // (`_placeDispatch` → null); settlement = spawnSettlement + Worldgen-Konsument `_tickAutoSettlement`.
 AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 });
 // Worldgen-Auto-Dorf-Daten (Konsument `_tickAutoSettlement`, Wände + Γ5-Disziplin dort):
-// cellM Welt-Zelle (m) · rarity 1 von N Zellen trägt ein Dorf (Erstkontakt ≈ rarity·cellM²/(2·nearM))
-// · nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Ursprung (nearM <
-// spawnClearM → am Spawn wirkt nur das START-DORF) · slopeMax Site-Wand (|∇h| m/m) · siteProbeR zwei
-// Probe-Ringe (×cellM), falls der Anker scheitert · startRadiusM Start-Dorf-Radien (einmalig je Welt,
-// Seed ":startdorf") · nHMin/nHSpan Hauszahl · perTick Häuser je Idle-Tick.
-// Die GESETZ-Felder (cellM · rarity · nHMin/nHSpan · slopeMax · fundamentMaxDh) wohnen im
-// fachwerk-Gesetzbuch (SIEDLUNG, via `_siedlungGesetz`); hier stehen sie nur als Fallback.
+// nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Ursprung (nearM < spawnClearM → am
+// Spawn wirkt nur das START-DORF) · siteProbeR zwei Probe-Ringe (×cellM), falls der Anker scheitert ·
+// startRadiusM Start-Dorf-Radien (einmalig je Welt, Seed ":startdorf") · perTick Häuser je Idle-Tick ·
+// drosselTakte das Tempo über dem Frame-Budget.
 // DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
 // (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax · Klippen-Wand fundamentMaxDh) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
