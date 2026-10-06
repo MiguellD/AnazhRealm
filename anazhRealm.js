@@ -9672,8 +9672,8 @@ class AnazhRealm {
         this._tierRufTakt(Math.min(1, dt));
     }
 
-    // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (Boden unter dem Wasser-Spiegel) und
-    // Strömung (die EINE Strömungs-Quelle `_waterFlowAt`). Die Punkte wandern mit dem Ohr.
+    // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (`_nassAt`) und Strömung (die EINE
+    // Strömungs-Quelle `_waterFlowAt`). Die Punkte wandern mit dem Ohr.
     _umweltRingProbe(um, px, pz, n) {
         const R = um.ring;
         for (let k = 0; k < n; k++) {
@@ -9682,12 +9682,18 @@ class AnazhRealm {
             const pt = R.punkte[i];
             const x = px + pt.ux * pt.r;
             const z = pz + pt.uz * pt.r;
-            const boden = this._voxelSurfaceY(x, z);
-            const nass = boden !== null && Number.isFinite(boden) && boden < this._waterLevelAt(x, z) - 0.05;
+            const nass = this._nassAt(x, z);
             R.nass[i] = nass ? 1 : 0;
             const fl = nass ? this._waterFlowAt(x, z) : null;
             R.tempo[i] = fl ? Math.hypot(fl.x, fl.z) : 0;
         }
+    }
+
+    // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter dem Wasser-Spiegel; eine Höhle, ein
+    // Loch (Surface null) trägt kein Wasser. Die EINE Nässe des Klangs: der Hör-Ring und der Wasser-Hauch lesen sie.
+    _nassAt(x, z) {
+        const boden = this._voxelSurfaceY(x, z);
+        return boden !== null && Number.isFinite(boden) && boden < this._waterLevelAt(x, z) - 0.05;
     }
 
     // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
@@ -65009,10 +65015,12 @@ class AnazhRealm {
         if (!opts.silent && entry.blockerAABBs) {
             const { span: _fpSpan } = this._voxelChunkConfig();
             const footprintKeys = new Set();
+            const fussabdruecke = [];
             for (const aabb of entry.blockerAABBs) {
                 const cxw = (aabb.minX + aabb.maxX) * 0.5;
                 const czw = (aabb.minZ + aabb.maxZ) * 0.5;
                 const r = Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5;
+                fussabdruecke.push({ cx: cxw, cz: czw, r });
                 // `skirt=0`: nur die Chunks unter der Architektur-AABB neu bauen, keine Skirt-Nachbarn (Density
                 // unverändert → keine Naht-Inkonsistenz) — ~89 % weniger dirty-Chunks, kein Bau-Klick-Spike.
                 this._remeshVoxelChunksAround(cxw, czw, r, 0);
@@ -65038,8 +65046,8 @@ class AnazhRealm {
                 if (this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks.delete(key);
             }
             // Mutiert eine solide Architektur die Cell-Klassifikation (Wasser strömt um den Damm), antwortet die
-            // Welt mit einem kurzen Strömungs-Hauch. KEIN Journal-Eintrag je Spawn (Journal-Idempotenz).
-            this._playWaterReactionPing();
+            // Welt mit einem kurzen Strömungs-Hauch — nur wo Wasser ist. KEIN Journal-Eintrag je Spawn (Journal-Idempotenz).
+            this._playWaterReactionPing(fussabdruecke);
             // V18.129 — eine solide Architektur kann ein DAMM sein: Kappen/Stau-
             // Felder der Region verwerfen (lazy-Neubau liest die frisch
             // gestempelten Zellen) + CA wecken → das Wasser staut sich auf.
@@ -73631,8 +73639,8 @@ class AnazhRealm {
                 // Density-Effekt → keine Skirt-Nachbarn-Naht.
                 this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r, 0);
             }
-            // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück.
-            this._playWaterReactionPing();
+            // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück (klingt nur, wo Wasser ist).
+            this._playWaterReactionPing(blockerFootprints);
             // Ein abgebauter DAMM lässt seinen Stausee ablaufen: Kappen/Stau-Felder verwerfen + CA wecken
             // (Gravitation ist kappen-frei; die Empfänger-Kappe sinkt lazy zurück).
             for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
@@ -73653,10 +73661,22 @@ class AnazhRealm {
         return true;
     }
 
-    // Wasser strömt zurück, wenn eine solide Welt-Geste die Wasser-Cell-Klassifikation verschiebt: ein Chor aus
-    // MINNAERT-Blasen auf Oszillatoren (klang:SUBSTANZ.wasser, die Blasen wachsen über das Ereignis). Stumm ohne Symphonie.
-    _playWaterReactionPing() {
-        this._substanzKlang("wasser", null);
+    // Wasser strömt zurück (Abbau) oder um den Damm (Bau) — nur wo Wasser IST: liegt ein Punkt eines Fußabdrucks
+    // ({cx, cz, r}: Mitte und Rand in vier Richtungen) im Wasser (`_nassAt`), antwortet ein Chor aus MINNAERT-Blasen auf
+    // Oszillatoren (klang:SUBSTANZ.wasser, die Blasen wachsen über das Ereignis). Ein Stein auf trockenem Land bleibt
+    // stumm — bis 06.10. hauchte jeder Bau und Abbau eines Blockers Wasser, auch fern jedes Ufers. Stumm ohne Symphonie.
+    _playWaterReactionPing(fussabdruecke) {
+        const R = [
+            [0, 0],
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ];
+        const nass = (fussabdruecke || []).some((f) =>
+            R.some(([ux, uz]) => this._nassAt(f.cx + ux * f.r, f.cz + uz * f.r))
+        );
+        if (nass) this._substanzKlang("wasser", null);
     }
 
     // Eine resonierende Form verklingt beim Abbau (klang:SUBSTANZ.abschied — Tonhöhe aus der Resonanz, Glissando nach

@@ -488,6 +488,9 @@ const FORBIDDEN = [
     },
     // Das Ohr liest die Kronen-Karte der STEHENDEN Bäume (`_kronenStreuAt`), nie das Kronenlicht-Feld der Platzierung.
     { token: "1 - this._canopyLightAt(px, pz, fussY)", fiel: "Integration W5-Klang — die Laub-Deckung ist _kronenStreuAt" },
+    // Der Wasser-Hauch klingt nur, wo Wasser ist: jeder Bau und Abbau reicht seine Fußabdrücke (`_nassAt`) — der Aufruf
+    // ohne Fußabdruck hauchte bis 06.10. auch fern jedes Ufers (der Stein-Abbau war nie stumm).
+    { token: "this._playWaterReactionPing()", fiel: "Integration W5-Klang — _playWaterReactionPing(fussabdruecke)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

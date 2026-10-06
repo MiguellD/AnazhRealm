@@ -33,7 +33,8 @@
 //  (E) EREIGNISSE: Treffer · Wasser strömt · eine Form singt · eine Form verklingt · ein
 //      Tier ruft · ein Ding im Inventar klingt · ein Tier antwortet auf einen Auftrag · ein Tier
 //      steigt eine Stufe — je einmal über den echten Weg ausgelöst: jede Quelle aus dem Gesetzbuch,
-//      keine Verbindung am Master vorbei direkt an den Ausgang.
+//      keine Verbindung am Master vorbei direkt an den Ausgang. Und still, wo die Welt still ist: der
+//      Wasser-Hauch auf trockenem Land baut keine Quelle.
 //  (L) LAB = WELT: das Klang-Studio (worlds/klang) spielt seine Orte über
 //      __klangCore.umweltGraph, sein Seeufer trägt das Ufer, und jeder Lab-Ort hält
 //      dasselbe SOLL wie der Welt-Ort.
@@ -51,7 +52,8 @@
 //  aus dem Stamm am Master vorbei (zwillingGlocke) → E · ein Graph ohne Werkstatt am
 //  Seeufer → W · ein Ruf, der im Spiel-Takt rechnet (zwillingRuf) → W · die Glut auf Armlänge
 //  ohne Spitzen-Wand → P · ein Ping-Zwilling im Stamm-Text (zwillingPing) → G Stamm beim Namen · ein Wald-Ort
-//  ohne stehenden Baum → S wald. Stubs restauriert.
+//  ohne stehenden Baum → S wald · ein Wasser-Hauch, der den Fußabdruck nicht liest (zwillingHauch) → E wasserTrocken.
+//  Stubs restauriert.
 //
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--aufnahme <ordner>] [--json <datei>]
 //   (--aufnahme: je Ort 6 s Ausgang als WAV + Spektrogramm-PNG, dazu der Lab-Ort offline;
@@ -234,6 +236,7 @@ function werkzeug() {
             await sleep(0);
         }
         if (best) orte.seeufer = best;
+        W.wasserPunkt = best ? best.wasser : null; // die Ereignis-Tour lässt das Wasser hier zurückströmen
         // Waldinneres: höchste Kronen-Deckung der Kronen-Karte auf trockenem Land (die Karte trägt die stehenden Kronen;
         // bei Gleichstand gewinnt der dichtere Bestand).
         let wald = null;
@@ -369,7 +372,8 @@ function werkzeug() {
     W.ereignisse = async () => {
         const s = st.symphony;
         const out = [];
-        const fang = async (art, fn, warteMs) => {
+        // `still`: ein Ereignis, das die Welt an diesem Ort NICHT hören darf (keine Quelle ist das Soll).
+        const fang = async (art, fn, warteMs, still) => {
             const a = window.__klangQuellen.length;
             const b = window.__klangAusgang.length;
             const syn0 = W.synthese();
@@ -385,6 +389,7 @@ function werkzeug() {
             const syn1 = W.synthese();
             out.push({
                 art,
+                still: !!still,
                 quellen: neu().map((e) => ({ art: e.art, frames: W.frames(e.stapel) })),
                 amAusgang: window.__klangAusgang
                     .slice(b)
@@ -394,7 +399,11 @@ function werkzeug() {
             });
         };
         await fang("treffer", () => r._playKampfOneShot({ härte: 1, dichte: 0.2 }));
-        await fang("wasser", () => r._playWaterReactionPing());
+        // Wasser strömt zurück — am Wasser des Seeufers; auf der trockenen Wiese (das Ohr steht dort) bleibt es still.
+        const wp = W.wasserPunkt;
+        await fang("wasser", () => r._playWaterReactionPing(wp ? [{ cx: wp.x, cz: wp.z, r: 1 }] : []));
+        const pm0 = st.playerMesh.position;
+        await fang("wasserTrocken", () => r._playWaterReactionPing([{ cx: pm0.x, cz: pm0.z, r: 1 }]), 0, true);
         await fang("abschied", () => r._playArchitectureFarewellPing({ type: "kristall_geode" }));
         await fang("singen", () => {
             st.blueprints.__klangOrb = {
@@ -1088,6 +1097,11 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
             continue;
         }
         werkstatt(e.art, e.hauptSynthese);
+        if (e.still) {
+            if (e.quellen.length)
+                rot.push(`E ${e.art}: ${e.quellen.length} Quelle(n), wo die Welt still ist (${e.quellen[0].frames.slice(0, 3).map((f) => f.fn).join(" ← ")})`);
+            continue;
+        }
         if (!e.quellen.length) rot.push(`E ${e.art}: keine Quelle (stumm)`);
         for (const q of e.quellen)
             if (!q.frames.some((f) => f.datei === "klang-core.js"))
@@ -1494,10 +1508,26 @@ function drucke(zeilen, offline, kostenErg, lab) {
                 if (!urteile(d10, null, null).rot.some((t) => /^S wald: der Bestand trägt keinen Wald/.test(t)))
                     fehl.push("S10: ein Wald ohne Bäume bleibt unbemerkt");
             } else fehl.push("S10: kein Wald-/Wiesen-Ort gemessen");
+            // S11: ein Wasser-Hauch, der den Fußabdruck nicht liest (er klänge auch auf trockenem Land) — die Tour nennt es.
+            const e11 = await page.evaluate(async () => {
+                const r = window.anazhRealm;
+                const P = Object.getPrototypeOf(r);
+                const alt = P._playWaterReactionPing;
+                P._playWaterReactionPing = function zwillingHauch() {
+                    this._substanzKlang("wasser", null);
+                };
+                try {
+                    return await window.__klangW.ereignisse();
+                } finally {
+                    P._playWaterReactionPing = alt;
+                }
+            });
+            if (!urteile({}, null, null, e11).rot.some((t) => /^E wasserTrocken: \d+ Quelle\(n\), wo die Welt still ist/.test(t)))
+                fehl.push("S11: der Wasser-Hauch auf trockenem Land bleibt unbemerkt");
             for (const t of fehl) console.log("   ❌ " + t);
             if (!fehl.length)
                 console.log(
-                    "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen · S10 Wald ohne Bestand rot"
+                    "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen · S10 Wald ohne Bestand rot · S11 Wasser-Hauch auf trockenem Land beim Namen"
                 );
             selbstOk = fehl.length === 0;
             ergebnis.selbsttest = fehl;
