@@ -208,6 +208,9 @@ function wand(src) {
     const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
     const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
     const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
+    // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie).
+    const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length;
+    const plattQuelle = /\.type === "start_plattform"/.test(fnBody(nc, /\n {4}_genesisPlattform\(\) \{/) || "");
     return [
         [
             "W1 die Bühne zeichnet ungemaskt (`_buehneRender`: uLodMaskOn 0 um den Render, im finally zurück)",
@@ -223,6 +226,11 @@ function wand(src) {
             /throw fehler;/.test(evalPos) && /this\._dslKeinOrt\(/.test(evalPos) && !/return null/.test(evalPos) && (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1,
         ],
         ["W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)", wachen === 0, `${wachen} Wache(n)`],
+        [
+            "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
+            plattQuelle && plattSuchen === 1,
+            `${plattSuchen} Suche(n) nach start_plattform`,
+        ],
     ];
 }
 
@@ -751,11 +759,16 @@ async function probe(arg) {
             .replace(
                 "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
                 "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"
+            )
+            // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
+            .replace(
+                "const anchor = this._genesisPlattform();",
+                'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'
             );
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache) → W1 W2 W3 W4 feuern",
-            rot.filter((w) => !w[1]).length === 4,
+            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling) → W1–W5 feuern",
+            rot.filter((w) => !w[1]).length === 5,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.

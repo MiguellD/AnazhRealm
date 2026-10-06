@@ -24374,12 +24374,11 @@ class AnazhRealm {
         return { x: 0, z: 0, y: Number.isFinite(h0) ? h0 : 0 };
     }
 
-    // Genesis-Plattform, idempotent (nur wenn keine start_plattform existiert, z. B. nach Reload);
-    // der Spieler steht oben drauf. Der Punkt kommt aus `_findOpenSpawnSpot`.
+    // Genesis-Plattform, idempotent (nur wenn keine start_plattform existiert, z. B. nach Reload — die EINE Quelle
+    // `_genesisPlattform` sagt es); der Spieler steht oben drauf. Der Punkt kommt aus `_findOpenSpawnSpot`.
     _ensureGenesisPlatform() {
         if (!this.state.architectures) return;
-        const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
-        if (exists) return;
+        if (this._genesisPlattform()) return;
         const spot = this._findOpenSpawnSpot();
         const h0 = spot.y;
         // Plattform 5 m über dem Terrain (genug Überblick, nicht
@@ -43762,13 +43761,13 @@ class AnazhRealm {
         if (pm && pm.position && typeof this._depositLife === "function") {
             this._depositLife(pm.position.x, pm.position.z);
         }
-        // Rückkehr am Genesis-Anker (die Start-Plattform); ohne Anker der
-        // offene Spawn-Spot — dieselben Quellen wie der Welt-Ursprung.
-        const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");
+        // Rückkehr am Genesis-Anker (die Start-Plattform, `_genesisPlattform` — die EINE Quelle des Genesis-Orts); ohne
+        // Anker der offene Spawn-Spot.
+        const anchor = this._genesisPlattform();
         let ax = 0;
         let az = 0;
         let ay = null;
-        if (anchor && anchor.position) {
+        if (anchor) {
             ax = anchor.position.x;
             az = anchor.position.z;
             ay = anchor.position.y + 2.2;
@@ -72953,8 +72952,8 @@ class AnazhRealm {
     // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
     // Positions-Tiebreak) in ±2 Nachbarzellen konkurriert. Rein → reihenfolge-unabhängig; strikte Total-Ordnung → kein
     // Paar akzeptierter Zentren < pack·(Ti+Tj). Shared shy-Distanz (phyto-core forestTooClose) + named prio-max
-    // (forestPrioWins); FOREST_TOPOLOGY.host = "cell" (Feel-Entscheid .116). Der Pflanz-Gang und die Spawn-Wahl lesen
-    // DIESE Antwort — der Wald ist eine Funktion, nie zwei.
+    // (forestPrioWins); FOREST_TOPOLOGY.host = "cell" (Feel-Entscheid .116). Einziger Leser ist der Pflanz-Gang
+    // (`_forestPlantChunk`) — die Spawn-Wahl liest den Wald nicht, die Genesis-Lichtung hält ihn von der Plattform fern.
     _forestDartSteht(d, gx, gz, cellDarts) {
         const F = AnazhRealm.FOREST;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
