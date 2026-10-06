@@ -570,6 +570,15 @@ const FORBIDDEN = [
     // DIE SPERRE GILT JE BODEN (W7-Vereinigung): das Gedächtnis der Sperre galt je Auge allein — ein neuer Boden im Stand
     // (Graben, Ring, Geomorph) erreichte es nicht. `_hoehlenAugeGleich` liest die Generation des Bodens (`H.boden`).
     { token: "_hoehlenAugeGleich(tor,", fiel: "W7-Vereinigung — die Sperre gilt je Auge UND je Boden (H.boden)" },
+    // DER EINE FAHR-SCHRITT (Welle L, Q13, 06.10.): die zweite Kopie des Zweispur-Modells im Stamm fiel (Längs-Antrieb als
+    // exp-Lerp, gemessene Längs-Beschleunigung, eigene Federn je Werk) — der Ritt fährt vehicle-core fahrSchritt, die
+    // Probefahrt auch (`FlatF` lebt nur im Kern: gate:fahr-leben K1).
+    { token: "_fahrVLongPrev", fiel: "Welle L Q13 — die Längs-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLong)" },
+    { token: "_ridePitchV", fiel: "Welle L Q13 — die Nick-Feder lebt im Fahr-Zustand des Kerns (fNickV)" },
+    { token: "_rideKurvenRollV", fiel: "Welle L Q13 — die Wank-Feder lebt im Fahr-Zustand des Kerns (fWankV)" },
+    { token: "_rideHeaveV", fiel: "Welle L Q13 — die Hub-Feder lebt im Fahr-Zustand des Kerns (fHubV)" },
+    { token: "_rideYawPrev", fiel: "Welle L Q13 — die Quer-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLat)" },
+    { token: "Spring.prototype.step", fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern", auch: ["worlds/garage/garage.js"] },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

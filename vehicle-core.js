@@ -2251,6 +2251,23 @@
             elEase: 0.02,
             posEase: 0.0016,
         },
+        // ── WELLE L (06.10., rein additive DATEN-Zeile — Praezedenz: kamera) — DER FAHR-SCHRITT (fahrSchritt unten):
+        //    die Lab-Literale des alten updateVehicle (byte-gleich umgezogen: Brems-Schwelle, Rueckwaerts-Antrieb und
+        //    -Deckel, Halt am Stand, Gier-Daempfung beim Halt), die Waende des Welt-Ritts (Ebenen-Klammer 0,7 rad = 40°,
+        //    Feder-Anschlaege) und der Abhebe-Abstand der Vertikale. EINE Quelle fuer Probefahrt UND Welt-Ritt. ──
+        schritt: {
+            bremsV: 0.3, // m/s: darueber bremst die Bremse, darunter faehrt sie rueckwaerts
+            rueckAntrieb: 0.4, // Anteil aEngine rueckwaerts
+            rueckVmax: 0.32, // Anteil vmax rueckwaerts
+            haltV: 0.08, // m/s: darunter haelt der Wagen ohne Eingabe (bis zum Reibkreis)
+            haltGier: 0.5, // Gier-Rate-Rest je Halt-Schritt
+            ebeneMax: 0.7, // rad: steiler traegt die Vier-Punkt-Ebene nur, wo der Grund unter dem Ursprung auf ihr liegt
+            ebeneTol: 0.5, // m: so nah muss der Grund unter dem Ursprung an einer steilen Ebene liegen (sonst: Kante)
+            stufeRad: 0.5, // Anteil radR: die Stufe, die ein Rad in einem Schritt hinaufsteigt (hoeher ist eine Wand)
+            luftEps: 0.02, // m: so weit unter der Fallkurve verliert das Rad den Griff (darunter haftet es)
+            nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
+            hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
+        },
     };
     // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
     // compound "hub-yaw" = Host rad.front + rotation.y = base + _rideSteerYaw (.120).
@@ -2477,6 +2494,328 @@
             // N8 (rein additiv) — die Probefahrt-Kamera reist mit (s. FAHR.kamera).
             kamera: FAHR.kamera,
         };
+    }
+
+    // ══ WELLE L (06.10., rein additiv — Praezedenz: exportDrive) — DER EINE FAHR-SCHRITT ══
+    // Befund 06.10. (artifacts/profiband/leben, Klasse Q13): Probefahrt (worlds/garage updateVehicle) und Welt-Ritt
+    // (anazhRealm _loopPlayerMovement) integrierten ZWEI Kopien des Zweispur-Modells, die auseinanderliefen (Laengs-
+    // Antrieb als Kraft gegen exp-Lerp, g 9,8 gegen 9,81, Stillstand des GT 54,7° gegen 66,6°) — und keine kannte eine
+    // Vertikale (der Wagen klebte am Boden, sprang im Spalt 7,95 m in einem Takt und hing danach 16,7 m in der Luft),
+    // den Quer-Hangabtrieb (0,00 m Abdrift am 35°-Querhang) oder den Reibkreis laengs (der Supersport stieg jede Wand
+    // hinauf). Jetzt EIN Satz, Probefahrt und Welt rufen ihn:
+    //   fahrGesetz(d, auf)              — der Fahr-Satz aus exportDrive (Lab: exportDrive(P); Welt: das fahrprofil
+    //                                     des Buchs) + die Aufstandspunkte {vorn, hinten, quer, bauch}
+    //   fahrZustand(x, z, yaw)          — ein frischer Zustand (der Lab-`car`, der Welt-`entry._fahr`)
+    //   fahrEbene(G, boden, x, z, yaw)  — die Ebene der vier Aufstandspunkte; sie traegt nur innerhalb der Klammer,
+    //                                     an einer Kante traegt der Grund unter dem Ursprung den Bauch
+    //   fahrStand(z, G, boden, dt)      — Ebene · ballistische Vertikale (Abheben, Fallen, Landen ueber die Hub-
+    //                                     Feder) · Aufbau-Federn (Nick, Wank, Hub)
+    //   fahrKraefte(z, e, G, dt)        — Lenksaeule · Schlupf · Reifenkraefte · Reibkreis laengs · Hangabtrieb
+    //                                     laengs UND quer · Halt am Stand · Gier · Lage
+    //   fahrSchritt(z, e, G, boden, dt) — Kraefte, dann Stand (die Probefahrt). Der Welt-Ritt ruft Stand, dann Kraefte,
+    //                                     und sein EINER Kontakt-Loeser setzt die Lage dazwischen — dieselbe Folge.
+    // Konvention (das Lab): yaw dreht den Bug (+x) nach (cos, −sin), links = (−sin, −cos); vlat > 0 nach links;
+    // steig > 0 Bug hoeher; wank > 0 links hoeher; fNick > 0 Bug hoch; fWank > 0 rechte Seite tief; fHub < 0 eingefedert.
+    // REIN + THREE-frei. boden(x, z) liefert die Hoehe des Bodens (nicht-finit = ungebaut).
+    function fahrGesetz(d, auf) {
+        const zs = d && d.zweispur;
+        const lk = d && d.lenkung;
+        if (!zs || !lk || !(d.vmax > 0) || !(d.kAcc > 0) || !(zs.mass > 0) || !(zs.Izz > 0)) return null;
+        const h = d.huelle;
+        const a = auf || (h ? { vorn: h.fAx, hinten: h.rAx, quer: h.spur / 2, bauch: h.yFloor } : null);
+        if (!a || !(a.vorn > a.hinten) || !(a.quer > 0)) return null;
+        const aEngine = d.kAcc * d.vmax;
+        const sp = d.spring || {};
+        return {
+            m: zs.mass,
+            Izz: zs.Izz,
+            b: zs.b,
+            c: zs.c,
+            L: lk.radstand,
+            W: d.spur,
+            cgH: d.cgH,
+            radR: d.radR,
+            grip: zs.grip,
+            g: zs.G,
+            CA_F: zs.CA_F,
+            CA_R: zs.CA_R,
+            maxGrip: zs.maxGrip,
+            aEngine: aEngine,
+            dragK: aEngine / (d.vmax * d.vmax), // das Gleichgewicht dragK·vmax² = aEngine (carPhys)
+            vmax: d.vmax,
+            maxSteer: lk.maxSteer,
+            sfK: lk.sfK,
+            brakeDecel: lk.brakeDecel,
+            handDecel: lk.handDecel,
+            steerK: zs.steerK,
+            steerZentrK: zs.steerZentrK,
+            slipEps: zs.slipEps,
+            handLatMul: zs.handLatMul,
+            lowBlendV: zs.lowBlendV,
+            lowLatK: zs.lowLatK,
+            pitchGain: zs.pitchGain,
+            rollGain: zs.rollGain,
+            heaveA: zs.heaveA,
+            heaveV: zs.heaveV,
+            heaveKMul: zs.heaveKMul,
+            heaveCMul: zs.heaveCMul,
+            aPitchMax: zs.aPitchMax,
+            aLatMax: zs.aLatMax,
+            k: sp.k,
+            cd: sp.c,
+            auf: { vorn: a.vorn, hinten: a.hinten, quer: a.quer, bauch: Number.isFinite(a.bauch) ? a.bauch : 0 },
+        };
+    }
+    function fahrZustand(x, z, yaw) {
+        return {
+            x: x || 0,
+            z: z || 0,
+            yaw: yaw || 0,
+            vlong: 0,
+            vlat: 0,
+            yawRate: 0,
+            steer: 0,
+            wheelAng: 0,
+            speed: 0,
+            aLong: 0,
+            aLat: 0,
+            slipF: 0,
+            slipR: 0,
+            y: NaN,
+            vy: 0,
+            luft: false,
+            steig: 0,
+            wank: 0,
+            traegt: true,
+            fNick: 0,
+            fNickV: 0,
+            fWank: 0,
+            fWankV: 0,
+            fHub: 0,
+            fHubV: 0,
+        };
+    }
+    function fahrEbene(G, boden, x, z, yaw) {
+        const a = G.auf;
+        const S = FAHR.schritt;
+        const fx = Math.cos(yaw),
+            fz = -Math.sin(yaw),
+            lx = -Math.sin(yaw),
+            lz = -Math.cos(yaw);
+        const h = (l, q) => boden(x + fx * l + lx * q, z + fz * l + lz * q);
+        const vLi = h(a.vorn, a.quer),
+            vRe = h(a.vorn, -a.quer),
+            hLi = h(a.hinten, a.quer),
+            hRe = h(a.hinten, -a.quer);
+        if (!Number.isFinite(vLi) || !Number.isFinite(vRe) || !Number.isFinite(hLi) || !Number.isFinite(hRe))
+            return null;
+        const hV = (vLi + vRe) / 2,
+            hH = (hLi + hRe) / 2;
+        const lang = Math.max(0.5, a.vorn - a.hinten);
+        const y0 = hH + ((hV - hH) * -a.hinten) / lang;
+        const steig = Math.atan2(hV - hH, lang);
+        const wank = Math.atan2((vLi + hLi) / 2 - (vRe + hRe) / 2, Math.max(0.5, 2 * a.quer));
+        // Die Ebene traegt nur, wo sie eine Ebene ist: der Grund unter dem Ursprung liegt auf ihr (ein gleichmaessiger
+        // Steilhang) ODER sie liegt innerhalb der Klammer. Sonst liegt eine KANTE unter dem Wagen (Spalt, Klippe) — vorher
+        // mittelte die Ebene Rand und Grund, und der Wagen hing 16,7 m ueber dem Spaltgrund in der Luft.
+        const mitte = boden(x, z);
+        const traegt =
+            (Math.abs(steig) <= S.ebeneMax && Math.abs(wank) <= S.ebeneMax) ||
+            (Number.isFinite(mitte) && Math.abs(mitte - y0) <= S.ebeneTol);
+        let y = traegt ? y0 : -Infinity;
+        // Kein Bauch im Boden: der Grund unter dem Ursprung traegt den Bauch (Kuppe, Kante; huelle.yFloor).
+        if (Number.isFinite(mitte)) y = Math.max(y, mitte - a.bauch);
+        if (!Number.isFinite(y)) return null;
+        // Auf der Kante ist die Lage die der Klammer (die Punkte liegen auf Rand und Grund, keine Flaeche).
+        const kl = (w) => (traegt ? w : Math.max(-S.ebeneMax, Math.min(S.ebeneMax, w)));
+        return { y: y, steig: kl(steig), wank: kl(wank), traegt: traegt };
+    }
+    function fahrFeder(z, key, m, k, c, dt, max) {
+        const kv = key + "V";
+        let v = Number.isFinite(z[kv]) ? z[kv] : 0;
+        let x = Number.isFinite(z[key]) ? z[key] : 0;
+        v += (m - k * x - c * v) * dt; // dieselbe Feder wie Spring.step der Probefahrt (semi-implizit)
+        x += v * dt;
+        if (!Number.isFinite(x) || !Number.isFinite(v)) {
+            x = 0;
+            v = 0;
+        }
+        if (x > max) {
+            x = max;
+            v = Math.min(0, v);
+        } else if (x < -max) {
+            x = -max;
+            v = Math.max(0, v);
+        }
+        z[key] = x;
+        z[kv] = v;
+    }
+    function fahrStand(z, G, boden, dt) {
+        const S = FAHR.schritt;
+        const g = G.g;
+        const eb = fahrEbene(G, boden, z.x, z.z, z.yaw);
+        if (eb) {
+            // Die Steig-Rate des Bodens unter der Fahrt (die Ableitung der Ebene laengs und quer).
+            const vBoden = (e) => z.vlong * Math.tan(e.steig) + z.vlat * Math.tan(e.wank);
+            if (!Number.isFinite(z.y)) {
+                z.y = eb.y;
+                z.vy = 0;
+                z.luft = false;
+            }
+            const yBall = z.y + z.vy * dt - 0.5 * g * dt * dt; // wohin die Fallkurve den Wagen legt
+            // Was ein Rad in einem Schritt hinaufsteigt (die Stufe + die Steig-Rate des Bodens); hoeher ist eine WAND — die
+            // Vertikale hebt den Wagen nie hinein (der Kontakt-Loeser des Wirts schiebt ihn heraus). Vorher nahm der Wagen
+            // Stufen bis 1,075 m in einem Takt.
+            const stufe = S.stufeRad * (G.radR > 0 ? G.radR : 0.34) + Math.abs(z.vy) * dt;
+            const warLuft = z.luft === true;
+            if (yBall >= eb.y) {
+                // DER BODEN FAELLT UNTER DIE FALLKURVE (Kuppe mit v²/R > g, Klippe, Spalt): der Wagen fliegt; die Reifen
+                // greifen nur, solange der Spalt unter luftEps bleibt (eine Bodenwelle hebt ihn nicht aus dem Griff).
+                z.vy -= g * dt;
+                z.y = yBall;
+                z.luft = z.y - eb.y > S.luftEps;
+            } else if (eb.y - yBall <= stufe) {
+                // DER BODEN TRAEGT: folgen — oder LANDEN, dann schlaegt der Stoss (relativ zum Boden) in die Hub-Feder.
+                const vb = vBoden(eb);
+                if (warLuft) z.fHubV = (Number.isFinite(z.fHubV) ? z.fHubV : 0) + Math.min(0, z.vy - g * dt - vb);
+                z.y = eb.y;
+                z.vy = vb;
+                z.luft = false;
+            } else if (warLuft) {
+                z.vy -= g * dt; // im Flug vor einer Wand: weiter auf der Fallkurve
+                z.y = yBall;
+            } else {
+                z.vy = 0; // an der Wand: der Wagen steigt nicht hinein
+            }
+            // Im Flug behaelt der Aufbau seine Lage; am Boden liegt er in der Ebene der Raeder.
+            if (!z.luft) {
+                z.steig = eb.steig;
+                z.wank = eb.wank;
+            }
+            z.traegt = eb.traegt;
+        }
+        // DIE AUFBAU-FEDERN (die Probefahrt-Federn: Moment aus der ECHTEN Beschleunigung der Reifen, Rezept-k/c).
+        if (G.k > 0 && G.cd >= 0) {
+            const aL = Math.max(-G.aPitchMax, Math.min(G.aPitchMax, z.aLong || 0));
+            const aQ = Math.max(-G.aLatMax, Math.min(G.aLatMax, z.aLat || 0));
+            fahrFeder(z, "fNick", aL * (G.cgH / G.L) * G.pitchGain, G.k, G.cd, dt, S.nickMax);
+            fahrFeder(z, "fWank", aQ * (G.cgH / G.W) * G.rollGain, G.k, G.cd, dt, S.nickMax);
+            const mH = -Math.abs(aL) * G.heaveA - Math.abs(z.vlong) * G.heaveV;
+            fahrFeder(z, "fHub", mH, G.k * G.heaveKMul, G.cd * G.heaveCMul, dt, S.hubMax);
+        }
+        return z;
+    }
+    function fahrKraefte(z, e, G, dt) {
+        const S = FAHR.schritt;
+        const m = G.m,
+            L = G.L,
+            b = G.b,
+            c = G.c,
+            g = G.g;
+        const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;
+        const brk = e && e.brake > 0 ? Math.min(1, e.brake) : 0;
+        const hand = !!(e && e.hand);
+        const steerIn = e && Number.isFinite(e.steer) ? Math.max(-1, Math.min(1, e.steer)) : 0;
+        // Lenksaeule: Ziel-Einschlag mit Selbstzentrierung (sf = 1/(1 + v·sfK)); der Lerp dt-ehrlich (60-fps-Basis:
+        // bei 60 fps byte-gleich dem Lab-Lerp je Frame).
+        const sf = 1 / (1 + (z.speed || 0) * G.sfK);
+        const kS = steerIn !== 0 ? G.steerK : G.steerZentrK;
+        z.steer += (steerIn * G.maxSteer * sf - z.steer) * (1 - Math.pow(1 - kS, dt * 60));
+        const cosN = Math.cos(z.steig || 0) * Math.cos(z.wank || 0); // der Normalkraft-Anteil am Hang
+        if (z.luft) {
+            // IM FLUG greift kein Reifen: nur der Luftwiderstand; die Gier dreht mit ihrer Rate weiter.
+            const aD = -G.dragK * z.vlong * Math.abs(z.vlong);
+            z.vlong += (aD + z.vlat * z.yawRate) * dt;
+            z.vlat += -z.vlong * z.yawRate * dt;
+            z.aLong = aD;
+            z.aLat = 0;
+            z.slipF = 0;
+            z.slipR = 0;
+        } else {
+            // ── Schlupfwinkel je Achse (Tiefpass im Nenner → bei Schritttempo stabil) ──
+            const vL = z.vlong,
+                dn = Math.abs(vL) + G.slipEps,
+                sgn = vL >= 0 ? 1 : -1;
+            const slipF = Math.atan2(z.vlat + z.yawRate * b, dn) - z.steer * sgn;
+            const slipR = Math.atan2(z.vlat - z.yawRate * c, dn);
+            z.slipF = slipF;
+            z.slipR = slipR;
+            // ── Achslasten mit Laengs-Lastverlagerung; am Hang traegt nur der Normal-Anteil ──
+            const Wt = m * g * cosN,
+                dW = (((z.aLong || 0) * G.cgH) / L) * m;
+            const Wf = Math.max(0, Wt * (c / L) - dW),
+                Wr = Math.max(0, Wt * (b / L) + dW);
+            // ── Reifen-SEITENKRAEFTE: Schlupf × Steifigkeit, gesaettigt am Reibkreis × Achslast ──
+            const cap = G.maxGrip * G.grip;
+            let FlatF = -Math.max(-cap, Math.min(cap, G.CA_F * slipF)) * Wf;
+            let FlatR = -Math.max(-cap, Math.min(cap, G.CA_R * slipR)) * Wr;
+            if (hand) FlatR *= G.handLatMul; // HANDBREMSE: die Heck-Seitenfuehrung bricht weg → Drift
+            // ── LAENGS am REIBKREIS: Antrieb, Bremse und Handbremse sind Reifenkraft — gedeckelt bei μ·N. Vorher trieb
+            //    der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ. ──
+            let aDrive = 0;
+            if (thr > 0) aDrive += G.aEngine * thr;
+            if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : G.aEngine * S.rueckAntrieb;
+            let Fr = aDrive * m;
+            if (hand) Fr -= G.handDecel * m * sgn;
+            const capL = cap * m * g * cosN;
+            Fr = Math.max(-capL, Math.min(capL, Fr));
+            let Fx = Fr - G.dragK * m * vL * Math.abs(vL); // Luftwiderstand (quadratisch)
+            if (Math.abs(vL) > 0.02) Fx -= FAHR.rollDecel * m * sgn; // Rollwiderstand
+            Fx -= FlatF * Math.sin(z.steer);
+            const Fy = FlatF * Math.cos(z.steer) + FlatR;
+            // ── Newton-Euler im Koerperframe (mit Rotationskopplung vlat·ω / vlong·ω) ──
+            const aLongB = Fx / m,
+                aLatB = Fy / m;
+            z.aLong = aLongB;
+            z.aLat = aLatB;
+            z.vlong += (aLongB + z.vlat * z.yawRate) * dt;
+            z.vlat += (aLatB - z.vlong * z.yawRate) * dt;
+            // ── Gier aus dem Reifenmoment; bei Schritttempo kinematisch geblendet (sonst instabil am Stand) ──
+            z.yawRate += ((b * FlatF * Math.cos(z.steer) - c * FlatR) / G.Izz) * dt;
+            const spd = Math.hypot(z.vlong, z.vlat);
+            const low = Math.max(0, Math.min(1, 1 - spd / G.lowBlendV));
+            z.yawRate = z.yawRate * (1 - low) + ((z.vlong * Math.tan(z.steer)) / L) * low;
+            // ── QUER-HANGABTRIEB g·sin(wank) zieht zur tiefen Seite; unter Schritttempo haelt ihn die Haftung bis zum
+            //    Reibkreis (darueber rutscht der Wagen, die kinematische Blende ruht). Vorher: 0,00 m Abdrift bei 35°. ──
+            const aG = -g * Math.sin(z.wank || 0);
+            const aS = cap * g * cosN;
+            const rutscht = Math.abs(aG) > aS;
+            z.vlat *= 1 - low * (rutscht ? 0 : G.lowLatK);
+            z.vlat += (rutscht ? aG : (1 - low) * aG) * dt;
+            // ── HALT am Stand ohne Eingabe: die Bremse haelt, solange der Hang unter dem Reibkreis liegt; sonst wirkt
+            //    der LAENGS-HANGABTRIEB −g·sin(steig) (vorher je Frame-Zahl ein Kriechen oder freies Rollen). ──
+            const hangL = g * Math.abs(Math.sin(z.steig || 0));
+            if (thr === 0 && brk === 0 && spd < S.haltV && hangL <= aS && !rutscht) {
+                z.vlong = 0;
+                z.vlat = 0;
+                z.yawRate *= S.haltGier;
+            } else {
+                z.vlong -= g * Math.sin(z.steig || 0) * dt;
+            }
+        }
+        z.yaw += z.yawRate * dt;
+        if (z.vlong > G.vmax) z.vlong = G.vmax;
+        if (z.vlong < -G.vmax * S.rueckVmax) z.vlong = -G.vmax * S.rueckVmax;
+        // NaN-Wand vor dem Gedaechtnis (die Gier bleibt, wo sie war).
+        if (!Number.isFinite(z.vlong) || !Number.isFinite(z.vlat) || !Number.isFinite(z.yawRate)) {
+            z.vlong = 0;
+            z.vlat = 0;
+            z.yawRate = 0;
+        }
+        if (!Number.isFinite(z.steer)) z.steer = 0;
+        if (!Number.isFinite(z.yaw)) z.yaw = 0;
+        // ── Lage aus der Koerper-Geschwindigkeit (vorwaerts = (cos, −sin), links = (−sin, −cos)) ──
+        const cy = Math.cos(z.yaw),
+            sy = Math.sin(z.yaw);
+        z.x += (z.vlong * cy - z.vlat * sy) * dt;
+        z.z += (-z.vlong * sy - z.vlat * cy) * dt;
+        z.speed = Math.hypot(z.vlong, z.vlat);
+        z.wheelAng += (z.vlong / Math.max(0.1, G.radR)) * dt; // Abrollen ω = v/r
+        return z;
+    }
+    function fahrSchritt(z, e, G, boden, dt) {
+        fahrKraefte(z, e, G, dt);
+        return fahrStand(z, G, boden, dt);
     }
 
     const PARAMS = [
@@ -2886,6 +3225,13 @@
         PRUEF_GESETZ: PRUEF_GESETZ,
         PRUEF_VIS: PRUEF_VIS,
         exportDrive: exportDrive,
+        // WELLE L (rein additiv) — der EINE Fahr-Schritt (Probefahrt UND Welt-Ritt)
+        fahrGesetz: fahrGesetz,
+        fahrZustand: fahrZustand,
+        fahrEbene: fahrEbene,
+        fahrStand: fahrStand,
+        fahrKraefte: fahrKraefte,
+        fahrSchritt: fahrSchritt,
         A_PITCH_MAX: A_PITCH_MAX,
         A_LAT_MAX: A_LAT_MAX,
         // Bau-Fläche (die Shell baut ihre Ebenen aus DIESER Quelle)

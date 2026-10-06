@@ -28730,18 +28730,24 @@ async function checkBandV18150Ride(ctx) {
             out.brennglasSafe = /riddenId/.test(window.__codeOf(r._tickFocusingAffordances));
             // P3: der Reiter-Skip lebt jetzt in der Feld-Struktur-Kollision (nicht mehr im Cull-Tick).
             out.lazyPassSkips = /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
-            // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
-            // Feld-nativ: die horizontale Geschwindigkeit lebt in state.playerVel.
-            // Welle L (Q1): Gier und Rad-Phase integriert der Sim-Schritt (`_rittSchritt`), die Pose zeichnet der Frame.
-            r.state.playerVel.setValue(5, 0, 0);
-            for (let i = 0; i < 3; i++) {
-                r._rittSchritt(0.05);
-                r._tickMountedMovement(0.05);
+            // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
+            // Welle L (Q13): ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
+            // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
+            for (const k of ["w", "a", "s", "d", "shift"]) r.state.keys[k] = false;
+            r.state.keys.w = true;
+            let tSim = 1000;
+            for (let i = 0; i < 30; i++) {
+                tSim += 1 / 60;
+                r._stepFixedSim(tSim, 1 / 60);
+                r._tickMountedMovement(1 / 60);
             }
-            const yawTarget = Math.atan2(5, 0);
+            r.state.keys.w = false;
+            const vFahrt = r.state.playerVel;
+            const yawTarget = Math.atan2(vFahrt.x(), vFahrt.z());
             out.orients =
                 Number.isFinite(entry._rideYaw) &&
-                Math.abs(entry._rideYaw - yawTarget) < 1.2 &&
+                Math.hypot(vFahrt.x(), vFahrt.z()) > 0.5 &&
+                Math.abs(entry._rideYaw - yawTarget) < 0.2 &&
                 entry.mesh &&
                 Math.abs(entry.mesh.rotation.y - entry._rideYaw) < 1e-6;
             out.wheelsRoll = (entry._ridePhase || 0) > 0.3;
