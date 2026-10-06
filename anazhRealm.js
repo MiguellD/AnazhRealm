@@ -62017,6 +62017,7 @@ class AnazhRealm {
             iEnde: 0, // Hochwasser der Abschnitte im Index
             iSumme: 0, // Indizes aller Bereiche (der ganze Ring)
             takt: 0, // Render-Takt (_tickChunkSatz) — ein Abschnitt, den kein Pass mehr fragt, fällt beim Umlegen
+            leerSeit: -1, // der Takt, seit dem der Satz keinen Bereich trägt (`_chunkSatzLeert`), -1 = er trägt einen
             schmutzig: false,
             anker: null,
             verborgen: false,
@@ -62043,6 +62044,7 @@ class AnazhRealm {
     // liegen); was der Haupt-Pass schon aufzeichnete, liest die alte, die bis zur Abgabe lebt.
     _chunkSatzGeometrie(s, vKap, iKap) {
         const alt = s.geom;
+        const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie die Rückkehr (`_chunkSatzLeert`)
         const g = new THREE.BufferGeometry();
         for (const [name, is] of s.spec.attr) {
             const arr = new Float32Array(vKap * is);
@@ -62071,9 +62073,38 @@ class AnazhRealm {
         // Stoff hängen (sein dispose-Hörer hält sie).
         if (s.mesh) s.mesh.geometry = g;
         if (alt) {
-            s.wachse++;
+            if (waechst) s.wachse++;
             this._queueGeometryDispose(alt);
         }
+    }
+
+    // DER LEERE SATZ (Integration W6, 06.10.): ein Satz ohne Bereich hält seine Pool-Kapazität nicht. Nach der Ruhe-Frist
+    // der Abschnitte (`ruheTakte` Render-Takte ohne Bereich — die Gnadenfrist der Gruppen liegt davor) kehrt er auf seine
+    // Start-Kapazität (CHUNK_SATZ) zurück: seine Abschnitte fallen, die Geometrie tauscht am SELBEN Mesh, die alten Puffer
+    // verlassen die GPU über den Kehraus. Befund (echte GPU, Mess-Wiese, drei Wander-Schleifen à 1,2 km, Puffer-Linse): die
+    // Bau-Sätze verlassener Dörfer hielten 38,3 MB in 147 Puffern, die größten ohne einen Bereich (buf:szene 90,5 MB gegen
+    // die Ratsche 40,6) — die Residenz folgte der Geschichte, nicht dem Bild.
+    _chunkSatzLeert(s) {
+        if (s.bloecke.size > 0) {
+            s.leerSeit = -1;
+            return;
+        }
+        if (s.leerSeit == null || s.leerSeit < 0) s.leerSeit = s.takt;
+        if (s.takt - s.leerSeit <= AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte) return;
+        const C = AnazhRealm.CHUNK_SATZ[s.spec.kapazitaet || s.art];
+        if (s.vKap <= C.v && s.iKap <= C.i) return;
+        s.abschnitte.clear();
+        s.iEnde = 0;
+        s.vFrei.length = 0;
+        s.vEnde = 0;
+        const alt = s.geom;
+        this._chunkSatzGeometrie(s, C.v, C.i);
+        // Der leere Satz zeichnet nicht (unsichtbar): seine Render-Objekte lesen die alte Geometrie bis zum nächsten
+        // Zeichnen, und der Kehraus hielte ihre Puffer für gezeichnet (gemessen in derselben Welt: die Kapazität der Sätze
+        // fiel 69,1 → 45,2 MB, der GPU-Speicher der Bau-Sätze nur 38,3 → 31,4 MB). Ihre Puffer verlassen die GPU hier — vor
+        // dem Zeichnen des Frames (`_loopRender`), die letzte Aufzeichnung, die sie las, ist abgegeben.
+        for (const k in alt.attributes) this._gpuAbschied(alt.attributes[k]);
+        if (alt.index) this._gpuAbschied(alt.index);
     }
 
     // Der EINE Mesh eines Satzes über seiner Pool-Geometrie (ein Wachsen tauscht nur die Geometrie).
@@ -62382,6 +62413,7 @@ class AnazhRealm {
         for (const s of saetze.values()) {
             s.takt++;
             this._chunkSatzBereit(s);
+            this._chunkSatzLeert(s);
         }
     }
 

@@ -33,6 +33,9 @@
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
 //       EINMAL statt einander je Frame zu verdrängen — danach 0 Bytes je Frame, fremd wie eigen. Befund (echte GPU,
 //       Mess-Wiese, Drehen 1°/Frame): 32 Verdrängungen in 36 Frames, k0 + k1 schrieben einander 2,2 MB je Frame neu.
+//   (k) DER LEERE SATZ (Integration W6) — ein Satz ohne Bereich hält seine Kapazität nur bis zur Ruhe-Frist
+//       (`ruheTakte`), dann kehrt er am selben Mesh auf seine Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, drei
+//       Wander-Schleifen à 1,2 km): die Bau-Sätze verlassener Dörfer hielten 38,3 MB, die größten ohne einen Bereich.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
 // direkt in der Szene, einer Gruppe `x#0@p:0,0`, einem zweiten `streuNah` derselben Senke, einer Fern-Deko, einer
 // selbst zeichnenden Satz-Gruppe (`f:zacken:L0`) und einem Haus ohne Bereich MUSS rot fallen und jeden Täter mit
@@ -813,6 +816,37 @@ function check(name, ok, detail) {
                 delete r._chunkSatzUmlegen;
             }
             phase(eng, 2);
+            // (k) DER LEERE SATZ (Integration W6): ein Satz ohne Bereich kehrt nach der Ruhe-Frist (`ruheTakte`) auf seine
+            // Start-Kapazität zurück, am SELBEN Mesh — die Bau-Sätze verlassener Dörfer hielten nach drei Wander-Schleifen
+            // 38,3 MB (echte GPU, Mess-Wiese). Probe an einem eigenen Bau-Satz des Gates: gewachsen, ohne Bereich.
+            res.leer = null;
+            {
+                const art = "gate:leer|probe|-";
+                (s.satzStoffe || (s.satzStoffe = new Map())).set(art, {
+                    name: "gateLeerSatz",
+                    mat: new T.MeshBasicMaterial(),
+                    wurf: false,
+                });
+                const ls = r._chunkSatz(art);
+                const C = r.constructor.CHUNK_SATZ.bau;
+                r._chunkSatzGeometrie(ls, C.v * 4, C.i * 4);
+                const mesh0 = ls.mesh,
+                    gross = [ls.vKap, ls.iKap];
+                for (let i = 0; i <= r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte; i++) r._tickChunkSatz();
+                const vorFrist = [ls.vKap, ls.iKap];
+                r._tickChunkSatz();
+                r._tickChunkSatz();
+                res.leer = {
+                    gross,
+                    vorFrist,
+                    nach: [ls.vKap, ls.iKap],
+                    start: [C.v, C.i],
+                    derselbe: ls.mesh === mesh0 && ls.mesh.geometry === ls.geom,
+                };
+                s.scene.remove(ls.mesh);
+                s.chunkSaetze.delete(art);
+                s.satzStoffe.delete(art);
+            }
             return res;
         });
     } catch (e) {
@@ -936,6 +970,18 @@ function check(name, ok, detail) {
             vAlt.slice(0, 2).join(" · ") || "(nichts — die Wand ist vakuös)"
         );
     } else check("(j) NEUSCHREIBEN gemessen", false, "keine Messung");
+    const le = out.leer;
+    check(
+        "(k) DER LEERE SATZ — ohne Bereich hält er seine Kapazität bis zur Ruhe-Frist, danach kehrt er auf die Start-Kapazität zurück (derselbe Mesh)",
+        !!le &&
+            le.vorFrist[0] === le.gross[0] &&
+            le.vorFrist[1] === le.gross[1] &&
+            le.nach[0] === le.start[0] &&
+            le.nach[1] === le.start[1] &&
+            le.gross[0] > le.start[0] &&
+            le.derselbe === true,
+        JSON.stringify(le)
+    );
     check("(g) kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
