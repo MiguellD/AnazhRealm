@@ -7,7 +7,8 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = Number(process.env.DIAG_PORT) || 4509;
+// Port über V1_RESOLVE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4509.
+const PORT = Number(process.env.V1_RESOLVE_PORT || 4509);
 const root = path.resolve(__dirname, "..");
 const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".css": "text/css", ".png": "image/png" };
 const server = http.createServer((req, res) => {
