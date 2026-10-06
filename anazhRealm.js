@@ -49923,9 +49923,14 @@ class AnazhRealm {
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
         if (h && Number.isFinite(h.fAx) && Number.isFinite(h.rAx) && Number.isFinite(h.spur) && h.fAx > h.rAx)
-            return { vorn: h.fAx * sc, hinten: h.rAx * sc, quer: (h.spur / 2) * sc };
+            return {
+                vorn: h.fAx * sc,
+                hinten: h.rAx * sc,
+                quer: (h.spur / 2) * sc,
+                bauch: Number.isFinite(h.yFloor) ? h.yFloor * sc : 0,
+            };
         const half = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
-        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6) };
+        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6), bauch: 0 };
     }
 
     // DIE EBENE DER RÄDER bei (x, z) in Fahrt-Richtung `fahrtYaw` (sin, cos): die vier Aufstandspunkte
@@ -49949,8 +49954,16 @@ class AnazhRealm {
         const hV = (vRe + vLi) / 2;
         const hH = (hRe + hLi) / 2;
         const lang = Math.max(0.5, st.vorn - st.hinten);
+        const y0 = hH + ((hV - hH) * -st.hinten) / lang;
+        // KEIN BAUCH IM BODEN: liegt der Boden unter dem Ursprung über dem Bauch (Studio-Fahrzeug: die Boden-Freiheit
+        // huelle.yFloor über der Rad-Ebene; Teile-Werk: seine Unterkante), steigt die Ebene, bis der Bauch aufliegt —
+        // über einer Kuppe trägt der Bauch, am gleichmäßigen Hang und über einer Mulde tragen die Räder (W5). Die
+        // Verwindung (zwei Räder je ±v) bleibt der Ebene: sie zu heben öffnete am Hang Rad-Spalten bis 0,195 m (B-f).
+        // Befund voller Playtest (M3 Ritt, Integration W5): am Kamm (66, 60) lag der Bauch 1,05 m im Boden.
+        const mitte = this.getTerrainHeightAt(x, z);
+        const heben = Number.isFinite(mitte) ? Math.max(0, mitte - (st.bauch || 0) - y0) : 0;
         return {
-            y: hH + ((hV - hH) * -st.hinten) / lang,
+            y: y0 + heben,
             nick: Math.atan2(hH - hV, lang),
             wank: Math.atan2((vRe + hRe) / 2 - (vLi + hLi) / 2, Math.max(0.5, 2 * st.quer)),
         };

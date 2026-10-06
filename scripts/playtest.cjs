@@ -29160,8 +29160,44 @@ async function checkBandM3RittVollendet(ctx) {
             // Lauf-Fläche − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
             const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
             const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
-            const sollY = expectFloat ? runSurf - 0.25 : terr;
-            out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - sollY) < 0.35;
+            // An Land steht das Gefährt auf seinen Rädern und versinkt nirgends (W5 + Integration): die Probe liest das
+            // Boden-Gesetz selbst an den vier Aufstandspunkten (`_rittAufstand`) und unter dem Ursprung (der Bauch), legt
+            // die Ebene der Unterkante mit dem Gelände-Nick und -Wank aus DENSELBEN vier Proben hinein und verlangt: der
+            // Bauch nicht im Boden (5 cm), kein Rad tiefer als die Verwindung des Bodens erlaubt (das B-f-Band 0,12 m von
+            // gate:vehicle-drive) und ein Punkt trägt (höchstens 0,35 m Luft — es steht). Die alte
+            // Probe verglich mit dem Boden unter dem Ursprung allein: über einer Mulde trägt der Wagen auf den Rädern
+            // (Spawn + 6 m: Mitte 0,45 m unter der Rad-Ebene), am Kamm (66, 60) lag der Bauch 1,05 m im Boden.
+            const auf = r._rittAufstand(entry);
+            const gY = entry._rideYaw;
+            const boden = (l, q) =>
+                r.getTerrainHeightAt(
+                    entry.position.x + Math.sin(gY) * l + Math.cos(gY) * q,
+                    entry.position.z + Math.cos(gY) * l - Math.sin(gY) * q
+                );
+            const vR = boden(auf.vorn, auf.quer),
+                vL = boden(auf.vorn, -auf.quer),
+                hR = boden(auf.hinten, auf.quer),
+                hL = boden(auf.hinten, -auf.quer);
+            const laengs = (vR + vL - hR - hL) / 2 / Math.max(0.5, auf.vorn - auf.hinten);
+            const seit = (vR + hR - vL - hL) / 2 / Math.max(0.5, 2 * auf.quer);
+            const luft = [
+                bottom + laengs * auf.vorn + seit * auf.quer - vR,
+                bottom + laengs * auf.vorn - seit * auf.quer - vL,
+                bottom + laengs * auf.hinten + seit * auf.quer - hR,
+                bottom + laengs * auf.hinten - seit * auf.quer - hL,
+                bottom + (auf.bauch || 0) - terr,
+            ];
+            out.luftMin = Math.min(...luft);
+            out.standsOnTerrain = expectFloat
+                ? Math.abs(bottom - (runSurf - 0.25)) < 0.35
+                : luft.every((v) => Number.isFinite(v)) &&
+                  luft[4] >= -0.05 &&
+                  Math.min(luft[0], luft[1], luft[2], luft[3]) >= -0.12 &&
+                  out.luftMin <= 0.35;
+            out.m3Zahlen =
+                `Unterkante ${(+bottom).toFixed(3)} · Boden-Mitte ${(+terr).toFixed(3)} · Luft je Rad und Bauch ` +
+                luft.map((v) => (+v).toFixed(3)).join("/") +
+                ` · schwimmt ${expectFloat} · Ort ${entry.position.x.toFixed(1)},${entry.position.z.toFixed(1)}`;
             out.riderFollows = Math.abs(pm.y - (entry.position.y - 0.5 + entry._sitzHeight)) < 0.05;
             out.vyZeroed = Math.abs(r.state._fieldVy) < 1e-6;
             // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), kein gefrorenes Maß → jede
@@ -29205,7 +29241,10 @@ async function checkBandM3RittVollendet(ctx) {
     );
     check(
         "M3 Ritt: das GEFÄHRT führt vertikal — es steht auf dem Terrain, der Reiter folgt ihm auf Sitz-Höhe, vy genullt (kein Versinken)",
+        res.standsOnTerrain && res.riderFollows && res.vyZeroed && res.clearCached,
         res.standsOnTerrain && res.riderFollows && res.vyZeroed && res.clearCached
+            ? ""
+            : `${res.m3Zahlen} · Reiter ${res.riderFollows} · vy ${res.vyZeroed} · Klärung ${res.clearCached}`
     );
     check(
         "M3 Ritt: die SITZ-POSE — der Avatar winkelt die Beine an, der Walk-Cycle ruht; Absteigen räumt die Pose",
