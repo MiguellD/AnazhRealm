@@ -166,17 +166,24 @@ function renderTafel(res){
 // ════════════════════════════════════════════════════════════════════
 // UI
 // ════════════════════════════════════════════════════════════════════
-// Presets
+// Presets — Welle L: Gattung und Kultur setzen P in der Merge-Ordnung von buildInstance (DEFAULT_P + Preset + Kultur als
+// ov); vorher mergte der Klick nur den Preset-Patch: Supersport → GT ließ grip 0,85 stehen, eine Kultur blieb für immer.
+let presetId='gt',kulturId=null;
+function presetSetzen(pid){presetId=pid;for(const k in P)delete P[k];
+  Object.assign(P,VC.DEFAULT_P,VC.presetPatch(pid),kulturId?CULTURES[kulturId].fx:{});syncSliders();rebuild();}
+function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const basis=Object.assign({},VC.DEFAULT_P,VC.presetPatch(presetId));
+  for(const k in alt){if(k in basis)P[k]=basis[k];else delete P[k];}   // die alte Kultur fällt ganz, die Regler bleiben
+  kulturId=kid;if(kid)Object.assign(P,CULTURES[kid].fx);rebuild();}
 const pdiv=document.getElementById('presets');
 for(const pid in PRESETS){const b=document.createElement('button');b.className='btn';b.textContent=PRESETS[pid].lab;
   if(pid==='gt')b.classList.add('on');
-  b.onclick=()=>{Object.assign(P,VC.presetPatch(pid));[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');
-    syncSliders();rebuild();};pdiv.appendChild(b);}
+  b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');presetSetzen(pid);};pdiv.appendChild(b);}
 // Kultur-Selektor (orthogonal zum Typ)
 const cdiv=document.createElement('div');cdiv.style.cssText='margin-top:8px';pdiv.parentNode.insertBefore(cdiv,pdiv.nextSibling);
 {const cl=document.createElement('div');cl.textContent='KULTUR';cl.style.cssText='font-size:10px;letter-spacing:1px;opacity:.55;margin:4px 0 2px';cdiv.appendChild(cl);}
 for(const cid in CULTURES){const b=document.createElement('button');b.className='btn';b.textContent=CULTURES[cid].lab;
-  b.onclick=()=>{Object.assign(P,CULTURES[cid].fx);[...cdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));b.classList.add('on');rebuild();};cdiv.appendChild(b);}
+  b.onclick=()=>{const ab=kulturId===cid;[...cdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));if(!ab)b.classList.add('on');
+    kulturSetzen(ab?null:cid);};cdiv.appendChild(b);}   // zweiter Klick auf die gewählte Kultur wählt sie ab
 // Ebenen-Toggles
 const ldiv=document.getElementById('layers');
 const LY=[['frame','Rahmen','gFrame'],['joints','Gelenke','gJoints'],['cal','Lehren','gCal'],['pkg','Baukörper','gPackage'],['wheels','Räder','gWheels'],['body','Haut','gBody'],['neg','Negativ','gNeg']];
@@ -391,7 +398,9 @@ function updateVehicle(dt,t){
 // Verfolgerkamera — schwingt sanft hinter das Auto, blickt voraus
 // Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück
 const _cf=new THREE.Vector3();
-const camOrb={az:Math.PI,el:FAHR.kamera.el,dist:FAHR.kamera.dist,follow:true};  // N8 — Kamera-Gesetz aus dem KERN (byte-gleich umgezogen)let dragging=false,_lpx=0,_lpy=0;
+const camOrb={az:Math.PI,el:FAHR.kamera.el,dist:FAHR.kamera.dist,follow:true};  // N8 — Kamera-Gesetz aus dem KERN (byte-gleich umgezogen)
+// Welle L: der Zug-Zustand der Maus steht im CODE (er stand im Kommentar hinter camOrb — jede Mausbewegung warf ReferenceError)
+let dragging=false,_lpx=0,_lpy=0;
 function lerpAngle(a,b,t){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*t;}
 function updateChaseCam(dt,snap){
   if(camOrb.follow){const azT=Math.atan2(Math.sin(car.yaw),-Math.cos(car.yaw));   // Soll-Azimut: hinter dem Auto
@@ -407,7 +416,7 @@ function updateChaseCam(dt,snap){
 let mode='werkstatt';const OVL='#brand,#lehren,#ctl,#leg,#hint';const hud=document.getElementById('hud');
 const _savP=new THREE.Vector3(),_savT=new THREE.Vector3();
 function enterDrive(){mode='fahren';
-  document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='block';
+  document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='flex';  // Welle L: der HUD ist ein Flex-Band (block klebte die Einheit an die Tastenhilfe)
   ground.visible=true;_savP.copy(cam.position);_savT.copy(oc.target);oc.enabled=false;
   car.x=0;car.z=0;car.yaw=0;car.vlong=0;car.vlat=0;car.yawRate=0;car.speed=0;car.steer=0;car.wheelAng=0;car.aLong=0;
   input.throttle=input.brake=input.steer=input.hand=0;
@@ -452,12 +461,12 @@ const oc=new THREE.OrbitControls(cam,R.domElement);oc.enableDamping=true;oc.targ
 const clock=new THREE.Clock();let simT=0;
 function animate(){requestAnimationFrame(animate);const dt=Math.min(1/30,clock.getDelta());simT+=dt;const t=simT;
   if(mode==='fahren'){readKeys();updateVehicle(dt,t);updateTrack(dt);updateSmoke(dt);updateChaseCam(dt,false);
-    if(hud){const sp=hud.querySelector('#spd');if(sp)sp.textContent=Math.round(Math.abs(car.speed)*12);}
+    if(hud){const sp=hud.querySelector('#spd');if(sp)sp.textContent=Math.round(Math.abs(car.speed)*FAHR.kmh);}  // Welle L: km/h aus der EINEN Kern-Zeile (×12 zeigte 3,33-fach)
   }else{oc.update();}
   const open=kin?0.62:0;                                            // Türen — in beiden Modi animiert
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;});
   R.render(scene,cam);}
-Object.assign(P,VC.presetPatch('gt'));rebuild();animate();
+presetSetzen('gt');animate();   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 
 /* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */

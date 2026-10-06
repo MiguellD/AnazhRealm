@@ -534,6 +534,13 @@ jobs:
               # Statische Wand: der Sitz lebt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter. Inklusive Selbst-Test.
               run: npm run gate:fahr-leben
 
+            - name: Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)
+              # DIE PROBEFAHRT-WERKSTATT WIE DER SCHOEPFER SIE BEDIENT (worlds/garage, r128 WebGL, kopflos): Orbit-Zug und
+              # Umsehen ohne Seitenfehler (vorher ReferenceError dragging je Mausbewegung), der Fahr-HUD als Flex-Band,
+              # der Tacho in km/h aus FAHR.kmh (vorher x12), Preset-Wechsel und erstes Laden ohne Leck (P = DEFAULT_P +
+              # Preset + Kultur), die Kultur abwaehlbar. Inklusive Selbst-Test.
+              run: npm run gate:garage-labor
+
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
               # DER ε-BEWEIS: die Tor-Domäne dockt AUSSCHLIESSLICH über die Checkliste §ε an —
               # Manifest-Zeile (porta-core, __portaCore) + KIND_POLICY-gate-Zeile + tor_basis-

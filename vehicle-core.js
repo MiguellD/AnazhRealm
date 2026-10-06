@@ -2198,6 +2198,10 @@
         //    REICHWEITE des Welt-Ritts (m, E-Mount) — Interaktions-Gesetz des
         //    Fahrens, kein Stamm-Literal. Byte-gleich 3. ──
         mountRangeM: 3,
+        // ── WELLE L (06.10., rein additive DATEN-Zeile — Praezedenz: mountRangeM) — DIE TACHO-UMRECHNUNG m/s → km/h:
+        //    die EINE Zahl, die jede Anzeige „km/h" liest (Labor-HUD heute, Welt-HUD morgen). Befund: die Probefahrt
+        //    rechnete |speed| × 12 unter der Einheit km/h (10,5 m/s zeigte 126 statt 37,8). ──
+        kmh: 3.6,
         // ── FAHR-GEFUEHL (rein additive DATEN-Zeile — Praezedenz: hostEmergent) —
         // DIE LENK-/DRIFT-GESETZE der Probefahrt fuer den Welt-Ritt: sfK ist die
         // selbstzentrierende Lenkung des Labs (sf = 1/(1 + v·sfK), updateVehicle

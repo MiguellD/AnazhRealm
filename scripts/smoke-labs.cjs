@@ -171,7 +171,8 @@ async function testWorld(browser, id, opts) {
             ? await frame
                   .evaluate(() => {
                       const h = document.getElementById("hud");
-                      return !!h && h.style.display === "block";
+                      // Welle L: der HUD ist ein Flex-Band (die Probe schrieb das alte display:block fest).
+                      return !!h && getComputedStyle(h).display === "flex";
                   })
                   .catch(() => false)
             : false;
