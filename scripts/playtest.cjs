@@ -38551,8 +38551,13 @@ async function checkBandWFFluss(ctx) {
         out.holzFloats = probeFloat("holz");
         out.steinFloats = probeFloat("stein");
         out.eisenFloats = probeFloat("eisen");
-        // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
-        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._tickMountedMovement));
+        // (6) der Studio-Wagen liegt nach der Hülle des Fahrzeug-Kerns im Wasser (D10: exportDrive.huelle.dichte), nie nach
+        // dem Holzkarren-Spender, den sein Bauplan klont (bis 8f09227d schwamm der GT wie ein Holz-Boot).
+        const pGt = r._vehicleProfile({ type: "fahrzeug_gt", scale: 1, position: { x: 0, y: 0, z: 0 } });
+        out.gtFloats = pGt ? pGt.floats : null;
+        // (7) der Ritt-Tick legt das Gefährt über die EINE Wahrheit am Körper mit seiner Gestalt ins Wasser.
+        const ritt = window.__codeOf(r._tickMountedMovement);
+        out.tickFloatConsumed = /_fahrzeugGestalt\(/.test(ritt) && /_koerperWasser\([^)]*gestalt\)/.test(ritt);
         return out;
     });
     check(
@@ -38572,8 +38577,12 @@ async function checkBandWFFluss(ctx) {
         res.flowRipple
     );
     check(
-        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken — volumen-gewichtete Mittel-Dichte) + im Ritt-Tick konsumiert",
-        res.holzFloats === true && res.steinFloats === false && res.eisenFloats === false && res.tickFloatConsumed
+        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + im Ritt-Tick über _koerperWasser mit der Gestalt",
+        res.holzFloats === true &&
+            res.steinFloats === false &&
+            res.eisenFloats === false &&
+            res.gtFloats === false &&
+            res.tickFloatConsumed
     );
 }
 

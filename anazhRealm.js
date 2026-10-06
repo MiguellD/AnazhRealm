@@ -32450,7 +32450,25 @@ class AnazhRealm {
     // Ufer-Wasser (die Zellen-Mitte über dem Spiegel) bleibt der Spiegel des Gesetzes. Bis 8f09227d las der Körper den
     // Spiegel ohne Decke: in trockenen Höhlen unter und neben dem See der Mess-Wiese 3511 von 3511 Proben „nass" — der
     // Spieler schwamm, die Kamera tauchte, das Tier schwamm auf dem Höhlen-Boden.
-    _koerperWasser(x, z, grundY) {
+    // DIE GESTALT (D10): mit `gestalt` (`{ linie }` — die Wasserlinie über der Unterkante des Körpers; Infinity = sie trägt
+    // nie) schreibt die Wahrheit die LAGE hinein: `gestalt.lage = { tiefe, schwimmt, unterkante }` — der Körper schwimmt,
+    // sobald die Säule über seinem Grund die Linie übersteigt (seine Unterkante liegt dann auf Spiegel − Linie), sonst steht er
+    // auf dem Grund (er watet; dichter als Wasser sinkt er). Leser: das Gefährt (`_tickMountedMovement`).
+    _koerperWasser(x, z, grundY, gestalt) {
+        const spiegel = this._koerperWasserSpiegel(x, z, grundY);
+        if (gestalt) {
+            const tiefe = Number.isFinite(grundY) && spiegel > grundY ? spiegel - grundY : 0;
+            const schwimmt = tiefe > gestalt.linie;
+            const L = gestalt.lage || (gestalt.lage = {});
+            L.tiefe = tiefe;
+            L.schwimmt = schwimmt;
+            L.unterkante = schwimmt ? spiegel - gestalt.linie : grundY;
+        }
+        return spiegel;
+    }
+
+    // Der Spiegel am Körper (die Wahrheit ohne Gestalt) — nur `_koerperWasser` ruft ihn.
+    _koerperWasserSpiegel(x, z, grundY) {
         const endlich = Number.isFinite(grundY);
         let spiegel = this._atlasWaterLevelAt(x, z, endlich ? grundY : -Infinity);
         if (!this.state.voxelChunks) return spiegel;
@@ -50021,7 +50039,9 @@ class AnazhRealm {
         }
         const mass = bp ? Math.max(0.6, Math.min(2.5, this._compoundSizeFactor(bp))) : 1;
         // Schwimmfähigkeit aus der volumen-gewichteten MITTEL-Dichte (nie der MAX-Tag — ein Eisen-Nagel
-        // versenkte sonst das Holz-Boot): unter ~0.55 trägt es (holz 0.4 schwimmt, stein/eisen sinken).
+        // versenkte sonst das Holz-Boot): unter der Wasser-Dichte der Tag-Skala (WASSER_DICHTE_TAG) trägt es (holz 0.4
+        // schwimmt, stein/eisen sinken). Ein Studio-Fahrzeug liest seine HÜLLE (unten) — nie die Substanz des Spenders.
+        const W_TAG = AnazhRealm.WASSER_DICHTE_TAG;
         let floats = false;
         let dichteMittel = 0.45; // ZENSUS-REST V18.488 — die Wasserlinien-Quelle (s. prof.dichte)
         if (bp && Array.isArray(bp.parts)) {
@@ -50038,8 +50058,18 @@ class AnazhRealm {
                 volSum += v;
                 dSum += v * d;
             }
-            floats = volSum > 0 && dSum / volSum < 0.55;
+            floats = volSum > 0 && dSum / volSum < W_TAG;
             if (volSum > 0) dichteMittel = dSum / volSum;
+        }
+        // DIE HÜLLE DES KERNS (D10): jeder Studio-Wagen ist ein Bauplan-Klon des Holzkarren-Spenders (fahrzeug_wagen,
+        // Mittel-Dichte 0,5155 < 0,55 — der Supersportler schwamm wie ein Holz-Boot); seine Dichte im Wasser ist die der
+        // Hülle aus dem Fahrzeug-Kern (exportDrive.huelle.dichte, relativ zu Wasser), fail-closed.
+        const fzgH = this._fahrzeugGesetzFor(entry);
+        const huelleH = fzgH && fzgH.drive ? fzgH.drive.huelle : null;
+        if (huelleH) {
+            if (!Number.isFinite(huelleH.dichte)) AnazhRealm._kernPflichtBruch("vehicle:exportDrive.huelle.dichte");
+            dichteMittel = huelleH.dichte * W_TAG;
+            floats = huelleH.dichte < 1;
         }
         // Emergenz-Koeffizienten aus dem Gesetzbuch (vehicle-core FAHR.hostEmergent); der Leser
         // _fahrGesetz ist FAIL-CLOSED über alle Felder — ein alter Kern bricht laut, kein Literal-Zwilling.
@@ -50203,6 +50233,40 @@ class AnazhRealm {
         }
         entry._vehicleProfile = prof;
         return prof;
+    }
+
+    // DIE GESTALT DES GEFÄHRTS IM WASSER (D10): `{ linie }` — die Wasserlinie über der Unterkante (m), bis zu der das Wasser
+    // die Hülle trägt; Infinity = sie trägt nie (dichter als Wasser: das Gefährt watet und sinkt). Archimedes: die Hülle
+    // taucht, bis ihr verdrängtes Volumen ihre Masse trägt. Die Dichte entscheidet `_vehicleProfile` (Substanz bzw. Hülle
+    // des Kerns); die Form ein Studio-Fahrzeug aus seiner Hülle (exportDrive.huelle: Unterkörper nose..tail × ±bw ×
+    // yFloor..yBelt, Greenhouse cowl..back × ±cw × yBelt..yRoof; die Linie misst von der Rad-Ebene y = 0), ein Teile-Werk aus
+    // der Höhe seines Bauplans (die Linie misst von seiner Unterkante). Am Eintrag gemerkt (die Form ist eingefroren).
+    // Leser: `_tickMountedMovement` über `_koerperWasser(x, z, grund, gestalt)`.
+    _fahrzeugGestalt(entry, prof) {
+        if (entry._wasserGestalt) return entry._wasserGestalt;
+        const p = prof || this._vehicleProfile(entry);
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const rel = p && Number.isFinite(p.dichte) ? p.dichte / AnazhRealm.WASSER_DICHTE_TAG : Infinity;
+        let linie = Infinity;
+        if (p && p.floats && rel < 1) {
+            const fzg = this._fahrzeugGesetzFor(entry);
+            const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+            if (h) {
+                const a1 = (h.noseX - h.tailX) * 2 * h.bw;
+                const a2 = Math.max(0.4, h.cowlX - h.backX) * 2 * h.cw;
+                const v1 = a1 * (h.yBelt - h.yFloor);
+                const m = rel * (v1 + a2 * (h.yRoof - h.yBelt));
+                linie = (h.yFloor + (m <= v1 ? m / a1 : h.yBelt - h.yFloor + (m - v1) / a2)) * sc;
+            } else {
+                const bp = this.state.blueprints && this.state.blueprints[entry.type];
+                const bb = bp ? this._compoundBBox(bp) : null;
+                const rumpfH = bb ? Math.max(0.3, (bb.max.y - bb.min.y) * sc) : 1;
+                const anteil = Math.max(0.1, Math.min(0.95, rel));
+                linie = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
+            }
+        }
+        entry._wasserGestalt = { linie, lage: null };
+        return entry._wasserGestalt;
     }
 
     // V18.150 — das Profil des AKTUELL gerittenen Gefährts (der Bewegungs-
@@ -50499,33 +50563,24 @@ class AnazhRealm {
                 entry._terrainRollZiel = eb.wank;
             }
         }
-        // Boot-Schwimmen: ein floats-Gefährt reitet den Wasser-Spiegel, wo er über dem Terrain
-        // liegt; ragt das Terrain über die Wasserlinie, führt es (Auflaufen per max(), kein Sonder-Pfad).
+        // DIE GESTALT IM WASSER (D10, W-L4): jedes Gefährt liegt nach seiner Gestalt im Wasser — die EINE Wasser-Wahrheit am
+        // Körper über seinem Grund (W-W2: ohne Grund war der Rand-Streifen eines Sees blind) mit seiner Wasserlinie
+        // (`_fahrzeugGestalt`: Hülle und Dichte aus dem Fahrzeug-Kern, beim Teile-Werk die Substanz). Treibend trägt das Wasser
+        // die Unterkante auf Spiegel − Linie, und der Spiegel ist waagrecht: Nick und Wank folgen nie dem Seegrund (F-D5:
+        // 25° Bug-ab; an der Mess-Wiese Wank-Ziel 29,5° über dem Hang des Sees). Dichter als Wasser watet es und sinkt: es
+        // steht auf dem Grund (bis 8f09227d trieb jeder Studio-Wagen mit der Dichte des Holzkarren-Spenders).
+        // `_afloat` = reitet das Gefährt in DIESEM Tick auf dem Spiegel. _stepCharacter (4b) liest es als Boots-Gate für
+        // die Strömung — der Reiter schwimmt nie selbst, das Boot folgt ihm.
         const rideProf = this._vehicleProfile(entry);
-        // `_afloat` = reitet das Gefährt in DIESEM Tick auf dem Spiegel. _stepCharacter (4b) liest es
-        // als Boots-Gate für die Strömung — der Reiter schwimmt nie selbst, das Boot folgt ihm.
         entry._afloat = false;
-        if (rideProf && rideProf.floats && Number.isFinite(groundY)) {
-            // Die EINE Wasser-Wahrheit am Körper über dem Grund des Gefährts (W-W2: ohne Grund war der Rand-Streifen
-            // eines Sees blind — 36 m mit 1–7 m Wasser, das Gefährt fuhr am Seegrund).
-            const runSurf = this._koerperWasser(pm.x, pm.z, groundY);
-            // Wasserlinie nach Archimedes: eingetauchter Rumpf-Anteil = prof.dichte / 0.55 (dieselbe Schwelle
-            // wie das floats-Gate) × Rumpf-Höhe aus der Bauplan-BBox (am Entry gecacht; Klemmen halten den
-            // Rumpf sichtbar).
-            if (!Number.isFinite(entry._tauchTiefe)) {
-                const bpT = this.state.blueprints && this.state.blueprints[entry.type];
-                const bbT = bpT ? this._compoundBBox(bpT) : null;
-                const sclT = Number.isFinite(entry.scale) ? entry.scale : 1;
-                const rumpfH = bbT ? Math.max(0.3, (bbT.max.y - bbT.min.y) * sclT) : 1;
-                const anteil = Math.max(
-                    0.1,
-                    Math.min(0.95, (Number.isFinite(rideProf.dichte) ? rideProf.dichte : 0.45) / 0.55)
-                );
-                entry._tauchTiefe = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
-            }
-            if (runSurf > -Infinity && runSurf - entry._tauchTiefe > groundY) {
-                groundY = runSurf - entry._tauchTiefe;
+        if (Number.isFinite(groundY)) {
+            const gestalt = this._fahrzeugGestalt(entry, rideProf);
+            this._koerperWasser(pm.x, pm.z, groundY, gestalt);
+            if (gestalt.lage.schwimmt) {
+                groundY = gestalt.lage.unterkante;
                 entry._afloat = true;
+                entry._terrainPitchZiel = 0;
+                entry._terrainRollZiel = 0;
             }
         }
         if (Number.isFinite(groundY)) {
@@ -91488,6 +91543,10 @@ AnazhRealm.Gesetz = function (pfad, fallback) {
 // Die Kerne sind PFLICHT (index.html lädt alle Gesetzbücher, _kernPflichtWand meldet den Ausfall):
 // ein unlesbares Gesetz ist ein lauter BRUCH, nie eine stille Ersatz-Welt. Keine Zahlen-Zwillinge im
 // Stamm — die Zwillings-Absenz-Wand (gate:studio-vertrag) hält sie draußen.
+// Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
+// Schwimmens und der Bezug der Wasserlinie (`_vehicleProfile`, `_fahrzeugGestalt`).
+AnazhRealm.WASSER_DICHTE_TAG = 0.55;
+
 AnazhRealm._kernPflichtBruch = function (pfad) {
     throw new Error(
         "KERN-PFLICHT verletzt: " +

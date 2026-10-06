@@ -22,8 +22,9 @@
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
 //         gefallen) wird an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen
 //         bewiesen (parts+connections JSON-geklont, registriert, aufgeraeumt) —
-//         byte-gleich gegen die emergente Formel nachgerechnet; floats bleibt in
-//         BEIDEN die Substanz-Entscheidung (das Lab kennt kein Wasser).
+//         byte-gleich gegen die emergente Formel nachgerechnet; floats ist beim
+//         Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10:
+//         exportDrive.huelle.dichte — bis 8f09227d schwamm der GT mit dem Spender).
 //   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
@@ -846,8 +847,8 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             : "kein Profil"
     );
     check(
-        "B-c: floats bleibt SUBSTANZ-Entscheidung (Lab exportiert kein floats — gt == wagen, derselbe Donor)",
-        !!pg && !!pw && typeof pg.floats === "boolean" && pg.floats === pw.floats,
+        "B-c (D10): der Studio-Wagen schwimmt nach der Huelle des Kerns (exportDrive.huelle.dichte > 1: gt sinkt), das Teile-Werk nach seiner Substanz (wagen-Substanz schwimmt) — nie gt == Holzkarren-Spender",
+        !!pg && !!pw && pg.floats === false && pw.floats === true,
         pg && pw ? `gt=${pg.floats} wagen=${pw.floats}` : ""
     );
     // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
