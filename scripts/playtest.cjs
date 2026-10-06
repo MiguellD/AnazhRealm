@@ -4078,7 +4078,8 @@ async function checkBandV1757HeldSlot(ctx) {
         r.equipHeld(wName);
         const armed = r.computePlayerStats().stats;
         out.heldRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
-        out.heldRaisesDefense = armed.defense > base.defense; // das Defense-Trio fließt mit
+        // Welle L (K-D15): die Hand ist kein Panzer — das Gerät faltet nur in die Angriffs-Größen
+        out.heldKeinPanzer = armed.defense === base.defense && armed.hpMax === base.hpMax;
 
         // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
         r.equipHeld(null);
@@ -4120,8 +4121,8 @@ async function checkBandV1757HeldSlot(ctx) {
         res.heldRaisesDamage
     );
     check(
-        "V17.57 W2-B: KONSUM — das harte Gerät hebt auch die Verteidigung (das Defense-Trio fließt)",
-        res.heldRaisesDefense
+        "Welle L K-D15: die Hand ist kein Panzer — das harte Gerät lässt Verteidigung und HP unberührt (nur Angriff)",
+        res.heldKeinPanzer
     );
     check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
     check(
@@ -4136,7 +4137,7 @@ async function checkBandV1757HeldSlot(ctx) {
 }
 
 // Kreatur-Kampf symmetrisch zum Spieler: computeCreatureStats liefert hpMax + defense;
-// `dealt = max(1, amount − defense)`; hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
+// die Rüstung dämpft (`dealt = roh² / (roh + defense)`, Welle L K-D5 — die flache Wand max(1, roh − defense) fiel); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
 // Spieler-Töter, removeCreature). Konsument ist der damage_creature-DSL-Op.
 async function checkBandV1753CreatureCombat(ctx) {
     const { page, check } = ctx;
@@ -4165,17 +4166,21 @@ async function checkBandV1753CreatureCombat(ctx) {
             Math.abs(c1.userData.hp - stats1.hpMax) < 1e-6 &&
             c1.userData.hp > 0;
 
-        // (2) KONSUM — damageCreature reduziert hp um max(1, amount − defense)
+        // (2) KONSUM — damageCreature dämpft: dealt = roh² / (roh + defense)
         const def1 = Math.max(0, stats1.defense || 0);
         const hpBefore = c1.userData.hp;
-        const dmgR = r.damageCreature(c1, def1 + 10, { source: "world" });
+        const roh1 = def1 + 10;
+        const soll1 = (roh1 * roh1) / (roh1 + def1);
+        const dmgR = r.damageCreature(c1, roh1, { source: "world" });
         out.damageReduces =
             dmgR.ok &&
             !dmgR.killed &&
-            Math.abs(dmgR.dealt - 10) < 1e-6 &&
-            Math.abs(c1.userData.hp - (hpBefore - 10)) < 1e-6;
-        // (3) der Schadens-Floor — ein winziger Treffer macht mind. 1 (keine Unverwundbarkeit, kein 0-Schaden)
-        out.damageFloor = r.damageCreature(c1, 0.1, { source: "world" }).dealt === 1;
+            Math.abs(dmgR.dealt - soll1) < 1e-6 &&
+            dmgR.dealt < roh1 &&
+            Math.abs(c1.userData.hp - (hpBefore - soll1)) < 1e-6;
+        // (3) ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit) — und nie mehr als er bringt
+        const winzig = r.damageCreature(c1, 0.1, { source: "world" }).dealt;
+        out.damageFloor = winzig > 0 && winzig < 0.1;
 
         // (4) ein Nicht-Kreatur-Ziel (der Spieler-Mesh) wird abgelehnt
         out.rejectsNonCreature = !r.damageCreature(r.state.playerMesh, 10, {}).ok;
@@ -4227,11 +4232,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         res.methodsExist
     );
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
-    check("V17.53 Kampf C: KONSUM — damageCreature reduziert hp um max(1, amount − defense)", res.damageReduces);
-    check(
-        "V17.53 Kampf C: der Schadens-Floor — ein winziger Treffer macht mind. 1 Schaden (keine Unverwundbarkeit)",
-        res.damageFloor
-    );
+    check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
+    check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
     check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
     check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
     check(
@@ -28571,9 +28573,8 @@ async function checkBandPhaseEThreat(ctx) {
             const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "wesen");
             spawned.push(lamm);
             out.gentleNoHunt = r._creatureHuntDrive(lamm, 0) === false;
-            // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft FLACH.
-            // Die Probe isoliert die Abwehr (0 vs 3): mit der Basis-defense klemmt der weiche Biss (max(2,…))
-            // sonst beidseitig auf der max(1,…)-Untergrenze.
+            // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft
+            // (_ruestungDaempft, dasselbe Gesetz wie bei den Wesen). Die Probe isoliert die Abwehr (0 vs 3).
             const savedDef = p.stats.defense;
             p.stats.defense = 0;
             p.hp = p.stats.hpMax || 100;

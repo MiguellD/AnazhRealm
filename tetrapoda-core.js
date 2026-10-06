@@ -2611,6 +2611,45 @@
     // W8 — die Gestalten je Rezept (B2c): JEDE Gattung trägt GESTALTEN_JE_REZEPT Individuen (eine neue zählt mit).
     for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
+    // ── DIE TREFFER-ZONE JE GLIED (Welle L 06.10., additiv) ──
+    // Das Treffer-Volumen eines Tiers sind seine Glieder (die Teile aus bauTier, dieselben Anker wie die
+    // Fern-Kapseln); jedes Glied trägt die Zone der Prüfstand-Tafel (schmiede ARENA.zonen). Der Rumpf ("wolf",
+    // die Wurzel des Leibs) teilt sich am Hals: die Hälfte zum Kopf ist Brust, die andere Bauch. Die Rute ist
+    // eine Extremität wie die Pfote. Unbenannte Glieder gehören zum Rumpf.
+    var TREFFER_ZONE = Object.freeze({
+        headGroup: "kopf",
+        jawGroup: "kopf",
+        cranium: "kopf",
+        earL: "kopf",
+        earR: "kopf",
+        lidTL: "kopf",
+        lidTR: "kopf",
+        legFL: "bein",
+        legFR: "bein",
+        legHL: "bein",
+        legHR: "bein",
+        flU: "bein",
+        frU: "bein",
+        flL: "bein",
+        frL: "bein",
+        hlT: "bein",
+        hrT: "bein",
+        hlC: "bein",
+        hrC: "bein",
+        flP: "fuss",
+        frP: "fuss",
+        hlP: "fuss",
+        hrP: "fuss",
+        tailRoot: "fuss",
+        wolf: "rumpf",
+    });
+    function trefferZone(gliedName) {
+        var n = typeof gliedName === "string" ? gliedName : "";
+        if (TREFFER_ZONE[n]) return TREFFER_ZONE[n];
+        if (n.indexOf("tailSeg") === 0) return "fuss";
+        return "rumpf";
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__tetrapodaCore = {
         VERSION: VERSION,
@@ -2643,5 +2682,7 @@
         STAND_POSE: STAND_POSE,
         VERHALTEN: VERHALTEN,
         fellStreu: fellStreu,
+        TREFFER_ZONE: TREFFER_ZONE,
+        trefferZone: trefferZone,
     };
 })(typeof self !== "undefined" ? self : globalThis);

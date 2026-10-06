@@ -570,6 +570,23 @@ const FORBIDDEN = [
     // DIE SPERRE GILT JE BODEN (W7-Vereinigung): das Gedächtnis der Sperre galt je Auge allein — ein neuer Boden im Stand
     // (Graben, Ring, Geomorph) erreichte es nicht. `_hoehlenAugeGleich` liest die Generation des Bodens (`H.boden`).
     { token: "_hoehlenAugeGleich(tor,", fiel: "W7-Vereinigung — die Sperre gilt je Auge UND je Boden (H.boden)" },
+    // DAS EINE TREFFER-URTEIL (Welle L, Klasse Q8): fünf Phantom-Leser ohne Definition im Kern (zone = null in 222 von
+    // 222 Treffern), die gattungs- und höhenblinde Säule, die Schadens-Klemme und die Wirts-Eichung des Pfeils sind
+    // gefallen — das Urteil fällt schmiede trefferUrteil, getroffen wird die Gestalt (_kreaturGliedTreffer).
+    { token: "zoneMulAt", fiel: "Welle L Q8 — die Zone trägt das Urteil (ARENA.zonen, tetrapoda trefferZone)" },
+    { token: "zoneKindAt", fiel: "Welle L Q8" },
+    { token: "zoneJuiceAt", fiel: "Welle L Q8 — der Hit-Stop liest die Energie des Urteils" },
+    { token: "handlingMul", fiel: "Welle L Q8 — ein Phantom-Leser (0 Definitionen)" },
+    { token: "handlingWindF", fiel: "Welle L Q8 — die Ausholzeit ist der Anteil der EINEN Dauer ∝ √I" },
+    { token: "_heldSchmiedeFaktor", fiel: "Welle L Q8 — die Wirkung des Urteils (_trefferWirkung) statt der Klemme" },
+    { token: "kapselRK", fiel: "Welle L Q8 — die Säule fiel, getroffen wird die Gestalt (_kreaturGliedTreffer)" },
+    { token: "kapselY0", fiel: "Welle L Q8" },
+    { token: "kapselY1", fiel: "Welle L Q8" },
+    { token: "kapselRMin", fiel: "Welle L Q8" },
+    { token: "mEffDmgMin", fiel: "Welle L Q8 — keine Schadens-Klemme" },
+    { token: "mEffDmgMax", fiel: "Welle L Q8" },
+    { token: "mEffRefKg", fiel: "Welle L Q8 — die Wirkung ist Energie gegen keRefJ" },
+    { token: "zugJouleRef", fiel: "Welle L Q8 — E = ableitenBogen(task).energie (die Studio-Energie)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
