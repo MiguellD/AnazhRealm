@@ -32773,39 +32773,17 @@ class AnazhRealm {
     // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
     // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (seine
     // Kugel gegen das Frustum der Pass-Kamera — `fr`, EINE Rechnung je Pass in `_passSicht`); jede Senke trägt dicht genau
-    // ihre sichtbaren Büschel. Die Signatur (Welt- und Projektions-Matrix) spart nur bei stehender Projektion: unter TRAA
-    // zittert die Projektion je Frame, der Satz rechnet und lädt jeden Frame (CPU-Kosten: offen, die ruhige Messung der
-    // Integration).
+    // ihre sichtbaren Büschel. Die Signatur der Kamera und der Kugel-Test sind die der Instanz-Sicht (`_sichtSteht`,
+    // `_sichtKugel`): der Satz rechnet, wenn sich Ring oder Blick ändern, nie wegen des Versatzes der zeitlichen Auflösung.
     _nahWieseSicht(kamera, fr) {
         const nw = this.state.nahWiese;
         if (!nw || !kamera || !nw.senken.size) return;
         if (!fr || !fr.planes) throw new Error("_nahWieseSicht: ohne das Frustum der Pass-Kamera (`_passSicht`)");
-        const sig = nw.sig || (nw.sig = new Float64Array(33));
-        const we = kamera.matrixWorld.elements;
-        const pe = kamera.projectionMatrix.elements;
-        let gleich = !nw.neu && sig[32] === kamera.id;
-        for (let i = 0; i < 16; i++) {
-            if (sig[i] !== we[i]) {
-                sig[i] = we[i];
-                gleich = false;
-            }
-            if (sig[16 + i] !== pe[i]) {
-                sig[16 + i] = pe[i];
-                gleich = false;
-            }
-        }
-        if (gleich) return;
-        sig[32] = kamera.id;
+        if (this._sichtSteht(nw.sig || (nw.sig = new Float64Array(33)), kamera, nw.neu)) return;
         nw.neu = false;
         const NW = AnazhRealm.NAH_WIESE;
-        const E = fr.planes;
-        const drin = (x, y, z, r) => {
-            for (let p = 0; p < 6; p++) {
-                const n = E[p].normal;
-                if (n.x * x + n.y * y + n.z * z + E[p].constant < -r) return false;
-            }
-            return true;
-        };
+        const we = kamera.matrixWorld.elements;
+        const drin = this._sichtKugel(fr, kamera);
         // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch).
         const ziel = [null, [null, null], [null, null]];
         let rMax = 0;
@@ -32847,6 +32825,154 @@ class AnazhRealm {
             im.needsUpdate = true;
             AnazhRealm._instanzZahl(a.mesh, a.anzahl);
         }
+    }
+
+    // DIE SICHT JE PASS DER INSTANZ-SÄTZE (Nah-Wiese · Karten, W7): ein Sicht-Satz legt seine Senke neu, wenn seine Daten
+    // (`neu`) oder die Kamera seines Passes sich ändern. Die Signatur ist die Welt-Matrix der Kamera und ihre Projektion OHNE
+    // den Versatz der zeitlichen Auflösung: TRAA verschiebt die Projektion je Frame um einen Bruchteil eines Pixels (die
+    // Elemente 8 und 9 einer Perspektive) — bis W7 rechnete und lud die Nah-Wiese darum jeden Frame. Der Kugel-Test
+    // (`_sichtKugel`) trägt den Rand dafür. Rückgabe true: die Sicht steht, der Satz bleibt, wie er ist.
+    _sichtSteht(sig, kamera, neu) {
+        const we = kamera.matrixWorld.elements;
+        const pe = kamera.projectionMatrix.elements;
+        let gleich = !neu && sig[32] === kamera.id;
+        for (let i = 0; i < 16; i++) {
+            if (sig[i] !== we[i]) {
+                sig[i] = we[i];
+                gleich = false;
+            }
+            if (i === 8 || i === 9) continue;
+            if (sig[16 + i] !== pe[i]) {
+                sig[16 + i] = pe[i];
+                gleich = false;
+            }
+        }
+        sig[32] = kamera.id;
+        return gleich;
+    }
+
+    // Der Kugel-Test der Instanz-Sicht gegen das Frustum der Pass-Kamera (`fr`, EINE Rechnung je Pass in `_passSicht`): die
+    // Kugel trägt den Rand der zeitlichen Auflösung (`SICHT_RAND` je Meter Abstand zum Auge — ein Ding, das ein versetzter
+    // Frame zeigen könnte, bleibt im Satz).
+    _sichtKugel(fr, kamera) {
+        const E = fr.planes;
+        const a = kamera.matrixWorld.elements;
+        const ax = a[12],
+            ay = a[13],
+            az = a[14];
+        const k = AnazhRealm.SICHT_RAND;
+        return (x, y, z, r) => {
+            const dx = x - ax,
+                dy = y - ay,
+                dz = z - az;
+            const rr = r + k * Math.sqrt(dx * dx + dy * dy + dz * dz);
+            for (let p = 0; p < 6; p++) {
+                const n = E[p].normal;
+                if (n.x * x + n.y * y + n.z * z + E[p].constant < -rr) return false;
+            }
+            return true;
+        };
+    }
+
+    // DIE SICHT DER KARTEN (W7): die EINE Atlas-Gruppe (`IMPOSTOR_ATLAS_GRUPPE`) ist die Wahrheit ihrer Slots (Belegen ·
+    // Freigeben · Stempel · Raycast) und hängt an keinem Eltern-Knoten; gezeichnet wird ihre SICHT — je Pass der Kamera die
+    // Karten, deren Kugel das Frustum schneidet, dicht in EINER eigenen Senke (`state.kartenSicht`: derselbe Stoff, das
+    // Einheits-Quad mit eigenen Instanz-Werten — Matrix, Tint, aKarte). Befund (echte GPU, Mess-Wiese −900/−850, `werkbank
+    // band`): die Gruppe im @global-Bündel zeichnete jede Karte des Rings in jedem Frame — 1 889 Karten bis 385 m, 3 778
+    // Dreiecke, ein Drittel davon im Blick (Haushalt 1k). Jede Mutation der Gruppe meldet der EINE Chokepoint
+    // `_archMeshBundleTouch`; die Signatur der Kamera (`_sichtSteht`) spart den Satz, solange nichts sich ändert. Die Kugel
+    // einer Karte: das Quad auf der Stammachse (Höhe aKarte.z, Halbbreite aKarte.y — Vorlage, × Instanz-Skala), das sich um
+    // die Hochachse zum Auge dreht; die Karte wiegt nicht.
+    _kartenSicht(kamera, fr) {
+        const st = this.state;
+        const g = st.archInstanceGroups ? st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE) : null;
+        const S = st.kartenSicht;
+        if (!g || !kamera || !(g.liveCount > 0)) {
+            if (S && S.mesh && S.mesh.count > 0) AnazhRealm._instanzZahl(S.mesh, 0);
+            return;
+        }
+        if (!fr || !fr.planes) throw new Error("_kartenSicht: ohne das Frustum der Pass-Kamera (`_passSicht`)");
+        const K =
+            S ||
+            (st.kartenSicht = {
+                mesh: null,
+                geom: null,
+                quelle: null,
+                kap: 0,
+                wahl: null,
+                sig: new Float64Array(33),
+                neu: true,
+            });
+        if (K.quelle !== g.geom) {
+            // die Gruppe wurde (neu) geboren: die Senke zeichnet ihr Quad mit ihrem Stoff
+            this._kartenSichtSenke(K, g, Math.max(64, K.kap));
+            K.neu = true;
+        }
+        if (this._sichtSteht(K.sig, kamera, K.neu)) return;
+        K.neu = false;
+        const drin = this._sichtKugel(fr, kamera);
+        const im = g.mesh.instanceMatrix.array;
+        const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
+        const ak = g.geom.attributes.aKarte.array;
+        if (!K.wahl || K.wahl.length < g.liveCount) K.wahl = new Int32Array(Math.max(64, g.capacity));
+        const wahl = K.wahl;
+        let n = 0;
+        for (let i = 0; i < g.liveCount; i++) {
+            const o = i * 16;
+            const h = ak[i * 4 + 2] * 0.5;
+            const s = Math.sqrt(im[o] * im[o] + im[o + 1] * im[o + 1] + im[o + 2] * im[o + 2]);
+            const r = s * Math.sqrt(h * h + ak[i * 4 + 1] * ak[i * 4 + 1]);
+            if (drin(im[o + 12] + im[o + 4] * h, im[o + 13] + im[o + 5] * h, im[o + 14] + im[o + 6] * h, r))
+                wahl[n++] = i;
+        }
+        // Die Senke fasst die Wahl (sie wächst ×1,5 vor dem Schreiben, nie mitten darin); trägt die Gruppe Farben, trägt
+        // die Senke sie.
+        if (n > K.kap || (ic && !K.mesh.instanceColor))
+            this._kartenSichtSenke(K, g, Math.max(n, Math.ceil(K.kap * 1.5)));
+        const m = K.mesh;
+        const kA = K.geom.attributes.aKarte.array;
+        for (let j = 0; j < n; j++) {
+            const i = wahl[j];
+            m.instanceMatrix.array.set(im.subarray(i * 16, i * 16 + 16), j * 16);
+            kA.set(ak.subarray(i * 4, i * 4 + 4), j * 4);
+            if (ic) m.instanceColor.array.set(ic.subarray(i * 3, i * 3 + 3), j * 3);
+        }
+        const teile = [m.instanceMatrix, K.geom.attributes.aKarte, ic ? m.instanceColor : null];
+        for (const t of teile) {
+            if (!t) continue;
+            t.clearUpdateRanges();
+            if (n) t.addUpdateRange(0, n * t.itemSize);
+            t.needsUpdate = true;
+        }
+        AnazhRealm._instanzZahl(m, n);
+    }
+
+    // Die Senke der Karten-Sicht (neu oder gewachsen): eine Instanz-Senke über dem Quad der Atlas-Gruppe (eigene
+    // Instanz-Werte, `_lodInstanceFacade`) mit ihrem Stoff, direkt in der Szene; sie heißt wie die Gruppe (die Täter-Klasse
+    // `fimp:atlas:L2`), wirft nicht und trägt die Ebenen der Gruppe. Die alte verlässt Graph und GPU (`_instanzAbschied`) —
+    // ihr Inhalt reist nicht mit, die Sicht legt sich im selben Pass neu.
+    _kartenSichtSenke(K, g, kap) {
+        const alt = K.mesh;
+        const geom = this._lodInstanceFacade(g.geom, kap);
+        const m = AnazhRealm._instanzMesh(geom, g.mat, kap);
+        if (g.mesh.instanceColor)
+            m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(kap * 3).fill(1), 3);
+        m.name = "kartenSicht";
+        m.userData.archInstanceKey = g.key;
+        m.castShadow = false;
+        m.receiveShadow = g.mesh.receiveShadow;
+        m.frustumCulled = false;
+        m.layers.mask = g.mesh.layers.mask;
+        AnazhRealm._instanzZahl(m, 0);
+        if (alt) {
+            if (alt.parent) alt.parent.remove(alt);
+            this._instanzAbschied(alt);
+        }
+        this.state.scene.add(m);
+        K.mesh = m;
+        K.geom = geom;
+        K.quelle = g.geom;
+        K.kap = kap;
     }
 
     // ═══ DIE NAH-STREU (Waldboden 04.10.) ═══
@@ -61940,6 +62066,8 @@ class AnazhRealm {
         // Welle 6 — eine Satz-Gruppe zeichnet als Bereich im Satz ihres Stoffs: der Bereich legt sich neu.
         else if (mesh && mesh.userData.bauSatz)
             this._bauSatzMarke(mesh.userData.archInstanceKey, mesh.userData.bauSatz);
+        // W7 — die Atlas-Gruppe zeichnet als Sicht: die Sicht legt sich im nächsten Pass neu.
+        else if (mesh && mesh.userData.kartenSicht && this.state.kartenSicht) this.state.kartenSicht.neu = true;
     }
 
     // Parent-bewusstes Entfernen (die scene.remove-Falle: remove() wirkt nur auf
@@ -63368,10 +63496,15 @@ class AnazhRealm {
         // "@global"-Bundle: der Key matcht das Kugel-Regex nicht → keine cullSphere → immer sichtbar,
         // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
         // Eine Satz-Gruppe hängt nirgends: sie ist Slot-Wahrheit und Raycast-Ziel, gezeichnet wird ihr Bereich im Satz.
-        const bundle = !leaf.tuer && !satz ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
+        // Ebenso die EINE Atlas-Gruppe (W7): gezeichnet wird ihre Sicht je Pass (`_kartenSicht`).
+        const bundle =
+            !leaf.tuer && !satz && !atlasGruppe ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
         if (satz) {
             mesh.frustumCulled = false;
             mesh.userData.bauSatz = satz;
+        } else if (atlasGruppe) {
+            mesh.frustumCulled = false;
+            mesh.userData.kartenSicht = true;
         } else if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
@@ -63466,6 +63599,7 @@ class AnazhRealm {
         next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
         next.userData.archInstanceKey = g.key;
         if (g.satz) next.userData.bauSatz = g.satz; // Welle 6 — die Satz-Gruppe bleibt ohne Eltern (der Satz zeichnet)
+        if (g.mesh.userData.kartenSicht) next.userData.kartenSicht = true; // W7 — die Atlas-Gruppe ebenso (die Sicht zeichnet)
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
         // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
@@ -63497,7 +63631,7 @@ class AnazhRealm {
             parent.remove(g.mesh);
             parent.add(next);
             if (parent.isBundleGroup) parent.needsUpdate = true;
-        } else if (!g.satz && this.state.scene) this.state.scene.add(next);
+        } else if (!g.satz && !next.userData.kartenSicht && this.state.scene) this.state.scene.add(next);
         this._instanzAbschied(g.mesh); // die eigenen Instanz-Puffer verlassen die GPU (geom/mat geteilt → bleiben)
         g.mesh = next;
         g.capacity = newCap;
@@ -88015,8 +88149,12 @@ class AnazhRealm {
         // Die Sätze (Boden · Wasser · Bau) wählen ihren Abschnitt mit demselben Gesetz: was das Pass-Frustum nicht
         // schneidet, zeichnet in diesem Pass nicht.
         this._chunkSatzPass(kamera, nach, k, S);
-        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
-        if (!nach && k < 0) this._nahWieseSicht(kamera, S.frustum);
+        // Die Instanz-Sicht (Nah-Wiese, Karten) legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie
+        // werfen nicht).
+        if (!nach && k < 0) {
+            this._nahWieseSicht(kamera, S.frustum);
+            this._kartenSicht(kamera, S.frustum);
+        }
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
         if (k < 0) {
@@ -88574,6 +88712,9 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
 // neu, sobald der Verschnitt (verlassene Läufe hinter umgezogenen Abschnitten) `verschnitt` × Index-Kapazität übersteigt;
 // ein Abschnitt verdichtet seine Lücken (`verschnitt` seines Laufs) und, nach `dichtNach` Pässen mit ruhender Wahl, seine
 // Folge (dicht in Satz-Ordnung, exakt).
+// DER RAND DER INSTANZ-SICHT (`_sichtKugel`, W7): je Meter Abstand zum Auge — die zeitliche Auflösung versetzt die
+// Projektion um höchstens einen halben Pixel (1080p, 75°: 0,0007 je m), der Rand trägt ~2 Pixel.
+AnazhRealm.SICHT_RAND = 0.003;
 AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, verschnitt: 0.25, dichtNach: 30 });
 // DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
 // `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden

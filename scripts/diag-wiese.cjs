@@ -158,7 +158,10 @@ const RENDER_FN = async (kam, W, H, png) => {
                         stabil = 0;
                         last = sz;
                     }
-                    if (takte >= 40 && stabil >= 15) break;
+                    // die Nah-Wiese liest das Studio-Buch (Budget, Gras-Vorlagen): ohne Buch fiele die Aufnahme in die
+                    // KERN-PFLICHT — die Linse wartet darauf (W7: unter Last kam das Buch nach den 40 Takten)
+                    const buch = !!(r._foundry && r._foundry.recipes && r.constructor._studioRenderConfig);
+                    if (takte >= 40 && stabil >= 15 && buch) break;
                     await sleep(50);
                 }
                 return { takte, chunks: last };
