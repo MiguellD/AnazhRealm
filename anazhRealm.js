@@ -17382,6 +17382,13 @@ class AnazhRealm {
             out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
             out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
         }
+        // Klarlack und Durchsicht reisen wie in der Brücke (phytogenesis `__extractAssetMesh`, W5) — DIESELBE Eintrags-
+        // Form; ein Bäcker-Stoff ohne die Felder (jede Kreatur heute) bleibt byte-alt.
+        if (typeof mat.clearcoat === "number" && mat.clearcoat > 0) {
+            out.mat.clearcoat = mat.clearcoat;
+            out.mat.clearcoatRoughness = typeof mat.clearcoatRoughness === "number" ? mat.clearcoatRoughness : 0;
+        }
+        if (mat.transparent && typeof mat.opacity === "number" && mat.opacity < 1) out.mat.opacity = mat.opacity;
         if (geo && geo.attributes) {
             for (const name in geo.attributes) {
                 const at = geo.attributes[name];
@@ -69323,7 +69330,9 @@ class AnazhRealm {
                 ? globalThis.__koerperCore.HAUT_LOOK
                 : null;
         // DER KLARLACK (W5 Gegenstände): die Haut des Körperstudios (HAUT_LOOK) ODER der Stoff selbst (Fahrzeug-Lack,
-        // Klingen-Stahl — `budgetRegler` cc/ccr aus dem Gesetzbuch); ohne Klarlack der Standard.
+        // Klingen-Stahl — `budgetRegler` cc/ccr aus dem Gesetzbuch); ohne Klarlack der Standard. Gemessen (Integration W5,
+        // echte GPU, Ausgabe-Pfad, Gesicht auf 0,75 m): die Haut hebt sich im Median 41,3 -> 42,9 (+4 %, zwei gleiche
+        // Schüsse 0,2 auseinander); er trägt nur die Menschen-Haut (skin/haut — kein Tier-Stoff), keinen Befehl mehr.
         const ccSoll =
             _hautL && Number.isFinite(_hautL.clearcoat)
                 ? {
@@ -69353,8 +69362,8 @@ class AnazhRealm {
                 mat.clearcoatRoughness = ccSoll.ccr;
             }
             // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
-            // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); den Schatten
-            // wirft er weiter (der Schattenpass liest colorNode.a, nie die Deckkraft). Eine dünne Scheibe zeichnet beide
+            // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); einen Schatten
+            // wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Eine dünne Scheibe zeichnet beide
             // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
             // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
             if (R.op < 1) {
@@ -69713,8 +69722,14 @@ class AnazhRealm {
         }
         // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder). Eine
         // LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
-        // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile.
-        mesh.castShadow = m.kind !== "fellSchale" && !(m.mat && m.mat.seh === "glut");
+        // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile. Ein
+        // DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem Gesetzbuch) wirft auch keinen: das
+        // Licht geht durch ihn, und r184 zieht einen doppelseitig-durchsichtigen Werfer im Schattenpass zweimal (der
+        // Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1 (Integration W5).
+        mesh.castShadow =
+            m.kind !== "fellSchale" &&
+            !(m.mat && m.mat.seh === "glut") &&
+            !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1);
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
         if (globalThis.__phytoCore.budgetLook(m.kind)) mesh.userData.__klasse = m.kind;
