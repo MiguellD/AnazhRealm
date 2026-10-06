@@ -137,6 +137,42 @@ function driveVerdict(d) {
     return out;
 }
 
+// ── B-e (W5 Gegenstände, 05.10.) — DAS FAHR-GEFÜHL-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die
+// vier benannten Täter des Welt-Ritts, je eine Zahl:
+//   achse   ≤ 10°   — der Wagen fährt in seine Bug-Richtung (vorher 90°: das längs-x-Template drehte mit der
+//                     Fahrt-Gier, der GT fuhr quer)
+//   kontakt ≤ 0,12 m — die Räder stehen auf dem Boden (vorher 0,48 m darunter: die −0,5-Basis der Instanz-Matrix
+//                     fehlte im Ritt; am Hang dazu halbe Länge × Steigung aus max() + Nick)
+//   lenk    ≤ 1,8 g — die Quer-Kinematik v·ω bleibt in der Reifen-Grenze (vorher 3–5 g: die Lastverlagerung las die
+//                     Rotationskopplung als Bremsen, der Wagen drehte sich auf)
+//   schwimm ≤ 40°   — im vollen Einschlag läuft der Wagen nicht quer (größter Schwimmwinkel Bug-Achse ↔ Fahrt: die
+//                     Probefahrt des Labors schwingt auf der Ebene bis 14,5°, am Hang der Gate-Strecke 30°; der
+//                     aufdrehende Wagen stand mit 88° quer)
+const FAHR_GEFUEHL = { achseGrad: 10, kontaktM: 0.12, lenkSpitzeG: 1.8, schwimmGrad: 40 };
+function fahrGefuehlVerdict(g) {
+    const out = [];
+    if (!g || g.spawned !== true) return ["spawn"];
+    if (!(g.achseGrad <= FAHR_GEFUEHL.achseGrad)) out.push(`achse ${(g.achseGrad || 0).toFixed(1)}°`);
+    if (!(g.kontaktM <= FAHR_GEFUEHL.kontaktM)) out.push(`kontakt ${(g.kontaktM || 0).toFixed(3)} m`);
+    if (!(g.lenkSpitzeG <= FAHR_GEFUEHL.lenkSpitzeG)) out.push(`lenk ${(g.lenkSpitzeG || 0).toFixed(2)} g`);
+    if (!(g.schwimmGrad <= FAHR_GEFUEHL.schwimmGrad)) out.push(`schwimm ${(g.schwimmGrad || 0).toFixed(1)}°`);
+    return out;
+}
+
+// ── B-f (W5 Gegenstände, 05.10.) — DAS STAND-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Ein geparkter
+// Wagen steht, wie er fährt: auf der Ebene seiner vier Räder (`_fahrzeugStand` beim Spawn). Vorher stand er waagrecht
+// auf dem Boden unter seinem Ursprung — an der Mess-Wiese hob er am 20-%-Hang ein Rad 0,49 m (längs) bis 0,76 m (quer)
+// aus dem Boden oder versenkte es. Gemessen an der GERENDERTEN Matrix (`_archEntryWorldMatrix`) gegen das Boden-Gesetz:
+//   spalt ≤ 0,12 m — der größte |Rad-Spalt| über alle Hang-Proben (dieselbe Schwelle wie der Ritt-Kontakt)
+//   proben ≥ 4     — die Probe fand Hänge (längs UND quer geparkt), sonst ist sie leer
+const STAND = { spaltM: 0.12, probenMin: 4 };
+function standVerdict(s) {
+    const out = [];
+    if (!s || !(s.proben >= STAND.probenMin)) return [`proben ${(s && s.proben) || 0}`];
+    if (!(s.spaltM <= STAND.spaltM)) out.push(`spalt ${(s.spaltM || 0).toFixed(3)} m`);
+    return out;
+}
+
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 require(path.join(root, "vehicle-core.js"));
@@ -275,6 +311,29 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             "Selbst-Test 6 (B2): ‚die Instanz-Matrix klebt am Spawn' → die Fahr-Linse feuert",
             driveVerdict(Object.assign({}, healthy, { visDX: 14.4 })).length >= 1
         );
+        // V6 (B-e, W5): das FAHR-GEFÜHL-Verdikt feuert auf jeden der vier gemessenen Täter des Vor-Stands.
+        const gesund = { spawned: true, achseGrad: 2.1, kontaktM: 0.03, lenkSpitzeG: 1.45, schwimmGrad: 6 };
+        check("Selbst-Test 9 (B-e): gesunde Fahrt == 0 Verstoesse", fahrGefuehlVerdict(gesund).length === 0);
+        for (const [name, bruch] of [
+            ["der Wagen faehrt quer (90°)", { achseGrad: 90 }],
+            ["die Raeder 0,48 m im Boden", { kontaktM: 0.48 }],
+            ["der Wagen dreht sich auf (4,2 rad/s · 8 m/s)", { lenkSpitzeG: 3.4 }],
+            ["der Wagen laeuft im Einschlag quer (Schwimmwinkel 70°)", { schwimmGrad: 70 }],
+        ])
+            check(
+                `Selbst-Test 10 (B-e): ‚${name}' → die Fahr-Gefühl-Linse feuert`,
+                fahrGefuehlVerdict(Object.assign({}, gesund, bruch)).length === 1
+            );
+        // V7 (B-f, W5): das STAND-Verdikt feuert auf den waagrecht geparkten Wagen und auf eine leere Probe.
+        check("Selbst-Test 11 (B-f): gesunder Stand == 0 Verstoesse", standVerdict({ proben: 6, spaltM: 0.05 }).length === 0);
+        check(
+            "Selbst-Test 12 (B-f): ‚der Wagen parkt waagrecht am Hang (Rad 0,49 m frei)' → die Stand-Linse feuert",
+            standVerdict({ proben: 6, spaltM: 0.49 }).length === 1
+        );
+        check(
+            "Selbst-Test 13 (B-f): ‚keine Hang-Probe gefunden' → die Stand-Linse feuert",
+            standVerdict({ proben: 0, spaltM: 0 }).length === 1
+        );
         // V4 (B2): ein Stamm OHNE die Chokepoint-Bindung → die A6-Wand feuert.
         const brokenAnazh = anazhSrc.replace("this._archInstanceUpdate(entry);", "");
         const a6 = staticLaws(vcSrc, garageSrc, brokenAnazh, phytoSrc).filter((l) => l[0].startsWith("A6"));
@@ -336,7 +395,9 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
-    const nodeExpected = { gt: gtExp, supersport: ssExp };
+    // B-e fährt an der MESS-WIESE (spec/profiband/haushalt.json messort) — der Spawn liegt im Gebirge (Stufen bis 24 m).
+    const messort = JSON.parse(fs.readFileSync(path.join(root, "spec/profiband/haushalt.json"), "utf8")).messort.spieler;
+    const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
         const dl0 = performance.now() + 60000;
@@ -489,10 +550,11 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                     r._tickMountedMovement(0.05);
                 }
                 res.drive.dist = Math.hypot(entry.position.x - m0.x, entry.position.z - m0.z);
+                // Der Sitz misst von der BASIS (position.y − 0.5 — die Platzierungs-Konvention der Instanz-Matrix).
                 res.drive.seated =
                     r.state.player.mountedArch === entry.id &&
                     Number.isFinite(entry._sitzHeight) &&
-                    Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.06;
+                    Math.abs(pm.y - (entry.position.y - 0.5 + entry._sitzHeight)) < 0.06;
                 // Das VISUAL zieht mit (die B2-Wurzel: die Instanz-Matrix blieb am Spawn stehen).
                 if (entry.instanced && entry.instSlots && entry.instSlots.length) {
                     const sl = entry.instSlots[0];
@@ -534,6 +596,189 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             }
         } catch (e) {
             res.driveErr = (e && e.message) || String(e);
+        }
+        // ===== B-e (W5 Gegenstände, 05.10.): DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
+        // Der GT fährt über `_loopPlayerMovement` (der EINE Bewegungs-Pfad, 60 Hz, dtOverride) + `_tickMountedMovement`:
+        // 90 Ticks Gas geradeaus, dann 120 Ticks voller Lenk-Einschlag. Gemessen an der GERENDERTEN Matrix
+        // (`_archEntryWorldMatrix`) und am Gesetz (exportDrive.huelle):
+        //   achse  — der Winkel zwischen der Bug-Achse des Templates (+x) und der Fahrt (Grad, Geradeaus-Ticks v > 3)
+        //   kontakt — die vier Aufstandspunkte (fAx/rAx × ±Spur/2, y = 0) gegen den Boden (m, |max| über alle Ticks)
+        //   lenk   — Spitze der Quer-Kinematik v·ω (in g) und der Tempo-Rest nach 2 s Einschlag (Anteil)
+        try {
+            const pm = r.state.playerMesh.position;
+            const keys = r.state.keys;
+            // Die Strecke (die Probe integriert ohne Kollision — ein Fels im Weg wäre kein Boden-Befund, und der GT
+            // schwimmt: über Wasser trägt die Lauf-Fläche): je Kandidat um die Mess-Wiese Proben alle 2 m auf 72 m in
+            // Fahrt-Richtung (+x: Template-Gier 0 = Bug +x) und ±3 m daneben — trocken; unter den trockenen die mit
+            // der kleinsten Stufe (die Welt ist hügelig: 30 % Steigung findet sich auf jeder 72-m-Geraden).
+            const mo = expected.messort;
+            let start = null;
+            for (let ring = 0; ring <= 4; ring++) {
+                for (let k = 0; k < (ring ? 8 : 1); k++) {
+                    const cx = mo[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
+                    const cz = mo[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
+                    let trocken = true;
+                    let stufe = 0;
+                    for (const dz of [-3, 0, 3]) {
+                        let vor = null;
+                        for (let s = 0; s <= 36 && trocken; s++) {
+                            const hx = r.getTerrainHeightAt(cx + s * 2, cz + dz);
+                            const ws = r._waterRunSurfaceAt(cx + s * 2, cz + dz);
+                            if (!Number.isFinite(hx) || (Number.isFinite(ws) && ws > hx - 0.3)) trocken = false;
+                            if (vor !== null) stufe = Math.max(stufe, Math.abs(hx - vor));
+                            vor = hx;
+                        }
+                    }
+                    if (trocken && (!start || stufe < start.stufe)) start = { x: cx, z: cz, stufe };
+                }
+            }
+            res.gefuehl = { spawned: false, start };
+            if (!start) throw new Error("keine trockene Strecke um die Mess-Wiese");
+            pm.set(start.x, r.getTerrainHeightAt(start.x, start.z) + 1, start.z);
+            const e2 = r.spawnArchitecture(
+                "fahrzeug_gt",
+                { x: start.x, y: r.getTerrainHeightAt(start.x, start.z) + 0.5, z: start.z },
+                { silent: true, precise: true, rotationY: 0 }
+            );
+            res.gefuehl.spawned = !!e2;
+            if (e2) {
+                const dl3 = performance.now() + 45000;
+                while (!e2.instanced && !e2.mesh && performance.now() < dl3) {
+                    r._rebuildArchitectureMesh(e2);
+                    if (e2.instanced || e2.mesh) break;
+                    await new Promise((res3) => setTimeout(res3, 200));
+                }
+                r.mountArchitecture(e2);
+                const fzg = r._fahrzeugGesetzFor(e2);
+                const h = fzg.drive.huelle;
+                const G = fzg.drive.zweispur.G * fzg.drive.zweispur.maxGrip * fzg.drive.zweispur.grip;
+                const M = new THREE.Matrix4();
+                const v3 = new THREE.Vector3();
+                const dt = 1 / 60;
+                let t = 1000;
+                let achse = 0;
+                let kontakt = 0;
+                const spalte = [];
+                let schwimm = 0;
+                let lenkSpitze = 0;
+                let vStart = null;
+                let vEnde = 0;
+                const tick = (lenk) => {
+                    t += dt;
+                    r._loopPlayerMovement(t, dt);
+                    const v = r.state.playerVel;
+                    pm.x += v.x() * dt;
+                    pm.z += v.z() * dt;
+                    r._tickMountedMovement(dt);
+                    r._archEntryWorldMatrix(e2, M);
+                    const sp = Math.hypot(v.x(), v.z());
+                    let spaltTick = 0;
+                    for (const ax of [h.fAx, h.rAx])
+                        for (const sz of [-1, 1]) {
+                            v3.set(ax, 0, (sz * h.spur) / 2).applyMatrix4(M);
+                            const spalt = Math.abs(v3.y - r.getTerrainHeightAt(v3.x, v3.z));
+                            spaltTick = Math.max(spaltTick, spalt);
+                            if (spalt > kontakt) {
+                                kontakt = spalt;
+                                // der Tick des größten Spalts beim Namen (Phase · schwimmend · Nick/Wank)
+                                res.gefuehl.kontaktBei = {
+                                    tick: Math.round((t - 1000) / dt),
+                                    lenk,
+                                    schwimmt: !!e2._afloat,
+                                    nick: +(e2._rideTerrainPitch || 0).toFixed(3),
+                                    wank: +(e2._rideRoll || 0).toFixed(3),
+                                    weg: +Math.hypot(pm.x - start.x, pm.z - start.z).toFixed(1),
+                                    boden: [-4, 0, 4].map((d) => +r.getTerrainHeightAt(pm.x + d, pm.z).toFixed(2)),
+                                };
+                            }
+                        }
+                    spalte.push(spaltTick);
+                    // Der Winkel zwischen Bug-Achse und Fahrt: geradeaus die ACHSE, im Einschlag der SCHWIMMWINKEL
+                    // (ein haftender Wagen bleibt unter 10°, ein aufdrehender läuft quer).
+                    let winkel = null;
+                    if (sp > 3) {
+                        v3.set(1, 0, 0).transformDirection(M);
+                        const c = (v3.x * v.x() + v3.z * v.z()) / Math.max(1e-6, Math.hypot(v3.x, v3.z) * sp);
+                        winkel = (Math.acos(Math.max(-1, Math.min(1, c))) * 180) / Math.PI;
+                    }
+                    if (!lenk && winkel !== null) achse = Math.max(achse, winkel);
+                    if (lenk) {
+                        if (vStart === null) vStart = sp;
+                        const f = e2._fahr || {};
+                        lenkSpitze = Math.max(lenkSpitze, Math.abs((f.yawRate || 0) * sp) / G);
+                        if (winkel !== null) schwimm = Math.max(schwimm, winkel);
+                        vEnde = sp;
+                    }
+                };
+                for (const k of ["w", "a", "s", "d", "shift"]) keys[k] = false;
+                keys.w = true;
+                for (let i = 0; i < 150; i++) tick(false);
+                keys.a = true;
+                for (let i = 0; i < 120; i++) tick(true);
+                for (const k of ["w", "a", "s", "d", "shift"]) keys[k] = false;
+                res.gefuehl.schwamm = !!e2._afloat;
+                res.gefuehl.achseGrad = achse;
+                // Der Kontakt ist das 75-%-Quantil des größten Rad-Spalts je Tick — ein starrer Wagen auf einer
+                // 2-m-Stufe des Hügels hebt kurz ein Rad (das Maximum reist als Befund mit), das Versinken der alten
+                // Basis (0,48 m) und das Schweben aus max() + Nick lagen auf JEDEM Tick.
+                spalte.sort((a, b) => a - b);
+                res.gefuehl.kontaktM = spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity;
+                res.gefuehl.kontaktMax = kontakt;
+                res.gefuehl.lenkSpitzeG = lenkSpitze;
+                res.gefuehl.schwimmGrad = schwimm;
+                res.gefuehl.tempoRest = vStart > 0 ? vEnde / vStart : 0;
+                res.gefuehl.vStart = vStart;
+                r.dismountArchitecture();
+                r.removeArchitecture(e2);
+                if (r.state.playerVel) r.state.playerVel.setValue(0, 0, 0);
+                r.state._fieldVy = 0;
+            }
+        } catch (e) {
+            res.gefuehlErr = (e && e.message) || String(e);
+        }
+        // ===== B-f (W5 Gegenstände, 05.10.): DER STAND AM HANG =====
+        // Je Hang-Probe um die Mess-Wiese (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der
+        // Spawn-Pfad wie Hotbar/DSL: Basis auf dem Boden unter dem Ursprung); gemessen werden die vier Aufstandspunkte der
+        // GERENDERTEN Matrix gegen das Boden-Gesetz.
+        try {
+            const mo = expected.messort;
+            const M = new THREE.Matrix4();
+            const v3 = new THREE.Vector3();
+            const hang = [];
+            for (let dx = -40; dx <= 40 && hang.length < 6; dx += 8)
+                for (let dz = -40; dz <= 40 && hang.length < 6; dz += 8) {
+                    const x = mo[0] + dx;
+                    const z = mo[1] + dz;
+                    const hh = (a, b) => r.getTerrainHeightAt(a, b);
+                    const g = Math.hypot((hh(x + 2, z) - hh(x - 2, z)) / 4, (hh(x, z + 2) - hh(x, z - 2)) / 4);
+                    const ws = r._waterRunSurfaceAt(x, z);
+                    if (!(g >= 0.12 && g <= 0.35) || (Number.isFinite(ws) && ws > hh(x, z) - 0.3)) continue;
+                    hang.push({ x, z, g, rot: hang.length % 2 ? Math.PI / 2 : 0 });
+                }
+            let spaltM = 0;
+            const je = [];
+            for (const p of hang) {
+                const e3 = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: p.x, y: r.getTerrainHeightAt(p.x, p.z) + 0.5, z: p.z },
+                    { silent: true, precise: true, rotationY: p.rot, seed: 11 }
+                );
+                if (!e3) continue;
+                const h = r._fahrzeugGesetzFor(e3).drive.huelle;
+                r._archEntryWorldMatrix(e3, M);
+                let maxS = 0;
+                for (const ax of [h.fAx, h.rAx])
+                    for (const sz of [-1, 1]) {
+                        v3.set(ax, 0, (sz * h.spur) / 2).applyMatrix4(M);
+                        maxS = Math.max(maxS, Math.abs(v3.y - r.getTerrainHeightAt(v3.x, v3.z)));
+                    }
+                spaltM = Math.max(spaltM, maxS);
+                je.push(+maxS.toFixed(3));
+                r.removeArchitecture(e3);
+            }
+            res.stand = { proben: je.length, spaltM, je, steigung: hang.map((p) => +p.g.toFixed(2)) };
+        } catch (e) {
+            res.standErr = (e && e.message) || String(e);
         }
         void expected;
         return res;
@@ -614,6 +859,24 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             (out.drive
                 ? `kind=${out.drive.visualKind} dist=${(out.drive.dist || 0).toFixed(2)}m vis=${out.drive.visDX}${dv.length ? " fehlt:" + dv.join(",") : ""}`
                 : "keine Probe")
+    );
+    // B-e (W5): das Fahr-Gefühl im echten Bewegungs-Pfad — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const gv = fahrGefuehlVerdict(out.gefuehl);
+    const g = out.gefuehl || {};
+    check(
+        "B-e/W5: FAHR-GEFÜHL — der GT fährt in seine Bug-Richtung, die Räder stehen auf dem Boden, der volle Einschlag bleibt in der Reifen-Grenze",
+        gv.length === 0,
+        out.gefuehlErr ||
+            `achse ${(g.achseGrad || 0).toFixed(1)}° · kontakt ${(g.kontaktM || 0).toFixed(3)} m (p75, max ${(g.kontaktMax || 0).toFixed(2)}) · lenk ${(g.lenkSpitzeG || 0).toFixed(2)} g · schwimm ${(g.schwimmGrad || 0).toFixed(1)}° · tempo ${((g.tempoRest || 0) * 100).toFixed(0)} % von ${(g.vStart || 0).toFixed(1)} m/s${gv.length ? " — Täter: " + gv.join(", ") + " · größter Spalt " + JSON.stringify(g.kontaktBei || null) : ""}`
+    );
+    // B-f (W5): der Stand am Hang — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const sv = standVerdict(out.stand);
+    const st = out.stand || {};
+    check(
+        "B-f/W5: STAND — ein geparkter GT steht am Hang auf seinen vier Rädern (längs und quer)",
+        sv.length === 0,
+        out.standErr ||
+            `größter Rad-Spalt ${(st.spaltM || 0).toFixed(3)} m über ${st.proben || 0} Hang-Proben (Steigung ${JSON.stringify(st.steigung || [])}, je ${JSON.stringify(st.je || [])})${sv.length ? " — Täter: " + sv.join(", ") : ""}`
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 

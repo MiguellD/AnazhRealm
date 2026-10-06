@@ -43433,32 +43433,92 @@ class AnazhRealm {
             // Gruppe warm kompilieren (Null-Renderer/headless: No-op; disposeAfter false —
             // die Geometrie ist GETEILT und bleibt im Spiel).
             if (isStudio) this._warmCompilePipeline(mesh, false);
-            // auf greifbare Hand-Größe skalieren — die ECHTE Geometrie-Spanne (positions + sizes +
-            // rotation), robust auch bei Ein-Part-Geräten (anders als _compoundBBox, positions-only).
+            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
+            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
+            const anchor =
+                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
+                pm;
+            // DIE WAHRE GRÖSSE (W5 Gegenstände): das Gerät erbt die Welt-Skala seines Ankers — der Studio-Mensch steht
+            // als Baum in Studio-Einheiten unter einer 0,283-Gruppe, sein Handgelenk misst 0,26–0,28 Welt je Einheit.
+            // Bis W5 skalierte die Hand im Anker-Raum: das Langschwert (Gesetzbuch 1,228 m) schrumpfte auf 0,62 Einheiten
+            // × 0,27 = 0,17 m, ein Spielzeug im Faustinneren. Jetzt rechnet die Hand in WELT-Metern: die Studio-Gestalt
+            // trägt ihre Gesetzbuch-Länge (die Schmiede baut in Metern — Masse, Balance und Reichweite rechnen damit),
+            // ein Part-Bau seine Werkzeug-Spanne `targetSpanM`; der Anker-Faktor wird herausgeteilt.
+            let ankerSkala = 1;
+            try {
+                anchor.updateWorldMatrix(true, false);
+                const ws = anchor.getWorldScale(new THREE.Vector3());
+                const m = (Math.abs(ws.x) + Math.abs(ws.y) + Math.abs(ws.z)) / 3;
+                if (Number.isFinite(m) && m > 1e-4) ankerSkala = m;
+            } catch (_e) {
+                /* Anker ohne Welt-Matrix — Welt = Anker-Raum */
+            }
+            // die ECHTE Geometrie-Spanne (positions + sizes + rotation), robust auch bei Ein-Part-Geräten
+            // (anders als _compoundBBox, positions-only).
             try {
                 mesh.updateMatrixWorld(true);
                 const box = new THREE.Box3().setFromObject(mesh);
                 if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
                     const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
                     if (span > 1e-4) {
-                        const s = Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
-                        mesh.scale.setScalar(s);
+                        const welt = isStudio
+                            ? 1
+                            : Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
+                        mesh.scale.setScalar(welt / ankerSkala);
                     }
                 }
             } catch (_e) {
                 /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
             }
-            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
-            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
-            const anchor =
-                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
-                pm;
-            const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
             const sx = side === "left" ? -1 : 1;
             // V18.110 — C7: der GRIFF-Punkt liegt in der Hand — das Mesh wird so
             // verschoben, dass der griffigste Part (bzw. der explizite griff-
             // Punkt) am Hand-Anker sitzt, nicht der Bauplan-Ursprung.
             const ms = mesh.scale && Number.isFinite(mesh.scale.x) ? mesh.scale.x : 1;
+            // DIE FAUST (W5): ein Studio-Gerät im Handgelenk des Studio-Menschen (die Rig-Gelenke, `_buildHumanGroup`)
+            // liegt, wie eine Hand greift — der Griff quer zum Unterarm durch die Faust, das Blatt zur Daumenseite und
+            // `neigung` unter die Waagrechte (der entspannte Arm), die Schneide (Klinge) bzw. der Kopf (Axt, Hammer,
+            // Spaten) in der Schwung-Ebene nach unten; der Bogen liegt mit seiner Länge im Griff. Die Gelenk-Achsen des
+            // Handgelenks: −y zu den Fingern, +z nach vorn (Daumenseite), x quer. Vorher stand die Klinge mit 0,5 rad
+            // Kipp den Unterarm hinauf (ein Handgelenk, um 160° überstreckt) — Messname: Haltung, Hand-Griff-Versatz.
+            const rig = pm.userData && pm.userData.rig;
+            const faust =
+                isStudio &&
+                !!rig &&
+                ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+            if (faust) {
+                const fo = cfg.faustOffset;
+                const art = mesh.userData && mesh.userData.heldArt;
+                // Der Bogen steht rechtwinklig zum Unterarm (gestreckter Bogen-Arm: der Bogen senkrecht zum Pfeil), eine
+                // Klinge oder ein Schaft `neigung` unter der Waagrechten des hängenden Arms.
+                const ng = art === "bogen" ? 0 : cfg.neigung;
+                const c = Math.cos(ng),
+                    s = Math.sin(ng);
+                const griff = new THREE.Vector3(0, -s, c); // die Griff-Achse: vorn, `neigung` hinab
+                const oben = new THREE.Vector3(0, c, s); // quer dazu in der Schwung-Ebene, oben
+                const quer = new THREE.Vector3(1, 0, 0);
+                const B = new THREE.Matrix4();
+                // Spalten = Bild der Template-Achsen X · Y · Z (rechtshändig).
+                if (art === "bogen")
+                    B.makeBasis(oben, griff, quer); // Länge Y im Griff, Sehne nach oben
+                else if (art === "klinge")
+                    B.makeBasis(griff, oben, quer.clone().negate()); // Klinge X, Schneiden-Ebene XY
+                else B.makeBasis(griff, quer.clone().negate(), oben.clone().negate()); // Kopf +Z nach unten
+                mesh.quaternion.setFromRotationMatrix(B);
+                const gpT =
+                    art === "bogen"
+                        ? new THREE.Vector3(0, 0, 0)
+                        : new THREE.Vector3((mesh.userData && mesh.userData.heldGripX) || 0, 0, 0);
+                gpT.multiplyScalar(ms).applyQuaternion(mesh.quaternion);
+                mesh.position.set(
+                    (fo.x * sx) / ankerSkala - gpT.x,
+                    fo.y / ankerSkala - gpT.y,
+                    fo.z / ankerSkala - gpT.z
+                );
+                anchor.add(mesh);
+                return mesh;
+            }
+            const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
             // Der Griff der Studio-Gestalt kommt als DATEN (heldGripX aus dem LIVE-Buch). Template-Achse ist X
             // (Griff bei 0, Klinge nach +X) → rotation.z += π/2 (Euler XYZ: Z wirkt zuerst) stellt sie in die
             // Hand-Konvention (lange Achse +Y, Griff unten); (gripX,0,0) liegt danach bei (0,gripX,0) — dieselbe
@@ -43574,6 +43634,9 @@ class AnazhRealm {
         const pol = rec && rec.kind ? AnazhRealm.KIND_POLICY[rec.kind] : null;
         const ax = !!(pol && pol.handAxis === "x");
         wrap.userData.heldAxis = ax ? "x" : "y";
+        // Die Werk-Art als DATEN (fx.task.art aus dem LIVE-Buch: klinge · keil · graben · pick · bogen): die Faust legt
+        // danach die Schneide bzw. den Kopf in die Schwung-Ebene und den Bogen längs in den Griff (`_refreshHeldMesh`).
+        wrap.userData.heldArt = (rec && rec.fx && rec.fx.task && rec.fx.task.art) || null;
         const held = rec && rec.fx && rec.fx.held;
         const s = rec && rec.s;
         wrap.userData.heldGripX =
@@ -49734,10 +49797,14 @@ class AnazhRealm {
         entry._sitzHeight = AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         // vehicle-Gestalt: Sattelpunkt aus exportDrive.sitz (seatRow-Anker — GT tief, Truck hoch).
         // Kein Gesetz → der emergente _attachPointFor bleibt die EINE Quelle der User-Eigenwerke.
-        const fzgSitz = (() => {
-            const fzg = this._fahrzeugGesetzFor(entry);
-            return fzg && fzg.drive && fzg.drive.sitz ? fzg.drive.sitz : null;
-        })();
+        const fzgM = this._fahrzeugGesetzFor(entry);
+        const fzgSitz = fzgM && fzgM.drive && fzgM.drive.sitz ? fzgM.drive.sitz : null;
+        // DER RAHMEN des Templates: ein Studio-Fahrzeug liegt längs x (vehicle-core huelle: Bug +x), ein Teile-Werk
+        // fährt in +z. Die Fahrt beginnt in der Richtung, in der der Wagen STEHT — ohne diesen Anfang griff der
+        // Bewegungs-Tick die Blick-Gier und der Wagen schnappte beim Aufsitzen herum.
+        entry._fahrAchseX = !!(fzgM && fzgM.drive && fzgM.drive.huelle);
+        entry._rideYaw =
+            (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + (entry._fahrAchseX ? Math.PI / 2 : 0);
         if (fzgSitz && Number.isFinite(fzgSitz.y)) {
             entry._sitzHeight = Math.max(0.45, fzgSitz.y * scale + AnazhRealm.SITZ_HIP_OFFSET);
         } else if (bp) {
@@ -49763,7 +49830,7 @@ class AnazhRealm {
         if (pm) {
             pm.x = entry.position.x;
             pm.z = entry.position.z;
-            pm.y = entry.position.y + entry._sitzHeight;
+            pm.y = entry.position.y - 0.5 + entry._sitzHeight; // der Sitz misst von der Basis (position.y − 0.5)
         }
         // Kollision ruht im Sattel (Reiter + Gefährt = EIN Körper, die Spieler-Kapsel kollidiert): der
         // statische Wagen-Körper blockierte sonst die Fahrt wie ein Bordstein. Beim Aufsteigen fällt er, der
@@ -49806,12 +49873,15 @@ class AnazhRealm {
         // Ruhe-Optik: Nick/Feder-Zustand nullen, der EINE Visual-Weg zieht die Matrix nach. call-Form MIT
         // ABSICHT: die A6-Wand des vehicle-drive-Gates schneidet die ERSTE direkte Instanz-Update-Bindung aus
         // dem Quelltext — die muss die Tick-Zeile in _tickMountedMovement bleiben. Muster hier nie zitieren.
-        if (entry && (entry._ridePitch || entry._rideVy || entry._rideHeave)) {
+        // Der Gelände-Nick/-Wank bleibt: der Wagen parkt in der Ebene seiner Räder.
+        if (entry && (entry._ridePitch || entry._rideVy || entry._rideHeave || entry._rideKurvenRoll)) {
             entry._ridePitch = 0;
             entry._rideVy = 0;
             entry._rideHeave = 0; // N7-Rest — das stehende Gefaehrt steht auf Feder-Null
             entry._rideHeaveV = 0;
-            if (entry.mesh) entry.mesh.rotation.x = 0;
+            entry._rideKurvenRoll = 0;
+            entry._rideKurvenRollV = 0;
+            if (entry.mesh) this._rittMeshPose(entry);
             else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
         }
         this.state.player.mountedArch = null;
@@ -49836,6 +49906,94 @@ class AnazhRealm {
             return { ok: false, reason: "none_in_range" };
         }
         return this.mountArchitecture(entry);
+    }
+
+    // DIE AUFSTANDSPUNKTE eines gerittenen Werks (m, Fahrt-Rahmen: vorn/hinten längs, quer zur Seite): ein
+    // Studio-Fahrzeug trägt sie im Gesetz (vehicle-core exportDrive.huelle — die Achsen fAx/rAx, die halbe Spur),
+    // ein Teile-Werk an Bug/Heck und den Flanken seiner Hülle (die halbe Spanne, gedeckelt 0.8..3 m).
+    _rittAufstand(entry) {
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
+        const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+        if (h && Number.isFinite(h.fAx) && Number.isFinite(h.rAx) && Number.isFinite(h.spur) && h.fAx > h.rAx)
+            return { vorn: h.fAx * sc, hinten: h.rAx * sc, quer: (h.spur / 2) * sc };
+        const half = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
+        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6) };
+    }
+
+    // DIE EBENE DER RÄDER bei (x, z) in Fahrt-Richtung `fahrtYaw` (sin, cos): die vier Aufstandspunkte
+    // (`_rittAufstand`) auf dem Boden-Gesetz → Höhe der Ebene unter dem Ursprung, Nick (Bug ab = +) und Wank (die
+    // Flanke (cos, −sin) oben = +), alle aus DENSELBEN Proben. Das alte max() über Bug/Heck hob den Ursprung auf den
+    // höchsten Punkt, und der Gelände-Nick kippte ihn dann noch einmal: am Hang schwebte der Wagen um halbe Länge ×
+    // Steigung. null, wenn eine Probe fehlt. Leser: der Ritt (`_tickMountedMovement`) und der Stand (`_fahrzeugStand`).
+    _rittEbene(entry, x, z, fahrtYaw) {
+        const st = this._rittAufstand(entry);
+        const fX = Math.sin(fahrtYaw);
+        const fZ = Math.cos(fahrtYaw);
+        const qX = Math.cos(fahrtYaw);
+        const qZ = -Math.sin(fahrtYaw);
+        const h = (l, q) => this.getTerrainHeightAt(x + fX * l + qX * q, z + fZ * l + qZ * q);
+        const vRe = h(st.vorn, st.quer);
+        const vLi = h(st.vorn, -st.quer);
+        const hRe = h(st.hinten, st.quer);
+        const hLi = h(st.hinten, -st.quer);
+        if (!Number.isFinite(vRe) || !Number.isFinite(vLi) || !Number.isFinite(hRe) || !Number.isFinite(hLi))
+            return null;
+        const hV = (vRe + vLi) / 2;
+        const hH = (hRe + hLi) / 2;
+        const lang = Math.max(0.5, st.vorn - st.hinten);
+        return {
+            y: hH + ((hV - hH) * -st.hinten) / lang,
+            nick: Math.atan2(hH - hV, lang),
+            wank: Math.atan2((vRe + hRe) / 2 - (vLi + hLi) / 2, Math.max(0.5, 2 * st.quer)),
+        };
+    }
+
+    // DER STAND eines Studio-Fahrzeugs (W5): es parkt, wie es fährt — auf der Ebene seiner vier Räder (Höhe, Nick,
+    // Wank aus `_rittEbene`); ohne ihn stand der Wagen waagrecht, am Hang hob ein Rad 0,3 m ab. Der Rahmen (längs x)
+    // und die Fahrt-Richtung (Template-Gier + π/2) stehen ab hier am Eintrag. Leser: der Spawn (jeder Pfad: Hotbar,
+    // DSL, Wiederherstellen) und der Abstieg trägt die letzte Ritt-Pose ohnehin.
+    _fahrzeugStand(entry) {
+        const fzg = this._fahrzeugGesetzFor(entry);
+        if (!fzg || !fzg.drive || !fzg.drive.huelle) return;
+        entry._fahrAchseX = true;
+        entry._rideYaw = (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + Math.PI / 2;
+        const eb = this._rittEbene(entry, entry.position.x, entry.position.z, entry._rideYaw);
+        if (!eb) return;
+        entry.position.y = eb.y + 0.5;
+        entry._terrainPitchZiel = eb.nick;
+        entry._terrainRollZiel = eb.wank;
+        entry._rideTerrainPitch = Math.max(-0.7, Math.min(0.7, eb.nick));
+        entry._rideRoll = Math.max(-0.7, Math.min(0.7, eb.wank));
+    }
+
+    // Die Template-Gier zu einer Fahrt-Richtung (sin, cos): ein Studio-Fahrzeug liegt längs x (Bug +x) — R_y(φ)
+    // trägt +x nach (cos φ, −sin φ), also φ = Fahrt − π/2; ein Teile-Werk fährt in +z (φ = Fahrt).
+    _rittGier(entry, fahrtYaw) {
+        return entry._fahrAchseX ? fahrtYaw - Math.PI / 2 : fahrtYaw;
+    }
+
+    // Die Pose des Gruppen-Pfads (Teile-Werk): Basis bei position.y − 0.5 (wie `_rebuildArchitectureMesh` und die
+    // Instanz-Matrix) + Squat; Nick und Wank drehen im Körper NACH der Gier (Euler mit Y zuerst, wie T·R_y·R_x·R_z) —
+    // die Ordnung XYZ kippte den Nick um die WELT-x-Achse: in Ost-Fahrt wurde er ein Wank.
+    _rittMeshPose(entry) {
+        const m = entry.mesh;
+        if (!m) return;
+        m.position.set(
+            entry.position.x,
+            entry.position.y - 0.5 + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0),
+            entry.position.z
+        );
+        const rp =
+            (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
+            (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
+        const rr =
+            (Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0) +
+            (Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
+        const ry = Number.isFinite(entry._rideYaw) ? this._rittGier(entry, entry._rideYaw) : m.rotation.y;
+        // Längs x: der Nick (Bug ab = +) dreht um z gegen den Sinn, der Wank um x; längs z: Nick um x, Wank um z.
+        if (entry._fahrAchseX) m.rotation.set(rr, ry, -rp, "YZX");
+        else m.rotation.set(rp, ry, rr, "YXZ");
     }
 
     // Pro Frame, wenn mounted: die Architektur an die Spieler-Position ziehen (minus Sitz-Offset);
@@ -49869,32 +50027,20 @@ class AnazhRealm {
         // Quelle, V18.150); die Architektur folgt in x/z.
         entry.position.x = pm.x;
         entry.position.z = pm.z;
-        // VERTIKAL führt das GEFÄHRT: es steht auf dem Terrain (getTerrainHeightAt + Boden-Klärung),
-        // exp-geglättet gegen Voxel-Stufen; der Reiter folgt IHM (Body kinematisch auf Sitz-Höhe, vy
-        // genullt). Umgekehrt fiele der Spieler-Body auf den Boden und das Gefährt versänke.
+        // VERTIKAL führt das GEFÄHRT: es steht auf dem Terrain (getTerrainHeightAt + Boden-Klärung); der
+        // Reiter folgt IHM (Body kinematisch auf Sitz-Höhe, vy genullt). Umgekehrt fiele der Spieler-Body
+        // auf den Boden und das Gefährt versänke.
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         let groundY = this.getTerrainHeightAt(pm.x, pm.z);
-        // Ein starrer Körper auf gekrümmtem Boden braucht den HÖCHSTEN Kontaktpunkt: Bug + Heck in
-        // Fahrt-Richtung mit-proben, max() führt (Tal-Seite schwebt minimal statt Berg-Seite taucht ein).
+        // DER KONTAKT: die Räder stehen auf der Ebene durch ihre vier Aufstandspunkte (`_rittEbene`). Der HANGABTRIEB
+        // im Bewegungs-Tick liest dasselbe Nick-Ziel.
         if (Number.isFinite(groundY) && Number.isFinite(entry._rideYaw)) {
-            const half = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
-            const dx = Math.sin(entry._rideYaw) * half;
-            const dz = Math.cos(entry._rideYaw) * half;
-            const gBug = this.getTerrainHeightAt(pm.x + dx, pm.z + dz);
-            const gHeck = this.getTerrainHeightAt(pm.x - dx, pm.z - dz);
-            if (Number.isFinite(gBug)) groundY = Math.max(groundY, gBug);
-            if (Number.isFinite(gHeck)) groundY = Math.max(groundY, gHeck);
-            // Aus Bug/Heck-Proben fällt der Gelände-NICK ab, zwei QUER-Proben liefern den WANK. Ziel-Winkel
-            // hier, Glättung im Pitch-Block; der HANGABTRIEB im Bewegungs-Tick liest dasselbe Ziel.
-            if (Number.isFinite(gBug) && Number.isFinite(gHeck))
-                entry._terrainPitchZiel = Math.atan2(gHeck - gBug, Math.max(0.5, 2 * half));
-            const wq = Math.max(0.6, half * 0.6);
-            const rxv = Math.cos(entry._rideYaw) * wq;
-            const rzv = -Math.sin(entry._rideYaw) * wq;
-            const gRe = this.getTerrainHeightAt(pm.x + rxv, pm.z + rzv);
-            const gLi = this.getTerrainHeightAt(pm.x - rxv, pm.z - rzv);
-            if (Number.isFinite(gRe) && Number.isFinite(gLi))
-                entry._terrainRollZiel = Math.atan2(gRe - gLi, Math.max(0.5, 2 * wq));
+            const eb = this._rittEbene(entry, pm.x, pm.z, entry._rideYaw);
+            if (eb) {
+                groundY = eb.y;
+                entry._terrainPitchZiel = eb.nick;
+                entry._terrainRollZiel = eb.wank;
+            }
         }
         // Boot-Schwimmen: ein floats-Gefährt reitet die geglättete Lauf-Fläche, wo sie über dem Terrain
         // liegt; ragt das Terrain über die Wasserlinie, führt es (Auflaufen per max(), kein Sonder-Pfad).
@@ -49924,13 +50070,22 @@ class AnazhRealm {
             }
         }
         if (Number.isFinite(groundY)) {
-            const targetY = groundY + (Number.isFinite(entry._groundClear) ? entry._groundClear : 0);
-            // Mit exportDrive.spring {k,c} federt die Aufsitz-Höhe genau damit: gedämpfte Feder, semi-implizit
-            // (stabil bei tick ≤ 0.1 und k ≤ ~400, ω·dt « 2; Überschwingen ∝ ζ = c/2√k). Render-seitig, die
-            // Sim bleibt unberührt. Nicht-finit oder > 4 m Auslenkung → hart targetY (Chunk-Sprung/Teleport).
-            // Ohne spring: exp-Lerp.
+            // Die Höhe des Eintrags trägt die Platzierungs-Konvention (die Basis liegt bei position.y − 0.5:
+            // `_archEntryWorldMatrix`, `_rebuildArchitectureMesh`, die Blocker) — ohne die +0.5 versank jedes
+            // gerittene Werk einen halben Meter (der GT: Reifen 0,48 m unter dem Boden). Ein Studio-Fahrzeug
+            // steht mit seiner Ebene y = 0 auf dem Boden (die 4 cm Laufflächen-Wölbung sind die Reifen-Last wie
+            // im Labor), ein Teile-Werk mit seiner Unterkante (−_compoundBottomY · Skala).
+            const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
+            const targetY = groundY + 0.5 + clear;
+            // An Land führt der Boden die Räder EXAKT (das Gesetz ist glatt; eine Feder auf der Boden-Folge hing
+            // c/k · Steig-Tempo nach: bergauf 0,28 m im Boden bei 15 m/s und 15 %). Der Aufbau federt über Nick,
+            // Wank und Heave unten. Schwimmend federt die Aufsitz-Höhe mit exportDrive.spring {k,c} (gedämpft,
+            // semi-implizit; nicht-finit oder > 4 m Auslenkung → hart targetY), ohne spring der exp-Lerp.
             const spr = rideProf && rideProf.spring;
-            if (spr && Number.isFinite(entry._rideY)) {
+            if (!entry._afloat) {
+                entry.position.y = targetY;
+                entry._rideVy = 0;
+            } else if (spr && Number.isFinite(entry._rideY)) {
                 let svy = Number.isFinite(entry._rideVy) ? entry._rideVy : 0;
                 svy += (spr.k * (targetY - entry._rideY) - spr.c * svy) * tick;
                 const sy = entry._rideY + svy * tick;
@@ -49950,20 +50105,22 @@ class AnazhRealm {
             }
             entry._rideY = entry.position.y;
             // HEAVE (N7-Rest) — der Squat senkt den SITZ mit (der benannte
-            // Sitz-Höhen-Konsument; render-/Gefühls-seitig, Blocker byte-alt).
-            const riderY = entry.position.y + sitz + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
+            // Sitz-Höhen-Konsument; render-/Gefühls-seitig, Blocker byte-alt). Der Sitz misst von der Basis.
+            const riderY = entry.position.y - 0.5 + sitz + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
             pm.y = riderY;
             // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen
             // (kein Ammo-Body, der synchronisiert werden müsste).
             this.state._fieldVy = 0;
         } else {
             // Fallback (ungebauter Chunk): der alte Reiter-führt-Pfad.
-            entry.position.y = pm.y - sitz;
+            entry.position.y = pm.y - sitz + 0.5;
             entry._rideY = null;
         }
         // Die Gier folgt der Fahrt-Richtung für BEIDE Visual-Pfade (instanzierte Fahrzeuge haben
-        // entry.mesh = null). entry.rotationY ist die EINE Gier-Wahrheit (Persistenz + _archEntryWorldMatrix
-        // + _blockerComputePartAABB lesen sie).
+        // entry.mesh = null). entry.rotationY ist die EINE Gier-Wahrheit des TEMPLATES (Persistenz +
+        // _archEntryWorldMatrix + _blockerComputePartAABB lesen sie); _rideYaw ist die Fahrt-Richtung
+        // (sin, cos). Ein Studio-Fahrzeug liegt längs x (Bug +x): sein Template steht um −π/2 zur Fahrt —
+        // sonst fuhr es quer zur eigenen Längsachse (`_rittGier`).
         const v = this.state.playerVel;
         const vx = v ? v.x() : 0;
         const vz = v ? v.z() : 0;
@@ -49973,7 +50130,7 @@ class AnazhRealm {
         const _fahrG = AnazhRealm._fahrGesetz();
         const fahrtGate = _fahrG.he.fahrtGate;
         if (entry._rideSteer) {
-            if (Number.isFinite(entry._rideYaw)) entry.rotationY = entry._rideYaw;
+            if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
             entry._rideSteer = false;
         } else if (sp > fahrtGate) {
             const targetYaw = Math.atan2(vx, vz);
@@ -49983,7 +50140,7 @@ class AnazhRealm {
             while (d < -Math.PI) d += 2 * Math.PI;
             cur += d * (1 - Math.exp(-_fahrG.he.yawFolgeK * tick));
             entry._rideYaw = cur;
-            entry.rotationY = cur;
+            entry.rotationY = this._rittGier(entry, cur);
         }
         // Die Fahr-Phase wächst mit dem WEG: Rad-Winkel = Weg/radR (exportDrive.radR). applyJoint
         // multipliziert den rad-Kanal ×1.6, darum teilt die Phase durch radR·1.6. Ohne radR Konstante 2.2.
@@ -50118,42 +50275,23 @@ class AnazhRealm {
             }
             entry._rideSp = sp;
             // Gelände-Nick/-Wank für JEDES gerittene Gefährt (der Beschleunigungs-Nick bleibt Feder-exklusiv):
-            // die Karosserie legt sich in den Hang. exp-geglättet, ±0.35 rad; render-only.
-            {
-                const zP = Number.isFinite(entry._terrainPitchZiel)
-                    ? Math.max(-0.35, Math.min(0.35, entry._terrainPitchZiel))
-                    : 0;
-                const zR = Number.isFinite(entry._terrainRollZiel)
-                    ? Math.max(-0.35, Math.min(0.35, entry._terrainRollZiel))
-                    : 0;
-                const kT = 1 - Math.exp(-6 * tick);
-                const cP = Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0;
-                const cR = Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0;
-                entry._rideTerrainPitch = cP + (zP - cP) * kT;
-                entry._rideRoll = cR + (zR - cR) * kT;
-            }
+            // die Karosserie liegt in der Ebene ihrer Aufstandspunkte; render-only. Ungeglättet — die Glättung
+            // (k = 6/s) hing bei Fahrt hinter dem Boden her und hob die Räder aus jeder Mulde. Die Klammer ist die
+            // NaN-/Sprung-Wand (±0.7 rad = 40°, steiler steht kein Wagen); die alte ±0.35 hob am 25°-Hang Bug und
+            // Heck 0,8 m aus dem Boden.
+            entry._rideTerrainPitch = Number.isFinite(entry._terrainPitchZiel)
+                ? Math.max(-0.7, Math.min(0.7, entry._terrainPitchZiel))
+                : 0;
+            entry._rideRoll = Number.isFinite(entry._terrainRollZiel)
+                ? Math.max(-0.7, Math.min(0.7, entry._terrainRollZiel))
+                : 0;
         }
         // Visual sofort updaten (sonst lagt es einen Frame). Klassischer Group-Pfad
         // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
         // (`_archInstanceUpdate`, foundry-bewusst) fürs Studio-Fahrzeug.
         if (entry.mesh) {
             // STEER_VIS.compound = "hub-yaw" — Feel .124; rad.front + _rideSteerYaw via _animateCompoundMotion.
-            // HEAVE (N7-Rest) — der Aufbau taucht mit dem Squat (render-only).
-            entry.mesh.position.set(
-                entry.position.x,
-                entry.position.y + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0),
-                entry.position.z
-            );
-            if (Number.isFinite(entry._rideYaw)) entry.mesh.rotation.y = entry._rideYaw;
-            // STEIGUNGS-DREIKLANG — Beschleunigungs-Nick + Gelände-Nick addieren,
-            // der Wank kommt als rotation.z dazu (beide 0 für Nicht-Gerittenes);
-            // ZENSUS-REST V18.488 — der Kurven-Wank addiert auf den Gelände-Wank.
-            entry.mesh.rotation.x =
-                (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
-                (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
-            entry.mesh.rotation.z =
-                (Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0) +
-                (Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
+            this._rittMeshPose(entry);
             const prof = this._vehicleProfile(entry);
             if (prof && prof.roles) {
                 this._animateCompoundMotion(
@@ -59283,8 +59421,7 @@ class AnazhRealm {
                 0,
                 1
             );
-            if (rp) m.multiply((this._archTmpRideRx || (this._archTmpRideRx = new THREE.Matrix4())).makeRotationX(rp));
-            if (rr) m.multiply((this._archTmpRideRz || (this._archTmpRideRz = new THREE.Matrix4())).makeRotationZ(rr));
+            if (rp || rr) this._archRittNeigung(entry, m, rp, rr);
             return m;
         }
         // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
@@ -59292,9 +59429,23 @@ class AnazhRealm {
         m.elements[12] = entry.position.x || 0;
         m.elements[13] = baseY;
         m.elements[14] = entry.position.z || 0;
-        if (rp) m.multiply((this._archTmpRideRx || (this._archTmpRideRx = new THREE.Matrix4())).makeRotationX(rp));
-        if (rr) m.multiply((this._archTmpRideRz || (this._archTmpRideRz = new THREE.Matrix4())).makeRotationZ(rr));
+        if (rp || rr) this._archRittNeigung(entry, m, rp, rr);
         return m;
+    }
+
+    // Nick (Bug ab = +) und Wank im KÖRPER des gerittenen Werks, nach R_y·S: längs z (Teile-Werk) Nick um x und Wank
+    // um z; längs x (Studio-Fahrzeug, `_fahrAchseX`, Bug +x) Nick um z gegen den Sinn und Wank um x — derselbe
+    // Rahmen wie `_rittMeshPose`. Vorher drehte der Nick des Studio-Fahrzeugs um seine LÄNGS-Achse (ein Wank).
+    _archRittNeigung(entry, m, rp, rr) {
+        const rx = this._archTmpRideRx || (this._archTmpRideRx = new THREE.Matrix4());
+        const rz = this._archTmpRideRz || (this._archTmpRideRz = new THREE.Matrix4());
+        if (entry._fahrAchseX) {
+            if (rp) m.multiply(rz.makeRotationZ(-rp));
+            if (rr) m.multiply(rx.makeRotationX(rr));
+        } else {
+            if (rp) m.multiply(rx.makeRotationX(rp));
+            if (rr) m.multiply(rz.makeRotationZ(rr));
+        }
     }
 
     // Die EINE Part-Farb-Quelle: baseColor aus part.color/Material-Substanz + Präzisions-Helligkeit
@@ -64711,6 +64862,8 @@ class AnazhRealm {
                 }
             }
         }
+        // DER STAND (W5): ein Studio-Fahrzeug parkt auf der Ebene seiner vier Räder (Höhe · Nick · Wank).
+        this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
@@ -69169,10 +69322,25 @@ class AnazhRealm {
             (kind === "skin" || kind === "haut") && typeof globalThis !== "undefined" && globalThis.__koerperCore
                 ? globalThis.__koerperCore.HAUT_LOOK
                 : null;
+        // DER KLARLACK (W5 Gegenstände): die Haut des Körperstudios (HAUT_LOOK) ODER der Stoff selbst (Fahrzeug-Lack,
+        // Klingen-Stahl — `budgetRegler` cc/ccr aus dem Gesetzbuch); ohne Klarlack der Standard.
+        const ccSoll =
+            _hautL && Number.isFinite(_hautL.clearcoat)
+                ? {
+                      cc: _hautL.clearcoat,
+                      ccr: Number.isFinite(_hautL.clearcoatRoughness) ? _hautL.clearcoatRoughness : 0.5,
+                  }
+                : R.cc > 0
+                  ? { cc: R.cc, ccr: R.ccr }
+                  : null;
+        // Die Physical-Klasse lebt in der Node-Bibliothek des Renderers (r184 — die Bootstrap-Brücke reicht sie nicht als
+        // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
+        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek.
+        const rendM = this.state && this.state.renderer;
         try {
             const MatK =
-                _hautL && Number.isFinite(_hautL.clearcoat) && typeof T.MeshPhysicalNodeMaterial === "function"
-                    ? T.MeshPhysicalNodeMaterial
+                ccSoll && rendM && !rendM._isHeadlessNull
+                    ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
                     : T.MeshStandardNodeMaterial;
             mat = new MatK({
                 roughness: rough,
@@ -69180,9 +69348,20 @@ class AnazhRealm {
                 flatShading: flat,
                 side: sideDouble ? T.DoubleSide : T.FrontSide,
             });
-            if (MatK === T.MeshPhysicalNodeMaterial) {
-                mat.clearcoat = _hautL.clearcoat;
-                mat.clearcoatRoughness = Number.isFinite(_hautL.clearcoatRoughness) ? _hautL.clearcoatRoughness : 0.5;
+            if (MatK !== T.MeshStandardNodeMaterial) {
+                mat.clearcoat = ccSoll.cc;
+                mat.clearcoatRoughness = ccSoll.ccr;
+            }
+            // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
+            // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); den Schatten
+            // wirft er weiter (der Schattenpass liest colorNode.a, nie die Deckkraft). Eine dünne Scheibe zeichnet beide
+            // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
+            // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
+            if (R.op < 1) {
+                mat.transparent = true;
+                mat.opacity = R.op;
+                mat.depthWrite = false;
+                mat.forceSinglePass = true;
             }
             if (env !== 1) mat.envMapIntensity = env;
             if (emis) {
@@ -86375,8 +86554,11 @@ class AnazhRealm {
                     const cosD = Math.cos(fahr.steer);
                     const aLatB = (FlatF * cosD + FlatR) / zs.mass;
                     // Rotationskopplung + Längsanteil der Lenk-Seitenkraft (Newton-
-                    // Euler im Körperframe — wie updateVehicle):
-                    vLong += ((-FlatF * Math.sin(fahr.steer)) / zs.mass + vLat * fahr.yawRate) * dtF;
+                    // Euler im Körperframe — wie updateVehicle). Die Kopplung vLat·ω ist
+                    // KINEMATIK (der Körperframe dreht), keine Kraft: sie bewegt vLong, aber
+                    // der Schwerpunkt erfährt sie nicht — die Lastverlagerung unten zieht sie ab.
+                    const kopplung = vLat * fahr.yawRate * dtF;
+                    vLong += ((-FlatF * Math.sin(fahr.steer)) / zs.mass) * dtF + kopplung;
                     vLat += (aLatB - vLong * fahr.yawRate) * dtF;
                     const torque = zs.b * FlatF * cosD - zs.c * FlatR;
                     fahr.yawRate += (torque / zs.Izz) * dtF;
@@ -86386,12 +86568,15 @@ class AnazhRealm {
                     vLat *= 1 - low * zs.lowLatK;
                     yaw += fahr.yawRate * dtF;
                     fahr.aLat = aLatB; // die Feder-Antwort liest die ECHTE Querbeschleunigung
-                    // Die GESAMTE Längsbeschleunigung GEMESSEN (Antrieb + Bremse +
-                    // Hangabtrieb + Reifen — alles, was vLong diesen Tick bewegte):
-                    // speist die Lastverlagerung des NÄCHSTEN Schritts und den
-                    // Brems-Nick der Feder (der Bug taucht, der Squat drückt).
-                    const vPrev = Number.isFinite(ent._fahrVLongPrev) ? ent._fahrVLongPrev : vLong;
-                    fahr.aLong = Math.max(-zs.aPitchMax, Math.min(zs.aPitchMax, (vLong - vPrev) / dtF));
+                    // Die TRÄGHE Längsbeschleunigung des Schwerpunkts GEMESSEN (Antrieb + Bremse + Hangabtrieb +
+                    // Reifen — alles, was vLong diesen Tick als KRAFT bewegte; die Lab-Wahrheit car.aLong = Fx/m):
+                    // speist die Lastverlagerung des NÄCHSTEN Schritts und den Brems-Nick der Feder (der Bug
+                    // taucht, der Squat drückt). Die Kopplung vLat·ω fällt heraus — mit ihr las die Last-
+                    // verlagerung die eigene Drehung als Bremsen: das Heck verlor Last, der Wagen drehte sich
+                    // auf (Lenk-Sprung bei 52 km/h: Gier-Rate 2,4 rad/s, Tempo 14 → 4 m/s — die Lab-Probefahrt
+                    // fängt sich bei 0,78 rad/s).
+                    const vPrev = Number.isFinite(ent._fahrVLongPrev) ? ent._fahrVLongPrev : vLong - kopplung;
+                    fahr.aLong = Math.max(-zs.aPitchMax, Math.min(zs.aPitchMax, (vLong - kopplung - vPrev) / dtF));
                     ent._fahrVLongPrev = vLong;
                 } else {
                     // V18.491.121 — recipe grip now in exportDrive.lenkung.gripK (× P.grip; default 1 → 6).
@@ -89336,6 +89521,12 @@ AnazhRealm.HELD_MESH = Object.freeze({
     handOffset: Object.freeze({ x: 0, y: -0.5, z: 0.12 }), // im Arm-Anker-Lokalraum (Handfläche/-spitze)
     rootOffset: Object.freeze({ x: 0.42, y: 0.9, z: 0.32 }), // Fallback: vorn-rechts an der Körper-Wurzel
     tilt: Object.freeze({ x: 0.5, y: 0, z: 0 }), // ein leichter Vorwärts-Neigung (ein langes Werkzeug zeigt nach vorn/unten)
+    // DIE FAUST (W5) — das Studio-Gerät im Handgelenk des Studio-Menschen, in WELT-Metern im Gelenk-Raum (−y zu den
+    // Fingern, +z Daumenseite): die Griff-Mitte sitzt in der Hand-Mitte (gemessen: der Schwerpunkt der Haut-Vertices am
+    // Handgelenk-Gelenk liegt 0,107 m fingerwärts, 0,013 m quer, 0,014 m vorn); die Griff-Achse zeigt nach vorn und
+    // `neigung` unter die Waagrechte (der entspannte Arm: das Langschwert-Ende 0,4 m über dem Boden statt im Boden).
+    faustOffset: Object.freeze({ x: 0.013, y: -0.105, z: 0.014 }),
+    neigung: 0.44,
 });
 // ═══ KAMPF-GEFÜHL — DIE GESETZE DES SCHWUNGS ═══
 // Die EINE Schwung-Dauer-Quelle ist die gerechnete Trägheit (_swingDynamics: I = Σ m·r² um den

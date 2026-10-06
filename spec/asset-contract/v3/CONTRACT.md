@@ -21,11 +21,16 @@ __vehicleCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
   (Schlüssel aus `__vehicleCore.PRESETS`, Namensraum `[a-z0-9_-]+`; jedes Rezept
   trägt `kind:"vehicle"` + `lab` (UI-Wortlaut) + `s` (numerischer Dial-Vektor) +
   `fx` (domänen-eigene Ausstattung: `sig`, `heck`)).
-- `seed` (int): **RESERVIERT — cv:3 ist SEED-INVARIANT.** Das Garage-Studio
-  trägt keinen stochastischen Term (Math.random lebt nur in der Shell-Deko:
-  Reifenrauch/Pylonen); derselbe Bauplan bei seed 7 und 12345 ist byte-gleich.
-  Das Gate prüft die Invarianz AKTIV: wer Seed-Variation einführt, bricht die
-  Goldens bewusst (Re-Mint-Entscheid, cv-Bump-Frage).
+- `seed` (int): **wählt den LACK der Gestalt — die GEOMETRIE ist seed-invariant.**
+  Das Garage-Studio trägt keinen stochastischen Term (Math.random lebt nur in der
+  Shell-Deko: Reifenrauch/Pylonen); derselbe Bauplan bei seed 7 und 12345 ist
+  geometrisch byte-gleich (das Gate prüft es aktiv, Fingerabdruck ohne Material).
+  Der Same wählt reihum einen der acht Lacke des `LACK_GESETZ` (`lackIndex(seed)
+  = 1 + seed mod 8`, Clay bleibt die Anatomie-Ansicht des Labors) — bewusster
+  Re-Mint W5 (05.10.): bis dahin fuhr die Welt das Ton-Modell (Albedo 0,58), und
+  jede Farbe folgt dem FARB-GESETZ (Hex = sRGB-Absicht, Material = linear); die
+  Geometrie aller 22 Probe-Fälle blieb byte-gleich. Kein cv-Bump: die Naht
+  (Float32-Attribute + Material-Daten) ist dieselbe.
 - `lod`: Fahrzeuge tragen NUR Stufe 0 (`PORTAL_RENDER_CONFIG.lod.kindStages =
 { vehicle: [0] }`); jede andere Stufe wird auf 0 geklemmt — L1=L0-Grade und
   L2-Auto-Impostor sind Sache des Wirts (Studio-Vertrag B2/W7b-Merge).
@@ -47,6 +52,8 @@ abweichendes Byte kippt den Hash.
 
 Fälle: 5 Gattungen × 2 Seeds (7, 12345) × LOD 0 + 2 ov-Kultur-Fälle
 (gt+toro, supersport+cavallo — friert auch die Override-Merge-Semantik ein) = 12.
+Seit W5 tragen seed 7 (Perlweiss) und 12345 (Racing-Grün) verschiedene Lacke —
+ihre Hashes unterscheiden sich in der Material-Signatur, die Geometrie nicht.
 
 ## Laufzeit des Gates
 

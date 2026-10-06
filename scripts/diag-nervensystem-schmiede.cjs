@@ -29,8 +29,8 @@
 //     equipHeld zeigt SOFORT den Part-Bau als Interim (die Hand ist nie leer) und
 //     tauscht bei Asset-Ankunft GENAU EINMAL auf die Studio-Wrapper (sharedGeom/
 //     sharedMat, foundryHeld) · Skala/Anker-Zahlen geloggt (Template-BBox je Achse
-//     fuer langschwert + spitzhacke, gripX aus dem LIVE-Buch, Achsen-Abbildung
-//     rotation.z += PI/2) · der Unequip zerstoert das GETEILTE Asset NICHT
+//     fuer langschwert + spitzhacke, gripX aus dem LIVE-Buch; H-F die FAUST in Welt-Metern:
+//     Länge, Griff-Versatz, Winkel zum Unterarm — W5) · der Unequip zerstoert das GETEILTE Asset NICHT
 //     (_queueDispose instrumentiert; die Cache-Gruppe baut danach noch eine
 //     Werkstatt-Vorschau; _liveRefs-Rueckgabe) · foundry-off (lokaler Hook,
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
@@ -63,6 +63,22 @@ const server = http.createServer((req, res) => {
     });
 });
 
+// ── H-F (W5 Gegenstände, 05.10.) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
+// Studio-Klinge in der Hand des Studio-Menschen, gemessen in WELT-Metern:
+//   laenge  0,95–1,05 — Welt-Länge / Gesetzbuch-Länge (vorher 0,14: das Langschwert 1,228 m maß 0,17 m — die Hand
+//                       skalierte im Anker-Raum, das Handgelenk misst 0,27 Welt je Studio-Einheit)
+//   versatz ≤ 0,03 m  — die Griff-Mitte gegen die Hand-Mitte (Schwerpunkt der Haut-Vertices am Handgelenk-Gelenk)
+//   winkel  50–130°   — Griff-Achse gegen den Unterarm: eine Faust greift quer (vorher stand die Klinge mit 0,5 rad Kipp
+//                       den Unterarm hinauf — ein um 160° überstrecktes Handgelenk)
+const FAUST = { laenge: [0.95, 1.05], versatzM: 0.03, winkel: [50, 130] };
+function faustVerdict(h) {
+    if (!h || !Number.isFinite(h.laenge)) return ["probe"];
+    const out = [];
+    if (!(h.laenge >= FAUST.laenge[0] && h.laenge <= FAUST.laenge[1])) out.push(`laenge ${h.laenge.toFixed(3)}`);
+    if (!(h.versatzM <= FAUST.versatzM)) out.push(`versatz ${(h.versatzM || 0).toFixed(3)} m`);
+    if (!(h.winkel >= FAUST.winkel[0] && h.winkel <= FAUST.winkel[1])) out.push(`winkel ${(h.winkel || 0).toFixed(1)}°`);
+    return out;
+}
 const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
@@ -197,11 +213,23 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         const brokenAxis = anazhSrc.replace('handAxis: "x"', 'handAxis: "y"');
         const s7 = staticLaws(brokenAxis, scSrc, manifestSrc).find((l) => l[0].startsWith("S7"));
         check("Selbst-Test 3: handAxis-Daten-Zeile gekippt -> S7 feuert", s7 && s7[1] === false);
+        // V4 (H-F, W5): das Faust-Verdikt feuert auf jeden der drei gemessenen Täter des Vor-Stands.
+        const gesund = { laenge: 1.0, versatzM: 0.012, winkel: 88 };
+        check("Selbst-Test 4 (H-F): gesunde Faust == 0 Verstoesse", faustVerdict(gesund).length === 0);
+        for (const [name, bruch] of [
+            ["das Langschwert misst 0,17 m (Anker-Raum)", { laenge: 0.14 }],
+            ["der Griff sitzt 0,04 m neben der Hand-Mitte", { versatzM: 0.042 }],
+            ["die Klinge steht den Unterarm hinauf (160°)", { winkel: 160 }],
+        ])
+            check(
+                `Selbst-Test 5 (H-F): ‚${name}' → die Faust-Linse feuert`,
+                faustVerdict(Object.assign({}, gesund, bruch)).length === 1
+            );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf alle drei Verletzungs-Klassen.");
+        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf alle Verletzungs-Klassen (Manifest, Policy, Handachse, Faust).");
         process.exit(0);
     }
 
@@ -402,8 +430,11 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
                     res.h.allShared = hm.children.every(
                         (c) => c.userData && c.userData.sharedGeom && c.userData.sharedMat
                     );
-                    res.h.scale = Number(hm.scale.x.toFixed(4));
-                    res.h.scaleOk = hm.scale.x > 0 && hm.scale.x <= r.constructor.HELD_MESH.maxScale;
+                    // die WELT-Skala (W5: die Hand teilt die Anker-Skala heraus — lokal 1/0,27, in der Welt 1:1)
+                    hm.updateMatrixWorld(true);
+                    const hmWs = hm.getWorldScale(new THREE.Vector3()).x;
+                    res.h.scale = Number(hmWs.toFixed(4));
+                    res.h.scaleOk = hmWs > 0 && hmWs <= r.constructor.HELD_MESH.maxScale;
                     res.h.gripX = hm.userData.heldGripX;
                     res.h.axis = hm.userData.heldAxis;
                     res.h.rotZ = Number(hm.rotation.z.toFixed(4));
@@ -413,6 +444,52 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
                     const src = hm.userData.foundrySrcGroup;
                     res.h.liveRefs = src ? src._liveRefs : -1;
                     if (src) res.h.bboxLang = box3(src); // Template-Raum (Quell-Gruppe, unskaliert)
+                    // H-F (W5): DIE FAUST in Welt-Metern — Länge gegen das Gesetzbuch, Griff-Mitte gegen die Hand-Mitte
+                    // (Schwerpunkt der Haut-Vertices, die das Handgelenk-Gelenk zu > 60 % trägt, Bind-Pose im Gelenk-
+                    // Raum), Winkel Griff-Achse ↔ Unterarm (Ellbogen → Handgelenk).
+                    try {
+                        pm.updateMatrixWorld(true);
+                        const bbT = src ? new THREE.Box3().setFromObject(src) : null;
+                        const W = (x) => new THREE.Vector3(x, 0, 0).applyMatrix4(hm.matrixWorld);
+                        const a = W(bbT.min.x);
+                        const b = W(bbT.max.x);
+                        const g = W(hm.userData.heldGripX || 0);
+                        const wrist = hm.parent;
+                        let palm = null;
+                        pm.traverse((o) => {
+                            if (palm || !o.isSkinnedMesh) return;
+                            const bi = o.skeleton.bones.indexOf(wrist);
+                            const SI = o.geometry.attributes.skinIndex;
+                            const SW = o.geometry.attributes.skinWeight;
+                            if (bi < 0 || !SI || !SW) return;
+                            const P = o.geometry.attributes.position;
+                            const v = new THREE.Vector3();
+                            const sum = new THREE.Vector3();
+                            let n = 0;
+                            for (let i = 0; i < P.count; i++) {
+                                let w = 0;
+                                for (let k = 0; k < 4; k++) if (SI.getComponent(i, k) === bi) w += SW.getComponent(i, k);
+                                if (w < 0.6) continue;
+                                v.fromBufferAttribute(P, i).applyMatrix4(o.bindMatrix).applyMatrix4(o.skeleton.boneInverses[bi]);
+                                sum.add(v);
+                                n++;
+                            }
+                            if (n) palm = sum.multiplyScalar(1 / n).applyMatrix4(wrist.matrixWorld);
+                        });
+                        const unterarm = wrist
+                            .getWorldPosition(new THREE.Vector3())
+                            .sub(wrist.parent.getWorldPosition(new THREE.Vector3()))
+                            .normalize();
+                        const achse = b.clone().sub(g).normalize();
+                        res.h.faust = {
+                            laenge: a.distanceTo(b) / (bbT.max.x - bbT.min.x),
+                            weltM: a.distanceTo(b),
+                            versatzM: palm ? g.distanceTo(palm) : null,
+                            winkel: (Math.acos(Math.max(-1, Math.min(1, achse.dot(unterarm)))) * 180) / Math.PI,
+                        };
+                    } catch (e) {
+                        res.h.faustErr = (e && e.message) || String(e);
+                    }
                     // (3) UNEQUIP zerstoert das GETEILTE Asset NICHT — _queueDispose instrumentiert.
                     const sharedGeos = [];
                     hm.traverse((o) => {
@@ -594,16 +671,23 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     );
     console.log(`      ↳ Hand-Mesh-Zahl langschwert: ${out.h.meshCount}`);
     check(
-        "H: auf Hand-Groesse skaliert (0 < scale <= maxScale) + am Arm-Anker geparentet",
+        "H: Welt-Skala in der Hand (0 < Welt-Skala <= maxScale) + am Arm-Anker geparentet",
         out.h.scaleOk === true && out.h.anchored === true,
         `scale=${out.h.scale}`
     );
     check(
-        'H: Anker-Formel — handAxis "x" (KIND_POLICY-Daten), rotation.z == tilt.z + PI/2, gripX == fx.held.gripX (langschwert 0.12 == griff 0.24/2)',
-        out.h.axis === "x" &&
-            Math.abs((out.h.rotZ || 0) - Math.PI / 2) < 1e-3 &&
-            Math.abs((out.h.gripX || 0) - 0.12) < 1e-6,
-        `gripX=${out.h.gripX} rotZ=${out.h.rotZ}`
+        'H: Anker-Daten — handAxis "x" (KIND_POLICY-Daten), gripX == fx.held.gripX (langschwert 0.12 == griff 0.24/2)',
+        out.h.axis === "x" && Math.abs((out.h.gripX || 0) - 0.12) < 1e-6,
+        `gripX=${out.h.gripX}`
+    );
+    // H-F (W5): die Faust — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const fv = faustVerdict(out.h.faust);
+    const fz = out.h.faust || {};
+    check(
+        "H-F/W5: DIE FAUST — das Langschwert trägt in der Hand seine Gesetzbuch-Länge, der Griff sitzt in der Hand-Mitte, die Klinge steht quer zum Unterarm",
+        fv.length === 0,
+        out.h.faustErr ||
+            `Länge ${(fz.weltM || 0).toFixed(3)} m (Welt/Gesetz ${(fz.laenge || 0).toFixed(3)}) · Versatz ${fz.versatzM === null || fz.versatzM === undefined ? "—" : fz.versatzM.toFixed(3)} m · Winkel ${(fz.winkel || 0).toFixed(1)}°${fv.length ? " — Täter: " + fv.join(", ") : ""}`
     );
     console.log(
         `      ↳ Skala/Anker langschwert: scale=${out.h.scale} gripX=${out.h.gripX} axis=${out.h.axis} bbox=${JSON.stringify(out.h.bboxLang)}`
