@@ -52,7 +52,7 @@
 //      verschleißt wie die Klinge (wear 0,5 → 0,65 des Schadens, jeder Schuss zehrt, verbraucht löst er nicht) und
 //      JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden · fehlt
 //      tetrapoda trefferZone, bricht der Treffer-Test laut · der erste Treffer auf eine Gattung zerlegt keine Haut
-//      (im Idle vorgebacken) · der Sweep liest _blickVorn · keine typeof-Probe auf eine eigene Methode.
+//      (vorgebacken im Takt der EINEN Bake-Uhr) · der Sweep liest _blickVorn · keine typeof-Probe auf eine eigene Methode.
 //  (Q9 MAUS) 3rd-Person 10 Klicks auf ein Tier in 2 m → 10 Schwünge, 0 Krater · 1st-Person Halten nach dem Stoß →
 //      0 Krater · RMB mit Schwert → 0 Aufschüttungen (Spaten und leere Hand schütten weiter) · offene Werkstatt →
 //      4 Canvas-Klicks, 0 Griffe in die Welt · FERTIGEN eines Bauwerks → Bau-Modus, die Hand bleibt leer.
@@ -61,7 +61,7 @@
 //  SELBST-TESTS (nur wo die Naht existiert): (S3) _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir" kippt
 //      hinter dich · (S4) _geraetGraebt ≡ true → das Schwert schüttet auf · (S5) _kreaturGliedTreffer ≡ null → kein
 //      Treffer · (S6) der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist
-//      rot · (S8) ohne Idle-Vorbacken → der erste Hieb zerlegt die Haut. Jede Naht restauriert.
+//      rot · (S8) ohne das Vorbacken → der erste Hieb zerlegt die Haut. Jede Naht restauriert.
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
@@ -604,7 +604,7 @@ async function WELLE_L() {
         }
         // (T11) der KALTE ERSTE TREFFER je Gattung (Lehre 14): ein Tier einer Gattung, deren Treffer-Glieder noch niemand
         // kennt, steht in der Welt, die Welt läuft 60 Spiel-Takte, dann der erste Hieb — gezählt werden die Haut-Vertices,
-        // die der Hieb SELBST zerlegt (_kreaturGliederGruppen im Treffer-Pfad). Vorgebacken im Idle: 0.
+        // die der Hieb SELBST zerlegt (_kreaturGliederGruppen im Treffer-Pfad). Vorgebacken (die EINE Bake-Uhr): 0.
         const gattungVon = (c) => {
             const ud = c.userData || {};
             return (
@@ -650,7 +650,7 @@ async function WELLE_L() {
         };
         w.z.kalt = kalterTreffer("baer");
         w.c.kaltVorgebacken = w.z.kalt.traf && w.z.kalt.zerlegt === 0;
-        // (S8) SELBST-TEST mit dem Täter: ohne das Idle-Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)
+        // (S8) SELBST-TEST mit dem Täter: ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)
         if (fn("_tickTrefferGliederVorbacken")) {
             r._tickTrefferGliederVorbacken = () => {};
             try {
@@ -1578,7 +1578,7 @@ async function WELLE_L() {
         check(c.bogenVerschleiss, "Q8 K-D6: der Bogen verschleißt wie die Klinge — wear 0,5 trifft mit 0,65, jeder Schuss zehrt, verbraucht (0,02) löst er nicht");
         check(c.einRohSchaden, "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden");
         check(c.kernPflichtZone, "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)");
-        check(c.kaltVorgebacken, "Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind im Idle vorgebacken");
+        check(c.kaltVorgebacken, "Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind vorgebacken (die EINE Bake-Uhr)");
         check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
         check(c.keinTypeofSelbst, "Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle");
         check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)");
@@ -1595,7 +1595,7 @@ async function WELLE_L() {
         check(c.s4 === true, "SELBST-TEST (S4): _geraetGraebt ≡ wahr → das Schwert schüttet auf (die Linse sieht den Rückfall)");
         check(c.s5 === true, "SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)");
         check(c.s6 === true, "SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot");
-        check(c.s8 === true, "SELBST-TEST (S8): ohne Idle-Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)");
+        check(c.s8 === true, "SELBST-TEST (S8): ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)");
     }
     console.log(
         `\n  ${ok ? "✅ GRÜN — die gerechnete Schwungphysik erreicht den Kampf: √I führt · die Klinge trifft · die Sim steht nie" : "❌ ROT — das Kampf-Gefühl trägt nicht"}\n`

@@ -71079,8 +71079,9 @@ class AnazhRealm {
     // DAS TREFFER-VOLUMEN eines Tiers (Welle L 06.10., Befund K-D3): seine Glieder-Kapseln — dieselbe Passung wie
     // das Fern-Bild (_gliedKapselMemo), jede mit der Zone ihres Glieds (tetrapoda trefferZone). Die senkrechte Säule
     // 0,1 L…1,4 L war gattungs- und höhenblind (Hirsch L 0,64 flach 1 Treffer aus 10, hangab 2 aus 8). Die Glied-Liste
-    // je Gattung entsteht EINMAL (die Gruppen-Bildung zerlegt die Haut je Bone); jedes weitere Tier löst nur die
-    // Namen an SEINEN Teilen auf. Die laufende Pose trägt jeder Test über die Welt-Matrix des Ankers.
+    // je Gattung entsteht EINMAL (die Gruppen-Bildung zerlegt die Haut je Bone — vorgebacken,
+    // _tickTrefferGliederVorbacken); jedes weitere Tier löst nur die Namen an SEINEN Teilen auf. Die laufende Pose
+    // trägt jeder Test über die Welt-Matrix des Ankers.
     _kreaturTrefferGlieder(cr) {
         const u = cr && cr.userData;
         if (!u) return null;
@@ -71114,6 +71115,28 @@ class AnazhRealm {
         }
         u._trefferGlieder = liste.length ? liste : null;
         return u._trefferGlieder;
+    }
+
+    // DIE TREFFER-GLIEDER VORGEBACKEN (Welle L, Lehre 14): die Glied-Liste einer Gattung entstand beim ERSTEN Treffer —
+    // der Hieb zerlegte die Haut synchron (_kreaturGliederGruppen: 28–32 Tsd. Vertices je Gattung in 57–83 Bone-Stücke
+    // kopiert, dazu bis 12 Kapsel-Fits). Steht ein Tier einer noch kalten Gattung in der Welt, bäckt der Frame sie vor:
+    // das NÄCHSTE solche Tier zuerst, EINE Gattung je Erlaubnis der EINEN Bake-Uhr (_weltBakeErlaubt — derselbe Takt wie
+    // der Fern-Satz, der dieselbe Zerlegung je Tier trägt); der Treffer liest danach nur das Memo.
+    _tickTrefferGliederVorbacken() {
+        const namen = this._trefferGliedNamen;
+        let naechstes = null;
+        let naechstD2 = Infinity;
+        for (const cr of this.state.creatures || []) {
+            const u = cr && cr.userData;
+            if (!u || u.dying || !u._tierBaum || u._trefferGlieder !== undefined) continue;
+            if (namen && namen.has(this._kreaturGattung(cr))) continue;
+            const d2 = this._spielerD2(cr.position.x, cr.position.z);
+            if (d2 < naechstD2) {
+                naechstD2 = d2;
+                naechstes = cr;
+            }
+        }
+        if (naechstes && this._weltBakeErlaubt(naechstD2)) this._kreaturTrefferGlieder(naechstes);
     }
 
     // DER TREFFER gegen die Gestalt: kleinste Distanz einer Strecke (die Klinge, der Pfeil-Flug) zu jeder Glied-Kapsel
@@ -89234,6 +89257,7 @@ class AnazhRealm {
         // unter Last jeden 4. Frame) — beim Boot an der Mess-Wiese standen 60 s lang 10 von 11 Karten ungebacken in der
         // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).
         this._tickImpostorBake();
+        this._tickTrefferGliederVorbacken(); // die Treffer-Glieder einer kalten Gattung, im Takt der EINEN Bake-Uhr
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege- und Kronen-Karte folgen dem Spieler (No-op ohne Weg und Krone)
