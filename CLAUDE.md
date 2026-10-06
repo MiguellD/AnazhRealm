@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.531.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.532.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,30 +80,33 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.531 — WELLE 5, DER AAA-LOOK IN SIEBEN FAMILIEN (seriell integriert):** Pflanzen nah (Rinden-Gesetz, EIN Blatt-Atlas
-512 px BC1 vormultipliziert, Strauch aus Karten + Reisig, `gate:pflanzen-nah`) · der gesetzte Wald ist jenseits der
-Mesh-Zone seine Karte bis 384 m (Kegel + Lappen fielen, `gate:fernwald`), der Bäcker hat seinen Faden · Waldboden nach
-dem Farb-Gesetz, die Kronen-Karte (`_kronenStreuAt`) ist die EINE Wald-Quelle (Streu · Nah-Wiese · Laub-Stimme) · Glut
-und Ausstattung aus dem Studio, die Trittfläche malt die Wege-Karte · Stoffe der Gegenstände, Durchsicht, Haut-Klarlack ·
-das Fell folgt der Haut, der Gang dem Weg des Leibs · jede klingende Quelle trägt ein Gesetz (`gate:klang-zensus`) ·
-freie Slots und leere Hüllen zeichnen nie (der Feld-Cull fiel, `gate:freie-slots`) · EIN Start-Rezept der WebGPU-Linsen
-(`scripts/lib/software-gpu.cjs`) · Studio-Häuser überstehen den Reload mit kaltem Buch, der Hüpfer landet. Mess-Wiese,
-echte GPU, ruhig: 193–261/208 Befehle, 2,14–2,63 M Dreiecke, 158–160 MB; GPU 22–26 ms/Frame, Frame p50/p95 25,5/34,2 ms.
+**V18.532 — DIE KOSTEN-MECHANIK (Wellen 6+7) AUF DEN DOMÄNEN DER WELLE 5:** EIN Gesetz der Pass-Wahl (`_passTrifft`: Box
+mit Saum gegen das Frustum der Pass-Kamera, in der Kaskade die Licht-Kapsel gegen die Scheibe) für Satz-Zellen, Bündel-
+Werfer, Instanzen, Karten und Büschel · je Pass ein Satz-Abschnitt · die Höhlen-Sicht · die Instanz-Wahl (`@wahl`) ·
+Pool-Sätze für Bau, Streu und Nah-Wiese, die verdichten · EIN Werfer je Gestalt · kein normalNode liest `normalWorld`.
+Mess-Wiese, echte GPU, Zweit-Boot ohne Tiere: 215–247 → 78–92/208 Befehle, 2,14–2,57 → 0,61–0,76 M Dreiecke, 167 → 161 MB;
+die Zeit misst die OMEN-ABAB zum finalen Kandidaten (folgt); gegen cf9a07ba gemessen: im Spiel Frame p50 25 statt 33 ms
+in 3 von 4 Läufen, Loop-GPU −7 ms, Befehle −55 bis −65 %, Dreiecke −55 bis −70 %; gpu-bank gleich ~27 ±2 ms (Pixel-Sockel).
 
-**V18.496–530 — AAA NAH · DIE KETTE:** nah/mittel das Studio-Mesh mit LOD-Kette (Bäcker nah zuerst, EINE Bake-Uhr), der
-Tier-Leib EINE geskinnte Haut; das FARB-GESETZ; EIN Himmel, die Belichtung aus dem Licht; die NAH-WIESE; die
-Transport-Schale `_foundrySchale`; Bundle-Wahrheit am Chokepoint `_renderScene`; TRAA; Schatten je Pass; EINE Täter-Klasse
-+ Band-Linse und Ratsche; EINE Nah-Grenze `ANALOG_NAH_M` 64 m; EIN Karten-Atlas; Koschmieder-Luft (Sichtweite 20,6 km);
-die Voxel-Bricks fielen. Linsen: Ausgabe-Pfad · Bühne · Werkbank (`albedo` · `licht` · `zaehlen` · `fluss` · `takt` ·
-`lauf` · `band` · `gpu-bank`).
+**V18.531 — WELLE 5, DER AAA-LOOK IN SIEBEN FAMILIEN:** Pflanzen nah (Rinden-Gesetz, EIN Blatt-Atlas, `gate:pflanzen-nah`)
+· der gesetzte Wald fern seine Karte bis 384 m (`gate:fernwald`) · Waldboden nach dem Farb-Gesetz, die Kronen-Karte die
+EINE Wald-Quelle · Glut und Ausstattung aus dem Studio, die Trittfläche · Stoffe der Gegenstände · das Fell folgt der Haut
+· das Klang-Gesetz (`gate:klang-zensus`) · freie Slots zeichnen nie (`gate:freie-slots`) · Häuser überstehen den Reload.
+
+**V18.496–530 — AAA NAH · DIE KETTE:** nah/mittel das Studio-Mesh mit LOD-Kette, der Tier-Leib EINE geskinnte Haut; das
+FARB-GESETZ; EIN Himmel, die Belichtung aus dem Licht; die NAH-WIESE; `_foundrySchale`; Bundle-Wahrheit am Chokepoint
+`_renderScene`; TRAA; Schatten je Pass; Band-Linse und Ratsche; `ANALOG_NAH_M` 64 m; EIN Karten-Atlas; Koschmieder-Luft;
+die Voxel-Bricks fielen. Linsen: Werkbank (`albedo` · `licht` · `zaehlen` · `fluss` · `takt` · `lauf` · `band` · `gpu-bank`).
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, EINE
 Payload (Analog-Primitive Kapsel+Box + Gesetz-Plätze) · NAH/MITTEL (< 64 m, Bau und Baum im Cull-Radius) = Studio-Mesh
 + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-Kapseln · Baum = seine Studio-Karte (der gesetzte
 bis 384 m) · Box-Satz · Streu-Gesetz · WALD-ORT = die Kronen-Karte · GRAS = nah Nah-Wiese, fern Boden-Funktion ·
-STREU = nah die Studio-Arten, fern die Boden-Farbe · AUSSTATTUNG (Glut, Markt, Brunnen) = Studio-Gestalt · KLANG = jede
-Stimme aus dem Klang-Gesetz (`klang:UMWELT` · `SUBSTANZ`) · LUFT = EINE Koschmieder-Luft (`scene.fogNode`) · POST = TRAA ·
-SCHATTEN = 2 Kaskaden, Box je Scheibe · INSTANZ-SENKEN dicht (`_instanzZahl`) · LINSEN-START = `software-gpu.cjs`.
+STREU = nah die Studio-Arten, fern die Boden-Farbe · AUSSTATTUNG = Studio-Gestalt · KLANG = das Klang-Gesetz · LUFT =
+EINE Koschmieder-Luft (`scene.fogNode`) · POST = TRAA · SCHATTEN = 2 Kaskaden, Box je Scheibe, EIN Werfer je Gestalt ·
+PASS-WAHL = EIN Gesetz (`_passTrifft`) für jeden Körper jedes Passes · SÄTZE = EIN Pool je Stoff (Boden · Wasser · Bau ·
+Streu · Nah-Wiese), je Pass ein Abschnitt, verdichtet · INSTANZ-WAHL je Pass · HÖHLE = die Höhlen-Sicht · INSTANZ-SENKEN
+dicht (`_instanzZahl`) · LINSEN-START = `software-gpu.cjs`.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
