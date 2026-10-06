@@ -32782,7 +32782,7 @@ async function checkBandV18193MakroErbgut(ctx) {
 }
 
 // Γ6 — vier stehende Wände gegen geheilte visuelle Narben: (G1) Schneeband auf PROMINENZ ·
-// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_waterCellAt` (3D-Wahrheit) ·
+// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_koerperWasser` (die EINE Wahrheit am Körper) ·
 // (G4) arch-water-solid via blockerAABBs. KEINE mutativen Spawns — Source-Proben + Welt nach Warmup.
 async function checkBandV18194Gamma6Befoerderung(ctx) {
     const { page, check } = ctx;
@@ -32855,25 +32855,20 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const buildSrc = r._voxelChunkGeometry ? window.__codeOf(r._voxelChunkGeometry) : "";
         out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
 
-        // (G3) FALSE-SWIM: `_waterCellAt` liest die 3D-Wahrheit (V13.11/V18.0).
-        // Eine HOHE Luft-Position (y=200) ist sicher AIR-Cell (0), nie WATER.
+        // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6) — der Zell-Leser
+        // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen. Ein Körper hoch in der
+        // Luft (y=200) und 20 m über dem Spieler steht nie unter dem Spiegel (kein Phantom-Wasser in der Höhe).
         // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
         let waterCellAtWorks = false;
         let highIsNotWater = false;
         let playerPosNoPhantom = false;
-        if (typeof r._waterCellAt === "function") {
+        if (typeof r._koerperWasser === "function" && typeof r._waterCellAt === "undefined") {
             waterCellAtWorks = true;
-            // Hohe Luft-Position (y=200) ist NIE Wasser (1) — entweder AIR (0),
-            // SOLID (2) oder null (Chunk außerhalb). V13.12-Heilung: kein
-            // Phantom-Wasser in der Höhe.
-            const highCell = r._waterCellAt(0, 200, 0);
-            highIsNotWater = highCell !== 1;
-            // Direkt über Spielerposition (≈ 20 m über Spieler) — sicher Luft,
-            // niemals Wasser.
+            highIsNotWater = r._koerperWasser(0, 0, 200) < 200;
             const pm = r.state.playerMesh;
             if (pm) {
-                const above = r._waterCellAt(pm.position.x, pm.position.y + 20, pm.position.z);
-                playerPosNoPhantom = above !== 1;
+                const y = pm.position.y + 20;
+                playerPosNoPhantom = r._koerperWasser(pm.position.x, pm.position.z, y) < y;
             } else {
                 playerPosNoPhantom = true; // ohne Spieler keine Probe → skip-pass
             }
@@ -32940,10 +32935,13 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         res.seamPadCropMechanism === true
     );
     // (G3) FALSE-SWIM
-    check("Γ6 (G3a) FALSE-SWIM: _waterCellAt liest 3D-Cell-Wahrheit (V13.11/V18.0)", res.waterCellAtExists === true);
-    check("Γ6 (G3b) hohe Luft-Position (y=200) ist NIE Wasser-Cell (kein Phantom)", res.waterCellHighNotWater === true);
     check(
-        "Γ6 (G3c) über Spielerposition (+20 m) ist NIE Wasser-Cell (kein Sub-Terrain-Blasen-Riss)",
+        "Γ6 (G3a) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (_koerperWasser; der Zell-Leser _waterCellAt fiel)",
+        res.waterCellAtExists === true
+    );
+    check("Γ6 (G3b) hohe Luft-Position (y=200) liegt NIE unter dem Spiegel (kein Phantom)", res.waterCellHighNotWater === true);
+    check(
+        "Γ6 (G3c) über Spielerposition (+20 m) liegt NIE unter dem Spiegel (kein Sub-Terrain-Blasen-Riss)",
         res.waterCellAbovePlayerNotWater === true
     );
     check("Γ6 (G3d) Cell-Build-Funktion vorhanden (V13.12 Vertikal-Open-Foundation)", res.cellsBuildHasFlood === true);

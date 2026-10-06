@@ -162,6 +162,7 @@ const FORBIDDEN = [
     // Der Körper im Wasser liest EINE Wahrheit (`_koerperWasser`: die Lauf-Fläche des Gesetzes über seinem Grund + die
     // Abweichung des Live-Automaten), nie das 1,8-m-Zell-Dach; die Strömung ist das Gesetz (wellen.adv) und koppelt additiv.
     { token: "_playerWaterContext", fiel: "Welle L Q6 — das Zell-Dach als Körper-Spiegel (W-K2)" },
+    { token: "_waterCellAt", fiel: "Welle L Q6 — der Zell-Leser als dritte Wahrheit, nur noch von einer Probe gerufen" },
     { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Host-Strömung 3,2 m/s neben dem Gesetz 1,2 (W-kD4)" },
     { token: "FLOW_ADVECT_K", fiel: "Welle L Q6 — die Schlupf-Kopplung des Spielers neben der additiven des Tiers" },
     // Der Fluss-Spiegel ist das Gesetz (`_hydroRiverSpiegel`: stromab nie steigend, quer waagrecht; das Bett folgt ihm) —

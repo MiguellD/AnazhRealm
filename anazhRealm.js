@@ -32429,25 +32429,6 @@ class AnazhRealm {
         this.state.hydrosphereMeshes = [];
     }
 
-    // 3D-Wasser-Wahrheit an einer Welt-Position: liest die geflutete Zelle (`entry.waterCells`,
-    // AIR/WATER/SOLID) am Index `i + k·dim + j·dim·dim`, immer mit LOD-0-Config (Cells leben auf LOD 0).
-    // Rückgabe 0/1/2 oder null (Chunk nicht gestreamt / außerhalb) → der Aufrufer fällt auf die 2.5D-
-    // Spalte zurück. Kein Re-Raten: die Zelle IST die Wahrheit.
-    _waterCellAt(x, y, z) {
-        if (!this.state.voxelChunks) return null;
-        const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
-        const cx = Math.floor(x / span);
-        const cz = Math.floor(z / span);
-        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || !entry.waterCells) return null;
-        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
-        const i = Math.floor((x - cx * span) / step);
-        const k = Math.floor((z - cz * span) / step);
-        const j = Math.floor((y - oy) / step);
-        if (i < 0 || k < 0 || j < 0 || i >= dim || k >= dim || j >= dimY) return null;
-        return entry.waterCells[i + k * dim + j * dim * dim];
-    }
-
     // DIE EINE WASSER-WAHRHEIT AM KÖRPER (Welle L, Q6): der Spiegel an (x, z), den das Auge sieht — der Spiegel des
     // Gesetzes (`_atlasWaterLevelAt`) über dem Grund des Körpers (`grundY`: das Bett trägt die Rand-Füllung, wie im
     // Zell-Sheet; unbekannt → nur der Kanal-Kern), dazu die Abweichung des Live-Automaten nach derselben Regel, die das
