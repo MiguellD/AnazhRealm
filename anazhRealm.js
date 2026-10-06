@@ -16218,7 +16218,10 @@ class AnazhRealm {
 
     clearCreatures() {
         if (!this.state.creatures || this.state.creatures.length === 0) return;
-        this.state.creatures.forEach((creature) => this.removeCreature(creature));
+        // Über eine KOPIE: removeCreature spliced die Liste selbst — ein forEach über das Original übersprang jedes
+        // zweite Tier, das als eingefrorener Geist in der Szene blieb (Leben-Prüfung R-D14: 6 Tiere → 3 Geister,
+        // je ~46 Befehle; jeder Welt-Wechsel und jede Neu-Genese).
+        for (const creature of this.state.creatures.slice()) this.removeCreature(creature);
         this.state.creatures = [];
         this.state.creatureEmotions = [];
     }
@@ -16244,6 +16247,7 @@ class AnazhRealm {
             }
         }
         const chosenSoul = this._pickCreatureSoulName(soulName);
+        if (!chosenSoul) return null; // unbekannte Seele: laute Absage (geloggt), kein Ersatz-Tier
         // RELOAD-TREUE: beim Restore kommen die beim ersten Guss eingefrorenen Dials als opts.dialsOv, damit
         // die Kreatur wie GEGOSSEN wiederkehrt, auch wenn die aktuelle Übergabe inzwischen anders ist.
         // Frischer Spawn (kein dialsOv) liest die aktuelle Übergabe.
@@ -16258,11 +16262,11 @@ class AnazhRealm {
         // Studio-Rezept-Id wenn gemappt, sonst die Seele selbst (Custom/Geist).
         group.userData.gattung =
             (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[chosenSoul]) || chosenSoul;
-        group.userData.name = this._pickCreatureName();
         // Kreatur-Sicht-Sync — eine pro-Peer eindeutige netId für den
         // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
         this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
         group.userData.netId = "c" + this.state._creatureNetSeq;
+        group.userData.name = this._pickCreatureName(group.userData.netId);
         // GRÖSSENKLASSE: jede Kreatur trägt eine Körpergröße (klein/normal/gross/GIGANT), deterministisch
         // aus ihrer netId (Peer-/Re-Wachstum-konsistent) oder aus dem Snapshot (opts.bodySize).
         // Das Template wird NUR UNIFORM skaliert — Symmetrie und Physik-Verhältnisse bleiben invariant.
@@ -16581,15 +16585,27 @@ class AnazhRealm {
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
 
-    _pickCreatureSoulName(requested) {
+    // Die Seele zu einem Wunsch: ein Schlüssel (wesen/wolf/fuchs/baer) oder ihr Schild ("Hirsch", "Bär"); ein
+    // unbekannter Wunsch ist eine laute Absage (null — spawnCreatureAt bricht ab), nie ein still gewürfelter Ersatz
+    // (die Kritik 06.10.: `spawnCreatureAt(…, "hirsch")` ergab einen Bären). Ohne Wunsch der Ambient-Pick aus dem
+    // Fauna-Strom (Γ5).
+    _pickCreatureSoulName(requested, rng = this._faunaRng()) {
         const souls = AnazhRealm.CREATURE_SOUL_NAMES;
-        if (typeof requested === "string" && souls.includes(requested)) return requested;
+        if (typeof requested === "string" && requested) {
+            if (souls.includes(requested)) return requested;
+            const norm = (t) => String(t).toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue");
+            const w = norm(requested);
+            const hit = souls.find((n) => norm(n) === w || norm(AnazhRealm.CREATURE_SOULS[n].label || "") === w);
+            if (hit) return hit;
+            this.log(`Kreatur-Seele „${requested}" unbekannt (${souls.join(", ")}) — kein Ersatz.`, "WARN");
+            return null;
+        }
         // PHASE E — Raubtier-Seelen entstehen nur auf BEWUSSTEN Wunsch
-        // (requested), nie aus dem Zufalls-/Ambient-Pick (sparsam: keine
+        // (requested), nie aus dem Ambient-Pick (sparsam: keine
         // friedliche Welt voll Aggression).
         const gentle = souls.filter((n) => !AnazhRealm.CREATURE_SOULS[n].predator);
         const pool = gentle.length ? gentle : souls;
-        return pool[Math.floor(Math.random() * pool.length)];
+        return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))];
     }
 
     // Aura-Y-Offset folgt der Soul-Höhe (auraY-Hint pro Seele), damit die
@@ -16601,9 +16617,11 @@ class AnazhRealm {
         return soul && Number.isFinite(soul.auraY) ? soul.auraY : 0.9;
     }
 
-    _pickCreatureName() {
+    // Der Name aus der Identität (netId, Γ5): derselbe Wurf auf jedem Peer und nach jedem Reload-Guss.
+    _pickCreatureName(netId) {
         const pool = AnazhRealm.CREATURE_NAME_POOL;
-        return pool[Math.floor(Math.random() * pool.length)];
+        const g = this._rollGenome(String(netId == null ? "c0" : netId), "creature-name");
+        return pool[Math.min(pool.length - 1, Math.floor(g.axis("name") * pool.length))];
     }
 
     // ═══ DAS KREATUR-SKELETT-GESETZ ═══
@@ -20650,21 +20668,14 @@ class AnazhRealm {
     // (`spawnCreatures`) UND die deferierte Progression (`_tickBootPhase3`). getTerrainHeightAt ist
     // voxel-aware. Symphonie kurz stumm (sonst N Pings).
     _spawnOneInitialCreature(soulName = null, spawnRadius = 50) {
-        const angle = Math.random() * Math.PI * 2;
         // V18.315 — FERN spawnen: das Wesen taucht aus der Distanz auf, statt dir vor die Füße zu ploppen; sein Satz
-        // blendet beim ersten Erscheinen ein (`einblenden`, der Nebel verdeckte die Geburt bis V18.530).
-        // (spawnRadius = Streu-Spanne oben drauf.)
-        const radius = AnazhRealm.CREATURE_SPAWN_FAR_MIN + Math.random() * Math.max(80, spawnRadius * 1.6);
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
+        // blendet beim ersten Erscheinen ein (`einblenden`). Der Ort ist das EINE Geburts-Gesetz (_kreaturGeburtsOrt:
+        // fern um den Spieler, außerhalb des Blicks), jeder Wurf aus dem Fauna-Strom (Γ5).
+        const rng = this._faunaRng();
+        const { x, z } = this._kreaturGeburtsOrt(rng, Math.max(80, spawnRadius * 1.6));
         const terrainHeight = this.getTerrainHeightAt(x, z);
-        const emotion = this._weatherIsWet()
-            ? Math.random() < 0.7
-                ? "sad"
-                : "happy"
-            : Math.random() < 0.7
-              ? "happy"
-              : "sad";
+        const nass = this._weatherIsWet();
+        const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
         const symBefore = this.state.symphony && this.state.symphony.enabled;
         if (this.state.symphony) this.state.symphony.enabled = false;
         this.spawnCreatureAt(x, terrainHeight + 1.0, z, emotion, soulName);
@@ -43654,6 +43665,11 @@ class AnazhRealm {
             this.state.player.emotions.awe = Math.min(1, (this.state.player.emotions.awe || 0) + 0.2);
         }
         this.state.player.deathWoundIntensity = 1.0;
+        // Der Tod steigt ab — am Ort, wie dismountArchitecture: der Körper kehrt am Anker wieder, das Gefährt bleibt,
+        // wo er fiel (Leben-Prüfung V-k8: der Sattel riss den Wagen 85 m mit, er stand unter der Plattform).
+        if (this.state.player.mountedArch !== null && this.state.player.mountedArch !== undefined) {
+            this.dismountArchitecture();
+        }
         // Das dritte Verb: der Todesort trägt eine Lebens-Spur ins Feld.
         const pm = this.state.playerMesh;
         if (pm && pm.position && typeof this._depositLife === "function") {
@@ -84137,7 +84153,7 @@ class AnazhRealm {
     // [ATMOSPHERE] Affinity-Pick: der Kandidat, dessen Compound-Tags am stärksten mit dem Welt-Feld an
     // (x, z) resonieren — Dot-Product über lebendig/dichte/glut/magieleitung, plus noise-Anteil (sonst
     // immer dieselbe Soul je Region). Liefert {pick, scoreMap} (Tests prüfen die Diskrimination).
-    _affinityPickFromCandidates(candidates, fieldAtPos, noise = 0.15) {
+    _affinityPickFromCandidates(candidates, fieldAtPos, noise = 0.15, rng = this._faunaRng()) {
         if (!Array.isArray(candidates) || candidates.length === 0) {
             return { pick: null, scoreMap: {} };
         }
@@ -84157,8 +84173,8 @@ class AnazhRealm {
                 const tagVal = tags[ax] || 0;
                 score += fieldVal * tagVal;
             }
-            // Noise: kleine Random-Komponente damit nicht jeder Spawn identisch ist
-            score += (Math.random() - 0.5) * noise;
+            // Noise: kleine Streuung, damit nicht jeder Spawn identisch ist — aus dem Strom des Aufrufers (Γ5)
+            score += (rng() - 0.5) * noise;
             scoreMap[cand.name || cand.id || "(unnamed)"] = score;
             if (score > bestScore) {
                 bestScore = score;
@@ -85255,19 +85271,19 @@ class AnazhRealm {
 
     // [ATMOSPHERE] Soul-Wahl für eine neue Kreatur per Affinity-Pick: Compound-Tags · Welt-Feld
     // (Dot-Product), höchste Resonanz gewinnt (dieselbe Logik wie spawnAffinityForBlueprint);
-    // noise 0.15 streut wiederholte Spawns. Optionales x, z ersetzt die Spieler-Position.
-    _pickFaunaSoulAtPlayer(x, z) {
+    // noise 0.15 streut wiederholte Spawns (aus dem Fauna-Strom). Optionales x, z ersetzt die Spieler-Position.
+    _pickFaunaSoulAtPlayer(x, z, rng = this._faunaRng()) {
         const pm = this.state.playerMesh;
         if ((!pm && (x === undefined || z === undefined)) || typeof this.worldFieldAt !== "function") {
-            return this._pickCreatureSoulName();
+            return this._pickCreatureSoulName(null, rng);
         }
         const px = x !== undefined ? x : pm.position.x;
         const pz = z !== undefined ? z : pm.position.z;
         const field = this.auraAt(px, pz); // §5 (V17.25): via auraAt (living Lese-API)
-        if (!field) return this._pickCreatureSoulName();
+        if (!field) return this._pickCreatureSoulName(null, rng);
         // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
         const souls = AnazhRealm.CREATURE_SOULS;
-        if (!souls) return this._pickCreatureSoulName();
+        if (!souls) return this._pickCreatureSoulName(null, rng);
         // PHASE E — Raubtiere kommen nicht ambient (predator-Filter, sparsam).
         const candidates = Object.keys(souls)
             .filter((name) => !souls[name].predator)
@@ -85275,8 +85291,8 @@ class AnazhRealm {
                 name,
                 tags: this._creatureSoulTags(name),
             }));
-        const { pick } = this._affinityPickFromCandidates(candidates, field);
-        return (pick && pick.name) || this._pickCreatureSoulName();
+        const { pick } = this._affinityPickFromCandidates(candidates, field, 0.15, rng);
+        return (pick && pick.name) || this._pickCreatureSoulName(null, rng);
     }
 
     // Findet die älteste Kreatur (kleinster bornAt). Für Tod-Wahl bei
@@ -85342,21 +85358,54 @@ class AnazhRealm {
         return true;
     }
 
-    // [ATMOSPHERE] Geburt: 6 Kandidaten-Positionen 12–25 m vom Spieler, je die affinity-beste Soul; der
-    // Kandidat mit höchstem Affinity-Score gewinnt. Stiller Spawn (kein Symphony-Ping).
+    // DER FAUNA-STROM (Lehre 7, Γ5): jeder Wurf des Tier-Lebenszyklus — Geburts-Ort, Seele, Gemüt, der Geburts- und
+    // Todes-Takt — zieht aus EINEM seed-gebundenen Strom der Welt, nie aus Math.random (Peers und Reloads würfelten
+    // sonst verschiedene Faunen). Wechselt die Welt (ihr Seed), beginnt der Strom neu.
+    _faunaRng() {
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const f = this._faunaStrom;
+        if (f && f.seed === seed) return f.rng;
+        this._faunaStrom = { seed, rng: this._streamRng(seed + "-fauna") };
+        return this._faunaStrom.rng;
+    }
+
+    // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
+    // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler) und außerhalb des Blicks; das Wesen taucht aus der Distanz
+    // auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen
+    // Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen Ort außerhalb des Blicks; fern ist jeder.
+    _kreaturGeburtsOrt(rng, spanne = 80) {
+        const pm = this.state.playerMesh;
+        const cx = pm ? pm.position.x : 0;
+        const cz = pm ? pm.position.z : 0;
+        const fr = this._frustumCache;
+        const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
+        let x = cx;
+        let z = cz;
+        for (let k = 0; k < 8; k++) {
+            const ang = rng() * Math.PI * 2;
+            const d = AnazhRealm.CREATURE_SPAWN_FAR_MIN + rng() * spanne;
+            x = cx + Math.cos(ang) * d;
+            z = cz + Math.sin(ang) * d;
+            if (!fr) break;
+            v.set(x, this.getTerrainHeightAt(x, z) + 1, z);
+            if (!fr.containsPoint(v)) break;
+        }
+        return { x, z };
+    }
+
+    // [ATMOSPHERE] Geburt: 6 Kandidaten-Orte nach dem Geburts-Gesetz (fern, außerhalb des Blicks), je die affinity-beste
+    // Soul; der Kandidat mit höchstem Affinity-Score gewinnt (bei Gleichstand der frühere Wurf). Stiller Spawn.
     _creatureNaturalBirth() {
         if (typeof this.spawnCreatureAt !== "function") return false;
         const pm = this.state.playerMesh;
         if (!pm) return false;
-        // 6 Kandidaten-Positionen + jeweilige Affinity-beste-Soul
+        const rng = this._faunaRng();
+        // 6 Kandidaten-Orte + jeweilige Affinity-beste-Soul
         const candidates = [];
         for (let i = 0; i < 6; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 12 + Math.random() * 13;
-            const cx = pm.position.x + Math.cos(angle) * distance;
-            const cz = pm.position.z + Math.sin(angle) * distance;
-            const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(cx, cz) : null;
-            const soul = this._pickFaunaSoulAtPlayer(cx, cz);
+            const ort = this._kreaturGeburtsOrt(rng);
+            const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(ort.x, ort.z) : null;
+            const soul = this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
             // Resonanz-Score: Soul-Tags · Field, total
             let score = 0;
             if (field && soul) {
@@ -85365,13 +85414,13 @@ class AnazhRealm {
                     score += (field[ax] || 0) * (tags[ax] || 0);
                 }
             }
-            candidates.push({ x: cx, z: cz, soul, score });
+            candidates.push({ x: ort.x, z: ort.z, soul, score });
         }
-        // Welt entscheidet: höchster Resonanz-Score gewinnt (+ kleine random
-        // Streuung damit keine zwei Geburten in derselben Region identisch sind)
-        candidates.sort((a, b) => b.score + Math.random() * 0.1 - (a.score + Math.random() * 0.1));
-        const best = candidates[0];
-        const y = pm.position.y + 2;
+        // Welt entscheidet: höchster Resonanz-Score gewinnt; der Strom streut schon die Orte.
+        let best = candidates[0];
+        for (const c of candidates) if (c.score > best.score) best = c;
+        const gY = this.getTerrainHeightAt(best.x, best.z);
+        const y = (Number.isFinite(gY) ? gY : pm.position.y) + 1;
         // Spawn (silent damit kein Ping-Schwall)
         const prevSymphony = this.state.symphony && this.state.symphony.enabled;
         if (prevSymphony) this.state.symphony.enabled = false;
@@ -85442,7 +85491,7 @@ class AnazhRealm {
             // Emotion-Modulation: hope beschleunigt Geburt, peace verlangsamt
             const baseBirth = this.constructor.FAUNA_BIRTH_PROBABILITY;
             const birthP = this._emotionModulate(baseBirth, { hope: 0.08, peace: -0.05 });
-            if (sinceBirth >= birthCd && Math.random() < Math.max(0.02, Math.min(0.5, birthP))) {
+            if (sinceBirth >= birthCd && this._faunaRng()() < Math.max(0.02, Math.min(0.5, birthP))) {
                 this._creatureNaturalBirth();
             }
         } else if (count > max) {
@@ -85450,7 +85499,7 @@ class AnazhRealm {
             // sorrow erhöht Tod, peace dämpft
             const baseDeath = this.constructor.FAUNA_DEATH_PROBABILITY;
             const deathP = this._emotionModulate(baseDeath, { sorrow: 0.1, peace: -0.06 });
-            if (sinceDeath >= deathCd && Math.random() < Math.max(0.02, Math.min(0.5, deathP))) {
+            if (sinceDeath >= deathCd && this._faunaRng()() < Math.max(0.02, Math.min(0.5, deathP))) {
                 const oldest = this._findOldestCreature();
                 if (oldest) this._creatureNaturalDeath(oldest);
             }

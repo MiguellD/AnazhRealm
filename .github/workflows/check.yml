@@ -627,6 +627,14 @@ jobs:
               # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
               run: npm run gate:tier-gang
 
+            - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
+              # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft updateCreatures selbst, nichts gestubbt
+              # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
+              # echten GPU). Die Leben-Prüfung 06.10. sah: clearCreatures liess jedes zweite Tier als Geist, die
+              # Geburt stand 12–25 m vor dem Spieler, der Tod im Sattel riss den Wagen mit. --selftest zuerst: je
+              # Probe spielt der alte Defekt als Täter ein, die Linse muss ROT lesen.
+              run: npm run gate:kreatur-takt
+
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
               # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/
               # koerper/tetrapoda), Node-direkt (THREE-frei) — Schema (klang: bpm/Skala==

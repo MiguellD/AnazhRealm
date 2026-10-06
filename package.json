@@ -106,6 +106,7 @@
         "gate:kreatur-kosten": "node scripts/diag-kreatur-kosten.cjs",
         "gate:hitch-telemetrie": "node scripts/diag-hitch-telemetrie.cjs",
         "gate:kreatur-leben": "node scripts/diag-kreatur-leben.cjs",
+        "gate:kreatur-takt": "node scripts/diag-kreatur-takt.cjs --selftest && node scripts/diag-kreatur-takt.cjs",
         "gate:tier-fern": "node scripts/diag-tier-fern.cjs",
         "gate:tier-anatomie": "node scripts/diag-tier-anatomie.cjs --selftest && node scripts/diag-tier-anatomie.cjs",
         "gate:tier-gang": "node scripts/diag-tier-gang.cjs --selftest && node scripts/diag-tier-gang.cjs",
