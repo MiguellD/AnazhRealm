@@ -14,7 +14,8 @@
 //      unsichtbar; MATRIX-TREUE: jede Marke eines Architektur-Eintrags zeigt die Matrix, die der Eintrag schriebe, und
 //      ihr Slot nennt ihn als Eigentümer (der Umzug trug die richtige Instanz)
 //   F  Fundament-Pool: count == Zahl der Sockel, Rückverweis Slot ↔ Eintrag geschlossen
-//   S  Nah-Streu · Nah-Wiese · Zaun: keine Null-3×3 in [0, count), Σ Blöcke == Anzahl, leer ⇒ unsichtbar
+//   S  Nah-Wiese · Zaun · Karten-Sicht: keine Null-3×3 in [0, count), leer ⇒ unsichtbar; die Nah-Streu (W7: ihre Senken
+//      sind Daten, ihr Stoff-Satz zeichnet): Σ Blöcke == Anzahl, keine Senke trägt eine Mesh
 //   W  Nah-Wiese (Welle 6): ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
 //      nie, die Senken stünden leer und S prüfte nichts. Die Linse legt den Satz nach jedem Umzug SELBST
 //      (scripts/lib/wiese-sicht.cjs: Linsen-Kamera am Ring-Mittelpunkt, Blick auf den nächsten Büschel) und verlangt:
@@ -239,16 +240,22 @@ async function welt() {
             const ns = st.nahStreu;
             if (ns)
                 for (const a of ns.senken.values()) {
-                    senke(a.name, a.mesh, a.anzahl);
                     let summe = 0;
                     for (const b of a.bloecke.values()) summe += b.n;
-                    if (summe !== a.anzahl) nenne(a.name, `Σ Blöcke ${summe} ≠ Anzahl ${a.anzahl}`, a.mesh, 0);
+                    if (summe !== a.anzahl)
+                        befunde.push({ senke: a.name, art: `Σ Blöcke ${summe} ≠ Anzahl ${a.anzahl}`, pass: "keiner", dreiecke: 0 });
+                    if (a.mesh !== undefined)
+                        befunde.push({ senke: a.name, art: "die Senke trägt eine Mesh (sie zeichnet selbst)", pass: "keiner", dreiecke: 0 });
                 }
+            // W7 — die Sicht der Karten: die EINE Senke, die der Haken je Pass legt (die Atlas-Gruppe hängt nirgends)
+            const ks = st.kartenSicht;
+            if (ks && ks.mesh) senke("kartenSicht", ks.mesh, null);
             // A — jede verfolgte Senke: aus dem Graphen nur mit Abschied, im Graphen nie mit. Eine Satz-Gruppe (Welle 6,
             // `g.satz`) hängt an keinem Eltern-Knoten — der Bau-Satz ihres Stoffs zeichnet sie: ihre Senke lebt, solange die
-            // Gruppe sie trägt.
+            // Gruppe sie trägt; ebenso die EINE Atlas-Gruppe (W7, `kartenSicht`: ihre Sicht zeichnet).
             const satzLebt = new Set();
-            for (const [, g] of st.archInstanceGroups || []) if (g.satz && g.mesh) satzLebt.add(g.mesh);
+            for (const [, g] of st.archInstanceGroups || [])
+                if (g.mesh && (g.satz || g.mesh.userData.kartenSicht)) satzLebt.add(g.mesh);
             for (const m of geboren) {
                 const name = m.name || m.userData.archInstanceKey || m.userData.leafKey || "Senke";
                 const drin = imGraph(m) || satzLebt.has(m);

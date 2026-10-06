@@ -232,16 +232,16 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
     const nc = ohneKommentare(src);
     const senke = rumpf(nc, /\n {4}_streuNahSenke\(art, v, stufe, p, lf, wiegt\)\s*\{/) || "";
     if (!senke) fehler.push("_streuNahSenke(art, v, stufe, p, lf, wiegt) nicht gefunden");
-    else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, skala\) : lf\.mat,/.test(senke))
+    else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true\) : lf\.mat,/.test(senke))
         fehler.push("_streuNahSenke: der Senken-Stoff ist nicht der Studio-Stoff (lf.mat bzw. _foundryTreeMaterial wiegend)");
     const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen\)\s*\{/) || "";
     if (!stoff) fehler.push("_foundryTreeMaterial(kind, mp, wiegen) nicht gefunden");
     else {
         if (!/: T\.MeshStandardNodeMaterial;/.test(stoff))
             fehler.push("_foundryTreeMaterial: der Studio-Stoff ist nicht MeshStandardNodeMaterial (bzw. Physical für die Haut)");
-        const ast = /\} else if \(wiegen > 0\) \{([\s\S]*?)\n {12}\}/.exec(stoff);
-        if (!ast || !/this\._windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe: TSL\.positionGeometry\.y\.mul\(wiegen\) \}\)/.test(ast[1]))
-            fehler.push("_foundryTreeMaterial: die weiche Nah-Streu wiegt nicht im EINEN Wind (_windSwayOffset, Höhe × Studio-Skala)");
+        const ast = /\} else if \(wiegen === true\) \{([\s\S]*?)\n {12}\}/.exec(stoff);
+        if (!ast || !/this\._windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe: TSL\.attribute\("aWiege", "float"\) \}\)/.test(ast[1]))
+            fehler.push("_foundryTreeMaterial: die weiche Nah-Streu wiegt nicht im EINEN Wind (_windSwayOffset, Höhe über der Wurzel in Metern: aWiege)");
     }
     // (4) DIE LAMBERT-WAND: kein Stoff der Welt ist Lambert (der ganze kommentar-freie Stamm).
     const lambert = [...nc.matchAll(/MeshLambert\w*/g)].length;
@@ -274,7 +274,7 @@ function main() {
             [
                 "Senken-Stoff am Studio vorbei",
                 QUELLE.replace(
-                    "mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, skala) : lf.mat,",
+                    "mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true) : lf.mat,",
                     "mat: new THREE.MeshStandardNodeMaterial(),"
                 ),
                 /Senken-Stoff ist nicht der Studio-Stoff/,
@@ -282,7 +282,7 @@ function main() {
             [
                 "Nah-Streu ohne Wind",
                 QUELLE.replace(
-                    "const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.positionGeometry.y.mul(wiegen) });",
+                    'const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });',
                     "const _sway = null;"
                 ),
                 /wiegt nicht im EINEN Wind/,

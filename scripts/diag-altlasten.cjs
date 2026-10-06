@@ -419,6 +419,16 @@ const FORBIDDEN = [
     // `_chunkSatzVerdichten` schrumpft jeden Satz auf seinen Inhalt; der Leer-Takt und sein Feld kehren nie zurück.
     { token: "_chunkSatzLeert", fiel: "W7 — _chunkSatzVerdichten (der leere Satz ist der Fall Inhalt 0)" },
     { token: "s.leerSeit", fiel: "W7 — s.ueberSeit (die Frist zählt ab dem Überschreiten der Schwelle, für jeden Satz)" },
+    // W7 (06.10.) — DIE NAH-STREU ZEICHNET JE STOFF: je Art × Gestalt × Stufe × Teil zeichnete eine InstancedMesh den ganzen
+    // Ring (echte GPU, Mess-Wiese: 15 Befehle, 46k Dreiecke, auch hinter dem Blick); der wiegende Stoff war je Studio-Skala
+    // ein eigener und las die Höhe aus der Vorlage (r184 rechnet den positionNode VOR der Instanzierung). Die Senke ist
+    // Daten, ihr Block ein Bereich im Streu-Satz ihres Stoffs (`_streuSatzArt`), die Höhe reist als `aWiege` (m).
+    {
+        token: "this._senkeMesh(a, 64, this.state.scene)",
+        fiel: "W7 — die Nah-Streu-Senke zeichnet nie selbst (_streuSatzArt)",
+    },
+    { token: "positionGeometry.y.mul(wiegen)", fiel: "W7 — die Höhe der wiegenden Nah-Streu ist aWiege (_satzBlock)" },
+    { token: '"|wiegt:"', fiel: "W7 — EIN wiegender Stoff je Regler, nie je Studio-Skala (|wiegt)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
