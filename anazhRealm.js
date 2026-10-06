@@ -71020,17 +71020,21 @@ class AnazhRealm {
             if (!kleinster) break;
             merge(kleinster, zielVon(kleinster));
         }
-        // Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle —
-        // gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul], sonst soul.
-        const ud = cr.userData || {};
+        return { gruppen, wurzel, gattung: this._kreaturGattung(cr) };
+    }
+
+    // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle für Fern-Satz, Treffer-
+    // Volumen und Idle-Vorbacken — gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul], sonst soul.
+    _kreaturGattung(cr) {
+        const ud = (cr && cr.userData) || {};
         const soul = ud.soul || "wesen";
-        const gattung =
+        return (
             ud.gattung ||
             ud.recipe ||
             ud.preset ||
             (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[soul]) ||
-            soul;
-        return { gruppen, wurzel, gattung };
+            soul
+        );
     }
 
     // Die Glied-Kapsel im Anker-Raum, EINMAL je Gattung × Glied gepasst (der Schlüssel des Fern-Satzes): das Fern-Bild
@@ -71081,17 +71085,13 @@ class AnazhRealm {
         const u = cr && cr.userData;
         if (!u) return null;
         if (u._trefferGlieder !== undefined) return u._trefferGlieder;
+        // KERN-PFLICHT (Welle L): ohne tetrapoda trefferZone gibt es kein Treffer-Volumen — ein lauter BRUCH wie im
+        // Treffer-Urteil (_kampfUrteil), nie ein still je Tier gespeichertes null (jedes Wesen wäre unverwundbar).
         const tc = globalThis.__tetrapodaCore;
+        if (!tc || typeof tc.trefferZone !== "function") AnazhRealm._kernPflichtBruch("tetrapoda:trefferZone");
         const tb = u._tierBaum;
-        if (!tb || !tc || typeof tc.trefferZone !== "function") return (u._trefferGlieder = null);
-        const ud = u;
-        const gattung =
-            ud.gattung ||
-            ud.recipe ||
-            ud.preset ||
-            (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul || "wesen"]) ||
-            ud.soul ||
-            "wesen";
+        if (!tb) return (u._trefferGlieder = null); // kein Studio-Leib (nur _buildCreatureGroup baut einen): keine Gestalt
+        const gattung = this._kreaturGattung(cr);
         const namenMemo = this._trefferGliedNamen || (this._trefferGliedNamen = new Map());
         let namen = namenMemo.get(gattung);
         if (!namen) {
