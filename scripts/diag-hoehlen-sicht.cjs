@@ -22,7 +22,10 @@
 //       nennt sie die fehlenden (sonst prüfte (b) nichts);
 //   (e) SCHNITT — die Wiese zeichnet weniger Höhlen-Dreiecke, als ihr Frustum trägt (sonst wäre die Sicht tot);
 //   (f) CODE — der EINE Chokepoint liest die Sicht (`_chunkSatzPass` ruft `_hoehlenSicht`, `_chunkSatzAbschnitt` den
-//       Stempel des Knotens, `_hoehlenSicht` den Weg hinaus); (g) kein Page-Error.
+//       Stempel des Knotens, `_hoehlenSicht` den Weg hinaus); (g) kein Page-Error;
+//   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
+//       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
+//       Pass jede Mündung im Bild neu (vorher sperrte ein gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ging).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -80,6 +83,20 @@ function urteil(b) {
             v.push(
                 `KEIN SCHNITT: die Wiese zeichnet ${x.hoehleImAbschnitt} von ${x.hoehleImFrustum} Höhlen-Dreiecken ihres ` +
                     "Frustums — die Höhlen-Sicht wirkt nicht"
+            );
+    }
+    const gd = b.gedaechtnis;
+    if (!gd || !(gd.imBild > 0)) v.push("LEER: (h) Gedächtnis: keine Mündung im Bild (die Wand prüfte nichts)");
+    else {
+        if (!(gd.vor < gd.imBild))
+            v.push(
+                `LINSE STUMPF: (h) Gedächtnis: im Stand misst jeder Pass ${gd.vor} von ${gd.imBild} Mündungen neu — ` +
+                    "die Sperre wird nie gemerkt, die Wand prüfte nichts"
+            );
+        if (gd.nach < gd.imBild)
+            v.push(
+                `GEDÄCHTNIS: ${gd.imBild - gd.nach} von ${gd.imBild} Mündungen im Bild behalten ihre Sperre über einen neuen ` +
+                    "Boden (`_chunkSatzMarke` im Stand) — ein gegrabener oder gesenkter Hang sperrte die Mündung dahinter weiter"
             );
     }
     const c = b.code || {};
@@ -143,6 +160,7 @@ function selbsttest() {
                 schatten: { empfaenger: 5, lecks: [] },
             },
         ],
+        gedaechtnis: { vor: 0, nach: 6, imBild: 6 },
         code: { passLiest: true, abschnittLiest: true, hinausLiest: true },
         pageErrors: [],
     };
@@ -186,6 +204,13 @@ function selbsttest() {
         ["Chokepoint fehlt", (b) => (b.code.passLiest = false), /CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht/],
         ["Stempel ungelesen", (b) => (b.code.abschnittLiest = false), /CODE: `_chunkSatzAbschnitt` liest/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
+        [
+            "die Sperre überlebt den Boden",
+            (b) => (b.gedaechtnis.nach = 0),
+            /GEDÄCHTNIS: 6 von 6 Mündungen im Bild behalten ihre Sperre/,
+        ],
+        ["stumpfes Gedächtnis", (b) => (b.gedaechtnis.vor = 6), /LINSE STUMPF: \(h\) Gedächtnis/],
+        ["Gedächtnis ohne Mündung", (b) => (b.gedaechtnis = null), /LEER: \(h\) Gedächtnis/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -522,6 +547,34 @@ const server = http.createServer((req, res) => {
             };
             for (const bl of blicke) aus.blicke.push(miss(bl));
 
+            // ── (h) GEDÄCHTNIS: die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat. Im Stand an der Mündung
+            // (jede Mündung im Bild trägt ihre Sperre) schreibt ein Geomorph-Schreiber einen Boden-Bereich neu
+            // (`_chunkSatzMarke`, wie beim Graben oder einer LOD-Naht): der nächste Pass misst jede Mündung im Bild neu.
+            const blM = blicke.find((x) => x.name === "muendung");
+            if (blM) {
+                const H = () => s.hoehle;
+                const imPass = () => {
+                    r._tickChunkSatz();
+                    r._passSicht(cam, false);
+                    const o = {
+                        offen: H().offen.length,
+                        imBild: [...H().muendungen].reduce(
+                            (a, kn) => a + kn.tore.filter((t) => t.st === H().stempel).length,
+                            0
+                        ),
+                    };
+                    r._passSicht(cam, true);
+                    return o;
+                };
+                hauptbild(blM);
+                r._passSicht(cam, true);
+                const vor = imPass();
+                const bm = [...s.bloecke.values()].find((b) => b.hoehle);
+                r._chunkSatzMarke("boden", bm.key, ["aMorphTarget", "aMorphWeight"]);
+                const nach = imPass();
+                aus.gedaechtnis = { vor: vor.offen, nach: nach.offen, imBild: vor.imBild, bereich: bm.key };
+            }
+
             // ── (b') HINAUS: der Spieler 16 m unter der Wiese (der Ring steht um ihn, LOD 0), das Auge in der Höhlen-Luft,
             // der Blick durch die Mündung hinaus — neu, dann die alte Probe (die Sperre ohne den Weg hinaus, am Exemplar)
             st.playerMesh.position.set(HINAUS.spieler[0], HINAUS.spieler[1], HINAUS.spieler[2]);
@@ -581,6 +634,12 @@ const server = http.createServer((req, res) => {
                     ? ` · Auge in Höhlen-Luft ${x.augeInHoehle} · die alte Probe ließe ${x.altFehlend} Zellen weg` +
                       (x.altZuerst ? `, zuerst ${x.altZuerst.bereich}#${x.altZuerst.knoten}` : "")
                     : "")
+        );
+    const gd = befund.gedaechtnis;
+    if (gd)
+        console.log(
+            `  (h) Gedächtnis an der Mündung: ${gd.imBild} Mündungen im Bild · im Stand neu gemessen ${gd.vor} · nach ` +
+                `\`_chunkSatzMarke("boden", ${gd.bereich})\` neu gemessen ${gd.nach}`
         );
     const v = urteil(befund);
     if (v.length) {

@@ -62847,7 +62847,11 @@ class AnazhRealm {
             ga.needsUpdate = true;
         }
         this._chunkSatzHuelle(s, b); // der Geomorph legt neue Ziele — die Hülle folgt
-        if (b.hoehle) b.hoehle.horizont = null; // und der Horizont (`_hoehlenHorizont`) liest sie neu
+        // und der Horizont (`_hoehlenHorizont`) liest sie neu — jede gemerkte Sperre misst ihn neu (`H.boden`)
+        if (b.hoehle) {
+            b.hoehle.horizont = null;
+            s.hoehle.boden++;
+        }
     }
 
     // Die Grund-Sicht des Satzes (außerhalb jedes Passes): nicht verborgen und ein Bereich da.
@@ -63177,7 +63181,11 @@ class AnazhRealm {
                 besucht: null,
                 kacheln: null, // die Licht-Kacheln der Kaskade (`_hoehlenSichtLicht`)
                 sichtHaupt: null, // die Zellen, die das letzte Hauptbild erreichte (die Empfänger der Kaskaden)
+                // die Generation des Bodens: jeder Ein- und Austritt eines Boden-Bereichs und jeder Geomorph-Schreiber legt den
+                // Horizont neu — eine gemerkte Sperre gilt nur dem Boden, den sie gemessen hat (`_hoehlenSperre`)
+                boden: 0,
             };
+        s.hoehle.boden++;
         const saum = AnazhRealm.HOEHLEN_SAUM.schritte * H.step + AnazhRealm.HOEHLEN_SAUM.m;
         const box = (A, o, weit) => {
             if (!(A[o] <= A[o + 3])) return null;
@@ -63205,7 +63213,12 @@ class AnazhRealm {
                 z: 0,
             });
         for (let o = 0; o < H.muend.length; o += 7)
-            knoten[H.muend[o]].tore.push({ box: box(H.muend, o + 1, true), sperre: -Infinity, auge: [NaN, NaN, NaN] });
+            knoten[H.muend[o]].tore.push({
+                box: box(H.muend, o + 1, true),
+                sperre: -Infinity,
+                auge: [NaN, NaN, NaN],
+                boden: -1,
+            });
         for (let o = 0; o < H.kanten.length; o += 8) {
             const a = knoten[H.kanten[o]];
             const c = knoten[H.kanten[o + 1]];
@@ -63402,6 +63415,7 @@ class AnazhRealm {
     // Der Austritt eines Boden-Bereichs: seine Starts fallen, die Nachbar-Zellen vergessen ihre Rand-Portale zu ihm, und seine
     // Nachbarn liegen an dieser Seite nun offen.
     _hoehlenLoese(s, b) {
+        s.hoehle.boden++;
         for (const kn of b.hoehle.knoten) {
             s.hoehle.muendungen.delete(kn);
             for (const e of kn.nb) if (e.zu.bereich !== b) e.zu.nb = e.zu.nb.filter((f) => f.zu.bereich !== b);
@@ -63423,10 +63437,13 @@ class AnazhRealm {
     // liest das Minimum seiner 3 × 3 Zellen (ein Bogen-Stück zwischen zwei Punkten liegt in ihnen). Gemerkt je Auge — für
     // jedes Auge im Würfel ±`HOEHLEN_AUGE_M` um das geprüfte (die Probe hebt das Auge und weitet die Box um ihn; die 3 × 3
     // Zellen tragen die Verschiebung): das Auge der Spiel-Kamera atmet im Stand um Millimeter, und jede Probe neu wäre
-    // Arbeit ohne Änderung.
+    // Arbeit ohne Änderung. Und je BODEN (`H.boden`): ein neuer Horizont — ein Chunk tritt ein oder aus (der Spieler gräbt,
+    // der Ring wandert), ein Geomorph senkt den Rand — erreicht jede gemerkte Sperre; ohne das sperrte im Stand ein
+    // gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ginge.
     _hoehlenSperre(s, tor, ex, ey, ez) {
-        if (this._hoehlenAugeGleich(tor, ex, ey, ez)) return tor.sperre;
+        if (this._hoehlenAugeGleich(s.hoehle, tor, ex, ey, ez)) return tor.sperre;
         const t = AnazhRealm.HOEHLEN_AUGE_M;
+        tor.boden = s.hoehle.boden;
         tor.auge[0] = ex;
         tor.auge[1] = ey;
         tor.auge[2] = ez;
@@ -63435,9 +63452,14 @@ class AnazhRealm {
         return tor.sperre;
     }
 
-    _hoehlenAugeGleich(tor, ex, ey, ez) {
+    _hoehlenAugeGleich(H, tor, ex, ey, ez) {
         const t = AnazhRealm.HOEHLEN_AUGE_M;
-        return Math.abs(tor.auge[0] - ex) <= t && Math.abs(tor.auge[1] - ey) <= t && Math.abs(tor.auge[2] - ez) <= t;
+        return (
+            tor.boden === H.boden &&
+            Math.abs(tor.auge[0] - ex) <= t &&
+            Math.abs(tor.auge[1] - ey) <= t &&
+            Math.abs(tor.auge[2] - ez) <= t
+        );
     }
 
     // Der Boden an der Raster-Zelle (I, K) der Welt (`HOEHLEN_HORIZONT_M`): die untere Schranke ihres Bereichs, −∞ ohne.
@@ -63565,7 +63587,7 @@ class AnazhRealm {
                 tor.r5 = rc[5];
                 tor.kn = kn;
                 tor.weit = this._hoehlenWeit(tor.box, ex, ez);
-                if (this._hoehlenAugeGleich(tor, ex, ey, ez)) {
+                if (this._hoehlenAugeGleich(H, tor, ex, ey, ez)) {
                     if (tor.sperre === -Infinity) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
                     else hinter.push(tor);
                     continue;
