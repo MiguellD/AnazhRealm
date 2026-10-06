@@ -17225,7 +17225,7 @@ class AnazhRealm {
             }
             geo.setIndex(new THREE.BufferAttribute(index, 1));
             geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
-            geo.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
+            geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(skinWeight, 4));
             const t0 = teile[0].mesh;
             const starr = new THREE.SkinnedMesh(geo, t0.material);
             starr.castShadow = t0.castShadow;
@@ -62017,7 +62017,10 @@ class AnazhRealm {
             iEnde: 0, // Hochwasser der Abschnitte im Index
             iSumme: 0, // Indizes aller Bereiche (der ganze Ring)
             takt: 0, // Render-Takt (_tickChunkSatz) — ein Abschnitt, den kein Pass mehr fragt, fällt beim Umlegen
-            leerSeit: -1, // der Takt, seit dem der Satz keinen Bereich trägt (`_chunkSatzLeert`), -1 = er trägt einen
+            vInhalt: 0, // die Vertices aller Bereiche (der Inhalt, den `_chunkSatzVerdichten` misst)
+            ueberSeit: -1, // der Takt, seit dem die Kapazität über `schwelle` × Ziel liegt (-1 = sie liegt darunter)
+            ueberHoch: 0, // das Hochwasser des Inhalts seit `ueberSeit`
+            ueberStart: 0, // der Inhalt zu Beginn der Frist (wächst er um mehr als `stetig`, beginnt sie neu)
             schmutzig: false,
             anker: null,
             verborgen: false,
@@ -62044,7 +62047,7 @@ class AnazhRealm {
     // liegen); was der Haupt-Pass schon aufzeichnete, liest die alte, die bis zur Abgabe lebt.
     _chunkSatzGeometrie(s, vKap, iKap) {
         const alt = s.geom;
-        const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie die Rückkehr (`_chunkSatzLeert`)
+        const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie das Schrumpfen (`_chunkSatzVerdichten`)
         const g = new THREE.BufferGeometry();
         for (const [name, is] of s.spec.attr) {
             const arr = new Float32Array(vKap * is);
@@ -62078,33 +62081,69 @@ class AnazhRealm {
         }
     }
 
-    // DER LEERE SATZ (Integration W6, 06.10.): ein Satz ohne Bereich hält seine Pool-Kapazität nicht. Nach der Ruhe-Frist
-    // der Abschnitte (`ruheTakte` Render-Takte ohne Bereich — die Gnadenfrist der Gruppen liegt davor) kehrt er auf seine
-    // Start-Kapazität (CHUNK_SATZ) zurück: seine Abschnitte fallen, die Geometrie tauscht am SELBEN Mesh, die alten Puffer
-    // verlassen die GPU über den Kehraus. Befund (echte GPU, Mess-Wiese, drei Wander-Schleifen à 1,2 km, Puffer-Linse): die
-    // Bau-Sätze verlassener Dörfer hielten 38,3 MB in 147 Puffern, die größten ohne einen Bereich (buf:szene 90,5 MB gegen
-    // die Ratsche 40,6) — die Residenz folgte der Geschichte, nicht dem Bild.
-    _chunkSatzLeert(s) {
-        if (s.bloecke.size > 0) {
-            s.leerSeit = -1;
-            return;
+    // DER SATZ FOLGT SEINEM INHALT (W7): die Kapazität eines Satzes folgte seiner Geschichte — er wuchs (×1,5) und schrumpfte
+    // nie, ein leerer kehrte nur auf die Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, Puffer-Linse): in Ruhe hielt
+    // der Wasser-Satz 3,25 MB für 0,33 MB Inhalt (9 745 von 65 536 Vertices), drei Bau-Sätze je 0,44 MB für 48 bis 1 464
+    // Vertices; nach drei Wander-Schleifen à 1,2 km hielt der Boden-Satz 24,9 statt 16,4 MB und die Bau-Sätze 12,0 statt
+    // 1,3 MB. Je Render-Takt misst der Satz sein Ziel: das Hochwasser seines Inhalts (die Vertices seiner Bereiche) über die
+    // Frist × `luft`, die Indizes aus dem Hochwasser der Abschnitte, die ein Pass noch fragt, mindestens vMin/iMin. Liegt die
+    // Kapazität `ruheTakte` Takte lang über `schwelle` × Ziel (die Schwelle über dem Wachs-Schritt hält ihn ruhig), schrumpft
+    // er auf das Ziel — ohne auf eine Ruhe seiner Bereiche zu warten (die Wasser-Bereiche treten fast je Takt neu ein), aber
+    // nie, solange er füllt: wächst sein Inhalt um mehr als `stetig` über den Stand zu Beginn der Frist (der Ring im Boot,
+    // ein Dorf, das einströmt), beginnt die Frist neu. Dann ziehen die Bereiche dicht nach vorn (jeder Index-Lauf um die
+    // Verschiebung seines Bereichs, Zellen und Hüllen bleiben), die Abschnitte fallen und jeder Pass legt seinen im nächsten
+    // Frame neu, die Geometrie tauscht am SELBEN Mesh, die Views der Chunks zeigen auf die neuen Arrays (jeder CPU-Leser
+    // bleibt byte-gleich). Ein leerer Satz ist der Fall „Inhalt 0". Die alten Puffer verlassen die GPU hier, vor dem Zeichnen
+    // des Frames (`_loopRender`): ein Render-Objekt, das die alte Geometrie las, tauscht beim nächsten Zeichnen, und der
+    // Kehraus hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
+    _chunkSatzVerdichten(s) {
+        const V = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
+        const R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+        let iBedarf = 0;
+        for (const a of s.abschnitte.values()) if (s.takt - a.takt <= R) iBedarf += this._chunkSatzKap(a.hoch);
+        const hoch = s.ueberSeit < 0 ? s.vInhalt : Math.max(s.ueberHoch, s.vInhalt);
+        const vZiel = Math.max(V.vMin, Math.ceil(hoch * V.luft));
+        const iZiel = Math.max(V.iMin, Math.ceil(iBedarf * V.luft));
+        const vNeu = s.vKap > vZiel * V.schwelle ? vZiel : s.vKap;
+        const iNeu = s.iKap > iZiel * V.schwelle ? iZiel : s.iKap;
+        if (vNeu === s.vKap && iNeu === s.iKap) {
+            s.ueberSeit = -1;
+            return false;
         }
-        if (s.leerSeit == null || s.leerSeit < 0) s.leerSeit = s.takt;
-        if (s.takt - s.leerSeit <= AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte) return;
-        const C = AnazhRealm.CHUNK_SATZ[s.spec.kapazitaet || s.art];
-        if (s.vKap <= C.v && s.iKap <= C.i) return;
+        if (s.ueberSeit < 0 || s.vInhalt > s.ueberStart * V.stetig) {
+            s.ueberSeit = s.takt;
+            s.ueberStart = s.vInhalt;
+        }
+        s.ueberHoch = hoch;
+        if (s.takt - s.ueberSeit <= R) return false;
+        s.ueberSeit = -1;
+        if (vNeu < s.vKap) {
+            // dicht nach vorn, in Lage-Folge: jedes Ziel liegt vor seiner Quelle, kein Bereich überschreibt einen ungezogenen
+            const folge = Array.from(s.bloecke.values()).sort((x, y) => x.vStart - y.vStart);
+            let pos = 0;
+            for (const b of folge) {
+                const d = pos - b.vStart;
+                if (d !== 0) {
+                    for (const [name, is] of s.spec.attr)
+                        s.geom.attributes[name].array.copyWithin(pos * is, b.vStart * is, (b.vStart + b.vAnzahl) * is);
+                    const idx = b.idx;
+                    for (let i = 0; i < idx.length; i++) idx[i] += d;
+                    b.vStart = pos;
+                }
+                pos += b.vAnzahl;
+            }
+            s.vEnde = pos;
+            s.vFrei.length = 0;
+        }
         s.abschnitte.clear();
         s.iEnde = 0;
-        s.vFrei.length = 0;
-        s.vEnde = 0;
         const alt = s.geom;
-        this._chunkSatzGeometrie(s, C.v, C.i);
-        // Der leere Satz zeichnet nicht (unsichtbar): seine Render-Objekte lesen die alte Geometrie bis zum nächsten
-        // Zeichnen, und der Kehraus hielte ihre Puffer für gezeichnet (gemessen in derselben Welt: die Kapazität der Sätze
-        // fiel 69,1 → 45,2 MB, der GPU-Speicher der Bau-Sätze nur 38,3 → 31,4 MB). Ihre Puffer verlassen die GPU hier — vor
-        // dem Zeichnen des Frames (`_loopRender`), die letzte Aufzeichnung, die sie las, ist abgegeben.
+        this._chunkSatzGeometrie(s, vNeu, iNeu);
+        s.geom.setDrawRange(0, 0); // der Index ist leer, bis jeder Pass seinen Abschnitt legt
+        s.verdichtet = (s.verdichtet || 0) + 1;
         for (const k in alt.attributes) this._gpuAbschied(alt.attributes[k]);
         if (alt.index) this._gpuAbschied(alt.index);
+        return true;
     }
 
     // Der EINE Mesh eines Satzes über seiner Pool-Geometrie (ein Wachsen tauscht nur die Geometrie).
@@ -62224,6 +62263,7 @@ class AnazhRealm {
             huelle: null,
         };
         s.bloecke.set(key, b);
+        s.vInhalt += n;
         this._chunkSatzViews(s, b);
         this._chunkSatzZellen(b, li, vStart, geom.zellen || null);
         this._chunkSatzHuelle(s, b);
@@ -62373,6 +62413,7 @@ class AnazhRealm {
         }
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
         s.bloecke.delete(key);
+        s.vInhalt -= b.vAnzahl;
         s.iSumme -= b.iAnzahl;
         s.schmutzig = true;
         return true;
@@ -62413,7 +62454,7 @@ class AnazhRealm {
         for (const s of saetze.values()) {
             s.takt++;
             this._chunkSatzBereit(s);
-            this._chunkSatzLeert(s);
+            this._chunkSatzVerdichten(s);
         }
     }
 
@@ -69402,7 +69443,7 @@ class AnazhRealm {
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
-        if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
+        if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
         // jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
@@ -69421,7 +69462,7 @@ class AnazhRealm {
             const si = new Uint16Array(m.skinIndex.array.length);
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
-            geo.setAttribute("skinWeight", new T.BufferAttribute(m.skinWeight.array, m.skinWeight.itemSize || 4));
+            geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
@@ -70309,6 +70350,41 @@ class AnazhRealm {
                 g.addEventListener("dispose", zaehlung);
             };
         }
+    }
+    // DER SCHMALE INDEX (W7): r184 weitet beim Anlegen JEDES nicht-normierte 8-/16-bit-Attribut auf 32 bit (die Vertex-
+    // Formate ohne x1/x3-Form) — auch den Index, den der Draw selbst als uint16 binden könnte (`setIndexBuffer` wählt das
+    // Format nach dem Array-Typ): jeder 16-bit-Index lag doppelt auf der GPU, und die Foundry lieferte ihn ohnehin als
+    // Uint32. Befund (echte GPU, Mess-Wiese, Puffer-Linse): 113 von 114 Index-Puffern hätten 16 bit gereicht, 2,8 MB zu viel
+    // — der Spieler allein 0,9 MB. Der EINE Weg jedes Index auf die GPU (`createIndexAttribute`) legt einen Uint16-Index
+    // ungeweitet an: das Weiten fragt `normalized` (für einen Index bedeutungslos), die Hülle setzt es nur für das Anlegen.
+    // Ein 16-bit-Index, der danach teilweise neu schreibt, bräche an der 4-Byte-Ausrichtung von writeBuffer — die Sätze
+    // (die einzigen Index-Schreiber) tragen Uint32 (gate:vendor-anker pinnt beide Vendor-Stellen).
+    _index16(renderer) {
+        const be = renderer && renderer.backend;
+        if (!be || be.isWebGPUBackend !== true || be.__anazhIndex16 || typeof be.createIndexAttribute !== "function")
+            return;
+        be.__anazhIndex16 = true;
+        const roh = be.createIndexAttribute;
+        be.createIndexAttribute = function (attr) {
+            if (!(attr && attr.array instanceof Uint16Array) || attr.normalized !== false) return roh.call(this, attr);
+            attr.normalized = true;
+            try {
+                return roh.call(this, attr);
+            } finally {
+                attr.normalized = false;
+            }
+        };
+    }
+    // Die schmalen Formen eines Assets (W7, Kosten ins Asset): ein Index über ≤ 65 535 Vertices trägt 16 bit (`_index16`
+    // hält ihn so auf der GPU), ein Haut-Gewicht 16 bit normiert (unorm16x4 statt float32x4 — 2 statt 4 B je Komponente;
+    // der Shader liest dasselbe vec4, die Abweichung ≤ 1/131 070 je Gewicht).
+    static _indexSchmal(arr, nVertices) {
+        return nVertices <= 65535 && !(arr instanceof Uint16Array) ? Uint16Array.from(arr) : arr;
+    }
+    static _hautGewicht(arr, itemSize) {
+        const w = new Uint16Array(arr.length);
+        for (let i = 0; i < arr.length; i++) w[i] = Math.round(Math.min(1, Math.max(0, arr[i])) * 65535);
+        return new THREE.BufferAttribute(w, itemSize || 4, true);
     }
     // DIE INSTANZ-ZAHL — der EINE Schreiber von `count` jeder Instanz-Senke (Instanz-Gruppen · Fundament · Zaun ·
     // Nah-Wiese · Nah-Streu): jede Senke ist DICHT ([0, n) lebt, ein freier Slot existiert nicht), und eine leere ist
@@ -84641,6 +84717,7 @@ class AnazhRealm {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
                 this._renderObjektRegister(renderer);
+                this._index16(renderer);
                 // Hitch-Telemetrie (d) Upload-Bytes: JEDER Upload läuft durch device.queue.writeBuffer — ein
                 // Laufzeit-Wrap hier zählt alles, die vendor-Datei bleibt byte-alt. Idempotent über __anazhTap;
                 // Konsum je Frame in _perfSenseFoldFrame.
@@ -87229,7 +87306,11 @@ class AnazhRealm {
             // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
             // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity. Kosten (04.10., echte GPU
             // Radeon 890M, 1080p, ruhig, gpu-bank 200 Frames × 12 Paare gegen FXAA): +1,1 ms je Frame (die Pass-
-            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB.
+            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Szene,
+            // Auflösung und Geschichte bleiben rgba16float (die Geschichts-Kopien verlangen EIN Format für alle drei):
+            // rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierte die Wolken zu Höhenlinien, die Radeon rundet beim
+            // Schreiben gegen null (Sonde 1,0117 → 1,0; das Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame
+            // 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5 Mantissen-Bit tragen die zeitliche Auflösung nicht.
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
             if (this.state._traa && typeof THREE.TRAANode !== "function") {
@@ -87817,9 +87898,11 @@ class AnazhRealm {
     // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted`
     // (aus); fallen kann sie nicht — der r184-Pipeline-Bau liest Format und Farbraum aus `textures[0]`
     // (getCurrentColorFormat · getCurrentColorSpace), ein Ziel ohne Farbe bräche jede Schatten-Pipeline. Darum r8
-    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). Der Knoten baut
-    // sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus nennt die
-    // Kaskade beim Namen.
+    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). EINE Farbe für
+    // beide Kaskaden trägt r184 nicht: das zweite Ziel legt die geteilte Textur bei seiner ersten Belegung neu an, der Pass
+    // des ersten liest die zerstörte („Destroyed texture used in a submit", die Schatten fallen — gemessen W7, echte GPU).
+    // Der Knoten baut sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus
+    // nennt die Kaskade beim Namen.
     _kaskadenZiele(csm) {
         const knoten = csm._shadowNodes || [];
         for (let i = 0; i < knoten.length; i++) {
@@ -88428,6 +88511,12 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
 // ein Abschnitt verdichtet seine Lücken (`verschnitt` seines Laufs) und, nach `dichtNach` Pässen mit ruhender Wahl, seine
 // Folge (dicht in Satz-Ordnung, exakt).
 AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, verschnitt: 0.25, dichtNach: 30 });
+// DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
+// `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
+// Abschnitte), mindestens vMin/iMin. Die Schwelle 1,5 liegt auf dem Wachs-Schritt der Vertices: nach einem Schrumpfen wächst
+// der Satz erst, wenn sein Inhalt um ein Viertel zunimmt, und schrumpft erst wieder, wenn er ein Drittel verliert. Wächst der
+// Inhalt während der Frist um mehr als `stetig` (10 %), beginnt sie neu — ein Satz, der füllt, schrumpft nie.
+AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, stetig: 1.1, vMin: 1024, iMin: 3072 });
 // DER BAU-SATZ (Welle 6, `_bauSatzArt`): die Studio-Arten (Rezept-`kind`), deren gesetzte Gestalt im Satz ihres Stoffs
 // zeichnet — je Art der Name des Satzes (die Täter-Klasse der Band-Linse, spec/profiband/haushalt.json: `bauSatz` →
 // bau, `formationenSatz` → formationen). Ein gesetzter Bau wandert nie (die Tür-Flügel reisen einzeln), und seine
