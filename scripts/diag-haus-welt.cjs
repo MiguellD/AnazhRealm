@@ -40,8 +40,9 @@ const MIME = {
 
 // DIE BASIS-ZEILEN je Defekt: [geheilte Form in anazhRealm.js, Basis-Form].
 const BASIS = {
-    // ohne die Studio-Hülle: der generische Parts-Pfad (haus_basis), wie vor der Welle
-    huelle: [["const hausBoxes = this._hausBlockerBoxen(entry);", "const hausBoxes = null;"]],
+    // ohne die Hülle des Gesetzbuchs: nur die Wände der Tür-Zeile (vier EG-Wände mit Tür-Lücke — die Basis-Blocker der
+    // Siedlungs-Häuser vor der Welle, hier schon gedreht), keine Böden, Tritte, Innenwände
+    huelle: [["if (hu && Array.isArray(hu.boxen)) {", "if (false) {"]],
     // die gedrehte Box als achsparallele Welt-AABB gelesen
     obb: [["        const ob = box.obb;\n        if (ob) {", "        const ob = null;\n        if (ob) {"]],
     // die Natur wirft in den Grundriss, und das Dorf räumt nicht
@@ -53,9 +54,10 @@ const BASIS = {
     streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],
     // die Streu-Zelle läuft an der Wand vorbei (der Neubau der Region)
     streuwand: [["const rec = this._naturSetzen(null, tf, null, () =>", "const rec = ((_a, _b, _c, f) => f())(null, tf, null, () =>"]],
-    // die Promotion läuft an der Wand vorbei (und die Region räumt nicht)
+    // die Promotion läuft an der Wand vorbei (und Region wie Neubau lassen die Zellen stehen — sonst erreicht keine den Ring)
     promotion: [
         ["this._streuZelleRaeumen(cell);", "void 0;"],
+        ["const rec = this._naturSetzen(null, tf, null, () =>", "const rec = ((_a, _b, _c, f) => f())(null, tf, null, () =>"],
         [
             "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this._naturSetzen(",
             "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this.spawnArchitecture(",
@@ -63,9 +65,20 @@ const BASIS = {
     ],
     // die Nah-Streu läuft an der Wand vorbei
     nahstreu: [["this._naturSetzen(null, it, null, () => items.push(it));", "items.push(it);"]],
+    // die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den Worker)
+    fernstufe: [
+        [
+            "/fachwerk-core.js",
+            "var huelle = gm.__solids && gm.__solids.length ? { stufe: stufe, boxen: gm.__solids } : null;",
+            "var hb = new THREE.Box3().setFromObject(g); var huelle = stufe === 0 ? { stufe: 0, boxen: gm.__solids } : { stufe: stufe, boxen: [hb.min.x, hb.min.y, hb.min.z, hb.max.x, hb.max.y, hb.max.z] };",
+        ],
+    ],
+    // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
+    kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
 let patch = null;
 let patchFehler = [];
+let patchAngewandt = new Set();
 
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
@@ -74,11 +87,17 @@ const server = http.createServer((req, res) => {
     if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
-        if (patch && p === "/anazhRealm.js") {
+        // eine Patch-Zeile [geheilt, basis] gilt anazhRealm.js, [datei, geheilt, basis] der genannten Datei (das Gesetzbuch
+        // reist über den Foundry-Worker: /fachwerk-core.js)
+        const meine = patch ? patch.map((z) => (z.length === 3 ? z : ["/anazhRealm.js", z[0], z[1]])).filter((z) => z[0] === p) : [];
+        if (meine.length) {
             let txt = data.toString("utf8");
-            for (const [geheilt, basis] of patch) {
-                if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
-                else txt = txt.replace(geheilt, basis);
+            for (const [, geheilt, basis] of meine) {
+                if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt in ${p} („${geheilt.slice(0, 70)}…")`);
+                else {
+                    txt = txt.replace(geheilt, basis);
+                    patchAngewandt.add(p + "|" + geheilt);
+                }
             }
             data = Buffer.from(txt, "utf8");
         }
@@ -193,6 +212,22 @@ async function proben() {
             if (Math.abs(d) < Math.abs(best)) best = d;
         }
         h.dieleCm = Number.isFinite(best) ? Math.round(best * 1000) / 10 : null;
+        // W4c DER GRUNDRISS DECKT DAS HAUS: die Solids des Gesetzbuchs liegen in der Fundament-Box des Eintrags (Mitte
+        // {ox,oz} + halbe Maße {ex,ez}, haus-lokal) — Podest, Natur-Wand und Räumen lesen sie
+        {
+            const f = e.fundament;
+            let ueber = 0;
+            for (const so of Hh.solids || []) {
+                ueber = Math.max(
+                    ueber,
+                    (f.ox || 0) - f.ex - so.min[0],
+                    so.max[0] - ((f.ox || 0) + f.ex),
+                    (f.oz || 0) - f.ez - so.min[2],
+                    so.max[2] - ((f.oz || 0) + f.ez)
+                );
+            }
+            h.grundrissUeberM = Math.round(ueber * 100) / 100;
+        }
         // W5 KOLLISION == OPTIK auf der Diele-Ebene: die Welt-Kapsel gegen die Gesetzbuch-Wand-Regel je Rasterpunkt
         {
             const STEP = A.PLAYER_STEP_UP;
@@ -252,7 +287,8 @@ async function proben() {
     const imGrundrissVon = (liste, x, z) => {
         for (const hs of liste) {
             const lx = lokal(hs, x, z);
-            if (Math.abs(lx.x) <= hs.fundament.ex && Math.abs(lx.z) <= hs.fundament.ez) return hs;
+            const f = hs.fundament;
+            if (Math.abs(lx.x - (f.ox || 0)) <= f.ex && Math.abs(lx.z - (f.oz || 0)) <= f.ez) return hs;
         }
         return null;
     };
@@ -319,12 +355,19 @@ async function proben() {
         await pumpe(10);
         o.w4b.neubau = streuImHaus(FH);
     }
-    // hinlaufen: der Spieler steht im Dorf, bis die Chunks um ihn stehen und die Promotion (3 je Takt) durch ist
-    stell(fx, (r.getTerrainHeightAt(fx, fz) || start.y) + 3, fz);
+    // hinlaufen: der Spieler steht in der Mitte der Häuser, bis die Chunks um ihn stehen und die Promotion (3 je Takt)
+    // durch ist (die Nah-Streu der Kamera reicht 24 m — die Mitte des Dorfs, nicht sein Anker)
+    let mx = 0;
+    let mz = 0;
+    for (const hs of FH) {
+        mx += hs.position.x / Math.max(1, FH.length);
+        mz += hs.position.z / Math.max(1, FH.length);
+    }
+    stell(mx, (r.getTerrainHeightAt(mx, mz) || start.y) + 3, mz);
     const span = r._voxelChunkConfig(0).span;
     for (let k = 0; k < 400; k++) {
         await pumpe(4);
-        const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(fx / span)},${Math.floor(fz / span)}`);
+        const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(mx / span)},${Math.floor(mz / span)}`);
         if (k > 60 && e && e.surfMap && !(s.pendingVegSpawns && s.pendingVegSpawns.length)) break;
     }
     await pumpe(120);
@@ -340,6 +383,139 @@ async function proben() {
                 if (imGrundrissVon(FH, it.x, it.z)) imHaus++;
             }
         o.w4b.kachel = { pflanzen: n, imHaus };
+    }
+    // W6 DER FRONTALE ANLAUF AUF DIE TÜR: je Kultur (Hof-Grundriss marokkanisch, viktorianisch mit Veranda, alemannisch)
+    // steht ein Haus mit Tür-Zeile und Fundament wie ein Siedlungs-Slot auf dem Hang, die Front bergauf (das Gelände der Welt
+    // ist bis 420 m nirgends eben; bergauf liegt das Podest vorn auf Gelände-Höhe — ein höheres Podest ist ohne Sprung nie
+    // betretbar, offen: Hang-Zugang). Der Spieler läuft 6 m vor der Front los, frontal durch die Tür bis 1,8 m dahinter
+    // (beim Hof-Haus durch das Tor, am Brunnen vorbei, über den Hof): (a) vor der ersten Studio-Stufe (im selben Takt wie
+    // der Spawn — die Foundry liefert erst im nächsten): die Kern-Hülle; (b) während die FERNSTUFE steht (der Spieler wartet
+    // 60 m bzw. 20 m vor der Mitte, bis die Foundry die Stufe 2 bzw. 1 liefert — der Sim-Schritt ruft keinen LOD-Takt, die
+    // Stufe bleibt im Anlauf). Soll: 1 m hinter der Schwelle.
+    o.w6 = [];
+    const KULT = ["marokkanisch", "viktorianisch", "alemannisch"];
+    const r0 = (x, z) => r.getTerrainHeightAt(x, z);
+    const orte = [];
+    for (const k of KULT) {
+        const w = { kultur: k };
+        o.w6.push(w);
+        const P = FC.hausParams(FC.PRESETS[k], null);
+        P.seed = 7;
+        const Hh = FC.HAUS(window.THREE, FC.mat, P);
+        Hh.build({ gelaende: false });
+        const dm = Hh.dims;
+        const tu = { x: dm.tuer.x, z: dm.tuer.z, w: dm.tuer.w, h: dm.tuer.h, y: dm.tuer.y, W: dm.W, D: dm.D };
+        // der Footprint aus den Solids des Gesetzbuchs (beim Hof-Haus reicht er 14 m vor den Ursprung): Mitte + halbe Maße
+        let x0 = Infinity;
+        let x1 = -Infinity;
+        let z0 = Infinity;
+        let z1 = -Infinity;
+        for (const so of Hh.solids) {
+            x0 = Math.min(x0, so.min[0]);
+            x1 = Math.max(x1, so.max[0]);
+            z0 = Math.min(z0, so.min[2]);
+            z1 = Math.max(z1, so.max[2]);
+        }
+        const fu = { ex: (x1 - x0) / 2, ez: (z1 - z0) / 2, ox: (x0 + x1) / 2, oz: (z0 + z1) / 2 };
+        // der Ort: trocken, der Footprint trägt höchstens 4 m Höhenunterschied; die Gier dreht die Front bergauf
+        let ort = null;
+        for (let d = 70; d <= 520 && !ort; d += 10)
+            for (let a = 0; a < 48 && !ort; a++) {
+                const cx = start.x + Math.cos((a / 48) * Math.PI * 2) * d;
+                const cz = start.z + Math.sin((a / 48) * Math.PI * 2) * d;
+                if (orte.some((q) => Math.hypot(q.x - cx, q.z - cz) < 70)) continue;
+                if (Math.hypot(cx - fx, cz - fz) < 120 || Math.hypot(cx - (start.x + 40), cz - (start.z + 40)) < 90) continue;
+                if (!r._isAboveWaterAt(cx, cz, 0.5)) continue;
+                const gx = (r0(cx + 4, cz) - r0(cx - 4, cz)) / 8;
+                const gz = (r0(cx, cz + 4) - r0(cx, cz - 4)) / 8;
+                if (!Number.isFinite(gx) || !Number.isFinite(gz) || Math.hypot(gx, gz) < 0.02) continue;
+                const gier = Math.atan2(-gx, -gz); // haus-lokal −z (die Front) = Welt (−sin, −cos) = bergauf
+                const c = Math.cos(gier);
+                const sn = Math.sin(gier);
+                let lo = Infinity;
+                let hi = -Infinity;
+                for (let lx = x0; lx <= x1 + 0.01; lx += Math.max(1, (x1 - x0) / 6))
+                    for (let lz = z0; lz <= z1 + 0.01; lz += Math.max(1, (z1 - z0) / 8)) {
+                        const h = r0(cx + lx * c + lz * sn, cz - lx * sn + lz * c);
+                        lo = Math.min(lo, h);
+                        hi = Math.max(hi, h);
+                    }
+                // die Front bergauf: die Vorderkante trägt den höchsten Punkt (das Podest liegt vorn auf Gelände-Höhe); kein
+                // Buckel im Footprint über den Ecken (der Slot setzt das Haus auf die höchste Ecke — ein Buckel stünde im Haus)
+                const vorn = r0(cx + fu.ox * c + (z0 - 0.5) * sn, cz - fu.ox * sn + (z0 - 0.5) * c);
+                let ecken = -Infinity;
+                for (const [lx, lz] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1], [fu.ox, fu.oz]])
+                    ecken = Math.max(ecken, r0(cx + lx * c + lz * sn, cz - lx * sn + lz * c));
+                if (Number.isFinite(hi) && hi - lo <= 5 && hi <= ecken + 0.1 && Number.isFinite(vorn) && vorn >= hi - 0.6)
+                    ort = { x: cx, z: cz, hMax: hi, gier };
+            }
+        if (!ort) {
+            w.fehler = "kein Ort";
+            continue;
+        }
+        orte.push(ort);
+        const huelleVon = (e) => (e._hausHuelle ? e._hausHuelle.boxen.length / 6 : 0);
+        // der Weg (haus-lokal): frontal auf die Tür; beim Hof-Haus durch das Tor, rechts am Brunnen vorbei (das Gesetz des
+        // Hofs: zC = Front − Hof-Tiefe, Torriegel 2,8 m, Brunnen mittig im Hof)
+        const wegpunkte = [];
+        if (dm.grundriss === "hof" || Hh.grundriss === "hof") {
+            const zF = tu.z;
+            const zC = zF - Math.max(5, Math.min(9, tu.W));
+            const wz = (zF + zC + 2.8) / 2;
+            wegpunkte.push([0, zC - 0.6], [0, zC + 2.8 + 0.4], [1.5, wz], [0, zF - 0.7]);
+        }
+        wegpunkte.push([tu.x, tu.z + 1.8]);
+        const anlauf = (e) => {
+            const vor = welt(e, tu.x, z0 - 6);
+            stell(vor.x, (r0(vor.x, vor.z) || e.position.y) + 1.0, vor.z);
+            for (const [lx, lz] of wegpunkte) {
+                const q = welt(e, lx, lz);
+                geh(500, q.x, q.z);
+            }
+            const l = lokal(e, pm.position.x, pm.position.z);
+            w.endeLokal = [Math.round(l.x * 100) / 100, Math.round((pm.position.y - A.PLAYER_FOOT_OFFSET - (e.position.y - 0.5)) * 100) / 100];
+            return Math.round((l.z - tu.z) * 100) / 100;
+        };
+        // (a) die Kern-Hülle: der Slot geht den Weg jedes Siedlungs-Hauses (`_spawnSettlementSlot`: Ecken, Podest, Grundriss
+        // räumt) — Spawn und Anlauf im selben Takt
+        const c = Math.cos(ort.gier);
+        const sn = Math.sin(ort.gier);
+        const slot = {
+            kultur: k,
+            x: ort.x,
+            z: ort.z,
+            phi: ort.gier,
+            seed: 7,
+            tuer: tu,
+            obb: { cx: ort.x + fu.ox * c + fu.oz * sn, cz: ort.z - fu.ox * sn + fu.oz * c, phi: ort.gier, ex: fu.ex, ez: fu.ez },
+        };
+        const vorSlot = new Set(s.architectures);
+        r._spawnSettlementSlot(slot, { x: 0, z: 0 }, r._foundry);
+        const e = s.architectures.find((q) => !vorSlot.has(q) && q.type === "haus_" + k);
+        if (!e) {
+            w.fehler = "Slot fiel";
+            continue;
+        }
+        // der Anlauf-Korridor (2 m breit, 6 m vor der Front bis zur Front) ist frei: die Natur darin räumt die Linse wie
+        // einen Weg (ein Baum im Weg ist kein Haus-Befund)
+        for (const q of s.architectures.slice()) {
+            if (q === e || !istNatur(q)) continue;
+            const lq = lokal(e, q.position.x, q.position.z);
+            if (Math.abs(lq.x - tu.x) <= 2 && lq.z >= z0 - 7 && lq.z <= z0) r.removeArchitecture(q);
+        }
+        w.gierGrad = Math.round((ort.gier * 180) / Math.PI);
+        w.kernBoxen = e.blockerAABBs ? e.blockerAABBs.length : 0;
+        w.kernHuelle = huelleVon(e);
+        w.kernDrinM = anlauf(e);
+        // (b) die Fernstufen: der Spieler wartet 60 m (Stufe 2) bzw. 20 m (Stufe 1) vor der Mitte, bis die Foundry liefert
+        w.fern = [];
+        for (const abstand of [60, 20]) {
+            const weg = welt(e, fu.ox, fu.oz - abstand);
+            stell(weg.x, (r0(weg.x, weg.z) || e.position.y) + 3, weg.z);
+            const soll = abstand > 40 ? 2 : 1;
+            for (let q = 0; q < 60 && !(e._hausHuelle && e._servedLod === soll); q++) await pumpe(10);
+            w.fern.push({ stufe: e._servedLod, huelle: huelleVon(e), drinM: anlauf(e) });
+        }
     }
     pm.position.set(start.x, start.y, start.z);
     return o;
@@ -364,6 +540,19 @@ function urteil(o) {
     if (unten.length) f.push(`W3 Treppe: ${mitTreppe.length - unten.length} von ${mitTreppe.length} Läufen tragen ins OG (${unten.map((h) => h.typ + ":" + h.treppeSteigM + "/" + h.treppeSollM).join(" ")})`);
     const optik = hs.filter((h) => !(h.optikProzent >= 97));
     if (optik.length) f.push(`W5 Kollision == Optik: ${optik.length} Häuser unter 97 % (${optik.map((h) => h.typ + "@" + h.gierGrad + "°:" + h.optikProzent + " %").join(" ")})`);
+    const w6 = (o.w6 || []).filter((w) => !w.fehler);
+    if (w6.length < 3) f.push(`W6 Aufbau: ${w6.length} von 3 Häusern (${(o.w6 || []).map((w) => w.kultur + ":" + (w.fehler || "ok")).join(" ")})`);
+    if (!w6.some((w) => w.kernHuelle === 0)) f.push("W6 Aufbau: kein Haus vor der ersten Studio-Stufe angelaufen");
+    const kernZu = w6.filter((w) => w.kernHuelle === 0 && !(w.kernDrinM >= 1));
+    if (kernZu.length) f.push(`W6 Kern-Hülle: vor der ersten Stufe ${kernZu.map((w) => w.kultur + " " + w.kernDrinM + " m").join(", ")} vor bzw. hinter der Schwelle (Soll ≥ 1)`);
+    const fernAlle = [];
+    for (const w of w6) for (const fz of w.fern || []) fernAlle.push(Object.assign({ kultur: w.kultur }, fz));
+    const stufen = new Set(fernAlle.filter((fz) => fz.stufe >= 1 && fz.huelle > 0).map((fz) => fz.stufe));
+    if (!stufen.has(1) || !stufen.has(2)) f.push(`W6 Aufbau: Fernstufen mit Hülle angelaufen: ${[...stufen].join("/") || "keine"} (Soll 1 und 2)`);
+    const fernZu = fernAlle.filter((fz) => fz.stufe >= 1 && fz.huelle > 0 && !(fz.drinM >= 1));
+    if (fernZu.length) f.push(`W6 Fernstufe: frontal ${fernZu.map((fz) => fz.kultur + "@L" + fz.stufe + " " + fz.drinM + " m").join(", ")} hinter der Schwelle (Soll ≥ 1)`);
+    const ueber = hs.filter((h) => !(h.grundrissUeberM <= 0.05));
+    if (ueber.length) f.push(`W4c Grundriss deckt das Haus nicht: ${ueber.map((h) => h.typ + " " + h.grundrissUeberM + " m").join(" ")} (die Solids ragen aus der Fundament-Box)`);
     if (o.w4 && o.w4.imHaus) f.push(`W4 Grundriss: ${o.w4.imHaus} Natur-Einträge im Grundriss eines Hauses (${o.w4.taeter.join(" ")})`);
     if (!o.w4b || !(o.w4b.haeuser >= 8)) f.push(`W4b Aufbau: ${o.w4b ? o.w4b.haeuser : "?"} Häuser im fernen Dorf (Soll ≥ 8)`);
     else {
@@ -372,8 +561,8 @@ function urteil(o) {
         if (!o.w4b.neubau || !(o.w4b.neubau.zellen >= 50)) f.push(`W4b Aufbau: die Region baute ${o.w4b.neubau ? o.w4b.neubau.zellen : "?"} Zellen neu (Soll ≥ 50)`);
         else if (o.w4b.neubau.imHaus) f.push(`W4b Neubau: ${o.w4b.neubau.imHaus} Streu-Zellen der neu gebauten Region in den Häusern (${JSON.stringify(o.w4b.neubau.je)})`);
         if (o.w4b.kachel && o.w4b.kachel.imHaus) f.push(`W4b Nah-Streu: ${o.w4b.kachel.imHaus} von ${o.w4b.kachel.pflanzen} Kachel-Pflanzen im Grundriss`);
-        if (o.w4b.nah.imHaus || o.w4b.nahStreu.imHaus)
-            f.push(`W4b Promotion: nach dem Hinlaufen ${o.w4b.nah.imHaus} Natur-Einträge und ${o.w4b.nahStreu.imHaus} Streu-Zellen im Grundriss (${o.w4b.nah.taeter.join(" ")})`);
+        if (o.w4b.nah.imHaus) f.push(`W4b Promotion: nach dem Hinlaufen ${o.w4b.nah.imHaus} Natur-Einträge im Grundriss (${o.w4b.nah.taeter.join(" ")})`);
+        if (o.w4b.nahStreu.imHaus) f.push(`W4b Rest-Streu: nach dem Hinlaufen ${o.w4b.nahStreu.imHaus} Streu-Zellen im Grundriss (${JSON.stringify(o.w4b.nahStreu.je)})`);
     }
     return f;
 }
@@ -384,9 +573,10 @@ function zeile(o) {
     return (
         `${hs.length} Häuser (${hs.map((h) => h.gierGrad + "°").join(" ")}) · W1 Tür ${hs.filter((h) => h.tuerDrinM >= 1).length}/${hs.length}` +
         ` · W2 Diele ${hs.map((h) => h.dieleCm).join("/")} cm · W3 Treppe ${hs.filter((h) => Number.isFinite(h.treppeSollM)).map((h) => h.treppeSteigM + "/" + h.treppeSollM).join(" ")} m` +
-        ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"}` +
+        ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
         ` · W4b fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
-        ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %`
+        ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
+        ` · W6 Tür frontal ${(o.w6 || []).map((w) => w.kultur + (w.fehler ? ":" + w.fehler : " Kern " + w.kernDrinM + " m (" + w.kernBoxen + " Boxen) / " + (w.fern || []).map((fz) => "L" + fz.stufe + " " + fz.drinM + " m").join(" / "))).join(" · ")}`
     );
 }
 
@@ -398,6 +588,7 @@ function zeile(o) {
         const lauf = async (inj) => {
             patch = inj && BASIS[inj] ? BASIS[inj] : null;
             patchFehler = [];
+            patchAngewandt = new Set();
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
@@ -432,6 +623,10 @@ function zeile(o) {
             });
             const o = await page.evaluate(proben);
             await kontext.close();
+            for (const z of patch || []) {
+                const [d, g] = z.length === 3 ? z : ["/anazhRealm.js", z[0]];
+                if (!patchAngewandt.has(d + "|" + g)) patchFehler.push(`nie angewandt: ${d} („${g.slice(0, 60)}…")`);
+            }
             patch = null;
             return { o, errs, pf: patchFehler.slice() };
         };
@@ -444,6 +639,8 @@ function zeile(o) {
                 streuwand: ["W4b Neubau"],
                 promotion: ["W4b Promotion"],
                 nahstreu: ["W4b Nah-Streu"],
+                fernstufe: ["W6 Fernstufe"],
+                kern: ["W6 Kern-Hülle"],
             };
             for (const inj of Object.keys(soll)) {
                 const { o, pf } = await lauf(inj);

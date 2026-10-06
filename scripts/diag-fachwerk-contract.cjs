@@ -266,13 +266,49 @@ function compare(golden, actual) {
 
     // 1) Alle Fälle bauen + fingerprinten.
     const actual = {};
+    const huellen = {}; // DIE HÜLLE DES GESETZBUCHS je Fall (Beipack __huelle, Welle L)
     const t0 = Date.now();
     for (const c of CASES) {
         const g = buildCase(c);
         actual[caseKey(c)] = fingerprint(g);
+        const hu = g.userData && g.userData.__huelle;
+        huellen[caseKey(c)] = hu && Array.isArray(hu.boxen) ? hu.boxen : null;
         disposeGroup(g);
     }
     console.log(`      ↳ ${CASES.length} Fälle gebaut in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+
+    // 1b) KOLLISION == OPTIK IN JEDER FERNE (Welle L): jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
+    //     kollidiert nie mit einer Stufen-Bounding-Box (die L1-Box des Hof-Hauses lag 8,2 m vor seinen Solids, die Tür war
+    //     von vorn unerreichbar). Selbsttest: eine Stufe mit ihrer Bounding-Box statt der Solids muss rot werden.
+    const huellenBruch = (H) => {
+        const bruch = [];
+        for (const k of KULTUREN)
+            for (const s of SEEDS) {
+                const h0 = H[`${k}-s${s}-L0`];
+                if (!h0 || h0.length < 6) {
+                    bruch.push(`${k}/${s}: L0 ohne Solids`);
+                    continue;
+                }
+                const z0 = h0.join(",");
+                for (const l of LODS)
+                    if (l !== 0 && (!H[`${k}-s${s}-L${l}`] || H[`${k}-s${s}-L${l}`].join(",") !== z0)) bruch.push(`${k}/${s}/L${l}`);
+            }
+        return bruch;
+    };
+    const hb = huellenBruch(huellen);
+    check("Hülle des Gesetzbuchs: jede Stufe trägt die Solids der Stufe 0 byte-gleich (32 Kulturen × 2 Samen)", hb.length === 0, hb.slice(0, 4).join(" "));
+    {
+        const korrupt = Object.assign({}, huellen);
+        korrupt["alemannisch-s7-L1"] = [-4, 0, -5, 4, 9, 5]; // die Stufen-Bounding-Box statt der Solids
+        check("SELBST-TEST: eine Stufe mit ihrer Bounding-Box statt der Solids wird rot", huellenBruch(korrupt).length === 1);
+    }
+    {
+        // die Hofmauer trägt Solids: das Hof-Haus reicht in seinen Solids bis vor das Tor (z < −13 m, vorher −5,65 m)
+        const hm = huellen["marokkanisch-s7-L0"] || [];
+        let zMin = Infinity;
+        for (let i = 2; i < hm.length; i += 6) zMin = Math.min(zMin, hm[i]);
+        check("Hofmauer-Solids: marokkanisch (Hof-Grundriss) trägt seine Hofmauer bis z = " + zMin.toFixed(2) + " m", zMin < -13);
+    }
 
     // 2) Determinismus: Stichproben-Fälle bauen doppelt byte-gleich (jede Stufe vertreten).
     let determin = true;

@@ -402,9 +402,14 @@ const FIXTURES = [
                 const ry = s.phi || 0;
                 const rc = Math.cos(ry);
                 const rs = Math.sin(ry);
+                // die Ecken um die obb-MITTE (Welle L: sie liegt bis 1,8 m neben dem Haus-Ursprung, das Hof-Haus 4 m)
+                const dxw = Number.isFinite(obb.cx) ? obb.cx - s.x : 0;
+                const dzw = Number.isFinite(obb.cz) ? obb.cz - s.z : 0;
+                const ox = dxw * rc - dzw * rs;
+                const oz = dxw * rs + dzw * rc;
                 for (let k = 0; k < 4; k++) {
-                    const lx = k & 1 ? obb.ex : -obb.ex;
-                    const lz = k & 2 ? obb.ez : -obb.ez;
+                    const lx = ox + (k & 1 ? obb.ex : -obb.ex);
+                    const lz = oz + (k & 2 ? obb.ez : -obb.ez);
                     const h = r.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
                     if (Number.isFinite(h)) {
                         hMin = Math.min(hMin, h);

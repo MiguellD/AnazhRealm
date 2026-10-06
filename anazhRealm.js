@@ -31617,8 +31617,8 @@ class AnazhRealm {
             this._blockerStampReach(entry);
             return;
         }
-        // HAUS (Welle L, Kollision == Optik): die Hülle der gezeichneten Stufe aus dem Gesetzbuch (`_hausHuelleSetzen`),
-        // gedreht wie das Haus (OBB); bis das Studio liefert, die geschlossene Kern-Hülle aus der Tür-Zeile. Vorher
+        // HAUS (Welle L, Kollision == Optik): die Solids des Gesetzbuchs, die JEDE Studio-Stufe trägt (`_hausHuelleSetzen`),
+        // gedreht wie das Haus (OBB); bis die erste Stufe liefert, die Kern-Hülle aus der Tür-Zeile mit Tür-Lücke. Vorher
         // vier EG-Riegel als achsparallele Welt-AABB: gedrehte Häuser 18–35 % begehbar, Kletterwand statt Treppe, der Fuß
         // 0,50 m unter der Diele (Leben-Prüfung N-D2 bis N-D4), das Solo-Haus stieß an `haus_basis` (3,09 m in der Wand).
         const hausBoxes = this._hausBlockerBoxen(entry);
@@ -31680,21 +31680,26 @@ class AnazhRealm {
         this._blockerStampReach(entry);
     }
 
-    // Die Hülle einer Stufe am Eintrag (Beipack `__huelle` des fachwerk-Asset, haus-lokal `[x0,y0,z0,x1,y1,z1]…`): die Stufe
-    // 0 trägt die Solids des Gesetzbuchs, die fernen Stufen ihre Außen-Box. Ein Wechsel schreibt die Blocker neu.
+    // Die Hülle am Eintrag (Beipack `__huelle` des fachwerk-Asset, haus-lokal `[x0,y0,z0,x1,y1,z1]…`): JEDE Stufe trägt die
+    // Solids des Gesetzbuchs (die der Stufe 0) — die Welt kollidiert in jeder Ferne, wie das Haus nah gezeichnet ist. Vorher
+    // trug die Fernstufe ihre Bounding-Box: beim Hof-Haus 8,2 m vor den Solids, die Tür von vorn unerreichbar (die Stufe 0
+    // kommt erst unter 8,6 m Mittelabstand). Ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
     _hausHuelleSetzen(entry, huelle) {
         if (!entry || !huelle || !Array.isArray(huelle.boxen) || huelle.boxen.length < 6) return;
-        if (entry._hausHuelle === huelle) return;
-        const pr = typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry(entry) : null;
-        const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
+        const alt = entry._hausHuelle;
+        if (alt === huelle) return;
         entry._hausHuelle = huelle;
+        const b = huelle.boxen;
+        if (alt && alt.boxen.length === b.length && alt.boxen.every((v, i) => v === b[i])) return;
+        const pr = this._foundryPresetForEntry(entry);
+        const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
-    // Gesetz) mit ihrer Welt-AABB als Vorfilter; ohne Studio-Hülle die geschlossene Kern-Hülle aus der Tür-Zeile (W × D,
-    // EG-Höhe). null: kein Haus.
+    // Gesetz) mit ihrer Welt-AABB als Vorfilter; ohne Studio-Hülle die Kern-Hülle aus der Tür-Zeile (`_hausKernHuelle`).
+    // null: kein Haus.
     _hausBlockerBoxen(entry) {
         const hu = entry && entry._hausHuelle;
         const t = entry && entry.tuer;
@@ -31704,7 +31709,7 @@ class AnazhRealm {
             boxen = hu.boxen;
             k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
         } else if (t && Number.isFinite(t.W) && Number.isFinite(t.D) && t.W > 1.5 && t.D > 1.5) {
-            boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];
+            boxen = this._hausKernHuelle(t);
         } else return null;
         const out = [];
         for (let i = 0; i + 5 < boxen.length; i += 6) {
@@ -31721,6 +31726,37 @@ class AnazhRealm {
             if (b) out.push(b);
         }
         return out.length ? out : null;
+    }
+
+    // DIE KERN-HÜLLE vor der ersten Studio-Stufe: die Tür-Zeile des Gesetzbuchs (Export: Tür-Rechteck, Kern-W/D, Hintertür)
+    // — vier EG-Wände mit Haus- und Hintertür-Lücke, Sturz darüber, und die Diele als Sockel bis zur Schwelle; haus-lokal
+    // [x0,y0,z0,x1,y1,z1]…. Vorher eine geschlossene Box W × D (die Tür zu, bis das Studio lieferte).
+    _hausKernHuelle(t) {
+        const H = 3.1;
+        const dick = 0.35;
+        const W2 = t.W / 2;
+        const D2 = t.D / 2;
+        const out = [];
+        const box = (x0, y0, z0, x1, y1, z1) => {
+            if (x1 - x0 > 0.05 && y1 - y0 > 0.05 && z1 - z0 > 0.02) out.push(x0, y0, z0, x1, y1, z1);
+        };
+        if (Number.isFinite(t.y) && t.y > 0.05) box(-W2, 0, -D2, W2, t.y, D2); // die Diele bis zur Schwelle
+        const wandX = (zF, l) => {
+            const z0 = zF - dick / 2;
+            const z1 = zF + dick / 2;
+            if (!l) return box(-W2, 0, z0, W2, H, z1);
+            const g0 = Math.max(-W2, l.x - l.w / 2 - 0.15);
+            const g1 = Math.min(W2, l.x + l.w / 2 + 0.15);
+            box(-W2, 0, z0, g0, H, z1);
+            box(g1, 0, z0, W2, H, z1);
+            box(g0, (Number.isFinite(l.y) ? l.y : 0.55) + (Number.isFinite(l.h) ? l.h : 2.05) + 0.1, z0, g1, H, z1);
+        };
+        wandX(t.z, Number.isFinite(t.x) && Number.isFinite(t.w) ? t : null); // die Front mit der Haustür
+        const hi = t.hinten;
+        wandX(-t.z, hi && Number.isFinite(hi.x) && Number.isFinite(hi.w) ? { x: hi.x, w: hi.w, y: t.y, h: t.h } : null);
+        box(-W2 - dick / 2, 0, -D2, -W2 + dick / 2, H, D2);
+        box(W2 - dick / 2, 0, -D2, W2 + dick / 2, H, D2);
+        return out;
     }
 
     // Eine haus-lokale Box → die GEDREHTE Blocker-Box der Welt: T(x, y−0,5, z) · R_y(rotationY) · S(scale·k) — dieselbe
@@ -31752,18 +31788,20 @@ class AnazhRealm {
         };
     }
 
-    // Die EINE Fundament-Geometrie (Blocker UND Render-Podest): aus entry.fundament {ex,ez} + LIVE-
-    // Terrain-Ecken. null ohne fundament-Feld oder auf ebenem Land (Podest < 0.25 m). Tiefe stets aus
-    // dem Dichte-Feld, nie persistiert (deterministisch).
+    // Die EINE Fundament-Geometrie (Blocker UND Render-Podest): aus entry.fundament {ex,ez} um seine Mitte
+    // {ox,oz} (haus-lokal) + LIVE-Terrain-Ecken. null ohne fundament-Feld oder auf ebenem Land (Podest < 0.25 m).
+    // Tiefe stets aus dem Dichte-Feld, nie persistiert (deterministisch).
     _archFundamentBox(entry) {
         const f = entry && entry.fundament;
         if (!f || !Number.isFinite(f.ex) || !Number.isFinite(f.ez)) return null;
         if (typeof this.getTerrainHeightAt !== "function") return null;
-        const ox = entry.position.x || 0;
-        const oz = entry.position.z || 0;
         const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
         const rc = Math.cos(ry);
         const rs = Math.sin(ry);
+        const lox = Number.isFinite(f.ox) ? f.ox : 0;
+        const loz = Number.isFinite(f.oz) ? f.oz : 0;
+        const ox = (entry.position.x || 0) + lox * rc + loz * rs;
+        const oz = (entry.position.z || 0) - lox * rs + loz * rc;
         // Marge 0.35 m: der Sockel steht sichtbar unter der Schwelle hervor
         // (Sockel-Look) und deckt die Fachwerk-Traufkante.
         const ex = f.ex + 0.35;
@@ -31788,8 +31826,8 @@ class AnazhRealm {
         const top = (Number.isFinite(entry.position.y) ? entry.position.y : 0) - 0.45;
         const bot = hMin - 0.6;
         if (!(top - bot > 0.25)) return null; // eben → kein Podest
-        // AABB-Felder = Blocker-Leser (konservativ, rotations-überdeckt);
-        // ex/ez/ry/x/z = Render-Leser (das GEDREHTE dichte Podest).
+        // AABB-Felder = Vorfilter und Zellen-Stempel (konservativ, rotations-überdeckt);
+        // ex/ez/ry/x/z = Render-Leser (das GEDREHTE dichte Podest), obb = Kapsel und Strahl.
         return {
             minX: ox - halfX,
             maxX: ox + halfX,
@@ -31802,6 +31840,10 @@ class AnazhRealm {
             ry,
             x: ox,
             z: oz,
+            // DIE GEDREHTE BOX (Welle L, Kollision == Optik): Kapsel und Strahl lösen im Rahmen des gezeichneten Podests
+            // (`_resolveCapsuleVsAABB`, `_segmentAABB`) — die Welt-AABB bleibt ihr Vorfilter und der Stempel der Zellen.
+            // Vorher trug die rotations-überdeckende AABB die Ecken eines gedrehten Hauses als Podest in der Luft.
+            obb: { cx: ox, cz: oz, c: rc, s: rs, hx: ex, hz: ez },
         };
     }
 
@@ -38165,7 +38207,12 @@ class AnazhRealm {
                 // DORF-IN-TERRAIN — der Fundament-Footprint überlebt den Reload (das
                 // Podest + die Blocker-Wahrheit leiten die Tiefe live aus dem Feld ab).
                 ...(a.fundament && Number.isFinite(a.fundament.ex)
-                    ? { fundament: { ex: a.fundament.ex, ez: a.fundament.ez } }
+                    ? {
+                          fundament: Object.assign(
+                              { ex: a.fundament.ex, ez: a.fundament.ez },
+                              a.fundament.ox || a.fundament.oz ? { ox: a.fundament.ox, oz: a.fundament.oz } : {}
+                          ),
+                      }
                     : {}),
                 // DORF-ERLEBNIS — die Tür-Zeile überlebt den Reload (die Blocker-
                 // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
@@ -66804,13 +66851,20 @@ class AnazhRealm {
             }
         }
         // DORF-IN-TERRAIN — der Fundament-Footprint reist am Eintrag (Snapshot + Restore):
-        // nur die halben Ausdehnungen {ex,ez} (klein, geklemmt); die Podest-TIEFE leitet
-        // der Konsument LIVE aus dem Dichte-Feld ab (deterministisch, nie persistiert).
+        // die halben Ausdehnungen {ex,ez} und der Versatz seiner Mitte zum Haus-Ursprung {ox,oz}
+        // (haus-lokal, Welle L — das Hof-Haus reicht 4 m vor seinen Ursprung; ein älterer Stand ohne
+        // Versatz liegt mittig), klein und geklemmt; die Podest-TIEFE leitet der Konsument LIVE aus
+        // dem Dichte-Feld ab (deterministisch, nie persistiert).
         if (opts.fundament && Number.isFinite(opts.fundament.ex) && Number.isFinite(opts.fundament.ez)) {
             entry.fundament = {
                 ex: Math.max(0.5, Math.min(24, +opts.fundament.ex)),
                 ez: Math.max(0.5, Math.min(24, +opts.fundament.ez)),
             };
+            const fo = opts.fundament;
+            if (Number.isFinite(fo.ox) && Number.isFinite(fo.oz) && (fo.ox || fo.oz)) {
+                entry.fundament.ox = Math.max(-24, Math.min(24, +fo.ox));
+                entry.fundament.oz = Math.max(-24, Math.min(24, +fo.oz));
+            }
         }
         // TÜR-ZEILE des Settlement-Exports am Eintrag (Snapshot + Restore): Tür-Rect + Kern-Footprint W/D,
         // haus-lokal. Konsumenten: `_hausBlockerBoxen` (die Kern-Hülle, bis das Studio die Hülle der Stufe liefert) +
@@ -68634,9 +68688,16 @@ class AnazhRealm {
             const ry = slot.phi || 0;
             const rc = Math.cos(ry);
             const rs = Math.sin(ry);
+            // DIE MITTE DES FOOTPRINTS (Welle L): die obb-Mitte (Siedlungs-Rahmen wie slot.x/z) liegt bis 1,8 m neben dem
+            // Haus-Ursprung (das Hof-Haus 4 m) — haus-lokal als Versatz {ox,oz}; Ecken, Podest und Grundriss liegen um IHN.
+            // Vorher um den Ursprung: das Podest ragte hinter dem Haus hervor, der Hof vorn stand ohne Grundriss.
+            const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
+            const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
+            const ox = dxw * rc - dzw * rs;
+            const oz = dxw * rs + dzw * rc;
             for (let k = 0; k < 4; k++) {
-                const lx = k & 1 ? obb.ex : -obb.ex;
-                const lz = k & 2 ? obb.ez : -obb.ez;
+                const lx = ox + (k & 1 ? obb.ex : -obb.ex);
+                const lz = oz + (k & 2 ? obb.ez : -obb.ez);
                 const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
                 if (Number.isFinite(h)) {
                     if (h > hMax) hMax = h;
@@ -68646,7 +68707,7 @@ class AnazhRealm {
             // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Slot.
             const S = AnazhRealm._siedlungGesetz();
             if (!S || hMax - hMin > S.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
-            fundament = { ex: obb.ex, ez: obb.ez };
+            fundament = { ex: obb.ex, ez: obb.ez, ox, oz };
         }
         const wy = hMax + 0.5;
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
@@ -73640,10 +73701,10 @@ class AnazhRealm {
         return setzen ? setzen() : this.spawnArchitecture(name, position, opts);
     }
 
-    // Liegt (x, z) im Grundriss eines Hauses? Die Häuser einer Siedlung tragen ihren Footprint (`fundament` {ex, ez} aus
-    // dem Export-obb, sonst die Tür-Zeile W/D) und ihre Gier; der Grundriss ist diese gedrehte Box plus `rand` (der
-    // Stamm, die Traufe). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) entsteht faul aus den Einträgen
-    // und fällt bei jedem Haus-Spawn/-Abriss.
+    // Liegt (x, z) im Grundriss eines Hauses? Die Häuser einer Siedlung tragen ihren Footprint (`fundament` {ex, ez} um
+    // seine Mitte {ox, oz} aus dem Export-obb, sonst die Tür-Zeile W/D) und ihre Gier; der Grundriss ist diese gedrehte Box
+    // plus `rand` (der Stamm, die Traufe). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) entsteht faul
+    // aus den Einträgen und fällt bei jedem Haus-Spawn/-Abriss.
     _imGrundriss(x, z, rand = 0.8) {
         const G = 32;
         const schluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
@@ -73653,7 +73714,7 @@ class AnazhRealm {
             for (const e of this.state.architectures || []) {
                 const fp = this._grundrissVon(e);
                 if (!fp) continue;
-                const r = Math.hypot(fp.ex, fp.ez) + 2;
+                const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
                 for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
                     for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
                         const k = schluessel(gx, gz);
@@ -73674,7 +73735,11 @@ class AnazhRealm {
             const sn = Math.sin(ry);
             const dx = x - e.position.x;
             const dz = z - e.position.z;
-            if (Math.abs(dx * c - dz * sn) <= fp.ex + rand && Math.abs(dx * sn + dz * c) <= fp.ez + rand) return true;
+            if (
+                Math.abs(dx * c - dz * sn - fp.ox) <= fp.ex + rand &&
+                Math.abs(dx * sn + dz * c - fp.oz) <= fp.ez + rand
+            )
+                return true;
         }
         return false;
     }
@@ -73692,13 +73757,14 @@ class AnazhRealm {
         return !!(pr && Object.prototype.hasOwnProperty.call(tab, pr));
     }
 
-    // Der Footprint eines Hauses (halbe Maße haus-lokal) — null für alles andere.
+    // Der Footprint eines Hauses (halbe Maße und Mitte, haus-lokal) — null für alles andere.
     _grundrissVon(e) {
         if (!e || !e.position) return null;
-        if (e.fundament && Number.isFinite(e.fundament.ex) && Number.isFinite(e.fundament.ez))
-            return { ex: e.fundament.ex, ez: e.fundament.ez };
+        const f = e.fundament;
+        if (f && Number.isFinite(f.ex) && Number.isFinite(f.ez))
+            return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
         const t = e.tuer;
-        if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2 };
+        if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
         return null;
     }
 
@@ -73713,7 +73779,7 @@ class AnazhRealm {
         this._grundrissGitter = null;
         const hx = haus.position.x;
         const hz = haus.position.z;
-        const r = fp.ex + fp.ez + 3;
+        const r = fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3;
         const weg = [];
         for (const e of this.state.architectures || []) {
             if (e === haus || !e.position) continue;
