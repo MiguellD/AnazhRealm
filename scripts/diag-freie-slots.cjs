@@ -15,6 +15,11 @@
 //      ihr Slot nennt ihn als Eigentümer (der Umzug trug die richtige Instanz)
 //   F  Fundament-Pool: count == Zahl der Sockel, Rückverweis Slot ↔ Eintrag geschlossen
 //   S  Nah-Streu · Nah-Wiese · Zaun: keine Null-3×3 in [0, count), Σ Blöcke == Anzahl, leer ⇒ unsichtbar
+//   W  Nah-Wiese (Welle 6): ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
+//      nie, die Senken stünden leer und S prüfte nichts. Die Linse legt den Satz nach jedem Umzug SELBST
+//      (scripts/lib/wiese-sicht.cjs: Linsen-Kamera am Ring-Mittelpunkt, Blick auf den nächsten Büschel) und verlangt:
+//      der Ring trägt Büschel, JEDE Senke anzahl > 0, jede gelegte Instanz steht im Ring um das Auge
+//      (der Selbsttest blickt in den Himmel — leere Senken — und nullt eine gelegte Instanz: beides rot und genannt)
 // Jeder Befund trägt seinen NAMEN: Senke · Pass (haupt = Kamera-Layer, schatten = k0/k1 über castShadow; eine unsichtbare
 // Senke betritt keinen Pass) · Dreiecke.
 //   Q  Quelle (kommentar-frei): `count` einer Instanz-Senke schreibt nur `_instanzZahl`; die Free-Liste und der
@@ -29,6 +34,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
 const PORT = Number(process.env.FREIE_SLOTS_PORT || 4527);
 const root = path.resolve(__dirname, "..");
@@ -87,6 +93,7 @@ async function welt() {
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
     });
+    await page.evaluateOnNewDocument(installWieseSicht);
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -104,13 +111,15 @@ async function welt() {
         const tF = performance.now();
         while (f && !f.ready && performance.now() - tF < 60000) await sleep(100);
         o.foundry = !!(f && f.ready);
-        const pm = st.playerMesh.position;
+        // Der Spieler LIVE: nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte Position zöge nur
+        // die Streu mit, Kamera und Nah-Wiese blieben am Start (bis 06.10. lag das Auge jedes Umzugs bei 36 0).
+        const spieler = () => st.playerMesh.position;
         const takt = async (n) => {
             for (let i = 0; i < n; i++) {
                 st._frameOverBudget = false;
                 try {
                     r._gameLoopTick(performance.now());
-                    r._tickScatterStreaming(pm);
+                    r._tickScatterStreaming(spieler());
                 } catch (_e) {}
                 await sleep(6);
             }
@@ -212,10 +221,35 @@ async function welt() {
             return { z, befunde };
         };
 
+        // ── W: das Urteil über den Sicht-Satz der Nah-Wiese (die Linse legte ihn selbst, scripts/lib/wiese-sicht.cjs) ──
+        const wieseUrteil = (w, befunde) => {
+            const nenne = (senke, art) => befunde.push({ senke, art, pass: "haupt", dreiecke: 0 });
+            const summe = Object.values(w.je).reduce((s, n) => s + n, 0);
+            if (!(w.senken > 0))
+                nenne("nahWiese", "keine Senke — die Studio-Gras-Vorlagen fehlen (die Linse misst nichts)");
+            else if (!(w.bueschel > 0)) {
+                // kein Wiesen-Grün im Ring (Waldboden, Fels, Wasser): der Satz muss leer stehen
+                if (summe) nenne("nahWiese", `${summe} Instanzen in einem Ring ohne Büschel — veraltete Matrizen`);
+            } else
+                for (const [name, n] of Object.entries(w.je))
+                    if (!(n > 0)) nenne(name, "anzahl 0 nach dem Sicht-Satz — leer bewiesen");
+            if (w.ausserhalb) nenne("nahWiese", `${w.ausserhalb} gelegte Instanzen außerhalb des Rings um das Auge`);
+        };
+        const wieseKurz = (w) => {
+            const n = Object.values(w.je);
+            return {
+                senken: w.senken,
+                bueschel: w.bueschel,
+                summe: n.reduce((s, x) => s + x, 0),
+                min: n.length ? Math.min(...n) : 0,
+                auge: w.auge ? [Math.round(w.auge.x), Math.round(w.auge.z)] : null,
+            };
+        };
+
         // ── die Wander-Sequenz: fort und zurück, mehrere Umzüge (je Umzug ein Teleport + Takte bis der Bau ruht) ──
         await takt(120);
-        const sx = pm.x,
-            sz = pm.z;
+        const sx = spieler().x,
+            sz = spieler().z;
         const umzuege = [
             [600, 0],
             [0, 0],
@@ -229,11 +263,30 @@ async function welt() {
         for (const [dx, dz] of umzuege) {
             const x = sx + dx,
                 zz = sz + dz;
+            const pm = spieler();
             const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, zz) : pm.y;
             pm.set(x, (Number.isFinite(y) ? y : pm.y) + 1.8, zz);
             await takt(160);
+            const wiese = window.__wieseSicht(r);
             const { z, befunde } = zensus();
-            o.umzuege.push({ ziel: [Math.round(x), Math.round(zz)], ...z, befunde: befunde.slice(0, 12), n: befunde.length });
+            wieseUrteil(wiese, befunde);
+            // Die Nah-Wiese legt ihren Ring um die KAMERA (`_tickNahWiese`), die Kamera folgt dem Spieler: steht das Auge
+            // nicht am Ziel, prüfte der Umzug den alten Ring.
+            if (!wiese.auge || Math.hypot(wiese.auge.x - x, wiese.auge.z - zz) > 30)
+                befunde.push({
+                    senke: "nahWiese",
+                    art: `das Auge folgte dem Umzug nicht (${wiese.auge ? Math.round(wiese.auge.x) + " " + Math.round(wiese.auge.z) : "—"}) — der Ring stand am alten Ort`,
+                    pass: "haupt",
+                    dreiecke: 0,
+                });
+            o.umzuege.push({
+                ziel: [Math.round(x), Math.round(zz)],
+                spieler: [Math.round(spieler().x), Math.round(spieler().z)],
+                ...z,
+                wiese: wieseKurz(wiese),
+                befunde: befunde.slice(0, 12),
+                n: befunde.length,
+            });
         }
 
         // ── SELBSTTEST: die Linse MUSS sehen, was sie nie sehen soll ──
@@ -283,6 +336,42 @@ async function welt() {
                 for (const b of befunde) if (b.senke === tausch.g.key && /trägt nicht/.test(b.art)) (st_.befunde = st_.befunde || []).push(b);
                 arr.set(merk, tausch.a * 16);
             }
+            // (4) W blind: ein Sicht-Satz in den Himmel lässt jede Senke der Nah-Wiese leer — die Linse nennt jede
+            const himmel = window.__wieseSicht(r, true);
+            const bH = [];
+            wieseUrteil(himmel, bH);
+            st_.wieseLeerGenannt =
+                himmel.senken > 0 && bH.filter((b) => /leer bewiesen/.test(b.art)).length === himmel.senken;
+            st_.wieseLeer = bH.length;
+            // (5) eine gelegte Instanz mit Null-3×3 und (6) eine gelegte Instanz fort aus dem Ring (die veraltete Matrix)
+            const echt = window.__wieseSicht(r);
+            const nw = st.nahWiese;
+            const voll = nw ? [...nw.senken.values()].find((a) => a.anzahl > 1) : null;
+            if (voll) {
+                const arr = voll.mesh.instanceMatrix.array;
+                const merk = arr.slice(0, 16);
+                for (const k of [0, 1, 2, 4, 5, 6, 8, 9, 10]) arr[k] = 0;
+                st_.wieseNullGenannt = zensus().befunde.some((b) => b.senke === voll.name && /Null-3×3/.test(b.art));
+                arr.set(merk, 0);
+                arr[12] += 500;
+                const bR = [];
+                wieseUrteil(window.__wieseZaehle(r, echt.auge), bR);
+                st_.wieseRingGenannt = bR.some((b) => /außerhalb des Rings/.test(b.art));
+                arr.set(merk, 0);
+                // (7) ein Ring ohne Büschel, dessen Senken noch Instanzen tragen (der Satz lief nicht nach)
+                const bV = [];
+                wieseUrteil(Object.assign({}, echt, { bueschel: 0 }), bV);
+                st_.wieseAltGenannt = bV.some((b) => /veraltete Matrizen/.test(b.art));
+                (st_.befunde = st_.befunde || []).push(
+                    {
+                        senke: voll.name,
+                        pass: "haupt",
+                        dreiecke: 0,
+                        art: `Himmel: ${st_.wieseLeer} leere Senken genannt`,
+                    },
+                    ...bR
+                );
+            }
             o.selbst = st_;
         }
         return o;
@@ -317,13 +406,23 @@ async function welt() {
     for (const u of out.umzuege || []) {
         maxGruppen = Math.max(maxGruppen, u.gruppen);
         console.log(
-            `  Umzug → ${u.ziel.join(" ")}: ${u.gruppen} Gruppen · ${u.instanzen} Instanzen · ${u.senken} Senken · ${u.marken} Eintrags-Marken treu geprüft · ${u.n} Befunde`
+            `  Umzug → ${u.ziel.join(" ")} (Spieler ${u.spieler.join(" ")}): ${u.gruppen} Gruppen · ${u.instanzen} Instanzen · ${u.senken} Senken · ${u.marken} Eintrags-Marken treu geprüft · Nah-Wiese (Auge ${u.wiese.auge ? u.wiese.auge.join(" ") : "—"}) ${u.wiese.senken} Senken, ${u.wiese.bueschel} Büschel im Ring, ${u.wiese.summe} gelegt (je Senke ≥ ${u.wiese.min}) · ${u.n} Befunde`
         );
         for (const b of u.befunde) console.log(`    ❌ ${b.senke} · ${b.pass} · ${b.dreiecke} Dreiecke — ${b.art}`);
         if (u.n) fails.push(`Umzug ${u.ziel.join(" ")}: ${u.n} Befunde (${u.befunde[0].senke} · ${u.befunde[0].art})`);
     }
     if (!out.umzuege || out.umzuege.length < 5) fails.push("die Wander-Sequenz lief nicht durch");
     if (!(maxGruppen > 20)) fails.push(`nur ${maxGruppen} Instanz-Gruppen — die Linse misst nichts`);
+    // W misst nur, wo Wiese steht: mindestens WIESE_ORTE Umzüge mit belegtem Ring, sonst ist W leer bewiesen
+    const wieseOrte = (out.umzuege || []).filter((u) => u.wiese.bueschel > 0 && u.wiese.min > 0).length;
+    const WIESE_ORTE = 4;
+    console.log(
+        `  Nah-Wiese: ${wieseOrte} von ${(out.umzuege || []).length} Umzügen mit belegtem Ring (Soll ≥ ${WIESE_ORTE})`
+    );
+    if (wieseOrte < WIESE_ORTE)
+        fails.push(
+            `die Nah-Wiese stand in nur ${wieseOrte} Umzügen auf Wiese (Soll ≥ ${WIESE_ORTE}) — W misst zu wenig`
+        );
     if (process.argv.includes("--selftest")) {
         const s = out.selbst || {};
         console.log(
@@ -333,6 +432,14 @@ async function welt() {
         if (!s.freiGenannt) fails.push("SELBSTTEST: der eingeschmuggelte freie Slot blieb ungesehen");
         if (!s.leerGenannt) fails.push("SELBSTTEST: die sichtbare leere Hülle blieb ungesehen");
         if (!s.tauschGenannt) fails.push("SELBSTTEST: die vertauschte Matrix (ein Umzug ohne Matrix) blieb ungesehen");
+        console.log(
+            `  ${s.wieseLeerGenannt ? "✅" : "❌"} SELBSTTEST W: der Sicht-Satz in den Himmel — jede leere Senke der Nah-Wiese genannt (${s.wieseLeer || 0}) · ${s.wieseNullGenannt ? "✅" : "❌"} eine gelegte Null-3×3 genannt · ${s.wieseRingGenannt ? "✅" : "❌"} eine Instanz fort aus dem Ring genannt · ${s.wieseAltGenannt ? "✅" : "❌"} veraltete Instanzen im leeren Ring genannt`
+        );
+        if (!s.wieseAltGenannt) fails.push("SELBSTTEST: veraltete Instanzen im Ring ohne Büschel blieben ungesehen");
+        if (!s.wieseLeerGenannt)
+            fails.push("SELBSTTEST: die leeren Senken der Nah-Wiese (Blick in den Himmel) blieben ungesehen");
+        if (!s.wieseNullGenannt) fails.push("SELBSTTEST: die gelegte Null-3×3 der Nah-Wiese blieb ungesehen");
+        if (!s.wieseRingGenannt) fails.push("SELBSTTEST: die Instanz fort aus dem Ring blieb ungesehen");
     }
     if (seitenFehler.length) {
         console.log("  Seiten-Fehler:", seitenFehler.slice(0, 3));
@@ -343,7 +450,7 @@ async function welt() {
         process.exit(1);
     }
     console.log(
-        `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass.`
+        `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; der Sicht-Satz der Nah-Wiese belegte in ${wieseOrte} Ringen jede Senke (${Math.min(...out.umzuege.filter((u) => u.wiese.bueschel > 0).map((u) => u.wiese.summe))}–${Math.max(...out.umzuege.map((u) => u.wiese.summe))} Instanzen), ein Ring ohne Wiese stand leer.`
     );
     process.exit(0);
 })().catch((e) => {

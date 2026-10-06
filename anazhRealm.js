@@ -32694,7 +32694,10 @@ class AnazhRealm {
             r = 0;
         for (let p = 0; p < fl.leaves.length; p++) {
             const lf = fl.leaves[p];
-            if (!lf || !lf.geom || !lf.mat) continue;
+            if (!lf || !lf.geom || !lf.mat)
+                throw new Error(
+                    `Nah-Wiese: Vorlage ${kopf} Teil ${p} ohne Geometrie oder Stoff — kein stiller Ausfall`
+                );
             const a = {
                 key: `${kopf}:${p}`,
                 name: `nahWiese:${v}:L${stufe}:${p}`,
@@ -32760,8 +32763,9 @@ class AnazhRealm {
     // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
     // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
     // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (seine
-    // Kugel gegen das Frustum der Pass-Kamera); jede Senke trägt dicht genau ihre sichtbaren Büschel. Stehen Kamera und
-    // Ring, steht der Satz (kein Upload).
+    // Kugel gegen das Frustum der Pass-Kamera); jede Senke trägt dicht genau ihre sichtbaren Büschel. Die Signatur
+    // (Welt- und Projektions-Matrix) spart nur bei stehender Projektion: unter TRAA zittert die Projektion je Frame, der
+    // Satz rechnet und lädt jeden Frame (CPU-Kosten: offen, die ruhige Messung der Integration).
     _nahWieseSicht(kamera) {
         const nw = this.state.nahWiese;
         if (!nw || !kamera || !nw.senken.size) return;
