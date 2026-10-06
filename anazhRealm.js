@@ -34638,13 +34638,9 @@ class AnazhRealm {
     // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
     // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
     _fernRingSetzVertex(fr, p, law, wl) {
-        const F = AnazhRealm.FERN_RING;
         const wet = law < wl;
-        let y = wet ? wl - F.wasserDrop : law;
-        if (p.row === 0) y -= F.saumDrop; // die Saum-Tauchkante
-        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60; // der Ring weicht
         const geo = fr.meshes[p.s].geometry;
-        geo.attributes.position.setXYZ(p.li, p.x, y, p.z);
+        geo.attributes.position.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl), p.z);
         // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
         // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
         // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
@@ -34663,6 +34659,16 @@ class AnazhRealm {
             fr.farbN++;
             if (g < fr.farbMin) fr.farbMin = g;
         }
+    }
+
+    // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
+    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, weicht der Ring (−60 m).
+    _fernRingY(fr, p, law, wl) {
+        const F = AnazhRealm.FERN_RING;
+        let y = law < wl ? wl - F.wasserDrop : law;
+        if (p.row === 0) y -= F.saumDrop;
+        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60;
+        return y;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -34794,7 +34800,9 @@ class AnazhRealm {
 
     // Deck-Wache: Chunks bauen/fallen NACH dem Ring-Anstrich → die Deck-Zone folgt dem Chunk-Strom
     // rollierend (128 Vertices/Tick durch dieselbe Setz-Naht). Zählt nie als Refresh
-    // (fr.refreshed/cursor unverändert — die Gate-Bänder lesen sie).
+    // (fr.refreshed/cursor unverändert — die Gate-Bänder lesen sie). Hoch lädt sie und die Normalen rechnet sie nur, wenn
+    // ein Punkt seine Höhe ändert (Welle C, Lehre 25 — gemessen 06.10., echte GPU, Mess-Wiese in Ruhe: computeVertexNormals
+    // über 3 072 Vertices und drei volle Attribut-Uploads JEDEN Frame, ohne dass ein Chunk kam oder ging).
     _fernRingDeckWache(fr) {
         const F = AnazhRealm.FERN_RING;
         if (fr.zoneVerts === undefined) {
@@ -34810,15 +34818,21 @@ class AnazhRealm {
         if (!fr.zoneVerts) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
+        const geo = fr.meshes[0].geometry;
+        const pos = geo.attributes.position;
+        let neu = false;
         for (let n = 0; n < 128; n++) {
             const p = this._fernRingPunkt(fr, fr.deckCursor % fr.zoneVerts);
             let law = this._terrainMacroSurfaceY(p.x, p.z, false);
             const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
             law = this._fernRingDeckMisch(fr, p.rad, law, voll);
-            this._fernRingSetzVertex(fr, p, law, wl);
+            if (Math.fround(this._fernRingY(fr, p, law, wl)) !== pos.getY(p.li)) {
+                this._fernRingSetzVertex(fr, p, law, wl);
+                neu = true;
+            }
             fr.deckCursor++;
         }
-        const geo = fr.meshes[0].geometry;
+        if (!neu) return;
         geo.attributes.position.needsUpdate = true;
         AnazhRealm._fernRingAttributeHoch(geo);
         geo.computeVertexNormals();
