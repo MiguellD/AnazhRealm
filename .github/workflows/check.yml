@@ -628,11 +628,14 @@ jobs:
               run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
-              # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft updateCreatures selbst, nichts gestubbt
+              # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft den echten Chokepoint selbst (updateCreatures,
+              # clearCreatures, _creatureNaturalBirth, _playerDeathRespawn, Snapshot, Peer-Tick), nichts gestubbt
               # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
-              # echten GPU). Die Leben-Prüfung 06.10. sah: clearCreatures liess jedes zweite Tier als Geist, die
-              # Geburt stand 12–25 m vor dem Spieler, der Tod im Sattel riss den Wagen mit. --selftest zuerst: je
-              # Probe spielt der alte Defekt als Täter ein, die Linse muss ROT lesen.
+              # echten GPU). Dreizehn Proben: geister · geburt · sattel · reload (Q12) · huepfer (Q1, das Sprung-Gesetz)
+              # · wachsen · zufall (Q2, kein Math.random im Kreatur-Leben über window.__codeOf) · gier (Q3, auch Gas ↔
+              # Bremse) · jagd (Q3/Q11, Beute-Flucht) · herde (Q11, gleichartig, nie am Blick) · hindernis (Q11, kein
+              # Strahl, der EINE Leib) · nacht (Ruhe hält den Leib) · peer (Sicht-Kopie). --selftest zuerst: je Probe
+              # spielt jeder alte Defekt als Täter ein (18), die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
 
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)

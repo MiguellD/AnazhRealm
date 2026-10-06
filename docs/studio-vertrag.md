@@ -337,6 +337,26 @@ Komponenten-SÄTZE, keine Klassen):
   per Mint-Mechanik neu gemünzt).
   Die Gegenwehr-Reichweite liest `jagd.strikeRange` (die EINE
   Reichweiten-Wahrheit; das nackte Stamm-`4` fiel bewusst auf 2.4).
+- **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` ·
+  `herdeZug` (Welle L 06.10., tetrapoda-core, Namensraum-Export, rein
+  additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht
+  mit):** der EINE Steuer-Schritt je Tier und Takt. `STEUER_GESETZ { tempo
+  wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
+  `GANG_GESETZ.g`) · `tempoEinheit(L)` = tempo·√(g·L) m/s (die Einheit, in
+  der VERHALTEN zählt) · `steuerSchritt(z, wx, wz, dt, L)` schreibt
+  `z = { gier, v }` fort: die Gier dreht mit der Wendegrenze
+  wende·√(g/L) auf den Wunsch (Welt-XZ, m/s) zu, der Leib läuft nur
+  vorwärts längs der Gier mit dem Anteil des Wunschs vor ihm, das Tempo
+  folgt mit Anfahr- (beschl·g) und Brems-Grenze (brems·g) ·
+  `ankunftTempo(rest, vMax)` = min(vMax, √(2·brems·g·rest)) — das
+  Ankunfts-Gesetz (wer `rest` m vor seinem Halt steht, wünscht nur das
+  Tempo, aus dem er dort steht) · `herdeZug(x, z, gattung, nachbarn, H,
+  out?)` → `{ x, z, n }` — die Herden-FORM (Kohäsion nur zu Nachbarn
+  derselben Gattung im Fenster `H = VERHALTEN.herde`, nie am Blick; das
+  Herden-Verhalten ist nach v1.0). Rein, THREE-frei. Leser:
+  `AnazhRealm._steuerGesetz()` (memoisiert, fail-closed) in
+  `updateCreatures` (EIN Schreiber der Gier `rotation.y`), `_kreaturZiel`
+  (Ankunft) und der Herden-Block; Linse `gate:kreatur-takt` (gier · herde).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
