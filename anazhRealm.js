@@ -63728,12 +63728,16 @@ class AnazhRealm {
     // sie als Form in die EINE Wege-Karte (Kanal Erde) — der Boden-Shader zeigt getretene Erde, Wiese und Nah-Streu
     // wachsen dort nicht (`_pfadFeldAt`). Einmal je Eintrag, beim ersten Studio-Platz (das Buch ist warm); sie bleibt,
     // solange der Eintrag lebt — der Boden vergisst die Feuerstelle nicht, wenn ihr Mesh die Mesh-Zone verlässt.
+    // Die Frage stellt jeder Eintrag EINMAL (Lehre 25): `_trittBox` ist undefined (nie gefragt), false (keine Fläche)
+    // oder die Form — jeder weitere Primär-Add (Stufen-Wechsel eines Baums, Hauses, Tors, der Karten-Platzierungen)
+    // kostet einen Feld-Vergleich, nie die Preset-Auflösung.
     _trittFlaecheSetzen(entry) {
-        if (!entry || entry._trittBox || !entry.position) return;
+        if (!entry || entry._trittBox !== undefined || !entry.position) return;
         const preset = this._foundryPresetForEntry(entry);
         const f = this._foundry;
         const rec = preset && f && f.recipes ? f.recipes[preset] : null;
         const t = rec && rec.fx ? rec.fx.tritt : null;
+        entry._trittBox = false; // transient (kein Snapshot)
         if (!t || typeof t !== "object") return;
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         const x = entry.position.x;
