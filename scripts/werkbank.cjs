@@ -71,6 +71,11 @@
 //       node scripts/werkbank.cjs zerlegen --runden 6 --json artifacts/werkbank/zerlegen-omen.json
 //       node scripts/werkbank.cjs zerlegen --nur haupt,tiefenkopie,traa,nachbild,bloom,godrays,kontrast,feldPass,leer --runden 8
 //       node scripts/werkbank.cjs stop
+//   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
+//                                                           DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter
+//                                                           Frame, je gezeichnetem Programm die statischen Kosten seines
+//                                                           erzeugten Fragments — Abtastungen unbedingt · im Zweig · in
+//                                                           Schleifen, Schleifen, Rausch-Aufrufe; --ordner legt das WGSL ab
 //   node scripts/werkbank.cjs band [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE (W0): einschwingen (volle Welt, bis der Bau
 //                                                           ruht), n Proben (Maximum je Klasse × Stufe × Pass) + VRAM
@@ -109,6 +114,7 @@ const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
+const SK = require("./lib/shader-kosten.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -809,6 +815,7 @@ async function starte() {
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
+        await page.evaluate(SK.SHADER_INSTALL);
         await page.evaluate(async () => {
             const dl = performance.now() + 300000;
             while (
@@ -1042,6 +1049,41 @@ async function starte() {
                         delete e.png;
                     }
                     return send({ klassen: liste, ordner, ms: Date.now() - t0 });
+                }
+                // DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter Frame (Bühne), je gezeichnetem Programm
+                // die statischen Kosten seines erzeugten Fragments — Abtastungen unbedingt · im Zweig · in Schleifen,
+                // Schleifen, Rausch-Aufrufe; `--ordner` legt je Programm das WGSL ab.
+                if (req.url === "/shader") {
+                    const liste = await page.evaluate(async () => {
+                        window.__buehne();
+                        return window.__shaderKosten({ frames: 1 });
+                    });
+                    const nur = b.nur ? new RegExp(b.nur) : null;
+                    const zeilen = liste
+                        .filter((p) => !nur || nur.test(p.programm) || p.klassen.some(([k]) => nur.test(k)))
+                        .map((p) => Object.assign({ programm: p.programm, objekte: p.objekte, klassen: p.klassen, wgsl: p.fragment }, SK.wgslKosten(p.fragment)))
+                        .sort((x, y) => y.abtastungen.unbedingt - x.abtastungen.unbedingt || y.abtastungen.gesamt - x.abtastungen.gesamt);
+                    if (b.ordner) {
+                        const ordner = path.resolve(b.ordner);
+                        fs.mkdirSync(ordner, { recursive: true });
+                        zeilen.forEach((z, i) =>
+                            fs.writeFileSync(path.join(ordner, `${String(i).padStart(3, "0")}-${z.programm.replace(/[^a-z0-9._-]+/gi, "_")}.wgsl`), z.wgsl)
+                        );
+                    }
+                    const top = Math.max(1, Number(b.top) || 30);
+                    const pad = (x, n) => String(x).padStart(n);
+                    const tabelle = [
+                        `DIE SHADER-KOSTEN je Programm (statisch, erzeugtes Fragment-WGSL) · ${zeilen.length} Programme${nur ? " (" + b.nur + ")" : ""}`,
+                        "Abtastungen: gesamt · unbedingt · im Zweig · in Schleife | Schleifen | Rauschen | Objekte | Programm (Klassen)",
+                        ...zeilen
+                            .slice(0, top)
+                            .map(
+                                (z) =>
+                                    `${pad(z.abtastungen.gesamt, 4)} ${pad(z.abtastungen.unbedingt, 4)} ${pad(z.abtastungen.zweig, 4)} ${pad(z.abtastungen.schleife, 4)} | ${pad(z.schleifen, 3)} | ${pad(z.rauschen, 3)} | ${pad(z.objekte, 4)} | ${z.programm}` +
+                                    (z.klassen.length > 1 ? " (" + z.klassen.map(([k, n]) => k + " ×" + n).join(", ") + ")" : "")
+                            ),
+                    ].join("\n");
+                    return send({ programme: zeilen.length, tabelle, ordner: b.ordner || null, ms: Date.now() - t0 });
                 }
                 if (req.url === "/takt") {
                     const o = await page.evaluate((k) => window.__taktZerlegung(k), {
@@ -1551,6 +1593,13 @@ async function starte() {
         if (!o || o.fehler) {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
+        }
+    }
+    else if (cmd === "shader") {
+        o = await rufe("/shader", { nur: opt("--nur"), top: opt("--top", 30), ordner: opt("--ordner") });
+        if (o && o.tabelle) {
+            console.log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
+            process.exit(0);
         }
     }
     else if (cmd === "reload") o = await rufe("/reload");
