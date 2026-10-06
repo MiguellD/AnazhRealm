@@ -617,6 +617,12 @@ jobs:
               # Rad-Ebene steht auf der Karte. --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
               run: npm run gate:koerper-stand
 
+            - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
+              # Headless: das Drehbuch-Dorf 7/18, die Foundry liefert die Stufen, der Spieler geht über den Sim-Schritt.
+              # W1 Tür · W2 der Fuß auf der Diele des Gesetzbuchs · W3 die Treppe trägt ins OG · W4 kein Gewächs im
+              # Grundriss · W5 Kollision == Optik je Rasterpunkt. --selftest: Basis-Zeilen serviert → genau ihre Probe rot.
+              run: npm run gate:haus-welt
+
             - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
               # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt
               # in der EINEN LOD-Geschichte (_tickArchitectureLOD via instFoundry) — nah

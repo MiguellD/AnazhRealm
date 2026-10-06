@@ -2806,6 +2806,22 @@
                 tuerWraps.push(wg);
             }
             if (tuerWraps.length) geoms.__tuerFluegel = tuerWraps; // reist neben den Rollen-Geoms (vo-lose Zeile, geomsZuGruppe überspringt sie)
+            // ═══ DIE HÜLLE REIST (Welle L, additiv, must-ignore) — Kollision == Optik ═══
+            // Die Solids, die das Haus beim Bau sammelt (addSolid: Fundament, Böden mit Treppenloch, Tritte, Wände mit
+            // Öffnungen, Brüstungen, Kniestock, Außentreppe), reisen haus-lokal als Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…
+            // — dieselbe Liste, die das Labor begeht (bauSolidsUndTueren). Die Welt stellte statt ihrer vier EG-Riegel
+            // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
+            var solL = [];
+            var solAus = function (Hs, dy) {
+                if (!Hs || !Hs.solids) return;
+                for (var si = 0; si < Hs.solids.length; si++) {
+                    var so = Hs.solids[si];
+                    solL.push(so.min[0], so.min[1] + dy, so.min[2], so.max[0], so.max[1] + dy, so.max[2]);
+                }
+            };
+            solAus(st.H, 0);
+            if (st.topH) solAus(st.topH, st.off || 0);
+            geoms.__solids = solL;
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -2888,8 +2904,16 @@
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
         if (gm.__tuerFluegel) for (var tf = 0; tf < gm.__tuerFluegel.length; tf++) g.add(gm.__tuerFluegel[tf]);
-        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe };
         g.updateMatrixWorld(true);
+        // DIE HÜLLE (Welle L): Stufe 0 trägt die Solids des Hauses (begehbar), die fernen Stufen ihre Außen-Box (das
+        // Labor-Gesetz: fern trägt die Ganz-Haus-Hülle, die Promotion tauscht sie gegen die Haus-Solids).
+        var huelle = null;
+        if (gm.__solids) huelle = { stufe: 0, boxen: gm.__solids };
+        else {
+            var hb = new THREE.Box3().setFromObject(g);
+            if (!hb.isEmpty()) huelle = { stufe: stufe, boxen: [hb.min.x, hb.min.y, hb.min.z, hb.max.x, hb.max.y, hb.max.z] };
+        }
+        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle };
         return g;
     }
 

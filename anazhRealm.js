@@ -30962,6 +30962,35 @@ class AnazhRealm {
     // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].
     // Liefert { t, nx, ny, nz } (Eintritts-t + Außen-Normale der getroffenen Fläche) oder null.
     _segmentAABB(sx, sy, sz, dx, dy, dz, b) {
+        // DIE GEDREHTE BOX (Haus-Hülle, Welle L): Start und Richtung in den Box-Rahmen, der Schnitt dort, die Normale zurück
+        const ob = b.obb;
+        if (ob) {
+            const qx = sx - ob.cx;
+            const qz = sz - ob.cz;
+            const lb = this._obbSegBox || (this._obbSegBox = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, topY: 0, botY: 0 });
+            lb.minX = -ob.hx;
+            lb.maxX = ob.hx;
+            lb.minZ = -ob.hz;
+            lb.maxZ = ob.hz;
+            lb.topY = b.topY;
+            lb.botY = b.botY;
+            const h = this._segmentAABB(
+                qx * ob.c - qz * ob.s,
+                sy,
+                qx * ob.s + qz * ob.c,
+                dx * ob.c - dz * ob.s,
+                dy,
+                dx * ob.s + dz * ob.c,
+                lb
+            );
+            if (h) {
+                const nx = h.nx;
+                const nz = h.nz;
+                h.nx = nx * ob.c + nz * ob.s;
+                h.nz = -nx * ob.s + nz * ob.c;
+            }
+            return h;
+        }
         const inv = (v) => (Math.abs(v) < 1e-9 ? 1e9 : 1 / v);
         const ix = inv(dx),
             iy = inv(dy),
@@ -31521,15 +31550,12 @@ class AnazhRealm {
             this._blockerStampReach(entry);
             return;
         }
-        // Haus mit Tür-Zeile (slot.tuer: Tür-Rect + Kern-Footprint W/D): Kollision = 4 Wand-Riegel am
-        // W/D-Rand, Tür-Durchgänge frei, innen begehbar. Ohne tuer-Zeile: generischer Parts-Pfad.
-        const hausParts = this._hausTuerBlockerParts(entry);
-        if (hausParts) {
-            const hausBoxes = [];
-            for (const part of hausParts) {
-                const aabb = this._blockerComputePartAABB(entry, part);
-                if (aabb) hausBoxes.push(aabb);
-            }
+        // HAUS (Welle L, Kollision == Optik): die Hülle der gezeichneten Stufe aus dem Gesetzbuch (`_hausHuelleSetzen`),
+        // gedreht wie das Haus (OBB); bis das Studio liefert, die geschlossene Kern-Hülle aus der Tür-Zeile. Vorher
+        // vier EG-Riegel als achsparallele Welt-AABB: gedrehte Häuser 18–35 % begehbar, Kletterwand statt Treppe, der Fuß
+        // 0,50 m unter der Diele (Leben-Prüfung N-D2 bis N-D4), das Solo-Haus stieß an `haus_basis` (3,09 m in der Wand).
+        const hausBoxes = this._hausBlockerBoxen(entry);
+        if (hausBoxes) {
             const fuH = this._archFundamentBox(entry);
             if (fuH) hausBoxes.push(fuH);
             if (hausBoxes.length) {
@@ -31587,41 +31613,76 @@ class AnazhRealm {
         this._blockerStampReach(entry);
     }
 
-    // Haus-Wand-Parts aus der Tür-Zeile (haus-lokale Daten; `_blockerComputePartAABB` macht sie mit
-    // entry.rotationY/scale zu Welt-AABBs): 4 Wand-Riegel am Kern-W/D, Haustür + Hintertür als LÜCKEN
-    // (+ Sturz). Höhe 3.1 m (EG), innen frei. Anbauten jenseits des Kern-W/D tragen keine Wand (HALB,
-    // ~80 %: die ext-Hülle als Wand würde die Tür-Lücke zustellen).
-    _hausTuerBlockerParts(entry) {
+    // Die Hülle einer Stufe am Eintrag (Beipack `__huelle` des fachwerk-Asset, haus-lokal `[x0,y0,z0,x1,y1,z1]…`): die Stufe
+    // 0 trägt die Solids des Gesetzbuchs, die fernen Stufen ihre Außen-Box. Ein Wechsel schreibt die Blocker neu.
+    _hausHuelleSetzen(entry, huelle) {
+        if (!entry || !huelle || !Array.isArray(huelle.boxen) || huelle.boxen.length < 6) return;
+        if (entry._hausHuelle === huelle) return;
+        const pr = typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry(entry) : null;
+        const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
+        entry._hausHuelle = huelle;
+        entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
+        this._populateBlockerAABBs(entry);
+    }
+
+    // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
+    // Gesetz) mit ihrer Welt-AABB als Vorfilter; ohne Studio-Hülle die geschlossene Kern-Hülle aus der Tür-Zeile (W × D,
+    // EG-Höhe). null: kein Haus.
+    _hausBlockerBoxen(entry) {
+        const hu = entry && entry._hausHuelle;
         const t = entry && entry.tuer;
-        if (!t || !Number.isFinite(t.W) || !Number.isFinite(t.D) || !(t.W > 1.5) || !(t.D > 1.5)) return null;
-        if (!Number.isFinite(t.w) || !(t.w > 0) || !Number.isFinite(t.z)) return null;
-        const H = 3.1;
-        const dick = 0.35;
-        const parts = [];
-        const wand = (px, pz, sx, sz, y0, y1) =>
-            parts.push({ position: { x: px, y: (y0 + y1) / 2, z: pz }, size: { x: sx, y: y1 - y0, z: sz } });
-        // Wand entlang X an der z-Kante zF, optional mit Tür-Lücke:
-        const wandX = (zF, luecke) => {
-            if (luecke) {
-                const g0 = Math.max(-t.W / 2, luecke.x - luecke.w / 2 - 0.15);
-                const g1 = Math.min(t.W / 2, luecke.x + luecke.w / 2 + 0.15);
-                if (g0 - -t.W / 2 > 0.05) wand((-t.W / 2 + g0) / 2, zF, g0 - -t.W / 2, dick, 0, H);
-                if (t.W / 2 - g1 > 0.05) wand((g1 + t.W / 2) / 2, zF, t.W / 2 - g1, dick, 0, H);
-                const oben =
-                    (Number.isFinite(luecke.y) ? luecke.y : 0.55) + (Number.isFinite(luecke.h) ? luecke.h : 2.05) + 0.1;
-                if (H - oben > 0.1) wand((g0 + g1) / 2, zF, g1 - g0, dick, oben, H); // Sturz über der Tür
-            } else wand(0, zF, t.W, dick, 0, H);
+        let boxen = null;
+        let k = 1;
+        if (hu && Array.isArray(hu.boxen)) {
+            boxen = hu.boxen;
+            k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
+        } else if (t && Number.isFinite(t.W) && Number.isFinite(t.D) && t.W > 1.5 && t.D > 1.5) {
+            boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];
+        } else return null;
+        const out = [];
+        for (let i = 0; i + 5 < boxen.length; i += 6) {
+            const b = this._hausObb(
+                entry,
+                boxen[i],
+                boxen[i + 1],
+                boxen[i + 2],
+                boxen[i + 3],
+                boxen[i + 4],
+                boxen[i + 5],
+                k
+            );
+            if (b) out.push(b);
+        }
+        return out.length ? out : null;
+    }
+
+    // Eine haus-lokale Box → die GEDREHTE Blocker-Box der Welt: T(x, y−0,5, z) · R_y(rotationY) · S(scale·k) — dieselbe
+    // Matrix wie die Instanz (`_archEntryWorldMatrix`). Felder: die Welt-AABB (minX…botY, der Vorfilter jedes Lesers)
+    // und `obb` { cx, cz, c, s, hx, hz } — lokal = (Δx·c − Δz·s, Δx·s + Δz·c). Entartete Boxen (Breite ≤ 0) fallen.
+    _hausObb(entry, x0, y0, z0, x1, y1, z1, k) {
+        const sc = (Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1) * (k || 1);
+        const hx = ((x1 - x0) / 2) * sc;
+        const hz = ((z1 - z0) / 2) * sc;
+        if (!(hx > 1e-4) || !(hz > 1e-4) || !(y1 > y0)) return null;
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const c = Math.cos(ry);
+        const sn = Math.sin(ry);
+        const lx = ((x0 + x1) / 2) * sc;
+        const lz = ((z0 + z1) / 2) * sc;
+        const cx = entry.position.x + lx * c + lz * sn;
+        const cz = entry.position.z - lx * sn + lz * c;
+        const oy = entry.position.y - 0.5;
+        const ex = hx * Math.abs(c) + hz * Math.abs(sn);
+        const ez = hx * Math.abs(sn) + hz * Math.abs(c);
+        return {
+            minX: cx - ex,
+            maxX: cx + ex,
+            minZ: cz - ez,
+            maxZ: cz + ez,
+            topY: oy + y1 * sc,
+            botY: oy + y0 * sc,
+            obb: { cx, cz, c, s: sn, hx, hz },
         };
-        wandX(t.z, t); // Front (−z) mit Haustür-Lücke
-        wandX(
-            -t.z,
-            t.hinten && Number.isFinite(t.hinten.x) && Number.isFinite(t.hinten.w)
-                ? { x: t.hinten.x, w: t.hinten.w, y: t.y, h: t.h }
-                : null
-        ); // Rücken (+z), Hintertür-Lücke wenn vorhanden
-        wand(-t.W / 2, 0, dick, t.D, 0, H); // Seiten-Wände (fensterdurchstieg bleibt zu — ehrlich genug)
-        wand(t.W / 2, 0, dick, t.D, 0, H);
-        return parts;
     }
 
     // Die EINE Fundament-Geometrie (Blocker UND Render-Podest): aus entry.fundament {ex,ez} + LIVE-
@@ -42237,6 +42298,12 @@ class AnazhRealm {
                 entry.portalMeta = a.portalMeta;
             }
         }
+        // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Gewächse, die vor dem Dorf in seine Häuser
+        // wuchsen (der Wurf kam vor dem Haus) — jedes Haus räumt nach dem Laden seinen Grundriss, wie beim Gründen.
+        let geraeumt = 0;
+        for (const e of this.state.architectures.slice())
+            if (this._grundrissVon(e)) geraeumt += this._grundrissRaeumen(e);
+        if (geraeumt) this.log(`Grundriss: ${geraeumt} Gewächse aus Häusern geräumt (älterer Stand).`, "INFO");
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
 
@@ -66145,6 +66212,10 @@ class AnazhRealm {
         }
         entry.instanced = true;
         entry.instSlots = slots;
+        // DIE HÜLLE DER STUFE (Welle L, Kollision == Optik): ein Haus kollidiert, wie es gezeichnet ist — die Stufe 0 mit den
+        // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), die fernen Stufen mit ihrer Außen-Box; der
+        // Stufen-Wechsel tauscht sie (das Labor-Gesetz: Promotion und Demotion je Haus).
+        if (flat && flat.foundry && flat.huelle) this._hausHuelleSetzen(entry, flat.huelle);
         // Merker: aus dem Studio (Foundry) platziert → der LOD-Tick (`_switchArchitectureLOD`) serviert die
         // neue Stufe aus der Foundry statt aus `grown_..._lodN`. Transientes Render-Feld (wie
         // `instanced`/`instSlots`) — nicht im Snapshot.
@@ -66676,7 +66747,8 @@ class AnazhRealm {
             };
         }
         // TÜR-ZEILE des Settlement-Exports am Eintrag (Snapshot + Restore): Tür-Rect + Kern-Footprint W/D,
-        // haus-lokal. Konsumenten: `_hausTuerBlockerParts` (Wände MIT Tür-Lücke) + `_tickHausTueren`.
+        // haus-lokal. Konsumenten: `_hausBlockerBoxen` (die Kern-Hülle, bis das Studio die Hülle der Stufe liefert) +
+        // `_tickHausTueren`.
         if (opts.tuer && Number.isFinite(opts.tuer.w) && Number.isFinite(opts.tuer.W) && Number.isFinite(opts.tuer.D)) {
             try {
                 entry.tuer = JSON.parse(JSON.stringify(opts.tuer));
@@ -66684,6 +66756,7 @@ class AnazhRealm {
                 /* nicht-serialisierbar → keine Tür-Zeile (fail-closed) */
             }
         }
+        if (entry.fundament || entry.tuer) this._grundrissGitter = null; // ein Haus mit Grundriss: das Gitter baut neu
         // KAMIN-RAUCH (.105): Spitze haus-lokal → userData.rauchQuelle (Invariant: Rauch ⟺ chimney).
         if (
             opts.chimney &&
@@ -68530,6 +68603,7 @@ class AnazhRealm {
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
+        if (entry) this._grundrissRaeumen(entry);
         return !!entry;
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
@@ -68606,7 +68680,8 @@ class AnazhRealm {
             if (!Number.isFinite(wy)) continue;
             const seedT = ((plan.seed >>> 0 || 1) + 31 + t * 7919) >>> 0;
             const art = baumArten[seedT % baumArten.length];
-            const entry = this.spawnArchitecture(
+            // der Hof-Baum geht durch DENSELBEN Grundriss-Chokepoint wie jeder Wurf der Natur (`_naturSetzen`)
+            const entry = this._naturSetzen(
                 art,
                 { x: wx, y: wy, z: wz },
                 {
@@ -71683,7 +71758,11 @@ class AnazhRealm {
             group = new T.Group();
             for (const m of meshes) {
                 // Beipack (`{ kind: "__…" }`, das Skelett der Kreatur) ist kein Mesh — der Ofen liest es vor dem Bau.
-                if (m && typeof m.kind === "string" && m.kind.startsWith("__")) continue;
+                // DIE HÜLLE eines Hauses (`__huelle`, Welle L) hängt an der Gruppe: der Flat reicht sie dem Eintrag.
+                if (m && typeof m.kind === "string" && m.kind.startsWith("__")) {
+                    if (m.kind === "__huelle" && m.huelle && Array.isArray(m.huelle.boxen)) group._huelle = m.huelle;
+                    continue;
+                }
                 const mesh = this._foundryBuildMesh(m);
                 if (mesh) group.add(mesh);
             }
@@ -72398,7 +72477,7 @@ class AnazhRealm {
                 }
             }
             group._foundryFlat = leaves.length
-                ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves }
+                ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves, huelle: group._huelle || null }
                 : false;
         }
         return group._foundryFlat;
@@ -73458,11 +73537,93 @@ class AnazhRealm {
     // Welt-Wechsel/Reload räumt sie. `this._vegSpawnImmediate === true` (Test/Worldgen) spawnt synchron.
     _enqueueVegetationSpawn(name, position, opts) {
         if (this._vegSpawnImmediate) {
-            this.spawnArchitecture(name, position, opts);
+            this._naturSetzen(name, position, opts);
             return;
         }
         if (!this.state.pendingVegSpawns) this.state.pendingVegSpawns = [];
         this.state.pendingVegSpawns.push({ name, position, opts });
+    }
+
+    // DER GRUNDRISS RÄUMT (Welle L, Q5/Q15): was die Natur wirft (Wald · Unterholz · Totholz · Fels-Streu, jeder Wurf über
+    // `_enqueueVegetationSpawn`), wächst nie in einem Haus — der Wurf fällt, wenn sein Ort im Grundriss eines Hauses liegt
+    // (`_imGrundriss`), geprüft beim Setzen (die Schlange kann ein Dorf überholen). Vorher wuchsen 7 Bäume in 5 von 8
+    // Häusern des Start-Dorfs, eine Birke im Türblatt, Wildwald in den Gassen der Stadt (N-D5, S-W4).
+    _naturSetzen(name, position, opts) {
+        if (position && this._imGrundriss(position.x, position.z)) return null;
+        return this.spawnArchitecture(name, position, opts);
+    }
+
+    // Liegt (x, z) im Grundriss eines Hauses? Die Häuser einer Siedlung tragen ihren Footprint (`fundament` {ex, ez} aus
+    // dem Export-obb, sonst die Tür-Zeile W/D) und ihre Gier; der Grundriss ist diese gedrehte Box plus `rand` (der
+    // Stamm, die Traufe). Das Gitter (32 m) entsteht faul aus den Einträgen und fällt bei jedem Haus-Spawn/-Abriss.
+    _imGrundriss(x, z, rand = 0.8) {
+        const G = 32;
+        let gitter = this._grundrissGitter;
+        if (!gitter) {
+            gitter = this._grundrissGitter = new Map();
+            for (const e of this.state.architectures || []) {
+                const fp = this._grundrissVon(e);
+                if (!fp) continue;
+                const r = Math.hypot(fp.ex, fp.ez) + 2;
+                for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
+                    for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
+                        const k = gx + "," + gz;
+                        let l = gitter.get(k);
+                        if (!l) gitter.set(k, (l = []));
+                        l.push(e);
+                    }
+            }
+        }
+        const l = gitter.get(Math.floor(x / G) + "," + Math.floor(z / G));
+        if (!l) return false;
+        for (const e of l) {
+            const fp = this._grundrissVon(e);
+            if (!fp) continue;
+            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+            const c = Math.cos(ry);
+            const sn = Math.sin(ry);
+            const dx = x - e.position.x;
+            const dz = z - e.position.z;
+            if (Math.abs(dx * c - dz * sn) <= fp.ex + rand && Math.abs(dx * sn + dz * c) <= fp.ez + rand) return true;
+        }
+        return false;
+    }
+
+    // Ist der Eintrag ein Gewächs (Baum, Strauch, Totholz)? Die Art steht am Eintrag (`_lodSpecies` des Walds, die
+    // Bauplan-Präfixe baum_/busch_/grown_, der Totholz-Stamm) — unabhängig davon, ob das Studio-Buch schon geladen ist;
+    // sonst die Studio-Art (Baum und Strauch tragen die Impostor-Zeile).
+    _istGewaechs(e) {
+        if (!e || typeof e.type !== "string") return false;
+        if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
+        const pr = this._foundryPresetForEntry(e);
+        return !!(pr && this._foundryPresetIsTree(pr));
+    }
+
+    // Der Footprint eines Hauses (halbe Maße haus-lokal) — null für alles andere.
+    _grundrissVon(e) {
+        if (!e || !e.position) return null;
+        if (e.fundament && Number.isFinite(e.fundament.ex) && Number.isFinite(e.fundament.ez))
+            return { ex: e.fundament.ex, ez: e.fundament.ez };
+        const t = e.tuer;
+        if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2 };
+        return null;
+    }
+
+    // Ein Haus steht: was die Natur schon in seinen Grundriss geworfen hat (Baum, Strauch, Totholz), fällt — der Wald stand
+    // oft vor dem Dorf. Leser: `_spawnSettlementSlot`. Gibt die Zahl der geräumten Gewächse.
+    _grundrissRaeumen(haus) {
+        const fp = this._grundrissVon(haus);
+        if (!fp) return 0;
+        this._grundrissGitter = null;
+        const weg = [];
+        for (const e of this.state.architectures || []) {
+            if (e === haus || !e.position || !this._istGewaechs(e)) continue;
+            if (Math.abs(e.position.x - haus.position.x) > fp.ex + fp.ez + 3) continue;
+            if (Math.abs(e.position.z - haus.position.z) > fp.ex + fp.ez + 3) continue;
+            if (this._imGrundriss(e.position.x, e.position.z)) weg.push(e);
+        }
+        for (const e of weg) this.removeArchitecture(e);
+        return weg.length;
     }
 
     // Pops bis zu maxPerFrame Tasks und ruft `spawnArchitecture` je Task: 4/Frame ≈ 20-25 ms statt
@@ -73474,7 +73635,7 @@ class AnazhRealm {
         for (let i = 0; i < maxPerFrame && queue.length > 0; i++) {
             const task = queue.shift();
             if (!task) continue;
-            this.spawnArchitecture(task.name, task.position, task.opts);
+            this._naturSetzen(task.name, task.position, task.opts);
             spawned++;
         }
         return spawned;
@@ -75629,6 +75790,7 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
+        if (this._grundrissVon(entry)) this._grundrissGitter = null; // der Grundriss eines Hauses fällt mit ihm
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
@@ -88391,6 +88553,48 @@ class AnazhRealm {
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
         const bodyLo = feetY + STEP;
+        // DIE GEDREHTE BOX (Haus-Hülle, Welle L): der Vorfilter ist ihre Welt-AABB, die Lösung geschieht im Box-Rahmen —
+        // die Achse lokal, dieselbe Auflage-/Wand-Mathematik gegen die lokalen Halb-Maße, der Schub zurück in die Welt.
+        // Vorher las die Kapsel den gedrehten Riegel als achsparallele Welt-AABB (sie stand mitten im Raum).
+        const ob = box.obb;
+        if (ob) {
+            if (
+                pos.x < box.minX - radius ||
+                pos.x > box.maxX + radius ||
+                pos.z < box.minZ - radius ||
+                pos.z > box.maxZ + radius
+            )
+                return supportTop;
+            const dx = pos.x - ob.cx;
+            const dz = pos.z - ob.cz;
+            const lp = this._obbLokal || (this._obbLokal = { x: 0, z: 0 });
+            lp.x = dx * ob.c - dz * ob.s;
+            lp.z = dx * ob.s + dz * ob.c;
+            const lb = this._obbBox || (this._obbBox = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, topY: 0, botY: 0 });
+            lb.minX = -ob.hx;
+            lb.maxX = ob.hx;
+            lb.minZ = -ob.hz;
+            lb.maxZ = ob.hz;
+            lb.topY = box.topY;
+            lb.botY = box.botY;
+            const ax = lp.x;
+            const az = lp.z;
+            const kontaktVorher = this.state._wandKontaktAt;
+            const st = this._resolveCapsuleVsAABB(lb, lp, feetY, headY, radius, supportTop);
+            const px = lp.x - ax;
+            const pz = lp.z - az;
+            if (px !== 0 || pz !== 0) {
+                pos.x += px * ob.c + pz * ob.s;
+                pos.z += -px * ob.s + pz * ob.c;
+                if (this.state._wandKontaktAt !== kontaktVorher) {
+                    const nx = this.state._wandKontaktNx;
+                    const nz = this.state._wandKontaktNz;
+                    this.state._wandKontaktNx = nx * ob.c + nz * ob.s;
+                    this.state._wandKontaktNz = -nx * ob.s + nz * ob.c;
+                }
+            }
+            return st;
+        }
         if (
             pos.x >= box.minX - radius &&
             pos.x <= box.maxX + radius &&
