@@ -90096,11 +90096,14 @@ class AnazhRealm {
         // urteilt mit ihr nach dem EINEN Gesetz. Die Matrix der Wahl trägt den Versatz der zeitlichen Auflösung NICHT (TRAA
         // verschiebt die Projektion je Frame um einen halben Pixel, die Elemente 8 und 9 einer Perspektive — den Rand dafür
         // trägt `sichtRand`): dieselbe Lage wählt in jedem Frame dasselbe, die gehaltene Wahl ist die frische (Welle C).
+        // Die Höhlen-Sicht liest ihre Schirm-Rechtecke aus S.m: perspektivisch um den Dreh-Rand geweitet (`_passMatrixWeit`),
+        // damit ihre Wahl über eine kleine Drehung hält wie das Gesetz (`drehRand`).
         if (!nach) {
             S.m.copy(kamera.projectionMatrix);
             if (kamera.isPerspectiveCamera === true) S.m.elements[8] = S.m.elements[9] = 0;
             S.m.multiply(kamera.matrixWorldInverse);
             S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
+            if (kamera.isPerspectiveCamera === true) this._passMatrixWeit(S.m, kamera, AnazhRealm.PASS_WAHL.drehRand);
             this._passWahlLage(S, kamera, k);
         }
         const L = S.lage;
@@ -90200,6 +90203,7 @@ class AnazhRealm {
                 ref: 1,
                 kanten: null,
                 halt: 0,
+                dreh: 0,
                 gen: 0,
                 key: "",
             });
@@ -90212,6 +90216,8 @@ class AnazhRealm {
         L.rand = PW.sichtRand;
         // der Halt (`_passLageGen`): die Ebenen und das Auge wandern um höchstens haltM, der Rand je Meter mit dem Auge
         L.halt = PW.haltM * (1 + PW.sichtRand);
+        // der Dreh-Rand: eine Perspektive hält ihre Wahl über eine Drehung bis `drehRand` (je Meter Abstand der Sinus)
+        L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(PW.drehRand) : 0;
         // Die Scheibe gilt nur dem Pass ihrer Kaskaden-Kamera (die Box beim letzten Rendern dieser Kaskade, `_kaskadeFit`).
         const csm = this.state.csmNode;
         const lw = k >= 0 && csm && csm.lights ? csm.lights[k] : null;
@@ -90246,6 +90252,20 @@ class AnazhRealm {
         return L;
     }
 
+    // Die Matrix einer Perspektive ohne den Versatz der zeitlichen Auflösung, ihr Sichtfeld je Halbwinkel um 1,5 × `dreh`
+    // geweitet: jeder Strahl, den eine um höchstens `dreh` gedrehte Kamera sieht, liegt darin (der Abstand eines Strahls zur
+    // Seiten-Ebene wächst um höchstens `dreh`, sein Winkel in der Bild-Achse um höchstens dreh / cos(Höhe) — an den Ecken
+    // eines 75°-Bilds 16:9 das 1,1-Fache).
+    _passMatrixWeit(aus, kamera, dreh) {
+        aus.copy(kamera.projectionMatrix);
+        const e = aus.elements;
+        e[8] = e[9] = 0;
+        const zu = 1.5 * dreh;
+        e[0] = 1 / Math.tan(Math.atan(1 / e[0]) + zu);
+        e[5] = 1 / Math.tan(Math.atan(1 / e[5]) + zu);
+        return aus.multiply(kamera.matrixWorldInverse);
+    }
+
     // DIE LAGE STEHT (Welle C, Lehre 25 — der Takt kostet, was ihn betrifft). Befund 06.10. (OMEN, GTX 1060 + i7-8750H, CPU-
     // Profil, Regler voll, Blick gepinnt, Mess-Wiese): die Sicht je Pass kostete ~6 ms CPU je Frame — jeder Pass rechnete
     // jeden Frame jede Wahl neu (Abschnitte, Höhlen-Sicht, Instanzen), auch wenn nichts sich bewegte; an der echten GPU
@@ -90265,7 +90285,7 @@ class AnazhRealm {
     // und kein Körper, den ein Leser wählt, liegt darüber; Auge und nahe Ebene zählen darum nur quer zur Achse. Solange die Lage
     // steht, urteilt jeder Leser vom Auge des Ankers (`L.ax`…) — der Rand je Meter ist der, mit dem die gehaltene Wahl fiel.
     _passLageGen(L, kamera, k) {
-        const N = 84;
+        const N = 85;
         const key = k >= 0 ? "k" + k : kamera === this.state.camera ? "haupt" : "anders";
         const M = this._passLagen || (this._passLagen = new Map());
         let a = M.get(key);
@@ -90295,12 +90315,19 @@ class AnazhRealm {
             s[o + 2] = P.normal.z;
             s[o + 3] = P.constant;
         };
-        for (let p = 0; p < 6; p++) {
-            const P = F.planes[p];
-            ebene(P, 3 + 4 * p);
-            // die nahe Ebene der orthogonalen Kamera (ihre Normale zeigt entlang der Achse) zählt nicht
-            if (ortho && P.normal.x * fx + P.normal.y * fy + P.normal.z * fz > 0.99) s[6 + 4 * p] = 0;
-        }
+        // perspektivisch: die Projektion ohne Versatz (ihre Ebenen drehen mit der Kamera — die Drehung zählt als Winkel,
+        // s[84] = 1); orthogonal: die Ebenen, ohne die nahe
+        s[84] = ortho ? 0 : 1;
+        if (!ortho) {
+            const pe = kamera.projectionMatrix.elements;
+            for (let i = 0; i < 24; i++) s[3 + i] = i < 16 && i !== 8 && i !== 9 ? pe[i] : 0;
+        } else
+            for (let p = 0; p < 6; p++) {
+                const P = F.planes[p];
+                ebene(P, 3 + 4 * p);
+                // die nahe Ebene der orthogonalen Kamera (ihre Normale zeigt entlang der Achse) zählt nicht
+                if (P.normal.x * fx + P.normal.y * fy + P.normal.z * fz > 0.99) s[6 + 4 * p] = 0;
+            }
         const f = L.fit;
         s[27] = f ? 1 : 0;
         for (let p = 0; p < 6; p++)
@@ -90349,16 +90376,22 @@ class AnazhRealm {
     }
 
     // Hält die Lage `s` gegen ihren Anker `a` (Aufbau `_passLageGen`)? Orte (das Auge, die Konstanten der Ebenen, der Boden
-    // der Kaskaden-Box) um höchstens haltM, Richtungen bis auf die Rundung, alles andere gleich.
+    // der Kaskaden-Box) um höchstens haltM, Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
+    // Drehung um höchstens `drehRand` (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) —, alles andere
+    // gleich.
     _passLageHaelt(a, s) {
-        const H = AnazhRealm.PASS_WAHL.haltM;
+        const PW = AnazhRealm.PASS_WAHL;
+        const H = PW.haltM;
         const dx = s[0] - a[0],
             dy = s[1] - a[1],
             dz = s[2] - a[2];
-        if (!(dx * dx + dy * dy + dz * dz <= H * H)) return false;
-        // die Ebenen: das Frustum (3…26), die Wahl-Scheibe (28…51) — die Richtung bis auf die Rundung, die Konstante um haltM
+        if (!(dx * dx + dy * dy + dz * dz <= H * H) || s[84] !== a[84]) return false;
+        const persp = s[84] === 1;
+        // perspektivisch die Projektion (3…26), orthogonal die Ebenen des Frustums; dazu die Wahl-Scheibe (28…51) — die
+        // Richtung bis auf die Rundung, die Konstante um haltM
         if (s[27] !== a[27]) return false;
-        for (let p = 0; p < 12; p++) {
+        if (persp) for (let i = 3; i < 27; i++) if (s[i] !== a[i]) return false;
+        for (let p = persp ? 6 : 0; p < 12; p++) {
             const o = p < 6 ? 3 + 4 * p : 28 + 4 * (p - 6);
             if (!(Math.abs(s[o + 3] - a[o + 3]) <= H)) return false;
             for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
@@ -90366,7 +90399,11 @@ class AnazhRealm {
         if (!(Math.abs(s[52] - a[52]) <= H) || s[53] !== a[53]) return false;
         // die Richtungen: die Licht-Basis (54…62), das Licht (63…65), die Drehung der Kamera (75…83)
         for (let i = 54; i < 66; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
-        for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
+        if (persp) {
+            let spur = 0;
+            for (let i = 75; i < 84; i++) spur += s[i] * a[i];
+            if (!((spur - 1) / 2 >= Math.cos(PW.drehRand))) return false;
+        } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
         // die Blende (66…74) gleich
         for (let i = 66; i < 75; i++) if (s[i] !== a[i]) return false;
         return true;
@@ -90377,8 +90414,9 @@ class AnazhRealm {
         const ax = cx - L.ax,
             ay = cy - L.ay,
             az = cz - L.az;
-        // der Saum, der Rand je Meter Abstand zum Auge (die zeitliche Auflösung) und der Halt der Lage (`_passLageGen`)
-        const rr = r + L.halt + L.rand * Math.sqrt(ax * ax + ay * ay + az * az);
+        // der Saum, der Rand je Meter Abstand zum Auge (die zeitliche Auflösung und die Drehung, über die die Lage hält) und
+        // der Halt der Lage (`_passLageGen`)
+        const rr = r + L.halt + (L.rand + L.dreh) * Math.sqrt(ax * ax + ay * ay + az * az);
         const E = L.fr.planes;
         for (let p = 0; p < 6; p++) {
             const n = E[p].normal;
@@ -95327,7 +95365,16 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
 // (`_passLageGen`) — das Auge der Spiel-Kamera atmet im Stand um Millimeter (gemessen 06.10., echte GPU, Mess-Wiese:
 // ±4 mm in y je Frame, keine Drehung), und jede neue Wahl darum rechnete jeden Frame dasselbe neu. Das Gesetz trägt den
 // Halt in jedem Urteil als Rand (`L.halt`), die gehaltene Wahl verliert darum nichts.
-AnazhRealm.PASS_WAHL = Object.freeze({ sichtRand: 0.003, saumM: Object.freeze([8, 24]), pflanzeRandM: 2, haltM: 0.02 });
+// `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): eine Perspektive hält ihre
+// Wahl über eine Drehung bis zu diesem Winkel (Bogenmaß, 2°) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die
+// Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das 1,5-Fache geweitet; gewählt wird neu, wenn die Drehung den Rand verlässt.
+AnazhRealm.PASS_WAHL = Object.freeze({
+    sichtRand: 0.003,
+    saumM: Object.freeze([8, 24]),
+    pflanzeRandM: 2,
+    haltM: 0.02,
+    drehRand: (2 * Math.PI) / 180,
+});
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
 // Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`). Der Hub
