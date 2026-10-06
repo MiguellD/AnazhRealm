@@ -11,13 +11,14 @@
 // Fenster der echten GPU (der Spiel-Loop ruht je Probe).
 //   node scripts/diag-kreatur-takt.cjs [--proben a,b] [--alle] [--selftest] [--werkbank <port>]
 //   --alle      jede Probe (auch die, deren Klasse noch nicht im Gate steht) — der Vorher-Lauf gegen die Basis
-//   --selftest  je Gate-Probe der alte Defekt als Täter eingespielt: jede Probe muss ROT lesen
+//   --selftest  je Gate-Probe jeder alte Defekt als Täter eingespielt (TAETER): jede Probe muss ROT lesen, und zwar aus
+//               dem Grund, der den Täter beim Namen nennt
 "use strict";
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { KREATUR_PROBEN_SRC, PROBEN, urteil } = require("./lib/kreatur-proben.cjs");
+const { KREATUR_PROBEN_SRC, PROBEN, TAETER, CODE_OF_SRC, urteil } = require("./lib/kreatur-proben.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
@@ -93,9 +94,10 @@ async function headless(laeufe) {
     page.setDefaultTimeout(880000);
     const fehler = [];
     page.on("pageerror", (e) => fehler.push((e.stack || e.message).split("\n")[0]));
-    await page.evaluateOnNewDocument(() => {
+    await page.evaluateOnNewDocument((codeOf) => {
         window.__anazhHeadlessNullRenderer = true;
-    });
+        window.__codeOf = (0, eval)("(" + codeOf + ")");
+    }, CODE_OF_SRC);
     const aus = [];
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -142,7 +144,9 @@ async function headless(laeufe) {
 async function imFenster(laeufe) {
     const aus = [];
     for (const l of laeufe) {
-        const o = await rufeWerkbank(`return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`);
+        const o = await rufeWerkbank(
+            `window.__codeOf = window.__codeOf || (${CODE_OF_SRC}); return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
+        );
         if (o.fehler) throw new Error(o.fehler);
         aus.push(o.ergebnis);
     }
@@ -154,7 +158,23 @@ async function imFenster(laeufe) {
         console.log("gate:kreatur-takt — noch keine Probe im Gate (GATE_PROBEN leer); --alle fährt jede Probe.");
         process.exit(0);
     }
-    const laeufe = SELBST ? gewaehlt.map((p) => ({ proben: [p], taeter: p })) : [{ proben: gewaehlt }];
+    // Der Selbsttest: je Probe jeder ihrer Täter in einem eigenen Lauf; das Wort, das ihn nennt, bleibt in Node.
+    const nennt = [];
+    const laeufe = SELBST
+        ? gewaehlt.flatMap((p) =>
+              (TAETER[p] || []).map(([t, re]) => {
+                  nennt.push(re);
+                  return { proben: [p], taeter: t };
+              })
+          )
+        : [{ proben: gewaehlt }];
+    if (SELBST) {
+        const ohne = gewaehlt.filter((p) => !(TAETER[p] && TAETER[p].length));
+        if (ohne.length) {
+            console.log(`❌ SELBST-TEST: Proben ohne Täter: ${ohne.join(", ")} — die Linse wäre ungeprüft`);
+            process.exit(1);
+        }
+    }
     const t0 = Date.now();
     const { aus, fehler } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
     console.log(
@@ -167,14 +187,21 @@ async function imFenster(laeufe) {
             const z = erg[name];
             const u = urteil(name, z);
             zeilen.push({ name, z, u });
-            const gruen = SELBST ? !u.ok : u.ok;
+            const gruen = SELBST ? !u.ok && nennt[li].test(u.grund) : u.ok;
             if (!gruen) rot++;
             const marke = u.ok ? "✅" : "❌";
-            console.log(`  ${marke} ${name.padEnd(9)} ${JSON.stringify(z)}`);
+            const wer = SELBST ? ` [Täter ${laeufe[li].taeter}]` : "";
+            console.log(`  ${marke} ${name.padEnd(9)}${wer} ${JSON.stringify(z)}`);
             if (!u.ok) console.log(`       ↳ ${u.grund}`);
             if (SELBST)
                 console.log(
-                    `       ${gruen ? "✅ der Täter macht die Probe ROT — die Linse sieht ihn" : "❌ der Täter bleibt unsichtbar — die Linse ist blind"}`
+                    `       ${
+                        gruen
+                            ? "✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn"
+                            : u.ok
+                              ? "❌ der Täter bleibt unsichtbar — die Linse ist blind"
+                              : `❌ rot, aber nicht aus seinem Grund (${nennt[li]}) — die Linse nennt ihn nicht`
+                    }`
                 );
         }
     });
@@ -186,14 +213,14 @@ async function imFenster(laeufe) {
     if (rot) {
         console.log(
             SELBST
-                ? `\n❌ SELBST-TEST ROT — ${rot} Probe(n) sehen ihren Täter nicht.`
+                ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
                 : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`
         );
         process.exit(1);
     }
     console.log(
         SELBST
-            ? `\n✅ SELBST-TEST GRÜN — jede Probe sieht ihren Täter (${zeilen.length}).`
+            ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${zeilen.length} Täter).`
             : `\n✅ GRÜN — ${zeilen.map((z) => z.name).join(" · ")}`
     );
     process.exit(0);

@@ -4685,7 +4685,8 @@ class AnazhRealm {
         const soulName = creature.userData.soul || "default";
         const phrases = pool[soulName] || pool.default || pool.wesen || [];
         if (phrases.length === 0) return false;
-        const tpl = phrases[Math.floor(Math.random() * phrases.length)];
+        // die Wahl der Worte zieht aus dem Fauna-Strom der Stimme (Γ5): dieselbe Welt, dieselben Worte
+        const tpl = phrases[Math.floor(this._faunaRng("stimme")() * phrases.length)];
         // Template-Variablen ersetzen. Unbekannte Variablen bleiben drin
         // (helfen beim Debug-Erkennen).
         const text = tpl.replace(/\$\{(\w+)\}/g, (m, key) => {
@@ -24076,11 +24077,12 @@ class AnazhRealm {
     updateCreatureEmotions() {
         // Wetter = ambienter Achsen-Impuls auf das 6-Achsen-Innenleben (kein Binär-Würfel), das Etikett
         // fällt aus der Valenz-Projektion; 10 %-Stochastik (nicht alle fühlen gleichzeitig). Der Sturm ist
-        // ein eigenes Gefühl (chaos + awe), nicht bloß mehr Regen.
+        // ein eigenes Gefühl (chaos + awe), nicht bloß mehr Regen. Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5).
         const word = this.state.weather;
         const wet = this._weatherIsWet(word);
+        const rng = this._faunaRng("gefuehl");
         for (let i = 0; i < this.state.creatures.length; i++) {
-            if (Math.random() >= 0.1) continue;
+            if (rng() >= 0.1) continue;
             const c = this.state.creatures[i];
             if (!c || !c.userData) continue;
             const ud = c.userData;
@@ -78037,11 +78039,13 @@ class AnazhRealm {
                 const count = Math.max(1, Math.min(50, parseInt(btn.getAttribute("data-creature-spawn"), 10) || 1));
                 const soulName = select ? select.value : "";
                 const chosen = soulName && AnazhRealm.CREATURE_SOUL_NAMES.includes(soulName) ? soulName : null;
-                // Spawn ohne clear (state.creatures bleibt + N neue dazu).
+                // Spawn ohne clear (state.creatures bleibt + N neue dazu); der Ort im Ring 5–15 m um den Spieler zieht
+                // aus dem Fauna-Strom des Hofs (Γ5) — ein Tier ist Welt-Substanz, auch wenn eine Hand es ruft.
+                const rng = this._faunaRng("hof");
                 for (let i = 0; i < count; i++) {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 5, z: 0 };
-                    const ang = Math.random() * Math.PI * 2;
-                    const r = 5 + Math.random() * 10;
+                    const ang = rng() * Math.PI * 2;
+                    const r = 5 + rng() * 10;
                     this.spawnCreatureAt(p.x + Math.cos(ang) * r, p.y + 1, p.z + Math.sin(ang) * r, "happy", chosen);
                 }
                 this._renderCreatureListUI();
@@ -85503,15 +85507,16 @@ class AnazhRealm {
         return true;
     }
 
-    // DER FAUNA-STROM (Lehre 7, Γ5): jeder Wurf des Tier-Lebenszyklus — Geburts-Ort, Seele, Gemüt, der Geburts- und
-    // Todes-Takt — zieht aus EINEM seed-gebundenen Strom der Welt, nie aus Math.random (Peers und Reloads würfelten
-    // sonst verschiedene Faunen). Wechselt die Welt (ihr Seed), beginnt der Strom neu.
-    _faunaRng() {
+    // DER FAUNA-STROM (Lehre 7, Γ5): jeder Wurf des Tier-Lebens zieht aus einem seed-gebundenen Strom der Welt, nie aus
+    // Math.random (Peers und Reloads würfelten sonst verschiedene Faunen) — je ZWECK ein eigener Strom (das Stream-Gesetz
+    // `_streamRng`: ein Wurf mehr re-rollt nie einen anderen): "fauna" der Lebenszyklus (Geburts-Ort, Seele, Gemüt, Geburts-
+    // und Todes-Takt, Gegenwehr), "gefuehl" das Wetter-Gefühl, "stimme" die Wahl der Worte, "hof" der Ort einer Hof-Geburt.
+    // Wechselt die Welt (ihr Seed), beginnen die Ströme neu.
+    _faunaRng(zweck = "fauna") {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        const f = this._faunaStrom;
-        if (f && f.seed === seed) return f.rng;
-        this._faunaStrom = { seed, rng: this._streamRng(seed + "-fauna") };
-        return this._faunaStrom.rng;
+        let f = this._faunaStroeme;
+        if (!f || f.seed !== seed) f = this._faunaStroeme = { seed, rng: Object.create(null) };
+        return f.rng[zweck] || (f.rng[zweck] = this._streamRng(seed + "-" + zweck));
     }
 
     // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern

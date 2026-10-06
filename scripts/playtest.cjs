@@ -23408,7 +23408,8 @@ async function checkBandPhasenBF(ctx) {
                 creatures: r.state.creatures,
                 ce: r.state.creatureEmotions,
             };
-            const savedRandom = Math.random;
+            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5, Welle L) — die Probe setzt den Strom, nie Math.random.
+            const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
             try {
                 r.state.weatherTransition = null;
                 r.state.weather = "rainy";
@@ -23424,7 +23425,7 @@ async function checkBandPhasenBF(ctx) {
                 };
                 r.state.creatures = [fake];
                 r.state.creatureEmotions = ["happy"];
-                Math.random = () => 0.05;
+                r._faunaRng = (zweck) => (zweck === "gefuehl" ? () => 0.05 : () => 0.99);
                 r.state.weather = "stormy";
                 r.updateCreatureEmotions();
                 const em = fake.userData.emotions;
@@ -23435,7 +23436,7 @@ async function checkBandPhasenBF(ctx) {
                 if (!/requestWeatherTransition/.test(window.__codeOf(r._setWeather))) return "_setWeather fadet nicht";
                 return true;
             } finally {
-                Math.random = savedRandom;
+                if (!hatteStrom) delete r._faunaRng;
                 r.state.weather = saved.w;
                 r.state.weatherTransition = saved.wt;
                 r.state.weatherEffectTime = saved.wet;

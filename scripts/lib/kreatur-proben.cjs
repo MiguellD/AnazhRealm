@@ -18,6 +18,7 @@
 //   nacht     (Q11) die Ruhe-Aktion hält den Leib an (Kritik §2.3: 81 % bewegt während ruhen)
 //   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
+//   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
 "use strict";
 
 // ═══ DIE SEITEN-FUNKTION (läuft im Browser: r = die Welt, T = THREE) ═══
@@ -843,6 +844,54 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── zufall (Q2, Lehre 7): kein Math.random im Kreatur-Leben ──
+    // Gelesen wird der LEBENDE Code jeder Methode (r[name] — die Instanz vor dem Prototyp, was die Welt ruft) über
+    // window.__codeOf (Kommentare gestrippt: sie zitieren den gefallenen Würfel). Die Klasse: jede Methode der Welt, deren
+    // Name ein Tier trägt (creature · kreatur · fauna · tier), dazu die benannten Wurf-Stellen der Leben-Prüfung ohne
+    // Tier im Namen. Eine benannte Methode, die fehlt, ist rot (die Liste veraltet nie still).
+    await buehne("zufall", async (restore) => {
+        const BENANNT = [
+            "_spawnOneInitialCreature",
+            "_creatureNaturalBirth",
+            "_kreaturGeburtsOrt",
+            "tickFaunaLifecycle",
+            "_pickCreatureSoulName",
+            "_pickCreatureName",
+            "_affinityPickFromCandidates",
+            "_pickFaunaSoulAtPlayer",
+            "damageCreature",
+            "updateCreatures",
+            "updateCreatureEmotions",
+            "_creatureSpeakProactive",
+            "creatureDrawerInitDOM",
+            "creatureJump",
+            "_tickKreaturVerhalten",
+            "_faunaRng",
+        ];
+        if (taeter === "zufall")
+            decke(
+                restore,
+                "_pickCreatureName",
+                (alt) =>
+                    function (...a) {
+                        return Math.random() < 2 ? alt.apply(this, a) : null;
+                    }
+            );
+        const code = window.__codeOf;
+        if (typeof code !== "function") return { fehler: "window.__codeOf fehlt (der Kommentar-Stripper der Linse)" };
+        const namen = new Set(BENANNT);
+        for (const n of Object.getOwnPropertyNames(A.prototype))
+            if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof A.prototype[n] === "function") namen.add(n);
+        const fehlt = [];
+        const treffer = [];
+        for (const n of namen) {
+            const f = r[n];
+            if (typeof f !== "function") fehlt.push(n);
+            else if (/Math\.random\s*\(/.test(code(f))) treffer.push(n);
+        }
+        return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer };
+    });
+
     // ── peer (Q3): die Sicht-Kopie beim Mitspieler dreht und geht ──
     await buehne("peer", async (restore) => {
         const remote = s.p2p && s.p2p.remoteCreatures;
@@ -902,6 +951,7 @@ const PROBEN = [
     "hindernis",
     "nacht",
     "peer",
+    "zufall",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -972,7 +1022,38 @@ function urteil(name, z) {
         soll(z.gierFehlerGrad <= 15, `Sicht-Kopie blickt ${z.gierFehlerGrad}° neben die Laufrichtung`);
         soll(z.gangV > 0.5, `Sicht-Kopie geht nicht (Gang-Tempo ${z.gangV})`);
     }
+    if (name === "zufall") {
+        soll(z.fehlt.length === 0, `benannte Methode fehlt: ${z.fehlt.join(", ")}`);
+        soll(z.methoden > z.benannt, `nur ${z.methoden} Methoden gelesen (die Tier-Klasse fehlt — Probe vakuös)`);
+        soll(z.treffer.length === 0, `Math.random im Kreatur-Leben: ${z.treffer.join(", ")}`);
+    }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
-module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, urteil };
+// DIE TÄTER des Selbsttests: je Probe jeder alte Defekt, den sie trägt, und das Wort, an dem das Urteil ihn beim Namen
+// nennt — rot aus dem falschen Grund ist blind für den richtigen.
+const TAETER = {
+    geister: [["geister", /Geister/]],
+    geburt: [["geburt", /Geburt/]],
+    sattel: [["sattel", /mountedArch/]],
+    reload: [["reload", /geheilt|Gier/]],
+    huepfer: [["huepfer", /ohne Aktion|Luft-Anteil/]],
+    wachsen: [["wachsen", /Skala/]],
+    gier: [["gier", /Lauf ↔ Blick|rückwärts/]],
+    jagd: [["jagd", /Achsen/]],
+    herde: [["herde", /am Blick/]],
+    hindernis: [["hindernis", /Feld-Strahlen/]],
+    nacht: [["nacht", /bewegt während ruhen/]],
+    peer: [["peer", /Sicht-Kopie/]],
+    zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
+};
+
+// Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare
+// zitieren gefallenen Code; eine Absenz-Probe liest nie ein Zitat).
+const CODE_OF_SRC = String((fnOrSrc) =>
+    String(fnOrSrc)
+        .replace(/\/\/.*$/gm, "")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+);
+
+module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, CODE_OF_SRC, urteil };
