@@ -87306,7 +87306,11 @@ class AnazhRealm {
             // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
             // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity. Kosten (04.10., echte GPU
             // Radeon 890M, 1080p, ruhig, gpu-bank 200 Frames × 12 Paare gegen FXAA): +1,1 ms je Frame (die Pass-
-            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB.
+            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Szene,
+            // Auflösung und Geschichte bleiben rgba16float (die Geschichts-Kopien verlangen EIN Format für alle drei):
+            // rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierte die Wolken zu Höhenlinien, die Radeon rundet beim
+            // Schreiben gegen null (Sonde 1,0117 → 1,0; das Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame
+            // 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5 Mantissen-Bit tragen die zeitliche Auflösung nicht.
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
             if (this.state._traa && typeof THREE.TRAANode !== "function") {
@@ -87894,9 +87898,11 @@ class AnazhRealm {
     // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted`
     // (aus); fallen kann sie nicht — der r184-Pipeline-Bau liest Format und Farbraum aus `textures[0]`
     // (getCurrentColorFormat · getCurrentColorSpace), ein Ziel ohne Farbe bräche jede Schatten-Pipeline. Darum r8
-    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). Der Knoten baut
-    // sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus nennt die
-    // Kaskade beim Namen.
+    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). EINE Farbe für
+    // beide Kaskaden trägt r184 nicht: das zweite Ziel legt die geteilte Textur bei seiner ersten Belegung neu an, der Pass
+    // des ersten liest die zerstörte („Destroyed texture used in a submit", die Schatten fallen — gemessen W7, echte GPU).
+    // Der Knoten baut sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus
+    // nennt die Kaskade beim Namen.
     _kaskadenZiele(csm) {
         const knoten = csm._shadowNodes || [];
         for (let i = 0; i < knoten.length; i++) {
