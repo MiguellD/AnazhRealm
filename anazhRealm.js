@@ -24234,10 +24234,10 @@ class AnazhRealm {
 
     // Deterministischer (alle Peers gleich) offener, flacher, trockener Spawn-Punkt: Ring-Spirale um
     // (0,0), der ERSTE Punkt, der (a) kein Kavernenboden ist (surf ≥ macro − 6; `getTerrainHeightAt` ist
-    // die echte Voxel-Oberfläche), (b) trocken liegt (surf > waterLevel + 1.5), (c) flach ist
-    // (±6-m-Proben, Δ ≤ 3.5 m). Nichts gefunden bis 240 m → (0,0).
+    // die echte Voxel-Oberfläche), (b) trocken liegt — über JEDEM Wasser (`_isAboveWaterAt`, Marge 1,5 m: See,
+    // Fluss, Tarn; bis 06.10. nur über dem Meeresspiegel), (c) flach ist (±6-m-Proben, Δ ≤ 3.5 m). Die Lichtung um
+    // die Plattform hält der Wald selbst frei (`_genesisLichtung`, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
     _findOpenSpawnSpot() {
-        const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         const candidates = [[0, 0]];
         for (let r = 12; r <= 240; r += 12) {
             for (let a = 0; a < 8; a++) {
@@ -24250,7 +24250,7 @@ class AnazhRealm {
             if (!Number.isFinite(surf)) continue;
             const macro = this._terrainMacroSurfaceY(x, z);
             if (Number.isFinite(macro) && surf < macro - 6) continue; // Kavernen-/Kraterboden
-            if (surf < wl + 1.5) continue; // nass
+            if (!this._isAboveWaterAt(x, z, 1.5)) continue; // nass (jedes Wasser)
             let flat = true;
             for (const [dx, dz] of [
                 [6, 0],
@@ -68696,9 +68696,26 @@ class AnazhRealm {
     }
     // Site-Wände am Anker (die Slot-Wände prüft `_spawnSettlementSlot` je Haus zusätzlich). `noSpawnClear`
     // öffnet NUR dem Start-Dorf die Spawn-Klar-Wand; Wasser/Steil bleiben für jede Site dieselbe Wand.
+    // DER GENESIS-ORT (EINE Quelle): die Mitte der Start-Plattform — dort kommt der Spieler an, um sie stehen die
+    // Kern-Portale (Schöpfer V18.486: „die kernportale um die genesis-plattform anordnen"), um sie bleibt die
+    // Warmup-Welt dorffrei und wächst das Start-Dorf. Ohne Plattform der Welt-Ursprung. Bis 06.10. lasen diese vier
+    // den Ursprung, während die Plattform dort stand, wo `_findOpenSpawnSpot` Platz fand (36 m daneben, seit der
+    // Kronen-Wand V-D1 dort, wo kein Baum durch die Scheibe wächst).
+    _genesisMitte() {
+        const p = this._genesisPlattform();
+        return p ? { x: p.position.x, z: p.position.z } : { x: 0, z: 0 };
+    }
+    _genesisPlattform() {
+        const p = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");
+        return p && p.position ? p : null;
+    }
+
     _autoSettlementSiteOk(x, z, noSpawnClear) {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (spawnClearM)
-        if (!noSpawnClear && Math.hypot(x, z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
+        if (!noSpawnClear) {
+            const g = this._genesisMitte();
+            if (Math.hypot(x - g.x, z - g.z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
+        }
         if (!this._isAboveWaterAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
         const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
         // ZENSUS 17.07. — die Steil-Wand ist fachwerk-Gesetz (SIEDLUNG.slopeMax).
@@ -68726,24 +68743,25 @@ class AnazhRealm {
     // `_autoSettlementStartInfo` (unten): EINMAL je Welt ein Start-Dorf ~110–170 m vom Spawn (Γ5
     // ":startdorf"), Radien × 8 Winkel durch `_autoSettlementSiteOk` mit offener Spawn-Klar-Wand.
     // GENESIS-PORTAL-RING: EINMAL je Welt stehen alle Built-in-Portale (WORLD_REGISTRY) im Kreis um den
-    // Ursprung, deterministisch. Doppelt idempotent: worldMeta-Stempel UND Existenz-Probe (ein
+    // Genesis-Ort (`_genesisMitte`), deterministisch. Doppelt idempotent: worldMeta-Stempel UND Existenz-Probe (ein
     // restauriertes Ring-Portal setzt den Stempel nach). Terrain/Bauplan nicht bereit → nächster Tick.
     _genesisPortalRing(playerPos) {
         const st = this.state;
         const wm = st.worldMeta;
         if (!wm || wm.genesisPortalRing || this._genesisRingFertig) return;
-        if (playerPos.x * playerPos.x + playerPos.z * playerPos.z > 60 * 60) return; // nur am Genesis-Ort
+        const M = this._genesisMitte();
+        if ((playerPos.x - M.x) ** 2 + (playerPos.z - M.z) ** 2 > 60 * 60) return; // nur am Genesis-Ort
         const bps = st.blueprints || {};
         const namen = Object.keys(bps).filter((n) => {
             const b = bps[n];
             return b && b.builtIn && b.role === "portal" && b.portalMeta && b.portalMeta.world;
         });
         if (!namen.length) return;
-        // Existenz-Probe: trägt die Welt schon ein Ring-Portal nahe des Ursprungs
+        // Existenz-Probe: trägt die Welt schon ein Ring-Portal nahe des Genesis-Orts
         // (Restore eines Saves ohne Stempel), gilt der Ring als gebaut.
         for (const e of st.architectures || []) {
             if (!e || !e.position) continue;
-            const d2 = e.position.x * e.position.x + e.position.z * e.position.z;
+            const d2 = (e.position.x - M.x) ** 2 + (e.position.z - M.z) ** 2;
             if (d2 <= 20 * 20 && namen.includes(e.type)) {
                 this._genesisRingFertig = true;
                 wm.genesisPortalRing = true;
@@ -68754,8 +68772,8 @@ class AnazhRealm {
         let gebaut = 0;
         for (let i = 0; i < namen.length; i++) {
             const a = (i / namen.length) * 2 * Math.PI;
-            const x = Math.cos(a) * R;
-            const z = Math.sin(a) * R;
+            const x = M.x + Math.cos(a) * R;
+            const z = M.z + Math.sin(a) * R;
             const y = this.getTerrainHeightAt(x, z);
             if (!Number.isFinite(y)) return; // Terrain reift noch — nächster Tick
             const entry = this.spawnArchitecture(namen[i], { x, y, z }, { seed: ((i + 1) * 7919) >>> 0 });
@@ -68812,11 +68830,13 @@ class AnazhRealm {
                 });
             return;
         }
+        // ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der Ring steht um ihn).
+        const M = this._genesisMitte();
         const px = portal.position.x || 0;
         const pz = portal.position.z || 0;
-        const len = Math.hypot(px, pz) || 1;
-        const ox = px + (px / len) * 8;
-        const oz = pz + (pz / len) * 8;
+        const len = Math.hypot(px - M.x, pz - M.z) || 1;
+        const ox = px + ((px - M.x) / len) * 8;
+        const oz = pz + ((pz - M.z) / len) * 8;
         const y = this.getTerrainHeightAt(ox, oz);
         if (!Number.isFinite(y)) return;
         // Deterministische Seeds: fachwerk 49177 · garage 49178 · schmiede 49179 · portale 49180.
@@ -68914,11 +68934,12 @@ class AnazhRealm {
             h = Math.imul(h, 16777619) >>> 0;
         }
         const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
+        const M = this._genesisMitte(); // um den Genesis-Ort, wo der Spieler ankommt
         for (let ri = 0; ri < A.startRadiusM.length; ri++) {
             for (let i = 0; i < 8; i++) {
                 const a = phase + (i / 8) * 2 * Math.PI;
-                const x = Math.cos(a) * A.startRadiusM[ri];
-                const z = Math.sin(a) * A.startRadiusM[ri];
+                const x = M.x + Math.cos(a) * A.startRadiusM[ri];
+                const z = M.z + Math.sin(a) * A.startRadiusM[ri];
                 if (!this._autoSettlementSiteOk(x, z, true)) continue;
                 return { key: "start", seed: h >>> 0 || 1, nH: S.nHMin + ((h >>> 24) % S.nHSpan), x, z };
             }
@@ -69024,7 +69045,7 @@ class AnazhRealm {
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
         // DER GENESIS-PORTAL-RING zuerst (einmalig je Welt, Schöpfer 17.07.) —
-        // dieselbe Tick-Heimat wie das Start-Dorf (Kanal lebt, Spieler am Ursprung).
+        // dieselbe Tick-Heimat wie das Start-Dorf (Kanal lebt, Spieler am Genesis-Ort).
         this._genesisPortalRing(playerPos);
         // V18.491.81 — Portal-approach Prefetch: Preview-Typen nur bei Tor-Nähe
         // (+ frühes Await-Book), nicht Boot-breit. Helper `_ensurePortalPreview` bleibt.
@@ -69052,12 +69073,13 @@ class AnazhRealm {
                 return; // EIN Dorf-Akt pro Tick
             }
         }
-        // Start-Dorf zuerst (einmalig je Welt): nur nahe des Ursprungs materialisieren (kein Fern-Spawn hinter
+        // Start-Dorf zuerst (einmalig je Welt): nur nahe des Genesis-Orts materialisieren (kein Fern-Spawn hinter
         // dem Rücken). Fail-closed + session-gemerkt: eine Welt ohne Fleck urteilt immer gleich.
+        const gM = this._genesisMitte();
         if (
             (!cells || !cells.start) &&
             !this._autoSettlementStartHopeless &&
-            playerPos.x * playerPos.x + playerPos.z * playerPos.z <= A.nearM * A.nearM
+            (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= A.nearM * A.nearM
         ) {
             const si = this._autoSettlementStartInfo();
             if (!si)
@@ -72794,6 +72816,64 @@ class AnazhRealm {
         sys.mesh.geometry.attributes.position.needsUpdate = true;
     }
 
+    // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
+    // Positions-Tiebreak) in ±2 Nachbarzellen konkurriert. Rein → reihenfolge-unabhängig; strikte Total-Ordnung → kein
+    // Paar akzeptierter Zentren < pack·(Ti+Tj). Shared shy-Distanz (phyto-core forestTooClose) + named prio-max
+    // (forestPrioWins); FOREST_TOPOLOGY.host = "cell" (Feel-Entscheid .116). Der Pflanz-Gang und die Spawn-Wahl lesen
+    // DIESE Antwort — der Wald ist eine Funktion, nie zwei.
+    _forestDartSteht(d, gx, gz, cellDarts) {
+        const F = AnazhRealm.FOREST;
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        const tooClose = core && typeof core.forestTooClose === "function" ? core.forestTooClose : null;
+        const prioWins = core && core.forestPrioWins;
+        for (let ax = -2; ax <= 2; ax++) {
+            for (let az = -2; az <= 2; az++) {
+                const nb = cellDarts(gx + ax, gz + az);
+                for (let k = 0; k < nb.length; k++) {
+                    const o = nb[k];
+                    if (o === d) continue; // sich selbst (eigene Zelle) überspringen
+                    const dx = d.x - o.x;
+                    const dz = d.z - o.z;
+                    // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
+                    const conflict = tooClose
+                        ? tooClose(dx, dz, d.T, o.T, F.pack)
+                        : (() => {
+                              const md = F.pack * (d.T + o.T);
+                              return dx * dx + dz * dz < md * md;
+                          })();
+                    if (!conflict) continue; // kein Konflikt
+                    // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
+                    const better = prioWins
+                        ? prioWins(o, d)
+                        : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
+                    if (better) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // DIE GENESIS-LICHTUNG (Befund V-D1, 06.10.): um die Start-Plattform wächst kein Baum, dessen Krone in der Welt über
+    // die Scheibe reicht. Bis 06.10. stand eine Tanne 2,0 m vom Plattform-Mittelpunkt: der erste Blick jedes neuen Spielers
+    // eine Nadelwand, der Stamm-Blocker 1,2 m unter der Oberkante (der Spieler lief durch den Stamm). Eine kronenfreie
+    // Stelle sucht die Spawn-Wahl nicht: in der Default-Welt hat keine flache, trockene Stelle bis 240 m eine (gemessen
+    // 06.10.: 161 Kandidaten, 0 frei) — der Genesis-Ort ist die Lichtung, der Wald weicht ihm. Rückgabe {x, z, r} oder null.
+    _genesisLichtung() {
+        const p = this._genesisPlattform();
+        if (!p) return null;
+        const pb = this.state.blueprints && this.state.blueprints.start_plattform;
+        const p0 = pb && Array.isArray(pb.parts) && pb.parts[0] && pb.parts[0].size;
+        const r = p0 && Number.isFinite(p0.x) ? p0.x / 2 : 0; // die Stein-Scheibe (cylinder: size.x = Durchmesser)
+        return { x: p.position.x, z: p.position.z, r };
+    }
+    // Die Krone eines Wald-Wurfs in der Welt: Kronen-Schüchternheit T (Vorlagen-Maß) × die Welt-Skala seiner Art
+    // (`_foundryWorldScaleMatrix`, dieselbe, mit der der Baum gezeichnet wird). Gemessen 06.10. (echte GPU, die weiteste
+    // Ast-Spitze der gezeichneten Instanz): die Studio-Tanne trägt bei T 3,0 m Äste bis 11,7 m, die Fichte bei T 2,6 m
+    // bis 13,2 m, die Birke bei T 3,6 m bis 12,4 m.
+    _forestKroneWelt(d) {
+        return d.T * (this._foundryWorldScaleMatrix(this._foundryPresetFor(d.sp)).elements[0] || 1);
+    }
+
     _forestPlantChunk(cx, cz) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         const F = AnazhRealm.FOREST;
@@ -72809,12 +72889,6 @@ class AnazhRealm {
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
         const c1z = Math.floor((oz + span) / CELL);
-        // Shared shy-Distanz (phyto-core forestTooClose) + named prio-max (forestPrioWins).
-        // FOREST_TOPOLOGY.host = "cell" (phyto-core) — Feel-Entscheid .116; chunk order-independent; no fake merge with Lab disk.
-        const _coreShy = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const forestTooClose =
-            _coreShy && typeof _coreShy.forestTooClose === "function" ? _coreShy.forestTooClose : null;
-        const forestPrioWins = _coreShy && _coreShy.forestPrioWins;
         // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
         // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
         const memo = new Map();
@@ -72828,46 +72902,19 @@ class AnazhRealm {
             return d;
         };
         let planted = 0;
+        const lichtung = this._genesisLichtung(); // der Genesis-Ort ist eine Lichtung (V-D1)
         for (let gz = c0z; gz <= c1z; gz++) {
             for (let gx = c0x; gx <= c1x; gx++) {
                 const own = cellDarts(gx, gz);
                 for (const d of own) {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
-                    // Kronen-Schüchternheit: der Dart steht, wenn KEIN besserer Dart (prio, Positions-Tiebreak) in ±2
-                    // Nachbarzellen konkurriert. Rein → reihenfolge-unabhängig; strikte Total-Ordnung → kein Paar
-                    // akzeptierter Zentren < pack·(Ti+Tj).
-                    let accepted = true;
-                    for (let ax = -2; ax <= 2 && accepted; ax++) {
-                        for (let az = -2; az <= 2 && accepted; az++) {
-                            const nb = cellDarts(gx + ax, gz + az);
-                            for (let k = 0; k < nb.length; k++) {
-                                const o = nb[k];
-                                if (o === d) continue; // sich selbst (eigene Zelle) überspringen
-                                const dx = d.x - o.x;
-                                const dz = d.z - o.z;
-                                // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
-                                const conflict = forestTooClose
-                                    ? forestTooClose(dx, dz, d.T, o.T, F.pack)
-                                    : (() => {
-                                          const md = F.pack * (d.T + o.T);
-                                          return dx * dx + dz * dz < md * md;
-                                      })();
-                                if (!conflict) continue; // kein Konflikt
-                                // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
-                                const better = forestPrioWins
-                                    ? forestPrioWins(o, d)
-                                    : o.prio > d.prio ||
-                                      (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
-                                if (better) {
-                                    accepted = false;
-                                    break;
-                                }
-                            }
-                            if (!accepted) break;
-                        }
-                    }
-                    if (!accepted) continue;
+                    if (!this._forestDartSteht(d, gx, gz, cellDarts)) continue;
+                    if (
+                        lichtung &&
+                        Math.hypot(d.x - lichtung.x, d.z - lichtung.z) < lichtung.r + this._forestKroneWelt(d)
+                    )
+                        continue;
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).
                     // Im Studio-Regime ist fd=1 → dieser Check feuert nie; sonst dünnt der Perf-Regler.
                     if (fd < 1 && d.keep >= fd) continue;
@@ -91396,7 +91443,7 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
 AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 });
 // Worldgen-Auto-Dorf-Daten (Konsument `_tickAutoSettlement`, Wände + Γ5-Disziplin dort):
 // cellM Welt-Zelle (m) · rarity 1 von N Zellen trägt ein Dorf (Erstkontakt ≈ rarity·cellM²/(2·nearM))
-// · nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Ursprung (nearM <
+// · nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Genesis-Ort (nearM <
 // spawnClearM → am Spawn wirkt nur das START-DORF) · slopeMax Site-Wand (|∇h| m/m) · siteProbeR zwei
 // Probe-Ringe (×cellM), falls der Anker scheitert · startRadiusM Start-Dorf-Radien (einmalig je Welt,
 // Seed ":startdorf") · nHMin/nHSpan Hauszahl · perTick Häuser je Idle-Tick.

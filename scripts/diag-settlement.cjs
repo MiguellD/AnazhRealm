@@ -571,13 +571,16 @@ const FIXTURES = [
             for (let t2 = 0; t2 < 5; t2++) r._tickAutoSettlement({ x: cand.x, z: cand.z });
             res.c.idempotent = again === null && r.state.architectures.length === archAfter;
             // C5 — DER GENESIS-PORTAL-RING (V18.486, Schöpfer: „beim ersten spawn
-            // die kernportale um die genesis-plattform anordnen"): am Ursprung
-            // heben alle builtIn-Welt-Portale im Kreis R 11 m; doppelt idempotent
+            // die kernportale um die genesis-plattform anordnen"): am Genesis-Ort
+            // (`_genesisMitte`, die Mitte der Start-Plattform — Welle L, V-D1) heben alle builtIn-Welt-Portale im
+            // Kreis R 11 m; doppelt idempotent
             // (worldMeta-Stempel + Existenz-Probe). Bis hier hatte der Ring KEINE
             // Linse — Fertigkeit ohne Konsum-Beweis ist die verbotene Klasse.
             res.c.ring = {};
             try {
                 const wm5 = r.state.worldMeta;
+                const M5 = r._genesisMitte();
+                const d2M = (e) => (e.position.x - M5.x) ** 2 + (e.position.z - M5.z) ** 2;
                 delete wm5.genesisPortalRing;
                 r._genesisRingFertig = false;
                 const portalArten = Object.keys(r.state.blueprints || {}).filter((n) => {
@@ -586,23 +589,23 @@ const FIXTURES = [
                 });
                 res.c.ring.arten = portalArten.length;
                 const ringVorher = r.state.architectures.filter(
-                    (e) => e && e.position && portalArten.includes(e.type) && e.position.x * e.position.x + e.position.z * e.position.z <= 400
+                    (e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 400
                 ).length;
-                for (let t5 = 0; t5 < 30 && !wm5.genesisPortalRing; t5++) r._genesisPortalRing({ x: 0, y: 1, z: 0 });
+                for (let t5 = 0; t5 < 30 && !wm5.genesisPortalRing; t5++) r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z });
                 const ringNachher = r.state.architectures.filter(
-                    (e) => e && e.position && portalArten.includes(e.type) && e.position.x * e.position.x + e.position.z * e.position.z <= 400
+                    (e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 400
                 ).length;
                 res.c.ring.stempel = wm5.genesisPortalRing === true;
                 res.c.ring.gebaut = ringNachher - ringVorher;
                 const archRing = r.state.architectures.length;
-                r._genesisPortalRing({ x: 0, y: 1, z: 0 }); // Idempotenz: der Stempel traegt
+                r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z }); // Idempotenz: der Stempel traegt
                 res.c.ring.idempotent = r.state.architectures.length === archRing;
                 // Radius-Probe: jedes neue Ring-Portal sitzt auf ~R 11 (±2 m)
                 res.c.ring.radiusOk = r.state.architectures
                     .filter((e) => e && e.position && portalArten.includes(e.type))
                     .slice(-res.c.ring.gebaut)
                     .every((e) => {
-                        const d = Math.sqrt(e.position.x * e.position.x + e.position.z * e.position.z);
+                        const d = Math.sqrt(d2M(e));
                         return d > 9 && d < 13;
                     });
             } catch (e5) {

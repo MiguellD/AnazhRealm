@@ -10,6 +10,13 @@
 //     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
 //     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
 //
+//   V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG: der echte Boot legt die Genesis-Plattform, der Wald wächst um den
+//     Spieler (Chunk-Strom + Pflanz-Schlange). Gemessen an den GEPFLANZTEN Bäumen: Stamm-Abstand zur Plattform-Mitte und
+//     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
+//     der gezeichneten Instanz geprüft). Befund: eine Tanne 2,0 m vom Mittelpunkt, der erste Blick eine Nadelwand.
+//     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring (`_genesisPortalRing`): er steht um die Plattform
+//     (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.                                     Soll Ring-Mitte ≤ 1 m
+//
 //   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -70,6 +77,17 @@ function vorschauVerdict(m) {
     return out;
 }
 
+function ankunftVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    if (!(m.baeume > 0)) out.push("kein Wald um die Plattform gewachsen");
+    if (m.kronen > 0) out.push(`${m.kronen} Krone(n) über der Scheibe (nächster Stamm ${m.naechsterStamm} m, ${m.naechsteArt})`);
+    if (!(m.ringPortale > 0)) out.push("kein Genesis-Ring");
+    else if (!(m.ringMitteAbstand <= 1)) out.push(`ring-mitte ${m.ringMitteAbstand} m neben der Plattform`);
+    if (m.trocken !== true) out.push("plattform im wasser");
+    return out;
+}
+
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
@@ -122,6 +140,70 @@ async function probe() {
             await sleep(ms || 30);
         }
     };
+    // ── V-D1: die Ankunft ──
+    try {
+        const m = { gestartet: false };
+        out.ankunft = m;
+        const dl0b = performance.now() + 60000;
+        while (performance.now() < dl0b && !st.architectures.some((a) => a && a.type === "start_plattform")) await tick(1, 100);
+        const plat = st.architectures.find((a) => a && a.type === "start_plattform");
+        if (!plat) throw new Error("keine Genesis-Plattform");
+        const platR = st.blueprints.start_plattform.parts[0].size.x / 2;
+        const P = plat.position;
+        m.plattform = [+P.x.toFixed(1), +P.z.toFixed(1)];
+        m.trocken = r._isAboveWaterAt(P.x, P.z, 0);
+        // Der Wald wächst um den Spieler: ticken, bis die Bäume im 40-m-Kreis ruhen.
+        const baeume = () =>
+            st.architectures.filter((a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40);
+        let stabil = 0,
+            last = -1;
+        const dl = performance.now() + 150000;
+        const t0 = performance.now();
+        while (performance.now() < dl) {
+            await tick(4, 20);
+            const n = baeume().length;
+            if (n === last) stabil++;
+            else {
+                stabil = 0;
+                last = n;
+            }
+            if (stabil >= 15 && n > 0 && performance.now() - t0 > 8000) break;
+        }
+        const F = r.constructor.FOREST;
+        let kronen = 0,
+            naechster = Infinity,
+            art = null;
+        const bs = baeume();
+        for (const a of bs) {
+            const d = Math.hypot(a.position.x - P.x, a.position.z - P.z);
+            const k = r._foundryWorldScaleMatrix(r._foundryPresetFor(a.type)).elements[0] || 1;
+            const krone = (F.crown[a.type] || 4) * (a.scale || 1) * k;
+            if (d < platR + krone) kronen++;
+            if (d < naechster) {
+                naechster = d;
+                art = a.type;
+            }
+        }
+        m.baeume = bs.length;
+        m.kronen = kronen;
+        m.naechsterStamm = Number.isFinite(naechster) ? +naechster.toFixed(2) : null;
+        m.naechsteArt = art;
+        // Der Genesis-Ring: der Kreis der Kern-Portale um den Genesis-Ort (headless ruht der Auto-Zug — die Probe ruft ihn).
+        for (let i = 0; i < 30 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++)
+            r._genesisPortalRing(st.playerMesh.position);
+        const ring = st.architectures.filter(
+            (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 80
+        );
+        m.ringPortale = ring.length;
+        if (ring.length) {
+            const cx = ring.reduce((s2, a) => s2 + a.position.x, 0) / ring.length;
+            const cz = ring.reduce((s2, a) => s2 + a.position.z, 0) / ring.length;
+            m.ringMitteAbstand = +Math.hypot(cx - P.x, cz - P.z).toFixed(2);
+        }
+        m.gestartet = true;
+    } catch (e) {
+        out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+    }
     // ── V-D3: die Werkstatt-Vorschau ──
     try {
         const m = { gestartet: false };
@@ -226,6 +308,17 @@ async function probe() {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
+        const gesundA = { gestartet: true, baeume: 9, kronen: 0, ringPortale: 10, ringMitteAbstand: 0, trocken: true };
+        check("Selbst-Test V-D1: gesunde Ankunft == 0 Täter", ankunftVerdict(gesundA).length === 0);
+        for (const [name, bruch, soll] of [
+            ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
+            ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
+            ["Plattform im See", { trocken: false }, "plattform im wasser"],
+            ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
+        ]) {
+            const v = ankunftVerdict(Object.assign({}, gesundA, bruch));
+            check(`Selbst-Test V-D1: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
         const gruen = wand(quelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const vorStand = quelle
@@ -263,6 +356,15 @@ async function probe() {
     await browser.close();
     server.close();
 
+    console.log("=== V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG ===");
+    const am = out.ankunft || {};
+    if (am.err) check("V-D1 Probe ohne Ausnahme", false, am.err.split("\n")[0]);
+    const vA = ankunftVerdict(am);
+    check(
+        "V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie",
+        vA.length === 0,
+        `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m${vA.length ? " — Täter: " + vA.join(", ") : ""}`
+    );
     console.log("=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===");
     const vm = out.vorschau || {};
     if (vm.err) check("V-D3 Probe ohne Ausnahme", false, vm.err.split("\n")[0]);
