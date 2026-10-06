@@ -90093,9 +90093,13 @@ class AnazhRealm {
         if (!nach && csm && csm.camera && kamera === csm.camera) this._kaskadenPassen(csm);
         const k = nach ? -1 : this._schattenKameraIndex(kamera);
         // Die Lage des Passes: EINE Rechnung je Pass (Frustum der Pass-Kamera, Auge, Kaskaden-Scheibe, Blende), jeder Leser
-        // urteilt mit ihr nach dem EINEN Gesetz.
+        // urteilt mit ihr nach dem EINEN Gesetz. Die Matrix der Wahl trägt den Versatz der zeitlichen Auflösung NICHT (TRAA
+        // verschiebt die Projektion je Frame um einen halben Pixel, die Elemente 8 und 9 einer Perspektive — den Rand dafür
+        // trägt `sichtRand`): dieselbe Lage wählt in jedem Frame dasselbe, die gehaltene Wahl ist die frische (Welle C).
         if (!nach) {
-            S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
+            S.m.copy(kamera.projectionMatrix);
+            if (kamera.isPerspectiveCamera === true) S.m.elements[8] = S.m.elements[9] = 0;
+            S.m.multiply(kamera.matrixWorldInverse);
             S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
             this._passWahlLage(S, kamera, k);
         }
@@ -90283,14 +90287,8 @@ class AnazhRealm {
         s[0] = we[12] - t * fx;
         s[1] = we[13] - t * fy;
         s[2] = we[14] - t * fz;
-        // das Frustum ohne den Versatz der zeitlichen Auflösung
-        const pm = this._passLagePM || (this._passLagePM = new THREE.Matrix4());
-        const F = this._passLageFr || (this._passLageFr = new THREE.Frustum());
-        pm.copy(kamera.projectionMatrix);
-        pm.elements[8] = 0;
-        pm.elements[9] = 0;
-        pm.multiply(kamera.matrixWorldInverse);
-        F.setFromProjectionMatrix(pm, kamera.coordinateSystem);
+        // das Frustum des Passes (`_passSicht` legt es ohne den Versatz der zeitlichen Auflösung)
+        const F = L.fr;
         const ebene = (P, o) => {
             s[o] = P.normal.x;
             s[o + 1] = P.normal.y;
