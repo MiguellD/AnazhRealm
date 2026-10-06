@@ -574,6 +574,8 @@ const FORBIDDEN = [
     { token: "_hausTuerBlockerParts", fiel: "Welle L — die Haus-Hülle der Stufe (_hausBlockerBoxen, OBB)" },
     { token: "_slopeProbeV", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
     { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
+    { token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT", fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)" },
+    { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

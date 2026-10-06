@@ -283,8 +283,10 @@ const FIXTURES = [
         // SCHICHT-VOLLENDUNG (18.07.): der Export trägt NUR gelebte Schichten —
         // trees/fences/felder/staende reisen (Hof-Bäume + Zäune + Äcker +
         // Marktstände haben Konsumenten); fluss/bruecken/graph (keine Welt-
-        // Wahrheit) und mauer/laternen (Visionsscope gestrichen, CLAUDE.md)
-        // sind GESTRICHEN (kein toter Passagier, Vertrags-Akt).
+        // Wahrheit) und mauer/laternen sind GESTRICHEN (kein toter Passagier,
+        // Vertrags-Akt). Grund: die Stadt-Genese mit Mauer/Fluss/Brücken in der
+        // Welt ist neues Verhalten hinter dem Feature-Stopp bis v1.0
+        // (docs/roadmap.md §0.v1, Leben-Synthese §5.3) — offen, benannt.
         check(
             "SCHICHT-VOLLENDUNG: Export trägt trees/fences/felder/staende, aber fluss/bruecken/graph/mauer/laternen sind gestrichen",
             Array.isArray(stadt.trees) &&
@@ -388,7 +390,7 @@ const FIXTURES = [
         // Slot-Anker == Export-Slot (der erste platzierte Eintrag traegt exakt slot.x/z + phi + seed).
         // DORF-IN-TERRAIN (die Probe wandert mit dem Gesetz): das Prädikat spiegelt
         // zusätzlich die Klippen-Wand der EINEN Slot-Quelle (Footprint-Δh über die
-        // vier obb-Ecken <= AUTO_SETTLEMENT.fundamentMaxDh).
+        // vier obb-Ecken <= SIEDLUNG.fundamentMaxDh, das fachwerk-Gesetz).
         const dhOf = (s) => {
             const wx = o1.x + s.x;
             const wz = o1.z + s.z;
@@ -420,7 +422,7 @@ const FIXTURES = [
                 pol.prefix &&
                 r.state.blueprints[pol.prefix + s.kultur] &&
                 r._isAboveWaterAt(o1.x + s.x, o1.z + s.z, 0.2) &&
-                dhOf(s) <= r.constructor.AUTO_SETTLEMENT.fundamentMaxDh
+                dhOf(s) <= r.constructor._siedlungGesetz().fundamentMaxDh
             );
         });
         const m0 = s0
@@ -469,8 +471,21 @@ const FIXTURES = [
         // 4) Der Chat-Konsument "dorf" existiert in der System-Befehls-Tabelle.
         res.chatDorf = r.chatSystemPatterns.some((p) => p.example && p.example.indexOf("dorf") === 0);
         // 5) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
+        // Welle L: der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
+        // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
         const src = window.__codeOf ? window.__codeOf(r.spawnSettlement) : r.spawnSettlement.toString();
-        res.gammaStream = /:stadt/.test(src) && !/Math\.random/.test(src);
+        const srcSame = window.__codeOf ? window.__codeOf(r._bauSame) : String(r._bauSame);
+        // derselbe Strom für den Chat-Satz „baue dorf hier" (Welle L: vorher würfelte Math.random den Dorf-Samen)
+        const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
+        const srcHier = baueHier
+            ? (window.__codeOf ? window.__codeOf(baueHier.build) : String(baueHier.build)).replace(/\/\/[^\n]*/g, "")
+            : "";
+        res.gammaHier = /_bauSame\(/.test(srcHier) && !/Math\.random/.test(srcHier);
+        res.gammaStream =
+            /_bauSame\("stadt"\)/.test(src) &&
+            !/Math\.random/.test(src) &&
+            /:\$\{art\}:/.test(srcSame) &&
+            !/Math\.random/.test(srcSame);
         // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
         // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
         res.waterWall = /_isAboveWaterAt/.test(
@@ -531,12 +546,18 @@ const FIXTURES = [
             // budget-frei); die Budget-Wand gilt der HAUS-Materialisierung:
             // Referenz ist der Stand NACH der Ankunft.
             const archAnkunft = r.state.architectures.length;
-            // Budget-Wand: ueber Budget materialisiert NICHTS.
+            // EXISTENZ VOR FRAMERATE (Welle L, Leben-Prüfung N-D9; Lehre 13): über dem Frame-Budget DROSSELT der Takt das
+            // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
+            // drosselTakte-ten Takt. Vorher (die V18.282-Wand) entstand über dem Budget nichts: 60 von 60 Proben, 0 Häuser.
             const fob = r.state._frameOverBudget;
+            const drossel = A.drosselTakte || 8;
             r.state._frameOverBudget = true;
-            r._tickAutoSettlement({ x: cand ? cand.x : 0, z: cand ? cand.z : 0 });
-            const archOverBudget = r.state.architectures.length;
-            res.c.budgetWall = archOverBudget === archAnkunft;
+            const qIdx0 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : null;
+            for (let t0 = 0; t0 < 2 * drossel; t0++) r._tickAutoSettlement({ x: cand ? cand.x : 0, z: cand ? cand.z : 0 });
+            // gezählt werden die bearbeiteten Slots (ein Slot an Wasser/Klippe fällt geschlossen, er zählt als Schritt)
+            const qIdx1 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : qIdx0;
+            res.c.ueberBudget = Number.isFinite(qIdx0) && Number.isFinite(qIdx1) ? qIdx1 - qIdx0 : null;
+            res.c.budgetWall = res.c.ueberBudget >= 1 && res.c.ueberBudget <= 2;
             r.state._frameOverBudget = false;
             // Materialisierung: je Tick hoechstens perTick Slots (gezaehlt).
             let ticks = 0;
@@ -608,6 +629,24 @@ const FIXTURES = [
             } catch (e5) {
                 res.c.ring.err = (e5 && e5.message) || String(e5);
             }
+            // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT (Welle L, Leben-Prüfung S-W1): zwei Siedlungen mit DEMSELBEN Samen an
+            // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch).
+            // Vorher schlüsselte das Gedächtnis nur den Samen: die zweite (die Stadt `dorf 7 120` neben `dorf 7 18`) blieb ohne Weg.
+            try {
+                const orig = r._stlWegeBuild;
+                const formen = [];
+                r._stlWegeBuild = function (...a) {
+                    const n6 = orig.apply(this, a);
+                    formen.push(n6);
+                    return n6;
+                };
+                await r.spawnSettlement({ seed: 4711, nH: 6, position: { x: 1500, y: 0, z: 1500 } });
+                await r.spawnSettlement({ seed: 4711, nH: 6, position: { x: -1500, y: 0, z: 1500 } });
+                r._stlWegeBuild = orig;
+                res.c.wegeJeOrt = formen;
+            } catch (e6) {
+                res.c.wegeErr = (e6 && e6.message) || String(e6);
+            }
             // Hook wiederherstellen (sichern + wiederherstellen, nie loeschen — die Disziplin):
             if (prevHook === undefined) delete window.__anazhAutoSettlement;
             else window.__anazhAutoSettlement = prevHook;
@@ -658,6 +697,7 @@ const FIXTURES = [
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check('B: der Chat-Konsument "dorf [seed] [häuser]" steht in der Befehls-Tabelle', out.chatDorf === true);
     check("B: Γ5 — der Siedlungs-Same zieht aus dem :stadt-Stream (kein Math.random)", out.gammaStream === true);
+    check("B: Γ5 — „baue dorf hier“ zieht denselben Bau-Strom (_bauSame, kein Math.random)", out.gammaHier === true);
     check(
         "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _isAboveWaterAt je Slot)",
         out.waterWall === true
@@ -682,7 +722,16 @@ const FIXTURES = [
         c.planOk === true && c.reserved === true && c.placed >= 1 && c.allHaus === true,
         `placed=${c.placed} ticks=${c.ticks}`
     );
-    check("C3b: die Budget-Wand pausiert (_frameOverBudget -> 0 Häuser in dem Tick)", c.budgetWall === true);
+    check(
+        "C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt (16 Takte → 1–2 Slots, nie 0)",
+        c.budgetWall === true,
+        `über dem Budget: ${c.ueberBudget} Slots in 16 Takten`
+    );
+    check(
+        "C6: der Wege-Schlüssel trägt den Ort — zwei Siedlungen mit demselben Samen bauen je ihre Wege",
+        Array.isArray(c.wegeJeOrt) && c.wegeJeOrt.length === 2 && c.wegeJeOrt.every((n6) => n6 > 0),
+        `Wege-Formen je Ort: ${(c.wegeJeOrt || []).join(" / ")}${c.wegeErr ? " err=" + c.wegeErr : ""}`
+    );
     const ring = c.ring || {};
     check(
         "C5: DER GENESIS-PORTAL-RING hebt am Ursprung (alle builtIn-Welt-Portale, Stempel gesetzt)",

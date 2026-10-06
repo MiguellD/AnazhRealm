@@ -4173,8 +4173,14 @@
             // + Hof-Bäume (Architektur-Spawns). Die Schichten ohne Welt-Wahrheit
             // (fluss/bruecken = Layout-interner Deko-Fluss, das Welt-Wasser ist
             // _isAboveWaterAt · graph = Diagnose-Meta · mauer/laternen = Stadt-
-            // Gestalt, Visionsscope gestrichen s. CLAUDE.md) sind aus dem
-            // Export GESTRICHEN — das Lab liest sein Layout direkt aus dorfLayout.
+            // Gestalt) sind aus dem Export GESTRICHEN — das Lab liest sein Layout
+            // direkt aus dorfLayout. Der Grund (Welle L, 06.10.; die frühere
+            // Begründung zitierte eine CLAUDE.md-Zeile, die es nie gab): die
+            // Stadt-Genese mit Mauer, Fluss und Brücken in der Welt ist NEUES
+            // Verhalten hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1;
+            // Leben-Synthese §5.3, NACH-V1) — offen, benannt: die Welt-Stadt zeigt
+            // keine Mauer, keine Laternen, keinen Siedlungs-Fluss (Messname
+            // gate:settlement „SCHICHT-VOLLENDUNG"); das Lab baut sie als Vorschau.
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,

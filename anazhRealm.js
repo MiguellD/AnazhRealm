@@ -2128,7 +2128,11 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                this.spawnSettlement({ position: pos, seed: s, nH: 9, autonomous: ctx.source === "nexus" });
+                // die Größe aus dem Siedlungs-Gesetz (fachwerk SIEDLUNG, derselbe Wurf wie die Auto-Dörfer) — das Stamm-
+                // Literal 9 fiel (Karte Dorf/Stadt DEFEKT 4: zwei Chat-Wege mit zwei Größen-Wahrheiten)
+                const SG = AnazhRealm._siedlungGesetz();
+                const nH = SG ? SG.nHMin + ((s >>> 24) % SG.nHSpan) : undefined;
+                this.spawnSettlement({ position: pos, seed: s, nH, autonomous: ctx.source === "nexus" });
                 ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
             },
             // AUSLÖSCHUNGS-WELLE — der TEMPEL ist die klassische PORTIKUS-Kultur des
@@ -8581,7 +8585,9 @@ class AnazhRealm {
                     const dist = 8;
                     const fx = p.x - Math.sin(yaw) * dist;
                     const fz = p.z - Math.cos(yaw) * dist;
-                    const seed = Math.floor(Math.random() * 0xffffffff);
+                    // der Same aus dem Welt-Strom (`_bauSame`; das Dorf derselbe Strom wie `dorf`) — nie Math.random
+                    // (Lehre 7: Peers und Reloads würfelten verschiedene Dörfer)
+                    const seed = this._bauSame(kind === "dorf" ? "stadt" : kind);
                     const op = map[kind];
                     const program = op
                         ? [op, ["at", fx, p.y, fz], seed]
@@ -68044,8 +68050,9 @@ class AnazhRealm {
             this._blattAtlasBild = m.blattAtlas;
     }
     // Siedlungs-Gesetz aus dem Buch (fachwerk-core SIEDLUNG, Feld `siedlung`): wo und wie viele Dörfer.
-    // Ganz oder gar nicht: EIN nicht-finites Feld → ganz byte-alt (`_siedlungGesetz` → AUTO_SETTLEMENT).
-    // Jeder Siedlungs-Urteils-Pfad läuft erst nach Buch-Ankunft (`_autoSettlementChannelLive`/Export).
+    // Ganz oder gar nicht: EIN nicht-finites Feld → kein Gesetz (`_siedlungGesetz` → null, kein Dorf — nie ein Ersatz).
+    // Jeder Siedlungs-Urteils-Pfad läuft erst nach Buch-Ankunft (`_autoSettlementChannelLive`/Export) — Rezepte und
+    // Gesetz kommen im selben Buch (`_foundryIngestBook`).
     _foundryIngestSiedlung(s) {
         if (
             s &&
@@ -68576,9 +68583,9 @@ class AnazhRealm {
                     if (h < hMin) hMin = h;
                 }
             }
-            // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG).
+            // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Slot.
             const S = AnazhRealm._siedlungGesetz();
-            if (hMax - hMin > S.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
+            if (!S || hMax - hMin > S.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
             fundament = { ex: obb.ex, ez: obb.ez };
         }
         const wy = hMax + 0.5;
@@ -68767,20 +68774,7 @@ class AnazhRealm {
     async spawnSettlement(opts) {
         const o = opts && typeof opts === "object" ? opts : {};
         let seed = Number.isFinite(o.seed) ? Number(o.seed) : NaN;
-        if (!Number.isFinite(seed)) {
-            // Γ5: der Siedlungs-Same zieht aus dem Welt-Seed-Stream (Suffix ":stadt", FNV-1a —
-            // das _worldRuleSeed-Muster; pro Akt zählt settlementCount hoch → jede neue
-            // Siedlung derselben Welt ein ANDERER, aber deterministischer Same).
-            const wm = this.state.worldMeta || {};
-            const n = (this._settlementCount = (this._settlementCount || 0) + 1); // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert, kein audit-Feld)
-            const s = `${wm.seed || "anazh-realm-seed"}:stadt:${n}`;
-            let h = 2166136261 >>> 0;
-            for (let i = 0; i < s.length; i++) {
-                h ^= s.charCodeAt(i);
-                h = Math.imul(h, 16777619) >>> 0;
-            }
-            seed = h >>> 0 || 1;
-        }
+        if (!Number.isFinite(seed)) seed = this._bauSame("stadt");
         // ZENSUS-REST V18.488 — der Stamm KLEMMT nur, er defaultet nie: ohne
         // o.nH führt der Kern-Default (fachwerk DORF: DP.nH — die EINE
         // Wahrheit; der divergente Stamm-Zwilling 18 vs Kern 24 ist gefallen).
@@ -68815,7 +68809,9 @@ class AnazhRealm {
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
             const wmD = this.state.worldMeta || (this.state.worldMeta = {});
             if (!wmD.settlementCells || typeof wmD.settlementCells !== "object") wmD.settlementCells = {};
-            const dKey = "d:" + seed;
+            // der Wege-Schlüssel trägt den ORT: zwei Siedlungen mit demselben Samen bauen je ihre Wege (vorher gewann die
+            // erste, die Stadt `dorf 7 120` neben `dorf 7 18` stand ohne einen Weg — Leben-Prüfung S-W1)
+            const dKey = "d:" + seed + "@" + Math.round(anchor.x) + "," + Math.round(anchor.z);
             if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
             const msg = `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`;
@@ -68826,15 +68822,31 @@ class AnazhRealm {
             return res;
         });
     }
+    // DER BAU-SAME (Γ5): zieht aus dem Welt-Seed-Stream (Suffix ":<art>", FNV-1a — das _worldRuleSeed-Muster); je Art zählt
+    // ein Akt-Zähler hoch → jeder neue Bau derselben Welt ein ANDERER, aber deterministischer Same. Die Siedlung trägt die
+    // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`) und der Chat-Satz „baue … hier" (der Same reist im Programm).
+    _bauSame(art) {
+        const wm = this.state.worldMeta || {};
+        const z = this._bauSameZaehler || (this._bauSameZaehler = {}); // Instanz-Feld (nicht serialisiert, kein audit-Feld)
+        const n = (z[art] = (z[art] || 0) + 1);
+        const s = `${wm.seed || "anazh-realm-seed"}:${art}:${n}`;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619) >>> 0;
+        }
+        return h >>> 0 || 1;
+    }
     // ═══ WORLDGEN-AUTO-DÖRFER (der Worldgen-Konsument des "settlement"-Kanals) ═══
-    // Γ5: je Welt-Zelle (AUTO_SETTLEMENT.cellM) entscheidet FNV-1a(worldSeed:dorf:cx,cz) Existenz (1 von
+    // Γ5: je Welt-Zelle (SIEDLUNG.cellM) entscheidet FNV-1a(worldSeed:dorf:cx,cz) Existenz (1 von
     // `rarity`), Seed, Größe, Anker; Wände: flach · über Wasser · spawnClearM (sonst FindSite).
     // Export async über den Foundry-Worker, Häuser budgetiert (nur `!_frameOverBudget`) über
     // `_spawnSettlementSlot`; `worldMeta.settlementCells` markiert bei Export-ANKUNFT (nie Doppel-Dorf).
     // Headless ruht der Zug (Gate-Hook `__anazhAutoSettlement`). Unten: Zelle → {seed, nH, Anker} | null.
     _autoSettlementCellInfo(cx, cz) {
-        // ZENSUS 17.07. — Existenz/Raster/Größe sind fachwerk-Gesetz (SIEDLUNG).
+        // ZENSUS 17.07. — Existenz/Raster/Größe sind fachwerk-Gesetz (SIEDLUNG); kaltes Buch → keine Zelle.
         const A = AnazhRealm._siedlungGesetz();
+        if (!A) return null;
         const wm = this.state.worldMeta || {};
         const s = `${wm.seed || "anazh-realm-seed"}:dorf:${cx},${cz}`;
         let h = 2166136261 >>> 0;
@@ -68863,7 +68875,8 @@ class AnazhRealm {
         if (!this._isAboveWaterAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
         const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
         // ZENSUS 17.07. — die Steil-Wand ist fachwerk-Gesetz (SIEDLUNG.slopeMax).
-        return !(Number.isFinite(slope) && slope > AnazhRealm._siedlungGesetz().slopeMax); // flach genug
+        const SG = AnazhRealm._siedlungGesetz();
+        return !!SG && !(Number.isFinite(slope) && slope > SG.slopeMax); // flach genug
     }
     // Site-Suche: der flache, trockene Fleck NAHE des Ankers statt Tod an einem Punkt (sonst fällt die
     // Mehrheit der Zellen an der Steil-Wand). Γ5 aus dem Zell-Seed: Anker zuerst, dann je Probe-Ring
@@ -68874,7 +68887,9 @@ class AnazhRealm {
         const phase = (((info.seed >>> 4) & 0xff) / 255) * 2 * Math.PI;
         for (let ri = 0; ri < A.siteProbeR.length; ri++) {
             // ZENSUS 17.07. — das Zell-Raster ist fachwerk-Gesetz (SIEDLUNG.cellM).
-            const rad = A.siteProbeR[ri] * AnazhRealm._siedlungGesetz().cellM;
+            const SG = AnazhRealm._siedlungGesetz();
+            if (!SG) return null;
+            const rad = A.siteProbeR[ri] * SG.cellM;
             for (let i = 0; i < 4; i++) {
                 const a = phase + (i / 4) * 2 * Math.PI + ri * (Math.PI / 4);
                 const px = info.x + Math.cos(a) * rad;
@@ -69065,8 +69080,9 @@ class AnazhRealm {
 
     _autoSettlementStartInfo() {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (startRadiusM)
-        // ZENSUS 17.07. — die Dorf-Größe ist fachwerk-Gesetz (SIEDLUNG.nHMin/nHSpan).
+        // ZENSUS 17.07. — die Dorf-Größe ist fachwerk-Gesetz (SIEDLUNG.nHMin/nHSpan); kaltes Buch → kein Start-Dorf.
         const S = AnazhRealm._siedlungGesetz();
+        if (!S) return null;
         const wm = this.state.worldMeta || {};
         const s = `${wm.seed || "anazh-realm-seed"}:startdorf`;
         let h = 2166136261 >>> 0;
@@ -69161,12 +69177,19 @@ class AnazhRealm {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (perTick/nearM)
         // (a) BUDGETIERTE MATERIALISIERUNG zuerst: ein angekommener Export baut seine
         // Häuser über Ticks verteilt — erst fertig wachsen, dann die nächste Zelle.
+        // EXISTENZ VOR FRAMERATE (Lehre 13, Leben-Prüfung N-D9): das Frame-Budget drosselt das TEMPO des Dorf-Akts, nie
+        // seine Existenz — über dem Budget trägt jeder A.drosselTakte-te Takt EINEN Slot bzw. EINEN Akt. Vorher kehrte der
+        // Takt über dem Budget um (60 von 60 Proben): auf jedem Gerät über dem Sollwert entstand das Start-Dorf nie.
+        const ueber = !!st._frameOverBudget;
+        if (ueber) {
+            this._dorfDrossel = (this._dorfDrossel || 0) + 1;
+            if (this._dorfDrossel % A.drosselTakte !== 0) return;
+        }
         const q = this._autoSettlementQueue;
         if (q && q.plan) {
-            if (st._frameOverBudget) return; // erst die Frame-Zeit (V18.282-Wand)
             const f = this._foundry;
             let n = 0;
-            while (q.idx < q.plan.slots.length && n < A.perTick) {
+            while (q.idx < q.plan.slots.length && n < (ueber ? 1 : A.perTick)) {
                 this._spawnSettlementSlot(q.plan.slots[q.idx++], q.origin, f);
                 n++;
             }
@@ -69179,7 +69202,6 @@ class AnazhRealm {
             }
             return;
         }
-        if (st._frameOverBudget) return;
         if (this._autoSettlementPendingKey) return; // ein Export-Roundtrip zur Zeit
         if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
         const wm = st.worldMeta || {};
@@ -69231,7 +69253,9 @@ class AnazhRealm {
         if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         // ZENSUS 17.07. — DASSELBE Zell-Raster wie die Zell-Wahrheit
         // (_autoSettlementCellInfo): SIEDLUNG.cellM, das fachwerk-Gesetz.
-        const cellM = AnazhRealm._siedlungGesetz().cellM;
+        const SGz = AnazhRealm._siedlungGesetz();
+        if (!SGz) return;
+        const cellM = SGz.cellM;
         const pcx = Math.floor(playerPos.x / cellM);
         const pcz = Math.floor(playerPos.z / cellM);
         for (let dz = -1; dz <= 1; dz++) {
@@ -91681,27 +91705,23 @@ AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1
 // Seed ":startdorf") · nHMin/nHSpan Hauszahl · perTick Häuser je Idle-Tick.
 // Die GESETZ-Felder (cellM · rarity · nHMin/nHSpan · slopeMax · fundamentMaxDh) wohnen im
 // fachwerk-Gesetzbuch (SIEDLUNG, via `_siedlungGesetz`); hier stehen sie nur als Fallback.
+// DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
+// (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax · Klippen-Wand fundamentMaxDh) lebt EINMAL in
+// fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
-    cellM: 256,
-    rarity: 2,
     nearM: 260,
     spawnClearM: 320,
-    slopeMax: 0.35,
     siteProbeR: Object.freeze([0.15, 0.3]),
     startRadiusM: Object.freeze([110, 130, 150, 170]),
-    nHMin: 8,
-    nHSpan: 10,
     perTick: 2,
-    // Klippen-Wand je Haus-Slot: max. Höhendifferenz über die vier obb-Footprint-Ecken (m). Darunter
-    // trägt ein Fundament-Podest das Haus in den Hang (_archFundamentBox), darüber fällt der Slot —
-    // Hang-Dörfer leben von hohen Sockeln, nur die wahre Klippe fällt.
-    fundamentMaxDh: 9,
+    // Über dem Frame-Budget trägt jeder drosselTakte-te Takt einen Slot (das Tempo fällt, die Siedlung entsteht).
+    drosselTakte: 8,
 });
-// DER EINE SIEDLUNGS-GESETZ-LESER (Zensus 17.07.): das Memo setzt der Buch-
-// Ingest (`_foundryIngestSiedlung`, validiert ganz-oder-gar-nicht); kaltes
-// Buch/alter Kern → AUTO_SETTLEMENT (byte-gleiche Werte, nie Misch-Gesetz).
+// DER EINE SIEDLUNGS-GESETZ-LESER (Zensus 17.07.): das Memo setzt der Buch-Ingest (`_foundryIngestSiedlung`, validiert
+// ganz-oder-gar-nicht); kaltes Buch → null: ohne Gesetz entsteht kein Dorf (fail-closed, die Leser prüfen), nie ein
+// Ersatz-Gesetz.
 AnazhRealm._siedlungGesetz = function () {
-    return AnazhRealm._siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT;
+    return AnazhRealm._siedlungGesetzMemo || null;
 };
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
