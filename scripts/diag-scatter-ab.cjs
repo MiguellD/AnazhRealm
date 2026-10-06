@@ -31,7 +31,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4409;
+const PORT = Number(process.env.SCATTER_AB_PORT || 4409);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

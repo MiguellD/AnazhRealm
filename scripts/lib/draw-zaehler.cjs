@@ -10,8 +10,8 @@
 // (f · fimp · fscatter · g), `tier:<seele>`, `spieler`, sonst der Name des Erzeugers; ohne jeden Namen
 // `UNBENANNT:<type>` — ein Linsen-Fehler (die Band-Linse ist rot, bis der Erzeuger das Objekt benennt). `unbenannt`
 // trägt je Fall eine Spur (Eltern-Kette, Material, Geometrie), die den Erzeuger finden lässt.
-//   - Je Klasse im Hauptbild: lebende Instanzen und ihr Abstand zur Kamera (dMin/dMax, freie Null-Matrix-Slots
-//     zählen nicht) — eine Nah-Stufe in der Ferne ist der stille L0-Rückfall (die Band-Linse liest `stufenWand`).
+//   - Je Klasse im Hauptbild: die Instanzen und ihr Abstand zur Kamera (dMin/dMax; jede Instanz-Senke ist dicht, jede
+//     gezeichnete Instanz lebt — `gate:freie-slots`) — eine Nah-Stufe in der Ferne ist der stille L0-Rückfall (die Band-Linse liest `stufenWand`).
 //   - `art` = die Studio-Art des Presets (Rezept-`kind` der lebenden Foundry), wo die Klasse ein Foundry-Preset trägt.
 //
 //   Seite:     window.__drawZensus({ top: 16, alle: false }) → { passe, klassen, unbenannt, programme, frameMs }
@@ -64,7 +64,7 @@ function drawZensus(opts) {
             e.obj++;
             e.cmd += cmd;
             e.tris += tris;
-            // Die Nähe der Klasse im Hauptbild: jede lebende Instanz (Null-Matrix = freier Slot) bzw. das Objekt.
+            // Die Nähe der Klasse im Hauptbild: jede Instanz bzw. das Objekt.
             if (pass === "haupt") {
                 const w = nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0 });
                 const mw = object.matrixWorld.elements;
@@ -81,7 +81,6 @@ function drawZensus(opts) {
                     const a = object.instanceMatrix.array;
                     for (let i = 0; i < object.count; i++) {
                         const b = i * 16;
-                        if (a[b] === 0 && a[b + 1] === 0 && a[b + 2] === 0) continue;
                         miss(a[b + 12], a[b + 13], a[b + 14]);
                     }
                 } else if (g && g.boundingSphere) {

@@ -13,7 +13,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const PORT = 4319;
+const PORT = Number(process.env.ARCH_PERF_PORT || 4319);
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",

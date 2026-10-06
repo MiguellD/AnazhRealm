@@ -445,6 +445,14 @@ jobs:
               # strukturell laut. Selbst-Tests: injizierte Fremd-Emitter + synthetisch verlorener Key → rot.
               run: npm run gate:asset-inventory
 
+            - name: Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass
+              # Jede Instanz-Senke ist DICHT: _archGroupFree zieht die letzte Instanz in die Lücke (_instanzUmzug), count
+              # schreibt nur _instanzZahl, eine leere Senke ist unsichtbar. Null-Renderer + Foundry an, Wander-Sequenz
+              # (fort und zurück, sieben Umzüge): nach jedem Umzug je Gruppe count gegen die Lebenden, Marke i trägt Slot i,
+              # keine Null-3×3 — jeder Befund mit Senke · Pass · Dreiecken. Quelle: kein count an _instanzZahl vorbei, keine
+              # Free-Liste, kein Shader-Riegel. Selbsttest: ein freier Slot, eine sichtbare leere Hülle, eine count-Zeile → rot.
+              run: npm run gate:freie-slots
+
             - name: V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht
               # V6 (Look-Finale, Track 1): der EINE LOOK-Wetter-Leser liefert die fünf Kanäle transition-aware;
               # grey stormy>=0.8 & sunny==0 (entsättigt das LICHT, nie den Himmel), wind stormy >=5x sunny,

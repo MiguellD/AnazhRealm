@@ -242,7 +242,7 @@ function check(name, ok, detail) {
         //     private Boden-Zelle (@reg-Slots, lod<2) demotet auf die Fern-Stufe,
         //     sobald der Spieler geht — Slots wandern nach @s:, die private Hülle
         //     leert sich und wird ge-reapt (die EINE Reap-Frage); der Ursprungs-
-        //     Sphere-Hazard fiel mit der positions-erbenden Null-Skala. Probe
+        //     Sphere-Hazard fiel mit dem freien Slot (die Gruppe ist dicht). Probe
         //     NUR an ZWEI-stufigen Arten (strauch/eiche) — geklemmte Arten
         //     (Blume/Fels) quittieren bewusst ohne Slot-Tausch. ──
         const dblk = {};
@@ -347,18 +347,16 @@ function check(name, ok, detail) {
                     const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
                     return !g || (g.liveCount | 0) === 0;
                 });
-                // Null-Skala erbt die Position: kein Slot einer lebenden privaten
-                // Gruppe darf eine Ursprungs-Translation tragen (Sphere-Hazard).
+                // Die Gruppe ist dicht (`_archGroupFree` verdichtet): kein gezeichneter Slot einer
+                // privaten Gruppe trägt eine Null-Skala (der freie Slot, der die Kugel verzerrte).
                 let ursprungsHazard = 0;
                 if (r.state.archInstanceGroups) {
                     for (const [k, g] of r.state.archInstanceGroups) {
                         if (!privat(k) || !g.mesh || !g.mesh.instanceMatrix) continue;
                         const arr = g.mesh.instanceMatrix.array;
-                        for (let sl = 0; sl < g.next; sl++) {
+                        for (let sl = 0; sl < g.mesh.count; sl++) {
                             const o = sl * 16;
-                            const skala0 = arr[o] === 0 && arr[o + 5] === 0 && arr[o + 10] === 0;
-                            const amUrsprung = arr[o + 12] === 0 && arr[o + 13] === 0 && arr[o + 14] === 0;
-                            if (skala0 && amUrsprung) ursprungsHazard++;
+                            if (arr[o] === 0 && arr[o + 5] === 0 && arr[o + 10] === 0) ursprungsHazard++;
                         }
                     }
                 }
@@ -523,7 +521,7 @@ function check(name, ok, detail) {
                 `slotsFern=${out.d.slotsFern} hülleWeg=${out.d.huelleWeg} (private Slots vor: ${out.d.privateSlotsVor})`
             );
             check(
-                "D: kein Ursprungs-Sphere-Hazard (Null-Skala erbt die Position)",
+                "D: kein Ursprungs-Sphere-Hazard (kein Null-Skala-Slot in einer dichten Gruppe)",
                 out.d.ursprungsHazard === 0,
                 `hazard-Slots=${out.d.ursprungsHazard}`
             );

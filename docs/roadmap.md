@@ -80,9 +80,11 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
 - **GPU/Render:** GPU-Density-WGSL → geschnitten (Roundtrip teurer als Worker-CPU; KEIN
   GPU-Compute-Rewrite der load-bearing Pipeline) · Cel/Schatten für WebGPU opfern → Rollback ·
   Geometrie-eps gegen Trapeze → falscher Hebel (Wurzel war die Facetten-Lichtung, `normalNode`) ·
-  „GPU-driven-Culling-Gigant" zur Wand geprobt (Juni): damals verworfen — V18.488 dann doch
-  gezielt gebaut (Feld-Cull: Compute-Kompaktierung + indirekte Draws nur für die schwersten
-  Streu-Familien); die Narbe gilt für den Voll-Rewrite, nicht für den gezielten Hebel.
+  „GPU-driven-Culling-Gigant" zur Wand geprobt (Juni): verworfen; der gezielte Hebel (Feld-Cull
+  V18.488: Compute-Kompaktierung + indirekte Draws für die @s:-Fernstufen der Streu) fiel 05.10.
+  mit seinem Ziel — die Fernstufe ist seit dem EINEN Atlas eine Karte; gemessen griff er nur noch
+  beim Wandern an Geröll-L0 und verwarf dort vor allem freie Slots, im Hauptbild allein, für die
+  Band-Linse unsichtbar (indirekter Draw). Die Narbe: kein GPU-Cull für Familien unter ~100 Instanzen.
 - **Hydro/Spawn:** Submarine-Biom-Dämpfung → Symptom-Pflaster · Perzentil-waterLevel-Magie →
   Sample-Region ≪ Wellenlänge · Architektur-Optik-Aufwertung entfesselte die Material-Resonanz
   (Optik-Anreicherung MUSS tag-neutral sein, 4 Achsen vorher/nachher messen).

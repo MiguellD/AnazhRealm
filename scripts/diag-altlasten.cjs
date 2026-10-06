@@ -491,6 +491,15 @@ const FORBIDDEN = [
     // Der Wasser-Hauch klingt nur, wo Wasser ist: jeder Bau und Abbau reicht seine Fußabdrücke (`_nassAt`) — der Aufruf
     // ohne Fußabdruck hauchte bis 06.10. auch fern jedes Ufers (der Stein-Abbau war nie stumm).
     { token: "this._playWaterReactionPing()", fiel: "Integration W5-Klang — _playWaterReactionPing(fussabdruecke)" },
+    // DER FELD-CULL FÄLLT (05.10.) — sein Ziel, die @s:-Fernstufen der Streu, gibt es nicht mehr (die Streu beginnt
+    // erst jenseits ANALOG_NAH_M, ihre Fernstufe ist die Karte im EINEN Atlas oder ein Gesetz-Platz). Gemessen an der
+    // Mess-Wiese (echte GPU): im Stand 0 Adoptionen in 2600 Takten; beim Wandern griff er nur an Geröll-L0-Familien und
+    // verwarf dort vor allem freie Slots (57 Instanzen, 12 lebend) — im Hauptbild allein, die Kaskaden zeichneten weiter
+    // alle. Der Konsument zeichnete indirekt, die Band-Linse zählte ihn mit der Kapazität. Name kommt nicht zurück.
+    { token: "feldCull", fiel: "05.10. — der Feld-Cull (Compute-Kompaktierung + indirekte Draws) fiel ganz" },
+    { token: "FeldCull", fiel: "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern" },
+    { token: "FELD_CULL", fiel: "05.10." },
+    { token: "IndirectStorageBufferAttribute", fiel: "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -799,12 +808,19 @@ function scanLabBuster() {
 // `AnazhRealm._instanzMesh` (Instanz-Matrix als Storage). Ein Bau daran vorbei trägt die Kapazität
 // wieder als Uniform-Array-Länge in den Vertex-Shader — ein Programm + eine Pipeline je Kapazität
 // (gemessen 02.10.: 756 Vertex- auf 60 Fragment-Programme). Erlaubt: genau EIN `new THREE.InstancedMesh(`
-// (der Chokepoint selbst) + der Feld-Cull-Konsument (Kapazität fest 1, eigene Storage-Matrix).
+// (der Chokepoint selbst). Gezählt wird JEDER Bau, auch über einen Alias (`const T = THREE; new T.InstancedMesh(`):
+// bis 05.10. sah die Wand nur die THREE-Schreibweise — der Feld-Cull-Konsument und die Werkstatt-Vorschau bauten an
+// ihr vorbei.
+const INSTANZ_BAU = /new\s+(?:[A-Za-z_$][\w$]*\.)?InstancedMesh\(/g;
 function scanInstanzWand(srcRoh) {
     const code = stripComments(srcRoh);
-    const n = (code.match(/new THREE\.InstancedMesh\(/g) || []).length;
+    const treffer = [];
+    for (const m of code.matchAll(INSTANZ_BAU)) treffer.push(code.slice(0, m.index).split("\n").length);
     const errs = [];
-    if (n !== 1) errs.push(`Instanz-Wand: \`new THREE.InstancedMesh(\` steht ${n}× im Stamm (erlaubt: 1, der Chokepoint _instanzMesh)`);
+    if (treffer.length !== 1)
+        errs.push(
+            `Instanz-Wand: eine InstancedMesh entsteht ${treffer.length}× im Stamm (erlaubt: 1, der Chokepoint _instanzMesh) — Zeilen ${treffer.join(", ")}`
+        );
     const kopf = code.indexOf("static _instanzMesh(geom, mat, cap) {");
     if (kopf < 0 || code.indexOf("new THREE.InstancedMesh(", kopf) - kopf > 200)
         errs.push("Instanz-Wand: der Chokepoint `static _instanzMesh(geom, mat, cap)` trägt den Bau nicht");
@@ -884,7 +900,8 @@ function main() {
         const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
         const instanzFeuert =
             scanInstanzWand(stamm).length === 0 &&
-            scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1;
+            scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1 &&
+            scanInstanzWand(stamm + "\nconst T = THREE;\nconst x = new T.InstancedMesh(g, m, 1);\n").length === 1;
         if (!instanzFeuert) {
             console.log("❌ SELBST-TEST: die Instanz-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);

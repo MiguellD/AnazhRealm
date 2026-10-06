@@ -23,7 +23,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4413;
+const PORT = Number(process.env.SCATTER_SLICE_PORT || 4413);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -100,7 +100,7 @@ const server = http.createServer((req, res) => {
                 const b = {};
                 if (st.archInstanceGroups)
                     for (const [k, g] of st.archInstanceGroups)
-                        b[k] = { count: g.count || 0, free: Array.isArray(g.free) ? g.free.length : 0 };
+                        b[k] = { live: g.liveCount || 0, count: g.mesh ? g.mesh.count : 0 };
                 return JSON.stringify(b);
             };
             const clean = () => {

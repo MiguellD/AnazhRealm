@@ -186,12 +186,10 @@ function check(name, ok, detail) {
                 const m = /^fscatter:([^:#]+):(\d+):(\d)#/.exec(key);
                 if (!m || r._foundryPresetIsTree(m[1]) || istKarte(m[1])) continue;
                 if (!g.mesh || !g.mesh.instanceMatrix) continue;
-                const frei = new Set(g.free || []);
+                // Die Gruppe ist dicht (`_archGroupFree` verdichtet): jeder Slot in [0, count) lebt.
                 const a = g.mesh.instanceMatrix.array;
-                for (let s = 0; s < (g.next | 0); s++) {
-                    if (frei.has(s)) continue;
+                for (let s = 0; s < g.mesh.count; s++) {
                     const o = s * 16;
-                    if (a[o] === 0 && a[o + 5] === 0 && a[o + 10] === 0) continue; // Null-Skala = frei
                     const d = Math.hypot(a[o + 12] - pm.x, a[o + 14] - pm.z);
                     if (d > dGrenze) {
                         n++;
