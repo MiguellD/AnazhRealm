@@ -93,7 +93,6 @@ function fernwaldLinse(opts) {
                     L[o + 3] = h.__fw;
                     delete h.__fw;
                 }
-                r._weltSeiteDirty(wm, h.feld);
             }
             if (wm && saetze.length && !nurSlots) wm.liste.needsUpdate = true;
         };

@@ -578,9 +578,10 @@ const FORBIDDEN = [
     { token: "_weltSeitenOrdnen", fiel: "Welle G — die Stellvertreter brauchen keine räumliche Ordnung" },
     { token: "_weltSeitenPflegen", fiel: "Welle G — die Hülle trägt jeder Eintrag selbst (Texel 0/1)" },
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
-    { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel" },
-    { token: "welt-march-seiten", fiel: "Welle G — die Seiten-Textur fiel" },
-    { token: "welt-march-folge", fiel: "Welle G — die Folge-Textur fiel" },
+    { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel (auch der Aufruf der Fernwald-Linse)" },
+    // die Ratsche des Profi-Bands führt keinen VRAM-Erzeuger, den es nicht mehr gibt
+    { token: "welt-march-seiten", fiel: "Welle G — die Seiten-Textur fiel", auch: ["spec/profiband/ratsche.json"] },
+    { token: "welt-march-folge", fiel: "Welle G — die Folge-Textur fiel", auch: ["spec/profiband/ratsche.json"] },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
