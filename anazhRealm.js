@@ -71627,14 +71627,14 @@ class AnazhRealm {
                 // (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 % durchsichtig, die L0-Hälfte der
                 // Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) — ungemaskt stand sie dort doppelt mit
                 // dem Billboard und sprang am Bandende weg. Seit Welle 6 trägt der Strauch die Kette wie der Baum.
-                const _aLodVal =
-                    _isTree && _lodS === 0
-                        ? 1
-                        : _isTree && _lodS === 1
-                          ? this._foundryDeclaredStage(stage.preset, 0) === 0
-                              ? 2
-                              : 3
-                          : 0;
+                // Dieselbe Regel von der anderen Seite: die L0 weicht der L1 (1) nur, wo die Art eine L1 deklariert; sonst
+                // ist sie die einzige Nah-Stufe (3) und weicht nur der Karte, die jede Karten-Art trägt (KIND_POLICY.impostor,
+                // `_foundryFlattenFor` baut sie vor der Stufen-Klammer). Wagen und Tore (kindStages [0]) trugen Stempel 1 und
+                // dithern ab 8 m zu einer L1, die es nicht gibt — gemessen 06.10. (echte GPU, nur die Gestalt im Bild,
+                // Leuchtdichte gegen die ungemaskte): GT bei 9,6 m 0,69, bei 12-45 m 0,08-0,15 — der eigene Wagen der
+                // Verfolger-Kamera ein Geist, jeder geparkte Wagen und jedes Tor zwischen 12 m und dem Karten-Band fort.
+                const _hat = (s) => this._foundryDeclaredStage(stage.preset, s) === s;
+                const _aLodVal = !_isTree ? 0 : _lodS === 0 ? (_hat(1) ? 1 : 3) : _lodS === 1 ? (_hat(0) ? 2 : 3) : 0;
                 const _h0 = this._foundryGruppenHoehe(group, stage && stage.preset);
                 const _D = AnazhRealm.LOD_DISTANCES;
                 const _capL = _D && Number.isFinite(_D.leafVisCap) ? _D.leafVisCap : 24;
