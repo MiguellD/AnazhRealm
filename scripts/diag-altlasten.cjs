@@ -158,9 +158,15 @@ const FORBIDDEN = [
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
     { token: "_chunkBundleAnker", fiel: "Welle B — der Satz ist der EINE Eintritt (_chunkSatzEin / _streuNahEin)" },
-    // Der Satz zeichnete den ganzen Ring in JEDEM Pass (ein Bereich lag an EINER Index-Stelle, `b.iStart`): seit Welle 6
-    // trägt der Index je Pass einen Abschnitt — die Viertel im Frustum der Pass-Kamera (_chunkSatzAbschnitt).
+    // Der Satz zeichnete den ganzen Ring in JEDEM Pass (ein Bereich lag an EINER Index-Stelle, `b.iStart`, der ganze Satz
+    // bis `s.iVoll`): seit Welle 6 trägt der Index je Pass einen Abschnitt — die Zellen im Frustum der Pass-Kamera
+    // (_chunkSatzAbschnitt), für Boden, Wasser UND Bau-Sätze. Die zweite Werfer-Wahl des Bau-Satzes (der Lauf vom ersten bis
+    // zum letzten Bereich im Frustum) fiel in dieselbe Mechanik; die Verdrängung der Kaskaden-Abschnitte (sie schrieben
+    // einander je Frame neu, 06.10. Mess-Wiese beim Drehen 2,2 MB je Frame) fiel ins Wachsen.
     { token: ".iStart", fiel: "Welle 6 Boden-Schatten — je Pass ein Abschnitt (_chunkSatzPass), kein Ring-Index" },
+    { token: ".iVoll", fiel: "Welle 6 — der ganze Satz zeichnet nie; je Pass ein Abschnitt (_chunkSatzAbschnitt)" },
+    { token: "_satzWerferWahl", fiel: "Welle 6 — die Werfer-Wahl der Bau-Sätze ist der Abschnitt je Pass (_chunkSatzPass)" },
+    { token: "_chunkSatzVerdraeng", fiel: "Welle 6 — kein Abschnitt verdrängt einen anderen; der Index wächst (_chunkSatzUmlegen)" },
     { token: "_chunkBundleRegionKey", fiel: "Welle B" },
     { token: "_bundleKugelWeite", fiel: "Welle B — kein Chunk-Bürger wächst eine Region-Kugel mehr" },
     { token: "_acquireScatterMesh", fiel: "Welle B — der Streu-Satz je Art (_streuNahArt)" },

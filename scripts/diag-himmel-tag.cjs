@@ -9,7 +9,10 @@
 //   3 DÄMMERUNG bei Sonnenuntergang leuchtet der Abendstern (Venus), die schwachen Sterne nicht
 //   4 NACHT    um Mitternacht leuchten alle Punkte
 //   5 MOND     am Tag blass (Deckung < 0,5), nachts fast deckend (> 0,85)
-// --selftest: eine injizierte Himmelskugel und eine zu tiefe Mittags-Grenzgröße müssen beim Namen rot werden.
+//   6 ZEICHNEN das Sternfeld zeichnet genau dann, wenn ein Punkt sichtbar ist, und in EINEM Durchgang (Welle 6: mittags
+//              zog es zwei GPU-Befehle für ein schwarzes Bild — DoubleSide-durchscheinend sind in r184 zwei Durchgänge)
+// --selftest: eine injizierte Himmelskugel, eine zu tiefe Mittags-Grenzgröße und ein Sternfeld in zwei Durchgängen
+// müssen beim Namen rot werden.
 //   node scripts/diag-himmel-tag.cjs [--selftest]
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -52,6 +55,7 @@ function probe(stoerung) {
         st.scene.add(kugel);
     }
     if (stoerung === "grenze") r._himmelGrenzgroesse = () => -3;
+    if (stoerung === "doppel" && st.starField) st.starField.material.forceSinglePass = false;
     const zeit = (t) => {
         st.timeOfDay = t;
         if (st.world) st.world.timeOfDay = t;
@@ -82,14 +86,18 @@ function probe(stoerung) {
     out.planetenFort = st.planets === undefined && r._buildSkyPlanets === undefined;
     zeit(0.5);
     out.mittag = sichtbar();
+    out.mittag.zeichnet = !!(sf && sf.visible);
     out.mondTag = +st.moonMesh.material.opacity.toFixed(3);
     // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
     zeit(0.75 + 1 / 360);
     out.daemmerung = sichtbar();
     zeit(0);
     out.nacht = sichtbar();
+    out.nacht.zeichnet = !!(sf && sf.visible);
     out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
+    out.einDurchgang = !!(sf && sf.material.forceSinglePass === true);
     if (kugel) st.scene.remove(kugel);
+    if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
     r._himmelGrenzgroesse = sauber.grenze;
     zeit(0.5);
     return out;
@@ -107,6 +115,13 @@ function urteil(S) {
         );
     if (!(S.nacht.n === S.punkte)) rot.push(`4 NACHT: nur ${S.nacht.n}/${S.punkte} Punkte (Grenze ${S.nacht.grenze})`);
     if (!(S.mondTag < 0.5 && S.mondNacht > 0.85)) rot.push(`5 MOND: Tag ${S.mondTag} · Nacht ${S.mondNacht}`);
+    if (S.mittag.n === 0 && S.mittag.zeichnet)
+        rot.push(
+            "6 ZEICHNEN: mittags zeichnet das Sternfeld ohne einen sichtbaren Punkt (Befehle für ein schwarzes Bild)"
+        );
+    if (S.nacht.n > 0 && !S.nacht.zeichnet)
+        rot.push(`6 ZEICHNEN: nachts zeichnet das Sternfeld nicht (${S.nacht.n} Punkte)`);
+    if (!S.einDurchgang) rot.push("6 ZEICHNEN: das Sternfeld zeichnet in zwei Durchgängen (forceSinglePass fehlt)");
     return rot;
 }
 
@@ -140,13 +155,16 @@ function urteil(S) {
     if (SELFTEST) {
         const kugel = urteil(await page.evaluate(probe, "kugel"));
         const grenze = urteil(await page.evaluate(probe, "grenze"));
+        const doppel = urteil(await page.evaluate(probe, "doppel"));
         const heil = urteil(await page.evaluate(probe, null));
         selbst = {
             kugelRot: kugel.some((e) => e.startsWith("1 KÖRPER")),
             grenzeRot: grenze.some((e) => e.startsWith("2 MITTAG")),
+            doppelRot: doppel.some((e) => e.startsWith("6 ZEICHNEN")),
             heilGruen: heil.length === 0,
             kugel: kugel[0] || "-",
             grenze: grenze[0] || "-",
+            doppel: doppel[0] || "-",
         };
     }
     await browser.close();
@@ -154,7 +172,10 @@ function urteil(S) {
 
     console.log("=== DIE HIMMELSKÖRPER-TAG-PROBE (V18.530) ===");
     console.log(`  Sternfeld: ${S.punkte} Punkte mit Größenklasse · fremde Himmels-Kugeln: ${S.fremdeKoerper}`);
-    console.log(`  Mittag:     ${S.mittag.n} Punkte sichtbar (Grenzgröße ${S.mittag.grenze})`);
+    console.log(
+        `  Mittag:     ${S.mittag.n} Punkte sichtbar (Grenzgröße ${S.mittag.grenze}) · Feld zeichnet: ${S.mittag.zeichnet}` +
+            ` · ein Durchgang: ${S.einDurchgang}`
+    );
     console.log(
         `  Dämmerung:  ${S.daemmerung.n} Punkte, Abendstern ${S.daemmerung.venus ? "sichtbar" : "fehlt"} (Grenze ${S.daemmerung.grenze})`
     );
@@ -167,6 +188,8 @@ function urteil(S) {
         console.log(`  Selbsttest: Mittags-Grenze −3 → ${selbst.grenze}`);
         if (!selbst.kugelRot) rot.push("SELBSTTEST: die injizierte Himmelskugel blieb grün");
         if (!selbst.grenzeRot) rot.push("SELBSTTEST: die zu tiefe Mittags-Grenze blieb grün");
+        console.log(`  Selbsttest: zwei Durchgänge → ${selbst.doppel}`);
+        if (!selbst.doppelRot) rot.push("SELBSTTEST: das Sternfeld in zwei Durchgängen blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
     if (rot.length) {

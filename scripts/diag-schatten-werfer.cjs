@@ -30,12 +30,13 @@
 //   W4  eine Region mit einem nahen und einem 2 km fernen Werfer: die Region wirft, der ferne Werfer ruht
 //   W5  der Boden außerhalb der Bundles: ein Tal in der nahen Scheibe unter jeder Bundle-Hülle empfängt (liegt in der
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
-//   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, Boden-Satz oder freier Werfer (Tier · Spieler · Insel ·
-//       Bauplan-Bau als eigene Gruppe)
-//   W7  der Boden-Satz je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
-//       245 696 Dreiecke): jeder Pass zeichnet genau die Viertel, deren Hülle sein Frustum schneidet, byte-gleich
-//       hintereinander, nach dem Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im
-//       Rücken) trägt die nahe Kaskade Boden hinter dem Blick (der Hang wirft)
+//   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, werfender Satz (Boden, Bau-Satz) oder freier Werfer
+//       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
+//   W7  die Sätze je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
+//       245 696 Dreiecke; der Bau-Satz zog in k1 den Lauf vom ersten bis zum letzten Bereich im Frustum): jeder Pass
+//       zeichnet in jedem Satz genau die Zellen, deren Hülle sein Frustum schneidet, byte-gleich hintereinander, nach dem
+//       Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe
+//       Kaskade Boden hinter dem Blick (der Hang wirft)
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
@@ -516,58 +517,93 @@ function probe(selbsttest) {
         }
     }
 
-    // ── W7: der Boden-Satz je Pass — jeder Pass (Hauptbild · jede Kaskade) zeichnet genau die Viertel, deren Hülle sein
-    // Frustum schneidet, byte-gleich hintereinander; ohne Viertel im Frustum zeichnet er nicht; nach jedem Pass zeigt der
-    // Satz den Abschnitt des Hauptbilds. Nicht vakuös: ein Pass lässt Viertel des Rings weg, und die nahe Kaskade trägt
-    // Viertel, die das Hauptbild nicht sieht (ein Hang hinter dem Blick wirft) — mittags und am Abend. ──
+    // ── W7: die Sätze je Pass — jeder Pass (Hauptbild · jede Kaskade) zeichnet in JEDEM Satz, der in ihm zeichnet (im
+    // Schatten-Pass die werfenden: Boden, werfende Bau-Sätze), genau die Zellen, deren Hülle sein Frustum schneidet,
+    // byte-gleich hintereinander (jeder Index verglichen); ohne Zelle im Frustum zeichnet der Satz nicht; nach jedem Pass
+    // zeigt jeder Satz den Abschnitt des Hauptbilds. Nicht vakuös: ein Pass lässt Viertel des Boden-Rings weg, und die
+    // nahe Kaskade trägt Boden, den das Hauptbild nicht sieht (ein Hang hinter dem Blick wirft) — mittags und am Abend. ──
     const w7 = (pass, t, yaw) => {
         tag(t);
         blick(yaw);
         alleNeu();
-        const g = () => boden.mesh.geometry;
-        const res = { paesse: [], falsch: 0, zurueck: true, weg: false, hinterWirft: false, voll: boden.iSumme / 3 };
-        const satz = (fr) => {
+        const saetze = [...(st.chunkSaetze ? st.chunkSaetze.values() : [])];
+        const res = {
+            paesse: [],
+            falsch: 0,
+            taeter: [],
+            zurueck: true,
+            weg: false,
+            hinterWirft: false,
+            voll: boden.iSumme / 3,
+            bauGeprueft: 0,
+        };
+        const wahl = (s, fr) => {
             const liste = [];
-            for (const b of boden.ordnung) {
+            for (const b of s.ordnung) {
                 if (!b.huelle || b.huelle.isEmpty() || !fr.intersectsBox(b.huelle)) continue;
                 for (const z of b.zellen) if (!z.huelle.isEmpty() && fr.intersectsBox(z.huelle)) liste.push(z);
             }
             return liste;
         };
-        const pruefPass = (kam, fr, name) => {
-            pass(kam, false);
-            const dr = g().drawRange;
-            const idx = g().index.array;
-            const soll = satz(fr);
-            let n = 0;
-            for (const z of soll) n += z.idx.length;
-            let inhalt = dr.count === n;
-            let pos = dr.start;
-            for (const z of soll) {
-                if (!inhalt) break;
-                for (let i = 0; i < z.idx.length; i += 5)
-                    if (idx[pos + i] !== z.idx[i]) {
-                        inhalt = false;
-                        break;
-                    }
-                pos += z.idx.length;
+        const hauptDr = new Map();
+        // Was ein Lauf zeichnet: die Multimenge seiner Dreiecke (jedes mit seiner Windung, Hash-Summe und -XOR) ohne die
+        // entarteten Lücken (drei gleiche Ecken) — der Abschnitt trägt seine Zellen je an ihrem Platz, ein Pass schreibt nur
+        // die Änderung seiner Wahl.
+        const dreiecke = (arr, a, e, aus) => {
+            for (let i = a; i + 2 < e; i += 3) {
+                const x = arr[i],
+                    y = arr[i + 1],
+                    z = arr[i + 2];
+                if (x === y && y === z) continue;
+                const h = (Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ Math.imul(z, 83492791)) >>> 0;
+                aus.s = (aus.s + h) >>> 0;
+                aus.x = (aus.x ^ h) >>> 0;
+                aus.n++;
             }
-            const sichtbar = boden.mesh.visible === n > 0;
-            res.paesse.push({ name, tris: dr.count / 3, soll: n / 3 });
-            if (!inhalt || !sichtbar) res.falsch++;
-            if (n / 3 < res.voll) res.weg = true;
+            return aus;
+        };
+        const pruefPass = (kam, fr, name, schatten) => {
+            pass(kam, false);
+            let imBoden = null;
+            for (const s of saetze) {
+                if (schatten && s.spec.schatten !== true) continue;
+                const dr = s.geom.drawRange;
+                const idx = s.geom.index.array;
+                const soll = wahl(s, fr);
+                let n = 0;
+                const sollM = { s: 0, x: 0, n: 0 };
+                for (const z of soll) {
+                    n += z.idx.length;
+                    dreiecke(z.idx, 0, z.idx.length, sollM);
+                }
+                const gez = dreiecke(idx, dr.start, dr.start + dr.count, { s: 0, x: 0, n: 0 });
+                const inhalt = gez.n === sollM.n && gez.s === sollM.s && gez.x === sollM.x && dr.count >= n;
+                const sichtbar = s.mesh.visible === n > 0;
+                if (!inhalt || !sichtbar) {
+                    res.falsch++;
+                    if (res.taeter.length < 6) res.taeter.push(name + ":" + s.spec.name);
+                }
+                if (s === boden) {
+                    res.paesse.push({ name, tris: dr.count / 3, soll: n / 3 });
+                    if (n / 3 < res.voll) res.weg = true;
+                    imBoden = new Set(soll);
+                } else if (s.spec.userData.bauSatz) res.bauGeprueft++;
+            }
             pass(kam, true);
-            return new Set(soll);
+            return imBoden;
         };
         const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        const imHaupt = pruefPass(cam, new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem), "haupt");
-        const hauptDr = [g().drawRange.start, g().drawRange.count];
+        const imHaupt = pruefPass(cam, new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem), "haupt", false);
+        for (const s of saetze) hauptDr.set(s, [s.geom.drawRange.start, s.geom.drawRange.count]);
         for (let i = 0; i < csm.lights.length; i++) {
             const kam = csm.lights[i].shadow.camera;
             const fr = frustumVon(i);
-            const imPass = pruefPass(kam, fr, "k" + i);
+            const imPass = pruefPass(kam, fr, "k" + i, true);
             if (i === 0) for (const z of imPass) if (!imHaupt.has(z)) res.hinterWirft = true;
-            if (g().drawRange.start !== hauptDr[0] || g().drawRange.count !== hauptDr[1]) res.zurueck = false;
+            for (const s of saetze) {
+                const h = hauptDr.get(s);
+                if (s.geom.drawRange.start !== h[0] || s.geom.drawRange.count !== h[1]) res.zurueck = false;
+            }
         }
         return res;
     };
@@ -600,10 +636,14 @@ function probe(selbsttest) {
             ...(st.architectures || []).map((e) => e && e.mesh).filter(Boolean),
             st.playerMesh,
         ]);
-        const bodenMesh = boden ? boden.mesh : null;
+        // jeder WERFENDE Satz (der Boden, die werfenden Bau-Sätze, Welle 6) trägt seine Bereichs-Hüllen in die Box
+        // (`_kaskadenHuellen`)
+        const satzWerfer = new Set();
+        if (st.chunkSaetze)
+            for (const s of st.chunkSaetze.values()) if (s.spec.schatten === true) satzWerfer.add(s.mesh);
         const fremd = [];
         for (const top of st.scene.children) {
-            if (top.isBundleGroup || frei.has(top) || top === bodenMesh) continue;
+            if (top.isBundleGroup || frei.has(top) || satzWerfer.has(top)) continue;
             top.traverse((o) => {
                 if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
             });
@@ -874,13 +914,16 @@ function probe(selbsttest) {
             JSON.stringify(a.w5)
         );
         check(
-            "W6 jeder Werfer ist der Box bekannt (Bundle · Boden-Satz · Tier · Spieler · Insel · Bauplan-Bau)",
+            "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier · Spieler · Insel · Bauplan-Bau)",
             a.w6.n === 0,
             a.w6.n ? a.w6.fremd.join(" | ") : "keine fremde Werfer-Klasse"
         );
-        const w7t = (w) => w.paesse.map((p) => `${p.name} ${Math.round(p.tris)}/${Math.round(w.voll)}`).join(" · ");
+        const w7t = (w) =>
+            w.paesse.map((p) => `${p.name} ${Math.round(p.tris)}/${Math.round(w.voll)}`).join(" · ") +
+            ` · Bau-Satz-Pässe ${w.bauGeprueft}` +
+            (w.taeter.length ? " — falsch: " + w.taeter.join(", ") : "");
         check(
-            "W7 der Boden-Satz je Pass: jeder Pass zeichnet genau seine Viertel im Frustum, danach das Hauptbild (Mittag · Abend)",
+            "W7 die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau seine Zellen im Frustum, danach das Hauptbild (Mittag · Abend)",
             !!a.w7 && a.w7.every((w) => w.falsch === 0 && w.zurueck && w.weg),
             a.w7
                 ? a.w7.map((w) => w7t(w) + (w.zurueck ? "" : " — kein Hauptbild danach")).join(" | ")

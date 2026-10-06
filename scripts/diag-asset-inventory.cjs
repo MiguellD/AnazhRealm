@@ -166,6 +166,12 @@ const server = http.createServer((req, res) => {
         if (st.nahStreu)
             for (const a of st.nahStreu.senken.values())
                 if (a.mesh && a.leafKey) meshKeys.set(a.mesh, ["nahStreu#" + a.leafKey]);
+        // Welle 6 — der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
+        // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
+        if (st.chunkSaetze)
+            for (const s of st.chunkSaetze.values())
+                if (s.spec && s.spec.userData && s.spec.userData.bauSatz && s.bloecke.size > 0)
+                    meshKeys.set(s.mesh, [...s.bloecke.keys()].map(String));
 
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
         const VEG =

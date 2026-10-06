@@ -163,8 +163,8 @@ const ANKER = [
     },
     // Der Satz je Pass (Welle 6 Boden-Schatten): jeder Pass setzt im Szenen-Haken seinen Abschnitt als drawRange — der
     // Draw liest die Geometrie-drawRange beim ZEICHNEN (Referenz am Render-Objekt), nie einmal je Objekt; und jeder Pass
-    // gibt seinen Befehl am Pass-Ende ab (ein Schatten-Pass mitten im Haupt-Pass ist abgegeben, ehe der nächste Haken einen
-    // verdrängten Abschnitt überschreibt).
+    // gibt seinen Befehl am Pass-Ende ab (ein Umlegen mitten im Frame zieht nur Abschnitte von Schatten-Pässen um, die
+    // schon abgegeben sind; den Lauf des offenen Haupt-Passes lässt es liegen).
     {
         file: "vendor/three.webgpu.min.js",
         sub: "if(u.drawRange=e.geometry.drawRange,u.group=n,null!==this._currentRenderBundle)",
@@ -178,7 +178,7 @@ const ANKER = [
     {
         file: "vendor/three.webgpu.min.js",
         sub: "if(this.device.queue.submit([t.encoder.finish()]),null!==e.textures)",
-        organ: "_chunkSatzVerdraengen (jeder Pass ist am Ende abgegeben — ein späterer Schreiber trifft ihn nie)",
+        organ: "_chunkSatzUmlegen (jeder Schatten-Pass ist am Ende abgegeben — ein Umzug mitten im Frame trifft ihn nie)",
     },
 ];
 
