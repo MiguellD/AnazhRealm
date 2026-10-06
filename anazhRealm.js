@@ -63375,17 +63375,35 @@ class AnazhRealm {
     _kronenStreuNeu(schluessel, x, z, radius) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !(radius > 0)) return;
-        // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt — die Karte summiert.
+        // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt — die Karte summiert. Eine GEÄNDERTE Krone
+        // malt jede Stufe neu (ihr alter Beitrag steckt in der Summe).
         const alt = wk.kronen.get(schluessel);
         if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
         wk.kronen.set(schluessel, [x, z, radius]);
-        for (const stufe of wk.stufen) if (stufe.zentriert) this._kronenStreuMale(stufe, x, z, radius);
+        const fernS = wk.stufen[wk.stufen.length - 1];
+        for (const stufe of wk.stufen) {
+            if (!stufe.zentriert) continue;
+            if (alt) {
+                stufe.kronen.neuMalen = true;
+                this._kronenStreuUmzug(stufe, null, stufe === fernS);
+            } else this._kronenStreuMale(stufe, x, z, radius);
+        }
+        // Die Nah-Wiese liest dieselbe Karte (`_kronenStreuAt`): ihre Kacheln unter der Krone wachsen neu (die erste
+        // Krone zentriert die Karte sofort — wie die erste Siedlung —, sonst läse der Neubau noch 0).
+        const pm = this.state.playerMesh;
+        if (!pm) return;
+        if (wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
+        const a = radius * AnazhRealm.LAUB_STREU.rand;
+        const NW = AnazhRealm.NAH_WIESE;
+        if (Math.hypot(x - pm.position.x, z - pm.position.z) - a < NW.radius + NW.rand + NW.kachel * 1.5)
+            this._nahWieseNeuIn(x - a, z - a, x + a, z + a);
     }
 
     // Eine Krone in EINE Stufe malen: `dichte` bis `kern` × Radius, weich (smoothstep) bis `rand` × Radius; die Kronen
     // SUMMIEREN sich (gekappt) — unter einer einzelnen Krone dringt noch Gras durch, wo Kronen sich schließen, deckt
-    // die Streu den ganzen Grund.
-    _kronenStreuMale(stufe, x, z, radius) {
+    // die Streu den ganzen Grund. `ausschnitt` [i0, i1, j0, j1] (Texel, inklusive) begrenzt das Malen auf den Streifen,
+    // den ein Umzug frisch freilegt.
+    _kronenStreuMale(stufe, x, z, radius, ausschnitt) {
         const K = AnazhRealm.LAUB_STREU;
         const kr = stufe.kronen;
         const N = kr.N;
@@ -63394,10 +63412,11 @@ class AnazhRealm {
         const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
         const aussen = radius * K.rand;
         const innen = radius * K.kern;
-        const i0 = Math.max(0, Math.floor((x - aussen - x0w) / t));
-        const i1 = Math.min(N - 1, Math.ceil((x + aussen - x0w) / t));
-        const j0 = Math.max(0, Math.floor((z - aussen - z0w) / t));
-        const j1 = Math.min(N - 1, Math.ceil((z + aussen - z0w) / t));
+        const a = ausschnitt || [0, N - 1, 0, N - 1];
+        const i0 = Math.max(a[0], Math.floor((x - aussen - x0w) / t));
+        const i1 = Math.min(a[1], Math.ceil((x + aussen - x0w) / t));
+        const j0 = Math.max(a[2], Math.floor((z - aussen - z0w) / t));
+        const j1 = Math.min(a[3], Math.ceil((z + aussen - z0w) / t));
         if (i1 < i0 || j1 < j0) return;
         const d = kr.daten;
         for (let j = j0; j <= j1; j++) {
@@ -63414,8 +63433,80 @@ class AnazhRealm {
         kr.schmutz = true;
     }
 
+    // Der Umzug der Kronen-Karte einer Stufe (Lehre 25: die Kosten tragen, was sich ändert, nie das Register): das
+    // Raster VERSCHIEBT sich um den Umzug (die Mitte rastet auf ganze Texel), gemalt wird nur der Streifen, den der
+    // Umzug freilegt, aus den Kronen, die ihn berühren. Bis 06.10. leerte jeder Umzug die Karte und malte das ganze
+    // Register neu (Mess-Wiese: 1078 Kronen, 213k Texel je Nah-Umzug alle 48 m Weg, synchron im Takt). Voll gemalt wird
+    // nur ohne alte Mitte, bei einem Sprung über das Fenster oder nach einer geänderten Krone (`neuMalen`). Der Umzug der
+    // FERNEN Stufe vergisst die Kronen jenseits ihres Fensters (das Register bleibt so groß wie das ferne Fenster).
+    _kronenStreuUmzug(stufe, war, fern) {
+        const wk = this.state.wegeKarte;
+        const kr = stufe.kronen;
+        const N = kr.N;
+        const t = stufe.S.fensterM / N;
+        const hk = stufe.S.fensterM / 2;
+        if (fern)
+            for (const [k, c] of wk.kronen)
+                if (Math.abs(c[0] - stufe.mitteX) - c[2] > hk || Math.abs(c[1] - stufe.mitteZ) - c[2] > hk)
+                    wk.kronen.delete(k);
+        const di = war ? Math.round((stufe.mitteX - war[0]) / t) : N;
+        const dj = war ? Math.round((stufe.mitteZ - war[1]) / t) : N;
+        const d = kr.daten;
+        let streifen;
+        if (kr.neuMalen || Math.abs(di) >= N || Math.abs(dj) >= N) {
+            kr.neuMalen = false;
+            d.fill(0);
+            streifen = [[0, N - 1, 0, N - 1]];
+        } else if (di === 0 && dj === 0) {
+            streifen = [];
+        } else {
+            // neu[j][i] = alt[j + dj][i + di]; die Zeilen-Reihenfolge folgt dem Vorzeichen (nie eine Quelle überschreiben).
+            const src0 = Math.max(0, di);
+            const dst0 = Math.max(0, -di);
+            const len = N - Math.abs(di);
+            for (let n = 0; n < N; n++) {
+                const j = dj >= 0 ? n : N - 1 - n;
+                const sj = j + dj;
+                if (sj < 0 || sj >= N) {
+                    d.fill(0, j * N, j * N + N);
+                    continue;
+                }
+                d.copyWithin(j * N + dst0, sj * N + src0, sj * N + src0 + len);
+                if (di > 0) d.fill(0, j * N + len, j * N + N);
+                else if (di < 0) d.fill(0, j * N, j * N + dst0);
+            }
+            // Die freigelegten Streifen: die Spalten (volle Höhe), dann die Zeilen ohne diese Spalten (keine Ecke doppelt).
+            streifen = [];
+            const sp = di > 0 ? [N - di, N - 1] : di < 0 ? [0, -di - 1] : null;
+            if (sp) streifen.push([sp[0], sp[1], 0, N - 1]);
+            const zi0 = di < 0 ? -di : 0;
+            const zi1 = di > 0 ? N - di - 1 : N - 1;
+            if (dj > 0) streifen.push([zi0, zi1, N - dj, N - 1]);
+            else if (dj < 0) streifen.push([zi0, zi1, 0, -dj - 1]);
+        }
+        if (streifen.length) {
+            const x0w = stufe.mitteX - hk;
+            const z0w = stufe.mitteZ - hk;
+            const rand = AnazhRealm.LAUB_STREU.rand;
+            for (const c of wk.kronen.values()) {
+                const aussen = c[2] * rand;
+                const ci0 = (c[0] - aussen - x0w) / t;
+                const ci1 = (c[0] + aussen - x0w) / t;
+                const cj0 = (c[1] - aussen - z0w) / t;
+                const cj1 = (c[1] + aussen - z0w) / t;
+                for (const s of streifen)
+                    if (ci1 >= s[0] && ci0 <= s[1] + 1 && cj1 >= s[2] && cj0 <= s[3] + 1)
+                        this._kronenStreuMale(stufe, c[0], c[1], c[2], s);
+            }
+        }
+        kr.schmutz = true;
+        kr.upload = -Infinity; // nach dem Umzug sofort hochladen
+    }
+
     // Die Kronen-Streu an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest (dieselbe
-    // Stufen-Wahl wie `_wegeFeldAt`).
+    // Stufen-Wahl wie `_wegeFeldAt`). DIE EINE Lese-Stelle für „hier steht Wald": das Kronendach der gepflanzten Bäume
+    // (0 offen, 0,6 unter einer Krone, 1 wo Kronen sich schließen) — Boden, Nah-Wiese und Klang lesen sie, nie das
+    // Kronenlicht-Feld der Platzierung (`_canopyLightAt` sagt, wo Bäume wachsen DÜRFEN, nicht wo sie stehen).
     _kronenStreuAt(x, z) {
         const wk = this.state.wegeKarte;
         if (!wk) return 0;
@@ -63523,6 +63614,7 @@ class AnazhRealm {
         for (const stufe of wk.stufen) {
             const S = stufe.S;
             if (!stufe.zentriert || Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) >= S.umzugM) {
+                const war = stufe.zentriert ? [stufe.mitteX, stufe.mitteZ] : null;
                 const raster = S.texelM * 16;
                 stufe.mitteX = Math.round(playerPos.x / raster) * raster;
                 stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
@@ -63540,20 +63632,7 @@ class AnazhRealm {
                 }
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
                 if (!warLeer || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
-                // Die Kronen der Stufe neu malen; der Umzug der FERNEN Stufe vergisst die Kronen jenseits ihres Fensters.
-                stufe.kronen.daten.fill(0);
-                const hk = S.fensterM / 2;
-                for (const [k, c] of wk.kronen) {
-                    const ax = Math.abs(c[0] - stufe.mitteX) - c[2];
-                    const az = Math.abs(c[1] - stufe.mitteZ) - c[2];
-                    if (ax > hk || az > hk) {
-                        if (S === fernS) wk.kronen.delete(k);
-                        continue;
-                    }
-                    this._kronenStreuMale(stufe, c[0], c[1], c[2]);
-                }
-                stufe.kronen.schmutz = true;
-                stufe.kronen.upload = -Infinity; // nach dem Umzug sofort hochladen
+                this._kronenStreuUmzug(stufe, war, S === fernS);
             }
             // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`).
             const kr = stufe.kronen;
