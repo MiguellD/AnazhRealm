@@ -418,6 +418,15 @@ const FORBIDDEN = [
     // nie beim Wurf (der Zweit-Boot pflanzt nicht neu); die Summe nimmt eine Krone exakt heraus, kein Voll-Neumalen.
     { token: "_kronenStreuNeu(`w:", fiel: "Integration 06.10. — spawnArchitecture trägt die Krone ein (a:<id>)" },
     { token: "kronen.neuMalen", fiel: "Integration 06.10. — _kronenStreuWeg nimmt eine Krone exakt aus der Summe" },
+    // WELLE L KREATUR (06.10., Leben-Prüfung Q1/Q2): der Hüpf-Würfel je Frame (R-D3: 21–26 % Luft-Frames, 2,4 % der
+    // Sprünge aus einer Aktion), der feste 0,05-s-Schritt des Hüpfers (bei 144 Hz ein Sechstel der Flugzeit) und das
+    // Wachsen-Relikt V7.66 (×1,01 je 5-%-Würfel, ohne Deckel; R-D2) kehren nicht zurück — der Hüpfer ist EIN Integrator
+    // auf dem Takt (v0 = √(2·g·h)), er startet nur aus einer Aktion, die Größe ist die Achse bodySize.
+    { token: '(emotion === "happy" ? 0.02 : 0.01)', fiel: "Welle L kreatur — der Hüpfer startet nur aus bound/pounce" },
+    { token: "_hopV * 0.05", fiel: "Welle L kreatur — der Hüpfer integriert auf delta (updateCreatures)" },
+    { token: "VG.sprung.impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (_hopSchwere)" },
+    { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
+    { token: "lastGrowthUpdate", fiel: "Welle L kreatur — das Wachsen-Relikt fiel" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-
     // Kronen (a:), die nur beim Entstehen eintragen; der Raum-Index `kronenZellen` bindet die Kosten an den Streifen.
     { token: "this._kronenStreuUmzug(stufe, war, S === fernS)", fiel: "Nachbesserung 06.10. — kein Umzug vergisst eine Krone" },

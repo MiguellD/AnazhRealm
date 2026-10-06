@@ -29,7 +29,7 @@ const opt = (k, d) => {
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
 // DAS GATE wächst je geschnittener Klasse: eine Probe steht hier, sobald ihr Schnitt im Stamm steht.
-const GATE_PROBEN = ["geister", "geburt", "sattel"];
+const GATE_PROBEN = ["geister", "geburt", "sattel", "huepfer", "wachsen"];
 const gewaehlt = opt("--proben", null) ? opt("--proben").split(",") : argv.includes("--alle") ? PROBEN : GATE_PROBEN;
 
 const mime = {

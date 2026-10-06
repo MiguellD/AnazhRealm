@@ -394,7 +394,6 @@ class AnazhRealm {
             nexusLastEvolution: 0,
             nexusEvolutionInterval: 24.0, // V18.302 — ruhiger (war 10 s = die „endlose Churn"); perf-gestreckt unter Last
             nexusAutonomyLimit: 100,
-            lastGrowthUpdate: 0,
             lastSelfAnalysis: 0,
             // voxel-worker.js baut Density-Grids parallel zum Main-Thread (bit-identischer Spiegel).
             voxelWorker: null,
@@ -17758,7 +17757,7 @@ class AnazhRealm {
         // Lab-Spiegel: BEH_PICK.host = "aktionen.profil".
         let VA = group.userData && group.userData._verhaltenAktion;
         if (VA) {
-            const nowS = performance.now() / 1000;
+            const nowS = this.state.creatureAnimationTime; // die Kreatur-Uhr, an der updateCreatures die Aktion stempelt
             if (nowS >= VA.bis || !VA.def) {
                 group.userData._verhaltenAktion = null;
                 VA = null;
@@ -17839,7 +17838,7 @@ class AnazhRealm {
         let drehY = 0;
         let sweepY = 0;
         if (VA && VA.def) {
-            const nowS = performance.now() / 1000;
+            const nowS = this.state.creatureAnimationTime;
             const d = VA.def;
             if (Number.isFinite(d.rollAmp)) roll += Math.sin(nowS * (d.rollRate || 10)) * d.rollAmp * fadeMul;
             if (Number.isFinite(d.dreh)) {
@@ -18490,8 +18489,9 @@ class AnazhRealm {
         if (!def) return;
         const dauer = Number.isFinite(def.dauer) ? def.dauer : 1;
         ud._verhaltenAktion = { name, def, start: nowS, bis: nowS + dauer };
-        // hop zündet den feld-nativen Hüpfer (dieselbe EINE Sprungmechanik).
-        if (Number.isFinite(def.hop) && def.hop > 0 && !(ud._hopV > 0)) ud._hopV = def.hop;
+        // hop zündet den Hüpfer: der Abflug-Impuls der Aktion (m/s), dieselbe Parabel wie creatureJump — der EINE Start
+        // eines Sprungs außer creatureJump (der Würfel je Frame ist gefallen).
+        if (Number.isFinite(def.hop) && def.hop > 0 && !(ud._hopV > 0) && !(ud._hopH > 0)) ud._hopV = def.hop;
         ud._verhaltenNext = nowS + dauer + alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]);
     }
     // DER EINE BRÜCKEN-RESOLVER (MOTION_EMOTION_PROFILES, Vorrang-Zeilen; keine Achse über der Schwelle
@@ -18908,7 +18908,7 @@ class AnazhRealm {
                 strikeChance > 0 &&
                 pmPos &&
                 Math.hypot(pmPos.x - creature.position.x, pmPos.z - creature.position.z) < VG.jagd.strikeRange &&
-                Math.random() < strikeChance
+                this._faunaRng()() < strikeChance // der Wurf aus dem Fauna-Strom (Γ5), nie Math.random
             ) {
                 const counter = Math.max(2, (stats.damage || 4) * tProf.counterMul);
                 this.damagePlayer(counter, "gegenwehr");
@@ -21082,7 +21082,6 @@ class AnazhRealm {
             // [0.6, 1.6], gecacht pro Soul×bodySize. Freude-Faktor + Hüpf-Höhen: tetrapoda VERHALTEN.freude.
             const speed =
                 (emotion === "happy" ? VGL.freude.tempoMul : 1) * this._creatureMoveCharacter(creature).speedMul;
-            const jumpHeight = emotion === "happy" ? VGL.freude.hopHochM : VGL.freude.hopBasisM;
             // V17.29 — tendende Kreatur (Nexus/Spieler-getragen) träufelt Leben
             // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
             this._tickCreatureLifeTrickle(creature, lifeTrickleNow);
@@ -21268,10 +21267,12 @@ class AnazhRealm {
                 if (waterSurface !== null) udZ._motionZustand = "schwimmen";
                 else if (udZ._motionZustand === "schwimmen") udZ._motionZustand = null;
                 // Verhaltens-Tick (nahe Wesen, dieselbe 50-m-Wand): tempo bremst/stoppt die Bewegung unten, hop
-                // zündet beim Start den feld-nativen Hüpfer.
-                this._tickKreaturVerhalten(creature, i, performance.now() / 1000);
+                // zündet beim Start den feld-nativen Hüpfer. Die Uhr der Aktion ist die Kreatur-Uhr (Q1: was den
+                // Körper bewegt, läuft im Takt — die Wand-Uhr ließ eine Aktion je nach Bildrate verschieden lang wirken).
+                const nowK = this.state.creatureAnimationTime;
+                this._tickKreaturVerhalten(creature, i, nowK);
                 const VA = udZ._verhaltenAktion;
-                if (VA && VA.def && Number.isFinite(VA.def.tempo) && performance.now() / 1000 < VA.bis) {
+                if (VA && VA.def && Number.isFinite(VA.def.tempo) && nowK < VA.bis) {
                     direction.multiplyScalar(Math.max(0, VA.def.tempo));
                 }
             }
@@ -21390,23 +21391,22 @@ class AnazhRealm {
                 udP._hangPitch = hp;
                 creature.rotation.x = hp;
             }
-            // P3 — der feld-native Hüpfer (`creatureJump` setzt `_hopV`): ein decayender
-            // Versatz ON TOP der geerdeten baseY (kein Ammo-Body, die Erdung bleibt Wahrheit).
-            // Steigen UND Fallen integrieren: lief der Takt nur bei steigendem Impuls, fror die Höhe am Scheitel ein
-            // (der Körper sprang auf den Boden zurück), und der nächste Sprung begann dort — an der Mess-Wiese stand ein
-            // Bär 7,6 m über dem Boden (Blick-Tour 3, playtest „DER HÜPFER landet").
+            // DER HÜPFER (Q1): ein Versatz ON TOP der geerdeten baseY (die Erdung bleibt Wahrheit), EIN Integrator auf
+            // dem Takt `delta` — die Parabel des Gesetzes (g des Gang-Gesetzes), je Schritt exakt (h += v·dt − g·dt²/2),
+            // darum dieselbe Flugzeit bei jeder Bildrate; er startet nur aus einer Aktion (bound/pounce, ihr `hop` ist
+            // der Abflug-Impuls in m/s) oder über creatureJump. Vorher rechnete er je Frame feste 0,05 s (bei 144 Hz
+            // ein Sechstel der Flugzeit) und ein Würfel je Frame zündete ihn (Leben-Prüfung R-D3: 21–26 % Luft-Frames).
             let hopOffset = 0;
-            if (creature.userData._hopV > 0 || creature.userData._hopH > 0) {
-                hopOffset = creature.userData._hopH || 0;
-                creature.userData._hopH = hopOffset + creature.userData._hopV * 0.05;
-                creature.userData._hopV -= 9.0 * 0.05; // Schwerkraft-Decay auf den Hüpf-Impuls
-                if (creature.userData._hopV <= 0 && creature.userData._hopH <= 0) {
-                    creature.userData._hopV = 0;
-                    creature.userData._hopH = 0;
-                } else if (creature.userData._hopH < 0) {
-                    creature.userData._hopH = 0;
-                    creature.userData._hopV = 0;
-                }
+            const udH = creature.userData;
+            if (udH._hopV > 0 || udH._hopH > 0) {
+                const g = AnazhRealm._hopSchwere();
+                const h = (udH._hopH || 0) + (udH._hopV || 0) * delta - 0.5 * g * delta * delta;
+                udH._hopV = (udH._hopV || 0) - g * delta;
+                if (!(h > 0)) {
+                    udH._hopH = 0;
+                    udH._hopV = 0;
+                } else udH._hopH = h;
+                hopOffset = udH._hopH;
             }
             creature.position.y = baseY + floatOffset + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
@@ -21460,11 +21460,6 @@ class AnazhRealm {
                     const targetColor = emotion === "happy" ? this._creatureHappyColor : this._creatureNeutralColor;
                     creature.material.color.lerp(targetColor, 0.05);
                 }
-            }
-
-            // Springen basierend auf Emotion
-            if (Math.random() < (emotion === "happy" ? 0.02 : 0.01)) {
-                this.creatureJump(creature, jumpHeight);
             }
 
             // Kill Plane
@@ -22490,17 +22485,13 @@ class AnazhRealm {
     }
 
     creatureJump(creature, jumpHeight) {
-        // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Impuls mehr. Ein transienter Hüpf-Versatz
-        // (decay), der im `updateCreatures`-Loop ON TOP der feld-geerdeten baseY addiert wird —
-        // die Erdung (`_creatureGroundY`) bleibt die Wahrheit, der Hüpfer reitet darauf.
+        // Ein Sprung auf die Höhe `jumpHeight` (m; ohne Angabe der Grund-Hüpfer des Gesetzes, VERHALTEN.freude.hopBasisM):
+        // der Abflug-Impuls ist die Parabel v0 = √(2·g·h) — derselbe Integrator in updateCreatures trägt ihn ON TOP der
+        // geerdeten Lage (die Erdung bleibt die Wahrheit, der Hüpfer reitet darauf).
         if (!creature || !creature.userData) return;
-        // SCHLUSS-WELLE — Höhe→Impuls-Faktor + Default-Höhe sind Gesetzbuch-
-        // Zeilen (tetrapoda VERHALTEN.sprung/freude, neben den hop-Werten).
         const VG = AnazhRealm._verhaltenGesetz();
-        creature.userData._hopV = Math.max(
-            creature.userData._hopV || 0,
-            (jumpHeight || VG.freude.hopBasisM) * VG.sprung.impulsProM
-        );
+        const h = Number.isFinite(jumpHeight) && jumpHeight > 0 ? jumpHeight : VG.freude.hopBasisM;
+        creature.userData._hopV = Math.max(creature.userData._hopV || 0, Math.sqrt(2 * AnazhRealm._hopSchwere() * h));
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -85521,7 +85512,7 @@ class AnazhRealm {
         // hinaus fortpflanzen; selbst-limitierend (kleine Chance, geteilter Cooldown, `max` bleibt die Wand).
         if (count >= target && count < max) {
             const sinceBirth = now - (this.state.faunaLifecycle.lastBirthAt || 0);
-            if (sinceBirth >= birthCd * 2 && Math.random() < 0.12) {
+            if (sinceBirth >= birthCd * 2 && this._faunaRng()() < 0.12) {
                 const creatures = this.state.creatures || [];
                 for (const c of creatures) {
                     const bond = (c && c.userData && c.userData.bond) || 0;
@@ -87524,7 +87515,7 @@ class AnazhRealm {
                 this.finalizePendingOutcomes(currentTime);
 
                 // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
-                this._loopWeatherAndGrowth(delta, currentTime);
+                this._loopWeatherAndGrowth(delta);
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
                 _pt = performance.now();
@@ -88851,8 +88842,10 @@ class AnazhRealm {
         }
     }
 
-    _loopWeatherAndGrowth(delta, currentTime) {
-        // ### Kreaturen, Wetter, Wachstum ###
+    _loopWeatherAndGrowth(delta) {
+        // ### Kreaturen und Wetter ### — das Wachsen der Tiere (updateGrowth, ×1,01 je 5-%-Würfel, V7.66) ist gefallen:
+        // die Größe ist die Achse bodySize aus der Identität (Leben-Prüfung R-D2: ×1,05 in Minuten, der Reload setzte
+        // zurück).
         const _ct = performance.now();
         this.updateCreatures(delta);
         this._perfSenseLap("creatures", _ct);
@@ -88881,11 +88874,6 @@ class AnazhRealm {
             this._setWeather(next);
             this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
-        }
-
-        if (currentTime - this.state.lastGrowthUpdate >= 1.0) {
-            this.updateGrowth(); // Fehler behoben
-            this.state.lastGrowthUpdate = currentTime;
         }
     }
 
@@ -90880,22 +90868,6 @@ class AnazhRealm {
         const vy = this._voxelSurfaceY(x, z);
         return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
     }
-
-    updateGrowth() {
-        // ### Wachstum aktualisieren ###
-        // Zweck: Dynamisches Wachstum von Kreaturen oder Terrain
-        // Learnings: Fehlte in V7.61, hinzugefügt für V7.66 zur Vollständigkeit
-        if (this.state.creatures.length > 0) {
-            this.state.creatures.forEach((creature, index) => {
-                if (Math.random() < 0.05) {
-                    // 5% Chance pro Frame
-                    creature.scale.multiplyScalar(1.01); // Leichtes Wachstum
-                    this.log(`Kreatur ${index} wächst: Skala ${creature.scale.x.toFixed(2)}`, "DEBUG");
-                }
-            });
-        }
-        this.log("Wachstum aktualisiert", "DEBUG");
-    }
 }
 
 // ===== ATLAS §26 · AUSSEN-KONSTANTEN — VERSION · Tag-Schlüssel · Signatur-Tabellen · frozen Welt-Daten =====
@@ -92011,8 +91983,6 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.stimmung.schwellen.weideDiet) &&
             v.freude &&
             Number.isFinite(v.freude.tempoMul) &&
-            v.sprung &&
-            Number.isFinite(v.sprung.impulsProM) &&
             Array.isArray(v.groessen) &&
             v.groessen.length >= 2 &&
             v.separation &&
@@ -92029,6 +91999,12 @@ AnazhRealm._verhaltenGesetz = function () {
         }
     } catch (_e) {}
     return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN");
+};
+// Die Schwere des Hüpfers: das g des Gang-Gesetzes (tetrapoda GANG_GESETZ.g) — der Abflug ist v0 = √(2·g·h), der Flug
+// die Parabel (updateCreatures integriert sie auf dem Takt). Fail-closed wie jedes Kern-Gesetz.
+AnazhRealm._hopSchwere = function () {
+    const g = AnazhRealm.Gesetz("tetrapoda:GANG_GESETZ.g", null);
+    return Number.isFinite(g) && g > 0 ? g : AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ.g");
 };
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // hpMax/damage/knockback/defense lesen ihre Koeffizienten via _kampfKoeff aus dem Gesetzbuch

@@ -168,7 +168,10 @@ probe("die Aufgaben-Tempi/Halt-Distanzen lesen das Gesetz (aufgaben.*)", /aufgab
 probe("die Schwarm-Kohäsion liest das Gesetz (herde.gewicht/maxNachbarn)", /HERDE\.maxNachbarn/);
 probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
 probe("Pirsch-/Neugier-Stopp lesen das Gesetz (pirschStoppM/neugierStoppM)", /VG\.jagd\.pirschStoppM/);
-probe("der Hüpf-Impuls liest das Gesetz (sprung.impulsProM)", /VG\.sprung\.impulsProM/);
+probe(
+    "der Hüpfer ist die Parabel des Gang-Gesetzes (v0 = √(2·g·h), EIN Integrator auf dem Takt)",
+    /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* h\)/
+);
 
 // ── C) SELBST-TEST: injizierte tote Zeile wird erkannt ──
 const fakeTargets = kreaturTargets.concat(["gibtsnicht"]);
