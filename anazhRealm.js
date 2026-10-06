@@ -2045,8 +2045,9 @@ class AnazhRealm {
                     const treeSeed = (baseSeed + i) >>> 0;
                     // Die SPEZIES direkt spawnen (baum_eiche/baum_kiefer); die Form kommt aus den grammatik-
                     // gewachsenen Built-in-Parts. arch.type = die Spezies (tragende Identität für hasInitialTrees,
-                    // Instancing, Crafting); Varianz (scale/yaw) aus dem Seed, appliziert in spawnArchitecture.
-                    const entry = this.spawnArchitecture(
+                    // Instancing, Crafting); Varianz (scale/yaw) aus dem Seed, appliziert in spawnArchitecture. Der Hain
+                    // setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Baum der KI wächst in einem Haus.
+                    const entry = this._naturSetzen(
                         treeKind,
                         { x: pos.x + jx, y: pos.y, z: pos.z + jz },
                         { seed: treeSeed }
@@ -2888,10 +2889,12 @@ class AnazhRealm {
 
     // Platzier-Schleife des Co-Schöpfers: n Stück im Jitter-Kreis um pos, je ein trockener Fleck
     // (max 4 Würfe, _isAboveWaterAt), geerdet auf die Voxel-Oberfläche (+0.5), Drehung + Baum-Größe aus
-    // dem Programm-RNG (deterministisch), Preset-Stempel am Eintrag. Budget wie jeder Spawn-Op.
+    // dem Programm-RNG (deterministisch), Preset-Stempel am Eintrag. Budget wie jeder Spawn-Op. Natur (Baum, Strauch, Fels
+    // — `_istNatur`) setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Hain der KI wächst in einem Haus.
     _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
         const stamp = this._studioStampFor(name);
         const istBaum = name.startsWith("baum_");
+        const natur = this._istNatur({ type: name });
         const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
         let spawned = 0;
         for (let i = 0; i < n; i++) {
@@ -2915,7 +2918,8 @@ class AnazhRealm {
             const opts = { seed: (baseSeed + i) >>> 0, rotationY: ctx.rng() * Math.PI * 2 };
             if (istBaum) opts.scale = 0.8 + ctx.rng() * 0.45;
             if (stamp) opts.studioOv = stamp;
-            if (this.spawnArchitecture(name, { x, y, z }, opts)) spawned++;
+            const ort = { x, y, z };
+            if (natur ? this._naturSetzen(name, ort, opts) : this.spawnArchitecture(name, ort, opts)) spawned++;
         }
         return spawned;
     }
@@ -33696,8 +33700,8 @@ class AnazhRealm {
     // · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
     // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
     // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
-    // Ernte-Identität `gi|gj|art|i` bleibt). Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`), Pfade bleiben frei,
-    // nur Arten mit Ufer-Band stehen im Wasser. Rückgabe { items, chunks } oder null, solange ein Chunk unter der
+    // Ernte-Identität `gi|gj|art|i` bleibt). Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`), Pfade bleiben frei, kein
+    // Haus trägt Streu (`_naturSetzen`), nur Arten mit Ufer-Band stehen im Wasser. Rückgabe { items, chunks } oder null, solange ein Chunk unter der
     // Kachel noch keine Boden-Karte hat.
     _nahStreuKachel(tx, tz, arten) {
         const NS = AnazhRealm.NAH_STREU;
@@ -33772,7 +33776,8 @@ class AnazhRealm {
                         if (py === null) continue;
                         if (!A.zeile.ufer && py < this._nahStreuSpiegel(px, pz) + 0.1) continue;
                         chunks.set(op.ck, op.e.surfMap);
-                        items.push({ art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung });
+                        const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
+                        this._naturSetzen(null, it, null, () => items.push(it)); // die EINE Natur-Wand: nie im Haus
                     }
                 }
             }
@@ -42361,12 +42366,12 @@ class AnazhRealm {
                 entry.portalMeta = a.portalMeta;
             }
         }
-        // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Gewächse, die vor dem Dorf in seine Häuser
-        // wuchsen (der Wurf kam vor dem Haus) — jedes Haus räumt nach dem Laden seinen Grundriss, wie beim Gründen.
+        // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Natur, die vor dem Dorf in seine Häuser
+        // wuchs (der Wurf kam vor dem Haus) — jedes Haus räumt nach dem Laden seinen Grundriss, wie beim Gründen.
         let geraeumt = 0;
         for (const e of this.state.architectures.slice())
             if (this._grundrissVon(e)) geraeumt += this._grundrissRaeumen(e);
-        if (geraeumt) this.log(`Grundriss: ${geraeumt} Gewächse aus Häusern geräumt (älterer Stand).`, "INFO");
+        if (geraeumt) this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern geräumt (älterer Stand).`, "INFO");
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
 
@@ -52941,24 +52946,27 @@ class AnazhRealm {
                 const lod = this._chooseLODForDistance(dist, undefined, visH);
                 // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
                 // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
-                // Foundry-gegated; headless (Foundry aus) bleibt Grammatik.
-                const rec = this._scatterMaterializeCell(
-                    region,
-                    layer,
-                    layerSalt,
-                    cellX,
-                    cellZ,
-                    cellM,
-                    tf,
-                    dist,
-                    surfY,
-                    species,
-                    variantIndex,
-                    visH,
-                    lod,
-                    regX,
-                    regZ,
-                    false
+                // Foundry-gegated; headless (Foundry aus) bleibt Grammatik. Die Zelle setzt durch die EINE Natur-Wand
+                // (`_naturSetzen`): im Grundriss eines Hauses wird sie nie Streu.
+                const rec = this._naturSetzen(null, tf, null, () =>
+                    this._scatterMaterializeCell(
+                        region,
+                        layer,
+                        layerSalt,
+                        cellX,
+                        cellZ,
+                        cellM,
+                        tf,
+                        dist,
+                        surfY,
+                        species,
+                        variantIndex,
+                        visH,
+                        lod,
+                        regX,
+                        regZ,
+                        false
+                    )
                 );
                 if (!rec) continue;
                 region.cells.push(rec);
@@ -53501,8 +53509,9 @@ class AnazhRealm {
         // ebenfalls, doppelt ist idempotent)
         this._scatterMarkCellPromoted(tf.x, tf.z, layerName);
         // Der Same der Zelle reist mit (Γ5): der echte Eintrag trägt DIESELBE Gestalt wie seine Streu-Instanz —
-        // ohne ihn würfelte spawnArchitecture Math.random, und die Gestalt wechselte am Promotions-Ring.
-        const entry = this.spawnArchitecture(
+        // ohne ihn würfelte spawnArchitecture Math.random, und die Gestalt wechselte am Promotions-Ring. Der Baum setzt
+        // durch die EINE Natur-Wand (`_naturSetzen`): im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.
+        const entry = this._naturSetzen(
             keys[0],
             { x: tf.x, y: (Number.isFinite(surfY) ? surfY : 0) + 0.5, z: tf.z },
             {
@@ -73619,20 +73628,25 @@ class AnazhRealm {
         this.state.pendingVegSpawns.push({ name, position, opts });
     }
 
-    // DER GRUNDRISS RÄUMT (Welle L, Q5/Q15): was die Natur wirft (Wald · Unterholz · Totholz · Fels-Streu, jeder Wurf über
-    // `_enqueueVegetationSpawn`), wächst nie in einem Haus — der Wurf fällt, wenn sein Ort im Grundriss eines Hauses liegt
-    // (`_imGrundriss`), geprüft beim Setzen (die Schlange kann ein Dorf überholen). Vorher wuchsen 7 Bäume in 5 von 8
-    // Häusern des Start-Dorfs, eine Birke im Türblatt, Wildwald in den Gassen der Stadt (N-D5, S-W4).
-    _naturSetzen(name, position, opts) {
+    // DIE EINE WAND „Natur weicht dem Bau" (Welle L, Q5/Q15, Entscheid D3): JEDE Quelle der Natur setzt durch sie — Wald,
+    // Unterholz, Totholz und Fels-Streu (`_enqueueVegetationSpawn`), der Hof-Baum, die Streu-Zelle jeder Schicht
+    // (`_scatterPass`), ihre Promotion zum echten Baum (`_promoteScatterCell`), die Nah-Streu (`_nahStreuKachel`) und der
+    // Hain der KI (`spawn_tree`, `spawn_studio`). Liegt der Ort im Grundriss eines Hauses (`_imGrundriss`), fällt der Wurf
+    // (null); sonst baut `setzen` (eine Quelle mit eigenem Bau: Instanz-Slots, Kachel-Pflanze) bzw. der Architektur-Eintrag
+    // `name`. Was vor dem Haus stand, räumt `_grundrissRaeumen`. Vorher wuchsen 7 Bäume in 5 von 8 Häusern des Start-Dorfs,
+    // eine Birke im Türblatt, Wildwald in den Gassen der Stadt (N-D5, S-W4), und die Streu lief an der Wand vorbei.
+    _naturSetzen(name, position, opts, setzen) {
         if (position && this._imGrundriss(position.x, position.z)) return null;
-        return this.spawnArchitecture(name, position, opts);
+        return setzen ? setzen() : this.spawnArchitecture(name, position, opts);
     }
 
     // Liegt (x, z) im Grundriss eines Hauses? Die Häuser einer Siedlung tragen ihren Footprint (`fundament` {ex, ez} aus
     // dem Export-obb, sonst die Tür-Zeile W/D) und ihre Gier; der Grundriss ist diese gedrehte Box plus `rand` (der
-    // Stamm, die Traufe). Das Gitter (32 m) entsteht faul aus den Einträgen und fällt bei jedem Haus-Spawn/-Abriss.
+    // Stamm, die Traufe). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) entsteht faul aus den Einträgen
+    // und fällt bei jedem Haus-Spawn/-Abriss.
     _imGrundriss(x, z, rand = 0.8) {
         const G = 32;
+        const schluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
         let gitter = this._grundrissGitter;
         if (!gitter) {
             gitter = this._grundrissGitter = new Map();
@@ -73642,14 +73656,15 @@ class AnazhRealm {
                 const r = Math.hypot(fp.ex, fp.ez) + 2;
                 for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
                     for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
-                        const k = gx + "," + gz;
+                        const k = schluessel(gx, gz);
                         let l = gitter.get(k);
                         if (!l) gitter.set(k, (l = []));
                         l.push(e);
                     }
             }
         }
-        const l = gitter.get(Math.floor(x / G) + "," + Math.floor(z / G));
+        if (gitter.size === 0) return false;
+        const l = gitter.get(schluessel(Math.floor(x / G), Math.floor(z / G)));
         if (!l) return false;
         for (const e of l) {
             const fp = this._grundrissVon(e);
@@ -73664,14 +73679,17 @@ class AnazhRealm {
         return false;
     }
 
-    // Ist der Eintrag ein Gewächs (Baum, Strauch, Totholz)? Die Art steht am Eintrag (`_lodSpecies` des Walds, die
-    // Bauplan-Präfixe baum_/busch_/grown_, der Totholz-Stamm) — unabhängig davon, ob das Studio-Buch schon geladen ist;
-    // sonst die Studio-Art (Baum und Strauch tragen die Impostor-Zeile).
-    _istGewaechs(e) {
+    // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
+    // der Totholz-Stamm) — unabhängig davon, ob das Studio-Buch schon geladen ist; sonst trägt das Gesetzbuch des
+    // Terrain-Studios seine Art (`__terrainCore.PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …). Tor und Wagen sind
+    // nie Natur (sie tragen auch eine Impostor-Zeile — die frühere Frage `_foundryPresetIsTree` hätte sie geräumt).
+    _istNatur(e) {
         if (!e || typeof e.type !== "string") return false;
         if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
-        const pr = this._foundryPresetForEntry(e);
-        return !!(pr && this._foundryPresetIsTree(pr));
+        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+        const tab = tc && tc.PHYTO_PRESETS;
+        const pr = tab ? this._foundryPresetForEntry(e) : null;
+        return !!(pr && Object.prototype.hasOwnProperty.call(tab, pr));
     }
 
     // Der Footprint eines Hauses (halbe Maße haus-lokal) — null für alles andere.
@@ -73684,21 +73702,74 @@ class AnazhRealm {
         return null;
     }
 
-    // Ein Haus steht: was die Natur schon in seinen Grundriss geworfen hat (Baum, Strauch, Totholz), fällt — der Wald stand
-    // oft vor dem Dorf. Leser: `_spawnSettlementSlot`. Gibt die Zahl der geräumten Gewächse.
+    // Ein Haus steht: was die Natur schon in seinen Grundriss geworfen hat, fällt — der Wald und die Streu standen oft vor
+    // dem Dorf (das Auto-Dorf entsteht ab 260 m, die Streu-Region reicht 384 m). Natur-Einträge (`_istNatur`), die lebenden
+    // Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die
+    // Wand neu). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene (Lehre 25). Leser: `_spawnSettlementSlot`
+    // und das Laden. Gibt die Zahl der geräumten Natur-Stücke.
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
         this._grundrissGitter = null;
+        const hx = haus.position.x;
+        const hz = haus.position.z;
+        const r = fp.ex + fp.ez + 3;
         const weg = [];
         for (const e of this.state.architectures || []) {
-            if (e === haus || !e.position || !this._istGewaechs(e)) continue;
-            if (Math.abs(e.position.x - haus.position.x) > fp.ex + fp.ez + 3) continue;
-            if (Math.abs(e.position.z - haus.position.z) > fp.ex + fp.ez + 3) continue;
-            if (this._imGrundriss(e.position.x, e.position.z)) weg.push(e);
+            if (e === haus || !e.position) continue;
+            if (Math.abs(e.position.x - hx) > r || Math.abs(e.position.z - hz) > r) continue;
+            if (!this._istNatur(e) || !this._imGrundriss(e.position.x, e.position.z)) continue;
+            weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
-        return weg.length;
+        let n = weg.length;
+        const map = this.state.scatterRegions;
+        if (map && map.size) {
+            const RM = AnazhRealm.SCATTER.regionM;
+            for (let rx = Math.floor((hx - r) / RM); rx <= Math.floor((hx + r) / RM); rx++)
+                for (let rz = Math.floor((hz - r) / RM); rz <= Math.floor((hz + r) / RM); rz++) {
+                    const region = map.get(`${rx},${rz}`);
+                    if (!region || !Array.isArray(region.cells)) continue;
+                    for (const cell of region.cells) {
+                        if (!cell.slots && !cell.feld) continue;
+                        if (Math.abs(cell.x - hx) > r || Math.abs(cell.z - hz) > r) continue;
+                        if (!this._imGrundriss(cell.x, cell.z)) continue;
+                        this._streuZelleRaeumen(cell);
+                        n++;
+                    }
+                }
+        }
+        const ns = this.state.nahStreu;
+        if (ns && ns.kacheln.size) {
+            const K = AnazhRealm.NAH_STREU.kachel;
+            for (let tx = Math.floor((hx - r) / K); tx <= Math.floor((hx + r) / K); tx++)
+                for (let tz = Math.floor((hz - r) / K); tz <= Math.floor((hz + r) / K); tz++) {
+                    const k = ns.kacheln.get(`${tx},${tz}`);
+                    if (!k) continue;
+                    this._nahStreuKachelEntsorgen(k);
+                    ns.kacheln.delete(k.key);
+                }
+        }
+        return n;
+    }
+
+    // Eine Streu-Zelle verlässt die Welt (ihr Ort liegt im Grundriss eines Hauses): ihre Instanz-Slots, ihr Gesetz-Platz,
+    // ihre Krone in der Kronen-Karte und ihr Lookup-Eintrag fallen; slot-los promotet und wechselt sie nie mehr die Stufe
+    // (Promotion und LOD-Takt überspringen `!cell.slots`). Der Neubau der Region setzt durch die Wand (`_scatterPass`).
+    _streuZelleRaeumen(cell) {
+        this._scatterFreeSlots(cell.slots);
+        cell.slots = null;
+        if (cell.feld) {
+            this._scatterFeldFrei(cell.feld);
+            cell.feld = null;
+        }
+        cell.bpName = null;
+        const layerName = cell.layer || "tree";
+        if (cell.promotable) {
+            this._kronenStreuWeg(`s:${layerName}:${cell.cellX},${cell.cellZ}`);
+            if (this.state.scatterLookup)
+                this.state.scatterLookup.delete(this._scatterCellKeyAt(cell.x, cell.z, layerName));
+        }
     }
 
     // Pops bis zu maxPerFrame Tasks und ruft `spawnArchitecture` je Task: 4/Frame ≈ 20-25 ms statt

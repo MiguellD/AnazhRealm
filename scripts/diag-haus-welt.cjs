@@ -8,7 +8,12 @@
 //   W1  TÜR: vom Podest vor der Haustür geht der Körper 1 m hinter die Schwelle — je Haus, gedrehte eingeschlossen
 //   W2  DIELE: drinnen steht der Fuß auf der Diele des Gesetzbuchs (± 3 cm; das Gesetzbuch rechnet die Probe selbst)
 //   W3  TREPPE: der Lauf EG→OG (die Flights des Gesetzbuchs) trägt den Körper ins Obergeschoss
-//   W4  GRUNDRISS: kein Gewächs (Baum, Strauch, Totholz) steht im Grundriss eines Hauses
+//   W4  GRUNDRISS: keine Natur (Baum, Strauch, Fels, Totholz — die Arten des Terrain-Studios) steht im Grundriss eines
+//       Hauses des Drehbuch-Dorfs
+//   W4b DAS FERNE DORF: ein Dorf entsteht 300 m vom Spieler (das Auto-Dorf ab 260 m) — keine lebende Streu-Zelle (Fern-
+//       Baum, Unterholz, Fels) steht in seinen Häusern, auch nicht, wenn die Region unter ihm neu baut; der Spieler läuft
+//       hin (Promotions-Ring 64 m, der Wald des neuen Rings, die Nah-Streu um die Kamera) — kein Natur-Eintrag, keine
+//       Streu-Zelle, keine Kachel-Pflanze im Grundriss. Alle Quellen setzen durch EINE Wand (`_naturSetzen`).
 //   W5  KOLLISION == OPTIK: an jedem Punkt eines 0,5-m-Rasters im Kern-Grundriss urteilt die Welt-Kapsel (der echte
 //       Löser `_resolveCapsuleVsAABB` gegen die Boxen des Hauses) wie das Gesetzbuch (dieselbe Wand-Regel gegen die Solids des Hauses): frei
 //       oder Wand — Übereinstimmung ≥ 97 % (vorher füllten gedrehte Riegel den Raum, Innenwände fehlten)
@@ -44,6 +49,20 @@ const BASIS = {
         ["if (position && this._imGrundriss(position.x, position.z)) return null;", ""],
         ["if (entry) this._grundrissRaeumen(entry);", ""],
     ],
+    // die Streu der Region räumt nicht, wenn das Dorf kommt
+    streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],
+    // die Streu-Zelle läuft an der Wand vorbei (der Neubau der Region)
+    streuwand: [["const rec = this._naturSetzen(null, tf, null, () =>", "const rec = ((_a, _b, _c, f) => f())(null, tf, null, () =>"]],
+    // die Promotion läuft an der Wand vorbei (und die Region räumt nicht)
+    promotion: [
+        ["this._streuZelleRaeumen(cell);", "void 0;"],
+        [
+            "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this._naturSetzen(",
+            "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this.spawnArchitecture(",
+        ],
+    ],
+    // die Nah-Streu läuft an der Wand vorbei
+    nahstreu: [["this._naturSetzen(null, it, null, () => items.push(it));", "items.push(it);"]],
 };
 let patch = null;
 let patchFehler = [];
@@ -220,32 +239,108 @@ async function proben() {
             h.treppeSollM = Math.round(fl.N * fl.rise * 100) / 100;
         }
     }
-    // W4 GRUNDRISS: kein Gewächs im Grundriss — nach dem Pumpen der Natur-Schlange
-    stell(start.x + 40, start.y + 3, start.z + 40);
-    await pumpe(200);
-    let imHaus = 0;
-    let gewaechse = 0;
-    const taeter = [];
-    for (const e of s.architectures) {
-        // ein Gewächs — am Eintrag erkannt (Wald-Art, Bauplan-Präfix, Totholz) oder an der Studio-Art (Impostor-Zeile)
+    // W4 GRUNDRISS: keine Natur im Grundriss — nach dem Pumpen der Natur-Schlange. Natur = ein Eintrag, dessen Art das
+    // Gesetzbuch des Terrain-Studios trägt (`__terrainCore.PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …) oder
+    // seine Wald-/Bauplan-Zeile (vor dem Buch); nie ein Tor oder Wagen (die tragen auch eine Impostor-Zeile).
+    const PHYTO = (window.__terrainCore && window.__terrainCore.PHYTO_PRESETS) || {};
+    const istNatur = (e) => {
+        if (!e || typeof e.type !== "string") return false;
+        if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
         const pr = r._foundryPresetForEntry(e);
-        const gew =
-            !!e._lodSpecies ||
-            e.type === "stamm_gefallen" ||
-            /^(baum_|busch_|grown_)/.test(e.type) ||
-            !!(pr && r._foundryPresetIsTree(pr));
-        if (!gew) continue;
-        gewaechse++;
-        for (const hs of H) {
-            const lx = lokal(hs, e.position.x, e.position.z);
-            if (Math.abs(lx.x) <= hs.fundament.ex && Math.abs(lx.z) <= hs.fundament.ez) {
+        return !!(pr && Object.prototype.hasOwnProperty.call(PHYTO, pr));
+    };
+    const imGrundrissVon = (liste, x, z) => {
+        for (const hs of liste) {
+            const lx = lokal(hs, x, z);
+            if (Math.abs(lx.x) <= hs.fundament.ex && Math.abs(lx.z) <= hs.fundament.ez) return hs;
+        }
+        return null;
+    };
+    const naturImHaus = (liste) => {
+        let imHaus = 0;
+        let natur = 0;
+        const taeter = [];
+        for (const e of s.architectures) {
+            if (!istNatur(e)) continue;
+            natur++;
+            const hs = imGrundrissVon(liste, e.position.x, e.position.z);
+            if (hs) {
                 imHaus++;
                 if (taeter.length < 6) taeter.push(e.type + "@" + hs.type);
-                break;
             }
         }
+        return { natur, imHaus, taeter };
+    };
+    // die lebende Streu (Instanz-Slots oder Gesetz-Platz) im Grundriss — je Schicht
+    const streuImHaus = (liste) => {
+        const je = {};
+        let n = 0;
+        let zellen = 0;
+        for (const region of (s.scatterRegions && s.scatterRegions.values()) || []) {
+            for (const c of region.cells || []) {
+                if (!((c.slots && c.slots.length) || c.feld)) continue;
+                zellen++;
+                if (!imGrundrissVon(liste, c.x, c.z)) continue;
+                n++;
+                je[c.layer] = (je[c.layer] || 0) + 1;
+            }
+        }
+        return { zellen, imHaus: n, je };
+    };
+    stell(start.x + 40, start.y + 3, start.z + 40);
+    await pumpe(200);
+    o.w4 = naturImHaus(H);
+    // W4b DAS FERNE DORF: es entsteht 300 m vom Spieler (das Auto-Dorf entsteht ab 260 m, `AUTO_SETTLEMENT.nearM`) — die
+    // Streu der Region stand schon (Fern-Bäume, Unterholz, Fels). Dann läuft der Spieler hin: der Promotions-Ring (64 m)
+    // macht aus Streu-Bäumen echte Bäume, der Wald des neuen Rings wirft.
+    stell(start.x, start.y + 3, start.z);
+    await pumpe(60);
+    const vorDorf = new Set(s.architectures);
+    const fx = start.x + 300;
+    const fz = start.z;
+    r.spawnSettlement({ seed: 23, nH: 14, x: fx, z: fz });
+    const fernHaeuser = () => s.architectures.filter((e) => !vorDorf.has(e) && e.type && e.type.startsWith("haus_") && e.fundament);
+    for (let k = 0; k < 120 && fernHaeuser().length < 8; k++) {
+        await pumpe(4);
+        await warte(100);
     }
-    o.w4 = { gewaechse, imHaus, taeter };
+    const FH = fernHaeuser();
+    o.w4b = { haeuser: FH.length, fern: streuImHaus(FH) };
+    // die Region unter dem Dorf baut neu (Rückkehr, Nach-Dünnen, Foundry-Refill): sie setzt durch die Wand
+    {
+        const RM = A.SCATTER.regionM;
+        const keys = new Set();
+        for (const hs of FH) keys.add(`${Math.floor(hs.position.x / RM)},${Math.floor(hs.position.z / RM)}`);
+        for (const k of keys) r._disposeScatterRegion(k);
+        for (let k = 0; k < 60; k++) {
+            await pumpe(2);
+            if ([...keys].every((q) => s.scatterRegions.has(q) && !s.scatterRegions.get(q)._cont)) break;
+        }
+        await pumpe(10);
+        o.w4b.neubau = streuImHaus(FH);
+    }
+    // hinlaufen: der Spieler steht im Dorf, bis die Chunks um ihn stehen und die Promotion (3 je Takt) durch ist
+    stell(fx, (r.getTerrainHeightAt(fx, fz) || start.y) + 3, fz);
+    const span = r._voxelChunkConfig(0).span;
+    for (let k = 0; k < 400; k++) {
+        await pumpe(4);
+        const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(fx / span)},${Math.floor(fz / span)}`);
+        if (k > 60 && e && e.surfMap && !(s.pendingVegSpawns && s.pendingVegSpawns.length)) break;
+    }
+    await pumpe(120);
+    o.w4b.nah = naturImHaus(FH);
+    o.w4b.nahStreu = streuImHaus(FH);
+    // die Nah-Streu um die Kamera (Farn, Blume, Kiesel der Kachel): keine Pflanze im Grundriss
+    {
+        let n = 0;
+        let imHaus = 0;
+        for (const k of (s.nahStreu && s.nahStreu.kacheln.values()) || [])
+            for (const it of k.items || []) {
+                n++;
+                if (imGrundrissVon(FH, it.x, it.z)) imHaus++;
+            }
+        o.w4b.kachel = { pflanzen: n, imHaus };
+    }
     pm.position.set(start.x, start.y, start.z);
     return o;
 }
@@ -269,7 +364,17 @@ function urteil(o) {
     if (unten.length) f.push(`W3 Treppe: ${mitTreppe.length - unten.length} von ${mitTreppe.length} Läufen tragen ins OG (${unten.map((h) => h.typ + ":" + h.treppeSteigM + "/" + h.treppeSollM).join(" ")})`);
     const optik = hs.filter((h) => !(h.optikProzent >= 97));
     if (optik.length) f.push(`W5 Kollision == Optik: ${optik.length} Häuser unter 97 % (${optik.map((h) => h.typ + "@" + h.gierGrad + "°:" + h.optikProzent + " %").join(" ")})`);
-    if (o.w4 && o.w4.imHaus) f.push(`W4 Grundriss: ${o.w4.imHaus} Gewächse im Grundriss eines Hauses (${o.w4.taeter.join(" ")})`);
+    if (o.w4 && o.w4.imHaus) f.push(`W4 Grundriss: ${o.w4.imHaus} Natur-Einträge im Grundriss eines Hauses (${o.w4.taeter.join(" ")})`);
+    if (!o.w4b || !(o.w4b.haeuser >= 8)) f.push(`W4b Aufbau: ${o.w4b ? o.w4b.haeuser : "?"} Häuser im fernen Dorf (Soll ≥ 8)`);
+    else {
+        if (!(o.w4b.fern.zellen >= 50)) f.push(`W4b Aufbau: ${o.w4b.fern.zellen} lebende Streu-Zellen im Ring (Soll ≥ 50)`);
+        if (o.w4b.fern.imHaus) f.push(`W4b Fern-Streu: ${o.w4b.fern.imHaus} Streu-Zellen in den Häusern des fernen Dorfs (${JSON.stringify(o.w4b.fern.je)})`);
+        if (!o.w4b.neubau || !(o.w4b.neubau.zellen >= 50)) f.push(`W4b Aufbau: die Region baute ${o.w4b.neubau ? o.w4b.neubau.zellen : "?"} Zellen neu (Soll ≥ 50)`);
+        else if (o.w4b.neubau.imHaus) f.push(`W4b Neubau: ${o.w4b.neubau.imHaus} Streu-Zellen der neu gebauten Region in den Häusern (${JSON.stringify(o.w4b.neubau.je)})`);
+        if (o.w4b.kachel && o.w4b.kachel.imHaus) f.push(`W4b Nah-Streu: ${o.w4b.kachel.imHaus} von ${o.w4b.kachel.pflanzen} Kachel-Pflanzen im Grundriss`);
+        if (o.w4b.nah.imHaus || o.w4b.nahStreu.imHaus)
+            f.push(`W4b Promotion: nach dem Hinlaufen ${o.w4b.nah.imHaus} Natur-Einträge und ${o.w4b.nahStreu.imHaus} Streu-Zellen im Grundriss (${o.w4b.nah.taeter.join(" ")})`);
+    }
     return f;
 }
 
@@ -279,7 +384,9 @@ function zeile(o) {
     return (
         `${hs.length} Häuser (${hs.map((h) => h.gierGrad + "°").join(" ")}) · W1 Tür ${hs.filter((h) => h.tuerDrinM >= 1).length}/${hs.length}` +
         ` · W2 Diele ${hs.map((h) => h.dieleCm).join("/")} cm · W3 Treppe ${hs.filter((h) => Number.isFinite(h.treppeSollM)).map((h) => h.treppeSteigM + "/" + h.treppeSollM).join(" ")} m` +
-        ` · W4 Gewächse im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.gewaechse : "?"} · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %`
+        ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"}` +
+        ` · W4b fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
+        ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %`
     );
 }
 
@@ -329,7 +436,15 @@ function zeile(o) {
             return { o, errs, pf: patchFehler.slice() };
         };
         if (SELBST) {
-            const soll = { huelle: ["W3 Treppe", "W5 Kollision"], obb: ["W5 Kollision"], grundriss: ["W4 Grundriss"] };
+            const soll = {
+                huelle: ["W3 Treppe", "W5 Kollision"],
+                obb: ["W5 Kollision"],
+                grundriss: ["W4 Grundriss"],
+                streu: ["W4b Fern-Streu"],
+                streuwand: ["W4b Neubau"],
+                promotion: ["W4b Promotion"],
+                nahstreu: ["W4b Nah-Streu"],
+            };
             for (const inj of Object.keys(soll)) {
                 const { o, pf } = await lauf(inj);
                 const f = urteil(o);
