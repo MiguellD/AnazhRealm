@@ -241,7 +241,7 @@ function kernProbe(VC) {
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
-const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03, schubM: 0.01 };
+const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03, schubM: 0.01, sattelRad: 0.01 };
 function stationVerdict(s) {
     const out = [];
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
@@ -263,6 +263,9 @@ function stationVerdict(s) {
             if (!(rd.rolle >= STATION.rolleRad)) out.push(`raeder rollen nicht (${rd.rolle.toFixed(2)} rad)`);
             if (!(rd.lenk >= STATION.lenkRad && rd.lenkHinten <= 0.01))
                 out.push(`raeder lenken nicht (vorn ${rd.lenk.toFixed(3)} · hinten ${rd.lenkHinten.toFixed(3)} rad)`);
+            // der Bremssattel (R:s) steht je Ecke als eigenes Leaf und hängt an der Nabe wie im Labor: er rollt nie
+            if (!(rd.stehend > 0)) out.push("raeder ohne Sattel (kein stehendes Rad-Leaf)");
+            else if (!(rd.stehRolle <= STATION.sattelRad)) out.push(`raeder Sattel rollt (${rd.stehRolle.toFixed(2)} rad)`);
         }
         if (!(rd.tauchBremse <= STATION.spaltM)) out.push(`raeder tauchen beim Bremsen ${rd.tauchBremse.toFixed(3)} m`);
         if (!(rd.spaltP75 <= STATION.spaltM)) out.push(`raeder Spalt p75 ${rd.spaltP75.toFixed(3)} m`);
@@ -532,9 +535,13 @@ async function probeLeben(expected) {
             const hu = r._fahrzeugGesetzFor(gR).drive.huelle;
             const radR = hu.radR * (Number.isFinite(gR.scale) ? gR.scale : 1);
             const rad = [];
+            // die STEHENDEN Rad-Leaves (R:s — der Bremssattel hängt an der Nabe: er lenkt mit, rollt aber nie)
+            const steh = [];
             if (flat && Array.isArray(flat.leaves) && gR.instSlots)
                 for (let i = 0; i < flat.leaves.length && i < gR.instSlots.length; i++)
-                    if (flat.leaves[i].rad && flat.leaves[i].rad.dreht) rad.push({ i, rd: flat.leaves[i].rad });
+                    if (flat.leaves[i].rad) (flat.leaves[i].rad.dreht ? rad : steh).push({ i, rd: flat.leaves[i].rad });
+            let stehRolle = 0;
+            const Bu = new THREE.Matrix4();
             const M = new THREE.Matrix4();
             const B = new THREE.Matrix4();
             const Rel = new THREE.Matrix4();
@@ -552,6 +559,19 @@ async function probeLeben(expected) {
                 r._tickMountedMovement(dt);
                 r._archEntryWorldMatrix(gR, B);
                 const Binv = B.clone().invert();
+                // der Sattel im UNGEFEDERTEN Rahmen der Räder: seine Hoch-Achse bleibt oben (nur der Lenk-Einschlag dreht
+                // um sie) — rollt er mit dem Rad, kippt sie um den Rad-Winkel
+                r._archEntryWorldMatrix(gR, Bu, true);
+                const BuInv = Bu.clone().invert();
+                for (const { i } of steh) {
+                    const s = gR.instSlots[i];
+                    const g = st.archInstanceGroups.get(s.key);
+                    if (!g) continue;
+                    g.mesh.getMatrixAt(s.slot, M);
+                    const e = Rel.multiplyMatrices(BuInv, M).elements;
+                    const c = e[5] / Math.max(1e-9, Math.hypot(e[4], e[5], e[6]));
+                    stehRolle = Math.max(stehRolle, Math.acos(Math.max(-1, Math.min(1, c))));
+                }
                 // die Rad-Punkte: Naben-Mitte je Ecke (Rad-Leaf) oder der Rad-Punkt der Aufbau-Matrix (starr)
                 const punkte = [];
                 if (rad.length) {
@@ -611,6 +631,8 @@ async function probeLeben(expected) {
             spalte.sort((a, b) => a - b);
             S.raeder = {
                 leaves: rad.length,
+                stehend: steh.length,
+                stehRolle,
                 rolle,
                 lenk,
                 lenkHinten,
@@ -978,7 +1000,7 @@ async function probeLeben(expected) {
             labor: { schritte: 180, maxM: 0.0001, bei: 3 },
             klippe: { sprung: 0.2, luft: 40 },
             quer: { drift: 1.2 },
-            raeder: { leaves: 4, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01, spaltMax: 0.05 },
+            raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01, spaltMax: 0.05 },
             huelleBlock: { tief: 0.0, abstand: 0.02 },
             huelleSchub: { weg: 0 },
             huelleBaer: { tief: 0.01, abstand: 0.0 },
@@ -991,8 +1013,10 @@ async function probeLeben(expected) {
             ["Querhang ohne Abtrieb: 0,00 m (F-D7)", { quer: { drift: 0.0 } }, "querhang"],
             ["Bug 1,85 m im Fels (F-D4)", { huelleBlock: { tief: 1.85, abstand: 0 } }, "huelle-fels Eindringen"],
             ["die starre Instanz: kein Rad-Leaf (F-D8)", { raeder: { leaves: 0, rolle: 0, lenk: 0, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01 } }, "raeder starr"],
-            ["Vorderräder 0,09 m im Boden beim Bremsen (F-D8)", { raeder: { leaves: 4, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.09, spaltP75: 0.01 } }, "raeder tauchen"],
-            ["die Räder lenken nicht (F-D8)", { raeder: { leaves: 4, rolle: 12, lenk: 0, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder lenken nicht"],
+            ["Vorderräder 0,09 m im Boden beim Bremsen (F-D8)", { raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.09, spaltP75: 0.01 } }, "raeder tauchen"],
+            ["die Räder lenken nicht (F-D8)", { raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder lenken nicht"],
+            ["der Bremssattel rollt mit dem Rad (Gegenprüfung 07.10.)", { raeder: { leaves: 4, stehend: 4, stehRolle: 3.1, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder Sattel rollt"],
+            ["kein Sattel an der Nabe", { raeder: { leaves: 4, stehend: 0, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder ohne Sattel"],
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
             ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
@@ -1121,9 +1145,17 @@ async function probeLeben(expected) {
     console.log("=== R — DIE RÄDER IN DER INSTANZ (Q13 · F-D8), echter Sim-Schritt ===");
     const R = S.raeder;
     check(
-        "R1 die Räder rollen und lenken: Rad-Leaves je Ecke, Rolle relativ zum Aufbau > 1 rad, vorn Einschlag > 0,1 rad, hinten 0",
-        !hat("kern") && !hat("raeder starr") && !hat("raeder rollen") && !hat("raeder lenken") && !hat("raeder keine"),
-        R ? `${R.leaves} drehende Rad-Leaves · Rolle ${R.rolle.toFixed(2)} rad · Einschlag vorn ${R.lenk.toFixed(3)} / hinten ${R.lenkHinten.toFixed(3)} rad` : "keine Probe"
+        "R1 die Räder rollen und lenken: Rad-Leaves je Ecke, Rolle relativ zum Aufbau > 1 rad, vorn Einschlag > 0,1 rad, hinten 0; der Sattel hängt an der Nabe (rollt nie)",
+        !hat("kern") &&
+            !hat("raeder starr") &&
+            !hat("raeder rollen") &&
+            !hat("raeder lenken") &&
+            !hat("raeder keine") &&
+            !hat("raeder ohne Sattel") &&
+            !hat("raeder Sattel"),
+        R
+            ? `${R.leaves} drehende + ${R.stehend} stehende Rad-Leaves · Rolle ${R.rolle.toFixed(2)} rad · Einschlag vorn ${R.lenk.toFixed(3)} / hinten ${R.lenkHinten.toFixed(3)} rad · Sattel-Rolle ${R.stehRolle.toFixed(3)} rad`
+            : "keine Probe"
     );
     check(
         "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",

@@ -66072,7 +66072,9 @@ class AnazhRealm {
     // Lenk-Einschlag (vorn, `_rideSteerYaw` = Lenksäule des Kerns) · Drehung π der Gegenseite · Rolle um die Achse
     // (`_fahr.wheelAng` = Weg/radR des Kerns, die Gegenseite dreht im Rad-Raum gegenläufig, rollt also gleich), und das Rad
     // federt einzeln auf seinen Boden (der Aufstandspunkt der Ruhe-Lage gegen `_fahrBoden`, gedeckelt bei ±Rad-Hub
-    // vehicle-core FAHR.schritt.radHub × radR) — die Ebene der vier Räder ist eine Ebene, der Boden nicht.
+    // vehicle-core FAHR.schritt.radHub × radR) — die Ebene der vier Räder ist eine Ebene, der Boden nicht. Nur das DREHENDE
+    // Teil rollt (`rd.dreht`, im Studio der Knoten radDreht); der Bremssattel (R:s) hängt an der Nabe wie im Labor (garage
+    // corners: grp lenkt, wheelSpin rollt) — er lenkt und federt mit, rollt aber nie (Gegenprüfung 07.10.: er kreiste mit).
     _archRadMatrix(entry, lf, ewU, out) {
         const rd = lf.rad;
         const fz = entry._fahr;
@@ -66081,7 +66083,7 @@ class AnazhRealm {
         const lenk = rd.front && Number.isFinite(entry._rideSteerYaw) ? entry._rideSteerYaw : 0;
         const ang = Number.isFinite(fz.wheelAng) ? fz.wheelAng : 0;
         R.makeRotationY(lenk + rd.dreh);
-        R.multiply(Q.makeRotationZ(rd.dreh ? ang : -ang));
+        if (rd.dreht) R.multiply(Q.makeRotationZ(rd.dreh ? ang : -ang));
         R.setPosition(rd.hx, rd.hy, rd.hz);
         out.multiplyMatrices(ewU, rd.welt).multiply(R);
         // das Rad federt einzeln auf seinen Boden: der Aufstandspunkt (unter der Nabe, y 0 im Vorlagen-Raum) gegen den Boden
