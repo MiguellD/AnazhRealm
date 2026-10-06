@@ -31,6 +31,7 @@ const SCHWELLE = {
     kantenVerhaeltnis: 1.3, // Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s gegen 60 s
     kantenRuhig: 5, // Kanten-Dichte des ruhigen Flusses bei 3600 s (mittlere Luma-Stufe je Pixel)
     hellRuhig: 0.05, // Schaum-Deckung des ruhigen Flusses (kein Ufer, kein Steil-Lauf: das Gesetz schäumt dort nicht)
+    sturm: 1.3, // Kanten-Dichte des ruhigen Flusses im Sturm gegen die bei Sonne (das Gesetz: Amplitude × (w0 + w1·Wind))
 };
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
@@ -170,6 +171,10 @@ function urteil(b) {
                         `B2 ZEBRA: der ruhige Fluss trägt bei Wasser-Uhr 3600 s Kanten-Dichte ${z.ruhig.kantenDichte} ` +
                             `(bei 60 s ${a.ruhig.kantenDichte})`
                     );
+                if (!(g.sturmVerhaeltnis >= S.sturm))
+                    v.push(
+                        `B3 STURM: der Sturm bewegt das Wasser nicht (Kanten-Dichte im Sturm ${g.sturmVerhaeltnis} × der ruhigen)`
+                    );
                 if (!(a.ruhig.hellAnteil <= S.hellRuhig))
                     v.push(
                         `B1 SCHAUM: ${(a.ruhig.hellAnteil * 100).toFixed(1)} % des ruhigen Flusses schaumbedeckt ohne Gesetz-Grund`
@@ -231,6 +236,7 @@ function selbsttest() {
             },
             uhr3600: { ruhig: { kantenDichte: 1 }, schnelle: { kantenDichte: 21 } },
             kantenVerhaeltnis: 1.05,
+            sturmVerhaeltnis: 1.8,
         },
     };
     const kopie = () => JSON.parse(JSON.stringify(gut));
@@ -258,6 +264,7 @@ function selbsttest() {
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
         ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],
         ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
+        ["B3 STURM", (b) => (b.bild.sturmVerhaeltnis = 1)],
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
         ["SEITE", (b) => (b.seitenFehler = ["TypeError: x"])],

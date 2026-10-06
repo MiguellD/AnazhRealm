@@ -32613,6 +32613,11 @@ class AnazhRealm {
         // diesen Anteil der Wellen-Amplitude → SICHTBARES sanftes Kräuseln (Default 0.2 statt der
         // zu subtilen 0.06; 0 = flach, 1 = wie Ozean). Ein persistierter Slider-Wert wird respektiert.
         const uLakeRipple = uniform(Number.isFinite(atmoW.waterLakeRipple) ? atmoW.waterLakeRipple : 0.2);
+        // DER WIND BEWEGT DAS WASSER (W-R3): die Wind-Zeile des Gesetzes (WASSER_GESETZ.wind, Amplitude × (w0 + w1·Wind))
+        // skaliert Kräuselung, Dünung und Glitzer — `uWind` ist der Wind des Wetters (0 ruhig … 1 Sturm, Schreiber
+        // `_dayNightApplyWaterMaterials`). Bis V18.531 las die Welt die Zeile nicht: Sturm und Sonne zeigten denselben See.
+        const uWind = uniform(0.06);
+        const windF = float(WG.wind[0]).add(uWind.mul(WG.wind[1]));
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -32666,13 +32671,15 @@ class AnazhRealm {
         const flowDir = aFlowV.div(flowMag.max(float(0.0001)));
         // Kräusel-Amplitude = Floor 0.3 + weite aDepth-Rampe (0.4→4.0 m): aDepth springt an Bett-Nähten
         // minimal — eine harte Rampe machte daraus eine sichtbare Linie. Shader-only.
-        const rippleAmt = uLakeRipple.mul(float(0.3).add(smoothstep(float(0.4), float(4.0), aDepthV).mul(float(0.7))));
+        const rippleAmt = uLakeRipple
+            .mul(float(0.3).add(smoothstep(float(0.4), float(4.0), aDepthV).mul(float(0.7))))
+            .mul(windF);
         // EINE Displace-Quelle (Ozean-Gerstner + organische Kräuselung) für alle 3 Normal-Samples.
         const surfDisp = Fn(([xz]) => {
             // Offene See: organische Dünung, nur wo aWaveV hoch — ×(1−flowMix), weil auch Binnenwasser
             // aWaveV > 0 trägt; fließende Flüsse bekommen nur die advektierte Kräuselung, die Mündung blendet
             // weich. Der Rest-Moiré im steilen Lauf-Kern kommt von der Fresnel-Lesart (s. `fres`-Block).
-            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix));
+            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix)).mul(windF);
             // See + Fluss: organische, advektierte Kräuselung (stromab in Flüssen, still in Seen) — zwei Lagen der
             // Fluss-Phase, je höchstens eine Phase weit getragen.
             // Kräusel-Oktaven klar UNTER der Mesh-Nyquist (~1,8-m-Raster → 3,6 m): 0.07 ≈ 14 m, 0.12 ≈ 8 m,
@@ -32802,6 +32809,7 @@ class AnazhRealm {
             .sub(0.675)
             .mul(0.2)
             .mul(fmag)
+            .mul(windF)
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
@@ -32879,6 +32887,7 @@ class AnazhRealm {
             minDepth: uMinDepth,
             depthFoam: uDepthFoam,
             lakeRipple: uLakeRipple,
+            wind: uWind,
         };
         // UNIFORM-HEIMAT + OBSERVER-DIÄT (Pflicht-Paar): alle Takt-Uniforms des
         // Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
@@ -84603,6 +84612,10 @@ class AnazhRealm {
             if (uniforms.light) uniforms.light.value = lightVal;
             if (uniforms.irr) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
+            // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
+            const wu = this.state.windUniforms;
+            if (uniforms.wind && wu && wu.uWindStrength)
+                uniforms.wind.value = Math.max(0, Math.min(1, wu.uWindStrength.value / AnazhRealm.WEATHER_WIND_AMP));
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
     }

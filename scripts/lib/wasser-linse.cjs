@@ -735,12 +735,19 @@ function wasserBild(opts) {
             ctx.putImageData(im, 0, 0);
             return c.toDataURL("image/png");
         };
-        let a, b;
+        let a, b, sturm;
+        // Der Wind des Wetters (W-R3): ruhig (Sonne, 0,06) für beide Uhren, dann derselbe Bogen im Sturm (1,0). Vor der
+        // Welle L trug das Material keinen Wind — dann ist beides dasselbe Bild.
+        const windAlt = U.wind ? U.wind.value : null;
         try {
             // zwei Uhren, die keine ganze Zahl von Phasen trennt (sonst verglichen beide dieselbe Phase)
+            if (U.wind) U.wind.value = 0.06;
             a = await mess(o.t0 || 61.3);
             b = await mess(o.t1 || 3601.7);
+            if (U.wind) U.wind.value = 1.0;
+            sturm = await mess(o.t0 || 61.3);
         } finally {
+            if (U.wind) U.wind.value = windAlt;
             U.time.value = zeitAlt;
             U.irr.value.copy(irrAlt);
             U.light.value = lichtAlt;
@@ -761,6 +768,8 @@ function wasserBild(opts) {
             uhr3600: { ruhig: Z(b.ruhig), schnelle: Z(b.schnelle) },
             // der Phasen-Zerfall an den Strähnen der Stromschnelle: Kanten-Dichte bei 3600 s gegen 60 s
             kantenVerhaeltnis: R(a.schnelle.kantenDichte > 0 ? b.schnelle.kantenDichte / a.schnelle.kantenDichte : 0),
+            // der Sturm am ruhigen Fluss: Kanten-Dichte bei Wind 1,0 gegen 0,06 (dieselbe Uhr)
+            sturmVerhaeltnis: R(a.ruhig.kantenDichte > 0 ? sturm.ruhig.kantenDichte / a.ruhig.kantenDichte : 0),
             png60: a.png,
             png3600: b.png,
         };
