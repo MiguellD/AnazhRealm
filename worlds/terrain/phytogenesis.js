@@ -5249,8 +5249,9 @@ init();
             // sind ebenfalls kind "unknown" und leben byte-exakt in den v1-Asset-Goldens —
             // gate:asset-contract, 52 sha256 ueber den Reply, gemessen). Fahrzeug-Materialien
             // (paint/glass/clay) sind uniform ohne Vertex-Colors; der Empfaenger
-            // (_foundryBuildGroup) fuellt daraus das color-Attribut. r128 liest Hex als
-            // LINEAR -> raw-Komponenten (die Farb-Regel: treue Anker als linear).
+            // (_foundryBuildGroup) fuellt daraus das color-Attribut. Die Komponenten sind LINEAR:
+            // das Gesetzbuch rechnet sein Paletten-Hex (sRGB-Absicht) selbst um (das FARB-GESETZ,
+            // W5: vehicle-core/schmiede-core `stoffFarbe`, fachwerk `_lin`), die Bruecke reicht sie roh.
             if (zweitKern && mat.color && typeof mat.color.r === "number")
                 out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
             // DIE EINE PIPE: Emissiv reist NUR wenn nicht-schwarz (additiv, must-ignore;

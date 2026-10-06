@@ -4,7 +4,7 @@
 //
 // Node-DIREKT (r128-UMD + require, wie gate:vehicle-contract): je Fahrzeug-Rezept × Lack-Gestalt (Same 1..8) und je
 // Schmiede-Rezept baut das Gesetzbuch seine Welt-Gestalt (`buildInstance`); je Mesh liest die Linse, was in die Welt
-// reist — die Material-Farbe (ein Stoff ohne Vertex-Farben) bzw. das flächen-gewichtete Mittel der Vertex-Farben (der
+// reist — die Material-Farbe (ein Stoff ohne Vertex-Farben) bzw. das Mittel der Vertex-Farben je Vertex (der
 // Wirt liest NUR das color-Attribut: eine Material-Tönung dazu zeigt das Labor, die Welt nie — Lab ≠ Welt).
 // Benannte Täter (je einer eine Probe):
 //   ohne-stoff   ein Material ohne userData.__stoff (das Gesetzbuch sagt nicht, was es ist)
@@ -118,7 +118,7 @@ function lackGestalten() {
             const c = [o.material.color.r, o.material.color.g, o.material.color.b];
             const k = c.join(",");
             n++;
-            if (!best || best.k !== k) best = best || { k, c };
+            if (!best) best = { k, c };
         });
         ist.push(best ? best.c : null);
         if (!n) out.push(`lack-gestalt: Same ${s} trägt keinen Karosserie-Lack`);
