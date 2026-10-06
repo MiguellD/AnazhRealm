@@ -4242,15 +4242,22 @@ function buildInstance(presetId, seed, lod, ov) {
 // Indizierter Merge (pos+nor+idx, Offsets verschoben) — bewusst pur (kein
 // BufferGeometryUtils: r128 heißt mergeBufferGeometries, r184 mergeGeometries —
 // die Pipe darf nicht an einer Namens-Drift der Addons hängen).
-function __tierMergeGeos(geos) {
+function __tierMergeGeos(geos, fuell) {
     let nv = 0,
-        ni = 0;
+        ni = 0,
+        mitFarbe = 0;
     for (const g of geos) {
         nv += g.attributes.position.count;
         ni += g.index ? g.index.count : g.attributes.position.count;
+        if (g.attributes.color) mitFarbe++;
     }
+    // DIE FARBE REIST MIT (Welle 5): trägt ein Teil des Eimers Vertex-Farben (das Fell-Muster der Tiere, der Wurzel→
+    // Spitze-Verlauf der Haar-Strähnen), füllen die übrigen mit der Stoff-Farbe (fuell, linear). Vorher fielen die
+    // Farben beim Verschmelzen still: die Strähnen des Menschen verloren ihren Lab-Verlauf.
+    if (mitFarbe && mitFarbe !== geos.length && !fuell) throw new Error("GELENK-GUSS: Farbe an " + mitFarbe + " von " + geos.length + " Teilen, keine Füll-Farbe");
     const pos = new Float32Array(nv * 3);
     const nor = new Float32Array(nv * 3);
+    const col = mitFarbe ? new Float32Array(nv * 3) : null;
     const idx = new Uint32Array(ni);
     let vo = 0,
         io = 0;
@@ -4258,6 +4265,8 @@ function __tierMergeGeos(geos) {
         pos.set(g.attributes.position.array, vo * 3);
         nor.set(g.attributes.normal.array, vo * 3);
         const c = g.attributes.position.count;
+        if (col && g.attributes.color) col.set(g.attributes.color.array, vo * 3);
+        else if (col) for (let i = 0; i < c; i++) col.set(fuell, (vo + i) * 3);
         if (g.index) {
             const ia = g.index.array;
             for (let i = 0; i < ia.length; i++) idx[io + i] = ia[i] + vo;
@@ -4271,8 +4280,47 @@ function __tierMergeGeos(geos) {
     const out = new THREE.BufferGeometry();
     out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+    if (col) out.setAttribute("color", new THREE.BufferAttribute(col, 3));
     out.setIndex(new THREE.BufferAttribute(idx, 1));
     return out;
+}
+// DAS FELL-MUSTER IM OFEN (Welle 5): tetrapoda fellFarbe (sRGB je Ort und Gelenk) → linear (FARB-GESETZ). gelenke(i)
+// liefert je Vertex [[Gelenk-Name, Gewicht], …] — die Haut mischt über ihre Bone-Gewichte, starre Teile tragen eins.
+function __tierLin(c) {
+    const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return [f(c[0] / 255), f(c[1] / 255), f(c[2] / 255)];
+}
+function __tierMusterFarben(kern, P, M, pa, gelenke, matrix) {
+    const n = pa.count;
+    const out = new Float32Array(n * 3);
+    const v = new THREE.Vector3();
+    for (let i = 0; i < n; i++) {
+        v.fromBufferAttribute(pa, i);
+        if (matrix) v.applyMatrix4(matrix);
+        let r = 0,
+            g = 0,
+            b = 0,
+            w = 0;
+        for (const [name, gw] of gelenke(i)) {
+            if (!(gw > 0)) continue;
+            const c = kern.fellFarbe(P, M, v.x, v.y, v.z, name);
+            r += gw * c[0];
+            g += gw * c[1];
+            b += gw * c[2];
+            w += gw;
+        }
+        const lc = __tierLin([r / w, g / w, b / w]);
+        out[i * 3] = lc[0];
+        out[i * 3 + 1] = lc[1];
+        out[i * 3 + 2] = lc[2];
+    }
+    return out;
+}
+// Die Gelenk-Gewichte einer geskinnten Hülle (Index → Name über die Bone-Ordnung).
+function __tierHautGelenke(geo, skinJoints) {
+    const si = geo.attributes.skinIndex.array,
+        sw = geo.attributes.skinWeight.array;
+    return (i) => [0, 1, 2, 3].map((k) => [skinJoints[si[i * 4 + k]], sw[i * 4 + k]]);
 }
 
 // Ein Strähnen-BLOCK aus einer Streu-Spec (die Haar-Streu des Menschen; deterministischer LCG, nie
@@ -4531,6 +4579,8 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
     const dials = ov && typeof ov === "object" ? Object.assign({}, dials0, ov) : Object.assign({}, dials0);
     const P = kern.deriveTierParams(dials);
     const TK = kern.TIER_MATERIAL_KLASSEN || {};
+    // DIE ART (Welle 5): die Augen-Farbe der Art (Wolf · Fuchs Bernstein, Bär · Hirsch dunkelbraun) — sRGB-Absicht.
+    const art = kern.artGestalt(P);
     const fein = (lod | 0) >= 1;
     const segW = fein ? 8 : 20,
         segH = fein ? 6 : 14,
@@ -4563,6 +4613,10 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         } else {
             const kl = TK[k] || TK.dunkel || { c: 0x111111, r: 0.5 };
             c = kl.c;
+            if (k === "tierauge") {
+                const a = art.kopf.auge;
+                c = (Math.round(a[0]) << 16) | (Math.round(a[1]) << 8) | Math.round(a[2]);
+            }
             r = kl.r != null ? kl.r : 0.5;
             if (kl.emissiv != null) {
                 em = kl.emissiv;
@@ -4615,8 +4669,13 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
             return m;
         },
         zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
+        // Die Hornhaut ist im Lab eine durchsichtige Schale (Deckkraft 0,05); die Welt hat keinen Glas-Pfad für sie —
+        // opak gegossen war sie eine weiße Kugel über der Iris (das Kulleraugen-Tier der Tour). Sie entfällt wie beim
+        // Menschen (bakeMenschInstance "cornea"); den Glanz trägt die Iris (Rauheit 0,06).
         kugelFein: (r, k, segs) =>
-            new THREE.Mesh(new THREE.SphereGeometry(r, fein ? 8 : Math.min(16, segs || 16), fein ? 6 : 12), matFuer(k)),
+            k === "hornhaut"
+                ? new THREE.Group()
+                : new THREE.Mesh(new THREE.SphereGeometry(r, fein ? 8 : Math.min(16, segs || 16), fein ? 6 : 12), matFuer(k)),
         v3: (x, y, z) => new THREE.Vector3(x, y, z),
         richte: (node, dir) => {
             node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
@@ -4653,16 +4712,17 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
             const nm2 = B.neckStart.clone().add(B.neckDir.clone().multiplyScalar(0.5));
             T.neckMid = [nm2.x, nm2.y, nm2.z];
         }
-        const lin2 = (hx) => {
-            const f2 = (v2) => (v2 <= 0.04045 ? v2 / 12.92 : Math.pow((v2 + 0.055) / 1.055, 2.4));
-            return [f2(((hx >> 16) & 255) / 255), f2(((hx >> 8) & 255) / 255), f2((hx & 255) / 255)];
+        // kl: die Haar-Länge der Art je Lab-Einheit (H/2,4 × Fell-Länge), ks: die Ruten-Haare (Fuchs buschig).
+        const k = (B.masse.H || P.size) / 2.4;
+        fell = {
+            rows: kern.fellStreu(P, B.masse, T) || [],
+            T,
+            schweif,
+            kl: k * art.fell.lang,
+            ks: k * art.schwanz.fell,
+            kern,
+            P,
         };
-        const toene = {
-            B: lin2(typeof P.cB === "number" ? P.cB : 0x6b4a2e),
-            D: lin2(typeof P.cD === "number" ? P.cD : 0x3a2e1c),
-            L: lin2(typeof P.cL === "number" ? P.cL : 0xc0a060),
-        };
-        fell = { rows: kern.fellStreu(P, B.masse, T) || [], T, toene, schweif };
     }
     const root = B.teile.wolf;
     const namen = [
@@ -4700,6 +4760,28 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         tailNamen.push(nm);
     });
     const skinJoints = __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell);
+    // Die starren Fell-Teile (Ohren, Lider, Zehen, Kamm …) tragen das Muster ihres Orts als eine Farbe — jedes Fell-Teil
+    // reist mit Vertex-Farbe (die Welt liest nur sie; der Eimer eines Gelenks mischt nie Teile mit und ohne).
+    root.updateMatrixWorld(true);
+    const zuWurzel = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    const mitte = new THREE.Vector3();
+    root.traverse((node) => {
+        const kl = node.isMesh && node.material && node.material.userData && node.material.userData.__klasse;
+        if (kl !== "fell" || node.userData.__nichtGiessen || node.geometry.attributes.color) return;
+        let gel = "wolf";
+        for (let c = node; c; c = c.parent)
+            if (nodeName.has(c)) {
+                gel = nodeName.get(c);
+                break;
+            }
+        node.geometry.computeBoundingSphere();
+        mitte.copy(node.geometry.boundingSphere.center).applyMatrix4(node.matrixWorld).applyMatrix4(zuWurzel);
+        const lc = __tierLin(kern.fellFarbe(P, B.masse, mitte.x, mitte.y, mitte.z, gel));
+        const n = node.geometry.attributes.position.count;
+        const arr = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++) arr.set(lc, i * 3);
+        node.geometry.setAttribute("color", new THREE.BufferAttribute(arr, 3));
+    });
     return __bakeGelenkBaum(root, "wolf", nodeName, fein, {
         art: presetId,
         tailSegs: tailNamen,
@@ -4732,7 +4814,27 @@ var TIER_HAUT = Object.freeze({
     blendKopf: 0.012, // × H (smin-Verrundung im Gesicht)
     blend: 0.035, // × H (smin-Verrundung der Nähte)
     eW: 0.03, // × H (Gewichts-Weiche: 1/(d² + eW²)²)
+    // DIE HAUT KOSTET IHR ZIEL, NIE IHRE FLÄCHE (Welle 5): ein breiter Leib (der Bär der Art-Gestalt) trug bei
+    // derselben Rasterweite 1,4× die Dreiecke des Wolfs (L0 78k > Budget 62k, L1 8k > 7k). Die Rasterweite wächst,
+    // bis die Haut ihr Ziel hält (Dreiecke ≈ 2 × Vorzeichen-Kanten des Felds); Wolf, Fuchs und Hirsch liegen darunter.
+    dreieckeNah: 19200,
+    dreieckeFern: 5000, // die Fern-Hülle (+ Ohren, Kamm, Lider ~1,3k als Primitive) hält L1 ≤ 7000
 });
+// Die Vorzeichen-Kanten des Felds (jede ist ein Viereck der Surface-Nets = zwei Dreiecke).
+function __tierKanten(f, nx, ny, nz) {
+    let n = 0;
+    for (let k = 0; k < nz; k++)
+        for (let j = 0; j < ny; j++) {
+            const row = nx * (j + ny * k);
+            for (let i = 0; i < nx; i++) {
+                const a = f[row + i] < 0;
+                if (i + 1 < nx && a !== f[row + i + 1] < 0) n++;
+                if (j + 1 < ny && a !== f[row + i + nx] < 0) n++;
+                if (k + 1 < nz && a !== f[row + i + nx * ny] < 0) n++;
+            }
+        }
+    return n;
+}
 function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const hk =
         kern && typeof kern.surfaceNets === "function"
@@ -4743,7 +4845,7 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     // Ohne Hüllen-Maschine kein Tier: LAUT (der Bäcker-Fänger meldet), nie still die Perlen-Kette.
     if (!hk) throw new Error("TIER-HAUT: Hüllen-Maschine (koerper-core.surfaceNets) fehlt");
     const H = (B.masse && B.masse.H) || P.size || 2.4;
-    const vox = (fein ? TIER_HAUT.voxFern : TIER_HAUT.voxNah) * H;
+    let vox = (fein ? TIER_HAUT.voxFern : TIER_HAUT.voxNah) * H;
     const blend = TIER_HAUT.blend * H;
     root.updateMatrixWorld(true);
     const kopf = B.teile.headGroup || null;
@@ -4757,14 +4859,24 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     };
     // Stufe 0: der Kopf trägt seine eigenen starren Häute (__tierKopfHaeute); das Fern-Standbild ist starr
     // und nimmt ihn in die eine Haut.
-    const prims = __tierPrims(root, root, (n) => fein || !unterKopf(n), vox, blend, gelenkVon);
+    const nimmHaut = (n) => fein || !unterKopf(n);
+    let prims = __tierPrims(root, root, nimmHaut, vox, blend, gelenkVon);
+    if (prims.length < 4) return null;
+    let feld = __tierFeld(prims, vox, blend);
+    const ziel = fein ? TIER_HAUT.dreieckeFern : TIER_HAUT.dreieckeNah;
+    const dreiecke = 2 * __tierKanten(feld.f, feld.nx, feld.ny, feld.nz);
+    if (dreiecke > ziel) {
+        for (const p of prims) p.node.userData.__nichtGiessen = false;
+        vox *= Math.sqrt(dreiecke / ziel);
+        prims = __tierPrims(root, root, nimmHaut, vox, blend, gelenkVon);
+        feld = __tierFeld(prims, vox, blend);
+    }
     if (fein)
         root.traverse((node) => {
             const kl = node.isMesh && node.material && node.material.userData && node.material.userData.__klasse;
             if (kl && TIER_HAUT.fernOhne.includes(kl)) node.userData.__nichtGiessen = true;
         });
-    if (prims.length < 4) return null;
-    const { f, nx, ny, nz, lo, hi } = __tierFeld(prims, vox, blend);
+    const { f, nx, ny, nz, lo, hi } = feld;
     // Gelenke der Haut in Baum-Ordnung (nur die, die ein Primitiv trägt).
     let skinJoints = null;
     if (!fein) {
@@ -4813,13 +4925,30 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const eW = TIER_HAUT.eW * H;
     const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten);
     if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
+    // Das Fell-Muster auf der Haut: L0 über die Bone-Gewichte, das Fern-Standbild nach dem nächsten Glied.
+    const gelenkeHaut = skinJoints
+        ? __tierHautGelenke(geo, skinJoints)
+        : (i) => {
+              const p = [geo.attributes.position.getX(i), geo.attributes.position.getY(i), geo.attributes.position.getZ(i)];
+              let best = null,
+                  bd = Infinity;
+              for (const z of zentren) {
+                  const d = z.d(p);
+                  if (d < bd) {
+                      bd = d;
+                      best = z.j;
+                  }
+              }
+              return [[best, 1]];
+          };
+    geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, gelenkeHaut, null), 3));
     const mesh = new THREE.Mesh(geo, matFuer("fell"));
     root.add(mesh); // Root-lokal gebacken (Identität)
     if (fell) {
         const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, H);
         root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
     }
-    if (!fein) __tierKopfHaeute(hk, B, H, matFuer);
+    if (!fein) __tierKopfHaeute(hk, B, H, matFuer, kern, P);
     return skinJoints;
 }
 
@@ -4842,17 +4971,24 @@ function __tierAbstand(p, x, y, z) {
 // Die Fell-Ellipsoide eines Teil-Baums im Raum `ref` (Matrix ref⁻¹ · Welt): Kugeln der Klasse fell, die
 // `nimm(node)` zulässt. Zu fein fürs Raster (kleinste Halbachse < minVox·vox) bleibt Primitiv, dünner als
 // minDicke·vox wächst (Dicken-Erhalt). Groß vor klein sortiert (das Innere wird früh TIEF).
-function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon) {
+// klassen: die Stoff-Klassen, deren Kugeln die Haut tragen (Tier: fell; Mensch-Kopf: skin + lips, Welle 5);
+// zylinder: auch Zylinder tragen sie, als Ellipsoid über ihrem größeren Radius und ihrer halben Höhe (der Nasenrücken,
+// die Kiefer-Äste des Menschen-Kopfs — sonst stünden sie als Stäbe auf der glatten Haut).
+function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon, klassen, zylinder) {
     const inv = new THREE.Matrix4().copy(ref.matrixWorld).invert();
     const sp = new THREE.Vector3();
     const prims = [];
+    const kls = klassen || ["fell"];
     baum.traverse((node) => {
         if (!node.isMesh || !node.geometry || !node.geometry.parameters) return;
         const kl = node.material && node.material.userData && node.material.userData.__klasse;
-        if (kl !== "fell" || !nimm(node)) return;
-        const r = node.geometry.parameters.radius;
-        if (!(r > 0) || node.geometry.type !== "SphereGeometry") return;
+        if (!kls.includes(kl) || !nimm(node)) return;
+        const gp = node.geometry.parameters;
+        const zyl = zylinder && node.geometry.type === "CylinderGeometry";
+        const r = zyl ? Math.max(gp.radiusTop, gp.radiusBottom) : gp.radius;
+        if (!(r > 0) || !(zyl || node.geometry.type === "SphereGeometry")) return;
         const M = new THREE.Matrix4().multiplyMatrices(inv, node.matrixWorld);
+        if (zyl) M.multiply(new THREE.Matrix4().makeScale(1, gp.height / (2 * r), 1));
         const e = M.elements;
         const sx = Math.sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]),
             sy = Math.sqrt(e[4] * e[4] + e[5] * e[5] + e[6] * e[6]),
@@ -4943,7 +5079,7 @@ function __tierFeld(prims, vox, blend) {
 // Brauen). Kopf und Kiefer werden je EINE starre Haut an ihrem Gelenk — derselbe SDF-Guss auf einem
 // feineren Raster (das Gesicht ist klein); starr heißt kein Skinning: der Kiefer öffnet (Gähnen, Schnüffeln).
 // Ohren und Lider bleiben eigene Gelenke mit ihren Primitiven; Augen, Nase, Zähne sind keine Fell-Klasse.
-function __tierKopfHaeute(hk, B, H, matFuer) {
+function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
     const vox = TIER_HAUT.voxKopf * H,
         blend = TIER_HAUT.blendKopf * H;
     const t = B.teile;
@@ -4963,6 +5099,10 @@ function __tierKopfHaeute(hk, B, H, matFuer) {
         const F = __tierFeld(prims, vox, blend);
         const geo = __huelleAusFeld(hk, F.f, F.nx, F.ny, F.nz, F.lo, vox, 0, 0, null, null, 0);
         if (!geo) throw new Error("TIER-HAUT: die Kopf-Haut lieferte keine Fläche");
+        // Das Fell-Muster im Gesicht (Fang, Wangen, Stirn) — im Wurzel-Raum der Ruhe-Pose gelesen.
+        const zuWurzel = new THREE.Matrix4().copy(t.wolf.matrixWorld).invert().multiply(g.matrixWorld);
+        const name = g === t.jawGroup ? "jawGroup" : "headGroup";
+        geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, () => [[name, 1]], zuWurzel), 3));
         g.add(new THREE.Mesh(geo, matFuer("fell"))); // Gelenk-lokal gebacken (Identität)
     }
 }
@@ -5015,7 +5155,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     root.updateMatrixWorld(true);
     const invRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
     const zeilen = [];
-    const zeile = (node, c, r, sc, d, n, l, ton) => {
+    const zeile = (node, c, r, sc, d, n, l) => {
         if (!(n > 0) || !(l > 0)) return;
         const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
         const dw = new THREE.Vector3(d[0], d[1], d[2]).transformDirection(M);
@@ -5031,7 +5171,6 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             dw,
             dichte: n / (rx * ry + ry * rz + rx * rz),
             l,
-            ton: fell.toene[ton] || fell.toene.B,
         });
     };
     const bX = (B.masse && B.masse.bX) || 1;
@@ -5042,19 +5181,23 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
                 if (!t3) continue;
                 const r = 0.3 * H * Math.sqrt(anteil * 3),
                     sc = [bX, 0.95, 1.15];
-                zeile(root, t3, r, sc, row.d, row.uDens * anteil, row.underL, "D");
-                zeile(root, t3, r, sc, row.d, row.gDens * anteil, row.guardL, "B");
-                zeile(root, t3, r, sc, row.d, row.gDens * anteil * row.hellQuote, 0.06, "L");
+                zeile(root, t3, r, sc, row.d, row.uDens * anteil, row.underL);
+                zeile(root, t3, r, sc, row.d, row.gDens * anteil, row.guardL);
+                zeile(root, t3, r, sc, row.d, row.gDens * anteil * row.hellQuote, 0.06 * fell.kl);
             }
             continue;
         }
         const node = B.teile[row.teil];
-        if (node) zeile(node, row.c, row.r, row.sc, row.d, row.n, row.l + (row.lj != null ? row.lj : 0.015) / 2, row.ton);
+        if (node)
+            zeile(node, row.c, row.r, row.sc, row.d, row.n, row.l + ((row.lj != null ? row.lj : 0.015) / 2) * fell.kl);
     }
     // Das Schweif-Gesetz des Ofens (Lab-Streu je Segment: (28 − 2i)·9 Strähnen, Länge 0.047 − 0.003·i im
     // Mittel, nach hinten gekämmt) — dieselben Zahlen wie die gefallenen Schweif-Strähnen.
-    for (const sw of fell.schweif)
-        zeile(sw.node, [0, 0, -0.048 * H], sw.segR, [0.95, 1.18, 1.18], [0, -0.12, -0.92], (28 - 2 * sw.i) * 9, 0.047 - 0.003 * sw.i, "B");
+    // Die Segment-Mitte ist die Lage des Segment-Leibs (die Art bestimmt seine Länge), die Haar-Länge die der Art.
+    for (const sw of fell.schweif) {
+        const leib = sw.node.children[0];
+        zeile(sw.node, [0, 0, leib.position.z], sw.segR, [0.95, 1.18, 1.18], [0, -0.12, -0.92], (28 - 2 * sw.i) * 9, (0.047 - 0.003 * sw.i) * fell.ks);
+    }
     const pa = basis.attributes.position,
         na = basis.attributes.normal,
         Vs = pa.count;
@@ -5071,10 +5214,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             L = 0,
             dx = 0,
             dy = 0,
-            dz = 0,
-            cr = 0,
-            cg = 0,
-            cb = 0;
+            dz = 0;
         for (const zl of zeilen) {
             const m = zl.Mi;
             const qx = (m[0] * x + m[4] * y + m[8] * z + m[12] - zl.c[0]) / zl.rx,
@@ -5089,9 +5229,6 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             dx += w * zl.dw.x;
             dy += w * zl.dw.y;
             dz += w * zl.dw.z;
-            cr += w * zl.ton[0];
-            cg += w * zl.ton[1];
-            cb += w * zl.ton[2];
         }
         dichte[i] = W;
         if (W > 0) {
@@ -5108,16 +5245,11 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             kamm[i * 3] = tx / tl;
             kamm[i * 3 + 1] = ty / tl;
             kamm[i * 3 + 2] = tz / tl;
-            ton[i * 3] = cr / W;
-            ton[i * 3 + 1] = cg / W;
-            ton[i * 3 + 2] = cb / W;
-        } else {
-            // Kein Gesetz trägt diesen Punkt: kahl (die Schalen fallen auf die Basis), Ton = Körper.
-            ton[i * 3] = fell.toene.B[0];
-            ton[i * 3 + 1] = fell.toene.B[1];
-            ton[i * 3 + 2] = fell.toene.B[2];
         }
     }
+    // Der Ton der Schalen ist das FELL-MUSTER am Haut-Punkt (Welle 5; vorher die Zeilen-Töne B/D/L der Ernährung) —
+    // die Schale und die Haut darunter tragen dieselbe Farbe.
+    ton.set(__tierMusterFarben(fell.kern, fell.P, B.masse, pa, __tierHautGelenke(basis, skinJoints), null));
     // Das Haar-Raster folgt der Gesetz-Dichte: Zellen je Einheit = √(Median Strähnen je Fläche) — der
     // Abstand der Lab-Strähnen (Wolf ~0.012); die lokale Dichte (relativ zum Median) skaliert die Locke.
     const belegt = Array.from(dichte)
@@ -5249,7 +5381,8 @@ function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
     });
     const out = new THREE.Group();
     for (const b of buckets.values()) {
-        const merged = b.geos.length === 1 ? b.geos[0] : __tierMergeGeos(b.geos);
+        const mc = b.mat && b.mat.color;
+        const merged = b.geos.length === 1 ? b.geos[0] : __tierMergeGeos(b.geos, mc ? [mc.r, mc.g, mc.b] : null);
         if (b.geos.length > 1) for (const g of b.geos) g.dispose();
         const mesh = new THREE.Mesh(merged, b.mat);
         mesh.userData.__assetJoint = b.joint;
@@ -5496,7 +5629,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                         if (n2.isMesh && n2.geometry && !n2.userData.__skinned) punkteVon(n2, pts, zen, animAhnH(n2));
                     });
             }
-            backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, 0.12);
+            backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
         }
         // ZURÜCK IN DIE DEFAULT-POSE: Gelenke restaurieren, je Gelenk das
         // Delta default×inv(spreiz) (Charakter-lokal), jeden Hüllen-Vertex
@@ -5531,6 +5664,80 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
+        }
+    }
+    // DIE KOPF-HAUT (Welle 5, „der Mensch nah: das Gesicht"): das Gesicht war ein Haufen einzelner Kugeln (Kiefer,
+    // Kinn, Wangen, Masseter, Lippen — jede mit eigener Kante, der Kartoffel-Kopf der Tour). Wie beim Tier (V18.499)
+    // gießt derselbe SDF-Guss die Haut- und Lippen-Kugeln des Kopfes (ohne die Augen-Gruppen: ihre Lider blinzeln) zu
+    // EINER glatten Fläche im Kopf-Raum; die Lippe ist eine Farbe der Haut (Vertex, je Punkt das nächste Primitiv),
+    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — das Fern-Standbild bleibt der Primitiv-Guss.
+    if (!fein && typeof kern.surfaceNets === "function" && kern.MENSCH_GESTALT && B.parts.head) {
+        const kopf = B.parts.head;
+        const KH = kern.MENSCH_GESTALT.kopfHaut;
+        const augen = [B.augen.eyeL, B.augen.eyeR].filter(Boolean);
+        const unterAuge = (n) => {
+            for (let c = n; c; c = c.parent) if (augen.includes(c)) return true;
+            return false;
+        };
+        B.character.updateMatrixWorld(true);
+        const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips"], true);
+        // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
+        kopf.traverse((n) => {
+            if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
+        });
+        if (prims.length < 2) throw new Error("MENSCH-HAUT: der Kopf trägt keine Haut-Primitive");
+        const Fk = __tierFeld(prims, KH.vox, KH.blend);
+        const geo = __huelleAusFeld(kern, Fk.f, Fk.nx, Fk.ny, Fk.nz, Fk.lo, KH.vox, 0, 0, null, null, 0);
+        if (!geo) throw new Error("MENSCH-HAUT: die Kopf-Haut lieferte keine Fläche");
+        // je Vertex die Farbe des nächsten Primitivs (normierter Abstand |Mi·p|/r − 1), linear wie das Material
+        const farbeVon = new Map();
+        for (const p of prims) {
+            const c = p.node.material.color;
+            farbeVon.set(p, [c.r, c.g, c.b]);
+        }
+        // die Mund-Linie liegt zwischen den Lippen-Mitten (Kopf-Raum), ihre Breite ist ein Bruchteil der Lippen-Höhe
+        const oL = B.augen.upperLipRef,
+            uL = B.augen.lowerLipRef;
+        const mundY = (oL.position.y + uL.position.y) / 2,
+            mundH = Math.abs(oL.position.y - uL.position.y);
+        const pa = geo.attributes.position;
+        const col = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+            const x = pa.getX(i),
+                y = pa.getY(i),
+                z = pa.getZ(i);
+            let best = prims[0],
+                bd = Infinity;
+            for (const p of prims) {
+                const m = p.Mi;
+                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
+                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
+                if (d < bd) {
+                    bd = d;
+                    best = p;
+                }
+            }
+            // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten (dunkel, ein Viertel der Lippe)
+            const fb = farbeVon.get(best);
+            const spalt = best.node.material.userData.__klasse === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
+            col.set(spalt ? [fb[0] * 0.25, fb[1] * 0.2, fb[2] * 0.2] : fb, i * 3);
+        }
+        geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+        kopf.add(new THREE.Mesh(geo, matFuer("haut"))); // Kopf-lokal gebacken (Identität)
+        // DIE HAND-HAUT: Handfläche, Finger (Zylinder als Ellipsoide) und Daumen werden EINE Fläche je Hand — vorher
+        // hingen vier Zylinder-Stäbe an einer Kugel (die Rechen-Hand der Tour).
+        const HH = kern.MENSCH_GESTALT.handHaut;
+        for (const hn of ["hand1", "hand-1"]) {
+            const hand = B.parts[hn];
+            if (!hand) continue;
+            const hp = __tierPrims(hand, hand, () => true, HH.vox, HH.blend, () => null, ["skin"], true);
+            if (hp.length < 2) throw new Error("MENSCH-HAUT: die Hand trägt keine Haut-Primitive");
+            const Fh = __tierFeld(hp, HH.vox, HH.blend);
+            const hg = __huelleAusFeld(kern, Fh.f, Fh.nx, Fh.ny, Fh.nz, Fh.lo, HH.vox, 0, 0, null, null, 0);
+            if (!hg) throw new Error("MENSCH-HAUT: die Hand-Haut lieferte keine Fläche");
+            hand.add(new THREE.Mesh(hg, matFuer("haut"))); // Hand-lokal gebacken (Identität)
         }
     }
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen

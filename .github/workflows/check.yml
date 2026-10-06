@@ -76,6 +76,21 @@ jobs:
               # Die Messung selbst: `werkbank band` / `werkbank ratsche` (echte GPU).
               run: npm run gate:profiband
 
+            - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
+              # GPU-frei, reines Node (three r128 im vm wie im Foundry-Worker): der Kreatur-Bäcker backt Wolf · Fuchs ·
+              # Bär · Hirsch, die Linse misst an der Haut der Ruhe-Pose (normiert auf den Widerrist) Widerrist in Metern,
+              # Brusttiefe, Bauch-Aufzug, Rumpf-Länge, Unterarm, Kopf-Höhe, Ohr, Rute und das Fell-Muster am Vertex
+              # (Bauch/Rücken, Läufe/Flanke, Rutenspitze/Flanke) gegen tetrapoda ANATOMIE_SOLL, dazu die Dreiecke beider
+              # Stufen gegen das Kreatur-Budget. --selftest zuerst: gestreckter Rumpf, einfarbiges Fell, Maßstab 1 → rot.
+              run: npm run gate:tier-anatomie
+
+            - name: Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)
+              # GPU-frei, reines Node (three r128 im vm): das Gesetz bauMensch + morphAuf mit den Start-Dials, die Arme
+              # gerade, normiert auf die Körperhöhe — Hand-Länge/-Breite, Handgelenk, Unterarm/Oberarm, Kopf-Höhe/-Breite,
+              # Pupillen-Abstand, Augapfel, Iris, Mund, Fuß gegen koerper-core MENSCH_SOLL. --selftest zuerst: 1,5-fache
+              # Hand, doppelte Augäpfel, doppelter Pupillen-Abstand → rot.
+              run: npm run gate:mensch-anatomie
+
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
               # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
@@ -589,6 +604,13 @@ jobs:
               # Audio-Konsument lebt (das Lofi-Pad faehrt das Genesis-Tempo, fail-soft
               # byte-alt auf LOFI_BPM). Inkl. Selbst-Test.
               run: npm run gate:nervensystem-labs
+
+            - name: Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)
+              # Headless (Null-Renderer, Produktions-Boot): jede Gattung läuft bei 0,8 · 1,6 · 3,0 m/s geradeaus durch
+              # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
+              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,2. --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt,
+              # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
+              run: npm run gate:tier-gang
 
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
               # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/

@@ -17232,7 +17232,7 @@ class AnazhRealm {
     }
     // Der Beipack-Leser (GENERISCH für jede Gelenk-Gattung — Tier UND Mensch):
     // Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an ihren Gelenken.
-    // Liefert {root, teile, tailNamen, hoehe, minY} oder null.
+    // Liefert {root, teile, tailNamen, minY} oder null.
     _ofenAssembleAsset(meshes) {
         if (!Array.isArray(meshes) || !meshes.length || typeof THREE === "undefined") return null;
         let skelett = null;
@@ -17286,7 +17286,6 @@ class AnazhRealm {
             });
         }
         const bb = new THREE.Box3().setFromObject(root);
-        const hoehe = Number.isFinite(bb.max.y - bb.min.y) ? Math.max(1e-3, bb.max.y - bb.min.y) : 1;
         AnazhRealm._ofenStarrBinden(root);
         // DIE KÖRPER-KUGEL: jede geskinnte Hülle (Haut · Fell · Kleid · starre Teile) cullt gegen die Bind-Hülle
         // des GANZEN Körpers × 1,25 — jede Pose bleibt darin (Glieder drehen um Gelenke im Leib). Die Bind-BBox
@@ -17307,7 +17306,6 @@ class AnazhRealm {
             root,
             teile,
             tailNamen: Array.isArray(skelett.tailSegs) ? skelett.tailSegs.slice() : [],
-            hoehe,
             minY: Number.isFinite(bb.min.y) ? bb.min.y : 0,
         };
     }
@@ -17552,6 +17550,44 @@ class AnazhRealm {
             }
         }
     }
+    // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose
+    // (alle Gelenke 0) in der Sagittal-Ebene (y, z) des Rumpfs vermessen — a = Bein-Gelenk → Unterglied-Gelenk (Kette[2]),
+    // b = Unterglied-Gelenk → Pfoten-Gelenk (Kette[3]), c = Pfoten-Gelenk → Aufsetz-Punkt (am Boden darunter), phi0 =
+    // Ruhe-Winkel von a nach b, zr = Aufsetz-Punkt vor dem Bein-Gelenk, h = Gelenk-Höhe über dem Boden. In Metern (× f),
+    // memoisiert an der Vorlage.
+    static _tierBeinMass(t0, f) {
+        if (t0._beinMass) return t0._beinMass;
+        const T = t0.teile;
+        const ketten = [
+            [T.legFL, T.flU, T.flL, T.flP],
+            [T.legFR, T.frU, T.frL, T.frP],
+            [T.legHL, T.hlT, T.hlC, T.hlP],
+            [T.legHR, T.hrT, T.hrC, T.hrP],
+        ];
+        t0.root.updateMatrixWorld(true);
+        const lage = (o) => new THREE.Vector3().setFromMatrixPosition(o.matrixWorld);
+        const mass = ketten.map((K) => {
+            const p0 = lage(K[0]),
+                p1 = lage(K[2]),
+                p2 = lage(K[3]);
+            const ay = (p1.y - p0.y) * f,
+                az = (p1.z - p0.z) * f,
+                by = (p2.y - p1.y) * f,
+                bz = (p2.z - p1.z) * f;
+            const p0w = T.wolf.worldToLocal(p0.clone());
+            return {
+                p0: [p0w.x * f, p0w.y * f, p0w.z * f],
+                a: [ay, az],
+                b: [by, bz],
+                c: [(t0.minY - p2.y) * f, 0],
+                phi0: Math.atan2(ay * bz - az * by, ay * by + az * bz),
+                zr: (p2.z - p0.z) * f,
+                h: (p0.y - t0.minY) * f,
+            };
+        });
+        t0._beinMass = mass;
+        return mass;
+    }
     // Der Baum-GANG konsumiert das EINE Gang-Gesetz: cpgStep + STAND_POSE + MOTION-Profile (LIVE-Buch
     // über _motionProfileName) treiben die vier Bein-KETTEN des bauTier-Baums (Lab-Ziel-Mathe direkt,
     // nicht PD-geglättet). Deterministisch (Stand-Unruhe aus t-Sinus); der CPG-Zustand wohnt an
@@ -17588,18 +17624,11 @@ class AnazhRealm {
                 P = VA._P;
             }
         }
-        let st = Number(P.stride) || 0;
-        let freq = Number(P.freq) || 0.25;
-        if (moving && st < 0.02) {
-            st = 0.05; // Gehen heißt Schreiten — auch ein stilles Profil schreitet in Bewegung
-            freq = Math.max(freq, 2.2);
-        }
         // AUSKLINGE-SAUM: am Standbild-Saum schreibt updateCreatures ud._animFade (1→0); Schritt/Sway/
         // Schwanz/Kopf klingen in die Stand-Pose aus, damit der wrap↔fern-Toggle eine STEHENDE Gestalt
         // trifft. Aufrufer ohne _animFade → fadeMul 1.
         const fade = group.userData._animFade;
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
-        if (fadeMul < 1) st *= fadeMul;
         let g = tb._gang;
         // Der Gang-Phasen-Seed liest das Gesetz (P.phases je MOTION-Preset: Trab/Pass/Stand) und seedet bei
         // Profil-Wechsel neu (wie Lab emo.set). Der walkPhase-Versatz (Desync je Kreatur) bleibt; ohne
@@ -17618,9 +17647,28 @@ class AnazhRealm {
             }
             g.profil = name;
         }
-        const dt = Math.max(0, Math.min(0.1, t - g.lastT));
+        // dtWeg = die echte Uhr-Spanne seit der letzten Auswertung (die Raten-Leiter wertet ferne Wesen nur jeden 2./4.
+        // Takt aus) — der Weg teilt sich durch sie, nie durch den gedeckelten Animations-Schritt.
+        const dtWeg = t - g.lastT;
+        const dt = Math.max(0, Math.min(0.1, dtWeg));
         g.lastT = t;
-        if (dt > 0 && core && typeof core.cpgStep === "function" && core.CPG_COUPLING) {
+        // DAS GANG-GESETZ (Welle 5, tetrapoda gangSchritt): Takt und Hüft-Auslenkung folgen dem WEG des Leibs — die
+        // Geschwindigkeit misst der Chokepoint selbst (Lage-Änderung je Uhr-Schritt, geglättet; jeder Halter — Welt,
+        // Peer, Werkstatt — läuft durch ihn), die Bein-Länge trägt der Guss (tb.beinL × Körpergröße). Vorher kam der
+        // Takt aus dem Gefühls-Profil (Freude 3,2 rad/s bei 0,06 rad Schritt, jede Geschwindigkeit): Schlupf 1,0.
+        const lage = group.position;
+        if (dtWeg > 0 && Number.isFinite(g.lageX)) {
+            const vRoh = Math.hypot(lage.x - g.lageX, lage.z - g.lageZ) / dtWeg;
+            g.v = (g.v || 0) + (Math.min(vRoh, core.GANG_GESETZ.vMax) - (g.v || 0)) * (1 - Math.exp(-8 * dt));
+        }
+        g.lageX = lage.x;
+        g.lageZ = lage.z;
+        const skala = group.scale.x || 1;
+        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala);
+        const st = gs.S * fadeMul;
+        const freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
+        const phAlt = g.ph.slice();
+        if (dt > 0 && typeof core.cpgStep === "function" && core.CPG_COUPLING) {
             core.cpgStep(g.ph, freq, core.CPG_COUPLING, dt);
         }
         const SP = (core && core.STAND_POSE) || [
@@ -17685,7 +17733,6 @@ class AnazhRealm {
             [T.legHL, T.hlT, T.hlC, T.hlP],
             [T.legHR, T.hrT, T.hrC, T.hrP],
         ];
-        const spr = st > 0.08 ? 2.0 : st > 0.02 ? 1.4 : 1.0;
         const seiten = [-1, 1, -1, 1];
         // V18.491.81 — kpMul: Lab skaliert pd.kp/kd; Host = einpolige Ziel-Näherung
         // (höher → knackiger). State an tb._gang; NeutralStance nullt den Gang.
@@ -17696,12 +17743,17 @@ class AnazhRealm {
                 [0, 0, 0, 0],
                 [0, 0, 0, 0],
             ];
-        const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * dt) : 1;
+        const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * (st > 0 ? 2.5 : 1) * dt) : 1;
+        // Das Fuß-Ziel liegt am BODEN (Gruppen-Raum); der Rumpf neigt und rollt (Federn, Wiegen) — die IK rechnet im
+        // Rumpf-Raum, das Ziel wird zurückgedreht.
+        const qRumpf = T.wolf
+            ? (this._gangQ || (this._gangQ = new THREE.Quaternion())).setFromEuler(T.wolf.rotation).invert()
+            : null;
+        const vZiel = this._gangV || (this._gangV = new THREE.Vector3());
         for (let i = 0; i < 4; i++) {
             const ph = g.ph[i];
             const K = ketten[i];
             const swing = Math.max(0, Math.sin(ph));
-            const stance = Math.max(0, -Math.sin(ph));
             let z0, z1, z2, z3;
             if (st < 0.002) {
                 // Stand: STAND_POSE + Gewichts-Unruhe + Roll-Shift (Lab-Mathe, t-Sinus).
@@ -17713,10 +17765,42 @@ class AnazhRealm {
                 z2 = SP[i][2] + wn * 0.3 - wShift * 0.2;
                 z3 = SP[i][3] + wn * 0.2;
             } else {
-                z0 = Math.sin(ph) * st * spr;
-                z1 = Math.sin(ph) * st * 0.4 * spr;
-                z2 = swing * 0.8 + stance * 0.12 + Math.max(0, Math.sin(ph + 0.5)) * st * 0.4;
-                z3 = swing * 0.45 + stance * 0.05 + Math.max(0, Math.sin(ph + 1.0)) * st * 0.25;
+                // DAS BEIN im Gang-Gesetz (tetrapoda gangFuss): das Fuß-Ziel (am Boden im Stand, gehoben im Schwung)
+                // stellt eine ebene Zwei-Knochen-IK — Hüfte (Kette[0]) und Unterglied (Kette[2]) nach dem Kosinussatz,
+                // der Knick in der Ruhe-Richtung; die Pfote bleibt waagrecht und faltet im Schwung.
+                const BM = tb.bein[i];
+                const GG = core.GANG_GESETZ;
+                // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine):
+                // im Stand wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
+                const rate = dt > 0 ? (g.ph[i] - phAlt[i]) / dt : freq;
+                const Si = st * (freq / Math.max(0.25 * freq, rate));
+                const F = core.gangFuss(ph, Si);
+                const p0y = BM.p0[1] * skala,
+                    p0z = BM.p0[2] * skala;
+                vZiel.set(BM.p0[0] * skala, p0y + (-BM.h + F.hub * GG.hub * BM.h) * skala, p0z + BM.zr * skala + F.dz);
+                if (qRumpf) vZiel.applyQuaternion(qRumpf);
+                const ty = vZiel.y - p0y - BM.c[0] * skala,
+                    tz = vZiel.z - p0z;
+                const ay = BM.a[0] * skala,
+                    az = BM.a[1] * skala,
+                    by = BM.b[0] * skala,
+                    bz = BM.b[1] * skala;
+                const la = Math.hypot(ay, az),
+                    lb = Math.hypot(by, bz);
+                const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, Math.hypot(ty, tz)));
+                const gam = Math.acos(Math.max(-1, Math.min(1, (d * d - la * la - lb * lb) / (2 * la * lb))));
+                const thK = (BM.phi0 < 0 ? -gam : gam) - BM.phi0;
+                const cK = Math.cos(thK),
+                    sK = Math.sin(thK);
+                const sy = ay + (by * cK - bz * sK),
+                    sz = az + (by * sK + bz * cK);
+                // der Winkel-Unterschied auf (−π, π] (beide Richtungen zeigen nach unten: atan2 springt dort um 2π)
+                let thH = Math.atan2(tz, ty) - Math.atan2(sz, sy);
+                thH -= 2 * Math.PI * Math.round(thH / (2 * Math.PI));
+                z0 = thH;
+                z1 = 0;
+                z2 = thK;
+                z3 = -(thH + thK) + F.hub * GG.falte;
             }
             const cur = g.legCur[i];
             if (!g.legInit) {
@@ -17807,13 +17891,10 @@ class AnazhRealm {
         if (t0 && t0.teile && t0.teile.wolf) {
             const parts2 = this._tetrapodaSoulParts(soulKey, opts && opts.dialsOv) || soul.bodyParts;
             const group2 = new THREE.Group();
-            let pTop = 0;
-            for (const p of parts2 || []) {
-                // Part-Positionen sind ZENTREN — der Scheitel liegt bei y + Höhe/2.
-                const t2 = ((p.position && p.position.y) || 0) + ((p.size && p.size.y) || 0) / 2;
-                if (t2 > pTop) pTop = t2;
-            }
-            const f2 = pTop > 0 ? pTop / t0.hoehe : 1;
+            // DIE EINE WELT-GRÖSSE (Welle 5): der Maßstab des Gesetzbuchs (tetrapoda MASSSTAB, Meter je Lab-Einheit) —
+            // der Wolf steht mit 0,8 m am Widerrist. Vorher maß die Gestalt sich an der Scheitel-Höhe der Seelen-Teile,
+            // und die Allometrie-Schleife überschrieb diese Skala mit 1: die Welt zeigte Lab-Einheiten als Meter.
+            const f2 = window.__tetrapodaCore.MASSSTAB.meterJeEinheit;
             const klon = t0.root.clone(true);
             const teile = {};
             klon.traverse((n) => {
@@ -17855,6 +17936,9 @@ class AnazhRealm {
                 teile,
                 tailSegs,
                 f: f2,
+                // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
+                beinL: (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2,
+                bein: AnazhRealm._tierBeinMass(t0, f2),
                 wrap: wrap2,
                 fern: wrap3,
             };
@@ -17891,6 +17975,10 @@ class AnazhRealm {
     // bleiben uniform.
     _applyCreatureAllometry(group, soulName, bodySize) {
         if (!group || !group.children || !Number.isFinite(bodySize)) return;
+        // Das Studio-Tier (bauTier) trägt keine Teil-Kinder: seine Kinder sind die Hüllen nah/fern — die Schleife unten
+        // setzte ihre Skala auf 1 (der Maßstab fiel, das Tier stand in Lab-Einheiten). Seine Allometrie ist Gesetz
+        // (deriveTierParams: Beinmuskel ∝ Größe^0,67), die Körpergröße skaliert uniform.
+        if (group.userData && group.userData._tierBaum) return;
         const soul = AnazhRealm.CREATURE_SOULS[soulName] || AnazhRealm.CREATURE_SOULS.wesen;
         // ABSCHIEDS-WELLE (A2) — die EFFEKTIVEN Parts führen (der studio-gedockte Guss
         // ändert Glied-Längen → die Glied-Klassifikation liest die gebaute Wahrheit).

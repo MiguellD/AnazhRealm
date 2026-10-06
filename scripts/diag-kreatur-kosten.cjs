@@ -232,8 +232,19 @@ const server = http.createServer((req, res) => {
             // ── (B) NEUTRALE STANCE: mid-step posieren → hinterm Standbild einfrieren ──
             const probeS = probes.voll;
             const roles = r._motionRolesForSoul(probeS.userData.soul);
+            // Gehen heißt WEG (Welle 5, das Gang-Gesetz): der Schritt-Schwung folgt der Lage-Änderung des Leibs — die
+            // Probe läuft 20 Takte mit 1,6 m/s (ein einzelner Ruf ohne Weg steht).
+            const schreite = (pr) => {
+                const g0 = pr.userData._tierBaum._gang;
+                let tS = (g0 ? g0.lastT : 0) + 1 / 30;
+                for (let k = 0; k < 20; k++) {
+                    pr.position.x += 1.6 / 30;
+                    savedACM.call(r, pr, roles, tS, 1.3 + 0.17 * k, true, null);
+                    tS += 1 / 30;
+                }
+            };
             probeS.userData._animFade = 1;
-            savedACM.call(r, probeS, roles, 0.7, 1.3, true, null); // moving → Schritt-Schwung
+            schreite(probeS); // moving → Schritt-Schwung
             o.devMid = maxDev(probeS);
             o.checks.bMidStepPremise = Number.isFinite(o.devMid) && o.devMid > 0.05; // Prämisse: WAR mid-step
             // hinter das Standbild pinnen + ticken → der Freeze-Pfad greift
@@ -257,7 +268,7 @@ const server = http.createServer((req, res) => {
             r.updateCreatures(0.02); // aufwachen (div 1 → Anim läuft, Flag fällt)
             pin();
             probeS.userData._animFade = 1;
-            savedACM.call(r, probeS, roles, 5.0, 2.9, true, null); // wieder mid-step
+            schreite(probeS); // wieder mid-step
             const devRePose = maxDev(probeS);
             const savedNS = r._tierBaumNeutralStance;
             r._tierBaumNeutralStance = function () {};
@@ -365,6 +376,7 @@ const server = http.createServer((req, res) => {
             if (wp && wp.userData && wp.userData._tierBaum) {
                 const v = new T3.Vector3();
                 for (let k = 0; k < 24; k++) {
+                    wp.position.x += 1.6 * 0.07; // der Gang folgt dem Weg (1,6 m/s)
                     r._animateTierBaum(wp, k * 0.07, k * 0.35, true, null);
                     wp.updateMatrixWorld(true);
                     wp.userData._tierBaum.wrap.traverse((n) => {

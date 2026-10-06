@@ -266,7 +266,7 @@
             max: 0.4,
             step: 0.01,
             def: 0.263,
-            law: "Nackwinkel = 8 + (Laenge-0.26)x55 -- laenger = aufrichtiger",
+            law: "Nackwinkel = 35 + (Laenge-0.26)x300, 5..72 -- laenger = aufrichtiger",
             grp: "KOERPER",
         },
         {
@@ -798,7 +798,9 @@
             build = fin(d.build, 0.42);
         var legMuscle = 0.42 * Math.pow(size / 2.4, 0.67) + (build - 0.5) * 0.3;
         legMuscle = Math.max(0.1, Math.min(0.9, legMuscle));
-        var neckAng = 8 + (neckLen - 0.263) * 55,
+        // Der Hals-Winkel (Welle 5, Natur-Haltung im Stand): Wolf 35° (Kopf am Widerrist), Fuchs 43°, Hirsch 55°
+        // (aufrecht), Bär 10° (tief) — vorher 8° + 55·Δ: der Hals lag waagrecht, der Kopf saß vorn AN der Brust.
+        var neckAng = Math.max(5, Math.min(72, 35 + (neckLen - 0.263) * 300)),
             snoutZ = 1.5 + (1 - diet) * 0.35,
             snoutX = 0.92 - (1 - diet) * 0.25,
             eyeFwd = 0.05 + diet * 0.18,
@@ -807,23 +809,16 @@
             bellyD = 0.04 + build * 0.18,
             skullR = 0.064 * Math.pow(size / 2.4, 0.25),
             tailSegs = Math.round(4 + (1 - build) * 7);
-        var cB, cD, cL, base;
-        if (diet > 0.7) {
-            cB = 0x6b5840;
-            cD = 0x3a2e1c;
-            cL = 0xc0a060;
-            base = "#5a4838";
-        } else if (diet > 0.3) {
-            cB = 0x3a2a1a;
-            cD = 0x1a1208;
-            cL = 0x5a4030;
-            base = "#3a2a18";
-        } else {
-            cB = 0x7a5a38;
-            cD = 0x3a2a18;
-            cL = 0x9a7a50;
-            base = "#6a4a28";
-        }
+        // DIE FELL-TÖNE DER ART (Welle 5): Grund = basis, dunkel = Rücken-Sattel, hell = Bauch des Art-Musters
+        // (vorher je Ernährung: Wolf und Fuchs trugen dasselbe Braun, der Hirsch das Braun eines Bären).
+        var mu = artGestalt({ size: size, neckLen: neckLen, legLen: legLen, diet: diet, build: build }).muster;
+        var hx = function (c) {
+            return (Math.round(c[0]) << 16) | (Math.round(c[1]) << 8) | Math.round(c[2]);
+        };
+        var cB = hx(mu.basis),
+            cD = hx(mu.ruecken),
+            cL = hx(mu.bauch),
+            base = "#" + ("000000" + hx(mu.ruecken).toString(16)).slice(-6);
         var guardL = 0.025 + build * 0.02,
             underL = 0.01 + build * 0.01,
             gDens = Math.round(30000 + build * 30000),
@@ -882,6 +877,11 @@
             by = M.by,
             sY = M.sY,
             hY = M.hY;
+        // DIE FELL-LÄNGE DER ART (Welle 5): die Haar-Längen waren absolute Lab-Zahlen (Wolf-Maß) — der Fuchs trug
+        // relativ zu lange, der Bär zu kurze Haare; jetzt × H/2,4 und × die Fell-Länge der Art (der Bär trägt
+        // zottiges Fell, der Hirsch glattes Sommerhaar).
+        var k = H / 2.4,
+            kl = k * artGestalt(P).fell.lang;
         var rows = [];
         var R = function (teil, cx, cy, cz, r, sx, sy2, sz, dx, dy, dz, n, l, t, ton) {
             rows.push({
@@ -891,8 +891,8 @@
                 sc: [sx, sy2, sz],
                 d: [dx, dy, dz],
                 n: n,
-                l: l,
-                t: t,
+                l: l * kl,
+                t: t * k,
                 ton: ton || "B",
             });
         };
@@ -1168,28 +1168,16 @@
                 0.022,
                 0.006
             );
-        R(
-            "wolf",
-            0,
-            sY - 0.42 * H + by * 2,
-            -0.4 - by * 1.5,
-            0.12,
-            1.4,
-            0.5,
-            1.6,
-            fD[0],
-            fD[1],
-            fD[2],
-            300,
-            0.022,
-            0.005
-        );
-        [-0.16, 0.16].forEach(function (x) {
-            R("wolf", x, hY - 0.02 * H, -0.6, 0.1, 1.5, 0.9, 1.3, fO[0], fO[1], fO[2], 400, 0.028, 0.006);
-        });
-        [-0.14, 0.14].forEach(function (x) {
-            R("wolf", x, hY - 0.06 * H, -0.75, 0.09, 1.4, 0.9, 1.3, fO[0], fO[1], fO[2], 350, 0.028, 0.006);
-        });
+        if (T && T.flank)
+            R("wolf", 0, T.flank[1] - 0.06 * H, T.flank[2], 0.05 * H, 1.4, 0.5, 1.6, fD[0], fD[1], fD[2], 300, 0.022, 0.005);
+        if (T && T.pelvis)
+            [-0.067, 0.067].forEach(function (x) {
+                R("wolf", x * H, T.pelvis[1] + 0.02 * H, T.pelvis[2], 0.042 * H, 1.5, 0.9, 1.3, fO[0], fO[1], fO[2], 400, 0.028, 0.006);
+            });
+        if (T && T.croup)
+            [-0.058, 0.058].forEach(function (x) {
+                R("wolf", x * H, T.croup[1], T.croup[2], 0.038 * H, 1.4, 0.9, 1.3, fO[0], fO[1], fO[2], 350, 0.028, 0.006);
+            });
         if (T && T.croup)
             R(
                 "wolf",
@@ -1232,9 +1220,9 @@
         rows.push({
             art: "deck",
             uDens: P.uDens || 3000,
-            underL: P.underL || 0.05,
+            underL: (P.underL || 0.05) * kl,
             gDens: P.gDens || 2200,
-            guardL: P.guardL || 0.09,
+            guardL: (P.guardL || 0.09) * kl,
             dunkelQuote: 0.2,
             hellQuote: 0.1,
             d: fO,
@@ -1341,6 +1329,51 @@
         return rows;
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // DAS GANG-GESETZ (Welle 5, „Gang ohne Gleiten"): der Fuß im Stand steht still auf dem Boden. Die Schritt-Länge je
+    // Zyklus wächst mit der relativen Geschwindigkeit (Froude v̂ = v/√(g·L), L = Hüft-Höhe): Λ = L·(1,2 + 2·v̂), gedeckelt
+    // durch den größten Bein-Winkel; der Fuß fegt im Stand (Tastgrad 0,5) die halbe Schritt-Länge S, die Frequenz folgt
+    // dem Weg (ω = 2π·v/Λ) — vorher lief der Takt aus dem Gefühls-Profil (Freude 3,2 rad/s, Schritt 0,06 rad) bei jeder
+    // Geschwindigkeit: die Pfoten glitten mit dem Leib (Schlupf 1,0, gate:tier-gang). gangFuss liest je Bein das ZIEL
+    // des Fußes zur Phase: im STAND (π…2π) wandert er am Boden gleichförmig von vorn (+S/2) nach hinten (−S/2), im
+    // SCHWUNG (0…π) kehrt er auf einer Hermite-Kurve nach vorn, die an beiden Enden mit der Stand-Rate rückwärts läuft
+    // (kein Vorwärts-Rutschen beim Aufsetzen), gehoben um hub·h·sin(Phase). Hüfte und Unterglied stellt der Wirt per
+    // ebener Zwei-Knochen-IK auf dieses Ziel (die Pfote bleibt waagrecht) — der Fuß steht, wo das Gesetz ihn hinstellt.
+    var GANG_GESETZ = Object.freeze({
+        g: 9.81,
+        schrittBasis: 1.2,
+        schrittFroude: 2.0,
+        tastgrad: 0.5,
+        maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
+        hub: 0.12, // × h — die Schwung-Höhe des Fußes
+        falte: 0.6, // rad — die Pfote faltet im Schwung
+        stand: 0.05, // m/s — darunter steht das Tier
+        vMax: 15, // m/s — Sprünge der Lage (Spawn, Peer-Schnapp) sind kein Lauf
+    });
+    function gangSchritt(v, L) {
+        var G = GANG_GESETZ;
+        if (!(v > G.stand) || !(L > 0)) return { omega: 0, S: 0, schritt: 0 };
+        var vv = Math.min(v, G.vMax);
+        var vh = vv / Math.sqrt(G.g * L);
+        var lamMax = (2 * L * Math.tan(G.maxWinkel)) / G.tastgrad;
+        var lam = Math.min(L * (G.schrittBasis + G.schrittFroude * vh), lamMax);
+        return { omega: (2 * Math.PI * vv) / lam, S: G.tastgrad * lam, schritt: lam };
+    }
+    // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}.
+    function gangFuss(ph, S) {
+        var TAU = 2 * Math.PI;
+        var u = ((ph % TAU) + TAU) % TAU;
+        if (u >= Math.PI) return { dz: S / 2 - (S * (u - Math.PI)) / Math.PI, hub: 0 };
+        // Hermite von −S/2 (Abheben hinten) nach +S/2 (Aufsetzen vorn), beide Enden mit der Stand-Rate (rückwärts)
+        var t = u / Math.PI,
+            m = -S;
+        var h00 = 2 * t * t * t - 3 * t * t + 1,
+            h10 = t * t * t - 2 * t * t + t,
+            h01 = -2 * t * t * t + 3 * t * t,
+            h11 = t * t * t - t * t;
+        return { dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m, hub: Math.sin(u) };
+    }
+
     function cpgStep(phases, freq, coupling, dt) {
         var d = [0, 0, 0, 0];
         for (var i = 0; i < 4; i++) {
@@ -1406,6 +1439,227 @@
             wurzelAnker: 0.12,
         }),
     });
+
+    // ════════════════════════════════════════════════════════════════════
+    // DER MASSSTAB (Welle 5, die EINE Welt-Größe): eine Lab-Einheit ist ein Drittel Meter — der Wolf (Größe 2,4)
+    // trägt seinen Widerrist bei ~1,0 H = 0,8 m, der Fuchs (1,5) bei ~0,47 m, der Bär (3,2) bei ~1,1 m, der Hirsch
+    // (2,8) bei ~1,07 m. Der Wirt skaliert die Gestalt mit DIESER Zahl (vorher: die Seelen-Teile-Höhe, deren Skala
+    // die Allometrie-Schleife überschrieb — die Welt zeigte Lab-Einheiten als Meter, den Wolf 2,7 m hoch).
+    var MASSSTAB = Object.freeze({ meterJeEinheit: 1 / 3 });
+
+    // ════════════════════════════════════════════════════════════════════
+    // DIE ART-GESTALT (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen"): die Anatomie je Art als
+    // DATEN, gemessen an der Natur (Widerrist W; Wolf: Brusttiefe 0,48 W, Rumpf 1,15 W, Bauch-Aufzug bei 0,68 W,
+    // Unterarm 0,08 W, Kopf am Widerrist; Fuchs: Rumpf 1,4 W, Rute 0,9 W buschig, Ohren 0,2 W; Bär: Buckel über
+    // dem Widerrist, Rumpf breit und tief, Glieder 1,7×, Sohlen-Pranke; Hirsch: Hals 55° aufrecht, flacher Aufzug,
+    // Hufe, Wedel). Der Rumpf ist kein Ellipsoid-Haufen an festen Lab-Koordinaten mehr (sie skalierten nicht mit H:
+    // jede Art außer dem Wolf war verzerrt), sondern ein PROFIL über der Bein-Linie: u = 0 Sitzbein … 1 Bug, je
+    // Station Oberlinie `oben`, Unterlinie `unten` (×H über/unter der Linie der Bein-Gelenke) und halbe `breit`e.
+    // Die Arten mischen sich über die fünf Dials (artGestalt): ein Preset trifft seine Art exakt, die Lab-Regler
+    // gleiten stetig zwischen ihnen. Diskrete Merkmale (Pfote, Ohr-Form) nimmt die stärkste Art.
+    // prettier-ignore
+    var ART_GESTALT = Object.freeze({
+        wolf: Object.freeze({
+            rumpf: { lang: 0.93, vor: 0.13, hinter: 0.17,
+                oben:  [0.09, 0.15, 0.19, 0.205, 0.205, 0.215, 0.235, 0.27, 0.285, 0.24, 0.12],
+                unten: [-0.08, -0.12, -0.1, -0.06, -0.07, -0.11, -0.16, -0.19, -0.185, -0.14, -0.04],
+                breit: [0.08, 0.12, 0.135, 0.12, 0.11, 0.125, 0.14, 0.145, 0.135, 0.11, 0.075] },
+            bein: { dicke: 1.0, distal: 1.1, pfote: "zehe", pfoteGross: 1.55, kralle: 1.0 },
+            hals: { dicke: 1.2, lang: 1.0 },
+            kopf: { gross: 1.0, nase: 1.0, ohrForm: "spitz", ohrH: 0.1, ohrB: 0.03, schnauzeL: 1.0, schnauzeB: 1.0, schnauzeH: 1.0,
+                schaedelB: 1.0, schaedelH: 1.0, auge: [214, 160, 40] },
+            schwanz: { segs: 8, segL: 0.042, wurzel: 0.034, mitte: 0.045, spitze: 0.024, hang: 0.55, fell: 1.6 },
+            fell: { lang: 1.5 },
+            // Grauwolf: Agouti-Sattel dunkel, Flanken grau-lohfarben, Kehle/Bauch/Wangen cremeweiß, Läufe lohfarben,
+            // die Rutenspitze schwarz.
+            muster: { basis: [146, 132, 112], ruecken: [86, 80, 72], bauch: [214, 204, 184], beine: [172, 146, 108],
+                maske: [212, 202, 184], spitze: [38, 34, 30], ohr: [104, 92, 78], spiegel: [146, 132, 112] },
+        }),
+        fox: Object.freeze({
+            rumpf: { lang: 1.18, vor: 0.12, hinter: 0.15,
+                oben:  [0.08, 0.14, 0.18, 0.195, 0.195, 0.2, 0.215, 0.245, 0.255, 0.215, 0.11],
+                unten: [-0.07, -0.11, -0.09, -0.055, -0.065, -0.1, -0.15, -0.175, -0.17, -0.13, -0.04],
+                breit: [0.068, 0.1, 0.115, 0.1, 0.093, 0.105, 0.118, 0.123, 0.115, 0.093, 0.064] },
+            bein: { dicke: 0.85, distal: 1.4, pfote: "zehe", pfoteGross: 1.4, kralle: 0.9 },
+            hals: { dicke: 1.1, lang: 1.0 },
+            kopf: { gross: 1.0, nase: 1.0, ohrForm: "spitz", ohrH: 0.15, ohrB: 0.042, schnauzeL: 1.12, schnauzeB: 0.82, schnauzeH: 0.9,
+                schaedelB: 0.92, schaedelH: 0.95, auge: [206, 128, 30] },
+            schwanz: { segs: 10, segL: 0.058, wurzel: 0.04, mitte: 0.075, spitze: 0.045, hang: 0.3, fell: 2.4 },
+            fell: { lang: 1.6 },
+            // Rotfuchs: rostrot, Kehle/Brust/Bauch/Wangen weiß, schwarze „Strümpfe", schwarze Ohr-Rücken, weiße
+            // Rutenspitze.
+            muster: { basis: [186, 88, 34], ruecken: [168, 76, 30], bauch: [236, 228, 212], beine: [46, 34, 28],
+                maske: [236, 230, 216], spitze: [238, 234, 224], ohr: [38, 30, 26], spiegel: [186, 88, 34] },
+        }),
+        bear: Object.freeze({
+            rumpf: { lang: 1.05, vor: 0.16, hinter: 0.2,
+                oben:  [0.1, 0.17, 0.21, 0.22, 0.23, 0.25, 0.29, 0.345, 0.355, 0.29, 0.14],
+                unten: [-0.07, -0.12, -0.16, -0.18, -0.2, -0.22, -0.235, -0.245, -0.235, -0.18, -0.06],
+                breit: [0.12, 0.18, 0.2, 0.2, 0.2, 0.21, 0.22, 0.22, 0.21, 0.17, 0.11] },
+            bein: { dicke: 1.7, distal: 1.0, pfote: "sohle", pfoteGross: 1.9, kralle: 3.2 },
+            hals: { dicke: 1.3, lang: 0.9 },
+            kopf: { gross: 1.45, nase: 0.72, ohrForm: "rund", ohrH: 0.045, ohrB: 0.03, schnauzeL: 0.78, schnauzeB: 1.35, schnauzeH: 1.3,
+                schaedelB: 1.25, schaedelH: 1.0, auge: [62, 38, 20] },
+            schwanz: { segs: 2, segL: 0.03, wurzel: 0.035, mitte: 0.035, spitze: 0.025, hang: 0.25, fell: 1.2 },
+            fell: { lang: 2.0 },
+            // Braunbär: dunkelbraun, die Läufe dunkler, der Fang heller, kein heller Bauch.
+            muster: { basis: [96, 64, 40], ruecken: [86, 58, 38], bauch: [74, 50, 34], beine: [56, 38, 26],
+                maske: [132, 98, 64], spitze: [96, 64, 40], ohr: [82, 56, 36], spiegel: [96, 64, 40] },
+        }),
+        deer: Object.freeze({
+            rumpf: { lang: 0.97, vor: 0.11, hinter: 0.15,
+                oben:  [0.07, 0.13, 0.165, 0.175, 0.17, 0.175, 0.19, 0.22, 0.23, 0.2, 0.1],
+                unten: [-0.08, -0.13, -0.16, -0.19, -0.21, -0.22, -0.23, -0.24, -0.22, -0.16, -0.05],
+                breit: [0.065, 0.1, 0.11, 0.11, 0.115, 0.12, 0.12, 0.115, 0.105, 0.085, 0.06] },
+            bein: { dicke: 0.85, distal: 1.5, pfote: "huf", pfoteGross: 1.0, kralle: 1.0 },
+            hals: { dicke: 1.0, lang: 1.7 },
+            kopf: { gross: 1.1, nase: 0.9, ohrForm: "blatt", ohrH: 0.16, ohrB: 0.042, schnauzeL: 1.3, schnauzeB: 0.8, schnauzeH: 1.45,
+                schaedelB: 0.85, schaedelH: 0.85, auge: [40, 24, 14] },
+            schwanz: { segs: 3, segL: 0.034, wurzel: 0.032, mitte: 0.034, spitze: 0.022, hang: 1.15, fell: 0.8 },
+            fell: { lang: 0.9 },
+            // Hirsch im Sommerkleid: rotbraun, Bauch und Spiegel (Keulen-Fleck) hell, Läufe etwas dunkler.
+            muster: { basis: [156, 92, 50], ruecken: [134, 80, 46], bauch: [216, 198, 168], beine: [136, 92, 58],
+                maske: [176, 150, 120], spitze: [232, 222, 202], ohr: [136, 86, 52], spiegel: [228, 216, 192] },
+        }),
+    });
+    // DAS SOLL der Art in Zahlen (Welle 5, die Natur-Bänder; gemessen von gate:tier-anatomie an der gebackenen Haut
+    // der Ruhe-Pose, normiert auf den Widerrist W): widerristM = W in Metern (× MASSSTAB), brustTiefe = Widerrist bis
+    // Brustbein, aufzug = Höhe der Bauch-Linie an der Flanke, rumpf = Rumpf-Länge auf halber Höhe, unterarm = Tiefe des
+    // Vorderlaufs bei 0,3 W, kopfHoehe = Scheitel über dem Boden, ohr = Ohr-Höhe, rute = Ruten-Länge, kopfFrei = Anteil
+    // der Kopf-Länge vor der Leib-Haut in Kopf-Höhe (der Kopf sitzt VOR dem Hals, nie in ihm), halsBreite = Breite der
+    // Leib-Haut auf 60 % des Wegs Schulter → Kopf (ohne Fell-Schalen). Das Muster:
+    // kontrast = Helligkeit Bauch / Rücken-Sattel, lauf = Läufe / Flanke, spitze = Rutenspitze / Flanke.
+    // prettier-ignore
+    var ANATOMIE_SOLL = Object.freeze({
+        wolf: { widerristM: [0.7, 0.9], brustTiefe: [0.42, 0.52], aufzug: [0.6, 0.75], rumpf: [1.1, 1.32],
+            unterarm: [0.06, 0.1], kopfHoehe: [0.95, 1.2], ohr: [0.09, 0.16], rute: [0.4, 0.65],
+            kontrast: [1.6, 3.2], lauf: [0.9, 1.4], spitze: [0, 0.5], kopfFrei: [0.5, 1], halsBreite: [0.13, 0.22] },
+        fox: { widerristM: [0.35, 0.52], brustTiefe: [0.4, 0.52], aufzug: [0.6, 0.75], rumpf: [1.35, 1.65],
+            unterarm: [0.05, 0.09], kopfHoehe: [1.0, 1.25], ohr: [0.13, 0.22], rute: [0.7, 1.0],
+            kontrast: [1.6, 3.2], lauf: [0, 0.5], spitze: [1.5, 3.0], kopfFrei: [0.5, 1], halsBreite: [0.11, 0.2] },
+        bear: { widerristM: [0.9, 1.3], brustTiefe: [0.5, 0.65], aufzug: [0.4, 0.58], rumpf: [1.35, 1.7],
+            unterarm: [0.12, 0.2], kopfHoehe: [0.8, 1.0], ohr: [0.06, 0.13], rute: [0, 0.1],
+            kontrast: [0.6, 1.1], lauf: [0, 0.8], spitze: [0.8, 1.2], kopfFrei: [0.5, 1], halsBreite: [0.18, 0.3] },
+        deer: { widerristM: [0.9, 1.25], brustTiefe: [0.36, 0.5], aufzug: [0.55, 0.72], rumpf: [0.95, 1.2],
+            unterarm: [0.05, 0.08], kopfHoehe: [1.25, 1.6], ohr: [0.09, 0.2], rute: [0.05, 0.2],
+            kontrast: [1.5, 3.0], lauf: [0.8, 1.2], spitze: [1.4, 3.0], kopfFrei: [0.5, 1], halsBreite: [0.08, 0.15] },
+    });
+    // Die Mischung: Gewicht je Art aus dem Abstand der Dials (je Dial über seine Lab-Spanne normiert), scharf
+    // (σ² = 0,01 — die vier Presets liegen ≥ 0,37 auseinander, ein Preset ist seine Art zu > 99,99 %).
+    var ART_SPANNE = Object.freeze({ size: 3, neck: 0.25, leg: 0.2, diet: 1, build: 1 });
+    function artGewichte(P) {
+        var d = { size: P.size, neck: P.neckLen, leg: P.legLen, diet: P.diet, build: P.build };
+        var w = {},
+            sum = 0,
+            best = null;
+        for (var id in ART_GESTALT) {
+            var g = GATTUNGEN[id];
+            var q = 0;
+            for (var k in ART_SPANNE) {
+                var x = (d[k] - g[k]) / ART_SPANNE[k];
+                q += x * x;
+            }
+            w[id] = Math.exp(-q / 0.01);
+            sum += w[id];
+            if (!best || w[id] > w[best]) best = id;
+        }
+        // Weit weg von jeder Art (sum ≈ 0): die nächste trägt allein.
+        if (!(sum > 1e-12)) {
+            for (var id2 in w) w[id2] = id2 === best ? 1 : 0;
+            sum = 1;
+        }
+        for (var id3 in w) w[id3] /= sum;
+        return { w: w, art: best };
+    }
+    // Die gemischte Gestalt: Zahlen und Profile gewichtet, Wörter von der stärksten Art; ref = die Art-Dials (für
+    // die Statur-Modulation: der Regler bleibt innerhalb einer Art lebendig).
+    function artGestalt(P) {
+        var g = artGewichte(P);
+        var mische = function (pfad) {
+            var erst = null;
+            for (var id in g.w) {
+                var v = ART_GESTALT[id];
+                for (var i = 0; i < pfad.length; i++) v = v[pfad[i]];
+                if (typeof v === "string") return ART_GESTALT[g.art][pfad[0]][pfad[1]];
+                if (Array.isArray(v)) {
+                    if (!erst) erst = v.map(function () { return 0; });
+                    for (var j = 0; j < v.length; j++) erst[j] += g.w[id] * v[j];
+                } else erst = (erst || 0) + g.w[id] * v;
+            }
+            return erst;
+        };
+        var out = { art: g.art, gewichte: g.w };
+        for (var teil in ART_GESTALT.wolf) {
+            out[teil] = {};
+            for (var feld in ART_GESTALT.wolf[teil]) out[teil][feld] = mische([teil, feld]);
+        }
+        var ref = { build: 0 };
+        for (var id4 in g.w) ref.build += g.w[id4] * GATTUNGEN[id4].build;
+        out.ref = ref;
+        return out;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // DAS FELL-MUSTER (Welle 5, die Farbe je Ort): wo ein Haut-Punkt am Tier liegt, entscheidet seine Farbe — der
+    // Rücken-Sattel (oberes Drittel des Rumpf-Querschnitts), der helle Bauch und die Kehle (unteres Drittel), die
+    // Läufe (unter Ellbogen und Knie), der Fang und die Wangen, die Ohr-Rücken, die Rutenspitze, der Spiegel (Keulen-
+    // Fleck). Eingang: P (Allometrie), M (bauTier.masse: Rumpf-Stützstellen + Kopf-Lage), der Punkt im Wurzel-Raum der
+    // Ruhe-Pose und sein Gelenk (Bone-Name; der Ofen mischt über die Haut-Gewichte). Ausgang: sRGB 0..255 (das FARB-
+    // GESETZ rechnet der Ofen). Reine Mathe (MESHFREI §8): Lab und Welt lesen dieselbe Farbe.
+    var BEIN_UNTEN = Object.freeze({ flL: 1, flP: 1, frL: 1, frP: 1, hlC: 1, hlP: 1, hrC: 1, hrP: 1 });
+    var BEIN_OBEN = Object.freeze({ flU: 1, frU: 1, hlT: 1, hrT: 1, legFL: 1, legFR: 1, legHL: 1, legHR: 1 });
+    function fellFarbe(P, M, x, y, z, gelenk) {
+        var mu = artGestalt(P).muster,
+            H = M.H,
+            W = M.sY;
+        var ss = function (a, b, t) {
+            var q = Math.max(0, Math.min(1, (t - a) / (b - a)));
+            return q * q * (3 - 2 * q);
+        };
+        var mix = function (a, b, t) {
+            return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+        };
+        if (gelenk === "earL" || gelenk === "earR") return mu.ohr.slice();
+        var tm = /^tailSeg(\d+)$/.exec(gelenk || "");
+        if (tm || gelenk === "tailRoot") {
+            var t = tm ? (Number(tm[1]) + 0.5) / Math.max(1, M.rute || 1) : 0;
+            return mix(mix(mu.ruecken, mu.basis, 0.5), mu.spitze, ss(0.62, 0.95, t));
+        }
+        // die Läufe: Unterarm/Unterschenkel ganz in der Lauf-Farbe; Oberarm/Keule tragen außen die Grund-Farbe und
+        // gleiten unter ~0,5 W in den Lauf (der Bauch-Ton gehört dem Rumpf, nie der Keule)
+        if (BEIN_UNTEN[gelenk]) return mu.beine.slice();
+        if (BEIN_OBEN[gelenk]) return mix(mu.basis, mu.beine, 1 - ss(0.32 * W, 0.6 * W, y));
+        var R = M.rumpf;
+        var c;
+        if (gelenk === "headGroup" || gelenk === "jawGroup") {
+            var K = M.kopf,
+                kH = K.g * H;
+            // Wangen, Lefzen und Kinn (untere Kopf-Hälfte): die Maske; der Nasenrücken trägt die Grund-Farbe mit einem
+            // Hauch Maske; Stirn und Scheitel dunkeln halb zum Rücken-Ton (Welle 5: vorher ganz — eine dunkle Kappe über
+            // einem weißen Fang). Die Schwellen messen in der Kopf-Größe der Art (K.g, der Bär trägt einen großen Kopf).
+            var fang = ss(K.z + 0.02 * kH, K.z + 0.07 * kH, z);
+            var unterK = gelenk === "jawGroup" ? 1 : 1 - ss(K.y - 0.03 * kH, K.y + 0.01 * kH, y);
+            c = mix(mu.basis, mu.ruecken, 0.5 * ss(K.y + 0.02 * kH, K.y + 0.07 * kH, y));
+            c = mix(c, mu.maske, Math.max(unterK, fang * 0.3));
+            return c;
+        }
+        var n = R.oben.length - 1,
+            u = Math.max(0, Math.min(1, (z - R.zRear) / (R.zFront - R.zRear))),
+            i = Math.min(n - 1, Math.floor(u * n)),
+            f = u * n - i;
+        var ob = R.oben[i] + (R.oben[i + 1] - R.oben[i]) * f,
+            un = R.unten[i] + (R.unten[i + 1] - R.unten[i]) * f;
+        var v = (y - un) / Math.max(1e-6, ob - un);
+        // Rumpf: Sattel oben, Bauch unten; vorn über den Bug hinaus der Hals: die Kehle hell bis unter den Kiefer
+        c = mix(mu.basis, mu.ruecken, ss(0.55, 0.95, v));
+        var hals = ss(R.zFront - 0.12 * H, R.zFront + 0.05 * H, z);
+        var bauch = 1 - ss(0.1, 0.42, v);
+        var kehle = hals * (1 - ss(0.35, 0.75, (y - un) / Math.max(1e-6, ob - un + hals * 0.15 * H)));
+        c = mix(c, mu.bauch, Math.max(bauch, kehle));
+        // der Spiegel: der helle Keulen-Fleck hinten über dem Sitzbein (Hirsch; die Raubtiere tragen dort ihre Basis)
+        c = mix(c, mu.spiegel, (1 - ss(0.04, 0.16, u)) * ss(0.25, 0.5, v) * (1 - ss(0.72, 0.92, v)));
+        return c;
+    }
 
     // ════════════════════════════════════════════════════════════════════
     // KONVERGENZ III — DER EINE TIER-BAU: bauTier(F, dials) baut den kompletten
@@ -1483,27 +1737,23 @@
         var boneSph = function (r, len, k) {
             return s(r, k, [0.92, len / (2 * r), 0.92]);
         };
-        var topY = function (z) {
-            var t = (sZ - z) / (sZ - hZ);
-            t = Math.max(0, Math.min(1, t));
-            return sY - t * (sY - hY);
-        };
         var pawOffsets = [0, 0, 0, 0];
         var P = dials && dials.legMuscle != null && dials.size != null ? dials : deriveTierParams(dials || {});
+        var A = artGestalt(P);
         H = P.size;
-        sY = H;
-        hY = H * 0.858;
-        sZ = H * 0.458;
-        hZ = -H * 0.5;
         lv = 1.0 + P.legMuscle;
         by = P.bellyD;
         tv = P.throat;
-        var bX = P.bWF,
-            hipY = hY - 0.09 * H,
-            hipJointY = hY - 0.06 * H;
+        var bX = P.bWF;
         bt = 1.0 + (P.build - 0.42) * 1.2;
-        var hindReach = P.legLen * H * 3.5,
-            hindLegY = Math.min(hipY, hindReach + 0.02 * H);
+        // Die Statur bleibt innerhalb der Art lebendig: Breite ∝ bWF, der Bauch hängt mit der Statur.
+        var breitMul = (0.35 + P.build * 0.2) / (0.35 + A.ref.build * 0.2),
+            bauchTief = (P.build - A.ref.build) * 0.1;
+        // DIE BEIN-GELENKE: Schulter vorn, Hüfte hinten — ihr Abstand trägt die Rumpf-Länge der Art.
+        var zS = 0.438 * H * A.rumpf.lang,
+            zH = -0.483 * H * A.rumpf.lang;
+        sZ = zS + 0.02 * H;
+        hZ = zH - 0.017 * H;
         var spF = STAND_POSE[0],
             spH = STAND_POSE[2];
         var fRH = spF[0] + spF[1],
@@ -1526,118 +1776,172 @@
                     1.73 * Math.cos((45 * Math.PI) / 180 + hTR) +
                     1.18 * Math.cos((5 * Math.PI) / 180 + hTM)) +
             0.011 * H;
-        var frontLegY = hindLegY - hindYReach + frontYReach;
+        // Beide Sohlen auf DEMSELBEN Boden: die Bein-Gelenke stehen um ihre Reichweite über y = 0.
+        var hindLegY = hindYReach,
+            frontLegY = frontYReach;
         pawOffsets[0] = pawOffsets[1] = P.legLen * 0.91 * H * Math.cos((15 * Math.PI) / 180) + 0.012 * H;
         pawOffsets[2] = pawOffsets[3] = P.legLen * 1.18 * H * Math.cos((5 * Math.PI) / 180) + 0.01 * H;
+        // ── DER RUMPF ALS PROFIL (ART_GESTALT.rumpf): u = 0 Sitzbein … 1 Bug, über der Linie der Bein-Gelenke ──
+        var zFront = zS + A.rumpf.vor * H,
+            zRear = zH - A.rumpf.hinter * H;
+        var basisY = function (u) {
+            return hindLegY + (frontLegY - hindLegY) * u;
+        };
+        var profil = function (arr, u) {
+            // Catmull-Rom über die 11 Stützstellen (stetig in Lage und Steigung — die Linie knickt nicht)
+            var x = Math.max(0, Math.min(1, u)) * 10,
+                i = Math.min(9, Math.floor(x)),
+                t = x - i;
+            var p0 = arr[Math.max(0, i - 1)],
+                p1 = arr[i],
+                p2 = arr[i + 1],
+                p3 = arr[Math.min(10, i + 2)];
+            return (
+                0.5 *
+                (2 * p1 +
+                    (p2 - p0) * t +
+                    (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
+                    (3 * p1 - p0 - 3 * p2 + p3) * t * t * t)
+            );
+        };
+        var oben = function (u) {
+            return basisY(u) + profil(A.rumpf.oben, u) * H;
+        };
+        var unten = function (u) {
+            var b = profil(A.rumpf.unten, u);
+            if (u > 0.15 && u < 0.6) b -= bauchTief * Math.sin(((u - 0.15) / 0.45) * Math.PI);
+            return basisY(u) + b * H;
+        };
+        var breite = function (u) {
+            return profil(A.rumpf.breit, u) * H * breitMul;
+        };
+        var zU = function (u) {
+            return zRear + (zFront - zRear) * u;
+        };
+        var uZ = function (z) {
+            return (z - zRear) / (zFront - zRear);
+        };
+        sY = oben(0.8);
+        hY = oben(0.18);
         wolf = F.gruppe();
-        ribcage = s(0.42 * H, "fell", [bX, 0.76, 0.78]);
-        ribcage.position.set(0, sY - 0.22 * H, 0.42);
-        wolf.add(ribcage);
-        var ribFront = s(0.36 * H, "fell", [bX * 0.96, 0.66, 0.74]);
-        ribFront.position.set(0, sY - 0.26 * H, 0.72);
-        wolf.add(ribFront);
-        var lowerRib = s(0.32 * H, "fell", [bX * 0.96, 0.62, 0.88]);
-        lowerRib.position.set(0, sY - 0.3 * H, 0.14);
-        wolf.add(lowerRib);
-        var sternum = s(0.17 * H, "fell", [bX * 0.88, 0.36, 0.82]);
-        sternum.position.set(0, sY - 0.4 * H, 0.48);
-        wolf.add(sternum);
-        waist = s(0.3 * H, "fell", [bX * 0.92, 0.56, 0.96]);
-        waist.position.set(0, sY - 0.34 * H + by * 2, -0.12 - by * 0.8);
-        wolf.add(waist);
-        flank = s(0.28 * H, "fell", [bX * 0.88, 0.52, 0.94]);
-        flank.position.set(0, sY - 0.38 * H + by * 1.5, -0.3 - by);
-        wolf.add(flank);
-        belly = s(0.3 * H, "fell", [bX * 0.92, 0.5 + by * 0.8, 0.96]);
-        belly.position.set(0, sY - 0.38 * H + by * 2, -0.35 - by * 1.5);
-        wolf.add(belly);
-        lowerAbd = s(0.28 * H, "fell", [bX * 0.83, 0.48, 0.9]);
-        lowerAbd.position.set(0, sY - 0.34 * H + by * 2, -0.55 - by * 1.5);
-        wolf.add(lowerAbd);
-        var loinBridge = s(0.24 * H, "fell", [bX * 0.83, 0.52, 0.88]);
-        loinBridge.position.set(0, sY - 0.32 * H, -0.42);
-        wolf.add(loinBridge);
-        var hipTrans = s(0.22 * H, "fell", [bX * 0.79, 0.58, 0.54]);
-        hipTrans.position.set(0, hY + 0.06 * H, -0.42);
-        wolf.add(hipTrans);
-        var upperPel = s(0.25 * H, "fell", [bX * 0.75, 0.6, 0.58]);
-        upperPel.position.set(0, hY - 0.02 * H, -0.58);
-        wolf.add(upperPel);
-        var pelvis = s(0.28 * H, "fell", [bX * 0.79, 0.66, 0.42]);
-        pelvis.position.set(0, hY - 0.06 * H, -0.74);
-        wolf.add(pelvis);
-        var croup = s(0.2 * H, "fell", [bX * 1.04, 0.44, 0.36]);
-        croup.position.set(0, hY - 0.1 * H, -0.88);
-        croup.rotation.x = 0.22;
-        wolf.add(croup);
-        var loin = s(0.28 * H, "fell", [bX * 0.79, 0.6, 1.48]);
-        loin.position.set(0, topY(-0.2) - 0.04 * H, -0.2);
-        wolf.add(loin);
-        var hipJoint = s(0.17 * H, "fell", [bX * 1.74 * 1.2, 0.56 * 0.8, 0.82]);
-        hipJoint.position.set(0, hipJointY + 0.01 * H, -0.82);
-        wolf.add(hipJoint);
-        var brisket = s(0.2 * H, "fell", [bX * 1.04, 0.58, 0.78]);
-        brisket.position.set(0, sY - 0.38 * H, 0.62);
-        wolf.add(brisket);
-        var chestLow = s(0.17 * H, "fell", [bX * 0.96, 0.54, 0.82]);
-        chestLow.position.set(0, sY - 0.44 * H, 0.34);
-        wolf.add(chestLow);
-        var chestFront = s(0.15 * H, "fell", [bX * 0.88, 0.56, 0.7]);
-        chestFront.position.set(0, sY - 0.36 * H, 0.82);
-        wolf.add(chestFront);
-        function buildPec(side) {
-            var p = s(0.1 * H, "fell", [bX * 0.92, 0.48, 0.82]);
-            p.position.set(side * 0.08 * H, sY - 0.36 * H, 0.58);
-            p.rotation.z = side * 0.15;
-            return p;
+        // Die Stationen: je eine Ellipsoid-Scheibe (halbe Breite × halbe Tiefe × doppelter Abstand), überlappend —
+        // die glatte Vereinigung der Haut macht daraus EINE Fläche. Benannte Stationen tragen die Rollen der Fell-
+        // Zeilen und der Lab-Animation (der Brustkorb atmet mit scale.y um 0.76).
+        var NS = 21,
+            schritt = (zFront - zRear) / (NS - 1);
+        var stationen = [];
+        for (var si = 0; si < NS; si++) {
+            var su = si / (NS - 1);
+            var sz0 = zU(su),
+                so = oben(su),
+                sun = unten(su),
+                sb = breite(su);
+            var shz = Math.min(2 * schritt, schritt + Math.min(sz0 - zRear, zFront - sz0));
+            var shy = Math.max(0.02 * H, (so - sun) / 2);
+            var sr = si === 15 ? shy / 0.76 : Math.max(sb, shy, shz);
+            var st = s(sr, "fell", [sb / sr, si === 15 ? 0.76 : shy / sr, shz / sr]);
+            st.position.set(0, (so + sun) / 2, sz0);
+            wolf.add(st);
+            stationen.push(st);
         }
-        wolf.add(buildPec(-1));
-        wolf.add(buildPec(1));
-        function buildScap(side) {
-            var sp = s(0.09 * H, "fell", [0.28, 1.12, 0.34]);
-            sp.position.set(side * 0.05 * H, topY(0.48) - 0.025, 0.48);
-            sp.rotation.z = side * 0.22;
-            return sp;
-        }
-        wolf.add(buildScap(-1));
-        wolf.add(buildScap(1));
-        var longZ = [0.42, 0.16, -0.12, -0.36, -0.56];
+        ribcage = stationen[15];
+        waist = stationen[9];
+        belly = stationen[8];
+        flank = stationen[7];
+        lowerAbd = stationen[6];
+        var pelvis = stationen[4];
+        var croup = stationen[2];
+        // Die Wirbel (Lab-Animation: der Rücken federt) liegen IM Rumpf — sie tragen die Bewegung, nie eine Beule.
+        var longU = [0.85, 0.7, 0.5, 0.32, 0.18];
         for (var i = 0; i < 5; i++) {
-            var segY = topY(longZ[i]) - 0.018;
             for (var sd = -1; sd <= 1; sd += 2) {
-                var seg = s(0.048 * H, "fell", [bX * 0.96, 0.5, 0.78]);
-                seg.position.set(sd * 0.048 * H, segY, longZ[i]);
+                var seg = s(0.045 * H, "fell", [bX * 0.96, 0.5, 0.78]);
+                seg.position.set(sd * 0.035 * H, oben(longU[i]) - 0.07 * H, zU(longU[i]));
                 wolf.add(seg);
                 spineSegs.push(seg);
             }
         }
-        function buildTrap(side) {
-            var t = s(0.09 * H, "fell", [bX * 0.96, 0.52, 0.84]);
-            t.position.set(side * 0.05 * H, topY(0.48) - 0.025, 0.48);
-            t.rotation.z = side * 0.1;
-            return t;
-        }
-        wolf.add(buildTrap(-1));
-        wolf.add(buildTrap(1));
-        var withersBridge = s(0.14 * H, "fell", [bX * 1.25, 0.56, 0.66]);
-        withersBridge.position.set(0, sY - 0.04 * H, 0.6);
-        wolf.add(withersBridge);
-        var chestNeckBridge = s(0.095 * H, "fell", [bX * 1.4, 0.55, 0.95]);
-        chestNeckBridge.position.set(0, sY - 0.17 * H, 0.82);
-        wolf.add(chestNeckBridge);
+        // DIE GLIEDER (ART_GESTALT.bein): die Gelenke stehen, wo die Rumpf-Breite es verlangt (vorn knapp unter
+        // der Brust, hinten unter dem Becken), jedes Fleisch-Teil trägt die Glied-Dicke der Art (D), der Unterarm,
+        // das Schienbein und die Mittelhand sind kräftiger als im alten Stelzen-Bein (Unterarm ~0,08 W). Absolute
+        // Lab-Zahlen tragen den Faktor k = H/2,4 (der Wolf behält seine Maße, jede andere Größe skaliert mit).
+        var Dp = Math.sqrt(A.bein.dicke),
+            Dd = A.bein.dicke * A.bein.distal,
+            k = H / 2.4;
+        // proximal (Schulter, Oberarm, Keule): √Dicke — die Masse liegt im Rumpf; distal (Unterarm, Schienbein,
+        // Mittelhand): Dicke × distal der Art (der Hirsch trägt dünne, aber tragende Läufe, nie Stelzen).
+        var sD = function (r, kl, sc) {
+            return s(r * Dp, kl, sc);
+        };
+        var sU = function (r, kl, sc) {
+            return s(r * Dd, kl, sc);
+        };
+        var boneD = function (r, len, kl) {
+            return s(r * Dp, kl, [0.92, len / (2 * r * Dp), 0.92]);
+        };
+        var boneU = function (r, len, kl) {
+            return s(r * Dd, kl, [0.92, len / (2 * r * Dd), 0.92]);
+        };
+        // DIE PFOTE der Art: "zehe" (Wolf · Fuchs: vier Zehen, Ballen, Krallen) · "sohle" (Bär: große Pranke, lange
+        // Krallen) · "huf" (Hirsch: zwei Schalen, Fesselkopf, keine Zehe und keine Kralle).
+        var baueFuss = function (paw, side, vorn) {
+            paw.scale.setScalar(A.bein.pfoteGross);
+            if (A.bein.pfote === "huf") {
+                var fessel = s(0.02 * H, "fell", [1.0, 1.1, 1.0]);
+                fessel.position.set(0, 0.018 * H, 0.002 * H);
+                paw.add(fessel);
+                for (var hs = -1; hs <= 1; hs += 2) {
+                    var schale = s(0.018 * H, "klaue", [0.55, 0.85, 1.35]);
+                    schale.position.set(hs * 0.0085 * H, -0.004 * H, 0.008 * H);
+                    schale.rotation.x = -0.12;
+                    paw.add(schale);
+                    var after = s(0.0045 * H, "klaue", [0.8, 1.2, 0.8]);
+                    after.position.set(hs * 0.011 * H, 0.02 * H, -0.012 * H);
+                    paw.add(after);
+                }
+                return;
+            }
+            var kr = A.bein.kralle;
+            var padMain = s((vorn ? 0.015 : 0.013) * H, "ballen", [1.6, vorn ? 0.28 : 0.26, 1.2]);
+            padMain.position.set(0, (vorn ? -0.01 : -0.008) * H, (vorn ? 0.01 : 0.008) * H);
+            paw.add(padMain);
+            var rMx = (vorn ? 0.028 : 0.028) * H * Math.pow(bt, 1.3);
+            var pm = s(rMx * (vorn ? 1.05 : 1.02), "fell", [1.0, vorn ? 0.3 : 0.28, 1.0]);
+            pm.position.set(0, 0.002 * H, 0.012 * H);
+            paw.add(pm);
+            for (var i = 0; i < 4; i++) {
+                var tx = (i - 1.5) * (vorn ? 0.022 : 0.018) * H;
+                var toe = s((vorn ? 0.01 : 0.009) * H, "fell", [1.0, vorn ? 0.58 : 0.52, vorn ? 1.5 : 1.4]);
+                toe.position.set(tx, -0.002 * H, (vorn ? 0.024 : 0.022) * H);
+                paw.add(toe);
+                var claw = s((vorn ? 0.003 : 0.0028) * H, "klaue", [1.0, 1.3 * kr, 1.0]);
+                claw.position.set(tx, -0.012 * H + 0.003 * H * (kr - 1), (vorn ? 0.048 : 0.042) * H + 0.004 * H * (kr - 1));
+                claw.rotation.x = 0.42 + 0.25 * (kr - 1);
+                paw.add(claw);
+                var toePad = s((vorn ? 0.006 : 0.005) * H, "ballen", [vorn ? 1.5 : 1.4, 0.28, 1.2]);
+                toePad.position.set(tx, (vorn ? -0.01 : -0.008) * H, (vorn ? 0.022 : 0.02) * H);
+                paw.add(toePad);
+            }
+            if (vorn) {
+                var dew = s(0.005 * H, "fell", [1.0, 1.0, 1.0]);
+                dew.position.set(side * 0.024 * H, 0, -0.01 * H);
+                paw.add(dew);
+            }
+        };
+        var xVorn = 0.78 * breite(uZ(zS)) + 0.03 * H,
+            xHinten = 0.6 * breite(uZ(zH)) + 0.01 * H;
         function buildFrontLeg(side) {
             var g = F.gruppe();
-            g.position.set(side * 0.115 * H, frontLegY, sZ - 0.02 * H);
+            g.position.set(side * xVorn, frontLegY, zS);
             var rS = 0.068 * H,
                 rE = 0.05 * H * Math.pow(bt, 0.6),
-                rC = 0.042 * H * Math.pow(bt, 1.0),
-                rM = 0.028 * H * Math.pow(bt, 1.3);
-            var scap = s(0.09 * H, "fell", [0.28, 1.12, 0.34]);
-            scap.position.set(side * -0.025, 0.08 * H, -0.03 * H);
+                rC = 0.042 * H * Math.pow(bt, 1.0);
+            var scap = sD(0.09 * H, "fell", [0.28, 1.12, 0.34]);
+            scap.position.set(side * -0.025 * k, 0.08 * H, -0.03 * H);
             scap.rotation.z = side * 0.22;
             g.add(scap);
-            var delt = s(rS * 1.15, "fell", [1.1, 1.32, 1.05 * lv]);
-            delt.position.set(side * 0.015, 0.0, 0.004 * H);
+            var delt = sD(rS * 1.15, "fell", [0.9, 1.32, 0.8 * lv]);
+            delt.position.set(side * 0.015 * k, 0.0, 0.004 * H);
             g.add(delt);
             if (side < 0) deltL = delt;
             else deltR = delt;
@@ -1646,11 +1950,11 @@
             var humVec = F.v3(0, -humLen * Math.cos(humAng), -humLen * Math.sin(humAng));
             var upper = F.gruppe();
             g.add(upper);
-            var hum = boneSph(rS * 0.5, humLen, "fell");
+            var hum = boneD(rS * 0.5, humLen, "fell");
             hum.position.copy(humVec.clone().multiplyScalar(0.5));
             hum.rotation.x = humAng;
             upper.add(hum);
-            tricep = s(0.092 * H, "fell", [0.72, 1.44, 0.62 * lv]);
+            tricep = sD(0.092 * H, "fell", [0.56, 1.44, 0.62 * lv]);
             tricep.position.copy(
                 humVec
                     .clone()
@@ -1661,7 +1965,7 @@
             upper.add(tricep);
             if (side < 0) tricepL = tricep;
             else tricepR = tricep;
-            var bic = s(0.065 * H, "fell", [0.52, 1.5, 0.48]);
+            var bic = sD(0.065 * H, "fell", [0.52, 1.5, 0.48]);
             bic.position.copy(
                 humVec
                     .clone()
@@ -1670,11 +1974,11 @@
             );
             bic.rotation.x = humAng;
             upper.add(bic);
-            var hf = s(0.048 * H * Math.pow(bt, 0.3), "fell", [0.95, 0.9, 0.95]);
+            var hf = sD(0.048 * H * Math.pow(bt, 0.3), "fell", [0.95, 0.9, 0.95]);
             hf.position.copy(humVec.clone().multiplyScalar(0.2));
             hf.rotation.x = humAng;
             upper.add(hf);
-            var elbow = s(rE * 1.08, "fell", [0.85, 0.75, 1.0]);
+            var elbow = sU(rE * 1.08, "fell", [0.85, 0.75, 1.0]);
             elbow.position.copy(humVec);
             upper.add(elbow);
             var radLen = P.legLen * 1.45 * H,
@@ -1683,15 +1987,16 @@
             var lower = F.gruppe();
             lower.position.copy(humVec);
             upper.add(lower);
-            var fa = boneSph(rE * 0.55, radLen, "fell");
+            var fa = boneU(rE * 0.9, radLen, "fell");
             fa.position.copy(radVec.clone().multiplyScalar(0.5));
             fa.rotation.x = -radAng;
             lower.add(fa);
-            var rf = s(0.03 * H * Math.pow(bt, 0.8), "fell", [0.95, 0.9, 0.95]);
-            rf.position.copy(radVec.clone().multiplyScalar(0.55));
+            // der Unterarm-Bauch (Beuger/Strecker) — das Glied verjüngt sich zur Handwurzel
+            var rf = sU(0.042 * H * Math.pow(bt, 0.8), "fell", [0.95, 1.6, 1.0]);
+            rf.position.copy(radVec.clone().multiplyScalar(0.3));
             rf.rotation.x = -radAng;
             lower.add(rf);
-            var ext = s(0.022 * H * Math.pow(bt, 1.0), "fell", [0.36, 1.2, 0.32]);
+            var ext = sU(0.022 * H * Math.pow(bt, 1.0), "fell", [0.36, 1.2, 0.32]);
             ext.position.copy(
                 radVec
                     .clone()
@@ -1700,7 +2005,7 @@
             );
             ext.rotation.x = -radAng;
             lower.add(ext);
-            var carpus = s(rC * 1.08, "fell", [0.85, 0.65, 1.0]);
+            var carpus = sU(rC * 1.08, "fell", [0.85, 0.65, 1.0]);
             carpus.position.copy(radVec);
             lower.add(carpus);
             var metaLen = P.legLen * 0.91 * H,
@@ -1709,11 +2014,11 @@
             var pawG = F.gruppe();
             pawG.position.copy(radVec);
             lower.add(pawG);
-            var meta = boneSph(rC * 0.68, metaLen, "fell");
+            var meta = boneU(rC * 0.85, metaLen, "fell");
             meta.position.copy(metaVec.clone().multiplyScalar(0.5));
             meta.rotation.x = -metaAng;
             pawG.add(meta);
-            var metaFlesh = s(0.026 * H * Math.pow(bt, 1.2), "fell", [0.95, 1.0, 0.85]);
+            var metaFlesh = sU(0.03 * H * Math.pow(bt, 1.2), "fell", [0.95, 1.0, 0.85]);
             metaFlesh.position.copy(
                 metaVec
                     .clone()
@@ -1725,28 +2030,7 @@
             var paw = F.gruppe();
             paw.position.copy(metaVec);
             pawG.add(paw);
-            var padMain = s(0.015 * H, "ballen", [1.6, 0.28, 1.2]);
-            padMain.position.set(0, -0.01 * H, 0.01 * H);
-            paw.add(padMain);
-            var pm = s(rM * 1.05, "fell", [1.0, 0.3, 1.0]);
-            pm.position.set(0, 0.002 * H, 0.012 * H);
-            paw.add(pm);
-            for (var i = 0; i < 4; i++) {
-                var tx = (i - 1.5) * 0.022 * H;
-                var toe = s(0.01 * H, "fell", [1.0, 0.58, 1.5]);
-                toe.position.set(tx, -0.002 * H, 0.024 * H);
-                paw.add(toe);
-                var claw = s(0.003 * H, "klaue", [1.0, 1.3, 1.0]);
-                claw.position.set(tx, -0.012 * H, 0.048 * H);
-                claw.rotation.x = 0.42;
-                paw.add(claw);
-                var toePad = s(0.006 * H, "ballen", [1.5, 0.28, 1.2]);
-                toePad.position.set(tx, -0.01 * H, 0.022 * H);
-                paw.add(toePad);
-            }
-            var dew = s(0.005 * H, "fell", [1.0, 1.0, 1.0]);
-            dew.position.set(side * 0.024 * H, 0, -0.01 * H);
-            paw.add(dew);
+            baueFuss(paw, side, true);
             if (side < 0) {
                 flU = upper;
                 flL = lower;
@@ -1760,29 +2044,30 @@
         }
         function buildHindLeg(side) {
             var g = F.gruppe();
-            g.position.set(side * 0.088 * H, hindLegY, hZ + 0.04);
+            g.position.set(side * xHinten, hindLegY, zH);
             var rH = 0.08 * H,
                 rSt = 0.062 * H * Math.pow(bt, 0.6),
-                rHk = 0.048 * H * Math.pow(bt, 1.0),
-                rMT = 0.028 * H * Math.pow(bt, 1.3);
-            var glute = s(rH * 1.35, "fell", [1.1, 1.1 * lv, 1.22 * lv]);
-            glute.position.set(side * -0.028, 0.03 * H, -0.02 * H);
+                rHk = 0.048 * H * Math.pow(bt, 1.0);
+            var gR = rH * 1.35 * Dp,
+                gSy = Math.min(1.1 * lv, (oben(uZ(zH)) - 0.02 * H - (hindLegY + 0.03 * H)) / gR);
+            var glute = s(gR, "fell", [0.85, gSy, 1.22 * lv]);
+            glute.position.set(side * -0.04 * H, 0.03 * H, -0.02 * H);
             g.add(glute);
             if (side < 0) gluteL = glute;
             else gluteR = glute;
-            var tfl = s(0.044 * H, "fell", [0.48, 1.12, 0.42]);
-            tfl.position.set(side * 0.012, -0.04 * H, 0.045 * H);
+            var tfl = sD(0.044 * H, "fell", [0.48, 1.12, 0.42]);
+            tfl.position.set(side * 0.012 * k, -0.04 * H, 0.045 * H);
             g.add(tfl);
             var femLen = P.legLen * 1.27 * H,
                 femAng = (35 * Math.PI) / 180;
             var femVec = F.v3(0, -femLen * Math.cos(femAng), femLen * Math.sin(femAng));
             var thigh = F.gruppe();
             g.add(thigh);
-            var fem = boneSph(rH * 0.5, femLen, "fell");
+            var fem = boneD(rH * 0.5, femLen, "fell");
             fem.position.copy(femVec.clone().multiplyScalar(0.5));
             fem.rotation.x = -femAng;
             thigh.add(fem);
-            quad = s(0.084 * H, "fell", [0.52, 1.86, 0.74 * lv]);
+            quad = sD(0.078 * H, "fell", [0.52, 1.86, 0.56 * lv]);
             quad.position.copy(
                 femVec
                     .clone()
@@ -1793,7 +2078,7 @@
             thigh.add(quad);
             if (side < 0) quadL = quad;
             else quadR = quad;
-            ham = s(0.094 * H, "fell", [0.74, 1.7, 0.84 * lv]);
+            ham = sD(0.094 * H, "fell", [0.74, 1.7, 0.84 * lv]);
             ham.position.copy(
                 femVec
                     .clone()
@@ -1804,7 +2089,7 @@
             thigh.add(ham);
             if (side < 0) hamL = ham;
             else hamR = ham;
-            var semi = s(0.058 * H, "fell", [0.5, 1.22, 0.6]);
+            var semi = sD(0.058 * H, "fell", [0.5, 1.22, 0.6]);
             semi.position.copy(
                 femVec
                     .clone()
@@ -1813,11 +2098,20 @@
             );
             semi.rotation.x = -femAng;
             thigh.add(semi);
-            var ff = s(0.05 * H * Math.pow(bt, 0.3), "fell", [0.95, 0.9, 0.95]);
+            var falte = sD(0.06 * H, "fell", [0.55, 1.5, 0.9]);
+            falte.position.copy(
+                femVec
+                    .clone()
+                    .multiplyScalar(0.62)
+                    .add(F.v3(0, 0.06 * H, 0.03 * H))
+            );
+            falte.rotation.x = 0.35;
+            thigh.add(falte);
+            var ff = sD(0.05 * H * Math.pow(bt, 0.3), "fell", [0.95, 0.9, 0.95]);
             ff.position.copy(femVec.clone().multiplyScalar(0.18));
             ff.rotation.x = -femAng;
             thigh.add(ff);
-            var stifle = s(rSt * 1.1, "fell", [0.85, 0.7, 1.0]);
+            var stifle = sD(rSt * 1.1, "fell", [0.85, 0.7, 1.0]);
             stifle.position.copy(femVec);
             thigh.add(stifle);
             var tibLen = P.legLen * 1.73 * H,
@@ -1826,26 +2120,26 @@
             var calf = F.gruppe();
             calf.position.copy(femVec);
             thigh.add(calf);
-            var tib = boneSph(rSt * 0.54, tibLen, "fell");
+            var tib = boneU(rSt * 0.72, tibLen, "fell");
             tib.position.copy(tibVec.clone().multiplyScalar(0.5));
             tib.rotation.x = tibAng;
             calf.add(tib);
-            gastro = s(0.052 * H, "fell", [0.52, 1.52, 0.5 * lv]);
+            gastro = sU(0.058 * H, "fell", [0.52, 1.52, 0.55 * lv]);
             gastro.position.copy(
                 tibVec
                     .clone()
-                    .multiplyScalar(0.25)
-                    .add(F.v3(0, 0, -0.012 * H))
+                    .multiplyScalar(0.3)
+                    .add(F.v3(0, 0, -0.014 * H))
             );
             gastro.rotation.x = tibAng;
             calf.add(gastro);
             if (side < 0) gastroL = gastro;
             else gastroR = gastro;
-            var tf = s(0.034 * H * Math.pow(bt, 0.8), "fell", [0.95, 0.9, 0.95]);
+            var tf = sU(0.038 * H * Math.pow(bt, 0.8), "fell", [0.95, 0.9, 0.95]);
             tf.position.copy(tibVec.clone().multiplyScalar(0.6));
             tf.rotation.x = tibAng;
             calf.add(tf);
-            var hock = s(rHk * 1.14, "fell", [0.85, 0.68, 1.0]);
+            var hock = sU(rHk * 1.14, "fell", [0.85, 0.68, 1.0]);
             hock.position.copy(tibVec);
             calf.add(hock);
             var metaTLen = P.legLen * 1.18 * H,
@@ -1854,11 +2148,11 @@
             var pawG = F.gruppe();
             pawG.position.copy(tibVec);
             calf.add(pawG);
-            var metaT2 = boneSph(rHk * 0.68, metaTLen, "fell");
+            var metaT2 = boneU(rHk * 0.85, metaTLen, "fell");
             metaT2.position.copy(metaTVec.clone().multiplyScalar(0.5));
             metaT2.rotation.x = -metaTAng;
             pawG.add(metaT2);
-            var metaTFlesh = s(0.024 * H * Math.pow(bt, 1.2), "fell", [0.95, 1.0, 0.85]);
+            var metaTFlesh = sU(0.028 * H * Math.pow(bt, 1.2), "fell", [0.95, 1.0, 0.85]);
             metaTFlesh.position.copy(
                 metaTVec
                     .clone()
@@ -1870,25 +2164,7 @@
             var paw = F.gruppe();
             paw.position.copy(metaTVec);
             pawG.add(paw);
-            var padMain2 = s(0.013 * H, "ballen", [1.6, 0.26, 1.2]);
-            padMain2.position.set(0, -0.008 * H, 0.008 * H);
-            paw.add(padMain2);
-            var pm2 = s(rMT * 1.02, "fell", [1.0, 0.28, 1.0]);
-            pm2.position.set(0, 0.002 * H, 0.012 * H);
-            paw.add(pm2);
-            for (var i = 0; i < 4; i++) {
-                var tx2 = (i - 1.5) * 0.018 * H;
-                var toe2 = s(0.009 * H, "fell", [1.0, 0.52, 1.4]);
-                toe2.position.set(tx2, -0.002 * H, 0.022 * H);
-                paw.add(toe2);
-                var claw2 = s(0.0028 * H, "klaue", [1.0, 1.3, 1.0]);
-                claw2.position.set(tx2, -0.01 * H, 0.042 * H);
-                claw2.rotation.x = 0.42;
-                paw.add(claw2);
-                var toePad2 = s(0.005 * H, "ballen", [1.4, 0.28, 1.2]);
-                toePad2.position.set(tx2, -0.008 * H, 0.02 * H);
-                paw.add(toePad2);
-            }
+            baueFuss(paw, side, false);
             if (side < 0) {
                 hlT = thigh;
                 hlC = calf;
@@ -1906,8 +2182,8 @@
         legHR = buildHindLeg(1);
         function buildShoulderBridge(side) {
             var wrap = F.gruppe();
-            wrap.position.set(0, 0.024 * H, 0);
-            wrap.scale.set(0.8, 1.2, 1.0);
+            wrap.position.set(-side * 0.02 * H, 0.024 * H, 0);
+            wrap.scale.set(0.6, 1.2, 1.0);
             var b = s(0.125 * H, "fell", [bX * 1.38, 0.89, 0.74]);
             b.rotation.z = side * 0.1;
             wrap.add(b);
@@ -1932,30 +2208,39 @@
         wolf.add(legFR);
         wolf.add(legHL);
         wolf.add(legHR);
-        var neckBaseZ = 0.92,
-            nLen = P.neckLen * H,
+        // DER HALS setzt am Bug über der Brust an (vorn-oben am Rumpf-Profil) und steigt im Winkel des Gesetzes
+        // (deriveTierParams.neckAng) — der Kopf trägt sich am Widerrist (Wolf), über ihm (Hirsch) oder tief (Bär).
+        // Die Dicke folgt der Statur stetig (vorher drei Stufen) und der Art.
+        var nLen = P.neckLen * H * A.hals.lang,
             nAng = (P.neckAng * Math.PI) / 180;
-        var neckStart = F.v3(0, sY - 0.06 * H, neckBaseZ);
-        var neckEnd = F.v3(0, neckStart.y + nLen * Math.sin(nAng), neckBaseZ + nLen * Math.cos(nAng));
+        var neckStart = F.v3(0, oben(0.93) - 0.075 * H, zU(0.93));
+        var neckEnd = F.v3(0, neckStart.y + nLen * Math.sin(nAng), neckStart.z + nLen * Math.cos(nAng));
         var neckDir = neckEnd.clone().sub(neckStart);
         var neckN = neckDir.clone().normalize();
-        var nThick =
-            P.build < 0.3
-                ? [0.1, 0.09, 0.08, 0.06]
-                : P.build < 0.5
-                  ? [0.13, 0.12, 0.11, 0.09]
-                  : [0.16, 0.15, 0.13, 0.11];
-        var nR = nThick.map(function (t) {
-            return t * H;
+        // Der Hals-Radius an der Wurzel (× H): Wolf 0,10 H (~8 cm), Fuchs 0,076 H, Bär 0,14 H (~15 cm), Hirsch 0,074 H —
+        // vorher 0,075 + 0,13·Statur: der Hals war so dick wie der Brustkorb und verschluckte den Kopf (Bär) bzw. legte
+        // ihm eine Kapuze um (Wolf).
+        var nBasis = (0.05 + 0.085 * P.build) * A.hals.dicke;
+        var nR = [1, 0.92, 0.84, 0.7].map(function (t) {
+            return t * nBasis * H;
         });
-        var nPos = [0.0, 0.3, 0.6, 1.0];
-        for (var i = 0; i < 4; i++) {
-            var nP = neckStart.clone().add(neckDir.clone().multiplyScalar(nPos[i]));
-            nP.y += Math.sin(nPos[i] * Math.PI) * 0.02 * H;
-            var nS = s(nR[i], "fell", [0.9, 0.94, 1.18]);
-            nS.position.copy(nP);
-            wolf.add(nS);
-            neckSegs.push(nS);
+        // Die Hals-Stationen liegen ENTLANG des Halses (je ein Glied, in Hals-Richtung gestreckt) und so dicht, dass
+        // ein langer Hals (Hirsch) nicht zur Perlen-Kette zerfällt: Abstand ≤ 0,75 × Wurzel-Radius.
+        var nN = Math.max(4, Math.ceil(nLen / (0.75 * nR[0])));
+        for (var i = 0; i < nN; i++) {
+            var nt = i / (nN - 1);
+            var nP = neckStart.clone().add(neckDir.clone().multiplyScalar(nt));
+            nP.y += Math.sin(nt * Math.PI) * 0.02 * H;
+            var nq = Math.min(2, nt * 3),
+                nqi = Math.min(2, Math.floor(nq));
+            var nRi = nR[nqi] + (nR[nqi + 1] - nR[nqi]) * (nq - nqi);
+            var nSG = F.gruppe();
+            nSG.position.copy(nP);
+            var nS = s(nRi, "fell", [0.9, 1.18, 0.94]);
+            F.richte(nS, neckN);
+            nSG.add(nS);
+            wolf.add(nSG);
+            neckSegs.push(nSG);
         }
         function buildNeckRidge(side) {
             var r = s(0.024 * H, "fell", [0.32, 2.8, 0.32]);
@@ -2010,38 +2295,54 @@
         neckHeadBlend.position.copy(neckEnd);
         neckHeadBlend.position.y -= 0.008 * H;
         wolf.add(neckHeadBlend);
-        var fBk = F.v3(0, -0.12, -0.92);
+        // DIE RUTE (ART_GESTALT.schwanz): am Sitzbein-Ansatz über dem Becken, hängend im Winkel der Art (Wolf ~30°,
+        // Hirsch fast senkrecht), ihr Leib buschig zur Mitte (Fuchs ~0,15 W dick) — Segment-Zahl und -Länge je Art
+        // (vorher: 4 + 7·(1−Statur) Segmente, der Hirsch trug eine Wolfsrute aus elf Gliedern).
         tailRoot = F.gruppe();
-        tailRoot.position.set(0, hY - 0.1 * H, -0.92 - 0.08 * H);
+        tailRoot.position.set(0, oben(0.04) - 0.03 * H, zU(0.03));
+        tailRoot.rotation.x = -A.schwanz.hang;
         tailRoot.scale.z = 1.6;
         wolf.add(tailRoot);
         var tailParent = tailRoot;
-        for (var i = 0; i < P.tailSegs; i++) {
+        var nSeg = Math.max(1, Math.round(A.schwanz.segs));
+        for (var i = 0; i < nSeg; i++) {
             var segG = F.gruppe();
-            var segR = Math.max(0.014, 0.036 * H - i * 0.004 * H);
+            var tt = nSeg > 1 ? i / (nSeg - 1) : 0;
+            var segR =
+                H *
+                (A.schwanz.wurzel * (1 - tt) +
+                    A.schwanz.spitze * tt +
+                    (A.schwanz.mitte - (A.schwanz.wurzel + A.schwanz.spitze) / 2) * Math.sin(Math.PI * tt));
             var seg = s(segR, "fell", [0.95, 1.18, 1.18]);
-            seg.position.z = -0.048 * H;
+            seg.position.z = -A.schwanz.segL * 1.15 * H;
             segG.add(seg);
             F.fellSchweif(segG, segR, i);
-            segG.position.z = i === 0 ? 0 : -0.042 * H;
+            segG.position.z = i === 0 ? 0 : -A.schwanz.segL * H;
             if (i > 0) segG.position.y = -0.003 * H * (i + 1);
             tailParent.add(segG);
             tailParent = segG;
             tailSegs.push(segG);
         }
+        // Die Kopf-Größe der Art (ART_GESTALT.kopf.gross: der Bär trägt einen großen Kopf, die Allometrie skullR ∝ Größe^0,25
+        // verkleinert ihn sonst) — der ganze Kopf-Baum skaliert, sein Zentrum rückt um dieselbe Zahl vor den Hals.
+        var kG = A.kopf.gross;
         var headY = neckEnd.y - 0.02 * H - 0.008 * H,
-            headZ = neckEnd.z + 0.12 * H;
+            headZ = neckEnd.z + 0.12 * H * kG;
         headGroup = F.gruppe();
         headGroup.position.set(0, headY, headZ);
-        var cranium = s(P.skullR * H, "fell", [0.95, 0.96, 1.26]);
-        cranium.position.set(0, 0.03 * H, -0.08 * H);
+        headGroup.scale.set(kG, kG, kG);
+        // DER KOPF der Art (ART_GESTALT.kopf): Schädel-Breite, Schnauzen-Länge und -Breite (Bär kurz und breit, Fuchs
+        // lang und schmal); die Fänge folgen der Ernährung (ein Pflanzenfresser trägt keine).
+        var kB = A.kopf.schaedelB;
+        var cranium = s(P.skullR * H, "fell", [0.95 * kB, 0.96 * A.kopf.schaedelH, 1.06]);
+        cranium.position.set(0, 0.03 * H, -0.062 * H);
         headGroup.add(cranium);
         var sagCrest = cH(0.004 * H, 0.012 * H, 0.06 * H, "fell");
         sagCrest.position.set(0, 0.07 * H, -0.06 * H);
         headGroup.add(sagCrest);
         function buildTemp(side) {
             var t = s(0.032 * H, "fell", [0.5, 0.82, 0.58]);
-            t.position.set(side * 0.05 * H, 0.024 * H, -0.038 * H);
+            t.position.set(side * 0.05 * H * kB, 0.024 * H, -0.038 * H);
             return t;
         }
         headGroup.add(buildTemp(-1));
@@ -2057,15 +2358,15 @@
         faceBase.position.set(0, 0.004 * H, 0.04 * H);
         headGroup.add(faceBase);
         function buildZyg(side) {
-            var z = s(0.028 * H, "fell", [1.08, 0.48, 0.74]);
-            z.position.set(side * 0.05 * H, -0.008 * H, 0.03 * H);
+            var z = s(0.032 * H, "fell", [1.2, 0.55, 0.8]);
+            z.position.set(side * 0.05 * H * kB, -0.008 * H, 0.03 * H);
             return z;
         }
         headGroup.add(buildZyg(-1));
         headGroup.add(buildZyg(1));
         function buildMass(side) {
             var m = s(0.032 * H, "fell", [0.72, 0.98, 0.72]);
-            m.position.set(side * 0.048 * H, -0.032 * H, 0.036 * H);
+            m.position.set(side * 0.048 * H * kB, -0.032 * H, 0.036 * H);
             return m;
         }
         headGroup.add(buildMass(-1));
@@ -2079,6 +2380,8 @@
         headGroup.add(buildJowl(1));
         var maxG = F.gruppe();
         maxG.position.set(0, -0.012 * H, 0.028 * H);
+        maxG.scale.set(A.kopf.schnauzeB, A.kopf.schnauzeH, A.kopf.schnauzeL);
+        var fangF = Math.max(0, Math.min(1, (P.diet - 0.25) / 0.4));
         var muzzle = s(0.044 * H, "fell", [P.snoutX, 0.78, P.snoutZ]);
         muzzle.position.set(0, -0.006 * H, 0.06 * H);
         maxG.add(muzzle);
@@ -2098,7 +2401,9 @@
         noseB.rotation.x = Math.PI / 2;
         noseB.position.set(0, 0.004 * H, 0.068 * H);
         maxG.add(noseB);
-        var nose = s(0.02 * H, "nase", [P.noseW, 0.86, 0.7]);
+        // die Nase der Art (kopf.nase): sie sitzt in der Schnauzen-Gruppe und wüchse sonst mit deren Breite/Höhe und der
+        // Kopf-Größe (der Bär trug eine 8 cm breite schwarze Kugel)
+        var nose = s(0.02 * H * A.kopf.nase, "nase", [P.noseW, 0.86, 0.7]);
         nose.position.set(0, -0.014 * H, 0.132 * H);
         maxG.add(nose);
         for (var sd = -1; sd <= 1; sd += 2) {
@@ -2109,9 +2414,9 @@
         var ulip = s(0.016 * H, "fell", [1.42, 0.44, 0.88]);
         ulip.position.set(0, -0.024 * H, 0.112 * H);
         maxG.add(ulip);
-        for (var sd = -1; sd <= 1; sd += 2) {
-            var fang = cH(0.004 * H, 0.0015 * H, 0.03 * H, "zahn");
-            fang.position.set(sd * 0.018 * H, -0.03 * H, 0.085 * H);
+        for (var sd = -1; sd <= 1 && fangF > 0.1; sd += 2) {
+            var fang = cH(0.004 * H, 0.0015 * H, 0.03 * H * fangF, "zahn");
+            fang.position.set(sd * 0.018 * H, -0.022 * H, 0.085 * H);
             fang.rotation.x = Math.PI * 0.92;
             maxG.add(fang);
             var carn = cH(0.0045 * H, 0.002 * H, 0.024 * H, "zahn");
@@ -2128,6 +2433,7 @@
         headGroup.add(maxG);
         jawGroup = F.gruppe();
         jawGroup.position.set(0, -0.04 * H, -0.018 * H);
+        jawGroup.scale.set(A.kopf.schnauzeB, A.kopf.schnauzeH, A.kopf.schnauzeL);
         var jawLen = P.diet > 0.7 ? 1.6 : P.diet > 0.3 ? 1.5 : 1.65;
         var jawBody = s(0.027 * H, "fell", [0.74, 0.62, jawLen]);
         jawBody.position.set(0, -0.006 * H, 0.062 * H);
@@ -2141,8 +2447,8 @@
         var tongue = s(0.013 * H, "zahnfleisch", [1.5, 0.42, 1.36]);
         tongue.position.set(0, -0.028 * H, 0.076 * H);
         jawGroup.add(tongue);
-        for (var sd = -1; sd <= 1; sd += 2) {
-            var fangL = cH(0.0035 * H, 0.0012 * H, 0.026 * H, "zahn");
+        for (var sd = -1; sd <= 1 && fangF > 0.1; sd += 2) {
+            var fangL = cH(0.0035 * H, 0.0012 * H, 0.026 * H * fangF, "zahn");
             fangL.position.set(sd * 0.016 * H, 0.016 * H, 0.104 * H);
             jawGroup.add(fangL);
             var carnL = cH(0.004 * H, 0.0018 * H, 0.022 * H, "zahn");
@@ -2167,7 +2473,7 @@
         var eyeY = 0.016 - (1 - P.diet) * 0.006;
         function buildEye(side) {
             var e = F.gruppe();
-            var socket = s(0.024 * H, "dunkel", [1.1, 1.12, 0.48]);
+            var socket = s(0.021 * H, "dunkel", [1.1, 1.12, 0.32]);
             socket.position.z = -0.004 * H;
             e.add(socket);
             var ball = s(0.017 * H, "tierauge", [1.0, 1.0, 0.9]);
@@ -2185,27 +2491,57 @@
             var lidB = s(0.017 * H, "fell", [0.94, 0.36, 0.88]);
             lidB.position.y = -0.012 * H;
             e.add(lidB);
-            e.position.set(side * 0.054 * H, eyeY * H, 0.014 * H);
+            e.position.set(side * 0.054 * H * kB, eyeY * H, 0.014 * H);
             e.rotation.y = side * P.eyeFwd;
             return e;
         }
         headGroup.add(buildEye(-1));
         headGroup.add(buildEye(1));
+        // DAS OHR der Art: "spitz" (Wolf · Fuchs: aufrechtes Dreieck mit dunklem Rand) · "rund" (Bär: kleine runde
+        // Muschel) · "blatt" (Hirsch: großes ovales Löffel-Ohr, seitlich gestellt). Höhe und Basis je Art (Wolf 0,1 H,
+        // Fuchs 0,15 H — vorher 0,062 H: halb so groß wie in der Natur).
+        var oH = A.kopf.ohrH * H,
+            oB = A.kopf.ohrB * H,
+            oY = 0.03 * H + P.skullR * H * 0.78,
+            oX = P.skullR * H * 0.95 * kB * 0.72;
         function buildEar(side) {
             var e = F.gruppe();
-            var outer = cH(0.003 * H, 0.015 * H, 0.062 * H, "fell");
-            outer.position.y = 0.032 * H;
+            if (A.kopf.ohrForm === "rund") {
+                var muschel = s(oB, "fell", [1.0, oH / oB, 0.5]);
+                muschel.position.y = oH * 0.55;
+                e.add(muschel);
+                var innenR = s(oB * 0.72, "zahnfleisch", [1.0, oH / oB, 0.25]);
+                innenR.position.set(0, oH * 0.55, oB * 0.12);
+                e.add(innenR);
+                e.position.set(side * oX, oY - oB * 0.4, -0.07 * H);
+                e.rotation.z = -side * 0.35;
+                return e;
+            }
+            if (A.kopf.ohrForm === "blatt") {
+                var blatt = s(oH * 0.5, "fell", [oB / (oH * 0.5), 1.0, 0.16]);
+                blatt.position.y = oH * 0.5;
+                e.add(blatt);
+                var innenB = s(oH * 0.42, "zahnfleisch", [(oB * 0.8) / (oH * 0.42), 1.0, 0.08]);
+                innenB.position.set(0, oH * 0.52, oB * 0.08);
+                e.add(innenB);
+                e.position.set(side * oX, oY - 0.01 * H, -0.065 * H);
+                e.rotation.z = -side * 0.7;
+                e.rotation.x = -0.25;
+                return e;
+            }
+            var outer = cH(0.003 * H, oB, oH, "fell");
+            outer.position.y = oH * 0.52;
             outer.scale.z = 0.32;
             e.add(outer);
-            var inner = cH(0.002 * H, 0.011 * H, 0.052 * H, "zahnfleisch");
-            inner.position.set(0, 0.028 * H, -0.004 * H);
+            var inner = cH(0.002 * H, oB * 0.73, oH * 0.84, "zahnfleisch");
+            inner.position.set(0, oH * 0.45, -0.004 * H);
             inner.scale.z = 0.28;
             e.add(inner);
-            var rim = cH(0.0022 * H, 0.0018 * H, 0.062 * H, "straehneD");
-            rim.position.set(side * 0.002, 0.032 * H, 0.002);
+            var rim = cH(0.0022 * H, 0.0018 * H, oH, "straehneD");
+            rim.position.set(side * 0.002 * (H / 2.4), oH * 0.52, 0.002 * (H / 2.4));
             rim.scale.z = 0.3;
             e.add(rim);
-            e.position.set(side * 0.046 * H, 0.066 * H, -0.052 * H);
+            e.position.set(side * oX, oY - 0.012 * H, -0.052 * H);
             e.rotation.z = side * 0.15;
             e.rotation.x = -0.08;
             return e;
@@ -2276,7 +2612,31 @@
             spineSegs: spineSegs,
             neckSegs: neckSegs,
             pawOffsets: pawOffsets,
-            masse: { H: H, sY: sY, hY: hY, sZ: sZ, hZ: hZ, bX: bX, bt: bt, lv: lv, by: by, tv: tv },
+            masse: {
+                H: H,
+                sY: sY,
+                hY: hY,
+                sZ: sZ,
+                hZ: hZ,
+                bX: bX,
+                bt: bt,
+                lv: lv,
+                by: by,
+                tv: tv,
+                // Welle 5: die Lage des Rumpf-Profils (21 Stützstellen über u) und des Kopfes — das Fell-Muster liest sie
+                rumpf: {
+                    zRear: zRear,
+                    zFront: zFront,
+                    oben: stationen.map(function (_s, i) {
+                        return oben(i / (NS - 1));
+                    }),
+                    unten: stationen.map(function (_s, i) {
+                        return unten(i / (NS - 1));
+                    }),
+                },
+                kopf: { y: headY, z: headZ, g: kG },
+                rute: nSeg,
+            },
             P: P,
         };
     }
@@ -2292,6 +2652,14 @@
         deriveTierParams: deriveTierParams,
         cpgStep: cpgStep,
         bauTier: bauTier,
+        MASSSTAB: MASSSTAB,
+        ART_GESTALT: ART_GESTALT,
+        artGestalt: artGestalt,
+        fellFarbe: fellFarbe,
+        ANATOMIE_SOLL: ANATOMIE_SOLL,
+        GANG_GESETZ: GANG_GESETZ,
+        gangSchritt: gangSchritt,
+        gangFuss: gangFuss,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,
