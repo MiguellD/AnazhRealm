@@ -310,7 +310,7 @@ function kernProbe(VC) {
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
-const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03, schubM: 0.01, sattelRad: 0.01 };
+const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03, schubM: 0.01, sattelRad: 0.01, standM: 0.05 };
 function stationVerdict(s) {
     const out = [];
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
@@ -321,6 +321,14 @@ function stationVerdict(s) {
     else {
         if (!(s.klippe.sprung <= STATION.sprungM)) out.push(`klippe-sprung ${s.klippe.sprung.toFixed(2)} m je Schritt`);
         if (!(s.klippe.luft > 0)) out.push("klippe ohne Flug");
+    }
+    const ab = s.absteigen;
+    if (!ab) out.push("absteigen keine Probe");
+    else if (!ab.imFlug || !(ab.hoehe >= 1)) out.push(`absteigen nicht im Flug (vakuös, ${(ab.hoehe || 0).toFixed(2)} m)`);
+    else {
+        if (!(Math.abs(ab.ueberBoden) <= STATION.standM))
+            out.push(`absteigen-luft: der Wagen hängt ${ab.ueberBoden.toFixed(2)} m über der Ebene seiner Räder`);
+        if (!(ab.sprung <= STATION.sprungM)) out.push(`absteigen-sprung ${ab.sprung.toFixed(2)} m je Schritt`);
     }
     if (!s.quer) out.push("querhang nicht gefunden");
     else if (!(s.quer.drift >= STATION.querM)) out.push(`querhang ohne Abtrieb (Quer-Abdrift ${s.quer.drift.toFixed(2)} m)`);
@@ -484,7 +492,7 @@ async function probeLeben(expected) {
         return res;
     }
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
-    const setzen = async (typ, x, zz, fahrt) => {
+    const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
         st.playerMesh.position.set(x, hh(x, zz) + 1.2, zz);
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
         st._fieldVy = 0;
@@ -501,6 +509,7 @@ async function probeLeben(expected) {
             if (e.instanced || e.mesh) break;
             await new Promise((r3) => setTimeout(r3, 200));
         }
+        if (vorAufsitzen) vorAufsitzen(e);
         const mr = r.mountArchitecture(e);
         if (!mr || !mr.ok) return null;
         tasten(false);
@@ -814,8 +823,30 @@ async function probeLeben(expected) {
                     kl = { x, z: zz, fall, fahrt: Math.atan2(ux, uz), sx: x - ux * 24, sz: zz - uz * 24 };
                 }
         S.klippeOrt = kl;
+        // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt beim Spawn einen Remesh seines Chunks an,
+        // und die Welt streut dort neu ein (Spawn-Affinität — im Lauf vom 07.10. standen drei Felsbögen und ein Glutbrunnen
+        // AUF dem Wagen und schoben ihn 3,3 m in den Hang: die Klasse „Natur weicht dem Bau", Familie koerper-haus, D3).
+        // Vor dem Aufsitzen läuft die Welt 60 Frames, dann räumt die Probe, was auf dem Anlauf bis 8 m über die Kante blockt.
+        let geraeumt = 0;
+        const bahnFrei = (k) => (wagen) => {
+            for (let i = 0; i < 60; i++) frame(i);
+            const ux = Math.sin(k.fahrt);
+            const uz = Math.cos(k.fahrt);
+            let n = 0;
+            for (const e of st.architectures.slice()) {
+                if (!e || e === wagen || !e.blockerAABBs || !e.position) continue;
+                const dx = e.position.x - k.sx;
+                const dz = e.position.z - k.sz;
+                const l = dx * ux + dz * uz;
+                if (l > -6 && l < 32 && Math.abs(dx * uz - dz * ux) < 6) {
+                    r.removeArchitecture(e);
+                    n++;
+                }
+            }
+            geraeumt = n;
+        };
         if (kl) {
-            const g2 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt);
+            const g2 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
             if (g2) {
                 tasten(true, false);
                 let yv = g2.position.y;
@@ -835,8 +866,39 @@ async function probeLeben(expected) {
                 for (let i = 0; i < 60; i++) frame(i);
                 r._stepFixedSim = P2;
                 const unterGrund = g2.position.y - 0.5 - hh(g2.position.x, g2.position.z);
-                S.klippe = { sprung, luft, schritte, ueberGrund: unterGrund, fall: kl.fall };
+                S.klippe = { sprung, luft, schritte, ueberGrund: unterGrund, fall: kl.fall, geraeumt };
                 weg(g2);
+            }
+            // S4 ABSTEIGEN IM FLUG (Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen nicht ab — wer im Flug
+            // ausstieg, ließ ihn bis zum Reload in der Luft hängen): dieselbe Klippe, W bis der Wagen 1 m über dem Boden
+            // fliegt, dann absteigen; 240 Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-
+            // Sprung > 0,5 m je Sim-Schritt.
+            const g4 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
+            if (g4) {
+                tasten(true, false);
+                let hoehe = 0;
+                for (let i = 0; i < 420; i++) {
+                    frame(i);
+                    hoehe = g4.position.y - 0.5 - hh(g4.position.x, g4.position.z);
+                    if (g4._fahr && g4._fahr.luft && hoehe >= 1) break;
+                }
+                tasten(false);
+                const imFlug = !!(g4._fahr && g4._fahr.luft);
+                r.dismountArchitecture();
+                let yv = g4.position.y;
+                let sprungAb = 0;
+                const P7 = r._stepFixedSim;
+                r._stepFixedSim = function (simTime, dt) {
+                    P7.call(this, simTime, dt);
+                    sprungAb = Math.max(sprungAb, Math.abs(g4.position.y - yv));
+                    yv = g4.position.y;
+                };
+                for (let i = 0; i < 240; i++) frame(i);
+                r._stepFixedSim = P7;
+                const eb = r._rittEbene(g4, g4.position.x, g4.position.z, g4._rideYaw);
+                const bodenY = eb ? eb.y : hh(g4.position.x, g4.position.z);
+                S.absteigen = { imFlug, hoehe, ueberBoden: g4.position.y - 0.5 - bodenY, sprung: sprungAb, geraeumt };
+                r.removeArchitecture(g4);
             }
         }
         // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W.
@@ -1102,6 +1164,7 @@ async function probeLeben(expected) {
             kern: true,
             labor: { schritte: 180, maxM: 0.0001, bei: 3 },
             klippe: { sprung: 0.2, luft: 40 },
+            absteigen: { imFlug: true, hoehe: 2.1, ueberBoden: 0.0, sprung: 0.2 },
             quer: { drift: 1.2 },
             raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01, spaltMax: 0.05 },
             huelleBlock: { tief: 0.0, abstand: 0.02 },
@@ -1114,6 +1177,9 @@ async function probeLeben(expected) {
             ["kein Fahr-Schritt im Kern", { kern: false }, "kern"],
             ["Welt weicht 0,4 m vom Labor ab", { labor: { schritte: 180, maxM: 0.4, bei: 50 } }, "labor≠welt"],
             ["7,95 m Höhen-Sprung in einem Schritt (F-D6)", { klippe: { sprung: 7.95, luft: 40 } }, "klippe-sprung"],
+            ["im Flug abgestiegen: der Wagen hängt 2,4 m in der Luft (Gegenprüfung 07.10.)", { absteigen: { imFlug: true, hoehe: 2.4, ueberBoden: 2.4, sprung: 0 } }, "absteigen-luft"],
+            ["im Flug abgestiegen: der Wagen springt 2,4 m auf den Boden (Teleport)", { absteigen: { imFlug: true, hoehe: 2.4, ueberBoden: 0, sprung: 2.4 } }, "absteigen-sprung"],
+            ["am Boden abgestiegen (vakuös)", { absteigen: { imFlug: false, hoehe: 0.1, ueberBoden: 0, sprung: 0 } }, "absteigen nicht im Flug"],
             ["Querhang ohne Abtrieb: 0,00 m (F-D7)", { quer: { drift: 0.0 } }, "querhang"],
             ["Bug 1,85 m im Fels (F-D4)", { huelleBlock: { tief: 1.85, abstand: 0 } }, "huelle-fels Eindringen"],
             ["die starre Instanz: kein Rad-Leaf (F-D8)", { raeder: { leaves: 0, rolle: 0, lenk: 0, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01 } }, "raeder starr"],
@@ -1258,7 +1324,14 @@ async function probeLeben(expected) {
         "S2 Klippe: kein Höhen-Sprung > 0,5 m je Sim-Schritt, der Wagen fliegt",
         !hat("kern") && !hat("klippe"),
         S.klippe
-            ? `Fall ${S.klippe.fall.toFixed(1)} m bei (${S.klippeOrt.x}, ${S.klippeOrt.z}) · größter Sprung ${S.klippe.sprung.toFixed(2)} m · Luft ${S.klippe.luft}/${S.klippe.schritte} · danach ${S.klippe.ueberGrund.toFixed(2)} m über dem Grund`
+            ? `Bahn geräumt ${S.klippe.geraeumt} · Fall ${S.klippe.fall.toFixed(1)} m bei (${S.klippeOrt.x}, ${S.klippeOrt.z}) · größter Sprung ${S.klippe.sprung.toFixed(2)} m · Luft ${S.klippe.luft}/${S.klippe.schritte} · danach ${S.klippe.ueberGrund.toFixed(2)} m über dem Grund`
+            : vS.join(" · ")
+    );
+    check(
+        "S4 Absteigen im Flug: der Wagen fällt ballistisch auf seinen Boden und steht dort (nie in der Luft, kein Sprung)",
+        !hat("kern") && !hat("absteigen"),
+        S.absteigen
+            ? `Bahn geräumt ${S.absteigen.geraeumt} · abgestiegen ${S.absteigen.hoehe.toFixed(2)} m über dem Boden (im Flug ${S.absteigen.imFlug}) · nach 240 Frames ${S.absteigen.ueberBoden.toFixed(3)} m über der Ebene seiner Räder · größter Sprung ${S.absteigen.sprung.toFixed(2)} m`
             : vS.join(" · ")
     );
     check(

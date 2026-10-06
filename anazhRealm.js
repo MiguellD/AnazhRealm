@@ -50573,6 +50573,22 @@ class AnazhRealm {
             if (entry.mesh) this._rittMeshPose(entry);
             else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
         }
+        // DER WAGEN BLEIBT NIE IN DER LUFT (Gegenprüfung 07.10.): die Fahrt endet mit dem Abstieg wie am Boden (der Wagen
+        // bleibt, wo der Reiter ihn verließ — Längs-, Quer- und Gier-Fahrt fallen), die VERTIKALE bleibt dem Fahr-Gesetz:
+        // fliegt er, trägt ihn `_fahrNachlauf` je Sim-Schritt auf der ballistischen Vertikale des Kerns, bis er steht.
+        const fzAb = entry && entry._fahrSatz ? entry._fahr : null;
+        if (fzAb) {
+            // der Fahr-Zustand steht, wo der Wagen steht (die Kräfte hatten ihn einen Schritt vorausgelegt)
+            fzAb.x = entry.position.x;
+            fzAb.z = entry.position.z;
+            fzAb.vlong = 0;
+            fzAb.vlat = 0;
+            fzAb.yawRate = 0;
+            fzAb.speed = 0;
+            fzAb.aLong = 0;
+            fzAb.aLat = 0;
+            if (fzAb.luft) (this._fahrLos || (this._fahrLos = new Set())).add(entry);
+        }
         this.state.player.mountedArch = null;
         // FAHR-ABSCHLUSS (19.07.) — die gemerkte Vor-Fahrt-Sicht kehrt zurück.
         if (this.state._mountVorKamera) {
@@ -50885,6 +50901,45 @@ class AnazhRealm {
         entry._rideRoll = Number.isFinite(entry._terrainRollZiel)
             ? Math.max(-0.7, Math.min(0.7, entry._terrainRollZiel))
             : 0;
+    }
+
+    // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
+    // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
+    // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
+    // auf der Ebene seiner Räder steht; dann ruht er (Federn null, Lage der Ebene, Blocker an der Ruhe-Lage) und verlässt den
+    // Nachlauf. Ein ungebauter Boden hält ihn, bis der Chunk steht; sitzt der Reiter wieder auf, führt der Ritt.
+    _fahrNachlauf(dt) {
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const pl = this.state.player;
+        for (const entry of this._fahrLos) {
+            const fz = entry._fahr;
+            if ((pl && pl.mountedArch === entry.id) || !fz || !entry._fahrSatz || !Number.isFinite(fz.y)) {
+                this._fahrLos.delete(entry);
+                continue;
+            }
+            vc.fahrStand(fz, entry._fahrSatz, this._fahrBoden(entry), dt);
+            const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
+            entry.position.y = fz.y + 0.5 + clear;
+            entry._rideY = entry.position.y;
+            entry._rideVy = fz.vy;
+            if (!fz.luft) {
+                // gelandet: er steht in der Ebene seiner Räder, die Federn ruhen
+                fz.vy = 0;
+                fz.fNick = fz.fNickV = fz.fWank = fz.fWankV = fz.fHub = fz.fHubV = 0;
+                entry._rideVy = 0;
+                entry._terrainPitchZiel = entry._rideTerrainPitch = -fz.steig;
+                entry._terrainRollZiel = entry._rideRoll = fz.wank;
+                if (entry.blockerAABBs) {
+                    this._populateBlockerAABBs(entry);
+                    entry._blockerStampAt = null;
+                }
+                this._fahrLos.delete(entry);
+            }
+            // der EINE Visual-Weg (call-Form wie im Abstieg: die A6-Wand des vehicle-drive-Gates liest die erste direkte
+            // Instanz-Update-Bindung als die Tick-Zeile in _tickMountedMovement)
+            if (entry.mesh) this._rittMeshPose(entry);
+            else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
+        }
     }
 
     // DER RITT IM FRAME (Welle L, Q1): nur SICHT. Der Wagen steht, wo der Reiter gezeichnet wird — an der interpolierten
@@ -75595,6 +75650,7 @@ class AnazhRealm {
         this._cullArchitectureMesh(entry);
         this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
+        if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", `Eine ${entry.type}-Struktur wurde abgebaut.`, {
@@ -87893,6 +87949,8 @@ class AnazhRealm {
         this._loopPlayerMovement(simTime, dt);
         // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
         this._rittSchritt(dt);
+        // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
+        if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
         // Charakter durch DENSELBEN Schritt-Pfad. simTime reist im 1-Hz-Anker mit — der Ghost läuft auf
