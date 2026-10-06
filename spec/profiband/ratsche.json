@@ -23,6 +23,19 @@
                 "zweit/3",
                 "erst/1"
             ]
+        },
+        "boden": {
+            "datum": "2026-10-06T07:40:00.000Z",
+            "geraet": "Radeon 890M (welle7-boden-hoehle, werkbank --echt, 1920x1080, DPR 1)",
+            "eingeschwungen": true,
+            "laeufe": 4,
+            "boots": [
+                "erst/1",
+                "zweit/2",
+                "erst/1",
+                "zweit/2"
+            ],
+            "grund": "die Höhlen-Sicht (Welle 7): die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht — nur die Boden-Zeile zog nach"
         }
     },
     "toleranzPct": 1,
@@ -43,15 +56,15 @@
         "boden": {
             "haupt": {
                 "befehle": 6,
-                "dreiecke": 139854
+                "dreiecke": 73897
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 146582
+                "dreiecke": 73561
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 90845
+                "dreiecke": 63297
             }
         },
         "karten": {

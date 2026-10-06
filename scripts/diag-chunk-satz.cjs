@@ -108,7 +108,8 @@ function urteilNeu(m) {
                     const strich = k.indexOf("|");
                     const satz = strich >= 0 ? k.slice(0, strich) + ": " : "";
                     const [wer, wen] = k.slice(strich + 1).split(">");
-                    const was = wer === wen ? `${wer} schrieb seinen Abschnitt` : `${wer} schrieb den Abschnitt von ${wen}`;
+                    const was =
+                        wer === wen ? `${wer} schrieb seinen Abschnitt` : `${wer} schrieb den Abschnitt von ${wen}`;
                     v.push(`NEUSCHREIBEN (${phase}, Frame ${i + 1}): ${satz}${was} — ${b} B`);
                 }
     return v;
@@ -199,7 +200,8 @@ function selbsttest() {
     // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu, gemessen
     // 06.10. an der Mess-Wiese) und ein fremder Umzug fallen rot, beim Namen.
     const neuGruen = { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] };
-    if (urteilNeu(neuGruen).length !== 0) fehler.push("die ruhige Messung fällt rot: " + urteilNeu(neuGruen).join(" · "));
+    if (urteilNeu(neuGruen).length !== 0)
+        fehler.push("die ruhige Messung fällt rot: " + urteilNeu(neuGruen).join(" · "));
     const neuFaelle = [
         {
             name: "die Kaskaden verdrängen einander je Frame",
@@ -563,7 +565,15 @@ function check(name, ok, detail) {
             };
             const abschnitteVon = (satz) => {
                 const idx = satz.geom.index.array;
-                const o = { treu: true, ordnung: true, hauptN: null, hauptBei0: true, ueberlapp: false, n: 0, luecken: 0 };
+                const o = {
+                    treu: true,
+                    ordnung: true,
+                    hauptN: null,
+                    hauptBei0: true,
+                    ueberlapp: false,
+                    n: 0,
+                    luecken: 0,
+                };
                 const laeufe = [];
                 for (const [key, a] of satz.abschnitte) {
                     let n = 0,
@@ -578,7 +588,13 @@ function check(name, ok, detail) {
                         }
                     }
                     if (!laufTreu(idx, a.start, a.ende, a.liste)) o.treu = false;
-                    if (n !== a.n || a.n > a.ende || a.ende > a.kap || a.start + a.kap > satz.iEnde || satz.iEnde > satz.iKap)
+                    if (
+                        n !== a.n ||
+                        a.n > a.ende ||
+                        a.ende > a.kap ||
+                        a.start + a.kap > satz.iEnde ||
+                        satz.iEnde > satz.iKap
+                    )
                         o.treu = false;
                     if (key === "haupt") {
                         o.hauptN = a.n;
@@ -706,7 +722,7 @@ function check(name, ok, detail) {
                 /_geometryDisposeListeners\.delete\(/.test(code(r._renderObjektRegister));
             // (j) NEUSCHREIBEN (06.10.): kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
             // ist, wächst EINMAL, statt dass die Kaskaden einander je Frame verdrängen. Die Kaskaden-Pässe fahren den EINEN
-            // Chokepoint `_chunkSatzPass` mit Stellvertreter-Kameras und Ortho-Frusta über dem Spieler: „ruhe" = enge Boxen
+            // Chokepoint `_chunkSatzPass` mit Stellvertreter-Ortho-Kameras über dem Spieler: „ruhe" = enge Boxen
             // (k0 ±120 m, k1 ±400 m), „druck" = beide über den ganzen Ring (der Abend mit der Sonne im Rücken trägt fast den
             // Ring); gemessen je Frame die Bytes der Neuschreib-Linse aller Sätze (`s.schreiben`). Der Selbsttest „alt" fährt
             // die alte Regel (reicht der Index nicht, verdrängt der Umzug jeden anderen Abschnitt außer dem Hauptbild) mit
@@ -723,14 +739,14 @@ function check(name, ok, detail) {
                 return c;
             };
             const S = r._kaskadenSchmier();
+            // je Stellvertreter dieselbe Lage wie in `_passSicht`: die Matrix der Pass-Kamera (die Höhlen-Sicht, Welle 7,
+            // liest `S.m` und die Drehung der Kamera), ihr Frustum und die Lage des Gesetzes
             const frame = (kameras) => {
                 r._tickChunkSatz();
                 r._passSicht(s.camera, false);
                 kameras.forEach((c, i) => {
-                    S.frustum.setFromProjectionMatrix(
-                        new T.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse),
-                        c.coordinateSystem
-                    );
+                    S.m.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
+                    S.frustum.setFromProjectionMatrix(S.m, c.coordinateSystem);
                     r._passWahlLage(S, c, i);
                     r._chunkSatzPass(c, false, i, S);
                     r._chunkSatzPass(c, true, -1, S);
@@ -764,8 +780,18 @@ function check(name, ok, detail) {
                 ring = ortho(4000);
             res.neu = { messung: {}, wachse: {} };
             res.neu.messung.ruhe = phase(eng, 5);
+            // der Druck braucht die volle Last: seit der Höhlen-Sicht (Welle 7) tragen die Ring-Kaskaden nur, was ein Empfänger
+            // braucht, und der Index reichte — am Exemplar zeichnet hier jede Höhlen-Zelle (die Methode des Stamms bleibt)
+            r._hoehlenSicht = function (satz) {
+                const st = ++satz.hoehle.stempel;
+                for (const b of satz.bloecke.values()) if (b.hoehle) for (const kn of b.hoehle.knoten) kn.sicht = st;
+            };
             let w0 = wachseSumme();
-            res.neu.messung.druck = phase([ring, ring], 5);
+            try {
+                res.neu.messung.druck = phase([ring, ring], 5);
+            } finally {
+                delete r._hoehlenSicht;
+            }
             res.neu.wachse.druck = wachseSumme() - w0;
             res.neu.boden = (() => {
                 const b = s.chunkSaetze.get("boden");

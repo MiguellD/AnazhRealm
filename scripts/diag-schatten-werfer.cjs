@@ -35,9 +35,10 @@
 //       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
 //   W7  die Sätze je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
 //       245 696 Dreiecke; der Bau-Satz zog in k1 den Lauf vom ersten bis zum letzten Bereich im Frustum): jeder Pass
-//       zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft, byte-gleich
-//       hintereinander, nach dem Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im
-//       Rücken) trägt die nahe Kaskade Boden hinter dem Blick (der Hang wirft)
+//       zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (Höhlen-Zellen nur, wenn
+//       die Höhlen-Sicht des Passes sie erreicht, Welle 7), byte-gleich hintereinander, nach dem Pass wieder den Abschnitt
+//       des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe Kaskade Boden hinter dem
+//       Blick (der Hang wirft)
 //   W8  die Instanz-Wahl je Pass (Befund 06.10., echte GPU, Mess-Wiese: jede globale Baum-Gruppe zog in jedem Pass JEDE
 //       Instanz — das Hauptbild auch die Bäume hinter dem Blick, k1 bei schrägem Blick jeden Zwilling, jeder Pass die Stufen,
 //       deren Maske vom Auge alles verwirft): gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
@@ -571,12 +572,21 @@ function probe(selbsttest) {
             voll: boden.iSumme / 3,
             bauGeprueft: 0,
         };
-        // das Soll: die Zellen, deren Hülle das EINE Gesetz in der Lage des Passes trifft (erst der Bereich, dann seine Zellen)
+        // das Soll: die Zellen, deren Hülle das EINE Gesetz in der Lage des Passes trifft (erst der Bereich, dann seine Zellen);
+        // eine Höhlen-Zelle (Welle 7) zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat — ihre Wahrheit
+        // prüft gate:hoehlen-sicht (Strahlen gegen den ganzen Boden-Satz), hier zählt die Treue des Abschnitts
         const wahl = (s, L) => {
             const liste = [];
+            const stempel = s.hoehle ? s.hoehle.stempel : 0;
             for (const b of s.ordnung) {
                 if (!b.huelle || b.huelle.isEmpty() || !r._passTrifftBox(L, b.huelle, 0)) continue;
-                for (const z of b.zellen) if (!z.huelle.isEmpty() && r._passTrifftBox(L, z.huelle, 0)) liste.push(z);
+                for (const z of b.zellen)
+                    if (
+                        (z.knoten === undefined || z.knoten.sicht === stempel) &&
+                        !z.huelle.isEmpty() &&
+                        r._passTrifftBox(L, z.huelle, 0)
+                    )
+                        liste.push(z);
             }
             return liste;
         };
@@ -961,7 +971,11 @@ function probe(selbsttest) {
                     res.instanz = Z.mesh.count > 0;
                 }
                 for (const sz of saetze) {
-                    const menge = soll.get(sz);
+                    // eine Höhlen-Zelle (Welle 7) zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat (W7)
+                    const stempel = sz.hoehle ? sz.hoehle.stempel : 0;
+                    const menge = new Set(
+                        [...soll.get(sz)].filter((zl) => zl.knoten === undefined || zl.knoten.sicht === stempel)
+                    );
                     const a = sz.abschnitte.get("k" + i);
                     const ist = new Set(a && sz.mesh.visible ? a.liste : []);
                     let gleich = ist.size === menge.size;

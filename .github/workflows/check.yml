@@ -343,6 +343,13 @@ jobs:
               # ändert den Satz, nicht die Szene). --selftest zuerst: injizierte Täter fallen rot und werden genannt.
               run: npm run gate:chunk-satz
 
+            - name: Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)
+              # An der Mess-Wiese, Null-Renderer: Main und Worker liefern den Höhlen-Graph byte-gleich; je Blick (Wiese, Hang,
+              # Mündung, IN der Höhle) trifft jeder Strahl gegen den ganzen Boden-Satz zuerst eine Zelle des Abschnitts (kein
+              # Loch), und jeder Empfänger, dessen Weg zum Licht Boden trifft, trifft einen der Kaskade (kein Licht-Leck); die
+              # Wiese zeichnet weniger Höhle, als ihr Frustum trägt. --selftest zuerst: injizierte Täter fallen rot.
+              run: npm run gate:hoehlen-sicht
+
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
               # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
               # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher

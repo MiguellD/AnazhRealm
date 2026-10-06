@@ -111,6 +111,14 @@ self.onmessage = function (e) {
                         indices: mesh.indices.buffer,
                         colors: mesh.colors.buffer,
                         waterCells: mesh.waterCells.buffer,
+                        // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
+                        hTri: mesh.hTri.buffer,
+                        hN: mesh.hN,
+                        hKnoten: mesh.hKnoten.buffer,
+                        hMuend: mesh.hMuend.buffer,
+                        hSeiten: mesh.hSeiten.buffer,
+                        hKanten: mesh.hKanten.buffer,
+                        hRand: mesh.hRand.buffer,
                         vertCount: mesh.positions.length / 3,
                         indexCount: mesh.indices.length,
                     },
@@ -120,6 +128,12 @@ self.onmessage = function (e) {
                         mesh.indices.buffer,
                         mesh.colors.buffer,
                         mesh.waterCells.buffer,
+                        mesh.hTri.buffer,
+                        mesh.hKnoten.buffer,
+                        mesh.hMuend.buffer,
+                        mesh.hSeiten.buffer,
+                        mesh.hKanten.buffer,
+                        mesh.hRand.buffer,
                     ]
                 );
             }
@@ -1840,7 +1854,9 @@ function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
     return { positions, vertCells, cellVert, sharp };
 }
 
-function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
+// Mit `lab` (Höhlen-Zelle je Gitter-Punkt, `hoehlenGraph`) trägt `triZelle` je Dreieck die Zelle des Luft-Endes seiner
+// Kante (−1: Himmels-Luft) — identisch zum Main (`_voxelEmitQuadIndices`).
+function emitQuadIndices(density, cellVert, dimX, dimY, dimZ, lab = null, triZelle = null) {
     const Nx = dimX + 1;
     const Ny = dimY + 1;
     const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
@@ -1851,32 +1867,288 @@ function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
         return cellVert[ci(i, j, k)];
     };
     const indices = [];
-    const quad = (a, b, c, d, parity) => {
+    const quad = (a, b, c, d, parity, zelle) => {
         if (a < 0 || b < 0 || c < 0 || d < 0) return;
         if (parity & 1) {
             indices.push(a, b, d, b, c, d);
         } else {
             indices.push(a, b, c, a, c, d);
         }
+        if (triZelle) triZelle.push(zelle, zelle);
     };
+    const luft = (p0, p1, s0) => (lab ? lab[s0 ? p1 : p0] : -1);
     for (let k = 0; k <= dimZ; k++) {
         for (let j = 0; j <= dimY; j++) {
             for (let i = 0; i <= dimX; i++) {
-                const s0 = solid(density[gi(i, j, k)]);
+                const p0 = gi(i, j, k);
+                const s0 = solid(density[p0]);
                 const parity = (i + j + k) & 1;
                 if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
-                    quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k), parity);
+                    quad(
+                        cv(i, j - 1, k - 1),
+                        cv(i, j, k - 1),
+                        cv(i, j, k),
+                        cv(i, j - 1, k),
+                        parity,
+                        luft(p0, gi(i + 1, j, k), s0)
+                    );
                 }
                 if (j < dimY && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
-                    quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k), parity);
+                    quad(
+                        cv(i - 1, j, k - 1),
+                        cv(i, j, k - 1),
+                        cv(i, j, k),
+                        cv(i - 1, j, k),
+                        parity,
+                        luft(p0, gi(i, j + 1, k), s0)
+                    );
                 }
                 if (k < dimZ && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
-                    quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k), parity);
+                    quad(
+                        cv(i - 1, j - 1, k),
+                        cv(i, j - 1, k),
+                        cv(i, j, k),
+                        cv(i - 1, j, k),
+                        parity,
+                        luft(p0, gi(i, j, k + 1), s0)
+                    );
                 }
             }
         }
     }
     return indices;
+}
+
+// DIE HÖHLEN-SCHICHT (Welle 7) — Spiegel von `_voxelHoehlenGraph` (MUSS bit-identisch): Himmels-Luft über der obersten
+// festen Ecke ihrer Spalte, Höhlen-Luft darunter; Zelle = Höhlen-Luft-Komponente je Chunk-Teil (Zelle 0 = die
+// versiegelten), Mündung = Höhlen-Luft waagerecht neben Himmels-Luft, Portal = 6-Nachbarn verschiedener Zellen, Rand-Band =
+// bis einen Schritt jenseits der Chunk-Kante.
+function hoehlenGraph(density, ox, oy, oz, dimX, dimY, dimZ, step) {
+    const Nx = dimX + 1;
+    const Ny = dimY + 1;
+    const Nz = dimZ + 1;
+    const NxNy = Nx * Ny;
+    const N = NxNy * Nz;
+    const top = new Int32Array(Nx * Nz).fill(-1);
+    for (let k = 0; k < Nz; k++)
+        for (let i = 0; i < Nx; i++)
+            for (let j = Ny - 1; j >= 0; j--)
+                if (density[i + j * Nx + k * NxNy] > 0) {
+                    top[i + k * Nx] = j;
+                    break;
+                }
+    const hoehle = (p, i, j, k) => density[p] <= 0 && j < top[i + k * Nx];
+    // DIE TEILUNG der Zellen (MUSS gleich in Main und Worker): je Chunk-Seite TEIL Kacheln, je SCHICHT Gitter-Ebenen eine
+    // Lage — eine kleine Zelle hält das Rechteck der Portal-Sicht eng (Werkbank 06.10., Mess-Wiese: Viertel ohne Lagen
+    // 13,8k, 4 × 4 Kacheln mit Lagen 7,5k Höhlen-Dreiecke im Hauptbild bei derselben Mündungs-Wahl).
+    const TEIL = 4,
+        SCHICHT = 8;
+    const kachel = (i, dim) => {
+        const t = Math.floor(((i - 1) * TEIL) / dim);
+        return t < 0 ? 0 : t >= TEIL ? TEIL - 1 : t;
+    };
+    const teil = (i, j, k) => kachel(i, dimX - 3) + TEIL * kachel(k, dimZ - 3) + TEIL * TEIL * Math.floor(j / SCHICHT);
+    const lab = new Int32Array(N).fill(-1);
+    const stapel = new Int32Array(N);
+    let nRoh = 0;
+    for (let p = 0; p < N; p++) {
+        if (lab[p] >= 0) continue;
+        const i = p % Nx;
+        const j = ((p / Nx) | 0) % Ny;
+        const k = (p / NxNy) | 0;
+        if (!hoehle(p, i, j, k)) continue;
+        const v = teil(i, j, k);
+        lab[p] = nRoh;
+        let sp = 0;
+        stapel[sp++] = p;
+        const tritt = (q, qi, qj, qk) => {
+            if (lab[q] >= 0 || !hoehle(q, qi, qj, qk) || teil(qi, qj, qk) !== v) return;
+            lab[q] = nRoh;
+            stapel[sp++] = q;
+        };
+        while (sp > 0) {
+            const q = stapel[--sp];
+            const qi = q % Nx;
+            const qj = ((q / Nx) | 0) % Ny;
+            const qk = (q / NxNy) | 0;
+            if (qi + 1 < Nx) tritt(q + 1, qi + 1, qj, qk);
+            if (qi > 0) tritt(q - 1, qi - 1, qj, qk);
+            if (qj + 1 < Ny) tritt(q + Nx, qi, qj + 1, qk);
+            if (qj > 0) tritt(q - Nx, qi, qj - 1, qk);
+            if (qk + 1 < Nz) tritt(q + NxNy, qi, qj, qk + 1);
+            if (qk > 0) tritt(q - NxNy, qi, qj, qk - 1);
+        }
+        nRoh++;
+    }
+    const LEER = [2147483647, -2147483648];
+    const luftB = new Int32Array(nRoh * 6);
+    // die Mündungen je Komponente und Fach (4 × 4 × 4 Gitter-Punkte): eine kleine Box hält die Horizont-Probe und das Licht-
+    // Rechteck eng (eine Komponente trägt oft Mündungen über die ganze Höhe einer Schlucht-Wand)
+    const mundM = new Map();
+    const mund = (c, i, j, k, i2, k2) => {
+        const key = c * 4096 + (i >> 2) + 8 * ((k >> 2) + 8 * (j >> 2));
+        let B = mundM.get(key);
+        if (!B) mundM.set(key, (B = [c, LEER[0], LEER[0], LEER[0], LEER[1], LEER[1], LEER[1]]));
+        dehne(B, 1, i, j, k);
+        dehne(B, 1, i2, j, k2);
+    };
+    const seitB = new Int32Array(nRoh * 24);
+    for (let c = 0; c < nRoh; c++) {
+        for (let a = 0; a < 3; a++) {
+            luftB[c * 6 + a] = LEER[0];
+            luftB[c * 6 + 3 + a] = LEER[1];
+        }
+        for (let sd = 0; sd < 4; sd++)
+            for (let a = 0; a < 3; a++) {
+                seitB[c * 24 + sd * 6 + a] = LEER[0];
+                seitB[c * 24 + sd * 6 + 3 + a] = LEER[1];
+            }
+    }
+    const dehne = (B, o, i, j, k) => {
+        if (i < B[o]) B[o] = i;
+        if (j < B[o + 1]) B[o + 1] = j;
+        if (k < B[o + 2]) B[o + 2] = k;
+        if (i > B[o + 3]) B[o + 3] = i;
+        if (j > B[o + 4]) B[o + 4] = j;
+        if (k > B[o + 5]) B[o + 5] = k;
+    };
+    const offen = new Uint8Array(nRoh);
+    const paare = [];
+    const himmel = (q, qi, qj, qk) => density[q] <= 0 && qj > top[qi + qk * Nx];
+    for (let p = 0; p < N; p++) {
+        const c = lab[p];
+        if (c < 0) continue;
+        const i = p % Nx;
+        const j = ((p / Nx) | 0) % Ny;
+        const k = (p / NxNy) | 0;
+        dehne(luftB, c * 6, i, j, k);
+        if (i <= 2) dehne(seitB, c * 24, i, j, k);
+        if (i >= dimX - 3) dehne(seitB, c * 24 + 6, i, j, k);
+        if (k <= 2) dehne(seitB, c * 24 + 12, i, j, k);
+        if (k >= dimZ - 3) dehne(seitB, c * 24 + 18, i, j, k);
+        if (i <= 2 || i >= dimX - 3 || k <= 2 || k >= dimZ - 3) offen[c] = 1;
+        if (i + 1 < Nx && himmel(p + 1, i + 1, j, k)) {
+            mund(c, i, j, k, i + 1, k);
+            offen[c] = 1;
+        }
+        if (i > 0 && himmel(p - 1, i - 1, j, k)) {
+            mund(c, i, j, k, i - 1, k);
+            offen[c] = 1;
+        }
+        if (k + 1 < Nz && himmel(p + NxNy, i, j, k + 1)) {
+            mund(c, i, j, k, i, k + 1);
+            offen[c] = 1;
+        }
+        if (k > 0 && himmel(p - NxNy, i, j, k - 1)) {
+            mund(c, i, j, k, i, k - 1);
+            offen[c] = 1;
+        }
+        if (i + 1 < Nx && lab[p + 1] >= 0 && lab[p + 1] !== c) {
+            paare.push(c, lab[p + 1], i, j, k, i + 1, j, k);
+            offen[c] = offen[lab[p + 1]] = 1;
+        }
+        if (j + 1 < Ny && lab[p + Nx] >= 0 && lab[p + Nx] !== c) {
+            paare.push(c, lab[p + Nx], i, j, k, i, j + 1, k);
+            offen[c] = offen[lab[p + Nx]] = 1;
+        }
+        if (k + 1 < Nz && lab[p + NxNy] >= 0 && lab[p + NxNy] !== c) {
+            paare.push(c, lab[p + NxNy], i, j, k, i, j, k + 1);
+            offen[c] = offen[lab[p + NxNy]] = 1;
+        }
+    }
+    const zelleVon = new Int32Array(nRoh);
+    let n = 1;
+    for (let c = 0; c < nRoh; c++) zelleVon[c] = offen[c] ? n++ : 0;
+    for (let p = 0; p < N; p++) if (lab[p] >= 0) lab[p] = zelleVon[lab[p]];
+    const wx = (i) => ox + i * step;
+    const wy = (j) => oy + j * step;
+    const wz = (k) => oz + k * step;
+    const knoten = new Float32Array(n * 6);
+    const seiten = new Float32Array(n * 24);
+    for (let z = 0; z < n; z++) {
+        for (let a = 0; a < 3; a++) {
+            knoten[z * 6 + a] = Infinity;
+            knoten[z * 6 + 3 + a] = -Infinity;
+        }
+        for (let sd = 0; sd < 4; sd++)
+            for (let a = 0; a < 3; a++) {
+                seiten[z * 24 + sd * 6 + a] = Infinity;
+                seiten[z * 24 + sd * 6 + 3 + a] = -Infinity;
+            }
+    }
+    const vereine = (Z, zo, B, bo) => {
+        if (B[bo] > B[bo + 3]) return;
+        const v = [wx(B[bo]), wy(B[bo + 1]), wz(B[bo + 2]), wx(B[bo + 3]), wy(B[bo + 4]), wz(B[bo + 5])];
+        for (let a = 0; a < 3; a++) {
+            if (v[a] < Z[zo + a]) Z[zo + a] = v[a];
+            if (v[3 + a] > Z[zo + 3 + a]) Z[zo + 3 + a] = v[3 + a];
+        }
+    };
+    for (let c = 0; c < nRoh; c++) {
+        const z = zelleVon[c];
+        vereine(knoten, z * 6, luftB, c * 6);
+        for (let sd = 0; sd < 4; sd++) vereine(seiten, z * 24 + sd * 6, seitB, c * 24 + sd * 6);
+    }
+    const portal = new Map();
+    for (let q = 0; q < paare.length; q += 8) {
+        const a = zelleVon[paare[q]];
+        const b = zelleVon[paare[q + 1]];
+        const lo = a < b ? a : b;
+        const hi = a < b ? b : a;
+        const key = lo * n + hi;
+        let B = portal.get(key);
+        if (!B) portal.set(key, (B = [lo, hi, Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]));
+        const pts = [
+            [paare[q + 2], paare[q + 3], paare[q + 4]],
+            [paare[q + 5], paare[q + 6], paare[q + 7]],
+        ];
+        for (const [i, j, k] of pts) {
+            const x = wx(i),
+                y = wy(j),
+                zz = wz(k);
+            if (x < B[2]) B[2] = x;
+            if (y < B[3]) B[3] = y;
+            if (zz < B[4]) B[4] = zz;
+            if (x > B[5]) B[5] = x;
+            if (y > B[6]) B[6] = y;
+            if (zz > B[7]) B[7] = zz;
+        }
+    }
+    // die Mündungs-Boxen [Zelle, Box] in Fund-Folge (eine versiegelte Komponente trägt keine)
+    const muend = new Float32Array(mundM.size * 7);
+    let om = 0;
+    for (const B of mundM.values()) {
+        muend[om++] = zelleVon[B[0]];
+        muend[om++] = wx(B[1]);
+        muend[om++] = wy(B[2]);
+        muend[om++] = wz(B[3]);
+        muend[om++] = wx(B[4]);
+        muend[om++] = wy(B[5]);
+        muend[om++] = wz(B[6]);
+    }
+    const kanten = new Float32Array(portal.size * 8);
+    let o = 0;
+    for (const B of portal.values()) for (let a = 0; a < 8; a++) kanten[o++] = B[a];
+    // (5) die RAND-EBENEN: je Höhlen-Punkt auf einer Chunk-Kante (−x: i = 1 · +x: i = dimX − 2 · −z: k = 1 · +z: k = dimZ − 2)
+    // [Seite, j, u (k bzw. i), Zelle] — derselbe Welt-Punkt liegt im Gitter des Nachbarn auf seiner Gegen-Kante (gleiche
+    // Stufe: dieselben Indizes), dort verknüpft der Haupt-Thread die Zellen exakt (`_hoehlenVerknuepfe`).
+    const randL = [];
+    for (let k = 0; k < Nz; k++)
+        for (let j = 0; j < Ny; j++) {
+            const a = lab[1 + j * Nx + k * NxNy];
+            if (a > 0) randL.push(0, j, k, a);
+            const b = lab[dimX - 2 + j * Nx + k * NxNy];
+            if (b > 0) randL.push(1, j, k, b);
+        }
+    for (let i = 0; i < Nx; i++)
+        for (let j = 0; j < Ny; j++) {
+            const a = lab[i + j * Nx + NxNy];
+            if (a > 0) randL.push(2, j, i, a);
+            const b = lab[i + j * Nx + (dimZ - 2) * NxNy];
+            if (b > 0) randL.push(3, j, i, b);
+        }
+    const rand = Int32Array.from(randL);
+    return { lab, n, knoten, muend, seiten, kanten, rand };
 }
 
 function laplacianSmoothPositions(positions, indices, iterations = 1, sharp = null) {
@@ -1927,7 +2199,7 @@ function laplacianSmoothPositions(positions, indices, iterations = 1, sharp = nu
     }
 }
 
-function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
+function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle = null) {
     if (cropMargin <= 0 || positions.length === 0) return;
     const vc = positions.length / 3;
     const remap = new Int32Array(vc).fill(-1);
@@ -1943,16 +2215,24 @@ function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
         keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
     }
     const keptIdx = [];
+    const keptZelle = [];
     for (let t = 0; t + 2 < indices.length; t += 3) {
         const a = remap[indices[t]];
         const b = remap[indices[t + 1]];
         const c = remap[indices[t + 2]];
-        if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+        if (a >= 0 && b >= 0 && c >= 0) {
+            keptIdx.push(a, b, c);
+            if (triZelle) keptZelle.push(triZelle[t / 3]);
+        }
     }
     positions.length = 0;
     for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
     indices.length = 0;
     for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+    if (triZelle) {
+        triZelle.length = 0;
+        for (let i = 0; i < keptZelle.length; i++) triZelle.push(keptZelle[i]);
+    }
 }
 
 function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
@@ -2517,9 +2797,12 @@ function buildChunkMesh(cx, cz, lod) {
         step
     );
     if (positions.length === 0) return { empty: true };
-    const indices = emitQuadIndices(density, cellVert, sampleDimX, sampleDimY, sampleDimZ);
+    // Die Höhlen-Schicht (Welle 7): der Sicht-Graph aus demselben Gitter, je Dreieck die Zelle seiner Luft.
+    const hoehle = hoehlenGraph(density, sampleOx, oy, sampleOz, sampleDimX, sampleDimY, sampleDimZ, step);
+    const triZelle = [];
+    const indices = emitQuadIndices(density, cellVert, sampleDimX, sampleDimY, sampleDimZ, hoehle.lab, triZelle);
     laplacianSmoothPositions(positions, indices, 1, sharp);
-    cropPad(positions, indices, vertCells, sampleDimX, sampleDimZ, 1);
+    cropPad(positions, indices, vertCells, sampleDimX, sampleDimZ, 1, triZelle);
     if (positions.length === 0) return { empty: true };
     const normals = gradientNormals(positions, density, sampleOx, oy, sampleOz, step, Nx, Ny, Nz);
     // V9.91 — positions VOR colors zu Float32 konvertieren. Sonst rechnet
@@ -2568,5 +2851,12 @@ function buildChunkMesh(cx, cz, lod) {
         normals,
         colors,
         waterCells,
+        hTri: Int32Array.from(triZelle),
+        hN: hoehle.n,
+        hKnoten: hoehle.knoten,
+        hMuend: hoehle.muend,
+        hSeiten: hoehle.seiten,
+        hKanten: hoehle.kanten,
+        hRand: hoehle.rand,
     };
 }

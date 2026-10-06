@@ -439,6 +439,11 @@ const FORBIDDEN = [
     { token: "_instanzWahlLage", fiel: "W7-Vereinigung — EINE Lage je Pass für jeden Leser (_passWahlLage)" },
     { token: "INSTANZ_WAHL", fiel: "W7-Vereinigung — die Konstanten des Gesetzes (PASS_WAHL)" },
     { token: "SICHT_RAND", fiel: "W7-Vereinigung — der Rand ist ein Teil des Gesetzes (PASS_WAHL.sichtRand)" },
+    // DIE SPERRE STATT DES URTEILS (Welle 7, 06.10.): die Horizont-Probe sagte nur „verdeckt" und nahm an, der Strahl laufe
+    // bis zur Mündung in Himmels-Luft — aus der Höhle hinaus fehlten 3 Zellen (2,8 % des Bilds). Sie misst die fernste
+    // Sperre (`_hoehlenSperre`), und der Lauf geht aus jeder erreichten Zelle hinaus (`_hoehlenHinaus`).
+    { token: "_hoehlenVerdeckt", fiel: "Welle 7 — die Horizont-Sperre (_hoehlenSperre) und der Weg hinaus" },
+    { token: "tor.verdeckt", fiel: "Welle 7 — die Mündung trägt ihre Sperre (tor.sperre)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
