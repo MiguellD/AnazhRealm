@@ -32,7 +32,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4407;
+const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -188,7 +188,7 @@ const server = http.createServer((req, res) => {
                 if (!(Math.abs(lp.x) < 0.01 && Math.abs(lp.z) < 0.01))
                     fail(`F1b: Land-Läufer wurde geschoben (x=${lp.x.toFixed(4)}, z=${lp.z.toFixed(4)} — soll exakt stehen)`);
                 // (c) das geritten-SCHWIMMENDE Boot (der Reiter ist nie submerged; das
-                //     `_afloat`-Gate aus `_tickMountedMovement` trägt die Advektion).
+                //     `_afloat`-Gate aus `_rittSchritt` trägt die Advektion).
                 const boat = mkShim(
                     (x, y) => deepFloor(x, y),
                     () => ({ submerged: false, surfaceY: null }),
@@ -335,6 +335,7 @@ const server = http.createServer((req, res) => {
                 vec3: (a, b, c) => ({ x: N(val(a)), y: N(val(b)), z: N(val(c)) }),
                 positionWorld: null,
                 positionLocal: null,
+                positionGeometry: null,
             };
             const bendOff = () => ({ x: N(0), y: N(-1e6), z: N(0), w: N(0) });
             const mkWindShim = (dirX, dirZ, bend0) => {
@@ -352,6 +353,8 @@ const server = http.createServer((req, res) => {
             const evalSway = (shim, wx, wz, localY, fn) => {
                 mockTSL.positionWorld = { x: N(wx), y: N(0.5), z: N(wz) };
                 mockTSL.positionLocal = { x: N(0), y: N(localY), z: N(0) };
+                // Das Höhen-Gewicht liest seit W7 die Geometrie-Position (Lehre 22: r184 instanziert positionLocal vorher).
+                mockTSL.positionGeometry = { x: N(0), y: N(localY), z: N(0) };
                 const res = (fn || r._windSwayOffset).call(shim, mockTSL, {});
                 return { x: res.x.v, z: res.z.v };
             };
@@ -444,8 +447,8 @@ const server = http.createServer((req, res) => {
                 const count = (needle) => src.split(needle).length - 1;
                 if (!String(r.updateCreatures).includes("_waterFlowAt"))
                     fail("KONSUM: `updateCreatures` liest `_waterFlowAt` nicht (Kreaturen ohne Strömung)");
-                if (!String(r._tickMountedMovement).includes("_afloat"))
-                    fail("KONSUM: `_tickMountedMovement` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
+                if (!String(r._rittSchritt).includes("_afloat"))
+                    fail("KONSUM: `_rittSchritt` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
                 if (!(count("._ensureWindCoupling(") >= 3))
                     fail(`KONSUM: uWindDir hat < 3 Leser (nur ${count("._ensureWindCoupling(")}× konsumiert — Gras/_windSwayOffset + Baum/_applyVegetationResponse + Impostor sollen DIESELBE Quelle lesen)`);
                 if (!(count("_tickGrasBend()") >= 1) || !src.includes("_windDirAt(currentTime)"))

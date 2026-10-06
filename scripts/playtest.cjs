@@ -23139,7 +23139,7 @@ async function checkBandPhasenBF(ctx) {
             !document.getElementById("workshop-import-soul-btn");
         out.c7MountSitz =
             /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
-            /_sitzHeight/.test(window.__codeOf(r._tickMountedMovement));
+            /_sitzHeight/.test(window.__codeOf(r._rittSchritt));
         out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
         // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg, das Abwärts-Material lebt als markierte
         // Saat); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
@@ -28732,10 +28732,12 @@ async function checkBandV18150Ride(ctx) {
             out.lazyPassSkips = /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
             // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
             // Feld-nativ: die horizontale Geschwindigkeit lebt in state.playerVel.
+            // Welle L (Q1): Gier und Rad-Phase integriert der Sim-Schritt (`_rittSchritt`), die Pose zeichnet der Frame.
             r.state.playerVel.setValue(5, 0, 0);
-            r._tickMountedMovement(0.05);
-            r._tickMountedMovement(0.05);
-            r._tickMountedMovement(0.05);
+            for (let i = 0; i < 3; i++) {
+                r._rittSchritt(0.05);
+                r._tickMountedMovement(0.05);
+            }
             const yawTarget = Math.atan2(5, 0);
             out.orients =
                 Number.isFinite(entry._rideYaw) &&
@@ -29137,7 +29139,7 @@ async function checkBandM3RittVollendet(ctx) {
             r.mountArchitecture(entry);
             // Feld-nativ: die Vertikale lebt in state._fieldVy (kein Ammo-Body).
             r.state._fieldVy = -8; // simulierter Fall
-            for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
+            for (let i = 0; i < 40; i++) r._rittSchritt(0.05); // settled (exp-Lerp) — der Sitz lebt im Sim-Schritt (Welle L)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
             // Die GERENDERTE Unterkante: die Basis liegt bei position.y − 0.5 (Instanz-Matrix · Gruppen-Bau) — die alte
             // Formel ohne die −0.5 hielt den versunkenen Wagen (Reifen 0,48 m im Boden) für stehend.
@@ -38605,7 +38607,7 @@ async function checkBandWFFluss(ctx) {
         out.steinFloats = probeFloat("stein");
         out.eisenFloats = probeFloat("eisen");
         // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
-        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._tickMountedMovement));
+        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._rittSchritt));
         return out;
     });
     check(

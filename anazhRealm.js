@@ -8032,6 +8032,7 @@ class AnazhRealm {
         // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
         this._stepCharacter(FIXED_DT, ls.simT);
         this._loopPlayerMovement(ls.simT, FIXED_DT);
+        this._rittSchritt(FIXED_DT); // der Ghost reitet nie (mountedArch null) — die Ordnung bleibt exakt
         ls.simT += FIXED_DT;
         // --- Ghost sichern ---
         ls.x = mesh.position.x;
@@ -50462,6 +50463,7 @@ class AnazhRealm {
             return { ok: false, reason: "not_moveable" };
         }
         this.state.player.mountedArch = entry.id;
+        this._mountedEntry = entry; // der Sim-Schritt (Lenk-Pfad, `_rittSchritt`) kennt das Werk ab dem ersten Schritt
         // N7 — frischer Aufstieg = frischer Fahrzustand (Lenksäule zentriert,
         // Gier-Rate null, Feder ruhig — kein Geister-Drift vom letzten Ritt).
         entry._fahr = null;
@@ -50691,33 +50693,28 @@ class AnazhRealm {
         else m.rotation.set(rp, ry, rr, "YXZ");
     }
 
-    // Pro Frame, wenn mounted: die Architektur an die Spieler-Position ziehen (minus Sitz-Offset);
-    // tickArchitectureCulling zieht das Welt-Mesh nach. Das Gefährt richtet sich per exp-Lerp übers
-    // kürzeste Winkel-Delta in die Fahrt, seine Gelenke fahren mit (Phase ∝ echtem Weg, dieselbe
-    // _animateCompoundMotion wie Kreatur + Avatar). Ausrichtung ist VISUAL — die Kollisions-AABB bleibt
-    // achsen-orientiert.
-    _tickMountedMovement(dt) {
-        const archId = this.state.player.mountedArch;
-        if (archId === null || archId === undefined) {
-            this._mountedEntry = null;
-            return;
-        }
-        const entry = (this.state.architectures || []).find((e) => e.id === archId);
-        if (!entry) {
-            // Architektur ist verschwunden (z. B. abgebaut) → auto-dismount
-            this.state.player.mountedArch = null;
-            this._mountedEntry = null;
-            // FAHR-ABSCHLUSS (19.07.) — auch der Auto-Abstieg stellt die Sicht zurück.
-            if (this.state._mountVorKamera) {
-                this.setCameraMode(this.state._mountVorKamera);
-                this.state._mountVorKamera = null;
-            }
-            return;
-        }
+    // DER RITT IM SIM-SCHRITT (Welle L, Q1 — Befund 06.10.: der Ritt schrieb den Sitz NACH der Interpolation auf das
+    // interpolierte Spieler-Mesh; der Akkumulator hielt das für einen Teleport und übernahm die nachhinkende Lage als
+    // Sim-Wahrheit — 114 von 114 Frames, 25,95 m simuliert gegen 10,27 m gefahren). Alles, was den Ritt BEWEGT, läuft
+    // jetzt in `_stepFixedSim` (nach der Bewegung, auf der Sim-Lage): der Eintrag folgt dem Reiter in x/z, steht auf der
+    // Ebene seiner Räder (oder schwimmt), der Reiter sitzt (pm.y = Sitz, VOR der Interpolation), Gier, Rad-Phase und
+    // Federn (Nick · Kurven-Wank · Heave) integrieren mit FIXED_DT. Das LENK-RECHT ist ein Zustand des Werks: ein
+    // Gesetz-Fahrzeug (fahrprofil.lenkung) führt seine Gier selbst (der Lenk-Pfad in `_loopPlayerMovement`), die Gier-
+    // Folge gilt nur Werken ohne Lenk-Gesetz. Das Frame-Flag dazwischen fiel: je Sim-Schritt gesetzt, je Frame gelöscht,
+    // zog in Frames ohne Sim-Schritt die Folge den Wagen am Hang 84° herum.
+    _rittSchritt(dt) {
+        const pl = this.state.player;
+        const archId = pl ? pl.mountedArch : null;
+        if (archId === null || archId === undefined) return;
+        const entry =
+            this._mountedEntry && this._mountedEntry.id === archId
+                ? this._mountedEntry
+                : (this.state.architectures || []).find((e) => e.id === archId);
+        if (!entry) return; // der Frame-Tick steigt ab (das Werk ist verschwunden)
         this._mountedEntry = entry;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
-        const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
+        const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : AnazhRealm.FIXED_DT;
         // HORIZONTAL führt der REITER (die WASD-Physik = die EINE Bewegungs-
         // Quelle, V18.150); die Architektur folgt in x/z.
         entry.position.x = pm.x;
@@ -50811,22 +50808,19 @@ class AnazhRealm {
             entry.position.y = pm.y - sitz + 0.5;
             entry._rideY = null;
         }
-        // Die Gier folgt der Fahrt-Richtung für BEIDE Visual-Pfade (instanzierte Fahrzeuge haben
-        // entry.mesh = null). entry.rotationY ist die EINE Gier-Wahrheit des TEMPLATES (Persistenz +
-        // _archEntryWorldMatrix + _blockerComputePartAABB lesen sie); _rideYaw ist die Fahrt-Richtung
-        // (sin, cos). Ein Studio-Fahrzeug liegt längs x (Bug +x): sein Template steht um −π/2 zur Fahrt —
-        // sonst fuhr es quer zur eigenen Längsachse (`_rittGier`).
+        // Die Gier: entry.rotationY ist die EINE Gier-Wahrheit des TEMPLATES (Persistenz + _archEntryWorldMatrix +
+        // _blockerComputePartAABB lesen sie); _rideYaw ist die Fahrt-Richtung (sin, cos). Ein Studio-Fahrzeug liegt
+        // längs x (Bug +x): sein Template steht um −π/2 zur Fahrt (`_rittGier`). Ein Gesetz-Fahrzeug führt SEINE Gier
+        // (der Lenk-Pfad schrieb _rideYaw in diesem Sim-Schritt); ein Werk ohne Lenk-Gesetz folgt der Fahrt (exp-k +
+        // Fahrt-Gate aus dem EINEN fail-closed Leser _fahrGesetz).
         const v = this.state.playerVel;
         const vx = v ? v.x() : 0;
         const vz = v ? v.z() : 0;
         const sp = Math.hypot(vx, vz);
-        // Lenkt das Studio-Fahrzeug selbst (_rideSteer), führt SEINE Gier direkt (die Lenkung ist die
-        // Wahrheit); sonst Gier-Folge (exp-k + Fahrt-Gate) aus dem EINEN fail-closed Leser _fahrGesetz.
         const _fahrG = AnazhRealm._fahrGesetz();
         const fahrtGate = _fahrG.he.fahrtGate;
-        if (entry._rideSteer) {
+        if (rideProf && rideProf.lenkung) {
             if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
-            entry._rideSteer = false;
         } else if (sp > fahrtGate) {
             const targetYaw = Math.atan2(vx, vz);
             let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
@@ -50981,6 +50975,43 @@ class AnazhRealm {
                 ? Math.max(-0.7, Math.min(0.7, entry._terrainRollZiel))
                 : 0;
         }
+    }
+
+    // DER RITT IM FRAME (Welle L, Q1): nur SICHT. Der Wagen steht, wo der Reiter gezeichnet wird — an der interpolierten
+    // Lage (`_applyFixedInterpolation` lief davor): x/z vom Spieler-Mesh, die Höhe aus dem Sitz zurück (Basis = Sitz −
+    // Sitz-Höhe − Heave + 0.5, die Umkehrung des Sim-Schritts). Der Frame-Tick schreibt NIE das Spieler-Mesh — sonst
+    // hält der Akkumulator die Lage für einen Teleport. Dazu: Abstieg, wenn das Werk verschwand; der EINE Visual-Weg
+    // (Gruppen-Pose + Gelenke ODER die Instanz-Matrix); die Blocker ziehen mit. Die Frame-Zeit trägt nichts mehr bei.
+    _tickMountedMovement(_dt) {
+        const archId = this.state.player.mountedArch;
+        if (archId === null || archId === undefined) {
+            this._mountedEntry = null;
+            return;
+        }
+        const entry = (this.state.architectures || []).find((e) => e.id === archId);
+        if (!entry) {
+            // Architektur ist verschwunden (z. B. abgebaut) → auto-dismount
+            this.state.player.mountedArch = null;
+            this._mountedEntry = null;
+            // FAHR-ABSCHLUSS (19.07.) — auch der Auto-Abstieg stellt die Sicht zurück.
+            if (this.state._mountVorKamera) {
+                this.setCameraMode(this.state._mountVorKamera);
+                this.state._mountVorKamera = null;
+            }
+            return;
+        }
+        this._mountedEntry = entry;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        // HORIZONTAL führt der REITER (die WASD-Physik = die EINE Bewegungs-Quelle, V18.150); die Architektur folgt in
+        // x/z, die Höhe kommt aus dem Sitz (der Sim-Schritt setzte ihn aus der Ebene der Räder).
+        entry.position.x = pm.x;
+        entry.position.z = pm.z;
+        const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        entry.position.y = pm.y + 0.5 - sitz - (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
+        const v = this.state.playerVel;
+        const sp = v ? Math.hypot(v.x(), v.z()) : 0;
+        const fahrtGate = AnazhRealm._fahrGesetz().he.fahrtGate;
         // Visual sofort updaten (sonst lagt es einen Frame). Klassischer Group-Pfad
         // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
         // (`_archInstanceUpdate`, foundry-bewusst) fürs Studio-Fahrzeug.
@@ -87873,6 +87904,8 @@ class AnazhRealm {
     _stepFixedSim(simTime, dt) {
         this._loopPhysicsSync(dt, simTime);
         this._loopPlayerMovement(simTime, dt);
+        // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
+        this._rittSchritt(dt);
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
         // Charakter durch DENSELBEN Schritt-Pfad. simTime reist im 1-Hz-Anker mit — der Ghost läuft auf
@@ -88015,6 +88048,11 @@ class AnazhRealm {
             vy += (s.gravity || -9.81) * dt;
             if (vy < -25) vy = -25;
         }
+        // IM SATTEL führt das Gefährt die Vertikale (Welle L, Q1 F-D10): der Reiter sitzt — kein Fall, kein Boden-Snap
+        // (Schritt 8); den Sitz setzt `_rittSchritt` im selben Sim-Schritt aus der Ebene der Räder. Vorher fiel die
+        // Kapsel je Schritt frei und galt in 421 von 421 Frames als „in der Luft" (0,425 m über dem Haft-Band).
+        const geritten = !!(s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined);
+        if (geritten) vy = 0;
 
         // 4b. STRÖMUNG: der Fluss-Flow (`_waterFlowAt`, EINE Quelle) advektiert SCHWIMMENDE Körper am EINEN
         // Bewegungs-Chokepoint — Gate `submerged` oder das gerittene schwimmende Gefährt (`_afloat`, von
@@ -88135,8 +88173,10 @@ class AnazhRealm {
         let grounded = false;
         let groundNormalY = 1.0;
         const probeStart = feetY + AnazhRealm.PLAYER_STEP_UP;
-        const buriedDeep = this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
-        if (buriedDeep) {
+        const buriedDeep = !geritten && this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
+        if (geritten) {
+            grounded = true; // der Reiter sitzt auf dem Gefährt, das auf seinen Rädern steht
+        } else if (buriedDeep) {
             // 8a. ANTI-CLIP: stecken die Füße TIEF im Terrain, scannt die Probe AUFWÄRTS zur Oberkante (30 m,
             // nur im seltenen Penetrations-Fall) und setzt den Spieler BEDINGUNGSLOS hoch — er darf NIE im
             // Soliden stecken (sonst Clip durch den Boden auf eine Höhlen-Schicht).
@@ -88571,7 +88611,6 @@ class AnazhRealm {
                 const fZ2 = Math.cos(yaw);
                 this.state.playerVel.setValue(fX2 * vLong + fZ2 * vLat, v.y(), fZ2 * vLong - fX2 * vLat);
                 ent._rideYaw = yaw;
-                ent._rideSteer = true; // der Yaw-Folge-Block im Mount-Tick ruht
                 // V18.491.120 — one visual steer field (zs: fahr.steer; non-zs: delta)
                 ent._rideSteerYaw = Number.isFinite(delta) ? delta : 0;
             } else if (slide) {
@@ -88740,6 +88779,7 @@ class AnazhRealm {
             // Vorframes + Kollision), dann die Bewegung (setzt die neue Intent-Velocity).
             this._stepCharacter(f.dt, t);
             this._loopPlayerMovement(t);
+            this._rittSchritt(f.dt);
         }
         const end = this._replaySnapshotState();
         s.keys = savedKeys;
