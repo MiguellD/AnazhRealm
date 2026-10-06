@@ -75952,13 +75952,17 @@ class AnazhRealm {
         const oz = pm.position.z;
         const reach = Number.isFinite(sw.reach) ? sw.reach : this._kampfBladeReach();
         const achse = this._kampfKlingenAchse(ox, oy, oz, reach);
-        const fx = Math.sin(achse.yaw);
-        const fz = Math.cos(achse.yaw);
+        // die Wand („nie hinter dem Rücken") misst waagrecht entlang der Achse, die Klinge läuft auf dem Bogen um sie —
+        // beide Richtungen aus der EINEN Vorwärts-Formel (_blickVorn), nie aus einer Inline-Kopie
+        const v = this._sweepVek || (this._sweepVek = [{}, {}]);
+        const vorn = this._blickVorn(achse.yaw, 0, v[0]);
+        const fx = vorn.x;
+        const fz = vorn.z;
         const arcYaw = achse.yaw + K.arcHalfRad * (1 - 2 * s);
-        const cp = Math.cos(achse.pitch);
-        const dx = Math.sin(arcYaw) * cp;
-        const dy = Math.sin(achse.pitch);
-        const dz = Math.cos(arcYaw) * cp;
+        const klinge = this._blickVorn(arcYaw, achse.pitch, v[1]);
+        const dx = klinge.x;
+        const dy = klinge.y;
+        const dz = klinge.z;
         // die Kapsel beginnt VOR dem Körper (nicht im Torso)
         const ax = ox + dx * 0.25,
             ay = oy + dy * 0.25,
