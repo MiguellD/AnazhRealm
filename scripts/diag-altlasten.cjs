@@ -414,6 +414,11 @@ const FORBIDDEN = [
         auch: ["worlds/terrain/phytogenesis.js"],
     },
     { token: "[4000, 1500, 1400]", fiel: "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)" },
+    // DIE SPERRE STATT DES URTEILS (Welle 7, 06.10.): die Horizont-Probe sagte nur „verdeckt" und nahm an, der Strahl laufe
+    // bis zur Mündung in Himmels-Luft — aus der Höhle hinaus fehlten 3 Zellen (2,8 % des Bilds). Sie misst die fernste
+    // Sperre (`_hoehlenSperre`), und der Lauf geht aus jeder erreichten Zelle hinaus (`_hoehlenHinaus`).
+    { token: "_hoehlenVerdeckt", fiel: "Welle 7 — die Horizont-Sperre (_hoehlenSperre) und der Weg hinaus" },
+    { token: "tor.verdeckt", fiel: "Welle 7 — die Mündung trägt ihre Sperre (tor.sperre)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

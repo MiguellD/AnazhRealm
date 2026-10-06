@@ -63098,7 +63098,7 @@ class AnazhRealm {
                 bereich: b,
                 id: z,
                 luft: box(H.knoten, z * 6, true),
-                // die Mündungen der Zelle (je Fach eine Box, um den Saum geweitet) mit ihrer Horizont-Probe je Auge
+                // die Mündungen der Zelle (je Fach eine Box, um den Saum geweitet) mit ihrer Horizont-Sperre je Auge
                 tore: [],
                 seiten: [0, 1, 2, 3].map((sd) => box(H.seiten, z * 24 + sd * 6, false)),
                 // je Seite die offene Rand-Box (der Nachbar-Chunk fehlt, `_hoehlenRand`), sonst null
@@ -63110,7 +63110,7 @@ class AnazhRealm {
                 z: 0,
             });
         for (let o = 0; o < H.muend.length; o += 7)
-            knoten[H.muend[o]].tore.push({ box: box(H.muend, o + 1, true), verdeckt: false, auge: [NaN, NaN, NaN] });
+            knoten[H.muend[o]].tore.push({ box: box(H.muend, o + 1, true), sperre: -Infinity, auge: [NaN, NaN, NaN] });
         for (let o = 0; o < H.kanten.length; o += 8) {
             const a = knoten[H.kanten[o]];
             const c = knoten[H.kanten[o + 1]];
@@ -63318,24 +63318,26 @@ class AnazhRealm {
         }
     }
 
-    // DIE HORIZONT-PROBE einer Mündung (perspektivisch): ein Strahl vom Auge betritt die Höhlen-Luft durch seine ERSTE
-    // Mündung und läuft bis dorthin in Himmels-Luft, also über dem gezeichneten Boden. Verdeckt ist die Box, wenn ein Bogen
-    // um das Auge (Abstand d vor der Box, über den Winkel-Keil ihrer Grundfläche) überall Boden trägt, der höher liegt als
-    // jeder Strahl zur Box dort sein kann (die Gerade vom Auge zum höchsten Punkt der Box, über den kürzesten bzw. längsten
-    // Weg). Der Boden ist die untere Schranke `_hoehlenHorizont`; ein ungeladener Ort hat keinen Boden (−∞). Der Bogen wird
-    // je Raster-Zelle abgetastet, jeder Punkt liest das Minimum seiner 3 × 3 Zellen (ein Bogen-Stück zwischen zwei Punkten
-    // liegt in ihnen). Gemerkt je Auge — für jedes Auge im Würfel ±`HOEHLEN_AUGE_M` um das geprüfte (die Probe hebt das Auge
-    // und weitet die Box um ihn; die 3 × 3 Zellen tragen die Verschiebung): das Auge der Spiel-Kamera atmet im Stand um
-    // Millimeter, und jede Probe neu wäre Arbeit ohne Änderung.
-    _hoehlenVerdeckt(s, tor, ex, ey, ez) {
-        if (this._hoehlenAugeGleich(tor, ex, ey, ez)) return tor.verdeckt;
+    // DIE HORIZONT-SPERRE einer Mündung (perspektivisch): der größte waagerechte Abstand d vom Auge, an dem JEDER Strahl zur
+    // Box unter dem gezeichneten Boden läuft — ein Bogen um das Auge (Abstand d, über den Winkel-Keil ihrer Grundfläche)
+    // trägt überall Boden, der höher liegt als jeder Strahl zur Box dort sein kann (die Gerade vom Auge zum höchsten Punkt
+    // der Box, über den kürzesten bzw. längsten Weg); −∞, wenn kein Bogen sperrt. Unter dem Boden liegt Fels oder Höhlen-Luft:
+    // ein Strahl aus Himmels-Luft kommt an einer Sperre nur durch eine Höhle vorbei, und hinter der fernsten Sperre läuft er
+    // aus einer Höhle, deren Ausgang weiter weg liegt (`_hoehlenHinaus`). Der Boden ist die untere Schranke
+    // `_hoehlenHorizont`; ein ungeladener Ort hat keinen Boden (−∞). Der Bogen wird je Raster-Zelle abgetastet, jeder Punkt
+    // liest das Minimum seiner 3 × 3 Zellen (ein Bogen-Stück zwischen zwei Punkten liegt in ihnen). Gemerkt je Auge — für
+    // jedes Auge im Würfel ±`HOEHLEN_AUGE_M` um das geprüfte (die Probe hebt das Auge und weitet die Box um ihn; die 3 × 3
+    // Zellen tragen die Verschiebung): das Auge der Spiel-Kamera atmet im Stand um Millimeter, und jede Probe neu wäre
+    // Arbeit ohne Änderung.
+    _hoehlenSperre(s, tor, ex, ey, ez) {
+        if (this._hoehlenAugeGleich(tor, ex, ey, ez)) return tor.sperre;
         const t = AnazhRealm.HOEHLEN_AUGE_M;
         tor.auge[0] = ex;
         tor.auge[1] = ey;
         tor.auge[2] = ez;
         const box = this._hoehlenProbenBox || (this._hoehlenProbenBox = new THREE.Box3());
-        tor.verdeckt = this._hoehlenHorizontProbe(s, box.copy(tor.box).expandByScalar(t), ex, ey + t, ez);
-        return tor.verdeckt;
+        tor.sperre = this._hoehlenHorizontProbe(s, box.copy(tor.box).expandByScalar(t), ex, ey + t, ez);
+        return tor.sperre;
     }
 
     _hoehlenAugeGleich(tor, ex, ey, ez) {
@@ -63362,10 +63364,8 @@ class AnazhRealm {
         const nx = Math.max(box.min.x - ex, 0, ex - box.max.x),
             nz = Math.max(box.min.z - ez, 0, ez - box.max.z);
         const dMin = Math.hypot(nx, nz);
-        if (dMin < 2) return false;
-        const fx = Math.max(Math.abs(box.min.x - ex), Math.abs(box.max.x - ex)),
-            fz = Math.max(Math.abs(box.min.z - ez), Math.abs(box.max.z - ez));
-        const dMax = Math.hypot(fx, fz);
+        if (dMin < 2) return -Infinity;
+        const dMax = this._hoehlenWeit(box, ex, ez);
         // der Winkel-Keil der Grundfläche um die Richtung zu ihrer Mitte
         const mitte = Math.atan2((box.min.z + box.max.z) / 2 - ez, (box.min.x + box.max.x) / 2 - ex);
         let w0 = Infinity,
@@ -63383,7 +63383,12 @@ class AnazhRealm {
         const c = this._hoehlenBodenCache || (this._hoehlenBodenCache = { n: 0, kx: NaN, kz: NaN, h: null });
         c.n = Math.round(this._voxelChunkConfig(0).span / R);
         c.kx = NaN;
-        for (let d = 2; d < dMin; d += Math.max(R, 0.04 * d)) {
+        // die Bögen von der Box zum Auge: der erste, der sperrt, ist die fernste Sperre
+        const bogen = this._hoehlenBoegen || (this._hoehlenBoegen = []);
+        bogen.length = 0;
+        for (let d = 2; d < dMin; d += Math.max(R, 0.04 * d)) bogen.push(d);
+        for (let j = bogen.length - 1; j >= 0; j--) {
+            const d = bogen[j];
             const grenze = ey + (hoch * d) / dRef; // kein Strahl liegt dort höher
             const schritte = Math.max(1, Math.ceil(((w1 - w0) * d) / R));
             let frei = false;
@@ -63398,9 +63403,17 @@ class AnazhRealm {
                             break;
                         }
             }
-            if (!frei) return true;
+            if (!frei) return d;
         }
-        return false;
+        return -Infinity;
+    }
+
+    // Der fernste waagerechte Abstand vom Auge zur Grundfläche einer Box.
+    _hoehlenWeit(box, ex, ez) {
+        return Math.hypot(
+            Math.max(Math.abs(box.min.x - ex), Math.abs(box.max.x - ex)),
+            Math.max(Math.abs(box.min.z - ez), Math.abs(box.max.z - ez))
+        );
     }
 
     // DIE HÖHLEN-SICHT eines Passes (aus `_chunkSatzPass`, mit der Matrix der Pass-Kamera in `S.m`): jede Zelle, die zeichnen
@@ -63408,9 +63421,11 @@ class AnazhRealm {
     // anders (`_hoehlenSichtLicht`). PERSPEKTIVISCH läuft ein Strahl vom Auge fort: je Zelle trägt der Lauf neben dem
     // Schirm-Rechteck die Tiefe, die der Strahl dort mindestens hat (NDC-z, monoton in der Blick-Tiefe) — ein Portal ganz davor
     // ist zu. Starts sind (1) die Zellen um das Auge (in ihrer Luft-Box) mit dem ganzen Bild, (2) jede Mündung im Bild, die der
-    // Horizont nicht verdeckt (`_hoehlenVerdeckt`), (3) jeder offene Rand — tritt das Auge von draußen ein, läuft er durch die
-    // Portale, sonst zeichnet nur seine Zelle (der Rand-Saum des Netzes ragt über die Kante). Das Hauptbild merkt seine
-    // erreichten Zellen (`sichtHaupt`, die Empfänger der Kaskaden).
+    // Horizont nicht sperrt (`_hoehlenSperre`), (3) jeder offene Rand — tritt das Auge von draußen ein, läuft er durch die
+    // Portale, sonst zeichnet nur seine Zelle (der Rand-Saum des Netzes ragt über die Kante). Der Lauf geht (4) durch die
+    // Portale und (5) aus jeder erreichten Zelle hinaus zu den gesperrten Mündungen dahinter (`_hoehlenHinaus`) — die Sperre
+    // gilt nur Strahlen, die bis zu ihr in Himmels-Luft laufen; einer, der in einer Höhle beginnt oder durch sie hindurch
+    // läuft, kommt an ihr vorbei. Das Hauptbild merkt seine erreichten Zellen (`sichtHaupt`, die Empfänger der Kaskaden).
     _hoehlenSicht(s, kamera, S, haupt) {
         if (!kamera || kamera.isPerspectiveCamera !== true) return this._hoehlenSichtLicht(s, S, kamera);
         const H = s.hoehle;
@@ -63437,20 +63452,27 @@ class AnazhRealm {
                     if (kn.luft && kn.luft.containsPoint(v)) this._hoehlenBesuch(H, kn, -1, -1, 1, 1, -Infinity);
             }
         // (2) die Mündungen im Bild: eine frische Horizont-Probe kostet — je Pass höchstens `HOEHLEN_HORIZONT_PROBEN`, die
-        // nächsten zuerst; eine Mündung ohne frische Probe gilt als offen (mehr zeichnen, nie ein Loch)
+        // nächsten zuerst; eine Mündung ohne frische Probe gilt als offen (mehr zeichnen, nie ein Loch). Eine gesperrte
+        // wartet auf einen Ausgang (`hinter`, (5)).
         const offen = H.offen || (H.offen = []);
+        const hinter = H.hinter || (H.hinter = []);
         offen.length = 0;
+        hinter.length = 0;
         for (const kn of H.muendungen)
             for (const tor of kn.tore) {
                 if (!this._hoehlenRect(tor.box, m, rc)) continue;
+                tor.st = st;
                 tor.r0 = rc[0];
                 tor.r1 = rc[1];
                 tor.r2 = rc[2];
                 tor.r3 = rc[3];
                 tor.r4 = rc[4];
+                tor.r5 = rc[5];
                 tor.kn = kn;
+                tor.weit = this._hoehlenWeit(tor.box, ex, ez);
                 if (this._hoehlenAugeGleich(tor, ex, ey, ez)) {
-                    if (!tor.verdeckt) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                    if (tor.sperre === -Infinity) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                    else hinter.push(tor);
                     continue;
                 }
                 const bx = tor.box;
@@ -63460,8 +63482,9 @@ class AnazhRealm {
         offen.sort((p, q) => p.d - q.d);
         for (let i = 0; i < offen.length; i++) {
             const tor = offen[i];
-            if (i < AnazhRealm.HOEHLEN_HORIZONT_PROBEN && this._hoehlenVerdeckt(s, tor, ex, ey, ez)) continue;
-            this._hoehlenBesuch(H, tor.kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4);
+            if (i < AnazhRealm.HOEHLEN_HORIZONT_PROBEN && this._hoehlenSperre(s, tor, ex, ey, ez) > -Infinity)
+                hinter.push(tor);
+            else this._hoehlenBesuch(H, tor.kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4);
         }
         for (const kn of H.muendungen) {
             // (3) der offene Rand: von draußen durch die Portale, von drinnen nur seine Zelle
@@ -63481,7 +63504,7 @@ class AnazhRealm {
                 else this._hoehlenMarke(H, kn);
             }
         }
-        // (4) durch die Portale: das Rechteck schrumpft je Portal, die Tiefe wächst
+        // (4) durch die Portale: das Rechteck schrumpft je Portal, die Tiefe wächst; (5) hinaus durch die Ausgänge der Zelle
         while (H.stapel.length > 0) {
             const kn = H.stapel.pop();
             const r = kn.rect;
@@ -63501,12 +63524,48 @@ class AnazhRealm {
                     y1 = r[3] < q[3] ? r[3] : q[3];
                 if (x0 <= x1 && y0 <= y1) this._hoehlenBesuch(H, ed.zu, x0, y0, x1, y1, q[4] > z ? q[4] : z);
             }
+            if (hinter.length > 0) this._hoehlenHinaus(H, kn, m, st, ex, ez);
         }
         // die Empfänger der Kaskaden: die erreichten Zellen, deren Dreiecke das Hauptbild zeichnet (im Frustum)
         if (besucht)
             H.sichtHaupt = besucht.filter(
                 (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && S.frustum.intersectsBox(kn.zelle.huelle)
             );
+    }
+
+    // HINAUS (5): ein Strahl, der eine erreichte Zelle durch ihre Luft quert, tritt durch eine ihrer Mündungen (oder einen
+    // offenen Rand) wieder in Himmels-Luft — das Auge stand in der Höhle, an ihrer Mündung, oder der Strahl lief unter einem
+    // Überhang, durch einen Tunnel. Jeder Ausgang im Bild ist ein Fenster (sein Rechteck ∩ das der Zelle, nicht näher als
+    // beide), und hinter ihm erreicht der Strahl jede gesperrte Mündung, deren fernste Sperre vor dem Ausgang liegt
+    // (`_hoehlenSperre`, gemessen vom geprüften Auge: der Würfel `HOEHLEN_AUGE_M` verschiebt sie um höchstens 2 × seine Kante).
+    _hoehlenHinaus(H, kn, m, st, ex, ez) {
+        for (const tor of kn.tore)
+            if (tor.st === st) this._hoehlenAusgang(H, kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4, tor.weit);
+        const q = H.rect;
+        for (let seite = 0; seite < 4; seite++) {
+            const rb = kn.raender[seite];
+            if (rb && this._hoehlenRect(rb, m, q))
+                this._hoehlenAusgang(H, kn, q[0], q[1], q[2], q[3], q[4], this._hoehlenWeit(rb, ex, ez));
+        }
+    }
+
+    _hoehlenAusgang(H, kn, x0, y0, x1, y1, z0, weit) {
+        const r = kn.rect;
+        if (r[0] > x0) x0 = r[0];
+        if (r[1] > y0) y0 = r[1];
+        if (r[2] < x1) x1 = r[2];
+        if (r[3] < y1) y1 = r[3];
+        if (x0 > x1 || y0 > y1) return;
+        if (kn.z > z0) z0 = kn.z;
+        const bis = weit + 2 * AnazhRealm.HOEHLEN_AUGE_M;
+        for (const tor of H.hinter) {
+            if (tor.sperre > bis || tor.r5 < z0) continue;
+            const a0 = x0 > tor.r0 ? x0 : tor.r0,
+                b0 = y0 > tor.r1 ? y0 : tor.r1,
+                a1 = x1 < tor.r2 ? x1 : tor.r2,
+                b1 = y1 < tor.r3 ? y1 : tor.r3;
+            if (a0 <= a1 && b0 <= b1) this._hoehlenBesuch(H, tor.kn, a0, b0, a1, b1, tor.r4 > z0 ? tor.r4 : z0);
+        }
     }
 
     // Eine Zelle erreicht ein Rechteck mit einer Tiefe: neu (Stempel) oder mehr als bisher (größeres Rechteck oder eine
@@ -89433,7 +89492,7 @@ AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
 // Frische Horizont-Proben je Hauptbild (`_hoehlenSicht`, die nächsten Mündungen zuerst): die Kosten folgen dem bewegten Auge,
 // nie der Zahl der Mündungen — eine Mündung ohne frische Probe zeichnet.
 AnazhRealm.HOEHLEN_HORIZONT_PROBEN = 8;
-// Der Würfel um das geprüfte Auge, in dem eine Horizont-Probe gilt (m, `_hoehlenVerdeckt`): weit unter der Raster-Zelle
+// Der Würfel um das geprüfte Auge, in dem eine Horizont-Probe gilt (m, `_hoehlenSperre`): weit unter der Raster-Zelle
 // (die 3 × 3 Zellen der Probe tragen die waagerechte Verschiebung), weit über dem Atmen der stehenden Kamera.
 AnazhRealm.HOEHLEN_AUGE_M = 0.25;
 // DIE KASKADE der Höhlen-Sicht (`_hoehlenSichtLicht`): die Kante einer ortsfesten Licht-Kachel quer zum Licht (m), die je

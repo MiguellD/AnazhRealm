@@ -9,22 +9,29 @@
 //   (a) SPIEGEL — Main (`_voxelHoehlenGraph` im Sync-Bau) und Worker (`hoehlenGraph`) liefern für dieselben Chunks
 //       byte-gleich Positionen, Index, je Dreieck die Zelle seiner Luft und den Graph (Knoten · Mündungen · Seiten · Kanten ·
 //       Rand);
-//   (b) BILD — je Blick (Wiese · Hang · Mündung · Höhle) trifft jeder Strahl des Auges zuerst eine Zelle, die im Abschnitt
-//       des Passes steht: eine Höhlen-Zelle, die aus der Mündung sichtbar ist, darf nie fehlen (sonst ein Loch);
+//   (b) BILD — je Blick (Wiese · Hang · Mündung · Höhle · Hinaus) trifft jeder Strahl des Auges zuerst eine Zelle, die im
+//       Abschnitt des Passes steht: eine Höhlen-Zelle, die aus der Mündung sichtbar ist, darf nie fehlen (sonst ein Loch).
+//       Jeder Blick läuft, bis jede Mündung im Bild ihre Horizont-Sperre trägt (die Probe wirkt ganz, nicht nur 8 je Bild);
+//   (b') HINAUS — das Auge in Höhlen-Luft, 16 m unter der Wiese (−1041/−738, der Ring um den Spieler dort), der Blick durch
+//       die Mündung hinaus: die Strahlen beginnen in der Höhle, laufen an den Sperren vorbei und erreichen Mündungen
+//       dahinter (`_hoehlenHinaus`). Die alte Probe — die Sperre ohne den Weg hinaus — ließ dort 3 Zellen weg (2,8 % des
+//       Bilds); der Blick ist scharf nur, solange sie dort rot fällt;
 //   (c) SCHATTEN — je Blick: jeder Empfänger des Bilds, dessen Weg zur Sonne im Licht-Frustum Boden trifft, trifft einen,
 //       den die Kaskade zeichnet (sonst fiele Licht durch Fels: ein Licht-Leck);
 //   (d) NICHT LEER — Mündung und Höhle zeigen Höhlen-Flächen, und die Linse ist scharf: ohne die Höhlen-Zellen im Abschnitt
 //       nennt sie die fehlenden (sonst prüfte (b) nichts);
 //   (e) SCHNITT — die Wiese zeichnet weniger Höhlen-Dreiecke, als ihr Frustum trägt (sonst wäre die Sicht tot);
 //   (f) CODE — der EINE Chokepoint liest die Sicht (`_chunkSatzPass` ruft `_hoehlenSicht`, `_chunkSatzAbschnitt` den
-//       Stempel des Knotens); (g) kein Page-Error.
+//       Stempel des Knotens, `_hoehlenSicht` den Weg hinaus); (g) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
-// leerer Blick, blinde Linse, toter Schnitt, fehlender Chokepoint, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
+// leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
+// ihn beim Namen nennen.
 //   node scripts/diag-hoehlen-sicht.cjs [--selftest]   (npm run gate:hoehlen-sicht; Port HOEHLEN_SICHT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const PFLICHT = ["wiese", "hang", "muendung", "hoehle"];
+const PFLICHT = ["wiese", "hang", "muendung", "hoehle", "hinaus"];
+const IN_HOEHLE = ["muendung", "hoehle", "hinaus"];
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
@@ -58,10 +65,17 @@ function urteil(b) {
         }
         if (x.schatten && !(x.schatten.empfaenger > 0))
             v.push(`LEER: Blick ${x.name}: kein Empfänger im Licht-Frustum (der Schatten prüfte nichts)`);
-        if ((x.name === "muendung" || x.name === "hoehle") && !(x.hoehle > 0))
+        if (IN_HOEHLE.includes(x.name) && !(x.hoehle > 0))
             v.push(`LEER: Blick ${x.name} zeigt keine Höhlen-Fläche (${x.strahlen} Strahlen) — (b) prüfte nichts`);
-        if ((x.name === "muendung" || x.name === "hoehle") && !(x.blind > 0))
+        if (IN_HOEHLE.includes(x.name) && !(x.blind > 0))
             v.push(`LINSE BLIND: Blick ${x.name}: ohne die Höhlen-Zellen im Abschnitt fehlt der Linse nichts`);
+        if (x.name === "hinaus" && x.augeInHoehle !== true)
+            v.push("LEER: Blick hinaus: das Auge steht nicht in Höhlen-Luft (Fels über ihm, Luft an ihm)");
+        if (x.name === "hinaus" && !(x.altFehlend > 0))
+            v.push(
+                "LINSE STUMPF: Blick hinaus: die alte Probe (die Sperre ohne den Weg hinaus) ließe hier keine Zelle weg — " +
+                    "der Blick prüft die Klasse nicht"
+            );
         if (x.name === "wiese" && x.hoehleImFrustum > 0 && !(x.hoehleImAbschnitt < x.hoehleImFrustum))
             v.push(
                 `KEIN SCHNITT: die Wiese zeichnet ${x.hoehleImAbschnitt} von ${x.hoehleImFrustum} Höhlen-Dreiecken ihres ` +
@@ -72,6 +86,10 @@ function urteil(b) {
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
     if (!c.abschnittLiest) v.push("CODE: `_chunkSatzAbschnitt` liest den Stempel des Höhlen-Knotens nicht");
+    if (!c.hinausLiest)
+        v.push(
+            "CODE: `_hoehlenSicht` ruft `_hoehlenHinaus` nicht (kein Strahl kommt aus einer Höhle an der Sperre vorbei)"
+        );
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
@@ -114,8 +132,18 @@ function selbsttest() {
                 schatten: { empfaenger: 5, lecks: [] },
             },
             { name: "hoehle", strahlen: 10, hoehle: 9, blind: 3, fehlend: [], schatten: { empfaenger: 5, lecks: [] } },
+            {
+                name: "hinaus",
+                strahlen: 10,
+                hoehle: 7,
+                blind: 3,
+                augeInHoehle: true,
+                altFehlend: 3,
+                fehlend: [],
+                schatten: { empfaenger: 5, lecks: [] },
+            },
         ],
-        code: { passLiest: true, abschnittLiest: true },
+        code: { passLiest: true, abschnittLiest: true, hinausLiest: true },
         pageErrors: [],
     };
     const fehler = [];
@@ -139,6 +167,21 @@ function selbsttest() {
         ["fehlender Blick", (b) => b.blicke.splice(1, 1), /LEER: Blick hang fehlt/],
         ["blinde Linse", (b) => (b.blicke[3].blind = 0), /LINSE BLIND: Blick hoehle/],
         ["toter Schnitt", (b) => (b.blicke[0].hoehleImAbschnitt = 100), /KEIN SCHNITT: die Wiese zeichnet 100 von 100/],
+        [
+            "die alte Probe (Loch beim Blick hinaus)",
+            (b) =>
+                (b.blicke[4].fehlend = [
+                    { bereich: "-24,-18", knoten: 64, hoehle: true, punkt: [-1021, 15.8, -734.5] },
+                ]),
+            /LOCH: Blick hinaus: 1 Zellen fehlen .*-24,-18#64 \(Höhle\)/,
+        ],
+        ["stumpfer Hinaus-Blick", (b) => (b.blicke[4].altFehlend = 0), /LINSE STUMPF: Blick hinaus/],
+        [
+            "Auge nicht in der Höhle",
+            (b) => (b.blicke[4].augeInHoehle = false),
+            /LEER: Blick hinaus: das Auge steht nicht/,
+        ],
+        ["Weg hinaus fehlt", (b) => (b.code.hinausLiest = false), /CODE: `_hoehlenSicht` ruft `_hoehlenHinaus` nicht/],
         ["Schatten prüft nichts", (b) => (b.blicke[1].schatten.empfaenger = 0), /LEER: Blick hang: kein Empfänger/],
         ["Chokepoint fehlt", (b) => (b.code.passLiest = false), /CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht/],
         ["Stempel ungelesen", (b) => (b.code.abschnittLiest = false), /CODE: `_chunkSatzAbschnitt` liest/],
@@ -173,7 +216,12 @@ const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
-const MESS = { x: -900, z: -850 }; // die Mess-Wiese
+const ORTE = {
+    mess: { x: -900, z: -850 }, // die Mess-Wiese
+    // der Blick aus der Höhle hinaus (der Ort der Gegenprüfung): Spieler und Auge 16 m unter der Wiese, Blick nach +x, 6 m
+    // hinab
+    hinaus: { spieler: [-1041, 11, -738], auge: [-1041, 12.5, -738], ziel: [-941, 6.5, -738] },
+};
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -222,7 +270,9 @@ const server = http.createServer((req, res) => {
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 120000,
         });
-        befund = await page.evaluate(async (MESS) => {
+        befund = await page.evaluate(async (ORTE) => {
+            const MESS = ORTE.mess,
+                HINAUS = ORTE.hinaus;
             const r = window.anazhRealm,
                 st = r.state,
                 T = window.THREE;
@@ -232,21 +282,26 @@ const server = http.createServer((req, res) => {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
             };
-            // ── an die Mess-Wiese, einschwingen (der Ring steht, kein Worker-Auftrag offen)
-            st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
-            let last = -1,
-                stabil = 0;
-            for (let i = 0; i < 6000; i++) {
-                takt();
-                const sz = st.voxelChunks ? st.voxelChunks.size : 0;
-                if (sz === last) stabil++;
-                else {
-                    stabil = 0;
-                    last = sz;
+            // einschwingen: der Ring steht, kein Worker-Auftrag offen
+            let last = -1;
+            const schwinge = async () => {
+                let stabil = 0;
+                last = -1;
+                for (let i = 0; i < 6000; i++) {
+                    takt();
+                    const sz = st.voxelChunks ? st.voxelChunks.size : 0;
+                    if (sz === last) stabil++;
+                    else {
+                        stabil = 0;
+                        last = sz;
+                    }
+                    if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
+                    if (i % 5 === 0) await pause(10);
                 }
-                if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
-                if (i % 5 === 0) await pause(10);
-            }
+            };
+            // ── an die Mess-Wiese
+            st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
+            await schwinge();
             r._tickChunkSatz();
             const s = st.chunkSaetze.get("boden");
             const aus = { spiegel: [], blicke: [], code: {}, ringChunks: last, bereiche: s.bloecke.size };
@@ -409,13 +464,23 @@ const server = http.createServer((req, res) => {
                         }
                 return { ab, imFr };
             };
-            for (const bl of blicke) {
+            // das Hauptbild eines Blicks, bis jede Mündung im Bild ihre Horizont-Sperre trägt (je Bild höchstens
+            // `HOEHLEN_HORIZONT_PROBEN` frische Proben; eine ohne gilt als offen — dann prüfte die Wand die Sperre nicht)
+            const hauptbild = (bl) => {
                 cam.position.set(bl.auge[0], bl.auge[1], bl.auge[2]);
                 cam.lookAt(bl.ziel[0], bl.ziel[1], bl.ziel[2]);
                 cam.updateMatrixWorld(true);
-                r._tickChunkSatz();
-                r._passSicht(cam, false);
-                const liste = (s.abschnitte.get("haupt") || { liste: [] }).liste.slice();
+                for (let f = 0; f < 400; f++) {
+                    r._tickChunkSatz();
+                    r._passSicht(cam, false);
+                    const offen = s.hoehle && s.hoehle.offen ? s.hoehle.offen.length : 0;
+                    if (offen <= r.constructor.HOEHLEN_HORIZONT_PROBEN) break;
+                    r._passSicht(cam, true);
+                }
+                return (s.abschnitte.get("haupt") || { liste: [] }).liste.slice();
+            };
+            const miss = (bl) => {
+                const liste = hauptbild(bl);
                 const fr = new T.Frustum().copy(S.frustum);
                 const h = window.__hoehlenStrahl(r, cam, liste, { nx: 160, ny: 90 });
                 const ohne = liste.filter((z) => z.knoten === undefined);
@@ -437,7 +502,7 @@ const server = http.createServer((req, res) => {
                 r._chunkSatzPass(licht, true, -1, S);
                 r._passSicht(cam, true);
                 const sch = window.__hoehlenSchatten(r, cam, licht, listeK, { nx: 128, ny: 72 });
-                aus.blicke.push({
+                return {
                     name: bl.name,
                     auge: bl.auge.map((v) => +v.toFixed(1)),
                     strahlen: h.strahlen,
@@ -449,8 +514,29 @@ const server = http.createServer((req, res) => {
                     abschnittTri: liste.reduce((a, x) => a + x.idx.length / 3, 0),
                     kaskadeTri: listeK.reduce((a, x) => a + x.idx.length / 3, 0),
                     schatten: { empfaenger: sch.empfaenger, beschattet: sch.beschattet, lecks: sch.lecks },
-                });
-            }
+                };
+            };
+            for (const bl of blicke) aus.blicke.push(miss(bl));
+
+            // ── (b') HINAUS: der Spieler 16 m unter der Wiese (der Ring steht um ihn, LOD 0), das Auge in der Höhlen-Luft,
+            // der Blick durch die Mündung hinaus — neu, dann die alte Probe (die Sperre ohne den Weg hinaus, am Exemplar)
+            st.playerMesh.position.set(HINAUS.spieler[0], HINAUS.spieler[1], HINAUS.spieler[2]);
+            await schwinge();
+            r._tickChunkSatz();
+            const hin = { name: "hinaus", auge: HINAUS.auge, ziel: HINAUS.ziel };
+            const ha = HINAUS.auge;
+            const ueber = (() => {
+                for (let y = ha[1] + 1.2; y < ha[1] + 60; y += 1.2) if (fest(ha[0], y, ha[2])) return true;
+                return false;
+            })();
+            const xh = miss(hin);
+            xh.augeInHoehle = !fest(ha[0], ha[1], ha[2]) && ueber;
+            r._hoehlenHinaus = () => {};
+            const alt = window.__hoehlenStrahl(r, cam, hauptbild(hin), { nx: 160, ny: 90 });
+            delete r._hoehlenHinaus;
+            xh.altFehlend = alt.fehlend.length;
+            xh.altZuerst = alt.fehlend[0] || null;
+            aus.blicke.push(xh);
             cam.position.copy(merk.p);
             cam.quaternion.copy(merk.q);
             cam.updateMatrixWorld(true);
@@ -458,8 +544,9 @@ const server = http.createServer((req, res) => {
             const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
+            aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
             return aus;
-        }, MESS);
+        }, ORTE);
     } catch (e) {
         befund = { fehler: (e && e.message) || String(e) };
     }
@@ -485,7 +572,11 @@ const server = http.createServer((req, res) => {
             `  Blick ${x.name} ${JSON.stringify(x.auge)}: ${x.strahlen} Strahlen, ${x.hoehle} auf Höhle, fehlend ${x.fehlend.length}, ` +
                 `blind-Probe ${x.blind} · Abschnitt ${x.abschnittTri} Dreiecke (Höhle ${x.hoehleImAbschnitt} von ${x.hoehleImFrustum} im ` +
                 `Frustum) · Kaskade ${x.kaskadeTri} · Schatten ${x.schatten.empfaenger} Empfänger, ${x.schatten.beschattet} beschattet, ` +
-                `${x.schatten.lecks.length} Lecks`
+                `${x.schatten.lecks.length} Lecks` +
+                (x.name === "hinaus"
+                    ? ` · Auge in Höhlen-Luft ${x.augeInHoehle} · die alte Probe ließe ${x.altFehlend} Zellen weg` +
+                      (x.altZuerst ? `, zuerst ${x.altZuerst.bereich}#${x.altZuerst.knoten}` : "")
+                    : "")
         );
     const v = urteil(befund);
     if (v.length) {
