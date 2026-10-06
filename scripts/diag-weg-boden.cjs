@@ -12,8 +12,13 @@
 //   6 FERNE       ein Weg 300 m vom Spieler steht in der Karte (die ferne Stufe der Clipmap, kein Loch hinter 120 m)
 //   7 BESTAND     die Kronen-Karte derselben Fenster: eine Eintrags-Krone übersteht 1,6 km Ausflug (Register, Streu,
 //                 verschoben = voll neu gemalt) — bis 06.10. vergaß der ferne Umzug jede Eintrags-Krone
-// --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante und der vergessliche ferne Umzug müssen beim
-// Namen rot werden.
+//   8 TRITT       die Trittfläche einer Feuerstelle (`fx.tritt` des Gesetzbuchs) als EINZIGE Form der Karte: gesetzt
+//                 tragen GPU-Bytes und CPU-Leser Erde und die Wiesen-/Streu-Kachel darüber fällt; abgebaut über den
+//                 echten Abbau (`removeArchitecture`) sind die Bytes sofort leer und gehen hoch, der CPU-Leser liest 0,
+//                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen) — bis 06.10. wartete
+//                 der Abbau auf den Takt, der ohne Weg und Krone früh zurückkehrte (GPU Erde, CPU 0, keine Wiese)
+// --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug und der alte
+// Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -180,6 +185,101 @@ function probe(stoerung) {
     return out;
 }
 
+// 8 TRITT — eine Feuerstelle (Bauplan `glutbrunnen`, Gestalt fachwerk `feuerstelle`) nahe dem Spieler; die Karte trägt
+// sonst nichts (kein Weg, keine Krone: der Fall, in dem der Takt früh zurückkehrt).
+function trittProbe(stoerung) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const A = r.constructor;
+    const pm = st.playerMesh.position;
+    let o = null;
+    for (let k = 0; k < 64 && !o; k++) {
+        const x = pm.x + (k % 8) * 6 - 21;
+        const z = pm.z + Math.floor(k / 8) * 6 - 21;
+        if (r._isAboveWaterAt(x, z, 0.2) && r._isAboveWaterAt(x + 3, z + 3, 0.2) && r._isAboveWaterAt(x - 3, z - 3, 0.2))
+            o = { x, z };
+    }
+    if (!o) return { fehler: "kein trockener Tritt-Ort" };
+    r._stlWegeDispose();
+    const wk = r._wegeKarteEnsure();
+    const nah = wk.stufen[0];
+    // die GPU-Bytes der Nah-Stufe (Kanal Erde) — dieselben, die der Boden-Shader liest, unabhängig vom CPU-Leser
+    const byte = (x, z) => {
+        const S = nah.S;
+        const i = Math.floor((x - (nah.mitteX - S.fensterM / 2)) / S.texelM);
+        const j = Math.floor((z - (nah.mitteZ - S.fensterM / 2)) / S.texelM);
+        return i < 0 || j < 0 || i >= nah.N || j >= nah.N ? -1 : nah.daten[(j * nah.N + i) * 2] / 255;
+    };
+    // Je Ring EINE Kachel über der Feuerstelle: steht dort keine (der Null-Renderer baut die Wiese nicht), sät die
+    // Probe einen leeren Platzhalter — die Probe zählt, ob der Abbau sie fallen lässt (der Takt baut Fehlendes neu).
+    const vorWiese = st.nahWiese;
+    const vorStreu = st.nahStreu;
+    const eigenWiese = !vorWiese;
+    const eigenStreu = !vorStreu;
+    if (eigenWiese) st.nahWiese = { gruppe: null, kacheln: new Map(), chunkStand: new Map() };
+    if (eigenStreu) st.nahStreu = { senken: new Map(), kacheln: new Map() };
+    const KW = A.NAH_WIESE.kachel;
+    const KS = A.NAH_STREU.kachel;
+    const kw = `${Math.floor(o.x / KW)},${Math.floor(o.z / KW)}`;
+    const ks = `${Math.floor(o.x / KS)},${Math.floor(o.z / KS)}`;
+    const gesaet = new Set();
+    const saeen = () => {
+        for (const [ring, key, k] of [
+            [st.nahWiese, kw, { meshes: null, quellen: null }],
+            [st.nahStreu, ks, { key: ks, senken: new Set(), zustand: null }],
+        ])
+            if (!ring.kacheln.has(key)) {
+                ring.kacheln.set(key, k);
+                gesaet.add(k);
+            }
+    };
+    const gefallen = () => (st.nahWiese.kacheln.has(kw) ? 0 : 1) + (st.nahStreu.kacheln.has(ks) ? 0 : 1);
+    const out = { ort: o };
+    const entry = r.spawnArchitecture(
+        "glutbrunnen",
+        { x: o.x, y: r.getTerrainHeightAt(o.x, o.z), z: o.z },
+        { silent: true, seed: 7 }
+    );
+    if (!entry) return { fehler: "die Feuerstelle steht nicht (spawnArchitecture)" };
+    saeen();
+    r._trittFlaecheSetzen(entry); // der Studio-Platz ruft sie beim ersten Primär-Add (`_archInstanceAdd`)
+    out.gesetztForm = !!entry._trittBox;
+    out.gesetztCpu = +r._wegeFeldAt(o.x, o.z).toFixed(3);
+    out.gesetztGpu = +byte(o.x, o.z).toFixed(3);
+    out.gesetztGefallen = gefallen();
+    saeen();
+    const version = nah.tex.version;
+    if (stoerung === "tritt") {
+        // der Abbau bis 06.10.: die Form fällt, die Stufen warten auf den Takt, keine Wiese wächst nach
+        r._trittFlaecheLoesen = function (e) {
+            const k = this.state.wegeKarte;
+            if (!e || !e._trittBox || !k) return;
+            const i = k.siedlungen.indexOf(e._trittBox);
+            if (i >= 0) k.siedlungen.splice(i, 1);
+            e._trittBox = null;
+            for (const s of k.stufen) s.zentriert = false;
+        };
+    }
+    try {
+        r.removeArchitecture(entry);
+        r._tickWegeKarte({ x: pm.x, z: pm.z }); // der nächste Spiel-Takt
+    } finally {
+        delete r._trittFlaecheLoesen; // die Störung lebte als eigene Eigenschaft, der Prototyp trägt wieder
+    }
+    out.geloestCpu = +r._wegeFeldAt(o.x, o.z).toFixed(3);
+    out.geloestGpu = +byte(o.x, o.z).toFixed(3);
+    out.geloestUpload = nah.tex.version > version;
+    out.geloestGefallen = gefallen();
+    out.formenRest = wk.siedlungen.length;
+    // nur die eigenen Platzhalter räumen (eine echte Kachel bleibt dem Takt)
+    if (gesaet.has(st.nahWiese.kacheln.get(kw))) st.nahWiese.kacheln.delete(kw);
+    if (gesaet.has(st.nahStreu.kacheln.get(ks))) st.nahStreu.kacheln.delete(ks);
+    if (eigenWiese) st.nahWiese = vorWiese;
+    if (eigenStreu) st.nahStreu = vorStreu;
+    r._stlWegeDispose();
+    return out;
+}
+
 function urteil(S) {
     if (S.fehler) return ["Probe: " + S.fehler];
     const rot = [];
@@ -199,6 +299,21 @@ function urteil(S) {
             `7 BESTAND: nach 1,6 km Ausflug steht die Eintrags-Krone ${S.bestandRegister ? "im" : "NICHT im"} Register, ` +
                 `Streu unter ihr ${S.bestandStreu} (soll > 0,5), ${S.bestandUngleich} Texel ungleich dem vollen Neumalen (soll 0)`
         );
+    const T = S.tritt;
+    if (!T) rot.push("8 TRITT: nicht gemessen");
+    else if (T.fehler) rot.push("8 TRITT: " + T.fehler);
+    else {
+        if (!(T.gesetztForm && T.gesetztCpu > 0.9 && T.gesetztGpu > 0.9 && T.gesetztGefallen === 2))
+            rot.push(
+                `8 TRITT gesetzt: Form ${T.gesetztForm} · CPU ${T.gesetztCpu} · GPU-Byte ${T.gesetztGpu} (soll > 0,9) · ` +
+                    `${T.gesetztGefallen}/2 Kacheln gefallen`
+            );
+        if (!(T.geloestCpu < 0.02 && T.geloestGpu === 0 && T.geloestUpload && T.geloestGefallen === 2 && T.formenRest === 0))
+            rot.push(
+                `8 TRITT gelöst: CPU ${T.geloestCpu} · GPU-Byte ${T.geloestGpu} (soll 0) · Upload ${T.geloestUpload} · ` +
+                    `${T.geloestGefallen}/2 Kacheln gefallen (Wiese und Nah-Streu wachsen zurück) · ${T.formenRest} Formen übrig`
+            );
+    }
     return rot;
 }
 
@@ -232,21 +347,37 @@ function urteil(S) {
         )
             await new Promise((r) => setTimeout(r, 100));
     });
-    const S = await page.evaluate(probe, null);
+    // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless)
+    await page.evaluate(async () => {
+        const dl = performance.now() + 90000;
+        const warm = () => {
+            const f = window.anazhRealm._foundry;
+            return f && f.recipes && f.recipes.feuerstelle;
+        };
+        while (!warm() && performance.now() < dl) await new Promise((r) => setTimeout(r, 100));
+    });
+    const messen = async (stoerung) =>
+        Object.assign(await page.evaluate(probe, stoerung === "tritt" ? null : stoerung), {
+            tritt: await page.evaluate(trittProbe, stoerung === "tritt" ? "tritt" : null),
+        });
+    const S = await messen(null);
     let selbst = null;
     if (SELFTEST) {
-        const streifen = urteil(await page.evaluate(probe, "streifen"));
-        const hart = urteil(await page.evaluate(probe, "hart"));
-        const vergessen = urteil(await page.evaluate(probe, "vergessen"));
-        const heil = urteil(await page.evaluate(probe, null));
+        const streifen = urteil(await messen("streifen"));
+        const hart = urteil(await messen("hart"));
+        const vergessen = urteil(await messen("vergessen"));
+        const tritt = urteil(await messen("tritt"));
+        const heil = urteil(await messen(null));
         selbst = {
             streifenRot: streifen.some((e) => e.startsWith("1 KEIN QUAD")),
             hartRot: hart.some((e) => e.startsWith("3 KANTE")),
             vergessenRot: vergessen.some((e) => e.startsWith("7 BESTAND")),
+            trittRot: tritt.some((e) => e.startsWith("8 TRITT gelöst")),
             heilGruen: heil.length === 0,
             streifen: streifen[0] || "-",
             hart: hart.find((e) => e.startsWith("3 KANTE")) || hart[0] || "-",
             vergessen: vergessen.find((e) => e.startsWith("7 BESTAND")) || vergessen[0] || "-",
+            tritt: tritt.find((e) => e.startsWith("8 TRITT")) || tritt[0] || "-",
         };
     }
     await browser.close();
@@ -264,6 +395,14 @@ function urteil(S) {
             `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +
                 `${S.bestandUngleich} Texel ungleich dem vollen Neumalen`
         );
+        const T = S.tritt || {};
+        if (T.fehler) console.log("  Trittfläche: " + T.fehler);
+        else
+            console.log(
+                `  Trittfläche gesetzt: CPU ${T.gesetztCpu} · GPU-Byte ${T.gesetztGpu} · ${T.gesetztGefallen}/2 Kacheln neu · ` +
+                    `gelöst: CPU ${T.geloestCpu} · GPU-Byte ${T.geloestGpu} · Upload ${T.geloestUpload} · ` +
+                    `${T.geloestGefallen}/2 Kacheln neu · ${T.formenRest} Formen übrig`
+            );
     }
     const rot = urteil(S);
     if (pageErrors.length) rot.push("Seiten-Fehler: " + pageErrors[0]);
@@ -271,9 +410,11 @@ function urteil(S) {
         console.log(`  Selbsttest: Boden-Streifen im Pool → ${selbst.streifen}`);
         console.log(`  Selbsttest: harte Kante → ${selbst.hart}`);
         console.log(`  Selbsttest: der ferne Umzug vergisst → ${selbst.vergessen}`);
+        console.log(`  Selbsttest: der alte Abbau der Trittfläche → ${selbst.tritt}`);
         if (!selbst.streifenRot) rot.push("SELBSTTEST: der injizierte Boden-Streifen blieb grün");
         if (!selbst.hartRot) rot.push("SELBSTTEST: die harte Kante blieb grün");
         if (!selbst.vergessenRot) rot.push("SELBSTTEST: der vergessene Kronen-Bestand blieb grün");
+        if (!selbst.trittRot) rot.push("SELBSTTEST: der alte Abbau der Trittfläche blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
     if (rot.length) {

@@ -63606,19 +63606,8 @@ class AnazhRealm {
                 stufe.mitteX = Math.round(playerPos.x / raster) * raster;
                 stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
                 stufe.zentriert = true;
-                // Eine leere Karte bleibt leer — kein Upload ohne Weg (der Umzug kommt auch für die Kronen). Die Marke
-                // setzt allein der Maler (`_wegeKarteMale`): was er seit dem letzten Upload malte, geht leer hoch.
-                const warLeer = stufe.wegeLeer === true;
-                stufe.daten.fill(0);
-                stufe.wegeLeer = true;
-                const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
-                for (const sd of wk.siedlungen) {
-                    if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
-                    if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
-                    for (const f of sd.formen) this._wegeKarteMale(stufe, f);
-                }
+                this._wegeStufeMalen(stufe);
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
-                if (!warLeer || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
                 this._kronenStreuUmzug(stufe, war);
             }
             // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
@@ -63637,6 +63626,24 @@ class AnazhRealm {
                 kr.upload = jetzt;
             }
         }
+    }
+
+    // Die Wege EINER zentrierten Stufe neu malen — der EINE Neu-Maler für Umzug und Abbau: leeren, die Formen der
+    // Siedlungen im Fenster malen (die Hülle verwirft ferne in O(1)), EIN Upload, wenn sich etwas ändert. Eine leere
+    // Karte bleibt leer — kein Upload ohne Weg (der Umzug kommt auch für die Kronen). Die Marke setzt allein der Maler
+    // (`_wegeKarteMale`): was er seit dem letzten Upload malte, geht leer hoch.
+    _wegeStufeMalen(stufe) {
+        const S = stufe.S;
+        const warLeer = stufe.wegeLeer === true;
+        stufe.daten.fill(0);
+        stufe.wegeLeer = true;
+        const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
+        for (const sd of this.state.wegeKarte.siedlungen) {
+            if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
+            if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
+            for (const f of sd.formen) this._wegeKarteMale(stufe, f);
+        }
+        if (!warLeer || !stufe.wegeLeer) stufe.tex.needsUpdate = true;
     }
 
     // Die getretene Erde an (x, z) ∈ [0, 1] — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest: die
@@ -63764,14 +63771,18 @@ class AnazhRealm {
         if (pm && wk.stufen.some((st) => !st.zentriert)) this._tickWegeKarte(pm.position);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }
-    // Der Abbau nimmt die Trittfläche mit: die Form fällt aus der Karte, der nächste Takt malt jede Stufe neu.
+    // Der Abbau nimmt die Trittfläche mit: die Form fällt aus der Karte, jede zentrierte Stufe malt JETZT neu (der
+    // EINE Neu-Maler — bis 06.10. wartete der Abbau auf den Takt, der ohne Weg und Krone früh zurückkehrte: die
+    // GPU-Karte zeigte weiter Erde, der CPU-Leser 0), Wiese und Nah-Streu wachsen über der Fläche zurück.
     _trittFlaecheLoesen(entry) {
         const wk = this.state.wegeKarte;
-        if (!entry || !entry._trittBox || !wk) return;
-        const i = wk.siedlungen.indexOf(entry._trittBox);
+        const box = entry ? entry._trittBox : null;
+        if (!box || !wk) return;
+        const i = wk.siedlungen.indexOf(box);
         if (i >= 0) wk.siedlungen.splice(i, 1);
-        entry._trittBox = null;
-        for (const stufe of wk.stufen) stufe.zentriert = false;
+        entry._trittBox = undefined;
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe);
+        this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }
 
     // Die Nah-Wiese UND die Nah-Streu über einer neuen Weg-/Tritt-Fläche neu wachsen lassen: jede Kachel im Rechteck
