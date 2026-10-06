@@ -17,11 +17,15 @@
 //   S  Nah-Streu · Nah-Wiese · Zaun: keine Null-3×3 in [0, count), Σ Blöcke == Anzahl, leer ⇒ unsichtbar
 // Jeder Befund trägt seinen NAMEN: Senke · Pass (haupt = Kamera-Layer, schatten = k0/k1 über castShadow; eine unsichtbare
 // Senke betritt keinen Pass) · Dreiecke.
+//   A  der Abschied (W6): jede Senke, die `_instanzMesh` baut, verlässt den Graphen nur über `_instanzAbschied` (r184 gibt
+//      bei `mesh.dispose()` nichts frei — ihre Instanz-Puffer blieben in seinem Register, `buf:verwaist` der Band-Linse), und
+//      keine Senke im Graphen bekommt ihn (ihr Speicher-Puffer wäre tot)
 //   Q  Quelle (kommentar-frei): `count` einer Instanz-Senke schreibt nur `_instanzZahl`; die Free-Liste und der
 //      Shader-Riegel der toten Karten-Slots (`_lebt`) sind weg.
 // SELBSTTEST (--selftest, nach der echten Messung in derselben Welt): ein eingeschmuggelter freier Slot (count +1 an einer
 // lebenden Gruppe, Null-3×3), eine sichtbare leere Hülle, eine vertauschte Matrix (ein Umzug ohne Matrix) und eine
-// eingeschmuggelte `count`-Zeile in der Quelle → jeder rot und beim Namen genannt.
+// eingeschmuggelte `count`-Zeile in der Quelle, eine Senke ohne Abschied und ein Abschied im Graphen → jeder rot und beim
+// Namen genannt.
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots; Port: FREIE_SLOTS_PORT)
 "use strict";
 const puppeteer = require("puppeteer");
@@ -105,6 +109,28 @@ async function welt() {
         while (f && !f.ready && performance.now() - tF < 60000) await sleep(100);
         o.foundry = !!(f && f.ready);
         const pm = st.playerMesh.position;
+        // ── A: DER ABSCHIED JEDER SENKE (W6) — jede Senke, die `_instanzMesh` ab hier baut, wird verfolgt; `_instanzAbschied`
+        // stempelt sie. Eine Senke, die den Graphen ohne Abschied verlässt, hinterlässt ihre Instanz-Puffer in r184s Register
+        // (`buf:verwaist`); ein Abschied einer Senke, die noch im Graphen steht, zerstört einen gezeichneten Speicher-Puffer.
+        const R = r.constructor;
+        const geboren = new Set();
+        const bau = R._instanzMesh;
+        R._instanzMesh = function (...a) {
+            const m = bau.apply(this, a);
+            geboren.add(m);
+            return m;
+        };
+        const proto = Object.getPrototypeOf(r);
+        const abschied = proto._instanzAbschied;
+        proto._instanzAbschied = function (m) {
+            if (m) m.__abschied = (m.__abschied || 0) + 1;
+            return abschied.call(this, m);
+        };
+        const imGraph = (m) => {
+            for (let p = m; p; p = p.parent) if (p === st.scene) return true;
+            return false;
+        };
+        let abschiede = 0;
         const takt = async (n) => {
             for (let i = 0; i < n; i++) {
                 st._frameOverBudget = false;
@@ -135,7 +161,7 @@ async function welt() {
         };
         const zensus = () => {
             const befunde = [];
-            const z = { gruppen: 0, instanzen: 0, senken: 0, marken: 0 };
+            const z = { gruppen: 0, instanzen: 0, senken: 0, marken: 0, verfolgt: geboren.size, abschiede: 0 };
             const nenne = (senke, art, m, n) => {
                 const p = paesse(m);
                 befunde.push({ senke, art, pass: p.join("+") || "keiner", dreiecke: Math.round(n * dreieckeJe(m.geometry)) });
@@ -209,6 +235,22 @@ async function welt() {
                     for (const b of a.bloecke.values()) summe += b.n;
                     if (summe !== a.anzahl) nenne(a.name, `Σ Blöcke ${summe} ≠ Anzahl ${a.anzahl}`, a.mesh, 0);
                 }
+            // A — jede verfolgte Senke: aus dem Graphen nur mit Abschied, im Graphen nie mit. Eine Satz-Gruppe (Welle 6,
+            // `g.satz`) hängt an keinem Eltern-Knoten — der Bau-Satz ihres Stoffs zeichnet sie: ihre Senke lebt, solange die
+            // Gruppe sie trägt.
+            const satzLebt = new Set();
+            for (const [, g] of st.archInstanceGroups || []) if (g.satz && g.mesh) satzLebt.add(g.mesh);
+            for (const m of geboren) {
+                const name = m.name || m.userData.archInstanceKey || m.userData.leafKey || "Senke";
+                const drin = imGraph(m) || satzLebt.has(m);
+                if (!drin && !m.__abschied) nenne(name, "fiel ohne Abschied — r184 hält ihre Instanz-Puffer (buf:verwaist)", m, 0);
+                if (drin && m.__abschied) nenne(name, "Abschied einer Senke im Graphen — ihr Speicher-Puffer ist tot", m, 0);
+                if (!drin && m.__abschied) {
+                    geboren.delete(m);
+                    abschiede++;
+                }
+            }
+            z.abschiede = abschiede;
             return { z, befunde };
         };
 
@@ -283,6 +325,25 @@ async function welt() {
                 for (const b of befunde) if (b.senke === tausch.g.key && /trägt nicht/.test(b.art)) (st_.befunde = st_.befunde || []).push(b);
                 arr.set(merk, tausch.a * 16);
             }
+            // (4) eine Senke fällt ohne Abschied, eine zweite bekommt ihn im Graphen
+            const muster = lebendig ? lebendig.mesh : null;
+            if (muster) {
+                const ohne = R._instanzMesh(muster.geometry, muster.material, 2);
+                ohne.name = "gate:ohne-abschied";
+                st.scene.add(ohne);
+                st.scene.remove(ohne);
+                const lebt = R._instanzMesh(muster.geometry, muster.material, 2);
+                lebt.name = "gate:lebend-abschied";
+                st.scene.add(lebt);
+                r._instanzAbschied(lebt);
+                const { befunde } = zensus();
+                st_.ohneGenannt = befunde.some((b) => b.senke === "gate:ohne-abschied" && /ohne Abschied/.test(b.art));
+                st_.lebendGenannt = befunde.some((b) => b.senke === "gate:lebend-abschied" && /im Graphen/.test(b.art));
+                for (const b of befunde) if (/^gate:/.test(b.senke)) (st_.befunde = st_.befunde || []).push(b);
+                st.scene.remove(lebt);
+                geboren.delete(ohne);
+                geboren.delete(lebt);
+            }
             o.selbst = st_;
         }
         return o;
@@ -317,13 +378,15 @@ async function welt() {
     for (const u of out.umzuege || []) {
         maxGruppen = Math.max(maxGruppen, u.gruppen);
         console.log(
-            `  Umzug → ${u.ziel.join(" ")}: ${u.gruppen} Gruppen · ${u.instanzen} Instanzen · ${u.senken} Senken · ${u.marken} Eintrags-Marken treu geprüft · ${u.n} Befunde`
+            `  Umzug → ${u.ziel.join(" ")}: ${u.gruppen} Gruppen · ${u.instanzen} Instanzen · ${u.senken} Senken · ${u.marken} Eintrags-Marken treu geprüft · ${u.abschiede} Senken mit Abschied gefallen (${u.verfolgt} verfolgt) · ${u.n} Befunde`
         );
         for (const b of u.befunde) console.log(`    ❌ ${b.senke} · ${b.pass} · ${b.dreiecke} Dreiecke — ${b.art}`);
         if (u.n) fails.push(`Umzug ${u.ziel.join(" ")}: ${u.n} Befunde (${u.befunde[0].senke} · ${u.befunde[0].art})`);
     }
     if (!out.umzuege || out.umzuege.length < 5) fails.push("die Wander-Sequenz lief nicht durch");
     if (!(maxGruppen > 20)) fails.push(`nur ${maxGruppen} Instanz-Gruppen — die Linse misst nichts`);
+    const letzt = (out.umzuege || [])[(out.umzuege || []).length - 1] || {};
+    if (!(letzt.abschiede > 0)) fails.push("keine Senke fiel mit Abschied — die Abschieds-Linse misst nichts");
     if (process.argv.includes("--selftest")) {
         const s = out.selbst || {};
         console.log(
@@ -333,6 +396,11 @@ async function welt() {
         if (!s.freiGenannt) fails.push("SELBSTTEST: der eingeschmuggelte freie Slot blieb ungesehen");
         if (!s.leerGenannt) fails.push("SELBSTTEST: die sichtbare leere Hülle blieb ungesehen");
         if (!s.tauschGenannt) fails.push("SELBSTTEST: die vertauschte Matrix (ein Umzug ohne Matrix) blieb ungesehen");
+        console.log(
+            `  ${s.ohneGenannt ? "✅" : "❌"} SELBSTTEST A: die Senke ohne Abschied wird genannt · ${s.lebendGenannt ? "✅" : "❌"} der Abschied einer Senke im Graphen wird genannt`
+        );
+        if (!s.ohneGenannt) fails.push("SELBSTTEST: die Senke ohne Abschied blieb ungesehen");
+        if (!s.lebendGenannt) fails.push("SELBSTTEST: der Abschied einer Senke im Graphen blieb ungesehen");
     }
     if (seitenFehler.length) {
         console.log("  Seiten-Fehler:", seitenFehler.slice(0, 3));
@@ -343,7 +411,7 @@ async function welt() {
         process.exit(1);
     }
     console.log(
-        `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass.`
+        `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; ${letzt.abschiede} Senken fielen mit Abschied, keine ohne.`
     );
     process.exit(0);
 })().catch((e) => {

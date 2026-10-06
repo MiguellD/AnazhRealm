@@ -25,8 +25,9 @@
 //       Eltern-Knoten (weder Bundle noch Szene) und lebt als Bereich im Satz ihres Stoffs — n × liveCount Vertices, die
 //       erste Instanz in Welt-Lage (Geometrie × Instanz-Matrix), je Instanz eine Zelle. Befund (echte GPU, Mess-Wiese):
 //       jede Gestalt zog als eigene Gruppe einen Befehl je Pass — das Dorf 33 (11 Häuser × 3 Stoffe), die Felszacken 34;
-//   (i) WACHSEN (Welle 6) — ein wachsender Satz trägt einen FRISCHEN Mesh über der neuen Pool-Geometrie, nie eine
-//       getauschte Geometrie (r184 zerstört beim verzögerten Entsorgen der alten sonst die GPU-Puffer der neuen);
+//   (i) WACHSEN (Welle 6) — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
+//       sicher, weil `_renderObjektRegister` r184s Geometrie-Hörer herausnimmt (er zerstörte beim verzögerten Entsorgen
+//       der alten Geometrie die GPU-Puffer der neuen) — EINE Antwort an der Wurzel, kein frischer Mesh je Wachsen;
 //   (j) NEUSCHREIBEN (06.10.) — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
 //       (`s.schreiben`, Index-Bytes je „Verursacher>Abschnitt") zählt über Frames in Ruhe 0 Bytes je Pass, und ein Index,
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
@@ -630,27 +631,32 @@ function check(name, ok, detail) {
             res.stitchDurchSatz = /_chunkSatzEin\(\s*"boden"/.test(code(r._rebuildLodStitchBand));
             res.wasserDurchSatz = /_chunkSatzEin\(\s*"wasser"/.test(code(r._finalizeWaterSheetMesh));
             res.bauOhneRegion = !/"p:"/.test(code(r._archPlacedRegionKey));
-            // (i) WACHSEN (Welle 6): ein Satz, der wächst, trägt einen FRISCHEN Mesh über der neuen Pool-Geometrie — r184
-            // hängt den Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst
-            // beim Entsorgen; eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 …
-            // was not set", das Hauptbild-Paket ungültig). Probe am Wasser-Satz: doppelte Kapazität, derselbe Inhalt.
+            // (i) WACHSEN (Welle 6): ein Satz, der wächst, tauscht die Geometrie am SELBEN Mesh — r184 hängt den
+            // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
+            // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
+            // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
+            // am Wasser-Satz: doppelte Kapazität, derselbe Inhalt, derselbe Mesh.
             res.wachsen = null;
             const ws = s.chunkSaetze ? s.chunkSaetze.get("wasser") : null;
             if (ws) {
                 const altMesh = ws.mesh,
+                    altGeom = ws.geom,
                     altIdx = ws.iSumme,
                     altBereiche = ws.bloecke.size;
                 r._chunkSatzGeometrie(ws, ws.vKap * 2, ws.iKap);
                 r._tickChunkSatz();
                 const ab = abschnitteVon(ws);
                 res.wachsen = {
-                    frisch: ws.mesh !== altMesh,
-                    altFort: altMesh.parent === null,
-                    neuDa: ws.mesh.parent === s.scene && ws.mesh.geometry === ws.geom,
+                    derselbe: ws.mesh === altMesh && ws.mesh.parent === s.scene,
+                    getauscht: ws.geom !== altGeom && ws.mesh.geometry === ws.geom,
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,
                 };
             }
-            res.keinTausch = !/\.mesh\.geometry\s*=/.test(code(r._chunkSatzGeometrie));
+            // Absenz am Code: der Tausch steht im Satz, der Hörer fällt im Register (EINE Antwort, kein frischer Mesh).
+            res.tauschSicher =
+                /\.mesh\.geometry\s*=/.test(code(r._chunkSatzGeometrie)) &&
+                !/_chunkSatzMesh\(/.test(code(r._chunkSatzGeometrie)) &&
+                /_geometryDisposeListeners\.delete\(/.test(code(r._renderObjektRegister));
             // (j) NEUSCHREIBEN (06.10.): kein Pass schreibt in Ruhe, und ein Index, der für Hauptbild + Kaskaden zu klein
             // ist, wächst EINMAL, statt dass die Kaskaden einander je Frame verdrängen. Die Kaskaden-Pässe fahren den EINEN
             // Chokepoint `_chunkSatzPass` mit Stellvertreter-Kameras und Ortho-Frusta über dem Spieler: „ruhe" = enge Boxen
@@ -890,9 +896,9 @@ function check(name, ok, detail) {
     );
     const wa = out.wachsen;
     check(
-        "(i) WACHSEN — ein wachsender Satz trägt einen frischen Mesh (nie eine getauschte Geometrie), derselbe Inhalt",
-        !!wa && wa.frisch && wa.altFort && wa.neuDa && wa.inhalt && out.keinTausch === true,
-        JSON.stringify(Object.assign({ keinTausch: out.keinTausch }, wa || {}))
+        "(i) WACHSEN — ein wachsender Satz tauscht die Geometrie am selben Mesh (der r184-Hörer fällt im Register), derselbe Inhalt",
+        !!wa && wa.derselbe && wa.getauscht && wa.inhalt && out.tauschSicher === true,
+        JSON.stringify(Object.assign({ tauschSicher: out.tauschSicher }, wa || {}))
     );
     const nu = out.neu;
     if (nu) {

@@ -32565,7 +32565,11 @@ class AnazhRealm {
     // Entsorgen gibt die Foundry-Referenz zurück (V4(B)-Ref-Zähler `_liveRefs` der Cache-Gruppe): solange
     // eine Kachel die Studio-Geometrie zeichnet, räumt der LRU sie nicht; war sie geräumt, fällt sie jetzt.
     _nahWieseKachelEntsorgen(k) {
-        if (k.meshes) for (const im of k.meshes) if (im.parent) im.parent.remove(im);
+        if (k.meshes)
+            for (const im of k.meshes) {
+                if (im.parent) im.parent.remove(im);
+                this._instanzAbschied(im);
+            }
         k.meshes = null;
         for (const src of k.quellen || []) {
             src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
@@ -32927,7 +32931,7 @@ class AnazhRealm {
             m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
             if (a.tint) m.instanceColor.array.set(alt.instanceColor.array.subarray(0, a.anzahl * 3));
             if (alt.parent) alt.parent.remove(alt);
-            alt.dispose();
+            this._instanzAbschied(alt);
             a.wachse++;
         }
         AnazhRealm._instanzZahl(m, a.anzahl);
@@ -48647,7 +48651,7 @@ class AnazhRealm {
         if (!R || R.cap < G.maxTeilchen || R.size !== G.size) {
             if (R) {
                 if (R.mesh.parent) R.mesh.parent.remove(R.mesh);
-                R.mesh.dispose();
+                this._instanzAbschied(R.mesh); // die Instanz-Puffer verlassen die GPU (W6, r184s Register)
                 R.geo.dispose();
                 R.mat.dispose();
             }
@@ -52320,8 +52324,8 @@ class AnazhRealm {
     }
 
     // V18.300 — eine REGIONALE Streu-Gruppe vollständig entsorgen (region-privat →
-    // kein anderer Konsument). Der Mesh verlässt die Szene + gibt seinen
-    // instanceMatrix-Buffer frei; geom/mat sind geteilt (archFlattenCache) → bleiben.
+    // kein anderer Konsument). Der Mesh verlässt die Szene, seine Instanz-Puffer die GPU
+    // (_instanzAbschied); geom/mat sind geteilt (archFlattenCache) → bleiben.
     _disposeArchInstanceGroup(groupKey) {
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(groupKey);
         if (!g) return;
@@ -52337,7 +52341,7 @@ class AnazhRealm {
             // Region-BundleGroup; ein leeres Bundle
             // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
             this._archBundleSceneRemove(g.mesh);
-            if (typeof g.mesh.dispose === "function") g.mesh.dispose();
+            this._instanzAbschied(g.mesh);
             // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
             // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
             // (`_evicted`), gibt jetzt der letzte Halter ihre geteilte Geometrie frei (deferred).
@@ -61914,9 +61918,9 @@ class AnazhRealm {
 
     // Die Pool-Geometrie (neu oder gewachsen): die Vertex-Attribute bis zum Hochwasser, der Index bis zum Hochwasser der
     // Abschnitte kopiert, die Views aller Bereiche neu gezeigt, die alte Geometrie geht in die verzögerte Entsorgung. Ein
-    // Wachsen mitten im Frame (ein Schatten-Pass, dessen Abschnitt keinen Platz findet) ist richtig: die schon projizierte
-    // Liste des Haupt-Passes zieht den alten Mesh, dessen Geometrie den Abschnitt des Hauptbilds an seiner Stelle trägt und
-    // bis zur Abgabe lebt; jeder spätere Pass projiziert den frischen.
+    // Wachsen mitten im Frame (ein Schatten-Pass, dessen Abschnitt keinen Platz findet) ist richtig: der Mesh trägt ab
+    // sofort die neue Geometrie, die den Abschnitt des Hauptbilds an seiner Stelle trägt (`_chunkSatzUmlegen` lässt ihn
+    // liegen); was der Haupt-Pass schon aufzeichnete, liest die alte, die bis zur Abgabe lebt.
     _chunkSatzGeometrie(s, vKap, iKap) {
         const alt = s.geom;
         const g = new THREE.BufferGeometry();
@@ -61938,19 +61942,21 @@ class AnazhRealm {
         s.vKap = vKap;
         s.iKap = iKap;
         for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
-        // Ein Wachsen trägt einen FRISCHEN Mesh, nie eine getauschte Geometrie: r184 hängt den Entsorgungs-Hörer einer
-        // Geometrie an ihr ERSTES Render-Objekt und liest dessen Attribute erst beim Entsorgen — nach einem Tausch die der
-        // neuen Geometrie. Die verzögerte Entsorgung der alten zerstörte so die GPU-Puffer der neuen (gemessen, Welle 6,
-        // echte GPU: die Normale des werfenden Bau-Satzes ohne Puffer, „Vertex buffer slot 5 … was not set", das ganze
-        // Hauptbild-Kommando-Paket ungültig). Der alte Mesh fällt mit seinen Render-Objekten.
-        if (s.mesh) this._chunkSatzMesh(s);
+        // Ein Wachsen tauscht die Geometrie am SELBEN Mesh: seine Render-Objekte sehen den Tausch beim nächsten Zeichnen
+        // (r184 `needsGeometryUpdate` → `setGeometry`). Die Falle des Tauschs — r184 hängt den Entsorgungs-Hörer einer
+        // Geometrie an ihr ERSTES Render-Objekt und liest dessen Attribute erst beim Entsorgen, nach dem Tausch die der neuen
+        // (Welle 6, echte GPU: die Normale des werfenden Bau-Satzes ohne Puffer, „Vertex buffer slot 5 … was not set") —
+        // fällt an der Wurzel, für jede Geometrie: `_renderObjektRegister` nimmt den Hörer heraus, die alten Puffer verlassen
+        // die GPU über den Kehraus (`_gpuKehraus`). Ein frischer Mesh je Wachsen ließe seine alten Render-Objekte am geteilten
+        // Stoff hängen (sein dispose-Hörer hält sie).
+        if (s.mesh) s.mesh.geometry = g;
         if (alt) {
             s.wachse++;
             this._queueGeometryDispose(alt);
         }
     }
 
-    // Der Mesh eines Satzes über seiner aktuellen Pool-Geometrie; ersetzt einen alten am selben Eltern-Knoten.
+    // Der EINE Mesh eines Satzes über seiner Pool-Geometrie (ein Wachsen tauscht nur die Geometrie).
     _chunkSatzMesh(s) {
         const spec = s.spec;
         const mesh = new THREE.Mesh(s.geom, spec.mat);
@@ -61961,11 +61967,6 @@ class AnazhRealm {
         mesh.renderOrder = spec.renderOrder;
         mesh.visible = s.grundAlt = this._chunkSatzGrund(s);
         Object.assign(mesh.userData, spec.userData);
-        const alt = s.mesh;
-        if (alt && alt.parent) {
-            alt.parent.add(mesh);
-            alt.parent.remove(alt);
-        }
         s.mesh = mesh;
         return mesh;
     }
@@ -63247,7 +63248,7 @@ class AnazhRealm {
             parent.add(next);
             if (parent.isBundleGroup) parent.needsUpdate = true;
         } else if (!g.satz && this.state.scene) this.state.scene.add(next);
-        g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
+        this._instanzAbschied(g.mesh); // die eigenen Instanz-Puffer verlassen die GPU (geom/mat geteilt → bleiben)
         g.mesh = next;
         g.capacity = newCap;
     }
@@ -63412,7 +63413,7 @@ class AnazhRealm {
             bigger.receiveShadow = true;
             st.scene.add(bigger);
             st.scene.remove(P.mesh);
-            P.mesh.dispose();
+            this._instanzAbschied(P.mesh);
             P.mesh = bigger;
             P.cap *= 2;
         }
@@ -63452,7 +63453,7 @@ class AnazhRealm {
         if (!P) return;
         if (P.mesh) {
             if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-            P.mesh.dispose(); // instanceMatrix-Buffer; Geo/Mat sind geteilt (this._archFund*)
+            this._instanzAbschied(P.mesh); // die Instanz-Puffer; Geo/Mat sind geteilt (this._archFund*)
         }
         this.state.archFundament = null;
     }
@@ -63712,7 +63713,7 @@ class AnazhRealm {
             bigger.receiveShadow = true;
             this.state.scene.add(bigger);
             this.state.scene.remove(P.mesh);
-            P.mesh.dispose();
+            this._instanzAbschied(P.mesh);
             P.mesh = bigger;
             P.cap *= 2;
         }
@@ -63862,7 +63863,7 @@ class AnazhRealm {
         const P = this.state.stlZaun;
         if (P && P.mesh) {
             if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-            P.mesh.dispose();
+            this._instanzAbschied(P.mesh);
         }
         this.state.stlZaun = null;
         // Die Wege-Karte leert sich (die Formen gehören der alten Welt); die Textur bleibt (kein Re-Compile).
@@ -64048,7 +64049,7 @@ class AnazhRealm {
 
     // Alle Instancing-Gruppen abbauen (Welt-Wechsel/Restore). Geometrie +
     // Material leben im archFlattenCache (geteilt) → NICHT disposen; nur die
-    // InstancedMesh-Wrapper (instanceMatrix-Buffer) freigeben + Map leeren.
+    // Instanz-Puffer der Senken verlassen die GPU (_instanzAbschied) + Map leeren.
     _archDisposeAllInstanceGroups() {
         if (this.state.archInstanceGroups) {
             for (const g of this.state.archInstanceGroups.values()) {
@@ -64056,7 +64057,7 @@ class AnazhRealm {
                 // SUBMIT-WAL — parent-bewusst: regionale InstancedMesh-Gruppen hängen
                 // in Region-BundleGroups (scene.remove wäre dort ein No-op = Leck).
                 if (g.mesh) this._archBundleSceneRemove(g.mesh);
-                if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
+                if (g.mesh) this._instanzAbschied(g.mesh);
             }
             this.state.archInstanceGroups.clear();
         }
@@ -70042,6 +70043,122 @@ class AnazhRealm {
         if (typeof THREE.StorageInstancedBufferAttribute === "function")
             m.instanceMatrix = new THREE.StorageInstancedBufferAttribute(m.instanceMatrix.array, 16);
         return m;
+    }
+    // DER GPU-ABSCHIED — der EINE Weg, auf dem eine Geometrie-Kopie die GPU verlässt. r184 trägt jedes hochgeladene
+    // Attribut STARK in sein Register (`renderer.info.memoryMap`) und gibt es nur auf zwei Wegen frei: `_attributes.delete`
+    // oder das `dispose`-Ereignis einer Geometrie — dieses nur für die Attribute des ERSTEN Render-Objekts, das sie zeichnete.
+    // `InstancedMesh.dispose()` gibt nichts frei (r184 hört auf kein Objekt-Ereignis), die Basis-Attribute einer Foundry-
+    // Gestalt, die eine Instanz-Fassade zeichnet, kennt r184 nur über die Fassade. Befund 05.10. (Radeon 890M, Mess-Wiese,
+    // drei Schleifen à 1,2 km, Puffer-Linse `werkbank puffer`): 131 MB Geometrie-Puffer auf der GPU, davon 60,7 MB im Bild —
+    // 55,6 MB hielt nur der Foundry-Cache (Gestalten ohne lebende Gruppe), 14,7 MB nur r184s Register (der alte Boden-Satz nach
+    // dem Wachsen 11,4 MB, 1 530 Instanz-Matrizen gefallener Nah-Wiesen-Kacheln und Gruppen). Das Attribut selbst bleibt
+    // (die CPU-Kopie im Cache); zeichnet es wieder ein Objekt, lädt r184 es neu hoch (die Version steigt). Verschränkte fallen nie
+    // einzeln (r184 zerstört den geteilten Puffer und vergisst ihn nicht — das nächste Zeichnen läse einen toten Puffer).
+    _gpuAbschied(attr) {
+        const rend = this.state.renderer;
+        if (!attr || attr.isInterleavedBufferAttribute || !rend || !rend._attributes || !rend.info) return false;
+        if (!rend.info.memoryMap.has(attr)) return false;
+        rend._attributes.delete(attr);
+        // Die Version steigt: zeichnet ein altes Render-Objekt das Attribut wieder, sieht der Beobachter (r184 equals,
+        // die Observer-Diät) die Änderung und lädt es hoch — ohne sie fände sein Draw keinen Puffer.
+        attr.needsUpdate = true;
+        return true;
+    }
+    // DER ABSCHIED EINER INSTANZ-SENKE — das Gegenstück zu `_instanzMesh`: ihre EIGENEN Instanz-Puffer (die Matrizen als
+    // Speicher-Puffer, die Farben) verlassen die GPU. Der Speicher-Puffer fällt NUR hier: seine Bindegruppe hält ihn, und
+    // r184 baut sie nur bei einem neuen Attribut-OBJEKT neu (`Bindings._update`), nie bei einem neu hochgeladenen Puffer —
+    // eine Senke, die weiterlebt, darf ihn nie verlieren. Der Aufrufer hat sie aus Graph und Bündel genommen; Geometrie und
+    // Stoff gehören ihm (geteilt).
+    _instanzAbschied(mesh) {
+        if (!mesh) return;
+        this._gpuAbschied(mesh.instanceMatrix);
+        this._gpuAbschied(mesh.instanceColor);
+        // Die Render-Objekte der Senke (`_renderObjektRegister`) lösen sich: von Stoff und Geometrie (ihr dispose-Ereignis
+        // hielt sie), ihr Knoten-Zustand aus r184s `nodeBuilderCache` (je Instanz-Senke unter ihrer uuid gecacht — er hält
+        // über den InstancedMeshNode die Senke selbst; nach drei Wander-Schleifen 3 713 Zustände für 226 lebende Senken),
+        // ihre eigenen Bindegruppen aus der Layout-Zählung. Dann nimmt der Collector sie samt Uniform-Puffern. Die Pipeline
+        // bleibt im Cache, wie bisher (r184s eigenes `dispose` gäbe mit dem letzten Render-Objekt einer Familie auch sie frei —
+        // die nächste Senke derselben Familie kompilierte neu); geteilte Gruppen gehören allen.
+        const ros = mesh.__renderObjekte;
+        const rend = this.state.renderer;
+        if (ros) {
+            mesh.__renderObjekte = null;
+            for (const ro of ros) {
+                if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
+                if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
+                if (rend && rend._nodes) rend._nodes.delete(ro);
+                if (rend && rend._bindings && ro._bindings)
+                    for (const bg of ro._bindings) {
+                        const b0 = bg.bindings && bg.bindings[0];
+                        if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+                        rend.backend.deleteBindGroupData(bg);
+                        rend._bindings.delete(bg);
+                        // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
+                        // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
+                        // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
+                        for (const b of bg.bindings || [])
+                            if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
+                                const td = rend._textures.get(b.texture);
+                                if (td.bindGroups) td.bindGroups.delete(bg);
+                            }
+                    }
+            }
+        }
+        mesh.dispose();
+    }
+    // DAS RENDER-OBJEKT-REGISTER: r184 baut je (Objekt × Stoff × Pass-Kontext) ein Render-Objekt mit eigenen Uniform-Puffern
+    // (`bindingBuffer…_object` · `_render`) und hängt es an das `dispose`-Ereignis seines STOFFS und seiner GEOMETRIE — ein
+    // geteilter Stoff hielt so jedes Render-Objekt jeder je gezeichneten Senke für immer, der Collector nahm keins (Mess-Wiese
+    // nach drei Wander-Schleifen: 7 481 Uniform-Puffer, 2,6 MB, keiner vom GC frei). Das Register merkt je Objekt seine
+    // Render-Objekte: der Abschied einer Senke (`_instanzAbschied`) löst sie, der Kehraus liest aus ihnen, was das Objekt
+    // WIRKLICH zeichnet — auch Attribute, die kein `geometry.attributes` trägt (r184s InstanceNode zeichnet die Instanz-
+    // Farbe aus einem EIGENEN Attribut über `instanceColor.array`).
+    _renderObjektRegister(renderer) {
+        const objs = renderer && renderer._objects;
+        if (!objs || objs.__anazhRegister || typeof objs.createRenderObject !== "function") return;
+        objs.__anazhRegister = true;
+        const roh = objs.createRenderObject;
+        objs.createRenderObject = function (...a) {
+            const ro = roh.apply(this, a);
+            const o = ro && ro.object;
+            if (!o) return ro;
+            const liste = o.__renderObjekte || (o.__renderObjekte = []);
+            liste.push(ro);
+            // r184 löst ein Render-Objekt selbst (ein neuer Schlüssel, ein entsorgter Stoff): es verlässt das Register.
+            const roDispose = ro.onDispose;
+            ro.onDispose = () => {
+                const l = o.__renderObjekte;
+                const i = l ? l.indexOf(ro) : -1;
+                if (i >= 0) l.splice(i, 1);
+                roDispose();
+            };
+            return ro;
+        };
+        // DER GEOMETRIE-HALTER FÄLLT: r184 hängt an jede gezeichnete Geometrie EINEN dispose-Hörer, der das ERSTE Render-
+        // Objekt einfängt (`initGeometry`, gehalten in der Map `_geometryDisposeListeners`) — eine Fassade, die nie entsorgt
+        // wird, hielt so ihre erste Senke samt Render-Objekt, Knoten-Zustand und Uniform-Puffern für immer (Heap-Halter-
+        // Suche 06.10.: zehn abgeschiedene Gruppen, alle zehn über diesen Hörer am Leben). Und sein Entsorgen löschte die
+        // Attribute DIESES Render-Objekts — auch Basis-Attribute, die eine Fassade mit lebenden Gruppen teilt. Die Residenz
+        // trägt der Kehraus (`_gpuKehraus`: was kein Objekt des Graphen zeichnet, verlässt die GPU); der Hörer fällt, nur
+        // die Geometrie-Zählung des Infos bleibt ehrlich.
+        const geos = renderer._geometries;
+        if (geos && typeof geos.initGeometry === "function" && geos._geometryDisposeListeners) {
+            const init = geos.initGeometry;
+            geos.initGeometry = function (ro) {
+                init.call(this, ro);
+                const g = ro.geometry;
+                const hoerer = this._geometryDisposeListeners.get(g);
+                if (!hoerer) return;
+                g.removeEventListener("dispose", hoerer);
+                this._geometryDisposeListeners.delete(g);
+                const info = this.info;
+                const zaehlung = () => {
+                    info.memory.geometries--;
+                    g.removeEventListener("dispose", zaehlung);
+                };
+                g.addEventListener("dispose", zaehlung);
+            };
+        }
     }
     // DIE INSTANZ-ZAHL — der EINE Schreiber von `count` jeder Instanz-Senke (Instanz-Gruppen · Fundament · Zaun ·
     // Nah-Wiese · Nah-Streu): jede Senke ist DICHT ([0, n) lebt, ein freier Slot existiert nicht), und eine leere ist
@@ -84373,6 +84490,7 @@ class AnazhRealm {
                 } catch (_e) {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
+                this._renderObjektRegister(renderer);
                 // Hitch-Telemetrie (d) Upload-Bytes: JEDER Upload läuft durch device.queue.writeBuffer — ein
                 // Laufzeit-Wrap hier zählt alles, die vendor-Datei bleibt byte-alt. Idempotent über __anazhTap;
                 // Konsum je Frame in _perfSenseFoldFrame.
@@ -86865,6 +86983,56 @@ class AnazhRealm {
         }
     }
 
+    // DIE KEHRAUS-MARKE: r184s Lebenszeit-Zähler der render()-Aufrufe (`info.render.calls` — NIE eine Frame-Metrik, die
+    // liest der EINE Tap über drawCalls); `attributeCall` trägt je Attribut seinen Wert beim letzten Zeichnen, der Kehraus
+    // vergleicht dagegen. Die einzige Lesung des Zählers im Stamm (gate:pipeline-constitution · gate:render-tap).
+    _gpuKehrausMarke() {
+        const ri = this.state.renderer && this.state.renderer.info;
+        return ri && ri.render ? ri.render.calls : 0;
+    }
+    // DER GPU-KEHRAUS — die Residenz folgt dem BILD, nie der Geschichte: nach dem Frame verlässt jeder Geometrie-Puffer die
+    // GPU, den kein Objekt des Szenen-Graphen zeichnet und den dieser Frame nicht zeichnete (die r184-Quads der Post-Kette
+    // tragen ihren Frame-Zähler in `attributeCall`). Was der Foundry-Cache nur auf der CPU behält, was ein Wachsen ersetzte,
+    // was eine Gruppe beim Fallen zurückließ — gleich welcher Erzeuger, EIN Chokepoint. Die Instanz-Matrizen (Speicher-
+    // Puffer) fallen nur über `_instanzAbschied` (ihre Bindegruppe hält sie). Kosten: ein Gang durch Graph und Register je
+    // GPU_KEHRAUS_MS — beide tragen nach dem Kehraus nur, was das Bild trägt. `zaehlerVor` = r184 `info.render.calls` vor
+    // dem Frame.
+    _gpuKehraus(zaehlerVor, jetzt) {
+        const st = this.state;
+        const rend = st.renderer;
+        if (!rend || !rend._attributes || !rend._geometries || !rend.info || !st.scene) return 0;
+        if (st._gpuKehrausT && jetzt - st._gpuKehrausT < AnazhRealm.GPU_KEHRAUS_MS) return 0;
+        st._gpuKehrausT = jetzt;
+        const lebt = new Set();
+        st.scene.traverse((o) => {
+            const g = o.geometry;
+            if (g && g.attributes) {
+                for (const k in g.attributes) lebt.add(g.attributes[k]);
+                if (g.index) lebt.add(g.index);
+            }
+            if (o.isInstancedMesh) {
+                lebt.add(o.instanceMatrix);
+                if (o.instanceColor) lebt.add(o.instanceColor);
+            }
+            // Was seine Render-Objekte zeichnen (r184 `getAttributes`, gecacht): auch die Knoten-Attribute. Ein Objekt unter
+            // der Observer-Diät lädt NICHTS neu hoch, solange sich keine Version ändert — ein Attribut, das es zeichnet,
+            // darf nie fallen.
+            const ros = o.__renderObjekte;
+            if (ros) for (const ro of ros) if (ro.attributes) for (const a of ro.attributes) lebt.add(a);
+        });
+        const gezeichnet = rend._geometries.attributeCall;
+        const weg = [];
+        for (const [a, v] of rend.info.memoryMap) {
+            if (!v || (v.type !== "attributes" && v.type !== "indexAttributes")) continue;
+            if (lebt.has(a) || gezeichnet.get(a) >= zaehlerVor) continue;
+            weg.push(a);
+        }
+        let n = 0;
+        for (const a of weg) if (this._gpuAbschied(a)) n++;
+        st._gpuKehrausN = (st._gpuKehrausN || 0) + n;
+        return n;
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -87069,6 +87237,12 @@ class AnazhRealm {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
+            // DIE LEINWAND OHNE TIEFE: in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene lebt im Ziel
+            // des Szene-Passes, mit eigener Tiefe) — r184 legte für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-Größe
+            // an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die kein Pixel las. Der direkte Pfad (die Kette scheitert
+            // im Render, _loopRender) holt sie zurück. Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an.
+            const rend = this.state.renderer;
+            if (rend.backend && rend.backend.isWebGPUBackend === true) rend.depth = false;
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
@@ -87808,6 +87982,8 @@ class AnazhRealm {
         // Steht die Post-Pipeline, rendert sie die Szene; bei postProcessingFailed direkter
         // renderer.render() — nie ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
+        // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
+        const zaehlerVor = this._gpuKehrausMarke();
         // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: compileAsync/_bundleReifeWache
         // submitten intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
         // Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
@@ -87822,7 +87998,14 @@ class AnazhRealm {
             } catch (err) {
                 this.state.postProcessingFailed = true;
                 this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
-                this.state.renderer.render(this.state.scene, this.state.camera);
+                // Der direkte Pfad zeichnet die Szene in die Leinwand: sie braucht ihre Tiefe wieder (die Post-Kette nahm
+                // sie, _ensurePostProcessing) — r184 baut den Leinwand-Pass neu (updateSize verwirft seinen Deskriptor).
+                const rend = this.state.renderer;
+                if (rend.depth === false) {
+                    rend.depth = true;
+                    if (rend.backend && typeof rend.backend.updateSize === "function") rend.backend.updateSize();
+                }
+                rend.render(this.state.scene, this.state.camera);
             }
         } else {
             this.state.renderer.render(this.state.scene, this.state.camera);
@@ -87836,6 +88019,8 @@ class AnazhRealm {
             f.renderCalls = _rinfo.render.drawCalls != null ? _rinfo.render.drawCalls : _rinfo.render.calls || 0;
             f.renderTris = _rinfo.render.triangles || 0;
         }
+        // Nach dem Frame: was weder der Graph noch dieser Frame zeichnet, verlässt die GPU (der EINE Kehraus).
+        this._gpuKehraus(zaehlerVor, performance.now());
         // pendingDisposals über `device.queue.onSubmittedWorkDone()` leeren — die EINZIGE deterministische
         // API (resolved, wenn die GPU alle bisherigen Submits durch hat); ein Frame-Zähler rät nur.
         if (this.state.pendingDisposals.size > 0) {
@@ -92034,6 +92219,9 @@ AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND = 8;
 // oszillieren beim Wandern/LOD-Wechsel um liveCount 0 — ein Sofort-Reap machte jede Oszillation zu
 // Voll-Dispose + Re-Mint (Pipeline-Cache, Matrix-Upload, Heap-Müll). 10 s deckt jede Oszillation.
 AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
+// Der Takt des GPU-Kehraus (`_gpuKehraus`): je Gang Graph + r184-Register (nach dem Kehraus beide nur das Bild); was zwischen
+// zwei Gängen den Graphen verlässt, hält die GPU höchstens so lange.
+AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // Der EINE forceWebGL-Hook: die Boot-Probe (gate:webgl-probe) erzwingt den r184-WebGL2-Rückfall;
 // alle fünf Renderer-Münzstellen (Welt · Feed-/Hof-/Ich-Bühne · Workshop-Preview) lesen diesen
 // Chokepoint → die erzwungene Welt fährt EIN Backend.

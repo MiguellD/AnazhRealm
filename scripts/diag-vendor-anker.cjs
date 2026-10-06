@@ -180,6 +180,51 @@ const ANKER = [
         sub: "if(this.device.queue.submit([t.encoder.finish()]),null!==e.textures)",
         organ: "_chunkSatzUmlegen (jeder Schatten-Pass ist am Ende abgegeben — ein Umzug mitten im Frame trifft ihn nie)",
     },
+    // Das Wachsen des Satzes tauscht die Geometrie am selben Mesh: das Render-Objekt sieht den Tausch beim nächsten Zeichnen
+    // und liest die Attribute der neuen Geometrie (der Geometrie-Hörer, der sonst die neuen Puffer zerstörte, fällt im
+    // Register — `_renderObjektRegister`, Anker unten).
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "l.needsGeometryUpdate&&l.setGeometry(e.geometry)",
+        organ: "_chunkSatzGeometrie (der Tausch am selben Mesh: das Render-Objekt folgt der Geometrie)",
+    },
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "setGeometry(e){this.geometry=e,this.attributes=null,this.attributesId=null}",
+        organ: "_chunkSatzGeometrie (nach dem Tausch liest das Render-Objekt die Attribute neu)",
+    },
+    // DIE RESIDENZ (W6): r184 hält jedes hochgeladene Attribut STARK in `info.memoryMap` und gibt es nur über
+    // `_attributes.delete` frei — der GPU-Abschied (_gpuAbschied · _instanzAbschied) und der Kehraus (_gpuKehraus) lesen das
+    // Register, die Zeichen-Spur je Attribut (`attributeCall`) und wissen, warum ein Speicher-Puffer nur mit seiner Senke fällt.
+    { file: "vendor/three.webgpu.min.js", sub: "this._attributes=new By(r,this.info)", organ: "_gpuAbschied (renderer._attributes)" },
+    { file: "vendor/three.webgpu.min.js", sub: "delete(e){const t=super.delete(e);return null!==t&&(this.backend.destroyAttribute(e),this.info.destroyAttribute(e)),t}", organ: "_gpuAbschied (Attributes.delete: GPU-Puffer + Register)" },
+    { file: "vendor/three.webgpu.min.js", sub: "destroyAttribute(e){const t=this.backend;t.get(this._getBufferAttribute(e)).buffer.destroy(),t.delete(e)}", organ: "_gpuAbschied (verschränkte Attribute fallen nie einzeln: der geteilte Puffer bliebe tot im Gedächtnis)" },
+    { file: "vendor/three.webgpu.min.js", sub: "_createAttribute(e,t){const r=this._getAttributeMemorySize(e);this.memoryMap.set(e,{size:r,type:t})", organ: "_gpuKehraus (das Register: memoryMap hält jedes Attribut stark)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._geometries=new Dy(this._attributes,this.info)", organ: "_gpuKehraus (renderer._geometries)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.attributeCall=new WeakMap", organ: "_gpuKehraus (die Zeichen-Spur je Attribut)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateAttribute(e,t){const r=this.info.render.calls;", organ: "_gpuKehraus (attributeCall = render.calls des letzten Zeichnens)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.attributes.update(e,i),n.attribute!==e&&(n.attribute=e,s=!0)", organ: "_instanzAbschied (die Bindegruppe eines Speicher-Puffers folgt nur dem Attribut-Objekt — er fällt nur mit seiner Senke)" },
+    // Das Render-Objekt-Register: r184 baut Render-Objekte über die Instanz-Methode createRenderObject und hängt jedes an das
+    // dispose-Ereignis von Stoff und Geometrie (der geteilte Stoff hielt sie für immer).
+    { file: "vendor/three.webgpu.min.js", sub: "this._objects=new Sy(this,this._nodes,this._geometries,this._pipelines,this._bindings,this.info)", organ: "_renderObjektRegister (renderer._objects)" },
+    { file: "vendor/three.webgpu.min.js", sub: "l=this.createRenderObject(this.nodes,this.geometries,this.renderer,e,t,r,s,i,n,a,o)", organ: "_renderObjektRegister (jedes Render-Objekt entsteht über createRenderObject)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'this.onMaterialDispose=()=>{this.dispose()},this.onGeometryDispose=()=>{this.attributes=null,this.attributesId=null},this.material.addEventListener("dispose",this.onMaterialDispose),this.geometry.addEventListener("dispose",this.onGeometryDispose)', organ: "_instanzAbschied (Stoff und Geometrie halten das Render-Objekt über ihr dispose-Ereignis)" },
+    { file: "vendor/three.webgpu.min.js", sub: "delete(e){if(e.isRenderObject){const t=this.get(e).nodeBuilderState;void 0!==t&&(t.usedTimes--,0===t.usedTimes&&this.nodeBuilderCache.delete(this.getForRenderCacheKey(e)))}return super.delete(e)}", organ: "_instanzAbschied (der Knoten-Zustand einer Senke verlässt den nodeBuilderCache — er hält die Senke)" },
+    { file: "vendor/three.webgpu.min.js", sub: "deleteBindGroupData(e){const{backend:t}=this,r=t.get(e);r.layout&&(r.layout.usedTimes--,0===r.layout.usedTimes&&this._bindGroupLayoutCache.delete(r.layoutKey)", organ: "_instanzAbschied (die eigenen Bindegruppen verlassen die Layout-Zählung)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getNodeBuilderState(){return this._nodeBuilderState||(this._nodeBuilderState=this._nodes.getForRender(this))}", organ: "_instanzAbschied (Render-Objekt: Knoten-Zustand gecacht am Objekt)" },
+    // Der Geometrie-Halter: initGeometry hängt EINEN dispose-Hörer je Geometrie, der das erste Render-Objekt einfängt und in
+    // _geometryDisposeListeners lebt — _renderObjektRegister nimmt ihn heraus (der Kehraus trägt die Residenz).
+    { file: "vendor/three.webgpu.min.js", sub: "initGeometry(e){const t=e.geometry;this.get(t).initialized=!0,this.info.memory.geometries++;const r=()=>{", organ: "_renderObjektRegister (der Geometrie-Hörer fängt das erste Render-Objekt ein)" },
+    { file: "vendor/three.webgpu.min.js", sub: 't.addEventListener("dispose",r),this._geometryDisposeListeners.set(t,r)}', organ: "_renderObjektRegister (der Hörer lebt in _geometryDisposeListeners)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateForRender(e){!1===this.has(e)&&this.initGeometry(e),this.updateAttributes(e)}", organ: "_renderObjektRegister (initGeometry läuft über die Instanz, einmal je Geometrie)" },
+    // Die Textur merkt jede Bindegruppe, die sie liest, und vergisst sie nie — _instanzAbschied nimmt die Gruppen der Senke heraus.
+    { file: "vendor/three.webgpu.min.js", sub: "l=this.textures.get(u);o&&(this.textures.updateTexture(u),t.generation!==l.generation&&(t.generation=l.generation,s=!0),l.bindGroups.add(e))", organ: "_instanzAbschied (die Textur hält die Bindegruppen ihrer Leser)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._textures=new tb(this,r,this.info)", organ: "_instanzAbschied (renderer._textures)" },
+    // Die Leinwand ohne Tiefe: der Leinwand-Pass trägt eine Tiefe nur bei renderer.depth/stencil; updateSize verwirft seinen
+    // Deskriptor (der direkte Pfad holt die Tiefe zurück).
+    { file: "vendor/three.webgpu.min.js", sub: "!0!==e.depth&&!0!==e.stencil||(i.depthStencilAttachment={view:this.textureUtils.getDepthBuffer(e.depth,e.stencil).createView()})", organ: "_ensurePostProcessing (die Leinwand ohne Tiefe)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateSize(){this.delete(this.renderer.getCanvasTarget())}", organ: "_loopRender (der direkte Pfad holt die Leinwand-Tiefe zurück)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.isWebGPUBackend=!0", organ: "_ensurePostProcessing (Leinwand-Tiefe nur auf WebGPU)" },
 ];
 
 // DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm schneiden (vom ersten
