@@ -71024,7 +71024,8 @@ class AnazhRealm {
     }
 
     // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle für Fern-Satz, Treffer-
-    // Volumen und Idle-Vorbacken — gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul], sonst soul.
+    // Volumen und Vorbacken (_tickTrefferGliederVorbacken) — gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul],
+    // sonst soul.
     _kreaturGattung(cr) {
         const ud = (cr && cr.userData) || {};
         const soul = ud.soul || "wesen";
