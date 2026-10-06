@@ -43,7 +43,7 @@
 //      gerechnet wird in der Klang-Werkstatt (Worker), der Haupt-Thread nimmt auf und spielt.
 //  (A) ARMLÄNGE: zwei Orte aus nächster Nähe — 1 m vor dem Glut-Bau, der nächste trockene
 //      Punkt 3–12 m neben dem Fuß des nächsten Wasserfalls der Region (der Fuß liegt im
-//      Becken; Mess-Saat: 8 m vor einem 17-m-Fall) — mit eigenem SOLL (die nahe Quelle trägt den Ort).
+//      Becken; Mess-Saat seit Welle L: 12 m neben einem 9,1-m-Fall) — mit eigenem SOLL (die nahe Quelle trägt den Ort).
 //  (P) DIE SPITZEN-PROBE: die ganze Mischung jedes Welt- und jedes Lab-Ortes offline durch
 //      Welt-Master und Spitzen-Wand (klang:umweltSpitze) — keine Spitze erreicht 0 dBFS.
 //  SELBST-TEST (--selftest, die Linse feuert): ein eingeschmuggelter Drohn-Oszillator
@@ -551,9 +551,11 @@ const SOLL = {
         ["glut ≥ −20", m.glut.db >= -20],
         ["glut ≥ wind + 6", m.glut.db >= m.wind.db + 6],
     ],
-    // Der Fall am nächsten trockenen Punkt (≤ 12 m): ein 17-m-Fall trägt dort nach dem Gesetz ≥ −17 dB.
+    // Der Fall am nächsten trockenen Punkt (≤ 12 m): der kleinste Fall des Gesetzes (waterfallMinDrop 6 m) trägt dort
+    // −14 − 20·lg(12/5) = −21,6 dB. (Bis Welle L stand hier ≥ −18 für den „17-m-Fall“ der Mess-Wiese — das war der
+    // 13-m-Kessel unter einem 4,3-m-Spiegel-Sturz; der Spiegel ist seit Welle L das Gesetz, der Kessel kein Fall.)
     fallArm: (m) => [
-        ["fall ≥ −18", m.fall.db >= -18],
+        ["fall ≥ −22", m.fall.db >= -22],
         ["fall ≥ wind + 10", m.fall.db >= m.wind.db + 10],
     ],
 };
