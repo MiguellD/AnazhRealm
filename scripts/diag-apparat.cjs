@@ -96,7 +96,9 @@ function countToString(src) {
 // Existenz-Proben leben im Apparat. Der Bestand darf NUR SINKEN — jede neue
 // Probe liest den Anker-Katalog (window.__anker) oder beweist KONSUM
 // (window.__consumes); wandert eine Probe, sinkt die Zahl hier mit.
-const FROZEN_TYPEOF = 878;
+// Welle 5 Klang: 878 → 874 (die Proben auf _buildHydroAudioLayer · _tickHydrosphereAudio · _pointSegDist2D ·
+// _tagToFrequency fielen mit ihren Methoden).
+const FROZEN_TYPEOF = 874;
 
 function countTypeof(src) {
     return (stripComments(src).match(/typeof [^=\n]{1,80}=== "function"/g) || []).length;

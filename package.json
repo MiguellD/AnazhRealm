@@ -112,6 +112,7 @@
         "gate:koerper-bewegung": "node scripts/diag-koerper-bewegung.cjs",
         "gate:kampf-gefuehl": "node scripts/diag-kampf-gefuehl.cjs",
         "gate:schritt-klang": "node scripts/diag-schritt-klang.cjs",
+        "gate:klang-zensus": "node scripts/diag-klang-zensus.cjs --selftest",
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
         "gate:gegenstand-stoff": "node scripts/diag-gegenstand-stoff.cjs --selftest && node scripts/diag-gegenstand-stoff.cjs",
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",

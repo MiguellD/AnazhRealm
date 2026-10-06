@@ -451,6 +451,23 @@ const FORBIDDEN = [
     // Integration 06.10. (W5-Körper) — die Galileo-Allometrie des Wirts (√L auf die Glied-Kinder) lief für kein Studio-Tier
     // mehr (es trägt keine Teil-Kinder); die Glied-Dicke ist Gesetz der Art, die Körpergröße skaliert uniform.
     { token: "_applyCreatureAllometry", fiel: "Integration W5-Körper — die Glied-Dicke trägt ART_GESTALT.bein" },
+    // Welle 5 Klang: die Klang-Welt ist das klang-Gesetzbuch (klang:UMWELT über umweltGraph). Der 110-Hz-Drohn ohne
+    // Gesetz, die Regen-Schicht mit zwei Schreibern (0,014 vs 0,045), die Hydro-Schicht, die je Takt jedes Fluss-Segment
+    // der Welt vermaß, und die Sinus-Pings statt Tier-Stimmen kehren nicht zurück (gate:klang-zensus nennt jeden Täter).
+    { token: "s.ambient", fiel: "Welle 5 Klang — der Drohn; die Welt rauscht aus klang:UMWELT (wind/laub/…)" },
+    { token: "ambientGain", fiel: "Welle 5 Klang — der Drohn" },
+    { token: "symphony.weather", fiel: "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem rain-Kanal" },
+    { token: "_symphonyWeatherTarget", fiel: "Welle 5 Klang — Regen = UMWELT.stimmen.regen" },
+    { token: "hydroAudio", fiel: "Welle 5 Klang — Ufer/Fluss/Fall aus dem Hör-Ring (_umweltRingProbe)" },
+    { token: "_buildHydroAudioLayer", fiel: "Welle 5 Klang — _umweltKlangBauen" },
+    { token: "_tickHydrosphereAudio", fiel: "Welle 5 Klang — _umweltKlangTick (Kosten je Frame konstant)" },
+    { token: "_pointSegDist2D", fiel: "Welle 5 Klang — der Fluss-Segment-Scan je Takt (Kosten ∝ Weltgröße)" },
+    { token: "playCreaturePing", fiel: "Welle 5 Klang — _tierRuf (die Stimme folgt dem Körper)" },
+    { token: "creaturePingCount", fiel: "Welle 5 Klang — symphony.tierRufe" },
+    { token: "_tagToFrequency", fiel: "Welle 5 Klang — UMWELT.tier (Grundton ∝ Körperlänge^−0,9)" },
+    // Die Körperlänge des Rufs maß eine Box3 über den GERENDERTEN Körper (skinnte jede Haut-Ecke auf der CPU) neben
+    // der Seelen-Teile-Länge des Hangs: EINE Quelle ist _creatureKoerperLaenge (Hang + Stimme).
+    { token: "_tierKoerperLaenge", fiel: "Welle 5 Klang — _creatureKoerperLaenge (EINE Körperlänge)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

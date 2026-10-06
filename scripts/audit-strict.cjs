@@ -397,13 +397,13 @@ async function auditStateAndMethods() {
                 "buildMode.phantomHit",
                 "symphony.ctx",
                 "symphony.enabled",
-                "symphony.ambient",
-                "symphony.weather",
+                "symphony.umwelt",
                 "symphony.masterGain",
+                "symphony.spitze",
                 "symphony.masterVolume",
                 "symphony.creaturePingVolume",
                 "symphony.voiceVolume",
-                "symphony.creaturePingCount",
+                "symphony.tierRufe",
                 "grok.companionName",
                 "grok.lastSpoke",
                 "grok.minGapSeconds",
@@ -681,7 +681,8 @@ async function auditStateAndMethods() {
 //      hardcoded Farb-Tabelle. Vision-treu wäre Modulation aus Tags/Welt.
 //      (Class-Konstanten sind ausgenommen — die sind Saat.)
 //   C) Magic-Number-Frequencies: ternary mit Hz-Zahlen (60..2000) → wahr-
-//      scheinlich Frequenz-Map. Vision-treu wäre _tagToFrequency.
+//      scheinlich Frequenz-Map. Vision-treu ist das klang-Gesetzbuch
+//      (klang:UMWELT — die Stimme folgt dem Körper, tierRuf).
 function auditAtmosphereHardcode() {
     console.log("\n=== Atmosphäre-Hardcode-Audit ===");
     const src = fs.readFileSync(SOURCE_JS, "utf8");
@@ -756,7 +757,7 @@ function auditAtmosphereHardcode() {
                 warn(
                     "ATMOSPHERE",
                     `${name}: Frequenz-Map aus Soul-Vergleichen erkannt`,
-                    "nutze _tagToFrequency(tags, baseHz) — Klang folgt Substanz"
+                    "lies das klang-Gesetzbuch (klang:UMWELT, tierRuf) — die Stimme folgt dem Körper"
                 );
                 warnCount++;
                 continue;
