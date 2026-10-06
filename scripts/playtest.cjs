@@ -5128,7 +5128,7 @@ async function checkBandV1763ForgeArmor(ctx) {
         blu.__geraet = {
             name: "__geraet",
             parts: [
-                { shape: "box", material: "stein", size: { x: 0.6, y: 0.6, z: 0.6 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 0.15, y: 1.2, z: 0.15 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         const fertHeld = r.fertigeBlueprint("__geraet");
@@ -5431,7 +5431,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         blu.__s7_forge = {
             name: "__s7_forge",
             parts: [
-                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "eisen", size: { x: 0.2, y: 1.6, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
@@ -5464,7 +5464,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         blu.__s7_plain = {
             name: "__s7_plain",
             parts: [
-                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 0.2, y: 1.8, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");

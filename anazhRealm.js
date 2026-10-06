@@ -11548,6 +11548,7 @@ class AnazhRealm {
             d.hidden = d.getAttribute("data-drawer") !== name;
         }
         this.state.uiActiveDrawer = name;
+        this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
         // toggleDrawer ruft den Werkstatt-Lifecycle-Hook (Lazy-Init der 3D-Preview + RAF-Start) —
         // sonst bleiben Drawer-Shortcuts/API-Calls ohne Preview (state.workshop.preview === null).
         if (typeof this._workshopHandleDrawerChange === "function") {
@@ -11588,6 +11589,7 @@ class AnazhRealm {
                 const isThis = drawer.getAttribute("data-drawer") === name;
                 drawer.hidden = !isThis;
             }
+            this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
             // UI-Putz: die Bibliothek beim Öffnen sofort füllen — die migrierten Welt-
             // Sektionen (Stammbaum/Tagebuch/Andere Welten) + die Welten-Liste.
             if (name === "bibliothek") {
@@ -44603,6 +44605,13 @@ class AnazhRealm {
         if (bp && bp.role === "armor") return this.forgeArmor(name);
         if (bp && bp.role === "soul") return this.forgeAvatar(name);
         if (bp && bp.role === "consumable") return this.brewConsumable(name);
+        // Ein Bauwerk wird gebaut, nicht gehalten (Welle L, V-k11): der Bau-Modus übernimmt (confirmBuild zahlt beim
+        // Setzen); die Schublade schließt, damit das Phantom in der Welt steht.
+        if (bp && this._isPlaceableBlueprint(bp)) {
+            const res = this._bauModusFuer(name);
+            if (res.ok && typeof this.closeAllDrawers === "function") this.closeAllDrawers();
+            return res.ok ? { ok: true, bauModus: true, slot: res.slot } : res;
+        }
         return this.forgeBlueprint(name);
     }
 
@@ -75143,6 +75152,26 @@ class AnazhRealm {
         this.log(`Bau-Modus: ${blueprintName} (Slot ${idx + 1})`, "INFO");
     }
 
+    // EIN BAUWERK GEHT IN DEN BAU-MODUS, NIE IN DIE HAND (Welle L, Befund V-k11): sein Hotbar-Platz (vorhanden, sonst
+    // der erste freie) wird gewählt — das Phantom steht vor dir, RMB oder F setzt es. Werkstatt-FERTIGEN legte die Eiche
+    // (7,8 × 8,8 × 6,4 m) in die Hand, RMB schüttete dann auf, und keine UI leerte die Hand. Ohne freien Platz: laut.
+    _bauModusFuer(name) {
+        if (!name || !this.state.blueprints || !this.state.blueprints[name]) return { ok: false, reason: "unknown" };
+        const hb = this.state.hotbar || [];
+        let idx = hb.indexOf(name);
+        if (idx < 0) {
+            idx = hb.findIndex((x) => !x);
+            if (idx < 0) {
+                this.log(`Bauen: die Hotbar ist voll — leere einen Platz für „${name}".`, "INFO");
+                return { ok: false, reason: "hotbar_voll" };
+            }
+            this.setHotbarSlot(idx, name);
+        }
+        const bm = this.state.buildMode;
+        if (!(bm.active && bm.slotIndex === idx && bm.blueprintName === name)) this.selectHotbarSlot(idx);
+        return { ok: !!(bm.active && bm.blueprintName === name), slot: idx };
+    }
+
     // Bauplan in einen Hotbar-Slot legen. Persistiert sich automatisch via
     // Save. UI im Spieler-Drawer ruft das auf.
     setHotbarSlot(slotIndex, blueprintName) {
@@ -76188,6 +76217,22 @@ class AnazhRealm {
         return null;
     }
 
+    // GRÄBT DIESES GERÄT? (die Maus-Absicht, Welle L Q9): die leere Hand und die Grab-Geräte der Schmiede (Werk-Art
+    // graben · pick: Spaten, Schaufel, Spitzhacke) graben und schütten auf; Klinge, Keil, Wucht und Bogen nie. Ein
+    // Eigenwerk gräbt, wenn es keine Klinge ist (_implementAffordanceLabel — die Form entscheidet); ein Bauwerk nie.
+    _geraetGraebt(bp) {
+        if (!bp) return true;
+        if (this._isPlaceableBlueprint(bp)) return false;
+        const gestalt = this._schmiedeGestalt(bp);
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (gestalt && sc && sc.REZEPT_ZU_GATTUNG && sc.GATTUNGEN) {
+            const g = sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[gestalt]];
+            const art = g && g.task ? g.task.art : null;
+            return art === "graben" || art === "pick";
+        }
+        return this._implementAffordanceLabel(bp) !== "Klinge";
+    }
+
     // ═══ DIE KAMPF-MASSE DER GATTUNG ═══
     // schmiede-core misst kampfMasze (Länge, Masse, Trägheit um den Pivot, mEff am Impact; prepP wie
     // gueteFaktor) → Schwung-Dauer, Reichweite, Schadens-Faktor der Studio-Klingen. Auflösung SYNCHRON
@@ -76811,12 +76856,12 @@ class AnazhRealm {
     }
 
     // V17.55 W1 — HALTEN-zum-Abbauen: solange die Abbau-Taste gehalten wird (+ Pointer-Lock,
-    // Inventar zu), wird in der strikeInterval-Kadenz auto-gehiebt → kontinuierliches Mahlen
-    // (frame-rate-unabhängig, Intervall-gegated; der erste Hieb kommt sofort beim mousedown).
+    // Inventar und Schubladen zu), wird in der strikeInterval-Kadenz nachgesetzt — mit DEMSELBEN Verb wie beim Drücken
+    // (die Maus-Absicht, p._mausVerb): der Hieb schlägt weiter, auch wenn der Stoß das Tier aus dem Fadenkreuz schob.
     _tickHarvest() {
         const p = this.state.player;
         if (!p || !p.breakHeld) return;
-        if (!this.state.isPointerLocked || this.state.inventoryOpen) {
+        if (!this.state.isPointerLocked || this.state.inventoryOpen || this._uiSchubladeOffen()) {
             p.breakHeld = false;
             return;
         }
@@ -76824,10 +76869,17 @@ class AnazhRealm {
         const last = Number.isFinite(p.lastHarvestStrikeAt) ? p.lastHarvestStrikeAt : -Infinity;
         if (now - last < (AnazhRealm.HARVEST.strikeIntervalSec || 0.2)) return;
         p.lastHarvestStrikeAt = now;
-        this.tryMouseBreak();
+        this.tryMouseBreak(p._mausVerb || undefined);
     }
 
-    tryMouseBreak() {
+    // DIE MAUS-ABSICHT (Welle L 06.10., Klasse Q9) — der EINE Dispatcher des linken Klicks. Beim DRÜCKEN liest er das
+    // Ziel am Fadenkreuz und das gehaltene Gerät: Kreatur in Nahkampf-Weite vom SCHULTERGELENK (nie von der Kamera: in
+    // der 3rd-Person lagen 8,1 m zwischen Kamera und Hirsch, Tor 6 m) → Hieb · Bau → Abbau · Klein-Flora → Pflücken ·
+    // sonst gräbt nur ein Grab-Gerät (Spaten, Schaufel, Spitzhacke) oder die leere Hand; jedes andere Gerät schwingt
+    // ins Leere (Luftschlag). `gehalten` = das Verb des Drückens (der Halte-Tick): es wiederholt sich, nie ein anderes —
+    // ein Hieb bleibt Hieb, ein gefallener Bau beendet das Abbauen. Vorher: 3rd-Person 10 Klicks → 0 Schwünge,
+    // 8 Krater; 1st-Person grub der Halte-Tick nach dem Stoß (6 Krater auf 10 Klicks).
+    tryMouseBreak(gehalten) {
         // Ein gehaltener Bogen beansprucht den Klick VOR Nahkampf/Abbau.
         // Buch kalt / kein Bogen → die Pfade darunter laufen unverändert.
         const bogenRec = this._heldBogenRecipe();
@@ -76851,35 +76903,52 @@ class AnazhRealm {
             };
             return true;
         }
-        // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite
-        // UND näher als eine Architektur wird ANGEGRIFFEN statt abgebaut (sonst Architektur
-        // → harvest, sonst → carve). So bleibt der Abbau-Pfad heil, der Kampf legt sich davor.
+        // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite UND näher als eine
+        // Architektur wird ANGEGRIFFEN statt abgebaut. _pickCreatureAtCrosshair liefert {creature, point} (far 30);
+        // das Nahkampf-Tor misst vom Schultergelenk des Spielers (ARENA.schwung.reachMaxM).
         const creaturePick = this._pickCreatureAtCrosshair();
         const pick = this._pickArchitectureAtCrosshair();
+        let verb = null;
         if (creaturePick && creaturePick.point) {
-            // das bestehende _pickCreatureAtCrosshair liefert {creature, point} (far 30) —
-            // die Distanz aus dem point + das Nahkampf-Reach-Gate hier (kein Methoden-Change,
-            // der andere Aufrufer bleibt unberührt; V17.9: reuse statt Duplikat).
-            const creatureDist = this.state.camera.position.distanceTo(creaturePick.point);
+            const K = AnazhRealm._arenaGesetz().schwung;
+            const pmB = this.state.playerMesh;
+            const pt = creaturePick.point;
+            const nahDist = pmB
+                ? Math.hypot(pt.x - pmB.position.x, pt.y - (pmB.position.y + K.shoulderH), pt.z - pmB.position.z)
+                : Infinity;
+            const creatureDist = this.state.camera.position.distanceTo(pt);
             const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
-            if (creatureDist <= AnazhRealm._arenaGesetz().schwung.reachMaxM && creatureDist <= archDist) {
-                const gate = this._mouseActionStaminaGate();
-                if (!gate.ok) {
-                    this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
-                    return false;
-                }
-                return this._playerAttackCreature(creaturePick.creature);
+            if (nahDist <= K.reachMaxM && creatureDist <= archDist) verb = "hieb";
+        }
+        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in Arm-Laenge wird GEPFLUECKT (wer auf die
+        // Bluete zielt, will sie — kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
+        const flora = !verb && !(pick && pick.entry) ? this._pickScatterAtCrosshair() : null;
+        if (!verb) {
+            if (pick && pick.entry) verb = "abbau";
+            else if (flora) verb = "pfluecken";
+            else verb = this._geraetGraebt(this._heldImplementBlueprint()) ? "graben" : "hieb";
+        }
+        const pV = this.state.player;
+        if (gehalten) {
+            if (verb !== gehalten) {
+                if (gehalten !== "hieb") return false; // das Ziel des Drückens ist fort: das Halten endet hier
+                verb = "hieb";
             }
+        } else if (pV) pV._mausVerb = verb;
+        if (verb === "hieb") {
+            const gate = this._mouseActionStaminaGate();
+            if (!gate.ok) {
+                this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
+                return false;
+            }
+            // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Leere → Luftschlag)
+            return this._playerAttackCreature(creaturePick && creaturePick.creature);
         }
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
-        if (pick && pick.entry) return this._strikeArchitecture(pick.entry);
-        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in
-        // Arm-Laenge wird GEPFLUECKT (wer auf die Bluete zielt, will sie —
-        // kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
-        const flora = this._pickScatterAtCrosshair();
-        if (flora) return this._harvestScatterPick(flora);
+        if (verb === "abbau") return this._strikeArchitecture(pick.entry);
+        if (verb === "pfluecken") return this._harvestScatterPick(flora);
         const target = this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
@@ -77002,9 +77071,19 @@ class AnazhRealm {
     }
 
     tryMousePlace() {
+        // DIE MAUS-ABSICHT (Welle L, Q9) — rechts: ein Bauwerk in der Hand geht in den Bau-Modus (die Hand wird frei;
+        // die Eiche lag 7,8 × 8,8 × 6,4 m in der Hand, RMB schüttete auf), aufgeschüttet wird nur mit einem Grab-Gerät
+        // oder der leeren Hand — eine Waffe schüttet nie auf (RMB mit Schwert: 3 × voxel_fill r 3,5 m, Spieler +4 m).
+        const heldP = this._heldImplementBlueprint();
+        const bauModusAn = this.state.buildMode && this.state.buildMode.active;
+        if (!bauModusAn && heldP && this._isPlaceableBlueprint(heldP)) {
+            this.equipHeld(null);
+            return this._bauModusFuer(heldP.name).ok;
+        }
         // Phase 3b — ist das Voxel-Terrain aktiv und KEIN Bau-Modus aktiv,
         // schüttet der RMB Boden auf (das Gegenstück zum LMB-Graben).
-        if (this.state.voxelTerrainActive && (!this.state.buildMode || !this.state.buildMode.active)) {
+        if (this.state.voxelTerrainActive && !bauModusAn) {
+            if (!this._geraetGraebt(heldP)) return false; // Waffe/Werkzeug: kein Aufschütten (Stich: nach v1.0)
             const fillGate = this._mouseActionStaminaGate();
             if (!fillGate.ok) {
                 this.log(`Aufschütten: zu wenig Stamina (${fillGate.have}/${fillGate.cost}).`, "INFO");
@@ -81957,6 +82036,8 @@ class AnazhRealm {
         if (role === "workshop-station" || role === "portal" || role === "vehicle") return;
         if (role === "soul" && bp.builtIn) return;
         const isSoul = role === "soul";
+        // Ein Bauwerk wird gebaut (fertigeBlueprint → Bau-Modus, Welle L V-k11), ein Gerät geht in die Hand.
+        const bauwerk = role !== "armor" && !isSoul && role !== "consumable" && this._isPlaceableBlueprint(bp);
         const verb =
             role === "armor"
                 ? "Rüstung weben (tragen)"
@@ -81964,7 +82045,9 @@ class AnazhRealm {
                   ? "Körper formen (verkörpern)"
                   : role === "consumable"
                     ? "Trank brauen (trinken)"
-                    : "Gerät schmieden (in die Hand)";
+                    : bauwerk
+                      ? "Bauen (das Phantom steht vor dir)"
+                      : "Gerät schmieden (in die Hand)";
         const row = document.createElement("div");
         row.className = "stat-row workshop-fertigen-row";
         // Step 1 — kein „Werk"-stat-label mehr: das _workshopAppendWerkHeading darüber trägt
@@ -90876,6 +90959,25 @@ class AnazhRealm {
 
     // Kein Renderer-Hot-Swap nach WebGL: NodeMaterials rendern nur auf WebGPURenderer (schwarze Welt).
 
+    // Ist eine Schublade offen? Die DOM-Wahrheit (ein sichtbarer .drawer), nicht ein Merker — der Werkstatt-, Hof- oder
+    // Bibliotheks-Drawer gehört der UI, nie der Welt (Welle L, Q9).
+    _uiSchubladeOffen() {
+        if (typeof document === "undefined" || typeof document.querySelector !== "function") return false;
+        return !!document.querySelector(".drawer[data-drawer]:not([hidden])");
+    }
+
+    // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
+    _uiZeigerFrei() {
+        if (this.state.player) this.state.player.breakHeld = false;
+        if (typeof document !== "undefined" && document.pointerLockElement && document.exitPointerLock) {
+            try {
+                document.exitPointerLock();
+            } catch (_e) {
+                /* Policy: kein Lock, nichts zu lösen */
+            }
+        }
+    }
+
     // Maus-Listener (Pointer-Lock-Click + Mousedown-Action) als Methode.
     // Wird in createScene am initial-Canvas gerufen.
     _attachWorldCanvasInputListeners(canvas) {
@@ -90883,16 +90985,18 @@ class AnazhRealm {
         canvas.addEventListener("click", () => {
             // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
             // re-locken. Sonst würde ein Klick neben das Overlay den
-            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
-            if (this.state.inventoryOpen) return;
+            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen. Dasselbe für jede offene Schublade (Welle L).
+            if (this.state.inventoryOpen || this._uiSchubladeOffen()) return;
             if (document.pointerLockElement === canvas) return;
             const p = canvas.requestPointerLock();
             if (p && typeof p.catch === "function") p.catch(() => {}); // Ablehnung (Policy) ist kein Seiten-Fehler
         });
-        // Maus-Aktionen (abbauen/platzieren) nur mit aktivem Pointer-Lock und geschlossenem Inventar
-        // (Drag&Drop hat eigene Listener). Im Rebind-Capture bindet der erste Maus-Button die Aktion.
+        // Maus-Aktionen (abbauen/platzieren) nur mit aktivem Pointer-Lock, geschlossenem Inventar und geschlossener
+        // Schublade (Drag&Drop hat eigene Listener): IST DIE UI OFFEN, IST DER CANVAS TAUB (Welle L, Befund V-D2 — mit
+        // offener Werkstatt und gefangenem Zeiger gruben 4 Klicks auf „Bauplan …" 4 Krater r 3,5 m). Im Rebind-Capture
+        // bindet der erste Maus-Button die Aktion.
         canvas.addEventListener("mousedown", (event) => {
-            if (this.state.inventoryOpen) return;
+            if (this.state.inventoryOpen || this._uiSchubladeOffen()) return;
             if (this.state.keybindRebind) {
                 const code = this._eventToBindingCode(event);
                 if (code) {
