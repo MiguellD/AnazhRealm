@@ -14187,7 +14187,7 @@ class AnazhRealm {
     }
 
     // ═══ DAS GERÄTE-PROFIL — EINE QUELLE (Telemetrie UND Regler-Seed) ═══
-    // Liest cores/deviceMemory/dpr/Schirm + GPU-Adapter-Info und urteilt eine grobe Klasse
+    // Liest cores/deviceMemory/dpr + GPU-Adapter-Info und urteilt eine grobe Klasse
     // (schwach/mittel/stark) + den loadScale-Prior — nie ein Urteil, der PID bleibt Richter; ein
     // schwaches Gerät zahlt so nicht den Überlast-Einbruch des optimistischen Kaltstarts.
     // Memoisiert erst, wenn die Adapter-Info da ist (Renderer-Init async).
@@ -14199,7 +14199,6 @@ class AnazhRealm {
         const cores = nav.hardwareConcurrency || 0;
         const memGb = nav.deviceMemory || 0;
         const dpr = win.devicePixelRatio || 1;
-        const mpix = Math.round((((win.innerWidth || 0) * dpr * (win.innerHeight || 0) * dpr) / 1e6) * 10) / 10;
         let gpu = "";
         try {
             const info = r && r.backend && r.backend.adapter && r.backend.adapter.info;
@@ -14217,13 +14216,11 @@ class AnazhRealm {
         let klasse = "mittel";
         if (software || mobil || (memGb > 0 && memGb <= 4) || (cores > 0 && cores <= 4)) klasse = "schwach";
         else if ((diskret || apple) && (memGb === 0 || memGb >= 8) && cores >= 8) klasse = "stark";
-        // Der Seed: Klassen-Basis minus Pixel-Zuschlag (grosse Hi-DPI-Flächen sind
-        // Fill-Last ab Frame 1 — dpr 2 auf 1440p sind bereits ~4.4 MPix).
-        let seed = klasse === "stark" ? 1 : klasse === "schwach" ? 0.45 : 0.7;
-        if (mpix > 6) seed -= 0.2;
-        else if (mpix > 4) seed -= 0.1;
-        seed = Math.max(0.3, Math.min(1, seed));
-        const profil = { klasse, seed, cores, memGb, dpr, mpix, gpu };
+        // Der Seed ist die Klasse allein. Bis V18.531 zog ein Pixel-Zuschlag ab 4 MPix 0,1–0,2 ab — ein Schirm-Gesetz
+        // VERKEHRT herum (ein größerer Schirm startete mit weniger Welt) und an `_schirm` vorbei (innerWidth·dpr). Die
+        // Fill-Last des Schirms trägt die Klassen-Pixel-Kappe (`_applyRenderScale`), danach der PID.
+        const seed = klasse === "stark" ? 1 : klasse === "schwach" ? 0.45 : 0.7;
+        const profil = { klasse, seed, cores, memGb, dpr, gpu };
         if (gpu) this._geraeteProfilMemo = profil; // erst mit Adapter-Wahrheit einfrieren
         return profil;
     }
@@ -14240,15 +14237,16 @@ class AnazhRealm {
     // Klasse + Seed als Telemetrie mit — der Trace zeigt, was der Seed entschieden hat.
     _flightRecorderDevice() {
         const nav = typeof navigator !== "undefined" ? navigator : {};
-        const win = typeof window !== "undefined" ? window : {};
         const r = this.state.renderer;
         const profil = this._geraeteProfil();
+        const schirm = this._schirm();
         const dev = {
             version: AnazhRealm.VERSION,
             userAgent: nav.userAgent || "?",
             cores: profil.cores,
             deviceMemoryGb: profil.memGb,
-            screen: (win.innerWidth || 0) + "x" + (win.innerHeight || 0),
+            // der Zeichenpuffer des EINEN Schirm-Maßstabs (Bildpunkte, die gerendert werden)
+            screen: schirm.breite + "x" + schirm.hoehe,
             dpr: profil.dpr,
             // KEIN-WEBGPU-GESCHICHTE: das BACKEND ist die Wahrheit (isWebGPURenderer
             // bleibt true, auch wenn r184 still auf WebGL2 zurückfiel).
@@ -20917,8 +20915,9 @@ class AnazhRealm {
 
     // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (seit V18.497 die Schalen, dazu
     // Rest-Strähnen wie der Nasenrücken) zeichnet nur, solange seine projizierte Breite FELL_BILDSCHIRM.pxMin
-    // erreicht — darunter trägt die Haut mit FELL_LOOK das Tier. Die Grenze folgt Bildhöhe, Sichtfeld und
-    // Tiergröße (jedes Holz, jede Auflösung); Hysterese gegen Flackern, geschaltet wird nur `visible`.
+    // erreicht — darunter trägt die Haut mit FELL_LOOK das Tier. Die Grenze folgt dem EINEN Schirm-Maßstab (`_schirm`:
+    // Zeichenpuffer + Sichtfeld) und der Tiergröße (jedes Holz, jede Auflösung — ein kleinerer Schirm schaltet früher
+    // ab); Hysterese gegen Flackern, geschaltet wird nur `visible`. Ohne Schirm (kein Renderer) bleibt der Zustand.
     _fellBildschirmGesetz(creature, tB) {
         if (!tB.straehnen) {
             tB.straehnen = [];
@@ -20930,11 +20929,9 @@ class AnazhRealm {
         }
         if (!tB.straehnen.length) return;
         const cam = this.state.camera;
-        const rend = this.state.renderer;
-        if (!cam || !cam.isPerspectiveCamera) return;
+        const pxJeM = this._schirm().pxJeM;
+        if (!cam || pxJeM == null) return;
         const F = AnazhRealm.FELL_BILDSCHIRM;
-        const hPx = (rend && rend.domElement && rend.domElement.height) || 1080;
-        const pxJeM = hPx / (2 * Math.tan(((cam.fov || 60) * Math.PI) / 360));
         const breite = F.breiteM * (tB.f || 1) * (creature.scale.x || 1);
         const d = Math.max(0.1, cam.position.distanceTo(creature.position));
         const px = (breite * pxJeM) / d;
@@ -22415,7 +22412,13 @@ class AnazhRealm {
             setClearColor: noop,
             getPixelRatio: () => 1,
             getContext: () => null,
-            getDrawingBufferSize: (t) => t || { width: 1, height: 1 },
+            // Der Zeichenpuffer ist der Canvas (der resize-Handler setzt ihn): der EINE Schirm-Maßstab (`_schirm`)
+            // liest headless denselben Schirm wie am echten Renderer.
+            getDrawingBufferSize: (t) => {
+                const w = canvas && canvas.width > 0 ? canvas.width : 0;
+                const h = canvas && canvas.height > 0 ? canvas.height : 0;
+                return t && typeof t.set === "function" ? t.set(w, h) : { x: w, y: h, width: w, height: h };
+            },
             setRenderTarget: noop,
             getRenderTarget: () => null,
             clear: noop,
@@ -85061,6 +85064,8 @@ class AnazhRealm {
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
             // Stack geloggt, die Welt läuft weiter (der Headless-Pump fängt selbst ab — sieht den Freeze nie).
             try {
+                // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
+                this._schirmMessen();
                 // Foundry so FRÜH wie möglich anwerfen: das Studio-iframe lädt ~1–2 s, und `_ensureAssetFoundry`
                 // entstünde sonst erst lazy beim ersten Foundry-Baum (`_foundryRewarmColdTrees` liest `_foundry`,
                 // erzeugt es nicht). Billig (nur iframe); das Gate (foundry-aus → null, headless-Null → No-op)
@@ -87693,6 +87698,33 @@ class AnazhRealm {
                 L.k[i] = frame;
             }
         }
+    }
+
+    // DER SCHIRM — die EINE Quelle jeder Schirm-Größe (Gebot 7: Kosten an den Schirm). Einmal je Takt (Loop-Eingang)
+    // aus dem Zeichenpuffer des Renderers (Bildpunkte samt Pixel-Verhältnis) und dem Sichtfeld der Kamera: Breite ·
+    // Höhe · MPix · pxJeM (Bildpunkte, die ein Meter Objekt in einem Meter Abstand senkrecht deckt). Jedes Gesetz, das
+    // den Schirm liest, liest IHN, und richtig herum: ein kleinerer Schirm trägt höchstens gleich viel Detail. Bis
+    // V18.531 las das Fell-Gesetz die Canvas-Höhe selbst (Rückfall 1080, Sichtfeld-Rückfall 60°), und der Geräte-Seed
+    // las `innerWidth·innerHeight·dpr²` VERKEHRT herum (ab 4 MPix weniger Welt: ein größerer Schirm startete ärmer).
+    // gate:schirm-monotonie zählt die Welt in drei Fenstergrößen je Pass und Klasse und nennt jeden zweiten Weg.
+    // Ohne Renderer oder Perspektiv-Kamera ist pxJeM null — ein fehlender Wert ist nie 0.
+    _schirmMessen() {
+        const st = this.state;
+        const rend = st.renderer;
+        const cam = st.camera;
+        const v = this._schirmPuffer || (this._schirmPuffer = new THREE.Vector2());
+        const s = this._schirmWert || (this._schirmWert = { breite: 0, hoehe: 0, mpix: 0, pxJeM: null });
+        if (rend && typeof rend.getDrawingBufferSize === "function") rend.getDrawingBufferSize(v);
+        else v.set(0, 0);
+        s.breite = v.x;
+        s.hoehe = v.y;
+        s.mpix = Math.round((v.x * v.y) / 1e5) / 10;
+        s.pxJeM = cam && cam.isPerspectiveCamera && v.y > 0 ? v.y / (2 * Math.tan((cam.fov * Math.PI) / 360)) : null;
+        return s;
+    }
+
+    _schirm() {
+        return this._schirmWert || this._schirmMessen();
     }
 
     _loopRender(currentTime) {

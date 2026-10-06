@@ -199,14 +199,18 @@ const server = http.createServer((req, res) => {
                     const pStark = prof({ vendor: "nvidia", architecture: "ampere" }, 24, 32, 1, 1920, 1080);
                     const pSchwach = prof({ vendor: "arm", architecture: "valhall" }, 8, 8, 1, 800, 600);
                     const pMittel = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 1440, 765);
-                    o.s5 = { pStark, pSchwach, pMittel };
+                    // DER SCHIRM IST KEIN SEED (06.10., gate:schirm-monotonie): bis V18.531 zog ein Pixel-Zuschlag ab
+                    // 4 MPix 0,1–0,2 ab — ein größerer Schirm startete mit weniger Welt. Dasselbe Gerät auf 4K: derselbe Seed.
+                    const pMittelGross = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 3840, 2160);
+                    o.s5 = { pStark, pSchwach, pMittel, pMittelGross };
                     o.s5Klassen =
                         pStark.klasse === "stark" &&
                         pStark.seed === 1 &&
                         pSchwach.klasse === "schwach" &&
                         Math.abs(pSchwach.seed - 0.45) < 1e-9 &&
                         pMittel.klasse === "mittel" &&
-                        Math.abs(pMittel.seed - 0.6) < 1e-9; // 0.7 − 0.1 Hi-DPI-Zuschlag (4.4 MPix)
+                        Math.abs(pMittel.seed - 0.7) < 1e-9 &&
+                        pMittelGross.seed === pMittel.seed;
                     // KONSUM: ein frischer Sense-Init (non-headless, Mittel-Profil aktiv)
                     // startet loadScale AM SEED — nicht bei optimistischer 1.
                     r._geraeteProfilMemo = null;
@@ -215,8 +219,8 @@ const server = http.createServer((req, res) => {
                     o.s5SeedStart = st.perfSense ? st.perfSense.seedStart : null;
                     o.s5SeedKonsumiert =
                         st.perfSense &&
-                        Math.abs(st.perfSense.seedStart - 0.6) < 1e-9 &&
-                        Math.abs(st.perfSense.loadScale - 0.6) < 0.06;
+                        Math.abs(st.perfSense.seedStart - 0.7) < 1e-9 &&
+                        Math.abs(st.perfSense.loadScale - 0.7) < 0.06;
                     // HEADLESS BYTE-ALT: derselbe Init unter Null-Renderer ⇒ Seed 1.
                     st.renderer._isHeadlessNull = true;
                     r._geraeteProfilMemo = null;
@@ -306,7 +310,7 @@ const server = http.createServer((req, res) => {
             pass: out.s3Recovered,
         },
         {
-            name: `S5 GERÄTE-SEED Klassen: stark=1 · schwach=0.45 · mittel-HiDPI=0.6 (${out.s5 ? [out.s5.pStark.klasse, out.s5.pSchwach.klasse, out.s5.pMittel.klasse].join("/") : "?"})`,
+            name: `S5 GERÄTE-SEED Klassen: stark=1 · schwach=0.45 · mittel=0.7, auf 4K derselbe Seed (${out.s5 ? [out.s5.pStark.klasse, out.s5.pSchwach.klasse, out.s5.pMittel.klasse, out.s5.pMittelGross.seed].join("/") : "?"})`,
             pass: out.s5Klassen === true,
         },
         {
