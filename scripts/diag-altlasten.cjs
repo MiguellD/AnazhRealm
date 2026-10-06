@@ -185,6 +185,11 @@ const FORBIDDEN = [
     { token: "_ensureWaterfallMaterial", fiel: "Welle L Q7 — die Saat ohne Leser" },
     { token: "waterfallUniforms", fiel: "Welle L Q7" },
     { token: "waterfallMaterial", fiel: "Welle L Q7" },
+    // DER REGEN ist EIN Gesetz für Labor und Welt (foundry-core REGEN_GESETZ): die Welt zeichnet Schlieren, deren Lage der
+    // Vertex aus Saat und Zeit rechnet; die Punktwolke (Math.random-Saat, je Frame im Haupt-Thread gefallen, 1 Pixel groß)
+    // und die eigenen Zahlen des Labors sind gefallen (W-R1/W-kD5).
+    { token: "sys.lastT", fiel: "Welle L Q7 — der Regen fiel je Frame im Haupt-Thread; die Lage rechnet der Vertex" },
+    { token: "dt * 42", fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ", auch: ["worlds/terrain/phytogenesis.js"] },
     // DIE UFER-BÄNDER sind stetig: Strand, Schlick, Pfad und Höhen-Feuchte lesen beide Bezüge (`_waterLevelAt` → see ·
     // fluss · ufer); das Strand-Fenster schnitt die Glocke bei 2,0 m, die Worker-Feuchte las eine Halbbreite, die kein
     // Segment trägt (2137 von 7578 Ufer-Vertices anders gefärbt als im Main).

@@ -659,15 +659,17 @@ function init() {
         scene.add(_skyDome);
     }
     {
-        // REGEN: fallende Streifen um die Kamera, Intensitaet vom Wetter
-        const RN = 1600,
+        // REGEN: fallende Streifen um die Kamera, Intensitaet vom Wetter — die Zahlen wohnen im Gesetzbuch
+        // (foundry-core REGEN_GESETZ, Welle L: EIN Regen fuer Labor und Welt)
+        const RG = REGEN_GESETZ;
+        const RN = RG.anzahl,
             rp = new Float32Array(RN * 6),
-            rext = [54, 30, 54];
+            rext = RG.raum.slice();
         for (let i = 0; i < RN; i++) {
             const x = (Math.random() - 0.5) * rext[0],
                 y = Math.random() * rext[1],
                 z = (Math.random() - 0.5) * rext[2],
-                ln = 0.5 + Math.random() * 0.6;
+                ln = RG.laenge[0] + Math.random() * RG.laenge[1];
             rp[i * 6] = x;
             rp[i * 6 + 1] = y;
             rp[i * 6 + 2] = z;
@@ -677,7 +679,7 @@ function init() {
         }
         const rg = new THREE.BufferGeometry();
         rg.setAttribute("position", new THREE.BufferAttribute(rp, 3));
-        const rm = new THREE.LineBasicMaterial({ color: 0xbcd2e2, transparent: true, opacity: 0.0, depthWrite: false });
+        const rm = new THREE.LineBasicMaterial({ color: RG.farbe, transparent: true, opacity: 0.0, depthWrite: false });
         _rain = new THREE.LineSegments(rg, rm);
         _rain.frustumCulled = false;
         _rain.renderOrder = 5;
@@ -4142,14 +4144,14 @@ function animate() {
     SEASON.uBloom.value += (bloomTarget - SEASON.uBloom.value) * 0.06;
     if (_rain) {
         const rm = _rain.material,
-            top = clamp(wxRain * 0.72, 0, 0.72);
+            top = clamp(wxRain * REGEN_GESETZ.deckung, 0, REGEN_GESETZ.deckung);
         rm.opacity += (top - rm.opacity) * 0.04;
         if (rm.opacity > 0.012) {
             _rain.visible = true;
             const ext = _rain.userData.ext,
                 rp = _rain.geometry.attributes.position,
-                fall = dt * 42,
-                drift = dt * Math.max(wxWind, 0.1) * 7;
+                fall = dt * REGEN_GESETZ.fall,
+                drift = dt * Math.max(wxWind, 0.1) * REGEN_GESETZ.drift;
             _rain.position.set(camera.position.x, camera.position.y - ext[1] * 0.5, camera.position.z);
             for (let i = 0; i < rp.count; i += 2) {
                 let y0 = rp.getY(i),

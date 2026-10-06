@@ -72455,59 +72455,108 @@ class AnazhRealm {
     // ==================== WETTER: sichtbarer Regen ====================
     // AnazhRealm hat state.weather (sunny/rainy/stormy) schon fuer Himmel/Wind/Naesse — hier der
     // sichtbare Niederschlag: eine Punktwolke, die dem Spieler folgt + faellt, bei rainy/stormy.
+    // DER REGEN (Welle L, W-R1/W-kD5): EIN Gesetz für Labor und Welt (foundry-core REGEN_GESETZ) — fallende Schlieren in
+    // einem Kasten um das Auge, der Wind treibt und neigt sie, die Deckung folgt der Regen-Stärke des Wetters. Gezeichnet
+    // als EIN instanziertes Sprite (PointsNodeMaterial: je Schliere ein Quad Breite × Länge in Welt-Maß; die Lage rechnet
+    // der Vertex aus Saat + Zeit, kein CPU-Umlauf je Frame). Bis V18.531 eine Punktwolke — WebGPU zeichnet Punkte ein
+    // Pixel groß: im Sturm lag kein Tropfen im Bild, senkrecht bei jedem Wind, und das Labor zeichnete andere Zahlen.
     _ensureRainSystem() {
         if (this._rainSystem) return this._rainSystem;
-        if (!this.state.scene) return null;
-        try {
-            const T = THREE;
-            const N = 1800;
-            const geo = new T.BufferGeometry();
-            const pos = new Float32Array(N * 3);
-            for (let i = 0; i < N; i++) {
-                pos[i * 3] = (Math.random() - 0.5) * 70;
-                pos[i * 3 + 1] = Math.random() * 42 - 6;
-                pos[i * 3 + 2] = (Math.random() - 0.5) * 70;
-            }
-            geo.setAttribute("position", new T.BufferAttribute(pos, 3));
-            const MatCtor = T.PointsNodeMaterial || T.PointsMaterial;
-            const mat = new MatCtor({ color: 0x9fb0c8, size: 0.5, transparent: true, opacity: 0.5, depthWrite: false });
-            const mesh = new T.Points(geo, mat);
-            mesh.frustumCulled = false;
-            mesh.renderOrder = 5;
-            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: die Regen-Punktwolke ist
-            // Wetter-Substanz (nur bei rainy/stormy sichtbar, folgt dem Spieler).
-            mesh.userData.inventar = "wetter-regen";
-            this.state.scene.add(mesh);
-            this._rainSystem = { mesh, lastT: null };
-        } catch (_e) {
-            this._rainSystem = null;
+        if (!this.state.scene || typeof THREE === "undefined" || !THREE.TSL || !THREE.PointsNodeMaterial) return null;
+        const RG =
+            AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:REGEN_GESETZ");
+        const T = THREE.TSL;
+        const N = RG.anzahl;
+        // Die Saat je Schliere (Lage im Kasten 0..1, Länge) aus einem festen Strom — das Bild ist reproduzierbar.
+        const saat = new Float32Array(N * 4);
+        let h = 2166136261 >>> 0;
+        const zufall = () => {
+            h ^= h << 13;
+            h >>>= 0;
+            h ^= h >>> 17;
+            h ^= h << 5;
+            h >>>= 0;
+            return h / 4294967296;
+        };
+        for (let i = 0; i < N; i++) {
+            saat[i * 4] = zufall();
+            saat[i * 4 + 1] = zufall();
+            saat[i * 4 + 2] = zufall();
+            saat[i * 4 + 3] = RG.laenge[0] + zufall() * RG.laenge[1];
         }
+        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 4));
+        const uZeit = T.uniform(0);
+        const uDrift = T.uniform(new THREE.Vector2(0, 0));
+        const uWinkel = T.uniform(0);
+        const R = RG.raum;
+        // Fallen (y) und Treiben (xz), je Achse in den Kasten um das Auge zurückgefaltet.
+        const x = T.fract(s4.x.add(uDrift.x.mul(uZeit).div(R[0])))
+            .sub(0.5)
+            .mul(R[0]);
+        const y = T.fract(s4.y.sub(uZeit.mul(RG.fall).div(R[1])))
+            .sub(0.5)
+            .mul(R[1]);
+        const z = T.fract(s4.z.add(uDrift.y.mul(uZeit).div(R[2])))
+            .sub(0.5)
+            .mul(R[2]);
+        // Das Maß im Bild: r184 teilt die Sprite-Größe durch die Tiefe, ohne die Brennweite — `uProj` (Projektion [1][1])
+        // macht Breite und Länge zu Welt-Metern. Eine Schliere schmaler als `minPixel` zeichnet `minPixel` breit und deckt
+        // anteilig (die Pixel-Deckung): fern wird der Regen ein Schleier, nah eine Schliere; am Auge und an den Kasten-
+        // Rändern blendet er aus (kein Schnitt, wo der Kasten faltet).
+        const uProj = T.uniform(1);
+        const tiefe = T.positionView.z.negate().max(0.05);
+        const pixelM = tiefe.mul(2).div(uProj.mul(T.viewportSize.y));
+        const breiteM = pixelM.mul(RG.minPixel).max(RG.breite);
+        const rand = T.length(T.vec2(x, z)).div(R[0] * 0.5);
+        const blende = T.varying(
+            T.min(T.float(RG.breite).div(breiteM), 1)
+                .mul(T.smoothstep(0.4, 2.0, tiefe))
+                .mul(T.float(1).sub(T.smoothstep(0.7, 1.0, rand)))
+        );
+        const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
+        mat.positionNode = T.vec3(x, y, z);
+        mat.sizeNode = T.vec2(breiteM, s4.w).mul(uProj);
+        mat.opacityNode = T.materialOpacity.mul(blende);
+        mat.rotationNode = uWinkel;
+        mat.sizeAttenuation = true;
+        const mesh = new THREE.Sprite(mat);
+        AnazhRealm._instanzZahl(mesh, N);
+        mesh.frustumCulled = false;
+        mesh.renderOrder = 5;
+        // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Regen ist Wetter-Substanz (sichtbar, solange das Wetter
+        // regnet; folgt dem Auge).
+        mesh.userData.inventar = "wetter-regen";
+        mesh.visible = false;
+        this.state.scene.add(mesh);
+        this._rainSystem = { mesh, uZeit, uDrift, uWinkel, uProj, RG };
         return this._rainSystem;
     }
     _tickRain(currentTime) {
         const st = this.state;
-        const wet = st.weather === "rainy" || st.weather === "stormy";
-        if (!wet) {
+        const wf = this._weatherFieldFor(st.weather);
+        if (!(wf.rain > 0.01)) {
             if (this._rainSystem && this._rainSystem.mesh) this._rainSystem.mesh.visible = false;
             return;
         }
         const sys = this._ensureRainSystem();
         if (!sys || !sys.mesh) return;
+        const RG = sys.RG;
         sys.mesh.visible = true;
-        const p = st.playerMesh ? st.playerMesh.position : null;
-        if (p) sys.mesh.position.set(p.x, p.y, p.z);
-        if (sys.mesh.material) sys.mesh.material.opacity = st.weather === "stormy" ? 0.62 : 0.42;
-        const now = currentTime || 0;
-        if (sys.lastT == null) sys.lastT = now;
-        const dt = Math.min(0.1, Math.max(0, (now - sys.lastT) / 1000));
-        sys.lastT = now;
-        const speed = st.weather === "stormy" ? 36 : 24;
-        const arr = sys.mesh.geometry.attributes.position.array;
-        for (let i = 1; i < arr.length; i += 3) {
-            arr[i] -= speed * dt;
-            if (arr[i] < -6) arr[i] += 42;
+        const cam = st.camera;
+        if (cam) sys.mesh.position.copy(cam.position);
+        sys.mesh.material.opacity = Math.min(RG.deckung, wf.rain * RG.deckung);
+        // Die Uhr der Schlieren (s), auf eine Stunde gefaltet (float-Genauigkeit im Vertex).
+        const t = ((currentTime || 0) / 1000) % 3600;
+        sys.uZeit.value = t;
+        const wd = this._windDirAt(t);
+        const v = RG.drift * Math.max(wf.wind, 0.1);
+        sys.uDrift.value.set(wd.x * v, wd.z * v);
+        // Die Neigung im Bild: der Drift-Anteil quer zur Blickrichtung gegen das Fallen (Bild-Rechts = Spalte 0 der Kamera).
+        if (cam) {
+            const m = cam.matrixWorld.elements;
+            sys.uWinkel.value = Math.atan2(wd.x * v * m[0] + wd.z * v * m[2], RG.fall);
+            sys.uProj.value = cam.projectionMatrix.elements[5];
         }
-        sys.mesh.geometry.attributes.position.needsUpdate = true;
     }
 
     _forestPlantChunk(cx, cz) {
