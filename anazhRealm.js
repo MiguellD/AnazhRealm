@@ -35566,10 +35566,17 @@ class AnazhRealm {
             0.0,
             0.9999995
         );
+        // Die Kiste mit ACHT Ecken (die Dreiecke und ihre Wicklung aus BoxGeometry, auf die Ecken umgezählt): je Instanz
+        // rechnet der Vertex-Knoten 8 Ecken statt 24 Flächen-Vertices — ein leerer Platz kostet 8 Aufrufe à 1 Abtastung.
         const kiste = new THREE.BoxGeometry(1, 1, 1).translate(0.5, 0.5, 0.5);
+        const kp = kiste.getAttribute("position");
+        const eckeVon = (v) => (kp.getX(v) > 0.5 ? 1 : 0) + (kp.getY(v) > 0.5 ? 2 : 0) + (kp.getZ(v) > 0.5 ? 4 : 0);
+        const ecken = [];
+        for (let c = 0; c < 8; c++) ecken.push(c & 1, (c >> 1) & 1, (c >> 2) & 1);
         const geoMarch = new THREE.InstancedBufferGeometry();
-        geoMarch.setIndex(kiste.getIndex());
-        geoMarch.setAttribute("position", kiste.getAttribute("position"));
+        geoMarch.setIndex(Array.from(kiste.getIndex().array, eckeVon));
+        geoMarch.setAttribute("position", new THREE.Float32BufferAttribute(ecken, 3));
+        kiste.dispose();
         geoMarch.instanceCount = 0; // der Pass-Takt setzt Obergrenze × Plätze je Block
         const marchMesh = new THREE.Mesh(geoMarch, matMarch);
         marchMesh.frustumCulled = false;
