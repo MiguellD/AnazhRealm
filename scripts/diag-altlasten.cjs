@@ -448,6 +448,9 @@ const FORBIDDEN = [
     // Integration 06.10. (W5-Körper) — DIE HAND-MITTE TRÄGT DIE HAND: die Welt-Konstante der Faust (die Hand vor Welle 5)
     // ließ den Griff 0,072 m neben der neuen Hand; der Ofen gibt den Schwerpunkt der Hand-Haut im Beipack mit.
     { token: "faustOffset", fiel: "Integration W5-Körper — der Griff sitzt auf rig.handMitte (Ofen-Beipack)" },
+    // Integration 06.10. (W5-Körper) — die Galileo-Allometrie des Wirts (√L auf die Glied-Kinder) lief für kein Studio-Tier
+    // mehr (es trägt keine Teil-Kinder); die Glied-Dicke ist Gesetz der Art, die Körpergröße skaliert uniform.
+    { token: "_applyCreatureAllometry", fiel: "Integration W5-Körper — die Glied-Dicke trägt ART_GESTALT.bein" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

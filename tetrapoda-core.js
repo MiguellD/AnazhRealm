@@ -807,8 +807,7 @@
             noseW = 2.0 - diet * 0.4;
         var bWF = 0.35 + build * 0.2,
             bellyD = 0.04 + build * 0.18,
-            skullR = 0.064 * Math.pow(size / 2.4, 0.25),
-            tailSegs = Math.round(4 + (1 - build) * 7);
+            skullR = 0.064 * Math.pow(size / 2.4, 0.25);
         // DIE FELL-TÖNE DER ART (Welle 5): Grund = basis, dunkel = Rücken-Sattel, hell = Bauch des Art-Musters
         // (vorher je Ernährung: Wolf und Fuchs trugen dasselbe Braun, der Hirsch das Braun eines Bären).
         var mu = artGestalt({ size: size, neckLen: neckLen, legLen: legLen, diet: diet, build: build }).muster;
@@ -840,7 +839,6 @@
             bWF: bWF,
             bellyD: bellyD,
             skullR: skullR,
-            tailSegs: tailSegs,
             cB: cB,
             cD: cD,
             cL: cL,
@@ -1392,7 +1390,8 @@
     // Hufe, Wedel). Der Rumpf ist kein Ellipsoid-Haufen an festen Lab-Koordinaten mehr (sie skalierten nicht mit H:
     // jede Art außer dem Wolf war verzerrt), sondern ein PROFIL über der Bein-Linie: u = 0 Sitzbein … 1 Bug, je
     // Station Oberlinie `oben`, Unterlinie `unten` (×H über/unter der Linie der Bein-Gelenke) und halbe `breit`e.
-    // Die Arten mischen sich über die fünf Dials (artGestalt): ein Preset trifft seine Art exakt, die Lab-Regler
+    // Die Arten mischen sich über die fünf Dials (artGestalt): ein Preset trägt seine Art zu > 99,9999 % (der Rest der
+    // Nachbar-Arten liegt unter 1e-6, etwa 7e-7 Fuchs im Wolf — die Gauß-Gewichte schneiden nie hart), die Lab-Regler
     // gleiten stetig zwischen ihnen. Diskrete Merkmale (Pfote, Ohr-Form) nimmt die stärkste Art.
     // prettier-ignore
     var ART_GESTALT = Object.freeze({

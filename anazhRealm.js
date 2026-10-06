@@ -6682,9 +6682,6 @@ class AnazhRealm {
                 // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
                 const _peerBs = this._creatureBodySize(e.id);
                 mesh.scale.setScalar(_peerBs);
-                // T5 (Ω-B5) — dieselbe Allometrie wie beim Original (die Sicht-Kopie ist stockig,
-                // wenn das Original ein Koloss ist; deterministisch aus der netId, kein Sync-Feld).
-                this._applyCreatureAllometry(mesh, typeof e.soul === "string" ? e.soul : "wesen", _peerBs);
                 mesh.position.set(+e.x || 0, +e.y || 0, +e.z || 0);
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
@@ -16154,11 +16151,10 @@ class AnazhRealm {
         group.userData.bodySize = Number.isFinite(opts.bodySize)
             ? opts.bodySize
             : this._creatureBodySize(group.userData.netId);
+        // Die Körpergröße skaliert das Studio-Tier UNIFORM; die Glied-Dicke ist Gesetz der Art (ART_GESTALT.bein,
+        // deriveTierParams: Beinmuskel ∝ Größe^0,67). Die Galileo-Allometrie des Wirts (√L auf die Glied-Kinder) fiel
+        // (Integration W5-Körper): das Studio-Tier trägt keine Teil-Kinder, sie lief seit Welle 5 für kein Wesen mehr.
         group.scale.setScalar(group.userData.bodySize);
-        // T5 (Ω-B5) — die ALLOMETRIE: die Glieder verdicken überproportional (√bodySize auf den
-        // Querschnitt), der Koloss wird stockig statt ein vergrößerter Zwerg. NACH der Uniform-
-        // Skala (sie trägt L, die Allometrie legt √L auf den Glied-Querschnitt). Render-only.
-        this._applyCreatureAllometry(group, chosenSoul, group.userData.bodySize);
         group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
         // bornAt = Identitäts-Marker: persistierte Kreaturen behalten ihn über Reload, neue bekommen jetzt.
         group.userData.bornAt = Date.now();
@@ -17986,42 +17982,6 @@ class AnazhRealm {
     // Der size-Dial braucht KEINE eigene Achse (ein Doppel-Faktor wäre falsch): er reist durch die EINE
     // Pipe (_tetrapodaStudioDials → _ofenKreaturDials); die Spawn-Höhe = Template-Höhe × bodySize-Wurf
     // (gate:studio-uebergabe).
-
-    // GALILEO-ALLOMETRIE (Quadrat-Kubik): Masse ∝ L³ → der tragende Glied-Querschnitt muss ∝ L³ wachsen,
-    // der Durchmesser ∝ L^1.5. group.scale trägt die uniforme Größe L; HIER bekommt jedes GLIED zusätzlich
-    // √L auf seine zwei kurzen Achsen → Querschnitt L·√L, Länge bleibt L (stockiger Koloss statt
-    // vergrößerter Zwerg; beide Glieder eines Paares gleich). Rumpf/Kopf (longest < 1.7×shortest)
-    // bleiben uniform.
-    _applyCreatureAllometry(group, soulName, bodySize) {
-        if (!group || !group.children || !Number.isFinite(bodySize)) return;
-        // Das Studio-Tier (bauTier) trägt keine Teil-Kinder: seine Kinder sind die Hüllen nah/fern — die Schleife unten
-        // setzte ihre Skala auf 1 (der Maßstab fiel, das Tier stand in Lab-Einheiten). Seine Allometrie ist Gesetz
-        // (deriveTierParams: Beinmuskel ∝ Größe^0,67), die Körpergröße skaliert uniform.
-        if (group.userData && group.userData._tierBaum) return;
-        const soul = AnazhRealm.CREATURE_SOULS[soulName] || AnazhRealm.CREATURE_SOULS.wesen;
-        // ABSCHIEDS-WELLE (A2) — die EFFEKTIVEN Parts führen (der studio-gedockte Guss
-        // ändert Glied-Längen → die Glied-Klassifikation liest die gebaute Wahrheit).
-        const parts = (group.userData && group.userData._soulParts) || (soul && soul.bodyParts);
-        if (!Array.isArray(parts)) return;
-        const allo = Math.sqrt(Math.max(0.01, bodySize)); // der EXTRA-Querschnitt (relativ zur Uniform-Skala)
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            const child = group.children[i];
-            if (!child || !part || !part.size) continue;
-            const sx = part.size.x || 0.1,
-                sy = part.size.y || 0.1,
-                sz = part.size.z || 0.1;
-            const longest = Math.max(sx, sy, sz);
-            const shortest = Math.min(sx, sy, sz);
-            // GLIED = vertikales schlankes Stütz-Teil (y längste Achse, ≥ 1.7× kürzeste): nur Beine bekommen √L
-            // auf x,z. Horizontale Leib-Massen skalieren uniform über group.scale (sonst wird der Rumpf fett).
-            if (sy !== longest || longest < shortest * 1.7) {
-                child.scale.set(1, 1, 1);
-                continue;
-            }
-            child.scale.set(allo, 1, allo);
-        }
-    }
 
     // === DIE MOTION-RESONANZ ===
     // Die Bewegungs-Rolle JEDES Parts emergiert aus Form × Lage × Spiegelung gegen
