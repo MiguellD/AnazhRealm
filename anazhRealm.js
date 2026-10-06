@@ -17225,7 +17225,7 @@ class AnazhRealm {
             }
             geo.setIndex(new THREE.BufferAttribute(index, 1));
             geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
-            geo.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
+            geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(skinWeight, 4));
             const t0 = teile[0].mesh;
             const starr = new THREE.SkinnedMesh(geo, t0.material);
             starr.castShadow = t0.castShadow;
@@ -69438,7 +69438,7 @@ class AnazhRealm {
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
-        if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
+        if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
         // jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
@@ -69457,7 +69457,7 @@ class AnazhRealm {
             const si = new Uint16Array(m.skinIndex.array.length);
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
-            geo.setAttribute("skinWeight", new T.BufferAttribute(m.skinWeight.array, m.skinWeight.itemSize || 4));
+            geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
@@ -70345,6 +70345,41 @@ class AnazhRealm {
                 g.addEventListener("dispose", zaehlung);
             };
         }
+    }
+    // DER SCHMALE INDEX (W7): r184 weitet beim Anlegen JEDES nicht-normierte 8-/16-bit-Attribut auf 32 bit (die Vertex-
+    // Formate ohne x1/x3-Form) — auch den Index, den der Draw selbst als uint16 binden könnte (`setIndexBuffer` wählt das
+    // Format nach dem Array-Typ): jeder 16-bit-Index lag doppelt auf der GPU, und die Foundry lieferte ihn ohnehin als
+    // Uint32. Befund (echte GPU, Mess-Wiese, Puffer-Linse): 113 von 114 Index-Puffern hätten 16 bit gereicht, 2,8 MB zu viel
+    // — der Spieler allein 0,9 MB. Der EINE Weg jedes Index auf die GPU (`createIndexAttribute`) legt einen Uint16-Index
+    // ungeweitet an: das Weiten fragt `normalized` (für einen Index bedeutungslos), die Hülle setzt es nur für das Anlegen.
+    // Ein 16-bit-Index, der danach teilweise neu schreibt, bräche an der 4-Byte-Ausrichtung von writeBuffer — die Sätze
+    // (die einzigen Index-Schreiber) tragen Uint32 (gate:vendor-anker pinnt beide Vendor-Stellen).
+    _index16(renderer) {
+        const be = renderer && renderer.backend;
+        if (!be || be.isWebGPUBackend !== true || be.__anazhIndex16 || typeof be.createIndexAttribute !== "function")
+            return;
+        be.__anazhIndex16 = true;
+        const roh = be.createIndexAttribute;
+        be.createIndexAttribute = function (attr) {
+            if (!(attr && attr.array instanceof Uint16Array) || attr.normalized !== false) return roh.call(this, attr);
+            attr.normalized = true;
+            try {
+                return roh.call(this, attr);
+            } finally {
+                attr.normalized = false;
+            }
+        };
+    }
+    // Die schmalen Formen eines Assets (W7, Kosten ins Asset): ein Index über ≤ 65 535 Vertices trägt 16 bit (`_index16`
+    // hält ihn so auf der GPU), ein Haut-Gewicht 16 bit normiert (unorm16x4 statt float32x4 — 2 statt 4 B je Komponente;
+    // der Shader liest dasselbe vec4, die Abweichung ≤ 1/131 070 je Gewicht).
+    static _indexSchmal(arr, nVertices) {
+        return nVertices <= 65535 && !(arr instanceof Uint16Array) ? Uint16Array.from(arr) : arr;
+    }
+    static _hautGewicht(arr, itemSize) {
+        const w = new Uint16Array(arr.length);
+        for (let i = 0; i < arr.length; i++) w[i] = Math.round(Math.min(1, Math.max(0, arr[i])) * 65535);
+        return new THREE.BufferAttribute(w, itemSize || 4, true);
     }
     // DIE INSTANZ-ZAHL — der EINE Schreiber von `count` jeder Instanz-Senke (Instanz-Gruppen · Fundament · Zaun ·
     // Nah-Wiese · Nah-Streu): jede Senke ist DICHT ([0, n) lebt, ein freier Slot existiert nicht), und eine leere ist
@@ -84677,6 +84712,7 @@ class AnazhRealm {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
                 this._renderObjektRegister(renderer);
+                this._index16(renderer);
                 // Hitch-Telemetrie (d) Upload-Bytes: JEDER Upload läuft durch device.queue.writeBuffer — ein
                 // Laufzeit-Wrap hier zählt alles, die vendor-Datei bleibt byte-alt. Idempotent über __anazhTap;
                 // Konsum je Frame in _perfSenseFoldFrame.

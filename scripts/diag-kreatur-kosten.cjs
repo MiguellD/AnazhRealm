@@ -30,6 +30,9 @@
 //      (ein Wolf im Gang, 24 Takte, jede Hülle Vertex für Vertex in der Pose)
 //      bleibt in der Kugel — kein Pop am Bildrand. (S3) Starr-Bindung gestubbt →
 //      die Linse zählt die unverschmolzenen Teile.
+//  (T) SCHMAL (W7): jeder Index über ≤ 65 535 Vertices trägt 16 bit (r184 weitete ihn auf 32, der Stamm hält ihn
+//      schmal — `_index16`), jedes Haut-Gewicht unorm16 (Wolf · Mensch). (S4) die alten Formen gestubbt → die Linse
+//      nennt die breiten Puffer.
 //  (S) SELBST-TESTS (die Linse feuert): (S1) mit gestubbter Raten-Leiter
 //      (_creatureAnimDiv ≡ 1) tickt auch die Hinter-Kreatur voll — der
 //      Zähler misst die echte Leiter, nicht sich selbst. (S2) mit gestubbter
@@ -325,11 +328,19 @@ const server = http.createServer((req, res) => {
             const T3 = window.THREE;
             const recW = A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP.wolf;
             const starrZensus = (root) => {
-                const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0 };
+                const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0, breit: [] };
                 const seen = new Set();
                 root.traverse((n) => {
                     if (!n.isMesh || !n.geometry) return;
                     z.meshes++;
+                    // (T) SCHMAL: ein Index über ≤ 65 535 Vertices trägt 16 bit, ein Haut-Gewicht unorm16
+                    const gs = n.geometry;
+                    const nV = gs.attributes.position ? gs.attributes.position.count : 0;
+                    if (gs.index && nV <= 65535 && gs.index.array.BYTES_PER_ELEMENT !== 2)
+                        z.breit.push(`Index ${gs.index.array.constructor.name} über ${nV} Vertices`);
+                    const sw = gs.attributes.skinWeight;
+                    if (sw && !(sw.array instanceof Uint16Array && sw.normalized === true))
+                        z.breit.push(`Haut-Gewicht ${sw.array.constructor.name}${sw.normalized ? " normiert" : ""}`);
                     if (n.isSkinnedMesh) {
                         z.skins++;
                         if (n.frustumCulled === false) z.ungecullt++;
@@ -398,6 +409,22 @@ const server = http.createServer((req, res) => {
             A._ofenStarrBinden = saveStarr; // restaurieren (Gate-Hook-Lehre)
             A._tierOfenMemo = saveMemo;
             o.checks.s3LensFires = !!o.s3Roh && o.s3Roh.unverschmolzen > 0;
+            // (T) SCHMAL (W7): r184 weitet jeden 16-bit-Index auf 32 bit (der Stamm hält ihn schmal, `_index16`), die Foundry
+            // lieferte Uint32-Indizes und float32-Haut-Gewichte — der Spieler trug 8 MB, 1,7 MB davon Breite ohne Gewinn.
+            o.checks.tSchmal = !!o.rWolf && !!o.rMensch && o.rWolf.breit.length === 0 && o.rMensch.breit.length === 0;
+            // (S4) SELBST-TEST: mit den alten Formen (Index wie geliefert, Gewicht float32) nennt die Linse die Breite
+            const saveSchmal = A._indexSchmal;
+            const saveGewicht = A._hautGewicht;
+            A._indexSchmal = (arr) => arr;
+            A._hautGewicht = (arr, is) =>
+                new T3.BufferAttribute(arr instanceof Float32Array ? arr : Float32Array.from(arr), is || 4);
+            A._tierOfenMemo = new Map();
+            const wolfBreit = recW ? r._ofenKreaturTemplate(recW, null, 0) : null;
+            o.s4Breit = wolfBreit ? starrZensus(wolfBreit.root).breit : null;
+            A._indexSchmal = saveSchmal; // restaurieren (Gate-Hook-Lehre)
+            A._hautGewicht = saveGewicht;
+            A._tierOfenMemo = saveMemo;
+            o.checks.s4LensFires = !!o.s4Breit && o.s4Breit.length > 0;
 
             o.creaturesAfter = s.creatures.length;
             return o;
@@ -472,6 +499,22 @@ const server = http.createServer((req, res) => {
         check(
             c.s3LensFires,
             `SELBST-TEST (S3): Starr-Bindung gestubbt → ${out.s3Roh && out.s3Roh.unverschmolzen} unverschmolzene Teile gezählt`
+        );
+        check(
+            c.tSchmal,
+            `(T) SCHMAL: jeder Index über ≤ 65 535 Vertices trägt 16 bit, jedes Haut-Gewicht unorm16 (Wolf · Mensch) — ${
+                [...((out.rWolf && out.rWolf.breit) || []), ...((out.rMensch && out.rMensch.breit) || [])]
+                    .slice(0, 3)
+                    .join(" · ") || "sauber"
+            }`
+        );
+        check(
+            c.s4LensFires,
+            `SELBST-TEST (S4): die alten Formen → die Linse nennt ${out.s4Breit && out.s4Breit.length} breite Puffer (${(
+                out.s4Breit || []
+            )
+                .slice(0, 2)
+                .join(" · ")})`
         );
         check(c.cFernGebaut, "(C) der Mensch trägt den lod1-Fern-Guss (_menschFern nah+fern)");
         check(c.cVertexDiff, "(C) messbare Vertex-Differenz (fern < 80 % von nah)");
