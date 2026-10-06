@@ -3,8 +3,8 @@
 // max 207 ms, IDB-Gets hinter den Schreib-Transaktionen Median 3,3 s) — kein Gate sah es, weil jede Zahl nur je
 // Auftrag klein wirkt. Die Linse hängt sich an den Worker-Kanal und misst je Antwort: Bytes, die Entpack-Zeit im
 // Haupt-Thread (Chromium deserialisiert beim ersten `ev.data`-Zugriff), die Worker-Arbeit (FIFO: Antwort minus
-// max(Senden, vorige Antwort)), das Warten, den Gruppen-Bau und den Ingest-Takt; dazu die Platte, falls der
-// Haupt-Thread sie noch anfasst (`_foundryIdbGet/_foundryIdbPut` — seit der Transport-Schale fort).
+// max(Senden, vorige Antwort)), das Warten, den Gruppen-Bau und den Ingest-Takt. Die Platte lebt seit der
+// Transport-Schale im Worker — ihre Haupt-Thread-Namen hält gate:altlasten fern (auch aus dieser Linse).
 //
 //   Seite:     window.__flussLinse() installiert (idempotent) · window.__flussBericht() → { kanal, haupt, … }
 //              FLUSS_INSTALL legt die Linse SELBST an, sobald der Foundry-Worker geboren ist (vor seiner ersten
@@ -16,7 +16,7 @@ function flussLinse() {
     const f = r && r._foundry;
     if (!f || !f.worker) return { fehler: "kein Foundry-Worker" };
     if (window.__fluss) return { schon: true };
-    const L = (window.__fluss = { send: new Map(), done: [], idb: [], idbPut: [], bau: [], ingest: [] });
+    const L = (window.__fluss = { send: new Map(), done: [], bau: [], ingest: [] });
     const bytesOf = (x, seen) => {
         if (!x || typeof x !== "object") return 0;
         if (ArrayBuffer.isView(x) || x instanceof ArrayBuffer) return x.byteLength;
@@ -74,24 +74,6 @@ function flussLinse() {
             const w = gb(ff);
             if (neu && w) haken(w, "baecker");
             return w;
-        };
-    }
-    if (typeof r._foundryIdbGet === "function") {
-        const ig = r._foundryIdbGet.bind(r);
-        r._foundryIdbGet = (p, s, lod, sea) => {
-            const t = performance.now();
-            return ig(p, s, lod, sea).then((x) => {
-                L.idb.push({ hit: !!x, ms: performance.now() - t });
-                return x;
-            });
-        };
-    }
-    if (typeof r._foundryIdbPut === "function") {
-        const ip = r._foundryIdbPut.bind(r);
-        r._foundryIdbPut = (p, s, lod, sea, meshes) => {
-            const t = performance.now();
-            ip(p, s, lod, sea, meshes);
-            L.idbPut.push({ ms: performance.now() - t });
         };
     }
     const bg = r._foundryBuildGroup.bind(r);
@@ -181,14 +163,6 @@ function flussBericht() {
         haupt: {
             entpackenMs: Math.round(sum(des)),
             entpackenMax: r1(Math.max(0, ...des)),
-            idbPutMs: Math.round(sum(L.idbPut, "ms")),
-            idbPutMax: r1(Math.max(0, ...L.idbPut.map((x) => x.ms))),
-            idbGetP50: Math.round(
-                pct(
-                    L.idb.map((x) => x.ms),
-                    0.5
-                )
-            ),
             bauMs: Math.round(sum(L.bau, "ms")),
             bauMax: r1(Math.max(0, ...L.bau.map((x) => x.ms))),
             bauN: L.bau.length,

@@ -1009,6 +1009,18 @@ function gateDateien(root) {
     return aus;
 }
 
+// DIE LINSEN TRAGEN DIE WAND MIT (Welle G, 06.10.): eine Linse in scripts/lib ruft die Stamm-Methoden in der Seite — ein
+// gefallener Name dort ist ein toter Aufruf, den erst ein Lauf findet (`werkbank fernwald` rief `_weltSeiteDirty` nach dem
+// Abschied der Seiten-Ebene; vier weitere Reste älterer Abschiede lagen dort). Die Gates in scripts/ bleiben draußen: ihre
+// Absenz-Proben tragen die gefallenen Namen als Suchtext.
+function linsenDateien(root) {
+    const d = path.join(root, "scripts", "lib");
+    return fs
+        .readdirSync(d)
+        .filter((f) => /\.c?js$/.test(f))
+        .map((f) => path.join(d, f));
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
@@ -1022,7 +1034,9 @@ function main() {
         "signaling-server.js",
         "foundry-core.js",
         "feld-wgsl.js",
-    ].map((f) => path.join(root, f));
+    ]
+        .map((f) => path.join(root, f))
+        .concat(linsenDateien(root));
 
     if (process.argv.includes("--selftest")) {
         // Die Instanz-Wand muss feuern: ein zweiter Bau am Chokepoint vorbei.
@@ -1092,6 +1106,27 @@ function main() {
             process.exit(1);
         }
         console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, DIAG_PORT erkannt)`);
+        // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
+        // wird beim Namen genannt.
+        const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]fernwald-linse\.cjs$/.test(f));
+        const tmpLinse = path.join(require("os").tmpdir(), "altlasten-selftest-linse.cjs");
+        let linsenFeuert = false;
+        if (fernwald) {
+            const quelle = fs.readFileSync(fernwald, "utf8");
+            const anker = "                    delete h.__fw;\n                }\n";
+            fs.writeFileSync(tmpLinse, quelle.replace(anker, anker + "                r._weltSeiteDirty(wm, h.feld);\n"));
+            const t = scan([tmpLinse]);
+            fs.unlinkSync(tmpLinse);
+            linsenFeuert =
+                quelle.includes(anker) && scan([fernwald]).length === 0 && t.length === 1 && /_weltSeiteDirty/.test(t[0]);
+        }
+        if (!linsenFeuert) {
+            console.log("❌ SELBST-TEST: die Linsen (scripts/lib) stehen nicht in der Wand, oder sie feuert dort nicht");
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf der Fernwald-Linse erkannt)`
+        );
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
         const tmp = path.join(require("os").tmpdir(), "altlasten-selftest.js");
         fs.writeFileSync(tmp, 'const x = 1;\nfunction tickPhoenixDeath() {}\n// Kommentar darf "glutwesen" sagen\n');
@@ -1128,12 +1163,12 @@ function main() {
         .concat(scanPortWand(gateDateien(root)))
         .concat(checkAliasArten());
     if (errs.length) {
-        console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
+        console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm und in den Linsen:");
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable.`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable.`
     );
 }
 

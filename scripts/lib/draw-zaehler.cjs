@@ -60,13 +60,10 @@ function drawZensus(opts) {
             const pass = passOf(scene, camera);
             const k = kl + "|" + pass;
             const g = object.geometry;
-            let cmd = 1,
-                tris = 0;
-            if (object.isBatchedMesh) {
-                cmd = object._multiDrawCount | 0;
-                const c = object._multiDrawCounts;
-                for (let i = 0; i < cmd; i++) tris += c[i] / 3;
-            } else if (g) {
+            // je Draw EIN Befehl: seit V18.510 ist jedes Leaf eine InstancedMesh (der Batch-Zweig fiel mit dem Batch)
+            const cmd = 1;
+            let tris = 0;
+            if (g) {
                 const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                 const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
                 tris = dr / 3;
