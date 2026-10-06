@@ -276,8 +276,14 @@ async function welt() {
                 // kein Wiesen-Grün im Ring (Waldboden, Fels, Wasser): der Satz muss leer stehen
                 if (summe) nenne("nahWiese", `${summe} Instanzen in einem Ring ohne Büschel — veraltete Matrizen`);
             } else
-                for (const [name, n] of Object.entries(w.je))
-                    if (!(n > 0)) nenne(name, "anzahl 0 nach dem Sicht-Satz — leer bewiesen");
+                // je Senke ihr Soll (`__wieseErwartet`: die Büschel ihrer Stufe im Blick der Linse) — ein dünner Ring
+                // (Waldboden unter der Kronen-Karte) trägt Stufen ohne Büschel im Blick, dort ist leer richtig
+                for (const [name, n] of Object.entries(w.je)) {
+                    const soll = w.erwartet ? w.erwartet[name] : undefined;
+                    if (soll === undefined) nenne(name, "kein Soll der Linse (__wieseErwartet) — die Linse misst nichts");
+                    else if (soll > 0 && !(n > 0)) nenne(name, `anzahl 0 nach dem Sicht-Satz bei ${soll} Büscheln im Blick — leer bewiesen`);
+                    else if (n < soll) nenne(name, `anzahl ${n} < ${soll} Büschel ihrer Stufe im Blick — der Sicht-Satz verliert Büschel`);
+                }
             if (w.ausserhalb) nenne("nahWiese", `${w.ausserhalb} gelegte Instanzen außerhalb des Rings um das Auge`);
         };
         const wieseKurz = (w) => {
@@ -287,6 +293,9 @@ async function welt() {
                 bueschel: w.bueschel,
                 summe: n.reduce((s, x) => s + x, 0),
                 min: n.length ? Math.min(...n) : 0,
+                // das Soll im Blick der Linse (`__wieseErwartet`): Summe und Zahl der Senken mit Soll > 0
+                soll: Object.values(w.erwartet || {}).reduce((s, x) => s + x, 0),
+                mitSoll: Object.values(w.erwartet || {}).filter((x) => x > 0).length,
                 auge: w.auge ? [Math.round(w.auge.x), Math.round(w.auge.z)] : null,
             };
         };
@@ -400,15 +409,21 @@ async function welt() {
                 geboren.delete(ohne);
                 geboren.delete(lebt);
             }
-            // (5) W blind: ein Sicht-Satz in den Himmel lässt jede Senke der Nah-Wiese leer — die Linse nennt jede
+            // (5) W blind: der Sicht-Satz legt nichts (jede Senke anzahl 0) — die Linse nennt jede Senke mit Soll > 0; der
+            // Blick in den Himmel hat kein Soll, dort schweigt sie (kein Fehlalarm, wo leer richtig ist)
             const himmel = window.__wieseSicht(r, true);
             const bH = [];
             wieseUrteil(himmel, bH);
-            st_.wieseLeerGenannt =
-                himmel.senken > 0 && bH.filter((b) => /leer bewiesen/.test(b.art)).length === himmel.senken;
-            st_.wieseLeer = bH.length;
-            // (6) eine gelegte Instanz mit Null-3×3 und (7) eine gelegte Instanz fort aus dem Ring (die veraltete Matrix)
             const echt = window.__wieseSicht(r);
+            const mitSoll = Object.values(echt.erwartet || {}).filter((n) => n > 0).length;
+            const bB = [];
+            const nullJe = Object.fromEntries(Object.keys(echt.je).map((k) => [k, 0]));
+            wieseUrteil(Object.assign({}, echt, { je: nullJe }), bB);
+            st_.wieseLeerGenannt =
+                mitSoll > 0 && bB.filter((b) => /leer bewiesen/.test(b.art)).length === mitSoll && bH.length === 0;
+            st_.wieseLeer = bB.length;
+            st_.wieseHimmel = bH.length;
+            // (6) eine gelegte Instanz mit Null-3×3 und (7) eine gelegte Instanz fort aus dem Ring (die veraltete Matrix)
             const nw = st.nahWiese;
             const voll = nw ? [...nw.senken.values()].find((a) => a.anzahl > 1) : null;
             if (voll) {
@@ -419,7 +434,7 @@ async function welt() {
                 arr.set(merk, 0);
                 arr[12] += 500;
                 const bR = [];
-                wieseUrteil(window.__wieseZaehle(r, echt.auge), bR);
+                wieseUrteil(Object.assign(window.__wieseZaehle(r, echt.auge), { erwartet: echt.erwartet }), bR);
                 st_.wieseRingGenannt = bR.some((b) => /außerhalb des Rings/.test(b.art));
                 arr.set(merk, 0);
                 // (8) ein Ring ohne Büschel, dessen Senken noch Instanzen tragen (der Satz lief nicht nach)
@@ -431,7 +446,7 @@ async function welt() {
                         senke: voll.name,
                         pass: "haupt",
                         dreiecke: 0,
-                        art: `Himmel: ${st_.wieseLeer} leere Senken genannt`,
+                        art: `blind: ${st_.wieseLeer} leere Senken mit Soll genannt, Himmel ohne Soll: ${st_.wieseHimmel} Befunde`,
                     },
                     ...bR
                 );
@@ -470,7 +485,7 @@ async function welt() {
     for (const u of out.umzuege || []) {
         maxGruppen = Math.max(maxGruppen, u.gruppen);
         console.log(
-            `  Umzug → ${u.ziel.join(" ")} (Spieler ${u.spieler.join(" ")}): ${u.gruppen} Gruppen · ${u.instanzen} Instanzen · ${u.senken} Senken · ${u.marken} Eintrags-Marken treu geprüft · ${u.abschiede} Senken mit Abschied gefallen (${u.verfolgt} verfolgt) · Nah-Wiese (Auge ${u.wiese.auge ? u.wiese.auge.join(" ") : "—"}) ${u.wiese.senken} Senken, ${u.wiese.bueschel} Büschel im Ring, ${u.wiese.summe} gelegt (je Senke ≥ ${u.wiese.min}) · ${u.n} Befunde`
+            `  Umzug → ${u.ziel.join(" ")} (Spieler ${u.spieler.join(" ")}): ${u.gruppen} Gruppen · ${u.instanzen} Instanzen · ${u.senken} Senken · ${u.marken} Eintrags-Marken treu geprüft · ${u.abschiede} Senken mit Abschied gefallen (${u.verfolgt} verfolgt) · Nah-Wiese (Auge ${u.wiese.auge ? u.wiese.auge.join(" ") : "—"}) ${u.wiese.senken} Senken, ${u.wiese.bueschel} Büschel im Ring, ${u.wiese.summe} gelegt (je Senke ≥ ${u.wiese.min}; Soll im Blick ${u.wiese.soll} in ${u.wiese.mitSoll} Senken) · ${u.n} Befunde`
         );
         for (const b of u.befunde) console.log(`    ❌ ${b.senke} · ${b.pass} · ${b.dreiecke} Dreiecke — ${b.art}`);
         if (u.n) fails.push(`Umzug ${u.ziel.join(" ")}: ${u.n} Befunde (${u.befunde[0].senke} · ${u.befunde[0].art})`);
@@ -479,11 +494,13 @@ async function welt() {
     if (!(maxGruppen > 20)) fails.push(`nur ${maxGruppen} Instanz-Gruppen — die Linse misst nichts`);
     const letzt = (out.umzuege || [])[(out.umzuege || []).length - 1] || {};
     if (!(letzt.abschiede > 0)) fails.push("keine Senke fiel mit Abschied — die Abschieds-Linse misst nichts");
-    // W misst nur, wo Wiese steht: mindestens WIESE_ORTE Umzüge mit belegtem Ring, sonst ist W leer bewiesen
-    const wieseOrte = (out.umzuege || []).filter((u) => u.wiese.bueschel > 0 && u.wiese.min > 0).length;
+    // W misst nur, wo Wiese im Blick steht: mindestens WIESE_ORTE Umzüge, in denen die Linse ein Soll trug (Büschel ihrer
+    // Stufe im Blick, `__wieseErwartet`) — sonst ist W leer bewiesen. Ein dünner Ring (Waldboden unter der Kronen-Karte)
+    // trägt ein Soll nur in den Stufen, die er im Blick hat; jede Senke mit Soll muss es tragen.
+    const wieseOrte = (out.umzuege || []).filter((u) => u.wiese.bueschel > 0 && u.wiese.soll > 0).length;
     const WIESE_ORTE = 4;
     console.log(
-        `  Nah-Wiese: ${wieseOrte} von ${(out.umzuege || []).length} Umzügen mit belegtem Ring (Soll ≥ ${WIESE_ORTE})`
+        `  Nah-Wiese: ${wieseOrte} von ${(out.umzuege || []).length} Umzügen mit Soll im Blick (Soll ≥ ${WIESE_ORTE})`
     );
     if (wieseOrte < WIESE_ORTE)
         fails.push(
@@ -504,11 +521,11 @@ async function welt() {
         if (!s.ohneGenannt) fails.push("SELBSTTEST: die Senke ohne Abschied blieb ungesehen");
         if (!s.lebendGenannt) fails.push("SELBSTTEST: der Abschied einer Senke im Graphen blieb ungesehen");
         console.log(
-            `  ${s.wieseLeerGenannt ? "✅" : "❌"} SELBSTTEST W: der Sicht-Satz in den Himmel — jede leere Senke der Nah-Wiese genannt (${s.wieseLeer || 0}) · ${s.wieseNullGenannt ? "✅" : "❌"} eine gelegte Null-3×3 genannt · ${s.wieseRingGenannt ? "✅" : "❌"} eine Instanz fort aus dem Ring genannt · ${s.wieseAltGenannt ? "✅" : "❌"} veraltete Instanzen im leeren Ring genannt`
+            `  ${s.wieseLeerGenannt ? "✅" : "❌"} SELBSTTEST W: der blinde Sicht-Satz — jede leere Senke mit Soll genannt (${s.wieseLeer || 0}), der Himmel ohne Soll still (${s.wieseHimmel || 0}) · ${s.wieseNullGenannt ? "✅" : "❌"} eine gelegte Null-3×3 genannt · ${s.wieseRingGenannt ? "✅" : "❌"} eine Instanz fort aus dem Ring genannt · ${s.wieseAltGenannt ? "✅" : "❌"} veraltete Instanzen im leeren Ring genannt`
         );
         if (!s.wieseAltGenannt) fails.push("SELBSTTEST: veraltete Instanzen im Ring ohne Büschel blieben ungesehen");
         if (!s.wieseLeerGenannt)
-            fails.push("SELBSTTEST: die leeren Senken der Nah-Wiese (Blick in den Himmel) blieben ungesehen");
+            fails.push("SELBSTTEST: die leeren Senken der Nah-Wiese mit Soll blieben ungesehen (oder der Himmel ohne Soll schlug an)");
         if (!s.wieseNullGenannt) fails.push("SELBSTTEST: die gelegte Null-3×3 der Nah-Wiese blieb ungesehen");
         if (!s.wieseRingGenannt) fails.push("SELBSTTEST: die Instanz fort aus dem Ring blieb ungesehen");
     }
@@ -521,7 +538,7 @@ async function welt() {
         process.exit(1);
     }
     console.log(
-        `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; ${letzt.abschiede} Senken fielen mit Abschied, keine ohne; der Sicht-Satz der Nah-Wiese belegte in ${wieseOrte} Ringen jede Senke (${Math.min(...out.umzuege.filter((u) => u.wiese.bueschel > 0).map((u) => u.wiese.summe))}–${Math.max(...out.umzuege.map((u) => u.wiese.summe))} Instanzen), ein Ring ohne Wiese stand leer.`
+        `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; ${letzt.abschiede} Senken fielen mit Abschied, keine ohne; der Sicht-Satz der Nah-Wiese trug in ${wieseOrte} Ringen jedes Soll seines Blicks (${Math.min(...out.umzuege.filter((u) => u.wiese.bueschel > 0).map((u) => u.wiese.summe))}–${Math.max(...out.umzuege.map((u) => u.wiese.summe))} Instanzen), ein Ring ohne Wiese stand leer.`
     );
     process.exit(0);
 })().catch((e) => {

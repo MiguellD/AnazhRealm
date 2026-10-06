@@ -10,7 +10,7 @@
 //                Nah-Streu über die Leaf-Keys seiner Senken, die Senken der Nah-Wiese über ihren Foundry-Leaf-Key).
 //                Die Senken der Nah-Wiese füllt
 //                ihr Sicht-Satz im Haupt-Pass — headless legt ihn die Linse selbst (scripts/lib/wiese-sicht.cjs) und
-//                verlangt: der Ring am Start trägt Büschel, jede Senke belegt und als Studio-Emitter gezählt (W).
+//                verlangt: der Ring am Start trägt Büschel, jede Senke mit Soll belegt, jede belegte als Studio-Emitter (W).
 //   SUBSTANZ   — Welt-Substanz ohne Studio-Gegenstück, bewusst KEINE Silhouetten-Frage
 //                (Terrain-Chunks · Wasser [isHydrosphere] · Himmel/Gestirne · Kreaturen ·
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
@@ -351,8 +351,10 @@ const server = http.createServer((req, res) => {
 
         o.zensus = census();
 
-        // ── W — die Nah-Wiese im Zensus (Welle 6): der Ring am Start trägt Büschel, jede Senke ist nach dem Sicht-Satz
-        // belegt und steht als STUDIO-Emitter im Zensus (über ihren Foundry-Leaf-Key) — sonst ist die Wiese leer bewiesen.
+        // ── W — die Nah-Wiese im Zensus (Welle 6): der Ring am Start trägt Büschel, jede Senke mit Soll (die Büschel ihrer
+        // Stufe im Blick der Linse, `__wieseErwartet`) ist nach dem Sicht-Satz belegt, und jede belegte Senke steht als
+        // STUDIO-Emitter im Zensus (über ihren Foundry-Leaf-Key) — sonst ist die Wiese leer bewiesen. Ein dünner Ring (der
+        // Waldboden unter der Kronen-Karte, Welle 5) trägt Stufen ohne Büschel im Blick: dort ist leer richtig.
         const wieseImZensus = (z) =>
             Object.entries(z.detail.studio)
                 .filter(([k]) => k.indexOf("[nahWiese#") >= 0)
@@ -365,11 +367,16 @@ const server = http.createServer((req, res) => {
                     `der Ring am Start trägt keinen Büschel (${w.kacheln} Kacheln) — die Linse misst die Nah-Wiese nicht`
                 );
             else {
-                const leer = Object.keys(w.je).filter((k) => !(w.je[k] > 0));
+                const soll = w.erwartet || {};
+                const leer = Object.keys(w.je).filter((k) => soll[k] > 0 && !(w.je[k] > 0));
+                if (!Object.keys(soll).length) f.push("kein Soll der Linse (__wieseErwartet) — die Linse misst nichts");
+                else if (!Object.values(soll).some((x) => x > 0))
+                    f.push("kein Büschel im Blick der Linse — die Linse misst die Nah-Wiese nicht");
                 if (leer.length)
-                    f.push(`${leer.length} Senken leer nach dem Sicht-Satz (${leer.join(", ")}) — leer bewiesen`);
+                    f.push(`${leer.length} Senken mit Soll leer nach dem Sicht-Satz (${leer.join(", ")}) — leer bewiesen`);
+                const belegt = Object.values(w.je).filter((x) => x > 0).length;
                 const n = wieseImZensus(z);
-                if (n !== w.senken) f.push(`${n} von ${w.senken} Senken der Nah-Wiese als Studio-Emitter gezählt`);
+                if (n !== belegt) f.push(`${n} von ${belegt} belegten Senken der Nah-Wiese als Studio-Emitter gezählt`);
             }
             return f;
         };
@@ -522,7 +529,8 @@ const server = http.createServer((req, res) => {
                 if (st.archInstanceGroups) st.archInstanceGroups.delete("baum_eiche#0@3,3");
             }
             // (c) W: eine belegte Senke der Nah-Wiese ohne Leaf-Key MUSS als Verletzung zählen (sie zeichnet, der Zensus
-            // sieht sie — nicht als leeren Pool), und ein Sicht-Satz in den Himmel (leere Senken) MUSS das W-Urteil röten.
+            // sieht sie — nicht als leeren Pool), und ein blinder Sicht-Satz (jede Senke leer bei Soll im Blick) MUSS das
+            // W-Urteil röten.
             if (st.nahWiese) {
                 const a = [...st.nahWiese.senken.values()].find((x) => x.anzahl > 0 && x.mesh);
                 o.selftestWiese = { name: a ? a.name : null, ohneKey: false, blind: [] };
@@ -533,7 +541,11 @@ const server = http.createServer((req, res) => {
                     meshKeys.set(a.mesh, keys);
                     o.selftestWiese.ohneKey = z3.violations.some((v) => v.name === a.name);
                 }
-                o.selftestWiese.blind = wieseUrteil(window.__wieseSicht(r, true), census());
+                const echt = window.__wieseSicht(r);
+                const nullJe = Object.fromEntries(Object.keys(echt.je).map((k) => [k, 0]));
+                o.selftestWiese.blind = wieseUrteil(Object.assign({}, echt, { je: nullJe }), census()).filter((x) =>
+                    /leer bewiesen/.test(x)
+                );
                 window.__wieseSicht(r);
             }
         }
@@ -610,11 +622,11 @@ const server = http.createServer((req, res) => {
             fails.push("Selbst-Test: synthetisch verlorener Key nicht gefangen");
         const sw = out.selftestWiese || { blind: [] };
         console.log(
-            `  Selbst-Test Nah-Wiese: belegte Senke ohne Leaf-Key (${sw.name}) → ${sw.ohneKey ? "Verletzung ✅" : "NICHT gesehen ❌"} · Sicht-Satz in den Himmel → ${sw.blind.length ? "rot ✅ (" + sw.blind[0] + ")" : "NICHT rot ❌"}`
+            `  Selbst-Test Nah-Wiese: belegte Senke ohne Leaf-Key (${sw.name}) → ${sw.ohneKey ? "Verletzung ✅" : "NICHT gesehen ❌"} · blinder Sicht-Satz → ${sw.blind.length ? "rot ✅ (" + sw.blind[0] + ")" : "NICHT rot ❌"}`
         );
         if (!sw.ohneKey) fails.push("Selbst-Test: eine belegte Senke der Nah-Wiese ohne Leaf-Key blieb ungesehen");
         if (!sw.blind.length)
-            fails.push("Selbst-Test: leere Senken der Nah-Wiese (Blick in den Himmel) röten das W-Urteil nicht");
+            fails.push("Selbst-Test: leere Senken der Nah-Wiese mit Soll (blinder Sicht-Satz) röten das W-Urteil nicht");
     }
     if (fails.length) {
         console.log(`\n❌ ASSET-INVENTUR ROT: ${fails.join(" · ")}`);
