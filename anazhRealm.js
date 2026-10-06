@@ -50598,21 +50598,17 @@ class AnazhRealm {
     }
 
     // DIE AUFSTANDSPUNKTE eines gerittenen Werks (m, Fahrt-Rahmen: vorn/hinten längs, quer zur Seite): ein
-    // Studio-Fahrzeug trägt sie im Gesetz (vehicle-core exportDrive.huelle — die Achsen fAx/rAx, die halbe Spur),
-    // ein Teile-Werk an Bug/Heck und den Flanken seiner Hülle (die halbe Spanne, gedeckelt 0.8..3 m).
+    // Studio-Fahrzeug trägt sie im Gesetz (vehicle-core fahrAufstand aus exportDrive.huelle — die Achsen fAx/rAx, die
+    // halbe Spur, der Bauch und der Federweg je Rad, dieselbe Quelle wie die Probefahrt), ein Teile-Werk an Bug/Heck und
+    // den Flanken seiner Hülle (die halbe Spanne, gedeckelt 0.8..3 m) — starr: seine Räder federn nicht einzeln (hub 0).
     _rittAufstand(entry) {
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
-        if (h && Number.isFinite(h.fAx) && Number.isFinite(h.rAx) && Number.isFinite(h.spur) && h.fAx > h.rAx)
-            return {
-                vorn: h.fAx * sc,
-                hinten: h.rAx * sc,
-                quer: (h.spur / 2) * sc,
-                bauch: Number.isFinite(h.yFloor) ? h.yFloor * sc : 0,
-            };
+        const auf = h ? AnazhRealm._fahrSchrittGesetz().vc.fahrAufstand(h, sc) : null;
+        if (auf) return auf;
         const half = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
-        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6), bauch: 0 };
+        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6), bauch: 0, hub: 0 };
     }
 
     // DIE EBENE DER RÄDER bei (x, z) in Fahrt-Richtung `fahrtYaw` (sin, cos): die vier Aufstandspunkte
@@ -66093,8 +66089,9 @@ class AnazhRealm {
         P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
         const boden = this._fahrBoden(entry)(P.x, P.z);
         if (Number.isFinite(boden)) {
-            // der Federweg aus dem Kern (FAHR.schritt.radHub × radR des Fahr-Satzes — `_fahr` lebt nur mit ihm)
-            const hub = AnazhRealm._fahrSchrittGesetz().S.radHub * entry._fahrSatz.radR;
+            // der Federweg je Rad aus dem Fahr-Satz (vehicle-core fahrAufstand: radHub × radR × Skala — derselbe, mit dem die
+            // Ebene des Kerns rechnet: was er nicht trägt, hob sie schon; `_fahr` lebt nur mit dem Satz)
+            const hub = entry._fahrSatz.auf.hub;
             out.elements[13] += Math.max(-hub, Math.min(hub, boden - P.y));
         }
         return out;
@@ -92004,11 +92001,12 @@ AnazhRealm._fahrGesetz = function () {
     }
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent");
 };
-// DER EINE FAHR-SCHRITT-LESER (Welle L, Nachbesserung 07.10.), fail-closed: die Funktionen des Fahr-Schritts (vehicle-core
-// fahrGesetz · fahrZustand · fahrEbene · fahrStand · fahrKraefte) und die Wände des Welt-Ritts (FAHR.schritt: Stufe,
-// Rad-Hub, Ebenen-Klammer, Luft-Abstand) in EINER Gültigkeits-Wand. Ein alter Kern bricht LAUT — vorher prüften `_fahrSatz`
-// und `_rittEbene` typeof und gaben still null (der Gesetz-Wagen ritt richtungs-folgend), und Hülle, Kontakt und Rad trugen
-// Literal-Zwillinge der Kern-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6). Memo je Kern-Objekt.
+// DER EINE FAHR-SCHRITT-LESER (Welle L, Nachbesserung 07.10.), fail-closed: die Funktionen des Fahr-Schritts
+// (vehicle-core fahrGesetz · fahrZustand · fahrEbene · fahrStand · fahrKraefte · fahrAufstand) und die Wände des
+// Welt-Ritts (FAHR.schritt: Stufe, Rad-Hub, Ebenen-Klammer, Luft-Abstand) in EINER Gültigkeits-Wand. Ein alter Kern
+// bricht LAUT — vorher prüften `_fahrSatz` und `_rittEbene` typeof und gaben still null (der Gesetz-Wagen ritt
+// richtungs-folgend), und Hülle, Kontakt und Rad trugen Literal-Zwillinge der Kern-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6).
+// Memo je Kern-Objekt.
 AnazhRealm._fahrSchrittGesetz = function () {
     const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
     const memo = AnazhRealm._fahrSchrittMemo;
@@ -92016,7 +92014,7 @@ AnazhRealm._fahrSchrittGesetz = function () {
     const S = vc && vc.FAHR && vc.FAHR.schritt;
     if (
         S &&
-        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte"].every(
+        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand"].every(
             (f) => typeof vc[f] === "function"
         ) &&
         ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps"].every((k) => Number.isFinite(S[k]))

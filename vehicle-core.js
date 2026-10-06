@@ -2523,14 +2523,27 @@
     // Konvention (das Lab): yaw dreht den Bug (+x) nach (cos, −sin), links = (−sin, −cos); vlat > 0 nach links;
     // steig > 0 Bug hoeher; wank > 0 links hoeher; fNick > 0 Bug hoch; fWank > 0 rechte Seite tief; fHub < 0 eingefedert.
     // REIN + THREE-frei. boden(x, z) liefert die Hoehe des Bodens (nicht-finit = ungebaut).
+    // fahrAufstand(huelle, s) — DIE Aufstandspunkte eines Studio-Fahrzeugs (Nachbesserung 07.10., rein additiv): die Achsen
+    //   fAx/rAx, die halbe Spur, der Bauch (yFloor) und der FEDERWEG je Rad (schritt.radHub × radR — so weit federt ein Rad
+    //   einzeln zu seinem Boden), alle × Welt-Skala s. EINE Quelle fuer Probefahrt (fahrGesetz ohne auf) und Welt-Ritt.
+    function fahrAufstand(h, s) {
+        const k = s > 0 ? s : 1;
+        if (!h || !(h.fAx > h.rAx) || !(h.spur > 0)) return null;
+        return {
+            vorn: h.fAx * k,
+            hinten: h.rAx * k,
+            quer: (h.spur / 2) * k,
+            bauch: (Number.isFinite(h.yFloor) ? h.yFloor : 0) * k,
+            hub: h.radR > 0 ? FAHR.schritt.radHub * h.radR * k : 0,
+        };
+    }
     function fahrGesetz(d, auf) {
         const zs = d && d.zweispur;
         const lk = d && d.lenkung;
         // radR traegt die Rolle (Weg/radR) und die Stufe — ohne ihn kein Fahr-Satz (kein stiller Ersatz-Radius).
         if (!zs || !lk || !(d.vmax > 0) || !(d.kAcc > 0) || !(zs.mass > 0) || !(zs.Izz > 0) || !(d.radR > 0))
             return null;
-        const h = d.huelle;
-        const a = auf || (h ? { vorn: h.fAx, hinten: h.rAx, quer: h.spur / 2, bauch: h.yFloor } : null);
+        const a = auf || fahrAufstand(d.huelle, 1);
         if (!a || !(a.vorn > a.hinten) || !(a.quer > 0)) return null;
         const aEngine = d.kAcc * d.vmax;
         const sp = d.spring || {};
@@ -2571,7 +2584,13 @@
             aLatMax: zs.aLatMax,
             k: sp.k,
             cd: sp.c,
-            auf: { vorn: a.vorn, hinten: a.hinten, quer: a.quer, bauch: Number.isFinite(a.bauch) ? a.bauch : 0 },
+            auf: {
+                vorn: a.vorn,
+                hinten: a.hinten,
+                quer: a.quer,
+                bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
+                hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
+            },
         };
     }
     function fahrZustand(x, z, yaw) {
@@ -2630,7 +2649,12 @@
         const traegt =
             (Math.abs(steig) <= S.ebeneMax && Math.abs(wank) <= S.ebeneMax) ||
             (Number.isFinite(mitte) && Math.abs(mitte - y0) <= S.ebeneTol);
-        let y = traegt ? y0 : -Infinity;
+        // Kein Rad tiefer im Boden als sein Federweg (Nachbesserung 07.10. — M3 an (102, 60): auf verwundenem Grund lagen
+        // zwei diagonale Raeder 0,229 m im Boden): die vier Punkte liegen um die Verwindung ±tau neben der Ebene; was ein
+        // Rad nicht einzeln zu seinem Boden federt (auf.hub; ein starres Werk 0), hebt die Ebene — der Wagen steht auf der
+        // hohen Diagonale, die tiefe haengt.
+        const tau = Math.abs(vLi - vRe - hLi + hRe) / 4;
+        let y = traegt ? y0 + Math.max(0, tau - (a.hub > 0 ? a.hub : 0)) : -Infinity;
         // Kein Bauch im Boden: der Grund unter dem Ursprung traegt den Bauch (Kuppe, Kante; huelle.yFloor).
         if (Number.isFinite(mitte)) y = Math.max(y, mitte - a.bauch);
         if (!Number.isFinite(y)) return null;
@@ -3234,6 +3258,7 @@
         PRUEF_VIS: PRUEF_VIS,
         exportDrive: exportDrive,
         // WELLE L (rein additiv) — der EINE Fahr-Schritt (Probefahrt UND Welt-Ritt)
+        fahrAufstand: fahrAufstand,
         fahrGesetz: fahrGesetz,
         fahrZustand: fahrZustand,
         fahrEbene: fahrEbene,

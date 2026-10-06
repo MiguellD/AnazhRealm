@@ -272,6 +272,40 @@ function kernProbe(VC) {
         k12.luft > 0 && k40.luft === 0 && kl.luft > 0 && kl.sprung <= 0.5 && !kl.z.luft && Math.abs(kl.z.y + 7) <= 0.05,
         `Kuppe R12 Luft ${k12.luft} · R40 Luft ${k40.luft} · Klippe Luft ${kl.luft}, größter Sprung ${kl.sprung.toFixed(2)} m, Ende y ${kl.z.y.toFixed(2)}`,
     ]);
+    // K6 — DIE VERWINDUNG (Gegenprüfung 07.10.: M3 an (102, 60) — auf verwundenem Boden lagen zwei diagonale Räder des
+    // Teile-Wagens 0,229 m im Boden): bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
+    // liegt tiefer im Boden als sein Federweg (auf.hub — der GT federt ein Rad einzeln, ein starres Werk nie), und wo der
+    // Federweg trägt, hebt die Verwindung den Wagen nicht.
+    const Pv = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
+    const Dv = VC.exportDrive(Pv);
+    const Ggt = VC.fahrGesetz(Dv);
+    const av = Ggt.auf;
+    const starr = VC.fahrGesetz(Dv, { vorn: av.vorn, hinten: av.hinten, quer: av.quer, bauch: av.bauch, hub: 0 });
+    const mL = (av.vorn + av.hinten) / 2;
+    const hL = (av.vorn - av.hinten) / 2;
+    const verwunden = (tau) => (x, z) => tau * ((x - mL) / hL) * (-z / av.quer);
+    const tief = (G, tau) => {
+        const boden = verwunden(tau);
+        const z = VC.fahrZustand(0, 0, 0);
+        VC.fahrStand(z, G, boden, 0);
+        let pen = 0;
+        // Fahrt-Rahmen des Kerns bei yaw 0: vorn +x, links −z
+        for (const l of [av.vorn, av.hinten])
+            for (const q of [av.quer, -av.quer]) {
+                const ebene = z.y + Math.tan(z.steig) * l + Math.tan(z.wank) * q;
+                pen = Math.max(pen, boden(l, -q) - ebene);
+            }
+        return { pen, y: z.y };
+    };
+    const hubGt = av.hub > 0 ? av.hub : 0;
+    const v45 = tief(Ggt, 0.45);
+    const s45 = tief(starr, 0.45);
+    const v10 = tief(Ggt, 0.1);
+    out.push([
+        "K6 Verwindung: kein Rad tiefer im Boden als sein Federweg (GT: radHub × radR, starr: 0); im Federweg hebt sie nicht",
+        hubGt > 0 && v45.pen <= hubGt + 1e-9 && s45.pen <= 1e-9 && Math.abs(v10.y) <= 1e-9,
+        `GT tau 0,45: ${v45.pen.toFixed(3)} m im Boden (Federweg ${hubGt.toFixed(3)}) · starr tau 0,45: ${s45.pen.toFixed(3)} m · GT tau 0,10: Hub ${v10.y.toFixed(3)} m`,
+    ]);
     return out;
 }
 
