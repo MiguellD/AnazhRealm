@@ -90932,9 +90932,13 @@ AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, st
 // bau, `formationenSatz` → formationen). Ein gesetzter Bau wandert nie (die Tür-Flügel reisen einzeln), und seine
 // Gestalt kehrt selten wieder (das Haus trägt seine Parzelle als Prägung, der Fels 16 Gestalten): die Instanz-Gruppe
 // zog je Gestalt einen Befehl je Pass. Baum und Strauch (die Dither-Blende je Instanz, viele Wiederkehrer), Tor und
-// Fahrzeug (Flügel, Fahrt) zeichnen als Instanz-Gruppe.
+// Fahrzeug (Flügel, Fahrt) zeichnen als Instanz-Gruppe. Die AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen, seit der
+// Welle 5 Studio-Gestalt aus fachwerk) ist gesetzter Bau, der zeichnet UND wirft: eine Instanz-Gruppe dieser Art kann
+// ihre Instanzen nicht je Pass wählen (die Wahl teilt den Instanz-Puffer, `_instanzWahlArt`) — 170 Feuerstellen warfen
+// je Kaskade alle (37 400 Dreiecke an der Mess-Wiese); im Satz wählt jeder Pass seine Zellen nach dem EINEN Gesetz.
 AnazhRealm.BAU_SATZ = Object.freeze({
     haus: "bauSatz",
+    ausstattung: "bauSatz",
     rock: "formationenSatz",
     boulder: "formationenSatz",
     scree: "formationenSatz",
